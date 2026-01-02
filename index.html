@@ -8,6 +8,8 @@
     <!-- Favicon -->
     <link rel="icon" href="IMG_4512.png" type="image/png">
     <link rel="apple-touch-icon" href="IMG_4512.png">
+      
+      <link rel="stylesheet" href="news-ticker.css">
 <script src="https://cdn.tailwindcss.com"></script>
 <script>
   tailwind.config = {
@@ -3768,6 +3770,19 @@ sss1: {
           <span onclick="showLogin()" class="text-purple-600 underline cursor-pointer font-medium">Back to Login</span>
         </p>
       </div>
+      <!-- News Ticker HTML -->
+<div class="news-ticker-container" role="region" aria-label="Breaking news ticker" aria-live="polite">
+    <div class="ticker-wrapper">
+        <div class="ticker-label">
+            <span class="ticker-label-icon" aria-hidden="true">—</span>
+            <span>NOTE</span>
+        </div>
+        <div class="ticker-content">
+            <div class="ticker-text speed-normal" id="tickerScroll"></div>
+        </div>
+        <button class="ticker-close" onclick="closeTicker()" aria-label="Close news ticker">×</button>
+    </div>
+</div>
     </div>`;
 
   // Fixed: Load schools into registration dropdown (no error message on empty)
@@ -5232,5 +5247,6 @@ async function loadStudentMessages() {
       // Initial render
       renderLogin();
     </script>
+    <script src="news-ticker.js"></script>
   </body>
 </html>
