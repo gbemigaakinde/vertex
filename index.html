@@ -3774,7 +3774,7 @@ sss1: {
 <div class="news-ticker-container" role="region" aria-label="Breaking news ticker" aria-live="polite">
     <div class="ticker-wrapper">
         <div class="ticker-label">
-            <span class="ticker-label-icon" aria-hidden="true">—</span>
+            <span class="ticker-label-icon" aria-hidden="true">•</span>
             <span>NOTE</span>
         </div>
         <div class="ticker-content">
@@ -3784,6 +3784,10 @@ sss1: {
     </div>
 </div>
     </div>`;
+    // ✅ ADD THIS LINE TO INITIALIZE THE TICKER
+  if (typeof initTicker === 'function') {
+    initTicker();
+  }
 
   // Fixed: Load schools into registration dropdown (no error message on empty)
   db.collection('schools').orderBy('name').onSnapshot(snap => {
