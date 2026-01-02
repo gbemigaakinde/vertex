@@ -4,11 +4,9 @@
 const tickerConfig = {
     // Add your news items here (each item is a separate news headline)
     newsItems: [
-        "Markets reach record highs amid economic optimism",
-        "New technology breakthrough announced by leading research team",
-        "Weather alert: Storm system approaching coastal regions",
-        "Sports update: Championship finals set for this weekend",
-        "Breaking: Major policy announcement expected later today"
+        "Welcome to Excellence Tutorial CBT System!",
+        "Complete at least 2 subjects to start your exam",
+        "Good luck with your tests!"
     ],
     
     // Animation speed: 'slow', 'normal', or 'fast'
