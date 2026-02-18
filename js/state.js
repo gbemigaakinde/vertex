@@ -22,7 +22,8 @@
     currentTaskConfig: null,
 
     // Chat
-    replyingTo:   null,   // { name: string, text: string } | null
+    replyingTo:      null,   // { name: string, text: string } | null
+    studentMessages: [],     // private messages for current student
 
     // Firestore unsubscribe handles — stored so we can cancel before re-subscribing
     _unsubs: {},
@@ -81,6 +82,7 @@
       this.exam        = null;
       this.examStartMs = null;
       this.replyingTo  = null;
+      this.studentMessages = [];
       this.currentTaskConfig = null;
     }
   };
@@ -91,5 +93,11 @@
     QUESTIONS_PER_SUBJECT:    40,
     EXAM_DURATION_MS:         120 * 60 * 1000,   // 2 hours
   };
+
+  // Shortcut helpers used by all modules
+  // Db() returns the Firestore instance
+  // S()  returns the current AppState
+  window.Db = function () { return window.fbDb; };
+  window.S  = function () { return window.AppState; };
 
 })();
