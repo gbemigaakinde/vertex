@@ -152,12 +152,15 @@
       return;
     }
 
-    const classKey          = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
-    const selectedQuestions = {};
+const classKey          = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
+const selectedQuestions = {};
 
-    const _qBank    = window.questions || (typeof questions !== 'undefined' ? questions : {});
-    if (!_qBank[classKey]) {
-  console.error('[exam] No questions for classKey:', classKey, '| keys:', Object.keys(_qBank));
+const _qBank = window.questions;
+console.log('[DEBUG] classKey:', classKey, '| qBank keys:', Object.keys(_qBank || {}));
+console.log('[DEBUG] subjects in class:', _qBank && _qBank[classKey] ? Object.keys(_qBank[classKey]) : 'NONE');
+console.log('[DEBUG] chosen subjects:', chosen);
+
+if (!_qBank || !_qBank[classKey]) {
   UI.toast(`No subjects found for class "${S().studentData.class}". Contact Master Timothy.`, 'error', 0);
   return;
 }
