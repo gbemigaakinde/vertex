@@ -35,7 +35,7 @@
         renderExam();
         _showInstructionsModal();
       } else {
-        renderSubjectSelection();
+        await renderSubjectSelection();
       }
     } catch (err) {
       console.error('[exam] loadOrStart error:', err);
@@ -46,7 +46,8 @@
   /* ── Subject selection screen ── */
   async function renderSubjectSelection() {
     const classKey  = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
-    const available = window.questions[classKey] ? Object.keys(window.questions[classKey]) : [];
+    const _qBank    = window.questions || {};
+    const available = _qBank[classKey] ? Object.keys(_qBank[classKey]) : [];
 
     // Load messages and tasks in parallel — neither blocks rendering
     await Promise.all([
@@ -116,6 +117,11 @@
     document.querySelectorAll('.subject-checkbox').forEach(cb => {
       cb.addEventListener('change', _updateStartBtn);
     });
+
+    } catch (err) {
+      console.error('[exam] renderSubjectSelection error:', err);
+      UI.toast('Failed to load subject selection. Please refresh the page.', 'error', 0);
+    }
   }
 
   function _updateStartBtn() {
@@ -143,8 +149,10 @@
     const classKey          = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
     const selectedQuestions = {};
 
+    const _qBank = window.questions || {};
+
     for (const subj of chosen) {
-      const all = (window.questions[classKey] || {})[subj] || [];
+      const all = (_qBank[classKey] || {})[subj] || [];
       if (all.length === 0) {
         UI.toast(`No questions available for ${subj}.`, 'error');
         return;
