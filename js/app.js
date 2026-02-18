@@ -1,18 +1,9 @@
 /* ============================================================
    js/app.js — Application entry point
-   Responsibilities:
-     - Single auth state listener (no duplicates)
-     - Route authenticated users to correct views
-     - Coordinate module initialisation on login/logout
-     - Global error boundary for uncaught promise rejections
    ============================================================ */
 
 (function () {
   'use strict';
-
-  /* -------------------------------------------------- */
-  /* Constants                                          */
-  /* -------------------------------------------------- */
 
   const TEACHER_UID = 'bV4u2V7aakMF7EyYe1bpCXGj4ny1';
 
@@ -31,7 +22,8 @@
   /* -------------------------------------------------- */
 
   function _startAuthListener() {
-    Auth().onAuthStateChanged(async (firebaseUser) => {
+    // FIX: use window.fbAuth directly (not Auth() as a function)
+    window.fbAuth.onAuthStateChanged(async (firebaseUser) => {
       if (firebaseUser) {
         await _onLogin(firebaseUser);
       } else {
@@ -42,7 +34,7 @@
 
   async function _onLogin(firebaseUser) {
     const uid = firebaseUser.uid;
-    AppState.set('user', uid);
+    AppState.userId = uid;
 
     // Teacher route
     if (uid === TEACHER_UID) {
@@ -50,17 +42,17 @@
       return;
     }
 
-    // Student route — load profile
     try {
-      const snap = await Db().collection('students').doc(uid).get();
+      // FIX: use window.fbDb directly (not Db() as a function)
+      const snap = await window.fbDb.collection('students').doc(uid).get();
 
       if (!snap.exists) {
         UI.toast('Profile not found. Please register again.', 'error', 0);
-        await Auth().signOut();
+        await window.fbAuth.signOut();
         return;
       }
 
-      AppState.set('studentData', snap.data());
+      AppState.studentData = snap.data();
 
       // Start real-time profile listener (for coaching task completion updates)
       Tasks.listenForStudentUpdates();
@@ -70,20 +62,16 @@
     } catch (err) {
       console.error('[app] Profile load error:', err);
       UI.toast('Access error. Please try again.', 'error', 0);
-      await Auth().signOut();
+      await window.fbAuth.signOut();
     }
   }
 
   function _onLogout() {
-    // Cancel all active listeners
     AppState.cancelAllListeners();
     Tasks.cancelListeners();
-
-    // Clear app state
     AppState.reset();
-
-    // Render login screen
-    Auth && Auth().currentUser === null && renderLogin();
+    // FIX: Auth module exposes window.Auth, call renderLogin directly
+    Auth.renderLogin();
   }
 
   /* -------------------------------------------------- */
@@ -91,10 +79,10 @@
   /* -------------------------------------------------- */
 
   async function _routeStudent() {
-    const uid = AppState.get('user');
+    const uid = AppState.userId;
 
     try {
-      const ongoingSnap = await Db().collection('ongoingExams').doc(uid).get();
+      const ongoingSnap = await window.fbDb.collection('ongoingExams').doc(uid).get();
 
       if (ongoingSnap.exists) {
         const examData = ongoingSnap.data();
@@ -108,7 +96,7 @@
           }
         }
 
-        AppState.set('exam', examData);
+        AppState.exam = examData;
         Exam.render();
 
         if (examData.startTime) {
@@ -131,7 +119,7 @@
   /* -------------------------------------------------- */
 
   async function _showSubjectSelection() {
-    const studentData = AppState.get('studentData');
+    const studentData = AppState.studentData;
 
     // Load tasks and messages in parallel
     await Promise.all([
@@ -142,7 +130,7 @@
     const classKey = (studentData.class || '').replace(/\s+/g, '').toLowerCase();
     const available = questions[classKey] ? Object.keys(questions[classKey]) : [];
 
-    const messages = AppState.get('studentMessages') || [];
+    const messages = AppState.studentMessages || [];
     const messagesHTML =
       messages.length > 0
         ? `<div class="space-y-6 mb-10">
@@ -206,7 +194,7 @@
       </div>`;
 
     // Initialise checkbox tracking state
-    AppState.set('exam', { chosen: [] });
+    AppState.exam = { chosen: [] };
 
     // Render tasks now that container exists
     Tasks.renderTasksHTML();
@@ -217,7 +205,7 @@
   /* -------------------------------------------------- */
 
   function toggleSubject(checkbox) {
-    let exam = AppState.get('exam') || { chosen: [] };
+    let exam = AppState.exam || { chosen: [] };
     if (!Array.isArray(exam.chosen)) exam.chosen = [];
 
     if (checkbox.checked) {
@@ -228,7 +216,7 @@
       exam.chosen = exam.chosen.filter((s) => s !== checkbox.value);
     }
 
-    AppState.set('exam', exam);
+    AppState.exam = exam;
 
     const btn = document.getElementById('startExamBtn');
     if (btn) btn.disabled = exam.chosen.length < 2;
@@ -239,13 +227,13 @@
   /* -------------------------------------------------- */
 
   async function startExam() {
-    const exam = AppState.get('exam') || {};
+    const exam = AppState.exam || {};
     if (!exam.chosen || exam.chosen.length < 2) {
       UI.toast('Please select at least 2 subjects.', 'warning');
       return;
     }
 
-    const studentData = AppState.get('studentData');
+    const studentData = AppState.studentData;
     const classKey = (studentData.class || '').replace(/\s+/g, '').toLowerCase();
     const selectedQuestions = {};
 
@@ -274,8 +262,8 @@
     UI.setLoading(btn, true);
 
     try {
-      await Db().collection('ongoingExams').doc(AppState.get('user')).set(newExam);
-      AppState.set('exam', newExam);
+      await window.fbDb.collection('ongoingExams').doc(AppState.userId).set(newExam);
+      AppState.exam = newExam;
       Exam.render();
       Exam.showInstructionsModal();
     } catch (err) {
@@ -293,11 +281,11 @@
   async function logout() {
     AppState.cancelAllListeners();
     Tasks.cancelListeners();
-    await Auth().signOut();
+    await window.fbAuth.signOut();
   }
 
   /* -------------------------------------------------- */
-  /* Toast container injection                          */
+  /* Private helpers                                    */
   /* -------------------------------------------------- */
 
   function _injectToastContainer() {
@@ -339,8 +327,5 @@
     startExam,
     logout,
   };
-
-  /* Convenience alias used throughout modules */
-  window.renderLogin = () => Auth_module && Auth_module.renderLogin();
 
 })();
