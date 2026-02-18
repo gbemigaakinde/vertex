@@ -12,16 +12,23 @@
 
   function _startAuthListener() {
     window.fbAuth.onAuthStateChanged(async firebaseUser => {
-      // Registration in auth.js raises this flag to suppress routing
-      // during the Auth-create -> Firestore-write -> signOut sequence.
-      // Both the signed-in and signed-out events during that window are ignored.
-      if (window._registrationInProgress) {
-        return;
-      }
-
       if (firebaseUser) {
+        // During registration auth.js creates an account then immediately
+        // signs out. We must not route this transient signed-in state into
+        // the exam flow — the Firestore profile write has not happened yet.
+        // Block _onLogin only. Allow the subsequent sign-out to fall through
+        // to _onLogout so Firebase's internal state machine stays in sync
+        // and the next real login fires onAuthStateChanged correctly.
+        if (window._registrationInProgress) {
+          return;
+        }
         await _onLogin(firebaseUser);
       } else {
+        // Always process sign-out normally, even during registration.
+        // After registration's signOut(), this fires and _onLogout() calls
+        // Auth.renderLogin() which rebuilds the page cleanly. This also
+        // ensures Firebase's listener receives the null state, preventing
+        // the SDK from skipping the next real sign-in event.
         _onLogout();
       }
     });
@@ -62,6 +69,11 @@
   }
 
   function _onLogout() {
+    // Clear the registration guard in case it was somehow left raised
+    // (e.g. an exception before auth.js cleared it). This ensures the
+    // next login attempt is never silently blocked.
+    window._registrationInProgress = false;
+
     Tasks.cancelListeners();
     AppState.reset();
     Auth.renderLogin();
