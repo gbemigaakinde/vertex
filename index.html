@@ -3,39 +3,109 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+  <!-- =====================================================
+       PRIMARY META
+       ===================================================== -->
   <title>Excellence Tutorial CBT</title>
+  <meta name="description" content="Computer-Based Testing System for Excellence Tutorial students." />
+  <meta name="author" content="Excellence Tutorial" />
+
+  <!-- =====================================================
+       PWA — Theme and display
+       ===================================================== -->
+  <meta name="theme-color" content="#6b46c1" />
+  <meta name="color-scheme" content="light" />
+
+  <!-- =====================================================
+       PWA — iOS Safari
+       Apple does not use the manifest for icons or splash
+       screens, so these tags are required separately.
+       ===================================================== -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="ExcellenceCBT" />
+  <link rel="apple-touch-icon" href="icons/icon-192x192.png" />
+  <link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152x152.png" />
+  <link rel="apple-touch-icon" sizes="144x144" href="icons/icon-144x144.png" />
+  <link rel="apple-touch-icon" sizes="128x128" href="icons/icon-128x128.png" />
+
+  <!-- =====================================================
+       PWA — Web App Manifest
+       ===================================================== -->
+  <link rel="manifest" href="/manifest.json" />
+
+  <!-- =====================================================
+       FAVICON
+       ===================================================== -->
   <link rel="icon" href="IMG_4512.png" type="image/png" />
-  <link rel="apple-touch-icon" href="IMG_4512.png" />
+
+  <!-- =====================================================
+       STYLESHEETS
+       news-ticker.css and styles.css are precached by SW.
+       Tailwind is CDN-loaded; cached via stale-while-revalidate.
+       ===================================================== -->
   <link rel="stylesheet" href="news-ticker.css" />
   <link rel="stylesheet" href="css/styles.css" />
-  <script src="https://cdn.tailwindcss.com" defer></script>
+
+  <!--
+    [NOTE] Tailwind CDN is loaded here without `defer` intentionally.
+    The CDN script must execute before the DOM renders to avoid a flash
+    of unstyled content. The service worker caches this via the CDN
+    cache with stale-while-revalidate strategy.
+
+    If you move to a self-hosted Tailwind build (recommended for
+    full offline reliability), replace this with a <link> to the
+    generated CSS file and add it to STATIC_ASSETS in sw.js.
+  -->
+  <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    // Tailwind config must run before Tailwind CDN parses
-    window.__tailwindConfig = {
-      theme: {
-        extend: {
-          fontFamily: {
-            sans: ['Segoe UI', 'system-ui', '-apple-system', 'sans-serif'],
+    /*
+     * Tailwind config must execute synchronously before the Tailwind
+     * CDN runtime parses the document. window.addEventListener is not
+     * used because the script above is synchronous.
+     */
+    if (window.tailwind) {
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['Segoe UI', 'system-ui', '-apple-system', 'sans-serif'],
+            },
           },
         },
-      },
-    };
+      };
+    }
   </script>
 </head>
+
 <body class="bg-gradient-to-br from-indigo-50 via-white to-purple-50">
 
   <!-- Toast notification container -->
-  <div id="toastContainer" class="fixed top-6 right-6 z-50 space-y-3 max-w-sm w-full pointer-events-none"></div>
+  <div
+    id="toastContainer"
+    class="fixed top-6 right-6 z-50 space-y-3 max-w-sm w-full pointer-events-none"
+    aria-live="polite"
+    aria-atomic="false"
+    role="status"
+  ></div>
 
   <!-- Main app mount point -->
   <div id="app" class="min-h-screen flex items-center justify-center p-6"></div>
 
-  <!-- Firebase SDKs — loaded at end of body, non-blocking -->
+  <!-- =====================================================
+       FIREBASE SDKs
+       Loaded from gstatic CDN (same as before).
+       The service worker bypasses all *.googleapis.com and
+       gstatic.com Firebase requests to preserve auth and
+       Firestore behaviour. The CDN cache handles offline
+       availability of the SDK files themselves.
+       ===================================================== -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
-  <!-- Application modules — order matters -->
+  <!-- Application modules — load order is significant -->
   <script src="data/questions.js"></script>
   <script src="js/config.js"></script>
   <script src="js/state.js"></script>
@@ -47,6 +117,120 @@
   <script src="js/exam.js"></script>
   <script src="js/app.js"></script>
   <script src="news-ticker.js"></script>
+
+  <!-- =====================================================
+       SERVICE WORKER REGISTRATION
+       Placed after all application scripts so that
+       AppState, UI, etc. are defined before the SW
+       controller change handler fires.
+
+       IMPORTANT: This script must remain inline here and
+       must not be moved to a separate file, because the
+       'controllerchange' event must be bound before any
+       module that uses UI.toast() could theoretically
+       unload the page.
+       ===================================================== -->
+  <script>
+    (function () {
+      'use strict';
+
+      /* Service workers require HTTPS (or localhost). */
+      if (!('serviceWorker' in navigator)) return;
+
+      var _swUpdateReady   = false;
+      var _swRegistration  = null;
+
+      function _registerSW() {
+        navigator.serviceWorker
+          .register('/sw.js', { scope: '/' })
+          .then(function (reg) {
+            _swRegistration = reg;
+            console.log('[SW] Registered. Scope:', reg.scope);
+
+            /*
+             * Check for a waiting SW immediately on registration.
+             * This handles the case where the user had the tab open
+             * when a new SW was installed but skipWaiting was not
+             * yet called (e.g. they dismissed a previous update toast).
+             */
+            if (reg.waiting) {
+              _onUpdateReady(reg.waiting);
+            }
+
+            /*
+             * A new SW has been found and is installing.
+             * Wait for it to reach the 'installed' state (waiting),
+             * then notify the user.
+             */
+            reg.addEventListener('updatefound', function () {
+              var newWorker = reg.installing;
+              if (!newWorker) return;
+
+              newWorker.addEventListener('statechange', function () {
+                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+                  /*
+                   * There is an existing controller (user was on a previous
+                   * version). The new SW is waiting. Notify the user.
+                   */
+                  _onUpdateReady(newWorker);
+                }
+              });
+            });
+          })
+          .catch(function (err) {
+            console.error('[SW] Registration failed:', err);
+          });
+
+        /*
+         * When the SW controller changes (i.e. skipWaiting() was called
+         * and the new SW activated), reload the page to ensure the user
+         * is running the latest version of all cached assets.
+         */
+        navigator.serviceWorker.addEventListener('controllerchange', function () {
+          if (_swUpdateReady) {
+            window.location.reload();
+          }
+        });
+      }
+
+      function _onUpdateReady(worker) {
+        _swUpdateReady = true;
+
+        /*
+         * Defer showing the toast until the UI module is guaranteed
+         * to be ready. app.js sets window._appReady = true inside
+         * DOMContentLoaded after all modules are initialised.
+         */
+        function _showUpdateToast() {
+          if (window.UI && typeof window.UI.showUpdateToast === 'function') {
+            window.UI.showUpdateToast(function onConfirm() {
+              if (worker) {
+                worker.postMessage({ type: 'SKIP_WAITING' });
+              }
+            });
+          } else {
+            /* UI not ready yet — retry after a short delay */
+            setTimeout(_showUpdateToast, 500);
+          }
+        }
+
+        _showUpdateToast();
+      }
+
+      /*
+       * Delay registration until after the page has loaded.
+       * This avoids competing with page-critical network requests
+       * on initial load, improving FCP on slow connections.
+       */
+      if (document.readyState === 'loading') {
+        window.addEventListener('load', _registerSW);
+      } else {
+        /* DOMContentLoaded already fired */
+        setTimeout(_registerSW, 0);
+      }
+
+    }());
+  </script>
 
 </body>
 </html>
