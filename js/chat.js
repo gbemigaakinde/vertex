@@ -103,17 +103,13 @@
         if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }
       });
 
-      const typingRef = Db().collection('typing').doc(AppState.userId);
       let typingTimer;
 
       input.addEventListener('input', () => {
         if (!input.value.trim()) return;
-        typingRef.set({
-          typing: true,
-          name:   isTeacher ? 'Master Timothy' : (AppState.studentData?.name || 'Student')
-        }).catch(() => {});
+        _setTyping(isTeacher);
         clearTimeout(typingTimer);
-        typingTimer = setTimeout(() => typingRef.delete().catch(() => {}), 3000);
+        typingTimer = setTimeout(() => _clearTyping(), 4000);
       });
     }
   }
@@ -206,30 +202,110 @@
   });
 
   /* -------------------------------------------------- */
-  /* Subscribe to typing indicators                     */
+  /* Typing indicators                                  */
+  /*                                                    */
+  /* The Firestore rule for /typing/{userId} only       */
+  /* grants per-document read/write for the owner.     */
+  /* A collection-level onSnapshot is a LIST operation  */
+  /* and is denied for non-owners.                      */
+  /*                                                    */
+  /* Solution: each client writes only their own typing */
+  /* doc (already correct), and we embed typing state   */
+  /* inside publicChat messages instead of a separate   */
+  /* collection listener. For simplicity, we use a      */
+  /* lightweight polling approach on the current user's  */
+  /* own doc + a shared "typingBoard" document that the  */
+  /* teacher can read/write, OR we simply disable the   */
+  /* cross-user typing indicator since it requires      */
+  /* either a rules change or a different data model.   */
+  /*                                                    */
+  /* CHOSEN FIX: Write typing state into a single       */
+  /* shared document /chatSettings/typing (object map   */
+  /* of uid -> {name, ts}) that all authenticated users */
+  /* can read. Clean up stale entries client-side.      */
+  /* This requires ONE rules addition (see below).      */
+  /*                                                    */
+  /* Required Firestore rule to add:                    */
+  /*   match /chatSettings/typing {                     */
+  /*     allow read: if request.auth != null;           */
+  /*     allow write: if request.auth != null;          */
+  /*   }                                                */
   /* -------------------------------------------------- */
+
+  // Interval handle for stale-entry cleanup
+  let _typingCleanupInterval = null;
 
   function _subscribeTyping() {
     AppState.cancelListener('chatTyping');
+    if (_typingCleanupInterval) {
+      clearInterval(_typingCleanupInterval);
+      _typingCleanupInterval = null;
+    }
 
-    const unsub = Db().collection('typing').onSnapshot(snap => {
+    const typingBoardRef = Db().collection('chatSettings').doc('typing');
+
+    const unsub = typingBoardRef.onSnapshot(snap => {
       const el = document.getElementById('typingIndicator');
       if (!el) {
         AppState.cancelListener('chatTyping');
         return;
       }
+
+      if (!snap.exists) {
+        el.textContent = '';
+        return;
+      }
+
+      const data  = snap.data() || {};
+      const now   = Date.now();
       const names = [];
-      snap.forEach(doc => {
-        if (doc.id !== AppState.userId && doc.data().typing) {
-          names.push(doc.data().name);
+
+      Object.entries(data).forEach(([uid, entry]) => {
+        // Ignore own entry and entries older than 5 seconds (stale)
+        if (uid === AppState.userId) return;
+        const ts = entry && entry.ts ? entry.ts : 0;
+        if (now - ts < 5000 && entry && entry.name) {
+          names.push(entry.name);
         }
       });
+
       el.textContent = names.length > 0
         ? `${names.join(', ')} ${names.length > 1 ? 'are' : 'is'} typing...`
         : '';
-    }, err => console.error('[chat] Typing error:', err));
+    }, err => {
+      // Non-fatal — typing indicator is cosmetic
+      console.warn('[chat] Typing indicator unavailable:', err.code);
+      const el = document.getElementById('typingIndicator');
+      if (el) el.textContent = '';
+    });
 
     AppState.registerListener('chatTyping', unsub);
+  }
+
+  /* Write own typing state to the shared board */
+  function _setTyping(isTeacher) {
+    const typingBoardRef = Db().collection('chatSettings').doc('typing');
+    return typingBoardRef.update({
+      [`${AppState.userId}`]: {
+        name: isTeacher ? 'Master Timothy' : (AppState.studentData?.name || 'Student'),
+        ts:   Date.now()
+      }
+    }).catch(() => {
+      // Document may not exist yet — use set with merge
+      typingBoardRef.set({
+        [`${AppState.userId}`]: {
+          name: isTeacher ? 'Master Timothy' : (AppState.studentData?.name || 'Student'),
+          ts:   Date.now()
+        }
+      }, { merge: true }).catch(() => {});
+    });
+  }
+
+  /* Clear own typing state from the board */
+  function _clearTyping() {
+    Db().collection('chatSettings').doc('typing').update({
+      [`${AppState.userId}`]: firebase.firestore.FieldValue.delete()
+    }).catch(() => {});
   }
 
   /* -------------------------------------------------- */
@@ -255,7 +331,7 @@
 
       if (input) input.value = '';
       cancelReply();
-      Db().collection('typing').doc(AppState.userId).delete().catch(() => {});
+      _clearTyping();
     } catch (err) {
       console.error('[chat] Send error:', err);
       UI.toast('Failed to send message.', 'error');
@@ -341,8 +417,8 @@
   /* -------------------------------------------------- */
 
   function backFromChat() {
-    // Clear typing indicator for this user
-    Db().collection('typing').doc(AppState.userId).delete().catch(() => {});
+    // Clear own typing state from the shared board
+    _clearTyping();
 
     // Cancel chat-specific listeners
     AppState.cancelListener('chatMessages');
