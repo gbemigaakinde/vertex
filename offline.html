@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Offline — Excellence Tutorial CBT</title>
+  <meta name="theme-color" content="#6b46c1" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: linear-gradient(135deg, #f0f4f8 0%, #e0e7ff 100%);
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      color: #1e293b;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+
+    .card {
+      background: rgba(255, 255, 255, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.6);
+      border-radius: 1.5rem;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+      padding: 3rem 2.5rem;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+    }
+
+    .icon {
+      width: 72px;
+      height: 72px;
+      margin: 0 auto 1.5rem;
+      display: block;
+    }
+
+    h1 {
+      font-size: 2rem;
+      font-weight: 800;
+      margin: 0 0 0.75rem;
+      background: linear-gradient(to right, #6b46c1, #9f7aea);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    p {
+      font-size: 1.1rem;
+      color: #475569;
+      line-height: 1.7;
+      margin: 0 0 2rem;
+    }
+
+    .btn {
+      display: inline-block;
+      background: linear-gradient(to right, #6b46c1, #9f7aea);
+      color: white;
+      font-weight: 600;
+      font-size: 1.05rem;
+      padding: 0.875rem 2.5rem;
+      border-radius: 0.875rem;
+      border: none;
+      cursor: pointer;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+      box-shadow: 0 4px 15px rgba(107, 70, 193, 0.3);
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(107, 70, 193, 0.35);
+    }
+
+    .hint {
+      margin-top: 1.5rem;
+      font-size: 0.85rem;
+      color: #94a3b8;
+    }
+
+    /* Connection status indicator */
+    #statusDot {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #ef4444;
+      margin-right: 6px;
+      vertical-align: middle;
+      transition: background 0.3s;
+    }
+
+    #statusDot.online { background: #16a34a; }
+    #statusText { vertical-align: middle; font-size: 0.9rem; color: #64748b; }
+
+    .status-row {
+      margin-bottom: 1.75rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <!-- Inline SVG icon — no external dependency -->
+    <svg class="icon" viewBox="0 0 72 72" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="36" cy="36" r="36" fill="#e0e7ff"/>
+      <path d="M22 44c0-7.732 6.268-14 14-14s14 6.268 14 14" stroke="#6b46c1" stroke-width="3" stroke-linecap="round"/>
+      <path d="M15 37C15 26.507 24.507 18 36 18s21 8.507 21 19" stroke="#9f7aea" stroke-width="3" stroke-linecap="round"/>
+      <line x1="36" y1="49" x2="36" y2="55" stroke="#6b46c1" stroke-width="3.5" stroke-linecap="round"/>
+      <line x1="20" y1="52" x2="52" y2="20" stroke="#ef4444" stroke-width="2.5" stroke-linecap="round"/>
+    </svg>
+
+    <h1>You are offline</h1>
+
+    <div class="status-row">
+      <span id="statusDot"></span>
+      <span id="statusText">No internet connection detected.</span>
+    </div>
+
+    <p>
+      Excellence Tutorial CBT requires a connection to Firebase for exam loading,
+      answer saving, and result submission. Please reconnect and try again.
+    </p>
+
+    <button class="btn" onclick="handleRetry()">Try Again</button>
+
+    <p class="hint">
+      If you were in the middle of an exam, your answers are saved to your device
+      and will sync automatically when you reconnect.
+    </p>
+  </div>
+
+  <script>
+    'use strict';
+
+    var dot  = document.getElementById('statusDot');
+    var text = document.getElementById('statusText');
+
+    function updateStatus() {
+      if (navigator.onLine) {
+        dot.classList.add('online');
+        text.textContent = 'Connection restored. You can retry now.';
+      } else {
+        dot.classList.remove('online');
+        text.textContent = 'No internet connection detected.';
+      }
+    }
+
+    function handleRetry() {
+      if (navigator.onLine) {
+        window.location.href = '/';
+      } else {
+        text.textContent = 'Still offline. Please check your connection.';
+      }
+    }
+
+    window.addEventListener('online',  updateStatus);
+    window.addEventListener('offline', updateStatus);
+
+    updateStatus();
+
+    /*
+     * Auto-redirect to the app when connection is restored.
+     * 1500ms delay gives the network stack time to stabilise
+     * before Firebase SDK attempts a connection.
+     */
+    window.addEventListener('online', function () {
+      setTimeout(function () {
+        window.location.href = '/';
+      }, 1500);
+    });
+  </script>
+</body>
+</html>
