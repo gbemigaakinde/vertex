@@ -18,8 +18,8 @@
 
         <!-- LOGIN PANEL -->
         <div id="loginPanel">
-          <input id="loginEmail" type="email" placeholder="Email address" class="mb-4" autocomplete="email" />
-          <input id="loginPass"  type="password" placeholder="Password"      class="mb-6" autocomplete="current-password" />
+          <input id="loginEmail" type="email"     placeholder="Email address" class="mb-4" autocomplete="email" />
+          <input id="loginPass"  type="password"  placeholder="Password"      class="mb-6" autocomplete="current-password" />
           <button id="loginBtn" onclick="Auth.login()" class="btn w-full text-xl py-5 mb-4">LOGIN</button>
           <p class="text-center text-sm text-gray-600 mb-3">
             New student?
@@ -36,7 +36,7 @@
 
         <!-- REGISTER PANEL -->
         <div id="registerPanel" class="hidden space-y-4">
-          <input id="regName"  type="text"     placeholder="Full Name" autocomplete="name" />
+          <input id="regName"   type="text"     placeholder="Full Name"           autocomplete="name" />
           <select id="regClass">
             <option value="" disabled selected>Select Class</option>
             <option>JSS1</option><option>JSS2</option><option>JSS3</option>
@@ -45,8 +45,8 @@
           <select id="regSchool">
             <option value="" disabled selected>Loading schools...</option>
           </select>
-          <input id="regEmail" type="email"    placeholder="Email address"         autocomplete="email" />
-          <input id="regPass"  type="password" placeholder="Password (min 6 chars)" autocomplete="new-password" />
+          <input id="regEmail"  type="email"    placeholder="Email address"           autocomplete="email" />
+          <input id="regPass"   type="password" placeholder="Password (min 6 chars)"  autocomplete="new-password" />
           <button id="regBtn" onclick="Auth.register()" class="btn w-full text-xl py-5">REGISTER</button>
           <p class="text-center text-sm text-gray-600">
             <button onclick="Auth.showLogin()" class="text-purple-600 underline font-medium">Back to Login</button>
@@ -68,30 +68,34 @@
         </div>
       </div>`);
 
-    // Initialize news ticker if available
     if (typeof initTicker === 'function') initTicker();
 
-    // Load schools into dropdown with a real-time listener
-    const unsub = fbDb.collection('schools').orderBy('name').onSnapshot(snap => {
+    // Load schools into dropdown with a real-time listener.
+    // The unsub is registered so _onLogin can cancel it before routing.
+    const unsub = window.fbDb.collection('schools').orderBy('name').onSnapshot(snap => {
       const sel = document.getElementById('regSchool');
-      if (!sel) { unsub(); return; }
+      if (!sel) {
+        // Element gone — user navigated away, cancel listener
+        unsub();
+        AppState.cancelListener('schoolDropdown');
+        return;
+      }
       let html = '<option value="" disabled selected>Select your school</option>';
       if (snap.empty) {
         html += '<option value="" disabled>No schools listed yet — contact Master Timothy</option>';
       } else {
         snap.forEach(doc => {
-          const n = doc.data().name;
+          const n = _esc(doc.data().name);
           html += `<option value="${n}">${n}</option>`;
         });
       }
       sel.innerHTML = html;
     }, err => {
-      console.error('[Auth] school load error:', err);
+      console.error('[auth] School load error:', err);
       const sel = document.getElementById('regSchool');
       if (sel) sel.innerHTML = '<option value="" disabled>Error loading schools — refresh page</option>';
     });
 
-    // Cancel school listener when user navigates away
     AppState.registerListener('schoolDropdown', unsub);
   }
 
@@ -118,17 +122,22 @@
 
     UI.setLoading(btn, true);
     try {
-      await fbAuth.signInWithEmailAndPassword(email, pass);
-      // auth.onAuthStateChanged in app.js handles the next step
+      // Cancel school listener before auth state changes take over routing
+      AppState.cancelListener('schoolDropdown');
+      await window.fbAuth.signInWithEmailAndPassword(email, pass);
+      // auth.onAuthStateChanged in app.js handles routing from here
     } catch (err) {
-      const msg = err.code === 'auth/user-not-found'     ? 'No account found with this email.'
-                : err.code === 'auth/wrong-password'      ? 'Incorrect password.'
-                : err.code === 'auth/too-many-requests'   ? 'Too many failed attempts. Try again later.'
-                : err.code === 'auth/invalid-email'       ? 'Invalid email address.'
+      const msg = err.code === 'auth/user-not-found'   ? 'No account found with this email.'
+                : err.code === 'auth/wrong-password'   ? 'Incorrect password.'
+                : err.code === 'auth/too-many-requests'? 'Too many failed attempts. Try again later.'
+                : err.code === 'auth/invalid-email'    ? 'Invalid email address.'
                 : 'Login failed. Please try again.';
       UI.toast(msg, 'error');
     } finally {
-      UI.setLoading(btn, false);
+      // Only clear loading if button is still in the DOM (login panel may have unmounted)
+      if (document.getElementById('loginBtn')) {
+        UI.setLoading(btn, false);
+      }
     }
   }
 
@@ -141,16 +150,16 @@
     const email  = (document.getElementById('regEmail')?.value  || '').trim();
     const pass   = document.getElementById('regPass')?.value    || '';
 
-    if (!name) { UI.toast('Please enter your full name.', 'warning'); return; }
-    if (!cls)  { UI.toast('Please select your class.',    'warning'); return; }
-    if (!school) { UI.toast('Please select your school.', 'warning'); return; }
-    if (!email)  { UI.toast('Please enter your email.',   'warning'); return; }
+    if (!name)         { UI.toast('Please enter your full name.',    'warning'); return; }
+    if (!cls)          { UI.toast('Please select your class.',       'warning'); return; }
+    if (!school)       { UI.toast('Please select your school.',      'warning'); return; }
+    if (!email)        { UI.toast('Please enter your email.',        'warning'); return; }
     if (pass.length < 6) { UI.toast('Password must be at least 6 characters.', 'warning'); return; }
 
     UI.setLoading(btn, true);
     try {
-      const cred = await fbAuth.createUserWithEmailAndPassword(email, pass);
-      await fbDb.collection('students').doc(cred.user.uid).set({
+      const cred = await window.fbAuth.createUserWithEmailAndPassword(email, pass);
+      await window.fbDb.collection('students').doc(cred.user.uid).set({
         name,
         class:     cls,
         school,
@@ -165,25 +174,37 @@
                 : 'Registration failed. Please try again.';
       UI.toast(msg, 'error');
     } finally {
-      UI.setLoading(btn, false);
+      if (document.getElementById('regBtn')) {
+        UI.setLoading(btn, false);
+      }
     }
   }
 
   /* ── Forgot password ── */
   async function forgotPassword() {
     const email = window.prompt('Enter your registered email address:');
-    if (!email || !email.includes('@')) {
-      if (email !== null) UI.toast('Please enter a valid email address.', 'warning');
+    if (!email) return;
+    if (!email.includes('@')) {
+      UI.toast('Please enter a valid email address.', 'warning');
       return;
     }
     try {
-      await fbAuth.sendPasswordResetEmail(email.trim());
+      await window.fbAuth.sendPasswordResetEmail(email.trim());
       UI.toast('Password reset email sent! Check your inbox.', 'success', 6000);
     } catch (err) {
       const msg = err.code === 'auth/user-not-found' ? 'No account with this email.'
                 : 'Could not send reset email. Try again.';
       UI.toast(msg, 'error');
     }
+  }
+
+  /* ── Private helpers ── */
+  function _esc(str) {
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
   /* ── Expose ── */
