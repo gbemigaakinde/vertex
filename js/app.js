@@ -1,32 +1,30 @@
 /* ============================================================
    js/app.js — Application entry point
-   Responsibilities:
-     - Bootstrap Firebase auth listener
-     - Route authenticated users to teacher dashboard or exam engine
-     - Handle logout cleanup
    ============================================================ */
 
 (function () {
   'use strict';
-
-  /* -------------------------------------------------- */
-  /* Bootstrap                                          */
-  /* -------------------------------------------------- */
 
   document.addEventListener('DOMContentLoaded', () => {
     _registerGlobalErrorHandlers();
     _startAuthListener();
   });
 
-  /* -------------------------------------------------- */
-  /* Auth state listener                                */
-  /* -------------------------------------------------- */
-
   function _startAuthListener() {
     window.fbAuth.onAuthStateChanged(async firebaseUser => {
       if (firebaseUser) {
+        // If auth.js registration is mid-flight, ignore this state change.
+        // The registration flow signs out immediately after creating the account,
+        // so the next state change will be the signed-out event which renders login.
+        if (window._registrationInProgress) {
+          return;
+        }
         await _onLogin(firebaseUser);
       } else {
+        // Also ignore the sign-out that registration triggers mid-flow.
+        if (window._registrationInProgress) {
+          return;
+        }
         _onLogout();
       }
     });
@@ -37,7 +35,6 @@
 
     // Cancel any pre-login listeners (e.g. school dropdown in auth.js)
     AppState.cancelAllListeners();
-
     AppState.userId = uid;
 
     // Teacher route
@@ -63,7 +60,7 @@
       // Start real-time profile listener for coaching task completion updates
       Tasks.listenForStudentUpdates();
 
-      // Route to exam engine — exam.js handles subject selection and exam resumption
+      // Route to exam engine
       await Exam.loadOrStart();
     } catch (err) {
       console.error('[app] Profile load error:', err);
@@ -73,17 +70,10 @@
   }
 
   function _onLogout() {
-    // Cancel all Firestore listeners and clear timers
     Tasks.cancelListeners();
-    AppState.reset();  // reset() calls cancelAllListeners() and clearTimer() internally
-
-    // Show login screen
+    AppState.reset();
     Auth.renderLogin();
   }
-
-  /* -------------------------------------------------- */
-  /* Global error handlers                              */
-  /* -------------------------------------------------- */
 
   function _registerGlobalErrorHandlers() {
     window.addEventListener('unhandledrejection', event => {
