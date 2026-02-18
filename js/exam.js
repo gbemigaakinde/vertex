@@ -155,7 +155,12 @@
     const classKey          = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
     const selectedQuestions = {};
 
-    const _qBank = window.questions || {};
+    const _qBank    = window.questions || (typeof questions !== 'undefined' ? questions : {});
+    if (!_qBank[classKey]) {
+  console.error('[exam] No questions for classKey:', classKey, '| keys:', Object.keys(_qBank));
+  UI.toast(`No subjects found for class "${S().studentData.class}". Contact Master Timothy.`, 'error', 0);
+  return;
+}
 
     for (const subj of chosen) {
       const all = (_qBank[classKey] || {})[subj] || [];
