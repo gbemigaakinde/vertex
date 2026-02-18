@@ -24,6 +24,10 @@
   /* -------------------------------------------------- */
   window._registrationInProgress = false;
 
+  // Email to pre-fill after successful registration.
+  // Set just before signOut() so renderLogin() (called by _onLogout) can use it.
+  let _pendingLoginEmail = '';
+
   /* ── Render login page ── */
   function renderLogin() {
     UI.mount(`
@@ -115,6 +119,14 @@
     });
 
     AppState.registerListener('schoolDropdown', unsub);
+
+    // If coming from a successful registration, pre-fill email and show success toast
+    if (_pendingLoginEmail) {
+      const emailEl = document.getElementById('loginEmail');
+      if (emailEl) emailEl.value = _pendingLoginEmail;
+      UI.toast('Registration successful! Please log in with your new account.', 'success', 7000);
+      _pendingLoginEmail = '';
+    }
   }
 
   function showRegister() {
@@ -213,19 +225,23 @@
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
 
-      // Step 4 — Sign out now that the profile is safely written
-      await window.fbAuth.signOut();
-
-      // Step 5 — Lower flag and render login manually
+      // Step 4 — Lower flag before signing out.
+      // app.js _onLogout() will now process the sign-out event and call
+      // Auth.renderLogin(), which rebuilds the login page cleanly.
+      // This keeps Firebase's internal state machine in sync so the
+      // next real login fires onAuthStateChanged correctly.
       window._registrationInProgress = false;
 
-      UI.toast('Registration successful! Please log in with your new account.', 'success', 7000);
+      // Store the email so _onLogout -> Auth.renderLogin can pre-fill it.
+      // We use a module-level variable since the DOM will be replaced.
+      _pendingLoginEmail = email;
 
-      // Pre-fill email to reduce friction
-      const loginEmailEl = document.getElementById('loginEmail');
-      if (loginEmailEl) loginEmailEl.value = email;
+      // Step 5 — Sign out. onAuthStateChanged fires with null.
+      // app.js _onLogout() handles it: resets state, calls Auth.renderLogin().
+      await window.fbAuth.signOut();
 
-      showLogin();
+      // The success toast is shown from Auth.renderLogin() via _pendingLoginEmail.
+      // If renderLogin was already called by the time we reach here, that is fine.
 
     } catch (err) {
       window._registrationInProgress = false;
