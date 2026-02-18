@@ -47,7 +47,12 @@
   async function renderSubjectSelection() {
     try {
     const classKey  = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
-    const _qBank    = window.questions || {};
+    const _qBank    = window.questions || (typeof questions !== 'undefined' ? questions : {});
+    if (!_qBank[classKey]) {
+  console.error('[exam] No questions for classKey:', classKey, '| keys:', Object.keys(_qBank));
+  UI.toast(`No subjects found for class "${S().studentData.class}". Contact Master Timothy.`, 'error', 0);
+  return;
+}
     const available = _qBank[classKey] ? Object.keys(_qBank[classKey]) : [];
 
     // Load messages and tasks in parallel — neither blocks rendering
