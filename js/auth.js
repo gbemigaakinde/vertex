@@ -5,6 +5,21 @@
 (function () {
   'use strict';
 
+  /* -------------------------------------------------- */
+  /* Registration guard flag                            */
+  /*                                                    */
+  /* When createUserWithEmailAndPassword succeeds,      */
+  /* Firebase immediately fires onAuthStateChanged with */
+  /* the new user — BEFORE the Firestore student doc    */
+  /* has been written. Without a guard, app.js sees a  */
+  /* signed-in user with no student profile, shows     */
+  /* "Profile not found", and signs them out.           */
+  /*                                                    */
+  /* This flag tells app.js to ignore that transient   */
+  /* auth state change during the registration flow.   */
+  /* -------------------------------------------------- */
+  window._registrationInProgress = false;
+
   /* ── Render login page ── */
   function renderLogin() {
     UI.mount(`
@@ -18,8 +33,8 @@
 
         <!-- LOGIN PANEL -->
         <div id="loginPanel">
-          <input id="loginEmail" type="email"     placeholder="Email address" class="mb-4" autocomplete="email" />
-          <input id="loginPass"  type="password"  placeholder="Password"      class="mb-6" autocomplete="current-password" />
+          <input id="loginEmail" type="email"    placeholder="Email address" class="mb-4" autocomplete="email" />
+          <input id="loginPass"  type="password" placeholder="Password"      class="mb-6" autocomplete="current-password" />
           <button id="loginBtn" onclick="Auth.login()" class="btn w-full text-xl py-5 mb-4">LOGIN</button>
           <p class="text-center text-sm text-gray-600 mb-3">
             New student?
@@ -36,7 +51,7 @@
 
         <!-- REGISTER PANEL -->
         <div id="registerPanel" class="hidden space-y-4">
-          <input id="regName"   type="text"     placeholder="Full Name"           autocomplete="name" />
+          <input id="regName"  type="text"     placeholder="Full Name"            autocomplete="name" />
           <select id="regClass">
             <option value="" disabled selected>Select Class</option>
             <option>JSS1</option><option>JSS2</option><option>JSS3</option>
@@ -45,8 +60,8 @@
           <select id="regSchool">
             <option value="" disabled selected>Loading schools...</option>
           </select>
-          <input id="regEmail"  type="email"    placeholder="Email address"           autocomplete="email" />
-          <input id="regPass"   type="password" placeholder="Password (min 6 chars)"  autocomplete="new-password" />
+          <input id="regEmail" type="email"    placeholder="Email address"            autocomplete="email" />
+          <input id="regPass"  type="password" placeholder="Password (min 6 chars)"   autocomplete="new-password" />
           <button id="regBtn" onclick="Auth.register()" class="btn w-full text-xl py-5">REGISTER</button>
           <p class="text-center text-sm text-gray-600">
             <button onclick="Auth.showLogin()" class="text-purple-600 underline font-medium">Back to Login</button>
@@ -64,36 +79,37 @@
           <div class="ticker-content">
             <div class="ticker-text speed-normal" id="tickerScroll"></div>
           </div>
-          <button class="ticker-close" onclick="closeTicker()" aria-label="Close ticker">×</button>
+          <button class="ticker-close" onclick="closeTicker()" aria-label="Close ticker">x</button>
         </div>
       </div>`);
 
-    if (typeof initTicker === 'function') initTicker();
+    // Guard: only init ticker if the element was actually rendered into the DOM
+    if (typeof initTicker === 'function' && document.getElementById('tickerScroll')) {
+      initTicker();
+    }
 
     // Load schools into dropdown with a real-time listener.
-    // The unsub is registered so _onLogin can cancel it before routing.
     const unsub = window.fbDb.collection('schools').orderBy('name').onSnapshot(snap => {
       const sel = document.getElementById('regSchool');
       if (!sel) {
-        // Element gone — user navigated away, cancel listener
         unsub();
         AppState.cancelListener('schoolDropdown');
         return;
       }
       let html = '<option value="" disabled selected>Select your school</option>';
       if (snap.empty) {
-        html += '<option value="" disabled>No schools listed yet — contact Master Timothy</option>';
+        html += '<option value="" disabled>No schools listed yet - contact Master Timothy</option>';
       } else {
         snap.forEach(doc => {
           const n = _esc(doc.data().name);
-          html += `<option value="${n}">${n}</option>`;
+          html += '<option value="' + n + '">' + n + '</option>';
         });
       }
       sel.innerHTML = html;
     }, err => {
       console.error('[auth] School load error:', err);
       const sel = document.getElementById('regSchool');
-      if (sel) sel.innerHTML = '<option value="" disabled>Error loading schools — refresh page</option>';
+      if (sel) sel.innerHTML = '<option value="" disabled>Error loading schools - refresh page</option>';
     });
 
     AppState.registerListener('schoolDropdown', unsub);
@@ -122,19 +138,17 @@
 
     UI.setLoading(btn, true);
     try {
-      // Cancel school listener before auth state changes take over routing
       AppState.cancelListener('schoolDropdown');
       await window.fbAuth.signInWithEmailAndPassword(email, pass);
-      // auth.onAuthStateChanged in app.js handles routing from here
     } catch (err) {
-      const msg = err.code === 'auth/user-not-found'   ? 'No account found with this email.'
-                : err.code === 'auth/wrong-password'   ? 'Incorrect password.'
-                : err.code === 'auth/too-many-requests'? 'Too many failed attempts. Try again later.'
-                : err.code === 'auth/invalid-email'    ? 'Invalid email address.'
+      const msg = err.code === 'auth/user-not-found'     ? 'No account found with this email.'
+                : err.code === 'auth/wrong-password'     ? 'Incorrect password.'
+                : err.code === 'auth/too-many-requests'  ? 'Too many failed attempts. Try again later.'
+                : err.code === 'auth/invalid-email'      ? 'Invalid email address.'
+                : err.code === 'auth/invalid-credential' ? 'Incorrect email or password.'
                 : 'Login failed. Please try again.';
       UI.toast(msg, 'error');
     } finally {
-      // Only clear loading if button is still in the DOM (login panel may have unmounted)
       if (document.getElementById('loginBtn')) {
         UI.setLoading(btn, false);
       }
@@ -150,29 +164,79 @@
     const email  = (document.getElementById('regEmail')?.value  || '').trim();
     const pass   = document.getElementById('regPass')?.value    || '';
 
-    if (!name)         { UI.toast('Please enter your full name.',    'warning'); return; }
-    if (!cls)          { UI.toast('Please select your class.',       'warning'); return; }
-    if (!school)       { UI.toast('Please select your school.',      'warning'); return; }
-    if (!email)        { UI.toast('Please enter your email.',        'warning'); return; }
+    if (!name)           { UI.toast('Please enter your full name.',             'warning'); return; }
+    if (!cls)            { UI.toast('Please select your class.',                'warning'); return; }
+    if (!school)         { UI.toast('Please select your school.',               'warning'); return; }
+    if (!email)          { UI.toast('Please enter your email.',                 'warning'); return; }
     if (pass.length < 6) { UI.toast('Password must be at least 6 characters.', 'warning'); return; }
 
     UI.setLoading(btn, true);
+
+    /*
+     * REGISTRATION FLOW - ORDER IS CRITICAL
+     *
+     * 1. Set the guard flag so app.js _onLogin ignores the transient
+     *    onAuthStateChanged that fires immediately after account creation.
+     * 2. Create the Firebase Auth account.
+     * 3. Sign out immediately - prevents app.js routing an incomplete user.
+     * 4. Write the Firestore student profile using the uid from step 2.
+     * 5. Clear the guard flag.
+     * 6. Show success and switch to login panel.
+     */
+
+    window._registrationInProgress = true;
+    let newUid = null;
+
     try {
+      // Step 2 - Create Auth account
       const cred = await window.fbAuth.createUserWithEmailAndPassword(email, pass);
-      await window.fbDb.collection('students').doc(cred.user.uid).set({
+      newUid = cred.user.uid;
+
+      // Step 3 - Sign out immediately before Firestore write.
+      // onAuthStateChanged fires here but _registrationInProgress is true
+      // so app.js _onLogin will bail out and not route the incomplete user.
+      await window.fbAuth.signOut();
+
+      // Step 4 - Write student profile now that the user is signed out
+      await window.fbDb.collection('students').doc(newUid).set({
         name,
         class:     cls,
         school,
         email,
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
-      UI.toast('Registration successful! Please log in.', 'success');
+
+      // Step 5 - Clear guard (signOut already triggered _onLogout which showed login)
+      window._registrationInProgress = false;
+
+      // Step 6 - Success
+      UI.toast('Registration successful! Please log in with your new account.', 'success', 7000);
+
+      // Pre-fill the email field to reduce friction
+      const loginEmailEl = document.getElementById('loginEmail');
+      if (loginEmailEl) loginEmailEl.value = email;
+
       showLogin();
+
     } catch (err) {
+      window._registrationInProgress = false;
+
+      if (newUid) {
+        // Auth account was created but something failed after.
+        // Log for manual cleanup - we cannot delete without a fresh credential.
+        console.error('[auth] Registration incomplete. Auth account created but flow failed.', {
+          uid: newUid, email, errorCode: err.code, errorMessage: err.message
+        });
+      }
+
       const msg = err.code === 'auth/email-already-in-use' ? 'An account with this email already exists.'
                 : err.code === 'auth/invalid-email'        ? 'Invalid email address.'
-                : 'Registration failed. Please try again.';
-      UI.toast(msg, 'error');
+                : err.code === 'auth/weak-password'        ? 'Password must be at least 6 characters.'
+                : err.code === 'auth/operation-not-allowed'? 'Registration is currently disabled. Contact Master Timothy.'
+                : err.code === 'auth/too-many-requests'    ? 'Too many attempts. Please wait and try again.'
+                : 'Registration failed: ' + (err.message || 'Please try again.');
+      UI.toast(msg, 'error', 8000);
+
     } finally {
       if (document.getElementById('regBtn')) {
         UI.setLoading(btn, false);
