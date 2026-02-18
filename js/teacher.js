@@ -6,7 +6,7 @@
      - Results tab: all results, delete
      - Schools tab: add, rename, delete schools
      - Tasks tab: coaching task config, private messages
-     - Chat tab: delegate to Chat module
+     - Chat tab: open public chat (returns to dashboard via backFromChat)
    ============================================================ */
 
 (function () {
@@ -19,15 +19,19 @@
   const _listeners = {};
 
   function _reg(key, unsub) {
-    if (_listeners[key]) _listeners[key]();
+    if (typeof _listeners[key] === 'function') _listeners[key]();
     _listeners[key] = unsub;
   }
 
   function _cancel(key) {
-    if (_listeners[key]) {
+    if (typeof _listeners[key] === 'function') {
       _listeners[key]();
       delete _listeners[key];
     }
+  }
+
+  function _cancelAll() {
+    Object.keys(_listeners).forEach(k => _cancel(k));
   }
 
   /* -------------------------------------------------- */
@@ -35,6 +39,9 @@
   /* -------------------------------------------------- */
 
   function renderTeacherDashboard() {
+    // Mark teacher status in AppState so chat.js backFromChat routes correctly
+    AppState.isTeacher = true;
+
     document.getElementById('app').innerHTML = `
       <div class="max-w-7xl mx-auto glass p-10 mt-10 rounded-3xl">
         <div class="flex justify-between items-center mb-10">
@@ -43,11 +50,11 @@
         </div>
 
         <div class="flex justify-center gap-6 mb-12 flex-wrap">
-          <button onclick="Teacher.showTab('students')" id="tab-students" class="btn text-xl px-8 py-4">Students</button>
-          <button onclick="Teacher.showTab('results')"  id="tab-results"  class="btn text-xl px-8 py-4">Results</button>
-          <button onclick="Teacher.showTab('schools')"  id="tab-schools"  class="btn text-xl px-8 py-4">Schools</button>
-          <button onclick="Teacher.showTab('tasks')"    id="tab-tasks"    class="btn text-xl px-8 py-4">Tasks &amp; Messages</button>
-          <button onclick="Teacher.showTab('chat')"     id="tab-chat"     class="btn bg-green-600 text-xl px-8 py-4">Chat</button>
+          <button onclick="Teacher.showTab('students')" id="tab-students" class="tab-btn btn text-xl px-8 py-4">Students</button>
+          <button onclick="Teacher.showTab('results')"  id="tab-results"  class="tab-btn btn text-xl px-8 py-4">Results</button>
+          <button onclick="Teacher.showTab('schools')"  id="tab-schools"  class="tab-btn btn text-xl px-8 py-4">Schools</button>
+          <button onclick="Teacher.showTab('tasks')"    id="tab-tasks"    class="tab-btn btn text-xl px-8 py-4">Tasks &amp; Messages</button>
+          <button onclick="Teacher.showTab('chat')"     id="tab-chat"     class="tab-btn btn bg-green-600 text-xl px-8 py-4">Chat</button>
         </div>
 
         <!-- Students tab -->
@@ -70,7 +77,7 @@
           <h2 class="text-3xl font-bold mb-8 text-center">Manage Schools</h2>
           <div class="max-w-2xl mx-auto glass-dark p-8 rounded-2xl mb-8">
             <input id="newSchoolName" type="text" placeholder="Enter new school name"
-                   class="w-full p-4 rounded-xl mb-4 text-lg">
+                   class="w-full p-4 rounded-xl mb-4 text-lg" />
             <button onclick="Teacher.addSchool()" class="btn w-full text-xl py-4">Add School</button>
           </div>
           <div id="schoolsList" class="space-y-4"></div>
@@ -80,18 +87,19 @@
         <div id="teacher-tasks" class="teacher-tab hidden">
           <h2 class="text-3xl font-bold mb-8 text-center">Coaching Tasks &amp; Private Messages</h2>
 
-          <!-- Coaching task config -->
           <div class="glass-dark p-8 rounded-3xl mb-12 max-w-5xl mx-auto shadow-2xl">
             <h3 class="text-2xl font-bold mb-6 text-purple-700">Coaching Tasks Manager</h3>
 
             <label class="flex items-center gap-4 mb-6 cursor-pointer">
-              <input type="checkbox" id="tasksActive" class="w-8 h-8 accent-purple-600">
+              <input type="checkbox" id="tasksActive" class="w-8 h-8 accent-purple-600" />
               <span class="text-2xl font-medium">Activate Coaching Tasks for All Students</span>
             </label>
 
-            <input  type="text"     id="tasksTitle"   placeholder="Title (e.g., Weekend Challenge)"
-                    class="w-full p-5 rounded-xl text-xl mb-4">
-            <textarea id="tasksMessage" placeholder="Message for students"
+            <input    type="text" id="tasksTitle"
+                      placeholder="Title (e.g., Weekend Challenge)"
+                      class="w-full p-5 rounded-xl text-xl mb-4" />
+            <textarea id="tasksMessage"
+                      placeholder="Message for students"
                       class="w-full p-5 rounded-xl text-xl h-40 mb-6"></textarea>
 
             <div class="space-y-4 mb-8">
@@ -100,7 +108,8 @@
                 <div class="flex-1">
                   <label class="block text-lg font-medium mb-2">Select Date</label>
                   <input type="date" id="newTaskDate"
-                         class="w-full p-4 rounded-xl text-lg border border-gray-300 focus:ring-2 focus:ring-purple-500 focus:outline-none">
+                         class="w-full p-4 rounded-xl text-lg border border-gray-300
+                                focus:ring-2 focus:ring-purple-500 focus:outline-none" />
                 </div>
                 <button onclick="Teacher.addTaskDate()" class="btn px-8 py-4 text-lg">+ Add Date</button>
               </div>
@@ -108,11 +117,13 @@
             </div>
 
             <div class="text-center space-y-4">
-              <button onclick="Teacher.saveTasksConfig()" class="btn bg-green-600 text-2xl px-16 py-5">
+              <button id="saveTasksBtn" onclick="Teacher.saveTasksConfig()"
+                      class="btn bg-green-600 text-2xl px-16 py-5">
                 Save &amp; Apply Tasks
               </button>
-              <br>
-              <button onclick="Teacher.deleteAllTasks()" class="btn bg-red-600 text-xl px-12 py-4 mt-4">
+              <br />
+              <button id="deleteTasksBtn" onclick="Teacher.deleteAllTasks()"
+                      class="btn bg-red-600 text-xl px-12 py-4 mt-4">
                 Delete All Tasks
               </button>
             </div>
@@ -143,15 +154,14 @@
             </div>
 
             <div class="text-center">
-              <button onclick="Teacher.sendPrivateMessage()" class="btn bg-red-600 text-2xl px-16 py-5">
+              <button id="sendMsgBtn" onclick="Teacher.sendPrivateMessage()"
+                      class="btn bg-red-600 text-2xl px-16 py-5">
                 Send Private Message
               </button>
             </div>
           </div>
         </div>
 
-        <!-- Chat tab (Chat module renders into this) -->
-        <div id="teacher-chat" class="teacher-tab hidden"></div>
       </div>`;
 
     showTab('students');
@@ -162,19 +172,25 @@
   /* -------------------------------------------------- */
 
   function showTab(tab) {
-    ['students', 'results', 'schools', 'tasks', 'chat'].forEach((t) => {
-      const el = document.getElementById(`teacher-${t}`);
-      if (el) el.classList.toggle('hidden', t !== tab);
+    ['students', 'results', 'schools', 'tasks'].forEach(t => {
+      const el  = document.getElementById(`teacher-${t}`);
       const btn = document.getElementById(`tab-${t}`);
-      if (btn) btn.classList.toggle('ring-4', t === tab);
-      if (btn) btn.classList.toggle('ring-purple-400', t === tab);
+      if (el)  el.classList.toggle('hidden', t !== tab);
+      if (btn) btn.classList.toggle('active', t === tab);
     });
+
+    // Chat is handled separately — it replaces #app via UI.mount.
+    // The teacher dashboard shell is re-rendered when chat.js backFromChat()
+    // detects AppState.isTeacher and calls Teacher.renderTeacherDashboard().
+    if (tab === 'chat') {
+      Chat.openPublicChat();
+      return;
+    }
 
     if (tab === 'students') _loadStudents();
     if (tab === 'results')  _loadResults();
     if (tab === 'schools')  _loadSchools();
     if (tab === 'tasks')    _loadTasksManager();
-    if (tab === 'chat')     Chat.open({ isTeacher: true });
   }
 
   /* -------------------------------------------------- */
@@ -190,10 +206,10 @@
     const unsub = Db()
       .collection('students')
       .onSnapshot(
-        (snap) => {
+        snap => {
           const bySchool = {};
-          snap.forEach((doc) => {
-            const d = doc.data();
+          snap.forEach(doc => {
+            const d      = doc.data();
             const school = d.school || 'No School';
             if (!bySchool[school]) bySchool[school] = [];
             bySchool[school].push({ id: doc.id, ...d });
@@ -207,81 +223,91 @@
             return;
           }
 
-          container.innerHTML = schools
-            .map((school) => {
-              const students = bySchool[school];
-              return `
-                <details class="glass-dark rounded-2xl overflow-hidden shadow-xl mb-4" open>
-                  <summary class="p-6 text-2xl font-bold cursor-pointer hover:bg-white/10 bg-purple-600/30">
-                    ${_esc(school)}
-                    <span class="text-lg font-normal opacity-80">(${students.length})</span>
-                  </summary>
-                  <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    ${students
-                      .map((s) => {
-                        const joined = s.createdAt
-                          ? new Date(
-                              s.createdAt.toDate ? s.createdAt.toDate() : s.createdAt
-                            ).toLocaleDateString()
-                          : 'Unknown';
-                        return `
-                          <div class="glass p-6 rounded-2xl relative">
-                            <button onclick="Teacher.removeStudent('${s.id}')"
-                                    class="absolute top-3 right-3 text-red-500 text-2xl leading-none"
-                                    aria-label="Delete ${_esc(s.name)}">&#215;</button>
-                            <button onclick="Teacher.toggleAdmin('${s.id}', '${_esc(s.name).replace(/'/g, "\\'")}', ${!!s.isAdmin})"
-                                    class="absolute top-3 left-3 text-yellow-500 text-xl"
-                                    aria-label="Toggle admin for ${_esc(s.name)}">
-                              ${s.isAdmin ? '&#9733;' : '&#9734;'}
-                            </button>
-                            <p class="text-xl font-bold">${_esc(s.name)}</p>
-                            <p class="opacity-80">${_esc(s.class || '')}</p>
-                            <p class="text-sm opacity-70 mt-2 break-all">${_esc(s.email || '')}</p>
-                            <p class="text-xs opacity-60 mt-4 italic">Joined: ${joined}</p>
-                          </div>`;
-                      })
-                      .join('')}
-                  </div>
-                </details>`;
-            })
-            .join('');
+          container.innerHTML = schools.map(school => {
+            const students = bySchool[school];
+            return `
+              <details class="glass-dark rounded-2xl overflow-hidden shadow-xl mb-4" open>
+                <summary class="p-6 text-2xl font-bold cursor-pointer hover:bg-white/10 bg-purple-600/30">
+                  ${_esc(school)}
+                  <span class="text-lg font-normal opacity-80">(${students.length})</span>
+                </summary>
+                <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  ${students.map(s => {
+                    const joined = s.createdAt
+                      ? new Date(s.createdAt.toDate ? s.createdAt.toDate() : s.createdAt).toLocaleDateString()
+                      : 'Unknown';
+                    // Store id in data attributes — avoids JS-string-in-HTML escaping pitfalls
+                    return `
+                      <div class="glass p-6 rounded-2xl relative">
+                        <button class="teacher-delete-student absolute top-3 right-3 text-red-500 text-2xl leading-none"
+                                data-uid="${_esc(s.id)}"
+                                aria-label="Delete ${_esc(s.name)}">&#215;</button>
+                        <button class="teacher-toggle-admin absolute top-3 left-3 text-yellow-500 text-xl"
+                                data-uid="${_esc(s.id)}"
+                                data-name="${_esc(s.name)}"
+                                data-is-admin="${s.isAdmin ? 'true' : 'false'}"
+                                aria-label="Toggle admin for ${_esc(s.name)}">
+                          ${s.isAdmin ? '&#9733;' : '&#9734;'}
+                        </button>
+                        <p class="text-xl font-bold">${_esc(s.name)}</p>
+                        <p class="opacity-80">${_esc(s.class || '')}</p>
+                        <p class="text-sm opacity-70 mt-2 break-all">${_esc(s.email || '')}</p>
+                        <p class="text-xs opacity-60 mt-4 italic">Joined: ${joined}</p>
+                      </div>`;
+                  }).join('')}
+                </div>
+              </details>`;
+          }).join('');
         },
-        (err) => {
+        err => {
           console.error('[teacher] Error loading students:', err);
-          container.innerHTML =
-            '<p class="text-center text-red-500">Error loading students.</p>';
+          container.innerHTML = '<p class="text-center text-red-500">Error loading students.</p>';
         }
       );
 
     _reg('students', unsub);
   }
 
+  // Event delegation for student card actions — avoids inline handlers with JS strings
+  document.addEventListener('click', async e => {
+    const deleteBtn = e.target.closest('.teacher-delete-student');
+    if (deleteBtn) { await removeStudent(deleteBtn.dataset.uid); return; }
+
+    const adminBtn = e.target.closest('.teacher-toggle-admin');
+    if (adminBtn) {
+      await toggleAdmin(
+        adminBtn.dataset.uid,
+        adminBtn.dataset.name,
+        adminBtn.dataset.isAdmin === 'true'
+      );
+    }
+  });
+
   async function removeStudent(uid) {
-    const ok = await UI.confirmAction(
-      'Permanently delete this student and all their data?'
-    );
+    if (!uid) return;
+    const ok = await UI.confirmAction('Permanently delete this student and all their data?');
     if (!ok) return;
 
     try {
-      // Get the name before deleting for the results cleanup
+      // Read name before deleting (for results cleanup)
       const snap = await Db().collection('students').doc(uid).get();
       const name = snap.exists ? snap.data().name : null;
 
-      // Delete student doc
+      // Delete student record
       await Db().collection('students').doc(uid).delete();
 
-      // Delete their ongoing exam
+      // Delete ongoing exam
       await Db().collection('ongoingExams').doc(uid).delete().catch(() => {});
 
-      // Delete their results (matched by name — best effort)
-      if (name) {
-        const results = await Db()
-          .collection('results')
-          .where('name', '==', name)
-          .get();
+      // Best-effort: delete results matched by uid field if present, fall back to name
+      let resultSnap = await Db().collection('results').where('uid', '==', uid).get();
+      if (resultSnap.empty && name) {
+        resultSnap = await Db().collection('results').where('name', '==', name).get();
+      }
+      if (!resultSnap.empty) {
         const batch = Db().batch();
-        results.forEach((d) => batch.delete(d.ref));
-        if (!results.empty) await batch.commit();
+        resultSnap.forEach(d => batch.delete(d.ref));
+        await batch.commit();
       }
 
       UI.toast('Student deleted.', 'success');
@@ -292,10 +318,9 @@
   }
 
   async function toggleAdmin(uid, name, currentlyAdmin) {
+    if (!uid) return;
     const ok = await UI.confirmAction(
-      currentlyAdmin
-        ? `Remove admin role from ${name}?`
-        : `Give admin role to ${name}?`
+      currentlyAdmin ? `Remove admin role from ${name}?` : `Give admin role to ${name}?`
     );
     if (!ok) return;
 
@@ -303,10 +328,9 @@
       const ref = Db().collection('admins').doc(uid);
       if (currentlyAdmin) {
         await ref.delete();
-        // Also update the students doc if isAdmin field present
         await Db().collection('students').doc(uid).update({ isAdmin: false }).catch(() => {});
       } else {
-        await ref.set({ created: new Date() });
+        await ref.set({ created: firebase.firestore.FieldValue.serverTimestamp() });
         await Db().collection('students').doc(uid).update({ isAdmin: true }).catch(() => {});
       }
       UI.toast(`Admin status updated for ${name}.`, 'success');
@@ -329,45 +353,37 @@
       .collection('results')
       .orderBy('timestamp', 'desc')
       .onSnapshot(
-        (snap) => {
+        snap => {
           if (snap.empty) {
             container.innerHTML =
               '<p class="col-span-full text-center text-2xl opacity-70">No results yet.</p>';
             return;
           }
 
-          container.innerHTML = snap.docs
-            .map((doc) => {
-              const r = doc.data();
-              const gradeColor =
-                r.grade === 'A'
-                  ? 'text-green-500'
-                  : r.grade === 'B'
-                  ? 'text-blue-500'
-                  : r.grade === 'C'
-                  ? 'text-yellow-600'
-                  : r.grade === 'D'
-                  ? 'text-orange-500'
-                  : 'text-red-500';
-
-              return `
-                <div class="glass-dark p-6 rounded-2xl relative">
-                  <button onclick="Teacher.deleteResult('${doc.id}')"
-                          class="absolute top-3 right-3 text-red-500 text-2xl leading-none"
-                          aria-label="Delete result">&#215;</button>
-                  <p class="text-xl font-bold">${_esc(r.name || '')}</p>
-                  <p class="opacity-80">${_esc(r.class || '')} &bull; ${_esc(r.school || '')}</p>
-                  <p class="text-4xl font-bold mt-4 ${gradeColor}">
-                    ${r.percentage || 0}% &rarr; ${_esc(r.grade || '?')}
-                  </p>
-                  ${(r.subjects || [])
-                    .map((s) => `<p><strong>${_esc(s)}:</strong> ${r.scores?.[s] || 0}%</p>`)
-                    .join('')}
-                </div>`;
-            })
-            .join('');
+          container.innerHTML = snap.docs.map(doc => {
+            const r = doc.data();
+            const gradeColor = r.grade === 'A' ? 'text-green-500'
+                             : r.grade === 'B' ? 'text-blue-500'
+                             : r.grade === 'C' ? 'text-yellow-600'
+                             : r.grade === 'D' ? 'text-orange-500'
+                             : 'text-red-500';
+            return `
+              <div class="glass-dark p-6 rounded-2xl relative">
+                <button class="teacher-delete-result absolute top-3 right-3 text-red-500 text-2xl leading-none"
+                        data-id="${_esc(doc.id)}"
+                        aria-label="Delete result">&#215;</button>
+                <p class="text-xl font-bold">${_esc(r.name || '')}</p>
+                <p class="opacity-80">${_esc(r.class || '')} &bull; ${_esc(r.school || '')}</p>
+                <p class="text-4xl font-bold mt-4 ${gradeColor}">
+                  ${r.percentage || 0}% &rarr; ${_esc(r.grade || '?')}
+                </p>
+                ${(r.subjects || []).map(s =>
+                  `<p><strong>${_esc(s)}:</strong> ${r.scores?.[s] || 0}%</p>`
+                ).join('')}
+              </div>`;
+          }).join('');
         },
-        (err) => {
+        err => {
           console.error('[teacher] Error loading results:', err);
           container.innerHTML =
             '<p class="col-span-full text-center text-red-500">Error loading results.</p>';
@@ -377,10 +393,16 @@
     _reg('results', unsub);
   }
 
+  // Event delegation for result deletion
+  document.addEventListener('click', async e => {
+    const btn = e.target.closest('.teacher-delete-result');
+    if (btn) await deleteResult(btn.dataset.id);
+  });
+
   async function deleteResult(id) {
+    if (!id) return;
     const ok = await UI.confirmAction('Delete this result permanently?');
     if (!ok) return;
-
     try {
       await Db().collection('results').doc(id).delete();
       UI.toast('Result deleted.', 'success');
@@ -404,57 +426,52 @@
       .collection('schools')
       .orderBy('name')
       .onSnapshot(
-        (snap) => {
+        snap => {
           if (snap.empty) {
             container.innerHTML =
               '<p class="text-center text-xl opacity-70">No schools added yet.</p>';
             return;
           }
-
-          container.innerHTML = snap.docs
-            .map(
-              (doc) => `
-              <div class="glass-dark p-6 rounded-2xl flex justify-between items-center shadow">
-                <p class="text-xl font-medium">${_esc(doc.data().name)}</p>
-                <div class="flex gap-4">
-                  <button onclick="Teacher.renameSchool('${doc.id}', '${_esc(doc.data().name).replace(/'/g, "\\'")}')"
-                          class="btn bg-blue-600 px-6 py-3 text-lg">Rename</button>
-                  <button onclick="Teacher.deleteSchool('${doc.id}', '${_esc(doc.data().name).replace(/'/g, "\\'")}')"
-                          class="text-red-500 text-3xl leading-none">&#215;</button>
-                </div>
-              </div>`
-            )
-            .join('');
+          container.innerHTML = snap.docs.map(doc => `
+            <div class="glass-dark p-6 rounded-2xl flex justify-between items-center shadow">
+              <p class="text-xl font-medium">${_esc(doc.data().name)}</p>
+              <div class="flex gap-4">
+                <button class="teacher-rename-school btn bg-blue-600 px-6 py-3 text-lg"
+                        data-id="${_esc(doc.id)}"
+                        data-name="${_esc(doc.data().name)}">Rename</button>
+                <button class="teacher-delete-school text-red-500 text-3xl leading-none"
+                        data-id="${_esc(doc.id)}"
+                        data-name="${_esc(doc.data().name)}">&#215;</button>
+              </div>
+            </div>`).join('');
         },
-        (err) => {
+        err => {
           console.error('[teacher] Error loading schools:', err);
-          container.innerHTML =
-            '<p class="text-center text-red-500">Error loading schools.</p>';
+          container.innerHTML = '<p class="text-center text-red-500">Error loading schools.</p>';
         }
       );
 
     _reg('schools', unsub);
   }
 
+  // Event delegation for school actions
+  document.addEventListener('click', async e => {
+    const renameBtn = e.target.closest('.teacher-rename-school');
+    if (renameBtn) { await renameSchool(renameBtn.dataset.id, renameBtn.dataset.name); return; }
+
+    const deleteBtn = e.target.closest('.teacher-delete-school');
+    if (deleteBtn) { await deleteSchool(deleteBtn.dataset.id, deleteBtn.dataset.name); }
+  });
+
   async function addSchool() {
     const input = document.getElementById('newSchoolName');
-    const name = input ? input.value.trim() : '';
+    const name  = input ? input.value.trim() : '';
 
-    if (!name) {
-      UI.toast('Please enter a school name.', 'warning');
-      return;
-    }
+    if (!name) { UI.toast('Please enter a school name.', 'warning'); return; }
 
     try {
-      const snap = await Db()
-        .collection('schools')
-        .where('name', '==', name)
-        .get();
-
-      if (!snap.empty) {
-        UI.toast('This school name already exists.', 'warning');
-        return;
-      }
+      const snap = await Db().collection('schools').where('name', '==', name).get();
+      if (!snap.empty) { UI.toast('This school name already exists.', 'warning'); return; }
 
       await Db().collection('schools').add({ name });
       if (input) input.value = '';
@@ -470,17 +487,9 @@
     if (!newName || newName.trim() === currentName) return;
 
     const trimmed = newName.trim();
-
     try {
-      const snap = await Db()
-        .collection('schools')
-        .where('name', '==', trimmed)
-        .get();
-
-      if (!snap.empty) {
-        UI.toast('This name already exists.', 'warning');
-        return;
-      }
+      const snap = await Db().collection('schools').where('name', '==', trimmed).get();
+      if (!snap.empty) { UI.toast('This name already exists.', 'warning'); return; }
 
       const ok = await UI.confirmAction(
         `Rename "${currentName}" to "${trimmed}"?\nExisting students keep their current school name.`
@@ -500,7 +509,6 @@
       `Delete "${schoolName}" from the list?\n\nStudents already registered keep their school name, but new students will not see it.`
     );
     if (!ok) return;
-
     try {
       await Db().collection('schools').doc(id).delete();
       UI.toast('School deleted.', 'success');
@@ -515,27 +523,26 @@
   /* -------------------------------------------------- */
 
   function _loadTasksManager() {
-    // Populate task config from Firestore
     _cancel('tasksManager');
     const unsub = Db()
       .collection('coachingTasks')
       .doc('current')
-      .onSnapshot((snap) => {
+      .onSnapshot(snap => {
         const data = snap.exists
           ? snap.data()
           : { active: false, dates: [], title: '', message: '' };
 
-        const activeEl = document.getElementById('tasksActive');
-        const titleEl = document.getElementById('tasksTitle');
+        const activeEl  = document.getElementById('tasksActive');
+        const titleEl   = document.getElementById('tasksTitle');
         const messageEl = document.getElementById('tasksMessage');
-        const datesEl = document.getElementById('tasksDates');
+        const datesEl   = document.getElementById('tasksDates');
 
-        if (activeEl) activeEl.checked = !!data.active;
-        if (titleEl) titleEl.value = data.title || '';
-        if (messageEl) messageEl.value = data.message || '';
+        if (activeEl)  activeEl.checked = !!data.active;
+        if (titleEl)   titleEl.value    = data.title   || '';
+        if (messageEl) messageEl.value  = data.message || '';
         if (datesEl) {
           datesEl.innerHTML = '';
-          (data.dates || []).forEach((d) => _appendDateItem(d));
+          (data.dates || []).forEach(d => _appendDateItem(d));
         }
       });
     _reg('tasksManager', unsub);
@@ -545,13 +552,13 @@
     const unsubStudents = Db()
       .collection('students')
       .orderBy('name')
-      .onSnapshot((snap) => {
+      .onSnapshot(snap => {
         const sel = document.getElementById('msgStudent');
         if (!sel) return;
         let html = '<option value="">Select student...</option>';
-        snap.forEach((doc) => {
+        snap.forEach(doc => {
           const s = doc.data();
-          html += `<option value="${doc.id}">${_esc(s.name)} (${_esc(s.class || '')})</option>`;
+          html += `<option value="${_esc(doc.id)}">${_esc(s.name)} (${_esc(s.class || '')})</option>`;
         });
         sel.innerHTML = html;
       });
@@ -564,19 +571,10 @@
     if (!dateInput || !container) return;
 
     const val = dateInput.value.trim();
-    if (!val) {
-      UI.toast('Please select a date first.', 'warning');
-      return;
-    }
+    if (!val) { UI.toast('Please select a date first.', 'warning'); return; }
 
-    // Prevent duplicates
-    const existing = Array.from(container.querySelectorAll('span.date-val')).map(
-      (s) => s.textContent
-    );
-    if (existing.includes(val)) {
-      UI.toast('This date is already in the list.', 'warning');
-      return;
-    }
+    const existing = Array.from(container.querySelectorAll('span.date-val')).map(s => s.textContent);
+    if (existing.includes(val)) { UI.toast('This date is already in the list.', 'warning'); return; }
 
     _appendDateItem(val);
     dateInput.value = '';
@@ -585,7 +583,6 @@
   function _appendDateItem(dateStr) {
     const container = document.getElementById('tasksDates');
     if (!container) return;
-
     const div = document.createElement('div');
     div.className = 'flex justify-between items-center bg-purple-100 p-4 rounded-xl shadow';
     div.innerHTML = `
@@ -595,35 +592,25 @@
   }
 
   async function saveTasksConfig() {
-    const active = document.getElementById('tasksActive')?.checked || false;
-    const title = document.getElementById('tasksTitle')?.value.trim() || '';
-    const message = document.getElementById('tasksMessage')?.value.trim() || '';
+    const active   = !!document.getElementById('tasksActive')?.checked;
+    const title    = document.getElementById('tasksTitle')?.value.trim()   || '';
+    const message  = document.getElementById('tasksMessage')?.value.trim() || '';
+    const dates    = Array.from(document.querySelectorAll('#tasksDates span.date-val'))
+                         .map(s => s.textContent.trim());
 
-    if (active && !title) {
-      UI.toast('Please enter a title for the coaching task.', 'warning');
-      return;
-    }
-
-    const dates = Array.from(
-      document.querySelectorAll('#tasksDates span.date-val')
-    ).map((s) => s.textContent.trim());
-
-    if (active && dates.length === 0) {
-      UI.toast('Please add at least one date when activating tasks.', 'warning');
-      return;
-    }
+    if (active && !title)          { UI.toast('Please enter a title for the coaching task.', 'warning'); return; }
+    if (active && dates.length === 0) { UI.toast('Please add at least one date when activating tasks.', 'warning'); return; }
 
     const payload = {
       active,
-      title: title || 'Coaching Task',
+      title:   title   || 'Coaching Task',
       message: message || 'Complete the required exams on the scheduled dates.',
       dates,
-      updatedAt: new Date().toISOString(),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     };
 
-    const btn = document.querySelector('button[onclick="Teacher.saveTasksConfig()"]');
+    const btn = document.getElementById('saveTasksBtn');
     UI.setLoading(btn, true);
-
     try {
       await Db().collection('coachingTasks').doc('current').set(payload);
       UI.toast('Coaching tasks saved.', 'success');
@@ -645,15 +632,14 @@
       await Db().collection('coachingTasks').doc('current').delete();
       UI.toast('All tasks deleted.', 'success');
 
-      // Clear the form
-      const titleEl = document.getElementById('tasksTitle');
-      const msgEl = document.getElementById('tasksMessage');
-      const datesEl = document.getElementById('tasksDates');
+      const titleEl  = document.getElementById('tasksTitle');
+      const msgEl    = document.getElementById('tasksMessage');
+      const datesEl  = document.getElementById('tasksDates');
       const activeEl = document.getElementById('tasksActive');
-      if (titleEl) titleEl.value = '';
-      if (msgEl) msgEl.value = '';
-      if (datesEl) datesEl.innerHTML = '';
-      if (activeEl) activeEl.checked = false;
+      if (titleEl)  titleEl.value    = '';
+      if (msgEl)    msgEl.value      = '';
+      if (datesEl)  datesEl.innerHTML = '';
+      if (activeEl) activeEl.checked  = false;
     } catch (err) {
       console.error('[teacher] deleteAllTasks error:', err);
       UI.toast('Failed to delete tasks.', 'error');
@@ -662,28 +648,27 @@
 
   async function sendPrivateMessage() {
     const studentId = document.getElementById('msgStudent')?.value;
-    const text = document.getElementById('msgText')?.value.trim();
-    const duration = parseInt(document.getElementById('msgDuration')?.value || '86400000', 10);
+    const text      = document.getElementById('msgText')?.value.trim();
+    const duration  = parseInt(document.getElementById('msgDuration')?.value || '86400000', 10);
 
-    if (!studentId) {
-      UI.toast('Please select a student.', 'warning');
-      return;
-    }
-    if (!text) {
-      UI.toast('Please write a message.', 'warning');
-      return;
-    }
+    if (!studentId) { UI.toast('Please select a student.',   'warning'); return; }
+    if (!text)      { UI.toast('Please write a message.', 'warning'); return; }
 
-    const btn = document.querySelector('button[onclick="Teacher.sendPrivateMessage()"]');
+    const btn = document.getElementById('sendMsgBtn');
     UI.setLoading(btn, true);
 
     try {
+      // Use server timestamp for sentAt; compute expiresAt via a client-calculated offset.
+      // Firestore does not support computed server timestamps, so we use client Date for
+      // expiresAt. The duration values are large enough that minor clock skew is acceptable.
+      const expiresAt = new Date(Date.now() + duration);
+
       await Db().collection('privateMessages').add({
         recipientId: studentId,
-        message: text,
-        sentAt: new Date(),
-        expiresAt: new Date(Date.now() + duration),
-        sentBy: 'Master Timothy',
+        message:     text,
+        sentAt:      firebase.firestore.FieldValue.serverTimestamp(),
+        expiresAt,
+        sentBy:      'Master Timothy',
       });
 
       const msgEl = document.getElementById('msgText');
@@ -702,9 +687,16 @@
   /* Logout                                             */
   /* -------------------------------------------------- */
 
-  function logout() {
-    Object.keys(_listeners).forEach((k) => _cancel(k));
-    Auth().signOut();
+  async function logout() {
+    _cancelAll();
+    AppState.isTeacher = false;
+    try {
+      await window.fbAuth.signOut();
+      // app.js onAuthStateChanged listener handles the rest
+    } catch (err) {
+      console.error('[teacher] logout error:', err);
+      UI.toast('Logout failed. Please try again.', 'error');
+    }
   }
 
   /* -------------------------------------------------- */
@@ -712,7 +704,7 @@
   /* -------------------------------------------------- */
 
   function _esc(str) {
-    return String(str || '')
+    return String(str == null ? '' : str)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
@@ -743,4 +735,5 @@
     deleteAllTasks,
     sendPrivateMessage,
   };
+
 })();
