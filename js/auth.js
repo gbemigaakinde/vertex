@@ -10,13 +10,17 @@
   /*                                                    */
   /* When createUserWithEmailAndPassword succeeds,      */
   /* Firebase immediately fires onAuthStateChanged with */
-  /* the new user — BEFORE the Firestore student doc    */
-  /* has been written. Without a guard, app.js sees a  */
-  /* signed-in user with no student profile, shows     */
-  /* "Profile not found", and signs them out.           */
+  /* the new user. app.js would then try to route that  */
+  /* user into the exam flow before the Firestore       */
+  /* student profile document has been written.         */
   /*                                                    */
-  /* This flag tells app.js to ignore that transient   */
-  /* auth state change during the registration flow.   */
+  /* Setting this flag to true before account creation  */
+  /* tells app.js to ignore all auth state changes      */
+  /* until registration is fully complete.              */
+  /*                                                    */
+  /* CRITICAL: the flag must be cleared and signOut()   */
+  /* called AFTER the Firestore write succeeds, not     */
+  /* before — the write requires request.auth != null.  */
   /* -------------------------------------------------- */
   window._registrationInProgress = false;
 
@@ -51,7 +55,7 @@
 
         <!-- REGISTER PANEL -->
         <div id="registerPanel" class="hidden space-y-4">
-          <input id="regName"  type="text"     placeholder="Full Name"            autocomplete="name" />
+          <input id="regName"  type="text"     placeholder="Full Name"           autocomplete="name" />
           <select id="regClass">
             <option value="" disabled selected>Select Class</option>
             <option>JSS1</option><option>JSS2</option><option>JSS3</option>
@@ -60,8 +64,8 @@
           <select id="regSchool">
             <option value="" disabled selected>Loading schools...</option>
           </select>
-          <input id="regEmail" type="email"    placeholder="Email address"            autocomplete="email" />
-          <input id="regPass"  type="password" placeholder="Password (min 6 chars)"   autocomplete="new-password" />
+          <input id="regEmail" type="email"    placeholder="Email address"          autocomplete="email" />
+          <input id="regPass"  type="password" placeholder="Password (min 6 chars)" autocomplete="new-password" />
           <button id="regBtn" onclick="Auth.register()" class="btn w-full text-xl py-5">REGISTER</button>
           <p class="text-center text-sm text-gray-600">
             <button onclick="Auth.showLogin()" class="text-purple-600 underline font-medium">Back to Login</button>
@@ -83,12 +87,10 @@
         </div>
       </div>`);
 
-    // Guard: only init ticker if the element was actually rendered into the DOM
     if (typeof initTicker === 'function' && document.getElementById('tickerScroll')) {
       initTicker();
     }
 
-    // Load schools into dropdown with a real-time listener.
     const unsub = window.fbDb.collection('schools').orderBy('name').onSnapshot(snap => {
       const sel = document.getElementById('regSchool');
       if (!sel) {
@@ -140,6 +142,7 @@
     try {
       AppState.cancelListener('schoolDropdown');
       await window.fbAuth.signInWithEmailAndPassword(email, pass);
+      // onAuthStateChanged in app.js handles routing
     } catch (err) {
       const msg = err.code === 'auth/user-not-found'     ? 'No account found with this email.'
                 : err.code === 'auth/wrong-password'     ? 'Incorrect password.'
@@ -173,32 +176,36 @@
     UI.setLoading(btn, true);
 
     /*
-     * REGISTRATION FLOW - ORDER IS CRITICAL
+     * REGISTRATION SEQUENCE — ORDER IS NON-NEGOTIABLE
      *
-     * 1. Set the guard flag so app.js _onLogin ignores the transient
-     *    onAuthStateChanged that fires immediately after account creation.
-     * 2. Create the Firebase Auth account.
-     * 3. Sign out immediately - prevents app.js routing an incomplete user.
-     * 4. Write the Firestore student profile using the uid from step 2.
-     * 5. Clear the guard flag.
-     * 6. Show success and switch to login panel.
+     * 1. Raise guard flag — app.js will ignore all auth state changes
+     *    until we lower it. This prevents routing an incomplete user.
+     *
+     * 2. Create Firebase Auth account. onAuthStateChanged fires immediately
+     *    with the new user, but app.js ignores it because the flag is raised.
+     *
+     * 3. Write Firestore student profile WHILE STILL SIGNED IN.
+     *    request.auth is the new user's context — the rule
+     *    "allow write: if request.auth.uid == studentId" will pass.
+     *    Signing out before this write would make request.auth null
+     *    and cause "Missing or insufficient permissions".
+     *
+     * 4. Sign out. onAuthStateChanged fires again (signed-out event).
+     *    app.js ignores it because the flag is still raised.
+     *
+     * 5. Lower guard flag. Call _onLogout manually so app.js renders
+     *    the login screen cleanly without going through onAuthStateChanged.
      */
 
     window._registrationInProgress = true;
-    let newUid = null;
 
     try {
-      // Step 2 - Create Auth account
+      // Step 2 — Create Auth account
       const cred = await window.fbAuth.createUserWithEmailAndPassword(email, pass);
-      newUid = cred.user.uid;
+      const uid  = cred.user.uid;
 
-      // Step 3 - Sign out immediately before Firestore write.
-      // onAuthStateChanged fires here but _registrationInProgress is true
-      // so app.js _onLogin will bail out and not route the incomplete user.
-      await window.fbAuth.signOut();
-
-      // Step 4 - Write student profile now that the user is signed out
-      await window.fbDb.collection('students').doc(newUid).set({
+      // Step 3 — Write Firestore profile while signed in (auth context is valid)
+      await window.fbDb.collection('students').doc(uid).set({
         name,
         class:     cls,
         school,
@@ -206,13 +213,15 @@
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
 
-      // Step 5 - Clear guard (signOut already triggered _onLogout which showed login)
+      // Step 4 — Sign out now that the profile is safely written
+      await window.fbAuth.signOut();
+
+      // Step 5 — Lower flag and render login manually
       window._registrationInProgress = false;
 
-      // Step 6 - Success
       UI.toast('Registration successful! Please log in with your new account.', 'success', 7000);
 
-      // Pre-fill the email field to reduce friction
+      // Pre-fill email to reduce friction
       const loginEmailEl = document.getElementById('loginEmail');
       if (loginEmailEl) loginEmailEl.value = email;
 
@@ -221,20 +230,19 @@
     } catch (err) {
       window._registrationInProgress = false;
 
-      if (newUid) {
-        // Auth account was created but something failed after.
-        // Log for manual cleanup - we cannot delete without a fresh credential.
-        console.error('[auth] Registration incomplete. Auth account created but flow failed.', {
-          uid: newUid, email, errorCode: err.code, errorMessage: err.message
-        });
+      // If sign-out failed after a successful write, the user is stuck signed in
+      // with a valid profile. Call signOut as a best-effort cleanup.
+      if (window.fbAuth.currentUser) {
+        window.fbAuth.signOut().catch(() => {});
       }
 
-      const msg = err.code === 'auth/email-already-in-use' ? 'An account with this email already exists.'
-                : err.code === 'auth/invalid-email'        ? 'Invalid email address.'
-                : err.code === 'auth/weak-password'        ? 'Password must be at least 6 characters.'
-                : err.code === 'auth/operation-not-allowed'? 'Registration is currently disabled. Contact Master Timothy.'
-                : err.code === 'auth/too-many-requests'    ? 'Too many attempts. Please wait and try again.'
-                : 'Registration failed: ' + (err.message || 'Please try again.');
+      const msg = err.code === 'auth/email-already-in-use'  ? 'An account with this email already exists.'
+                : err.code === 'auth/invalid-email'         ? 'Invalid email address.'
+                : err.code === 'auth/weak-password'         ? 'Password must be at least 6 characters.'
+                : err.code === 'auth/operation-not-allowed' ? 'Registration is currently disabled. Contact Master Timothy.'
+                : err.code === 'auth/too-many-requests'     ? 'Too many attempts. Please wait and try again.'
+                : err.code === 'permission-denied'          ? 'Could not save profile. Please try again.'
+                : 'Registration failed. Please try again.';
       UI.toast(msg, 'error', 8000);
 
     } finally {
