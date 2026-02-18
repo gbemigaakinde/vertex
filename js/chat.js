@@ -1,24 +1,28 @@
 /* ============================================================
    js/chat.js — Public Discussion Chat
-   Fixes: unsubscribes old listeners, typing cleanup, lock toggle
    ============================================================ */
 
 (function () {
   'use strict';
 
-  const S  = () => AppState;
-  const Db = () => fbDb;
+  /* -------------------------------------------------- */
+  /* Open chat                                          */
+  /* Can be called from:                                */
+  /*   - Student dashboard (replaces app content)       */
+  /*   - Teacher dashboard (replaces app content)       */
+  /* In both cases UI.mount replaces #app; the Back     */
+  /* button re-renders the correct dashboard.           */
+  /* -------------------------------------------------- */
 
-  /* ── Open chat ── */
   async function openPublicChat() {
-    const isTeacher = S().userId === AppConfig.TEACHER_UID;
+    const isTeacher = AppState.userId === AppConfig.TEACHER_UID;
     let chatLocked  = false;
 
     try {
       const lockSnap = await Db().collection('chatSettings').doc('lock').get();
-      chatLocked = lockSnap.exists && lockSnap.data().isLocked;
+      chatLocked = lockSnap.exists && !!lockSnap.data().isLocked;
     } catch (err) {
-      console.warn('[Chat] Could not read lock state:', err);
+      console.warn('[chat] Could not read lock state:', err);
     }
 
     const canSend = isTeacher || !chatLocked;
@@ -27,7 +31,7 @@
       <div class="max-w-4xl mx-auto glass p-8 mt-8 rounded-3xl animate-fadeIn">
         <div class="flex justify-between items-center mb-6">
           <h2 class="text-3xl font-bold">Public Discussion Chat</h2>
-          <button onclick="Chat.backFromChat()" class="btn bg-gray-500 hover:bg-gray-600 text-lg px-6 py-3">← Back</button>
+          <button onclick="Chat.backFromChat()" class="btn bg-gray-500 hover:bg-gray-600 text-lg px-6 py-3">Back</button>
         </div>
 
         <div class="glass-dark p-5 rounded-2xl mb-6 text-center">
@@ -52,7 +56,8 @@
 
         ${isTeacher ? `
           <div class="text-center mb-6">
-            <button id="lockBtn" onclick="Chat.toggleLock()" class="btn ${chatLocked ? 'bg-green-600' : 'bg-red-600'} text-lg px-8 py-3">
+            <button id="lockBtn" onclick="Chat.toggleLock()"
+                    class="btn ${chatLocked ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'} text-lg px-8 py-3">
               ${chatLocked ? 'Unlock Chat' : 'Lock Chat'}
             </button>
           </div>` : ''}
@@ -93,17 +98,19 @@
     const input = document.getElementById('chatInput');
     if (input && canSend) {
       input.focus();
+
       input.addEventListener('keydown', e => {
         if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }
       });
 
+      const typingRef = Db().collection('typing').doc(AppState.userId);
       let typingTimer;
-      const typingRef = Db().collection('typing').doc(S().userId);
+
       input.addEventListener('input', () => {
         if (!input.value.trim()) return;
         typingRef.set({
           typing: true,
-          name:   isTeacher ? 'Master Timothy' : S().studentData.name
+          name:   isTeacher ? 'Master Timothy' : (AppState.studentData?.name || 'Student')
         }).catch(() => {});
         clearTimeout(typingTimer);
         typingTimer = setTimeout(() => typingRef.delete().catch(() => {}), 3000);
@@ -111,143 +118,204 @@
     }
   }
 
-  /* ── Subscribe to messages ── */
-  function _subscribeMessages(canAdmin) {
-    const unsub = Db().collection('publicChat')
+  /* -------------------------------------------------- */
+  /* Subscribe to messages                              */
+  /* -------------------------------------------------- */
+
+  function _subscribeMessages(isTeacher) {
+    // Cancel previous listener before re-subscribing
+    AppState.cancelListener('chatMessages');
+
+    const unsub = Db()
+      .collection('publicChat')
       .orderBy('timestamp', 'asc')
       .limit(200)
       .onSnapshot(snap => {
         const container = document.getElementById('chatMessages');
-        if (!container) { unsub(); return; }
+        if (!container) {
+          AppState.cancelListener('chatMessages');
+          return;
+        }
 
         const msgs = [];
         snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
 
-        // Pinned messages float to top
+        // Pinned messages float to top, otherwise timestamp order is preserved
         msgs.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
 
         container.innerHTML = msgs.length === 0
           ? '<p class="text-center opacity-60 py-4">No messages yet. Be the first!</p>'
-          : msgs.map(msg => _buildMessageHtml(msg, canAdmin)).join('');
+          : msgs.map(msg => _buildMessageHtml(msg, isTeacher)).join('');
 
         container.scrollTop = container.scrollHeight;
-      }, err => console.error('[Chat] messages error:', err));
+      }, err => console.error('[chat] Messages error:', err));
 
     AppState.registerListener('chatMessages', unsub);
   }
 
-  function _buildMessageHtml(msg, canAdmin) {
+  function _buildMessageHtml(msg, isTeacher) {
     const isTeacherMsg = msg.senderName === 'Master Timothy';
     const time = msg.timestamp
       ? new Date(msg.timestamp.toDate ? msg.timestamp.toDate() : msg.timestamp).toLocaleString()
       : 'Just now';
 
+    // Admin buttons use data attributes to avoid JS-string-in-HTML escaping issues
+    const adminDeleteBtn = isTeacher
+      ? `<button class="chat-delete-btn absolute top-2 right-2 text-red-400 hover:text-red-600 text-xl leading-none"
+                 data-id="${_esc(msg.id)}" title="Delete">×</button>`
+      : '';
+
+    const pinBtn = isTeacher
+      ? `<button class="chat-pin-btn absolute top-2 right-8 text-yellow-400 hover:text-yellow-600 text-lg leading-none"
+                 data-id="${_esc(msg.id)}" title="Pin">P</button>`
+      : '';
+
+    const replyBtn = `
+      <button class="chat-reply-btn text-xs text-purple-600 underline hover:text-purple-800"
+              data-id="${_esc(msg.id)}">Reply</button>`;
+
     return `
       <div class="glass-dark p-4 rounded-xl relative ${isTeacherMsg ? 'border-2 border-yellow-400 bg-yellow-50' : ''}">
-        ${msg.pinned ? '<span class="absolute top-2 right-10 text-xs font-bold text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded">📌 PINNED</span>' : ''}
-        ${canAdmin ? `<button onclick="Chat.deleteMessage('${msg.id}')" class="absolute top-2 right-2 text-red-400 hover:text-red-600 text-xl leading-none" title="Delete">×</button>` : ''}
-        ${S().userId === AppConfig.TEACHER_UID ? `<button onclick="Chat.togglePin('${msg.id}')" class="absolute top-2 right-8 text-yellow-400 hover:text-yellow-600 text-lg leading-none" title="Pin">📌</button>` : ''}
-
-        <p class="font-bold text-sm">
+        ${msg.pinned ? '<span class="absolute top-2 left-3 text-xs font-bold text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded">PINNED</span>' : ''}
+        ${adminDeleteBtn}
+        ${pinBtn}
+        <p class="font-bold text-sm ${msg.pinned ? 'mt-5' : ''}">
           ${_esc(msg.senderName)}
           ${msg.senderClass ? `<span class="font-normal opacity-60">(${_esc(msg.senderClass)})</span>` : ''}
         </p>
-        ${msg.replyTo ? `<p class="text-xs opacity-60 ml-3 mt-1">↳ Replying to ${_esc(msg.replyTo.name)}: ${_esc(msg.replyTo.text)}</p>` : ''}
+        ${msg.replyTo ? `<p class="text-xs opacity-60 ml-3 mt-1">Replying to ${_esc(msg.replyTo.name)}: ${_esc(msg.replyTo.text)}</p>` : ''}
         <p class="mt-1">${_esc(msg.text)}</p>
         <div class="flex justify-between items-center mt-2">
           <p class="text-xs opacity-50">${time}</p>
-          <button onclick="Chat.setReplyTo('${msg.id}')" class="text-xs text-purple-600 underline hover:text-purple-800">Reply</button>
+          ${replyBtn}
         </div>
       </div>`;
   }
 
-  /* ── Subscribe to typing indicators ── */
+  /* ── Event delegation for chat message actions ── */
+  // Attached once on the container rather than inline on every message button
+  document.addEventListener('click', e => {
+    const deleteBtn = e.target.closest('.chat-delete-btn');
+    if (deleteBtn) { deleteMessage(deleteBtn.dataset.id); return; }
+
+    const pinBtn = e.target.closest('.chat-pin-btn');
+    if (pinBtn) { togglePin(pinBtn.dataset.id); return; }
+
+    const replyBtn = e.target.closest('.chat-reply-btn');
+    if (replyBtn) { setReplyTo(replyBtn.dataset.id); return; }
+  });
+
+  /* -------------------------------------------------- */
+  /* Subscribe to typing indicators                     */
+  /* -------------------------------------------------- */
+
   function _subscribeTyping() {
+    AppState.cancelListener('chatTyping');
+
     const unsub = Db().collection('typing').onSnapshot(snap => {
       const el = document.getElementById('typingIndicator');
-      if (!el) { unsub(); return; }
+      if (!el) {
+        AppState.cancelListener('chatTyping');
+        return;
+      }
       const names = [];
       snap.forEach(doc => {
-        if (doc.id !== S().userId && doc.data().typing) names.push(doc.data().name);
+        if (doc.id !== AppState.userId && doc.data().typing) {
+          names.push(doc.data().name);
+        }
       });
       el.textContent = names.length > 0
         ? `${names.join(', ')} ${names.length > 1 ? 'are' : 'is'} typing...`
         : '';
-    }, err => console.error('[Chat] typing error:', err));
+    }, err => console.error('[chat] Typing error:', err));
 
     AppState.registerListener('chatTyping', unsub);
   }
 
-  /* ── Send message ── */
+  /* -------------------------------------------------- */
+  /* Send message                                       */
+  /* -------------------------------------------------- */
+
   async function sendMessage() {
-    const input = document.getElementById('chatInput');
-    const text  = (input?.value || '').trim();
+    const input     = document.getElementById('chatInput');
+    const text      = (input?.value || '').trim();
     if (!text) return;
 
-    const isTeacher = S().userId === AppConfig.TEACHER_UID;
+    const isTeacher = AppState.userId === AppConfig.TEACHER_UID;
+
     try {
       await Db().collection('publicChat').add({
         text,
-        senderName:  isTeacher ? 'Master Timothy' : S().studentData.name,
-        senderClass: isTeacher ? '' : (S().studentData.class || ''),
+        senderName:  isTeacher ? 'Master Timothy' : (AppState.studentData?.name || 'Student'),
+        senderClass: isTeacher ? '' : (AppState.studentData?.class || ''),
         timestamp:   firebase.firestore.FieldValue.serverTimestamp(),
-        replyTo:     S().replyingTo || null,
+        replyTo:     AppState.replyingTo || null,
         pinned:      false
       });
+
       if (input) input.value = '';
       cancelReply();
-      // Clear typing indicator
-      Db().collection('typing').doc(S().userId).delete().catch(() => {});
+      Db().collection('typing').doc(AppState.userId).delete().catch(() => {});
     } catch (err) {
-      console.error('[Chat] send error:', err);
+      console.error('[chat] Send error:', err);
       UI.toast('Failed to send message.', 'error');
     }
   }
 
-  /* ── Reply ── */
+  /* -------------------------------------------------- */
+  /* Reply                                              */
+  /* -------------------------------------------------- */
+
   async function setReplyTo(msgId) {
     try {
       const snap = await Db().collection('publicChat').doc(msgId).get();
       if (!snap.exists) return;
       const data = snap.data();
-      S().replyingTo = { name: data.senderName, text: data.text };
+      AppState.replyingTo = { name: data.senderName, text: data.text };
 
-      const preview  = document.getElementById('replyPreview');
-      const nameEl   = document.getElementById('replyName');
-      const textEl   = document.getElementById('replyText');
+      const preview = document.getElementById('replyPreview');
+      const nameEl  = document.getElementById('replyName');
+      const textEl  = document.getElementById('replyText');
       if (preview && nameEl && textEl) {
         nameEl.textContent = data.senderName;
-        textEl.textContent = data.text.substring(0, 80) + (data.text.length > 80 ? '...' : '');
+        textEl.textContent = data.text.length > 80 ? data.text.substring(0, 80) + '...' : data.text;
         preview.classList.remove('hidden');
       }
     } catch (err) {
-      console.error('[Chat] setReplyTo error:', err);
+      console.error('[chat] setReplyTo error:', err);
     }
   }
 
   function cancelReply() {
-    S().replyingTo = null;
+    AppState.replyingTo = null;
     const preview = document.getElementById('replyPreview');
     if (preview) preview.classList.add('hidden');
   }
 
-  /* ── Admin actions ── */
+  /* -------------------------------------------------- */
+  /* Admin actions                                      */
+  /* -------------------------------------------------- */
+
   async function deleteMessage(id) {
+    if (!id) return;
     const ok = await UI.confirmAction('Delete this message?');
     if (!ok) return;
-    await Db().collection('publicChat').doc(id).delete().catch(err => {
-      console.error('[Chat] delete error:', err);
+    try {
+      await Db().collection('publicChat').doc(id).delete();
+    } catch (err) {
+      console.error('[chat] Delete error:', err);
       UI.toast('Failed to delete message.', 'error');
-    });
+    }
   }
 
   async function togglePin(id) {
+    if (!id) return;
     try {
       const snap = await Db().collection('publicChat').doc(id).get();
       if (!snap.exists) return;
       await snap.ref.update({ pinned: !snap.data().pinned });
     } catch (err) {
-      console.error('[Chat] togglePin error:', err);
+      console.error('[chat] togglePin error:', err);
     }
   }
 
@@ -260,46 +328,66 @@
       } else {
         await ref.set({ isLocked: true });
       }
+      // Re-render chat to update lock UI
       openPublicChat();
     } catch (err) {
-      console.error('[Chat] toggleLock error:', err);
+      console.error('[chat] toggleLock error:', err);
       UI.toast('Failed to toggle lock.', 'error');
     }
   }
 
-  /* ── Back from chat ── */
+  /* -------------------------------------------------- */
+  /* Back from chat                                     */
+  /* -------------------------------------------------- */
+
   function backFromChat() {
-    // Clear typing
-    Db().collection('typing').doc(S().userId).delete().catch(() => {});
+    // Clear typing indicator for this user
+    Db().collection('typing').doc(AppState.userId).delete().catch(() => {});
+
+    // Cancel chat-specific listeners
     AppState.cancelListener('chatMessages');
     AppState.cancelListener('chatTyping');
-    S().replyingTo = null;
+    AppState.replyingTo = null;
 
-    if (S().isTeacher) {
-      Teacher.render();
-    } else if (S().exam?.step === 'exam') {
+    // Route back to the correct dashboard
+    if (AppState.isTeacher) {
+      Teacher.renderTeacherDashboard();
+    } else if (AppState.exam && AppState.exam.step === 'exam') {
       Exam.renderExam();
     } else {
       Exam.renderSubjectSelection();
     }
   }
 
-  /* ── HTML escape ── */
+  /* -------------------------------------------------- */
+  /* Private helpers                                    */
+  /* -------------------------------------------------- */
+
   function _esc(str) {
     if (str == null) return '';
-    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
   }
 
-  /* ── Expose ── */
+  /* -------------------------------------------------- */
+  /* Expose                                             */
+  /* open() is an alias for openPublicChat() so that    */
+  /* any remaining legacy callers do not hard-error.    */
+  /* -------------------------------------------------- */
+
   window.Chat = {
     openPublicChat,
+    open: openPublicChat,    // alias — keeps old call sites working
     sendMessage,
     setReplyTo,
     cancelReply,
     deleteMessage,
     togglePin,
     toggleLock,
-    backFromChat
+    backFromChat,
   };
 
 })();
