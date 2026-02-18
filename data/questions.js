@@ -1,4 +1,4 @@
-const questions = {
+window.questions = {
     jss1: {
     'English Language': [
       {
