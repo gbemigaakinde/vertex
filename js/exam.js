@@ -45,6 +45,7 @@
 
   /* ── Subject selection screen ── */
   async function renderSubjectSelection() {
+    try {
     const classKey  = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
     const _qBank    = window.questions || {};
     const available = _qBank[classKey] ? Object.keys(_qBank[classKey]) : [];
