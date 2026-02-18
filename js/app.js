@@ -12,19 +12,16 @@
 
   function _startAuthListener() {
     window.fbAuth.onAuthStateChanged(async firebaseUser => {
+      // Registration in auth.js raises this flag to suppress routing
+      // during the Auth-create -> Firestore-write -> signOut sequence.
+      // Both the signed-in and signed-out events during that window are ignored.
+      if (window._registrationInProgress) {
+        return;
+      }
+
       if (firebaseUser) {
-        // If auth.js registration is mid-flight, ignore this state change.
-        // The registration flow signs out immediately after creating the account,
-        // so the next state change will be the signed-out event which renders login.
-        if (window._registrationInProgress) {
-          return;
-        }
         await _onLogin(firebaseUser);
       } else {
-        // Also ignore the sign-out that registration triggers mid-flow.
-        if (window._registrationInProgress) {
-          return;
-        }
         _onLogout();
       }
     });
@@ -33,7 +30,6 @@
   async function _onLogin(firebaseUser) {
     const uid = firebaseUser.uid;
 
-    // Cancel any pre-login listeners (e.g. school dropdown in auth.js)
     AppState.cancelAllListeners();
     AppState.userId = uid;
 
@@ -56,11 +52,7 @@
       }
 
       AppState.studentData = snap.data();
-
-      // Start real-time profile listener for coaching task completion updates
       Tasks.listenForStudentUpdates();
-
-      // Route to exam engine
       await Exam.loadOrStart();
     } catch (err) {
       console.error('[app] Profile load error:', err);
