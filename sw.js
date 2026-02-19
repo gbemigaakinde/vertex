@@ -9,12 +9,19 @@
 
 'use strict';
 
-/* ── Version — increment this on every deployment ── */
-const CACHE_VERSION    = 'v1.0.0';
-const STATIC_CACHE     = `static-${CACHE_VERSION}`;
-const CDN_CACHE        = `cdn-${CACHE_VERSION}`;
+const CACHE_VERSION = 'v1.0.1';
+const STATIC_CACHE  = `static-${CACHE_VERSION}`;
+const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
 
-/* ── Static assets to precache at install ── */
+/*
+ * Track whether this is a first-time install (no previous SW controller).
+ * Used in activate to decide whether clients.claim() is safe to call.
+ * claim() on a first install is safe — the page has no Firestore state yet.
+ * claim() on an update would take over mid-session pages and corrupt
+ * Firestore's IndexedDB lock, causing all db reads/writes to hang.
+ */
+let _isFirstInstall = false;
+
 const STATIC_ASSETS = [
   '/',
   '/index.html',
@@ -33,12 +40,8 @@ const STATIC_ASSETS = [
   '/data/questions.js',
   '/news-ticker.css',
   '/news-ticker.js',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png',
-  '/IMG_4512.png',
 ];
 
-/* ── Domains that must NEVER be intercepted ── */
 const BYPASS_ORIGINS = [
   'firestore.googleapis.com',
   'firebaseapp.com',
@@ -49,24 +52,23 @@ const BYPASS_ORIGINS = [
   'cloudfunctions.net',
 ];
 
-/* ── CDN origins to cache with stale-while-revalidate ── */
 const CDN_ORIGINS = [
   'cdn.tailwindcss.com',
   'www.gstatic.com',
 ];
 
 /* ─────────────────────────────────────────────────────────── */
-/* INSTALL — Precache static shell                            */
+/* INSTALL                                                    */
 /* ─────────────────────────────────────────────────────────── */
 self.addEventListener('install', event => {
+  /*
+   * Detect first install: if there is no current controller,
+   * no SW was previously active for this scope.
+   */
+  _isFirstInstall = !self.registration.active;
+
   event.waitUntil(
     caches.open(STATIC_CACHE).then(cache => {
-      /*
-       * addAll() is atomic — if any asset fails, the install fails.
-       * We use individual add() calls with error swallowing for
-       * optional assets (icons that may not exist yet), and addAll()
-       * only for guaranteed assets.
-       */
       const coreAssets = [
         '/',
         '/index.html',
@@ -98,10 +100,10 @@ self.addEventListener('install', event => {
         '/icons/icon-512x512.png',
         '/icons/icon-512x512-maskable.png',
         '/IMG_4512.png',
+        '/vertex.jpeg',
       ];
 
       const corePromise = cache.addAll(coreAssets);
-
       const optionalPromises = optionalAssets.map(url =>
         cache.add(url).catch(err => {
           console.warn(`[SW] Optional asset not cached: ${url}`, err.message);
@@ -109,94 +111,99 @@ self.addEventListener('install', event => {
       );
 
       return Promise.all([corePromise, ...optionalPromises]);
-    }).then(() => {
-      /*
-       * skipWaiting() causes the new SW to activate immediately
-       * instead of waiting for all tabs to close.
-       * The app.js update handler triggers a page reload after
-       * this activates, ensuring users always get a fresh page.
-       */
-      return self.skipWaiting();
     })
+    /*
+     * DO NOT call self.skipWaiting() here.
+     *
+     * Auto-activating via skipWaiting() during install causes the SW to
+     * take control of already-open pages via clients.claim(). Any page
+     * that already called firebase.firestore() will have its IndexedDB
+     * persistence lock invalidated mid-session, causing all Firestore
+     * operations to silently hang. The app renders nothing.
+     *
+     * The SW will now wait in 'waiting' state until the user confirms
+     * the update toast, which sends SKIP_WAITING. Only then does it activate.
+     */
   );
 });
 
 /* ─────────────────────────────────────────────────────────── */
-/* ACTIVATE — Delete outdated caches                          */
+/* ACTIVATE                                                   */
 /* ─────────────────────────────────────────────────────────── */
 self.addEventListener('activate', event => {
   const validCaches = [STATIC_CACHE, CDN_CACHE];
 
   event.waitUntil(
-    caches.keys().then(keys =>
-      Promise.all(
-        keys
-          .filter(key => !validCaches.includes(key))
-          .map(key => {
-            console.log(`[SW] Deleting outdated cache: ${key}`);
-            return caches.delete(key);
-          })
+    caches.keys()
+      .then(keys =>
+        Promise.all(
+          keys
+            .filter(key => !validCaches.includes(key))
+            .map(key => {
+              console.log(`[SW] Deleting outdated cache: ${key}`);
+              return caches.delete(key);
+            })
+        )
       )
-    ).then(() => {
-      /*
-       * clients.claim() lets the activated SW take control of
-       * all open pages immediately without requiring a reload.
-       * Combined with skipWaiting() in install, this ensures
-       * the SW is always active and in sync.
-       */
-      return self.clients.claim();
-    })
+      .then(() => {
+        /*
+         * clients.claim() is only safe on first install.
+         *
+         * On first install there are no open pages with Firestore state,
+         * so claiming them is safe and ensures the SW controls the page
+         * that triggered the install without requiring a reload.
+         *
+         * On updates, the new SW is already serving new navigations
+         * (because skipWaiting was called only after user confirmation).
+         * Claiming existing clients here would interrupt active exam
+         * sessions and corrupt Firestore's IndexedDB lock on those pages.
+         */
+        if (_isFirstInstall) {
+          console.log('[SW] First install — claiming clients.');
+          return self.clients.claim();
+        }
+        console.log('[SW] Update activated — not claiming existing clients.');
+      })
   );
 });
 
 /* ─────────────────────────────────────────────────────────── */
-/* FETCH — Route requests                                     */
+/* FETCH                                                      */
 /* ─────────────────────────────────────────────────────────── */
 self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
 
-  /* ── 1. Bypass non-GET requests entirely ── */
-  if (request.method !== 'GET') {
-    return;
-  }
+  if (request.method !== 'GET') return;
 
-  /* ── 2. Bypass Firebase / Firestore / Auth endpoints ── */
-  if (BYPASS_ORIGINS.some(origin => url.hostname.includes(origin))) {
-    return;
-  }
+  if (BYPASS_ORIGINS.some(origin => url.hostname.includes(origin))) return;
 
-  /* ── 3. Bypass chrome-extension and non-http(s) schemes ── */
-  if (!url.protocol.startsWith('http')) {
-    return;
-  }
+  if (!url.protocol.startsWith('http')) return;
 
-  /* ── 4. CDN assets — stale-while-revalidate ── */
   if (CDN_ORIGINS.some(origin => url.hostname.includes(origin))) {
-    event.respondWith(_stalWhileRevalidate(request, CDN_CACHE));
+    event.respondWith(_staleWhileRevalidate(request, CDN_CACHE));
     return;
   }
 
-  /* ── 5. Navigation requests — cache-first with offline fallback ── */
   if (request.mode === 'navigate') {
     event.respondWith(_navigationHandler(request));
     return;
   }
 
-  /* ── 6. Static assets — cache-first ── */
   event.respondWith(_cacheFirst(request));
 });
 
 /* ─────────────────────────────────────────────────────────── */
-/* MESSAGE — Handle commands from app.js                      */
+/* MESSAGE                                                    */
 /* ─────────────────────────────────────────────────────────── */
 self.addEventListener('message', event => {
   if (!event.data) return;
 
   if (event.data.type === 'SKIP_WAITING') {
     /*
-     * Called from app.js when the user acknowledges an update toast.
-     * This causes the waiting SW to activate immediately.
+     * User confirmed the update toast. Activate now.
+     * The controllerchange event in index.html will reload the page,
+     * giving the user a clean session under the new SW.
      */
     self.skipWaiting();
   }
@@ -207,14 +214,9 @@ self.addEventListener('message', event => {
 });
 
 /* ─────────────────────────────────────────────────────────── */
-/* Strategy implementations                                   */
+/* Strategies                                                 */
 /* ─────────────────────────────────────────────────────────── */
 
-/**
- * Cache-first: serve from cache, fall back to network.
- * On network success, update the cache entry.
- * On total failure, return a minimal error response.
- */
 async function _cacheFirst(request) {
   const cached = await caches.match(request, { ignoreSearch: false });
   if (cached) return cached;
@@ -227,7 +229,7 @@ async function _cacheFirst(request) {
     }
     return networkResponse;
   } catch (err) {
-    console.warn(`[SW] Cache-first network failure for: ${request.url}`);
+    console.warn(`[SW] Cache-first network failure: ${request.url}`);
     return new Response('Asset unavailable offline.', {
       status: 503,
       headers: { 'Content-Type': 'text/plain' },
@@ -235,12 +237,7 @@ async function _cacheFirst(request) {
   }
 }
 
-/**
- * Stale-while-revalidate: serve from cache immediately (if available),
- * then fetch from network in the background to update the cache.
- * If nothing is cached, wait for the network.
- */
-async function _stalWhileRevalidate(request, cacheName) {
+async function _staleWhileRevalidate(request, cacheName) {
   const cache  = await caches.open(cacheName);
   const cached = await cache.match(request);
 
@@ -254,28 +251,16 @@ async function _stalWhileRevalidate(request, cacheName) {
   return cached || networkFetch;
 }
 
-/**
- * Navigation handler: serve index.html from cache for all navigation
- * requests (SPA pattern). Fall back to offline.html if not cached.
- *
- * We always serve /index.html for navigation because the app is a
- * single-page application — all routing is handled in JS.
- */
 async function _navigationHandler(request) {
   try {
-    /* Try the cache first — serve app shell immediately */
     const cachedShell = await caches.match('/index.html');
     if (cachedShell) return cachedShell;
 
-    /* Not in cache — try the network */
-    const networkResponse = await fetch(request);
-    return networkResponse;
+    return await fetch(request);
   } catch (err) {
-    /* Network failed and not cached — serve offline fallback */
     const offlinePage = await caches.match('/offline.html');
     if (offlinePage) return offlinePage;
 
-    /* Absolute last resort */
     return new Response(
       '<!DOCTYPE html><html><head><title>Offline</title></head><body>' +
       '<h1>You are offline.</h1><p>Please check your connection and reload.</p>' +
