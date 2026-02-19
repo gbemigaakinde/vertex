@@ -64,6 +64,7 @@
             <option value="" disabled selected>Select Class</option>
             <option>JSS1</option><option>JSS2</option><option>JSS3</option>
             <option>SSS1</option><option>SSS2</option><option>SSS3</option>
+            <option>TUTORIAL</option>
           </select>
           <select id="regSchool">
             <option value="" disabled selected>Loading schools...</option>
