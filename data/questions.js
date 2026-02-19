@@ -3520,5 +3520,465 @@ sss1: {
   { q: "Why does phloem transport require living cells, unlike xylem transport?", opts: ["Phloem carries water", "Phloem transport depends on metabolic energy", "Xylem vessels are narrower", "Xylem lacks cell walls"], ans: 1, exp: "Phloem translocation involves active loading and unloading that requires energy from living cells." },
   { q: "Which adaptation best explains the efficiency of the mammalian digestive system compared to simpler organisms?", opts: ["Presence of a single stomach", "Short alimentary canal", "Regional specialization of digestive organs", "Absence of enzymes"], ans: 2, exp: "Specialized regions allow different stages of digestion and absorption to occur efficiently." }
 ]
-}
+},
+tutorial: {
+        'English Language': [
+        ],
+        'General Mathematics': [
+        ],
+        'Literature in English': [
+        ],
+         'Economics': [
+            {
+                q: "The concept of opportunity cost is best illustrated when a government:",
+                opts: [
+                    "Prints more money to finance expenditure",
+                    "Chooses to build a hospital instead of a highway",
+                    "Reduces tax rates for all citizens",
+                    "Introduces price control on petrol"
+                ],
+                ans: 1,
+                exp: "Opportunity cost is the value of the next best alternative foregone. Building a hospital instead of a highway means sacrificing the benefits of the highway."
+            },
+            {
+                q: "A rightward shift in the demand curve, other things being equal, will result from:",
+                opts: [
+                    "An increase in the price of the commodity",
+                    "A decrease in consumers’ income for a normal good",
+                    "An increase in the price of a substitute good",
+                    "An improvement in production technology"
+                ],
+                ans: 2,
+                exp: "If the price of a substitute rises, consumers switch to the commodity, increasing its demand and shifting the demand curve to the right."
+            },
+            {
+                q: "Price elasticity of demand will be perfectly inelastic when:",
+                opts: [
+                    "A small price change leads to a large quantity change",
+                    "Quantity demanded remains constant regardless of price changes",
+                    "Demand curve is horizontal",
+                    "Total revenue remains constant as price changes"
+                ],
+                ans: 1,
+                exp: "Perfectly inelastic demand means quantity demanded does not respond at all to changes in price."
+            },
+            {
+                q: "The law of diminishing marginal returns applies in the short run because:",
+                opts: [
+                    "All factors of production are variable",
+                    "At least one factor of production is fixed",
+                    "Technology remains constant",
+                    "Firms operate under monopoly"
+                ],
+                ans: 1,
+                exp: "In the short run, at least one factor is fixed. Increasing variable inputs to a fixed factor eventually leads to diminishing marginal returns."
+            },
+            {
+                q: "Which of the following best describes a public good?",
+                opts: [
+                    "It is rival and excludable",
+                    "It is non-rival and non-excludable",
+                    "It is produced only by the private sector",
+                    "Its consumption reduces its availability to others"
+                ],
+                ans: 1,
+                exp: "Public goods are non-rival and non-excludable, meaning one person’s use does not reduce availability to others and people cannot easily be excluded."
+            },
+            {
+                q: "In national income accounting, transfer payments are excluded because they:",
+                opts: [
+                    "Are illegal transactions",
+                    "Do not represent payment for current goods and services",
+                    "Are paid only to foreigners",
+                    "Are part of indirect taxes"
+                ],
+                ans: 1,
+                exp: "Transfer payments such as pensions are not payments for current production and are therefore excluded from national income."
+            },
+            {
+                q: "When marginal propensity to consume is 0.8, the simple multiplier is:",
+                opts: [
+                    "2",
+                    "4",
+                    "5",
+                    "8"
+                ],
+                ans: 2,
+                exp: "Multiplier = 1 / (1 − MPC) = 1 / (1 − 0.8) = 1 / 0.2 = 5."
+            },
+            {
+                q: "Cost-push inflation is mainly caused by:",
+                opts: [
+                    "Excess aggregate demand",
+                    "Increase in cost of production",
+                    "Increase in money supply only",
+                    "Decrease in taxation"
+                ],
+                ans: 1,
+                exp: "Cost-push inflation results from rising production costs such as wages or raw materials, pushing prices upward."
+            },
+            {
+                q: "A fall in exchange rate under a floating system implies:",
+                opts: [
+                    "Appreciation of the domestic currency",
+                    "Depreciation of the domestic currency",
+                    "Increase in foreign reserves",
+                    "Surplus in balance of payments"
+                ],
+                ans: 1,
+                exp: "A fall in exchange rate means the domestic currency has depreciated relative to other currencies."
+            },
+            {
+                q: "Which market structure is characterized by price discrimination and high barriers to entry?",
+                opts: [
+                    "Perfect competition",
+                    "Monopolistic competition",
+                    "Monopoly",
+                    "Oligopoly with no differentiation"
+                ],
+                ans: 2,
+                exp: "A monopoly has high barriers to entry and can practice price discrimination under certain conditions."
+            },
+            {
+                q: "The demand for labour is regarded as a derived demand because it:",
+                opts: [
+                    "Depends on workers’ preferences",
+                    "Is influenced by government policy",
+                    "Is based on the demand for the final product",
+                    "Is fixed in the short run"
+                ],
+                ans: 2,
+                exp: "Labour demand is derived from the demand for goods and services it helps to produce."
+            },
+            {
+                q: "In a closed economy without government, equilibrium level of income occurs where:",
+                opts: [
+                    "Savings equal taxes",
+                    "Investment equals savings",
+                    "Consumption equals income",
+                    "Exports equal imports"
+                ],
+                ans: 1,
+                exp: "In a two-sector model, equilibrium is achieved when planned investment equals planned savings."
+            },
+            {
+                q: "If total cost is ₦500 and total variable cost is ₦300, total fixed cost is:",
+                opts: [
+                    "₦200",
+                    "₦300",
+                    "₦500",
+                    "₦800"
+                ],
+                ans: 0,
+                exp: "Total cost equals fixed cost plus variable cost. Therefore, fixed cost = 500 − 300 = ₦200."
+            },
+            {
+                q: "Balance of trade deficit occurs when:",
+                opts: [
+                    "Exports exceed imports",
+                    "Imports exceed exports",
+                    "Invisible earnings exceed visible imports",
+                    "Capital inflow exceeds outflow"
+                ],
+                ans: 1,
+                exp: "A deficit occurs when the value of imports is greater than the value of exports."
+            },
+            {
+                q: "Which of the following is a regressive tax?",
+                opts: [
+                    "Progressive income tax",
+                    "Company profit tax",
+                    "Value added tax",
+                    "Capital gains tax"
+                ],
+                ans: 2,
+                exp: "Indirect taxes like VAT take a larger proportion of income from low-income earners, making them regressive."
+            },
+  {
+                q: "If average revenue equals marginal revenue at all output levels, the firm is operating under:",
+                opts: [
+                    "Monopoly",
+                    "Perfect competition",
+                    "Monopolistic competition in the long run",
+                    "Oligopoly with collusion"
+                ],
+                ans: 1,
+                exp: "Under perfect competition, price equals average revenue and marginal revenue at all output levels."
+            },
+            {
+                q: "The break-even point for a firm is attained where:",
+                opts: [
+                    "Marginal cost equals marginal revenue",
+                    "Total revenue equals total cost",
+                    "Average variable cost is minimum",
+                    "Total revenue exceeds total cost"
+                ],
+                ans: 1,
+                exp: "Break-even occurs where total revenue equals total cost, meaning zero economic profit."
+            },
+            {
+                q: "Which of the following is not a function of money?",
+                opts: [
+                    "Medium of exchange",
+                    "Store of value",
+                    "Measure of labour efficiency",
+                    "Unit of account"
+                ],
+                ans: 2,
+                exp: "Money functions as medium of exchange, store of value, and unit of account, but not as a measure of labour efficiency."
+            },
+            {
+                q: "An increase in bank rate by the central bank is likely to:",
+                opts: [
+                    "Encourage borrowing",
+                    "Reduce money supply",
+                    "Increase inflation",
+                    "Increase aggregate demand"
+                ],
+                ans: 1,
+                exp: "A higher bank rate discourages borrowing by commercial banks and reduces money supply."
+            },
+            {
+                q: "Structural unemployment is mainly caused by:",
+                opts: [
+                    "Seasonal fluctuations",
+                    "Lack of effective demand",
+                    "Mismatch between skills and job requirements",
+                    "Temporary withdrawal from labour market"
+                ],
+                ans: 2,
+                exp: "Structural unemployment results from a mismatch between workers’ skills and the requirements of available jobs."
+            },
+            {
+                q: "A Lorenz curve that lies closer to the line of equality indicates:",
+                opts: [
+                    "High income inequality",
+                    "Perfect inequality",
+                    "Greater income equality",
+                    "Zero national income"
+                ],
+                ans: 2,
+                exp: "The closer the Lorenz curve is to the line of equality, the more equal the income distribution."
+            },
+            {
+                q: "In the theory of comparative cost advantage, a country benefits from trade if it:",
+                opts: [
+                    "Produces all goods at lower cost",
+                    "Has absolute advantage in all goods",
+                    "Specializes in goods with lower opportunity cost",
+                    "Avoids specialization"
+                ],
+                ans: 2,
+                exp: "Comparative advantage is based on lower opportunity cost, not absolute cost."
+            },
+            {
+                q: "If marginal cost is rising and lies above average cost, the average cost will:",
+                opts: [
+                    "Remain constant",
+                    "Fall",
+                    "Rise",
+                    "Be zero"
+                ],
+                ans: 2,
+                exp: "When marginal cost is above average cost, it pulls the average cost upward."
+            },
+            {
+                q: "Which of the following best explains stagflation?",
+                opts: [
+                    "High inflation and high unemployment",
+                    "Low inflation and low unemployment",
+                    "Economic growth with price stability",
+                    "Budget surplus with low prices"
+                ],
+                ans: 0,
+                exp: "Stagflation refers to the coexistence of high inflation and high unemployment."
+            },
+            {
+                q: "Capital widening refers to:",
+                opts: [
+                    "Increase in capital per worker",
+                    "Replacement of worn-out capital",
+                    "Increase in total capital stock due to population growth",
+                    "Introduction of new technology"
+                ],
+                ans: 2,
+                exp: "Capital widening occurs when capital stock increases just to maintain existing capital per worker due to population growth."
+            },
+            {
+                q: "An increase in indirect taxes on a commodity will shift the supply curve:",
+                opts: [
+                    "To the right",
+                    "To the left",
+                    "Downward",
+                    "Not at all"
+                ],
+                ans: 1,
+                exp: "Indirect taxes increase cost of production and shift the supply curve to the left."
+            },
+            {
+                q: "Which of the following items is included in Gross Domestic Product?",
+                opts: [
+                    "Second-hand car sales",
+                    "Transfer payments",
+                    "Final goods and services produced within the country",
+                    "Illegal transactions"
+                ],
+                ans: 2,
+                exp: "GDP measures the value of final goods and services produced within a country during a given period."
+            },
+            {
+                q: "Under a fixed exchange rate system, devaluation is used to:",
+                opts: [
+                    "Reduce exports",
+                    "Encourage imports",
+                    "Correct balance of payments deficit",
+                    "Increase domestic interest rates"
+                ],
+                ans: 2,
+                exp: "Devaluation makes exports cheaper and imports more expensive, helping to correct balance of payments deficit."
+            },
+            {
+                q: "Which of the following is a characteristic of monopolistic competition?",
+                opts: [
+                    "Homogeneous products",
+                    "Single seller",
+                    "Product differentiation",
+                    "Perfect knowledge"
+                ],
+                ans: 2,
+                exp: "Monopolistic competition features many sellers offering differentiated products."
+            },
+            {
+                q: "If MPC is 0.75, the marginal propensity to save is:",
+                opts: [
+                    "0.25",
+                    "0.75",
+                    "1.00",
+                    "0.50"
+                ],
+                ans: 0,
+                exp: "MPS = 1 − MPC = 1 − 0.75 = 0.25."
+            },
+            {
+                q: "The precautionary motive for holding money is associated with:",
+                opts: [
+                    "Everyday transactions",
+                    "Unexpected contingencies",
+                    "Speculation in bond market",
+                    "Saving for investment only"
+                ],
+                ans: 1,
+                exp: "People hold money for precautionary reasons to meet unforeseen events."
+            },
+            {
+                q: "A subsidy on production will generally:",
+                opts: [
+                    "Increase cost of production",
+                    "Reduce supply",
+                    "Increase supply",
+                    "Increase price"
+                ],
+                ans: 2,
+                exp: "Subsidy lowers production cost and increases supply."
+            },
+            {
+                q: "When total utility is maximum, marginal utility is:",
+                opts: [
+                    "Positive",
+                    "Negative",
+                    "Zero",
+                    "Constant"
+                ],
+                ans: 2,
+                exp: "Total utility reaches maximum when marginal utility equals zero."
+            },
+            {
+                q: "The Phillips curve shows the relationship between:",
+                opts: [
+                    "Inflation and unemployment",
+                    "Income and consumption",
+                    "Exports and imports",
+                    "Savings and investment"
+                ],
+                ans: 0,
+                exp: "The Phillips curve illustrates an inverse relationship between inflation and unemployment in the short run."
+            },
+            {
+                q: "In a planned economy, resources are allocated mainly through:",
+                opts: [
+                    "Price mechanism",
+                    "Consumer sovereignty",
+                    "Government directives",
+                    "Profit motive"
+                ],
+                ans: 2,
+                exp: "In a planned economy, the government determines allocation of resources."
+            },
+            {
+                q: "Which of the following is an example of horizontal integration?",
+                opts: [
+                    "A manufacturer acquiring its supplier",
+                    "A firm merging with a competitor",
+                    "A retailer buying a manufacturer",
+                    "A company diversifying into banking"
+                ],
+                ans: 1,
+                exp: "Horizontal integration occurs when a firm merges with another firm at the same stage of production."
+            },
+            {
+                q: "If price elasticity of supply is zero, supply is:",
+                opts: [
+                    "Perfectly elastic",
+                    "Unitary elastic",
+                    "Perfectly inelastic",
+                    "Relatively elastic"
+                ],
+                ans: 2,
+                exp: "Perfectly inelastic supply means quantity supplied does not change regardless of price."
+            },
+            {
+                q: "Which of the following will increase aggregate demand?",
+                opts: [
+                    "Increase in taxation",
+                    "Decrease in government expenditure",
+                    "Increase in exports",
+                    "Increase in interest rates"
+                ],
+                ans: 2,
+                exp: "An increase in exports raises aggregate demand since exports are a component of AD."
+            },
+            {
+                q: "The minimum wage law, if set above equilibrium wage, will likely cause:",
+                opts: [
+                    "Labour shortage",
+                    "Labour surplus",
+                    "Wage discrimination",
+                    "Full employment"
+                ],
+                ans: 1,
+                exp: "A minimum wage above equilibrium creates excess supply of labour, leading to unemployment."
+            },
+            {
+                q: "Which of the following best measures economic development?",
+                opts: [
+                    "Increase in GDP only",
+                    "Increase in per capita income with structural changes",
+                    "Increase in population size",
+                    "Increase in export duties"
+                ],
+                ans: 1,
+                exp: "Economic development involves rising per capita income and structural, institutional, and social changes."
+            }
+        ],
+        'Government': [
+        ],
+        'Civic Education': [
+        ],
+        'Marketing': [
+        ],
+        'Yoruba': [
+        ],
+        'Islamic Religious Studies': [
+        ]
+    }
 };
