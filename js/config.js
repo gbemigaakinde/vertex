@@ -2,7 +2,6 @@
    js/config.js — Firebase initialization
    Only this file touches the Firebase config.
    ============================================================ */
-
 (function () {
   'use strict';
 
@@ -17,15 +16,25 @@
 
   firebase.initializeApp(firebaseConfig);
 
-  // Expose singletons globally — all other modules use these references
   window.fbAuth = firebase.auth();
   window.fbDb   = firebase.firestore();
 
-  // Enable offline persistence (helps on flaky connections)
-  window.fbDb.enablePersistence({ synchronizeTabs: true }).catch(err => {
-    // failed-precondition: multiple tabs open; ignore
-    // unimplemented: browser doesn't support; ignore
-    console.warn('[Firebase] Persistence not available:', err.code);
-  });
+  /*
+   * enablePersistence() is intentionally NOT called here.
+   *
+   * This app uses a Service Worker with clients.claim() and skipWaiting().
+   * When the SW takes control of an already-open page, Firestore's IndexedDB
+   * persistence lock becomes invalid, causing all subsequent Firestore reads
+   * and writes to silently hang or fail — resulting in a blank screen after
+   * login because the student profile read in app.js never resolves.
+   *
+   * Firestore's built-in network reconnection handles offline recovery
+   * adequately for this use case. The SW caches the app shell and static
+   * assets; Firestore data is always fetched live.
+   *
+   * Do not re-enable persistence without first removing skipWaiting() from
+   * sw.js install and clients.claim() from sw.js activate, and testing
+   * thoroughly across Chrome Android standalone mode.
+   */
 
 })();
