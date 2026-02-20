@@ -34,7 +34,7 @@
       <div class="max-w-md w-full glass p-10 animate-fadeIn">
         <div class="text-center mb-10">
           <h1 class="text-5xl font-extrabold bg-gradient-to-r from-purple-600 to-pink-600 bg-clip-text text-transparent mb-3">
-            Excellence Tutorial
+            Vertex Tutorial
           </h1>
           <p class="text-xl text-gray-600">Computer-Based Testing System</p>
         </div>
