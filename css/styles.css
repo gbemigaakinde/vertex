@@ -228,10 +228,13 @@ textarea::placeholder {
 /* ── Hidden utility ── */
 .hidden { display: none !important; }
 
-/* Animated gradient text for Vertex Tutorial */
 .animated-text {
-  font-weight: 800; /* or match your existing font weight */
+  font-weight: 800;
   font-size: 3rem;
+
+  display: inline-block;      /* important */
+  white-space: nowrap;        /* prevents odd spacing behaviour */
+
   background: linear-gradient(
     270deg,
     #6b46c1,
@@ -240,14 +243,10 @@ textarea::placeholder {
     #60a5fa,
     #6b46c1
   );
-  background-size: 1000% 1000%;
+
+  background-size: 200% 200%;   /* reduce this from 1000% */
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
-  animation: gradientMove 5s ease infinite;
-}
 
-@keyframes gradientMove {
-  0%   { background-position: 0% 50%; }
-  50%  { background-position: 100% 50%; }
-  100% { background-position: 0% 50%; }
+  animation: gradientMove 6s linear infinite;
 }
