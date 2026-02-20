@@ -33,7 +33,7 @@
     UI.mount(`
       <div class="max-w-md w-full glass p-10 animate-fadeIn">
         <div class="text-center mb-10">
-          <h1 class="animated-text mb-3">
+          <h1 class="animated-text text-3xl font-extrabold mb-3">
                Vertex Tutorial
           </h1>
           <p class="text-xl text-gray-600">Computer-Based Testing System</p>
