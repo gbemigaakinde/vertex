@@ -230,10 +230,11 @@ textarea::placeholder {
 
 .animated-text {
   font-weight: 800;
-  font-size: 3rem;
+  font-size: clamp(2rem, 5vw, 3rem);
+  text-align: center;
+  word-break: break-word;
 
-  display: inline-block;      /* important */
-  white-space: nowrap;        /* prevents odd spacing behaviour */
+  display: inline-block;
 
   background: linear-gradient(
     270deg,
@@ -244,9 +245,14 @@ textarea::placeholder {
     #6b46c1
   );
 
-  background-size: 200% 200%;   /* reduce this from 1000% */
+  background-size: 300% 300%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 
   animation: gradientMove 6s linear infinite;
+}
+
+@keyframes gradientMove {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
 }
