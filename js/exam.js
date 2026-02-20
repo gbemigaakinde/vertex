@@ -633,7 +633,7 @@ if (!_qBank || !_qBank[classKey]) {
   function _shareWhatsApp() {
     if (!_currentResultForShare) return;
     const { result } = _currentResultForShare;
-    let text = `*Excellence Tutorial CBT Result*%0A%0AName: ${result.name}%0AClass: ${result.class}%0ASchool: ${result.school}%0A%0AOverall: ${result.percentage}% - Grade ${result.grade}%0A%0A`;
+    let text = `*Vertex Tutorial CBT Result*%0A%0AName: ${result.name}%0AClass: ${result.class}%0ASchool: ${result.school}%0A%0AOverall: ${result.percentage}% - Grade ${result.grade}%0A%0A`;
     result.subjects.forEach(s => { text += `${s}: ${result.scores[s]}%25%0A`; });
     window.open(`https://wa.me/?text=${text}`);
   }
@@ -641,7 +641,7 @@ if (!_qBank || !_qBank[classKey]) {
   function _copyResult() {
     if (!_currentResultForShare) return;
     const { result } = _currentResultForShare;
-    let text = `Excellence Tutorial CBT Result\n\nName: ${result.name}\nClass: ${result.class}\nSchool: ${result.school}\n\nOverall: ${result.percentage}% - Grade ${result.grade}\n\n`;
+    let text = `Vertex Tutorial CBT Result\n\nName: ${result.name}\nClass: ${result.class}\nSchool: ${result.school}\n\nOverall: ${result.percentage}% - Grade ${result.grade}\n\n`;
     result.subjects.forEach(s => { text += `${s}: ${result.scores[s]}%\n`; });
     navigator.clipboard.writeText(text)
       .then(() => UI.toast('Result copied to clipboard!', 'success'))
