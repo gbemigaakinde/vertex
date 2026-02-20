@@ -231,7 +231,6 @@ textarea::placeholder {
 /* Animated gradient text for Vertex Tutorial */
 .animated-text {
   font-weight: 800; /* or match your existing font weight */
-  font-size: 5rem;  /* match your h1 text size */
   background: linear-gradient(
     270deg,
     #6b46c1,
