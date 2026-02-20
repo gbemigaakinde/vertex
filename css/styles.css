@@ -227,3 +227,27 @@ textarea::placeholder {
 
 /* ── Hidden utility ── */
 .hidden { display: none !important; }
+
+/* Animated gradient text for Vertex Tutorial */
+.animated-text {
+  font-weight: 800; /* or match your existing font weight */
+  font-size: 5rem;  /* match your h1 text size */
+  background: linear-gradient(
+    270deg,
+    #6b46c1,
+    #9f7aea,
+    #f472b6,
+    #60a5fa,
+    #6b46c1
+  );
+  background-size: 1000% 1000%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradientMove 5s ease infinite;
+}
+
+@keyframes gradientMove {
+  0%   { background-position: 0% 50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
