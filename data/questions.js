@@ -3523,10 +3523,1319 @@ sss1: {
 },
 tutorial: {
         'English Language': [
+            {
+                q: "Choose the option that best completes the sentence: Hardly had the manager arrived _____ the workers began to protest.",
+                opts: [
+                    "than",
+                    "when",
+                    "that",
+                    "while"
+                ],
+                ans: 1,
+                exp: "The correlative structure is 'Hardly had… when…', not 'than'."
+            },
+            {
+                q: "Identify the option nearest in meaning to the underlined word: The witness gave a SPURIOUS account of the incident.",
+                opts: [
+                    "Detailed",
+                    "False",
+                    "Brief",
+                    "Emotional"
+                ],
+                ans: 1,
+                exp: "Spurious means false or not genuine."
+            },
+            {
+                q: "Choose the correct interpretation: If Musa had studied harder, he would have passed the examination.",
+                opts: [
+                    "Musa studied hard and passed",
+                    "Musa did not study hard and did not pass",
+                    "Musa studied hard but failed",
+                    "Musa will study harder next time"
+                ],
+                ans: 1,
+                exp: "This is a third conditional sentence indicating a past unreal situation."
+            },
+            {
+                q: "Select the option with the correct stress pattern for the word 'photography':",
+                opts: [
+                    "PHO-to-gra-phy",
+                    "pho-TO-gra-phy",
+                    "pho-to-GRA-phy",
+                    "pho-to-gra-PHY"
+                ],
+                ans: 2,
+                exp: "The primary stress in photography falls on the third syllable."
+            },
+            {
+                q: "Choose the correct option: Neither the principal nor the teachers _____ aware of the decision.",
+                opts: [
+                    "was",
+                    "were",
+                    "has been",
+                    "is being"
+                ],
+                ans: 1,
+                exp: "With 'neither… nor…' the verb agrees with the noun closest to it, which is 'teachers'."
+            },
+            {
+                q: "Identify the correctly punctuated sentence:",
+                opts: [
+                    "Although he was tired, but he continued working.",
+                    "Although he was tired he continued working.",
+                    "Although he was tired, he continued working.",
+                    "Although, he was tired he continued working."
+                ],
+                ans: 2,
+                exp: "A comma follows the dependent clause introduced by 'although'."
+            },
+            {
+                q: "Choose the word opposite in meaning to 'prodigal':",
+                opts: [
+                    "Wasteful",
+                    "Lavish",
+                    "Frugal",
+                    "Careless"
+                ],
+                ans: 2,
+                exp: "Prodigal means wasteful, so the opposite is frugal."
+            },
+            {
+                q: "The meeting was called off _____ the chairman’s absence.",
+                opts: [
+                    "because",
+                    "because of",
+                    "despite",
+                    "although"
+                ],
+                ans: 1,
+                exp: "'Because of' is followed by a noun phrase such as 'the chairman’s absence'."
+            },
+            {
+                q: "Choose the correct indirect speech: The teacher said, 'I will mark your scripts tomorrow.'",
+                opts: [
+                    "The teacher said she will mark our scripts tomorrow.",
+                    "The teacher said she would mark their scripts the next day.",
+                    "The teacher said she would mark our scripts tomorrow.",
+                    "The teacher says she would mark their scripts the next day."
+                ],
+                ans: 1,
+                exp: "Future tense changes to 'would' and 'tomorrow' becomes 'the next day' in reported speech."
+            },
+            {
+                q: "Which of the following sentences contains a non-restrictive clause?",
+                opts: [
+                    "Students who fail the test will repeat the class.",
+                    "My brother who lives in Lagos is a doctor.",
+                    "My brother, who lives in Lagos, is a doctor.",
+                    "Anyone who calls me should wait."
+                ],
+                ans: 2,
+                exp: "The commas indicate a non-restrictive clause giving extra information."
+            },
+            {
+                q: "Choose the correct option: She insisted that he _____ the money immediately.",
+                opts: [
+                    "returns",
+                    "returned",
+                    "return",
+                    "will return"
+                ],
+                ans: 2,
+                exp: "After verbs like insist, the subjunctive form is used, hence 'return'."
+            },
+            {
+                q: "Select the word that best completes the sentence: The company is on the brink of _____.",
+                opts: [
+                    "collapse",
+                    "collapsing",
+                    "to collapse",
+                    "collapsed"
+                ],
+                ans: 0,
+                exp: "'On the brink of' is followed by a noun, so 'collapse' is correct."
+            },
+            {
+                q: "Choose the sentence that is grammatically correct:",
+                opts: [
+                    "Each of the players have received their medals.",
+                    "Each of the players has received his medal.",
+                    "Each of the players have received his medal.",
+                    "Each of the players has received their medals."
+                ],
+                ans: 1,
+                exp: "'Each' is singular and takes a singular verb and pronoun."
+            },
+            {
+                q: "Identify the literary device in: The wind whispered through the trees.",
+                opts: [
+                    "Metaphor",
+                    "Alliteration",
+                    "Personification",
+                    "Irony"
+                ],
+                ans: 2,
+                exp: "Human qualities are attributed to the wind."
+            },
+            {
+                q: "Choose the correct preposition: He is proficient _____ Mathematics.",
+                opts: [
+                    "at",
+                    "in",
+                    "on",
+                    "with"
+                ],
+                ans: 1,
+                exp: "The correct collocation is 'proficient in'."
+            },
+            {
+                q: "Select the option nearest in meaning to 'ameliorate':",
+                opts: [
+                    "Destroy",
+                    "Worsen",
+                    "Improve",
+                    "Delay"
+                ],
+                ans: 2,
+                exp: "Ameliorate means to improve or make better."
+            },
+            {
+                q: "Which of the following contains a dangling modifier?",
+                opts: [
+                    "Walking down the street, I saw the accident.",
+                    "Walking down the street, the accident was seen.",
+                    "I saw the accident while walking down the street.",
+                    "As I walked down the street, I saw the accident."
+                ],
+                ans: 1,
+                exp: "The modifier incorrectly suggests that the accident was walking."
+            },
+            {
+                q: "Choose the correct option: The news _____ shocking to everyone.",
+                opts: [
+                    "were",
+                    "are",
+                    "was",
+                    "have been"
+                ],
+                ans: 2,
+                exp: "'News' is an uncountable noun and takes a singular verb."
+            },
+            {
+                q: "Identify the word with a different vowel sound:",
+                opts: [
+                    "Seat",
+                    "Sit",
+                    "Beat",
+                    "Heat"
+                ],
+                ans: 1,
+                exp: "'Sit' has a short vowel sound while the others have a long vowel sound."
+            },
+            {
+                q: "Choose the best option: The committee arrived at _____ decision after hours of debate.",
+                opts: [
+                    "it’s",
+                    "its",
+                    "their",
+                    "there"
+                ],
+                ans: 1,
+                exp: "'Its' is the possessive form of 'it'."
+            },
+            {
+                q: "He would rather _____ at home than go out in the rain.",
+                opts: [
+                    "stays",
+                    "stayed",
+                    "stay",
+                    "to stay"
+                ],
+                ans: 2,
+                exp: "'Would rather' is followed by the base form of the verb."
+            },
+            {
+                q: "Choose the correct question tag: She seldom visits you, _____?",
+                opts: [
+                    "does she",
+                    "doesn't she",
+                    "is she",
+                    "isn't she"
+                ],
+                ans: 0,
+                exp: "'Seldom' makes the statement negative in meaning, so the tag is positive."
+            },
+            {
+                q: "Which of the following is a complex sentence?",
+                opts: [
+                    "She came and she left.",
+                    "She came, but she left early.",
+                    "When she came, we left.",
+                    "She came; we left."
+                ],
+                ans: 2,
+                exp: "A complex sentence contains an independent and a dependent clause."
+            },
+            {
+                q: "Choose the correctly spelt word:",
+                opts: [
+                    "Accomodation",
+                    "Accommodation",
+                    "Acommodation",
+                    "Accommmodation"
+                ],
+                ans: 1,
+                exp: "The correct spelling is 'Accommodation'."
+            },
+            {
+                q: "The phrase 'a blessing in disguise' means:",
+                opts: [
+                    "An obvious misfortune",
+                    "A hidden advantage",
+                    "A public embarrassment",
+                    "A serious illness"
+                ],
+                ans: 1,
+                exp: "It refers to something that appears bad but results in good."
+            },
+            {
+                q: "Choose the correct option: The suspects were accused _____ theft.",
+                opts: [
+                    "for",
+                    "with",
+                    "of",
+                    "on"
+                ],
+                ans: 2,
+                exp: "The correct collocation is 'accused of'."
+            },
+            {
+                q: "Select the correct passive form: They are building a new bridge.",
+                opts: [
+                    "A new bridge was built.",
+                    "A new bridge is being built.",
+                    "A new bridge has been built.",
+                    "A new bridge is built."
+                ],
+                ans: 1,
+                exp: "Present continuous passive form is 'is being built'."
+            },
+            {
+                q: "Which of the following sentences is in the present perfect tense?",
+                opts: [
+                    "She writes a letter.",
+                    "She has written a letter.",
+                    "She wrote a letter.",
+                    "She is writing a letter."
+                ],
+                ans: 1,
+                exp: "Present perfect tense uses 'has/have' plus past participle."
+            },
+            {
+                q: "Choose the word that best completes the sentence: His argument is hardly _____ convincing.",
+                opts: [
+                    "so",
+                    "very",
+                    "too",
+                    "much"
+                ],
+                ans: 0,
+                exp: "'Hardly so convincing' is the correct idiomatic expression."
+            },
+            {
+                q: "Identify the part of speech of the underlined word: She gave me a QUICK reply.",
+                opts: [
+                    "Adverb",
+                    "Adjective",
+                    "Verb",
+                    "Noun"
+                ],
+                ans: 1,
+                exp: "'Quick' describes the noun 'reply', so it is an adjective."
+            },
+            {
+                q: "Choose the correct option: The students congratulated _____ on their success.",
+                opts: [
+                    "themselves",
+                    "theirselves",
+                    "themself",
+                    "them"
+                ],
+                ans: 0,
+                exp: "'Themselves' is the correct reflexive pronoun."
+            },
+            {
+                q: "Which of the following is an example of a euphemism?",
+                opts: [
+                    "He died.",
+                    "He passed away.",
+                    "He shouted loudly.",
+                    "He fell down."
+                ],
+                ans: 1,
+                exp: "'Passed away' is a mild expression replacing 'died'."
+            },
+            {
+                q: "Choose the correct option: No sooner had she finished cooking _____ the guests arrived.",
+                opts: [
+                    "when",
+                    "than",
+                    "that",
+                    "while"
+                ],
+                ans: 1,
+                exp: "The correct structure is 'No sooner… than…'."
+            },
+            {
+                q: "Identify the sentence with correct concord:",
+                opts: [
+                    "The list of items are on the table.",
+                    "The list of items is on the table.",
+                    "The list of items were on the table.",
+                    "The list of items have been on the table."
+                ],
+                ans: 1,
+                exp: "The subject is 'list', which is singular."
+            },
+            {
+                q: "Choose the word that is stressed on the first syllable:",
+                opts: [
+                    "Record (noun)",
+                    "Record (verb)",
+                    "Permit (verb)",
+                    "Present (verb)"
+                ],
+                ans: 0,
+                exp: "As a noun, 'record' has stress on the first syllable."
+            },
+            {
+                q: "Select the correct option: She is looking forward to _____ you soon.",
+                opts: [
+                    "see",
+                    "seeing",
+                    "to see",
+                    "seen"
+                ],
+                ans: 1,
+                exp: "'Look forward to' is followed by a gerund."
+            },
+            {
+                q: "The antonym of 'opaque' is:",
+                opts: [
+                    "Dark",
+                    "Transparent",
+                    "Solid",
+                    "Dull"
+                ],
+                ans: 1,
+                exp: "Opaque means not transparent, so the opposite is transparent."
+            },
+            {
+                q: "Choose the correct option: The boy, along with his friends, _____ playing.",
+                opts: [
+                    "are",
+                    "were",
+                    "is",
+                    "have been"
+                ],
+                ans: 2,
+                exp: "The subject is 'boy'; the phrase 'along with his friends' does not affect agreement."
+            },
+            {
+                q: "Identify the sentence that expresses a polite request:",
+                opts: [
+                    "Close the door.",
+                    "You must close the door.",
+                    "Could you please close the door?",
+                    "You are closing the door."
+                ],
+                ans: 2,
+                exp: "'Could you please…' expresses a polite request."
+            },
+            {
+                q: "Choose the correctly reported speech: He said, 'Do you like football?'",
+                opts: [
+                    "He asked if I liked football.",
+                    "He asked do I like football.",
+                    "He said if I like football.",
+                    "He said I liked football?"
+                ],
+                ans: 0,
+                exp: "In reported speech, question form changes to statement form and tense shifts appropriately."
+            }
         ],
         'General Mathematics': [
+            {
+                q: "If log₁₀ 2 = 0.3010, evaluate log₁₀ 80.",
+                opts: [
+                    "1.9030",
+                    "2.9030",
+                    "1.6020",
+                    "2.6020"
+                ],
+                ans: 0,
+                exp: "80 = 8 × 10 = 2³ × 10. So log 80 = 3log2 + 1 = 3(0.3010) + 1 = 0.9030 + 1 = 1.9030."
+            },
+            {
+                q: "Solve for x: 2x² − 7x − 4 = 0.",
+                opts: [
+                    "x = 4 or −1/2",
+                    "x = −4 or 1/2",
+                    "x = 2 or −1",
+                    "x = −2 or 1"
+                ],
+                ans: 0,
+                exp: "Factorizing: 2x² − 7x − 4 = (2x + 1)(x − 4) = 0. Hence x = 4 or −1/2."
+            },
+            {
+                q: "The nth term of a sequence is given by Tₙ = 3n − 5. Find T₁₀.",
+                opts: [
+                    "25",
+                    "30",
+                    "35",
+                    "20"
+                ],
+                ans: 0,
+                exp: "T₁₀ = 3(10) − 5 = 30 − 5 = 25."
+            },
+            {
+                q: "Find the mean of the data: 3, 7, 8, 10, 12.",
+                opts: [
+                    "8",
+                    "7",
+                    "9",
+                    "6"
+                ],
+                ans: 0,
+                exp: "Mean = (3 + 7 + 8 + 10 + 12) / 5 = 40 / 5 = 8."
+            },
+            {
+                q: "A chord of a circle subtends an angle of 60° at the centre. If the radius is 7 cm, find the length of the chord.",
+                opts: [
+                    "7 cm",
+                    "14 cm",
+                    "7√3 cm",
+                    "3.5 cm"
+                ],
+                ans: 0,
+                exp: "Chord length = 2r sin(θ/2) = 2 × 7 × sin30° = 14 × 0.5 = 7 cm."
+            },
+            {
+                q: "Simplify: (x² − 9) / (x − 3).",
+                opts: [
+                    "x + 3",
+                    "x − 3",
+                    "x² − 3",
+                    "1"
+                ],
+                ans: 0,
+                exp: "x² − 9 = (x − 3)(x + 3). Cancelling (x − 3) gives x + 3."
+            },
+            {
+                q: "The probability of an event occurring is 0.35. What is the probability that it does not occur?",
+                opts: [
+                    "0.65",
+                    "0.35",
+                    "1.35",
+                    "0.50"
+                ],
+                ans: 0,
+                exp: "Complementary probability = 1 − 0.35 = 0.65."
+            },
+            {
+                q: "Find the sum of the first 20 terms of the arithmetic progression: 5, 9, 13, ...",
+                opts: [
+                    "860",
+                    "880",
+                    "900",
+                    "840"
+                ],
+                ans: 0,
+                exp: "a = 5, d = 4. S₂₀ = 20/2[2(5) + 19(4)] = 10[10 + 76] = 10 × 86 = 860."
+            },
+            {
+                q: "If sin θ = 3/5 and θ is acute, find cos θ.",
+                opts: [
+                    "4/5",
+                    "3/4",
+                    "5/4",
+                    "2/5"
+                ],
+                ans: 0,
+                exp: "Using Pythagoras: cos θ = √(1 − sin²θ) = √(1 − 9/25) = √(16/25) = 4/5."
+            },
+            {
+                q: "Find the determinant of the matrix |2 3; 4 5|.",
+                opts: [
+                    "−2",
+                    "2",
+                    "−1",
+                    "1"
+                ],
+                ans: 0,
+                exp: "Determinant = (2 × 5) − (3 × 4) = 10 − 12 = −2."
+            },
+            {
+                q: "Convert 225° to radians.",
+                opts: [
+                    "5π/4",
+                    "3π/4",
+                    "4π/5",
+                    "2π/3"
+                ],
+                ans: 0,
+                exp: "Radians = 225 × π/180 = 5π/4."
+            },
+            {
+                q: "Solve the inequality: 3x − 5 > 7.",
+                opts: [
+                    "x > 4",
+                    "x < 4",
+                    "x > 12",
+                    "x < 12"
+                ],
+                ans: 0,
+                exp: "3x > 12 so x > 4."
+            },
+            {
+                q: "The gradient of the line joining (2,3) and (6,11) is:",
+                opts: [
+                    "2",
+                    "4",
+                    "3",
+                    "1"
+                ],
+                ans: 0,
+                exp: "Gradient = (11 − 3)/(6 − 2) = 8/4 = 2."
+            },
+            {
+                q: "If P = ₦5000 is invested at 5% simple interest for 3 years, find the interest.",
+                opts: [
+                    "₦750",
+                    "₦500",
+                    "₦1000",
+                    "₦850"
+                ],
+                ans: 0,
+                exp: "I = PRT = 5000 × 0.05 × 3 = 750."
+            },
+            {
+                q: "Expand (2x − 3)².",
+                opts: [
+                    "4x² − 12x + 9",
+                    "4x² − 9",
+                    "2x² − 12x + 9",
+                    "4x² + 12x + 9"
+                ],
+                ans: 0,
+                exp: "(2x − 3)² = 4x² − 12x + 9."
+            },
+            {
+                q: "Find the mode of: 2, 4, 4, 5, 6, 4, 7.",
+                opts: [
+                    "4",
+                    "5",
+                    "2",
+                    "6"
+                ],
+                ans: 0,
+                exp: "Mode is the most frequent value, which is 4."
+            },
+            {
+                q: "A sector of a circle has angle 90° and radius 14 cm. Find its area. (π = 22/7)",
+                opts: [
+                    "154 cm²",
+                    "308 cm²",
+                    "616 cm²",
+                    "77 cm²"
+                ],
+                ans: 0,
+                exp: "Area = θ/360 × πr² = 90/360 × 22/7 × 196 = 1/4 × 22 × 28 = 154 cm²."
+            },
+            {
+                q: "Solve: √(x + 5) = 4.",
+                opts: [
+                    "11",
+                    "9",
+                    "16",
+                    "21"
+                ],
+                ans: 0,
+                exp: "x + 5 = 16 so x = 11."
+            },
+            {
+                q: "If f(x) = 2x² − x + 3, find f(2).",
+                opts: [
+                    "9",
+                    "11",
+                    "7",
+                    "5"
+                ],
+                ans: 0,
+                exp: "f(2) = 2(4) − 2 + 3 = 8 − 2 + 3 = 9."
+            },
+            {
+                q: "The standard form of 0.00045 is:",
+                opts: [
+                    "4.5 × 10⁻⁴",
+                    "4.5 × 10⁴",
+                    "45 × 10⁻⁵",
+                    "0.45 × 10⁻³"
+                ],
+                ans: 0,
+                exp: "Move decimal 4 places right: 4.5 × 10⁻⁴."
+            },
+            {
+                q: "In a class of 50 students, 30 study Physics, 25 study Chemistry, and 10 study both. How many study neither?",
+                opts: [
+                    "5",
+                    "10",
+                    "15",
+                    "20"
+                ],
+                ans: 0,
+                exp: "Number studying at least one = 30 + 25 − 10 = 45. Neither = 50 − 45 = 5."
+            },
+            {
+                q: "Find the 5th term of the geometric progression 3, 6, 12, ...",
+                opts: [
+                    "48",
+                    "24",
+                    "36",
+                    "96"
+                ],
+                ans: 0,
+                exp: "a = 3, r = 2. T₅ = 3 × 2⁴ = 3 × 16 = 48."
+            },
+            {
+                q: "If tan θ = 1, where 0° ≤ θ ≤ 180°, θ equals:",
+                opts: [
+                    "45°",
+                    "90°",
+                    "135°",
+                    "30°"
+                ],
+                ans: 0,
+                exp: "tan 45° = 1 within the given interval."
+            },
+            {
+                q: "Factorize: x² + 5x + 6.",
+                opts: [
+                    "(x + 2)(x + 3)",
+                    "(x − 2)(x − 3)",
+                    "(x + 1)(x + 6)",
+                    "(x + 5)(x + 1)"
+                ],
+                ans: 0,
+                exp: "x² + 5x + 6 = (x + 2)(x + 3)."
+            },
+            {
+                q: "Solve simultaneously: x + y = 7 and x − y = 1.",
+                opts: [
+                    "x = 4, y = 3",
+                    "x = 3, y = 4",
+                    "x = 5, y = 2",
+                    "x = 2, y = 5"
+                ],
+                ans: 0,
+                exp: "Adding equations: 2x = 8 so x = 4. Substitute to get y = 3."
+            },
+            {
+                q: "Find the median of 5, 9, 12, 15, 18.",
+                opts: [
+                    "12",
+                    "9",
+                    "15",
+                    "13"
+                ],
+                ans: 0,
+                exp: "Median is the middle number in ordered data, which is 12."
+            },
+            {
+                q: "If 2ˣ = 32, find x.",
+                opts: [
+                    "5",
+                    "4",
+                    "6",
+                    "3"
+                ],
+                ans: 0,
+                exp: "32 = 2⁵ so x = 5."
+            },
+            {
+                q: "The volume of a cube of side 4 cm is:",
+                opts: [
+                    "64 cm³",
+                    "16 cm³",
+                    "32 cm³",
+                    "48 cm³"
+                ],
+                ans: 0,
+                exp: "Volume = side³ = 4³ = 64 cm³."
+            },
+            {
+                q: "Solve: |x − 3| = 5.",
+                opts: [
+                    "8 or −2",
+                    "5 or −8",
+                    "2 or −8",
+                    "−5 or 8"
+                ],
+                ans: 0,
+                exp: "x − 3 = 5 or −5. Hence x = 8 or −2."
+            },
+            {
+                q: "Find the circumference of a circle of radius 14 cm. (π = 22/7)",
+                opts: [
+                    "88 cm",
+                    "176 cm",
+                    "44 cm",
+                    "98 cm"
+                ],
+                ans: 0,
+                exp: "Circumference = 2πr = 2 × 22/7 × 14 = 88 cm."
+            },
+            {
+                q: "If a die is thrown once, what is the probability of getting a multiple of 3?",
+                opts: [
+                    "1/3",
+                    "1/6",
+                    "1/2",
+                    "2/3"
+                ],
+                ans: 0,
+                exp: "Multiples of 3 are 3 and 6. Probability = 2/6 = 1/3."
+            },
+            {
+                q: "Find the range of 4, 10, 15, 7, 12.",
+                opts: [
+                    "11",
+                    "10",
+                    "8",
+                    "15"
+                ],
+                ans: 0,
+                exp: "Range = highest − lowest = 15 − 4 = 11."
+            },
+            {
+                q: "Solve: 5x = 3x + 8.",
+                opts: [
+                    "4",
+                    "2",
+                    "8",
+                    "−4"
+                ],
+                ans: 0,
+                exp: "2x = 8 so x = 4."
+            },
+            {
+                q: "If the angles of a triangle are in ratio 2:3:4, find the largest angle.",
+                opts: [
+                    "80°",
+                    "60°",
+                    "100°",
+                    "90°"
+                ],
+                ans: 0,
+                exp: "Sum ratio = 9 parts. 180/9 = 20°. Largest = 4 × 20° = 80°."
+            },
+            {
+                q: "Simplify: (3/4) ÷ (2/5).",
+                opts: [
+                    "15/8",
+                    "6/20",
+                    "8/15",
+                    "5/6"
+                ],
+                ans: 0,
+                exp: "Divide by multiplying reciprocal: (3/4) × (5/2) = 15/8."
+            },
+            {
+                q: "Find the equation of a line with gradient 3 passing through (0, −2).",
+                opts: [
+                    "y = 3x − 2",
+                    "y = 3x + 2",
+                    "y = −3x − 2",
+                    "y = −3x + 2"
+                ],
+                ans: 0,
+                exp: "Equation in form y = mx + c. Here c = −2 and m = 3."
+            },
+            {
+                q: "Evaluate: 7! / 5!.",
+                opts: [
+                    "42",
+                    "35",
+                    "21",
+                    "14"
+                ],
+                ans: 0,
+                exp: "7! / 5! = 7 × 6 = 42."
+            },
+            {
+                q: "If 3x + 2 = 11, find x.",
+                opts: [
+                    "3",
+                    "2",
+                    "4",
+                    "1"
+                ],
+                ans: 0,
+                exp: "3x = 9 so x = 3."
+            },
+            {
+                q: "Find the area of a triangle with base 10 cm and height 8 cm.",
+                opts: [
+                    "40 cm²",
+                    "80 cm²",
+                    "20 cm²",
+                    "60 cm²"
+                ],
+                ans: 0,
+                exp: "Area = 1/2 × base × height = 1/2 × 10 × 8 = 40 cm²."
+            }
         ],
         'Literature in English': [
+            {
+                q: "A tragic hero is best described as a character who:",
+                opts: [
+                    "Is morally perfect and never makes mistakes",
+                    "Falls from greatness due to a fatal flaw",
+                    "Succeeds through intelligence and hard work",
+                    "Avoids conflict throughout the story"
+                ],
+                ans: 1,
+                exp: "In classical tragedy, a tragic hero is a noble character whose downfall results from a tragic flaw or error in judgment."
+            },
+            {
+                q: "In drama, a soliloquy is used primarily to:",
+                opts: [
+                    "Provide comic relief",
+                    "Reveal a character’s inner thoughts",
+                    "Introduce minor characters",
+                    "Create stage suspense only"
+                ],
+                ans: 1,
+                exp: "A soliloquy allows a character to express inner thoughts aloud, revealing motives and emotions."
+            },
+            {
+                q: "The technique of beginning a narrative in the middle of the action is known as:",
+                opts: [
+                    "Flashback",
+                    "Foreshadowing",
+                    "In medias res",
+                    "Climax"
+                ],
+                ans: 2,
+                exp: "In medias res is a narrative technique where a story starts in the middle of events."
+            },
+            {
+                q: "Dramatic irony occurs when:",
+                opts: [
+                    "The audience knows more than the characters",
+                    "A character speaks humorously",
+                    "The writer addresses the reader directly",
+                    "Events move backwards"
+                ],
+                ans: 0,
+                exp: "Dramatic irony arises when the audience possesses knowledge that characters do not."
+            },
+            {
+                q: "A bildungsroman focuses on:",
+                opts: [
+                    "War and conflict",
+                    "Satirical criticism",
+                    "The growth and development of a character",
+                    "Mythical adventures"
+                ],
+                ans: 2,
+                exp: "A bildungsroman traces the psychological and moral growth of a protagonist."
+            },
+            {
+                q: "The rhyme scheme ABAB CDCD EFEF GG is typical of:",
+                opts: [
+                    "A Petrarchan sonnet",
+                    "A Shakespearean sonnet",
+                    "A ballad",
+                    "Blank verse"
+                ],
+                ans: 1,
+                exp: "The Shakespearean sonnet consists of three quatrains and a concluding couplet with that rhyme pattern."
+            },
+            {
+                q: "Which of the following best defines satire?",
+                opts: [
+                    "Glorification of heroes",
+                    "Use of humour and ridicule to criticize",
+                    "Romantic expression of love",
+                    "Exaggerated praise"
+                ],
+                ans: 1,
+                exp: "Satire employs humour, irony or exaggeration to criticize societal vices."
+            },
+            {
+                q: "Catharsis in tragedy refers to:",
+                opts: [
+                    "Comic resolution",
+                    "Audience purification of emotions",
+                    "Character transformation",
+                    "Narrative suspense"
+                ],
+                ans: 1,
+                exp: "Aristotle described catharsis as the purging of pity and fear experienced by the audience."
+            },
+            {
+                q: "A round character is one who:",
+                opts: [
+                    "Is static and unchanging",
+                    "Represents a single idea",
+                    "Is complex and well-developed",
+                    "Appears briefly in the text"
+                ],
+                ans: 2,
+                exp: "Round characters are multi-dimensional and undergo development."
+            },
+            {
+                q: "The central idea or underlying meaning of a literary work is its:",
+                opts: [
+                    "Plot",
+                    "Theme",
+                    "Setting",
+                    "Climax"
+                ],
+                ans: 1,
+                exp: "Theme refers to the main idea or message explored in a text."
+            },
+            {
+                q: "Blank verse is characterized by:",
+                opts: [
+                    "Rhymed iambic pentameter",
+                    "Unrhymed iambic pentameter",
+                    "Rhymed tetrameter",
+                    "Irregular rhyme scheme"
+                ],
+                ans: 1,
+                exp: "Blank verse consists of unrhymed iambic pentameter."
+            },
+            {
+                q: "Foil in literature refers to:",
+                opts: [
+                    "A comic interlude",
+                    "A character who contrasts with another",
+                    "A turning point in the plot",
+                    "A poetic refrain"
+                ],
+                ans: 1,
+                exp: "A foil highlights qualities of another character through contrast."
+            },
+            {
+                q: "The climax of a plot is the point where:",
+                opts: [
+                    "Exposition begins",
+                    "Conflict reaches its highest tension",
+                    "Characters are introduced",
+                    "Resolution occurs"
+                ],
+                ans: 1,
+                exp: "Climax is the peak of conflict and turning point in a narrative."
+            },
+            {
+                q: "An aside in drama is meant to:",
+                opts: [
+                    "Address the audience privately",
+                    "Change the setting",
+                    "Introduce a new act",
+                    "End the play"
+                ],
+                ans: 0,
+                exp: "An aside is a remark made to the audience unheard by other characters."
+            },
+            {
+                q: "Which of the following is a feature of epic poetry?",
+                opts: [
+                    "Short lyrical expression",
+                    "Domestic conflict only",
+                    "Extended narrative about heroic deeds",
+                    "Dialogue-driven structure"
+                ],
+                ans: 2,
+                exp: "Epic poetry narrates heroic deeds of national or historical significance."
+            },
+            {
+                q: "Alliteration is the repetition of:",
+                opts: [
+                    "Vowel sounds at the middle",
+                    "Consonant sounds at the beginning",
+                    "Entire words",
+                    "Sentence structures"
+                ],
+                ans: 1,
+                exp: "Alliteration involves repetition of initial consonant sounds."
+            },
+            {
+                q: "A stock character is one who:",
+                opts: [
+                    "Is highly individualized",
+                    "Represents a stereotype",
+                    "Changes significantly",
+                    "Narrates the story"
+                ],
+                ans: 1,
+                exp: "Stock characters are stereotypical and easily recognizable types."
+            },
+            {
+                q: "In poetry, a volta refers to:",
+                opts: [
+                    "A rhyme scheme",
+                    "A line break",
+                    "A turn in thought",
+                    "A metrical foot"
+                ],
+                ans: 2,
+                exp: "A volta marks a shift in tone or argument, common in sonnets."
+            },
+            {
+                q: "Which narrative point of view uses ‘he’ or ‘she’?",
+                opts: [
+                    "First person",
+                    "Second person",
+                    "Third person",
+                    "Stream of consciousness"
+                ],
+                ans: 2,
+                exp: "Third-person narration refers to characters as he, she or they."
+            },
+            {
+                q: "A paradox is:",
+                opts: [
+                    "An exaggerated statement",
+                    "A contradictory statement with truth",
+                    "A humorous remark",
+                    "A rhetorical question"
+                ],
+                ans: 1,
+                exp: "A paradox appears contradictory but reveals a deeper truth."
+            },
+            {
+                q: "The main function of setting in a literary text is to:",
+                opts: [
+                    "Provide comic effect",
+                    "Establish time and place",
+                    "Limit character development",
+                    "Introduce minor conflicts"
+                ],
+                ans: 1,
+                exp: "Setting provides the background of time, place and atmosphere."
+            },
+            {
+                q: "Which of the following best defines metaphor?",
+                opts: [
+                    "Direct comparison using like or as",
+                    "Indirect comparison without like or as",
+                    "Human qualities given to objects",
+                    "Repetition of sounds"
+                ],
+                ans: 1,
+                exp: "A metaphor compares two unlike things without using like or as."
+            },
+            {
+                q: "A flat character is one who:",
+                opts: [
+                    "Has many complexities",
+                    "Undergoes transformation",
+                    "Represents one dominant trait",
+                    "Narrates events"
+                ],
+                ans: 2,
+                exp: "Flat characters are defined by a single quality or trait."
+            },
+            {
+                q: "The resolution in a plot occurs when:",
+                opts: [
+                    "Conflict is introduced",
+                    "Tension increases",
+                    "Events conclude and conflicts are settled",
+                    "Characters meet for the first time"
+                ],
+                ans: 2,
+                exp: "Resolution ties up loose ends and concludes the story."
+            },
+            {
+                q: "Irony of situation occurs when:",
+                opts: [
+                    "The opposite of what is expected happens",
+                    "A character jokes",
+                    "The narrator lies",
+                    "Dialogue is exaggerated"
+                ],
+                ans: 0,
+                exp: "Situational irony involves outcomes contrary to expectation."
+            },
+            {
+                q: "An allegory is a narrative in which:",
+                opts: [
+                    "Characters symbolize abstract ideas",
+                    "Events lack meaning",
+                    "There is no plot",
+                    "Language is purely literal"
+                ],
+                ans: 0,
+                exp: "Allegory uses characters and events to represent abstract concepts."
+            },
+            {
+                q: "The protagonist in a literary work is:",
+                opts: [
+                    "The villain",
+                    "The central character",
+                    "The narrator",
+                    "A minor character"
+                ],
+                ans: 1,
+                exp: "The protagonist is the principal character around whom the story revolves."
+            },
+            {
+                q: "Which of the following is a feature of modern drama?",
+                opts: [
+                    "Strict adherence to classical unities",
+                    "Mythological themes only",
+                    "Realism and social issues",
+                    "Absence of dialogue"
+                ],
+                ans: 2,
+                exp: "Modern drama often addresses realistic social and psychological issues."
+            },
+            {
+                q: "A refrain in poetry is:",
+                opts: [
+                    "A repeated line or phrase",
+                    "A metrical error",
+                    "A narrative aside",
+                    "A form of imagery"
+                ],
+                ans: 0,
+                exp: "A refrain is a line or phrase repeated at intervals in a poem."
+            },
+            {
+                q: "Which of the following best defines stream of consciousness?",
+                opts: [
+                    "Chronological narration",
+                    "Objective storytelling",
+                    "Representation of a character’s flow of thoughts",
+                    "Dialogue between two characters"
+                ],
+                ans: 2,
+                exp: "Stream of consciousness presents a character’s continuous mental processes."
+            },
+            {
+                q: "The antagonist in a play primarily:",
+                opts: [
+                    "Supports the protagonist",
+                    "Opposes the protagonist",
+                    "Narrates the events",
+                    "Resolves the conflict"
+                ],
+                ans: 1,
+                exp: "The antagonist opposes or creates obstacles for the protagonist."
+            },
+            {
+                q: "A ballad is traditionally:",
+                opts: [
+                    "A short lyrical love poem",
+                    "A dramatic monologue",
+                    "A narrative poem meant for singing",
+                    "An epic in prose"
+                ],
+                ans: 2,
+                exp: "Ballads are narrative poems originally composed for singing."
+            },
+            {
+                q: "The unities of time, place and action are associated with:",
+                opts: [
+                    "Romantic drama",
+                    "Modernist fiction",
+                    "Classical tragedy",
+                    "Postcolonial poetry"
+                ],
+                ans: 2,
+                exp: "The classical unities were principles guiding structure in classical tragedy."
+            },
+            {
+                q: "Imagery in literature appeals primarily to:",
+                opts: [
+                    "Logical reasoning only",
+                    "The senses",
+                    "Political ideology",
+                    "Mathematical calculation"
+                ],
+                ans: 1,
+                exp: "Imagery creates sensory impressions through descriptive language."
+            },
+            {
+                q: "A monologue differs from a soliloquy because a monologue:",
+                opts: [
+                    "Is always comic",
+                    "Is addressed to other characters",
+                    "Reveals secret thoughts only",
+                    "Ends the play"
+                ],
+                ans: 1,
+                exp: "A monologue is spoken to other characters, while a soliloquy reveals inner thoughts."
+            },
+            {
+                q: "An elegy is a poem that expresses:",
+                opts: [
+                    "Joyful celebration",
+                    "Mockery",
+                    "Mourning or lamentation",
+                    "Political propaganda"
+                ],
+                ans: 2,
+                exp: "An elegy is written to mourn the dead or express sorrow."
+            },
+            {
+                q: "A denouement in drama refers to:",
+                opts: [
+                    "Introduction of conflict",
+                    "Turning point",
+                    "Final unraveling of events",
+                    "Opening dialogue"
+                ],
+                ans: 2,
+                exp: "Denouement is the final resolution following the climax."
+            },
+            {
+                q: "Symbolism in literature involves:",
+                opts: [
+                    "Direct explanation of ideas",
+                    "Use of symbols to represent deeper meanings",
+                    "Elimination of theme",
+                    "Random imagery"
+                ],
+                ans: 1,
+                exp: "Symbolism uses objects or actions to represent abstract concepts."
+            },
+            {
+                q: "A tragic flaw is also known as:",
+                opts: [
+                    "Hubris",
+                    "Irony",
+                    "Foreshadowing",
+                    "Satire"
+                ],
+                ans: 0,
+                exp: "Hubris refers to excessive pride, a common tragic flaw in classical tragedy."
+            },
+            {
+                q: "The narrative technique that hints at future events is:",
+                opts: [
+                    "Flashback",
+                    "Foreshadowing",
+                    "Climax",
+                    "Satire"
+                ],
+                ans: 1,
+                exp: "Foreshadowing provides clues about events that will occur later in the story."
+            }
         ],
          'Economics': [
             {
@@ -3971,10 +5280,1330 @@ tutorial: {
             }
         ],
         'Government': [
+            {
+                q: "In a federal system, residual powers are powers that are:",
+                opts: [
+                    "Shared equally by all tiers of government",
+                    "Vested in the component units",
+                    "Exercised only during emergencies",
+                    "Granted to the judiciary"
+                ],
+                ans: 1,
+                exp: "Residual powers are those not specifically mentioned in the constitution and are usually vested in the component units in a federal system."
+            },
+            {
+                q: "Which of the following is a major feature of a rigid constitution?",
+                opts: [
+                    "It can be amended by a simple majority",
+                    "It is partly written and partly unwritten",
+                    "Its amendment requires a special procedure",
+                    "It exists only in military regimes"
+                ],
+                ans: 2,
+                exp: "A rigid constitution requires a special and often more difficult procedure for amendment than ordinary laws."
+            },
+            {
+                q: "The doctrine of separation of powers is primarily designed to:",
+                opts: [
+                    "Promote party supremacy",
+                    "Prevent concentration of power",
+                    "Encourage military intervention",
+                    "Strengthen traditional institutions"
+                ],
+                ans: 1,
+                exp: "Separation of powers prevents abuse of authority by dividing governmental powers among different organs."
+            },
+            {
+                q: "Which political thinker is most closely associated with the concept of popular sovereignty?",
+                opts: [
+                    "Thomas Hobbes",
+                    "John Locke",
+                    "Jean-Jacques Rousseau",
+                    "Karl Marx"
+                ],
+                ans: 2,
+                exp: "Rousseau strongly advocated the idea that sovereignty resides with the people."
+            },
+            {
+                q: "A parliamentary system differs from a presidential system mainly because in a parliamentary system:",
+                opts: [
+                    "The executive is independent of the legislature",
+                    "The head of state and head of government are always separate",
+                    "The executive is drawn from and responsible to the legislature",
+                    "Judicial review is absent"
+                ],
+                ans: 2,
+                exp: "In a parliamentary system, the executive emerges from the legislature and is accountable to it."
+            },
+            {
+                q: "Which of the following best describes a confederation?",
+                opts: [
+                    "A union with a strong central authority",
+                    "A loose association of sovereign states",
+                    "A system with unitary features",
+                    "A military alliance only"
+                ],
+                ans: 1,
+                exp: "A confederation is a loose union of sovereign states that retain most of their powers."
+            },
+            {
+                q: "An unwritten constitution is best exemplified by:",
+                opts: [
+                    "United States",
+                    "Nigeria",
+                    "United Kingdom",
+                    "France"
+                ],
+                ans: 2,
+                exp: "The United Kingdom operates an unwritten constitution based on statutes, conventions, and judicial decisions."
+            },
+            {
+                q: "The principle of rule of law implies that:",
+                opts: [
+                    "Leaders are above the law",
+                    "Citizens must obey only customary law",
+                    "Everyone is equal before the law",
+                    "Only judges interpret the constitution"
+                ],
+                ans: 2,
+                exp: "Rule of law ensures equality before the law and supremacy of the law over arbitrary power."
+            },
+            {
+                q: "Which of the following is a function of the legislature?",
+                opts: [
+                    "Executing laws",
+                    "Interpreting laws",
+                    "Making laws",
+                    "Enforcing laws"
+                ],
+                ans: 2,
+                exp: "The primary function of the legislature is law-making."
+            },
+            {
+                q: "Coup d’état is best described as:",
+                opts: [
+                    "Peaceful transfer of power",
+                    "Illegal seizure of government power",
+                    "Judicial review process",
+                    "Electoral reform"
+                ],
+                ans: 1,
+                exp: "A coup d’état is an unconstitutional and often violent takeover of government."
+            },
+            {
+                q: "Which of the following countries practices a federal system?",
+                opts: [
+                    "France",
+                    "Japan",
+                    "Nigeria",
+                    "China"
+                ],
+                ans: 2,
+                exp: "Nigeria operates a federal system with powers divided between federal and state governments."
+            },
+            {
+                q: "A pressure group differs from a political party because a pressure group:",
+                opts: [
+                    "Seeks to capture political power",
+                    "Fields candidates for elections",
+                    "Influences government policy without seeking office",
+                    "Forms the executive arm"
+                ],
+                ans: 2,
+                exp: "Pressure groups aim to influence policy but do not seek to form government."
+            },
+            {
+                q: "Bicameral legislature refers to a legislature with:",
+                opts: [
+                    "Two houses",
+                    "Two political parties",
+                    "Two executive heads",
+                    "Two constitutions"
+                ],
+                ans: 0,
+                exp: "Bicameralism means the legislature consists of two chambers."
+            },
+            {
+                q: "Which of the following is NOT a feature of democracy?",
+                opts: [
+                    "Periodic elections",
+                    "Military decrees",
+                    "Fundamental human rights",
+                    "Popular participation"
+                ],
+                ans: 1,
+                exp: "Military decrees are features of authoritarian regimes, not democracy."
+            },
+            {
+                q: "Judicial review empowers the judiciary to:",
+                opts: [
+                    "Remove elected officials at will",
+                    "Declare laws unconstitutional",
+                    "Draft new legislation",
+                    "Control the armed forces"
+                ],
+                ans: 1,
+                exp: "Judicial review allows courts to determine the constitutionality of laws and actions."
+            },
+            {
+                q: "Which of the following is a demerit of a one-party system?",
+                opts: [
+                    "Political instability",
+                    "Lack of political competition",
+                    "Excessive public debates",
+                    "Weak executive authority"
+                ],
+                ans: 1,
+                exp: "A one-party system reduces competition and limits alternative political choices."
+            },
+            {
+                q: "The tenure of judges is usually secured in order to:",
+                opts: [
+                    "Encourage political loyalty",
+                    "Ensure judicial independence",
+                    "Reduce court cases",
+                    "Promote executive control"
+                ],
+                ans: 1,
+                exp: "Security of tenure protects judges from undue political influence."
+            },
+            {
+                q: "Indirect democracy is also known as:",
+                opts: [
+                    "Participatory democracy",
+                    "Representative democracy",
+                    "Military democracy",
+                    "Traditional democracy"
+                ],
+                ans: 1,
+                exp: "In indirect or representative democracy, citizens elect representatives to govern on their behalf."
+            },
+            {
+                q: "Which electoral system is based on the winner-takes-all principle?",
+                opts: [
+                    "Proportional representation",
+                    "Second ballot system",
+                    "Simple majority system",
+                    "Referendum"
+                ],
+                ans: 2,
+                exp: "The simple majority system awards victory to the candidate with the highest votes."
+            },
+            {
+                q: "The main purpose of checks and balances is to:",
+                opts: [
+                    "Encourage executive dominance",
+                    "Promote dictatorship",
+                    "Limit abuse of power",
+                    "Eliminate opposition parties"
+                ],
+                ans: 2,
+                exp: "Checks and balances prevent any arm of government from becoming too powerful."
+            },
+            {
+                q: "Which of the following is a function of the executive?",
+                opts: [
+                    "Adjudicating disputes",
+                    "Law-making",
+                    "Implementation of laws",
+                    "Constitutional amendment"
+                ],
+                ans: 2,
+                exp: "The executive implements and enforces laws made by the legislature."
+            },
+            {
+                q: "A referendum is best described as:",
+                opts: [
+                    "An executive order",
+                    "A vote by the electorate on a specific issue",
+                    "A judicial injunction",
+                    "A parliamentary debate"
+                ],
+                ans: 1,
+                exp: "A referendum allows citizens to vote directly on a specific public issue."
+            },
+            {
+                q: "Which of the following is NOT an agent of political socialization?",
+                opts: [
+                    "Family",
+                    "School",
+                    "Political parties",
+                    "Weather"
+                ],
+                ans: 3,
+                exp: "Weather does not play a role in shaping political values or attitudes."
+            },
+            {
+                q: "Delegated legislation refers to laws made by:",
+                opts: [
+                    "The judiciary",
+                    "The electorate",
+                    "Authorities other than the legislature by its permission",
+                    "Traditional rulers only"
+                ],
+                ans: 2,
+                exp: "Delegated legislation is made by bodies authorized by the legislature."
+            },
+            {
+                q: "A state must possess which of the following to be recognized in international law?",
+                opts: [
+                    "A developed economy",
+                    "A written constitution",
+                    "Defined territory and permanent population",
+                    "Membership of the UN"
+                ],
+                ans: 2,
+                exp: "A state requires defined territory, permanent population, government, and sovereignty."
+            },
+            {
+                q: "The term sovereignty refers to:",
+                opts: [
+                    "Power shared among citizens",
+                    "Supreme authority of the state",
+                    "Independence of the judiciary only",
+                    "Freedom of the press"
+                ],
+                ans: 1,
+                exp: "Sovereignty is the supreme and final authority within a state."
+            },
+            {
+                q: "Which organ of government interprets the law?",
+                opts: [
+                    "Legislature",
+                    "Executive",
+                    "Judiciary",
+                    "Civil service"
+                ],
+                ans: 2,
+                exp: "The judiciary is responsible for interpreting laws."
+            },
+            {
+                q: "An ombudsman is primarily responsible for:",
+                opts: [
+                    "Commanding the armed forces",
+                    "Investigating complaints against public officials",
+                    "Conducting elections",
+                    "Drafting the national budget"
+                ],
+                ans: 1,
+                exp: "An ombudsman investigates administrative abuses and complaints by citizens."
+            },
+            {
+                q: "Which of the following is a merit of federalism?",
+                opts: [
+                    "Concentration of power",
+                    "Encouragement of local autonomy",
+                    "Suppression of minority groups",
+                    "Elimination of local governments"
+                ],
+                ans: 1,
+                exp: "Federalism promotes local autonomy by distributing powers across different levels."
+            },
+            {
+                q: "Political apathy refers to:",
+                opts: [
+                    "Active protest",
+                    "Military rule",
+                    "Lack of interest in political activities",
+                    "High voter turnout"
+                ],
+                ans: 2,
+                exp: "Political apathy is the lack of interest or participation in politics."
+            },
+            {
+                q: "Which of the following is a feature of authoritarianism?",
+                opts: [
+                    "Free press",
+                    "Independent judiciary",
+                    "Concentration of power in one leader",
+                    "Competitive elections"
+                ],
+                ans: 2,
+                exp: "Authoritarian regimes concentrate power in one leader or a small group."
+            },
+            {
+                q: "Citizenship by birth is also known as:",
+                opts: [
+                    "Naturalization",
+                    "Jus soli",
+                    "Registration",
+                    "Denaturalization"
+                ],
+                ans: 1,
+                exp: "Jus soli refers to citizenship acquired by birth within a territory."
+            },
+            {
+                q: "Which of the following best defines legitimacy?",
+                opts: [
+                    "Use of force to rule",
+                    "Legal right to rule recognized by the people",
+                    "Military approval of government",
+                    "Control of economic resources"
+                ],
+                ans: 1,
+                exp: "Legitimacy is the recognized and accepted right to rule."
+            },
+            {
+                q: "An impeachment process is used to:",
+                opts: [
+                    "Elect a new president",
+                    "Amend the constitution",
+                    "Remove a public official from office",
+                    "Form a coalition government"
+                ],
+                ans: 2,
+                exp: "Impeachment is a constitutional process for removing top public officials."
+            },
+            {
+                q: "Which of the following is a characteristic of proportional representation?",
+                opts: [
+                    "Winner takes all",
+                    "Allocation of seats according to votes received",
+                    "Appointment by executive",
+                    "Indirect voting by legislators"
+                ],
+                ans: 1,
+                exp: "Proportional representation allocates seats based on proportion of votes won."
+            },
+            {
+                q: "The concept of checks and balances is closely associated with:",
+                opts: [
+                    "Unitary system",
+                    "Separation of powers",
+                    "One-party state",
+                    "Military government"
+                ],
+                ans: 1,
+                exp: "Checks and balances operate within the framework of separation of powers."
+            },
+            {
+                q: "Which of the following is NOT a function of political parties?",
+                opts: [
+                    "Political education",
+                    "Interest articulation",
+                    "Judicial interpretation",
+                    "Recruitment of leaders"
+                ],
+                ans: 2,
+                exp: "Judicial interpretation is the function of the judiciary, not political parties."
+            },
+            {
+                q: "The term franchise in politics refers to:",
+                opts: [
+                    "Freedom of speech",
+                    "Right to contest election only",
+                    "Right to vote",
+                    "Right to own property"
+                ],
+                ans: 2,
+                exp: "Franchise means the right of citizens to vote in elections."
+            },
+            {
+                q: "A coalition government is formed when:",
+                opts: [
+                    "The military takes over",
+                    "One party wins all seats",
+                    "Two or more parties agree to govern together",
+                    "The judiciary assumes executive powers"
+                ],
+                ans: 2,
+                exp: "A coalition government arises when parties combine to form a majority government."
+            },
+            {
+                q: "Which of the following is essential for the operation of democracy?",
+                opts: [
+                    "Suppression of opposition",
+                    "Periodic free and fair elections",
+                    "Unlimited executive powers",
+                    "Military dominance"
+                ],
+                ans: 1,
+                exp: "Free and fair elections are fundamental to democratic governance."
+            }
         ],
         'Civic Education': [
+            {
+                q: "Which of the following best explains the concept of citizenship?",
+                opts: [
+                    "Temporary residence in a country",
+                    "Legal membership of a state with rights and duties",
+                    "Ownership of property in a country",
+                    "Participation in cultural festivals"
+                ],
+                ans: 1,
+                exp: "Citizenship is the legal relationship between an individual and a state, involving rights, duties and obligations."
+            },
+            {
+                q: "A major objective of civic education is to:",
+                opts: [
+                    "Promote military rule",
+                    "Encourage responsible participation in governance",
+                    "Increase tax rates",
+                    "Replace constitutional law"
+                ],
+                ans: 1,
+                exp: "Civic education seeks to prepare citizens to participate actively and responsibly in public affairs."
+            },
+            {
+                q: "Which of the following is a fundamental human right?",
+                opts: [
+                    "Right to overthrow government violently",
+                    "Right to private revenge",
+                    "Right to freedom of expression",
+                    "Right to ignore the law"
+                ],
+                ans: 2,
+                exp: "Freedom of expression is a constitutionally guaranteed fundamental human right."
+            },
+            {
+                q: "The rule of law implies that:",
+                opts: [
+                    "Government officials are above the law",
+                    "All citizens are subject to the law",
+                    "Only traditional rulers make laws",
+                    "The military interprets the constitution"
+                ],
+                ans: 1,
+                exp: "Rule of law ensures that both leaders and citizens are subject to and protected by the law."
+            },
+            {
+                q: "Which of the following is NOT a responsibility of a citizen?",
+                opts: [
+                    "Obeying the law",
+                    "Paying taxes",
+                    "Voting during elections",
+                    "Bribing public officials"
+                ],
+                ans: 3,
+                exp: "Bribery is illegal and not a civic responsibility."
+            },
+            {
+                q: "National values include:",
+                opts: [
+                    "Corruption and nepotism",
+                    "Integrity and accountability",
+                    "Violence and intolerance",
+                    "Selfishness and greed"
+                ],
+                ans: 1,
+                exp: "Integrity and accountability are core national values expected of citizens."
+            },
+            {
+                q: "The primary aim of democracy is to:",
+                opts: [
+                    "Ensure participation of the people in governance",
+                    "Promote dictatorship",
+                    "Suppress opposition",
+                    "Empower the military"
+                ],
+                ans: 0,
+                exp: "Democracy promotes government of the people, by the people and for the people."
+            },
+            {
+                q: "Which of the following best describes civil society?",
+                opts: [
+                    "The armed forces",
+                    "Organizations independent of government that promote citizens’ interests",
+                    "The executive arm of government",
+                    "Traditional institutions only"
+                ],
+                ans: 1,
+                exp: "Civil society comprises independent groups that protect and promote public interests."
+            },
+            {
+                q: "A free and fair election requires:",
+                opts: [
+                    "Intimidation of voters",
+                    "Transparency and impartiality",
+                    "Appointment of winners by government",
+                    "Restriction of opposition parties"
+                ],
+                ans: 1,
+                exp: "Transparency and neutrality are essential for credible elections."
+            },
+            {
+                q: "Which agency in Nigeria is responsible for conducting elections?",
+                opts: [
+                    "EFCC",
+                    "INEC",
+                    "ICPC",
+                    "NDLEA"
+                ],
+                ans: 1,
+                exp: "The Independent National Electoral Commission conducts and supervises elections in Nigeria."
+            },
+            {
+                q: "Corruption can best be described as:",
+                opts: [
+                    "Honest discharge of duties",
+                    "Abuse of public office for private gain",
+                    "Public accountability",
+                    "Electoral participation"
+                ],
+                ans: 1,
+                exp: "Corruption involves misuse of entrusted power for personal benefit."
+            },
+            {
+                q: "Which of the following promotes national unity?",
+                opts: [
+                    "Ethnic discrimination",
+                    "Religious intolerance",
+                    "Respect for diversity",
+                    "Electoral violence"
+                ],
+                ans: 2,
+                exp: "Respecting cultural and religious diversity strengthens unity."
+            },
+            {
+                q: "Human trafficking violates the right to:",
+                opts: [
+                    "Personal dignity and freedom",
+                    "Freedom to commit crime",
+                    "Political domination",
+                    "Economic exploitation"
+                ],
+                ans: 0,
+                exp: "Human trafficking violates the fundamental rights to dignity, liberty and security."
+            },
+            {
+                q: "Which of the following is an attribute of integrity?",
+                opts: [
+                    "Dishonesty",
+                    "Transparency",
+                    "Nepotism",
+                    "Embezzlement"
+                ],
+                ans: 1,
+                exp: "Integrity involves honesty, transparency and moral uprightness."
+            },
+            {
+                q: "The right to vote and be voted for is known as:",
+                opts: [
+                    "Judicial immunity",
+                    "Electoral franchise",
+                    "Diplomatic privilege",
+                    "Collective bargaining"
+                ],
+                ans: 1,
+                exp: "Franchise refers to the right to participate in elections."
+            },
+            {
+                q: "Which of the following best defines patriotism?",
+                opts: [
+                    "Blind support for government",
+                    "Love and loyalty to one’s country",
+                    "Ethnic superiority",
+                    "Political apathy"
+                ],
+                ans: 1,
+                exp: "Patriotism is devotion and loyalty to one’s nation."
+            },
+            {
+                q: "A constitution primarily serves to:",
+                opts: [
+                    "Encourage dictatorship",
+                    "Define structure and functions of government",
+                    "Promote anarchy",
+                    "Replace the judiciary"
+                ],
+                ans: 1,
+                exp: "A constitution outlines the powers and structure of government."
+            },
+            {
+                q: "Which of the following is an example of civic engagement?",
+                opts: [
+                    "Tax evasion",
+                    "Community development participation",
+                    "Election rigging",
+                    "Political violence"
+                ],
+                ans: 1,
+                exp: "Active participation in community development reflects civic engagement."
+            },
+            {
+                q: "Drug abuse is a social vice because it:",
+                opts: [
+                    "Promotes discipline",
+                    "Enhances national development",
+                    "Harms individuals and society",
+                    "Strengthens family ties"
+                ],
+                ans: 2,
+                exp: "Drug abuse damages health, productivity and social stability."
+            },
+            {
+                q: "Which of the following is a democratic institution?",
+                opts: [
+                    "Military junta",
+                    "Electoral commission",
+                    "Secret police",
+                    "Warlord council"
+                ],
+                ans: 1,
+                exp: "Electoral commissions help ensure democratic governance through credible elections."
+            },
+            {
+                q: "The separation of powers enhances democracy by:",
+                opts: [
+                    "Concentrating power",
+                    "Encouraging abuse of office",
+                    "Preventing misuse of authority",
+                    "Weakening accountability"
+                ],
+                ans: 2,
+                exp: "Dividing powers among arms of government reduces abuse."
+            },
+            {
+                q: "Which of the following is a consequence of electoral malpractice?",
+                opts: [
+                    "Political stability",
+                    "Loss of public trust",
+                    "Strengthened democracy",
+                    "Increased transparency"
+                ],
+                ans: 1,
+                exp: "Malpractice undermines public confidence in governance."
+            },
+            {
+                q: "The dignity of human person prohibits:",
+                opts: [
+                    "Freedom of movement",
+                    "Torture and inhuman treatment",
+                    "Religious worship",
+                    "Free speech"
+                ],
+                ans: 1,
+                exp: "The constitution protects individuals from torture and degrading treatment."
+            },
+            {
+                q: "Which of the following best promotes accountability?",
+                opts: [
+                    "Secrecy in governance",
+                    "Press freedom",
+                    "Corruption",
+                    "Electoral fraud"
+                ],
+                ans: 1,
+                exp: "A free press exposes wrongdoing and promotes transparency."
+            },
+            {
+                q: "Political participation includes:",
+                opts: [
+                    "Voting and contesting elections",
+                    "Avoiding civic duties",
+                    "Spreading false information",
+                    "Encouraging violence"
+                ],
+                ans: 0,
+                exp: "Political participation involves lawful involvement in political processes."
+            },
+            {
+                q: "Which of the following is NOT a national symbol of Nigeria?",
+                opts: [
+                    "National flag",
+                    "National anthem",
+                    "National passport",
+                    "Coat of arms"
+                ],
+                ans: 2,
+                exp: "The passport is not classified as a national symbol."
+            },
+            {
+                q: "The fight against corruption in Nigeria is led by:",
+                opts: [
+                    "INEC and NDLEA",
+                    "EFCC and ICPC",
+                    "Police and Army only",
+                    "Traditional councils"
+                ],
+                ans: 1,
+                exp: "EFCC and ICPC are major anti-corruption agencies."
+            },
+            {
+                q: "A responsible citizen is one who:",
+                opts: [
+                    "Disregards national laws",
+                    "Participates actively in civic duties",
+                    "Promotes tribal conflict",
+                    "Avoids taxes"
+                ],
+                ans: 1,
+                exp: "Responsible citizens fulfil their duties and support national development."
+            },
+            {
+                q: "Which of the following undermines rule of law?",
+                opts: [
+                    "Equality before the law",
+                    "Judicial independence",
+                    "Selective application of laws",
+                    "Constitutional supremacy"
+                ],
+                ans: 2,
+                exp: "Applying laws selectively violates the principle of equality before the law."
+            },
+            {
+                q: "Citizenship by naturalization is granted to:",
+                opts: [
+                    "Aliens after meeting legal requirements",
+                    "All tourists automatically",
+                    "Only by birth",
+                    "Refugees without conditions"
+                ],
+                ans: 0,
+                exp: "Naturalization is granted to foreigners who satisfy legal conditions."
+            },
+            {
+                q: "Which of the following is a result of good governance?",
+                opts: [
+                    "Economic stagnation",
+                    "Political unrest",
+                    "Sustainable development",
+                    "Abuse of office"
+                ],
+                ans: 2,
+                exp: "Good governance promotes accountability and development."
+            },
+            {
+                q: "The fundamental objectives of state policy focus on:",
+                opts: [
+                    "Personal wealth accumulation",
+                    "Welfare and security of citizens",
+                    "Military supremacy",
+                    "Suppression of rights"
+                ],
+                ans: 1,
+                exp: "The state is expected to promote welfare and security."
+            },
+            {
+                q: "Which of the following best prevents abuse of human rights?",
+                opts: [
+                    "Independent judiciary",
+                    "Authoritarian rule",
+                    "Military dictatorship",
+                    "Press censorship"
+                ],
+                ans: 0,
+                exp: "An independent judiciary protects citizens against rights violations."
+            },
+            {
+                q: "Tolerance in a multicultural society means:",
+                opts: [
+                    "Forcing others to adopt one culture",
+                    "Respecting differences peacefully",
+                    "Encouraging discrimination",
+                    "Suppressing minority views"
+                ],
+                ans: 1,
+                exp: "Tolerance involves peaceful acceptance of diversity."
+            },
+            {
+                q: "Which of the following describes civic responsibility?",
+                opts: [
+                    "Ignoring public affairs",
+                    "Obeying laws and serving the community",
+                    "Engaging in electoral violence",
+                    "Evading taxes"
+                ],
+                ans: 1,
+                exp: "Civic responsibility requires compliance with laws and contribution to community welfare."
+            },
+            {
+                q: "Public complaints commission is meant to:",
+                opts: [
+                    "Conduct elections",
+                    "Investigate administrative injustice",
+                    "Command armed forces",
+                    "Draft budgets"
+                ],
+                ans: 1,
+                exp: "The commission handles complaints against public officials and institutions."
+            },
+            {
+                q: "Which of the following strengthens democracy?",
+                opts: [
+                    "Free press and active civil society",
+                    "Military intervention",
+                    "Election boycott",
+                    "Autocratic leadership"
+                ],
+                ans: 0,
+                exp: "Independent media and civil society deepen democratic accountability."
+            },
+            {
+                q: "Youth empowerment programmes primarily aim to:",
+                opts: [
+                    "Encourage crime",
+                    "Reduce unemployment and promote productivity",
+                    "Promote violence",
+                    "Increase illiteracy"
+                ],
+                ans: 1,
+                exp: "Youth empowerment enhances skills and employment opportunities."
+            },
+            {
+                q: "Which of the following is a civic virtue?",
+                opts: [
+                    "Honesty",
+                    "Fraud",
+                    "Violence",
+                    "Intolerance"
+                ],
+                ans: 0,
+                exp: "Civic virtues such as honesty promote trust and responsible citizenship."
+            },
+            {
+                q: "Community service is important because it:",
+                opts: [
+                    "Promotes selfishness",
+                    "Encourages social responsibility",
+                    "Weakens national unity",
+                    "Reduces civic awareness"
+                ],
+                ans: 1,
+                exp: "Community service fosters responsibility and collective development."
+            }
         ],
         'Marketing': [
+            {
+                q: "Which of the following best explains the marketing concept?",
+                opts: [
+                    "Maximising sales through aggressive promotion",
+                    "Producing goods at the lowest possible cost",
+                    "Satisfying customer needs profitably",
+                    "Focusing mainly on product innovation"
+                ],
+                ans: 2,
+                exp: "The marketing concept emphasizes identifying and satisfying customer needs while making profit."
+            },
+            {
+                q: "A company divides the market based on income, occupation and education. This is:",
+                opts: [
+                    "Geographic segmentation",
+                    "Demographic segmentation",
+                    "Psychographic segmentation",
+                    "Behavioural segmentation"
+                ],
+                ans: 1,
+                exp: "Income, occupation and education are demographic variables."
+            },
+            {
+                q: "Which stage of the product life cycle is characterised by rapid sales growth and rising profits?",
+                opts: [
+                    "Introduction",
+                    "Growth",
+                    "Maturity",
+                    "Decline"
+                ],
+                ans: 1,
+                exp: "During the growth stage, sales increase rapidly and profits rise significantly."
+            },
+            {
+                q: "A strategy where a firm sets a high initial price before gradually lowering it is:",
+                opts: [
+                    "Penetration pricing",
+                    "Predatory pricing",
+                    "Price skimming",
+                    "Cost-plus pricing"
+                ],
+                ans: 2,
+                exp: "Price skimming involves setting high initial prices to maximise early profits."
+            },
+            {
+                q: "Which of the following is not an element of the marketing mix?",
+                opts: [
+                    "Product",
+                    "Promotion",
+                    "Production",
+                    "Place"
+                ],
+                ans: 2,
+                exp: "The traditional 4Ps are Product, Price, Place and Promotion."
+            },
+            {
+                q: "Consumer buying behaviour influenced by social class and lifestyle is classified under:",
+                opts: [
+                    "Personal factors",
+                    "Psychological factors",
+                    "Cultural factors",
+                    "Economic factors"
+                ],
+                ans: 2,
+                exp: "Social class and lifestyle fall under cultural influences."
+            },
+            {
+                q: "Which channel of distribution involves no intermediary?",
+                opts: [
+                    "Producer to wholesaler",
+                    "Producer to retailer",
+                    "Producer to consumer",
+                    "Producer to agent"
+                ],
+                ans: 2,
+                exp: "Direct channel is producer straight to consumer."
+            },
+            {
+                q: "A brand that is legally protected against imitation is:",
+                opts: [
+                    "Patent",
+                    "Trademark",
+                    "Copyright",
+                    "Licence"
+                ],
+                ans: 1,
+                exp: "A trademark gives legal protection to a brand name or symbol."
+            },
+            {
+                q: "Which of the following best describes target marketing?",
+                opts: [
+                    "Mass production of goods",
+                    "Selecting specific segments to serve",
+                    "Setting high promotional budgets",
+                    "Reducing production costs"
+                ],
+                ans: 1,
+                exp: "Target marketing involves choosing a specific market segment."
+            },
+            {
+                q: "An example of non-personal communication in promotion is:",
+                opts: [
+                    "Personal selling",
+                    "Word-of-mouth",
+                    "Advertising",
+                    "Direct marketing"
+                ],
+                ans: 2,
+                exp: "Advertising is non-personal and paid communication."
+            },
+            {
+                q: "Which demand state exists when consumers dislike a product and may even pay to avoid it?",
+                opts: [
+                    "Negative demand",
+                    "Declining demand",
+                    "Full demand",
+                    "Overfull demand"
+                ],
+                ans: 0,
+                exp: "Negative demand occurs when consumers avoid the product."
+            },
+            {
+                q: "The process of designing a company’s offering and image to occupy a distinct place in the minds of target consumers is:",
+                opts: [
+                    "Segmentation",
+                    "Positioning",
+                    "Branding",
+                    "Differentiation"
+                ],
+                ans: 1,
+                exp: "Positioning creates a distinctive image in the consumer’s mind."
+            },
+            {
+                q: "A reduction in price to encourage bulk buying is known as:",
+                opts: [
+                    "Trade discount",
+                    "Cash discount",
+                    "Quantity discount",
+                    "Seasonal discount"
+                ],
+                ans: 2,
+                exp: "Quantity discount is given for large-volume purchases."
+            },
+            {
+                q: "Which research method collects data through observation of actual consumer behaviour?",
+                opts: [
+                    "Survey method",
+                    "Experiment",
+                    "Observation",
+                    "Interview"
+                ],
+                ans: 2,
+                exp: "Observation involves watching and recording behaviour."
+            },
+            {
+                q: "In the AIDA model, the letter ‘I’ stands for:",
+                opts: [
+                    "Influence",
+                    "Interest",
+                    "Image",
+                    "Investment"
+                ],
+                ans: 1,
+                exp: "AIDA stands for Attention, Interest, Desire and Action."
+            },
+            {
+                q: "Which of the following is a function of a wholesaler?",
+                opts: [
+                    "Production",
+                    "Brand development",
+                    "Warehousing",
+                    "Advertising to final consumers"
+                ],
+                ans: 2,
+                exp: "Wholesalers store goods and distribute to retailers."
+            },
+            {
+                q: "A product designed for final consumption by households is a:",
+                opts: [
+                    "Industrial product",
+                    "Capital good",
+                    "Consumer product",
+                    "Raw material"
+                ],
+                ans: 2,
+                exp: "Consumer products are purchased for personal use."
+            },
+            {
+                q: "Which pricing method involves adding a standard markup to the cost of the product?",
+                opts: [
+                    "Cost-plus pricing",
+                    "Competitive pricing",
+                    "Psychological pricing",
+                    "Penetration pricing"
+                ],
+                ans: 0,
+                exp: "Cost-plus pricing adds a fixed percentage to cost."
+            },
+            {
+                q: "The main objective of public relations is to:",
+                opts: [
+                    "Increase immediate sales",
+                    "Build good corporate image",
+                    "Reduce prices",
+                    "Eliminate competitors"
+                ],
+                ans: 1,
+                exp: "Public relations focuses on maintaining a favourable image."
+            },
+            {
+                q: "A company that adopts a concentrated marketing strategy:",
+                opts: [
+                    "Targets all segments equally",
+                    "Ignores market segmentation",
+                    "Focuses on a single market segment",
+                    "Produces for export only"
+                ],
+                ans: 2,
+                exp: "Concentrated marketing focuses on one specific segment."
+            },
+            {
+                q: "Which factor most directly affects consumer purchasing power?",
+                opts: [
+                    "Fashion trends",
+                    "Income level",
+                    "Packaging design",
+                    "Brand loyalty"
+                ],
+                ans: 1,
+                exp: "Income determines consumers’ ability to buy."
+            },
+            {
+                q: "Retailing involves selling goods:",
+                opts: [
+                    "To manufacturers",
+                    "To final consumers",
+                    "In large quantities only",
+                    "Through agents only"
+                ],
+                ans: 1,
+                exp: "Retailers sell directly to the ultimate consumers."
+            },
+            {
+                q: "An unsought product is one that:",
+                opts: [
+                    "Consumers buy frequently",
+                    "Consumers actively search for",
+                    "Consumers do not normally think of buying",
+                    "Has low quality"
+                ],
+                ans: 2,
+                exp: "Unsought products are not actively sought by consumers."
+            },
+            {
+                q: "Which element of the marketing mix generates revenue?",
+                opts: [
+                    "Product",
+                    "Promotion",
+                    "Price",
+                    "Place"
+                ],
+                ans: 2,
+                exp: "Price directly determines revenue."
+            },
+            {
+                q: "Market penetration strategy aims to:",
+                opts: [
+                    "Introduce new products to new markets",
+                    "Sell more existing products to existing markets",
+                    "Diversify into unrelated businesses",
+                    "Reduce production costs"
+                ],
+                ans: 1,
+                exp: "Penetration focuses on increasing market share with existing products."
+            },
+            {
+                q: "A push promotional strategy mainly targets:",
+                opts: [
+                    "Final consumers only",
+                    "Retailers and wholesalers",
+                    "Government agencies",
+                    "Competitors"
+                ],
+                ans: 1,
+                exp: "Push strategy directs promotion at intermediaries."
+            },
+            {
+                q: "Which of the following is an example of direct marketing?",
+                opts: [
+                    "Television advert",
+                    "Billboard display",
+                    "Email campaign",
+                    "Public relations event"
+                ],
+                ans: 2,
+                exp: "Email campaign communicates directly with consumers."
+            },
+            {
+                q: "Brand equity refers to:",
+                opts: [
+                    "The physical assets of a company",
+                    "The value added by a brand name",
+                    "The cost of advertising",
+                    "The price of the product"
+                ],
+                ans: 1,
+                exp: "Brand equity is the value derived from consumer perception of the brand."
+            },
+            {
+                q: "The ultimate goal of marketing research is to:",
+                opts: [
+                    "Eliminate competition",
+                    "Make informed decisions",
+                    "Increase production capacity",
+                    "Reduce taxes"
+                ],
+                ans: 1,
+                exp: "Marketing research provides data for decision-making."
+            },
+            {
+                q: "Impulse buying is most associated with which type of product?",
+                opts: [
+                    "Speciality goods",
+                    "Industrial goods",
+                    "Convenience goods",
+                    "Capital goods"
+                ],
+                ans: 2,
+                exp: "Convenience goods are frequently bought with little planning."
+            },
+            {
+                q: "Which of the following is a disadvantage of intensive distribution?",
+                opts: [
+                    "Limited market coverage",
+                    "High distribution cost",
+                    "Low brand visibility",
+                    "Reduced product availability"
+                ],
+                ans: 1,
+                exp: "Intensive distribution increases costs due to wide coverage."
+            },
+            {
+                q: "A firm introducing a new product identical to a competitor’s aims at:",
+                opts: [
+                    "Market innovation",
+                    "Market imitation",
+                    "Product diversification",
+                    "Market withdrawal"
+                ],
+                ans: 1,
+                exp: "Market imitation involves copying existing products."
+            },
+            {
+                q: "Which stage of consumer decision-making involves evaluating alternatives?",
+                opts: [
+                    "Problem recognition",
+                    "Information search",
+                    "Post-purchase behaviour",
+                    "Evaluation of alternatives"
+                ],
+                ans: 3,
+                exp: "Consumers compare different brands at this stage."
+            },
+            {
+                q: "Corporate social responsibility in marketing mainly enhances:",
+                opts: [
+                    "Short-term profit only",
+                    "Brand reputation",
+                    "Production cost",
+                    "Legal penalties"
+                ],
+                ans: 1,
+                exp: "CSR improves corporate image and public goodwill."
+            },
+            {
+                q: "Market share is best defined as:",
+                opts: [
+                    "Total industry sales",
+                    "Company’s sales as a percentage of total industry sales",
+                    "Total company profit",
+                    "Total market demand"
+                ],
+                ans: 1,
+                exp: "Market share measures a firm’s proportion of total sales."
+            },
+            {
+                q: "Product differentiation mainly seeks to:",
+                opts: [
+                    "Reduce production cost",
+                    "Create perceived uniqueness",
+                    "Lower prices drastically",
+                    "Eliminate branding"
+                ],
+                ans: 1,
+                exp: "Differentiation creates distinct value in customers’ minds."
+            },
+            {
+                q: "A decline in sales due to changing consumer preferences is common at which stage of product life cycle?",
+                opts: [
+                    "Introduction",
+                    "Growth",
+                    "Maturity",
+                    "Decline"
+                ],
+                ans: 3,
+                exp: "Sales fall during the decline stage."
+            },
+            {
+                q: "Which factor is most important in selecting a distribution channel?",
+                opts: [
+                    "Colour of packaging",
+                    "Nature of the product",
+                    "Advertising slogan",
+                    "Firm’s logo"
+                ],
+                ans: 1,
+                exp: "The type and characteristics of the product influence channel choice."
+            },
+            {
+                q: "Consumer protection laws primarily aim to:",
+                opts: [
+                    "Protect manufacturers",
+                    "Reduce competition",
+                    "Safeguard buyers’ rights",
+                    "Increase taxes"
+                ],
+                ans: 2,
+                exp: "Consumer protection ensures fairness and safety for buyers."
+            },
+            {
+                q: "Which of the following best defines market orientation?",
+                opts: [
+                    "Producing goods before identifying demand",
+                    "Focusing solely on profit",
+                    "Responding effectively to customer needs and competitors",
+                    "Reducing advertising expenses"
+                ],
+                ans: 2,
+                exp: "Market orientation involves coordinated efforts to meet customer needs better than competitors."
+            }
         ],
         'Yoruba': [
         ],
