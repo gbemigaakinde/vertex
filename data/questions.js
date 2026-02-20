@@ -6606,7 +6606,447 @@ tutorial: {
             }
         ],
         'Yoruba': [
+    {
+        q: "Nínú fónẹ́tíìkì, kí ni a mọ̀ sí 'Ìsúnkì'? ",
+        opts: [
+            "Ìparapọ̀ fágáélì méjì",
+            "Sísun kọ́ńsónáǹtì sẹ́yìn",
+            "Kíkúrú ọ̀rọ̀ nípa yíyọ fágáélì tàbí kọ́ńsónáǹtì kúrò",
+            "Mímú ohùn gboro"
         ],
+        ans: 2,
+        exp: "Ìsúnkì (Contraction) jẹ́ ọ̀nà tí a ń gbà mú ọ̀rọ̀ kúrú nípa yíyọ fágáélì tàbí kọ́ńsónáǹtì kúrò fún ìrọ̀rùn pípè."
+    },
+    {
+        q: "Tí a bá ní 'Adé kò lọ', 'kò' nínú gbólóhùn yìí jẹ́:",
+        opts: [
+            "Ọ̀rọ̀-ìṣe",
+            "Atọ́ka-ìsẹ́",
+            "Atọ́ka-ìbéèrè",
+            "Ọ̀rọ̀-asopọ̀"
+        ],
+        ans: 1,
+        exp: "Atọ́ka-ìsẹ́ (Negation marker) ni 'kò' jẹ́ nínú èdè Yorùbá, ó ń fihàn pé ohun tí a sọ kò ṣẹlẹ̀."
+    },
+    {
+        q: "Kí ni ìtumọ̀ òwe yìí: 'À-pẹ́-kọ́ ni 'kú-ayé'?",
+        opts: [
+            "Ikú kìí ṣàì dé",
+            "Ayé kò nípẹ̀kun",
+            "Ohun tí a bá fi sùúrù ṣe ni í tọ́jọ́",
+            "Èèyàn kò ní kú mọ́"
+        ],
+        ans: 2,
+        exp: "Ìtumọ̀ rẹ̀ ni pé ohun tí a bá fi sùúrù kọ́ tàbí ṣe, kò ní tètè bàjẹ́."
+    },
+    {
+        q: "Nínú àṣà ìsìnkú ní ilẹ̀ Yorùbá, kí ni 'Ìtúfò'?",
+        opts: [
+            "Lílọ sí itẹ́",
+            "Sísan owó òkú",
+            "Ìfilọ̀ ikú ẹni tó dàgbà",
+            "Wíwẹ òkú"
+        ],
+        ans: 2,
+        exp: "Ìtúfò ni ìfilọ̀ ikú ẹni tó dàgbà sí àwọn ará ìlú."
+    },
+    {
+        q: "Èwo nínú àwọn wọ̀nyí ni kì í ṣe kọ́ńsónáǹtì fágáélì (nasal consonants)?",
+        opts: [
+            "m",
+            "n",
+            "ng",
+            "b"
+        ],
+        ans: 3,
+        exp: "'b' jẹ́ kọ́ńsónáǹtì àìmú (oral consonant), kì í ṣe kọ́ńsónáǹtì fágáélì."
+    },
+    {
+        q: "Kí ni 'Oríkì' nínú lítíréṣọ̀ alohùn?",
+        opts: [
+            "Ìtàn àtẹnudẹ́nu",
+            "Ẹ̀ka ewì tí ó ń jẹ́ ríròyìn ìran tàbí orílẹ̀-èdè ẹni",
+            "Eré oníṣẹ́",
+            "Ìtàn àròsọ"
+        ],
+        ans: 1,
+        exp: "Oríkì jẹ́ ewì tí a fi ń yin ènìyàn, ìlú, tàbí ohun ọ̀ṣìn nípa sísọ ìtàn ìran wọn."
+    },
+    {
+        q: "Nínú ìsọ̀rí ọ̀rọ̀, 'pupa', 'funfun', 'gíga' jẹ́:",
+        opts: [
+            "Ọ̀rọ̀-orúkọ",
+            "Ọ̀rọ̀-atọ́kùn",
+            "Ọ̀rọ̀-aponlé",
+            "Ọ̀rọ̀-àpèjúwe"
+        ],
+        ans: 3,
+        exp: "Àwọn wọ̀nyí jẹ́ ọ̀rọ̀ tí a fi ń ṣàpèjúwe bí nǹkan ṣe rí."
+    },
+    {
+        q: "Ta ni ọba tí ó kọ́kọ́ jẹ ní ìlú Òde-Òndó gẹ́gẹ́ bí ìtàn àṣà?",
+        opts: [
+            "Púpùpú",
+            "Odùduwà",
+            "Orànmíyàn",
+            "Ajagunlà"
+        ],
+        ans: 0,
+        exp: "Ọmọ-ọba Púpùpú, tí í ṣe ọmọbìnrin Odùduwà, ni a gbà pé ó tẹ ìlú Òndó dó."
+    },
+    {
+        q: "Kí ni ìtumọ̀ 'Àmì-ohùn' nínú èdè Yorùbá?",
+        opts: [
+            "Fágáélì pípè",
+            "Ohùn tí a fi ń pe ọ̀rọ̀ láti fihàn ìyàtọ̀ nínú ìtumọ̀",
+            "Ìlànà kíkọ̀wé",
+            "Kọ́ńsónáǹtì pípè"
+        ],
+        ans: 1,
+        exp: "Àmì-ohùn (Do, Re, Mi) ni a fi ń mọ ìtumọ̀ ọ̀rọ̀ tí ó ní lẹ́tà kan náà nínú èdè Yorùbá."
+    },
+    {
+        q: "Nínú ìṣírí Yorùbá, 'Ogorún' (100) ni:",
+        opts: [
+            "Ogun márùn-ún",
+            "Ogun mẹ́rin",
+            "Ogun mẹ́ta",
+            "Ogun mẹ́fà"
+        ],
+        ans: 0,
+        exp: "Ogorún túmọ̀ sí ogun lọ́nà márùn-ún (20 x 5 = 100)."
+    },
+    {
+        q: "Bí a bá ní 'Ọmọ náà rẹwà gan-an', 'gan-an' jẹ́:",
+        opts: [
+            "Ọ̀rọ̀-orúkọ",
+            "Ọ̀rọ̀-aponlé",
+            "Ọ̀rọ̀-atọ́kùn",
+            "Ọ̀rọ̀-ìṣe"
+        ],
+        ans: 1,
+        exp: "Ọ̀rọ̀-aponlé (Adverb) ni 'gan-an' tí ó ń tẹnumọ́ bí ẹni náà ṣe rẹwà sí."
+    },
+    {
+        q: "Ìran wo ni a mọ̀ mọ́ iṣẹ́ 'Alágbede'?",
+        opts: [
+            "Ìran Ògún",
+            "Ìran Sàngó",
+            "Ìran Ọbàtálá",
+            "Ìran Ọ̀ṣun"
+        ],
+        ans: 0,
+        exp: "Ògún ni òrìṣà irin, fún ìdí èyí, àwọn alágbẹ̀dẹ ń sìn ín."
+    },
+    {
+        q: "Kí ni orúkọ ọmọ tí a bí lẹ́yìn ìbejì?",
+        opts: [
+            "Ìdòwú",
+            "Àlàbí",
+            "Ìgè",
+            "Alaba"
+        ],
+        ans: 0,
+        exp: "Ìdòwú ni orúkọ tí a ń sọ ọmọ tí a bí tẹ̀lé àwọn ìbejì."
+    },
+    {
+        q: "Èwo nínú àwọn wọ̀nyí ni kì í ṣe fágáélì nímú (nasal vowels)?",
+        opts: [
+            "an",
+            "in",
+            "un",
+            "e"
+        ],
+        ans: 3,
+        exp: "'e' jẹ́ fágáélì àìmú (oral vowel). Àwọn tó kù ní àmì nímú."
+    },
+    {
+        q: "Nínú lítíréṣọ̀ Yorùbá, kí ni 'Ìjálá'?",
+        opts: [
+            "Ewì àwọn apẹja",
+            "Ewì àwọn ọdẹ",
+            "Ewì àwọn agbẹ̀",
+            "Ewì àwọn obìnrin"
+        ],
+        ans: 1,
+        exp: "Ìjálá jẹ́ ewì tí àwọn ọdẹ ń sun nígbà ọde tàbí láti yin Ògún."
+    },
+    {
+        q: "Ìpín mélòó ni a lè pín Gbólóhùn Alápòpọ̀ sí?",
+        opts: [
+            "Mẹ́rin",
+            "Méjì",
+            "Mẹ́ta",
+            "Márùn-ún"
+        ],
+        ans: 1,
+        exp: "A lè pín Gbólóhùn Alápòpọ̀ (Compound Sentences) sí méjì: Alápòpọ̀ Oníbátan àti Alápòpọ̀ Aláìníbátan."
+    },
+    {
+        q: "Ta ni kọ ìwé 'Ògbójú Ọdẹ nínú Igbó Irúnmalẹ̀'?",
+        opts: [
+            "J.F. Odunjo",
+            "D.O. Fagunwa",
+            "Adebayo Faleti",
+            "Wole Soyinka"
+        ],
+        ans: 1,
+        exp: "D.O. Fagunwa ni òǹkọ̀wé tí ó kọ ìwé ìtàn àròsọ ògbójú ọdẹ yìí."
+    },
+    {
+        q: "Kí ni iṣẹ́ 'Ajẹ́lẹ̀' nínú ìṣèlú ayé àtijọ́?",
+        opts: [
+            "Olùkórè owó-odò",
+            "Aṣojú Ọba ní ìlú mìíràn",
+            "Olórí ogun",
+            "Olùtọ́jú ẹrọ"
+        ],
+        ans: 1,
+        exp: "Ajẹ́lẹ̀ jẹ́ aṣojú tí Ọba (pàápàá Aláàfin) ń rán sí àwọn ìlú tí ó wà lábẹ́ rẹ̀ láti ṣèmójútó wọn."
+    },
+    {
+        q: "Gbólóhùn wo ni ó ní 'Ọ̀rọ̀-ìṣe-ashelù' (Transitive Verb)?",
+        opts: [
+            "Olù jẹun",
+            "Olù ra ìwé",
+            "Olù sùn",
+            "Olù lọ"
+        ],
+        ans: 1,
+        exp: "Gbólóhùn 'Olù ra ìwé' ní ẹrù (ìwé) tí ọ̀rọ̀-ìṣe 'ra' ń ṣiṣẹ́ lé lórí."
+    },
+    {
+        q: "Kí ni ìtumọ̀ 'Àdàmọ̀dì' nínú ọ̀rọ̀ Yorùbá?",
+        opts: [
+            "Ohun gidi",
+            "Ohun gidi tí a ṣe bí ẹni pé kì í ṣe òótọ́",
+            "Ìṣe tàbí ọ̀rọ̀ tí a dọ́gbọ́n ṣe láti tan ni jẹ",
+            "Àrùn kan"
+        ],
+        ans: 2,
+        exp: "Àdàmọ̀dì túmọ̀ sí ohun tí kò jẹ́ òótọ́ ṣùgbọ́n tí a dọ́gbọ́n ṣe kí ó dàbí òótọ́."
+    },
+    {
+        q: "Èwo nínú àwọn wọ̀nyí ni kì í ṣe ọ̀kan lára àwọn 'Odu-Ifá' mọ́kàndínlógún?",
+        opts: [
+            "Èjì-ogbè",
+            "Ọ̀yẹ̀kú-mẹ́jì",
+            "Ìwòrì-mẹ́jì",
+            "Àmì-ohùn"
+        ],
+        ans: 3,
+        exp: "Àmì-ohùn kì í ṣe ara Odù Ifá, ètò ohùn nínú èdè ni."
+    },
+    {
+        q: "Tí ọmọ bá kú, tí ìyá rẹ̀ sì tún bímọ mìíràn, tí wọ́n gbà pé ọmọ kan náà ni, a ń pè é ní:",
+        opts: [
+            "Abíkú",
+            "Ìbejì",
+            "Àmúyá",
+            "Dàda"
+        ],
+        ans: 0,
+        exp: "Abíkú ni orúkọ tí a ń pe ọmọ tí a gbà pé ó ń lọ, ó ń bọ̀ (kú, tún padà wá)."
+    },
+    {
+        q: "Kí ni ìtumọ̀ 'Èdè-Àmúlò'?",
+        opts: [
+            "Èdè tí a ń sọ nínú ilé",
+            "Èdè tí a ń lò fún iṣẹ́ pàtó kan (e.g. èdè agbẹjọ́rò)",
+            "Èdè tí a kò gbọ́",
+            "Èdè àjèjì"
+        ],
+        ans: 1,
+        exp: "Èdè-àmúlò (Register) ni èdè tí ó yàtọ̀ gẹ́gẹ́ bí iṣẹ́ tàbí àyíká tí a bá wà."
+    },
+    {
+        q: "Nínú lítíréṣọ̀, kí ni 'Àfara'?",
+        opts: [
+            "Lílo ọ̀rọ̀ tí ó ní ìtumọ̀ ju kan lọ",
+            "Sísọ ohun tí kò lè sọ̀rọ̀ bí ènìyàn",
+            "Ìfiwéra tààrà",
+            "Ìfiwéra tàpòlà"
+        ],
+        ans: 0,
+        exp: "Àfara (Ambiguity) jẹ́ lílo ọ̀rọ̀ tàbí gbólóhùn tí ó lè ní ìtumọ̀ ọ̀tọ̀ọ̀tọ̀."
+    },
+    {
+        q: "Ta ni 'Ìyá-Abíye' nínú àṣà Yorùbá?",
+        opts: [
+            "Obìnrin tí ń rànlọ́wọ́ láti bímọ",
+            "Olórí obìnrin nínú ìlú",
+            "Ìyá tó bí ọmọ pupọ̀",
+            "Obìnrin tó ń ta oúnjẹ"
+        ],
+        ans: 0,
+        exp: "Ìyá-Abíye (Traditional Birth Attendant) ni ẹni tí ń gbẹ̀bí nínú àṣà Yorùbá."
+    },
+    {
+        q: "Nínú Gbólóhùn 'Bọ́lá lọ sí oko', 'lọ' jẹ́:",
+        opts: [
+            "Ọ̀rọ̀-orúkọ",
+            "Ọ̀rọ̀-ìṣe",
+            "Ọ̀rọ̀-atọ́kùn",
+            "Ọ̀rọ̀-àpèjúwe"
+        ],
+        ans: 1,
+        exp: "Ọ̀rọ̀-ìṣe (Verb) ni 'lọ' nítorí ó fihàn ohun tí Olùṣe (Bọ́lá) ṣe."
+    },
+    {
+        q: "Kí ni iṣẹ́ 'Arọkin' nínú ààfin Ọba?",
+        opts: [
+            "Láti dáná",
+            "Láti kọrin fún ọba",
+            "Láti pa ìtàn ìran ọba mọ́ sọ́kàn àti láti sọ ọ́",
+            "Láti ṣọ́ ẹnu-ọ̀nà"
+        ],
+        ans: 2,
+        exp: "Arọkin jẹ́ ẹni tí ó mọ ìtàn ìran ọba àti ìlú sọ́kàn láti máa rántí wọn."
+    },
+    {
+        q: "Èwo nínú àwọn wọ̀nyí ni kì í ṣe 'Aṣọ-Ìbora'?",
+        opts: [
+            "Kíjìpá",
+            "Sányán",
+            "Àlàárì",
+            "Ìpàdà"
+        ],
+        ans: 3,
+        exp: "Ìpàdà kì í ṣe orúkọ aṣọ, ó jẹ́ ọ̀rọ̀-ìṣe tàbí orúkọ ìṣẹ̀lẹ̀."
+    },
+    {
+        q: "Àmì-ohùn mélòó ni ó wà nínú èdè Yorùbá?",
+        opts: [
+            "Mẹ́ta",
+            "Méjì",
+            "Mẹ́rin",
+            "Márùn-ún"
+        ],
+        ans: 0,
+        exp: "Àmì-ohùn mẹ́ta ni ó wà: Àmì-òkè (´), Àmì-àárín ( ), àti Àmì-ìsàlẹ̀ (`)."
+    },
+    {
+        q: "Nínú àṣà ìgbéyàwó, kí ni 'Idána'?",
+        opts: [
+            "Sísun oúnjẹ",
+            "Sísan owó orí ìyàwó àti rírú ẹrù ìfẹ́",
+            "Wíwẹ ìyàwó",
+            "Kíkọrin fún ìyàwó"
+        ],
+        ans: 1,
+        exp: "Idána ni ìgbésẹ̀ tí ọkọ ń gbé láti san owó orí ìyàwó àti láti mú ẹrù wá fún ẹbí ìyàwó."
+    },
+    {
+        q: "Kí ni ìtumọ̀ 'Àparò' nínú èdè Yorùbá (ẹyẹ)?",
+        opts: [
+            "Parrot",
+            "Bushfowl/Partridge",
+            "Eagle",
+            "Pigeon"
+        ],
+        ans: 1,
+        exp: "Àparò ni ẹyẹ tí a mọ̀ sí Bushfowl tàbí Partridge lédè Gẹ̀ẹ́sì."
+    },
+    {
+        q: "Nínú ìsọ̀rí ọ̀rọ̀, 'Sáré', 'Jẹun', 'Dìde' jẹ́:",
+        opts: [
+            "Ọ̀rọ̀-orúkọ",
+            "Ọ̀rọ̀-ìṣe",
+            "Ọ̀rọ̀-aponlé",
+            "Ọ̀rọ̀-asopọ̀"
+        ],
+        ans: 1,
+        exp: "Àwọn wọ̀nyí jẹ́ ọ̀rọ̀-ìṣe (Verbs) nítorí wọ́n ń fihàn ìṣe kan tàbí òmíràn."
+    },
+    {
+        q: "Kí ni 'Eré-Oníṣẹ́' (Drama)?",
+        opts: [
+            "Lítíréṣọ̀ tí a kọ láti kà nínú ìwé nìkan",
+            "Lítíréṣọ̀ tí a kọ láti gbé jáde lórí ìtàgé",
+            "Ìtàn àtẹnudẹ́nu",
+            "Orin kíkọ"
+        ],
+        ans: 1,
+        exp: "Eré-oníṣẹ́ jẹ́ ẹ̀ka lítíréṣọ̀ tí ó dá lórí ṣíṣe àfarawé ìṣẹ̀lẹ̀ ayé lórí ìtàgé."
+    },
+    {
+        q: "Tí ọ̀rọ̀ bá bẹ̀rẹ̀ pẹ̀lú fágáélì nínú Yorùbá, irú ọ̀rọ̀ bẹ́ẹ̀ jẹ́:",
+        opts: [
+            "Ọ̀rọ̀-ìṣe",
+            "Ọ̀rọ̀-orúkọ",
+            "Ọ̀rọ̀-atọ́kùn",
+            "Ọ̀rọ̀-asopọ̀"
+        ],
+        ans: 1,
+        exp: "Púọ̀ nínú ọ̀rọ̀-orúkọ (Nouns) ní èdè Yorùbá ni ó máa ń bẹ̀rẹ̀ pẹ̀lú fágáélì."
+    },
+    {
+        q: "Kí ni ìtumọ̀ òwe yìí: 'Ilé ọba tì jò, ẹwà lo bù kún un'?",
+        opts: [
+            "Ìpalára lè yọrí sí rere",
+            "Ọba gbọ́dọ̀ tún ilé rẹ̀ ṣe",
+            "Òjò kì í pa ọba",
+            "Ilé ọba kò lè jò"
+        ],
+        ans: 0,
+        exp: "Ó túmọ̀ sí pé nǹkan burúkú tó ṣẹlẹ̀ lè ṣí ọ̀nà fún nǹkan tó dára jù bẹ́ẹ̀ lọ láti wáyé."
+    },
+    {
+        q: "Nínú fónọ́lọ́jì, fágáélì mélòó ni ó wà nínú èdè Yorùbá?",
+        opts: [
+            "Méje",
+            "Mẹ́wàá",
+            "Méjìlá",
+            "Mẹ́rìndínlógún"
+        ],
+        ans: 2,
+        exp: "Fágáélì méjìlá ni ó wà: 7 fágáélì àìmú (a, e, ẹ, i, o, ọ, u) àti 5 fágáélì nímú (an, ẹn, in, ọn, un)."
+    },
+    {
+        q: "Kí ni iṣẹ́ 'Adayébá'?",
+        opts: [
+            "Iṣẹ́ tí a kọ́ ní ilé-ìwé",
+            "Iṣẹ́ tí a jogún látọ̀dọ̀ àwọn baba ńlá wa",
+            "Iṣẹ́ tí a ń ṣe ní òkè-òkun",
+            "Iṣẹ́ ìjọba"
+        ],
+        ans: 1,
+        exp: "Iṣẹ́ adayébá ni iṣẹ́ àṣà tí idílé kan ti mọ̀ látayébáyé bíi iṣẹ́ àgbẹ̀ tàbí alágbede."
+    },
+    {
+        q: "Tí ènìyàn bá jẹ́ 'Amòye', ó túmọ̀ sí pé:",
+        opts: [
+            "Ó jẹ́ ọ̀mọ̀wé",
+            "Ó ní òye àti ọgbọ́n pupọ̀",
+            "Ó mọ̀ ọ̀nà ìlú",
+            "Ó jẹ́ olówó"
+        ],
+        ans: 1,
+        exp: "Amòye jẹ́ ẹni tí ó ní ọgbọ́n, òye, àti ìjìnlẹ̀ nínú nǹkan ṣíṣe."
+    },
+    {
+        q: "Nínú ìsìnkú Yorùbá, 'Ọ̀fọ̀' túmọ̀ sí:",
+        opts: [
+            "Ayọ̀ fún ẹni tó kú",
+            "Ìbànújẹ́ tàbí òfò ẹni tó kú",
+            "Oúnjẹ òkú",
+            "Orin òkú"
+        ],
+        ans: 1,
+        exp: "Ọ̀fọ̀ (Mourning/Grief) jẹ́ ìṣẹ̀lẹ̀ ìbànújẹ́ tí ó wáyé nípa ikú ẹnìkan."
+    },
+    {
+        q: "Gbólóhùn wo ni ó ní 'Arọpò-orúkọ-asọtin' (Relative Pronoun)?",
+        opts: [
+            "Mo rí ẹni tí ó jí owó náà",
+            "Mo lọ sí oko",
+            "Bọ́lá ga ju Adé lọ",
+            "Kí ni orúkọ rẹ?"
+        ],
+        ans: 0,
+        exp: "Nínú gbólóhùn 'Mo rí ẹni tí...', 'tí' ni arọpò-orúkọ-asọtin nítorí ó ń ṣọ̀rọ̀ nípa ẹni tí a dárúkọ ṣáájú."
+    }
+],
         'Islamic Religious Studies': [
         ]
     }
