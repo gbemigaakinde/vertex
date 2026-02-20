@@ -4,9 +4,9 @@
 const tickerConfig = {
     // Add your news items here (each item is a separate news headline)
     newsItems: [
-        "Welcome to Excellence Tutorial CBT System!",
+        "Welcome to Vertex Tutorial CBT System!",
         "If you had already registered, then login with your email and password. Otherwise, click Register to register",
-        "If you do not have an email address, use yourname@excellence.com (e.g. tosin@excellence.com) as your email",
+        "If you do not have an email address, use yourname@vertex.com (e.g. tosin@vertex.com) as your email",
         "Use a password that you will never forget",
         "Select at least 2 subjects to start your exam",
         "Good luck with your tests!"
