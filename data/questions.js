@@ -7289,8 +7289,731 @@ tutorial: {
         exp: "Suratun Nisa 4:3 restricts the number of wives to four, under the strict condition of equal treatment."
     }
 ],
-
-
-
+'Chemistry': [
+    {
+        q: "What is the oxidation state of Manganese in the compound $K_2MnO_4$?",
+        opts: ["+2", "+4", "+6", "+7"],
+        ans: 2,
+        exp: "In $K_2MnO_4$, $2(+1) + x + 4(-2) = 0$. Solving for x gives $+6$. Note that this is Manganate (VI), not Permanganate (VII)."
+    },
+    {
+        q: "Which of the following gases will diffuse fastest under the same conditions of temperature and pressure? [H=1, C=12, N=14, O=16, S=32]",
+        opts: ["$CO_2$", "$NH_3$", "$SO_2$", "$NO_2$"],
+        ans: 1,
+        exp: "According to Graham's Law, the rate of diffusion is inversely proportional to the square root of the molar mass. $NH_3$ (17) is the lightest among the options."
+    },
+    {
+        q: "The shape of a molecule of methane ($CH_4$) is:",
+        opts: ["Linear", "Planar", "Tetrahedral", "Pyramidal"],
+        ans: 2,
+        exp: "Methane has $sp^3$ hybridization with four bonding pairs and zero lone pairs, resulting in a tetrahedral shape with a bond angle of 109.5°."
+    },
+    {
+        q: "A reaction is spontaneous at all temperatures if:",
+        opts: ["$\Delta H$ is positive and $\Delta S$ is negative", "$\Delta H$ is negative and $\Delta S$ is positive", "Both $\Delta H$ and $\Delta S$ are positive", "Both $\Delta H$ and $\Delta S$ are negative"],
+        ans: 1,
+        exp: "For spontaneity, Gibbs free energy ($\Delta G = \Delta H - T\Delta S$) must be negative. A negative enthalpy and positive entropy ensure $\Delta G$ is always negative."
+    },
+    {
+        q: "The number of isomers possible for the alkane with molecular formula $C_5H_{12}$ is:",
+        opts: ["2", "3", "4", "5"],
+        ans: 1,
+        exp: "The three isomers are n-pentane, isopentane (2-methylbutane), and neopentane (2,2-dimethylpropane)."
+    },
+    {
+        q: "Which of these is used as a 'negative catalyst' (inhibitor) in the decomposition of hydrogen peroxide?",
+        opts: ["$MnO_2$", "$H_3PO_4$", "Finely divided Iron", "$V_2O_5$"],
+        ans: 1,
+        exp: "While $MnO_2$ speeds up the decomposition, Phosphoric acid ($H_3PO_4$) or acetanilide is used to slow it down (stabilize it)."
+    },
+    {
+        q: "What volume of 0.5 $mol/dm^3$ $H_2SO_4$ is required to neutralize 20 $cm^3$ of 0.1 $mol/dm^3$ NaOH?",
+        opts: ["2 $cm^3$", "4 $cm^3$", "8 $cm^3$", "20 $cm^3$"],
+        ans: 0,
+        exp: "Using $C_aV_a / C_bV_b = n_a / n_b$: $(0.5 \times V_a) / (0.1 \times 20) = 1/2$. $V_a = (0.1 \times 20) / (0.5 \times 2) = 2 / 1 = 2$ $cm^3$."
+    },
+    {
+        q: "The most electronegative element in the periodic table is:",
+        opts: ["Chlorine", "Fluorine", "Oxygen", "Nitrogen"],
+        ans: 1,
+        exp: "Fluorine has the highest elective affinity and smallest atomic radius among the halogens, making it the most electronegative."
+    },
+    {
+        q: "In the electrolysis of brine using a mercury cathode, the product formed at the cathode is:",
+        opts: ["Hydrogen gas", "Chlorine gas", "Sodium metal", "Sodium Amalgam"],
+        ans: 3,
+        exp: "Sodium ions are discharged preferentially at the mercury cathode to form an alloy called sodium amalgam ($Na/Hg$)."
+    },
+    {
+        q: "The monomer of natural rubber is:",
+        opts: ["Ethyne", "Isoprene", "Styrene", "Butadiene"],
+        ans: 1,
+        exp: "Natural rubber is a polymer of 2-methylbuta-1,3-diene, commonly known as isoprene."
+    },
+    {
+        q: "Which of the following quantum numbers determines the shape of an orbital?",
+        opts: ["Principal quantum number", "Azimuthal quantum number", "Magnetic quantum number", "Spin quantum number"],
+        ans: 1,
+        exp: "The Azimuthal (subsidiary) quantum number (l) defines the subshell (s, p, d, f) and consequently the orbital shape."
+    },
+    {
+        q: "When an element undergoes beta ($\beta$) decay, its atomic number:",
+        opts: ["Decreases by 2", "Increases by 1", "Remains the same", "Decreases by 1"],
+        ans: 1,
+        exp: "In beta decay, a neutron turns into a proton and an electron (the beta particle). The extra proton increases the atomic number by 1."
+    },
+    {
+        q: "The solubility of $CO_2$ in water increases with:",
+        opts: ["Increase in temperature and increase in pressure", "Decrease in temperature and decrease in pressure", "Increase in temperature and decrease in pressure", "Decrease in temperature and increase in pressure"],
+        ans: 3,
+        exp: "Gases are more soluble in liquids at high pressures (Henry's Law) and low temperatures."
+    },
+    {
+        q: "Which of the following salts will form a solution with a pH greater than 7?",
+        opts: ["$NaCl$", "$NH_4Cl$", "$Na_2CO_3$", "$FeCl_3$"],
+        ans: 2,
+        exp: "$Na_2CO_3$ is a salt of a strong base (NaOH) and a weak acid ($H_2CO_3$). Its hydrolysis yields excess $OH^-$ ions."
+    },
+    {
+        q: "The alloy 'Duralumin' consists of Aluminum and:",
+        opts: ["Cu, Mg, Mn", "Cu, Zn, Sn", "Fe, Cr, Ni", "Mg, Zn, Pb"],
+        ans: 0,
+        exp: "Duralumin is composed of Al (95%), Cu (4%), Mg (0.5%), and Mn (0.5%). It is known for being light yet strong."
+    },
+    {
+        q: "Faraday’s second law of electrolysis states that the mass of elements discharged is proportional to their:",
+        opts: ["Atomic mass", "Relative density", "Chemical equivalent", "Atomic number"],
+        ans: 2,
+        exp: "Chemical equivalent = Relative Atomic Mass / Valency. The masses are proportional to these equivalents when the same quantity of electricity is passed."
+    },
+    {
+        q: "Which of these pairs are allotropes of Carbon?",
+        opts: ["Graphite and Coke", "Diamond and Graphite", "Coal and Charcoal", "Soot and Lampblack"],
+        ans: 1,
+        exp: "Diamond and Graphite are crystalline allotropes. Others like coal and charcoal are often considered amorphous forms or impure carbon."
+    },
+    {
+        q: "The reaction $C_2H_5OH + CH_3COOH \rightleftharpoons CH_3COOC_2H_5 + H_2O$ is known as:",
+        opts: ["Saponification", "Hydrolysis", "Esterification", "Polymerization"],
+        ans: 2,
+        exp: "Esterification is the reaction between an alkanol and an alkanoic acid to produce an ester and water in the presence of an acid catalyst."
+    },
+    {
+        q: "The empirical formula of a compound containing 40% Carbon, 6.7% Hydrogen, and 53.3% Oxygen is: [C=12, H=1, O=16]",
+        opts: ["$CHO$", "$CH_2O$", "$C_2H_4O_2$", "$CH_4O$"],
+        ans: 1,
+        exp: "Mole ratio: C=40/12=3.33, H=6.7/1=6.7, O=53.3/16=3.33. Dividing by smallest (3.33) gives C=1, H=2, O=1."
+    },
+    {
+        q: "In the Contact Process for the manufacture of $H_2SO_4$, the catalyst used is:",
+        opts: ["Iron", "Platinum", "Vanadium (V) oxide", "Manganese (IV) oxide"],
+        ans: 2,
+        exp: "$V_2O_5$ is used to catalyze the oxidation of $SO_2$ to $SO_3$. Modern plants prefer it over platinum because it is cheaper and less susceptible to poisoning."
+    },
+    {
+        q: "Which of the following is a transition metal?",
+        opts: ["Calcium", "Aluminum", "Iron", "Sodium"],
+        ans: 2,
+        exp: "Iron ($Fe$) is a d-block element, which is a characteristic of transition metals including variable oxidation states and colored ions."
+    },
+    {
+        q: "The functional group of the alkanals is:",
+        opts: ["-OH", "-COOH", "-CHO", "-CO-"],
+        ans: 2,
+        exp: "Alkanals (aldehydes) contain the formyl group (-CHO). -OH is for alkanols, -COOH for acids, and -CO- for alkanones."
+    },
+    {
+        q: "Which of the following will decolorize bromine water?",
+        opts: ["Cyclohexane", "Benzene", "Ethene", "Butane"],
+        ans: 2,
+        exp: "Unsaturated hydrocarbons like ethene undergo addition reactions with bromine, decolorizing the reddish-brown solution."
+    },
+    {
+        q: "The hardest known natural substance is:",
+        opts: ["Steel", "Diamond", "Quartz", "Graphite"],
+        ans: 1,
+        exp: "Diamond's giant covalent structure with every carbon atom tetrahedrally bonded to four others makes it extremely hard."
+    },
+    {
+        q: "What is the normality of a solution? (Note: often replaced by Molarity in modern syllabi, but check context). A 1M $H_2SO_4$ solution is:",
+        opts: ["0.5N", "1N", "2N", "4N"],
+        ans: 2,
+        exp: "Normality = Molarity $\times$ number of replaceable $H^+$ ions. For $H_2SO_4$, it is $1 \times 2 = 2N$."
+    },
+    {
+        q: "A sequence of reactions where the product of one step is the reactant of the next is called:",
+        opts: ["Reversible reaction", "Chain reaction", "Thermal decomposition", "Neutralization"],
+        ans: 1,
+        exp: "Chain reactions involve initiation, propagation, and termination steps, common in free radical halogenation of alkanes."
+    },
+    {
+        q: "Which gas is produced when dilute $HNO_3$ reacts with Copper?",
+        opts: ["$H_2$", "$NO_2$", "$NO$", "$N_2O$"],
+        ans: 2,
+        exp: "Dilute $HNO_3$ acts as an oxidizing agent, reducing to Nitrogen (II) oxide ($NO$). Concentrated $HNO_3$ would yield $NO_2$."
+    },
+    {
+        q: "The bond formed between two elements with a large difference in electronegativity is:",
+        opts: ["Covalent", "Ionic", "Metallic", "Dative"],
+        ans: 1,
+        exp: "When the difference is high (usually > 1.7), one atom effectively transfers electrons to the other, forming an ionic bond."
+    },
+    {
+        q: "Temporary hardness in water is caused by the presence of:",
+        opts: ["$CaSO_4$", "$MgSO_4$", "$Ca(HCO_3)_2$", "$CaCl_2$"],
+        ans: 2,
+        exp: "Calcium and Magnesium hydrogen carbonates cause temporary hardness because they decompose upon boiling."
+    },
+    {
+        q: "In a nuclear reactor, graphite rods are used to:",
+        opts: ["Absorb neutrons", "Cool the reactor", "Slow down neutrons", "Speed up the reaction"],
+        ans: 2,
+        exp: "Graphite acts as a 'moderator' to slow down fast-moving neutrons to a speed where they can cause further fission."
+    },
+    {
+        q: "Which of the following is a neutralization reaction?",
+        opts: ["$Zn + H_2SO_4 \rightarrow ZnSO_4 + H_2$", "$HCl + NaOH \rightarrow NaCl + H_2O$", "$AgNO_3 + NaCl \rightarrow AgCl + NaNO_3$", "$2H_2 + O_2 \rightarrow 2H_2O$"],
+        ans: 1,
+        exp: "Neutralization is the reaction between an acid and a base to produce salt and water only."
+    },
+    {
+        q: "The radioactive isotope used in the treatment of cancer is:",
+        opts: ["Carbon-14", "Iodine-131", "Cobalt-60", "Uranium-235"],
+        ans: 2,
+        exp: "Cobalt-60 emits gamma rays used in radiotherapy to destroy malignant cancer cells."
+    },
+    {
+        q: "What is the IUPAC name for $CH_3CH(OH)CH_3$?",
+        opts: ["Propan-1-ol", "Propan-2-ol", "Butan-2-ol", "Ethanol"],
+        ans: 1,
+        exp: "The longest chain has 3 carbons (Prop-), and the hydroxyl group is on the second carbon, hence Propan-2-ol."
+    },
+    {
+        q: "Which law states that the total pressure of a mixture of non-reacting gases is the sum of their partial pressures?",
+        opts: ["Boyle's Law", "Charles's Law", "Dalton's Law", "Gay-Lussac's Law"],
+        ans: 2,
+        exp: "Dalton's Law of Partial Pressures applies specifically to mixtures of gases that do not react chemically."
+    },
+    {
+        q: "The process of heating an ore in the absence of air below its melting point is:",
+        opts: ["Roasting", "Smelting", "Calcination", "Froth Flotation"],
+        ans: 2,
+        exp: "Calcination is used to remove volatile impurities or decompose carbonates/hydroxides. Roasting involves heating in the presence of air."
+    },
+    {
+        q: "Water gas is a mixture of:",
+        opts: ["$CO$ and $H_2$", "$CO$ and $N_2$", "$CO_2$ and $H_2$", "$CH_4$ and $H_2$"],
+        ans: 0,
+        exp: "Water gas is produced by passing steam over red-hot coke ($C + H_2O \rightarrow CO + H_2$)."
+    },
+    {
+        q: "The enzyme that converts glucose to ethanol and $CO_2$ is:",
+        opts: ["Diastase", "Maltase", "Zymase", "Invertase"],
+        ans: 2,
+        exp: "Zymase, secreted by yeast, catalyzes the fermentation of simple sugars like glucose into ethanol."
+    },
+    {
+        q: "An electrochemical cell that converts chemical energy into electrical energy is a:",
+        opts: ["Voltameter", "Electrolytic cell", "Galvanic (Voltaic) cell", "Accumulator"],
+        ans: 2,
+        exp: "Galvanic cells use spontaneous redox reactions to generate electricity, unlike electrolytic cells which require an external power source."
+    },
+    {
+        q: "Which of these elements is a liquid at room temperature?",
+        opts: ["Iodine", "Bromine", "Chlorine", "Fluorine"],
+        ans: 1,
+        exp: "Bromine is the only non-metallic element that is liquid at room temperature; Mercury is the metallic equivalent."
+    },
+    {
+        q: "The standard electrode potential is measured at:",
+        opts: ["273K and 1 atm", "298K and 1 atm", "373K and 2 atm", "298K and 0.5 atm"],
+        ans: 1,
+        exp: "Standard conditions for $E^{\theta}$ are 25°C (298K), 1 atmosphere pressure, and 1.0 $mol/dm^3$ concentration."
+    }
+],
+'Physics': [
+    {
+        q: "A body of mass $2kg$ moves in a circular path of radius $0.5m$ with a linear velocity of $10ms^{-1}$. Calculate the centripetal force acting on the body.",
+        opts: ["40N", "200N", "400N", "100N"],
+        ans: 2,
+        exp: "Using $F = \\frac{mv^2}{r}$: $F = \\frac{2 \\times 10^2}{0.5} = \\frac{200}{0.5} = 400N$."
+    },
+    {
+        q: "A radioactive substance has a half-life of 20 days. What fraction of the original sample remains after 80 days?",
+        opts: ["1/4", "1/8", "1/16", "1/32"],
+        ans: 2,
+        exp: "Number of half-lives $n = \\frac{80}{20} = 4$. Remaining fraction $= (\\frac{1}{2})^4 = \\frac{1}{16}$."
+    },
+    {
+        q: "An object is placed $15cm$ in front of a concave mirror of focal length $10cm$. The image formed is:",
+        opts: ["Real, inverted and magnified", "Virtual, erect and magnified", "Real, inverted and diminished", "Virtual, erect and diminished"],
+        ans: 0,
+        exp: "Since $f < u < 2f$ ($10 < 15 < 20$), the image is real, inverted, and magnified."
+    },
+    {
+        q: "The resistance of a wire is $10\\Omega$. If it is stretched to twice its original length while keeping volume constant, the new resistance is:",
+        opts: ["20\\Omega", "40\\Omega", "5\\Omega", "10\\Omega"],
+        ans: 1,
+        exp: "When $L$ doubles, $A$ halves to keep volume constant. $R \\propto \\frac{L}{A}$, so new $R = \\frac{2L}{A/2} = 4 \\times R_{old} = 40\\Omega$."
+    },
+    {
+        q: "A capacitor of $10\\mu F$ is connected to a $100V$ D.C supply. Calculate the energy stored.",
+        opts: ["0.05J", "0.1J", "1.0J", "0.5J"],
+        ans: 0,
+        exp: "Energy $E = \\frac{1}{2}CV^2 = 0.5 \\times 10 \\times 10^{-6} \\times 100^2 = 0.05J$."
+    },
+    {
+        q: "Which of the following is common to both sound and light waves?",
+        opts: ["Polarization", "Diffraction", "Propagation in a vacuum", "Same speed in air"],
+        ans: 1,
+        exp: "Both are wave phenomena and exhibit diffraction. Sound cannot be polarized (it is longitudinal) and cannot travel in a vacuum."
+    },
+    {
+        q: "A hydraulic press has a small piston of area $0.02m^2$ and a large piston of area $0.5m^2$. If a force of $100N$ is applied to the small piston, the force on the large one is:",
+        opts: ["2500N", "400N", "5000N", "1000N"],
+        ans: 0,
+        exp: "By Pascal's Principle, $\\frac{F_1}{A_1} = \\frac{F_2}{A_2}$. $F_2 = \\frac{100 \\times 0.5}{0.02} = 2500N$."
+    },
+    {
+        q: "The refractive index of glass is 1.5. Calculate the speed of light in glass. ($c = 3 \\times 10^8 ms^{-1}$)",
+        opts: ["$2.0 \\times 10^8 ms^{-1}$", "$4.5 \\times 10^8 ms^{-1}$", "$1.5 \\times 10^8 ms^{-1}$", "$3.0 \\times 10^8 ms^{-1}$"],
+        ans: 0,
+        exp: "$v = \\frac{c}{n} = \\frac{3 \\times 10^8}{1.5} = 2.0 \\times 10^8 ms^{-1}$."
+    },
+    {
+        q: "A transformer has 500 turns in primary and 2500 in secondary. If primary voltage is $120V$, the secondary voltage is:",
+        opts: ["24V", "600V", "120V", "3000V"],
+        ans: 1,
+        exp: "$\\frac{V_s}{V_p} = \\frac{N_s}{N_p} \\Rightarrow V_s = 120 \\times \\frac{2500}{500} = 600V$."
+    },
+    {
+        q: "An electric iron is rated $240V$, $1200W$. Calculate the resistance of its element.",
+        opts: ["48\\Omega", "0.2\\Omega", "5\\Omega", "288\\Omega"],
+        ans: 0,
+        exp: "$R = \\frac{V^2}{P} = \\frac{240^2}{1200} = \\frac{57600}{1200} = 48\\Omega$."
+    },
+    {
+        q: "The wavelength of a wave traveling at $340ms^{-1}$ with a frequency of $170Hz$ is:",
+        opts: ["0.5m", "2.0m", "57.8m", "1.5m"],
+        ans: 1,
+        exp: "$\\lambda = \\frac{v}{f} = \\frac{340}{170} = 2.0m$."
+    },
+    {
+        q: "A simple pendulum has a period of $2s$ on Earth. What is its period on the moon where $g$ is $1/6$ of Earth's?",
+        opts: ["0.8s", "12.0s", "$2\\sqrt{6}s$", "$2/\\sqrt{6}s$"],
+        ans: 2,
+        exp: "$T \\propto \\frac{1}{\\sqrt{g}}$. If $g$ becomes $g/6$, $T$ becomes $T\\sqrt{6} = 2\\sqrt{6}s$."
+    },
+    {
+        q: "Calculate the escape velocity of a rocket from Earth's surface. ($R=6.4 \\times 10^6m, g=10ms^{-2}$)",
+        opts: ["$1.1 \\times 10^3 ms^{-1}$", "$1.1 \\times 10^4 ms^{-1}$", "$8.0 \\times 10^3 ms^{-1}$", "$4.2 \\times 10^4 ms^{-1}$"],
+        ans: 1,
+        exp: "$v_e = \\sqrt{2gR} = \\sqrt{2 \\times 10 \\times 6.4 \\times 10^6} \\approx 11313 ms^{-1}$ (approx $1.1 \\times 10^4$)."
+    },
+    {
+        q: "Which instrument is used to measure the relative density of a liquid?",
+        opts: ["Hygrometer", "Hydrometer", "Manometer", "Barometer"],
+        ans: 1,
+        exp: "A Hydrometer measures relative density. Hygrometer measures humidity; Manometer measures gas pressure."
+    },
+    {
+        q: "The property of a material to return to its original shape after deformation is:",
+        opts: ["Plasticity", "Viscosity", "Elasticity", "Malleability"],
+        ans: 2,
+        exp: "Elasticity is the ability of a material to regain its original shape after the distorting force is removed."
+    },
+    {
+        q: "A gas occupies $2.0m^3$ at $27^{\\circ}C$. Calculate its volume at $127^{\\circ}C$ if pressure remains constant.",
+        opts: ["$2.67m^3$", "$9.41m^3$", "$1.50m^3$", "$0.43m^3$"],
+        ans: 0,
+        exp: "Using Charles' Law $\\frac{V_1}{T_1} = \\frac{V_2}{T_2}$ (Kelvin): $\\frac{2}{300} = \\frac{V_2}{400} \\Rightarrow V_2 = \\frac{800}{300} = 2.67m^3$."
+    },
+    {
+        q: "In the absence of air resistance, an object dropped from a height $h$ hits the ground with a velocity:",
+        opts: ["$gh$", "$\\sqrt{gh}$", "$2gh$", "$\\sqrt{2gh}$"],
+        ans: 3,
+        exp: "Using $v^2 = u^2 + 2as$ with $u=0$, $a=g$, and $s=h$: $v = \\sqrt{2gh}$."
+    },
+    {
+        q: "The clinical thermometer differs from the laboratory thermometer because it has:",
+        opts: ["A longer stem", "A constriction", "A wider bore", "Alcohol instead of mercury"],
+        ans: 1,
+        exp: "The constriction prevents the mercury from dropping back into the bulb before the reading is taken."
+    },
+    {
+        q: "Which of the following colors of light is deviated most by a glass prism?",
+        opts: ["Red", "Yellow", "Green", "Violet"],
+        ans: 3,
+        exp: "Violet light has the shortest wavelength and the highest refractive index in glass, causing it to deviate the most."
+    },
+    {
+        q: "The energy equivalent of a mass of $1.0kg$ is: ($c = 3 \\times 10^8 ms^{-1}$)",
+        opts: ["$9 \\times 10^{16}J$", "$3 \\times 10^8J$", "$9 \\times 10^8J$", "$1.5 \\times 10^{16}J$"],
+        ans: 0,
+        exp: "$E = mc^2 = 1 \\times (3 \\times 10^8)^2 = 9 \\times 10^{16}J$."
+    },
+    {
+        q: "A vector $A$ has components $A_x = 3$ and $A_y = 4$. The magnitude of the vector is:",
+        opts: ["7", "1", "5", "12"],
+        ans: 2,
+        exp: "$|A| = \\sqrt{3^2 + 4^2} = \\sqrt{9 + 16} = 5$."
+    },
+    {
+        q: "The heat required to change $1kg$ of ice at $0^{\\circ}C$ to water at $0^{\\circ}C$ is known as:",
+        opts: ["Specific heat capacity", "Latent heat of vaporization", "Latent heat of fusion", "Heat of combustion"],
+        ans: 2,
+        exp: "Latent heat of fusion is the heat required to change a substance from solid to liquid without a change in temperature."
+    },
+    {
+        q: "Two $6\\Omega$ resistors are connected in parallel. Their effective resistance is:",
+        opts: ["12\\Omega", "3\\Omega", "1\\Omega", "36\\Omega"],
+        ans: 1,
+        exp: "For parallel: $\\frac{1}{R_p} = \\frac{1}{6} + \\frac{1}{6} = \\frac{2}{6} \\Rightarrow R_p = 3\\Omega$."
+    },
+    {
+        q: "The force between two point charges is $F$. If the distance between them is doubled, the new force is:",
+        opts: ["2F", "4F", "F/2", "F/4"],
+        ans: 3,
+        exp: "By Coulomb's law, $F \\propto \\frac{1}{r^2}$. If $r$ becomes $2r$, $F$ becomes $\\frac{F}{2^2} = F/4$."
+    },
+    {
+        q: "The particle nature of light is demonstrated by:",
+        opts: ["Interference", "Photoelectric effect", "Diffraction", "Refraction"],
+        ans: 1,
+        exp: "The Photoelectric effect proves that light behaves as discrete packets of energy called photons (particles)."
+    },
+    {
+        q: "An object is moving with a constant velocity. Which of the following is true?",
+        opts: ["Acceleration is zero", "Force is increasing", "Momentum is zero", "Displacement is zero"],
+        ans: 0,
+        exp: "Velocity is constant $\\Rightarrow \\frac{dv}{dt} = 0$, so acceleration must be zero."
+    },
+    {
+        q: "The dimension of force is:",
+        opts: ["$MLT^{-1}$", "$MLT^{-2}$", "$ML^2T^{-2}$", "$ML^{-1}T^{-2}$"],
+        ans: 1,
+        exp: "$Force = mass \\times acceleration = M \\times LT^{-2} = MLT^{-2}$."
+    },
+    {
+        q: "A magnifying glass has a focal length of $5cm$. Its magnifying power when the image is at infinity is:",
+        opts: ["5", "25", "0.2", "4"],
+        ans: 0,
+        exp: "$M = \\frac{D}{f}$ where $D=25cm$. $M = \\frac{25}{5} = 5$."
+    },
+    {
+        q: "The frequency of a simple a.c. generator can be increased by:",
+        opts: ["Increasing the number of turns", "Increasing the magnetic field", "Increasing the speed of rotation", "Using a split-ring commutator"],
+        ans: 2,
+        exp: "Frequency $f = \\frac{NP}{120}$ (for motors/gen) or simply $f \\propto$ speed of rotation."
+    },
+    {
+        q: "Which of the following is a scalar quantity?",
+        opts: ["Weight", "Momentum", "Energy", "Acceleration"],
+        ans: 2,
+        exp: "Energy has magnitude but no direction, making it a scalar. Weight, momentum, and acceleration are vectors."
+    },
+    {
+        q: "The unit of electric potential is:",
+        opts: ["Ampere", "Ohm", "Volt", "Coulomb"],
+        ans: 2,
+        exp: "The Volt is the S.I. unit for electric potential and electromotive force."
+    },
+    {
+        q: "If the velocity-time graph is a straight line parallel to the time axis, the acceleration is:",
+        opts: ["Uniform", "Zero", "Increasing", "Decreasing"],
+        ans: 1,
+        exp: "A line parallel to the time axis means velocity is constant, thus acceleration is zero."
+    },
+    {
+        q: "Sound waves cannot travel through:",
+        opts: ["Steel", "Water", "Air", "A vacuum"],
+        ans: 3,
+        exp: "Sound is a mechanical wave and requires a material medium to propagate."
+    },
+    {
+        q: "Calculate the work done in moving a $2C$ charge through a potential difference of $12V$.",
+        opts: ["6J", "14J", "24J", "10J"],
+        ans: 2,
+        exp: "$W = QV = 2 \\times 12 = 24J$."
+    },
+    {
+        q: "The point in a body through which its whole weight appears to act is:",
+        opts: ["Center of mass", "Center of gravity", "Pivot", "Equilibrium point"],
+        ans: 1,
+        exp: "The center of gravity is the point where the entire weight of the body is concentrated."
+    },
+    {
+        q: "An intrinsic semiconductor can be made extrinsic by adding impurities in a process called:",
+        opts: ["Annealing", "Doping", "Transmutation", "Ionization"],
+        ans: 1,
+        exp: "Doping is the intentional addition of impurities to a semiconductor to change its electrical properties."
+    },
+    {
+        q: "The pressure exerted by a liquid at a depth $h$ is given by:",
+        opts: ["$mgh$", "$\\frac{1}{2}\\rho v^2$", "$\\rho gh$", "$h\\rho$"],
+        ans: 2,
+        exp: "Hydrostatic pressure $P = \\rho gh$ where $\\rho$ is density, $g$ is gravity, and $h$ is depth."
+    },
+    {
+        q: "The process of a gas changing directly to a solid is called:",
+        opts: ["Sublimation", "Deposition", "Condensation", "Fusion"],
+        ans: 1,
+        exp: "Deposition is the phase transition in which gas transforms into solid without passing through the liquid phase."
+    },
+    {
+        q: "A concave lens is also known as a:",
+        opts: ["Diverging lens", "Converging lens", "Biconvex lens", "Parabolic lens"],
+        ans: 0,
+        exp: "A concave lens causes parallel rays of light to spread out (diverge) after passing through it."
+    },
+    {
+        q: "Which law states that the current flowing through a conductor is proportional to the potential difference, provided temperature is constant?",
+        opts: ["Faraday's Law", "Lenz's Law", "Ohm's Law", "Hooke's Law"],
+        ans: 2,
+        exp: "Ohm's Law states $V = IR$ under constant physical conditions."
+    }
+],
+'Biology': [
+    {
+        q: "Which organelle is primarily involved in the synthesis of lipids and the detoxification of drugs in the liver?",
+        opts: ["Rough Endoplasmic Reticulum", "Smooth Endoplasmic Reticulum", "Golgi Apparatus", "Lysosomes"],
+        ans: 1,
+        exp: "The Smooth ER lacks ribosomes and specializes in lipid metabolism and chemical detoxification."
+    },
+    {
+        q: "In a cross between homozygous red and homozygous white flowers, all offspring are pink. This is an example of:",
+        opts: ["Complete dominance", "Co-dominance", "Incomplete dominance", "Epistasis"],
+        ans: 2,
+        exp: "Incomplete dominance results in an intermediate phenotype (a blend) because neither allele is fully dominant."
+    },
+    {
+        q: "A DNA strand has the sequence G-A-T-C-A. What is the corresponding mRNA sequence after transcription?",
+        opts: ["C-U-A-G-U", "C-T-A-G-T", "G-A-U-C-A", "T-C-A-G-T"],
+        ans: 0,
+        exp: "In RNA, G pairs with C, A pairs with U, and T pairs with A."
+    },
+    {
+        q: "Which blood vessel carries deoxygenated blood from the heart to the lungs?",
+        opts: ["Aorta", "Pulmonary Vein", "Pulmonary Artery", "Vena Cava"],
+        ans: 2,
+        exp: "The Pulmonary Artery is the only artery that carries deoxygenated blood away from the heart."
+    },
+    {
+        q: "The theory of 'Use and Disuse' and the inheritance of acquired characteristics was proposed by:",
+        opts: ["Charles Darwin", "Jean-Baptiste Lamarck", "Gregor Mendel", "Alfred Wallace"],
+        ans: 1,
+        exp: "Lamarckism suggests that physical changes acquired during an organism's life are passed to offspring."
+    },
+    {
+        q: "In the human kidney, the process of ultrafiltration occurs specifically in the:",
+        opts: ["Bowman's Capsule", "Loop of Henle", "Proximal Tubule", "Collecting Duct"],
+        ans: 0,
+        exp: "High pressure in the glomerulus forces water and small solutes into the Bowman's capsule."
+    },
+    {
+        q: "Which of the following is a density-independent factor regulating a population?",
+        opts: ["Competition", "Infectious Disease", "Flooding", "Predation"],
+        ans: 2,
+        exp: "Abiotic factors like natural disasters (floods) affect populations regardless of their size."
+    },
+    {
+        q: "During anaerobic respiration in yeast, the final products are:",
+        opts: ["Lactic acid and energy", "Ethanol, $CO_2$ and energy", "Water and $CO_2$", "Pyruvic acid and water"],
+        ans: 1,
+        exp: "Yeast fermentation produces ethanol and carbon dioxide ($CO_2$)."
+    },
+    {
+        q: "The specific site for the light-independent stage (Calvin cycle) of photosynthesis is the:",
+        opts: ["Grana", "Stroma", "Mitochondria", "Cytoplasm"],
+        ans: 1,
+        exp: "While light reactions happen in the grana, the stroma contains enzymes for carbon fixation."
+    },
+    {
+        q: "Which part of the ear is responsible for maintaining body balance and posture?",
+        opts: ["Cochlea", "Semicircular canals", "Eardrum", "Eustachian tube"],
+        ans: 1,
+        exp: "The semicircular canals detect rotational movement and help maintain equilibrium."
+    },
+    {
+        q: "The flow of energy in a standard ecosystem is always:",
+        opts: ["Cyclic", "Unidirectional", "Multidirectional", "Reversible"],
+        ans: 1,
+        exp: "Energy enters from the sun and is lost as heat at each trophic level; it does not recycle."
+    },
+    {
+        q: "Rickets in children is primarily caused by a deficiency of:",
+        opts: ["Vitamin C", "Vitamin A", "Vitamin D", "Vitamin B1"],
+        ans: 2,
+        exp: "Vitamin D is essential for calcium absorption; its deficiency leads to soft or deformed bones."
+    },
+    {
+        q: "The coordination of voluntary muscular movements and balance is controlled by the:",
+        opts: ["Cerebrum", "Medulla Oblongata", "Cerebellum", "Hypothalamus"],
+        ans: 2,
+        exp: "The cerebellum fine-tunes motor activities and posture."
+    },
+    {
+        q: "A structural adaptation of the xerophyte for water conservation is:",
+        opts: ["Broad leaves", "Sunken stomata", "Thin cuticles", "Large air spaces"],
+        ans: 1,
+        exp: "Sunken stomata reduce the rate of transpiration by trapping moist air."
+    },
+    {
+        q: "In an ecosystem, the organisms that break down organic matter into inorganic nutrients are:",
+        opts: ["Primary Consumers", "Secondary Consumers", "Decomposers", "Producers"],
+        ans: 2,
+        exp: "Fungi and bacteria decompose dead matter, recycling nutrients back into the soil."
+    },
+    {
+        q: "Which of the following is an example of a vestigial organ in humans?",
+        opts: ["Appendix", "Liver", "Spleen", "Pancreas"],
+        ans: 0,
+        exp: "Vestigial organs are structures that have lost their original function through evolution."
+    },
+    {
+        q: "The master gland of the endocrine system is the:",
+        opts: ["Thyroid gland", "Adrenal gland", "Pituitary gland", "Pancreas"],
+        ans: 2,
+        exp: "The pituitary gland secretes hormones that control other endocrine glands."
+    },
+    {
+        q: "The vector for the parasite $Trypanosoma$ which causes sleeping sickness is:",
+        opts: ["Anopheles mosquito", "Housefly", "Tsetse fly", "Black fly"],
+        ans: 2,
+        exp: "Tsetse flies transmit the protozoan parasite to humans and livestock."
+    },
+    {
+        q: "In a food chain, the total amount of energy is greatest at the level of the:",
+        opts: ["Top carnivores", "Secondary consumers", "Primary consumers", "Producers"],
+        ans: 3,
+        exp: "Producers (plants) are at the base and possess the most energy directly from the sun."
+    },
+    {
+        q: "The process by which plants lose water vapor through the stomata is:",
+        opts: ["Guttation", "Transpiration", "Evaporation", "Osmosis"],
+        ans: 1,
+        exp: "Transpiration is the biological process of water loss from the aerial parts of plants."
+    },
+    {
+        q: "The correct order of stages in mitosis is:",
+        opts: ["Prophase, Anaphase, Metaphase, Telophase", "Prophase, Metaphase, Anaphase, Telophase", "Metaphase, Prophase, Anaphase, Telophase", "Telophase, Anaphase, Metaphase, Prophase"],
+        ans: 1,
+        exp: "The sequence is PMAT: Prophase, Metaphase, Anaphase, and Telophase."
+    },
+    {
+        q: "Which of these is the function of the hormone Insulin?",
+        opts: ["Increases blood glucose", "Decreases blood glucose", "Stimulates growth", "Regulates calcium levels"],
+        ans: 1,
+        exp: "Insulin promotes the uptake of glucose by cells, lowering blood sugar levels."
+    },
+    {
+        q: "The unit of heredity that carries information from parents to offspring is the:",
+        opts: ["Centrosome", "Gene", "Nucleolus", "Ribosome"],
+        ans: 1,
+        exp: "Genes are segments of DNA located on chromosomes that determine specific traits."
+    },
+    {
+        q: "The part of the flower that develops into a fruit after fertilization is the:",
+        opts: ["Ovule", "Ovary", "Stigma", "Anther"],
+        ans: 1,
+        exp: "The ovary matures into the fruit, while the ovules mature into seeds."
+    },
+    {
+        q: "Which component of the blood is responsible for clotting at a wound site?",
+        opts: ["Red blood cells", "White blood cells", "Platelets", "Plasma"],
+        ans: 2,
+        exp: "Platelets (thrombocytes) release substances that initiate blood clotting."
+    },
+    {
+        q: "The basic functional unit of the human nervous system is the:",
+        opts: ["Nephron", "Neuron", "Axon", "Dendrite"],
+        ans: 1,
+        exp: "The neuron is the specialized cell designed to transmit electrical impulses."
+    },
+    {
+        q: "Movement of molecules from a region of higher concentration to lower concentration is:",
+        opts: ["Osmosis", "Active transport", "Diffusion", "Plasmolysis"],
+        ans: 2,
+        exp: "Diffusion is a passive process that occurs down a concentration gradient."
+    },
+    {
+        q: "Which scientist is regarded as the father of genetics?",
+        opts: ["Charles Darwin", "Robert Hooke", "Gregor Mendel", "Louis Pasteur"],
+        ans: 2,
+        exp: "Mendel's work with pea plants established the laws of inheritance."
+    },
+    {
+        q: "The interaction between a shark and a remora fish is an example of:",
+        opts: ["Parasitism", "Mutualism", "Commensalism", "Competition"],
+        ans: 2,
+        exp: "The remora benefits from scraps and protection, while the shark is unaffected."
+    },
+    {
+        q: "The primary organ for gaseous exchange in insects is the:",
+        opts: ["Gills", "Lungs", "Tracheae", "Skin"],
+        ans: 2,
+        exp: "Insects use a system of branching tubes called tracheae for gas exchange."
+    },
+    {
+        q: "Which of the following is a characteristic of Wind-pollinated flowers?",
+        opts: ["Bright petals", "Scented flowers", "Feathery stigmas", "Sticky pollen"],
+        ans: 2,
+        exp: "Feathery stigmas provide a large surface area to catch wind-borne pollen grains."
+    },
+    {
+        q: "The enzyme Pepsin, which breaks down proteins, is found in the:",
+        opts: ["Mouth", "Stomach", "Small Intestine", "Pancreas"],
+        ans: 1,
+        exp: "Pepsin acts in the acidic environment of the stomach to begin protein digestion."
+    },
+    {
+        q: "Double fertilization is a unique feature of:",
+        opts: ["Bryophytes", "Pteridophytes", "Angiosperms", "Gymnosperms"],
+        ans: 2,
+        exp: "In flowering plants, two fertilization events occur within the embryo sac."
+    },
+    {
+        q: "Which of the following serves as a respiratory surface in an earthworm?",
+        opts: ["Lungs", "Gills", "Moist skin", "Tracheoles"],
+        ans: 2,
+        exp: "Earthworms absorb oxygen directly through their thin, moist skin."
+    },
+    {
+        q: "The ability of an organism to maintain a constant internal environment is:",
+        opts: ["Metabolism", "Homeostasis", "Irritability", "Osmoregulation"],
+        ans: 1,
+        exp: "Homeostasis regulates internal variables like temperature and pH."
+    },
+    {
+        q: "Which type of skeleton is found in earthworms and jellyfish?",
+        opts: ["Exoskeleton", "Endoskeleton", "Hydrostatic skeleton", "Bony skeleton"],
+        ans: 2,
+        exp: "A hydrostatic skeleton uses fluid-filled cavities to provide support."
+    },
+    {
+        q: "The part of the eye that controls the amount of light entering the pupil is the:",
+        opts: ["Cornea", "Retina", "Iris", "Lens"],
+        ans: 2,
+        exp: "The iris adjusts the size of the pupil based on light intensity."
+    },
+    {
+        q: "Which vitamin is synthesized in the skin through exposure to sunlight?",
+        opts: ["Vitamin K", "Vitamin E", "Vitamin D", "Vitamin A"],
+        ans: 2,
+        exp: "Exposure to UV light triggers the production of Vitamin D in the skin."
+    },
+    {
+        q: "The stage of life cycle in which a mosquito is most easily controlled by oiling water is:",
+        opts: ["Adult", "Egg", "Larva", "Pupa"],
+        ans: 2,
+        exp: "Oil prevents larvae and pupae from breathing at the water surface."
+    },
+    {
+        q: "A key difference between a plant cell and an animal cell is the presence of:",
+        opts: ["Nucleus", "Mitochondria", "Cell wall", "Cell membrane"],
+        ans: 2,
+        exp: "Plant cells have a rigid cellulose cell wall, which animal cells lack."
+    }
+]
     }
 };
