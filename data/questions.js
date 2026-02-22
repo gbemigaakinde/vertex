@@ -7048,6 +7048,249 @@ tutorial: {
     }
 ],
         'Islamic Religious Studies': [
-        ]
+    {
+        q: "The collection of the Qur'an into a single volume (Mushaf) was first initiated during the caliphate of Abu Bakr following the Battle of:",
+        opts: ["Badr", "Yamamah", "Uhud", "Khaibar"],
+        ans: 1,
+        exp: "The death of many Huffaz (memorisers) at the Battle of Yamamah prompted Umar b. al-Khattab to suggest the compilation to Abu Bakr."
+    },
+    {
+        q: "In the science of Hadith, a narration that has a continuous chain of transmitters (Isnad) reaching the Prophet is termed:",
+        opts: ["Mawquf", "Maqtu", "Marfu", "Mursal"],
+        ans: 2,
+        exp: "Marfu refers to a tradition elevated to the Prophet, while Mawquf stops at a Companion and Maqtu at a Successor."
+    },
+    {
+        q: "Which of these Surahs deals extensively with the laws of inheritance (Mirath)?",
+        opts: ["Suratul Baqarah", "Suratun Nisa", "Suratul Ma'idah", "Suratul An'am"],
+        ans: 1,
+        exp: "Suratun Nisa (The Women) contains the specific mathematical shares for legal heirs in Islam."
+    },
+    {
+        q: "The term 'Tashri' in Islamic jurisprudence refers to:",
+        opts: ["The interpretation of dreams", "The process of legislation", "The act of purifying wealth", "The migration for the sake of Allah"],
+        ans: 1,
+        exp: "Tashri is the divine legislation of laws as found in the Qur'an and Sunnah."
+    },
+    {
+        q: "During the treaty of Hudaibiyah, who was the representative of the Quraish that negotiated the terms with Prophet Muhammad (S.A.W)?",
+        opts: ["Abu Sufyan", "Suhayl b. Amr", "Ikrimah b. Abi Jahl", "Khalid b. Walid"],
+        ans: 1,
+        exp: "Suhayl b. Amr negotiated the treaty, which initially seemed disadvantageous to Muslims but proved to be a 'Manifest Victory'."
+    },
+    {
+        q: "What is the primary difference between 'Nabi' and 'Rasul' in Islamic theology?",
+        opts: ["A Rasul is always a king", "A Rasul is sent with a new Shari'ah (Law)", "A Nabi is not required to preach", "A Nabi receives revelation only through dreams"],
+        ans: 1,
+        exp: "Every Rasul is a Nabi, but not every Nabi is a Rasul. A Rasul is specifically sent with a divine Book or a new Law."
+    },
+    {
+        q: "The fast of 'Ashura' is observed on the 10th day of which Islamic month?",
+        opts: ["Ramadan", "Rajab", "Muharram", "Dhul-Hijjah"],
+        ans: 2,
+        exp: "Ashura is observed on the 10th of Muharram, marking the day Allah saved Prophet Musa and the Israelites from Pharaoh."
+    },
+    {
+        q: "In the context of Hajj, 'Ifraad' refers to performing:",
+        opts: ["Umrah and Hajj together with one Ihram", "Only the Hajj rites", "Umrah first, then Hajj with separate Ihram", "Hajj on behalf of a deceased person"],
+        ans: 1,
+        exp: "Hajj al-Ifraad is the 'isolated' Hajj where the pilgrim does not perform Umrah during the Hajj months."
+    },
+    {
+        q: "Which of the following is NOT one of the 'Six Authentic Books' (Al-Kutub al-Sittah) of Hadith?",
+        opts: ["Sahih Muslim", "Sunan Ibn Majah", "Muwatta Malik", "Sunan Abu Dawud"],
+        ans: 2,
+        exp: "Muwatta Malik is a highly respected primary source, but the six canonical books include Bukhari, Muslim, Abu Dawud, Tirmidhi, Nasa'i, and Ibn Majah."
+    },
+    {
+        q: "The 'Year of Grief' (Amul Huzn) was marked by the deaths of which two pivotal figures in the Prophet's life?",
+        opts: ["Hamzah and Jafar", "Khadijah and Abu Talib", "Abu Bakr and Umar", "Aminah and Abdul-Muttalib"],
+        ans: 1,
+        exp: "The loss of his wife Khadijah and his protective uncle Abu Talib in the same year left the Prophet (S.A.W) socially and emotionally vulnerable."
+    },
+    {
+        q: "If a person misses one Raka'ah of the congregational prayer, they are known as a:",
+        opts: ["Mu'azzin", "Masbuq", "Munfarid", "Mamum"],
+        ans: 1,
+        exp: "A Masbuq is a 'latecomer' who follows the Imam and completes the missed units after the Imam's final Taslim."
+    },
+    {
+        q: "The Islamic tax levied on non-Muslim subjects living in an Islamic state in exchange for protection is called:",
+        opts: ["Zakat", "Ushr", "Jizyah", "Kharaj"],
+        ans: 2,
+        exp: "Jizyah was the poll tax paid by 'Dhimmis' for state protection and exemption from military service."
+    },
+    {
+        q: "Who was the 'Sahabi' that suggested digging a trench (Khandaq) during the Battle of the Confederates?",
+        opts: ["Bilal al-Habashi", "Salman al-Farisi", "Ammar b. Yasir", "Zaid b. Thabit"],
+        ans: 1,
+        exp: "Salman al-Farisi introduced this Persian military strategy, which effectively neutralized the Quraish cavalry."
+    },
+    {
+        q: "The 'Madd' (prolongation) that occurs due to the presence of a Hamzah after a long vowel in the same word is:",
+        opts: ["Madd Muttasil", "Madd Munfasil", "Madd Laazim", "Madd Arid"],
+        ans: 0,
+        exp: "Madd Muttasil (Connected Madd) occurs when the vowel and Hamzah are in the same word (e.g., Ja'a)."
+    },
+    {
+        q: "Which Caliph was responsible for the final 'Uthmanic Codex' (Standardization) of the Qur'an?",
+        opts: ["Abu Bakr", "Umar", "Uthman", "Ali"],
+        ans: 2,
+        exp: "Uthman b. Affan ordered the standard dialect (Quraish) to be used to prevent disputes in recitation across the empire."
+    },
+    {
+        q: "The term 'Tawhid al-Uluhiyyah' refers to the Oneness of Allah in:",
+        opts: ["His Lordship and Creation", "His Names and Attributes", "His Worship", "His Sovereignty over kings"],
+        ans: 2,
+        exp: "Uluhiyyah is the maintenance of Allah's unity in worship (Ibadah), ensuring no partner is associated with Him."
+    },
+    {
+        q: "The period of waiting for a widowed woman before she can remarry (Iddah) is:",
+        opts: ["Three lunar months", "Four months and ten days", "Until she gives birth", "Forty days"],
+        ans: 1,
+        exp: "Based on Suratul Baqarah 2:234, the Iddah for a widow is four months and ten days."
+    },
+    {
+        q: "Which Battle resulted in the martyrdom of the Prophet's uncle, Hamzah b. Abdul-Muttalib?",
+        opts: ["Badr", "Uhud", "Khaibar", "Hunayn"],
+        ans: 1,
+        exp: "Hamzah was killed by Wahshi during the Battle of Uhud, where the Muslims suffered a setback due to the archers leaving their posts."
+    },
+    {
+        q: "A Hadith Qudsi is a narration where:",
+        opts: ["The meaning and words are from the Prophet", "The meaning is from Allah but the words are from the Prophet", "The words are from Allah and it is part of the Qur'an", "The Prophet quotes a Companion"],
+        ans: 1,
+        exp: "Unlike the Qur'an, Hadith Qudsi is not used in ritual prayer and its wording is not miraculous (mu'jiz), though the source is Allah."
+    },
+    {
+        q: "The 'Sujud as-Sahwi' (Prostration of Forgetfulness) is performed:",
+        opts: ["To make up for missing a Fard pillar", "To compensate for a mistake or omission in Sunnah/Wajib acts", "Only when the Imam makes a mistake", "At the beginning of every prayer"],
+        ans: 1,
+        exp: "It is performed to rectify errors like forgetting a Tashahhud or being unsure of the number of Raka'at."
+    },
+    {
+        q: "Who was the first person to call the Adhan (Call to Prayer)?",
+        opts: ["Umar b. al-Khattab", "Ali b. Abi Talib", "Bilal b. Rabah", "Abu Hurairah"],
+        ans: 2,
+        exp: "Bilal, an Abyssinian companion, was chosen by the Prophet (S.A.W) for his powerful and beautiful voice."
+    },
+    {
+        q: "Which specific condition makes Zakat compulsory on an asset?",
+        opts: ["The owner must be a scholar", "The asset must reach the Nisab and be held for a Hawl (one year)", "The asset must be gold only", "The asset must be given during Ramadan"],
+        ans: 1,
+        exp: "Nisab is the minimum threshold of wealth, and Hawl is the one-year period of possession."
+    },
+    {
+        q: "The first migration (Hijrah) of the Muslims for safety was to:",
+        opts: ["Yathrib", "Abyssinia (Habashah)", "Ta'if", "Egypt"],
+        ans: 1,
+        exp: "The Prophet sent a group of followers to the Christian King Negus (Najashi) of Abyssinia to escape Quraish persecution."
+    },
+    {
+        q: "Which angel is responsible for blowing the Trumpet (Sur) to signal the Day of Judgment?",
+        opts: ["Jibril", "Mikail", "Israfil", "Izrail"],
+        ans: 2,
+        exp: "Israfil is the angel tasked with blowing the trumpet twice—once for the end of the world and once for the Resurrection."
+    },
+    {
+        q: "The practice of 'Tayamum' (Dry Ablution) is permissible when:",
+        opts: ["One is too lazy to use water", "Water is unavailable or harmful to health", "One is traveling by air", "The water available is cold"],
+        ans: 1,
+        exp: "Tayamum using clean earth is a concession (Rukhsah) provided in the Qur'an for health or scarcity reasons."
+    },
+    {
+        q: "The 'Ushr' is a Zakat paid on:",
+        opts: ["Livestock", "Gold and Silver", "Agricultural produce", "Business inventory"],
+        ans: 2,
+        exp: "Ushr is a 10% (or 5% if irrigated) tax on farm harvests."
+    },
+    {
+        q: "Which Surah is known as 'The Heart of the Qur'an'?",
+        opts: ["Al-Fatihah", "Al-Ikhlas", "Yasin", "Al-Baqarah"],
+        ans: 2,
+        exp: "Prophetic traditions describe Surah Yasin as the heart of the Qur'an due to its focus on the core tenets of faith."
+    },
+    {
+        q: "The Quranic term 'Al-Furqan' means:",
+        opts: ["The Guidance", "The Criterion between right and wrong", "The Healing", "The Reminder"],
+        ans: 1,
+        exp: "Furqan is a title for the Qur'an because it distinguishes (farraqa) truth from falsehood."
+    },
+    {
+        q: "Who accompanied the Prophet (S.A.W) during his migration from Makkah to Madinah?",
+        opts: ["Ali b. Abi Talib", "Umar b. al-Khattab", "Abu Bakr as-Siddiq", "Uthman b. Affan"],
+        ans: 2,
+        exp: "Abu Bakr was the Prophet's companion in the cave of Thawr and throughout the perilous journey."
+    },
+    {
+        q: "The 'Khulafa ar-Rashidun' period lasted for approximately how many years?",
+        opts: ["10 years", "20 years", "30 years", "40 years"],
+        ans: 2,
+        exp: "The collective rule of Abu Bakr, Umar, Uthman, and Ali lasted about 30 years (11 A.H. to 40 A.H.)."
+    },
+    {
+        q: "A marriage contract (Nikah) is invalid without the presence of a 'Wali' and:",
+        opts: ["A large dowry", "At least two just witnesses", "A feast (Walimah)", "A civil registry"],
+        ans: 1,
+        exp: "The presence of two witnesses and the guardian (Wali) are pillars of the marriage contract in Islamic Law."
+    },
+    {
+        q: "Which Islamic sect emphasizes the 'Imamate' and believes Ali was the rightful immediate successor to the Prophet?",
+        opts: ["Sunni", "Shi'a", "Kharijite", "Mu'tazilite"],
+        ans: 1,
+        exp: "The Shi'a believe the leadership (Imamate) belongs specifically to the Ahl al-Bayt (the Prophet's family)."
+    },
+    {
+        q: "The collection of sayings and actions of the Prophet is known as:",
+        opts: ["Qur'an", "Sunnah/Hadith", "Fiqh", "Tasawwuf"],
+        ans: 1,
+        exp: "Sunnah is the practice, and Hadith is the recorded narration of the Prophet's life and speech."
+    },
+    {
+        q: "What is the meaning of 'Al-Asma al-Husna'?",
+        opts: ["The Most Beautiful Names of Allah", "The Pillars of Faith", "The Stories of the Prophets", "The Manners of the Prophet"],
+        ans: 0,
+        exp: "There are 99 known 'Most Beautiful Names' of Allah mentioned in the Qur'an and Sunnah."
+    },
+    {
+        q: "The 'Mahr' in an Islamic marriage belongs to:",
+        opts: ["The bride's father", "The bride herself", "The groom's family", "The local mosque"],
+        ans: 1,
+        exp: "The Mahr (dowry) is the exclusive property of the woman, to be used as she sees fit."
+    },
+    {
+        q: "Which prophet is mentioned most frequently by name in the Qur'an?",
+        opts: ["Ibrahim", "Isa", "Musa", "Muhammad"],
+        ans: 2,
+        exp: "Prophet Musa (Moses) is mentioned 136 times in the Qur'an across various Surahs."
+    },
+    {
+        q: "The 'Night Journey' and 'Ascension' of the Prophet are referred to as:",
+        opts: ["Hijrah and Jihad", "Isra and Mi'raj", "Fath and Umrah", "Tahajjud and Witr"],
+        ans: 1,
+        exp: "Isra is the journey from Makkah to Jerusalem, and Mi'raj is the ascension through the seven heavens."
+    },
+    {
+        q: "The 'Mu'awwidhatayn' refers to which two Surahs used for seeking protection?",
+        opts: ["Al-Fatihah and Al-Ikhlas", "Al-Falaq and An-Nas", "Al-Baqarah and Ali-Imran", "Al-Kafirun and Al-Ikhlas"],
+        ans: 1,
+        exp: "These two final Surahs of the Qur'an are recited to seek refuge in Allah from various evils."
+    },
+    {
+        q: "In Islamic law, 'Qiyas' refers to:",
+        opts: ["The consensus of scholars", "Analytical deduction/Analogy", "The tradition of the Prophet", "Personal opinion without proof"],
+        ans: 1,
+        exp: "Qiyas is the fourth source of Shari'ah, where a new case is judged by comparing it to an existing case in the Qur'an or Sunnah."
+    },
+    {
+        q: "The maximum number of wives a Muslim man can have simultaneously, provided he is just, is:",
+        opts: ["Two", "Three", "Four", "Unlimited"],
+        ans: 2,
+        exp: "Suratun Nisa 4:3 restricts the number of wives to four, under the strict condition of equal treatment."
+    }
+],
+
+
+
     }
 };
