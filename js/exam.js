@@ -366,8 +366,19 @@ if (!_qBank || !_qBank[classKey]) {
       });
     });
 
-    // Sync timer display immediately so it does not show 02:00:00 for one second
+    // Sync timer display immediately
     _updateTimerDisplay();
+
+    // LaTeX Support: Render math in the question and options
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ],
+        throwOnError: false
+      });
+    }
   }
 
   /* ── Save answer — debounced Firestore write ── */
@@ -625,7 +636,18 @@ if (!_qBank || !_qBank[classKey]) {
         </div>
       </div>`);
 
-    _currentResultForShare = { exam, result };
+   _currentResultForShare = { exam, result };
+
+    // LaTeX Support: Render math in the review/explanations section
+    if (window.renderMathInElement) {
+      renderMathInElement(document.body, {
+        delimiters: [
+          {left: '$$', right: '$$', display: true},
+          {left: '$', right: '$', display: false}
+        ],
+        throwOnError: false
+      });
+    }
   }
 
   let _currentResultForShare = null;
