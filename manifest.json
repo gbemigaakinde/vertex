@@ -1,6 +1,6 @@
 {
   "name": "Vertex Tutorial CBT",
-  "short_name": "ExcellenceCBT",
+  "short_name": "VertexCBT",
   "description": "Computer-Based Testing System for Vertex Tutorial students.",
   "start_url": "/?source=pwa",
   "scope": "/",
