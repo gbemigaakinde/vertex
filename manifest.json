@@ -1,7 +1,7 @@
 {
   "name": "Excellence Tutorial CBT",
   "short_name": "ExcellenceCBT",
-  "description": "Computer-Based Testing System for Excellence Tutorial students.",
+  "description": "Computer-Based Testing System for Vertex Tutorial students.",
   "start_url": "/?source=pwa",
   "scope": "/",
   "display": "standalone",
