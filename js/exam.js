@@ -370,15 +370,7 @@ if (!_qBank || !_qBank[classKey]) {
     _updateTimerDisplay();
 
     // LaTeX Support: Render math in the question and options
-    if (window.renderMathInElement) {
-      renderMathInElement(document.body, {
-        delimiters: [
-          {left: '$$', right: '$$', display: true},
-          {left: '$', right: '$', display: false}
-        ],
-        throwOnError: false
-      });
-    }
+    _renderKatex();
   }
 
   /* ── Save answer — debounced Firestore write ── */
@@ -639,16 +631,24 @@ if (!_qBank || !_qBank[classKey]) {
    _currentResultForShare = { exam, result };
 
     // LaTeX Support: Render math in the review/explanations section
-    if (window.renderMathInElement) {
-      renderMathInElement(document.body, {
-        delimiters: [
-          {left: '$$', right: '$$', display: true},
-          {left: '$', right: '$', display: false}
-        ],
-        throwOnError: false
-      });
-    }
+    _renderKatex();
   }
+
+function _renderKatex() {
+  // renderMathInElement may not be ready yet if KaTeX scripts are still loading
+  if (window.renderMathInElement) {
+    renderMathInElement(document.body, {
+      delimiters: [
+        { left: '$$', right: '$$', display: true },
+        { left: '$',  right: '$',  display: false }
+      ],
+      throwOnError: false
+    });
+  } else {
+    // Retry until the deferred scripts finish loading
+    setTimeout(_renderKatex, 100);
+  }
+}
 
   let _currentResultForShare = null;
 
