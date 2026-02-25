@@ -1,91 +1,149 @@
 /* ============================================================
-   Vertex Tutorial CBT — Global Styles
-
-   Architecture:
-   - Tailwind CDN provides all utility classes (text-xl, p-6, etc.)
-   - This file defines ONLY custom named classes used by JS modules
-   - Every class emitted by auth.js / exam.js / teacher.js / chat.js
-     / tasks.js is accounted for here
-
-   Design: Deep Violet Studio
-   Premium exam environment — jewel-toned dark stage,
-   frosted glass panels, crisp typography, calm focus
+   Vertex Tutorial CBT — Definitive Stylesheet
+   
+   Design: "Precision Academy"
+   A modern, international examination platform aesthetic.
+   Clean white surfaces. Deep indigo brand. Sharp typography.
+   Warm amber for success states. Zero clutter during exams.
+   
+   Think: Pearson VUE, Cambridge Assessment, Prometric —
+   but warmer, more human, and genuinely beautiful.
+   
+   Architecture: Tailwind CDN handles ALL utility classes.
+   This file defines custom named classes + critical overrides
+   only. Every class emitted by JS modules is accounted for.
    ============================================================ */
 
-/* ── Fonts ── */
-@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+/* ── Fonts: Outfit (body) + DM Mono (timer) ── */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&family=DM+Mono:wght@400;500&display=swap');
 
 /* ============================================================
-   RESET
+   CSS VARIABLES
+   ============================================================ */
+:root {
+  /* Brand */
+  --indigo-950: #1e1b4b;
+  --indigo-900: #312e81;
+  --indigo-800: #3730a3;
+  --indigo-700: #4338ca;
+  --indigo-600: #4f46e5;
+  --indigo-500: #6366f1;
+  --indigo-400: #818cf8;
+  --indigo-200: #c7d2fe;
+  --indigo-100: #e0e7ff;
+  --indigo-50:  #eef2ff;
+
+  /* Surface */
+  --white:      #ffffff;
+  --gray-50:    #f9fafb;
+  --gray-100:   #f3f4f6;
+  --gray-200:   #e5e7eb;
+  --gray-300:   #d1d5db;
+  --gray-400:   #9ca3af;
+  --gray-500:   #6b7280;
+  --gray-600:   #4b5563;
+  --gray-700:   #374151;
+  --gray-800:   #1f2937;
+  --gray-900:   #111827;
+
+  /* States */
+  --green-600:  #16a34a;
+  --green-500:  #22c55e;
+  --green-100:  #dcfce7;
+  --green-50:   #f0fdf4;
+  --amber-600:  #d97706;
+  --amber-500:  #f59e0b;
+  --amber-100:  #fef3c7;
+  --amber-50:   #fffbeb;
+  --red-700:    #b91c1c;
+  --red-600:    #dc2626;
+  --red-100:    #fee2e2;
+  --red-50:     #fef2f2;
+  --blue-600:   #2563eb;
+  --blue-50:    #eff6ff;
+
+  /* Typography */
+  --font-main:  'Outfit', 'Segoe UI', system-ui, sans-serif;
+  --font-mono:  'DM Mono', 'Courier New', monospace;
+
+  /* Surfaces + Shadows */
+  --shadow-xs:  0 1px 2px rgba(0,0,0,.05);
+  --shadow-sm:  0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+  --shadow-md:  0 4px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.05);
+  --shadow-lg:  0 10px 25px rgba(0,0,0,.10), 0 4px 8px rgba(0,0,0,.06);
+  --shadow-xl:  0 20px 40px rgba(0,0,0,.12), 0 8px 16px rgba(0,0,0,.07);
+  --shadow-brand: 0 4px 14px rgba(79,70,229,.30);
+
+  /* Radii */
+  --r-sm:   8px;
+  --r-md:   12px;
+  --r-lg:   16px;
+  --r-xl:   20px;
+  --r-2xl:  28px;
+
+  /* Transition */
+  --ease: cubic-bezier(0.4,0,0.2,1);
+  --t-fast: 150ms;
+  --t-base: 200ms;
+}
+
+/* ============================================================
+   RESET + BASE
    ============================================================ */
 *, *::before, *::after { box-sizing: border-box; }
 
-/* ============================================================
-   BODY & PAGE BACKGROUND
-   We use !important to override Tailwind's bg-gradient utility
-   that the original HTML puts on body.
-   ============================================================ */
+html { scroll-behavior: smooth; }
+
 body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
-  font-family: 'Sora', 'Segoe UI', system-ui, -apple-system, sans-serif;
-  color: #1e293b;
+  font-family: var(--font-main);
+  color: var(--gray-800);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  font-size: 16px;
+  line-height: 1.6;
 
-  /* Deep violet stage — the atmosphere that makes everything else feel premium */
-  background-color: #0f0524 !important;
+  /* Page background: clean light with a very subtle indigo tint */
+  background-color: #f0f2ff !important;
   background-image:
-    radial-gradient(ellipse 80% 55% at 15% 0%,   rgba(109, 40, 217, 0.55) 0%, transparent 60%),
-    radial-gradient(ellipse 65% 50% at 85% 100%,  rgba(76,  29, 149, 0.50) 0%, transparent 60%),
-    radial-gradient(ellipse 100% 80% at 50% 50%,  #140632 0%, #0f0524 100%) !important;
+    radial-gradient(ellipse 80% 50% at 0% 0%,   rgba(99,102,241,.10) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(79,70,229,.08) 0%, transparent 55%) !important;
   background-attachment: fixed !important;
 }
 
-/* ============================================================
-   TYPOGRAPHY — apply Sora across the app
-   ============================================================ */
-h1, h2, h3, h4, h5, h6,
-p, span, div, button, input,
-label, select, textarea, a {
-  font-family: 'Sora', 'Segoe UI', system-ui, -apple-system, sans-serif;
+/* ── Apply Outfit globally ── */
+*, button, input, select, textarea {
+  font-family: var(--font-main) !important;
 }
 
 /* ============================================================
-   GLASS MORPHISM
-   These two classes are used on virtually every card/panel
-   generated by JS innerHTML
+   GLASS / CARD SURFACES
+   These two classes are used on virtually every rendered panel.
+   We make them crisp white cards — no frosted glass that bleeds.
    ============================================================ */
 
 .glass {
-  background: rgba(255, 255, 255, 0.93) !important;
-  backdrop-filter: blur(24px) saturate(180%) !important;
-  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.72) !important;
-  border-radius: 1.5rem !important;
-  box-shadow:
-    0 4px 24px rgba(0, 0, 0, 0.18),
-    0 1px 6px  rgba(0, 0, 0, 0.10),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+  background: var(--white) !important;
+  border: 1px solid var(--gray-200) !important;
+  border-radius: var(--r-2xl) !important;
+  box-shadow: var(--shadow-lg) !important;
 }
 
 .glass-dark {
-  background: rgba(255, 255, 255, 0.84) !important;
-  backdrop-filter: blur(16px) saturate(160%) !important;
-  -webkit-backdrop-filter: blur(16px) saturate(160%) !important;
-  border: 1px solid rgba(255, 255, 255, 0.55) !important;
-  border-radius: 1rem !important;
-  box-shadow:
-    0 2px 14px rgba(0, 0, 0, 0.10),
-    inset 0 1px 0 rgba(255, 255, 255, 0.85) !important;
+  background: var(--gray-50) !important;
+  border: 1px solid var(--gray-200) !important;
+  border-radius: var(--r-lg) !important;
+  box-shadow: var(--shadow-sm) !important;
 }
 
 /* ============================================================
-   ANIMATED BRAND TEXT (used on login/welcome screens)
+   ANIMATED BRAND TITLE (login / welcome screens)
    ============================================================ */
+
 .animated-text {
-  font-family: 'Sora', system-ui, sans-serif !important;
+  font-family: var(--font-main) !important;
   font-weight: 800;
   font-size: clamp(2rem, 5vw, 3rem);
   text-align: center;
@@ -93,18 +151,18 @@ label, select, textarea, a {
   display: inline-block;
   background: linear-gradient(
     135deg,
-    #c4b5fd 0%,
-    #a78bfa 25%,
-    #f472b6 50%,
-    #818cf8 75%,
-    #c4b5fd 100%
+    var(--indigo-700) 0%,
+    var(--indigo-500) 30%,
+    #a78bfa 55%,
+    var(--indigo-600) 80%,
+    var(--indigo-700) 100%
   );
   background-size: 300% 300%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: gradientFlow 5s ease infinite;
-  letter-spacing: -0.02em;
+  animation: gradientFlow 6s ease infinite;
+  letter-spacing: -0.025em;
   line-height: 1.1;
 }
 
@@ -116,23 +174,21 @@ label, select, textarea, a {
 
 /* ============================================================
    BUTTONS
-   Base .btn — JS applies additional Tailwind color utilities
-   on top (bg-green-600, bg-red-600, bg-gray-500, etc.)
-   Those Tailwind classes will override background as needed.
-   We define the shadow, font, transition, and shape.
+   JS applies .btn as base + Tailwind bg-* for color variants.
+   We define shape, font, transitions. Color overrides below.
    ============================================================ */
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.5rem;
-  font-family: 'Sora', system-ui, sans-serif;
+  gap: .5rem;
+  font-family: var(--font-main) !important;
   font-weight: 600;
-  font-size: 0.9375rem;
-  letter-spacing: 0.01em;
-  padding: 0.8125rem 1.75rem;
-  border-radius: 0.875rem;
+  font-size: .9375rem;
+  letter-spacing: .01em;
+  padding: .75rem 1.625rem;
+  border-radius: var(--r-md);
   border: none;
   cursor: pointer;
   text-align: center;
@@ -140,34 +196,26 @@ label, select, textarea, a {
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   transition:
-    transform     0.18s cubic-bezier(0.4, 0, 0.2, 1),
-    box-shadow    0.18s cubic-bezier(0.4, 0, 0.2, 1),
-    opacity       0.18s ease,
-    filter        0.18s ease;
-
-  /* Default brand gradient — overridden by Tailwind bg-* on specific buttons */
-  background: linear-gradient(135deg, #6b46c1, #7c3aed, #8b5cf6);
-  color: white;
-  box-shadow:
-    0 4px 15px rgba(107, 70, 193, 0.35),
-    0 1px 4px  rgba(0, 0, 0, 0.15),
-    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+    transform    var(--t-fast) var(--ease),
+    box-shadow   var(--t-fast) var(--ease),
+    filter       var(--t-fast) var(--ease),
+    opacity      var(--t-fast) var(--ease);
   position: relative;
   overflow: hidden;
+
+  /* Default brand color */
+  background: var(--indigo-600);
+  color: white !important;
+  box-shadow: var(--shadow-brand);
 }
 
-/* Shimmer overlay on hover */
 .btn::after {
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    135deg,
-    rgba(255,255,255,0.14) 0%,
-    transparent 50%
-  );
+  background: rgba(255,255,255,.12);
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity var(--t-fast);
   border-radius: inherit;
   pointer-events: none;
 }
@@ -176,40 +224,69 @@ label, select, textarea, a {
 .btn:active:not(:disabled)::after { opacity: 0; }
 
 .btn:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow:
-    0 8px 25px rgba(107, 70, 193, 0.45),
-    0 4px 10px rgba(0, 0, 0, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.18);
-  filter: brightness(1.06);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(79,70,229,.40);
+  filter: brightness(1.05);
 }
 
 .btn:active:not(:disabled) {
   transform: translateY(0);
-  box-shadow:
-    0 2px 8px rgba(107, 70, 193, 0.30),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-  filter: brightness(0.97);
+  filter: brightness(.97);
 }
 
 .btn:focus-visible {
-  outline: 3px solid rgba(167, 139, 250, 0.75);
+  outline: 3px solid var(--indigo-400);
   outline-offset: 3px;
 }
 
 .btn:disabled {
-  opacity: 0.45;
+  opacity: .45;
   cursor: not-allowed;
   transform: none !important;
   box-shadow: none !important;
   filter: none !important;
 }
 
-/* ── Loading state ──
-   Uses ::after (same as shimmer) but overrides it to be the spinner.
-   The shimmer's opacity is forced to 0 so it doesn't fight the spinner. */
+/* ── Color variants via Tailwind classes already on the elements ──
+   Tailwind bg-* will override background. We ensure text stays white
+   and inject proper shadows for each variant. */
+
+/* Green buttons (Chat, Send, Unlock, etc.) */
+.btn[class*="bg-green"] {
+  box-shadow: 0 4px 14px rgba(22,163,74,.30) !important;
+}
+.btn[class*="bg-green"]:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(22,163,74,.40) !important;
+}
+
+/* Red buttons (Submit, Delete, Lock, etc.) */
+.btn[class*="bg-red"] {
+  box-shadow: 0 4px 14px rgba(220,38,38,.28) !important;
+}
+.btn[class*="bg-red"]:hover:not(:disabled) {
+  box-shadow: 0 6px 20px rgba(220,38,38,.38) !important;
+}
+
+/* Gray/secondary buttons (Back, Previous, etc.) */
+.btn[class*="bg-gray"] {
+  background: var(--gray-100) !important;
+  color: var(--gray-700) !important;
+  box-shadow: var(--shadow-sm) !important;
+  border: 1px solid var(--gray-300) !important;
+}
+.btn[class*="bg-gray"]:hover:not(:disabled) {
+  background: var(--gray-200) !important;
+  box-shadow: var(--shadow-md) !important;
+}
+
+/* Blue buttons */
+.btn[class*="bg-blue"] {
+  box-shadow: 0 4px 14px rgba(37,99,235,.28) !important;
+}
+
+/* ── Loading state ── */
 .btn-loading {
-  opacity: 0.8;
+  opacity: .80;
   cursor: not-allowed !important;
   pointer-events: none;
   padding-right: 3.25rem;
@@ -218,19 +295,19 @@ label, select, textarea, a {
 .btn-loading::after {
   content: '' !important;
   position: absolute !important;
-  width: 1.0625rem !important;
-  height: 1.0625rem !important;
+  inset: auto !important;
+  width: 1rem !important;
+  height: 1rem !important;
   top: 50% !important;
   right: 1rem !important;
   left: auto !important;
-  margin-top: -0.53125rem !important;
-  border: 2.5px solid rgba(255, 255, 255, 0.3) !important;
+  margin-top: -.5rem !important;
+  background: none !important;
+  border: 2px solid rgba(255,255,255,.35) !important;
   border-top-color: white !important;
   border-radius: 50% !important;
-  background: none !important;
-  animation: spin 0.75s linear infinite !important;
   opacity: 1 !important;
-  inset: auto !important;
+  animation: spin .7s linear infinite !important;
 }
 
 /* ============================================================
@@ -243,19 +320,18 @@ input[type="password"],
 input[type="date"],
 select,
 textarea {
-  font-family: 'Sora', system-ui, sans-serif;
-  font-size: 0.9375rem;
+  font-family: var(--font-main) !important;
+  font-size: .9375rem;
   font-weight: 400;
-  background: rgba(255, 255, 255, 0.82);
-  border: 1.5px solid rgba(167, 139, 250, 0.35);
-  color: #1e293b;
-  padding: 0.875rem 1.125rem;
-  border-radius: 0.875rem;
+  color: var(--gray-800);
+  background: var(--white);
+  border: 1.5px solid var(--gray-300) !important;
+  border-radius: var(--r-md) !important;
+  padding: .75rem 1rem;
   width: 100%;
   transition:
-    border-color  0.18s ease,
-    box-shadow    0.18s ease,
-    background    0.18s ease;
+    border-color var(--t-fast) var(--ease),
+    box-shadow   var(--t-fast) var(--ease);
   -webkit-appearance: none;
   appearance: none;
 }
@@ -264,177 +340,177 @@ input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: #8b5cf6;
-  background: rgba(255, 255, 255, 0.97);
-  box-shadow:
-    0 0 0 3px rgba(139, 92, 246, 0.18),
-    0 2px 10px rgba(139, 92, 246, 0.10);
+  border-color: var(--indigo-500) !important;
+  box-shadow: 0 0 0 3px rgba(99,102,241,.15) !important;
+  background: var(--white);
 }
 
 input::placeholder,
 textarea::placeholder {
-  color: #94a3b8;
+  color: var(--gray-400);
   font-weight: 400;
 }
 
 /* ============================================================
-   TIMER
-   JS sets id="timerDisplay" and class from:
-   timer-green / timer-yellow / timer-red
-   Also has Tailwind: text-4xl md:text-5xl font-extrabold font-mono
-   We override font to Space Mono for clear digit rendering.
+   ┌─────────────────────────────────────────┐
+   │  TIMER (#timerDisplay)                  │
+   └─────────────────────────────────────────┘
+   JS emits: id="timerDisplay"
+   With Tailwind: text-4xl md:text-5xl font-extrabold font-mono
+   And class toggled: timer-green / timer-yellow / timer-red
+   We override font to DM Mono for clean digit rendering.
    ============================================================ */
 
 #timerDisplay {
-  font-family: 'Space Mono', 'Courier New', monospace !important;
-  font-weight: 700 !important;
-  letter-spacing: 0.05em;
+  font-family: var(--font-mono) !important;
+  font-weight: 500 !important;
+  letter-spacing: .06em;
   line-height: 1;
-  transition: color 0.5s ease;
-  min-width: 8.5ch;
+  transition: color .5s var(--ease);
+  min-width: 9ch;
   display: block;
 }
 
-.timer-green {
-  color: #4ade80 !important;
-  text-shadow: 0 0 18px rgba(74, 222, 128, 0.45);
+.timer-green  {
+  color: #16a34a !important;
 }
 
 .timer-yellow {
-  color: #fbbf24 !important;
-  text-shadow: 0 0 18px rgba(251, 191, 36, 0.50);
+  color: #d97706 !important;
 }
 
 .timer-red {
-  color: #f87171 !important;
-  text-shadow: 0 0 22px rgba(248, 113, 113, 0.65);
-  animation: timerUrgency 1s ease-in-out infinite;
+  color: #dc2626 !important;
+  animation: timerPulse 1s ease-in-out infinite;
 }
 
-@keyframes timerUrgency {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.68; transform: scale(1.035); }
+@keyframes timerPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: .6; }
 }
 
-/* ── Sticky exam header ──
-   The exam layout first card (glass div containing #timerDisplay)
-   becomes sticky so the timer is always visible while scrolling. */
+/* ── Sticky exam header (first .glass card that holds the timer) ── */
 .exam-header-sticky {
   position: sticky;
-  top: 0.75rem;
-  z-index: 50;
-  transition: box-shadow 0.3s ease;
+  top: .75rem;
+  z-index: 40;
+  transition: box-shadow .25s var(--ease);
 }
 
 .exam-header-sticky.stuck {
   box-shadow:
-    0 10px 40px rgba(0, 0, 0, 0.25),
-    0 4px 12px  rgba(107, 70, 193, 0.25),
-    inset 0 1px 0 rgba(255, 255, 255, 0.95) !important;
+    0 8px 30px rgba(0,0,0,.12),
+    0 2px 8px  rgba(79,70,229,.15),
+    0 0 0 1px  rgba(0,0,0,.04) !important;
 }
 
 /* ============================================================
-   QUESTION OPTION LABELS
-   JS generates:
+   ┌─────────────────────────────────────────┐
+   │  QUESTION OPTION LABELS                 │
+   └─────────────────────────────────────────┘
+   JS emits:
      class="block glass p-5 rounded-xl cursor-pointer
             hover:bg-purple-50 transition text-lg option-label"
-   Selected via inline style: border:2px solid #7c3aed;
-                               background:rgba(124,58,237,0.07)
+   Selected via inline style:
+     border:2px solid #7c3aed; background:rgba(124,58,237,0.07)
    ============================================================ */
 
 .option-label {
   display: flex !important;
   align-items: flex-start !important;
-  gap: 0.875rem;
+  gap: .875rem;
   padding: 1rem 1.25rem !important;
-  border-radius: 0.875rem !important;
+  border-radius: var(--r-md) !important;
   cursor: pointer;
-  border: 1.5px solid rgba(167, 139, 250, 0.22) !important;
-  background: rgba(255, 255, 255, 0.90) !important;
+
+  /* Clean unselected state */
+  background: var(--white) !important;
+  border: 1.5px solid var(--gray-200) !important;
+  box-shadow: var(--shadow-xs) !important;
+
   transition:
-    border-color    0.15s ease,
-    background      0.15s ease,
-    box-shadow      0.15s ease,
-    transform       0.15s ease !important;
+    border-color var(--t-fast) var(--ease),
+    background   var(--t-fast) var(--ease),
+    box-shadow   var(--t-fast) var(--ease),
+    transform    var(--t-fast) var(--ease) !important;
+
   min-height: 56px;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
   position: relative;
-  overflow: visible !important;
+  overflow: hidden !important;
 }
 
 /* Left accent bar */
 .option-label::before {
   content: '';
   position: absolute;
-  left: 0;
-  top: 6px;
-  bottom: 6px;
+  left: 0; top: 8px; bottom: 8px;
   width: 3px;
   background: transparent;
   border-radius: 0 3px 3px 0;
-  transition: background 0.15s ease;
+  transition: background var(--t-fast);
 }
 
 .option-label:hover {
-  border-color: rgba(124, 58, 237, 0.45) !important;
-  background: rgba(245, 243, 255, 0.97) !important;
-  transform: translateX(4px);
-  box-shadow:
-    0 2px 14px rgba(107, 70, 193, 0.14),
-    inset 0 1px 0 rgba(255,255,255,0.9) !important;
+  border-color: var(--indigo-400) !important;
+  background: var(--indigo-50) !important;
+  box-shadow: var(--shadow-md) !important;
+  transform: translateX(3px);
 }
 
 .option-label:hover::before {
-  background: rgba(124, 58, 237, 0.5);
+  background: var(--indigo-400);
 }
 
-/* Selected — JS inline style targets the border:#7c3aed pattern */
+/* Selected — JS applies inline style with #7c3aed */
 .option-label[style*="7c3aed"] {
-  border-color: #7c3aed !important;
-  background: rgba(237, 233, 254, 0.97) !important;
+  background: var(--indigo-50) !important;
+  border-color: var(--indigo-600) !important;
   box-shadow:
-    0 0 0 3px rgba(124, 58, 237, 0.16),
-    0 4px 20px rgba(107, 70, 193, 0.16) !important;
-  transform: translateX(5px);
+    0 0 0 3px rgba(79,70,229,.12),
+    var(--shadow-md) !important;
+  transform: translateX(4px);
 }
 
 .option-label[style*="7c3aed"]::before {
-  background: #7c3aed;
+  background: var(--indigo-600);
 }
 
+/* Radio input inside */
 .option-label input[type="radio"] {
-  width: 1.125rem;
-  height: 1.125rem;
+  width: 1.125rem !important;
+  height: 1.125rem !important;
   min-width: 1.125rem;
-  min-height: 1.125rem;
-  accent-color: #7c3aed;
-  margin-top: 0.175rem;
+  accent-color: var(--indigo-600);
+  margin-top: .175rem;
   cursor: pointer;
   flex-shrink: 0;
 }
 
 /* ============================================================
-   QUESTION NAVIGATOR GRID BUTTONS
+   ┌─────────────────────────────────────────┐
+   │  QUESTION NAVIGATOR BUTTONS             │
+   └─────────────────────────────────────────┘
    JS: class="nav-btn [current] [answered]"
    ============================================================ */
 
 .nav-btn {
-  width: 2.625rem;
-  height: 2.625rem;
-  border-radius: 0.5rem;
-  border: 1.5px solid rgba(167, 139, 250, 0.28);
-  font-family: 'Sora', system-ui, sans-serif;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--r-sm);
+  border: 1.5px solid var(--gray-300);
+  font-family: var(--font-main) !important;
   font-weight: 700;
-  font-size: 0.78rem;
+  font-size: .78rem;
   cursor: pointer;
   transition:
-    background   0.15s ease,
-    border-color 0.15s ease,
-    transform    0.15s ease,
-    box-shadow   0.15s ease;
-  background: rgba(255, 255, 255, 0.88);
-  color: #4b5563;
+    background     var(--t-fast) var(--ease),
+    border-color   var(--t-fast) var(--ease),
+    transform      var(--t-fast) var(--ease),
+    box-shadow     var(--t-fast) var(--ease);
+  background: var(--white);
+  color: var(--gray-600);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -444,94 +520,90 @@ textarea::placeholder {
 }
 
 .nav-btn:hover {
-  background: rgba(237, 233, 254, 0.95);
-  border-color: rgba(124, 58, 237, 0.5);
-  color: #6b46c1;
-  transform: scale(1.1);
-  box-shadow: 0 2px 10px rgba(107, 70, 193, 0.18);
+  background: var(--indigo-50);
+  border-color: var(--indigo-400);
+  color: var(--indigo-700);
+  transform: scale(1.08);
 }
 
 .nav-btn:focus-visible {
-  outline: 2px solid rgba(167, 139, 250, 0.85);
+  outline: 2px solid var(--indigo-500);
   outline-offset: 2px;
 }
 
-/* Current question — strong indigo highlight */
+/* Current */
 .nav-btn.current {
-  background: linear-gradient(135deg, #6b46c1, #7c3aed) !important;
-  border-color: transparent !important;
+  background: var(--indigo-600) !important;
+  border-color: var(--indigo-600) !important;
   color: white !important;
-  transform: scale(1.15) !important;
-  box-shadow:
-    0 4px 16px rgba(107, 70, 193, 0.55),
-    0 0 0 3px  rgba(167, 139, 250, 0.28) !important;
+  transform: scale(1.13) !important;
+  box-shadow: var(--shadow-brand) !important;
 }
 
-/* Answered question — green to indicate completion */
+/* Answered */
 .nav-btn.answered {
-  background: linear-gradient(135deg, #059669, #10b981) !important;
+  background: var(--green-500) !important;
   border-color: transparent !important;
   color: white !important;
-  box-shadow: 0 2px 10px rgba(16, 185, 129, 0.40) !important;
+  box-shadow: 0 2px 8px rgba(34,197,94,.35) !important;
 }
 
-/* Current AND answered — indigo with green ring */
+/* Current AND answered */
 .nav-btn.current.answered {
-  background: linear-gradient(135deg, #6b46c1, #7c3aed) !important;
-  border: 2px solid #10b981 !important;
+  background: var(--indigo-600) !important;
+  border: 2px solid var(--green-500) !important;
   color: white !important;
-  transform: scale(1.15) !important;
+  transform: scale(1.13) !important;
   box-shadow:
-    0 4px 16px rgba(107, 70, 193, 0.55),
-    0 0 0 4px  rgba(16, 185, 129, 0.28) !important;
+    var(--shadow-brand),
+    0 0 0 3px rgba(34,197,94,.22) !important;
 }
 
 /* ============================================================
-   MODAL
+   ┌─────────────────────────────────────────┐
+   │  MODALS                                 │
+   └─────────────────────────────────────────┘
    ============================================================ */
 
 .modal-overlay {
   position: fixed;
   inset: 0;
-  background: rgba(10, 2, 30, 0.78);
+  background: rgba(17,24,39,.65);
   display: flex;
   align-items: center;
   justify-content: center;
   z-index: 999;
   padding: 1.25rem;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  animation: overlayFadeIn 0.22s ease-out both;
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  animation: overlayIn .2s ease-out both;
 }
 
-@keyframes overlayFadeIn {
+@keyframes overlayIn {
   from { opacity: 0; }
   to   { opacity: 1; }
 }
 
 .modal-box {
-  background: rgba(255, 255, 255, 0.98);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border: 1px solid rgba(167, 139, 250, 0.28);
-  border-radius: 1.5rem;
-  padding: 2.75rem 2.5rem;
+  background: var(--white);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--r-2xl);
+  padding: 2.5rem;
   max-width: 44rem;
   width: 100%;
-  box-shadow:
-    0 28px 64px rgba(0, 0, 0, 0.40),
-    0 8px  24px rgba(107, 70, 193, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 1);
-  animation: modalSlideIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+  box-shadow: var(--shadow-xl);
+  animation: modalIn .28s cubic-bezier(.34,1.56,.64,1) both;
 }
 
-@keyframes modalSlideIn {
-  from { opacity: 0; transform: scale(0.88) translateY(18px); }
-  to   { opacity: 1; transform: scale(1)    translateY(0);    }
+@keyframes modalIn {
+  from { opacity: 0; transform: scale(.91) translateY(14px); }
+  to   { opacity: 1; transform: scale(1)   translateY(0);    }
 }
 
 /* ============================================================
-   TOAST NOTIFICATIONS
+   ┌─────────────────────────────────────────┐
+   │  TOAST NOTIFICATIONS                    │
+   └─────────────────────────────────────────┘
    ============================================================ */
 
 #toastContainer {
@@ -541,7 +613,7 @@ textarea::placeholder {
   z-index: 9000;
   display: flex;
   flex-direction: column;
-  gap: 0.625rem;
+  gap: .625rem;
   max-width: 360px;
   width: calc(100vw - 2.5rem);
   pointer-events: none;
@@ -551,123 +623,458 @@ textarea::placeholder {
   pointer-events: auto;
   display: flex;
   align-items: flex-start;
-  gap: 0.75rem;
-  padding: 0.9rem 1.125rem;
-  border-radius: 0.875rem;
-  font-family: 'Sora', system-ui, sans-serif;
-  font-size: 0.895rem;
+  gap: .75rem;
+  padding: .875rem 1.125rem;
+  border-radius: var(--r-md);
+  font-family: var(--font-main) !important;
+  font-size: .895rem;
   font-weight: 500;
   line-height: 1.5;
   max-width: 360px;
-  box-shadow:
-    0 10px 32px rgba(0, 0, 0, 0.28),
-    0 4px 10px  rgba(0, 0, 0, 0.16);
-  animation: toastSlideIn 0.3s cubic-bezier(0.22, 1, 0.36, 1) both;
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(255, 255, 255, 0.22);
+  box-shadow: var(--shadow-xl);
+  animation: toastIn .28s cubic-bezier(.22,1,.36,1) both;
+  border-left: 4px solid transparent;
 }
 
 .toast.dismissing {
-  animation: toastSlideOut 0.26s ease-in both;
+  animation: toastOut .22s ease-in both;
 }
 
-.toast-success { background: rgba(4,  120,  87, 0.93); color: white; }
-.toast-error   { background: rgba(185, 28,  28, 0.93); color: white; }
-.toast-info    { background: rgba(79,  70,  229, 0.93); color: white; }
-.toast-warning { background: rgba(180, 83,  9,  0.93); color: white; }
-
-@keyframes toastSlideIn {
-  from { opacity: 0; transform: translateX(110%) scale(0.94); }
-  to   { opacity: 1; transform: translateX(0) scale(1); }
+.toast-success {
+  background: var(--green-50);
+  border-left-color: var(--green-600);
+  color: #14532d;
 }
 
-@keyframes toastSlideOut {
-  from { opacity: 1; transform: translateX(0); max-height: 120px; }
-  to   { opacity: 0; transform: translateX(110%); max-height: 0; }
+.toast-error {
+  background: var(--red-50);
+  border-left-color: var(--red-600);
+  color: #7f1d1d;
+}
+
+.toast-info {
+  background: var(--indigo-50);
+  border-left-color: var(--indigo-600);
+  color: var(--indigo-950);
+}
+
+.toast-warning {
+  background: var(--amber-50);
+  border-left-color: var(--amber-600);
+  color: #78350f;
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(110%) scale(.95); }
+  to   { opacity: 1; transform: translateX(0) scale(1);      }
+}
+
+@keyframes toastOut {
+  from { opacity: 1; transform: translateX(0);    max-height: 120px; }
+  to   { opacity: 0; transform: translateX(110%); max-height: 0;     }
 }
 
 /* ============================================================
-   TEACHER DASHBOARD
-   tab-btn: used as class="tab-btn btn text-xl px-8 py-4"
-   tab-btn.active: JS adds this via classList.toggle
-   teacher-tab: panels shown/hidden via .hidden class
+   ┌─────────────────────────────────────────┐
+   │  TEACHER DASHBOARD                      │
+   └─────────────────────────────────────────┘
+   
+   Tab buttons: class="tab-btn btn text-xl px-8 py-4"
+   Active:      .tab-btn.active (toggled by JS)
+   Tab panels:  .teacher-tab [.hidden]
+   
+   The outer shell: class="max-w-7xl mx-auto glass p-10 mt-10 rounded-3xl"
+   We add visual structure to the tab bar area.
    ============================================================ */
 
+/* Tab panels */
 .teacher-tab {
   display: block;
-  animation: fadeIn 0.25s ease-out both;
+  animation: fadeIn .22s ease-out both;
 }
 
 .teacher-tab.hidden { display: none !important; }
 
+/* Tab button active state */
 .tab-btn.active {
-  background: linear-gradient(135deg, #6b46c1, #9f7aea) !important;
+  background: var(--indigo-600) !important;
   color: white !important;
-  box-shadow:
-    0 4px 16px rgba(107, 70, 193, 0.45),
-    inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+  box-shadow: var(--shadow-brand) !important;
+  border-color: transparent !important;
 }
 
+.tab-btn.active:hover:not(:disabled) {
+  background: var(--indigo-700) !important;
+}
+
+/* ── Teacher dashboard shell enhancements ──
+   JS renders a single big .glass card. We add a top accent bar. */
+.max-w-7xl.glass {
+  border-top: 4px solid var(--indigo-600) !important;
+  padding: 2.5rem !important;
+}
+
+/* ── Student cards ── */
+.teacher-tab .glass.p-6.rounded-2xl {
+  transition:
+    box-shadow var(--t-base) var(--ease),
+    transform  var(--t-base) var(--ease);
+}
+
+.teacher-tab .glass.p-6.rounded-2xl:hover {
+  box-shadow: var(--shadow-lg) !important;
+  transform: translateY(-1px);
+}
+
+/* ── Result cards ── */
+#resultsList .glass-dark {
+  transition:
+    box-shadow var(--t-base) var(--ease),
+    transform  var(--t-base) var(--ease);
+}
+
+#resultsList .glass-dark:hover {
+  box-shadow: var(--shadow-md) !important;
+  transform: translateY(-1px);
+}
+
+/* ── School rows ── */
+#schoolsList .glass-dark {
+  transition: box-shadow var(--t-base) var(--ease);
+}
+
+#schoolsList .glass-dark:hover {
+  box-shadow: var(--shadow-md) !important;
+}
+
+/* ── Tasks date items (purple-100 bg) ── */
+.bg-purple-100 {
+  background: var(--indigo-50) !important;
+  border: 1px solid var(--indigo-200) !important;
+  border-radius: var(--r-md) !important;
+}
+
+/* ── School group details/summary ── */
+.teacher-tab details.glass-dark summary,
+.teacher-tab details summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  padding: 1.25rem 1.5rem !important;
+  border-bottom: 1px solid var(--gray-200);
+  background: var(--gray-50) !important;
+  font-size: 1.125rem !important;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: var(--r-lg) var(--r-lg) 0 0;
+  transition: background var(--t-fast);
+}
+
+.teacher-tab details[open] summary {
+  background: var(--indigo-50) !important;
+  border-bottom-color: var(--indigo-200);
+}
+
+.teacher-tab details summary::-webkit-details-marker { display: none; }
+
+.teacher-tab details summary::after {
+  content: '›';
+  font-size: 1.25rem;
+  color: var(--gray-400);
+  font-weight: 400;
+  transition: transform var(--t-base);
+  flex-shrink: 0;
+}
+
+.teacher-tab details[open] summary::after {
+  transform: rotate(90deg);
+}
+
+/* ── Tasks section purple text overrides to indigo ── */
+.text-purple-700 { color: var(--indigo-700) !important; }
+.text-purple-600 { color: var(--indigo-600) !important; }
+.border-purple-600 { border-color: var(--indigo-600) !important; }
+.bg-purple-50 { background-color: var(--indigo-50) !important; }
+.border-purple-200 { border-color: var(--indigo-200) !important; }
+.border-purple-500\/50 { border-color: rgba(99,102,241,.4) !important; }
+.bg-purple-600\/30 { background: rgba(79,70,229,.08) !important; }
+
 /* ============================================================
-   CHAT
+   ┌─────────────────────────────────────────┐
+   │  PUBLIC CHAT                            │
+   └─────────────────────────────────────────┘
+   
+   chat.js generates a .max-w-4xl.glass.p-8 container.
+   Inside: rules box with border-l-4 border-purple-600 bg-purple-50,
+   message area, input row.
    ============================================================ */
 
+/* Messages container */
 #chatMessages {
   max-height: 22rem;
   overflow-y: auto;
   scroll-behavior: smooth;
-  padding-right: 0.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: .625rem;
+  padding-right: .25rem;
 }
 
 #chatMessages::-webkit-scrollbar       { width: 5px; }
 #chatMessages::-webkit-scrollbar-track { background: transparent; }
 #chatMessages::-webkit-scrollbar-thumb {
-  background: rgba(167, 139, 250, 0.38);
+  background: var(--indigo-200);
   border-radius: 99px;
+}
+#chatMessages::-webkit-scrollbar-thumb:hover {
+  background: var(--indigo-400);
+}
+
+/* Individual message bubbles — .glass-dark.p-4.rounded-xl.relative */
+#chatMessages .glass-dark {
+  border-radius: var(--r-md) !important;
+  padding: .875rem 1rem !important;
+  background: var(--white) !important;
+  border: 1px solid var(--gray-100) !important;
+  transition: box-shadow var(--t-fast);
+  position: relative;
+}
+
+#chatMessages .glass-dark:hover {
+  box-shadow: var(--shadow-sm) !important;
+}
+
+/* Teacher messages — JS adds: border-2 border-yellow-400 bg-yellow-50 */
+#chatMessages .glass-dark[class*="border-yellow"] {
+  background: var(--amber-50) !important;
+  border-color: var(--amber-500) !important;
+  border-left: 3px solid var(--amber-500) !important;
+}
+
+/* Typing indicator */
+#typingIndicator {
+  min-height: 1.25rem;
+  font-size: .8125rem;
+  color: var(--gray-400);
+  text-align: center;
+  font-style: italic;
+}
+
+/* Reply preview */
+#replyPreview {
+  border-radius: var(--r-md) !important;
+  background: var(--indigo-50) !important;
+  border: 1px solid var(--indigo-200) !important;
+  padding: .75rem 1rem !important;
+}
+
+/* ── Chat rules box ── */
+.border-l-4.border-purple-600.bg-purple-50 {
+  background: var(--indigo-50) !important;
+  border-left-color: var(--indigo-600) !important;
 }
 
 /* ============================================================
-   SUBJECT SELECTION
-   JS generates <label class="glass p-6 rounded-2xl cursor-pointer
-   hover:scale-105 transition shadow block"> containing a
-   <input type="checkbox" class="subject-checkbox w-5 h-5 ...">
+   ┌─────────────────────────────────────────┐
+   │  EXAM — SUBJECT SELECTION               │
+   └─────────────────────────────────────────┘
+   
+   Each subject: <label class="glass p-6 rounded-2xl cursor-pointer
+                  hover:scale-105 transition shadow block">
    ============================================================ */
 
+/* Subject label cards */
+label.glass[class*="cursor-pointer"] {
+  transition:
+    transform   var(--t-base) var(--ease),
+    box-shadow  var(--t-base) var(--ease),
+    border-color var(--t-base) var(--ease) !important;
+  border: 2px solid var(--gray-200) !important;
+  padding: 1.5rem !important;
+}
+
+label.glass[class*="cursor-pointer"]:hover {
+  transform: translateY(-3px) scale(1.02) !important;
+  border-color: var(--indigo-400) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+label.glass:has(.subject-checkbox:checked) {
+  border-color: var(--indigo-600) !important;
+  background: var(--indigo-50) !important;
+  box-shadow:
+    0 0 0 3px rgba(79,70,229,.12),
+    var(--shadow-md) !important;
+}
+
 .subject-checkbox {
-  width: 1.25rem !important;
-  height: 1.25rem !important;
-  accent-color: #7c3aed;
+  width: 1.125rem !important;
+  height: 1.125rem !important;
+  accent-color: var(--indigo-600);
   cursor: pointer;
 }
 
-/* Highlight label when its checkbox is checked */
-label:has(.subject-checkbox:checked) {
-  border: 2px solid #7c3aed !important;
-  background: rgba(237, 233, 254, 0.96) !important;
-  box-shadow:
-    0 0 0 4px rgba(124, 58, 237, 0.16),
-    0 6px 24px rgba(107, 70, 193, 0.18) !important;
+/* ============================================================
+   ┌─────────────────────────────────────────┐
+   │  EXAM — RESULTS SCREEN                  │
+   └─────────────────────────────────────────┘
+   
+   Results are in details/summary accordions with class:
+   "glass-dark rounded-2xl overflow-hidden shadow-lg"
+   
+   Each question: "glass p-6 rounded-xl border-4 border-green-500/red-500/gray-400"
+   ============================================================ */
+
+/* Results accordions */
+details.glass-dark,
+.space-y-6 details {
+  border-radius: var(--r-lg) !important;
+  overflow: hidden;
+  transition: box-shadow var(--t-base) var(--ease);
+  border: 1px solid var(--gray-200) !important;
+  background: var(--white) !important;
+}
+
+details.glass-dark[open],
+.space-y-6 details[open] {
+  box-shadow: var(--shadow-md) !important;
+}
+
+details.glass-dark > summary,
+.space-y-6 details > summary {
+  list-style: none;
+  cursor: pointer;
+  user-select: none;
+  -webkit-user-select: none;
+  padding: 1.25rem 1.5rem !important;
+  background: var(--gray-50) !important;
+  font-size: 1rem !important;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid transparent;
+  transition: background var(--t-fast);
+}
+
+details.glass-dark[open] > summary,
+.space-y-6 details[open] > summary {
+  background: var(--indigo-50) !important;
+  border-bottom-color: var(--indigo-100);
+  color: var(--indigo-900);
+}
+
+details summary::-webkit-details-marker { display: none; }
+
+details summary::after {
+  content: '›';
+  font-size: 1.25rem;
+  color: var(--gray-400);
+  font-weight: 400;
+  transition: transform var(--t-base);
+  flex-shrink: 0;
+}
+
+details[open] summary::after {
+  transform: rotate(90deg);
+  color: var(--indigo-500);
+}
+
+/* Question review cards — border-4 border-green/red/gray */
+.border-green-500 {
+  background: var(--green-50) !important;
+  border-color: var(--green-600) !important;
+}
+
+.border-red-500 {
+  background: var(--red-50) !important;
+  border-color: var(--red-600) !important;
+}
+
+.border-gray-400 {
+  background: var(--gray-50) !important;
+  border-color: var(--gray-300) !important;
+}
+
+/* bg-gray-100 explanation boxes */
+.bg-gray-100 {
+  background: var(--gray-50) !important;
+  border: 1px solid var(--gray-200) !important;
+  border-radius: var(--r-sm) !important;
 }
 
 /* ============================================================
-   APP MOUNT POINT
-   #app gets class from Tailwind: min-h-screen flex items-center
-   justify-center p-6
-   During exam it should scroll, not be flex-centered
+   ┌─────────────────────────────────────────┐
+   │  TASKS (tasks.js)                       │
+   └─────────────────────────────────────────┘
+   Renders into #tasksContainer.
+   Outer: glass-dark p-8 rounded-3xl mb-10 border-4 border-purple-500/50
+   Each date: glass p-6 rounded-2xl text-center
+   ============================================================ */
+
+#tasksContainer .glass-dark {
+  background: linear-gradient(135deg, var(--indigo-50) 0%, var(--white) 100%) !important;
+  border: 1.5px solid var(--indigo-200) !important;
+  border-radius: var(--r-2xl) !important;
+}
+
+#tasksContainer .glass {
+  border: 1.5px solid var(--gray-200) !important;
+  transition:
+    box-shadow var(--t-base) var(--ease),
+    transform  var(--t-base) var(--ease);
+}
+
+#tasksContainer .glass:hover {
+  box-shadow: var(--shadow-md) !important;
+  transform: translateY(-2px);
+}
+
+/* ============================================================
+   ┌─────────────────────────────────────────┐
+   │  APP MOUNT + LAYOUT                     │
+   └─────────────────────────────────────────┘
    ============================================================ */
 
 #app {
   min-height: 100vh;
 }
 
-/* Exam active state — set by our inline JS patch */
+/* Exam active: full-page scrollable layout */
 #app.exam-active {
   display: block !important;
   align-items: unset !important;
   justify-content: unset !important;
   padding: 1.5rem !important;
 }
+
+/* ============================================================
+   SCROLLBARS
+   ============================================================ */
+
+::-webkit-scrollbar       { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--gray-300);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--gray-400);
+}
+
+/* ============================================================
+   FOCUS
+   ============================================================ */
+
+:focus-visible {
+  outline: 2px solid var(--indigo-500);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+*:focus:not(:focus-visible) { outline: none; }
 
 /* ============================================================
    ANIMATIONS
@@ -678,22 +1085,22 @@ label:has(.subject-checkbox:checked) {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: scale(0.96) translateY(10px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-12px); }
+  from { opacity: 0; transform: translateY(-10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
 @keyframes pulse {
   0%, 100% { opacity: 1; }
-  50%       { opacity: 0.6; }
+  50%       { opacity: .6; }
 }
 
-.animate-fadeIn    { animation: fadeIn    0.35s ease-out both; }
-.animate-slideDown { animation: slideDown 0.28s ease-out both; }
+.animate-fadeIn    { animation: fadeIn    .32s ease-out both; }
+.animate-slideDown { animation: slideDown .25s ease-out both; }
 
 /* ============================================================
    HIDDEN
@@ -702,85 +1109,44 @@ label:has(.subject-checkbox:checked) {
 .hidden { display: none !important; }
 
 /* ============================================================
-   DETAILS/SUMMARY (results screen review accordions)
-   ============================================================ */
-
-details summary {
-  list-style: none;
-  cursor: pointer;
-  user-select: none;
-  -webkit-user-select: none;
-}
-
-details summary::-webkit-details-marker { display: none; }
-
-/* ============================================================
-   SCROLLBARS — global polish
-   ============================================================ */
-
-::-webkit-scrollbar       { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb {
-  background: rgba(167, 139, 250, 0.32);
-  border-radius: 99px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(139, 92, 246, 0.52);
-}
-
-/* ============================================================
-   FOCUS STATES — accessibility
-   ============================================================ */
-
-:focus-visible {
-  outline: 2px solid rgba(167, 139, 250, 0.85);
-  outline-offset: 3px;
-  border-radius: 4px;
-}
-
-*:focus:not(:focus-visible) {
-  outline: none;
-}
-
-/* ============================================================
    RESPONSIVE
    ============================================================ */
 
 @media (max-width: 640px) {
   .modal-box {
-    padding: 1.75rem 1.375rem;
-    border-radius: 1.25rem;
+    padding: 1.75rem 1.25rem;
+    border-radius: var(--r-xl);
   }
 
   .option-label {
     min-height: 52px;
-    padding: 0.8125rem 1rem !important;
+    padding: .8125rem .9375rem !important;
   }
 
   .nav-btn {
-    width: 2.375rem;
-    height: 2.375rem;
-    font-size: 0.72rem;
+    width: 2.25rem;
+    height: 2.25rem;
+    font-size: .72rem;
   }
 
   .btn {
-    padding: 0.75rem 1.25rem;
-    font-size: 0.875rem;
+    padding: .6875rem 1.125rem;
+    font-size: .875rem;
   }
 
-  .glass   { border-radius: 1.25rem !important; }
-  .glass-dark { border-radius: 0.875rem !important; }
+  .glass    { border-radius: var(--r-xl) !important; }
+  .glass-dark { border-radius: var(--r-lg) !important; }
 
-  #app { padding: 1rem !important; }
+  .max-w-7xl.glass { padding: 1.25rem !important; }
 
   #app:not(.exam-active) {
+    padding: 1rem !important;
     padding-top: 1.5rem !important;
-    align-items: flex-start !important;
   }
 }
 
 /* ============================================================
-   PRINT — result summary
+   PRINT
    ============================================================ */
 
 @media print {
@@ -788,16 +1154,11 @@ details summary::-webkit-details-marker { display: none; }
     background: white !important;
     color: black !important;
   }
-
   .glass, .glass-dark {
     background: white !important;
-    border: 1px solid #ddd !important;
+    border: 1px solid #ccc !important;
     box-shadow: none !important;
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
   }
-
   .btn { display: none !important; }
-  #toastContainer { display: none !important; }
-  .modal-overlay  { display: none !important; }
+  #toastContainer, .modal-overlay { display: none !important; }
 }
