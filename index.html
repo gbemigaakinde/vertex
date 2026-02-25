@@ -4,22 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
-  <!-- =====================================================
-       PRIMARY META
-       ===================================================== -->
   <title>Vertex Tutorial Centre</title>
   <meta name="description" content="Computer-Based Testing System for Vertex Tutorial students." />
   <meta name="author" content="Vertex Tutorial" />
 
-  <!-- =====================================================
-       PWA — Theme and display
-       ===================================================== -->
-  <meta name="theme-color" content="#1a0845" />
+  <!-- PWA -->
+  <meta name="theme-color" content="#4f46e5" />
   <meta name="color-scheme" content="light" />
-
-  <!-- =====================================================
-       PWA — iOS Safari
-       ===================================================== -->
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="VertexCBT" />
@@ -27,29 +18,17 @@
   <link rel="apple-touch-icon" sizes="152x152" href="vertex.jpeg" />
   <link rel="apple-touch-icon" sizes="144x144" href="vertex.jpeg" />
   <link rel="apple-touch-icon" sizes="128x128" href="vertex.jpeg" />
-
-  <!-- =====================================================
-       PWA — Web App Manifest
-       ===================================================== -->
   <link rel="manifest" href="/manifest.json" />
-
-  <!-- =====================================================
-       FAVICON
-       ===================================================== -->
   <link rel="icon" href="vertex.jpeg" type="image/png" />
 
-  <!-- =====================================================
-       STYLESHEETS
-       news-ticker.css and styles.css are precached by SW.
-       Tailwind is CDN-loaded; cached via stale-while-revalidate.
-       ===================================================== -->
+  <!-- Stylesheets -->
   <link rel="stylesheet" href="news-ticker.css" />
   <link rel="stylesheet" href="css/styles.css" />
 
   <!--
-    Tailwind CDN — must execute synchronously before DOM renders.
-    All JS-generated HTML uses Tailwind utility classes extensively.
-    styles.css defines our custom class names ON TOP of Tailwind.
+    Tailwind CDN — synchronous, must not be deferred.
+    Every JS module renders HTML using Tailwind utility classes.
+    Our styles.css defines named custom classes on top.
   -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -58,11 +37,8 @@
         theme: {
           extend: {
             fontFamily: {
-              /*
-               * Override Tailwind's default sans stack with Sora.
-               * Applies to all font-sans usages in generated HTML.
-               */
-              sans: ['Sora', 'Segoe UI', 'system-ui', '-apple-system', 'sans-serif'],
+              /* Override Tailwind's default sans with Outfit */
+              sans: ['Outfit', 'Segoe UI', 'system-ui', '-apple-system', 'sans-serif'],
             },
           },
         },
@@ -70,7 +46,7 @@
     }
   </script>
 
-  <!-- KaTeX -->
+  <!-- KaTeX for maths rendering -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex-auto-render.min.js"
@@ -78,14 +54,13 @@
 </head>
 
 <!--
-  NOTE: Tailwind's bg-gradient utility classes on <body> are intentionally
-  kept here for compatibility. Our styles.css body rule uses !important
-  on background-color and background-image to apply the deep violet theme
-  on top of them. Both coexist correctly.
+  The Tailwind body gradient utility classes below are kept for
+  compatibility. styles.css body rule uses !important to apply
+  our background on top of them cleanly.
 -->
 <body class="bg-gradient-to-br from-indigo-50 via-white to-purple-50">
 
-  <!-- Toast notification container -->
+  <!-- Toast notification container — ID used by ui.js -->
   <div
     id="toastContainer"
     class="fixed top-6 right-6 z-50 space-y-3 max-w-sm w-full pointer-events-none"
@@ -94,21 +69,19 @@
     role="status"
   ></div>
 
-  <!-- Main app mount point -->
+  <!-- Main app mount point — ID used by UI.mount() and all modules -->
   <div id="app" class="min-h-screen flex items-center justify-center p-6"></div>
 
   <!-- PWA Install Prompt -->
-  <div id="install-prompt" style="display: none; position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: rgba(255,255,255,0.96); padding: 16px 24px; border-radius: 20px; box-shadow: 0 8px 32px rgba(0,0,0,0.28); z-index: 9999; max-width: 90%; text-align: center; backdrop-filter: blur(16px); border: 1px solid rgba(167,139,250,0.3);">
-    <p style="margin: 0 0 12px 0; font-weight: 700; color: #1e0a4a; font-family: Sora, sans-serif;">Install Vertex Tutorial App</p>
-    <div style="display: flex; gap: 8px; justify-content: center;">
-      <button id="install-button" class="btn text-sm px-5 py-2">Install</button>
-      <button id="install-cancel" style="background:rgba(100,116,139,0.12); color:#475569; border:1.5px solid rgba(148,163,184,0.4); font-family:Sora,sans-serif; font-weight:600; font-size:0.875rem; padding:0.5rem 1.25rem; border-radius:0.875rem; cursor:pointer;">Later</button>
+  <div id="install-prompt" style="display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:white;padding:20px 28px;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.15);z-index:9999;max-width:90%;text-align:center;border:1px solid #e5e7eb;">
+    <p style="margin:0 0 14px 0;font-weight:700;color:#1f2937;font-family:Outfit,sans-serif;font-size:.9375rem;">Install Vertex Tutorial App</p>
+    <div style="display:flex;gap:8px;justify-content:center;">
+      <button id="install-button" style="background:#4f46e5;color:white;border:none;padding:8px 20px;border-radius:8px;font-weight:600;cursor:pointer;font-family:Outfit,sans-serif;font-size:.875rem;">Install</button>
+      <button id="install-cancel"  style="background:#f3f4f6;color:#4b5563;border:1px solid #e5e7eb;padding:8px 20px;border-radius:8px;cursor:pointer;font-family:Outfit,sans-serif;font-size:.875rem;">Later</button>
     </div>
   </div>
 
-  <!-- =====================================================
-       FIREBASE SDKs
-       ===================================================== -->
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
@@ -129,202 +102,124 @@
 
   <!-- =====================================================
        PRESENTATION ENHANCEMENTS
-       Purely visual — zero changes to exam logic, scoring,
-       timer, submission, or any IDs referenced by JS modules.
+       Purely visual layer. No logic, scoring, IDs touched.
 
-       What this does:
-       1. Makes exam header card sticky (timer always visible)
-       2. Switches #app between flex-center and block layout
-       3. Adds keyboard shortcuts (←/→ for prev/next, 1-4 for options)
-       4. Adds scroll shadow to sticky header
+       1. Sticky exam header (timer always on screen)
+       2. #app layout switch between flex-center / block
+       3. Keyboard shortcuts: ← → or P N (prev/next)
+                               1 2 3 4 (select option)
        ===================================================== -->
   <script>
     (function () {
       'use strict';
 
-      /* ─────────────────────────────────────────────────
-         1. Patch Exam.renderExam — purely presentation
-            Wait for Exam module to be defined, then wrap it.
-         ───────────────────────────────────────────────── */
-      function _patchExamModule() {
+      /* ── Patch Exam.renderExam ── */
+      function _patchExam() {
         if (!window.Exam || typeof window.Exam.renderExam !== 'function') {
-          setTimeout(_patchExamModule, 80);
-          return;
+          return setTimeout(_patchExam, 80);
         }
-
-        var _origRender = window.Exam.renderExam;
-
+        var _orig = window.Exam.renderExam;
         window.Exam.renderExam = function () {
-          /* Run all original exam rendering logic first */
-          _origRender.apply(this, arguments);
-
-          /* Then apply layout and sticky header */
-          _activateExamLayout();
-          _makeTimerSticky();
+          _orig.apply(this, arguments);
+          _setExamLayout(true);
+          _stickyTimer();
         };
       }
 
-      /* ─────────────────────────────────────────────────
-         2. Patch UI.mount — restores flex-center on
-            non-exam screens (login, subject selection, etc.)
-         ───────────────────────────────────────────────── */
-      function _patchUiModule() {
+      /* ── Patch UI.mount ── */
+      function _patchMount() {
         if (!window.UI || typeof window.UI.mount !== 'function') {
-          setTimeout(_patchUiModule, 80);
-          return;
+          return setTimeout(_patchMount, 80);
         }
-
-        var _origMount = window.UI.mount;
-
+        var _orig = window.UI.mount;
         window.UI.mount = function (html) {
-          /* Run original mount */
-          _origMount.call(this, html);
-
-          /* Decide layout based on exam step */
-          var exam = window.AppState && window.AppState.exam;
-          if (!exam || exam.step !== 'exam') {
-            _deactivateExamLayout();
-          }
+          _orig.call(this, html);
+          var inExam = window.AppState &&
+                       window.AppState.exam &&
+                       window.AppState.exam.step === 'exam';
+          if (!inExam) _setExamLayout(false);
         };
       }
 
-      /* ─────────────────────────────────────────────────
-         3. Activate exam layout on #app
-         ───────────────────────────────────────────────── */
-      function _activateExamLayout() {
+      /* ── Toggle #app between flex-center and block ── */
+      function _setExamLayout(active) {
         var app = document.getElementById('app');
         if (!app) return;
-        /* Remove Tailwind flex centering (added by Tailwind utility classes) */
-        app.style.display         = 'block';
-        app.style.alignItems      = '';
-        app.style.justifyContent  = '';
-        app.style.padding         = '1.5rem';
-        app.classList.add('exam-active');
-      }
-
-      function _deactivateExamLayout() {
-        var app = document.getElementById('app');
-        if (!app) return;
-        app.style.display         = '';
-        app.style.alignItems      = '';
-        app.style.justifyContent  = '';
-        app.style.padding         = '';
-        app.classList.remove('exam-active');
-      }
-
-      /* ─────────────────────────────────────────────────
-         4. Make the exam header card (first .glass child
-            of #app containing #timerDisplay) sticky so
-            the timer is always on screen.
-         ───────────────────────────────────────────────── */
-      function _makeTimerSticky() {
-        var app = document.getElementById('app');
-        if (!app) return;
-
-        /* exam.js renders:
-             <div class="max-w-4xl ...">           ← outerWrap
-               <div class="glass p-6 ...">         ← header card (has #timerDisplay)
-               <div class="glass p-8 ...">         ← question card
-               ...
-        */
-        var outerWrap = app.firstElementChild;
-        if (!outerWrap) return;
-
-        var firstCard = outerWrap.firstElementChild;
-        if (!firstCard) return;
-
-        /* Only sticky the card that holds the timer */
-        if (!firstCard.querySelector('#timerDisplay')) return;
-
-        /* Already patched */
-        if (firstCard.classList.contains('exam-header-sticky')) return;
-
-        firstCard.classList.add('exam-header-sticky');
-
-        /* IntersectionObserver: add .stuck shadow when card hits top */
-        if ('IntersectionObserver' in window) {
-          /* Sentinel pixel above the card */
-          var sentinel = document.createElement('div');
-          sentinel.style.cssText =
-            'height:1px; margin-bottom:-1px; pointer-events:none;';
-          outerWrap.insertBefore(sentinel, firstCard);
-
-          if (window._examStickyObserver) {
-            window._examStickyObserver.disconnect();
-          }
-
-          window._examStickyObserver = new IntersectionObserver(
-            function (entries) {
-              var card = document.querySelector('.exam-header-sticky');
-              if (!card) return;
-              if (!entries[0].isIntersecting) {
-                card.classList.add('stuck');
-              } else {
-                card.classList.remove('stuck');
-              }
-            },
-            { threshold: [0], rootMargin: '-1px 0px 0px 0px' }
-          );
-
-          window._examStickyObserver.observe(sentinel);
-        }
-      }
-
-      /* ─────────────────────────────────────────────────
-         5. Keyboard shortcuts (presentation only)
-            ←/→ or P/N = previous/next question
-            1/2/3/4    = select option A/B/C/D
-         ───────────────────────────────────────────────── */
-      document.addEventListener('keydown', function (e) {
-        /* Never fire when user is typing in an input */
-        var active = document.activeElement;
         if (active) {
-          var t = active.tagName;
-          if (t === 'INPUT' || t === 'TEXTAREA' || t === 'SELECT') return;
+          app.style.display        = 'block';
+          app.style.alignItems     = '';
+          app.style.justifyContent = '';
+          app.style.padding        = '1.5rem';
+          app.classList.add('exam-active');
+        } else {
+          app.style.display        = '';
+          app.style.alignItems     = '';
+          app.style.justifyContent = '';
+          app.style.padding        = '';
+          app.classList.remove('exam-active');
         }
+      }
 
-        /* Only during an active exam */
+      /* ── Make the exam header card sticky ──
+         exam.js renders:
+           <div class="max-w-4xl mx-auto p-4 flex flex-col gap-6">   ← wrap
+             <div class="glass p-6 rounded-3xl ...">                  ← header (has #timerDisplay)
+             <div class="glass p-8 rounded-3xl">                      ← question
+         We add .exam-header-sticky to the first child glass div.
+      */
+      function _stickyTimer() {
+        var app = document.getElementById('app');
+        if (!app) return;
+        var wrap = app.firstElementChild;
+        if (!wrap) return;
+        var header = wrap.firstElementChild;
+        if (!header || !header.classList.contains('glass')) return;
+        if (!header.querySelector('#timerDisplay')) return;
+        if (header.classList.contains('exam-header-sticky')) return;
+
+        header.classList.add('exam-header-sticky');
+
+        /* Scroll observer: add .stuck shadow when header pins */
+        if (!('IntersectionObserver' in window)) return;
+        var sentinel = document.createElement('div');
+        sentinel.style.cssText = 'height:1px;pointer-events:none;visibility:hidden;';
+        wrap.insertBefore(sentinel, header);
+
+        if (window._stickyObs) window._stickyObs.disconnect();
+        window._stickyObs = new IntersectionObserver(function (entries) {
+          var el = document.querySelector('.exam-header-sticky');
+          if (!el) return;
+          el.classList.toggle('stuck', !entries[0].isIntersecting);
+        }, { threshold: [0], rootMargin: '-1px 0px 0px 0px' });
+        window._stickyObs.observe(sentinel);
+      }
+
+      /* ── Keyboard shortcuts ── */
+      document.addEventListener('keydown', function (e) {
+        var tag = document.activeElement && document.activeElement.tagName;
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
         var exam = window.AppState && window.AppState.exam;
         if (!exam || exam.step !== 'exam') return;
 
-        switch (e.key) {
-          case 'ArrowRight':
-          case 'n':
-          case 'N':
-            e.preventDefault();
-            if (window.Exam && window.Exam.nextQuestion) {
-              window.Exam.nextQuestion();
-            }
-            break;
-
-          case 'ArrowLeft':
-          case 'p':
-          case 'P':
-            e.preventDefault();
-            if (window.Exam && window.Exam.prevQuestion) {
-              window.Exam.prevQuestion();
-            }
-            break;
-
-          case '1': case '2': case '3': case '4': case '5':
-            var optIdx = parseInt(e.key, 10) - 1;
-            var radios = document.querySelectorAll('input[name="option"]');
-            if (radios[optIdx]) {
-              radios[optIdx].checked = true;
-              radios[optIdx].dispatchEvent(
-                new Event('change', { bubbles: true })
-              );
-            }
-            break;
+        if (e.key === 'ArrowRight' || e.key === 'n' || e.key === 'N') {
+          e.preventDefault();
+          window.Exam && window.Exam.nextQuestion();
+        } else if (e.key === 'ArrowLeft' || e.key === 'p' || e.key === 'P') {
+          e.preventDefault();
+          window.Exam && window.Exam.prevQuestion();
+        } else if (e.key >= '1' && e.key <= '5') {
+          var idx = parseInt(e.key, 10) - 1;
+          var radios = document.querySelectorAll('input[name="option"]');
+          if (radios[idx]) {
+            radios[idx].checked = true;
+            radios[idx].dispatchEvent(new Event('change', { bubbles: true }));
+          }
         }
       });
 
-      /* ─────────────────────────────────────────────────
-         Start all patches after DOM is ready
-         ───────────────────────────────────────────────── */
       document.addEventListener('DOMContentLoaded', function () {
-        _patchExamModule();
-        _patchUiModule();
+        _patchExam();
+        _patchMount();
       });
 
     }());
@@ -332,12 +227,7 @@
 
   <!-- =====================================================
        SERVICE WORKER REGISTRATION
-       Placed after all application scripts so that
-       AppState, UI, etc. are defined before the SW
-       controller change handler fires.
-
-       IMPORTANT: This script must remain inline here and
-       must not be moved to a separate file.
+       Must remain inline after all module scripts.
        ===================================================== -->
   <script>
     (function () {
@@ -345,8 +235,8 @@
 
       if (!('serviceWorker' in navigator)) return;
 
-      var _swUpdateReady   = false;
-      var _swRegistration  = null;
+      var _swUpdateReady  = false;
+      var _swRegistration = null;
 
       function _registerSW() {
         navigator.serviceWorker
@@ -354,49 +244,36 @@
           .then(function (reg) {
             _swRegistration = reg;
             console.log('[SW] Registered. Scope:', reg.scope);
-
-            if (reg.waiting) {
-              _onUpdateReady(reg.waiting);
-            }
-
+            if (reg.waiting) _onUpdateReady(reg.waiting);
             reg.addEventListener('updatefound', function () {
-              var newWorker = reg.installing;
-              if (!newWorker) return;
-
-              newWorker.addEventListener('statechange', function () {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  _onUpdateReady(newWorker);
+              var nw = reg.installing;
+              if (!nw) return;
+              nw.addEventListener('statechange', function () {
+                if (nw.state === 'installed' && navigator.serviceWorker.controller) {
+                  _onUpdateReady(nw);
                 }
               });
             });
           })
-          .catch(function (err) {
-            console.error('[SW] Registration failed:', err);
-          });
+          .catch(function (err) { console.error('[SW] Registration failed:', err); });
 
         navigator.serviceWorker.addEventListener('controllerchange', function () {
-          if (_swUpdateReady) {
-            window.location.reload();
-          }
+          if (_swUpdateReady) window.location.reload();
         });
       }
 
       function _onUpdateReady(worker) {
         _swUpdateReady = true;
-
-        function _showUpdateToast() {
+        function _show() {
           if (window.UI && typeof window.UI.showUpdateToast === 'function') {
-            window.UI.showUpdateToast(function onConfirm() {
-              if (worker) {
-                worker.postMessage({ type: 'SKIP_WAITING' });
-              }
+            window.UI.showUpdateToast(function () {
+              if (worker) worker.postMessage({ type: 'SKIP_WAITING' });
             });
           } else {
-            setTimeout(_showUpdateToast, 500);
+            setTimeout(_show, 500);
           }
         }
-
-        _showUpdateToast();
+        _show();
       }
 
       if (document.readyState === 'loading') {
@@ -404,7 +281,6 @@
       } else {
         setTimeout(_registerSW, 0);
       }
-
     }());
   </script>
 
