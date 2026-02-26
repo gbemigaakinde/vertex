@@ -635,19 +635,30 @@ if (!_qBank || !_qBank[classKey]) {
   }
 
 function _renderKatex() {
-  // renderMathInElement may not be ready yet if KaTeX scripts are still loading
-  if (window.renderMathInElement) {
-    renderMathInElement(document.body, {
-      delimiters: [
-        { left: '$$', right: '$$', display: true },
-        { left: '$',  right: '$',  display: false }
-      ],
-      throwOnError: false
-    });
-  } else {
-    // Retry until the deferred scripts finish loading
-    setTimeout(_renderKatex, 100);
-  }
+  // Use requestAnimationFrame to ensure the DOM has painted
+  // before we attempt to render — this is critical after UI.mount()
+  requestAnimationFrame(function () {
+    // Check the flag YOUR index.html actually sets (not renderMathInElement directly)
+    if (window._katexAutoRenderReady && window.renderMathInElement) {
+      try {
+        renderMathInElement(document.getElementById('app'), {
+          delimiters: [
+            { left: '$$', right: '$$', display: true  },
+            { left: '$',  right: '$',  display: false },
+            { left: '\\(', right: '\\)', display: false },
+            { left: '\\[', right: '\\]', display: true  }
+          ],
+          throwOnError: false,
+          errorColor: '#cc0000'
+        });
+      } catch (err) {
+        console.warn('[KaTeX] Render error:', err);
+      }
+    } else {
+      // Scripts still loading — retry after a short delay
+      setTimeout(_renderKatex, 150);
+    }
+  });
 }
 
   let _currentResultForShare = null;
