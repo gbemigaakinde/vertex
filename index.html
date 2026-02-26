@@ -46,10 +46,28 @@
     }
   </script>
 
-  <!-- KaTeX for maths rendering -->
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <!-- =====================================================
+       KaTeX — Option A math rendering
+       
+       LOAD ORDER IS CRITICAL — do not rearrange:
+       
+       1. katex.min.css    — styles (non-blocking link)
+       2. katex.min.js     — core library   (defer)
+       3. auto-render.js   — DOM scanner    (defer, depends on #2)
+       
+       Both JS files are `defer` so they execute after HTML
+       parsing in document order — auto-render always loads
+       after core. The onload on auto-render sets
+       window._katexAutoRenderReady = true, which is the flag
+       exam.js checks before calling renderMathInElement().
+       
+       DO NOT add crossorigin="anonymous" — it causes CORS
+       failures on some mobile networks/proxies and silently
+       prevents the scripts from executing.
+       ===================================================== -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
-  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex-auto-render.min.js"
+  <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
           onload="window._katexAutoRenderReady = true;"></script>
 </head>
 
