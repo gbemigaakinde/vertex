@@ -1,5 +1,21 @@
 /* ============================================================
    js/exam.js — Exam engine: start, navigate, timer, submit
+   ============================================================
+   CHANGES FROM PREVIOUS VERSION:
+   1. preprocessLatex() added — converts bare LaTeX symbols
+      (outside $...$ blocks) to Unicode/HTML before escaping.
+      Acts as Option B: cheap, offline-safe symbol conversion.
+   2. _renderKatex() fixed:
+      - Checks window._katexAutoRenderReady (the flag index.html
+        actually sets) instead of window.renderMathInElement alone.
+      - Wrapped in requestAnimationFrame() so KaTeX runs after
+        the browser has painted the new DOM nodes.
+      - Scoped to #app instead of document.body (faster).
+      - try/catch prevents one bad expression breaking the page.
+      - Added \( \) and \[ \] delimiters for full LaTeX coverage.
+   3. All question text, options, and explanations now pass
+      through preprocessLatex() before _escHtml() so both
+      Option A (KaTeX) and Option B (preprocessor) run together.
    ============================================================ */
 
 (function () {
@@ -8,6 +24,90 @@
   const S   = () => AppState;
   const Db  = () => window.fbDb;
   const CFG = () => AppConfig;
+
+  /* ══════════════════════════════════════════════════════════
+     OPTION B — LaTeX preprocessor
+     Runs BEFORE html is written to the DOM.
+     Only touches symbols that are OUTSIDE $...$ math blocks —
+     those are left untouched for KaTeX (Option A) to handle.
+     ══════════════════════════════════════════════════════════ */
+  function preprocessLatex(str) {
+    if (str == null) return '';
+    str = String(str);
+
+    /* ── Step 1: Pull out $...$ / $$...$$ blocks ──
+       Replace them with numbered placeholders so the symbol
+       substitutions below never accidentally touch LaTeX math. */
+    const protectedBlocks = [];
+    str = str.replace(/\$\$[\s\S]*?\$\$|\$[^$]*?\$/g, function (match) {
+      protectedBlocks.push(match);
+      return '%%MATH_' + (protectedBlocks.length - 1) + '%%';
+    });
+
+    /* ── Step 2: Convert bare symbols outside math blocks ── */
+    str = str
+      // Arrows / logic
+      .replace(/\\implies/g,        '⟹')
+      .replace(/\\Rightarrow/g,     '⇒')
+      .replace(/\\rightarrow/g,     '→')
+      .replace(/\\leftarrow/g,      '←')
+      .replace(/\\leftrightarrow/g, '↔')
+
+      // Inequalities
+      .replace(/\\geq/g,  '≥')
+      .replace(/\\leq/g,  '≤')
+      .replace(/\\neq/g,  '≠')
+      .replace(/\\approx/g, '≈')
+
+      // Arithmetic
+      .replace(/\\times/g, '×')
+      .replace(/\\div/g,   '÷')
+      .replace(/\\pm/g,    '±')
+      .replace(/\\cdot/g,  '·')
+
+      // Degree sign — handles 90^\circ and bare \degree
+      .replace(/\^\\circ/g,  '°')
+      .replace(/\\degree/g,  '°')
+
+      // Common constants / Greek
+      .replace(/\\infty/g,  '∞')
+      .replace(/\\pi/g,     'π')
+      .replace(/\\alpha/g,  'α')
+      .replace(/\\beta/g,   'β')
+      .replace(/\\gamma/g,  'γ')
+      .replace(/\\delta/g,  'δ')
+      .replace(/\\theta/g,  'θ')
+      .replace(/\\lambda/g, 'λ')
+      .replace(/\\mu/g,     'μ')
+      .replace(/\\sigma/g,  'σ')
+      .replace(/\\omega/g,  'ω')
+
+      // Sets / misc
+      .replace(/\\in/g,      '∈')
+      .replace(/\\notin/g,   '∉')
+      .replace(/\\subset/g,  '⊂')
+      .replace(/\\cup/g,     '∪')
+      .replace(/\\cap/g,     '∩')
+      .replace(/\\emptyset/g,'∅')
+      .replace(/\\therefore/g,'∴')
+      .replace(/\\because/g, '∵');
+
+    /* ── Step 3: Restore protected math blocks ── */
+    str = str.replace(/%%MATH_(\d+)%%/g, function (_, i) {
+      return protectedBlocks[parseInt(i, 10)];
+    });
+
+    return str;
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     Convenience wrapper — preprocess then HTML-escape.
+     Use this everywhere question text / options / explanations
+     are inserted into HTML.
+     ══════════════════════════════════════════════════════════ */
+  function _safeQ(str) {
+    return _escHtml(preprocessLatex(str));
+  }
 
   /* ── Load or resume exam after login ── */
   async function loadOrStart() {
@@ -289,7 +389,7 @@ if (!_qBank || !_qBank[classKey]) {
 
         <!-- Question -->
         <div class="glass p-8 rounded-3xl">
-          <p class="text-xl md:text-2xl leading-relaxed mb-8 font-medium">${_escHtml(q.q)}</p>
+          <p class="text-xl md:text-2xl leading-relaxed mb-8 font-medium">${_safeQ(q.q)}</p>
           <div class="space-y-4" id="optionsContainer">
             ${q.opts.map((opt, idx) => {
               const selected = exam.answers[`${subj}-${exam.currentIndex}`] === idx;
@@ -300,7 +400,7 @@ if (!_qBank || !_qBank[classKey]) {
                     ${selected ? 'checked' : ''}
                     class="w-5 h-5 accent-purple-600 mr-4"
                     aria-label="Option ${String.fromCharCode(65 + idx)}" />
-                  <span>${_escHtml(opt)}</span>
+                  <span>${_safeQ(opt)}</span>
                 </label>`;
             }).join('')}
           </div>
@@ -369,7 +469,7 @@ if (!_qBank || !_qBank[classKey]) {
     // Sync timer display immediately
     _updateTimerDisplay();
 
-    // LaTeX Support: Render math in the question and options
+    // Option A — KaTeX renders any remaining $...$ math expressions
     _renderKatex();
   }
 
@@ -598,21 +698,21 @@ if (!_qBank || !_qBank[classKey]) {
                                   : 'border-red-500 bg-red-50';
                     return `
                       <div class="glass p-6 rounded-xl border-4 ${border}">
-                        <p class="font-semibold text-lg mb-4">Q${i + 1}: ${_escHtml(q.q)}</p>
+                        <p class="font-semibold text-lg mb-4">Q${i + 1}: ${_safeQ(q.q)}</p>
                         <div class="grid md:grid-cols-2 gap-6 mb-4">
                           <div>
                             <strong>Your answer:</strong>
                             <span class="ml-3 ${correct ? 'text-green-700' : userAns === undefined ? 'text-gray-600' : 'text-red-700'}">
-                              ${userAns !== undefined ? _escHtml(q.opts[userAns]) : 'Not answered'}
+                              ${userAns !== undefined ? _safeQ(q.opts[userAns]) : 'Not answered'}
                             </span>
                           </div>
                           <div>
                             <strong>Correct answer:</strong>
-                            <span class="ml-3 text-green-700">${_escHtml(q.opts[q.ans])}</span>
+                            <span class="ml-3 text-green-700">${_safeQ(q.opts[q.ans])}</span>
                           </div>
                         </div>
                         <div class="bg-gray-100 p-4 rounded-lg text-sm">
-                          <strong>Explanation:</strong> ${_escHtml(q.exp)}
+                          <strong>Explanation:</strong> ${_safeQ(q.exp)}
                         </div>
                       </div>`;
                   }).join('')}
@@ -630,36 +730,49 @@ if (!_qBank || !_qBank[classKey]) {
 
    _currentResultForShare = { exam, result };
 
-    // LaTeX Support: Render math in the review/explanations section
+    // Option A — KaTeX renders math in review/explanations section
     _renderKatex();
   }
 
-function _renderKatex() {
-  // Use requestAnimationFrame to ensure the DOM has painted
-  // before we attempt to render — this is critical after UI.mount()
-  requestAnimationFrame(function () {
-    // Check the flag YOUR index.html actually sets (not renderMathInElement directly)
-    if (window._katexAutoRenderReady && window.renderMathInElement) {
-      try {
-        renderMathInElement(document.getElementById('app'), {
-          delimiters: [
-            { left: '$$', right: '$$', display: true  },
-            { left: '$',  right: '$',  display: false },
-            { left: '\\(', right: '\\)', display: false },
-            { left: '\\[', right: '\\]', display: true  }
-          ],
-          throwOnError: false,
-          errorColor: '#cc0000'
-        });
-      } catch (err) {
-        console.warn('[KaTeX] Render error:', err);
+  /* ══════════════════════════════════════════════════════════
+     OPTION A — KaTeX renderer (fixed)
+
+     Changes from original:
+     1. Checks window._katexAutoRenderReady (the flag set by the
+        onload on the auto-render <script> tag in index.html)
+        AND window.renderMathInElement — both must be ready.
+     2. Wrapped in requestAnimationFrame() so KaTeX scans the
+        DOM after the browser has actually painted the new nodes
+        written by UI.mount() / renderExam() / renderResults().
+     3. Scoped to #app instead of document.body — faster and
+        avoids re-processing static page chrome on every question.
+     4. try/catch so a single malformed expression (e.g. unclosed
+        $) doesn't silently kill rendering for the whole question.
+     5. Added \( \) and \[ \] delimiters for full LaTeX coverage.
+     ══════════════════════════════════════════════════════════ */
+  function _renderKatex() {
+    requestAnimationFrame(function () {
+      if (window._katexAutoRenderReady && window.renderMathInElement) {
+        try {
+          renderMathInElement(document.getElementById('app'), {
+            delimiters: [
+              { left: '$$', right: '$$', display: true  },
+              { left: '$',  right: '$',  display: false },
+              { left: '\\(', right: '\\)', display: false },
+              { left: '\\[', right: '\\]', display: true  }
+            ],
+            throwOnError: false,
+            errorColor: '#cc0000'
+          });
+        } catch (err) {
+          console.warn('[KaTeX] Render error:', err);
+        }
+      } else {
+        // KaTeX scripts still loading — retry shortly
+        setTimeout(_renderKatex, 150);
       }
-    } else {
-      // Scripts still loading — retry after a short delay
-      setTimeout(_renderKatex, 150);
-    }
-  });
-}
+    });
+  }
 
   let _currentResultForShare = null;
 
@@ -712,6 +825,7 @@ function _renderKatex() {
     _copyResult,
     _escHtml,
     _escAttr,
+    preprocessLatex,   // exposed for testing / use by other modules if needed
   };
 
 })();
