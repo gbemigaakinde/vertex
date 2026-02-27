@@ -1,18 +1,15 @@
 /* ============================================================
-   js/chat.js — Public Discussion Chat
+   js/chat.js — Public Discussion Chat (UI v2)
+   ============================================================
+   UI CHANGES:
+   - All oversized text classes removed (text-3xl→text-xl etc.)
+   - Button sizes normalized to standard .btn height
+   - Padding reduced on containers
+   - No logic or functional changes
    ============================================================ */
 
 (function () {
   'use strict';
-
-  /* -------------------------------------------------- */
-  /* Open chat                                          */
-  /* Can be called from:                                */
-  /*   - Student dashboard (replaces app content)       */
-  /*   - Teacher dashboard (replaces app content)       */
-  /* In both cases UI.mount replaces #app; the Back     */
-  /* button re-renders the correct dashboard.           */
-  /* -------------------------------------------------- */
 
   async function openPublicChat() {
     const isTeacher = AppState.userId === AppConfig.TEACHER_UID;
@@ -28,19 +25,25 @@
     const canSend = isTeacher || !chatLocked;
 
     UI.mount(`
-      <div class="max-w-4xl mx-auto glass p-8 mt-8 rounded-3xl animate-fadeIn">
-        <div class="flex justify-between items-center mb-6">
-          <h2 class="text-3xl font-bold">Public Discussion Chat</h2>
-          <button onclick="Chat.backFromChat()" class="btn bg-gray-500 hover:bg-gray-600 text-lg px-6 py-3">Back</button>
+      <div class="max-w-4xl mx-auto glass animate-fadeIn" style="padding:1.25rem 1.5rem;margin-top:1.25rem;margin-bottom:1.25rem;">
+
+        <!-- Header -->
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="font-bold" style="font-size:1.1875rem;">Public Discussion Chat</h2>
+          <button onclick="Chat.backFromChat()" class="btn bg-gray-500 hover:bg-gray-600" style="font-size:0.8125rem;">
+            ← Back
+          </button>
         </div>
 
-        <div class="glass-dark p-5 rounded-2xl mb-6 text-center">
-          <p class="text-lg font-semibold text-purple-700">For all students — ask questions, discuss, help each other</p>
+        <!-- Subtitle -->
+        <div class="glass-dark text-center mb-4" style="padding:.625rem 1rem;font-size:.8125rem;color:#4338ca;font-weight:500;">
+          For all students — ask questions, discuss, help each other
         </div>
 
-        <div class="glass p-5 rounded-2xl mb-6 border-l-4 border-purple-600 bg-purple-50">
-          <h3 class="font-bold mb-3">Chat Rules</h3>
-          <ul class="space-y-2 text-sm opacity-90">
+        <!-- Chat rules -->
+        <div class="mb-4 border-l-4 border-purple-600 bg-purple-50 rounded-r-lg" style="padding:.75rem 1rem;">
+          <h3 class="font-semibold mb-2" style="font-size:.8125rem;">Chat Rules</h3>
+          <ul style="font-size:.8125rem;color:#374151;line-height:1.7;">
             <li>• Be respectful and kind</li>
             <li>• No abusive or offensive language</li>
             <li>• Academic questions only</li>
@@ -49,45 +52,46 @@
         </div>
 
         ${chatLocked && !isTeacher ? `
-          <div class="glass-dark p-5 rounded-2xl mb-6 text-center border border-red-400 bg-red-50">
-            <p class="text-xl text-red-600 font-bold">Chat is currently LOCKED</p>
-            <p class="text-sm mt-1">You can read messages but not send new ones.</p>
+          <div class="mb-4 rounded-lg text-center" style="padding:.75rem 1rem;border:1px solid #fca5a5;background:#fef2f2;">
+            <p style="font-size:.875rem;font-weight:700;color:#dc2626;">Chat is currently locked</p>
+            <p style="font-size:.8125rem;color:#6b7280;margin-top:2px;">You can read messages but not send new ones.</p>
           </div>` : ''}
 
         ${isTeacher ? `
-          <div class="text-center mb-6">
+          <div class="text-center mb-4">
             <button id="lockBtn" onclick="Chat.toggleLock()"
-                    class="btn ${chatLocked ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'} text-lg px-8 py-3">
+                    class="btn ${chatLocked ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}">
               ${chatLocked ? 'Unlock Chat' : 'Lock Chat'}
             </button>
           </div>` : ''}
 
         <!-- Messages -->
-        <div class="glass-dark p-5 rounded-2xl mb-4 border-2 border-purple-200">
-          <div id="chatMessages" class="space-y-3"></div>
+        <div class="glass-dark mb-3" style="padding:.75rem;border-radius:10px;border:1px solid #e5e7eb;">
+          <div id="chatMessages"></div>
         </div>
 
         <!-- Typing indicator -->
-        <div id="typingIndicator" class="text-sm text-center opacity-60 mb-3 min-h-5"></div>
+        <div id="typingIndicator" class="text-center mb-2" style="min-height:1rem;font-size:.75rem;color:#9ca3af;font-style:italic;"></div>
 
         <!-- Reply preview -->
-        <div id="replyPreview" class="hidden glass-dark p-4 rounded-xl mb-3 flex justify-between items-center gap-4">
+        <div id="replyPreview" class="hidden flex justify-between items-center gap-3 mb-3"
+             style="border-radius:8px;">
           <div class="flex-1 min-w-0">
-            <strong>Replying to <span id="replyName"></span>:</strong>
-            <span id="replyText" class="block truncate text-sm opacity-70 mt-1"></span>
+            <strong style="font-size:.8125rem;">Replying to <span id="replyName"></span>:</strong>
+            <span id="replyText" class="block truncate" style="font-size:.75rem;color:#6b7280;margin-top:2px;"></span>
           </div>
-          <button onclick="Chat.cancelReply()" class="text-red-500 text-2xl flex-shrink-0">×</button>
+          <button onclick="Chat.cancelReply()" style="color:#dc2626;font-size:1.25rem;background:none;border:none;cursor:pointer;flex-shrink:0;line-height:1;">×</button>
         </div>
 
-        <!-- Input -->
-        <div class="flex gap-3">
+        <!-- Input row -->
+        <div class="flex gap-2">
           <input id="chatInput" type="text"
                  placeholder="${canSend ? 'Type your message...' : 'Chat is locked'}"
-                 class="flex-1"
                  autocomplete="off"
+                 style="flex:1;"
                  ${canSend ? '' : 'disabled'} />
           <button id="sendBtn" onclick="Chat.sendMessage()"
-                  class="btn bg-green-600 hover:bg-green-700 text-lg px-6"
+                  class="btn bg-green-600 hover:bg-green-700"
                   ${canSend ? '' : 'disabled'}>Send</button>
         </div>
       </div>`);
@@ -98,13 +102,11 @@
     const input = document.getElementById('chatInput');
     if (input && canSend) {
       input.focus();
-
       input.addEventListener('keydown', e => {
         if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }
       });
 
       let typingTimer;
-
       input.addEventListener('input', () => {
         if (!input.value.trim()) return;
         _setTyping(isTeacher);
@@ -114,12 +116,8 @@
     }
   }
 
-  /* -------------------------------------------------- */
-  /* Subscribe to messages                              */
-  /* -------------------------------------------------- */
-
+  /* ── Subscribe to messages ── */
   function _subscribeMessages(isTeacher) {
-    // Cancel previous listener before re-subscribing
     AppState.cancelListener('chatMessages');
 
     const unsub = Db()
@@ -135,12 +133,10 @@
 
         const msgs = [];
         snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
-
-        // Pinned messages float to top, otherwise timestamp order is preserved
         msgs.sort((a, b) => (b.pinned ? 1 : 0) - (a.pinned ? 1 : 0));
 
         container.innerHTML = msgs.length === 0
-          ? '<p class="text-center opacity-60 py-4">No messages yet. Be the first!</p>'
+          ? '<p style="text-align:center;font-size:.8125rem;color:#9ca3af;padding:1rem 0;">No messages yet. Be the first!</p>'
           : msgs.map(msg => _buildMessageHtml(msg, isTeacher)).join('');
 
         container.scrollTop = container.scrollHeight;
@@ -155,41 +151,54 @@
       ? new Date(msg.timestamp.toDate ? msg.timestamp.toDate() : msg.timestamp).toLocaleString()
       : 'Just now';
 
-    // Admin buttons use data attributes to avoid JS-string-in-HTML escaping issues
     const adminDeleteBtn = isTeacher
-      ? `<button class="chat-delete-btn absolute top-2 right-2 text-red-400 hover:text-red-600 text-xl leading-none"
-                 data-id="${_esc(msg.id)}" title="Delete">×</button>`
+      ? `<button class="chat-delete-btn"
+                 data-id="${_esc(msg.id)}"
+                 style="position:absolute;top:.5rem;right:.5rem;background:none;border:none;
+                        color:#f87171;cursor:pointer;font-size:1rem;line-height:1;padding:2px 4px;"
+                 title="Delete">×</button>`
       : '';
 
     const pinBtn = isTeacher
-      ? `<button class="chat-pin-btn absolute top-2 right-8 text-yellow-400 hover:text-yellow-600 text-lg leading-none"
-                 data-id="${_esc(msg.id)}" title="Pin">P</button>`
+      ? `<button class="chat-pin-btn"
+                 data-id="${_esc(msg.id)}"
+                 style="position:absolute;top:.5rem;right:1.75rem;background:none;border:none;
+                        color:#f59e0b;cursor:pointer;font-size:.75rem;padding:2px 4px;"
+                 title="Pin">📌</button>`
       : '';
 
     const replyBtn = `
-      <button class="chat-reply-btn text-xs text-purple-600 underline hover:text-purple-800"
-              data-id="${_esc(msg.id)}">Reply</button>`;
+      <button class="chat-reply-btn"
+              data-id="${_esc(msg.id)}"
+              style="font-size:.75rem;color:var(--c-brand,#4f46e5);background:none;border:none;
+                     cursor:pointer;text-decoration:underline;">Reply</button>`;
 
     return `
-      <div class="glass-dark p-4 rounded-xl relative ${isTeacherMsg ? 'border-2 border-yellow-400 bg-yellow-50' : ''}">
-        ${msg.pinned ? '<span class="absolute top-2 left-3 text-xs font-bold text-yellow-600 bg-yellow-100 px-2 py-0.5 rounded">PINNED</span>' : ''}
+      <div style="position:relative;padding:.625rem .875rem;border-radius:8px;margin-bottom:.375rem;
+                  background:${isTeacherMsg ? 'var(--c-warning-light,#fffbeb)' : 'var(--c-surface,#fff)'};
+                  border:1px solid ${isTeacherMsg ? 'var(--c-warning,#d97706)' : 'var(--c-border,#e5e7eb)'};
+                  ${isTeacherMsg ? 'border-left:3px solid var(--c-warning,#d97706);' : ''}">
+        ${msg.pinned
+          ? '<span style="font-size:.6875rem;font-weight:700;color:#d97706;background:#fef3c7;padding:1px 6px;border-radius:4px;display:inline-block;margin-bottom:4px;">PINNED</span><br>'
+          : ''}
         ${adminDeleteBtn}
         ${pinBtn}
-        <p class="font-bold text-sm ${msg.pinned ? 'mt-5' : ''}">
+        <p style="font-size:.8125rem;font-weight:600;color:#111827;margin-bottom:2px;">
           ${_esc(msg.senderName)}
-          ${msg.senderClass ? `<span class="font-normal opacity-60">(${_esc(msg.senderClass)})</span>` : ''}
+          ${msg.senderClass ? `<span style="font-weight:400;color:#6b7280;">(${_esc(msg.senderClass)})</span>` : ''}
         </p>
-        ${msg.replyTo ? `<p class="text-xs opacity-60 ml-3 mt-1">Replying to ${_esc(msg.replyTo.name)}: ${_esc(msg.replyTo.text)}</p>` : ''}
-        <p class="mt-1">${_esc(msg.text)}</p>
-        <div class="flex justify-between items-center mt-2">
-          <p class="text-xs opacity-50">${time}</p>
+        ${msg.replyTo
+          ? `<p style="font-size:.75rem;color:#9ca3af;margin-bottom:3px;padding-left:8px;border-left:2px solid #e5e7eb;">↳ ${_esc(msg.replyTo.name)}: ${_esc(msg.replyTo.text)}</p>`
+          : ''}
+        <p style="font-size:.875rem;color:#1f2937;line-height:1.5;">${_esc(msg.text)}</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px;">
+          <span style="font-size:.6875rem;color:#9ca3af;">${time}</span>
           ${replyBtn}
         </div>
       </div>`;
   }
 
-  /* ── Event delegation for chat message actions ── */
-  // Attached once on the container rather than inline on every message button
+  /* ── Event delegation ── */
   document.addEventListener('click', e => {
     const deleteBtn = e.target.closest('.chat-delete-btn');
     if (deleteBtn) { deleteMessage(deleteBtn.dataset.id); return; }
@@ -201,38 +210,7 @@
     if (replyBtn) { setReplyTo(replyBtn.dataset.id); return; }
   });
 
-  /* -------------------------------------------------- */
-  /* Typing indicators                                  */
-  /*                                                    */
-  /* The Firestore rule for /typing/{userId} only       */
-  /* grants per-document read/write for the owner.     */
-  /* A collection-level onSnapshot is a LIST operation  */
-  /* and is denied for non-owners.                      */
-  /*                                                    */
-  /* Solution: each client writes only their own typing */
-  /* doc (already correct), and we embed typing state   */
-  /* inside publicChat messages instead of a separate   */
-  /* collection listener. For simplicity, we use a      */
-  /* lightweight polling approach on the current user's  */
-  /* own doc + a shared "typingBoard" document that the  */
-  /* teacher can read/write, OR we simply disable the   */
-  /* cross-user typing indicator since it requires      */
-  /* either a rules change or a different data model.   */
-  /*                                                    */
-  /* CHOSEN FIX: Write typing state into a single       */
-  /* shared document /chatSettings/typing (object map   */
-  /* of uid -> {name, ts}) that all authenticated users */
-  /* can read. Clean up stale entries client-side.      */
-  /* This requires ONE rules addition (see below).      */
-  /*                                                    */
-  /* Required Firestore rule to add:                    */
-  /*   match /chatSettings/typing {                     */
-  /*     allow read: if request.auth != null;           */
-  /*     allow write: if request.auth != null;          */
-  /*   }                                                */
-  /* -------------------------------------------------- */
-
-  // Interval handle for stale-entry cleanup
+  /* ── Typing indicators ── */
   let _typingCleanupInterval = null;
 
   function _subscribeTyping() {
@@ -246,34 +224,24 @@
 
     const unsub = typingBoardRef.onSnapshot(snap => {
       const el = document.getElementById('typingIndicator');
-      if (!el) {
-        AppState.cancelListener('chatTyping');
-        return;
-      }
+      if (!el) { AppState.cancelListener('chatTyping'); return; }
 
-      if (!snap.exists) {
-        el.textContent = '';
-        return;
-      }
+      if (!snap.exists) { el.textContent = ''; return; }
 
       const data  = snap.data() || {};
       const now   = Date.now();
       const names = [];
 
       Object.entries(data).forEach(([uid, entry]) => {
-        // Ignore own entry and entries older than 5 seconds (stale)
         if (uid === AppState.userId) return;
         const ts = entry && entry.ts ? entry.ts : 0;
-        if (now - ts < 5000 && entry && entry.name) {
-          names.push(entry.name);
-        }
+        if (now - ts < 5000 && entry && entry.name) names.push(entry.name);
       });
 
       el.textContent = names.length > 0
         ? `${names.join(', ')} ${names.length > 1 ? 'are' : 'is'} typing...`
         : '';
     }, err => {
-      // Non-fatal — typing indicator is cosmetic
       console.warn('[chat] Typing indicator unavailable:', err.code);
       const el = document.getElementById('typingIndicator');
       if (el) el.textContent = '';
@@ -282,7 +250,6 @@
     AppState.registerListener('chatTyping', unsub);
   }
 
-  /* Write own typing state to the shared board */
   function _setTyping(isTeacher) {
     const typingBoardRef = Db().collection('chatSettings').doc('typing');
     return typingBoardRef.update({
@@ -291,7 +258,6 @@
         ts:   Date.now()
       }
     }).catch(() => {
-      // Document may not exist yet — use set with merge
       typingBoardRef.set({
         [`${AppState.userId}`]: {
           name: isTeacher ? 'Master Timothy' : (AppState.studentData?.name || 'Student'),
@@ -301,20 +267,16 @@
     });
   }
 
-  /* Clear own typing state from the board */
   function _clearTyping() {
     Db().collection('chatSettings').doc('typing').update({
       [`${AppState.userId}`]: firebase.firestore.FieldValue.delete()
     }).catch(() => {});
   }
 
-  /* -------------------------------------------------- */
-  /* Send message                                       */
-  /* -------------------------------------------------- */
-
+  /* ── Send message ── */
   async function sendMessage() {
-    const input     = document.getElementById('chatInput');
-    const text      = (input?.value || '').trim();
+    const input = document.getElementById('chatInput');
+    const text  = (input?.value || '').trim();
     if (!text) return;
 
     const isTeacher = AppState.userId === AppConfig.TEACHER_UID;
@@ -338,10 +300,7 @@
     }
   }
 
-  /* -------------------------------------------------- */
-  /* Reply                                              */
-  /* -------------------------------------------------- */
-
+  /* ── Reply ── */
   async function setReplyTo(msgId) {
     try {
       const snap = await Db().collection('publicChat').doc(msgId).get();
@@ -368,10 +327,7 @@
     if (preview) preview.classList.add('hidden');
   }
 
-  /* -------------------------------------------------- */
-  /* Admin actions                                      */
-  /* -------------------------------------------------- */
-
+  /* ── Admin actions ── */
   async function deleteMessage(id) {
     if (!id) return;
     const ok = await UI.confirmAction('Delete this message?');
@@ -399,12 +355,7 @@
     try {
       const ref  = Db().collection('chatSettings').doc('lock');
       const snap = await ref.get();
-      if (snap.exists) {
-        await ref.delete();
-      } else {
-        await ref.set({ isLocked: true });
-      }
-      // Re-render chat to update lock UI
+      if (snap.exists) { await ref.delete(); } else { await ref.set({ isLocked: true }); }
       openPublicChat();
     } catch (err) {
       console.error('[chat] toggleLock error:', err);
@@ -412,20 +363,13 @@
     }
   }
 
-  /* -------------------------------------------------- */
-  /* Back from chat                                     */
-  /* -------------------------------------------------- */
-
+  /* ── Back from chat ── */
   function backFromChat() {
-    // Clear own typing state from the shared board
     _clearTyping();
-
-    // Cancel chat-specific listeners
     AppState.cancelListener('chatMessages');
     AppState.cancelListener('chatTyping');
     AppState.replyingTo = null;
 
-    // Route back to the correct dashboard
     if (AppState.isTeacher) {
       Teacher.renderTeacherDashboard();
     } else if (AppState.exam && AppState.exam.step === 'exam') {
@@ -435,9 +379,8 @@
     }
   }
 
-  /* -------------------------------------------------- */
-  /* Private helpers                                    */
-  /* -------------------------------------------------- */
+  /* ── Private helpers ── */
+  function Db() { return window.fbDb; }
 
   function _esc(str) {
     if (str == null) return '';
@@ -448,15 +391,10 @@
       .replace(/"/g, '&quot;');
   }
 
-  /* -------------------------------------------------- */
-  /* Expose                                             */
-  /* open() is an alias for openPublicChat() so that    */
-  /* any remaining legacy callers do not hard-error.    */
-  /* -------------------------------------------------- */
-
+  /* ── Expose ── */
   window.Chat = {
     openPublicChat,
-    open: openPublicChat,    // alias — keeps old call sites working
+    open: openPublicChat,
     sendMessage,
     setReplyTo,
     cancelReply,
