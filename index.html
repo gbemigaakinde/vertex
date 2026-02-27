@@ -190,9 +190,16 @@
         if (!app) return;
         var wrap = app.firstElementChild;
         if (!wrap) return;
-        var header = wrap.firstElementChild;
-        if (!header || !header.classList.contains('glass')) return;
-        if (!header.querySelector('#timerDisplay')) return;
+        // Find the glass card that contains the timer (may not be firstElementChild
+        // now that the student info bar is inserted before it)
+        var header = wrap.querySelector('.glass:has(#timerDisplay)');
+        if (!header) {
+          // Fallback for browsers without :has() support
+          header = Array.from(wrap.children).find(function(el) {
+            return el.classList.contains('glass') && el.querySelector('#timerDisplay');
+          });
+        }
+        if (!header) return;
         if (header.classList.contains('exam-header-sticky')) return;
 
         header.classList.add('exam-header-sticky');
