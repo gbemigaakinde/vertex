@@ -5,27 +5,7 @@
 (function () {
   'use strict';
 
-  /* -------------------------------------------------- */
-  /* Registration guard flag                            */
-  /*                                                    */
-  /* When createUserWithEmailAndPassword succeeds,      */
-  /* Firebase immediately fires onAuthStateChanged with */
-  /* the new user. app.js would then try to route that  */
-  /* user into the exam flow before the Firestore       */
-  /* student profile document has been written.         */
-  /*                                                    */
-  /* Setting this flag to true before account creation  */
-  /* tells app.js to ignore all auth state changes      */
-  /* until registration is fully complete.              */
-  /*                                                    */
-  /* CRITICAL: the flag must be cleared and signOut()   */
-  /* called AFTER the Firestore write succeeds, not     */
-  /* before — the write requires request.auth != null.  */
-  /* -------------------------------------------------- */
   window._registrationInProgress = false;
-
-  // Email to pre-fill after successful registration.
-  // Set just before signOut() so renderLogin() (called by _onLogout) can use it.
   let _pendingLoginEmail = '';
 
   /* ── Render login page ── */
@@ -41,8 +21,25 @@
 
         <!-- LOGIN PANEL -->
         <div id="loginPanel">
-          <input id="loginEmail" type="email"    placeholder="Email address" class="mb-4" autocomplete="email" />
-          <input id="loginPass"  type="password" placeholder="Password"      class="mb-6" autocomplete="current-password" />
+          <input id="loginEmail" type="email" placeholder="Email address" class="mb-4" autocomplete="email" />
+          <div class="mb-6" style="position:relative;display:flex;align-items:center;">
+            <input id="loginPass" type="password" placeholder="Password" style="padding-right:3rem;margin-bottom:0;" autocomplete="current-password" />
+            <button type="button" id="loginPassToggle"
+              aria-label="Show password" aria-pressed="false"
+              style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);
+                     width:32px;height:32px;background:none;border:none;cursor:pointer;
+                     display:flex;align-items:center;justify-content:center;
+                     color:#9ca3af;border-radius:6px;padding:0;transition:color .15s;">
+              <svg id="loginPassEye" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+              <svg id="loginPassEyeOff" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            </button>
+          </div>
           <button id="loginBtn" onclick="Auth.login()" class="btn w-full text-xl py-5 mb-4">LOGIN</button>
           <p class="text-center text-sm text-gray-600 mb-3">
             New student?
@@ -59,7 +56,7 @@
 
         <!-- REGISTER PANEL -->
         <div id="registerPanel" class="hidden space-y-4">
-          <input id="regName"  type="text"     placeholder="Full Name"           autocomplete="name" />
+          <input id="regName"  type="text"  placeholder="Full Name"  autocomplete="name" />
           <select id="regClass">
             <option value="" disabled selected>Select Class</option>
             <option>JSS1</option><option>JSS2</option><option>JSS3</option>
@@ -69,8 +66,25 @@
           <select id="regSchool">
             <option value="" disabled selected>Loading schools...</option>
           </select>
-          <input id="regEmail" type="email"    placeholder="Email address"          autocomplete="email" />
-          <input id="regPass"  type="password" placeholder="Password (min 6 chars)" autocomplete="new-password" />
+          <input id="regEmail" type="email" placeholder="Email address" autocomplete="email" />
+          <div style="position:relative;display:flex;align-items:center;">
+            <input id="regPass" type="password" placeholder="Password (min 6 chars)" style="padding-right:3rem;margin-bottom:0;" autocomplete="new-password" />
+            <button type="button" id="regPassToggle"
+              aria-label="Show password" aria-pressed="false"
+              style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);
+                     width:32px;height:32px;background:none;border:none;cursor:pointer;
+                     display:flex;align-items:center;justify-content:center;
+                     color:#9ca3af;border-radius:6px;padding:0;transition:color .15s;">
+              <svg id="regPassEye" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+              </svg>
+              <svg id="regPassEyeOff" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
+                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                <line x1="1" y1="1" x2="23" y2="23"/>
+              </svg>
+            </button>
+          </div>
           <button id="regBtn" onclick="Auth.register()" class="btn w-full text-xl py-5">REGISTER</button>
           <p class="text-center text-sm text-gray-600">
             <button onclick="Auth.showLogin()" class="text-purple-600 underline font-medium">Back to Login</button>
@@ -95,6 +109,29 @@
     if (typeof initTicker === 'function' && document.getElementById('tickerScroll')) {
       initTicker();
     }
+
+    // Wire up password visibility toggles
+    (function () {
+      function _wireToggle(inputId, btnId, eyeId, eyeOffId) {
+        var input  = document.getElementById(inputId);
+        var btn    = document.getElementById(btnId);
+        var eye    = document.getElementById(eyeId);
+        var eyeOff = document.getElementById(eyeOffId);
+        if (!input || !btn) return;
+        btn.addEventListener('mouseover', function () { btn.style.color = '#4f46e5'; });
+        btn.addEventListener('mouseout',  function () { btn.style.color = '#9ca3af'; });
+        btn.addEventListener('click', function () {
+          var showing = input.type === 'text';
+          input.type           = showing ? 'password' : 'text';
+          eye.style.display    = showing ? ''         : 'none';
+          eyeOff.style.display = showing ? 'none'     : '';
+          btn.setAttribute('aria-label',   showing ? 'Show password' : 'Hide password');
+          btn.setAttribute('aria-pressed', String(!showing));
+        });
+      }
+      _wireToggle('loginPass', 'loginPassToggle', 'loginPassEye', 'loginPassEyeOff');
+      _wireToggle('regPass',   'regPassToggle',   'regPassEye',   'regPassEyeOff');
+    }());
 
     const unsub = window.fbDb.collection('schools').orderBy('name').onSnapshot(snap => {
       const sel = document.getElementById('regSchool');
@@ -121,7 +158,6 @@
 
     AppState.registerListener('schoolDropdown', unsub);
 
-    // If coming from a successful registration, pre-fill email and show success toast
     if (_pendingLoginEmail) {
       const emailEl = document.getElementById('loginEmail');
       if (emailEl) emailEl.value = _pendingLoginEmail;
@@ -155,7 +191,6 @@
     try {
       AppState.cancelListener('schoolDropdown');
       await window.fbAuth.signInWithEmailAndPassword(email, pass);
-      // onAuthStateChanged in app.js handles routing
     } catch (err) {
       const msg = err.code === 'auth/user-not-found'     ? 'No account found with this email.'
                 : err.code === 'auth/wrong-password'     ? 'Incorrect password.'
@@ -188,36 +223,12 @@
 
     UI.setLoading(btn, true);
 
-    /*
-     * REGISTRATION SEQUENCE — ORDER IS NON-NEGOTIABLE
-     *
-     * 1. Raise guard flag — app.js will ignore all auth state changes
-     *    until we lower it. This prevents routing an incomplete user.
-     *
-     * 2. Create Firebase Auth account. onAuthStateChanged fires immediately
-     *    with the new user, but app.js ignores it because the flag is raised.
-     *
-     * 3. Write Firestore student profile WHILE STILL SIGNED IN.
-     *    request.auth is the new user's context — the rule
-     *    "allow write: if request.auth.uid == studentId" will pass.
-     *    Signing out before this write would make request.auth null
-     *    and cause "Missing or insufficient permissions".
-     *
-     * 4. Sign out. onAuthStateChanged fires again (signed-out event).
-     *    app.js ignores it because the flag is still raised.
-     *
-     * 5. Lower guard flag. Call _onLogout manually so app.js renders
-     *    the login screen cleanly without going through onAuthStateChanged.
-     */
-
     window._registrationInProgress = true;
 
     try {
-      // Step 2 — Create Auth account
       const cred = await window.fbAuth.createUserWithEmailAndPassword(email, pass);
       const uid  = cred.user.uid;
 
-      // Step 3 — Write Firestore profile while signed in (auth context is valid)
       await window.fbDb.collection('students').doc(uid).set({
         name,
         class:     cls,
@@ -226,29 +237,13 @@
         createdAt: firebase.firestore.FieldValue.serverTimestamp()
       });
 
-      // Step 4 — Lower flag before signing out.
-      // app.js _onLogout() will now process the sign-out event and call
-      // Auth.renderLogin(), which rebuilds the login page cleanly.
-      // This keeps Firebase's internal state machine in sync so the
-      // next real login fires onAuthStateChanged correctly.
       window._registrationInProgress = false;
-
-      // Store the email so _onLogout -> Auth.renderLogin can pre-fill it.
-      // We use a module-level variable since the DOM will be replaced.
       _pendingLoginEmail = email;
-
-      // Step 5 — Sign out. onAuthStateChanged fires with null.
-      // app.js _onLogout() handles it: resets state, calls Auth.renderLogin().
       await window.fbAuth.signOut();
-
-      // The success toast is shown from Auth.renderLogin() via _pendingLoginEmail.
-      // If renderLogin was already called by the time we reach here, that is fine.
 
     } catch (err) {
       window._registrationInProgress = false;
 
-      // If sign-out failed after a successful write, the user is stuck signed in
-      // with a valid profile. Call signOut as a best-effort cleanup.
       if (window.fbAuth.currentUser) {
         window.fbAuth.signOut().catch(() => {});
       }
