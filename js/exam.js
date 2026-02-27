@@ -306,6 +306,7 @@ if (!_qBank || !_qBank[classKey]) {
   }
 
   /* ── Instructions modal ── */
+  // AFTER
   function _showInstructionsModal() {
     const existing = document.getElementById('examModal');
     if (existing) existing.remove();
@@ -313,31 +314,38 @@ if (!_qBank || !_qBank[classKey]) {
     const modal = document.createElement('div');
     modal.id        = 'examModal';
     modal.className = 'modal-overlay';
+    // Allow scrolling inside the overlay itself on small screens
+    modal.style.cssText = 'align-items:flex-start;overflow-y:auto;padding:1rem 0.75rem;';
     modal.setAttribute('role',            'dialog');
     modal.setAttribute('aria-modal',      'true');
     modal.setAttribute('aria-labelledby', 'examModalTitle');
 
     modal.innerHTML = `
-      <div class="modal-box max-w-xl">
-        <h2 id="examModalTitle" class="text-4xl font-bold mb-8 text-center">Exam Instructions</h2>
-        <ul class="space-y-3 text-lg mb-8 text-left list-none">
+      <div class="modal-box" style="max-width:36rem;width:100%;margin:auto;">
+        <h2 id="examModalTitle" class="text-2xl font-bold mb-5 text-center">Exam Instructions</h2>
+        <ul class="space-y-2 text-base mb-6 text-left list-none">
           <li>• This exam lasts <strong>2 hours</strong> (120 minutes).</li>
           <li>• Answer questions for all selected subjects.</li>
           <li>• Use <strong>Previous / Next</strong> or the navigator to move between questions.</li>
-          <li>• Questions with a <strong>green ring</strong> in the navigator have been answered.</li>
+          <li>• Questions with a <strong>green indicator</strong> in the navigator have been answered.</li>
           <li>• You can open Public Chat at any time.</li>
           <li>• Once submitted, answers cannot be changed.</li>
-          <li class="font-bold text-red-600 text-center mt-4">The timer starts when you click the button below.</li>
+          <li class="font-bold text-red-600 text-center pt-2">⏱ The timer starts when you click the button below.</li>
         </ul>
         <div class="text-center">
-          <button onclick="Exam.beginExam()" class="btn text-xl px-12 py-5 bg-green-600 hover:bg-green-700">
+          <button onclick="Exam.beginExam()"
+                  class="btn text-base px-8 py-4 bg-green-600 hover:bg-green-700"
+                  style="width:100%;max-width:22rem;">
             I understand — Start Exam Now
           </button>
         </div>
-        <p class="text-center text-sm opacity-60 mt-6">Good luck!</p>
+        <p class="text-center text-xs opacity-60 mt-4">Good luck!</p>
       </div>`;
 
     document.body.appendChild(modal);
+
+    // Scroll overlay to top so the button is reachable on very small screens
+    requestAnimationFrame(() => { modal.scrollTop = 0; });
   }
 
   /* ── Begin exam — user clicks OK in instructions modal ── */
@@ -372,6 +380,15 @@ if (!_qBank || !_qBank[classKey]) {
 
     UI.mount(`
       <div class="max-w-4xl mx-auto p-4 flex flex-col gap-6">
+
+        <!-- Student info bar -->
+        <div class="glass-dark px-5 py-3 rounded-2xl flex flex-wrap items-center gap-x-5 gap-y-1 text-sm font-medium">
+          <span class="font-bold text-base">${_escHtml(S().studentData.name)}</span>
+          <span class="opacity-60">|</span>
+          <span>${_escHtml(S().studentData.class)}</span>
+          <span class="opacity-60">|</span>
+          <span>${_escHtml(S().studentData.school)}</span>
+        </div>
 
         <!-- Header -->
         <div class="glass p-6 rounded-3xl flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
