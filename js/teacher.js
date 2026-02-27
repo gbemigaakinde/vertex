@@ -1,19 +1,43 @@
 /* ============================================================
-   js/teacher.js — Teacher dashboard
-   Responsibilities:
-     - Render teacher dashboard shell with tabs
-     - Students tab: list grouped by school, delete, toggle admin
-     - Results tab: all results, delete
-     - Schools tab: add, rename, delete schools
-     - Tasks tab: coaching task config, private messages
-     - Chat tab: open public chat (returns to dashboard via backFromChat)
+   js/teacher.js — Teacher dashboard (UI v2)
+   ============================================================
+   UI REDESIGN — what changed:
+   ┌──────────────────────────────────────────────────────────┐
+   │ SHELL                                                    │
+   │  Before: max-w-7xl glass p-10 mt-10, text-5xl heading,  │
+   │          tab buttons text-xl px-8 py-4 (58px tall each) │
+   │  After:  compact admin shell with sidebar-style pill nav,│
+   │          page header 1rem padding, nav pills 34px tall   │
+   │                                                          │
+   │ STUDENTS                                                 │
+   │  Before: text-3xl section H2, gap-6, p-6 cards          │
+   │  After:  compact header bar, tighter cards with badges   │
+   │                                                          │
+   │ RESULTS                                                  │
+   │  Before: text-4xl score display, 4-col grid gap-6        │
+   │  After:  2-3 col grid, compact score pill, proper rhythm │
+   │                                                          │
+   │ SCHOOLS                                                  │
+   │  Before: p-8 glass-dark add-form, full-width btn py-4   │
+   │  After:  inline input + button row, clean list           │
+   │                                                          │
+   │ TASKS                                                    │
+   │  Before: w-8 h-8 checkbox, text-xl inputs (52px), px-16 │
+   │          py-5 buttons (~68px), glass-dark p-8 rounded-3xl│
+   │  After:  standard form controls, two-section layout,     │
+   │          proper label/input hierarchy                    │
+   │                                                          │
+   │ ZERO LOGIC CHANGES — all Firestore, Auth, event         │
+   │ delegation, IDs, data-attributes, onclick handlers,      │
+   │ class names used by JS unchanged                        │
+   └──────────────────────────────────────────────────────────┘
    ============================================================ */
 
 (function () {
   'use strict';
 
   /* -------------------------------------------------- */
-  /* Active Firestore listeners — tracked for cleanup   */
+  /* Active Firestore listeners — unchanged             */
   /* -------------------------------------------------- */
 
   const _listeners = {};
@@ -39,136 +63,279 @@
   /* -------------------------------------------------- */
 
   function renderTeacherDashboard() {
-    // Mark teacher status in AppState so chat.js backFromChat routes correctly
     AppState.isTeacher = true;
 
     document.getElementById('app').innerHTML = `
-      <div class="max-w-7xl mx-auto glass p-10 mt-10 rounded-3xl">
-        <div class="flex justify-between items-center mb-10">
-          <h1 class="text-5xl font-bold">Teacher Dashboard</h1>
-          <button onclick="Teacher.logout()" class="btn text-xl px-8 py-4">Logout</button>
-        </div>
+      <div class="max-w-7xl mx-auto glass mt-6" style="margin-bottom:1.5rem;">
 
-        <div class="flex justify-center gap-6 mb-12 flex-wrap">
-          <button onclick="Teacher.showTab('students')" id="tab-students" class="tab-btn btn text-xl px-8 py-4">Students</button>
-          <button onclick="Teacher.showTab('results')"  id="tab-results"  class="tab-btn btn text-xl px-8 py-4">Results</button>
-          <button onclick="Teacher.showTab('schools')"  id="tab-schools"  class="tab-btn btn text-xl px-8 py-4">Schools</button>
-          <button onclick="Teacher.showTab('tasks')"    id="tab-tasks"    class="tab-btn btn text-xl px-8 py-4">Tasks &amp; Messages</button>
-          <button onclick="Teacher.showTab('chat')"     id="tab-chat"     class="tab-btn btn bg-green-600 text-xl px-8 py-4">Chat</button>
-        </div>
-
-        <!-- Students tab -->
-        <div id="teacher-students" class="teacher-tab">
-          <div class="flex justify-between items-center mb-8">
-            <h2 class="text-3xl font-bold">Registered Students</h2>
-            <button onclick="Teacher._loadStudents()" class="btn bg-blue-600 text-lg px-6 py-3">Refresh</button>
+        <!-- ── Dashboard header ── -->
+        <div style="display:flex;align-items:center;justify-content:space-between;
+                    padding:1rem 1.5rem;border-bottom:1px solid var(--c-border,#e5e7eb);">
+          <div style="display:flex;align-items:center;gap:.75rem;">
+            <div style="width:28px;height:28px;background:var(--c-brand,#4f46e5);border-radius:7px;
+                        display:flex;align-items:center;justify-content:center;
+                        color:#fff;font-weight:800;font-size:.75rem;flex-shrink:0;">V</div>
+            <div>
+              <h1 style="font-size:1rem;font-weight:700;line-height:1.2;color:var(--c-text,#111827);">
+                Teacher Dashboard
+              </h1>
+              <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:1px;">
+                Master Timothy — Admin
+              </p>
+            </div>
           </div>
-          <div id="studentsList"></div>
+          <button onclick="Teacher.logout()" class="btn bg-gray-500 hover:bg-gray-600"
+                  style="font-size:.8125rem;padding:.4375rem .875rem;">
+            Sign out
+          </button>
         </div>
 
-        <!-- Results tab -->
-        <div id="teacher-results" class="teacher-tab hidden">
-          <h2 class="text-3xl font-bold mb-8 text-center">All Exam Results</h2>
-          <div id="resultsList" class="grid gap-6 md:grid-cols-3 lg:grid-cols-4"></div>
+        <!-- ── Tab nav ── -->
+        <div style="display:flex;align-items:center;gap:.375rem;padding:.625rem 1.5rem;
+                    border-bottom:1px solid var(--c-border,#e5e7eb);flex-wrap:wrap;">
+          <button onclick="Teacher.showTab('students')" id="tab-students"
+                  class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">
+            Students
+          </button>
+          <button onclick="Teacher.showTab('results')" id="tab-results"
+                  class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">
+            Results
+          </button>
+          <button onclick="Teacher.showTab('schools')" id="tab-schools"
+                  class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">
+            Schools
+          </button>
+          <button onclick="Teacher.showTab('tasks')" id="tab-tasks"
+                  class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">
+            Tasks &amp; Messages
+          </button>
+          <button onclick="Teacher.showTab('chat')" id="tab-chat"
+                  class="tab-btn btn bg-green-600" style="font-size:.8125rem;padding:.4375rem .875rem;">
+            Chat
+          </button>
         </div>
 
-        <!-- Schools tab -->
-        <div id="teacher-schools" class="teacher-tab hidden">
-          <h2 class="text-3xl font-bold mb-8 text-center">Manage Schools</h2>
-          <div class="max-w-2xl mx-auto glass-dark p-8 rounded-2xl mb-8">
-            <input id="newSchoolName" type="text" placeholder="Enter new school name"
-                   class="w-full p-4 rounded-xl mb-4 text-lg" />
-            <button onclick="Teacher.addSchool()" class="btn w-full text-xl py-4">Add School</button>
-          </div>
-          <div id="schoolsList" class="space-y-4"></div>
-        </div>
+        <!-- ── Tab panels ── -->
+        <div style="padding:1.25rem 1.5rem;">
 
-        <!-- Tasks & Messages tab -->
-        <div id="teacher-tasks" class="teacher-tab hidden">
-          <h2 class="text-3xl font-bold mb-8 text-center">Coaching Tasks &amp; Private Messages</h2>
-
-          <div class="glass-dark p-8 rounded-3xl mb-12 max-w-5xl mx-auto shadow-2xl">
-            <h3 class="text-2xl font-bold mb-6 text-purple-700">Coaching Tasks Manager</h3>
-
-            <label class="flex items-center gap-4 mb-6 cursor-pointer">
-              <input type="checkbox" id="tasksActive" class="w-8 h-8 accent-purple-600" />
-              <span class="text-2xl font-medium">Activate Coaching Tasks for All Students</span>
-            </label>
-
-            <input    type="text" id="tasksTitle"
-                      placeholder="Title (e.g., Weekend Challenge)"
-                      class="w-full p-5 rounded-xl text-xl mb-4" />
-            <textarea id="tasksMessage"
-                      placeholder="Message for students"
-                      class="w-full p-5 rounded-xl text-xl h-40 mb-6"></textarea>
-
-            <div class="space-y-4 mb-8">
-              <h4 class="text-xl font-bold">Task Dates</h4>
-              <div class="flex gap-4 items-end">
-                <div class="flex-1">
-                  <label class="block text-lg font-medium mb-2">Select Date</label>
-                  <input type="date" id="newTaskDate"
-                         class="w-full p-4 rounded-xl text-lg border border-gray-300
-                                focus:ring-2 focus:ring-purple-500 focus:outline-none" />
-                </div>
-                <button onclick="Teacher.addTaskDate()" class="btn px-8 py-4 text-lg">+ Add Date</button>
+          <!-- Students -->
+          <div id="teacher-students" class="teacher-tab">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+              <div>
+                <h2 style="font-size:1rem;font-weight:700;">Registered Students</h2>
+                <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:2px;">
+                  Grouped by school
+                </p>
               </div>
-              <div id="tasksDates" class="space-y-3"></div>
-            </div>
-
-            <div class="text-center space-y-4">
-              <button id="saveTasksBtn" onclick="Teacher.saveTasksConfig()"
-                      class="btn bg-green-600 text-2xl px-16 py-5">
-                Save &amp; Apply Tasks
-              </button>
-              <br />
-              <button id="deleteTasksBtn" onclick="Teacher.deleteAllTasks()"
-                      class="btn bg-red-600 text-xl px-12 py-4 mt-4">
-                Delete All Tasks
+              <button onclick="Teacher._loadStudents()" class="btn bg-blue-600"
+                      style="font-size:.8125rem;padding:.4375rem .875rem;">
+                Refresh
               </button>
             </div>
+            <div id="studentsList"></div>
           </div>
 
-          <!-- Private message sender -->
-          <div class="glass-dark p-8 rounded-3xl max-w-5xl mx-auto shadow-2xl">
-            <h3 class="text-2xl font-bold mb-6 text-red-700">Send Private Message to a Student</h3>
+          <!-- Results -->
+          <div id="teacher-results" class="teacher-tab hidden">
+            <div style="margin-bottom:1rem;">
+              <h2 style="font-size:1rem;font-weight:700;">All Exam Results</h2>
+              <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:2px;">
+                Most recent first
+              </p>
+            </div>
+            <div id="resultsList" class="grid gap-3 md:grid-cols-2 lg:grid-cols-3"></div>
+          </div>
 
-            <select id="msgStudent" class="w-full p-5 rounded-xl text-xl mb-6">
-              <option value="">Select a student...</option>
-            </select>
-
-            <textarea id="msgText" placeholder="Write your private message here..."
-                      class="w-full p-5 rounded-xl text-xl h-40 mb-6"></textarea>
-
-            <div class="mb-8">
-              <label class="text-xl font-medium block mb-3">Message expires in:</label>
-              <select id="msgDuration" class="w-full p-5 rounded-xl text-xl">
-                <option value="3600000">1 hour</option>
-                <option value="86400000">1 day</option>
-                <option value="172800000">2 days</option>
-                <option value="259200000">3 days</option>
-                <option value="604800000">1 week</option>
-                <option value="1209600000">2 weeks</option>
-                <option value="2592000000">30 days</option>
-              </select>
+          <!-- Schools -->
+          <div id="teacher-schools" class="teacher-tab hidden">
+            <div style="margin-bottom:1rem;">
+              <h2 style="font-size:1rem;font-weight:700;">Manage Schools</h2>
+              <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:2px;">
+                Add, rename, or remove schools from the registration list
+              </p>
             </div>
 
-            <div class="text-center">
-              <button id="sendMsgBtn" onclick="Teacher.sendPrivateMessage()"
-                      class="btn bg-red-600 text-2xl px-16 py-5">
-                Send Private Message
+            <!-- Inline add form -->
+            <div style="display:flex;gap:.625rem;margin-bottom:1.25rem;max-width:520px;">
+              <input id="newSchoolName" type="text" placeholder="New school name"
+                     style="flex:1;" />
+              <button onclick="Teacher.addSchool()" class="btn"
+                      style="white-space:nowrap;padding:.5rem 1rem;font-size:.875rem;">
+                Add School
               </button>
             </div>
-          </div>
-        </div>
 
+            <div id="schoolsList" class="space-y-2"></div>
+          </div>
+
+          <!-- Tasks & Messages -->
+          <div id="teacher-tasks" class="teacher-tab hidden">
+            <div style="margin-bottom:1.25rem;">
+              <h2 style="font-size:1rem;font-weight:700;">Coaching Tasks &amp; Messages</h2>
+              <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:2px;">
+                Configure scheduled tasks and send private messages to students
+              </p>
+            </div>
+
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;" class="tasks-grid">
+
+              <!-- ── Coaching task config ── -->
+              <div class="glass-dark" style="padding:1.25rem;border-radius:10px;">
+                <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;
+                            padding-bottom:.75rem;border-bottom:1px solid var(--c-border,#e5e7eb);">
+                  <div style="width:6px;height:6px;border-radius:50%;background:var(--c-brand,#4f46e5);"></div>
+                  <h3 style="font-size:.9375rem;font-weight:700;color:var(--c-brand-text,#3730a3);">
+                    Coaching Tasks
+                  </h3>
+                </div>
+
+                <!-- Active toggle -->
+                <label style="display:flex;align-items:center;gap:.625rem;margin-bottom:1rem;
+                              cursor:pointer;padding:.625rem .75rem;border-radius:8px;
+                              border:1px solid var(--c-border,#e5e7eb);background:var(--c-surface,#fff);">
+                  <input type="checkbox" id="tasksActive"
+                         style="width:1rem;height:1rem;accent-color:var(--c-brand,#4f46e5);
+                                flex-shrink:0;cursor:pointer;" />
+                  <span style="font-size:.875rem;font-weight:600;color:var(--c-text,#111827);">
+                    Activate for all students
+                  </span>
+                </label>
+
+                <!-- Title -->
+                <div style="margin-bottom:.75rem;">
+                  <label style="display:block;font-size:.75rem;font-weight:600;
+                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">
+                    Task Title
+                  </label>
+                  <input type="text" id="tasksTitle"
+                         placeholder="e.g., Weekend Challenge" />
+                </div>
+
+                <!-- Message -->
+                <div style="margin-bottom:.875rem;">
+                  <label style="display:block;font-size:.75rem;font-weight:600;
+                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">
+                    Message for Students
+                  </label>
+                  <textarea id="tasksMessage"
+                            placeholder="Instructions or motivation..."
+                            style="height:6rem;resize:vertical;"></textarea>
+                </div>
+
+                <!-- Date picker -->
+                <div style="margin-bottom:.875rem;">
+                  <label style="display:block;font-size:.75rem;font-weight:600;
+                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">
+                    Task Dates
+                  </label>
+                  <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;">
+                    <input type="date" id="newTaskDate" style="flex:1;" />
+                    <button onclick="Teacher.addTaskDate()" class="btn"
+                            style="white-space:nowrap;padding:.5rem .875rem;font-size:.8125rem;">
+                      + Add
+                    </button>
+                  </div>
+                  <div id="tasksDates" class="space-y-1"></div>
+                </div>
+
+                <!-- Actions -->
+                <div style="display:flex;gap:.5rem;padding-top:.875rem;
+                            border-top:1px solid var(--c-border,#e5e7eb);">
+                  <button id="saveTasksBtn" onclick="Teacher.saveTasksConfig()"
+                          class="btn bg-green-600 hover:bg-green-700"
+                          style="flex:1;font-size:.875rem;padding:.5625rem .875rem;">
+                    Save &amp; Apply
+                  </button>
+                  <button id="deleteTasksBtn" onclick="Teacher.deleteAllTasks()"
+                          class="btn bg-red-600 hover:bg-red-700"
+                          style="font-size:.875rem;padding:.5625rem .875rem;">
+                    Delete All
+                  </button>
+                </div>
+              </div>
+
+              <!-- ── Private message sender ── -->
+              <div class="glass-dark" style="padding:1.25rem;border-radius:10px;">
+                <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;
+                            padding-bottom:.75rem;border-bottom:1px solid var(--c-border,#e5e7eb);">
+                  <div style="width:6px;height:6px;border-radius:50%;background:var(--c-danger,#dc2626);"></div>
+                  <h3 style="font-size:.9375rem;font-weight:700;color:var(--c-danger,#dc2626);">
+                    Private Message
+                  </h3>
+                </div>
+
+                <!-- Student selector -->
+                <div style="margin-bottom:.75rem;">
+                  <label style="display:block;font-size:.75rem;font-weight:600;
+                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">
+                    Recipient
+                  </label>
+                  <select id="msgStudent">
+                    <option value="">Select a student...</option>
+                  </select>
+                </div>
+
+                <!-- Message text -->
+                <div style="margin-bottom:.75rem;">
+                  <label style="display:block;font-size:.75rem;font-weight:600;
+                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">
+                    Message
+                  </label>
+                  <textarea id="msgText"
+                            placeholder="Write your private message..."
+                            style="height:6rem;resize:vertical;"></textarea>
+                </div>
+
+                <!-- Duration -->
+                <div style="margin-bottom:.875rem;">
+                  <label style="display:block;font-size:.75rem;font-weight:600;
+                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">
+                    Expires after
+                  </label>
+                  <select id="msgDuration">
+                    <option value="3600000">1 hour</option>
+                    <option value="86400000">1 day</option>
+                    <option value="172800000">2 days</option>
+                    <option value="259200000">3 days</option>
+                    <option value="604800000">1 week</option>
+                    <option value="1209600000">2 weeks</option>
+                    <option value="2592000000">30 days</option>
+                  </select>
+                </div>
+
+                <!-- Send -->
+                <div style="padding-top:.875rem;border-top:1px solid var(--c-border,#e5e7eb);">
+                  <button id="sendMsgBtn" onclick="Teacher.sendPrivateMessage()"
+                          class="btn bg-red-600 hover:bg-red-700"
+                          style="width:100%;justify-content:center;font-size:.875rem;">
+                    Send Private Message
+                  </button>
+                </div>
+              </div>
+
+            </div><!-- /tasks-grid -->
+          </div>
+
+        </div><!-- /tab panels wrapper -->
       </div>`;
+
+    /* Make tasks grid single column on mobile */
+    const style = document.createElement('style');
+    style.id = '_teacherGridStyle';
+    style.textContent = `
+      @media (max-width: 768px) {
+        .tasks-grid { grid-template-columns: 1fr !important; }
+      }
+    `;
+    if (!document.getElementById('_teacherGridStyle')) {
+      document.head.appendChild(style);
+    }
 
     showTab('students');
   }
 
   /* -------------------------------------------------- */
-  /* Tab switching                                      */
+  /* Tab switching — logic unchanged                    */
   /* -------------------------------------------------- */
 
   function showTab(tab) {
@@ -179,9 +346,6 @@
       if (btn) btn.classList.toggle('active', t === tab);
     });
 
-    // Chat is handled separately — it replaces #app via UI.mount.
-    // The teacher dashboard shell is re-rendered when chat.js backFromChat()
-    // detects AppState.isTeacher and calls Teacher.renderTeacherDashboard().
     if (tab === 'chat') {
       Chat.openPublicChat();
       return;
@@ -194,13 +358,16 @@
   }
 
   /* -------------------------------------------------- */
-  /* Students tab                                       */
+  /* Students tab — logic unchanged, template redesigned*/
   /* -------------------------------------------------- */
 
   function _loadStudents() {
     const container = document.getElementById('studentsList');
     if (!container) return;
-    container.innerHTML = '<p class="text-center text-2xl opacity-70">Loading...</p>';
+    container.innerHTML = `
+      <div style="text-align:center;padding:2rem;color:var(--c-text-3,#6b7280);font-size:.875rem;">
+        Loading students...
+      </div>`;
 
     _cancel('students');
     const unsub = Db()
@@ -218,57 +385,94 @@
           const schools = Object.keys(bySchool).sort();
 
           if (schools.length === 0) {
-            container.innerHTML =
-              '<p class="text-center text-2xl opacity-70">No students registered yet.</p>';
+            container.innerHTML = `
+              <div style="text-align:center;padding:2rem;color:var(--c-text-3,#6b7280);font-size:.875rem;">
+                No students registered yet.
+              </div>`;
             return;
           }
 
           container.innerHTML = schools.map(school => {
             const students = bySchool[school];
+            const total    = students.length;
             return `
-              <details class="glass-dark rounded-2xl overflow-hidden shadow-xl mb-4" open>
-                <summary class="p-6 text-2xl font-bold cursor-pointer hover:bg-white/10 bg-purple-600/30">
-                  ${_esc(school)}
-                  <span class="text-lg font-normal opacity-80">(${students.length})</span>
+              <details class="glass-dark overflow-hidden mb-3" style="border-radius:10px;" open>
+                <summary style="cursor:pointer;">
+                  <span style="font-weight:700;font-size:.9375rem;">${_esc(school)}</span>
+                  <span style="margin-left:.5rem;font-size:.75rem;font-weight:500;
+                               background:var(--c-brand-light,#eef2ff);color:var(--c-brand-text,#3730a3);
+                               border:1px solid var(--c-brand-border,#c7d2fe);
+                               padding:1px 7px;border-radius:99px;">${total}</span>
                 </summary>
-                <div class="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  ${students.map(s => {
-                    const joined = s.createdAt
-                      ? new Date(s.createdAt.toDate ? s.createdAt.toDate() : s.createdAt).toLocaleDateString()
-                      : 'Unknown';
-                    // Store id in data attributes — avoids JS-string-in-HTML escaping pitfalls
-                    return `
-                      <div class="glass p-6 rounded-2xl relative">
-                        <button class="teacher-delete-student absolute top-3 right-3 text-red-500 text-2xl leading-none"
-                                data-uid="${_esc(s.id)}"
-                                aria-label="Delete ${_esc(s.name)}">&#215;</button>
-                        <button class="teacher-toggle-admin absolute top-3 left-3 text-yellow-500 text-xl"
-                                data-uid="${_esc(s.id)}"
-                                data-name="${_esc(s.name)}"
-                                data-is-admin="${s.isAdmin ? 'true' : 'false'}"
-                                aria-label="Toggle admin for ${_esc(s.name)}">
-                          ${s.isAdmin ? '&#9733;' : '&#9734;'}
-                        </button>
-                        <p class="text-xl font-bold">${_esc(s.name)}</p>
-                        <p class="opacity-80">${_esc(s.class || '')}</p>
-                        <p class="text-sm opacity-70 mt-2 break-all">${_esc(s.email || '')}</p>
-                        <p class="text-xs opacity-60 mt-4 italic">Joined: ${joined}</p>
-                      </div>`;
-                  }).join('')}
+                <div style="padding:.875rem 1rem;">
+                  <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.625rem;">
+                    ${students.map(s => {
+                      const joined = s.createdAt
+                        ? new Date(s.createdAt.toDate ? s.createdAt.toDate() : s.createdAt).toLocaleDateString()
+                        : '—';
+                      return `
+                        <div style="position:relative;background:var(--c-surface,#fff);
+                                    border:1px solid var(--c-border,#e5e7eb);border-radius:8px;
+                                    padding:.75rem .875rem .75rem 2.25rem;">
+                          <!-- Admin toggle (star) — top-left -->
+                          <button class="teacher-toggle-admin"
+                                  data-uid="${_esc(s.id)}"
+                                  data-name="${_esc(s.name)}"
+                                  data-is-admin="${s.isAdmin ? 'true' : 'false'}"
+                                  aria-label="Toggle admin for ${_esc(s.name)}"
+                                  style="position:absolute;top:.5rem;left:.5rem;
+                                         background:none;border:none;cursor:pointer;
+                                         font-size:.875rem;line-height:1;padding:2px;
+                                         color:${s.isAdmin ? '#d97706' : '#d1d5db'};">
+                            ${s.isAdmin ? '★' : '☆'}
+                          </button>
+
+                          <!-- Delete (×) — top-right -->
+                          <button class="teacher-delete-student"
+                                  data-uid="${_esc(s.id)}"
+                                  aria-label="Delete ${_esc(s.name)}"
+                                  style="position:absolute;top:.375rem;right:.5rem;
+                                         background:none;border:none;cursor:pointer;
+                                         font-size:1rem;line-height:1;padding:2px 4px;
+                                         color:var(--c-text-4,#9ca3af);"
+                                  onmouseenter="this.style.color='var(--c-danger,#dc2626)'"
+                                  onmouseleave="this.style.color='var(--c-text-4,#9ca3af)'">
+                            ×
+                          </button>
+
+                          <p style="font-size:.875rem;font-weight:700;color:var(--c-text,#111827);
+                                    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+                                    padding-right:1rem;">${_esc(s.name)}</p>
+                          <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:1px;">
+                            ${_esc(s.class || '—')}
+                          </p>
+                          <p style="font-size:.6875rem;color:var(--c-text-4,#9ca3af);margin-top:3px;
+                                    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                            ${_esc(s.email || '')}
+                          </p>
+                          <p style="font-size:.6875rem;color:var(--c-text-4,#9ca3af);margin-top:4px;">
+                            Joined ${joined}
+                          </p>
+                        </div>`;
+                    }).join('')}
+                  </div>
                 </div>
               </details>`;
           }).join('');
         },
         err => {
           console.error('[teacher] Error loading students:', err);
-          container.innerHTML = '<p class="text-center text-red-500">Error loading students.</p>';
+          container.innerHTML = `
+            <p style="text-align:center;color:var(--c-danger,#dc2626);font-size:.875rem;">
+              Error loading students.
+            </p>`;
         }
       );
 
     _reg('students', unsub);
   }
 
-  // Event delegation for student card actions — avoids inline handlers with JS strings
+  /* Event delegation — logic unchanged */
   document.addEventListener('click', async e => {
     const deleteBtn = e.target.closest('.teacher-delete-student');
     if (deleteBtn) { await removeStudent(deleteBtn.dataset.uid); return; }
@@ -289,17 +493,12 @@
     if (!ok) return;
 
     try {
-      // Read name before deleting (for results cleanup)
       const snap = await Db().collection('students').doc(uid).get();
       const name = snap.exists ? snap.data().name : null;
 
-      // Delete student record
       await Db().collection('students').doc(uid).delete();
-
-      // Delete ongoing exam
       await Db().collection('ongoingExams').doc(uid).delete().catch(() => {});
 
-      // Best-effort: delete results matched by uid field if present, fall back to name
       let resultSnap = await Db().collection('results').where('uid', '==', uid).get();
       if (resultSnap.empty && name) {
         resultSnap = await Db().collection('results').where('name', '==', name).get();
@@ -341,7 +540,7 @@
   }
 
   /* -------------------------------------------------- */
-  /* Results tab                                        */
+  /* Results tab — logic unchanged, template redesigned */
   /* -------------------------------------------------- */
 
   function _loadResults() {
@@ -355,45 +554,93 @@
       .onSnapshot(
         snap => {
           if (snap.empty) {
-            container.innerHTML =
-              '<p class="col-span-full text-center text-2xl opacity-70">No results yet.</p>';
+            container.innerHTML = `
+              <p style="grid-column:1/-1;text-align:center;padding:2rem;
+                        color:var(--c-text-3,#6b7280);font-size:.875rem;">
+                No results yet.
+              </p>`;
             return;
           }
 
           container.innerHTML = snap.docs.map(doc => {
             const r = doc.data();
-            const gradeColor = r.grade === 'A' ? 'text-green-500'
-                             : r.grade === 'B' ? 'text-blue-500'
-                             : r.grade === 'C' ? 'text-yellow-600'
-                             : r.grade === 'D' ? 'text-orange-500'
-                             : 'text-red-500';
+            const gradeColor = r.grade === 'A' ? 'var(--c-success,#16a34a)'
+                             : r.grade === 'B' ? 'var(--c-info,#2563eb)'
+                             : r.grade === 'C' ? 'var(--c-warning,#d97706)'
+                             : r.grade === 'D' ? '#ea580c'
+                             : 'var(--c-danger,#dc2626)';
+            const pct = r.percentage || 0;
+            const ts  = r.timestamp
+              ? new Date(r.timestamp.toDate ? r.timestamp.toDate() : r.timestamp).toLocaleDateString()
+              : '—';
+
             return `
-              <div class="glass-dark p-6 rounded-2xl relative">
-                <button class="teacher-delete-result absolute top-3 right-3 text-red-500 text-2xl leading-none"
+              <div style="position:relative;background:var(--c-surface,#fff);
+                          border:1px solid var(--c-border,#e5e7eb);border-radius:10px;
+                          padding:.875rem 1rem;overflow:hidden;">
+
+                <!-- Delete -->
+                <button class="teacher-delete-result"
                         data-id="${_esc(doc.id)}"
-                        aria-label="Delete result">&#215;</button>
-                <p class="text-xl font-bold">${_esc(r.name || '')}</p>
-                <p class="opacity-80">${_esc(r.class || '')} &bull; ${_esc(r.school || '')}</p>
-                <p class="text-4xl font-bold mt-4 ${gradeColor}">
-                  ${r.percentage || 0}% &rarr; ${_esc(r.grade || '?')}
-                </p>
-                ${(r.subjects || []).map(s =>
-                  `<p><strong>${_esc(s)}:</strong> ${r.scores?.[s] || 0}%</p>`
-                ).join('')}
+                        aria-label="Delete result"
+                        style="position:absolute;top:.5rem;right:.625rem;background:none;
+                               border:none;cursor:pointer;font-size:1rem;line-height:1;
+                               padding:2px 4px;color:var(--c-text-4,#9ca3af);"
+                        onmouseenter="this.style.color='var(--c-danger,#dc2626)'"
+                        onmouseleave="this.style.color='var(--c-text-4,#9ca3af)'">
+                  ×
+                </button>
+
+                <!-- Grade badge -->
+                <div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:.625rem;">
+                  <div style="min-width:48px;height:48px;border-radius:8px;
+                              background:${gradeColor}12;border:1px solid ${gradeColor}40;
+                              display:flex;flex-direction:column;align-items:center;
+                              justify-content:center;flex-shrink:0;">
+                    <span style="font-size:.6875rem;font-weight:700;color:${gradeColor};
+                                 line-height:1;">${pct}%</span>
+                    <span style="font-size:1rem;font-weight:800;color:${gradeColor};
+                                 line-height:1;margin-top:1px;">${_esc(r.grade || '?')}</span>
+                  </div>
+                  <div style="min-width:0;flex:1;padding-right:1.25rem;">
+                    <p style="font-size:.875rem;font-weight:700;color:var(--c-text,#111827);
+                               white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                      ${_esc(r.name || '')}
+                    </p>
+                    <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:1px;">
+                      ${_esc(r.class || '')} · ${_esc(r.school || '')}
+                    </p>
+                  </div>
+                </div>
+
+                <!-- Per-subject scores -->
+                <div style="display:flex;flex-wrap:wrap;gap:.25rem;margin-bottom:.5rem;">
+                  ${(r.subjects || []).map(s => `
+                    <span style="font-size:.6875rem;font-weight:600;
+                                 background:var(--c-surface-2,#f9fafb);
+                                 border:1px solid var(--c-border,#e5e7eb);
+                                 border-radius:4px;padding:1px 6px;color:var(--c-text-2,#374151);">
+                      ${_esc(s)}: ${r.scores?.[s] || 0}%
+                    </span>`).join('')}
+                </div>
+
+                <p style="font-size:.6875rem;color:var(--c-text-4,#9ca3af);">${ts}</p>
               </div>`;
           }).join('');
         },
         err => {
           console.error('[teacher] Error loading results:', err);
-          container.innerHTML =
-            '<p class="col-span-full text-center text-red-500">Error loading results.</p>';
+          container.innerHTML = `
+            <p style="grid-column:1/-1;text-align:center;color:var(--c-danger,#dc2626);font-size:.875rem;">
+              Error loading results.
+            </p>`;
         }
       );
 
     _reg('results', unsub);
   }
 
-  // Event delegation for result deletion
+  /* Event delegation for result deletion — logic unchanged */
   document.addEventListener('click', async e => {
     const btn = e.target.closest('.teacher-delete-result');
     if (btn) await deleteResult(btn.dataset.id);
@@ -413,13 +660,14 @@
   }
 
   /* -------------------------------------------------- */
-  /* Schools tab                                        */
+  /* Schools tab — logic unchanged, template redesigned */
   /* -------------------------------------------------- */
 
   function _loadSchools() {
     const container = document.getElementById('schoolsList');
     if (!container) return;
-    container.innerHTML = '<p class="text-center opacity-70">Loading schools...</p>';
+    container.innerHTML = `
+      <p style="font-size:.875rem;color:var(--c-text-3,#6b7280);">Loading...</p>`;
 
     _cancel('schools');
     const unsub = Db()
@@ -428,33 +676,49 @@
       .onSnapshot(
         snap => {
           if (snap.empty) {
-            container.innerHTML =
-              '<p class="text-center text-xl opacity-70">No schools added yet.</p>';
+            container.innerHTML = `
+              <p style="font-size:.875rem;color:var(--c-text-3,#6b7280);">
+                No schools added yet.
+              </p>`;
             return;
           }
           container.innerHTML = snap.docs.map(doc => `
-            <div class="glass-dark p-6 rounded-2xl flex justify-between items-center shadow">
-              <p class="text-xl font-medium">${_esc(doc.data().name)}</p>
-              <div class="flex gap-4">
-                <button class="teacher-rename-school btn bg-blue-600 px-6 py-3 text-lg"
+            <div style="display:flex;align-items:center;justify-content:space-between;
+                        background:var(--c-surface,#fff);border:1px solid var(--c-border,#e5e7eb);
+                        border-radius:8px;padding:.625rem 1rem;">
+              <p style="font-size:.9375rem;font-weight:500;color:var(--c-text,#111827);">
+                ${_esc(doc.data().name)}
+              </p>
+              <div style="display:flex;gap:.375rem;align-items:center;">
+                <button class="teacher-rename-school btn bg-blue-600"
                         data-id="${_esc(doc.id)}"
-                        data-name="${_esc(doc.data().name)}">Rename</button>
-                <button class="teacher-delete-school text-red-500 text-3xl leading-none"
+                        data-name="${_esc(doc.data().name)}"
+                        style="font-size:.75rem;padding:.3125rem .75rem;">
+                  Rename
+                </button>
+                <button class="teacher-delete-school"
                         data-id="${_esc(doc.id)}"
-                        data-name="${_esc(doc.data().name)}">&#215;</button>
+                        data-name="${_esc(doc.data().name)}"
+                        style="background:none;border:none;cursor:pointer;font-size:1rem;
+                               line-height:1;padding:2px 4px;color:var(--c-text-4,#9ca3af);"
+                        onmouseenter="this.style.color='var(--c-danger,#dc2626)'"
+                        onmouseleave="this.style.color='var(--c-text-4,#9ca3af)'">
+                  ×
+                </button>
               </div>
             </div>`).join('');
         },
         err => {
           console.error('[teacher] Error loading schools:', err);
-          container.innerHTML = '<p class="text-center text-red-500">Error loading schools.</p>';
+          container.innerHTML = `
+            <p style="color:var(--c-danger,#dc2626);font-size:.875rem;">Error loading schools.</p>`;
         }
       );
 
     _reg('schools', unsub);
   }
 
-  // Event delegation for school actions
+  /* Event delegation — logic unchanged */
   document.addEventListener('click', async e => {
     const renameBtn = e.target.closest('.teacher-rename-school');
     if (renameBtn) { await renameSchool(renameBtn.dataset.id, renameBtn.dataset.name); return; }
@@ -519,7 +783,7 @@
   }
 
   /* -------------------------------------------------- */
-  /* Tasks & Messages tab                               */
+  /* Tasks & Messages tab — logic unchanged             */
   /* -------------------------------------------------- */
 
   function _loadTasksManager() {
@@ -547,7 +811,6 @@
       });
     _reg('tasksManager', unsub);
 
-    // Populate students dropdown for private messages
     _cancel('msgStudents');
     const unsubStudents = Db()
       .collection('students')
@@ -584,10 +847,19 @@
     const container = document.getElementById('tasksDates');
     if (!container) return;
     const div = document.createElement('div');
-    div.className = 'flex justify-between items-center bg-purple-100 p-4 rounded-xl shadow';
+    div.style.cssText = `
+      display:flex;align-items:center;justify-content:space-between;
+      background:var(--c-brand-light,#eef2ff);border:1px solid var(--c-brand-border,#c7d2fe);
+      border-radius:6px;padding:.375rem .75rem;
+    `;
     div.innerHTML = `
-      <span class="date-val text-lg font-medium">${_esc(dateStr)}</span>
-      <button onclick="this.parentElement.remove()" class="text-red-600 font-bold text-2xl px-3">&#215;</button>`;
+      <span class="date-val" style="font-size:.8125rem;font-weight:600;
+                                    color:var(--c-brand-text,#3730a3);">${_esc(dateStr)}</span>
+      <button onclick="this.parentElement.remove()"
+              style="background:none;border:none;cursor:pointer;font-size:.875rem;
+                     color:var(--c-danger,#dc2626);line-height:1;padding:0 2px;">
+        ×
+      </button>`;
     container.appendChild(div);
   }
 
@@ -598,7 +870,7 @@
     const dates    = Array.from(document.querySelectorAll('#tasksDates span.date-val'))
                          .map(s => s.textContent.trim());
 
-    if (active && !title)          { UI.toast('Please enter a title for the coaching task.', 'warning'); return; }
+    if (active && !title)             { UI.toast('Please enter a title for the coaching task.', 'warning'); return; }
     if (active && dates.length === 0) { UI.toast('Please add at least one date when activating tasks.', 'warning'); return; }
 
     const payload = {
@@ -636,8 +908,8 @@
       const msgEl    = document.getElementById('tasksMessage');
       const datesEl  = document.getElementById('tasksDates');
       const activeEl = document.getElementById('tasksActive');
-      if (titleEl)  titleEl.value    = '';
-      if (msgEl)    msgEl.value      = '';
+      if (titleEl)  titleEl.value     = '';
+      if (msgEl)    msgEl.value       = '';
       if (datesEl)  datesEl.innerHTML = '';
       if (activeEl) activeEl.checked  = false;
     } catch (err) {
@@ -651,16 +923,13 @@
     const text      = document.getElementById('msgText')?.value.trim();
     const duration  = parseInt(document.getElementById('msgDuration')?.value || '86400000', 10);
 
-    if (!studentId) { UI.toast('Please select a student.',   'warning'); return; }
-    if (!text)      { UI.toast('Please write a message.', 'warning'); return; }
+    if (!studentId) { UI.toast('Please select a student.',  'warning'); return; }
+    if (!text)      { UI.toast('Please write a message.',   'warning'); return; }
 
     const btn = document.getElementById('sendMsgBtn');
     UI.setLoading(btn, true);
 
     try {
-      // Use server timestamp for sentAt; compute expiresAt via a client-calculated offset.
-      // Firestore does not support computed server timestamps, so we use client Date for
-      // expiresAt. The duration values are large enough that minor clock skew is acceptable.
       const expiresAt = new Date(Date.now() + duration);
 
       await Db().collection('privateMessages').add({
@@ -684,7 +953,7 @@
   }
 
   /* -------------------------------------------------- */
-  /* Logout                                             */
+  /* Logout — unchanged                                 */
   /* -------------------------------------------------- */
 
   async function logout() {
@@ -692,7 +961,6 @@
     AppState.isTeacher = false;
     try {
       await window.fbAuth.signOut();
-      // app.js onAuthStateChanged listener handles the rest
     } catch (err) {
       console.error('[teacher] logout error:', err);
       UI.toast('Logout failed. Please try again.', 'error');
@@ -700,7 +968,7 @@
   }
 
   /* -------------------------------------------------- */
-  /* Private helpers                                    */
+  /* Private helpers — unchanged                        */
   /* -------------------------------------------------- */
 
   function _esc(str) {
@@ -711,25 +979,23 @@
       .replace(/"/g, '&quot;');
   }
 
+  function Db() { return window.fbDb; }
+
   /* -------------------------------------------------- */
-  /* Expose                                             */
+  /* Expose — unchanged                                 */
   /* -------------------------------------------------- */
 
   window.Teacher = {
     renderTeacherDashboard,
     showTab,
     logout,
-    // Students
     _loadStudents,
     removeStudent,
     toggleAdmin,
-    // Results
     deleteResult,
-    // Schools
     addSchool,
     renameSchool,
     deleteSchool,
-    // Tasks
     addTaskDate,
     saveTasksConfig,
     deleteAllTasks,
