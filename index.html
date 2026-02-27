@@ -26,9 +26,9 @@
   <link rel="stylesheet" href="css/styles.css" />
 
   <!--
-    Tailwind CDN — synchronous, must not be deferred.
-    Every JS module renders HTML using Tailwind utility classes.
-    Our styles.css defines named custom classes on top.
+    Tailwind CDN — synchronous.
+    Our styles.css applies overrides on top via !important where
+    Tailwind utility specificity would otherwise win.
   -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -37,7 +37,6 @@
         theme: {
           extend: {
             fontFamily: {
-              /* Override Tailwind's default sans with Outfit */
               sans: ['Outfit', 'Segoe UI', 'system-ui', '-apple-system', 'sans-serif'],
             },
           },
@@ -46,39 +45,16 @@
     }
   </script>
 
-  <!-- =====================================================
-       KaTeX — Option A math rendering
-       
-       LOAD ORDER IS CRITICAL — do not rearrange:
-       
-       1. katex.min.css    — styles (non-blocking link)
-       2. katex.min.js     — core library   (defer)
-       3. auto-render.js   — DOM scanner    (defer, depends on #2)
-       
-       Both JS files are `defer` so they execute after HTML
-       parsing in document order — auto-render always loads
-       after core. The onload on auto-render sets
-       window._katexAutoRenderReady = true, which is the flag
-       exam.js checks before calling renderMathInElement().
-       
-       DO NOT add crossorigin="anonymous" — it causes CORS
-       failures on some mobile networks/proxies and silently
-       prevents the scripts from executing.
-       ===================================================== -->
+  <!-- KaTeX math rendering -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
           onload="window._katexAutoRenderReady = true;"></script>
 </head>
 
-<!--
-  The Tailwind body gradient utility classes below are kept for
-  compatibility. styles.css body rule uses !important to apply
-  our background on top of them cleanly.
--->
 <body class="bg-gradient-to-br from-indigo-50 via-white to-purple-50">
 
-  <!-- Toast notification container — ID used by ui.js -->
+  <!-- Toast container -->
   <div
     id="toastContainer"
     class="fixed top-6 right-6 z-50 space-y-3 max-w-sm w-full pointer-events-none"
@@ -87,15 +63,29 @@
     role="status"
   ></div>
 
-  <!-- Main app mount point — ID used by UI.mount() and all modules -->
+  <!-- Main app mount point -->
   <div id="app" class="min-h-screen flex items-center justify-center p-6"></div>
 
   <!-- PWA Install Prompt -->
-  <div id="install-prompt" style="display:none;position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:white;padding:20px 28px;border-radius:16px;box-shadow:0 8px 32px rgba(0,0,0,.15);z-index:9999;max-width:90%;text-align:center;border:1px solid #e5e7eb;">
-    <p style="margin:0 0 14px 0;font-weight:700;color:#1f2937;font-family:Outfit,sans-serif;font-size:.9375rem;">Install Vertex Tutorial App</p>
+  <div id="install-prompt"
+       style="display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
+              background:white;padding:1rem 1.5rem;border-radius:12px;
+              box-shadow:0 8px 28px rgba(0,0,0,.14);z-index:9999;
+              max-width:90%;text-align:center;border:1px solid #e5e7eb;">
+    <p style="margin:0 0 10px;font-weight:700;color:#1f2937;font-family:Outfit,sans-serif;font-size:.875rem;">
+      Install Vertex Tutorial App
+    </p>
     <div style="display:flex;gap:8px;justify-content:center;">
-      <button id="install-button" style="background:#4f46e5;color:white;border:none;padding:8px 20px;border-radius:8px;font-weight:600;cursor:pointer;font-family:Outfit,sans-serif;font-size:.875rem;">Install</button>
-      <button id="install-cancel"  style="background:#f3f4f6;color:#4b5563;border:1px solid #e5e7eb;padding:8px 20px;border-radius:8px;cursor:pointer;font-family:Outfit,sans-serif;font-size:.875rem;">Later</button>
+      <button id="install-button"
+              style="background:#4f46e5;color:white;border:none;padding:7px 18px;
+                     border-radius:6px;font-weight:600;cursor:pointer;font-family:Outfit,sans-serif;font-size:.8125rem;">
+        Install
+      </button>
+      <button id="install-cancel"
+              style="background:#f3f4f6;color:#4b5563;border:1px solid #e5e7eb;padding:7px 18px;
+                     border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif;font-size:.8125rem;">
+        Later
+      </button>
     </div>
   </div>
 
@@ -119,19 +109,12 @@
   <script src="news-ticker.js"></script>
 
   <!-- =====================================================
-       PRESENTATION ENHANCEMENTS
-       Purely visual layer. No logic, scoring, IDs touched.
-
-       1. Sticky exam header (timer always on screen)
-       2. #app layout switch between flex-center / block
-       3. Keyboard shortcuts: ← → or P N (prev/next)
-                               1 2 3 4 (select option)
+       PRESENTATION ENHANCEMENTS — unchanged from original
        ===================================================== -->
   <script>
     (function () {
       'use strict';
 
-      /* ── Patch Exam.renderExam ── */
       function _patchExam() {
         if (!window.Exam || typeof window.Exam.renderExam !== 'function') {
           return setTimeout(_patchExam, 80);
@@ -144,7 +127,6 @@
         };
       }
 
-      /* ── Patch UI.mount ── */
       function _patchMount() {
         if (!window.UI || typeof window.UI.mount !== 'function') {
           return setTimeout(_patchMount, 80);
@@ -159,7 +141,6 @@
         };
       }
 
-      /* ── Toggle #app between flex-center and block ── */
       function _setExamLayout(active) {
         var app = document.getElementById('app');
         if (!app) return;
@@ -167,7 +148,7 @@
           app.style.display        = 'block';
           app.style.alignItems     = '';
           app.style.justifyContent = '';
-          app.style.padding        = '1.5rem';
+          app.style.padding        = '0.75rem';
           app.classList.add('exam-active');
         } else {
           app.style.display        = '';
@@ -178,23 +159,14 @@
         }
       }
 
-      /* ── Make the exam header card sticky ──
-         exam.js renders:
-           <div class="max-w-4xl mx-auto p-4 flex flex-col gap-6">   ← wrap
-             <div class="glass p-6 rounded-3xl ...">                  ← header (has #timerDisplay)
-             <div class="glass p-8 rounded-3xl">                      ← question
-         We add .exam-header-sticky to the first child glass div.
-      */
       function _stickyTimer() {
         var app = document.getElementById('app');
         if (!app) return;
         var wrap = app.firstElementChild;
         if (!wrap) return;
-        // Find the glass card that contains the timer (may not be firstElementChild
-        // now that the student info bar is inserted before it)
+
         var header = wrap.querySelector('.glass:has(#timerDisplay)');
         if (!header) {
-          // Fallback for browsers without :has() support
           header = Array.from(wrap.children).find(function(el) {
             return el.classList.contains('glass') && el.querySelector('#timerDisplay');
           });
@@ -204,7 +176,6 @@
 
         header.classList.add('exam-header-sticky');
 
-        /* Scroll observer: add .stuck shadow when header pins */
         if (!('IntersectionObserver' in window)) return;
         var sentinel = document.createElement('div');
         sentinel.style.cssText = 'height:1px;pointer-events:none;visibility:hidden;';
@@ -219,7 +190,7 @@
         window._stickyObs.observe(sentinel);
       }
 
-      /* ── Keyboard shortcuts ── */
+      /* Keyboard shortcuts */
       document.addEventListener('keydown', function (e) {
         var tag = document.activeElement && document.activeElement.tagName;
         if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
@@ -250,10 +221,7 @@
     }());
   </script>
 
-  <!-- =====================================================
-       SERVICE WORKER REGISTRATION
-       Must remain inline after all module scripts.
-       ===================================================== -->
+  <!-- Service Worker Registration — unchanged -->
   <script>
     (function () {
       'use strict';
