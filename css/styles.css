@@ -600,6 +600,19 @@ textarea::placeholder {
   to   { opacity: 1; transform: scale(1)   translateY(0);    }
 }
 
+/* ── Mobile: allow modal overlay to scroll when content overflows viewport ── */
+@media (max-height: 640px), (max-width: 480px) {
+  .modal-overlay {
+    align-items: flex-start !important;
+    overflow-y: auto !important;
+    padding: 1rem 0.75rem !important;
+  }
+
+  .modal-box {
+    margin: auto !important;
+    padding: 1.5rem 1.25rem !important;
+  }
+}
 /* ============================================================
    ┌─────────────────────────────────────────┐
    │  TOAST NOTIFICATIONS                    │
