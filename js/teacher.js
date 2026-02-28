@@ -1,37 +1,7 @@
 /* ============================================================
    js/teacher.js — Teacher dashboard (UI v2)
    ============================================================
-   UI REDESIGN — what changed:
-   ┌──────────────────────────────────────────────────────────┐
-   │ SHELL                                                    │
-   │  Before: max-w-7xl glass p-10 mt-10, text-5xl heading,  │
-   │          tab buttons text-xl px-8 py-4 (58px tall each) │
-   │  After:  compact admin shell with sidebar-style pill nav,│
-   │          page header 1rem padding, nav pills 34px tall   │
-   │                                                          │
-   │ STUDENTS                                                 │
-   │  Before: text-3xl section H2, gap-6, p-6 cards          │
-   │  After:  compact header bar, tighter cards with badges   │
-   │                                                          │
-   │ RESULTS                                                  │
-   │  Before: text-4xl score display, 4-col grid gap-6        │
-   │  After:  2-3 col grid, compact score pill, proper rhythm │
-   │                                                          │
-   │ SCHOOLS                                                  │
-   │  Before: p-8 glass-dark add-form, full-width btn py-4   │
-   │  After:  inline input + button row, clean list           │
-   │                                                          │
-   │ TASKS                                                    │
-   │  Before: w-8 h-8 checkbox, text-xl inputs (52px), px-16 │
-   │          py-5 buttons (~68px), glass-dark p-8 rounded-3xl│
-   │  After:  standard form controls, two-section layout,     │
-   │          proper label/input hierarchy                    │
-   │                                                          │
-   │ ZERO LOGIC CHANGES — all Firestore, Auth, event         │
-   │ delegation, IDs, data-attributes, onclick handlers,      │
-   │ class names used by JS unchanged                        │
-   └──────────────────────────────────────────────────────────┘
-   ============================================================ */
+ */
 
 (function () {
   'use strict';
