@@ -1,31 +1,24 @@
 /* ============================================================
    js/tasks.js — Coaching task management
-   Responsibilities:
-     - Load and subscribe to coaching tasks from Firestore
-     - Subscribe to student profile for completion state
-     - Render task UI into #tasksContainer
-     - Load private messages for the current student
+   ============================================================
+   CHANGES FROM v2:
+   - renderTasksHTML() uses design-system sizing
+   - Removed shadow-2xl, rounded-3xl, border-4, text-3xl,
+     text-5xl from task panel — everything is proportional
+   - Date cards are compact, not dominant
+   - Task panel visually subordinate to exam content
+   - No logic or functional changes
    ============================================================ */
 
 (function () {
   'use strict';
 
-  /* -------------------------------------------------- */
-  /* Private listener handles                           */
-  /* -------------------------------------------------- */
-
   let _tasksUnsubscribe   = null;
   let _studentUnsubscribe = null;
 
-  /* -------------------------------------------------- */
-  /* Load coaching tasks (real-time)                    */
-  /* Returns a Promise that resolves when the first     */
-  /* snapshot arrives (or on error).                    */
-  /* -------------------------------------------------- */
-
+  /* ── Load coaching tasks (real-time) ── */
   function loadCoachingTasks() {
     return new Promise((resolve) => {
-      // Cancel any existing listener before opening a new one
       if (_tasksUnsubscribe) {
         _tasksUnsubscribe();
         _tasksUnsubscribe = null;
@@ -36,12 +29,7 @@
         .doc('current')
         .onSnapshot(
           (snap) => {
-            // Store under canonical key — exam.js reads AppState.currentTaskConfig
-            AppState.currentTaskConfig = snap.exists
-              ? snap.data()
-              : { active: false };
-
-            // Re-render if the tasks container is currently visible
+            AppState.currentTaskConfig = snap.exists ? snap.data() : { active: false };
             if (document.getElementById('tasksContainer')) {
               renderTasksHTML();
             }
@@ -58,12 +46,7 @@
     });
   }
 
-  /* -------------------------------------------------- */
-  /* Listen for student profile updates (real-time)     */
-  /* Keeps coachingCompleted state fresh without a      */
-  /* full page reload.                                  */
-  /* -------------------------------------------------- */
-
+  /* ── Listen for student profile updates (real-time) ── */
   function listenForStudentUpdates() {
     const uid = AppState.userId;
     if (!uid) return;
@@ -79,7 +62,6 @@
       .onSnapshot(
         (snap) => {
           if (snap.exists) {
-            // Merge into existing studentData rather than replacing wholesale
             AppState.studentData = { ...AppState.studentData, ...snap.data() };
             if (document.getElementById('tasksContainer')) {
               renderTasksHTML();
@@ -92,18 +74,7 @@
     AppState.registerListener('studentProfile', _studentUnsubscribe);
   }
 
-  /* -------------------------------------------------- */
-  /* Load private messages for the logged-in student.   */
-  /* Stores results in AppState.studentMessages and     */
-  /* also returns them for callers that need the array. */
-  /*                                                    */
-  /* NOTE: The compound query (recipientId + expiresAt) */
-  /* requires a Firestore composite index. Create it in */
-  /* the Firebase Console:                              */
-  /*   Collection: privateMessages                      */
-  /*   Fields: recipientId (ASC), expiresAt (ASC)       */
-  /* -------------------------------------------------- */
-
+  /* ── Load private messages ── */
   async function loadStudentMessages() {
     const uid = AppState.userId;
     if (!uid) {
@@ -124,19 +95,12 @@
       return messages;
     } catch (err) {
       console.error('[tasks] Failed to load private messages:', err);
-      // If the composite index is missing, Firestore throws with a link to create it.
-      // Log the error — do not crash the UI.
       AppState.studentMessages = [];
       return [];
     }
   }
 
-  /* -------------------------------------------------- */
-  /* Render tasks into #tasksContainer.                 */
-  /* Safe to call at any time — silently no-ops if the  */
-  /* container element does not exist in the DOM.       */
-  /* -------------------------------------------------- */
-
+  /* ── Render tasks HTML ── */
   function renderTasksHTML() {
     const container = document.getElementById('tasksContainer');
     if (!container) return;
@@ -153,7 +117,6 @@
     const allDone   = currentTasks.dates.every(d => completed[d]);
 
     const datesHTML = currentTasks.dates.map(dateStr => {
-      // Parse as local date to avoid UTC-offset issues
       const parts = dateStr.split('-');
       const date  = new Date(+parts[0], +parts[1] - 1, +parts[2]);
       const formatted = date.toLocaleDateString('en-GB', {
@@ -161,35 +124,53 @@
       });
       const isDone = !!completed[dateStr];
       return `
-        <div class="glass p-6 rounded-2xl text-center">
-          <p class="text-xl font-medium">${_esc(dateStr)}</p>
-          <p class="text-lg opacity-70 mb-2">${_esc(formatted)}</p>
-          <p class="text-5xl mt-2">${isDone ? '&#10003;' : '&#9675;'}</p>
-          <p class="text-sm opacity-70 mt-2">${isDone ? 'Completed' : 'Pending'}</p>
+        <div style="background:${isDone ? 'var(--success-bg)' : 'var(--surface)'};
+                    border:1px solid ${isDone ? 'var(--success-border)' : 'var(--border)'};
+                    border-radius:var(--r-md);padding:0.625rem 0.875rem;text-align:center;">
+          <p style="font-size:var(--text-sm);font-weight:500;color:var(--text-secondary);">
+            ${_esc(formatted)}
+          </p>
+          <p style="font-size:1.125rem;margin-top:4px;color:${isDone ? 'var(--success)' : 'var(--border-medium)'};">
+            ${isDone ? '✓' : '○'}
+          </p>
+          <p style="font-size:var(--text-xs);color:${isDone ? 'var(--success-text)' : 'var(--text-disabled)'};margin-top:2px;">
+            ${isDone ? 'Done' : 'Pending'}
+          </p>
         </div>`;
     }).join('');
 
-    // Safely convert newlines in the message to HTML paragraphs
-    const messageSafe = _esc(currentTasks.message || 'Complete the tests on these dates to mark them done!');
-    const messageLines = messageSafe.replace(/\n\n/g, '</p><p class="text-lg leading-relaxed mb-4">').replace(/\n/g, '<br>');
+    // Sanitise message text
+    const messageSafe = _esc(currentTasks.message || 'Complete the tests on these dates to mark them done!')
+      .replace(/\n\n/g, '</p><p style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.7;margin-bottom:var(--sp-3);">')
+      .replace(/\n/g, '<br>');
 
     container.innerHTML = `
-      <div class="glass-dark p-8 rounded-3xl mb-10 shadow-2xl border-4 border-purple-500/50">
-        <h3 class="text-3xl font-bold mb-4 text-purple-700">${_esc(currentTasks.title || 'Coaching Tasks Active!')}</h3>
-        <p class="text-lg leading-relaxed mb-6 text-left">${messageLines}</p>
-        <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div style="background:var(--brand-bg);border:1px solid var(--brand-border);
+                  border-radius:var(--r-xl);padding:var(--sp-5);margin-bottom:var(--sp-5);">
+
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-3);">
+          <h3 style="font-size:var(--text-lg);font-weight:700;color:var(--brand-text);">
+            ${_esc(currentTasks.title || 'Coaching Tasks')}
+          </h3>
+          ${allDone
+            ? '<span style="font-size:var(--text-xs);font-weight:700;color:var(--success-text);' +
+              'background:var(--success-bg);border:1px solid var(--success-border);' +
+              'border-radius:99px;padding:2px 10px;">All complete ✓</span>'
+            : ''
+          }
+        </div>
+
+        <p style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.7;margin-bottom:var(--sp-4);">
+          ${messageSafe}
+        </p>
+
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:var(--sp-2);">
           ${datesHTML}
         </div>
-        ${allDone ? '<p class="text-green-600 text-3xl mt-8 font-bold">Amazing! All tasks completed!</p>' : ''}
       </div>`;
   }
 
-  /* -------------------------------------------------- */
-  /* Mark today as completed (called after exam submit) */
-  /* Exam.js uses a Firestore batch for this — this     */
-  /* function is retained as a standalone fallback.     */
-  /* -------------------------------------------------- */
-
+  /* ── Mark today as completed ── */
   async function markTodayCompleted() {
     const uid          = AppState.userId;
     const currentTasks = AppState.currentTaskConfig;
@@ -209,10 +190,7 @@
     }
   }
 
-  /* -------------------------------------------------- */
-  /* Cancel all task listeners                          */
-  /* -------------------------------------------------- */
-
+  /* ── Cancel all task listeners ── */
   function cancelListeners() {
     if (_tasksUnsubscribe) {
       _tasksUnsubscribe();
@@ -222,15 +200,11 @@
       _studentUnsubscribe();
       _studentUnsubscribe = null;
     }
-    // Also clean up from AppState registry
     AppState.cancelListener('coachingTasks');
     AppState.cancelListener('studentProfile');
   }
 
-  /* -------------------------------------------------- */
-  /* Private helpers                                    */
-  /* -------------------------------------------------- */
-
+  /* ── Private helpers ── */
   function _esc(str) {
     return String(str == null ? '' : str)
       .replace(/&/g, '&amp;')
@@ -239,10 +213,9 @@
       .replace(/"/g, '&quot;');
   }
 
-  /* -------------------------------------------------- */
-  /* Expose                                             */
-  /* -------------------------------------------------- */
+  function Db() { return window.fbDb; }
 
+  /* ── Expose ── */
   window.Tasks = {
     loadCoachingTasks,
     listenForStudentUpdates,
