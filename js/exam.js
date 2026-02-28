@@ -789,10 +789,10 @@
     }
 
     const percentage = Math.round((totalCorrect / totalQuestions) * 100);
-    const grade = percentage >= 80 ? 'A'
-                : percentage >= 70 ? 'B'
-                : percentage >= 60 ? 'C'
-                : percentage >= 50 ? 'D'
+    const grade = percentage >= 70 ? 'A'
+                : percentage >= 60 ? 'B'
+                : percentage >= 50 ? 'C'
+                : percentage >= 40 ? 'D'
                 : 'E';
 
     return {
