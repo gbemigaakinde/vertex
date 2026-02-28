@@ -9,7 +9,7 @@
   <meta name="author" content="Vertex Tutorial" />
 
   <!-- PWA -->
-  <meta name="theme-color" content="#4f46e5" />
+  <meta name="theme-color" content="#3b5bdb" />
   <meta name="color-scheme" content="light" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -26,9 +26,10 @@
   <link rel="stylesheet" href="css/styles.css" />
 
   <!--
-    Tailwind CDN — synchronous.
-    Our styles.css applies overrides on top via !important where
-    Tailwind utility specificity would otherwise win.
+    Tailwind CDN — layout utilities only.
+    The design system CSS in styles.css owns all visual
+    properties. Tailwind is used only for flex/grid/gap/
+    display utilities in JS template strings.
   -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -41,6 +42,10 @@
             },
           },
         },
+        // Disable Tailwind's preflight to prevent competing resets
+        corePlugins: {
+          preflight: false,
+        },
       };
     }
   </script>
@@ -52,38 +57,37 @@
           onload="window._katexAutoRenderReady = true;"></script>
 </head>
 
-<body class="bg-gradient-to-br from-indigo-50 via-white to-purple-50">
+<body>
 
   <!-- Toast container -->
   <div
     id="toastContainer"
-    class="fixed top-6 right-6 z-50 space-y-3 max-w-sm w-full pointer-events-none"
     aria-live="polite"
     aria-atomic="false"
     role="status"
   ></div>
 
   <!-- Main app mount point -->
-  <div id="app" class="min-h-screen flex items-center justify-center p-6"></div>
+  <div id="app"></div>
 
   <!-- PWA Install Prompt -->
   <div id="install-prompt"
        style="display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
-              background:white;padding:1rem 1.5rem;border-radius:12px;
-              box-shadow:0 8px 28px rgba(0,0,0,.14);z-index:9999;
+              background:white;padding:1rem 1.5rem;border-radius:10px;
+              box-shadow:0 6px 20px rgba(0,0,0,.12);z-index:9999;
               max-width:90%;text-align:center;border:1px solid #e5e7eb;">
-    <p style="margin:0 0 10px;font-weight:700;color:#1f2937;font-family:Outfit,sans-serif;font-size:.875rem;">
+    <p style="margin:0 0 10px;font-weight:700;color:#111827;font-family:Outfit,sans-serif;font-size:0.875rem;">
       Install Vertex Tutorial App
     </p>
     <div style="display:flex;gap:8px;justify-content:center;">
       <button id="install-button"
-              style="background:#4f46e5;color:white;border:none;padding:7px 18px;
-                     border-radius:6px;font-weight:600;cursor:pointer;font-family:Outfit,sans-serif;font-size:.8125rem;">
+              style="background:#3b5bdb;color:white;border:none;padding:6px 16px;
+                     border-radius:6px;font-weight:600;cursor:pointer;font-family:Outfit,sans-serif;font-size:0.8125rem;">
         Install
       </button>
       <button id="install-cancel"
-              style="background:#f3f4f6;color:#4b5563;border:1px solid #e5e7eb;padding:7px 18px;
-                     border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif;font-size:.8125rem;">
+              style="background:#f3f4f6;color:#4b5563;border:1px solid #e5e7eb;padding:6px 16px;
+                     border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif;font-size:0.8125rem;">
         Later
       </button>
     </div>
@@ -109,7 +113,7 @@
   <script src="news-ticker.js"></script>
 
   <!-- =====================================================
-       PRESENTATION ENHANCEMENTS — unchanged from original
+       PRESENTATION ENHANCEMENTS
        ===================================================== -->
   <script>
     (function () {
@@ -167,7 +171,7 @@
 
         var header = wrap.querySelector('.glass:has(#timerDisplay)');
         if (!header) {
-          header = Array.from(wrap.children).find(function(el) {
+          header = Array.from(wrap.children).find(function (el) {
             return el.classList.contains('glass') && el.querySelector('#timerDisplay');
           });
         }
@@ -221,7 +225,7 @@
     }());
   </script>
 
-  <!-- Service Worker Registration — unchanged -->
+  <!-- Service Worker Registration -->
   <script>
     (function () {
       'use strict';
