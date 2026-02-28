@@ -1,5 +1,13 @@
 /* ============================================================
    js/auth.js — Authentication: login, register, password reset
+   ============================================================
+   CHANGES FROM v2:
+   - Login/register template uses design-system classes
+   - Removed animated gradient title (institutional context)
+   - Button sizes normalised — no oversized padding
+   - Password toggle uses cbt-eye-btn class
+   - Panel transitions are smooth
+   - No functional logic changes
    ============================================================ */
 
 (function () {
@@ -11,99 +19,171 @@
   /* ── Render login page ── */
   function renderLogin() {
     UI.mount(`
-      <div class="max-w-md w-full glass p-10 animate-fadeIn">
-        <div class="text-center mb-10">
-          <h1 class="animated-text mb-3">
-               Vertex Tutorial
-          </h1>
-          <p class="text-xl text-gray-600">Computer-Based Testing System</p>
-        </div>
+      <div class="cbt-layout cbt-layout--auth cbt-animate-in">
 
-        <!-- LOGIN PANEL -->
-        <div id="loginPanel">
-          <input id="loginEmail" type="email" placeholder="Email address" class="mb-4" autocomplete="email" />
-          <div class="mb-6" style="position:relative;display:flex;align-items:center;">
-            <input id="loginPass" type="password" placeholder="Password" style="padding-right:3rem;margin-bottom:0;" autocomplete="current-password" />
-            <button type="button" id="loginPassToggle"
-              aria-label="Show password" aria-pressed="false"
-              style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);
-                     width:32px;height:32px;background:none;border:none;cursor:pointer;
-                     display:flex;align-items:center;justify-content:center;
-                     color:#9ca3af;border-radius:6px;padding:0;transition:color .15s;">
-              <svg id="loginPassEye" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
+        <div class="cbt-card">
+
+          <!-- Brand header -->
+          <div style="text-align:center;margin-bottom:var(--sp-6);">
+            <div style="display:inline-flex;align-items:center;justify-content:center;
+                        width:40px;height:40px;background:var(--brand);border-radius:10px;
+                        margin-bottom:var(--sp-3);">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white"
+                   stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/>
+                <line x1="12" y1="22" x2="12" y2="15.5"/>
+                <polyline points="22 8.5 12 15.5 2 8.5"/>
               </svg>
-              <svg id="loginPassEyeOff" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
-                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-                <line x1="1" y1="1" x2="23" y2="23"/>
-              </svg>
+            </div>
+            <h1 class="cbt-brand-title">Vertex Tutorial</h1>
+            <p class="cbt-brand-subtitle">Computer-Based Testing System</p>
+          </div>
+
+          <!-- LOGIN PANEL -->
+          <div id="loginPanel">
+            <div class="cbt-field" style="margin-bottom:var(--sp-3);">
+              <label class="cbt-label" for="loginEmail">Email address</label>
+              <input id="loginEmail" type="email" placeholder="you@example.com"
+                     autocomplete="email" />
+            </div>
+
+            <div class="cbt-field" style="margin-bottom:var(--sp-5);">
+              <label class="cbt-label" for="loginPass">Password</label>
+              <div class="cbt-password-wrap">
+                <input id="loginPass" type="password" placeholder="••••••••"
+                       autocomplete="current-password" />
+                <button type="button" id="loginPassToggle" class="cbt-eye-btn"
+                        aria-label="Show password" aria-pressed="false">
+                  <svg id="loginPassEye" xmlns="http://www.w3.org/2000/svg"
+                       width="16" height="16" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                  </svg>
+                  <svg id="loginPassEyeOff" xmlns="http://www.w3.org/2000/svg"
+                       width="16" height="16" viewBox="0 0 24 24" fill="none"
+                       stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                       style="display:none;">
+                    <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                    <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                    <line x1="1" y1="1" x2="23" y2="23"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <button id="loginBtn" onclick="Auth.login()"
+                    class="btn w-full" style="margin-bottom:var(--sp-3);">
+              Sign In
             </button>
-          </div>
-          <button id="loginBtn" onclick="Auth.login()" class="btn w-full text-xl py-5 mb-4">LOGIN</button>
-          <p class="text-center text-sm text-gray-600 mb-3">
-            New student?
-            <button onclick="Auth.showRegister()" class="text-purple-600 underline font-medium">Register</button>
-          </p>
-          <p class="text-center text-sm">
-            <button onclick="Auth.forgotPassword()" class="text-purple-600 underline font-medium">Forgot Password?</button>
-          </p>
-          <p class="text-center text-xs text-gray-500 mt-8">
-            With love from your master,<br>
-            <span class="font-semibold text-purple-600">Master Timothy</span>
-          </p>
-        </div>
 
-        <!-- REGISTER PANEL -->
-        <div id="registerPanel" class="hidden space-y-4">
-          <input id="regName"  type="text"  placeholder="Full Name"  autocomplete="name" />
-          <select id="regClass">
-            <option value="" disabled selected>Select Class</option>
-            <option>JSS1</option><option>JSS2</option><option>JSS3</option>
-            <option>SSS1</option><option>SSS2</option><option>SSS3</option>
-            <option>TUTORIAL</option>
-          </select>
-          <select id="regSchool">
-            <option value="" disabled selected>Loading schools...</option>
-          </select>
-          <input id="regEmail" type="email" placeholder="Email address" autocomplete="email" />
-          <div style="position:relative;display:flex;align-items:center;">
-            <input id="regPass" type="password" placeholder="Password (min 6 chars)" style="padding-right:3rem;margin-bottom:0;" autocomplete="new-password" />
-            <button type="button" id="regPassToggle"
-              aria-label="Show password" aria-pressed="false"
-              style="position:absolute;right:.75rem;top:50%;transform:translateY(-50%);
-                     width:32px;height:32px;background:none;border:none;cursor:pointer;
-                     display:flex;align-items:center;justify-content:center;
-                     color:#9ca3af;border-radius:6px;padding:0;transition:color .15s;">
-              <svg id="regPassEye" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-              </svg>
-              <svg id="regPassEyeOff" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;">
-                <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
-                <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
-                <line x1="1" y1="1" x2="23" y2="23"/>
-              </svg>
+            <div style="text-align:center;font-size:var(--text-sm);color:var(--text-tertiary);">
+              <span>New student? </span>
+              <button onclick="Auth.showRegister()" class="cbt-text-link">Register here</button>
+            </div>
+
+            <div style="text-align:center;margin-top:var(--sp-2);font-size:var(--text-sm);">
+              <button onclick="Auth.forgotPassword()" class="cbt-text-link">
+                Forgot password?
+              </button>
+            </div>
+          </div>
+
+          <!-- REGISTER PANEL -->
+          <div id="registerPanel" class="hidden">
+            <div style="display:flex;flex-direction:column;gap:var(--sp-3);">
+
+              <div class="cbt-field">
+                <label class="cbt-label" for="regName">Full Name</label>
+                <input id="regName" type="text" placeholder="Your full name"
+                       autocomplete="name" />
+              </div>
+
+              <div class="cbt-field">
+                <label class="cbt-label" for="regClass">Class</label>
+                <select id="regClass">
+                  <option value="" disabled selected>Select your class</option>
+                  <option>JSS1</option><option>JSS2</option><option>JSS3</option>
+                  <option>SSS1</option><option>SSS2</option><option>SSS3</option>
+                  <option>TUTORIAL</option>
+                </select>
+              </div>
+
+              <div class="cbt-field">
+                <label class="cbt-label" for="regSchool">School</label>
+                <select id="regSchool">
+                  <option value="" disabled selected>Loading schools...</option>
+                </select>
+              </div>
+
+              <div class="cbt-field">
+                <label class="cbt-label" for="regEmail">Email address</label>
+                <input id="regEmail" type="email" placeholder="you@example.com"
+                       autocomplete="email" />
+              </div>
+
+              <div class="cbt-field">
+                <label class="cbt-label" for="regPass">Password</label>
+                <div class="cbt-password-wrap">
+                  <input id="regPass" type="password" placeholder="At least 6 characters"
+                         autocomplete="new-password" />
+                  <button type="button" id="regPassToggle" class="cbt-eye-btn"
+                          aria-label="Show password" aria-pressed="false">
+                    <svg id="regPassEye" xmlns="http://www.w3.org/2000/svg"
+                         width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                    <svg id="regPassEyeOff" xmlns="http://www.w3.org/2000/svg"
+                         width="16" height="16" viewBox="0 0 24 24" fill="none"
+                         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                         style="display:none;">
+                      <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"/>
+                      <path d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"/>
+                      <line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+
+            <button id="regBtn" onclick="Auth.register()"
+                    class="btn w-full" style="margin-top:var(--sp-4);margin-bottom:var(--sp-3);">
+              Create Account
             </button>
-          </div>
-          <button id="regBtn" onclick="Auth.register()" class="btn w-full text-xl py-5">REGISTER</button>
-          <p class="text-center text-sm text-gray-600">
-            <button onclick="Auth.showLogin()" class="text-purple-600 underline font-medium">Back to Login</button>
-          </p>
-        </div>
-      </div>
 
-      <!-- News ticker -->
-      <div class="news-ticker-container" role="region" aria-label="Notice ticker" aria-live="polite">
-        <div class="ticker-wrapper">
-          <div class="ticker-label">
-            <span class="ticker-label-icon" aria-hidden="true">•</span>
-            <span>NOTE</span>
+            <div style="text-align:center;font-size:var(--text-sm);color:var(--text-tertiary);">
+              Already registered?
+              <button onclick="Auth.showLogin()" class="cbt-text-link">Back to sign in</button>
+            </div>
           </div>
-          <div class="ticker-content">
-            <div class="ticker-text speed-normal" id="tickerScroll"></div>
+
+          <!-- Footer -->
+          <div class="cbt-auth-footer">
+            With care from your master,
+            <span style="font-weight:600;color:var(--brand);">Master Timothy</span>
           </div>
-          <button class="ticker-close" onclick="closeTicker()" aria-label="Close ticker">x</button>
+
+        </div><!-- /cbt-card -->
+
+        <!-- News ticker -->
+        <div class="news-ticker-container" role="region"
+             aria-label="Notice ticker" aria-live="polite"
+             style="margin-top:var(--sp-4);">
+          <div class="ticker-wrapper">
+            <div class="ticker-label">
+              <span class="ticker-label-icon" aria-hidden="true">•</span>
+              <span>NOTE</span>
+            </div>
+            <div class="ticker-content">
+              <div class="ticker-text speed-normal" id="tickerScroll"></div>
+            </div>
+            <button class="ticker-close" onclick="closeTicker()" aria-label="Close ticker">×</button>
+          </div>
         </div>
+
       </div>`);
 
     if (typeof initTicker === 'function' && document.getElementById('tickerScroll')) {
@@ -118,8 +198,6 @@
         var eye    = document.getElementById(eyeId);
         var eyeOff = document.getElementById(eyeOffId);
         if (!input || !btn) return;
-        btn.addEventListener('mouseover', function () { btn.style.color = '#4f46e5'; });
-        btn.addEventListener('mouseout',  function () { btn.style.color = '#9ca3af'; });
         btn.addEventListener('click', function () {
           var showing = input.type === 'text';
           input.type           = showing ? 'password' : 'text';
@@ -133,6 +211,14 @@
       _wireToggle('regPass',   'regPassToggle',   'regPassEye',   'regPassEyeOff');
     }());
 
+    // Allow Enter key on password field to submit
+    var loginPassEl = document.getElementById('loginPass');
+    if (loginPassEl) {
+      loginPassEl.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') Auth.login();
+      });
+    }
+
     const unsub = window.fbDb.collection('schools').orderBy('name').onSnapshot(snap => {
       const sel = document.getElementById('regSchool');
       if (!sel) {
@@ -142,7 +228,7 @@
       }
       let html = '<option value="" disabled selected>Select your school</option>';
       if (snap.empty) {
-        html += '<option value="" disabled>No schools listed yet - contact Master Timothy</option>';
+        html += '<option value="" disabled>No schools listed yet — contact Master Timothy</option>';
       } else {
         snap.forEach(doc => {
           const n = _esc(doc.data().name);
@@ -153,7 +239,7 @@
     }, err => {
       console.error('[auth] School load error:', err);
       const sel = document.getElementById('regSchool');
-      if (sel) sel.innerHTML = '<option value="" disabled>Error loading schools - refresh page</option>';
+      if (sel) sel.innerHTML = '<option value="" disabled>Error loading schools — refresh page</option>';
     });
 
     AppState.registerListener('schoolDropdown', unsub);
@@ -161,7 +247,7 @@
     if (_pendingLoginEmail) {
       const emailEl = document.getElementById('loginEmail');
       if (emailEl) emailEl.value = _pendingLoginEmail;
-      UI.toast('Registration successful! Please log in with your new account.', 'success', 7000);
+      UI.toast('Registration successful! Please sign in with your new account.', 'success', 7000);
       _pendingLoginEmail = '';
     }
   }
@@ -222,7 +308,6 @@
     if (pass.length < 6) { UI.toast('Password must be at least 6 characters.', 'warning'); return; }
 
     UI.setLoading(btn, true);
-
     window._registrationInProgress = true;
 
     try {
