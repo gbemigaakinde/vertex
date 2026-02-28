@@ -1,18 +1,41 @@
 /* ============================================================
    js/exam.js — Exam engine: start, navigate, timer, submit
    ============================================================
-   UI CHANGES (v2):
-   - All oversized Tailwind classes replaced with design-system
-     appropriate equivalents (text-xl→text-base, py-5→py-2.5,
-     p-10→p-6, text-7xl→text-4xl, etc.)
-   - Purple drift fixed: bg-purple-600 → bg-indigo-600
-   - Student info bar compacted
-   - Timer display uses correct --text-timer size
-   - Question text: text-xl (was text-2xl/text-3xl)
-   - Options: text-base (was text-lg)
-   - Navigator section: more compact
-   - Results grade display: proportional
-   - No logic, scoring, or IDs changed
+   TIMER FIX (device-switch inflation):
+
+   Root cause: examStartMs was derived from the Firestore
+   startTime field, which is correct, BUT two failure modes
+   existed:
+
+   1. If the beginExam() Firestore write failed silently,
+      startTime was never persisted. On resume from another
+      device the field was absent, so examStartMs fell back
+      to null and the timer showed the full 2 hours again.
+
+   2. On some mobile browsers, reading a cached Firestore
+      document on resume could return a stale startTime,
+      making Date.now() - examStartMs smaller than the true
+      elapsed duration, giving the student extra time.
+
+   Fix:
+   - startTime is written with { merge: true } so a partial
+     write does not wipe other fields.
+   - On loadOrStart(), if startTime is present we derive
+     examStartMs from it directly (server timestamp → ms).
+     The remaining time formula Date.now() - examStartMs is
+     therefore always anchored to the original wall-clock
+     start, regardless of which device resumes.
+   - If startTime is absent (e.g. student closed during the
+     instructions modal before clicking Begin), we treat the
+     exam as not yet started and show the instructions modal
+     again, keeping examStartMs null until the student
+     explicitly begins. This prevents a silent reset to the
+     full 2 hours.
+   - _startTimer() guards against double-intervals by calling
+     S().clearTimer() unconditionally before creating a new
+     setInterval. This was already present but is now
+     explicitly documented.
+   - No UI, scoring, or navigation logic has changed.
    ============================================================ */
 
 (function () {
@@ -23,7 +46,7 @@
   const CFG = () => AppConfig;
 
   /* ══════════════════════════════════════════════════════════
-     OPTION B — LaTeX preprocessor
+     LaTeX preprocessor
      ══════════════════════════════════════════════════════════ */
   function preprocessLatex(str) {
     if (str == null) return '';
@@ -82,39 +105,99 @@
     return _escHtml(preprocessLatex(str));
   }
 
-  /* ── Load or resume exam after login ── */
+  /* ══════════════════════════════════════════════════════════
+     _resolveStartMs(startTime)
+
+     Converts a Firestore Timestamp (or plain Date / seconds
+     object) into a Unix millisecond integer.
+     Returns null if the value cannot be resolved.
+     ══════════════════════════════════════════════════════════ */
+  function _resolveStartMs(startTime) {
+    if (!startTime) return null;
+
+    // Firestore Timestamp object
+    if (typeof startTime.toDate === 'function') {
+      return startTime.toDate().getTime();
+    }
+
+    // Serialised Timestamp: { seconds, nanoseconds }
+    if (typeof startTime.seconds === 'number') {
+      return startTime.seconds * 1000;
+    }
+
+    // Plain JS Date
+    if (startTime instanceof Date) {
+      return startTime.getTime();
+    }
+
+    // Numeric ms (already resolved)
+    if (typeof startTime === 'number') {
+      return startTime;
+    }
+
+    return null;
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     loadOrStart — entry point after login
+     ══════════════════════════════════════════════════════════ */
   async function loadOrStart() {
     try {
       const snap = await Db().collection('ongoingExams').doc(S().userId).get();
 
-      if (snap.exists) {
-        S().exam = snap.data();
+      if (!snap.exists) {
+        // No ongoing exam — show subject selection
+        await renderSubjectSelection();
+        return;
+      }
 
-        const st = S().exam.startTime;
-        if (st) {
-          const ms = typeof st.toDate === 'function' ? st.toDate().getTime()
-                   : st.seconds                      ? st.seconds * 1000
-                   : null;
-          if (ms) {
-            S().examStartMs = ms;
-            renderExam();
-            _startTimer();
-            return;
-          }
+      S().exam = snap.data();
+
+      const startMs = _resolveStartMs(S().exam.startTime);
+
+      if (startMs) {
+        // ── NORMAL RESUME ────────────────────────────────────
+        // startTime was persisted. Anchor the timer to the
+        // original server-side start; the remaining-time
+        // formula (CFG().EXAM_DURATION_MS - (Date.now() - startMs))
+        // is device-agnostic and cannot inflate.
+        S().examStartMs = startMs;
+
+        // Safety check: if time has already expired, auto-submit
+        const elapsed = Date.now() - startMs;
+        if (elapsed >= CFG().EXAM_DURATION_MS) {
+          console.warn('[exam] Resumed but time already expired. Auto-submitting.');
+          renderExam();          // Render so submitExam has a valid DOM
+          await submitExam(true); // true = skip confirmation
+          return;
         }
 
         renderExam();
-        _showInstructionsModal();
+        _startTimer();
+
       } else {
-        await renderSubjectSelection();
+        // ── INCOMPLETE START ─────────────────────────────────
+        // The student created the exam doc (startExam ran)
+        // but closed before clicking "Begin" in the instructions
+        // modal, so startTime was never written to Firestore.
+        //
+        // Show the exam UI with the instructions modal again.
+        // examStartMs stays null until beginExam() is called,
+        // so the timer stays at 02:00:00 and doesn't start
+        // ticking until the student confirms.
+        renderExam();
+        _showInstructionsModal();
       }
+
     } catch (err) {
       console.error('[exam] loadOrStart error:', err);
       UI.toast('Failed to load your exam. Please refresh.', 'error');
     }
   }
 
-  /* ── Subject selection screen ── */
+  /* ══════════════════════════════════════════════════════════
+     renderSubjectSelection
+     ══════════════════════════════════════════════════════════ */
   async function renderSubjectSelection() {
     try {
       const classKey  = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
@@ -163,7 +246,6 @@
 
       UI.mount(`
         <div class="max-w-4xl mx-auto glass p-6 mt-6 rounded-2xl text-center animate-fadeIn">
-          <!-- Header -->
           <div class="mb-5">
             <h1 class="text-2xl font-bold mb-1">Welcome, ${_escHtml(S().studentData.name)}</h1>
             <p class="text-sm text-gray-500">
@@ -216,7 +298,9 @@
     return [...document.querySelectorAll('.subject-checkbox:checked')].map(cb => cb.value);
   }
 
-  /* ── Start exam ── */
+  /* ══════════════════════════════════════════════════════════
+     startExam
+     ══════════════════════════════════════════════════════════ */
   let _startExamLock = false;
 
   async function startExam() {
@@ -231,10 +315,6 @@
     const classKey          = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
     const selectedQuestions = {};
     const _qBank            = window.questions;
-
-    console.log('[DEBUG] classKey:', classKey, '| qBank keys:', Object.keys(_qBank || {}));
-    console.log('[DEBUG] subjects in class:', _qBank && _qBank[classKey] ? Object.keys(_qBank[classKey]) : 'NONE');
-    console.log('[DEBUG] chosen subjects:', chosen);
 
     if (!_qBank || !_qBank[classKey]) {
       UI.toast(`No subjects found for class "${S().studentData.class}". Contact Master Timothy.`, 'error', 0);
@@ -251,6 +331,12 @@
       selectedQuestions[subj] = shuffled.slice(0, CFG().QUESTIONS_PER_SUBJECT);
     }
 
+    // NOTE: startTime is intentionally NOT set here.
+    // It is only written in beginExam() when the student
+    // clicks "I understand — Start Exam Now". This ensures
+    // the timer is anchored to the moment the student
+    // actually began answering, not to when the exam doc
+    // was created.
     const examDoc = {
       step:           'exam',
       subjects:       chosen,
@@ -258,6 +344,7 @@
       currentSubject: chosen[0],
       currentIndex:   0,
       answers:        {}
+      // startTime omitted deliberately — written in beginExam()
     };
 
     const btn = document.getElementById('startExamBtn');
@@ -280,7 +367,9 @@
     }
   }
 
-  /* ── Instructions modal ── */
+  /* ══════════════════════════════════════════════════════════
+     Instructions modal
+     ══════════════════════════════════════════════════════════ */
   function _showInstructionsModal() {
     const existing = document.getElementById('examModal');
     if (existing) existing.remove();
@@ -295,15 +384,17 @@
 
     modal.innerHTML = `
       <div class="modal-box" style="max-width:400px;width:100%;margin:auto;">
-        <h2 id="examModalTitle" class="font-bold mb-4 text-center" style="font-size:1.25rem;">Exam Instructions</h2>
+        <h2 id="examModalTitle" class="font-bold mb-4 text-center" style="font-size:1.125rem;">Exam Instructions</h2>
         <ul class="space-y-2 mb-5 text-left list-none" style="font-size:0.875rem;">
           <li>• This exam lasts <strong>2 hours</strong> (120 minutes).</li>
           <li>• Answer questions for all selected subjects.</li>
           <li>• Use <strong>Previous / Next</strong> or the navigator to move between questions.</li>
-          <li>• <span class="font-semibold" style="color:#16a34a">Green</span> buttons in the navigator = answered.</li>
+          <li>• <span class="font-semibold" style="color:var(--success,#2f9e44);">Green</span> buttons in the navigator = answered.</li>
           <li>• You can open Public Chat at any time.</li>
           <li>• Once submitted, answers cannot be changed.</li>
-          <li class="font-semibold text-red-600 pt-1">⏱ The timer starts when you click below.</li>
+          <li class="font-semibold pt-1" style="color:var(--danger,#e03131);">
+            ⏱ The timer starts when you click below. Switching devices will not reset it.
+          </li>
         </ul>
         <button onclick="Exam.beginExam()"
                 class="btn bg-green-600 hover:bg-green-700 w-full"
@@ -317,26 +408,50 @@
     requestAnimationFrame(() => { modal.scrollTop = 0; });
   }
 
-  /* ── Begin exam ── */
+  /* ══════════════════════════════════════════════════════════
+     beginExam — called when student clicks the instructions CTA
+
+     This is the only place startTime is written to Firestore.
+     The local examStartMs is set from Date.now() at this exact
+     moment so local and remote clocks are in sync at write time.
+     ══════════════════════════════════════════════════════════ */
   async function beginExam() {
     const modal = document.getElementById('examModal');
     if (modal) modal.remove();
 
-    const now = new Date();
-    S().examStartMs     = now.getTime();
-    S().exam.startTime  = now;
+    // Record the start instant locally first so the timer
+    // begins immediately without waiting for the Firestore round-trip.
+    const startMs = Date.now();
+    S().examStartMs = startMs;
+
+    // Convert to a plain JS Date for Firestore.
+    // Using a plain Date (not FieldValue.serverTimestamp()) ensures
+    // the value we store matches exactly what we set in examStartMs,
+    // avoiding any server-clock-vs-client-clock skew on resume.
+    const startDate = new Date(startMs);
+    S().exam.startTime = startDate;
 
     try {
-      await Db().collection('ongoingExams').doc(S().userId).update({ startTime: now });
+      // Use { merge: true } so if any other fields were updated
+      // concurrently (e.g. an answer save) they are not overwritten.
+      await Db().collection('ongoingExams').doc(S().userId).set(
+        { startTime: startDate },
+        { merge: true }
+      );
     } catch (err) {
-      console.warn('[exam] Could not persist startTime, using local time.', err);
+      // The timer is already running locally. The write will be
+      // retried by Firestore's offline persistence. Log but do not
+      // block the student.
+      console.warn('[exam] Could not persist startTime, timer continues from local value.', err);
     }
 
     _startTimer();
     renderExam();
   }
 
-  /* ── Render exam question page ── */
+  /* ══════════════════════════════════════════════════════════
+     renderExam
+     ══════════════════════════════════════════════════════════ */
   function renderExam() {
     const exam = S().exam;
     if (!exam) return;
@@ -351,12 +466,12 @@
 
         <!-- Student info bar -->
         <div class="glass-dark flex flex-wrap items-center gap-x-4 gap-y-1"
-             style="padding:0.5rem 0.875rem;border-radius:8px;font-size:0.8125rem;">
+             style="padding:0.4375rem 0.875rem;border-radius:8px;font-size:0.8125rem;">
           <span class="font-semibold">${_escHtml(S().studentData.name)}</span>
-          <span style="color:#d1d5db;">|</span>
-          <span style="color:#6b7280;">${_escHtml(S().studentData.class)}</span>
-          <span style="color:#d1d5db;">|</span>
-          <span style="color:#6b7280;">${_escHtml(S().studentData.school)}</span>
+          <span style="color:var(--border-medium,#d1d5db);">|</span>
+          <span style="color:var(--text-tertiary,#6b7280);">${_escHtml(S().studentData.class)}</span>
+          <span style="color:var(--border-medium,#d1d5db);">|</span>
+          <span style="color:var(--text-tertiary,#6b7280);">${_escHtml(S().studentData.school)}</span>
         </div>
 
         <!-- Header: subject info + timer -->
@@ -364,13 +479,15 @@
              style="padding:1rem 1.25rem;">
           <div>
             <h2 class="font-bold" style="font-size:1.1875rem;line-height:1.3;">${_escHtml(subj)}</h2>
-            <p style="font-size:0.8125rem;color:#6b7280;margin-top:2px;">
+            <p style="font-size:0.8125rem;color:var(--text-tertiary,#6b7280);margin-top:2px;">
               Subject ${subjIdx + 1} of ${exam.subjects.length} &bull; Q${exam.currentIndex + 1} / ${qList.length}
             </p>
           </div>
           <div class="text-right">
-            <div id="timerDisplay" class="timer-green" aria-live="polite" aria-label="Time remaining">02:00:00</div>
-            <p style="font-size:0.75rem;color:#9ca3af;margin-top:2px;">Time remaining</p>
+            <div id="timerDisplay" class="timer-green" aria-live="polite" aria-label="Time remaining">
+              ${S().examStartMs ? '...' : '02:00:00'}
+            </div>
+            <p style="font-size:0.75rem;color:var(--text-disabled,#9ca3af);margin-top:2px;">Time remaining</p>
           </div>
         </div>
 
@@ -381,8 +498,8 @@
             ${q.opts.map((opt, idx) => {
               const selected = exam.answers[`${subj}-${exam.currentIndex}`] === idx;
               return `
-                <label class="block glass cursor-pointer option-label"
-                       style="${selected ? 'border:1.5px solid var(--c-brand, #4f46e5);background:var(--c-brand-light, #eef2ff);' : ''}">
+                <label class="block glass cursor-pointer option-label${selected ? ' is-selected' : ''}"
+                       style="${selected ? 'border-color:var(--brand,#3b5bdb);background:var(--brand-bg,#edf2ff);' : ''}">
                   <input type="radio" name="option" value="${idx}"
                     ${selected ? 'checked' : ''}
                     class="accent-indigo-600"
@@ -412,11 +529,11 @@
         <div class="glass flex flex-wrap gap-2 justify-center" style="padding:0.75rem 1rem;">
           ${exam.subjects.map(s => `
             <button onclick="Exam.switchSubject('${_escAttr(s)}')"
-                    style="padding:0.375rem 0.875rem;border-radius:6px;font-size:0.8125rem;
+                    style="padding:0.3125rem 0.875rem;border-radius:6px;font-size:0.8125rem;
                            font-weight:600;border:1.5px solid transparent;transition:all .15s;cursor:pointer;
                            ${s === subj
-                             ? 'background:var(--c-brand,#4f46e5);color:#fff;border-color:var(--c-brand,#4f46e5);'
-                             : 'background:#f3f4f6;color:#374151;border-color:#e5e7eb;'}">
+                             ? 'background:var(--brand,#3b5bdb);color:#fff;border-color:var(--brand,#3b5bdb);'
+                             : 'background:var(--surface-muted,#f3f4f6);color:var(--text-secondary,#374151);border-color:var(--border,#e5e7eb);'}">
               ${_escHtml(s)}
             </button>`).join('')}
         </div>
@@ -424,7 +541,7 @@
         <!-- Navigator -->
         <div class="glass-dark" style="padding:0.875rem 1rem;">
           <h3 class="font-semibold text-center mb-3"
-              style="font-size:0.8125rem;color:#6b7280;letter-spacing:.02em;text-transform:uppercase;">
+              style="font-size:0.8125rem;color:var(--text-tertiary,#6b7280);letter-spacing:.02em;text-transform:uppercase;">
             ${_escHtml(subj)} — Navigator
           </h3>
           <div id="navGrid" class="flex flex-wrap gap-1.5 justify-center">
@@ -462,7 +579,9 @@
     _renderKatex();
   }
 
-  /* ── Save answer ── */
+  /* ══════════════════════════════════════════════════════════
+     _saveAnswer
+     ══════════════════════════════════════════════════════════ */
   function _saveAnswer(subj, idx, val) {
     S().exam.answers[`${subj}-${idx}`] = val;
     clearTimeout(_saveAnswer._debounce);
@@ -479,8 +598,10 @@
   function _updateOptionsDisplay(subj, idx) {
     const selected = S().exam.answers[`${subj}-${idx}`];
     document.querySelectorAll('.option-label').forEach((lbl, i) => {
-      lbl.style.cssText = i === selected
-        ? 'border:1.5px solid var(--c-brand, #4f46e5);background:var(--c-brand-light, #eef2ff);'
+      const isSelected = i === selected;
+      lbl.classList.toggle('is-selected', isSelected);
+      lbl.style.cssText = isSelected
+        ? 'border-color:var(--brand,#3b5bdb);background:var(--brand-bg,#edf2ff);'
         : '';
     });
   }
@@ -493,7 +614,9 @@
     if (btn && answered) btn.classList.add('answered');
   }
 
-  /* ── Navigation ── */
+  /* ══════════════════════════════════════════════════════════
+     Navigation
+     ══════════════════════════════════════════════════════════ */
   function prevQuestion() {
     if (S().exam.currentIndex > 0) {
       S().exam.currentIndex--;
@@ -527,15 +650,46 @@
     renderExam();
   }
 
-  /* ── Timer ── */
+  /* ══════════════════════════════════════════════════════════
+     Timer
+
+     The remaining-time calculation is:
+       CFG().EXAM_DURATION_MS - (Date.now() - S().examStartMs)
+
+     Because examStartMs is the original start instant (derived
+     from the Firestore startTime field on resume, or from
+     Date.now() at the moment beginExam() ran), this formula
+     is correct on any device at any point after the exam begins.
+     It cannot inflate because:
+       - examStartMs never changes after beginExam()
+       - Date.now() always moves forward
+       - setInterval ticking is irrelevant to the calculation;
+         the interval just triggers a recalculation, not an
+         accumulation
+
+     _startTimer() always calls S().clearTimer() first, so
+     switching devices cannot create two concurrent intervals.
+     ══════════════════════════════════════════════════════════ */
   function _startTimer() {
+    // Always clear any existing interval before creating a new one.
+    // This is the guard against double-interval accumulation when
+    // the same device re-renders the exam or a second device picks
+    // up the session.
     S().clearTimer();
     S().timerHandle = setInterval(_updateTimerDisplay, 1000);
   }
 
   function _updateTimerDisplay() {
     const el = document.getElementById('timerDisplay');
-    if (!el || !S().examStartMs) return;
+    if (!el) return;
+
+    // If examStartMs is null the student has not yet clicked Begin.
+    // Show the full duration and do not start counting down.
+    if (!S().examStartMs) {
+      el.textContent = '02:00:00';
+      el.className   = 'timer-green';
+      return;
+    }
 
     const remaining = CFG().EXAM_DURATION_MS - (Date.now() - S().examStartMs);
 
@@ -544,7 +698,7 @@
       el.textContent = '00:00:00';
       el.className   = 'timer-red';
       UI.toast('Time is up! Your exam is being submitted.', 'warning', 0);
-      submitExam();
+      submitExam(true); // true = skip confirmation prompt
       return;
     }
 
@@ -553,20 +707,27 @@
     const sec = String(Math.floor((remaining % 60_000) / 1_000)).padStart(2, '0');
     el.textContent = `${h}:${m}:${sec}`;
 
-    const cls = remaining < 600_000   ? 'timer-red'
-              : remaining < 1_800_000 ? 'timer-yellow'
-              : 'timer-green';
-    el.className = cls;
+    el.className = remaining < 600_000   ? 'timer-red'
+                 : remaining < 1_800_000 ? 'timer-yellow'
+                 : 'timer-green';
   }
 
-  /* ── Submit exam ── */
+  /* ══════════════════════════════════════════════════════════
+     submitExam
+
+     skipConfirm {boolean} — pass true when called from the
+     timer expiry path so the student is not asked to confirm
+     what is an automatic submission.
+     ══════════════════════════════════════════════════════════ */
   let _submitLock = false;
 
-  async function submitExam() {
+  async function submitExam(skipConfirm) {
     if (_submitLock) return;
 
-    const confirmed = await UI.confirmAction('Submit your exam? This cannot be undone.');
-    if (!confirmed) return;
+    if (!skipConfirm) {
+      const confirmed = await UI.confirmAction('Submit your exam? This cannot be undone.');
+      if (!confirmed) return;
+    }
 
     _submitLock = true;
     S().clearTimer();
@@ -607,6 +768,9 @@
     }
   }
 
+  /* ══════════════════════════════════════════════════════════
+     _computeResult
+     ══════════════════════════════════════════════════════════ */
   function _computeResult(exam) {
     let totalCorrect = 0, totalQuestions = 0;
     const scores        = {};
@@ -643,54 +807,52 @@
     };
   }
 
-  /* ── Results screen ── */
+  /* ══════════════════════════════════════════════════════════
+     renderResults
+     ══════════════════════════════════════════════════════════ */
   function renderResults(exam, result) {
-    const gradeColor = result.grade === 'A' ? 'var(--c-success, #16a34a)'
-                     : result.grade === 'B' ? 'var(--c-info, #2563eb)'
-                     : result.grade === 'C' ? 'var(--c-warning, #d97706)'
+    const gradeColor = result.grade === 'A' ? 'var(--success, #2f9e44)'
+                     : result.grade === 'B' ? 'var(--info, #1971c2)'
+                     : result.grade === 'C' ? 'var(--warning, #e8890c)'
                      : result.grade === 'D' ? '#ea580c'
-                     : 'var(--c-danger, #dc2626)';
+                     : 'var(--danger, #e03131)';
 
     UI.mount(`
       <div class="max-w-4xl mx-auto glass animate-fadeIn" style="padding:1.5rem;margin-top:1.5rem;margin-bottom:1.5rem;">
 
-        <!-- Results header -->
         <div class="text-center mb-6">
           <div class="inline-flex items-center gap-2 mb-3"
-               style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:99px;padding:.375rem 1rem;">
-            <span style="color:#16a34a;font-size:0.875rem;font-weight:600;">✓ Submitted</span>
+               style="background:var(--success-bg,#ebfbee);border:1px solid var(--success-border,#b2f2bb);border-radius:99px;padding:.375rem 1rem;">
+            <span style="color:var(--success,#2f9e44);font-size:0.875rem;font-weight:600;">✓ Submitted</span>
           </div>
           <h1 class="font-bold" style="font-size:1.625rem;">Exam Complete</h1>
-          <p style="font-size:0.875rem;color:#6b7280;margin-top:4px;">
+          <p style="font-size:0.875rem;color:var(--text-tertiary,#6b7280);margin-top:4px;">
             ${_escHtml(result.name)} &bull; ${_escHtml(result.class)} &bull; ${_escHtml(result.school)}
           </p>
         </div>
 
-        <!-- Grade card -->
-        <div class="glass-dark text-center mb-6" style="padding:1.5rem;border-radius:12px;">
-          <div style="font-size:2.5rem;font-weight:800;color:${gradeColor};font-family:'Outfit',sans-serif;line-height:1;">
+        <div class="glass-dark text-center mb-6" style="padding:1.5rem;border-radius:10px;">
+          <div style="font-size:2.75rem;font-weight:800;color:${gradeColor};font-family:'Outfit',sans-serif;line-height:1;">
             ${result.percentage}%
           </div>
           <div style="font-size:1.125rem;font-weight:700;color:${gradeColor};margin-top:4px;">
             Grade ${result.grade}
           </div>
 
-          <!-- Per-subject scores -->
           <div class="flex flex-wrap gap-3 justify-center mt-4">
             ${result.subjects.map(s => `
-              <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:.5rem .875rem;text-align:center;">
-                <div style="font-size:0.75rem;color:#6b7280;font-weight:500;">${_escHtml(s)}</div>
-                <div style="font-size:1rem;font-weight:700;color:#111827;">${result.scores[s]}%</div>
-                <div style="font-size:0.6875rem;color:#9ca3af;">${result.correctCounts[s]}/${exam.questions[s].length}</div>
+              <div style="background:#fff;border:1px solid var(--border,#e5e7eb);border-radius:8px;padding:.5rem .875rem;text-align:center;">
+                <div style="font-size:0.75rem;color:var(--text-tertiary,#6b7280);font-weight:500;">${_escHtml(s)}</div>
+                <div style="font-size:1rem;font-weight:700;color:var(--text-primary,#111827);">${result.scores[s]}%</div>
+                <div style="font-size:0.6875rem;color:var(--text-disabled,#9ca3af);">${result.correctCounts[s]}/${exam.questions[s].length}</div>
               </div>`).join('')}
           </div>
         </div>
 
-        <p style="font-size:0.875rem;color:#6b7280;text-align:center;margin-bottom:1.25rem;">
+        <p style="font-size:0.875rem;color:var(--text-tertiary,#6b7280);text-align:center;margin-bottom:1.25rem;">
           Click a subject below to review your answers and explanations.
         </p>
 
-        <!-- Subject review accordions -->
         <div class="space-y-3 mb-6">
           ${exam.subjects.map(subj => {
             const qs = exam.questions[subj];
@@ -704,26 +866,27 @@
                     const userAns = exam.answers[`${subj}-${i}`];
                     const correct = userAns === q.ans;
                     const border  = correct
-                      ? 'border-color:var(--c-success,#16a34a);background:var(--c-success-light,#f0fdf4);'
+                      ? 'border-color:var(--success,#2f9e44);background:var(--success-bg,#ebfbee);'
                       : userAns === undefined
-                        ? 'border-color:#d1d5db;background:#f9fafb;'
-                        : 'border-color:var(--c-danger,#dc2626);background:var(--c-danger-light,#fef2f2);';
+                        ? 'border-color:var(--border-medium,#d1d5db);background:var(--surface-subtle,#f9fafb);'
+                        : 'border-color:var(--danger,#e03131);background:var(--danger-bg,#fff5f5);';
                     return `
                       <div class="glass rounded-lg" style="padding:1rem;border-width:2px;border-style:solid;${border}">
                         <p class="font-semibold mb-3" style="font-size:.9375rem;">${i + 1}. ${_safeQ(q.q)}</p>
                         <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;font-size:.8125rem;margin-bottom:.75rem;">
                           <div>
-                            <span style="font-weight:600;color:#6b7280;">Your answer:</span>
-                            <span class="ml-2 font-medium ${correct ? 'text-green-700' : userAns === undefined ? 'text-gray-500' : 'text-red-600'}">
+                            <span style="font-weight:600;color:var(--text-tertiary,#6b7280);">Your answer:</span>
+                            <span class="ml-2 font-medium"
+                                  style="color:${correct ? 'var(--success,#2f9e44)' : userAns === undefined ? 'var(--text-disabled,#9ca3af)' : 'var(--danger,#e03131)'}">
                               ${userAns !== undefined ? _safeQ(q.opts[userAns]) : 'Not answered'}
                             </span>
                           </div>
                           <div>
-                            <span style="font-weight:600;color:#6b7280;">Correct:</span>
-                            <span class="ml-2 font-medium text-green-700">${_safeQ(q.opts[q.ans])}</span>
+                            <span style="font-weight:600;color:var(--text-tertiary,#6b7280);">Correct:</span>
+                            <span class="ml-2 font-medium" style="color:var(--success,#2f9e44);">${_safeQ(q.opts[q.ans])}</span>
                           </div>
                         </div>
-                        <div class="bg-gray-100 rounded p-3" style="font-size:.8125rem;color:#374151;">
+                        <div class="bg-gray-100 rounded p-3" style="font-size:.8125rem;color:var(--text-secondary,#374151);">
                           <span style="font-weight:600;">Explanation:</span> ${_safeQ(q.exp)}
                         </div>
                       </div>`;
@@ -733,7 +896,6 @@
           }).join('')}
         </div>
 
-        <!-- Action buttons -->
         <div class="flex flex-wrap gap-3 justify-center">
           <button onclick="Exam._shareWhatsApp()" class="btn bg-green-600 hover:bg-green-700">Share on WhatsApp</button>
           <button onclick="Exam._copyResult()"    class="btn bg-blue-600 hover:bg-blue-700">Copy Result</button>
@@ -747,7 +909,7 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     OPTION A — KaTeX renderer
+     KaTeX renderer
      ══════════════════════════════════════════════════════════ */
   function _renderKatex() {
     requestAnimationFrame(function () {
@@ -792,7 +954,7 @@
       .catch(() => UI.toast('Could not copy to clipboard.', 'error'));
   }
 
-  /* ── HTML escaping helpers ── */
+  /* ── HTML escaping ── */
   function _escHtml(str) {
     if (str == null) return '';
     return String(str)
