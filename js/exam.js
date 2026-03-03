@@ -2,12 +2,11 @@
    js/exam.js — Exam engine: start, navigate, timer, submit
    ============================================================
    CHANGES:
-   - renderSubjectSelection() now respects allowedSubjects from
-     AppState.currentTaskConfig. When an active task restricts
-     subjects, only those subjects are shown and pre-checked.
-     Students see a clear notice explaining the restriction.
-     All other subjects are hidden — the lock is enforced both
-     in the UI and defensively inside startExam().
+   - Subject restriction now reads dateSubjects[today] from the
+     active task config instead of the old flat allowedSubjects.
+   - Backward compatible: falls back to allowedSubjects if a
+     task doc predates the dateSubjects format.
+   - Defence-in-depth in startExam() updated to match.
    ============================================================ */
 
 (function () {
@@ -36,35 +35,17 @@
       .replace(/\\rightarrow/g,     '→')
       .replace(/\\leftarrow/g,      '←')
       .replace(/\\leftrightarrow/g, '↔')
-      .replace(/\\geq/g,  '≥')
-      .replace(/\\leq/g,  '≤')
-      .replace(/\\neq/g,  '≠')
-      .replace(/\\approx/g, '≈')
-      .replace(/\\times/g, '×')
-      .replace(/\\div/g,   '÷')
-      .replace(/\\pm/g,    '±')
-      .replace(/\\cdot/g,  '·')
-      .replace(/\^\\circ/g,  '°')
-      .replace(/\\degree/g,  '°')
-      .replace(/\\infty/g,  '∞')
-      .replace(/\\pi/g,     'π')
-      .replace(/\\alpha/g,  'α')
-      .replace(/\\beta/g,   'β')
-      .replace(/\\gamma/g,  'γ')
-      .replace(/\\delta/g,  'δ')
-      .replace(/\\theta/g,  'θ')
-      .replace(/\\lambda/g, 'λ')
-      .replace(/\\mu/g,     'μ')
-      .replace(/\\sigma/g,  'σ')
-      .replace(/\\omega/g,  'ω')
-      .replace(/\\in/g,      '∈')
-      .replace(/\\notin/g,   '∉')
-      .replace(/\\subset/g,  '⊂')
-      .replace(/\\cup/g,     '∪')
-      .replace(/\\cap/g,     '∩')
-      .replace(/\\emptyset/g,'∅')
-      .replace(/\\therefore/g,'∴')
-      .replace(/\\because/g, '∵');
+      .replace(/\\geq/g,   '≥').replace(/\\leq/g,   '≤').replace(/\\neq/g,   '≠')
+      .replace(/\\approx/g,'≈').replace(/\\times/g, '×').replace(/\\div/g,   '÷')
+      .replace(/\\pm/g,    '±').replace(/\\cdot/g,  '·')
+      .replace(/\^\\circ/g,'°').replace(/\\degree/g,'°').replace(/\\infty/g, '∞')
+      .replace(/\\pi/g,    'π').replace(/\\alpha/g, 'α').replace(/\\beta/g,  'β')
+      .replace(/\\gamma/g, 'γ').replace(/\\delta/g, 'δ').replace(/\\theta/g, 'θ')
+      .replace(/\\lambda/g,'λ').replace(/\\mu/g,    'μ').replace(/\\sigma/g, 'σ')
+      .replace(/\\omega/g, 'ω')
+      .replace(/\\in/g,      '∈').replace(/\\notin/g,  '∉').replace(/\\subset/g,'⊂')
+      .replace(/\\cup/g,     '∪').replace(/\\cap/g,    '∩').replace(/\\emptyset/g,'∅')
+      .replace(/\\therefore/g,'∴').replace(/\\because/g,'∵');
 
     str = str.replace(/%%MATH_(\d+)%%/g, function (_, i) {
       return protectedBlocks[parseInt(i, 10)];
@@ -78,7 +59,7 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     _resolveStartMs(startTime)
+     _resolveStartMs
      ══════════════════════════════════════════════════════════ */
   function _resolveStartMs(startTime) {
     if (!startTime) return null;
@@ -86,6 +67,47 @@
     if (typeof startTime.seconds === 'number')  return startTime.seconds * 1000;
     if (startTime instanceof Date)              return startTime.getTime();
     if (typeof startTime === 'number')          return startTime;
+    return null;
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     _getRestrictedSubjectsForToday
+     Central helper — resolves which subjects (if any) are
+     restricted for the student right now.
+
+     Priority:
+       1. New format: task.dateSubjects[today]  (per-date map)
+       2. Old format: task.allowedSubjects       (flat array)
+       3. null = no restriction
+
+     Returns string[] | null
+     ══════════════════════════════════════════════════════════ */
+  function _getRestrictedSubjectsForToday() {
+    const taskCfg = S().currentTaskConfig || {};
+    if (!taskCfg.active) return null;
+
+    const today = (window.Tasks && Tasks._localDateStr)
+      ? Tasks._localDateStr()
+      : (() => {
+          const d = new Date();
+          return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        })();
+
+    // New per-date format
+    if (taskCfg.dateSubjects && typeof taskCfg.dateSubjects === 'object') {
+      const todaySubjects = taskCfg.dateSubjects[today];
+      if (Array.isArray(todaySubjects) && todaySubjects.length > 0) {
+        return todaySubjects;
+      }
+      // today is either not a scheduled date or has no restriction — no lock
+      return null;
+    }
+
+    // Old flat format (backward compat)
+    if (Array.isArray(taskCfg.allowedSubjects) && taskCfg.allowedSubjects.length > 0) {
+      return taskCfg.allowedSubjects;
+    }
+
     return null;
   }
 
@@ -131,32 +153,23 @@
      ══════════════════════════════════════════════════════════ */
   async function renderSubjectSelection() {
     try {
-      const classKey  = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
-      const _qBank    = window.questions || (typeof questions !== 'undefined' ? questions : {});
+      const classKey = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
+      const _qBank   = window.questions || (typeof questions !== 'undefined' ? questions : {});
       if (!_qBank[classKey]) {
         console.error('[exam] No questions for classKey:', classKey, '| keys:', Object.keys(_qBank));
         UI.toast(`No subjects found for class "${S().studentData.class}". Contact Master Timothy.`, 'error', 0);
         return;
       }
 
-      // All subjects available for this student's class
-      const allAvailable = _qBank[classKey] ? Object.keys(_qBank[classKey]) : [];
+      const allAvailable = Object.keys(_qBank[classKey]);
 
-      // ── Subject restriction from active task ──
-      // AppState.currentTaskConfig is set by tasks.js _resolveTask() and is
-      // already the highest-priority task that applies to this student.
-      const taskCfg         = S().currentTaskConfig || {};
-      const restrictedSubjs = (taskCfg.active && Array.isArray(taskCfg.allowedSubjects) && taskCfg.allowedSubjects.length > 0)
-        ? taskCfg.allowedSubjects
-        : null; // null = no restriction
+      // FIX: use central helper that reads dateSubjects[today]
+      const restrictedSubjs = _getRestrictedSubjectsForToday();
 
-      // The subjects we actually show the student
       const available = restrictedSubjs
         ? allAvailable.filter(s => restrictedSubjs.includes(s))
         : allAvailable;
 
-      // Tasks and messages are loaded by Tasks.listenForStudentUpdates()
-      // which runs on every login path before this point.
       const messages = S().studentMessages || [];
 
       let messagesHtml = '';
@@ -174,8 +187,6 @@
           </div>`;
       }
 
-      // ── Subject restriction notice banner ──
-      // Shown when a task locks the student to specific subjects.
       const restrictionBannerHtml = restrictedSubjs
         ? `<div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:1rem;
                        background:var(--warning-bg,#fff9db);border:1px solid var(--warning-border,#ffec99);
@@ -184,7 +195,7 @@
              <span style="font-size:1.125rem;flex-shrink:0;margin-top:1px;">📋</span>
              <div>
                <p style="font-size:.875rem;font-weight:700;color:var(--warning-text,#7c4a00);margin-bottom:.25rem;">
-                 Subject restriction active
+                 Subject restriction active for today
                </p>
                <p style="font-size:.8125rem;color:var(--text-secondary,#374151);line-height:1.6;">
                  Your coaching task requires you to attempt only:
@@ -195,32 +206,22 @@
            </div>`
         : '';
 
-      // ── Build subject cards ──
-      // When restricted: subjects are pre-checked and locked (disabled).
-      // When unrestricted: behaviour is unchanged from before.
       let subjectsHtml;
       if (available.length === 0) {
         subjectsHtml = `
           <p class="text-red-500 text-sm">
             ${restrictedSubjs
-              ? 'The subjects assigned to you are not available for your class. Please contact Master Timothy.'
+              ? 'The subjects assigned to you for today are not available for your class. Please contact Master Timothy.'
               : 'No subjects available for your class.'}
           </p>`;
       } else if (restrictedSubjs) {
-        // Locked mode — all available subjects are pre-checked and disabled.
-        // The student must attempt all of them (the minimum is still 2 but
-        // if fewer than 2 are assigned the teacher should fix the task).
         const enoughSubjects = available.length >= 2;
         subjectsHtml = `
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             ${available.map(subj => `
-              <label class="glass p-4 rounded-xl shadow block"
-                     style="opacity:.9;cursor:default;">
-                <input type="checkbox"
-                       value="${_escAttr(subj)}"
-                       class="subject-checkbox w-4 h-4 accent-indigo-600"
-                       checked
-                       disabled />
+              <label class="glass p-4 rounded-xl shadow block" style="opacity:.9;cursor:default;">
+                <input type="checkbox" value="${_escAttr(subj)}"
+                       class="subject-checkbox w-4 h-4 accent-indigo-600" checked disabled />
                 <span class="block mt-2 text-sm font-semibold">${_escHtml(subj)}</span>
                 <span style="display:block;font-size:.6875rem;color:var(--success,#2f9e44);
                               font-weight:600;margin-top:3px;">✓ Required</span>
@@ -235,12 +236,12 @@
                  At least 2 are needed. Please contact Master Timothy.
                </p>`}`;
       } else {
-        // Normal unrestricted mode — unchanged from original
         subjectsHtml = `
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             ${allAvailable.map(subj => `
               <label class="glass p-4 rounded-xl cursor-pointer hover:scale-105 transition shadow block">
-                <input type="checkbox" value="${_escAttr(subj)}" class="subject-checkbox w-4 h-4 accent-indigo-600" />
+                <input type="checkbox" value="${_escAttr(subj)}"
+                       class="subject-checkbox w-4 h-4 accent-indigo-600" />
                 <span class="block mt-2 text-sm font-semibold">${_escHtml(subj)}</span>
               </label>`).join('')}
           </div>
@@ -272,26 +273,20 @@
 
           <div class="text-left mb-3">
             <p class="text-sm font-semibold text-gray-600">
-              ${restrictedSubjs
-                ? 'Your required subjects for this task:'
-                : 'Select at least 2 subjects to begin'}
+              ${restrictedSubjs ? 'Your required subjects for today:' : 'Select at least 2 subjects to begin'}
             </p>
           </div>
 
           ${subjectsHtml}
 
           <div class="mt-6 pt-5 border-t border-gray-100">
-            <button onclick="window.fbAuth.signOut()" class="text-xs text-gray-400 hover:text-gray-600 underline">
-              Sign out
-            </button>
+            <button onclick="window.fbAuth.signOut()"
+                    class="text-xs text-gray-400 hover:text-gray-600 underline">Sign out</button>
           </div>
         </div>`);
 
       Tasks.renderTasksHTML();
 
-      // Only wire up the change listener in unrestricted mode.
-      // In restricted mode the checkboxes are disabled and the button
-      // is already in the correct enabled/disabled state.
       if (!restrictedSubjs) {
         document.querySelectorAll('.subject-checkbox').forEach(cb => {
           cb.addEventListener('change', _updateStartBtn);
@@ -322,33 +317,23 @@
   async function startExam() {
     if (_startExamLock) return;
 
-    // Collect chosen subjects — works for both normal and restricted mode
-    // (disabled checkboxes are still checked, so :checked still selects them)
     const chosen = _getSelectedSubjects();
     if (chosen.length < 2) {
       UI.toast('Select at least 2 subjects.', 'warning');
       return;
     }
 
-    const classKey          = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
-    const selectedQuestions = {};
-    const _qBank            = window.questions;
+    const classKey = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
+    const _qBank   = window.questions;
 
     if (!_qBank || !_qBank[classKey]) {
       UI.toast(`No subjects found for class "${S().studentData.class}". Contact Master Timothy.`, 'error', 0);
       return;
     }
 
-    // ── Defence in depth: enforce subject restriction server-side too ──
-    // If a task restricts subjects, silently drop any that are not allowed.
-    // This prevents a determined student from opening DevTools and unchecking
-    // the disabled attribute before clicking Start.
-    const taskCfg         = S().currentTaskConfig || {};
-    const restrictedSubjs = (taskCfg.active && Array.isArray(taskCfg.allowedSubjects) && taskCfg.allowedSubjects.length > 0)
-      ? taskCfg.allowedSubjects
-      : null;
-
-    const finalChosen = restrictedSubjs
+    // FIX: defence-in-depth now also uses the central helper
+    const restrictedSubjs = _getRestrictedSubjectsForToday();
+    const finalChosen     = restrictedSubjs
       ? chosen.filter(s => restrictedSubjs.includes(s))
       : chosen;
 
@@ -357,6 +342,7 @@
       return;
     }
 
+    const selectedQuestions = {};
     for (const subj of finalChosen) {
       const all = (_qBank[classKey] || {})[subj] || [];
       if (all.length === 0) {
@@ -389,9 +375,7 @@
       console.error('[exam] startExam error:', err);
       UI.toast('Failed to start exam. Please try again.', 'error');
     } finally {
-      if (document.getElementById('startExamBtn')) {
-        UI.setLoading(btn, false);
-      }
+      if (document.getElementById('startExamBtn')) UI.setLoading(btn, false);
       _startExamLock = false;
     }
   }
@@ -407,8 +391,8 @@
     modal.id        = 'examModal';
     modal.className = 'modal-overlay';
     modal.style.cssText = 'align-items:flex-start;overflow-y:auto;padding:1rem 0.75rem;';
-    modal.setAttribute('role',            'dialog');
-    modal.setAttribute('aria-modal',      'true');
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
     modal.setAttribute('aria-labelledby', 'examModalTitle');
 
     modal.innerHTML = `
@@ -425,11 +409,8 @@
             ⏱ The timer starts when you click below. Switching devices will not reset it.
           </li>
         </ul>
-        <button onclick="Exam.beginExam()"
-                class="btn bg-green-600 hover:bg-green-700 w-full"
-                style="justify-content:center;">
-          I understand — Start Exam Now
-        </button>
+        <button onclick="Exam.beginExam()" class="btn bg-green-600 hover:bg-green-700 w-full"
+                style="justify-content:center;">I understand — Start Exam Now</button>
         <p class="text-center mt-3" style="font-size:0.75rem;color:#9ca3af;">Good luck!</p>
       </div>`;
 
@@ -451,8 +432,7 @@
 
     try {
       await Db().collection('ongoingExams').doc(S().userId).set(
-        { startTime: startDate },
-        { merge: true }
+        { startTime: startDate }, { merge: true }
       );
     } catch (err) {
       console.warn('[exam] Could not persist startTime, timer continues from local value.', err);
@@ -477,7 +457,6 @@
     UI.mount(`
       <div class="max-w-4xl mx-auto flex flex-col gap-4" style="padding:0.75rem 0;">
 
-        <!-- Student info bar -->
         <div class="glass-dark flex flex-wrap items-center gap-x-4 gap-y-1"
              style="padding:0.4375rem 0.875rem;border-radius:8px;font-size:0.8125rem;">
           <span class="font-semibold">${_escHtml(S().studentData.name)}</span>
@@ -487,7 +466,6 @@
           <span style="color:var(--text-tertiary,#6b7280);">${_escHtml(S().studentData.school)}</span>
         </div>
 
-        <!-- Header: subject info + timer -->
         <div class="glass flex flex-col md:flex-row justify-between items-start md:items-center gap-3"
              style="padding:1rem 1.25rem;">
           <div>
@@ -504,41 +482,31 @@
           </div>
         </div>
 
-        <!-- Question + Options -->
         <div class="glass" style="padding:1.25rem 1.5rem;">
-          <p class="font-medium" style="font-size:1.0625rem;line-height:1.65;margin-bottom:1.25rem;">${_safeQ(q.q)}</p>
+          <p class="font-medium" style="font-size:1.0625rem;line-height:1.65;margin-bottom:1.25rem;">
+            ${_safeQ(q.q)}</p>
           <div class="space-y-2" id="optionsContainer">
             ${q.opts.map((opt, idx) => {
               const selected = exam.answers[`${subj}-${exam.currentIndex}`] === idx;
               return `
                 <label class="block glass cursor-pointer option-label${selected ? ' is-selected' : ''}"
                        style="${selected ? 'border-color:var(--brand,#3b5bdb);background:var(--brand-bg,#edf2ff);' : ''}">
-                  <input type="radio" name="option" value="${idx}"
-                    ${selected ? 'checked' : ''}
-                    class="accent-indigo-600"
-                    aria-label="Option ${String.fromCharCode(65 + idx)}" />
+                  <input type="radio" name="option" value="${idx}" ${selected ? 'checked' : ''}
+                         class="accent-indigo-600" aria-label="Option ${String.fromCharCode(65 + idx)}" />
                   <span class="flex-1">${_safeQ(opt)}</span>
                 </label>`;
             }).join('')}
           </div>
         </div>
 
-        <!-- Controls -->
         <div class="grid grid-cols-3 gap-3">
           <button id="prevBtn" onclick="Exam.prevQuestion()"
                   ${exam.currentIndex === 0 ? 'disabled' : ''}
-                  class="btn bg-gray-500 hover:bg-gray-600">
-            ← Prev
-          </button>
-          <button onclick="Chat.openPublicChat()" class="btn bg-green-600 hover:bg-green-700">
-            Chat
-          </button>
-          <button onclick="Exam.nextQuestion()" class="btn">
-            Next →
-          </button>
+                  class="btn bg-gray-500 hover:bg-gray-600">← Prev</button>
+          <button onclick="Chat.openPublicChat()" class="btn bg-green-600 hover:bg-green-700">Chat</button>
+          <button onclick="Exam.nextQuestion()" class="btn">Next →</button>
         </div>
 
-        <!-- Subject tabs -->
         <div class="glass flex flex-wrap gap-2 justify-center" style="padding:0.75rem 1rem;">
           ${exam.subjects.map(s => `
             <button onclick="Exam.switchSubject('${_escAttr(s)}')"
@@ -551,7 +519,6 @@
             </button>`).join('')}
         </div>
 
-        <!-- Navigator -->
         <div class="glass-dark" style="padding:0.875rem 1rem;">
           <h3 class="font-semibold text-center mb-3"
               style="font-size:0.8125rem;color:var(--text-tertiary,#6b7280);letter-spacing:.02em;text-transform:uppercase;">
@@ -569,10 +536,8 @@
           </div>
         </div>
 
-        <!-- Submit -->
         <div class="text-center" style="padding-bottom:1rem;">
-          <button onclick="Exam.submitExam()" id="submitBtn"
-                  class="btn bg-red-600 hover:bg-red-700">
+          <button onclick="Exam.submitExam()" id="submitBtn" class="btn bg-red-600 hover:bg-red-700">
             Submit Exam
           </button>
         </div>
@@ -599,9 +564,7 @@
     S().exam.answers[`${subj}-${idx}`] = val;
     clearTimeout(_saveAnswer._debounce);
     _saveAnswer._debounce = setTimeout(() => {
-      Db()
-        .collection('ongoingExams')
-        .doc(S().userId)
+      Db().collection('ongoingExams').doc(S().userId)
         .update({ answers: S().exam.answers })
         .catch(err => console.warn('[exam] Answer save error:', err));
     }, 800);
@@ -613,8 +576,7 @@
       const isSelected = i === selected;
       lbl.classList.toggle('is-selected', isSelected);
       lbl.style.cssText = isSelected
-        ? 'border-color:var(--brand,#3b5bdb);background:var(--brand-bg,#edf2ff);'
-        : '';
+        ? 'border-color:var(--brand,#3b5bdb);background:var(--brand-bg,#edf2ff);' : '';
     });
   }
 
@@ -629,10 +591,7 @@
      Navigation
      ══════════════════════════════════════════════════════════ */
   function prevQuestion() {
-    if (S().exam.currentIndex > 0) {
-      S().exam.currentIndex--;
-      renderExam();
-    }
+    if (S().exam.currentIndex > 0) { S().exam.currentIndex--; renderExam(); }
   }
 
   function nextQuestion() {
@@ -650,16 +609,8 @@
     renderExam();
   }
 
-  function goTo(index) {
-    S().exam.currentIndex = index;
-    renderExam();
-  }
-
-  function switchSubject(subj) {
-    S().exam.currentSubject = subj;
-    S().exam.currentIndex   = 0;
-    renderExam();
-  }
+  function goTo(index)       { S().exam.currentIndex = index; renderExam(); }
+  function switchSubject(subj) { S().exam.currentSubject = subj; S().exam.currentIndex = 0; renderExam(); }
 
   /* ══════════════════════════════════════════════════════════
      Timer
@@ -674,17 +625,14 @@
     if (!el) return;
 
     if (!S().examStartMs) {
-      el.textContent = '02:00:00';
-      el.className   = 'timer-green';
-      return;
+      el.textContent = '02:00:00'; el.className = 'timer-green'; return;
     }
 
     const remaining = CFG().EXAM_DURATION_MS - (Date.now() - S().examStartMs);
 
     if (remaining <= 0) {
       S().clearTimer();
-      el.textContent = '00:00:00';
-      el.className   = 'timer-red';
+      el.textContent = '00:00:00'; el.className = 'timer-red';
       UI.toast('Time is up! Your exam is being submitted.', 'warning', 0);
       submitExam(true);
       return;
@@ -694,10 +642,7 @@
     const m   = String(Math.floor((remaining % 3_600_000) / 60_000)).padStart(2, '0');
     const sec = String(Math.floor((remaining % 60_000) / 1_000)).padStart(2, '0');
     el.textContent = `${h}:${m}:${sec}`;
-
-    el.className = remaining < 600_000   ? 'timer-red'
-                 : remaining < 1_800_000 ? 'timer-yellow'
-                 : 'timer-green';
+    el.className   = remaining < 600_000 ? 'timer-red' : remaining < 1_800_000 ? 'timer-yellow' : 'timer-green';
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -723,56 +668,38 @@
       const exam   = S().exam;
       const result = _computeResult(exam);
 
-      /*
-       * Build a serialisable snapshot of every question + the student's
-       * chosen answer index. This is stored permanently in the result
-       * document so the teacher can review the exact attempt later.
-       *
-       * Shape per subject:
-       *   { q: string, opts: string[], ans: number, exp: string, chosen: number|null }
-       */
       const questionSnapshots = {};
       for (const subj of exam.subjects) {
         questionSnapshots[subj] = exam.questions[subj].map((q, i) => {
-          // Firestore rejects writes that contain `undefined` anywhere in the
-          // payload — even nested inside arrays — and will throw or silently
-          // drop the field depending on the SDK version.  Coerce every value
-          // to a safe type before writing.
           const chosenRaw = exam.answers[`${subj}-${i}`];
           return {
             q:      q.q    != null ? String(q.q)   : '',
-            opts:   Array.isArray(q.opts)
-                      ? q.opts.map(o => o != null ? String(o) : '')
-                      : [],
+            opts:   Array.isArray(q.opts) ? q.opts.map(o => o != null ? String(o) : '') : [],
             ans:    q.ans  != null ? Number(q.ans)  : 0,
             exp:    q.exp  != null ? String(q.exp)  : '',
-            chosen: chosenRaw !== undefined && chosenRaw !== null
-                      ? Number(chosenRaw)
-                      : null,
+            chosen: chosenRaw !== undefined && chosenRaw !== null ? Number(chosenRaw) : null,
           };
         });
       }
 
       const batch = Db().batch();
 
-      const resultRef = Db().collection('results').doc();
-      batch.set(resultRef, {
+      batch.set(Db().collection('results').doc(), {
         ...result,
-        questionSnapshots,          // ← full attempt detail saved here
+        questionSnapshots,
         timestamp: firebase.firestore.FieldValue.serverTimestamp()
       });
 
       batch.delete(Db().collection('ongoingExams').doc(S().userId));
 
-      // Use local-date helper (same as tasks.js) so the recorded date
-      // matches the teacher's calendar date, not the UTC date.
       const today   = (window.Tasks && Tasks._localDateStr)
-                        ? Tasks._localDateStr()
-                        : (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })();
+        ? Tasks._localDateStr()
+        : (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })();
       const taskCfg = S().currentTaskConfig;
       if (taskCfg && taskCfg.active && Array.isArray(taskCfg.dates) && taskCfg.dates.includes(today)) {
-        const studentRef = Db().collection('students').doc(S().userId);
-        batch.update(studentRef, { [`coachingCompleted.${today}`]: true });
+        batch.update(Db().collection('students').doc(S().userId), {
+          [`coachingCompleted.${today}`]: true
+        });
       }
 
       await batch.commit();
@@ -792,15 +719,12 @@
      ══════════════════════════════════════════════════════════ */
   function _computeResult(exam) {
     let totalCorrect = 0, totalQuestions = 0;
-    const scores        = {};
-    const correctCounts = {};
+    const scores = {}, correctCounts = {};
 
     for (const subj of exam.subjects) {
       const qs = exam.questions[subj];
       let correct = 0;
-      qs.forEach((q, i) => {
-        if (exam.answers[`${subj}-${i}`] === q.ans) correct++;
-      });
+      qs.forEach((q, i) => { if (exam.answers[`${subj}-${i}`] === q.ans) correct++; });
       correctCounts[subj] = correct;
       scores[subj]        = Math.round((correct / qs.length) * 100);
       totalCorrect        += correct;
@@ -808,21 +732,12 @@
     }
 
     const percentage = Math.round((totalCorrect / totalQuestions) * 100);
-    const grade = percentage >= 70 ? 'A'
-                : percentage >= 60 ? 'B'
-                : percentage >= 50 ? 'C'
-                : percentage >= 40 ? 'D'
-                : 'E';
+    const grade = percentage >= 70 ? 'A' : percentage >= 60 ? 'B'
+                : percentage >= 50 ? 'C' : percentage >= 40 ? 'D' : 'E';
 
     return {
-      name:          S().studentData.name,
-      class:         S().studentData.class,
-      school:        S().studentData.school,
-      subjects:      exam.subjects,
-      scores,
-      correctCounts,
-      percentage,
-      grade
+      name: S().studentData.name, class: S().studentData.class, school: S().studentData.school,
+      subjects: exam.subjects, scores, correctCounts, percentage, grade
     };
   }
 
@@ -854,10 +769,7 @@
           <div style="font-size:2.75rem;font-weight:800;color:${gradeColor};font-family:'Outfit',sans-serif;line-height:1;">
             ${result.percentage}%
           </div>
-          <div style="font-size:1.125rem;font-weight:700;color:${gradeColor};margin-top:4px;">
-            Grade ${result.grade}
-          </div>
-
+          <div style="font-size:1.125rem;font-weight:700;color:${gradeColor};margin-top:4px;">Grade ${result.grade}</div>
           <div class="flex flex-wrap gap-3 justify-center mt-4">
             ${result.subjects.map(s => `
               <div style="background:#fff;border:1px solid var(--border,#e5e7eb);border-radius:8px;padding:.5rem .875rem;text-align:center;">
@@ -941,12 +853,9 @@
               { left: '\\(', right: '\\)', display: false },
               { left: '\\[', right: '\\]', display: true  }
             ],
-            throwOnError: false,
-            errorColor: '#cc0000'
+            throwOnError: false, errorColor: '#cc0000'
           });
-        } catch (err) {
-          console.warn('[KaTeX] Render error:', err);
-        }
+        } catch (err) { console.warn('[KaTeX] Render error:', err); }
       } else {
         setTimeout(_renderKatex, 150);
       }
@@ -977,15 +886,10 @@
   function _escHtml(str) {
     if (str == null) return '';
     return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  function _escAttr(str) {
-    return _escHtml(str).replace(/'/g, '&#39;');
-  }
+  function _escAttr(str) { return _escHtml(str).replace(/'/g, '&#39;'); }
 
   /* ── Expose ── */
   window.Exam = {
