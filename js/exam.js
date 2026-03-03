@@ -1,5 +1,13 @@
 /* ============================================================
    js/exam.js — Exam engine: start, navigate, timer, submit
+   ============================================================
+   CHANGES:
+   - renderSubjectSelection() now respects allowedSubjects from
+     AppState.currentTaskConfig. When an active task restricts
+     subjects, only those subjects are shown and pre-checked.
+     Students see a clear notice explaining the restriction.
+     All other subjects are hidden — the lock is enforced both
+     in the UI and defensively inside startExam().
    ============================================================ */
 
 (function () {
@@ -130,11 +138,25 @@
         UI.toast(`No subjects found for class "${S().studentData.class}". Contact Master Timothy.`, 'error', 0);
         return;
       }
-      const available = _qBank[classKey] ? Object.keys(_qBank[classKey]) : [];
+
+      // All subjects available for this student's class
+      const allAvailable = _qBank[classKey] ? Object.keys(_qBank[classKey]) : [];
+
+      // ── Subject restriction from active task ──
+      // AppState.currentTaskConfig is set by tasks.js _resolveTask() and is
+      // already the highest-priority task that applies to this student.
+      const taskCfg         = S().currentTaskConfig || {};
+      const restrictedSubjs = (taskCfg.active && Array.isArray(taskCfg.allowedSubjects) && taskCfg.allowedSubjects.length > 0)
+        ? taskCfg.allowedSubjects
+        : null; // null = no restriction
+
+      // The subjects we actually show the student
+      const available = restrictedSubjs
+        ? allAvailable.filter(s => restrictedSubjs.includes(s))
+        : allAvailable;
 
       // Tasks and messages are loaded by Tasks.listenForStudentUpdates()
       // which runs on every login path before this point.
-      // Reading directly from AppState here is sufficient.
       const messages = S().studentMessages || [];
 
       let messagesHtml = '';
@@ -152,10 +174,71 @@
           </div>`;
       }
 
-      const subjectsHtml = available.length === 0
-        ? '<p class="text-red-500 text-sm">No subjects available for your class.</p>'
-        : `<div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+      // ── Subject restriction notice banner ──
+      // Shown when a task locks the student to specific subjects.
+      const restrictionBannerHtml = restrictedSubjs
+        ? `<div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:1rem;
+                       background:var(--warning-bg,#fff9db);border:1px solid var(--warning-border,#ffec99);
+                       border-left:3px solid var(--warning,#e8890c);border-radius:8px;
+                       padding:.75rem 1rem;text-align:left;">
+             <span style="font-size:1.125rem;flex-shrink:0;margin-top:1px;">📋</span>
+             <div>
+               <p style="font-size:.875rem;font-weight:700;color:var(--warning-text,#7c4a00);margin-bottom:.25rem;">
+                 Subject restriction active
+               </p>
+               <p style="font-size:.8125rem;color:var(--text-secondary,#374151);line-height:1.6;">
+                 Your coaching task requires you to attempt only:
+                 <strong>${available.map(s => _escHtml(s)).join(', ') || 'no subjects'}</strong>.
+                 Other subjects are not available for this session.
+               </p>
+             </div>
+           </div>`
+        : '';
+
+      // ── Build subject cards ──
+      // When restricted: subjects are pre-checked and locked (disabled).
+      // When unrestricted: behaviour is unchanged from before.
+      let subjectsHtml;
+      if (available.length === 0) {
+        subjectsHtml = `
+          <p class="text-red-500 text-sm">
+            ${restrictedSubjs
+              ? 'The subjects assigned to you are not available for your class. Please contact Master Timothy.'
+              : 'No subjects available for your class.'}
+          </p>`;
+      } else if (restrictedSubjs) {
+        // Locked mode — all available subjects are pre-checked and disabled.
+        // The student must attempt all of them (the minimum is still 2 but
+        // if fewer than 2 are assigned the teacher should fix the task).
+        const enoughSubjects = available.length >= 2;
+        subjectsHtml = `
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             ${available.map(subj => `
+              <label class="glass p-4 rounded-xl shadow block"
+                     style="opacity:.9;cursor:default;">
+                <input type="checkbox"
+                       value="${_escAttr(subj)}"
+                       class="subject-checkbox w-4 h-4 accent-indigo-600"
+                       checked
+                       disabled />
+                <span class="block mt-2 text-sm font-semibold">${_escHtml(subj)}</span>
+                <span style="display:block;font-size:.6875rem;color:var(--success,#2f9e44);
+                              font-weight:600;margin-top:3px;">✓ Required</span>
+              </label>`).join('')}
+          </div>
+          ${enoughSubjects
+            ? `<button id="startExamBtn" onclick="Exam.startExam()" class="btn btn-lg w-full max-w-xs">
+                 Start Exam
+               </button>`
+            : `<p class="text-red-500 text-sm">
+                 Only ${available.length} required subject${available.length !== 1 ? 's' : ''} found.
+                 At least 2 are needed. Please contact Master Timothy.
+               </p>`}`;
+      } else {
+        // Normal unrestricted mode — unchanged from original
+        subjectsHtml = `
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+            ${allAvailable.map(subj => `
               <label class="glass p-4 rounded-xl cursor-pointer hover:scale-105 transition shadow block">
                 <input type="checkbox" value="${_escAttr(subj)}" class="subject-checkbox w-4 h-4 accent-indigo-600" />
                 <span class="block mt-2 text-sm font-semibold">${_escHtml(subj)}</span>
@@ -164,6 +247,7 @@
           <button id="startExamBtn" onclick="Exam.startExam()" disabled class="btn btn-lg w-full max-w-xs">
             Start Exam
           </button>`;
+      }
 
       UI.mount(`
         <div class="max-w-4xl mx-auto glass p-6 mt-6 rounded-2xl text-center animate-fadeIn">
@@ -184,8 +268,14 @@
             </button>
           </div>
 
+          ${restrictionBannerHtml}
+
           <div class="text-left mb-3">
-            <p class="text-sm font-semibold text-gray-600">Select at least 2 subjects to begin</p>
+            <p class="text-sm font-semibold text-gray-600">
+              ${restrictedSubjs
+                ? 'Your required subjects for this task:'
+                : 'Select at least 2 subjects to begin'}
+            </p>
           </div>
 
           ${subjectsHtml}
@@ -199,9 +289,14 @@
 
       Tasks.renderTasksHTML();
 
-      document.querySelectorAll('.subject-checkbox').forEach(cb => {
-        cb.addEventListener('change', _updateStartBtn);
-      });
+      // Only wire up the change listener in unrestricted mode.
+      // In restricted mode the checkboxes are disabled and the button
+      // is already in the correct enabled/disabled state.
+      if (!restrictedSubjs) {
+        document.querySelectorAll('.subject-checkbox').forEach(cb => {
+          cb.addEventListener('change', _updateStartBtn);
+        });
+      }
 
     } catch (err) {
       console.error('[exam] renderSubjectSelection error:', err);
@@ -227,6 +322,8 @@
   async function startExam() {
     if (_startExamLock) return;
 
+    // Collect chosen subjects — works for both normal and restricted mode
+    // (disabled checkboxes are still checked, so :checked still selects them)
     const chosen = _getSelectedSubjects();
     if (chosen.length < 2) {
       UI.toast('Select at least 2 subjects.', 'warning');
@@ -242,7 +339,25 @@
       return;
     }
 
-    for (const subj of chosen) {
+    // ── Defence in depth: enforce subject restriction server-side too ──
+    // If a task restricts subjects, silently drop any that are not allowed.
+    // This prevents a determined student from opening DevTools and unchecking
+    // the disabled attribute before clicking Start.
+    const taskCfg         = S().currentTaskConfig || {};
+    const restrictedSubjs = (taskCfg.active && Array.isArray(taskCfg.allowedSubjects) && taskCfg.allowedSubjects.length > 0)
+      ? taskCfg.allowedSubjects
+      : null;
+
+    const finalChosen = restrictedSubjs
+      ? chosen.filter(s => restrictedSubjs.includes(s))
+      : chosen;
+
+    if (finalChosen.length < 2) {
+      UI.toast('Not enough allowed subjects selected. Please contact Master Timothy.', 'error');
+      return;
+    }
+
+    for (const subj of finalChosen) {
       const all = (_qBank[classKey] || {})[subj] || [];
       if (all.length === 0) {
         UI.toast(`No questions available for ${subj}.`, 'error');
@@ -254,9 +369,9 @@
 
     const examDoc = {
       step:           'exam',
-      subjects:       chosen,
+      subjects:       finalChosen,
       questions:      selectedQuestions,
-      currentSubject: chosen[0],
+      currentSubject: finalChosen[0],
       currentIndex:   0,
       answers:        {}
     };
