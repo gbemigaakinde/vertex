@@ -62,7 +62,7 @@
                 Teacher Dashboard
               </h1>
               <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:1px;">
-                Master Timothy — Admin
+                Admin
               </p>
             </div>
           </div>
