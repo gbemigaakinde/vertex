@@ -1265,20 +1265,22 @@
   }
 
   /* Returns the Firestore doc ID for the currently selected scope/target */
-  function _currentTaskDocId() {
-    if (_taskScope === 'all') return 'global';
-    if (_taskScope === 'class') {
-      const sel = document.getElementById('taskTargetClass');
-      const cls = sel ? sel.value.trim() : '';
-      return cls ? Tasks._classDocId(cls) : null;
-    }
-    if (_taskScope === 'student') {
-      const sel = document.getElementById('taskTargetStudent');
-      const uid = sel ? sel.value.trim() : '';
-      return uid ? Tasks._studentDocId(uid) : null;
-    }
-    return null;
+  // WITH THIS:
+function _currentTaskDocId() {
+  if (_taskScope === 'all') return 'global';
+  if (_taskScope === 'class') {
+    const sel = document.getElementById('taskTargetClass');
+    const cls = sel ? sel.value.trim() : '';
+    if (!cls) return null;
+    return 'class_' + cls.replace(/\s+/g, '').toLowerCase();
   }
+  if (_taskScope === 'student') {
+    const sel = document.getElementById('taskTargetStudent');
+    const uid = sel ? sel.value.trim() : '';
+    return uid ? 'student_' + uid : null;
+  }
+  return null;
+}
 
   /* ── Called when class or student dropdown changes — refresh subjects ── */
   function _onTaskTargetChange() {
@@ -1849,7 +1851,8 @@
     addSchool,
     renameSchool,
     deleteSchool,
-    addTaskDate,
+    addTaskDate,          // ← was missing: "Add" date button calls this
+    deleteTask,           // ← was missing: task delete buttons call this
     saveTasksConfig,
     deleteAllTasks,
     sendPrivateMessage,
