@@ -1,52 +1,31 @@
 /* ============================================================
    js/app.js — Application entry point
    ============================================================
-   CHANGES FROM ORIGINAL:
-   1. window._appReady flag set after initialisation so the
-      inline SW registration script in index.html knows the
-      UI module is ready to display the update toast.
-   2. No other logic changed.
+   FIX: await Tasks.listenForStudentUpdates() before calling
+   Exam.loadOrStart(). listenForStudentUpdates() now returns
+   a Promise that resolves after both loadCoachingTasks() and
+   loadStudentMessages() have completed their first Firestore
+   fetch. This guarantees AppState.currentTaskConfig is
+   populated before renderSubjectSelection() reads it to apply
+   subject restrictions.
    ============================================================ */
-
 (function () {
   'use strict';
 
   document.addEventListener('DOMContentLoaded', function () {
     _registerGlobalErrorHandlers();
     _startAuthListener();
-
-    /*
-     * Signal to the inline SW registration script in index.html
-     * that the UI module is ready to accept showUpdateToast() calls.
-     * The SW registration script polls for this flag before attempting
-     * to show any toast, avoiding a race condition on first load.
-     */
     window._appReady = true;
   });
 
   function _startAuthListener() {
     window.fbAuth.onAuthStateChanged(async function (firebaseUser) {
       if (firebaseUser) {
-        /*
-         * During registration auth.js creates an account then immediately
-         * signs out. We must not route this transient signed-in state into
-         * the exam flow — the Firestore profile write has not happened yet.
-         * Block _onLogin only. Allow the subsequent sign-out to fall through
-         * to _onLogout so Firebase's internal state machine stays in sync
-         * and the next real login fires onAuthStateChanged correctly.
-         */
         if (window._registrationInProgress) {
           return;
         }
         await _onLogin(firebaseUser);
       } else {
-        /*
-         * Always process sign-out normally, even during registration.
-         * After registration's signOut(), this fires and _onLogout() calls
-         * Auth.renderLogin() which rebuilds the page cleanly. This also
-         * ensures Firebase's listener receives the null state, preventing
-         * the SDK from skipping the next real sign-in event.
-         */
         _onLogout();
       }
     });
@@ -57,7 +36,7 @@
     AppState.cancelAllListeners();
     AppState.userId = uid;
 
-    /* Teacher route */
+    /* Teacher route — tasks/messages not needed */
     if (uid === AppConfig.TEACHER_UID) {
       AppState.isTeacher = true;
       Teacher.renderTeacherDashboard();
@@ -68,15 +47,31 @@
 
     try {
       var snap = await window.fbDb.collection('students').doc(uid).get();
-
       if (!snap.exists) {
         UI.toast('Profile not found. Please register again.', 'error', 0);
         await window.fbAuth.signOut();
         return;
       }
-
       AppState.studentData = snap.data();
-      Tasks.listenForStudentUpdates();
+
+      /*
+       * FIX: await listenForStudentUpdates() before proceeding.
+       *
+       * listenForStudentUpdates() now returns a Promise that resolves
+       * only after BOTH loadCoachingTasks() and loadStudentMessages()
+       * have received their first Firestore response. This ensures:
+       *   • AppState.currentTaskConfig is set (or confirmed null)
+       *   • AppState.studentMessages is populated
+       * before renderSubjectSelection() reads them to apply subject
+       * restrictions and display private messages correctly.
+       *
+       * Previously this was fire-and-forget, causing subject restrictions
+       * to be silently skipped on every fresh login because
+       * AppState.currentTaskConfig was still null when the exam screen
+       * first rendered.
+       */
+      await Tasks.listenForStudentUpdates();
+
       await Exam.loadOrStart();
     } catch (err) {
       console.error('[app] Profile load error:', err);
@@ -86,11 +81,6 @@
   }
 
   function _onLogout() {
-    /*
-     * Clear the registration guard in case it was somehow left raised
-     * (e.g. an exception before auth.js cleared it). This ensures the
-     * next login attempt is never silently blocked.
-     */
     window._registrationInProgress = false;
     Tasks.cancelListeners();
     AppState.reset();
