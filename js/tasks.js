@@ -1,21 +1,16 @@
 /* ============================================================
    js/tasks.js — Coaching task management
    ============================================================
-   TASK SCOPING (v3):
-   Tasks can now target:
-     • All students   → Firestore doc: coachingTasks/global
-     • A class        → Firestore doc: coachingTasks/class_<classkey>
-     • One student    → Firestore doc: coachingTasks/student_<uid>
-
-   A student sees the MOST SPECIFIC active task that applies
-   to them.  Priority (highest wins):
-     student-specific  >  class-specific  >  global
-
-   If the winning task is not active, the next level is tried.
-   The student panel shows only one task at a time.
-
-   Backward compat: the old coachingTasks/current doc is
-   ignored.  Migrate by re-saving as coachingTasks/global.
+   FIXES:
+   1. listenForStudentUpdates() now returns a Promise that
+      resolves only after BOTH loadCoachingTasks() AND
+      loadStudentMessages() have completed their first fetch.
+      This lets app.js await it before calling Exam.loadOrStart(),
+      guaranteeing AppState.currentTaskConfig is populated before
+      the subject selection screen reads it.
+   2. renderTasksHTML() now displays the subject restriction list
+      inside the student's task panel so students know which
+      subjects are required before reaching the exam screen.
    ============================================================ */
 
 (function () {
@@ -34,8 +29,6 @@
 
   /* ══════════════════════════════════════════════════════════
      _classDocId(classStr)
-     Converts a class name to its Firestore doc ID.
-     Matches the classKey format used throughout the app.
      ══════════════════════════════════════════════════════════ */
   function _classDocId(classStr) {
     return 'class_' + (classStr || '').replace(/\s+/g, '').toLowerCase();
@@ -50,18 +43,6 @@
 
   /* ══════════════════════════════════════════════════════════
      loadCoachingTasks
-
-     Subscribes to up to three Firestore docs simultaneously:
-       coachingTasks/global
-       coachingTasks/class_<studentClass>
-       coachingTasks/student_<uid>
-
-     Whenever any of them changes, _resolveTask() picks the
-     most specific active one and stores it in
-     AppState.currentTaskConfig, then re-renders the panel.
-
-     Returns a Promise that resolves once all three initial
-     values have been received (or errored).
      ══════════════════════════════════════════════════════════ */
   function loadCoachingTasks() {
     const uid          = AppState.userId;
@@ -69,15 +50,12 @@
     const classDocId   = _classDocId(classStr);
     const studentDocId = uid ? _studentDocId(uid) : null;
 
-    // Cancel any previous task listeners
     AppState.cancelListener('taskGlobal');
     AppState.cancelListener('taskClass');
     AppState.cancelListener('taskStudent');
 
-    // Local cache of the three docs
     const _docs = { global: null, class: null, student: null };
 
-    // Resolve once all initial snapshots have fired
     let _initialCount = 0;
     const _needed     = studentDocId ? 3 : 2;
     let   _resolveFn  = null;
@@ -103,7 +81,6 @@
       }
     }
 
-    // Global listener
     const unsubGlobal = Db()
       .collection('coachingTasks').doc('global')
       .onSnapshot(
@@ -112,7 +89,6 @@
       );
     AppState.registerListener('taskGlobal', unsubGlobal);
 
-    // Class listener
     const unsubClass = Db()
       .collection('coachingTasks').doc(classDocId)
       .onSnapshot(
@@ -121,7 +97,6 @@
       );
     AppState.registerListener('taskClass', unsubClass);
 
-    // Student listener (only when uid is known)
     if (studentDocId) {
       const unsubStudent = Db()
         .collection('coachingTasks').doc(studentDocId)
@@ -131,8 +106,6 @@
         );
       AppState.registerListener('taskStudent', unsubStudent);
     } else {
-      // No uid yet — count this slot as received so the promise
-      // still resolves after the other two fire.
       _docs.student = null;
     }
 
@@ -155,8 +128,7 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     loadStudentMessages  — client-side expiry filter
-     (single-field query, no composite index required)
+     loadStudentMessages
      ══════════════════════════════════════════════════════════ */
   async function loadStudentMessages() {
     const uid = AppState.userId;
@@ -197,14 +169,15 @@
   /* ══════════════════════════════════════════════════════════
      listenForStudentUpdates
 
-     Called once from app.js on every login path (fresh start
-     AND exam resume). Keeps coachingCompleted in sync and
-     bootstraps task + message loading so both paths always
-     have the data they need.
+     FIX: Now returns a Promise that resolves only after BOTH
+     loadCoachingTasks() AND loadStudentMessages() have
+     completed their first fetch. app.js must await this before
+     calling Exam.loadOrStart() so that AppState.currentTaskConfig
+     is populated before the subject selection screen reads it.
      ══════════════════════════════════════════════════════════ */
   function listenForStudentUpdates() {
     const uid = AppState.userId;
-    if (!uid) return;
+    if (!uid) return Promise.resolve();
 
     AppState.cancelListener('studentProfile');
 
@@ -224,16 +197,24 @@
 
     AppState.registerListener('studentProfile', unsub);
 
-    loadCoachingTasks().catch(function(err) {
-      console.warn('[tasks] loadCoachingTasks error:', err);
-    });
-    loadStudentMessages().catch(function(err) {
-      console.warn('[tasks] loadStudentMessages error:', err);
-    });
+    // Return a single promise that resolves when BOTH initial fetches complete.
+    // This is what app.js awaits before rendering the exam screen.
+    return Promise.all([
+      loadCoachingTasks().catch(function(err) {
+        console.warn('[tasks] loadCoachingTasks error:', err);
+      }),
+      loadStudentMessages().catch(function(err) {
+        console.warn('[tasks] loadStudentMessages error:', err);
+      })
+    ]);
   }
 
   /* ══════════════════════════════════════════════════════════
      renderTasksHTML
+
+     FIX: Now shows the subject restriction list in the task
+     panel so students can see which subjects are required
+     before they reach the subject selection screen.
      ══════════════════════════════════════════════════════════ */
   function renderTasksHTML() {
     const container = document.getElementById('tasksContainer');
@@ -278,6 +259,21 @@
       .replace(/\n\n/g, '</p><p style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.7;margin-bottom:var(--sp-3);">')
       .replace(/\n/g, '<br>');
 
+    // FIX: Build subject restriction notice if the task has allowedSubjects
+    const hasSubjectRestriction = Array.isArray(currentTasks.allowedSubjects) &&
+                                  currentTasks.allowedSubjects.length > 0;
+    const subjectRestrictionHTML = hasSubjectRestriction
+      ? '<div style="display:flex;align-items:flex-start;gap:.5rem;margin-top:var(--sp-3);' +
+        'padding:.625rem .875rem;background:var(--warning-bg,#fff9db);' +
+        'border:1px solid var(--warning-border,#ffec99);border-radius:var(--r-md);">' +
+        '<span style="flex-shrink:0;font-size:1rem;">📚</span>' +
+        '<div>' +
+        '<p style="font-size:var(--text-xs);font-weight:700;color:var(--warning-text,#7c4a00);margin-bottom:2px;">Required subjects for this task</p>' +
+        '<p style="font-size:var(--text-xs);color:var(--text-secondary,#374151);line-height:1.6;">' +
+        currentTasks.allowedSubjects.map(_esc).join(', ') +
+        '</p></div></div>'
+      : '';
+
     container.innerHTML =
       '<div style="background:var(--brand-bg);border:1px solid var(--brand-border);' +
       'border-radius:var(--r-xl);padding:var(--sp-5);margin-bottom:var(--sp-5);">' +
@@ -293,7 +289,9 @@
       '<p style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.7;margin-bottom:var(--sp-4);">' +
       messageSafe + '</p>' +
       '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:var(--sp-2);">' +
-      datesHTML + '</div></div>';
+      datesHTML + '</div>' +
+      subjectRestrictionHTML +   // FIX: subject restriction shown here
+      '</div>';
   }
 
   /* ══════════════════════════════════════════════════════════
