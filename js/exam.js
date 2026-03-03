@@ -718,7 +718,7 @@
                style="background:var(--success-bg,#ebfbee);border:1px solid var(--success-border,#b2f2bb);border-radius:99px;padding:.375rem 1rem;">
             <span style="color:var(--success,#2f9e44);font-size:0.875rem;font-weight:600;">✓ Submitted</span>
           </div>
-          <h1 class="font-bold" style="font-size:1.625rem;">Exam Complete</h1>
+          <h1 class="font-bold" style="font-size:1.625rem;">Exam Completed!</h1>
           <p style="font-size:0.875rem;color:var(--text-tertiary,#6b7280);margin-top:4px;">
             ${_escHtml(result.name)} &bull; ${_escHtml(result.class)} &bull; ${_escHtml(result.school)}
           </p>
