@@ -264,8 +264,8 @@ window.questions = {
     {
         q: "Simplify: $5(2a - 3b) - 2(4a - 7b) - a$.",
         opts: ["$a - b$", "$b - a$", "$a + b$", "$-a - b$"],
-        ans: 1,
-        exp: "$10a - 15b - 8a + 14b - a$. Grouping: $(10a - 8a - a) + (-15b + 14b) = a - b$. Wait, $10-8-1 = 1$. $-15+14 = -1$. Result is $a-b$."
+        ans: 0,
+        exp: "$5(2a-3b) - 2(4a-7b) - a = 10a - 15b - 8a + 14b - a$. Collecting like terms: $(10-8-1)a + (-15+14)b = a - b$."
     },
     {
         q: "If $x = -2$ and $y = -3$, evaluate $\\frac{x^2 - y^2}{x + y}$.",
