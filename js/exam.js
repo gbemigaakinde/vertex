@@ -1,41 +1,5 @@
 /* ============================================================
    js/exam.js — Exam engine: start, navigate, timer, submit
-   ============================================================
-   TIMER FIX (device-switch inflation):
-
-   Root cause: examStartMs was derived from the Firestore
-   startTime field, which is correct, BUT two failure modes
-   existed:
-
-   1. If the beginExam() Firestore write failed silently,
-      startTime was never persisted. On resume from another
-      device the field was absent, so examStartMs fell back
-      to null and the timer showed the full 2 hours again.
-
-   2. On some mobile browsers, reading a cached Firestore
-      document on resume could return a stale startTime,
-      making Date.now() - examStartMs smaller than the true
-      elapsed duration, giving the student extra time.
-
-   Fix:
-   - startTime is written with { merge: true } so a partial
-     write does not wipe other fields.
-   - On loadOrStart(), if startTime is present we derive
-     examStartMs from it directly (server timestamp → ms).
-     The remaining time formula Date.now() - examStartMs is
-     therefore always anchored to the original wall-clock
-     start, regardless of which device resumes.
-   - If startTime is absent (e.g. student closed during the
-     instructions modal before clicking Begin), we treat the
-     exam as not yet started and show the instructions modal
-     again, keeping examStartMs null until the student
-     explicitly begins. This prevents a silent reset to the
-     full 2 hours.
-   - _startTimer() guards against double-intervals by calling
-     S().clearTimer() unconditionally before creating a new
-     setInterval. This was already present but is now
-     explicitly documented.
-   - No UI, scoring, or navigation logic has changed.
    ============================================================ */
 
 (function () {
