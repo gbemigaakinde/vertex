@@ -230,16 +230,24 @@
       return;
     }
 
-    const completed = studentData.coachingCompleted || {};
-    const allDone   = currentTasks.dates.every(function(d) { return completed[d]; });
+    const completed    = studentData.coachingCompleted || {};
+    const allDone      = currentTasks.dates.every(d => completed[d]);
+    const dateSubjects = currentTasks.dateSubjects || {};
 
-    const datesHTML = currentTasks.dates.map(function(dateStr) {
-      const parts = dateStr.split('-');
-      const date  = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+    const datesHTML = currentTasks.dates.map(dateStr => {
+      const parts     = dateStr.split('-');
+      const date      = new Date(+parts[0], +parts[1] - 1, +parts[2]);
       const formatted = date.toLocaleDateString('en-GB', {
         weekday: 'short', day: 'numeric', month: 'short'
       });
-      const isDone = !!completed[dateStr];
+      const isDone   = !!completed[dateStr];
+      const subjects = dateSubjects[dateStr] || [];
+      const subjNote = subjects.length > 0
+        ? '<p style="font-size:var(--text-xs);color:var(--brand-text,#3730a3);' +
+          'margin-top:4px;font-weight:600;line-height:1.4;">' +
+          subjects.map(_esc).join(', ') + '</p>'
+        : '';
+
       return '<div style="background:' + (isDone ? 'var(--success-bg)' : 'var(--surface)') + ';' +
              'border:1px solid ' + (isDone ? 'var(--success-border)' : 'var(--border)') + ';' +
              'border-radius:var(--r-md);padding:0.625rem 0.875rem;text-align:center;">' +
@@ -250,7 +258,9 @@
              (isDone ? '✓' : '○') + '</p>' +
              '<p style="font-size:var(--text-xs);color:' +
              (isDone ? 'var(--success-text)' : 'var(--text-disabled)') + ';margin-top:2px;">' +
-             (isDone ? 'Done' : 'Pending') + '</p></div>';
+             (isDone ? 'Done' : 'Pending') + '</p>' +
+             subjNote +
+             '</div>';
     }).join('');
 
     const messageSafe = _esc(
@@ -258,21 +268,6 @@
     )
       .replace(/\n\n/g, '</p><p style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.7;margin-bottom:var(--sp-3);">')
       .replace(/\n/g, '<br>');
-
-    // FIX: Build subject restriction notice if the task has allowedSubjects
-    const hasSubjectRestriction = Array.isArray(currentTasks.allowedSubjects) &&
-                                  currentTasks.allowedSubjects.length > 0;
-    const subjectRestrictionHTML = hasSubjectRestriction
-      ? '<div style="display:flex;align-items:flex-start;gap:.5rem;margin-top:var(--sp-3);' +
-        'padding:.625rem .875rem;background:var(--warning-bg,#fff9db);' +
-        'border:1px solid var(--warning-border,#ffec99);border-radius:var(--r-md);">' +
-        '<span style="flex-shrink:0;font-size:1rem;">📚</span>' +
-        '<div>' +
-        '<p style="font-size:var(--text-xs);font-weight:700;color:var(--warning-text,#7c4a00);margin-bottom:2px;">Required subjects for this task</p>' +
-        '<p style="font-size:var(--text-xs);color:var(--text-secondary,#374151);line-height:1.6;">' +
-        currentTasks.allowedSubjects.map(_esc).join(', ') +
-        '</p></div></div>'
-      : '';
 
     container.innerHTML =
       '<div style="background:var(--brand-bg);border:1px solid var(--brand-border);' +
@@ -288,10 +283,8 @@
       '</div>' +
       '<p style="font-size:var(--text-sm);color:var(--text-secondary);line-height:1.7;margin-bottom:var(--sp-4);">' +
       messageSafe + '</p>' +
-      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:var(--sp-2);">' +
-      datesHTML + '</div>' +
-      subjectRestrictionHTML +   // FIX: subject restriction shown here
-      '</div>';
+      '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:var(--sp-2);">' +
+      datesHTML + '</div></div>';
   }
 
   /* ══════════════════════════════════════════════════════════
