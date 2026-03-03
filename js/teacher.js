@@ -1267,20 +1267,24 @@
   /* Returns the Firestore doc ID for the currently selected scope/target */
   // WITH THIS:
 function _currentTaskDocId() {
-  if (_taskScope === 'all') return 'global';
-  if (_taskScope === 'class') {
-    const sel = document.getElementById('taskTargetClass');
-    const cls = sel ? sel.value.trim() : '';
-    if (!cls) return null;
-    return 'class_' + cls.replace(/\s+/g, '').toLowerCase();
+    if (_taskScope === 'all') return 'global';
+
+    if (_taskScope === 'class') {
+      const sel = document.getElementById('taskTargetClass');
+      const cls = sel ? sel.value.trim() : '';
+      if (!cls) return null;
+      return 'class_' + cls.replace(/\s+/g, '').toLowerCase();
+    }
+
+    if (_taskScope === 'student') {
+      const sel = document.getElementById('taskTargetStudent');
+      const uid = sel ? sel.value.trim() : '';
+      if (!uid) return null;
+      return 'student_' + uid;
+    }
+
+    return null;
   }
-  if (_taskScope === 'student') {
-    const sel = document.getElementById('taskTargetStudent');
-    const uid = sel ? sel.value.trim() : '';
-    return uid ? 'student_' + uid : null;
-  }
-  return null;
-}
 
   /* ── Called when class or student dropdown changes — refresh subjects ── */
   function _onTaskTargetChange() {
@@ -1571,35 +1575,47 @@ function _currentTaskDocId() {
   }
 
   async function saveTasksConfig() {
-    const docId   = _currentTaskDocId();
+    // ── 1. Validate scope target FIRST, before reading anything else ──
+    const docId = _currentTaskDocId();
+
+    if (!docId) {
+      if (_taskScope === 'class')   { UI.toast('Please select a class.',   'warning'); return; }
+      if (_taskScope === 'student') { UI.toast('Please select a student.', 'warning'); return; }
+      // Fallback — should never reach here, but prevents a null-doc crash
+      UI.toast('No valid target selected.', 'warning');
+      return;
+    }
+
+    // ── 2. Read form values ──
     const active  = !!document.getElementById('tasksActive')?.checked;
     const title   = document.getElementById('tasksTitle')?.value.trim()   || '';
     const message = document.getElementById('tasksMessage')?.value.trim() || '';
     const dates   = Array.from(document.querySelectorAll('#tasksDates span.date-val'))
                         .map(s => s.textContent.trim());
-
-    // Collect subject restriction — empty array means no restriction
     const allowedSubjects = _getCheckedTaskSubjects();
 
-    // Validate scope target
-    if (!docId) {
-      if (_taskScope === 'class')   { UI.toast('Please select a class.', 'warning');   return; }
-      if (_taskScope === 'student') { UI.toast('Please select a student.', 'warning'); return; }
+    // ── 3. Validate required fields (always, regardless of active state) ──
+    if (!title) {
+      UI.toast('Please enter a task title.', 'warning');
+      return;
     }
-    if (active && !title)             { UI.toast('Please enter a task title.', 'warning'); return; }
-    if (active && dates.length === 0) { UI.toast('Please add at least one date.', 'warning'); return; }
+    if (dates.length === 0) {
+      UI.toast('Please add at least one date.', 'warning');
+      return;
+    }
 
+    // ── 4. Build payload ──
     const payload = {
       active,
       scope:           _taskScope,
-      title:           title   || 'Coaching Task',
+      title,
       message:         message || 'Complete the required exams on the scheduled dates.',
       dates,
-      allowedSubjects, // ← empty array = no restriction; non-empty = subject lock
-      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      allowedSubjects,
+      updatedAt:       firebase.firestore.FieldValue.serverTimestamp(),
     };
 
-    // Store the target label for student-scoped tasks so the list can show the name
+    // Store human-readable target label so the existing-tasks list can show it
     if (_taskScope === 'student') {
       const sel = document.getElementById('taskTargetStudent');
       const opt = sel && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex] : null;
@@ -1610,16 +1626,19 @@ function _currentTaskDocId() {
       if (sel) payload.className = sel.value;
     }
 
+    // ── 5. Save ──
     const btn = document.getElementById('saveTasksBtn');
     UI.setLoading(btn, true);
     try {
       await Db().collection('coachingTasks').doc(docId).set(payload);
       UI.toast('Task saved.', 'success');
       _clearTaskForm();
-      _refreshTaskSubjectList(); // reset subject list to reflect cleared state
+      _refreshTaskSubjectList();
     } catch (err) {
       console.error('[teacher] saveTasksConfig error:', err);
-      UI.toast('Failed to save task.', 'error');
+      // Surface the real Firestore error code so it's visible even without DevTools
+      const detail = err && err.code ? ' (' + err.code + ')' : '';
+      UI.toast('Failed to save task' + detail + '.', 'error');
     } finally {
       UI.setLoading(btn, false);
     }
