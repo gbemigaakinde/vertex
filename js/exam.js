@@ -620,15 +620,24 @@
        */
       const questionSnapshots = {};
       for (const subj of exam.subjects) {
-        questionSnapshots[subj] = exam.questions[subj].map((q, i) => ({
-          q:      q.q,
-          opts:   q.opts,
-          ans:    q.ans,
-          exp:    q.exp  || '',
-          chosen: exam.answers[`${subj}-${i}`] !== undefined
-                    ? exam.answers[`${subj}-${i}`]
-                    : null,
-        }));
+        questionSnapshots[subj] = exam.questions[subj].map((q, i) => {
+          // Firestore rejects writes that contain `undefined` anywhere in the
+          // payload — even nested inside arrays — and will throw or silently
+          // drop the field depending on the SDK version.  Coerce every value
+          // to a safe type before writing.
+          const chosenRaw = exam.answers[`${subj}-${i}`];
+          return {
+            q:      q.q    != null ? String(q.q)   : '',
+            opts:   Array.isArray(q.opts)
+                      ? q.opts.map(o => o != null ? String(o) : '')
+                      : [],
+            ans:    q.ans  != null ? Number(q.ans)  : 0,
+            exp:    q.exp  != null ? String(q.exp)  : '',
+            chosen: chosenRaw !== undefined && chosenRaw !== null
+                      ? Number(chosenRaw)
+                      : null,
+          };
+        });
       }
 
       const batch = Db().batch();
@@ -718,7 +727,7 @@
                style="background:var(--success-bg,#ebfbee);border:1px solid var(--success-border,#b2f2bb);border-radius:99px;padding:.375rem 1rem;">
             <span style="color:var(--success,#2f9e44);font-size:0.875rem;font-weight:600;">✓ Submitted</span>
           </div>
-          <h1 class="font-bold" style="font-size:1.625rem;">Exam Completed!</h1>
+          <h1 class="font-bold" style="font-size:1.625rem;">Exam Complete</h1>
           <p style="font-size:0.875rem;color:var(--text-tertiary,#6b7280);margin-top:4px;">
             ${_escHtml(result.name)} &bull; ${_escHtml(result.class)} &bull; ${_escHtml(result.school)}
           </p>
