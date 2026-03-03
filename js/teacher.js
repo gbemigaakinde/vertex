@@ -11,6 +11,12 @@
      saved by exam.js at submission time. If a result was
      submitted before this field existed (older records) the
      modal displays a graceful "not available" message.
+   - FIX: Task student dropdown now correctly repopulates
+     whenever the student cache updates (was never refreshing).
+   - NEW: Subject restriction — teacher can optionally lock a
+     task to specific subjects. Affected students only see and
+     can attempt those subjects. Works for all scopes (all /
+     class / student). Empty selection = no restriction.
    - All other logic (students, schools, tasks, messages,
      chat, logout) is unchanged.
    ============================================================ */
@@ -207,7 +213,7 @@
                                 color:var(--c-text-2,#374151);margin-bottom:.375rem;">
                     Class
                   </label>
-                  <select id="taskTargetClass">
+                  <select id="taskTargetClass" onchange="Teacher._onTaskTargetChange()">
                     <option value="">Select a class...</option>
                   </select>
                 </div>
@@ -218,7 +224,7 @@
                                 color:var(--c-text-2,#374151);margin-bottom:.375rem;">
                     Student
                   </label>
-                  <select id="taskTargetStudent">
+                  <select id="taskTargetStudent" onchange="Teacher._onTaskTargetChange()">
                     <option value="">Select a student...</option>
                   </select>
                 </div>
@@ -268,6 +274,41 @@
                     </button>
                   </div>
                   <div id="tasksDates" class="space-y-1"></div>
+                </div>
+
+                <!-- ── Subject restriction (NEW) ── -->
+                <div id="taskSubjectWrap" style="margin-bottom:.875rem;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.375rem;">
+                    <label style="font-size:.75rem;font-weight:600;color:var(--c-text-2,#374151);">
+                      Restrict to Subjects
+                      <span style="font-weight:400;color:var(--c-text-3,#6b7280);margin-left:.25rem;">(optional)</span>
+                    </label>
+                    <div style="display:flex;gap:.375rem;">
+                      <button onclick="Teacher._selectAllTaskSubjects()"
+                              style="font-size:.6875rem;font-weight:600;color:var(--brand,#3b5bdb);
+                                     background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">
+                        All
+                      </button>
+                      <span style="color:var(--border-medium,#d1d5db);">·</span>
+                      <button onclick="Teacher._clearTaskSubjects()"
+                              style="font-size:.6875rem;font-weight:600;color:var(--text-tertiary,#6b7280);
+                                     background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">
+                        None
+                      </button>
+                    </div>
+                  </div>
+                  <div id="taskSubjectList"
+                       style="max-height:140px;overflow-y:auto;border:1.5px solid var(--border-medium,#d1d5db);
+                              border-radius:6px;background:var(--surface,#fff);">
+                    <p style="font-size:.8125rem;color:var(--text-tertiary,#6b7280);
+                               padding:.5rem .75rem;font-style:italic;">
+                      Select a scope target above to see available subjects
+                    </p>
+                  </div>
+                  <p style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin-top:.375rem;line-height:1.5;">
+                    Leave all unchecked for no restriction — students see all subjects normally.
+                    Check specific subjects to lock this task's students to only those subjects.
+                  </p>
                 </div>
 
                 <!-- Actions -->
@@ -445,6 +486,10 @@
       .review-q-card--skipped {
         border-color: var(--border-medium, #d1d5db);
         background: var(--surface-subtle, #f9fafb);
+      }
+      /* Subject checkbox list in task form */
+      #taskSubjectList label:last-child {
+        border-bottom: none;
       }
     `;
     if (!document.getElementById('_teacherGridStyle')) {
@@ -1203,8 +1248,9 @@
       if (studentWrap) studentWrap.style.display = '';
     }
 
-    // Clear form when scope changes
+    // Clear form and refresh subject list whenever scope changes
     _clearTaskForm();
+    _refreshTaskSubjectList();
   }
 
   function _clearTaskForm() {
@@ -1234,8 +1280,96 @@
     return null;
   }
 
+  /* ── Called when class or student dropdown changes — refresh subjects ── */
+  function _onTaskTargetChange() {
+    _refreshTaskSubjectList();
+  }
+
+  /* ── Get subjects available for the current scope/target from window.questions ── */
+  function _getSubjectsForCurrentScope() {
+    const qBank = window.questions || {};
+
+    if (_taskScope === 'all') {
+      // Union of all subjects across all class keys
+      const all = new Set();
+      Object.values(qBank).forEach(classSubjects => {
+        Object.keys(classSubjects).forEach(s => all.add(s));
+      });
+      return [...all].sort();
+    }
+
+    if (_taskScope === 'class') {
+      const sel = document.getElementById('taskTargetClass');
+      const cls = sel ? sel.value.trim() : '';
+      if (!cls) return [];
+      const classKey = cls.replace(/\s+/g, '').toLowerCase();
+      return Object.keys(qBank[classKey] || {}).sort();
+    }
+
+    if (_taskScope === 'student') {
+      const sel = document.getElementById('taskTargetStudent');
+      const uid = sel ? sel.value.trim() : '';
+      if (!uid) return [];
+      // Look up the student's class from the cache
+      const student = _msgStudentCache.find(s => s.id === uid);
+      if (!student || !student.cls) return [];
+      const classKey = student.cls.replace(/\s+/g, '').toLowerCase();
+      return Object.keys(qBank[classKey] || {}).sort();
+    }
+
+    return [];
+  }
+
+  /* ── Render the subject checkbox list in the task form ── */
+  function _refreshTaskSubjectList() {
+    const container = document.getElementById('taskSubjectList');
+    if (!container) return;
+
+    const subjects = _getSubjectsForCurrentScope();
+
+    if (subjects.length === 0) {
+      const hint = _taskScope === 'all'
+        ? 'No subjects found in the question bank.'
+        : 'Select a target above to see available subjects.';
+      container.innerHTML = `
+        <p style="font-size:.8125rem;color:var(--text-tertiary,#6b7280);
+                   padding:.5rem .75rem;font-style:italic;">${hint}</p>`;
+      return;
+    }
+
+    container.innerHTML = subjects.map(subj => `
+      <label style="display:flex;align-items:center;gap:.625rem;padding:.4375rem .75rem;
+                    cursor:pointer;border-bottom:1px solid var(--border,#e5e7eb);
+                    transition:background .1s;"
+             onmouseenter="this.style.background='var(--brand-bg,#edf2ff)'"
+             onmouseleave="this.style.background=''">
+        <input type="checkbox"
+               class="task-subject-cb"
+               value="${_esc(subj)}"
+               style="width:.9375rem;height:.9375rem;accent-color:var(--brand,#3b5bdb);
+                      flex-shrink:0;cursor:pointer;" />
+        <span style="font-size:.8125rem;color:var(--text-primary,#111827);">
+          ${_esc(subj)}
+        </span>
+      </label>`).join('');
+  }
+
+  function _selectAllTaskSubjects() {
+    document.querySelectorAll('.task-subject-cb').forEach(cb => { cb.checked = true; });
+  }
+
+  function _clearTaskSubjects() {
+    document.querySelectorAll('.task-subject-cb').forEach(cb => { cb.checked = false; });
+  }
+
+  /* ── Get checked subjects from the task form ── */
+  function _getCheckedTaskSubjects() {
+    return [...document.querySelectorAll('.task-subject-cb:checked')].map(cb => cb.value);
+  }
+
   function _loadTasksManager() {
     _cancel('tasksManager');
+    _taskScope = 'all'; // reset scope state on tab load
 
     // ── Populate class dropdown from unique classes in student list ──
     _cancel('taskClassList');
@@ -1258,18 +1392,6 @@
       });
     _reg('taskClassList', unsubClasses);
 
-    // ── Populate student dropdown (reuse cache if available) ──
-    const populateStudentSel = () => {
-      const sel = document.getElementById('taskTargetStudent');
-      if (!sel) return;
-      let html = '<option value="">Select a student...</option>';
-      _msgStudentCache.forEach(s => {
-        html += `<option value="${_esc(s.id)}">${_esc(s.name)} (${_esc(s.cls)})</option>`;
-      });
-      sel.innerHTML = html;
-    };
-    populateStudentSel();
-
     // ── Live list of all existing tasks ──
     _cancel('tasksList');
     const unsubTasks = Db()
@@ -1291,13 +1413,32 @@
           const s = doc.data();
           _msgStudentCache.push({ id: doc.id, name: s.name || '', cls: s.class || '' });
         });
-        // Refresh whichever UI is currently visible
+        // Refresh all student-dependent UI in one place
         _populateMsgSingleSelect();
         _populateMsgCheckboxList();
+        _populateTaskStudentSelect();   // ← FIX: was never called on cache update
+        // Also refresh subject list if student scope is active and a student is selected
+        if (_taskScope === 'student') {
+          _refreshTaskSubjectList();
+        }
       });
     _reg('msgStudents', unsubStudents);
-    // Also refresh task student dropdown now that cache is ready
-    populateStudentSel();
+
+    // Seed the scope UI to its default state (all)
+    _setTaskScope('all');
+  }
+
+  /* ── NEW: Dedicated function to populate task student dropdown ── */
+  /* This is separate from _populateMsgSingleSelect so each can     */
+  /* evolve independently without coupling.                          */
+  function _populateTaskStudentSelect() {
+    const sel = document.getElementById('taskTargetStudent');
+    if (!sel) return;
+    let html = '<option value="">Select a student...</option>';
+    _msgStudentCache.forEach(s => {
+      html += `<option value="${_esc(s.id)}">${_esc(s.name)} (${_esc(s.cls)})</option>`;
+    });
+    sel.innerHTML = html;
   }
 
   /* ── Render the list of all existing task docs ── */
@@ -1344,6 +1485,13 @@
         const studentName = resolveStudentName(doc.id);
         const scopeDisplay = studentName ? 'Student: ' + studentName : scope.label;
         const dates       = (d.dates || []).join(', ') || '—';
+        // Show subject restriction badge if present
+        const subjBadge   = (d.allowedSubjects && d.allowedSubjects.length > 0)
+          ? '<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;' +
+            'background:var(--surface-muted,#f3f4f6);color:var(--text-secondary,#374151);' +
+            'border:1px solid var(--border,#e5e7eb);" title="' + _esc(d.allowedSubjects.join(', ')) + '">' +
+            '📚 ' + d.allowedSubjects.length + ' subject' + (d.allowedSubjects.length !== 1 ? 's' : '') + '</span>'
+          : '';
         return '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem;' +
                'background:var(--c-surface,#fff);border:1px solid var(--c-border,#e5e7eb);' +
                'border-radius:8px;padding:.5rem .875rem;">' +
@@ -1356,7 +1504,9 @@
                '<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;' +
                (d.active ? 'background:var(--success-bg,#ebfbee);color:var(--success-text,#1a5c29);border:1px solid var(--success-border,#b2f2bb);'
                          : 'background:var(--surface-muted,#f3f4f6);color:var(--text-disabled,#9ca3af);border:1px solid var(--border,#e5e7eb);') +
-               '">' + (d.active ? 'Active' : 'Inactive') + '</span></div>' +
+               '">' + (d.active ? 'Active' : 'Inactive') + '</span>' +
+               subjBadge +
+               '</div>' +
                '<p style="font-size:.6875rem;color:var(--c-text-4,#9ca3af);">' + _esc(dates) + '</p>' +
                '</div>' +
                '<button class="teacher-delete-task" data-task-id="' + _esc(doc.id) + '"' +
@@ -1426,6 +1576,9 @@
     const dates   = Array.from(document.querySelectorAll('#tasksDates span.date-val'))
                         .map(s => s.textContent.trim());
 
+    // Collect subject restriction — empty array means no restriction
+    const allowedSubjects = _getCheckedTaskSubjects();
+
     // Validate scope target
     if (!docId) {
       if (_taskScope === 'class')   { UI.toast('Please select a class.', 'warning');   return; }
@@ -1436,10 +1589,11 @@
 
     const payload = {
       active,
-      scope:   _taskScope,
-      title:   title   || 'Coaching Task',
-      message: message || 'Complete the required exams on the scheduled dates.',
+      scope:           _taskScope,
+      title:           title   || 'Coaching Task',
+      message:         message || 'Complete the required exams on the scheduled dates.',
       dates,
+      allowedSubjects, // ← empty array = no restriction; non-empty = subject lock
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     };
 
@@ -1460,6 +1614,7 @@
       await Db().collection('coachingTasks').doc(docId).set(payload);
       UI.toast('Task saved.', 'success');
       _clearTaskForm();
+      _refreshTaskSubjectList(); // reset subject list to reflect cleared state
     } catch (err) {
       console.error('[teacher] saveTasksConfig error:', err);
       UI.toast('Failed to save task.', 'error');
@@ -1704,8 +1859,11 @@
     _updateMsgSelectedCount,
     _selectAllMsgStudents,
     _clearMsgStudents,
-    // Task scope helpers (called from inline HTML)
+    // Task scope + subject helpers (called from inline HTML)
     _setTaskScope,
+    _onTaskTargetChange,
+    _selectAllTaskSubjects,
+    _clearTaskSubjects,
   };
 
 })();
