@@ -62,7 +62,7 @@
                 Teacher Dashboard
               </h1>
               <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:1px;">
-                Admin
+                Master Timothy — Admin
               </p>
             </div>
           </div>
@@ -170,36 +170,91 @@
                   </h3>
                 </div>
 
-                <label style="display:flex;align-items:center;gap:.625rem;margin-bottom:1rem;
+                <!-- Scope selector -->
+                <div style="margin-bottom:.875rem;">
+                  <label style="display:block;font-size:.75rem;font-weight:600;
+                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">
+                    Assign to
+                  </label>
+                  <div style="display:flex;gap:0;border:1px solid var(--c-border,#e5e7eb);
+                              border-radius:6px;overflow:hidden;width:100%;">
+                    <button id="taskScopeAll" onclick="Teacher._setTaskScope('all')"
+                            style="flex:1;padding:.4375rem .5rem;font-size:.75rem;font-weight:600;
+                                   cursor:pointer;border:none;transition:background .12s,color .12s;
+                                   background:var(--brand,#3b5bdb);color:#fff;">
+                      All Students
+                    </button>
+                    <button id="taskScopeClass" onclick="Teacher._setTaskScope('class')"
+                            style="flex:1;padding:.4375rem .5rem;font-size:.75rem;font-weight:600;
+                                   cursor:pointer;border:none;border-left:1px solid var(--c-border,#e5e7eb);
+                                   transition:background .12s,color .12s;
+                                   background:var(--surface-muted,#f3f4f6);color:var(--text-tertiary,#6b7280);">
+                      By Class
+                    </button>
+                    <button id="taskScopeStudent" onclick="Teacher._setTaskScope('student')"
+                            style="flex:1;padding:.4375rem .5rem;font-size:.75rem;font-weight:600;
+                                   cursor:pointer;border:none;border-left:1px solid var(--c-border,#e5e7eb);
+                                   transition:background .12s,color .12s;
+                                   background:var(--surface-muted,#f3f4f6);color:var(--text-tertiary,#6b7280);">
+                      By Student
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Class target (shown when scope = class) -->
+                <div id="taskTargetClassWrap" style="display:none;margin-bottom:.75rem;">
+                  <label style="display:block;font-size:.75rem;font-weight:600;
+                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">
+                    Class
+                  </label>
+                  <select id="taskTargetClass">
+                    <option value="">Select a class...</option>
+                  </select>
+                </div>
+
+                <!-- Student target (shown when scope = student) -->
+                <div id="taskTargetStudentWrap" style="display:none;margin-bottom:.75rem;">
+                  <label style="display:block;font-size:.75rem;font-weight:600;
+                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">
+                    Student
+                  </label>
+                  <select id="taskTargetStudent">
+                    <option value="">Select a student...</option>
+                  </select>
+                </div>
+
+                <!-- Active toggle -->
+                <label style="display:flex;align-items:center;gap:.625rem;margin-bottom:.875rem;
                               cursor:pointer;padding:.625rem .75rem;border-radius:8px;
                               border:1px solid var(--c-border,#e5e7eb);background:var(--c-surface,#fff);">
                   <input type="checkbox" id="tasksActive"
                          style="width:1rem;height:1rem;accent-color:var(--c-brand,#4f46e5);
                                 flex-shrink:0;cursor:pointer;" />
                   <span style="font-size:.875rem;font-weight:600;color:var(--c-text,#111827);">
-                    Activate for all students
+                    Active
                   </span>
                 </label>
 
+                <!-- Title -->
                 <div style="margin-bottom:.75rem;">
                   <label style="display:block;font-size:.75rem;font-weight:600;
                                 color:var(--c-text-2,#374151);margin-bottom:.375rem;">
                     Task Title
                   </label>
-                  <input type="text" id="tasksTitle"
-                         placeholder="e.g., Weekend Challenge" />
+                  <input type="text" id="tasksTitle" placeholder="e.g., Weekend Challenge" />
                 </div>
 
+                <!-- Message -->
                 <div style="margin-bottom:.875rem;">
                   <label style="display:block;font-size:.75rem;font-weight:600;
                                 color:var(--c-text-2,#374151);margin-bottom:.375rem;">
                     Message for Students
                   </label>
-                  <textarea id="tasksMessage"
-                            placeholder="Instructions or motivation..."
-                            style="height:6rem;resize:vertical;"></textarea>
+                  <textarea id="tasksMessage" placeholder="Instructions or motivation..."
+                            style="height:5.5rem;resize:vertical;"></textarea>
                 </div>
 
+                <!-- Date picker -->
                 <div style="margin-bottom:.875rem;">
                   <label style="display:block;font-size:.75rem;font-weight:600;
                                 color:var(--c-text-2,#374151);margin-bottom:.375rem;">
@@ -215,6 +270,7 @@
                   <div id="tasksDates" class="space-y-1"></div>
                 </div>
 
+                <!-- Actions -->
                 <div style="display:flex;gap:.5rem;padding-top:.875rem;
                             border-top:1px solid var(--c-border,#e5e7eb);">
                   <button id="saveTasksBtn" onclick="Teacher.saveTasksConfig()"
@@ -222,13 +278,9 @@
                           style="flex:1;font-size:.875rem;padding:.5625rem .875rem;">
                     Save &amp; Apply
                   </button>
-                  <button id="deleteTasksBtn" onclick="Teacher.deleteAllTasks()"
-                          class="btn bg-red-600 hover:bg-red-700"
-                          style="font-size:.875rem;padding:.5625rem .875rem;">
-                    Delete All
-                  </button>
                 </div>
               </div>
+
 
               <!-- ── Private message sender ── -->
               <div class="glass-dark" style="padding:1.25rem;border-radius:10px;">
@@ -733,6 +785,13 @@
     if (card && card.dataset.resultId) {
       await _openReviewModal(card.dataset.resultId);
     }
+
+    // Delete task
+    const taskBtn = e.target.closest('.teacher-delete-task');
+    if (taskBtn) {
+      e.stopPropagation();
+      await deleteTask(taskBtn.dataset.taskId);
+    }
   });
 
   async function deleteResult(id) {
@@ -1114,30 +1173,111 @@
   /* Tasks & Messages tab                                */
   /* -------------------------------------------------- */
 
+  /* ── Task scope state ── */
+  let _taskScope = 'all'; // 'all' | 'class' | 'student'
+
+  function _setTaskScope(scope) {
+    _taskScope = scope;
+    const classWrap   = document.getElementById('taskTargetClassWrap');
+    const studentWrap = document.getElementById('taskTargetStudentWrap');
+    const btnAll      = document.getElementById('taskScopeAll');
+    const btnClass    = document.getElementById('taskScopeClass');
+    const btnStudent  = document.getElementById('taskScopeStudent');
+
+    // Reset all button styles
+    [btnAll, btnClass, btnStudent].forEach(b => {
+      if (b) { b.style.background = 'var(--surface-muted,#f3f4f6)'; b.style.color = 'var(--text-tertiary,#6b7280)'; }
+    });
+
+    if (scope === 'all') {
+      if (btnAll) { btnAll.style.background = 'var(--brand,#3b5bdb)'; btnAll.style.color = '#fff'; }
+      if (classWrap)   classWrap.style.display   = 'none';
+      if (studentWrap) studentWrap.style.display = 'none';
+    } else if (scope === 'class') {
+      if (btnClass) { btnClass.style.background = 'var(--brand,#3b5bdb)'; btnClass.style.color = '#fff'; }
+      if (classWrap)   classWrap.style.display   = '';
+      if (studentWrap) studentWrap.style.display = 'none';
+    } else {
+      if (btnStudent) { btnStudent.style.background = 'var(--brand,#3b5bdb)'; btnStudent.style.color = '#fff'; }
+      if (classWrap)   classWrap.style.display   = 'none';
+      if (studentWrap) studentWrap.style.display = '';
+    }
+
+    // Clear form when scope changes
+    _clearTaskForm();
+  }
+
+  function _clearTaskForm() {
+    const activeEl  = document.getElementById('tasksActive');
+    const titleEl   = document.getElementById('tasksTitle');
+    const messageEl = document.getElementById('tasksMessage');
+    const datesEl   = document.getElementById('tasksDates');
+    if (activeEl)  activeEl.checked = false;
+    if (titleEl)   titleEl.value    = '';
+    if (messageEl) messageEl.value  = '';
+    if (datesEl)   datesEl.innerHTML = '';
+  }
+
+  /* Returns the Firestore doc ID for the currently selected scope/target */
+  function _currentTaskDocId() {
+    if (_taskScope === 'all') return 'global';
+    if (_taskScope === 'class') {
+      const sel = document.getElementById('taskTargetClass');
+      const cls = sel ? sel.value.trim() : '';
+      return cls ? Tasks._classDocId(cls) : null;
+    }
+    if (_taskScope === 'student') {
+      const sel = document.getElementById('taskTargetStudent');
+      const uid = sel ? sel.value.trim() : '';
+      return uid ? Tasks._studentDocId(uid) : null;
+    }
+    return null;
+  }
+
   function _loadTasksManager() {
     _cancel('tasksManager');
-    const unsub = Db()
-      .collection('coachingTasks')
-      .doc('current')
+
+    // ── Populate class dropdown from unique classes in student list ──
+    _cancel('taskClassList');
+    const unsubClasses = Db()
+      .collection('students')
       .onSnapshot(snap => {
-        const data = snap.exists
-          ? snap.data()
-          : { active: false, dates: [], title: '', message: '' };
-
-        const activeEl  = document.getElementById('tasksActive');
-        const titleEl   = document.getElementById('tasksTitle');
-        const messageEl = document.getElementById('tasksMessage');
-        const datesEl   = document.getElementById('tasksDates');
-
-        if (activeEl)  activeEl.checked = !!data.active;
-        if (titleEl)   titleEl.value    = data.title   || '';
-        if (messageEl) messageEl.value  = data.message || '';
-        if (datesEl) {
-          datesEl.innerHTML = '';
-          (data.dates || []).forEach(d => _appendDateItem(d));
+        const classes = new Set();
+        snap.forEach(doc => {
+          const c = doc.data().class;
+          if (c) classes.add(c);
+        });
+        const sel = document.getElementById('taskTargetClass');
+        if (sel) {
+          let html = '<option value="">Select a class...</option>';
+          [...classes].sort().forEach(c => {
+            html += `<option value="${_esc(c)}">${_esc(c)}</option>`;
+          });
+          sel.innerHTML = html;
         }
       });
-    _reg('tasksManager', unsub);
+    _reg('taskClassList', unsubClasses);
+
+    // ── Populate student dropdown (reuse cache if available) ──
+    const populateStudentSel = () => {
+      const sel = document.getElementById('taskTargetStudent');
+      if (!sel) return;
+      let html = '<option value="">Select a student...</option>';
+      _msgStudentCache.forEach(s => {
+        html += `<option value="${_esc(s.id)}">${_esc(s.name)} (${_esc(s.cls)})</option>`;
+      });
+      sel.innerHTML = html;
+    };
+    populateStudentSel();
+
+    // ── Live list of all existing tasks ──
+    _cancel('tasksList');
+    const unsubTasks = Db()
+      .collection('coachingTasks')
+      .onSnapshot(snap => {
+        _renderExistingTasksList(snap.docs);
+      });
+    _reg('tasksList', unsubTasks);
 
     _cancel('msgStudents');
     // Cache student list so search filtering can work without re-querying
@@ -1156,6 +1296,91 @@
         _populateMsgCheckboxList();
       });
     _reg('msgStudents', unsubStudents);
+    // Also refresh task student dropdown now that cache is ready
+    populateStudentSel();
+  }
+
+  /* ── Render the list of all existing task docs ── */
+  function _renderExistingTasksList(docs) {
+    let container = document.getElementById('existingTasksList');
+    if (!container) {
+      const panel = document.getElementById('teacher-tasks');
+      if (!panel) return;
+      const inner = panel.querySelector('div[style*="padding:1.25rem 1.5rem"]') || panel;
+      container = document.createElement('div');
+      container.id = 'existingTasksList';
+      container.style.cssText = 'margin-top:1rem;';
+      inner.appendChild(container);
+    }
+
+    const tasks = docs.filter(function(d) { return d.id !== 'current'; });
+
+    if (tasks.length === 0) {
+      container.innerHTML = '';
+      return;
+    }
+
+    function scopeLabel(docId) {
+      if (docId === 'global')              return { label: 'All Students',   color: 'var(--brand,#3b5bdb)',   bg: 'var(--brand-bg,#edf2ff)',    border: 'var(--brand-border,#bac8ff)' };
+      if (docId.startsWith('class_'))      return { label: 'Class: ' + docId.replace('class_','').toUpperCase(), color: 'var(--warning,#e8890c)', bg: 'var(--warning-bg,#fff9db)', border: 'var(--warning-border,#ffec99)' };
+      if (docId.startsWith('student_'))    return { label: 'Student',         color: 'var(--success,#2f9e44)', bg: 'var(--success-bg,#ebfbee)',  border: 'var(--success-border,#b2f2bb)' };
+      return { label: docId, color: 'var(--text-tertiary,#6b7280)', bg: 'var(--surface-muted,#f3f4f6)', border: 'var(--border,#e5e7eb)' };
+    }
+
+    function resolveStudentName(docId) {
+      if (!docId.startsWith('student_')) return null;
+      const uid   = docId.replace('student_', '');
+      const found = _msgStudentCache.find(function(s) { return s.id === uid; });
+      return found ? found.name + ' (' + found.cls + ')' : uid;
+    }
+
+    container.innerHTML =
+      '<div style="border-top:1px solid var(--c-border,#e5e7eb);padding-top:1rem;margin-top:.25rem;">' +
+      '<h3 style="font-size:.875rem;font-weight:700;color:var(--c-text,#111827);margin-bottom:.625rem;">Existing Tasks</h3>' +
+      '<div style="display:flex;flex-direction:column;gap:.375rem;">' +
+      tasks.map(function(doc) {
+        const d           = doc.data();
+        const scope       = scopeLabel(doc.id);
+        const studentName = resolveStudentName(doc.id);
+        const scopeDisplay = studentName ? 'Student: ' + studentName : scope.label;
+        const dates       = (d.dates || []).join(', ') || '—';
+        return '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem;' +
+               'background:var(--c-surface,#fff);border:1px solid var(--c-border,#e5e7eb);' +
+               'border-radius:8px;padding:.5rem .875rem;">' +
+               '<div style="min-width:0;flex:1;">' +
+               '<div style="display:flex;align-items:center;gap:.375rem;flex-wrap:wrap;margin-bottom:2px;">' +
+               '<span style="font-size:.8125rem;font-weight:700;color:var(--c-text,#111827);">' + _esc(d.title || '—') + '</span>' +
+               '<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;' +
+               'background:' + scope.bg + ';color:' + scope.color + ';border:1px solid ' + scope.border + ';">' +
+               _esc(scopeDisplay) + '</span>' +
+               '<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;' +
+               (d.active ? 'background:var(--success-bg,#ebfbee);color:var(--success-text,#1a5c29);border:1px solid var(--success-border,#b2f2bb);'
+                         : 'background:var(--surface-muted,#f3f4f6);color:var(--text-disabled,#9ca3af);border:1px solid var(--border,#e5e7eb);') +
+               '">' + (d.active ? 'Active' : 'Inactive') + '</span></div>' +
+               '<p style="font-size:.6875rem;color:var(--c-text-4,#9ca3af);">' + _esc(dates) + '</p>' +
+               '</div>' +
+               '<button class="teacher-delete-task" data-task-id="' + _esc(doc.id) + '"' +
+               ' style="background:none;border:none;cursor:pointer;font-size:1rem;' +
+               'line-height:1;padding:2px 4px;color:var(--c-text-4,#9ca3af);flex-shrink:0;margin-top:1px;"' +
+               ' onmouseenter="this.style.color='var(--c-danger,#dc2626)'"' +
+               ' onmouseleave="this.style.color='var(--c-text-4,#9ca3af)'">&#215;</button>' +
+               '</div>';
+      }).join('') +
+      '</div></div>';
+  }
+
+  /* Delete task by doc ID — wired via event delegation below */
+  async function deleteTask(docId) {
+    if (!docId) return;
+    const ok = await UI.confirmAction('Delete this task? Students will stop seeing it immediately.');
+    if (!ok) return;
+    try {
+      await Db().collection('coachingTasks').doc(docId).delete();
+      UI.toast('Task deleted.', 'success');
+    } catch (err) {
+      console.error('[teacher] deleteTask error:', err);
+      UI.toast('Failed to delete task.', 'error');
+    }
   }
 
   function addTaskDate() {
@@ -1194,54 +1419,71 @@
   }
 
   async function saveTasksConfig() {
-    const active   = !!document.getElementById('tasksActive')?.checked;
-    const title    = document.getElementById('tasksTitle')?.value.trim()   || '';
-    const message  = document.getElementById('tasksMessage')?.value.trim() || '';
-    const dates    = Array.from(document.querySelectorAll('#tasksDates span.date-val'))
-                         .map(s => s.textContent.trim());
+    const docId   = _currentTaskDocId();
+    const active  = !!document.getElementById('tasksActive')?.checked;
+    const title   = document.getElementById('tasksTitle')?.value.trim()   || '';
+    const message = document.getElementById('tasksMessage')?.value.trim() || '';
+    const dates   = Array.from(document.querySelectorAll('#tasksDates span.date-val'))
+                        .map(s => s.textContent.trim());
 
-    if (active && !title)             { UI.toast('Please enter a title for the coaching task.', 'warning'); return; }
-    if (active && dates.length === 0) { UI.toast('Please add at least one date when activating tasks.', 'warning'); return; }
+    // Validate scope target
+    if (!docId) {
+      if (_taskScope === 'class')   { UI.toast('Please select a class.', 'warning');   return; }
+      if (_taskScope === 'student') { UI.toast('Please select a student.', 'warning'); return; }
+    }
+    if (active && !title)             { UI.toast('Please enter a task title.', 'warning'); return; }
+    if (active && dates.length === 0) { UI.toast('Please add at least one date.', 'warning'); return; }
 
     const payload = {
       active,
+      scope:   _taskScope,
       title:   title   || 'Coaching Task',
       message: message || 'Complete the required exams on the scheduled dates.',
       dates,
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     };
 
+    // Store the target label for student-scoped tasks so the list can show the name
+    if (_taskScope === 'student') {
+      const sel = document.getElementById('taskTargetStudent');
+      const opt = sel && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex] : null;
+      if (opt) payload.studentName = opt.text;
+    }
+    if (_taskScope === 'class') {
+      const sel = document.getElementById('taskTargetClass');
+      if (sel) payload.className = sel.value;
+    }
+
     const btn = document.getElementById('saveTasksBtn');
     UI.setLoading(btn, true);
     try {
-      await Db().collection('coachingTasks').doc('current').set(payload);
-      UI.toast('Coaching tasks saved.', 'success');
+      await Db().collection('coachingTasks').doc(docId).set(payload);
+      UI.toast('Task saved.', 'success');
+      _clearTaskForm();
     } catch (err) {
       console.error('[teacher] saveTasksConfig error:', err);
-      UI.toast('Failed to save tasks.', 'error');
+      UI.toast('Failed to save task.', 'error');
     } finally {
       UI.setLoading(btn, false);
     }
   }
 
+  // deleteAllTasks kept for backward compat but now just clears legacy doc
   async function deleteAllTasks() {
     const ok = await UI.confirmAction(
-      'Delete all current tasks? This removes them from every student portal immediately.'
+      'Delete ALL tasks (all scopes)? Every student will stop seeing their tasks immediately.'
     );
     if (!ok) return;
-
     try {
-      await Db().collection('coachingTasks').doc('current').delete();
+      // Fetch and delete every doc in coachingTasks
+      const snap = await Db().collection('coachingTasks').get();
+      if (!snap.empty) {
+        const batch = Db().batch();
+        snap.forEach(function(d) { batch.delete(d.ref); });
+        await batch.commit();
+      }
       UI.toast('All tasks deleted.', 'success');
-
-      const titleEl  = document.getElementById('tasksTitle');
-      const msgEl    = document.getElementById('tasksMessage');
-      const datesEl  = document.getElementById('tasksDates');
-      const activeEl = document.getElementById('tasksActive');
-      if (titleEl)  titleEl.value     = '';
-      if (msgEl)    msgEl.value       = '';
-      if (datesEl)  datesEl.innerHTML = '';
-      if (activeEl) activeEl.checked  = false;
+      _clearTaskForm();
     } catch (err) {
       console.error('[teacher] deleteAllTasks error:', err);
       UI.toast('Failed to delete tasks.', 'error');
@@ -1462,6 +1704,8 @@
     _updateMsgSelectedCount,
     _selectAllMsgStudents,
     _clearMsgStudents,
+    // Task scope helpers (called from inline HTML)
+    _setTaskScope,
   };
 
 })();
