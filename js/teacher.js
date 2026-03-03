@@ -62,7 +62,7 @@
                 Teacher Dashboard
               </h1>
               <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:1px;">
-                Master Timothy — Admin
+                Admin
               </p>
             </div>
           </div>
@@ -459,7 +459,7 @@
   /* -------------------------------------------------- */
 
   function showTab(tab) {
-    ['students', 'results', 'schools', 'tasks'].forEach(t => {
+    ['students', 'results', 'schools', 'tasks', 'chat'].forEach(t => {
       const el  = document.getElementById(`teacher-${t}`);
       const btn = document.getElementById(`tab-${t}`);
       if (el)  el.classList.toggle('hidden', t !== tab);
@@ -1362,8 +1362,8 @@
                '<button class="teacher-delete-task" data-task-id="' + _esc(doc.id) + '"' +
                ' style="background:none;border:none;cursor:pointer;font-size:1rem;' +
                'line-height:1;padding:2px 4px;color:var(--c-text-4,#9ca3af);flex-shrink:0;margin-top:1px;"' +
-               ' onmouseenter="this.style.color='var(--c-danger,#dc2626)'"' +
-               ' onmouseleave="this.style.color='var(--c-text-4,#9ca3af)'">&#215;</button>' +
+               ' onmouseenter="this.style.color=&apos;var(--c-danger,#dc2626)&apos;"' +
+               ' onmouseleave="this.style.color=&apos;var(--c-text-4,#9ca3af)&apos;">&#215;</button>' +
                '</div>';
       }).join('') +
       '</div></div>';
