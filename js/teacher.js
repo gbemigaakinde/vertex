@@ -1326,46 +1326,314 @@ function _currentTaskDocId() {
     return [];
   }
 
-  /* ── Render the subject checkbox list in the task form ── */
-  function _refreshTaskSubjectList() {
-    const container = document.getElementById('taskSubjectList');
-    if (!container) return;
+  /* ══════════════════════════════════════════════════════════
+     TASK SUBJECT UI
+     _refreshTaskSubjectList() is no longer used for a global
+     subject list — subjects are now per-date, rendered inline
+     inside each date row by _appendDateItem().
+     The taskSubjectWrap div in the HTML can be hidden/removed.
+     ══════════════════════════════════════════════════════════ */
 
-    const subjects = _getSubjectsForCurrentScope();
+  /* Call this once after the tasks panel renders to hide the
+     now-unused global subject restriction block.              */
+  function _hideGlobalSubjectWrap() {
+    const wrap = document.getElementById('taskSubjectWrap');
+    if (wrap) wrap.style.display = 'none';
+  }
 
-    if (subjects.length === 0) {
-      const hint = _taskScope === 'all'
-        ? 'No subjects found in the question bank.'
-        : 'Select a target above to see available subjects.';
-      container.innerHTML = `
-        <p style="font-size:.8125rem;color:var(--text-tertiary,#6b7280);
-                   padding:.5rem .75rem;font-style:italic;">${hint}</p>`;
-      return;
+  /* Get all available subjects for the current scope/target.
+     Unchanged from original — still used per-date.           */
+  function _getSubjectsForCurrentScope() {
+    const qBank = window.questions || {};
+    if (_taskScope === 'all') {
+      const all = new Set();
+      Object.values(qBank).forEach(classSubjects => {
+        Object.keys(classSubjects).forEach(s => all.add(s));
+      });
+      return [...all].sort();
     }
+    if (_taskScope === 'class') {
+      const sel = document.getElementById('taskTargetClass');
+      const cls = sel ? sel.value.trim() : '';
+      if (!cls) return [];
+      const classKey = cls.replace(/\s+/g, '').toLowerCase();
+      return Object.keys(qBank[classKey] || {}).sort();
+    }
+    if (_taskScope === 'student') {
+      const sel = document.getElementById('taskTargetStudent');
+      const uid = sel ? sel.value.trim() : '';
+      if (!uid) return [];
+      const student = _msgStudentCache.find(s => s.id === uid);
+      if (!student || !student.cls) return [];
+      const classKey = student.cls.replace(/\s+/g, '').toLowerCase();
+      return Object.keys(qBank[classKey] || {}).sort();
+    }
+    return [];
+  }
 
-    container.innerHTML = subjects.map(subj => `
-      <label style="display:flex;align-items:center;gap:.625rem;padding:.4375rem .75rem;
-                    cursor:pointer;border-bottom:1px solid var(--border,#e5e7eb);
-                    transition:background .1s;"
-             onmouseenter="this.style.background='var(--brand-bg,#edf2ff)'"
-             onmouseleave="this.style.background=''">
-        <input type="checkbox"
-               class="task-subject-cb"
-               value="${_esc(subj)}"
-               style="width:.9375rem;height:.9375rem;accent-color:var(--brand,#3b5bdb);
-                      flex-shrink:0;cursor:pointer;" />
-        <span style="font-size:.8125rem;color:var(--text-primary,#111827);">
-          ${_esc(subj)}
-        </span>
-      </label>`).join('');
+  /* _refreshTaskSubjectList — kept for compatibility but now
+     only hides the global wrap since subjects are per-date.  */
+  function _refreshTaskSubjectList() {
+    _hideGlobalSubjectWrap();
   }
 
   function _selectAllTaskSubjects() {
-    document.querySelectorAll('.task-subject-cb').forEach(cb => { cb.checked = true; });
+    // No-op at global level — subjects are now per-date
   }
 
   function _clearTaskSubjects() {
-    document.querySelectorAll('.task-subject-cb').forEach(cb => { cb.checked = false; });
+    // No-op at global level — subjects are now per-date
+  }
+
+  /* ── addTaskDate ──────────────────────────────────────────
+     Adds a date row with its own inline subject checklist.   */
+  function addTaskDate() {
+    const dateInput = document.getElementById('newTaskDate');
+    const container = document.getElementById('tasksDates');
+    if (!dateInput || !container) return;
+
+    const val = dateInput.value.trim();
+    if (!val) { UI.toast('Please select a date first.', 'warning'); return; }
+
+    const existing = Array.from(container.querySelectorAll('.date-val'))
+                         .map(s => s.dataset.date);
+    if (existing.includes(val)) {
+      UI.toast('This date is already in the list.', 'warning');
+      return;
+    }
+
+    _appendDateItem(val);
+    dateInput.value = '';
+  }
+
+  /* ── _appendDateItem ──────────────────────────────────────
+     Renders one date row with:
+       • the date label
+       • a remove button
+       • a collapsible subject checklist for that date only   */
+  function _appendDateItem(dateStr, preselected) {
+    const container = document.getElementById('tasksDates');
+    if (!container) return;
+
+    const subjects = _getSubjectsForCurrentScope();
+    preselected = preselected || [];
+
+    // Format the date for display
+    const parts = dateStr.split('-');
+    const displayDate = new Date(+parts[0], +parts[1] - 1, +parts[2])
+      .toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+
+    // Build subject checkboxes
+    const subjectCheckboxesHtml = subjects.length > 0
+      ? subjects.map(subj => {
+          const checked = preselected.includes(subj) ? 'checked' : '';
+          return `
+            <label style="display:flex;align-items:center;gap:.5rem;padding:.3125rem .625rem;
+                          cursor:pointer;border-bottom:1px solid var(--border,#e5e7eb);
+                          transition:background .1s;"
+                   onmouseenter="this.style.background='var(--brand-bg,#edf2ff)'"
+                   onmouseleave="this.style.background=''">
+              <input type="checkbox"
+                     class="date-subj-cb"
+                     value="${_esc(subj)}"
+                     ${checked}
+                     style="width:.875rem;height:.875rem;accent-color:var(--brand,#3b5bdb);
+                            flex-shrink:0;cursor:pointer;" />
+              <span style="font-size:.8125rem;color:var(--text-primary,#111827);">
+                ${_esc(subj)}
+              </span>
+            </label>`;
+        }).join('')
+      : `<p style="font-size:.8125rem;color:var(--text-tertiary,#6b7280);
+                   padding:.5rem .75rem;font-style:italic;">
+           No subjects available — select a target first.
+         </p>`;
+
+    const uid = 'date_' + dateStr.replace(/-/g, '');
+
+    const div = document.createElement('div');
+    div.className  = 'task-date-row';
+    div.dataset.date = dateStr;
+    div.style.cssText = `
+      border:1.5px solid var(--brand-border,#bac8ff);
+      border-radius:8px;
+      overflow:hidden;
+      margin-bottom:.5rem;
+      background:var(--surface,#fff);
+    `;
+
+    div.innerHTML = `
+      <!-- Date header row -->
+      <div style="display:flex;align-items:center;justify-content:space-between;
+                  padding:.5rem .75rem;background:var(--brand-bg,#edf2ff);cursor:pointer;"
+           onclick="this.nextElementSibling.style.display =
+                    this.nextElementSibling.style.display === 'none' ? '' : 'none'">
+        <div style="display:flex;align-items:center;gap:.5rem;">
+          <span class="date-val"
+                data-date="${_esc(dateStr)}"
+                style="font-size:.8125rem;font-weight:700;color:var(--brand-text,#3730a3);">
+            ${_esc(displayDate)}
+          </span>
+          <span class="date-subj-count"
+                style="font-size:.6875rem;font-weight:600;color:var(--text-tertiary,#6b7280);">
+            (all subjects)
+          </span>
+        </div>
+        <div style="display:flex;align-items:center;gap:.375rem;">
+          <span style="font-size:.6875rem;color:var(--brand,#3b5bdb);">▾ subjects</span>
+          <button onclick="event.stopPropagation();this.closest('.task-date-row').remove()"
+                  style="background:none;border:none;cursor:pointer;font-size:1rem;
+                         line-height:1;padding:2px 4px;color:var(--c-danger,#dc2626);">
+            ×
+          </button>
+        </div>
+      </div>
+
+      <!-- Subject checklist for this date -->
+      <div style="border-top:1px solid var(--border,#e5e7eb);">
+        <div style="display:flex;align-items:center;justify-content:space-between;
+                    padding:.375rem .75rem;background:var(--surface-muted,#f9fafb);
+                    border-bottom:1px solid var(--border,#e5e7eb);">
+          <span style="font-size:.6875rem;font-weight:600;color:var(--text-tertiary,#6b7280);">
+            Subjects for this date
+            <span style="font-weight:400;">(leave all unchecked = no restriction)</span>
+          </span>
+          <div style="display:flex;gap:.375rem;">
+            <button onclick="_selectAllDateSubjects(this)"
+                    style="font-size:.6875rem;font-weight:600;color:var(--brand,#3b5bdb);
+                           background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">
+              All
+            </button>
+            <span style="color:var(--border-medium,#d1d5db);">·</span>
+            <button onclick="_clearDateSubjects(this)"
+                    style="font-size:.6875rem;font-weight:600;color:var(--text-tertiary,#6b7280);
+                           background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">
+              None
+            </button>
+          </div>
+        </div>
+        <div class="date-subj-list"
+             style="max-height:130px;overflow-y:auto;">
+          ${subjectCheckboxesHtml}
+        </div>
+      </div>`;
+
+    container.appendChild(div);
+
+    // Wire up checkbox change → update the summary label
+    div.querySelectorAll('.date-subj-cb').forEach(cb => {
+      cb.addEventListener('change', () => _updateDateSubjCount(div));
+    });
+
+    // Set initial summary label
+    _updateDateSubjCount(div);
+  }
+
+  /* Updates the "(n subjects)" summary label on a date row */
+  function _updateDateSubjCount(rowEl) {
+    const checked = rowEl.querySelectorAll('.date-subj-cb:checked').length;
+    const label   = rowEl.querySelector('.date-subj-count');
+    if (!label) return;
+    label.textContent = checked === 0
+      ? '(all subjects)'
+      : `(${checked} subject${checked !== 1 ? 's' : ''} required)`;
+    label.style.color = checked === 0
+      ? 'var(--text-tertiary,#6b7280)'
+      : 'var(--brand,#3b5bdb)';
+  }
+
+  /* Select/clear all subjects for a single date row */
+  function _selectAllDateSubjects(btn) {
+    const row = btn.closest('.task-date-row');
+    if (!row) return;
+    row.querySelectorAll('.date-subj-cb').forEach(cb => { cb.checked = true; });
+    _updateDateSubjCount(row);
+  }
+
+  function _clearDateSubjects(btn) {
+    const row = btn.closest('.task-date-row');
+    if (!row) return;
+    row.querySelectorAll('.date-subj-cb').forEach(cb => { cb.checked = false; });
+    _updateDateSubjCount(row);
+  }
+
+window._selectAllDateSubjects = function(btn) { ... }
+window._clearDateSubjects     = function(btn) { ... }
+
+  /* ── saveTasksConfig ──────────────────────────────────────
+     Reads per-date subject selections and builds dateSubjects
+     map. Removes old flat allowedSubjects field entirely.    */
+  async function saveTasksConfig() {
+    // 1. Validate scope target first
+    const docId = _currentTaskDocId();
+    if (!docId) {
+      if (_taskScope === 'class')   { UI.toast('Please select a class.',   'warning'); return; }
+      if (_taskScope === 'student') { UI.toast('Please select a student.', 'warning'); return; }
+      UI.toast('No valid target selected.', 'warning');
+      return;
+    }
+
+    // 2. Read form values
+    const active  = !!document.getElementById('tasksActive')?.checked;
+    const title   = document.getElementById('tasksTitle')?.value.trim()   || '';
+    const message = document.getElementById('tasksMessage')?.value.trim() || '';
+
+    // 3. Read per-date subject selections
+    const dateRows = Array.from(document.querySelectorAll('.task-date-row'));
+    const dates    = dateRows.map(row => row.dataset.date).filter(Boolean);
+
+    if (!title) {
+      UI.toast('Please enter a task title.', 'warning');
+      return;
+    }
+    if (dates.length === 0) {
+      UI.toast('Please add at least one date.', 'warning');
+      return;
+    }
+
+    // Build dateSubjects map — empty array means no restriction for that date
+    const dateSubjects = {};
+    dateRows.forEach(row => {
+      const date    = row.dataset.date;
+      const checked = [...row.querySelectorAll('.date-subj-cb:checked')].map(cb => cb.value);
+      dateSubjects[date] = checked;
+    });
+
+    // 4. Build payload
+    const payload = {
+      active,
+      scope:        _taskScope,
+      title,
+      message:      message || 'Complete the required exams on the scheduled dates.',
+      dates,
+      dateSubjects,          // per-date subject map replaces flat allowedSubjects
+      updatedAt:    firebase.firestore.FieldValue.serverTimestamp(),
+    };
+
+    if (_taskScope === 'student') {
+      const sel = document.getElementById('taskTargetStudent');
+      const opt = sel && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex] : null;
+      if (opt) payload.studentName = opt.text;
+    }
+    if (_taskScope === 'class') {
+      const sel = document.getElementById('taskTargetClass');
+      if (sel) payload.className = sel.value;
+    }
+
+    // 5. Save
+    const btn = document.getElementById('saveTasksBtn');
+    UI.setLoading(btn, true);
+    try {
+      await Db().collection('coachingTasks').doc(docId).set(payload);
+      UI.toast('Task saved.', 'success');
+      _clearTaskForm();
+    } catch (err) {
+      console.error('[teacher] saveTasksConfig error:', err);
+      const detail = err && err.code ? ' (' + err.code + ')' : '';
+      UI.toast('Failed to save task' + detail + '.', 'error');
+    } finally {
+      UI.setLoading(btn, false);
+    }
   }
 
   /* ── Get checked subjects from the task form ── */
@@ -1536,111 +1804,6 @@ function _currentTaskDocId() {
     } catch (err) {
       console.error('[teacher] deleteTask error:', err);
       UI.toast('Failed to delete task.', 'error');
-    }
-  }
-
-  function addTaskDate() {
-    const dateInput = document.getElementById('newTaskDate');
-    const container = document.getElementById('tasksDates');
-    if (!dateInput || !container) return;
-
-    const val = dateInput.value.trim();
-    if (!val) { UI.toast('Please select a date first.', 'warning'); return; }
-
-    const existing = Array.from(container.querySelectorAll('span.date-val')).map(s => s.textContent);
-    if (existing.includes(val)) { UI.toast('This date is already in the list.', 'warning'); return; }
-
-    _appendDateItem(val);
-    dateInput.value = '';
-  }
-
-  function _appendDateItem(dateStr) {
-    const container = document.getElementById('tasksDates');
-    if (!container) return;
-    const div = document.createElement('div');
-    div.style.cssText = `
-      display:flex;align-items:center;justify-content:space-between;
-      background:var(--c-brand-light,#eef2ff);border:1px solid var(--c-brand-border,#c7d2fe);
-      border-radius:6px;padding:.375rem .75rem;
-    `;
-    div.innerHTML = `
-      <span class="date-val" style="font-size:.8125rem;font-weight:600;
-                                    color:var(--c-brand-text,#3730a3);">${_esc(dateStr)}</span>
-      <button onclick="this.parentElement.remove()"
-              style="background:none;border:none;cursor:pointer;font-size:.875rem;
-                     color:var(--c-danger,#dc2626);line-height:1;padding:0 2px;">
-        ×
-      </button>`;
-    container.appendChild(div);
-  }
-
-  async function saveTasksConfig() {
-    // ── 1. Validate scope target FIRST, before reading anything else ──
-    const docId = _currentTaskDocId();
-
-    if (!docId) {
-      if (_taskScope === 'class')   { UI.toast('Please select a class.',   'warning'); return; }
-      if (_taskScope === 'student') { UI.toast('Please select a student.', 'warning'); return; }
-      // Fallback — should never reach here, but prevents a null-doc crash
-      UI.toast('No valid target selected.', 'warning');
-      return;
-    }
-
-    // ── 2. Read form values ──
-    const active  = !!document.getElementById('tasksActive')?.checked;
-    const title   = document.getElementById('tasksTitle')?.value.trim()   || '';
-    const message = document.getElementById('tasksMessage')?.value.trim() || '';
-    const dates   = Array.from(document.querySelectorAll('#tasksDates span.date-val'))
-                        .map(s => s.textContent.trim());
-    const allowedSubjects = _getCheckedTaskSubjects();
-
-    // ── 3. Validate required fields (always, regardless of active state) ──
-    if (!title) {
-      UI.toast('Please enter a task title.', 'warning');
-      return;
-    }
-    if (dates.length === 0) {
-      UI.toast('Please add at least one date.', 'warning');
-      return;
-    }
-
-    // ── 4. Build payload ──
-    const payload = {
-      active,
-      scope:           _taskScope,
-      title,
-      message:         message || 'Complete the required exams on the scheduled dates.',
-      dates,
-      allowedSubjects,
-      updatedAt:       firebase.firestore.FieldValue.serverTimestamp(),
-    };
-
-    // Store human-readable target label so the existing-tasks list can show it
-    if (_taskScope === 'student') {
-      const sel = document.getElementById('taskTargetStudent');
-      const opt = sel && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex] : null;
-      if (opt) payload.studentName = opt.text;
-    }
-    if (_taskScope === 'class') {
-      const sel = document.getElementById('taskTargetClass');
-      if (sel) payload.className = sel.value;
-    }
-
-    // ── 5. Save ──
-    const btn = document.getElementById('saveTasksBtn');
-    UI.setLoading(btn, true);
-    try {
-      await Db().collection('coachingTasks').doc(docId).set(payload);
-      UI.toast('Task saved.', 'success');
-      _clearTaskForm();
-      _refreshTaskSubjectList();
-    } catch (err) {
-      console.error('[teacher] saveTasksConfig error:', err);
-      // Surface the real Firestore error code so it's visible even without DevTools
-      const detail = err && err.code ? ' (' + err.code + ')' : '';
-      UI.toast('Failed to save task' + detail + '.', 'error');
-    } finally {
-      UI.setLoading(btn, false);
     }
   }
 
@@ -1858,6 +2021,9 @@ function _currentTaskDocId() {
   /* -------------------------------------------------- */
   /* Expose                                              */
   /* -------------------------------------------------- */
+
+window._selectAllDateSubjects = _selectAllDateSubjects;
+window._clearDateSubjects     = _clearDateSubjects;
 
   window.Teacher = {
     renderTeacherDashboard,
