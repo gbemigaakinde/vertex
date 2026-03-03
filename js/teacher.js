@@ -1,13 +1,25 @@
 /* ============================================================
    js/teacher.js — Teacher dashboard (UI v2)
    ============================================================
- */
+   CHANGES:
+   - Results cards are now clickable. Clicking a result card
+     opens a fullscreen modal showing the student's exact
+     attempt: every question, their chosen answer, the correct
+     answer, and the explanation — identical to the student's
+     own post-exam review screen.
+   - Full detail is read from the `questionSnapshots` field
+     saved by exam.js at submission time. If a result was
+     submitted before this field existed (older records) the
+     modal displays a graceful "not available" message.
+   - All other logic (students, schools, tasks, messages,
+     chat, logout) is unchanged.
+   ============================================================ */
 
 (function () {
   'use strict';
 
   /* -------------------------------------------------- */
-  /* Active Firestore listeners — unchanged             */
+  /* Active Firestore listeners                         */
   /* -------------------------------------------------- */
 
   const _listeners = {};
@@ -110,7 +122,7 @@
             <div style="margin-bottom:1rem;">
               <h2 style="font-size:1rem;font-weight:700;">All Exam Results</h2>
               <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:2px;">
-                Most recent first
+                Most recent first &mdash; click any card to review the full attempt
               </p>
             </div>
             <div id="resultsList" class="grid gap-3 md:grid-cols-2 lg:grid-cols-3"></div>
@@ -125,7 +137,6 @@
               </p>
             </div>
 
-            <!-- Inline add form -->
             <div style="display:flex;gap:.625rem;margin-bottom:1.25rem;max-width:520px;">
               <input id="newSchoolName" type="text" placeholder="New school name"
                      style="flex:1;" />
@@ -159,7 +170,6 @@
                   </h3>
                 </div>
 
-                <!-- Active toggle -->
                 <label style="display:flex;align-items:center;gap:.625rem;margin-bottom:1rem;
                               cursor:pointer;padding:.625rem .75rem;border-radius:8px;
                               border:1px solid var(--c-border,#e5e7eb);background:var(--c-surface,#fff);">
@@ -171,7 +181,6 @@
                   </span>
                 </label>
 
-                <!-- Title -->
                 <div style="margin-bottom:.75rem;">
                   <label style="display:block;font-size:.75rem;font-weight:600;
                                 color:var(--c-text-2,#374151);margin-bottom:.375rem;">
@@ -181,7 +190,6 @@
                          placeholder="e.g., Weekend Challenge" />
                 </div>
 
-                <!-- Message -->
                 <div style="margin-bottom:.875rem;">
                   <label style="display:block;font-size:.75rem;font-weight:600;
                                 color:var(--c-text-2,#374151);margin-bottom:.375rem;">
@@ -192,7 +200,6 @@
                             style="height:6rem;resize:vertical;"></textarea>
                 </div>
 
-                <!-- Date picker -->
                 <div style="margin-bottom:.875rem;">
                   <label style="display:block;font-size:.75rem;font-weight:600;
                                 color:var(--c-text-2,#374151);margin-bottom:.375rem;">
@@ -208,7 +215,6 @@
                   <div id="tasksDates" class="space-y-1"></div>
                 </div>
 
-                <!-- Actions -->
                 <div style="display:flex;gap:.5rem;padding-top:.875rem;
                             border-top:1px solid var(--c-border,#e5e7eb);">
                   <button id="saveTasksBtn" onclick="Teacher.saveTasksConfig()"
@@ -234,7 +240,6 @@
                   </h3>
                 </div>
 
-                <!-- Student selector -->
                 <div style="margin-bottom:.75rem;">
                   <label style="display:block;font-size:.75rem;font-weight:600;
                                 color:var(--c-text-2,#374151);margin-bottom:.375rem;">
@@ -245,7 +250,6 @@
                   </select>
                 </div>
 
-                <!-- Message text -->
                 <div style="margin-bottom:.75rem;">
                   <label style="display:block;font-size:.75rem;font-weight:600;
                                 color:var(--c-text-2,#374151);margin-bottom:.375rem;">
@@ -256,7 +260,6 @@
                             style="height:6rem;resize:vertical;"></textarea>
                 </div>
 
-                <!-- Duration -->
                 <div style="margin-bottom:.875rem;">
                   <label style="display:block;font-size:.75rem;font-weight:600;
                                 color:var(--c-text-2,#374151);margin-bottom:.375rem;">
@@ -273,7 +276,6 @@
                   </select>
                 </div>
 
-                <!-- Send -->
                 <div style="padding-top:.875rem;border-top:1px solid var(--c-border,#e5e7eb);">
                   <button id="sendMsgBtn" onclick="Teacher.sendPrivateMessage()"
                           class="btn bg-red-600 hover:bg-red-700"
@@ -289,12 +291,65 @@
         </div><!-- /tab panels wrapper -->
       </div>`;
 
-    /* Make tasks grid single column on mobile */
     const style = document.createElement('style');
     style.id = '_teacherGridStyle';
     style.textContent = `
       @media (max-width: 768px) {
         .tasks-grid { grid-template-columns: 1fr !important; }
+      }
+      /* Result card hover — signals it is clickable */
+      .teacher-result-card {
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      }
+      .teacher-result-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,0,0,.10);
+        border-color: var(--brand-border, #bac8ff);
+      }
+      /* Attempt review modal */
+      #teacherReviewModal {
+        position: fixed;
+        inset: 0;
+        background: rgba(17,24,39,.6);
+        z-index: 1200;
+        display: flex;
+        align-items: flex-start;
+        justify-content: center;
+        padding: 1.25rem;
+        overflow-y: auto;
+        backdrop-filter: blur(3px);
+        -webkit-backdrop-filter: blur(3px);
+        animation: cbt-overlay-in 0.16s ease-out both;
+      }
+      #teacherReviewModal .review-panel {
+        background: var(--surface, #fff);
+        border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px;
+        padding: 1.5rem;
+        width: 100%;
+        max-width: 760px;
+        margin: auto;
+        box-shadow: 0 8px 32px rgba(0,0,0,.12);
+        animation: cbt-modal-in 0.24s cubic-bezier(.34,1.45,.64,1) both;
+      }
+      .review-q-card {
+        border-radius: 8px;
+        padding: 1rem;
+        border-width: 2px;
+        border-style: solid;
+      }
+      .review-q-card--correct {
+        border-color: var(--success, #2f9e44);
+        background: var(--success-bg, #ebfbee);
+      }
+      .review-q-card--wrong {
+        border-color: var(--danger, #e03131);
+        background: var(--danger-bg, #fff5f5);
+      }
+      .review-q-card--skipped {
+        border-color: var(--border-medium, #d1d5db);
+        background: var(--surface-subtle, #f9fafb);
       }
     `;
     if (!document.getElementById('_teacherGridStyle')) {
@@ -305,7 +360,7 @@
   }
 
   /* -------------------------------------------------- */
-  /* Tab switching — logic unchanged                    */
+  /* Tab switching                                       */
   /* -------------------------------------------------- */
 
   function showTab(tab) {
@@ -328,7 +383,7 @@
   }
 
   /* -------------------------------------------------- */
-  /* Students tab — logic unchanged, template redesigned*/
+  /* Students tab                                        */
   /* -------------------------------------------------- */
 
   function _loadStudents() {
@@ -384,7 +439,6 @@
                         <div style="position:relative;background:var(--c-surface,#fff);
                                     border:1px solid var(--c-border,#e5e7eb);border-radius:8px;
                                     padding:.75rem .875rem .75rem 2.25rem;">
-                          <!-- Admin toggle (star) — top-left -->
                           <button class="teacher-toggle-admin"
                                   data-uid="${_esc(s.id)}"
                                   data-name="${_esc(s.name)}"
@@ -396,8 +450,6 @@
                                          color:${s.isAdmin ? '#d97706' : '#d1d5db'};">
                             ${s.isAdmin ? '★' : '☆'}
                           </button>
-
-                          <!-- Delete (×) — top-right -->
                           <button class="teacher-delete-student"
                                   data-uid="${_esc(s.id)}"
                                   aria-label="Delete ${_esc(s.name)}"
@@ -409,7 +461,6 @@
                                   onmouseleave="this.style.color='var(--c-text-4,#9ca3af)'">
                             ×
                           </button>
-
                           <p style="font-size:.875rem;font-weight:700;color:var(--c-text,#111827);
                                     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
                                     padding-right:1rem;">${_esc(s.name)}</p>
@@ -442,7 +493,6 @@
     _reg('students', unsub);
   }
 
-  /* Event delegation — logic unchanged */
   document.addEventListener('click', async e => {
     const deleteBtn = e.target.closest('.teacher-delete-student');
     if (deleteBtn) { await removeStudent(deleteBtn.dataset.uid); return; }
@@ -510,7 +560,7 @@
   }
 
   /* -------------------------------------------------- */
-  /* Results tab — logic unchanged, template redesigned */
+  /* Results tab                                         */
   /* -------------------------------------------------- */
 
   function _loadResults() {
@@ -543,9 +593,13 @@
             const ts  = r.timestamp
               ? new Date(r.timestamp.toDate ? r.timestamp.toDate() : r.timestamp).toLocaleDateString()
               : '—';
+            const hasDetail = !!(r.questionSnapshots);
 
             return `
-              <div style="position:relative;background:var(--c-surface,#fff);
+              <div class="teacher-result-card"
+                   data-result-id="${_esc(doc.id)}"
+                   title="${hasDetail ? 'Click to review full attempt' : 'No detailed data for this attempt'}"
+                   style="position:relative;background:var(--c-surface,#fff);
                           border:1px solid var(--c-border,#e5e7eb);border-radius:10px;
                           padding:.875rem 1rem;overflow:hidden;">
 
@@ -555,7 +609,7 @@
                         aria-label="Delete result"
                         style="position:absolute;top:.5rem;right:.625rem;background:none;
                                border:none;cursor:pointer;font-size:1rem;line-height:1;
-                               padding:2px 4px;color:var(--c-text-4,#9ca3af);"
+                               padding:2px 4px;color:var(--c-text-4,#9ca3af);z-index:2;"
                         onmouseenter="this.style.color='var(--c-danger,#dc2626)'"
                         onmouseleave="this.style.color='var(--c-text-4,#9ca3af)'">
                   ×
@@ -594,7 +648,18 @@
                     </span>`).join('')}
                 </div>
 
-                <p style="font-size:.6875rem;color:var(--c-text-4,#9ca3af);">${ts}</p>
+                <div style="display:flex;align-items:center;justify-content:space-between;">
+                  <p style="font-size:.6875rem;color:var(--c-text-4,#9ca3af);">${ts}</p>
+                  ${hasDetail
+                    ? `<span style="font-size:.6875rem;font-weight:600;color:var(--brand,#3b5bdb);
+                                    background:var(--brand-bg,#edf2ff);border:1px solid var(--brand-border,#bac8ff);
+                                    border-radius:4px;padding:1px 7px;">
+                         View attempt →
+                       </span>`
+                    : `<span style="font-size:.6875rem;color:var(--c-text-4,#9ca3af);font-style:italic;">
+                         No detail available
+                       </span>`}
+                </div>
               </div>`;
           }).join('');
         },
@@ -610,10 +675,21 @@
     _reg('results', unsub);
   }
 
-  /* Event delegation for result deletion — logic unchanged */
+  /* ---- Event delegation: delete result & open drilldown ---- */
   document.addEventListener('click', async e => {
-    const btn = e.target.closest('.teacher-delete-result');
-    if (btn) await deleteResult(btn.dataset.id);
+    // Delete button — handle first; stop the click from bubbling to the card
+    const deleteBtn = e.target.closest('.teacher-delete-result');
+    if (deleteBtn) {
+      e.stopPropagation();
+      await deleteResult(deleteBtn.dataset.id);
+      return;
+    }
+
+    // Card click → open review modal
+    const card = e.target.closest('.teacher-result-card');
+    if (card && card.dataset.resultId) {
+      await _openReviewModal(card.dataset.resultId);
+    }
   });
 
   async function deleteResult(id) {
@@ -630,7 +706,247 @@
   }
 
   /* -------------------------------------------------- */
-  /* Schools tab — logic unchanged, template redesigned */
+  /* Review modal — full attempt drilldown              */
+  /* -------------------------------------------------- */
+
+  async function _openReviewModal(resultId) {
+    // Remove any existing modal
+    const existing = document.getElementById('teacherReviewModal');
+    if (existing) existing.remove();
+
+    // Show loading overlay immediately
+    const overlay = document.createElement('div');
+    overlay.id = 'teacherReviewModal';
+    overlay.innerHTML = `
+      <div class="review-panel" style="text-align:center;padding:3rem 1.5rem;">
+        <div style="font-size:.9375rem;color:var(--text-tertiary,#6b7280);">Loading attempt…</div>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    // Close on backdrop click or Escape
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) overlay.remove();
+    });
+    overlay.addEventListener('keydown', e => {
+      if (e.key === 'Escape') overlay.remove();
+    });
+
+    let r;
+    try {
+      const snap = await Db().collection('results').doc(resultId).get();
+      if (!snap.exists) {
+        overlay.querySelector('.review-panel').innerHTML = `
+          <p style="color:var(--danger,#e03131);font-size:.9375rem;">Result not found.</p>
+          <button onclick="document.getElementById('teacherReviewModal').remove()"
+                  class="btn bg-gray-500" style="margin-top:1rem;">Close</button>`;
+        return;
+      }
+      r = snap.data();
+    } catch (err) {
+      console.error('[teacher] _openReviewModal fetch error:', err);
+      overlay.querySelector('.review-panel').innerHTML = `
+        <p style="color:var(--danger,#e03131);font-size:.9375rem;">Failed to load result.</p>
+        <button onclick="document.getElementById('teacherReviewModal').remove()"
+                class="btn bg-gray-500" style="margin-top:1rem;">Close</button>`;
+      return;
+    }
+
+    const gradeColor = r.grade === 'A' ? 'var(--success,#2f9e44)'
+                     : r.grade === 'B' ? 'var(--info,#1971c2)'
+                     : r.grade === 'C' ? 'var(--warning,#e8890c)'
+                     : r.grade === 'D' ? '#ea580c'
+                     : 'var(--danger,#e03131)';
+
+    const ts = r.timestamp
+      ? new Date(r.timestamp.toDate ? r.timestamp.toDate() : r.timestamp)
+          .toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })
+      : '—';
+
+    /* ── No detail available (old record) ── */
+    if (!r.questionSnapshots) {
+      overlay.querySelector('.review-panel').innerHTML = `
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;">
+          <div>
+            <h2 style="font-size:1.125rem;font-weight:700;">${_esc(r.name || '')}</h2>
+            <p style="font-size:.8125rem;color:var(--text-tertiary,#6b7280);margin-top:2px;">
+              ${_esc(r.class || '')} · ${_esc(r.school || '')} · ${ts}
+            </p>
+          </div>
+          <button onclick="document.getElementById('teacherReviewModal').remove()"
+                  class="btn bg-gray-500" style="font-size:.8125rem;">Close</button>
+        </div>
+        <div style="padding:2rem;text-align:center;background:var(--surface-muted,#f3f4f6);
+                    border-radius:8px;border:1px solid var(--border,#e5e7eb);">
+          <p style="font-size:2rem;">📋</p>
+          <p style="font-size:.9375rem;font-weight:600;color:var(--text-primary,#111827);margin-top:.5rem;">
+            Detailed attempt data not available
+          </p>
+          <p style="font-size:.8125rem;color:var(--text-tertiary,#6b7280);margin-top:.375rem;line-height:1.6;">
+            This result was submitted before per-question tracking was introduced.<br>
+            All future attempts will include the full question-by-question breakdown.
+          </p>
+        </div>`;
+      return;
+    }
+
+    /* ── Build subject accordion blocks ── */
+    const subjectBlocks = (r.subjects || []).map(subj => {
+      const qs = r.questionSnapshots[subj] || [];
+      const correctCount = r.correctCounts?.[subj] ?? qs.filter(q => q.chosen === q.ans).length;
+      const pct          = r.scores?.[subj] ?? 0;
+
+      const questionsHtml = qs.map((q, i) => {
+        const isSkipped = q.chosen === null || q.chosen === undefined;
+        const isCorrect = !isSkipped && q.chosen === q.ans;
+        const cardClass = isCorrect  ? 'review-q-card--correct'
+                        : isSkipped  ? 'review-q-card--skipped'
+                        : 'review-q-card--wrong';
+
+        const chosenColor = isCorrect  ? 'var(--success,#2f9e44)'
+                          : isSkipped  ? 'var(--text-disabled,#9ca3af)'
+                          : 'var(--danger,#e03131)';
+
+        const chosenText = isSkipped
+          ? 'Not answered'
+          : _escQ(q.opts?.[q.chosen] ?? '—');
+
+        const correctText = _escQ(q.opts?.[q.ans] ?? '—');
+
+        return `
+          <div class="review-q-card ${cardClass}">
+            <p style="font-size:.9375rem;font-weight:600;margin-bottom:.75rem;line-height:1.6;">
+              ${i + 1}. ${_escQ(q.q)}
+            </p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;
+                        font-size:.8125rem;margin-bottom:.75rem;">
+              <div>
+                <span style="font-weight:600;color:var(--text-tertiary,#6b7280);">Student answered:</span>
+                <span style="display:block;margin-top:2px;font-weight:500;color:${chosenColor};">
+                  ${chosenText}
+                </span>
+              </div>
+              <div>
+                <span style="font-weight:600;color:var(--text-tertiary,#6b7280);">Correct answer:</span>
+                <span style="display:block;margin-top:2px;font-weight:500;color:var(--success,#2f9e44);">
+                  ${correctText}
+                </span>
+              </div>
+            </div>
+            ${q.exp ? `
+              <div style="background:var(--surface-muted,#f3f4f6);border:1px solid var(--border,#e5e7eb);
+                          border-radius:6px;padding:.5625rem .875rem;font-size:.8125rem;
+                          color:var(--text-secondary,#374151);line-height:1.6;">
+                <span style="font-weight:600;">Explanation:</span> ${_escQ(q.exp)}
+              </div>` : ''}
+          </div>`;
+      }).join('');
+
+      return `
+        <details style="border:1px solid var(--border,#e5e7eb);border-radius:10px;
+                        overflow:hidden;margin-bottom:.75rem;">
+          <summary style="padding:.875rem 1.125rem;font-size:.9375rem;font-weight:700;
+                          cursor:pointer;background:var(--surface-subtle,#f9fafb);
+                          display:flex;align-items:center;justify-content:space-between;
+                          list-style:none;user-select:none;">
+            <span>${_esc(subj)}</span>
+            <span style="font-size:.8125rem;font-weight:600;
+                         color:${pct >= 50 ? 'var(--success,#2f9e44)' : 'var(--danger,#e03131)'};">
+              ${correctCount}/${qs.length} correct · ${pct}%
+            </span>
+          </summary>
+          <div style="padding:1rem;display:flex;flex-direction:column;gap:.75rem;">
+            ${questionsHtml || '<p style="font-size:.875rem;color:var(--text-tertiary,#6b7280);">No questions found.</p>'}
+          </div>
+        </details>`;
+    }).join('');
+
+    overlay.querySelector('.review-panel').innerHTML = `
+      <!-- ── Modal header ── -->
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;
+                  gap:1rem;margin-bottom:1.25rem;padding-bottom:1rem;
+                  border-bottom:1px solid var(--border,#e5e7eb);">
+        <div>
+          <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-primary,#111827);">
+            ${_esc(r.name || '')}
+          </h2>
+          <p style="font-size:.8125rem;color:var(--text-tertiary,#6b7280);margin-top:3px;">
+            ${_esc(r.class || '')} · ${_esc(r.school || '')}
+          </p>
+          <p style="font-size:.75rem;color:var(--text-disabled,#9ca3af);margin-top:2px;">${ts}</p>
+        </div>
+        <button onclick="document.getElementById('teacherReviewModal').remove()"
+                class="btn bg-gray-500"
+                style="font-size:.8125rem;padding:.4375rem .875rem;flex-shrink:0;">
+          Close
+        </button>
+      </div>
+
+      <!-- ── Score summary bar ── -->
+      <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;
+                  background:var(--surface-subtle,#f9fafb);border:1px solid var(--border,#e5e7eb);
+                  border-radius:8px;padding:.875rem 1.125rem;margin-bottom:1.25rem;">
+        <div style="text-align:center;min-width:60px;">
+          <div style="font-size:2rem;font-weight:800;color:${gradeColor};line-height:1;">
+            ${r.percentage || 0}%
+          </div>
+          <div style="font-size:.875rem;font-weight:700;color:${gradeColor};">Grade ${_esc(r.grade || '?')}</div>
+        </div>
+        <div style="flex:1;display:flex;flex-wrap:wrap;gap:.375rem;">
+          ${(r.subjects || []).map(s => `
+            <div style="background:#fff;border:1px solid var(--border,#e5e7eb);border-radius:6px;
+                        padding:.375rem .75rem;text-align:center;min-width:80px;">
+              <div style="font-size:.75rem;color:var(--text-tertiary,#6b7280);font-weight:500;">
+                ${_esc(s)}
+              </div>
+              <div style="font-size:.9375rem;font-weight:700;color:var(--text-primary,#111827);">
+                ${r.scores?.[s] || 0}%
+              </div>
+              <div style="font-size:.6875rem;color:var(--text-disabled,#9ca3af);">
+                ${r.correctCounts?.[s] ?? '?'}/${(r.questionSnapshots?.[s] || []).length}
+              </div>
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <!-- ── Subject accordions ── -->
+      <div>
+        ${subjectBlocks || '<p style="font-size:.875rem;color:var(--text-tertiary,#6b7280);">No subjects found.</p>'}
+      </div>`;
+
+    // KaTeX re-render for the modal content
+    if (window._katexAutoRenderReady && window.renderMathInElement) {
+      requestAnimationFrame(() => {
+        try {
+          renderMathInElement(overlay, {
+            delimiters: [
+              { left: '$$', right: '$$', display: true  },
+              { left: '$',  right: '$',  display: false },
+              { left: '\\(', right: '\\)', display: false },
+              { left: '\\[', right: '\\]', display: true  }
+            ],
+            throwOnError: false
+          });
+        } catch (e) { /* non-fatal */ }
+      });
+    }
+  }
+
+  /* ── Helper: escape + preprocessLatex for question text ── */
+  function _escQ(str) {
+    if (str == null) return '';
+    // Use Exam's preprocessLatex if available; otherwise plain escape
+    const processed = (window.Exam && window.Exam.preprocessLatex)
+      ? window.Exam.preprocessLatex(str)
+      : str;
+    return String(processed)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  /* -------------------------------------------------- */
+  /* Schools tab                                         */
   /* -------------------------------------------------- */
 
   function _loadSchools() {
@@ -688,7 +1004,6 @@
     _reg('schools', unsub);
   }
 
-  /* Event delegation — logic unchanged */
   document.addEventListener('click', async e => {
     const renameBtn = e.target.closest('.teacher-rename-school');
     if (renameBtn) { await renameSchool(renameBtn.dataset.id, renameBtn.dataset.name); return; }
@@ -753,7 +1068,7 @@
   }
 
   /* -------------------------------------------------- */
-  /* Tasks & Messages tab — logic unchanged             */
+  /* Tasks & Messages tab                                */
   /* -------------------------------------------------- */
 
   function _loadTasksManager() {
@@ -923,7 +1238,7 @@
   }
 
   /* -------------------------------------------------- */
-  /* Logout — unchanged                                 */
+  /* Logout                                              */
   /* -------------------------------------------------- */
 
   async function logout() {
@@ -938,7 +1253,7 @@
   }
 
   /* -------------------------------------------------- */
-  /* Private helpers — unchanged                        */
+  /* Private helpers                                     */
   /* -------------------------------------------------- */
 
   function _esc(str) {
@@ -952,7 +1267,7 @@
   function Db() { return window.fbDb; }
 
   /* -------------------------------------------------- */
-  /* Expose — unchanged                                 */
+  /* Expose                                              */
   /* -------------------------------------------------- */
 
   window.Teacher = {
