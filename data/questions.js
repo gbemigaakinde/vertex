@@ -2115,132 +2115,731 @@ sss1: {
     }
 ],
 'Mathematics': [
-    {"q":"Solve the simultaneous equations: 2x + 5y = 16 and 3x - 5y = 6. What is the value of x?","opts":["2","3","4","5"],"ans":2,"exp":"Add the equations: 5x = 22 → x = 4.4? No. Add: 5x = 22 wrong. 2x + 5y + 3x - 5y = 16 + 6 → 5x = 22 → x = 22/5. Use integer. Correct set below."},
-    {"q":"Solve 4x + 3y = 17 and 2x + 3y = 11. What is the value of x?","opts":["1","2","3","4"],"ans":2,"exp":"Subtract the equations: (4x + 3y) - (2x + 3y) = 17 - 11 → 2x = 6 → x = 3."},
-    {"q":"If y varies directly as x and y = 15 when x = 5, find y when x = 8.","opts":["20","24","28","30"],"ans":1,"exp":"y = kx → 15 = 5k → k = 3. When x = 8, y = 3×8 = 24."},
-    {"q":"If y varies inversely as x and y = 4 when x = 12, find x when y = 6.","opts":["6","8","10","12"],"ans":1,"exp":"xy = k → 4×12 = 48 = k. When y = 6, x = 48/6 = 8."},
-    {"q":"Solve the quadratic equation x² - 5x + 6 = 0 by factorisation.","opts":["x = 1 or 2","x = 2 or 3","x = 3 or 4","x = -2 or -3"],"ans":1,"exp":"Factors of 6 summing to -5: -2 and -3. (x - 2)(x - 3) = 0 → x = 2 or 3."},
-    {"q":"The roots of x² - 8x + 15 = 0 are α and β. Find α + β and αβ.","opts":["8 and 15","15 and 8","-8 and 15","8 and -15"],"ans":0,"exp":"For x² - (sum)x + product = 0. Sum = 8, product = 15."},
-    {"q":"If p is directly proportional to q² and p = 20 when q = 2, find p when q = 5.","opts":["50","80","100","125"],"ans":3,"exp":"p = kq² → 20 = k×4 → k = 5. When q = 5, p = 5×25 = 125."},
-    {"q":"Solve the system: 5x - 2y = 11 and 3x + 2y = 13.","opts":["x=3, y=2","x=4, y=3","x=3, y=4","x=2, y=3"],"ans":0,"exp":"Add equations: 8x = 24 → x = 3. Substitute into second: 9 + 2y = 13 → 2y = 4 → y = 2."},
-    {"q":"The discriminant of 3x² + 4x - 1 = 0 is","opts":["4","16","28","40"],"ans":2,"exp":"D = b² - 4ac = 16 - 4(3)(-1) = 16 + 12 = 28."},
-    {"q":"If all mathematicians are scientists and no scientists are artists, which must be true?","opts":["All mathematicians are artists","Some mathematicians are artists","No mathematicians are artists","Some scientists are artists"],"ans":2,"exp":"Mathematicians ⊂ scientists, scientists ∩ artists = ∅ → mathematicians ∩ artists = ∅."},
-    {"q":"In triangle ABC, AB = 8 cm, BC = 6 cm, AC = 10 cm. Classify the triangle.","opts":["Acute","Right-angled","Obtuse","Equilateral"],"ans":1,"exp":"Check 6² + 8² = 36 + 64 = 100 = 10² → right-angled at B."},
-    {"q":"Find the length of the perpendicular from the centre to a chord of length 16 cm in a circle of radius 10 cm.","opts":["6 cm","8 cm","10 cm","12 cm"],"ans":0,"exp":"Half chord = 8 cm. Distance d = √(10² - 8²) = √(100 - 64) = √36 = 6 cm."},
-    {"q":"A circle has radius 7 cm. Find the length of a chord 4 cm from the centre.","opts":["2√45 cm","√96 cm","2√33 cm","14 cm"],"ans":2,"exp":"Half chord = √(49 - 16) = √33. Full chord = 2√33 cm."},
-    {"q":"Construct an angle of 60° using compass and ruler. The final step involves drawing","opts":["an arc from the vertex","a line from intersection points","an equilateral triangle","a perpendicular bisector"],"ans":2,"exp":"Standard 60° construction creates equilateral triangle to obtain 60° angle."},
-    {"q":"The sum of the roots of 2x² + 7x - 4 = 0 is","opts":["-7/2","-7/4","7/2","4"],"ans":0,"exp":"Sum of roots = -b/a = -7/2."},
-    {"q":"If y ∝ 1/x and x = 5 when y = 10, find the equation connecting x and y.","opts":["xy = 50","y = 2x","xy = 15","y = 50/x"],"ans":0,"exp":"xy = k → 5×10 = 50 = k → xy = 50."},
-    {"q":"Solve 3(x - 4) = 2(x + 6).","opts":["x = 18","x = 24","x = 30","x = 12"],"ans":0,"exp":"3x - 12 = 2x + 12 → 3x - 2x = 12 + 12 → x = 24? Wait 3x - 12 = 2x + 12 → x = 24. No: 3x - 2x = 12 + 12 → x = 24, but options. Correct x = 24 not in. Use x=18: 3(14)=42, 2(24)=48 no. 3(x-4)=2(x+6) → 3x-12=2x+12 → x=24. Change to correct integer."},
-    {"q":"Solve x² - 6x + 8 = 0.","opts":["x = 2 or 4","x = -2 or -4","x = 3 or 3","x = 1 or 8"],"ans":0,"exp":"(x - 2)(x - 4) = 0 → x = 2 or 4."},
-    {"q":"If the product of two numbers is 24 and their sum is 10, find the numbers.","opts":["4 and 6","3 and 8","2 and 12","5 and 5"],"ans":0,"exp":"x + y = 10, xy = 24 → (x,y) roots of t² - 10t + 24 = 0 → (t-4)(t-6)=0 → 4 and 6."},
-    {"q":"A line segment of length 12 cm is divided in the ratio 3:5. Find the longer part.","opts":["4.5 cm","7.5 cm","8 cm","9 cm"],"ans":1,"exp":"Total parts = 8. Longer = 5/8 × 12 = 7.5 cm."},
-    {"q":"Find the gradient of the line joining (2,3) and (5,9).","opts":["1","2","3","4"],"ans":1,"exp":"Gradient = (9-3)/(5-2) = 6/3 = 2."},
-    {"q":"The area of a triangle with base 10 cm and height 8 cm is","opts":["40 cm²","80 cm²","50 cm²","60 cm²"],"ans":0,"exp":"Area = (1/2)×base×height = (1/2)×10×8 = 40 cm²."},
-    {"q":"If log₁₀(x) = 2, then x =","opts":["20","100","200","1000"],"ans":1,"exp":"log₁₀(x) = 2 → x = 10² = 100."},
-    {"q":"Solve the inequality 2x + 5 > 13.","opts":["x > 4","x > 9","x > 6","x > 8"],"ans":0,"exp":"2x > 8 → x > 4."},
-    {"q":"The exterior angle of a regular pentagon is","opts":["60°","72°","108°","120°"],"ans":1,"exp":"Exterior angle = 360°/5 = 72°."},
-    {"q":"In a right-angled triangle, sin θ = 3/5. Find cos θ.","opts":["3/5","4/5","5/4","√34/5"],"ans":1,"exp":"By Pythagoras, adjacent = 4, hypotenuse = 5 → cos θ = 4/5."},
-    {"q":"The volume of a cube with edge 4 cm is","opts":["16 cm³","32 cm³","64 cm³","128 cm³"],"ans":2,"exp":"Volume = edge³ = 4³ = 64 cm³."},
-    {"q":"If 2ˣ = 8, find x.","opts":["1","2","3","4"],"ans":2,"exp":"2ˣ = 2³ → x = 3."},
-    {"q":"Find the midpoint of the line joining (1,4) and (5,10).","opts":["(3,7)","(2,6)","(4,8)","(3,6)"],"ans":0,"exp":"Midpoint = ((1+5)/2, (4+10)/2) = (3,7)."},
-    {"q":"The sum of angles in a quadrilateral is","opts":["180°","360°","540°","720°"],"ans":1,"exp":"Sum of interior angles in quadrilateral = 360°."},
-    {"q":"Solve 5(2x - 3) = 25.","opts":["x = 4","x = 5","x = 8","x = 10"],"ans":2,"exp":"10x - 15 = 25 → 10x = 40 → x = 4? No. 5(2x-3)=25 → 2x-3=5 → 2x=8 → x=4. Options wrong. Correct x=4 not in. Use proper."},
-    {"q":"Solve 4x - 7 = 3x + 5.","opts":["x = 12","x = 10","x = 8","x = 2"],"ans":0,"exp":"4x - 3x = 5 + 7 → x = 12."},
-    {"q":"If y varies directly as the square of x and y = 18 when x = 3, find y when x = 5.","opts":["40","50","45","60"],"ans":1,"exp":"y = kx² → 18 = k×9 → k = 2. y = 2×25 = 50 when x=5."},
-    {"q":"The perimeter of a square with side 9 cm is","opts":["18 cm","27 cm","36 cm","45 cm"],"ans":2,"exp":"Perimeter = 4×side = 36 cm."},
-    {"q":"Find the value of x if 3ˣ⁺¹ = 27.","opts":["1","2","3","4"],"ans":1,"exp":"3ˣ⁺¹ = 3³ → x+1 = 3 → x = 2."},
-    {"q":"In triangle ABC, angle B = 90°, AB = 5 cm, BC = 12 cm. Find AC.","opts":["13 cm","17 cm","10 cm","15 cm"],"ans":0,"exp":"AC = √(5² + 12²) = √(25 + 144) = √169 = 13 cm."},
-    {"q":"The area of a circle with radius 7 cm is (take π = 22/7)","opts":["154 cm²","144 cm²","121 cm²","100 cm²"],"ans":0,"exp":"Area = πr² = (22/7)×49 = 154 cm²."},
-    {"q":"Solve the equation 2x² - 8x + 6 = 0.","opts":["x = 1 or 3","x = 2 or 4","x = -1 or -3","x = 1 or 2"],"ans":0,"exp":"Divide by 2: x² - 4x + 3 = 0 → (x-1)(x-3)=0 → x=1 or 3."},
-    {"q":"If 15 men can complete a job in 8 days, how many days will 10 men take?","opts":["10 days","12 days","15 days","20 days"],"ans":1,"exp":"Total man-days = 15×8 = 120. For 10 men: days = 120/10 = 12."},
-    {"q":"The angle bisector theorem states that the bisector divides the opposite side in the ratio of the","opts":["adjacent sides","opposite sides","all sides","perimeter"],"ans":0,"exp":"Ratio of the other two sides (adjacent to the angle)."}
-],
+    {
+      q: "Which of the following is the general form of a quadratic equation?",
+      opts: ["ax + b = 0", "ax² + bx + c = 0", "ax³ + bx² + c = 0", "a/x + b = 0"],
+      ans: 1,
+      exp: "A quadratic equation has degree 2, so its general form is ax² + bx + c = 0, where a ≠ 0."
+    },
+    {
+      q: "Solve: x² − 5x + 6 = 0. What are the values of x?",
+      opts: ["x = −2 or x = −3", "x = 2 or x = 3", "x = 1 or x = 6", "x = −1 or x = −6"],
+      ans: 1,
+      exp: "Factorising: (x − 2)(x − 3) = 0 → x = 2 or x = 3."
+    },
+    {
+      q: "The product of two consecutive even integers is 48. Which quadratic equation represents this?",
+      opts: ["x² + 2x − 48 = 0", "x² − 2x + 48 = 0", "x² + 4x − 48 = 0", "x² − 4x − 48 = 0"],
+      ans: 0,
+      exp: "Let integers be x and x+2. Then x(x+2) = 48 → x² + 2x − 48 = 0."
+    },
+    {
+      q: "Using the quadratic formula, what are the roots of 2x² − 4x − 6 = 0?",
+      opts: ["x = 1 or x = −3", "x = 3 or x = −1", "x = 2 or x = −2", "x = 6 or x = −1"],
+      ans: 1,
+      exp: "Divide by 2: x² − 2x − 3 = 0. Factorise: (x−3)(x+1) = 0 → x = 3 or x = −1."
+    },
+    {
+      q: "A universal set U = {1, 2, 3, 4, 5, 6, 7, 8}. If A = {2, 4, 6, 8}, what is A′ (complement of A)?",
+      opts: ["A′ = {1, 3, 5, 7}", "A′ = {2, 4, 6, 8}", "A′ = {1, 2, 3}", "A′ = {5, 6, 7, 8}"],
+      ans: 0,
+      exp: "The complement of A contains all elements in U that are NOT in A: {1, 3, 5, 7}."
+    },
+    {
+      q: "If P = {a, b, c, d} and Q = {c, d, e, f}, find P ∩ Q.",
+      opts: ["P ∩ Q = {a, b, c, d, e, f}", "P ∩ Q = {a, b}", "P ∩ Q = {c, d}", "P ∩ Q = {e, f}"],
+      ans: 2,
+      exp: "The intersection contains elements common to both sets: {c, d}."
+    },
+    {
+      q: "Which of the following describes an empty set?",
+      opts: ["{0}", "{ }", "{null}", "{undefined}"],
+      ans: 1,
+      exp: "An empty set (also called a null set) has no elements and is written as { } or ∅."
+    },
+    {
+      q: "In a class of 40 students, 25 study French, 20 study German, and 10 study both. How many study neither?",
+      opts: ["10", "5", "15", "20"],
+      ans: 1,
+      exp: "n(F ∪ G) = 25 + 20 − 10 = 35. Students studying neither = 40 − 35 = 5."
+    },
+    {
+      q: "Which Venn diagram region represents elements in A but NOT in B?",
+      opts: ["A ∩ B", "A ∪ B", "A only (A − B)", "B′"],
+      ans: 2,
+      exp: "Elements in A but not in B are found in the region exclusive to A, written A − B or A ∩ B′."
+    },
+    {
+      q: "A circle has a radius of 7 cm. Calculate the length of an arc that subtends an angle of 90° at the centre. (π = 22/7)",
+      opts: ["11 cm", "22 cm", "44 cm", "5.5 cm"],
+      ans: 0,
+      exp: "Arc length = (θ/360) × 2πr = (90/360) × 2 × (22/7) × 7 = ¼ × 44 = 11 cm."
+    },
+    {
+      q: "Calculate the area of a sector of a circle with radius 14 cm and angle 45°. (π = 22/7)",
+      opts: ["77 cm²", "154 cm²", "44 cm²", "308 cm²"],
+      ans: 0,
+      exp: "Area of sector = (θ/360) × πr² = (45/360) × (22/7) × 196 = (1/8) × 616 = 77 cm²."
+    },
+    {
+      q: "Which of the following correctly defines a subset?",
+      opts: ["A set with more elements than the universal set", "A set whose elements are all contained in another set", "A set that has no elements", "A set with only one element"],
+      ans: 1,
+      exp: "Set A is a subset of B if every element of A is also an element of B, written A ⊆ B."
+    },
+    {
+      q: "Solve by completing the square: x² + 6x + 5 = 0.",
+      opts: ["x = −1 or x = −5", "x = 1 or x = 5", "x = −1 or x = 5", "x = 2 or x = −5"],
+      ans: 0,
+      exp: "(x+3)² − 9 + 5 = 0 → (x+3)² = 4 → x+3 = ±2 → x = −1 or x = −5."
+    },
+    {
+      q: "A ladder leans against a wall. The foot is 6 m from the wall and the ladder makes a 60° angle with the ground. How high up the wall does it reach? (tan 60° = √3 ≈ 1.732)",
+      opts: ["10.39 m", "3.46 m", "6.93 m", "12 m"],
+      ans: 0,
+      exp: "Height = 6 × tan 60° = 6 × 1.732 ≈ 10.39 m."
+    },
+    {
+      q: "Find the value of sin 30° + cos 60°.",
+      opts: ["0", "1", "√2", "2"],
+      ans: 1,
+      exp: "sin 30° = 0.5 and cos 60° = 0.5. Their sum = 1."
+    },
+    {
+      q: "Which of the following is the correct formula for the area of a triangle in terms of base and height?",
+      opts: ["A = b × h", "A = ½ × b × h", "A = 2bh", "A = b + h"],
+      ans: 1,
+      exp: "Area of a triangle = ½ × base × height."
+    },
+    {
+      q: "The statement 'If it rains, then the ground is wet' is what type of logical statement?",
+      opts: ["Negation", "Conjunction", "Conditional statement", "Disjunction"],
+      ans: 2,
+      exp: "A conditional statement (implication) has the form 'If P, then Q' where P is the antecedent and Q is the consequent."
+    },
+    {
+      q: "What is the negation of the statement 'All students passed the exam'?",
+      opts: ["No student passed the exam", "Some students passed the exam", "At least one student did not pass the exam", "All students failed the exam"],
+      ans: 2,
+      exp: "The negation of 'All P are Q' is 'At least one P is not Q' — at least one student did not pass."
+    },
+    {
+      q: "In a Venn diagram with three sets A, B, and C, which region represents elements belonging to all three sets?",
+      opts: ["A ∪ B ∪ C", "A ∩ B only", "A ∩ B ∩ C", "A′ ∩ B ∩ C"],
+      ans: 2,
+      exp: "The central overlapping region of three circles represents A ∩ B ∩ C — elements in all three sets."
+    },
+    {
+      q: "The graph of y = x² − 4x + 3 crosses the x-axis at which points?",
+      opts: ["x = 1 and x = 3", "x = −1 and x = −3", "x = 2 and x = 2", "x = 4 and x = 0"],
+      ans: 0,
+      exp: "Set y = 0: x² − 4x + 3 = 0 → (x−1)(x−3) = 0 → x = 1 and x = 3."
+    },
+    {
+      q: "A sector has an area of 38.5 cm² and a radius of 7 cm. What is the angle of the sector? (π = 22/7)",
+      opts: ["90°", "45°", "120°", "60°"],
+      ans: 0,
+      exp: "38.5 = (θ/360) × (22/7) × 49 → 38.5 = (θ/360) × 154 → θ = (38.5 × 360)/154 = 90°."
+    },
+    {
+      q: "If tan θ = 3/4, find sin θ (assuming θ is acute).",
+      opts: ["3/5", "4/5", "3/4", "5/3"],
+      ans: 0,
+      exp: "In a right triangle with opposite = 3 and adjacent = 4, hypotenuse = 5. So sin θ = 3/5."
+    },
+    {
+      q: "What is the perimeter of a sector with radius 10 cm and angle 72°? (π = 3.14)",
+      opts: ["32.56 cm", "62.8 cm", "20 cm", "12.56 cm"],
+      ans: 0,
+      exp: "Arc = (72/360) × 2 × 3.14 × 10 = 0.2 × 62.8 = 12.56. Perimeter = 12.56 + 10 + 10 = 32.56 cm."
+    },
+    {
+      q: "Which of the following is a finite set?",
+      opts: ["{x : x is a natural number}", "{x : x is an even number}", "{x : x is a month of the year}", "{x : x is a fraction}"],
+      ans: 2,
+      exp: "The months of the year are countable and fixed (12 months), making it a finite set."
+    },
+    {
+      q: "Solve: 3x² = 75.",
+      opts: ["x = ±5", "x = ±25", "x = ±15", "x = ±3"],
+      ans: 0,
+      exp: "x² = 75/3 = 25 → x = ±√25 = ±5."
+    },
+    {
+      q: "In a survey, 30 people like tea, 25 like coffee, and 10 like both. How many people like tea or coffee (using union)?",
+      opts: ["55", "65", "45", "35"],
+      ans: 2,
+      exp: "n(T ∪ C) = 30 + 25 − 10 = 45 people."
+    },
+    {
+      q: "A cosine graph y = cos x has its maximum value at which angle?",
+      opts: ["90°", "180°", "270°", "0°"],
+      ans: 3,
+      exp: "cos 0° = 1, which is the maximum value of the cosine function."
+    },
+    {
+      q: "The roots of x² + px + q = 0 are 3 and −5. What is the value of p?",
+      opts: ["p = 2", "p = −2", "p = 8", "p = −8"],
+      ans: 0,
+      exp: "Sum of roots = 3 + (−5) = −2 = −p → p = 2."
+    },
+    {
+      q: "Which of these is the antecedent in the statement: 'If x > 5, then x² > 25'?",
+      opts: ["x² > 25", "x > 5", "x > 0", "x² = 25"],
+      ans: 1,
+      exp: "In 'If P, then Q', P is the antecedent. Here P is 'x > 5'."
+    },
+    {
+      q: "A quadratic equation has roots −2 and 7. Which equation represents this?",
+      opts: ["x² − 5x − 14 = 0", "x² + 5x − 14 = 0", "x² − 5x + 14 = 0", "x² + 5x + 14 = 0"],
+      ans: 0,
+      exp: "Sum of roots = 5, product = −14. Equation: x² − (sum)x + product = x² − 5x − 14 = 0."
+    },
+    {
+      q: "The sine of an angle in a right-angled triangle is defined as:",
+      opts: ["Adjacent / Hypotenuse", "Opposite / Adjacent", "Hypotenuse / Opposite", "Opposite / Hypotenuse"],
+      ans: 3,
+      exp: "sin θ = Opposite / Hypotenuse — one of the basic SOHCAHTOA definitions."
+    },
+    {
+      q: "If U = {1,2,3,4,5,6,7,8,9,10}, A = {1,3,5,7,9} and B = {2,4,6,8,10}, find A ∪ B.",
+      opts: ["{}", "{1,2,3,4,5,6,7,8,9,10}", "{1,3,5}", "{2,4,6,8}"],
+      ans: 1,
+      exp: "A ∪ B includes all elements from both sets = {1,2,3,4,5,6,7,8,9,10} = U."
+    },
+    {
+      q: "Which value of x satisfies 2x² − 8 = 0?",
+      opts: ["x = ±4", "x = ±2", "x = ±8", "x = ±1"],
+      ans: 1,
+      exp: "2x² = 8 → x² = 4 → x = ±2."
+    },
+    {
+      q: "A graph of y = sin x completes one full cycle between:",
+      opts: ["0° and 90°", "0° and 180°", "0° and 270°", "0° and 360°"],
+      ans: 3,
+      exp: "The sine function has a period of 360°, completing one full cycle from 0° to 360°."
+    },
+    {
+      q: "In logic, the statement 'P and Q' is called a:",
+      opts: ["Disjunction", "Negation", "Conditional", "Conjunction"],
+      ans: 3,
+      exp: "'P and Q' (P ∧ Q) is a conjunction — it is true only when both P and Q are true."
+    },
+    {
+      q: "What is the discriminant of 3x² − 5x + 2 = 0, and what does it indicate?",
+      opts: ["1; two equal real roots", "1; two distinct real roots", "−1; no real roots", "25; two irrational roots"],
+      ans: 1,
+      exp: "Discriminant = b² − 4ac = 25 − 24 = 1. Since 1 > 0, there are two distinct real roots."
+    },
+    {
+      q: "A chord divides a circle into two parts. The smaller part is called the:",
+      opts: ["Sector", "Arc", "Minor segment", "Diameter"],
+      ans: 2,
+      exp: "A chord divides a circle into a minor segment (smaller) and a major segment (larger)."
+    },
+    {
+      q: "Using a trigonometric table or calculator, what is sin 45° correct to 4 decimal places?",
+      opts: ["0.7071", "0.8660", "0.5000", "0.9659"],
+      ans: 0,
+      exp: "sin 45° = 1/√2 ≈ 0.7071."
+    },
+    {
+      q: "What is the exact value of cos 30°?",
+      opts: ["1/2", "√3/2", "√2/2", "√3/3"],
+      ans: 1,
+      exp: "cos 30° = √3/2 ≈ 0.8660."
+    },
+    {
+      q: "A rectangle's length exceeds its width by 4 cm and its area is 21 cm². Which quadratic equation represents this situation?",
+      opts: ["x² + 4x − 21 = 0", "x² − 4x + 21 = 0", "x² − 4x − 21 = 0", "x² + 4x + 21 = 0"],
+      ans: 0,
+      exp: "Let width = x. Length = x + 4. Area: x(x + 4) = 21 → x² + 4x − 21 = 0."
+    }
+  ],
 'Chemistry': [
-    {"q":"According to Boyle's Law, if the temperature is constant, the volume of a fixed mass of gas is","opts":["directly proportional to pressure","inversely proportional to pressure","directly proportional to the square of pressure","independent of pressure"],"ans":1,"exp":"Boyle's Law states that P × V = constant (or V ∝ 1/P) at constant temperature."},
-    {"q":"A gas occupies 300 cm³ at a pressure of 760 mmHg. What will be its volume if the pressure is increased to 1520 mmHg at constant temperature?","opts":["150 cm³","600 cm³","300 cm³","760 cm³"],"ans":0,"exp":"Using Boyle's Law: P₁V₁ = P₂V₂ → 760 × 300 = 1520 × V₂ → V₂ = (760 × 300)/1520 = 150 cm³."},
-    {"q":"Charles' Law states that at constant pressure, the volume of a fixed mass of gas is","opts":["inversely proportional to temperature","directly proportional to absolute temperature","directly proportional to pressure","independent of temperature"],"ans":1,"exp":"V ∝ T (where T is in Kelvin) at constant pressure."},
-    {"q":"A gas has a volume of 500 cm³ at 27°C. What will be its volume at 127°C if pressure remains constant?","opts":["625 cm³","700 cm³","400 cm³","500 cm³"],"ans":0,"exp":"T₁ = 300 K, T₂ = 400 K. V₂ = V₁ × (T₂/T₁) = 500 × (400/300) = 500 × 4/3 ≈ 666.7 cm³? Wait—exact 2000/3 ≈ 666.7, but options. Use better numbers."},
-    {"q":"A gas occupies 200 cm³ at 0°C. At what temperature in °C will it occupy 300 cm³ at constant pressure?","opts":["136.5°C","150°C","409.5°C","273°C"],"ans":0,"exp":"T₁ = 273 K, V₂/V₁ = 300/200 = 1.5. T₂ = 273 × 1.5 = 409.5 K → 409.5 - 273 = 136.5°C."},
-    {"q":"Gay-Lussac's Law relates pressure of a gas to its","opts":["volume","mass","absolute temperature","density"],"ans":2,"exp":"At constant volume, P ∝ T (absolute temperature)."},
-    {"q":"The pressure of a gas is 2 atm at 27°C. What will the pressure be at 127°C if volume is constant?","opts":["2.67 atm","3 atm","1.5 atm","4 atm"],"ans":0,"exp":"T₁ = 300 K, T₂ = 400 K. P₂ = P₁ × (T₂/T₁) = 2 × (400/300) = 2 × 4/3 ≈ 2.67 atm."},
-    {"q":"Avogadro's Law states that equal volumes of all gases at the same temperature and pressure contain","opts":["equal masses","equal densities","equal number of molecules","equal pressure"],"ans":2,"exp":"Equal volumes contain equal number of molecules (or moles) under same T and P."},
-    {"q":"At STP, 1 mole of any gas occupies","opts":["11.2 dm³","22.4 dm³","44.8 dm³","1 dm³"],"ans":1,"exp":"Molar volume at STP (0°C, 1 atm) is 22.4 dm³."},
-    {"q":"How many moles are in 11.2 dm³ of oxygen gas at STP?","opts":["0.25 mole","0.5 mole","1 mole","2 moles"],"ans":1,"exp":"Moles = volume / 22.4 dm³ = 11.2 / 22.4 = 0.5 mole."},
-    {"q":"A gas occupies 400 cm³ at 27°C and 760 mmHg. What volume will it occupy at STP (0°C, 760 mmHg)?","opts":["300 cm³","366 cm³","400 cm³","434 cm³"],"ans":1,"exp":"Using Charles' Law (P constant): V₂ = V₁ × (273/300) = 400 × 0.91 = 364 cm³ ≈ 366 cm³ (common approximation)."},
-    {"q":"Using the combined gas law, if a gas changes from 2 atm, 300 cm³, 27°C to 1 atm, 127°C, what is the new volume?","opts":["600 cm³","800 cm³","900 cm³","1200 cm³"],"ans":2,"exp":"P₁V₁/T₁ = P₂V₂/T₂ → V₂ = (P₁V₁ T₂)/(P₂ T₁) = (2 × 300 × 400)/(1 × 300) = 800 cm³? Wait—400/300 × 600 = 800, but 900? Recalc: 2×300×400 / (1×300) = 240000/300 = 800 cm³. Use 900 for different."},
-    {"q":"The kinetic theory of matter assumes that gas particles","opts":["have significant volume","attract each other strongly","move in random motion","are stationary"],"ans":2,"exp":"Particles are in constant random motion."},
-    {"q":"According to kinetic theory, the pressure of a gas is due to","opts":["gravitational force on particles","collisions of particles with container walls","attraction between particles","volume of particles"],"ans":1,"exp":"Pressure arises from bombardment of walls by moving particles."},
-    {"q":"Which separation technique is best for separating an insoluble solid from a liquid?","opts":["Filtration","Distillation","Chromatography","Evaporation"],"ans":0,"exp":"Filtration separates insoluble solids (residue) from liquid (filtrate)."},
-    {"q":"To obtain pure water from sea water, the most suitable method is","opts":["Filtration","Decantation","Distillation","Sublimation"],"ans":2,"exp":"Distillation separates soluble salts by evaporating water and condensing it."},
-    {"q":"Chromatography is used to separate","opts":["mixtures of liquids with different boiling points","coloured substances in a mixture","insoluble solids","gases only"],"ans":1,"exp":"Paper chromatography separates dyes or pigments based on solubility and adsorption."},
-    {"q":"Sublimation is used to separate","opts":["iodine from sand","salt from water","alcohol from water","oil from water"],"ans":0,"exp":"Iodine sublimes (solid to gas) leaving sand behind."},
-    {"q":"Which method separates a mixture of ethanol (b.p. 78°C) and water (b.p. 100°C)?","opts":["Fractional distillation","Simple distillation","Filtration","Evaporation"],"ans":0,"exp":"Fractional distillation separates liquids with close but different boiling points."},
-    {"q":"Decantation is commonly used after","opts":["sedimentation","distillation","chromatography","sublimation"],"ans":0,"exp":"Allowing heavier particles to settle, then pouring off the clear liquid."},
-    {"q":"An acid turns blue litmus paper","opts":["red","colourless","green","remains blue"],"ans":0,"exp":"Acids turn blue litmus red."},
-    {"q":"A base turns red litmus paper","opts":["blue","red","colourless","remains red"],"ans":0,"exp":"Bases turn red litmus blue."},
-    {"q":"The pH of a neutral solution is","opts":["0","7","14","1"],"ans":1,"exp":"pH = 7 for neutral solutions like pure water."},
-    {"q":"Which is a property of acids?","opts":["Feel slippery","Taste bitter","React with metals to produce hydrogen","Turn red litmus blue"],"ans":2,"exp":"Acids react with active metals to liberate H₂ gas."},
-    {"q":"Common salt (NaCl) is formed by neutralisation of","opts":["HCl and NaOH","H₂SO₄ and NaOH","HNO₃ and KOH","HCl and KOH"],"ans":0,"exp":"HCl (acid) + NaOH (base) → NaCl + H₂O."},
-    {"q":"Which salt is produced when sulfuric acid reacts with sodium hydroxide?","opts":["Sodium sulfate","Sodium chloride","Sodium nitrate","Sodium carbonate"],"ans":0,"exp":"H₂SO₄ + 2NaOH → Na₂SO₄ + 2H₂O."},
-    {"q":"Water is described as a universal solvent because it","opts":["dissolves all substances","dissolves many substances","is colourless","has high boiling point"],"ans":1,"exp":"Water dissolves a wide variety of ionic and polar substances."},
-    {"q":"Hard water contains dissolved salts of","opts":["calcium and magnesium","sodium and potassium","iron only","chlorine"],"ans":0,"exp":"Mainly Ca²⁺ and Mg²⁺ bicarbonates, sulfates or chlorides."},
-    {"q":"Temporary hardness in water is caused by","opts":["calcium chloride","magnesium sulfate","calcium bicarbonate","sodium chloride"],"ans":2,"exp":"Bicarbonates decompose on boiling to remove hardness."},
-    {"q":"Water of crystallisation is found in","opts":["anhydrous salts","hydrated salts","pure water","distilled water"],"ans":1,"exp":"Hydrated salts like CuSO₄·5H₂O contain fixed water molecules."},
-    {"q":"One major use of water in industry is","opts":["as a coolant","as a fuel","for photosynthesis","for drinking only"],"ans":0,"exp":"Water absorbs heat effectively and is used for cooling."},
-    {"q":"The process by which plants lose water vapour is called","opts":["transpiration","evaporation","condensation","osmosis"],"ans":0,"exp":"Transpiration is loss of water from leaves."},
-    {"q":"Pure water boils at","opts":["90°C","100°C","120°C","0°C"],"ans":1,"exp":"Standard boiling point of pure water is 100°C at 1 atm."},
-    {"q":"When water freezes, its volume","opts":["decreases","increases","remains the same","becomes zero"],"ans":1,"exp":"Ice is less dense than liquid water; volume increases (anomalous expansion)."},
-    {"q":"The chemical formula for heavy water is","opts":["H₂O","D₂O","T₂O","H₂O₂"],"ans":1,"exp":"Heavy water contains deuterium (D) instead of hydrogen."},
-    {"q":"Water has a high specific heat capacity, which means it","opts":["boils easily","freezes quickly","absorbs a lot of heat with little temperature change","conducts heat poorly"],"ans":2,"exp":"High specific heat helps in temperature regulation."},
-    {"q":"Deliquescent substances","opts":["absorb moisture and become wet","lose water on heating","sublime easily","are insoluble in water"],"ans":0,"exp":"Example: NaOH absorbs water from air and forms solution."},
-    {"q":"Efflorescent substances","opts":["gain water from air","lose water of crystallisation to air","absorb heat","release heat"],"ans":1,"exp":"Example: Na₂CO₃·10H₂O loses water and becomes powdery."},
-    {"q":"Hygroscopic substances","opts":["absorb moisture but do not form solution","dissolve completely in water","release water","are always liquids"],"ans":0,"exp":"Example: conc. H₂SO₄ absorbs moisture without dissolving."},
-    {"q":"The main gas responsible for acid rain when dissolved in water is","opts":["carbon dioxide","sulfur dioxide","oxygen","nitrogen"],"ans":1,"exp":"SO₂ forms sulfurous/sulfuric acid; NOₓ also contributes but SO₂ primary."}
-],
+    {
+      q: "The mole is defined as the amount of substance containing as many elementary entities as atoms in exactly:",
+      opts: ["12 g of carbon-14", "12 g of carbon-12", "1 g of hydrogen", "6 g of carbon-12"],
+      ans: 1,
+      exp: "One mole = 6.02 × 10²³ particles, defined by the number of atoms in exactly 12 g of carbon-12."
+    },
+    {
+      q: "Which of the following correctly states the Law of Conservation of Mass?",
+      opts: ["Mass is created during chemical reactions", "The total mass of reactants equals the total mass of products", "Mass is destroyed during exothermic reactions", "Products always have greater mass than reactants"],
+      ans: 1,
+      exp: "The Law of Conservation of Mass states that mass is neither created nor destroyed in a chemical reaction."
+    },
+    {
+      q: "How many moles are present in 44 g of CO₂? (C = 12, O = 16)",
+      opts: ["2 moles", "0.5 moles", "1 mole", "4 moles"],
+      ans: 2,
+      exp: "Molar mass of CO₂ = 12 + 32 = 44 g/mol. Moles = 44/44 = 1 mole."
+    },
+    {
+      q: "Balance the equation: H₂ + O₂ → H₂O. What are the correct coefficients?",
+      opts: ["1, 1, 1", "2, 1, 2", "1, 2, 2", "2, 2, 2"],
+      ans: 1,
+      exp: "2H₂ + O₂ → 2H₂O balances both hydrogen (4 atoms each side) and oxygen (2 atoms each side)."
+    },
+    {
+      q: "In a covalent bond, atoms achieve stability by:",
+      opts: ["Transferring electrons", "Sharing electrons", "Gaining protons", "Losing neutrons"],
+      ans: 1,
+      exp: "Covalent bonds form when two atoms share electrons to achieve a stable electronic configuration."
+    },
+    {
+      q: "An ionic bond is formed between atoms by:",
+      opts: ["Sharing of electron pairs", "Transfer of electrons from metal to non-metal", "Transfer of protons", "Sharing of neutrons"],
+      ans: 1,
+      exp: "Ionic bonds form when a metal transfers one or more electrons to a non-metal, creating oppositely charged ions."
+    },
+    {
+      q: "Which gas law states that at constant temperature, the volume of a gas is inversely proportional to its pressure?",
+      opts: ["Charles's Law", "Avogadro's Law", "Boyle's Law", "Gay-Lussac's Law"],
+      ans: 2,
+      exp: "Boyle's Law: PV = constant (at constant temperature). As pressure increases, volume decreases."
+    },
+    {
+      q: "Using Avogadro's number (6.02 × 10²³), how many molecules are present in 2 moles of water?",
+      opts: ["6.02 × 10²³", "3.01 × 10²³", "1.204 × 10²⁴", "12.04 × 10²³"],
+      ans: 2,
+      exp: "2 × 6.02 × 10²³ = 1.204 × 10²⁴ molecules."
+    },
+    {
+      q: "What does oxidation mean in terms of electron transfer?",
+      opts: ["Gain of electrons", "Loss of electrons", "Gain of protons", "Loss of protons"],
+      ans: 1,
+      exp: "Oxidation is the LOSS of electrons. Remember OIL RIG: Oxidation Is Loss, Reduction Is Gain."
+    },
+    {
+      q: "According to Charles's Law, if the temperature of a gas doubles (in Kelvin) at constant pressure, the volume:",
+      opts: ["Remains constant", "Doubles", "Halves", "Quadruples"],
+      ans: 1,
+      exp: "Charles's Law: V ∝ T (constant pressure). If T doubles, V doubles."
+    },
+    {
+      q: "Which of the following is an example of a physical change explained by the kinetic theory?",
+      opts: ["Burning of wood", "Rusting of iron", "Evaporation of water", "Fermentation of sugar"],
+      ans: 2,
+      exp: "Evaporation is a physical change explained by kinetic theory — molecules gain energy and escape as gas."
+    },
+    {
+      q: "What is the molar mass of NaCl? (Na = 23, Cl = 35.5)",
+      opts: ["58 g/mol", "58.5 g/mol", "57 g/mol", "59 g/mol"],
+      ans: 1,
+      exp: "Molar mass of NaCl = 23 + 35.5 = 58.5 g/mol."
+    },
+    {
+      q: "What is the reducing agent in the reaction: Zn + CuSO₄ → ZnSO₄ + Cu?",
+      opts: ["CuSO₄", "ZnSO₄", "Cu", "Zn"],
+      ans: 3,
+      exp: "Zn loses electrons (is oxidised), so Zn is the reducing agent. A reducing agent is itself oxidised."
+    },
+    {
+      q: "The kinetic theory of gases assumes that gas molecules have:",
+      opts: ["Negligible volume and no intermolecular forces", "Large volume and strong forces", "Fixed positions in space", "Constant speed and direction"],
+      ans: 0,
+      exp: "Ideal gas molecules are assumed to have negligible volume and no intermolecular attractive forces."
+    },
+    {
+      q: "In the reaction 2H₂ + O₂ → 2H₂O, if 4 g of H₂ reacts, what mass of water is produced? (H=1, O=16)",
+      opts: ["18 g", "36 g", "9 g", "16 g"],
+      ans: 1,
+      exp: "4 g H₂ = 2 moles. From equation, 2 mol H₂ gives 2 mol H₂O = 2 × 18 = 36 g."
+    },
+    {
+      q: "Which of the following is NOT a postulate of the kinetic theory?",
+      opts: ["Gas molecules are in constant random motion", "Collisions between gas molecules are perfectly elastic", "Gas molecules exert strong attractive forces on each other", "The average kinetic energy is proportional to absolute temperature"],
+      ans: 2,
+      exp: "The kinetic theory assumes ideal gas molecules have negligible intermolecular forces, not strong ones."
+    },
+    {
+      q: "What type of bonding is present in a hydrogen molecule (H₂)?",
+      opts: ["Ionic bond", "Metallic bond", "Non-polar covalent bond", "Polar covalent bond"],
+      ans: 2,
+      exp: "H₂ is formed by two identical atoms sharing electrons equally — a non-polar covalent bond."
+    },
+    {
+      q: "Gay-Lussac's Law states that at constant volume, the pressure of a gas is:",
+      opts: ["Inversely proportional to temperature", "Directly proportional to temperature (in Kelvin)", "Independent of temperature", "Inversely proportional to the number of moles"],
+      ans: 1,
+      exp: "Gay-Lussac's Law: P/T = constant (at constant volume). Pressure increases as temperature increases."
+    },
+    {
+      q: "What is the mass of 3 moles of CaCO₃? (Ca=40, C=12, O=16)",
+      opts: ["200 g", "300 g", "100 g", "150 g"],
+      ans: 1,
+      exp: "Molar mass of CaCO₃ = 40 + 12 + 48 = 100 g/mol. 3 moles = 3 × 100 = 300 g."
+    },
+    {
+      q: "Which of the following correctly describes the Law of Definite Proportions?",
+      opts: ["Gases react in variable volume ratios", "A pure compound always contains elements in the same proportion by mass", "Mixtures have definite melting points", "Elements combine in multiple mass ratios"],
+      ans: 1,
+      exp: "Law of Definite Proportions: any sample of a pure compound contains the same elements in the same mass ratio."
+    },
+    {
+      q: "At STP, one mole of any ideal gas occupies:",
+      opts: ["22.4 L", "2.24 L", "224 L", "11.2 L"],
+      ans: 0,
+      exp: "At STP (0°C, 1 atm), 1 mole of an ideal gas occupies 22.4 litres."
+    },
+    {
+      q: "In the reaction Fe₂O₃ + 3CO → 2Fe + 3CO₂, which substance is reduced?",
+      opts: ["CO", "CO₂", "Fe", "Fe₂O₃"],
+      ans: 3,
+      exp: "Fe₂O₃ is reduced because Fe³⁺ gains electrons to become Fe (neutral). Fe₂O₃ is the oxidising agent."
+    },
+    {
+      q: "Which of the following elements forms an ionic bond with chlorine?",
+      opts: ["Carbon", "Nitrogen", "Sodium", "Oxygen"],
+      ans: 2,
+      exp: "Sodium (a metal) transfers an electron to chlorine (a non-metal), forming NaCl — an ionic compound."
+    },
+    {
+      q: "Which theory explains why gases are highly compressible?",
+      opts: ["Law of conservation of mass", "Boyle's Law", "Kinetic theory of gases", "Avogadro's Law"],
+      ans: 2,
+      exp: "The kinetic theory explains compressibility because gas molecules have large empty spaces between them."
+    },
+    {
+      q: "What is the mole ratio of H₂ to NH₃ in the equation: N₂ + 3H₂ → 2NH₃?",
+      opts: ["1:2", "3:2", "2:3", "1:1"],
+      ans: 1,
+      exp: "From the balanced equation: 3 moles H₂ produces 2 moles NH₃. Ratio H₂:NH₃ = 3:2."
+    },
+    {
+      q: "Dalton's Law of Multiple Proportions states that:",
+      opts: ["Elements combine in fixed ratios", "When two elements form more than one compound, masses of one combining with a fixed mass of the other are in simple whole-number ratios", "Gases occupy equal volumes at equal temperatures", "Atoms cannot be created or destroyed"],
+      ans: 1,
+      exp: "Dalton's Law of Multiple Proportions explains why C and O can form CO or CO₂ with mass ratios of 1:2."
+    },
+    {
+      q: "Which of the following describes a coordinate (dative) covalent bond?",
+      opts: ["Both atoms contribute one electron each", "One atom provides both electrons for the shared pair", "An electron is transferred from one atom to another", "Electrons are delocalised across the molecule"],
+      ans: 1,
+      exp: "In a coordinate (dative) bond, one atom (donor) provides both electrons of the shared pair, e.g., in NH₄⁺ formation."
+    },
+    {
+      q: "How many atoms are present in 1 mole of iron (Fe)?",
+      opts: ["1", "6.02 × 10²²", "6.02 × 10²³", "6.02 × 10²⁴"],
+      ans: 2,
+      exp: "1 mole of any substance contains 6.02 × 10²³ (Avogadro's number) of atoms."
+    },
+    {
+      q: "The combined gas law is expressed as:",
+      opts: ["PV = nRT", "P₁V₁/T₁ = P₂V₂/T₂", "V₁/T₁ = V₂/T₂", "P₁/T₁ = P₂/T₂"],
+      ans: 1,
+      exp: "The combined gas law merges Boyle's and Charles's laws: P₁V₁/T₁ = P₂V₂/T₂."
+    },
+    {
+      q: "In chemical equations, the state symbol (g) after a formula indicates the substance is:",
+      opts: ["A solid", "A liquid", "An aqueous solution", "A gas"],
+      ans: 3,
+      exp: "State symbols: (s) = solid, (l) = liquid, (aq) = aqueous solution, (g) = gas."
+    },
+    {
+      q: "What mass of oxygen is needed to completely burn 4 g of hydrogen? (H=1, O=16)",
+      opts: ["16 g", "32 g", "8 g", "64 g"],
+      ans: 1,
+      exp: "2H₂ + O₂ → 2H₂O. 4g H₂ = 2 mol. From equation, 2 mol H₂ needs 1 mol O₂ = 32 g."
+    },
+    {
+      q: "Which statement best describes metallic bonding?",
+      opts: ["Metal atoms transfer electrons to non-metal atoms", "Metal atoms share electrons only with adjacent atoms", "Metal cations are surrounded by a sea of delocalised electrons", "Metal atoms form discrete molecules"],
+      ans: 2,
+      exp: "In metallic bonding, positive metal ions (cations) are held together by freely moving delocalised electrons."
+    },
+    {
+      q: "Which gas law would you apply to find the new volume of a gas when only pressure changes at constant temperature?",
+      opts: ["Charles's Law", "Avogadro's Law", "Gay-Lussac's Law", "Boyle's Law"],
+      ans: 3,
+      exp: "Boyle's Law applies when temperature is constant: P₁V₁ = P₂V₂."
+    },
+    {
+      q: "If 10 g of CaCO₃ is heated: CaCO₃ → CaO + CO₂, what mass of CO₂ is produced? (Ca=40, C=12, O=16)",
+      opts: ["4.4 g", "5.6 g", "2.2 g", "8.8 g"],
+      ans: 0,
+      exp: "Molar mass CaCO₃ = 100 g/mol. 10 g = 0.1 mol → 0.1 mol CO₂ = 0.1 × 44 = 4.4 g."
+    },
+    {
+      q: "What is the oxidation state of manganese in KMnO₄? (K = +1, O = −2)",
+      opts: ["+5", "+6", "+7", "+4"],
+      ans: 2,
+      exp: "+1 + Mn + 4(−2) = 0 → Mn − 7 = 0 → Mn = +7."
+    },
+    {
+      q: "Which of the following pairs forms a polar covalent bond?",
+      opts: ["H₂", "Cl₂", "N₂", "HCl"],
+      ans: 3,
+      exp: "HCl is polar covalent because H and Cl have different electronegativities, creating an unequal electron distribution."
+    },
+    {
+      q: "In the ideal gas equation PV = nRT, what does 'n' represent?",
+      opts: ["Number of molecules", "Number of atoms", "Number of moles", "Number of protons"],
+      ans: 2,
+      exp: "In PV = nRT, n is the number of moles of gas. R is the universal gas constant."
+    },
+    {
+      q: "Reduction is best defined as:",
+      opts: ["Loss of hydrogen", "Gain of oxygen", "Gain of electrons or loss of oxygen", "Increase in oxidation state"],
+      ans: 2,
+      exp: "Reduction involves gain of electrons (or loss of oxygen, or gain of hydrogen). OIL RIG — Reduction Is Gain."
+    },
+    {
+      q: "Which of these is an example of a law of chemical combination?",
+      opts: ["Newton's first law", "Ohm's law", "Avogadro's Law of combining volumes", "Hooke's law"],
+      ans: 2,
+      exp: "Avogadro's Law of combining volumes is a law of chemical combination: gases combine in simple volume ratios."
+    },
+    {
+      q: "A gas occupies 500 cm³ at 27°C. Using Charles's Law, what volume does it occupy at 127°C at constant pressure?",
+      opts: ["666.7 cm³", "250 cm³", "1000 cm³", "375 cm³"],
+      ans: 0,
+      exp: "T₁ = 300 K, T₂ = 400 K. V₂ = V₁ × T₂/T₁ = 500 × 400/300 ≈ 666.7 cm³."
+    }
+  ],
 'Physics': [
-    {"q":"Work is defined as the product of force and","opts":["distance moved in the direction of the force","total distance moved","time taken","mass of the object"],"ans":0,"exp":"Work done = force × displacement in the direction of force (W = F × d × cosθ, where θ=0 for parallel)."},
-    {"q":"The SI unit of work is","opts":["newton","joule","watt","pascal"],"ans":1,"exp":"1 joule (J) = 1 newton-metre (N·m)."},
-    {"q":"A force of 50 N displaces an object by 4 m in the direction of the force. The work done is","opts":["100 J","200 J","250 J","300 J"],"ans":1,"exp":"Work = F × d = 50 × 4 = 200 J."},
-    {"q":"Kinetic energy is the energy possessed by a body due to its","opts":["position","motion","shape","temperature"],"ans":1,"exp":"Kinetic energy depends on mass and velocity (KE = ½mv²)."},
-    {"q":"Potential energy is the energy possessed by a body due to its","opts":["motion","position or condition","temperature","electric charge"],"ans":1,"exp":"Gravitational PE = mgh; elastic PE also due to condition."},
-    {"q":"The law of conservation of energy states that energy","opts":["can be created","can be destroyed","can neither be created nor destroyed","is always decreasing"],"ans":2,"exp":"Energy can only be converted from one form to another; total energy remains constant."},
-    {"q":"A stone of mass 2 kg is raised to a height of 10 m. If g = 10 m/s², its gravitational potential energy is","opts":["100 J","200 J","300 J","400 J"],"ans":1,"exp":"PE = mgh = 2 × 10 × 10 = 200 J."},
-    {"q":"Power is defined as the rate of doing","opts":["force","work","acceleration","displacement"],"ans":1,"exp":"Power = work done / time taken."},
-    {"q":"The SI unit of power is","opts":["joule","newton","watt","kilowatt-hour"],"ans":2,"exp":"1 watt (W) = 1 joule per second (J/s)."},
-    {"q":"A machine does 500 J of work in 20 seconds. Its power is","opts":["10 W","20 W","25 W","100 W"],"ans":2,"exp":"Power = 500 / 20 = 25 W."},
-    {"q":"Heat is a form of","opts":["energy","temperature","force","power"],"ans":0,"exp":"Heat is energy transferred due to temperature difference."},
-    {"q":"Temperature is a measure of the","opts":["total heat energy in a body","average kinetic energy of particles","amount of hotness or coldness","mass of the body"],"ans":1,"exp":"Temperature indicates the degree of hotness, related to average KE of molecules."},
-    {"q":"The fixed points on the Celsius scale are","opts":["0°C and 212°C","32°F and 212°F","0°C and 100°C","-273°C and 373°C"],"ans":2,"exp":"Ice point 0°C, steam point 100°C."},
-    {"q":"The clinical thermometer is used to measure","opts":["room temperature","body temperature","boiling point of water","very low temperatures"],"ans":1,"exp":"Clinical thermometer has range around 35°C to 42°C for human body."},
-    {"q":"The lower fixed point on the Kelvin scale is","opts":["0 K","273 K","100 K","373 K"],"ans":0,"exp":"Absolute zero is 0 K."},
-    {"q":"To convert Celsius to Kelvin, we","opts":["subtract 273","add 273","multiply by 273","divide by 273"],"ans":1,"exp":"K = °C + 273."},
-    {"q":"A laboratory thermometer typically has a range from","opts":["-10°C to 110°C","0°C to 100°C","35°C to 42°C","-200°C to 500°C"],"ans":0,"exp":"Common lab thermometers cover -10°C to 110°C."},
-    {"q":"Heat flows from a body at","opts":["lower temperature to higher temperature","higher temperature to lower temperature","same temperature","no flow"],"ans":1,"exp":"Heat always flows from hotter to colder body."},
-    {"q":"Thermal expansion is greatest in","opts":["solids","liquids","gases","all the same"],"ans":2,"exp":"Gases expand much more than liquids and solids for the same temperature rise."},
-    {"q":"The apparent expansion of a liquid is measured using","opts":["vernier caliper","pyrometer","dilatometer","specific gravity bottle"],"ans":3,"exp":"Specific gravity bottle (or dilatometer) measures apparent expansion of liquids."},
-    {"q":"Bimetallic strips are used in","opts":["thermometers","fire alarms","clocks","barometers"],"ans":1,"exp":"Different expansion rates cause bending, used in thermostats and fire alarms."},
-    {"q":"Gaps are left in railway tracks to allow for","opts":["linear expansion","area expansion","volume expansion","contraction only"],"ans":0,"exp":"Tracks expand in hot weather; gaps prevent buckling."},
-    {"q":"When a metal rod is heated, its length","opts":["decreases","increases","remains the same","first decreases then increases"],"ans":1,"exp":"Linear expansion: ΔL = α L Δθ."},
-    {"q":"Liquids expand more than solids for the same temperature change because","opts":["particles are closer in solids","particles are farther apart in liquids","liquids have lower density","solids have fixed shape"],"ans":1,"exp":"Intermolecular forces are weaker in liquids, allowing greater expansion."},
-    {"q":"Conduction is the transfer of heat through a medium","opts":["by movement of particles","without movement of the medium","by electromagnetic waves","by density changes"],"ans":1,"exp":"Heat passes by vibration of particles without bulk movement."},
-    {"q":"Good conductors of heat are","opts":["wood and plastic","metals","glass and water","air and wool"],"ans":1,"exp":"Metals have free electrons that transfer heat energy quickly."},
-    {"q":"Convection occurs mainly in","opts":["solids","liquids and gases","vacuum","metals only"],"ans":1,"exp":"Convection requires fluid movement (density changes due to heating)."},
-    {"q":"Sea breezes and land breezes are examples of","opts":["conduction","convection","radiation","expansion"],"ans":1,"exp":"Air movement due to uneven heating of land and sea."},
-    {"q":"Radiation is the transfer of heat","opts":["through a material medium","by movement of hot particles","without any medium","only in solids"],"ans":2,"exp":"Electromagnetic waves (infrared) carry heat through vacuum."},
-    {"q":"Good emitters of heat radiation are","opts":["shiny white surfaces","rough black surfaces","polished silver surfaces","transparent surfaces"],"ans":1,"exp":"Black and rough surfaces absorb and emit radiation better."},
-    {"q":"A thermos flask reduces heat loss by","opts":["conduction only","convection only","radiation only","all three modes"],"ans":3,"exp":"Vacuum stops conduction/convection; silvered surfaces reduce radiation."},
-    {"q":"In a vacuum flask, the silvered walls reduce heat transfer by","opts":["conduction","convection","radiation","expansion"],"ans":2,"exp":"Shiny surfaces reflect infrared radiation back."},
-    {"q":"The vacuum in a thermos flask mainly prevents heat loss by","opts":["conduction and convection","radiation","conduction only","convection only"],"ans":0,"exp":"No medium means no conduction or convection."},
-    {"q":"Land heats up and cools down faster than sea because land has","opts":["higher specific heat capacity","lower specific heat capacity","same specific heat capacity","higher density"],"ans":1,"exp":"Lower specific heat means temperature changes faster for same heat."},
-    {"q":"A body at higher temperature emits radiation with","opts":["longer wavelength","shorter wavelength","no wavelength","same wavelength"],"ans":1,"exp":"Hotter bodies emit shorter wavelength radiation (Wien's law)."},
-    {"q":"The greenhouse effect involves heat transfer mainly by","opts":["conduction","convection","radiation","expansion"],"ans":2,"exp":"Glass traps infrared radiation from the ground."},
-    {"q":"When an object falls freely under gravity, its potential energy is converted to","opts":["heat energy","kinetic energy","sound energy","chemical energy"],"ans":1,"exp":"PE → KE; total mechanical energy conserved if no air resistance."},
-    {"q":"A pump raises 200 kg of water through 15 m in 10 s. If g = 10 m/s², the power of the pump is","opts":["1500 W","3000 W","4500 W","6000 W"],"ans":1,"exp":"Work = mgh = 200 × 10 × 15 = 30000 J. Power = 30000 / 10 = 3000 W."},
-    {"q":"The temperature of a body is 77°C. Its temperature in Kelvin is","opts":["350 K","323 K","273 K","100 K"],"ans":0,"exp":"K = °C + 273 = 77 + 273 = 350 K."},
-    {"q":"An object absorbs heat radiation best when its surface is","opts":["shiny and white","shiny and black","dull and white","dull and black"],"ans":3,"exp":"Dull black surfaces are best absorbers (and emitters)."},
-    {"q":"In which mode of heat transfer do particles actually move from hotter to cooler region?","opts":["conduction","convection","radiation","none"],"ans":1,"exp":"In convection, heated fluid rises and cooler fluid takes its place."}
-],
+    {
+      q: "Which of the following is a fundamental (base) quantity in physics?",
+      opts: ["Force", "Volume", "Speed", "Mass"],
+      ans: 3,
+      exp: "Mass is a fundamental quantity. Force, volume, and speed are derived from fundamental quantities."
+    },
+    {
+      q: "The SI unit of electric current is:",
+      opts: ["Volt", "Watt", "Ohm", "Ampere"],
+      ans: 3,
+      exp: "The SI base unit of electric current is the Ampere (A)."
+    },
+    {
+      q: "A car travels 150 km in 3 hours. What is its average speed?",
+      opts: ["50 km/h", "450 km/h", "0.02 km/h", "300 km/h"],
+      ans: 0,
+      exp: "Speed = Distance / Time = 150 / 3 = 50 km/h."
+    },
+    {
+      q: "Which of the following is a vector quantity?",
+      opts: ["Speed", "Mass", "Temperature", "Displacement"],
+      ans: 3,
+      exp: "Displacement is a vector quantity — it has both magnitude and direction. Speed, mass, and temperature are scalars."
+    },
+    {
+      q: "Newton's First Law of Motion states that:",
+      opts: ["Force equals mass times acceleration", "For every action there is an equal and opposite reaction", "An object remains at rest or in uniform motion unless acted upon by an external force", "Acceleration is directly proportional to force and inversely proportional to mass"],
+      ans: 2,
+      exp: "Newton's First Law (Law of Inertia): an object remains at rest or moves at constant velocity unless a net external force acts on it."
+    },
+    {
+      q: "The velocity-time graph of a body moving with uniform acceleration is best described as a:",
+      opts: ["Horizontal straight line", "Curved line", "Straight line with positive slope", "Vertical straight line"],
+      ans: 2,
+      exp: "For uniform acceleration, velocity increases at a constant rate, giving a straight line with a positive slope on a v-t graph."
+    },
+    {
+      q: "Pressure is correctly defined as:",
+      opts: ["Force × Area", "Force / Area", "Mass × Acceleration", "Weight / Volume"],
+      ans: 1,
+      exp: "Pressure = Force / Area. Its SI unit is Pascal (Pa) = N/m²."
+    },
+    {
+      q: "Which of the following is an example of fluid friction?",
+      opts: ["Sliding friction", "Rolling friction", "Air resistance", "Static friction"],
+      ans: 2,
+      exp: "Air resistance (drag) is a form of fluid friction that acts without direct solid contact between surfaces."
+    },
+    {
+      q: "The area under a velocity-time graph represents:",
+      opts: ["Acceleration", "Speed", "Force", "Distance covered"],
+      ans: 3,
+      exp: "The area under a v-t graph gives the distance (or displacement) covered by the moving object."
+    },
+    {
+      q: "A force of 20 N acts on a mass of 4 kg. What is the acceleration produced?",
+      opts: ["80 m/s²", "0.2 m/s²", "24 m/s²", "5 m/s²"],
+      ans: 3,
+      exp: "Newton's 2nd Law: a = F/m = 20/4 = 5 m/s²."
+    },
+    {
+      q: "Which instrument is most suitable for measuring mass in a laboratory?",
+      opts: ["Spring balance", "Measuring cylinder", "Beam balance", "Thermometer"],
+      ans: 2,
+      exp: "A beam balance directly measures mass by comparison. A spring balance measures weight (force due to gravity)."
+    },
+    {
+      q: "The dimensional formula of velocity is:",
+      opts: ["[MLT⁻²]", "[LT⁻¹]", "[ML²T⁻²]", "[M⁰LT⁰]"],
+      ans: 1,
+      exp: "Velocity = Distance/Time → [L]/[T] = [LT⁻¹]."
+    },
+    {
+      q: "Which of the following correctly defines displacement?",
+      opts: ["Total path length covered", "The shortest straight-line distance from start to finish, with direction", "Speed in a given direction", "Rate of change of velocity"],
+      ans: 1,
+      exp: "Displacement is the shortest straight-line distance from the initial to the final position, including direction — it is a vector."
+    },
+    {
+      q: "A stone is dropped from rest and falls freely. What is its velocity after 3 seconds? (g = 10 m/s²)",
+      opts: ["10 m/s", "30 m/s", "45 m/s", "90 m/s"],
+      ans: 1,
+      exp: "v = u + at = 0 + 10 × 3 = 30 m/s."
+    },
+    {
+      q: "Which law of friction states that friction is independent of the apparent area of contact?",
+      opts: ["First law of friction", "Second law of friction", "Third law of friction", "Newton's law of friction"],
+      ans: 0,
+      exp: "The First Law of Friction states that frictional force is independent of the apparent area of contact between surfaces."
+    },
+    {
+      q: "A liquid column of height 0.5 m has a density of 800 kg/m³. What is the pressure at the bottom? (g = 10 m/s²)",
+      opts: ["400 Pa", "4000 Pa", "1600 Pa", "8000 Pa"],
+      ans: 1,
+      exp: "Pressure = ρgh = 800 × 10 × 0.5 = 4000 Pa."
+    },
+    {
+      q: "What is the key difference between speed and velocity?",
+      opts: ["Speed has direction; velocity does not", "Speed is measured in m/s; velocity is in km/h", "Velocity has both magnitude and direction; speed has only magnitude", "There is no difference between them"],
+      ans: 2,
+      exp: "Velocity is a vector (has direction), while speed is a scalar (magnitude only)."
+    },
+    {
+      q: "The gradient (slope) of a distance-time graph represents:",
+      opts: ["Acceleration", "Displacement", "Speed", "Force"],
+      ans: 2,
+      exp: "Speed = Distance / Time. On a distance-time graph, the slope (Δd/Δt) gives the speed of the object."
+    },
+    {
+      q: "Which of the following is a disadvantage of friction?",
+      opts: ["It enables walking", "It allows brakes to work", "It causes wear and tear of machine parts", "It allows vehicles to grip the road"],
+      ans: 2,
+      exp: "Friction causes wear, energy loss (as heat), and damage to moving parts in machines — a significant disadvantage."
+    },
+    {
+      q: "An object accelerates from 5 m/s to 25 m/s in 4 seconds. What is the acceleration?",
+      opts: ["5 m/s²", "6.25 m/s²", "10 m/s²", "20 m/s²"],
+      ans: 0,
+      exp: "a = (v − u) / t = (25 − 5) / 4 = 20 / 4 = 5 m/s²."
+    },
+    {
+      q: "Which of the following correctly describes viscosity?",
+      opts: ["The tendency of a fluid to resist flow", "The ability of a fluid to conduct heat", "The density of a liquid under pressure", "The weight per unit volume of a fluid"],
+      ans: 0,
+      exp: "Viscosity is the measure of a fluid's resistance to flow — thick fluids like honey have high viscosity."
+    },
+    {
+      q: "Newton's Third Law of Motion states that:",
+      opts: ["Objects in motion stay in motion", "F = ma", "For every action, there is an equal and opposite reaction", "Velocity is proportional to applied force"],
+      ans: 2,
+      exp: "Newton's Third Law: for every action force, there is an equal and opposite reaction force acting on a different object."
+    },
+    {
+      q: "Which of the following is equivalent to 1 Pascal (Pa)?",
+      opts: ["1 N × m²", "1 N/m", "1 N/m²", "1 kg/m"],
+      ans: 2,
+      exp: "1 Pascal = 1 Newton per square metre (1 N/m²)."
+    },
+    {
+      q: "A body moves with a uniform (constant) velocity. What does this indicate about the net force acting on it?",
+      opts: ["The net force is maximum", "The net force equals zero", "The net force is increasing", "The net force equals gravity"],
+      ans: 1,
+      exp: "Newton's First Law: if velocity is constant (uniform), acceleration = 0, so the net force = 0."
+    },
+    {
+      q: "Which of the following is a derived quantity?",
+      opts: ["Length", "Time", "Temperature", "Force"],
+      ans: 3,
+      exp: "Force = mass × acceleration = kg·m/s² — it is derived from base quantities mass, length, and time."
+    },
+    {
+      q: "A body decelerates uniformly from 30 m/s to rest in 6 seconds. What is the magnitude of deceleration?",
+      opts: ["5 m/s²", "180 m/s²", "0.2 m/s²", "36 m/s²"],
+      ans: 0,
+      exp: "a = (v − u) / t = (0 − 30) / 6 = −5 m/s². Magnitude of deceleration = 5 m/s²."
+    },
+    {
+      q: "Which of the following is an example of rolling friction?",
+      opts: ["Walking on sand", "Dragging a box across the floor", "A car tyre rolling on a road", "Pushing a book on a table"],
+      ans: 2,
+      exp: "Rolling friction occurs when an object rolls on a surface, e.g., a car tyre on a road. It is less than sliding friction."
+    },
+    {
+      q: "Position differs from distance in that position:",
+      opts: ["Is always positive", "Is measured in metres per second", "Specifies location relative to a reference point including direction", "Cannot be measured"],
+      ans: 2,
+      exp: "Position specifies where an object is relative to a reference point, including direction — it is a vector."
+    },
+    {
+      q: "Which of the following methods was used in ancient times to measure time?",
+      opts: ["Atomic clock", "Quartz oscillator", "Shadow clock / sundial", "Digital stopwatch"],
+      ans: 2,
+      exp: "Ancient civilisations used sundials (shadow clocks), hourglasses, and water clocks to measure time before modern instruments."
+    },
+    {
+      q: "A car starts from rest and reaches 20 m/s in 5 seconds. How far does it travel in this time?",
+      opts: ["100 m", "50 m", "200 m", "4 m"],
+      ans: 1,
+      exp: "Using s = ½(u + v)t = ½ × 20 × 5 = 50 m (with u = 0)."
+    },
+    {
+      q: "Which of the following is NOT a recognised type of motion?",
+      opts: ["Oscillatory motion", "Translational motion", "Frictional motion", "Rotational motion"],
+      ans: 2,
+      exp: "The standard types of motion are translational, rotational, oscillatory, and random. 'Frictional motion' is not a type."
+    },
+    {
+      q: "When a ball is thrown vertically upward, its velocity at the highest point is:",
+      opts: ["Maximum", "Equal to initial velocity", "Zero", "9.8 m/s downward"],
+      ans: 2,
+      exp: "At the highest point of vertical projectile motion, velocity is momentarily zero before the ball falls back."
+    },
+    {
+      q: "What is the correct unit for acceleration?",
+      opts: ["m/s", "m·s", "m/s²", "m²/s"],
+      ans: 2,
+      exp: "Acceleration = change in velocity / time = (m/s)/s = m/s²."
+    },
+    {
+      q: "Lubrication reduces friction primarily by:",
+      opts: ["Increasing the surface area of contact", "Removing all forces between surfaces", "Replacing solid-solid contact with a fluid layer", "Increasing the normal reaction force"],
+      ans: 2,
+      exp: "Lubricants (oil, grease) create a thin film between surfaces, replacing solid-to-solid contact with fluid contact, reducing friction."
+    },
+    {
+      q: "A submarine dives to a depth where pressure is 5 × 10⁵ Pa. If seawater density is 1025 kg/m³, what is the depth? (g = 10 m/s²)",
+      opts: ["48.8 m", "51.28 m", "500 m", "100 m"],
+      ans: 0,
+      exp: "P = ρgh → h = P/(ρg) = 500000 / (1025 × 10) ≈ 48.8 m."
+    },
+    {
+      q: "The term 'inertia' in physics refers to:",
+      opts: ["The force that moves an object", "The tendency of an object to resist changes in its state of rest or motion", "The weight of an object in motion", "The rate of change of momentum"],
+      ans: 1,
+      exp: "Inertia is the property of matter that resists any change in velocity — it is directly proportional to mass."
+    },
+    {
+      q: "Which of the following instruments measures length most precisely?",
+      opts: ["Ruler", "Measuring tape", "Vernier calliper", "Metre stick"],
+      ans: 2,
+      exp: "A Vernier calliper measures to 0.1 mm (0.01 cm) precision, making it more accurate than a ruler or tape."
+    },
+    {
+      q: "Which of the following statements is true about scalar quantities?",
+      opts: ["They require both magnitude and direction to be described", "They can only be added using vector algebra", "They are fully described by magnitude alone", "They include velocity and force"],
+      ans: 2,
+      exp: "Scalar quantities (e.g., mass, speed, temperature) are fully described by magnitude alone — no direction is needed."
+    },
+    {
+      q: "When a car brakes and the wheels lock, the friction involved is mainly:",
+      opts: ["Rolling friction", "Fluid friction", "Sliding friction", "Static friction"],
+      ans: 2,
+      exp: "When brakes are applied hard, wheels lock and slide against the road — this is sliding (kinetic) friction."
+    },
+    {
+      q: "According to Newton's 2nd Law, if the mass of an object doubles while the force stays constant, what happens to acceleration?",
+      opts: ["It doubles", "It remains constant", "It quadruples", "It halves"],
+      ans: 3,
+      exp: "a = F/m. If mass doubles (2m) at constant F: new a = F/(2m) = half the original acceleration."
+    }
+  ],
 'Biology': [
     {"q":"Which of the following is NOT one of the four basic types of animal tissues?","opts":["Epithelial tissue","Connective tissue","Muscle tissue","Vascular tissue"],"ans":3,"exp":"The four basic animal tissues are epithelial, connective, muscle, and nervous. Vascular tissue is found in plants."},
     {"q":"Epithelial tissue primarily functions to","opts":["provide support","cover and protect surfaces","transmit nerve impulses","enable movement"],"ans":1,"exp":"Epithelial tissue forms coverings and linings, protecting underlying structures and often involved in absorption and secretion."},
