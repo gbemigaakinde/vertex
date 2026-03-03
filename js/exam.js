@@ -132,11 +132,9 @@
       }
       const available = _qBank[classKey] ? Object.keys(_qBank[classKey]) : [];
 
-      await Promise.all([
-        Tasks.loadStudentMessages(),
-        Tasks.loadCoachingTasks(),
-      ]).catch(err => console.warn('[exam] Subject selection pre-load error:', err));
-
+      // Tasks and messages are loaded by Tasks.listenForStudentUpdates()
+      // which runs on every login path before this point.
+      // Reading directly from AppState here is sufficient.
       const messages = S().studentMessages || [];
 
       let messagesHtml = '';
@@ -651,7 +649,11 @@
 
       batch.delete(Db().collection('ongoingExams').doc(S().userId));
 
-      const today   = new Date().toISOString().split('T')[0];
+      // Use local-date helper (same as tasks.js) so the recorded date
+      // matches the teacher's calendar date, not the UTC date.
+      const today   = (window.Tasks && Tasks._localDateStr)
+                        ? Tasks._localDateStr()
+                        : (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })();
       const taskCfg = S().currentTaskConfig;
       if (taskCfg && taskCfg.active && Array.isArray(taskCfg.dates) && taskCfg.dates.includes(today)) {
         const studentRef = Db().collection('students').doc(S().userId);
