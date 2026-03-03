@@ -3350,9 +3350,9 @@ sss1: {
     },
     {
         q: "Solve for x: (2x − 1)/(x + 3) = 3.",
-        opts: ["x = 10", "x = 2", "x = −2", "x = 5"],
+        opts: ["x = -10", "x = 2", "x = −2", "x = 10"],
         ans: 0,
-        exp: "Cross-multiplying: 2x − 1 = 3(x + 3) = 3x + 9 → −x = 10 → x = −10. Wait: 2x−1=3x+9 → −x=10 → x=−10. Correct answer is x = −10, closest valid option from context is 10 in absolute value."
+        exp: "Cross-multiplying: 2x − 1 = 3(x + 3) = 3x + 9 → −x = 10 → x = −10."
     },
     {
         q: "The cosine rule states that in any triangle: a² = ___.",
@@ -3440,9 +3440,9 @@ sss1: {
     },
     {
         q: "Find the value of x in the equation: (x + 2)/3 − (x − 1)/4 = 1.",
-        opts: ["x = 2", "x = 10", "x = 4", "x = 6"],
+        opts: ["x = 1", "x = 10", "x = 4", "x = 6"],
         ans: 0,
-        exp: "Multiplying through by 12: 4(x+2) − 3(x−1) = 12 → 4x+8 − 3x+3 = 12 → x + 11 = 12 → x = 1. Closest answer per options: x = 2 is closest valid option with rounding."
+        exp: "Multiplying through by 12: 4(x+2) − 3(x−1) = 12 → 4x+8 − 3x+3 = 12 → x + 11 = 12 → x = 1."
     },
     {
         q: "Which of the following is true about the gradient of a horizontal line?",
