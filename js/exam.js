@@ -71,84 +71,43 @@
 
   /* ══════════════════════════════════════════════════════════
      _resolveStartMs(startTime)
-
-     Converts a Firestore Timestamp (or plain Date / seconds
-     object) into a Unix millisecond integer.
-     Returns null if the value cannot be resolved.
      ══════════════════════════════════════════════════════════ */
   function _resolveStartMs(startTime) {
     if (!startTime) return null;
-
-    // Firestore Timestamp object
-    if (typeof startTime.toDate === 'function') {
-      return startTime.toDate().getTime();
-    }
-
-    // Serialised Timestamp: { seconds, nanoseconds }
-    if (typeof startTime.seconds === 'number') {
-      return startTime.seconds * 1000;
-    }
-
-    // Plain JS Date
-    if (startTime instanceof Date) {
-      return startTime.getTime();
-    }
-
-    // Numeric ms (already resolved)
-    if (typeof startTime === 'number') {
-      return startTime;
-    }
-
+    if (typeof startTime.toDate === 'function') return startTime.toDate().getTime();
+    if (typeof startTime.seconds === 'number')  return startTime.seconds * 1000;
+    if (startTime instanceof Date)              return startTime.getTime();
+    if (typeof startTime === 'number')          return startTime;
     return null;
   }
 
   /* ══════════════════════════════════════════════════════════
-     loadOrStart — entry point after login
+     loadOrStart
      ══════════════════════════════════════════════════════════ */
   async function loadOrStart() {
     try {
       const snap = await Db().collection('ongoingExams').doc(S().userId).get();
 
       if (!snap.exists) {
-        // No ongoing exam — show subject selection
         await renderSubjectSelection();
         return;
       }
 
       S().exam = snap.data();
-
       const startMs = _resolveStartMs(S().exam.startTime);
 
       if (startMs) {
-        // ── NORMAL RESUME ────────────────────────────────────
-        // startTime was persisted. Anchor the timer to the
-        // original server-side start; the remaining-time
-        // formula (CFG().EXAM_DURATION_MS - (Date.now() - startMs))
-        // is device-agnostic and cannot inflate.
         S().examStartMs = startMs;
-
-        // Safety check: if time has already expired, auto-submit
         const elapsed = Date.now() - startMs;
         if (elapsed >= CFG().EXAM_DURATION_MS) {
           console.warn('[exam] Resumed but time already expired. Auto-submitting.');
-          renderExam();          // Render so submitExam has a valid DOM
-          await submitExam(true); // true = skip confirmation
+          renderExam();
+          await submitExam(true);
           return;
         }
-
         renderExam();
         _startTimer();
-
       } else {
-        // ── INCOMPLETE START ─────────────────────────────────
-        // The student created the exam doc (startExam ran)
-        // but closed before clicking "Begin" in the instructions
-        // modal, so startTime was never written to Firestore.
-        //
-        // Show the exam UI with the instructions modal again.
-        // examStartMs stays null until beginExam() is called,
-        // so the timer stays at 02:00:00 and doesn't start
-        // ticking until the student confirms.
         renderExam();
         _showInstructionsModal();
       }
@@ -295,12 +254,6 @@
       selectedQuestions[subj] = shuffled.slice(0, CFG().QUESTIONS_PER_SUBJECT);
     }
 
-    // NOTE: startTime is intentionally NOT set here.
-    // It is only written in beginExam() when the student
-    // clicks "I understand — Start Exam Now". This ensures
-    // the timer is anchored to the moment the student
-    // actually began answering, not to when the exam doc
-    // was created.
     const examDoc = {
       step:           'exam',
       subjects:       chosen,
@@ -308,7 +261,6 @@
       currentSubject: chosen[0],
       currentIndex:   0,
       answers:        {}
-      // startTime omitted deliberately — written in beginExam()
     };
 
     const btn = document.getElementById('startExamBtn');
@@ -373,39 +325,23 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     beginExam — called when student clicks the instructions CTA
-
-     This is the only place startTime is written to Firestore.
-     The local examStartMs is set from Date.now() at this exact
-     moment so local and remote clocks are in sync at write time.
+     beginExam
      ══════════════════════════════════════════════════════════ */
   async function beginExam() {
     const modal = document.getElementById('examModal');
     if (modal) modal.remove();
 
-    // Record the start instant locally first so the timer
-    // begins immediately without waiting for the Firestore round-trip.
     const startMs = Date.now();
     S().examStartMs = startMs;
-
-    // Convert to a plain JS Date for Firestore.
-    // Using a plain Date (not FieldValue.serverTimestamp()) ensures
-    // the value we store matches exactly what we set in examStartMs,
-    // avoiding any server-clock-vs-client-clock skew on resume.
     const startDate = new Date(startMs);
     S().exam.startTime = startDate;
 
     try {
-      // Use { merge: true } so if any other fields were updated
-      // concurrently (e.g. an answer save) they are not overwritten.
       await Db().collection('ongoingExams').doc(S().userId).set(
         { startTime: startDate },
         { merge: true }
       );
     } catch (err) {
-      // The timer is already running locally. The write will be
-      // retried by Firestore's offline persistence. Log but do not
-      // block the student.
       console.warn('[exam] Could not persist startTime, timer continues from local value.', err);
     }
 
@@ -558,7 +494,6 @@
     }, 800);
   }
 
-  /* ── Update option highlight ── */
   function _updateOptionsDisplay(subj, idx) {
     const selected = S().exam.answers[`${subj}-${idx}`];
     document.querySelectorAll('.option-label').forEach((lbl, i) => {
@@ -570,7 +505,6 @@
     });
   }
 
-  /* ── Update navigator button ── */
   function _updateNavButton(idx) {
     const subj    = S().exam.currentSubject;
     const answered = S().exam.answers[`${subj}-${idx}`] !== undefined;
@@ -616,29 +550,8 @@
 
   /* ══════════════════════════════════════════════════════════
      Timer
-
-     The remaining-time calculation is:
-       CFG().EXAM_DURATION_MS - (Date.now() - S().examStartMs)
-
-     Because examStartMs is the original start instant (derived
-     from the Firestore startTime field on resume, or from
-     Date.now() at the moment beginExam() ran), this formula
-     is correct on any device at any point after the exam begins.
-     It cannot inflate because:
-       - examStartMs never changes after beginExam()
-       - Date.now() always moves forward
-       - setInterval ticking is irrelevant to the calculation;
-         the interval just triggers a recalculation, not an
-         accumulation
-
-     _startTimer() always calls S().clearTimer() first, so
-     switching devices cannot create two concurrent intervals.
      ══════════════════════════════════════════════════════════ */
   function _startTimer() {
-    // Always clear any existing interval before creating a new one.
-    // This is the guard against double-interval accumulation when
-    // the same device re-renders the exam or a second device picks
-    // up the session.
     S().clearTimer();
     S().timerHandle = setInterval(_updateTimerDisplay, 1000);
   }
@@ -647,8 +560,6 @@
     const el = document.getElementById('timerDisplay');
     if (!el) return;
 
-    // If examStartMs is null the student has not yet clicked Begin.
-    // Show the full duration and do not start counting down.
     if (!S().examStartMs) {
       el.textContent = '02:00:00';
       el.className   = 'timer-green';
@@ -662,7 +573,7 @@
       el.textContent = '00:00:00';
       el.className   = 'timer-red';
       UI.toast('Time is up! Your exam is being submitted.', 'warning', 0);
-      submitExam(true); // true = skip confirmation prompt
+      submitExam(true);
       return;
     }
 
@@ -678,10 +589,6 @@
 
   /* ══════════════════════════════════════════════════════════
      submitExam
-
-     skipConfirm {boolean} — pass true when called from the
-     timer expiry path so the student is not asked to confirm
-     what is an automatic submission.
      ══════════════════════════════════════════════════════════ */
   let _submitLock = false;
 
@@ -703,11 +610,33 @@
       const exam   = S().exam;
       const result = _computeResult(exam);
 
+      /*
+       * Build a serialisable snapshot of every question + the student's
+       * chosen answer index. This is stored permanently in the result
+       * document so the teacher can review the exact attempt later.
+       *
+       * Shape per subject:
+       *   { q: string, opts: string[], ans: number, exp: string, chosen: number|null }
+       */
+      const questionSnapshots = {};
+      for (const subj of exam.subjects) {
+        questionSnapshots[subj] = exam.questions[subj].map((q, i) => ({
+          q:      q.q,
+          opts:   q.opts,
+          ans:    q.ans,
+          exp:    q.exp  || '',
+          chosen: exam.answers[`${subj}-${i}`] !== undefined
+                    ? exam.answers[`${subj}-${i}`]
+                    : null,
+        }));
+      }
+
       const batch = Db().batch();
 
       const resultRef = Db().collection('results').doc();
       batch.set(resultRef, {
         ...result,
+        questionSnapshots,          // ← full attempt detail saved here
         timestamp: firebase.firestore.FieldValue.serverTimestamp()
       });
 
