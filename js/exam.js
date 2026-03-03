@@ -646,100 +646,115 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     submitExam
-     ══════════════════════════════════════════════════════════ */
-  let _submitLock = false;
+   submitExam
+   ══════════════════════════════════════════════════════════ */
+let _submitLock = false;
 
-  async function submitExam(skipConfirm) {
-    if (_submitLock) return;
+async function submitExam(skipConfirm) {
+  if (_submitLock) return;
 
-    if (!skipConfirm) {
-      const confirmed = await UI.confirmAction('Submit your exam? This cannot be undone.');
-      if (!confirmed) return;
-    }
-
-    _submitLock = true;
-    S().clearTimer();
-
-    const btn = document.getElementById('submitBtn');
-    UI.setLoading(btn, true);
-
-    try {
-      const exam   = S().exam;
-      const result = _computeResult(exam);
-
-      const questionSnapshots = {};
-      for (const subj of exam.subjects) {
-        questionSnapshots[subj] = exam.questions[subj].map((q, i) => {
-          const chosenRaw = exam.answers[`${subj}-${i}`];
-          return {
-            q:      q.q    != null ? String(q.q)   : '',
-            opts:   Array.isArray(q.opts) ? q.opts.map(o => o != null ? String(o) : '') : [],
-            ans:    q.ans  != null ? Number(q.ans)  : 0,
-            exp:    q.exp  != null ? String(q.exp)  : '',
-            chosen: chosenRaw !== undefined && chosenRaw !== null ? Number(chosenRaw) : null,
-          };
-        });
-      }
-
-      const batch = Db().batch();
-
-      batch.set(Db().collection('results').doc(), {
-        ...result,
-        questionSnapshots,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp()
-      });
-
-      batch.delete(Db().collection('ongoingExams').doc(S().userId));
-
-      const today   = (window.Tasks && Tasks._localDateStr)
-        ? Tasks._localDateStr()
-        : (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })();
-      const taskCfg = S().currentTaskConfig;
-      if (taskCfg && taskCfg.active && Array.isArray(taskCfg.dates) && taskCfg.dates.includes(today)) {
-        batch.update(Db().collection('students').doc(S().userId), {
-          [`coachingCompleted.${today}`]: true
-        });
-      }
-
-      await batch.commit();
-      renderResults(exam, result);
-    } catch (err) {
-      console.error('[exam] submitExam error:', err);
-      UI.toast('Submission failed. Please try again.', 'error');
-      _submitLock = false;
-      if (document.getElementById('submitBtn')) {
-        UI.setLoading(document.getElementById('submitBtn'), false);
-      }
-    }
+  if (!skipConfirm) {
+    const confirmed = await UI.confirmAction('Submit your exam? This cannot be undone.');
+    if (!confirmed) return;
   }
 
-  /* ══════════════════════════════════════════════════════════
-     _computeResult
-     ══════════════════════════════════════════════════════════ */
-  function _computeResult(exam) {
-    let totalCorrect = 0, totalQuestions = 0;
-    const scores = {}, correctCounts = {};
+  _submitLock = true;
+  S().clearTimer();
 
+  const btn = document.getElementById('submitBtn');
+  UI.setLoading(btn, true);
+
+  try {
+    const exam   = S().exam;
+    const result = _computeResult(exam);
+
+    const questionSnapshots = {};
     for (const subj of exam.subjects) {
-      const qs = exam.questions[subj];
-      let correct = 0;
-      qs.forEach((q, i) => { if (exam.answers[`${subj}-${i}`] === q.ans) correct++; });
-      correctCounts[subj] = correct;
-      scores[subj]        = Math.round((correct / qs.length) * 100);
-      totalCorrect        += correct;
-      totalQuestions      += qs.length;
+      questionSnapshots[subj] = exam.questions[subj].map((q, i) => {
+        const chosenRaw = exam.answers[`${subj}-${i}`];
+        return {
+          q:      q.q    != null ? String(q.q)   : '',
+          opts:   Array.isArray(q.opts) ? q.opts.map(o => o != null ? String(o) : '') : [],
+          ans:    q.ans  != null ? Number(q.ans)  : 0,
+          exp:    q.exp  != null ? String(q.exp)  : '',
+          chosen: chosenRaw !== undefined && chosenRaw !== null ? Number(chosenRaw) : null,
+        };
+      });
     }
 
-    const percentage = Math.round((totalCorrect / totalQuestions) * 100);
-    const grade = percentage >= 70 ? 'A' : percentage >= 60 ? 'B'
-                : percentage >= 50 ? 'C' : percentage >= 40 ? 'D' : 'E';
+    const batch = Db().batch();
 
-    return {
-      name: S().studentData.name, class: S().studentData.class, school: S().studentData.school,
-      subjects: exam.subjects, scores, correctCounts, percentage, grade
-    };
+    batch.set(Db().collection('results').doc(), {
+      ...result,
+      questionSnapshots,
+      timestamp: firebase.firestore.FieldValue.serverTimestamp()
+    });
+
+    batch.delete(Db().collection('ongoingExams').doc(S().userId));
+
+    const today   = (window.Tasks && Tasks._localDateStr)
+      ? Tasks._localDateStr()
+      : (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })();
+    const taskCfg = S().currentTaskConfig;
+    if (taskCfg && taskCfg.active && Array.isArray(taskCfg.dates) && taskCfg.dates.includes(today)) {
+      batch.update(Db().collection('students').doc(S().userId), {
+        [`coachingCompleted.${today}`]: true
+      });
+    }
+
+    await batch.commit();
+
+    // FIX 2: Clear stale exam state so a subsequent session starts clean.
+    S().exam        = null;
+    S().examStartMs = null;
+
+    renderResults(exam, result);
+
+  } catch (err) {
+    console.error('[exam] submitExam error:', err);
+    UI.toast('Submission failed. Please try again.', 'error');
+    if (document.getElementById('submitBtn')) {
+      UI.setLoading(document.getElementById('submitBtn'), false);
+    }
+  } finally {
+    // FIX 1: Always release the lock — in both success AND failure paths.
+    // Previously this was only in the catch block, so a successful first
+    // submission permanently blocked every subsequent submission in the
+    // same browser session, causing silent no-ops and missing results.
+    _submitLock = false;
   }
+}
+
+/* ══════════════════════════════════════════════════════════
+   _computeResult
+   ══════════════════════════════════════════════════════════ */
+function _computeResult(exam) {
+  let totalCorrect = 0, totalQuestions = 0;
+  const scores = {}, correctCounts = {};
+
+  for (const subj of exam.subjects) {
+    const qs = exam.questions[subj];
+    let correct = 0;
+    qs.forEach((q, i) => { if (exam.answers[`${subj}-${i}`] === q.ans) correct++; });
+    correctCounts[subj] = correct;
+    scores[subj]        = Math.round((correct / qs.length) * 100);
+    totalCorrect        += correct;
+    totalQuestions      += qs.length;
+  }
+
+  const percentage = Math.round((totalCorrect / totalQuestions) * 100);
+  const grade = percentage >= 70 ? 'A' : percentage >= 60 ? 'B'
+              : percentage >= 50 ? 'C' : percentage >= 40 ? 'D' : 'E';
+
+  return {
+    uid:    S().userId,          // FIX 3: store uid so teacher delete-by-uid works reliably
+    name:   S().studentData.name,
+    class:  S().studentData.class,
+    school: S().studentData.school,
+    subjects: exam.subjects,
+    scores, correctCounts, percentage, grade
+  };
+}
 
   /* ══════════════════════════════════════════════════════════
      renderResults
