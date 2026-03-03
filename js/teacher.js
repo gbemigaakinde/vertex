@@ -62,7 +62,7 @@
                 Teacher Dashboard
               </h1>
               <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:1px;">
-                Admin
+                Master Timothy — Admin
               </p>
             </div>
           </div>
@@ -241,13 +241,56 @@
                 </div>
 
                 <div style="margin-bottom:.75rem;">
-                  <label style="display:block;font-size:.75rem;font-weight:600;
-                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">
-                    Recipient
-                  </label>
-                  <select id="msgStudent">
-                    <option value="">Select a student...</option>
-                  </select>
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.375rem;">
+                    <label style="font-size:.75rem;font-weight:600;color:var(--c-text-2,#374151);">
+                      Recipients
+                    </label>
+                    <div style="display:flex;border:1px solid var(--c-border,#e5e7eb);border-radius:6px;overflow:hidden;">
+                      <button id="msgModeSingle" onclick="Teacher._setMsgMode('single')"
+                              style="padding:2px 9px;font-size:.6875rem;font-weight:600;cursor:pointer;
+                                     border:none;background:var(--brand,#3b5bdb);color:#fff;">
+                        Single
+                      </button>
+                      <button id="msgModeMulti" onclick="Teacher._setMsgMode('multi')"
+                              style="padding:2px 9px;font-size:.6875rem;font-weight:600;cursor:pointer;
+                                     border:none;background:var(--surface-muted,#f3f4f6);color:var(--text-tertiary,#6b7280);">
+                        Multiple
+                      </button>
+                    </div>
+                  </div>
+                  <!-- Single mode -->
+                  <div id="msgSingleWrap">
+                    <select id="msgStudent">
+                      <option value="">Select a student...</option>
+                    </select>
+                  </div>
+                  <!-- Multi mode -->
+                  <div id="msgMultiWrap" style="display:none;">
+                    <input id="msgStudentSearch" type="text" placeholder="Search students..."
+                           oninput="Teacher._filterMsgStudents()" style="margin-bottom:.375rem;" />
+                    <div id="msgStudentList"
+                         style="max-height:160px;overflow-y:auto;border:1.5px solid var(--border-medium,#d1d5db);
+                                border-radius:6px;background:var(--surface,#fff);">
+                    </div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.375rem;">
+                      <span id="msgSelectedCount" style="font-size:.75rem;color:var(--text-tertiary,#6b7280);">
+                        0 selected
+                      </span>
+                      <div style="display:flex;gap:.375rem;align-items:center;">
+                        <button onclick="Teacher._selectAllMsgStudents()"
+                                style="font-size:.6875rem;font-weight:600;color:var(--brand,#3b5bdb);
+                                       background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">
+                          Select all
+                        </button>
+                        <span style="color:var(--border-medium,#d1d5db);">·</span>
+                        <button onclick="Teacher._clearMsgStudents()"
+                                style="font-size:.6875rem;font-weight:600;color:var(--text-tertiary,#6b7280);
+                                       background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">
+                          Clear
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
                 <div style="margin-bottom:.75rem;">
@@ -1097,18 +1140,20 @@
     _reg('tasksManager', unsub);
 
     _cancel('msgStudents');
+    // Cache student list so search filtering can work without re-querying
+    _msgStudentCache = [];
     const unsubStudents = Db()
       .collection('students')
       .orderBy('name')
       .onSnapshot(snap => {
-        const sel = document.getElementById('msgStudent');
-        if (!sel) return;
-        let html = '<option value="">Select student...</option>';
+        _msgStudentCache = [];
         snap.forEach(doc => {
           const s = doc.data();
-          html += `<option value="${_esc(doc.id)}">${_esc(s.name)} (${_esc(s.class || '')})</option>`;
+          _msgStudentCache.push({ id: doc.id, name: s.name || '', cls: s.class || '' });
         });
-        sel.innerHTML = html;
+        // Refresh whichever UI is currently visible
+        _populateMsgSingleSelect();
+        _populateMsgCheckboxList();
       });
     _reg('msgStudents', unsubStudents);
   }
@@ -1203,32 +1248,158 @@
     }
   }
 
-  async function sendPrivateMessage() {
-    const studentId = document.getElementById('msgStudent')?.value;
-    const text      = document.getElementById('msgText')?.value.trim();
-    const duration  = parseInt(document.getElementById('msgDuration')?.value || '86400000', 10);
+  /* Cache populated by the msgStudents listener */
+  let _msgStudentCache = [];
 
-    if (!studentId) { UI.toast('Please select a student.',  'warning'); return; }
-    if (!text)      { UI.toast('Please write a message.',   'warning'); return; }
+  /* Which mode is active: 'single' | 'multi' */
+  let _msgMode = 'single';
+
+  function _setMsgMode(mode) {
+    _msgMode = mode;
+    const singleWrap = document.getElementById('msgSingleWrap');
+    const multiWrap  = document.getElementById('msgMultiWrap');
+    const singleBtn  = document.getElementById('msgModeSingle');
+    const multiBtn   = document.getElementById('msgModeMulti');
+    if (!singleWrap || !multiWrap) return;
+
+    if (mode === 'single') {
+      singleWrap.style.display = '';
+      multiWrap.style.display  = 'none';
+      if (singleBtn) { singleBtn.style.background = 'var(--brand,#3b5bdb)';        singleBtn.style.color = '#fff'; }
+      if (multiBtn)  { multiBtn.style.background  = 'var(--surface-muted,#f3f4f6)'; multiBtn.style.color  = 'var(--text-tertiary,#6b7280)'; }
+    } else {
+      singleWrap.style.display = 'none';
+      multiWrap.style.display  = '';
+      if (multiBtn)  { multiBtn.style.background  = 'var(--brand,#3b5bdb)';        multiBtn.style.color = '#fff'; }
+      if (singleBtn) { singleBtn.style.background = 'var(--surface-muted,#f3f4f6)'; singleBtn.style.color = 'var(--text-tertiary,#6b7280)'; }
+      _populateMsgCheckboxList();
+    }
+  }
+
+  function _populateMsgSingleSelect() {
+    const sel = document.getElementById('msgStudent');
+    if (!sel) return;
+    let html = '<option value="">Select a student...</option>';
+    _msgStudentCache.forEach(s => {
+      html += `<option value="${_esc(s.id)}">${_esc(s.name)} (${_esc(s.cls)})</option>`;
+    });
+    sel.innerHTML = html;
+  }
+
+  function _populateMsgCheckboxList(filter) {
+    const container = document.getElementById('msgStudentList');
+    if (!container) return;
+    const q = (filter || document.getElementById('msgStudentSearch')?.value || '').toLowerCase();
+
+    const filtered = q
+      ? _msgStudentCache.filter(s => s.name.toLowerCase().includes(q) || s.cls.toLowerCase().includes(q))
+      : _msgStudentCache;
+
+    if (filtered.length === 0) {
+      container.innerHTML = `<p style="font-size:.8125rem;color:var(--text-tertiary,#6b7280);
+                                        padding:.5rem .75rem;">No students found.</p>`;
+      return;
+    }
+
+    container.innerHTML = filtered.map(s => `
+      <label style="display:flex;align-items:center;gap:.625rem;padding:.4375rem .75rem;
+                    cursor:pointer;border-bottom:1px solid var(--border,#e5e7eb);
+                    transition:background .1s;"
+             onmouseenter="this.style.background='var(--brand-bg,#edf2ff)'"
+             onmouseleave="this.style.background=''">
+        <input type="checkbox"
+               class="msg-student-cb"
+               value="${_esc(s.id)}"
+               onchange="Teacher._updateMsgSelectedCount()"
+               style="width:.9375rem;height:.9375rem;accent-color:var(--brand,#3b5bdb);
+                      flex-shrink:0;cursor:pointer;" />
+        <span style="font-size:.8125rem;color:var(--text-primary,#111827);flex:1;
+                     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+          ${_esc(s.name)}
+          <span style="color:var(--text-tertiary,#6b7280);font-size:.75rem;"> — ${_esc(s.cls)}</span>
+        </span>
+      </label>`).join('');
+
+    _updateMsgSelectedCount();
+  }
+
+  function _filterMsgStudents() {
+    // Preserve checked state across filter: collect currently checked IDs first
+    const checked = new Set(
+      [...document.querySelectorAll('.msg-student-cb:checked')].map(cb => cb.value)
+    );
+    _populateMsgCheckboxList();
+    // Re-check any previously selected items that are still visible
+    document.querySelectorAll('.msg-student-cb').forEach(cb => {
+      if (checked.has(cb.value)) cb.checked = true;
+    });
+    _updateMsgSelectedCount();
+  }
+
+  function _updateMsgSelectedCount() {
+    const count = document.querySelectorAll('.msg-student-cb:checked').length;
+    const el    = document.getElementById('msgSelectedCount');
+    if (el) el.textContent = `${count} selected`;
+  }
+
+  function _selectAllMsgStudents() {
+    document.querySelectorAll('.msg-student-cb').forEach(cb => { cb.checked = true; });
+    _updateMsgSelectedCount();
+  }
+
+  function _clearMsgStudents() {
+    document.querySelectorAll('.msg-student-cb').forEach(cb => { cb.checked = false; });
+    _updateMsgSelectedCount();
+  }
+
+  async function sendPrivateMessage() {
+    const text     = document.getElementById('msgText')?.value.trim();
+    const duration = parseInt(document.getElementById('msgDuration')?.value || '86400000', 10);
+
+    if (!text) { UI.toast('Please write a message.', 'warning'); return; }
+
+    // Collect recipient IDs depending on active mode
+    let recipientIds = [];
+    if (_msgMode === 'single') {
+      const val = document.getElementById('msgStudent')?.value;
+      if (!val) { UI.toast('Please select a student.', 'warning'); return; }
+      recipientIds = [val];
+    } else {
+      recipientIds = [...document.querySelectorAll('.msg-student-cb:checked')].map(cb => cb.value);
+      if (recipientIds.length === 0) { UI.toast('Please select at least one student.', 'warning'); return; }
+    }
 
     const btn = document.getElementById('sendMsgBtn');
     UI.setLoading(btn, true);
 
     try {
       const expiresAt = new Date(Date.now() + duration);
+      const sentAt    = firebase.firestore.FieldValue.serverTimestamp();
 
-      await Db().collection('privateMessages').add({
-        recipientId: studentId,
-        message:     text,
-        sentAt:      firebase.firestore.FieldValue.serverTimestamp(),
-        expiresAt,
-        sentBy:      'Master Timothy',
+      // Write one privateMessages document per recipient.
+      // Use a batch so it is atomic for up to 500 recipients.
+      const batch = Db().batch();
+      recipientIds.forEach(id => {
+        const ref = Db().collection('privateMessages').doc();
+        batch.set(ref, {
+          recipientId: id,
+          message:     text,
+          sentAt,
+          expiresAt,
+          sentBy:      'Master Timothy',
+        });
       });
+      await batch.commit();
 
+      // Reset fields
       const msgEl = document.getElementById('msgText');
       if (msgEl) msgEl.value = '';
+      _clearMsgStudents();
+      const singleSel = document.getElementById('msgStudent');
+      if (singleSel) singleSel.value = '';
 
-      UI.toast('Message sent successfully.', 'success');
+      const label = recipientIds.length === 1 ? '1 student' : `${recipientIds.length} students`;
+      UI.toast(`Message sent to ${label}.`, 'success');
     } catch (err) {
       console.error('[teacher] sendPrivateMessage error:', err);
       UI.toast('Failed to send message.', 'error');
@@ -1285,6 +1456,12 @@
     saveTasksConfig,
     deleteAllTasks,
     sendPrivateMessage,
+    // Multi-select recipient helpers (called from inline HTML)
+    _setMsgMode,
+    _filterMsgStudents,
+    _updateMsgSelectedCount,
+    _selectAllMsgStudents,
+    _clearMsgStudents,
   };
 
 })();
