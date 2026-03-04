@@ -66,6 +66,52 @@
   }
 
   /* ══════════════════════════════════════════════════════════
+     _examDurationMs()
+     ──────────────────────────────────────────────────────────
+     Single source of truth for the exam duration at runtime.
+     Priority:
+       1. exam.durationMs  — stamped onto the exam doc at
+                             startExam() from the task config,
+                             survives page reloads because it
+                             is persisted to Firestore.
+       2. currentTaskConfig.durationMs — task-level override
+                             set by the teacher.
+       3. AppConfig.EXAM_DURATION_MS — system default (2 h).
+
+     Always returns a positive integer (milliseconds).
+     ══════════════════════════════════════════════════════════ */
+  function _examDurationMs() {
+    const fromExam = S().exam && typeof S().exam.durationMs === 'number' && S().exam.durationMs > 0
+      ? S().exam.durationMs : null;
+    const fromTask = S().currentTaskConfig && typeof S().currentTaskConfig.durationMs === 'number'
+      && S().currentTaskConfig.durationMs > 0
+      ? S().currentTaskConfig.durationMs : null;
+    return fromExam || fromTask || CFG().EXAM_DURATION_MS;
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     _formatDuration(ms) → 'H hours M minutes' display string
+     used in the instructions modal and timer initial value.
+     ══════════════════════════════════════════════════════════ */
+  function _formatDuration(ms) {
+    const totalMin = Math.round(ms / 60_000);
+    const h        = Math.floor(totalMin / 60);
+    const m        = totalMin % 60;
+    if (h === 0)   return `${m} minute${m !== 1 ? 's' : ''}`;
+    if (m === 0)   return `${h} hour${h !== 1 ? 's' : ''}`;
+    return `${h} hour${h !== 1 ? 's' : ''} ${m} minute${m !== 1 ? 's' : ''}`;
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     _initialTimerStr(ms) → 'HH:MM:SS' for the pre-start display
+     ══════════════════════════════════════════════════════════ */
+  function _initialTimerStr(ms) {
+    const h   = String(Math.floor(ms / 3_600_000)).padStart(2, '0');
+    const m   = String(Math.floor((ms % 3_600_000) / 60_000)).padStart(2, '0');
+    return `${h}:${m}:00`;
+  }
+
+  /* ══════════════════════════════════════════════════════════
      _resolveStartMs
      ══════════════════════════════════════════════════════════ */
   function _resolveStartMs(startTime) {
@@ -145,7 +191,7 @@
       if (startMs) {
         S().examStartMs = startMs;
         const elapsed = Date.now() - startMs;
-        if (elapsed >= CFG().EXAM_DURATION_MS) {
+        if (elapsed >= _examDurationMs()) {
           console.warn('[exam] Resumed but time already expired. Auto-submitting.');
           renderExam();
           await submitExam(true);
@@ -366,8 +412,12 @@
       selectedQuestions[subj] = shuffled.slice(0, CFG().QUESTIONS_PER_SUBJECT);
     }
 
-    // Stamp the session date at creation time
-    const sessionDate = _todayStr();
+    // Stamp the session date and per-task duration at creation time.
+    // durationMs is read from the active task config so it survives page
+    // reloads — the exam doc in Firestore becomes the authoritative source.
+    const sessionDate  = _todayStr();
+    const examDuration = (S().currentTaskConfig && S().currentTaskConfig.durationMs)
+      || CFG().EXAM_DURATION_MS;
 
     const examDoc = {
       step:           'exam',
@@ -377,6 +427,7 @@
       currentIndex:   0,
       answers:        {},
       sessionDate,
+      durationMs:     examDuration,
     };
 
     const btn = document.getElementById('startExamBtn');
@@ -416,7 +467,7 @@
       <div class="modal-box" style="max-width:400px;width:100%;margin:auto;">
         <h2 id="examModalTitle" class="font-bold mb-4 text-center" style="font-size:1.125rem;">Exam Instructions</h2>
         <ul class="space-y-2 mb-5 text-left list-none" style="font-size:0.875rem;">
-          <li>• This exam lasts <strong>2 hours</strong> (120 minutes).</li>
+          <li>• This exam lasts <strong>${_formatDuration(_examDurationMs())}</strong>.</li>
           <li>• Answer questions for all selected subjects.</li>
           <li>• Use <strong>Previous / Next</strong> or the navigator to move between questions.</li>
           <li>• <span class="font-semibold" style="color:var(--success,#2f9e44);">Green</span> buttons in the navigator = answered.</li>
@@ -497,7 +548,7 @@
           </div>
           <div class="text-right">
             <div id="timerDisplay" class="timer-green" aria-live="polite" aria-label="Time remaining">
-              ${S().examStartMs ? '...' : '02:00:00'}
+              ${S().examStartMs ? '...' : _initialTimerStr(_examDurationMs())}
             </div>
             <p style="font-size:0.75rem;color:var(--text-disabled,#9ca3af);margin-top:2px;">Time remaining</p>
           </div>
@@ -645,11 +696,15 @@
     const el = document.getElementById('timerDisplay');
     if (!el) return;
 
+    const duration = _examDurationMs();
+
     if (!S().examStartMs) {
-      el.textContent = '02:00:00'; el.className = 'timer-green'; return;
+      el.textContent = _initialTimerStr(duration);
+      el.className   = 'timer-green';
+      return;
     }
 
-    const remaining = CFG().EXAM_DURATION_MS - (Date.now() - S().examStartMs);
+    const remaining = duration - (Date.now() - S().examStartMs);
 
     if (remaining <= 0) {
       S().clearTimer();
@@ -663,7 +718,13 @@
     const m   = String(Math.floor((remaining % 3_600_000) / 60_000)).padStart(2, '0');
     const sec = String(Math.floor((remaining % 60_000) / 1_000)).padStart(2, '0');
     el.textContent = `${h}:${m}:${sec}`;
-    el.className   = remaining < 600_000 ? 'timer-red' : remaining < 1_800_000 ? 'timer-yellow' : 'timer-green';
+
+    // Thresholds are proportional: red = last 8%, yellow = last 25% of total duration
+    const redThreshold    = duration * 0.08;
+    const yellowThreshold = duration * 0.25;
+    el.className = remaining < redThreshold ? 'timer-red'
+                 : remaining < yellowThreshold ? 'timer-yellow'
+                 : 'timer-green';
   }
 
   /* ══════════════════════════════════════════════════════════
