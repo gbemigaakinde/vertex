@@ -235,6 +235,19 @@
   }
 
   /* ══════════════════════════════════════════════════════════
+     _isTodayATaskDay()
+     Returns true when today is one of the task's scheduled
+     dates (regardless of completion status).
+     ══════════════════════════════════════════════════════════ */
+  function _isTodayATaskDay() {
+    const taskCfg = S().currentTaskConfig;
+    if (!taskCfg || !taskCfg.active) return false;
+    const today = _todayStr();
+    const dates = Array.isArray(taskCfg.dates) ? taskCfg.dates : [];
+    return dates.includes(today);
+  }
+
+  /* ══════════════════════════════════════════════════════════
      _nextUnlockedDateLabel()
      ──────────────────────────────────────────────────────────
      Returns a human-readable label for the next task date
@@ -312,6 +325,32 @@
                  Your coaching task requires you to attempt only:
                  <strong>${available.map(s => _escHtml(s)).join(', ') || 'no subjects'}</strong>.
                  Other subjects are not available for this session.
+               </p>
+             </div>
+           </div>`
+        : '';
+
+      // ── Non-task-day awareness banner ─────────────────────
+      // Shown only when: active task exists, today is NOT a
+      // scheduled task date, but there IS an upcoming date.
+      // Tells the student they can take a free exam today but
+      // their next required session is on a specific date.
+      const taskCfgForBanner  = S().currentTaskConfig;
+      const nextLabel         = _nextUnlockedDateLabel();
+      const offDayBannerHtml  = (taskCfgForBanner && taskCfgForBanner.active
+                                  && !_isTodayATaskDay() && nextLabel)
+        ? `<div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:1rem;
+                       background:var(--brand-bg,#edf2ff);border:1px solid var(--brand-border,#bac8ff);
+                       border-left:3px solid var(--brand,#3b5bdb);border-radius:8px;
+                       padding:.75rem 1rem;text-align:left;">
+             <span style="font-size:1.125rem;flex-shrink:0;margin-top:1px;">📅</span>
+             <div>
+               <p style="font-size:.875rem;font-weight:700;color:var(--brand-text,#3730a3);margin-bottom:.25rem;">
+                 No task session today
+               </p>
+               <p style="font-size:.8125rem;color:var(--text-secondary,#374151);line-height:1.6;">
+                 You can take a free practice exam now. Your next required session is on
+                 <strong>${nextLabel}</strong>.
                </p>
              </div>
            </div>`
@@ -409,6 +448,7 @@
             </button>
           </div>
 
+          ${offDayBannerHtml}
           ${restrictionBannerHtml}
 
           <div class="text-left mb-3">
@@ -1092,6 +1132,7 @@
     _escAttr,
     preprocessLatex,
     _isTodayTaskDayCompleted,
+    _isTodayATaskDay,
     _nextUnlockedDateLabel,
   };
 
