@@ -494,7 +494,6 @@
 
     let weekDoneCount    = 0;
     let weekMissedCount  = 0;
-    let weekPendingCount = 0;
 
     const datesHTML = displayDates.map(dateStr => {
       const parts     = dateStr.split('-');
@@ -507,11 +506,9 @@
       const isPast   = dateStr < todayStr;
       const isToday  = dateStr === todayStr;
       const isMissed = isPast && !isDone;
-      const isFuture = !isPast && !isToday;
 
       if (isDone)        weekDoneCount++;
       else if (isMissed) weekMissedCount++;
-      else if (isToday)  weekPendingCount++;
 
       const subjects = _resolveSubjectsForDate(currentTask, dateStr);
       const subjNote = subjects.length > 0
