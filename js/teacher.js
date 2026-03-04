@@ -1430,9 +1430,20 @@
         dates,
         dateSubjects,
         durationMs:  durationMs || null,
-        scope:       _assignScope === 'all' ? 'global' : _assignScope,
+        assignScope: _assignScope,
         updatedAt:   firebase.firestore.FieldValue.serverTimestamp(),
       };
+
+      if (_assignScope === 'class') {
+        const sel = document.getElementById('taskTargetClass');
+        if (sel) payload.className = sel.value;
+      }
+      if (_assignScope === 'student') {
+        const sel = document.getElementById('taskTargetStudent');
+        const opt = sel && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex] : null;
+        if (sel)  payload.studentUid  = sel.value;
+        if (opt)  payload.studentName = opt.text;
+      }
 
     } else {
       // weekly or range
@@ -1459,7 +1470,7 @@
       });
 
       payload = {
-        recurrence:  _taskScope,
+        recurrence:  _taskScope,          // 'weekly' or 'range' — exact value, not hardcoded
         active, title,
         message:     message || 'Complete the required exams on the scheduled dates.',
         startDate,
@@ -1467,8 +1478,7 @@
         weeklyDays:  checkedDays,
         dateSubjects,
         durationMs:  durationMs || null,
-        scope:       'weekly',
-        assignScope: _assignScope,
+        assignScope: _assignScope,        // 'all' | 'class' | 'student'
         updatedAt:   firebase.firestore.FieldValue.serverTimestamp(),
       };
 
@@ -1606,6 +1616,16 @@
       return found ? found.name + ' (' + found.cls + ')' : uid;
     }
 
+    // A task is recurring if its recurrence field says so, OR if its docId
+    // uses the 'weekly_' prefix (covers older docs without a recurrence field).
+    function isRecurringTask(doc) {
+      const d = doc.data();
+      return d.recurrence === 'weekly' ||
+             d.recurrence === 'range'  ||
+             doc.id === 'weekly'       ||
+             doc.id.startsWith('weekly_');
+    }
+
     container.innerHTML =
       '<div style="border-top:1px solid var(--c-border,#e5e7eb);padding-top:1rem;margin-top:.25rem;">' +
       '<h3 style="font-size:.875rem;font-weight:700;color:var(--c-text,#111827);margin-bottom:.625rem;">Existing Tasks</h3>' +
@@ -1618,15 +1638,14 @@
           ? (doc.id.startsWith('weekly_') ? '🔄 Recurring · Student: ' : 'Student: ') + studentName
           : scope.label;
 
-        const isRecurring = d.recurrence === 'weekly' || d.recurrence === 'range' ||
-          doc.id === 'weekly' || doc.id.startsWith('weekly_') || d.scope === 'weekly';
+        const recurring = isRecurringTask(doc);
 
         let datesDisplay;
-        if (isRecurring) {
-          const dayList = (d.weeklyDays || []).join(', ') || '—';
+        if (recurring) {
+          const dayList = (d.weeklyDays || []).join(', ') || (d.recurrence === 'range' ? 'All weekdays in range' : '—');
           const start   = d.startDate || '?';
           const end     = d.endDate   || 'open-ended';
-          datesDisplay  = `${d.recurrence || 'weekly'} · ${dayList} · ${start} → ${end}`;
+          datesDisplay  = `${d.recurrence || 'recurring'} · ${dayList} · ${start} → ${end}`;
         } else {
           datesDisplay = (d.dates || []).join(', ') || '—';
         }
@@ -1688,7 +1707,7 @@
 
     const todayStr = Tasks._localDateStr();
 
-    /* ── Get all historical dates for a task ── */
+    /* ── Get all historical dates for a task (up to today) ── */
     function getTaskDates(doc) {
       const d = doc.data();
       return Tasks._resolveTaskDates(d, { upToDate: todayStr });
@@ -1749,6 +1768,15 @@
       return monday.toLocaleDateString('en-GB', opts) + ' – ' + sunday.toLocaleDateString('en-GB', opts);
     }
 
+    // A task is recurring if recurrence field says so, OR docId uses 'weekly_' prefix
+    function isRecurringDoc(doc) {
+      const d = doc.data();
+      return d.recurrence === 'weekly' ||
+             d.recurrence === 'range'  ||
+             doc.id === 'weekly'       ||
+             doc.id.startsWith('weekly_');
+    }
+
     container.innerHTML = activeTasks.map(doc => {
       const d        = doc.data();
       const title    = d.title || doc.id;
@@ -1757,9 +1785,7 @@
 
       if (allDates.length === 0 || students.length === 0) return '';
 
-      const isRecurring = d.recurrence === 'weekly' || d.recurrence === 'range' ||
-        doc.id === 'weekly' || doc.id.startsWith('weekly_') || d.scope === 'weekly';
-
+      const recurring = isRecurringDoc(doc);
       const weeks = groupByWeek(allDates);
       if (weeks.length === 0) return '';
 
@@ -1828,7 +1854,7 @@
                           border:1px solid ${allStudentsDone ? 'var(--success-border,#b2f2bb)' : 'var(--border,#e5e7eb)'};
                           display:flex;align-items:center;justify-content:space-between;">
             <div style="display:flex;align-items:center;gap:.5rem;">
-              <span style="font-size:.1875rem;color:var(--text-tertiary,#6b7280);">▶</span>
+              <span style="font-size:.625rem;color:var(--text-tertiary,#6b7280);">▶</span>
               <span style="font-size:.8125rem;font-weight:700;color:var(--text-primary,#111827);">
                 ${_esc(wLabel)}
               </span>
@@ -1860,7 +1886,7 @@
         </details>`;
       }).join('');
 
-      // All-time summary row
+      // All-time summary
       const totalSessions = allDates.length;
       const totalDone     = students
         .reduce((sum, s) => sum + allDates.filter(dt => !!(s.coachingCompleted || {})[dt]).length, 0);
@@ -1871,7 +1897,7 @@
           <div>
             <h4 style="font-size:.875rem;font-weight:700;color:var(--c-text,#111827);">
               📊 ${_esc(title)}
-              ${isRecurring ? '<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;margin-left:.375rem;">🔄 Recurring</span>' : ''}
+              ${recurring ? `<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;margin-left:.375rem;">🔄 ${_esc((d.recurrence || 'recurring').charAt(0).toUpperCase() + (d.recurrence || 'recurring').slice(1))}</span>` : ''}
             </h4>
             <p style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin-top:1px;">
               ${students.length} student${students.length !== 1 ? 's' : ''} ·
