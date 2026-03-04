@@ -1722,7 +1722,6 @@
     function groupByWeek(dates) {
       const weeks = {};
       dates.forEach(dateStr => {
-        const d      = Tasks._resolveTaskDates ? dateStr : dateStr;
         const parts  = dateStr.split('-');
         const date   = new Date(+parts[0], +parts[1]-1, +parts[2]);
         const dow    = date.getDay();
@@ -1767,22 +1766,12 @@
       /* ── Build the weekly progress table ── */
       const weeksHTML = weeks.map((weekObj, wIdx) => {
         const { weekKey, dates: weekDates } = weekObj;
-        const isCurrentWeek = weekKey === Tasks._localDateStr
-          ? Tasks._localDateStr((() => {
-              const now = new Date();
-              const dow = now.getDay();
-              const d2  = new Date(now);
-              d2.setDate(now.getDate() + (dow === 0 ? -6 : 1 - dow));
-              return d2;
-            })())
-          : null;
 
         // Per-student summary for this week
         const studentRows = students.map(student => {
-          const completed = student.coachingCompleted || {};
+          const completed   = student.coachingCompleted || {};
           const doneDates   = weekDates.filter(dt => !!completed[dt]);
           const missedDates = weekDates.filter(dt => dt < todayStr && !completed[dt]);
-          const futureDates = weekDates.filter(dt => dt > todayStr);
           const doneCount   = doneDates.length;
           const missedCount = missedDates.length;
           const totalPast   = weekDates.filter(dt => dt <= todayStr).length;
@@ -1873,8 +1862,7 @@
 
       // All-time summary row
       const totalSessions = allDates.length;
-      const totalDone     = _msgStudentCache
-        .filter(s => students.includes(s) || students.find(st => st.id === s.id))
+      const totalDone     = students
         .reduce((sum, s) => sum + allDates.filter(dt => !!(s.coachingCompleted || {})[dt]).length, 0);
       const possibleTotal = students.length * totalSessions;
 
