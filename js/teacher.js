@@ -32,368 +32,384 @@
   /* -------------------------------------------------- */
 
   function renderTeacherDashboard() {
-  AppState.isTeacher = true;
+    AppState.isTeacher = true;
 
-  document.getElementById('app').innerHTML = `
-    <div class="max-w-7xl mx-auto glass mt-6" style="margin-bottom:1.5rem;">
+    document.getElementById('app').innerHTML = `
+      <div class="max-w-7xl mx-auto glass mt-6" style="margin-bottom:1.5rem;">
 
-      <!-- ── Dashboard header ── -->
-      <div style="display:flex;align-items:center;justify-content:space-between;
-                  padding:1rem 1.5rem;border-bottom:1px solid var(--c-border,#e5e7eb);">
-        <div style="display:flex;align-items:center;gap:.75rem;">
-          <div style="width:28px;height:28px;background:var(--c-brand,#4f46e5);border-radius:7px;
-                      display:flex;align-items:center;justify-content:center;
-                      color:#fff;font-weight:800;font-size:.75rem;flex-shrink:0;">V</div>
-          <div>
-            <h1 style="font-size:1rem;font-weight:700;line-height:1.2;color:var(--c-text,#111827);">
-              Teacher Dashboard
-            </h1>
-            <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:1px;">Admin</p>
-          </div>
-        </div>
-        <button onclick="Teacher.logout()" class="btn bg-gray-500 hover:bg-gray-600"
-                style="font-size:.8125rem;padding:.4375rem .875rem;">
-          Sign out
-        </button>
-      </div>
-
-      <!-- ── Tab nav ── -->
-      <div style="display:flex;align-items:center;gap:.375rem;padding:.625rem 1.5rem;
-                  border-bottom:1px solid var(--c-border,#e5e7eb);flex-wrap:wrap;">
-        <button onclick="Teacher.showTab('students')" id="tab-students"
-                class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">Students</button>
-        <button onclick="Teacher.showTab('results')" id="tab-results"
-                class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">Results</button>
-        <button onclick="Teacher.showTab('schools')" id="tab-schools"
-                class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">Schools</button>
-        <button onclick="Teacher.showTab('tasks')" id="tab-tasks"
-                class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">Tasks &amp; Messages</button>
-        <button onclick="Teacher.showTab('chat')" id="tab-chat"
-                class="tab-btn btn bg-green-600" style="font-size:.8125rem;padding:.4375rem .875rem;">Chat</button>
-      </div>
-
-      <!-- ── Tab panels ── -->
-      <div style="padding:1.25rem 1.5rem;">
-
-        <!-- Students -->
-        <div id="teacher-students" class="teacher-tab">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+        <!-- ── Dashboard header ── -->
+        <div style="display:flex;align-items:center;justify-content:space-between;
+                    padding:1rem 1.5rem;border-bottom:1px solid var(--c-border,#e5e7eb);">
+          <div style="display:flex;align-items:center;gap:.75rem;">
+            <div style="width:28px;height:28px;background:var(--c-brand,#4f46e5);border-radius:7px;
+                        display:flex;align-items:center;justify-content:center;
+                        color:#fff;font-weight:800;font-size:.75rem;flex-shrink:0;">V</div>
             <div>
-              <h2 style="font-size:1rem;font-weight:700;">Registered Students</h2>
-              <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:2px;">Grouped by school</p>
+              <h1 style="font-size:1rem;font-weight:700;line-height:1.2;color:var(--c-text,#111827);">
+                Teacher Dashboard
+              </h1>
+              <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:1px;">Admin</p>
             </div>
-            <button onclick="Teacher._loadStudents()" class="btn bg-blue-600"
-                    style="font-size:.8125rem;padding:.4375rem .875rem;">Refresh</button>
           </div>
-          <div id="studentsList"></div>
+          <button onclick="Teacher.logout()" class="btn bg-gray-500 hover:bg-gray-600"
+                  style="font-size:.8125rem;padding:.4375rem .875rem;">
+            Sign out
+          </button>
         </div>
 
-        <!-- Results -->
-        <div id="teacher-results" class="teacher-tab hidden">
-          <div style="margin-bottom:1rem;">
-            <h2 style="font-size:1rem;font-weight:700;">All Exam Results</h2>
-            <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:2px;">
-              Most recent first &mdash; click any card to review the full attempt
-            </p>
-          </div>
-          <div id="resultsList" class="grid gap-3 md:grid-cols-2 lg:grid-cols-3"></div>
+        <!-- ── Tab nav ── -->
+        <div style="display:flex;align-items:center;gap:.375rem;padding:.625rem 1.5rem;
+                    border-bottom:1px solid var(--c-border,#e5e7eb);flex-wrap:wrap;">
+          <button onclick="Teacher.showTab('students')" id="tab-students"
+                  class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">Students</button>
+          <button onclick="Teacher.showTab('results')" id="tab-results"
+                  class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">Results</button>
+          <button onclick="Teacher.showTab('schools')" id="tab-schools"
+                  class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">Schools</button>
+          <button onclick="Teacher.showTab('tasks')" id="tab-tasks"
+                  class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">Tasks &amp; Messages</button>
+          <button onclick="Teacher.showTab('chat')" id="tab-chat"
+                  class="tab-btn btn bg-green-600" style="font-size:.8125rem;padding:.4375rem .875rem;">Chat</button>
         </div>
 
-        <!-- Schools -->
-        <div id="teacher-schools" class="teacher-tab hidden">
-          <div style="margin-bottom:1rem;">
-            <h2 style="font-size:1rem;font-weight:700;">Manage Schools</h2>
-            <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:2px;">
-              Add, rename, or remove schools from the registration list
-            </p>
-          </div>
-          <div style="display:flex;gap:.625rem;margin-bottom:1.25rem;max-width:520px;">
-            <input id="newSchoolName" type="text" placeholder="New school name" style="flex:1;" />
-            <button onclick="Teacher.addSchool()" class="btn"
-                    style="white-space:nowrap;padding:.5rem 1rem;font-size:.875rem;">Add School</button>
-          </div>
-          <div id="schoolsList" class="space-y-2"></div>
-        </div>
+        <!-- ── Tab panels ── -->
+        <div style="padding:1.25rem 1.5rem;">
 
-        <!-- Tasks & Messages -->
-        <div id="teacher-tasks" class="teacher-tab hidden">
-          <div style="margin-bottom:1.25rem;">
-            <h2 style="font-size:1rem;font-weight:700;">Coaching Tasks &amp; Messages</h2>
-            <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:2px;">
-              Configure scheduled tasks and send private messages to students
-            </p>
+          <!-- Students -->
+          <div id="teacher-students" class="teacher-tab">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+              <div>
+                <h2 style="font-size:1rem;font-weight:700;">Registered Students</h2>
+                <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:2px;">Grouped by school</p>
+              </div>
+              <button onclick="Teacher._loadStudents()" class="btn bg-blue-600"
+                      style="font-size:.8125rem;padding:.4375rem .875rem;">Refresh</button>
+            </div>
+            <div id="studentsList"></div>
           </div>
 
-          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;" class="tasks-grid">
+          <!-- Results -->
+          <div id="teacher-results" class="teacher-tab hidden">
+            <div style="margin-bottom:1rem;">
+              <h2 style="font-size:1rem;font-weight:700;">All Exam Results</h2>
+              <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:2px;">
+                Most recent first &mdash; click any card to review the full attempt
+              </p>
+            </div>
+            <div id="resultsList" class="grid gap-3 md:grid-cols-2 lg:grid-cols-3"></div>
+          </div>
 
-            <!-- ── Coaching task config ── -->
-            <div class="glass-dark" style="padding:1.25rem;border-radius:10px;">
-              <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;
-                          padding-bottom:.75rem;border-bottom:1px solid var(--c-border,#e5e7eb);">
-                <div style="width:6px;height:6px;border-radius:50%;background:var(--c-brand,#4f46e5);"></div>
-                <h3 style="font-size:.9375rem;font-weight:700;color:var(--c-brand-text,#3730a3);">Coaching Tasks</h3>
-              </div>
+          <!-- Schools -->
+          <div id="teacher-schools" class="teacher-tab hidden">
+            <div style="margin-bottom:1rem;">
+              <h2 style="font-size:1rem;font-weight:700;">Manage Schools</h2>
+              <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:2px;">
+                Add, rename, or remove schools from the registration list
+              </p>
+            </div>
+            <div style="display:flex;gap:.625rem;margin-bottom:1.25rem;max-width:520px;">
+              <input id="newSchoolName" type="text" placeholder="New school name" style="flex:1;" />
+              <button onclick="Teacher.addSchool()" class="btn"
+                      style="white-space:nowrap;padding:.5rem 1rem;font-size:.875rem;">Add School</button>
+            </div>
+            <div id="schoolsList" class="space-y-2"></div>
+          </div>
 
-              <!-- Scope selector — now 4 options including Weekly -->
-              <div style="margin-bottom:.875rem;">
-                <label style="display:block;font-size:.75rem;font-weight:600;
-                              color:var(--c-text-2,#374151);margin-bottom:.375rem;">Assign to</label>
-                <div style="display:flex;gap:0;border:1px solid var(--c-border,#e5e7eb);
-                            border-radius:6px;overflow:hidden;width:100%;">
-                  <button id="taskScopeAll" onclick="Teacher._setTaskScope('all')"
-                          style="flex:1;padding:.4375rem .375rem;font-size:.6875rem;font-weight:600;
-                                 cursor:pointer;border:none;transition:background .12s,color .12s;
-                                 background:var(--brand,#3b5bdb);color:#fff;">All</button>
-                  <button id="taskScopeWeekly" onclick="Teacher._setTaskScope('weekly')"
-                          style="flex:1;padding:.4375rem .375rem;font-size:.6875rem;font-weight:600;
-                                 cursor:pointer;border:none;border-left:1px solid var(--c-border,#e5e7eb);
-                                 transition:background .12s,color .12s;
-                                 background:var(--surface-muted,#f3f4f6);color:var(--text-tertiary,#6b7280);">Weekly</button>
-                  <button id="taskScopeClass" onclick="Teacher._setTaskScope('class')"
-                          style="flex:1;padding:.4375rem .375rem;font-size:.6875rem;font-weight:600;
-                                 cursor:pointer;border:none;border-left:1px solid var(--c-border,#e5e7eb);
-                                 transition:background .12s,color .12s;
-                                 background:var(--surface-muted,#f3f4f6);color:var(--text-tertiary,#6b7280);">By Class</button>
-                  <button id="taskScopeStudent" onclick="Teacher._setTaskScope('student')"
-                          style="flex:1;padding:.4375rem .375rem;font-size:.6875rem;font-weight:600;
-                                 cursor:pointer;border:none;border-left:1px solid var(--c-border,#e5e7eb);
-                                 transition:background .12s,color .12s;
-                                 background:var(--surface-muted,#f3f4f6);color:var(--text-tertiary,#6b7280);">By Student</button>
-                </div>
-              </div>
-
-              <!-- Weekly hint -->
-              <div id="taskWeeklyHint" style="display:none;margin-bottom:.75rem;padding:.5rem .75rem;
-                   background:var(--brand-bg,#edf2ff);border:1px solid var(--brand-border,#bac8ff);
-                   border-radius:6px;font-size:.75rem;color:var(--brand-text,#3730a3);line-height:1.6;">
-                🔄 Weekly tasks repeat automatically every week. Select the days below; the system
-                will resolve the exact dates for each week on its own.
-              </div>
-
-              <!-- Class target -->
-              <div id="taskTargetClassWrap" style="display:none;margin-bottom:.75rem;">
-                <label style="display:block;font-size:.75rem;font-weight:600;
-                              color:var(--c-text-2,#374151);margin-bottom:.375rem;">Class</label>
-                <select id="taskTargetClass" onchange="Teacher._onTaskTargetChange()">
-                  <option value="">Select a class...</option>
-                </select>
-              </div>
-
-              <!-- Student target -->
-              <div id="taskTargetStudentWrap" style="display:none;margin-bottom:.75rem;">
-                <label style="display:block;font-size:.75rem;font-weight:600;
-                              color:var(--c-text-2,#374151);margin-bottom:.375rem;">Student</label>
-                <select id="taskTargetStudent" onchange="Teacher._onTaskTargetChange()">
-                  <option value="">Select a student...</option>
-                </select>
-              </div>
-
-              <!-- Active toggle -->
-              <label style="display:flex;align-items:center;gap:.625rem;margin-bottom:.875rem;
-                            cursor:pointer;padding:.625rem .75rem;border-radius:8px;
-                            border:1px solid var(--c-border,#e5e7eb);background:var(--c-surface,#fff);">
-                <input type="checkbox" id="tasksActive"
-                       style="width:1rem;height:1rem;accent-color:var(--c-brand,#4f46e5);
-                              flex-shrink:0;cursor:pointer;" />
-                <div>
-                  <span style="font-size:.875rem;font-weight:600;color:var(--c-text,#111827);">Active</span>
-                  <span style="display:block;font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin-top:1px;">
-                    Students only see this task when Active is checked
-                  </span>
-                </div>
-              </label>
-
-              <!-- Title -->
-              <div style="margin-bottom:.75rem;">
-                <label style="display:block;font-size:.75rem;font-weight:600;
-                              color:var(--c-text-2,#374151);margin-bottom:.375rem;">Task Title</label>
-                <input type="text" id="tasksTitle" placeholder="e.g., Weekend Challenge" />
-              </div>
-
-              <!-- Message -->
-              <div style="margin-bottom:.875rem;">
-                <label style="display:block;font-size:.75rem;font-weight:600;
-                              color:var(--c-text-2,#374151);margin-bottom:.375rem;">Message for Students</label>
-                <textarea id="tasksMessage" placeholder="Instructions or motivation..."
-                          style="height:5.5rem;resize:vertical;"></textarea>
-              </div>
-
-              <!-- Date / day picker area -->
-              <div style="margin-bottom:.875rem;">
-                <label style="display:block;font-size:.75rem;font-weight:600;
-                              color:var(--c-text-2,#374151);margin-bottom:.375rem;">
-                  <span id="taskDateLabel">Task Dates &amp; Subjects</span>
-                </label>
-                <p id="taskDateHint" style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin-bottom:.5rem;line-height:1.5;">
-                  Add each date then choose which subjects are required for that day.
-                  Leave all unchecked on a date = no subject restriction for that day.
-                </p>
-
-                <!-- Calendar date input (non-weekly) -->
-                <div id="taskDatePickerWrap" style="display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;">
-                  <input type="date" id="newTaskDate" style="flex:1;" />
-                  <button onclick="Teacher.addTaskDate()" class="btn"
-                          style="white-space:nowrap;padding:.5rem .875rem;font-size:.8125rem;">+ Add</button>
-                </div>
-
-                <!-- Day-of-week selector (weekly scope only) -->
-                <div id="taskDayOfWeekPickerWrap" style="display:none;margin-bottom:.5rem;">
-                  <select id="newTaskDayOfWeek" style="flex:1;width:100%;">
-                    <option value="">Select a day of the week...</option>
-                    <option value="Monday">Monday</option>
-                    <option value="Tuesday">Tuesday</option>
-                    <option value="Wednesday">Wednesday</option>
-                    <option value="Thursday">Thursday</option>
-                    <option value="Friday">Friday</option>
-                    <option value="Saturday">Saturday</option>
-                    <option value="Sunday">Sunday</option>
-                  </select>
-                  <button onclick="Teacher.addTaskDate()" class="btn"
-                          style="white-space:nowrap;padding:.5rem .875rem;font-size:.8125rem;margin-top:.375rem;width:100%;">
-                    + Add Day
-                  </button>
-                </div>
-
-                <div id="tasksDates" class="space-y-1"></div>
-              </div>
-
-              <!-- Actions -->
-              <div style="display:flex;gap:.5rem;padding-top:.875rem;
-                          border-top:1px solid var(--c-border,#e5e7eb);">
-                <button id="saveTasksBtn" onclick="Teacher.saveTasksConfig()"
-                        class="btn bg-green-600 hover:bg-green-700"
-                        style="flex:1;font-size:.875rem;padding:.5625rem .875rem;">
-                  Save &amp; Apply
-                </button>
-              </div>
+          <!-- Tasks & Messages -->
+          <div id="teacher-tasks" class="teacher-tab hidden">
+            <div style="margin-bottom:1.25rem;">
+              <h2 style="font-size:1rem;font-weight:700;">Coaching Tasks &amp; Messages</h2>
+              <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:2px;">
+                Configure scheduled tasks and send private messages to students
+              </p>
             </div>
 
-            <!-- ── Private message sender ── (unchanged HTML) -->
-            <div class="glass-dark" style="padding:1.25rem;border-radius:10px;">
-              <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;
-                          padding-bottom:.75rem;border-bottom:1px solid var(--c-border,#e5e7eb);">
-                <div style="width:6px;height:6px;border-radius:50%;background:var(--c-danger,#dc2626);"></div>
-                <h3 style="font-size:.9375rem;font-weight:700;color:var(--c-danger,#dc2626);">Private Message</h3>
-              </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;" class="tasks-grid">
 
-              <div style="margin-bottom:.75rem;">
-                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.375rem;">
-                  <label style="font-size:.75rem;font-weight:600;color:var(--c-text-2,#374151);">Recipients</label>
-                  <div style="display:flex;border:1px solid var(--c-border,#e5e7eb);border-radius:6px;overflow:hidden;">
-                    <button id="msgModeSingle" onclick="Teacher._setMsgMode('single')"
-                            style="padding:2px 9px;font-size:.6875rem;font-weight:600;cursor:pointer;
-                                   border:none;background:var(--brand,#3b5bdb);color:#fff;">Single</button>
-                    <button id="msgModeMulti" onclick="Teacher._setMsgMode('multi')"
-                            style="padding:2px 9px;font-size:.6875rem;font-weight:600;cursor:pointer;
-                                   border:none;background:var(--surface-muted,#f3f4f6);color:var(--text-tertiary,#6b7280);">Multiple</button>
+              <!-- ── Coaching task config ── -->
+              <div class="glass-dark" style="padding:1.25rem;border-radius:10px;">
+                <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;
+                            padding-bottom:.75rem;border-bottom:1px solid var(--c-border,#e5e7eb);">
+                  <div style="width:6px;height:6px;border-radius:50%;background:var(--c-brand,#4f46e5);"></div>
+                  <h3 style="font-size:.9375rem;font-weight:700;color:var(--c-brand-text,#3730a3);">Coaching Tasks</h3>
+                </div>
+
+                <!-- Scope selector -->
+                <div style="margin-bottom:.875rem;">
+                  <label style="display:block;font-size:.75rem;font-weight:600;
+                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">Task type</label>
+                  <div style="display:flex;gap:0;border:1px solid var(--c-border,#e5e7eb);
+                              border-radius:6px;overflow:hidden;width:100%;">
+                    <button id="taskScopeAll" onclick="Teacher._setTaskScope('all')"
+                            style="flex:1;padding:.4375rem .375rem;font-size:.6875rem;font-weight:600;
+                                   cursor:pointer;border:none;transition:background .12s,color .12s;
+                                   background:var(--brand,#3b5bdb);color:#fff;">One-time</button>
+                    <button id="taskScopeWeekly" onclick="Teacher._setTaskScope('weekly')"
+                            style="flex:1;padding:.4375rem .375rem;font-size:.6875rem;font-weight:600;
+                                   cursor:pointer;border:none;border-left:1px solid var(--c-border,#e5e7eb);
+                                   transition:background .12s,color .12s;
+                                   background:var(--surface-muted,#f3f4f6);color:var(--text-tertiary,#6b7280);">Weekly</button>
                   </div>
                 </div>
-                <div id="msgSingleWrap">
-                  <select id="msgStudent"><option value="">Select a student...</option></select>
+
+                <!-- Weekly hint (hidden until weekly selected) -->
+                <div id="taskWeeklyHint" style="display:none;margin-bottom:.75rem;padding:.5rem .75rem;
+                     background:var(--brand-bg,#edf2ff);border:1px solid var(--brand-border,#bac8ff);
+                     border-radius:6px;font-size:.75rem;color:var(--brand-text,#3730a3);line-height:1.6;">
+                  🔄 Weekly tasks repeat automatically every week. Select the days below; the system
+                  will resolve the exact dates for each week on its own.
                 </div>
-                <div id="msgMultiWrap" style="display:none;">
-                  <input id="msgStudentSearch" type="text" placeholder="Search students..."
-                         oninput="Teacher._filterMsgStudents()" style="margin-bottom:.375rem;" />
-                  <div id="msgStudentList"
-                       style="max-height:160px;overflow-y:auto;border:1.5px solid var(--border-medium,#d1d5db);
-                              border-radius:6px;background:var(--surface,#fff);"></div>
-                  <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.375rem;">
-                    <span id="msgSelectedCount" style="font-size:.75rem;color:var(--text-tertiary,#6b7280);">0 selected</span>
-                    <div style="display:flex;gap:.375rem;align-items:center;">
-                      <button onclick="Teacher._selectAllMsgStudents()"
-                              style="font-size:.6875rem;font-weight:600;color:var(--brand,#3b5bdb);
-                                     background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">Select all</button>
-                      <span style="color:var(--border-medium,#d1d5db);">·</span>
-                      <button onclick="Teacher._clearMsgStudents()"
-                              style="font-size:.6875rem;font-weight:600;color:var(--text-tertiary,#6b7280);
-                                     background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">Clear</button>
+
+                <!-- Weekly sub-target picker (injected by _renderWeeklySubTargetPicker) -->
+                <!-- id="taskWeeklySubTargetWrap" inserted here at runtime -->
+
+                <!-- Assign-to selector (shown for one-time tasks) -->
+                <div id="taskAssignToWrap" style="margin-bottom:.875rem;">
+                  <label style="display:block;font-size:.75rem;font-weight:600;
+                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">Assign to</label>
+                  <div style="display:flex;gap:0;border:1px solid var(--c-border,#e5e7eb);
+                              border-radius:6px;overflow:hidden;width:100%;">
+                    <button id="taskAssignAll" onclick="Teacher._setAssignScope('all')"
+                            style="flex:1;padding:.4375rem .375rem;font-size:.6875rem;font-weight:600;
+                                   cursor:pointer;border:none;transition:background .12s,color .12s;
+                                   background:var(--brand,#3b5bdb);color:#fff;">All</button>
+                    <button id="taskAssignClass" onclick="Teacher._setAssignScope('class')"
+                            style="flex:1;padding:.4375rem .375rem;font-size:.6875rem;font-weight:600;
+                                   cursor:pointer;border:none;border-left:1px solid var(--c-border,#e5e7eb);
+                                   transition:background .12s,color .12s;
+                                   background:var(--surface-muted,#f3f4f6);color:var(--text-tertiary,#6b7280);">By Class</button>
+                    <button id="taskAssignStudent" onclick="Teacher._setAssignScope('student')"
+                            style="flex:1;padding:.4375rem .375rem;font-size:.6875rem;font-weight:600;
+                                   cursor:pointer;border:none;border-left:1px solid var(--c-border,#e5e7eb);
+                                   transition:background .12s,color .12s;
+                                   background:var(--surface-muted,#f3f4f6);color:var(--text-tertiary,#6b7280);">By Student</button>
+                  </div>
+                </div>
+
+                <!-- Class target -->
+                <div id="taskTargetClassWrap" style="display:none;margin-bottom:.75rem;">
+                  <label style="display:block;font-size:.75rem;font-weight:600;
+                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">Class</label>
+                  <select id="taskTargetClass" onchange="Teacher._onTaskTargetChange()">
+                    <option value="">Select a class...</option>
+                  </select>
+                </div>
+
+                <!-- Student target -->
+                <div id="taskTargetStudentWrap" style="display:none;margin-bottom:.75rem;">
+                  <label style="display:block;font-size:.75rem;font-weight:600;
+                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">Student</label>
+                  <select id="taskTargetStudent" onchange="Teacher._onTaskTargetChange()">
+                    <option value="">Select a student...</option>
+                  </select>
+                </div>
+
+                <!-- Active toggle -->
+                <label style="display:flex;align-items:center;gap:.625rem;margin-bottom:.875rem;
+                              cursor:pointer;padding:.625rem .75rem;border-radius:8px;
+                              border:1px solid var(--c-border,#e5e7eb);background:var(--c-surface,#fff);">
+                  <input type="checkbox" id="tasksActive"
+                         style="width:1rem;height:1rem;accent-color:var(--c-brand,#4f46e5);
+                                flex-shrink:0;cursor:pointer;" />
+                  <div>
+                    <span style="font-size:.875rem;font-weight:600;color:var(--c-text,#111827);">Active</span>
+                    <span style="display:block;font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin-top:1px;">
+                      Students only see this task when Active is checked
+                    </span>
+                  </div>
+                </label>
+
+                <!-- Title -->
+                <div style="margin-bottom:.75rem;">
+                  <label style="display:block;font-size:.75rem;font-weight:600;
+                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">Task Title</label>
+                  <input type="text" id="tasksTitle" placeholder="e.g., Weekend Challenge" />
+                </div>
+
+                <!-- Message -->
+                <div style="margin-bottom:.875rem;">
+                  <label style="display:block;font-size:.75rem;font-weight:600;
+                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">Message for Students</label>
+                  <textarea id="tasksMessage" placeholder="Instructions or motivation..."
+                            style="height:5.5rem;resize:vertical;"></textarea>
+                </div>
+
+                <!-- Date / day picker area -->
+                <div style="margin-bottom:.875rem;">
+                  <label style="display:block;font-size:.75rem;font-weight:600;
+                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">
+                    <span id="taskDateLabel">Task Dates &amp; Subjects</span>
+                  </label>
+                  <p id="taskDateHint" style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin-bottom:.5rem;line-height:1.5;">
+                    Add each date then choose which subjects are required for that day.
+                    Leave all unchecked on a date = no subject restriction for that day.
+                  </p>
+
+                  <!-- Calendar date input (one-time) -->
+                  <div id="taskDatePickerWrap" style="display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;">
+                    <input type="date" id="newTaskDate" style="flex:1;" />
+                    <button onclick="Teacher.addTaskDate()" class="btn"
+                            style="white-space:nowrap;padding:.5rem .875rem;font-size:.8125rem;">+ Add</button>
+                  </div>
+
+                  <!-- Day-of-week selector (weekly only) -->
+                  <div id="taskDayOfWeekPickerWrap" style="display:none;margin-bottom:.5rem;">
+                    <select id="newTaskDayOfWeek" style="flex:1;width:100%;">
+                      <option value="">Select a day of the week...</option>
+                      <option value="Monday">Monday</option>
+                      <option value="Tuesday">Tuesday</option>
+                      <option value="Wednesday">Wednesday</option>
+                      <option value="Thursday">Thursday</option>
+                      <option value="Friday">Friday</option>
+                      <option value="Saturday">Saturday</option>
+                      <option value="Sunday">Sunday</option>
+                    </select>
+                    <button onclick="Teacher.addTaskDate()" class="btn"
+                            style="white-space:nowrap;padding:.5rem .875rem;font-size:.8125rem;margin-top:.375rem;width:100%;">
+                      + Add Day
+                    </button>
+                  </div>
+
+                  <div id="tasksDates" class="space-y-1"></div>
+                </div>
+
+                <!-- Actions -->
+                <div style="display:flex;gap:.5rem;padding-top:.875rem;
+                            border-top:1px solid var(--c-border,#e5e7eb);">
+                  <button id="saveTasksBtn" onclick="Teacher.saveTasksConfig()"
+                          class="btn bg-green-600 hover:bg-green-700"
+                          style="flex:1;font-size:.875rem;padding:.5625rem .875rem;">
+                    Save &amp; Apply
+                  </button>
+                </div>
+              </div>
+
+              <!-- ── Private message sender ── -->
+              <div class="glass-dark" style="padding:1.25rem;border-radius:10px;">
+                <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;
+                            padding-bottom:.75rem;border-bottom:1px solid var(--c-border,#e5e7eb);">
+                  <div style="width:6px;height:6px;border-radius:50%;background:var(--c-danger,#dc2626);"></div>
+                  <h3 style="font-size:.9375rem;font-weight:700;color:var(--c-danger,#dc2626);">Private Message</h3>
+                </div>
+
+                <div style="margin-bottom:.75rem;">
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.375rem;">
+                    <label style="font-size:.75rem;font-weight:600;color:var(--c-text-2,#374151);">Recipients</label>
+                    <div style="display:flex;border:1px solid var(--c-border,#e5e7eb);border-radius:6px;overflow:hidden;">
+                      <button id="msgModeSingle" onclick="Teacher._setMsgMode('single')"
+                              style="padding:2px 9px;font-size:.6875rem;font-weight:600;cursor:pointer;
+                                     border:none;background:var(--brand,#3b5bdb);color:#fff;">Single</button>
+                      <button id="msgModeMulti" onclick="Teacher._setMsgMode('multi')"
+                              style="padding:2px 9px;font-size:.6875rem;font-weight:600;cursor:pointer;
+                                     border:none;background:var(--surface-muted,#f3f4f6);color:var(--text-tertiary,#6b7280);">Multiple</button>
+                    </div>
+                  </div>
+                  <div id="msgSingleWrap">
+                    <select id="msgStudent"><option value="">Select a student...</option></select>
+                  </div>
+                  <div id="msgMultiWrap" style="display:none;">
+                    <input id="msgStudentSearch" type="text" placeholder="Search students..."
+                           oninput="Teacher._filterMsgStudents()" style="margin-bottom:.375rem;" />
+                    <div id="msgStudentList"
+                         style="max-height:160px;overflow-y:auto;border:1.5px solid var(--border-medium,#d1d5db);
+                                border-radius:6px;background:var(--surface,#fff);"></div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.375rem;">
+                      <span id="msgSelectedCount" style="font-size:.75rem;color:var(--text-tertiary,#6b7280);">0 selected</span>
+                      <div style="display:flex;gap:.375rem;align-items:center;">
+                        <button onclick="Teacher._selectAllMsgStudents()"
+                                style="font-size:.6875rem;font-weight:600;color:var(--brand,#3b5bdb);
+                                       background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">Select all</button>
+                        <span style="color:var(--border-medium,#d1d5db);">·</span>
+                        <button onclick="Teacher._clearMsgStudents()"
+                                style="font-size:.6875rem;font-weight:600;color:var(--text-tertiary,#6b7280);
+                                       background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">Clear</button>
+                      </div>
                     </div>
                   </div>
                 </div>
+
+                <div style="margin-bottom:.75rem;">
+                  <label style="display:block;font-size:.75rem;font-weight:600;
+                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">Message</label>
+                  <textarea id="msgText" placeholder="Write your private message..."
+                            style="height:6rem;resize:vertical;"></textarea>
+                </div>
+
+                <div style="margin-bottom:.875rem;">
+                  <label style="display:block;font-size:.75rem;font-weight:600;
+                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">Expires after</label>
+                  <select id="msgDuration">
+                    <option value="3600000">1 hour</option>
+                    <option value="86400000">1 day</option>
+                    <option value="172800000">2 days</option>
+                    <option value="259200000">3 days</option>
+                    <option value="604800000">1 week</option>
+                    <option value="1209600000">2 weeks</option>
+                    <option value="2592000000">30 days</option>
+                  </select>
+                </div>
+
+                <div style="padding-top:.875rem;border-top:1px solid var(--c-border,#e5e7eb);">
+                  <button id="sendMsgBtn" onclick="Teacher.sendPrivateMessage()"
+                          class="btn bg-red-600 hover:bg-red-700"
+                          style="width:100%;justify-content:center;font-size:.875rem;">
+                    Send Private Message
+                  </button>
+                </div>
               </div>
 
-              <div style="margin-bottom:.75rem;">
-                <label style="display:block;font-size:.75rem;font-weight:600;
-                              color:var(--c-text-2,#374151);margin-bottom:.375rem;">Message</label>
-                <textarea id="msgText" placeholder="Write your private message..."
-                          style="height:6rem;resize:vertical;"></textarea>
-              </div>
+            </div><!-- /tasks-grid -->
+          </div>
 
-              <div style="margin-bottom:.875rem;">
-                <label style="display:block;font-size:.75rem;font-weight:600;
-                              color:var(--c-text-2,#374151);margin-bottom:.375rem;">Expires after</label>
-                <select id="msgDuration">
-                  <option value="3600000">1 hour</option>
-                  <option value="86400000">1 day</option>
-                  <option value="172800000">2 days</option>
-                  <option value="259200000">3 days</option>
-                  <option value="604800000">1 week</option>
-                  <option value="1209600000">2 weeks</option>
-                  <option value="2592000000">30 days</option>
-                </select>
-              </div>
+        </div><!-- /tab panels wrapper -->
+      </div>`;
 
-              <div style="padding-top:.875rem;border-top:1px solid var(--c-border,#e5e7eb);">
-                <button id="sendMsgBtn" onclick="Teacher.sendPrivateMessage()"
-                        class="btn bg-red-600 hover:bg-red-700"
-                        style="width:100%;justify-content:center;font-size:.875rem;">
-                  Send Private Message
-                </button>
-              </div>
-            </div>
+    const style = document.createElement('style');
+    style.id = '_teacherGridStyle';
+    style.textContent = `
+      @media (max-width: 768px) {
+        .tasks-grid { grid-template-columns: 1fr !important; }
+      }
+      .teacher-result-card {
+        cursor: pointer;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+      }
+      .teacher-result-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(0,0,0,.10);
+        border-color: var(--brand-border, #bac8ff);
+      }
+      #teacherReviewModal {
+        position: fixed; inset: 0;
+        background: rgba(17,24,39,.6);
+        z-index: 1200;
+        display: flex; align-items: flex-start; justify-content: center;
+        padding: 1.25rem; overflow-y: auto;
+        backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
+        animation: cbt-overlay-in 0.16s ease-out both;
+      }
+      #teacherReviewModal .review-panel {
+        background: var(--surface, #fff);
+        border: 1px solid var(--border, #e5e7eb);
+        border-radius: 12px; padding: 1.5rem;
+        width: 100%; max-width: 760px; margin: auto;
+        box-shadow: 0 8px 32px rgba(0,0,0,.12);
+        animation: cbt-modal-in 0.24s cubic-bezier(.34,1.45,.64,1) both;
+      }
+      .review-q-card { border-radius:8px; padding:1rem; border-width:2px; border-style:solid; }
+      .review-q-card--correct  { border-color:var(--success,#2f9e44); background:var(--success-bg,#ebfbee); }
+      .review-q-card--wrong    { border-color:var(--danger,#e03131);  background:var(--danger-bg,#fff5f5); }
+      .review-q-card--skipped  { border-color:var(--border-medium,#d1d5db); background:var(--surface-subtle,#f9fafb); }
+      .task-date-row .date-subj-list label:last-child { border-bottom: none; }
+      .progress-student-row { transition: background .12s; }
+      .progress-student-row:hover { background: var(--brand-bg,#edf2ff) !important; }
+    `;
+    if (!document.getElementById('_teacherGridStyle')) {
+      document.head.appendChild(style);
+    }
 
-          </div><!-- /tasks-grid -->
-        </div>
-
-      </div><!-- /tab panels wrapper -->
-    </div>`;
-
-  const style = document.createElement('style');
-  style.id = '_teacherGridStyle';
-  style.textContent = `
-    @media (max-width: 768px) {
-      .tasks-grid { grid-template-columns: 1fr !important; }
-    }
-    .teacher-result-card {
-      cursor: pointer;
-      transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
-    }
-    .teacher-result-card:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(0,0,0,.10);
-      border-color: var(--brand-border, #bac8ff);
-    }
-    #teacherReviewModal {
-      position: fixed; inset: 0;
-      background: rgba(17,24,39,.6);
-      z-index: 1200;
-      display: flex; align-items: flex-start; justify-content: center;
-      padding: 1.25rem; overflow-y: auto;
-      backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
-      animation: cbt-overlay-in 0.16s ease-out both;
-    }
-    #teacherReviewModal .review-panel {
-      background: var(--surface, #fff);
-      border: 1px solid var(--border, #e5e7eb);
-      border-radius: 12px; padding: 1.5rem;
-      width: 100%; max-width: 760px; margin: auto;
-      box-shadow: 0 8px 32px rgba(0,0,0,.12);
-      animation: cbt-modal-in 0.24s cubic-bezier(.34,1.45,.64,1) both;
-    }
-    .review-q-card { border-radius:8px; padding:1rem; border-width:2px; border-style:solid; }
-    .review-q-card--correct  { border-color:var(--success,#2f9e44); background:var(--success-bg,#ebfbee); }
-    .review-q-card--wrong    { border-color:var(--danger,#e03131);  background:var(--danger-bg,#fff5f5); }
-    .review-q-card--skipped  { border-color:var(--border-medium,#d1d5db); background:var(--surface-subtle,#f9fafb); }
-    .task-date-row .date-subj-list label:last-child { border-bottom: none; }
-    .progress-student-row { transition: background .12s; }
-    .progress-student-row:hover { background: var(--brand-bg,#edf2ff) !important; }
-  `;
-  if (!document.getElementById('_teacherGridStyle')) {
-    document.head.appendChild(style);
+    showTab('students');
   }
-
-  showTab('students');
-}
 
   /* -------------------------------------------------- */
   /* Tab switching                                       */
@@ -943,67 +959,73 @@
   /* Tasks & Messages tab                                */
   /* -------------------------------------------------- */
 
-  let _taskScope = 'all';
+  // _taskScope:   'all' | 'weekly'
+  // _assignScope: 'all' | 'class' | 'student'  (for one-time AND weekly tasks)
+  let _taskScope   = 'all';
+  let _assignScope = 'all';
 
+  /* ── _setTaskScope: toggles between One-time and Weekly ── */
   function _setTaskScope(scope) {
-  _taskScope = scope;
-  const classWrap   = document.getElementById('taskTargetClassWrap');
-  const studentWrap = document.getElementById('taskTargetStudentWrap');
-  const weeklyHint  = document.getElementById('taskWeeklyHint');
-  const datePickerW = document.getElementById('taskDatePickerWrap');
-  const dayPickerW  = document.getElementById('taskDayOfWeekPickerWrap');
-  const dateLabel   = document.getElementById('taskDateLabel');
-  const dateHint    = document.getElementById('taskDateHint');
-  const btnAll      = document.getElementById('taskScopeAll');
-  const btnWeekly   = document.getElementById('taskScopeWeekly');
-  const btnClass    = document.getElementById('taskScopeClass');
-  const btnStudent  = document.getElementById('taskScopeStudent');
+    _taskScope = scope;
 
-  [btnAll, btnWeekly, btnClass, btnStudent].forEach(b => {
-    if (b) { b.style.background = 'var(--surface-muted,#f3f4f6)'; b.style.color = 'var(--text-tertiary,#6b7280)'; }
-  });
+    const btnAll    = document.getElementById('taskScopeAll');
+    const btnWeekly = document.getElementById('taskScopeWeekly');
 
-  const highlight = btn => {
-    if (btn) { btn.style.background = 'var(--brand,#3b5bdb)'; btn.style.color = '#fff'; }
-  };
+    [btnAll, btnWeekly].forEach(b => {
+      if (b) { b.style.background = 'var(--surface-muted,#f3f4f6)'; b.style.color = 'var(--text-tertiary,#6b7280)'; }
+    });
 
-  // Reset pickers
-  if (classWrap)   classWrap.style.display   = 'none';
-  if (studentWrap) studentWrap.style.display = 'none';
-  if (weeklyHint)  weeklyHint.style.display  = 'none';
+    const active = scope === 'weekly' ? btnWeekly : btnAll;
+    if (active) { active.style.background = 'var(--brand,#3b5bdb)'; active.style.color = '#fff'; }
 
-  if (scope === 'all') {
-    highlight(btnAll);
-    if (datePickerW) datePickerW.style.display = '';
-    if (dayPickerW)  dayPickerW.style.display  = 'none';
-    if (dateLabel)   dateLabel.innerHTML = 'Task Dates &amp; Subjects';
-    if (dateHint)    dateHint.textContent = 'Add each date then choose which subjects are required for that day. Leave all unchecked = no restriction.';
-  } else if (scope === 'weekly') {
-    highlight(btnWeekly);
-    if (weeklyHint)  weeklyHint.style.display  = '';
-    if (datePickerW) datePickerW.style.display = 'none';
-    if (dayPickerW)  dayPickerW.style.display  = '';
-    if (dateLabel)   dateLabel.innerHTML = 'Days of Week &amp; Subjects';
-    if (dateHint)    dateHint.textContent = 'Select which days of the week this task runs. The system automatically maps these to the correct calendar dates each week.';
-  } else if (scope === 'class') {
-    highlight(btnClass);
-    if (classWrap)   classWrap.style.display   = '';
-    if (datePickerW) datePickerW.style.display = '';
-    if (dayPickerW)  dayPickerW.style.display  = 'none';
-    if (dateLabel)   dateLabel.innerHTML = 'Task Dates &amp; Subjects';
-    if (dateHint)    dateHint.textContent = 'Add each date then choose which subjects are required for that day. Leave all unchecked = no restriction.';
-  } else {
-    // student
-    highlight(btnStudent);
-    if (studentWrap) studentWrap.style.display = '';
-    if (datePickerW) datePickerW.style.display = '';
-    if (dayPickerW)  dayPickerW.style.display  = 'none';
-    if (dateLabel)   dateLabel.innerHTML = 'Task Dates &amp; Subjects';
-    if (dateHint)    dateHint.textContent = 'Add each date then choose which subjects are required for that day. Leave all unchecked = no restriction.';
+    const weeklyHint  = document.getElementById('taskWeeklyHint');
+    const datePickerW = document.getElementById('taskDatePickerWrap');
+    const dayPickerW  = document.getElementById('taskDayOfWeekPickerWrap');
+    const dateLabel   = document.getElementById('taskDateLabel');
+    const dateHint    = document.getElementById('taskDateHint');
+
+    if (scope === 'weekly') {
+      if (weeklyHint)  weeklyHint.style.display  = '';
+      if (datePickerW) datePickerW.style.display = 'none';
+      if (dayPickerW)  dayPickerW.style.display  = '';
+      if (dateLabel)   dateLabel.innerHTML = 'Days of Week &amp; Subjects';
+      if (dateHint)    dateHint.textContent = 'Select which days of the week this task runs. The system automatically maps these to the correct calendar dates each week.';
+    } else {
+      if (weeklyHint)  weeklyHint.style.display  = 'none';
+      if (datePickerW) datePickerW.style.display = '';
+      if (dayPickerW)  dayPickerW.style.display  = 'none';
+      if (dateLabel)   dateLabel.innerHTML = 'Task Dates &amp; Subjects';
+      if (dateHint)    dateHint.textContent = 'Add each date then choose which subjects are required for that day. Leave all unchecked = no restriction.';
+    }
+
+    // Reset assign scope back to 'all' and re-render the assign-to buttons
+    _setAssignScope('all');
+    _clearTaskForm();
   }
 
-  _clearTaskForm();
-}
+  /* ── _setAssignScope: All / By Class / By Student (works for both one-time and weekly) ── */
+  function _setAssignScope(scope) {
+    _assignScope = scope;
+
+    const btnAll     = document.getElementById('taskAssignAll');
+    const btnClass   = document.getElementById('taskAssignClass');
+    const btnStudent = document.getElementById('taskAssignStudent');
+    const classWrap  = document.getElementById('taskTargetClassWrap');
+    const studWrap   = document.getElementById('taskTargetStudentWrap');
+
+    [btnAll, btnClass, btnStudent].forEach(b => {
+      if (b) { b.style.background = 'var(--surface-muted,#f3f4f6)'; b.style.color = 'var(--text-tertiary,#6b7280)'; }
+    });
+
+    const active = scope === 'class' ? btnClass : scope === 'student' ? btnStudent : btnAll;
+    if (active) { active.style.background = 'var(--brand,#3b5bdb)'; active.style.color = '#fff'; }
+
+    if (classWrap)  classWrap.style.display  = scope === 'class'   ? '' : 'none';
+    if (studWrap)   studWrap.style.display   = scope === 'student' ? '' : 'none';
+
+    // Rebuild date/day rows so subject lists match the new target
+    _onTaskTargetChange();
+  }
 
   function _clearTaskForm() {
     const activeEl  = document.getElementById('tasksActive');
@@ -1016,52 +1038,79 @@
     if (datesEl)   datesEl.innerHTML = '';
   }
 
+  /* ── _currentTaskDocId ──
+     Generates the Firestore doc ID for the task being saved.
+
+     One-time:
+       all     → 'global'
+       class   → 'class_sss1'
+       student → 'student_UID'
+
+     Weekly:
+       all     → 'weekly'
+       class   → 'weekly_class_sss1'
+       student → 'weekly_student_UID'
+  */
   function _currentTaskDocId() {
-  if (_taskScope === 'all')    return 'global';
-  if (_taskScope === 'weekly') return 'weekly';
-  if (_taskScope === 'class') {
-    const sel = document.getElementById('taskTargetClass');
-    const cls = sel ? sel.value.trim() : '';
-    if (!cls) return null;
-    return 'class_' + cls.replace(/\s+/g, '').toLowerCase();
+    const prefix = _taskScope === 'weekly' ? 'weekly' : '';
+
+    if (_assignScope === 'all') {
+      return prefix || 'global';
+    }
+
+    if (_assignScope === 'class') {
+      const sel = document.getElementById('taskTargetClass');
+      const cls = sel ? sel.value.trim() : '';
+      if (!cls) return null;
+      const classKey = 'class_' + cls.replace(/\s+/g, '').toLowerCase();
+      return prefix ? prefix + '_' + classKey : classKey;
+    }
+
+    if (_assignScope === 'student') {
+      const sel = document.getElementById('taskTargetStudent');
+      const uid = sel ? sel.value.trim() : '';
+      if (!uid) return null;
+      const studentKey = 'student_' + uid;
+      return prefix ? prefix + '_' + studentKey : studentKey;
+    }
+
+    return null;
   }
-  if (_taskScope === 'student') {
-    const sel = document.getElementById('taskTargetStudent');
-    const uid = sel ? sel.value.trim() : '';
-    if (!uid) return null;
-    return 'student_' + uid;
-  }
-  return null;
-}
 
   function _onTaskTargetChange() {
-    // Rebuild any already-added date rows with the correct subject list
-    // for the newly selected target.
+    // Rebuild existing date/day rows with correct subject list for new target
     const datesEl = document.getElementById('tasksDates');
     if (!datesEl) return;
-    const existingDates = Array.from(datesEl.querySelectorAll('.task-date-row'))
-                               .map(r => r.dataset.date);
+    const existingRows = Array.from(datesEl.querySelectorAll('.task-date-row'));
+    const data = existingRows.map(r => ({
+      date:     r.dataset.date,
+      isWeekly: r.dataset.isWeekly === 'true',
+    }));
     datesEl.innerHTML = '';
-    existingDates.forEach(d => _appendDateItem(d, []));
+    data.forEach(({ date, isWeekly }) => _appendDateItem(date, [], isWeekly));
   }
 
-  /* ── Get subjects for the current scope/target ── */
+  /* ── _getSubjectsForCurrentScope ── */
   function _getSubjectsForCurrentScope() {
     const qBank = window.questions || {};
-    if (_taskScope === 'all') {
+
+    if (_assignScope === 'all') {
+      // Union of every subject across all classes
       const all = new Set();
       Object.values(qBank).forEach(classSubjects => {
         Object.keys(classSubjects).forEach(s => all.add(s));
       });
       return [...all].sort();
     }
-    if (_taskScope === 'class') {
+
+    if (_assignScope === 'class') {
       const sel = document.getElementById('taskTargetClass');
       const cls = sel ? sel.value.trim() : '';
       if (!cls) return [];
       return Object.keys(qBank[cls.replace(/\s+/g, '').toLowerCase()] || {}).sort();
     }
-    if (_taskScope === 'student') {
+
+    if (_assignScope === 'student') {
       const sel = document.getElementById('taskTargetStudent');
       const uid = sel ? sel.value.trim() : '';
       if (!uid) return [];
@@ -1069,135 +1118,134 @@
       if (!student || !student.cls) return [];
       return Object.keys(qBank[student.cls.replace(/\s+/g, '').toLowerCase()] || {}).sort();
     }
+
     return [];
   }
 
   /* ── addTaskDate ── */
   function addTaskDate() {
-  const container = document.getElementById('tasksDates');
-  if (!container) return;
+    const container = document.getElementById('tasksDates');
+    if (!container) return;
 
-  if (_taskScope === 'weekly') {
-    const daySelect = document.getElementById('newTaskDayOfWeek');
-    const val = daySelect ? daySelect.value.trim() : '';
-    if (!val) { UI.toast('Please select a day of the week.', 'warning'); return; }
+    if (_taskScope === 'weekly') {
+      const daySelect = document.getElementById('newTaskDayOfWeek');
+      const val = daySelect ? daySelect.value.trim() : '';
+      if (!val) { UI.toast('Please select a day of the week.', 'warning'); return; }
 
-    const existing = Array.from(container.querySelectorAll('.task-date-row')).map(r => r.dataset.date);
-    if (existing.includes(val)) { UI.toast('This day is already in the list.', 'warning'); return; }
+      const existing = Array.from(container.querySelectorAll('.task-date-row')).map(r => r.dataset.date);
+      if (existing.includes(val)) { UI.toast('This day is already in the list.', 'warning'); return; }
 
-    _appendDateItem(val, [], true /* isWeekly */);
-    if (daySelect) daySelect.value = '';
-  } else {
-    const dateInput = document.getElementById('newTaskDate');
-    const val = dateInput ? dateInput.value.trim() : '';
-    if (!val) { UI.toast('Please select a date first.', 'warning'); return; }
+      _appendDateItem(val, [], true);
+      if (daySelect) daySelect.value = '';
+    } else {
+      const dateInput = document.getElementById('newTaskDate');
+      const val = dateInput ? dateInput.value.trim() : '';
+      if (!val) { UI.toast('Please select a date first.', 'warning'); return; }
 
-    const existing = Array.from(container.querySelectorAll('.task-date-row')).map(r => r.dataset.date);
-    if (existing.includes(val)) { UI.toast('This date is already in the list.', 'warning'); return; }
+      const existing = Array.from(container.querySelectorAll('.task-date-row')).map(r => r.dataset.date);
+      if (existing.includes(val)) { UI.toast('This date is already in the list.', 'warning'); return; }
 
-    _appendDateItem(val, [], false /* not weekly */);
-    if (dateInput) dateInput.value = '';
+      _appendDateItem(val, [], false);
+      if (dateInput) dateInput.value = '';
+    }
   }
-}
 
-  /* ── _appendDateItem ──
-     Renders one date card with its own subject checklist.
-     preselected = array of subject strings to pre-check.     */
+  /* ── _appendDateItem ── */
   function _appendDateItem(dateStr, preselected, isWeeklyMode) {
-  const container = document.getElementById('tasksDates');
-  if (!container) return;
-  preselected  = preselected  || [];
-  isWeeklyMode = !!isWeeklyMode;
+    const container = document.getElementById('tasksDates');
+    if (!container) return;
+    preselected  = preselected  || [];
+    isWeeklyMode = !!isWeeklyMode;
 
-  const subjects = _getSubjectsForCurrentScope();
+    const subjects = _getSubjectsForCurrentScope();
 
-  // Display label: day name for weekly, formatted date otherwise
-  let displayLabel;
-  if (isWeeklyMode) {
-    displayLabel = dateStr; // e.g. 'Monday'
-  } else {
-    const parts = dateStr.split('-');
-    displayLabel = new Date(+parts[0], +parts[1] - 1, +parts[2])
-      .toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-  }
+    // Display label: day name for weekly, formatted date otherwise
+    let displayLabel;
+    if (isWeeklyMode) {
+      displayLabel = dateStr; // e.g. 'Monday'
+    } else {
+      const parts = dateStr.split('-');
+      displayLabel = new Date(+parts[0], +parts[1] - 1, +parts[2])
+        .toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+    }
 
-  const subjectCheckboxesHtml = subjects.length > 0
-    ? subjects.map(subj => `
-        <label style="display:flex;align-items:center;gap:.5rem;padding:.3125rem .625rem;
-                      cursor:pointer;border-bottom:1px solid var(--border,#e5e7eb);transition:background .1s;"
-               onmouseenter="this.style.background='var(--brand-bg,#edf2ff)'"
-               onmouseleave="this.style.background=''">
-          <input type="checkbox" class="date-subj-cb" value="${_esc(subj)}"
-                 ${preselected.includes(subj) ? 'checked' : ''}
-                 style="width:.875rem;height:.875rem;accent-color:var(--brand,#3b5bdb);
-                        flex-shrink:0;cursor:pointer;" />
-          <span style="font-size:.8125rem;color:var(--text-primary,#111827);">${_esc(subj)}</span>
-        </label>`).join('')
-    : `<p style="font-size:.8125rem;color:var(--text-tertiary,#6b7280);
-                 padding:.5rem .75rem;font-style:italic;">
-         No subjects available — select a scope target first.
-       </p>`;
+    const subjectCheckboxesHtml = subjects.length > 0
+      ? subjects.map(subj => `
+          <label style="display:flex;align-items:center;gap:.5rem;padding:.3125rem .625rem;
+                        cursor:pointer;border-bottom:1px solid var(--border,#e5e7eb);transition:background .1s;"
+                 onmouseenter="this.style.background='var(--brand-bg,#edf2ff)'"
+                 onmouseleave="this.style.background=''">
+            <input type="checkbox" class="date-subj-cb" value="${_esc(subj)}"
+                   ${preselected.includes(subj) ? 'checked' : ''}
+                   style="width:.875rem;height:.875rem;accent-color:var(--brand,#3b5bdb);
+                          flex-shrink:0;cursor:pointer;" />
+            <span style="font-size:.8125rem;color:var(--text-primary,#111827);">${_esc(subj)}</span>
+          </label>`).join('')
+      : `<p style="font-size:.8125rem;color:var(--text-tertiary,#6b7280);
+                   padding:.5rem .75rem;font-style:italic;">
+           No subjects available — select a target first.
+         </p>`;
 
-  const div = document.createElement('div');
-  div.className    = 'task-date-row';
-  div.dataset.date = dateStr;
-  div.dataset.isWeekly = isWeeklyMode ? 'true' : 'false';
-  div.style.cssText = `
-    border:1.5px solid var(--brand-border,#bac8ff);border-radius:8px;
-    overflow:hidden;margin-bottom:.5rem;background:var(--surface,#fff);`;
+    const div = document.createElement('div');
+    div.className       = 'task-date-row';
+    div.dataset.date    = dateStr;
+    div.dataset.isWeekly = isWeeklyMode ? 'true' : 'false';
+    div.style.cssText   = `
+      border:1.5px solid var(--brand-border,#bac8ff);border-radius:8px;
+      overflow:hidden;margin-bottom:.5rem;background:var(--surface,#fff);`;
 
-  div.innerHTML = `
-    <div style="display:flex;align-items:center;justify-content:space-between;
-                padding:.5rem .75rem;background:var(--brand-bg,#edf2ff);cursor:pointer;"
-         onclick="this.nextElementSibling.style.display =
-                  this.nextElementSibling.style.display === 'none' ? '' : 'none'">
-      <div style="display:flex;align-items:center;gap:.5rem;">
-        ${isWeeklyMode ? '<span style="font-size:.6875rem;font-weight:700;color:var(--brand,#3b5bdb);background:rgba(59,91,219,.12);padding:1px 6px;border-radius:4px;">🔄</span>' : ''}
-        <span style="font-size:.8125rem;font-weight:700;color:var(--brand-text,#3730a3);">
-          ${_esc(displayLabel)}
-        </span>
-        <span class="date-subj-count"
-              style="font-size:.6875rem;font-weight:600;color:var(--text-tertiary,#6b7280);">
-          (all subjects)
-        </span>
-      </div>
-      <div style="display:flex;align-items:center;gap:.375rem;">
-        <span style="font-size:.6875rem;color:var(--brand,#3b5bdb);">▾ subjects</span>
-        <button onclick="event.stopPropagation();this.closest('.task-date-row').remove()"
-                style="background:none;border:none;cursor:pointer;font-size:1rem;
-                       line-height:1;padding:2px 4px;color:var(--c-danger,#dc2626);">×</button>
-      </div>
-    </div>
-    <div style="border-top:1px solid var(--border,#e5e7eb);">
+    div.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:space-between;
-                  padding:.375rem .75rem;background:var(--surface-muted,#f9fafb);
-                  border-bottom:1px solid var(--border,#e5e7eb);">
-        <span style="font-size:.6875rem;font-weight:600;color:var(--text-tertiary,#6b7280);">
-          Subjects for this ${isWeeklyMode ? 'day' : 'date'}
-          <span style="font-weight:400;">(leave all unchecked = no restriction)</span>
-        </span>
-        <div style="display:flex;gap:.375rem;">
-          <button onclick="Teacher._selectAllDateSubjects(this)"
-                  style="font-size:.6875rem;font-weight:600;color:var(--brand,#3b5bdb);
-                         background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">All</button>
-          <span style="color:var(--border-medium,#d1d5db);">·</span>
-          <button onclick="Teacher._clearDateSubjects(this)"
-                  style="font-size:.6875rem;font-weight:600;color:var(--text-tertiary,#6b7280);
-                         background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">None</button>
+                  padding:.5rem .75rem;background:var(--brand-bg,#edf2ff);cursor:pointer;"
+           onclick="this.nextElementSibling.style.display =
+                    this.nextElementSibling.style.display === 'none' ? '' : 'none'">
+        <div style="display:flex;align-items:center;gap:.5rem;">
+          ${isWeeklyMode ? '<span style="font-size:.6875rem;font-weight:700;color:var(--brand,#3b5bdb);background:rgba(59,91,219,.12);padding:1px 6px;border-radius:4px;">🔄</span>' : ''}
+          <span style="font-size:.8125rem;font-weight:700;color:var(--brand-text,#3730a3);">
+            ${_esc(displayLabel)}
+          </span>
+          <span class="date-subj-count"
+                style="font-size:.6875rem;font-weight:600;color:var(--text-tertiary,#6b7280);">
+            (all subjects)
+          </span>
+        </div>
+        <div style="display:flex;align-items:center;gap:.375rem;">
+          <span style="font-size:.6875rem;color:var(--brand,#3b5bdb);">▾ subjects</span>
+          <button onclick="event.stopPropagation();this.closest('.task-date-row').remove()"
+                  style="background:none;border:none;cursor:pointer;font-size:1rem;
+                         line-height:1;padding:2px 4px;color:var(--c-danger,#dc2626);">×</button>
         </div>
       </div>
-      <div class="date-subj-list" style="max-height:130px;overflow-y:auto;">
-        ${subjectCheckboxesHtml}
-      </div>
-    </div>`;
+      <div style="border-top:1px solid var(--border,#e5e7eb);">
+        <div style="display:flex;align-items:center;justify-content:space-between;
+                    padding:.375rem .75rem;background:var(--surface-muted,#f9fafb);
+                    border-bottom:1px solid var(--border,#e5e7eb);">
+          <span style="font-size:.6875rem;font-weight:600;color:var(--text-tertiary,#6b7280);">
+            Subjects for this ${isWeeklyMode ? 'day' : 'date'}
+            <span style="font-weight:400;">(leave all unchecked = no restriction)</span>
+          </span>
+          <div style="display:flex;gap:.375rem;">
+            <button onclick="Teacher._selectAllDateSubjects(this)"
+                    style="font-size:.6875rem;font-weight:600;color:var(--brand,#3b5bdb);
+                           background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">All</button>
+            <span style="color:var(--border-medium,#d1d5db);">·</span>
+            <button onclick="Teacher._clearDateSubjects(this)"
+                    style="font-size:.6875rem;font-weight:600;color:var(--text-tertiary,#6b7280);
+                           background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">None</button>
+          </div>
+        </div>
+        <div class="date-subj-list" style="max-height:130px;overflow-y:auto;">
+          ${subjectCheckboxesHtml}
+        </div>
+      </div>`;
 
-  container.appendChild(div);
+    container.appendChild(div);
 
-  div.querySelectorAll('.date-subj-cb').forEach(cb => {
-    cb.addEventListener('change', () => _updateDateSubjCount(div));
-  });
-  _updateDateSubjCount(div);
-}
+    div.querySelectorAll('.date-subj-cb').forEach(cb => {
+      cb.addEventListener('change', () => _updateDateSubjCount(div));
+    });
+    _updateDateSubjCount(div);
+  }
 
   function _updateDateSubjCount(rowEl) {
     const checked = rowEl.querySelectorAll('.date-subj-cb:checked').length;
@@ -1209,7 +1257,6 @@
     label.style.color = checked === 0 ? 'var(--text-tertiary,#6b7280)' : 'var(--brand,#3b5bdb)';
   }
 
-  /* Called from onclick inside dynamically-created HTML — must be on Teacher */
   function _selectAllDateSubjects(btn) {
     const row = btn.closest('.task-date-row');
     if (!row) return;
@@ -1226,146 +1273,166 @@
 
   /* ── saveTasksConfig ── */
   async function saveTasksConfig() {
-  const docId = _currentTaskDocId();
-  if (!docId) {
-    if (_taskScope === 'class')   { UI.toast('Please select a class.',   'warning'); return; }
-    if (_taskScope === 'student') { UI.toast('Please select a student.', 'warning'); return; }
-    UI.toast('No valid target selected.', 'warning');
-    return;
-  }
+    const docId = _currentTaskDocId();
 
-  const active  = !!document.getElementById('tasksActive')?.checked;
-  const title   = document.getElementById('tasksTitle')?.value.trim()   || '';
-  const message = document.getElementById('tasksMessage')?.value.trim() || '';
-
-  const dateRows = Array.from(document.querySelectorAll('.task-date-row'));
-  if (!title)             { UI.toast('Please enter a task title.',    'warning'); return; }
-  if (dateRows.length === 0) {
-    UI.toast(_taskScope === 'weekly' ? 'Please add at least one day of the week.' : 'Please add at least one date.', 'warning');
-    return;
-  }
-
-  let payload;
-
-  if (_taskScope === 'weekly') {
-    // Weekly: keys are day names, not calendar dates
-    const weeklyDays    = dateRows.map(row => row.dataset.date).filter(Boolean);
-    const dateSubjects  = {};
-    dateRows.forEach(row => {
-      dateSubjects[row.dataset.date] =
-        [...row.querySelectorAll('.date-subj-cb:checked')].map(cb => cb.value);
-    });
-
-    payload = {
-      active,
-      scope:        'weekly',
-      title,
-      message:      message || 'Complete the required exams on the scheduled days.',
-      weeklyDays,          // ['Monday','Wednesday','Friday']
-      dateSubjects,        // { Monday: ['Maths'], Wednesday: [], Friday: ['English'] }
-      updatedAt:    firebase.firestore.FieldValue.serverTimestamp(),
-    };
-  } else {
-    // Non-weekly: keys are YYYY-MM-DD calendar dates (existing behaviour)
-    const dates = dateRows.map(row => row.dataset.date).filter(Boolean);
-    const dateSubjects = {};
-    dateRows.forEach(row => {
-      dateSubjects[row.dataset.date] =
-        [...row.querySelectorAll('.date-subj-cb:checked')].map(cb => cb.value);
-    });
-
-    payload = {
-      active,
-      scope:        _taskScope,
-      title,
-      message:      message || 'Complete the required exams on the scheduled dates.',
-      dates,
-      dateSubjects,
-      updatedAt:    firebase.firestore.FieldValue.serverTimestamp(),
-    };
-
-    if (_taskScope === 'student') {
-      const sel = document.getElementById('taskTargetStudent');
-      const opt = sel && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex] : null;
-      if (opt) payload.studentName = opt.text;
+    if (!docId) {
+      if (_assignScope === 'class')   { UI.toast('Please select a class.',   'warning'); return; }
+      if (_assignScope === 'student') { UI.toast('Please select a student.', 'warning'); return; }
+      UI.toast('No valid target selected.', 'warning');
+      return;
     }
-    if (_taskScope === 'class') {
-      const sel = document.getElementById('taskTargetClass');
-      if (sel) payload.className = sel.value;
+
+    const active  = !!document.getElementById('tasksActive')?.checked;
+    const title   = document.getElementById('tasksTitle')?.value.trim()   || '';
+    const message = document.getElementById('tasksMessage')?.value.trim() || '';
+
+    const dateRows = Array.from(document.querySelectorAll('.task-date-row'));
+    if (!title) { UI.toast('Please enter a task title.', 'warning'); return; }
+    if (dateRows.length === 0) {
+      UI.toast(
+        _taskScope === 'weekly'
+          ? 'Please add at least one day of the week.'
+          : 'Please add at least one date.',
+        'warning'
+      );
+      return;
+    }
+
+    let payload;
+
+    if (_taskScope === 'weekly') {
+      // Weekly: keys are day names
+      const weeklyDays   = dateRows.map(row => row.dataset.date).filter(Boolean);
+      const dateSubjects = {};
+      dateRows.forEach(row => {
+        dateSubjects[row.dataset.date] =
+          [...row.querySelectorAll('.date-subj-cb:checked')].map(cb => cb.value);
+      });
+
+      payload = {
+        active,
+        scope:       'weekly',
+        assignScope: _assignScope,
+        title,
+        message:     message || 'Complete the required exams on the scheduled days.',
+        weeklyDays,
+        dateSubjects,
+        updatedAt:   firebase.firestore.FieldValue.serverTimestamp(),
+      };
+
+      if (_assignScope === 'class') {
+        const sel = document.getElementById('taskTargetClass');
+        if (sel) payload.className = sel.value;
+      }
+      if (_assignScope === 'student') {
+        const sel = document.getElementById('taskTargetStudent');
+        const opt = sel && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex] : null;
+        if (sel)  payload.studentUid  = sel.value;
+        if (opt)  payload.studentName = opt.text;
+      }
+
+    } else {
+      // One-time: keys are YYYY-MM-DD calendar dates
+      const dates        = dateRows.map(row => row.dataset.date).filter(Boolean);
+      const dateSubjects = {};
+      dateRows.forEach(row => {
+        dateSubjects[row.dataset.date] =
+          [...row.querySelectorAll('.date-subj-cb:checked')].map(cb => cb.value);
+      });
+
+      payload = {
+        active,
+        scope:       _assignScope === 'all' ? 'global' : _assignScope,
+        title,
+        message:     message || 'Complete the required exams on the scheduled dates.',
+        dates,
+        dateSubjects,
+        updatedAt:   firebase.firestore.FieldValue.serverTimestamp(),
+      };
+
+      if (_assignScope === 'student') {
+        const sel = document.getElementById('taskTargetStudent');
+        const opt = sel && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex] : null;
+        if (opt) payload.studentName = opt.text;
+      }
+      if (_assignScope === 'class') {
+        const sel = document.getElementById('taskTargetClass');
+        if (sel) payload.className = sel.value;
+      }
+    }
+
+    const btn = document.getElementById('saveTasksBtn');
+    UI.setLoading(btn, true);
+    try {
+      await Db().collection('coachingTasks').doc(docId).set(payload);
+      UI.toast('Task saved.', 'success');
+      _clearTaskForm();
+    } catch (err) {
+      console.error('[teacher] saveTasksConfig error:', err);
+      UI.toast('Failed to save task' + (err?.code ? ' (' + err.code + ')' : '') + '.', 'error');
+    } finally {
+      UI.setLoading(btn, false);
     }
   }
-
-  const btn = document.getElementById('saveTasksBtn');
-  UI.setLoading(btn, true);
-  try {
-    await Db().collection('coachingTasks').doc(docId).set(payload);
-    UI.toast('Task saved.', 'success');
-    _clearTaskForm();
-  } catch (err) {
-    console.error('[teacher] saveTasksConfig error:', err);
-    const detail = err && err.code ? ' (' + err.code + ')' : '';
-    UI.toast('Failed to save task' + detail + '.', 'error');
-  } finally {
-    UI.setLoading(btn, false);
-  }
-}
 
   /* ── _loadTasksManager ── */
   function _loadTasksManager() {
-  _cancel('tasksManager');
-  _taskScope = 'all';
+    _cancel('tasksManager');
+    _taskScope   = 'all';
+    _assignScope = 'all';
 
-  _cancel('taskClassList');
-  const unsubClasses = Db().collection('students').onSnapshot(snap => {
-    const classes = new Set();
-    snap.forEach(doc => { const c = doc.data().class; if (c) classes.add(c); });
-    const sel = document.getElementById('taskTargetClass');
-    if (sel) {
-      let html = '<option value="">Select a class...</option>';
-      [...classes].sort().forEach(c => { html += `<option value="${_esc(c)}">${_esc(c)}</option>`; });
-      sel.innerHTML = html;
-    }
-  });
-  _reg('taskClassList', unsubClasses);
-
-  _cancel('tasksList');
-  const unsubTasks = Db().collection('coachingTasks').onSnapshot(snap => {
-    _renderExistingTasksList(snap.docs);
-  });
-  _reg('tasksList', unsubTasks);
-
-  _cancel('msgStudents');
-  _msgStudentCache = [];
-  const unsubStudents = Db().collection('students').orderBy('name').onSnapshot(snap => {
-    _msgStudentCache = [];
-    snap.forEach(doc => {
-      const s = doc.data();
-      _msgStudentCache.push({
-        id:                 doc.id,
-        name:               s.name  || '',
-        cls:                s.class || '',
-        coachingCompleted:  s.coachingCompleted || {},   // ← for progress table
-      });
+    // Populate class dropdown
+    _cancel('taskClassList');
+    const unsubClasses = Db().collection('students').onSnapshot(snap => {
+      const classes = new Set();
+      snap.forEach(doc => { const c = doc.data().class; if (c) classes.add(c); });
+      const sel = document.getElementById('taskTargetClass');
+      if (sel) {
+        let html = '<option value="">Select a class...</option>';
+        [...classes].sort().forEach(c => { html += `<option value="${_esc(c)}">${_esc(c)}</option>`; });
+        sel.innerHTML = html;
+      }
     });
-    _populateMsgSingleSelect();
-    _populateMsgCheckboxList();
-    _populateTaskStudentSelect();
-    if (_taskScope === 'student') {
-      _onTaskTargetChange();
-    }
-    // Re-render progress whenever student data changes
-    const taskPanel = document.getElementById('existingTasksList');
-    if (taskPanel) {
-      // Re-run progress render with the latest task docs
-      Db().collection('coachingTasks').get().then(snap => {
-        _renderStudentProgress(snap.docs.filter(d => d.id !== 'current'));
-      }).catch(() => {});
-    }
-  });
-  _reg('msgStudents', unsubStudents);
+    _reg('taskClassList', unsubClasses);
 
-  _setTaskScope('all');
-}
+    // Listen to all task docs
+    _cancel('tasksList');
+    const unsubTasks = Db().collection('coachingTasks').onSnapshot(snap => {
+      _renderExistingTasksList(snap.docs);
+    });
+    _reg('tasksList', unsubTasks);
+
+    // Load students for messaging + task targeting
+    _cancel('msgStudents');
+    _msgStudentCache = [];
+    const unsubStudents = Db().collection('students').orderBy('name').onSnapshot(snap => {
+      _msgStudentCache = [];
+      snap.forEach(doc => {
+        const s = doc.data();
+        _msgStudentCache.push({
+          id:                doc.id,
+          name:              s.name  || '',
+          cls:               s.class || '',
+          coachingCompleted: s.coachingCompleted || {},
+        });
+      });
+      _populateMsgSingleSelect();
+      _populateMsgCheckboxList();
+      _populateTaskStudentSelect();
+
+      // Re-render progress table with fresh student data
+      const taskPanel = document.getElementById('existingTasksList');
+      if (taskPanel) {
+        Db().collection('coachingTasks').get().then(snap => {
+          _renderStudentProgress(snap.docs);
+        }).catch(() => {});
+      }
+    });
+    _reg('msgStudents', unsubStudents);
+
+    // Set initial scope UI
+    _setTaskScope('all');
+  }
 
   function _populateTaskStudentSelect() {
     const sel = document.getElementById('taskTargetStudent');
@@ -1379,239 +1446,268 @@
 
   /* ── _renderExistingTasksList ── */
   function _renderExistingTasksList(docs) {
-  let container = document.getElementById('existingTasksList');
-  if (!container) {
-    const panel = document.getElementById('teacher-tasks');
-    if (!panel) return;
-    const inner = panel.querySelector('div[style*="padding:1.25rem 1.5rem"]') || panel;
-    container = document.createElement('div');
-    container.id = 'existingTasksList';
-    container.style.cssText = 'margin-top:1rem;';
-    inner.appendChild(container);
-  }
-
-  const tasks = docs.filter(d => d.id !== 'current');
-  if (tasks.length === 0) { container.innerHTML = ''; return; }
-
-  function scopeLabel(docId) {
-    if (docId === 'global')           return { label: 'All Students', color: 'var(--brand,#3b5bdb)',   bg: 'var(--brand-bg,#edf2ff)',    border: 'var(--brand-border,#bac8ff)' };
-    if (docId === 'weekly')           return { label: '🔄 Weekly',    color: '#7c3aed',                bg: '#f5f3ff',                    border: '#ddd6fe' };
-    if (docId.startsWith('class_'))   return { label: 'Class: ' + docId.replace('class_','').toUpperCase(), color: 'var(--warning,#e8890c)', bg: 'var(--warning-bg,#fff9db)', border: 'var(--warning-border,#ffec99)' };
-    if (docId.startsWith('student_')) return { label: 'Student', color: 'var(--success,#2f9e44)', bg: 'var(--success-bg,#ebfbee)', border: 'var(--success-border,#b2f2bb)' };
-    return { label: docId, color: 'var(--text-tertiary,#6b7280)', bg: 'var(--surface-muted,#f3f4f6)', border: 'var(--border,#e5e7eb)' };
-  }
-
-  function resolveStudentName(docId) {
-    if (!docId.startsWith('student_')) return null;
-    const uid   = docId.replace('student_', '');
-    const found = _msgStudentCache.find(s => s.id === uid);
-    return found ? found.name + ' (' + found.cls + ')' : uid;
-  }
-
-  container.innerHTML =
-    '<div style="border-top:1px solid var(--c-border,#e5e7eb);padding-top:1rem;margin-top:.25rem;">' +
-    '<h3 style="font-size:.875rem;font-weight:700;color:var(--c-text,#111827);margin-bottom:.625rem;">Existing Tasks</h3>' +
-    '<div style="display:flex;flex-direction:column;gap:.375rem;">' +
-    tasks.map(doc => {
-      const d            = doc.data();
-      const scope        = scopeLabel(doc.id);
-      const studentName  = resolveStudentName(doc.id);
-      const scopeDisplay = studentName ? 'Student: ' + studentName : scope.label;
-
-      const isWeekly = doc.id === 'weekly' || d.scope === 'weekly';
-
-      let datesDisplay, subjBadge;
-
-      if (isWeekly) {
-        datesDisplay = (d.weeklyDays || []).join(', ') || '—';
-        const dateSubjects  = d.dateSubjects || {};
-        const totalWithSubj = Object.values(dateSubjects).filter(arr => arr.length > 0).length;
-        subjBadge = totalWithSubj > 0
-          ? '<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;' +
-            'background:var(--surface-muted,#f3f4f6);color:var(--text-secondary,#374151);' +
-            'border:1px solid var(--border,#e5e7eb);" title="Per-day subject restrictions active">' +
-            '📚 ' + totalWithSubj + ' day' + (totalWithSubj !== 1 ? 's' : '') + ' restricted</span>'
-          : '';
-      } else {
-        datesDisplay = (d.dates || []).join(', ') || '—';
-        const dateSubjects  = d.dateSubjects || {};
-        const totalWithSubj = Object.values(dateSubjects).filter(arr => arr.length > 0).length;
-        subjBadge = totalWithSubj > 0
-          ? '<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;' +
-            'background:var(--surface-muted,#f3f4f6);color:var(--text-secondary,#374151);' +
-            'border:1px solid var(--border,#e5e7eb);" title="Per-date subject restrictions active">' +
-            '📚 ' + totalWithSubj + ' date' + (totalWithSubj !== 1 ? 's' : '') + ' restricted</span>'
-          : '';
-      }
-
-      return '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem;' +
-             'background:var(--c-surface,#fff);border:1px solid var(--c-border,#e5e7eb);border-radius:8px;padding:.5rem .875rem;">' +
-             '<div style="min-width:0;flex:1;">' +
-             '<div style="display:flex;align-items:center;gap:.375rem;flex-wrap:wrap;margin-bottom:2px;">' +
-             '<span style="font-size:.8125rem;font-weight:700;color:var(--c-text,#111827);">' + _esc(d.title || '—') + '</span>' +
-             '<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;' +
-             'background:' + scope.bg + ';color:' + scope.color + ';border:1px solid ' + scope.border + ';">' +
-             _esc(scopeDisplay) + '</span>' +
-             '<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;' +
-             (d.active
-               ? 'background:var(--success-bg,#ebfbee);color:var(--success-text,#1a5c29);border:1px solid var(--success-border,#b2f2bb);'
-               : 'background:var(--surface-muted,#f3f4f6);color:var(--text-disabled,#9ca3af);border:1px solid var(--border,#e5e7eb);') +
-             '">' + (d.active ? 'Active' : 'Inactive') + '</span>' +
-             subjBadge +
-             '</div>' +
-             '<p style="font-size:.6875rem;color:var(--c-text-4,#9ca3af);">' + _esc(datesDisplay) + '</p>' +
-             '</div>' +
-             '<button class="teacher-delete-task" data-task-id="' + _esc(doc.id) + '"' +
-             ' style="background:none;border:none;cursor:pointer;font-size:1rem;line-height:1;' +
-             'padding:2px 4px;color:var(--c-text-4,#9ca3af);flex-shrink:0;margin-top:1px;"' +
-             ' onmouseenter="this.style.color=&apos;var(--c-danger,#dc2626)&apos;"' +
-             ' onmouseleave="this.style.color=&apos;var(--c-text-4,#9ca3af)&apos;">&#215;</button>' +
-             '</div>';
-    }).join('') +
-    '</div></div>';
-
-  // Render progress section below the task list
-  _renderStudentProgress(tasks);
-}
-
-function _renderStudentProgress(taskDocs) {
-  // Find or create progress container (appended after existingTasksList)
-  let container = document.getElementById('taskProgressPanel');
-  if (!container) {
-    const parent = document.getElementById('existingTasksList');
-    if (!parent) return;
-    container = document.createElement('div');
-    container.id = 'taskProgressPanel';
-    container.style.cssText = 'margin-top:1.25rem;';
-    parent.parentNode.insertBefore(container, parent.nextSibling);
-  }
-
-  if (_msgStudentCache.length === 0) { container.innerHTML = ''; return; }
-
-  const activeTasks = taskDocs.filter(doc => {
-    const d = doc.data();
-    return d.active && (
-      (d.dates && d.dates.length > 0) ||
-      (d.weeklyDays && d.weeklyDays.length > 0)
-    );
-  });
-
-  if (activeTasks.length === 0) { container.innerHTML = ''; return; }
-
-  const todayStr = (function() {
-    const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-  })();
-
-  // Helper: resolve dates array for a task doc
-  function getTaskDates(doc) {
-    const d = doc.data();
-    if (d.scope === 'weekly' || doc.id === 'weekly') {
-      if (window.Tasks && Tasks._resolveWeeklyDates) {
-        const resolved = Tasks._resolveWeeklyDates(d);
-        return resolved.dates || [];
-      }
+    let container = document.getElementById('existingTasksList');
+    if (!container) {
+      const panel = document.getElementById('teacher-tasks');
+      if (!panel) return;
+      const inner = panel.querySelector('div[style*="padding:1.25rem 1.5rem"]') || panel;
+      container = document.createElement('div');
+      container.id = 'existingTasksList';
+      container.style.cssText = 'margin-top:1rem;';
+      inner.appendChild(container);
     }
-    return d.dates || [];
+
+    const tasks = docs.filter(d => d.id !== 'current');
+    if (tasks.length === 0) { container.innerHTML = ''; _renderStudentProgress([]); return; }
+
+    function scopeLabel(docId) {
+      if (docId === 'global')
+        return { label: 'All Students',         color: 'var(--brand,#3b5bdb)',     bg: 'var(--brand-bg,#edf2ff)',      border: 'var(--brand-border,#bac8ff)' };
+      if (docId === 'weekly')
+        return { label: '🔄 Weekly · All',       color: '#7c3aed',                  bg: '#f5f3ff',                      border: '#ddd6fe' };
+      if (docId.startsWith('weekly_class_'))
+        return { label: '🔄 Weekly · Class: ' + docId.replace('weekly_class_', '').toUpperCase(), color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' };
+      if (docId.startsWith('weekly_student_'))
+        return { label: '🔄 Weekly · Student',   color: '#7c3aed',                  bg: '#f5f3ff',                      border: '#ddd6fe' };
+      if (docId.startsWith('class_'))
+        return { label: 'Class: ' + docId.replace('class_', '').toUpperCase(), color: 'var(--warning,#e8890c)', bg: 'var(--warning-bg,#fff9db)', border: 'var(--warning-border,#ffec99)' };
+      if (docId.startsWith('student_'))
+        return { label: 'Student',               color: 'var(--success,#2f9e44)',   bg: 'var(--success-bg,#ebfbee)',    border: 'var(--success-border,#b2f2bb)' };
+      return { label: docId,                     color: 'var(--text-tertiary,#6b7280)', bg: 'var(--surface-muted,#f3f4f6)', border: 'var(--border,#e5e7eb)' };
+    }
+
+    function resolveStudentName(docId) {
+      const prefix = docId.startsWith('weekly_student_') ? 'weekly_student_'
+                   : docId.startsWith('student_')        ? 'student_'
+                   : null;
+      if (!prefix) return null;
+      const uid   = docId.replace(prefix, '');
+      const found = _msgStudentCache.find(s => s.id === uid);
+      return found ? found.name + ' (' + found.cls + ')' : uid;
+    }
+
+    container.innerHTML =
+      '<div style="border-top:1px solid var(--c-border,#e5e7eb);padding-top:1rem;margin-top:.25rem;">' +
+      '<h3 style="font-size:.875rem;font-weight:700;color:var(--c-text,#111827);margin-bottom:.625rem;">Existing Tasks</h3>' +
+      '<div style="display:flex;flex-direction:column;gap:.375rem;">' +
+      tasks.map(doc => {
+        const d           = doc.data();
+        const scope       = scopeLabel(doc.id);
+        const studentName = resolveStudentName(doc.id);
+        const scopeDisplay = studentName ? (doc.id.startsWith('weekly_') ? '🔄 Weekly · Student: ' : 'Student: ') + studentName : scope.label;
+
+        const isWeekly = doc.id === 'weekly' || doc.id.startsWith('weekly_') || d.scope === 'weekly';
+
+        let datesDisplay, subjBadge;
+
+        if (isWeekly) {
+          datesDisplay = (d.weeklyDays || []).join(', ') || '—';
+          const totalWithSubj = Object.values(d.dateSubjects || {}).filter(arr => arr.length > 0).length;
+          subjBadge = totalWithSubj > 0
+            ? '<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;' +
+              'background:var(--surface-muted,#f3f4f6);color:var(--text-secondary,#374151);' +
+              'border:1px solid var(--border,#e5e7eb);">📚 ' + totalWithSubj + ' day' + (totalWithSubj !== 1 ? 's' : '') + ' restricted</span>'
+            : '';
+        } else {
+          datesDisplay = (d.dates || []).join(', ') || '—';
+          const totalWithSubj = Object.values(d.dateSubjects || {}).filter(arr => arr.length > 0).length;
+          subjBadge = totalWithSubj > 0
+            ? '<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;' +
+              'background:var(--surface-muted,#f3f4f6);color:var(--text-secondary,#374151);' +
+              'border:1px solid var(--border,#e5e7eb);">📚 ' + totalWithSubj + ' date' + (totalWithSubj !== 1 ? 's' : '') + ' restricted</span>'
+            : '';
+        }
+
+        return '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem;' +
+               'background:var(--c-surface,#fff);border:1px solid var(--c-border,#e5e7eb);border-radius:8px;padding:.5rem .875rem;">' +
+               '<div style="min-width:0;flex:1;">' +
+               '<div style="display:flex;align-items:center;gap:.375rem;flex-wrap:wrap;margin-bottom:2px;">' +
+               '<span style="font-size:.8125rem;font-weight:700;color:var(--c-text,#111827);">' + _esc(d.title || '—') + '</span>' +
+               '<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;' +
+               'background:' + scope.bg + ';color:' + scope.color + ';border:1px solid ' + scope.border + ';">' +
+               _esc(scopeDisplay) + '</span>' +
+               '<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;' +
+               (d.active
+                 ? 'background:var(--success-bg,#ebfbee);color:var(--success-text,#1a5c29);border:1px solid var(--success-border,#b2f2bb);'
+                 : 'background:var(--surface-muted,#f3f4f6);color:var(--text-disabled,#9ca3af);border:1px solid var(--border,#e5e7eb);') +
+               '">' + (d.active ? 'Active' : 'Inactive') + '</span>' +
+               subjBadge +
+               '</div>' +
+               '<p style="font-size:.6875rem;color:var(--c-text-4,#9ca3af);">' + _esc(datesDisplay) + '</p>' +
+               '</div>' +
+               '<button class="teacher-delete-task" data-task-id="' + _esc(doc.id) + '"' +
+               ' style="background:none;border:none;cursor:pointer;font-size:1rem;line-height:1;' +
+               'padding:2px 4px;color:var(--c-text-4,#9ca3af);flex-shrink:0;margin-top:1px;"' +
+               ' onmouseenter="this.style.color=&apos;var(--c-danger,#dc2626)&apos;"' +
+               ' onmouseleave="this.style.color=&apos;var(--c-text-4,#9ca3af)&apos;">&#215;</button>' +
+               '</div>';
+      }).join('') +
+      '</div></div>';
+
+    _renderStudentProgress(tasks);
   }
 
-  container.innerHTML = activeTasks.map(doc => {
-    const d     = doc.data();
-    const title = d.title || doc.id;
-    const dates = getTaskDates(doc);
-    const isWeekly = d.scope === 'weekly' || doc.id === 'weekly';
+  /* ── _renderStudentProgress ── */
+  function _renderStudentProgress(taskDocs) {
+    let container = document.getElementById('taskProgressPanel');
+    if (!container) {
+      const parent = document.getElementById('existingTasksList');
+      if (!parent) return;
+      container = document.createElement('div');
+      container.id = 'taskProgressPanel';
+      container.style.cssText = 'margin-top:1.25rem;';
+      parent.parentNode.insertBefore(container, parent.nextSibling);
+    }
 
-    // Only show dates up to today (past + today)
-    const relevantDates = dates.filter(dt => dt <= todayStr);
-    if (relevantDates.length === 0) return '';
+    if (_msgStudentCache.length === 0) { container.innerHTML = ''; return; }
 
-    // For each student, compute done / missed per date
-    const rows = _msgStudentCache.map(student => {
-      const completed = (student.coachingCompleted || {});
-      const cells = relevantDates.map(dt => {
-        const isDone   = !!completed[dt];
-        const isToday  = dt === todayStr;
-        const isMissed = !isDone && dt < todayStr;
+    const activeTasks = taskDocs.filter(doc => {
+      const d = doc.data();
+      return d.active && (
+        (d.dates && d.dates.length > 0) ||
+        (d.weeklyDays && d.weeklyDays.length > 0)
+      );
+    });
 
-        const icon  = isDone ? '✓' : isMissed ? '✗' : '○';
-        const color = isDone ? 'var(--success,#2f9e44)' : isMissed ? 'var(--danger,#e03131)' : 'var(--warning,#e8890c)';
-        const bg    = isDone ? 'var(--success-bg,#ebfbee)' : isMissed ? 'var(--danger-bg,#fff5f5)' : 'var(--warning-bg,#fff9db)';
-        const label = isDone ? 'Done' : isMissed ? 'Missed' : 'Today';
+    if (activeTasks.length === 0) { container.innerHTML = ''; return; }
 
-        const parts = dt.split('-');
-        const dispDate = new Date(+parts[0], +parts[1]-1, +parts[2])
-          .toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+    const todayStr = (() => {
+      const d = new Date();
+      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    })();
 
-        return `<td style="text-align:center;padding:.375rem .5rem;border-right:1px solid var(--border,#e5e7eb);">
-          <div style="font-size:.5625rem;color:var(--text-disabled,#9ca3af);margin-bottom:1px;">${_esc(dispDate)}</div>
-          <div style="font-size:.875rem;font-weight:700;color:${color};">${icon}</div>
-          <div style="font-size:.5rem;color:${color};font-weight:600;">${label}</div>
-        </td>`;
+    // Resolve concrete dates for a task doc
+    function getTaskDates(doc) {
+      const d = doc.data();
+      if (doc.id === 'weekly' || doc.id.startsWith('weekly_') || d.scope === 'weekly') {
+        if (window.Tasks && Tasks._resolveWeeklyDates) {
+          return (Tasks._resolveWeeklyDates(d).dates) || [];
+        }
+      }
+      return d.dates || [];
+    }
+
+    // Determine which students this task applies to
+    function getStudentsForTask(doc) {
+      const docId = doc.id;
+
+      if (docId === 'global')               return _msgStudentCache;
+      if (docId === 'weekly')               return _msgStudentCache;
+
+      if (docId.startsWith('weekly_class_')) {
+        const cls = docId.replace('weekly_class_', '');
+        return _msgStudentCache.filter(s => s.cls.replace(/\s+/g, '').toLowerCase() === cls);
+      }
+      if (docId.startsWith('weekly_student_')) {
+        const uid = docId.replace('weekly_student_', '');
+        return _msgStudentCache.filter(s => s.id === uid);
+      }
+      if (docId.startsWith('class_')) {
+        const cls = docId.replace('class_', '');
+        return _msgStudentCache.filter(s => s.cls.replace(/\s+/g, '').toLowerCase() === cls);
+      }
+      if (docId.startsWith('student_')) {
+        const uid = docId.replace('student_', '');
+        return _msgStudentCache.filter(s => s.id === uid);
+      }
+      return [];
+    }
+
+    container.innerHTML = activeTasks.map(doc => {
+      const d        = doc.data();
+      const title    = d.title || doc.id;
+      const dates    = getTaskDates(doc);
+      const isWeekly = doc.id === 'weekly' || doc.id.startsWith('weekly_') || d.scope === 'weekly';
+      const students = getStudentsForTask(doc);
+
+      const relevantDates = dates.filter(dt => dt <= todayStr);
+      if (relevantDates.length === 0 || students.length === 0) return '';
+
+      const rows = students.map(student => {
+        const completed = student.coachingCompleted || {};
+        const cells = relevantDates.map(dt => {
+          const isDone   = !!completed[dt];
+          const isToday  = dt === todayStr;
+          const isMissed = !isDone && dt < todayStr;
+
+          const icon  = isDone ? '✓' : isMissed ? '✗' : '○';
+          const color = isDone ? 'var(--success,#2f9e44)' : isMissed ? 'var(--danger,#e03131)' : 'var(--warning,#e8890c)';
+          const label = isDone ? 'Done' : isMissed ? 'Missed' : 'Today';
+
+          const parts    = dt.split('-');
+          const dispDate = new Date(+parts[0], +parts[1]-1, +parts[2])
+            .toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+
+          return `<td style="text-align:center;padding:.375rem .5rem;border-right:1px solid var(--border,#e5e7eb);">
+            <div style="font-size:.5625rem;color:var(--text-disabled,#9ca3af);margin-bottom:1px;">${_esc(dispDate)}</div>
+            <div style="font-size:.875rem;font-weight:700;color:${color};">${icon}</div>
+            <div style="font-size:.5rem;color:${color};font-weight:600;">${label}</div>
+          </td>`;
+        }).join('');
+
+        const doneCount   = relevantDates.filter(dt => !!completed[dt]).length;
+        const missedCount = relevantDates.filter(dt => !completed[dt] && dt < todayStr).length;
+
+        return `<tr class="progress-student-row" style="border-bottom:1px solid var(--border,#e5e7eb);">
+          <td style="padding:.375rem .75rem;white-space:nowrap;border-right:1px solid var(--border,#e5e7eb);">
+            <div style="font-size:.8125rem;font-weight:700;color:var(--text-primary,#111827);">${_esc(student.name)}</div>
+            <div style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);">${_esc(student.cls)}</div>
+          </td>
+          ${cells}
+          <td style="padding:.375rem .75rem;text-align:center;white-space:nowrap;">
+            <div style="font-size:.75rem;font-weight:700;color:${missedCount > 0 ? 'var(--danger,#e03131)' : 'var(--success,#2f9e44)'};">
+              ${doneCount}/${relevantDates.length}
+            </div>
+            ${missedCount > 0
+              ? `<div style="font-size:.5625rem;color:var(--danger,#e03131);">${missedCount} missed</div>`
+              : doneCount === relevantDates.length && relevantDates.length > 0
+                ? '<div style="font-size:.5625rem;color:var(--success,#2f9e44);">All done ✓</div>'
+                : ''}
+          </td>
+        </tr>`;
       }).join('');
 
-      const doneCount   = relevantDates.filter(dt => !!completed[dt]).length;
-      const missedCount = relevantDates.filter(dt => !completed[dt] && dt < todayStr).length;
+      const headerCells = relevantDates.map(dt => {
+        const parts   = dt.split('-');
+        const label   = new Date(+parts[0], +parts[1]-1, +parts[2])
+          .toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+        const isToday = dt === todayStr;
+        return `<th style="text-align:center;padding:.375rem .5rem;border-right:1px solid var(--border,#e5e7eb);
+                           font-size:.6875rem;font-weight:700;
+                           color:${isToday ? 'var(--brand,#3b5bdb)' : 'var(--text-secondary,#374151)'};
+                           background:var(--surface-subtle,#f9fafb);">${_esc(label)}${isToday ? '<br><span style="font-size:.5rem;color:var(--brand,#3b5bdb);">TODAY</span>' : ''}</th>`;
+      }).join('');
 
-      return `<tr class="progress-student-row" style="border-bottom:1px solid var(--border,#e5e7eb);">
-        <td style="padding:.375rem .75rem;white-space:nowrap;border-right:1px solid var(--border,#e5e7eb);">
-          <div style="font-size:.8125rem;font-weight:700;color:var(--text-primary,#111827);">${_esc(student.name)}</div>
-          <div style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);">${_esc(student.cls)}</div>
-        </td>
-        ${cells}
-        <td style="padding:.375rem .75rem;text-align:center;white-space:nowrap;">
-          <div style="font-size:.75rem;font-weight:700;color:${missedCount > 0 ? 'var(--danger,#e03131)' : 'var(--success,#2f9e44)'};">
-            ${doneCount}/${relevantDates.length}
+      return `<div style="margin-bottom:1rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;">
+          <div>
+            <h4 style="font-size:.875rem;font-weight:700;color:var(--c-text,#111827);">
+              📊 Progress: ${_esc(title)}
+              ${isWeekly ? '<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;margin-left:.375rem;">🔄 Weekly</span>' : ''}
+            </h4>
+            <p style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin-top:1px;">
+              ${students.length} student${students.length !== 1 ? 's' : ''} · ${relevantDates.length} session${relevantDates.length !== 1 ? 's' : ''} up to today
+            </p>
           </div>
-          ${missedCount > 0
-            ? `<div style="font-size:.5625rem;color:var(--danger,#e03131);">${missedCount} missed</div>`
-            : doneCount === relevantDates.length && relevantDates.length > 0
-              ? '<div style="font-size:.5625rem;color:var(--success,#2f9e44);">All done ✓</div>'
-              : ''}
-        </td>
-      </tr>`;
-    }).join('');
-
-    const headerCells = relevantDates.map(dt => {
-      const parts = dt.split('-');
-      const label = new Date(+parts[0], +parts[1]-1, +parts[2])
-        .toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
-      const isToday = dt === todayStr;
-      return `<th style="text-align:center;padding:.375rem .5rem;border-right:1px solid var(--border,#e5e7eb);
-                         font-size:.6875rem;font-weight:700;
-                         color:${isToday ? 'var(--brand,#3b5bdb)' : 'var(--text-secondary,#374151)'};
-                         background:var(--surface-subtle,#f9fafb);">${_esc(label)}${isToday ? '<br><span style="font-size:.5rem;color:var(--brand,#3b5bdb);">TODAY</span>' : ''}</th>`;
-    }).join('');
-
-    return `<div style="margin-bottom:1rem;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;">
-        <div>
-          <h4 style="font-size:.875rem;font-weight:700;color:var(--c-text,#111827);">
-            📊 Progress: ${_esc(title)}
-            ${isWeekly ? '<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;margin-left:.375rem;">🔄 Weekly</span>' : ''}
-          </h4>
-          <p style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin-top:1px;">
-            Showing ${relevantDates.length} session${relevantDates.length !== 1 ? 's' : ''} up to today
-          </p>
         </div>
-      </div>
-      <div style="overflow-x:auto;border:1px solid var(--border,#e5e7eb);border-radius:8px;">
-        <table style="width:100%;border-collapse:collapse;min-width:400px;">
-          <thead>
-            <tr style="border-bottom:1.5px solid var(--border,#e5e7eb);">
-              <th style="text-align:left;padding:.375rem .75rem;border-right:1px solid var(--border,#e5e7eb);
-                         font-size:.6875rem;font-weight:700;color:var(--text-secondary,#374151);
-                         background:var(--surface-subtle,#f9fafb);">Student</th>
-              ${headerCells}
-              <th style="text-align:center;padding:.375rem .5rem;font-size:.6875rem;font-weight:700;
-                         color:var(--text-secondary,#374151);background:var(--surface-subtle,#f9fafb);">Total</th>
-            </tr>
-          </thead>
-          <tbody>${rows || '<tr><td colspan="99" style="text-align:center;padding:1rem;font-size:.875rem;color:var(--text-tertiary,#6b7280);">No students found.</td></tr>'}</tbody>
-        </table>
-      </div>
-    </div>`;
-  }).filter(Boolean).join('');
-}
+        <div style="overflow-x:auto;border:1px solid var(--border,#e5e7eb);border-radius:8px;">
+          <table style="width:100%;border-collapse:collapse;min-width:400px;">
+            <thead>
+              <tr style="border-bottom:1.5px solid var(--border,#e5e7eb);">
+                <th style="text-align:left;padding:.375rem .75rem;border-right:1px solid var(--border,#e5e7eb);
+                           font-size:.6875rem;font-weight:700;color:var(--text-secondary,#374151);
+                           background:var(--surface-subtle,#f9fafb);">Student</th>
+                ${headerCells}
+                <th style="text-align:center;padding:.375rem .5rem;font-size:.6875rem;font-weight:700;
+                           color:var(--text-secondary,#374151);background:var(--surface-subtle,#f9fafb);">Total</th>
+              </tr>
+            </thead>
+            <tbody>${rows || '<tr><td colspan="99" style="text-align:center;padding:1rem;font-size:.875rem;color:var(--text-tertiary,#6b7280);">No students found.</td></tr>'}</tbody>
+          </table>
+        </div>
+      </div>`;
+    }).filter(Boolean).join('');
+  }
 
   async function deleteTask(docId) {
     if (!docId) return;
@@ -1823,8 +1919,8 @@ function _renderStudentProgress(taskDocs) {
     _selectAllMsgStudents,
     _clearMsgStudents,
     _setTaskScope,
+    _setAssignScope,
     _onTaskTargetChange,
-    // Per-date subject helpers — called from onclick inside dynamic HTML
     _selectAllDateSubjects,
     _clearDateSubjects,
   };
