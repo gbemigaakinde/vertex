@@ -1,5 +1,35 @@
 /* ============================================================
-   js/teacher.js — Teacher dashboard (UI v2)
+   js/teacher.js — Teacher dashboard (UI v3)
+   ============================================================
+   CHANGES FROM v2:
+   ─────────────────────────────────────────────────────────────
+   A. Task creation form now exposes three recurrence modes:
+        • One-time  — manually pick specific calendar dates
+        • Weekly    — pick day(s) of week + start date + end date
+        • Range     — pick weekdays + date range (or "all days"
+                      by leaving weekdays empty)
+
+   B. Task document now stores:
+        recurrence: 'once' | 'weekly' | 'range'
+        startDate:  'YYYY-MM-DD'   (weekly / range tasks)
+        endDate:    'YYYY-MM-DD' | null
+        weeklyDays: ['Monday', ...]  (weekly / range tasks)
+        dateSubjects: { 'day-name-or-YYYY-MM-DD': [subjects] }
+        dates:      kept for 'once' tasks only
+
+   C. Progress table (_renderStudentProgress) now:
+        • Queries ALL historical dates via Tasks._resolveTaskDates
+        • Groups columns by ISO week (Mon–Sun)
+        • Shows each week as a collapsible section
+        • Each week row per student shows done/missed counts
+        • Expandable to see individual day dots
+        • No more unreadably wide tables for long tasks
+
+   D. Backward compatible: 'once' tasks (no recurrence field)
+      still render as before.
+   ─────────────────────────────────────────────────────────────
+   All other teacher functionality (students, results, schools,
+   private messaging) is unchanged from v2.
    ============================================================ */
 
 (function () {
@@ -52,9 +82,7 @@
             </div>
           </div>
           <button onclick="Teacher.logout()" class="btn bg-gray-500 hover:bg-gray-600"
-                  style="font-size:.8125rem;padding:.4375rem .875rem;">
-            Sign out
-          </button>
+                  style="font-size:.8125rem;padding:.4375rem .875rem;">Sign out</button>
         </div>
 
         <!-- ── Tab nav ── -->
@@ -62,13 +90,13 @@
                     border-bottom:1px solid var(--c-border,#e5e7eb);flex-wrap:wrap;">
           <button onclick="Teacher.showTab('students')" id="tab-students"
                   class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">Students</button>
-          <button onclick="Teacher.showTab('results')" id="tab-results"
+          <button onclick="Teacher.showTab('results')"  id="tab-results"
                   class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">Results</button>
-          <button onclick="Teacher.showTab('schools')" id="tab-schools"
+          <button onclick="Teacher.showTab('schools')"  id="tab-schools"
                   class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">Schools</button>
-          <button onclick="Teacher.showTab('tasks')" id="tab-tasks"
+          <button onclick="Teacher.showTab('tasks')"    id="tab-tasks"
                   class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">Tasks &amp; Messages</button>
-          <button onclick="Teacher.showTab('chat')" id="tab-chat"
+          <button onclick="Teacher.showTab('chat')"     id="tab-chat"
                   class="tab-btn btn bg-green-600" style="font-size:.8125rem;padding:.4375rem .875rem;">Chat</button>
         </div>
 
@@ -93,7 +121,7 @@
             <div style="margin-bottom:1rem;">
               <h2 style="font-size:1rem;font-weight:700;">All Exam Results</h2>
               <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:2px;">
-                Most recent first &mdash; click any card to review the full attempt
+                Most recent first — click any card to review the full attempt
               </p>
             </div>
             <div id="resultsList" class="grid gap-3 md:grid-cols-2 lg:grid-cols-3"></div>
@@ -134,52 +162,51 @@
                   <h3 style="font-size:.9375rem;font-weight:700;color:var(--c-brand-text,#3730a3);">Coaching Tasks</h3>
                 </div>
 
-                <!-- Scope selector -->
+                <!-- ── Recurrence type ── -->
                 <div style="margin-bottom:.875rem;">
                   <label style="display:block;font-size:.75rem;font-weight:600;
-                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">Task type</label>
+                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">Recurrence</label>
                   <div style="display:flex;gap:0;border:1px solid var(--c-border,#e5e7eb);
                               border-radius:6px;overflow:hidden;width:100%;">
-                    <button id="taskScopeAll" onclick="Teacher._setTaskScope('all')"
-                            style="flex:1;padding:.4375rem .375rem;font-size:.6875rem;font-weight:600;
+                    <button id="taskScopeAll" onclick="Teacher._setTaskScope('once')"
+                            style="flex:1;padding:.4375rem .25rem;font-size:.6875rem;font-weight:600;
                                    cursor:pointer;border:none;transition:background .12s,color .12s;
                                    background:var(--brand,#3b5bdb);color:#fff;">One-time</button>
                     <button id="taskScopeWeekly" onclick="Teacher._setTaskScope('weekly')"
-                            style="flex:1;padding:.4375rem .375rem;font-size:.6875rem;font-weight:600;
+                            style="flex:1;padding:.4375rem .25rem;font-size:.6875rem;font-weight:600;
                                    cursor:pointer;border:none;border-left:1px solid var(--c-border,#e5e7eb);
                                    transition:background .12s,color .12s;
                                    background:var(--surface-muted,#f3f4f6);color:var(--text-tertiary,#6b7280);">Weekly</button>
+                    <button id="taskScopeRange" onclick="Teacher._setTaskScope('range')"
+                            style="flex:1;padding:.4375rem .25rem;font-size:.6875rem;font-weight:600;
+                                   cursor:pointer;border:none;border-left:1px solid var(--c-border,#e5e7eb);
+                                   transition:background .12s,color .12s;
+                                   background:var(--surface-muted,#f3f4f6);color:var(--text-tertiary,#6b7280);">Date Range</button>
                   </div>
                 </div>
 
-                <!-- Weekly hint (hidden until weekly selected) -->
-                <div id="taskWeeklyHint" style="display:none;margin-bottom:.75rem;padding:.5rem .75rem;
+                <!-- Recurrence hint -->
+                <div id="taskRecurrenceHint" style="display:none;margin-bottom:.75rem;padding:.5rem .75rem;
                      background:var(--brand-bg,#edf2ff);border:1px solid var(--brand-border,#bac8ff);
-                     border-radius:6px;font-size:.75rem;color:var(--brand-text,#3730a3);line-height:1.6;">
-                  🔄 Weekly tasks repeat automatically every week. Select the days below; the system
-                  will resolve the exact dates for each week on its own.
-                </div>
+                     border-radius:6px;font-size:.75rem;color:var(--brand-text,#3730a3);line-height:1.6;"></div>
 
-                <!-- Weekly sub-target picker (injected by _renderWeeklySubTargetPicker) -->
-                <!-- id="taskWeeklySubTargetWrap" inserted here at runtime -->
-
-                <!-- Assign-to selector (shown for one-time tasks) -->
+                <!-- Assign-to selector -->
                 <div id="taskAssignToWrap" style="margin-bottom:.875rem;">
                   <label style="display:block;font-size:.75rem;font-weight:600;
                                 color:var(--c-text-2,#374151);margin-bottom:.375rem;">Assign to</label>
                   <div style="display:flex;gap:0;border:1px solid var(--c-border,#e5e7eb);
                               border-radius:6px;overflow:hidden;width:100%;">
                     <button id="taskAssignAll" onclick="Teacher._setAssignScope('all')"
-                            style="flex:1;padding:.4375rem .375rem;font-size:.6875rem;font-weight:600;
+                            style="flex:1;padding:.4375rem .25rem;font-size:.6875rem;font-weight:600;
                                    cursor:pointer;border:none;transition:background .12s,color .12s;
                                    background:var(--brand,#3b5bdb);color:#fff;">All</button>
                     <button id="taskAssignClass" onclick="Teacher._setAssignScope('class')"
-                            style="flex:1;padding:.4375rem .375rem;font-size:.6875rem;font-weight:600;
+                            style="flex:1;padding:.4375rem .25rem;font-size:.6875rem;font-weight:600;
                                    cursor:pointer;border:none;border-left:1px solid var(--c-border,#e5e7eb);
                                    transition:background .12s,color .12s;
                                    background:var(--surface-muted,#f3f4f6);color:var(--text-tertiary,#6b7280);">By Class</button>
                     <button id="taskAssignStudent" onclick="Teacher._setAssignScope('student')"
-                            style="flex:1;padding:.4375rem .375rem;font-size:.6875rem;font-weight:600;
+                            style="flex:1;padding:.4375rem .25rem;font-size:.6875rem;font-weight:600;
                                    cursor:pointer;border:none;border-left:1px solid var(--c-border,#e5e7eb);
                                    transition:background .12s,color .12s;
                                    background:var(--surface-muted,#f3f4f6);color:var(--text-tertiary,#6b7280);">By Student</button>
@@ -223,7 +250,7 @@
                 <div style="margin-bottom:.75rem;">
                   <label style="display:block;font-size:.75rem;font-weight:600;
                                 color:var(--c-text-2,#374151);margin-bottom:.375rem;">Task Title</label>
-                  <input type="text" id="tasksTitle" placeholder="e.g., Weekend Challenge" />
+                  <input type="text" id="tasksTitle" placeholder="e.g., Term 2 Coaching Programme" />
                 </div>
 
                 <!-- Message -->
@@ -231,46 +258,22 @@
                   <label style="display:block;font-size:.75rem;font-weight:600;
                                 color:var(--c-text-2,#374151);margin-bottom:.375rem;">Message for Students</label>
                   <textarea id="tasksMessage" placeholder="Instructions or motivation..."
-                            style="height:5.5rem;resize:vertical;"></textarea>
+                            style="height:4rem;resize:vertical;"></textarea>
                 </div>
 
-                <!-- Date / day picker area -->
-                <div style="margin-bottom:.875rem;">
+                <!-- ── Date / range config area — rendered by _renderDateConfigArea() ── -->
+                <div id="taskDateConfigArea"></div>
+
+                <!-- Subject restrictions for recurring tasks -->
+                <div id="taskRecurringSubjectsWrap" style="display:none;margin-bottom:.875rem;">
                   <label style="display:block;font-size:.75rem;font-weight:600;
                                 color:var(--c-text-2,#374151);margin-bottom:.375rem;">
-                    <span id="taskDateLabel">Task Dates &amp; Subjects</span>
+                    Subject Restrictions
+                    <span style="font-weight:400;color:var(--text-tertiary,#6b7280);">
+                      — per day of week (leave all unchecked = no restriction)
+                    </span>
                   </label>
-                  <p id="taskDateHint" style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin-bottom:.5rem;line-height:1.5;">
-                    Add each date then choose which subjects are required for that day.
-                    Leave all unchecked on a date = no subject restriction for that day.
-                  </p>
-
-                  <!-- Calendar date input (one-time) -->
-                  <div id="taskDatePickerWrap" style="display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;">
-                    <input type="date" id="newTaskDate" style="flex:1;" />
-                    <button onclick="Teacher.addTaskDate()" class="btn"
-                            style="white-space:nowrap;padding:.5rem .875rem;font-size:.8125rem;">+ Add</button>
-                  </div>
-
-                  <!-- Day-of-week selector (weekly only) -->
-                  <div id="taskDayOfWeekPickerWrap" style="display:none;margin-bottom:.5rem;">
-                    <select id="newTaskDayOfWeek" style="flex:1;width:100%;">
-                      <option value="">Select a day of the week...</option>
-                      <option value="Monday">Monday</option>
-                      <option value="Tuesday">Tuesday</option>
-                      <option value="Wednesday">Wednesday</option>
-                      <option value="Thursday">Thursday</option>
-                      <option value="Friday">Friday</option>
-                      <option value="Saturday">Saturday</option>
-                      <option value="Sunday">Sunday</option>
-                    </select>
-                    <button onclick="Teacher.addTaskDate()" class="btn"
-                            style="white-space:nowrap;padding:.5rem .875rem;font-size:.8125rem;margin-top:.375rem;width:100%;">
-                      + Add Day
-                    </button>
-                  </div>
-
-                  <div id="tasksDates" class="space-y-1"></div>
+                  <div id="taskRecurringSubjectsList"></div>
                 </div>
 
                 <!-- Actions -->
@@ -359,7 +362,7 @@
               </div>
 
             </div><!-- /tasks-grid -->
-          </div>
+          </div><!-- /teacher-tasks -->
 
         </div><!-- /tab panels wrapper -->
       </div>`;
@@ -367,46 +370,37 @@
     const style = document.createElement('style');
     style.id = '_teacherGridStyle';
     style.textContent = `
-      @media (max-width: 768px) {
-        .tasks-grid { grid-template-columns: 1fr !important; }
-      }
+      @media (max-width:768px) { .tasks-grid { grid-template-columns:1fr !important; } }
       .teacher-result-card {
-        cursor: pointer;
-        transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+        cursor:pointer;
+        transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;
       }
       .teacher-result-card:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(0,0,0,.10);
-        border-color: var(--brand-border, #bac8ff);
+        transform:translateY(-2px);
+        box-shadow:0 6px 20px rgba(0,0,0,.10);
+        border-color:var(--brand-border,#bac8ff);
       }
       #teacherReviewModal {
-        position: fixed; inset: 0;
-        background: rgba(17,24,39,.6);
-        z-index: 1200;
-        display: flex; align-items: flex-start; justify-content: center;
-        padding: 1.25rem; overflow-y: auto;
-        backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px);
-        animation: cbt-overlay-in 0.16s ease-out both;
+        position:fixed;inset:0;background:rgba(17,24,39,.6);z-index:1200;
+        display:flex;align-items:flex-start;justify-content:center;
+        padding:1.25rem;overflow-y:auto;
+        backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
+        animation:cbt-overlay-in .16s ease-out both;
       }
       #teacherReviewModal .review-panel {
-        background: var(--surface, #fff);
-        border: 1px solid var(--border, #e5e7eb);
-        border-radius: 12px; padding: 1.5rem;
-        width: 100%; max-width: 760px; margin: auto;
-        box-shadow: 0 8px 32px rgba(0,0,0,.12);
-        animation: cbt-modal-in 0.24s cubic-bezier(.34,1.45,.64,1) both;
+        background:var(--surface,#fff);border:1px solid var(--border,#e5e7eb);
+        border-radius:12px;padding:1.5rem;width:100%;max-width:760px;margin:auto;
+        box-shadow:0 8px 32px rgba(0,0,0,.12);
+        animation:cbt-modal-in .24s cubic-bezier(.34,1.45,.64,1) both;
       }
-      .review-q-card { border-radius:8px; padding:1rem; border-width:2px; border-style:solid; }
-      .review-q-card--correct  { border-color:var(--success,#2f9e44); background:var(--success-bg,#ebfbee); }
-      .review-q-card--wrong    { border-color:var(--danger,#e03131);  background:var(--danger-bg,#fff5f5); }
-      .review-q-card--skipped  { border-color:var(--border-medium,#d1d5db); background:var(--surface-subtle,#f9fafb); }
-      .task-date-row .date-subj-list label:last-child { border-bottom: none; }
-      .progress-student-row { transition: background .12s; }
-      .progress-student-row:hover { background: var(--brand-bg,#edf2ff) !important; }
+      .review-q-card { border-radius:8px;padding:1rem;border-width:2px;border-style:solid; }
+      .review-q-card--correct  { border-color:var(--success,#2f9e44);background:var(--success-bg,#ebfbee); }
+      .review-q-card--wrong    { border-color:var(--danger,#e03131);background:var(--danger-bg,#fff5f5); }
+      .review-q-card--skipped  { border-color:var(--border-medium,#d1d5db);background:var(--surface-subtle,#f9fafb); }
+      .progress-week-row summary { cursor:pointer;list-style:none;user-select:none; }
+      .progress-week-row summary::-webkit-details-marker { display:none; }
     `;
-    if (!document.getElementById('_teacherGridStyle')) {
-      document.head.appendChild(style);
-    }
+    if (!document.getElementById('_teacherGridStyle')) document.head.appendChild(style);
 
     showTab('students');
   }
@@ -416,7 +410,7 @@
   /* -------------------------------------------------- */
 
   function showTab(tab) {
-    ['students', 'results', 'schools', 'tasks', 'chat'].forEach(t => {
+    ['students','results','schools','tasks','chat'].forEach(t => {
       const el  = document.getElementById(`teacher-${t}`);
       const btn = document.getElementById(`tab-${t}`);
       if (el)  el.classList.toggle('hidden', t !== tab);
@@ -438,8 +432,7 @@
     if (!container) return;
     container.innerHTML = `
       <div style="text-align:center;padding:2rem;color:var(--c-text-3,#6b7280);font-size:.875rem;">
-        Loading students...
-      </div>`;
+        Loading students...</div>`;
 
     _cancel('students');
     const unsub = Db().collection('students').onSnapshot(
@@ -455,8 +448,7 @@
         if (schools.length === 0) {
           container.innerHTML = `
             <div style="text-align:center;padding:2rem;color:var(--c-text-3,#6b7280);font-size:.875rem;">
-              No students registered yet.
-            </div>`;
+              No students registered yet.</div>`;
           return;
         }
         container.innerHTML = schools.map(school => {
@@ -604,7 +596,7 @@
           const hasDetail = !!(r.questionSnapshots);
           return `
             <div class="teacher-result-card" data-result-id="${_esc(doc.id)}"
-                 title="${hasDetail ? 'Click to review full attempt' : 'No detailed data for this attempt'}"
+                 title="${hasDetail ? 'Click to review full attempt' : 'No detailed data'}"
                  style="position:relative;background:var(--c-surface,#fff);
                         border:1px solid var(--c-border,#e5e7eb);border-radius:10px;
                         padding:.875rem 1rem;overflow:hidden;">
@@ -644,7 +636,7 @@
                   ? `<span style="font-size:.6875rem;font-weight:600;color:var(--brand,#3b5bdb);
                                   background:var(--brand-bg,#edf2ff);border:1px solid var(--brand-border,#bac8ff);
                                   border-radius:4px;padding:1px 7px;">View attempt →</span>`
-                  : `<span style="font-size:.6875rem;color:var(--c-text-4,#9ca3af);font-style:italic;">No detail available</span>`}
+                  : `<span style="font-size:.6875rem;color:var(--c-text-4,#9ca3af);font-style:italic;">No detail</span>`}
               </div>
             </div>`;
         }).join('');
@@ -712,7 +704,6 @@
       }
       r = snap.data();
     } catch (err) {
-      console.error('[teacher] _openReviewModal fetch error:', err);
       overlay.querySelector('.review-panel').innerHTML = `
         <p style="color:var(--danger,#e03131);font-size:.9375rem;">Failed to load result.</p>
         <button onclick="document.getElementById('teacherReviewModal').remove()"
@@ -727,7 +718,7 @@
                      : 'var(--danger,#e03131)';
     const ts = r.timestamp
       ? new Date(r.timestamp.toDate ? r.timestamp.toDate() : r.timestamp)
-          .toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })
+          .toLocaleString('en-GB', { dateStyle:'medium', timeStyle:'short' })
       : '—';
 
     if (!r.questionSnapshots) {
@@ -747,8 +738,7 @@
           <p style="font-size:.9375rem;font-weight:600;color:var(--text-primary,#111827);margin-top:.5rem;">
             Detailed attempt data not available</p>
           <p style="font-size:.8125rem;color:var(--text-tertiary,#6b7280);margin-top:.375rem;line-height:1.6;">
-            This result was submitted before per-question tracking was introduced.<br>
-            All future attempts will include the full question-by-question breakdown.</p>
+            This result was submitted before per-question tracking was introduced.</p>
         </div>`;
       return;
     }
@@ -839,12 +829,12 @@
         try {
           renderMathInElement(overlay, {
             delimiters: [
-              { left: '$$', right: '$$', display: true  },
-              { left: '$',  right: '$',  display: false },
-              { left: '\\(', right: '\\)', display: false },
-              { left: '\\[', right: '\\]', display: true  }
+              { left:'$$', right:'$$', display:true  },
+              { left:'$',  right:'$',  display:false },
+              { left:'\\(', right:'\\)', display:false },
+              { left:'\\[', right:'\\]', display:true  },
             ],
-            throwOnError: false
+            throwOnError: false,
           });
         } catch (e) { /* non-fatal */ }
       });
@@ -856,7 +846,7 @@
     const processed = (window.Exam && window.Exam.preprocessLatex)
       ? window.Exam.preprocessLatex(str) : str;
     return String(processed)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
   /* -------------------------------------------------- */
@@ -943,7 +933,7 @@
 
   async function deleteSchool(id, schoolName) {
     const ok = await UI.confirmAction(
-      `Delete "${schoolName}" from the list?\n\nStudents already registered keep their school name, but new students will not see it.`
+      `Delete "${schoolName}" from the list?\n\nStudents already registered keep their school name.`
     );
     if (!ok) return;
     try {
@@ -956,54 +946,196 @@
   }
 
   /* -------------------------------------------------- */
-  /* Tasks & Messages tab                                */
+  /* Tasks & Messages tab — state                        */
   /* -------------------------------------------------- */
 
-  // _taskScope:   'all' | 'weekly'
-  // _assignScope: 'all' | 'class' | 'student'  (for one-time AND weekly tasks)
-  let _taskScope   = 'all';
+  // _taskScope:   'once' | 'weekly' | 'range'
+  // _assignScope: 'all' | 'class' | 'student'
+  let _taskScope   = 'once';
   let _assignScope = 'all';
 
-  /* ── _setTaskScope: toggles between One-time and Weekly ── */
+  /* ─────────────────────────────────────────────────── */
+  /* _setTaskScope                                       */
+  /* ─────────────────────────────────────────────────── */
   function _setTaskScope(scope) {
     _taskScope = scope;
 
-    const btnAll    = document.getElementById('taskScopeAll');
+    const btnOnce   = document.getElementById('taskScopeAll');
     const btnWeekly = document.getElementById('taskScopeWeekly');
+    const btnRange  = document.getElementById('taskScopeRange');
 
-    [btnAll, btnWeekly].forEach(b => {
+    [btnOnce, btnWeekly, btnRange].forEach(b => {
       if (b) { b.style.background = 'var(--surface-muted,#f3f4f6)'; b.style.color = 'var(--text-tertiary,#6b7280)'; }
     });
-
-    const active = scope === 'weekly' ? btnWeekly : btnAll;
+    const active = scope === 'weekly' ? btnWeekly : scope === 'range' ? btnRange : btnOnce;
     if (active) { active.style.background = 'var(--brand,#3b5bdb)'; active.style.color = '#fff'; }
 
-    const weeklyHint  = document.getElementById('taskWeeklyHint');
-    const datePickerW = document.getElementById('taskDatePickerWrap');
-    const dayPickerW  = document.getElementById('taskDayOfWeekPickerWrap');
-    const dateLabel   = document.getElementById('taskDateLabel');
-    const dateHint    = document.getElementById('taskDateHint');
-
-    if (scope === 'weekly') {
-      if (weeklyHint)  weeklyHint.style.display  = '';
-      if (datePickerW) datePickerW.style.display = 'none';
-      if (dayPickerW)  dayPickerW.style.display  = '';
-      if (dateLabel)   dateLabel.innerHTML = 'Days of Week &amp; Subjects';
-      if (dateHint)    dateHint.textContent = 'Select which days of the week this task runs. The system automatically maps these to the correct calendar dates each week.';
-    } else {
-      if (weeklyHint)  weeklyHint.style.display  = 'none';
-      if (datePickerW) datePickerW.style.display = '';
-      if (dayPickerW)  dayPickerW.style.display  = 'none';
-      if (dateLabel)   dateLabel.innerHTML = 'Task Dates &amp; Subjects';
-      if (dateHint)    dateHint.textContent = 'Add each date then choose which subjects are required for that day. Leave all unchecked = no restriction.';
+    const hint = document.getElementById('taskRecurrenceHint');
+    if (hint) {
+      if (scope === 'weekly') {
+        hint.style.display = '';
+        hint.innerHTML = '🔄 <strong>Weekly</strong>: runs every week between Start Date and End Date (or open-ended). Pick which days of the week are active. Dates resolve automatically each week.';
+      } else if (scope === 'range') {
+        hint.style.display = '';
+        hint.innerHTML = '📅 <strong>Date Range</strong>: runs every selected weekday between Start Date and End Date. Great for term-long programmes.';
+      } else {
+        hint.style.display = 'none';
+        hint.innerHTML = '';
+      }
     }
 
-    // Reset assign scope back to 'all' and re-render the assign-to buttons
-    _setAssignScope('all');
-    _clearTaskForm();
+    _renderDateConfigArea();
+    _renderRecurringSubjectPicker();
+    _clearTaskFormDates();
   }
 
-  /* ── _setAssignScope: All / By Class / By Student (works for both one-time and weekly) ── */
+  /* ─────────────────────────────────────────────────── */
+  /* _renderDateConfigArea                               */
+  /* Injects the correct date-entry UI into              */
+  /* #taskDateConfigArea based on _taskScope.            */
+  /* ─────────────────────────────────────────────────── */
+  function _renderDateConfigArea() {
+    const area = document.getElementById('taskDateConfigArea');
+    if (!area) return;
+
+    if (_taskScope === 'once') {
+      area.innerHTML = `
+        <div style="margin-bottom:.875rem;">
+          <label style="display:block;font-size:.75rem;font-weight:600;
+                        color:var(--c-text-2,#374151);margin-bottom:.375rem;">
+            Task Dates &amp; Subjects
+          </label>
+          <p style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin-bottom:.5rem;line-height:1.5;">
+            Add each specific date, then choose which subjects are required for that day.
+            Leave all unchecked = no subject restriction.
+          </p>
+          <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;">
+            <input type="date" id="newTaskDate" style="flex:1;" />
+            <button onclick="Teacher.addTaskDate()" class="btn"
+                    style="white-space:nowrap;padding:.5rem .875rem;font-size:.8125rem;">+ Add</button>
+          </div>
+          <div id="tasksDates" class="space-y-1"></div>
+        </div>`;
+
+    } else {
+      // weekly or range — shared start/end date inputs + day-of-week checkboxes
+      const dayNames = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+      const rangeLabel = _taskScope === 'range' ? 'Active weekdays' : 'Days of week';
+
+      area.innerHTML = `
+        <div style="margin-bottom:.875rem;">
+          <label style="display:block;font-size:.75rem;font-weight:600;
+                        color:var(--c-text-2,#374151);margin-bottom:.375rem;">Start Date <span style="color:var(--danger,#e03131);">*</span></label>
+          <input type="date" id="taskStartDate" style="width:100%;" />
+        </div>
+        <div style="margin-bottom:.875rem;">
+          <label style="display:block;font-size:.75rem;font-weight:600;
+                        color:var(--c-text-2,#374151);margin-bottom:.375rem;">
+            End Date
+            <span style="font-weight:400;color:var(--text-tertiary,#6b7280);">— leave blank for open-ended</span>
+          </label>
+          <input type="date" id="taskEndDate" style="width:100%;" />
+        </div>
+        <div style="margin-bottom:.875rem;">
+          <label style="display:block;font-size:.75rem;font-weight:600;
+                        color:var(--c-text-2,#374151);margin-bottom:.375rem;">${_esc(rangeLabel)}</label>
+          <div style="display:flex;flex-wrap:wrap;gap:.375rem;">
+            ${dayNames.map(day => `
+              <label style="display:flex;align-items:center;gap:.375rem;font-size:.8125rem;
+                            cursor:pointer;padding:.3125rem .625rem;border-radius:6px;
+                            border:1px solid var(--c-border,#e5e7eb);background:var(--c-surface,#fff);">
+                <input type="checkbox" class="task-day-cb" value="${day}"
+                       style="width:.875rem;height:.875rem;accent-color:var(--brand,#3b5bdb);cursor:pointer;" />
+                ${day.slice(0,3)}
+              </label>`).join('')}
+          </div>
+          ${_taskScope === 'range'
+            ? `<p style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin-top:.375rem;line-height:1.4;">
+                 Leave all unchecked to run every calendar day in the range.
+               </p>`
+            : ''}
+        </div>`;
+    }
+
+    // Show/hide the recurring subject picker wrapper
+    const rswWrap = document.getElementById('taskRecurringSubjectsWrap');
+    if (rswWrap) rswWrap.style.display = _taskScope !== 'once' ? '' : 'none';
+  }
+
+  /* ─────────────────────────────────────────────────── */
+  /* _renderRecurringSubjectPicker                       */
+  /* For weekly/range tasks, shows one checkbox group    */
+  /* per day-of-week.                                    */
+  /* ─────────────────────────────────────────────────── */
+  function _renderRecurringSubjectPicker() {
+    const wrap = document.getElementById('taskRecurringSubjectsList');
+    if (!wrap) return;
+    if (_taskScope === 'once') { wrap.innerHTML = ''; return; }
+
+    const subjects = _getSubjectsForCurrentScope();
+    if (subjects.length === 0) {
+      wrap.innerHTML = `<p style="font-size:.8125rem;color:var(--text-tertiary,#6b7280);font-style:italic;">
+        Select a target first to see available subjects.</p>`;
+      return;
+    }
+
+    const dayNames = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+    wrap.innerHTML = dayNames.map(day => `
+      <details style="border:1px solid var(--c-border,#e5e7eb);border-radius:8px;
+                      overflow:hidden;margin-bottom:.375rem;">
+        <summary style="padding:.4375rem .75rem;font-size:.8125rem;font-weight:600;cursor:pointer;
+                        background:var(--surface-subtle,#f9fafb);display:flex;align-items:center;
+                        justify-content:space-between;list-style:none;user-select:none;">
+          <span>${day}</span>
+          <span class="recurring-day-count-${day}" style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);">
+            (all subjects)
+          </span>
+        </summary>
+        <div style="padding:.5rem .75rem;">
+          <div style="display:flex;gap:.5rem;margin-bottom:.375rem;">
+            <button onclick="Teacher._selectAllDaySubjects('${day}')"
+                    style="font-size:.6875rem;font-weight:600;color:var(--brand,#3b5bdb);
+                           background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">All</button>
+            <span style="color:var(--border-medium,#d1d5db);">·</span>
+            <button onclick="Teacher._clearDaySubjects('${day}')"
+                    style="font-size:.6875rem;font-weight:600;color:var(--text-tertiary,#6b7280);
+                           background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">None</button>
+          </div>
+          ${subjects.map(subj => `
+            <label style="display:flex;align-items:center;gap:.5rem;padding:.25rem 0;
+                          font-size:.8125rem;cursor:pointer;">
+              <input type="checkbox" class="recurring-day-subj-cb" data-day="${day}" value="${_esc(subj)}"
+                     onchange="Teacher._updateDaySubjCount('${day}')"
+                     style="width:.875rem;height:.875rem;accent-color:var(--brand,#3b5bdb);cursor:pointer;" />
+              ${_esc(subj)}
+            </label>`).join('')}
+        </div>
+      </details>`).join('');
+  }
+
+  function _selectAllDaySubjects(day) {
+    document.querySelectorAll(`.recurring-day-subj-cb[data-day="${day}"]`)
+      .forEach(cb => { cb.checked = true; });
+    _updateDaySubjCount(day);
+  }
+
+  function _clearDaySubjects(day) {
+    document.querySelectorAll(`.recurring-day-subj-cb[data-day="${day}"]`)
+      .forEach(cb => { cb.checked = false; });
+    _updateDaySubjCount(day);
+  }
+
+  function _updateDaySubjCount(day) {
+    const count = document.querySelectorAll(`.recurring-day-subj-cb[data-day="${day}"]:checked`).length;
+    const label = document.querySelector(`.recurring-day-count-${day}`);
+    if (!label) return;
+    label.textContent = count === 0 ? '(all subjects)' : `(${count} restricted)`;
+    label.style.color = count === 0 ? 'var(--text-tertiary,#6b7280)' : 'var(--brand,#3b5bdb)';
+  }
+
+  /* ─────────────────────────────────────────────────── */
+  /* _setAssignScope                                     */
+  /* ─────────────────────────────────────────────────── */
   function _setAssignScope(scope) {
     _assignScope = scope;
 
@@ -1016,90 +1148,87 @@
     [btnAll, btnClass, btnStudent].forEach(b => {
       if (b) { b.style.background = 'var(--surface-muted,#f3f4f6)'; b.style.color = 'var(--text-tertiary,#6b7280)'; }
     });
-
     const active = scope === 'class' ? btnClass : scope === 'student' ? btnStudent : btnAll;
     if (active) { active.style.background = 'var(--brand,#3b5bdb)'; active.style.color = '#fff'; }
 
-    if (classWrap)  classWrap.style.display  = scope === 'class'   ? '' : 'none';
-    if (studWrap)   studWrap.style.display   = scope === 'student' ? '' : 'none';
+    if (classWrap) classWrap.style.display = scope === 'class'   ? '' : 'none';
+    if (studWrap)  studWrap.style.display  = scope === 'student' ? '' : 'none';
 
-    // Rebuild date/day rows so subject lists match the new target
+    // Rebuild subject pickers for new target
+    _renderRecurringSubjectPicker();
     _onTaskTargetChange();
+  }
+
+  function _clearTaskFormDates() {
+    const datesEl = document.getElementById('tasksDates');
+    if (datesEl) datesEl.innerHTML = '';
   }
 
   function _clearTaskForm() {
     const activeEl  = document.getElementById('tasksActive');
     const titleEl   = document.getElementById('tasksTitle');
     const messageEl = document.getElementById('tasksMessage');
-    const datesEl   = document.getElementById('tasksDates');
+    const startEl   = document.getElementById('taskStartDate');
+    const endEl     = document.getElementById('taskEndDate');
     if (activeEl)  activeEl.checked  = false;
     if (titleEl)   titleEl.value     = '';
     if (messageEl) messageEl.value   = '';
-    if (datesEl)   datesEl.innerHTML = '';
+    if (startEl)   startEl.value     = '';
+    if (endEl)     endEl.value       = '';
+    document.querySelectorAll('.task-day-cb').forEach(cb => { cb.checked = false; });
+    document.querySelectorAll('.recurring-day-subj-cb').forEach(cb => { cb.checked = false; });
+    _clearTaskFormDates();
   }
 
-  /* ── _currentTaskDocId ──
-     Generates the Firestore doc ID for the task being saved.
-
-     One-time:
-       all     → 'global'
-       class   → 'class_sss1'
-       student → 'student_UID'
-
-     Weekly:
-       all     → 'weekly'
-       class   → 'weekly_class_sss1'
-       student → 'weekly_student_UID'
-  */
+  /* ─────────────────────────────────────────────────── */
+  /* _currentTaskDocId                                   */
+  /* ─────────────────────────────────────────────────── */
   function _currentTaskDocId() {
-    const prefix = _taskScope === 'weekly' ? 'weekly' : '';
+    // For weekly/range, doc IDs use the 'weekly_' prefix so the
+    // existing 6-listener architecture in tasks.js still finds them.
+    const prefix = _taskScope !== 'once' ? 'weekly' : '';
 
-    if (_assignScope === 'all') {
-      return prefix || 'global';
-    }
+    if (_assignScope === 'all') return prefix || 'global';
 
     if (_assignScope === 'class') {
       const sel = document.getElementById('taskTargetClass');
       const cls = sel ? sel.value.trim() : '';
       if (!cls) return null;
-      const classKey = 'class_' + cls.replace(/\s+/g, '').toLowerCase();
-      return prefix ? prefix + '_' + classKey : classKey;
+      const key = 'class_' + cls.replace(/\s+/g,'').toLowerCase();
+      return prefix ? prefix + '_' + key : key;
     }
 
     if (_assignScope === 'student') {
       const sel = document.getElementById('taskTargetStudent');
       const uid = sel ? sel.value.trim() : '';
       if (!uid) return null;
-      const studentKey = 'student_' + uid;
-      return prefix ? prefix + '_' + studentKey : studentKey;
+      const key = 'student_' + uid;
+      return prefix ? prefix + '_' + key : key;
     }
 
     return null;
   }
 
   function _onTaskTargetChange() {
-    // Rebuild existing date/day rows with correct subject list for new target
+    // Rebuild existing one-time date rows for new target's subjects
+    if (_taskScope !== 'once') return;
     const datesEl = document.getElementById('tasksDates');
     if (!datesEl) return;
-    const existingRows = Array.from(datesEl.querySelectorAll('.task-date-row'));
-    const data = existingRows.map(r => ({
-      date:     r.dataset.date,
-      isWeekly: r.dataset.isWeekly === 'true',
-    }));
+    const data = Array.from(datesEl.querySelectorAll('.task-date-row'))
+      .map(r => r.dataset.date);
     datesEl.innerHTML = '';
-    data.forEach(({ date, isWeekly }) => _appendDateItem(date, [], isWeekly));
+    data.forEach(date => _appendDateItem(date, []));
   }
 
-  /* ── _getSubjectsForCurrentScope ── */
+  /* ─────────────────────────────────────────────────── */
+  /* _getSubjectsForCurrentScope                         */
+  /* ─────────────────────────────────────────────────── */
   function _getSubjectsForCurrentScope() {
     const qBank = window.questions || {};
 
     if (_assignScope === 'all') {
-      // Union of every subject across all classes
       const all = new Set();
-      Object.values(qBank).forEach(classSubjects => {
-        Object.keys(classSubjects).forEach(s => all.add(s));
-      });
+      Object.values(qBank).forEach(cls => Object.keys(cls).forEach(s => all.add(s)));
       return [...all].sort();
     }
 
@@ -1107,7 +1236,7 @@
       const sel = document.getElementById('taskTargetClass');
       const cls = sel ? sel.value.trim() : '';
       if (!cls) return [];
-      return Object.keys(qBank[cls.replace(/\s+/g, '').toLowerCase()] || {}).sort();
+      return Object.keys(qBank[cls.replace(/\s+/g,'').toLowerCase()] || {}).sort();
     }
 
     if (_assignScope === 'student') {
@@ -1116,82 +1245,58 @@
       if (!uid) return [];
       const student = _msgStudentCache.find(s => s.id === uid);
       if (!student || !student.cls) return [];
-      return Object.keys(qBank[student.cls.replace(/\s+/g, '').toLowerCase()] || {}).sort();
+      return Object.keys(qBank[student.cls.replace(/\s+/g,'').toLowerCase()] || {}).sort();
     }
 
     return [];
   }
 
-  /* ── addTaskDate ── */
+  /* ─────────────────────────────────────────────────── */
+  /* addTaskDate (one-time only)                         */
+  /* ─────────────────────────────────────────────────── */
   function addTaskDate() {
     const container = document.getElementById('tasksDates');
     if (!container) return;
-
-    if (_taskScope === 'weekly') {
-      const daySelect = document.getElementById('newTaskDayOfWeek');
-      const val = daySelect ? daySelect.value.trim() : '';
-      if (!val) { UI.toast('Please select a day of the week.', 'warning'); return; }
-
-      const existing = Array.from(container.querySelectorAll('.task-date-row')).map(r => r.dataset.date);
-      if (existing.includes(val)) { UI.toast('This day is already in the list.', 'warning'); return; }
-
-      _appendDateItem(val, [], true);
-      if (daySelect) daySelect.value = '';
-    } else {
-      const dateInput = document.getElementById('newTaskDate');
-      const val = dateInput ? dateInput.value.trim() : '';
-      if (!val) { UI.toast('Please select a date first.', 'warning'); return; }
-
-      const existing = Array.from(container.querySelectorAll('.task-date-row')).map(r => r.dataset.date);
-      if (existing.includes(val)) { UI.toast('This date is already in the list.', 'warning'); return; }
-
-      _appendDateItem(val, [], false);
-      if (dateInput) dateInput.value = '';
-    }
+    const dateInput = document.getElementById('newTaskDate');
+    const val = dateInput ? dateInput.value.trim() : '';
+    if (!val) { UI.toast('Please select a date first.', 'warning'); return; }
+    const existing = Array.from(container.querySelectorAll('.task-date-row')).map(r => r.dataset.date);
+    if (existing.includes(val)) { UI.toast('This date is already in the list.', 'warning'); return; }
+    _appendDateItem(val, []);
+    if (dateInput) dateInput.value = '';
   }
 
-  /* ── _appendDateItem ── */
-  function _appendDateItem(dateStr, preselected, isWeeklyMode) {
+  /* ─────────────────────────────────────────────────── */
+  /* _appendDateItem (one-time tasks)                    */
+  /* ─────────────────────────────────────────────────── */
+  function _appendDateItem(dateStr, preselected) {
     const container = document.getElementById('tasksDates');
     if (!container) return;
-    preselected  = preselected  || [];
-    isWeeklyMode = !!isWeeklyMode;
+    preselected = preselected || [];
 
     const subjects = _getSubjectsForCurrentScope();
-
-    // Display label: day name for weekly, formatted date otherwise
-    let displayLabel;
-    if (isWeeklyMode) {
-      displayLabel = dateStr; // e.g. 'Monday'
-    } else {
-      const parts = dateStr.split('-');
-      displayLabel = new Date(+parts[0], +parts[1] - 1, +parts[2])
-        .toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
-    }
+    const parts    = dateStr.split('-');
+    const label    = new Date(+parts[0], +parts[1] - 1, +parts[2])
+      .toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
 
     const subjectCheckboxesHtml = subjects.length > 0
       ? subjects.map(subj => `
-          <label style="display:flex;align-items:center;gap:.5rem;padding:.3125rem .625rem;
-                        cursor:pointer;border-bottom:1px solid var(--border,#e5e7eb);transition:background .1s;"
+          <label style="display:flex;align-items:center;gap:.5rem;padding:.3125rem .625rem;cursor:pointer;
+                        border-bottom:1px solid var(--border,#e5e7eb);"
                  onmouseenter="this.style.background='var(--brand-bg,#edf2ff)'"
                  onmouseleave="this.style.background=''">
             <input type="checkbox" class="date-subj-cb" value="${_esc(subj)}"
                    ${preselected.includes(subj) ? 'checked' : ''}
-                   style="width:.875rem;height:.875rem;accent-color:var(--brand,#3b5bdb);
-                          flex-shrink:0;cursor:pointer;" />
+                   style="width:.875rem;height:.875rem;accent-color:var(--brand,#3b5bdb);cursor:pointer;" />
             <span style="font-size:.8125rem;color:var(--text-primary,#111827);">${_esc(subj)}</span>
           </label>`).join('')
-      : `<p style="font-size:.8125rem;color:var(--text-tertiary,#6b7280);
-                   padding:.5rem .75rem;font-style:italic;">
-           No subjects available — select a target first.
-         </p>`;
+      : `<p style="font-size:.8125rem;color:var(--text-tertiary,#6b7280);padding:.5rem .75rem;font-style:italic;">
+           No subjects available.</p>`;
 
     const div = document.createElement('div');
-    div.className       = 'task-date-row';
-    div.dataset.date    = dateStr;
-    div.dataset.isWeekly = isWeeklyMode ? 'true' : 'false';
-    div.style.cssText   = `
-      border:1.5px solid var(--brand-border,#bac8ff);border-radius:8px;
+    div.className    = 'task-date-row';
+    div.dataset.date = dateStr;
+    div.style.cssText = `border:1.5px solid var(--brand-border,#bac8ff);border-radius:8px;
       overflow:hidden;margin-bottom:.5rem;background:var(--surface,#fff);`;
 
     div.innerHTML = `
@@ -1200,14 +1305,9 @@
            onclick="this.nextElementSibling.style.display =
                     this.nextElementSibling.style.display === 'none' ? '' : 'none'">
         <div style="display:flex;align-items:center;gap:.5rem;">
-          ${isWeeklyMode ? '<span style="font-size:.6875rem;font-weight:700;color:var(--brand,#3b5bdb);background:rgba(59,91,219,.12);padding:1px 6px;border-radius:4px;">🔄</span>' : ''}
-          <span style="font-size:.8125rem;font-weight:700;color:var(--brand-text,#3730a3);">
-            ${_esc(displayLabel)}
-          </span>
-          <span class="date-subj-count"
-                style="font-size:.6875rem;font-weight:600;color:var(--text-tertiary,#6b7280);">
-            (all subjects)
-          </span>
+          <span style="font-size:.8125rem;font-weight:700;color:var(--brand-text,#3730a3);">${_esc(label)}</span>
+          <span class="date-subj-count" style="font-size:.6875rem;font-weight:600;color:var(--text-tertiary,#6b7280);">
+            (all subjects)</span>
         </div>
         <div style="display:flex;align-items:center;gap:.375rem;">
           <span style="font-size:.6875rem;color:var(--brand,#3b5bdb);">▾ subjects</span>
@@ -1221,8 +1321,7 @@
                     padding:.375rem .75rem;background:var(--surface-muted,#f9fafb);
                     border-bottom:1px solid var(--border,#e5e7eb);">
           <span style="font-size:.6875rem;font-weight:600;color:var(--text-tertiary,#6b7280);">
-            Subjects for this ${isWeeklyMode ? 'day' : 'date'}
-            <span style="font-weight:400;">(leave all unchecked = no restriction)</span>
+            Subjects <span style="font-weight:400;">(leave all unchecked = no restriction)</span>
           </span>
           <div style="display:flex;gap:.375rem;">
             <button onclick="Teacher._selectAllDateSubjects(this)"
@@ -1240,7 +1339,6 @@
       </div>`;
 
     container.appendChild(div);
-
     div.querySelectorAll('.date-subj-cb').forEach(cb => {
       cb.addEventListener('change', () => _updateDateSubjCount(div));
     });
@@ -1251,9 +1349,7 @@
     const checked = rowEl.querySelectorAll('.date-subj-cb:checked').length;
     const label   = rowEl.querySelector('.date-subj-count');
     if (!label) return;
-    label.textContent = checked === 0
-      ? '(all subjects)'
-      : `(${checked} subject${checked !== 1 ? 's' : ''} required)`;
+    label.textContent = checked === 0 ? '(all subjects)' : `(${checked} subject${checked !== 1 ? 's' : ''} required)`;
     label.style.color = checked === 0 ? 'var(--text-tertiary,#6b7280)' : 'var(--brand,#3b5bdb)';
   }
 
@@ -1271,10 +1367,11 @@
     _updateDateSubjCount(row);
   }
 
-  /* ── saveTasksConfig ── */
+  /* ─────────────────────────────────────────────────── */
+  /* saveTasksConfig                                     */
+  /* ─────────────────────────────────────────────────── */
   async function saveTasksConfig() {
     const docId = _currentTaskDocId();
-
     if (!docId) {
       if (_assignScope === 'class')   { UI.toast('Please select a class.',   'warning'); return; }
       if (_assignScope === 'student') { UI.toast('Please select a student.', 'warning'); return; }
@@ -1286,23 +1383,15 @@
     const title   = document.getElementById('tasksTitle')?.value.trim()   || '';
     const message = document.getElementById('tasksMessage')?.value.trim() || '';
 
-    const dateRows = Array.from(document.querySelectorAll('.task-date-row'));
     if (!title) { UI.toast('Please enter a task title.', 'warning'); return; }
-    if (dateRows.length === 0) {
-      UI.toast(
-        _taskScope === 'weekly'
-          ? 'Please add at least one day of the week.'
-          : 'Please add at least one date.',
-        'warning'
-      );
-      return;
-    }
 
     let payload;
 
-    if (_taskScope === 'weekly') {
-      // Weekly: keys are day names
-      const weeklyDays   = dateRows.map(row => row.dataset.date).filter(Boolean);
+    if (_taskScope === 'once') {
+      const dateRows = Array.from(document.querySelectorAll('.task-date-row'));
+      if (dateRows.length === 0) { UI.toast('Please add at least one date.', 'warning'); return; }
+
+      const dates        = dateRows.map(r => r.dataset.date).filter(Boolean);
       const dateSubjects = {};
       dateRows.forEach(row => {
         dateSubjects[row.dataset.date] =
@@ -1310,13 +1399,49 @@
       });
 
       payload = {
-        active,
+        recurrence:  'once',
+        active, title,
+        message:     message || 'Complete the required exams on the scheduled dates.',
+        dates,
+        dateSubjects,
+        scope:       _assignScope === 'all' ? 'global' : _assignScope,
+        updatedAt:   firebase.firestore.FieldValue.serverTimestamp(),
+      };
+
+    } else {
+      // weekly or range
+      const startDate = document.getElementById('taskStartDate')?.value.trim() || '';
+      const endDate   = document.getElementById('taskEndDate')?.value.trim()   || null;
+
+      if (!startDate) { UI.toast('Please set a start date.', 'warning'); return; }
+      if (endDate && endDate < startDate) {
+        UI.toast('End date must be after start date.', 'warning'); return;
+      }
+
+      const checkedDays = [...document.querySelectorAll('.task-day-cb:checked')].map(cb => cb.value);
+      if (_taskScope === 'weekly' && checkedDays.length === 0) {
+        UI.toast('Please select at least one day of the week.', 'warning'); return;
+      }
+
+      // Build dateSubjects from the per-day-of-week subject pickers
+      const dateSubjects = {};
+      const dayNames = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+      dayNames.forEach(day => {
+        const selected = [...document.querySelectorAll(`.recurring-day-subj-cb[data-day="${day}"]:checked`)]
+          .map(cb => cb.value);
+        if (selected.length > 0) dateSubjects[day] = selected;
+      });
+
+      payload = {
+        recurrence:  _taskScope,
+        active, title,
+        message:     message || 'Complete the required exams on the scheduled dates.',
+        startDate,
+        endDate:     endDate || null,
+        weeklyDays:  checkedDays,
+        dateSubjects,
         scope:       'weekly',
         assignScope: _assignScope,
-        title,
-        message:     message || 'Complete the required exams on the scheduled days.',
-        weeklyDays,
-        dateSubjects,
         updatedAt:   firebase.firestore.FieldValue.serverTimestamp(),
       };
 
@@ -1329,35 +1454,6 @@
         const opt = sel && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex] : null;
         if (sel)  payload.studentUid  = sel.value;
         if (opt)  payload.studentName = opt.text;
-      }
-
-    } else {
-      // One-time: keys are YYYY-MM-DD calendar dates
-      const dates        = dateRows.map(row => row.dataset.date).filter(Boolean);
-      const dateSubjects = {};
-      dateRows.forEach(row => {
-        dateSubjects[row.dataset.date] =
-          [...row.querySelectorAll('.date-subj-cb:checked')].map(cb => cb.value);
-      });
-
-      payload = {
-        active,
-        scope:       _assignScope === 'all' ? 'global' : _assignScope,
-        title,
-        message:     message || 'Complete the required exams on the scheduled dates.',
-        dates,
-        dateSubjects,
-        updatedAt:   firebase.firestore.FieldValue.serverTimestamp(),
-      };
-
-      if (_assignScope === 'student') {
-        const sel = document.getElementById('taskTargetStudent');
-        const opt = sel && sel.selectedIndex >= 0 ? sel.options[sel.selectedIndex] : null;
-        if (opt) payload.studentName = opt.text;
-      }
-      if (_assignScope === 'class') {
-        const sel = document.getElementById('taskTargetClass');
-        if (sel) payload.className = sel.value;
       }
     }
 
@@ -1375,10 +1471,13 @@
     }
   }
 
-  /* ── _loadTasksManager ── */
+  /* -------------------------------------------------- */
+  /* _loadTasksManager                                   */
+  /* -------------------------------------------------- */
+
   function _loadTasksManager() {
     _cancel('tasksManager');
-    _taskScope   = 'all';
+    _taskScope   = 'once';
     _assignScope = 'all';
 
     // Populate class dropdown
@@ -1402,7 +1501,7 @@
     });
     _reg('tasksList', unsubTasks);
 
-    // Load students for messaging + task targeting
+    // Load students for messaging + targeting
     _cancel('msgStudents');
     _msgStudentCache = [];
     const unsubStudents = Db().collection('students').orderBy('name').onSnapshot(snap => {
@@ -1419,19 +1518,10 @@
       _populateMsgSingleSelect();
       _populateMsgCheckboxList();
       _populateTaskStudentSelect();
-
-      // Re-render progress table with fresh student data
-      const taskPanel = document.getElementById('existingTasksList');
-      if (taskPanel) {
-        Db().collection('coachingTasks').get().then(snap => {
-          _renderStudentProgress(snap.docs);
-        }).catch(() => {});
-      }
     });
     _reg('msgStudents', unsubStudents);
 
-    // Set initial scope UI
-    _setTaskScope('all');
+    _setTaskScope('once');
   }
 
   function _populateTaskStudentSelect() {
@@ -1444,13 +1534,16 @@
     sel.innerHTML = html;
   }
 
-  /* ── _renderExistingTasksList ── */
+  /* -------------------------------------------------- */
+  /* _renderExistingTasksList                            */
+  /* -------------------------------------------------- */
+
   function _renderExistingTasksList(docs) {
     let container = document.getElementById('existingTasksList');
     if (!container) {
       const panel = document.getElementById('teacher-tasks');
       if (!panel) return;
-      const inner = panel.querySelector('div[style*="padding:1.25rem 1.5rem"]') || panel;
+      const inner = panel.querySelector('[style*="padding:1.25rem 1.5rem"]') || panel;
       container = document.createElement('div');
       container.id = 'existingTasksList';
       container.style.cssText = 'margin-top:1rem;';
@@ -1462,18 +1555,18 @@
 
     function scopeLabel(docId) {
       if (docId === 'global')
-        return { label: 'All Students',         color: 'var(--brand,#3b5bdb)',     bg: 'var(--brand-bg,#edf2ff)',      border: 'var(--brand-border,#bac8ff)' };
+        return { label:'All Students', color:'var(--brand,#3b5bdb)', bg:'var(--brand-bg,#edf2ff)', border:'var(--brand-border,#bac8ff)' };
       if (docId === 'weekly')
-        return { label: '🔄 Weekly · All',       color: '#7c3aed',                  bg: '#f5f3ff',                      border: '#ddd6fe' };
+        return { label:'🔄 Recurring · All', color:'#7c3aed', bg:'#f5f3ff', border:'#ddd6fe' };
       if (docId.startsWith('weekly_class_'))
-        return { label: '🔄 Weekly · Class: ' + docId.replace('weekly_class_', '').toUpperCase(), color: '#7c3aed', bg: '#f5f3ff', border: '#ddd6fe' };
+        return { label:'🔄 Recurring · Class: ' + docId.replace('weekly_class_','').toUpperCase(), color:'#7c3aed', bg:'#f5f3ff', border:'#ddd6fe' };
       if (docId.startsWith('weekly_student_'))
-        return { label: '🔄 Weekly · Student',   color: '#7c3aed',                  bg: '#f5f3ff',                      border: '#ddd6fe' };
+        return { label:'🔄 Recurring · Student', color:'#7c3aed', bg:'#f5f3ff', border:'#ddd6fe' };
       if (docId.startsWith('class_'))
-        return { label: 'Class: ' + docId.replace('class_', '').toUpperCase(), color: 'var(--warning,#e8890c)', bg: 'var(--warning-bg,#fff9db)', border: 'var(--warning-border,#ffec99)' };
+        return { label:'Class: ' + docId.replace('class_','').toUpperCase(), color:'var(--warning,#e8890c)', bg:'var(--warning-bg,#fff9db)', border:'var(--warning-border,#ffec99)' };
       if (docId.startsWith('student_'))
-        return { label: 'Student',               color: 'var(--success,#2f9e44)',   bg: 'var(--success-bg,#ebfbee)',    border: 'var(--success-border,#b2f2bb)' };
-      return { label: docId,                     color: 'var(--text-tertiary,#6b7280)', bg: 'var(--surface-muted,#f3f4f6)', border: 'var(--border,#e5e7eb)' };
+        return { label:'Student', color:'var(--success,#2f9e44)', bg:'var(--success-bg,#ebfbee)', border:'var(--success-border,#b2f2bb)' };
+      return { label:docId, color:'var(--text-tertiary,#6b7280)', bg:'var(--surface-muted,#f3f4f6)', border:'var(--border,#e5e7eb)' };
     }
 
     function resolveStudentName(docId) {
@@ -1481,7 +1574,7 @@
                    : docId.startsWith('student_')        ? 'student_'
                    : null;
       if (!prefix) return null;
-      const uid   = docId.replace(prefix, '');
+      const uid   = docId.replace(prefix,'');
       const found = _msgStudentCache.find(s => s.id === uid);
       return found ? found.name + ' (' + found.cls + ')' : uid;
     }
@@ -1494,60 +1587,58 @@
         const d           = doc.data();
         const scope       = scopeLabel(doc.id);
         const studentName = resolveStudentName(doc.id);
-        const scopeDisplay = studentName ? (doc.id.startsWith('weekly_') ? '🔄 Weekly · Student: ' : 'Student: ') + studentName : scope.label;
+        const scopeDisp   = studentName
+          ? (doc.id.startsWith('weekly_') ? '🔄 Recurring · Student: ' : 'Student: ') + studentName
+          : scope.label;
 
-        const isWeekly = doc.id === 'weekly' || doc.id.startsWith('weekly_') || d.scope === 'weekly';
+        const isRecurring = d.recurrence === 'weekly' || d.recurrence === 'range' ||
+          doc.id === 'weekly' || doc.id.startsWith('weekly_') || d.scope === 'weekly';
 
-        let datesDisplay, subjBadge;
-
-        if (isWeekly) {
-          datesDisplay = (d.weeklyDays || []).join(', ') || '—';
-          const totalWithSubj = Object.values(d.dateSubjects || {}).filter(arr => arr.length > 0).length;
-          subjBadge = totalWithSubj > 0
-            ? '<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;' +
-              'background:var(--surface-muted,#f3f4f6);color:var(--text-secondary,#374151);' +
-              'border:1px solid var(--border,#e5e7eb);">📚 ' + totalWithSubj + ' day' + (totalWithSubj !== 1 ? 's' : '') + ' restricted</span>'
-            : '';
+        let datesDisplay;
+        if (isRecurring) {
+          const dayList = (d.weeklyDays || []).join(', ') || '—';
+          const start   = d.startDate || '?';
+          const end     = d.endDate   || 'open-ended';
+          datesDisplay  = `${d.recurrence || 'weekly'} · ${dayList} · ${start} → ${end}`;
         } else {
           datesDisplay = (d.dates || []).join(', ') || '—';
-          const totalWithSubj = Object.values(d.dateSubjects || {}).filter(arr => arr.length > 0).length;
-          subjBadge = totalWithSubj > 0
-            ? '<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;' +
-              'background:var(--surface-muted,#f3f4f6);color:var(--text-secondary,#374151);' +
-              'border:1px solid var(--border,#e5e7eb);">📚 ' + totalWithSubj + ' date' + (totalWithSubj !== 1 ? 's' : '') + ' restricted</span>'
-            : '';
         }
 
         return '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem;' +
-               'background:var(--c-surface,#fff);border:1px solid var(--c-border,#e5e7eb);border-radius:8px;padding:.5rem .875rem;">' +
-               '<div style="min-width:0;flex:1;">' +
-               '<div style="display:flex;align-items:center;gap:.375rem;flex-wrap:wrap;margin-bottom:2px;">' +
-               '<span style="font-size:.8125rem;font-weight:700;color:var(--c-text,#111827);">' + _esc(d.title || '—') + '</span>' +
-               '<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;' +
-               'background:' + scope.bg + ';color:' + scope.color + ';border:1px solid ' + scope.border + ';">' +
-               _esc(scopeDisplay) + '</span>' +
-               '<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;' +
-               (d.active
-                 ? 'background:var(--success-bg,#ebfbee);color:var(--success-text,#1a5c29);border:1px solid var(--success-border,#b2f2bb);'
-                 : 'background:var(--surface-muted,#f3f4f6);color:var(--text-disabled,#9ca3af);border:1px solid var(--border,#e5e7eb);') +
-               '">' + (d.active ? 'Active' : 'Inactive') + '</span>' +
-               subjBadge +
-               '</div>' +
-               '<p style="font-size:.6875rem;color:var(--c-text-4,#9ca3af);">' + _esc(datesDisplay) + '</p>' +
-               '</div>' +
-               '<button class="teacher-delete-task" data-task-id="' + _esc(doc.id) + '"' +
-               ' style="background:none;border:none;cursor:pointer;font-size:1rem;line-height:1;' +
-               'padding:2px 4px;color:var(--c-text-4,#9ca3af);flex-shrink:0;margin-top:1px;"' +
-               ' onmouseenter="this.style.color=&apos;var(--c-danger,#dc2626)&apos;"' +
-               ' onmouseleave="this.style.color=&apos;var(--c-text-4,#9ca3af)&apos;">&#215;</button>' +
-               '</div>';
+          'background:var(--c-surface,#fff);border:1px solid var(--c-border,#e5e7eb);border-radius:8px;padding:.5rem .875rem;">' +
+          '<div style="min-width:0;flex:1;">' +
+          '<div style="display:flex;align-items:center;gap:.375rem;flex-wrap:wrap;margin-bottom:2px;">' +
+          `<span style="font-size:.8125rem;font-weight:700;color:var(--c-text,#111827);">${_esc(d.title || '—')}</span>` +
+          `<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;` +
+          `background:${scope.bg};color:${scope.color};border:1px solid ${scope.border};">${_esc(scopeDisp)}</span>` +
+          `<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;` +
+          (d.active
+            ? 'background:var(--success-bg,#ebfbee);color:var(--success-text,#1a5c29);border:1px solid var(--success-border,#b2f2bb);'
+            : 'background:var(--surface-muted,#f3f4f6);color:var(--text-disabled,#9ca3af);border:1px solid var(--border,#e5e7eb);') +
+          '">' + (d.active ? 'Active' : 'Inactive') + '</span>' +
+          '</div>' +
+          `<p style="font-size:.6875rem;color:var(--c-text-4,#9ca3af);word-break:break-all;">${_esc(datesDisplay)}</p>` +
+          '</div>' +
+          `<button class="teacher-delete-task" data-task-id="${_esc(doc.id)}"` +
+          ` style="background:none;border:none;cursor:pointer;font-size:1rem;line-height:1;` +
+          `padding:2px 4px;color:var(--c-text-4,#9ca3af);flex-shrink:0;margin-top:1px;"` +
+          ` onmouseenter="this.style.color='var(--c-danger,#dc2626)'"` +
+          ` onmouseleave="this.style.color='var(--c-text-4,#9ca3af)'">&#215;</button>` +
+          '</div>';
       }).join('') +
       '</div></div>';
 
     _renderStudentProgress(tasks);
   }
 
-  /* ── _renderStudentProgress ── */
+  /* ══════════════════════════════════════════════════════════
+     _renderStudentProgress
+     ──────────────────────────────────────────────────────────
+     Groups dates by ISO week. Each active task gets its own
+     section. Within each section, weeks are collapsible rows.
+     Each week row shows a student's done/missed counts for
+     that week, expandable to individual day dots.
+     ══════════════════════════════════════════════════════════ */
   function _renderStudentProgress(taskDocs) {
     let container = document.getElementById('taskProgressPanel');
     if (!container) {
@@ -1563,147 +1654,219 @@
 
     const activeTasks = taskDocs.filter(doc => {
       const d = doc.data();
-      return d.active && (
-        (d.dates && d.dates.length > 0) ||
-        (d.weeklyDays && d.weeklyDays.length > 0)
-      );
+      return d.active;
     });
 
     if (activeTasks.length === 0) { container.innerHTML = ''; return; }
 
-    const todayStr = (() => {
-      const d = new Date();
-      return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    })();
+    const todayStr = Tasks._localDateStr();
 
-    // Resolve concrete dates for a task doc
+    /* ── Get all historical dates for a task ── */
     function getTaskDates(doc) {
       const d = doc.data();
-      if (doc.id === 'weekly' || doc.id.startsWith('weekly_') || d.scope === 'weekly') {
-        if (window.Tasks && Tasks._resolveWeeklyDates) {
-          return (Tasks._resolveWeeklyDates(d).dates) || [];
-        }
-      }
-      return d.dates || [];
+      return Tasks._resolveTaskDates(d, { upToDate: todayStr });
     }
 
-    // Determine which students this task applies to
+    /* ── Which students does this task apply to ── */
     function getStudentsForTask(doc) {
-      const docId = doc.id;
-
-      if (docId === 'global')               return _msgStudentCache;
-      if (docId === 'weekly')               return _msgStudentCache;
-
-      if (docId.startsWith('weekly_class_')) {
-        const cls = docId.replace('weekly_class_', '');
-        return _msgStudentCache.filter(s => s.cls.replace(/\s+/g, '').toLowerCase() === cls);
+      const id = doc.id;
+      if (id === 'global')               return _msgStudentCache;
+      if (id === 'weekly')               return _msgStudentCache;
+      if (id.startsWith('weekly_class_')) {
+        const cls = id.replace('weekly_class_','');
+        return _msgStudentCache.filter(s => s.cls.replace(/\s+/g,'').toLowerCase() === cls);
       }
-      if (docId.startsWith('weekly_student_')) {
-        const uid = docId.replace('weekly_student_', '');
+      if (id.startsWith('weekly_student_')) {
+        const uid = id.replace('weekly_student_','');
         return _msgStudentCache.filter(s => s.id === uid);
       }
-      if (docId.startsWith('class_')) {
-        const cls = docId.replace('class_', '');
-        return _msgStudentCache.filter(s => s.cls.replace(/\s+/g, '').toLowerCase() === cls);
+      if (id.startsWith('class_')) {
+        const cls = id.replace('class_','');
+        return _msgStudentCache.filter(s => s.cls.replace(/\s+/g,'').toLowerCase() === cls);
       }
-      if (docId.startsWith('student_')) {
-        const uid = docId.replace('student_', '');
+      if (id.startsWith('student_')) {
+        const uid = id.replace('student_','');
         return _msgStudentCache.filter(s => s.id === uid);
       }
       return [];
     }
 
+    /* ── Group dates into ISO weeks ── */
+    function groupByWeek(dates) {
+      const weeks = {};
+      dates.forEach(dateStr => {
+        const d      = Tasks._resolveTaskDates ? dateStr : dateStr;
+        const parts  = dateStr.split('-');
+        const date   = new Date(+parts[0], +parts[1]-1, +parts[2]);
+        const dow    = date.getDay();
+        const diff   = dow === 0 ? -6 : 1 - dow;
+        const monday = new Date(date);
+        monday.setDate(date.getDate() + diff);
+        const weekKey = Tasks._localDateStr(monday);
+        if (!weeks[weekKey]) weeks[weekKey] = [];
+        weeks[weekKey].push(dateStr);
+      });
+      // Sort weeks descending (most recent first)
+      return Object.keys(weeks).sort().reverse().map(weekKey => ({
+        weekKey,
+        dates: weeks[weekKey].sort(),
+      }));
+    }
+
+    /* ── Format week label ── */
+    function weekLabel(weekKey) {
+      const parts   = weekKey.split('-');
+      const monday  = new Date(+parts[0], +parts[1]-1, +parts[2]);
+      const sunday  = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      const opts    = { day:'numeric', month:'short' };
+      return monday.toLocaleDateString('en-GB', opts) + ' – ' + sunday.toLocaleDateString('en-GB', opts);
+    }
+
     container.innerHTML = activeTasks.map(doc => {
       const d        = doc.data();
       const title    = d.title || doc.id;
-      const dates    = getTaskDates(doc);
-      const isWeekly = doc.id === 'weekly' || doc.id.startsWith('weekly_') || d.scope === 'weekly';
+      const allDates = getTaskDates(doc);
       const students = getStudentsForTask(doc);
 
-      const relevantDates = dates.filter(dt => dt <= todayStr);
-      if (relevantDates.length === 0 || students.length === 0) return '';
+      if (allDates.length === 0 || students.length === 0) return '';
 
-      const rows = students.map(student => {
-        const completed = student.coachingCompleted || {};
-        const cells = relevantDates.map(dt => {
-          const isDone   = !!completed[dt];
-          const isToday  = dt === todayStr;
-          const isMissed = !isDone && dt < todayStr;
+      const isRecurring = d.recurrence === 'weekly' || d.recurrence === 'range' ||
+        doc.id === 'weekly' || doc.id.startsWith('weekly_') || d.scope === 'weekly';
 
-          const icon  = isDone ? '✓' : isMissed ? '✗' : '○';
-          const color = isDone ? 'var(--success,#2f9e44)' : isMissed ? 'var(--danger,#e03131)' : 'var(--warning,#e8890c)';
-          const label = isDone ? 'Done' : isMissed ? 'Missed' : 'Today';
+      const weeks = groupByWeek(allDates);
+      if (weeks.length === 0) return '';
 
-          const parts    = dt.split('-');
-          const dispDate = new Date(+parts[0], +parts[1]-1, +parts[2])
-            .toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+      /* ── Build the weekly progress table ── */
+      const weeksHTML = weeks.map((weekObj, wIdx) => {
+        const { weekKey, dates: weekDates } = weekObj;
+        const isCurrentWeek = weekKey === Tasks._localDateStr
+          ? Tasks._localDateStr((() => {
+              const now = new Date();
+              const dow = now.getDay();
+              const d2  = new Date(now);
+              d2.setDate(now.getDate() + (dow === 0 ? -6 : 1 - dow));
+              return d2;
+            })())
+          : null;
 
-          return `<td style="text-align:center;padding:.375rem .5rem;border-right:1px solid var(--border,#e5e7eb);">
-            <div style="font-size:.5625rem;color:var(--text-disabled,#9ca3af);margin-bottom:1px;">${_esc(dispDate)}</div>
-            <div style="font-size:.875rem;font-weight:700;color:${color};">${icon}</div>
-            <div style="font-size:.5rem;color:${color};font-weight:600;">${label}</div>
-          </td>`;
+        // Per-student summary for this week
+        const studentRows = students.map(student => {
+          const completed = student.coachingCompleted || {};
+          const doneDates   = weekDates.filter(dt => !!completed[dt]);
+          const missedDates = weekDates.filter(dt => dt < todayStr && !completed[dt]);
+          const futureDates = weekDates.filter(dt => dt > todayStr);
+          const doneCount   = doneDates.length;
+          const missedCount = missedDates.length;
+          const totalPast   = weekDates.filter(dt => dt <= todayStr).length;
+
+          const statusColor = missedCount > 0 ? 'var(--danger,#e03131)'
+            : doneCount === totalPast && totalPast > 0 ? 'var(--success,#2f9e44)'
+            : 'var(--text-tertiary,#6b7280)';
+
+          // Day-dot row (shown when week is expanded)
+          const dayDots = weekDates.map(dt => {
+            const isDone   = !!completed[dt];
+            const isPast   = dt < todayStr;
+            const isToday  = dt === todayStr;
+            const isMissed = isPast && !isDone;
+            const icon  = isDone ? '✓' : isMissed ? '✗' : isToday ? '○' : '–';
+            const color = isDone ? 'var(--success,#2f9e44)'
+              : isMissed ? 'var(--danger,#e03131)'
+              : isToday  ? 'var(--warning,#e8890c)'
+              : 'var(--border-medium,#d1d5db)';
+            const parts2  = dt.split('-');
+            const dayLabel = new Date(+parts2[0], +parts2[1]-1, +parts2[2])
+              .toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
+            return `<div style="text-align:center;min-width:60px;">` +
+              `<div style="font-size:.5625rem;color:var(--text-disabled,#9ca3af);">${_esc(dayLabel)}</div>` +
+              `<div style="font-size:1rem;font-weight:700;color:${color};">${icon}</div>` +
+              `</div>`;
+          }).join('');
+
+          return `<tr style="border-bottom:1px solid var(--border,#e5e7eb);">
+            <td style="padding:.375rem .75rem;white-space:nowrap;border-right:1px solid var(--border,#e5e7eb);">
+              <div style="font-size:.8125rem;font-weight:700;color:var(--text-primary,#111827);">${_esc(student.name)}</div>
+              <div style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);">${_esc(student.cls)}</div>
+            </td>
+            <td style="padding:.375rem .75rem;text-align:center;border-right:1px solid var(--border,#e5e7eb);">
+              <span style="font-size:.875rem;font-weight:700;color:${statusColor};">${doneCount}/${totalPast}</span>
+              ${missedCount > 0
+                ? `<div style="font-size:.5625rem;color:var(--danger,#e03131);">${missedCount} missed</div>` : ''}
+            </td>
+            <td style="padding:.375rem .75rem;">
+              <div style="display:flex;gap:.625rem;flex-wrap:wrap;">${dayDots}</div>
+            </td>
+          </tr>`;
         }).join('');
 
-        const doneCount   = relevantDates.filter(dt => !!completed[dt]).length;
-        const missedCount = relevantDates.filter(dt => !completed[dt] && dt < todayStr).length;
+        const wLabel = weekLabel(weekKey);
+        const allStudentsDone = students.every(s => {
+          const completed = s.coachingCompleted || {};
+          return weekDates.filter(dt => dt <= todayStr).every(dt => !!completed[dt]);
+        });
 
-        return `<tr class="progress-student-row" style="border-bottom:1px solid var(--border,#e5e7eb);">
-          <td style="padding:.375rem .75rem;white-space:nowrap;border-right:1px solid var(--border,#e5e7eb);">
-            <div style="font-size:.8125rem;font-weight:700;color:var(--text-primary,#111827);">${_esc(student.name)}</div>
-            <div style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);">${_esc(student.cls)}</div>
-          </td>
-          ${cells}
-          <td style="padding:.375rem .75rem;text-align:center;white-space:nowrap;">
-            <div style="font-size:.75rem;font-weight:700;color:${missedCount > 0 ? 'var(--danger,#e03131)' : 'var(--success,#2f9e44)'};">
-              ${doneCount}/${relevantDates.length}
+        return `<details class="progress-week-row" ${wIdx === 0 ? 'open' : ''} style="margin-bottom:.375rem;">
+          <summary style="padding:.5rem .875rem;border-radius:8px;
+                          background:${allStudentsDone ? 'var(--success-bg,#ebfbee)' : 'var(--surface-subtle,#f9fafb)'};
+                          border:1px solid ${allStudentsDone ? 'var(--success-border,#b2f2bb)' : 'var(--border,#e5e7eb)'};
+                          display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:.5rem;">
+              <span style="font-size:.1875rem;color:var(--text-tertiary,#6b7280);">▶</span>
+              <span style="font-size:.8125rem;font-weight:700;color:var(--text-primary,#111827);">
+                ${_esc(wLabel)}
+              </span>
+              <span style="font-size:.6875rem;font-weight:600;padding:1px 6px;border-radius:4px;
+                           background:var(--surface-muted,#f3f4f6);color:var(--text-tertiary,#6b7280);">
+                ${weekDates.length} session${weekDates.length !== 1 ? 's' : ''}
+              </span>
             </div>
-            ${missedCount > 0
-              ? `<div style="font-size:.5625rem;color:var(--danger,#e03131);">${missedCount} missed</div>`
-              : doneCount === relevantDates.length && relevantDates.length > 0
-                ? '<div style="font-size:.5625rem;color:var(--success,#2f9e44);">All done ✓</div>'
-                : ''}
-          </td>
-        </tr>`;
+            ${allStudentsDone
+              ? `<span style="font-size:.6875rem;font-weight:700;color:var(--success-text,#1a5c29);">All done ✓</span>`
+              : ''}
+          </summary>
+          <div style="overflow-x:auto;border:1px solid var(--border,#e5e7eb);
+                      border-radius:0 0 8px 8px;border-top:none;margin-top:-1px;">
+            <table style="width:100%;border-collapse:collapse;min-width:360px;">
+              <thead>
+                <tr style="border-bottom:1.5px solid var(--border,#e5e7eb);background:var(--surface-subtle,#f9fafb);">
+                  <th style="text-align:left;padding:.375rem .75rem;border-right:1px solid var(--border,#e5e7eb);
+                             font-size:.6875rem;font-weight:700;color:var(--text-secondary,#374151);">Student</th>
+                  <th style="text-align:center;padding:.375rem .75rem;border-right:1px solid var(--border,#e5e7eb);
+                             font-size:.6875rem;font-weight:700;color:var(--text-secondary,#374151);">Done</th>
+                  <th style="text-align:left;padding:.375rem .75rem;
+                             font-size:.6875rem;font-weight:700;color:var(--text-secondary,#374151);">Days</th>
+                </tr>
+              </thead>
+              <tbody>${studentRows}</tbody>
+            </table>
+          </div>
+        </details>`;
       }).join('');
 
-      const headerCells = relevantDates.map(dt => {
-        const parts   = dt.split('-');
-        const label   = new Date(+parts[0], +parts[1]-1, +parts[2])
-          .toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
-        const isToday = dt === todayStr;
-        return `<th style="text-align:center;padding:.375rem .5rem;border-right:1px solid var(--border,#e5e7eb);
-                           font-size:.6875rem;font-weight:700;
-                           color:${isToday ? 'var(--brand,#3b5bdb)' : 'var(--text-secondary,#374151)'};
-                           background:var(--surface-subtle,#f9fafb);">${_esc(label)}${isToday ? '<br><span style="font-size:.5rem;color:var(--brand,#3b5bdb);">TODAY</span>' : ''}</th>`;
-      }).join('');
+      // All-time summary row
+      const totalSessions = allDates.length;
+      const totalDone     = _msgStudentCache
+        .filter(s => students.includes(s) || students.find(st => st.id === s.id))
+        .reduce((sum, s) => sum + allDates.filter(dt => !!(s.coachingCompleted || {})[dt]).length, 0);
+      const possibleTotal = students.length * totalSessions;
 
-      return `<div style="margin-bottom:1rem;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;">
+      return `<div style="margin-bottom:1.5rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.625rem;">
           <div>
             <h4 style="font-size:.875rem;font-weight:700;color:var(--c-text,#111827);">
-              📊 Progress: ${_esc(title)}
-              ${isWeekly ? '<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;margin-left:.375rem;">🔄 Weekly</span>' : ''}
+              📊 ${_esc(title)}
+              ${isRecurring ? '<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;margin-left:.375rem;">🔄 Recurring</span>' : ''}
             </h4>
             <p style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin-top:1px;">
-              ${students.length} student${students.length !== 1 ? 's' : ''} · ${relevantDates.length} session${relevantDates.length !== 1 ? 's' : ''} up to today
+              ${students.length} student${students.length !== 1 ? 's' : ''} ·
+              ${totalSessions} session${totalSessions !== 1 ? 's' : ''} total ·
+              ${totalDone}/${possibleTotal} completions all-time
             </p>
           </div>
         </div>
-        <div style="overflow-x:auto;border:1px solid var(--border,#e5e7eb);border-radius:8px;">
-          <table style="width:100%;border-collapse:collapse;min-width:400px;">
-            <thead>
-              <tr style="border-bottom:1.5px solid var(--border,#e5e7eb);">
-                <th style="text-align:left;padding:.375rem .75rem;border-right:1px solid var(--border,#e5e7eb);
-                           font-size:.6875rem;font-weight:700;color:var(--text-secondary,#374151);
-                           background:var(--surface-subtle,#f9fafb);">Student</th>
-                ${headerCells}
-                <th style="text-align:center;padding:.375rem .5rem;font-size:.6875rem;font-weight:700;
-                           color:var(--text-secondary,#374151);background:var(--surface-subtle,#f9fafb);">Total</th>
-              </tr>
-            </thead>
-            <tbody>${rows || '<tr><td colspan="99" style="text-align:center;padding:1rem;font-size:.875rem;color:var(--text-tertiary,#6b7280);">No students found.</td></tr>'}</tbody>
-          </table>
+        <div style="display:flex;flex-direction:column;gap:.25rem;">
+          ${weeksHTML || '<p style="font-size:.875rem;color:var(--text-tertiary,#6b7280);">No sessions yet.</p>'}
         </div>
       </div>`;
     }).filter(Boolean).join('');
@@ -1723,7 +1886,7 @@
   }
 
   async function deleteAllTasks() {
-    const ok = await UI.confirmAction('Delete ALL tasks? Every student will stop seeing their tasks immediately.');
+    const ok = await UI.confirmAction('Delete ALL tasks?');
     if (!ok) return;
     try {
       const snap = await Db().collection('coachingTasks').get();
@@ -1786,7 +1949,7 @@
     }
     container.innerHTML = filtered.map(s => `
       <label style="display:flex;align-items:center;gap:.625rem;padding:.4375rem .75rem;
-                    cursor:pointer;border-bottom:1px solid var(--border,#e5e7eb);transition:background .1s;"
+                    cursor:pointer;border-bottom:1px solid var(--border,#e5e7eb);"
              onmouseenter="this.style.background='var(--brand-bg,#edf2ff)'"
              onmouseleave="this.style.background=''">
         <input type="checkbox" class="msg-student-cb" value="${_esc(s.id)}"
@@ -1888,7 +2051,7 @@
 
   function _esc(str) {
     return String(str == null ? '' : str)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
   function Db() { return window.fbDb; }
@@ -1910,8 +2073,8 @@
     deleteSchool,
     addTaskDate,
     deleteTask,
-    saveTasksConfig,
     deleteAllTasks,
+    saveTasksConfig,
     sendPrivateMessage,
     _setMsgMode,
     _filterMsgStudents,
@@ -1923,6 +2086,9 @@
     _onTaskTargetChange,
     _selectAllDateSubjects,
     _clearDateSubjects,
+    _selectAllDaySubjects,
+    _clearDaySubjects,
+    _updateDaySubjCount,
   };
 
 })();
