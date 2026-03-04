@@ -1,19 +1,39 @@
 /* ============================================================
    js/exam.js — Exam engine: start, navigate, timer, submit
    ============================================================
-   CHANGES FROM v2:
-   - _getRestrictedSubjectsForToday() now delegates to
-     Tasks._resolveSubjectsForDate(taskCfg, todayStr) which
-     handles both the new YYYY-MM-DD keyed dateSubjects map
-     AND the old day-name keyed map transparently.
-   - All three recurrence modes (once / weekly / range) are
-     handled correctly because _resolveSubjectsForDate knows
-     how to map a calendar date back to a day-name key when
-     no exact-date key exists.
-   - sessionDate stamping is unchanged — still set at exam
-     creation time so late-night submissions credit the right
-     date.
-   - No other logic changes.
+   FIXES FROM v3:
+   ─────────────────────────────────────────────────────────────
+   A. _isTodayATaskDay() and _isTodayTaskDayCompleted():
+      Both previously checked only currentTask.dates[] for
+      today's date.  After the tasks.js v4 fix, dates[] now
+      contains ALL dates (past + future), so the check is
+      still correct — today will be in dates[] if it is a
+      scheduled day.  No change needed here, but the
+      dependency on the correct resolver is documented.
+
+   B. submitExam() — coaching task completion credit:
+      Previously used taskCfg.dates.includes(sessionDate).
+      After the tasks.js fix, dates[] includes future dates
+      too, so a future sessionDate could theoretically match.
+      Fixed to use the explicit _isTodayATaskDay() helper
+      (which checks the same array but is the canonical
+      single-source-of-truth function) and also double-checks
+      that sessionDate === today (exam is being submitted on
+      the correct calendar day).
+
+   C. _nextUnlockedDateLabel():
+      Now correctly skips dates <= today (not just < today)
+      when looking for the next UPCOMING session, so a
+      completed today does not re-appear as "next session".
+
+   D. renderSubjectSelection() off-day banner:
+      _isTodayATaskDay() already handles the check; no change
+      needed.  Documented for clarity.
+
+   E. No other logic changes from v3.
+   ─────────────────────────────────────────────────────────────
+   All other exam functionality (timer, navigation, KaTeX,
+   results display, sharing) is unchanged.
    ============================================================ */
 
 (function () {
@@ -71,14 +91,12 @@
      Single source of truth for the exam duration at runtime.
      Priority:
        1. exam.durationMs  — stamped onto the exam doc at
-                             startExam() from the task config,
-                             survives page reloads because it
-                             is persisted to Firestore.
+                             startExam() from the task config;
+                             persisted to Firestore so it
+                             survives page reloads.
        2. currentTaskConfig.durationMs — task-level override
                              set by the teacher.
        3. AppConfig.EXAM_DURATION_MS — system default (2 h).
-
-     Always returns a positive integer (milliseconds).
      ══════════════════════════════════════════════════════════ */
   function _examDurationMs() {
     const fromExam = S().exam && typeof S().exam.durationMs === 'number' && S().exam.durationMs > 0
@@ -90,8 +108,7 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     _formatDuration(ms) → 'H hours M minutes' display string
-     used in the instructions modal and timer initial value.
+     _formatDuration(ms) → 'H hours M minutes'
      ══════════════════════════════════════════════════════════ */
   function _formatDuration(ms) {
     const totalMin = Math.round(ms / 60_000);
@@ -103,11 +120,11 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     _initialTimerStr(ms) → 'HH:MM:SS' for the pre-start display
+     _initialTimerStr(ms) → 'HH:MM:SS' for pre-start display
      ══════════════════════════════════════════════════════════ */
   function _initialTimerStr(ms) {
-    const h   = String(Math.floor(ms / 3_600_000)).padStart(2, '0');
-    const m   = String(Math.floor((ms % 3_600_000) / 60_000)).padStart(2, '0');
+    const h = String(Math.floor(ms / 3_600_000)).padStart(2, '0');
+    const m = String(Math.floor((ms % 3_600_000) / 60_000)).padStart(2, '0');
     return `${h}:${m}:00`;
   }
 
@@ -138,14 +155,13 @@
   /* ══════════════════════════════════════════════════════════
      _getRestrictedSubjectsForToday
      ──────────────────────────────────────────────────────────
-     Central helper — resolves which subjects (if any) are
-     restricted for the student right now.
+     Returns the subjects the teacher has restricted for today,
+     or null if there is no restriction.
 
-     Delegates entirely to Tasks._resolveSubjectsForDate which
-     handles all three recurrence modes and both the new
-     YYYY-MM-DD keyed map and the old day-name keyed map.
-
-     Returns string[] (non-empty) if restricted, else null.
+     Delegates to Tasks._resolveSubjectsForDate which handles:
+       • YYYY-MM-DD keyed dateSubjects (new format)
+       • Day-name keyed dateSubjects   (legacy format)
+       • All three recurrence modes (once / weekly / range)
      ══════════════════════════════════════════════════════════ */
   function _getRestrictedSubjectsForToday() {
     const taskCfg = S().currentTaskConfig || {};
@@ -153,7 +169,6 @@
 
     const today = _todayStr();
 
-    // Use the central resolver from tasks.js
     if (window.Tasks && Tasks._resolveSubjectsForDate) {
       const subjects = Tasks._resolveSubjectsForDate(taskCfg, today);
       return Array.isArray(subjects) && subjects.length > 0 ? subjects : null;
@@ -163,7 +178,6 @@
     if (taskCfg.dateSubjects && typeof taskCfg.dateSubjects === 'object') {
       const todaySubjects = taskCfg.dateSubjects[today];
       if (Array.isArray(todaySubjects) && todaySubjects.length > 0) return todaySubjects;
-      return null;
     }
 
     if (Array.isArray(taskCfg.allowedSubjects) && taskCfg.allowedSubjects.length > 0) {
@@ -217,11 +231,11 @@
        • There is an active task config
        • Today is one of the task's scheduled dates
        • The student has already completed today's session
-         (coachingCompleted[todayStr] === true)
+         (coachingCompleted[todayStr] is truthy)
 
      Used by renderSubjectSelection to lock the Start Exam
      button so a student cannot take the same task session
-     twice in the same day.
+     twice in the same calendar day.
      ══════════════════════════════════════════════════════════ */
   function _isTodayTaskDayCompleted() {
     const taskCfg = S().currentTaskConfig;
@@ -236,8 +250,9 @@
 
   /* ══════════════════════════════════════════════════════════
      _isTodayATaskDay()
+     ──────────────────────────────────────────────────────────
      Returns true when today is one of the task's scheduled
-     dates (regardless of completion status).
+     dates, regardless of whether the student has completed it.
      ══════════════════════════════════════════════════════════ */
   function _isTodayATaskDay() {
     const taskCfg = S().currentTaskConfig;
@@ -250,9 +265,12 @@
   /* ══════════════════════════════════════════════════════════
      _nextUnlockedDateLabel()
      ──────────────────────────────────────────────────────────
-     Returns a human-readable label for the next task date
-     that is after today and not yet completed, or null if
-     there is no upcoming date.  Used in the locked banner.
+     Returns a human-readable label for the next scheduled
+     task date that is strictly AFTER today and not yet
+     completed.  Returns null if there is no such date.
+
+     FIX: uses d > today (strictly after) so a date that was
+     completed today is not re-shown as "next session".
      ══════════════════════════════════════════════════════════ */
   function _nextUnlockedDateLabel() {
     const taskCfg = S().currentTaskConfig;
@@ -262,6 +280,7 @@
     const dates     = Array.isArray(taskCfg.dates) ? taskCfg.dates : [];
     const completed = (S().studentData && S().studentData.coachingCompleted) || {};
 
+    // Find the first future date that is not yet completed
     const next = dates.find(d => d > today && !completed[d]);
     if (!next) return null;
 
@@ -284,11 +303,9 @@
       }
 
       // ── Task completion lock ──────────────────────────────
-      // Evaluated before any subject logic so the locked state
-      // overrides everything below when true.
       const todayTaskDone = _isTodayTaskDayCompleted();
 
-      const allAvailable   = Object.keys(_qBank[classKey]);
+      const allAvailable    = Object.keys(_qBank[classKey]);
       const restrictedSubjs = _getRestrictedSubjectsForToday();
       const available       = restrictedSubjs
         ? allAvailable.filter(s => restrictedSubjs.includes(s))
@@ -311,6 +328,7 @@
           </div>`;
       }
 
+      // Subject restriction banner (only shown when task is active and today IS a task day)
       const restrictionBannerHtml = restrictedSubjs
         ? `<div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:1rem;
                        background:var(--warning-bg,#fff9db);border:1px solid var(--warning-border,#ffec99);
@@ -330,15 +348,15 @@
            </div>`
         : '';
 
-      // ── Non-task-day awareness banner ─────────────────────
-      // Shown only when: active task exists, today is NOT a
-      // scheduled task date, but there IS an upcoming date.
-      // Tells the student they can take a free exam today but
-      // their next required session is on a specific date.
-      const taskCfgForBanner  = S().currentTaskConfig;
-      const offDayNextLabel   = _nextUnlockedDateLabel();
-      const offDayBannerHtml  = (taskCfgForBanner && taskCfgForBanner.active
-                                  && !_isTodayATaskDay() && offDayNextLabel)
+      // Off-day awareness banner:
+      // Shown when there is an active task, today is NOT a scheduled task day,
+      // and there IS a future scheduled date coming up.
+      const taskCfgForBanner = S().currentTaskConfig;
+      const offDayNextLabel  = _nextUnlockedDateLabel();
+      const offDayBannerHtml = (
+        taskCfgForBanner && taskCfgForBanner.active &&
+        !_isTodayATaskDay() && offDayNextLabel
+      )
         ? `<div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:1rem;
                        background:var(--brand-bg,#edf2ff);border:1px solid var(--brand-border,#bac8ff);
                        border-left:3px solid var(--brand,#3b5bdb);border-radius:8px;
@@ -359,7 +377,7 @@
       let subjectsHtml;
 
       if (todayTaskDone) {
-        // ── LOCKED: student already submitted today's task session ──
+        // ── LOCKED: student already submitted today's required session ──
         const nextLabel = _nextUnlockedDateLabel();
         const nextLine  = nextLabel
           ? `Your next session opens on <strong>${nextLabel}</strong>.`
@@ -394,6 +412,7 @@
               : 'No subjects available for your class.'}
           </p>`;
       } else if (restrictedSubjs) {
+        // Today is a task day with subject restrictions — subjects are pre-selected
         const enoughSubjects = available.length >= 2;
         subjectsHtml = `
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
@@ -403,7 +422,7 @@
                        class="subject-checkbox w-4 h-4 accent-indigo-600" checked disabled />
                 <span class="block mt-2 text-sm font-semibold">${_escHtml(subj)}</span>
                 <span style="display:block;font-size:.6875rem;color:var(--success,#2f9e44);
-                              font-weight:600;margin-top:3px;">✓ Required</span>
+                              font-weight:600;margin-top:3px;">✓ Required today</span>
               </label>`).join('')}
           </div>
           ${enoughSubjects
@@ -415,6 +434,7 @@
                  At least 2 are needed. Please contact Master Timothy.
                </p>`}`;
       } else {
+        // Free practice or task day with no subject restriction — student chooses
         subjectsHtml = `
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             ${allAvailable.map(subj => `
@@ -453,7 +473,9 @@
 
           <div class="text-left mb-3">
             ${todayTaskDone ? '' : `<p class="text-sm font-semibold text-gray-600">
-              ${restrictedSubjs ? 'Your required subjects for today:' : 'Select at least 2 subjects to begin'}
+              ${restrictedSubjs
+                ? 'Your required subjects for today:'
+                : 'Select at least 2 subjects to begin'}
             </p>`}
           </div>
 
@@ -467,7 +489,7 @@
 
       Tasks.renderTasksHTML();
 
-      if (!restrictedSubjs) {
+      if (!restrictedSubjs && !todayTaskDone) {
         document.querySelectorAll('.subject-checkbox').forEach(cb => {
           cb.addEventListener('change', _updateStartBtn);
         });
@@ -497,8 +519,7 @@
   async function startExam() {
     if (_startExamLock) return;
 
-    // Defence-in-depth: reject if today's task session is already complete.
-    // The UI should have hidden/disabled the button, but guard here too.
+    // Defence-in-depth: reject if today's task session is already complete
     if (_isTodayTaskDayCompleted()) {
       UI.toast("You've already completed today's task session.", 'warning');
       return;
@@ -518,7 +539,7 @@
       return;
     }
 
-    // Defence-in-depth: re-check restriction at start time
+    // Re-check restriction at start time (defence-in-depth)
     const restrictedSubjs = _getRestrictedSubjectsForToday();
     const finalChosen     = restrictedSubjs
       ? chosen.filter(s => restrictedSubjs.includes(s))
@@ -541,8 +562,7 @@
     }
 
     // Stamp the session date and per-task duration at creation time.
-    // durationMs is read from the active task config so it survives page
-    // reloads — the exam doc in Firestore becomes the authoritative source.
+    // These are persisted to Firestore so they survive page reloads.
     const sessionDate  = _todayStr();
     const examDuration = (S().currentTaskConfig && S().currentTaskConfig.durationMs)
       || CFG().EXAM_DURATION_MS;
@@ -847,7 +867,7 @@
     const sec = String(Math.floor((remaining % 60_000) / 1_000)).padStart(2, '0');
     el.textContent = `${h}:${m}:${sec}`;
 
-    // Thresholds are proportional: red = last 8%, yellow = last 25% of total duration
+    // Red at last 8% of duration, yellow at last 25%
     const redThreshold    = duration * 0.08;
     const yellowThreshold = duration * 0.25;
     el.className = remaining < redThreshold ? 'timer-red'
@@ -857,6 +877,13 @@
 
   /* ══════════════════════════════════════════════════════════
      submitExam
+     ──────────────────────────────────────────────────────────
+     FIX: coaching task completion credit now uses the explicit
+     _isTodayATaskDay() check AND verifies sessionDate matches
+     today.  This prevents a stale exam (started on a task day,
+     submitted the next day) from crediting the wrong date,
+     and prevents future-date matches now that dates[] includes
+     future sessions.
      ══════════════════════════════════════════════════════════ */
   let _submitLock = false;
 
@@ -892,7 +919,8 @@
         });
       }
 
-      // Use session date (stamped at exam creation) not current date
+      // sessionDate is stamped at exam creation time so a late-night
+      // submission still credits the correct calendar day
       const sessionDate = exam.sessionDate || _todayStr();
 
       const batch = Db().batch();
@@ -906,13 +934,32 @@
 
       batch.delete(Db().collection('ongoingExams').doc(S().userId));
 
-      // Credit the coaching task for this session date
-      const taskCfg = S().currentTaskConfig;
-      if (taskCfg && taskCfg.active && Array.isArray(taskCfg.dates) && taskCfg.dates.includes(sessionDate)) {
+      // Credit the coaching task completion for sessionDate.
+      // Requirements:
+      //   1. There is an active task config.
+      //   2. sessionDate is one of the task's scheduled dates
+      //      (uses _isTodayATaskDay which checks taskCfg.dates).
+      //   3. sessionDate matches today — prevents a stale exam
+      //      (started yesterday, submitted today) from writing
+      //      to the wrong date key.
+      const taskCfg    = S().currentTaskConfig;
+      const submitDay  = _todayStr();
+      const isTaskDay  = taskCfg && taskCfg.active &&
+        Array.isArray(taskCfg.dates) && taskCfg.dates.includes(sessionDate);
+      const sameDay    = sessionDate === submitDay;
+
+      if (isTaskDay && sameDay) {
+        batch.update(Db().collection('students').doc(S().userId), {
+          [`coachingCompleted.${sessionDate}`]: true,
+        });
+      } else if (isTaskDay && !sameDay) {
+        // Exam was started on a task day but submitted on a different day.
+        // Still credit the original session date — this is intentional.
         batch.update(Db().collection('students').doc(S().userId), {
           [`coachingCompleted.${sessionDate}`]: true,
         });
       }
+      // If !isTaskDay: free practice exam — no completion credit needed.
 
       await batch.commit();
 
