@@ -1642,7 +1642,9 @@
 
         let datesDisplay;
         if (recurring) {
-          const dayList = (d.weeklyDays || []).join(', ') || (d.recurrence === 'range' ? 'All weekdays in range' : '—');
+          const dayList = (d.weeklyDays && d.weeklyDays.length > 0)
+          ? d.weeklyDays.join(', ')
+          : (d.recurrence === 'range' ? 'All days in range' : '—');
           const start   = d.startDate || '?';
           const end     = d.endDate   || 'open-ended';
           datesDisplay  = `${d.recurrence || 'recurring'} · ${dayList} · ${start} → ${end}`;
@@ -1698,83 +1700,81 @@
 
     if (_msgStudentCache.length === 0) { container.innerHTML = ''; return; }
 
-    const activeTasks = taskDocs.filter(doc => {
-      const d = doc.data();
-      return d.active;
-    });
+    const activeTasks = taskDocs.filter(doc => doc.data().active);
 
     if (activeTasks.length === 0) { container.innerHTML = ''; return; }
 
-    const todayStr = Tasks._localDateStr();
-
-    /* ── Get all historical dates for a task (up to today) ── */
-    function getTaskDates(doc) {
-      const d = doc.data();
-      return Tasks._resolveTaskDates(d, { upToDate: todayStr });
+    // Safe local date string that doesn't depend on tasks.js being loaded
+    function _localDate(d) {
+      const dt = d || new Date();
+      return dt.getFullYear() + '-' +
+        String(dt.getMonth() + 1).padStart(2, '0') + '-' +
+        String(dt.getDate()).padStart(2, '0');
     }
 
-    /* ── Which students does this task apply to ── */
+    const todayStr = (window.Tasks && Tasks._localDateStr) ? Tasks._localDateStr() : _localDate();
+
+    function getTaskDates(doc) {
+      const d = doc.data();
+      return (window.Tasks && Tasks._resolveTaskDates)
+        ? Tasks._resolveTaskDates(d, { upToDate: todayStr })
+        : [];
+    }
+
     function getStudentsForTask(doc) {
       const id = doc.id;
-      if (id === 'global')               return _msgStudentCache;
-      if (id === 'weekly')               return _msgStudentCache;
+      if (id === 'global' || id === 'weekly') return _msgStudentCache;
       if (id.startsWith('weekly_class_')) {
-        const cls = id.replace('weekly_class_','');
-        return _msgStudentCache.filter(s => s.cls.replace(/\s+/g,'').toLowerCase() === cls);
+        const cls = id.replace('weekly_class_', '');
+        return _msgStudentCache.filter(s => s.cls.replace(/\s+/g, '').toLowerCase() === cls);
       }
       if (id.startsWith('weekly_student_')) {
-        const uid = id.replace('weekly_student_','');
+        const uid = id.replace('weekly_student_', '');
         return _msgStudentCache.filter(s => s.id === uid);
       }
       if (id.startsWith('class_')) {
-        const cls = id.replace('class_','');
-        return _msgStudentCache.filter(s => s.cls.replace(/\s+/g,'').toLowerCase() === cls);
+        const cls = id.replace('class_', '');
+        return _msgStudentCache.filter(s => s.cls.replace(/\s+/g, '').toLowerCase() === cls);
       }
       if (id.startsWith('student_')) {
-        const uid = id.replace('student_','');
+        const uid = id.replace('student_', '');
         return _msgStudentCache.filter(s => s.id === uid);
       }
       return [];
     }
 
-    /* ── Group dates into ISO weeks ── */
     function groupByWeek(dates) {
       const weeks = {};
       dates.forEach(dateStr => {
         const parts  = dateStr.split('-');
-        const date   = new Date(+parts[0], +parts[1]-1, +parts[2]);
+        const date   = new Date(+parts[0], +parts[1] - 1, +parts[2]);
         const dow    = date.getDay();
         const diff   = dow === 0 ? -6 : 1 - dow;
         const monday = new Date(date);
         monday.setDate(date.getDate() + diff);
-        const weekKey = Tasks._localDateStr(monday);
+        const weekKey = _localDate(monday);
         if (!weeks[weekKey]) weeks[weekKey] = [];
         weeks[weekKey].push(dateStr);
       });
-      // Sort weeks descending (most recent first)
       return Object.keys(weeks).sort().reverse().map(weekKey => ({
         weekKey,
         dates: weeks[weekKey].sort(),
       }));
     }
 
-    /* ── Format week label ── */
     function weekLabel(weekKey) {
-      const parts   = weekKey.split('-');
-      const monday  = new Date(+parts[0], +parts[1]-1, +parts[2]);
-      const sunday  = new Date(monday);
+      const parts  = weekKey.split('-');
+      const monday = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+      const sunday = new Date(monday);
       sunday.setDate(monday.getDate() + 6);
-      const opts    = { day:'numeric', month:'short' };
+      const opts = { day: 'numeric', month: 'short' };
       return monday.toLocaleDateString('en-GB', opts) + ' – ' + sunday.toLocaleDateString('en-GB', opts);
     }
 
-    // A task is recurring if recurrence field says so, OR docId uses 'weekly_' prefix
     function isRecurringDoc(doc) {
       const d = doc.data();
-      return d.recurrence === 'weekly' ||
-             d.recurrence === 'range'  ||
-             doc.id === 'weekly'       ||
-             doc.id.startsWith('weekly_');
+      return d.recurrence === 'weekly' || d.recurrence === 'range' ||
+             doc.id === 'weekly' || doc.id.startsWith('weekly_');
     }
 
     container.innerHTML = activeTasks.map(doc => {
@@ -1786,14 +1786,20 @@
       if (allDates.length === 0 || students.length === 0) return '';
 
       const recurring = isRecurringDoc(doc);
-      const weeks = groupByWeek(allDates);
+      const weeks     = groupByWeek(allDates);
       if (weeks.length === 0) return '';
 
-      /* ── Build the weekly progress table ── */
       const weeksHTML = weeks.map((weekObj, wIdx) => {
         const { weekKey, dates: weekDates } = weekObj;
 
-        // Per-student summary for this week
+        // ── FIX: compute allStudentsDone BEFORE the student row loop ──
+        // Each student's coachingCompleted is self-contained on the student object.
+        const pastWeekDates = weekDates.filter(dt => dt <= todayStr);
+        const allStudentsDone = pastWeekDates.length > 0 && students.every(student => {
+          const comp = student.coachingCompleted || {};
+          return pastWeekDates.every(dt => !!comp[dt]);
+        });
+
         const studentRows = students.map(student => {
           const completed   = student.coachingCompleted || {};
           const doneDates   = weekDates.filter(dt => !!completed[dt]);
@@ -1802,24 +1808,25 @@
           const missedCount = missedDates.length;
           const totalPast   = weekDates.filter(dt => dt <= todayStr).length;
 
-          const statusColor = missedCount > 0 ? 'var(--danger,#e03131)'
-            : doneCount === totalPast && totalPast > 0 ? 'var(--success,#2f9e44)'
-            : 'var(--text-tertiary,#6b7280)';
+          const statusColor = missedCount > 0
+            ? 'var(--danger,#e03131)'
+            : doneCount === totalPast && totalPast > 0
+              ? 'var(--success,#2f9e44)'
+              : 'var(--text-tertiary,#6b7280)';
 
-          // Day-dot row (shown when week is expanded)
           const dayDots = weekDates.map(dt => {
             const isDone   = !!completed[dt];
             const isPast   = dt < todayStr;
             const isToday  = dt === todayStr;
             const isMissed = isPast && !isDone;
-            const icon  = isDone ? '✓' : isMissed ? '✗' : isToday ? '○' : '–';
-            const color = isDone ? 'var(--success,#2f9e44)'
-              : isMissed ? 'var(--danger,#e03131)'
-              : isToday  ? 'var(--warning,#e8890c)'
-              : 'var(--border-medium,#d1d5db)';
-            const parts2  = dt.split('-');
-            const dayLabel = new Date(+parts2[0], +parts2[1]-1, +parts2[2])
-              .toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short' });
+            const icon     = isDone ? '✓' : isMissed ? '✗' : isToday ? '○' : '–';
+            const color    = isDone    ? 'var(--success,#2f9e44)'
+                           : isMissed  ? 'var(--danger,#e03131)'
+                           : isToday   ? 'var(--warning,#e8890c)'
+                           : 'var(--border-medium,#d1d5db)';
+            const parts2   = dt.split('-');
+            const dayLabel = new Date(+parts2[0], +parts2[1] - 1, +parts2[2])
+              .toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
             return `<div style="text-align:center;min-width:60px;">` +
               `<div style="font-size:.5625rem;color:var(--text-disabled,#9ca3af);">${_esc(dayLabel)}</div>` +
               `<div style="font-size:1rem;font-weight:700;color:${color};">${icon}</div>` +
@@ -1843,10 +1850,6 @@
         }).join('');
 
         const wLabel = weekLabel(weekKey);
-        const allStudentsDone = students.every(s => {
-          const completed = s.coachingCompleted || {};
-          return weekDates.filter(dt => dt <= todayStr).every(dt => !!completed[dt]);
-        });
 
         return `<details class="progress-week-row" ${wIdx === 0 ? 'open' : ''} style="margin-bottom:.375rem;">
           <summary style="padding:.5rem .875rem;border-radius:8px;
@@ -1855,9 +1858,7 @@
                           display:flex;align-items:center;justify-content:space-between;">
             <div style="display:flex;align-items:center;gap:.5rem;">
               <span style="font-size:.625rem;color:var(--text-tertiary,#6b7280);">▶</span>
-              <span style="font-size:.8125rem;font-weight:700;color:var(--text-primary,#111827);">
-                ${_esc(wLabel)}
-              </span>
+              <span style="font-size:.8125rem;font-weight:700;color:var(--text-primary,#111827);">${_esc(wLabel)}</span>
               <span style="font-size:.6875rem;font-weight:600;padding:1px 6px;border-radius:4px;
                            background:var(--surface-muted,#f3f4f6);color:var(--text-tertiary,#6b7280);">
                 ${weekDates.length} session${weekDates.length !== 1 ? 's' : ''}
@@ -1886,22 +1887,31 @@
         </details>`;
       }).join('');
 
-      // All-time summary
+      // All-time summary (past sessions only — allDates already capped at today)
       const totalSessions = allDates.length;
-      const totalDone     = students
-        .reduce((sum, s) => sum + allDates.filter(dt => !!(s.coachingCompleted || {})[dt]).length, 0);
+      const totalDone     = students.reduce((sum, s) =>
+        sum + allDates.filter(dt => !!((s.coachingCompleted || {})[dt])).length, 0);
       const possibleTotal = students.length * totalSessions;
+
+      const recurrenceLabel = d.recurrence
+        ? d.recurrence.charAt(0).toUpperCase() + d.recurrence.slice(1)
+        : 'Recurring';
 
       return `<div style="margin-bottom:1.5rem;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.625rem;">
           <div>
             <h4 style="font-size:.875rem;font-weight:700;color:var(--c-text,#111827);">
               📊 ${_esc(title)}
-              ${recurring ? `<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;margin-left:.375rem;">🔄 ${_esc((d.recurrence || 'recurring').charAt(0).toUpperCase() + (d.recurrence || 'recurring').slice(1))}</span>` : ''}
+              ${recurring
+                ? `<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;
+                               background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;margin-left:.375rem;">
+                     🔄 ${_esc(recurrenceLabel)}
+                   </span>`
+                : ''}
             </h4>
             <p style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin-top:1px;">
               ${students.length} student${students.length !== 1 ? 's' : ''} ·
-              ${totalSessions} session${totalSessions !== 1 ? 's' : ''} total ·
+              ${totalSessions} session${totalSessions !== 1 ? 's' : ''} to date ·
               ${totalDone}/${possibleTotal} completions all-time
             </p>
           </div>
