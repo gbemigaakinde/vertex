@@ -315,70 +315,81 @@
   let _startExamLock = false;
 
   async function startExam() {
-    if (_startExamLock) return;
+  if (_startExamLock) return;
 
-    const chosen = _getSelectedSubjects();
-    if (chosen.length < 2) {
-      UI.toast('Select at least 2 subjects.', 'warning');
-      return;
-    }
-
-    const classKey = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
-    const _qBank   = window.questions;
-
-    if (!_qBank || !_qBank[classKey]) {
-      UI.toast(`No subjects found for class "${S().studentData.class}". Contact Master Timothy.`, 'error', 0);
-      return;
-    }
-
-    // FIX: defence-in-depth now also uses the central helper
-    const restrictedSubjs = _getRestrictedSubjectsForToday();
-    const finalChosen     = restrictedSubjs
-      ? chosen.filter(s => restrictedSubjs.includes(s))
-      : chosen;
-
-    if (finalChosen.length < 2) {
-      UI.toast('Not enough allowed subjects selected. Please contact Master Timothy.', 'error');
-      return;
-    }
-
-    const selectedQuestions = {};
-    for (const subj of finalChosen) {
-      const all = (_qBank[classKey] || {})[subj] || [];
-      if (all.length === 0) {
-        UI.toast(`No questions available for ${subj}.`, 'error');
-        return;
-      }
-      const shuffled = [...all].sort(() => Math.random() - 0.5);
-      selectedQuestions[subj] = shuffled.slice(0, CFG().QUESTIONS_PER_SUBJECT);
-    }
-
-    const examDoc = {
-      step:           'exam',
-      subjects:       finalChosen,
-      questions:      selectedQuestions,
-      currentSubject: finalChosen[0],
-      currentIndex:   0,
-      answers:        {}
-    };
-
-    const btn = document.getElementById('startExamBtn');
-    UI.setLoading(btn, true);
-    _startExamLock = true;
-
-    try {
-      await Db().collection('ongoingExams').doc(S().userId).set(examDoc);
-      S().exam = examDoc;
-      renderExam();
-      _showInstructionsModal();
-    } catch (err) {
-      console.error('[exam] startExam error:', err);
-      UI.toast('Failed to start exam. Please try again.', 'error');
-    } finally {
-      if (document.getElementById('startExamBtn')) UI.setLoading(btn, false);
-      _startExamLock = false;
-    }
+  const chosen = _getSelectedSubjects();
+  if (chosen.length < 2) {
+    UI.toast('Select at least 2 subjects.', 'warning');
+    return;
   }
+
+  const classKey = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
+  const _qBank   = window.questions;
+
+  if (!_qBank || !_qBank[classKey]) {
+    UI.toast(`No subjects found for class "${S().studentData.class}". Contact Master Timothy.`, 'error', 0);
+    return;
+  }
+
+  // Defence-in-depth: re-check subject restriction at start time
+  const restrictedSubjs = _getRestrictedSubjectsForToday();
+  const finalChosen     = restrictedSubjs
+    ? chosen.filter(s => restrictedSubjs.includes(s))
+    : chosen;
+
+  if (finalChosen.length < 2) {
+    UI.toast('Not enough allowed subjects selected. Please contact Master Timothy.', 'error');
+    return;
+  }
+
+  const selectedQuestions = {};
+  for (const subj of finalChosen) {
+    const all = (_qBank[classKey] || {})[subj] || [];
+    if (all.length === 0) {
+      UI.toast(`No questions available for ${subj}.`, 'error');
+      return;
+    }
+    const shuffled = [...all].sort(() => Math.random() - 0.5);
+    selectedQuestions[subj] = shuffled.slice(0, CFG().QUESTIONS_PER_SUBJECT);
+  }
+
+  // FIX: capture the session date at exam-creation time.
+  // This is the date that will be credited in coachingCompleted
+  // regardless of when the student eventually submits.
+  const sessionDate = (window.Tasks && Tasks._localDateStr)
+    ? Tasks._localDateStr()
+    : (() => {
+        const d = new Date();
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+      })();
+
+  const examDoc = {
+    step:           'exam',
+    subjects:       finalChosen,
+    questions:      selectedQuestions,
+    currentSubject: finalChosen[0],
+    currentIndex:   0,
+    answers:        {},
+    sessionDate,          // ← persisted so submitExam reads this, not "now"
+  };
+
+  const btn = document.getElementById('startExamBtn');
+  UI.setLoading(btn, true);
+  _startExamLock = true;
+
+  try {
+    await Db().collection('ongoingExams').doc(S().userId).set(examDoc);
+    S().exam = examDoc;
+    renderExam();
+    _showInstructionsModal();
+  } catch (err) {
+    console.error('[exam] startExam error:', err);
+    UI.toast('Failed to start exam. Please try again.', 'error');
+  } finally {
+    if (document.getElementById('startExamBtn')) UI.setLoading(btn, false);
+    _startExamLock = false;
+  }
+}
 
   /* ══════════════════════════════════════════════════════════
      Instructions modal
@@ -422,25 +433,36 @@
      beginExam
      ══════════════════════════════════════════════════════════ */
   async function beginExam() {
-    const modal = document.getElementById('examModal');
-    if (modal) modal.remove();
+  const modal = document.getElementById('examModal');
+  if (modal) modal.remove();
 
-    const startMs = Date.now();
-    S().examStartMs = startMs;
-    const startDate = new Date(startMs);
-    S().exam.startTime = startDate;
+  const startMs = Date.now();
+  S().examStartMs = startMs;
+  const startDate = new Date(startMs);
+  S().exam.startTime = startDate;
 
-    try {
-      await Db().collection('ongoingExams').doc(S().userId).set(
-        { startTime: startDate }, { merge: true }
-      );
-    } catch (err) {
-      console.warn('[exam] Could not persist startTime, timer continues from local value.', err);
-    }
-
-    _startTimer();
-    renderExam();
+  // Ensure sessionDate is set in memory even for exams resumed from Firestore
+  // (loadOrStart restores S().exam from Firestore which already contains sessionDate)
+  if (!S().exam.sessionDate) {
+    S().exam.sessionDate = (window.Tasks && Tasks._localDateStr)
+      ? Tasks._localDateStr()
+      : (() => {
+          const d = new Date();
+          return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+        })();
   }
+
+  try {
+    await Db().collection('ongoingExams').doc(S().userId).set(
+      { startTime: startDate, sessionDate: S().exam.sessionDate }, { merge: true }
+    );
+  } catch (err) {
+    console.warn('[exam] Could not persist startTime, timer continues from local value.', err);
+  }
+
+  _startTimer();
+  renderExam();
+}
 
   /* ══════════════════════════════════════════════════════════
      renderExam
@@ -682,29 +704,42 @@ async function submitExam(skipConfirm) {
       });
     }
 
+    // FIX: Use the date the exam SESSION started, not the current date.
+    // S().exam.sessionDate is set in startExam() and beginExam() and
+    // persisted to Firestore so it survives page reloads.
+    // Falls back to current date only for legacy exams that predate this fix.
+    const sessionDate = exam.sessionDate || (
+      (window.Tasks && Tasks._localDateStr)
+        ? Tasks._localDateStr()
+        : (() => {
+            const d = new Date();
+            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+          })()
+    );
+
     const batch = Db().batch();
 
     batch.set(Db().collection('results').doc(), {
       ...result,
       questionSnapshots,
+      sessionDate,   // also store on the result for teacher visibility
       timestamp: firebase.firestore.FieldValue.serverTimestamp()
     });
 
     batch.delete(Db().collection('ongoingExams').doc(S().userId));
 
-    const today   = (window.Tasks && Tasks._localDateStr)
-      ? Tasks._localDateStr()
-      : (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; })();
+    // Credit the task date using the SESSION date, not today
     const taskCfg = S().currentTaskConfig;
-    if (taskCfg && taskCfg.active && Array.isArray(taskCfg.dates) && taskCfg.dates.includes(today)) {
+    if (taskCfg && taskCfg.active && Array.isArray(taskCfg.dates) && taskCfg.dates.includes(sessionDate)) {
       batch.update(Db().collection('students').doc(S().userId), {
-        [`coachingCompleted.${today}`]: true
+        [`coachingCompleted.${sessionDate}`]: true
       });
     }
+    // Weekly tasks: credit by the session date as well (weekly task dates are also stored as YYYY-MM-DD
+    // resolved dates — see tasks.js _resolveWeeklyDates — so the same check works)
 
     await batch.commit();
 
-    // FIX 2: Clear stale exam state so a subsequent session starts clean.
     S().exam        = null;
     S().examStartMs = null;
 
@@ -717,10 +752,7 @@ async function submitExam(skipConfirm) {
       UI.setLoading(document.getElementById('submitBtn'), false);
     }
   } finally {
-    // FIX 1: Always release the lock — in both success AND failure paths.
-    // Previously this was only in the catch block, so a successful first
-    // submission permanently blocked every subsequent submission in the
-    // same browser session, causing silent no-ops and missing results.
+    // Always release the lock — both success and failure paths
     _submitLock = false;
   }
 }
