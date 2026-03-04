@@ -336,9 +336,9 @@
       // Tells the student they can take a free exam today but
       // their next required session is on a specific date.
       const taskCfgForBanner  = S().currentTaskConfig;
-      const nextLabel         = _nextUnlockedDateLabel();
+      const offDayNextLabel   = _nextUnlockedDateLabel();
       const offDayBannerHtml  = (taskCfgForBanner && taskCfgForBanner.active
-                                  && !_isTodayATaskDay() && nextLabel)
+                                  && !_isTodayATaskDay() && offDayNextLabel)
         ? `<div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:1rem;
                        background:var(--brand-bg,#edf2ff);border:1px solid var(--brand-border,#bac8ff);
                        border-left:3px solid var(--brand,#3b5bdb);border-radius:8px;
@@ -350,7 +350,7 @@
                </p>
                <p style="font-size:.8125rem;color:var(--text-secondary,#374151);line-height:1.6;">
                  You can take a free practice exam now. Your next required session is on
-                 <strong>${nextLabel}</strong>.
+                 <strong>${offDayNextLabel}</strong>.
                </p>
              </div>
            </div>`
@@ -449,12 +449,12 @@
           </div>
 
           ${offDayBannerHtml}
-          ${restrictionBannerHtml}
+          ${todayTaskDone ? '' : restrictionBannerHtml}
 
           <div class="text-left mb-3">
-            <p class="text-sm font-semibold text-gray-600">
+            ${todayTaskDone ? '' : `<p class="text-sm font-semibold text-gray-600">
               ${restrictedSubjs ? 'Your required subjects for today:' : 'Select at least 2 subjects to begin'}
-            </p>
+            </p>`}
           </div>
 
           ${subjectsHtml}
