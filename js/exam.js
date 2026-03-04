@@ -1,12 +1,19 @@
 /* ============================================================
    js/exam.js — Exam engine: start, navigate, timer, submit
    ============================================================
-   CHANGES:
-   - Subject restriction now reads dateSubjects[today] from the
-     active task config instead of the old flat allowedSubjects.
-   - Backward compatible: falls back to allowedSubjects if a
-     task doc predates the dateSubjects format.
-   - Defence-in-depth in startExam() updated to match.
+   CHANGES FROM v2:
+   - _getRestrictedSubjectsForToday() now delegates to
+     Tasks._resolveSubjectsForDate(taskCfg, todayStr) which
+     handles both the new YYYY-MM-DD keyed dateSubjects map
+     AND the old day-name keyed map transparently.
+   - All three recurrence modes (once / weekly / range) are
+     handled correctly because _resolveSubjectsForDate knows
+     how to map a calendar date back to a day-name key when
+     no exact-date key exists.
+   - sessionDate stamping is unchanged — still set at exam
+     creation time so late-night submissions credit the right
+     date.
+   - No other logic changes.
    ============================================================ */
 
 (function () {
@@ -71,39 +78,48 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     _getRestrictedSubjectsForToday
-     Central helper — resolves which subjects (if any) are
-     restricted for the student right now.
-
-     Priority:
-       1. New format: task.dateSubjects[today]  (per-date map)
-       2. Old format: task.allowedSubjects       (flat array)
-       3. null = no restriction
-
-     Returns string[] | null
+     _todayStr  — canonical local date string for today
      ══════════════════════════════════════════════════════════ */
-  function _getRestrictedSubjectsForToday() {
-    const taskCfg = S().currentTaskConfig || {};
-    if (!taskCfg.active) return null;
-
-    const today = (window.Tasks && Tasks._localDateStr)
+  function _todayStr() {
+    return (window.Tasks && Tasks._localDateStr)
       ? Tasks._localDateStr()
       : (() => {
           const d = new Date();
           return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
         })();
+  }
 
-    // New per-date format
+  /* ══════════════════════════════════════════════════════════
+     _getRestrictedSubjectsForToday
+     ──────────────────────────────────────────────────────────
+     Central helper — resolves which subjects (if any) are
+     restricted for the student right now.
+
+     Delegates entirely to Tasks._resolveSubjectsForDate which
+     handles all three recurrence modes and both the new
+     YYYY-MM-DD keyed map and the old day-name keyed map.
+
+     Returns string[] (non-empty) if restricted, else null.
+     ══════════════════════════════════════════════════════════ */
+  function _getRestrictedSubjectsForToday() {
+    const taskCfg = S().currentTaskConfig || {};
+    if (!taskCfg.active) return null;
+
+    const today = _todayStr();
+
+    // Use the central resolver from tasks.js
+    if (window.Tasks && Tasks._resolveSubjectsForDate) {
+      const subjects = Tasks._resolveSubjectsForDate(taskCfg, today);
+      return Array.isArray(subjects) && subjects.length > 0 ? subjects : null;
+    }
+
+    // Fallback (should not reach here in normal operation)
     if (taskCfg.dateSubjects && typeof taskCfg.dateSubjects === 'object') {
       const todaySubjects = taskCfg.dateSubjects[today];
-      if (Array.isArray(todaySubjects) && todaySubjects.length > 0) {
-        return todaySubjects;
-      }
-      // today is either not a scheduled date or has no restriction — no lock
+      if (Array.isArray(todaySubjects) && todaySubjects.length > 0) return todaySubjects;
       return null;
     }
 
-    // Old flat format (backward compat)
     if (Array.isArray(taskCfg.allowedSubjects) && taskCfg.allowedSubjects.length > 0) {
       return taskCfg.allowedSubjects;
     }
@@ -161,12 +177,9 @@
         return;
       }
 
-      const allAvailable = Object.keys(_qBank[classKey]);
-
-      // FIX: use central helper that reads dateSubjects[today]
+      const allAvailable   = Object.keys(_qBank[classKey]);
       const restrictedSubjs = _getRestrictedSubjectsForToday();
-
-      const available = restrictedSubjs
+      const available       = restrictedSubjs
         ? allAvailable.filter(s => restrictedSubjs.includes(s))
         : allAvailable;
 
@@ -211,7 +224,7 @@
         subjectsHtml = `
           <p class="text-red-500 text-sm">
             ${restrictedSubjs
-              ? 'The subjects assigned to you for today are not available for your class. Please contact Master Timothy.'
+              ? 'The subjects assigned for today are not available for your class. Please contact Master Timothy.'
               : 'No subjects available for your class.'}
           </p>`;
       } else if (restrictedSubjs) {
@@ -315,81 +328,74 @@
   let _startExamLock = false;
 
   async function startExam() {
-  if (_startExamLock) return;
+    if (_startExamLock) return;
 
-  const chosen = _getSelectedSubjects();
-  if (chosen.length < 2) {
-    UI.toast('Select at least 2 subjects.', 'warning');
-    return;
-  }
-
-  const classKey = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
-  const _qBank   = window.questions;
-
-  if (!_qBank || !_qBank[classKey]) {
-    UI.toast(`No subjects found for class "${S().studentData.class}". Contact Master Timothy.`, 'error', 0);
-    return;
-  }
-
-  // Defence-in-depth: re-check subject restriction at start time
-  const restrictedSubjs = _getRestrictedSubjectsForToday();
-  const finalChosen     = restrictedSubjs
-    ? chosen.filter(s => restrictedSubjs.includes(s))
-    : chosen;
-
-  if (finalChosen.length < 2) {
-    UI.toast('Not enough allowed subjects selected. Please contact Master Timothy.', 'error');
-    return;
-  }
-
-  const selectedQuestions = {};
-  for (const subj of finalChosen) {
-    const all = (_qBank[classKey] || {})[subj] || [];
-    if (all.length === 0) {
-      UI.toast(`No questions available for ${subj}.`, 'error');
+    const chosen = _getSelectedSubjects();
+    if (chosen.length < 2) {
+      UI.toast('Select at least 2 subjects.', 'warning');
       return;
     }
-    const shuffled = [...all].sort(() => Math.random() - 0.5);
-    selectedQuestions[subj] = shuffled.slice(0, CFG().QUESTIONS_PER_SUBJECT);
+
+    const classKey = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
+    const _qBank   = window.questions;
+
+    if (!_qBank || !_qBank[classKey]) {
+      UI.toast(`No subjects found for class "${S().studentData.class}". Contact Master Timothy.`, 'error', 0);
+      return;
+    }
+
+    // Defence-in-depth: re-check restriction at start time
+    const restrictedSubjs = _getRestrictedSubjectsForToday();
+    const finalChosen     = restrictedSubjs
+      ? chosen.filter(s => restrictedSubjs.includes(s))
+      : chosen;
+
+    if (finalChosen.length < 2) {
+      UI.toast('Not enough allowed subjects selected. Please contact Master Timothy.', 'error');
+      return;
+    }
+
+    const selectedQuestions = {};
+    for (const subj of finalChosen) {
+      const all = (_qBank[classKey] || {})[subj] || [];
+      if (all.length === 0) {
+        UI.toast(`No questions available for ${subj}.`, 'error');
+        return;
+      }
+      const shuffled = [...all].sort(() => Math.random() - 0.5);
+      selectedQuestions[subj] = shuffled.slice(0, CFG().QUESTIONS_PER_SUBJECT);
+    }
+
+    // Stamp the session date at creation time
+    const sessionDate = _todayStr();
+
+    const examDoc = {
+      step:           'exam',
+      subjects:       finalChosen,
+      questions:      selectedQuestions,
+      currentSubject: finalChosen[0],
+      currentIndex:   0,
+      answers:        {},
+      sessionDate,
+    };
+
+    const btn = document.getElementById('startExamBtn');
+    UI.setLoading(btn, true);
+    _startExamLock = true;
+
+    try {
+      await Db().collection('ongoingExams').doc(S().userId).set(examDoc);
+      S().exam = examDoc;
+      renderExam();
+      _showInstructionsModal();
+    } catch (err) {
+      console.error('[exam] startExam error:', err);
+      UI.toast('Failed to start exam. Please try again.', 'error');
+    } finally {
+      if (document.getElementById('startExamBtn')) UI.setLoading(btn, false);
+      _startExamLock = false;
+    }
   }
-
-  // FIX: capture the session date at exam-creation time.
-  // This is the date that will be credited in coachingCompleted
-  // regardless of when the student eventually submits.
-  const sessionDate = (window.Tasks && Tasks._localDateStr)
-    ? Tasks._localDateStr()
-    : (() => {
-        const d = new Date();
-        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-      })();
-
-  const examDoc = {
-    step:           'exam',
-    subjects:       finalChosen,
-    questions:      selectedQuestions,
-    currentSubject: finalChosen[0],
-    currentIndex:   0,
-    answers:        {},
-    sessionDate,          // ← persisted so submitExam reads this, not "now"
-  };
-
-  const btn = document.getElementById('startExamBtn');
-  UI.setLoading(btn, true);
-  _startExamLock = true;
-
-  try {
-    await Db().collection('ongoingExams').doc(S().userId).set(examDoc);
-    S().exam = examDoc;
-    renderExam();
-    _showInstructionsModal();
-  } catch (err) {
-    console.error('[exam] startExam error:', err);
-    UI.toast('Failed to start exam. Please try again.', 'error');
-  } finally {
-    if (document.getElementById('startExamBtn')) UI.setLoading(btn, false);
-    _startExamLock = false;
-  }
-}
 
   /* ══════════════════════════════════════════════════════════
      Instructions modal
@@ -433,36 +439,29 @@
      beginExam
      ══════════════════════════════════════════════════════════ */
   async function beginExam() {
-  const modal = document.getElementById('examModal');
-  if (modal) modal.remove();
+    const modal = document.getElementById('examModal');
+    if (modal) modal.remove();
 
-  const startMs = Date.now();
-  S().examStartMs = startMs;
-  const startDate = new Date(startMs);
-  S().exam.startTime = startDate;
+    const startMs = Date.now();
+    S().examStartMs = startMs;
+    const startDate = new Date(startMs);
+    S().exam.startTime = startDate;
 
-  // Ensure sessionDate is set in memory even for exams resumed from Firestore
-  // (loadOrStart restores S().exam from Firestore which already contains sessionDate)
-  if (!S().exam.sessionDate) {
-    S().exam.sessionDate = (window.Tasks && Tasks._localDateStr)
-      ? Tasks._localDateStr()
-      : (() => {
-          const d = new Date();
-          return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-        })();
+    if (!S().exam.sessionDate) {
+      S().exam.sessionDate = _todayStr();
+    }
+
+    try {
+      await Db().collection('ongoingExams').doc(S().userId).set(
+        { startTime: startDate, sessionDate: S().exam.sessionDate }, { merge: true }
+      );
+    } catch (err) {
+      console.warn('[exam] Could not persist startTime, timer continues from local value.', err);
+    }
+
+    _startTimer();
+    renderExam();
   }
-
-  try {
-    await Db().collection('ongoingExams').doc(S().userId).set(
-      { startTime: startDate, sessionDate: S().exam.sessionDate }, { merge: true }
-    );
-  } catch (err) {
-    console.warn('[exam] Could not persist startTime, timer continues from local value.', err);
-  }
-
-  _startTimer();
-  renderExam();
-}
 
   /* ══════════════════════════════════════════════════════════
      renderExam
@@ -631,7 +630,7 @@
     renderExam();
   }
 
-  function goTo(index)       { S().exam.currentIndex = index; renderExam(); }
+  function goTo(index)         { S().exam.currentIndex = index; renderExam(); }
   function switchSubject(subj) { S().exam.currentSubject = subj; S().exam.currentIndex = 0; renderExam(); }
 
   /* ══════════════════════════════════════════════════════════
@@ -668,125 +667,112 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-   submitExam
-   ══════════════════════════════════════════════════════════ */
-let _submitLock = false;
+     submitExam
+     ══════════════════════════════════════════════════════════ */
+  let _submitLock = false;
 
-async function submitExam(skipConfirm) {
-  if (_submitLock) return;
+  async function submitExam(skipConfirm) {
+    if (_submitLock) return;
 
-  if (!skipConfirm) {
-    const confirmed = await UI.confirmAction('Submit your exam? This cannot be undone.');
-    if (!confirmed) return;
+    if (!skipConfirm) {
+      const confirmed = await UI.confirmAction('Submit your exam? This cannot be undone.');
+      if (!confirmed) return;
+    }
+
+    _submitLock = true;
+    S().clearTimer();
+
+    const btn = document.getElementById('submitBtn');
+    UI.setLoading(btn, true);
+
+    try {
+      const exam   = S().exam;
+      const result = _computeResult(exam);
+
+      const questionSnapshots = {};
+      for (const subj of exam.subjects) {
+        questionSnapshots[subj] = exam.questions[subj].map((q, i) => {
+          const chosenRaw = exam.answers[`${subj}-${i}`];
+          return {
+            q:      q.q    != null ? String(q.q)   : '',
+            opts:   Array.isArray(q.opts) ? q.opts.map(o => o != null ? String(o) : '') : [],
+            ans:    q.ans  != null ? Number(q.ans)  : 0,
+            exp:    q.exp  != null ? String(q.exp)  : '',
+            chosen: chosenRaw !== undefined && chosenRaw !== null ? Number(chosenRaw) : null,
+          };
+        });
+      }
+
+      // Use session date (stamped at exam creation) not current date
+      const sessionDate = exam.sessionDate || _todayStr();
+
+      const batch = Db().batch();
+
+      batch.set(Db().collection('results').doc(), {
+        ...result,
+        questionSnapshots,
+        sessionDate,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+
+      batch.delete(Db().collection('ongoingExams').doc(S().userId));
+
+      // Credit the coaching task for this session date
+      const taskCfg = S().currentTaskConfig;
+      if (taskCfg && taskCfg.active && Array.isArray(taskCfg.dates) && taskCfg.dates.includes(sessionDate)) {
+        batch.update(Db().collection('students').doc(S().userId), {
+          [`coachingCompleted.${sessionDate}`]: true,
+        });
+      }
+
+      await batch.commit();
+
+      S().exam        = null;
+      S().examStartMs = null;
+
+      renderResults(exam, result);
+
+    } catch (err) {
+      console.error('[exam] submitExam error:', err);
+      UI.toast('Submission failed. Please try again.', 'error');
+      if (document.getElementById('submitBtn')) {
+        UI.setLoading(document.getElementById('submitBtn'), false);
+      }
+    } finally {
+      _submitLock = false;
+    }
   }
 
-  _submitLock = true;
-  S().clearTimer();
+  /* ══════════════════════════════════════════════════════════
+     _computeResult
+     ══════════════════════════════════════════════════════════ */
+  function _computeResult(exam) {
+    let totalCorrect = 0, totalQuestions = 0;
+    const scores = {}, correctCounts = {};
 
-  const btn = document.getElementById('submitBtn');
-  UI.setLoading(btn, true);
-
-  try {
-    const exam   = S().exam;
-    const result = _computeResult(exam);
-
-    const questionSnapshots = {};
     for (const subj of exam.subjects) {
-      questionSnapshots[subj] = exam.questions[subj].map((q, i) => {
-        const chosenRaw = exam.answers[`${subj}-${i}`];
-        return {
-          q:      q.q    != null ? String(q.q)   : '',
-          opts:   Array.isArray(q.opts) ? q.opts.map(o => o != null ? String(o) : '') : [],
-          ans:    q.ans  != null ? Number(q.ans)  : 0,
-          exp:    q.exp  != null ? String(q.exp)  : '',
-          chosen: chosenRaw !== undefined && chosenRaw !== null ? Number(chosenRaw) : null,
-        };
-      });
+      const qs = exam.questions[subj];
+      let correct = 0;
+      qs.forEach((q, i) => { if (exam.answers[`${subj}-${i}`] === q.ans) correct++; });
+      correctCounts[subj] = correct;
+      scores[subj]        = Math.round((correct / qs.length) * 100);
+      totalCorrect        += correct;
+      totalQuestions      += qs.length;
     }
 
-    // FIX: Use the date the exam SESSION started, not the current date.
-    // S().exam.sessionDate is set in startExam() and beginExam() and
-    // persisted to Firestore so it survives page reloads.
-    // Falls back to current date only for legacy exams that predate this fix.
-    const sessionDate = exam.sessionDate || (
-      (window.Tasks && Tasks._localDateStr)
-        ? Tasks._localDateStr()
-        : (() => {
-            const d = new Date();
-            return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-          })()
-    );
+    const percentage = Math.round((totalCorrect / totalQuestions) * 100);
+    const grade = percentage >= 70 ? 'A' : percentage >= 60 ? 'B'
+                : percentage >= 50 ? 'C' : percentage >= 40 ? 'D' : 'E';
 
-    const batch = Db().batch();
-
-    batch.set(Db().collection('results').doc(), {
-      ...result,
-      questionSnapshots,
-      sessionDate,   // also store on the result for teacher visibility
-      timestamp: firebase.firestore.FieldValue.serverTimestamp()
-    });
-
-    batch.delete(Db().collection('ongoingExams').doc(S().userId));
-
-    // Credit the task date using the SESSION date, not today
-    const taskCfg = S().currentTaskConfig;
-    if (taskCfg && taskCfg.active && Array.isArray(taskCfg.dates) && taskCfg.dates.includes(sessionDate)) {
-      batch.update(Db().collection('students').doc(S().userId), {
-        [`coachingCompleted.${sessionDate}`]: true
-      });
-    }
-    // Weekly tasks: credit by the session date as well (weekly task dates are also stored as YYYY-MM-DD
-    // resolved dates — see tasks.js _resolveWeeklyDates — so the same check works)
-
-    await batch.commit();
-
-    S().exam        = null;
-    S().examStartMs = null;
-
-    renderResults(exam, result);
-
-  } catch (err) {
-    console.error('[exam] submitExam error:', err);
-    UI.toast('Submission failed. Please try again.', 'error');
-    if (document.getElementById('submitBtn')) {
-      UI.setLoading(document.getElementById('submitBtn'), false);
-    }
-  } finally {
-    // Always release the lock — both success and failure paths
-    _submitLock = false;
+    return {
+      uid:    S().userId,
+      name:   S().studentData.name,
+      class:  S().studentData.class,
+      school: S().studentData.school,
+      subjects: exam.subjects,
+      scores, correctCounts, percentage, grade,
+    };
   }
-}
-
-/* ══════════════════════════════════════════════════════════
-   _computeResult
-   ══════════════════════════════════════════════════════════ */
-function _computeResult(exam) {
-  let totalCorrect = 0, totalQuestions = 0;
-  const scores = {}, correctCounts = {};
-
-  for (const subj of exam.subjects) {
-    const qs = exam.questions[subj];
-    let correct = 0;
-    qs.forEach((q, i) => { if (exam.answers[`${subj}-${i}`] === q.ans) correct++; });
-    correctCounts[subj] = correct;
-    scores[subj]        = Math.round((correct / qs.length) * 100);
-    totalCorrect        += correct;
-    totalQuestions      += qs.length;
-  }
-
-  const percentage = Math.round((totalCorrect / totalQuestions) * 100);
-  const grade = percentage >= 70 ? 'A' : percentage >= 60 ? 'B'
-              : percentage >= 50 ? 'C' : percentage >= 40 ? 'D' : 'E';
-
-  return {
-    uid:    S().userId,          // FIX 3: store uid so teacher delete-by-uid works reliably
-    name:   S().studentData.name,
-    class:  S().studentData.class,
-    school: S().studentData.school,
-    subjects: exam.subjects,
-    scores, correctCounts, percentage, grade
-  };
-}
 
   /* ══════════════════════════════════════════════════════════
      renderResults
@@ -895,12 +881,12 @@ function _computeResult(exam) {
         try {
           renderMathInElement(document.getElementById('app'), {
             delimiters: [
-              { left: '$$', right: '$$', display: true  },
-              { left: '$',  right: '$',  display: false },
-              { left: '\\(', right: '\\)', display: false },
-              { left: '\\[', right: '\\]', display: true  }
+              { left:'$$', right:'$$', display:true  },
+              { left:'$',  right:'$',  display:false },
+              { left:'\\(', right:'\\)', display:false },
+              { left:'\\[', right:'\\]', display:true  },
             ],
-            throwOnError: false, errorColor: '#cc0000'
+            throwOnError: false, errorColor: '#cc0000',
           });
         } catch (err) { console.warn('[KaTeX] Render error:', err); }
       } else {
@@ -933,10 +919,10 @@ function _computeResult(exam) {
   function _escHtml(str) {
     if (str == null) return '';
     return String(str)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  function _escAttr(str) { return _escHtml(str).replace(/'/g, '&#39;'); }
+  function _escAttr(str) { return _escHtml(str).replace(/'/g,'&#39;'); }
 
   /* ── Expose ── */
   window.Exam = {
