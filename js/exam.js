@@ -519,9 +519,13 @@
   async function startExam() {
     if (_startExamLock) return;
 
-    // Defence-in-depth: reject if today's task session is already complete
+    // Defence-in-depth: always re-check lock at call time,
+    // even if the Firestore snapshot hasn't updated yet.
+    // _isTodayTaskDayCompleted() reads AppState.studentData.coachingCompleted
+    // which is now updated in-memory immediately in submitExam() (Fix 1).
     if (_isTodayTaskDayCompleted()) {
-      UI.toast("You've already completed today's task session.", 'warning');
+      UI.toast("You've already completed today's required session.", 'warning');
+      await renderSubjectSelection();
       return;
     }
 
@@ -561,8 +565,6 @@
       selectedQuestions[subj] = shuffled.slice(0, CFG().QUESTIONS_PER_SUBJECT);
     }
 
-    // Stamp the session date and per-task duration at creation time.
-    // These are persisted to Firestore so they survive page reloads.
     const sessionDate  = _todayStr();
     const examDuration = (S().currentTaskConfig && S().currentTaskConfig.durationMs)
       || CFG().EXAM_DURATION_MS;
@@ -590,9 +592,15 @@
     } catch (err) {
       console.error('[exam] startExam error:', err);
       UI.toast('Failed to start exam. Please try again.', 'error');
+      _startExamLock = false;
     } finally {
       if (document.getElementById('startExamBtn')) UI.setLoading(btn, false);
-      _startExamLock = false;
+      // NOTE: _startExamLock is intentionally NOT released here on success.
+      // It stays true for the duration of the exam session so the Start
+      // button cannot be triggered again while an exam is in progress.
+      // It is reset to false only when submitExam() releases _submitLock,
+      // or on page reload (module re-evaluation).
+      // For the error case it is released in the catch block above.
     }
   }
 
@@ -925,8 +933,6 @@
         });
       }
 
-      // sessionDate is stamped at exam creation time so a late-night
-      // submission still credits the correct calendar day.
       const sessionDate = exam.sessionDate || _todayStr();
 
       const batch = Db().batch();
@@ -940,11 +946,6 @@
 
       batch.delete(Db().collection('ongoingExams').doc(S().userId));
 
-      // Credit coaching task completion for sessionDate.
-      // Condition: there is an active task AND sessionDate is one of its
-      // scheduled dates.  We always credit sessionDate regardless of
-      // whether it matches today — an exam started on a task day and
-      // submitted the next day should still count for that session.
       const taskCfg   = S().currentTaskConfig;
       const isTaskDay = taskCfg &&
                         taskCfg.active &&
@@ -959,8 +960,19 @@
 
       await batch.commit();
 
+      // ── FIX: Update AppState in memory immediately so the lock works
+      //    instantly on "New Exam" click, without waiting for the Firestore
+      //    snapshot to round-trip back. The snapshot listener will also fire
+      //    and confirm the same value — this is just a defensive early update.
+      if (isTaskDay) {
+        if (!S().studentData) S().studentData = {};
+        if (!S().studentData.coachingCompleted) S().studentData.coachingCompleted = {};
+        S().studentData.coachingCompleted[sessionDate] = true;
+      }
+
       S().exam        = null;
       S().examStartMs = null;
+      _startExamLock  = false;  // ← ADD THIS LINE
 
       renderResults(exam, result);
 
