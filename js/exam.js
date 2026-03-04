@@ -211,6 +211,53 @@
   }
 
   /* ══════════════════════════════════════════════════════════
+     _isTodayTaskDayCompleted()
+     ──────────────────────────────────────────────────────────
+     Returns true when ALL of the following hold:
+       • There is an active task config
+       • Today is one of the task's scheduled dates
+       • The student has already completed today's session
+         (coachingCompleted[todayStr] === true)
+
+     Used by renderSubjectSelection to lock the Start Exam
+     button so a student cannot take the same task session
+     twice in the same day.
+     ══════════════════════════════════════════════════════════ */
+  function _isTodayTaskDayCompleted() {
+    const taskCfg = S().currentTaskConfig;
+    if (!taskCfg || !taskCfg.active) return false;
+
+    const today     = _todayStr();
+    const dates     = Array.isArray(taskCfg.dates) ? taskCfg.dates : [];
+    const completed = (S().studentData && S().studentData.coachingCompleted) || {};
+
+    return dates.includes(today) && !!completed[today];
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     _nextUnlockedDateLabel()
+     ──────────────────────────────────────────────────────────
+     Returns a human-readable label for the next task date
+     that is after today and not yet completed, or null if
+     there is no upcoming date.  Used in the locked banner.
+     ══════════════════════════════════════════════════════════ */
+  function _nextUnlockedDateLabel() {
+    const taskCfg = S().currentTaskConfig;
+    if (!taskCfg) return null;
+
+    const today     = _todayStr();
+    const dates     = Array.isArray(taskCfg.dates) ? taskCfg.dates : [];
+    const completed = (S().studentData && S().studentData.coachingCompleted) || {};
+
+    const next = dates.find(d => d > today && !completed[d]);
+    if (!next) return null;
+
+    const parts = next.split('-');
+    return new Date(+parts[0], +parts[1] - 1, +parts[2])
+      .toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  }
+
+  /* ══════════════════════════════════════════════════════════
      renderSubjectSelection
      ══════════════════════════════════════════════════════════ */
   async function renderSubjectSelection() {
@@ -222,6 +269,11 @@
         UI.toast(`No subjects found for class "${S().studentData.class}". Contact Master Timothy.`, 'error', 0);
         return;
       }
+
+      // ── Task completion lock ──────────────────────────────
+      // Evaluated before any subject logic so the locked state
+      // overrides everything below when true.
+      const todayTaskDone = _isTodayTaskDayCompleted();
 
       const allAvailable   = Object.keys(_qBank[classKey]);
       const restrictedSubjs = _getRestrictedSubjectsForToday();
@@ -266,7 +318,36 @@
         : '';
 
       let subjectsHtml;
-      if (available.length === 0) {
+
+      if (todayTaskDone) {
+        // ── LOCKED: student already submitted today's task session ──
+        const nextLabel = _nextUnlockedDateLabel();
+        const nextLine  = nextLabel
+          ? `Your next session opens on <strong>${nextLabel}</strong>.`
+          : 'There are no upcoming sessions scheduled right now.';
+
+        subjectsHtml = `
+          <div style="margin-bottom:1.25rem;padding:1.25rem 1.5rem;border-radius:12px;
+                      background:var(--success-bg,#ebfbee);border:2px solid var(--success-border,#b2f2bb);
+                      text-align:center;">
+            <div style="font-size:2rem;margin-bottom:.5rem;">✅</div>
+            <p style="font-size:1rem;font-weight:700;color:var(--success-text,#1a5c29);margin-bottom:.375rem;">
+              Today's session complete!
+            </p>
+            <p style="font-size:.875rem;color:var(--text-secondary,#374151);line-height:1.6;">
+              You've already submitted your exam for today's task. ${nextLine}
+            </p>
+          </div>
+          <button disabled
+                  style="display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
+                         padding:.75rem 2rem;border-radius:8px;font-size:.9375rem;font-weight:700;
+                         background:var(--surface-muted,#f3f4f6);color:var(--text-disabled,#9ca3af);
+                         border:1.5px solid var(--border,#e5e7eb);cursor:not-allowed;
+                         width:100%;max-width:20rem;">
+            🔒 Exam Locked for Today
+          </button>`;
+
+      } else if (available.length === 0) {
         subjectsHtml = `
           <p class="text-red-500 text-sm">
             ${restrictedSubjs
@@ -375,6 +456,13 @@
 
   async function startExam() {
     if (_startExamLock) return;
+
+    // Defence-in-depth: reject if today's task session is already complete.
+    // The UI should have hidden/disabled the button, but guard here too.
+    if (_isTodayTaskDayCompleted()) {
+      UI.toast("You've already completed today's task session.", 'warning');
+      return;
+    }
 
     const chosen = _getSelectedSubjects();
     if (chosen.length < 2) {
@@ -1003,6 +1091,8 @@
     _escHtml,
     _escAttr,
     preprocessLatex,
+    _isTodayTaskDayCompleted,
+    _nextUnlockedDateLabel,
   };
 
 })();
