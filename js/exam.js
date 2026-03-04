@@ -878,12 +878,18 @@
   /* ══════════════════════════════════════════════════════════
      submitExam
      ──────────────────────────────────────────────────────────
-     FIX: coaching task completion credit now uses the explicit
-     _isTodayATaskDay() check AND verifies sessionDate matches
-     today.  This prevents a stale exam (started on a task day,
-     submitted the next day) from crediting the wrong date,
-     and prevents future-date matches now that dates[] includes
-     future sessions.
+     Computes results, writes to Firestore, and credits the
+     coaching task completion for sessionDate when applicable.
+
+     Task-completion credit rules:
+       • sessionDate must be one of the task's scheduled dates
+         (checked via taskCfg.dates[], which includes all dates
+         past and future after _expandTaskDoc runs).
+       • No same-day check: if a student started on a task day
+         and submits the next day, we still credit sessionDate
+         because that is the day they sat the exam.
+       • Free-practice exams (no matching task date) receive no
+         completion credit.
      ══════════════════════════════════════════════════════════ */
   let _submitLock = false;
 
@@ -920,7 +926,7 @@
       }
 
       // sessionDate is stamped at exam creation time so a late-night
-      // submission still credits the correct calendar day
+      // submission still credits the correct calendar day.
       const sessionDate = exam.sessionDate || _todayStr();
 
       const batch = Db().batch();
@@ -934,32 +940,22 @@
 
       batch.delete(Db().collection('ongoingExams').doc(S().userId));
 
-      // Credit the coaching task completion for sessionDate.
-      // Requirements:
-      //   1. There is an active task config.
-      //   2. sessionDate is one of the task's scheduled dates
-      //      (uses _isTodayATaskDay which checks taskCfg.dates).
-      //   3. sessionDate matches today — prevents a stale exam
-      //      (started yesterday, submitted today) from writing
-      //      to the wrong date key.
-      const taskCfg    = S().currentTaskConfig;
-      const submitDay  = _todayStr();
-      const isTaskDay  = taskCfg && taskCfg.active &&
-        Array.isArray(taskCfg.dates) && taskCfg.dates.includes(sessionDate);
-      const sameDay    = sessionDate === submitDay;
+      // Credit coaching task completion for sessionDate.
+      // Condition: there is an active task AND sessionDate is one of its
+      // scheduled dates.  We always credit sessionDate regardless of
+      // whether it matches today — an exam started on a task day and
+      // submitted the next day should still count for that session.
+      const taskCfg   = S().currentTaskConfig;
+      const isTaskDay = taskCfg &&
+                        taskCfg.active &&
+                        Array.isArray(taskCfg.dates) &&
+                        taskCfg.dates.includes(sessionDate);
 
-      if (isTaskDay && sameDay) {
-        batch.update(Db().collection('students').doc(S().userId), {
-          [`coachingCompleted.${sessionDate}`]: true,
-        });
-      } else if (isTaskDay && !sameDay) {
-        // Exam was started on a task day but submitted on a different day.
-        // Still credit the original session date — this is intentional.
+      if (isTaskDay) {
         batch.update(Db().collection('students').doc(S().userId), {
           [`coachingCompleted.${sessionDate}`]: true,
         });
       }
-      // If !isTaskDay: free practice exam — no completion credit needed.
 
       await batch.commit();
 
