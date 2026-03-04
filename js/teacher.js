@@ -1231,8 +1231,17 @@
   }
 
   function _onTaskTargetChange() {
-    // Rebuild existing one-time date rows for new target's subjects
-    if (_taskScope !== 'once') return;
+    // For weekly/range tasks: re-render the per-day subject picker now that
+    // a class or student has been selected (subjects depend on the target).
+    // This was previously skipped by an early return, so the subject
+    // checkboxes never appeared after picking a class or student.
+    if (_taskScope !== 'once') {
+      _renderRecurringSubjectPicker();
+      return;
+    }
+
+    // For once tasks: rebuild any existing date rows so their subject
+    // checkboxes reflect the newly selected class/student's subjects.
     const datesEl = document.getElementById('tasksDates');
     if (!datesEl) return;
     const data = Array.from(datesEl.querySelectorAll('.task-date-row'))
