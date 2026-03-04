@@ -631,10 +631,17 @@
 
     // This-week summary badge
     const pastThisWeek   = displayDates.filter(d => d <= todayStr).length;
-    const weekAllDone    = pastThisWeek > 0 && weekDoneCount === pastThisWeek;
+    // ── FIX: "all done" only fires when EVERY session this week is completed,
+    //    not just the ones that have passed so far. A student who submitted
+    //    Monday should not see "all done" while Tuesday/Thursday/Saturday
+    //    are still upcoming. The badge now requires all displayDates to be done.
+    const allSessionsThisWeekDone =
+      displayDates.length > 0 &&
+      displayDates.every(d => !!completed[d]);
+
     const allFutureThisWeek = displayDates.every(d => d > todayStr);
 
-    const statusBadge = weekAllDone && !allFutureThisWeek
+    const statusBadge = allSessionsThisWeekDone && !allFutureThisWeek
       ? `<div style="margin-top:.75rem;padding:.875rem 1rem;border-radius:8px;` +
         `background:var(--success-bg,#ebfbee);border:1px solid var(--success-border,#b2f2bb);text-align:center;">` +
         `<p style="font-size:.9375rem;font-weight:700;color:var(--success-text,#1a5c29);">This week: all done! 🎉</p>` +
