@@ -1,33 +1,12 @@
 /* ============================================================
-   REPLACEMENT FUNCTIONS FOR js/tasks.js
-
-   CHANGES:
-   1. _resolveWeeklyDates() — NEW helper. For a weekly task,
-      generates the concrete YYYY-MM-DD date for each scheduled
-      day-of-week within the current Monday–Sunday week. This
-      means the task automatically refreshes each week without
-      any teacher action.
-
-   2. loadCoachingTasks() — now listens to the 'weekly' doc in
-      addition to global / class / student docs, and routes
-      weekly task data through _resolveWeeklyDates() before
-      merging.
-
-   3. _resolveTask() — priority: student > class > weekly > global.
-      Passes weekly docs through _resolveWeeklyDates().
-
-   4. renderTasksHTML() — adds "missed" state (past dates not
-      completed), better completion badge, and completion
-      congratulations message.
-
-   5. _localDateStr() unchanged — kept for reference.
+   js/tasks.js
    ============================================================ */
 
 (function () {
   'use strict';
 
   /* ══════════════════════════════════════════════════════════
-     _localDateStr  — unchanged
+     _localDateStr
      ══════════════════════════════════════════════════════════ */
   function _localDateStr(date) {
     const d = date || new Date();
@@ -38,7 +17,7 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     _classDocId / _studentDocId  — unchanged
+     _classDocId / _studentDocId
      ══════════════════════════════════════════════════════════ */
   function _classDocId(classStr) {
     return 'class_' + (classStr || '').replace(/\s+/g, '').toLowerCase();
@@ -49,145 +28,176 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     _resolveWeeklyDates  — NEW
-     
+     _resolveWeeklyDates
+
      Given a weekly task doc that contains:
-       weeklyDays: ['Monday', 'Wednesday', 'Friday']   (day names)
-       dateSubjects: { Monday: [...], Wednesday: [...] }  (subjects per day)
-     
+       weeklyDays:   ['Monday', 'Wednesday', 'Friday']
+       dateSubjects: { Monday: [...], Wednesday: [...] }
+
      Returns a NEW doc object with:
-       dates: ['2025-03-03', '2025-03-05', '2025-03-07']  (concrete dates)
-       dateSubjects: { '2025-03-03': [...], ... }          (mapped to dates)
-     
-     The concrete dates are always the occurrences within the
-     CURRENT Monday–Sunday ISO week, so they refresh automatically.
+       dates:        ['2025-03-03', '2025-03-05', '2025-03-07']
+       dateSubjects: { '2025-03-03': [...], ... }
+
+     Dates are always the occurrences within the CURRENT
+     Monday–Sunday ISO week, so they refresh automatically.
      ══════════════════════════════════════════════════════════ */
   function _resolveWeeklyDates(weeklyDoc) {
     if (!weeklyDoc || !Array.isArray(weeklyDoc.weeklyDays)) return weeklyDoc;
 
     const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
-    // Find Monday of the current week (ISO week: Mon=start)
-    const now       = new Date();
-    const todayDow  = now.getDay(); // 0=Sun … 6=Sat
+    // Find Monday of the current week (ISO week: Mon = start)
+    const now      = new Date();
+    const todayDow = now.getDay(); // 0=Sun … 6=Sat
     const diffToMon = (todayDow === 0) ? -6 : 1 - todayDow;
-    const monday    = new Date(now);
+    const monday   = new Date(now);
     monday.setDate(now.getDate() + diffToMon);
     monday.setHours(0, 0, 0, 0);
 
-    const resolvedDates     = [];
-    const resolvedSubjects  = {};
+    const resolvedDates    = [];
+    const resolvedSubjects = {};
 
     weeklyDoc.weeklyDays.forEach(dayName => {
       const dowIndex = DAY_NAMES.indexOf(dayName);
       if (dowIndex === -1) return;
 
-      // Offset from Monday: Mon=0 … Sun=6 in ISO, but JS Mon=1 Sun=0
-      // Monday offset = 0, Tuesday = 1, … Saturday = 5, Sunday = 6
+      // ISO offset from Monday: Mon=0 … Sat=5, Sun=6
       const isoOffset = (dowIndex === 0) ? 6 : dowIndex - 1;
-      const date      = new Date(monday);
+      const date = new Date(monday);
       date.setDate(monday.getDate() + isoOffset);
 
       const dateStr = _localDateStr(date);
       resolvedDates.push(dateStr);
 
-      // Map the day-name-keyed subjects to the concrete date key
       const subjectsForDay = (weeklyDoc.dateSubjects || {})[dayName] || [];
       resolvedSubjects[dateStr] = subjectsForDay;
     });
 
-    // Sort chronologically
     resolvedDates.sort();
 
     return Object.assign({}, weeklyDoc, {
       dates:        resolvedDates,
       dateSubjects: resolvedSubjects,
-      _isWeekly:    true,   // flag so renderTasksHTML knows it's a recurring task
+      _isWeekly:    true,
     });
   }
 
   /* ══════════════════════════════════════════════════════════
-     loadCoachingTasks  — FULL REPLACEMENT
-     Now listens to 4 docs: global, class, student, weekly.
+     loadCoachingTasks
+
+     Listens to up to 6 docs:
+       global                   — all-students one-time task
+       class_X                  — class one-time task
+       student_UID              — student one-time task
+       weekly                   — weekly task for all students
+       weekly_class_X           — weekly task for a class
+       weekly_student_UID       — weekly task for one student
      ══════════════════════════════════════════════════════════ */
   function loadCoachingTasks() {
-    const uid          = AppState.userId;
-    const classStr     = (AppState.studentData || {}).class || '';
-    const classDocId   = _classDocId(classStr);
-    const studentDocId = uid ? _studentDocId(uid) : null;
+    const uid        = AppState.userId;
+    const classStr   = (AppState.studentData || {}).class || '';
+    const classKey   = _classDocId(classStr);                        // class_sss1
+    const studentKey = uid ? _studentDocId(uid) : null;             // student_UID
+    const wkAllKey   = 'weekly';                                     // weekly
+    const wkClassKey = 'weekly_' + classKey;                        // weekly_class_sss1
+    const wkStudKey  = uid ? 'weekly_student_' + uid : null;        // weekly_student_UID
 
+    // Cancel previous listeners
     AppState.cancelListener('taskGlobal');
     AppState.cancelListener('taskClass');
     AppState.cancelListener('taskStudent');
     AppState.cancelListener('taskWeekly');
+    AppState.cancelListener('taskWeeklyClass');
+    AppState.cancelListener('taskWeeklyStudent');
 
-    const _docs = { global: null, class: null, student: null, weekly: null };
+    const _docs = {
+      global: null, class: null, student: null,
+      weekly: null, weeklyClass: null, weeklyStudent: null,
+    };
 
+    // Total number of listeners we are opening
+    const _needed = 4 + (studentKey ? 1 : 0) + (wkStudKey ? 1 : 0);
     let _initialCount = 0;
-    const _needed     = studentDocId ? 4 : 3;
-    let   _resolveFn  = null;
+    let _resolveFn    = null;
     const promise     = new Promise(res => { _resolveFn = res; });
 
     function _onSnap(key, snap) {
       _docs[key] = snap.exists ? snap.data() : null;
       _initialCount++;
       _resolveTask(_docs);
-      if (_initialCount >= _needed && _resolveFn) {
-        _resolveFn();
-        _resolveFn = null;
-      }
+      if (_initialCount >= _needed && _resolveFn) { _resolveFn(); _resolveFn = null; }
     }
-
     function _onErr(key, err) {
-      console.error('[tasks] coachingTasks/' + key + ' listener error:', err);
+      console.error('[tasks] coachingTasks/' + key + ' error:', err);
       _docs[key] = null;
       _initialCount++;
-      if (_initialCount >= _needed && _resolveFn) {
-        _resolveFn();
-        _resolveFn = null;
-      }
+      if (_initialCount >= _needed && _resolveFn) { _resolveFn(); _resolveFn = null; }
     }
 
-    const unsubGlobal = Db()
-      .collection('coachingTasks').doc('global')
-      .onSnapshot(s => _onSnap('global', s), e => _onErr('global', e));
-    AppState.registerListener('taskGlobal', unsubGlobal);
+    // global
+    AppState.registerListener('taskGlobal',
+      Db().collection('coachingTasks').doc('global')
+        .onSnapshot(s => _onSnap('global', s), e => _onErr('global', e)));
 
-    const unsubClass = Db()
-      .collection('coachingTasks').doc(classDocId)
-      .onSnapshot(s => _onSnap('class', s), e => _onErr('class', e));
-    AppState.registerListener('taskClass', unsubClass);
+    // class
+    AppState.registerListener('taskClass',
+      Db().collection('coachingTasks').doc(classKey)
+        .onSnapshot(s => _onSnap('class', s), e => _onErr('class', e)));
 
-    const unsubWeekly = Db()
-      .collection('coachingTasks').doc('weekly')
-      .onSnapshot(s => _onSnap('weekly', s), e => _onErr('weekly', e));
-    AppState.registerListener('taskWeekly', unsubWeekly);
+    // weekly (all)
+    AppState.registerListener('taskWeekly',
+      Db().collection('coachingTasks').doc(wkAllKey)
+        .onSnapshot(s => _onSnap('weekly', s), e => _onErr('weekly', e)));
 
-    if (studentDocId) {
-      const unsubStudent = Db()
-        .collection('coachingTasks').doc(studentDocId)
-        .onSnapshot(s => _onSnap('student', s), e => _onErr('student', e));
-      AppState.registerListener('taskStudent', unsubStudent);
+    // weekly_class_X
+    AppState.registerListener('taskWeeklyClass',
+      Db().collection('coachingTasks').doc(wkClassKey)
+        .onSnapshot(s => _onSnap('weeklyClass', s), e => _onErr('weeklyClass', e)));
+
+    // student (one-time)
+    if (studentKey) {
+      AppState.registerListener('taskStudent',
+        Db().collection('coachingTasks').doc(studentKey)
+          .onSnapshot(s => _onSnap('student', s), e => _onErr('student', e)));
     } else {
       _docs.student = null;
+    }
+
+    // weekly_student_UID
+    if (wkStudKey) {
+      AppState.registerListener('taskWeeklyStudent',
+        Db().collection('coachingTasks').doc(wkStudKey)
+          .onSnapshot(s => _onSnap('weeklyStudent', s), e => _onErr('weeklyStudent', e)));
+    } else {
+      _docs.weeklyStudent = null;
     }
 
     return promise;
   }
 
   /* ══════════════════════════════════════════════════════════
-     _resolveTask  — FULL REPLACEMENT
-     Priority: student > class > weekly > global.
-     Weekly docs are expanded to concrete dates before merging.
+     _resolveTask
+
+     Priority (highest → lowest):
+       student one-time
+       student weekly
+       class one-time
+       class weekly
+       global weekly (all)
+       global one-time
      ══════════════════════════════════════════════════════════ */
   function _resolveTask(docs) {
-    const weeklyExpanded = docs.weekly ? _resolveWeeklyDates(docs.weekly) : null;
+    const weeklyExpanded        = docs.weekly        ? _resolveWeeklyDates(docs.weekly)        : null;
+    const weeklyClassExpanded   = docs.weeklyClass   ? _resolveWeeklyDates(docs.weeklyClass)   : null;
+    const weeklyStudentExpanded = docs.weeklyStudent ? _resolveWeeklyDates(docs.weeklyStudent) : null;
 
     const resolved =
-      (docs.student && docs.student.active ? docs.student        : null) ||
-      (docs.class   && docs.class.active   ? docs.class          : null) ||
-      (weeklyExpanded && weeklyExpanded.active ? weeklyExpanded  : null) ||
-      (docs.global  && docs.global.active  ? docs.global         : null) ||
+      (docs.student               && docs.student.active               ? docs.student              : null) ||
+      (weeklyStudentExpanded      && weeklyStudentExpanded.active       ? weeklyStudentExpanded     : null) ||
+      (docs.class                 && docs.class.active                 ? docs.class                : null) ||
+      (weeklyClassExpanded        && weeklyClassExpanded.active         ? weeklyClassExpanded       : null) ||
+      (weeklyExpanded             && weeklyExpanded.active              ? weeklyExpanded            : null) ||
+      (docs.global                && docs.global.active                ? docs.global               : null) ||
       { active: false };
 
     AppState.currentTaskConfig = resolved;
@@ -198,7 +208,7 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     loadStudentMessages  — unchanged
+     loadStudentMessages
      ══════════════════════════════════════════════════════════ */
   async function loadStudentMessages() {
     const uid = AppState.userId;
@@ -237,7 +247,7 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     listenForStudentUpdates  — unchanged from fixed version
+     listenForStudentUpdates
      ══════════════════════════════════════════════════════════ */
   function listenForStudentUpdates() {
     const uid = AppState.userId;
@@ -272,17 +282,7 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     renderTasksHTML  — FULL REPLACEMENT
-
-     Changes:
-     • Past-date detection: a date whose calendar day has passed
-       AND is not completed is shown as "Missed" (✗) in red.
-     • Today not yet completed = Pending (○) in amber.
-     • Future dates = Upcoming (–) in grey.
-     • Completed = Done (✓) in green.
-     • All-done banner with congratulations.
-     • Weekly badge shown if _isWeekly flag is set.
-     • Subject list shown per date (unchanged from before).
+     renderTasksHTML
      ══════════════════════════════════════════════════════════ */
   function renderTasksHTML() {
     const container = document.getElementById('tasksContainer');
@@ -303,7 +303,6 @@
     const todayStr     = _localDateStr();
     const isWeekly     = !!currentTasks._isWeekly;
 
-    // Categorise each date
     let doneCount    = 0;
     let missedCount  = 0;
     let pendingCount = 0;
@@ -316,11 +315,10 @@
         weekday: 'short', day: 'numeric', month: 'short'
       });
 
-      const isDone    = !!completed[dateStr];
-      const isPast    = dateStr < todayStr;
-      const isToday   = dateStr === todayStr;
-      const isFuture  = dateStr > todayStr;
-      const isMissed  = isPast && !isDone;
+      const isDone   = !!completed[dateStr];
+      const isPast   = dateStr < todayStr;
+      const isToday  = dateStr === todayStr;
+      const isMissed = isPast && !isDone;
 
       if (isDone)        doneCount++;
       else if (isMissed) missedCount++;
@@ -334,7 +332,6 @@
           subjects.map(_esc).join(', ') + '</p>'
         : '';
 
-      // Style per state
       let bgColor, borderColor, iconColor, icon, labelText, labelColor;
 
       if (isDone) {
@@ -359,7 +356,6 @@
         labelText   = 'Today';
         labelColor  = 'var(--warning-text,#7c4a00)';
       } else {
-        // future
         bgColor     = 'var(--surface,#fff)';
         borderColor = 'var(--border,#e5e7eb)';
         iconColor   = 'var(--border-medium,#d1d5db)';
@@ -380,14 +376,12 @@
              `</div>`;
     }).join('');
 
-    const totalDates  = currentTasks.dates.length;
-    const allDone     = doneCount === totalDates;
-    const noneFuture  = futureCount === 0;
+    const totalDates = currentTasks.dates.length;
+    const allDone    = doneCount === totalDates;
+    const noneFuture = futureCount === 0;
 
-    // Status badge / completion message
     let statusBadgeHtml = '';
     if (allDone) {
-      // Full congratulations banner
       statusBadgeHtml =
         '<div style="margin-top:var(--sp-3,0.75rem);padding:0.875rem 1rem;border-radius:8px;' +
         'background:var(--success-bg,#ebfbee);border:1px solid var(--success-border,#b2f2bb);text-align:center;">' +
@@ -399,7 +393,6 @@
         ' Keep up the great effort!</p>' +
         '</div>';
     } else if (missedCount > 0 && noneFuture && !allDone) {
-      // Week ended with some missed
       statusBadgeHtml =
         '<div style="margin-top:var(--sp-3,0.75rem);padding:0.75rem 1rem;border-radius:8px;' +
         'background:var(--danger-bg,#fff5f5);border:1px solid var(--danger,#e03131);text-align:center;">' +
@@ -410,7 +403,6 @@
         '</div>';
     }
 
-    // Weekly marker
     const weeklyBadge = isWeekly
       ? '<span style="font-size:.6875rem;font-weight:700;padding:2px 9px;border-radius:99px;' +
         'background:var(--brand-bg,#edf2ff);color:var(--brand-text,#3730a3);' +
@@ -454,13 +446,15 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     cancelListeners  — unchanged
+     cancelListeners
      ══════════════════════════════════════════════════════════ */
   function cancelListeners() {
     AppState.cancelListener('taskGlobal');
     AppState.cancelListener('taskClass');
     AppState.cancelListener('taskStudent');
     AppState.cancelListener('taskWeekly');
+    AppState.cancelListener('taskWeeklyClass');
+    AppState.cancelListener('taskWeeklyStudent');
     AppState.cancelListener('studentProfile');
   }
 
