@@ -261,6 +261,25 @@
                             style="height:4rem;resize:vertical;"></textarea>
                 </div>
 
+                <!-- Exam duration -->
+                <div style="margin-bottom:.875rem;">
+                  <label style="display:block;font-size:.75rem;font-weight:600;
+                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">
+                    Exam Duration
+                    <span style="font-weight:400;color:var(--text-tertiary,#6b7280);">— for students on this task</span>
+                  </label>
+                  <select id="taskDurationMs">
+                    <option value="">Use default (2 hours)</option>
+                    <option value="1800000">30 minutes</option>
+                    <option value="2700000">45 minutes</option>
+                    <option value="3600000">1 hour</option>
+                    <option value="5400000">1 hour 30 minutes</option>
+                    <option value="7200000">2 hours (default)</option>
+                    <option value="9000000">2 hours 30 minutes</option>
+                    <option value="10800000">3 hours</option>
+                  </select>
+                </div>
+
                 <!-- ── Date / range config area — rendered by _renderDateConfigArea() ── -->
                 <div id="taskDateConfigArea"></div>
 
@@ -1165,16 +1184,18 @@
   }
 
   function _clearTaskForm() {
-    const activeEl  = document.getElementById('tasksActive');
-    const titleEl   = document.getElementById('tasksTitle');
-    const messageEl = document.getElementById('tasksMessage');
-    const startEl   = document.getElementById('taskStartDate');
-    const endEl     = document.getElementById('taskEndDate');
-    if (activeEl)  activeEl.checked  = false;
-    if (titleEl)   titleEl.value     = '';
-    if (messageEl) messageEl.value   = '';
-    if (startEl)   startEl.value     = '';
-    if (endEl)     endEl.value       = '';
+    const activeEl    = document.getElementById('tasksActive');
+    const titleEl     = document.getElementById('tasksTitle');
+    const messageEl   = document.getElementById('tasksMessage');
+    const startEl     = document.getElementById('taskStartDate');
+    const endEl       = document.getElementById('taskEndDate');
+    const durationEl  = document.getElementById('taskDurationMs');
+    if (activeEl)   activeEl.checked  = false;
+    if (titleEl)    titleEl.value     = '';
+    if (messageEl)  messageEl.value   = '';
+    if (startEl)    startEl.value     = '';
+    if (endEl)      endEl.value       = '';
+    if (durationEl) durationEl.value  = '';
     document.querySelectorAll('.task-day-cb').forEach(cb => { cb.checked = false; });
     document.querySelectorAll('.recurring-day-subj-cb').forEach(cb => { cb.checked = false; });
     _clearTaskFormDates();
@@ -1383,6 +1404,10 @@
     const title   = document.getElementById('tasksTitle')?.value.trim()   || '';
     const message = document.getElementById('tasksMessage')?.value.trim() || '';
 
+    // Duration: null means "use system default" — exam.js falls back to AppConfig.EXAM_DURATION_MS
+    const durationRaw = document.getElementById('taskDurationMs')?.value;
+    const durationMs  = durationRaw ? parseInt(durationRaw, 10) : null;
+
     if (!title) { UI.toast('Please enter a task title.', 'warning'); return; }
 
     let payload;
@@ -1404,6 +1429,7 @@
         message:     message || 'Complete the required exams on the scheduled dates.',
         dates,
         dateSubjects,
+        durationMs:  durationMs || null,
         scope:       _assignScope === 'all' ? 'global' : _assignScope,
         updatedAt:   firebase.firestore.FieldValue.serverTimestamp(),
       };
@@ -1440,6 +1466,7 @@
         endDate:     endDate || null,
         weeklyDays:  checkedDays,
         dateSubjects,
+        durationMs:  durationMs || null,
         scope:       'weekly',
         assignScope: _assignScope,
         updatedAt:   firebase.firestore.FieldValue.serverTimestamp(),
