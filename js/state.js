@@ -1,23 +1,30 @@
 /* ============================================================
    js/state.js — Centralized application state
    All modules read and write state through this object.
+   ============================================================
+   v3 notes:
+   currentTaskConfig now holds a RESOLVED task doc — meaning
+   for weekly/range tasks, tasks.js has already run the full
+   _resolveTaskDates() engine and flattened all historical
+   dates into doc.dates[].  The raw recurrence fields
+   (recurrence, startDate, endDate, weeklyDays) are preserved
+   on the object so exam.js / teacher.js can still inspect them
+   if needed.  No structural change to AppState itself.
    ============================================================ */
 (function () {
   'use strict';
 
   /*
    * Internal property map — canonical names used by get/set.
-   * Direct property access is also supported for back-compat,
-   * but all modules should prefer get/set going forward.
    *
-   * Canonical key  →  AppState property
-   * ─────────────────────────────────────
-   * 'user'         →  userId
-   * 'studentData'  →  studentData
-   * 'currentTasks' →  currentTaskConfig   (single canonical name)
-   * 'studentMessages' → studentMessages
-   * 'isTeacher'    →  isTeacher
-   * 'exam'         →  exam
+   * Canonical key     →  AppState property
+   * ─────────────────────────────────────────
+   * 'user'            →  userId
+   * 'studentData'     →  studentData
+   * 'currentTasks'    →  currentTaskConfig
+   * 'studentMessages' →  studentMessages
+   * 'isTeacher'       →  isTeacher
+   * 'exam'            →  exam
    */
   const _keyMap = {
     user:            'userId',
@@ -30,17 +37,30 @@
 
   window.AppState = {
     /* ── Auth ── */
-    userId:       null,
-    studentData:  null,
-    isTeacher:    false,
+    userId:      null,
+    studentData: null,
+    isTeacher:   false,
 
     /* ── Exam ── */
-    exam:         null,   // Active exam document (mirrors ongoingExams Firestore doc)
-    timerHandle:  null,   // setInterval handle — cleared before re-assignment
-    examStartMs:  null,   // Unix ms timestamp when exam timer began
+    exam:        null,   // Active exam document (mirrors ongoingExams Firestore doc)
+    timerHandle: null,   // setInterval handle — cleared before re-assignment
+    examStartMs: null,   // Unix ms timestamp when exam timer began
 
-    /* ── Task / coaching ── */
-    currentTaskConfig: null,  // Snapshot of coachingTasks/current doc
+    /* ── Task / coaching ──
+     *
+     * currentTaskConfig is always the RESOLVED winning task doc:
+     *   • For 'once' tasks: { recurrence:'once', dates:[...], dateSubjects:{...}, ... }
+     *   • For 'weekly'/'range' tasks: the raw doc PLUS
+     *       dates:        all concrete YYYY-MM-DD dates up to today
+     *       dateSubjects: { 'YYYY-MM-DD': string[] } resolved from day-name keys
+     *       _isRecurring: true
+     *       _isWeekly:    true  (kept for backward compat)
+     *
+     * The resolution is done by tasks.js _resolveWeeklyDates() which
+     * now calls the full _resolveTaskDates() engine instead of only
+     * returning the current ISO week.
+     */
+    currentTaskConfig: null,
 
     /* ── Chat ── */
     replyingTo:      null,   // { name: string, text: string } | null
@@ -49,40 +69,24 @@
     /* ── Firestore unsubscribe handles ── */
     _unsubs: {},
 
-    /* ─────────────────────────────────────────── */
-    /* Generic accessor API (used by tasks.js etc) */
-    /* ─────────────────────────────────────────── */
+    /* ─────────────────────────────────────────────────────── */
+    /* Generic accessor API                                    */
+    /* ─────────────────────────────────────────────────────── */
 
-    /**
-     * Get a state value by canonical key or direct property name.
-     * @param {string} key
-     * @returns {*}
-     */
     get(key) {
       const prop = _keyMap[key] || key;
       return this[prop];
     },
 
-    /**
-     * Set a state value by canonical key or direct property name.
-     * @param {string} key
-     * @param {*}      value
-     */
     set(key, value) {
       const prop = _keyMap[key] || key;
       this[prop] = value;
     },
 
-    /* ─────────────────────────────────────────── */
-    /* Listener registry                           */
-    /* ─────────────────────────────────────────── */
+    /* ─────────────────────────────────────────────────────── */
+    /* Listener registry                                       */
+    /* ─────────────────────────────────────────────────────── */
 
-    /**
-     * Register an unsubscribe function under a named key.
-     * Calling this again with the same key first cancels the previous listener.
-     * @param {string}   key
-     * @param {Function} unsub
-     */
     registerListener(key, unsub) {
       if (typeof this._unsubs[key] === 'function') {
         this._unsubs[key]();
@@ -90,10 +94,6 @@
       this._unsubs[key] = unsub;
     },
 
-    /**
-     * Cancel a specific named listener.
-     * @param {string} key
-     */
     cancelListener(key) {
       if (typeof this._unsubs[key] === 'function') {
         this._unsubs[key]();
@@ -101,9 +101,6 @@
       }
     },
 
-    /**
-     * Cancel all active Firestore listeners. Call this on logout.
-     */
     cancelAllListeners() {
       Object.keys(this._unsubs).forEach(k => {
         if (typeof this._unsubs[k] === 'function') this._unsubs[k]();
@@ -111,9 +108,6 @@
       this._unsubs = {};
     },
 
-    /**
-     * Clear the countdown timer if one is running.
-     */
     clearTimer() {
       if (this.timerHandle) {
         clearInterval(this.timerHandle);
@@ -121,9 +115,6 @@
       }
     },
 
-    /**
-     * Hard reset — called on logout. Cancels all listeners and clears all state.
-     */
     reset() {
       this.cancelAllListeners();
       this.clearTimer();
@@ -135,7 +126,7 @@
       this.replyingTo        = null;
       this.studentMessages   = [];
       this.currentTaskConfig = null;
-    }
+    },
   };
 
   /* ── Global constants ── */
