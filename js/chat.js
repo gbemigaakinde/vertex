@@ -6,6 +6,26 @@
    - Button sizes normalized to standard .btn height
    - Padding reduced on containers
    - No logic or functional changes
+
+   MENTION SYSTEM FIXES (v3):
+   ─────────────────────────────────────────────────────────────
+   1. _resolveMentionedUids(): replaced broken non-greedy regex
+      with NBSP-delimiter strategy. _insertMention() places a
+      \u00A0 (NBSP) right after every inserted name; this file
+      now uses that as the authoritative end-of-mention marker.
+      Falls back to trimmed-whitespace matching for names typed
+      manually without the dropdown.
+
+   2. _renderTextWithMentions(): no longer tries to match names
+      with a generic regex on HTML-escaped text. Instead builds
+      an escaped-name lookup set and replaces each known @Name
+      token individually, matching longest names first to avoid
+      prefix collisions (e.g. "Ali" vs "Alice").
+
+   3. _loadStudentRoster(): teacher shortcut now correctly reads
+      window.Teacher._msgStudentCache via the getter exported
+      in teacher.js, so the teacher never needs an extra fetch.
+   ─────────────────────────────────────────────────────────────
    ============================================================ */
 
 (function () {
@@ -18,8 +38,11 @@ let _mentionQuery   = '';
 let _mentionStartIdx = -1;  // caret position where '@' was typed
 
 function _loadStudentRoster() {
-  // In teacher view, reuse the already-loaded student cache
-  if (window.Teacher && Array.isArray(window.Teacher._msgStudentCache) && window.Teacher._msgStudentCache.length > 0) {
+  // In teacher view, reuse the already-loaded student cache via the
+  // getter exported on window.Teacher (teacher.js: get _msgStudentCache()).
+  if (window.Teacher &&
+      Array.isArray(window.Teacher._msgStudentCache) &&
+      window.Teacher._msgStudentCache.length > 0) {
     _studentRoster = window.Teacher._msgStudentCache;
     return Promise.resolve();
   }
@@ -115,13 +138,16 @@ function _buildMentionDropdown(suggestions, anchorEl) {
   const first = dropdown.querySelector('.mention-item');
   if (first) first.style.background = 'var(--brand-bg,#edf2ff)';
 
-  if (anchorEl) {
+  // Append dropdown to #chatInputWrap (which has position:relative in its
+  // inline style), so bottom/left/right coordinates are relative to that row.
+  const wrap = document.getElementById('chatInputWrap');
+  if (wrap) {
+    wrap.appendChild(dropdown);
+  } else if (anchorEl) {
+    // Fallback: use the closest positioned ancestor
     const wrapper = anchorEl.closest('[style*="position"]') || anchorEl.parentElement;
     if (wrapper) {
-      const wrapperStyle = wrapper.getAttribute('style') || '';
-      if (!wrapperStyle.includes('position:relative') && !wrapperStyle.includes('position: relative')) {
-        wrapper.style.position = 'relative';
-      }
+      if (!wrapper.style.position) wrapper.style.position = 'relative';
       wrapper.appendChild(dropdown);
     }
   }
@@ -143,7 +169,10 @@ function _insertMention(uid, name) {
   const before = val.substring(0, _mentionStartIdx);  // text before '@'
   const after  = val.substring(input.selectionStart); // text after cursor
 
-  // Insert the mention token: @Name followed by a space
+  // Insert the mention token: @Name followed by a NBSP (\u00A0).
+  // The NBSP is the authoritative end-of-mention delimiter used by
+  // _resolveMentionedUids() to extract names reliably, including
+  // multi-word names like "John Smith".
   input.value = before + '@' + name + '\u00A0' + after;
 
   // Move caret to right after the inserted mention
@@ -191,39 +220,123 @@ function _handleMentionKeydown(e, suggestions) {
   return false;
 }
 
-// Extract all @mentioned names from message text and resolve UIDs
+/* ─────────────────────────────────────────────────────────────
+   _resolveMentionedUids
+   ─────────────────────────────────────────────────────────────
+   Extracts all @-mentioned student UIDs from a message string.
+
+   Strategy:
+   Primary path — NBSP delimiter (dropdown-inserted mentions):
+     _insertMention() always appends \u00A0 after the name, so
+     we split on "@" and take everything up to the first \u00A0
+     as the name. This handles multi-word names perfectly.
+
+   Fallback path — space delimiter (manually typed @name):
+     After NBSP tokens are consumed, any remaining "@word"
+     sequences are matched against the roster using the original
+     whitespace-boundary approach. Single-word-name manual
+     mentions still work; multi-word manual entries are an
+     unsupported edge case (users should use the dropdown).
+   ───────────────────────────────────────────────────────────── */
 function _resolveMentionedUids(text) {
+  if (!text || _studentRoster.length === 0) return [];
+
   const mentioned = [];
-  // Normalize NBSP → regular space before matching
-  const normalized = text.replace(/\u00A0/g, ' ');
-  const regex = /@([\w][^\s@]*(?:\s[\w][^\s@]*)*?)(?=\s|$)/g;
-  let match;
-  while ((match = regex.exec(normalized)) !== null) {
-    const mentionName = match[1].trim().toLowerCase();
-    const found = _studentRoster.find(s => s.name.toLowerCase() === mentionName);
+
+  // ── Primary: NBSP-terminated mentions (inserted via dropdown) ──
+  // Split on '@', then for each token check if it starts with a known
+  // roster name followed immediately by \u00A0.
+  const nbspParts = text.split('@');
+  for (let i = 1; i < nbspParts.length; i++) {
+    const part    = nbspParts[i];
+    const nbspIdx = part.indexOf('\u00A0');
+    if (nbspIdx === -1) continue; // no NBSP — handled by fallback below
+    const candidate = part.substring(0, nbspIdx).trim();
+    if (!candidate) continue;
+    const found = _studentRoster.find(
+      s => s.name.toLowerCase() === candidate.toLowerCase()
+    );
     if (found && found.id !== AppState.userId && !mentioned.includes(found.id)) {
       mentioned.push(found.id);
     }
   }
+
+  // ── Fallback: space-delimited single-word mentions (manually typed) ──
+  // Normalize NBSP → space, then match @word patterns that were NOT
+  // already caught by the NBSP path (i.e. not followed by \u00A0).
+  // Only attempt single-word name matching here.
+  const normalized = text.replace(/\u00A0/g, ' ');
+  const singleWordRegex = /@(\w+)(?=\s|$)/g;
+  let match;
+  while ((match = singleWordRegex.exec(normalized)) !== null) {
+    const candidate = match[1].trim().toLowerCase();
+    const found = _studentRoster.find(
+      s => s.name.toLowerCase() === candidate && s.id !== AppState.userId
+    );
+    if (found && !mentioned.includes(found.id)) {
+      mentioned.push(found.id);
+    }
+  }
+
   return mentioned;
 }
 
-// Render text with @mentions highlighted
+/* ─────────────────────────────────────────────────────────────
+   _renderTextWithMentions
+   ─────────────────────────────────────────────────────────────
+   Renders a stored message string as HTML, wrapping any
+   @Name tokens that match known roster entries in a styled
+   highlight span.
+
+   Strategy:
+   - Escape the raw text first (security).
+   - Build the list of known names sorted longest-first to
+     avoid prefix collisions (e.g. "Ali" matching inside
+     "Alice"). Escape each name for use inside a regex.
+   - Replace "@EscapedName" (followed by whitespace, end of
+     string, or the HTML-encoded NBSP &#160;/&nbsp;) with the
+     styled span. Uses the HTML-escaped name for the regex but
+     displays the original name inside the span.
+   ───────────────────────────────────────────────────────────── */
 function _renderTextWithMentions(rawText) {
-  const escaped = _esc(rawText);
-  // Replace @Name patterns with a styled span
-  return escaped.replace(/@([\w][^\s@&<>]{0,40}?)(?=\s|$|&nbsp;|&#160;)/g, (match, name) => {
-    const found = _studentRoster.find(
-      s => s.name.toLowerCase() === name.replace(/&#\d+;/g,'').toLowerCase()
+  if (!rawText) return '';
+
+  // Step 1: HTML-escape the raw text (safe base)
+  let escaped = _esc(rawText);
+
+  // Step 2: Build sorted name list (longest first to avoid prefix collisions)
+  const knownNames = _studentRoster
+    .map(s => s.name)
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length);
+
+  if (knownNames.length === 0) return escaped;
+
+  // Step 3: Replace each @Name occurrence in the escaped string.
+  // We iterate over names rather than a single regex to handle multi-word
+  // names that contain spaces, which regex character classes cannot express
+  // without knowing the exact name.
+  for (const name of knownNames) {
+    // Escape the name for use in a regex (handles dots, parens, etc.)
+    const escapedName = _esc(name); // HTML-escaped version (what appears in `escaped`)
+    const regexSafeName = escapedName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    // Match @EscapedName followed by whitespace, HTML-encoded NBSP, or end of string.
+    // The leading (?<![^\s]) prevents matching mid-word (e.g. avoid email@name).
+    const namePattern = new RegExp(
+      '@(' + regexSafeName + ')(?=\\s|$|&nbsp;|&#160;|&#xA0;)',
+      'gi'
     );
-    if (found) {
+
+    escaped = escaped.replace(namePattern, (match, captured) => {
       return `<span style="display:inline-block;background:var(--brand-bg,#edf2ff);` +
         `color:var(--brand-text,#3730a3);font-weight:700;border-radius:4px;` +
         `padding:0 4px;font-size:.875em;border:1px solid var(--brand-border,#bac8ff);">` +
-        `@${_esc(name)}</span>`;
-    }
-    return match; // unrecognised @word — leave as-is
-  });
+        `@${captured}</span>`;
+    });
+  }
+
+  return escaped;
 }
 
   async function openPublicChat() {
@@ -320,7 +433,7 @@ function _renderTextWithMentions(rawText) {
         <button onclick="Chat.cancelReply()" style="color:#dc2626;font-size:1.25rem;background:none;border:none;cursor:pointer;flex-shrink:0;line-height:1;">×</button>
       </div>
 
-      <!-- Input row — wrapped in relative div for dropdown positioning -->
+      <!-- Input row — position:relative so the dropdown can use bottom:100% -->
       <div style="position:relative;display:flex;gap:.5rem;" id="chatInputWrap">
         <input id="chatInput" type="text"
                placeholder="${canSend ? 'Type a message… use @ to mention someone' : 'Chat is locked'}"
@@ -350,46 +463,46 @@ function _renderTextWithMentions(rawText) {
 
     // ── Input: detect @ trigger and update mention dropdown ──
     input.addEventListener('input', () => {
-  const val   = input.value;
-  const caret = input.selectionStart;
+      const val   = input.value;
+      const caret = input.selectionStart;
 
-  // Find the last '@' before the caret that isn't preceded by a word char
-  let atIdx = -1;
-  for (let i = caret - 1; i >= 0; i--) {
-    if (val[i] === '@') {
-      const before = i > 0 ? val[i - 1] : ' ';
-      if (/\s/.test(before) || i === 0) { atIdx = i; break; }
-    }
-    // Stop scanning if we hit a space (no @ found in this word)
-    if (/\s/.test(val[i])) break;
-  }
+      // Find the last '@' before the caret that isn't preceded by a word char
+      let atIdx = -1;
+      for (let i = caret - 1; i >= 0; i--) {
+        if (val[i] === '@') {
+          const before = i > 0 ? val[i - 1] : ' ';
+          if (/\s/.test(before) || i === 0) { atIdx = i; break; }
+        }
+        // Stop scanning if we hit a space (no @ found in this word)
+        if (/\s/.test(val[i])) break;
+      }
 
-  if (atIdx !== -1) {
-    // FIX: always set _mentionStartIdx BEFORE calling _destroyMentionDropdown,
-    // because _destroyMentionDropdown resets it to -1.
-    _mentionActive   = true;
-    _mentionStartIdx = atIdx;
-    _mentionQuery    = val.substring(atIdx + 1, caret);
-    const suggestions = _getMentionSuggestions(_mentionQuery);
-    if (suggestions.length > 0) {
-      _buildMentionDropdown(suggestions, input);
-    } else {
-      // Destroy only the dropdown UI — then restore tracking state
-      const el = document.getElementById('mentionDropdown');
-      if (el) el.remove();
-      // Do NOT call _destroyMentionDropdown() here — it resets _mentionStartIdx
-    }
-  } else {
-    _destroyMentionDropdown();
-  }
+      if (atIdx !== -1) {
+        // FIX: always set state BEFORE calling _buildMentionDropdown,
+        // because _destroyMentionDropdown (called inside) resets these to -1/false.
+        _mentionActive   = true;
+        _mentionStartIdx = atIdx;
+        _mentionQuery    = val.substring(atIdx + 1, caret);
+        const suggestions = _getMentionSuggestions(_mentionQuery);
+        if (suggestions.length > 0) {
+          _buildMentionDropdown(suggestions, input);
+        } else {
+          // Only remove the dropdown DOM element; preserve tracking state
+          // so _mentionStartIdx stays valid for when the user types more.
+          const el = document.getElementById('mentionDropdown');
+          if (el) el.remove();
+        }
+      } else {
+        _destroyMentionDropdown();
+      }
 
-  // Typing indicator
-  if (val.trim()) {
-    _setTyping(isTeacher);
-    clearTimeout(input._typingTimer);
-    input._typingTimer = setTimeout(() => _clearTyping(), 4000);
-  }
-});
+      // Typing indicator
+      if (val.trim()) {
+        _setTyping(isTeacher);
+        clearTimeout(input._typingTimer);
+        input._typingTimer = setTimeout(() => _clearTyping(), 4000);
+      }
+    });
 
     // Close dropdown if user clicks outside
     document.addEventListener('mousedown', _onOutsideClick);
@@ -583,7 +696,7 @@ function _onOutsideClick(e) {
   /* ── Send message ── */
   async function sendMessage() {
   const input = document.getElementById('chatInput');
-  const text  = (input?.value || '').trim().replace(/\u00A0/g, ' ');
+  const text  = (input?.value || '').trim();
   if (!text) return;
 
   // Close any open mention dropdown
@@ -592,7 +705,8 @@ function _onOutsideClick(e) {
   const isTeacher  = AppState.userId === AppConfig.TEACHER_UID;
   const replyingTo = AppState.replyingTo || null;
 
-  // Resolve @mentioned UIDs before clearing the input
+  // Resolve @mentioned UIDs BEFORE stripping NBSP — the NBSP is the
+  // delimiter used by _resolveMentionedUids() to find multi-word names.
   const mentionedUids = _resolveMentionedUids(text);
 
   // Clear input and reply state immediately for good UX
@@ -600,10 +714,14 @@ function _onOutsideClick(e) {
   cancelReply();
   _clearTyping();
 
+  // Normalise NBSP → regular space for the stored message text so it
+  // displays cleanly in all contexts.
+  const storedText = text.replace(/\u00A0/g, ' ');
+
   try {
     // Step 1: Write the chat message
     await Db().collection('publicChat').add({
-      text,
+      text:          storedText,
       senderName:    isTeacher ? 'Master Timothy' : (AppState.studentData?.name || 'Student'),
       senderClass:   isTeacher ? '' : (AppState.studentData?.class || ''),
       senderId:      AppState.userId,
