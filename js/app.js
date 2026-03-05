@@ -36,14 +36,32 @@
   AppState.cancelAllListeners();
   AppState.userId = uid;
 
+  // ── Teacher path ──
   if (uid === AppConfig.TEACHER_UID) {
     AppState.isTeacher = true;
     Teacher.renderTeacherDashboard();
+
+    // Start notification listener for the teacher so they get a badge
+    // on the Chat tab when a student mentions them.
+    AppState.chatUnread = 0;
+    var teacherNotifUnsub = window.fbDb
+      .collection('chatNotifications')
+      .doc(uid)
+      .onSnapshot(function (notifSnap) {
+        var count = (notifSnap.exists && notifSnap.data().unread) || 0;
+        AppState.chatUnread = count;
+        if (window.Chat && Chat._updateChatBadge) {
+          Chat._updateChatBadge(count);
+        }
+      }, function (err) {
+        console.warn('[app] teacher chatNotifications listener error:', err);
+      });
+    AppState.registerListener('chatNotifications', teacherNotifUnsub);
     return;
   }
 
+  // ── Student path ──
   AppState.isTeacher = false;
-
   try {
     var snap = await window.fbDb.collection('students').doc(uid).get();
     if (!snap.exists) {
@@ -53,10 +71,6 @@
     }
     AppState.studentData = snap.data();
 
-    // Start listening for chat reply notifications.
-    // The listener updates AppState.chatUnread and refreshes the badge
-    // whenever the Firestore counter changes (e.g. another student replies
-    // to this user while the subject selection screen is visible).
     AppState.chatUnread = 0;
     var notifUnsub = window.fbDb
       .collection('chatNotifications')
@@ -64,7 +78,6 @@
       .onSnapshot(function (notifSnap) {
         var count = (notifSnap.exists && notifSnap.data().unread) || 0;
         AppState.chatUnread = count;
-        // Update the badge on the chat button if it is currently rendered
         if (window.Chat && Chat._updateChatBadge) {
           Chat._updateChatBadge(count);
         }
