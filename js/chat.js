@@ -40,6 +40,27 @@
       mentionable entry so students can @mention Master Timothy.
       Placed first in the roster so "@M" immediately surfaces
       "Master Timothy" in the dropdown.
+
+   MENTION SYSTEM FIX (v5):
+   ─────────────────────────────────────────────────────────────
+   7. _loadStudentRoster(): added AppState.isTeacher guard on
+      the teacher-cache shortcut. For students, window.Teacher
+      always exists but _msgStudentCache is always empty (it is
+      only populated when the teacher opens the Tasks tab).
+      The previous code fell through to the Firestore fetch,
+      which also failed because the students collection 'list'
+      rule required isAdmin(). Fix: only use the teacher cache
+      when AppState.isTeacher is true; students always use the
+      Firestore fetch (which now works after the security rules
+      update allowing list for isSignedIn()).
+
+   STUDY MESSAGE STYLING (v6):
+   ─────────────────────────────────────────────────────────────
+   8. _buildMessageHtml(): messages with type:'study' (posted
+      via the Study Room share feature) are rendered with a
+      distinct teal/green left-border and a 📚 Study Room
+      header badge, so they stand out from regular messages
+      in the public chat timeline.
    ─────────────────────────────────────────────────────────────
    ============================================================ */
 
@@ -55,8 +76,13 @@ let _mentionStartIdx = -1;   // caret position where '@' was typed
 /* ─────────────────────────────────────────────────────────────
    _loadStudentRoster
    Populates _studentRoster with all students plus the teacher
-   entry. In teacher view reuses the already-loaded cache from
-   teacher.js (exposed via getter) to avoid a second fetch.
+   entry.
+
+   IMPORTANT: only use the teacher._msgStudentCache shortcut
+   when the current user IS the teacher (AppState.isTeacher).
+   For students, that cache is always empty because it is only
+   populated when the teacher opens the Tasks tab — so students
+   must always use the Firestore fetch path.
    ───────────────────────────────────────────────────────────── */
 function _loadStudentRoster() {
   // In teacher view, reuse the already-loaded student cache from teacher.js.
@@ -66,7 +92,7 @@ function _loadStudentRoster() {
       window.Teacher &&
       Array.isArray(window.Teacher._msgStudentCache) &&
       window.Teacher._msgStudentCache.length > 0) {
-    _studentRoster = window.Teacher._msgStudentCache.slice();
+    _studentRoster = window.Teacher._msgStudentCache.slice(); // shallow copy
     _ensureTeacherInRoster();
     return Promise.resolve();
   }
@@ -423,11 +449,11 @@ function _renderTextWithMentions(rawText) {
       <div class="mb-4 border-l-4 border-purple-600 bg-purple-50 rounded-r-lg" style="padding:.75rem 1rem;">
         <h3 class="font-semibold mb-2" style="font-size:.8125rem;">Chat Rules</h3>
         <ul style="font-size:.8125rem;color:#374151;line-height:1.7;">
-          <li>Be respectful and kind</li>
-          <li>No abusive or offensive language</li>
-          <li>Academic questions only</li>
-          <li>Master Timothy may lock chat if needed</li>
-          <li>Type <strong>@name</strong> to mention someone</li>
+          <li>• Be respectful and kind</li>
+          <li>• No abusive or offensive language</li>
+          <li>• Academic questions only</li>
+          <li>• Master Timothy may lock chat if needed</li>
+          <li>• Type <strong>@name</strong> to mention someone</li>
         </ul>
       </div>
 
@@ -576,6 +602,7 @@ function _onOutsideClick(e) {
 
   function _buildMessageHtml(msg, isTeacher) {
   const isTeacherMsg = msg.senderName === 'Master Timothy';
+  const isStudyMsg   = msg.type === 'study';
 
   // "mentioned you" badge shown to any user (student or teacher) when their
   // UID appears in mentionedUids.
@@ -615,6 +642,42 @@ function _onOutsideClick(e) {
                     border-radius:4px;padding:1px 6px;margin-left:.375rem;">mentioned you</span>`
     : '';
 
+  // ── Study Room shared message ──────────────────────────────
+  // Shared explanations from the Study Room get a distinct teal
+  // left-border, a 📚 badge header, and pre-formatted text so
+  // the step-by-step explanation renders with line breaks.
+  if (isStudyMsg) {
+    const studyText = _esc(msg.text || '')
+      .replace(/\n/g, '<br>');
+
+    return `
+      <div style="position:relative;padding:.75rem 1rem;border-radius:8px;margin-bottom:.5rem;
+                  background:#f0fdf4;border:1px solid #86efac;border-left:3px solid #16a34a;">
+        ${adminDeleteBtn}
+        ${pinBtn}
+        ${msg.pinned
+          ? '<span style="font-size:.6875rem;font-weight:700;color:#d97706;background:#fef3c7;padding:1px 6px;border-radius:4px;display:inline-block;margin-bottom:4px;">PINNED</span><br>'
+          : ''}
+        <div style="display:flex;align-items:center;gap:.375rem;margin-bottom:.5rem;flex-wrap:wrap;">
+          <span style="font-size:.6875rem;font-weight:700;color:#15803d;background:#dcfce7;
+                       border:1px solid #86efac;border-radius:4px;padding:1px 8px;">
+            📚 Study Room
+          </span>
+          <span style="font-size:.8125rem;font-weight:600;color:#111827;">${_esc(msg.senderName)}</span>
+          ${msg.senderClass
+            ? `<span style="font-size:.75rem;color:#6b7280;">(${_esc(msg.senderClass)})</span>`
+            : ''}
+        </div>
+        <p style="font-size:.875rem;color:#1f2937;line-height:1.65;white-space:pre-line;"
+           >${studyText}</p>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:.5rem;">
+          <span style="font-size:.6875rem;color:#9ca3af;">${time}</span>
+          ${replyBtn}
+        </div>
+      </div>`;
+  }
+
+  // ── Regular message ────────────────────────────────────────
   const mentionBorder = isMentionedMe
     ? 'border-color:var(--brand,#3b5bdb);border-left:3px solid var(--brand,#3b5bdb);'
     : '';
