@@ -59,17 +59,19 @@ let _mentionStartIdx = -1;   // caret position where '@' was typed
    teacher.js (exposed via getter) to avoid a second fetch.
    ───────────────────────────────────────────────────────────── */
 function _loadStudentRoster() {
-  // In teacher view, reuse the already-loaded student cache via the
-  // getter exported on window.Teacher (teacher.js: get _msgStudentCache()).
-  if (window.Teacher &&
+  // In teacher view, reuse the already-loaded student cache from teacher.js.
+  // Only do this if AppState identifies the current user as the teacher,
+  // because for students the cache is always empty (never populated).
+  if (AppState.isTeacher &&
+      window.Teacher &&
       Array.isArray(window.Teacher._msgStudentCache) &&
       window.Teacher._msgStudentCache.length > 0) {
-    _studentRoster = window.Teacher._msgStudentCache.slice(); // shallow copy
+    _studentRoster = window.Teacher._msgStudentCache.slice();
     _ensureTeacherInRoster();
     return Promise.resolve();
   }
 
-  // If already loaded this session in student view, reuse it.
+  // If already loaded this session, reuse it.
   if (_studentRoster.length > 0) return Promise.resolve();
 
   return window.fbDb.collection('students').orderBy('name').get()
