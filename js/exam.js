@@ -452,7 +452,7 @@
       UI.mount(`
         <div class="max-w-4xl mx-auto glass p-6 mt-6 rounded-2xl text-center animate-fadeIn">
           <div class="mb-5">
-            <h1 class="text-2xl font-bold mb-1">Welcome, ${_escHtml(S().studentData.name)}</h1>
+            <h1 class="text-2xl font-bold mb-1">Welcome, ${_escHtml(S().studentData.name)}!</h1>
             <p class="text-sm text-gray-500">
               ${_escHtml(S().studentData.class)} &bull; ${_escHtml(S().studentData.school)}
             </p>
