@@ -11,19 +11,224 @@
 (function () {
   'use strict';
 
+// ── Mention system state ──────────────────────────────────
+let _studentRoster  = [];   // [{ id, name, cls }] — all students for @mention lookup
+let _mentionActive  = false;
+let _mentionQuery   = '';
+let _mentionStartIdx = -1;  // caret position where '@' was typed
+
+function _loadStudentRoster() {
+  // Reuse teacher cache if available (teacher view), otherwise fetch once
+  if (window.Teacher && Array.isArray(window._teacherStudentCache)) {
+    _studentRoster = window._teacherStudentCache;
+    return Promise.resolve();
+  }
+  return window.fbDb.collection('students').orderBy('name').get()
+    .then(snap => {
+      _studentRoster = [];
+      snap.forEach(doc => {
+        const d = doc.data();
+        _studentRoster.push({ id: doc.id, name: d.name || '', cls: d.class || '' });
+      });
+    })
+    .catch(err => console.warn('[chat] Could not load student roster:', err));
+}
+
+function _getMentionSuggestions(query) {
+  const q = query.toLowerCase();
+  return _studentRoster
+    .filter(s => s.id !== AppState.userId && s.name.toLowerCase().includes(q))
+    .slice(0, 6);
+}
+
+function _buildMentionDropdown(suggestions, anchorEl) {
+  _destroyMentionDropdown();
+  if (suggestions.length === 0) return;
+
+  const dropdown = document.createElement('div');
+  dropdown.id = 'mentionDropdown';
+  dropdown.style.cssText = [
+    'position:absolute',
+    'bottom:calc(100% + 6px)',
+    'left:0',
+    'right:0',
+    'background:var(--surface,#fff)',
+    'border:1.5px solid var(--brand-border,#bac8ff)',
+    'border-radius:10px',
+    'box-shadow:0 4px 20px rgba(0,0,0,.12)',
+    'z-index:999',
+    'overflow:hidden',
+    'max-height:220px',
+    'overflow-y:auto',
+  ].join(';');
+
+  suggestions.forEach((s, idx) => {
+    const item = document.createElement('div');
+    item.className = 'mention-item';
+    item.dataset.uid  = s.id;
+    item.dataset.name = s.name;
+    item.dataset.idx  = idx;
+    item.style.cssText = [
+      'display:flex',
+      'align-items:center',
+      'gap:.625rem',
+      'padding:.5rem .875rem',
+      'cursor:pointer',
+      'border-bottom:1px solid var(--border,#e5e7eb)',
+      'transition:background .1s',
+    ].join(';');
+    item.innerHTML =
+      `<div style="width:28px;height:28px;border-radius:50%;background:var(--brand-bg,#edf2ff);` +
+      `border:1.5px solid var(--brand-border,#bac8ff);display:flex;align-items:center;` +
+      `justify-content:center;flex-shrink:0;font-size:.6875rem;font-weight:700;` +
+      `color:var(--brand-text,#3730a3);">${_esc(s.name.charAt(0).toUpperCase())}</div>` +
+      `<div style="min-width:0;flex:1;">` +
+      `<span style="font-size:.875rem;font-weight:600;color:var(--text-primary,#111827);">` +
+      `${_esc(s.name)}</span>` +
+      `<span style="font-size:.75rem;color:var(--text-tertiary,#6b7280);margin-left:.375rem;">` +
+      `${_esc(s.cls)}</span></div>` +
+      `<span style="font-size:.6875rem;color:var(--brand,#3b5bdb);font-weight:600;">@mention</span>`;
+
+    item.addEventListener('mouseenter', () => {
+      document.querySelectorAll('.mention-item').forEach(el => el.style.background = '');
+      item.style.background = 'var(--brand-bg,#edf2ff)';
+    });
+    item.addEventListener('mouseleave', () => { item.style.background = ''; });
+    item.addEventListener('mousedown', e => {
+      e.preventDefault(); // Prevent input blur
+      _insertMention(s.id, s.name);
+    });
+
+    dropdown.appendChild(item);
+  });
+
+  // Highlight first item
+  const first = dropdown.querySelector('.mention-item');
+  if (first) first.style.background = 'var(--brand-bg,#edf2ff)';
+
+  if (anchorEl) {
+    const wrapper = anchorEl.closest('[style*="position"]') || anchorEl.parentElement;
+    if (wrapper) {
+      const wrapperStyle = wrapper.getAttribute('style') || '';
+      if (!wrapperStyle.includes('position:relative') && !wrapperStyle.includes('position: relative')) {
+        wrapper.style.position = 'relative';
+      }
+      wrapper.appendChild(dropdown);
+    }
+  }
+}
+
+function _destroyMentionDropdown() {
+  const el = document.getElementById('mentionDropdown');
+  if (el) el.remove();
+  _mentionActive  = false;
+  _mentionQuery   = '';
+  _mentionStartIdx = -1;
+}
+
+function _insertMention(uid, name) {
+  const input = document.getElementById('chatInput');
+  if (!input) return;
+
+  const val    = input.value;
+  const before = val.substring(0, _mentionStartIdx);  // text before '@'
+  const after  = val.substring(input.selectionStart); // text after cursor
+
+  // Insert the mention token: @Name followed by a space
+  input.value = before + '@' + name + '\u00A0' + after;
+
+  // Move caret to right after the inserted mention
+  const newPos = before.length + name.length + 2; // '@' + name + NBSP
+  input.setSelectionRange(newPos, newPos);
+
+  _destroyMentionDropdown();
+  input.focus();
+}
+
+function _handleMentionKeydown(e, suggestions) {
+  if (!_mentionActive) return false;
+
+  const dropdown  = document.getElementById('mentionDropdown');
+  if (!dropdown)  return false;
+  const items     = [...dropdown.querySelectorAll('.mention-item')];
+  const activeIdx = items.findIndex(el => el.style.background !== '');
+
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    const next = (activeIdx + 1) % items.length;
+    items.forEach(el => el.style.background = '');
+    items[next].style.background = 'var(--brand-bg,#edf2ff)';
+    return true;
+  }
+  if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    const prev = (activeIdx - 1 + items.length) % items.length;
+    items.forEach(el => el.style.background = '');
+    items[prev].style.background = 'var(--brand-bg,#edf2ff)';
+    return true;
+  }
+  if (e.key === 'Enter' || e.key === 'Tab') {
+    const highlighted = items.find(el => el.style.background !== '');
+    if (highlighted) {
+      e.preventDefault();
+      _insertMention(highlighted.dataset.uid, highlighted.dataset.name);
+      return true;
+    }
+  }
+  if (e.key === 'Escape') {
+    _destroyMentionDropdown();
+    return true;
+  }
+  return false;
+}
+
+// Extract all @mentioned names from message text and resolve UIDs
+function _resolveMentionedUids(text) {
+  const mentioned = [];
+  const regex = /@([\w\s]+?)(?=\s|$|[^\w\s])/g;
+  let match;
+  while ((match = regex.exec(text)) !== null) {
+    const mentionName = match[1].trim().replace(/\u00A0/g, '').toLowerCase();
+    const found = _studentRoster.find(s => s.name.toLowerCase() === mentionName);
+    if (found && found.id !== AppState.userId && !mentioned.includes(found.id)) {
+      mentioned.push(found.id);
+    }
+  }
+  return mentioned;
+}
+
+// Render text with @mentions highlighted
+function _renderTextWithMentions(rawText) {
+  const escaped = _esc(rawText);
+  // Replace @Name patterns with a styled span
+  return escaped.replace(/@([\w][^\s@&<>]{0,40}?)(?=\s|$|&nbsp;|&#160;)/g, (match, name) => {
+    const found = _studentRoster.find(
+      s => s.name.toLowerCase() === name.replace(/&#\d+;/g,'').toLowerCase()
+    );
+    if (found) {
+      return `<span style="display:inline-block;background:var(--brand-bg,#edf2ff);` +
+        `color:var(--brand-text,#3730a3);font-weight:700;border-radius:4px;` +
+        `padding:0 4px;font-size:.875em;border:1px solid var(--brand-border,#bac8ff);">` +
+        `@${_esc(name)}</span>`;
+    }
+    return match; // unrecognised @word — leave as-is
+  });
+}
+
   async function openPublicChat() {
   const isTeacher = AppState.userId === AppConfig.TEACHER_UID;
   let chatLocked  = false;
 
-  // Clear this user's unread reply notifications when they open chat
+  // Load student roster for @mentions (non-blocking)
+  _loadStudentRoster();
+
+  // Clear unread notifications
   if (!isTeacher) {
     try {
       await Db().collection('chatNotifications').doc(AppState.userId).set(
-        { unread: 0 },
-        { merge: true }
+        { unread: 0 }, { merge: true }
       );
       AppState.chatUnread = 0;
-      // Remove the badge from the chat button immediately
       _updateChatBadge(0);
     } catch (err) {
       console.warn('[chat] Could not clear notifications:', err);
@@ -63,6 +268,7 @@
           <li>• No abusive or offensive language</li>
           <li>• Academic questions only</li>
           <li>• Master Timothy may lock chat if needed</li>
+          <li>• Type <strong>@name</strong> to mention a student</li>
         </ul>
       </div>
 
@@ -98,10 +304,10 @@
         <button onclick="Chat.cancelReply()" style="color:#dc2626;font-size:1.25rem;background:none;border:none;cursor:pointer;flex-shrink:0;line-height:1;">×</button>
       </div>
 
-      <!-- Input row -->
-      <div class="flex gap-2">
+      <!-- Input row — wrapped in relative div for dropdown positioning -->
+      <div style="position:relative;display:flex;gap:.5rem;" id="chatInputWrap">
         <input id="chatInput" type="text"
-               placeholder="${canSend ? 'Type your message...' : 'Chat is locked'}"
+               placeholder="${canSend ? 'Type a message… use @ to mention someone' : 'Chat is locked'}"
                autocomplete="off"
                style="flex:1;"
                ${canSend ? '' : 'disabled'} />
@@ -117,17 +323,62 @@
   const input = document.getElementById('chatInput');
   if (input && canSend) {
     input.focus();
+
+    // ── Keydown: handle mention navigation + Enter to send ──
     input.addEventListener('keydown', e => {
+      const suggestions = _mentionActive ? _getMentionSuggestions(_mentionQuery) : [];
+      const handled = _handleMentionKeydown(e, suggestions);
+      if (handled) return;
       if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }
     });
 
-    let typingTimer;
+    // ── Input: detect @ trigger and update mention dropdown ──
     input.addEventListener('input', () => {
-      if (!input.value.trim()) return;
-      _setTyping(isTeacher);
-      clearTimeout(typingTimer);
-      typingTimer = setTimeout(() => _clearTyping(), 4000);
+      const val   = input.value;
+      const caret = input.selectionStart;
+
+      // Find the last '@' before the caret that isn't preceded by a word char
+      let atIdx = -1;
+      for (let i = caret - 1; i >= 0; i--) {
+        if (val[i] === '@') {
+          const before = i > 0 ? val[i - 1] : ' ';
+          if (/\s/.test(before) || i === 0) { atIdx = i; break; }
+        }
+        // Stop scanning if we hit a space (no @ found in this word)
+        if (/\s/.test(val[i])) break;
+      }
+
+      if (atIdx !== -1) {
+        _mentionActive   = true;
+        _mentionStartIdx = atIdx;
+        _mentionQuery    = val.substring(atIdx + 1, caret);
+        const suggestions = _getMentionSuggestions(_mentionQuery);
+        if (suggestions.length > 0) {
+          _buildMentionDropdown(suggestions, input);
+        } else {
+          _destroyMentionDropdown();
+          _mentionActive = true; // keep tracking even if no results yet
+        }
+      } else {
+        _destroyMentionDropdown();
+      }
+
+      // Typing indicator
+      if (val.trim()) {
+        _setTyping(isTeacher);
+        clearTimeout(input._typingTimer);
+        input._typingTimer = setTimeout(() => _clearTyping(), 4000);
+      }
     });
+
+    // Close dropdown if user clicks outside
+    document.addEventListener('mousedown', _onOutsideClick);
+  }
+}
+
+function _onOutsideClick(e) {
+  if (!e.target.closest('#mentionDropdown') && !e.target.closest('#chatInput')) {
+    _destroyMentionDropdown();
   }
 }
 
@@ -161,57 +412,78 @@
   }
 
   function _buildMessageHtml(msg, isTeacher) {
-    const isTeacherMsg = msg.senderName === 'Master Timothy';
-    const time = msg.timestamp
-      ? new Date(msg.timestamp.toDate ? msg.timestamp.toDate() : msg.timestamp).toLocaleString()
-      : 'Just now';
+  const isTeacherMsg  = msg.senderName === 'Master Timothy';
+  const isMentionedMe = !isTeacher &&
+    Array.isArray(msg.mentionedUids) &&
+    msg.mentionedUids.includes(AppState.userId);
 
-    const adminDeleteBtn = isTeacher
-      ? `<button class="chat-delete-btn"
-                 data-id="${_esc(msg.id)}"
-                 style="position:absolute;top:.5rem;right:.5rem;background:none;border:none;
-                        color:#f87171;cursor:pointer;font-size:1rem;line-height:1;padding:2px 4px;"
-                 title="Delete">×</button>`
-      : '';
+  const time = msg.timestamp
+    ? new Date(msg.timestamp.toDate ? msg.timestamp.toDate() : msg.timestamp).toLocaleString()
+    : 'Just now';
 
-    const pinBtn = isTeacher
-      ? `<button class="chat-pin-btn"
-                 data-id="${_esc(msg.id)}"
-                 style="position:absolute;top:.5rem;right:1.75rem;background:none;border:none;
-                        color:#f59e0b;cursor:pointer;font-size:.75rem;padding:2px 4px;"
-                 title="Pin">📌</button>`
-      : '';
+  const adminDeleteBtn = isTeacher
+    ? `<button class="chat-delete-btn"
+               data-id="${_esc(msg.id)}"
+               style="position:absolute;top:.5rem;right:.5rem;background:none;border:none;
+                      color:#f87171;cursor:pointer;font-size:1rem;line-height:1;padding:2px 4px;"
+               title="Delete">×</button>`
+    : '';
 
-    const replyBtn = `
-      <button class="chat-reply-btn"
-              data-id="${_esc(msg.id)}"
-              style="font-size:.75rem;color:var(--c-brand,#4f46e5);background:none;border:none;
-                     cursor:pointer;text-decoration:underline;">Reply</button>`;
+  const pinBtn = isTeacher
+    ? `<button class="chat-pin-btn"
+               data-id="${_esc(msg.id)}"
+               style="position:absolute;top:.5rem;right:1.75rem;background:none;border:none;
+                      color:#f59e0b;cursor:pointer;font-size:.75rem;padding:2px 4px;"
+               title="Pin">📌</button>`
+    : '';
 
-    return `
-      <div style="position:relative;padding:.625rem .875rem;border-radius:8px;margin-bottom:.375rem;
-                  background:${isTeacherMsg ? 'var(--c-warning-light,#fffbeb)' : 'var(--c-surface,#fff)'};
-                  border:1px solid ${isTeacherMsg ? 'var(--c-warning,#d97706)' : 'var(--c-border,#e5e7eb)'};
-                  ${isTeacherMsg ? 'border-left:3px solid var(--c-warning,#d97706);' : ''}">
-        ${msg.pinned
-          ? '<span style="font-size:.6875rem;font-weight:700;color:#d97706;background:#fef3c7;padding:1px 6px;border-radius:4px;display:inline-block;margin-bottom:4px;">PINNED</span><br>'
-          : ''}
-        ${adminDeleteBtn}
-        ${pinBtn}
-        <p style="font-size:.8125rem;font-weight:600;color:#111827;margin-bottom:2px;">
-          ${_esc(msg.senderName)}
-          ${msg.senderClass ? `<span style="font-weight:400;color:#6b7280;">(${_esc(msg.senderClass)})</span>` : ''}
-        </p>
-        ${msg.replyTo
-          ? `<p style="font-size:.75rem;color:#9ca3af;margin-bottom:3px;padding-left:8px;border-left:2px solid #e5e7eb;">↳ ${_esc(msg.replyTo.name)}: ${_esc(msg.replyTo.text)}</p>`
-          : ''}
-        <p style="font-size:.875rem;color:#1f2937;line-height:1.5;">${_esc(msg.text)}</p>
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px;">
-          <span style="font-size:.6875rem;color:#9ca3af;">${time}</span>
-          ${replyBtn}
-        </div>
-      </div>`;
-  }
+  const replyBtn = `
+    <button class="chat-reply-btn"
+            data-id="${_esc(msg.id)}"
+            style="font-size:.75rem;color:var(--c-brand,#4f46e5);background:none;border:none;
+                   cursor:pointer;text-decoration:underline;">Reply</button>`;
+
+  const mentionBadge = isMentionedMe
+    ? `<span style="font-size:.6875rem;font-weight:700;color:var(--brand-text,#3730a3);
+                    background:var(--brand-bg,#edf2ff);border:1px solid var(--brand-border,#bac8ff);
+                    border-radius:4px;padding:1px 6px;margin-left:.375rem;">mentioned you</span>`
+    : '';
+
+  // Border highlight if current user is mentioned
+  const mentionBorder = isMentionedMe
+    ? 'border-color:var(--brand,#3b5bdb);border-left:3px solid var(--brand,#3b5bdb);'
+    : '';
+
+  return `
+    <div style="position:relative;padding:.625rem .875rem;border-radius:8px;margin-bottom:.375rem;
+                background:${isMentionedMe
+                  ? 'var(--brand-bg,#edf2ff)'
+                  : isTeacherMsg
+                    ? 'var(--c-warning-light,#fffbeb)'
+                    : 'var(--c-surface,#fff)'};
+                border:1px solid ${isTeacherMsg ? 'var(--c-warning,#d97706)' : 'var(--c-border,#e5e7eb)'};
+                ${isTeacherMsg ? 'border-left:3px solid var(--c-warning,#d97706);' : ''}
+                ${mentionBorder}">
+      ${msg.pinned
+        ? '<span style="font-size:.6875rem;font-weight:700;color:#d97706;background:#fef3c7;padding:1px 6px;border-radius:4px;display:inline-block;margin-bottom:4px;">PINNED</span><br>'
+        : ''}
+      ${adminDeleteBtn}
+      ${pinBtn}
+      <p style="font-size:.8125rem;font-weight:600;color:#111827;margin-bottom:2px;">
+        ${_esc(msg.senderName)}
+        ${msg.senderClass ? `<span style="font-weight:400;color:#6b7280;">(${_esc(msg.senderClass)})</span>` : ''}
+        ${mentionBadge}
+      </p>
+      ${msg.replyTo
+        ? `<p style="font-size:.75rem;color:#9ca3af;margin-bottom:3px;padding-left:8px;border-left:2px solid #e5e7eb;">↳ ${_esc(msg.replyTo.name)}: ${_esc(msg.replyTo.text)}</p>`
+        : ''}
+      <p style="font-size:.875rem;color:#1f2937;line-height:1.5;">${_renderTextWithMentions(msg.text)}</p>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:5px;">
+        <span style="font-size:.6875rem;color:#9ca3af;">${time}</span>
+        ${replyBtn}
+      </div>
+    </div>`;
+}
 
   /* ── Event delegation ── */
   document.addEventListener('click', e => {
@@ -291,11 +563,17 @@
   /* ── Send message ── */
   async function sendMessage() {
   const input = document.getElementById('chatInput');
-  const text  = (input?.value || '').trim();
+  const text  = (input?.value || '').trim().replace(/\u00A0/g, ' ');
   if (!text) return;
 
-  const isTeacher = AppState.userId === AppConfig.TEACHER_UID;
+  // Close any open mention dropdown
+  _destroyMentionDropdown();
+
+  const isTeacher  = AppState.userId === AppConfig.TEACHER_UID;
   const replyingTo = AppState.replyingTo || null;
+
+  // Resolve @mentioned UIDs before clearing the input
+  const mentionedUids = _resolveMentionedUids(text);
 
   // Clear input and reply state immediately for good UX
   if (input) input.value = '';
@@ -306,39 +584,41 @@
     // Step 1: Write the chat message
     await Db().collection('publicChat').add({
       text,
-      senderName:  isTeacher ? 'Master Timothy' : (AppState.studentData?.name || 'Student'),
-      senderClass: isTeacher ? '' : (AppState.studentData?.class || ''),
-      senderId:    AppState.userId,
-      timestamp:   firebase.firestore.FieldValue.serverTimestamp(),
-      replyTo:     replyingTo,
-      pinned:      false,
+      senderName:    isTeacher ? 'Master Timothy' : (AppState.studentData?.name || 'Student'),
+      senderClass:   isTeacher ? '' : (AppState.studentData?.class || ''),
+      senderId:      AppState.userId,
+      timestamp:     firebase.firestore.FieldValue.serverTimestamp(),
+      replyTo:       replyingTo,
+      pinned:        false,
+      mentionedUids: mentionedUids.length > 0 ? mentionedUids : null,
     });
 
-    // Step 2: Notify the person being replied to (separate try/catch
-    // so a notification failure never blocks the message from sending)
-    if (
-      replyingTo &&
-      replyingTo.senderId &&
-      replyingTo.senderId !== AppState.userId
-    ) {
+    // Step 2: Send notifications — one write per recipient (reply + mentions combined)
+    const notifyUids = new Set(mentionedUids);
+    if (replyingTo && replyingTo.senderId && replyingTo.senderId !== AppState.userId) {
+      notifyUids.add(replyingTo.senderId);
+    }
+
+    if (notifyUids.size > 0) {
       try {
-        const notifRef = Db().collection('chatNotifications').doc(replyingTo.senderId);
-        await notifRef.set(
-          { unread: firebase.firestore.FieldValue.increment(1) },
-          { merge: true }
+        await Promise.all(
+          [...notifyUids].map(uid =>
+            Db().collection('chatNotifications').doc(uid).set(
+              { unread: firebase.firestore.FieldValue.increment(1) },
+              { merge: true }
+            )
+          )
         );
       } catch (notifErr) {
-        // Non-fatal — message already sent; just log the warning
-        console.warn('[chat] Could not write notification:', notifErr);
+        console.warn('[chat] Could not write notification(s):', notifErr);
       }
     }
 
   } catch (err) {
     console.error('[chat] Send error:', err);
     UI.toast('Failed to send message.', 'error');
-    // Restore the text so the user doesn't lose it
+    // Restore input so user doesn't lose their message
     if (input) input.value = text;
-    // Restore reply state if there was one
     if (replyingTo) {
       AppState.replyingTo = replyingTo;
       const preview = document.getElementById('replyPreview');
@@ -350,6 +630,7 @@
           ? replyingTo.text.substring(0, 80) + '...'
           : replyingTo.text;
         preview.classList.remove('hidden');
+        preview.style.display = 'flex';
       }
     }
   }
@@ -439,19 +720,21 @@
 
   /* ── Back from chat ── */
   function backFromChat() {
-    _clearTyping();
-    AppState.cancelListener('chatMessages');
-    AppState.cancelListener('chatTyping');
-    AppState.replyingTo = null;
+  _clearTyping();
+  _destroyMentionDropdown();
+  document.removeEventListener('mousedown', _onOutsideClick);
+  AppState.cancelListener('chatMessages');
+  AppState.cancelListener('chatTyping');
+  AppState.replyingTo = null;
 
-    if (AppState.isTeacher) {
-      Teacher.renderTeacherDashboard();
-    } else if (AppState.exam && AppState.exam.step === 'exam') {
-      Exam.renderExam();
-    } else {
-      Exam.renderSubjectSelection();
-    }
+  if (AppState.isTeacher) {
+    Teacher.renderTeacherDashboard();
+  } else if (AppState.exam && AppState.exam.step === 'exam') {
+    Exam.renderExam();
+  } else {
+    Exam.renderSubjectSelection();
   }
+}
 
   /* ── Private helpers ── */
   function Db() { return window.fbDb; }
@@ -513,6 +796,7 @@ function _updateChatBadge(count) {
   toggleLock,
   backFromChat,
   _updateChatBadge,
+  _destroyMentionDropdown,
 };
 
 })();
