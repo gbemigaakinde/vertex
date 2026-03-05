@@ -18,11 +18,15 @@ let _mentionQuery   = '';
 let _mentionStartIdx = -1;  // caret position where '@' was typed
 
 function _loadStudentRoster() {
-  // Reuse teacher cache if available (teacher view), otherwise fetch once
-  if (window.Teacher && Array.isArray(window._teacherStudentCache)) {
-    _studentRoster = window._teacherStudentCache;
+  // In teacher view, reuse the already-loaded student cache
+  if (window.Teacher && Array.isArray(window.Teacher._msgStudentCache) && window.Teacher._msgStudentCache.length > 0) {
+    _studentRoster = window.Teacher._msgStudentCache;
     return Promise.resolve();
   }
+
+  // If already loaded this session in student view, reuse it
+  if (_studentRoster.length > 0) return Promise.resolve();
+
   return window.fbDb.collection('students').orderBy('name').get()
     .then(snap => {
       _studentRoster = [];
@@ -42,7 +46,12 @@ function _getMentionSuggestions(query) {
 }
 
 function _buildMentionDropdown(suggestions, anchorEl) {
-  _destroyMentionDropdown();
+  // Only remove the existing dropdown element — do NOT call _destroyMentionDropdown()
+  // because that resets _mentionActive and _mentionStartIdx which were just set
+  // by the input handler before this function was called.
+  const existing = document.getElementById('mentionDropdown');
+  if (existing) existing.remove();
+
   if (suggestions.length === 0) return;
 
   const dropdown = document.createElement('div');
@@ -95,7 +104,7 @@ function _buildMentionDropdown(suggestions, anchorEl) {
     });
     item.addEventListener('mouseleave', () => { item.style.background = ''; });
     item.addEventListener('mousedown', e => {
-      e.preventDefault(); // Prevent input blur
+      e.preventDefault();
       _insertMention(s.id, s.name);
     });
 
@@ -221,8 +230,9 @@ function _renderTextWithMentions(rawText) {
   const isTeacher = AppState.userId === AppConfig.TEACHER_UID;
   let chatLocked  = false;
 
-  // Load student roster for @mentions (non-blocking)
-  _loadStudentRoster();
+  // Load student roster for @mentions — awaited so roster is ready before
+  // the input listener fires. The chat lock fetch runs in parallel.
+  const rosterPromise = _loadStudentRoster();
 
   // Clear unread notifications
   if (!isTeacher) {
@@ -238,10 +248,14 @@ function _renderTextWithMentions(rawText) {
   }
 
   try {
-    const lockSnap = await Db().collection('chatSettings').doc('lock').get();
+    const [lockSnap] = await Promise.all([
+      Db().collection('chatSettings').doc('lock').get(),
+      rosterPromise,
+    ]);
     chatLocked = lockSnap.exists && !!lockSnap.data().isLocked;
   } catch (err) {
     console.warn('[chat] Could not read lock state:', err);
+    await rosterPromise.catch(() => {});
   }
 
   const canSend = isTeacher || !chatLocked;
