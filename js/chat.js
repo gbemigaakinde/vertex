@@ -25,6 +25,21 @@
    3. _loadStudentRoster(): teacher shortcut now correctly reads
       window.Teacher._msgStudentCache via the getter exported
       in teacher.js, so the teacher never needs an extra fetch.
+
+   NOTIFICATION FIXES (v4):
+   ─────────────────────────────────────────────────────────────
+   4. _updateChatBadge(): now checks both #chatOpenBtn (student
+      view) and #tab-chat (teacher dashboard tab) so the badge
+      appears correctly for both roles.
+
+   5. openPublicChat(): removed the !isTeacher guard around the
+      notification-clear block so the teacher's unread counter
+      is also reset when they open chat.
+
+   6. _ensureTeacherInRoster(): teacher is added as a
+      mentionable entry so students can @mention Master Timothy.
+      Placed first in the roster so "@M" immediately surfaces
+      "Master Timothy" in the dropdown.
    ─────────────────────────────────────────────────────────────
    ============================================================ */
 
@@ -32,22 +47,29 @@
   'use strict';
 
 // ── Mention system state ──────────────────────────────────
-let _studentRoster  = [];   // [{ id, name, cls }] — all students for @mention lookup
-let _mentionActive  = false;
-let _mentionQuery   = '';
-let _mentionStartIdx = -1;  // caret position where '@' was typed
+let _studentRoster   = [];   // [{ id, name, cls }] — all students + teacher for @mention
+let _mentionActive   = false;
+let _mentionQuery    = '';
+let _mentionStartIdx = -1;   // caret position where '@' was typed
 
+/* ─────────────────────────────────────────────────────────────
+   _loadStudentRoster
+   Populates _studentRoster with all students plus the teacher
+   entry. In teacher view reuses the already-loaded cache from
+   teacher.js (exposed via getter) to avoid a second fetch.
+   ───────────────────────────────────────────────────────────── */
 function _loadStudentRoster() {
   // In teacher view, reuse the already-loaded student cache via the
   // getter exported on window.Teacher (teacher.js: get _msgStudentCache()).
   if (window.Teacher &&
       Array.isArray(window.Teacher._msgStudentCache) &&
       window.Teacher._msgStudentCache.length > 0) {
-    _studentRoster = window.Teacher._msgStudentCache;
+    _studentRoster = window.Teacher._msgStudentCache.slice(); // shallow copy
+    _ensureTeacherInRoster();
     return Promise.resolve();
   }
 
-  // If already loaded this session in student view, reuse it
+  // If already loaded this session in student view, reuse it.
   if (_studentRoster.length > 0) return Promise.resolve();
 
   return window.fbDb.collection('students').orderBy('name').get()
@@ -57,8 +79,26 @@ function _loadStudentRoster() {
         const d = doc.data();
         _studentRoster.push({ id: doc.id, name: d.name || '', cls: d.class || '' });
       });
+      _ensureTeacherInRoster();
     })
     .catch(err => console.warn('[chat] Could not load student roster:', err));
+}
+
+/* ─────────────────────────────────────────────────────────────
+   _ensureTeacherInRoster
+   Adds the teacher as a mentionable entry at the front of the
+   roster if not already present, so students can @mention
+   Master Timothy and he receives a notification badge.
+   ───────────────────────────────────────────────────────────── */
+function _ensureTeacherInRoster() {
+  const alreadyPresent = _studentRoster.some(s => s.id === AppConfig.TEACHER_UID);
+  if (!alreadyPresent) {
+    _studentRoster.unshift({
+      id:   AppConfig.TEACHER_UID,
+      name: 'Master Timothy',
+      cls:  'Teacher',
+    });
+  }
 }
 
 function _getMentionSuggestions(query) {
@@ -156,8 +196,8 @@ function _buildMentionDropdown(suggestions, anchorEl) {
 function _destroyMentionDropdown() {
   const el = document.getElementById('mentionDropdown');
   if (el) el.remove();
-  _mentionActive  = false;
-  _mentionQuery   = '';
+  _mentionActive   = false;
+  _mentionQuery    = '';
   _mentionStartIdx = -1;
 }
 
@@ -186,7 +226,7 @@ function _insertMention(uid, name) {
 function _handleMentionKeydown(e, suggestions) {
   if (!_mentionActive) return false;
 
-  const dropdown  = document.getElementById('mentionDropdown');
+  const dropdown = document.getElementById('mentionDropdown');
   if (!dropdown)  return false;
   const items     = [...dropdown.querySelectorAll('.mention-item')];
   const activeIdx = items.findIndex(el => el.style.background !== '');
@@ -223,7 +263,8 @@ function _handleMentionKeydown(e, suggestions) {
 /* ─────────────────────────────────────────────────────────────
    _resolveMentionedUids
    ─────────────────────────────────────────────────────────────
-   Extracts all @-mentioned student UIDs from a message string.
+   Extracts all @-mentioned UIDs (students + teacher) from a
+   message string.
 
    Strategy:
    Primary path — NBSP delimiter (dropdown-inserted mentions):
@@ -233,7 +274,7 @@ function _handleMentionKeydown(e, suggestions) {
 
    Fallback path — space delimiter (manually typed @name):
      After NBSP tokens are consumed, any remaining "@word"
-     sequences are matched against the roster using the original
+     sequences are matched against the roster using a
      whitespace-boundary approach. Single-word-name manual
      mentions still work; multi-word manual entries are an
      unsupported edge case (users should use the dropdown).
@@ -244,8 +285,6 @@ function _resolveMentionedUids(text) {
   const mentioned = [];
 
   // ── Primary: NBSP-terminated mentions (inserted via dropdown) ──
-  // Split on '@', then for each token check if it starts with a known
-  // roster name followed immediately by \u00A0.
   const nbspParts = text.split('@');
   for (let i = 1; i < nbspParts.length; i++) {
     const part    = nbspParts[i];
@@ -262,9 +301,6 @@ function _resolveMentionedUids(text) {
   }
 
   // ── Fallback: space-delimited single-word mentions (manually typed) ──
-  // Normalize NBSP → space, then match @word patterns that were NOT
-  // already caught by the NBSP path (i.e. not followed by \u00A0).
-  // Only attempt single-word name matching here.
   const normalized = text.replace(/\u00A0/g, ' ');
   const singleWordRegex = /@(\w+)(?=\s|$)/g;
   let match;
@@ -286,7 +322,8 @@ function _resolveMentionedUids(text) {
    ─────────────────────────────────────────────────────────────
    Renders a stored message string as HTML, wrapping any
    @Name tokens that match known roster entries in a styled
-   highlight span.
+   highlight span. Includes the teacher entry so @Master Timothy
+   is highlighted in rendered messages.
 
    Strategy:
    - Escape the raw text first (security).
@@ -295,8 +332,7 @@ function _resolveMentionedUids(text) {
      "Alice"). Escape each name for use inside a regex.
    - Replace "@EscapedName" (followed by whitespace, end of
      string, or the HTML-encoded NBSP &#160;/&nbsp;) with the
-     styled span. Uses the HTML-escaped name for the regex but
-     displays the original name inside the span.
+     styled span.
    ───────────────────────────────────────────────────────────── */
 function _renderTextWithMentions(rawText) {
   if (!rawText) return '';
@@ -313,16 +349,10 @@ function _renderTextWithMentions(rawText) {
   if (knownNames.length === 0) return escaped;
 
   // Step 3: Replace each @Name occurrence in the escaped string.
-  // We iterate over names rather than a single regex to handle multi-word
-  // names that contain spaces, which regex character classes cannot express
-  // without knowing the exact name.
   for (const name of knownNames) {
-    // Escape the name for use in a regex (handles dots, parens, etc.)
-    const escapedName = _esc(name); // HTML-escaped version (what appears in `escaped`)
+    const escapedName   = _esc(name);
     const regexSafeName = escapedName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-    // Match @EscapedName followed by whitespace, HTML-encoded NBSP, or end of string.
-    // The leading (?<![^\s]) prevents matching mid-word (e.g. avoid email@name).
     const namePattern = new RegExp(
       '@(' + regexSafeName + ')(?=\\s|$|&nbsp;|&#160;|&#xA0;)',
       'gi'
@@ -347,17 +377,15 @@ function _renderTextWithMentions(rawText) {
   // the input listener fires. The chat lock fetch runs in parallel.
   const rosterPromise = _loadStudentRoster();
 
-  // Clear unread notifications
-  if (!isTeacher) {
-    try {
-      await Db().collection('chatNotifications').doc(AppState.userId).set(
-        { unread: 0 }, { merge: true }
-      );
-      AppState.chatUnread = 0;
-      _updateChatBadge(0);
-    } catch (err) {
-      console.warn('[chat] Could not clear notifications:', err);
-    }
+  // Clear unread notifications for both students AND teacher.
+  try {
+    await Db().collection('chatNotifications').doc(AppState.userId).set(
+      { unread: 0 }, { merge: true }
+    );
+    AppState.chatUnread = 0;
+    _updateChatBadge(0);
+  } catch (err) {
+    console.warn('[chat] Could not clear notifications:', err);
   }
 
   try {
@@ -397,7 +425,7 @@ function _renderTextWithMentions(rawText) {
           <li>• No abusive or offensive language</li>
           <li>• Academic questions only</li>
           <li>• Master Timothy may lock chat if needed</li>
-          <li>• Type <strong>@name</strong> to mention a student</li>
+          <li>• Type <strong>@name</strong> to mention someone</li>
         </ul>
       </div>
 
@@ -478,8 +506,8 @@ function _renderTextWithMentions(rawText) {
       }
 
       if (atIdx !== -1) {
-        // FIX: always set state BEFORE calling _buildMentionDropdown,
-        // because _destroyMentionDropdown (called inside) resets these to -1/false.
+        // Always set state BEFORE calling _buildMentionDropdown because
+        // _destroyMentionDropdown (called inside) resets these to -1/false.
         _mentionActive   = true;
         _mentionStartIdx = atIdx;
         _mentionQuery    = val.substring(atIdx + 1, caret);
@@ -545,8 +573,11 @@ function _onOutsideClick(e) {
   }
 
   function _buildMessageHtml(msg, isTeacher) {
-  const isTeacherMsg  = msg.senderName === 'Master Timothy';
-  const isMentionedMe = !isTeacher &&
+  const isTeacherMsg = msg.senderName === 'Master Timothy';
+
+  // "mentioned you" badge shown to any user (student or teacher) when their
+  // UID appears in mentionedUids.
+  const isMentionedMe =
     Array.isArray(msg.mentionedUids) &&
     msg.mentionedUids.includes(AppState.userId);
 
@@ -582,7 +613,6 @@ function _onOutsideClick(e) {
                     border-radius:4px;padding:1px 6px;margin-left:.375rem;">mentioned you</span>`
     : '';
 
-  // Border highlight if current user is mentioned
   const mentionBorder = isMentionedMe
     ? 'border-color:var(--brand,#3b5bdb);border-left:3px solid var(--brand,#3b5bdb);'
     : '';
@@ -887,10 +917,14 @@ function _onOutsideClick(e) {
   }
 
 /* ── Chat badge helper ── */
+/* Works for both roles:
+     Student view  → button id="chatOpenBtn"
+     Teacher view  → button id="tab-chat"      */
 function _updateChatBadge(count) {
-  const btn = document.getElementById('chatOpenBtn');
+  const btn = document.getElementById('chatOpenBtn') ||
+              document.getElementById('tab-chat');
   if (!btn) return;
-  // Remove any existing badge
+
   const existing = btn.querySelector('.chat-notif-badge');
   if (existing) existing.remove();
 
