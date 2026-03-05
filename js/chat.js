@@ -185,10 +185,12 @@ function _handleMentionKeydown(e, suggestions) {
 // Extract all @mentioned names from message text and resolve UIDs
 function _resolveMentionedUids(text) {
   const mentioned = [];
-  const regex = /@([\w\s]+?)(?=\s|$|[^\w\s])/g;
+  // Normalize NBSP → regular space before matching
+  const normalized = text.replace(/\u00A0/g, ' ');
+  const regex = /@([\w][^\s@]*(?:\s[\w][^\s@]*)*?)(?=\s|$)/g;
   let match;
-  while ((match = regex.exec(text)) !== null) {
-    const mentionName = match[1].trim().replace(/\u00A0/g, '').toLowerCase();
+  while ((match = regex.exec(normalized)) !== null) {
+    const mentionName = match[1].trim().toLowerCase();
     const found = _studentRoster.find(s => s.name.toLowerCase() === mentionName);
     if (found && found.id !== AppState.userId && !mentioned.includes(found.id)) {
       mentioned.push(found.id);
@@ -334,42 +336,46 @@ function _renderTextWithMentions(rawText) {
 
     // ── Input: detect @ trigger and update mention dropdown ──
     input.addEventListener('input', () => {
-      const val   = input.value;
-      const caret = input.selectionStart;
+  const val   = input.value;
+  const caret = input.selectionStart;
 
-      // Find the last '@' before the caret that isn't preceded by a word char
-      let atIdx = -1;
-      for (let i = caret - 1; i >= 0; i--) {
-        if (val[i] === '@') {
-          const before = i > 0 ? val[i - 1] : ' ';
-          if (/\s/.test(before) || i === 0) { atIdx = i; break; }
-        }
-        // Stop scanning if we hit a space (no @ found in this word)
-        if (/\s/.test(val[i])) break;
-      }
+  // Find the last '@' before the caret that isn't preceded by a word char
+  let atIdx = -1;
+  for (let i = caret - 1; i >= 0; i--) {
+    if (val[i] === '@') {
+      const before = i > 0 ? val[i - 1] : ' ';
+      if (/\s/.test(before) || i === 0) { atIdx = i; break; }
+    }
+    // Stop scanning if we hit a space (no @ found in this word)
+    if (/\s/.test(val[i])) break;
+  }
 
-      if (atIdx !== -1) {
-        _mentionActive   = true;
-        _mentionStartIdx = atIdx;
-        _mentionQuery    = val.substring(atIdx + 1, caret);
-        const suggestions = _getMentionSuggestions(_mentionQuery);
-        if (suggestions.length > 0) {
-          _buildMentionDropdown(suggestions, input);
-        } else {
-          _destroyMentionDropdown();
-          _mentionActive = true; // keep tracking even if no results yet
-        }
-      } else {
-        _destroyMentionDropdown();
-      }
+  if (atIdx !== -1) {
+    // FIX: always set _mentionStartIdx BEFORE calling _destroyMentionDropdown,
+    // because _destroyMentionDropdown resets it to -1.
+    _mentionActive   = true;
+    _mentionStartIdx = atIdx;
+    _mentionQuery    = val.substring(atIdx + 1, caret);
+    const suggestions = _getMentionSuggestions(_mentionQuery);
+    if (suggestions.length > 0) {
+      _buildMentionDropdown(suggestions, input);
+    } else {
+      // Destroy only the dropdown UI — then restore tracking state
+      const el = document.getElementById('mentionDropdown');
+      if (el) el.remove();
+      // Do NOT call _destroyMentionDropdown() here — it resets _mentionStartIdx
+    }
+  } else {
+    _destroyMentionDropdown();
+  }
 
-      // Typing indicator
-      if (val.trim()) {
-        _setTyping(isTeacher);
-        clearTimeout(input._typingTimer);
-        input._typingTimer = setTimeout(() => _clearTyping(), 4000);
-      }
-    });
+  // Typing indicator
+  if (val.trim()) {
+    _setTyping(isTeacher);
+    clearTimeout(input._typingTimer);
+    input._typingTimer = setTimeout(() => _clearTyping(), 4000);
+  }
+});
 
     // Close dropdown if user clicks outside
     document.addEventListener('mousedown', _onOutsideClick);
