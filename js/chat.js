@@ -295,36 +295,63 @@
   if (!text) return;
 
   const isTeacher = AppState.userId === AppConfig.TEACHER_UID;
+  const replyingTo = AppState.replyingTo || null;
+
+  // Clear input and reply state immediately for good UX
+  if (input) input.value = '';
+  cancelReply();
+  _clearTyping();
 
   try {
-    // Write the message
+    // Step 1: Write the chat message
     await Db().collection('publicChat').add({
       text,
       senderName:  isTeacher ? 'Master Timothy' : (AppState.studentData?.name || 'Student'),
       senderClass: isTeacher ? '' : (AppState.studentData?.class || ''),
       senderId:    AppState.userId,
       timestamp:   firebase.firestore.FieldValue.serverTimestamp(),
-      replyTo:     AppState.replyingTo || null,
-      pinned:      false
+      replyTo:     replyingTo,
+      pinned:      false,
     });
 
-    // If this is a reply, increment the notification counter for the
-    // original message's sender (as long as they are not the replier).
-    if (AppState.replyingTo && AppState.replyingTo.senderId &&
-        AppState.replyingTo.senderId !== AppState.userId) {
-      const notifRef = Db().collection('chatNotifications').doc(AppState.replyingTo.senderId);
-      await notifRef.set(
-        { unread: firebase.firestore.FieldValue.increment(1) },
-        { merge: true }
-      );
+    // Step 2: Notify the person being replied to (separate try/catch
+    // so a notification failure never blocks the message from sending)
+    if (
+      replyingTo &&
+      replyingTo.senderId &&
+      replyingTo.senderId !== AppState.userId
+    ) {
+      try {
+        const notifRef = Db().collection('chatNotifications').doc(replyingTo.senderId);
+        await notifRef.set(
+          { unread: firebase.firestore.FieldValue.increment(1) },
+          { merge: true }
+        );
+      } catch (notifErr) {
+        // Non-fatal — message already sent; just log the warning
+        console.warn('[chat] Could not write notification:', notifErr);
+      }
     }
 
-    if (input) input.value = '';
-    cancelReply();
-    _clearTyping();
   } catch (err) {
     console.error('[chat] Send error:', err);
     UI.toast('Failed to send message.', 'error');
+    // Restore the text so the user doesn't lose it
+    if (input) input.value = text;
+    // Restore reply state if there was one
+    if (replyingTo) {
+      AppState.replyingTo = replyingTo;
+      const preview = document.getElementById('replyPreview');
+      const nameEl  = document.getElementById('replyName');
+      const textEl  = document.getElementById('replyText');
+      if (preview && nameEl && textEl) {
+        nameEl.textContent = replyingTo.name;
+        textEl.textContent = replyingTo.text.length > 80
+          ? replyingTo.text.substring(0, 80) + '...'
+          : replyingTo.text;
+        preview.classList.remove('hidden');
+      }
+    }
   }
 }
 
@@ -334,7 +361,7 @@
     const snap = await Db().collection('publicChat').doc(msgId).get();
     if (!snap.exists) return;
     const data = snap.data();
-    // Store senderId so sendMessage() can notify the right person
+
     AppState.replyingTo = {
       name:     data.senderName,
       text:     data.text,
@@ -344,21 +371,35 @@
     const preview = document.getElementById('replyPreview');
     const nameEl  = document.getElementById('replyName');
     const textEl  = document.getElementById('replyText');
+
     if (preview && nameEl && textEl) {
       nameEl.textContent = data.senderName;
-      textEl.textContent = data.text.length > 80 ? data.text.substring(0, 80) + '...' : data.text;
+      textEl.textContent = data.text.length > 80
+        ? data.text.substring(0, 80) + '...'
+        : data.text;
+
+      // Force visible — remove hidden class AND ensure display is set
       preview.classList.remove('hidden');
+      preview.style.display = 'flex';
     }
+
+    // Focus the input so the user can type immediately
+    const input = document.getElementById('chatInput');
+    if (input) input.focus();
+
   } catch (err) {
     console.error('[chat] setReplyTo error:', err);
   }
 }
 
   function cancelReply() {
-    AppState.replyingTo = null;
-    const preview = document.getElementById('replyPreview');
-    if (preview) preview.classList.add('hidden');
+  AppState.replyingTo = null;
+  const preview = document.getElementById('replyPreview');
+  if (preview) {
+    preview.classList.add('hidden');
+    preview.style.display = '';  // Clear the inline style set by setReplyTo
   }
+}
 
   /* ── Admin actions ── */
   async function deleteMessage(id) {
