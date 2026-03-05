@@ -463,9 +463,9 @@
           <div id="tasksContainer" class="mb-6"></div>
 
           <div class="mb-6">
-            <button onclick="Chat.openPublicChat()" class="btn bg-green-600 hover:bg-green-700">
-              Public Discussion Chat
-            </button>
+            <button id="chatOpenBtn" onclick="Chat.openPublicChat()" class="btn bg-green-600 hover:bg-green-700" style="position:relative;">
+                 Public Discussion Chat
+             </button>
           </div>
 
           ${offDayBannerHtml}
@@ -488,6 +488,13 @@
         </div>`);
 
       Tasks.renderTasksHTML();
+
+// Restore the notification badge if there are unread reply notifications
+if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updateChatBadge) {
+  requestAnimationFrame(function () {
+    Chat._updateChatBadge(AppState.chatUnread);
+  });
+}
 
       if (!restrictedSubjs && !todayTaskDone) {
         document.querySelectorAll('.subject-checkbox').forEach(cb => {
