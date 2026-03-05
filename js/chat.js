@@ -423,11 +423,11 @@ function _renderTextWithMentions(rawText) {
       <div class="mb-4 border-l-4 border-purple-600 bg-purple-50 rounded-r-lg" style="padding:.75rem 1rem;">
         <h3 class="font-semibold mb-2" style="font-size:.8125rem;">Chat Rules</h3>
         <ul style="font-size:.8125rem;color:#374151;line-height:1.7;">
-          <li>• Be respectful and kind</li>
-          <li>• No abusive or offensive language</li>
-          <li>• Academic questions only</li>
-          <li>• Master Timothy may lock chat if needed</li>
-          <li>• Type <strong>@name</strong> to mention someone</li>
+          <li>Be respectful and kind</li>
+          <li>No abusive or offensive language</li>
+          <li>Academic questions only</li>
+          <li>Master Timothy may lock chat if needed</li>
+          <li>Type <strong>@name</strong> to mention someone</li>
         </ul>
       </div>
 
