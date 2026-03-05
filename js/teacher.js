@@ -96,8 +96,9 @@
                   class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">Schools</button>
           <button onclick="Teacher.showTab('tasks')"    id="tab-tasks"
                   class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">Tasks &amp; Messages</button>
-          <button onclick="Teacher.showTab('chat')"     id="tab-chat"
-                  class="tab-btn btn bg-green-600" style="font-size:.8125rem;padding:.4375rem .875rem;">Chat</button>
+          // NEW — position:relative added so the badge can anchor to it
+<button onclick="Teacher.showTab('chat')"     id="tab-chat"
+        class="tab-btn btn bg-green-600" style="font-size:.8125rem;padding:.4375rem .875rem;position:relative;">Chat</button>
         </div>
 
         <!-- ── Tab panels ── -->
