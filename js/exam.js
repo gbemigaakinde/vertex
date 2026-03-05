@@ -1,36 +1,42 @@
 /* ============================================================
    js/exam.js — Exam engine: start, navigate, timer, submit
    ============================================================
-   FIXES FROM v3:
+   CHANGES FROM v4:
    ─────────────────────────────────────────────────────────────
-   A. _isTodayATaskDay() and _isTodayTaskDayCompleted():
-      Both previously checked only currentTask.dates[] for
-      today's date.  After the tasks.js v4 fix, dates[] now
-      contains ALL dates (past + future), so the check is
-      still correct — today will be in dates[] if it is a
-      scheduled day.  No change needed here, but the
-      dependency on the correct resolver is documented.
+   A. Study Room feature added:
+      • openStudyRoom(returnTo)  — entry point called from both
+        the student dashboard and the exam results screen.
+        returnTo = 'dashboard' | 'results' controls where the
+        Back button goes.
+      • renderStudyRoom()        — full panel renderer.
+      • _studySelectSource()     — switches between "From My
+        Exam" and "Type a Problem" tabs.
+      • _studyLoadExamQuestions()— fetches and renders the
+        question cards from the most recent exam result.
+      • _studySelectQuestion()   — pre-loads a question from
+        the exam card into the active problem slot.
+      • _studyStartManual()      — starts a session from the
+        free-text input.
+      • _studyAsk()              — sends a message to the AI
+        tutor (full conversation history included each call).
+      • _studyRenderThread()     — re-renders the conversation
+        bubbles after each exchange.
+      • _studyShare()            — posts a formatted summary
+        of the session to publicChat as type:'study'.
+      • _studyBack()             — navigates back to wherever
+        the student came from.
 
-   B. submitExam() — coaching task completion credit:
-      Previously used taskCfg.dates.includes(sessionDate).
-      After the tasks.js fix, dates[] includes future dates
-      too, so a future sessionDate could theoretically match.
-      Fixed to use the explicit _isTodayATaskDay() helper
-      (which checks the same array but is the canonical
-      single-source-of-truth function) and also double-checks
-      that sessionDate === today (exam is being submitted on
-      the correct calendar day).
+   B. renderSubjectSelection() updated:
+      • "Study Room" button added next to the Chat button on
+        the student dashboard.
 
-   C. _nextUnlockedDateLabel():
-      Now correctly skips dates <= today (not just < today)
-      when looking for the next UPCOMING session, so a
-      completed today does not re-appear as "next session".
+   C. renderResults() updated:
+      • "Study Room" button added next to "New Exam".
+      • Passes the exam + result objects to openStudyRoom so
+        "From My Exam" works instantly without a Firestore
+        fetch.
 
-   D. renderSubjectSelection() off-day banner:
-      _isTodayATaskDay() already handles the check; no change
-      needed.  Documented for clarity.
-
-   E. No other logic changes from v3.
+   D. No other logic changes from v4.
    ─────────────────────────────────────────────────────────────
    All other exam functionality (timer, navigation, KaTeX,
    results display, sharing) is unchanged.
@@ -87,16 +93,6 @@
 
   /* ══════════════════════════════════════════════════════════
      _examDurationMs()
-     ──────────────────────────────────────────────────────────
-     Single source of truth for the exam duration at runtime.
-     Priority:
-       1. exam.durationMs  — stamped onto the exam doc at
-                             startExam() from the task config;
-                             persisted to Firestore so it
-                             survives page reloads.
-       2. currentTaskConfig.durationMs — task-level override
-                             set by the teacher.
-       3. AppConfig.EXAM_DURATION_MS — system default (2 h).
      ══════════════════════════════════════════════════════════ */
   function _examDurationMs() {
     const fromExam = S().exam && typeof S().exam.durationMs === 'number' && S().exam.durationMs > 0
@@ -108,7 +104,7 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     _formatDuration(ms) → 'H hours M minutes'
+     _formatDuration(ms)
      ══════════════════════════════════════════════════════════ */
   function _formatDuration(ms) {
     const totalMin = Math.round(ms / 60_000);
@@ -120,7 +116,7 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     _initialTimerStr(ms) → 'HH:MM:SS' for pre-start display
+     _initialTimerStr(ms)
      ══════════════════════════════════════════════════════════ */
   function _initialTimerStr(ms) {
     const h = String(Math.floor(ms / 3_600_000)).padStart(2, '0');
@@ -141,7 +137,7 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     _todayStr  — canonical local date string for today
+     _todayStr
      ══════════════════════════════════════════════════════════ */
   function _todayStr() {
     return (window.Tasks && Tasks._localDateStr)
@@ -154,14 +150,6 @@
 
   /* ══════════════════════════════════════════════════════════
      _getRestrictedSubjectsForToday
-     ──────────────────────────────────────────────────────────
-     Returns the subjects the teacher has restricted for today,
-     or null if there is no restriction.
-
-     Delegates to Tasks._resolveSubjectsForDate which handles:
-       • YYYY-MM-DD keyed dateSubjects (new format)
-       • Day-name keyed dateSubjects   (legacy format)
-       • All three recurrence modes (once / weekly / range)
      ══════════════════════════════════════════════════════════ */
   function _getRestrictedSubjectsForToday() {
     const taskCfg = S().currentTaskConfig || {};
@@ -174,7 +162,6 @@
       return Array.isArray(subjects) && subjects.length > 0 ? subjects : null;
     }
 
-    // Fallback (should not reach here in normal operation)
     if (taskCfg.dateSubjects && typeof taskCfg.dateSubjects === 'object') {
       const todaySubjects = taskCfg.dateSubjects[today];
       if (Array.isArray(todaySubjects) && todaySubjects.length > 0) return todaySubjects;
@@ -225,17 +212,7 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     _isTodayTaskDayCompleted()
-     ──────────────────────────────────────────────────────────
-     Returns true when ALL of the following hold:
-       • There is an active task config
-       • Today is one of the task's scheduled dates
-       • The student has already completed today's session
-         (coachingCompleted[todayStr] is truthy)
-
-     Used by renderSubjectSelection to lock the Start Exam
-     button so a student cannot take the same task session
-     twice in the same calendar day.
+     _isTodayTaskDayCompleted
      ══════════════════════════════════════════════════════════ */
   function _isTodayTaskDayCompleted() {
     const taskCfg = S().currentTaskConfig;
@@ -249,10 +226,7 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     _isTodayATaskDay()
-     ──────────────────────────────────────────────────────────
-     Returns true when today is one of the task's scheduled
-     dates, regardless of whether the student has completed it.
+     _isTodayATaskDay
      ══════════════════════════════════════════════════════════ */
   function _isTodayATaskDay() {
     const taskCfg = S().currentTaskConfig;
@@ -263,14 +237,7 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     _nextUnlockedDateLabel()
-     ──────────────────────────────────────────────────────────
-     Returns a human-readable label for the next scheduled
-     task date that is strictly AFTER today and not yet
-     completed.  Returns null if there is no such date.
-
-     FIX: uses d > today (strictly after) so a date that was
-     completed today is not re-shown as "next session".
+     _nextUnlockedDateLabel
      ══════════════════════════════════════════════════════════ */
   function _nextUnlockedDateLabel() {
     const taskCfg = S().currentTaskConfig;
@@ -280,7 +247,6 @@
     const dates     = Array.isArray(taskCfg.dates) ? taskCfg.dates : [];
     const completed = (S().studentData && S().studentData.coachingCompleted) || {};
 
-    // Find the first future date that is not yet completed
     const next = dates.find(d => d > today && !completed[d]);
     if (!next) return null;
 
@@ -302,9 +268,7 @@
         return;
       }
 
-      // ── Task completion lock ──────────────────────────────
-      const todayTaskDone = _isTodayTaskDayCompleted();
-
+      const todayTaskDone   = _isTodayTaskDayCompleted();
       const allAvailable    = Object.keys(_qBank[classKey]);
       const restrictedSubjs = _getRestrictedSubjectsForToday();
       const available       = restrictedSubjs
@@ -328,7 +292,6 @@
           </div>`;
       }
 
-      // Subject restriction banner (only shown when task is active and today IS a task day)
       const restrictionBannerHtml = restrictedSubjs
         ? `<div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:1rem;
                        background:var(--warning-bg,#fff9db);border:1px solid var(--warning-border,#ffec99);
@@ -348,9 +311,6 @@
            </div>`
         : '';
 
-      // Off-day awareness banner:
-      // Shown when there is an active task, today is NOT a scheduled task day,
-      // and there IS a future scheduled date coming up.
       const taskCfgForBanner = S().currentTaskConfig;
       const offDayNextLabel  = _nextUnlockedDateLabel();
       const offDayBannerHtml = (
@@ -377,7 +337,6 @@
       let subjectsHtml;
 
       if (todayTaskDone) {
-        // ── LOCKED: student already submitted today's required session ──
         const nextLabel = _nextUnlockedDateLabel();
         const nextLine  = nextLabel
           ? `Your next session opens on <strong>${nextLabel}</strong>.`
@@ -412,7 +371,6 @@
               : 'No subjects available for your class.'}
           </p>`;
       } else if (restrictedSubjs) {
-        // Today is a task day with subject restrictions — subjects are pre-selected
         const enoughSubjects = available.length >= 2;
         subjectsHtml = `
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
@@ -434,7 +392,6 @@
                  At least 2 are needed. Please contact Master Timothy.
                </p>`}`;
       } else {
-        // Free practice or task day with no subject restriction — student chooses
         subjectsHtml = `
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             ${allAvailable.map(subj => `
@@ -462,10 +419,15 @@
 
           <div id="tasksContainer" class="mb-6"></div>
 
-          <div class="mb-6">
-            <button id="chatOpenBtn" onclick="Chat.openPublicChat()" class="btn bg-green-600 hover:bg-green-700" style="position:relative;">
-                 Public Discussion Chat
-             </button>
+          <div class="mb-6" style="display:flex;gap:.625rem;justify-content:center;flex-wrap:wrap;">
+            <button id="chatOpenBtn" onclick="Chat.openPublicChat()"
+                    class="btn bg-green-600 hover:bg-green-700" style="position:relative;">
+              Public Discussion Chat
+            </button>
+            <button onclick="Exam.openStudyRoom('dashboard')"
+                    class="btn bg-indigo-600 hover:bg-indigo-700" style="position:relative;">
+              🧠 Study Room
+            </button>
           </div>
 
           ${offDayBannerHtml}
@@ -489,12 +451,11 @@
 
       Tasks.renderTasksHTML();
 
-// Restore the notification badge if there are unread reply notifications
-if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updateChatBadge) {
-  requestAnimationFrame(function () {
-    Chat._updateChatBadge(AppState.chatUnread);
-  });
-}
+      if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updateChatBadge) {
+        requestAnimationFrame(function () {
+          Chat._updateChatBadge(AppState.chatUnread);
+        });
+      }
 
       if (!restrictedSubjs && !todayTaskDone) {
         document.querySelectorAll('.subject-checkbox').forEach(cb => {
@@ -526,10 +487,6 @@ if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updat
   async function startExam() {
     if (_startExamLock) return;
 
-    // Defence-in-depth: always re-check lock at call time,
-    // even if the Firestore snapshot hasn't updated yet.
-    // _isTodayTaskDayCompleted() reads AppState.studentData.coachingCompleted
-    // which is now updated in-memory immediately in submitExam() (Fix 1).
     if (_isTodayTaskDayCompleted()) {
       UI.toast("You've already completed today's required session.", 'warning');
       await renderSubjectSelection();
@@ -550,7 +507,6 @@ if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updat
       return;
     }
 
-    // Re-check restriction at start time (defence-in-depth)
     const restrictedSubjs = _getRestrictedSubjectsForToday();
     const finalChosen     = restrictedSubjs
       ? chosen.filter(s => restrictedSubjs.includes(s))
@@ -602,12 +558,6 @@ if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updat
       _startExamLock = false;
     } finally {
       if (document.getElementById('startExamBtn')) UI.setLoading(btn, false);
-      // NOTE: _startExamLock is intentionally NOT released here on success.
-      // It stays true for the duration of the exam session so the Start
-      // button cannot be triggered again while an exam is in progress.
-      // It is reset to false only when submitExam() releases _submitLock,
-      // or on page reload (module re-evaluation).
-      // For the error case it is released in the catch block above.
     }
   }
 
@@ -882,7 +832,6 @@ if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updat
     const sec = String(Math.floor((remaining % 60_000) / 1_000)).padStart(2, '0');
     el.textContent = `${h}:${m}:${sec}`;
 
-    // Red at last 8% of duration, yellow at last 25%
     const redThreshold    = duration * 0.08;
     const yellowThreshold = duration * 0.25;
     el.className = remaining < redThreshold ? 'timer-red'
@@ -892,19 +841,6 @@ if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updat
 
   /* ══════════════════════════════════════════════════════════
      submitExam
-     ──────────────────────────────────────────────────────────
-     Computes results, writes to Firestore, and credits the
-     coaching task completion for sessionDate when applicable.
-
-     Task-completion credit rules:
-       • sessionDate must be one of the task's scheduled dates
-         (checked via taskCfg.dates[], which includes all dates
-         past and future after _expandTaskDoc runs).
-       • No same-day check: if a student started on a task day
-         and submits the next day, we still credit sessionDate
-         because that is the day they sat the exam.
-       • Free-practice exams (no matching task date) receive no
-         completion credit.
      ══════════════════════════════════════════════════════════ */
   let _submitLock = false;
 
@@ -967,10 +903,6 @@ if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updat
 
       await batch.commit();
 
-      // ── FIX: Update AppState in memory immediately so the lock works
-      //    instantly on "New Exam" click, without waiting for the Firestore
-      //    snapshot to round-trip back. The snapshot listener will also fire
-      //    and confirm the same value — this is just a defensive early update.
       if (isTaskDay) {
         if (!S().studentData) S().studentData = {};
         if (!S().studentData.coachingCompleted) S().studentData.coachingCompleted = {};
@@ -979,7 +911,7 @@ if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updat
 
       S().exam        = null;
       S().examStartMs = null;
-      _startExamLock  = false;  // ← ADD THIS LINE
+      _startExamLock  = false;
 
       renderResults(exam, result);
 
@@ -1029,6 +961,10 @@ if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updat
      renderResults
      ══════════════════════════════════════════════════════════ */
   function renderResults(exam, result) {
+    // Store for Study Room access via "From My Exam" tab
+    _studyLastExam   = exam;
+    _studyLastResult = result;
+
     const gradeColor = result.grade === 'A' ? 'var(--success, #2f9e44)'
                      : result.grade === 'B' ? 'var(--info, #1971c2)'
                      : result.grade === 'C' ? 'var(--warning, #e8890c)'
@@ -1114,6 +1050,7 @@ if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updat
         <div class="flex flex-wrap gap-3 justify-center">
           <button onclick="Exam._shareWhatsApp()" class="btn bg-green-600 hover:bg-green-700">Share on WhatsApp</button>
           <button onclick="Exam._copyResult()"    class="btn bg-blue-600 hover:bg-blue-700">Copy Result</button>
+          <button onclick="Exam.openStudyRoom('results')" class="btn bg-indigo-600 hover:bg-indigo-700">🧠 Study Room</button>
           <button onclick="Exam.renderSubjectSelection()" class="btn">New Exam</button>
         </div>
 
@@ -1166,7 +1103,576 @@ if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updat
       .catch(() => UI.toast('Could not copy to clipboard.', 'error'));
   }
 
-  /* ── HTML escaping ── */
+  /* ══════════════════════════════════════════════════════════
+     ╔══════════════════════════════════════════════════════╗
+     ║                    STUDY ROOM                        ║
+     ╚══════════════════════════════════════════════════════╝
+
+     Private state — scoped to the current Study Room session.
+     Reset fully each time openStudyRoom() is called.
+     ══════════════════════════════════════════════════════════ */
+
+  // The exam/result data most recently passed to renderResults(),
+  // persisted here so "From My Exam" works even after navigating away.
+  let _studyLastExam   = null;
+  let _studyLastResult = null;
+
+  // Per-session state (reset on every openStudyRoom() call)
+  let _studyReturnTo      = 'dashboard'; // 'dashboard' | 'results'
+  let _studySource        = 'exam';      // 'exam' | 'manual'
+  let _studyProblem       = null;        // { text, subject } | null
+  let _studyConversation  = [];          // [{role:'user'|'assistant', content:string}]
+  let _studyLoading       = false;
+
+  /* ──────────────────────────────────────────────────────────
+     openStudyRoom(returnTo)
+     Entry point. Called from the dashboard and results screen.
+     ────────────────────────────────────────────────────────── */
+  function openStudyRoom(returnTo) {
+    _studyReturnTo     = returnTo || 'dashboard';
+    _studySource       = 'exam';
+    _studyProblem      = null;
+    _studyConversation = [];
+    _studyLoading      = false;
+    renderStudyRoom();
+  }
+
+  /* ──────────────────────────────────────────────────────────
+     renderStudyRoom()
+     Full panel renderer — called on open and after each
+     conversation update.
+     ────────────────────────────────────────────────────────── */
+  function renderStudyRoom() {
+    const hasExamData = !!(_studyLastExam && _studyLastResult);
+
+    UI.mount(`
+      <div class="max-w-4xl mx-auto animate-fadeIn"
+           style="padding:.75rem 0;margin-top:.75rem;margin-bottom:1.5rem;">
+
+        <!-- ── Header ── -->
+        <div class="glass" style="display:flex;align-items:center;justify-content:space-between;
+                                   padding:.875rem 1.25rem;border-radius:12px;margin-bottom:1rem;">
+          <div style="display:flex;align-items:center;gap:.625rem;">
+            <span style="font-size:1.375rem;">🧠</span>
+            <div>
+              <h2 style="font-size:1rem;font-weight:700;color:var(--text-primary,#111827);line-height:1.2;">
+                Study Room</h2>
+              <p style="font-size:.75rem;color:var(--text-tertiary,#6b7280);margin-top:1px;">
+                AI-powered maths tutor — ask anything
+              </p>
+            </div>
+          </div>
+          <button onclick="Exam._studyBack()"
+                  class="btn bg-gray-500 hover:bg-gray-600"
+                  style="font-size:.8125rem;padding:.4375rem .875rem;">← Back</button>
+        </div>
+
+        <!-- ── Source tabs ── -->
+        <div class="glass" style="padding:.75rem 1rem;border-radius:12px;margin-bottom:1rem;">
+          <div style="display:flex;gap:0;border:1px solid var(--c-border,#e5e7eb);
+                      border-radius:8px;overflow:hidden;max-width:380px;">
+            <button id="studyTabExam" onclick="Exam._studySelectSource('exam')"
+                    style="flex:1;padding:.5rem .75rem;font-size:.8125rem;font-weight:600;
+                           cursor:pointer;border:none;transition:background .12s,color .12s;
+                           background:${_studySource === 'exam' ? 'var(--brand,#3b5bdb)' : 'var(--surface-muted,#f3f4f6)'};
+                           color:${_studySource === 'exam' ? '#fff' : 'var(--text-tertiary,#6b7280)'};">
+              📋 From My Exam
+            </button>
+            <button id="studyTabManual" onclick="Exam._studySelectSource('manual')"
+                    style="flex:1;padding:.5rem .75rem;font-size:.8125rem;font-weight:600;
+                           cursor:pointer;border:none;border-left:1px solid var(--c-border,#e5e7eb);
+                           transition:background .12s,color .12s;
+                           background:${_studySource === 'manual' ? 'var(--brand,#3b5bdb)' : 'var(--surface-muted,#f3f4f6)'};
+                           color:${_studySource === 'manual' ? '#fff' : 'var(--text-tertiary,#6b7280)'};">
+              ✏️ Type a Problem
+            </button>
+          </div>
+
+          <!-- From My Exam tab content -->
+          <div id="studyExamPanel" style="margin-top:.875rem;${_studySource !== 'exam' ? 'display:none;' : ''}">
+            ${hasExamData
+              ? _buildExamQuestionCards()
+              : `<div style="padding:1rem;text-align:center;border-radius:8px;
+                             background:var(--surface-muted,#f3f4f6);border:1px solid var(--border,#e5e7eb);">
+                   <p style="font-size:.875rem;color:var(--text-tertiary,#6b7280);">
+                     No recent exam data in this session.
+                   </p>
+                   <p style="font-size:.8125rem;color:var(--text-disabled,#9ca3af);margin-top:.375rem;">
+                     Complete an exam first, or use "Type a Problem" to study anything.
+                   </p>
+                 </div>`}
+          </div>
+
+          <!-- Type a Problem tab content -->
+          <div id="studyManualPanel" style="margin-top:.875rem;${_studySource !== 'manual' ? 'display:none;' : ''}">
+            <label style="display:block;font-size:.8125rem;font-weight:600;
+                          color:var(--text-secondary,#374151);margin-bottom:.5rem;">
+              Type or paste your maths problem below
+            </label>
+            <textarea id="studyManualInput"
+                      placeholder="e.g. Solve for x: 3x² − 5x + 2 = 0&#10;or&#10;Explain the difference between permutation and combination."
+                      style="width:100%;height:5rem;resize:vertical;font-size:.875rem;
+                             border:1.5px solid var(--border,#e5e7eb);border-radius:8px;
+                             padding:.625rem .875rem;background:var(--surface,#fff);
+                             color:var(--text-primary,#111827);line-height:1.6;"></textarea>
+            <button onclick="Exam._studyStartManual()"
+                    class="btn bg-indigo-600 hover:bg-indigo-700"
+                    style="margin-top:.625rem;font-size:.875rem;">
+              Ask Tutor →
+            </button>
+          </div>
+        </div>
+
+        <!-- ── Active problem display (shown once a problem is selected) ── -->
+        ${_studyProblem ? `
+          <div style="padding:.875rem 1rem;border-radius:10px;margin-bottom:1rem;
+                      background:var(--brand-bg,#edf2ff);border:1.5px solid var(--brand-border,#bac8ff);
+                      border-left:4px solid var(--brand,#3b5bdb);">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem;">
+              <div style="min-width:0;flex:1;">
+                <p style="font-size:.6875rem;font-weight:700;color:var(--brand-text,#3730a3);
+                           text-transform:uppercase;letter-spacing:.04em;margin-bottom:.375rem;">
+                  ${_studyProblem.subject ? '📚 ' + _escHtml(_studyProblem.subject) : '📝 Current Problem'}
+                </p>
+                <p style="font-size:.9375rem;color:var(--text-primary,#111827);line-height:1.65;">
+                  ${_safeQ(_studyProblem.text)}
+                </p>
+              </div>
+              <button onclick="Exam._studyClearProblem()"
+                      style="background:none;border:none;cursor:pointer;font-size:1rem;
+                             line-height:1;color:var(--text-tertiary,#6b7280);flex-shrink:0;
+                             padding:2px 4px;"
+                      title="Clear problem">×</button>
+            </div>
+          </div>` : ''}
+
+        <!-- ── Conversation thread ── -->
+        ${_studyConversation.length > 0 ? `
+          <div id="studyThread" style="display:flex;flex-direction:column;gap:.75rem;margin-bottom:1rem;">
+            ${_buildConversationHTML()}
+          </div>` : ''}
+
+        <!-- ── Loading indicator ── -->
+        ${_studyLoading ? `
+          <div style="display:flex;align-items:center;gap:.75rem;padding:.875rem 1rem;
+                      border-radius:10px;background:var(--surface-subtle,#f9fafb);
+                      border:1px solid var(--border,#e5e7eb);margin-bottom:1rem;">
+            <div style="width:8px;height:8px;border-radius:50%;background:var(--brand,#3b5bdb);
+                        animation:pulse 1s infinite;"></div>
+            <p style="font-size:.875rem;color:var(--text-tertiary,#6b7280);font-style:italic;">
+              Study Assistant is thinking…
+            </p>
+          </div>` : ''}
+
+        <!-- ── Follow-up input (shown after first AI response) ── -->
+        ${_studyProblem && _studyConversation.length > 0 && !_studyLoading ? `
+          <div class="glass" style="padding:.875rem 1rem;border-radius:12px;margin-bottom:1rem;">
+            <label style="display:block;font-size:.75rem;font-weight:600;
+                          color:var(--text-secondary,#374151);margin-bottom:.5rem;">
+              Ask a follow-up question
+            </label>
+            <div style="display:flex;gap:.5rem;">
+              <input id="studyFollowUp" type="text"
+                     placeholder="e.g. Why do we use that formula? Can you show another example?"
+                     style="flex:1;font-size:.875rem;"
+                     onkeydown="if(event.key==='Enter'){event.preventDefault();Exam._studyAsk();}" />
+              <button onclick="Exam._studyAsk()"
+                      class="btn bg-indigo-600 hover:bg-indigo-700"
+                      style="font-size:.875rem;white-space:nowrap;">Ask</button>
+            </div>
+          </div>` : ''}
+
+        <!-- ── Share to chat button (shown after at least one AI response) ── -->
+        ${_studyConversation.filter(m => m.role === 'assistant').length > 0 && !_studyLoading ? `
+          <div style="text-align:center;padding-top:.25rem;">
+            <button onclick="Exam._studyShare()"
+                    class="btn bg-green-600 hover:bg-green-700"
+                    style="font-size:.875rem;">
+              📢 Share this explanation to Public Chat
+            </button>
+            <p style="font-size:.6875rem;color:var(--text-disabled,#9ca3af);margin-top:.5rem;">
+              Share a summary so your classmates can benefit too
+            </p>
+          </div>` : ''}
+
+      </div>
+    `);
+
+    // Scroll thread to bottom after render
+    requestAnimationFrame(() => {
+      const thread = document.getElementById('studyThread');
+      if (thread) thread.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    });
+
+    _renderKatex();
+  }
+
+  /* ──────────────────────────────────────────────────────────
+     _buildExamQuestionCards()
+     Builds HTML for the "From My Exam" tab question grid.
+     ────────────────────────────────────────────────────────── */
+  function _buildExamQuestionCards() {
+    const exam   = _studyLastExam;
+    const result = _studyLastResult;
+    if (!exam || !result) return '';
+
+    return exam.subjects.map(subj => {
+      const qs = exam.questions[subj] || [];
+      const cardsHTML = qs.map((q, i) => {
+        const userAns  = exam.answers[`${subj}-${i}`];
+        const isCorrect = userAns === q.ans;
+        const isSkipped = userAns === undefined;
+
+        const indicator = isCorrect ? '✓' : isSkipped ? '–' : '✗';
+        const indicatorColor = isCorrect
+          ? 'var(--success,#2f9e44)'
+          : isSkipped
+            ? 'var(--text-disabled,#9ca3af)'
+            : 'var(--danger,#e03131)';
+
+        const borderColor = isCorrect
+          ? 'var(--success-border,#b2f2bb)'
+          : isSkipped
+            ? 'var(--border,#e5e7eb)'
+            : 'var(--danger,#e03131)';
+
+        const bgColor = isCorrect
+          ? 'var(--success-bg,#ebfbee)'
+          : isSkipped
+            ? 'var(--surface,#fff)'
+            : 'var(--danger-bg,#fff5f5)';
+
+        // Truncate question text for the card preview
+        const qText   = String(q.q || '');
+        const preview = qText.length > 90 ? qText.slice(0, 90) + '…' : qText;
+
+        // Encode question for onclick attribute safely
+        const qIndex = i;
+
+        return `
+          <div style="border:1.5px solid ${borderColor};border-radius:8px;padding:.625rem .875rem;
+                      background:${bgColor};position:relative;">
+            <div style="display:flex;align-items:flex-start;gap:.5rem;margin-bottom:.5rem;">
+              <span style="font-size:.875rem;font-weight:700;color:${indicatorColor};
+                            flex-shrink:0;margin-top:1px;">${indicator}</span>
+              <p style="font-size:.8125rem;color:var(--text-primary,#111827);line-height:1.55;
+                         flex:1;min-width:0;">
+                Q${i + 1}. ${_safeQ(preview)}
+              </p>
+            </div>
+            <button onclick="Exam._studySelectQuestion('${_escAttr(subj)}', ${qIndex})"
+                    style="font-size:.75rem;font-weight:700;color:var(--brand-text,#3730a3);
+                           background:var(--brand-bg,#edf2ff);border:1px solid var(--brand-border,#bac8ff);
+                           border-radius:6px;padding:3px 10px;cursor:pointer;
+                           transition:background .1s;">
+              Study this →
+            </button>
+          </div>`;
+      }).join('');
+
+      return `
+        <details style="margin-bottom:.625rem;" open>
+          <summary style="font-size:.875rem;font-weight:700;color:var(--text-primary,#111827);
+                          cursor:pointer;padding:.375rem 0;list-style:none;
+                          display:flex;align-items:center;gap:.5rem;user-select:none;">
+            <span style="font-size:.625rem;color:var(--text-tertiary,#6b7280);">▶</span>
+            ${_escHtml(subj)}
+            <span style="font-size:.6875rem;font-weight:500;color:var(--text-tertiary,#6b7280);">
+              — ${result.correctCounts[subj] || 0}/${qs.length} correct
+            </span>
+          </summary>
+          <div style="display:flex;flex-direction:column;gap:.5rem;margin-top:.5rem;padding-left:.25rem;">
+            ${cardsHTML}
+          </div>
+        </details>`;
+    }).join('');
+  }
+
+  /* ──────────────────────────────────────────────────────────
+     _buildConversationHTML()
+     Renders all messages in the conversation thread.
+     ────────────────────────────────────────────────────────── */
+  function _buildConversationHTML() {
+    return _studyConversation.map((msg, idx) => {
+      const isAI = msg.role === 'assistant';
+
+      if (isAI) {
+        // Convert markdown-like formatting in AI responses for readability:
+        // **bold**, numbered lists, line breaks
+        let content = _escHtml(msg.content)
+          .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+          .replace(/\n\n/g, '</p><p style="margin-bottom:.625rem;">')
+          .replace(/\n/g, '<br>');
+
+        return `
+          <div style="display:flex;align-items:flex-start;gap:.75rem;">
+            <div style="width:32px;height:32px;border-radius:50%;background:var(--brand,#3b5bdb);
+                        display:flex;align-items:center;justify-content:center;
+                        flex-shrink:0;font-size:.875rem;color:#fff;font-weight:700;margin-top:2px;">🎓</div>
+            <div style="flex:1;min-width:0;background:var(--brand-bg,#edf2ff);
+                        border:1px solid var(--brand-border,#bac8ff);border-radius:0 10px 10px 10px;
+                        border-left:3px solid var(--brand,#3b5bdb);padding:.875rem 1rem;">
+              <p style="font-size:.6875rem;font-weight:700;color:var(--brand-text,#3730a3);
+                         margin-bottom:.5rem;letter-spacing:.02em;">STUDY ASSISTANT</p>
+              <div style="font-size:.9375rem;color:var(--text-primary,#111827);line-height:1.7;">
+                <p style="margin-bottom:.625rem;">${content}</p>
+              </div>
+            </div>
+          </div>`;
+      } else {
+        return `
+          <div style="display:flex;align-items:flex-start;gap:.75rem;flex-direction:row-reverse;">
+            <div style="width:32px;height:32px;border-radius:50%;background:var(--surface-muted,#f3f4f6);
+                        border:1.5px solid var(--border,#e5e7eb);display:flex;align-items:center;
+                        justify-content:center;flex-shrink:0;font-size:.875rem;margin-top:2px;">👤</div>
+            <div style="flex:1;min-width:0;background:var(--surface,#fff);
+                        border:1px solid var(--border,#e5e7eb);border-radius:10px 0 10px 10px;
+                        padding:.75rem 1rem;max-width:85%;">
+              <p style="font-size:.9375rem;color:var(--text-primary,#111827);line-height:1.6;">
+                ${_escHtml(msg.content)}
+              </p>
+            </div>
+          </div>`;
+      }
+    }).join('');
+  }
+
+  /* ──────────────────────────────────────────────────────────
+     _studySelectSource(source)
+     Switches between the two input tabs.
+     ────────────────────────────────────────────────────────── */
+  function _studySelectSource(source) {
+    _studySource = source;
+    const examPanel   = document.getElementById('studyExamPanel');
+    const manualPanel = document.getElementById('studyManualPanel');
+    const tabExam     = document.getElementById('studyTabExam');
+    const tabManual   = document.getElementById('studyTabManual');
+
+    if (examPanel)   examPanel.style.display   = source === 'exam'   ? '' : 'none';
+    if (manualPanel) manualPanel.style.display = source === 'manual' ? '' : 'none';
+
+    if (tabExam) {
+      tabExam.style.background = source === 'exam' ? 'var(--brand,#3b5bdb)' : 'var(--surface-muted,#f3f4f6)';
+      tabExam.style.color      = source === 'exam' ? '#fff' : 'var(--text-tertiary,#6b7280)';
+    }
+    if (tabManual) {
+      tabManual.style.background = source === 'manual' ? 'var(--brand,#3b5bdb)' : 'var(--surface-muted,#f3f4f6)';
+      tabManual.style.color      = source === 'manual' ? '#fff' : 'var(--text-tertiary,#6b7280)';
+    }
+  }
+
+  /* ──────────────────────────────────────────────────────────
+     _studySelectQuestion(subject, qIndex)
+     Pre-loads a question from the exam card into the active
+     problem, then sends the first message to the AI.
+     ────────────────────────────────────────────────────────── */
+  function _studySelectQuestion(subject, qIndex) {
+    const exam = _studyLastExam;
+    if (!exam) return;
+
+    const q         = (exam.questions[subject] || [])[qIndex];
+    if (!q) return;
+
+    const userAns   = exam.answers[`${subject}-${qIndex}`];
+    const isCorrect = userAns === q.ans;
+    const isSkipped = userAns === undefined;
+
+    // Build a rich context message for the AI including what the student answered
+    const userAnswerText = isSkipped
+      ? 'I did not answer this question.'
+      : isCorrect
+        ? `I answered correctly: "${q.opts[userAns]}"`
+        : `I answered "${q.opts[userAns]}" but the correct answer was "${q.opts[q.ans]}".`;
+
+    const problemText = q.q;
+    const optsText    = q.opts.map((o, i) => `${String.fromCharCode(65 + i)}) ${o}`).join('\n');
+
+    _studyProblem      = { text: problemText, subject };
+    _studyConversation = [];
+
+    // First user message sent automatically, as if the student said:
+    // "Please explain this question to me"
+    const firstUserMsg =
+      `I need help with this ${subject} question:\n\n` +
+      `${problemText}\n\n` +
+      `Options:\n${optsText}\n\n` +
+      `${userAnswerText} Please explain this to me step by step.`;
+
+    _studyAskWith(firstUserMsg);
+  }
+
+  /* ──────────────────────────────────────────────────────────
+     _studyStartManual()
+     Starts a session from the free-text input.
+     ────────────────────────────────────────────────────────── */
+  function _studyStartManual() {
+    const input = document.getElementById('studyManualInput');
+    const text  = (input ? input.value.trim() : '');
+    if (!text) { UI.toast('Please type a problem first.', 'warning'); return; }
+
+    _studyProblem      = { text, subject: null };
+    _studyConversation = [];
+
+    _studyAskWith(`Please explain this maths problem to me step by step:\n\n${text}`);
+  }
+
+  /* ──────────────────────────────────────────────────────────
+     _studyAsk()
+     Sends the follow-up input field's content to the AI.
+     ────────────────────────────────────────────────────────── */
+  function _studyAsk() {
+    const input = document.getElementById('studyFollowUp');
+    const text  = (input ? input.value.trim() : '');
+    if (!text) return;
+    if (input) input.value = '';
+    _studyAskWith(text);
+  }
+
+  /* ──────────────────────────────────────────────────────────
+     _studyAskWith(userMessage)
+     Core function that appends a user message and calls the
+     Anthropic API with the full conversation history.
+     ────────────────────────────────────────────────────────── */
+  async function _studyAskWith(userMessage) {
+    if (_studyLoading) return;
+
+    _studyConversation.push({ role: 'user', content: userMessage });
+    _studyLoading = true;
+    renderStudyRoom();
+
+    const systemPrompt =
+      `You are a patient, encouraging maths tutor called "Study Assistant" for secondary school students in Nigeria. ` +
+      `Your job is to help students understand maths problems deeply, not just get the right answer.\n\n` +
+      `When a student brings you a problem, always follow this structure:\n` +
+      `1. **What the question is asking** — restate it simply in one sentence.\n` +
+      `2. **Concept or formula needed** — name it and write it out clearly.\n` +
+      `3. **Step-by-step solution** — number each step. Show all working. Do not skip steps.\n` +
+      `4. **Final answer** — state it clearly and directly.\n` +
+      `5. **Remember this** — one short memorable tip about the concept for future questions.\n\n` +
+      `For follow-up questions, stay in context of the same problem. Be warm and encouraging. ` +
+      `If the student got it wrong, never make them feel bad — focus on the concept, not the mistake. ` +
+      `Keep responses focused and clear. Avoid unnecessary padding. ` +
+      `Use plain text formatting — no markdown tables, no code blocks.`;
+
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model:      'claude-sonnet-4-20250514',
+          max_tokens: 1000,
+          system:     systemPrompt,
+          messages:   _studyConversation.map(m => ({ role: m.role, content: m.content })),
+        }),
+      });
+
+      if (!response.ok) {
+        const errData = await response.json().catch(() => ({}));
+        throw new Error(errData.error?.message || `API error ${response.status}`);
+      }
+
+      const data = await response.json();
+      const aiText = (data.content || [])
+        .filter(b => b.type === 'text')
+        .map(b => b.text)
+        .join('');
+
+      if (!aiText) throw new Error('Empty response from AI.');
+
+      _studyConversation.push({ role: 'assistant', content: aiText });
+
+    } catch (err) {
+      console.error('[studyRoom] AI call failed:', err);
+      // Remove the user message we added so the state stays consistent
+      _studyConversation.pop();
+      UI.toast('Could not reach the Study Assistant. Please try again.', 'error');
+    } finally {
+      _studyLoading = false;
+      renderStudyRoom();
+    }
+  }
+
+  /* ──────────────────────────────────────────────────────────
+     _studyClearProblem()
+     Resets the active problem and conversation.
+     ────────────────────────────────────────────────────────── */
+  function _studyClearProblem() {
+    _studyProblem      = null;
+    _studyConversation = [];
+    _studyLoading      = false;
+    renderStudyRoom();
+  }
+
+  /* ──────────────────────────────────────────────────────────
+     _studyShare()
+     Posts a formatted summary of the session to publicChat.
+     ────────────────────────────────────────────────────────── */
+  async function _studyShare() {
+    const aiMessages = _studyConversation.filter(m => m.role === 'assistant');
+    if (aiMessages.length === 0) {
+      UI.toast('Nothing to share yet — ask the tutor first.', 'warning');
+      return;
+    }
+
+    const confirmed = await UI.confirmAction(
+      'Share this explanation to Public Chat? Your classmates will be able to see it.'
+    );
+    if (!confirmed) return;
+
+    // Build the share text — problem + first AI explanation (trimmed if very long)
+    const problemLine = _studyProblem
+      ? `Problem: ${_studyProblem.text.slice(0, 200)}${_studyProblem.text.length > 200 ? '…' : ''}`
+      : 'Problem: (typed manually)';
+
+    const firstExplanation = aiMessages[0].content;
+    const trimmedExplanation = firstExplanation.length > 800
+      ? firstExplanation.slice(0, 800) + '…\n\n[See full explanation in Study Room]'
+      : firstExplanation;
+
+    const subjectTag = _studyProblem && _studyProblem.subject
+      ? ` — ${_studyProblem.subject}`
+      : '';
+
+    const shareText =
+      `📚 Study Room${subjectTag}\n\n` +
+      `${problemLine}\n\n` +
+      `${trimmedExplanation}\n\n` +
+      `— Shared by ${S().studentData.name}`;
+
+    try {
+      await Db().collection('publicChat').add({
+        text:          shareText,
+        senderName:    S().studentData.name,
+        senderClass:   S().studentData.class || '',
+        senderId:      S().userId,
+        timestamp:     firebase.firestore.FieldValue.serverTimestamp(),
+        replyTo:       null,
+        pinned:        false,
+        mentionedUids: null,
+        type:          'study',
+      });
+      UI.toast('Explanation shared to Public Chat! 🎉', 'success');
+    } catch (err) {
+      console.error('[studyRoom] Share failed:', err);
+      UI.toast('Failed to share. Please try again.', 'error');
+    }
+  }
+
+  /* ──────────────────────────────────────────────────────────
+     _studyBack()
+     Returns to the correct screen based on how Study Room was opened.
+     ────────────────────────────────────────────────────────── */
+  function _studyBack() {
+    if (_studyReturnTo === 'results' && _studyLastExam && _studyLastResult) {
+      renderResults(_studyLastExam, _studyLastResult);
+    } else {
+      renderSubjectSelection();
+    }
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     HTML escaping helpers
+     ══════════════════════════════════════════════════════════ */
   function _escHtml(str) {
     if (str == null) return '';
     return String(str)
@@ -1175,7 +1681,9 @@ if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updat
 
   function _escAttr(str) { return _escHtml(str).replace(/'/g,'&#39;'); }
 
-  /* ── Expose ── */
+  /* ══════════════════════════════════════════════════════════
+     Expose
+     ══════════════════════════════════════════════════════════ */
   window.Exam = {
     loadOrStart,
     renderSubjectSelection,
@@ -1196,6 +1704,16 @@ if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updat
     _isTodayTaskDayCompleted,
     _isTodayATaskDay,
     _nextUnlockedDateLabel,
+    // Study Room
+    openStudyRoom,
+    renderStudyRoom,
+    _studyBack,
+    _studySelectSource,
+    _studySelectQuestion,
+    _studyStartManual,
+    _studyAsk,
+    _studyClearProblem,
+    _studyShare,
   };
 
 })();
