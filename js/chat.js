@@ -12,109 +12,124 @@
   'use strict';
 
   async function openPublicChat() {
-    const isTeacher = AppState.userId === AppConfig.TEACHER_UID;
-    let chatLocked  = false;
+  const isTeacher = AppState.userId === AppConfig.TEACHER_UID;
+  let chatLocked  = false;
 
+  // Clear this user's unread reply notifications when they open chat
+  if (!isTeacher) {
     try {
-      const lockSnap = await Db().collection('chatSettings').doc('lock').get();
-      chatLocked = lockSnap.exists && !!lockSnap.data().isLocked;
+      await Db().collection('chatNotifications').doc(AppState.userId).set(
+        { unread: 0 },
+        { merge: true }
+      );
+      AppState.chatUnread = 0;
+      // Remove the badge from the chat button immediately
+      _updateChatBadge(0);
     } catch (err) {
-      console.warn('[chat] Could not read lock state:', err);
-    }
-
-    const canSend = isTeacher || !chatLocked;
-
-    UI.mount(`
-      <div class="max-w-4xl mx-auto glass animate-fadeIn" style="padding:1.25rem 1.5rem;margin-top:1.25rem;margin-bottom:1.25rem;">
-
-        <!-- Header -->
-        <div class="flex justify-between items-center mb-4">
-          <h2 class="font-bold" style="font-size:1.1875rem;">Public Discussion Chat</h2>
-          <button onclick="Chat.backFromChat()" class="btn bg-gray-500 hover:bg-gray-600" style="font-size:0.8125rem;">
-            ← Back
-          </button>
-        </div>
-
-        <!-- Subtitle -->
-        <div class="glass-dark text-center mb-4" style="padding:.625rem 1rem;font-size:.8125rem;color:#4338ca;font-weight:500;">
-          For all students — ask questions, discuss, help each other
-        </div>
-
-        <!-- Chat rules -->
-        <div class="mb-4 border-l-4 border-purple-600 bg-purple-50 rounded-r-lg" style="padding:.75rem 1rem;">
-          <h3 class="font-semibold mb-2" style="font-size:.8125rem;">Chat Rules</h3>
-          <ul style="font-size:.8125rem;color:#374151;line-height:1.7;">
-            <li>• Be respectful and kind</li>
-            <li>• No abusive or offensive language</li>
-            <li>• Academic questions only</li>
-            <li>• Master Timothy may lock chat if needed</li>
-          </ul>
-        </div>
-
-        ${chatLocked && !isTeacher ? `
-          <div class="mb-4 rounded-lg text-center" style="padding:.75rem 1rem;border:1px solid #fca5a5;background:#fef2f2;">
-            <p style="font-size:.875rem;font-weight:700;color:#dc2626;">Chat is currently locked</p>
-            <p style="font-size:.8125rem;color:#6b7280;margin-top:2px;">You can read messages but not send new ones.</p>
-          </div>` : ''}
-
-        ${isTeacher ? `
-          <div class="text-center mb-4">
-            <button id="lockBtn" onclick="Chat.toggleLock()"
-                    class="btn ${chatLocked ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}">
-              ${chatLocked ? 'Unlock Chat' : 'Lock Chat'}
-            </button>
-          </div>` : ''}
-
-        <!-- Messages -->
-        <div class="glass-dark mb-3" style="padding:.75rem;border-radius:10px;border:1px solid #e5e7eb;">
-          <div id="chatMessages"></div>
-        </div>
-
-        <!-- Typing indicator -->
-        <div id="typingIndicator" class="text-center mb-2" style="min-height:1rem;font-size:.75rem;color:#9ca3af;font-style:italic;"></div>
-
-        <!-- Reply preview -->
-        <div id="replyPreview" class="hidden flex justify-between items-center gap-3 mb-3"
-             style="border-radius:8px;">
-          <div class="flex-1 min-w-0">
-            <strong style="font-size:.8125rem;">Replying to <span id="replyName"></span>:</strong>
-            <span id="replyText" class="block truncate" style="font-size:.75rem;color:#6b7280;margin-top:2px;"></span>
-          </div>
-          <button onclick="Chat.cancelReply()" style="color:#dc2626;font-size:1.25rem;background:none;border:none;cursor:pointer;flex-shrink:0;line-height:1;">×</button>
-        </div>
-
-        <!-- Input row -->
-        <div class="flex gap-2">
-          <input id="chatInput" type="text"
-                 placeholder="${canSend ? 'Type your message...' : 'Chat is locked'}"
-                 autocomplete="off"
-                 style="flex:1;"
-                 ${canSend ? '' : 'disabled'} />
-          <button id="sendBtn" onclick="Chat.sendMessage()"
-                  class="btn bg-green-600 hover:bg-green-700"
-                  ${canSend ? '' : 'disabled'}>Send</button>
-        </div>
-      </div>`);
-
-    _subscribeMessages(isTeacher);
-    _subscribeTyping();
-
-    const input = document.getElementById('chatInput');
-    if (input && canSend) {
-      input.focus();
-      input.addEventListener('keydown', e => {
-        if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }
-      });
-
-      let typingTimer;
-      input.addEventListener('input', () => {
-        if (!input.value.trim()) return;
-        _setTyping(isTeacher);
-        clearTimeout(typingTimer);
-        typingTimer = setTimeout(() => _clearTyping(), 4000);
-      });
+      console.warn('[chat] Could not clear notifications:', err);
     }
   }
+
+  try {
+    const lockSnap = await Db().collection('chatSettings').doc('lock').get();
+    chatLocked = lockSnap.exists && !!lockSnap.data().isLocked;
+  } catch (err) {
+    console.warn('[chat] Could not read lock state:', err);
+  }
+
+  const canSend = isTeacher || !chatLocked;
+
+  UI.mount(`
+    <div class="max-w-4xl mx-auto glass animate-fadeIn" style="padding:1.25rem 1.5rem;margin-top:1.25rem;margin-bottom:1.25rem;">
+
+      <!-- Header -->
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="font-bold" style="font-size:1.1875rem;">Public Discussion Chat</h2>
+        <button onclick="Chat.backFromChat()" class="btn bg-gray-500 hover:bg-gray-600" style="font-size:0.8125rem;">
+          ← Back
+        </button>
+      </div>
+
+      <!-- Subtitle -->
+      <div class="glass-dark text-center mb-4" style="padding:.625rem 1rem;font-size:.8125rem;color:#4338ca;font-weight:500;">
+        For all students — ask questions, discuss, help each other
+      </div>
+
+      <!-- Chat rules -->
+      <div class="mb-4 border-l-4 border-purple-600 bg-purple-50 rounded-r-lg" style="padding:.75rem 1rem;">
+        <h3 class="font-semibold mb-2" style="font-size:.8125rem;">Chat Rules</h3>
+        <ul style="font-size:.8125rem;color:#374151;line-height:1.7;">
+          <li>• Be respectful and kind</li>
+          <li>• No abusive or offensive language</li>
+          <li>• Academic questions only</li>
+          <li>• Master Timothy may lock chat if needed</li>
+        </ul>
+      </div>
+
+      ${chatLocked && !isTeacher ? `
+        <div class="mb-4 rounded-lg text-center" style="padding:.75rem 1rem;border:1px solid #fca5a5;background:#fef2f2;">
+          <p style="font-size:.875rem;font-weight:700;color:#dc2626;">Chat is currently locked</p>
+          <p style="font-size:.8125rem;color:#6b7280;margin-top:2px;">You can read messages but not send new ones.</p>
+        </div>` : ''}
+
+      ${isTeacher ? `
+        <div class="text-center mb-4">
+          <button id="lockBtn" onclick="Chat.toggleLock()"
+                  class="btn ${chatLocked ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'}">
+            ${chatLocked ? 'Unlock Chat' : 'Lock Chat'}
+          </button>
+        </div>` : ''}
+
+      <!-- Messages -->
+      <div class="glass-dark mb-3" style="padding:.75rem;border-radius:10px;border:1px solid #e5e7eb;">
+        <div id="chatMessages"></div>
+      </div>
+
+      <!-- Typing indicator -->
+      <div id="typingIndicator" class="text-center mb-2" style="min-height:1rem;font-size:.75rem;color:#9ca3af;font-style:italic;"></div>
+
+      <!-- Reply preview -->
+      <div id="replyPreview" class="hidden flex justify-between items-center gap-3 mb-3"
+           style="border-radius:8px;">
+        <div class="flex-1 min-w-0">
+          <strong style="font-size:.8125rem;">Replying to <span id="replyName"></span>:</strong>
+          <span id="replyText" class="block truncate" style="font-size:.75rem;color:#6b7280;margin-top:2px;"></span>
+        </div>
+        <button onclick="Chat.cancelReply()" style="color:#dc2626;font-size:1.25rem;background:none;border:none;cursor:pointer;flex-shrink:0;line-height:1;">×</button>
+      </div>
+
+      <!-- Input row -->
+      <div class="flex gap-2">
+        <input id="chatInput" type="text"
+               placeholder="${canSend ? 'Type your message...' : 'Chat is locked'}"
+               autocomplete="off"
+               style="flex:1;"
+               ${canSend ? '' : 'disabled'} />
+        <button id="sendBtn" onclick="Chat.sendMessage()"
+                class="btn bg-green-600 hover:bg-green-700"
+                ${canSend ? '' : 'disabled'}>Send</button>
+      </div>
+    </div>`);
+
+  _subscribeMessages(isTeacher);
+  _subscribeTyping();
+
+  const input = document.getElementById('chatInput');
+  if (input && canSend) {
+    input.focus();
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }
+    });
+
+    let typingTimer;
+    input.addEventListener('input', () => {
+      if (!input.value.trim()) return;
+      _setTyping(isTeacher);
+      clearTimeout(typingTimer);
+      typingTimer = setTimeout(() => _clearTyping(), 4000);
+    });
+  }
+}
 
   /* ── Subscribe to messages ── */
   function _subscribeMessages(isTeacher) {
@@ -275,51 +290,69 @@
 
   /* ── Send message ── */
   async function sendMessage() {
-    const input = document.getElementById('chatInput');
-    const text  = (input?.value || '').trim();
-    if (!text) return;
+  const input = document.getElementById('chatInput');
+  const text  = (input?.value || '').trim();
+  if (!text) return;
 
-    const isTeacher = AppState.userId === AppConfig.TEACHER_UID;
+  const isTeacher = AppState.userId === AppConfig.TEACHER_UID;
 
-    try {
-      await Db().collection('publicChat').add({
-        text,
-        senderName:  isTeacher ? 'Master Timothy' : (AppState.studentData?.name || 'Student'),
-        senderClass: isTeacher ? '' : (AppState.studentData?.class || ''),
-        timestamp:   firebase.firestore.FieldValue.serverTimestamp(),
-        replyTo:     AppState.replyingTo || null,
-        pinned:      false
-      });
+  try {
+    // Write the message
+    await Db().collection('publicChat').add({
+      text,
+      senderName:  isTeacher ? 'Master Timothy' : (AppState.studentData?.name || 'Student'),
+      senderClass: isTeacher ? '' : (AppState.studentData?.class || ''),
+      senderId:    AppState.userId,
+      timestamp:   firebase.firestore.FieldValue.serverTimestamp(),
+      replyTo:     AppState.replyingTo || null,
+      pinned:      false
+    });
 
-      if (input) input.value = '';
-      cancelReply();
-      _clearTyping();
-    } catch (err) {
-      console.error('[chat] Send error:', err);
-      UI.toast('Failed to send message.', 'error');
+    // If this is a reply, increment the notification counter for the
+    // original message's sender (as long as they are not the replier).
+    if (AppState.replyingTo && AppState.replyingTo.senderId &&
+        AppState.replyingTo.senderId !== AppState.userId) {
+      const notifRef = Db().collection('chatNotifications').doc(AppState.replyingTo.senderId);
+      await notifRef.set(
+        { unread: firebase.firestore.FieldValue.increment(1) },
+        { merge: true }
+      );
     }
+
+    if (input) input.value = '';
+    cancelReply();
+    _clearTyping();
+  } catch (err) {
+    console.error('[chat] Send error:', err);
+    UI.toast('Failed to send message.', 'error');
   }
+}
 
   /* ── Reply ── */
   async function setReplyTo(msgId) {
-    try {
-      const snap = await Db().collection('publicChat').doc(msgId).get();
-      if (!snap.exists) return;
-      const data = snap.data();
-      AppState.replyingTo = { name: data.senderName, text: data.text };
+  try {
+    const snap = await Db().collection('publicChat').doc(msgId).get();
+    if (!snap.exists) return;
+    const data = snap.data();
+    // Store senderId so sendMessage() can notify the right person
+    AppState.replyingTo = {
+      name:     data.senderName,
+      text:     data.text,
+      senderId: data.senderId || null,
+    };
 
-      const preview = document.getElementById('replyPreview');
-      const nameEl  = document.getElementById('replyName');
-      const textEl  = document.getElementById('replyText');
-      if (preview && nameEl && textEl) {
-        nameEl.textContent = data.senderName;
-        textEl.textContent = data.text.length > 80 ? data.text.substring(0, 80) + '...' : data.text;
-        preview.classList.remove('hidden');
-      }
-    } catch (err) {
-      console.error('[chat] setReplyTo error:', err);
+    const preview = document.getElementById('replyPreview');
+    const nameEl  = document.getElementById('replyName');
+    const textEl  = document.getElementById('replyText');
+    if (preview && nameEl && textEl) {
+      nameEl.textContent = data.senderName;
+      textEl.textContent = data.text.length > 80 ? data.text.substring(0, 80) + '...' : data.text;
+      preview.classList.remove('hidden');
     }
+  } catch (err) {
+    console.error('[chat] setReplyTo error:', err);
   }
+}
 
   function cancelReply() {
     AppState.replyingTo = null;
@@ -391,17 +424,54 @@
       .replace(/"/g, '&quot;');
   }
 
+/* ── Chat badge helper ── */
+function _updateChatBadge(count) {
+  const btn = document.getElementById('chatOpenBtn');
+  if (!btn) return;
+  // Remove any existing badge
+  const existing = btn.querySelector('.chat-notif-badge');
+  if (existing) existing.remove();
+
+  if (count > 0) {
+    const badge = document.createElement('span');
+    badge.className = 'chat-notif-badge';
+    badge.textContent = count > 9 ? '9+' : String(count);
+    badge.style.cssText = [
+      'position:absolute',
+      'top:-6px',
+      'right:-6px',
+      'min-width:18px',
+      'height:18px',
+      'background:var(--danger,#e03131)',
+      'color:#fff',
+      'font-size:0.625rem',
+      'font-weight:700',
+      'border-radius:99px',
+      'display:flex',
+      'align-items:center',
+      'justify-content:center',
+      'padding:0 4px',
+      'pointer-events:none',
+      'border:2px solid var(--surface,#fff)',
+      'line-height:1',
+    ].join(';');
+    btn.style.position = 'relative';
+    btn.appendChild(badge);
+  }
+}
+
   /* ── Expose ── */
   window.Chat = {
-    openPublicChat,
-    open: openPublicChat,
-    sendMessage,
-    setReplyTo,
-    cancelReply,
-    deleteMessage,
-    togglePin,
-    toggleLock,
-    backFromChat,
-  };
+  openPublicChat,
+  open: openPublicChat,
+  sendMessage,
+  setReplyTo,
+  cancelReply,
+  deleteMessage,
+  togglePin,
+  toggleLock,
+  backFromChat,
+  _updateChatBadge,
+};
 
 })();
