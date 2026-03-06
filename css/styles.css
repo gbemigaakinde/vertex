@@ -1783,6 +1783,14 @@ textarea {
   pointer-events: none !important;
 }
 
+.btn.btn-loading,
+.btn.btn-loading:disabled {
+  opacity: 0.75 !important;
+  cursor: wait !important;
+  pointer-events: none !important;
+  padding-right: 2.5rem !important;
+}
+
 /* Colour overrides on .btn */
 .btn.bg-green-600,
 .btn[class*="bg-green"] {
