@@ -61,9 +61,11 @@
   if (!btn) return;
   if (isLoading) {
     btn.disabled = true;
+    btn.setAttribute('aria-busy', 'true');
     btn.classList.add('btn-loading');
   } else {
     btn.disabled = false;
+    btn.removeAttribute('aria-busy');
     btn.classList.remove('btn-loading');
   }
 }
