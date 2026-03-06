@@ -916,20 +916,25 @@
   });
 
   async function addSchool() {
-    const input = document.getElementById('newSchoolName');
-    const name  = input ? input.value.trim() : '';
-    if (!name) { UI.toast('Please enter a school name.', 'warning'); return; }
-    try {
-      const snap = await Db().collection('schools').where('name', '==', name).get();
-      if (!snap.empty) { UI.toast('This school name already exists.', 'warning'); return; }
-      await Db().collection('schools').add({ name });
-      if (input) input.value = '';
-      UI.toast(`School "${name}" added.`, 'success');
-    } catch (err) {
-      console.error('[teacher] addSchool error:', err);
-      UI.toast('Failed to add school.', 'error');
-    }
+  const input = document.getElementById('newSchoolName');
+  const name  = input ? input.value.trim() : '';
+  if (!name) { UI.toast('Please enter a school name.', 'warning'); return; }
+
+  const btn = document.querySelector('button[onclick="Teacher.addSchool()"]');
+  UI.setLoading(btn, true);
+  try {
+    const snap = await Db().collection('schools').where('name', '==', name).get();
+    if (!snap.empty) { UI.toast('This school name already exists.', 'warning'); return; }
+    await Db().collection('schools').add({ name });
+    if (input) input.value = '';
+    UI.toast(`School "${name}" added.`, 'success');
+  } catch (err) {
+    console.error('[teacher] addSchool error:', err);
+    UI.toast('Failed to add school.', 'error');
+  } finally {
+    UI.setLoading(btn, false);
   }
+}
 
   async function renameSchool(id, currentName) {
     const newName = window.prompt('Enter new school name:', currentName);
