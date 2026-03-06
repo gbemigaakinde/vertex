@@ -43,7 +43,7 @@
           <div id="loginPanel">
             <div class="cbt-field" style="margin-bottom:var(--sp-3);">
               <label class="cbt-label" for="loginEmail">Email address</label>
-              <input id="loginEmail" type="email" placeholder="you@example.com"
+              <input id="loginEmail" type="email" placeholder="yourname@vertex.com"
                      autocomplete="email" />
             </div>
 
@@ -118,7 +118,7 @@
 
               <div class="cbt-field">
                 <label class="cbt-label" for="regEmail">Email address</label>
-                <input id="regEmail" type="email" placeholder="you@example.com"
+                <input id="regEmail" type="email" placeholder="yourname@vertex.com"
                        autocomplete="email" />
               </div>
 
