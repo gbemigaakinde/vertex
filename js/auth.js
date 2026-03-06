@@ -264,90 +264,90 @@
 
   /* ── Login ── */
   async function login() {
-    const btn   = document.getElementById('loginBtn');
-    const email = (document.getElementById('loginEmail')?.value || '').trim();
-    const pass  = document.getElementById('loginPass')?.value || '';
+  const btn   = document.getElementById('loginBtn');
+  const email = (document.getElementById('loginEmail')?.value || '').trim();
+  const pass  = document.getElementById('loginPass')?.value || '';
 
-    if (!email || !pass) {
-      UI.toast('Please enter your email and password.', 'warning');
-      return;
-    }
+  if (!email || !pass) {
+    UI.toast('Please enter your email and password.', 'warning');
+    return;
+  }
 
-    UI.setLoading(btn, true);
-    try {
-      AppState.cancelListener('schoolDropdown');
-      await window.fbAuth.signInWithEmailAndPassword(email, pass);
-    } catch (err) {
-      const msg = err.code === 'auth/user-not-found'     ? 'No account found with this email.'
-                : err.code === 'auth/wrong-password'     ? 'Incorrect password.'
-                : err.code === 'auth/too-many-requests'  ? 'Too many failed attempts. Try again later.'
-                : err.code === 'auth/invalid-email'      ? 'Invalid email address.'
-                : err.code === 'auth/invalid-credential' ? 'Incorrect email or password.'
-                : 'Login failed. Please try again.';
-      UI.toast(msg, 'error');
-    } finally {
-      if (document.getElementById('loginBtn')) {
-        UI.setLoading(btn, false);
-      }
+  UI.setLoading(btn, true);
+  try {
+    AppState.cancelListener('schoolDropdown');
+    await window.fbAuth.signInWithEmailAndPassword(email, pass);
+  } catch (err) {
+    const msg = err.code === 'auth/user-not-found'     ? 'No account found with this email.'
+              : err.code === 'auth/wrong-password'     ? 'Incorrect password.'
+              : err.code === 'auth/too-many-requests'  ? 'Too many failed attempts. Try again later.'
+              : err.code === 'auth/invalid-email'      ? 'Invalid email address.'
+              : err.code === 'auth/invalid-credential' ? 'Incorrect email or password.'
+              : 'Login failed. Please try again.';
+    UI.toast(msg, 'error');
+  } finally {
+    if (document.getElementById('loginBtn')) {
+      UI.setLoading(btn, false);
     }
   }
+}
 
   /* ── Register ── */
   async function register() {
-    const btn    = document.getElementById('regBtn');
-    const name   = (document.getElementById('regName')?.value   || '').trim();
-    const cls    = document.getElementById('regClass')?.value   || '';
-    const school = document.getElementById('regSchool')?.value  || '';
-    const email  = (document.getElementById('regEmail')?.value  || '').trim();
-    const pass   = document.getElementById('regPass')?.value    || '';
+  const btn    = document.getElementById('regBtn');
+  const name   = (document.getElementById('regName')?.value   || '').trim();
+  const cls    = document.getElementById('regClass')?.value   || '';
+  const school = document.getElementById('regSchool')?.value  || '';
+  const email  = (document.getElementById('regEmail')?.value  || '').trim();
+  const pass   = document.getElementById('regPass')?.value    || '';
 
-    if (!name)           { UI.toast('Please enter your full name.',             'warning'); return; }
-    if (!cls)            { UI.toast('Please select your class.',                'warning'); return; }
-    if (!school)         { UI.toast('Please select your school.',               'warning'); return; }
-    if (!email)          { UI.toast('Please enter your email.',                 'warning'); return; }
-    if (pass.length < 6) { UI.toast('Password must be at least 6 characters.', 'warning'); return; }
+  if (!name)           { UI.toast('Please enter your full name.',             'warning'); return; }
+  if (!cls)            { UI.toast('Please select your class.',                'warning'); return; }
+  if (!school)         { UI.toast('Please select your school.',               'warning'); return; }
+  if (!email)          { UI.toast('Please enter your email.',                 'warning'); return; }
+  if (pass.length < 6) { UI.toast('Password must be at least 6 characters.', 'warning'); return; }
 
-    UI.setLoading(btn, true);
-    window._registrationInProgress = true;
+  UI.setLoading(btn, true);
+  window._registrationInProgress = true;
 
-    try {
-      const cred = await window.fbAuth.createUserWithEmailAndPassword(email, pass);
-      const uid  = cred.user.uid;
+  try {
+    const cred = await window.fbAuth.createUserWithEmailAndPassword(email, pass);
+    const uid  = cred.user.uid;
 
-      await window.fbDb.collection('students').doc(uid).set({
-        name,
-        class:     cls,
-        school,
-        email,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp()
-      });
+    await window.fbDb.collection('students').doc(uid).set({
+      name,
+      class:     cls,
+      school,
+      email,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
 
-      window._registrationInProgress = false;
-      _pendingLoginEmail = email;
-      await window.fbAuth.signOut();
+    window._registrationInProgress = false;
+    _pendingLoginEmail = email;
+    await window.fbAuth.signOut();
 
-    } catch (err) {
-      window._registrationInProgress = false;
+  } catch (err) {
+    window._registrationInProgress = false;
 
-      if (window.fbAuth.currentUser) {
-        window.fbAuth.signOut().catch(() => {});
-      }
+    if (window.fbAuth.currentUser) {
+      window.fbAuth.signOut().catch(() => {});
+    }
 
-      const msg = err.code === 'auth/email-already-in-use'  ? 'An account with this email already exists.'
-                : err.code === 'auth/invalid-email'         ? 'Invalid email address.'
-                : err.code === 'auth/weak-password'         ? 'Password must be at least 6 characters.'
-                : err.code === 'auth/operation-not-allowed' ? 'Registration is currently disabled. Contact Master Timothy.'
-                : err.code === 'auth/too-many-requests'     ? 'Too many attempts. Please wait and try again.'
-                : err.code === 'permission-denied'          ? 'Could not save profile. Please try again.'
-                : 'Registration failed. Please try again.';
-      UI.toast(msg, 'error', 8000);
+    const msg = err.code === 'auth/email-already-in-use'  ? 'An account with this email already exists.'
+              : err.code === 'auth/invalid-email'         ? 'Invalid email address.'
+              : err.code === 'auth/weak-password'         ? 'Password must be at least 6 characters.'
+              : err.code === 'auth/operation-not-allowed' ? 'Registration is currently disabled. Contact Master Timothy.'
+              : err.code === 'auth/too-many-requests'     ? 'Too many attempts. Please wait and try again.'
+              : err.code === 'permission-denied'          ? 'Could not save profile. Please try again.'
+              : 'Registration failed. Please try again.';
+    UI.toast(msg, 'error', 8000);
 
-    } finally {
-      if (document.getElementById('regBtn')) {
-        UI.setLoading(btn, false);
-      }
+  } finally {
+    if (document.getElementById('regBtn')) {
+      UI.setLoading(btn, false);
     }
   }
+}
 
   /* ── Forgot password ── */
   async function forgotPassword() {
