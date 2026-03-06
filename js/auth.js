@@ -277,6 +277,8 @@
   try {
     AppState.cancelListener('schoolDropdown');
     await window.fbAuth.signInWithEmailAndPassword(email, pass);
+    // On success the DOM is replaced by onAuthStateChanged → finally never runs setLoading(false)
+    // That is intentional — the login panel is destroyed.
   } catch (err) {
     const msg = err.code === 'auth/user-not-found'     ? 'No account found with this email.'
               : err.code === 'auth/wrong-password'     ? 'Incorrect password.'
@@ -285,10 +287,7 @@
               : err.code === 'auth/invalid-credential' ? 'Incorrect email or password.'
               : 'Login failed. Please try again.';
     UI.toast(msg, 'error');
-  } finally {
-    if (document.getElementById('loginBtn')) {
-      UI.setLoading(btn, false);
-    }
+    UI.setLoading(btn, false);
   }
 }
 
@@ -325,6 +324,8 @@
     window._registrationInProgress = false;
     _pendingLoginEmail = email;
     await window.fbAuth.signOut();
+    // signOut triggers onAuthStateChanged → renderLogin() → DOM replaced
+    // setLoading(false) is not needed; the element is gone
 
   } catch (err) {
     window._registrationInProgress = false;
@@ -341,11 +342,7 @@
               : err.code === 'permission-denied'          ? 'Could not save profile. Please try again.'
               : 'Registration failed. Please try again.';
     UI.toast(msg, 'error', 8000);
-
-  } finally {
-    if (document.getElementById('regBtn')) {
-      UI.setLoading(btn, false);
-    }
+    UI.setLoading(btn, false);
   }
 }
 
