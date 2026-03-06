@@ -58,17 +58,15 @@
   /* ─────────────────────────────────────────────────────── */
 
   function setLoading(btn, isLoading) {
-    if (!btn) return;
-    if (isLoading) {
-      btn.disabled = true;
-      // Support both naming conventions
-      btn.classList.add('btn-loading');
-      btn._originalText = btn.textContent;
-    } else {
-      btn.disabled = false;
-      btn.classList.remove('btn-loading');
-    }
+  if (!btn) return;
+  if (isLoading) {
+    btn.disabled = true;
+    btn.classList.add('btn-loading');
+  } else {
+    btn.disabled = false;
+    btn.classList.remove('btn-loading');
   }
+}
 
   /* ─────────────────────────────────────────────────────── */
   /* Mount main content                                      */
