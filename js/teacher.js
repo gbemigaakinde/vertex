@@ -920,11 +920,15 @@
   const name  = input ? input.value.trim() : '';
   if (!name) { UI.toast('Please enter a school name.', 'warning'); return; }
 
-  const btn = document.querySelector('button[onclick="Teacher.addSchool()"]');
+  const btn = document.querySelector('#teacher-schools button[onclick="Teacher.addSchool()"]');
   UI.setLoading(btn, true);
   try {
     const snap = await Db().collection('schools').where('name', '==', name).get();
-    if (!snap.empty) { UI.toast('This school name already exists.', 'warning'); return; }
+    if (!snap.empty) {
+      UI.toast('This school name already exists.', 'warning');
+      UI.setLoading(btn, false);
+      return;
+    }
     await Db().collection('schools').add({ name });
     if (input) input.value = '';
     UI.toast(`School "${name}" added.`, 'success');
