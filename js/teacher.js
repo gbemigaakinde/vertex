@@ -1593,7 +1593,9 @@
   /* _renderExistingTasksList                            */
   /* -------------------------------------------------- */
 
-  function _renderExistingTasksList(docs) {
+  // REPLACE the _renderExistingTasksList function in teacher.js with this:
+
+function _renderExistingTasksList(docs) {
     let container = document.getElementById('existingTasksList');
     if (!container) {
       const panel = document.getElementById('teacher-tasks');
@@ -1634,8 +1636,6 @@
       return found ? found.name + ' (' + found.cls + ')' : uid;
     }
 
-    // A task is recurring if its recurrence field says so, OR if its docId
-    // uses the 'weekly_' prefix (covers older docs without a recurrence field).
     function isRecurringTask(doc) {
       const d = doc.data();
       return d.recurrence === 'weekly' ||
@@ -1685,11 +1685,20 @@
           '</div>' +
           `<p style="font-size:.6875rem;color:var(--c-text-4,#9ca3af);word-break:break-all;">${_esc(datesDisplay)}</p>` +
           '</div>' +
+          '<div style="display:flex;gap:.375rem;align-items:center;flex-shrink:0;margin-top:1px;">' +
+          `<button onclick="Teacher.exportTaskReportPDF('${_esc(doc.id)}')"` +
+          ` style="background:var(--brand,#3b5bdb);color:#fff;border:none;cursor:pointer;` +
+          `font-size:.6875rem;font-weight:700;padding:3px 9px;border-radius:4px;` +
+          `white-space:nowrap;font-family:inherit;line-height:1.5;` +
+          `transition:background .12s;" ` +
+          `onmouseenter="this.style.background='#2f4ac4'" onmouseleave="this.style.background='var(--brand,#3b5bdb)'"` +
+          `title="Export attendance & progress report as PDF">📄 PDF</button>` +
           `<button class="teacher-delete-task" data-task-id="${_esc(doc.id)}"` +
           ` style="background:none;border:none;cursor:pointer;font-size:1rem;line-height:1;` +
-          `padding:2px 4px;color:var(--c-text-4,#9ca3af);flex-shrink:0;margin-top:1px;"` +
+          `padding:2px 4px;color:var(--c-text-4,#9ca3af);"` +
           ` onmouseenter="this.style.color='var(--c-danger,#dc2626)'"` +
           ` onmouseleave="this.style.color='var(--c-text-4,#9ca3af)'">&#215;</button>` +
+          '</div>' +
           '</div>';
       }).join('') +
       '</div></div>';
@@ -2125,41 +2134,777 @@
 
   function Db() { return window.fbDb; }
 
+   /* -------------------------------------------------- */
+  /* _loadJsPDF — lazy-load jsPDF + autoTable from CDN  */
+  /* -------------------------------------------------- */
+
+  function _loadJsPDF() {
+    return new Promise((resolve, reject) => {
+      if (window.jspdf && window.jspdf.jsPDF) { resolve(window.jspdf.jsPDF); return; }
+
+      function loadScript(src) {
+        return new Promise((res, rej) => {
+          const s = document.createElement('script');
+          s.src = src; s.onload = res; s.onerror = rej;
+          document.head.appendChild(s);
+        });
+      }
+
+      loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js')
+        .then(() => loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js'))
+        .then(() => resolve(window.jspdf.jsPDF))
+        .catch(reject);
+    });
+  }
+
+  /* -------------------------------------------------- */
+  /* exportTaskReportPDF                                 */
+  /* -------------------------------------------------- */
+
+  async function exportTaskReportPDF(docId) {
+    if (!docId) return;
+
+    UI.toast('Generating PDF report…', 'info', 3000);
+
+    let jsPDF;
+    try {
+      jsPDF = await _loadJsPDF();
+    } catch (e) {
+      UI.toast('Could not load PDF library. Check your internet connection.', 'error');
+      return;
+    }
+
+    /* ── Fetch task doc from Firestore ── */
+    let taskDoc;
+    try {
+      const snap = await Db().collection('coachingTasks').doc(docId).get();
+      if (!snap.exists) { UI.toast('Task not found.', 'error'); return; }
+      taskDoc = snap.data();
+    } catch (e) {
+      console.error('[teacher] exportTaskReportPDF fetch error:', e);
+      UI.toast('Failed to fetch task data.', 'error');
+      return;
+    }
+
+    /* ── Resolve dates via tasks.js helper ── */
+    const todayStr = (window.Tasks && Tasks._localDateStr) ? Tasks._localDateStr() : (() => {
+      const d = new Date();
+      return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+    })();
+
+    const allDates = (window.Tasks && Tasks._resolveTaskDates)
+      ? Tasks._resolveTaskDates(taskDoc, { upToDate: todayStr })
+      : (taskDoc.dates || []).filter(d => d <= todayStr);
+
+    /* ── Determine scope: which students see this task ── */
+    function getStudentsForDocId(id) {
+      if (id === 'global' || id === 'weekly') return _msgStudentCache;
+      if (id.startsWith('weekly_class_')) {
+        const cls = id.replace('weekly_class_', '');
+        return _msgStudentCache.filter(s => s.cls.replace(/\s+/g,'').toLowerCase() === cls);
+      }
+      if (id.startsWith('weekly_student_')) {
+        const uid = id.replace('weekly_student_', '');
+        return _msgStudentCache.filter(s => s.id === uid);
+      }
+      if (id.startsWith('class_')) {
+        const cls = id.replace('class_', '');
+        return _msgStudentCache.filter(s => s.cls.replace(/\s+/g,'').toLowerCase() === cls);
+      }
+      if (id.startsWith('student_')) {
+        const uid = id.replace('student_', '');
+        return _msgStudentCache.filter(s => s.id === uid);
+      }
+      return [];
+    }
+
+    const students = getStudentsForDocId(docId);
+
+    /* ── Helpers ── */
+    function fmtDate(str) {
+      if (!str) return '—';
+      const p = str.split('-');
+      return new Date(+p[0], +p[1]-1, +p[2]).toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
+    }
+    function fmtDateShort(str) {
+      if (!str) return '—';
+      const p = str.split('-');
+      return new Date(+p[0], +p[1]-1, +p[2]).toLocaleDateString('en-GB', { day:'numeric', month:'short' });
+    }
+    function fmtDuration(ms) {
+      if (!ms) return 'Default (2 hrs)';
+      const h = Math.floor(ms/3600000), m = Math.floor((ms%3600000)/60000);
+      if (h===0) return `${m} min`; if (m===0) return `${h} hr`; return `${h} hr ${m} min`;
+    }
+    function scopeText(id) {
+      if (id === 'global' || id === 'weekly') return 'All Students';
+      if (id.startsWith('weekly_class_') || id.startsWith('class_')) {
+        const cls = id.replace('weekly_class_','').replace('class_','');
+        return 'Class: ' + cls.toUpperCase();
+      }
+      if (id.startsWith('weekly_student_') || id.startsWith('student_')) {
+        const uid = id.replace('weekly_student_','').replace('student_','');
+        const s = _msgStudentCache.find(x => x.id === uid);
+        return 'Student: ' + (s ? s.name : uid);
+      }
+      return id;
+    }
+    function recurrenceText(d) {
+      if (!d.recurrence || d.recurrence === 'once') return 'One-time';
+      if (d.recurrence === 'weekly') return 'Weekly (recurring)';
+      if (d.recurrence === 'range') return 'Date range';
+      return d.recurrence;
+    }
+
+    /* ── Build per-student stats ── */
+    const studentStats = students.map(s => {
+      const comp = s.coachingCompleted || {};
+      const done = allDates.filter(d => !!comp[d]).length;
+      const pastOnly = allDates.filter(d => d < todayStr);
+      const missed = pastOnly.filter(d => !comp[d]).length;
+      const pct = allDates.length > 0 ? Math.round((done / allDates.length) * 100) : 0;
+      return { ...s, done, missed, total: allDates.length, pct, comp };
+    }).sort((a, b) => b.pct - a.pct || a.name.localeCompare(b.name));
+
+    const cohortDone    = studentStats.reduce((n, s) => n + s.done, 0);
+    const cohortPossible = studentStats.length * allDates.length;
+    const cohortPct     = cohortPossible > 0 ? Math.round((cohortDone / cohortPossible) * 100) : 0;
+
+    /* ── Build class breakdown ── */
+    const byClass = {};
+    studentStats.forEach(s => {
+      if (!byClass[s.cls]) byClass[s.cls] = { done:0, total:0, count:0 };
+      byClass[s.cls].done  += s.done;
+      byClass[s.cls].total += s.total;
+      byClass[s.cls].count++;
+    });
+
+    /* ════════════════════════════════════════════════════
+       PDF DOCUMENT
+       ════════════════════════════════════════════════════ */
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    const PAGE_W   = 210;
+    const PAGE_H   = 297;
+    const MARGIN   = 14;
+    const CONTENT_W = PAGE_W - MARGIN * 2;
+
+    /* ── Colour palette ── */
+    const C = {
+      brand:       [59, 91, 219],
+      brandLight:  [237, 242, 255],
+      brandBorder: [186, 200, 255],
+      success:     [47, 158, 68],
+      successBg:   [235, 251, 238],
+      danger:      [224, 49, 49],
+      dangerBg:    [255, 245, 245],
+      warning:     [232, 137, 12],
+      warningBg:   [255, 249, 219],
+      text:        [17, 24, 39],
+      textSec:     [55, 65, 81],
+      textTert:    [107, 114, 128],
+      textDis:     [156, 163, 175],
+      border:      [229, 231, 235],
+      surface:     [255, 255, 255],
+      surfaceMuted:[243, 244, 246],
+      purple:      [124, 58, 237],
+      purpleBg:    [245, 243, 255],
+    };
+
+    let y = 0; // current Y cursor
+
+    /* ────────────────────────────────────────────────────
+       Helper: add new page if needed
+    ──────────────────────────────────────────────────── */
+    function checkPage(needed) {
+      if (y + needed > PAGE_H - 16) {
+        doc.addPage();
+        y = MARGIN;
+        _drawPageFooter();
+      }
+    }
+
+    /* ────────────────────────────────────────────────────
+       Helper: filled rounded rect (simulated with rect)
+    ──────────────────────────────────────────────────── */
+    function fillRect(x, ry, w, h, color, stroke) {
+      doc.setFillColor(...color);
+      if (stroke) { doc.setDrawColor(...stroke); doc.roundedRect(x, ry, w, h, 2, 2, 'FD'); }
+      else { doc.roundedRect(x, ry, w, h, 2, 2, 'F'); }
+    }
+
+    /* ────────────────────────────────────────────────────
+       Helper: draw page header stripe
+    ──────────────────────────────────────────────────── */
+    function _drawPageHeader() {
+      /* Top brand stripe */
+      doc.setFillColor(...C.brand);
+      doc.rect(0, 0, PAGE_W, 22, 'F');
+
+      /* Logo square */
+      doc.setFillColor(255,255,255);
+      doc.roundedRect(MARGIN, 5, 12, 12, 2, 2, 'F');
+      doc.setTextColor(...C.brand);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('V', MARGIN + 6, 13.5, { align: 'center' });
+
+      /* App name */
+      doc.setTextColor(255, 255, 255);
+      doc.setFontSize(11);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Vertex Tutorial CBT', MARGIN + 16, 12.5);
+
+      /* Report label top-right */
+      doc.setFontSize(7.5);
+      doc.setFont('helvetica', 'normal');
+      doc.text('COACHING TASK REPORT', PAGE_W - MARGIN, 9, { align: 'right' });
+      doc.text('Generated: ' + new Date().toLocaleString('en-GB', { dateStyle:'medium', timeStyle:'short' }), PAGE_W - MARGIN, 14, { align: 'right' });
+
+      y = 28;
+    }
+
+    /* ────────────────────────────────────────────────────
+       Helper: draw page footer
+    ──────────────────────────────────────────────────── */
+    function _drawPageFooter() {
+      const pageCount = doc.internal.getNumberOfPages();
+      doc.setDrawColor(...C.border);
+      doc.setLineWidth(0.3);
+      doc.line(MARGIN, PAGE_H - 10, PAGE_W - MARGIN, PAGE_H - 10);
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...C.textDis);
+      doc.text('Vertex Tutorial CBT — Confidential Report', MARGIN, PAGE_H - 5.5);
+      doc.text(`Page ${pageCount}`, PAGE_W - MARGIN, PAGE_H - 5.5, { align: 'right' });
+    }
+
+    /* ────────────────────────────────────────────────────
+       Helper: section heading
+    ──────────────────────────────────────────────────── */
+    function sectionHeading(text) {
+      checkPage(14);
+      doc.setFillColor(...C.surfaceMuted);
+      doc.setDrawColor(...C.border);
+      doc.setLineWidth(0.3);
+      doc.roundedRect(MARGIN, y, CONTENT_W, 8, 1.5, 1.5, 'FD');
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...C.brand);
+      doc.text(text.toUpperCase(), MARGIN + 4, y + 5.3);
+      y += 11;
+    }
+
+    /* ────────────────────────────────────────────────────
+       Helper: key-value row
+    ──────────────────────────────────────────────────── */
+    function kvRow(label, value, accent) {
+      checkPage(8);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...C.textTert);
+      doc.text(label, MARGIN + 2, y + 4.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...(accent || C.text));
+      doc.text(String(value), MARGIN + 48, y + 4.5);
+      y += 6.5;
+    }
+
+    /* ────────────────────────────────────────────────────
+       Helper: progress bar (text-mode)
+    ──────────────────────────────────────────────────── */
+    function miniProgressBar(x, ry, w, h, pct, color) {
+      doc.setFillColor(...C.border);
+      doc.roundedRect(x, ry, w, h, h/2, h/2, 'F');
+      if (pct > 0) {
+        doc.setFillColor(...color);
+        doc.roundedRect(x, ry, Math.max(w * pct / 100, h), h, h/2, h/2, 'F');
+      }
+    }
+
+    /* ════════════════════════════════════════════════════
+       PAGE 1 — TITLE + TASK DETAILS + TIMETABLE
+       ════════════════════════════════════════════════════ */
+    _drawPageHeader();
+
+    /* ── Task title hero block ── */
+    fillRect(MARGIN, y, CONTENT_W, 28, C.brandLight, C.brandBorder);
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.brand);
+    const titleLines = doc.splitTextToSize(taskDoc.title || 'Untitled Task', CONTENT_W - 30);
+    doc.text(titleLines, MARGIN + 5, y + 9);
+
+    /* Active badge */
+    const badgeX = PAGE_W - MARGIN - 30;
+    if (taskDoc.active) {
+      fillRect(badgeX, y + 4, 26, 7, C.success);
+      doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+      doc.text('● ACTIVE', badgeX + 13, y + 8.8, { align:'center' });
+    } else {
+      fillRect(badgeX, y + 4, 26, 7, C.surfaceMuted, C.border);
+      doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(...C.textDis);
+      doc.text('INACTIVE', badgeX + 13, y + 8.8, { align:'center' });
+    }
+
+    /* Recurrence pill */
+    const recTxt = recurrenceText(taskDoc);
+    const isRec  = taskDoc.recurrence && taskDoc.recurrence !== 'once';
+    fillRect(MARGIN + 5, y + 18, 40, 6, isRec ? C.purpleBg : C.surfaceMuted);
+    doc.setFontSize(7); doc.setFont('helvetica','bold');
+    doc.setTextColor(...(isRec ? C.purple : C.textTert));
+    doc.text((isRec ? '🔄 ' : '') + recTxt, MARGIN + 7, y + 22.2);
+
+    y += 32;
+
+    /* ── Task Details section ── */
+    sectionHeading('Task Details');
+
+    kvRow('Scope',      scopeText(docId));
+    kvRow('Recurrence', recurrenceText(taskDoc));
+    kvRow('Status',     taskDoc.active ? 'Active (visible to students)' : 'Inactive', taskDoc.active ? C.success : C.textDis);
+    kvRow('Duration',   fmtDuration(taskDoc.durationMs));
+    kvRow('Sessions',   allDates.length + ' scheduled (to date)');
+    kvRow('Students',   students.length + ' enrolled');
+
+    if (taskDoc.message) {
+      checkPage(18);
+      doc.setFontSize(7.5);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...C.textTert);
+      doc.text('Task Message', MARGIN + 2, y + 4);
+      y += 6;
+      fillRect(MARGIN, y, CONTENT_W, 0, C.surfaceMuted); // placeholder, height set below
+      const msgLines = doc.splitTextToSize(taskDoc.message, CONTENT_W - 10);
+      const msgH = msgLines.length * 4.5 + 5;
+      checkPage(msgH + 4);
+      fillRect(MARGIN, y, CONTENT_W, msgH, C.surfaceMuted, C.border);
+      doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...C.textSec);
+      doc.text(msgLines, MARGIN + 4, y + 4.5);
+      y += msgH + 4;
+    }
+
+    y += 2;
+
+    /* ── Timetable section ── */
+    sectionHeading('Timetable & Schedule');
+
+    if (taskDoc.recurrence && taskDoc.recurrence !== 'once') {
+      kvRow('Start Date', taskDoc.startDate ? fmtDate(taskDoc.startDate) : '—');
+      kvRow('End Date',   taskDoc.endDate   ? fmtDate(taskDoc.endDate)   : 'Open-ended');
+      kvRow('Active Days', (taskDoc.weeklyDays && taskDoc.weeklyDays.length > 0)
+        ? taskDoc.weeklyDays.join(', ')
+        : taskDoc.recurrence === 'range' ? 'All calendar days' : '—');
+    }
+
+    /* Date list table */
+    if (allDates.length > 0) {
+      checkPage(14);
+      doc.setFontSize(7.5);
+      doc.setFont('helvetica','bold');
+      doc.setTextColor(...C.textTert);
+      doc.text(`Scheduled Sessions to Date (${allDates.length} total)`, MARGIN + 2, y + 4);
+      y += 7;
+
+      /* Build date rows in columns of 4 */
+      const COLS = 4;
+      const colW = CONTENT_W / COLS;
+      const chunks = [];
+      for (let i = 0; i < allDates.length; i += COLS) chunks.push(allDates.slice(i, i + COLS));
+
+      // Check how many rows we need
+      const rowH = 7;
+      checkPage(chunks.length * rowH + 4);
+
+      chunks.forEach((row, ri) => {
+        const ry2 = y + ri * rowH;
+        if (ry2 + rowH > PAGE_H - 16) {
+          doc.addPage(); y = MARGIN - ri * rowH; _drawPageFooter();
+        }
+        row.forEach((dateStr, ci) => {
+          const cx = MARGIN + ci * colW;
+          const isPast = dateStr < todayStr;
+          const isToday = dateStr === todayStr;
+
+          // Check how many students completed this date
+          const completedCount = studentStats.filter(s => !!s.comp[dateStr]).length;
+          const allDone = completedCount === studentStats.length && studentStats.length > 0;
+
+          const bgColor = isToday ? C.warningBg : allDone ? C.successBg : isPast ? C.surfaceMuted : C.surface;
+          const borderColor = isToday ? C.warning : allDone ? C.success : C.border;
+
+          fillRect(cx + 1, ry2, colW - 2, rowH - 1, bgColor, borderColor);
+
+          doc.setFontSize(6.5); doc.setFont('helvetica','bold');
+          doc.setTextColor(...(isToday ? C.warning : allDone ? C.success : C.text));
+          doc.text(fmtDateShort(dateStr), cx + 3, ry2 + 3.8);
+
+          doc.setFontSize(5.5); doc.setFont('helvetica','normal');
+          doc.setTextColor(...C.textTert);
+          doc.text(completedCount + '/' + studentStats.length + ' done', cx + 3, ry2 + 6.5);
+        });
+      });
+
+      y += chunks.length * rowH + 6;
+    }
+
+    /* ── Subject restrictions ── */
+    const dsKeys = Object.keys(taskDoc.dateSubjects || {});
+    if (dsKeys.length > 0) {
+      sectionHeading('Subject Restrictions');
+      const subjRows = dsKeys.map(k => [
+        k.match(/^\d{4}-\d{2}-\d{2}$/) ? fmtDate(k) : k,
+        (taskDoc.dateSubjects[k] || []).join(', ') || 'None'
+      ]);
+      doc.autoTable({
+        startY: y,
+        head: [['Date / Day', 'Required Subjects']],
+        body: subjRows,
+        margin: { left: MARGIN, right: MARGIN },
+        headStyles: {
+          fillColor: C.brand,
+          textColor: [255,255,255],
+          fontStyle: 'bold',
+          fontSize: 8,
+          cellPadding: { top:3, bottom:3, left:4, right:4 },
+        },
+        bodyStyles: {
+          fontSize: 7.5,
+          textColor: C.text,
+          cellPadding: { top:2.5, bottom:2.5, left:4, right:4 },
+        },
+        alternateRowStyles: { fillColor: C.surfaceMuted },
+        tableLineColor: C.border,
+        tableLineWidth: 0.2,
+        theme: 'grid',
+      });
+      y = doc.lastAutoTable.finalY + 6;
+    }
+
+    _drawPageFooter();
+
+    /* ════════════════════════════════════════════════════
+       PAGE 2+ — STUDENT PROGRESS TABLE
+       ════════════════════════════════════════════════════ */
+    doc.addPage();
+    _drawPageHeader();
+    _drawPageFooter();
+
+    sectionHeading('Student Attendance & Progress');
+
+    /* Cohort summary stats bar */
+    checkPage(24);
+    fillRect(MARGIN, y, CONTENT_W, 20, C.brandLight, C.brandBorder);
+
+    const statCols = [
+      { label:'Students Enrolled', value: students.length,    color: C.brand   },
+      { label:'Sessions to Date',  value: allDates.length,    color: C.brand   },
+      { label:'Total Completions', value: cohortDone,         color: C.success },
+      { label:'Cohort Attendance', value: cohortPct + '%',    color: cohortPct >= 70 ? C.success : cohortPct >= 50 ? C.warning : C.danger },
+    ];
+    const sw = CONTENT_W / statCols.length;
+    statCols.forEach((sc, i) => {
+      const sx = MARGIN + i * sw;
+      if (i > 0) {
+        doc.setDrawColor(...C.brandBorder);
+        doc.setLineWidth(0.3);
+        doc.line(sx, y + 3, sx, y + 17);
+      }
+      doc.setFontSize(14); doc.setFont('helvetica','bold'); doc.setTextColor(...sc.color);
+      doc.text(String(sc.value), sx + sw/2, y + 11, { align:'center' });
+      doc.setFontSize(6.5); doc.setFont('helvetica','normal'); doc.setTextColor(...C.textTert);
+      doc.text(sc.label, sx + sw/2, y + 17, { align:'center' });
+    });
+    y += 24;
+
+    /* ── Main student progress table ── */
+    /* Decide how many date columns to include (max 10 for readability) */
+    const MAX_DATE_COLS = 10;
+    const displayDates  = allDates.slice(-MAX_DATE_COLS); // most recent dates
+    const hasMore       = allDates.length > MAX_DATE_COLS;
+
+    const dateHeaders = displayDates.map(d => {
+      const p = d.split('-');
+      const dt = new Date(+p[0], +p[1]-1, +p[2]);
+      return dt.toLocaleDateString('en-GB', { weekday:'narrow', day:'numeric', month:'numeric' });
+    });
+
+    const tableHead = [
+      ['#', 'Student', 'Class', 'Done', 'Miss', '%', 'Progress', ...dateHeaders]
+    ];
+
+    const tableBody = studentStats.map((s, idx) => {
+      const progressBar = '█'.repeat(Math.round(s.pct / 10)) + '░'.repeat(10 - Math.round(s.pct / 10));
+      const dateDots    = displayDates.map(d => s.comp[d] ? '✓' : (d < todayStr ? '✗' : '·'));
+      return [
+        String(idx + 1),
+        s.name,
+        s.cls || '—',
+        String(s.done),
+        String(s.missed),
+        s.pct + '%',
+        progressBar,
+        ...dateDots
+      ];
+    });
+
+    const pctColor = (pct) => {
+      if (pct >= 80) return C.success;
+      if (pct >= 50) return C.warning;
+      return C.danger;
+    };
+
+    doc.autoTable({
+      startY: y,
+      head: tableHead,
+      body: tableBody,
+      margin: { left: MARGIN, right: MARGIN },
+      headStyles: {
+        fillColor: C.brand,
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 6.5,
+        cellPadding: { top:3, bottom:3, left:2, right:2 },
+        halign: 'center',
+      },
+      columnStyles: {
+        0: { cellWidth: 7,  halign:'center', fontSize: 6 },
+        1: { cellWidth: 32, halign:'left',   fontStyle:'bold', fontSize: 7 },
+        2: { cellWidth: 18, halign:'left',   fontSize: 6.5 },
+        3: { cellWidth: 9,  halign:'center', fontSize: 7, textColor: C.success },
+        4: { cellWidth: 9,  halign:'center', fontSize: 7, textColor: C.danger  },
+        5: { cellWidth: 11, halign:'center', fontStyle:'bold', fontSize: 7 },
+        6: { cellWidth: 26, halign:'left',   fontStyle:'normal', fontSize: 5.5, textColor: C.brand },
+      },
+      bodyStyles: {
+        fontSize: 6,
+        textColor: C.text,
+        cellPadding: { top: 2.5, bottom: 2.5, left: 2, right: 2 },
+        valign: 'middle',
+      },
+      alternateRowStyles: { fillColor: C.surfaceMuted },
+      tableLineColor: C.border,
+      tableLineWidth: 0.2,
+      theme: 'grid',
+      willDrawCell: function(data) {
+        /* Colour the % cell by performance */
+        if (data.column.index === 5 && data.section === 'body') {
+          const pct = parseInt(data.cell.text[0], 10) || 0;
+          data.cell.styles.textColor = pctColor(pct);
+        }
+        /* Colour date dot cells */
+        if (data.column.index >= 7 && data.section === 'body') {
+          const txt = data.cell.text[0];
+          data.cell.styles.textColor = txt === '✓' ? C.success : txt === '✗' ? C.danger : C.textDis;
+          data.cell.styles.fontStyle = 'bold';
+          data.cell.styles.halign    = 'center';
+          data.cell.styles.fontSize  = 7;
+        }
+      },
+    });
+
+    y = doc.lastAutoTable.finalY + 4;
+
+    if (hasMore) {
+      checkPage(8);
+      doc.setFontSize(7); doc.setFont('helvetica','italic'); doc.setTextColor(...C.textTert);
+      doc.text(`* Showing most recent ${MAX_DATE_COLS} sessions. ${allDates.length - MAX_DATE_COLS} earlier session(s) omitted from date columns but included in totals.`, MARGIN, y + 4);
+      y += 8;
+    }
+
+    /* ── Class breakdown table (if multiple classes) ── */
+    const classKeys = Object.keys(byClass);
+    if (classKeys.length > 1) {
+      checkPage(20);
+      y += 4;
+      sectionHeading('Class Breakdown');
+
+      doc.autoTable({
+        startY: y,
+        head: [['Class', 'Students', 'Sessions', 'Total Done', 'Attendance %']],
+        body: classKeys.sort().map(cls => {
+          const b   = byClass[cls];
+          const pct = b.total > 0 ? Math.round((b.done / b.total) * 100) : 0;
+          return [cls || '—', String(b.count), String(b.total / b.count | 0), String(b.done), pct + '%'];
+        }),
+        margin: { left: MARGIN, right: MARGIN },
+        headStyles: {
+          fillColor: C.brand,
+          textColor: [255,255,255],
+          fontStyle: 'bold',
+          fontSize: 8,
+          cellPadding: { top:3, bottom:3, left:4, right:4 },
+        },
+        bodyStyles: {
+          fontSize: 7.5,
+          cellPadding: { top:2.5, bottom:2.5, left:4, right:4 },
+        },
+        columnStyles: {
+          0: { fontStyle:'bold' },
+          4: { fontStyle:'bold' },
+        },
+        alternateRowStyles: { fillColor: C.surfaceMuted },
+        tableLineColor: C.border,
+        tableLineWidth: 0.2,
+        theme: 'grid',
+        willDrawCell: function(data) {
+          if (data.column.index === 4 && data.section === 'body') {
+            const pct = parseInt(data.cell.text[0], 10) || 0;
+            data.cell.styles.textColor = pctColor(pct);
+          }
+        },
+      });
+      y = doc.lastAutoTable.finalY + 4;
+    }
+
+    /* ── Individual Student Detail Pages (one per student with full date log) ── */
+    if (allDates.length > 0 && studentStats.length <= 30) {
+      // Only generate individual pages if small-enough cohort (prevents 200-page PDFs)
+      studentStats.forEach((s, si) => {
+        doc.addPage();
+        _drawPageHeader();
+        _drawPageFooter();
+
+        /* Student header card */
+        fillRect(MARGIN, y, CONTENT_W, 22, C.brandLight, C.brandBorder);
+        doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.setTextColor(...C.brand);
+        doc.text(s.name, MARGIN + 5, y + 9);
+        doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...C.textSec);
+        doc.text(s.cls || '—', MARGIN + 5, y + 15);
+
+        /* Stats pills row */
+        const pills = [
+          { label:'Done',    value: s.done,      color: C.success    },
+          { label:'Missed',  value: s.missed,    color: C.danger     },
+          { label:'Total',   value: s.total,     color: C.brand      },
+          { label:'Rate',    value: s.pct + '%', color: pctColor(s.pct) },
+        ];
+        pills.forEach((p, pi) => {
+          const px = MARGIN + 70 + pi * 32;
+          fillRect(px, y + 4, 28, 13, C.surface, C.border);
+          doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(...p.color);
+          doc.text(String(p.value), px + 14, y + 12, { align:'center' });
+          doc.setFontSize(6); doc.setFont('helvetica','normal'); doc.setTextColor(...C.textTert);
+          doc.text(p.label, px + 14, y + 16, { align:'center' });
+        });
+
+        y += 26;
+
+        /* Progress bar full width */
+        checkPage(10);
+        doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(...C.textTert);
+        doc.text('ATTENDANCE PROGRESS', MARGIN, y + 4);
+        doc.setTextColor(...pctColor(s.pct));
+        doc.text(s.pct + '%', PAGE_W - MARGIN, y + 4, { align:'right' });
+        y += 6;
+        miniProgressBar(MARGIN, y, CONTENT_W, 4, s.pct, pctColor(s.pct));
+        y += 9;
+
+        /* Session log table */
+        sectionHeading('Session Log — ' + s.name);
+
+        const sessionRows = allDates.map((dateStr, i) => {
+          const done    = !!s.comp[dateStr];
+          const isPast  = dateStr < todayStr;
+          const isToday = dateStr === todayStr;
+          const status  = done ? 'Completed ✓' : isToday ? 'Today ○' : isPast ? 'Missed ✗' : 'Upcoming –';
+          const p       = dateStr.split('-');
+          const dayName = new Date(+p[0], +p[1]-1, +p[2]).toLocaleDateString('en-GB', { weekday:'long' });
+          const subjList = (taskDoc.dateSubjects || {})[dateStr] || (taskDoc.dateSubjects || {})[dayName] || [];
+          return [
+            String(i + 1),
+            dayName,
+            fmtDate(dateStr),
+            subjList.join(', ') || 'No restriction',
+            status,
+          ];
+        });
+
+        doc.autoTable({
+          startY: y,
+          head: [['#', 'Day', 'Date', 'Required Subjects', 'Status']],
+          body: sessionRows,
+          margin: { left: MARGIN, right: MARGIN },
+          headStyles: {
+            fillColor: C.brand,
+            textColor: [255,255,255],
+            fontStyle: 'bold',
+            fontSize: 7.5,
+            cellPadding: { top:3, bottom:3, left:3, right:3 },
+          },
+          columnStyles: {
+            0: { cellWidth: 8,  halign:'center', fontSize:7 },
+            1: { cellWidth: 26, fontSize:7.5 },
+            2: { cellWidth: 38, fontSize:7.5 },
+            3: { cellWidth: 50, fontSize:7 },
+            4: { cellWidth: 30, fontStyle:'bold', halign:'center', fontSize:7.5 },
+          },
+          bodyStyles: {
+            fontSize: 7,
+            cellPadding: { top:2.5, bottom:2.5, left:3, right:3 },
+          },
+          alternateRowStyles: { fillColor: C.surfaceMuted },
+          tableLineColor: C.border,
+          tableLineWidth: 0.2,
+          theme: 'grid',
+          willDrawCell: function(data) {
+            if (data.column.index === 4 && data.section === 'body') {
+              const txt = data.cell.text[0] || '';
+              data.cell.styles.textColor =
+                txt.includes('✓') ? C.success :
+                txt.includes('✗') ? C.danger  :
+                txt.includes('○') ? C.warning :
+                C.textDis;
+            }
+          },
+        });
+
+        y = doc.lastAutoTable.finalY + 6;
+      });
+    }
+
+    /* ── Save ── */
+    const safeName = (taskDoc.title || 'task').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    const dateStamp = todayStr.replace(/-/g,'');
+    doc.save(`vtx_report_${safeName}_${dateStamp}.pdf`);
+    UI.toast('PDF report downloaded.', 'success');
+  }
+   
   /* -------------------------------------------------- */
   /* Expose                                              */
   /* -------------------------------------------------- */
 
   window.Teacher = {
-  renderTeacherDashboard,
-  showTab,
-  logout,
-  _loadStudents,
-  removeStudent,
-  toggleAdmin,
-  deleteResult,
-  addSchool,
-  renameSchool,
-  deleteSchool,
-  addTaskDate,
-  deleteTask,
-  deleteAllTasks,
-  saveTasksConfig,
-  sendPrivateMessage,
-  _setMsgMode,
-  _filterMsgStudents,
-  _updateMsgSelectedCount,
-  _selectAllMsgStudents,
-  _clearMsgStudents,
-  _setTaskScope,
-  _setAssignScope,
-  _onTaskTargetChange,
-  _selectAllDateSubjects,
-  _clearDateSubjects,
-  _selectAllDaySubjects,
-  _clearDaySubjects,
-  _updateDaySubjCount,
-  // Exported so chat.js can reuse the already-loaded roster for @mentions
-  get _msgStudentCache() { return _msgStudentCache; },
-};
+    renderTeacherDashboard,
+    showTab,
+    logout,
+    _loadStudents,
+    removeStudent,
+    toggleAdmin,
+    deleteResult,
+    addSchool,
+    renameSchool,
+    deleteSchool,
+    addTaskDate,
+    deleteTask,
+    deleteAllTasks,
+    saveTasksConfig,
+    sendPrivateMessage,
+    _setMsgMode,
+    _filterMsgStudents,
+    _updateMsgSelectedCount,
+    _selectAllMsgStudents,
+    _clearMsgStudents,
+    _setTaskScope,
+    _setAssignScope,
+    _onTaskTargetChange,
+    _selectAllDateSubjects,
+    _clearDateSubjects,
+    _selectAllDaySubjects,
+    _clearDaySubjects,
+    _updateDaySubjCount,
+    exportTaskReportPDF,       // ← NEW
+    get _msgStudentCache() { return _msgStudentCache; },
+  };
 
 })();
