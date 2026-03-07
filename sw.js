@@ -96,10 +96,11 @@ const CDN_ORIGINS = [
 /* ─────────────────────────────────────────────────────────── */
 self.addEventListener('install', event => {
   /*
-   * Detect first install: if there is no current controller,
-   * no SW was previously active for this scope.
+   * Reliable first-install detection:
+   * If no SW is currently controlling any clients, this is a first install.
+   * self.registration.active is null on first install and non-null on updates.
    */
-  _isFirstInstall = !self.registration.active;
+  _isFirstInstall = (self.registration.active === null);
 
   event.waitUntil(
     caches.open(STATIC_CACHE).then(cache => {
@@ -138,18 +139,6 @@ self.addEventListener('install', event => {
 
       return Promise.all([corePromise, ...optionalPromises]);
     })
-    /*
-     * DO NOT call self.skipWaiting() here.
-     *
-     * Auto-activating via skipWaiting() during install causes the SW to
-     * take control of already-open pages via clients.claim(). Any page
-     * that already called firebase.firestore() will have its IndexedDB
-     * persistence lock invalidated mid-session, causing all Firestore
-     * operations to silently hang. The app renders nothing.
-     *
-     * The SW will now wait in 'waiting' state until the user confirms
-     * the update toast, which sends SKIP_WAITING. Only then does it activate.
-     */
   );
 });
 
