@@ -50,6 +50,21 @@
     }
   </script>
 
+<!-- OneSignal Push Notifications -->
+<script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+<script>
+  window.OneSignalDeferred = window.OneSignalDeferred || [];
+  OneSignalDeferred.push(async function(OneSignal) {
+    await OneSignal.init({
+      appId: "aedb9095-3b34-497f-810d-a0b08213303a",
+      safari_web_id: "web.onesignal.auto.4bf63793-66f2-4d83-98c9-d7c9e724d029",
+      notifyButton: {
+        enable: false,
+      },
+    });
+  });
+</script>
+
   <!-- KaTeX math rendering -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
@@ -110,8 +125,6 @@
   <script src="js/tasks.js"></script>
   <script src="js/teacher.js"></script>
   <script src="js/exam.js"></script>
-  <!-- Notifications module — must load before app.js -->
-  <script src="js/notifications.js"></script>
   <script src="js/app.js"></script>
   <script src="js/installPrompt.js"></script>
   <script src="news-ticker.js"></script>
