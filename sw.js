@@ -1,5 +1,5 @@
 /* ============================================================
-   sw.js — Service Worker for Excellence Tutorial CBT PWA
+   sw.js — Service Worker for Vertex Tutorial CBT PWA
    Strategy:
      - Static shell   : Cache-first (precached at install)
      - CDN assets     : Stale-while-revalidate (separate cache)
