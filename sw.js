@@ -5,11 +5,16 @@
      - CDN assets     : Stale-while-revalidate (separate cache)
      - Firebase/Auth  : Bypass entirely — never intercepted
      - Navigation     : Cache-first with offline fallback
+
+   UPDATE: Added FCM origins to BYPASS_ORIGINS so push
+   notification network requests are never intercepted by
+   this service worker. Also added js/notifications.js to
+   the static asset cache list.
    ============================================================ */
 
 'use strict';
 
-const CACHE_VERSION = 'v1.1.1';
+const CACHE_VERSION = 'v1.1.2';
 const STATIC_CACHE  = `static-${CACHE_VERSION}`;
 const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
 
@@ -37,11 +42,17 @@ const STATIC_ASSETS = [
   '/js/teacher.js',
   '/js/exam.js',
   '/js/app.js',
+  '/js/notifications.js',
   '/data/questions.js',
   '/news-ticker.css',
   '/news-ticker.js',
 ];
 
+/*
+ * These origins are never intercepted by this service worker.
+ * Firebase, Google APIs, and FCM endpoints are all bypassed
+ * so they always go straight to the network.
+ */
 const BYPASS_ORIGINS = [
   'firestore.googleapis.com',
   'firebaseapp.com',
@@ -50,6 +61,8 @@ const BYPASS_ORIGINS = [
   'securetoken.googleapis.com',
   'firebase.googleapis.com',
   'cloudfunctions.net',
+  'fcm.googleapis.com',
+  'fcmregistrations.googleapis.com',
 ];
 
 const CDN_ORIGINS = [
@@ -84,6 +97,7 @@ self.addEventListener('install', event => {
         '/js/teacher.js',
         '/js/exam.js',
         '/js/app.js',
+        '/js/notifications.js',
         '/data/questions.js',
         '/news-ticker.css',
         '/news-ticker.js',
