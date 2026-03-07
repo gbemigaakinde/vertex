@@ -649,6 +649,50 @@ if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updat
     requestAnimationFrame(() => { modal.scrollTop = 0; });
   }
 
+/* ══════════════════════════════════════════════════════════
+   _setupVisibilityGuard
+   Counts tab minimize/hide events during an active exam.
+   1st hide: silent.
+   2nd hide: warning toast.
+   3rd hide: auto-submit immediately.
+   ══════════════════════════════════════════════════════════ */
+let _visibilityHideCount = 0;
+let _visibilityHandler   = null;
+
+function _setupVisibilityGuard() {
+  // Clean up any previous listener first
+  _teardownVisibilityGuard();
+  _visibilityHideCount = 0;
+
+  _visibilityHandler = function () {
+    if (document.visibilityState !== 'hidden') return;
+
+    _visibilityHideCount++;
+
+    if (_visibilityHideCount === 2) {
+      UI.toast(
+        '⚠️ Warning: If you minimize again, your exam will be submitted automatically.',
+        'warning',
+        6000
+      );
+    } else if (_visibilityHideCount >= 3) {
+      _teardownVisibilityGuard();
+      UI.toast('Exam auto-submitted: tab hidden too many times.', 'error', 0);
+      submitExam(true);
+    }
+  };
+
+  document.addEventListener('visibilitychange', _visibilityHandler);
+}
+
+function _teardownVisibilityGuard() {
+  if (_visibilityHandler) {
+    document.removeEventListener('visibilitychange', _visibilityHandler);
+    _visibilityHandler = null;
+  }
+  _visibilityHideCount = 0;
+}
+
   /* ══════════════════════════════════════════════════════════
      beginExam
      ══════════════════════════════════════════════════════════ */
@@ -674,7 +718,8 @@ if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updat
     }
 
     _startTimer();
-    renderExam();
+  _setupVisibilityGuard();
+  renderExam();
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -918,6 +963,7 @@ if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updat
 
     _submitLock = true;
     S().clearTimer();
+    _teardownVisibilityGuard();
 
     const btn = document.getElementById('submitBtn');
     UI.setLoading(btn, true);
