@@ -14,7 +14,7 @@
 
 'use strict';
 
-const CACHE_VERSION = 'v1.1.2';
+const CACHE_VERSION = 'v1.1.3';
 const STATIC_CACHE  = `static-${CACHE_VERSION}`;
 const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
 
