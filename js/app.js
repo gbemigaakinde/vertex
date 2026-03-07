@@ -95,14 +95,6 @@
         });
       AppState.registerListener('chatNotifications', notifUnsub);
 
-      // ── Push notifications ──
-      // Request permission and save FCM token. Non-fatal if declined or
-      // unsupported — a warning is logged but the app continues normally.
-      if (window.Notifications && typeof window.Notifications.init === 'function') {
-        Notifications.init(uid).catch(function (e) {
-          console.warn('[app] Notifications.init error (non-fatal):', e);
-        });
-      }
 
       await Tasks.listenForStudentUpdates();
       await Exam.loadOrStart();
