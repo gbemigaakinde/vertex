@@ -6,13 +6,34 @@
      - Firebase/Auth  : Bypass entirely — never intercepted
      - Navigation     : Cache-first with offline fallback
 
-   UPDATE: Added FCM origins to BYPASS_ORIGINS so push
-   notification network requests are never intercepted by
-   this service worker. Also added js/notifications.js to
-   the static asset cache list.
+   UPDATE v2:
+   - Added FCM background message handler and notificationclick
+     handler directly in this file. This is required because
+     notifications.js now passes THIS sw.js registration to
+     getToken() via serviceWorkerRegistration, so FCM uses
+     this SW for background messages instead of auto-registering
+     firebase-messaging-sw.js as a competing SW on the same
+     scope. firebase-messaging-sw.js is now redundant and can
+     be kept as a fallback or removed.
    ============================================================ */
 
 'use strict';
+
+/* ── FCM SDK must be imported before firebase.initializeApp() ── */
+importScripts('https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js');
+importScripts('https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js');
+
+/* ── Initialize Firebase inside this SW (required for FCM) ── */
+firebase.initializeApp({
+  apiKey:            'AIzaSyCQk1Q5GyCVo3cKNcHaYHVzAnVeWlqkzns',
+  authDomain:        'excellencecbt.firebaseapp.com',
+  projectId:         'excellencecbt',
+  storageBucket:     'excellencecbt.firebasestorage.app',
+  messagingSenderId: '24170253162',
+  appId:             '1:24170253162:web:6e6cb86c5ffc84aebaf313',
+});
+
+const _fcmMessaging = firebase.messaging();
 
 const CACHE_VERSION = 'v1.1.3';
 const STATIC_CACHE  = `static-${CACHE_VERSION}`;
@@ -216,6 +237,60 @@ self.addEventListener('message', event => {
   if (event.data.type === 'GET_VERSION') {
     event.source.postMessage({ type: 'VERSION', version: CACHE_VERSION });
   }
+});
+
+/* ─────────────────────────────────────────────────────────── */
+/* FCM BACKGROUND MESSAGES                                    */
+/* ─────────────────────────────────────────────────────────── */
+
+/*
+ * Fires when a push notification arrives and the app tab is
+ * closed or in the background (not focused).
+ * The notification payload should include:
+ *   notification.title — headline shown in the OS tray
+ *   notification.body  — message text
+ *   data.url           — optional URL to open on tap
+ */
+_fcmMessaging.onBackgroundMessage(function (payload) {
+  console.log('[SW] Background message received:', payload);
+
+  const title = (payload.notification && payload.notification.title)
+    || 'Vertex Tutorial';
+
+  const options = {
+    body:  (payload.notification && payload.notification.body)
+           || 'You have a new message from Master Timothy.',
+    icon:  '/vertex.jpeg',
+    badge: '/vertex.jpeg',
+    data:  { url: (payload.data && payload.data.url) || '/' },
+  };
+
+  self.registration.showNotification(title, options);
+});
+
+/*
+ * Opens (or focuses) the app when the user taps a notification.
+ */
+self.addEventListener('notificationclick', function (event) {
+  event.notification.close();
+
+  const targetUrl = (event.notification.data && event.notification.data.url) || '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {
+      /* If the app is already open, focus it */
+      for (let i = 0; i < clientList.length; i++) {
+        const client = clientList[i];
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      /* Otherwise open a new window */
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
 });
 
 /* ─────────────────────────────────────────────────────────── */
