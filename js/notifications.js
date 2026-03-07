@@ -12,25 +12,29 @@
    4. If they allow, we save their FCM token to Firestore so
       the teacher can send push notifications to them.
 
-   WHY THIS MATTERS:
-   If we ask for permission immediately on login with no
-   explanation, most students will tap Block out of confusion.
-   Once they tap Block, the browser never asks again for this
-   site. Showing our own banner first gives context and
-   dramatically increases how many students tap Allow.
+   FIX v2:
+   - VAPID key is now a single unbroken string (previously
+     split across two lines which produced an 87-char key
+     instead of the required 88 chars, causing getToken()
+     to silently fail).
+   - getToken() now passes serviceWorkerRegistration so FCM
+     reuses the existing sw.js registration at scope '/'
+     instead of auto-registering firebase-messaging-sw.js
+     as a competing service worker on the same scope.
    ============================================================ */
 
 (function () {
   'use strict';
 
   /*
-   * Your VAPID public key.
+   * Your VAPID public key — pasted as ONE unbroken string.
    * Found in Firebase Console → Project Settings →
    * Cloud Messaging → Web configuration → Key pair.
+   *
+   * IMPORTANT: This must be the exact key from Firebase,
+   * copied in one go. Do not split it across lines.
    */
-  var VAPID_KEY =
-    'BM3F4Aw4HykHcg3nl6oLzKvNZeGYQnil6fONXMWEGD6C' +
-    '0Ypk8npaNP1-hAhVfPdiGFbxERVFDgARCX8DGGFkTrM';
+  var VAPID_KEY = 'BM3F4Aw4HykHcg3nl6oLzKvNZeGYQnil6fONXMWEGD6C0Ypk8npaNP1-hAhVfPdiGFbxERVFDgARCX8DGGFkTrM';
 
   var _messaging  = null;
   var _userId     = null;
@@ -192,10 +196,22 @@
      This is what actually triggers the browser's official
      "Allow / Block" popup (via getToken).
      Then saves the resulting token to Firestore.
+
+     FIX: passes serviceWorkerRegistration so FCM reuses the
+     existing sw.js at scope '/' instead of auto-registering
+     firebase-messaging-sw.js as a second competing SW.
      ============================================================ */
   async function _requestTokenAndSave() {
     try {
       _messaging = firebase.messaging();
+
+      /*
+       * Get the existing SW registration so FCM reuses it.
+       * This prevents firebase-messaging-sw.js from being
+       * registered as a second service worker competing with
+       * sw.js on the same scope '/'.
+       */
+      var swReg = await navigator.serviceWorker.getRegistration('/');
 
       /*
        * getToken() does two things:
@@ -203,7 +219,10 @@
        *     (only if permission is still 'default').
        *  2. Returns a unique token string for this device.
        */
-      var token = await _messaging.getToken({ vapidKey: VAPID_KEY });
+      var token = await _messaging.getToken({
+        vapidKey: VAPID_KEY,
+        serviceWorkerRegistration: swReg,
+      });
 
       if (token) {
         console.log('[notifications] Token obtained successfully.');
