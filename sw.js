@@ -6,36 +6,16 @@
      - Firebase/Auth  : Bypass entirely — never intercepted
      - Navigation     : Cache-first with offline fallback
 
-   UPDATE v2:
-   - Added FCM background message handler and notificationclick
-     handler directly in this file. This is required because
-     notifications.js now passes THIS sw.js registration to
-     getToken() via serviceWorkerRegistration, so FCM uses
-     this SW for background messages instead of auto-registering
-     firebase-messaging-sw.js as a competing SW on the same
-     scope. firebase-messaging-sw.js is now redundant and can
-     be kept as a fallback or removed.
+   UPDATE v3:
+   - Removed FCM background message handler and all Firebase
+     imports. Push notifications are now handled entirely by
+     OneSignal (its own service worker from the uploaded zip).
+     This SW handles only caching and offline support.
    ============================================================ */
 
 'use strict';
 
-/* ── FCM SDK must be imported before firebase.initializeApp() ── */
-importScripts('https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js');
-
-/* ── Initialize Firebase inside this SW (required for FCM) ── */
-firebase.initializeApp({
-  apiKey:            'AIzaSyCQk1Q5GyCVo3cKNcHaYHVzAnVeWlqkzns',
-  authDomain:        'excellencecbt.firebaseapp.com',
-  projectId:         'excellencecbt',
-  storageBucket:     'excellencecbt.firebasestorage.app',
-  messagingSenderId: '24170253162',
-  appId:             '1:24170253162:web:6e6cb86c5ffc84aebaf313',
-});
-
-const _fcmMessaging = firebase.messaging();
-
-const CACHE_VERSION = 'v1.1.4';
+const CACHE_VERSION = 'v1.1.5';
 const STATIC_CACHE  = `static-${CACHE_VERSION}`;
 const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
 
@@ -48,30 +28,9 @@ const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
  */
 let _isFirstInstall = false;
 
-const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/offline.html',
-  '/manifest.json',
-  '/css/styles.css',
-  '/js/config.js',
-  '/js/state.js',
-  '/js/ui.js',
-  '/js/auth.js',
-  '/js/chat.js',
-  '/js/tasks.js',
-  '/js/teacher.js',
-  '/js/exam.js',
-  '/js/app.js',
-  '/js/notifications.js',
-  '/data/questions.js',
-  '/news-ticker.css',
-  '/news-ticker.js',
-];
-
 /*
  * These origins are never intercepted by this service worker.
- * Firebase, Google APIs, and FCM endpoints are all bypassed
+ * Firebase, Google APIs, and OneSignal endpoints are all bypassed
  * so they always go straight to the network.
  */
 const BYPASS_ORIGINS = [
@@ -84,6 +43,8 @@ const BYPASS_ORIGINS = [
   'cloudfunctions.net',
   'fcm.googleapis.com',
   'fcmregistrations.googleapis.com',
+  'onesignal.com',
+  'os.tc',
 ];
 
 const CDN_ORIGINS = [
@@ -97,8 +58,8 @@ const CDN_ORIGINS = [
 self.addEventListener('install', event => {
   /*
    * Reliable first-install detection:
-   * If no SW is currently controlling any clients, this is a first install.
-   * self.registration.active is null on first install and non-null on updates.
+   * self.registration.active is null on first install,
+   * and points to the currently active SW on updates.
    */
   _isFirstInstall = (self.registration.active === null);
 
@@ -119,7 +80,6 @@ self.addEventListener('install', event => {
         '/js/teacher.js',
         '/js/exam.js',
         '/js/app.js',
-        '/js/notifications.js',
         '/data/questions.js',
         '/news-ticker.css',
         '/news-ticker.js',
@@ -139,6 +99,18 @@ self.addEventListener('install', event => {
 
       return Promise.all([corePromise, ...optionalPromises]);
     })
+    /*
+     * DO NOT call self.skipWaiting() here.
+     *
+     * Auto-activating via skipWaiting() during install causes the SW to
+     * take control of already-open pages via clients.claim(). Any page
+     * that already called firebase.firestore() will have its IndexedDB
+     * persistence lock invalidated mid-session, causing all Firestore
+     * operations to silently hang. The app renders nothing.
+     *
+     * The SW will now wait in 'waiting' state until the user confirms
+     * the update toast, which sends SKIP_WAITING. Only then does it activate.
+     */
   );
 });
 
@@ -226,60 +198,6 @@ self.addEventListener('message', event => {
   if (event.data.type === 'GET_VERSION') {
     event.source.postMessage({ type: 'VERSION', version: CACHE_VERSION });
   }
-});
-
-/* ─────────────────────────────────────────────────────────── */
-/* FCM BACKGROUND MESSAGES                                    */
-/* ─────────────────────────────────────────────────────────── */
-
-/*
- * Fires when a push notification arrives and the app tab is
- * closed or in the background (not focused).
- * The notification payload should include:
- *   notification.title — headline shown in the OS tray
- *   notification.body  — message text
- *   data.url           — optional URL to open on tap
- */
-_fcmMessaging.onBackgroundMessage(function (payload) {
-  console.log('[SW] Background message received:', payload);
-
-  const title = (payload.notification && payload.notification.title)
-    || 'Vertex Tutorial';
-
-  const options = {
-    body:  (payload.notification && payload.notification.body)
-           || 'You have a new message from Master Timothy.',
-    icon:  '/vertex.jpeg',
-    badge: '/vertex.jpeg',
-    data:  { url: (payload.data && payload.data.url) || '/' },
-  };
-
-  self.registration.showNotification(title, options);
-});
-
-/*
- * Opens (or focuses) the app when the user taps a notification.
- */
-self.addEventListener('notificationclick', function (event) {
-  event.notification.close();
-
-  const targetUrl = (event.notification.data && event.notification.data.url) || '/';
-
-  event.waitUntil(
-    clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {
-      /* If the app is already open, focus it */
-      for (let i = 0; i < clientList.length; i++) {
-        const client = clientList[i];
-        if (client.url.includes(self.location.origin) && 'focus' in client) {
-          return client.focus();
-        }
-      }
-      /* Otherwise open a new window */
-      if (clients.openWindow) {
-        return clients.openWindow(targetUrl);
-      }
-    })
-  );
 });
 
 /* ─────────────────────────────────────────────────────────── */
