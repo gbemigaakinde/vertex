@@ -96,8 +96,10 @@
                   class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">Schools</button>
           <button onclick="Teacher.showTab('tasks')"    id="tab-tasks"
                   class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">Tasks &amp; Messages</button>
-      <button onclick="Teacher.showTab('chat')"     id="tab-chat"
-        class="tab-btn btn bg-green-600" style="font-size:.8125rem;padding:.4375rem .875rem;position:relative;">Chat</button>
+      <button onclick="Teacher.showTab('studyroom')" id="tab-studyroom"
+               class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">Study Room</button>
+       <button onclick="Teacher.showTab('chat')"     id="tab-chat"
+         class="tab-btn btn bg-green-600" style="font-size:.8125rem;padding:.4375rem .875rem;position:relative;">Chat</button>
         </div>
 
         <!-- ── Tab panels ── -->
@@ -151,6 +153,10 @@
                 Configure scheduled tasks and send private messages to students
               </p>
             </div>
+
+          <!-- Study Room -->
+          <div id="teacher-studyroom" class="teacher-tab hidden"></div>
+
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;" class="tasks-grid">
 
@@ -429,13 +435,14 @@
   /* -------------------------------------------------- */
 
   function showTab(tab) {
-    ['students','results','schools','tasks','chat'].forEach(t => {
+    ['students','results','schools','tasks','studyroom','chat'].forEach(t => {
       const el  = document.getElementById(`teacher-${t}`);
       const btn = document.getElementById(`tab-${t}`);
       if (el)  el.classList.toggle('hidden', t !== tab);
       if (btn) btn.classList.toggle('active', t === tab);
     });
     if (tab === 'chat')     { Chat.openPublicChat(); return; }
+    if (tab === 'studyroom')  { StudyRoom.openForTeacher(); return; }
     if (tab === 'students') _loadStudents();
     if (tab === 'results')  _loadResults();
     if (tab === 'schools')  _loadSchools();
