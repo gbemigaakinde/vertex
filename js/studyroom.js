@@ -119,14 +119,15 @@
       });
     }
 
-    /* Order matters: innermost first so nested tags (e.g. <svg> inside <figure>) stash correctly */
+    /* Order matters: outermost first so outer wrappers (e.g. <figure> containing <svg>)
+     * are captured whole. Inner tags inside them are preserved as-is within the stash. */
     _stashBlock('script');   /* removed below — still stash to neutralise */
     _stashBlock('style');
-    _stashBlock('svg');
-    _stashBlock('figure');
-    _stashBlock('aside');
-    _stashBlock('section');
+    _stashBlock('figure');   /* must come before svg — figure may wrap svg */
+    _stashBlock('section');  /* must come before aside — section may wrap aside */
     _stashBlock('details');
+    _stashBlock('aside');
+    _stashBlock('svg');
 
     /* STEP 2 — Sanitise the remaining (non-stashed) content */
     html = html
@@ -208,11 +209,19 @@
     });
     if (buffer.length) result.push('<p>' + _inlineMarkdown(buffer.join(' ')) + '</p>');
 
-    /* STEP 3 — Restore stashed blocks */
+    /* STEP 3 — Restore stashed blocks.
+     *
+     * Restore in REVERSE order so outer wrappers (e.g. <figure>) are restored
+     * before the inner placeholders they contain (e.g. HTMLSTASH0_ for <svg>).
+     * A second forward pass then resolves any inner placeholders now exposed.
+     */
     let output = result.join('\n');
-    stash.forEach((block, i) => {
-      output = output.replace(STASH_TAG + i + '_', block);
-    });
+    for (let i = stash.length - 1; i >= 0; i--) {
+      output = output.split(STASH_TAG + i + '_').join(stash[i]);
+    }
+    for (let i = 0; i < stash.length; i++) {
+      output = output.split(STASH_TAG + i + '_').join(stash[i]);
+    }
 
     return output;
   }
