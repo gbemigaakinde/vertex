@@ -369,7 +369,7 @@
     if (!filtered.length) {
       browser.innerHTML = `
         <div class="sr-empty">
-          <span class="sr-empty__icon">📭</span>
+          <span class="sr-empty__icon"></span>
           <p class="sr-empty__text">No lessons found for this filter.</p>
         </div>`;
       return;
@@ -491,6 +491,39 @@
         });
       } catch (e) {}
     }
+
+    _bindQuizButtons(document.getElementById('app'));
+  }
+
+  /*
+   * Wire up quiz check buttons that use data-q / data-ans / data-msg attributes.
+   * Called after every render so buttons in both scroll and flip mode work.
+   * This is necessary because the markdown sanitiser strips <script> tags and
+   * on* attributes from lesson content, so inline handlers never reach the DOM.
+   */
+  function _bindQuizButtons(containerEl) {
+    if (!containerEl) return;
+    containerEl.querySelectorAll('button[data-q]').forEach(btn => {
+      if (btn.dataset.quizBound) return;
+      btn.dataset.quizBound = '1';
+      btn.addEventListener('click', () => {
+        const qId      = btn.getAttribute('data-q');
+        const correct  = btn.getAttribute('data-ans');
+        const msg      = btn.getAttribute('data-msg');
+        const selected = containerEl.querySelector('input[name="' + qId + '"]:checked');
+        const fb       = containerEl.querySelector('#' + qId + '-fb');
+        if (!fb) return;
+        if (!selected) {
+          fb.className  = 'ins-fb err';
+          fb.textContent = 'Please select an answer first.';
+          return;
+        }
+        fb.className  = selected.value === correct ? 'ins-fb ok' : 'ins-fb err';
+        fb.textContent = selected.value === correct
+          ? msg
+          : 'Not quite. Review the relevant section above and try again.';
+      });
+    });
   }
 
   /* ──────────────────────────────────────────────────
@@ -525,9 +558,9 @@
           <span class="sr-topbar__title">${_esc(lesson.title)}</span>
           <div class="sr-topbar__actions">
             <button class="sr-topbar__back" id="srModeToggle" onclick="StudyRoom._toggleMode()">
-              ${isFlip ? '📄 Scroll Mode' : '📖 Flip Mode'}
+              ${isFlip ? 'Scroll Mode' : 'Flip Mode'}
             </button>
-            <button class="sr-topbar__back" onclick="StudyRoom._togglePrefs()" id="srPrefsBtn">⚙ Aa</button>
+            <button class="sr-topbar__back" onclick="StudyRoom._togglePrefs()" id="srPrefsBtn">Aa</button>
           </div>
         </div>
 
@@ -692,6 +725,8 @@
         });
       } catch(e){}
     }
+
+    _bindQuizButtons(bookEl);
   }
 
   function _prevLessonBtn(lesson) {
