@@ -354,7 +354,7 @@
     0 24px 64px rgba(0,0,0,.28),
     0 8px  24px rgba(0,0,0,.18),
     inset 0 0 0 1px rgba(0,0,0,.06);
-  min-height: 480px;
+  min-height: 400px;
   position: relative;
   overflow: hidden;
   animation: sr-page-in 0.3s var(--ease) both;
@@ -382,7 +382,7 @@
   padding: 2.25rem 2.5rem 1.5rem;
   position: relative;
   overflow: hidden;
-  min-height: 480px;
+  min-height: 400px;
   display: flex;
   flex-direction: column;
 }
@@ -864,18 +864,45 @@
 @media (max-width: 768px) {
   .sr-layout { grid-template-columns: 1fr; }
   .sr-sidebar { display: none; }
-
-  /* Mobile: single page view */
-  .sr-book__spread     { grid-template-columns: 1fr; }
-  .sr-book__page--left { display: none; }
-  .sr-book__page--right {
-    border-radius: var(--r-xl);
-    background: var(--sr-page-bg, #fefefe) !important;
-    min-height: 360px;
-    padding: 1.5rem 1.25rem;
-  }
-
   .sr-lesson-header__title { font-size: 1.5rem; }
+
+  /* ── Flip mode on mobile: drop the book aesthetic entirely.
+        Show a single plain card — no spine, no two-column split,
+        no forced tall height that makes half-width columns unreadable. ── */
+  .sr-flip-outer {
+    padding: var(--sp-3) var(--sp-3) var(--sp-4);
+    align-items: stretch;
+  }
+  .sr-flip-inner {
+    max-width: 100%;
+  }
+  .sr-book {
+    perspective: none;
+  }
+  .sr-book__spread {
+    display: block;          /* single column — no grid */
+    background: transparent;
+    box-shadow: none;
+    border-radius: 0;
+    min-height: 0;
+    animation: none;
+  }
+  .sr-book__spread::after {
+    display: none;           /* hide spine */
+  }
+  .sr-book__page--left {
+    display: none;           /* hide left page */
+  }
+  .sr-book__page--right {
+    border-radius: var(--r-lg);
+    background: var(--surface) !important;
+    box-shadow: var(--shadow-sm);
+    min-height: 0;
+    padding: 1.25rem 1rem 1.5rem;
+  }
+  .sr-book__page-num {
+    display: none;           /* page numbers irrelevant on single-page mobile */
+  }
 }
 
 @media (max-width: 640px) {
