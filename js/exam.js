@@ -462,10 +462,14 @@
 
           <div id="tasksContainer" class="mb-6"></div>
 
-          <div class="mb-6">
+          <div class="mb-6" style="display:flex;gap:.625rem;flex-wrap:wrap;justify-content:center;">
             <button id="chatOpenBtn" onclick="Chat.openPublicChat()" class="btn bg-green-600 hover:bg-green-700" style="position:relative;">
-                 Public Discussion Chat
-             </button>
+              Public Discussion Chat
+            </button>
+            <button onclick="StudyRoom.openForStudent()" class="btn bg-blue-600 hover:bg-blue-700"
+                    style="position:relative;">
+              📖 Study Room
+            </button>
           </div>
 
           ${offDayBannerHtml}
