@@ -33,12 +33,16 @@
   z-index: 50;
   background: var(--surface);
   border-bottom: 1px solid var(--border);
-  padding: 0.625rem 1.25rem;
+  padding: 0.5rem 1rem;
+  padding-left:  max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
   display: flex;
   align-items: center;
-  gap: 0.875rem;
-  flex-wrap: wrap;
+  gap: 0.5rem;
+  flex-wrap: nowrap;
   box-shadow: var(--shadow-sm);
+  min-height: 3rem;
+  overflow: hidden;
 }
 
 .sr-topbar__back {
@@ -51,11 +55,12 @@
   background: var(--surface-muted);
   border: 1px solid var(--border-medium);
   border-radius: var(--r-md);
-  padding: 0.375rem 0.75rem;
+  padding: 0.3rem 0.625rem;
   cursor: pointer;
   transition: background var(--t-fast), color var(--t-fast);
   white-space: nowrap;
   font-family: var(--font);
+  flex-shrink: 0;   /* never shrink — title shrinks instead */
 }
 .sr-topbar__back:hover { background: var(--border); color: var(--text-primary); }
 
@@ -63,8 +68,8 @@
   font-size: var(--text-base);
   font-weight: 700;
   color: var(--text-primary);
-  flex: 1;
-  min-width: 0;
+  flex: 1 1 0;
+  min-width: 0;       /* required for truncation in flex */
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -73,8 +78,9 @@
 .sr-topbar__actions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  flex-wrap: wrap;
+  gap: 0.375rem;
+  flex-shrink: 0;     /* never shrink or wrap */
+  flex-wrap: nowrap;
 }
 
 /* ============================================================
@@ -155,6 +161,8 @@
   min-height: 0;
   overflow-y: auto;
   padding: var(--sp-6) var(--sp-4);
+  /* Extra bottom clearance for iOS browser chrome and safe area */
+  padding-bottom: max(var(--sp-8), calc(env(safe-area-inset-bottom) + 4rem));
   transition: background var(--t-base);
 }
 
@@ -738,7 +746,6 @@
 }
 
 .sr-empty       { text-align: center; padding: var(--sp-10) var(--sp-4); color: var(--text-tertiary); }
-.sr-empty__icon { font-size: 2.5rem; margin-bottom: var(--sp-3); display: block; }
 .sr-empty__text { font-size: var(--text-base); font-weight: 500; }
 
 /* ============================================================
@@ -883,7 +890,7 @@
   .sr-prefs-panel.is-open { transform: translateY(0); }
 
   .sr-flip-outer { padding: var(--sp-3) var(--sp-2); }
-  .sr-topbar     { padding: .5rem .75rem; gap: .5rem; }
+  .sr-topbar     { gap: .375rem; }
   .sr-browser    { padding: var(--sp-3); }
 }
 
