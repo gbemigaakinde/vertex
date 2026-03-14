@@ -36,17 +36,17 @@
   const CLASS_OPTIONS = ['JSS1','JSS2','JSS3','SSS1','SSS2','SSS3','TUTORIAL'];
 
   /* ── Module state ── */
-  let _prefs              = _loadPrefs();
-  let _currentLesson      = null;
-  let _siblingLessons     = [];
-  let _flipPages          = [];
-  let _flipIndex          = 0;
-  let _editingId          = null;
+  let _prefs               = _loadPrefs();
+  let _currentLesson       = null;
+  let _siblingLessons      = [];
+  let _flipPages           = [];
+  let _flipIndex           = 0;
+  let _editingId           = null;
   let _teacherLessonsUnsub = null;
-  let _previewMode        = false;
-  let _defaultTerm        = '';
+  let _previewMode         = false;
+  let _defaultTerm         = '';
   let _studentLessonsCache = [];
-  let _teacherLessonsAll  = [];
+  let _teacherLessonsAll   = [];
 
   /* ══════════════════════════════════════════════════
      PREFERENCES
@@ -63,10 +63,6 @@
     try { localStorage.setItem(PREFS_KEY, JSON.stringify(_prefs)); } catch (e) {}
   }
 
-  /**
-   * Apply current _prefs to all live reader elements inside containerEl.
-   * Called after every pref change and after initial render.
-   */
   function _applyPrefsToReader(containerEl) {
     if (!containerEl) return;
 
@@ -74,13 +70,13 @@
     const scrollContent = containerEl.querySelector('.sr-scroll-content');
     if (scrollContent) scrollContent.style.maxWidth = _prefs.pageWidth + 'px';
 
-    /* Background theme — swap class on reader wrapper(s) */
+    /* Background theme */
     containerEl.querySelectorAll('.sr-scroll-reader, .sr-flip-outer').forEach(el => {
       ['white','sepia','warm','dark','night'].forEach(c => el.classList.remove('sr-bg--' + c));
       el.classList.add('sr-bg--' + _prefs.bg);
     });
 
-    /* Typography — every .sr-content (both modes) */
+    /* Typography */
     const fontStack = _fontStack();
     containerEl.querySelectorAll('.sr-content').forEach(el => {
       el.style.fontSize   = _prefs.fontSize + 'px';
@@ -200,7 +196,6 @@
   function _splitIntoPages(htmlContent) {
     if (!htmlContent) return [''];
 
-    /* Normalise all explicit breaks to a sentinel */
     const SENTINEL = '<!-- __PAGEBREAK__ -->';
     const normalised = htmlContent
       .replace(/<!--\s*pagebreak\s*-->/gi, SENTINEL)
@@ -208,7 +203,6 @@
 
     const parts = normalised.split(SENTINEL).map(p => p.trim()).filter(Boolean);
 
-    /* If the whole content is one block, auto-split by token word count */
     if (parts.length <= 1) {
       const WORDS_PER_PAGE = 250;
       const tokens  = (parts[0] || '').match(/<[^>]+>|[^<]+/g) || [];
@@ -243,6 +237,18 @@
     return String(str)
       .replace(/&/g,'&amp;').replace(/</g,'&lt;')
       .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ══════════════════════════════════════════════════
+     HELPERS
+     ══════════════════════════════════════════════════ */
+
+  /** Normalise a subject string for case-insensitive comparison */
+  function _normSubject(s) { return (s || '').trim().toLowerCase(); }
+
+  /** Build a stable group key: subject + term (used for sibling scoping & browser grouping) */
+  function _groupKey(lesson) {
+    return _normSubject(lesson.subject) + '||' + (lesson.term || '');
   }
 
   /* ══════════════════════════════════════════════════
@@ -303,7 +309,6 @@
         </div>
       </div>`);
 
-    /* Load default term first, then load lessons */
     _loadDefaultTerm(function (defaultTerm) {
       if (defaultTerm) {
         const sel = document.getElementById('srFilterTerm');
@@ -324,14 +329,18 @@
       .then(snap => {
         _studentLessonsCache = [];
         snap.forEach(doc => _studentLessonsCache.push({ id: doc.id, ...doc.data() }));
+
+        /* Sort: subject A→Z, then term (chronological), then order numerically */
         _studentLessonsCache.sort((a, b) => {
-          const sa = (a.subject || '').toLowerCase(), sb = (b.subject || '').toLowerCase();
+          const sa = _normSubject(a.subject), sb = _normSubject(b.subject);
           if (sa < sb) return -1; if (sa > sb) return 1;
+          const ta = TERMS.indexOf(a.term), tb = TERMS.indexOf(b.term);
+          if (ta !== tb) return ta - tb;
           return (a.order || 0) - (b.order || 0);
         });
 
-        /* Populate subject filter */
-        const subjects = [...new Set(_studentLessonsCache.map(l => l.subject).filter(Boolean))].sort();
+        /* Populate subject filter from unique subjects */
+        const subjects = [...new Set(_studentLessonsCache.map(l => (l.subject || '').trim()).filter(Boolean))].sort();
         const subjectSel = document.getElementById('srFilterSubject');
         if (subjectSel) {
           subjectSel.innerHTML = '<option value="">All Subjects</option>' +
@@ -351,8 +360,8 @@
     const subjectFilter = (document.getElementById('srFilterSubject')?.value || '').trim();
 
     let filtered = _studentLessonsCache;
-    if (termFilter)    filtered = filtered.filter(l => l.term    === termFilter);
-    if (subjectFilter) filtered = filtered.filter(l => l.subject === subjectFilter);
+    if (termFilter)    filtered = filtered.filter(l => l.term === termFilter);
+    if (subjectFilter) filtered = filtered.filter(l => _normSubject(l.subject) === _normSubject(subjectFilter));
 
     const browser = document.getElementById('srLessonBrowser');
     if (!browser) return;
@@ -366,24 +375,51 @@
       return;
     }
 
-    /* Group by subject */
-    const bySubject = {};
-    filtered.forEach(l => { const k = l.subject || 'General'; (bySubject[k] = bySubject[k] || []).push(l); });
+    /*
+     * Grouping strategy:
+     *   - Term filter active   → group by subject only (all visible lessons share the same term)
+     *   - No term filter       → group by subject + term to avoid colliding order numbers
+     *                            across terms; heading shows "Subject — Term"
+     */
+    const byGroup = {};
+    filtered.forEach(l => {
+      const key = termFilter
+        ? (l.subject || 'General')
+        : _groupKey(l);
+      if (!byGroup[key]) byGroup[key] = { subject: l.subject || 'General', term: l.term || '', lessons: [] };
+      byGroup[key].lessons.push(l);
+    });
 
-    browser.innerHTML = Object.keys(bySubject).sort().map(subj => {
-      const lessons = bySubject[subj];
+    /* Sort lessons within each group by order */
+    Object.values(byGroup).forEach(g => g.lessons.sort((a, b) => (a.order || 0) - (b.order || 0)));
+
+    /* Sort groups: subject A→Z, then term chronologically */
+    const sortedKeys = Object.keys(byGroup).sort((ka, kb) => {
+      const ga = byGroup[ka], gb = byGroup[kb];
+      const sa = _normSubject(ga.subject), sb = _normSubject(gb.subject);
+      if (sa < sb) return -1; if (sa > sb) return 1;
+      return TERMS.indexOf(ga.term) - TERMS.indexOf(gb.term);
+    });
+
+    browser.innerHTML = sortedKeys.map(key => {
+      const { subject, term, lessons } = byGroup[key];
+      const heading = termFilter
+        ? _esc(subject)
+        : `${_esc(subject)}<span class="sr-subject-group__term"> — ${_esc(term)}</span>`;
+      const count = lessons.length;
+
       return `
         <div class="sr-subject-group">
           <div class="sr-subject-group__header">
-            <span class="sr-subject-group__name">${_esc(subj)}</span>
-            <span class="sr-subject-group__count">${lessons.length} lesson${lessons.length !== 1 ? 's' : ''}</span>
+            <span class="sr-subject-group__name">${heading}</span>
+            <span class="sr-subject-group__count">${count} lesson${count !== 1 ? 's' : ''}</span>
           </div>
-          ${lessons.map(l => `
+          ${lessons.map((l, idx) => `
             <div class="sr-lesson-card" onclick="StudyRoom._openLesson('${_esc(l.id)}')">
-              <div class="sr-lesson-card__num">${l.order || 1}</div>
+              <div class="sr-lesson-card__num">${l.order > 0 ? l.order : idx + 1}</div>
               <div class="sr-lesson-card__body">
                 <div class="sr-lesson-card__title">${_esc(l.title)}</div>
-                <div class="sr-lesson-card__meta">${_esc(l.term || '')} · ${_esc(l.topic || '')}</div>
+                <div class="sr-lesson-card__meta">${_esc(l.term || '')}${l.topic ? ' · ' + _esc(l.topic) : ''}</div>
               </div>
               <span class="sr-lesson-card__arrow">›</span>
             </div>`).join('')}
@@ -398,17 +434,26 @@
   function _openLesson(lessonId) {
     const lesson = _studentLessonsCache.find(l => l.id === lessonId);
     if (!lesson) {
+      /* Not in cache (e.g. direct link) — fetch and open without siblings */
       window.fbDb.collection('lessons').doc(lessonId).get()
         .then(snap => {
           if (!snap.exists) { UI.toast('Lesson not found.', 'error'); return; }
           _renderReader({ id: snap.id, ...snap.data() }, []);
         })
-        .catch(err => { console.error('[studyroom] _openLesson error:', err); UI.toast('Failed to load lesson.', 'error'); });
+        .catch(err => {
+          console.error('[studyroom] _openLesson error:', err);
+          UI.toast('Failed to load lesson.', 'error');
+        });
       return;
     }
 
+    /*
+     * Siblings = lessons in the same class (guaranteed by cache) + same subject + same term.
+     * Scoping by term prevents the sidebar and prev/next buttons from crossing term
+     * boundaries, and also prevents colliding order numbers from different terms.
+     */
     const siblings = _studentLessonsCache
-      .filter(l => l.subject === lesson.subject)
+      .filter(l => _normSubject(l.subject) === _normSubject(lesson.subject) && l.term === lesson.term)
       .sort((a, b) => (a.order || 0) - (b.order || 0));
 
     _renderReader(lesson, siblings);
@@ -424,8 +469,7 @@
 
     const renderedHtml = _renderMarkdown(lesson.content || '');
 
-    /* Pre-compute flip pages ONCE here so both _buildFlipReader and
-       _buildSpread share the same array without re-splitting. */
+    /* Pre-compute flip pages ONCE — shared by _buildFlipReader and _buildSpread */
     _flipPages = _splitIntoPages(renderedHtml);
     _flipIndex = 0;
 
@@ -437,10 +481,8 @@
     _applyPrefsToReader(document.getElementById('app'));
     _syncPrefsUI();
 
-    /* Only bind scroll progress in scroll mode */
     if (_prefs.mode === 'scroll') _bindScrollProgress();
 
-    /* Re-render KaTeX if loaded */
     if (window._katexAutoRenderReady && window.renderMathInElement) {
       try {
         renderMathInElement(document.getElementById('app'), {
@@ -462,9 +504,15 @@
     const sidebarItems = siblings.map((s, i) => `
       <div class="sr-sidebar__item${s.id === lesson.id ? ' is-active' : ''}"
            onclick="StudyRoom._openLesson('${_esc(s.id)}')">
-        <span class="sr-sidebar__num">${s.order || i + 1}</span>
+        <span class="sr-sidebar__num">${s.order > 0 ? s.order : i + 1}</span>
         <span class="sr-sidebar__name">${_esc(s.title)}</span>
       </div>`).join('');
+
+    /*
+     * Sidebar heading: "Subject — Term" so the student always knows which
+     * term's lessons they are browsing inside the reader.
+     */
+    const sidebarHeading = [lesson.subject, lesson.term].filter(Boolean).join(' — ');
 
     return `
       <div class="sr-shell">
@@ -486,7 +534,7 @@
         <div class="sr-layout${hasSidebar ? '' : ' sr-layout--no-sidebar'}" id="srLayout">
           ${hasSidebar ? `
             <div class="sr-sidebar" id="srSidebar">
-              <div class="sr-sidebar__heading">${_esc(lesson.subject || 'Lessons')}</div>
+              <div class="sr-sidebar__heading">${_esc(sidebarHeading)}</div>
               ${sidebarItems}
             </div>` : ''}
 
@@ -534,12 +582,9 @@
 
   /* ──────────────────────────────────────────────────
      Flip reader
+     NOTE: _flipPages / _flipIndex already set by _renderReader — do NOT reset here.
      ────────────────────────────────────────────────── */
 
-  /**
-   * NOTE: _flipPages and _flipIndex are already set by _renderReader
-   * before this function is called. Do NOT reset them here.
-   */
   function _buildFlipReader(lesson) {
     return `
       <div class="sr-flip-outer sr-bg--${_esc(_prefs.bg)}" id="srFlipOuter">
@@ -594,9 +639,7 @@
         <div class="sr-book__page sr-book__page--right">
           <div class="sr-book__page-content">
             <div class="sr-content" style="font-family:${fontStack};font-size:${fs}px;line-height:${lineH};">
-              ${right
-                ? right
-                : '<p style="color:var(--text-disabled);font-style:italic;text-align:center;margin-top:4rem;">— end —</p>'}
+              ${right || '<p style="color:var(--text-disabled);font-style:italic;text-align:center;margin-top:4rem;">— end —</p>'}
             </div>
           </div>
           <span class="sr-book__page-num">${rightNum <= total ? rightNum : ''}</span>
@@ -618,7 +661,7 @@
     const book = document.getElementById('srBook');
     if (book) {
       book.style.animation = 'none';
-      void book.offsetHeight;                             /* force reflow */
+      void book.offsetHeight;
       book.style.animation = `sr-flip-${direction} 0.4s var(--ease) both`;
     }
     setTimeout(callback, 200);
@@ -636,13 +679,11 @@
     if (nextBtn) nextBtn.disabled = (_flipIndex + 2 >= _flipPages.length);
     if (info)    info.textContent = _flipNavLabel();
 
-    /* Update progress bar */
     const fill = document.getElementById('srProgressFill');
     if (fill && _flipPages.length) {
       fill.style.width = Math.min(100, (_flipIndex + 2) / _flipPages.length * 100).toFixed(1) + '%';
     }
 
-    /* Re-render math */
     if (window._katexAutoRenderReady && window.renderMathInElement) {
       try {
         renderMathInElement(bookEl, {
@@ -652,8 +693,6 @@
       } catch(e){}
     }
   }
-
-  /* ── Prev / next lesson navigation buttons ── */
 
   function _prevLessonBtn(lesson) {
     const idx = _siblingLessons.findIndex(l => l.id === lesson.id);
@@ -778,31 +817,26 @@
   }
 
   function _syncPrefsUI() {
-    /* Font size */
     const fsEl = document.getElementById('srFontSize');
     if (fsEl) fsEl.value = _prefs.fontSize;
     const fsLbl = document.getElementById('srFontSizeLabel');
     if (fsLbl) fsLbl.textContent = _prefs.fontSize + 'px';
 
-    /* Line spacing */
     const lsEl = document.getElementById('srLineSpacing');
     if (lsEl) lsEl.value = _prefs.lineSpacing;
     const lsLbl = document.getElementById('srLineSpacingLabel');
     if (lsLbl) lsLbl.textContent = Number(_prefs.lineSpacing).toFixed(2) + '×';
 
-    /* Font family buttons */
     document.querySelectorAll('.sr-pref-btn[onclick*="fontFamily"]').forEach(btn => {
       const m = btn.getAttribute('onclick').match(/'(\w+)'\)/);
       if (m) btn.classList.toggle('is-active', m[1] === _prefs.fontFamily);
     });
 
-    /* Page width buttons */
     document.querySelectorAll('.sr-pref-btn[onclick*="pageWidth"]').forEach(btn => {
       const m = btn.getAttribute('onclick').match(/(\d+)\)/);
       if (m) btn.classList.toggle('is-active', +m[1] === _prefs.pageWidth);
     });
 
-    /* Background buttons */
     document.querySelectorAll('.sr-bg-btn').forEach(btn => {
       const m = btn.getAttribute('onclick')?.match(/'(\w+)'\)/);
       if (m) btn.classList.toggle('is-active', m[1] === _prefs.bg);
@@ -864,7 +898,6 @@
     if (!container) return;
     _editingId = null;
 
-    /* Load current default term before rendering the panel */
     _loadDefaultTerm(function (currentDefault) {
       container.innerHTML = `
         <div style="margin-bottom:1.25rem;">
@@ -920,14 +953,14 @@
               <div>
                 <label style="display:block;font-size:.75rem;font-weight:600;
                               color:var(--text-secondary);margin-bottom:.25rem;">Title *</label>
-                <input type="text" id="srLessonTitle" placeholder="Lesson title e.g. Introduction to Fractions" />
+                <input type="text" id="srLessonTitle" placeholder="e.g. Introduction to Fractions" />
               </div>
 
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
                 <div>
                   <label style="display:block;font-size:.75rem;font-weight:600;
                                 color:var(--text-secondary);margin-bottom:.25rem;">Class *</label>
-                  <select id="srLessonClass">
+                  <select id="srLessonClass" onchange="StudyRoom._autoFillOrder()">
                     <option value="">Select class…</option>
                     ${CLASS_OPTIONS.map(c => `<option>${c}</option>`).join('')}
                   </select>
@@ -935,7 +968,7 @@
                 <div>
                   <label style="display:block;font-size:.75rem;font-weight:600;
                                 color:var(--text-secondary);margin-bottom:.25rem;">Term *</label>
-                  <select id="srLessonTerm">
+                  <select id="srLessonTerm" onchange="StudyRoom._autoFillOrder()">
                     <option value="">Select term…</option>
                     ${TERMS.map(t => `<option>${t}</option>`).join('')}
                   </select>
@@ -946,12 +979,13 @@
                 <div>
                   <label style="display:block;font-size:.75rem;font-weight:600;
                                 color:var(--text-secondary);margin-bottom:.25rem;">Subject *</label>
-                  <input type="text" id="srLessonSubject" placeholder="e.g. Mathematics" />
+                  <input type="text" id="srLessonSubject" placeholder="e.g. Mathematics"
+                         oninput="StudyRoom._autoFillOrder()" />
                 </div>
                 <div>
                   <label style="display:block;font-size:.75rem;font-weight:600;
                                 color:var(--text-secondary);margin-bottom:.25rem;">Order</label>
-                  <input type="number" id="srLessonOrder" placeholder="1" min="1" style="width:100%" />
+                  <input type="number" id="srLessonOrder" placeholder="auto" min="1" style="width:100%" />
                 </div>
               </div>
 
@@ -997,12 +1031,16 @@
               Published Lessons
             </div>
 
-            <div style="display:flex;gap:.5rem;margin-bottom:.75rem;">
-              <select id="srTeacherFilterClass" onchange="StudyRoom._teacherFilterLessons()" style="flex:1;">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;margin-bottom:.75rem;">
+              <select id="srTeacherFilterClass" onchange="StudyRoom._teacherFilterLessons()" >
                 <option value="">All Classes</option>
                 ${CLASS_OPTIONS.map(c => `<option>${c}</option>`).join('')}
               </select>
-              <select id="srTeacherFilterSubject" onchange="StudyRoom._teacherFilterLessons()" style="flex:1;">
+              <select id="srTeacherFilterTerm" onchange="StudyRoom._teacherFilterLessons()">
+                <option value="">All Terms</option>
+                ${TERMS.map(t => `<option value="${_esc(t)}">${_esc(t)}</option>`).join('')}
+              </select>
+              <select id="srTeacherFilterSubject" onchange="StudyRoom._teacherFilterLessons()">
                 <option value="">All Subjects</option>
               </select>
             </div>
@@ -1046,53 +1084,64 @@
       .onSnapshot(snap => {
         _teacherLessonsAll = [];
         snap.forEach(doc => _teacherLessonsAll.push({ id: doc.id, ...doc.data() }));
+
+        /* Sort: class A→Z, subject A→Z, term chronologically, order numerically */
         _teacherLessonsAll.sort((a, b) => {
           const ca = (a.class   || '').toLowerCase(), cb = (b.class   || '').toLowerCase();
           if (ca < cb) return -1; if (ca > cb) return 1;
-          const sa = (a.subject || '').toLowerCase(), sb = (b.subject || '').toLowerCase();
+          const sa = _normSubject(a.subject),          sb = _normSubject(b.subject);
           if (sa < sb) return -1; if (sa > sb) return 1;
+          const ta = TERMS.indexOf(a.term),            tb = TERMS.indexOf(b.term);
+          if (ta !== tb) return ta - tb;
           return (a.order || 0) - (b.order || 0);
         });
+
         _populateTeacherSubjectFilter();
         _teacherFilterLessons();
       }, err => {
         console.error('[studyroom] _loadTeacherLessons error:', err);
       });
 
-    /* Register with AppState if the helper exists */
     if (window.AppState && typeof AppState.registerListener === 'function') {
       AppState.registerListener('studyroomLessons', _teacherLessonsUnsub);
     }
   }
 
   function _populateTeacherSubjectFilter() {
-    const cls = document.getElementById('srTeacherFilterClass')?.value || '';
+    const cls  = document.getElementById('srTeacherFilterClass')?.value || '';
+    const term = document.getElementById('srTeacherFilterTerm')?.value  || '';
+
     const subjects = [...new Set(
       _teacherLessonsAll
-        .filter(l => !cls || l.class === cls)
-        .map(l => l.subject).filter(Boolean)
+        .filter(l => (!cls  || l.class === cls)
+                  && (!term || l.term  === term))
+        .map(l => (l.subject || '').trim())
+        .filter(Boolean)
     )].sort();
+
     const sel = document.getElementById('srTeacherFilterSubject');
     if (!sel) return;
     const cur = sel.value;
     sel.innerHTML = '<option value="">All Subjects</option>' +
-      subjects.map(s => `<option${s === cur ? ' selected' : ''}>${_esc(s)}</option>`).join('');
+      subjects.map(s => `<option${_normSubject(s) === _normSubject(cur) ? ' selected' : ''}>${_esc(s)}</option>`).join('');
   }
 
   function _teacherFilterLessons() {
     _populateTeacherSubjectFilter();
-    const cls  = document.getElementById('srTeacherFilterClass')?.value  || '';
+    const cls  = document.getElementById('srTeacherFilterClass')?.value   || '';
+    const term = document.getElementById('srTeacherFilterTerm')?.value    || '';
     const subj = document.getElementById('srTeacherFilterSubject')?.value || '';
 
     let filtered = _teacherLessonsAll;
-    if (cls)  filtered = filtered.filter(l => l.class   === cls);
-    if (subj) filtered = filtered.filter(l => l.subject === subj);
+    if (cls)  filtered = filtered.filter(l => l.class === cls);
+    if (term) filtered = filtered.filter(l => l.term  === term);
+    if (subj) filtered = filtered.filter(l => _normSubject(l.subject) === _normSubject(subj));
 
     const container = document.getElementById('srTeacherLessonList');
     if (!container) return;
 
     if (!filtered.length) {
-      container.innerHTML = '<p style="font-size:.875rem;color:var(--text-tertiary);padding:.5rem 0;text-align:center;">No lessons yet.</p>';
+      container.innerHTML = '<p style="font-size:.875rem;color:var(--text-tertiary);padding:.5rem 0;text-align:center;">No lessons found.</p>';
       return;
     }
 
@@ -1121,21 +1170,61 @@
       </div>`).join('');
   }
 
-  /* ── Save lesson ── */
-  async function _saveLesson() {
-    const title   = document.getElementById('srLessonTitle')?.value.trim()   || '';
+  /* ── Auto-fill Order field based on class + term + subject ── */
+  function _autoFillOrder() {
+    if (_editingId) return;   /* never overwrite when editing an existing lesson */
     const cls     = document.getElementById('srLessonClass')?.value           || '';
     const term    = document.getElementById('srLessonTerm')?.value            || '';
     const subject = document.getElementById('srLessonSubject')?.value.trim() || '';
-    const order   = parseInt(document.getElementById('srLessonOrder')?.value  || '1', 10) || 1;
-    const topic   = document.getElementById('srLessonTopic')?.value.trim()   || '';
-    const content = document.getElementById('srLessonContent')?.value        || '';
+    if (!cls || !term || !subject) return;
+
+    const group = _teacherLessonsAll.filter(
+      l => l.class === cls
+        && l.term  === term
+        && _normSubject(l.subject) === _normSubject(subject)
+    );
+
+    const nextOrder = group.length
+      ? Math.max(...group.map(l => l.order || 0)) + 1
+      : 1;
+
+    const orderEl = document.getElementById('srLessonOrder');
+    /* Only overwrite if the teacher has not already typed a value */
+    if (orderEl && !orderEl.value) orderEl.value = nextOrder;
+  }
+
+  /* ── Save lesson ── */
+  async function _saveLesson() {
+    const title    = document.getElementById('srLessonTitle')?.value.trim()   || '';
+    const cls      = document.getElementById('srLessonClass')?.value           || '';
+    const term     = document.getElementById('srLessonTerm')?.value            || '';
+    const subject  = document.getElementById('srLessonSubject')?.value.trim() || '';
+    const orderRaw = document.getElementById('srLessonOrder')?.value          || '';
+    const order    = parseInt(orderRaw, 10) || 1;
+    const topic    = document.getElementById('srLessonTopic')?.value.trim()   || '';
+    const content  = document.getElementById('srLessonContent')?.value        || '';
 
     if (!title)   { UI.toast('Please enter a lesson title.',    'warning'); return; }
     if (!cls)     { UI.toast('Please select a class.',          'warning'); return; }
     if (!term)    { UI.toast('Please select a term.',           'warning'); return; }
     if (!subject) { UI.toast('Please enter a subject.',         'warning'); return; }
     if (!content) { UI.toast('Please add some lesson content.', 'warning'); return; }
+
+    /* Warn (non-blocking) if another lesson in the same group already uses this order */
+    const duplicate = _teacherLessonsAll.find(
+      l => l.class === cls
+        && l.term  === term
+        && _normSubject(l.subject) === _normSubject(subject)
+        && (l.order || 0) === order
+        && l.id !== _editingId
+    );
+    if (duplicate) {
+      UI.toast(
+        `Order ${order} is already used by "${duplicate.title}" in this group. ` +
+        `Consider a different number to keep sequencing unambiguous.`,
+        'warning'
+      );
+    }
 
     const btn = document.getElementById('srSaveBtn');
     if (btn) UI.setLoading(btn, true);
@@ -1169,7 +1258,7 @@
     if (!lesson) return;
     _editingId = id;
 
-    const set = (elId, val) => { const el = document.getElementById(elId); if (el) el.value = val || ''; };
+    const set = (elId, val) => { const el = document.getElementById(elId); if (el) el.value = val ?? ''; };
     set('srLessonTitle',   lesson.title);
     set('srLessonClass',   lesson.class);
     set('srLessonTerm',    lesson.term);
@@ -1255,7 +1344,7 @@
 
     /* Teacher */
     openTeacherTab,
-    openForTeacher: openTeacherTab,   /* alias used by teacher.js */
+    openForTeacher: openTeacherTab,
     _saveLesson,
     _editLesson,
     _cancelEdit,
@@ -1263,6 +1352,7 @@
     _previewLesson,
     _teacherFilterLessons,
     _saveDefaultTermSetting,
+    _autoFillOrder,
 
     cancelTeacherListeners() {
       if (_teacherLessonsUnsub) { _teacherLessonsUnsub(); _teacherLessonsUnsub = null; }
