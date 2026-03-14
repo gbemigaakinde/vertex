@@ -96,10 +96,10 @@
                   class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">Schools</button>
           <button onclick="Teacher.showTab('tasks')"    id="tab-tasks"
                   class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">Tasks &amp; Messages</button>
-      <button onclick="Teacher.showTab('studyroom')" id="tab-studyroom"
-               class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">Study Room</button>
-       <button onclick="Teacher.showTab('chat')"     id="tab-chat"
-         class="tab-btn btn bg-green-600" style="font-size:.8125rem;padding:.4375rem .875rem;position:relative;">Chat</button>
+          <button onclick="Teacher.showTab('studyroom')" id="tab-studyroom"
+                  class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">Study Room</button>
+          <button onclick="Teacher.showTab('chat')"     id="tab-chat"
+                  class="tab-btn btn bg-green-600" style="font-size:.8125rem;padding:.4375rem .875rem;position:relative;">Chat</button>
         </div>
 
         <!-- ── Tab panels ── -->
@@ -153,10 +153,6 @@
                 Configure scheduled tasks and send private messages to students
               </p>
             </div>
-
-          <!-- Study Room -->
-          <div id="teacher-studyroom" class="teacher-tab hidden"></div>
-
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;" class="tasks-grid">
 
@@ -388,6 +384,9 @@
 
             </div><!-- /tasks-grid -->
           </div><!-- /teacher-tasks -->
+
+          <!-- Study Room — MUST be a sibling of the other tab panels, NOT inside teacher-tasks -->
+          <div id="teacher-studyroom" class="teacher-tab hidden"></div>
 
         </div><!-- /tab panels wrapper -->
       </div>`;
