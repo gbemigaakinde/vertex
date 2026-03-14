@@ -66,27 +66,51 @@
   function _applyPrefsToReader(containerEl) {
     if (!containerEl) return;
 
-    /* Page width — scroll mode only */
-    const scrollContent = containerEl.querySelector('.sr-scroll-content');
-    if (scrollContent) scrollContent.style.maxWidth = _prefs.pageWidth + 'px';
+    const fontStack = _fontStack();
 
-    /* Background theme */
+    /* ── Page width (scroll mode) ──
+     * Set on the scroll content wrapper AND propagate as a CSS variable
+     * on the reader so child elements can also reference it.           */
+    const scrollReader  = containerEl.querySelector('.sr-scroll-reader');
+    const scrollContent = containerEl.querySelector('.sr-scroll-content');
+    if (scrollContent) {
+      scrollContent.style.maxWidth = _prefs.pageWidth + 'px';
+    }
+    if (scrollReader) {
+      scrollReader.style.setProperty('--sr-page-width', _prefs.pageWidth + 'px');
+    }
+
+    /* ── Background theme ──
+     * Swap class on reader wrapper. Also update CSS variables so that
+     * text colours, borders etc. inside the reader adapt for dark modes. */
     containerEl.querySelectorAll('.sr-scroll-reader, .sr-flip-outer').forEach(el => {
       ['white','sepia','warm','dark','night'].forEach(c => el.classList.remove('sr-bg--' + c));
       el.classList.add('sr-bg--' + _prefs.bg);
     });
 
-    /* Typography */
-    const fontStack = _fontStack();
+    /* ── Typography ──
+     * Apply to every .sr-content element (covers both scroll and flip).
+     * Use !important-equivalent by setting the style directly so it
+     * overrides any class-level font-family from the lesson's own <style>. */
     containerEl.querySelectorAll('.sr-content').forEach(el => {
-      el.style.fontSize   = _prefs.fontSize + 'px';
-      el.style.lineHeight = _prefs.lineSpacing;
-      el.style.fontFamily = fontStack;
+      el.style.setProperty('font-size',   _prefs.fontSize + 'px');
+      el.style.setProperty('line-height', String(_prefs.lineSpacing));
+      el.style.setProperty('font-family', fontStack);
     });
 
-    /* Flip book pages get a slightly smaller font */
+    /* Flip pages: slightly smaller font */
     containerEl.querySelectorAll('.sr-book__page-content .sr-content').forEach(el => {
-      el.style.fontSize = Math.max(12, _prefs.fontSize - 2) + 'px';
+      el.style.setProperty('font-size', Math.max(12, _prefs.fontSize - 2) + 'px');
+    });
+
+    /* ── Propagate font family to lesson-specific elements ──
+     * The lesson HTML may contain elements like <p>, <li>, <td> that sit
+     * directly inside .sr-content. Setting font-family on .sr-content
+     * should cascade, but some lesson <style> blocks may override it.
+     * We push the font family down to all text-bearing children too.    */
+    const textTags = 'p, li, td, th, blockquote, figcaption, aside, h1, h2, h3, h4, h5, h6';
+    containerEl.querySelectorAll('.sr-content ' + textTags).forEach(el => {
+      el.style.setProperty('font-family', fontStack);
     });
   }
 
