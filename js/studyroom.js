@@ -98,11 +98,46 @@
     if (!md) return '';
     let html = String(md);
 
-    /* Sanitise */
+    /*
+     * STEP 1 — Stash verbatim HTML blocks before any processing.
+     *
+     * Multi-line HTML blocks (svg, figure, aside, section, style, details, table)
+     * must survive the sanitiser and paragraph-wrapper unchanged. We replace each
+     * block with a unique placeholder, run all markdown transforms, then restore.
+     *
+     * Tags whose opening tag may carry attributes (e.g. <figure>, <aside class="...">) 
+     * are matched with [^>]* so the attribute content is included in the match.
+     */
+    const stash = [];
+    const STASH_TAG = 'HTMLSTASH';
+
+    function _stashBlock(tagName) {
+      const re = new RegExp('<' + tagName + '[^>]*>[\\s\\S]*?<\\/' + tagName + '>', 'gi');
+      html = html.replace(re, match => {
+        stash.push(match);
+        return STASH_TAG + (stash.length - 1) + '_';
+      });
+    }
+
+    /* Order matters: innermost first so nested tags (e.g. <svg> inside <figure>) stash correctly */
+    _stashBlock('script');   /* removed below — still stash to neutralise */
+    _stashBlock('style');
+    _stashBlock('svg');
+    _stashBlock('figure');
+    _stashBlock('aside');
+    _stashBlock('section');
+    _stashBlock('details');
+
+    /* STEP 2 — Sanitise the remaining (non-stashed) content */
     html = html
-      .replace(/<script[\s\S]*?<\/script>/gi, '')
+      .replace(/<script[\s\S]*?<\/script>/gi, '')   /* belt-and-braces: any un-stashed scripts */
       .replace(/\bon\w+\s*=/gi, 'data-removed=')
       .replace(/javascript:/gi, '');
+
+    /* Remove stashed <script> blocks (index already recorded, just blank them) */
+    stash.forEach((block, i) => {
+      if (/^<script/i.test(block)) stash[i] = '';
+    });
 
     /* GFM tables */
     html = html.replace(/^\|(.+)\|\s*\n\|[-| :]+\|\s*\n((?:\|.+\|\s*\n?)*)/gm, (_, header, rows) => {
@@ -153,8 +188,8 @@
       return `<ol>${items}</ol>`;
     });
 
-    /* Wrap remaining lines in <p> */
-    const blockStarters = ['<h','<ul','<ol','<li','<pre','<blockquote','<table','<hr','<p'];
+    /* Wrap remaining lines in <p>, treating stash placeholders as block elements */
+    const blockStarters = ['<h','<ul','<ol','<li','<pre','<blockquote','<table','<hr','<p', STASH_TAG];
     const result = [];
     let buffer   = [];
 
@@ -173,7 +208,13 @@
     });
     if (buffer.length) result.push('<p>' + _inlineMarkdown(buffer.join(' ')) + '</p>');
 
-    return result.join('\n');
+    /* STEP 3 — Restore stashed blocks */
+    let output = result.join('\n');
+    stash.forEach((block, i) => {
+      output = output.replace(STASH_TAG + i + '_', block);
+    });
+
+    return output;
   }
 
   function _inlineMarkdown(text) {
