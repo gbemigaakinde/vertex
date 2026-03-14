@@ -532,6 +532,7 @@
     _syncPrefsUI();
 
     if (_prefs.mode === 'scroll') _bindScrollProgress();
+    if (_prefs.mode === 'flip')   _bindFlipSwipe();
 
     if (window._katexAutoRenderReady && window.renderMathInElement) {
       try {
@@ -682,7 +683,7 @@
             </button>
             <div class="sr-flip-nav__info" id="srFlipInfo">${_flipNavLabel()}</div>
             <button class="sr-flip-nav__btn" id="srFlipNext" onclick="StudyRoom._flipNext()"
-                    ${_flipIndex + 2 >= _flipPages.length ? 'disabled' : ''}>
+                    ${_flipAtLastPage() ? 'disabled' : ''}>
               Next →
             </button>
           </div>
@@ -690,9 +691,24 @@
       </div>`;
   }
 
+  /* Returns true when there is no further page to advance to */
+  function _flipAtLastPage() {
+    return _flipIsMobile()
+      ? _flipIndex >= _flipPages.length - 1
+      : _flipIndex + 2 >= _flipPages.length;
+  }
+
+  /* On mobile we show ONE page at a time; on desktop TWO (spread) */
+  function _flipIsMobile() {
+    return window.innerWidth <= 768;
+  }
+
   function _flipNavLabel() {
     const total = _flipPages.length;
     if (!total) return 'No pages';
+    if (_flipIsMobile()) {
+      return `Page ${_flipIndex + 1} of ${total}`;
+    }
     const hi = Math.min(_flipIndex + 2, total);
     return total <= 2
       ? `Page ${_flipIndex + 1} of ${total}`
@@ -700,11 +716,12 @@
   }
 
   function _buildSpread() {
-    const left      = _flipPages[_flipIndex]     || '';
-    const right     = _flipPages[_flipIndex + 1] || '';
+    const isMobile  = _flipIsMobile();
     const total     = _flipPages.length;
+    const left      = isMobile ? '' : (_flipPages[_flipIndex] || '');
+    const right     = isMobile ? (_flipPages[_flipIndex] || '') : (_flipPages[_flipIndex + 1] || '');
     const leftNum   = _flipIndex + 1;
-    const rightNum  = _flipIndex + 2;
+    const rightNum  = isMobile ? _flipIndex + 1 : _flipIndex + 2;
     const fs        = Math.max(12, _prefs.fontSize - 2);
     const fontStack = _fontStack();
     const lineH     = _prefs.lineSpacing;
@@ -731,13 +748,15 @@
   }
 
   function _flipNext() {
-    if (_flipIndex + 2 >= _flipPages.length) return;
-    _animateFlip('left', () => { _flipIndex += 2; _updateSpread(); });
+    if (_flipAtLastPage()) return;
+    const step = _flipIsMobile() ? 1 : 2;
+    _animateFlip('left', () => { _flipIndex += step; _updateSpread(); });
   }
 
   function _flipPrev() {
     if (_flipIndex === 0) return;
-    _animateFlip('right', () => { _flipIndex = Math.max(0, _flipIndex - 2); _updateSpread(); });
+    const step = _flipIsMobile() ? 1 : 2;
+    _animateFlip('right', () => { _flipIndex = Math.max(0, _flipIndex - step); _updateSpread(); });
   }
 
   function _animateFlip(direction, callback) {
@@ -759,12 +778,15 @@
     const nextBtn = document.getElementById('srFlipNext');
     const info    = document.getElementById('srFlipInfo');
     if (prevBtn) prevBtn.disabled = (_flipIndex === 0);
-    if (nextBtn) nextBtn.disabled = (_flipIndex + 2 >= _flipPages.length);
+    if (nextBtn) nextBtn.disabled = _flipAtLastPage();
     if (info)    info.textContent = _flipNavLabel();
 
     const fill = document.getElementById('srProgressFill');
     if (fill && _flipPages.length) {
-      fill.style.width = Math.min(100, (_flipIndex + 2) / _flipPages.length * 100).toFixed(1) + '%';
+      const pct = _flipIsMobile()
+        ? (_flipIndex + 1) / _flipPages.length * 100
+        : (_flipIndex + 2) / _flipPages.length * 100;
+      fill.style.width = Math.min(100, pct).toFixed(1) + '%';
     }
 
     if (window._katexAutoRenderReady && window.renderMathInElement) {
@@ -777,7 +799,41 @@
     }
 
     _bindQuizButtons(bookEl);
+    _bindFlipSwipe();   /* re-bind swipe after innerHTML replaced */
   }
+
+  /*
+   * Swipe / drag to flip pages.
+   * Works for both touch (mobile) and mouse (desktop).
+   * A horizontal swipe of ≥50px triggers the appropriate direction.
+   */
+  function _bindFlipSwipe() {
+    const book = document.getElementById('srBook');
+    if (!book || book.dataset.swipeBound) return;
+    book.dataset.swipeBound = '1';
+
+    let startX = null;
+    const THRESHOLD = 50;
+
+    function onStart(x) { startX = x; }
+    function onEnd(x) {
+      if (startX === null) return;
+      const dx = x - startX;
+      startX = null;
+      if (Math.abs(dx) < THRESHOLD) return;
+      if (dx < 0) _flipNext();   /* swipe left  → next page  */
+      else        _flipPrev();   /* swipe right → prev page  */
+    }
+
+    /* Touch */
+    book.addEventListener('touchstart', e => onStart(e.touches[0].clientX),     { passive: true });
+    book.addEventListener('touchend',   e => onEnd(e.changedTouches[0].clientX), { passive: true });
+
+    /* Mouse */
+    book.addEventListener('mousedown', e => onStart(e.clientX));
+    book.addEventListener('mouseup',   e => onEnd(e.clientX));
+  }
+
 
   function _prevLessonBtn(lesson) {
     const idx = _siblingLessons.findIndex(l => l.id === lesson.id);
