@@ -5,8 +5,11 @@
      StudyRoom.openForStudent()  — called from exam.js
      StudyRoom.openTeacherTab()  — called from teacher.js tab
 
-   Firestore collection: 'lessons'
-   Document fields:
+   Firestore collections:
+     'lessons'             — lesson documents
+     'studyroom_settings'  — doc 'defaults' with field defaultTerm
+
+   Lesson document fields:
      title, class, term, subject, topic, content,
      order, createdAt, updatedAt
 
@@ -28,22 +31,22 @@
 
   const PREFS_KEY = 'vtx_study_prefs';
 
-  const TERMS = [
-    'First Term', 'Second Term', 'Third Term',
-  ];
+  const TERMS = ['First Term', 'Second Term', 'Third Term'];
 
-  const CLASS_OPTIONS = [
-    'JSS1','JSS2','JSS3','SSS1','SSS2','SSS3','TUTORIAL'
-  ];
+  const CLASS_OPTIONS = ['JSS1','JSS2','JSS3','SSS1','SSS2','SSS3','TUTORIAL'];
 
-  /* ── State ── */
-  let _prefs        = _loadPrefs();
-  let _currentLesson = null;
-  let _siblingLessons = [];
-  let _flipPages    = [];
-  let _flipIndex    = 0;
-  let _editingId    = null;   // teacher edit mode
+  /* ── Module state ── */
+  let _prefs              = _loadPrefs();
+  let _currentLesson      = null;
+  let _siblingLessons     = [];
+  let _flipPages          = [];
+  let _flipIndex          = 0;
+  let _editingId          = null;
   let _teacherLessonsUnsub = null;
+  let _previewMode        = false;
+  let _defaultTerm        = '';
+  let _studentLessonsCache = [];
+  let _teacherLessonsAll  = [];
 
   /* ══════════════════════════════════════════════════
      PREFERENCES
@@ -57,134 +60,122 @@
   }
 
   function _savePrefs() {
-    try { localStorage.setItem(PREFS_KEY, JSON.stringify(_prefs)); } catch (e) { /* */ }
+    try { localStorage.setItem(PREFS_KEY, JSON.stringify(_prefs)); } catch (e) {}
   }
 
+  /**
+   * Apply current _prefs to all live reader elements inside containerEl.
+   * Called after every pref change and after initial render.
+   */
   function _applyPrefsToReader(containerEl) {
     if (!containerEl) return;
-    const content = containerEl.querySelector('.sr-scroll-content, .sr-book');
-    if (content) {
-      content.style.maxWidth  = _prefs.pageWidth + 'px';
-    }
-    const reader = containerEl.querySelector('.sr-scroll-reader, .sr-flip-outer');
-    if (reader) {
-      // Remove old bg classes
-      ['sr-bg--white','sr-bg--sepia','sr-bg--warm','sr-bg--dark','sr-bg--night'].forEach(c => reader.classList.remove(c));
-      reader.classList.add('sr-bg--' + _prefs.bg);
-    }
-    const srContent = containerEl.querySelector('.sr-content');
-    if (srContent) {
-      srContent.style.fontSize   = _prefs.fontSize + 'px';
-      srContent.style.lineHeight = _prefs.lineSpacing;
-      srContent.style.fontFamily = _prefs.fontFamily === 'serif'
-        ? "'Lora', 'Source Serif 4', Georgia, serif"
-        : _prefs.fontFamily === 'sans'
-          ? "var(--font)"
-          : "'Inconsolata', 'DM Mono', monospace";
-    }
-    const bookPages = containerEl.querySelectorAll('.sr-book__page-content .sr-content');
-    bookPages.forEach(el => {
-      el.style.fontSize   = Math.max(12, _prefs.fontSize - 2) + 'px';
+
+    /* Page width — scroll mode only */
+    const scrollContent = containerEl.querySelector('.sr-scroll-content');
+    if (scrollContent) scrollContent.style.maxWidth = _prefs.pageWidth + 'px';
+
+    /* Background theme — swap class on reader wrapper(s) */
+    containerEl.querySelectorAll('.sr-scroll-reader, .sr-flip-outer').forEach(el => {
+      ['white','sepia','warm','dark','night'].forEach(c => el.classList.remove('sr-bg--' + c));
+      el.classList.add('sr-bg--' + _prefs.bg);
+    });
+
+    /* Typography — every .sr-content (both modes) */
+    const fontStack = _fontStack();
+    containerEl.querySelectorAll('.sr-content').forEach(el => {
+      el.style.fontSize   = _prefs.fontSize + 'px';
       el.style.lineHeight = _prefs.lineSpacing;
-      el.style.fontFamily = _prefs.fontFamily === 'serif'
-        ? "'Lora', 'Source Serif 4', Georgia, serif"
-        : "var(--font)";
+      el.style.fontFamily = fontStack;
+    });
+
+    /* Flip book pages get a slightly smaller font */
+    containerEl.querySelectorAll('.sr-book__page-content .sr-content').forEach(el => {
+      el.style.fontSize = Math.max(12, _prefs.fontSize - 2) + 'px';
     });
   }
 
   /* ══════════════════════════════════════════════════
-     MARKDOWN RENDERER
-     (safe subset, no external library needed)
+     MARKDOWN RENDERER  (safe subset, no external lib)
      ══════════════════════════════════════════════════ */
 
   function _renderMarkdown(md) {
     if (!md) return '';
-
     let html = String(md);
 
-    // Sanitise: strip script tags and on* attributes
+    /* Sanitise */
     html = html
       .replace(/<script[\s\S]*?<\/script>/gi, '')
       .replace(/\bon\w+\s*=/gi, 'data-removed=')
       .replace(/javascript:/gi, '');
 
-    // Tables (must come before inline processing)
-    html = html.replace(/^\|(.+)\|\s*\n\|[-| :]+\|\s*\n((?:\|.+\|\s*\n?)*)/gm, function (_, header, rows) {
-      const ths = header.split('|').filter(Boolean).map(c =>
-        `<th>${_inlineMarkdown(c.trim())}</th>`).join('');
+    /* GFM tables */
+    html = html.replace(/^\|(.+)\|\s*\n\|[-| :]+\|\s*\n((?:\|.+\|\s*\n?)*)/gm, (_, header, rows) => {
+      const ths = header.split('|').filter(Boolean)
+        .map(c => `<th>${_inlineMarkdown(c.trim())}</th>`).join('');
       const trs = rows.trim().split('\n').map(row => {
-        const tds = row.split('|').filter(Boolean).map(c =>
-          `<td>${_inlineMarkdown(c.trim())}</td>`).join('');
+        const tds = row.split('|').filter(Boolean)
+          .map(c => `<td>${_inlineMarkdown(c.trim())}</td>`).join('');
         return `<tr>${tds}</tr>`;
       }).join('');
       return `<table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
     });
 
-    // Fenced code blocks
-    html = html.replace(/```(\w*)\n?([\s\S]*?)```/gm, function (_, lang, code) {
-      const escaped = code.replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      return `<pre><code class="lang-${lang}">${escaped}</code></pre>`;
+    /* Fenced code blocks */
+    html = html.replace(/```(\w*)\n?([\s\S]*?)```/gm, (_, lang, code) => {
+      const esc = code.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+      return `<pre><code class="lang-${lang}">${esc}</code></pre>`;
     });
 
-    // Block quotes
+    /* Block quotes */
     html = html.replace(/^> (.+)/gm, '<blockquote>$1</blockquote>');
 
-    // Headings
-    html = html.replace(/^###### (.+)$/gm, '<h6>$1</h6>');
-    html = html.replace(/^##### (.+)$/gm, '<h5>$1</h5>');
-    html = html.replace(/^#### (.+)$/gm, '<h4>$1</h4>');
-    html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
-    html = html.replace(/^## (.+)$/gm, '<h2>$1</h2>');
-    html = html.replace(/^# (.+)$/gm, '<h1>$1</h1>');
+    /* Headings */
+    html = html
+      .replace(/^###### (.+)$/gm, '<h6>$1</h6>')
+      .replace(/^##### (.+)$/gm,  '<h5>$1</h5>')
+      .replace(/^#### (.+)$/gm,   '<h4>$1</h4>')
+      .replace(/^### (.+)$/gm,    '<h3>$1</h3>')
+      .replace(/^## (.+)$/gm,     '<h2>$1</h2>')
+      .replace(/^# (.+)$/gm,      '<h1>$1</h1>');
 
-    // Horizontal rule
-    html = html.replace(/^---+$/gm, '<hr>');
-    html = html.replace(/^\*\*\*+$/gm, '<hr>');
+    /* Horizontal rules (also used as page-break in flip mode) */
+    html = html
+      .replace(/^---+$/gm,    '<hr>')
+      .replace(/^\*\*\*+$/gm, '<hr>');
 
-    // Unordered lists
-    html = html.replace(/((?:^[-*+] .+\n?)+)/gm, function (block) {
-      const items = block.trim().split('\n').map(line =>
-        `<li>${_inlineMarkdown(line.replace(/^[-*+] /, ''))}</li>`).join('');
+    /* Unordered lists */
+    html = html.replace(/((?:^[-*+] .+\n?)+)/gm, block => {
+      const items = block.trim().split('\n')
+        .map(line => `<li>${_inlineMarkdown(line.replace(/^[-*+] /, ''))}</li>`).join('');
       return `<ul>${items}</ul>`;
     });
 
-    // Ordered lists
-    html = html.replace(/((?:^\d+\. .+\n?)+)/gm, function (block) {
-      const items = block.trim().split('\n').map(line =>
-        `<li>${_inlineMarkdown(line.replace(/^\d+\. /, ''))}</li>`).join('');
+    /* Ordered lists */
+    html = html.replace(/((?:^\d+\. .+\n?)+)/gm, block => {
+      const items = block.trim().split('\n')
+        .map(line => `<li>${_inlineMarkdown(line.replace(/^\d+\. /, ''))}</li>`).join('');
       return `<ol>${items}</ol>`;
     });
 
-    // Paragraphs — wrap lines that aren't already block elements
-    const lines = html.split('\n');
+    /* Wrap remaining lines in <p> */
+    const blockStarters = ['<h','<ul','<ol','<li','<pre','<blockquote','<table','<hr','<p'];
     const result = [];
-    let buffer = [];
-    const blockTags = ['<h','<ul','<ol','<li','<pre','<blockquote','<table','<hr','<p'];
+    let buffer   = [];
 
-    lines.forEach(line => {
-      const trimmed = line.trim();
-      if (!trimmed) {
-        if (buffer.length) {
-          result.push('<p>' + _inlineMarkdown(buffer.join(' ')) + '</p>');
-          buffer = [];
-        }
+    html.split('\n').forEach(line => {
+      const t = line.trim();
+      if (!t) {
+        if (buffer.length) { result.push('<p>' + _inlineMarkdown(buffer.join(' ')) + '</p>'); buffer = []; }
         return;
       }
-      const isBlock = blockTags.some(t => trimmed.startsWith(t));
-      if (isBlock) {
-        if (buffer.length) {
-          result.push('<p>' + _inlineMarkdown(buffer.join(' ')) + '</p>');
-          buffer = [];
-        }
-        result.push(trimmed);
+      if (blockStarters.some(tag => t.startsWith(tag))) {
+        if (buffer.length) { result.push('<p>' + _inlineMarkdown(buffer.join(' ')) + '</p>'); buffer = []; }
+        result.push(t);
       } else {
-        buffer.push(trimmed);
+        buffer.push(t);
       }
     });
-
-    if (buffer.length) {
-      result.push('<p>' + _inlineMarkdown(buffer.join(' ')) + '</p>');
-    }
+    if (buffer.length) result.push('<p>' + _inlineMarkdown(buffer.join(' ')) + '</p>');
 
     return result.join('\n');
   }
@@ -192,46 +183,55 @@
   function _inlineMarkdown(text) {
     if (!text) return '';
     return text
-      // Bold + italic
-      .replace(/\*\*\*(.+?)\*\*\*/g, '<strong><em>$1</em></strong>')
-      // Bold
-      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-      .replace(/__(.+?)__/g, '<strong>$1</strong>')
-      // Italic
-      .replace(/\*(.+?)\*/g, '<em>$1</em>')
-      .replace(/_(.+?)_/g, '<em>$1</em>')
-      // Inline code
-      .replace(/`(.+?)`/g, '<code>$1</code>')
-      // Link
+      .replace(/\*\*\*(.+?)\*\*\*/g,  '<strong><em>$1</em></strong>')
+      .replace(/\*\*(.+?)\*\*/g,      '<strong>$1</strong>')
+      .replace(/__(.+?)__/g,          '<strong>$1</strong>')
+      .replace(/\*(.+?)\*/g,          '<em>$1</em>')
+      .replace(/_(.+?)_/g,            '<em>$1</em>')
+      .replace(/`(.+?)`/g,            '<code>$1</code>')
       .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
-      // Image
-      .replace(/!\[(.+?)\]\((.+?)\)/g, '<img src="$2" alt="$1">');
+      .replace(/!\[(.+?)\]\((.+?)\)/g,'<img src="$2" alt="$1">');
   }
 
   /* ══════════════════════════════════════════════════
-     FLIP MODE — split content into pages
+     FLIP MODE — split HTML into page chunks
      ══════════════════════════════════════════════════ */
 
   function _splitIntoPages(htmlContent) {
-    // Split on <hr> or manual page break <!-- pagebreak -->
-    const parts = htmlContent
-      .replace(/<!--\s*pagebreak\s*-->/gi, '<hr class="__pb__">')
-      .split(/<hr class="__pb__">|(?=<h1[^>]*>)/);
+    if (!htmlContent) return [''];
 
-    const pages = parts.map(p => p.trim()).filter(Boolean);
+    /* Normalise all explicit breaks to a sentinel */
+    const SENTINEL = '<!-- __PAGEBREAK__ -->';
+    const normalised = htmlContent
+      .replace(/<!--\s*pagebreak\s*-->/gi, SENTINEL)
+      .replace(/<hr\s*\/?>/gi, SENTINEL);
 
-    // If still one big block, auto-split by word count (~250 words per page)
-    if (pages.length === 1 && pages[0]) {
+    const parts = normalised.split(SENTINEL).map(p => p.trim()).filter(Boolean);
+
+    /* If the whole content is one block, auto-split by token word count */
+    if (parts.length <= 1) {
       const WORDS_PER_PAGE = 250;
-      const words = pages[0].split(/\s+/);
-      const result = [];
-      for (let i = 0; i < words.length; i += WORDS_PER_PAGE) {
-        result.push(words.slice(i, i + WORDS_PER_PAGE).join(' '));
+      const tokens  = (parts[0] || '').match(/<[^>]+>|[^<]+/g) || [];
+      const pages   = [];
+      let page      = '';
+      let wordCount = 0;
+
+      for (const token of tokens) {
+        page += token;
+        if (!token.startsWith('<')) {
+          wordCount += token.split(/\s+/).filter(Boolean).length;
+          if (wordCount >= WORDS_PER_PAGE) {
+            pages.push(page.trim());
+            page = '';
+            wordCount = 0;
+          }
+        }
       }
-      return result.length ? result : pages;
+      if (page.trim()) pages.push(page.trim());
+      return pages.length ? pages : [''];
     }
 
-    return pages;
+    return parts;
   }
 
   /* ══════════════════════════════════════════════════
@@ -241,7 +241,26 @@
   function _esc(str) {
     if (str == null) return '';
     return String(str)
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  /* ══════════════════════════════════════════════════
+     DEFAULT TERM — Firestore read / write
+     ══════════════════════════════════════════════════ */
+
+  function _loadDefaultTerm(callback) {
+    window.fbDb.collection('studyroom_settings').doc('defaults').get()
+      .then(snap => {
+        _defaultTerm = (snap.exists && snap.data().defaultTerm) ? snap.data().defaultTerm : '';
+        if (callback) callback(_defaultTerm);
+      })
+      .catch(() => { if (callback) callback(''); });
+  }
+
+  function _saveDefaultTerm(term) {
+    return window.fbDb.collection('studyroom_settings').doc('defaults')
+      .set({ defaultTerm: term }, { merge: true });
   }
 
   /* ══════════════════════════════════════════════════
@@ -257,22 +276,18 @@
     UI.mount(`
       <div class="sr-shell sr-animate-in">
         <div class="sr-topbar">
-          <button class="sr-topbar__back" onclick="StudyRoom._closeStudentRoom()">
-            ← Back
-          </button>
+          <button class="sr-topbar__back" onclick="StudyRoom._closeStudentRoom()">← Back</button>
           <span class="sr-topbar__title">Study Room</span>
         </div>
-
         <div class="sr-browser">
           <div class="sr-browser__header">
-            <h2 style="font-size:var(--text-xl);font-weight:700;color:var(--text-primary);margin-bottom:0.25rem;">
+            <h2 style="font-size:var(--text-xl);font-weight:700;color:var(--text-primary);margin-bottom:.25rem;">
               Study Materials
             </h2>
             <p style="font-size:var(--text-sm);color:var(--text-tertiary);">
               ${_esc(studentClass)} — Select a lesson to start reading
             </p>
           </div>
-
           <div class="sr-browser__filters">
             <select id="srFilterTerm" onchange="StudyRoom._filterLessons()">
               <option value="">All Terms</option>
@@ -282,60 +297,52 @@
               <option value="">All Subjects</option>
             </select>
           </div>
-
           <div id="srLessonBrowser">
-            <div style="text-align:center;padding:3rem 1rem;color:var(--text-tertiary);">
-              Loading lessons…
-            </div>
+            <div style="text-align:center;padding:3rem 1rem;color:var(--text-tertiary);">Loading lessons…</div>
           </div>
         </div>
       </div>`);
 
-    _loadStudentLessons(studentClass);
+    /* Load default term first, then load lessons */
+    _loadDefaultTerm(function (defaultTerm) {
+      if (defaultTerm) {
+        const sel = document.getElementById('srFilterTerm');
+        if (sel) sel.value = defaultTerm;
+      }
+      _loadStudentLessons(studentClass);
+    });
   }
 
   function _closeStudentRoom() {
-    // Go back to subject selection
-    if (window.Exam && Exam.renderSubjectSelection) {
-      Exam.renderSubjectSelection();
-    }
+    if (window.Exam && Exam.renderSubjectSelection) Exam.renderSubjectSelection();
   }
 
-  let _studentLessonsCache = [];
-
   function _loadStudentLessons(studentClass) {
-    // Single-field filter only — no compound orderBy so no composite index is needed.
-    // Sorting is done client-side after the fetch.
     window.fbDb.collection('lessons')
       .where('class', '==', studentClass)
       .get()
       .then(snap => {
         _studentLessonsCache = [];
         snap.forEach(doc => _studentLessonsCache.push({ id: doc.id, ...doc.data() }));
-
-        // Sort client-side: subject A→Z, then order numerically within subject
         _studentLessonsCache.sort((a, b) => {
-          const sa = (a.subject || '').toLowerCase();
-          const sb = (b.subject || '').toLowerCase();
-          if (sa < sb) return -1;
-          if (sa > sb) return  1;
+          const sa = (a.subject || '').toLowerCase(), sb = (b.subject || '').toLowerCase();
+          if (sa < sb) return -1; if (sa > sb) return 1;
           return (a.order || 0) - (b.order || 0);
         });
 
-        // Populate subject filter
+        /* Populate subject filter */
         const subjects = [...new Set(_studentLessonsCache.map(l => l.subject).filter(Boolean))].sort();
         const subjectSel = document.getElementById('srFilterSubject');
         if (subjectSel) {
           subjectSel.innerHTML = '<option value="">All Subjects</option>' +
             subjects.map(s => `<option value="${_esc(s)}">${_esc(s)}</option>`).join('');
         }
-
         _filterLessons();
       })
       .catch(err => {
         console.error('[studyroom] _loadStudentLessons error:', err);
-        const browser = document.getElementById('srLessonBrowser');
-        if (browser) browser.innerHTML = '<p style="color:var(--danger);text-align:center;padding:2rem;">Failed to load lessons. Please refresh.</p>';
+        const el = document.getElementById('srLessonBrowser');
+        if (el) el.innerHTML = '<p style="color:var(--danger);text-align:center;padding:2rem;">Failed to load lessons. Please refresh.</p>';
       });
   }
 
@@ -350,7 +357,7 @@
     const browser = document.getElementById('srLessonBrowser');
     if (!browser) return;
 
-    if (filtered.length === 0) {
+    if (!filtered.length) {
       browser.innerHTML = `
         <div class="sr-empty">
           <span class="sr-empty__icon">📭</span>
@@ -359,13 +366,9 @@
       return;
     }
 
-    // Group by subject
+    /* Group by subject */
     const bySubject = {};
-    filtered.forEach(l => {
-      const key = l.subject || 'General';
-      if (!bySubject[key]) bySubject[key] = [];
-      bySubject[key].push(l);
-    });
+    filtered.forEach(l => { const k = l.subject || 'General'; (bySubject[k] = bySubject[k] || []).push(l); });
 
     browser.innerHTML = Object.keys(bySubject).sort().map(subj => {
       const lessons = bySubject[subj];
@@ -380,9 +383,7 @@
               <div class="sr-lesson-card__num">${l.order || 1}</div>
               <div class="sr-lesson-card__body">
                 <div class="sr-lesson-card__title">${_esc(l.title)}</div>
-                <div class="sr-lesson-card__meta">
-                  ${_esc(l.term || '')} · ${_esc(l.topic || '')}
-                </div>
+                <div class="sr-lesson-card__meta">${_esc(l.term || '')} · ${_esc(l.topic || '')}</div>
               </div>
               <span class="sr-lesson-card__arrow">›</span>
             </div>`).join('')}
@@ -397,7 +398,6 @@
   function _openLesson(lessonId) {
     const lesson = _studentLessonsCache.find(l => l.id === lessonId);
     if (!lesson) {
-      // Fetch from Firestore if not cached
       window.fbDb.collection('lessons').doc(lessonId).get()
         .then(snap => {
           if (!snap.exists) { UI.toast('Lesson not found.', 'error'); return; }
@@ -407,7 +407,6 @@
       return;
     }
 
-    // Build sibling list (same subject)
     const siblings = _studentLessonsCache
       .filter(l => l.subject === lesson.subject)
       .sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -420,42 +419,46 @@
      ══════════════════════════════════════════════════ */
 
   function _renderReader(lesson, siblings) {
-    _currentLesson = lesson;
+    _currentLesson  = lesson;
     _siblingLessons = siblings;
 
     const renderedHtml = _renderMarkdown(lesson.content || '');
+
+    /* Pre-compute flip pages ONCE here so both _buildFlipReader and
+       _buildSpread share the same array without re-splitting. */
     _flipPages = _splitIntoPages(renderedHtml);
     _flipIndex = 0;
 
     UI.mount(_buildReaderShell(lesson, siblings, renderedHtml));
 
-    // Set app to full-width mode
     const app = document.getElementById('app');
-    if (app) {
-      app.classList.add('exam-active');
-      app.style.padding = '0';
-    }
+    if (app) { app.classList.add('exam-active'); app.style.padding = '0'; }
 
     _applyPrefsToReader(document.getElementById('app'));
     _syncPrefsUI();
-    _bindScrollProgress();
 
-    // Re-render KaTeX if available
+    /* Only bind scroll progress in scroll mode */
+    if (_prefs.mode === 'scroll') _bindScrollProgress();
+
+    /* Re-render KaTeX if loaded */
     if (window._katexAutoRenderReady && window.renderMathInElement) {
       try {
         renderMathInElement(document.getElementById('app'), {
-          delimiters: [
-            { left:'$$', right:'$$', display:true  },
-            { left:'$',  right:'$',  display:false },
-          ],
+          delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
           throwOnError: false,
         });
-      } catch (e) { /* non-fatal */ }
+      } catch (e) {}
     }
   }
 
+  /* ──────────────────────────────────────────────────
+     Shell builder
+     ────────────────────────────────────────────────── */
+
   function _buildReaderShell(lesson, siblings, renderedHtml) {
-    const isFlip = _prefs.mode === 'flip';
+    const isFlip     = _prefs.mode === 'flip';
+    const hasSidebar = siblings.length > 1;
+
     const sidebarItems = siblings.map((s, i) => `
       <div class="sr-sidebar__item${s.id === lesson.id ? ' is-active' : ''}"
            onclick="StudyRoom._openLesson('${_esc(s.id)}')">
@@ -463,45 +466,41 @@
         <span class="sr-sidebar__name">${_esc(s.title)}</span>
       </div>`).join('');
 
-    const breadcrumb = [lesson.class, lesson.term, lesson.subject]
-      .filter(Boolean)
-      .map(b => `<span>${_esc(b)}</span>`)
-      .join('<span style="color:var(--border-medium)"> / </span>');
-
     return `
       <div class="sr-shell">
-        <div class="sr-progress-bar"><div class="sr-progress-bar__fill" id="srProgressFill" style="width:0%"></div></div>
+        <div class="sr-progress-bar">
+          <div class="sr-progress-bar__fill" id="srProgressFill" style="width:0%"></div>
+        </div>
 
-        <div class="sr-topbar">
-          <button class="sr-topbar__back" onclick="StudyRoom._backToBrowser()">
-            ← Lessons
-          </button>
+        <div class="sr-topbar" id="srTopbar">
+          <button class="sr-topbar__back" onclick="StudyRoom._backToBrowser()">← Lessons</button>
           <span class="sr-topbar__title">${_esc(lesson.title)}</span>
           <div class="sr-topbar__actions">
-            <button class="sr-topbar__back" id="srModeToggle" onclick="StudyRoom._toggleMode()" style="gap:0.25rem;">
-              ${_prefs.mode === 'scroll' ? '📖 Flip Mode' : '📄 Scroll Mode'}
+            <button class="sr-topbar__back" id="srModeToggle" onclick="StudyRoom._toggleMode()">
+              ${isFlip ? '📄 Scroll Mode' : '📖 Flip Mode'}
             </button>
-            <button class="sr-topbar__back" onclick="StudyRoom._togglePrefs()" id="srPrefsBtn">
-              ⚙ Aa
-            </button>
+            <button class="sr-topbar__back" onclick="StudyRoom._togglePrefs()" id="srPrefsBtn">⚙ Aa</button>
           </div>
         </div>
 
-        <div class="sr-layout" id="srLayout">
-          ${siblings.length > 1 ? `
-            <div class="sr-sidebar">
+        <div class="sr-layout${hasSidebar ? '' : ' sr-layout--no-sidebar'}" id="srLayout">
+          ${hasSidebar ? `
+            <div class="sr-sidebar" id="srSidebar">
               <div class="sr-sidebar__heading">${_esc(lesson.subject || 'Lessons')}</div>
               ${sidebarItems}
             </div>` : ''}
 
-          ${isFlip ? _buildFlipReader(lesson, renderedHtml) : _buildScrollReader(lesson, renderedHtml)}
+          ${isFlip ? _buildFlipReader(lesson) : _buildScrollReader(lesson, renderedHtml)}
         </div>
 
         ${_buildPrefsPanel()}
       </div>`;
   }
 
-  /* ── Scroll reader ── */
+  /* ──────────────────────────────────────────────────
+     Scroll reader
+     ────────────────────────────────────────────────── */
+
   function _buildScrollReader(lesson, renderedHtml) {
     const breadcrumb = [lesson.class, lesson.term, lesson.subject]
       .filter(Boolean)
@@ -509,9 +508,8 @@
       .join('<span style="opacity:.5;margin:0 .2em"> / </span>');
 
     return `
-      <div class="sr-scroll-reader sr-bg--${_prefs.bg}" id="srScrollReader">
-        <div class="sr-scroll-content sr-animate-in" id="srScrollContent"
-             style="max-width:${_prefs.pageWidth}px;font-size:${_prefs.fontSize}px;line-height:${_prefs.lineSpacing};">
+      <div class="sr-scroll-reader sr-bg--${_esc(_prefs.bg)}" id="srScrollReader">
+        <div class="sr-scroll-content" id="srScrollContent" style="max-width:${_prefs.pageWidth}px;">
 
           <div class="sr-lesson-header">
             <div class="sr-lesson-header__breadcrumb">${breadcrumb}</div>
@@ -534,85 +532,96 @@
       </div>`;
   }
 
-  /* ── Flip reader ── */
-  function _buildFlipReader(lesson, renderedHtml) {
-    _flipPages = _splitIntoPages(renderedHtml);
-    _flipIndex = 0;
+  /* ──────────────────────────────────────────────────
+     Flip reader
+     ────────────────────────────────────────────────── */
+
+  /**
+   * NOTE: _flipPages and _flipIndex are already set by _renderReader
+   * before this function is called. Do NOT reset them here.
+   */
+  function _buildFlipReader(lesson) {
     return `
-      <div class="sr-flip-outer sr-bg--${_prefs.bg}" id="srFlipOuter">
-        <div class="sr-book" id="srBook">
-          ${_buildSpread()}
-        </div>
-        <div class="sr-flip-nav">
-          <button class="sr-flip-nav__btn" id="srFlipPrev" onclick="StudyRoom._flipPrev()"
-                  ${_flipIndex === 0 ? 'disabled' : ''}>
-            ← Previous
-          </button>
-          <div class="sr-flip-nav__info" id="srFlipInfo">
-            Page ${_flipIndex + 1} – ${Math.min(_flipIndex + 2, _flipPages.length)} of ${_flipPages.length}
+      <div class="sr-flip-outer sr-bg--${_esc(_prefs.bg)}" id="srFlipOuter">
+        <div class="sr-flip-inner">
+          <div class="sr-book" id="srBook">
+            ${_buildSpread()}
           </div>
-          <button class="sr-flip-nav__btn" id="srFlipNext" onclick="StudyRoom._flipNext()"
-                  ${_flipIndex + 2 >= _flipPages.length ? 'disabled' : ''}>
-            Next →
-          </button>
+          <div class="sr-flip-nav">
+            <button class="sr-flip-nav__btn" id="srFlipPrev" onclick="StudyRoom._flipPrev()"
+                    ${_flipIndex === 0 ? 'disabled' : ''}>
+              ← Previous
+            </button>
+            <div class="sr-flip-nav__info" id="srFlipInfo">${_flipNavLabel()}</div>
+            <button class="sr-flip-nav__btn" id="srFlipNext" onclick="StudyRoom._flipNext()"
+                    ${_flipIndex + 2 >= _flipPages.length ? 'disabled' : ''}>
+              Next →
+            </button>
+          </div>
         </div>
       </div>`;
   }
 
+  function _flipNavLabel() {
+    const total = _flipPages.length;
+    if (!total) return 'No pages';
+    const hi = Math.min(_flipIndex + 2, total);
+    return total <= 2
+      ? `Page ${_flipIndex + 1} of ${total}`
+      : `Pages ${_flipIndex + 1}–${hi} of ${total}`;
+  }
+
   function _buildSpread() {
-    const left  = _flipPages[_flipIndex]     || '';
-    const right = _flipPages[_flipIndex + 1] || '';
-    const totalPages = _flipPages.length;
-    const leftNum  = _flipIndex + 1;
-    const rightNum = _flipIndex + 2;
+    const left      = _flipPages[_flipIndex]     || '';
+    const right     = _flipPages[_flipIndex + 1] || '';
+    const total     = _flipPages.length;
+    const leftNum   = _flipIndex + 1;
+    const rightNum  = _flipIndex + 2;
+    const fs        = Math.max(12, _prefs.fontSize - 2);
+    const fontStack = _fontStack();
+    const lineH     = _prefs.lineSpacing;
 
     return `
       <div class="sr-book__spread" id="srSpread">
         <div class="sr-book__page sr-book__page--left">
           <div class="sr-book__page-content">
-            <div class="sr-content" style="font-family:${_fontStack()};font-size:${Math.max(12,_prefs.fontSize-2)}px;line-height:${_prefs.lineSpacing};">
-              ${left}
+            <div class="sr-content" style="font-family:${fontStack};font-size:${fs}px;line-height:${lineH};">
+              ${left || '<p style="color:var(--text-disabled);font-style:italic;text-align:center;margin-top:4rem;">— blank —</p>'}
             </div>
           </div>
           <span class="sr-book__page-num">${leftNum}</span>
         </div>
         <div class="sr-book__page sr-book__page--right">
           <div class="sr-book__page-content">
-            <div class="sr-content" style="font-family:${_fontStack()};font-size:${Math.max(12,_prefs.fontSize-2)}px;line-height:${_prefs.lineSpacing};">
-              ${right || '<p style="color:var(--text-disabled);font-style:italic;text-align:center;margin-top:4rem;">— end —</p>'}
+            <div class="sr-content" style="font-family:${fontStack};font-size:${fs}px;line-height:${lineH};">
+              ${right
+                ? right
+                : '<p style="color:var(--text-disabled);font-style:italic;text-align:center;margin-top:4rem;">— end —</p>'}
             </div>
           </div>
-          <span class="sr-book__page-num">${rightNum <= totalPages ? rightNum : ''}</span>
+          <span class="sr-book__page-num">${rightNum <= total ? rightNum : ''}</span>
         </div>
       </div>`;
   }
 
   function _flipNext() {
     if (_flipIndex + 2 >= _flipPages.length) return;
-    const book = document.getElementById('srBook');
-    if (book) {
-      book.style.animation = 'none';
-      book.offsetHeight; // reflow
-      book.style.animation = 'sr-flip-left 0.5s var(--ease)';
-    }
-    setTimeout(() => {
-      _flipIndex += 2;
-      _updateSpread();
-    }, 200);
+    _animateFlip('left', () => { _flipIndex += 2; _updateSpread(); });
   }
 
   function _flipPrev() {
     if (_flipIndex === 0) return;
+    _animateFlip('right', () => { _flipIndex = Math.max(0, _flipIndex - 2); _updateSpread(); });
+  }
+
+  function _animateFlip(direction, callback) {
     const book = document.getElementById('srBook');
     if (book) {
       book.style.animation = 'none';
-      book.offsetHeight;
-      book.style.animation = 'sr-flip-right 0.5s var(--ease)';
+      void book.offsetHeight;                             /* force reflow */
+      book.style.animation = `sr-flip-${direction} 0.4s var(--ease) both`;
     }
-    setTimeout(() => {
-      _flipIndex = Math.max(0, _flipIndex - 2);
-      _updateSpread();
-    }, 200);
+    setTimeout(callback, 200);
   }
 
   function _updateSpread() {
@@ -623,37 +632,41 @@
     const prevBtn = document.getElementById('srFlipPrev');
     const nextBtn = document.getElementById('srFlipNext');
     const info    = document.getElementById('srFlipInfo');
-    if (prevBtn) prevBtn.disabled = _flipIndex === 0;
-    if (nextBtn) nextBtn.disabled = _flipIndex + 2 >= _flipPages.length;
-    if (info)    info.textContent = `Page ${_flipIndex + 1}–${Math.min(_flipIndex + 2, _flipPages.length)} of ${_flipPages.length}`;
+    if (prevBtn) prevBtn.disabled = (_flipIndex === 0);
+    if (nextBtn) nextBtn.disabled = (_flipIndex + 2 >= _flipPages.length);
+    if (info)    info.textContent = _flipNavLabel();
 
-    // Update progress
+    /* Update progress bar */
     const fill = document.getElementById('srProgressFill');
-    if (fill) fill.style.width = ((_flipIndex + 2) / _flipPages.length * 100).toFixed(1) + '%';
+    if (fill && _flipPages.length) {
+      fill.style.width = Math.min(100, (_flipIndex + 2) / _flipPages.length * 100).toFixed(1) + '%';
+    }
 
-    // Re-render KaTeX
+    /* Re-render math */
     if (window._katexAutoRenderReady && window.renderMathInElement) {
-      try { renderMathInElement(bookEl, { delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}], throwOnError:false }); } catch(e){}
+      try {
+        renderMathInElement(bookEl, {
+          delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+          throwOnError:false,
+        });
+      } catch(e){}
     }
   }
 
-  /* ── Helpers for prev/next lesson buttons ── */
+  /* ── Prev / next lesson navigation buttons ── */
+
   function _prevLessonBtn(lesson) {
     const idx = _siblingLessons.findIndex(l => l.id === lesson.id);
     if (idx <= 0) return '<span></span>';
     const prev = _siblingLessons[idx - 1];
-    return `<button class="sr-topbar__back" onclick="StudyRoom._openLesson('${_esc(prev.id)}')">
-      ← ${_esc(prev.title)}
-    </button>`;
+    return `<button class="sr-topbar__back" onclick="StudyRoom._openLesson('${_esc(prev.id)}')">← ${_esc(prev.title)}</button>`;
   }
 
   function _nextLessonBtn(lesson) {
     const idx = _siblingLessons.findIndex(l => l.id === lesson.id);
     if (idx < 0 || idx >= _siblingLessons.length - 1) return '<span></span>';
     const next = _siblingLessons[idx + 1];
-    return `<button class="btn" onclick="StudyRoom._openLesson('${_esc(next.id)}')">
-      ${_esc(next.title)} →
-    </button>`;
+    return `<button class="btn" onclick="StudyRoom._openLesson('${_esc(next.id)}')">${_esc(next.title)} →</button>`;
   }
 
   /* ══════════════════════════════════════════════════
@@ -663,10 +676,7 @@
   function _toggleMode() {
     _prefs.mode = _prefs.mode === 'scroll' ? 'flip' : 'scroll';
     _savePrefs();
-    if (_currentLesson) {
-      const renderedHtml = _renderMarkdown(_currentLesson.content || '');
-      _renderReader(_currentLesson, _siblingLessons);
-    }
+    if (_currentLesson) _renderReader(_currentLesson, _siblingLessons);
   }
 
   /* ══════════════════════════════════════════════════
@@ -688,7 +698,8 @@
           <input type="range" class="sr-pref-slider" id="srFontSize"
                  min="12" max="26" step="1" value="${_prefs.fontSize}"
                  oninput="StudyRoom._onPrefChange('fontSize', +this.value)" />
-          <div style="text-align:center;font-size:var(--text-xs);color:var(--text-tertiary);margin-top:0.25rem;">
+          <div id="srFontSizeLabel"
+               style="text-align:center;font-size:var(--text-xs);color:var(--text-tertiary);margin-top:.25rem;">
             ${_prefs.fontSize}px
           </div>
         </div>
@@ -712,6 +723,10 @@
           <input type="range" class="sr-pref-slider" id="srLineSpacing"
                  min="1.3" max="2.4" step="0.05" value="${_prefs.lineSpacing}"
                  oninput="StudyRoom._onPrefChange('lineSpacing', +this.value)" />
+          <div id="srLineSpacingLabel"
+               style="text-align:center;font-size:var(--text-xs);color:var(--text-tertiary);margin-top:.25rem;">
+            ${Number(_prefs.lineSpacing).toFixed(2)}×
+          </div>
         </div>
 
         <div class="sr-prefs-section">
@@ -763,30 +778,34 @@
   }
 
   function _syncPrefsUI() {
-    // Font size label
+    /* Font size */
     const fsEl = document.getElementById('srFontSize');
-    if (fsEl) {
-      fsEl.value = _prefs.fontSize;
-      const label = fsEl.nextElementSibling;
-      if (label) label.textContent = _prefs.fontSize + 'px';
-    }
+    if (fsEl) fsEl.value = _prefs.fontSize;
+    const fsLbl = document.getElementById('srFontSizeLabel');
+    if (fsLbl) fsLbl.textContent = _prefs.fontSize + 'px';
+
+    /* Line spacing */
     const lsEl = document.getElementById('srLineSpacing');
     if (lsEl) lsEl.value = _prefs.lineSpacing;
+    const lsLbl = document.getElementById('srLineSpacingLabel');
+    if (lsLbl) lsLbl.textContent = Number(_prefs.lineSpacing).toFixed(2) + '×';
 
-    // Active buttons — font
+    /* Font family buttons */
     document.querySelectorAll('.sr-pref-btn[onclick*="fontFamily"]').forEach(btn => {
-      const match = btn.getAttribute('onclick').match(/'(\w+)'\)/);
-      if (match) btn.classList.toggle('is-active', match[1] === _prefs.fontFamily);
+      const m = btn.getAttribute('onclick').match(/'(\w+)'\)/);
+      if (m) btn.classList.toggle('is-active', m[1] === _prefs.fontFamily);
     });
-    // Active buttons — pageWidth
+
+    /* Page width buttons */
     document.querySelectorAll('.sr-pref-btn[onclick*="pageWidth"]').forEach(btn => {
-      const match = btn.getAttribute('onclick').match(/(\d+)\)/);
-      if (match) btn.classList.toggle('is-active', +match[1] === _prefs.pageWidth);
+      const m = btn.getAttribute('onclick').match(/(\d+)\)/);
+      if (m) btn.classList.toggle('is-active', +m[1] === _prefs.pageWidth);
     });
-    // Active bg buttons
+
+    /* Background buttons */
     document.querySelectorAll('.sr-bg-btn').forEach(btn => {
-      const match = btn.getAttribute('onclick')?.match(/'(\w+)'\)/);
-      if (match) btn.classList.toggle('is-active', match[1] === _prefs.bg);
+      const m = btn.getAttribute('onclick')?.match(/'(\w+)'\)/);
+      if (m) btn.classList.toggle('is-active', m[1] === _prefs.bg);
     });
   }
 
@@ -797,8 +816,8 @@
   }
 
   function _fontStack() {
-    if (_prefs.fontFamily === 'sans')  return "var(--font)";
-    if (_prefs.fontFamily === 'mono')  return "'Inconsolata','DM Mono',monospace";
+    if (_prefs.fontFamily === 'sans') return 'var(--font)';
+    if (_prefs.fontFamily === 'mono') return "'Inconsolata','DM Mono',monospace";
     return "'Lora','Source Serif 4',Georgia,serif";
   }
 
@@ -810,11 +829,10 @@
     const reader = document.getElementById('srScrollReader');
     const fill   = document.getElementById('srProgressFill');
     if (!reader || !fill) return;
-
-    reader.addEventListener('scroll', function () {
+    reader.addEventListener('scroll', () => {
       const scrollable = reader.scrollHeight - reader.clientHeight;
-      if (scrollable <= 0) { fill.style.width = '100%'; return; }
-      fill.style.width = (reader.scrollTop / scrollable * 100).toFixed(1) + '%';
+      fill.style.width = scrollable <= 0 ? '100%'
+        : (reader.scrollTop / scrollable * 100).toFixed(1) + '%';
     }, { passive: true });
   }
 
@@ -823,15 +841,18 @@
      ══════════════════════════════════════════════════ */
 
   function _backToBrowser() {
-    // Restore app layout
     const app = document.getElementById('app');
-    if (app) {
-      app.classList.remove('exam-active');
-      app.style.padding = '';
-    }
+    if (app) { app.classList.remove('exam-active'); app.style.padding = ''; }
     _currentLesson  = null;
     _siblingLessons = [];
-    openForStudent();
+
+    if (_previewMode) {
+      _previewMode = false;
+      _studentLessonsCache = [];
+      if (window.Teacher) Teacher.showTab('studyroom');
+    } else {
+      openForStudent();
+    }
   }
 
   /* ══════════════════════════════════════════════════
@@ -841,148 +862,192 @@
   function openTeacherTab() {
     const container = document.getElementById('teacher-studyroom');
     if (!container) return;
-
     _editingId = null;
 
-    container.innerHTML = `
-      <div style="margin-bottom:1.25rem;">
-        <h2 style="font-size:1rem;font-weight:700;">Study Room — Lesson Management</h2>
-        <p style="font-size:.75rem;color:var(--text-tertiary);margin-top:2px;">
-          Create and manage lessons for students. Write content in Markdown.
-        </p>
-      </div>
-
-      <div class="sr-teacher-panel">
-
-        <!-- ── Left: Lesson form ── -->
-        <div class="sr-form-card">
-          <div class="sr-form-card__title">
-            <span class="sr-form-card__dot"></span>
-            <span id="srFormTitle">New Lesson</span>
-            <span id="srEditBadge" style="display:none;margin-left:auto;
-                  font-size:.6875rem;font-weight:700;padding:1px 7px;border-radius:99px;
-                  background:var(--warning-bg);color:var(--warning-text);border:1px solid var(--warning-border);">
-              Editing
-            </span>
-          </div>
-
-          <div style="display:flex;flex-direction:column;gap:.75rem;">
-
-            <div>
-              <label style="display:block;font-size:.75rem;font-weight:600;
-                            color:var(--text-secondary);margin-bottom:.25rem;">Title *</label>
-              <input type="text" id="srLessonTitle" placeholder="Lesson title e.g. Introduction to Fractions" />
-            </div>
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
-              <div>
-                <label style="display:block;font-size:.75rem;font-weight:600;
-                              color:var(--text-secondary);margin-bottom:.25rem;">Class *</label>
-                <select id="srLessonClass">
-                  <option value="">Select class…</option>
-                  ${CLASS_OPTIONS.map(c => `<option>${c}</option>`).join('')}
-                </select>
-              </div>
-              <div>
-                <label style="display:block;font-size:.75rem;font-weight:600;
-                              color:var(--text-secondary);margin-bottom:.25rem;">Term *</label>
-                <select id="srLessonTerm">
-                  <option value="">Select term…</option>
-                  ${TERMS.map(t => `<option>${t}</option>`).join('')}
-                </select>
-              </div>
-            </div>
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
-              <div>
-                <label style="display:block;font-size:.75rem;font-weight:600;
-                              color:var(--text-secondary);margin-bottom:.25rem;">Subject *</label>
-                <input type="text" id="srLessonSubject" placeholder="e.g. Mathematics" />
-              </div>
-              <div>
-                <label style="display:block;font-size:.75rem;font-weight:600;
-                              color:var(--text-secondary);margin-bottom:.25rem;">Order</label>
-                <input type="number" id="srLessonOrder" placeholder="1" min="1" style="width:100%" />
-              </div>
-            </div>
-
-            <div>
-              <label style="display:block;font-size:.75rem;font-weight:600;
-                            color:var(--text-secondary);margin-bottom:.25rem;">Topic / Subtitle</label>
-              <input type="text" id="srLessonTopic" placeholder="e.g. Understanding numerators and denominators" />
-            </div>
-
-            <div>
-              <label style="display:block;font-size:.75rem;font-weight:600;
-                            color:var(--text-secondary);margin-bottom:.25rem;">Lesson Content (Markdown) *</label>
-              <textarea id="srLessonContent" class="sr-content-editor"
-                        placeholder="# Lesson Title&#10;&#10;Write your lesson here using Markdown…&#10;&#10;## Section 1&#10;&#10;Content goes here."></textarea>
-              <div class="sr-markdown-hint">
-                <code># H1</code> <code>## H2</code> <code>**bold**</code> <code>*italic*</code>
-                <code>\`code\`</code> <code>- list item</code> <code>| table |</code>
-                — Use <code>---</code> as a page break for Flip Mode
-              </div>
-            </div>
-
-            <div style="display:flex;gap:.625rem;padding-top:.75rem;border-top:1px solid var(--border);">
-              <button id="srSaveBtn" onclick="StudyRoom._saveLesson()"
-                      class="btn bg-green-600" style="flex:1;justify-content:center;">
-                Save Lesson
-              </button>
-              <button onclick="StudyRoom._previewLesson()" class="btn bg-blue-600"
-                      style="justify-content:center;">
-                Preview
-              </button>
-              <button onclick="StudyRoom._cancelEdit()" class="btn bg-gray-500"
-                      id="srCancelBtn" style="display:none;justify-content:center;">
-                Cancel
-              </button>
-            </div>
-
-          </div>
+    /* Load current default term before rendering the panel */
+    _loadDefaultTerm(function (currentDefault) {
+      container.innerHTML = `
+        <div style="margin-bottom:1.25rem;">
+          <h2 style="font-size:1rem;font-weight:700;">Study Room — Lesson Management</h2>
+          <p style="font-size:.75rem;color:var(--text-tertiary);margin-top:2px;">
+            Create and manage lessons for students. Write content in Markdown.
+          </p>
         </div>
 
-        <!-- ── Right: Lesson list ── -->
-        <div class="sr-form-card">
+        <!-- ── Default Term Setting ── -->
+        <div class="sr-form-card" style="margin-bottom:1.25rem;">
           <div class="sr-form-card__title">
-            <span class="sr-form-card__dot" style="background:var(--success);"></span>
-            Published Lessons
+            <span class="sr-form-card__dot" style="background:var(--warning);"></span>
+            Student Browser Default
           </div>
-
-          <div style="display:flex;gap:.5rem;margin-bottom:.75rem;">
-            <select id="srTeacherFilterClass" onchange="StudyRoom._teacherFilterLessons()" style="flex:1;">
-              <option value="">All Classes</option>
-              ${CLASS_OPTIONS.map(c => `<option>${c}</option>`).join('')}
+          <div style="display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;">
+            <label style="font-size:.8125rem;font-weight:600;color:var(--text-secondary);white-space:nowrap;">
+              Default Term shown to students:
+            </label>
+            <select id="srDefaultTermSel" style="flex:1;min-width:160px;max-width:220px;">
+              <option value="">— No default (show All Terms) —</option>
+              ${TERMS.map(t =>
+                `<option value="${_esc(t)}"${t === currentDefault ? ' selected' : ''}>${_esc(t)}</option>`
+              ).join('')}
             </select>
-            <select id="srTeacherFilterSubject" onchange="StudyRoom._teacherFilterLessons()" style="flex:1;">
-              <option value="">All Subjects</option>
-            </select>
+            <button id="srSaveDefaultTermBtn" onclick="StudyRoom._saveDefaultTermSetting()"
+                    style="background:var(--brand);color:#fff;border:none;padding:.4375rem .875rem;
+                           border-radius:var(--r-md);font-size:.8125rem;font-weight:700;
+                           cursor:pointer;font-family:var(--font);white-space:nowrap;">
+              Save Default
+            </button>
           </div>
-
-          <div class="sr-teacher-lessons" id="srTeacherLessonList">
-            <p style="font-size:.875rem;color:var(--text-tertiary);padding:.5rem 0;">Loading…</p>
-          </div>
+          <p style="font-size:.6875rem;color:var(--text-tertiary);margin-top:.5rem;">
+            When students open the Study Room, this term will be pre-selected in their filter.
+          </p>
         </div>
 
-      </div>`;
+        <div class="sr-teacher-panel">
 
-    _loadTeacherLessons();
+          <!-- ── Left: Lesson form ── -->
+          <div class="sr-form-card">
+            <div class="sr-form-card__title">
+              <span class="sr-form-card__dot"></span>
+              <span id="srFormTitle">New Lesson</span>
+              <span id="srEditBadge" style="display:none;margin-left:auto;font-size:.6875rem;
+                    font-weight:700;padding:1px 7px;border-radius:99px;
+                    background:var(--warning-bg);color:var(--warning-text);
+                    border:1px solid var(--warning-border);">Editing</span>
+            </div>
+
+            <div style="display:flex;flex-direction:column;gap:.75rem;">
+
+              <div>
+                <label style="display:block;font-size:.75rem;font-weight:600;
+                              color:var(--text-secondary);margin-bottom:.25rem;">Title *</label>
+                <input type="text" id="srLessonTitle" placeholder="Lesson title e.g. Introduction to Fractions" />
+              </div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+                <div>
+                  <label style="display:block;font-size:.75rem;font-weight:600;
+                                color:var(--text-secondary);margin-bottom:.25rem;">Class *</label>
+                  <select id="srLessonClass">
+                    <option value="">Select class…</option>
+                    ${CLASS_OPTIONS.map(c => `<option>${c}</option>`).join('')}
+                  </select>
+                </div>
+                <div>
+                  <label style="display:block;font-size:.75rem;font-weight:600;
+                                color:var(--text-secondary);margin-bottom:.25rem;">Term *</label>
+                  <select id="srLessonTerm">
+                    <option value="">Select term…</option>
+                    ${TERMS.map(t => `<option>${t}</option>`).join('')}
+                  </select>
+                </div>
+              </div>
+
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+                <div>
+                  <label style="display:block;font-size:.75rem;font-weight:600;
+                                color:var(--text-secondary);margin-bottom:.25rem;">Subject *</label>
+                  <input type="text" id="srLessonSubject" placeholder="e.g. Mathematics" />
+                </div>
+                <div>
+                  <label style="display:block;font-size:.75rem;font-weight:600;
+                                color:var(--text-secondary);margin-bottom:.25rem;">Order</label>
+                  <input type="number" id="srLessonOrder" placeholder="1" min="1" style="width:100%" />
+                </div>
+              </div>
+
+              <div>
+                <label style="display:block;font-size:.75rem;font-weight:600;
+                              color:var(--text-secondary);margin-bottom:.25rem;">Topic / Subtitle</label>
+                <input type="text" id="srLessonTopic" placeholder="e.g. Understanding numerators and denominators" />
+              </div>
+
+              <div>
+                <label style="display:block;font-size:.75rem;font-weight:600;
+                              color:var(--text-secondary);margin-bottom:.25rem;">Lesson Content (Markdown) *</label>
+                <textarea id="srLessonContent" class="sr-content-editor"
+                          placeholder="# Lesson Title&#10;&#10;Write your lesson here using Markdown…&#10;&#10;## Section 1&#10;&#10;Content goes here."></textarea>
+                <div class="sr-markdown-hint">
+                  <code># H1</code> <code>## H2</code> <code>**bold**</code> <code>*italic*</code>
+                  <code>\`code\`</code> <code>- list item</code> <code>| table |</code>
+                  — Use <code>---</code> as a page break in Flip Mode
+                </div>
+              </div>
+
+              <div style="display:flex;gap:.625rem;padding-top:.75rem;border-top:1px solid var(--border);">
+                <button id="srSaveBtn" onclick="StudyRoom._saveLesson()"
+                        class="btn bg-green-600" style="flex:1;justify-content:center;">
+                  Save Lesson
+                </button>
+                <button onclick="StudyRoom._previewLesson()" class="btn bg-blue-600"
+                        style="justify-content:center;">
+                  Preview
+                </button>
+                <button onclick="StudyRoom._cancelEdit()" class="btn bg-gray-500"
+                        id="srCancelBtn" style="display:none;justify-content:center;">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Right: Lesson list ── -->
+          <div class="sr-form-card">
+            <div class="sr-form-card__title">
+              <span class="sr-form-card__dot" style="background:var(--success);"></span>
+              Published Lessons
+            </div>
+
+            <div style="display:flex;gap:.5rem;margin-bottom:.75rem;">
+              <select id="srTeacherFilterClass" onchange="StudyRoom._teacherFilterLessons()" style="flex:1;">
+                <option value="">All Classes</option>
+                ${CLASS_OPTIONS.map(c => `<option>${c}</option>`).join('')}
+              </select>
+              <select id="srTeacherFilterSubject" onchange="StudyRoom._teacherFilterLessons()" style="flex:1;">
+                <option value="">All Subjects</option>
+              </select>
+            </div>
+
+            <div class="sr-teacher-lessons" id="srTeacherLessonList">
+              <p style="font-size:.875rem;color:var(--text-tertiary);padding:.5rem 0;">Loading…</p>
+            </div>
+          </div>
+
+        </div>`;
+
+      _loadTeacherLessons();
+    });
   }
 
-  /* ── Teacher: load all lessons ── */
-  let _teacherLessonsAll = [];
+  /* ── Save teacher default term ── */
+  function _saveDefaultTermSetting() {
+    const sel  = document.getElementById('srDefaultTermSel');
+    const term = sel ? sel.value : '';
+    const btn  = document.getElementById('srSaveDefaultTermBtn');
+    if (btn) btn.textContent = 'Saving…';
 
+    _saveDefaultTerm(term)
+      .then(() => {
+        _defaultTerm = term;
+        UI.toast(term ? `Default term set to "${term}".` : 'Default term cleared.', 'success');
+        if (btn) btn.textContent = 'Save Default';
+      })
+      .catch(err => {
+        console.error('[studyroom] _saveDefaultTermSetting error:', err);
+        UI.toast('Failed to save default term.', 'error');
+        if (btn) btn.textContent = 'Save Default';
+      });
+  }
+
+  /* ── Load all lessons (real-time) ── */
   function _loadTeacherLessons() {
     if (_teacherLessonsUnsub) { _teacherLessonsUnsub(); _teacherLessonsUnsub = null; }
 
-    // No compound orderBy — avoids composite index requirement.
-    // Sort is done client-side after each snapshot.
     _teacherLessonsUnsub = window.fbDb.collection('lessons')
       .onSnapshot(snap => {
         _teacherLessonsAll = [];
         snap.forEach(doc => _teacherLessonsAll.push({ id: doc.id, ...doc.data() }));
         _teacherLessonsAll.sort((a, b) => {
-          const ca = (a.class || '').toLowerCase(), cb = (b.class || '').toLowerCase();
+          const ca = (a.class   || '').toLowerCase(), cb = (b.class   || '').toLowerCase();
           if (ca < cb) return -1; if (ca > cb) return 1;
           const sa = (a.subject || '').toLowerCase(), sb = (b.subject || '').toLowerCase();
           if (sa < sb) return -1; if (sa > sb) return 1;
@@ -994,7 +1059,10 @@
         console.error('[studyroom] _loadTeacherLessons error:', err);
       });
 
-    AppState.registerListener('studyroomLessons', _teacherLessonsUnsub);
+    /* Register with AppState if the helper exists */
+    if (window.AppState && typeof AppState.registerListener === 'function') {
+      AppState.registerListener('studyroomLessons', _teacherLessonsUnsub);
+    }
   }
 
   function _populateTeacherSubjectFilter() {
@@ -1005,11 +1073,10 @@
         .map(l => l.subject).filter(Boolean)
     )].sort();
     const sel = document.getElementById('srTeacherFilterSubject');
-    if (sel) {
-      const cur = sel.value;
-      sel.innerHTML = '<option value="">All Subjects</option>' +
-        subjects.map(s => `<option ${s === cur ? 'selected' : ''}>${_esc(s)}</option>`).join('');
-    }
+    if (!sel) return;
+    const cur = sel.value;
+    sel.innerHTML = '<option value="">All Subjects</option>' +
+      subjects.map(s => `<option${s === cur ? ' selected' : ''}>${_esc(s)}</option>`).join('');
   }
 
   function _teacherFilterLessons() {
@@ -1024,9 +1091,8 @@
     const container = document.getElementById('srTeacherLessonList');
     if (!container) return;
 
-    if (filtered.length === 0) {
-      container.innerHTML = `<p style="font-size:.875rem;color:var(--text-tertiary);padding:.5rem 0;text-align:center;">
-        No lessons yet.</p>`;
+    if (!filtered.length) {
+      container.innerHTML = '<p style="font-size:.875rem;color:var(--text-tertiary);padding:.5rem 0;text-align:center;">No lessons yet.</p>';
       return;
     }
 
@@ -1055,7 +1121,7 @@
       </div>`).join('');
   }
 
-  /* ── Teacher: save lesson ── */
+  /* ── Save lesson ── */
   async function _saveLesson() {
     const title   = document.getElementById('srLessonTitle')?.value.trim()   || '';
     const cls     = document.getElementById('srLessonClass')?.value           || '';
@@ -1065,14 +1131,14 @@
     const topic   = document.getElementById('srLessonTopic')?.value.trim()   || '';
     const content = document.getElementById('srLessonContent')?.value        || '';
 
-    if (!title)   { UI.toast('Please enter a lesson title.',   'warning'); return; }
-    if (!cls)     { UI.toast('Please select a class.',         'warning'); return; }
-    if (!term)    { UI.toast('Please select a term.',          'warning'); return; }
-    if (!subject) { UI.toast('Please enter a subject.',        'warning'); return; }
-    if (!content) { UI.toast('Please add some lesson content.','warning'); return; }
+    if (!title)   { UI.toast('Please enter a lesson title.',    'warning'); return; }
+    if (!cls)     { UI.toast('Please select a class.',          'warning'); return; }
+    if (!term)    { UI.toast('Please select a term.',           'warning'); return; }
+    if (!subject) { UI.toast('Please enter a subject.',         'warning'); return; }
+    if (!content) { UI.toast('Please add some lesson content.', 'warning'); return; }
 
     const btn = document.getElementById('srSaveBtn');
-    UI.setLoading(btn, true);
+    if (btn) UI.setLoading(btn, true);
 
     const payload = {
       title, class: cls, term, subject, topic, content, order,
@@ -1093,45 +1159,42 @@
       console.error('[studyroom] _saveLesson error:', err);
       UI.toast('Failed to save lesson.', 'error');
     } finally {
-      UI.setLoading(btn, false);
+      if (btn) UI.setLoading(btn, false);
     }
   }
 
-  /* ── Teacher: edit lesson ── */
+  /* ── Edit lesson ── */
   function _editLesson(id) {
     const lesson = _teacherLessonsAll.find(l => l.id === id);
     if (!lesson) return;
-
     _editingId = id;
 
-    const setVal = (elId, val) => { const el = document.getElementById(elId); if (el) el.value = val || ''; };
+    const set = (elId, val) => { const el = document.getElementById(elId); if (el) el.value = val || ''; };
+    set('srLessonTitle',   lesson.title);
+    set('srLessonClass',   lesson.class);
+    set('srLessonTerm',    lesson.term);
+    set('srLessonSubject', lesson.subject);
+    set('srLessonOrder',   lesson.order);
+    set('srLessonTopic',   lesson.topic);
+    set('srLessonContent', lesson.content);
 
-    setVal('srLessonTitle',   lesson.title);
-    setVal('srLessonClass',   lesson.class);
-    setVal('srLessonTerm',    lesson.term);
-    setVal('srLessonSubject', lesson.subject);
-    setVal('srLessonOrder',   lesson.order);
-    setVal('srLessonTopic',   lesson.topic);
-    setVal('srLessonContent', lesson.content);
-
-    const formTitle  = document.getElementById('srFormTitle');
-    const editBadge  = document.getElementById('srEditBadge');
-    const cancelBtn  = document.getElementById('srCancelBtn');
+    const formTitle = document.getElementById('srFormTitle');
+    const editBadge = document.getElementById('srEditBadge');
+    const cancelBtn = document.getElementById('srCancelBtn');
     if (formTitle) formTitle.textContent = 'Edit Lesson';
     if (editBadge) editBadge.style.display = '';
     if (cancelBtn) cancelBtn.style.display = '';
 
-    // Scroll form into view
     document.getElementById('srLessonTitle')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
-  /* ── Teacher: cancel edit ── */
+  /* ── Cancel edit ── */
   function _cancelEdit() {
     _editingId = null;
-    const fields = ['srLessonTitle','srLessonClass','srLessonTerm','srLessonSubject',
-                    'srLessonOrder','srLessonTopic','srLessonContent'];
-    fields.forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
-
+    ['srLessonTitle','srLessonClass','srLessonTerm','srLessonSubject',
+     'srLessonOrder','srLessonTopic','srLessonContent'].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = '';
+    });
     const formTitle = document.getElementById('srFormTitle');
     const editBadge = document.getElementById('srEditBadge');
     const cancelBtn = document.getElementById('srCancelBtn');
@@ -1140,7 +1203,7 @@
     if (cancelBtn) cancelBtn.style.display = 'none';
   }
 
-  /* ── Teacher: delete lesson ── */
+  /* ── Delete lesson ── */
   async function _deleteLesson(id) {
     const ok = await UI.confirmAction('Delete this lesson permanently?');
     if (!ok) return;
@@ -1153,68 +1216,54 @@
     }
   }
 
-  /* ── Teacher: preview lesson ── */
+  /* ── Preview lesson ── */
   function _previewLesson() {
-    const title   = document.getElementById('srLessonTitle')?.value.trim()   || 'Preview';
-    const content = document.getElementById('srLessonContent')?.value        || '';
-    const topic   = document.getElementById('srLessonTopic')?.value.trim()   || '';
-    const cls     = document.getElementById('srLessonClass')?.value           || '';
-    const term    = document.getElementById('srLessonTerm')?.value            || '';
-    const subject = document.getElementById('srLessonSubject')?.value.trim() || '';
-
-    const fakeLesson = { id: '__preview__', title, topic, content, class: cls, term, subject };
+    const fakeLesson = {
+      id:      '__preview__',
+      title:   document.getElementById('srLessonTitle')?.value.trim()   || 'Preview',
+      content: document.getElementById('srLessonContent')?.value        || '',
+      topic:   document.getElementById('srLessonTopic')?.value.trim()   || '',
+      class:   document.getElementById('srLessonClass')?.value           || '',
+      term:    document.getElementById('srLessonTerm')?.value            || '',
+      subject: document.getElementById('srLessonSubject')?.value.trim() || '',
+      order:   1,
+    };
     _studentLessonsCache = [fakeLesson];
-
-    // Store a flag so backToBrowser re-opens teacher tab
     _previewMode = true;
     _renderReader(fakeLesson, [fakeLesson]);
   }
 
-  let _previewMode = false;
-
-  // Override _backToBrowser for preview mode
-  const _originalBackToBrowser = _backToBrowser;
-
-  function _backToBrowserSafe() {
-    const app = document.getElementById('app');
-    if (app) { app.classList.remove('exam-active'); app.style.padding = ''; }
-    _currentLesson = null;
-    _siblingLessons = [];
-    if (_previewMode) {
-      _previewMode = false;
-      _studentLessonsCache = [];
-      // Return to teacher dashboard
-      if (window.Teacher) Teacher.showTab('studyroom');
-    } else {
-      openForStudent();
-    }
-  }
-
   /* ══════════════════════════════════════════════════
-     EXPOSE
+     PUBLIC API
      ══════════════════════════════════════════════════ */
 
   window.StudyRoom = {
+    /* Student */
     openForStudent,
-    openTeacherTab,
-    openForTeacher: openTeacherTab,   // alias used by teacher.js
     _closeStudentRoom,
-    _backToBrowser: _backToBrowserSafe,
     _filterLessons,
     _openLesson,
+
+    /* Reader */
+    _backToBrowser,
     _toggleMode,
     _togglePrefs,
     _onPrefChange,
     _resetPrefs,
     _flipNext,
     _flipPrev,
+
+    /* Teacher */
+    openTeacherTab,
+    openForTeacher: openTeacherTab,   /* alias used by teacher.js */
     _saveLesson,
     _editLesson,
     _cancelEdit,
     _deleteLesson,
     _previewLesson,
     _teacherFilterLessons,
-    // For teacher.js tab routing
+    _saveDefaultTermSetting,
+
     cancelTeacherListeners() {
       if (_teacherLessonsUnsub) { _teacherLessonsUnsub(); _teacherLessonsUnsub = null; }
     },
