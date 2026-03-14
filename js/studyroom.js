@@ -260,7 +260,7 @@
           <button class="sr-topbar__back" onclick="StudyRoom._closeStudentRoom()">
             ← Back
           </button>
-          <span class="sr-topbar__title">📚 Study Room</span>
+          <span class="sr-topbar__title">Study Room</span>
         </div>
 
         <div class="sr-browser">
