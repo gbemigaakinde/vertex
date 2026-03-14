@@ -326,7 +326,7 @@
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: var(--sp-5) var(--sp-4) var(--sp-4);
+  padding: var(--sp-4) var(--sp-4) var(--sp-4);
   transition: background var(--t-base);
 }
 
@@ -354,7 +354,10 @@
     0 24px 64px rgba(0,0,0,.28),
     0 8px  24px rgba(0,0,0,.18),
     inset 0 0 0 1px rgba(0,0,0,.06);
-  min-height: 400px;
+  /* Height: fill remaining viewport after topbar (~3.5rem) + nav (~3rem) + padding */
+  height: calc(100vh - 3.5rem - 3.5rem - 3rem);
+  max-height: 680px;
+  min-height: 320px;
   position: relative;
   overflow: hidden;
   animation: sr-page-in 0.3s var(--ease) both;
@@ -381,8 +384,8 @@
   background: var(--sr-page-bg, #fefefe);
   padding: 2.25rem 2.5rem 1.5rem;
   position: relative;
-  overflow: hidden;
-  min-height: 400px;
+  overflow: hidden;   /* content that overflows is hidden — fits the page */
+  height: 100%;       /* fill the spread's fixed height exactly */
   display: flex;
   flex-direction: column;
 }
@@ -884,7 +887,9 @@
     background: transparent;
     box-shadow: none;
     border-radius: 0;
+    height: auto;            /* override desktop fixed height */
     min-height: 0;
+    max-height: none;
     animation: none;
   }
   .sr-book__spread::after {
@@ -897,8 +902,10 @@
     border-radius: var(--r-lg);
     background: var(--surface) !important;
     box-shadow: var(--shadow-sm);
+    height: auto;       /* let content determine height on mobile */
     min-height: 0;
     padding: 1.25rem 1rem 1.5rem;
+    overflow-y: auto;   /* allow page to scroll if content is taller than screen */
   }
   .sr-book__page-num {
     display: none;           /* page numbers irrelevant on single-page mobile */
