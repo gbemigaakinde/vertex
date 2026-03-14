@@ -304,14 +304,23 @@
   let _studentLessonsCache = [];
 
   function _loadStudentLessons(studentClass) {
+    // Single-field filter only — no compound orderBy so no composite index is needed.
+    // Sorting is done client-side after the fetch.
     window.fbDb.collection('lessons')
       .where('class', '==', studentClass)
-      .orderBy('subject')
-      .orderBy('order')
       .get()
       .then(snap => {
         _studentLessonsCache = [];
         snap.forEach(doc => _studentLessonsCache.push({ id: doc.id, ...doc.data() }));
+
+        // Sort client-side: subject A→Z, then order numerically within subject
+        _studentLessonsCache.sort((a, b) => {
+          const sa = (a.subject || '').toLowerCase();
+          const sb = (b.subject || '').toLowerCase();
+          if (sa < sb) return -1;
+          if (sa > sb) return  1;
+          return (a.order || 0) - (b.order || 0);
+        });
 
         // Populate subject filter
         const subjects = [...new Set(_studentLessonsCache.map(l => l.subject).filter(Boolean))].sort();
@@ -966,11 +975,19 @@
   function _loadTeacherLessons() {
     if (_teacherLessonsUnsub) { _teacherLessonsUnsub(); _teacherLessonsUnsub = null; }
 
+    // No compound orderBy — avoids composite index requirement.
+    // Sort is done client-side after each snapshot.
     _teacherLessonsUnsub = window.fbDb.collection('lessons')
-      .orderBy('class').orderBy('subject').orderBy('order')
       .onSnapshot(snap => {
         _teacherLessonsAll = [];
         snap.forEach(doc => _teacherLessonsAll.push({ id: doc.id, ...doc.data() }));
+        _teacherLessonsAll.sort((a, b) => {
+          const ca = (a.class || '').toLowerCase(), cb = (b.class || '').toLowerCase();
+          if (ca < cb) return -1; if (ca > cb) return 1;
+          const sa = (a.subject || '').toLowerCase(), sb = (b.subject || '').toLowerCase();
+          if (sa < sb) return -1; if (sa > sb) return 1;
+          return (a.order || 0) - (b.order || 0);
+        });
         _populateTeacherSubjectFilter();
         _teacherFilterLessons();
       }, err => {
