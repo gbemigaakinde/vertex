@@ -1197,6 +1197,7 @@
   window.StudyRoom = {
     openForStudent,
     openTeacherTab,
+    openForTeacher: openTeacherTab,   // alias used by teacher.js
     _closeStudentRoom,
     _backToBrowser: _backToBrowserSafe,
     _filterLessons,
