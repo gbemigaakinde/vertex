@@ -26,7 +26,6 @@
     lineSpacing: 1.75,
     pageWidth:   720,
     bg:          'white',
-    mode:        'scroll',   // 'scroll' | 'flip'
   };
 
   const PREFS_KEY = 'vtx_study_prefs';
@@ -39,8 +38,6 @@
   let _prefs               = _loadPrefs();
   let _currentLesson       = null;
   let _siblingLessons      = [];
-  let _flipPages           = [];
-  let _flipIndex           = 0;
   let _editingId           = null;
   let _teacherLessonsUnsub = null;
   let _previewMode         = false;
@@ -83,13 +80,13 @@
     /* ── Background theme ──
      * Swap class on reader wrapper. Also update CSS variables so that
      * text colours, borders etc. inside the reader adapt for dark modes. */
-    containerEl.querySelectorAll('.sr-scroll-reader, .sr-flip-outer').forEach(el => {
+    containerEl.querySelectorAll('.sr-scroll-reader').forEach(el => {
       ['white','sepia','warm','dark','night'].forEach(c => el.classList.remove('sr-bg--' + c));
       el.classList.add('sr-bg--' + _prefs.bg);
     });
 
     /* ── Typography ──
-     * Apply to every .sr-content element (covers both scroll and flip).
+     * Apply to every .sr-content element.
      * Use !important-equivalent by setting the style directly so it
      * overrides any class-level font-family from the lesson's own <style>. */
     containerEl.querySelectorAll('.sr-content').forEach(el => {
@@ -98,10 +95,7 @@
       el.style.setProperty('font-family', fontStack);
     });
 
-    /* Flip pages: slightly smaller font */
-    containerEl.querySelectorAll('.sr-book__page-content .sr-content').forEach(el => {
-      el.style.setProperty('font-size', Math.max(12, _prefs.fontSize - 2) + 'px');
-    });
+
 
     /* ── Propagate font family to lesson-specific elements ──
      * The lesson HTML may contain elements like <p>, <li>, <td> that sit
@@ -194,7 +188,7 @@
       .replace(/^## (.+)$/gm,     '<h2>$1</h2>')
       .replace(/^# (.+)$/gm,      '<h1>$1</h1>');
 
-    /* Horizontal rules (also used as page-break in flip mode) */
+    /* Horizontal rules */
     html = html
       .replace(/^---+$/gm,    '<hr>')
       .replace(/^\*\*\*+$/gm, '<hr>');
@@ -261,45 +255,6 @@
       .replace(/`(.+?)`/g,            '<code>$1</code>')
       .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
       .replace(/!\[(.+?)\]\((.+?)\)/g,'<img src="$2" alt="$1">');
-  }
-
-  /* ══════════════════════════════════════════════════
-     FLIP MODE — split HTML into page chunks
-     ══════════════════════════════════════════════════ */
-
-  function _splitIntoPages(htmlContent) {
-    if (!htmlContent) return [''];
-
-    const SENTINEL = '<!-- __PAGEBREAK__ -->';
-    const normalised = htmlContent
-      .replace(/<!--\s*pagebreak\s*-->/gi, SENTINEL)
-      .replace(/<hr\s*\/?>/gi, SENTINEL);
-
-    const parts = normalised.split(SENTINEL).map(p => p.trim()).filter(Boolean);
-
-    if (parts.length <= 1) {
-      const WORDS_PER_PAGE = 250;
-      const tokens  = (parts[0] || '').match(/<[^>]+>|[^<]+/g) || [];
-      const pages   = [];
-      let page      = '';
-      let wordCount = 0;
-
-      for (const token of tokens) {
-        page += token;
-        if (!token.startsWith('<')) {
-          wordCount += token.split(/\s+/).filter(Boolean).length;
-          if (wordCount >= WORDS_PER_PAGE) {
-            pages.push(page.trim());
-            page = '';
-            wordCount = 0;
-          }
-        }
-      }
-      if (page.trim()) pages.push(page.trim());
-      return pages.length ? pages : [''];
-    }
-
-    return parts;
   }
 
   /* ══════════════════════════════════════════════════
@@ -543,9 +498,6 @@
 
     const renderedHtml = _renderMarkdown(lesson.content || '');
 
-    /* Pre-compute flip pages ONCE — shared by _buildFlipReader and _buildSpread */
-    _flipPages = _splitIntoPages(renderedHtml);
-    _flipIndex = 0;
 
     UI.mount(_buildReaderShell(lesson, siblings, renderedHtml));
 
@@ -556,7 +508,6 @@
     _syncPrefsUI();
 
     if (_prefs.mode === 'scroll') _bindScrollProgress();
-    if (_prefs.mode === 'flip')   _bindFlipSwipe();
 
     if (window._katexAutoRenderReady && window.renderMathInElement) {
       try {
@@ -572,7 +523,7 @@
 
   /*
    * Wire up quiz check buttons that use data-q / data-ans / data-msg attributes.
-   * Called after every render so buttons in both scroll and flip mode work.
+   * Called after every render so buttons work correctly.
    * This is necessary because the markdown sanitiser strips <script> tags and
    * on* attributes from lesson content, so inline handlers never reach the DOM.
    */
@@ -606,7 +557,6 @@
      ────────────────────────────────────────────────── */
 
   function _buildReaderShell(lesson, siblings, renderedHtml) {
-    const isFlip     = _prefs.mode === 'flip';
     const hasSidebar = siblings.length > 1;
 
     const sidebarItems = siblings.map((s, i) => `
@@ -632,9 +582,6 @@
           <button class="sr-topbar__back" onclick="StudyRoom._backToBrowser()">← Lessons</button>
           <span class="sr-topbar__title">${_esc(lesson.title)}</span>
           <div class="sr-topbar__actions">
-            <button class="sr-topbar__back" id="srModeToggle" onclick="StudyRoom._toggleMode()">
-              ${isFlip ? 'Scroll Mode' : 'Flip Mode'}
-            </button>
             <button class="sr-topbar__back" onclick="StudyRoom._togglePrefs()" id="srPrefsBtn">Aa</button>
           </div>
         </div>
@@ -646,7 +593,7 @@
               ${sidebarItems}
             </div>` : ''}
 
-          ${isFlip ? _buildFlipReader(lesson) : _buildScrollReader(lesson, renderedHtml)}
+          ${_buildScrollReader(lesson, renderedHtml)}
         </div>
 
         ${_buildPrefsPanel()}
@@ -686,201 +633,6 @@
           </div>
         </div>
       </div>`;
-  }
-
-  /* ──────────────────────────────────────────────────
-     Flip reader
-     NOTE: _flipPages / _flipIndex already set by _renderReader — do NOT reset here.
-     ────────────────────────────────────────────────── */
-
-  function _buildFlipReader(lesson) {
-    return `
-      <div class="sr-flip-outer sr-bg--${_esc(_prefs.bg)}" id="srFlipOuter">
-        <div class="sr-flip-inner">
-          <div class="sr-book" id="srBook">
-            ${_buildSpread()}
-          </div>
-          <div class="sr-flip-nav">
-            <button class="sr-flip-nav__btn" id="srFlipPrev" onclick="StudyRoom._flipPrev()"
-                    ${_flipIndex === 0 ? 'disabled' : ''}>
-              ← Previous
-            </button>
-            <div class="sr-flip-nav__info" id="srFlipInfo">${_flipNavLabel()}</div>
-            <button class="sr-flip-nav__btn" id="srFlipNext" onclick="StudyRoom._flipNext()"
-                    ${_flipAtLastPage() ? 'disabled' : ''}>
-              Next →
-            </button>
-          </div>
-        </div>
-      </div>`;
-  }
-
-  /* Returns true when there is no further page to advance to */
-  function _flipAtLastPage() {
-    return _flipIsMobile()
-      ? _flipIndex >= _flipPages.length - 1
-      : _flipIndex + 2 >= _flipPages.length;
-  }
-
-  /* On mobile we show ONE page at a time; on desktop TWO (spread) */
-  function _flipIsMobile() {
-    return window.innerWidth <= 768;
-  }
-
-  function _flipNavLabel() {
-    const total = _flipPages.length;
-    if (!total) return 'No pages';
-    if (_flipIsMobile()) {
-      return `Page ${_flipIndex + 1} of ${total}`;
-    }
-    const hi = Math.min(_flipIndex + 2, total);
-    return total <= 2
-      ? `Page ${_flipIndex + 1} of ${total}`
-      : `Pages ${_flipIndex + 1}–${hi} of ${total}`;
-  }
-
-  function _buildSpread() {
-    const isMobile  = _flipIsMobile();
-    const total     = _flipPages.length;
-    const left      = isMobile ? '' : (_flipPages[_flipIndex] || '');
-    const right     = isMobile ? (_flipPages[_flipIndex] || '') : (_flipPages[_flipIndex + 1] || '');
-    const leftNum   = _flipIndex + 1;
-    const rightNum  = isMobile ? _flipIndex + 1 : _flipIndex + 2;
-    const fs        = Math.max(12, _prefs.fontSize - 2);
-    const fontStack = _fontStack();
-    const lineH     = _prefs.lineSpacing;
-
-    return `
-      <div class="sr-book__spread" id="srSpread">
-        <div class="sr-book__page sr-book__page--left">
-          <div class="sr-book__page-content">
-            <div class="sr-content" style="font-family:${fontStack};font-size:${fs}px;line-height:${lineH};">
-              ${left || '<p style="color:var(--text-disabled);font-style:italic;text-align:center;margin-top:4rem;">— blank —</p>'}
-            </div>
-          </div>
-          <span class="sr-book__page-num">${leftNum}</span>
-        </div>
-        <div class="sr-book__page sr-book__page--right">
-          <div class="sr-book__page-content">
-            <div class="sr-content" style="font-family:${fontStack};font-size:${fs}px;line-height:${lineH};">
-              ${right || '<p style="color:var(--text-disabled);font-style:italic;text-align:center;margin-top:4rem;">— end —</p>'}
-            </div>
-          </div>
-          <span class="sr-book__page-num">${rightNum <= total ? rightNum : ''}</span>
-        </div>
-      </div>`;
-  }
-
-  function _flipNext() {
-    if (_flipAtLastPage()) return;
-    const step = _flipIsMobile() ? 1 : 2;
-    _animateFlip('left', () => { _flipIndex += step; _updateSpread(); });
-  }
-
-  function _flipPrev() {
-    if (_flipIndex === 0) return;
-    const step = _flipIsMobile() ? 1 : 2;
-    _animateFlip('right', () => { _flipIndex = Math.max(0, _flipIndex - step); _updateSpread(); });
-  }
-
-  function _animateFlip(direction, callback) {
-    const book = document.getElementById('srBook');
-    if (book) {
-      book.style.animation = 'none';
-      void book.offsetHeight;
-      book.style.animation = `sr-flip-${direction} 0.4s var(--ease) both`;
-    }
-    setTimeout(callback, 200);
-  }
-
-  function _updateSpread() {
-    const bookEl = document.getElementById('srBook');
-    if (!bookEl) return;
-    bookEl.innerHTML = _buildSpread();
-
-    const prevBtn = document.getElementById('srFlipPrev');
-    const nextBtn = document.getElementById('srFlipNext');
-    const info    = document.getElementById('srFlipInfo');
-    if (prevBtn) prevBtn.disabled = (_flipIndex === 0);
-    if (nextBtn) nextBtn.disabled = _flipAtLastPage();
-    if (info)    info.textContent = _flipNavLabel();
-
-    const fill = document.getElementById('srProgressFill');
-    if (fill && _flipPages.length) {
-      const pct = _flipIsMobile()
-        ? (_flipIndex + 1) / _flipPages.length * 100
-        : (_flipIndex + 2) / _flipPages.length * 100;
-      fill.style.width = Math.min(100, pct).toFixed(1) + '%';
-    }
-
-    if (window._katexAutoRenderReady && window.renderMathInElement) {
-      try {
-        renderMathInElement(bookEl, {
-          delimiters:[{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
-          throwOnError:false,
-        });
-      } catch(e){}
-    }
-
-    _bindQuizButtons(bookEl);
-    _bindFlipSwipe();   /* re-bind swipe after innerHTML replaced */
-  }
-
-  /*
-   * Swipe / drag to flip pages.
-   * Works for both touch (mobile) and mouse (desktop).
-   * A horizontal swipe of ≥50px triggers the appropriate direction.
-   */
-  function _bindFlipSwipe() {
-    const book = document.getElementById('srBook');
-    if (!book || book.dataset.swipeBound) return;
-    book.dataset.swipeBound = '1';
-
-    let startX = null;
-    const THRESHOLD = 50;
-
-    function onStart(x) { startX = x; }
-    function onEnd(x) {
-      if (startX === null) return;
-      const dx = x - startX;
-      startX = null;
-      if (Math.abs(dx) < THRESHOLD) return;
-      if (dx < 0) _flipNext();   /* swipe left  → next page  */
-      else        _flipPrev();   /* swipe right → prev page  */
-    }
-
-    /* Touch */
-    book.addEventListener('touchstart', e => onStart(e.touches[0].clientX),     { passive: true });
-    book.addEventListener('touchend',   e => onEnd(e.changedTouches[0].clientX), { passive: true });
-
-    /* Mouse */
-    book.addEventListener('mousedown', e => onStart(e.clientX));
-    book.addEventListener('mouseup',   e => onEnd(e.clientX));
-  }
-
-
-  function _prevLessonBtn(lesson) {
-    const idx = _siblingLessons.findIndex(l => l.id === lesson.id);
-    if (idx <= 0) return '<span></span>';
-    const prev = _siblingLessons[idx - 1];
-    return `<button class="sr-topbar__back" onclick="StudyRoom._openLesson('${_esc(prev.id)}')">← ${_esc(prev.title)}</button>`;
-  }
-
-  function _nextLessonBtn(lesson) {
-    const idx = _siblingLessons.findIndex(l => l.id === lesson.id);
-    if (idx < 0 || idx >= _siblingLessons.length - 1) return '<span></span>';
-    const next = _siblingLessons[idx + 1];
-    return `<button class="btn" onclick="StudyRoom._openLesson('${_esc(next.id)}')">${_esc(next.title)} →</button>`;
-  }
-
-  /* ══════════════════════════════════════════════════
-     MODE TOGGLE
-     ══════════════════════════════════════════════════ */
-
-  function _toggleMode() {
-    _prefs.mode = _prefs.mode === 'scroll' ? 'flip' : 'scroll';
-    _savePrefs();
-    if (_currentLesson) _renderReader(_currentLesson, _siblingLessons);
   }
 
   /* ══════════════════════════════════════════════════
@@ -1168,7 +920,7 @@
                 <div class="sr-markdown-hint">
                   <code># H1</code> <code>## H2</code> <code>**bold**</code> <code>*italic*</code>
                   <code>\`code\`</code> <code>- list item</code> <code>| table |</code>
-                  — Use <code>---</code> as a page break in Flip Mode
+
                 </div>
               </div>
 
@@ -1500,12 +1252,9 @@
 
     /* Reader */
     _backToBrowser,
-    _toggleMode,
     _togglePrefs,
     _onPrefChange,
     _resetPrefs,
-    _flipNext,
-    _flipPrev,
 
     /* Teacher */
     openTeacherTab,
