@@ -65,9 +65,6 @@
 
     const fontStack = _fontStack();
 
-    /* ── Page width (scroll mode) ──
-     * Set on the scroll content wrapper AND propagate as a CSS variable
-     * on the reader so child elements can also reference it.           */
     const scrollReader  = containerEl.querySelector('.sr-scroll-reader');
     const scrollContent = containerEl.querySelector('.sr-scroll-content');
     if (scrollContent) {
@@ -77,31 +74,17 @@
       scrollReader.style.setProperty('--sr-page-width', _prefs.pageWidth + 'px');
     }
 
-    /* ── Background theme ──
-     * Swap class on reader wrapper. Also update CSS variables so that
-     * text colours, borders etc. inside the reader adapt for dark modes. */
     containerEl.querySelectorAll('.sr-scroll-reader').forEach(el => {
       ['white','sepia','warm','dark','night'].forEach(c => el.classList.remove('sr-bg--' + c));
       el.classList.add('sr-bg--' + _prefs.bg);
     });
 
-    /* ── Typography ──
-     * Apply to every .sr-content element.
-     * Use !important-equivalent by setting the style directly so it
-     * overrides any class-level font-family from the lesson's own <style>. */
     containerEl.querySelectorAll('.sr-content').forEach(el => {
       el.style.setProperty('font-size',   _prefs.fontSize + 'px');
       el.style.setProperty('line-height', String(_prefs.lineSpacing));
       el.style.setProperty('font-family', fontStack);
     });
 
-
-
-    /* ── Propagate font family to lesson-specific elements ──
-     * The lesson HTML may contain elements like <p>, <li>, <td> that sit
-     * directly inside .sr-content. Setting font-family on .sr-content
-     * should cascade, but some lesson <style> blocks may override it.
-     * We push the font family down to all text-bearing children too.    */
     const textTags = 'p, li, td, th, blockquote, figcaption, aside, h1, h2, h3, h4, h5, h6';
     containerEl.querySelectorAll('.sr-content ' + textTags).forEach(el => {
       el.style.setProperty('font-family', fontStack);
@@ -116,16 +99,6 @@
     if (!md) return '';
     let html = String(md);
 
-    /*
-     * STEP 1 — Stash verbatim HTML blocks before any processing.
-     *
-     * Multi-line HTML blocks (svg, figure, aside, section, style, details, table)
-     * must survive the sanitiser and paragraph-wrapper unchanged. We replace each
-     * block with a unique placeholder, run all markdown transforms, then restore.
-     *
-     * Tags whose opening tag may carry attributes (e.g. <figure>, <aside class="...">) 
-     * are matched with [^>]* so the attribute content is included in the match.
-     */
     const stash = [];
     const STASH_TAG = 'HTMLSTASH';
 
@@ -137,23 +110,19 @@
       });
     }
 
-    /* Order matters: outermost first so outer wrappers (e.g. <figure> containing <svg>)
-     * are captured whole. Inner tags inside them are preserved as-is within the stash. */
-    _stashBlock('script');   /* removed below — still stash to neutralise */
+    _stashBlock('script');
     _stashBlock('style');
-    _stashBlock('figure');   /* must come before svg — figure may wrap svg */
-    _stashBlock('section');  /* must come before aside — section may wrap aside */
+    _stashBlock('figure');
+    _stashBlock('section');
     _stashBlock('details');
     _stashBlock('aside');
     _stashBlock('svg');
 
-    /* STEP 2 — Sanitise the remaining (non-stashed) content */
     html = html
-      .replace(/<script[\s\S]*?<\/script>/gi, '')   /* belt-and-braces: any un-stashed scripts */
+      .replace(/<script[\s\S]*?<\/script>/gi, '')
       .replace(/\bon\w+\s*=/gi, 'data-removed=')
       .replace(/javascript:/gi, '');
 
-    /* Remove stashed <script> blocks (index already recorded, just blank them) */
     stash.forEach((block, i) => {
       if (/^<script/i.test(block)) stash[i] = '';
     });
@@ -207,7 +176,7 @@
       return `<ol>${items}</ol>`;
     });
 
-    /* Wrap remaining lines in <p>, treating stash placeholders as block elements */
+    /* Wrap remaining lines in <p> */
     const blockStarters = ['<h','<ul','<ol','<li','<pre','<blockquote','<table','<hr','<p', STASH_TAG];
     const result = [];
     let buffer   = [];
@@ -227,12 +196,7 @@
     });
     if (buffer.length) result.push('<p>' + _inlineMarkdown(buffer.join(' ')) + '</p>');
 
-    /* STEP 3 — Restore stashed blocks.
-     *
-     * Restore in REVERSE order so outer wrappers (e.g. <figure>) are restored
-     * before the inner placeholders they contain (e.g. HTMLSTASH0_ for <svg>).
-     * A second forward pass then resolves any inner placeholders now exposed.
-     */
+    /* Restore stashed blocks — reverse order so outer wrappers restore first */
     let output = result.join('\n');
     for (let i = stash.length - 1; i >= 0; i--) {
       output = output.split(STASH_TAG + i + '_').join(stash[i]);
@@ -272,10 +236,8 @@
      HELPERS
      ══════════════════════════════════════════════════ */
 
-  /** Normalise a subject string for case-insensitive comparison */
   function _normSubject(s) { return (s || '').trim().toLowerCase(); }
 
-  /** Build a stable group key: subject + term (used for sibling scoping & browser grouping) */
   function _groupKey(lesson) {
     return _normSubject(lesson.subject) + '||' + (lesson.term || '');
   }
@@ -359,7 +321,6 @@
         _studentLessonsCache = [];
         snap.forEach(doc => _studentLessonsCache.push({ id: doc.id, ...doc.data() }));
 
-        /* Sort: subject A→Z, then term (chronological), then order numerically */
         _studentLessonsCache.sort((a, b) => {
           const sa = _normSubject(a.subject), sb = _normSubject(b.subject);
           if (sa < sb) return -1; if (sa > sb) return 1;
@@ -368,7 +329,6 @@
           return (a.order || 0) - (b.order || 0);
         });
 
-        /* Populate subject filter from unique subjects */
         const subjects = [...new Set(_studentLessonsCache.map(l => (l.subject || '').trim()).filter(Boolean))].sort();
         const subjectSel = document.getElementById('srFilterSubject');
         if (subjectSel) {
@@ -398,31 +358,20 @@
     if (!filtered.length) {
       browser.innerHTML = `
         <div class="sr-empty">
-          <span class="sr-empty__icon"></span>
           <p class="sr-empty__text">No lessons found for this filter.</p>
         </div>`;
       return;
     }
 
-    /*
-     * Grouping strategy:
-     *   - Term filter active   → group by subject only (all visible lessons share the same term)
-     *   - No term filter       → group by subject + term to avoid colliding order numbers
-     *                            across terms; heading shows "Subject — Term"
-     */
     const byGroup = {};
     filtered.forEach(l => {
-      const key = termFilter
-        ? (l.subject || 'General')
-        : _groupKey(l);
+      const key = termFilter ? (l.subject || 'General') : _groupKey(l);
       if (!byGroup[key]) byGroup[key] = { subject: l.subject || 'General', term: l.term || '', lessons: [] };
       byGroup[key].lessons.push(l);
     });
 
-    /* Sort lessons within each group by order */
     Object.values(byGroup).forEach(g => g.lessons.sort((a, b) => (a.order || 0) - (b.order || 0)));
 
-    /* Sort groups: subject A→Z, then term chronologically */
     const sortedKeys = Object.keys(byGroup).sort((ka, kb) => {
       const ga = byGroup[ka], gb = byGroup[kb];
       const sa = _normSubject(ga.subject), sb = _normSubject(gb.subject);
@@ -463,7 +412,6 @@
   function _openLesson(lessonId) {
     const lesson = _studentLessonsCache.find(l => l.id === lessonId);
     if (!lesson) {
-      /* Not in cache (e.g. direct link) — fetch and open without siblings */
       window.fbDb.collection('lessons').doc(lessonId).get()
         .then(snap => {
           if (!snap.exists) { UI.toast('Lesson not found.', 'error'); return; }
@@ -476,11 +424,6 @@
       return;
     }
 
-    /*
-     * Siblings = lessons in the same class (guaranteed by cache) + same subject + same term.
-     * Scoping by term prevents the sidebar and prev/next buttons from crossing term
-     * boundaries, and also prevents colliding order numbers from different terms.
-     */
     const siblings = _studentLessonsCache
       .filter(l => _normSubject(l.subject) === _normSubject(lesson.subject) && l.term === lesson.term)
       .sort((a, b) => (a.order || 0) - (b.order || 0));
@@ -498,7 +441,6 @@
 
     const renderedHtml = _renderMarkdown(lesson.content || '');
 
-
     UI.mount(_buildReaderShell(lesson, siblings, renderedHtml));
 
     const app = document.getElementById('app');
@@ -506,8 +448,7 @@
 
     _applyPrefsToReader(document.getElementById('app'));
     _syncPrefsUI();
-
-    if (_prefs.mode === 'scroll') _bindScrollProgress();
+    _bindScrollProgress();
 
     if (window._katexAutoRenderReady && window.renderMathInElement) {
       try {
@@ -521,12 +462,6 @@
     _bindQuizButtons(document.getElementById('app'));
   }
 
-  /*
-   * Wire up quiz check buttons that use data-q / data-ans / data-msg attributes.
-   * Called after every render so buttons work correctly.
-   * This is necessary because the markdown sanitiser strips <script> tags and
-   * on* attributes from lesson content, so inline handlers never reach the DOM.
-   */
   function _bindQuizButtons(containerEl) {
     if (!containerEl) return;
     containerEl.querySelectorAll('button[data-q]').forEach(btn => {
@@ -540,11 +475,11 @@
         const fb       = containerEl.querySelector('#' + qId + '-fb');
         if (!fb) return;
         if (!selected) {
-          fb.className  = 'ins-fb err';
+          fb.className   = 'ins-fb err';
           fb.textContent = 'Please select an answer first.';
           return;
         }
-        fb.className  = selected.value === correct ? 'ins-fb ok' : 'ins-fb err';
+        fb.className   = selected.value === correct ? 'ins-fb ok' : 'ins-fb err';
         fb.textContent = selected.value === correct
           ? msg
           : 'Not quite. Review the relevant section above and try again.';
@@ -566,10 +501,6 @@
         <span class="sr-sidebar__name">${_esc(s.title)}</span>
       </div>`).join('');
 
-    /*
-     * Sidebar heading: "Subject — Term" so the student always knows which
-     * term's lessons they are browsing inside the reader.
-     */
     const sidebarHeading = [lesson.subject, lesson.term].filter(Boolean).join(' — ');
 
     return `
@@ -633,6 +564,22 @@
           </div>
         </div>
       </div>`;
+  }
+
+  /* ── Prev / Next lesson navigation buttons ── */
+
+  function _prevLessonBtn(lesson) {
+    const idx = _siblingLessons.findIndex(l => l.id === lesson.id);
+    if (idx <= 0) return '<span></span>';
+    const prev = _siblingLessons[idx - 1];
+    return `<button class="sr-topbar__back" onclick="StudyRoom._openLesson('${_esc(prev.id)}')">← ${_esc(prev.title)}</button>`;
+  }
+
+  function _nextLessonBtn(lesson) {
+    const idx = _siblingLessons.findIndex(l => l.id === lesson.id);
+    if (idx < 0 || idx >= _siblingLessons.length - 1) return '<span></span>';
+    const next = _siblingLessons[idx + 1];
+    return `<button class="btn" onclick="StudyRoom._openLesson('${_esc(next.id)}')">${_esc(next.title)} →</button>`;
   }
 
   /* ══════════════════════════════════════════════════
@@ -824,7 +771,6 @@
           </p>
         </div>
 
-        <!-- ── Default Term Setting ── -->
         <div class="sr-form-card" style="margin-bottom:1.25rem;">
           <div class="sr-form-card__title">
             <span class="sr-form-card__dot" style="background:var(--warning);"></span>
@@ -854,7 +800,6 @@
 
         <div class="sr-teacher-panel">
 
-          <!-- ── Left: Lesson form ── -->
           <div class="sr-form-card">
             <div class="sr-form-card__title">
               <span class="sr-form-card__dot"></span>
@@ -920,7 +865,6 @@
                 <div class="sr-markdown-hint">
                   <code># H1</code> <code>## H2</code> <code>**bold**</code> <code>*italic*</code>
                   <code>\`code\`</code> <code>- list item</code> <code>| table |</code>
-
                 </div>
               </div>
 
@@ -941,7 +885,6 @@
             </div>
           </div>
 
-          <!-- ── Right: Lesson list ── -->
           <div class="sr-form-card">
             <div class="sr-form-card__title">
               <span class="sr-form-card__dot" style="background:var(--success);"></span>
@@ -949,7 +892,7 @@
             </div>
 
             <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:.5rem;margin-bottom:.75rem;">
-              <select id="srTeacherFilterClass" onchange="StudyRoom._teacherFilterLessons()" >
+              <select id="srTeacherFilterClass" onchange="StudyRoom._teacherFilterLessons()">
                 <option value="">All Classes</option>
                 ${CLASS_OPTIONS.map(c => `<option>${c}</option>`).join('')}
               </select>
@@ -973,7 +916,6 @@
     });
   }
 
-  /* ── Save teacher default term ── */
   function _saveDefaultTermSetting() {
     const sel  = document.getElementById('srDefaultTermSel');
     const term = sel ? sel.value : '';
@@ -993,7 +935,6 @@
       });
   }
 
-  /* ── Load all lessons (real-time) ── */
   function _loadTeacherLessons() {
     if (_teacherLessonsUnsub) { _teacherLessonsUnsub(); _teacherLessonsUnsub = null; }
 
@@ -1002,7 +943,6 @@
         _teacherLessonsAll = [];
         snap.forEach(doc => _teacherLessonsAll.push({ id: doc.id, ...doc.data() }));
 
-        /* Sort: class A→Z, subject A→Z, term chronologically, order numerically */
         _teacherLessonsAll.sort((a, b) => {
           const ca = (a.class   || '').toLowerCase(), cb = (b.class   || '').toLowerCase();
           if (ca < cb) return -1; if (ca > cb) return 1;
@@ -1087,9 +1027,8 @@
       </div>`).join('');
   }
 
-  /* ── Auto-fill Order field based on class + term + subject ── */
   function _autoFillOrder() {
-    if (_editingId) return;   /* never overwrite when editing an existing lesson */
+    if (_editingId) return;
     const cls     = document.getElementById('srLessonClass')?.value           || '';
     const term    = document.getElementById('srLessonTerm')?.value            || '';
     const subject = document.getElementById('srLessonSubject')?.value.trim() || '';
@@ -1106,11 +1045,9 @@
       : 1;
 
     const orderEl = document.getElementById('srLessonOrder');
-    /* Only overwrite if the teacher has not already typed a value */
     if (orderEl && !orderEl.value) orderEl.value = nextOrder;
   }
 
-  /* ── Save lesson ── */
   async function _saveLesson() {
     const title    = document.getElementById('srLessonTitle')?.value.trim()   || '';
     const cls      = document.getElementById('srLessonClass')?.value           || '';
@@ -1127,7 +1064,6 @@
     if (!subject) { UI.toast('Please enter a subject.',         'warning'); return; }
     if (!content) { UI.toast('Please add some lesson content.', 'warning'); return; }
 
-    /* Warn (non-blocking) if another lesson in the same group already uses this order */
     const duplicate = _teacherLessonsAll.find(
       l => l.class === cls
         && l.term  === term
@@ -1169,7 +1105,6 @@
     }
   }
 
-  /* ── Edit lesson ── */
   function _editLesson(id) {
     const lesson = _teacherLessonsAll.find(l => l.id === id);
     if (!lesson) return;
@@ -1194,7 +1129,6 @@
     document.getElementById('srLessonTitle')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
 
-  /* ── Cancel edit ── */
   function _cancelEdit() {
     _editingId = null;
     ['srLessonTitle','srLessonClass','srLessonTerm','srLessonSubject',
@@ -1209,7 +1143,6 @@
     if (cancelBtn) cancelBtn.style.display = 'none';
   }
 
-  /* ── Delete lesson ── */
   async function _deleteLesson(id) {
     const ok = await UI.confirmAction('Delete this lesson permanently?');
     if (!ok) return;
@@ -1222,7 +1155,6 @@
     }
   }
 
-  /* ── Preview lesson ── */
   function _previewLesson() {
     const fakeLesson = {
       id:      '__preview__',
@@ -1244,19 +1176,14 @@
      ══════════════════════════════════════════════════ */
 
   window.StudyRoom = {
-    /* Student */
     openForStudent,
     _closeStudentRoom,
     _filterLessons,
     _openLesson,
-
-    /* Reader */
     _backToBrowser,
     _togglePrefs,
     _onPrefChange,
     _resetPrefs,
-
-    /* Teacher */
     openTeacherTab,
     openForTeacher: openTeacherTab,
     _saveLesson,
@@ -1267,7 +1194,6 @@
     _teacherFilterLessons,
     _saveDefaultTermSetting,
     _autoFillOrder,
-
     cancelTeacherListeners() {
       if (_teacherLessonsUnsub) { _teacherLessonsUnsub(); _teacherLessonsUnsub = null; }
     },
