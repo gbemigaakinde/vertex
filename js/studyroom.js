@@ -745,9 +745,30 @@
     _siblingLessons = [];
 
     if (_previewMode) {
-      _previewMode = false;
+      _previewMode         = false;
       _studentLessonsCache = [];
-      if (window.Teacher) Teacher.showTab('studyroom');
+      /*
+       * The reader was mounted via UI.mount() which replaced all of #app.
+       * The teacher dashboard no longer exists in the DOM, so calling
+       * Teacher.showTab() directly does nothing — #teacher-studyroom is gone.
+       * Re-render the full teacher dashboard first, then switch to the
+       * studyroom tab once the DOM is ready.
+       */
+      if (window.Teacher) {
+        /*
+         * Try common teacher dashboard re-render method names.
+         * Once the dashboard DOM is rebuilt, switch to the studyroom tab.
+         */
+        const rerender = Teacher.render || Teacher.init || Teacher.mount || Teacher.open || null;
+        if (typeof rerender === 'function') {
+          rerender.call(Teacher);
+          setTimeout(() => {
+            if (typeof Teacher.showTab === 'function') Teacher.showTab('studyroom');
+          }, 0);
+        } else if (typeof Teacher.showTab === 'function') {
+          Teacher.showTab('studyroom');
+        }
+      }
     } else {
       openForStudent();
     }
