@@ -17,7 +17,6 @@
    The topbar is fixed-height; the layout below gets flex:1 so
    it consumes all remaining vertical space. Each reader then
    scrolls internally via overflow-y:auto — this is what makes
-   flip mode work as a distinct bounded region, not a long page.
 */
 
 .sr-shell {
@@ -308,161 +307,6 @@
 .sr-content em     { font-style: italic; }
 
 /* ============================================================
-   5. FLIP MODE READER
-   ============================================================ */
-
-/*
-   .sr-flip-outer fills the grid cell and allows vertical scroll
-   only when the book is too tall for the viewport (e.g. on very
-   short screens). Normally the book fits.
-
-   .sr-flip-inner is a centring flex column containing the book
-   + nav bar, with a sensible max-width so the book never becomes
-   uncomfortably wide.
-*/
-
-.sr-flip-outer {
-  min-height: 0;
-  overflow-y: auto;
-  display: flex;
-  justify-content: center;
-  align-items: flex-start;
-  padding: var(--sp-4) var(--sp-4) var(--sp-4);
-  transition: background var(--t-base);
-}
-
-.sr-flip-inner {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  width: 100%;
-  max-width: 860px;
-  gap: var(--sp-3);
-}
-
-/* Perspective wrapper for the 3-D page-turn animation */
-.sr-book {
-  width: 100%;
-  perspective: 2400px;
-}
-
-.sr-book__spread {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  background: #c8b89a;
-  border-radius: 4px 12px 12px 4px;
-  box-shadow:
-    0 24px 64px rgba(0,0,0,.28),
-    0 8px  24px rgba(0,0,0,.18),
-    inset 0 0 0 1px rgba(0,0,0,.06);
-  /* Height: fill remaining viewport after topbar (~3.5rem) + nav (~3rem) + padding */
-  height: calc(100vh - 3.5rem - 3.5rem - 3rem);
-  max-height: 680px;
-  min-height: 320px;
-  position: relative;
-  overflow: hidden;
-  animation: sr-page-in 0.3s var(--ease) both;
-}
-
-/* Spine shadow */
-.sr-book__spread::after {
-  content: '';
-  position: absolute;
-  left: calc(50% - 1px);
-  top: 0; bottom: 0;
-  width: 2px;
-  background: linear-gradient(to right,
-    rgba(0,0,0,.22),
-    rgba(0,0,0,.06) 40%,
-    rgba(0,0,0,.06) 60%,
-    rgba(0,0,0,.16)
-  );
-  z-index: 2;
-  pointer-events: none;
-}
-
-.sr-book__page {
-  background: var(--sr-page-bg, #fefefe);
-  padding: 2.25rem 2.5rem 1.5rem;
-  position: relative;
-  overflow: hidden;   /* content that overflows is hidden — fits the page */
-  height: 100%;       /* fill the spread's fixed height exactly */
-  display: flex;
-  flex-direction: column;
-}
-
-.sr-book__page--left {
-  border-radius: 4px 0 0 4px;
-  background:
-    linear-gradient(to right, rgba(0,0,0,.04) 0%, transparent 12%),
-    var(--sr-page-bg, #fefefe);
-}
-
-.sr-book__page--right {
-  border-radius: 0 12px 12px 0;
-  background:
-    linear-gradient(to left, rgba(0,0,0,.04) 0%, transparent 12%),
-    var(--sr-page-bg, #fefefe);
-}
-
-.sr-book__page-num {
-  font-family: 'Lora', Georgia, serif;
-  font-size: 0.6875rem;
-  color: var(--text-disabled);
-  margin-top: auto;
-  padding-top: 1rem;
-  letter-spacing: 0.05em;
-  display: block;
-  flex-shrink: 0;
-}
-
-.sr-book__page--left  .sr-book__page-num { text-align: left; }
-.sr-book__page--right .sr-book__page-num { text-align: right; }
-
-/* Content container inside each page — overflow hidden keeps text
-   from bleeding past the page boundary */
-.sr-book__page-content {
-  flex: 1;
-  overflow: hidden;
-}
-
-/* Flip navigation */
-.sr-flip-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-}
-
-.sr-flip-nav__btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.375rem;
-  font-size: var(--text-sm);
-  font-weight: 600;
-  color: var(--text-secondary);
-  background: var(--surface);
-  border: 1px solid var(--border-medium);
-  border-radius: var(--r-md);
-  padding: 0.4375rem 0.875rem;
-  cursor: pointer;
-  transition: all var(--t-fast);
-  font-family: var(--font);
-}
-.sr-flip-nav__btn:hover:not(:disabled) {
-  background: var(--brand-bg);
-  border-color: var(--brand-border);
-  color: var(--brand);
-}
-.sr-flip-nav__btn:disabled { opacity: 0.35; cursor: not-allowed; }
-
-.sr-flip-nav__info {
-  font-size: var(--text-xs);
-  color: var(--text-tertiary);
-  text-align: center;
-}
-
-/* ============================================================
    6. BACKGROUND THEMES
    ============================================================ */
 
@@ -492,9 +336,6 @@
 .sr-bg--sepia .sr-lesson-header__title,
 .sr-bg--warm  .sr-lesson-header__title { color: #1e160a; }
 
-/* Sepia book page */
-.sr-bg--sepia .sr-book__page { background: #f8f0dc !important; color: #3b2f1e; }
-.sr-bg--warm  .sr-book__page { background: #fef6ee !important; color: #3b2f1e; }
 
 /* ── Dark themes ── */
 .sr-bg--dark  {
@@ -586,9 +427,6 @@
 .sr-bg--dark  .ins-table tbody tr:nth-child(even) td,
 .sr-bg--night .ins-table tbody tr:nth-child(even) td { background: rgba(255,255,255,.04); }
 
-/* Dark flip book pages */
-.sr-bg--dark  .sr-book__page { color: #d8d8e8; }
-.sr-bg--night .sr-book__page { color: #d0d0e0; }
 
 /* Lesson header in dark mode */
 .sr-bg--dark  .sr-lesson-header__title,
@@ -967,47 +805,7 @@
   .sr-sidebar { display: none; }
   .sr-lesson-header__title { font-size: 1.5rem; }
 
-  /* ── Flip mode on mobile: drop the book aesthetic entirely.
-        Show a single plain card — no spine, no two-column split,
-        no forced tall height that makes half-width columns unreadable. ── */
-  .sr-flip-outer {
-    padding: var(--sp-3) var(--sp-3) var(--sp-4);
-    align-items: stretch;
-  }
-  .sr-flip-inner {
-    max-width: 100%;
-  }
-  .sr-book {
-    perspective: none;
-  }
-  .sr-book__spread {
-    display: block;          /* single column — no grid */
-    background: transparent;
-    box-shadow: none;
-    border-radius: 0;
-    height: auto;            /* override desktop fixed height */
-    min-height: 0;
-    max-height: none;
-    animation: none;
-  }
-  .sr-book__spread::after {
-    display: none;           /* hide spine */
-  }
-  .sr-book__page--left {
-    display: none;           /* hide left page */
-  }
-  .sr-book__page--right {
-    border-radius: var(--r-lg);
-    background: var(--surface) !important;
-    box-shadow: var(--shadow-sm);
-    height: auto;       /* let content determine height on mobile */
-    min-height: 0;
-    padding: 1.25rem 1rem 1.5rem;
-    overflow-y: auto;   /* allow page to scroll if content is taller than screen */
-  }
-  .sr-book__page-num {
-    display: none;           /* page numbers irrelevant on single-page mobile */
-  }
+
 }
 
 @media (max-width: 640px) {
@@ -1021,7 +819,6 @@
   }
   .sr-prefs-panel.is-open { transform: translateY(0); }
 
-  .sr-flip-outer { padding: var(--sp-3) var(--sp-2); }
   .sr-topbar     { gap: .375rem; }
   .sr-browser    { padding: var(--sp-3); }
 }
@@ -1036,15 +833,3 @@
 }
 
 .sr-animate-in { animation: sr-page-in 0.22s var(--ease) both; }
-
-@keyframes sr-flip-left {
-  0%   { transform: perspective(2400px) rotateY(0deg); }
-  50%  { transform: perspective(2400px) rotateY(-14deg); }
-  100% { transform: perspective(2400px) rotateY(0deg); }
-}
-
-@keyframes sr-flip-right {
-  0%   { transform: perspective(2400px) rotateY(0deg); }
-  50%  { transform: perspective(2400px) rotateY(14deg); }
-  100% { transform: perspective(2400px) rotateY(0deg); }
-}
