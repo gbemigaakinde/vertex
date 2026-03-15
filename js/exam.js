@@ -1,39 +1,5 @@
 /* ============================================================
    js/exam.js — Exam engine: start, navigate, timer, submit
-   ============================================================
-   FIXES FROM v3:
-   ─────────────────────────────────────────────────────────────
-   A. _isTodayATaskDay() and _isTodayTaskDayCompleted():
-      Both previously checked only currentTask.dates[] for
-      today's date.  After the tasks.js v4 fix, dates[] now
-      contains ALL dates (past + future), so the check is
-      still correct — today will be in dates[] if it is a
-      scheduled day.  No change needed here, but the
-      dependency on the correct resolver is documented.
-
-   B. submitExam() — coaching task completion credit:
-      Previously used taskCfg.dates.includes(sessionDate).
-      After the tasks.js fix, dates[] includes future dates
-      too, so a future sessionDate could theoretically match.
-      Fixed to use the explicit _isTodayATaskDay() helper
-      (which checks the same array but is the canonical
-      single-source-of-truth function) and also double-checks
-      that sessionDate === today (exam is being submitted on
-      the correct calendar day).
-
-   C. _nextUnlockedDateLabel():
-      Now correctly skips dates <= today (not just < today)
-      when looking for the next UPCOMING session, so a
-      completed today does not re-appear as "next session".
-
-   D. renderSubjectSelection() off-day banner:
-      _isTodayATaskDay() already handles the check; no change
-      needed.  Documented for clarity.
-
-   E. No other logic changes from v3.
-   ─────────────────────────────────────────────────────────────
-   All other exam functionality (timer, navigation, KaTeX,
-   results display, sharing) is unchanged.
    ============================================================ */
 
 (function () {
@@ -289,6 +255,150 @@
       .toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   }
 
+   /* ══════════════════════════════════════════════════════════
+   _getGreeting(name)
+   ──────────────────────────────────────────────────────────
+   Returns a time-aware, occasionally witty greeting string.
+   Called by renderSubjectSelection() to personalise the
+   welcome header. No side-effects; pure function.
+
+   Time bands:
+     00:00–04:59  Late night / owl hours
+     05:00–06:29  Early bird / dawn
+     06:30–11:59  Morning (witty academic variants mixed in)
+     12:00–12:59  Noon
+     13:00–16:59  Afternoon
+     17:00–18:59  Early evening
+     19:00–20:59  Evening (prime study hours → academic wit)
+     21:00–22:59  Night study
+     23:00–23:59  Late night again
+
+   At certain bands a random roll decides whether to use a
+   witty academic line instead of the plain greeting so the
+   experience stays fresh without being annoying.
+   ══════════════════════════════════════════════════════════ */
+function _getGreeting(name) {
+  const hour   = new Date().getHours();
+  const minute = new Date().getMinutes();
+  const time   = hour + minute / 60; // fractional hour for easy range checks
+  const n      = _escHtml(name);
+
+  /* ── Witty academic pool ── */
+  const wittyMorning = [
+    `Rise and grind, ${n}! The exam won't pass itself.`,
+    `Good morning, ${n}! Neurons charged and ready?`,
+    `Morning, ${n}! Today's forecast: 100% chance of correct answers.`,
+    `Ah, ${n}! The early bird catches the A-grade. `,
+    `Up and at 'em, ${n}! Shakespeare didn't write itself either.`,
+    `Good morning, ${n}! Your future self is cheering you on.`,
+    `Morning, ${n}! Let's make those neurons dance.`,
+  ];
+
+  const wittyAfternoon = [
+    `Still going strong, ${n}? The afternoon slump is a myth!`,
+    `Good afternoon, ${n}! Half the day is yours — own it.`,
+    `Hey ${n}, afternoon fuel: focus + determination = results.`,
+    `Welcome back, ${n}! Post-lunch brain is a myth — prove it.`,
+    `Afternoon, ${n}! Every question answered is a step closer.`,
+    `Great to see you, ${n}! The grind doesn't take a lunch break.`,
+  ];
+
+  const wittyEvening = [
+    `Evening, ${n}! The great minds studied by lamplight too.`,
+    `Night owl mode activated, ${n}! 🦉`,
+    `Good evening, ${n}! The quiet hours belong to the dedicated.`,
+    `Welcome, ${n}! Even Newton had evening breakthroughs.`,
+    `Evening grind, ${n}! This is where legends are made.`,
+    `Hey ${n}, the library never judges. Neither do we.`,
+    `Burning the midnight oil early, ${n}? Respect.`,
+  ];
+
+  const wittyLateNight = [
+    `Still here, ${n}? Dedication level: extraordinary.`,
+    `Late night session, ${n}! Einstein approved of this hustle.`,
+    `Burning the midnight oil, ${n}? The results will show it.`,
+    `Night mode: ON. Sleep can wait, ${n}!`,
+    `${n}, the night is young and so is your potential.`,
+    `Midnight warrior, ${n}! Every minute counts.`,
+  ];
+
+  /* ── Pick a random item from an array ── */
+  function _pick(arr) {
+    return arr[Math.floor(Math.random() * arr.length)];
+  }
+
+  /* ── Should we show a witty line? (40% chance per render) ── */
+  const goWitty = Math.random() < 0.40;
+
+  /* ── Time-band logic ── */
+  if (time >= 0 && time < 5) {
+    // 00:00 – 04:59  Deep night
+    return goWitty
+      ? _pick(wittyLateNight)
+      : `Burning the midnight oil, ${n}? Let's go!`;
+  }
+
+  if (time >= 5 && time < 6.5) {
+    // 05:00 – 06:29  Dawn / early bird
+    return goWitty
+      ? _pick(wittyMorning)
+      : `You're up early, ${n}! The early bird catches the grade.`;
+  }
+
+  if (time >= 6.5 && time < 12) {
+    // 06:30 – 11:59  Morning
+    return goWitty
+      ? _pick(wittyMorning)
+      : `Good morning, ${n}!`;
+  }
+
+  if (time >= 12 && time < 13) {
+    // 12:00 – 12:59  Noon
+    const noonOptions = [
+      `Good afternoon, ${n}! Right on time.`,
+      `High noon, ${n}! Time to show what you know.`,
+      `Midday check-in, ${n}! Let's make this session count.`,
+    ];
+    return _pick(noonOptions);
+  }
+
+  if (time >= 13 && time < 17) {
+    // 13:00 – 16:59  Afternoon
+    return goWitty
+      ? _pick(wittyAfternoon)
+      : `Good afternoon, ${n}!`;
+  }
+
+  if (time >= 17 && time < 19) {
+    // 17:00 – 18:59  Early evening
+    const earlyEveOptions = [
+      `Evening, ${n}! The day's work isn't done yet.`,
+      `Good evening, ${n}! Prime study hours ahead.`,
+      `Hey ${n}, the evening session awaits!`,
+    ];
+    return goWitty ? _pick(wittyEvening) : _pick(earlyEveOptions);
+  }
+
+  if (time >= 19 && time < 21) {
+    // 19:00 – 20:59  Evening — prime academic hustle hours
+    return goWitty
+      ? _pick(wittyEvening)
+      : `Good evening, ${n}!`;
+  }
+
+  if (time >= 21 && time < 23) {
+    // 21:00 – 22:59  Night study
+    return goWitty
+      ? _pick(wittyLateNight)
+      : `Night study session, ${n}! Keep pushing.`;
+  }
+
+  // 23:00 – 23:59  Late night
+  return goWitty
+    ? _pick(wittyLateNight)
+    : `Late night hustle, ${n}! Respect the dedication.`;
+}
+   
   /* ══════════════════════════════════════════════════════════
      renderSubjectSelection
      ══════════════════════════════════════════════════════════ */
@@ -452,7 +562,7 @@
       UI.mount(`
         <div class="max-w-4xl mx-auto glass p-6 mt-6 rounded-2xl text-center animate-fadeIn">
           <div class="mb-5">
-            <h1 class="text-2xl font-bold mb-1">Welcome, ${_escHtml(S().studentData.name)}!</h1>
+            <h1 class="text-2xl font-bold mb-1">${_getGreeting(S().studentData.name)}</h1>
             <p class="text-sm text-gray-500">
               ${_escHtml(S().studentData.class)} &bull; ${_escHtml(S().studentData.school)}
             </p>
