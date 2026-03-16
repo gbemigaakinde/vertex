@@ -35,7 +35,7 @@ firebase.initializeApp({
 
 const _fcmMessaging = firebase.messaging();
 
-const CACHE_VERSION = 'v1.2.3';
+const CACHE_VERSION = 'v1.2.4';
 const STATIC_CACHE  = `static-${CACHE_VERSION}`;
 const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
 
