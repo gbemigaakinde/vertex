@@ -10,6 +10,15 @@
   const CFG = () => AppConfig;
 
   /* ══════════════════════════════════════════════════════════
+     FIX: Declare _questionRenderedAt at module scope.
+     Without this declaration, assigning to it inside
+     renderExam() throws a ReferenceError in strict mode,
+     which crashes renderExam() and surfaces as
+     "Failed to start exam."
+     ══════════════════════════════════════════════════════════ */
+  let _questionRenderedAt = 0;
+
+  /* ══════════════════════════════════════════════════════════
      LaTeX preprocessor
      ══════════════════════════════════════════════════════════ */
   function preprocessLatex(str) {
@@ -53,16 +62,6 @@
 
   /* ══════════════════════════════════════════════════════════
      _examDurationMs()
-     ──────────────────────────────────────────────────────────
-     Single source of truth for the exam duration at runtime.
-     Priority:
-       1. exam.durationMs  — stamped onto the exam doc at
-                             startExam() from the task config;
-                             persisted to Firestore so it
-                             survives page reloads.
-       2. currentTaskConfig.durationMs — task-level override
-                             set by the teacher.
-       3. AppConfig.EXAM_DURATION_MS — system default (2 h).
      ══════════════════════════════════════════════════════════ */
   function _examDurationMs() {
     const fromExam = S().exam && typeof S().exam.durationMs === 'number' && S().exam.durationMs > 0
@@ -107,7 +106,7 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     _todayStr  — canonical local date string for today
+     _todayStr
      ══════════════════════════════════════════════════════════ */
   function _todayStr() {
     return (window.Tasks && Tasks._localDateStr)
@@ -120,14 +119,6 @@
 
   /* ══════════════════════════════════════════════════════════
      _getRestrictedSubjectsForToday
-     ──────────────────────────────────────────────────────────
-     Returns the subjects the teacher has restricted for today,
-     or null if there is no restriction.
-
-     Delegates to Tasks._resolveSubjectsForDate which handles:
-       • YYYY-MM-DD keyed dateSubjects (new format)
-       • Day-name keyed dateSubjects   (legacy format)
-       • All three recurrence modes (once / weekly / range)
      ══════════════════════════════════════════════════════════ */
   function _getRestrictedSubjectsForToday() {
     const taskCfg = S().currentTaskConfig || {};
@@ -140,7 +131,6 @@
       return Array.isArray(subjects) && subjects.length > 0 ? subjects : null;
     }
 
-    // Fallback (should not reach here in normal operation)
     if (taskCfg.dateSubjects && typeof taskCfg.dateSubjects === 'object') {
       const todaySubjects = taskCfg.dateSubjects[today];
       if (Array.isArray(todaySubjects) && todaySubjects.length > 0) return todaySubjects;
@@ -191,17 +181,7 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     _isTodayTaskDayCompleted()
-     ──────────────────────────────────────────────────────────
-     Returns true when ALL of the following hold:
-       • There is an active task config
-       • Today is one of the task's scheduled dates
-       • The student has already completed today's session
-         (coachingCompleted[todayStr] is truthy)
-
-     Used by renderSubjectSelection to lock the Start Exam
-     button so a student cannot take the same task session
-     twice in the same calendar day.
+     _isTodayTaskDayCompleted
      ══════════════════════════════════════════════════════════ */
   function _isTodayTaskDayCompleted() {
     const taskCfg = S().currentTaskConfig;
@@ -215,10 +195,7 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     _isTodayATaskDay()
-     ──────────────────────────────────────────────────────────
-     Returns true when today is one of the task's scheduled
-     dates, regardless of whether the student has completed it.
+     _isTodayATaskDay
      ══════════════════════════════════════════════════════════ */
   function _isTodayATaskDay() {
     const taskCfg = S().currentTaskConfig;
@@ -229,14 +206,7 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     _nextUnlockedDateLabel()
-     ──────────────────────────────────────────────────────────
-     Returns a human-readable label for the next scheduled
-     task date that is strictly AFTER today and not yet
-     completed.  Returns null if there is no such date.
-
-     FIX: uses d > today (strictly after) so a date that was
-     completed today is not re-shown as "next session".
+     _nextUnlockedDateLabel
      ══════════════════════════════════════════════════════════ */
   function _nextUnlockedDateLabel() {
     const taskCfg = S().currentTaskConfig;
@@ -246,7 +216,6 @@
     const dates     = Array.isArray(taskCfg.dates) ? taskCfg.dates : [];
     const completed = (S().studentData && S().studentData.coachingCompleted) || {};
 
-    // Find the first future date that is not yet completed
     const next = dates.find(d => d > today && !completed[d]);
     if (!next) return null;
 
@@ -255,164 +224,114 @@
       .toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   }
 
-   /* ══════════════════════════════════════════════════════════
-   _getGreeting(name)
-   ──────────────────────────────────────────────────────────
-   Returns a time-aware, occasionally witty greeting string.
-   Called by renderSubjectSelection() to personalise the
-   welcome header. No side-effects; pure function.
+  /* ══════════════════════════════════════════════════════════
+     _getGreeting(name)
+     ══════════════════════════════════════════════════════════ */
+  function _getGreeting(name) {
+    const hour   = new Date().getHours();
+    const minute = new Date().getMinutes();
+    const time   = hour + minute / 60;
+    const n      = _escHtml(name);
 
-   Time bands:
-     00:00–04:59  Late night / owl hours
-     05:00–06:29  Early bird / dawn
-     06:30–11:59  Morning (witty academic variants mixed in)
-     12:00–12:59  Noon
-     13:00–16:59  Afternoon
-     17:00–18:59  Early evening
-     19:00–20:59  Evening (prime study hours → academic wit)
-     21:00–22:59  Night study
-     23:00–23:59  Late night again
-
-   At certain bands a random roll decides whether to use a
-   witty academic line instead of the plain greeting so the
-   experience stays fresh without being annoying.
-   ══════════════════════════════════════════════════════════ */
-function _getGreeting(name) {
-  const hour   = new Date().getHours();
-  const minute = new Date().getMinutes();
-  const time   = hour + minute / 60; // fractional hour for easy range checks
-  const n      = _escHtml(name);
-
-  /* ── Witty academic pool ── */
-  const wittyMorning = [
-    `Rise and grind, ${n}! The exam won't pass itself.`,
-    `Good morning, ${n}! Neurons charged and ready?`,
-    `Morning, ${n}! Today's forecast: 100% chance of correct answers.`,
-    `Ah, ${n}! The early bird catches the A-grade. `,
-    `Up and at 'em, ${n}! Shakespeare didn't write itself either.`,
-    `Good morning, ${n}! Your future self is cheering you on.`,
-    `Morning, ${n}! Let's make those neurons dance.`,
-  ];
-
-  const wittyAfternoon = [
-    `Still going strong, ${n}? The afternoon slump is a myth!`,
-    `Good afternoon, ${n}! Half the day is yours — own it.`,
-    `Hey ${n}, afternoon fuel: focus + determination = results.`,
-    `Welcome back, ${n}! Post-lunch brain is a myth — prove it.`,
-    `Afternoon, ${n}! Every question answered is a step closer.`,
-    `Great to see you, ${n}! The grind doesn't take a lunch break.`,
-  ];
-
-  const wittyEvening = [
-    `Evening, ${n}! The great minds studied by lamplight too.`,
-    `Night owl mode activated, ${n}! 🦉`,
-    `Good evening, ${n}! The quiet hours belong to the dedicated.`,
-    `Welcome, ${n}! Even Newton had evening breakthroughs.`,
-    `Evening grind, ${n}! This is where legends are made.`,
-    `Hey ${n}, the library never judges. Neither do we.`,
-    `Burning the midnight oil early, ${n}? Respect.`,
-  ];
-
-  const wittyLateNight = [
-    `Still here, ${n}? Dedication level: extraordinary.`,
-    `Late night session, ${n}! Einstein approved of this hustle.`,
-    `Burning the midnight oil, ${n}? The results will show it.`,
-    `Night mode: ON. Sleep can wait, ${n}!`,
-    `${n}, the night is young and so is your potential.`,
-    `Midnight warrior, ${n}! Every minute counts.`,
-  ];
-
-  /* ── Pick a random item from an array ── */
-  function _pick(arr) {
-    return arr[Math.floor(Math.random() * arr.length)];
-  }
-
-  /* ── Should we show a witty line? (40% chance per render) ── */
-  const goWitty = Math.random() < 0.40;
-
-  /* ── Time-band logic ── */
-  if (time >= 0 && time < 5) {
-    // 00:00 – 04:59  Deep night
-    return goWitty
-      ? _pick(wittyLateNight)
-      : `Burning the midnight oil, ${n}? Let's go!`;
-  }
-
-  if (time >= 5 && time < 6.5) {
-    // 05:00 – 06:29  Dawn / early bird
-    return goWitty
-      ? _pick(wittyMorning)
-      : `You're up early, ${n}! The early bird catches the grade.`;
-  }
-
-  if (time >= 6.5 && time < 12) {
-    // 06:30 – 11:59  Morning
-    return goWitty
-      ? _pick(wittyMorning)
-      : `Good morning, ${n}!`;
-  }
-
-  if (time >= 12 && time < 13) {
-    // 12:00 – 12:59  Noon
-    const noonOptions = [
-      `Good afternoon, ${n}! Right on time.`,
-      `High noon, ${n}! Time to show what you know.`,
-      `Midday check-in, ${n}! Let's make this session count.`,
+    const wittyMorning = [
+      `Rise and grind, ${n}! The exam won't pass itself.`,
+      `Good morning, ${n}! Neurons charged and ready?`,
+      `Morning, ${n}! Today's forecast: 100% chance of correct answers.`,
+      `Ah, ${n}! The early bird catches the A-grade.`,
+      `Up and at 'em, ${n}! Shakespeare didn't write itself either.`,
+      `Good morning, ${n}! Your future self is cheering you on.`,
+      `Morning, ${n}! Let's make those neurons dance.`,
     ];
-    return _pick(noonOptions);
-  }
 
-  if (time >= 13 && time < 17) {
-    // 13:00 – 16:59  Afternoon
-    return goWitty
-      ? _pick(wittyAfternoon)
-      : `Good afternoon, ${n}!`;
-  }
-
-  if (time >= 17 && time < 19) {
-    // 17:00 – 18:59  Early evening
-    const earlyEveOptions = [
-      `Evening, ${n}! The day's work isn't done yet.`,
-      `Good evening, ${n}! Prime study hours ahead.`,
-      `Hey ${n}, the evening session awaits!`,
+    const wittyAfternoon = [
+      `Still going strong, ${n}? The afternoon slump is a myth!`,
+      `Good afternoon, ${n}! Half the day is yours — own it.`,
+      `Hey ${n}, afternoon fuel: focus + determination = results.`,
+      `Welcome back, ${n}! Post-lunch brain is a myth — prove it.`,
+      `Afternoon, ${n}! Every question answered is a step closer.`,
+      `Great to see you, ${n}! The grind doesn't take a lunch break.`,
     ];
-    return goWitty ? _pick(wittyEvening) : _pick(earlyEveOptions);
+
+    const wittyEvening = [
+      `Evening, ${n}! The great minds studied by lamplight too.`,
+      `Night owl mode activated, ${n}! 🦉`,
+      `Good evening, ${n}! The quiet hours belong to the dedicated.`,
+      `Welcome, ${n}! Even Newton had evening breakthroughs.`,
+      `Evening grind, ${n}! This is where legends are made.`,
+      `Hey ${n}, the library never judges. Neither do we.`,
+      `Burning the midnight oil early, ${n}? Respect.`,
+    ];
+
+    const wittyLateNight = [
+      `Still here, ${n}? Dedication level: extraordinary.`,
+      `Late night session, ${n}! Einstein approved of this hustle.`,
+      `Burning the midnight oil, ${n}? The results will show it.`,
+      `Night mode: ON. Sleep can wait, ${n}!`,
+      `${n}, the night is young and so is your potential.`,
+      `Midnight warrior, ${n}! Every minute counts.`,
+    ];
+
+    function _pick(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    const goWitty = Math.random() < 0.40;
+
+    if (time >= 0 && time < 5) {
+      return goWitty ? _pick(wittyLateNight) : `Burning the midnight oil, ${n}? Let's go!`;
+    }
+    if (time >= 5 && time < 6.5) {
+      return goWitty ? _pick(wittyMorning) : `You're up early, ${n}! The early bird catches the grade.`;
+    }
+    if (time >= 6.5 && time < 12) {
+      return goWitty ? _pick(wittyMorning) : `Good morning, ${n}!`;
+    }
+    if (time >= 12 && time < 13) {
+      const noonOptions = [
+        `Good afternoon, ${n}! Right on time.`,
+        `High noon, ${n}! Time to show what you know.`,
+        `Midday check-in, ${n}! Let's make this session count.`,
+      ];
+      return _pick(noonOptions);
+    }
+    if (time >= 13 && time < 17) {
+      return goWitty ? _pick(wittyAfternoon) : `Good afternoon, ${n}!`;
+    }
+    if (time >= 17 && time < 19) {
+      const earlyEveOptions = [
+        `Evening, ${n}! The day's work isn't done yet.`,
+        `Good evening, ${n}! Prime study hours ahead.`,
+        `Hey ${n}, the evening session awaits!`,
+      ];
+      return goWitty ? _pick(wittyEvening) : _pick(earlyEveOptions);
+    }
+    if (time >= 19 && time < 21) {
+      return goWitty ? _pick(wittyEvening) : `Good evening, ${n}!`;
+    }
+    if (time >= 21 && time < 23) {
+      return goWitty ? _pick(wittyLateNight) : `Night study session, ${n}! Keep pushing.`;
+    }
+    return goWitty ? _pick(wittyLateNight) : `Late night hustle, ${n}! Respect the dedication.`;
   }
 
-  if (time >= 19 && time < 21) {
-    // 19:00 – 20:59  Evening — prime academic hustle hours
-    return goWitty
-      ? _pick(wittyEvening)
-      : `Good evening, ${n}!`;
-  }
-
-  if (time >= 21 && time < 23) {
-    // 21:00 – 22:59  Night study
-    return goWitty
-      ? _pick(wittyLateNight)
-      : `Night study session, ${n}! Keep pushing.`;
-  }
-
-  // 23:00 – 23:59  Late night
-  return goWitty
-    ? _pick(wittyLateNight)
-    : `Late night hustle, ${n}! Respect the dedication.`;
-}
-   
   /* ══════════════════════════════════════════════════════════
      renderSubjectSelection
      ══════════════════════════════════════════════════════════ */
   async function renderSubjectSelection() {
     try {
       const classKey = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
-      const _qBank   = window.questions || (typeof questions !== 'undefined' ? questions : {});
+
+      /* FIX: Consistently resolve the question bank from window.questions.
+         The original code used two different patterns in different functions.
+         This single line is used everywhere now. */
+      const _qBank = window.questions || {};
+
       if (!_qBank[classKey]) {
         console.error('[exam] No questions for classKey:', classKey, '| keys:', Object.keys(_qBank));
         UI.toast(`No subjects found for class "${S().studentData.class}". Contact Master Timothy.`, 'error', 0);
         return;
       }
 
-      // ── Task completion lock ──────────────────────────────
       const todayTaskDone = _isTodayTaskDayCompleted();
 
       const allAvailable    = Object.keys(_qBank[classKey]);
@@ -438,7 +357,6 @@ function _getGreeting(name) {
           </div>`;
       }
 
-      // Subject restriction banner (only shown when task is active and today IS a task day)
       const restrictionBannerHtml = restrictedSubjs
         ? `<div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:1rem;
                        background:var(--warning-bg,#fff9db);border:1px solid var(--warning-border,#ffec99);
@@ -458,9 +376,6 @@ function _getGreeting(name) {
            </div>`
         : '';
 
-      // Off-day awareness banner:
-      // Shown when there is an active task, today is NOT a scheduled task day,
-      // and there IS a future scheduled date coming up.
       const taskCfgForBanner = S().currentTaskConfig;
       const offDayNextLabel  = _nextUnlockedDateLabel();
       const offDayBannerHtml = (
@@ -487,7 +402,6 @@ function _getGreeting(name) {
       let subjectsHtml;
 
       if (todayTaskDone) {
-        // ── LOCKED: student already submitted today's required session ──
         const nextLabel = _nextUnlockedDateLabel();
         const nextLine  = nextLabel
           ? `Your next session opens on <strong>${nextLabel}</strong>.`
@@ -522,7 +436,6 @@ function _getGreeting(name) {
               : 'No subjects available for your class.'}
           </p>`;
       } else if (restrictedSubjs) {
-        // Today is a task day with subject restrictions — subjects are pre-selected
         const enoughSubjects = available.length >= 2;
         subjectsHtml = `
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
@@ -544,7 +457,6 @@ function _getGreeting(name) {
                  At least 2 are needed. Please contact Master Timothy.
                </p>`}`;
       } else {
-        // Free practice or task day with no subject restriction — student chooses
         subjectsHtml = `
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             ${allAvailable.map(subj => `
@@ -603,12 +515,12 @@ function _getGreeting(name) {
 
       Tasks.renderTasksHTML();
 
-// Restore the notification badge if there are unread reply notifications
-if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updateChatBadge) {
-  requestAnimationFrame(function () {
-    Chat._updateChatBadge(AppState.chatUnread);
-  });
-}
+      // Restore the notification badge if there are unread reply notifications
+      if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updateChatBadge) {
+        requestAnimationFrame(function () {
+          Chat._updateChatBadge(AppState.chatUnread);
+        });
+      }
 
       if (!restrictedSubjs && !todayTaskDone) {
         document.querySelectorAll('.subject-checkbox').forEach(cb => {
@@ -640,10 +552,6 @@ if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updat
   async function startExam() {
     if (_startExamLock) return;
 
-    // Defence-in-depth: always re-check lock at call time,
-    // even if the Firestore snapshot hasn't updated yet.
-    // _isTodayTaskDayCompleted() reads AppState.studentData.coachingCompleted
-    // which is now updated in-memory immediately in submitExam() (Fix 1).
     if (_isTodayTaskDayCompleted()) {
       UI.toast("You've already completed today's required session.", 'warning');
       await renderSubjectSelection();
@@ -657,14 +565,15 @@ if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updat
     }
 
     const classKey = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
-    const _qBank   = window.questions;
 
-    if (!_qBank || !_qBank[classKey]) {
+    /* FIX: Use window.questions consistently — same as renderSubjectSelection */
+    const _qBank = window.questions || {};
+
+    if (!_qBank[classKey]) {
       UI.toast(`No subjects found for class "${S().studentData.class}". Contact Master Timothy.`, 'error', 0);
       return;
     }
 
-    // Re-check restriction at start time (defence-in-depth)
     const restrictedSubjs = _getRestrictedSubjectsForToday();
     const finalChosen     = restrictedSubjs
       ? chosen.filter(s => restrictedSubjs.includes(s))
@@ -716,12 +625,6 @@ if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updat
       _startExamLock = false;
     } finally {
       if (document.getElementById('startExamBtn')) UI.setLoading(btn, false);
-      // NOTE: _startExamLock is intentionally NOT released here on success.
-      // It stays true for the duration of the exam session so the Start
-      // button cannot be triggered again while an exam is in progress.
-      // It is reset to false only when submitExam() releases _submitLock,
-      // or on page reload (module re-evaluation).
-      // For the error case it is released in the catch block above.
     }
   }
 
@@ -763,49 +666,44 @@ if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updat
     requestAnimationFrame(() => { modal.scrollTop = 0; });
   }
 
-/* ══════════════════════════════════════════════════════════
-   _setupVisibilityGuard
-   Counts tab minimize/hide events during an active exam.
-   1st hide: silent.
-   2nd hide: warning toast.
-   3rd hide: auto-submit immediately.
-   ══════════════════════════════════════════════════════════ */
-let _visibilityHideCount = 0;
-let _visibilityHandler   = null;
+  /* ══════════════════════════════════════════════════════════
+     _setupVisibilityGuard
+     ══════════════════════════════════════════════════════════ */
+  let _visibilityHideCount = 0;
+  let _visibilityHandler   = null;
 
-function _setupVisibilityGuard() {
-  // Clean up any previous listener first
-  _teardownVisibilityGuard();
-  _visibilityHideCount = 0;
+  function _setupVisibilityGuard() {
+    _teardownVisibilityGuard();
+    _visibilityHideCount = 0;
 
-  _visibilityHandler = function () {
-    if (document.visibilityState !== 'hidden') return;
+    _visibilityHandler = function () {
+      if (document.visibilityState !== 'hidden') return;
 
-    _visibilityHideCount++;
+      _visibilityHideCount++;
 
-    if (_visibilityHideCount === 2) {
-      UI.toast(
-        '⚠️ Warning: If you minimize again, your exam will be submitted automatically.',
-        'warning',
-        6000
-      );
-    } else if (_visibilityHideCount >= 3) {
-      _teardownVisibilityGuard();
-      UI.toast('Exam auto-submitted: tab hidden too many times.', 'error', 0);
-      submitExam(true);
-    }
-  };
+      if (_visibilityHideCount === 2) {
+        UI.toast(
+          '⚠️ Warning: If you minimize again, your exam will be submitted automatically.',
+          'warning',
+          6000
+        );
+      } else if (_visibilityHideCount >= 3) {
+        _teardownVisibilityGuard();
+        UI.toast('Exam auto-submitted: tab hidden too many times.', 'error', 0);
+        submitExam(true);
+      }
+    };
 
-  document.addEventListener('visibilitychange', _visibilityHandler);
-}
-
-function _teardownVisibilityGuard() {
-  if (_visibilityHandler) {
-    document.removeEventListener('visibilitychange', _visibilityHandler);
-    _visibilityHandler = null;
+    document.addEventListener('visibilitychange', _visibilityHandler);
   }
-  _visibilityHideCount = 0;
-}
+
+  function _teardownVisibilityGuard() {
+    if (_visibilityHandler) {
+      document.removeEventListener('visibilitychange', _visibilityHandler);
+      _visibilityHandler = null;
+    }
+    _visibilityHideCount = 0;
+  }
 
   /* ══════════════════════════════════════════════════════════
      beginExam
@@ -832,15 +730,15 @@ function _teardownVisibilityGuard() {
     }
 
     _startTimer();
-  _setupVisibilityGuard();
-  renderExam();
+    _setupVisibilityGuard();
+    renderExam();
   }
 
   /* ══════════════════════════════════════════════════════════
      renderExam
      ══════════════════════════════════════════════════════════ */
   function renderExam() {
-    _questionRenderedAt = Date.now(); // ← stamp when this question loaded
+    _questionRenderedAt = Date.now(); // now safe — declared at top of IIFE
     const exam = S().exam;
     if (!exam) return;
 
@@ -993,11 +891,11 @@ function _teardownVisibilityGuard() {
     const elapsed = Date.now() - _questionRenderedAt;
     if (elapsed < 3000) {
       UI.toast(
-        '⚠️ You\'re moving too fast! Take a moment to read the question carefully.',
+        "⚠️ You're moving too fast! Take a moment to read the question carefully.",
         'warning',
         3500
       );
-      return; // block navigation
+      return;
     }
 
     const exam  = S().exam;
@@ -1052,7 +950,6 @@ function _teardownVisibilityGuard() {
     const sec = String(Math.floor((remaining % 60_000) / 1_000)).padStart(2, '0');
     el.textContent = `${h}:${m}:${sec}`;
 
-    // Red at last 8% of duration, yellow at last 25%
     const redThreshold    = duration * 0.08;
     const yellowThreshold = duration * 0.25;
     el.className = remaining < redThreshold ? 'timer-red'
@@ -1062,19 +959,6 @@ function _teardownVisibilityGuard() {
 
   /* ══════════════════════════════════════════════════════════
      submitExam
-     ──────────────────────────────────────────────────────────
-     Computes results, writes to Firestore, and credits the
-     coaching task completion for sessionDate when applicable.
-
-     Task-completion credit rules:
-       • sessionDate must be one of the task's scheduled dates
-         (checked via taskCfg.dates[], which includes all dates
-         past and future after _expandTaskDoc runs).
-       • No same-day check: if a student started on a task day
-         and submits the next day, we still credit sessionDate
-         because that is the day they sat the exam.
-       • Free-practice exams (no matching task date) receive no
-         completion credit.
      ══════════════════════════════════════════════════════════ */
   let _submitLock = false;
 
@@ -1138,10 +1022,6 @@ function _teardownVisibilityGuard() {
 
       await batch.commit();
 
-      // ── FIX: Update AppState in memory immediately so the lock works
-      //    instantly on "New Exam" click, without waiting for the Firestore
-      //    snapshot to round-trip back. The snapshot listener will also fire
-      //    and confirm the same value — this is just a defensive early update.
       if (isTaskDay) {
         if (!S().studentData) S().studentData = {};
         if (!S().studentData.coachingCompleted) S().studentData.coachingCompleted = {};
@@ -1150,7 +1030,7 @@ function _teardownVisibilityGuard() {
 
       S().exam        = null;
       S().examStartMs = null;
-      _startExamLock  = false;  // ← ADD THIS LINE
+      _startExamLock  = false;
 
       renderResults(exam, result);
 
