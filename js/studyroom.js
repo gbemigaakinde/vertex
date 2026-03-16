@@ -573,7 +573,7 @@
     const prev = _siblingLessons[idx - 1];
     return `<button class="sr-topbar__back sr-lesson-nav-btn"
                     title="${_esc(prev.title)}"
-                    onclick="StudyRoom._openLesson('${_esc(prev.id)}')">← ${_esc(prev.title)}</button>`;
+                    onclick="StudyRoom._openLesson('${_esc(prev.id)}')">←&nbsp;<span class="sr-lesson-nav-btn__label">${_esc(prev.title)}</span></button>`;
   }
 
   function _nextLessonBtn(lesson) {
@@ -582,7 +582,7 @@
     const next = _siblingLessons[idx + 1];
     return `<button class="btn sr-lesson-nav-btn"
                     title="${_esc(next.title)}"
-                    onclick="StudyRoom._openLesson('${_esc(next.id)}')">${_esc(next.title)} →</button>`;
+                    onclick="StudyRoom._openLesson('${_esc(next.id)}')"><span class="sr-lesson-nav-btn__label">${_esc(next.title)}</span>&nbsp;→</button>`;
   }
 
   /* ══════════════════════════════════════════════════
