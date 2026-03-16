@@ -63,6 +63,7 @@ const STATIC_ASSETS = [
   '/js/teacher.js',
   '/js/exam.js',
   '/js/studyroom.js',
+  '/css/studyroom.css',
   '/js/app.js',
   '/js/notifications.js',
   '/data/questions.js',
