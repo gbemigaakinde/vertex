@@ -285,8 +285,6 @@
   min-width: 0;
   /* overflow-x must stay visible so tables can scroll horizontally */
   overflow-x: visible;
-  word-break: break-word;
-  overflow-wrap: break-word;
 }
 
 .sr-content h1, .sr-content h2, .sr-content h3,
@@ -377,9 +375,6 @@
   border: 1px solid var(--border);
   padding: 0.5em 0.875em;
   text-align: left;
-  /* FIX: cell content wraps */
-  word-break: break-word;
-  overflow-wrap: break-word;
 }
 
 .sr-content tbody tr:nth-child(even) { background: var(--surface-subtle); }
