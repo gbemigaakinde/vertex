@@ -12,7 +12,9 @@
    ============================================================ */
 
 .sr-shell {
-  height: 100vh;
+  /* Use dvh only — it accounts for Safari's dynamic toolbar.
+     100vh on iOS Safari = full height including the hidden toolbar,
+     which pushes content off the visible screen. */
   height: 100dvh;
   display: flex;
   flex-direction: column;
@@ -21,6 +23,10 @@
 }
 
 .sr-topbar {
+  /* Sticky so it never scrolls off screen even if the shell
+     height is miscalculated by the browser */
+  position: sticky;
+  top: 0;
   flex-shrink: 0;
   z-index: 50;
   background: var(--surface);
@@ -34,7 +40,6 @@
   flex-wrap: nowrap;
   box-shadow: var(--shadow-sm);
   min-height: 3rem;
-  /* FIX: prevent topbar from being stretched by its children */
   overflow: hidden;
   min-width: 0;
 }
@@ -622,7 +627,7 @@
   flex: 1 1 0;
   min-height: 0;
   overflow-y: auto;
-  overflow-x: hidden; /* FIX: browser panel must not scroll horizontally */
+  overflow-x: hidden;
 }
 
 .sr-browser {
