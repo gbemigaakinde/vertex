@@ -840,6 +840,7 @@ function _teardownVisibilityGuard() {
      renderExam
      ══════════════════════════════════════════════════════════ */
   function renderExam() {
+    _questionRenderedAt = Date.now(); // ← stamp when this question loaded
     const exam = S().exam;
     if (!exam) return;
 
@@ -989,6 +990,16 @@ function _teardownVisibilityGuard() {
   }
 
   function nextQuestion() {
+    const elapsed = Date.now() - _questionRenderedAt;
+    if (elapsed < 3000) {
+      UI.toast(
+        '⚠️ You\'re moving too fast! Take a moment to read the question carefully.',
+        'warning',
+        3500
+      );
+      return; // block navigation
+    }
+
     const exam  = S().exam;
     const qList = exam.questions[exam.currentSubject];
     if (exam.currentIndex < qList.length - 1) {
