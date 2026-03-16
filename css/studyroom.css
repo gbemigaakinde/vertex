@@ -254,14 +254,26 @@
   width: 100%;
 }
 
-/* Prev/Next lesson buttons — cap width and truncate long titles */
+/*
+ * Prev/Next lesson buttons.
+ * text-overflow:ellipsis on an inline-flex button itself doesn't work
+ * reliably — the button shrinks but the text visually clips or "zooms".
+ * The button is capped with max-width and overflow:hidden, and a child
+ * <span class="sr-lesson-nav-btn__label"> does the actual truncation.
+ */
 .sr-lesson-nav-btn {
-  max-width: 260px !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
-  flex-shrink: 1 !important;
-  min-width: 0 !important;
+  max-width: 260px;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.sr-lesson-nav-btn__label {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 
 /* ============================================================
@@ -270,9 +282,9 @@
 
 .sr-content {
   color: var(--text-primary);
-  /* FIX: content box must not overflow its container */
   min-width: 0;
-  overflow-x: hidden;
+  /* overflow-x must stay visible so tables can scroll horizontally */
+  overflow-x: visible;
   word-break: break-word;
   overflow-wrap: break-word;
 }
@@ -352,11 +364,10 @@
   border-collapse: collapse;
   margin-bottom: 1.25em;
   font-size: 0.9em;
+  /* display:block + overflow-x:auto lets the table be wider than the
+     content column and scroll horizontally — do NOT add max-width here */
   overflow-x: auto;
   display: block;
-  /* FIX: table block must not exceed content width */
-  max-width: 100%;
-  box-sizing: border-box;
 }
 
 .sr-content thead tr { background: var(--brand); color: #fff; }
@@ -940,8 +951,7 @@
 
   /* FIX: on mobile the bottom nav buttons need a tighter max-width */
   .sr-lesson-nav-btn {
-    max-width: 160px !important;
-    font-size: var(--text-xs) !important;
+    max-width: 160px;
   }
 }
 
