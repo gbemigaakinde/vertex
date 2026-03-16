@@ -464,14 +464,16 @@ function _renderTextWithMentions(rawText) {
       </div>
 
       <!-- Input row — position:relative so the dropdown can use bottom:100% -->
-      <div style="position:relative;display:flex;gap:.5rem;" id="chatInputWrap">
-        <input id="chatInput" type="text"
+      <div style="position:relative;display:flex;gap:.5rem;align-items:flex-end;" id="chatInputWrap">
+        <textarea id="chatInput"
                placeholder="${canSend ? 'Type a message… use @ to mention someone' : 'Chat is locked'}"
                autocomplete="off"
-               style="flex:1;"
-               ${canSend ? '' : 'disabled'} />
+               rows="1"
+               style="flex:1;resize:none;overflow-y:hidden;line-height:1.5;padding:.5625rem .75rem;min-height:36px;max-height:120px;border-radius:var(--r-md);font-family:var(--font);font-size:var(--text-base);"
+               ${canSend ? '' : 'disabled'}></textarea>
         <button id="sendBtn" onclick="Chat.sendMessage()"
                 class="btn bg-green-600 hover:bg-green-700"
+                style="flex-shrink:0;align-self:flex-end;"
                 ${canSend ? '' : 'disabled'}>Send</button>
       </div>
     </div>`);
@@ -488,11 +490,18 @@ function _renderTextWithMentions(rawText) {
       const suggestions = _mentionActive ? _getMentionSuggestions(_mentionQuery) : [];
       const handled = _handleMentionKeydown(e, suggestions);
       if (handled) return;
-      if (e.key === 'Enter') { e.preventDefault(); sendMessage(); }
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
     });
 
-    // ── Input: detect @ trigger and update mention dropdown ──
+    // ── Input: detect @ trigger, update mention dropdown, and auto-grow ──
     input.addEventListener('input', () => {
+      // Auto-grow textarea to fit content
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+      input.style.overflowY = input.scrollHeight > 120 ? 'auto' : 'hidden';
       const val   = input.value;
       const caret = input.selectionStart;
 
@@ -540,7 +549,7 @@ function _renderTextWithMentions(rawText) {
 }
 
 function _onOutsideClick(e) {
-  if (!e.target.closest('#mentionDropdown') && !e.target.closest('#chatInput')) {
+  if (!e.target.closest('#mentionDropdown') && !e.target.closest('#chatInputWrap')) {
     _destroyMentionDropdown();
   }
 }
