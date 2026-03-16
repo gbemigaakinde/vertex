@@ -498,7 +498,7 @@
       <div class="sr-sidebar__item${s.id === lesson.id ? ' is-active' : ''}"
            onclick="StudyRoom._openLesson('${_esc(s.id)}')">
         <span class="sr-sidebar__num">${s.order > 0 ? s.order : i + 1}</span>
-        <span class="sr-sidebar__name">${_esc(s.title)}</span>
+        <span class="sr-sidebar__name" title="${_esc(s.title)}">${_esc(s.title)}</span>
       </div>`).join('');
 
     const sidebarHeading = [lesson.subject, lesson.term].filter(Boolean).join(' — ');
@@ -510,8 +510,8 @@
         </div>
 
         <div class="sr-topbar" id="srTopbar">
-          <button class="sr-topbar__back" onclick="StudyRoom._backToBrowser()">← Lessons</button>
-          <span class="sr-topbar__title">${_esc(lesson.title)}</span>
+          <button class="sr-topbar__back" onclick="StudyRoom._backToBrowser()" title="Back to Lessons">← Lessons</button>
+          <span class="sr-topbar__title" title="${_esc(lesson.title)}">${_esc(lesson.title)}</span>
           <div class="sr-topbar__actions">
             <button class="sr-topbar__back" onclick="StudyRoom._togglePrefs()" id="srPrefsBtn">Aa</button>
           </div>
@@ -520,7 +520,7 @@
         <div class="sr-layout${hasSidebar ? '' : ' sr-layout--no-sidebar'}" id="srLayout">
           ${hasSidebar ? `
             <div class="sr-sidebar" id="srSidebar">
-              <div class="sr-sidebar__heading">${_esc(sidebarHeading)}</div>
+              <div class="sr-sidebar__heading" title="${_esc(sidebarHeading)}">${_esc(sidebarHeading)}</div>
               ${sidebarItems}
             </div>` : ''}
 
@@ -556,10 +556,9 @@
             ${renderedHtml}
           </div>
 
-          <div style="margin-top:var(--sp-8);padding-top:var(--sp-5);border-top:1px solid var(--border);
-                      display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:var(--sp-3);">
+          <div class="sr-lesson-footer">
             ${_prevLessonBtn(lesson)}
-            <span style="font-size:var(--text-xs);color:var(--text-disabled);">End of lesson</span>
+            <span style="font-size:var(--text-xs);color:var(--text-disabled);flex-shrink:0;">End of lesson</span>
             ${_nextLessonBtn(lesson)}
           </div>
         </div>
@@ -572,14 +571,18 @@
     const idx = _siblingLessons.findIndex(l => l.id === lesson.id);
     if (idx <= 0) return '<span></span>';
     const prev = _siblingLessons[idx - 1];
-    return `<button class="sr-topbar__back" onclick="StudyRoom._openLesson('${_esc(prev.id)}')">← ${_esc(prev.title)}</button>`;
+    return `<button class="sr-topbar__back sr-lesson-nav-btn"
+                    title="${_esc(prev.title)}"
+                    onclick="StudyRoom._openLesson('${_esc(prev.id)}')">← ${_esc(prev.title)}</button>`;
   }
 
   function _nextLessonBtn(lesson) {
     const idx = _siblingLessons.findIndex(l => l.id === lesson.id);
     if (idx < 0 || idx >= _siblingLessons.length - 1) return '<span></span>';
     const next = _siblingLessons[idx + 1];
-    return `<button class="btn" onclick="StudyRoom._openLesson('${_esc(next.id)}')">${_esc(next.title)} →</button>`;
+    return `<button class="btn sr-lesson-nav-btn"
+                    title="${_esc(next.title)}"
+                    onclick="StudyRoom._openLesson('${_esc(next.id)}')">${_esc(next.title)} →</button>`;
   }
 
   /* ══════════════════════════════════════════════════
