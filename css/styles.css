@@ -2252,8 +2252,9 @@ label.glass:has(.subject-checkbox:checked) {
   font-size: var(--text-sm) !important;
   align-items: center !important;
   gap: var(--sp-3) !important;
-  min-width: 0 !important;
+  width: 100% !important;
   max-width: 100% !important;
+  min-width: 0 !important;
   overflow: hidden !important;
   box-sizing: border-box !important;
 }
@@ -2261,13 +2262,17 @@ label.glass:has(.subject-checkbox:checked) {
 #replyPreview > div {
   flex: 1 1 0 !important;
   min-width: 0 !important;
+  width: 0 !important;
   overflow: hidden !important;
 }
 
 #replyPreview strong {
   font-size: var(--text-sm) !important;
   font-weight: 600 !important;
-  display: inline !important;
+  display: block !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 #replyPreview #replyName {
@@ -2283,6 +2288,7 @@ label.glass:has(.subject-checkbox:checked) {
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
+  width: 100% !important;
   max-width: 100% !important;
 }
 
