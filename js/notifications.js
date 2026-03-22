@@ -202,40 +202,35 @@
      firebase-messaging-sw.js as a second competing SW.
      ============================================================ */
   async function _requestTokenAndSave() {
-    try {
-      _messaging = firebase.messaging();
+  try {
+    _messaging = firebase.messaging();
 
-      /*
-       * Get the existing SW registration so FCM reuses it.
-       * This prevents firebase-messaging-sw.js from being
-       * registered as a second service worker competing with
-       * sw.js on the same scope '/'.
-       */
-      var swReg = await navigator.serviceWorker.getRegistration('/');
+    /*
+     * FIX: navigator.serviceWorker.ready is a Promise that resolves
+     * with the active ServiceWorkerRegistration once a SW is controlling
+     * the page. It never returns undefined, unlike getRegistration('/')
+     * which can return undefined if the SW hasn't activated yet, causing
+     * FCM to fall back to auto-registering firebase-messaging-sw.js
+     * (which is intentionally empty) and silently failing to get a token.
+     */
+    var swReg = await navigator.serviceWorker.ready;
 
-      /*
-       * getToken() does two things:
-       *  1. Shows the browser's native Allow/Block popup
-       *     (only if permission is still 'default').
-       *  2. Returns a unique token string for this device.
-       */
-      var token = await _messaging.getToken({
-        vapidKey: VAPID_KEY,
-        serviceWorkerRegistration: swReg,
-      });
+    var token = await _messaging.getToken({
+      vapidKey: VAPID_KEY,
+      serviceWorkerRegistration: swReg,
+    });
 
-      if (token) {
-        console.log('[notifications] Token obtained successfully.');
-        await _saveToken(token);
-        _listenForForegroundMessages();
-      } else {
-        console.warn('[notifications] No token returned — user may have blocked.');
-      }
-    } catch (err) {
-      /* Non-fatal. Happens if user clicks Block, or on iOS Safari. */
-      console.warn('[notifications] Could not get token (non-fatal):', err.message || err);
+    if (token) {
+      console.log('[notifications] Token obtained successfully.');
+      await _saveToken(token);
+      _listenForForegroundMessages();
+    } else {
+      console.warn('[notifications] No token returned — user may have blocked.');
     }
+  } catch (err) {
+    console.warn('[notifications] Could not get token (non-fatal):', err.message || err);
   }
+}
 
   /* ============================================================
      _saveToken(token)
