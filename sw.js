@@ -15,6 +15,13 @@
      firebase-messaging-sw.js as a competing SW on the same
      scope. firebase-messaging-sw.js is now redundant and can
      be kept as a fallback or removed.
+
+   UPDATE v3:
+   - Added /js/landing.js to the cached asset list so the
+     public homepage is available offline.
+   - Removed the duplicate STATIC_ASSETS declaration at the
+     top of the file (the array inside the install handler
+     is the authoritative list).
    ============================================================ */
 
 'use strict';
@@ -35,7 +42,7 @@ firebase.initializeApp({
 
 const _fcmMessaging = firebase.messaging();
 
-const CACHE_VERSION = 'v1.2.6';
+const CACHE_VERSION = 'v1.2.7';
 const STATIC_CACHE  = `static-${CACHE_VERSION}`;
 const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
 
@@ -47,30 +54,6 @@ const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
  * Firestore's IndexedDB lock, causing all db reads/writes to hang.
  */
 let _isFirstInstall = false;
-
-const STATIC_ASSETS = [
-  '/',
-  '/index.html',
-  '/offline.html',
-  '/manifest.json',
-  '/css/styles.css',
-  '/js/config.js',
-  '/js/state.js',
-  '/js/ui.js',
-  '/js/auth.js',
-  '/js/chat.js',
-  '/js/tasks.js',
-  '/js/teacher.js',
-  '/js/exam.js',
-  '/js/studyroom.js',
-  '/css/studyroom.css',
-  '/js/app.js',
-  '/js/landing.js',
-  '/js/notifications.js',
-  '/data/questions.js',
-  '/news-ticker.css',
-  '/news-ticker.js',
-];
 
 /*
  * These origins are never intercepted by this service worker.
@@ -113,6 +96,8 @@ self.addEventListener('install', event => {
         '/offline.html',
         '/manifest.json',
         '/css/styles.css',
+        '/css/modern.css',
+        '/css/studyroom.css',
         '/js/config.js',
         '/js/state.js',
         '/js/ui.js',
@@ -122,10 +107,10 @@ self.addEventListener('install', event => {
         '/js/teacher.js',
         '/js/exam.js',
         '/js/studyroom.js',
-        '/css/studyroom.css',
-        '/js/app.js',
         '/js/landing.js',
+        '/js/app.js',
         '/js/notifications.js',
+        '/js/installPrompt.js',
         '/data/questions.js',
         '/news-ticker.css',
         '/news-ticker.js',
