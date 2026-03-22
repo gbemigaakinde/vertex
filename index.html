@@ -9,7 +9,7 @@
   <meta name="author" content="Vertex Tutorial" />
 
   <!-- PWA -->
-  <meta name="theme-color" content="#3b5bdb" />
+  <meta name="theme-color" content="#1a1f36" />
   <meta name="color-scheme" content="light" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -25,14 +25,11 @@
   <link rel="stylesheet" href="news-ticker.css" />
   <link rel="stylesheet" href="css/styles.css" />
   <link rel="stylesheet" href="css/modern.css" />
-  <!-- Study Room styles — loaded after the base design system -->
   <link rel="stylesheet" href="css/studyroom.css" />
 
   <!--
     Tailwind CDN — layout utilities only.
-    The design system CSS in styles.css owns all visual
-    properties. Tailwind is used only for flex/grid/gap/
-    display utilities in JS template strings.
+    The design system CSS in styles.css owns all visual properties.
   -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -45,10 +42,7 @@
             },
           },
         },
-        // Disable Tailwind's preflight to prevent competing resets
-        corePlugins: {
-          preflight: false,
-        },
+        corePlugins: { preflight: false },
       };
     }
   </script>
@@ -58,17 +52,280 @@
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
           onload="window._katexAutoRenderReady = true;"></script>
+
+  <!-- ============================================================
+       LOADING SCREEN STYLES
+       Inlined here so they are available before ANY external CSS
+       loads. The loading screen must appear on the very first paint.
+       ============================================================ -->
+  <style>
+    /* ── Loading overlay ── */
+    #vtx-loader {
+      position: fixed;
+      inset: 0;
+      z-index: 99999;
+      background: #0d0f1e;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0;
+      font-family: 'Georgia', serif;
+      /* Fade out when .is-done is added */
+      transition: opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1),
+                  visibility 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+      opacity: 1;
+      visibility: visible;
+    }
+
+    #vtx-loader.is-done {
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+    }
+
+    /* Subtle grain texture overlay */
+    #vtx-loader::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    /* Faint radial glow behind the book */
+    #vtx-loader::after {
+      content: '';
+      position: absolute;
+      width: 420px;
+      height: 420px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(59, 91, 219, 0.18) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    /* ── Book container ── */
+    .vtx-book-wrap {
+      position: relative;
+      z-index: 1;
+      margin-bottom: 2.5rem;
+      animation: vtx-float 3s ease-in-out infinite;
+    }
+
+    /* The open book SVG illustration */
+    .vtx-book {
+      width: 96px;
+      height: 72px;
+      position: relative;
+    }
+
+    /* ── Page-turn animation ── */
+    .vtx-page {
+      position: absolute;
+      top: 0;
+      right: 50%;
+      width: 46px;
+      height: 68px;
+      transform-origin: right center;
+      transform-style: preserve-3d;
+      animation: vtx-page-turn 1.8s ease-in-out infinite;
+    }
+
+    .vtx-page:nth-child(2) { animation-delay: 0.3s; opacity: 0.7; }
+    .vtx-page:nth-child(3) { animation-delay: 0.6s; opacity: 0.45; }
+
+    @keyframes vtx-page-turn {
+      0%   { transform: rotateY(0deg);    }
+      40%  { transform: rotateY(-160deg); }
+      60%  { transform: rotateY(-160deg); }
+      100% { transform: rotateY(0deg);    }
+    }
+
+    @keyframes vtx-float {
+      0%, 100% { transform: translateY(0px); }
+      50%       { transform: translateY(-8px); }
+    }
+
+    /* ── Text below book ── */
+    .vtx-loader-title {
+      position: relative;
+      z-index: 1;
+      font-family: 'Georgia', 'Times New Roman', serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #f0f0f8;
+      margin-bottom: 0.375rem;
+      text-align: center;
+    }
+
+    .vtx-loader-subtitle {
+      position: relative;
+      z-index: 1;
+      font-family: 'Georgia', serif;
+      font-size: 0.75rem;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: rgba(160, 165, 200, 0.7);
+      margin-bottom: 2.25rem;
+      text-align: center;
+    }
+
+    /* ── Progress track ── */
+    .vtx-loader-track {
+      position: relative;
+      z-index: 1;
+      width: 180px;
+      height: 2px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 99px;
+      overflow: hidden;
+      margin-bottom: 1.25rem;
+    }
+
+    .vtx-loader-bar {
+      height: 100%;
+      width: 0%;
+      border-radius: 99px;
+      background: linear-gradient(90deg, #3b5bdb, #6b8cff);
+      transition: width 0.4s ease;
+      /* Also runs the shimmer independently */
+      position: relative;
+      overflow: hidden;
+    }
+
+    .vtx-loader-bar::after {
+      content: '';
+      position: absolute;
+      top: 0; left: -100%; bottom: 0;
+      width: 60%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      animation: vtx-shimmer 1.4s ease-in-out infinite;
+    }
+
+    @keyframes vtx-shimmer {
+      0%   { left: -60%; }
+      100% { left: 140%; }
+    }
+
+    /* ── Status text ── */
+    .vtx-loader-status {
+      position: relative;
+      z-index: 1;
+      font-family: 'Georgia', serif;
+      font-size: 0.6875rem;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: rgba(140, 145, 185, 0.65);
+      text-align: center;
+      min-height: 1em;
+      transition: opacity 0.3s ease;
+    }
+
+    /* Dot pulse loader (shown before progress bar fills) */
+    .vtx-dots {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 0.5rem;
+    }
+
+    .vtx-dot {
+      width: 5px;
+      height: 5px;
+      border-radius: 50%;
+      background: rgba(100, 120, 220, 0.6);
+      animation: vtx-dot-pulse 1.4s ease-in-out infinite;
+    }
+
+    .vtx-dot:nth-child(2) { animation-delay: 0.22s; }
+    .vtx-dot:nth-child(3) { animation-delay: 0.44s; }
+
+    @keyframes vtx-dot-pulse {
+      0%, 80%, 100% { transform: scale(1);   opacity: 0.5; }
+      40%            { transform: scale(1.5); opacity: 1;   }
+    }
+  </style>
 </head>
 
 <body>
 
+  <!-- ============================================================
+       LOADING SCREEN
+       This is hard-coded in HTML so it renders on the very first
+       paint — before Firebase, before JS modules, before fonts.
+       app.js calls window.VtxLoader.done() when the app is ready.
+       ============================================================ -->
+  <div id="vtx-loader" role="status" aria-label="Loading Vertex Tutorial">
+
+    <!-- Open book illustration (pure SVG, no external assets) -->
+    <div class="vtx-book-wrap">
+      <svg class="vtx-book" viewBox="0 0 96 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Book spine shadow -->
+        <line x1="48" y1="4" x2="48" y2="70" stroke="rgba(200,210,255,0.2)" stroke-width="1.5"/>
+
+        <!-- Left page -->
+        <path d="M48 8 Q24 6 4 12 L4 68 Q24 62 48 64 Z"
+              fill="rgba(255,255,255,0.06)"
+              stroke="rgba(160,175,255,0.3)"
+              stroke-width="1"/>
+        <!-- Left page lines -->
+        <line x1="12" y1="22" x2="40" y2="20" stroke="rgba(160,175,255,0.15)" stroke-width="1"/>
+        <line x1="12" y1="30" x2="40" y2="28" stroke="rgba(160,175,255,0.15)" stroke-width="1"/>
+        <line x1="12" y1="38" x2="40" y2="36" stroke="rgba(160,175,255,0.15)" stroke-width="1"/>
+        <line x1="12" y1="46" x2="36" y2="44" stroke="rgba(160,175,255,0.10)" stroke-width="1"/>
+        <line x1="12" y1="54" x2="32" y2="52" stroke="rgba(160,175,255,0.10)" stroke-width="1"/>
+
+        <!-- Right page -->
+        <path d="M48 8 Q72 6 92 12 L92 68 Q72 62 48 64 Z"
+              fill="rgba(255,255,255,0.06)"
+              stroke="rgba(160,175,255,0.3)"
+              stroke-width="1"/>
+        <!-- Right page lines -->
+        <line x1="56" y1="22" x2="84" y2="20" stroke="rgba(160,175,255,0.15)" stroke-width="1"/>
+        <line x1="56" y1="30" x2="84" y2="28" stroke="rgba(160,175,255,0.15)" stroke-width="1"/>
+        <line x1="56" y1="38" x2="84" y2="36" stroke="rgba(160,175,255,0.15)" stroke-width="1"/>
+        <line x1="56" y1="46" x2="80" y2="44" stroke="rgba(160,175,255,0.10)" stroke-width="1"/>
+        <line x1="56" y1="54" x2="76" y2="52" stroke="rgba(160,175,255,0.10)" stroke-width="1"/>
+
+        <!-- Turning page (animated via CSS) -->
+        <g class="vtx-page" style="transform-origin:48px 36px;">
+          <path d="M48 8 Q60 6 72 10 L72 66 Q60 62 48 64 Z"
+                fill="rgba(100,130,255,0.18)"
+                stroke="rgba(130,160,255,0.4)"
+                stroke-width="0.75"/>
+        </g>
+      </svg>
+    </div>
+
+    <!-- Brand name -->
+    <div class="vtx-loader-title">Vertex Tutorial</div>
+    <div class="vtx-loader-subtitle">Computer-Based Testing</div>
+
+    <!-- Dot pulse -->
+    <div class="vtx-dots" id="vtxDots">
+      <div class="vtx-dot"></div>
+      <div class="vtx-dot"></div>
+      <div class="vtx-dot"></div>
+    </div>
+
+    <!-- Progress bar (hidden until JS starts updating it) -->
+    <div class="vtx-loader-track" id="vtxTrack" style="opacity:0;transition:opacity 0.3s;">
+      <div class="vtx-loader-bar" id="vtxBar"></div>
+    </div>
+
+    <!-- Status text -->
+    <div class="vtx-loader-status" id="vtxStatus">Preparing your session&hellip;</div>
+
+  </div>
+
   <!-- Toast container -->
-  <div
-    id="toastContainer"
-    aria-live="polite"
-    aria-atomic="false"
-    role="status"
-  ></div>
+  <div id="toastContainer" aria-live="polite" aria-atomic="false" role="status"></div>
 
   <!-- Main app mount point -->
   <div id="app"></div>
@@ -84,7 +341,7 @@
     </p>
     <div style="display:flex;gap:8px;justify-content:center;">
       <button id="install-button"
-              style="background:#3b5bdb;color:white;border:none;padding:6px 16px;
+              style="background:#1a1f36;color:white;border:none;padding:6px 16px;
                      border-radius:6px;font-weight:600;cursor:pointer;font-family:Outfit,sans-serif;font-size:0.8125rem;">
         Install
       </button>
@@ -96,11 +353,75 @@
     </div>
   </div>
 
+  <!-- ============================================================
+       LOADER CONTROLLER
+       Exposed as window.VtxLoader so app.js can update progress
+       and dismiss the screen without importing anything.
+       ============================================================ -->
+  <script>
+    (function () {
+      'use strict';
+
+      var _bar    = document.getElementById('vtxBar');
+      var _track  = document.getElementById('vtxTrack');
+      var _status = document.getElementById('vtxStatus');
+      var _dots   = document.getElementById('vtxDots');
+      var _loader = document.getElementById('vtx-loader');
+      var _pct    = 0;
+      var _done   = false;
+
+      function _setProgress(pct, label) {
+        if (_done) return;
+        _pct = Math.min(100, Math.max(0, pct));
+
+        // Show the bar once we have real progress
+        if (_pct > 0 && _track) {
+          _track.style.opacity = '1';
+          if (_dots) _dots.style.opacity = '0';
+        }
+
+        if (_bar)    _bar.style.width  = _pct + '%';
+        if (_status && label) _status.textContent = label;
+      }
+
+      function _done_fn() {
+        if (_done) return;
+        _done = true;
+        _setProgress(100, 'Ready');
+
+        // Small delay so the 100% fill is visible before fade
+        setTimeout(function () {
+          if (_loader) _loader.classList.add('is-done');
+          // Remove from DOM after transition so it can't block clicks
+          setTimeout(function () {
+            if (_loader && _loader.parentNode) {
+              _loader.parentNode.removeChild(_loader);
+            }
+          }, 650);
+        }, 280);
+      }
+
+      window.VtxLoader = {
+        progress: _setProgress,
+        done:     _done_fn,
+      };
+
+      // Failsafe: if JS crashes and done() is never called, remove
+      // the loader after 12 seconds so students are never stuck.
+      setTimeout(function () {
+        if (!_done) {
+          console.warn('[VtxLoader] Failsafe triggered — removing loader after timeout.');
+          _done_fn();
+        }
+      }, 12000);
+
+    }());
+  </script>
+
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <!-- FCM SDK — added for push notification support -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js"></script>
 
   <!-- Application modules — load order is significant -->
@@ -114,15 +435,15 @@
   <script src="js/studyroom.js"></script>
   <script src="js/teacher.js"></script>
   <script src="js/exam.js"></script>
-  <!-- Notifications module — must load before app.js -->
   <script src="js/notifications.js"></script>
+  <script src="js/landing.js"></script>
   <script src="js/app.js"></script>
   <script src="js/installPrompt.js"></script>
   <script src="news-ticker.js"></script>
 
-  <!-- =====================================================
-       PRESENTATION ENHANCEMENTS
-       ===================================================== -->
+  <!-- ============================================================
+       PRESENTATION ENHANCEMENTS (unchanged from original)
+       ============================================================ -->
   <script>
     (function () {
       'use strict';
@@ -233,7 +554,7 @@
     }());
   </script>
 
-  <!-- Service Worker Registration -->
+  <!-- Service Worker Registration (unchanged from original) -->
   <script>
     (function () {
       'use strict';
