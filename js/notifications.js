@@ -12,15 +12,24 @@
    4. If they allow, we save their FCM token to Firestore so
       the teacher can send push notifications to them.
 
-   FIX v2:
-   - VAPID key is now a single unbroken string (previously
-     split across two lines which produced an 87-char key
-     instead of the required 88 chars, causing getToken()
-     to silently fail).
-   - getToken() now passes serviceWorkerRegistration so FCM
-     reuses the existing sw.js registration at scope '/'
-     instead of auto-registering firebase-messaging-sw.js
-     as a competing service worker on the same scope.
+   FIX v3:
+   - _requestTokenAndSave() now uses navigator.serviceWorker.ready
+     instead of navigator.serviceWorker.getRegistration('/').
+
+     getRegistration('/') can return a registration whose .active
+     property is null if the SW is still installing or waiting
+     at the moment of the call (which is common — it runs during
+     login, shortly after page load). When FCM receives a
+     registration with no active worker, it falls back to
+     auto-registering firebase-messaging-sw.js (which is
+     intentionally empty), getToken() returns null or throws,
+     the catch block swallows it silently, and nothing is ever
+     saved to Firestore.
+
+     navigator.serviceWorker.ready is a Promise that only
+     resolves once a SW is FULLY ACTIVE and controlling the
+     page. It never returns undefined or an inactive registration,
+     so FCM always receives a valid SW to work with.
    ============================================================ */
 
 (function () {
@@ -30,14 +39,11 @@
    * Your VAPID public key — pasted as ONE unbroken string.
    * Found in Firebase Console → Project Settings →
    * Cloud Messaging → Web configuration → Key pair.
-   *
-   * IMPORTANT: This must be the exact key from Firebase,
-   * copied in one go. Do not split it across lines.
    */
   var VAPID_KEY = 'BM3F4Aw4HykHcg3nl6oLzKvNZeGYQnil6fONXMWEGD6C0Ypk8npaNP1-hAhVfPdiGFbxERVFDgARCX8DGGFkTrM';
 
-  var _messaging  = null;
-  var _userId     = null;
+  var _messaging = null;
+  var _userId    = null;
 
   /* ============================================================
      init(userId)
@@ -70,13 +76,13 @@
       return Promise.resolve();
     }
 
-    /* If already granted, just silently refresh the token.
+    /* If already granted, silently refresh the token.
        No need to show the banner again. */
     if (Notification.permission === 'granted') {
       return _requestTokenAndSave();
     }
 
-    /* If already denied, we cannot ask again — browser blocks it.
+    /* If already denied, the browser blocks further requests.
        Do nothing. */
     if (Notification.permission === 'denied') {
       console.log('[notifications] Permission was previously denied. Cannot ask again.');
@@ -128,7 +134,6 @@
     ].join(';');
 
     banner.innerHTML =
-      /* Left side — icon + text */
       '<div style="display:flex;align-items:center;gap:0.75rem;flex:1;min-width:0;">' +
         '<span style="font-size:1.5rem;flex-shrink:0;">🔔</span>' +
         '<div>' +
@@ -140,7 +145,6 @@
           '</p>' +
         '</div>' +
       '</div>' +
-      /* Right side — buttons */
       '<div style="display:flex;gap:0.5rem;flex-shrink:0;">' +
         '<button id="notifPromptDismiss"' +
           ' style="background:transparent;color:rgba(255,255,255,0.6);border:1px solid rgba(255,255,255,0.3);' +
@@ -158,8 +162,8 @@
 
     /* Inject slide-up animation if not already in the page */
     if (!document.getElementById('_notifBannerStyle')) {
-      var style = document.createElement('style');
-      style.id  = '_notifBannerStyle';
+      var style       = document.createElement('style');
+      style.id        = '_notifBannerStyle';
       style.textContent =
         '@keyframes slideUpBanner {' +
           'from { transform:translateY(100%); opacity:0; }' +
@@ -193,44 +197,56 @@
   /* ============================================================
      _requestTokenAndSave()
      ──────────────────────────────────────────────────────────
-     This is what actually triggers the browser's official
-     "Allow / Block" popup (via getToken).
-     Then saves the resulting token to Firestore.
+     Triggers the browser's official Allow/Block popup (via
+     getToken), then saves the resulting token to Firestore.
 
-     FIX: passes serviceWorkerRegistration so FCM reuses the
-     existing sw.js at scope '/' instead of auto-registering
-     firebase-messaging-sw.js as a second competing SW.
+     FIX: uses navigator.serviceWorker.ready instead of
+     navigator.serviceWorker.getRegistration('/').
+
+     getRegistration('/') can return a registration with a null
+     .active worker if the SW is still installing at call time.
+     FCM then falls back to auto-registering the empty
+     firebase-messaging-sw.js, getToken() returns null, and
+     nothing is saved — silently.
+
+     navigator.serviceWorker.ready only resolves once a SW is
+     fully active and controlling the page, guaranteeing FCM
+     always receives a valid registration to work with.
      ============================================================ */
   async function _requestTokenAndSave() {
-  try {
-    _messaging = firebase.messaging();
+    try {
+      _messaging = firebase.messaging();
 
-    /*
-     * FIX: navigator.serviceWorker.ready is a Promise that resolves
-     * with the active ServiceWorkerRegistration once a SW is controlling
-     * the page. It never returns undefined, unlike getRegistration('/')
-     * which can return undefined if the SW hasn't activated yet, causing
-     * FCM to fall back to auto-registering firebase-messaging-sw.js
-     * (which is intentionally empty) and silently failing to get a token.
-     */
-    var swReg = await navigator.serviceWorker.ready;
+      /*
+       * Wait for the SW to be fully active before asking FCM
+       * for a token. This is the critical fix — .ready never
+       * resolves to undefined or an inactive registration.
+       */
+      var swReg = await navigator.serviceWorker.ready;
 
-    var token = await _messaging.getToken({
-      vapidKey: VAPID_KEY,
-      serviceWorkerRegistration: swReg,
-    });
+      /*
+       * getToken() does two things:
+       *  1. Shows the browser's native Allow/Block popup
+       *     (only if permission is still 'default').
+       *  2. Returns a unique token string for this device.
+       */
+      var token = await _messaging.getToken({
+        vapidKey: VAPID_KEY,
+        serviceWorkerRegistration: swReg,
+      });
 
-    if (token) {
-      console.log('[notifications] Token obtained successfully.');
-      await _saveToken(token);
-      _listenForForegroundMessages();
-    } else {
-      console.warn('[notifications] No token returned — user may have blocked.');
+      if (token) {
+        console.log('[notifications] Token obtained successfully.');
+        await _saveToken(token);
+        _listenForForegroundMessages();
+      } else {
+        console.warn('[notifications] No token returned — user may have blocked.');
+      }
+    } catch (err) {
+      /* Non-fatal. Happens if user clicks Block, or on iOS Safari. */
+      console.warn('[notifications] Could not get token (non-fatal):', err.message || err);
     }
-  } catch (err) {
-    console.warn('[notifications] Could not get token (non-fatal):', err.message || err);
   }
-}
 
   /* ============================================================
      _saveToken(token)
@@ -255,10 +271,10 @@
   /* ============================================================
      _listenForForegroundMessages()
      ──────────────────────────────────────────────────────────
-     When the app is OPEN and the student is looking at it,
-     the service worker does NOT show a system notification.
-     This handler catches those messages and shows them
-     as toasts using your existing UI.toast() system instead.
+     When the app is open and the student is looking at it,
+     the SW does NOT show a system notification.
+     This handler catches those messages and shows them as
+     toasts using the existing UI.toast() system instead.
      ============================================================ */
   function _listenForForegroundMessages() {
     if (!_messaging) return;
@@ -275,8 +291,8 @@
 
   /* ============================================================
      _detectPlatform()
-     Returns a short label saved alongside the token in
-     Firestore so you can see what devices your students use.
+     Returns a short label saved alongside the token so you
+     can see what devices your students use.
      ============================================================ */
   function _detectPlatform() {
     var ua = navigator.userAgent || '';
