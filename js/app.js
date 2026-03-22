@@ -1,31 +1,44 @@
 /* ============================================================
    js/app.js — Application entry point
    ============================================================
-   FIX: await Tasks.listenForStudentUpdates() before calling
-   Exam.loadOrStart(). listenForStudentUpdates() now returns
-   a Promise that resolves after both loadCoachingTasks() and
-   loadStudentMessages() have completed their first Firestore
-   fetch. This guarantees AppState.currentTaskConfig is
-   populated before renderSubjectSelection() reads it to apply
-   subject restrictions.
+   CHANGES FROM PREVIOUS VERSION:
 
-   UPDATE: Added Notifications.init(uid) call after student
-   profile loads. This requests push notification permission
-   and saves the FCM token to Firestore so the teacher can
-   send push notifications to students. Non-fatal — the app
-   works normally if the student declines or the browser
-   does not support notifications.
+   1. VtxLoader integration — reports loading progress to the
+      splash screen defined in index.html so the user sees a
+      meaningful loading indicator instead of a blank page.
+      Steps reported:
+        10% — Firebase initialised
+        30% — Auth listener ready
+        60% — Student profile loaded
+        80% — Tasks and messages loaded
+       100% — App ready (loader dismissed)
+
+   2. Landing page — unauthenticated users now see the public
+      homepage (Landing.render()) instead of going directly to
+      the login screen. The login is reachable via the Sign In
+      button on that page.
+
+   All other logic (teacher path, student path, error handling,
+   registration guard) is unchanged from the previous version.
    ============================================================ */
 (function () {
   'use strict';
 
   document.addEventListener('DOMContentLoaded', function () {
     _registerGlobalErrorHandlers();
+
+    /* Step 1 — Firebase is already initialised by config.js which
+       loads before this file. Mark first milestone. */
+    if (window.VtxLoader) window.VtxLoader.progress(10, 'Connecting…');
+
     _startAuthListener();
     window._appReady = true;
   });
 
   function _startAuthListener() {
+    /* Step 2 — Auth listener is being established */
+    if (window.VtxLoader) window.VtxLoader.progress(30, 'Checking session…');
+
     window.fbAuth.onAuthStateChanged(async function (firebaseUser) {
       if (firebaseUser) {
         if (window._registrationInProgress) {
@@ -43,13 +56,18 @@
     AppState.cancelAllListeners();
     AppState.userId = uid;
 
+    /* Step 3 — We have a user, loading their profile */
+    if (window.VtxLoader) window.VtxLoader.progress(50, 'Loading your profile…');
+
     // ── Teacher path ──
     if (uid === AppConfig.TEACHER_UID) {
       AppState.isTeacher = true;
+
+      if (window.VtxLoader) window.VtxLoader.progress(90, 'Opening dashboard…');
+
       Teacher.renderTeacherDashboard();
 
-      // Start notification listener for the teacher so they get a badge
-      // on the Chat tab when a student mentions them.
+      // Start notification listener for the teacher
       AppState.chatUnread = 0;
       var teacherNotifUnsub = window.fbDb
         .collection('chatNotifications')
@@ -64,6 +82,8 @@
           console.warn('[app] teacher chatNotifications listener error:', err);
         });
       AppState.registerListener('chatNotifications', teacherNotifUnsub);
+
+      if (window.VtxLoader) window.VtxLoader.done();
       return;
     }
 
@@ -72,6 +92,7 @@
     try {
       var snap = await window.fbDb.collection('students').doc(uid).get();
       if (!snap.exists) {
+        if (window.VtxLoader) window.VtxLoader.done();
         UI.toast('Profile not found. Please register again.', 'error', 0);
         await window.fbAuth.signOut();
         return;
@@ -79,6 +100,9 @@
 
       AppState.studentData = snap.data();
       AppState.chatUnread = 0;
+
+      /* Step 4 — Profile loaded, now loading tasks and messages */
+      if (window.VtxLoader) window.VtxLoader.progress(70, 'Loading your tasks…');
 
       // ── Chat notification listener ──
       var notifUnsub = window.fbDb
@@ -96,8 +120,6 @@
       AppState.registerListener('chatNotifications', notifUnsub);
 
       // ── Push notifications ──
-      // Request permission and save FCM token. Non-fatal if declined or
-      // unsupported — a warning is logged but the app continues normally.
       if (window.Notifications && typeof window.Notifications.init === 'function') {
         Notifications.init(uid).catch(function (e) {
           console.warn('[app] Notifications.init error (non-fatal):', e);
@@ -105,10 +127,17 @@
       }
 
       await Tasks.listenForStudentUpdates();
+
+      /* Step 5 — Everything loaded, dismiss loader then render */
+      if (window.VtxLoader) window.VtxLoader.progress(90, 'Almost ready…');
+
       await Exam.loadOrStart();
+
+      if (window.VtxLoader) window.VtxLoader.done();
 
     } catch (err) {
       console.error('[app] Profile load error:', err);
+      if (window.VtxLoader) window.VtxLoader.done();
       UI.toast('Access error. Please try again.', 'error', 0);
       await window.fbAuth.signOut();
     }
@@ -118,7 +147,18 @@
     window._registrationInProgress = false;
     Tasks.cancelListeners();
     AppState.reset();
-    Auth.renderLogin();
+
+    /* Show the public homepage instead of going directly to login.
+       VtxLoader.done() is called here because _onLogout() is also
+       triggered on the very first load when no user is signed in. */
+    if (window.VtxLoader) window.VtxLoader.done();
+
+    // Use Landing page if available, otherwise fall back to login
+    if (window.Landing && typeof Landing.render === 'function') {
+      Landing.render();
+    } else {
+      Auth.renderLogin();
+    }
   }
 
   function _registerGlobalErrorHandlers() {
