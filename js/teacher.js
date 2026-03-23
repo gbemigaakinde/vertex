@@ -453,96 +453,111 @@
   /* -------------------------------------------------- */
 
   function _loadStudents() {
-    const container = document.getElementById('studentsList');
-    if (!container) return;
-    container.innerHTML = `
-      <div style="text-align:center;padding:2rem;color:var(--c-text-3,#6b7280);font-size:.875rem;">
-        Loading students...</div>`;
+  const container = document.getElementById('studentsList');
+  if (!container) return;
+  container.innerHTML = `
+    <div style="text-align:center;padding:2rem;color:var(--c-text-3,#6b7280);font-size:.875rem;">
+      Loading students...</div>`;
 
-    _cancel('students');
-    const unsub = Db().collection('students').onSnapshot(
-      snap => {
-        const bySchool = {};
-        snap.forEach(doc => {
-          const d = doc.data();
-          const school = d.school || 'No School';
-          if (!bySchool[school]) bySchool[school] = [];
-          bySchool[school].push({ id: doc.id, ...d });
-        });
-        const schools = Object.keys(bySchool).sort();
-        if (schools.length === 0) {
-          container.innerHTML = `
-            <div style="text-align:center;padding:2rem;color:var(--c-text-3,#6b7280);font-size:.875rem;">
-              No students registered yet.</div>`;
-          return;
-        }
-        container.innerHTML = schools.map(school => {
-          const students = bySchool[school];
-          return `
-            <details class="glass-dark overflow-hidden mb-3" style="border-radius:10px;" open>
-              <summary style="cursor:pointer;">
-                <span style="font-weight:700;font-size:.9375rem;">${_esc(school)}</span>
-                <span style="margin-left:.5rem;font-size:.75rem;font-weight:500;
-                             background:var(--c-brand-light,#eef2ff);color:var(--c-brand-text,#3730a3);
-                             border:1px solid var(--c-brand-border,#c7d2fe);
-                             padding:1px 7px;border-radius:99px;">${students.length}</span>
-              </summary>
-              <div style="padding:.875rem 1rem;">
-                <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.625rem;">
-                  ${students.map(s => {
-                    const joined = s.createdAt
-                      ? new Date(s.createdAt.toDate ? s.createdAt.toDate() : s.createdAt).toLocaleDateString()
-                      : '—';
-                    return `
-                      <div style="position:relative;background:var(--c-surface,#fff);
-                                  border:1px solid var(--c-border,#e5e7eb);border-radius:8px;
-                                  padding:.75rem .875rem .75rem 2.25rem;">
-                        <button class="teacher-toggle-admin"
-                                data-uid="${_esc(s.id)}" data-name="${_esc(s.name)}"
-                                data-is-admin="${s.isAdmin ? 'true' : 'false'}"
-                                aria-label="Toggle admin for ${_esc(s.name)}"
-                                style="position:absolute;top:.5rem;left:.5rem;background:none;border:none;
-                                       cursor:pointer;font-size:.875rem;line-height:1;padding:2px;
-                                       color:${s.isAdmin ? '#d97706' : '#d1d5db'};">
-                          ${s.isAdmin ? '★' : '☆'}
-                        </button>
-                        <button class="teacher-delete-student" data-uid="${_esc(s.id)}"
-                                aria-label="Delete ${_esc(s.name)}"
-                                style="position:absolute;top:.375rem;right:.5rem;background:none;border:none;
-                                       cursor:pointer;font-size:1rem;line-height:1;padding:2px 4px;
-                                       color:var(--c-text-4,#9ca3af);"
-                                onmouseenter="this.style.color='var(--c-danger,#dc2626)'"
-                                onmouseleave="this.style.color='var(--c-text-4,#9ca3af)'">×</button>
-                        <p style="font-size:.875rem;font-weight:700;color:var(--c-text,#111827);
-                                  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:1rem;">
-                          ${_esc(s.name)}</p>
-                        <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:1px;">${_esc(s.class || '—')}</p>
-                        <p style="font-size:.6875rem;color:var(--c-text-4,#9ca3af);margin-top:3px;
-                                  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_esc(s.email || '')}</p>
-                        <p style="font-size:.6875rem;color:var(--c-text-4,#9ca3af);margin-top:4px;">Joined ${joined}</p>
-                      </div>`;
-                  }).join('')}
-                </div>
-              </div>
-            </details>`;
-        }).join('');
-      },
-      err => {
-        console.error('[teacher] Error loading students:', err);
-        container.innerHTML = `<p style="text-align:center;color:var(--c-danger,#dc2626);font-size:.875rem;">Error loading students.</p>`;
+  _cancel('students');
+  const unsub = Db().collection('students').onSnapshot(
+    snap => {
+      const bySchool = {};
+      snap.forEach(doc => {
+        const d = doc.data();
+        const school = d.school || 'No School';
+        if (!bySchool[school]) bySchool[school] = [];
+        bySchool[school].push({ id: doc.id, ...d });
+      });
+      const schools = Object.keys(bySchool).sort();
+      if (schools.length === 0) {
+        container.innerHTML = `
+          <div style="text-align:center;padding:2rem;color:var(--c-text-3,#6b7280);font-size:.875rem;">
+            No students registered yet.</div>`;
+        return;
       }
-    );
-    _reg('students', unsub);
-  }
+      container.innerHTML = schools.map(school => {
+        const students = bySchool[school];
+        return `
+          <details class="glass-dark overflow-hidden mb-3" style="border-radius:10px;" open>
+            <summary style="cursor:pointer;">
+              <span style="font-weight:700;font-size:.9375rem;">${_esc(school)}</span>
+              <span style="margin-left:.5rem;font-size:.75rem;font-weight:500;
+                           background:var(--c-brand-light,#eef2ff);color:var(--c-brand-text,#3730a3);
+                           border:1px solid var(--c-brand-border,#c7d2fe);
+                           padding:1px 7px;border-radius:99px;">${students.length}</span>
+            </summary>
+            <div style="padding:.875rem 1rem;">
+              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.625rem;">
+                ${students.map(s => {
+                  const joined = s.createdAt
+                    ? new Date(s.createdAt.toDate ? s.createdAt.toDate() : s.createdAt).toLocaleDateString()
+                    : '—';
+                  const admno = s.admissionNo ? `<p style="font-size:.6875rem;color:var(--brand,#3b5bdb);
+                    margin-top:2px;font-weight:600;">🪪 ${_esc(s.admissionNo)}</p>` : '';
+                  return `
+                    <div style="position:relative;background:var(--c-surface,#fff);
+                                border:1px solid var(--c-border,#e5e7eb);border-radius:8px;
+                                padding:.75rem .875rem .75rem 2.25rem;">
+                      <!-- Admin star toggle -->
+                      <button class="teacher-toggle-admin"
+                              data-uid="${_esc(s.id)}" data-name="${_esc(s.name)}"
+                              data-is-admin="${s.isAdmin ? 'true' : 'false'}"
+                              aria-label="Toggle admin for ${_esc(s.name)}"
+                              style="position:absolute;top:.5rem;left:.5rem;background:none;border:none;
+                                     cursor:pointer;font-size:.875rem;line-height:1;padding:2px;
+                                     color:${s.isAdmin ? '#d97706' : '#d1d5db'};">
+                        ${s.isAdmin ? '★' : '☆'}
+                      </button>
+                      <!-- Edit button -->
+                      <button class="teacher-edit-student" data-uid="${_esc(s.id)}"
+                              aria-label="Edit ${_esc(s.name)}"
+                              style="position:absolute;top:.375rem;right:1.625rem;background:none;border:none;
+                                     cursor:pointer;font-size:.75rem;line-height:1;padding:2px 4px;
+                                     color:var(--brand,#3b5bdb);font-weight:700;"
+                              onmouseenter="this.style.color='#1d3aaa'"
+                              onmouseleave="this.style.color='var(--brand,#3b5bdb)'">✎</button>
+                      <!-- Delete button -->
+                      <button class="teacher-delete-student" data-uid="${_esc(s.id)}"
+                              aria-label="Delete ${_esc(s.name)}"
+                              style="position:absolute;top:.375rem;right:.5rem;background:none;border:none;
+                                     cursor:pointer;font-size:1rem;line-height:1;padding:2px 4px;
+                                     color:var(--c-text-4,#9ca3af);"
+                              onmouseenter="this.style.color='var(--c-danger,#dc2626)'"
+                              onmouseleave="this.style.color='var(--c-text-4,#9ca3af)'">×</button>
+                      <p style="font-size:.875rem;font-weight:700;color:var(--c-text,#111827);
+                                white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:1rem;">
+                        ${_esc(s.name)}</p>
+                      <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:1px;">${_esc(s.class || '—')}</p>
+                      <p style="font-size:.6875rem;color:var(--c-text-4,#9ca3af);margin-top:3px;
+                                overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_esc(s.email || '')}</p>
+                      ${admno}
+                      <p style="font-size:.6875rem;color:var(--c-text-4,#9ca3af);margin-top:4px;">Joined ${joined}</p>
+                    </div>`;
+                }).join('')}
+              </div>
+            </div>
+          </details>`;
+      }).join('');
+    },
+    err => {
+      console.error('[teacher] Error loading students:', err);
+      container.innerHTML = `<p style="text-align:center;color:var(--c-danger,#dc2626);font-size:.875rem;">Error loading students.</p>`;
+    }
+  );
+  _reg('students', unsub);
+}
 
   document.addEventListener('click', async e => {
-    const deleteBtn = e.target.closest('.teacher-delete-student');
-    if (deleteBtn) { await removeStudent(deleteBtn.dataset.uid); return; }
-    const adminBtn = e.target.closest('.teacher-toggle-admin');
-    if (adminBtn) {
-      await toggleAdmin(adminBtn.dataset.uid, adminBtn.dataset.name, adminBtn.dataset.isAdmin === 'true');
-    }
-  });
+  const deleteBtn = e.target.closest('.teacher-delete-student');
+  if (deleteBtn) { await removeStudent(deleteBtn.dataset.uid); return; }
+  const editBtn = e.target.closest('.teacher-edit-student');
+  if (editBtn) { await editStudent(editBtn.dataset.uid); return; }
+  const adminBtn = e.target.closest('.teacher-toggle-admin');
+  if (adminBtn) {
+    await toggleAdmin(adminBtn.dataset.uid, adminBtn.dataset.name, adminBtn.dataset.isAdmin === 'true');
+  }
+});
 
   async function removeStudent(uid) {
     if (!uid) return;
@@ -568,6 +583,269 @@
       UI.toast('Failed to delete student.', 'error');
     }
   }
+
+async function editStudent(uid) {
+  if (!uid) return;
+
+  // Fetch current data
+  let studentData;
+  try {
+    const snap = await Db().collection('students').doc(uid).get();
+    if (!snap.exists) { UI.toast('Student not found.', 'error'); return; }
+    studentData = snap.data();
+  } catch (err) {
+    console.error('[teacher] editStudent fetch error:', err);
+    UI.toast('Failed to load student data.', 'error');
+    return;
+  }
+
+  // Remove any existing modal
+  const existing = document.getElementById('teacherEditStudentModal');
+  if (existing) existing.remove();
+
+  const classOptions = ['JSS1','JSS2','JSS3','SSS1','SSS2','SSS3','TUTORIAL']
+    .map(c => `<option value="${c}" ${studentData.class === c ? 'selected' : ''}>${c}</option>`)
+    .join('');
+
+  // Build school dropdown — populated after mount
+  const overlay = document.createElement('div');
+  overlay.id = 'teacherEditStudentModal';
+  overlay.style.cssText = `
+    position:fixed;inset:0;background:rgba(17,24,39,.55);z-index:1300;
+    display:flex;align-items:center;justify-content:center;
+    padding:1.25rem;overflow-y:auto;
+    backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
+    animation:cbt-overlay-in .16s ease-out both;`;
+
+  overlay.innerHTML = `
+    <div style="background:var(--surface,#fff);border:1px solid var(--border,#e5e7eb);
+                border-radius:12px;padding:1.5rem;width:100%;max-width:440px;margin:auto;
+                box-shadow:0 8px 32px rgba(0,0,0,.14);
+                animation:cbt-modal-in .22s cubic-bezier(.34,1.45,.64,1) both;">
+
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;
+                  margin-bottom:1.25rem;padding-bottom:.875rem;
+                  border-bottom:1px solid var(--border,#e5e7eb);">
+        <div>
+          <h2 style="font-size:1rem;font-weight:700;color:var(--text-primary,#111827);">Edit Student</h2>
+          <p style="font-size:.75rem;color:var(--text-tertiary,#6b7280);margin-top:2px;">
+            ${_esc(studentData.name || '')} &bull; UID: ${_esc(uid.slice(0,8))}…
+          </p>
+        </div>
+        <button onclick="document.getElementById('teacherEditStudentModal').remove()"
+                style="background:none;border:none;cursor:pointer;font-size:1.25rem;
+                       line-height:1;color:var(--text-tertiary,#6b7280);padding:2px 6px;"
+                onmouseenter="this.style.color='var(--danger,#e03131)'"
+                onmouseleave="this.style.color='var(--text-tertiary,#6b7280)'">×</button>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:.875rem;">
+
+        <!-- Full Name -->
+        <div>
+          <label style="display:block;font-size:.75rem;font-weight:600;
+                        color:var(--text-secondary,#374151);margin-bottom:.3125rem;">Full Name</label>
+          <input id="editStudentName" type="text" value="${_esc(studentData.name || '')}"
+                 placeholder="Student's full name"
+                 style="width:100%;box-sizing:border-box;" />
+        </div>
+
+        <!-- Class -->
+        <div>
+          <label style="display:block;font-size:.75rem;font-weight:600;
+                        color:var(--text-secondary,#374151);margin-bottom:.3125rem;">Class</label>
+          <select id="editStudentClass" style="width:100%;box-sizing:border-box;">
+            ${classOptions}
+          </select>
+        </div>
+
+        <!-- School -->
+        <div>
+          <label style="display:block;font-size:.75rem;font-weight:600;
+                        color:var(--text-secondary,#374151);margin-bottom:.3125rem;">School</label>
+          <select id="editStudentSchool" style="width:100%;box-sizing:border-box;">
+            <option value="" disabled>Loading schools…</option>
+          </select>
+        </div>
+
+        <!-- Admission Number -->
+        <div>
+          <label style="display:block;font-size:.75rem;font-weight:600;
+                        color:var(--text-secondary,#374151);margin-bottom:.3125rem;">
+            Admission / Registration Number
+            <span style="font-weight:400;color:var(--text-tertiary,#6b7280);">— optional</span>
+          </label>
+          <input id="editStudentAdmno" type="text"
+                 value="${_esc(studentData.admissionNo || '')}"
+                 placeholder="e.g. VTX-2024-001"
+                 style="width:100%;box-sizing:border-box;text-transform:uppercase;"
+                 oninput="this.value=this.value.toUpperCase()" />
+          <p style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin-top:.25rem;line-height:1.5;">
+            Must be unique. Students can use this to log in instead of their email.
+            Leave blank to remove.
+          </p>
+        </div>
+
+        <!-- Info notice: email not editable here -->
+        <div style="padding:.625rem .875rem;background:var(--surface-muted,#f3f4f6);
+                    border:1px solid var(--border,#e5e7eb);border-radius:8px;
+                    font-size:.75rem;color:var(--text-tertiary,#6b7280);line-height:1.6;">
+          ℹ️ Email address cannot be changed here. To update a student's email,
+          the student must contact you and re-register with the new email.
+        </div>
+
+      </div>
+
+      <!-- Actions -->
+      <div style="display:flex;gap:.625rem;margin-top:1.25rem;padding-top:.875rem;
+                  border-top:1px solid var(--border,#e5e7eb);">
+        <button onclick="document.getElementById('teacherEditStudentModal').remove()"
+                class="btn bg-gray-500 hover:bg-gray-600"
+                style="flex:1;justify-content:center;font-size:.875rem;">
+          Cancel
+        </button>
+        <button id="editStudentSaveBtn"
+                onclick="Teacher._saveStudentEdit('${_esc(uid)}', '${_esc(studentData.admissionNo || '')}')"
+                class="btn bg-blue-600 hover:bg-blue-700"
+                style="flex:1;justify-content:center;font-size:.875rem;">
+          Save Changes
+        </button>
+      </div>
+
+    </div>`;
+
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+  overlay.addEventListener('keydown', e => { if (e.key === 'Escape') overlay.remove(); });
+
+  // Populate school dropdown from Firestore
+  try {
+    const schoolsSnap = await Db().collection('schools').orderBy('name').get();
+    const schoolSel   = document.getElementById('editStudentSchool');
+    if (schoolSel) {
+      let html = '<option value="" disabled>Select school</option>';
+      if (schoolsSnap.empty) {
+        html += `<option value="${_esc(studentData.school || '')}" selected>${_esc(studentData.school || 'No schools listed')}</option>`;
+      } else {
+        schoolsSnap.forEach(doc => {
+          const n = _esc(doc.data().name);
+          html += `<option value="${n}" ${studentData.school === doc.data().name ? 'selected' : ''}>${n}</option>`;
+        });
+        // If student's school isn't in the list, add it so we don't lose it
+        const names = schoolsSnap.docs.map(d => d.data().name);
+        if (studentData.school && !names.includes(studentData.school)) {
+          html += `<option value="${_esc(studentData.school)}" selected>${_esc(studentData.school)} (current)</option>`;
+        }
+      }
+      schoolSel.innerHTML = html;
+    }
+  } catch (err) {
+    console.warn('[teacher] editStudent school load error:', err);
+    const schoolSel = document.getElementById('editStudentSchool');
+    if (schoolSel) {
+      schoolSel.innerHTML = `<option value="${_esc(studentData.school || '')}" selected>${_esc(studentData.school || '—')}</option>`;
+    }
+  }
+}
+
+async function _saveStudentEdit(uid, previousAdmno) {
+  const btn       = document.getElementById('editStudentSaveBtn');
+  const nameEl    = document.getElementById('editStudentName');
+  const classEl   = document.getElementById('editStudentClass');
+  const schoolEl  = document.getElementById('editStudentSchool');
+  const admnoEl   = document.getElementById('editStudentAdmno');
+
+  const name   = (nameEl?.value   || '').trim();
+  const cls    = (classEl?.value  || '').trim();
+  const school = (schoolEl?.value || '').trim();
+  const admno  = (admnoEl?.value  || '').trim().toUpperCase();
+
+  // Basic validation
+  if (!name)   { UI.toast('Name cannot be empty.',  'warning'); return; }
+  if (!cls)    { UI.toast('Please select a class.', 'warning'); return; }
+  if (!school) { UI.toast('Please select a school.','warning'); return; }
+
+  // Validate admission number format if provided
+  // Allow letters, digits, hyphens, underscores — max 30 chars
+  if (admno && !/^[A-Z0-9\-_]{1,30}$/.test(admno)) {
+    UI.toast(
+      'Admission number can only contain letters, numbers, hyphens, and underscores (max 30 characters).',
+      'warning',
+      6000
+    );
+    return;
+  }
+
+  UI.setLoading(btn, true);
+
+  try {
+    const admnoChanged     = admno !== previousAdmno.toUpperCase();
+    const removingAdmno    = admnoChanged && admno === '';
+    const addingOrChanging = admnoChanged && admno !== '';
+
+    // ── Check uniqueness if a new admno is being set ──
+    if (addingOrChanging) {
+      const existingSnap = await Db().collection('admissionNumbers').doc(admno).get();
+      if (existingSnap.exists && existingSnap.data().uid !== uid) {
+        UI.toast(
+          `Admission number "${admno}" is already assigned to another student.`,
+          'error',
+          7000
+        );
+        UI.setLoading(btn, false);
+        return;
+      }
+    }
+
+    // ── Fetch current email (needed for the index entry) ──
+    const studentSnap = await Db().collection('students').doc(uid).get();
+    if (!studentSnap.exists) {
+      UI.toast('Student record not found. It may have been deleted.', 'error');
+      UI.setLoading(btn, false);
+      return;
+    }
+    const email = studentSnap.data().email || '';
+
+    // ── Build Firestore batch ──
+    const batch = Db().batch();
+
+    // Update student doc — only the safe editable fields
+    batch.update(Db().collection('students').doc(uid), {
+      name,
+      class:       cls,
+      school,
+      admissionNo: admno || null,
+    });
+
+    // Update admissionNumbers index
+    if (addingOrChanging) {
+      // Write new index entry
+      batch.set(Db().collection('admissionNumbers').doc(admno), { uid, email });
+      // Remove old index entry if one existed
+      if (previousAdmno) {
+        batch.delete(Db().collection('admissionNumbers').doc(previousAdmno.toUpperCase()));
+      }
+    } else if (removingAdmno && previousAdmno) {
+      // Just delete the old entry
+      batch.delete(Db().collection('admissionNumbers').doc(previousAdmno.toUpperCase()));
+    }
+
+    await batch.commit();
+
+    UI.toast(`Student record updated successfully.`, 'success');
+    document.getElementById('teacherEditStudentModal')?.remove();
+
+  } catch (err) {
+    console.error('[teacher] _saveStudentEdit error:', err);
+    const msg = err.code === 'permission-denied'
+      ? 'Permission denied. Are you logged in as a teacher?'
+      : 'Failed to save changes. Please try again.';
+    UI.toast(msg, 'error');
+  } finally {
+    UI.setLoading(btn, false);
+  }
+}
 
   async function toggleAdmin(uid, name, currentlyAdmin) {
     if (!uid) return;
@@ -2886,6 +3164,8 @@ function _renderExistingTasksList(docs) {
     logout,
     _loadStudents,
     removeStudent,
+    editStudent,
+    _saveStudentEdit,
     toggleAdmin,
     deleteResult,
     addSchool,
