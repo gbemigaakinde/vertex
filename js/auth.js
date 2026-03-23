@@ -82,7 +82,7 @@
               <div class="cbt-field" style="margin-bottom:var(--sp-3);">
                 <label class="cbt-label" for="loginAdmno">Admission / Registration Number</label>
                 <input id="loginAdmno" type="text" placeholder="e.g. VTX-2024-001"
-                       autocomplete="username" style="text-transform:uppercase;" />
+                       autocomplete="off" style="text-transform:uppercase;" />
               </div>
             </div>
 
