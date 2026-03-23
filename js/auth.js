@@ -1,13 +1,18 @@
 /* ============================================================
    js/auth.js — Authentication: login, register, password reset
    ============================================================
-   CHANGES FROM v2:
-   - Login/register template uses design-system classes
-   - Removed animated gradient title (institutional context)
-   - Button sizes normalised — no oversized padding
-   - Password toggle uses cbt-eye-btn class
-   - Panel transitions are smooth
-   - No functional logic changes
+   CHANGES FROM v3:
+   - Login panel now supports TWO modes:
+       1. Email + Password  (existing, unchanged)
+       2. Admission No + Password  (new)
+     A tab toggle switches between them. Both paths ultimately
+     call Firebase signInWithEmailAndPassword — the admissionNo
+     path first resolves the email via the admissionNumbers
+     index collection, then proceeds identically.
+   - Register form unchanged except admissionNo field is NOT
+     shown to students — only teachers assign admission numbers.
+   - forgotPassword works only with email (admission-no users
+     must contact Master Timothy to reset).
    ============================================================ */
 
 (function () {
@@ -15,6 +20,9 @@
 
   window._registrationInProgress = false;
   let _pendingLoginEmail = '';
+
+  /* ── Which login mode is active ── */
+  let _loginMode = 'email'; // 'email' | 'admno'
 
   /* ── Render login page ── */
   function renderLogin() {
@@ -41,12 +49,44 @@
 
           <!-- LOGIN PANEL -->
           <div id="loginPanel">
-            <div class="cbt-field" style="margin-bottom:var(--sp-3);">
-              <label class="cbt-label" for="loginEmail">Email address</label>
-              <input id="loginEmail" type="email" placeholder="yourname@vertex.com"
-                     autocomplete="email" />
+
+            <!-- Login mode toggle -->
+            <div style="display:flex;gap:0;border:1px solid var(--border,#e5e7eb);
+                        border-radius:8px;overflow:hidden;margin-bottom:var(--sp-4);">
+              <button id="loginTabEmail" onclick="Auth._setLoginMode('email')"
+                      style="flex:1;padding:.5rem .75rem;font-size:.8125rem;font-weight:600;
+                             cursor:pointer;border:none;font-family:inherit;transition:background .12s,color .12s;
+                             background:var(--brand,#3b5bdb);color:#fff;">
+                Email
+              </button>
+              <button id="loginTabAdmno" onclick="Auth._setLoginMode('admno')"
+                      style="flex:1;padding:.5rem .75rem;font-size:.8125rem;font-weight:600;
+                             cursor:pointer;border:none;border-left:1px solid var(--border,#e5e7eb);
+                             font-family:inherit;transition:background .12s,color .12s;
+                             background:var(--surface-muted,#f3f4f6);color:var(--text-tertiary,#6b7280);">
+                Admission No
+              </button>
             </div>
 
+            <!-- Email login fields -->
+            <div id="loginEmailFields">
+              <div class="cbt-field" style="margin-bottom:var(--sp-3);">
+                <label class="cbt-label" for="loginEmail">Email address</label>
+                <input id="loginEmail" type="email" placeholder="yourname@vertex.com"
+                       autocomplete="email" />
+              </div>
+            </div>
+
+            <!-- Admission No login field -->
+            <div id="loginAdmnoFields" style="display:none;">
+              <div class="cbt-field" style="margin-bottom:var(--sp-3);">
+                <label class="cbt-label" for="loginAdmno">Admission / Registration Number</label>
+                <input id="loginAdmno" type="text" placeholder="e.g. VTX-2024-001"
+                       autocomplete="username" style="text-transform:uppercase;" />
+              </div>
+            </div>
+
+            <!-- Shared password field -->
             <div class="cbt-field" style="margin-bottom:var(--sp-5);">
               <label class="cbt-label" for="loginPass">Password</label>
               <div class="cbt-password-wrap">
@@ -87,6 +127,17 @@
                 Forgot password?
               </button>
             </div>
+
+            <!-- Admission No hint -->
+            <div id="loginAdmnoHint" style="display:none;margin-top:var(--sp-3);
+                 padding:.625rem .875rem;background:var(--brand-bg,#edf2ff);
+                 border:1px solid var(--brand-border,#bac8ff);border-radius:8px;
+                 font-size:.8125rem;color:var(--brand-text,#3730a3);line-height:1.6;">
+              ℹ️ Your admission number was assigned by Master Timothy.
+              If you don't have one, use the <strong>Email</strong> tab instead,
+              or contact Master Timothy.
+            </div>
+
           </div>
 
           <!-- REGISTER PANEL -->
@@ -190,6 +241,9 @@
       initTicker();
     }
 
+    // Restore login mode state
+    _loginMode = 'email';
+
     // Wire up password visibility toggles
     (function () {
       function _wireToggle(inputId, btnId, eyeId, eyeOffId) {
@@ -216,6 +270,20 @@
     if (loginPassEl) {
       loginPassEl.addEventListener('keydown', function (e) {
         if (e.key === 'Enter') Auth.login();
+      });
+    }
+
+    // Allow Enter on admission no field too
+    var admnoEl = document.getElementById('loginAdmno');
+    if (admnoEl) {
+      admnoEl.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter') Auth.login();
+      });
+      // Auto-uppercase as user types
+      admnoEl.addEventListener('input', function () {
+        var pos = admnoEl.selectionStart;
+        admnoEl.value = admnoEl.value.toUpperCase();
+        admnoEl.setSelectionRange(pos, pos);
       });
     }
 
@@ -252,6 +320,37 @@
     }
   }
 
+  /* ── Switch login mode (email vs admission no) ── */
+  function _setLoginMode(mode) {
+    _loginMode = mode;
+
+    var tabEmail  = document.getElementById('loginTabEmail');
+    var tabAdmno  = document.getElementById('loginTabAdmno');
+    var emailFlds = document.getElementById('loginEmailFields');
+    var admnoFlds = document.getElementById('loginAdmnoFields');
+    var admnoHint = document.getElementById('loginAdmnoHint');
+
+    if (!tabEmail || !tabAdmno) return;
+
+    if (mode === 'admno') {
+      tabAdmno.style.background = 'var(--brand,#3b5bdb)';
+      tabAdmno.style.color      = '#fff';
+      tabEmail.style.background = 'var(--surface-muted,#f3f4f6)';
+      tabEmail.style.color      = 'var(--text-tertiary,#6b7280)';
+      if (emailFlds) emailFlds.style.display = 'none';
+      if (admnoFlds) admnoFlds.style.display = '';
+      if (admnoHint) admnoHint.style.display = '';
+    } else {
+      tabEmail.style.background = 'var(--brand,#3b5bdb)';
+      tabEmail.style.color      = '#fff';
+      tabAdmno.style.background = 'var(--surface-muted,#f3f4f6)';
+      tabAdmno.style.color      = 'var(--text-tertiary,#6b7280)';
+      if (emailFlds) emailFlds.style.display = '';
+      if (admnoFlds) admnoFlds.style.display = 'none';
+      if (admnoHint) admnoHint.style.display = 'none';
+    }
+  }
+
   function showRegister() {
     document.getElementById('loginPanel').classList.add('hidden');
     document.getElementById('registerPanel').classList.remove('hidden');
@@ -264,32 +363,82 @@
 
   /* ── Login ── */
   async function login() {
-  const btn   = document.getElementById('loginBtn');
-  const email = (document.getElementById('loginEmail')?.value || '').trim();
-  const pass  = document.getElementById('loginPass')?.value || '';
+    const btn  = document.getElementById('loginBtn');
+    const pass = document.getElementById('loginPass')?.value || '';
 
-  if (!email || !pass) {
-    UI.toast('Please enter your email and password.', 'warning');
-    return;
-  }
+    if (!pass) {
+      UI.toast('Please enter your password.', 'warning');
+      return;
+    }
 
-  UI.setLoading(btn, true);
-  try {
-    AppState.cancelListener('schoolDropdown');
-    await window.fbAuth.signInWithEmailAndPassword(email, pass);
-    // On success the DOM is replaced by onAuthStateChanged → finally never runs setLoading(false)
-    // That is intentional — the login panel is destroyed.
-  } catch (err) {
-    const msg = err.code === 'auth/user-not-found'     ? 'No account found with this email.'
-              : err.code === 'auth/wrong-password'     ? 'Incorrect password.'
-              : err.code === 'auth/too-many-requests'  ? 'Too many failed attempts. Try again later.'
-              : err.code === 'auth/invalid-email'      ? 'Invalid email address.'
-              : err.code === 'auth/invalid-credential' ? 'Incorrect email or password.'
-              : 'Login failed. Please try again.';
-    UI.toast(msg, 'error');
-    UI.setLoading(btn, false);
+    UI.setLoading(btn, true);
+
+    try {
+      AppState.cancelListener('schoolDropdown');
+
+      if (_loginMode === 'admno') {
+        // ── Admission No path ──
+        const rawAdmno = (document.getElementById('loginAdmno')?.value || '').trim().toUpperCase();
+        if (!rawAdmno) {
+          UI.toast('Please enter your admission number.', 'warning');
+          UI.setLoading(btn, false);
+          return;
+        }
+
+        // 1. Look up the admissionNo index
+        let indexSnap;
+        try {
+          indexSnap = await window.fbDb.collection('admissionNumbers').doc(rawAdmno).get();
+        } catch (fetchErr) {
+          console.error('[auth] admissionNumbers lookup error:', fetchErr);
+          UI.toast('Could not verify admission number. Please try again.', 'error');
+          UI.setLoading(btn, false);
+          return;
+        }
+
+        if (!indexSnap.exists) {
+          UI.toast('Admission number not found. Check the number or use the Email tab.', 'error');
+          UI.setLoading(btn, false);
+          return;
+        }
+
+        const { uid, email } = indexSnap.data();
+
+        if (!uid || !email) {
+          // Index entry is malformed — shouldn't happen in normal operation
+          console.error('[auth] admissionNumbers entry missing uid/email for:', rawAdmno);
+          UI.toast('Account data error. Please contact Master Timothy.', 'error');
+          UI.setLoading(btn, false);
+          return;
+        }
+
+        // 2. Sign in with the resolved email
+        await window.fbAuth.signInWithEmailAndPassword(email, pass);
+        // On success the DOM is replaced by onAuthStateChanged
+
+      } else {
+        // ── Email path (unchanged) ──
+        const email = (document.getElementById('loginEmail')?.value || '').trim();
+        if (!email) {
+          UI.toast('Please enter your email and password.', 'warning');
+          UI.setLoading(btn, false);
+          return;
+        }
+        await window.fbAuth.signInWithEmailAndPassword(email, pass);
+        // On success the DOM is replaced by onAuthStateChanged
+      }
+
+    } catch (err) {
+      const msg = err.code === 'auth/user-not-found'     ? 'No account found with this email.'
+                : err.code === 'auth/wrong-password'     ? 'Incorrect password.'
+                : err.code === 'auth/too-many-requests'  ? 'Too many failed attempts. Try again later.'
+                : err.code === 'auth/invalid-email'      ? 'Invalid email address.'
+                : err.code === 'auth/invalid-credential' ? 'Incorrect credentials. Please check and try again.'
+                : 'Login failed. Please try again.';
+      UI.toast(msg, 'error');
+      UI.setLoading(btn, false);
+    }
   }
-}
 
   /* ── Register ── */
   async function register() {
@@ -318,14 +467,14 @@
       class:     cls,
       school,
       email,
+      admissionNo: null,   // placeholder — teacher assigns later
       createdAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
     window._registrationInProgress = false;
     _pendingLoginEmail = email;
     await window.fbAuth.signOut();
-    // signOut triggers onAuthStateChanged → renderLogin() → DOM replaced
-    // setLoading(false) is not needed; the element is gone
+    // signOut triggers onAuthStateChanged → renderLogin()
 
   } catch (err) {
     window._registrationInProgress = false;
@@ -348,6 +497,16 @@
 
   /* ── Forgot password ── */
   async function forgotPassword() {
+    // Only email-based reset is supported — admission no users must contact teacher
+    if (_loginMode === 'admno') {
+      UI.toast(
+        'Password reset requires your email address. Switch to the Email tab, or contact Master Timothy.',
+        'info',
+        8000
+      );
+      return;
+    }
+
     const email = window.prompt('Enter your registered email address:');
     if (!email) return;
     if (!email.includes('@')) {
@@ -374,6 +533,14 @@
   }
 
   /* ── Expose ── */
-  window.Auth = { renderLogin, showRegister, showLogin, login, register, forgotPassword };
+  window.Auth = {
+    renderLogin,
+    showRegister,
+    showLogin,
+    login,
+    register,
+    forgotPassword,
+    _setLoginMode,
+  };
 
 })();
