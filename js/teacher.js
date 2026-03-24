@@ -100,6 +100,8 @@
                   class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">Study Room</button>
           <button onclick="Teacher.showTab('chat')"     id="tab-chat"
                   class="tab-btn btn bg-green-600" style="font-size:.8125rem;padding:.4375rem .875rem;position:relative;">Chat</button>
+          <button onclick="Teacher.showTab('dm')"       id="tab-dm"
+                  class="tab-btn btn bg-indigo-600" style="font-size:.8125rem;padding:.4375rem .875rem;position:relative;">Messages</button>
         </div>
 
         <!-- ── Tab panels ── -->
@@ -282,7 +284,7 @@
                   </select>
                 </div>
 
-                <!-- ── Date / range config area — rendered by _renderDateConfigArea() ── -->
+                <!-- ── Date / range config area ── -->
                 <div id="taskDateConfigArea"></div>
 
                 <!-- Subject restrictions for recurring tasks -->
@@ -385,8 +387,11 @@
             </div><!-- /tasks-grid -->
           </div><!-- /teacher-tasks -->
 
-          <!-- Study Room — MUST be a sibling of the other tab panels, NOT inside teacher-tasks -->
+          <!-- Study Room -->
           <div id="teacher-studyroom" class="teacher-tab hidden"></div>
+
+          <!-- Direct Messages -->
+          <div id="teacher-dm" class="teacher-tab hidden"></div>
 
         </div><!-- /tab panels wrapper -->
       </div>`;
@@ -432,20 +437,20 @@
   /* -------------------------------------------------- */
   /* Tab switching                                       */
   /* -------------------------------------------------- */
-
   function showTab(tab) {
-    ['students','results','schools','tasks','studyroom','chat'].forEach(t => {
+    ['students','results','schools','tasks','studyroom','chat','dm'].forEach(t => {
       const el  = document.getElementById(`teacher-${t}`);
       const btn = document.getElementById(`tab-${t}`);
       if (el)  el.classList.toggle('hidden', t !== tab);
       if (btn) btn.classList.toggle('active', t === tab);
     });
-    if (tab === 'chat')     { Chat.openPublicChat(); return; }
-    if (tab === 'studyroom')  { StudyRoom.openForTeacher(); return; }
-    if (tab === 'students') _loadStudents();
-    if (tab === 'results')  _loadResults();
-    if (tab === 'schools')  _loadSchools();
-    if (tab === 'tasks')    _loadTasksManager();
+    if (tab === 'chat')      { Chat.openPublicChat();       return; }
+    if (tab === 'studyroom') { StudyRoom.openForTeacher();  return; }
+    if (tab === 'dm')        { DM.openTeacherInbox();       return; }
+    if (tab === 'students')  _loadStudents();
+    if (tab === 'results')   _loadResults();
+    if (tab === 'schools')   _loadSchools();
+    if (tab === 'tasks')     _loadTasksManager();
   }
 
   /* -------------------------------------------------- */
@@ -3189,7 +3194,7 @@ function _renderExistingTasksList(docs) {
     _selectAllDaySubjects,
     _clearDaySubjects,
     _updateDaySubjCount,
-    exportTaskReportPDF,       // ← NEW
+    exportTaskReportPDF,
     get _msgStudentCache() { return _msgStudentCache; },
   };
 
