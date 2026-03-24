@@ -492,6 +492,10 @@
                     style="position:relative;">
               📖 Study Room
             </button>
+            <button id="dmOpenBtn" onclick="DM.openStudentInbox()" class="btn bg-indigo-600 hover:bg-indigo-700"
+                    style="position:relative;">
+              ✉️ Message Teacher
+            </button>
           </div>
 
           ${offDayBannerHtml}
