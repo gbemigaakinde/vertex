@@ -519,12 +519,21 @@
 
       Tasks.renderTasksHTML();
 
-      // Restore the notification badge if there are unread reply notifications
-      if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updateChatBadge) {
-        requestAnimationFrame(function () {
-          Chat._updateChatBadge(AppState.chatUnread);
-        });
-      }
+    // Restore the chat notification badge if there are unread reply notifications
+    if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updateChatBadge) {
+      requestAnimationFrame(function () {
+        Chat._updateChatBadge(AppState.chatUnread);
+      });
+    }
+
+    // Restore the DM badge — UI.mount() just rebuilt the DOM, so the badge
+    // that was appended to the old #dmOpenBtn is gone. Re-apply from the
+    // cached count that initStudentDMListener keeps up to date in AppState.
+    if (AppState.dmStudentUnread && AppState.dmStudentUnread > 0 && window.DM && DM._updateStudentBadge) {
+      requestAnimationFrame(function () {
+        DM._updateStudentBadge(AppState.dmStudentUnread);
+      });
+    }
 
       if (!restrictedSubjs && !todayTaskDone) {
         document.querySelectorAll('.subject-checkbox').forEach(cb => {
