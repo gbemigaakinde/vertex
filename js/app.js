@@ -83,6 +83,11 @@
         });
       AppState.registerListener('chatNotifications', teacherNotifUnsub);
 
+      // Start DM unread listener for teacher badge
+      if (window.DM && typeof DM.initTeacherDMListener === 'function') {
+        DM.initTeacherDMListener();
+      }
+
       if (window.VtxLoader) window.VtxLoader.done();
       return;
     }
@@ -127,6 +132,11 @@
       }
 
       await Tasks.listenForStudentUpdates();
+
+      // Start DM unread listener for student badge
+      if (window.DM && typeof DM.initStudentDMListener === 'function') {
+        DM.initStudentDMListener(uid);
+      }
 
       /* Step 5 — Everything loaded, dismiss loader then render */
       if (window.VtxLoader) window.VtxLoader.progress(90, 'Almost ready…');
