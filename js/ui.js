@@ -103,7 +103,7 @@
       overlay.innerHTML =
         '<div class="cbt-modal modal-box" style="max-width:26rem;text-align:center;">' +
           '<p id="uiConfirmTitle" style="font-size:1rem;font-weight:600;' +
-             'color:var(--text-primary,#111827);line-height:1.6;margin-bottom:1.5rem;">' +
+             'color:var(--text-1);line-height:1.6;margin-bottom:1.5rem;">' +
             _escHtml(message) +
           '</p>' +
           '<div style="display:flex;gap:0.75rem;justify-content:center;">' +
