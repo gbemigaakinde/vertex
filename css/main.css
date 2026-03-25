@@ -1,0 +1,1494 @@
+/* ============================================================
+   Vertex Tutorial CBT — main.css
+   "Academic Precision" design system
+   
+   Replaces styles.css + modern.css (now a single unified file)
+   Loaded before studyroom.css
+
+   Typography: Instrument Serif (display) + DM Sans (body) + DM Mono (timer)
+   Palette:    Ink / Warm white / Amber accent / Stone rule
+   Philosophy: No cards, no gradients, no emojis. Typography-first.
+               Thin rules. Generous white space. Flat, solid color.
+   ============================================================ */
+
+/* ── Fonts ── */
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300;1,9..40,400&family=DM+Mono:wght@400;500&display=swap');
+
+/* ============================================================
+   1. DESIGN TOKENS
+   ============================================================ */
+:root {
+  /* ── Ink scale ── */
+  --ink-900: #0e0e0f;
+  --ink-800: #1c1c1e;
+  --ink-700: #2e2e30;
+  --ink-600: #48484c;
+  --ink-400: #8a8a8e;
+  --ink-300: #b4b4b8;
+  --ink-200: #d8d8da;
+  --ink-100: #ebebec;
+
+  /* ── Surface scale (warm, not cold white) ── */
+  --surface-0: #fafaf8;   /* page background */
+  --surface-1: #f5f4f0;   /* subtle inset */
+  --surface-2: #eeecea;   /* muted / disabled */
+  --surface-white: #ffffff;
+
+  /* ── Amber accent (single interactive color) ── */
+  --amber:        #b5641e;
+  --amber-hover:  #9a5218;
+  --amber-active: #7e4213;
+  --amber-bg:     #fdf3eb;
+  --amber-border: #e8c49a;
+  --amber-text:   #7e4213;
+
+  /* ── Semantic ── */
+  --success:        #1a5c3a;
+  --success-bg:     #eef5f1;
+  --success-border: #b0d4c0;
+  --success-text:   #0f3d25;
+
+  --danger:         #a82e2e;
+  --danger-hover:   #8f2424;
+  --danger-bg:      #faf1f1;
+  --danger-border:  #ddb8b8;
+  --danger-text:    #6b1c1c;
+
+  --warning:        #8a5c00;
+  --warning-bg:     #fdf7e8;
+  --warning-border: #ddc880;
+  --warning-text:   #5a3c00;
+
+  --info:           #1a3f6b;
+  --info-bg:        #eef3fa;
+  --info-border:    #a8c0e0;
+
+  /* ── Semantic aliases (for legacy class names in JS) ── */
+  --brand:          var(--amber);
+  --brand-hover:    var(--amber-hover);
+  --brand-active:   var(--amber-active);
+  --brand-bg:       var(--amber-bg);
+  --brand-border:   var(--amber-border);
+  --brand-text:     var(--amber-text);
+
+  --text-primary:   var(--ink-900);
+  --text-secondary: var(--ink-700);
+  --text-tertiary:  var(--ink-600);
+  --text-disabled:  var(--ink-300);
+
+  --border:         var(--ink-200);
+  --border-medium:  var(--ink-300);
+
+  --surface:        var(--surface-white);
+  --surface-subtle: var(--surface-1);
+  --surface-muted:  var(--surface-2);
+
+  --page-bg:        var(--surface-0);
+
+  /* ── Typography ── */
+  --font:         'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-display: 'Instrument Serif', Georgia, serif;
+  --font-mono:    'DM Mono', 'Courier New', monospace;
+
+  /* Type scale */
+  --text-xs:    0.6875rem;   /* 11px */
+  --text-sm:    0.8125rem;   /* 13px */
+  --text-base:  0.9375rem;   /* 15px */
+  --text-md:    1.0625rem;   /* 17px */
+  --text-lg:    1.1875rem;   /* 19px */
+  --text-xl:    1.375rem;    /* 22px */
+  --text-2xl:   1.75rem;     /* 28px */
+  --text-3xl:   2.25rem;     /* 36px */
+  --text-timer: 1.875rem;
+  --text-grade: 3rem;
+
+  /* ── Spacing ── */
+  --sp-1:  0.25rem;
+  --sp-2:  0.5rem;
+  --sp-3:  0.75rem;
+  --sp-4:  1rem;
+  --sp-5:  1.375rem;
+  --sp-6:  1.875rem;
+  --sp-8:  2.5rem;
+  --sp-10: 3.5rem;
+
+  /* ── Radii — very restrained ── */
+  --r-sm:  2px;
+  --r-md:  4px;
+  --r-lg:  6px;
+  --r-xl:  8px;
+  --r-2xl: 10px;
+
+  /* ── Shadows — near-invisible ── */
+  --shadow-xs: 0 1px 2px rgba(14,14,15,.04);
+  --shadow-sm: 0 1px 4px rgba(14,14,15,.06), 0 0 0 1px rgba(14,14,15,.03);
+  --shadow-md: 0 3px 10px rgba(14,14,15,.07), 0 0 0 1px rgba(14,14,15,.03);
+  --shadow-lg: 0 6px 20px rgba(14,14,15,.08), 0 0 0 1px rgba(14,14,15,.03);
+  --shadow-amber: 0 2px 8px rgba(181,100,30,.18);
+
+  /* Motion */
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --t-fast: 90ms;
+  --t-base: 150ms;
+  --t-slow: 220ms;
+}
+
+/* ============================================================
+   2. RESET & BASE
+   ============================================================ */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 15px;
+  scroll-behavior: smooth;
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  font-family: var(--font);
+  font-size: var(--text-base);
+  line-height: 1.6;
+  color: var(--text-primary);
+  background-color: var(--page-bg);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*, button, input, select, textarea {
+  font-family: var(--font);
+}
+
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: var(--ink-200);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover { background: var(--ink-300); }
+
+:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+  border-radius: var(--r-sm);
+}
+*:focus:not(:focus-visible) { outline: none; }
+
+/* ============================================================
+   3. PAGE LAYOUT
+   ============================================================ */
+#app {
+  min-height: 100vh;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: var(--sp-6) var(--sp-4);
+}
+
+#app.exam-active {
+  display: block;
+  padding: var(--sp-3);
+}
+
+/* ============================================================
+   4. SURFACE SYSTEM — no cards, just elevation via line
+   ============================================================ */
+
+/* Primary container — clean white, ruled border */
+.glass {
+  background: var(--surface-white) !important;
+  border: 1px solid var(--ink-200) !important;
+  border-radius: var(--r-xl) !important;
+  box-shadow: var(--shadow-xs) !important;
+  backdrop-filter: none !important;
+}
+
+/* Secondary / inner surface — warm off-white */
+.glass-dark {
+  background: var(--surface-1) !important;
+  border: 1px solid var(--ink-200) !important;
+  border-radius: var(--r-lg) !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Padding resets on glass (Tailwind conflicts) */
+.glass.p-10, .glass.p-8 { padding: var(--sp-6) !important; }
+.glass.p-6               { padding: var(--sp-5) !important; }
+.glass-dark.p-8          { padding: var(--sp-5) !important; }
+.glass-dark.p-6          { padding: var(--sp-4) !important; }
+.glass.mt-10             { margin-top: var(--sp-5) !important; }
+.glass-dark.mt-10        { margin-top: var(--sp-5) !important; }
+
+/* ============================================================
+   5. TYPOGRAPHY UTILITIES
+   ============================================================ */
+.cbt-title {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 400;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+}
+
+.cbt-heading {
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+  font-weight: 400;
+  color: var(--text-primary);
+  letter-spacing: -0.015em;
+}
+
+.cbt-brand-title {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: 400;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+
+.cbt-brand-subtitle {
+  font-size: var(--text-sm);
+  color: var(--text-tertiary);
+  margin-top: 0.25rem;
+}
+
+.cbt-label {
+  font-size: var(--text-xs);
+  font-weight: 600;
+  color: var(--text-tertiary);
+  display: block;
+  margin-bottom: var(--sp-1);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cbt-meta {
+  font-size: var(--text-xs);
+  color: var(--text-tertiary);
+  line-height: 1.5;
+}
+
+/* Tailwind type scale remaps */
+.text-xs    { font-size: var(--text-xs)   !important; }
+.text-sm    { font-size: var(--text-sm)   !important; }
+.text-base  { font-size: var(--text-base) !important; }
+.text-lg    { font-size: var(--text-md)   !important; }
+.text-xl    { font-size: var(--text-lg)   !important; }
+.text-2xl   { font-size: var(--text-xl)   !important; }
+.text-3xl   { font-size: var(--text-xl)   !important; }
+.text-4xl   { font-size: var(--text-2xl)  !important; }
+.text-5xl   { font-size: var(--text-2xl)  !important; }
+.text-7xl   { font-size: var(--text-3xl)  !important; }
+
+@media (min-width: 768px) {
+  .md\:text-3xl { font-size: var(--text-xl)  !important; }
+  .md\:text-5xl { font-size: var(--text-2xl) !important; }
+}
+
+/* ============================================================
+   6. FORM ELEMENTS
+   ============================================================ */
+.cbt-input,
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="date"],
+input[type="number"],
+select,
+textarea {
+  font-family: var(--font) !important;
+  font-size: var(--text-base) !important;
+  font-weight: 400;
+  color: var(--text-primary) !important;
+  background: var(--surface-white) !important;
+  border: 1px solid var(--ink-200) !important;
+  border-radius: var(--r-md) !important;
+  padding: 0.5625rem 0.75rem !important;
+  width: 100% !important;
+  line-height: 1.5;
+  transition:
+    border-color var(--t-fast) var(--ease),
+    box-shadow   var(--t-fast) var(--ease);
+  -webkit-appearance: none;
+  appearance: none;
+  outline: none;
+}
+
+input[type="text"]:focus,
+input[type="email"]:focus,
+input[type="password"]:focus,
+input[type="date"]:focus,
+input[type="number"]:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--amber) !important;
+  box-shadow: 0 0 0 3px rgba(181,100,30,.1) !important;
+}
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--ink-300);
+  font-weight: 400;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 5rem;
+}
+
+/* Password wrapper */
+.cbt-password-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.cbt-password-wrap input {
+  padding-right: 2.75rem !important;
+}
+
+.cbt-eye-btn {
+  position: absolute;
+  right: 0.625rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 28px;
+  height: 28px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-300);
+  border-radius: var(--r-sm);
+  transition: color var(--t-fast);
+}
+.cbt-eye-btn:hover { color: var(--amber); }
+
+/* ============================================================
+   7. BUTTON SYSTEM
+   ============================================================ */
+
+/* ── Base .btn (used everywhere in JS templates) ── */
+.btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: var(--sp-2) !important;
+  font-family: var(--font) !important;
+  font-weight: 600 !important;
+  font-size: var(--text-sm) !important;
+  letter-spacing: 0.01em !important;
+  padding: 0.5rem 1rem !important;
+  height: 34px !important;
+  border-radius: var(--r-md) !important;
+  border: 1px solid transparent !important;
+  cursor: pointer !important;
+  white-space: nowrap !important;
+  user-select: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  transition:
+    background var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease),
+    transform var(--t-fast) var(--ease),
+    opacity var(--t-fast) var(--ease) !important;
+  text-decoration: none !important;
+  position: relative;
+  background: var(--amber) !important;
+  color: #fff !important;
+  box-shadow: none !important;
+  line-height: 1 !important;
+}
+
+.btn:hover:not(:disabled) {
+  background: var(--amber-hover) !important;
+  transform: translateY(-1px) !important;
+  box-shadow: var(--shadow-amber) !important;
+}
+
+.btn:active:not(:disabled) {
+  transform: translateY(0) !important;
+  box-shadow: none !important;
+}
+
+.btn:disabled {
+  opacity: 0.38 !important;
+  cursor: not-allowed !important;
+  pointer-events: none !important;
+}
+
+/* Colour variants */
+.btn.bg-green-600,
+.btn.hover\:bg-green-700,
+.btn[class*="bg-green"] {
+  background: var(--success) !important;
+  box-shadow: none !important;
+}
+.btn.bg-green-600:hover:not(:disabled),
+.btn[class*="bg-green"]:hover:not(:disabled) {
+  background: var(--success-text) !important;
+  box-shadow: 0 2px 8px rgba(26,92,58,.2) !important;
+}
+
+.btn.bg-red-600,
+.btn[class*="bg-red"] {
+  background: var(--danger) !important;
+  box-shadow: none !important;
+}
+.btn.bg-red-600:hover:not(:disabled),
+.btn[class*="bg-red"]:hover:not(:disabled) {
+  background: var(--danger-hover) !important;
+  box-shadow: 0 2px 8px rgba(168,46,46,.2) !important;
+}
+
+.btn.bg-gray-500,
+.btn[class*="bg-gray"] {
+  background: var(--surface-2) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--ink-200) !important;
+  box-shadow: none !important;
+}
+.btn.bg-gray-500:hover:not(:disabled),
+.btn[class*="bg-gray"]:hover:not(:disabled) {
+  background: var(--ink-100) !important;
+  box-shadow: none !important;
+}
+
+.btn.bg-blue-600,
+.btn[class*="bg-blue"] {
+  background: var(--info) !important;
+  box-shadow: none !important;
+}
+.btn.bg-blue-600:hover:not(:disabled),
+.btn[class*="bg-blue"]:hover:not(:disabled) {
+  background: #15336a !important;
+}
+
+.btn.bg-indigo-600,
+.btn[class*="bg-indigo"] {
+  background: var(--ink-800) !important;
+  box-shadow: none !important;
+}
+.btn.bg-indigo-600:hover:not(:disabled),
+.btn[class*="bg-indigo"]:hover:not(:disabled) {
+  background: var(--ink-900) !important;
+}
+
+/* Size overrides */
+.btn.w-full  { width: 100% !important; }
+.btn.max-w-xs { max-width: 240px !important; }
+
+.btn.btn-lg,
+.btn[class*="py-3"] {
+  height: 40px !important;
+  padding: 0.5625rem 1.25rem !important;
+  font-size: var(--text-base) !important;
+}
+
+.btn.text-xl, .btn.text-2xl,
+.btn[class*="py-5"], .btn[class*="py-4"] {
+  font-size: var(--text-sm) !important;
+  padding: 0.5rem 1rem !important;
+  height: 34px !important;
+}
+
+.btn[class*="px-16"],
+.btn[class*="px-10"],
+.btn[class*="px-8"] {
+  padding-left: 1rem !important;
+  padding-right: 1rem !important;
+}
+
+/* Loading spinner */
+.btn.btn-loading {
+  opacity: 0.7 !important;
+  pointer-events: none !important;
+  padding-right: 2.5rem !important;
+}
+
+.btn.btn-loading::after {
+  content: '' !important;
+  position: absolute !important;
+  right: 0.75rem !important;
+  top: 50% !important;
+  width: 0.8rem !important;
+  height: 0.8rem !important;
+  margin-top: -0.4rem !important;
+  border: 1.5px solid rgba(255,255,255,.3) !important;
+  border-top-color: rgba(255,255,255,.9) !important;
+  border-radius: 50% !important;
+  animation: cbt-spin 0.6s linear infinite !important;
+}
+
+.btn[class*="bg-gray"].btn-loading::after {
+  border-color: rgba(0,0,0,.1) !important;
+  border-top-color: var(--ink-600) !important;
+}
+
+/* ── cbt-btn system (for new code paths) ── */
+.cbt-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--sp-2);
+  font-family: var(--font);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 0.5rem 1rem;
+  height: 34px;
+  border-radius: var(--r-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  user-select: none;
+  transition:
+    background var(--t-fast) var(--ease),
+    transform  var(--t-fast) var(--ease),
+    box-shadow var(--t-fast) var(--ease);
+  text-decoration: none;
+  position: relative;
+}
+
+.cbt-btn--primary   { background: var(--amber); color: #fff; }
+.cbt-btn--success   { background: var(--success); color: #fff; }
+.cbt-btn--danger    { background: var(--danger); color: #fff; }
+.cbt-btn--ghost     { background: var(--surface-2); color: var(--text-secondary); border-color: var(--ink-200); }
+.cbt-btn--info      { background: var(--info); color: #fff; }
+
+.cbt-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: brightness(0.93);
+  box-shadow: var(--shadow-sm);
+}
+
+.cbt-btn--full { width: 100%; justify-content: center; }
+.cbt-btn--lg   { height: 40px; padding: 0.5625rem 1.25rem; font-size: var(--text-base); }
+
+/* ============================================================
+   8. BADGES
+   ============================================================ */
+.cbt-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--sp-1);
+  font-size: 0.625rem;
+  font-weight: 600;
+  padding: 2px 7px;
+  border-radius: 3px;
+  white-space: nowrap;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.cbt-badge--success {
+  background: var(--success-bg);
+  color: var(--success-text);
+  border: 1px solid var(--success-border);
+}
+.cbt-badge--brand,
+.cbt-badge--warning {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border: 1px solid var(--warning-border);
+}
+.cbt-badge--danger {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  border: 1px solid var(--danger-border);
+}
+.cbt-badge--neutral {
+  background: var(--surface-1);
+  color: var(--text-tertiary);
+  border: 1px solid var(--ink-200);
+}
+
+/* ============================================================
+   9. MCQ OPTIONS
+   ============================================================ */
+.option-label,
+.cbt-option {
+  display: flex !important;
+  align-items: flex-start !important;
+  gap: var(--sp-3) !important;
+  padding: 0.75rem 1rem !important;
+  border-radius: var(--r-lg) !important;
+  cursor: pointer !important;
+  background: var(--surface-white) !important;
+  border: 1px solid var(--ink-200) !important;
+  transition:
+    border-color var(--t-fast) var(--ease),
+    background   var(--t-fast) var(--ease) !important;
+  min-height: 44px !important;
+  user-select: none !important;
+  -webkit-tap-highlight-color: transparent !important;
+  position: relative !important;
+  font-size: var(--text-base) !important;
+  box-shadow: none !important;
+}
+
+/* Left accent bar */
+.option-label::before,
+.cbt-option::before {
+  content: '' !important;
+  position: absolute !important;
+  left: 0 !important; top: 5px !important; bottom: 5px !important;
+  width: 2px !important;
+  background: transparent !important;
+  border-radius: 0 1px 1px 0 !important;
+  transition: background var(--t-fast) !important;
+}
+
+.option-label:hover,
+.cbt-option:hover {
+  border-color: var(--amber-border) !important;
+  background: var(--amber-bg) !important;
+}
+.option-label:hover::before,
+.cbt-option:hover::before {
+  background: var(--amber) !important;
+}
+
+.option-label.is-selected,
+.cbt-option.is-selected,
+.option-label[style*="edf2ff"],
+.option-label[style*="3b5bdb"] {
+  background: var(--amber-bg) !important;
+  border-color: var(--amber) !important;
+  box-shadow: 0 0 0 2px rgba(181,100,30,.08) !important;
+}
+.option-label.is-selected::before,
+.cbt-option.is-selected::before {
+  background: var(--amber) !important;
+}
+
+.option-label input[type="radio"] {
+  width: 1rem !important;
+  height: 1rem !important;
+  min-width: 1rem !important;
+  accent-color: var(--amber) !important;
+  margin-top: 0.2rem !important;
+  cursor: pointer !important;
+  flex-shrink: 0 !important;
+}
+
+/* Subject checkboxes */
+.subject-checkbox {
+  width: 1rem !important;
+  height: 1rem !important;
+  accent-color: var(--amber) !important;
+  cursor: pointer !important;
+}
+
+label.glass[class*="cursor-pointer"] {
+  transition:
+    transform    var(--t-base) var(--ease),
+    border-color var(--t-base) var(--ease),
+    background   var(--t-base) var(--ease) !important;
+  border: 1px solid var(--ink-200) !important;
+  padding: 0.75rem 1rem !important;
+  box-shadow: none !important;
+}
+
+label.glass[class*="cursor-pointer"]:hover {
+  transform: translateY(-1px) !important;
+  border-color: var(--amber-border) !important;
+  background: var(--amber-bg) !important;
+}
+
+label.glass:has(.subject-checkbox:checked) {
+  border-color: var(--amber) !important;
+  background: var(--amber-bg) !important;
+  box-shadow: 0 0 0 2px rgba(181,100,30,.1) !important;
+}
+
+/* ============================================================
+   10. QUESTION NAVIGATOR
+   ============================================================ */
+.nav-btn,
+.cbt-nav-dot {
+  width: 1.875rem !important;
+  height: 1.875rem !important;
+  border-radius: var(--r-md) !important;
+  border: 1px solid var(--ink-200) !important;
+  background: var(--surface-white) !important;
+  color: var(--ink-600) !important;
+  font-family: var(--font) !important;
+  font-weight: 600 !important;
+  font-size: 0.625rem !important;
+  cursor: pointer !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition:
+    background var(--t-fast) var(--ease),
+    border-color var(--t-fast) var(--ease),
+    transform var(--t-fast) var(--ease) !important;
+  padding: 0 !important;
+  line-height: 1 !important;
+  box-shadow: none !important;
+}
+
+.nav-btn:hover,
+.cbt-nav-dot:hover {
+  background: var(--amber-bg) !important;
+  border-color: var(--amber-border) !important;
+  color: var(--amber-text) !important;
+  transform: scale(1.06) !important;
+}
+
+.nav-btn.answered,
+.cbt-nav-dot.is-answered {
+  background: var(--success) !important;
+  border-color: transparent !important;
+  color: #fff !important;
+  box-shadow: none !important;
+}
+
+.nav-btn.current,
+.cbt-nav-dot.is-current {
+  background: var(--amber) !important;
+  border-color: var(--amber) !important;
+  color: #fff !important;
+  transform: scale(1.1) !important;
+  box-shadow: var(--shadow-amber) !important;
+}
+
+.nav-btn.current.answered,
+.cbt-nav-dot.is-current.is-answered {
+  background: var(--amber) !important;
+  border: 2px solid var(--success) !important;
+  color: #fff !important;
+  transform: scale(1.1) !important;
+}
+
+/* ============================================================
+   11. TIMER
+   ============================================================ */
+#timerDisplay,
+.cbt-timer {
+  font-family: var(--font-mono) !important;
+  font-size: var(--text-timer) !important;
+  font-weight: 500 !important;
+  letter-spacing: 0.05em !important;
+  line-height: 1 !important;
+  display: block !important;
+  min-width: 7ch !important;
+  transition: color var(--t-slow) var(--ease) !important;
+}
+
+.timer-green,  .cbt-timer--green  { color: var(--success) !important; }
+.timer-yellow, .cbt-timer--yellow { color: var(--warning) !important; }
+.timer-red,    .cbt-timer--red    {
+  color: var(--danger) !important;
+  animation: cbt-pulse 0.9s ease-in-out infinite !important;
+}
+
+/* ============================================================
+   12. EXAM HEADER STICKY
+   ============================================================ */
+.exam-header-sticky,
+.cbt-exam-header {
+  position: sticky !important;
+  top: 0.5rem !important;
+  z-index: 40 !important;
+  transition: box-shadow var(--t-base) var(--ease) !important;
+}
+
+.exam-header-sticky.stuck,
+.cbt-exam-header.is-stuck {
+  box-shadow: 0 4px 20px rgba(14,14,15,.07), 0 0 0 1px rgba(14,14,15,.04) !important;
+}
+
+/* ============================================================
+   13. SUBJECT TAB STRIP
+   ============================================================ */
+.cbt-tab-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--sp-2);
+  padding: var(--sp-3) var(--sp-4);
+  background: var(--surface-white);
+  border: 1px solid var(--ink-200);
+  border-radius: var(--r-lg);
+}
+
+.cbt-tab {
+  padding: 0.3125rem 0.75rem;
+  border-radius: var(--r-sm);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  border: 1px solid var(--ink-200);
+  background: var(--surface-1);
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.cbt-tab:hover {
+  background: var(--amber-bg);
+  border-color: var(--amber-border);
+  color: var(--amber-text);
+}
+
+.cbt-tab.is-active {
+  background: var(--amber);
+  border-color: var(--amber);
+  color: #fff;
+}
+
+/* ============================================================
+   14. MODALS & OVERLAYS
+   ============================================================ */
+.cbt-overlay,
+.modal-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  background: rgba(14,14,15,.45) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 999 !important;
+  padding: var(--sp-4) !important;
+  backdrop-filter: blur(4px) !important;
+  -webkit-backdrop-filter: blur(4px) !important;
+  animation: cbt-overlay-in var(--t-base) ease-out both !important;
+  overflow-y: auto !important;
+}
+
+.cbt-modal,
+.modal-box {
+  background: var(--surface-white) !important;
+  border: 1px solid var(--ink-200) !important;
+  border-radius: var(--r-xl) !important;
+  padding: var(--sp-6) !important;
+  max-width: 400px;
+  width: 100%;
+  box-shadow: var(--shadow-lg) !important;
+  animation: cbt-modal-in var(--t-slow) cubic-bezier(.34,1.45,.64,1) both !important;
+  margin: auto;
+}
+
+.modal-box h2, .modal-box h3 {
+  font-family: var(--font-display);
+  font-size: var(--text-lg) !important;
+  font-weight: 400 !important;
+}
+
+/* Confirm dialog */
+#uiConfirmOk {
+  background: var(--danger) !important;
+}
+#uiConfirmOk:hover { background: var(--danger-hover) !important; }
+
+#uiConfirmCancel {
+  background: var(--surface-2) !important;
+  color: var(--text-secondary) !important;
+  border-color: var(--ink-200) !important;
+}
+#uiConfirmCancel:hover { background: var(--ink-100) !important; }
+
+/* ============================================================
+   15. TOASTS
+   ============================================================ */
+#toastContainer {
+  position: fixed;
+  top: var(--sp-4);
+  right: var(--sp-4);
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-2);
+  max-width: 300px;
+  width: calc(100vw - 2rem);
+  pointer-events: none;
+}
+
+.cbt-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--sp-2);
+  padding: 0.625rem 0.875rem;
+  border-radius: var(--r-md);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  line-height: 1.5;
+  box-shadow: var(--shadow-lg);
+  animation: cbt-toast-in var(--t-slow) cubic-bezier(.22,1,.36,1) both;
+  border-left: 2px solid transparent;
+}
+
+.cbt-toast.is-dismissing {
+  animation: cbt-toast-out var(--t-base) ease-in both;
+}
+
+.cbt-toast--success {
+  background: var(--success-bg);
+  border-left-color: var(--success);
+  color: var(--success-text);
+}
+.cbt-toast--error {
+  background: var(--danger-bg);
+  border-left-color: var(--danger);
+  color: var(--danger-text);
+}
+.cbt-toast--info {
+  background: var(--surface-white);
+  border: 1px solid var(--ink-200);
+  border-left: 2px solid var(--amber);
+  color: var(--text-primary);
+}
+.cbt-toast--warning {
+  background: var(--warning-bg);
+  border-left-color: var(--warning);
+  color: var(--warning-text);
+}
+
+.cbt-toast__dismiss {
+  margin-left: auto;
+  flex-shrink: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.5;
+  font-size: 1rem;
+  line-height: 1;
+  padding: 0;
+}
+.cbt-toast__dismiss:hover { opacity: 1; }
+
+/* ============================================================
+   16. RESULTS SCREEN
+   ============================================================ */
+.cbt-grade-display {
+  font-family: var(--font-display);
+  font-size: var(--text-grade);
+  font-weight: 400;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.cbt-accordion {
+  border: 1px solid var(--ink-200);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+
+.cbt-accordion + .cbt-accordion { margin-top: var(--sp-2); }
+
+.cbt-accordion summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.875rem 1.125rem;
+  font-size: var(--text-base);
+  font-weight: 500;
+  color: var(--text-primary);
+  cursor: pointer;
+  background: var(--surface-1);
+  list-style: none;
+  user-select: none;
+  border-bottom: 1px solid transparent;
+  transition: background var(--t-fast);
+}
+
+.cbt-accordion summary::-webkit-details-marker { display: none; }
+
+.cbt-accordion summary::after {
+  content: '›';
+  font-size: 1.125rem;
+  color: var(--ink-300);
+  font-weight: 400;
+  transition: transform var(--t-base);
+  flex-shrink: 0;
+}
+
+.cbt-accordion[open] summary {
+  background: var(--amber-bg);
+  border-bottom-color: var(--amber-border);
+  color: var(--amber-text);
+}
+
+.cbt-accordion[open] summary::after {
+  transform: rotate(90deg);
+  color: var(--amber);
+}
+
+/* Review item states */
+.cbt-review-item {
+  border: 1px solid var(--ink-200);
+  border-radius: var(--r-lg);
+  padding: var(--sp-4);
+  background: var(--surface-white);
+}
+
+.cbt-review-item--correct,
+.border-green-500 {
+  border-color: var(--success-border) !important;
+  background: var(--success-bg) !important;
+}
+
+.cbt-review-item--wrong,
+.border-red-500 {
+  border-color: var(--danger-border) !important;
+  background: var(--danger-bg) !important;
+}
+
+.cbt-review-item--skipped,
+.border-gray-400 {
+  border-color: var(--ink-200) !important;
+  background: var(--surface-1) !important;
+}
+
+/* Explanation box */
+.cbt-explanation,
+.bg-gray-100 {
+  background: var(--surface-1) !important;
+  border: 1px solid var(--ink-200) !important;
+  border-radius: var(--r-sm) !important;
+  padding: 0.625rem 0.875rem !important;
+  font-size: var(--text-sm) !important;
+  color: var(--text-secondary) !important;
+  line-height: 1.6;
+}
+
+/* ============================================================
+   17. TEACHER DASHBOARD
+   ============================================================ */
+.max-w-7xl.glass {
+  border-top: 2px solid var(--amber) !important;
+  padding: 0 !important;
+}
+
+/* Tab nav */
+.tab-btn {
+  background: transparent !important;
+  color: var(--ink-400) !important;
+  border: 1px solid transparent !important;
+  border-radius: var(--r-sm) !important;
+  font-size: var(--text-sm) !important;
+  font-weight: 500 !important;
+  padding: 0.4375rem 0.875rem !important;
+  height: auto !important;
+  box-shadow: none !important;
+  transition: color var(--t-fast), background var(--t-fast), border-color var(--t-fast) !important;
+}
+
+.tab-btn:hover:not(:disabled) {
+  color: var(--text-primary) !important;
+  background: var(--surface-1) !important;
+  border-color: var(--ink-200) !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.tab-btn.active {
+  background: var(--amber) !important;
+  color: #fff !important;
+  border-color: var(--amber) !important;
+  font-weight: 600 !important;
+}
+
+/* Chat tab */
+#tab-chat.tab-btn,
+.tab-btn.bg-green-600 {
+  background: var(--success) !important;
+  color: #fff !important;
+  border-color: var(--success) !important;
+  font-weight: 600 !important;
+}
+#tab-chat.tab-btn:hover:not(:disabled),
+.tab-btn.bg-green-600:hover:not(:disabled) {
+  background: var(--success-text) !important;
+  transform: none !important;
+}
+
+/* DM tab */
+#tab-dm.tab-btn,
+.tab-btn.bg-indigo-600 {
+  background: var(--ink-700) !important;
+  color: #fff !important;
+  border-color: var(--ink-700) !important;
+  font-weight: 600 !important;
+}
+#tab-dm.tab-btn:hover:not(:disabled) {
+  background: var(--ink-900) !important;
+  transform: none !important;
+}
+
+/* Tab panel */
+.teacher-tab         { display: block; animation: cbt-fade-in var(--t-slow) ease-out both; }
+.teacher-tab.hidden  { display: none !important; }
+
+/* Teacher details/summary */
+.teacher-tab details summary,
+details.glass-dark > summary,
+.space-y-6 details > summary {
+  list-style: none !important;
+  cursor: pointer !important;
+  user-select: none !important;
+  padding: 0.75rem 1rem !important;
+  background: var(--surface-1) !important;
+  font-size: var(--text-base) !important;
+  font-weight: 500 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  border-bottom: 1px solid transparent !important;
+  border-radius: var(--r-lg) var(--r-lg) 0 0 !important;
+  transition: background var(--t-fast) !important;
+}
+
+.teacher-tab details[open] summary,
+details.glass-dark[open] > summary,
+.space-y-6 details[open] > summary {
+  background: var(--amber-bg) !important;
+  border-bottom-color: var(--amber-border) !important;
+  color: var(--amber-text) !important;
+}
+
+.teacher-tab details summary::-webkit-details-marker,
+details summary::-webkit-details-marker { display: none !important; }
+
+.teacher-tab details summary::after,
+details.glass-dark > summary::after,
+.space-y-6 details > summary::after {
+  content: '›' !important;
+  font-size: 1.125rem !important;
+  color: var(--ink-300) !important;
+  font-weight: 400 !important;
+  transition: transform var(--t-base) !important;
+  flex-shrink: 0 !important;
+}
+
+.teacher-tab details[open] summary::after,
+details.glass-dark[open] > summary::after,
+.space-y-6 details[open] > summary::after {
+  transform: rotate(90deg) !important;
+  color: var(--amber) !important;
+}
+
+/* Result card hover */
+.teacher-result-card {
+  cursor: pointer;
+  transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+}
+
+.teacher-result-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+  border-color: var(--amber-border) !important;
+}
+
+/* ============================================================
+   18. CHAT
+   ============================================================ */
+#chatMessages {
+  max-height: 380px !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  scroll-behavior: smooth !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: var(--sp-2) !important;
+  padding-right: var(--sp-1) !important;
+  min-width: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+#chatMessages p, #chatMessages span {
+  word-break: break-word !important;
+  overflow-wrap: break-word !important;
+}
+
+#chatMessages::-webkit-scrollbar { width: 3px !important; }
+#chatMessages::-webkit-scrollbar-thumb {
+  background: var(--ink-200) !important;
+  border-radius: 99px !important;
+}
+
+/* Teacher message */
+#chatMessages .glass-dark[class*="border-yellow"] {
+  background: var(--warning-bg) !important;
+  border-color: var(--warning-border) !important;
+  border-left: 2px solid var(--warning) !important;
+}
+
+#typingIndicator {
+  min-height: 1.1rem !important;
+  font-size: var(--text-xs) !important;
+  color: var(--ink-300) !important;
+  text-align: center !important;
+  font-style: italic !important;
+}
+
+#replyPreview {
+  border-radius: var(--r-md) !important;
+  background: var(--amber-bg) !important;
+  border: 1px solid var(--amber-border) !important;
+  padding: 0.5rem 0.75rem !important;
+  font-size: var(--text-sm) !important;
+  align-items: center !important;
+  gap: var(--sp-3) !important;
+  width: 100% !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+#replyPreview > div {
+  flex: 1 1 0 !important;
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+#replyPreview strong {
+  font-size: var(--text-sm) !important;
+  font-weight: 600 !important;
+  display: block !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+#replyPreview #replyText {
+  display: block !important;
+  font-size: var(--text-xs) !important;
+  color: var(--ink-600) !important;
+  margin-top: 2px !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+}
+
+/* Chat rules block */
+.border-l-4.border-purple-600.bg-purple-50 {
+  background: var(--surface-1) !important;
+  border-left: 2px solid var(--amber) !important;
+  border-top: none !important;
+  border-right: none !important;
+  border-bottom: none !important;
+  border-radius: 0 var(--r-md) var(--r-md) 0 !important;
+  padding: 0.75rem 1rem !important;
+}
+
+/* Mention dropdown */
+#mentionDropdown {
+  border-radius: var(--r-lg) !important;
+  border: 1px solid var(--ink-200) !important;
+  box-shadow: var(--shadow-lg) !important;
+}
+
+.mention-item:last-child { border-bottom: none !important; }
+
+/* ============================================================
+   19. TASKS PANEL (student view)
+   ============================================================ */
+#tasksContainer .glass-dark {
+  background: var(--amber-bg) !important;
+  border: 1px solid var(--amber-border) !important;
+  border-radius: var(--r-xl) !important;
+  padding: var(--sp-5) !important;
+}
+
+#tasksContainer .text-5xl  { font-size: var(--text-xl)  !important; }
+#tasksContainer .text-3xl  { font-size: var(--text-lg)  !important; }
+
+#tasksContainer .border-red-300 {
+  background: var(--danger-bg) !important;
+  border-color: var(--danger-border) !important;
+}
+
+/* ============================================================
+   20. COLOR OVERRIDES — Tailwind purple → amber/ink
+   ============================================================ */
+.text-purple-700   { color: var(--amber-text)   !important; }
+.text-purple-600   { color: var(--amber)         !important; }
+.border-purple-600 { border-color: var(--amber)  !important; }
+.bg-purple-50      { background: var(--amber-bg) !important; }
+.bg-purple-600     { background: var(--amber)    !important; }
+.border-purple-200 { border-color: var(--amber-border) !important; }
+.border-purple-500\/50 { border-color: rgba(181,100,30,.25) !important; }
+.bg-purple-600\/30     { background: rgba(181,100,30,.07) !important; }
+
+.bg-purple-100 {
+  background: var(--amber-bg) !important;
+  border: 1px solid var(--amber-border) !important;
+  border-radius: var(--r-sm) !important;
+}
+
+/* Indigo → amber/ink */
+.bg-indigo-600 { background: var(--ink-800) !important; }
+.accent-indigo-600 { accent-color: var(--amber) !important; }
+
+/* Review card borders from JS inline styles */
+.glass.rounded-lg[style*="var(--success"] { border-color: var(--success-border) !important; }
+.glass.rounded-lg[style*="var(--danger"]  { border-color: var(--danger-border)  !important; }
+
+/* Container max-widths */
+.max-w-4xl { max-width: 840px !important; }
+.max-w-5xl { max-width: 960px !important; }
+.max-w-7xl { max-width: 1080px !important; }
+
+/* ============================================================
+   21. NOTIFICATION BADGES
+   ============================================================ */
+.chat-notif-badge,
+.dm-notif-badge {
+  background: var(--danger) !important;
+  border: 2px solid var(--surface-white) !important;
+}
+
+/* ============================================================
+   22. AUTH SCREEN
+   ============================================================ */
+.cbt-auth-footer {
+  font-size: var(--text-xs);
+  color: var(--ink-300);
+  text-align: center;
+  margin-top: var(--sp-6);
+  padding-top: var(--sp-4);
+  border-top: 1px solid var(--ink-200);
+}
+
+.cbt-text-link {
+  color: var(--amber);
+  text-decoration: underline;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: inherit;
+  font-family: inherit;
+  font-weight: 500;
+  padding: 0;
+}
+.cbt-text-link:hover { color: var(--amber-hover); }
+
+/* ============================================================
+   23. STUDENT INFO BAR
+   ============================================================ */
+.cbt-student-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.75rem;
+  background: var(--surface-1);
+  border: 1px solid var(--ink-200);
+  border-radius: var(--r-md);
+  padding: 0.4375rem 0.875rem;
+  font-size: var(--text-sm);
+}
+
+/* ============================================================
+   24. UTILITIES
+   ============================================================ */
+.hidden { display: none !important; }
+
+.animate-fadeIn,
+.cbt-animate-in {
+  animation: cbt-fade-in var(--t-slow) var(--ease) both !important;
+}
+
+/* Score card */
+.cbt-score-card {
+  background: var(--surface-white);
+  border: 1px solid var(--ink-200);
+  border-radius: var(--r-md);
+  padding: 0.5rem 0.75rem;
+  text-align: center;
+  min-width: 88px;
+}
+
+/* ============================================================
+   25. ANIMATIONS
+   ============================================================ */
+@keyframes cbt-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes cbt-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.45; }
+}
+
+@keyframes cbt-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes cbt-overlay-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes cbt-modal-in {
+  from { opacity: 0; transform: scale(0.97) translateY(10px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0); }
+}
+
+@keyframes cbt-toast-in {
+  from { opacity: 0; transform: translateX(105%); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes cbt-toast-out {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(105%); }
+}
+
+/* ============================================================
+   26. RESPONSIVE
+   ============================================================ */
+@media (max-width: 640px) {
+  #app { padding: var(--sp-3) !important; }
+  #app.exam-active { padding: 0.4rem !important; }
+
+  .glass {
+    padding: var(--sp-4) !important;
+    border-radius: var(--r-lg) !important;
+  }
+
+  .cbt-modal, .modal-box {
+    padding: var(--sp-4) !important;
+    border-radius: var(--r-lg) !important;
+  }
+
+  #timerDisplay { font-size: 1.5rem !important; }
+  .cbt-grade-display { font-size: 2.25rem !important; }
+
+  .nav-btn, .cbt-nav-dot {
+    width: 1.625rem !important;
+    height: 1.625rem !important;
+  }
+
+  .btn { font-size: var(--text-sm) !important; }
+
+  #toastContainer {
+    top: var(--sp-3);
+    right: var(--sp-3);
+    max-width: 260px;
+  }
+
+  .max-w-7xl.glass { padding: 0 !important; }
+}
+
+/* ============================================================
+   27. PRINT
+   ============================================================ */
+@media print {
+  body { background: white; color: black; }
+  .glass, .glass-dark { background: white !important; box-shadow: none !important; }
+  .btn, #toastContainer, .cbt-overlay { display: none !important; }
+}
