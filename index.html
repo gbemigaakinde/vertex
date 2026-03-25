@@ -8,9 +8,9 @@
   <meta name="description" content="Computer-Based Testing System for Vertex Tutorial students." />
   <meta name="author" content="Vertex Tutorial" />
 
-  <!-- PWA -->
-  <meta name="theme-color" content="#0e0e0f" />
-  <meta name="color-scheme" content="light" />
+  <meta name="theme-color" content="#0d0d0f" media="(prefers-color-scheme: dark)" />
+  <meta name="theme-color" content="#f7f7f8" media="(prefers-color-scheme: light)" />
+  <meta name="color-scheme" content="light dark" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="VertexCBT" />
@@ -21,15 +21,14 @@
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" href="vertex.jpeg" type="image/png" />
 
-  <!-- Stylesheets — main.css replaces styles.css + modern.css -->
+  <!-- Geist font from Google Fonts CDN alternative -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+
   <link rel="stylesheet" href="news-ticker.css" />
   <link rel="stylesheet" href="css/main.css" />
   <link rel="stylesheet" href="css/studyroom.css" />
 
-  <!--
-    Tailwind CDN — layout utilities only.
-    All visual properties live in main.css.
-  -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
     if (window.tailwind) {
@@ -37,7 +36,7 @@
         theme: {
           extend: {
             fontFamily: {
-              sans: ['DM Sans', 'system-ui', '-apple-system', 'sans-serif'],
+              sans: ['Geist', 'DM Sans', 'system-ui', '-apple-system', 'sans-serif'],
             },
           },
         },
@@ -46,30 +45,35 @@
     }
   </script>
 
-  <!-- KaTeX math rendering -->
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
           onload="window._katexAutoRenderReady = true;"></script>
 
-  <!-- ============================================================
-       LOADING SCREEN STYLES — inlined for first-paint
-       ============================================================ -->
   <style>
-    /* ── Loading overlay ── */
+    /* ── Dark mode bootstrap (runs before CSS loads to prevent flash) ── */
+    (function() {
+      const stored = localStorage.getItem('vtx-theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (stored === 'dark' || (!stored && prefersDark)) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      }
+    })();
+  </style>
+
+  <style>
+    /* ── Loading screen ── */
     #vtx-loader {
       position: fixed;
       inset: 0;
       z-index: 99999;
-      background: #0e0e0f;
+      background: #0d0d0f;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 0;
-      font-family: 'Georgia', serif;
-      transition: opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1),
-                  visibility 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+      font-family: 'Geist', 'DM Sans', system-ui, sans-serif;
+      transition: opacity 0.5s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.5s cubic-bezier(0.4, 0, 0.2, 1);
       opacity: 1;
       visibility: visible;
     }
@@ -80,257 +84,220 @@
       pointer-events: none;
     }
 
-    /* Subtle warm radial glow */
-    #vtx-loader::after {
-      content: '';
-      position: absolute;
-      width: 480px;
-      height: 480px;
-      border-radius: 50%;
-      background: radial-gradient(circle, rgba(181,100,30,.12) 0%, transparent 68%);
-      pointer-events: none;
+    .vtx-loader-mark {
+      width: 44px;
+      height: 44px;
+      background: #4f6ef7;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 8px 24px rgba(79, 110, 247, 0.35);
+      animation: vtx-mark-pulse 2.4s ease-in-out infinite;
     }
 
-    /* ── Book container ── */
-    .vtx-book-wrap {
-      position: relative;
-      z-index: 1;
-      margin-bottom: 2.5rem;
-      animation: vtx-float 3.2s ease-in-out infinite;
+    @keyframes vtx-mark-pulse {
+      0%, 100% { box-shadow: 0 8px 24px rgba(79, 110, 247, 0.35); }
+      50%       { box-shadow: 0 8px 32px rgba(79, 110, 247, 0.55); transform: scale(1.03); }
     }
 
-    .vtx-book {
-      width: 88px;
-      height: 68px;
-      position: relative;
-    }
-
-    /* ── Page-turn animation ── */
-    .vtx-page {
-      position: absolute;
-      top: 0;
-      right: 50%;
-      width: 42px;
-      height: 64px;
-      transform-origin: right center;
-      transform-style: preserve-3d;
-      animation: vtx-page-turn 1.9s ease-in-out infinite;
-    }
-
-    .vtx-page:nth-child(2) { animation-delay: 0.32s; opacity: 0.65; }
-    .vtx-page:nth-child(3) { animation-delay: 0.64s; opacity: 0.38; }
-
-    @keyframes vtx-page-turn {
-      0%   { transform: rotateY(0deg);    }
-      40%  { transform: rotateY(-160deg); }
-      60%  { transform: rotateY(-160deg); }
-      100% { transform: rotateY(0deg);    }
-    }
-
-    @keyframes vtx-float {
-      0%, 100% { transform: translateY(0px); }
-      50%       { transform: translateY(-7px); }
-    }
-
-    /* ── Brand text ── */
     .vtx-loader-title {
-      position: relative;
-      z-index: 1;
-      font-family: 'Georgia', 'Times New Roman', serif;
-      font-size: 1.375rem;
-      font-weight: 700;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-      color: #f5f5f0;
+      font-size: 1.0625rem;
+      font-weight: 600;
+      letter-spacing: -0.015em;
+      color: #f0f0f2;
       margin-bottom: 0.25rem;
       text-align: center;
     }
 
     .vtx-loader-subtitle {
-      position: relative;
-      z-index: 1;
-      font-family: 'Georgia', serif;
       font-size: 0.6875rem;
-      letter-spacing: 0.26em;
+      letter-spacing: 0.12em;
       text-transform: uppercase;
-      color: rgba(200, 195, 180, 0.5);
-      margin-bottom: 2.25rem;
+      color: rgba(180, 180, 192, 0.4);
+      margin-bottom: 2rem;
       text-align: center;
     }
 
-    /* ── Progress track ── */
     .vtx-loader-track {
-      position: relative;
-      z-index: 1;
       width: 160px;
-      height: 1px;
-      background: rgba(255,255,255,.08);
+      height: 2px;
+      background: rgba(255,255,255,.06);
       border-radius: 99px;
       overflow: hidden;
-      margin-bottom: 1.25rem;
+      margin-bottom: 1rem;
+      opacity: 0;
+      transition: opacity 0.3s ease;
     }
 
     .vtx-loader-bar {
       height: 100%;
       width: 0%;
       border-radius: 99px;
-      background: #b5641e;
+      background: #4f6ef7;
       transition: width 0.4s ease;
-      position: relative;
-      overflow: hidden;
     }
 
-    .vtx-loader-bar::after {
-      content: '';
-      position: absolute;
-      top: 0; left: -100%; bottom: 0;
-      width: 60%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent);
-      animation: vtx-shimmer 1.6s ease-in-out infinite;
-    }
-
-    @keyframes vtx-shimmer {
-      0%   { left: -60%; }
-      100% { left: 140%; }
-    }
-
-    /* ── Status text ── */
     .vtx-loader-status {
-      position: relative;
-      z-index: 1;
-      font-family: 'Georgia', serif;
-      font-size: 0.625rem;
-      letter-spacing: 0.2em;
-      text-transform: uppercase;
-      color: rgba(180, 175, 160, 0.5);
+      font-size: 0.6875rem;
+      letter-spacing: 0.06em;
+      color: rgba(160, 160, 175, 0.45);
       text-align: center;
       min-height: 1em;
       transition: opacity 0.3s ease;
     }
 
-    /* Dot pulse (before bar appears) */
     .vtx-dots {
-      position: relative;
-      z-index: 1;
       display: flex;
       gap: 5px;
       align-items: center;
       justify-content: center;
-      margin-bottom: 0.5rem;
+      margin-bottom: 0.75rem;
     }
 
     .vtx-dot {
       width: 4px;
       height: 4px;
       border-radius: 50%;
-      background: rgba(181,100,30,.5);
-      animation: vtx-dot-pulse 1.5s ease-in-out infinite;
+      background: rgba(79, 110, 247, 0.5);
+      animation: vtx-dot-pulse 1.4s ease-in-out infinite;
     }
 
-    .vtx-dot:nth-child(2) { animation-delay: 0.24s; }
-    .vtx-dot:nth-child(3) { animation-delay: 0.48s; }
+    .vtx-dot:nth-child(2) { animation-delay: 0.22s; }
+    .vtx-dot:nth-child(3) { animation-delay: 0.44s; }
 
     @keyframes vtx-dot-pulse {
       0%, 80%, 100% { transform: scale(1);   opacity: 0.4; }
       40%            { transform: scale(1.6); opacity: 1;   }
     }
+
+    /* ── Theme toggle button ── */
+    #themeToggle {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      z-index: 9998;
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-3);
+      transition: background 0.14s, color 0.14s, border-color 0.14s;
+      box-shadow: var(--shadow-sm);
+    }
+
+    #themeToggle:hover {
+      background: var(--bg-muted);
+      color: var(--text-1);
+      border-color: var(--border-strong);
+    }
+
+    .theme-icon-dark  { display: block; }
+    .theme-icon-light { display: none; }
+
+    [data-theme="dark"] .theme-icon-dark  { display: none; }
+    [data-theme="dark"] .theme-icon-light { display: block; }
   </style>
 </head>
 
 <body>
 
-  <!-- ============================================================
-       LOADING SCREEN
-       ============================================================ -->
+  <!-- Dark mode bootstrap script (must be synchronous) -->
+  <script>
+    (function() {
+      const stored = localStorage.getItem('vtx-theme');
+      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (stored === 'dark' || (!stored && prefersDark)) {
+        document.documentElement.setAttribute('data-theme', 'dark');
+      } else {
+        document.documentElement.setAttribute('data-theme', 'light');
+      }
+    })();
+  </script>
+
+  <!-- Loading screen -->
   <div id="vtx-loader" role="status" aria-label="Loading Vertex Tutorial">
-
-    <!-- Open book illustration (pure SVG) -->
-    <div class="vtx-book-wrap">
-      <svg class="vtx-book" viewBox="0 0 88 68" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <!-- Book spine -->
-        <line x1="44" y1="4" x2="44" y2="65" stroke="rgba(200,190,165,0.18)" stroke-width="1.5"/>
-
-        <!-- Left page -->
-        <path d="M44 8 Q22 6 4 11 L4 64 Q22 58 44 60 Z"
-              fill="rgba(255,255,255,0.04)"
-              stroke="rgba(181,100,30,0.22)"
-              stroke-width="1"/>
-        <line x1="11" y1="20" x2="36" y2="18" stroke="rgba(181,100,30,0.12)" stroke-width="1"/>
-        <line x1="11" y1="28" x2="36" y2="26" stroke="rgba(181,100,30,0.12)" stroke-width="1"/>
-        <line x1="11" y1="36" x2="36" y2="34" stroke="rgba(181,100,30,0.12)" stroke-width="1"/>
-        <line x1="11" y1="44" x2="32" y2="42" stroke="rgba(181,100,30,0.08)" stroke-width="1"/>
-        <line x1="11" y1="52" x2="28" y2="50" stroke="rgba(181,100,30,0.08)" stroke-width="1"/>
-
-        <!-- Right page -->
-        <path d="M44 8 Q66 6 84 11 L84 64 Q66 58 44 60 Z"
-              fill="rgba(255,255,255,0.04)"
-              stroke="rgba(181,100,30,0.22)"
-              stroke-width="1"/>
-        <line x1="52" y1="20" x2="77" y2="18" stroke="rgba(181,100,30,0.12)" stroke-width="1"/>
-        <line x1="52" y1="28" x2="77" y2="26" stroke="rgba(181,100,30,0.12)" stroke-width="1"/>
-        <line x1="52" y1="36" x2="77" y2="34" stroke="rgba(181,100,30,0.12)" stroke-width="1"/>
-        <line x1="52" y1="44" x2="74" y2="42" stroke="rgba(181,100,30,0.08)" stroke-width="1"/>
-        <line x1="52" y1="52" x2="70" y2="50" stroke="rgba(181,100,30,0.08)" stroke-width="1"/>
-
-        <!-- Turning page -->
-        <g class="vtx-page" style="transform-origin:44px 34px;">
-          <path d="M44 8 Q56 6 68 10 L68 62 Q56 58 44 60 Z"
-                fill="rgba(181,100,30,0.14)"
-                stroke="rgba(181,100,30,0.35)"
-                stroke-width="0.75"/>
-        </g>
+    <div class="vtx-loader-mark">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white"
+           stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/>
+        <line x1="12" y1="22" x2="12" y2="15.5"/>
+        <polyline points="22 8.5 12 15.5 2 8.5"/>
       </svg>
     </div>
-
     <div class="vtx-loader-title">Vertex Tutorial</div>
     <div class="vtx-loader-subtitle">Computer-Based Testing</div>
-
     <div class="vtx-dots" id="vtxDots">
       <div class="vtx-dot"></div>
       <div class="vtx-dot"></div>
       <div class="vtx-dot"></div>
     </div>
-
-    <div class="vtx-loader-track" id="vtxTrack" style="opacity:0;transition:opacity 0.3s;">
+    <div class="vtx-loader-track" id="vtxTrack">
       <div class="vtx-loader-bar" id="vtxBar"></div>
     </div>
-
     <div class="vtx-loader-status" id="vtxStatus">Preparing your session&hellip;</div>
-
   </div>
+
+  <!-- Theme toggle -->
+  <button id="themeToggle" aria-label="Toggle dark mode" onclick="VtxTheme.toggle()">
+    <!-- Sun (shown in dark mode) -->
+    <svg class="theme-icon-light" width="16" height="16" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="12" r="5"/>
+      <line x1="12" y1="1" x2="12" y2="3"/>
+      <line x1="12" y1="21" x2="12" y2="23"/>
+      <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+      <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+      <line x1="1" y1="12" x2="3" y2="12"/>
+      <line x1="21" y1="12" x2="23" y2="12"/>
+      <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+      <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+    </svg>
+    <!-- Moon (shown in light mode) -->
+    <svg class="theme-icon-dark" width="16" height="16" viewBox="0 0 24 24" fill="none"
+         stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+    </svg>
+  </button>
 
   <!-- Toast container -->
   <div id="toastContainer" aria-live="polite" aria-atomic="false" role="status"></div>
 
-  <!-- Main app mount point -->
+  <!-- Main app mount -->
   <div id="app"></div>
 
   <!-- PWA Install Prompt -->
   <div id="install-prompt"
        style="display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
-              background:#fff;padding:1rem 1.5rem;border-radius:8px;
-              box-shadow:0 6px 20px rgba(14,14,15,.12);z-index:9999;
-              max-width:90%;text-align:center;border:1px solid #e4e2dc;">
-    <p style="margin:0 0 10px;font-weight:600;color:#0e0e0f;font-family:'DM Sans',system-ui,sans-serif;font-size:0.875rem;">
+              background:var(--bg-base);padding:1rem 1.5rem;border-radius:var(--r-xl);
+              box-shadow:var(--shadow-xl);z-index:9999;max-width:90%;text-align:center;
+              border:1px solid var(--border);">
+    <p style="margin:0 0 10px;font-weight:600;color:var(--text-1);font-size:0.875rem;">
       Install Vertex Tutorial App
     </p>
     <div style="display:flex;gap:8px;justify-content:center;">
       <button id="install-button"
-              style="background:#0e0e0f;color:white;border:none;padding:6px 16px;
-                     border-radius:4px;font-weight:600;cursor:pointer;font-family:'DM Sans',system-ui,sans-serif;font-size:0.8125rem;">
+              style="background:var(--accent);color:white;border:none;padding:6px 16px;
+                     border-radius:var(--r-md);font-weight:600;cursor:pointer;
+                     font-family:var(--font);font-size:0.8125rem;">
         Install
       </button>
       <button id="install-cancel"
-              style="background:#f5f4f0;color:#48484c;border:1px solid #e4e2dc;padding:6px 16px;
-                     border-radius:4px;cursor:pointer;font-family:'DM Sans',system-ui,sans-serif;font-size:0.8125rem;">
+              style="background:var(--bg-subtle);color:var(--text-2);border:1px solid var(--border);
+                     padding:6px 16px;border-radius:var(--r-md);cursor:pointer;
+                     font-family:var(--font);font-size:0.8125rem;">
         Later
       </button>
     </div>
   </div>
 
-  <!-- ============================================================
-       LOADER CONTROLLER
-       ============================================================ -->
+  <!-- Loader controller -->
   <script>
     (function () {
       'use strict';
@@ -341,10 +308,10 @@
       var _dots   = document.getElementById('vtxDots');
       var _loader = document.getElementById('vtx-loader');
       var _pct    = 0;
-      var _done   = false;
+      var _isDone = false;
 
       function _setProgress(pct, label) {
-        if (_done) return;
+        if (_isDone) return;
         _pct = Math.min(100, Math.max(0, pct));
         if (_pct > 0 && _track) {
           _track.style.opacity = '1';
@@ -354,35 +321,98 @@
         if (_status && label) _status.textContent = label;
       }
 
-      function _done_fn() {
-        if (_done) return;
-        _done = true;
+      function _done() {
+        if (_isDone) return;
+        _isDone = true;
         _setProgress(100, 'Ready');
         setTimeout(function () {
           if (_loader) _loader.classList.add('is-done');
           setTimeout(function () {
-            if (_loader && _loader.parentNode) {
-              _loader.parentNode.removeChild(_loader);
-            }
-          }, 650);
-        }, 280);
+            if (_loader && _loader.parentNode) _loader.parentNode.removeChild(_loader);
+          }, 600);
+        }, 260);
       }
 
-      window.VtxLoader = {
-        progress: _setProgress,
-        done:     _done_fn,
-      };
+      window.VtxLoader = { progress: _setProgress, done: _done };
 
-      // Failsafe
       setTimeout(function () {
-        if (!_done) {
-          console.warn('[VtxLoader] Failsafe triggered.');
-          _done_fn();
-        }
+        if (!_isDone) { console.warn('[VtxLoader] Failsafe triggered.'); _done(); }
       }, 12000);
-
     }());
   </script>
+
+  <!-- Theme controller -->
+  <script>
+    (function () {
+      'use strict';
+
+      function _apply(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('vtx-theme', theme);
+      }
+
+      function toggle() {
+        const current = document.documentElement.getAttribute('data-theme') || 'light';
+        _apply(current === 'dark' ? 'light' : 'dark');
+      }
+
+      /* Sync with OS preference changes */
+      window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', function (e) {
+        if (!localStorage.getItem('vtx-theme')) {
+          _apply(e.matches ? 'dark' : 'light');
+        }
+      });
+
+      window.VtxTheme = { toggle: toggle, apply: _apply };
+    }());
+  </script>
+
+  <!-- CSS variable bridge for data-theme attribute -->
+  <style>
+    [data-theme="dark"] {
+      --bg-base:        #111113;
+      --bg-page:        #0d0d0f;
+      --bg-subtle:      #18181b;
+      --bg-muted:       #222226;
+      --bg-overlay:     rgba(0, 0, 0, 0.72);
+      --border:         #2a2a30;
+      --border-strong:  #3a3a42;
+      --text-1:         #f0f0f2;
+      --text-2:         #c4c4cc;
+      --text-3:         #86868f;
+      --text-4:         #56565e;
+      --text-inverse:   #0d0d0f;
+      --accent:         #6b87f8;
+      --accent-hover:   #5a78f6;
+      --accent-active:  #4f6ef7;
+      --accent-subtle:  rgba(107, 135, 248, 0.1);
+      --accent-border:  rgba(107, 135, 248, 0.28);
+      --accent-text:    #8da2fa;
+      --success:        #22c45e;
+      --success-subtle: rgba(34, 196, 94, 0.1);
+      --success-border: rgba(34, 196, 94, 0.25);
+      --success-text:   #4ade80;
+      --danger:         #f05050;
+      --danger-subtle:  rgba(240, 80, 80, 0.1);
+      --danger-border:  rgba(240, 80, 80, 0.25);
+      --danger-text:    #fca5a5;
+      --warning:        #f59e0b;
+      --warning-subtle: rgba(245, 158, 11, 0.1);
+      --warning-border: rgba(245, 158, 11, 0.25);
+      --warning-text:   #fcd34d;
+      --shadow-xs: 0 1px 2px rgba(0,0,0,.3);
+      --shadow-sm: 0 1px 3px rgba(0,0,0,.4), 0 1px 2px rgba(0,0,0,.3);
+      --shadow-md: 0 4px 12px rgba(0,0,0,.4), 0 2px 4px rgba(0,0,0,.3);
+      --shadow-lg: 0 8px 24px rgba(0,0,0,.5), 0 4px 8px rgba(0,0,0,.3);
+      --shadow-xl: 0 16px 40px rgba(0,0,0,.6), 0 6px 12px rgba(0,0,0,.3);
+      --shadow-accent: 0 4px 14px rgba(107, 135, 248, 0.3);
+      color-scheme: dark;
+    }
+
+    [data-theme="light"] {
+      color-scheme: light;
+    }
+  </style>
 
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
@@ -408,9 +438,7 @@
   <script src="js/installPrompt.js"></script>
   <script src="news-ticker.js"></script>
 
-  <!-- ============================================================
-       PRESENTATION ENHANCEMENTS (unchanged logic)
-       ============================================================ -->
+  <!-- Presentation enhancements -->
   <script>
     (function () {
       'use strict';
@@ -490,7 +518,6 @@
         window._stickyObs.observe(sentinel);
       }
 
-      /* Keyboard shortcuts */
       document.addEventListener('keydown', function (e) {
         var tag = document.activeElement && document.activeElement.tagName;
         if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
@@ -517,11 +544,10 @@
         _patchExam();
         _patchMount();
       });
-
     }());
   </script>
 
-  <!-- Service Worker Registration -->
+  <!-- Service Worker -->
   <script>
     (function () {
       'use strict';
