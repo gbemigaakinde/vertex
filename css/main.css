@@ -4,7 +4,7 @@
    VERTEX CBT — main.css
    Corporate SaaS Design System
    Typography: Geist (body) + Geist Mono (timer/code)
-   Themes: Light (default) + Dark (prefers-color-scheme + .dark)
+   Themes: Light (default) + Dark ([data-theme="dark"])
    ============================================================ */
 
 /* ── Design Tokens ── */
@@ -106,7 +106,7 @@
   --t-slow:      220ms;
   --t-enter:     300ms;
 
-  /* Legacy aliases (for JS-rendered class names) */
+  /* Legacy aliases */
   --brand:           var(--accent);
   --brand-hover:     var(--accent-hover);
   --brand-active:    var(--accent-active);
@@ -157,78 +157,97 @@
   --c-success:       var(--success);
   --c-info:          var(--info);
   --success-bg:      var(--success-subtle);
-  --success-border:  var(--success-border);
-  --success-text:    var(--success-text);
   --danger-bg:       var(--danger-subtle);
-  --danger-border:   var(--danger-border);
-  --danger-text:     var(--danger-text);
   --warning-bg:      var(--warning-subtle);
-  --warning-border:  var(--warning-border);
-  --warning-text:    var(--warning-text);
   --info-bg:         var(--info-subtle);
-  --info-border:     var(--info-border);
 }
 
-/* ── Dark mode ── */
-@media (prefers-color-scheme: dark) {
-  :root { color-scheme: dark; }
-  :root:not(.light) { --vtx-dark: 1; }
-}
-.dark { --vtx-dark: 1; color-scheme: dark; }
+/* ── Dark mode — single authoritative block ── */
+[data-theme="dark"] {
+  color-scheme: dark;
 
-[style*="--vtx-dark"],
-:root:has(+ .dark),
-.dark,
-@media (prefers-color-scheme: dark) { :root:not(.light) {} }
+  --bg-base:        #111113;
+  --bg-page:        #0d0d0f;
+  --bg-subtle:      #18181b;
+  --bg-muted:       #222226;
+  --bg-overlay:     rgba(0, 0, 0, 0.72);
 
-:root[data-theme="dark"],
-.dark,
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) {
-    --bg-base:        #111113;
-    --bg-page:        #0d0d0f;
-    --bg-subtle:      #18181b;
-    --bg-muted:       #222226;
-    --bg-overlay:     rgba(0, 0, 0, 0.72);
+  --border:         #2a2a30;
+  --border-strong:  #3a3a42;
 
-    --border:         #2a2a30;
-    --border-strong:  #3a3a42;
+  --text-1:         #f0f0f2;
+  --text-2:         #c4c4cc;
+  --text-3:         #86868f;
+  --text-4:         #56565e;
+  --text-inverse:   #0d0d0f;
 
-    --text-1:         #f0f0f2;
-    --text-2:         #c4c4cc;
-    --text-3:         #86868f;
-    --text-4:         #56565e;
-    --text-inverse:   #0d0d0f;
+  --accent:         #6b87f8;
+  --accent-hover:   #5a78f6;
+  --accent-active:  #4f6ef7;
+  --accent-subtle:  rgba(107, 135, 248, 0.1);
+  --accent-border:  rgba(107, 135, 248, 0.28);
+  --accent-text:    #8da2fa;
 
-    --accent:         #6b87f8;
-    --accent-hover:   #5a78f6;
-    --accent-active:  #4f6ef7;
-    --accent-subtle:  rgba(107, 135, 248, 0.1);
-    --accent-border:  rgba(107, 135, 248, 0.28);
-    --accent-text:    #8da2fa;
+  --success:        #22c45e;
+  --success-subtle: rgba(34, 196, 94, 0.1);
+  --success-border: rgba(34, 196, 94, 0.25);
+  --success-text:   #4ade80;
 
-    --success:        #22c45e;
-    --success-subtle: rgba(34, 196, 94, 0.1);
-    --success-border: rgba(34, 196, 94, 0.25);
-    --success-text:   #4ade80;
+  --danger:         #f05050;
+  --danger-subtle:  rgba(240, 80, 80, 0.1);
+  --danger-border:  rgba(240, 80, 80, 0.25);
+  --danger-text:    #fca5a5;
 
-    --danger:         #f05050;
-    --danger-subtle:  rgba(240, 80, 80, 0.1);
-    --danger-border:  rgba(240, 80, 80, 0.25);
-    --danger-text:    #fca5a5;
+  --warning:        #f59e0b;
+  --warning-subtle: rgba(245, 158, 11, 0.1);
+  --warning-border: rgba(245, 158, 11, 0.25);
+  --warning-text:   #fcd34d;
 
-    --warning:        #f59e0b;
-    --warning-subtle: rgba(245, 158, 11, 0.1);
-    --warning-border: rgba(245, 158, 11, 0.25);
-    --warning-text:   #fcd34d;
+  --shadow-xs: 0 1px 2px rgba(0,0,0,.3);
+  --shadow-sm: 0 1px 3px rgba(0,0,0,.4), 0 1px 2px rgba(0,0,0,.3);
+  --shadow-md: 0 4px 12px rgba(0,0,0,.4), 0 2px 4px rgba(0,0,0,.3);
+  --shadow-lg: 0 8px 24px rgba(0,0,0,.5), 0 4px 8px rgba(0,0,0,.3);
+  --shadow-xl: 0 16px 40px rgba(0,0,0,.6), 0 6px 12px rgba(0,0,0,.3);
+  --shadow-accent: 0 4px 14px rgba(107, 135, 248, 0.3);
 
-    --shadow-xs: 0 1px 2px rgba(0,0,0,.3);
-    --shadow-sm: 0 1px 3px rgba(0,0,0,.4), 0 1px 2px rgba(0,0,0,.3);
-    --shadow-md: 0 4px 12px rgba(0,0,0,.4), 0 2px 4px rgba(0,0,0,.3);
-    --shadow-lg: 0 8px 24px rgba(0,0,0,.5), 0 4px 8px rgba(0,0,0,.3);
-    --shadow-xl: 0 16px 40px rgba(0,0,0,.6), 0 6px 12px rgba(0,0,0,.3);
-    --shadow-accent: 0 4px 14px rgba(107, 135, 248, 0.3);
-  }
+  /* Re-map all aliases so JS-rendered HTML using old var names still works */
+  --brand:           var(--accent);
+  --brand-hover:     var(--accent-hover);
+  --brand-active:    var(--accent-active);
+  --brand-bg:        var(--accent-subtle);
+  --brand-border:    var(--accent-border);
+  --brand-text:      var(--accent-text);
+  --text-primary:    var(--text-1);
+  --text-secondary:  var(--text-2);
+  --text-tertiary:   var(--text-3);
+  --text-disabled:   var(--text-4);
+  --text-accent:     var(--accent-text);
+  --c-text:          var(--text-1);
+  --c-text-2:        var(--text-2);
+  --c-text-3:        var(--text-3);
+  --c-text-4:        var(--text-4);
+  --c-brand:         var(--accent);
+  --c-brand-light:   var(--accent-subtle);
+  --c-brand-text:    var(--accent-text);
+  --c-brand-border:  var(--accent-border);
+  --c-surface:       var(--bg-base);
+  --c-surface-2:     var(--bg-subtle);
+  --c-border:        var(--border);
+  --c-border-3:      var(--border-strong);
+  --page-bg:         var(--bg-page);
+  --surface:         var(--bg-base);
+  --ink-900:         var(--text-1);
+  --ink-800:         var(--text-2);
+  --ink-700:         var(--text-2);
+  --ink-600:         var(--text-3);
+  --ink-400:         var(--text-4);
+  --ink-300:         var(--text-4);
+  --ink-200:         var(--border);
+  --ink-100:         var(--bg-subtle);
+  --success-bg:      var(--success-subtle);
+  --danger-bg:       var(--danger-subtle);
+  --warning-bg:      var(--warning-subtle);
+  --info-bg:         var(--info-subtle);
 }
 
 /* ── Reset ── */
@@ -320,6 +339,7 @@ body {
   border-radius: var(--r-xl);
   padding: var(--sp-6);
   box-shadow: var(--shadow-md);
+  color: var(--text-1);
 }
 
 /* ── Typography utilities ── */
@@ -677,6 +697,7 @@ textarea { resize: vertical; min-height: 5rem; }
   position: relative !important;
   font-size: var(--text-base) !important;
   box-shadow: none !important;
+  color: var(--text-1) !important;
 }
 
 .option-label::before, .cbt-option::before {
@@ -870,14 +891,22 @@ label.glass:has(.subject-checkbox:checked) {
   box-shadow: var(--shadow-xl) !important;
   animation: cbt-modal-in var(--t-slow) cubic-bezier(.34,1.45,.64,1) both !important;
   margin: auto;
+  color: var(--text-1) !important;
 }
 
 .modal-box h2, .modal-box h3 {
   font-size: var(--text-lg) !important;
   font-weight: 600 !important;
+  color: var(--text-1) !important;
 }
 
-#uiConfirmOk { background: var(--danger) !important; }
+/* Fix: confirm modal paragraph uses hardcoded color in ui.js — override it */
+#uiConfirmModal p,
+#uiConfirmModal [id="uiConfirmTitle"] {
+  color: var(--text-1) !important;
+}
+
+#uiConfirmOk { background: var(--danger) !important; color: #fff !important; }
 #uiConfirmOk:hover { background: var(--danger-text) !important; }
 #uiConfirmCancel {
   background: var(--bg-subtle) !important;
@@ -915,6 +944,7 @@ label.glass:has(.subject-checkbox:checked) {
   border: 1px solid var(--border);
   background: var(--bg-base);
   border-left: 3px solid var(--border);
+  color: var(--text-1);
 }
 
 .cbt-toast.is-dismissing { animation: cbt-toast-out var(--t-base) ease-in both; }
@@ -944,6 +974,7 @@ label.glass:has(.subject-checkbox:checked) {
   font-weight: 700;
   line-height: 1;
   letter-spacing: -0.04em;
+  color: var(--text-1);
 }
 
 .cbt-accordion {
@@ -994,6 +1025,7 @@ label.glass:has(.subject-checkbox:checked) {
   border-radius: var(--r-lg);
   padding: var(--sp-4);
   background: var(--bg-base);
+  color: var(--text-1);
 }
 
 .cbt-review-item--correct, .border-green-500 {
@@ -1090,6 +1122,7 @@ details.glass-dark > summary,
   background: var(--bg-subtle) !important;
   font-size: var(--text-base) !important;
   font-weight: 500 !important;
+  color: var(--text-1) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
@@ -1316,6 +1349,7 @@ details.glass-dark[open] > summary::after,
   border-radius: var(--r-md);
   padding: 0.4375rem 0.875rem;
   font-size: var(--text-sm);
+  color: var(--text-1);
 }
 
 /* ── Score card ── */
@@ -1326,6 +1360,7 @@ details.glass-dark[open] > summary::after,
   padding: 0.5rem 0.75rem;
   text-align: center;
   min-width: 88px;
+  color: var(--text-1);
 }
 
 /* ── Utilities ── */
