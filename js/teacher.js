@@ -61,394 +61,457 @@
   /* Render dashboard shell                             */
   /* -------------------------------------------------- */
 
-  function renderTeacherDashboard() {
-    AppState.isTeacher = true;
+function renderTeacherDashboard() {
+  AppState.isTeacher = true;
 
-    document.getElementById('app').innerHTML = `
-      <div class="max-w-7xl mx-auto glass mt-6" style="margin-bottom:1.5rem;">
+  document.getElementById('app').innerHTML = `
+    <div class="max-w-7xl mx-auto glass mt-6" style="margin-bottom:1.5rem;">
 
-        <!-- Header -->
-        <div style="display:flex;align-items:center;justify-content:space-between;
-                    padding:1rem 1.5rem;border-bottom:1px solid var(--border);">
-          <div style="display:flex;align-items:center;gap:.75rem;">
-            <div style="width:28px;height:28px;background:var(--text-primary);border-radius:4px;
-                        display:flex;align-items:center;justify-content:center;
-                        color:#fff;font-weight:700;font-size:.75rem;flex-shrink:0;">V</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;
+                  padding:0.875rem 1.25rem;border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;gap:0.75rem;">
+          <div style="width:30px;height:30px;background:var(--accent);border-radius:7px;
+                      display:flex;align-items:center;justify-content:center;flex-shrink:0;
+                      box-shadow:var(--shadow-accent);">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white"
+                 stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/>
+              <line x1="12" y1="22" x2="12" y2="15.5"/>
+              <polyline points="22 8.5 12 15.5 2 8.5"/>
+            </svg>
+          </div>
+          <div>
+            <div style="font-size:var(--text-base);font-weight:600;color:var(--text-1);
+                        letter-spacing:-0.015em;line-height:1.2;">
+              Teacher Dashboard
+            </div>
+            <div style="font-size:var(--text-xs);color:var(--text-4);margin-top:1px;">
+              Administrator
+            </div>
+          </div>
+        </div>
+        <button onclick="Teacher.logout()" class="btn bg-gray-500"
+                style="font-size:var(--text-sm);">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
+            <polyline points="16 17 21 12 16 7"/>
+            <line x1="21" y1="12" x2="9" y2="12"/>
+          </svg>
+          Sign out
+        </button>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:0.25rem;padding:0.5rem 1.25rem;
+                  border-bottom:1px solid var(--border);flex-wrap:wrap;overflow-x:auto;">
+        <button onclick="Teacher.showTab('students')" id="tab-students"
+                class="tab-btn btn">Students</button>
+        <button onclick="Teacher.showTab('results')"  id="tab-results"
+                class="tab-btn btn">Results</button>
+        <button onclick="Teacher.showTab('schools')"  id="tab-schools"
+                class="tab-btn btn">Schools</button>
+        <button onclick="Teacher.showTab('tasks')"    id="tab-tasks"
+                class="tab-btn btn">Tasks &amp; Messages</button>
+        <button onclick="Teacher.showTab('studyroom')" id="tab-studyroom"
+                class="tab-btn btn">Study Room</button>
+        <div style="width:1px;height:20px;background:var(--border);margin:0 0.25rem;flex-shrink:0;"></div>
+        <button onclick="Teacher.showTab('chat')" id="tab-chat"
+                class="tab-btn btn bg-green-600"
+                style="position:relative;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          Chat
+        </button>
+        <button onclick="Teacher.showTab('dm')" id="tab-dm"
+                class="tab-btn btn bg-indigo-600"
+                style="position:relative;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+            <polyline points="22,6 12,13 2,6"/>
+          </svg>
+          Messages
+        </button>
+      </div>
+
+      <div style="padding:1.25rem 1.5rem;">
+
+        <div id="teacher-students" class="teacher-tab">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
             <div>
-              <h1 style="font-family:'Instrument Serif',Georgia,serif;font-size:1.0625rem;
-                          font-weight:400;line-height:1.2;color:var(--text-primary);">
-                Teacher Dashboard
-              </h1>
-              <p style="font-size:.75rem;color:var(--text-tertiary);margin-top:1px;">Administrator</p>
+              <h2 style="font-size:var(--text-md);font-weight:600;color:var(--text-1);
+                          letter-spacing:-0.015em;">Registered Students</h2>
+              <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">Grouped by school</p>
             </div>
+            <button onclick="Teacher._loadStudents()" class="btn bg-gray-500"
+                    style="font-size:var(--text-sm);">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="1 4 1 10 7 10"/>
+                <path d="M3.51 15a9 9 0 1 0 .49-3.5"/>
+              </svg>
+              Refresh
+            </button>
           </div>
-          <button onclick="Teacher.logout()" class="btn bg-gray-500 hover:bg-gray-600"
-                  style="font-size:.8125rem;padding:.4375rem .875rem;">Sign out</button>
+          <div id="studentsList"></div>
         </div>
 
-        <!-- Tab nav -->
-        <div style="display:flex;align-items:center;gap:.375rem;padding:.625rem 1.5rem;
-                    border-bottom:1px solid var(--border);flex-wrap:wrap;">
-          <button onclick="Teacher.showTab('students')" id="tab-students"
-                  class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">Students</button>
-          <button onclick="Teacher.showTab('results')"  id="tab-results"
-                  class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">Results</button>
-          <button onclick="Teacher.showTab('schools')"  id="tab-schools"
-                  class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">Schools</button>
-          <button onclick="Teacher.showTab('tasks')"    id="tab-tasks"
-                  class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">Tasks &amp; Messages</button>
-          <button onclick="Teacher.showTab('studyroom')" id="tab-studyroom"
-                  class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">Study Room</button>
-          <button onclick="Teacher.showTab('chat')"     id="tab-chat"
-                  class="tab-btn btn bg-green-600" style="font-size:.8125rem;padding:.4375rem .875rem;position:relative;">Chat</button>
-          <button onclick="Teacher.showTab('dm')"       id="tab-dm"
-                  class="tab-btn btn bg-indigo-600" style="font-size:.8125rem;padding:.4375rem .875rem;position:relative;">Messages</button>
+        <div id="teacher-results" class="teacher-tab hidden">
+          <div style="margin-bottom:1rem;">
+            <h2 style="font-size:var(--text-md);font-weight:600;color:var(--text-1);
+                        letter-spacing:-0.015em;">All Exam Results</h2>
+            <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">
+              Most recent first — click any card to review the full attempt
+            </p>
+          </div>
+          <div id="resultsList" class="grid gap-3 md:grid-cols-2 lg:grid-cols-3"></div>
         </div>
 
-        <!-- Tab panels -->
-        <div style="padding:1.25rem 1.5rem;">
+        <div id="teacher-schools" class="teacher-tab hidden">
+          <div style="margin-bottom:1rem;">
+            <h2 style="font-size:var(--text-md);font-weight:600;color:var(--text-1);
+                        letter-spacing:-0.015em;">Manage Schools</h2>
+            <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">
+              Add, rename, or remove schools from the registration list
+            </p>
+          </div>
+          <div style="display:flex;gap:0.5rem;margin-bottom:1.25rem;max-width:520px;">
+            <input id="newSchoolName" type="text" placeholder="New school name" style="flex:1;" />
+            <button onclick="Teacher.addSchool()" class="btn"
+                    style="white-space:nowrap;font-size:var(--text-sm);">Add School</button>
+          </div>
+          <div id="schoolsList" class="space-y-2"></div>
+        </div>
 
-          <!-- Students -->
-          <div id="teacher-students" class="teacher-tab">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
-              <div>
-                <h2 style="font-size:1rem;font-weight:600;font-family:'Instrument Serif',Georgia,serif;font-weight:400;">Registered Students</h2>
-                <p style="font-size:.75rem;color:var(--text-tertiary);margin-top:2px;">Grouped by school</p>
+        <div id="teacher-tasks" class="teacher-tab hidden">
+          <div style="margin-bottom:1.25rem;">
+            <h2 style="font-size:var(--text-md);font-weight:600;color:var(--text-1);
+                        letter-spacing:-0.015em;">Coaching Tasks &amp; Messages</h2>
+            <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">
+              Configure scheduled tasks and send private messages to students
+            </p>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;" class="tasks-grid">
+
+            <div class="glass-dark" style="padding:1.25rem;border-radius:var(--r-lg);">
+              <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem;
+                          padding-bottom:0.75rem;border-bottom:1px solid var(--border);">
+                <div style="width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>
+                <h3 style="font-size:var(--text-base);font-weight:600;color:var(--text-1);">
+                  Coaching Tasks
+                </h3>
               </div>
-              <button onclick="Teacher._loadStudents()" class="btn bg-blue-600"
-                      style="font-size:.8125rem;padding:.4375rem .875rem;">Refresh</button>
-            </div>
-            <div id="studentsList"></div>
-          </div>
 
-          <!-- Results -->
-          <div id="teacher-results" class="teacher-tab hidden">
-            <div style="margin-bottom:1rem;">
-              <h2 style="font-size:1rem;font-family:'Instrument Serif',Georgia,serif;font-weight:400;">All Exam Results</h2>
-              <p style="font-size:.75rem;color:var(--text-tertiary);margin-top:2px;">
-                Most recent first &mdash; click any card to review the full attempt
-              </p>
-            </div>
-            <div id="resultsList" class="grid gap-3 md:grid-cols-2 lg:grid-cols-3"></div>
-          </div>
-
-          <!-- Schools -->
-          <div id="teacher-schools" class="teacher-tab hidden">
-            <div style="margin-bottom:1rem;">
-              <h2 style="font-size:1rem;font-family:'Instrument Serif',Georgia,serif;font-weight:400;">Manage Schools</h2>
-              <p style="font-size:.75rem;color:var(--text-tertiary);margin-top:2px;">
-                Add, rename, or remove schools from the registration list
-              </p>
-            </div>
-            <div style="display:flex;gap:.625rem;margin-bottom:1.25rem;max-width:520px;">
-              <input id="newSchoolName" type="text" placeholder="New school name" style="flex:1;" />
-              <button onclick="Teacher.addSchool()" class="btn"
-                      style="white-space:nowrap;padding:.5rem 1rem;font-size:.875rem;">Add School</button>
-            </div>
-            <div id="schoolsList" class="space-y-2"></div>
-          </div>
-
-          <!-- Tasks & Messages -->
-          <div id="teacher-tasks" class="teacher-tab hidden">
-            <div style="margin-bottom:1.25rem;">
-              <h2 style="font-size:1rem;font-family:'Instrument Serif',Georgia,serif;font-weight:400;">Coaching Tasks &amp; Messages</h2>
-              <p style="font-size:.75rem;color:var(--text-tertiary);margin-top:2px;">
-                Configure scheduled tasks and send private messages to students
-              </p>
-            </div>
-
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;" class="tasks-grid">
-
-              <!-- Coaching task config -->
-              <div class="glass-dark" style="padding:1.25rem;border-radius:8px;">
-                <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;
-                            padding-bottom:.75rem;border-bottom:1px solid var(--border);">
-                  <div style="width:6px;height:6px;border-radius:50%;background:var(--amber);"></div>
-                  <h3 style="font-size:.9375rem;font-weight:600;color:var(--amber-text);">Coaching Tasks</h3>
-                </div>
-
-                <!-- Recurrence type -->
-                <div style="margin-bottom:.875rem;">
-                  <label style="display:block;font-size:.75rem;font-weight:600;
-                                color:var(--text-secondary);margin-bottom:.375rem;letter-spacing:.03em;text-transform:uppercase;">Recurrence</label>
-                  <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:4px;overflow:hidden;width:100%;">
-                    <button id="taskScopeAll" onclick="Teacher._setTaskScope('once')"
-                            style="flex:1;padding:.4375rem .25rem;font-size:.6875rem;font-weight:600;
-                                   cursor:pointer;border:none;transition:background .12s,color .12s;
-                                   background:var(--amber);color:#fff;">One-time</button>
-                    <button id="taskScopeWeekly" onclick="Teacher._setTaskScope('weekly')"
-                            style="flex:1;padding:.4375rem .25rem;font-size:.6875rem;font-weight:600;
-                                   cursor:pointer;border:none;border-left:1px solid var(--border);
-                                   transition:background .12s,color .12s;
-                                   background:var(--surface-muted);color:var(--text-tertiary);">Weekly</button>
-                    <button id="taskScopeRange" onclick="Teacher._setTaskScope('range')"
-                            style="flex:1;padding:.4375rem .25rem;font-size:.6875rem;font-weight:600;
-                                   cursor:pointer;border:none;border-left:1px solid var(--border);
-                                   transition:background .12s,color .12s;
-                                   background:var(--surface-muted);color:var(--text-tertiary);">Date Range</button>
-                  </div>
-                </div>
-
-                <!-- Recurrence hint -->
-                <div id="taskRecurrenceHint" style="display:none;margin-bottom:.75rem;padding:.5rem .75rem;
-                     background:var(--amber-bg);border:1px solid var(--amber-border);
-                     border-radius:4px;font-size:.75rem;color:var(--amber-text);line-height:1.6;"></div>
-
-                <!-- Assign-to -->
-                <div id="taskAssignToWrap" style="margin-bottom:.875rem;">
-                  <label style="display:block;font-size:.75rem;font-weight:600;
-                                color:var(--text-secondary);margin-bottom:.375rem;letter-spacing:.03em;text-transform:uppercase;">Assign to</label>
-                  <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:4px;overflow:hidden;width:100%;">
-                    <button id="taskAssignAll" onclick="Teacher._setAssignScope('all')"
-                            style="flex:1;padding:.4375rem .25rem;font-size:.6875rem;font-weight:600;
-                                   cursor:pointer;border:none;transition:background .12s,color .12s;
-                                   background:var(--amber);color:#fff;">All</button>
-                    <button id="taskAssignClass" onclick="Teacher._setAssignScope('class')"
-                            style="flex:1;padding:.4375rem .25rem;font-size:.6875rem;font-weight:600;
-                                   cursor:pointer;border:none;border-left:1px solid var(--border);
-                                   transition:background .12s,color .12s;
-                                   background:var(--surface-muted);color:var(--text-tertiary);">By Class</button>
-                    <button id="taskAssignStudent" onclick="Teacher._setAssignScope('student')"
-                            style="flex:1;padding:.4375rem .25rem;font-size:.6875rem;font-weight:600;
-                                   cursor:pointer;border:none;border-left:1px solid var(--border);
-                                   transition:background .12s,color .12s;
-                                   background:var(--surface-muted);color:var(--text-tertiary);">By Student</button>
-                  </div>
-                </div>
-
-                <!-- Class target -->
-                <div id="taskTargetClassWrap" style="display:none;margin-bottom:.75rem;">
-                  <label style="display:block;font-size:.75rem;font-weight:600;
-                                color:var(--text-secondary);margin-bottom:.375rem;letter-spacing:.03em;text-transform:uppercase;">Class</label>
-                  <select id="taskTargetClass" onchange="Teacher._onTaskTargetChange()">
-                    <option value="">Select a class...</option>
-                  </select>
-                </div>
-
-                <!-- Student target -->
-                <div id="taskTargetStudentWrap" style="display:none;margin-bottom:.75rem;">
-                  <label style="display:block;font-size:.75rem;font-weight:600;
-                                color:var(--text-secondary);margin-bottom:.375rem;letter-spacing:.03em;text-transform:uppercase;">Student</label>
-                  <select id="taskTargetStudent" onchange="Teacher._onTaskTargetChange()">
-                    <option value="">Select a student...</option>
-                  </select>
-                </div>
-
-                <!-- Active toggle -->
-                <label style="display:flex;align-items:center;gap:.625rem;margin-bottom:.875rem;
-                              cursor:pointer;padding:.625rem .75rem;border-radius:6px;
-                              border:1px solid var(--border);background:var(--surface);">
-                  <input type="checkbox" id="tasksActive"
-                         style="width:1rem;height:1rem;accent-color:var(--amber);flex-shrink:0;cursor:pointer;" />
-                  <div>
-                    <span style="font-size:.875rem;font-weight:600;color:var(--text-primary);">Active</span>
-                    <span style="display:block;font-size:.6875rem;color:var(--text-tertiary);margin-top:1px;">
-                      Students only see this task when Active is checked
-                    </span>
-                  </div>
+              <div style="margin-bottom:0.875rem;">
+                <label style="display:block;font-size:var(--text-xs);font-weight:500;
+                              color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">
+                  Recurrence
                 </label>
-
-                <!-- Title -->
-                <div style="margin-bottom:.75rem;">
-                  <label style="display:block;font-size:.75rem;font-weight:600;
-                                color:var(--text-secondary);margin-bottom:.375rem;letter-spacing:.03em;text-transform:uppercase;">Task Title</label>
-                  <input type="text" id="tasksTitle" placeholder="e.g., Term 2 Coaching Programme" />
-                </div>
-
-                <!-- Message -->
-                <div style="margin-bottom:.875rem;">
-                  <label style="display:block;font-size:.75rem;font-weight:600;
-                                color:var(--text-secondary);margin-bottom:.375rem;letter-spacing:.03em;text-transform:uppercase;">Message for Students</label>
-                  <textarea id="tasksMessage" placeholder="Instructions or motivation..."
-                            style="height:4rem;resize:vertical;"></textarea>
-                </div>
-
-                <!-- Exam duration -->
-                <div style="margin-bottom:.875rem;">
-                  <label style="display:block;font-size:.75rem;font-weight:600;
-                                color:var(--text-secondary);margin-bottom:.375rem;letter-spacing:.03em;text-transform:uppercase;">
-                    Exam Duration
-                    <span style="font-weight:400;text-transform:none;color:var(--text-tertiary);">— for students on this task</span>
-                  </label>
-                  <select id="taskDurationMs">
-                    <option value="">Use default (2 hours)</option>
-                    <option value="1800000">30 minutes</option>
-                    <option value="2700000">45 minutes</option>
-                    <option value="3600000">1 hour</option>
-                    <option value="5400000">1 hour 30 minutes</option>
-                    <option value="7200000">2 hours (default)</option>
-                    <option value="9000000">2 hours 30 minutes</option>
-                    <option value="10800000">3 hours</option>
-                  </select>
-                </div>
-
-                <!-- Date / range config area -->
-                <div id="taskDateConfigArea"></div>
-
-                <!-- Subject restrictions -->
-                <div id="taskRecurringSubjectsWrap" style="display:none;margin-bottom:.875rem;">
-                  <label style="display:block;font-size:.75rem;font-weight:600;
-                                color:var(--text-secondary);margin-bottom:.375rem;letter-spacing:.03em;text-transform:uppercase;">
-                    Subject Restrictions
-                    <span style="font-weight:400;text-transform:none;color:var(--text-tertiary);">
-                      — per day of week
-                    </span>
-                  </label>
-                  <div id="taskRecurringSubjectsList"></div>
-                </div>
-
-                <!-- Actions -->
-                <div style="display:flex;gap:.5rem;padding-top:.875rem;border-top:1px solid var(--border);">
-                  <button id="saveTasksBtn" onclick="Teacher.saveTasksConfig()"
-                          class="btn bg-green-600 hover:bg-green-700"
-                          style="flex:1;font-size:.875rem;padding:.5625rem .875rem;">
-                    Save &amp; Apply
+                <div style="display:flex;background:var(--bg-muted);border:1px solid var(--border);
+                            border-radius:var(--r-md);padding:3px;gap:3px;">
+                  <button id="taskScopeAll" onclick="Teacher._setTaskScope('once')"
+                          style="flex:1;padding:0.375rem 0.25rem;font-size:var(--text-xs);font-weight:500;
+                                 cursor:pointer;border:none;border-radius:5px;transition:background var(--t-fast),color var(--t-fast),box-shadow var(--t-fast);
+                                 background:var(--bg-base);color:var(--text-1);box-shadow:var(--shadow-xs);font-family:inherit;">
+                    One-time
+                  </button>
+                  <button id="taskScopeWeekly" onclick="Teacher._setTaskScope('weekly')"
+                          style="flex:1;padding:0.375rem 0.25rem;font-size:var(--text-xs);font-weight:500;
+                                 cursor:pointer;border:none;border-radius:5px;transition:background var(--t-fast),color var(--t-fast);
+                                 background:transparent;color:var(--text-3);box-shadow:none;font-family:inherit;">
+                    Weekly
+                  </button>
+                  <button id="taskScopeRange" onclick="Teacher._setTaskScope('range')"
+                          style="flex:1;padding:0.375rem 0.25rem;font-size:var(--text-xs);font-weight:500;
+                                 cursor:pointer;border:none;border-radius:5px;transition:background var(--t-fast),color var(--t-fast);
+                                 background:transparent;color:var(--text-3);box-shadow:none;font-family:inherit;">
+                    Date Range
                   </button>
                 </div>
               </div>
 
-              <!-- Private message sender -->
-              <div class="glass-dark" style="padding:1.25rem;border-radius:8px;">
-                <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;
-                            padding-bottom:.75rem;border-bottom:1px solid var(--border);">
-                  <div style="width:6px;height:6px;border-radius:50%;background:var(--danger);"></div>
-                  <h3 style="font-size:.9375rem;font-weight:600;color:var(--danger-text);">Private Message</h3>
-                </div>
+              <div id="taskRecurrenceHint" style="display:none;margin-bottom:0.75rem;padding:0.5rem 0.75rem;
+                   background:var(--accent-subtle);border:1px solid var(--accent-border);
+                   border-radius:var(--r-md);font-size:var(--text-xs);color:var(--accent-text);line-height:1.6;"></div>
 
-                <div style="margin-bottom:.75rem;">
-                  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.375rem;">
-                    <label style="font-size:.75rem;font-weight:600;color:var(--text-secondary);letter-spacing:.03em;text-transform:uppercase;">Recipients</label>
-                    <div style="display:flex;border:1px solid var(--border);border-radius:4px;overflow:hidden;">
-                      <button id="msgModeSingle" onclick="Teacher._setMsgMode('single')"
-                              style="padding:2px 9px;font-size:.6875rem;font-weight:600;cursor:pointer;
-                                     border:none;background:var(--amber);color:#fff;">Single</button>
-                      <button id="msgModeMulti" onclick="Teacher._setMsgMode('multi')"
-                              style="padding:2px 9px;font-size:.6875rem;font-weight:600;cursor:pointer;
-                                     border:none;background:var(--surface-muted);color:var(--text-tertiary);">Multiple</button>
-                    </div>
-                  </div>
-                  <div id="msgSingleWrap">
-                    <select id="msgStudent"><option value="">Select a student...</option></select>
-                  </div>
-                  <div id="msgMultiWrap" style="display:none;">
-                    <input id="msgStudentSearch" type="text" placeholder="Search students..."
-                           oninput="Teacher._filterMsgStudents()" style="margin-bottom:.375rem;" />
-                    <div id="msgStudentList"
-                         style="max-height:160px;overflow-y:auto;border:1px solid var(--border-medium);
-                                border-radius:4px;background:var(--surface);"></div>
-                    <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.375rem;">
-                      <span id="msgSelectedCount" style="font-size:.75rem;color:var(--text-tertiary);">0 selected</span>
-                      <div style="display:flex;gap:.375rem;align-items:center;">
-                        <button onclick="Teacher._selectAllMsgStudents()"
-                                style="font-size:.6875rem;font-weight:600;color:var(--amber);
-                                       background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">Select all</button>
-                        <span style="color:var(--border-medium);">·</span>
-                        <button onclick="Teacher._clearMsgStudents()"
-                                style="font-size:.6875rem;font-weight:600;color:var(--text-tertiary);
-                                       background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">Clear</button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div style="margin-bottom:.75rem;">
-                  <label style="display:block;font-size:.75rem;font-weight:600;
-                                color:var(--text-secondary);margin-bottom:.375rem;letter-spacing:.03em;text-transform:uppercase;">Message</label>
-                  <textarea id="msgText" placeholder="Write your private message..."
-                            style="height:6rem;resize:vertical;"></textarea>
-                </div>
-
-                <div style="margin-bottom:.875rem;">
-                  <label style="display:block;font-size:.75rem;font-weight:600;
-                                color:var(--text-secondary);margin-bottom:.375rem;letter-spacing:.03em;text-transform:uppercase;">Expires after</label>
-                  <select id="msgDuration">
-                    <option value="3600000">1 hour</option>
-                    <option value="86400000">1 day</option>
-                    <option value="172800000">2 days</option>
-                    <option value="259200000">3 days</option>
-                    <option value="604800000">1 week</option>
-                    <option value="1209600000">2 weeks</option>
-                    <option value="2592000000">30 days</option>
-                  </select>
-                </div>
-
-                <div style="padding-top:.875rem;border-top:1px solid var(--border);">
-                  <button id="sendMsgBtn" onclick="Teacher.sendPrivateMessage()"
-                          class="btn bg-red-600 hover:bg-red-700"
-                          style="width:100%;justify-content:center;font-size:.875rem;">
-                    Send Private Message
+              <div id="taskAssignToWrap" style="margin-bottom:0.875rem;">
+                <label style="display:block;font-size:var(--text-xs);font-weight:500;
+                              color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">
+                  Assign to
+                </label>
+                <div style="display:flex;background:var(--bg-muted);border:1px solid var(--border);
+                            border-radius:var(--r-md);padding:3px;gap:3px;">
+                  <button id="taskAssignAll" onclick="Teacher._setAssignScope('all')"
+                          style="flex:1;padding:0.375rem 0.25rem;font-size:var(--text-xs);font-weight:500;
+                                 cursor:pointer;border:none;border-radius:5px;transition:background var(--t-fast),color var(--t-fast),box-shadow var(--t-fast);
+                                 background:var(--bg-base);color:var(--text-1);box-shadow:var(--shadow-xs);font-family:inherit;">
+                    All
+                  </button>
+                  <button id="taskAssignClass" onclick="Teacher._setAssignScope('class')"
+                          style="flex:1;padding:0.375rem 0.25rem;font-size:var(--text-xs);font-weight:500;
+                                 cursor:pointer;border:none;border-radius:5px;transition:background var(--t-fast),color var(--t-fast);
+                                 background:transparent;color:var(--text-3);box-shadow:none;font-family:inherit;">
+                    By Class
+                  </button>
+                  <button id="taskAssignStudent" onclick="Teacher._setAssignScope('student')"
+                          style="flex:1;padding:0.375rem 0.25rem;font-size:var(--text-xs);font-weight:500;
+                                 cursor:pointer;border:none;border-radius:5px;transition:background var(--t-fast),color var(--t-fast);
+                                 background:transparent;color:var(--text-3);box-shadow:none;font-family:inherit;">
+                    By Student
                   </button>
                 </div>
               </div>
 
-            </div><!-- /tasks-grid -->
-          </div><!-- /teacher-tasks -->
+              <div id="taskTargetClassWrap" style="display:none;margin-bottom:0.75rem;">
+                <label style="display:block;font-size:var(--text-xs);font-weight:500;
+                              color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">
+                  Class
+                </label>
+                <select id="taskTargetClass" onchange="Teacher._onTaskTargetChange()"></select>
+              </div>
 
-          <!-- Study Room -->
-          <div id="teacher-studyroom" class="teacher-tab hidden"></div>
+              <div id="taskTargetStudentWrap" style="display:none;margin-bottom:0.75rem;">
+                <label style="display:block;font-size:var(--text-xs);font-weight:500;
+                              color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">
+                  Student
+                </label>
+                <select id="taskTargetStudent" onchange="Teacher._onTaskTargetChange()"></select>
+              </div>
 
-          <!-- Direct Messages -->
-          <div id="teacher-dm" class="teacher-tab hidden"></div>
+              <label style="display:flex;align-items:center;gap:0.625rem;margin-bottom:0.875rem;
+                            cursor:pointer;padding:0.625rem 0.75rem;border-radius:var(--r-md);
+                            border:1px solid var(--border);background:var(--bg-base);">
+                <input type="checkbox" id="tasksActive"
+                       style="width:1rem;height:1rem;accent-color:var(--accent);flex-shrink:0;cursor:pointer;" />
+                <div>
+                  <span style="font-size:var(--text-sm);font-weight:500;color:var(--text-1);">Active</span>
+                  <span style="display:block;font-size:var(--text-xs);color:var(--text-3);margin-top:1px;">
+                    Students only see this task when Active is on
+                  </span>
+                </div>
+              </label>
 
-        </div><!-- /tab panels wrapper -->
-      </div>`;
+              <div style="margin-bottom:0.75rem;">
+                <label style="display:block;font-size:var(--text-xs);font-weight:500;
+                              color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">
+                  Task Title
+                </label>
+                <input type="text" id="tasksTitle" placeholder="e.g. Term 2 Coaching Programme" />
+              </div>
 
-    const style = document.createElement('style');
-    style.id = '_teacherGridStyle';
-    style.textContent = `
-      @media (max-width:768px) { .tasks-grid { grid-template-columns:1fr !important; } }
-      .teacher-result-card {
-        cursor:pointer;
-        transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;
-      }
-      .teacher-result-card:hover {
-        transform:translateY(-2px);
-        box-shadow:0 4px 16px rgba(14,14,15,.08);
-        border-color:var(--amber-border) !important;
-      }
-      #teacherReviewModal {
-        position:fixed;inset:0;background:rgba(14,14,15,.45);z-index:1200;
-        display:flex;align-items:flex-start;justify-content:center;
-        padding:1.25rem;overflow-y:auto;
-        backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
-        animation:cbt-overlay-in .16s ease-out both;
-      }
-      #teacherReviewModal .review-panel {
-        background:var(--surface);border:1px solid var(--border);
-        border-radius:10px;padding:1.5rem;width:100%;max-width:760px;margin:auto;
-        box-shadow:0 8px 28px rgba(14,14,15,.1);
-        animation:cbt-modal-in .24s cubic-bezier(.34,1.45,.64,1) both;
-      }
-      .review-q-card { border-radius:6px;padding:1rem;border-width:1px;border-style:solid; }
-      .review-q-card--correct  { border-color:var(--success-border);background:var(--success-bg); }
-      .review-q-card--wrong    { border-color:var(--danger-border);background:var(--danger-bg); }
-      .review-q-card--skipped  { border-color:var(--border);background:var(--surface-subtle); }
-      .progress-week-row summary { cursor:pointer;list-style:none;user-select:none; }
-      .progress-week-row summary::-webkit-details-marker { display:none; }
-    `;
-    if (!document.getElementById('_teacherGridStyle')) document.head.appendChild(style);
+              <div style="margin-bottom:0.875rem;">
+                <label style="display:block;font-size:var(--text-xs);font-weight:500;
+                              color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">
+                  Message for Students
+                </label>
+                <textarea id="tasksMessage" placeholder="Instructions or motivation..."
+                          style="height:4rem;resize:vertical;"></textarea>
+              </div>
 
-    showTab('students');
-  }
+              <div style="margin-bottom:0.875rem;">
+                <label style="display:block;font-size:var(--text-xs);font-weight:500;
+                              color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">
+                  Exam Duration
+                  <span style="font-weight:400;text-transform:none;color:var(--text-4);">— for this task</span>
+                </label>
+                <select id="taskDurationMs">
+                  <option value="">Use default (2 hours)</option>
+                  <option value="1800000">30 minutes</option>
+                  <option value="2700000">45 minutes</option>
+                  <option value="3600000">1 hour</option>
+                  <option value="5400000">1 hour 30 minutes</option>
+                  <option value="7200000">2 hours (default)</option>
+                  <option value="9000000">2 hours 30 minutes</option>
+                  <option value="10800000">3 hours</option>
+                </select>
+              </div>
 
-  /* -------------------------------------------------- */
-  /* Tab switching                                       */
-  /* -------------------------------------------------- */
-  function showTab(tab) {
-    ['students','results','schools','tasks','studyroom','chat','dm'].forEach(t => {
-      const el  = document.getElementById(`teacher-${t}`);
-      const btn = document.getElementById(`tab-${t}`);
-      if (el)  el.classList.toggle('hidden', t !== tab);
-      if (btn) btn.classList.toggle('active', t === tab);
-    });
-    if (tab === 'chat')      { Chat.openPublicChat();       return; }
-    if (tab === 'studyroom') { StudyRoom.openForTeacher();  return; }
-    if (tab === 'dm')        { DM.openTeacherInbox();       return; }
-    if (tab === 'students')  _loadStudents();
-    if (tab === 'results')   _loadResults();
-    if (tab === 'schools')   _loadSchools();
-    if (tab === 'tasks')     _loadTasksManager();
-  }
+              <div id="taskDateConfigArea"></div>
+
+              <div id="taskRecurringSubjectsWrap" style="display:none;margin-bottom:0.875rem;">
+                <label style="display:block;font-size:var(--text-xs);font-weight:500;
+                              color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">
+                  Subject Restrictions
+                  <span style="font-weight:400;text-transform:none;color:var(--text-4);">— per day of week</span>
+                </label>
+                <div id="taskRecurringSubjectsList"></div>
+              </div>
+
+              <div style="display:flex;gap:0.5rem;padding-top:0.875rem;border-top:1px solid var(--border);">
+                <button id="saveTasksBtn" onclick="Teacher.saveTasksConfig()"
+                        class="btn bg-green-600 hover:bg-green-700"
+                        style="flex:1;justify-content:center;font-size:var(--text-sm);">
+                  Save &amp; Apply
+                </button>
+              </div>
+            </div>
+
+            <div class="glass-dark" style="padding:1.25rem;border-radius:var(--r-lg);">
+              <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem;
+                          padding-bottom:0.75rem;border-bottom:1px solid var(--border);">
+                <div style="width:6px;height:6px;border-radius:50%;background:var(--danger);flex-shrink:0;"></div>
+                <h3 style="font-size:var(--text-base);font-weight:600;color:var(--text-1);">
+                  Private Message
+                </h3>
+              </div>
+
+              <div style="margin-bottom:0.75rem;">
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.375rem;">
+                  <label style="font-size:var(--text-xs);font-weight:500;color:var(--text-3);
+                                text-transform:uppercase;letter-spacing:.04em;">Recipients</label>
+                  <div style="display:flex;background:var(--bg-muted);border:1px solid var(--border);
+                              border-radius:var(--r-sm);padding:2px;gap:2px;">
+                    <button id="msgModeSingle" onclick="Teacher._setMsgMode('single')"
+                            style="padding:2px 9px;font-size:var(--text-xs);font-weight:500;cursor:pointer;
+                                   border:none;border-radius:4px;font-family:inherit;transition:background var(--t-fast),color var(--t-fast),box-shadow var(--t-fast);
+                                   background:var(--bg-base);color:var(--text-1);box-shadow:var(--shadow-xs);">
+                      Single
+                    </button>
+                    <button id="msgModeMulti" onclick="Teacher._setMsgMode('multi')"
+                            style="padding:2px 9px;font-size:var(--text-xs);font-weight:500;cursor:pointer;
+                                   border:none;border-radius:4px;font-family:inherit;transition:background var(--t-fast),color var(--t-fast);
+                                   background:transparent;color:var(--text-3);">
+                      Multiple
+                    </button>
+                  </div>
+                </div>
+                <div id="msgSingleWrap">
+                  <select id="msgStudent"><option value="">Select a student...</option></select>
+                </div>
+                <div id="msgMultiWrap" style="display:none;">
+                  <input id="msgStudentSearch" type="text" placeholder="Search students..."
+                         oninput="Teacher._filterMsgStudents()" style="margin-bottom:0.375rem;" />
+                  <div id="msgStudentList"
+                       style="max-height:160px;overflow-y:auto;border:1px solid var(--border);
+                              border-radius:var(--r-md);background:var(--bg-base);"></div>
+                  <div style="display:flex;align-items:center;justify-content:space-between;margin-top:0.375rem;">
+                    <span id="msgSelectedCount" style="font-size:var(--text-xs);color:var(--text-3);">0 selected</span>
+                    <div style="display:flex;gap:0.375rem;align-items:center;">
+                      <button onclick="Teacher._selectAllMsgStudents()"
+                              style="font-size:var(--text-xs);font-weight:500;color:var(--accent);
+                                     background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">
+                        Select all
+                      </button>
+                      <span style="color:var(--border-strong);">·</span>
+                      <button onclick="Teacher._clearMsgStudents()"
+                              style="font-size:var(--text-xs);font-weight:500;color:var(--text-3);
+                                     background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">
+                        Clear
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style="margin-bottom:0.75rem;">
+                <label style="display:block;font-size:var(--text-xs);font-weight:500;
+                              color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">
+                  Message
+                </label>
+                <textarea id="msgText" placeholder="Write your private message..."
+                          style="height:6rem;resize:vertical;"></textarea>
+              </div>
+
+              <div style="margin-bottom:0.875rem;">
+                <label style="display:block;font-size:var(--text-xs);font-weight:500;
+                              color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">
+                  Expires after
+                </label>
+                <select id="msgDuration">
+                  <option value="3600000">1 hour</option>
+                  <option value="86400000">1 day</option>
+                  <option value="172800000">2 days</option>
+                  <option value="259200000">3 days</option>
+                  <option value="604800000">1 week</option>
+                  <option value="1209600000">2 weeks</option>
+                  <option value="2592000000">30 days</option>
+                </select>
+              </div>
+
+              <div style="padding-top:0.875rem;border-top:1px solid var(--border);">
+                <button id="sendMsgBtn" onclick="Teacher.sendPrivateMessage()"
+                        class="btn bg-red-600 hover:bg-red-700"
+                        style="width:100%;justify-content:center;font-size:var(--text-sm);">
+                  Send Private Message
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        <div id="teacher-studyroom" class="teacher-tab hidden"></div>
+        <div id="teacher-dm" class="teacher-tab hidden"></div>
+
+      </div>
+    </div>`;
+
+  const existing = document.getElementById('_teacherGridStyle');
+  if (existing) existing.remove();
+
+  const style = document.createElement('style');
+  style.id = '_teacherGridStyle';
+  style.textContent = `
+    @media (max-width:768px) { .tasks-grid { grid-template-columns:1fr !important; } }
+    .teacher-result-card {
+      cursor:pointer;
+      transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;
+    }
+    .teacher-result-card:hover {
+      transform:translateY(-2px);
+      box-shadow:var(--shadow-md);
+      border-color:var(--accent-border) !important;
+    }
+    #teacherReviewModal {
+      position:fixed;inset:0;background:var(--bg-overlay);z-index:1200;
+      display:flex;align-items:flex-start;justify-content:center;
+      padding:1.25rem;overflow-y:auto;
+      backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+      animation:cbt-overlay-in .16s ease-out both;
+    }
+    #teacherReviewModal .review-panel {
+      background:var(--bg-base);border:1px solid var(--border);
+      border-radius:var(--r-xl);padding:1.5rem;width:100%;max-width:760px;margin:auto;
+      box-shadow:var(--shadow-xl);
+      animation:cbt-modal-in .24s cubic-bezier(.34,1.45,.64,1) both;
+    }
+    .review-q-card { border-radius:var(--r-md);padding:1rem;border-width:1px;border-style:solid; }
+    .review-q-card--correct  { border-color:var(--success-border);background:var(--success-subtle); }
+    .review-q-card--wrong    { border-color:var(--danger-border);background:var(--danger-subtle); }
+    .review-q-card--skipped  { border-color:var(--border);background:var(--bg-subtle); }
+    .progress-week-row summary { cursor:pointer;list-style:none;user-select:none; }
+    .progress-week-row summary::-webkit-details-marker { display:none; }
+    #teacherEditStudentModal {
+      position:fixed;inset:0;background:var(--bg-overlay);z-index:1300;
+      display:flex;align-items:center;justify-content:center;
+      padding:1.25rem;overflow-y:auto;
+      backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
+      animation:cbt-overlay-in .16s ease-out both;
+    }
+  `;
+  document.head.appendChild(style);
+
+  showTab('students');
+}
+
+function showTab(tab) {
+  ['students','results','schools','tasks','studyroom','chat','dm'].forEach(t => {
+    const el  = document.getElementById(`teacher-${t}`);
+    const btn = document.getElementById(`tab-${t}`);
+    if (el)  el.classList.toggle('hidden', t !== tab);
+    if (btn) btn.classList.toggle('active', t === tab);
+  });
+  if (tab === 'chat')      { Chat.openPublicChat();       return; }
+  if (tab === 'studyroom') { StudyRoom.openForTeacher();  return; }
+  if (tab === 'dm')        { DM.openTeacherInbox();       return; }
+  if (tab === 'students')  _loadStudents();
+  if (tab === 'results')   _loadResults();
+  if (tab === 'schools')   _loadSchools();
+  if (tab === 'tasks')     _loadTasksManager();
+}
 
   /* -------------------------------------------------- */
   /* Students tab                                        */
@@ -1279,25 +1342,27 @@ async function _saveStudentEdit(uid, previousAdmno) {
   const btnRange  = document.getElementById('taskScopeRange');
 
   [btnOnce, btnWeekly, btnRange].forEach(b => {
-    if (b) {
-      b.style.background = 'var(--surface-muted)';
-      b.style.color = 'var(--text-tertiary)';
-    }
+    if (!b) return;
+    b.style.background = 'transparent';
+    b.style.color      = 'var(--text-3)';
+    b.style.boxShadow  = 'none';
   });
+
   const active = scope === 'weekly' ? btnWeekly : scope === 'range' ? btnRange : btnOnce;
   if (active) {
-    active.style.background = 'var(--amber)';
-    active.style.color = '#fff';
+    active.style.background = 'var(--bg-base)';
+    active.style.color      = 'var(--text-1)';
+    active.style.boxShadow  = 'var(--shadow-xs)';
   }
 
   const hint = document.getElementById('taskRecurrenceHint');
   if (hint) {
     if (scope === 'weekly') {
       hint.style.display = '';
-      hint.innerHTML = '<strong>Weekly</strong>: runs every week between Start Date and End Date (or open-ended). Pick which days of the week are active. Dates resolve automatically each week.';
+      hint.innerHTML = '<strong>Weekly</strong>: runs every week between Start Date and End Date. Pick which days of the week are active.';
     } else if (scope === 'range') {
       hint.style.display = '';
-      hint.innerHTML = '<strong>Date Range</strong>: runs every selected weekday between Start Date and End Date. Great for term-long programmes.';
+      hint.innerHTML = '<strong>Date Range</strong>: runs every selected weekday between Start Date and End Date.';
     } else {
       hint.style.display = 'none';
       hint.innerHTML = '';
@@ -1466,15 +1531,17 @@ async function _saveStudentEdit(uid, previousAdmno) {
   const studWrap   = document.getElementById('taskTargetStudentWrap');
 
   [btnAll, btnClass, btnStudent].forEach(b => {
-    if (b) {
-      b.style.background = 'var(--surface-muted)';
-      b.style.color = 'var(--text-tertiary)';
-    }
+    if (!b) return;
+    b.style.background = 'transparent';
+    b.style.color      = 'var(--text-3)';
+    b.style.boxShadow  = 'none';
   });
+
   const active = scope === 'class' ? btnClass : scope === 'student' ? btnStudent : btnAll;
   if (active) {
-    active.style.background = 'var(--amber)';
-    active.style.color = '#fff';
+    active.style.background = 'var(--bg-base)';
+    active.style.color      = 'var(--text-1)';
+    active.style.boxShadow  = 'var(--shadow-xs)';
   }
 
   if (classWrap) classWrap.style.display = scope === 'class'   ? '' : 'none';
@@ -2284,19 +2351,38 @@ function _renderExistingTasksList(docs) {
 
   function _setMsgMode(mode) {
   _msgMode = mode;
+
   const singleWrap = document.getElementById('msgSingleWrap');
   const multiWrap  = document.getElementById('msgMultiWrap');
   const singleBtn  = document.getElementById('msgModeSingle');
   const multiBtn   = document.getElementById('msgModeMulti');
+
   if (!singleWrap || !multiWrap) return;
+
   if (mode === 'single') {
-    singleWrap.style.display = ''; multiWrap.style.display = 'none';
-    if (singleBtn) { singleBtn.style.background = 'var(--amber)'; singleBtn.style.color = '#fff'; }
-    if (multiBtn)  { multiBtn.style.background  = 'var(--surface-muted)'; multiBtn.style.color = 'var(--text-tertiary)'; }
+    singleWrap.style.display = '';
+    multiWrap.style.display  = 'none';
+    if (singleBtn) {
+      singleBtn.style.background = 'var(--bg-base)';
+      singleBtn.style.color      = 'var(--text-1)';
+      singleBtn.style.boxShadow  = 'var(--shadow-xs)';
+    }
+    if (multiBtn) {
+      multiBtn.style.background = 'transparent';
+      multiBtn.style.color      = 'var(--text-3)';
+    }
   } else {
-    singleWrap.style.display = 'none'; multiWrap.style.display = '';
-    if (multiBtn)  { multiBtn.style.background  = 'var(--amber)'; multiBtn.style.color = '#fff'; }
-    if (singleBtn) { singleBtn.style.background = 'var(--surface-muted)'; singleBtn.style.color = 'var(--text-tertiary)'; }
+    singleWrap.style.display = 'none';
+    multiWrap.style.display  = '';
+    if (multiBtn) {
+      multiBtn.style.background = 'var(--bg-base)';
+      multiBtn.style.color      = 'var(--text-1)';
+      multiBtn.style.boxShadow  = 'var(--shadow-xs)';
+    }
+    if (singleBtn) {
+      singleBtn.style.background = 'transparent';
+      singleBtn.style.color      = 'var(--text-3)';
+    }
     _populateMsgCheckboxList();
   }
 }
