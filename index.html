@@ -9,7 +9,7 @@
   <meta name="author" content="Vertex Tutorial" />
 
   <!-- PWA -->
-  <meta name="theme-color" content="#1a1f36" />
+  <meta name="theme-color" content="#0e0e0f" />
   <meta name="color-scheme" content="light" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -21,15 +21,14 @@
   <link rel="manifest" href="/manifest.json" />
   <link rel="icon" href="vertex.jpeg" type="image/png" />
 
-  <!-- Stylesheets -->
+  <!-- Stylesheets — main.css replaces styles.css + modern.css -->
   <link rel="stylesheet" href="news-ticker.css" />
-  <link rel="stylesheet" href="css/styles.css" />
-  <link rel="stylesheet" href="css/modern.css" />
+  <link rel="stylesheet" href="css/main.css" />
   <link rel="stylesheet" href="css/studyroom.css" />
 
   <!--
     Tailwind CDN — layout utilities only.
-    The design system CSS in styles.css owns all visual properties.
+    All visual properties live in main.css.
   -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
@@ -38,7 +37,7 @@
         theme: {
           extend: {
             fontFamily: {
-              sans: ['Outfit', 'Segoe UI', 'system-ui', '-apple-system', 'sans-serif'],
+              sans: ['DM Sans', 'system-ui', '-apple-system', 'sans-serif'],
             },
           },
         },
@@ -54,9 +53,7 @@
           onload="window._katexAutoRenderReady = true;"></script>
 
   <!-- ============================================================
-       LOADING SCREEN STYLES
-       Inlined here so they are available before ANY external CSS
-       loads. The loading screen must appear on the very first paint.
+       LOADING SCREEN STYLES — inlined for first-paint
        ============================================================ -->
   <style>
     /* ── Loading overlay ── */
@@ -64,14 +61,13 @@
       position: fixed;
       inset: 0;
       z-index: 99999;
-      background: #0d0f1e;
+      background: #0e0e0f;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       gap: 0;
       font-family: 'Georgia', serif;
-      /* Fade out when .is-done is added */
       transition: opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1),
                   visibility 0.55s cubic-bezier(0.4, 0, 0.2, 1);
       opacity: 1;
@@ -84,24 +80,14 @@
       pointer-events: none;
     }
 
-    /* Subtle grain texture overlay */
-    #vtx-loader::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
-      opacity: 0.4;
-      pointer-events: none;
-    }
-
-    /* Faint radial glow behind the book */
+    /* Subtle warm radial glow */
     #vtx-loader::after {
       content: '';
       position: absolute;
-      width: 420px;
-      height: 420px;
+      width: 480px;
+      height: 480px;
       border-radius: 50%;
-      background: radial-gradient(circle, rgba(59, 91, 219, 0.18) 0%, transparent 70%);
+      background: radial-gradient(circle, rgba(181,100,30,.12) 0%, transparent 68%);
       pointer-events: none;
     }
 
@@ -110,13 +96,12 @@
       position: relative;
       z-index: 1;
       margin-bottom: 2.5rem;
-      animation: vtx-float 3s ease-in-out infinite;
+      animation: vtx-float 3.2s ease-in-out infinite;
     }
 
-    /* The open book SVG illustration */
     .vtx-book {
-      width: 96px;
-      height: 72px;
+      width: 88px;
+      height: 68px;
       position: relative;
     }
 
@@ -125,15 +110,15 @@
       position: absolute;
       top: 0;
       right: 50%;
-      width: 46px;
-      height: 68px;
+      width: 42px;
+      height: 64px;
       transform-origin: right center;
       transform-style: preserve-3d;
-      animation: vtx-page-turn 1.8s ease-in-out infinite;
+      animation: vtx-page-turn 1.9s ease-in-out infinite;
     }
 
-    .vtx-page:nth-child(2) { animation-delay: 0.3s; opacity: 0.7; }
-    .vtx-page:nth-child(3) { animation-delay: 0.6s; opacity: 0.45; }
+    .vtx-page:nth-child(2) { animation-delay: 0.32s; opacity: 0.65; }
+    .vtx-page:nth-child(3) { animation-delay: 0.64s; opacity: 0.38; }
 
     @keyframes vtx-page-turn {
       0%   { transform: rotateY(0deg);    }
@@ -144,20 +129,20 @@
 
     @keyframes vtx-float {
       0%, 100% { transform: translateY(0px); }
-      50%       { transform: translateY(-8px); }
+      50%       { transform: translateY(-7px); }
     }
 
-    /* ── Text below book ── */
+    /* ── Brand text ── */
     .vtx-loader-title {
       position: relative;
       z-index: 1;
       font-family: 'Georgia', 'Times New Roman', serif;
-      font-size: 1.5rem;
+      font-size: 1.375rem;
       font-weight: 700;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
-      color: #f0f0f8;
-      margin-bottom: 0.375rem;
+      color: #f5f5f0;
+      margin-bottom: 0.25rem;
       text-align: center;
     }
 
@@ -165,10 +150,10 @@
       position: relative;
       z-index: 1;
       font-family: 'Georgia', serif;
-      font-size: 0.75rem;
-      letter-spacing: 0.22em;
+      font-size: 0.6875rem;
+      letter-spacing: 0.26em;
       text-transform: uppercase;
-      color: rgba(160, 165, 200, 0.7);
+      color: rgba(200, 195, 180, 0.5);
       margin-bottom: 2.25rem;
       text-align: center;
     }
@@ -177,9 +162,9 @@
     .vtx-loader-track {
       position: relative;
       z-index: 1;
-      width: 180px;
-      height: 2px;
-      background: rgba(255, 255, 255, 0.08);
+      width: 160px;
+      height: 1px;
+      background: rgba(255,255,255,.08);
       border-radius: 99px;
       overflow: hidden;
       margin-bottom: 1.25rem;
@@ -189,9 +174,8 @@
       height: 100%;
       width: 0%;
       border-radius: 99px;
-      background: linear-gradient(90deg, #3b5bdb, #6b8cff);
+      background: #b5641e;
       transition: width 0.4s ease;
-      /* Also runs the shimmer independently */
       position: relative;
       overflow: hidden;
     }
@@ -201,8 +185,8 @@
       position: absolute;
       top: 0; left: -100%; bottom: 0;
       width: 60%;
-      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
-      animation: vtx-shimmer 1.4s ease-in-out infinite;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent);
+      animation: vtx-shimmer 1.6s ease-in-out infinite;
     }
 
     @keyframes vtx-shimmer {
@@ -215,40 +199,40 @@
       position: relative;
       z-index: 1;
       font-family: 'Georgia', serif;
-      font-size: 0.6875rem;
-      letter-spacing: 0.18em;
+      font-size: 0.625rem;
+      letter-spacing: 0.2em;
       text-transform: uppercase;
-      color: rgba(140, 145, 185, 0.65);
+      color: rgba(180, 175, 160, 0.5);
       text-align: center;
       min-height: 1em;
       transition: opacity 0.3s ease;
     }
 
-    /* Dot pulse loader (shown before progress bar fills) */
+    /* Dot pulse (before bar appears) */
     .vtx-dots {
       position: relative;
       z-index: 1;
       display: flex;
-      gap: 6px;
+      gap: 5px;
       align-items: center;
       justify-content: center;
       margin-bottom: 0.5rem;
     }
 
     .vtx-dot {
-      width: 5px;
-      height: 5px;
+      width: 4px;
+      height: 4px;
       border-radius: 50%;
-      background: rgba(100, 120, 220, 0.6);
-      animation: vtx-dot-pulse 1.4s ease-in-out infinite;
+      background: rgba(181,100,30,.5);
+      animation: vtx-dot-pulse 1.5s ease-in-out infinite;
     }
 
-    .vtx-dot:nth-child(2) { animation-delay: 0.22s; }
-    .vtx-dot:nth-child(3) { animation-delay: 0.44s; }
+    .vtx-dot:nth-child(2) { animation-delay: 0.24s; }
+    .vtx-dot:nth-child(3) { animation-delay: 0.48s; }
 
     @keyframes vtx-dot-pulse {
-      0%, 80%, 100% { transform: scale(1);   opacity: 0.5; }
-      40%            { transform: scale(1.5); opacity: 1;   }
+      0%, 80%, 100% { transform: scale(1);   opacity: 0.4; }
+      40%            { transform: scale(1.6); opacity: 1;   }
     }
   </style>
 </head>
@@ -257,69 +241,60 @@
 
   <!-- ============================================================
        LOADING SCREEN
-       This is hard-coded in HTML so it renders on the very first
-       paint — before Firebase, before JS modules, before fonts.
-       app.js calls window.VtxLoader.done() when the app is ready.
        ============================================================ -->
   <div id="vtx-loader" role="status" aria-label="Loading Vertex Tutorial">
 
-    <!-- Open book illustration (pure SVG, no external assets) -->
+    <!-- Open book illustration (pure SVG) -->
     <div class="vtx-book-wrap">
-      <svg class="vtx-book" viewBox="0 0 96 72" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <!-- Book spine shadow -->
-        <line x1="48" y1="4" x2="48" y2="70" stroke="rgba(200,210,255,0.2)" stroke-width="1.5"/>
+      <svg class="vtx-book" viewBox="0 0 88 68" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <!-- Book spine -->
+        <line x1="44" y1="4" x2="44" y2="65" stroke="rgba(200,190,165,0.18)" stroke-width="1.5"/>
 
         <!-- Left page -->
-        <path d="M48 8 Q24 6 4 12 L4 68 Q24 62 48 64 Z"
-              fill="rgba(255,255,255,0.06)"
-              stroke="rgba(160,175,255,0.3)"
+        <path d="M44 8 Q22 6 4 11 L4 64 Q22 58 44 60 Z"
+              fill="rgba(255,255,255,0.04)"
+              stroke="rgba(181,100,30,0.22)"
               stroke-width="1"/>
-        <!-- Left page lines -->
-        <line x1="12" y1="22" x2="40" y2="20" stroke="rgba(160,175,255,0.15)" stroke-width="1"/>
-        <line x1="12" y1="30" x2="40" y2="28" stroke="rgba(160,175,255,0.15)" stroke-width="1"/>
-        <line x1="12" y1="38" x2="40" y2="36" stroke="rgba(160,175,255,0.15)" stroke-width="1"/>
-        <line x1="12" y1="46" x2="36" y2="44" stroke="rgba(160,175,255,0.10)" stroke-width="1"/>
-        <line x1="12" y1="54" x2="32" y2="52" stroke="rgba(160,175,255,0.10)" stroke-width="1"/>
+        <line x1="11" y1="20" x2="36" y2="18" stroke="rgba(181,100,30,0.12)" stroke-width="1"/>
+        <line x1="11" y1="28" x2="36" y2="26" stroke="rgba(181,100,30,0.12)" stroke-width="1"/>
+        <line x1="11" y1="36" x2="36" y2="34" stroke="rgba(181,100,30,0.12)" stroke-width="1"/>
+        <line x1="11" y1="44" x2="32" y2="42" stroke="rgba(181,100,30,0.08)" stroke-width="1"/>
+        <line x1="11" y1="52" x2="28" y2="50" stroke="rgba(181,100,30,0.08)" stroke-width="1"/>
 
         <!-- Right page -->
-        <path d="M48 8 Q72 6 92 12 L92 68 Q72 62 48 64 Z"
-              fill="rgba(255,255,255,0.06)"
-              stroke="rgba(160,175,255,0.3)"
+        <path d="M44 8 Q66 6 84 11 L84 64 Q66 58 44 60 Z"
+              fill="rgba(255,255,255,0.04)"
+              stroke="rgba(181,100,30,0.22)"
               stroke-width="1"/>
-        <!-- Right page lines -->
-        <line x1="56" y1="22" x2="84" y2="20" stroke="rgba(160,175,255,0.15)" stroke-width="1"/>
-        <line x1="56" y1="30" x2="84" y2="28" stroke="rgba(160,175,255,0.15)" stroke-width="1"/>
-        <line x1="56" y1="38" x2="84" y2="36" stroke="rgba(160,175,255,0.15)" stroke-width="1"/>
-        <line x1="56" y1="46" x2="80" y2="44" stroke="rgba(160,175,255,0.10)" stroke-width="1"/>
-        <line x1="56" y1="54" x2="76" y2="52" stroke="rgba(160,175,255,0.10)" stroke-width="1"/>
+        <line x1="52" y1="20" x2="77" y2="18" stroke="rgba(181,100,30,0.12)" stroke-width="1"/>
+        <line x1="52" y1="28" x2="77" y2="26" stroke="rgba(181,100,30,0.12)" stroke-width="1"/>
+        <line x1="52" y1="36" x2="77" y2="34" stroke="rgba(181,100,30,0.12)" stroke-width="1"/>
+        <line x1="52" y1="44" x2="74" y2="42" stroke="rgba(181,100,30,0.08)" stroke-width="1"/>
+        <line x1="52" y1="52" x2="70" y2="50" stroke="rgba(181,100,30,0.08)" stroke-width="1"/>
 
-        <!-- Turning page (animated via CSS) -->
-        <g class="vtx-page" style="transform-origin:48px 36px;">
-          <path d="M48 8 Q60 6 72 10 L72 66 Q60 62 48 64 Z"
-                fill="rgba(100,130,255,0.18)"
-                stroke="rgba(130,160,255,0.4)"
+        <!-- Turning page -->
+        <g class="vtx-page" style="transform-origin:44px 34px;">
+          <path d="M44 8 Q56 6 68 10 L68 62 Q56 58 44 60 Z"
+                fill="rgba(181,100,30,0.14)"
+                stroke="rgba(181,100,30,0.35)"
                 stroke-width="0.75"/>
         </g>
       </svg>
     </div>
 
-    <!-- Brand name -->
     <div class="vtx-loader-title">Vertex Tutorial</div>
     <div class="vtx-loader-subtitle">Computer-Based Testing</div>
 
-    <!-- Dot pulse -->
     <div class="vtx-dots" id="vtxDots">
       <div class="vtx-dot"></div>
       <div class="vtx-dot"></div>
       <div class="vtx-dot"></div>
     </div>
 
-    <!-- Progress bar (hidden until JS starts updating it) -->
     <div class="vtx-loader-track" id="vtxTrack" style="opacity:0;transition:opacity 0.3s;">
       <div class="vtx-loader-bar" id="vtxBar"></div>
     </div>
 
-    <!-- Status text -->
     <div class="vtx-loader-status" id="vtxStatus">Preparing your session&hellip;</div>
 
   </div>
@@ -333,21 +308,21 @@
   <!-- PWA Install Prompt -->
   <div id="install-prompt"
        style="display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
-              background:white;padding:1rem 1.5rem;border-radius:10px;
-              box-shadow:0 6px 20px rgba(0,0,0,.12);z-index:9999;
-              max-width:90%;text-align:center;border:1px solid #e5e7eb;">
-    <p style="margin:0 0 10px;font-weight:700;color:#111827;font-family:Outfit,sans-serif;font-size:0.875rem;">
+              background:#fff;padding:1rem 1.5rem;border-radius:8px;
+              box-shadow:0 6px 20px rgba(14,14,15,.12);z-index:9999;
+              max-width:90%;text-align:center;border:1px solid #e4e2dc;">
+    <p style="margin:0 0 10px;font-weight:600;color:#0e0e0f;font-family:'DM Sans',system-ui,sans-serif;font-size:0.875rem;">
       Install Vertex Tutorial App
     </p>
     <div style="display:flex;gap:8px;justify-content:center;">
       <button id="install-button"
-              style="background:#1a1f36;color:white;border:none;padding:6px 16px;
-                     border-radius:6px;font-weight:600;cursor:pointer;font-family:Outfit,sans-serif;font-size:0.8125rem;">
+              style="background:#0e0e0f;color:white;border:none;padding:6px 16px;
+                     border-radius:4px;font-weight:600;cursor:pointer;font-family:'DM Sans',system-ui,sans-serif;font-size:0.8125rem;">
         Install
       </button>
       <button id="install-cancel"
-              style="background:#f3f4f6;color:#4b5563;border:1px solid #e5e7eb;padding:6px 16px;
-                     border-radius:6px;cursor:pointer;font-family:Outfit,sans-serif;font-size:0.8125rem;">
+              style="background:#f5f4f0;color:#48484c;border:1px solid #e4e2dc;padding:6px 16px;
+                     border-radius:4px;cursor:pointer;font-family:'DM Sans',system-ui,sans-serif;font-size:0.8125rem;">
         Later
       </button>
     </div>
@@ -355,8 +330,6 @@
 
   <!-- ============================================================
        LOADER CONTROLLER
-       Exposed as window.VtxLoader so app.js can update progress
-       and dismiss the screen without importing anything.
        ============================================================ -->
   <script>
     (function () {
@@ -373,13 +346,10 @@
       function _setProgress(pct, label) {
         if (_done) return;
         _pct = Math.min(100, Math.max(0, pct));
-
-        // Show the bar once we have real progress
         if (_pct > 0 && _track) {
           _track.style.opacity = '1';
           if (_dots) _dots.style.opacity = '0';
         }
-
         if (_bar)    _bar.style.width  = _pct + '%';
         if (_status && label) _status.textContent = label;
       }
@@ -388,11 +358,8 @@
         if (_done) return;
         _done = true;
         _setProgress(100, 'Ready');
-
-        // Small delay so the 100% fill is visible before fade
         setTimeout(function () {
           if (_loader) _loader.classList.add('is-done');
-          // Remove from DOM after transition so it can't block clicks
           setTimeout(function () {
             if (_loader && _loader.parentNode) {
               _loader.parentNode.removeChild(_loader);
@@ -406,11 +373,10 @@
         done:     _done_fn,
       };
 
-      // Failsafe: if JS crashes and done() is never called, remove
-      // the loader after 12 seconds so students are never stuck.
+      // Failsafe
       setTimeout(function () {
         if (!_done) {
-          console.warn('[VtxLoader] Failsafe triggered — removing loader after timeout.');
+          console.warn('[VtxLoader] Failsafe triggered.');
           _done_fn();
         }
       }, 12000);
@@ -424,7 +390,7 @@
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js"></script>
 
-  <!-- Application modules — load order is significant -->
+  <!-- Application modules -->
   <script src="data/questions.js"></script>
   <script src="js/config.js"></script>
   <script src="js/state.js"></script>
@@ -443,7 +409,7 @@
   <script src="news-ticker.js"></script>
 
   <!-- ============================================================
-       PRESENTATION ENHANCEMENTS (unchanged from original)
+       PRESENTATION ENHANCEMENTS (unchanged logic)
        ============================================================ -->
   <script>
     (function () {
@@ -555,7 +521,7 @@
     }());
   </script>
 
-  <!-- Service Worker Registration (unchanged from original) -->
+  <!-- Service Worker Registration -->
   <script>
     (function () {
       'use strict';
