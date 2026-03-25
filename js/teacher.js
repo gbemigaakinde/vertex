@@ -61,33 +61,37 @@
   /* Render dashboard shell                             */
   /* -------------------------------------------------- */
 
+  /* ── REPLACEMENT for renderTeacherDashboard() in teacher.js ── */
+  /* Replace the entire renderTeacherDashboard function body with this */
+
   function renderTeacherDashboard() {
     AppState.isTeacher = true;
 
     document.getElementById('app').innerHTML = `
       <div class="max-w-7xl mx-auto glass mt-6" style="margin-bottom:1.5rem;">
 
-        <!-- ── Dashboard header ── -->
+        <!-- Header -->
         <div style="display:flex;align-items:center;justify-content:space-between;
-                    padding:1rem 1.5rem;border-bottom:1px solid var(--c-border,#e5e7eb);">
+                    padding:1rem 1.5rem;border-bottom:1px solid var(--border);">
           <div style="display:flex;align-items:center;gap:.75rem;">
-            <div style="width:28px;height:28px;background:var(--c-brand,#4f46e5);border-radius:7px;
+            <div style="width:28px;height:28px;background:var(--text-primary);border-radius:4px;
                         display:flex;align-items:center;justify-content:center;
-                        color:#fff;font-weight:800;font-size:.75rem;flex-shrink:0;">V</div>
+                        color:#fff;font-weight:700;font-size:.75rem;flex-shrink:0;">V</div>
             <div>
-              <h1 style="font-size:1rem;font-weight:700;line-height:1.2;color:var(--c-text,#111827);">
+              <h1 style="font-family:'Instrument Serif',Georgia,serif;font-size:1.0625rem;
+                          font-weight:400;line-height:1.2;color:var(--text-primary);">
                 Teacher Dashboard
               </h1>
-              <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:1px;">Admin</p>
+              <p style="font-size:.75rem;color:var(--text-tertiary);margin-top:1px;">Administrator</p>
             </div>
           </div>
           <button onclick="Teacher.logout()" class="btn bg-gray-500 hover:bg-gray-600"
                   style="font-size:.8125rem;padding:.4375rem .875rem;">Sign out</button>
         </div>
 
-        <!-- ── Tab nav ── -->
+        <!-- Tab nav -->
         <div style="display:flex;align-items:center;gap:.375rem;padding:.625rem 1.5rem;
-                    border-bottom:1px solid var(--c-border,#e5e7eb);flex-wrap:wrap;">
+                    border-bottom:1px solid var(--border);flex-wrap:wrap;">
           <button onclick="Teacher.showTab('students')" id="tab-students"
                   class="tab-btn btn" style="font-size:.8125rem;padding:.4375rem .875rem;">Students</button>
           <button onclick="Teacher.showTab('results')"  id="tab-results"
@@ -104,15 +108,15 @@
                   class="tab-btn btn bg-indigo-600" style="font-size:.8125rem;padding:.4375rem .875rem;position:relative;">Messages</button>
         </div>
 
-        <!-- ── Tab panels ── -->
+        <!-- Tab panels -->
         <div style="padding:1.25rem 1.5rem;">
 
           <!-- Students -->
           <div id="teacher-students" class="teacher-tab">
             <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
               <div>
-                <h2 style="font-size:1rem;font-weight:700;">Registered Students</h2>
-                <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:2px;">Grouped by school</p>
+                <h2 style="font-size:1rem;font-weight:600;font-family:'Instrument Serif',Georgia,serif;font-weight:400;">Registered Students</h2>
+                <p style="font-size:.75rem;color:var(--text-tertiary);margin-top:2px;">Grouped by school</p>
               </div>
               <button onclick="Teacher._loadStudents()" class="btn bg-blue-600"
                       style="font-size:.8125rem;padding:.4375rem .875rem;">Refresh</button>
@@ -123,9 +127,9 @@
           <!-- Results -->
           <div id="teacher-results" class="teacher-tab hidden">
             <div style="margin-bottom:1rem;">
-              <h2 style="font-size:1rem;font-weight:700;">All Exam Results</h2>
-              <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:2px;">
-                Most recent first — click any card to review the full attempt
+              <h2 style="font-size:1rem;font-family:'Instrument Serif',Georgia,serif;font-weight:400;">All Exam Results</h2>
+              <p style="font-size:.75rem;color:var(--text-tertiary);margin-top:2px;">
+                Most recent first &mdash; click any card to review the full attempt
               </p>
             </div>
             <div id="resultsList" class="grid gap-3 md:grid-cols-2 lg:grid-cols-3"></div>
@@ -134,8 +138,8 @@
           <!-- Schools -->
           <div id="teacher-schools" class="teacher-tab hidden">
             <div style="margin-bottom:1rem;">
-              <h2 style="font-size:1rem;font-weight:700;">Manage Schools</h2>
-              <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:2px;">
+              <h2 style="font-size:1rem;font-family:'Instrument Serif',Georgia,serif;font-weight:400;">Manage Schools</h2>
+              <p style="font-size:.75rem;color:var(--text-tertiary);margin-top:2px;">
                 Add, rename, or remove schools from the registration list
               </p>
             </div>
@@ -150,77 +154,75 @@
           <!-- Tasks & Messages -->
           <div id="teacher-tasks" class="teacher-tab hidden">
             <div style="margin-bottom:1.25rem;">
-              <h2 style="font-size:1rem;font-weight:700;">Coaching Tasks &amp; Messages</h2>
-              <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:2px;">
+              <h2 style="font-size:1rem;font-family:'Instrument Serif',Georgia,serif;font-weight:400;">Coaching Tasks &amp; Messages</h2>
+              <p style="font-size:.75rem;color:var(--text-tertiary);margin-top:2px;">
                 Configure scheduled tasks and send private messages to students
               </p>
             </div>
 
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;" class="tasks-grid">
 
-              <!-- ── Coaching task config ── -->
-              <div class="glass-dark" style="padding:1.25rem;border-radius:10px;">
+              <!-- Coaching task config -->
+              <div class="glass-dark" style="padding:1.25rem;border-radius:8px;">
                 <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;
-                            padding-bottom:.75rem;border-bottom:1px solid var(--c-border,#e5e7eb);">
-                  <div style="width:6px;height:6px;border-radius:50%;background:var(--c-brand,#4f46e5);"></div>
-                  <h3 style="font-size:.9375rem;font-weight:700;color:var(--c-brand-text,#3730a3);">Coaching Tasks</h3>
+                            padding-bottom:.75rem;border-bottom:1px solid var(--border);">
+                  <div style="width:6px;height:6px;border-radius:50%;background:var(--amber);"></div>
+                  <h3 style="font-size:.9375rem;font-weight:600;color:var(--amber-text);">Coaching Tasks</h3>
                 </div>
 
-                <!-- ── Recurrence type ── -->
+                <!-- Recurrence type -->
                 <div style="margin-bottom:.875rem;">
                   <label style="display:block;font-size:.75rem;font-weight:600;
-                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">Recurrence</label>
-                  <div style="display:flex;gap:0;border:1px solid var(--c-border,#e5e7eb);
-                              border-radius:6px;overflow:hidden;width:100%;">
+                                color:var(--text-secondary);margin-bottom:.375rem;letter-spacing:.03em;text-transform:uppercase;">Recurrence</label>
+                  <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:4px;overflow:hidden;width:100%;">
                     <button id="taskScopeAll" onclick="Teacher._setTaskScope('once')"
                             style="flex:1;padding:.4375rem .25rem;font-size:.6875rem;font-weight:600;
                                    cursor:pointer;border:none;transition:background .12s,color .12s;
-                                   background:var(--brand,#3b5bdb);color:#fff;">One-time</button>
+                                   background:var(--amber);color:#fff;">One-time</button>
                     <button id="taskScopeWeekly" onclick="Teacher._setTaskScope('weekly')"
                             style="flex:1;padding:.4375rem .25rem;font-size:.6875rem;font-weight:600;
-                                   cursor:pointer;border:none;border-left:1px solid var(--c-border,#e5e7eb);
+                                   cursor:pointer;border:none;border-left:1px solid var(--border);
                                    transition:background .12s,color .12s;
-                                   background:var(--surface-muted,#f3f4f6);color:var(--text-tertiary,#6b7280);">Weekly</button>
+                                   background:var(--surface-muted);color:var(--text-tertiary);">Weekly</button>
                     <button id="taskScopeRange" onclick="Teacher._setTaskScope('range')"
                             style="flex:1;padding:.4375rem .25rem;font-size:.6875rem;font-weight:600;
-                                   cursor:pointer;border:none;border-left:1px solid var(--c-border,#e5e7eb);
+                                   cursor:pointer;border:none;border-left:1px solid var(--border);
                                    transition:background .12s,color .12s;
-                                   background:var(--surface-muted,#f3f4f6);color:var(--text-tertiary,#6b7280);">Date Range</button>
+                                   background:var(--surface-muted);color:var(--text-tertiary);">Date Range</button>
                   </div>
                 </div>
 
                 <!-- Recurrence hint -->
                 <div id="taskRecurrenceHint" style="display:none;margin-bottom:.75rem;padding:.5rem .75rem;
-                     background:var(--brand-bg,#edf2ff);border:1px solid var(--brand-border,#bac8ff);
-                     border-radius:6px;font-size:.75rem;color:var(--brand-text,#3730a3);line-height:1.6;"></div>
+                     background:var(--amber-bg);border:1px solid var(--amber-border);
+                     border-radius:4px;font-size:.75rem;color:var(--amber-text);line-height:1.6;"></div>
 
-                <!-- Assign-to selector -->
+                <!-- Assign-to -->
                 <div id="taskAssignToWrap" style="margin-bottom:.875rem;">
                   <label style="display:block;font-size:.75rem;font-weight:600;
-                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">Assign to</label>
-                  <div style="display:flex;gap:0;border:1px solid var(--c-border,#e5e7eb);
-                              border-radius:6px;overflow:hidden;width:100%;">
+                                color:var(--text-secondary);margin-bottom:.375rem;letter-spacing:.03em;text-transform:uppercase;">Assign to</label>
+                  <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:4px;overflow:hidden;width:100%;">
                     <button id="taskAssignAll" onclick="Teacher._setAssignScope('all')"
                             style="flex:1;padding:.4375rem .25rem;font-size:.6875rem;font-weight:600;
                                    cursor:pointer;border:none;transition:background .12s,color .12s;
-                                   background:var(--brand,#3b5bdb);color:#fff;">All</button>
+                                   background:var(--amber);color:#fff;">All</button>
                     <button id="taskAssignClass" onclick="Teacher._setAssignScope('class')"
                             style="flex:1;padding:.4375rem .25rem;font-size:.6875rem;font-weight:600;
-                                   cursor:pointer;border:none;border-left:1px solid var(--c-border,#e5e7eb);
+                                   cursor:pointer;border:none;border-left:1px solid var(--border);
                                    transition:background .12s,color .12s;
-                                   background:var(--surface-muted,#f3f4f6);color:var(--text-tertiary,#6b7280);">By Class</button>
+                                   background:var(--surface-muted);color:var(--text-tertiary);">By Class</button>
                     <button id="taskAssignStudent" onclick="Teacher._setAssignScope('student')"
                             style="flex:1;padding:.4375rem .25rem;font-size:.6875rem;font-weight:600;
-                                   cursor:pointer;border:none;border-left:1px solid var(--c-border,#e5e7eb);
+                                   cursor:pointer;border:none;border-left:1px solid var(--border);
                                    transition:background .12s,color .12s;
-                                   background:var(--surface-muted,#f3f4f6);color:var(--text-tertiary,#6b7280);">By Student</button>
+                                   background:var(--surface-muted);color:var(--text-tertiary);">By Student</button>
                   </div>
                 </div>
 
                 <!-- Class target -->
                 <div id="taskTargetClassWrap" style="display:none;margin-bottom:.75rem;">
                   <label style="display:block;font-size:.75rem;font-weight:600;
-                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">Class</label>
+                                color:var(--text-secondary);margin-bottom:.375rem;letter-spacing:.03em;text-transform:uppercase;">Class</label>
                   <select id="taskTargetClass" onchange="Teacher._onTaskTargetChange()">
                     <option value="">Select a class...</option>
                   </select>
@@ -229,7 +231,7 @@
                 <!-- Student target -->
                 <div id="taskTargetStudentWrap" style="display:none;margin-bottom:.75rem;">
                   <label style="display:block;font-size:.75rem;font-weight:600;
-                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">Student</label>
+                                color:var(--text-secondary);margin-bottom:.375rem;letter-spacing:.03em;text-transform:uppercase;">Student</label>
                   <select id="taskTargetStudent" onchange="Teacher._onTaskTargetChange()">
                     <option value="">Select a student...</option>
                   </select>
@@ -237,14 +239,13 @@
 
                 <!-- Active toggle -->
                 <label style="display:flex;align-items:center;gap:.625rem;margin-bottom:.875rem;
-                              cursor:pointer;padding:.625rem .75rem;border-radius:8px;
-                              border:1px solid var(--c-border,#e5e7eb);background:var(--c-surface,#fff);">
+                              cursor:pointer;padding:.625rem .75rem;border-radius:6px;
+                              border:1px solid var(--border);background:var(--surface);">
                   <input type="checkbox" id="tasksActive"
-                         style="width:1rem;height:1rem;accent-color:var(--c-brand,#4f46e5);
-                                flex-shrink:0;cursor:pointer;" />
+                         style="width:1rem;height:1rem;accent-color:var(--amber);flex-shrink:0;cursor:pointer;" />
                   <div>
-                    <span style="font-size:.875rem;font-weight:600;color:var(--c-text,#111827);">Active</span>
-                    <span style="display:block;font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin-top:1px;">
+                    <span style="font-size:.875rem;font-weight:600;color:var(--text-primary);">Active</span>
+                    <span style="display:block;font-size:.6875rem;color:var(--text-tertiary);margin-top:1px;">
                       Students only see this task when Active is checked
                     </span>
                   </div>
@@ -253,14 +254,14 @@
                 <!-- Title -->
                 <div style="margin-bottom:.75rem;">
                   <label style="display:block;font-size:.75rem;font-weight:600;
-                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">Task Title</label>
+                                color:var(--text-secondary);margin-bottom:.375rem;letter-spacing:.03em;text-transform:uppercase;">Task Title</label>
                   <input type="text" id="tasksTitle" placeholder="e.g., Term 2 Coaching Programme" />
                 </div>
 
                 <!-- Message -->
                 <div style="margin-bottom:.875rem;">
                   <label style="display:block;font-size:.75rem;font-weight:600;
-                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">Message for Students</label>
+                                color:var(--text-secondary);margin-bottom:.375rem;letter-spacing:.03em;text-transform:uppercase;">Message for Students</label>
                   <textarea id="tasksMessage" placeholder="Instructions or motivation..."
                             style="height:4rem;resize:vertical;"></textarea>
                 </div>
@@ -268,9 +269,9 @@
                 <!-- Exam duration -->
                 <div style="margin-bottom:.875rem;">
                   <label style="display:block;font-size:.75rem;font-weight:600;
-                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">
+                                color:var(--text-secondary);margin-bottom:.375rem;letter-spacing:.03em;text-transform:uppercase;">
                     Exam Duration
-                    <span style="font-weight:400;color:var(--text-tertiary,#6b7280);">— for students on this task</span>
+                    <span style="font-weight:400;text-transform:none;color:var(--text-tertiary);">— for students on this task</span>
                   </label>
                   <select id="taskDurationMs">
                     <option value="">Use default (2 hours)</option>
@@ -284,24 +285,23 @@
                   </select>
                 </div>
 
-                <!-- ── Date / range config area ── -->
+                <!-- Date / range config area -->
                 <div id="taskDateConfigArea"></div>
 
-                <!-- Subject restrictions for recurring tasks -->
+                <!-- Subject restrictions -->
                 <div id="taskRecurringSubjectsWrap" style="display:none;margin-bottom:.875rem;">
                   <label style="display:block;font-size:.75rem;font-weight:600;
-                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">
+                                color:var(--text-secondary);margin-bottom:.375rem;letter-spacing:.03em;text-transform:uppercase;">
                     Subject Restrictions
-                    <span style="font-weight:400;color:var(--text-tertiary,#6b7280);">
-                      — per day of week (leave all unchecked = no restriction)
+                    <span style="font-weight:400;text-transform:none;color:var(--text-tertiary);">
+                      — per day of week
                     </span>
                   </label>
                   <div id="taskRecurringSubjectsList"></div>
                 </div>
 
                 <!-- Actions -->
-                <div style="display:flex;gap:.5rem;padding-top:.875rem;
-                            border-top:1px solid var(--c-border,#e5e7eb);">
+                <div style="display:flex;gap:.5rem;padding-top:.875rem;border-top:1px solid var(--border);">
                   <button id="saveTasksBtn" onclick="Teacher.saveTasksConfig()"
                           class="btn bg-green-600 hover:bg-green-700"
                           style="flex:1;font-size:.875rem;padding:.5625rem .875rem;">
@@ -310,24 +310,24 @@
                 </div>
               </div>
 
-              <!-- ── Private message sender ── -->
-              <div class="glass-dark" style="padding:1.25rem;border-radius:10px;">
+              <!-- Private message sender -->
+              <div class="glass-dark" style="padding:1.25rem;border-radius:8px;">
                 <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:1rem;
-                            padding-bottom:.75rem;border-bottom:1px solid var(--c-border,#e5e7eb);">
-                  <div style="width:6px;height:6px;border-radius:50%;background:var(--c-danger,#dc2626);"></div>
-                  <h3 style="font-size:.9375rem;font-weight:700;color:var(--c-danger,#dc2626);">Private Message</h3>
+                            padding-bottom:.75rem;border-bottom:1px solid var(--border);">
+                  <div style="width:6px;height:6px;border-radius:50%;background:var(--danger);"></div>
+                  <h3 style="font-size:.9375rem;font-weight:600;color:var(--danger-text);">Private Message</h3>
                 </div>
 
                 <div style="margin-bottom:.75rem;">
                   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.375rem;">
-                    <label style="font-size:.75rem;font-weight:600;color:var(--c-text-2,#374151);">Recipients</label>
-                    <div style="display:flex;border:1px solid var(--c-border,#e5e7eb);border-radius:6px;overflow:hidden;">
+                    <label style="font-size:.75rem;font-weight:600;color:var(--text-secondary);letter-spacing:.03em;text-transform:uppercase;">Recipients</label>
+                    <div style="display:flex;border:1px solid var(--border);border-radius:4px;overflow:hidden;">
                       <button id="msgModeSingle" onclick="Teacher._setMsgMode('single')"
                               style="padding:2px 9px;font-size:.6875rem;font-weight:600;cursor:pointer;
-                                     border:none;background:var(--brand,#3b5bdb);color:#fff;">Single</button>
+                                     border:none;background:var(--amber);color:#fff;">Single</button>
                       <button id="msgModeMulti" onclick="Teacher._setMsgMode('multi')"
                               style="padding:2px 9px;font-size:.6875rem;font-weight:600;cursor:pointer;
-                                     border:none;background:var(--surface-muted,#f3f4f6);color:var(--text-tertiary,#6b7280);">Multiple</button>
+                                     border:none;background:var(--surface-muted);color:var(--text-tertiary);">Multiple</button>
                     </div>
                   </div>
                   <div id="msgSingleWrap">
@@ -337,17 +337,17 @@
                     <input id="msgStudentSearch" type="text" placeholder="Search students..."
                            oninput="Teacher._filterMsgStudents()" style="margin-bottom:.375rem;" />
                     <div id="msgStudentList"
-                         style="max-height:160px;overflow-y:auto;border:1.5px solid var(--border-medium,#d1d5db);
-                                border-radius:6px;background:var(--surface,#fff);"></div>
+                         style="max-height:160px;overflow-y:auto;border:1px solid var(--border-medium);
+                                border-radius:4px;background:var(--surface);"></div>
                     <div style="display:flex;align-items:center;justify-content:space-between;margin-top:.375rem;">
-                      <span id="msgSelectedCount" style="font-size:.75rem;color:var(--text-tertiary,#6b7280);">0 selected</span>
+                      <span id="msgSelectedCount" style="font-size:.75rem;color:var(--text-tertiary);">0 selected</span>
                       <div style="display:flex;gap:.375rem;align-items:center;">
                         <button onclick="Teacher._selectAllMsgStudents()"
-                                style="font-size:.6875rem;font-weight:600;color:var(--brand,#3b5bdb);
+                                style="font-size:.6875rem;font-weight:600;color:var(--amber);
                                        background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">Select all</button>
-                        <span style="color:var(--border-medium,#d1d5db);">·</span>
+                        <span style="color:var(--border-medium);">·</span>
                         <button onclick="Teacher._clearMsgStudents()"
-                                style="font-size:.6875rem;font-weight:600;color:var(--text-tertiary,#6b7280);
+                                style="font-size:.6875rem;font-weight:600;color:var(--text-tertiary);
                                        background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">Clear</button>
                       </div>
                     </div>
@@ -356,14 +356,14 @@
 
                 <div style="margin-bottom:.75rem;">
                   <label style="display:block;font-size:.75rem;font-weight:600;
-                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">Message</label>
+                                color:var(--text-secondary);margin-bottom:.375rem;letter-spacing:.03em;text-transform:uppercase;">Message</label>
                   <textarea id="msgText" placeholder="Write your private message..."
                             style="height:6rem;resize:vertical;"></textarea>
                 </div>
 
                 <div style="margin-bottom:.875rem;">
                   <label style="display:block;font-size:.75rem;font-weight:600;
-                                color:var(--c-text-2,#374151);margin-bottom:.375rem;">Expires after</label>
+                                color:var(--text-secondary);margin-bottom:.375rem;letter-spacing:.03em;text-transform:uppercase;">Expires after</label>
                   <select id="msgDuration">
                     <option value="3600000">1 hour</option>
                     <option value="86400000">1 day</option>
@@ -375,7 +375,7 @@
                   </select>
                 </div>
 
-                <div style="padding-top:.875rem;border-top:1px solid var(--c-border,#e5e7eb);">
+                <div style="padding-top:.875rem;border-top:1px solid var(--border);">
                   <button id="sendMsgBtn" onclick="Teacher.sendPrivateMessage()"
                           class="btn bg-red-600 hover:bg-red-700"
                           style="width:100%;justify-content:center;font-size:.875rem;">
@@ -406,26 +406,26 @@
       }
       .teacher-result-card:hover {
         transform:translateY(-2px);
-        box-shadow:0 6px 20px rgba(0,0,0,.10);
-        border-color:var(--brand-border,#bac8ff);
+        box-shadow:0 4px 16px rgba(14,14,15,.08);
+        border-color:var(--amber-border) !important;
       }
       #teacherReviewModal {
-        position:fixed;inset:0;background:rgba(17,24,39,.6);z-index:1200;
+        position:fixed;inset:0;background:rgba(14,14,15,.45);z-index:1200;
         display:flex;align-items:flex-start;justify-content:center;
         padding:1.25rem;overflow-y:auto;
-        backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
+        backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);
         animation:cbt-overlay-in .16s ease-out both;
       }
       #teacherReviewModal .review-panel {
-        background:var(--surface,#fff);border:1px solid var(--border,#e5e7eb);
-        border-radius:12px;padding:1.5rem;width:100%;max-width:760px;margin:auto;
-        box-shadow:0 8px 32px rgba(0,0,0,.12);
+        background:var(--surface);border:1px solid var(--border);
+        border-radius:10px;padding:1.5rem;width:100%;max-width:760px;margin:auto;
+        box-shadow:0 8px 28px rgba(14,14,15,.1);
         animation:cbt-modal-in .24s cubic-bezier(.34,1.45,.64,1) both;
       }
-      .review-q-card { border-radius:8px;padding:1rem;border-width:2px;border-style:solid; }
-      .review-q-card--correct  { border-color:var(--success,#2f9e44);background:var(--success-bg,#ebfbee); }
-      .review-q-card--wrong    { border-color:var(--danger,#e03131);background:var(--danger-bg,#fff5f5); }
-      .review-q-card--skipped  { border-color:var(--border-medium,#d1d5db);background:var(--surface-subtle,#f9fafb); }
+      .review-q-card { border-radius:6px;padding:1rem;border-width:1px;border-style:solid; }
+      .review-q-card--correct  { border-color:var(--success-border);background:var(--success-bg); }
+      .review-q-card--wrong    { border-color:var(--danger-border);background:var(--danger-bg); }
+      .review-q-card--skipped  { border-color:var(--border);background:var(--surface-subtle); }
       .progress-week-row summary { cursor:pointer;list-style:none;user-select:none; }
       .progress-week-row summary::-webkit-details-marker { display:none; }
     `;
