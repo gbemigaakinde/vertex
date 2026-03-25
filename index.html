@@ -54,8 +54,7 @@
     /* ── Dark mode bootstrap (runs before CSS loads to prevent flash) ── */
     (function() {
       const stored = localStorage.getItem('vtx-theme');
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (stored === 'dark' || (!stored && prefersDark)) {
+      if (stored === 'dark') {
         document.documentElement.setAttribute('data-theme', 'dark');
       }
     })();
@@ -212,8 +211,7 @@
   <script>
     (function() {
       const stored = localStorage.getItem('vtx-theme');
-      const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      if (stored === 'dark' || (!stored && prefersDark)) {
+      if (stored === 'dark') {
         document.documentElement.setAttribute('data-theme', 'dark');
       } else {
         document.documentElement.setAttribute('data-theme', 'light');
