@@ -61,9 +61,6 @@
   /* Render dashboard shell                             */
   /* -------------------------------------------------- */
 
-  /* ── REPLACEMENT for renderTeacherDashboard() in teacher.js ── */
-  /* Replace the entire renderTeacherDashboard function body with this */
-
   function renderTeacherDashboard() {
     AppState.isTeacher = true;
 
