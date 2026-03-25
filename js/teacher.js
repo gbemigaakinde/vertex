@@ -1272,36 +1272,42 @@ async function _saveStudentEdit(uid, previousAdmno) {
   /* _setTaskScope                                       */
   /* ─────────────────────────────────────────────────── */
   function _setTaskScope(scope) {
-    _taskScope = scope;
+  _taskScope = scope;
 
-    const btnOnce   = document.getElementById('taskScopeAll');
-    const btnWeekly = document.getElementById('taskScopeWeekly');
-    const btnRange  = document.getElementById('taskScopeRange');
+  const btnOnce   = document.getElementById('taskScopeAll');
+  const btnWeekly = document.getElementById('taskScopeWeekly');
+  const btnRange  = document.getElementById('taskScopeRange');
 
-    [btnOnce, btnWeekly, btnRange].forEach(b => {
-      if (b) { b.style.background = 'var(--surface-muted,#f3f4f6)'; b.style.color = 'var(--text-tertiary,#6b7280)'; }
-    });
-    const active = scope === 'weekly' ? btnWeekly : scope === 'range' ? btnRange : btnOnce;
-    if (active) { active.style.background = 'var(--brand,#3b5bdb)'; active.style.color = '#fff'; }
-
-    const hint = document.getElementById('taskRecurrenceHint');
-    if (hint) {
-      if (scope === 'weekly') {
-        hint.style.display = '';
-        hint.innerHTML = '🔄 <strong>Weekly</strong>: runs every week between Start Date and End Date (or open-ended). Pick which days of the week are active. Dates resolve automatically each week.';
-      } else if (scope === 'range') {
-        hint.style.display = '';
-        hint.innerHTML = '📅 <strong>Date Range</strong>: runs every selected weekday between Start Date and End Date. Great for term-long programmes.';
-      } else {
-        hint.style.display = 'none';
-        hint.innerHTML = '';
-      }
+  [btnOnce, btnWeekly, btnRange].forEach(b => {
+    if (b) {
+      b.style.background = 'var(--surface-muted)';
+      b.style.color = 'var(--text-tertiary)';
     }
-
-    _renderDateConfigArea();
-    _renderRecurringSubjectPicker();
-    _clearTaskFormDates();
+  });
+  const active = scope === 'weekly' ? btnWeekly : scope === 'range' ? btnRange : btnOnce;
+  if (active) {
+    active.style.background = 'var(--amber)';
+    active.style.color = '#fff';
   }
+
+  const hint = document.getElementById('taskRecurrenceHint');
+  if (hint) {
+    if (scope === 'weekly') {
+      hint.style.display = '';
+      hint.innerHTML = '<strong>Weekly</strong>: runs every week between Start Date and End Date (or open-ended). Pick which days of the week are active. Dates resolve automatically each week.';
+    } else if (scope === 'range') {
+      hint.style.display = '';
+      hint.innerHTML = '<strong>Date Range</strong>: runs every selected weekday between Start Date and End Date. Great for term-long programmes.';
+    } else {
+      hint.style.display = 'none';
+      hint.innerHTML = '';
+    }
+  }
+
+  _renderDateConfigArea();
+  _renderRecurringSubjectPicker();
+  _clearTaskFormDates();
+}
 
   /* ─────────────────────────────────────────────────── */
   /* _renderDateConfigArea                               */
@@ -1451,27 +1457,32 @@ async function _saveStudentEdit(uid, previousAdmno) {
   /* _setAssignScope                                     */
   /* ─────────────────────────────────────────────────── */
   function _setAssignScope(scope) {
-    _assignScope = scope;
+  _assignScope = scope;
 
-    const btnAll     = document.getElementById('taskAssignAll');
-    const btnClass   = document.getElementById('taskAssignClass');
-    const btnStudent = document.getElementById('taskAssignStudent');
-    const classWrap  = document.getElementById('taskTargetClassWrap');
-    const studWrap   = document.getElementById('taskTargetStudentWrap');
+  const btnAll     = document.getElementById('taskAssignAll');
+  const btnClass   = document.getElementById('taskAssignClass');
+  const btnStudent = document.getElementById('taskAssignStudent');
+  const classWrap  = document.getElementById('taskTargetClassWrap');
+  const studWrap   = document.getElementById('taskTargetStudentWrap');
 
-    [btnAll, btnClass, btnStudent].forEach(b => {
-      if (b) { b.style.background = 'var(--surface-muted,#f3f4f6)'; b.style.color = 'var(--text-tertiary,#6b7280)'; }
-    });
-    const active = scope === 'class' ? btnClass : scope === 'student' ? btnStudent : btnAll;
-    if (active) { active.style.background = 'var(--brand,#3b5bdb)'; active.style.color = '#fff'; }
-
-    if (classWrap) classWrap.style.display = scope === 'class'   ? '' : 'none';
-    if (studWrap)  studWrap.style.display  = scope === 'student' ? '' : 'none';
-
-    // Rebuild subject pickers for new target
-    _renderRecurringSubjectPicker();
-    _onTaskTargetChange();
+  [btnAll, btnClass, btnStudent].forEach(b => {
+    if (b) {
+      b.style.background = 'var(--surface-muted)';
+      b.style.color = 'var(--text-tertiary)';
+    }
+  });
+  const active = scope === 'class' ? btnClass : scope === 'student' ? btnStudent : btnAll;
+  if (active) {
+    active.style.background = 'var(--amber)';
+    active.style.color = '#fff';
   }
+
+  if (classWrap) classWrap.style.display = scope === 'class'   ? '' : 'none';
+  if (studWrap)  studWrap.style.display  = scope === 'student' ? '' : 'none';
+
+  _renderRecurringSubjectPicker();
+  _onTaskTargetChange();
+}
 
   function _clearTaskFormDates() {
     const datesEl = document.getElementById('tasksDates');
@@ -2272,23 +2283,23 @@ function _renderExistingTasksList(docs) {
   let _msgMode = 'single';
 
   function _setMsgMode(mode) {
-    _msgMode = mode;
-    const singleWrap = document.getElementById('msgSingleWrap');
-    const multiWrap  = document.getElementById('msgMultiWrap');
-    const singleBtn  = document.getElementById('msgModeSingle');
-    const multiBtn   = document.getElementById('msgModeMulti');
-    if (!singleWrap || !multiWrap) return;
-    if (mode === 'single') {
-      singleWrap.style.display = ''; multiWrap.style.display = 'none';
-      if (singleBtn) { singleBtn.style.background = 'var(--brand,#3b5bdb)'; singleBtn.style.color = '#fff'; }
-      if (multiBtn)  { multiBtn.style.background  = 'var(--surface-muted,#f3f4f6)'; multiBtn.style.color = 'var(--text-tertiary,#6b7280)'; }
-    } else {
-      singleWrap.style.display = 'none'; multiWrap.style.display = '';
-      if (multiBtn)  { multiBtn.style.background  = 'var(--brand,#3b5bdb)'; multiBtn.style.color = '#fff'; }
-      if (singleBtn) { singleBtn.style.background = 'var(--surface-muted,#f3f4f6)'; singleBtn.style.color = 'var(--text-tertiary,#6b7280)'; }
-      _populateMsgCheckboxList();
-    }
+  _msgMode = mode;
+  const singleWrap = document.getElementById('msgSingleWrap');
+  const multiWrap  = document.getElementById('msgMultiWrap');
+  const singleBtn  = document.getElementById('msgModeSingle');
+  const multiBtn   = document.getElementById('msgModeMulti');
+  if (!singleWrap || !multiWrap) return;
+  if (mode === 'single') {
+    singleWrap.style.display = ''; multiWrap.style.display = 'none';
+    if (singleBtn) { singleBtn.style.background = 'var(--amber)'; singleBtn.style.color = '#fff'; }
+    if (multiBtn)  { multiBtn.style.background  = 'var(--surface-muted)'; multiBtn.style.color = 'var(--text-tertiary)'; }
+  } else {
+    singleWrap.style.display = 'none'; multiWrap.style.display = '';
+    if (multiBtn)  { multiBtn.style.background  = 'var(--amber)'; multiBtn.style.color = '#fff'; }
+    if (singleBtn) { singleBtn.style.background = 'var(--surface-muted)'; singleBtn.style.color = 'var(--text-tertiary)'; }
+    _populateMsgCheckboxList();
   }
+}
 
   function _populateMsgSingleSelect() {
     const sel = document.getElementById('msgStudent');
