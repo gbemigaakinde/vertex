@@ -313,6 +313,7 @@
   word-break: normal;
 }
 
+/* ── Tables — fully theme-aware, no hardcoded colors ── */
 .sr-content table {
   width: 100%;
   border-collapse: collapse;
@@ -320,17 +321,32 @@
   font-size: 0.9em;
   overflow-x: auto;
   display: block;
+  color: var(--text-1);
 }
 
-.sr-content thead tr { background: var(--text-1); color: var(--bg-base); }
+.sr-content thead tr {
+  background: var(--accent-subtle);
+}
+
+.sr-content thead th {
+  color: var(--accent-text);
+  font-weight: 600;
+}
 
 .sr-content th, .sr-content td {
   border: 1px solid var(--border);
   padding: 0.5em 0.875em;
   text-align: left;
+  color: var(--text-1);
 }
 
-.sr-content tbody tr:nth-child(even) { background: var(--bg-subtle); }
+.sr-content tbody tr:nth-child(even) {
+  background: var(--bg-subtle);
+}
+
+.sr-content tbody tr:nth-child(odd) {
+  background: var(--bg-base);
+}
 
 .sr-content img {
   max-width: 100%;
@@ -368,14 +384,36 @@
   color: #5a3200;
 }
 
+/* Tables on sepia/warm */
+.sr-bg--sepia .sr-content table,
+.sr-bg--warm  .sr-content table { color: #3b2f1e; }
+
+.sr-bg--sepia .sr-content thead tr,
+.sr-bg--warm  .sr-content thead tr { background: rgba(0,0,0,.08); }
+
+.sr-bg--sepia .sr-content thead th,
+.sr-bg--warm  .sr-content thead th { color: #1e160a; }
+
+.sr-bg--sepia .sr-content th,
+.sr-bg--sepia .sr-content td,
+.sr-bg--warm  .sr-content th,
+.sr-bg--warm  .sr-content td { border-color: rgba(0,0,0,.12); color: #3b2f1e; }
+
+.sr-bg--sepia .sr-content tbody tr:nth-child(even),
+.sr-bg--warm  .sr-content tbody tr:nth-child(even) { background: rgba(0,0,0,.04); }
+
+.sr-bg--sepia .sr-content tbody tr:nth-child(odd),
+.sr-bg--warm  .sr-content tbody tr:nth-child(odd)  { background: transparent; }
+
 .sr-bg--sepia .sr-lesson-header__title,
 .sr-bg--warm  .sr-lesson-header__title { color: #1e160a; }
 
+/* ── Dark / Night reader backgrounds ── */
 .sr-bg--dark  { background: #111113 !important; color-scheme: dark; }
 .sr-bg--night { background: #0d0d0f !important; color-scheme: dark; }
 
 .sr-bg--dark,
-.sr-bg--night { color: var(--text-2); }
+.sr-bg--night { color: #d0d0d8; }
 
 .sr-bg--dark  .sr-content,
 .sr-bg--night .sr-content { color: #d0d0d8; }
@@ -389,7 +427,7 @@
 .sr-bg--night .sr-content strong { color: #f0f0f4; }
 
 .sr-bg--dark  .sr-content a,
-.sr-bg--night .sr-content a { color: var(--accent); }
+.sr-bg--night .sr-content a { color: #8da2fa; }
 
 .sr-bg--dark  .sr-content code,
 .sr-bg--night .sr-content code {
@@ -409,21 +447,31 @@
 
 .sr-bg--dark  .sr-content blockquote,
 .sr-bg--night .sr-content blockquote {
-  background: rgba(79,110,247,.1);
-  border-color: var(--accent);
+  background: rgba(107,135,248,.1);
+  border-color: #6b87f8;
   color: #b4b4c0;
 }
 
+/* Tables on dark/night backgrounds */
+.sr-bg--dark  .sr-content table,
+.sr-bg--night .sr-content table { color: #d0d0d8; }
+
 .sr-bg--dark  .sr-content thead tr,
-.sr-bg--night .sr-content thead tr { background: rgba(255,255,255,.1); }
+.sr-bg--night .sr-content thead tr { background: rgba(107,135,248,.15); }
 
-.sr-bg--dark  .sr-content td,
+.sr-bg--dark  .sr-content thead th,
+.sr-bg--night .sr-content thead th { color: #c0ccff; }
+
 .sr-bg--dark  .sr-content th,
-.sr-bg--night .sr-content td,
-.sr-bg--night .sr-content th { border-color: rgba(255,255,255,.08); }
+.sr-bg--dark  .sr-content td,
+.sr-bg--night .sr-content th,
+.sr-bg--night .sr-content td { border-color: rgba(255,255,255,.1); color: #d0d0d8; }
 
-.sr-bg--dark  .sr-content tbody tr:nth-child(even) td,
-.sr-bg--night .sr-content tbody tr:nth-child(even) td { background: rgba(255,255,255,.03); }
+.sr-bg--dark  .sr-content tbody tr:nth-child(even),
+.sr-bg--night .sr-content tbody tr:nth-child(even) { background: rgba(255,255,255,.04); }
+
+.sr-bg--dark  .sr-content tbody tr:nth-child(odd),
+.sr-bg--night .sr-content tbody tr:nth-child(odd)  { background: transparent; }
 
 .sr-bg--dark  .sr-lesson-header__title,
 .sr-bg--night .sr-lesson-header__title { color: #f0f0f4; }
@@ -463,6 +511,7 @@
   overflow-y: auto;
   transform: translateX(100%);
   transition: transform var(--t-slow) var(--ease);
+  color: var(--text-1);
 }
 .sr-prefs-panel.is-open { transform: translateX(0); }
 
@@ -697,6 +746,7 @@
   min-width: 0;
   overflow: hidden;
   box-sizing: border-box;
+  color: var(--text-1);
 }
 
 .sr-form-card__title {
@@ -742,6 +792,7 @@
   border-radius: 2px;
   padding: 0 3px;
   font-size: .875em;
+  color: var(--text-2);
 }
 
 .sr-teacher-lessons {
