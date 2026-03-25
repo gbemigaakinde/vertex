@@ -182,6 +182,9 @@ self.addEventListener('fetch', event => {
 
   if (request.method !== 'GET') return;
 
+  // Never intercept the service worker file itself
+  if (url.pathname === '/sw.js') return;
+
   if (BYPASS_ORIGINS.some(origin => url.hostname.includes(origin))) return;
 
   if (!url.protocol.startsWith('http')) return;
