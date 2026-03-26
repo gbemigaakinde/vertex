@@ -14,10 +14,10 @@
      lastAt           : Timestamp
      studentUnread    : number      (unread count for the student)
      teacherUnread    : number      (unread count for the teacher)
-     studentOnline    : boolean     (true while student's app is open)
-     studentLastSeen  : Timestamp   (when student last went offline)
-     teacherOnline    : boolean     (true while teacher's app is open)
-     teacherLastSeen  : Timestamp   (when teacher last went offline)
+     studentOnline    : boolean
+     studentLastSeen  : Timestamp
+     teacherOnline    : boolean
+     teacherLastSeen  : Timestamp
 
    Message doc fields:
      text      : string
@@ -27,49 +27,65 @@
      timestamp : Timestamp
      status    : 'sent' | 'delivered' | 'read'
 
-   Delivery/Read receipt logic (WhatsApp-style):
-     ✓  (one grey tick)  = 'sent'     — message saved to Firestore
-     ✓✓ (two grey ticks) = 'delivered'— recipient has been online since send
-     ✓✓ (two blue ticks) = 'read'     — recipient opened the conversation
+   ── Why presence was always stuck on "Online" ─────────────
+   The security rules for directMessages require isSignedIn()
+   (request.auth != null). Firebase Auth clears the token the
+   moment fbAuth.signOut() is called — synchronously, before
+   any async Firestore write can go out. So every offline write
+   attempted after signOut() was silently rejected by the rules,
+   leaving online:true stuck in Firestore forever.
 
-   Online/Last seen:
-     - Student: online from the moment they log in to the app
-       (not just when DM is open). Goes offline on tab close OR
-       on explicit logout via DM.cancelListeners().
-     - Teacher: online from the moment they log in to the app
-       (not just when DM tab or any thread is open). Goes offline
-       on tab close OR on explicit logout via DM.cancelListeners().
-     - Status updates in real time via Firestore listener.
-     - Opening or closing a DM conversation thread does NOT
-       affect either party's online status.
+   The fix has two parts:
 
-   Student badge lives on #dmOpenBtn (subject selection screen).
-   Teacher badge lives on #tab-dm   (teacher dashboard tab).
+   1. Security rules: a targeted `allow update` rule that permits
+      writing ONLY the online/lastSeen fields to false/timestamp
+      without auth. Nothing else is writable unauthenticated.
+      See the rules block at the bottom of this file header.
 
-   ── Presence reliability ──────────────────────────────────
-   `beforeunload` does NOT await promises, so an async Firestore
-   write inside it will be abandoned before it completes. We use
-   two complementary mechanisms instead:
+   2. Write order: cancelListeners() is awaited by app.js BEFORE
+      fbAuth.signOut() is ever called. Auth is still valid when
+      the offline write goes out, so the rules pass. The
+      visibilitychange path fires while the page is alive so auth
+      is valid there too. The beforeunload path uses client Date
+      (not serverTimestamp) since it can't await, and relies on
+      the unauthenticated security rule as a safety net.
 
-   1. `visibilitychange` (hidden) — fires when the tab is hidden,
-      backgrounded, or the window is minimised. The browser does
-      NOT kill the page immediately, so a synchronous Firestore
-      write has enough time to go out. This covers the vast
-      majority of "user left" cases.
+   ── Required Firestore security rule additions ─────────────
+   Add these two blocks to your rules file:
 
-   2. `beforeunload` with `navigator.sendBeacon` — sends a tiny
-      keepalive HTTP request that the browser guarantees to deliver
-      even as the page unloads. We point it at a lightweight
-      Cloud Function endpoint (`/offlineBeacon`) that writes the
-      offline status server-side. This covers hard tab closes and
-      browser-quit scenarios that visibilitychange might miss.
-      If the beacon endpoint is unavailable the worst case is a
-      stale "Online" label that self-corrects the next time the
-      user logs in.
+     // Inside: match /directMessages/{studentUid}
+     // (alongside the existing authenticated read/write rule)
+     allow update: if (
+       request.resource.data.diff(resource.data).affectedKeys()
+         .hasOnly(['studentOnline','studentLastSeen','teacherOnline','teacherLastSeen'])
+       && (
+         request.resource.data.get('studentOnline', true) == false ||
+         request.resource.data.get('teacherOnline', true) == false
+       )
+     );
 
-   3. Explicit logout — `cancelListeners()` is called by app.js
-      before AppState.reset(). It writes offline synchronously
-      (awaited) and removes both event listeners.
+     // New top-level match for the sentinel doc:
+     match /teacherPresence/global {
+       allow read: if isSignedIn();
+       allow write: if isAdmin();
+       allow update: if (
+         request.resource.data.diff(resource.data).affectedKeys()
+           .hasOnly(['online','lastSeen'])
+         && request.resource.data.get('online', true) == false
+       );
+     }
+
+   ── Presence reliability layers ───────────────────────────
+   1. cancelListeners() — explicit logout. Awaited in app.js
+      BEFORE fbAuth.signOut(). Auth is valid. Most reliable.
+
+   2. visibilitychange (hidden) — tab hidden/minimised. Auth is
+      still valid (the page is alive). Write succeeds.
+      Restores online:true when tab becomes visible again.
+
+   3. beforeunload — hard tab close. Uses client Date (not
+      serverTimestamp). Relies on the unauthenticated rule as a
+      safety net. Fire-and-forget only.
    ============================================================ */
 
 (function () {
@@ -96,7 +112,6 @@
         </svg>
       </span>`;
     }
-    // 'sent' — one grey tick
     return `<span class="dm-ticks dm-ticks--sent" title="Sent" aria-label="Sent">
       <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M1.5 5L4 7.5L8.5 2" stroke="rgba(255,255,255,0.6)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
@@ -105,7 +120,7 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     CSS injection — ticks + presence styles
+     CSS injection
      ══════════════════════════════════════════════════════════ */
   function _injectStyles() {
     if (document.getElementById('_dmStyles')) return;
@@ -113,53 +128,34 @@
     style.id = '_dmStyles';
     style.textContent = `
       .dm-ticks {
-        display: inline-flex;
-        align-items: center;
-        margin-left: 4px;
-        vertical-align: middle;
-        flex-shrink: 0;
-        line-height: 1;
+        display: inline-flex; align-items: center; margin-left: 4px;
+        vertical-align: middle; flex-shrink: 0; line-height: 1;
       }
       .dm-msg-footer {
-        display: flex;
-        align-items: center;
-        justify-content: flex-end;
-        gap: 2px;
-        margin-top: 3px;
+        display: flex; align-items: center; justify-content: flex-end;
+        gap: 2px; margin-top: 3px;
       }
-      .dm-msg-footer .dm-time {
-        font-size: .625rem;
-        opacity: 0.65;
-        line-height: 1;
-      }
+      .dm-msg-footer .dm-time { font-size: .625rem; opacity: 0.65; line-height: 1; }
       .dm-presence {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
-        font-size: .6875rem;
-        line-height: 1;
-        margin-top: 3px;
+        display: inline-flex; align-items: center; gap: 5px;
+        font-size: .6875rem; line-height: 1; margin-top: 3px;
       }
       .dm-presence__dot {
-        width: 7px;
-        height: 7px;
-        border-radius: 50%;
-        flex-shrink: 0;
-        transition: background .4s ease;
+        width: 7px; height: 7px; border-radius: 50%;
+        flex-shrink: 0; transition: background .4s ease;
       }
-      .dm-presence__dot--online  {
-        background: #22c45e;
-        box-shadow: 0 0 0 2px rgba(34,196,94,.2);
+      .dm-presence__dot--online {
+        background: #22c45e; box-shadow: 0 0 0 2px rgba(34,196,94,.2);
       }
       .dm-presence__dot--offline { background: var(--text-4, #9ca3af); }
-      .dm-presence__label        { color: var(--text-tertiary, #6b7280); font-size: .6875rem; }
+      .dm-presence__label { color: var(--text-tertiary, #6b7280); font-size: .6875rem; }
       .dm-presence__label--online { color: #22c45e !important; font-weight: 500; }
     `;
     document.head.appendChild(style);
   }
 
   /* ══════════════════════════════════════════════════════════
-     Presence formatting helpers
+     Presence formatting
      ══════════════════════════════════════════════════════════ */
 
   function _formatLastSeen(ts) {
@@ -167,23 +163,19 @@
     const date = ts.toDate ? ts.toDate() : new Date(ts);
     const now  = new Date();
     const diffMins = Math.floor((now - date) / 60000);
-
     if (diffMins < 1)  return 'Last seen: just now';
     if (diffMins < 60) return `Last seen: ${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
-
     const isToday = date.toDateString() === now.toDateString();
     if (isToday) {
       return 'Last seen today at ' +
         date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     }
-
     const yesterday = new Date(now);
     yesterday.setDate(now.getDate() - 1);
     if (date.toDateString() === yesterday.toDateString()) {
       return 'Last seen yesterday at ' +
         date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     }
-
     return 'Last seen ' +
       date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) +
       ' at ' +
@@ -204,71 +196,27 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     Presence management
-     ══════════════════════════════════════════════════════════
-
-     The core problem with async writes in beforeunload:
-       window.addEventListener('beforeunload', async () => {
-         await db.doc(...).set({online: false}); // NEVER COMPLETES
-       });
-     The browser tears down the page before the promise resolves.
-
-     Our solution uses THREE layers:
-
-     Layer 1 — visibilitychange:
-       Fires synchronously when tab is hidden/minimised. The page
-       is still alive so the Firestore write has time to go out.
-       Covers ~95% of real-world "user left" cases.
-
-     Layer 2 — beforeunload + sendBeacon:
-       sendBeacon() is a fire-and-forget HTTP POST the browser
-       guarantees to deliver even during page unload. We send the
-       user's UID to a lightweight backend endpoint that writes
-       offline status server-side. This covers hard tab closes.
-       Gracefully degrades: if the endpoint is missing the status
-       self-corrects at next login.
-
-     Layer 3 — explicit cancelListeners():
-       Called by app.js on in-app logout. Does a proper awaited
-       Firestore write. Removes both event listeners.
-
+     Presence state
      ══════════════════════════════════════════════════════════ */
 
-  // ── Beacon endpoint ──────────────────────────────────────
-  // Point this at your Cloud Function that writes online:false.
-  // If you don't have one yet, leave it as '' and Layer 1 + 3
-  // will still keep status correct in the vast majority of cases.
-  const OFFLINE_BEACON_URL = '';   // e.g. 'https://us-central1-YOUR_PROJECT.cloudfunctions.net/offlineBeacon'
-
-  // Cleanup functions stored so cancelListeners() can call them
-  // synchronously on an in-app logout.
-  let _studentOfflineCleanup = null;
-  let _teacherOfflineCleanup = null;
-
-  // Bound event listener references so we can removeEventListener
-  // exactly (anonymous functions cannot be removed).
-  let _studentVisibilityHandler  = null;
+  let _studentOfflineCleanup      = null;
+  let _teacherOfflineCleanup      = null;
+  let _studentVisibilityHandler   = null;
   let _studentBeforeunloadHandler = null;
-  let _teacherVisibilityHandler  = null;
+  let _teacherVisibilityHandler   = null;
   let _teacherBeforeunloadHandler = null;
 
-  /* ── helpers ── */
+  // Guards so a second call (e.g. visibilitychange fires after
+  // cancelListeners has already written offline) is a no-op.
+  let _studentOfflineDone = false;
+  let _teacherOfflineDone = false;
 
-  function _sendBeacon(uid, role) {
-    if (!OFFLINE_BEACON_URL) return;
-    try {
-      const body = JSON.stringify({ uid, role });
-      navigator.sendBeacon(OFFLINE_BEACON_URL, new Blob([body], { type: 'application/json' }));
-    } catch (_) {}
-  }
+  /* ══════════════════════════════════════════════════════════
+     Student presence
+     ══════════════════════════════════════════════════════════ */
 
-  /* ── Student presence ─────────────────────────────────── */
-
-  /**
-   * Called once at student login.
-   * Sets studentOnline:true and registers the two unload guards.
-   */
   async function _setStudentOnlineGlobal(uid) {
+    _studentOfflineDone = false;
     try {
       await _threadRef(uid).set({ studentOnline: true }, { merge: true });
     } catch (e) {
@@ -277,51 +225,63 @@
     }
 
     const goOffline = async () => {
+      if (_studentOfflineDone) return;
+      _studentOfflineDone = true;
       try {
-        await _threadRef(uid).set({
-          studentOnline:   false,
-          studentLastSeen: firebase.firestore.FieldValue.serverTimestamp(),
-        }, { merge: true });
-      } catch (_) {}
+        // Use serverTimestamp when auth is valid (normal logout and
+        // visibilitychange paths). Falls back to client Date if auth
+        // is somehow already gone — the unauthenticated rule allows
+        // it and the timestamp is still accurate enough for display.
+        const ts = firebase.auth().currentUser
+          ? firebase.firestore.FieldValue.serverTimestamp()
+          : new Date();
+        await _threadRef(uid).set(
+          { studentOnline: false, studentLastSeen: ts },
+          { merge: true }
+        );
+      } catch (e) {
+        console.warn('[dm] studentOffline write failed:', e);
+      }
     };
 
     _studentOfflineCleanup = goOffline;
 
-    // Layer 1: visibilitychange — synchronous trigger, async write has time to complete.
+    // Layer 2 — visibilitychange.
     _studentVisibilityHandler = () => {
       if (document.visibilityState === 'hidden') {
         goOffline().catch(() => {});
       } else {
-        // Tab became visible again — restore online status.
-        _threadRef(uid).set({ studentOnline: true }, { merge: true }).catch(() => {});
+        // Tab visible again — restore online if still logged in.
+        if (firebase.auth().currentUser) {
+          _studentOfflineDone = false;
+          _threadRef(uid).set({ studentOnline: true }, { merge: true }).catch(() => {});
+        }
       }
     };
     document.addEventListener('visibilitychange', _studentVisibilityHandler);
 
-    // Layer 2: beforeunload + sendBeacon for hard tab closes.
+    // Layer 3 — beforeunload. Must be synchronous. Uses client Date
+    // because serverTimestamp() requires a round-trip that won't
+    // complete during unload.
     _studentBeforeunloadHandler = () => {
-      _sendBeacon(uid, 'student');
-      // Attempt a synchronous-style Firestore write as a best-effort
-      // fallback (will only succeed if the network stack hasn't been
-      // torn down yet — not guaranteed, but costs nothing).
+      if (_studentOfflineDone) return;
+      _studentOfflineDone = true;
       try {
-        _threadRef(uid).set({
-          studentOnline:   false,
-          studentLastSeen: firebase.firestore.FieldValue.serverTimestamp(),
-        }, { merge: true });
+        _threadRef(uid).set(
+          { studentOnline: false, studentLastSeen: new Date() },
+          { merge: true }
+        );
       } catch (_) {}
     };
     window.addEventListener('beforeunload', _studentBeforeunloadHandler);
   }
 
-  /* ── Teacher presence ─────────────────────────────────── */
+  /* ══════════════════════════════════════════════════════════
+     Teacher presence
+     ══════════════════════════════════════════════════════════ */
 
-  /**
-   * Called once at teacher login.
-   * Broadcasts teacherOnline:true to all thread docs and registers
-   * the two unload guards.
-   */
   async function _setTeacherOnlineGlobal() {
+    _teacherOfflineDone = false;
     try {
       await _broadcastTeacherPresence(true);
     } catch (e) {
@@ -330,47 +290,68 @@
     }
 
     const goOffline = async () => {
+      if (_teacherOfflineDone) return;
+      _teacherOfflineDone = true;
       try {
         await _broadcastTeacherPresence(false);
-      } catch (_) {}
+      } catch (e) {
+        console.warn('[dm] teacherOffline broadcast failed:', e);
+      }
     };
 
     _teacherOfflineCleanup = goOffline;
 
-    // Layer 1: visibilitychange.
     _teacherVisibilityHandler = () => {
       if (document.visibilityState === 'hidden') {
         goOffline().catch(() => {});
       } else {
-        _broadcastTeacherPresence(true).catch(() => {});
+        if (firebase.auth().currentUser) {
+          _teacherOfflineDone = false;
+          _broadcastTeacherPresence(true).catch(() => {});
+        }
       }
     };
     document.addEventListener('visibilitychange', _teacherVisibilityHandler);
 
-    // Layer 2: beforeunload + sendBeacon.
+    // beforeunload — synchronous fire-and-forget.
     _teacherBeforeunloadHandler = () => {
-      _sendBeacon(AppConfig.TEACHER_UID, 'teacher');
-      try { _broadcastTeacherPresence(false); } catch (_) {}
+      if (_teacherOfflineDone) return;
+      _teacherOfflineDone = true;
+      const db  = Db();
+      const now = new Date();
+      try {
+        db.collection('teacherPresence').doc('global').set(
+          { online: false, lastSeen: now }, { merge: true }
+        );
+      } catch (_) {}
+      // Best-effort update thread docs from SDK cache.
+      try {
+        db.collection('directMessages').get().then(snap => {
+          if (snap.empty) return;
+          const batch = db.batch();
+          snap.forEach(doc => batch.set(
+            doc.ref,
+            { teacherOnline: false, teacherLastSeen: now },
+            { merge: true }
+          ));
+          batch.commit();
+        }).catch(() => {});
+      } catch (_) {}
     };
     window.addEventListener('beforeunload', _teacherBeforeunloadHandler);
   }
 
-  /**
-   * Writes teacherOnline (and teacherLastSeen when going offline)
-   * to every existing thread doc in batches of 400, and to the
-   * sentinel doc teacherPresence/global.
-   */
   async function _broadcastTeacherPresence(isOnline) {
     const db = Db();
-    const timestamp = firebase.firestore.FieldValue.serverTimestamp();
+    const ts = firebase.auth().currentUser
+      ? firebase.firestore.FieldValue.serverTimestamp()
+      : new Date();
 
-    // Sentinel doc — students read this on first open and on send.
     const sentinelData = isOnline
       ? { online: true }
-      : { online: false, lastSeen: timestamp };
+      : { online: false, lastSeen: ts };
     await db.collection('teacherPresence').doc('global').set(sentinelData, { merge: true });
 
-    // All existing thread docs.
     const snap = await db.collection('directMessages').get();
     if (snap.empty) return;
 
@@ -382,7 +363,7 @@
       refs.slice(i, i + 400).forEach(ref => {
         const data = isOnline
           ? { teacherOnline: true }
-          : { teacherOnline: false, teacherLastSeen: timestamp };
+          : { teacherOnline: false, teacherLastSeen: ts };
         batch.set(ref, data, { merge: true });
       });
       await batch.commit();
@@ -395,7 +376,6 @@
 
   function _watchPresence(studentUid, watchRole, elementId, listenerKey) {
     AppState.cancelListener(listenerKey);
-
     const onlineField   = watchRole === 'teacher' ? 'teacherOnline'   : 'studentOnline';
     const lastSeenField = watchRole === 'teacher' ? 'teacherLastSeen' : 'studentLastSeen';
 
@@ -412,30 +392,9 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     Delivery helpers (WhatsApp tick logic)
-
-     NOTE on Firestore SDK v8 and the `!=` operator:
-     The v8 compat API does not support the `!=` WHERE operator
-     in compound queries. Instead we use two separate `.get()`
-     calls — one for each role — and merge the results. This
-     avoids composite-index requirements and SDK version issues.
-
-     _markDelivered: upgrades 'sent' messages sent BY the other
-                     party to 'delivered'. Called once at login
-                     (not inside onSnapshot) to avoid instantly
-                     upgrading a message the sender just wrote.
-
-     _markRead:      upgrades 'sent'/'delivered' messages sent BY
-                     the other party to 'read'. Called when the
-                     user opens the specific conversation thread.
+     Delivery / read receipt helpers
      ══════════════════════════════════════════════════════════ */
 
-  /**
-   * @param {string} studentUid
-   * @param {'student'|'teacher'} recipientRole  — the role of the person
-   *   who is NOW online / opening the conversation. We want to mark
-   *   messages sent BY THE OTHER role.
-   */
   async function _markDelivered(studentUid, recipientRole) {
     const senderRole = recipientRole === 'student' ? 'teacher' : 'student';
     try {
@@ -496,8 +455,8 @@
       console.warn('[dm] Could not clear studentUnread:', e);
     }
 
-    // Seed thread doc for brand-new students so _watchPresence() has
-    // accurate teacher status from the very first open.
+    // Seed thread doc for brand-new students so _watchPresence()
+    // can show accurate teacher status before any message is sent.
     try {
       const threadSnap = await threadRef.get();
       if (!threadSnap.exists) {
@@ -516,22 +475,18 @@
           teacherOnline,
         };
         if (teacherLastSeen) seedData.teacherLastSeen = teacherLastSeen;
-
         await threadRef.set(seedData, { merge: true });
       }
     } catch (e) {
-      console.warn('[dm] Could not seed thread doc for new student:', e);
+      console.warn('[dm] Could not seed thread doc:', e);
     }
 
     UI.mount(`
       <div class="max-w-2xl mx-auto glass animate-fadeIn"
            style="padding:1.25rem 1.5rem;margin-top:1.25rem;margin-bottom:1.25rem;">
-
-        <!-- Header -->
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
           <div>
             <h2 class="font-bold" style="font-size:1.125rem;line-height:1.3;">Message Master Timothy</h2>
-            <!-- Live teacher presence — updated by Firestore listener below -->
             <div id="dmTeacherPresence" style="margin-top:2px;">
               ${_presenceHTML(false, null)}
             </div>
@@ -540,7 +495,6 @@
                   style="font-size:.8125rem;">← Back</button>
         </div>
 
-        <!-- Info banner -->
         <div style="margin-bottom:1rem;padding:.625rem .875rem;
                     background:var(--brand-bg,#edf2ff);border:1px solid var(--brand-border,#bac8ff);
                     border-radius:8px;font-size:.8125rem;color:var(--brand-text,#3730a3);line-height:1.6;">
@@ -548,7 +502,6 @@
           He will reply here as soon as possible.
         </div>
 
-        <!-- Messages area -->
         <div id="dmMessages"
              style="min-height:260px;max-height:420px;overflow-y:auto;
                     border:1px solid var(--border,#e5e7eb);border-radius:10px;
@@ -558,11 +511,8 @@
           </p>
         </div>
 
-        <!-- Input row -->
         <div style="display:flex;gap:.5rem;align-items:flex-end;">
-          <textarea id="dmInput"
-                    placeholder="Type your message…"
-                    rows="1"
+          <textarea id="dmInput" placeholder="Type your message…" rows="1"
                     style="flex:1;resize:none;overflow-y:hidden;line-height:1.5;
                            padding:.5625rem .75rem;min-height:36px;max-height:120px;
                            border-radius:var(--r-md);font-family:var(--font);font-size:var(--text-base);"></textarea>
@@ -585,40 +535,33 @@
       });
     }
 
-    // Student opens DM: mark teacher's messages as delivered then read.
-    // Student is already marked online from login — no presence write here.
     await _markDelivered(uid, 'student');
     await _markRead(uid, 'student');
-
-    // Watch teacher online/lastSeen in real time.
     _watchPresence(uid, 'teacher', 'dmTeacherPresence', 'dmTeacherPresenceWatch');
     _subscribeStudentMessages(uid);
   }
 
   function _subscribeStudentMessages(uid) {
     AppState.cancelListener('dmStudentMessages');
-
     const unsub = _threadRef(uid)
       .collection('messages')
       .orderBy('timestamp', 'asc')
       .onSnapshot(snap => {
         const container = document.getElementById('dmMessages');
         if (!container) { AppState.cancelListener('dmStudentMessages'); return; }
-
         if (snap.empty) {
           container.innerHTML = `
-            <p style="text-align:center;font-size:.8125rem;color:var(--text-disabled,#9ca3af);padding:2rem 0;">
+            <p style="text-align:center;font-size:.8125rem;
+                      color:var(--text-disabled,#9ca3af);padding:2rem 0;">
               No messages yet. Say hello to Master Timothy! 👋
             </p>`;
           return;
         }
-
         const msgs = [];
         snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
         container.innerHTML = msgs.map(m => _buildStudentBubble(m, uid)).join('');
         container.scrollTop = container.scrollHeight;
       }, err => console.error('[dm] Student messages error:', err));
-
     AppState.registerListener('dmStudentMessages', unsub);
   }
 
@@ -633,9 +576,7 @@
       ? `background:var(--brand,#3b5bdb);color:#fff;border-radius:12px 12px 2px 12px;margin-left:auto;`
       : `background:var(--surface,#fff);color:var(--text-primary,#111827);
          border:1px solid var(--border,#e5e7eb);border-radius:12px 12px 12px 2px;margin-right:auto;`;
-
     const nameStyle = isMe ? `color:rgba(255,255,255,.75);` : `color:var(--brand-text,#3730a3);`;
-
     const footer = isMe
       ? `<div class="dm-msg-footer">
            <span class="dm-time">${time}</span>
@@ -667,29 +608,26 @@
     const studentData = AppState.studentData || {};
     const name        = studentData.name  || 'Student';
     const cls         = studentData.class || '';
+    const btn         = document.getElementById('dmSendBtn');
 
-    const btn = document.getElementById('dmSendBtn');
     UI.setLoading(btn, true);
     if (input) input.value = '';
 
-    // Check teacher online status via the lightweight sentinel doc.
     let teacherIsOnline = false;
     try {
       const sentinelSnap = await Db().collection('teacherPresence').doc('global').get();
       teacherIsOnline = !!(sentinelSnap.exists && sentinelSnap.data().online);
     } catch (_) {}
 
-    const initialStatus = teacherIsOnline ? 'delivered' : 'sent';
-
     try {
-      const batch = Db().batch();
+      const batch  = Db().batch();
       const msgRef = _threadRef(uid).collection('messages').doc();
       batch.set(msgRef, {
         text,
         senderId:   uid,
         senderName: name,
         role:       'student',
-        status:     initialStatus,
+        status:     teacherIsOnline ? 'delivered' : 'sent',
         timestamp:  firebase.firestore.FieldValue.serverTimestamp(),
       });
       batch.set(_threadRef(uid), {
@@ -715,7 +653,6 @@
   function backFromStudentInbox() {
     AppState.cancelListener('dmStudentMessages');
     AppState.cancelListener('dmTeacherPresenceWatch');
-    // Student remains online — only goes offline on tab hide or logout.
     Exam.renderSubjectSelection();
   }
 
@@ -725,15 +662,12 @@
 
   function openTeacherInbox() {
     _injectStyles();
-
     const panel = document.getElementById('teacher-dm');
     if (!panel) return;
 
     panel.innerHTML = `
       <div style="display:grid;grid-template-columns:260px 1fr;gap:1.25rem;min-height:520px;"
            id="dmTeacherGrid">
-
-        <!-- Left: thread list -->
         <div style="border:1px solid var(--border,#e5e7eb);border-radius:10px;overflow:hidden;
                     display:flex;flex-direction:column;background:var(--surface,#fff);">
           <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border,#e5e7eb);
@@ -747,8 +681,6 @@
                       text-align:center;padding:2rem 1rem;">Loading…</p>
           </div>
         </div>
-
-        <!-- Right: active conversation -->
         <div style="border:1px solid var(--border,#e5e7eb);border-radius:10px;overflow:hidden;
                     display:flex;flex-direction:column;background:var(--surface,#fff);"
              id="dmConversationPanel">
@@ -757,7 +689,6 @@
             Select a conversation to view messages
           </div>
         </div>
-
       </div>`;
 
     _addTeacherGridResponsiveStyle();
@@ -766,7 +697,6 @@
 
   function _subscribeTeacherThreadList() {
     AppState.cancelListener('dmTeacherThreads');
-
     const unsub = Db()
       .collection('directMessages')
       .orderBy('lastAt', 'desc')
@@ -793,13 +723,11 @@
         list.innerHTML = items.map(item => {
           const unread   = item.teacherUnread || 0;
           const isActive = _activeStudentUid === item.id;
+          const isOnline = !!item.studentOnline;
           const timeStr  = item.lastAt
             ? new Date(item.lastAt.toDate ? item.lastAt.toDate() : item.lastAt)
-                .toLocaleDateString('en-GB', { day:'numeric', month:'short' })
+                .toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
             : '';
-
-          const isOnline = !!item.studentOnline;
-
           const presenceTxt = isOnline
             ? `<span style="color:#22c45e;font-size:.6rem;font-weight:600;line-height:1;">● Online</span>`
             : (item.studentLastSeen
@@ -808,8 +736,6 @@
                    </span>`
                 : '');
 
-          // Use data attributes for the click target to avoid inline
-          // string escaping issues with special characters in names.
           return `
             <div class="dm-thread-item"
                  data-uid="${_esc(item.id)}"
@@ -817,14 +743,11 @@
                  data-class="${_esc(item.studentClass || '')}"
                  style="display:flex;align-items:flex-start;gap:.625rem;
                         padding:.625rem .875rem;cursor:pointer;
-                        border-bottom:1px solid var(--border,#e5e7eb);
-                        transition:background .1s;
+                        border-bottom:1px solid var(--border,#e5e7eb);transition:background .1s;
                         background:${isActive ? 'var(--brand-bg,#edf2ff)' : 'transparent'};"
                  onmouseenter="if(this.dataset.uid!==window._dmActiveUid)this.style.background='var(--surface-subtle,#f9fafb)'"
                  onmouseleave="if(this.dataset.uid!==window._dmActiveUid)this.style.background='transparent'"
                  onclick="DM._openConversationFromEl(this)">
-
-              <!-- Avatar with green online ring when student is active -->
               <div style="position:relative;flex-shrink:0;">
                 <div style="width:34px;height:34px;border-radius:50%;
                             background:var(--brand-bg,#edf2ff);
@@ -835,13 +758,11 @@
                   ${_esc((item.studentName || '?').charAt(0).toUpperCase())}
                 </div>
                 ${isOnline
-                  ? `<span style="position:absolute;bottom:0;right:0;
-                                  width:9px;height:9px;border-radius:50%;
-                                  background:#22c45e;
+                  ? `<span style="position:absolute;bottom:0;right:0;width:9px;height:9px;
+                                  border-radius:50%;background:#22c45e;
                                   border:2px solid var(--surface,#fff);"></span>`
                   : ''}
               </div>
-
               <div style="flex:1;min-width:0;">
                 <div style="display:flex;align-items:baseline;justify-content:space-between;gap:.25rem;">
                   <span style="font-size:.8125rem;font-weight:700;color:var(--text-primary,#111827);
@@ -850,9 +771,7 @@
                   </span>
                   <span style="font-size:.625rem;color:var(--text-disabled,#9ca3af);flex-shrink:0;">${timeStr}</span>
                 </div>
-
                 <div style="margin-top:1px;min-height:.85rem;">${presenceTxt}</div>
-
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:.25rem;margin-top:2px;">
                   <span style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);
                                 white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
@@ -884,11 +803,6 @@
   let _activeStudentUid  = null;
   window._dmActiveUid    = null;
 
-  /**
-   * Called from the thread-list item's onclick. Reads uid/name/class
-   * from data attributes so special characters in names cannot break
-   * the call.
-   */
   function _openConversationFromEl(el) {
     const uid  = el.dataset.uid;
     const name = el.dataset.name;
@@ -912,26 +826,19 @@
       console.warn('[dm] Could not clear teacherUnread:', e);
     }
 
-    // Teacher opens conversation: mark messages delivered then read.
-    // Teacher's own online status is untouched — already set at login.
     await _markDelivered(studentUid, 'teacher');
     await _markRead(studentUid, 'teacher');
 
     const panel = document.getElementById('dmConversationPanel');
     if (!panel) return;
 
-    // Store uid/name/class on the panel element so the send-reply
-    // handler can read them without relying on inline string escaping.
     panel.dataset.studentUid  = studentUid;
     panel.dataset.studentName = studentName;
 
     panel.innerHTML = `
-      <!-- Conversation header with live student presence -->
       <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border,#e5e7eb);
-                  background:var(--surface-subtle,#f9fafb);display:flex;
-                  align-items:center;gap:.625rem;">
-        <div id="dmConvAvatar"
-             style="width:36px;height:36px;border-radius:50%;flex-shrink:0;
+                  background:var(--surface-subtle,#f9fafb);display:flex;align-items:center;gap:.625rem;">
+        <div style="width:36px;height:36px;border-radius:50%;flex-shrink:0;
                     background:var(--brand-bg,#edf2ff);border:1.5px solid var(--brand-border,#bac8ff);
                     display:flex;align-items:center;justify-content:center;
                     font-size:.8125rem;font-weight:700;color:var(--brand-text,#3730a3);">
@@ -940,19 +847,16 @@
         <div>
           <p style="font-size:.875rem;font-weight:700;color:var(--text-primary,#111827);line-height:1.3;">
             ${_esc(studentName)}
-            <span style="font-size:.6875rem;font-weight:400;
-                         color:var(--text-tertiary,#6b7280);margin-left:.25rem;">
+            <span style="font-size:.6875rem;font-weight:400;color:var(--text-tertiary,#6b7280);margin-left:.25rem;">
               ${_esc(studentClass)}
             </span>
           </p>
-          <!-- Live student presence line -->
           <div id="dmStudentPresence" style="margin-top:1px;">
             ${_presenceHTML(false, null)}
           </div>
         </div>
       </div>
 
-      <!-- Messages -->
       <div id="dmTeacherMessages"
            style="flex:1;overflow-y:auto;padding:.875rem;
                   background:var(--surface-subtle,#f9fafb);min-height:300px;max-height:380px;">
@@ -961,17 +865,13 @@
         </p>
       </div>
 
-      <!-- Input row -->
       <div style="padding:.75rem;border-top:1px solid var(--border,#e5e7eb);
                   display:flex;gap:.5rem;align-items:flex-end;background:var(--surface,#fff);">
-        <textarea id="dmTeacherInput"
-                  placeholder="Reply to ${_esc(studentName)}…"
-                  rows="1"
+        <textarea id="dmTeacherInput" placeholder="Reply to ${_esc(studentName)}…" rows="1"
                   style="flex:1;resize:none;overflow-y:hidden;line-height:1.5;
                          padding:.5625rem .75rem;min-height:36px;max-height:100px;
                          border-radius:var(--r-md);font-family:var(--font);font-size:var(--text-base);"></textarea>
-        <button id="dmTeacherSendBtn"
-                onclick="DM._sendTeacherReplyFromPanel()"
+        <button id="dmTeacherSendBtn" onclick="DM._sendTeacherReplyFromPanel()"
                 class="btn bg-green-600 hover:bg-green-700"
                 style="flex-shrink:0;align-self:flex-end;">Reply</button>
       </div>`;
@@ -980,10 +880,7 @@
     if (input) {
       input.focus();
       input.addEventListener('keydown', e => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-          e.preventDefault();
-          _sendTeacherReplyFromPanel();
-        }
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); _sendTeacherReplyFromPanel(); }
       });
       input.addEventListener('input', () => {
         input.style.height = 'auto';
@@ -996,10 +893,6 @@
     _subscribeTeacherMessages(studentUid);
   }
 
-  /**
-   * Reads the active student uid/name from the conversation panel's
-   * data attributes, avoiding any inline string escaping in onclick.
-   */
   function _sendTeacherReplyFromPanel() {
     const panel = document.getElementById('dmConversationPanel');
     if (!panel) return;
@@ -1011,14 +904,12 @@
 
   function _subscribeTeacherMessages(studentUid) {
     AppState.cancelListener('dmTeacherMessages');
-
     const unsub = _threadRef(studentUid)
       .collection('messages')
       .orderBy('timestamp', 'asc')
       .onSnapshot(snap => {
         const container = document.getElementById('dmTeacherMessages');
         if (!container) { AppState.cancelListener('dmTeacherMessages'); return; }
-
         if (snap.empty) {
           container.innerHTML = `
             <p style="text-align:center;font-size:.8125rem;
@@ -1027,13 +918,11 @@
             </p>`;
           return;
         }
-
         const msgs = [];
         snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
         container.innerHTML = msgs.map(m => _buildTeacherBubble(m)).join('');
         container.scrollTop = container.scrollHeight;
       }, err => console.error('[dm] Teacher messages error:', err));
-
     AppState.registerListener('dmTeacherMessages', unsub);
   }
 
@@ -1048,9 +937,7 @@
       ? `background:var(--brand,#3b5bdb);color:#fff;border-radius:12px 12px 2px 12px;margin-left:auto;`
       : `background:var(--surface,#fff);color:var(--text-primary,#111827);
          border:1px solid var(--border,#e5e7eb);border-radius:12px 12px 12px 2px;margin-right:auto;`;
-
     const nameStyle = isTeacher ? `color:rgba(255,255,255,.75);` : `color:var(--brand-text,#3730a3);`;
-
     const footer = isTeacher
       ? `<div class="dm-msg-footer">
            <span class="dm-time">${time}</span>
@@ -1082,24 +969,21 @@
     UI.setLoading(btn, true);
     if (input) input.value = '';
 
-    // Check student online status from thread doc.
     let studentIsOnline = false;
     try {
       const threadSnap = await _threadRef(studentUid).get();
       studentIsOnline = !!(threadSnap.exists && threadSnap.data().studentOnline);
     } catch (_) {}
 
-    const initialStatus = studentIsOnline ? 'delivered' : 'sent';
-
     try {
-      const batch = Db().batch();
+      const batch  = Db().batch();
       const msgRef = _threadRef(studentUid).collection('messages').doc();
       batch.set(msgRef, {
         text,
         senderId:   AppConfig.TEACHER_UID,
         senderName: 'Master Timothy',
         role:       'teacher',
-        status:     initialStatus,
+        status:     studentIsOnline ? 'delivered' : 'sent',
         timestamp:  firebase.firestore.FieldValue.serverTimestamp(),
       });
       batch.set(_threadRef(studentUid), {
@@ -1133,14 +1017,13 @@
       badge.className   = 'dm-notif-badge';
       badge.textContent = count > 9 ? '9+' : String(count);
       badge.style.cssText = [
-        'position:absolute','top:-6px','right:-6px',
-        'min-width:18px','height:18px',
-        'background:var(--danger,#e03131)','color:#fff',
-        'font-size:.625rem','font-weight:700',
-        'border-radius:99px','display:flex','align-items:center',
-        'justify-content:center','padding:0 4px',
-        'pointer-events:none',
-        'border:2px solid var(--surface,#fff)','line-height:1',
+        'position:absolute', 'top:-6px', 'right:-6px',
+        'min-width:18px', 'height:18px',
+        'background:var(--danger,#e03131)', 'color:#fff',
+        'font-size:.625rem', 'font-weight:700', 'border-radius:99px',
+        'display:flex', 'align-items:center', 'justify-content:center',
+        'padding:0 4px', 'pointer-events:none',
+        'border:2px solid var(--surface,#fff)', 'line-height:1',
       ].join(';');
       btn.style.position = 'relative';
       btn.appendChild(badge);
@@ -1157,14 +1040,13 @@
       badge.className   = 'dm-notif-badge';
       badge.textContent = count > 9 ? '9+' : String(count);
       badge.style.cssText = [
-        'position:absolute','top:-6px','right:-6px',
-        'min-width:18px','height:18px',
-        'background:var(--danger,#e03131)','color:#fff',
-        'font-size:.625rem','font-weight:700',
-        'border-radius:99px','display:flex','align-items:center',
-        'justify-content:center','padding:0 4px',
-        'pointer-events:none',
-        'border:2px solid var(--surface,#fff)','line-height:1',
+        'position:absolute', 'top:-6px', 'right:-6px',
+        'min-width:18px', 'height:18px',
+        'background:var(--danger,#e03131)', 'color:#fff',
+        'font-size:.625rem', 'font-weight:700', 'border-radius:99px',
+        'display:flex', 'align-items:center', 'justify-content:center',
+        'padding:0 4px', 'pointer-events:none',
+        'border:2px solid var(--surface,#fff)', 'line-height:1',
       ].join(';');
       btn.style.position = 'relative';
       btn.appendChild(badge);
@@ -1176,20 +1058,14 @@
      ══════════════════════════════════════════════════════════ */
   async function initStudentDMListener(uid) {
     AppState.cancelListener('dmStudentUnread');
-
     const unsub = _threadRef(uid).onSnapshot(snap => {
       const count = (snap.exists && snap.data().studentUnread) || 0;
       AppState.dmStudentUnread = count;
       _updateStudentBadge(count);
     }, err => console.warn('[dm] Student unread listener error:', err));
-
     AppState.registerListener('dmStudentUnread', unsub);
 
-    // Mark student online for the whole session and register unload guards.
     await _setStudentOnlineGlobal(uid);
-
-    // Upgrade any existing 'sent' teacher messages to 'delivered'
-    // now that the student is online.
     await _markDelivered(uid, 'student');
   }
 
@@ -1199,11 +1075,8 @@
   async function initTeacherDMListener() {
     AppState.cancelListener('dmTeacherUnread');
 
-    // Set teacher online globally and register unload guards.
     await _setTeacherOnlineGlobal();
 
-    // One-shot delivery sweep at login only (NOT inside onSnapshot,
-    // to avoid instantly upgrading a message the student just sent).
     try {
       const allThreads = await Db().collection('directMessages').get();
       allThreads.forEach(doc => {
@@ -1213,7 +1086,6 @@
       console.warn('[dm] initTeacherDMListener delivery sweep error:', e);
     }
 
-    // Live badge listener.
     const unsub = Db()
       .collection('directMessages')
       .onSnapshot(snap => {
@@ -1221,15 +1093,14 @@
         snap.forEach(doc => { total += (doc.data().teacherUnread || 0); });
         _updateTeacherBadge(total);
       }, err => console.warn('[dm] Teacher unread listener error:', err));
-
     AppState.registerListener('dmTeacherUnread', unsub);
   }
 
   /* ══════════════════════════════════════════════════════════
-     cancelListeners — called by app.js on logout
+     cancelListeners — called by app.js BEFORE fbAuth.signOut()
      ══════════════════════════════════════════════════════════ */
   async function cancelListeners() {
-    // Cancel Firestore listeners first.
+    // Step 1 — cancel Firestore listeners.
     AppState.cancelListener('dmStudentMessages');
     AppState.cancelListener('dmTeacherThreads');
     AppState.cancelListener('dmTeacherMessages');
@@ -1240,16 +1111,8 @@
     _activeStudentUid   = null;
     window._dmActiveUid = null;
 
-    // Remove event listeners BEFORE awaiting writes so they don't
-    // fire again if something triggers visibility/unload mid-logout.
-    if (_teacherVisibilityHandler) {
-      document.removeEventListener('visibilitychange', _teacherVisibilityHandler);
-      _teacherVisibilityHandler = null;
-    }
-    if (_teacherBeforeunloadHandler) {
-      window.removeEventListener('beforeunload', _teacherBeforeunloadHandler);
-      _teacherBeforeunloadHandler = null;
-    }
+    // Step 2 — remove DOM event listeners so they don't re-fire
+    // during the logout transition.
     if (_studentVisibilityHandler) {
       document.removeEventListener('visibilitychange', _studentVisibilityHandler);
       _studentVisibilityHandler = null;
@@ -1258,9 +1121,18 @@
       window.removeEventListener('beforeunload', _studentBeforeunloadHandler);
       _studentBeforeunloadHandler = null;
     }
+    if (_teacherVisibilityHandler) {
+      document.removeEventListener('visibilitychange', _teacherVisibilityHandler);
+      _teacherVisibilityHandler = null;
+    }
+    if (_teacherBeforeunloadHandler) {
+      window.removeEventListener('beforeunload', _teacherBeforeunloadHandler);
+      _teacherBeforeunloadHandler = null;
+    }
 
-    // Write offline status synchronously (awaited) — safe here because
-    // this is an in-app logout, not a tab close, so the page is alive.
+    // Step 3 — write offline while auth is STILL VALID.
+    // app.js awaits this function before calling fbAuth.signOut(),
+    // so the auth token is guaranteed to be alive here.
     if (_teacherOfflineCleanup) {
       await _teacherOfflineCleanup().catch(() => {});
       _teacherOfflineCleanup = null;
@@ -1272,7 +1144,7 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     Responsive style for teacher grid
+     Responsive style
      ══════════════════════════════════════════════════════════ */
   function _addTeacherGridResponsiveStyle() {
     if (document.getElementById('_dmGridStyle')) return;
@@ -1281,26 +1153,19 @@
     style.textContent = `
       @media (max-width:640px) {
         #dmTeacherGrid { grid-template-columns: 1fr !important; }
-      }
-    `;
+      }`;
     document.head.appendChild(style);
   }
 
   /* ══════════════════════════════════════════════════════════
      Private helpers
      ══════════════════════════════════════════════════════════ */
-  function _threadRef(studentUid) {
-    return Db().collection('directMessages').doc(studentUid);
-  }
-
-  function Db() { return window.fbDb; }
-
+  function _threadRef(uid) { return Db().collection('directMessages').doc(uid); }
+  function Db()            { return window.fbDb; }
   function _esc(str) {
     return String(str == null ? '' : str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
   /* ══════════════════════════════════════════════════════════
