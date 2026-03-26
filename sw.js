@@ -42,7 +42,7 @@ firebase.initializeApp({
 
 const _fcmMessaging = firebase.messaging();
 
-const CACHE_VERSION = 'v1.3.1';
+const CACHE_VERSION = 'v1.3.2';
 const STATIC_CACHE  = `static-${CACHE_VERSION}`;
 const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
 
@@ -102,6 +102,7 @@ self.addEventListener('install', event => {
         '/js/ui.js',
         '/js/auth.js',
         '/js/chat.js',
+        '/js/dm.js',
         '/js/tasks.js',
         '/js/teacher.js',
         '/js/exam.js',
