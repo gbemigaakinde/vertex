@@ -18,6 +18,11 @@
       the login screen. The login is reachable via the Sign In
       button on that page.
 
+   3. DM.cancelListeners() is called in _onLogout() so the
+      student/teacher online status is correctly written to
+      Firestore on a normal logout (beforeunload does not fire
+      for an in-app logout triggered by fbAuth.signOut()).
+
    All other logic (teacher path, student path, error handling,
    registration guard) is unchanged from the previous version.
    ============================================================ */
@@ -155,6 +160,14 @@
 
   function _onLogout() {
     window._registrationInProgress = false;
+
+    // Write offline status to Firestore immediately on logout.
+    // This must happen BEFORE AppState.reset() cancels listeners,
+    // because DM.cancelListeners() needs the stored cleanup functions.
+    if (window.DM && typeof DM.cancelListeners === 'function') {
+      DM.cancelListeners();
+    }
+
     Tasks.cancelListeners();
     AppState.reset();
 
