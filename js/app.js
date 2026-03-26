@@ -18,14 +18,12 @@
       the login screen. The login is reachable via the Sign In
       button on that page.
 
-   3. DM.cancelListeners() is called at the top of _onLogout()
-      so both student and teacher online status are correctly
-      written to Firestore on a normal logout. This must run
-      BEFORE AppState.reset() because DM.cancelListeners() relies
-      on cleanup functions stored inside dm.js's closure.
-      (beforeunload does not fire for an in-app JS logout, so
-      the explicit call here is the only way to write offline
-      reliably on logout.)
+   3. DM.cancelListeners() is called (and awaited) at the top of
+      _onLogout() so both student and teacher online status are
+      correctly written to Firestore on a normal logout. It is
+      now async so it must be awaited. This must still run BEFORE
+      AppState.reset() because DM.cancelListeners() relies on
+      cleanup functions stored inside dm.js's closure.
 
    All other logic (teacher path, student path, error handling,
    registration guard) is unchanged from the previous version.
@@ -55,7 +53,7 @@
         }
         await _onLogin(firebaseUser);
       } else {
-        _onLogout();
+        await _onLogout();
       }
     });
   }
@@ -164,16 +162,17 @@
     }
   }
 
-  function _onLogout() {
+  async function _onLogout() {
     window._registrationInProgress = false;
 
-    // Write offline status to Firestore immediately on logout.
-    // MUST run before AppState.reset() — DM.cancelListeners() needs
-    // the cleanup functions stored in dm.js's closure. AppState.reset()
-    // cancels Firestore listeners but does NOT clear those closures,
-    // so ordering here is safe and intentional.
+    // Write offline status to Firestore and remove event listeners.
+    // MUST run (and be awaited) before AppState.reset() — the cleanup
+    // functions live inside dm.js's closure and AppState.reset() does
+    // not clear them, but cancelListeners() is now async so we await it
+    // to ensure the Firestore writes complete before the page continues
+    // tearing down.
     if (window.DM && typeof DM.cancelListeners === 'function') {
-      DM.cancelListeners();
+      await DM.cancelListeners();
     }
 
     Tasks.cancelListeners();
