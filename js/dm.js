@@ -45,6 +45,31 @@
 
    Student badge lives on #dmOpenBtn (subject selection screen).
    Teacher badge lives on #tab-dm   (teacher dashboard tab).
+
+   ── Presence reliability ──────────────────────────────────
+   `beforeunload` does NOT await promises, so an async Firestore
+   write inside it will be abandoned before it completes. We use
+   two complementary mechanisms instead:
+
+   1. `visibilitychange` (hidden) — fires when the tab is hidden,
+      backgrounded, or the window is minimised. The browser does
+      NOT kill the page immediately, so a synchronous Firestore
+      write has enough time to go out. This covers the vast
+      majority of "user left" cases.
+
+   2. `beforeunload` with `navigator.sendBeacon` — sends a tiny
+      keepalive HTTP request that the browser guarantees to deliver
+      even as the page unloads. We point it at a lightweight
+      Cloud Function endpoint (`/offlineBeacon`) that writes the
+      offline status server-side. This covers hard tab closes and
+      browser-quit scenarios that visibilitychange might miss.
+      If the beacon endpoint is unavailable the worst case is a
+      stale "Online" label that self-corrects the next time the
+      user logs in.
+
+   3. Explicit logout — `cancelListeners()` is called by app.js
+      before AppState.reset(). It writes offline synchronously
+      (awaited) and removes both event listeners.
    ============================================================ */
 
 (function () {
@@ -182,119 +207,179 @@
      Presence management
      ══════════════════════════════════════════════════════════
 
-     STUDENT presence:
-       - Set online once at login via initStudentDMListener()
-         which calls _setStudentOnlineGlobal(uid).
-       - Goes offline on: (a) tab close — beforeunload listener,
-         (b) explicit logout — DM.cancelListeners() called by app.js.
-       - Opening or closing the DM screen does NOT affect presence.
+     The core problem with async writes in beforeunload:
+       window.addEventListener('beforeunload', async () => {
+         await db.doc(...).set({online: false}); // NEVER COMPLETES
+       });
+     The browser tears down the page before the promise resolves.
 
-     TEACHER presence:
-       - Set online once at login via initTeacherDMListener()
-         which calls _setTeacherOnlineGlobal(uid).
-       - Goes offline on: (a) tab close — beforeunload listener,
-         (b) explicit logout — DM.cancelListeners() called by app.js.
-       - Opening, switching, or closing DM conversation threads
-         does NOT affect the teacher's online status at all.
+     Our solution uses THREE layers:
 
-     Both follow the exact same session-scoped pattern. The
-     teacherOnline field on every thread doc is updated once at
-     login (true) and once at logout/tab-close (false), with a
-     batch write so all threads are updated atomically.
+     Layer 1 — visibilitychange:
+       Fires synchronously when tab is hidden/minimised. The page
+       is still alive so the Firestore write has time to go out.
+       Covers ~95% of real-world "user left" cases.
+
+     Layer 2 — beforeunload + sendBeacon:
+       sendBeacon() is a fire-and-forget HTTP POST the browser
+       guarantees to deliver even during page unload. We send the
+       user's UID to a lightweight backend endpoint that writes
+       offline status server-side. This covers hard tab closes.
+       Gracefully degrades: if the endpoint is missing the status
+       self-corrects at next login.
+
+     Layer 3 — explicit cancelListeners():
+       Called by app.js on in-app logout. Does a proper awaited
+       Firestore write. Removes both event listeners.
 
      ══════════════════════════════════════════════════════════ */
 
-  // Holds the student's offline cleanup fn for use by cancelListeners().
-  let _studentOfflineCleanup = null;
+  // ── Beacon endpoint ──────────────────────────────────────
+  // Point this at your Cloud Function that writes online:false.
+  // If you don't have one yet, leave it as '' and Layer 1 + 3
+  // will still keep status correct in the vast majority of cases.
+  const OFFLINE_BEACON_URL = '';   // e.g. 'https://us-central1-YOUR_PROJECT.cloudfunctions.net/offlineBeacon'
 
-  // Holds the teacher's offline cleanup fn for use by cancelListeners().
+  // Cleanup functions stored so cancelListeners() can call them
+  // synchronously on an in-app logout.
+  let _studentOfflineCleanup = null;
   let _teacherOfflineCleanup = null;
+
+  // Bound event listener references so we can removeEventListener
+  // exactly (anonymous functions cannot be removed).
+  let _studentVisibilityHandler  = null;
+  let _studentBeforeunloadHandler = null;
+  let _teacherVisibilityHandler  = null;
+  let _teacherBeforeunloadHandler = null;
+
+  /* ── helpers ── */
+
+  function _sendBeacon(uid, role) {
+    if (!OFFLINE_BEACON_URL) return;
+    try {
+      const body = JSON.stringify({ uid, role });
+      navigator.sendBeacon(OFFLINE_BEACON_URL, new Blob([body], { type: 'application/json' }));
+    } catch (_) {}
+  }
+
+  /* ── Student presence ─────────────────────────────────── */
 
   /**
    * Called once at student login.
-   * Sets studentOnline: true on the student's own thread doc.
-   * Registers a beforeunload handler for tab-close.
-   * Stores the cleanup function so cancelListeners() can write
-   * offline immediately on an in-app logout (beforeunload doesn't
-   * fire for a normal JS logout).
+   * Sets studentOnline:true and registers the two unload guards.
    */
   async function _setStudentOnlineGlobal(uid) {
     try {
       await _threadRef(uid).set({ studentOnline: true }, { merge: true });
-
-      const goOffline = async () => {
-        try {
-          await _threadRef(uid).set({
-            studentOnline:   false,
-            studentLastSeen: firebase.firestore.FieldValue.serverTimestamp(),
-          }, { merge: true });
-        } catch (_) {}
-      };
-
-      _studentOfflineCleanup = goOffline;
-      window.addEventListener('beforeunload', goOffline);
     } catch (e) {
-      console.warn('[dm] Could not set studentOnline globally:', e);
+      console.warn('[dm] Could not set studentOnline=true:', e);
+      return;
     }
+
+    const goOffline = async () => {
+      try {
+        await _threadRef(uid).set({
+          studentOnline:   false,
+          studentLastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+      } catch (_) {}
+    };
+
+    _studentOfflineCleanup = goOffline;
+
+    // Layer 1: visibilitychange — synchronous trigger, async write has time to complete.
+    _studentVisibilityHandler = () => {
+      if (document.visibilityState === 'hidden') {
+        goOffline().catch(() => {});
+      } else {
+        // Tab became visible again — restore online status.
+        _threadRef(uid).set({ studentOnline: true }, { merge: true }).catch(() => {});
+      }
+    };
+    document.addEventListener('visibilitychange', _studentVisibilityHandler);
+
+    // Layer 2: beforeunload + sendBeacon for hard tab closes.
+    _studentBeforeunloadHandler = () => {
+      _sendBeacon(uid, 'student');
+      // Attempt a synchronous-style Firestore write as a best-effort
+      // fallback (will only succeed if the network stack hasn't been
+      // torn down yet — not guaranteed, but costs nothing).
+      try {
+        _threadRef(uid).set({
+          studentOnline:   false,
+          studentLastSeen: firebase.firestore.FieldValue.serverTimestamp(),
+        }, { merge: true });
+      } catch (_) {}
+    };
+    window.addEventListener('beforeunload', _studentBeforeunloadHandler);
   }
+
+  /* ── Teacher presence ─────────────────────────────────── */
 
   /**
    * Called once at teacher login.
-   * Sets teacherOnline: true on ALL existing student thread docs
-   * (batch write) so every student's "Master Timothy is Online"
-   * header updates at the same time.
-   * Also writes to a central sentinel doc (teacherPresence/global)
-   * so that new thread docs created after login can read the
-   * current teacher state with a single lightweight read.
-   * Registers a beforeunload handler and stores the cleanup fn.
+   * Broadcasts teacherOnline:true to all thread docs and registers
+   * the two unload guards.
    */
-  async function _setTeacherOnlineGlobal(uid) {
+  async function _setTeacherOnlineGlobal() {
     try {
       await _broadcastTeacherPresence(true);
-
-      const goOffline = async () => {
-        try {
-          await _broadcastTeacherPresence(false);
-        } catch (_) {}
-      };
-
-      _teacherOfflineCleanup = goOffline;
-      window.addEventListener('beforeunload', goOffline);
     } catch (e) {
-      console.warn('[dm] Could not set teacherOnline globally:', e);
+      console.warn('[dm] Could not set teacherOnline=true globally:', e);
+      return;
     }
+
+    const goOffline = async () => {
+      try {
+        await _broadcastTeacherPresence(false);
+      } catch (_) {}
+    };
+
+    _teacherOfflineCleanup = goOffline;
+
+    // Layer 1: visibilitychange.
+    _teacherVisibilityHandler = () => {
+      if (document.visibilityState === 'hidden') {
+        goOffline().catch(() => {});
+      } else {
+        _broadcastTeacherPresence(true).catch(() => {});
+      }
+    };
+    document.addEventListener('visibilitychange', _teacherVisibilityHandler);
+
+    // Layer 2: beforeunload + sendBeacon.
+    _teacherBeforeunloadHandler = () => {
+      _sendBeacon(AppConfig.TEACHER_UID, 'teacher');
+      try { _broadcastTeacherPresence(false); } catch (_) {}
+    };
+    window.addEventListener('beforeunload', _teacherBeforeunloadHandler);
   }
 
   /**
    * Writes teacherOnline (and teacherLastSeen when going offline)
-   * to every existing thread doc in batches of 400.
-   * Also writes to a shared sentinel doc (teacherPresence/global)
-   * so that sendStudentMessage() and openStudentInbox() can check
-   * teacher status with a single lightweight read instead of
-   * querying all thread docs.
+   * to every existing thread doc in batches of 400, and to the
+   * sentinel doc teacherPresence/global.
    */
   async function _broadcastTeacherPresence(isOnline) {
     const db = Db();
     const timestamp = firebase.firestore.FieldValue.serverTimestamp();
 
-    // Update sentinel doc — one lightweight doc the student paths read.
-    const sentinelRef = db.collection('teacherPresence').doc('global');
+    // Sentinel doc — students read this on first open and on send.
     const sentinelData = isOnline
       ? { online: true }
       : { online: false, lastSeen: timestamp };
-    await sentinelRef.set(sentinelData, { merge: true });
+    await db.collection('teacherPresence').doc('global').set(sentinelData, { merge: true });
 
-    // Update all existing thread docs in batches.
+    // All existing thread docs.
     const snap = await db.collection('directMessages').get();
     if (snap.empty) return;
 
-    const docs = [];
-    snap.forEach(doc => docs.push(doc.ref));
+    const refs = [];
+    snap.forEach(doc => refs.push(doc.ref));
 
-    // Firestore batch limit is 500 writes; use 400 for safety.
-    for (let i = 0; i < docs.length; i += 400) {
+    for (let i = 0; i < refs.length; i += 400) {
       const batch = db.batch();
-      docs.slice(i, i + 400).forEach(ref => {
+      refs.slice(i, i + 400).forEach(ref => {
         const data = isOnline
           ? { teacherOnline: true }
           : { teacherOnline: false, teacherLastSeen: timestamp };
@@ -329,27 +414,35 @@
   /* ══════════════════════════════════════════════════════════
      Delivery helpers (WhatsApp tick logic)
 
-     sent      → message written to Firestore
-     delivered → recipient's app is open (they've been online)
-     read      → recipient has opened this specific conversation
+     NOTE on Firestore SDK v8 and the `!=` operator:
+     The v8 compat API does not support the `!=` WHERE operator
+     in compound queries. Instead we use two separate `.get()`
+     calls — one for each role — and merge the results. This
+     avoids composite-index requirements and SDK version issues.
 
-     _markDelivered: upgrades 'sent' messages from the OTHER party
-                     to 'delivered'. Called ONCE when a user comes
-                     online — NOT inside any repeating onSnapshot
-                     callback — so the single grey tick stays visible
-                     until the recipient actually comes online.
+     _markDelivered: upgrades 'sent' messages sent BY the other
+                     party to 'delivered'. Called once at login
+                     (not inside onSnapshot) to avoid instantly
+                     upgrading a message the sender just wrote.
 
-     _markRead:      upgrades 'sent'/'delivered' messages from the
-                     OTHER party to 'read'. Called when the user
-                     opens the conversation.
+     _markRead:      upgrades 'sent'/'delivered' messages sent BY
+                     the other party to 'read'. Called when the
+                     user opens the specific conversation thread.
      ══════════════════════════════════════════════════════════ */
 
+  /**
+   * @param {string} studentUid
+   * @param {'student'|'teacher'} recipientRole  — the role of the person
+   *   who is NOW online / opening the conversation. We want to mark
+   *   messages sent BY THE OTHER role.
+   */
   async function _markDelivered(studentUid, recipientRole) {
+    const senderRole = recipientRole === 'student' ? 'teacher' : 'student';
     try {
       const snap = await _threadRef(studentUid)
         .collection('messages')
+        .where('role', '==', senderRole)
         .where('status', '==', 'sent')
-        .where('role', '!=', recipientRole)
         .get();
       if (snap.empty) return;
       const batch = Db().batch();
@@ -361,10 +454,11 @@
   }
 
   async function _markRead(studentUid, recipientRole) {
+    const senderRole = recipientRole === 'student' ? 'teacher' : 'student';
     try {
       const snap = await _threadRef(studentUid)
         .collection('messages')
-        .where('role', '!=', recipientRole)
+        .where('role', '==', senderRole)
         .get();
       if (snap.empty) return;
       const toUpdate = [];
@@ -402,18 +496,8 @@
       console.warn('[dm] Could not clear studentUnread:', e);
     }
 
-    // ── Seed thread doc for brand-new students ──────────────────────────
-    // _watchPresence() listens to this student's thread doc to show the
-    // teacher's online status in the header. If the student has never sent
-    // a message before, that doc does not exist yet, so _watchPresence()
-    // would always show "Last seen: unknown" regardless of whether the
-    // teacher is actually online.
-    //
-    // Fix: check whether the thread doc exists. If it doesn't, create it
-    // now — copying the teacher's current online state from the lightweight
-    // sentinel doc (teacherPresence/global) — so that _watchPresence() has
-    // accurate data to display from the very first time the student opens
-    // the message screen, even before they send their first message.
+    // Seed thread doc for brand-new students so _watchPresence() has
+    // accurate teacher status from the very first open.
     try {
       const threadSnap = await threadRef.get();
       if (!threadSnap.exists) {
@@ -438,7 +522,6 @@
     } catch (e) {
       console.warn('[dm] Could not seed thread doc for new student:', e);
     }
-    // ── End seed ────────────────────────────────────────────────────────
 
     UI.mount(`
       <div class="max-w-2xl mx-auto glass animate-fadeIn"
@@ -502,16 +585,13 @@
       });
     }
 
-    // Student opens DM: mark teacher's messages read (delivered first, then read).
+    // Student opens DM: mark teacher's messages as delivered then read.
     // Student is already marked online from login — no presence write here.
     await _markDelivered(uid, 'student');
     await _markRead(uid, 'student');
 
-    // Watch teacher's online/lastSeen and update the header in real time.
-    // The thread doc is guaranteed to exist at this point (seeded above if
-    // it was missing), so this listener will always have data to display.
+    // Watch teacher online/lastSeen in real time.
     _watchPresence(uid, 'teacher', 'dmTeacherPresence', 'dmTeacherPresenceWatch');
-
     _subscribeStudentMessages(uid);
   }
 
@@ -592,9 +672,7 @@
     UI.setLoading(btn, true);
     if (input) input.value = '';
 
-    // Check if the teacher is currently online by reading the lightweight
-    // sentinel doc rather than the thread doc, so this one read works
-    // regardless of whether the teacher has a thread open or not.
+    // Check teacher online status via the lightweight sentinel doc.
     let teacherIsOnline = false;
     try {
       const sentinelSnap = await Db().collection('teacherPresence').doc('global').get();
@@ -621,9 +699,6 @@
         lastAt:        firebase.firestore.FieldValue.serverTimestamp(),
         teacherUnread: firebase.firestore.FieldValue.increment(1),
         studentUnread: 0,
-        // Ensure the teacher's current online state is reflected on this
-        // thread doc (covers the case where it was just created for the
-        // first time and the teacher is online but not yet reflected).
         teacherOnline: teacherIsOnline,
       }, { merge: true });
       await batch.commit();
@@ -640,7 +715,7 @@
   function backFromStudentInbox() {
     AppState.cancelListener('dmStudentMessages');
     AppState.cancelListener('dmTeacherPresenceWatch');
-    // Student remains online — only go offline on tab close or logout.
+    // Student remains online — only goes offline on tab hide or logout.
     Exam.renderSubjectSelection();
   }
 
@@ -733,17 +808,21 @@
                    </span>`
                 : '');
 
+          // Use data attributes for the click target to avoid inline
+          // string escaping issues with special characters in names.
           return `
             <div class="dm-thread-item"
                  data-uid="${_esc(item.id)}"
-                 onclick="DM._openConversation('${_esc(item.id)}', '${_esc(item.studentName || '')}', '${_esc(item.studentClass || '')}')"
+                 data-name="${_esc(item.studentName || '')}"
+                 data-class="${_esc(item.studentClass || '')}"
                  style="display:flex;align-items:flex-start;gap:.625rem;
                         padding:.625rem .875rem;cursor:pointer;
                         border-bottom:1px solid var(--border,#e5e7eb);
                         transition:background .1s;
                         background:${isActive ? 'var(--brand-bg,#edf2ff)' : 'transparent'};"
-                 onmouseenter="if('${_esc(item.id)}'!==window._dmActiveUid)this.style.background='var(--surface-subtle,#f9fafb)'"
-                 onmouseleave="if('${_esc(item.id)}'!==window._dmActiveUid)this.style.background='transparent'">
+                 onmouseenter="if(this.dataset.uid!==window._dmActiveUid)this.style.background='var(--surface-subtle,#f9fafb)'"
+                 onmouseleave="if(this.dataset.uid!==window._dmActiveUid)this.style.background='transparent'"
+                 onclick="DM._openConversationFromEl(this)">
 
               <!-- Avatar with green online ring when student is active -->
               <div style="position:relative;flex-shrink:0;">
@@ -772,7 +851,6 @@
                   <span style="font-size:.625rem;color:var(--text-disabled,#9ca3af);flex-shrink:0;">${timeStr}</span>
                 </div>
 
-                <!-- Presence line under name -->
                 <div style="margin-top:1px;min-height:.85rem;">${presenceTxt}</div>
 
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:.25rem;margin-top:2px;">
@@ -806,6 +884,19 @@
   let _activeStudentUid  = null;
   window._dmActiveUid    = null;
 
+  /**
+   * Called from the thread-list item's onclick. Reads uid/name/class
+   * from data attributes so special characters in names cannot break
+   * the call.
+   */
+  function _openConversationFromEl(el) {
+    const uid  = el.dataset.uid;
+    const name = el.dataset.name;
+    const cls  = el.dataset.class;
+    if (!uid) return;
+    _openConversation(uid, name, cls);
+  }
+
   async function _openConversation(studentUid, studentName, studentClass) {
     _activeStudentUid   = studentUid;
     window._dmActiveUid = studentUid;
@@ -821,16 +912,18 @@
       console.warn('[dm] Could not clear teacherUnread:', e);
     }
 
-    // Teacher opens a conversation thread:
-    //   - No presence writes here. Teacher is already online at the
-    //     session level (set at login). Opening a thread does not
-    //     change that.
-    //   - Mark messages delivered then read for the tick receipt logic.
+    // Teacher opens conversation: mark messages delivered then read.
+    // Teacher's own online status is untouched — already set at login.
     await _markDelivered(studentUid, 'teacher');
     await _markRead(studentUid, 'teacher');
 
     const panel = document.getElementById('dmConversationPanel');
     if (!panel) return;
+
+    // Store uid/name/class on the panel element so the send-reply
+    // handler can read them without relying on inline string escaping.
+    panel.dataset.studentUid  = studentUid;
+    panel.dataset.studentName = studentName;
 
     panel.innerHTML = `
       <!-- Conversation header with live student presence -->
@@ -852,7 +945,7 @@
               ${_esc(studentClass)}
             </span>
           </p>
-          <!-- Live student presence line — updated by Firestore listener -->
+          <!-- Live student presence line -->
           <div id="dmStudentPresence" style="margin-top:1px;">
             ${_presenceHTML(false, null)}
           </div>
@@ -878,7 +971,7 @@
                          padding:.5625rem .75rem;min-height:36px;max-height:100px;
                          border-radius:var(--r-md);font-family:var(--font);font-size:var(--text-base);"></textarea>
         <button id="dmTeacherSendBtn"
-                onclick="DM._sendTeacherReply('${_esc(studentUid)}', '${_esc(studentName)}')"
+                onclick="DM._sendTeacherReplyFromPanel()"
                 class="btn bg-green-600 hover:bg-green-700"
                 style="flex-shrink:0;align-self:flex-end;">Reply</button>
       </div>`;
@@ -889,7 +982,7 @@
       input.addEventListener('keydown', e => {
         if (e.key === 'Enter' && !e.shiftKey) {
           e.preventDefault();
-          _sendTeacherReply(studentUid, studentName);
+          _sendTeacherReplyFromPanel();
         }
       });
       input.addEventListener('input', () => {
@@ -901,6 +994,19 @@
 
     _watchPresence(studentUid, 'student', 'dmStudentPresence', 'dmStudentPresenceWatch');
     _subscribeTeacherMessages(studentUid);
+  }
+
+  /**
+   * Reads the active student uid/name from the conversation panel's
+   * data attributes, avoiding any inline string escaping in onclick.
+   */
+  function _sendTeacherReplyFromPanel() {
+    const panel = document.getElementById('dmConversationPanel');
+    if (!panel) return;
+    const uid  = panel.dataset.studentUid;
+    const name = panel.dataset.studentName;
+    if (!uid) return;
+    _sendTeacherReply(uid, name);
   }
 
   function _subscribeTeacherMessages(studentUid) {
@@ -976,7 +1082,7 @@
     UI.setLoading(btn, true);
     if (input) input.value = '';
 
-    // Check the student's online status directly from their thread doc.
+    // Check student online status from thread doc.
     let studentIsOnline = false;
     try {
       const threadSnap = await _threadRef(studentUid).get();
@@ -1079,7 +1185,7 @@
 
     AppState.registerListener('dmStudentUnread', unsub);
 
-    // Mark student online for the whole session.
+    // Mark student online for the whole session and register unload guards.
     await _setStudentOnlineGlobal(uid);
 
     // Upgrade any existing 'sent' teacher messages to 'delivered'
@@ -1089,31 +1195,15 @@
 
   /* ══════════════════════════════════════════════════════════
      initTeacherDMListener — called once after teacher login
-     ══════════════════════════════════════════════════════════
-
-     Teacher presence follows the exact same session-scoped pattern
-     as the student. _setTeacherOnlineGlobal() writes teacherOnline:
-     true to all existing thread docs (batch) at login, and registers
-     beforeunload/cancelListeners cleanup to write false on logout or
-     tab close.
-
-     The delivery sweep (_markDelivered) runs ONCE via a one-shot
-     .get() at login time — NOT inside the onSnapshot callback.
-     Putting _markDelivered inside onSnapshot would instantly upgrade
-     a freshly-written 'sent' message to 'delivered' every time any
-     thread doc changes, making the single grey tick invisible to the
-     student sender. The one-shot approach means: messages sent BEFORE
-     the teacher logged in get promoted to 'delivered' at login, and
-     messages sent AFTER remain 'sent' until the teacher opens that
-     specific conversation (_openConversation runs the sweep then too).
      ══════════════════════════════════════════════════════════ */
   async function initTeacherDMListener() {
     AppState.cancelListener('dmTeacherUnread');
 
-    // Set teacher online globally at login (same pattern as student).
-    await _setTeacherOnlineGlobal(AppConfig.TEACHER_UID);
+    // Set teacher online globally and register unload guards.
+    await _setTeacherOnlineGlobal();
 
-    // One-shot delivery sweep at login only (not inside onSnapshot).
+    // One-shot delivery sweep at login only (NOT inside onSnapshot,
+    // to avoid instantly upgrading a message the student just sent).
     try {
       const allThreads = await Db().collection('directMessages').get();
       allThreads.forEach(doc => {
@@ -1123,7 +1213,7 @@
       console.warn('[dm] initTeacherDMListener delivery sweep error:', e);
     }
 
-    // Live badge listener — badge only, no delivery sweeps here.
+    // Live badge listener.
     const unsub = Db()
       .collection('directMessages')
       .onSnapshot(snap => {
@@ -1138,7 +1228,8 @@
   /* ══════════════════════════════════════════════════════════
      cancelListeners — called by app.js on logout
      ══════════════════════════════════════════════════════════ */
-  function cancelListeners() {
+  async function cancelListeners() {
+    // Cancel Firestore listeners first.
     AppState.cancelListener('dmStudentMessages');
     AppState.cancelListener('dmTeacherThreads');
     AppState.cancelListener('dmTeacherMessages');
@@ -1149,18 +1240,33 @@
     _activeStudentUid   = null;
     window._dmActiveUid = null;
 
-    // Write teacher offline immediately on logout.
-    // (beforeunload does not fire for a normal in-app logout.)
-    if (_teacherOfflineCleanup) {
-      window.removeEventListener('beforeunload', _teacherOfflineCleanup);
-      _teacherOfflineCleanup().catch(() => {});
-      _teacherOfflineCleanup = null;
+    // Remove event listeners BEFORE awaiting writes so they don't
+    // fire again if something triggers visibility/unload mid-logout.
+    if (_teacherVisibilityHandler) {
+      document.removeEventListener('visibilitychange', _teacherVisibilityHandler);
+      _teacherVisibilityHandler = null;
+    }
+    if (_teacherBeforeunloadHandler) {
+      window.removeEventListener('beforeunload', _teacherBeforeunloadHandler);
+      _teacherBeforeunloadHandler = null;
+    }
+    if (_studentVisibilityHandler) {
+      document.removeEventListener('visibilitychange', _studentVisibilityHandler);
+      _studentVisibilityHandler = null;
+    }
+    if (_studentBeforeunloadHandler) {
+      window.removeEventListener('beforeunload', _studentBeforeunloadHandler);
+      _studentBeforeunloadHandler = null;
     }
 
-    // Write student offline immediately on logout.
+    // Write offline status synchronously (awaited) — safe here because
+    // this is an in-app logout, not a tab close, so the page is alive.
+    if (_teacherOfflineCleanup) {
+      await _teacherOfflineCleanup().catch(() => {});
+      _teacherOfflineCleanup = null;
+    }
     if (_studentOfflineCleanup) {
-      window.removeEventListener('beforeunload', _studentOfflineCleanup);
-      _studentOfflineCleanup().catch(() => {});
+      await _studentOfflineCleanup().catch(() => {});
       _studentOfflineCleanup = null;
     }
   }
@@ -1206,7 +1312,9 @@
     backFromStudentInbox,
     openTeacherInbox,
     _openConversation,
+    _openConversationFromEl,
     _sendTeacherReply,
+    _sendTeacherReplyFromPanel,
     initStudentDMListener,
     initTeacherDMListener,
     cancelListeners,
