@@ -243,13 +243,13 @@
    * Sets teacherOnline: true on ALL existing student thread docs
    * (batch write) so every student's "Master Timothy is Online"
    * header updates at the same time.
-   * Also sets a flag in a central teacher-presence doc so that
-   * new thread docs created after login can read the current state.
+   * Also writes to a central sentinel doc (teacherPresence/global)
+   * so that new thread docs created after login can read the
+   * current teacher state with a single lightweight read.
    * Registers a beforeunload handler and stores the cleanup fn.
    */
   async function _setTeacherOnlineGlobal(uid) {
     try {
-      // Write teacherOnline: true to all existing thread docs in one batch.
       await _broadcastTeacherPresence(true);
 
       const goOffline = async () => {
@@ -269,21 +269,22 @@
    * Writes teacherOnline (and teacherLastSeen when going offline)
    * to every existing thread doc in batches of 400.
    * Also writes to a shared sentinel doc (teacherPresence/global)
-   * so that sendStudentMessage() can check teacher status with a
-   * single lightweight read instead of querying all thread docs.
+   * so that sendStudentMessage() and openStudentInbox() can check
+   * teacher status with a single lightweight read instead of
+   * querying all thread docs.
    */
   async function _broadcastTeacherPresence(isOnline) {
     const db = Db();
     const timestamp = firebase.firestore.FieldValue.serverTimestamp();
 
-    // Update sentinel doc — one lightweight doc the student send path reads.
+    // Update sentinel doc — one lightweight doc the student paths read.
     const sentinelRef = db.collection('teacherPresence').doc('global');
     const sentinelData = isOnline
       ? { online: true }
       : { online: false, lastSeen: timestamp };
     await sentinelRef.set(sentinelData, { merge: true });
 
-    // Update all existing thread docs in parallel batches.
+    // Update all existing thread docs in batches.
     const snap = await db.collection('directMessages').get();
     if (snap.empty) return;
 
@@ -389,8 +390,9 @@
   async function openStudentInbox() {
     _injectStyles();
 
-    const uid       = AppState.userId;
-    const threadRef = _threadRef(uid);
+    const uid         = AppState.userId;
+    const studentData = AppState.studentData || {};
+    const threadRef   = _threadRef(uid);
 
     try {
       await threadRef.set({ studentUnread: 0 }, { merge: true });
@@ -399,6 +401,44 @@
     } catch (e) {
       console.warn('[dm] Could not clear studentUnread:', e);
     }
+
+    // ── Seed thread doc for brand-new students ──────────────────────────
+    // _watchPresence() listens to this student's thread doc to show the
+    // teacher's online status in the header. If the student has never sent
+    // a message before, that doc does not exist yet, so _watchPresence()
+    // would always show "Last seen: unknown" regardless of whether the
+    // teacher is actually online.
+    //
+    // Fix: check whether the thread doc exists. If it doesn't, create it
+    // now — copying the teacher's current online state from the lightweight
+    // sentinel doc (teacherPresence/global) — so that _watchPresence() has
+    // accurate data to display from the very first time the student opens
+    // the message screen, even before they send their first message.
+    try {
+      const threadSnap = await threadRef.get();
+      if (!threadSnap.exists) {
+        const sentinelSnap = await Db()
+          .collection('teacherPresence')
+          .doc('global')
+          .get();
+        const teacherOnline   = !!(sentinelSnap.exists && sentinelSnap.data().online);
+        const teacherLastSeen = (sentinelSnap.exists && sentinelSnap.data().lastSeen) || null;
+
+        const seedData = {
+          studentName:   studentData.name  || '',
+          studentClass:  studentData.class || '',
+          studentUnread: 0,
+          teacherUnread: 0,
+          teacherOnline,
+        };
+        if (teacherLastSeen) seedData.teacherLastSeen = teacherLastSeen;
+
+        await threadRef.set(seedData, { merge: true });
+      }
+    } catch (e) {
+      console.warn('[dm] Could not seed thread doc for new student:', e);
+    }
+    // ── End seed ────────────────────────────────────────────────────────
 
     UI.mount(`
       <div class="max-w-2xl mx-auto glass animate-fadeIn"
@@ -468,6 +508,8 @@
     await _markRead(uid, 'student');
 
     // Watch teacher's online/lastSeen and update the header in real time.
+    // The thread doc is guaranteed to exist at this point (seeded above if
+    // it was missing), so this listener will always have data to display.
     _watchPresence(uid, 'teacher', 'dmTeacherPresence', 'dmTeacherPresenceWatch');
 
     _subscribeStudentMessages(uid);
@@ -580,7 +622,8 @@
         teacherUnread: firebase.firestore.FieldValue.increment(1),
         studentUnread: 0,
         // Ensure the teacher's current online state is reflected on this
-        // thread doc (in case it was just created for the first time).
+        // thread doc (covers the case where it was just created for the
+        // first time and the teacher is online but not yet reflected).
         teacherOnline: teacherIsOnline,
       }, { merge: true });
       await batch.commit();
