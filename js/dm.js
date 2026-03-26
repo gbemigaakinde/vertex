@@ -86,6 +86,17 @@
    3. beforeunload — hard tab close. Uses client Date (not
       serverTimestamp). Relies on the unauthenticated rule as a
       safety net. Fire-and-forget only.
+
+   ── Sent / Delivered / Read state flow ───────────────────
+   • On send   : status = recipientIsOnline ? 'delivered' : 'sent'
+   • On open   : _markDelivered() upgrades 'sent'→'delivered' for
+                 all messages from the other party.
+                 _markRead() upgrades 'sent'/'delivered'→'read'
+                 for all messages from the other party.
+   • Live inbox: when a new message snapshot arrives while the
+                 inbox is already open, _markDelivered() and
+                 _markRead() are called again so newly-arrived
+                 messages are immediately receipted.
    ============================================================ */
 
 (function () {
@@ -150,8 +161,64 @@
       .dm-presence__dot--offline { background: var(--text-4, #9ca3af); }
       .dm-presence__label { color: var(--text-tertiary, #6b7280); font-size: .6875rem; }
       .dm-presence__label--online { color: #22c45e !important; font-weight: 500; }
+      /* Date separator */
+      .dm-date-sep {
+        display: flex; align-items: center; gap: .625rem;
+        margin: .875rem 0 .625rem; user-select: none;
+      }
+      .dm-date-sep__line {
+        flex: 1; height: 1px; background: var(--border, #e5e7eb);
+      }
+      .dm-date-sep__label {
+        font-size: .625rem; font-weight: 600; letter-spacing: .04em;
+        color: var(--text-disabled, #9ca3af); white-space: nowrap;
+        padding: 2px 8px; border-radius: 99px;
+        background: var(--surface-subtle, #f3f4f6);
+        border: 1px solid var(--border, #e5e7eb);
+      }
+      /* New conversation modal */
+      .dm-new-conv-overlay {
+        position: fixed; inset: 0; background: rgba(0,0,0,.45);
+        display: flex; align-items: center; justify-content: center;
+        z-index: 9999; animation: dmFadeIn .15s ease;
+      }
+      @keyframes dmFadeIn { from { opacity:0 } to { opacity:1 } }
+      .dm-new-conv-modal {
+        background: var(--surface, #fff); border-radius: 14px;
+        width: min(480px, 94vw); padding: 1.25rem 1.5rem;
+        box-shadow: 0 20px 60px rgba(0,0,0,.2);
+      }
     `;
     document.head.appendChild(style);
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     Date separator helpers
+     ══════════════════════════════════════════════════════════ */
+
+  /**
+   * Returns a display label for a given date relative to today.
+   * e.g. "Today", "Yesterday", "Mon, 14 Apr", "14 Apr 2024"
+   */
+  function _dateLabelFor(date) {
+    const now       = new Date();
+    const today     = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+    const msgDay    = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+    if (msgDay.getTime() === today.getTime())     return 'Today';
+    if (msgDay.getTime() === yesterday.getTime()) return 'Yesterday';
+
+    const sameYear = date.getFullYear() === now.getFullYear();
+    return date.toLocaleDateString('en-GB', {
+      weekday: 'short', day: 'numeric', month: 'short',
+      ...(sameYear ? {} : { year: 'numeric' }),
+    });
+  }
+
+  /** Returns a "YYYY-MM-DD" key for grouping messages by calendar day. */
+  function _dayKey(date) {
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -228,10 +295,6 @@
       if (_studentOfflineDone) return;
       _studentOfflineDone = true;
       try {
-        // Use serverTimestamp when auth is valid (normal logout and
-        // visibilitychange paths). Falls back to client Date if auth
-        // is somehow already gone — the unauthenticated rule allows
-        // it and the timestamp is still accurate enough for display.
         const ts = firebase.auth().currentUser
           ? firebase.firestore.FieldValue.serverTimestamp()
           : new Date();
@@ -246,12 +309,10 @@
 
     _studentOfflineCleanup = goOffline;
 
-    // Layer 2 — visibilitychange.
     _studentVisibilityHandler = () => {
       if (document.visibilityState === 'hidden') {
         goOffline().catch(() => {});
       } else {
-        // Tab visible again — restore online if still logged in.
         if (firebase.auth().currentUser) {
           _studentOfflineDone = false;
           _threadRef(uid).set({ studentOnline: true }, { merge: true }).catch(() => {});
@@ -260,9 +321,6 @@
     };
     document.addEventListener('visibilitychange', _studentVisibilityHandler);
 
-    // Layer 3 — beforeunload. Must be synchronous. Uses client Date
-    // because serverTimestamp() requires a round-trip that won't
-    // complete during unload.
     _studentBeforeunloadHandler = () => {
       if (_studentOfflineDone) return;
       _studentOfflineDone = true;
@@ -313,7 +371,6 @@
     };
     document.addEventListener('visibilitychange', _teacherVisibilityHandler);
 
-    // beforeunload — synchronous fire-and-forget.
     _teacherBeforeunloadHandler = () => {
       if (_teacherOfflineDone) return;
       _teacherOfflineDone = true;
@@ -324,7 +381,6 @@
           { online: false, lastSeen: now }, { merge: true }
         );
       } catch (_) {}
-      // Best-effort update thread docs from SDK cache.
       try {
         db.collection('directMessages').get().then(snap => {
           if (snap.empty) return;
@@ -484,7 +540,7 @@
     UI.mount(`
       <div class="max-w-2xl mx-auto glass animate-fadeIn"
            style="padding:1.25rem 1.5rem;margin-top:1.25rem;margin-bottom:1.25rem;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;">
           <div>
             <h2 class="font-bold" style="font-size:1.125rem;line-height:1.3;">Message Master Timothy</h2>
             <div id="dmTeacherPresence" style="margin-top:2px;">
@@ -493,6 +549,16 @@
           </div>
           <button onclick="DM.backFromStudentInbox()" class="btn bg-gray-500 hover:bg-gray-600"
                   style="font-size:.8125rem;">← Back</button>
+        </div>
+
+        <div style="margin-bottom:.75rem;padding:.5rem .875rem;
+                    background:var(--surface-subtle,#f3f4f6);
+                    border:1px solid var(--border,#e5e7eb);
+                    border-radius:8px;font-size:.75rem;
+                    color:var(--text-tertiary,#6b7280);
+                    display:flex;align-items:center;gap:.4rem;line-height:1.5;">
+          🔒 <span><strong style="color:var(--text-secondary,#374151);font-weight:600;">Private</strong>
+          — these messages can only be seen by you and Master Timothy.</span>
         </div>
 
         <div style="margin-bottom:1rem;padding:.625rem .875rem;
@@ -559,10 +625,52 @@
         }
         const msgs = [];
         snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
-        container.innerHTML = msgs.map(m => _buildStudentBubble(m, uid)).join('');
+
+        // Mark incoming teacher messages as read now that the inbox is open/updated.
+        _markDelivered(uid, 'student').catch(() => {});
+        _markRead(uid, 'student').catch(() => {});
+
+        container.innerHTML = _renderMessagesWithDateSeps(msgs, uid, 'student');
         container.scrollTop = container.scrollHeight;
       }, err => console.error('[dm] Student messages error:', err));
     AppState.registerListener('dmStudentMessages', unsub);
+  }
+
+  /**
+   * Renders an array of message objects into HTML, inserting date separator
+   * dividers whenever the calendar day changes between consecutive messages.
+   *
+   * @param {Object[]} msgs      - Ordered array of message docs.
+   * @param {string}   myUid     - The current viewer's uid.
+   * @param {string}   viewerRole - 'student' | 'teacher'  (controls bubble builder)
+   */
+  function _renderMessagesWithDateSeps(msgs, myUid, viewerRole) {
+    let lastDayKey = null;
+    const parts    = [];
+
+    for (const msg of msgs) {
+      const ts   = msg.timestamp;
+      const date = ts ? (ts.toDate ? ts.toDate() : new Date(ts)) : null;
+      const dk   = date ? _dayKey(date) : null;
+
+      if (dk && dk !== lastDayKey) {
+        parts.push(`
+          <div class="dm-date-sep">
+            <div class="dm-date-sep__line"></div>
+            <span class="dm-date-sep__label">${_esc(_dateLabelFor(date))}</span>
+            <div class="dm-date-sep__line"></div>
+          </div>`);
+        lastDayKey = dk;
+      }
+
+      if (viewerRole === 'student') {
+        parts.push(_buildStudentBubble(msg, myUid));
+      } else {
+        parts.push(_buildTeacherBubble(msg));
+      }
+    }
+
+    return parts.join('');
   }
 
   function _buildStudentBubble(msg, myUid) {
@@ -671,10 +779,21 @@
         <div style="border:1px solid var(--border,#e5e7eb);border-radius:10px;overflow:hidden;
                     display:flex;flex-direction:column;background:var(--surface,#fff);">
           <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border,#e5e7eb);
-                      background:var(--surface-subtle,#f9fafb);">
+                      background:var(--surface-subtle,#f9fafb);
+                      display:flex;align-items:center;justify-content:space-between;gap:.5rem;">
             <h3 style="font-size:.875rem;font-weight:700;color:var(--text-primary,#111827);">
-              Student Conversations
+              Conversations
             </h3>
+            <button onclick="DM._openNewConversationModal()"
+                    title="Message a student"
+                    style="flex-shrink:0;width:28px;height:28px;border-radius:50%;
+                           border:1px solid var(--brand-border,#bac8ff);
+                           background:var(--brand-bg,#edf2ff);cursor:pointer;
+                           display:flex;align-items:center;justify-content:center;
+                           color:var(--brand-text,#3730a3);font-size:1rem;line-height:1;
+                           transition:background .15s;" title="New conversation">
+              ✏️
+            </button>
           </div>
           <div id="dmThreadList" style="flex:1;overflow-y:auto;padding:.375rem 0;">
             <p style="font-size:.8125rem;color:var(--text-disabled,#9ca3af);
@@ -832,8 +951,9 @@
     const panel = document.getElementById('dmConversationPanel');
     if (!panel) return;
 
-    panel.dataset.studentUid  = studentUid;
-    panel.dataset.studentName = studentName;
+    panel.dataset.studentUid   = studentUid;
+    panel.dataset.studentName  = studentName;
+    panel.dataset.studentClass = studentClass || '';
 
     panel.innerHTML = `
       <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border,#e5e7eb);
@@ -873,7 +993,7 @@
                          border-radius:var(--r-md);font-family:var(--font);font-size:var(--text-base);"></textarea>
         <button id="dmTeacherSendBtn" onclick="DM._sendTeacherReplyFromPanel()"
                 class="btn bg-green-600 hover:bg-green-700"
-                style="flex-shrink:0;align-self:flex-end;">Reply</button>
+                style="flex-shrink:0;align-self:flex-end;">Send</button>
       </div>`;
 
     const input = document.getElementById('dmTeacherInput');
@@ -920,7 +1040,12 @@
         }
         const msgs = [];
         snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
-        container.innerHTML = msgs.map(m => _buildTeacherBubble(m)).join('');
+
+        // Mark incoming student messages as read while the conversation is open.
+        _markDelivered(studentUid, 'teacher').catch(() => {});
+        _markRead(studentUid, 'teacher').catch(() => {});
+
+        container.innerHTML = _renderMessagesWithDateSeps(msgs, AppConfig.TEACHER_UID, 'teacher');
         container.scrollTop = container.scrollHeight;
       }, err => console.error('[dm] Teacher messages error:', err));
     AppState.registerListener('dmTeacherMessages', unsub);
@@ -975,6 +1100,15 @@
       studentIsOnline = !!(threadSnap.exists && threadSnap.data().studentOnline);
     } catch (_) {}
 
+    // Fetch the student's name and class in case this is a teacher-initiated
+    // thread where the thread doc may not yet have studentName populated.
+    let resolvedName  = studentName;
+    let resolvedClass = '';
+    try {
+      const panel = document.getElementById('dmConversationPanel');
+      if (panel) resolvedClass = panel.dataset.studentClass || '';
+    } catch (_) {}
+
     try {
       const batch  = Db().batch();
       const msgRef = _threadRef(studentUid).collection('messages').doc();
@@ -987,6 +1121,8 @@
         timestamp:  firebase.firestore.FieldValue.serverTimestamp(),
       });
       batch.set(_threadRef(studentUid), {
+        studentName:   resolvedName,
+        studentClass:  resolvedClass,
         lastMessage:   text.length > 80 ? text.substring(0, 80) + '…' : text,
         lastAt:        firebase.firestore.FieldValue.serverTimestamp(),
         studentUnread: firebase.firestore.FieldValue.increment(1),
@@ -1001,6 +1137,153 @@
       UI.setLoading(btn, false);
       if (input) { input.style.height = 'auto'; input.focus(); }
     }
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     Teacher — New Conversation (message any student first)
+     ══════════════════════════════════════════════════════════ */
+
+  /**
+   * Opens a modal that lets the teacher pick any registered student
+   * from the /students collection and open a conversation with them,
+   * even before the student has sent any message.
+   *
+   * The modal renders a searchable list of students. Selecting one
+   * calls _openConversation() which creates/merges the thread doc on
+   * the first message send.
+   */
+  async function _openNewConversationModal() {
+    _injectStyles();
+
+    // Render the modal shell immediately with a loading state.
+    const overlay = document.createElement('div');
+    overlay.className = 'dm-new-conv-overlay';
+    overlay.id        = 'dmNewConvOverlay';
+    overlay.innerHTML = `
+      <div class="dm-new-conv-modal">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+          <h3 style="font-size:.9375rem;font-weight:700;color:var(--text-primary,#111827);">
+            Message a Student
+          </h3>
+          <button onclick="DM._closeNewConversationModal()"
+                  style="background:none;border:none;cursor:pointer;font-size:1.25rem;
+                         color:var(--text-tertiary,#6b7280);line-height:1;padding:2px 6px;">×</button>
+        </div>
+        <input id="dmStudentSearch" type="text" placeholder="Search by name or class…"
+               style="width:100%;box-sizing:border-box;padding:.5rem .75rem;margin-bottom:.75rem;
+                      border:1px solid var(--border,#e5e7eb);border-radius:8px;
+                      font-family:var(--font);font-size:var(--text-base);outline:none;" />
+        <div id="dmStudentPickerList"
+             style="max-height:320px;overflow-y:auto;border:1px solid var(--border,#e5e7eb);
+                    border-radius:8px;">
+          <p style="font-size:.8125rem;color:var(--text-disabled,#9ca3af);
+                    text-align:center;padding:2rem 1rem;">Loading students…</p>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+
+    // Close on backdrop click.
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) _closeNewConversationModal();
+    });
+
+    // Focus the search box.
+    const searchInput = document.getElementById('dmStudentSearch');
+    if (searchInput) searchInput.focus();
+
+    // Fetch all students.
+    let allStudents = [];
+    try {
+      const snap = await Db().collection('students').get();
+      snap.forEach(doc => allStudents.push({ uid: doc.id, ...doc.data() }));
+      allStudents.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+    } catch (e) {
+      console.error('[dm] _openNewConversationModal fetch error:', e);
+      const list = document.getElementById('dmStudentPickerList');
+      if (list) list.innerHTML = `<p style="font-size:.8125rem;color:var(--danger,#e03131);
+                                     text-align:center;padding:2rem 1rem;">
+                                     Failed to load students.</p>`;
+      return;
+    }
+
+    _renderStudentPickerList(allStudents, '');
+
+    if (searchInput) {
+      searchInput.addEventListener('input', () => {
+        _renderStudentPickerList(allStudents, searchInput.value);
+      });
+    }
+  }
+
+  function _renderStudentPickerList(students, query) {
+    const list = document.getElementById('dmStudentPickerList');
+    if (!list) return;
+
+    const q = query.toLowerCase().trim();
+    const filtered = q
+      ? students.filter(s =>
+          (s.name  || '').toLowerCase().includes(q) ||
+          (s.class || '').toLowerCase().includes(q))
+      : students;
+
+    if (!filtered.length) {
+      list.innerHTML = `<p style="font-size:.8125rem;color:var(--text-disabled,#9ca3af);
+                          text-align:center;padding:2rem 1rem;">No students found.</p>`;
+      return;
+    }
+
+    list.innerHTML = filtered.map((s, idx) => `
+      <div style="display:flex;align-items:center;gap:.625rem;padding:.625rem .875rem;
+                  cursor:pointer;transition:background .1s;
+                  ${idx < filtered.length - 1 ? 'border-bottom:1px solid var(--border,#e5e7eb);' : ''}"
+           onmouseenter="this.style.background='var(--surface-subtle,#f9fafb)'"
+           onmouseleave="this.style.background='transparent'"
+           onclick="DM._pickStudentForConversation('${_esc(s.uid)}','${_esc(s.name || '')}','${_esc(s.class || '')}')">
+        <div style="width:34px;height:34px;border-radius:50%;flex-shrink:0;
+                    background:var(--brand-bg,#edf2ff);border:1.5px solid var(--brand-border,#bac8ff);
+                    display:flex;align-items:center;justify-content:center;
+                    font-size:.75rem;font-weight:700;color:var(--brand-text,#3730a3);">
+          ${_esc((s.name || '?').charAt(0).toUpperCase())}
+        </div>
+        <div>
+          <p style="font-size:.8125rem;font-weight:600;color:var(--text-primary,#111827);margin:0;">
+            ${_esc(s.name || 'Unknown')}
+          </p>
+          <p style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin:0;">
+            ${_esc(s.class || '—')}
+          </p>
+        </div>
+      </div>`).join('');
+  }
+
+  function _closeNewConversationModal() {
+    const overlay = document.getElementById('dmNewConvOverlay');
+    if (overlay) overlay.remove();
+  }
+
+  /**
+   * Called when the teacher selects a student from the picker.
+   * Seeds a minimal thread doc (if it doesn't exist) so the
+   * conversation panel can open, then opens the conversation.
+   */
+  async function _pickStudentForConversation(uid, name, cls) {
+    _closeNewConversationModal();
+
+    // Seed a minimal thread doc so the conversation can open cleanly.
+    // merge:true means we won't overwrite an existing thread.
+    try {
+      await _threadRef(uid).set({
+        studentName:   name,
+        studentClass:  cls,
+        studentUnread: 0,
+        teacherUnread: 0,
+        lastMessage:   '',
+      }, { merge: true });
+    } catch (e) {
+      console.warn('[dm] Could not seed thread doc for new conv:', e);
+    }
+
+    await _openConversation(uid, name, cls);
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -1111,8 +1394,7 @@
     _activeStudentUid   = null;
     window._dmActiveUid = null;
 
-    // Step 2 — remove DOM event listeners so they don't re-fire
-    // during the logout transition.
+    // Step 2 — remove DOM event listeners.
     if (_studentVisibilityHandler) {
       document.removeEventListener('visibilitychange', _studentVisibilityHandler);
       _studentVisibilityHandler = null;
@@ -1131,8 +1413,6 @@
     }
 
     // Step 3 — write offline while auth is STILL VALID.
-    // app.js awaits this function before calling fbAuth.signOut(),
-    // so the auth token is guaranteed to be alive here.
     if (_teacherOfflineCleanup) {
       await _teacherOfflineCleanup().catch(() => {});
       _teacherOfflineCleanup = null;
@@ -1180,6 +1460,9 @@
     _openConversationFromEl,
     _sendTeacherReply,
     _sendTeacherReplyFromPanel,
+    _openNewConversationModal,
+    _closeNewConversationModal,
+    _pickStudentForConversation,
     initStudentDMListener,
     initTeacherDMListener,
     cancelListeners,
