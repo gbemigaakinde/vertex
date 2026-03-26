@@ -18,10 +18,14 @@
       the login screen. The login is reachable via the Sign In
       button on that page.
 
-   3. DM.cancelListeners() is called in _onLogout() so the
-      student/teacher online status is correctly written to
-      Firestore on a normal logout (beforeunload does not fire
-      for an in-app logout triggered by fbAuth.signOut()).
+   3. DM.cancelListeners() is called at the top of _onLogout()
+      so both student and teacher online status are correctly
+      written to Firestore on a normal logout. This must run
+      BEFORE AppState.reset() because DM.cancelListeners() relies
+      on cleanup functions stored inside dm.js's closure.
+      (beforeunload does not fire for an in-app JS logout, so
+      the explicit call here is the only way to write offline
+      reliably on logout.)
 
    All other logic (teacher path, student path, error handling,
    registration guard) is unchanged from the previous version.
@@ -88,7 +92,8 @@
         });
       AppState.registerListener('chatNotifications', teacherNotifUnsub);
 
-      // Start DM unread listener for teacher badge
+      // Start DM listener for teacher — sets teacher online globally
+      // and starts the unread badge listener.
       if (window.DM && typeof DM.initTeacherDMListener === 'function') {
         DM.initTeacherDMListener();
       }
@@ -138,7 +143,8 @@
 
       await Tasks.listenForStudentUpdates();
 
-      // Start DM unread listener for student badge
+      // Start DM listener for student — sets student online globally
+      // and starts the unread badge listener.
       if (window.DM && typeof DM.initStudentDMListener === 'function') {
         DM.initStudentDMListener(uid);
       }
@@ -162,8 +168,10 @@
     window._registrationInProgress = false;
 
     // Write offline status to Firestore immediately on logout.
-    // This must happen BEFORE AppState.reset() cancels listeners,
-    // because DM.cancelListeners() needs the stored cleanup functions.
+    // MUST run before AppState.reset() — DM.cancelListeners() needs
+    // the cleanup functions stored in dm.js's closure. AppState.reset()
+    // cancels Firestore listeners but does NOT clear those closures,
+    // so ordering here is safe and intentional.
     if (window.DM && typeof DM.cancelListeners === 'function') {
       DM.cancelListeners();
     }
