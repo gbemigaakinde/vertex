@@ -1,59 +1,46 @@
 /* ============================================================
    js/app.js — Application entry point
    ============================================================
-   CHANGES FROM PREVIOUS VERSION:
+   Key rule: DM.cancelListeners() MUST be awaited before EVERY
+   call to fbAuth.signOut(). This is because:
 
-   1. VtxLoader integration — reports loading progress to the
-      splash screen defined in index.html so the user sees a
-      meaningful loading indicator instead of a blank page.
-      Steps reported:
-        10% — Firebase initialised
-        30% — Auth listener ready
-        60% — Student profile loaded
-        80% — Tasks and messages loaded
-       100% — App ready (loader dismissed)
+   - cancelListeners() writes online:false to Firestore while
+     the auth token is still valid.
+   - signOut() clears the auth token synchronously.
+   - Any Firestore write after signOut() is rejected by the
+     security rules (which require isSignedIn()), leaving the
+     user stuck as "Online" indefinitely.
 
-   2. Landing page — unauthenticated users now see the public
-      homepage (Landing.render()) instead of going directly to
-      the login screen. The login is reachable via the Sign In
-      button on that page.
+   There are two signOut() call sites in this file:
+     1. _onLogin() — profile not found, signs out with error.
+     2. _onLogin() — access error, signs out with error.
+   Both now await DM.cancelListeners() first.
 
-   3. DM.cancelListeners() is called (and awaited) at the top of
-      _onLogout() so both student and teacher online status are
-      correctly written to Firestore on a normal logout. It is
-      now async so it must be awaited. This must still run BEFORE
-      AppState.reset() because DM.cancelListeners() relies on
-      cleanup functions stored inside dm.js's closure.
-
-   All other logic (teacher path, student path, error handling,
-   registration guard) is unchanged from the previous version.
+   _onLogout() fires from onAuthStateChanged AFTER signOut()
+   has already happened, so it must NOT attempt any Firestore
+   writes itself. DM.cancelListeners() is safe to call there
+   too (it's idempotent — the cleanup functions will already
+   be null if cancelListeners was properly called pre-signOut).
    ============================================================ */
 (function () {
   'use strict';
 
   document.addEventListener('DOMContentLoaded', function () {
     _registerGlobalErrorHandlers();
-
-    /* Step 1 — Firebase is already initialised by config.js which
-       loads before this file. Mark first milestone. */
     if (window.VtxLoader) window.VtxLoader.progress(10, 'Connecting…');
-
     _startAuthListener();
     window._appReady = true;
   });
 
   function _startAuthListener() {
-    /* Step 2 — Auth listener is being established */
     if (window.VtxLoader) window.VtxLoader.progress(30, 'Checking session…');
 
     window.fbAuth.onAuthStateChanged(async function (firebaseUser) {
       if (firebaseUser) {
-        if (window._registrationInProgress) {
-          return;
-        }
+        if (window._registrationInProgress) return;
         await _onLogin(firebaseUser);
       } else {
-        await _onLogout();
+        _onLogout();
       }
     });
   }
@@ -63,18 +50,15 @@
     AppState.cancelAllListeners();
     AppState.userId = uid;
 
-    /* Step 3 — We have a user, loading their profile */
     if (window.VtxLoader) window.VtxLoader.progress(50, 'Loading your profile…');
 
     // ── Teacher path ──
     if (uid === AppConfig.TEACHER_UID) {
       AppState.isTeacher = true;
-
       if (window.VtxLoader) window.VtxLoader.progress(90, 'Opening dashboard…');
 
       Teacher.renderTeacherDashboard();
 
-      // Start notification listener for the teacher
       AppState.chatUnread = 0;
       var teacherNotifUnsub = window.fbDb
         .collection('chatNotifications')
@@ -82,16 +66,12 @@
         .onSnapshot(function (notifSnap) {
           var count = (notifSnap.exists && notifSnap.data().unread) || 0;
           AppState.chatUnread = count;
-          if (window.Chat && Chat._updateChatBadge) {
-            Chat._updateChatBadge(count);
-          }
+          if (window.Chat && Chat._updateChatBadge) Chat._updateChatBadge(count);
         }, function (err) {
           console.warn('[app] teacher chatNotifications listener error:', err);
         });
       AppState.registerListener('chatNotifications', teacherNotifUnsub);
 
-      // Start DM listener for teacher — sets teacher online globally
-      // and starts the unread badge listener.
       if (window.DM && typeof DM.initTeacherDMListener === 'function') {
         DM.initTeacherDMListener();
       }
@@ -107,32 +87,32 @@
       if (!snap.exists) {
         if (window.VtxLoader) window.VtxLoader.done();
         UI.toast('Profile not found. Please register again.', 'error', 0);
+        // Cancel DM BEFORE signOut so the offline write goes out
+        // while auth is still valid.
+        if (window.DM && typeof DM.cancelListeners === 'function') {
+          await DM.cancelListeners();
+        }
         await window.fbAuth.signOut();
         return;
       }
 
       AppState.studentData = snap.data();
-      AppState.chatUnread = 0;
+      AppState.chatUnread  = 0;
 
-      /* Step 4 — Profile loaded, now loading tasks and messages */
       if (window.VtxLoader) window.VtxLoader.progress(70, 'Loading your tasks…');
 
-      // ── Chat notification listener ──
       var notifUnsub = window.fbDb
         .collection('chatNotifications')
         .doc(uid)
         .onSnapshot(function (notifSnap) {
           var count = (notifSnap.exists && notifSnap.data().unread) || 0;
           AppState.chatUnread = count;
-          if (window.Chat && Chat._updateChatBadge) {
-            Chat._updateChatBadge(count);
-          }
+          if (window.Chat && Chat._updateChatBadge) Chat._updateChatBadge(count);
         }, function (err) {
           console.warn('[app] chatNotifications listener error:', err);
         });
       AppState.registerListener('chatNotifications', notifUnsub);
 
-      // ── Push notifications ──
       if (window.Notifications && typeof window.Notifications.init === 'function') {
         Notifications.init(uid).catch(function (e) {
           console.warn('[app] Notifications.init error (non-fatal):', e);
@@ -141,49 +121,48 @@
 
       await Tasks.listenForStudentUpdates();
 
-      // Start DM listener for student — sets student online globally
-      // and starts the unread badge listener.
       if (window.DM && typeof DM.initStudentDMListener === 'function') {
         DM.initStudentDMListener(uid);
       }
 
-      /* Step 5 — Everything loaded, dismiss loader then render */
       if (window.VtxLoader) window.VtxLoader.progress(90, 'Almost ready…');
-
       await Exam.loadOrStart();
-
       if (window.VtxLoader) window.VtxLoader.done();
 
     } catch (err) {
       console.error('[app] Profile load error:', err);
       if (window.VtxLoader) window.VtxLoader.done();
       UI.toast('Access error. Please try again.', 'error', 0);
+      // Cancel DM BEFORE signOut.
+      if (window.DM && typeof DM.cancelListeners === 'function') {
+        await DM.cancelListeners();
+      }
       await window.fbAuth.signOut();
     }
   }
 
-  async function _onLogout() {
+  // _onLogout fires from onAuthStateChanged, which means signOut()
+  // has ALREADY been called by the time we get here. Auth is gone.
+  // Do NOT attempt any Firestore writes here. DM.cancelListeners()
+  // is called only to clean up any remaining listeners and event
+  // handlers — the offline writes inside it are guarded by the
+  // _studentOfflineDone / _teacherOfflineDone flags and will be
+  // no-ops if cancelListeners() was properly called pre-signOut.
+  function _onLogout() {
     window._registrationInProgress = false;
 
-    // Write offline status to Firestore and remove event listeners.
-    // MUST run (and be awaited) before AppState.reset() — the cleanup
-    // functions live inside dm.js's closure and AppState.reset() does
-    // not clear them, but cancelListeners() is now async so we await it
-    // to ensure the Firestore writes complete before the page continues
-    // tearing down.
     if (window.DM && typeof DM.cancelListeners === 'function') {
-      await DM.cancelListeners();
+      // Not awaited — we're in a synchronous logout context and auth
+      // is already gone. The cleanup functions will be null (already
+      // ran pre-signOut) so this is purely listener teardown.
+      DM.cancelListeners();
     }
 
     Tasks.cancelListeners();
     AppState.reset();
 
-    /* Show the public homepage instead of going directly to login.
-       VtxLoader.done() is called here because _onLogout() is also
-       triggered on the very first load when no user is signed in. */
     if (window.VtxLoader) window.VtxLoader.done();
 
-    // Use Landing page if available, otherwise fall back to login
     if (window.Landing && typeof Landing.render === 'function') {
       Landing.render();
     } else {
