@@ -33,10 +33,11 @@
      ✓✓ (two blue ticks) = 'read'     — recipient opened the conversation
 
    Online/Last seen:
-     - Student sees "Online" or "Last seen …" for Master Timothy in their header
-     - Teacher sees "Online" or "Last seen …" for each student in conversation header
-     - Thread list also shows a green dot + status for each student
-     - Status updates in real time via Firestore listener (no page refresh needed)
+     - Student is online from the moment they log in to the app
+       (not just when the DM screen is open).
+     - Teacher sees "Online" or "Last seen …" for each student.
+     - Student sees "Online" or "Last seen …" for Master Timothy.
+     - Status updates in real time via Firestore listener.
 
    Student badge lives on #dmOpenBtn (subject selection screen).
    Teacher badge lives on #tab-dm   (teacher dashboard tab).
@@ -132,15 +133,10 @@
      Presence formatting helpers
      ══════════════════════════════════════════════════════════ */
 
-  /**
-   * Converts a Firestore Timestamp / JS Date into a WhatsApp-style
-   * "last seen …" string.
-   */
   function _formatLastSeen(ts) {
     if (!ts) return 'Last seen: unknown';
     const date = ts.toDate ? ts.toDate() : new Date(ts);
     const now  = new Date();
-
     const diffMins = Math.floor((now - date) / 60000);
 
     if (diffMins < 1)  return 'Last seen: just now';
@@ -165,10 +161,6 @@
       date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   }
 
-  /**
-   * Returns the HTML for an online / last-seen presence line
-   * shown under a name in the chat header.
-   */
   function _presenceHTML(isOnline, lastSeen) {
     if (isOnline) {
       return `<span class="dm-presence">
@@ -184,47 +176,65 @@
 
   /* ══════════════════════════════════════════════════════════
      Presence management
+     ══════════════════════════════════════════════════════════
+
+     DESIGN:
+     - Student: online from the moment they log in (via
+       _setStudentOnlineGlobal). The DM screen opening does NOT
+       create a second, conflicting presence write — it simply
+       watches presence. The single beforeunload cleanup set at
+       login handles going offline.
+
+     - Teacher: online only while they have the DM conversation
+       panel open (per-conversation, via _setPresence). The
+       teacher's "online" field tells the student their teacher
+       is actively reading the conversation.
+
      ══════════════════════════════════════════════════════════ */
 
-  let _presenceCleanup = null;
+  // Tracks the teacher-side presence cleanup only.
+  let _teacherPresenceCleanup = null;
 
   /**
-   * Sets the online flag for a given role on the thread doc and
-   * registers a cleanup that writes lastSeen + clears the flag on
-   * page unload or navigation away.
+   * Sets the teacher's online flag for a given student's thread
+   * and registers cleanup for when they navigate away.
+   * Only used for the teacher role.
    */
-  async function _setPresence(studentUid, role) {
-    if (_presenceCleanup) { _presenceCleanup(); _presenceCleanup = null; }
+  async function _setTeacherPresence(studentUid) {
+    // Clear any previous teacher presence for a different thread
+    if (_teacherPresenceCleanup) {
+      _teacherPresenceCleanup();
+      _teacherPresenceCleanup = null;
+    }
 
-    const onlineField   = role === 'teacher' ? 'teacherOnline'   : 'studentOnline';
-    const lastSeenField = role === 'teacher' ? 'teacherLastSeen' : 'studentLastSeen';
-    const ref           = _threadRef(studentUid);
+    const ref = _threadRef(studentUid);
 
     try {
-      await ref.set({ [onlineField]: true }, { merge: true });
+      await ref.set({ teacherOnline: true }, { merge: true });
     } catch (e) {
-      console.warn('[dm] Could not set presence:', e);
+      console.warn('[dm] Could not set teacher presence:', e);
     }
 
     const goOffline = async () => {
       try {
         await ref.set({
-          [onlineField]:   false,
-          [lastSeenField]: firebase.firestore.FieldValue.serverTimestamp(),
+          teacherOnline:   false,
+          teacherLastSeen: firebase.firestore.FieldValue.serverTimestamp(),
         }, { merge: true });
       } catch (_) {}
     };
 
     window.addEventListener('beforeunload', goOffline);
-    _presenceCleanup = () => {
+    _teacherPresenceCleanup = () => {
       window.removeEventListener('beforeunload', goOffline);
       goOffline();
     };
   }
 
   /**
-   * Called at student login (not just when DM is opened) so the teacher
-   * sees the student as online from the moment they log in to the app.
+   * Called once at student login. Marks the student as online for
+   * the entire session — not just when the DM screen is open.
+   * Registers a single beforeunload to go offline on tab close.
    */
   async function _setStudentOnlineGlobal(uid) {
     try {
@@ -239,16 +249,19 @@
         } catch (_) {}
       };
 
+      // Store cleanup so cancelListeners() can call it on logout
+      _studentOfflineCleanup = goOffline;
       window.addEventListener('beforeunload', goOffline);
     } catch (e) {
       console.warn('[dm] Could not set studentOnline globally:', e);
     }
   }
 
+  // Holds the student's global offline handler so logout can call it
+  let _studentOfflineCleanup = null;
+
   /* ══════════════════════════════════════════════════════════
      Live presence watcher
-     Subscribes to the thread doc and keeps a DOM element updated
-     with the other party's online/last-seen status in real time.
      ══════════════════════════════════════════════════════════ */
 
   function _watchPresence(studentUid, watchRole, elementId, listenerKey) {
@@ -270,10 +283,22 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     Delivery helpers
+     Delivery helpers (WhatsApp tick logic)
+
+     sent      → message written to Firestore
+     delivered → recipient has come online (their app is open)
+     read      → recipient has opened this specific conversation
+
+     _markDelivered: upgrades 'sent' messages from the OTHER party
+                     to 'delivered'. Called when a user comes online.
+     _markRead:      upgrades 'sent' and 'delivered' messages from
+                     the OTHER party to 'read'. Called when a user
+                     opens the conversation.
      ══════════════════════════════════════════════════════════ */
 
   async function _markDelivered(studentUid, recipientRole) {
+    // recipientRole is the role of the person NOW ONLINE —
+    // we upgrade messages sent BY THE OTHER ROLE.
     try {
       const snap = await _threadRef(studentUid)
         .collection('messages')
@@ -290,6 +315,8 @@
   }
 
   async function _markRead(studentUid, recipientRole) {
+    // recipientRole is the role of the person NOW READING —
+    // we upgrade messages sent BY THE OTHER ROLE.
     try {
       const snap = await _threadRef(studentUid)
         .collection('messages')
@@ -392,9 +419,9 @@
       });
     }
 
-    // Student is now actively in the DM screen
-    await _setPresence(uid, 'student');
-    await _markDelivered(uid, 'student');
+    // Student opens DM — mark teacher's messages as read (sent → delivered → read)
+    // Note: student is already marked online globally from login, no presence write needed here.
+    await _markDelivered(uid, 'student'); // ensure delivered before marking read
     await _markRead(uid, 'student');
 
     // Watch teacher's online/lastSeen and update the header in real time
@@ -480,6 +507,15 @@
     UI.setLoading(btn, true);
     if (input) input.value = '';
 
+    // If teacher is currently online (has DM panel open), skip to 'delivered'
+    let teacherIsOnline = false;
+    try {
+      const threadSnap = await _threadRef(uid).get();
+      teacherIsOnline = !!(threadSnap.exists && threadSnap.data().teacherOnline);
+    } catch (_) {}
+
+    const initialStatus = teacherIsOnline ? 'delivered' : 'sent';
+
     try {
       const batch = Db().batch();
       const msgRef = _threadRef(uid).collection('messages').doc();
@@ -488,7 +524,7 @@
         senderId:   uid,
         senderName: name,
         role:       'student',
-        status:     'sent',
+        status:     initialStatus,
         timestamp:  firebase.firestore.FieldValue.serverTimestamp(),
       });
       batch.set(_threadRef(uid), {
@@ -513,7 +549,8 @@
   function backFromStudentInbox() {
     AppState.cancelListener('dmStudentMessages');
     AppState.cancelListener('dmTeacherPresenceWatch');
-    if (_presenceCleanup) { _presenceCleanup(); _presenceCleanup = null; }
+    // Student remains online — do NOT go offline here.
+    // Offline only happens on tab close (beforeunload).
     Exam.renderSubjectSelection();
   }
 
@@ -598,7 +635,6 @@
 
           const isOnline = !!item.studentOnline;
 
-          // Short presence text for the thread list
           const presenceTxt = isOnline
             ? `<span style="color:#22c45e;font-size:.6rem;font-weight:600;line-height:1;">● Online</span>`
             : (item.studentLastSeen
@@ -695,9 +731,11 @@
       console.warn('[dm] Could not clear teacherUnread:', e);
     }
 
-    // Teacher has opened this conversation — mark as online + messages as read
-    await _setPresence(studentUid, 'teacher');
-    await _markRead(studentUid, 'teacher');
+    // Teacher opens conversation — set teacher online for this thread,
+    // then mark student's messages delivered then read (WhatsApp order)
+    await _setTeacherPresence(studentUid);
+    await _markDelivered(studentUid, 'teacher'); // sent → delivered (shows grey double tick to student)
+    await _markRead(studentUid, 'teacher');       // delivered → read  (shows blue double tick to student)
 
     const panel = document.getElementById('dmConversationPanel');
     if (!panel) return;
@@ -952,7 +990,8 @@
 
     AppState.registerListener('dmStudentUnread', unsub);
 
-    // Student just logged in — mark them online so teacher sees the green dot
+    // Student logged in — mark them online globally so teacher sees the green dot
+    // from anywhere in the app, not just when the DM screen is open.
     await _setStudentOnlineGlobal(uid);
 
     // Upgrade any 'sent' teacher messages to 'delivered' now they're online
@@ -971,13 +1010,20 @@
         let total = 0;
         snap.forEach(doc => { total += (doc.data().teacherUnread || 0); });
         _updateTeacherBadge(total);
+
+        // When teacher comes online, upgrade all 'sent' student messages to
+        // 'delivered' across every thread — this is what shows the grey
+        // double tick to students before the teacher opens any conversation.
+        snap.forEach(doc => {
+          _markDelivered(doc.id, 'teacher').catch(() => {});
+        });
       }, err => console.warn('[dm] Teacher unread listener error:', err));
 
     AppState.registerListener('dmTeacherUnread', unsub);
   }
 
   /* ══════════════════════════════════════════════════════════
-     cancelListeners
+     cancelListeners — called on logout
      ══════════════════════════════════════════════════════════ */
   function cancelListeners() {
     AppState.cancelListener('dmStudentMessages');
@@ -989,7 +1035,19 @@
     AppState.cancelListener('dmStudentPresenceWatch');
     _activeStudentUid   = null;
     window._dmActiveUid = null;
-    if (_presenceCleanup) { _presenceCleanup(); _presenceCleanup = null; }
+
+    // Clean up teacher presence if active
+    if (_teacherPresenceCleanup) {
+      _teacherPresenceCleanup();
+      _teacherPresenceCleanup = null;
+    }
+
+    // Clean up student global presence on logout
+    if (_studentOfflineCleanup) {
+      window.removeEventListener('beforeunload', _studentOfflineCleanup);
+      _studentOfflineCleanup().catch(() => {});
+      _studentOfflineCleanup = null;
+    }
   }
 
   /* ══════════════════════════════════════════════════════════
