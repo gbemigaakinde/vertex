@@ -2,7 +2,7 @@
    js/dm.js — Direct Messaging: Student ↔ Teacher
    ============================================================ */
 
- (function () {
+(function () {
   'use strict';
 
   /* ══════════════════════════════════════════════════════════
@@ -42,8 +42,7 @@
     size = size || 16;
     return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"
               xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-      <path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="1.75"
-            stroke-linecap="round"/>
+      <path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
     </svg>`;
   }
 
@@ -56,13 +55,16 @@
     </svg>`;
   }
 
-  function _iconInfo(size) {
+  function _iconHistory(size) {
     size = size || 14;
     return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"
-              xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="flex-shrink:0;">
-      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.75"/>
-      <path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="1.75"
-            stroke-linecap="round"/>
+              xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"
+            stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M3 3v5h5" stroke="currentColor" stroke-width="1.75"
+            stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M12 7v5l4 2" stroke="currentColor" stroke-width="1.75"
+            stroke-linecap="round" stroke-linejoin="round"/>
     </svg>`;
   }
 
@@ -129,9 +131,7 @@
         display: flex; align-items: center; gap: .625rem;
         margin: .875rem 0 .625rem; user-select: none;
       }
-      .dm-date-sep__line {
-        flex: 1; height: 1px; background: var(--border, #e5e7eb);
-      }
+      .dm-date-sep__line { flex: 1; height: 1px; background: var(--border, #e5e7eb); }
       .dm-date-sep__label {
         font-size: .625rem; font-weight: 600; letter-spacing: .04em;
         color: var(--text-disabled, #9ca3af); white-space: nowrap;
@@ -158,6 +158,124 @@
         color: var(--accent-text, #2d49d6);
         font-size: .6875rem; font-weight: 700; margin-bottom: 3px;
       }
+
+      /* ── Message wrapper & action button ── */
+      .dm-msg-wrap { position: relative; }
+      .dm-msg-wrap .dm-action-btn {
+        position: absolute; top: 4px;
+        width: 24px; height: 24px; border-radius: 50%;
+        border: 1px solid var(--border, #e5e7eb);
+        background: var(--surface, #fff);
+        color: var(--text-3, #6b7280);
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; opacity: 0; transition: opacity .15s, background .15s;
+        padding: 0; flex-shrink: 0;
+        box-shadow: 0 1px 4px rgba(0,0,0,.10);
+        z-index: 10;
+      }
+      .dm-msg-wrap .dm-action-btn--right { right: -30px; }
+      .dm-msg-wrap .dm-action-btn--left  { left: -30px; }
+      .dm-msg-wrap:hover .dm-action-btn,
+      .dm-msg-wrap:focus-within .dm-action-btn,
+      .dm-msg-wrap .dm-action-btn.dm-action-btn--open { opacity: 1; }
+      .dm-msg-wrap .dm-action-btn:hover {
+        background: var(--bg-subtle, #f3f4f6); color: var(--accent, #4f6ef7);
+      }
+
+      /* ── Action menu dropdown ── */
+      .dm-action-menu {
+        position: absolute; z-index: 200;
+        background: var(--surface, #fff);
+        border: 1px solid var(--border, #e5e7eb);
+        border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.12);
+        min-width: 148px; overflow: hidden;
+        animation: dmFadeIn .1s ease;
+      }
+      .dm-action-menu-item {
+        display: flex; align-items: center; gap: .5rem;
+        padding: .5rem .75rem; font-size: .8125rem;
+        color: var(--text-1, #0d0d0f); cursor: pointer;
+        transition: background .1s; white-space: nowrap;
+        border: none; background: none; width: 100%; text-align: left;
+        font-family: var(--font);
+      }
+      .dm-action-menu-item:hover { background: var(--bg-subtle, #f3f4f6); }
+      .dm-action-menu-item + .dm-action-menu-item {
+        border-top: 1px solid var(--border, #e5e7eb);
+      }
+
+      /* ── Inline edit mode ── */
+      .dm-edit-textarea {
+        width: 100%; resize: none; overflow-y: hidden; line-height: 1.55;
+        font-size: .875rem; font-family: var(--font); padding: .375rem .5rem;
+        border: 1px solid var(--accent, #4f6ef7); border-radius: 6px;
+        background: rgba(255,255,255,.15); color: inherit; outline: none;
+        box-shadow: 0 0 0 3px var(--accent-subtle, rgba(79,110,247,.12));
+        min-height: 2.4rem;
+      }
+      .dm-edit-actions {
+        display: flex; gap: .375rem; margin-top: .375rem; justify-content: flex-end;
+      }
+      .dm-edit-btn {
+        font-size: .6875rem; font-weight: 600; padding: 3px 11px;
+        border-radius: 5px; border: none; cursor: pointer;
+        font-family: var(--font); transition: opacity .1s;
+      }
+      .dm-edit-btn--save   { background: #fff; color: var(--accent, #4f6ef7); }
+      .dm-edit-btn--cancel { background: rgba(255,255,255,.2); color: inherit; opacity: .75; }
+      .dm-edit-btn--save-light   { background: var(--accent, #4f6ef7); color: #fff; }
+      .dm-edit-btn--cancel-light {
+        background: var(--bg-subtle, #f3f4f6); color: var(--text-2, #3a3a40);
+        border: 1px solid var(--border, #e5e7eb);
+      }
+
+      /* ── "edited" label ── */
+      .dm-edited-label {
+        font-size: .5625rem; opacity: .6; font-style: italic;
+        margin-left: 4px; line-height: 1; white-space: nowrap;
+      }
+
+      /* ── History modal ── */
+      .dm-history-overlay {
+        position: fixed; inset: 0; background: rgba(0,0,0,.5);
+        display: flex; align-items: center; justify-content: center;
+        z-index: 10000; padding: 1rem; animation: dmFadeIn .15s ease;
+      }
+      .dm-history-modal {
+        background: var(--surface, #fff); border-radius: 12px;
+        width: min(460px, 96vw); max-height: 80vh;
+        display: flex; flex-direction: column;
+        box-shadow: 0 20px 60px rgba(0,0,0,.22);
+        border: 1px solid var(--border, #e5e7eb);
+      }
+      .dm-history-header {
+        display: flex; align-items: center; justify-content: space-between;
+        padding: .875rem 1.125rem;
+        border-bottom: 1px solid var(--border, #e5e7eb);
+        flex-shrink: 0;
+      }
+      .dm-history-body {
+        overflow-y: auto; padding: .75rem 1rem; flex: 1;
+        display: flex; flex-direction: column; gap: .625rem;
+      }
+      .dm-history-entry {
+        padding: .625rem .875rem; border-radius: 8px;
+        border: 1px solid var(--border, #e5e7eb);
+        background: var(--bg-subtle, #f9fafb);
+      }
+      .dm-history-entry p {
+        font-size: .875rem; line-height: 1.55; color: var(--text-1, #0d0d0f);
+        white-space: pre-wrap; word-break: break-word; margin: 0;
+      }
+      .dm-history-entry time {
+        display: block; font-size: .625rem;
+        color: var(--text-4, #9ca3af); margin-top: .25rem;
+      }
+      .dm-history-current {
+        background: var(--accent-subtle, rgba(79,110,247,.08));
+        border-color: var(--accent-border, rgba(79,110,247,.25));
+      }
+      .dm-history-current p { font-weight: 500; }
     `;
     document.head.appendChild(style);
   }
@@ -171,10 +289,8 @@
     const today     = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
     const msgDay    = new Date(date.getFullYear(), date.getMonth(), date.getDate());
-
     if (msgDay.getTime() === today.getTime())     return 'Today';
     if (msgDay.getTime() === yesterday.getTime()) return 'Yesterday';
-
     const sameYear = date.getFullYear() === now.getFullYear();
     return date.toLocaleDateString('en-GB', {
       weekday: 'short', day: 'numeric', month: 'short',
@@ -237,15 +353,11 @@
   let _studentBeforeunloadHandler = null;
   let _teacherVisibilityHandler   = null;
   let _teacherBeforeunloadHandler = null;
-
-  let _studentOfflineDone = false;
-  let _teacherOfflineDone = false;
+  let _studentOfflineDone         = false;
+  let _teacherOfflineDone         = false;
 
   /* ══════════════════════════════════════════════════════════
      Student presence
-     Writes online status to BOTH the thread doc and the
-     student profile doc so the teacher can read presence for
-     any student, even those with no prior conversation.
      ══════════════════════════════════════════════════════════ */
 
   async function _setStudentOnlineGlobal(uid) {
@@ -271,22 +383,11 @@
         const ts = firebase.auth().currentUser
           ? firebase.firestore.FieldValue.serverTimestamp()
           : new Date();
-        const threadBatch = Db().batch();
-        threadBatch.set(
-          _threadRef(uid),
-          { studentOnline: false, studentLastSeen: ts },
-          { merge: true }
-        );
-        try {
-          threadBatch.update(
-            Db().collection('students').doc(uid),
-            { isOnline: false, lastSeen: ts }
-          );
-        } catch (_) {}
-        await threadBatch.commit();
-      } catch (e) {
-        console.warn('[dm] studentOffline write failed:', e);
-      }
+        const b = Db().batch();
+        b.set(_threadRef(uid), { studentOnline: false, studentLastSeen: ts }, { merge: true });
+        try { b.update(Db().collection('students').doc(uid), { isOnline: false, lastSeen: ts }); } catch (_) {}
+        await b.commit();
+      } catch (e) { console.warn('[dm] studentOffline write failed:', e); }
     };
 
     _studentOfflineCleanup = goOffline;
@@ -297,10 +398,10 @@
       } else {
         if (firebase.auth().currentUser) {
           _studentOfflineDone = false;
-          const batch = Db().batch();
-          batch.set(_threadRef(uid), { studentOnline: true }, { merge: true });
-          try { batch.update(Db().collection('students').doc(uid), { isOnline: true }); } catch (_) {}
-          batch.commit().catch(() => {});
+          const b = Db().batch();
+          b.set(_threadRef(uid), { studentOnline: true }, { merge: true });
+          try { b.update(Db().collection('students').doc(uid), { isOnline: true }); } catch (_) {}
+          b.commit().catch(() => {});
         }
       }
     };
@@ -310,15 +411,8 @@
       if (_studentOfflineDone) return;
       _studentOfflineDone = true;
       const now = new Date();
-      try {
-        _threadRef(uid).set(
-          { studentOnline: false, studentLastSeen: now },
-          { merge: true }
-        );
-      } catch (_) {}
-      try {
-        Db().collection('students').doc(uid).update({ isOnline: false, lastSeen: now });
-      } catch (_) {}
+      try { _threadRef(uid).set({ studentOnline: false, studentLastSeen: now }, { merge: true }); } catch (_) {}
+      try { Db().collection('students').doc(uid).update({ isOnline: false, lastSeen: now }); } catch (_) {}
     };
     window.addEventListener('beforeunload', _studentBeforeunloadHandler);
   }
@@ -339,9 +433,7 @@
     const goOffline = async () => {
       if (_teacherOfflineDone) return;
       _teacherOfflineDone = true;
-      try {
-        await _broadcastTeacherPresence(false);
-      } catch (e) {
+      try { await _broadcastTeacherPresence(false); } catch (e) {
         console.warn('[dm] teacherOffline broadcast failed:', e);
       }
     };
@@ -363,22 +455,13 @@
     _teacherBeforeunloadHandler = () => {
       if (_teacherOfflineDone) return;
       _teacherOfflineDone = true;
-      const db  = Db();
-      const now = new Date();
-      try {
-        db.collection('teacherPresence').doc('global').set(
-          { online: false, lastSeen: now }, { merge: true }
-        );
-      } catch (_) {}
+      const db = Db(); const now = new Date();
+      try { db.collection('teacherPresence').doc('global').set({ online: false, lastSeen: now }, { merge: true }); } catch (_) {}
       try {
         db.collection('directMessages').get().then(snap => {
           if (snap.empty) return;
           const batch = db.batch();
-          snap.forEach(doc => batch.set(
-            doc.ref,
-            { teacherOnline: false, teacherLastSeen: now },
-            { merge: true }
-          ));
+          snap.forEach(doc => batch.set(doc.ref, { teacherOnline: false, teacherLastSeen: now }, { merge: true }));
           batch.commit();
         }).catch(() => {});
       } catch (_) {}
@@ -391,75 +474,54 @@
     const ts = firebase.auth().currentUser
       ? firebase.firestore.FieldValue.serverTimestamp()
       : new Date();
-
-    const sentinelData = isOnline
-      ? { online: true }
-      : { online: false, lastSeen: ts };
-    await db.collection('teacherPresence').doc('global').set(sentinelData, { merge: true });
-
+    await db.collection('teacherPresence').doc('global').set(
+      isOnline ? { online: true } : { online: false, lastSeen: ts },
+      { merge: true }
+    );
     const snap = await db.collection('directMessages').get();
     if (snap.empty) return;
-
     const refs = [];
     snap.forEach(doc => refs.push(doc.ref));
-
     for (let i = 0; i < refs.length; i += 400) {
       const batch = db.batch();
-      refs.slice(i, i + 400).forEach(ref => {
-        const data = isOnline
-          ? { teacherOnline: true }
-          : { teacherOnline: false, teacherLastSeen: ts };
-        batch.set(ref, data, { merge: true });
-      });
+      refs.slice(i, i + 400).forEach(ref => batch.set(ref,
+        isOnline ? { teacherOnline: true } : { teacherOnline: false, teacherLastSeen: ts },
+        { merge: true }
+      ));
       await batch.commit();
     }
   }
 
   /* ══════════════════════════════════════════════════════════
      Live presence watcher
-     For the teacher watching a student: prefers the thread doc
-     but falls back to students/{uid} for students with no
-     prior conversation thread.
      ══════════════════════════════════════════════════════════ */
 
   function _watchPresence(studentUid, watchRole, elementId, listenerKey) {
     AppState.cancelListener(listenerKey);
 
     if (watchRole === 'teacher') {
-      const onlineField   = 'teacherOnline';
-      const lastSeenField = 'teacherLastSeen';
       const unsub = _threadRef(studentUid).onSnapshot(snap => {
         const el = document.getElementById(elementId);
         if (!el) { AppState.cancelListener(listenerKey); return; }
-        const data     = (snap.exists && snap.data()) || {};
-        const isOnline = !!data[onlineField];
-        const lastSeen = data[lastSeenField] || null;
-        el.innerHTML   = _presenceHTML(isOnline, lastSeen);
+        const data = (snap.exists && snap.data()) || {};
+        el.innerHTML = _presenceHTML(!!data.teacherOnline, data.teacherLastSeen || null);
       }, err => console.warn('[dm] Presence watch error:', err));
       AppState.registerListener(listenerKey, unsub);
       return;
     }
 
-    // watchRole === 'student': watch the thread doc first; if it doesn't
-    // exist yet, fall back to the students/{uid} profile doc.
     const unsub = _threadRef(studentUid).onSnapshot(snap => {
       const el = document.getElementById(elementId);
       if (!el) { AppState.cancelListener(listenerKey); return; }
-
       if (snap.exists) {
-        const data     = snap.data() || {};
-        const isOnline = !!data.studentOnline;
-        const lastSeen = data.studentLastSeen || null;
-        el.innerHTML   = _presenceHTML(isOnline, lastSeen);
+        const data = snap.data() || {};
+        el.innerHTML = _presenceHTML(!!data.studentOnline, data.studentLastSeen || null);
       } else {
-        // No thread doc yet — read from the student profile.
         Db().collection('students').doc(studentUid).get().then(profileSnap => {
           const el2 = document.getElementById(elementId);
           if (!el2) return;
-          const data     = (profileSnap.exists && profileSnap.data()) || {};
-          const isOnline = !!data.isOnline;
-          const lastSeen = data.lastSeen || null;
-          el2.innerHTML  = _presenceHTML(isOnline, lastSeen);
+          const data = (profileSnap.exists && profileSnap.data()) || {};
+          el2.innerHTML = _presenceHTML(!!data.isOnline, data.lastSeen || null);
         }).catch(() => {});
       }
     }, err => console.warn('[dm] Presence watch error:', err));
@@ -474,26 +536,19 @@
     const senderRole = recipientRole === 'student' ? 'teacher' : 'student';
     try {
       const snap = await _threadRef(studentUid)
-        .collection('messages')
-        .where('role', '==', senderRole)
-        .where('status', '==', 'sent')
-        .get();
+        .collection('messages').where('role', '==', senderRole).where('status', '==', 'sent').get();
       if (snap.empty) return;
       const batch = Db().batch();
       snap.forEach(doc => batch.update(doc.ref, { status: 'delivered' }));
       await batch.commit();
-    } catch (e) {
-      console.warn('[dm] _markDelivered error:', e);
-    }
+    } catch (e) { console.warn('[dm] _markDelivered error:', e); }
   }
 
   async function _markRead(studentUid, recipientRole) {
     const senderRole = recipientRole === 'student' ? 'teacher' : 'student';
     try {
       const snap = await _threadRef(studentUid)
-        .collection('messages')
-        .where('role', '==', senderRole)
-        .get();
+        .collection('messages').where('role', '==', senderRole).get();
       if (snap.empty) return;
       const toUpdate = [];
       snap.forEach(doc => {
@@ -506,9 +561,370 @@
         toUpdate.slice(i, i + 400).forEach(ref => b.update(ref, { status: 'read' }));
         await b.commit();
       }
+    } catch (e) { console.warn('[dm] _markRead error:', e); }
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     Edit helpers
+     editHistory subcollection path:
+       directMessages/{studentUid}/messages/{msgId}/editHistory/{entryId}
+     Each entry: { text: string, editedAt: Timestamp }
+     Security: students cannot read this subcollection (rules below).
+     ══════════════════════════════════════════════════════════ */
+
+  function _msgHistoryRef(studentUid, messageId) {
+    return _threadRef(studentUid).collection('messages').doc(messageId).collection('editHistory');
+  }
+
+  async function _saveEdit(studentUid, messageId, oldText, newText) {
+    const db         = Db();
+    const historyRef = _msgHistoryRef(studentUid, messageId).doc();
+    const msgRef     = _threadRef(studentUid).collection('messages').doc(messageId);
+    const ts         = firebase.firestore.FieldValue.serverTimestamp();
+    const batch      = db.batch();
+    batch.set(historyRef, { text: oldText, editedAt: ts });
+    batch.update(msgRef, { text: newText, editedAt: ts });
+    await batch.commit();
+  }
+
+  async function _showEditHistory(studentUid, messageId, currentText) {
+    let entries = [];
+    try {
+      const snap = await _msgHistoryRef(studentUid, messageId)
+        .orderBy('editedAt', 'asc').get();
+      snap.forEach(doc => entries.push({ id: doc.id, ...doc.data() }));
     } catch (e) {
-      console.warn('[dm] _markRead error:', e);
+      console.error('[dm] _showEditHistory error:', e);
+      UI.toast('Could not load edit history.', 'error');
+      return;
     }
+
+    const existing = document.getElementById('dmHistoryOverlay');
+    if (existing) existing.remove();
+
+    const fmt = ts => {
+      if (!ts) return '—';
+      const d = ts.toDate ? ts.toDate() : new Date(ts);
+      return d.toLocaleString('en-GB', {
+        day: 'numeric', month: 'short', year: 'numeric',
+        hour: '2-digit', minute: '2-digit',
+      });
+    };
+
+    const historyRows = entries.length === 0
+      ? `<p style="font-size:.8125rem;color:var(--text-4,#9ca3af);text-align:center;padding:1.5rem 0;">
+           No prior edits recorded for this message.
+         </p>`
+      : entries.map((e, i) => `
+          <div class="dm-history-entry">
+            <p>${_esc(e.text)}</p>
+            <time>Version ${i + 1} &mdash; ${_esc(fmt(e.editedAt))}</time>
+          </div>`).join('');
+
+    const overlay = document.createElement('div');
+    overlay.className = 'dm-history-overlay';
+    overlay.id        = 'dmHistoryOverlay';
+    overlay.innerHTML = `
+      <div class="dm-history-modal">
+        <div class="dm-history-header">
+          <div style="display:flex;align-items:center;gap:.5rem;">
+            <span style="color:var(--accent,#4f6ef7);">${_iconHistory(16)}</span>
+            <span style="font-size:.9375rem;font-weight:700;color:var(--text-1,#0d0d0f);">Edit History</span>
+          </div>
+          <button onclick="document.getElementById('dmHistoryOverlay').remove()"
+                  style="background:none;border:none;cursor:pointer;color:var(--text-3,#6b7280);
+                         display:flex;align-items:center;padding:4px;border-radius:4px;">
+            ${_iconClose(16)}
+          </button>
+        </div>
+        <div class="dm-history-body">
+          <div class="dm-history-entry dm-history-current">
+            <p>${_esc(currentText)}</p>
+            <time>Current version</time>
+          </div>
+          ${historyRows}
+        </div>
+      </div>`;
+
+    overlay.addEventListener('click', e => {
+      if (e.target === overlay) overlay.remove();
+    });
+    document.body.appendChild(overlay);
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     Inline edit UI
+     ══════════════════════════════════════════════════════════ */
+
+  function _activateInlineEdit(studentUid, messageId, currentText, isDarkBubble, wrapperId) {
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+
+    const textEl   = wrapper.querySelector('.dm-bubble-text');
+    const footerEl = wrapper.querySelector('.dm-msg-footer');
+    const editedEl = wrapper.querySelector('.dm-edited-label-wrap');
+    if (!textEl) return;
+
+    const saveClass   = isDarkBubble ? 'dm-edit-btn dm-edit-btn--save'   : 'dm-edit-btn dm-edit-btn--save-light';
+    const cancelClass = isDarkBubble ? 'dm-edit-btn dm-edit-btn--cancel' : 'dm-edit-btn dm-edit-btn--cancel-light';
+
+    const editUI = document.createElement('div');
+    editUI.id = `dmEditUI-${messageId}`;
+
+    const ta = document.createElement('textarea');
+    ta.className = 'dm-edit-textarea';
+    ta.value     = currentText;
+    ta.rows      = 1;
+
+    const actions   = document.createElement('div');
+    actions.className = 'dm-edit-actions';
+
+    const cancelBtn       = document.createElement('button');
+    cancelBtn.className   = cancelClass;
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.onclick     = () => {
+      editUI.remove();
+      if (textEl)   textEl.style.display   = '';
+      if (footerEl) footerEl.style.display = '';
+      if (editedEl) editedEl.style.display = '';
+    };
+
+    const saveBtn       = document.createElement('button');
+    saveBtn.className   = saveClass;
+    saveBtn.textContent = 'Save';
+    saveBtn.onclick     = async () => {
+      const newText = ta.value.trim();
+      if (!newText) { UI.toast('Message cannot be empty.', 'warning'); return; }
+      if (newText === currentText) { cancelBtn.onclick(); return; }
+      saveBtn.disabled    = true;
+      saveBtn.textContent = 'Saving…';
+      try {
+        await _saveEdit(studentUid, messageId, currentText, newText);
+        if (textEl) textEl.textContent = newText;
+        cancelBtn.onclick();
+      } catch (err) {
+        console.error('[dm] inline edit save error:', err);
+        UI.toast('Could not save edit. Please try again.', 'error');
+        saveBtn.disabled    = false;
+        saveBtn.textContent = 'Save';
+      }
+    };
+
+    actions.appendChild(cancelBtn);
+    actions.appendChild(saveBtn);
+    editUI.appendChild(ta);
+    editUI.appendChild(actions);
+
+    if (textEl)   textEl.style.display   = 'none';
+    if (footerEl) footerEl.style.display = 'none';
+    if (editedEl) editedEl.style.display = 'none';
+
+    const inner = wrapper.querySelector('.dm-bubble-inner');
+    if (inner) inner.appendChild(editUI);
+
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+    ta.addEventListener('input', () => {
+      ta.style.height = 'auto';
+      ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+    });
+    ta.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveBtn.onclick(); }
+      if (e.key === 'Escape') cancelBtn.onclick();
+    });
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     Action menu dropdown
+     ══════════════════════════════════════════════════════════ */
+
+  let _openMenuId = null;
+
+  function _closeOpenMenu() {
+    if (_openMenuId) {
+      const m = document.getElementById(_openMenuId);
+      if (m) m.remove();
+      const btn = document.querySelector('.dm-action-btn--open');
+      if (btn) btn.classList.remove('dm-action-btn--open');
+      _openMenuId = null;
+    }
+  }
+
+  function _toggleActionMenu(wrapperId, studentUid, messageId, currentText, canEdit, canHistory, isDarkBubble, alignRight) {
+    const menuId = `dmMenu-${messageId}`;
+    if (_openMenuId === menuId) { _closeOpenMenu(); return; }
+    _closeOpenMenu();
+
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+
+    const triggerBtn = wrapper.querySelector('.dm-action-btn');
+    if (triggerBtn) triggerBtn.classList.add('dm-action-btn--open');
+
+    const menu    = document.createElement('div');
+    menu.className = 'dm-action-menu';
+    menu.id        = menuId;
+    menu.style.cssText = alignRight
+      ? 'right:0;top:calc(100% + 4px);'
+      : 'left:0;top:calc(100% + 4px);';
+
+    if (canEdit) {
+      const editItem       = document.createElement('button');
+      editItem.className   = 'dm-action-menu-item';
+      editItem.innerHTML   = `${_iconPencil(13)} Edit message`;
+      editItem.onclick     = () => {
+        _closeOpenMenu();
+        _activateInlineEdit(studentUid, messageId, currentText, isDarkBubble, wrapperId);
+      };
+      menu.appendChild(editItem);
+    }
+
+    if (canHistory) {
+      const histItem       = document.createElement('button');
+      histItem.className   = 'dm-action-menu-item';
+      histItem.innerHTML   = `${_iconHistory(13)} Edit history`;
+      histItem.onclick     = () => {
+        _closeOpenMenu();
+        _showEditHistory(studentUid, messageId, currentText);
+      };
+      menu.appendChild(histItem);
+    }
+
+    if (!menu.children.length) return;
+
+    const bubbleInner = wrapper.querySelector('.dm-bubble-inner') || wrapper;
+    bubbleInner.style.position = 'relative';
+    bubbleInner.appendChild(menu);
+    _openMenuId = menuId;
+
+    setTimeout(() => {
+      document.addEventListener('click', function _handler(e) {
+        if (!menu.contains(e.target) && !wrapper.querySelector('.dm-action-btn')?.contains(e.target)) {
+          _closeOpenMenu();
+          document.removeEventListener('click', _handler);
+        }
+      });
+    }, 0);
+  }
+
+  /* ══════════════════════════════════════════════════════════
+     Bubble builders
+     ══════════════════════════════════════════════════════════ */
+
+  function _buildStudentBubble(msg, myUid) {
+    const isMe    = msg.senderId === myUid;
+    const msgId   = msg.id || '';
+    const wrapId  = `dmWrap-${_esc(msgId)}`;
+    const canEdit = isMe && !!msgId;
+
+    const time = msg.timestamp
+      ? new Date(msg.timestamp.toDate ? msg.timestamp.toDate() : msg.timestamp)
+          .toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+      : 'Just now';
+
+    const bubbleStyle = isMe
+      ? `background:var(--brand,#3b5bdb);color:#fff;border-radius:12px 12px 2px 12px;margin-left:auto;`
+      : `background:var(--surface,#fff);color:var(--text-primary,#111827);
+         border:1px solid var(--border,#e5e7eb);border-radius:12px 12px 12px 2px;margin-right:auto;`;
+
+    const editedLabel = msg.editedAt
+      ? `<span class="dm-edited-label-wrap"><span class="dm-edited-label">edited</span></span>`
+      : '';
+
+    const footer = isMe
+      ? `<div class="dm-msg-footer">${editedLabel}<span class="dm-time">${time}</span>${_tickIcon(msg.status || 'sent')}</div>`
+      : `<div class="dm-msg-footer" style="justify-content:flex-start;">${editedLabel}<span class="dm-time">${time}</span></div>`;
+
+    const safeUid   = _esc(myUid);
+    const safeMsgId = _esc(msgId);
+    const actionBtn = canEdit
+      ? `<button class="dm-action-btn dm-action-btn--${isMe ? 'right' : 'left'}"
+                 title="Message options"
+                 onclick="event.stopPropagation();DM._toggleActionMenu(
+                   '${wrapId}','${safeUid}','${safeMsgId}',
+                   document.getElementById('${wrapId}').querySelector('.dm-bubble-text').textContent,
+                   true,false,${isMe},${isMe})">
+           ${_iconPencil(11)}
+         </button>`
+      : '';
+
+    return `
+      <div id="${wrapId}" class="dm-msg-wrap"
+           style="display:flex;flex-direction:column;max-width:80%;margin-bottom:.75rem;
+                  ${isMe ? 'align-items:flex-end;margin-left:auto;' : 'align-items:flex-start;'}">
+        <span class="dm-bubble-name--${isMe ? 'mine' : 'theirs'}">
+          ${isMe ? 'You' : _esc(msg.senderName || 'Master Timothy')}
+        </span>
+        <div style="position:relative;max-width:100%;">
+          ${actionBtn}
+          <div class="dm-bubble-inner"
+               style="position:relative;padding:.625rem .875rem .5rem;${bubbleStyle}word-break:break-word;">
+            <p class="dm-bubble-text"
+               style="font-size:.875rem;line-height:1.55;white-space:pre-wrap;margin:0;">${_esc(msg.text)}</p>
+            ${footer}
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function _buildTeacherBubble(msg) {
+    const isTeacher  = msg.role === 'teacher';
+    const msgId      = msg.id || '';
+    const wrapId     = `dmWrap-${_esc(msgId)}`;
+    const studentUid = _activeStudentUid || '';
+    const canEdit    = isTeacher && !!msgId;
+    const canHistory = !!msgId;
+
+    const time = msg.timestamp
+      ? new Date(msg.timestamp.toDate ? msg.timestamp.toDate() : msg.timestamp)
+          .toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+      : 'Just now';
+
+    const bubbleStyle = isTeacher
+      ? `background:var(--brand,#3b5bdb);color:#fff;border-radius:12px 12px 2px 12px;margin-left:auto;`
+      : `background:var(--surface,#fff);color:var(--text-primary,#111827);
+         border:1px solid var(--border,#e5e7eb);border-radius:12px 12px 12px 2px;margin-right:auto;`;
+
+    const editedLabel = msg.editedAt
+      ? `<span class="dm-edited-label-wrap"><span class="dm-edited-label">edited</span></span>`
+      : '';
+
+    const footer = isTeacher
+      ? `<div class="dm-msg-footer">${editedLabel}<span class="dm-time">${time}</span>${_tickIcon(msg.status || 'sent')}</div>`
+      : `<div class="dm-msg-footer" style="justify-content:flex-start;">${editedLabel}<span class="dm-time">${time}</span></div>`;
+
+    const safeStudentUid = _esc(studentUid);
+    const safeMsgId      = _esc(msgId);
+    const actionBtn = (canEdit || canHistory)
+      ? `<button class="dm-action-btn dm-action-btn--${isTeacher ? 'right' : 'left'}"
+                 title="Message options"
+                 onclick="event.stopPropagation();DM._toggleActionMenu(
+                   '${wrapId}','${safeStudentUid}','${safeMsgId}',
+                   document.getElementById('${wrapId}').querySelector('.dm-bubble-text').textContent,
+                   ${canEdit},${canHistory},${isTeacher},${isTeacher})">
+           ${_iconPencil(11)}
+         </button>`
+      : '';
+
+    return `
+      <div id="${wrapId}" class="dm-msg-wrap"
+           style="display:flex;flex-direction:column;max-width:80%;margin-bottom:.75rem;
+                  ${isTeacher ? 'align-items:flex-end;margin-left:auto;' : 'align-items:flex-start;'}">
+        <span class="dm-bubble-name--${isTeacher ? 'mine' : 'theirs'}">
+          ${isTeacher ? 'Master Timothy' : _esc(msg.senderName || 'Student')}
+        </span>
+        <div style="position:relative;max-width:100%;">
+          ${actionBtn}
+          <div class="dm-bubble-inner"
+               style="position:relative;padding:.625rem .875rem .5rem;${bubbleStyle}word-break:break-word;">
+            <p class="dm-bubble-text"
+               style="font-size:.875rem;line-height:1.55;white-space:pre-wrap;margin:0;">${_esc(msg.text)}</p>
+            ${footer}
+          </div>
+        </div>
+      </div>`;
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -526,33 +942,22 @@
       await threadRef.set({ studentUnread: 0 }, { merge: true });
       AppState.dmStudentUnread = 0;
       _updateStudentBadge(0);
-    } catch (e) {
-      console.warn('[dm] Could not clear studentUnread:', e);
-    }
+    } catch (e) { console.warn('[dm] Could not clear studentUnread:', e); }
 
     try {
       const threadSnap = await threadRef.get();
       if (!threadSnap.exists) {
-        const sentinelSnap = await Db()
-          .collection('teacherPresence')
-          .doc('global')
-          .get();
+        const sentinelSnap = await Db().collection('teacherPresence').doc('global').get();
         const teacherOnline   = !!(sentinelSnap.exists && sentinelSnap.data().online);
         const teacherLastSeen = (sentinelSnap.exists && sentinelSnap.data().lastSeen) || null;
-
         const seedData = {
-          studentName:   studentData.name  || '',
-          studentClass:  studentData.class || '',
-          studentUnread: 0,
-          teacherUnread: 0,
-          teacherOnline,
+          studentName: studentData.name || '', studentClass: studentData.class || '',
+          studentUnread: 0, teacherUnread: 0, teacherOnline,
         };
         if (teacherLastSeen) seedData.teacherLastSeen = teacherLastSeen;
         await threadRef.set(seedData, { merge: true });
       }
-    } catch (e) {
-      console.warn('[dm] Could not seed thread doc:', e);
-    }
+    } catch (e) { console.warn('[dm] Could not seed thread doc:', e); }
 
     UI.mount(`
       <div class="max-w-2xl mx-auto glass animate-fadeIn"
@@ -560,19 +965,15 @@
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;">
           <div>
             <h2 class="font-bold" style="font-size:1.125rem;line-height:1.3;">Message Master Timothy</h2>
-            <div id="dmTeacherPresence" style="margin-top:2px;">
-              ${_presenceHTML(false, null)}
-            </div>
+            <div id="dmTeacherPresence" style="margin-top:2px;">${_presenceHTML(false, null)}</div>
           </div>
           <button onclick="DM.backFromStudentInbox()" class="btn bg-gray-500 hover:bg-gray-600"
                   style="font-size:.8125rem;">&#8592; Back</button>
         </div>
 
         <div style="margin-bottom:.75rem;padding:.5rem .875rem;
-                    background:var(--surface-subtle,#f3f4f6);
-                    border:1px solid var(--border,#e5e7eb);
-                    border-radius:8px;font-size:.75rem;
-                    color:var(--text-tertiary,#6b7280);
+                    background:var(--surface-subtle,#f3f4f6);border:1px solid var(--border,#e5e7eb);
+                    border-radius:8px;font-size:.75rem;color:var(--text-tertiary,#6b7280);
                     display:flex;align-items:center;gap:.5rem;line-height:1.5;">
           <span style="color:var(--text-tertiary,#6b7280);">${_iconLock(13)}</span>
           <span><strong style="color:var(--text-secondary,#374151);font-weight:600;">Private</strong>
@@ -591,7 +992,7 @@
         <div id="dmMessages"
              style="min-height:260px;max-height:420px;overflow-y:auto;
                     border:1px solid var(--border,#e5e7eb);border-radius:10px;
-                    padding:.75rem;margin-bottom:.75rem;background:var(--surface-subtle,#f9fafb);">
+                    padding:.75rem 1.75rem;margin-bottom:.75rem;background:var(--surface-subtle,#f9fafb);">
           <p style="text-align:center;font-size:.8125rem;color:var(--text-disabled,#9ca3af);padding:2rem 0;">
             Loading messages…
           </p>
@@ -630,8 +1031,7 @@
   function _subscribeStudentMessages(uid) {
     AppState.cancelListener('dmStudentMessages');
     const unsub = _threadRef(uid)
-      .collection('messages')
-      .orderBy('timestamp', 'asc')
+      .collection('messages').orderBy('timestamp', 'asc')
       .onSnapshot(snap => {
         const container = document.getElementById('dmMessages');
         if (!container) { AppState.cancelListener('dmStudentMessages'); return; }
@@ -645,10 +1045,8 @@
         }
         const msgs = [];
         snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
-
         _markDelivered(uid, 'student').catch(() => {});
         _markRead(uid, 'student').catch(() => {});
-
         container.innerHTML = _renderMessagesWithDateSeps(msgs, uid, 'student');
         container.scrollTop = container.scrollHeight;
       }, err => console.error('[dm] Student messages error:', err));
@@ -658,12 +1056,10 @@
   function _renderMessagesWithDateSeps(msgs, myUid, viewerRole) {
     let lastDayKey = null;
     const parts    = [];
-
     for (const msg of msgs) {
       const ts   = msg.timestamp;
       const date = ts ? (ts.toDate ? ts.toDate() : new Date(ts)) : null;
       const dk   = date ? _dayKey(date) : null;
-
       if (dk && dk !== lastDayKey) {
         parts.push(`
           <div class="dm-date-sep">
@@ -673,49 +1069,11 @@
           </div>`);
         lastDayKey = dk;
       }
-
-      if (viewerRole === 'student') {
-        parts.push(_buildStudentBubble(msg, myUid));
-      } else {
-        parts.push(_buildTeacherBubble(msg));
-      }
+      parts.push(viewerRole === 'student'
+        ? _buildStudentBubble(msg, myUid)
+        : _buildTeacherBubble(msg));
     }
-
     return parts.join('');
-  }
-
-  function _buildStudentBubble(msg, myUid) {
-    const isMe = msg.senderId === myUid;
-    const time = msg.timestamp
-      ? new Date(msg.timestamp.toDate ? msg.timestamp.toDate() : msg.timestamp)
-          .toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-      : 'Just now';
-
-    const bubbleStyle = isMe
-      ? `background:var(--brand,#3b5bdb);color:#fff;border-radius:12px 12px 2px 12px;margin-left:auto;`
-      : `background:var(--surface,#fff);color:var(--text-primary,#111827);
-         border:1px solid var(--border,#e5e7eb);border-radius:12px 12px 12px 2px;margin-right:auto;`;
-
-    const footer = isMe
-      ? `<div class="dm-msg-footer">
-           <span class="dm-time">${time}</span>
-           ${_tickIcon(msg.status || 'sent')}
-         </div>`
-      : `<div class="dm-msg-footer" style="justify-content:flex-start;">
-           <span class="dm-time">${time}</span>
-         </div>`;
-
-    return `
-      <div style="display:flex;flex-direction:column;max-width:80%;margin-bottom:.75rem;
-                  ${isMe ? 'align-items:flex-end;margin-left:auto;' : 'align-items:flex-start;'}">
-        <span class="dm-bubble-name--${isMe ? 'mine' : 'theirs'}">
-          ${isMe ? 'You' : _esc(msg.senderName || 'Master Timothy')}
-        </span>
-        <div style="padding:.625rem .875rem .5rem;${bubbleStyle}max-width:100%;word-break:break-word;">
-          <p style="font-size:.875rem;line-height:1.55;white-space:pre-wrap;">${_esc(msg.text)}</p>
-          ${footer}
-        </div>
-      </div>`;
   }
 
   async function sendStudentMessage() {
@@ -742,21 +1100,16 @@
       const batch  = Db().batch();
       const msgRef = _threadRef(uid).collection('messages').doc();
       batch.set(msgRef, {
-        text,
-        senderId:   uid,
-        senderName: name,
-        role:       'student',
-        status:     teacherIsOnline ? 'delivered' : 'sent',
-        timestamp:  firebase.firestore.FieldValue.serverTimestamp(),
+        text, senderId: uid, senderName: name, role: 'student',
+        status: teacherIsOnline ? 'delivered' : 'sent',
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
       });
       batch.set(_threadRef(uid), {
-        studentName:   name,
-        studentClass:  cls,
-        lastMessage:   text.length > 80 ? text.substring(0, 80) + '…' : text,
-        lastAt:        firebase.firestore.FieldValue.serverTimestamp(),
+        studentName: name, studentClass: cls,
+        lastMessage: text.length > 80 ? text.substring(0, 80) + '…' : text,
+        lastAt: firebase.firestore.FieldValue.serverTimestamp(),
         teacherUnread: firebase.firestore.FieldValue.increment(1),
-        studentUnread: 0,
-        teacherOnline: teacherIsOnline,
+        studentUnread: 0, teacherOnline: teacherIsOnline,
       }, { merge: true });
       await batch.commit();
     } catch (err) {
@@ -772,6 +1125,7 @@
   function backFromStudentInbox() {
     AppState.cancelListener('dmStudentMessages');
     AppState.cancelListener('dmTeacherPresenceWatch');
+    _closeOpenMenu();
     Exam.renderSubjectSelection();
   }
 
@@ -801,8 +1155,7 @@
                            border:1px solid var(--brand-border,#bac8ff);
                            background:var(--brand-bg,#edf2ff);cursor:pointer;
                            display:flex;align-items:center;justify-content:center;
-                           color:var(--brand-text,#3730a3);
-                           transition:background .15s;">
+                           color:var(--brand-text,#3730a3);transition:background .15s;">
               ${_iconPencil(13)}
             </button>
           </div>
@@ -828,8 +1181,7 @@
   function _subscribeTeacherThreadList() {
     AppState.cancelListener('dmTeacherThreads');
     const unsub = Db()
-      .collection('directMessages')
-      .orderBy('lastAt', 'desc')
+      .collection('directMessages').orderBy('lastAt', 'desc')
       .onSnapshot(snap => {
         const list = document.getElementById('dmThreadList');
         if (!list) { AppState.cancelListener('dmTeacherThreads'); return; }
@@ -952,9 +1304,7 @@
 
     try {
       await _threadRef(studentUid).set({ teacherUnread: 0 }, { merge: true });
-    } catch (e) {
-      console.warn('[dm] Could not clear teacherUnread:', e);
-    }
+    } catch (e) { console.warn('[dm] Could not clear teacherUnread:', e); }
 
     await _markDelivered(studentUid, 'teacher');
     await _markRead(studentUid, 'teacher');
@@ -982,14 +1332,12 @@
               ${_esc(studentClass)}
             </span>
           </p>
-          <div id="dmStudentPresence" style="margin-top:1px;">
-            ${_presenceHTML(false, null)}
-          </div>
+          <div id="dmStudentPresence" style="margin-top:1px;">${_presenceHTML(false, null)}</div>
         </div>
       </div>
 
       <div id="dmTeacherMessages"
-           style="flex:1;overflow-y:auto;padding:.875rem;
+           style="flex:1;overflow-y:auto;padding:.875rem 1.75rem;
                   background:var(--surface-subtle,#f9fafb);min-height:300px;max-height:380px;">
         <p style="text-align:center;font-size:.8125rem;color:var(--text-disabled,#9ca3af);padding:2rem 0;">
           Loading messages…
@@ -1036,8 +1384,7 @@
   function _subscribeTeacherMessages(studentUid) {
     AppState.cancelListener('dmTeacherMessages');
     const unsub = _threadRef(studentUid)
-      .collection('messages')
-      .orderBy('timestamp', 'asc')
+      .collection('messages').orderBy('timestamp', 'asc')
       .onSnapshot(snap => {
         const container = document.getElementById('dmTeacherMessages');
         if (!container) { AppState.cancelListener('dmTeacherMessages'); return; }
@@ -1051,48 +1398,12 @@
         }
         const msgs = [];
         snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
-
         _markDelivered(studentUid, 'teacher').catch(() => {});
         _markRead(studentUid, 'teacher').catch(() => {});
-
         container.innerHTML = _renderMessagesWithDateSeps(msgs, AppConfig.TEACHER_UID, 'teacher');
         container.scrollTop = container.scrollHeight;
       }, err => console.error('[dm] Teacher messages error:', err));
     AppState.registerListener('dmTeacherMessages', unsub);
-  }
-
-  function _buildTeacherBubble(msg) {
-    const isTeacher = msg.role === 'teacher';
-    const time = msg.timestamp
-      ? new Date(msg.timestamp.toDate ? msg.timestamp.toDate() : msg.timestamp)
-          .toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-      : 'Just now';
-
-    const bubbleStyle = isTeacher
-      ? `background:var(--brand,#3b5bdb);color:#fff;border-radius:12px 12px 2px 12px;margin-left:auto;`
-      : `background:var(--surface,#fff);color:var(--text-primary,#111827);
-         border:1px solid var(--border,#e5e7eb);border-radius:12px 12px 12px 2px;margin-right:auto;`;
-
-    const footer = isTeacher
-      ? `<div class="dm-msg-footer">
-           <span class="dm-time">${time}</span>
-           ${_tickIcon(msg.status || 'sent')}
-         </div>`
-      : `<div class="dm-msg-footer" style="justify-content:flex-start;">
-           <span class="dm-time">${time}</span>
-         </div>`;
-
-    return `
-      <div style="display:flex;flex-direction:column;max-width:80%;margin-bottom:.75rem;
-                  ${isTeacher ? 'align-items:flex-end;margin-left:auto;' : 'align-items:flex-start;'}">
-        <span class="dm-bubble-name--${isTeacher ? 'mine' : 'theirs'}">
-          ${isTeacher ? 'Master Timothy' : _esc(msg.senderName || 'Student')}
-        </span>
-        <div style="padding:.625rem .875rem .5rem;${bubbleStyle}max-width:100%;word-break:break-word;">
-          <p style="font-size:.875rem;line-height:1.55;white-space:pre-wrap;">${_esc(msg.text)}</p>
-          ${footer}
-        </div>
-      </div>`;
   }
 
   async function _sendTeacherReply(studentUid, studentName) {
@@ -1121,18 +1432,14 @@
       const batch  = Db().batch();
       const msgRef = _threadRef(studentUid).collection('messages').doc();
       batch.set(msgRef, {
-        text,
-        senderId:   AppConfig.TEACHER_UID,
-        senderName: 'Master Timothy',
-        role:       'teacher',
-        status:     studentIsOnline ? 'delivered' : 'sent',
-        timestamp:  firebase.firestore.FieldValue.serverTimestamp(),
+        text, senderId: AppConfig.TEACHER_UID, senderName: 'Master Timothy',
+        role: 'teacher', status: studentIsOnline ? 'delivered' : 'sent',
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
       });
       batch.set(_threadRef(studentUid), {
-        studentName:   resolvedName,
-        studentClass:  resolvedClass,
-        lastMessage:   text.length > 80 ? text.substring(0, 80) + '…' : text,
-        lastAt:        firebase.firestore.FieldValue.serverTimestamp(),
+        studentName: resolvedName, studentClass: resolvedClass,
+        lastMessage: text.length > 80 ? text.substring(0, 80) + '…' : text,
+        lastAt: firebase.firestore.FieldValue.serverTimestamp(),
         studentUnread: firebase.firestore.FieldValue.increment(1),
         teacherUnread: 0,
       }, { merge: true });
@@ -1149,9 +1456,6 @@
 
   /* ══════════════════════════════════════════════════════════
      Teacher — New Conversation
-     The student picker now reads presence from students/{uid}
-     so the teacher can see online status for any student,
-     including those with no prior conversation thread.
      ══════════════════════════════════════════════════════════ */
 
   async function _openNewConversationModal() {
@@ -1167,10 +1471,8 @@
             Message a Student
           </h3>
           <button onclick="DM._closeNewConversationModal()"
-                  style="background:none;border:none;cursor:pointer;
-                         color:var(--text-tertiary,#6b7280);line-height:1;padding:4px;
-                         display:flex;align-items:center;justify-content:center;
-                         border-radius:4px;">
+                  style="background:none;border:none;cursor:pointer;color:var(--text-tertiary,#6b7280);
+                         display:flex;align-items:center;padding:4px;border-radius:4px;">
             ${_iconClose(16)}
           </button>
         </div>
@@ -1209,13 +1511,11 @@
       console.error('[dm] _openNewConversationModal fetch error:', e);
       const list = document.getElementById('dmStudentPickerList');
       if (list) list.innerHTML = `<p style="font-size:.8125rem;color:var(--danger,#e03131);
-                                     text-align:center;padding:2rem 1rem;">
-                                     Failed to load students.</p>`;
+                                     text-align:center;padding:2rem 1rem;">Failed to load students.</p>`;
       return;
     }
 
     _renderStudentPickerList(allStudents, '');
-
     if (searchInput) {
       searchInput.addEventListener('input', () => {
         _renderStudentPickerList(allStudents, searchInput.value);
@@ -1241,8 +1541,8 @@
     }
 
     list.innerHTML = filtered.map((s, idx) => {
-      const isOnline = !!s.isOnline;
-      const lastSeen = s.lastSeen || null;
+      const isOnline    = !!s.isOnline;
+      const lastSeen    = s.lastSeen || null;
       const presenceTxt = isOnline
         ? `<span style="color:#22c45e;font-size:.6rem;font-weight:600;line-height:1;">&#x25cf; Online</span>`
         : (lastSeen
@@ -1257,8 +1557,7 @@
              onmouseleave="this.style.background='transparent'"
              onclick="DM._pickStudentForConversation('${_esc(s.uid)}','${_esc(s.name || '')}','${_esc(s.class || '')}')">
           <div style="position:relative;flex-shrink:0;">
-            <div style="width:34px;height:34px;border-radius:50%;
-                        background:var(--brand-bg,#edf2ff);
+            <div style="width:34px;height:34px;border-radius:50%;background:var(--brand-bg,#edf2ff);
                         border:1.5px solid ${isOnline ? '#22c45e' : 'var(--brand-border,#bac8ff)'};
                         display:flex;align-items:center;justify-content:center;
                         font-size:.75rem;font-weight:700;color:var(--brand-text,#3730a3);
@@ -1294,19 +1593,12 @@
 
   async function _pickStudentForConversation(uid, name, cls) {
     _closeNewConversationModal();
-
     try {
       await _threadRef(uid).set({
-        studentName:   name,
-        studentClass:  cls,
-        studentUnread: 0,
-        teacherUnread: 0,
-        lastMessage:   '',
+        studentName: name, studentClass: cls,
+        studentUnread: 0, teacherUnread: 0, lastMessage: '',
       }, { merge: true });
-    } catch (e) {
-      console.warn('[dm] Could not seed thread doc for new conv:', e);
-    }
-
+    } catch (e) { console.warn('[dm] Could not seed thread doc for new conv:', e); }
     await _openConversation(uid, name, cls);
   }
 
@@ -1371,7 +1663,6 @@
       _updateStudentBadge(count);
     }, err => console.warn('[dm] Student unread listener error:', err));
     AppState.registerListener('dmStudentUnread', unsub);
-
     await _setStudentOnlineGlobal(uid);
     await _markDelivered(uid, 'student');
   }
@@ -1381,25 +1672,17 @@
      ══════════════════════════════════════════════════════════ */
   async function initTeacherDMListener() {
     AppState.cancelListener('dmTeacherUnread');
-
     await _setTeacherOnlineGlobal();
-
     try {
       const allThreads = await Db().collection('directMessages').get();
-      allThreads.forEach(doc => {
-        _markDelivered(doc.id, 'teacher').catch(() => {});
-      });
-    } catch (e) {
-      console.warn('[dm] initTeacherDMListener delivery sweep error:', e);
-    }
+      allThreads.forEach(doc => { _markDelivered(doc.id, 'teacher').catch(() => {}); });
+    } catch (e) { console.warn('[dm] initTeacherDMListener delivery sweep error:', e); }
 
-    const unsub = Db()
-      .collection('directMessages')
-      .onSnapshot(snap => {
-        let total = 0;
-        snap.forEach(doc => { total += (doc.data().teacherUnread || 0); });
-        _updateTeacherBadge(total);
-      }, err => console.warn('[dm] Teacher unread listener error:', err));
+    const unsub = Db().collection('directMessages').onSnapshot(snap => {
+      let total = 0;
+      snap.forEach(doc => { total += (doc.data().teacherUnread || 0); });
+      _updateTeacherBadge(total);
+    }, err => console.warn('[dm] Teacher unread listener error:', err));
     AppState.registerListener('dmTeacherUnread', unsub);
   }
 
@@ -1416,6 +1699,7 @@
     AppState.cancelListener('dmStudentPresenceWatch');
     _activeStudentUid   = null;
     window._dmActiveUid = null;
+    _closeOpenMenu();
 
     if (_studentVisibilityHandler) {
       document.removeEventListener('visibilitychange', _studentVisibilityHandler);
@@ -1484,6 +1768,7 @@
     _openNewConversationModal,
     _closeNewConversationModal,
     _pickStudentForConversation,
+    _toggleActionMenu,
     initStudentDMListener,
     initTeacherDMListener,
     cancelListeners,
