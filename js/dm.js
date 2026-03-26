@@ -1,106 +1,70 @@
 /* ============================================================
    js/dm.js — Direct Messaging: Student ↔ Teacher
-   ============================================================
-   Each student has exactly one conversation thread with the
-   teacher, stored at:
-
-     directMessages/{studentUid}               ← thread doc
-     directMessages/{studentUid}/messages/{id} ← individual messages
-
-   Thread doc fields:
-     studentName      : string
-     studentClass     : string
-     lastMessage      : string      (preview text)
-     lastAt           : Timestamp
-     studentUnread    : number      (unread count for the student)
-     teacherUnread    : number      (unread count for the teacher)
-     studentOnline    : boolean
-     studentLastSeen  : Timestamp
-     teacherOnline    : boolean
-     teacherLastSeen  : Timestamp
-
-   Message doc fields:
-     text      : string
-     senderId  : string  (uid)
-     senderName: string
-     role      : 'student' | 'teacher'
-     timestamp : Timestamp
-     status    : 'sent' | 'delivered' | 'read'
-
-   ── Why presence was always stuck on "Online" ─────────────
-   The security rules for directMessages require isSignedIn()
-   (request.auth != null). Firebase Auth clears the token the
-   moment fbAuth.signOut() is called — synchronously, before
-   any async Firestore write can go out. So every offline write
-   attempted after signOut() was silently rejected by the rules,
-   leaving online:true stuck in Firestore forever.
-
-   The fix has two parts:
-
-   1. Security rules: a targeted `allow update` rule that permits
-      writing ONLY the online/lastSeen fields to false/timestamp
-      without auth. Nothing else is writable unauthenticated.
-      See the rules block at the bottom of this file header.
-
-   2. Write order: cancelListeners() is awaited by app.js BEFORE
-      fbAuth.signOut() is ever called. Auth is still valid when
-      the offline write goes out, so the rules pass. The
-      visibilitychange path fires while the page is alive so auth
-      is valid there too. The beforeunload path uses client Date
-      (not serverTimestamp) since it can't await, and relies on
-      the unauthenticated security rule as a safety net.
-
-   ── Required Firestore security rule additions ─────────────
-   Add these two blocks to your rules file:
-
-     // Inside: match /directMessages/{studentUid}
-     // (alongside the existing authenticated read/write rule)
-     allow update: if (
-       request.resource.data.diff(resource.data).affectedKeys()
-         .hasOnly(['studentOnline','studentLastSeen','teacherOnline','teacherLastSeen'])
-       && (
-         request.resource.data.get('studentOnline', true) == false ||
-         request.resource.data.get('teacherOnline', true) == false
-       )
-     );
-
-     // New top-level match for the sentinel doc:
-     match /teacherPresence/global {
-       allow read: if isSignedIn();
-       allow write: if isAdmin();
-       allow update: if (
-         request.resource.data.diff(resource.data).affectedKeys()
-           .hasOnly(['online','lastSeen'])
-         && request.resource.data.get('online', true) == false
-       );
-     }
-
-   ── Presence reliability layers ───────────────────────────
-   1. cancelListeners() — explicit logout. Awaited in app.js
-      BEFORE fbAuth.signOut(). Auth is valid. Most reliable.
-
-   2. visibilitychange (hidden) — tab hidden/minimised. Auth is
-      still valid (the page is alive). Write succeeds.
-      Restores online:true when tab becomes visible again.
-
-   3. beforeunload — hard tab close. Uses client Date (not
-      serverTimestamp). Relies on the unauthenticated rule as a
-      safety net. Fire-and-forget only.
-
-   ── Sent / Delivered / Read state flow ───────────────────
-   • On send   : status = recipientIsOnline ? 'delivered' : 'sent'
-   • On open   : _markDelivered() upgrades 'sent'→'delivered' for
-                 all messages from the other party.
-                 _markRead() upgrades 'sent'/'delivered'→'read'
-                 for all messages from the other party.
-   • Live inbox: when a new message snapshot arrives while the
-                 inbox is already open, _markDelivered() and
-                 _markRead() are called again so newly-arrived
-                 messages are immediately receipted.
    ============================================================ */
 
-(function () {
+ (function () {
   'use strict';
+
+  /* ══════════════════════════════════════════════════════════
+     SVG icon helpers (no emojis)
+     ══════════════════════════════════════════════════════════ */
+
+  function _iconLock(size) {
+    size = size || 14;
+    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"
+              xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="flex-shrink:0;">
+      <rect x="3" y="11" width="18" height="11" rx="2" stroke="currentColor" stroke-width="1.75"/>
+      <path d="M7 11V7a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+    </svg>`;
+  }
+
+  function _iconMail(size) {
+    size = size || 14;
+    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"
+              xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="flex-shrink:0;">
+      <rect x="2" y="4" width="20" height="16" rx="2" stroke="currentColor" stroke-width="1.75"/>
+      <path d="M2 7l10 7 10-7" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+    </svg>`;
+  }
+
+  function _iconPencil(size) {
+    size = size || 14;
+    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"
+              xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
+            stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
+            stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
+  }
+
+  function _iconClose(size) {
+    size = size || 16;
+    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"
+              xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="1.75"
+            stroke-linecap="round"/>
+    </svg>`;
+  }
+
+  function _iconSearch(size) {
+    size = size || 14;
+    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"
+              xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <circle cx="11" cy="11" r="8" stroke="currentColor" stroke-width="1.75"/>
+      <path d="m21 21-4.35-4.35" stroke="currentColor" stroke-width="1.75" stroke-linecap="round"/>
+    </svg>`;
+  }
+
+  function _iconInfo(size) {
+    size = size || 14;
+    return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"
+              xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="flex-shrink:0;">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.75"/>
+      <path d="M12 16v-4M12 8h.01" stroke="currentColor" stroke-width="1.75"
+            stroke-linecap="round"/>
+    </svg>`;
+  }
 
   /* ══════════════════════════════════════════════════════════
      SVG tick helpers
@@ -161,7 +125,6 @@
       .dm-presence__dot--offline { background: var(--text-4, #9ca3af); }
       .dm-presence__label { color: var(--text-tertiary, #6b7280); font-size: .6875rem; }
       .dm-presence__label--online { color: #22c45e !important; font-weight: 500; }
-      /* Date separator */
       .dm-date-sep {
         display: flex; align-items: center; gap: .625rem;
         margin: .875rem 0 .625rem; user-select: none;
@@ -176,7 +139,6 @@
         background: var(--surface-subtle, #f3f4f6);
         border: 1px solid var(--border, #e5e7eb);
       }
-      /* New conversation modal */
       .dm-new-conv-overlay {
         position: fixed; inset: 0; background: rgba(0,0,0,.45);
         display: flex; align-items: center; justify-content: center;
@@ -188,6 +150,14 @@
         width: min(480px, 94vw); padding: 1.25rem 1.5rem;
         box-shadow: 0 20px 60px rgba(0,0,0,.2);
       }
+      .dm-bubble-name--mine {
+        color: var(--accent-text, #2d49d6);
+        font-size: .6875rem; font-weight: 700; margin-bottom: 3px;
+      }
+      .dm-bubble-name--theirs {
+        color: var(--accent-text, #2d49d6);
+        font-size: .6875rem; font-weight: 700; margin-bottom: 3px;
+      }
     `;
     document.head.appendChild(style);
   }
@@ -196,10 +166,6 @@
      Date separator helpers
      ══════════════════════════════════════════════════════════ */
 
-  /**
-   * Returns a display label for a given date relative to today.
-   * e.g. "Today", "Yesterday", "Mon, 14 Apr", "14 Apr 2024"
-   */
   function _dateLabelFor(date) {
     const now       = new Date();
     const today     = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -216,7 +182,6 @@
     });
   }
 
-  /** Returns a "YYYY-MM-DD" key for grouping messages by calendar day. */
   function _dayKey(date) {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   }
@@ -273,22 +238,30 @@
   let _teacherVisibilityHandler   = null;
   let _teacherBeforeunloadHandler = null;
 
-  // Guards so a second call (e.g. visibilitychange fires after
-  // cancelListeners has already written offline) is a no-op.
   let _studentOfflineDone = false;
   let _teacherOfflineDone = false;
 
   /* ══════════════════════════════════════════════════════════
      Student presence
+     Writes online status to BOTH the thread doc and the
+     student profile doc so the teacher can read presence for
+     any student, even those with no prior conversation.
      ══════════════════════════════════════════════════════════ */
 
   async function _setStudentOnlineGlobal(uid) {
     _studentOfflineDone = false;
     try {
-      await _threadRef(uid).set({ studentOnline: true }, { merge: true });
+      const batch = Db().batch();
+      batch.set(_threadRef(uid), { studentOnline: true }, { merge: true });
+      batch.update(Db().collection('students').doc(uid), { isOnline: true });
+      await batch.commit();
     } catch (e) {
-      console.warn('[dm] Could not set studentOnline=true:', e);
-      return;
+      try {
+        await _threadRef(uid).set({ studentOnline: true }, { merge: true });
+      } catch (e2) {
+        console.warn('[dm] Could not set studentOnline=true:', e2);
+        return;
+      }
     }
 
     const goOffline = async () => {
@@ -298,10 +271,19 @@
         const ts = firebase.auth().currentUser
           ? firebase.firestore.FieldValue.serverTimestamp()
           : new Date();
-        await _threadRef(uid).set(
+        const threadBatch = Db().batch();
+        threadBatch.set(
+          _threadRef(uid),
           { studentOnline: false, studentLastSeen: ts },
           { merge: true }
         );
+        try {
+          threadBatch.update(
+            Db().collection('students').doc(uid),
+            { isOnline: false, lastSeen: ts }
+          );
+        } catch (_) {}
+        await threadBatch.commit();
       } catch (e) {
         console.warn('[dm] studentOffline write failed:', e);
       }
@@ -315,7 +297,10 @@
       } else {
         if (firebase.auth().currentUser) {
           _studentOfflineDone = false;
-          _threadRef(uid).set({ studentOnline: true }, { merge: true }).catch(() => {});
+          const batch = Db().batch();
+          batch.set(_threadRef(uid), { studentOnline: true }, { merge: true });
+          try { batch.update(Db().collection('students').doc(uid), { isOnline: true }); } catch (_) {}
+          batch.commit().catch(() => {});
         }
       }
     };
@@ -324,11 +309,15 @@
     _studentBeforeunloadHandler = () => {
       if (_studentOfflineDone) return;
       _studentOfflineDone = true;
+      const now = new Date();
       try {
         _threadRef(uid).set(
-          { studentOnline: false, studentLastSeen: new Date() },
+          { studentOnline: false, studentLastSeen: now },
           { merge: true }
         );
+      } catch (_) {}
+      try {
+        Db().collection('students').doc(uid).update({ isOnline: false, lastSeen: now });
       } catch (_) {}
     };
     window.addEventListener('beforeunload', _studentBeforeunloadHandler);
@@ -428,22 +417,52 @@
 
   /* ══════════════════════════════════════════════════════════
      Live presence watcher
+     For the teacher watching a student: prefers the thread doc
+     but falls back to students/{uid} for students with no
+     prior conversation thread.
      ══════════════════════════════════════════════════════════ */
 
   function _watchPresence(studentUid, watchRole, elementId, listenerKey) {
     AppState.cancelListener(listenerKey);
-    const onlineField   = watchRole === 'teacher' ? 'teacherOnline'   : 'studentOnline';
-    const lastSeenField = watchRole === 'teacher' ? 'teacherLastSeen' : 'studentLastSeen';
 
+    if (watchRole === 'teacher') {
+      const onlineField   = 'teacherOnline';
+      const lastSeenField = 'teacherLastSeen';
+      const unsub = _threadRef(studentUid).onSnapshot(snap => {
+        const el = document.getElementById(elementId);
+        if (!el) { AppState.cancelListener(listenerKey); return; }
+        const data     = (snap.exists && snap.data()) || {};
+        const isOnline = !!data[onlineField];
+        const lastSeen = data[lastSeenField] || null;
+        el.innerHTML   = _presenceHTML(isOnline, lastSeen);
+      }, err => console.warn('[dm] Presence watch error:', err));
+      AppState.registerListener(listenerKey, unsub);
+      return;
+    }
+
+    // watchRole === 'student': watch the thread doc first; if it doesn't
+    // exist yet, fall back to the students/{uid} profile doc.
     const unsub = _threadRef(studentUid).onSnapshot(snap => {
       const el = document.getElementById(elementId);
       if (!el) { AppState.cancelListener(listenerKey); return; }
-      const data     = (snap.exists && snap.data()) || {};
-      const isOnline = !!data[onlineField];
-      const lastSeen = data[lastSeenField] || null;
-      el.innerHTML   = _presenceHTML(isOnline, lastSeen);
-    }, err => console.warn('[dm] Presence watch error:', err));
 
+      if (snap.exists) {
+        const data     = snap.data() || {};
+        const isOnline = !!data.studentOnline;
+        const lastSeen = data.studentLastSeen || null;
+        el.innerHTML   = _presenceHTML(isOnline, lastSeen);
+      } else {
+        // No thread doc yet — read from the student profile.
+        Db().collection('students').doc(studentUid).get().then(profileSnap => {
+          const el2 = document.getElementById(elementId);
+          if (!el2) return;
+          const data     = (profileSnap.exists && profileSnap.data()) || {};
+          const isOnline = !!data.isOnline;
+          const lastSeen = data.lastSeen || null;
+          el2.innerHTML  = _presenceHTML(isOnline, lastSeen);
+        }).catch(() => {});
+      }
+    }, err => console.warn('[dm] Presence watch error:', err));
     AppState.registerListener(listenerKey, unsub);
   }
 
@@ -511,8 +530,6 @@
       console.warn('[dm] Could not clear studentUnread:', e);
     }
 
-    // Seed thread doc for brand-new students so _watchPresence()
-    // can show accurate teacher status before any message is sent.
     try {
       const threadSnap = await threadRef.get();
       if (!threadSnap.exists) {
@@ -548,7 +565,7 @@
             </div>
           </div>
           <button onclick="DM.backFromStudentInbox()" class="btn bg-gray-500 hover:bg-gray-600"
-                  style="font-size:.8125rem;">← Back</button>
+                  style="font-size:.8125rem;">&#8592; Back</button>
         </div>
 
         <div style="margin-bottom:.75rem;padding:.5rem .875rem;
@@ -556,16 +573,19 @@
                     border:1px solid var(--border,#e5e7eb);
                     border-radius:8px;font-size:.75rem;
                     color:var(--text-tertiary,#6b7280);
-                    display:flex;align-items:center;gap:.4rem;line-height:1.5;">
-          🔒 <span><strong style="color:var(--text-secondary,#374151);font-weight:600;">Private</strong>
+                    display:flex;align-items:center;gap:.5rem;line-height:1.5;">
+          <span style="color:var(--text-tertiary,#6b7280);">${_iconLock(13)}</span>
+          <span><strong style="color:var(--text-secondary,#374151);font-weight:600;">Private</strong>
           — these messages can only be seen by you and Master Timothy.</span>
         </div>
 
         <div style="margin-bottom:1rem;padding:.625rem .875rem;
                     background:var(--brand-bg,#edf2ff);border:1px solid var(--brand-border,#bac8ff);
-                    border-radius:8px;font-size:.8125rem;color:var(--brand-text,#3730a3);line-height:1.6;">
-          📩 Send a question or concern directly to Master Timothy.
-          He will reply here as soon as possible.
+                    border-radius:8px;font-size:.8125rem;color:var(--brand-text,#3730a3);line-height:1.6;
+                    display:flex;align-items:flex-start;gap:.5rem;">
+          <span style="margin-top:1px;">${_iconMail(14)}</span>
+          <span>Send a question or concern directly to Master Timothy.
+          He will reply here as soon as possible.</span>
         </div>
 
         <div id="dmMessages"
@@ -619,14 +639,13 @@
           container.innerHTML = `
             <p style="text-align:center;font-size:.8125rem;
                       color:var(--text-disabled,#9ca3af);padding:2rem 0;">
-              No messages yet. Say hello to Master Timothy! 👋
+              No messages yet. Say hello to Master Timothy!
             </p>`;
           return;
         }
         const msgs = [];
         snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
 
-        // Mark incoming teacher messages as read now that the inbox is open/updated.
         _markDelivered(uid, 'student').catch(() => {});
         _markRead(uid, 'student').catch(() => {});
 
@@ -636,14 +655,6 @@
     AppState.registerListener('dmStudentMessages', unsub);
   }
 
-  /**
-   * Renders an array of message objects into HTML, inserting date separator
-   * dividers whenever the calendar day changes between consecutive messages.
-   *
-   * @param {Object[]} msgs      - Ordered array of message docs.
-   * @param {string}   myUid     - The current viewer's uid.
-   * @param {string}   viewerRole - 'student' | 'teacher'  (controls bubble builder)
-   */
   function _renderMessagesWithDateSeps(msgs, myUid, viewerRole) {
     let lastDayKey = null;
     const parts    = [];
@@ -684,7 +695,7 @@
       ? `background:var(--brand,#3b5bdb);color:#fff;border-radius:12px 12px 2px 12px;margin-left:auto;`
       : `background:var(--surface,#fff);color:var(--text-primary,#111827);
          border:1px solid var(--border,#e5e7eb);border-radius:12px 12px 12px 2px;margin-right:auto;`;
-    const nameStyle = isMe ? `color:rgba(255,255,255,.75);` : `color:var(--brand-text,#3730a3);`;
+
     const footer = isMe
       ? `<div class="dm-msg-footer">
            <span class="dm-time">${time}</span>
@@ -697,7 +708,7 @@
     return `
       <div style="display:flex;flex-direction:column;max-width:80%;margin-bottom:.75rem;
                   ${isMe ? 'align-items:flex-end;margin-left:auto;' : 'align-items:flex-start;'}">
-        <span style="font-size:.6875rem;font-weight:700;margin-bottom:3px;${nameStyle}">
+        <span class="dm-bubble-name--${isMe ? 'mine' : 'theirs'}">
           ${isMe ? 'You' : _esc(msg.senderName || 'Master Timothy')}
         </span>
         <div style="padding:.625rem .875rem .5rem;${bubbleStyle}max-width:100%;word-break:break-word;">
@@ -790,9 +801,9 @@
                            border:1px solid var(--brand-border,#bac8ff);
                            background:var(--brand-bg,#edf2ff);cursor:pointer;
                            display:flex;align-items:center;justify-content:center;
-                           color:var(--brand-text,#3730a3);font-size:1rem;line-height:1;
-                           transition:background .15s;" title="New conversation">
-              ✏️
+                           color:var(--brand-text,#3730a3);
+                           transition:background .15s;">
+              ${_iconPencil(13)}
             </button>
           </div>
           <div id="dmThreadList" style="flex:1;overflow-y:auto;padding:.375rem 0;">
@@ -848,7 +859,7 @@
                 .toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
             : '';
           const presenceTxt = isOnline
-            ? `<span style="color:#22c45e;font-size:.6rem;font-weight:600;line-height:1;">● Online</span>`
+            ? `<span style="color:#22c45e;font-size:.6rem;font-weight:600;line-height:1;">&#x25cf; Online</span>`
             : (item.studentLastSeen
                 ? `<span style="font-size:.6rem;color:var(--text-disabled,#9ca3af);line-height:1;">
                      ${_esc(_formatLastSeen(item.studentLastSeen))}
@@ -1041,7 +1052,6 @@
         const msgs = [];
         snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
 
-        // Mark incoming student messages as read while the conversation is open.
         _markDelivered(studentUid, 'teacher').catch(() => {});
         _markRead(studentUid, 'teacher').catch(() => {});
 
@@ -1062,7 +1072,7 @@
       ? `background:var(--brand,#3b5bdb);color:#fff;border-radius:12px 12px 2px 12px;margin-left:auto;`
       : `background:var(--surface,#fff);color:var(--text-primary,#111827);
          border:1px solid var(--border,#e5e7eb);border-radius:12px 12px 12px 2px;margin-right:auto;`;
-    const nameStyle = isTeacher ? `color:rgba(255,255,255,.75);` : `color:var(--brand-text,#3730a3);`;
+
     const footer = isTeacher
       ? `<div class="dm-msg-footer">
            <span class="dm-time">${time}</span>
@@ -1075,7 +1085,7 @@
     return `
       <div style="display:flex;flex-direction:column;max-width:80%;margin-bottom:.75rem;
                   ${isTeacher ? 'align-items:flex-end;margin-left:auto;' : 'align-items:flex-start;'}">
-        <span style="font-size:.6875rem;font-weight:700;margin-bottom:3px;${nameStyle}">
+        <span class="dm-bubble-name--${isTeacher ? 'mine' : 'theirs'}">
           ${isTeacher ? 'Master Timothy' : _esc(msg.senderName || 'Student')}
         </span>
         <div style="padding:.625rem .875rem .5rem;${bubbleStyle}max-width:100%;word-break:break-word;">
@@ -1100,8 +1110,6 @@
       studentIsOnline = !!(threadSnap.exists && threadSnap.data().studentOnline);
     } catch (_) {}
 
-    // Fetch the student's name and class in case this is a teacher-initiated
-    // thread where the thread doc may not yet have studentName populated.
     let resolvedName  = studentName;
     let resolvedClass = '';
     try {
@@ -1140,22 +1148,15 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     Teacher — New Conversation (message any student first)
+     Teacher — New Conversation
+     The student picker now reads presence from students/{uid}
+     so the teacher can see online status for any student,
+     including those with no prior conversation thread.
      ══════════════════════════════════════════════════════════ */
 
-  /**
-   * Opens a modal that lets the teacher pick any registered student
-   * from the /students collection and open a conversation with them,
-   * even before the student has sent any message.
-   *
-   * The modal renders a searchable list of students. Selecting one
-   * calls _openConversation() which creates/merges the thread doc on
-   * the first message send.
-   */
   async function _openNewConversationModal() {
     _injectStyles();
 
-    // Render the modal shell immediately with a loading state.
     const overlay = document.createElement('div');
     overlay.className = 'dm-new-conv-overlay';
     overlay.id        = 'dmNewConvOverlay';
@@ -1166,13 +1167,23 @@
             Message a Student
           </h3>
           <button onclick="DM._closeNewConversationModal()"
-                  style="background:none;border:none;cursor:pointer;font-size:1.25rem;
-                         color:var(--text-tertiary,#6b7280);line-height:1;padding:2px 6px;">×</button>
+                  style="background:none;border:none;cursor:pointer;
+                         color:var(--text-tertiary,#6b7280);line-height:1;padding:4px;
+                         display:flex;align-items:center;justify-content:center;
+                         border-radius:4px;">
+            ${_iconClose(16)}
+          </button>
         </div>
-        <input id="dmStudentSearch" type="text" placeholder="Search by name or class…"
-               style="width:100%;box-sizing:border-box;padding:.5rem .75rem;margin-bottom:.75rem;
-                      border:1px solid var(--border,#e5e7eb);border-radius:8px;
-                      font-family:var(--font);font-size:var(--text-base);outline:none;" />
+        <div style="position:relative;margin-bottom:.75rem;">
+          <span style="position:absolute;left:.625rem;top:50%;transform:translateY(-50%);
+                       color:var(--text-4,#9ca3af);pointer-events:none;">
+            ${_iconSearch(14)}
+          </span>
+          <input id="dmStudentSearch" type="text" placeholder="Search by name or class…"
+                 style="width:100%;box-sizing:border-box;padding:.5rem .75rem .5rem 2rem;
+                        border:1px solid var(--border,#e5e7eb);border-radius:8px;
+                        font-family:var(--font);font-size:var(--text-base);outline:none;" />
+        </div>
         <div id="dmStudentPickerList"
              style="max-height:320px;overflow-y:auto;border:1px solid var(--border,#e5e7eb);
                     border-radius:8px;">
@@ -1182,16 +1193,13 @@
       </div>`;
     document.body.appendChild(overlay);
 
-    // Close on backdrop click.
     overlay.addEventListener('click', e => {
       if (e.target === overlay) _closeNewConversationModal();
     });
 
-    // Focus the search box.
     const searchInput = document.getElementById('dmStudentSearch');
     if (searchInput) searchInput.focus();
 
-    // Fetch all students.
     let allStudents = [];
     try {
       const snap = await Db().collection('students').get();
@@ -1232,28 +1240,51 @@
       return;
     }
 
-    list.innerHTML = filtered.map((s, idx) => `
-      <div style="display:flex;align-items:center;gap:.625rem;padding:.625rem .875rem;
-                  cursor:pointer;transition:background .1s;
-                  ${idx < filtered.length - 1 ? 'border-bottom:1px solid var(--border,#e5e7eb);' : ''}"
-           onmouseenter="this.style.background='var(--surface-subtle,#f9fafb)'"
-           onmouseleave="this.style.background='transparent'"
-           onclick="DM._pickStudentForConversation('${_esc(s.uid)}','${_esc(s.name || '')}','${_esc(s.class || '')}')">
-        <div style="width:34px;height:34px;border-radius:50%;flex-shrink:0;
-                    background:var(--brand-bg,#edf2ff);border:1.5px solid var(--brand-border,#bac8ff);
-                    display:flex;align-items:center;justify-content:center;
-                    font-size:.75rem;font-weight:700;color:var(--brand-text,#3730a3);">
-          ${_esc((s.name || '?').charAt(0).toUpperCase())}
-        </div>
-        <div>
-          <p style="font-size:.8125rem;font-weight:600;color:var(--text-primary,#111827);margin:0;">
-            ${_esc(s.name || 'Unknown')}
-          </p>
-          <p style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin:0;">
-            ${_esc(s.class || '—')}
-          </p>
-        </div>
-      </div>`).join('');
+    list.innerHTML = filtered.map((s, idx) => {
+      const isOnline = !!s.isOnline;
+      const lastSeen = s.lastSeen || null;
+      const presenceTxt = isOnline
+        ? `<span style="color:#22c45e;font-size:.6rem;font-weight:600;line-height:1;">&#x25cf; Online</span>`
+        : (lastSeen
+            ? `<span style="font-size:.6rem;color:var(--text-disabled,#9ca3af);line-height:1;">${_esc(_formatLastSeen(lastSeen))}</span>`
+            : `<span style="font-size:.6rem;color:var(--text-disabled,#9ca3af);line-height:1;">Offline</span>`);
+
+      return `
+        <div style="display:flex;align-items:center;gap:.625rem;padding:.625rem .875rem;
+                    cursor:pointer;transition:background .1s;
+                    ${idx < filtered.length - 1 ? 'border-bottom:1px solid var(--border,#e5e7eb);' : ''}"
+             onmouseenter="this.style.background='var(--surface-subtle,#f9fafb)'"
+             onmouseleave="this.style.background='transparent'"
+             onclick="DM._pickStudentForConversation('${_esc(s.uid)}','${_esc(s.name || '')}','${_esc(s.class || '')}')">
+          <div style="position:relative;flex-shrink:0;">
+            <div style="width:34px;height:34px;border-radius:50%;
+                        background:var(--brand-bg,#edf2ff);
+                        border:1.5px solid ${isOnline ? '#22c45e' : 'var(--brand-border,#bac8ff)'};
+                        display:flex;align-items:center;justify-content:center;
+                        font-size:.75rem;font-weight:700;color:var(--brand-text,#3730a3);
+                        transition:border-color .3s;">
+              ${_esc((s.name || '?').charAt(0).toUpperCase())}
+            </div>
+            ${isOnline
+              ? `<span style="position:absolute;bottom:0;right:0;width:9px;height:9px;
+                              border-radius:50%;background:#22c45e;
+                              border:2px solid var(--surface,#fff);"></span>`
+              : ''}
+          </div>
+          <div style="flex:1;min-width:0;">
+            <p style="font-size:.8125rem;font-weight:600;color:var(--text-primary,#111827);margin:0;">
+              ${_esc(s.name || 'Unknown')}
+            </p>
+            <div style="display:flex;align-items:center;gap:.375rem;margin-top:1px;">
+              <p style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin:0;">
+                ${_esc(s.class || '—')}
+              </p>
+              <span style="color:var(--text-disabled,#9ca3af);font-size:.6rem;">·</span>
+              ${presenceTxt}
+            </div>
+          </div>
+        </div>`;
+    }).join('');
   }
 
   function _closeNewConversationModal() {
@@ -1261,16 +1292,9 @@
     if (overlay) overlay.remove();
   }
 
-  /**
-   * Called when the teacher selects a student from the picker.
-   * Seeds a minimal thread doc (if it doesn't exist) so the
-   * conversation panel can open, then opens the conversation.
-   */
   async function _pickStudentForConversation(uid, name, cls) {
     _closeNewConversationModal();
 
-    // Seed a minimal thread doc so the conversation can open cleanly.
-    // merge:true means we won't overwrite an existing thread.
     try {
       await _threadRef(uid).set({
         studentName:   name,
@@ -1337,7 +1361,7 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     initStudentDMListener — called once after student login
+     initStudentDMListener
      ══════════════════════════════════════════════════════════ */
   async function initStudentDMListener(uid) {
     AppState.cancelListener('dmStudentUnread');
@@ -1353,7 +1377,7 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     initTeacherDMListener — called once after teacher login
+     initTeacherDMListener
      ══════════════════════════════════════════════════════════ */
   async function initTeacherDMListener() {
     AppState.cancelListener('dmTeacherUnread');
@@ -1380,10 +1404,9 @@
   }
 
   /* ══════════════════════════════════════════════════════════
-     cancelListeners — called by app.js BEFORE fbAuth.signOut()
+     cancelListeners
      ══════════════════════════════════════════════════════════ */
   async function cancelListeners() {
-    // Step 1 — cancel Firestore listeners.
     AppState.cancelListener('dmStudentMessages');
     AppState.cancelListener('dmTeacherThreads');
     AppState.cancelListener('dmTeacherMessages');
@@ -1394,7 +1417,6 @@
     _activeStudentUid   = null;
     window._dmActiveUid = null;
 
-    // Step 2 — remove DOM event listeners.
     if (_studentVisibilityHandler) {
       document.removeEventListener('visibilitychange', _studentVisibilityHandler);
       _studentVisibilityHandler = null;
@@ -1412,7 +1434,6 @@
       _teacherBeforeunloadHandler = null;
     }
 
-    // Step 3 — write offline while auth is STILL VALID.
     if (_teacherOfflineCleanup) {
       await _teacherOfflineCleanup().catch(() => {});
       _teacherOfflineCleanup = null;
