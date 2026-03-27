@@ -1,6 +1,47 @@
+/* ============================================================
+   js/dm.js — Direct Messaging + Presence System (v2)
+   ============================================================
+   PRESENCE UPGRADE — heartbeat-based model:
+
+   Previous model (fragile):
+   - Relied on a final "set online:false" write at logout/close.
+   - If the tab crashed or network dropped, user stayed "Online"
+     indefinitely.
+
+   New model (resilient):
+   - lastSeen is the single source of truth.
+   - A heartbeat fires every HEARTBEAT_INTERVAL_MS while the user
+     is active, writing lastSeen = serverTimestamp() to Firestore.
+   - A user is "Online" only if their lastSeen is within
+     ONLINE_THRESHOLD_MS of the current time.
+   - The system remains correct even if the logout cleanup write
+     never executes.
+
+   Key constants:
+     HEARTBEAT_INTERVAL_MS = 25 000  (write every 25 s)
+     ONLINE_THRESHOLD_MS   = 60 000  (online if seen within 60 s)
+
+   The old offline cleanup writes (goOffline) are kept so logout
+   still produces fast UI feedback, but correctness no longer
+   depends on them.
+   ============================================================ */
 (function () {
   'use strict';
 
+  /* ── Presence constants ── */
+  const HEARTBEAT_INTERVAL_MS = 25_000;   // write lastSeen every 25 s
+  const ONLINE_THRESHOLD_MS   = 60_000;   // seen within 60 s → Online
+
+  /* ── Returns true if a Firestore timestamp is recent enough ── */
+  function _isRecentlyActive(ts) {
+    if (!ts) return false;
+    const date = ts.toDate ? ts.toDate() : new Date(ts);
+    return (Date.now() - date.getTime()) <= ONLINE_THRESHOLD_MS;
+  }
+
+  /* ────────────────────────────────────────────────────────────
+     Icons
+  ──────────────────────────────────────────────────────────── */
   function _iconLock(size) {
     size = size || 14;
     return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"
@@ -84,6 +125,9 @@
     </span>`;
   }
 
+  /* ────────────────────────────────────────────────────────────
+     Styles
+  ──────────────────────────────────────────────────────────── */
   function _injectStyles() {
     if (document.getElementById('_dmStyles')) return;
     const style = document.createElement('style');
@@ -255,6 +299,9 @@
     document.head.appendChild(style);
   }
 
+  /* ────────────────────────────────────────────────────────────
+     Date/time helpers
+  ──────────────────────────────────────────────────────────── */
   function _dateLabelFor(date) {
     const now       = new Date();
     const today     = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -297,8 +344,20 @@
       date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   }
 
-  function _presenceHTML(isOnline, lastSeen) {
-    if (isOnline) {
+  /* ────────────────────────────────────────────────────────────
+     Presence HTML
+     ──────────────────────────────────────────────────────────
+     IMPORTANT: isOnline (the boolean flag) is now ONLY used as
+     a fast hint. The definitive check is _isRecentlyActive(ts).
+     A user is shown as Online only if their lastSeen timestamp
+     is within ONLINE_THRESHOLD_MS of now.
+  ──────────────────────────────────────────────────────────── */
+  function _presenceHTML(isOnlineFlagHint, lastSeen) {
+    // Trust the timestamp over the boolean flag.
+    // If lastSeen is recent → Online; otherwise → Offline.
+    const actuallyOnline = _isRecentlyActive(lastSeen);
+
+    if (actuallyOnline) {
       return `<span class="dm-presence">
         <span class="dm-presence__dot dm-presence__dot--online"></span>
         <span class="dm-presence__label dm-presence__label--online">Online</span>
@@ -310,6 +369,9 @@
     </span>`;
   }
 
+  /* ────────────────────────────────────────────────────────────
+     Module-level state
+  ──────────────────────────────────────────────────────────── */
   let _studentOfflineCleanup      = null;
   let _teacherOfflineCleanup      = null;
   let _studentVisibilityHandler   = null;
@@ -320,25 +382,107 @@
   let _teacherOfflineDone         = false;
   let _teacherIsOnline            = false;
 
+  // Heartbeat timer handles
+  let _studentHeartbeatHandle = null;
+  let _teacherHeartbeatHandle = null;
+
+  /* ────────────────────────────────────────────────────────────
+     Heartbeat — student
+     Fires every HEARTBEAT_INTERVAL_MS to refresh lastSeen.
+     This is what keeps the user appearing "Online" in the new
+     threshold-based model. Writing online:true here is optional
+     (legacy UI hint) — correctness comes from lastSeen alone.
+  ──────────────────────────────────────────────────────────── */
+  function _startStudentHeartbeat(uid) {
+    _stopStudentHeartbeat();
+    _studentHeartbeatHandle = setInterval(async () => {
+      if (!firebase.auth().currentUser || _studentOfflineDone) {
+        _stopStudentHeartbeat();
+        return;
+      }
+      // Skip heartbeat when tab is hidden — saves writes and lets lastSeen
+      // go stale naturally, so the presence indicator auto-flips to Offline.
+      if (document.visibilityState === 'hidden') return;
+
+      const ts = firebase.firestore.FieldValue.serverTimestamp();
+      try {
+        const b = Db().batch();
+        b.set(_threadRef(uid), { studentLastSeen: ts, studentOnline: true }, { merge: true });
+        b.update(Db().collection('students').doc(uid), { lastSeen: ts, isOnline: true });
+        await b.commit();
+      } catch (e) {
+        console.warn('[dm] Student heartbeat write failed:', e);
+      }
+    }, HEARTBEAT_INTERVAL_MS);
+  }
+
+  function _stopStudentHeartbeat() {
+    if (_studentHeartbeatHandle) {
+      clearInterval(_studentHeartbeatHandle);
+      _studentHeartbeatHandle = null;
+    }
+  }
+
+  /* ────────────────────────────────────────────────────────────
+     Heartbeat — teacher
+  ──────────────────────────────────────────────────────────── */
+  function _startTeacherHeartbeat() {
+    _stopTeacherHeartbeat();
+    _teacherHeartbeatHandle = setInterval(async () => {
+      if (!firebase.auth().currentUser || _teacherOfflineDone) {
+        _stopTeacherHeartbeat();
+        return;
+      }
+      if (document.visibilityState === 'hidden') return;
+
+      try {
+        await _broadcastTeacherPresence(true);
+      } catch (e) {
+        console.warn('[dm] Teacher heartbeat write failed:', e);
+      }
+    }, HEARTBEAT_INTERVAL_MS);
+  }
+
+  function _stopTeacherHeartbeat() {
+    if (_teacherHeartbeatHandle) {
+      clearInterval(_teacherHeartbeatHandle);
+      _teacherHeartbeatHandle = null;
+    }
+  }
+
+  /* ────────────────────────────────────────────────────────────
+     Student online presence setup
+  ──────────────────────────────────────────────────────────── */
   async function _setStudentOnlineGlobal(uid) {
     _studentOfflineDone = false;
+
+    // Initial "I'm here" write — sets both online flag and lastSeen.
     try {
+      const ts    = firebase.firestore.FieldValue.serverTimestamp();
       const batch = Db().batch();
-      batch.set(_threadRef(uid), { studentOnline: true }, { merge: true });
-      batch.update(Db().collection('students').doc(uid), { isOnline: true });
+      batch.set(_threadRef(uid), { studentOnline: true, studentLastSeen: ts }, { merge: true });
+      batch.update(Db().collection('students').doc(uid), { isOnline: true, lastSeen: ts });
       await batch.commit();
     } catch (e) {
       try {
-        await _threadRef(uid).set({ studentOnline: true }, { merge: true });
+        const ts = firebase.firestore.FieldValue.serverTimestamp();
+        await _threadRef(uid).set({ studentOnline: true, studentLastSeen: ts }, { merge: true });
       } catch (e2) {
         console.warn('[dm] Could not set studentOnline=true:', e2);
         return;
       }
     }
 
+    // Start heartbeat to keep lastSeen fresh.
+    _startStudentHeartbeat(uid);
+
+    /* goOffline — called at logout or tab-close.
+       This is purely for fast UI feedback.
+       Correctness no longer depends on this succeeding. */
     const goOffline = async () => {
       if (_studentOfflineDone) return;
       _studentOfflineDone = true;
+      _stopStudentHeartbeat();
       try {
         const ts = firebase.auth().currentUser
           ? firebase.firestore.FieldValue.serverTimestamp()
@@ -352,25 +496,38 @@
 
     _studentOfflineCleanup = goOffline;
 
+    // Tab hidden → stop heartbeat so lastSeen goes stale → auto-Offline after threshold.
+    // Tab visible again → restart heartbeat immediately.
     _studentVisibilityHandler = () => {
       if (document.visibilityState === 'hidden') {
-        goOffline().catch(() => {});
+        _stopStudentHeartbeat();
+        // Do NOT call goOffline here — let the threshold handle it naturally.
+        // (Calling goOffline here caused the user to appear offline when just
+        // switching tabs momentarily, even with the tab still open.)
       } else {
-        if (firebase.auth().currentUser && _studentOfflineDone) {
-          const b = Db().batch();
-          b.set(_threadRef(uid), { studentOnline: true }, { merge: true });
-          try { b.update(Db().collection('students').doc(uid), { isOnline: true }); } catch (_) {}
-          b.commit()
-            .then(() => { _studentOfflineDone = false; })
-            .catch(() => {});
+        if (firebase.auth().currentUser && !_studentOfflineDone) {
+          // Immediately refresh lastSeen on tab-focus so the user snaps
+          // back to Online without waiting a full heartbeat interval.
+          (async () => {
+            const ts = firebase.firestore.FieldValue.serverTimestamp();
+            try {
+              const b = Db().batch();
+              b.set(_threadRef(uid), { studentOnline: true, studentLastSeen: ts }, { merge: true });
+              b.update(Db().collection('students').doc(uid), { isOnline: true, lastSeen: ts });
+              await b.commit();
+            } catch (_) {}
+          })();
+          _startStudentHeartbeat(uid);
         }
       }
     };
     document.addEventListener('visibilitychange', _studentVisibilityHandler);
 
+    // beforeunload — best-effort synchronous write.
     _studentBeforeunloadHandler = () => {
       if (_studentOfflineDone) return;
       _studentOfflineDone = true;
+      _stopStudentHeartbeat();
       const now = new Date();
       try { _threadRef(uid).set({ studentOnline: false, studentLastSeen: now }, { merge: true }); } catch (_) {}
       try { Db().collection('students').doc(uid).update({ isOnline: false, lastSeen: now }); } catch (_) {}
@@ -378,9 +535,13 @@
     window.addEventListener('beforeunload', _studentBeforeunloadHandler);
   }
 
+  /* ────────────────────────────────────────────────────────────
+     Teacher online presence setup
+  ──────────────────────────────────────────────────────────── */
   async function _setTeacherOnlineGlobal() {
     _teacherOfflineDone = false;
     _teacherIsOnline    = true;
+
     try {
       await _broadcastTeacherPresence(true);
     } catch (e) {
@@ -388,10 +549,14 @@
       return;
     }
 
+    // Start heartbeat.
+    _startTeacherHeartbeat();
+
     const goOffline = async () => {
       if (_teacherOfflineDone) return;
       _teacherOfflineDone = true;
       _teacherIsOnline    = false;
+      _stopTeacherHeartbeat();
       try { await _broadcastTeacherPresence(false); } catch (e) {
         console.warn('[dm] teacherOffline broadcast failed:', e);
       }
@@ -401,12 +566,12 @@
 
     _teacherVisibilityHandler = () => {
       if (document.visibilityState === 'hidden') {
-        goOffline().catch(() => {});
+        _stopTeacherHeartbeat();
       } else {
-        if (firebase.auth().currentUser && _teacherOfflineDone) {
-          _teacherOfflineDone = false;
-          _teacherIsOnline    = true;
+        if (firebase.auth().currentUser && !_teacherOfflineDone) {
+          // Snap back to Online immediately on tab-focus.
           _broadcastTeacherPresence(true).catch(() => {});
+          _startTeacherHeartbeat();
         }
       }
     };
@@ -416,6 +581,7 @@
       if (_teacherOfflineDone) return;
       _teacherOfflineDone = true;
       _teacherIsOnline    = false;
+      _stopTeacherHeartbeat();
       const db = Db(); const now = new Date();
       try { db.collection('teacherPresence').doc('global').set({ online: false, lastSeen: now }, { merge: true }); } catch (_) {}
       try {
@@ -430,15 +596,23 @@
     window.addEventListener('beforeunload', _teacherBeforeunloadHandler);
   }
 
+  /* ────────────────────────────────────────────────────────────
+     _broadcastTeacherPresence
+     Now includes lastSeen on EVERY write (online or offline),
+     so the threshold check always has a fresh timestamp.
+  ──────────────────────────────────────────────────────────── */
   async function _broadcastTeacherPresence(isOnline) {
     const db = Db();
     const ts = firebase.auth().currentUser
       ? firebase.firestore.FieldValue.serverTimestamp()
       : new Date();
+
+    // Always write lastSeen — even when going online — so the timestamp is fresh.
     await db.collection('teacherPresence').doc('global').set(
-      isOnline ? { online: true } : { online: false, lastSeen: ts },
+      { online: isOnline, lastSeen: ts },
       { merge: true }
     );
+
     const snap = await db.collection('directMessages').get();
     if (snap.empty) return;
     const refs = [];
@@ -446,13 +620,20 @@
     for (let i = 0; i < refs.length; i += 400) {
       const batch = db.batch();
       refs.slice(i, i + 400).forEach(ref => batch.set(ref,
-        isOnline ? { teacherOnline: true } : { teacherOnline: false, teacherLastSeen: ts },
+        { teacherOnline: isOnline, teacherLastSeen: ts },
         { merge: true }
       ));
       await batch.commit();
     }
   }
 
+  /* ────────────────────────────────────────────────────────────
+     _watchPresence
+     Reads both the boolean flag AND the lastSeen timestamp from
+     Firestore snapshots, then calls _presenceHTML which applies
+     the threshold check. The boolean flag is passed as a hint
+     only — the rendered result depends on _isRecentlyActive(ts).
+  ──────────────────────────────────────────────────────────── */
   function _watchPresence(studentUid, watchRole, elementId, listenerKey) {
     AppState.cancelListener(listenerKey);
 
@@ -461,6 +642,7 @@
         const el = document.getElementById(elementId);
         if (!el) { AppState.cancelListener(listenerKey); return; }
         const data = (snap.exists && snap.data()) || {};
+        // Pass both the flag (hint) and the timestamp (source of truth).
         el.innerHTML = _presenceHTML(!!data.teacherOnline, data.teacherLastSeen || null);
       }, err => console.warn('[dm] Presence watch error:', err));
       AppState.registerListener(listenerKey, unsub);
@@ -485,10 +667,9 @@
     AppState.registerListener(listenerKey, unsub);
   }
 
-  // Marks messages sent by the other party as 'delivered'.
-  // Queries only by status to avoid requiring a composite Firestore index,
-  // then filters by role in memory. This is safe because message threads are
-  // small (typically < 500 messages) and avoids silent index-missing failures.
+  /* ────────────────────────────────────────────────────────────
+     Message delivery helpers (unchanged logic)
+  ──────────────────────────────────────────────────────────── */
   async function _markDelivered(studentUid, recipientRole) {
     const senderRole = recipientRole === 'student' ? 'teacher' : 'student';
     try {
@@ -510,9 +691,6 @@
     } catch (e) { console.warn('[dm] _markDelivered error:', e); }
   }
 
-  // Marks messages sent by the other party as 'read'.
-  // Only promotes 'sent' or 'delivered' messages — never downgrades 'read' ones.
-  // Uses a single-field query for the same index-safety reason as _markDelivered.
   async function _markRead(studentUid, recipientRole) {
     const senderRole = recipientRole === 'student' ? 'teacher' : 'student';
     try {
@@ -535,6 +713,9 @@
     } catch (e) { console.warn('[dm] _markRead error:', e); }
   }
 
+  /* ────────────────────────────────────────────────────────────
+     Edit history helpers (unchanged)
+  ──────────────────────────────────────────────────────────── */
   function _msgHistoryRef(studentUid, messageId) {
     return _threadRef(studentUid).collection('messages').doc(messageId).collection('editHistory');
   }
@@ -615,6 +796,9 @@
     document.body.appendChild(overlay);
   }
 
+  /* ────────────────────────────────────────────────────────────
+     Inline edit UI (unchanged)
+  ──────────────────────────────────────────────────────────── */
   function _activateInlineEdit(studentUid, messageId, currentText, isDarkBubble, wrapperId) {
     const wrapper = document.getElementById(wrapperId);
     if (!wrapper) return;
@@ -695,6 +879,9 @@
     });
   }
 
+  /* ────────────────────────────────────────────────────────────
+     Action menu (unchanged)
+  ──────────────────────────────────────────────────────────── */
   let _openMenuId = null;
 
   function _closeOpenMenu() {
@@ -764,6 +951,9 @@
     }, 0);
   }
 
+  /* ────────────────────────────────────────────────────────────
+     Bubble builders (unchanged)
+  ──────────────────────────────────────────────────────────── */
   function _buildStudentBubble(msg, myUid) {
     const isMe    = msg.senderId === myUid;
     const msgId   = msg.id || '';
@@ -878,6 +1068,9 @@
       </div>`;
   }
 
+  /* ────────────────────────────────────────────────────────────
+     Student inbox
+  ──────────────────────────────────────────────────────────── */
   async function openStudentInbox() {
     _injectStyles();
 
@@ -895,8 +1088,10 @@
       const threadSnap = await threadRef.get();
       if (!threadSnap.exists) {
         const sentinelSnap = await Db().collection('teacherPresence').doc('global').get();
-        const teacherOnline   = !!(sentinelSnap.exists && sentinelSnap.data().online);
-        const teacherLastSeen = (sentinelSnap.exists && sentinelSnap.data().lastSeen) || null;
+        const tData = (sentinelSnap.exists && sentinelSnap.data()) || {};
+        // Use threshold check for teacher online status — not raw boolean.
+        const teacherOnline   = _isRecentlyActive(tData.lastSeen);
+        const teacherLastSeen = tData.lastSeen || null;
         const seedData = {
           studentName: studentData.name || '', studentClass: studentData.class || '',
           studentUnread: 0, teacherUnread: 0, teacherOnline,
@@ -969,10 +1164,6 @@
       });
     }
 
-    // Mark as read now that the thread is open. _markDelivered is NOT called
-    // here because it already ran at login via initStudentDMListener. Calling
-    // it again here would create a race with _markRead where delivered could
-    // overwrite a read status if the batches arrive out of order.
     await _markRead(uid, 'student');
     _watchPresence(uid, 'teacher', 'dmTeacherPresence', 'dmTeacherPresenceWatch');
     _subscribeStudentMessages(uid);
@@ -995,8 +1186,6 @@
         }
         const msgs = [];
         snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
-        // Only call _markRead in the snapshot — the thread is open so the
-        // student is actively reading. Do not call _markDelivered here.
         _markRead(uid, 'student').catch(() => {});
         container.innerHTML = _renderMessagesWithDateSeps(msgs, uid, 'student');
         container.scrollTop = container.scrollHeight;
@@ -1027,6 +1216,10 @@
     return parts.join('');
   }
 
+  /* ────────────────────────────────────────────────────────────
+     sendStudentMessage
+     Uses threshold check to decide delivered vs sent status.
+  ──────────────────────────────────────────────────────────── */
   async function sendStudentMessage() {
     const input = document.getElementById('dmInput');
     const text  = (input?.value || '').trim();
@@ -1041,11 +1234,12 @@
     UI.setLoading(btn, true);
     if (input) input.value = '';
 
-    // Check teacher presence from the sentinel doc (authoritative global state)
+    // Use the sentinel doc + threshold check for teacher online status.
     let teacherIsOnline = false;
     try {
       const sentinelSnap = await Db().collection('teacherPresence').doc('global').get();
-      teacherIsOnline = !!(sentinelSnap.exists && sentinelSnap.data().online);
+      const tData = (sentinelSnap.exists && sentinelSnap.data()) || {};
+      teacherIsOnline = _isRecentlyActive(tData.lastSeen);
     } catch (_) {}
 
     try {
@@ -1081,6 +1275,9 @@
     Exam.renderSubjectSelection();
   }
 
+  /* ────────────────────────────────────────────────────────────
+     Teacher inbox
+  ──────────────────────────────────────────────────────────── */
   function openTeacherInbox() {
     _injectStyles();
     const panel = document.getElementById('teacher-dm');
@@ -1126,6 +1323,10 @@
     _subscribeTeacherThreadList();
   }
 
+  /* ────────────────────────────────────────────────────────────
+     Thread list
+     Now uses _isRecentlyActive for the presence dot & label.
+  ──────────────────────────────────────────────────────────── */
   function _subscribeTeacherThreadList() {
     AppState.cancelListener('dmTeacherThreads');
     const unsub = Db()
@@ -1153,7 +1354,8 @@
         list.innerHTML = items.map(item => {
           const unread   = item.teacherUnread || 0;
           const isActive = _activeStudentUid === item.id;
-          const isOnline = !!item.studentOnline;
+          // Apply threshold check — ignore raw boolean for display.
+          const isOnline = _isRecentlyActive(item.studentLastSeen);
           const timeStr  = item.lastAt
             ? new Date(item.lastAt.toDate ? item.lastAt.toDate() : item.lastAt)
                 .toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
@@ -1254,10 +1456,6 @@
       await _threadRef(studentUid).set({ teacherUnread: 0 }, { merge: true });
     } catch (e) { console.warn('[dm] Could not clear teacherUnread:', e); }
 
-    // Only mark as read — _markDelivered already ran at login via
-    // initTeacherDMListener so it does not need to run again here.
-    // Calling both here in sequence creates a race where 'delivered'
-    // can overwrite 'read' if the batches land out of order.
     await _markRead(studentUid, 'teacher');
 
     const panel = document.getElementById('dmConversationPanel');
@@ -1349,7 +1547,6 @@
         }
         const msgs = [];
         snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
-        // Thread is open — only mark as read, not delivered.
         _markRead(studentUid, 'teacher').catch(() => {});
         container.innerHTML = _renderMessagesWithDateSeps(msgs, AppConfig.TEACHER_UID, 'teacher');
         container.scrollTop = container.scrollHeight;
@@ -1357,6 +1554,10 @@
     AppState.registerListener('dmTeacherMessages', unsub);
   }
 
+  /* ────────────────────────────────────────────────────────────
+     _sendTeacherReply
+     Uses threshold check for student online status.
+  ──────────────────────────────────────────────────────────── */
   async function _sendTeacherReply(studentUid, studentName) {
     const input = document.getElementById('dmTeacherInput');
     const text  = (input?.value || '').trim();
@@ -1366,11 +1567,12 @@
     UI.setLoading(btn, true);
     if (input) input.value = '';
 
-    // Check student presence from the thread doc
+    // Use threshold check — not the raw boolean.
     let studentIsOnline = false;
     try {
       const threadSnap = await _threadRef(studentUid).get();
-      studentIsOnline = !!(threadSnap.exists && threadSnap.data().studentOnline);
+      const tData = (threadSnap.exists && threadSnap.data()) || {};
+      studentIsOnline = _isRecentlyActive(tData.studentLastSeen);
     } catch (_) {}
 
     let resolvedName  = studentName;
@@ -1406,6 +1608,10 @@
     }
   }
 
+  /* ────────────────────────────────────────────────────────────
+     New conversation modal
+     Presence dots use threshold check.
+  ──────────────────────────────────────────────────────────── */
   async function _openNewConversationModal() {
     _injectStyles();
 
@@ -1489,7 +1695,8 @@
     }
 
     list.innerHTML = filtered.map((s, idx) => {
-      const isOnline    = !!s.isOnline;
+      // Apply threshold check using student's lastSeen from the students collection.
+      const isOnline    = _isRecentlyActive(s.lastSeen);
       const lastSeen    = s.lastSeen || null;
       const presenceTxt = isOnline
         ? `<span style="color:#22c45e;font-size:.6rem;font-weight:600;line-height:1;">&#x25cf; Online</span>`
@@ -1550,6 +1757,9 @@
     await _openConversation(uid, name, cls);
   }
 
+  /* ────────────────────────────────────────────────────────────
+     Badge helpers (unchanged)
+  ──────────────────────────────────────────────────────────── */
   function _updateStudentBadge(count) {
     const btn = document.getElementById('dmOpenBtn');
     if (!btn) return;
@@ -1596,6 +1806,9 @@
     }
   }
 
+  /* ────────────────────────────────────────────────────────────
+     initStudentDMListener
+  ──────────────────────────────────────────────────────────── */
   async function initStudentDMListener(uid) {
     AppState.cancelListener('dmStudentUnread');
     const unsub = _threadRef(uid).onSnapshot(snap => {
@@ -1606,20 +1819,16 @@
     AppState.registerListener('dmStudentUnread', unsub);
 
     await _setStudentOnlineGlobal(uid);
-
-    // Mark all teacher messages that are still 'sent' as 'delivered' now
-    // that the student is online. This is the authoritative delivery sweep
-    // that makes the double-grey-tick appear for the teacher.
     await _markDelivered(uid, 'student');
   }
 
+  /* ────────────────────────────────────────────────────────────
+     initTeacherDMListener
+  ──────────────────────────────────────────────────────────── */
   async function initTeacherDMListener() {
     AppState.cancelListener('dmTeacherUnread');
     await _setTeacherOnlineGlobal();
 
-    // Mark all student messages in every thread as 'delivered' now that the
-    // teacher is online. This is the authoritative delivery sweep that makes
-    // double-grey-ticks appear for students who have sent messages.
     try {
       const allThreads = await Db().collection('directMessages').get();
       const deliveryPromises = [];
@@ -1637,6 +1846,10 @@
     AppState.registerListener('dmTeacherUnread', unsub);
   }
 
+  /* ────────────────────────────────────────────────────────────
+     cancelListeners
+     Stops heartbeats before calling the offline cleanup writes.
+  ──────────────────────────────────────────────────────────── */
   async function cancelListeners() {
     AppState.cancelListener('dmStudentMessages');
     AppState.cancelListener('dmTeacherThreads');
@@ -1648,6 +1861,10 @@
     _activeStudentUid   = null;
     window._dmActiveUid = null;
     _closeOpenMenu();
+
+    // Stop heartbeats first so they don't race with the cleanup writes.
+    _stopStudentHeartbeat();
+    _stopTeacherHeartbeat();
 
     if (_studentVisibilityHandler) {
       document.removeEventListener('visibilitychange', _studentVisibilityHandler);
@@ -1666,6 +1883,8 @@
       _teacherBeforeunloadHandler = null;
     }
 
+    // Best-effort offline writes — for fast UI feedback only.
+    // Correctness is guaranteed by the heartbeat going stale.
     if (_teacherOfflineCleanup) {
       await _teacherOfflineCleanup().catch(() => {});
       _teacherOfflineCleanup = null;
@@ -1678,6 +1897,9 @@
     _teacherIsOnline = false;
   }
 
+  /* ────────────────────────────────────────────────────────────
+     Misc helpers
+  ──────────────────────────────────────────────────────────── */
   function _addTeacherGridResponsiveStyle() {
     if (document.getElementById('_dmGridStyle')) return;
     const style = document.createElement('style');
@@ -1697,6 +1919,9 @@
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+  /* ────────────────────────────────────────────────────────────
+     Public API
+  ──────────────────────────────────────────────────────────── */
   window.DM = {
     openStudentInbox,
     sendStudentMessage,
