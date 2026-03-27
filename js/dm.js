@@ -1,13 +1,5 @@
-/* ============================================================
-   js/dm.js — Direct Messaging: Student ↔ Teacher
-   ============================================================ */
-
 (function () {
   'use strict';
-
-  /* ══════════════════════════════════════════════════════════
-     SVG icon helpers (no emojis)
-     ══════════════════════════════════════════════════════════ */
 
   function _iconLock(size) {
     size = size || 14;
@@ -68,10 +60,6 @@
     </svg>`;
   }
 
-  /* ══════════════════════════════════════════════════════════
-     SVG tick helpers
-     ══════════════════════════════════════════════════════════ */
-
   function _tickIcon(status) {
     if (status === 'read') {
       return `<span class="dm-ticks dm-ticks--read" title="Read" aria-label="Read">
@@ -96,9 +84,6 @@
     </span>`;
   }
 
-  /* ══════════════════════════════════════════════════════════
-     CSS injection
-     ══════════════════════════════════════════════════════════ */
   function _injectStyles() {
     if (document.getElementById('_dmStyles')) return;
     const style = document.createElement('style');
@@ -158,8 +143,6 @@
         color: var(--accent-text, #2d49d6);
         font-size: .6875rem; font-weight: 700; margin-bottom: 3px;
       }
-
-      /* ── Message wrapper & action button ── */
       .dm-msg-wrap { position: relative; }
       .dm-msg-wrap .dm-action-btn {
         position: absolute; top: 4px;
@@ -181,8 +164,6 @@
       .dm-msg-wrap .dm-action-btn:hover {
         background: var(--bg-subtle, #f3f4f6); color: var(--accent, #4f6ef7);
       }
-
-      /* ── Action menu dropdown ── */
       .dm-action-menu {
         position: absolute; z-index: 200;
         background: var(--surface, #fff);
@@ -203,8 +184,6 @@
       .dm-action-menu-item + .dm-action-menu-item {
         border-top: 1px solid var(--border, #e5e7eb);
       }
-
-      /* ── Inline edit mode ── */
       .dm-edit-textarea {
         width: 100%; resize: none; overflow-y: hidden; line-height: 1.55;
         font-size: .875rem; font-family: var(--font); padding: .375rem .5rem;
@@ -228,14 +207,10 @@
         background: var(--bg-subtle, #f3f4f6); color: var(--text-2, #3a3a40);
         border: 1px solid var(--border, #e5e7eb);
       }
-
-      /* ── "edited" label ── */
       .dm-edited-label {
         font-size: .5625rem; opacity: .6; font-style: italic;
         margin-left: 4px; line-height: 1; white-space: nowrap;
       }
-
-      /* ── History modal ── */
       .dm-history-overlay {
         position: fixed; inset: 0; background: rgba(0,0,0,.5);
         display: flex; align-items: center; justify-content: center;
@@ -280,10 +255,6 @@
     document.head.appendChild(style);
   }
 
-  /* ══════════════════════════════════════════════════════════
-     Date separator helpers
-     ══════════════════════════════════════════════════════════ */
-
   function _dateLabelFor(date) {
     const now       = new Date();
     const today     = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -301,10 +272,6 @@
   function _dayKey(date) {
     return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
   }
-
-  /* ══════════════════════════════════════════════════════════
-     Presence formatting
-     ══════════════════════════════════════════════════════════ */
 
   function _formatLastSeen(ts) {
     if (!ts) return 'Last seen: unknown';
@@ -343,10 +310,6 @@
     </span>`;
   }
 
-  /* ══════════════════════════════════════════════════════════
-     Presence state
-     ══════════════════════════════════════════════════════════ */
-
   let _studentOfflineCleanup      = null;
   let _teacherOfflineCleanup      = null;
   let _studentVisibilityHandler   = null;
@@ -355,10 +318,7 @@
   let _teacherBeforeunloadHandler = null;
   let _studentOfflineDone         = false;
   let _teacherOfflineDone         = false;
-
-  /* ══════════════════════════════════════════════════════════
-     Student presence
-     ══════════════════════════════════════════════════════════ */
+  let _teacherIsOnline            = false;
 
   async function _setStudentOnlineGlobal(uid) {
     _studentOfflineDone = false;
@@ -396,12 +356,13 @@
       if (document.visibilityState === 'hidden') {
         goOffline().catch(() => {});
       } else {
-        if (firebase.auth().currentUser) {
-          _studentOfflineDone = false;
+        if (firebase.auth().currentUser && _studentOfflineDone) {
           const b = Db().batch();
           b.set(_threadRef(uid), { studentOnline: true }, { merge: true });
           try { b.update(Db().collection('students').doc(uid), { isOnline: true }); } catch (_) {}
-          b.commit().catch(() => {});
+          b.commit()
+            .then(() => { _studentOfflineDone = false; })
+            .catch(() => {});
         }
       }
     };
@@ -417,12 +378,9 @@
     window.addEventListener('beforeunload', _studentBeforeunloadHandler);
   }
 
-  /* ══════════════════════════════════════════════════════════
-     Teacher presence
-     ══════════════════════════════════════════════════════════ */
-
   async function _setTeacherOnlineGlobal() {
     _teacherOfflineDone = false;
+    _teacherIsOnline    = true;
     try {
       await _broadcastTeacherPresence(true);
     } catch (e) {
@@ -433,6 +391,7 @@
     const goOffline = async () => {
       if (_teacherOfflineDone) return;
       _teacherOfflineDone = true;
+      _teacherIsOnline    = false;
       try { await _broadcastTeacherPresence(false); } catch (e) {
         console.warn('[dm] teacherOffline broadcast failed:', e);
       }
@@ -444,8 +403,9 @@
       if (document.visibilityState === 'hidden') {
         goOffline().catch(() => {});
       } else {
-        if (firebase.auth().currentUser) {
+        if (firebase.auth().currentUser && _teacherOfflineDone) {
           _teacherOfflineDone = false;
+          _teacherIsOnline    = true;
           _broadcastTeacherPresence(true).catch(() => {});
         }
       }
@@ -455,6 +415,7 @@
     _teacherBeforeunloadHandler = () => {
       if (_teacherOfflineDone) return;
       _teacherOfflineDone = true;
+      _teacherIsOnline    = false;
       const db = Db(); const now = new Date();
       try { db.collection('teacherPresence').doc('global').set({ online: false, lastSeen: now }, { merge: true }); } catch (_) {}
       try {
@@ -492,10 +453,6 @@
     }
   }
 
-  /* ══════════════════════════════════════════════════════════
-     Live presence watcher
-     ══════════════════════════════════════════════════════════ */
-
   function _watchPresence(studentUid, watchRole, elementId, listenerKey) {
     AppState.cancelListener(listenerKey);
 
@@ -528,27 +485,41 @@
     AppState.registerListener(listenerKey, unsub);
   }
 
-  /* ══════════════════════════════════════════════════════════
-     Delivery / read receipt helpers
-     ══════════════════════════════════════════════════════════ */
-
+  // Marks messages sent by the other party as 'delivered'.
+  // Queries only by status to avoid requiring a composite Firestore index,
+  // then filters by role in memory. This is safe because message threads are
+  // small (typically < 500 messages) and avoids silent index-missing failures.
   async function _markDelivered(studentUid, recipientRole) {
     const senderRole = recipientRole === 'student' ? 'teacher' : 'student';
     try {
       const snap = await _threadRef(studentUid)
-        .collection('messages').where('role', '==', senderRole).where('status', '==', 'sent').get();
+        .collection('messages')
+        .where('status', '==', 'sent')
+        .get();
       if (snap.empty) return;
-      const batch = Db().batch();
-      snap.forEach(doc => batch.update(doc.ref, { status: 'delivered' }));
-      await batch.commit();
+      const toUpdate = [];
+      snap.forEach(doc => {
+        if (doc.data().role === senderRole) toUpdate.push(doc.ref);
+      });
+      if (!toUpdate.length) return;
+      for (let i = 0; i < toUpdate.length; i += 400) {
+        const b = Db().batch();
+        toUpdate.slice(i, i + 400).forEach(ref => b.update(ref, { status: 'delivered' }));
+        await b.commit();
+      }
     } catch (e) { console.warn('[dm] _markDelivered error:', e); }
   }
 
+  // Marks messages sent by the other party as 'read'.
+  // Only promotes 'sent' or 'delivered' messages — never downgrades 'read' ones.
+  // Uses a single-field query for the same index-safety reason as _markDelivered.
   async function _markRead(studentUid, recipientRole) {
     const senderRole = recipientRole === 'student' ? 'teacher' : 'student';
     try {
       const snap = await _threadRef(studentUid)
-        .collection('messages').where('role', '==', senderRole).get();
+        .collection('messages')
+        .where('role', '==', senderRole)
+        .get();
       if (snap.empty) return;
       const toUpdate = [];
       snap.forEach(doc => {
@@ -563,14 +534,6 @@
       }
     } catch (e) { console.warn('[dm] _markRead error:', e); }
   }
-
-  /* ══════════════════════════════════════════════════════════
-     Edit helpers
-     editHistory subcollection path:
-       directMessages/{studentUid}/messages/{msgId}/editHistory/{entryId}
-     Each entry: { text: string, editedAt: Timestamp }
-     Security: students cannot read this subcollection (rules below).
-     ══════════════════════════════════════════════════════════ */
 
   function _msgHistoryRef(studentUid, messageId) {
     return _threadRef(studentUid).collection('messages').doc(messageId).collection('editHistory');
@@ -652,10 +615,6 @@
     document.body.appendChild(overlay);
   }
 
-  /* ══════════════════════════════════════════════════════════
-     Inline edit UI
-     ══════════════════════════════════════════════════════════ */
-
   function _activateInlineEdit(studentUid, messageId, currentText, isDarkBubble, wrapperId) {
     const wrapper = document.getElementById(wrapperId);
     if (!wrapper) return;
@@ -736,10 +695,6 @@
     });
   }
 
-  /* ══════════════════════════════════════════════════════════
-     Action menu dropdown
-     ══════════════════════════════════════════════════════════ */
-
   let _openMenuId = null;
 
   function _closeOpenMenu() {
@@ -808,10 +763,6 @@
       });
     }, 0);
   }
-
-  /* ══════════════════════════════════════════════════════════
-     Bubble builders
-     ══════════════════════════════════════════════════════════ */
 
   function _buildStudentBubble(msg, myUid) {
     const isMe    = msg.senderId === myUid;
@@ -927,10 +878,6 @@
       </div>`;
   }
 
-  /* ══════════════════════════════════════════════════════════
-     STUDENT SIDE
-     ══════════════════════════════════════════════════════════ */
-
   async function openStudentInbox() {
     _injectStyles();
 
@@ -1022,7 +969,10 @@
       });
     }
 
-    await _markDelivered(uid, 'student');
+    // Mark as read now that the thread is open. _markDelivered is NOT called
+    // here because it already ran at login via initStudentDMListener. Calling
+    // it again here would create a race with _markRead where delivered could
+    // overwrite a read status if the batches arrive out of order.
     await _markRead(uid, 'student');
     _watchPresence(uid, 'teacher', 'dmTeacherPresence', 'dmTeacherPresenceWatch');
     _subscribeStudentMessages(uid);
@@ -1045,7 +995,8 @@
         }
         const msgs = [];
         snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
-        _markDelivered(uid, 'student').catch(() => {});
+        // Only call _markRead in the snapshot — the thread is open so the
+        // student is actively reading. Do not call _markDelivered here.
         _markRead(uid, 'student').catch(() => {});
         container.innerHTML = _renderMessagesWithDateSeps(msgs, uid, 'student');
         container.scrollTop = container.scrollHeight;
@@ -1090,6 +1041,7 @@
     UI.setLoading(btn, true);
     if (input) input.value = '';
 
+    // Check teacher presence from the sentinel doc (authoritative global state)
     let teacherIsOnline = false;
     try {
       const sentinelSnap = await Db().collection('teacherPresence').doc('global').get();
@@ -1128,10 +1080,6 @@
     _closeOpenMenu();
     Exam.renderSubjectSelection();
   }
-
-  /* ══════════════════════════════════════════════════════════
-     TEACHER SIDE
-     ══════════════════════════════════════════════════════════ */
 
   function openTeacherInbox() {
     _injectStyles();
@@ -1306,7 +1254,10 @@
       await _threadRef(studentUid).set({ teacherUnread: 0 }, { merge: true });
     } catch (e) { console.warn('[dm] Could not clear teacherUnread:', e); }
 
-    await _markDelivered(studentUid, 'teacher');
+    // Only mark as read — _markDelivered already ran at login via
+    // initTeacherDMListener so it does not need to run again here.
+    // Calling both here in sequence creates a race where 'delivered'
+    // can overwrite 'read' if the batches land out of order.
     await _markRead(studentUid, 'teacher');
 
     const panel = document.getElementById('dmConversationPanel');
@@ -1398,7 +1349,7 @@
         }
         const msgs = [];
         snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
-        _markDelivered(studentUid, 'teacher').catch(() => {});
+        // Thread is open — only mark as read, not delivered.
         _markRead(studentUid, 'teacher').catch(() => {});
         container.innerHTML = _renderMessagesWithDateSeps(msgs, AppConfig.TEACHER_UID, 'teacher');
         container.scrollTop = container.scrollHeight;
@@ -1415,6 +1366,7 @@
     UI.setLoading(btn, true);
     if (input) input.value = '';
 
+    // Check student presence from the thread doc
     let studentIsOnline = false;
     try {
       const threadSnap = await _threadRef(studentUid).get();
@@ -1453,10 +1405,6 @@
       if (input) { input.style.height = 'auto'; input.focus(); }
     }
   }
-
-  /* ══════════════════════════════════════════════════════════
-     Teacher — New Conversation
-     ══════════════════════════════════════════════════════════ */
 
   async function _openNewConversationModal() {
     _injectStyles();
@@ -1602,10 +1550,6 @@
     await _openConversation(uid, name, cls);
   }
 
-  /* ══════════════════════════════════════════════════════════
-     Badge helpers
-     ══════════════════════════════════════════════════════════ */
-
   function _updateStudentBadge(count) {
     const btn = document.getElementById('dmOpenBtn');
     if (!btn) return;
@@ -1652,9 +1596,6 @@
     }
   }
 
-  /* ══════════════════════════════════════════════════════════
-     initStudentDMListener
-     ══════════════════════════════════════════════════════════ */
   async function initStudentDMListener(uid) {
     AppState.cancelListener('dmStudentUnread');
     const unsub = _threadRef(uid).onSnapshot(snap => {
@@ -1663,19 +1604,29 @@
       _updateStudentBadge(count);
     }, err => console.warn('[dm] Student unread listener error:', err));
     AppState.registerListener('dmStudentUnread', unsub);
+
     await _setStudentOnlineGlobal(uid);
+
+    // Mark all teacher messages that are still 'sent' as 'delivered' now
+    // that the student is online. This is the authoritative delivery sweep
+    // that makes the double-grey-tick appear for the teacher.
     await _markDelivered(uid, 'student');
   }
 
-  /* ══════════════════════════════════════════════════════════
-     initTeacherDMListener
-     ══════════════════════════════════════════════════════════ */
   async function initTeacherDMListener() {
     AppState.cancelListener('dmTeacherUnread');
     await _setTeacherOnlineGlobal();
+
+    // Mark all student messages in every thread as 'delivered' now that the
+    // teacher is online. This is the authoritative delivery sweep that makes
+    // double-grey-ticks appear for students who have sent messages.
     try {
       const allThreads = await Db().collection('directMessages').get();
-      allThreads.forEach(doc => { _markDelivered(doc.id, 'teacher').catch(() => {}); });
+      const deliveryPromises = [];
+      allThreads.forEach(doc => {
+        deliveryPromises.push(_markDelivered(doc.id, 'teacher').catch(() => {}));
+      });
+      await Promise.all(deliveryPromises);
     } catch (e) { console.warn('[dm] initTeacherDMListener delivery sweep error:', e); }
 
     const unsub = Db().collection('directMessages').onSnapshot(snap => {
@@ -1686,9 +1637,6 @@
     AppState.registerListener('dmTeacherUnread', unsub);
   }
 
-  /* ══════════════════════════════════════════════════════════
-     cancelListeners
-     ══════════════════════════════════════════════════════════ */
   async function cancelListeners() {
     AppState.cancelListener('dmStudentMessages');
     AppState.cancelListener('dmTeacherThreads');
@@ -1726,11 +1674,10 @@
       await _studentOfflineCleanup().catch(() => {});
       _studentOfflineCleanup = null;
     }
+
+    _teacherIsOnline = false;
   }
 
-  /* ══════════════════════════════════════════════════════════
-     Responsive style
-     ══════════════════════════════════════════════════════════ */
   function _addTeacherGridResponsiveStyle() {
     if (document.getElementById('_dmGridStyle')) return;
     const style = document.createElement('style');
@@ -1742,9 +1689,6 @@
     document.head.appendChild(style);
   }
 
-  /* ══════════════════════════════════════════════════════════
-     Private helpers
-     ══════════════════════════════════════════════════════════ */
   function _threadRef(uid) { return Db().collection('directMessages').doc(uid); }
   function Db()            { return window.fbDb; }
   function _esc(str) {
@@ -1753,9 +1697,6 @@
       .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  /* ══════════════════════════════════════════════════════════
-     Expose
-     ══════════════════════════════════════════════════════════ */
   window.DM = {
     openStudentInbox,
     sendStudentMessage,
