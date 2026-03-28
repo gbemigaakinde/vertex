@@ -1262,47 +1262,49 @@
   if (!panel) return;
 
   panel.innerHTML = `
-    <div style="display:grid;grid-template-columns:260px 1fr;gap:1.25rem;height:560px;max-height:80vh;"
-         id="dmTeacherGrid">
+    <div id="dmTeacherShell"
+         style="border:1px solid var(--border,#e5e7eb);border-radius:12px;overflow:hidden;
+                background:var(--surface,#fff);display:flex;flex-direction:column;
+                height:600px;max-height:82vh;position:relative;">
 
-      <!-- Left: thread list -->
-      <div style="border:1px solid var(--border,#e5e7eb);border-radius:10px;overflow:hidden;
-                  display:flex;flex-direction:column;background:var(--surface,#fff);min-height:0;">
+      <!-- VIEW A: Thread list -->
+      <div id="dmViewList" style="display:flex;flex-direction:column;height:100%;min-height:0;">
+
+        <!-- List header -->
         <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border,#e5e7eb);
                     background:var(--surface-subtle,#f9fafb);flex-shrink:0;
                     display:flex;align-items:center;justify-content:space-between;gap:.5rem;">
-          <h3 style="font-size:.875rem;font-weight:700;color:var(--text-primary,#111827);">
-            Conversations
+          <h3 style="font-size:.9375rem;font-weight:700;color:var(--text-primary,#111827);">
+            Messages
           </h3>
           <button onclick="DM._openNewConversationModal()"
-                  title="Message a student"
-                  style="flex-shrink:0;width:28px;height:28px;border-radius:50%;
+                  title="New message"
+                  style="width:30px;height:30px;border-radius:50%;
                          border:1px solid var(--brand-border,#bac8ff);
                          background:var(--brand-bg,#edf2ff);cursor:pointer;
                          display:flex;align-items:center;justify-content:center;
                          color:var(--brand-text,#3730a3);transition:background .15s;">
-            ${_iconPencil(13)}
+            ${_iconPencil(14)}
           </button>
         </div>
-        <div id="dmThreadList" style="flex:1;overflow-y:auto;padding:.375rem 0;min-height:0;">
+
+        <!-- Scrollable thread list -->
+        <div id="dmThreadList"
+             style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;">
           <p style="font-size:.8125rem;color:var(--text-disabled,#9ca3af);
                     text-align:center;padding:2rem 1rem;">Loading…</p>
         </div>
       </div>
 
-      <!-- Right: conversation panel -->
-      <div style="border:1px solid var(--border,#e5e7eb);border-radius:10px;overflow:hidden;
-                  display:flex;flex-direction:column;background:var(--surface,#fff);min-height:0;"
-           id="dmConversationPanel">
-        <div style="flex:1;display:flex;align-items:center;justify-content:center;
-                    padding:2rem;color:var(--text-disabled,#9ca3af);font-size:.875rem;">
-          Select a conversation to view messages
-        </div>
+      <!-- VIEW B: Single conversation (hidden until a thread is opened) -->
+      <div id="dmViewChat"
+           style="display:none;flex-direction:column;height:100%;min-height:0;position:absolute;
+                  inset:0;background:var(--surface,#fff);z-index:10;">
+        <!-- Populated by _openConversation() -->
       </div>
 
     </div>`;
 
-  _addTeacherGridResponsiveStyle();
   _subscribeTeacherThreadList();
 }
 
@@ -1430,6 +1432,7 @@
   _activeStudentUid   = studentUid;
   window._dmActiveUid = studentUid;
 
+  // Highlight active thread in the list
   document.querySelectorAll('.dm-thread-item').forEach(el => {
     el.style.background = el.dataset.uid === studentUid
       ? 'var(--brand-bg,#edf2ff)' : 'transparent';
@@ -1441,28 +1444,57 @@
 
   await _markRead(studentUid, 'teacher');
 
-  const panel = document.getElementById('dmConversationPanel');
-  if (!panel) return;
+  // Switch to chat view (full-panel takeover, WhatsApp-style)
+  const viewList = document.getElementById('dmViewList');
+  const viewChat = document.getElementById('dmViewChat');
+  if (!viewList || !viewChat) return;
 
-  panel.dataset.studentUid   = studentUid;
-  panel.dataset.studentName  = studentName;
-  panel.dataset.studentClass = studentClass || '';
+  viewList.style.display = 'none';
+  viewChat.style.display = 'flex';
+  viewChat.style.flexDirection = 'column';
 
-  panel.innerHTML = `
-    <!-- Conversation header (fixed, does not scroll) -->
-    <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border,#e5e7eb);
+  // Store student info on shell for send handler
+  viewChat.dataset.studentUid   = studentUid;
+  viewChat.dataset.studentName  = studentName;
+  viewChat.dataset.studentClass = studentClass || '';
+
+  viewChat.innerHTML = `
+
+    <!-- Chat header with back button -->
+    <div style="padding:.625rem 1rem;border-bottom:1px solid var(--border,#e5e7eb);
                 background:var(--surface-subtle,#f9fafb);flex-shrink:0;
-                display:flex;align-items:center;gap:.625rem;">
+                display:flex;align-items:center;gap:.75rem;">
+
+      <!-- Back button -->
+      <button onclick="DM._backToThreadList()"
+              title="Back to conversations"
+              style="flex-shrink:0;width:32px;height:32px;border-radius:50%;
+                     border:1px solid var(--border,#e5e7eb);background:var(--surface,#fff);
+                     cursor:pointer;display:flex;align-items:center;justify-content:center;
+                     color:var(--text-2,#3a3a40);transition:background .15s;"
+              onmouseenter="this.style.background='var(--bg-subtle,#f0f0f2)'"
+              onmouseleave="this.style.background='var(--surface,#fff)'">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+
+      <!-- Avatar -->
       <div style="width:36px;height:36px;border-radius:50%;flex-shrink:0;
                   background:var(--brand-bg,#edf2ff);border:1.5px solid var(--brand-border,#bac8ff);
                   display:flex;align-items:center;justify-content:center;
                   font-size:.8125rem;font-weight:700;color:var(--brand-text,#3730a3);">
         ${_esc((studentName || '?').charAt(0).toUpperCase())}
       </div>
-      <div>
-        <p style="font-size:.875rem;font-weight:700;color:var(--text-primary,#111827);line-height:1.3;">
+
+      <!-- Name + presence -->
+      <div style="flex:1;min-width:0;">
+        <p style="font-size:.875rem;font-weight:700;color:var(--text-primary,#111827);
+                  line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
           ${_esc(studentName)}
-          <span style="font-size:.6875rem;font-weight:400;color:var(--text-tertiary,#6b7280);margin-left:.25rem;">
+          <span style="font-size:.6875rem;font-weight:400;
+                       color:var(--text-tertiary,#6b7280);margin-left:.25rem;">
             ${_esc(studentClass)}
           </span>
         </p>
@@ -1470,27 +1502,31 @@
       </div>
     </div>
 
-    <!-- Messages body (scrolls vertically, does NOT affect panel width) -->
+    <!-- Messages body -->
     <div id="dmTeacherMessages"
          style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;
-                padding:.875rem 1.75rem;background:var(--surface-subtle,#f9fafb);
+                padding:.875rem 1rem;background:var(--surface-subtle,#f9fafb);
                 display:flex;flex-direction:column;word-break:break-word;
                 box-sizing:border-box;width:100%;">
-      <p style="text-align:center;font-size:.8125rem;color:var(--text-disabled,#9ca3af);padding:2rem 0;">
+      <p style="text-align:center;font-size:.8125rem;
+                color:var(--text-disabled,#9ca3af);padding:2rem 0;">
         Loading messages…
       </p>
     </div>
 
-    <!-- Input bar (fixed, does not scroll) -->
-    <div style="padding:.75rem;border-top:1px solid var(--border,#e5e7eb);flex-shrink:0;
+    <!-- Input bar -->
+    <div style="padding:.625rem .875rem;border-top:1px solid var(--border,#e5e7eb);flex-shrink:0;
                 display:flex;gap:.5rem;align-items:flex-end;background:var(--surface,#fff);
                 box-sizing:border-box;width:100%;">
-      <textarea id="dmTeacherInput" placeholder="Reply to ${_esc(studentName)}…" rows="1"
+      <textarea id="dmTeacherInput"
+                placeholder="Reply to ${_esc(studentName)}…"
+                rows="1"
                 style="flex:1;min-width:0;resize:none;overflow-y:hidden;line-height:1.5;
-                       padding:.5625rem .75rem;min-height:36px;max-height:100px;
-                       border-radius:var(--r-md);font-family:var(--font);font-size:var(--text-base);
-                       box-sizing:border-box;"></textarea>
-      <button id="dmTeacherSendBtn" onclick="DM._sendTeacherReplyFromPanel()"
+                       padding:.5625rem .75rem;min-height:36px;max-height:120px;
+                       border-radius:var(--r-md);font-family:var(--font);
+                       font-size:var(--text-base);box-sizing:border-box;"></textarea>
+      <button id="dmTeacherSendBtn"
+              onclick="DM._sendTeacherReplyFromPanel()"
               class="btn bg-green-600 hover:bg-green-700"
               style="flex-shrink:0;align-self:flex-end;">Send</button>
     </div>`;
@@ -1499,12 +1535,15 @@
   if (input) {
     input.focus();
     input.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); _sendTeacherReplyFromPanel(); }
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        _sendTeacherReplyFromPanel();
+      }
     });
     input.addEventListener('input', () => {
       input.style.height = 'auto';
-      input.style.height = Math.min(input.scrollHeight, 100) + 'px';
-      input.style.overflowY = input.scrollHeight > 100 ? 'auto' : 'hidden';
+      input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+      input.style.overflowY = input.scrollHeight > 120 ? 'auto' : 'hidden';
     });
   }
 
@@ -1512,6 +1551,26 @@
   _subscribeTeacherMessages(studentUid);
 }
 
+   function _backToThreadList() {
+  // Cancel active chat listeners
+  AppState.cancelListener('dmTeacherMessages');
+  AppState.cancelListener('dmStudentPresenceWatch');
+  _activeStudentUid   = null;
+  window._dmActiveUid = null;
+  _closeOpenMenu();
+
+  // Clear active highlight on thread list
+  document.querySelectorAll('.dm-thread-item').forEach(el => {
+    el.style.background = 'transparent';
+  });
+
+  // Switch back to list view
+  const viewList = document.getElementById('dmViewList');
+  const viewChat = document.getElementById('dmViewChat');
+  if (viewList) viewList.style.display = 'flex';
+  if (viewChat) { viewChat.style.display = 'none'; viewChat.innerHTML = ''; }
+}
+   
   function _sendTeacherReplyFromPanel() {
     const panel = document.getElementById('dmConversationPanel');
     if (!panel) return;
@@ -1914,23 +1973,24 @@
      Public API
   ──────────────────────────────────────────────────────────── */
   window.DM = {
-    openStudentInbox,
-    sendStudentMessage,
-    backFromStudentInbox,
-    openTeacherInbox,
-    _openConversation,
-    _openConversationFromEl,
-    _sendTeacherReply,
-    _sendTeacherReplyFromPanel,
-    _openNewConversationModal,
-    _closeNewConversationModal,
-    _pickStudentForConversation,
-    _toggleActionMenu,
-    initStudentDMListener,
-    initTeacherDMListener,
-    cancelListeners,
-    _updateStudentBadge,
-    _updateTeacherBadge,
-  };
+  openStudentInbox,
+  sendStudentMessage,
+  backFromStudentInbox,
+  openTeacherInbox,
+  _openConversation,
+  _openConversationFromEl,
+  _sendTeacherReply,
+  _sendTeacherReplyFromPanel,
+  _openNewConversationModal,
+  _closeNewConversationModal,
+  _pickStudentForConversation,
+  _toggleActionMenu,
+  _backToThreadList,         
+  initStudentDMListener,
+  initTeacherDMListener,
+  cancelListeners,
+  _updateStudentBadge,
+  _updateTeacherBadge,
+};
 
 })();
