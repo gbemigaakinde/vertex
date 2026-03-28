@@ -8,20 +8,26 @@
 
    UPDATE v2:
    - Added FCM background message handler and notificationclick
-     handler directly in this file. This is required because
-     notifications.js now passes THIS sw.js registration to
-     getToken() via serviceWorkerRegistration, so FCM uses
-     this SW for background messages instead of auto-registering
-     firebase-messaging-sw.js as a competing SW on the same
-     scope. firebase-messaging-sw.js is now redundant and can
-     be kept as a fallback or removed.
+     handler directly in this file.
 
    UPDATE v3:
-   - Added /js/landing.js to the cached asset list so the
-     public homepage is available offline.
-   - Removed the duplicate STATIC_ASSETS declaration at the
-     top of the file (the array inside the install handler
-     is the authoritative list).
+   - Added /js/landing.js to the cached asset list.
+   - Removed duplicate STATIC_ASSETS declaration.
+
+   UPDATE v4 — FCM TOKEN BUG FIX:
+   - Moved www.gstatic.com from CDN_ORIGINS into BYPASS_ORIGINS.
+     The Firebase/FCM SDK makes internal registration XHRs to
+     https://www.gstatic.com/iid/... to obtain and refresh push
+     tokens. When this SW intercepted those requests with its
+     stale-while-revalidate strategy, the responses were either
+     served from a stale cache entry or failed with a network
+     error — both cases cause getToken() to return null or throw
+     silently, so no token was ever saved to Firestore.
+     www.gstatic.com MUST be bypassed unconditionally so every
+     FCM registration call goes straight to the network.
+   - Also moved fonts.gstatic.com to BYPASS_ORIGINS for the same
+     reason (it should never be cached by this SW — the browser
+     has its own font cache).
    ============================================================ */
 
 'use strict';
@@ -42,23 +48,28 @@ firebase.initializeApp({
 
 const _fcmMessaging = firebase.messaging();
 
-const CACHE_VERSION = 'v1.4.5';
+const CACHE_VERSION = 'v1.4.6';
 const STATIC_CACHE  = `static-${CACHE_VERSION}`;
 const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
 
 /*
  * Track whether this is a first-time install (no previous SW controller).
- * Used in activate to decide whether clients.claim() is safe to call.
- * claim() on a first install is safe — the page has no Firestore state yet.
- * claim() on an update would take over mid-session pages and corrupt
- * Firestore's IndexedDB lock, causing all db reads/writes to hang.
  */
 let _isFirstInstall = false;
 
 /*
- * These origins are never intercepted by this service worker.
- * Firebase, Google APIs, and FCM endpoints are all bypassed
- * so they always go straight to the network.
+ * These origins are NEVER intercepted by this service worker.
+ *
+ * CRITICAL: www.gstatic.com is in this list, NOT in CDN_ORIGINS.
+ * The Firebase/FCM SDK makes internal token-registration XHRs to
+ * https://www.gstatic.com/iid/... endpoints. If this SW intercepts
+ * those requests (even with stale-while-revalidate), FCM receives a
+ * stale or error response, getToken() returns null or throws, and no
+ * push token is ever saved to Firestore. Bypassing gstatic entirely
+ * ensures every FCM call reaches the network unobstructed.
+ *
+ * fonts.gstatic.com is also bypassed — the browser has its own font
+ * cache and this SW should not interfere with it.
  */
 const BYPASS_ORIGINS = [
   'firestore.googleapis.com',
@@ -70,22 +81,23 @@ const BYPASS_ORIGINS = [
   'cloudfunctions.net',
   'fcm.googleapis.com',
   'fcmregistrations.googleapis.com',
+  'www.gstatic.com',      // FCM token registration + Firebase SDK scripts
+  'fonts.gstatic.com',    // Google Fonts glyphs — use browser font cache
 ];
 
+/*
+ * CDN_ORIGINS: third-party CDNs for app assets (NOT Firebase).
+ * www.gstatic.com has been deliberately removed from this list.
+ */
 const CDN_ORIGINS = [
   'cdn.tailwindcss.com',
-  'www.gstatic.com',
+  'cdn.jsdelivr.net',
 ];
 
 /* ─────────────────────────────────────────────────────────── */
 /* INSTALL                                                    */
 /* ─────────────────────────────────────────────────────────── */
 self.addEventListener('install', event => {
-  /*
-   * Reliable first-install detection:
-   * If no SW is currently controlling any clients, this is a first install.
-   * self.registration.active is null on first install and non-null on updates.
-   */
   _isFirstInstall = (self.registration.active === null);
 
   event.waitUntil(
@@ -152,18 +164,6 @@ self.addEventListener('activate', event => {
         )
       )
       .then(() => {
-        /*
-         * clients.claim() is only safe on first install.
-         *
-         * On first install there are no open pages with Firestore state,
-         * so claiming them is safe and ensures the SW controls the page
-         * that triggered the install without requiring a reload.
-         *
-         * On updates, the new SW is already serving new navigations
-         * (because skipWaiting was called only after user confirmation).
-         * Claiming existing clients here would interrupt active exam
-         * sessions and corrupt Firestore's IndexedDB lock on those pages.
-         */
         if (_isFirstInstall) {
           console.log('[SW] First install — claiming clients.');
           return self.clients.claim();
@@ -185,6 +185,7 @@ self.addEventListener('fetch', event => {
   // Never intercept the service worker file itself
   if (url.pathname === '/sw.js') return;
 
+  // Bypass Firebase, Google APIs, gstatic (FCM token endpoints), etc.
   if (BYPASS_ORIGINS.some(origin => url.hostname.includes(origin))) return;
 
   if (!url.protocol.startsWith('http')) return;
@@ -209,11 +210,6 @@ self.addEventListener('message', event => {
   if (!event.data) return;
 
   if (event.data.type === 'SKIP_WAITING') {
-    /*
-     * User confirmed the update toast. Activate now.
-     * The controllerchange event in index.html will reload the page,
-     * giving the user a clean session under the new SW.
-     */
     self.skipWaiting();
   }
 
@@ -226,14 +222,6 @@ self.addEventListener('message', event => {
 /* FCM BACKGROUND MESSAGES                                    */
 /* ─────────────────────────────────────────────────────────── */
 
-/*
- * Fires when a push notification arrives and the app tab is
- * closed or in the background (not focused).
- * The notification payload should include:
- *   notification.title — headline shown in the OS tray
- *   notification.body  — message text
- *   data.url           — optional URL to open on tap
- */
 _fcmMessaging.onBackgroundMessage(function (payload) {
   console.log('[SW] Background message received:', payload);
 
@@ -251,9 +239,6 @@ _fcmMessaging.onBackgroundMessage(function (payload) {
   self.registration.showNotification(title, options);
 });
 
-/*
- * Opens (or focuses) the app when the user taps a notification.
- */
 self.addEventListener('notificationclick', function (event) {
   event.notification.close();
 
@@ -261,14 +246,12 @@ self.addEventListener('notificationclick', function (event) {
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {
-      /* If the app is already open, focus it */
       for (let i = 0; i < clientList.length; i++) {
         const client = clientList[i];
         if (client.url.includes(self.location.origin) && 'focus' in client) {
           return client.focus();
         }
       }
-      /* Otherwise open a new window */
       if (clients.openWindow) {
         return clients.openWindow(targetUrl);
       }
