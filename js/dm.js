@@ -750,20 +750,19 @@
 
   async function _saveEdit(studentUid, messageId, oldText, newText, isTeacher) {
   const db         = Db();
-  const historyRef = _msgHistoryRef(studentUid, messageId);
+  const historyCol = _msgHistoryRef(studentUid, messageId);
   const msgRef     = _threadRef(studentUid).collection('messages').doc(messageId);
   const ts         = firebase.firestore.FieldValue.serverTimestamp();
 
-  // Hard server-side guard: re-check edit count before writing (students only)
   if (!isTeacher) {
-    const countSnap = await historyRef.get();
+    const countSnap = await historyCol.get();
     if (countSnap.size >= 2) {
       throw new Error('EDIT_LIMIT_REACHED');
     }
   }
 
   const batch = db.batch();
-  batch.set(historyRef.doc(), { text: oldText, editedAt: ts });
+  batch.set(historyCol.doc(), { text: oldText, editedAt: ts });
   batch.update(msgRef, { text: newText, editedAt: ts });
   await batch.commit();
 }
@@ -845,14 +844,13 @@
   const inner = wrapper.querySelector('.dm-bubble-inner');
   if (!inner) return;
 
-  // Prevent double-opening
   if (inner.querySelector(`[id^="dmEditUI-"]`)) return;
 
-  const saveClass   = isDarkBubble ? 'dm-edit-btn dm-edit-btn--save'        : 'dm-edit-btn dm-edit-btn--save-light';
-  const cancelClass = isDarkBubble ? 'dm-edit-btn dm-edit-btn--cancel'      : 'dm-edit-btn dm-edit-btn--cancel-light';
+  const saveClass   = isDarkBubble ? 'dm-edit-btn dm-edit-btn--save'   : 'dm-edit-btn dm-edit-btn--save-light';
+  const cancelClass = isDarkBubble ? 'dm-edit-btn dm-edit-btn--cancel' : 'dm-edit-btn dm-edit-btn--cancel-light';
 
-  const editUI  = document.createElement('div');
-  editUI.id     = `dmEditUI-${messageId}`;
+  const editUI = document.createElement('div');
+  editUI.id    = `dmEditUI-${messageId}`;
 
   const cancelBtn       = document.createElement('button');
   cancelBtn.className   = cancelClass;
@@ -864,13 +862,11 @@
     if (editedEl) editedEl.style.display = '';
   };
 
-  // Hide original content
   if (textEl)   textEl.style.display   = 'none';
   if (footerEl) footerEl.style.display = 'none';
   if (editedEl) editedEl.style.display = 'none';
 
-  // Show a loading placeholder immediately so there's no blank
-  const placeholder     = document.createElement('p');
+  const placeholder         = document.createElement('p');
   placeholder.style.cssText = 'font-size:.75rem;opacity:.5;padding:.25rem 0;margin:0;';
   placeholder.textContent   = 'Loading…';
   editUI.appendChild(placeholder);
@@ -897,13 +893,11 @@
       saveBtn.disabled    = true;
       saveBtn.textContent = 'Saving…';
       try {
-        // isTeacher is passed here so _saveEdit can enforce the limit server-side too
         await _saveEdit(studentUid, messageId, currentText, newText, isTeacher);
         if (textEl) textEl.textContent = newText;
         cancelBtn.onclick();
       } catch (err) {
         if (err.message === 'EDIT_LIMIT_REACHED') {
-          // Server confirmed limit — show the notice instead of the editor
           _buildLimitNotice();
         } else {
           console.error('[dm] inline edit save error:', err);
@@ -934,7 +928,6 @@
   };
 
   const _buildLimitNotice = () => {
-    // Clear everything inside editUI, keep cancel button
     editUI.innerHTML = '';
     const msg         = document.createElement('p');
     msg.style.cssText = `font-size:.75rem;line-height:1.5;margin:0 0 .375rem;opacity:.85;
@@ -950,10 +943,8 @@
   };
 
   if (isTeacher) {
-    // No restriction for teacher — build editor immediately
     _buildEditor();
   } else {
-    // Pre-check edit count (UI convenience — hard guard is also in _saveEdit)
     _msgHistoryRef(studentUid, messageId).get()
       .then(snap => {
         if (snap.size >= 2) {
@@ -963,8 +954,10 @@
         }
       })
       .catch(err => {
-        console.error('[dm] Could not check edit count:', err);
-        cancelBtn.onclick();
+        // If the read fails for any reason, allow the edit —
+        // _saveEdit will enforce the hard limit on write anyway.
+        console.warn('[dm] Could not pre-check edit count, proceeding:', err);
+        _buildEditor();
       });
   }
 }
