@@ -6,20 +6,15 @@
 (function () {
   'use strict';
 
-  /* ── Presence constants ── */
-  const HEARTBEAT_INTERVAL_MS = 25_000;   // write lastSeen every 25 s
-  const ONLINE_THRESHOLD_MS   = 60_000;   // seen within 60 s → Online
+  const HEARTBEAT_INTERVAL_MS = 25_000;
+  const ONLINE_THRESHOLD_MS   = 60_000;
 
-  /* ── Returns true if a Firestore timestamp is recent enough ── */
   function _isRecentlyActive(ts) {
     if (!ts) return false;
     const date = ts.toDate ? ts.toDate() : new Date(ts);
     return (Date.now() - date.getTime()) <= ONLINE_THRESHOLD_MS;
   }
 
-  /* ────────────────────────────────────────────────────────────
-     Icons
-  ──────────────────────────────────────────────────────────── */
   function _iconLock(size) {
     size = size || 14;
     return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"
@@ -103,22 +98,16 @@
     </span>`;
   }
 
-  /* ────────────────────────────────────────────────────────────
-     Styles
-  ──────────────────────────────────────────────────────────── */
   function _injectStyles() {
     if (document.getElementById('_dmStyles')) return;
     const style = document.createElement('style');
     style.id = '_dmStyles';
     style.textContent = `
-      /* Ticks */
       .dm-ticks { display:inline-flex;align-items:center;margin-left:2px;vertical-align:middle;flex-shrink:0;line-height:1; }
 
-      /* Edit trigger — shown on bubble hover */
       .dm-bubble-inner:hover .dm-edit-trigger-btn,
       .dm-bubble-inner:focus-within .dm-edit-trigger-btn { opacity:1 !important; }
 
-      /* Presence */
       .dm-presence { display:inline-flex;align-items:center;gap:5px;font-size:.6875rem;line-height:1;margin-top:3px; }
       .dm-presence__dot { width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:background .4s; }
       .dm-presence__dot--online { background:#22c45e;box-shadow:0 0 0 2px rgba(34,196,94,.2); }
@@ -126,7 +115,6 @@
       .dm-presence__label { color:var(--text-3,#6b7280);font-size:.6875rem; }
       .dm-presence__label--online { color:#22c45e !important;font-weight:500; }
 
-      /* Date separator */
       .dm-date-sep { display:flex;align-items:center;gap:.625rem;margin:.875rem 0 .625rem;user-select:none; }
       .dm-date-sep__line { flex:1;height:1px;background:var(--border,#e5e7eb); }
       .dm-date-sep__label {
@@ -135,17 +123,14 @@
         background:var(--bg-subtle,#f3f4f6);border:1px solid var(--border,#e5e7eb);
       }
 
-      /* ── Teacher DM shell ── */
       #dmTeacherShell {
         position:relative;
         width:100%;
         max-width:100%;
         min-width:0;
         box-sizing:border-box;
-        overflow:hidden;
       }
 
-      /* Thread list rows */
       .dm-thread-list-wrap {
         width:100%;
         max-width:100%;
@@ -167,13 +152,11 @@
         width:100%;
         max-width:100%;
         min-width:0;
-        overflow:hidden;
       }
       .dm-thread-item:last-child { border-bottom:none; }
       .dm-thread-item:hover { background:var(--bg-subtle,#f5f5f7); }
       .dm-thread-item.is-active { background:var(--accent-subtle,rgba(79,110,247,.07)); }
 
-      /* Avatar — must NOT shrink */
       .dm-thread-av {
         flex-shrink:0;
         position:relative;
@@ -196,10 +179,6 @@
         background:#22c45e;border:2px solid var(--bg-base,#fff);
       }
 
-      /* Thread body — CRITICAL: flex:1 + min-width:0 + overflow:hidden
-         This is what allows text-overflow:ellipsis to actually fire.
-         Without min-width:0, a flex child defaults to min-width:auto
-         which is as wide as its content, breaking truncation. */
       .dm-thread-bd {
         flex:1;
         min-width:0;
@@ -224,7 +203,6 @@
       .dm-thread-date {
         font-size:.6875rem;color:var(--text-4,#9ca3af);
         flex-shrink:0;white-space:nowrap;
-        /* Prevent date from being squeezed out entirely */
         max-width:60px;
       }
       .dm-thread-presence {
@@ -235,8 +213,6 @@
       }
       .dm-thread-presence.online { color:#22c45e;font-weight:600; }
 
-      /* Row 2: preview + badge. CRITICAL: min-width:0 on the row itself,
-         and flex:1 min-width:0 on the preview span. */
       .dm-thread-r2 {
         display:flex;
         align-items:center;
@@ -259,19 +235,16 @@
         padding:0 5px;line-height:1;
       }
       .dm-thread-class {
-        display:inline-block;font-size:.625rem;font-weight:500;
+        display:block;
+        font-size:.625rem;font-weight:500;
         color:var(--accent-text,#2d49d6);
         background:var(--accent-subtle,rgba(79,110,247,.08));
         border:1px solid var(--accent-border,rgba(79,110,247,.25));
         border-radius:4px;padding:1px 6px;margin-top:3px;white-space:nowrap;
         max-width:100%;overflow:hidden;text-overflow:ellipsis;
-        /* Block display so it sits on its own line and doesn't stretch row */
-        display:block;
         width:fit-content;
-        max-width:100%;
       }
 
-      /* Action menu */
       .dm-new-conv-overlay {
         position:fixed;inset:0;background:rgba(0,0,0,.45);
         display:flex;align-items:center;justify-content:center;
@@ -300,7 +273,6 @@
       .dm-action-menu-item:hover { background:var(--bg-subtle,#f3f4f6); }
       .dm-action-menu-item + .dm-action-menu-item { border-top:1px solid var(--border,#e5e7eb); }
 
-      /* Inline edit */
       .dm-edit-textarea {
         width:100%;resize:none;overflow-y:hidden;line-height:1.55;
         font-size:.875rem;font-family:var(--font);padding:.375rem .5rem;
@@ -317,7 +289,6 @@
       .dm-edit-btn--cancel-light { background:var(--bg-subtle,#f3f4f6);color:var(--text-2,#3a3a40);border:1px solid var(--border,#e5e7eb); }
       .dm-edited-label { font-size:.5625rem;opacity:.6;font-style:italic;margin-left:4px;line-height:1;white-space:nowrap; }
 
-      /* History modal */
       .dm-history-overlay {
         position:fixed;inset:0;background:rgba(0,0,0,.5);
         display:flex;align-items:center;justify-content:center;
@@ -344,7 +315,6 @@
       .dm-history-current { background:var(--accent-subtle,rgba(79,110,247,.08));border-color:var(--accent-border,rgba(79,110,247,.25)); }
       .dm-history-current p { font-weight:500; }
 
-      /* ── Chat message bubbles ── */
       .dm-msg-out {
         display:flex;
         flex-direction:column;
@@ -406,7 +376,6 @@
       }
       .dm-bubble-time--dim { opacity:.55; }
 
-      /* Message container areas */
       .dm-messages-area {
         overflow-y:auto;
         overflow-x:hidden;
@@ -416,18 +385,20 @@
         min-width:0;
       }
 
-      /* ── Picker rows in new conversation modal ── */
       .dm-picker-row {
         min-width:0;
         overflow:hidden;
+      }
+
+      #teacher-dm {
+        overflow:visible !important;
+        min-width:0;
+        box-sizing:border-box;
       }
     `;
     document.head.appendChild(style);
   }
 
-  /* ────────────────────────────────────────────────────────────
-     Date/time helpers
-  ──────────────────────────────────────────────────────────── */
   function _dateLabelFor(date) {
     const now       = new Date();
     const today     = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -470,9 +441,6 @@
       date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   }
 
-  /* ────────────────────────────────────────────────────────────
-     Presence HTML
-  ──────────────────────────────────────────────────────────── */
   function _presenceHTML(isOnlineFlagHint, lastSeen) {
     const actuallyOnline = _isRecentlyActive(lastSeen);
     if (actuallyOnline) {
@@ -487,9 +455,6 @@
     </span>`;
   }
 
-  /* ────────────────────────────────────────────────────────────
-     Module-level state
-  ──────────────────────────────────────────────────────────── */
   let _studentOfflineCleanup      = null;
   let _teacherOfflineCleanup      = null;
   let _studentVisibilityHandler   = null;
@@ -503,9 +468,6 @@
   let _studentHeartbeatHandle = null;
   let _teacherHeartbeatHandle = null;
 
-  /* ────────────────────────────────────────────────────────────
-     Heartbeat — student
-  ──────────────────────────────────────────────────────────── */
   function _startStudentHeartbeat(uid) {
     _stopStudentHeartbeat();
     _studentHeartbeatHandle = setInterval(async () => {
@@ -533,9 +495,6 @@
     }
   }
 
-  /* ────────────────────────────────────────────────────────────
-     Heartbeat — teacher
-  ──────────────────────────────────────────────────────────── */
   function _startTeacherHeartbeat() {
     _stopTeacherHeartbeat();
     _teacherHeartbeatHandle = setInterval(async () => {
@@ -559,9 +518,6 @@
     }
   }
 
-  /* ────────────────────────────────────────────────────────────
-     Student online presence setup
-  ──────────────────────────────────────────────────────────── */
   async function _setStudentOnlineGlobal(uid) {
     _studentOfflineDone = false;
     try {
@@ -628,9 +584,6 @@
     window.addEventListener('beforeunload', _studentBeforeunloadHandler);
   }
 
-  /* ────────────────────────────────────────────────────────────
-     Teacher online presence setup
-  ──────────────────────────────────────────────────────────── */
   async function _setTeacherOnlineGlobal() {
     _teacherOfflineDone = false;
     _teacherIsOnline    = true;
@@ -684,9 +637,6 @@
     window.addEventListener('beforeunload', _teacherBeforeunloadHandler);
   }
 
-  /* ────────────────────────────────────────────────────────────
-     _broadcastTeacherPresence
-  ──────────────────────────────────────────────────────────── */
   async function _broadcastTeacherPresence(isOnline) {
     const db = Db();
     const ts = firebase.auth().currentUser
@@ -710,9 +660,6 @@
     }
   }
 
-  /* ────────────────────────────────────────────────────────────
-     _watchPresence
-  ──────────────────────────────────────────────────────────── */
   function _watchPresence(studentUid, watchRole, elementId, listenerKey) {
     AppState.cancelListener(listenerKey);
 
@@ -745,9 +692,6 @@
     AppState.registerListener(listenerKey, unsub);
   }
 
-  /* ────────────────────────────────────────────────────────────
-     Message delivery helpers
-  ──────────────────────────────────────────────────────────── */
   async function _markDelivered(studentUid, recipientRole) {
     const senderRole = recipientRole === 'student' ? 'teacher' : 'student';
     try {
@@ -791,9 +735,6 @@
     } catch (e) { console.warn('[dm] _markRead error:', e); }
   }
 
-  /* ────────────────────────────────────────────────────────────
-     Edit history helpers
-  ──────────────────────────────────────────────────────────── */
   function _msgHistoryRef(studentUid, messageId) {
     return _threadRef(studentUid).collection('messages').doc(messageId).collection('editHistory');
   }
@@ -874,9 +815,6 @@
     document.body.appendChild(overlay);
   }
 
-  /* ────────────────────────────────────────────────────────────
-     Inline edit UI
-  ──────────────────────────────────────────────────────────── */
   function _activateInlineEdit(studentUid, messageId, currentText, isDarkBubble, wrapperId) {
     const wrapper = document.getElementById(wrapperId);
     if (!wrapper) return;
@@ -957,9 +895,6 @@
     });
   }
 
-  /* ────────────────────────────────────────────────────────────
-     Action menu
-  ──────────────────────────────────────────────────────────── */
   let _openMenuId = null;
 
   function _closeOpenMenu() {
@@ -1019,13 +954,6 @@
     }, 0);
   }
 
-  /* ────────────────────────────────────────────────────────────
-     Bubble builders
-     FIX: Replaced inline percentage padding on individual wrappers
-     with stable CSS classes. Bubbles now use max-width on the
-     inner element rather than percentage padding on the outer,
-     preventing overflow on narrow screens.
-  ──────────────────────────────────────────────────────────── */
   function _buildStudentBubble(msg, myUid) {
     const isMe    = msg.senderId === myUid;
     const msgId   = msg.id || '';
@@ -1174,9 +1102,6 @@
     }
   }
 
-  /* ────────────────────────────────────────────────────────────
-     Student inbox
-  ──────────────────────────────────────────────────────────── */
   async function openStudentInbox() {
     _injectStyles();
 
@@ -1325,9 +1250,6 @@
     return parts.join('');
   }
 
-  /* ────────────────────────────────────────────────────────────
-     sendStudentMessage
-  ──────────────────────────────────────────────────────────── */
   async function sendStudentMessage() {
     const input = document.getElementById('dmInput');
     const text  = (input?.value || '').trim();
@@ -1382,9 +1304,6 @@
     Exam.renderSubjectSelection();
   }
 
-  /* ────────────────────────────────────────────────────────────
-     Teacher inbox
-  ──────────────────────────────────────────────────────────── */
   function openTeacherInbox() {
     _injectStyles();
     const panel = document.getElementById('teacher-dm');
@@ -1394,19 +1313,16 @@
       <div id="dmTeacherShell"
            style="border:1px solid var(--border,#e5e7eb);border-radius:12px;
                   background:var(--surface,#fff);display:flex;flex-direction:column;
-                  height:600px;max-height:82vh;position:relative;
-                  width:100%;max-width:100%;box-sizing:border-box;
-                  overflow:hidden;min-width:0;">
+                  height:600px;max-height:82vh;
+                  width:100%;box-sizing:border-box;">
 
-        <!-- VIEW A: Thread list -->
         <div id="dmViewList" style="display:flex;flex-direction:column;height:100%;min-height:0;
-                                    width:100%;max-width:100%;box-sizing:border-box;overflow:hidden;">
+                                    width:100%;box-sizing:border-box;">
 
-          <!-- List header -->
           <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border,#e5e7eb);
                       background:var(--surface-subtle,#f9fafb);flex-shrink:0;
                       display:flex;align-items:center;justify-content:space-between;gap:.5rem;
-                      box-sizing:border-box;width:100%;min-width:0;overflow:hidden;">
+                      box-sizing:border-box;width:100%;">
             <h3 style="font-size:.9375rem;font-weight:700;color:var(--text-primary,#111827);
                        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
                        flex:1;min-width:0;">
@@ -1423,7 +1339,6 @@
             </button>
           </div>
 
-          <!-- Scrollable thread list -->
           <div id="dmThreadList"
                class="dm-thread-list-wrap"
                style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;width:100%;box-sizing:border-box;">
@@ -1432,13 +1347,11 @@
           </div>
         </div>
 
-        <!-- VIEW B: Single conversation -->
         <div id="dmViewChat"
              style="display:none;flex-direction:column;height:100%;min-height:0;
                     position:absolute;inset:0;
                     background:var(--surface,#fff);z-index:10;
-                    width:100%;max-width:100%;box-sizing:border-box;overflow:hidden;">
-          <!-- Populated by _openConversation() -->
+                    width:100%;box-sizing:border-box;">
         </div>
 
       </div>`;
@@ -1446,9 +1359,6 @@
     _subscribeTeacherThreadList();
   }
 
-  /* ────────────────────────────────────────────────────────────
-     Thread list
-  ──────────────────────────────────────────────────────────── */
   function _subscribeTeacherThreadList() {
     AppState.cancelListener('dmTeacherThreads');
 
@@ -1552,18 +1462,15 @@
     viewChat.style.display = 'flex';
     viewChat.style.flexDirection = 'column';
 
-    // FIX: Store student info on dmViewChat (not a non-existent dmConversationPanel)
     viewChat.dataset.studentUid   = studentUid;
     viewChat.dataset.studentName  = studentName;
     viewChat.dataset.studentClass = studentClass || '';
 
     viewChat.innerHTML = `
-
-      <!-- Chat header with back button -->
       <div style="padding:.625rem 1rem;border-bottom:1px solid var(--border,#e5e7eb);
                   background:var(--surface-subtle,#f9fafb);flex-shrink:0;
                   display:flex;align-items:center;gap:.75rem;
-                  box-sizing:border-box;width:100%;overflow:hidden;">
+                  box-sizing:border-box;width:100%;">
 
         <button onclick="DM._backToThreadList()"
                 title="Back to conversations"
@@ -1599,7 +1506,6 @@
         </div>
       </div>
 
-      <!-- Messages body -->
       <div id="dmTeacherMessages"
            class="dm-messages-area"
            style="flex:1;min-height:0;
@@ -1611,10 +1517,9 @@
         </p>
       </div>
 
-      <!-- Input bar -->
       <div style="padding:.625rem .875rem;border-top:1px solid var(--border,#e5e7eb);flex-shrink:0;
                   display:flex;gap:.5rem;align-items:flex-end;background:var(--surface,#fff);
-                  box-sizing:border-box;width:100%;overflow:hidden;">
+                  box-sizing:border-box;width:100%;">
         <textarea id="dmTeacherInput"
                   placeholder="Reply to ${_esc(studentName)}…"
                   rows="1"
@@ -1665,11 +1570,6 @@
     if (viewChat) { viewChat.style.display = 'none'; viewChat.innerHTML = ''; }
   }
 
-  /* ────────────────────────────────────────────────────────────
-     FIX: _sendTeacherReplyFromPanel now reads from #dmViewChat
-     (where the data attributes are actually stored), not from
-     the non-existent #dmConversationPanel element.
-  ──────────────────────────────────────────────────────────── */
   function _sendTeacherReplyFromPanel() {
     const viewChat = document.getElementById('dmViewChat');
     if (!viewChat) return;
@@ -1704,11 +1604,6 @@
     AppState.registerListener('dmTeacherMessages', unsub);
   }
 
-  /* ────────────────────────────────────────────────────────────
-     _sendTeacherReply
-     FIX: Now accepts cls as a direct parameter instead of reading
-     from the non-existent #dmConversationPanel element.
-  ──────────────────────────────────────────────────────────── */
   async function _sendTeacherReply(studentUid, studentName, studentClass) {
     const input = document.getElementById('dmTeacherInput');
     const text  = (input?.value || '').trim();
@@ -1754,9 +1649,6 @@
     }
   }
 
-  /* ────────────────────────────────────────────────────────────
-     New conversation modal
-  ──────────────────────────────────────────────────────────── */
   async function _openNewConversationModal() {
     _injectStyles();
 
@@ -1839,8 +1731,6 @@
       return;
     }
 
-    // FIX: Student picker rows use data attributes + a JS onclick handler
-    // to avoid inline onclick string interpolation breaking on names with apostrophes.
     list.innerHTML = filtered.map((s, idx) => {
       const isOnline    = _isRecentlyActive(s.lastSeen);
       const lastSeen    = s.lastSeen || null;
@@ -1881,14 +1771,13 @@
                         white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:8rem;">
                 ${_esc(s.class || '—')}
               </p>
-              <span style="color:var(--text-disabled,#9ca3af);font-size:.6rem;flex-shrink:0;">·</span>
+              <span style="color:var(--border-strong);">·</span>
               ${presenceTxt}
             </div>
           </div>
         </div>`;
     }).join('');
 
-    // Attach click handlers via JS to avoid inline onclick attribute quoting issues
     list.querySelectorAll('.dm-picker-row').forEach(row => {
       row.addEventListener('mouseenter', () => { row.style.background = 'var(--surface-subtle,#f9fafb)'; });
       row.addEventListener('mouseleave', () => { row.style.background = 'transparent'; });
@@ -1914,9 +1803,6 @@
     await _openConversation(uid, name, cls);
   }
 
-  /* ────────────────────────────────────────────────────────────
-     Badge helpers
-  ──────────────────────────────────────────────────────────── */
   function _updateStudentBadge(count) {
     const btn = document.getElementById('dmOpenBtn');
     if (!btn) return;
@@ -1963,9 +1849,6 @@
     }
   }
 
-  /* ────────────────────────────────────────────────────────────
-     initStudentDMListener
-  ──────────────────────────────────────────────────────────── */
   async function initStudentDMListener(uid) {
     AppState.cancelListener('dmStudentUnread');
     const unsub = _threadRef(uid).onSnapshot(snap => {
@@ -1979,9 +1862,6 @@
     await _markDelivered(uid, 'student');
   }
 
-  /* ────────────────────────────────────────────────────────────
-     initTeacherDMListener
-  ──────────────────────────────────────────────────────────── */
   async function initTeacherDMListener() {
     AppState.cancelListener('dmTeacherUnread');
     await _setTeacherOnlineGlobal();
@@ -2003,9 +1883,6 @@
     AppState.registerListener('dmTeacherUnread', unsub);
   }
 
-  /* ────────────────────────────────────────────────────────────
-     cancelListeners
-  ──────────────────────────────────────────────────────────── */
   async function cancelListeners() {
     AppState.cancelListener('dmStudentMessages');
     AppState.cancelListener('dmTeacherThreads');
@@ -2050,13 +1927,9 @@
     _teacherIsOnline = false;
   }
 
-  /* ────────────────────────────────────────────────────────────
-     Misc helpers
-  ──────────────────────────────────────────────────────────── */
   function _threadRef(uid) { return Db().collection('directMessages').doc(uid); }
   function Db()            { return window.fbDb; }
 
-  /* _esc — safe for text content and HTML attribute values that use double-quote delimiters */
   function _esc(str) {
     return String(str == null ? '' : str)
       .replace(/&/g, '&amp;')
@@ -2065,7 +1938,6 @@
       .replace(/"/g, '&quot;');
   }
 
-  /* _escAttr — safe for HTML attribute values that use single-quote delimiters (onclick="...") */
   function _escAttr(str) {
     return String(str == null ? '' : str)
       .replace(/&/g, '&amp;')
@@ -2075,9 +1947,6 @@
       .replace(/'/g, '&#x27;');
   }
 
-  /* ────────────────────────────────────────────────────────────
-     Public API
-  ──────────────────────────────────────────────────────────── */
   window.DM = {
     openStudentInbox,
     sendStudentMessage,
