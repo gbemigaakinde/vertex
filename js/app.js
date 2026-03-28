@@ -76,6 +76,11 @@
         DM.initTeacherDMListener();
       }
 
+      // ── Init teacher message notifications ──
+      if (window.MsgNotif) {
+        MsgNotif.initForTeacher();
+      }
+
       if (window.VtxLoader) window.VtxLoader.done();
       return;
     }
@@ -87,8 +92,6 @@
       if (!snap.exists) {
         if (window.VtxLoader) window.VtxLoader.done();
         UI.toast('Profile not found. Please register again.', 'error', 0);
-        // Cancel DM BEFORE signOut so the offline write goes out
-        // while auth is still valid.
         if (window.DM && typeof DM.cancelListeners === 'function') {
           await DM.cancelListeners();
         }
@@ -125,6 +128,11 @@
         DM.initStudentDMListener(uid);
       }
 
+      // ── Init student message notifications ──
+      if (window.MsgNotif) {
+        MsgNotif.initForStudent(uid);
+      }
+
       if (window.VtxLoader) window.VtxLoader.progress(90, 'Almost ready…');
       await Exam.loadOrStart();
       if (window.VtxLoader) window.VtxLoader.done();
@@ -133,7 +141,6 @@
       console.error('[app] Profile load error:', err);
       if (window.VtxLoader) window.VtxLoader.done();
       UI.toast('Access error. Please try again.', 'error', 0);
-      // Cancel DM BEFORE signOut.
       if (window.DM && typeof DM.cancelListeners === 'function') {
         await DM.cancelListeners();
       }
@@ -141,20 +148,15 @@
     }
   }
 
-  // _onLogout fires from onAuthStateChanged, which means signOut()
-  // has ALREADY been called by the time we get here. Auth is gone.
-  // Do NOT attempt any Firestore writes here. DM.cancelListeners()
-  // is called only to clean up any remaining listeners and event
-  // handlers — the offline writes inside it are guarded by the
-  // _studentOfflineDone / _teacherOfflineDone flags and will be
-  // no-ops if cancelListeners() was properly called pre-signOut.
   function _onLogout() {
     window._registrationInProgress = false;
 
+    // ── Cancel message notifications ──
+    if (window.MsgNotif) {
+      MsgNotif.cancel();
+    }
+
     if (window.DM && typeof DM.cancelListeners === 'function') {
-      // Not awaited — we're in a synchronous logout context and auth
-      // is already gone. The cleanup functions will be null (already
-      // ran pre-signOut) so this is purely listener teardown.
       DM.cancelListeners();
     }
 
