@@ -824,7 +824,7 @@
     document.body.appendChild(overlay);
   }
 
-  function _activateInlineEdit(studentUid, messageId, currentText, isDarkBubble, wrapperId) {
+  function _activateInlineEdit(studentUid, messageId, currentText, isDarkBubble, wrapperId, isTeacher) {
     const wrapper = document.getElementById(wrapperId);
     if (!wrapper) return;
 
@@ -836,16 +836,13 @@
     const saveClass   = isDarkBubble ? 'dm-edit-btn dm-edit-btn--save'   : 'dm-edit-btn dm-edit-btn--save-light';
     const cancelClass = isDarkBubble ? 'dm-edit-btn dm-edit-btn--cancel' : 'dm-edit-btn dm-edit-btn--cancel-light';
 
+    // Hide original content immediately so there's no flicker
+    if (textEl)   textEl.style.display   = 'none';
+    if (footerEl) footerEl.style.display = 'none';
+    if (editedEl) editedEl.style.display = 'none';
+
     const editUI = document.createElement('div');
     editUI.id = `dmEditUI-${messageId}`;
-
-    const ta = document.createElement('textarea');
-    ta.className = 'dm-edit-textarea';
-    ta.value     = currentText;
-    ta.rows      = 1;
-
-    const actions   = document.createElement('div');
-    actions.className = 'dm-edit-actions';
 
     const cancelBtn       = document.createElement('button');
     cancelBtn.className   = cancelClass;
@@ -856,6 +853,73 @@
       if (footerEl) footerEl.style.display = '';
       if (editedEl) editedEl.style.display = '';
     };
+
+    const inner = wrapper.querySelector('.dm-bubble-inner');
+
+    // For students only: check edit count before rendering the editor
+    if (!isTeacher) {
+      _msgHistoryRef(studentUid, messageId).get().then(snap => {
+        const editCount = snap.size;
+
+        if (editCount >= 2) {
+          // Limit reached — show a notice instead of the editor
+          const notice = document.createElement('div');
+          notice.style.cssText = 'font-size:.75rem;line-height:1.5;padding:.25rem 0;';
+
+          const msg = document.createElement('p');
+          msg.style.cssText = `
+            margin:0 0 .375rem;
+            opacity:.85;
+            color:${isDarkBubble ? 'rgba(255,255,255,.9)' : 'var(--danger,#e03b3b)'};
+          `;
+          msg.textContent = 'Messages can only be edited twice.';
+
+          const actions = document.createElement('div');
+          actions.className = 'dm-edit-actions';
+          actions.appendChild(cancelBtn);
+
+          notice.appendChild(msg);
+          notice.appendChild(actions);
+          editUI.appendChild(notice);
+          if (inner) inner.appendChild(editUI);
+          return;
+        }
+
+        // Under the limit — render the normal editor
+        _renderEditForm({
+          editUI, cancelBtn, saveClass, cancelClass,
+          studentUid, messageId, currentText,
+          isDarkBubble, inner, textEl, footerEl, editedEl,
+        });
+      }).catch(err => {
+        console.error('[dm] Could not check edit count:', err);
+        // On error, cancel gracefully
+        cancelBtn.onclick();
+      });
+
+      if (inner) inner.appendChild(editUI);
+      return;
+    }
+
+    // Teacher side — no restriction, render editor directly
+    _renderEditForm({
+      editUI, cancelBtn, saveClass, cancelClass,
+      studentUid, messageId, currentText,
+      isDarkBubble, inner, textEl, footerEl, editedEl,
+    });
+    if (inner) inner.appendChild(editUI);
+  }
+  
+  function _renderEditForm({ editUI, cancelBtn, saveClass, studentUid, messageId,
+                           currentText, isDarkBubble, inner, textEl, footerEl, editedEl }) {
+
+    const ta = document.createElement('textarea');
+    ta.className = 'dm-edit-textarea';
+    ta.value     = currentText;
+    ta.rows      = 1;
+
+    const actions     = document.createElement('div');
+    actions.className = 'dm-edit-actions';
 
     const saveBtn       = document.createElement('button');
     saveBtn.className   = saveClass;
@@ -883,13 +947,6 @@
     editUI.appendChild(ta);
     editUI.appendChild(actions);
 
-    if (textEl)   textEl.style.display   = 'none';
-    if (footerEl) footerEl.style.display = 'none';
-    if (editedEl) editedEl.style.display = 'none';
-
-    const inner = wrapper.querySelector('.dm-bubble-inner');
-    if (inner) inner.appendChild(editUI);
-
     ta.focus();
     ta.setSelectionRange(ta.value.length, ta.value.length);
     ta.style.height = 'auto';
@@ -916,7 +973,7 @@
     }
   }
 
-  function _toggleActionMenu(wrapperId, studentUid, messageId, currentText, canEdit, canHistory, isDarkBubble, alignRight) {
+  function _toggleActionMenu(wrapperId, studentUid, messageId, currentText, canEdit, canHistory, isDarkBubble, alignRight, isTeacher) {
     const menuId = `dmMenu-${messageId}`;
     if (_openMenuId === menuId) { _closeOpenMenu(); return; }
     _closeOpenMenu();
@@ -935,7 +992,10 @@
       const editItem     = document.createElement('button');
       editItem.className = 'dm-action-menu-item';
       editItem.innerHTML = `${_iconPencil(13)} Edit message`;
-      editItem.onclick   = () => { _closeOpenMenu(); _activateInlineEdit(studentUid, messageId, currentText, isDarkBubble, wrapperId); };
+      editItem.onclick   = () => {
+        _closeOpenMenu();
+        _activateInlineEdit(studentUid, messageId, currentText, isDarkBubble, wrapperId, isTeacher);
+      };
       menu.appendChild(editItem);
     }
 
@@ -983,7 +1043,7 @@
 
     const editBtn = canEdit
       ? `<button title="Edit"
-                 onclick="event.stopPropagation();DM._toggleActionMenu('${wrapId}','${safeUid}','${safeMsgId}',document.getElementById('${wrapId}').querySelector('.dm-bubble-text').textContent,true,false,${isMe},${isMe})"
+                 onclick="event.stopPropagation();DM._toggleActionMenu('${wrapId}','${safeUid}','${safeMsgId}',document.getElementById('${wrapId}').querySelector('.dm-bubble-text').textContent,true,false,${isMe},${isMe},false)"
                  style="background:none;border:none;cursor:pointer;padding:0 0 0 4px;
                         display:inline-flex;align-items:center;opacity:0;transition:opacity .15s;
                         color:${isMe ? 'rgba(255,255,255,.7)' : 'var(--text-4,#9ca3af)'};
@@ -1060,7 +1120,7 @@
 
     const editBtn = (canEdit || canHistory)
       ? `<button title="Options"
-                 onclick="event.stopPropagation();DM._toggleActionMenu('${wrapId}','${safeStudentUid}','${safeMsgId}',document.getElementById('${wrapId}').querySelector('.dm-bubble-text').textContent,${canEdit},${canHistory},${isTeacher},${isTeacher})"
+                 onclick="event.stopPropagation();DM._toggleActionMenu('${wrapId}','${safeStudentUid}','${safeMsgId}',document.getElementById('${wrapId}').querySelector('.dm-bubble-text').textContent,${canEdit},${canHistory},${isTeacher},${isTeacher},true)"
                  style="background:none;border:none;cursor:pointer;padding:0 0 0 4px;
                         display:inline-flex;align-items:center;opacity:0;transition:opacity .15s;
                         color:${isTeacher ? 'rgba(255,255,255,.7)' : 'var(--text-4,#9ca3af)'};
