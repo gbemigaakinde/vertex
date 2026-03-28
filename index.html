@@ -51,35 +51,45 @@
 
   <style>
     /* ══════════════════════════════════════════════════════
-       BOOK LOADING SCREEN
+       VERTEX CBT — LOADING SCREEN
+       Colours match the site design system exactly:
+         Background : #fafaf8  (--lp-cream / site cream)
+         Ink        : #0e0e0f  (--lp-ink)
+         Accent     : #4f6ef7  (--accent indigo)
+         Amber      : #b5641e  (--lp-amber, landing page accent)
+         Rule       : #e4e2dc  (--lp-rule)
+       Fonts        : Instrument Serif (display) + DM Sans (body)
+                      — same fonts as the landing page
        ══════════════════════════════════════════════════════ */
     @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap');
 
+    /* ── Loader shell ── */
     #vtx-loader {
       position: fixed;
       inset: 0;
       z-index: 99999;
-      background: #0c0b09;
+      /* Cream — matches --lp-cream and --bg-page */
+      background: #fafaf8;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
       font-family: 'DM Sans', system-ui, sans-serif;
-      transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1),
-                  visibility 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1),
+                  visibility 0.55s cubic-bezier(0.4, 0, 0.2, 1);
       opacity: 1;
       visibility: visible;
       overflow: hidden;
     }
 
-    /* Subtle warm paper texture overlay */
+    /* Very subtle warm vignette — keeps it light, not dark */
     #vtx-loader::before {
       content: '';
       position: absolute;
       inset: 0;
-      background:
-        radial-gradient(ellipse 80% 60% at 50% 40%, rgba(181,130,60,0.06) 0%, transparent 70%),
-        radial-gradient(ellipse 40% 40% at 20% 80%, rgba(79,110,247,0.04) 0%, transparent 60%);
+      background: radial-gradient(ellipse 90% 70% at 50% 50%,
+        transparent 40%,
+        rgba(14, 14, 15, 0.04) 100%);
       pointer-events: none;
     }
 
@@ -89,84 +99,128 @@
       pointer-events: none;
     }
 
-    /* ── Book scene container ── */
-    .vtx-book-scene {
-      width: 220px;
-      height: 160px;
-      position: relative;
-      margin-bottom: 2.5rem;
-      perspective: 900px;
+    /* ── Dark-mode override: flip to ink background ── */
+    [data-theme="dark"] #vtx-loader {
+      background: #111113;
+    }
+    [data-theme="dark"] #vtx-loader::before {
+      background: radial-gradient(ellipse 90% 70% at 50% 50%,
+        rgba(79, 110, 247, 0.04) 0%,
+        transparent 60%);
     }
 
-    /* ── Book base (spine + back cover) ── */
+    /* ════════════════════════════════════════════════
+       BOOK SCENE
+       The trick to a visually centred open book:
+       - The book element itself is 140 px wide and
+         rotates around its LEFT edge (the spine).
+       - When fully open, pages fan out to the right,
+         shifting the visual centre rightward.
+       - We shift the entire .vtx-book LEFT by ~28 px
+         (≈ half the fanned spread) so the open state
+         reads as centred inside .vtx-book-scene.
+       ════════════════════════════════════════════════ */
+    .vtx-book-scene {
+      /* Wide enough to hold the fanned open book */
+      width: 280px;
+      height: 170px;
+      position: relative;
+      margin-bottom: 2.75rem;
+      /* 3-D perspective centred on the scene */
+      perspective: 900px;
+      perspective-origin: 50% 50%;
+    }
+
+    /* The book sits left of centre so that when the
+       cover + pages fan right, the whole thing looks
+       centred inside .vtx-book-scene                 */
     .vtx-book {
       position: absolute;
       bottom: 0;
-      left: 50%;
+      /* offset left so fanned-open state is centred */
+      left: calc(50% - 42px);
       transform: translateX(-50%);
       width: 140px;
       height: 120px;
       transform-style: preserve-3d;
     }
 
-    /* Back cover — always visible as base */
+    /* ── Back cover (always visible, static) ── */
     .vtx-book-back {
       position: absolute;
       inset: 0;
-      background: linear-gradient(135deg, #2a1f10 0%, #1a1208 100%);
+      /* Ink-coloured cover matching --lp-ink */
+      background: linear-gradient(140deg, #1c1c20 0%, #0e0e0f 100%);
       border-radius: 3px 10px 10px 3px;
       box-shadow:
-        -4px 4px 20px rgba(0,0,0,0.7),
-        0 8px 32px rgba(0,0,0,0.5);
+        -4px 6px 24px rgba(14, 14, 15, 0.18),
+        0 8px 32px rgba(14, 14, 15, 0.12);
     }
 
-    /* Spine */
+    [data-theme="dark"] .vtx-book-back {
+      background: linear-gradient(140deg, #2a2a30 0%, #18181b 100%);
+      box-shadow:
+        -4px 6px 24px rgba(0, 0, 0, 0.5),
+        0 8px 32px rgba(0, 0, 0, 0.4);
+    }
+
+    /* ── Spine ── */
     .vtx-book-spine {
       position: absolute;
       left: -12px;
       top: 0;
       width: 12px;
       height: 100%;
-      background: linear-gradient(180deg, #4f3a1a 0%, #3a2a10 100%);
+      background: linear-gradient(180deg, #2a2a30 0%, #0e0e0f 100%);
       border-radius: 3px 0 0 3px;
-      box-shadow: -3px 4px 12px rgba(0,0,0,0.6);
+      box-shadow: -3px 4px 14px rgba(14, 14, 15, 0.2);
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 3px;
+      gap: 4px;
+    }
+
+    [data-theme="dark"] .vtx-book-spine {
+      background: linear-gradient(180deg, #3a3a42 0%, #18181b 100%);
     }
 
     .vtx-spine-line {
       width: 2px;
-      height: 40px;
-      background: rgba(181,130,60,0.3);
+      height: 36px;
+      /* Indigo accent — matches --accent */
+      background: rgba(79, 110, 247, 0.35);
       border-radius: 1px;
     }
 
-    /* Front cover (closes over pages) */
+    /* ── Front cover (opens and reveals pages) ── */
     .vtx-book-front {
       position: absolute;
       inset: 0;
-      background: linear-gradient(135deg, #3d2c14 0%, #2a1f0e 100%);
+      background: linear-gradient(140deg, #1c1c20 0%, #0e0e0f 100%);
       border-radius: 3px 10px 10px 3px;
       transform-origin: left center;
       transform-style: preserve-3d;
-      animation: vtx-cover-open 2.4s cubic-bezier(0.45, 0, 0.15, 1) 0.5s both;
+      animation: vtx-cover-open 2.6s cubic-bezier(0.45, 0, 0.15, 1) 0.4s both;
       z-index: 10;
-      box-shadow: 2px 0 8px rgba(0,0,0,0.4);
+      box-shadow: 2px 0 10px rgba(14, 14, 15, 0.15);
     }
 
-    /* Front cover face */
+    [data-theme="dark"] .vtx-book-front {
+      background: linear-gradient(140deg, #2a2a30 0%, #18181b 100%);
+    }
+
+    /* Inset border on cover face */
     .vtx-book-front::before {
       content: '';
       position: absolute;
-      inset: 6px;
-      border: 1px solid rgba(181,130,60,0.25);
+      inset: 7px;
+      /* Amber rule — matches --lp-amber */
+      border: 1px solid rgba(181, 100, 30, 0.3);
       border-radius: 2px 8px 8px 2px;
     }
 
-    /* Cover title text */
+    /* ── Cover typography ── */
     .vtx-cover-title {
       position: absolute;
       inset: 0;
@@ -174,7 +228,7 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      gap: 4px;
+      gap: 5px;
       backface-visibility: hidden;
     }
 
@@ -182,27 +236,35 @@
       font-family: 'Instrument Serif', Georgia, serif;
       font-size: 0.75rem;
       font-style: italic;
-      color: rgba(220,185,110,0.8);
-      letter-spacing: 0.06em;
+      /* Cream text on dark cover */
+      color: rgba(250, 250, 248, 0.75);
+      letter-spacing: 0.04em;
       text-align: center;
       line-height: 1.3;
-      padding: 0 12px;
+      padding: 0 14px;
     }
 
     .vtx-cover-rule {
-      width: 40px;
+      width: 36px;
       height: 1px;
-      background: rgba(181,130,60,0.4);
+      /* Amber rule */
+      background: rgba(181, 100, 30, 0.45);
     }
 
     .vtx-cover-sub {
-      font-size: 0.45rem;
-      letter-spacing: 0.2em;
+      font-size: 0.4375rem;
+      letter-spacing: 0.24em;
       text-transform: uppercase;
-      color: rgba(181,130,60,0.45);
+      color: rgba(181, 100, 30, 0.5);
     }
 
-    /* ── Pages fanning out ── */
+    /* ════════════════════════════════════════════════
+       PAGES
+       Six pages fan out from closed (0°) to open.
+       They rotate around the LEFT edge (spine) just
+       like the cover. Staggered delays give the
+       "riffling" effect.
+       ════════════════════════════════════════════════ */
     .vtx-page {
       position: absolute;
       inset: 0;
@@ -211,110 +273,139 @@
       transform-style: preserve-3d;
     }
 
-    /* Generate 6 pages with slightly different opening angles and delays */
+    /* Warm cream pages — matches --lp-cream-2 */
     .vtx-page-1 {
-      background: linear-gradient(90deg, #f0e8d5 0%, #ede0c4 100%);
-      animation: vtx-page-fan-1 2.4s cubic-bezier(0.45, 0, 0.15, 1) 0.55s both;
+      background: linear-gradient(90deg, #f0ede6 0%, #ece8e0 100%);
+      animation: vtx-page-fan-1 2.6s cubic-bezier(0.45, 0, 0.15, 1) 0.45s both;
       z-index: 9;
     }
     .vtx-page-2 {
-      background: linear-gradient(90deg, #f2ead8 0%, #eee2c8 100%);
-      animation: vtx-page-fan-2 2.4s cubic-bezier(0.45, 0, 0.15, 1) 0.6s both;
+      background: linear-gradient(90deg, #f2efe8 0%, #eeeae2 100%);
+      animation: vtx-page-fan-2 2.6s cubic-bezier(0.45, 0, 0.15, 1) 0.5s both;
       z-index: 8;
     }
     .vtx-page-3 {
-      background: linear-gradient(90deg, #f3ecda 0%, #f0e5cb 100%);
-      animation: vtx-page-fan-3 2.4s cubic-bezier(0.45, 0, 0.15, 1) 0.65s both;
+      background: linear-gradient(90deg, #f3f0e9 0%, #efebe3 100%);
+      animation: vtx-page-fan-3 2.6s cubic-bezier(0.45, 0, 0.15, 1) 0.55s both;
       z-index: 7;
     }
     .vtx-page-4 {
-      background: linear-gradient(90deg, #f4eddb 0%, #f1e7cd 100%);
-      animation: vtx-page-fan-4 2.4s cubic-bezier(0.45, 0, 0.15, 1) 0.7s both;
+      background: linear-gradient(90deg, #f4f1ea 0%, #f0ece4 100%);
+      animation: vtx-page-fan-4 2.6s cubic-bezier(0.45, 0, 0.15, 1) 0.6s both;
       z-index: 6;
     }
     .vtx-page-5 {
-      background: linear-gradient(90deg, #f5eedc 0%, #f2e8ce 100%);
-      animation: vtx-page-fan-5 2.4s cubic-bezier(0.45, 0, 0.15, 1) 0.75s both;
+      background: linear-gradient(90deg, #f5f2eb 0%, #f1ede5 100%);
+      animation: vtx-page-fan-5 2.6s cubic-bezier(0.45, 0, 0.15, 1) 0.65s both;
       z-index: 5;
     }
     .vtx-page-6 {
-      background: linear-gradient(90deg, #f6efde 0%, #f3e9d0 100%);
-      animation: vtx-page-fan-6 2.4s cubic-bezier(0.45, 0, 0.15, 1) 0.8s both;
+      background: linear-gradient(90deg, #f6f3ec 0%, #f2eee6 100%);
+      animation: vtx-page-fan-6 2.6s cubic-bezier(0.45, 0, 0.15, 1) 0.7s both;
       z-index: 4;
     }
 
-    /* Lines on opened pages */
+    [data-theme="dark"] .vtx-page-1 { background: linear-gradient(90deg, #2a2a30 0%, #222228 100%); }
+    [data-theme="dark"] .vtx-page-2 { background: linear-gradient(90deg, #2c2c32 0%, #242429 100%); }
+    [data-theme="dark"] .vtx-page-3 { background: linear-gradient(90deg, #2e2e34 0%, #26262b 100%); }
+    [data-theme="dark"] .vtx-page-4 { background: linear-gradient(90deg, #303036 0%, #28282d 100%); }
+    [data-theme="dark"] .vtx-page-5 { background: linear-gradient(90deg, #323238 0%, #2a2a2f 100%); }
+    [data-theme="dark"] .vtx-page-6 { background: linear-gradient(90deg, #34343a 0%, #2c2c31 100%); }
+
+    /* Ruled lines on visible page faces */
     .vtx-page::after {
       content: '';
       position: absolute;
-      top: 16px;
-      left: 16px;
-      right: 12px;
-      bottom: 16px;
+      top: 14px;
+      left: 14px;
+      right: 10px;
+      bottom: 14px;
       background: repeating-linear-gradient(
         to bottom,
         transparent,
         transparent 9px,
-        rgba(181,130,60,0.12) 9px,
-        rgba(181,130,60,0.12) 10px
+        rgba(14, 14, 15, 0.06) 9px,
+        rgba(14, 14, 15, 0.06) 10px
       );
       border-radius: 0 4px 4px 0;
     }
 
-    /* Cover opens to ~160deg (flat open) */
+    [data-theme="dark"] .vtx-page::after {
+      background: repeating-linear-gradient(
+        to bottom,
+        transparent,
+        transparent 9px,
+        rgba(250, 250, 248, 0.06) 9px,
+        rgba(250, 250, 248, 0.06) 10px
+      );
+    }
+
+    /* ── Page animations ── */
+    /* Cover opens fully flat (≈ 162°) */
     @keyframes vtx-cover-open {
       0%   { transform: rotateY(0deg); }
       100% { transform: rotateY(-162deg); }
     }
 
-    /* Each page fans to slightly different angle */
+    /* Pages fan to incrementally shallower angles, creating spread */
     @keyframes vtx-page-fan-1 {
       0%   { transform: rotateY(0deg); }
-      100% { transform: rotateY(-148deg); }
+      100% { transform: rotateY(-144deg); }
     }
     @keyframes vtx-page-fan-2 {
       0%   { transform: rotateY(0deg); }
-      100% { transform: rotateY(-132deg); }
+      100% { transform: rotateY(-124deg); }
     }
     @keyframes vtx-page-fan-3 {
       0%   { transform: rotateY(0deg); }
-      100% { transform: rotateY(-114deg); }
+      100% { transform: rotateY(-102deg); }
     }
     @keyframes vtx-page-fan-4 {
       0%   { transform: rotateY(0deg); }
-      100% { transform: rotateY(-94deg); }
+      100% { transform: rotateY(-80deg); }
     }
     @keyframes vtx-page-fan-5 {
       0%   { transform: rotateY(0deg); }
-      100% { transform: rotateY(-72deg); }
+      100% { transform: rotateY(-58deg); }
     }
     @keyframes vtx-page-fan-6 {
       0%   { transform: rotateY(0deg); }
-      100% { transform: rotateY(-50deg); }
+      100% { transform: rotateY(-38deg); }
     }
 
-    /* ── Shadow under book ── */
+    /* ── Drop shadow under the book ── */
     .vtx-book-shadow {
       position: absolute;
-      bottom: -8px;
-      left: 50%;
-      transform: translateX(-42%);
-      width: 180px;
+      bottom: -10px;
+      /* Centre shadow under the book + half of its fanned spread */
+      left: calc(50% - 42px);
+      transform: translateX(-50%);
+      width: 200px;
       height: 18px;
-      background: radial-gradient(ellipse, rgba(0,0,0,0.55) 0%, transparent 70%);
-      animation: vtx-shadow-grow 2.4s cubic-bezier(0.45, 0, 0.15, 1) 0.5s both;
+      background: radial-gradient(ellipse,
+        rgba(14, 14, 15, 0.15) 0%,
+        transparent 70%);
+      animation: vtx-shadow-grow 2.6s cubic-bezier(0.45, 0, 0.15, 1) 0.4s both;
+    }
+
+    [data-theme="dark"] .vtx-book-shadow {
+      background: radial-gradient(ellipse,
+        rgba(0, 0, 0, 0.45) 0%,
+        transparent 70%);
     }
 
     @keyframes vtx-shadow-grow {
       0%   { width: 140px; opacity: 0.3; }
-      100% { width: 210px; opacity: 1; }
+      100% { width: 240px; opacity: 1; }
     }
 
-    /* ── Text below book ── */
+    /* ════════════════════════════════════════════════
+       WORDMARK + PROGRESS
+       ════════════════════════════════════════════════ */
     .vtx-loader-text {
       text-align: center;
-      margin-bottom: 1.75rem;
-      animation: vtx-fade-up 0.6s ease 0.3s both;
+      margin-bottom: 2rem;
+      animation: vtx-fade-up 0.5s ease 0.3s both;
     }
 
     .vtx-loader-title {
@@ -322,28 +413,35 @@
       font-size: 1.25rem;
       font-style: italic;
       font-weight: 400;
-      color: rgba(220,200,160,0.9);
+      /* Ink — matches --lp-ink */
+      color: #0e0e0f;
       letter-spacing: -0.01em;
-      margin-bottom: 0.25rem;
+      margin-bottom: 0.2rem;
+    }
+
+    [data-theme="dark"] .vtx-loader-title {
+      color: rgba(250, 250, 248, 0.9);
     }
 
     .vtx-loader-subtitle {
       font-size: 0.5625rem;
       letter-spacing: 0.22em;
       text-transform: uppercase;
-      color: rgba(160,140,100,0.4);
+      /* --lp-ink-4 */
+      color: #a4a4aa;
     }
 
-    /* ── Progress bar ── */
+    /* ── Progress bar area ── */
     .vtx-progress-wrap {
       width: 200px;
-      animation: vtx-fade-up 0.6s ease 0.5s both;
+      animation: vtx-fade-up 0.5s ease 0.5s both;
     }
 
     .vtx-loader-track {
       width: 100%;
       height: 2px;
-      background: rgba(255,255,255,0.06);
+      /* --lp-rule */
+      background: #e4e2dc;
       border-radius: 99px;
       overflow: hidden;
       margin-bottom: 0.75rem;
@@ -351,25 +449,31 @@
       transition: opacity 0.4s ease;
     }
 
+    [data-theme="dark"] .vtx-loader-track {
+      background: #2a2a30;
+    }
+
     .vtx-loader-bar {
       height: 100%;
       width: 0%;
       border-radius: 99px;
-      background: linear-gradient(90deg, #b58230 0%, #d4a550 100%);
+      /* Indigo accent — matches --accent */
+      background: #4f6ef7;
       transition: width 0.45s ease;
-      box-shadow: 0 0 8px rgba(181,130,60,0.5);
+      box-shadow: 0 0 8px rgba(79, 110, 247, 0.35);
     }
 
     .vtx-loader-status {
       font-size: 0.625rem;
       letter-spacing: 0.08em;
-      color: rgba(160,140,100,0.4);
+      /* --lp-ink-4 */
+      color: #a4a4aa;
       text-align: center;
       min-height: 1em;
       transition: opacity 0.3s ease;
     }
 
-    /* Idle pulsing dots (shown before progress begins) */
+    /* ── Idle dots (shown before progress begins) ── */
     .vtx-dots {
       display: flex;
       gap: 5px;
@@ -382,24 +486,27 @@
       width: 3px;
       height: 3px;
       border-radius: 50%;
-      background: rgba(181,130,60,0.45);
-      animation: vtx-dot-pulse 1.6s ease-in-out infinite;
+      /* Indigo accent */
+      background: rgba(79, 110, 247, 0.45);
+      animation: vtx-dot-pulse 1.5s ease-in-out infinite;
     }
-    .vtx-dot:nth-child(2) { animation-delay: 0.24s; }
-    .vtx-dot:nth-child(3) { animation-delay: 0.48s; }
+    .vtx-dot:nth-child(2) { animation-delay: 0.22s; }
+    .vtx-dot:nth-child(3) { animation-delay: 0.44s; }
 
     /* ── Keyframes ── */
     @keyframes vtx-dot-pulse {
-      0%, 80%, 100% { transform: scale(1); opacity: 0.35; }
-      40% { transform: scale(1.7); opacity: 1; }
+      0%, 80%, 100% { transform: scale(1);   opacity: 0.35; }
+      40%            { transform: scale(1.8); opacity: 1;    }
     }
 
     @keyframes vtx-fade-up {
       from { opacity: 0; transform: translateY(10px); }
-      to   { opacity: 1; transform: translateY(0); }
+      to   { opacity: 1; transform: translateY(0);    }
     }
 
-    /* ── Theme toggle button ── */
+    /* ════════════════════════════════════════════════
+       THEME TOGGLE BUTTON
+       ════════════════════════════════════════════════ */
     #themeToggle {
       position: fixed;
       bottom: 16px;
@@ -435,20 +542,16 @@
 
 <body>
 
-  <!-- Dark mode bootstrap script (must be synchronous) -->
+  <!-- Dark mode bootstrap — must be synchronous -->
   <script>
     (function() {
-      const stored = localStorage.getItem('vtx-theme');
-      if (stored === 'dark') {
-        document.documentElement.setAttribute('data-theme', 'dark');
-      } else {
-        document.documentElement.setAttribute('data-theme', 'light');
-      }
+      var stored = localStorage.getItem('vtx-theme');
+      document.documentElement.setAttribute('data-theme', stored === 'dark' ? 'dark' : 'light');
     })();
   </script>
 
   <!-- ════════════════════════════════════════════════
-       BOOK LOADING SCREEN
+       LOADING SCREEN
        ════════════════════════════════════════════════ -->
   <div id="vtx-loader" role="status" aria-label="Loading Vertex Tutorial">
 
@@ -456,7 +559,7 @@
     <div class="vtx-book-scene">
       <div class="vtx-book-shadow"></div>
       <div class="vtx-book">
-        <!-- Back cover (static) -->
+        <!-- Static back cover -->
         <div class="vtx-book-back"></div>
         <!-- Spine -->
         <div class="vtx-book-spine">
@@ -464,14 +567,14 @@
           <div class="vtx-spine-line" style="height:20px;"></div>
           <div class="vtx-spine-line"></div>
         </div>
-        <!-- Pages fanning out (rendered back-to-front) -->
+        <!-- Pages rendered back-to-front so front page is on top -->
         <div class="vtx-page vtx-page-6"></div>
         <div class="vtx-page vtx-page-5"></div>
         <div class="vtx-page vtx-page-4"></div>
         <div class="vtx-page vtx-page-3"></div>
         <div class="vtx-page vtx-page-2"></div>
         <div class="vtx-page vtx-page-1"></div>
-        <!-- Front cover (opens last) -->
+        <!-- Front cover opens last -->
         <div class="vtx-book-front">
           <div class="vtx-cover-title">
             <div class="vtx-cover-rule"></div>
@@ -483,7 +586,7 @@
       </div>
     </div>
 
-    <!-- Label -->
+    <!-- Wordmark -->
     <div class="vtx-loader-text">
       <div class="vtx-loader-title">Vertex Tutorial</div>
       <div class="vtx-loader-subtitle">Computer-Based Testing</div>
@@ -506,7 +609,7 @@
 
   <!-- Theme toggle -->
   <button id="themeToggle" aria-label="Toggle dark mode" onclick="VtxTheme.toggle()">
-    <!-- Sun (shown in dark mode) -->
+    <!-- Sun icon (shown in dark mode) -->
     <svg class="theme-icon-light" width="16" height="16" viewBox="0 0 24 24" fill="none"
          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="12" cy="12" r="5"/>
@@ -519,7 +622,7 @@
       <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
       <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
     </svg>
-    <!-- Moon (shown in light mode) -->
+    <!-- Moon icon (shown in light mode) -->
     <svg class="theme-icon-dark" width="16" height="16" viewBox="0 0 24 24" fill="none"
          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
@@ -589,12 +692,13 @@
           if (_loader) _loader.classList.add('is-done');
           setTimeout(function () {
             if (_loader && _loader.parentNode) _loader.parentNode.removeChild(_loader);
-          }, 700);
+          }, 650);
         }, 280);
       }
 
       window.VtxLoader = { progress: _setProgress, done: _done };
 
+      // Failsafe — dismiss after 12 s no matter what
       setTimeout(function () {
         if (!_isDone) { console.warn('[VtxLoader] Failsafe triggered.'); _done(); }
       }, 12000);
@@ -612,7 +716,7 @@
       }
 
       function toggle() {
-        const current = document.documentElement.getAttribute('data-theme') || 'light';
+        var current = document.documentElement.getAttribute('data-theme') || 'light';
         _apply(current === 'dark' ? 'light' : 'dark');
       }
 
