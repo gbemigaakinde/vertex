@@ -1304,22 +1304,22 @@ function _cancelTypingListeners(threadUid) {
                   style="font-size:.8125rem;flex-shrink:0;">&#8592; Back</button>
         </div>
 
-        <div style="margin-bottom:.75rem;padding:.5rem .875rem;
-                    background:var(--surface-subtle,#f3f4f6);border:1px solid var(--border,#e5e7eb);
-                    border-radius:8px;font-size:.75rem;color:var(--text-tertiary,#6b7280);
-                    display:flex;align-items:center;gap:.5rem;line-height:1.5;box-sizing:border-box;">
-          <span style="color:var(--text-tertiary,#6b7280);flex-shrink:0;">${_iconLock(13)}</span>
-          <span><strong style="color:var(--text-secondary,#374151);font-weight:600;">Private</strong>
-          — these messages can only be seen by you and Master Timothy.</span>
+        <div style="margin-bottom:.5rem;padding:.375rem .625rem;
+         background:var(--surface-subtle,#f3f4f6);border:1px solid var(--border,#e5e7eb);
+         border-radius:8px;font-size:.7rem;color:var(--text-tertiary,#6b7280);
+         display:flex;align-items:center;gap:.375rem;line-height:1.3;box-sizing:border-box;">
+        <span style="color:var(--text-tertiary,#6b7280);flex-shrink:0;">${_iconLock(12)}</span>
+        <span><strong style="color:var(--text-secondary,#374151);font-weight:600;">Private</strong>
+         — these messages can only be seen by you and Master Timothy.</span>
         </div>
 
-        <div style="margin-bottom:1rem;padding:.625rem .875rem;
-                    background:var(--brand-bg,#edf2ff);border:1px solid var(--brand-border,#bac8ff);
-                    border-radius:8px;font-size:.8125rem;color:var(--brand-text,#3730a3);line-height:1.6;
-                    display:flex;align-items:flex-start;gap:.5rem;box-sizing:border-box;">
-          <span style="margin-top:1px;flex-shrink:0;">${_iconMail(14)}</span>
-          <span>Send a question or concern directly to Master Timothy.
-          He will reply here as soon as possible.</span>
+        <div style="margin-bottom:.625rem;padding:.5rem .625rem;
+           background:var(--brand-bg,#edf2ff);border:1px solid var(--brand-border,#bac8ff);
+           border-radius:8px;font-size:.75rem;color:var(--brand-text,#3730a3);line-height:1.4;
+           display:flex;align-items:flex-start;gap:.375rem;box-sizing:border-box;">
+        <span style="margin-top:1px;flex-shrink:0;">${_iconMail(12)}</span>
+        <span>Send a question or concern directly to Master Timothy.
+              He will reply here as soon as possible.</span>
         </div>
 
         <div id="dmMessages"
