@@ -2089,6 +2089,13 @@ function _cancelTypingListeners(threadUid) {
   }
 
   async function cancelListeners() {
+    // Clean up any active typing state before everything else
+    if (_typingActive && _typingCurrentUid && _typingCurrentRole) {
+      _stopTyping(_typingCurrentUid, _typingCurrentRole).catch(() => {});
+    }
+    if (_typingDebounceTimer) { clearTimeout(_typingDebounceTimer); _typingDebounceTimer = null; }
+    _typingActive = false;
+
     AppState.cancelListener('dmStudentMessages');
     AppState.cancelListener('dmTeacherThreads');
     AppState.cancelListener('dmTeacherMessages');
