@@ -129,6 +129,15 @@
         max-width:100%;
         min-width:0;
         box-sizing:border-box;
+        overflow:hidden;
+      }
+
+      #teacher-dm {
+        width:100%;
+        max-width:100%;
+        min-width:0;
+        box-sizing:border-box;
+        overflow:hidden;
       }
 
       .dm-thread-list-wrap {
@@ -136,6 +145,7 @@
         max-width:100%;
         min-width:0;
         overflow-x:hidden;
+        overflow-y:auto;
         box-sizing:border-box;
       }
 
@@ -152,6 +162,7 @@
         width:100%;
         max-width:100%;
         min-width:0;
+        overflow:hidden;
       }
       .dm-thread-item:last-child { border-bottom:none; }
       .dm-thread-item:hover { background:var(--bg-subtle,#f5f5f7); }
@@ -180,7 +191,7 @@
       }
 
       .dm-thread-bd {
-        flex:1;
+        flex:1 1 0%;
         min-width:0;
         max-width:100%;
         overflow:hidden;
@@ -198,12 +209,11 @@
       .dm-thread-name {
         font-size:.875rem;font-weight:700;color:var(--text-1,#0d0d0f);
         white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-        flex:1;min-width:0;
+        flex:1 1 0%;min-width:0;
       }
       .dm-thread-date {
         font-size:.6875rem;color:var(--text-4,#9ca3af);
         flex-shrink:0;white-space:nowrap;
-        max-width:60px;
       }
       .dm-thread-presence {
         font-size:.6875rem;color:var(--text-3,#6b7280);margin-bottom:1px;
@@ -224,8 +234,7 @@
       .dm-thread-preview {
         font-size:.8125rem;color:var(--text-3,#6b7280);
         white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-        flex:1;min-width:0;
-        max-width:100%;
+        flex:1 1 0%;min-width:0;
       }
       .dm-thread-badge {
         flex-shrink:0;min-width:20px;height:20px;border-radius:99px;
@@ -391,7 +400,7 @@
       }
 
       #teacher-dm {
-        overflow:visible !important;
+        overflow:hidden !important;
         min-width:0;
         box-sizing:border-box;
       }
