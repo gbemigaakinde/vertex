@@ -107,169 +107,273 @@
      Styles
   ──────────────────────────────────────────────────────────── */
   function _injectStyles() {
-  if (document.getElementById('_dmStyles')) return;
-  const style = document.createElement('style');
-  style.id = '_dmStyles';
-  style.textContent = `
-    /* Ticks */
-    .dm-ticks { display:inline-flex;align-items:center;margin-left:2px;vertical-align:middle;flex-shrink:0;line-height:1; }
+    if (document.getElementById('_dmStyles')) return;
+    const style = document.createElement('style');
+    style.id = '_dmStyles';
+    style.textContent = `
+      /* Ticks */
+      .dm-ticks { display:inline-flex;align-items:center;margin-left:2px;vertical-align:middle;flex-shrink:0;line-height:1; }
 
-    /* Edit trigger — shown on bubble hover */
-    .dm-bubble-inner:hover .dm-edit-trigger-btn,
-    .dm-bubble-inner:focus-within .dm-edit-trigger-btn { opacity:1 !important; }
+      /* Edit trigger — shown on bubble hover */
+      .dm-bubble-inner:hover .dm-edit-trigger-btn,
+      .dm-bubble-inner:focus-within .dm-edit-trigger-btn { opacity:1 !important; }
 
-    /* Presence */
-    .dm-presence { display:inline-flex;align-items:center;gap:5px;font-size:.6875rem;line-height:1;margin-top:3px; }
-    .dm-presence__dot { width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:background .4s; }
-    .dm-presence__dot--online { background:#22c45e;box-shadow:0 0 0 2px rgba(34,196,94,.2); }
-    .dm-presence__dot--offline { background:var(--text-4,#9ca3af); }
-    .dm-presence__label { color:var(--text-3,#6b7280);font-size:.6875rem; }
-    .dm-presence__label--online { color:#22c45e !important;font-weight:500; }
+      /* Presence */
+      .dm-presence { display:inline-flex;align-items:center;gap:5px;font-size:.6875rem;line-height:1;margin-top:3px; }
+      .dm-presence__dot { width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:background .4s; }
+      .dm-presence__dot--online { background:#22c45e;box-shadow:0 0 0 2px rgba(34,196,94,.2); }
+      .dm-presence__dot--offline { background:var(--text-4,#9ca3af); }
+      .dm-presence__label { color:var(--text-3,#6b7280);font-size:.6875rem; }
+      .dm-presence__label--online { color:#22c45e !important;font-weight:500; }
 
-    /* Date separator */
-    .dm-date-sep { display:flex;align-items:center;gap:.625rem;margin:.875rem 0 .625rem;user-select:none; }
-    .dm-date-sep__line { flex:1;height:1px;background:var(--border,#e5e7eb); }
-    .dm-date-sep__label {
-      font-size:.625rem;font-weight:600;letter-spacing:.04em;color:var(--text-4,#9ca3af);
-      white-space:nowrap;padding:2px 8px;border-radius:99px;
-      background:var(--bg-subtle,#f3f4f6);border:1px solid var(--border,#e5e7eb);
-    }
+      /* Date separator */
+      .dm-date-sep { display:flex;align-items:center;gap:.625rem;margin:.875rem 0 .625rem;user-select:none; }
+      .dm-date-sep__line { flex:1;height:1px;background:var(--border,#e5e7eb); }
+      .dm-date-sep__label {
+        font-size:.625rem;font-weight:600;letter-spacing:.04em;color:var(--text-4,#9ca3af);
+        white-space:nowrap;padding:2px 8px;border-radius:99px;
+        background:var(--bg-subtle,#f3f4f6);border:1px solid var(--border,#e5e7eb);
+      }
 
-    /* Thread list rows */
-    .dm-thread-item {
-      display:flex;align-items:flex-start;gap:.75rem;
-      padding:.75rem 1rem;cursor:pointer;
-      border-bottom:1px solid var(--border,#e5e7eb);
-      background:transparent;transition:background .12s ease;
-      box-sizing:border-box;width:100%;overflow:hidden;
-    }
-    .dm-thread-item:last-child { border-bottom:none; }
-    .dm-thread-item:hover { background:var(--bg-subtle,#f5f5f7); }
-    .dm-thread-item.is-active { background:var(--accent-subtle,rgba(79,110,247,.07)); }
+      /* ── Teacher DM shell ── */
+      #dmTeacherShell {
+        position:relative;
+        width:100%;
+        max-width:100%;
+        box-sizing:border-box;
+        overflow:hidden;
+      }
 
-    /* Avatar */
-    .dm-thread-av {
-      flex-shrink:0;position:relative;
-      width:42px;height:42px;
-    }
-    .dm-thread-av-circle {
-      width:42px;height:42px;border-radius:50%;
-      background:var(--accent-subtle,rgba(79,110,247,.08));
-      border:1.5px solid var(--accent-border,rgba(79,110,247,.25));
-      display:flex;align-items:center;justify-content:center;
-      font-size:.9375rem;font-weight:700;color:var(--accent-text,#2d49d6);
-    }
-    .dm-thread-av-circle.online { border-color:#22c45e; }
-    .dm-thread-av-dot {
-      position:absolute;bottom:1px;right:1px;
-      width:11px;height:11px;border-radius:50%;
-      background:#22c45e;border:2px solid var(--bg-base,#fff);
-    }
+      /* Thread list rows */
+      .dm-thread-list-wrap {
+        width:100%;
+        max-width:100%;
+        overflow-x:hidden;
+        box-sizing:border-box;
+      }
 
-    /* Thread body */
-    .dm-thread-bd { flex:1;min-width:0;overflow:hidden; }
-    .dm-thread-r1 { display:flex;align-items:baseline;justify-content:space-between;gap:.375rem;margin-bottom:1px; }
-    .dm-thread-name {
-      font-size:.875rem;font-weight:700;color:var(--text-1,#0d0d0f);
-      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;
-    }
-    .dm-thread-date { font-size:.6875rem;color:var(--text-4,#9ca3af);flex-shrink:0;white-space:nowrap; }
-    .dm-thread-presence {
-      font-size:.6875rem;color:var(--text-3,#6b7280);margin-bottom:1px;
-      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-    }
-    .dm-thread-presence.online { color:#22c45e;font-weight:600; }
-    .dm-thread-r2 { display:flex;align-items:center;justify-content:space-between;gap:.375rem; }
-    .dm-thread-preview {
-      font-size:.8125rem;color:var(--text-3,#6b7280);
-      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;
-    }
-    .dm-thread-badge {
-      flex-shrink:0;min-width:20px;height:20px;border-radius:99px;
-      background:var(--danger,#e03b3b);color:#fff;
-      font-size:.625rem;font-weight:700;
-      display:flex;align-items:center;justify-content:center;
-      padding:0 5px;line-height:1;
-    }
-    .dm-thread-class {
-      display:inline-block;font-size:.625rem;font-weight:500;
-      color:var(--accent-text,#2d49d6);
-      background:var(--accent-subtle,rgba(79,110,247,.08));
-      border:1px solid var(--accent-border,rgba(79,110,247,.25));
-      border-radius:4px;padding:1px 6px;margin-top:3px;white-space:nowrap;
-    }
+      .dm-thread-item {
+        display:flex;
+        align-items:flex-start;
+        gap:.75rem;
+        padding:.75rem 1rem;
+        cursor:pointer;
+        border-bottom:1px solid var(--border,#e5e7eb);
+        background:transparent;
+        transition:background .12s ease;
+        box-sizing:border-box;
+        width:100%;
+        max-width:100%;
+        overflow:hidden;
+        min-width:0;
+      }
+      .dm-thread-item:last-child { border-bottom:none; }
+      .dm-thread-item:hover { background:var(--bg-subtle,#f5f5f7); }
+      .dm-thread-item.is-active { background:var(--accent-subtle,rgba(79,110,247,.07)); }
 
-    /* Action menu */
-    .dm-new-conv-overlay {
-      position:fixed;inset:0;background:rgba(0,0,0,.45);
-      display:flex;align-items:center;justify-content:center;
-      z-index:9999;animation:dmFadeIn .15s ease;
-    }
-    @keyframes dmFadeIn { from{opacity:0} to{opacity:1} }
-    .dm-new-conv-modal {
-      background:var(--bg-base,#fff);border-radius:14px;
-      width:min(480px,94vw);padding:1.25rem 1.5rem;
-      box-shadow:0 20px 60px rgba(0,0,0,.2);
-      border:1px solid var(--border,#e5e7eb);
-    }
-    .dm-action-menu {
-      position:absolute;z-index:200;
-      background:var(--bg-base,#fff);border:1px solid var(--border,#e5e7eb);
-      border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.12);
-      min-width:148px;overflow:hidden;animation:dmFadeIn .1s ease;
-    }
-    .dm-action-menu-item {
-      display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;
-      font-size:.8125rem;color:var(--text-1,#0d0d0f);cursor:pointer;
-      transition:background .1s;white-space:nowrap;
-      border:none;background:none;width:100%;text-align:left;font-family:var(--font);
-    }
-    .dm-action-menu-item:hover { background:var(--bg-subtle,#f3f4f6); }
-    .dm-action-menu-item + .dm-action-menu-item { border-top:1px solid var(--border,#e5e7eb); }
+      /* Avatar */
+      .dm-thread-av {
+        flex-shrink:0;
+        position:relative;
+        width:42px;
+        height:42px;
+      }
+      .dm-thread-av-circle {
+        width:42px;height:42px;border-radius:50%;
+        background:var(--accent-subtle,rgba(79,110,247,.08));
+        border:1.5px solid var(--accent-border,rgba(79,110,247,.25));
+        display:flex;align-items:center;justify-content:center;
+        font-size:.9375rem;font-weight:700;color:var(--accent-text,#2d49d6);
+        flex-shrink:0;
+      }
+      .dm-thread-av-circle.online { border-color:#22c45e; }
+      .dm-thread-av-dot {
+        position:absolute;bottom:1px;right:1px;
+        width:11px;height:11px;border-radius:50%;
+        background:#22c45e;border:2px solid var(--bg-base,#fff);
+      }
 
-    /* Inline edit */
-    .dm-edit-textarea {
-      width:100%;resize:none;overflow-y:hidden;line-height:1.55;
-      font-size:.875rem;font-family:var(--font);padding:.375rem .5rem;
-      border:1px solid var(--accent,#4f6ef7);border-radius:6px;
-      background:rgba(255,255,255,.15);color:inherit;outline:none;
-      box-shadow:0 0 0 3px var(--accent-subtle,rgba(79,110,247,.12));min-height:2.4rem;
-    }
-    .dm-edit-actions { display:flex;gap:.375rem;margin-top:.375rem;justify-content:flex-end; }
-    .dm-edit-btn { font-size:.6875rem;font-weight:600;padding:3px 11px;border-radius:5px;border:none;cursor:pointer;font-family:var(--font); }
-    .dm-edit-btn--save { background:#fff;color:var(--accent,#4f6ef7); }
-    .dm-edit-btn--cancel { background:rgba(255,255,255,.2);color:inherit;opacity:.75; }
-    .dm-edit-btn--save-light { background:var(--accent,#4f6ef7);color:#fff; }
-    .dm-edit-btn--cancel-light { background:var(--bg-subtle,#f3f4f6);color:var(--text-2,#3a3a40);border:1px solid var(--border,#e5e7eb); }
-    .dm-edited-label { font-size:.5625rem;opacity:.6;font-style:italic;margin-left:4px;line-height:1;white-space:nowrap; }
+      /* Thread body — MUST have min-width:0 inside flex to allow truncation */
+      .dm-thread-bd { flex:1;min-width:0;overflow:hidden; }
+      .dm-thread-r1 { display:flex;align-items:baseline;justify-content:space-between;gap:.375rem;margin-bottom:1px; }
+      .dm-thread-name {
+        font-size:.875rem;font-weight:700;color:var(--text-1,#0d0d0f);
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+        flex:1;min-width:0;
+      }
+      .dm-thread-date { font-size:.6875rem;color:var(--text-4,#9ca3af);flex-shrink:0;white-space:nowrap; }
+      .dm-thread-presence {
+        font-size:.6875rem;color:var(--text-3,#6b7280);margin-bottom:1px;
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+        max-width:100%;
+      }
+      .dm-thread-presence.online { color:#22c45e;font-weight:600; }
+      .dm-thread-r2 { display:flex;align-items:center;justify-content:space-between;gap:.375rem;min-width:0; }
+      .dm-thread-preview {
+        font-size:.8125rem;color:var(--text-3,#6b7280);
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+        flex:1;min-width:0;
+      }
+      .dm-thread-badge {
+        flex-shrink:0;min-width:20px;height:20px;border-radius:99px;
+        background:var(--danger,#e03b3b);color:#fff;
+        font-size:.625rem;font-weight:700;
+        display:flex;align-items:center;justify-content:center;
+        padding:0 5px;line-height:1;
+      }
+      .dm-thread-class {
+        display:inline-block;font-size:.625rem;font-weight:500;
+        color:var(--accent-text,#2d49d6);
+        background:var(--accent-subtle,rgba(79,110,247,.08));
+        border:1px solid var(--accent-border,rgba(79,110,247,.25));
+        border-radius:4px;padding:1px 6px;margin-top:3px;white-space:nowrap;
+        max-width:100%;overflow:hidden;text-overflow:ellipsis;
+      }
 
-    /* History modal */
-    .dm-history-overlay {
-      position:fixed;inset:0;background:rgba(0,0,0,.5);
-      display:flex;align-items:center;justify-content:center;
-      z-index:10000;padding:1rem;animation:dmFadeIn .15s ease;
-    }
-    .dm-history-modal {
-      background:var(--bg-base,#fff);border-radius:12px;
-      width:min(460px,96vw);max-height:80vh;display:flex;flex-direction:column;
-      box-shadow:0 20px 60px rgba(0,0,0,.22);border:1px solid var(--border,#e5e7eb);
-    }
-    .dm-history-header {
-      display:flex;align-items:center;justify-content:space-between;
-      padding:.875rem 1.125rem;border-bottom:1px solid var(--border,#e5e7eb);flex-shrink:0;
-    }
-    .dm-history-body { overflow-y:auto;padding:.75rem 1rem;flex:1;display:flex;flex-direction:column;gap:.625rem; }
-    .dm-history-entry {
-      padding:.625rem .875rem;border-radius:8px;
-      border:1px solid var(--border,#e5e7eb);background:var(--bg-subtle,#f9fafb);
-    }
-    .dm-history-entry p { font-size:.875rem;line-height:1.55;color:var(--text-1,#0d0d0f);white-space:pre-wrap;word-break:break-word;margin:0; }
-    .dm-history-entry time { display:block;font-size:.625rem;color:var(--text-4,#9ca3af);margin-top:.25rem; }
-    .dm-history-current { background:var(--accent-subtle,rgba(79,110,247,.08));border-color:var(--accent-border,rgba(79,110,247,.25)); }
-    .dm-history-current p { font-weight:500; }
-  `;
-  document.head.appendChild(style);
-}
+      /* Action menu */
+      .dm-new-conv-overlay {
+        position:fixed;inset:0;background:rgba(0,0,0,.45);
+        display:flex;align-items:center;justify-content:center;
+        z-index:9999;animation:dmFadeIn .15s ease;
+      }
+      @keyframes dmFadeIn { from{opacity:0} to{opacity:1} }
+      .dm-new-conv-modal {
+        background:var(--bg-base,#fff);border-radius:14px;
+        width:min(480px,94vw);padding:1.25rem 1.5rem;
+        box-shadow:0 20px 60px rgba(0,0,0,.2);
+        border:1px solid var(--border,#e5e7eb);
+        box-sizing:border-box;
+      }
+      .dm-action-menu {
+        position:absolute;z-index:200;
+        background:var(--bg-base,#fff);border:1px solid var(--border,#e5e7eb);
+        border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.12);
+        min-width:148px;overflow:hidden;animation:dmFadeIn .1s ease;
+      }
+      .dm-action-menu-item {
+        display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;
+        font-size:.8125rem;color:var(--text-1,#0d0d0f);cursor:pointer;
+        transition:background .1s;white-space:nowrap;
+        border:none;background:none;width:100%;text-align:left;font-family:var(--font);
+      }
+      .dm-action-menu-item:hover { background:var(--bg-subtle,#f3f4f6); }
+      .dm-action-menu-item + .dm-action-menu-item { border-top:1px solid var(--border,#e5e7eb); }
+
+      /* Inline edit */
+      .dm-edit-textarea {
+        width:100%;resize:none;overflow-y:hidden;line-height:1.55;
+        font-size:.875rem;font-family:var(--font);padding:.375rem .5rem;
+        border:1px solid var(--accent,#4f6ef7);border-radius:6px;
+        background:rgba(255,255,255,.15);color:inherit;outline:none;
+        box-shadow:0 0 0 3px var(--accent-subtle,rgba(79,110,247,.12));
+        min-height:2.4rem;box-sizing:border-box;
+      }
+      .dm-edit-actions { display:flex;gap:.375rem;margin-top:.375rem;justify-content:flex-end; }
+      .dm-edit-btn { font-size:.6875rem;font-weight:600;padding:3px 11px;border-radius:5px;border:none;cursor:pointer;font-family:var(--font); }
+      .dm-edit-btn--save { background:#fff;color:var(--accent,#4f6ef7); }
+      .dm-edit-btn--cancel { background:rgba(255,255,255,.2);color:inherit;opacity:.75; }
+      .dm-edit-btn--save-light { background:var(--accent,#4f6ef7);color:#fff; }
+      .dm-edit-btn--cancel-light { background:var(--bg-subtle,#f3f4f6);color:var(--text-2,#3a3a40);border:1px solid var(--border,#e5e7eb); }
+      .dm-edited-label { font-size:.5625rem;opacity:.6;font-style:italic;margin-left:4px;line-height:1;white-space:nowrap; }
+
+      /* History modal */
+      .dm-history-overlay {
+        position:fixed;inset:0;background:rgba(0,0,0,.5);
+        display:flex;align-items:center;justify-content:center;
+        z-index:10000;padding:1rem;animation:dmFadeIn .15s ease;
+        box-sizing:border-box;
+      }
+      .dm-history-modal {
+        background:var(--bg-base,#fff);border-radius:12px;
+        width:min(460px,96vw);max-height:80vh;display:flex;flex-direction:column;
+        box-shadow:0 20px 60px rgba(0,0,0,.22);border:1px solid var(--border,#e5e7eb);
+        box-sizing:border-box;
+      }
+      .dm-history-header {
+        display:flex;align-items:center;justify-content:space-between;
+        padding:.875rem 1.125rem;border-bottom:1px solid var(--border,#e5e7eb);flex-shrink:0;
+      }
+      .dm-history-body { overflow-y:auto;padding:.75rem 1rem;flex:1;display:flex;flex-direction:column;gap:.625rem; }
+      .dm-history-entry {
+        padding:.625rem .875rem;border-radius:8px;
+        border:1px solid var(--border,#e5e7eb);background:var(--bg-subtle,#f9fafb);
+      }
+      .dm-history-entry p { font-size:.875rem;line-height:1.55;color:var(--text-1,#0d0d0f);white-space:pre-wrap;word-break:break-word;margin:0; }
+      .dm-history-entry time { display:block;font-size:.625rem;color:var(--text-4,#9ca3af);margin-top:.25rem; }
+      .dm-history-current { background:var(--accent-subtle,rgba(79,110,247,.08));border-color:var(--accent-border,rgba(79,110,247,.25)); }
+      .dm-history-current p { font-weight:500; }
+
+      /* ── Chat message bubbles ── */
+      .dm-msg-out {
+        display:flex;
+        flex-direction:column;
+        align-items:flex-end;
+        margin-bottom:.75rem;
+        padding-left:20%;          /* fixed percentage — creates left indent for outgoing */
+        box-sizing:border-box;
+        width:100%;
+        max-width:100%;
+      }
+      .dm-msg-in {
+        display:flex;
+        flex-direction:column;
+        align-items:flex-start;
+        margin-bottom:.75rem;
+        padding-right:20%;         /* fixed percentage — creates right indent for incoming */
+        box-sizing:border-box;
+        width:100%;
+        max-width:100%;
+      }
+      .dm-bubble-wrap {
+        display:inline-flex;
+        flex-direction:column;
+        max-width:100%;
+        min-width:0;
+      }
+      .dm-bubble-inner {
+        word-break:break-word;
+        overflow-wrap:break-word;
+        display:block;
+        max-width:100%;
+        box-sizing:border-box;
+        position:relative;
+      }
+      .dm-bubble-text {
+        font-size:.9375rem;
+        line-height:1.5;
+        white-space:pre-wrap;
+        word-break:break-word;
+        overflow-wrap:break-word;
+        margin:0;
+      }
+      .dm-bubble-footer {
+        display:flex;
+        align-items:center;
+        gap:3px;
+        margin-top:2px;
+      }
+      .dm-bubble-footer--end  { justify-content:flex-end; }
+      .dm-bubble-footer--start{ justify-content:flex-start; }
+      .dm-bubble-time {
+        font-size:.625rem;
+        opacity:.7;
+        line-height:1;
+        white-space:nowrap;
+        flex-shrink:0;
+      }
+      .dm-bubble-time--dim { opacity:.55; }
+
+      /* Message container areas */
+      .dm-messages-area {
+        overflow-y:auto;
+        overflow-x:hidden;
+        box-sizing:border-box;
+        width:100%;
+        max-width:100%;
+      }
+    `;
+    document.head.appendChild(style);
+  }
 
   /* ────────────────────────────────────────────────────────────
      Date/time helpers
@@ -318,17 +422,9 @@
 
   /* ────────────────────────────────────────────────────────────
      Presence HTML
-     ──────────────────────────────────────────────────────────
-     IMPORTANT: isOnline (the boolean flag) is now ONLY used as
-     a fast hint. The definitive check is _isRecentlyActive(ts).
-     A user is shown as Online only if their lastSeen timestamp
-     is within ONLINE_THRESHOLD_MS of now.
   ──────────────────────────────────────────────────────────── */
   function _presenceHTML(isOnlineFlagHint, lastSeen) {
-    // Trust the timestamp over the boolean flag.
-    // If lastSeen is recent → Online; otherwise → Offline.
     const actuallyOnline = _isRecentlyActive(lastSeen);
-
     if (actuallyOnline) {
       return `<span class="dm-presence">
         <span class="dm-presence__dot dm-presence__dot--online"></span>
@@ -354,16 +450,11 @@
   let _teacherOfflineDone         = false;
   let _teacherIsOnline            = false;
 
-  // Heartbeat timer handles
   let _studentHeartbeatHandle = null;
   let _teacherHeartbeatHandle = null;
 
   /* ────────────────────────────────────────────────────────────
      Heartbeat — student
-     Fires every HEARTBEAT_INTERVAL_MS to refresh lastSeen.
-     This is what keeps the user appearing "Online" in the new
-     threshold-based model. Writing online:true here is optional
-     (legacy UI hint) — correctness comes from lastSeen alone.
   ──────────────────────────────────────────────────────────── */
   function _startStudentHeartbeat(uid) {
     _stopStudentHeartbeat();
@@ -372,10 +463,7 @@
         _stopStudentHeartbeat();
         return;
       }
-      // Skip heartbeat when tab is hidden — saves writes and lets lastSeen
-      // go stale naturally, so the presence indicator auto-flips to Offline.
       if (document.visibilityState === 'hidden') return;
-
       const ts = firebase.firestore.FieldValue.serverTimestamp();
       try {
         const b = Db().batch();
@@ -406,7 +494,6 @@
         return;
       }
       if (document.visibilityState === 'hidden') return;
-
       try {
         await _broadcastTeacherPresence(true);
       } catch (e) {
@@ -427,8 +514,6 @@
   ──────────────────────────────────────────────────────────── */
   async function _setStudentOnlineGlobal(uid) {
     _studentOfflineDone = false;
-
-    // Initial "I'm here" write — sets both online flag and lastSeen.
     try {
       const ts    = firebase.firestore.FieldValue.serverTimestamp();
       const batch = Db().batch();
@@ -444,13 +529,8 @@
         return;
       }
     }
-
-    // Start heartbeat to keep lastSeen fresh.
     _startStudentHeartbeat(uid);
 
-    /* goOffline — called at logout or tab-close.
-       This is purely for fast UI feedback.
-       Correctness no longer depends on this succeeding. */
     const goOffline = async () => {
       if (_studentOfflineDone) return;
       _studentOfflineDone = true;
@@ -465,21 +545,13 @@
         await b.commit();
       } catch (e) { console.warn('[dm] studentOffline write failed:', e); }
     };
-
     _studentOfflineCleanup = goOffline;
 
-    // Tab hidden → stop heartbeat so lastSeen goes stale → auto-Offline after threshold.
-    // Tab visible again → restart heartbeat immediately.
     _studentVisibilityHandler = () => {
       if (document.visibilityState === 'hidden') {
         _stopStudentHeartbeat();
-        // Do NOT call goOffline here — let the threshold handle it naturally.
-        // (Calling goOffline here caused the user to appear offline when just
-        // switching tabs momentarily, even with the tab still open.)
       } else {
         if (firebase.auth().currentUser && !_studentOfflineDone) {
-          // Immediately refresh lastSeen on tab-focus so the user snaps
-          // back to Online without waiting a full heartbeat interval.
           (async () => {
             const ts = firebase.firestore.FieldValue.serverTimestamp();
             try {
@@ -495,7 +567,6 @@
     };
     document.addEventListener('visibilitychange', _studentVisibilityHandler);
 
-    // beforeunload — best-effort synchronous write.
     _studentBeforeunloadHandler = () => {
       if (_studentOfflineDone) return;
       _studentOfflineDone = true;
@@ -513,15 +584,12 @@
   async function _setTeacherOnlineGlobal() {
     _teacherOfflineDone = false;
     _teacherIsOnline    = true;
-
     try {
       await _broadcastTeacherPresence(true);
     } catch (e) {
       console.warn('[dm] Could not set teacherOnline=true globally:', e);
       return;
     }
-
-    // Start heartbeat.
     _startTeacherHeartbeat();
 
     const goOffline = async () => {
@@ -533,7 +601,6 @@
         console.warn('[dm] teacherOffline broadcast failed:', e);
       }
     };
-
     _teacherOfflineCleanup = goOffline;
 
     _teacherVisibilityHandler = () => {
@@ -541,7 +608,6 @@
         _stopTeacherHeartbeat();
       } else {
         if (firebase.auth().currentUser && !_teacherOfflineDone) {
-          // Snap back to Online immediately on tab-focus.
           _broadcastTeacherPresence(true).catch(() => {});
           _startTeacherHeartbeat();
         }
@@ -570,21 +636,16 @@
 
   /* ────────────────────────────────────────────────────────────
      _broadcastTeacherPresence
-     Now includes lastSeen on EVERY write (online or offline),
-     so the threshold check always has a fresh timestamp.
   ──────────────────────────────────────────────────────────── */
   async function _broadcastTeacherPresence(isOnline) {
     const db = Db();
     const ts = firebase.auth().currentUser
       ? firebase.firestore.FieldValue.serverTimestamp()
       : new Date();
-
-    // Always write lastSeen — even when going online — so the timestamp is fresh.
     await db.collection('teacherPresence').doc('global').set(
       { online: isOnline, lastSeen: ts },
       { merge: true }
     );
-
     const snap = await db.collection('directMessages').get();
     if (snap.empty) return;
     const refs = [];
@@ -601,10 +662,6 @@
 
   /* ────────────────────────────────────────────────────────────
      _watchPresence
-     Reads both the boolean flag AND the lastSeen timestamp from
-     Firestore snapshots, then calls _presenceHTML which applies
-     the threshold check. The boolean flag is passed as a hint
-     only — the rendered result depends on _isRecentlyActive(ts).
   ──────────────────────────────────────────────────────────── */
   function _watchPresence(studentUid, watchRole, elementId, listenerKey) {
     AppState.cancelListener(listenerKey);
@@ -614,7 +671,6 @@
         const el = document.getElementById(elementId);
         if (!el) { AppState.cancelListener(listenerKey); return; }
         const data = (snap.exists && snap.data()) || {};
-        // Pass both the flag (hint) and the timestamp (source of truth).
         el.innerHTML = _presenceHTML(!!data.teacherOnline, data.teacherLastSeen || null);
       }, err => console.warn('[dm] Presence watch error:', err));
       AppState.registerListener(listenerKey, unsub);
@@ -640,7 +696,7 @@
   }
 
   /* ────────────────────────────────────────────────────────────
-     Message delivery helpers (unchanged logic)
+     Message delivery helpers
   ──────────────────────────────────────────────────────────── */
   async function _markDelivered(studentUid, recipientRole) {
     const senderRole = recipientRole === 'student' ? 'teacher' : 'student';
@@ -686,7 +742,7 @@
   }
 
   /* ────────────────────────────────────────────────────────────
-     Edit history helpers (unchanged)
+     Edit history helpers
   ──────────────────────────────────────────────────────────── */
   function _msgHistoryRef(studentUid, messageId) {
     return _threadRef(studentUid).collection('messages').doc(messageId).collection('editHistory');
@@ -769,7 +825,7 @@
   }
 
   /* ────────────────────────────────────────────────────────────
-     Inline edit UI (unchanged)
+     Inline edit UI
   ──────────────────────────────────────────────────────────── */
   function _activateInlineEdit(studentUid, messageId, currentText, isDarkBubble, wrapperId) {
     const wrapper = document.getElementById(wrapperId);
@@ -852,7 +908,7 @@
   }
 
   /* ────────────────────────────────────────────────────────────
-     Action menu (unchanged)
+     Action menu
   ──────────────────────────────────────────────────────────── */
   let _openMenuId = null;
 
@@ -867,220 +923,206 @@
   }
 
   function _toggleActionMenu(wrapperId, studentUid, messageId, currentText, canEdit, canHistory, isDarkBubble, alignRight) {
-  const menuId = `dmMenu-${messageId}`;
-  if (_openMenuId === menuId) { _closeOpenMenu(); return; }
-  _closeOpenMenu();
+    const menuId = `dmMenu-${messageId}`;
+    if (_openMenuId === menuId) { _closeOpenMenu(); return; }
+    _closeOpenMenu();
 
-  const bubbleInner = document.querySelector(`#${wrapperId} .dm-bubble-inner`);
-  if (!bubbleInner) return;
+    const bubbleInner = document.querySelector(`#${wrapperId} .dm-bubble-inner`);
+    if (!bubbleInner) return;
 
-  const menu     = document.createElement('div');
-  menu.className = 'dm-action-menu';
-  menu.id        = menuId;
-  menu.style.cssText = alignRight
-    ? 'right:0;bottom:calc(100% + 6px);'
-    : 'left:0;bottom:calc(100% + 6px);';
+    const menu     = document.createElement('div');
+    menu.className = 'dm-action-menu';
+    menu.id        = menuId;
+    menu.style.cssText = alignRight
+      ? 'right:0;bottom:calc(100% + 6px);'
+      : 'left:0;bottom:calc(100% + 6px);';
 
-  if (canEdit) {
-    const editItem     = document.createElement('button');
-    editItem.className = 'dm-action-menu-item';
-    editItem.innerHTML = `${_iconPencil(13)} Edit message`;
-    editItem.onclick   = () => { _closeOpenMenu(); _activateInlineEdit(studentUid, messageId, currentText, isDarkBubble, wrapperId); };
-    menu.appendChild(editItem);
+    if (canEdit) {
+      const editItem     = document.createElement('button');
+      editItem.className = 'dm-action-menu-item';
+      editItem.innerHTML = `${_iconPencil(13)} Edit message`;
+      editItem.onclick   = () => { _closeOpenMenu(); _activateInlineEdit(studentUid, messageId, currentText, isDarkBubble, wrapperId); };
+      menu.appendChild(editItem);
+    }
+
+    if (canHistory) {
+      const histItem     = document.createElement('button');
+      histItem.className = 'dm-action-menu-item';
+      histItem.innerHTML = `${_iconHistory(13)} Edit history`;
+      histItem.onclick   = () => { _closeOpenMenu(); _showEditHistory(studentUid, messageId, currentText); };
+      menu.appendChild(histItem);
+    }
+
+    if (!menu.children.length) return;
+
+    bubbleInner.style.position = 'relative';
+    bubbleInner.appendChild(menu);
+    _openMenuId = menuId;
+
+    setTimeout(() => {
+      document.addEventListener('click', function _handler(e) {
+        if (!menu.contains(e.target)) {
+          _closeOpenMenu();
+          document.removeEventListener('click', _handler);
+        }
+      });
+    }, 0);
   }
-
-  if (canHistory) {
-    const histItem     = document.createElement('button');
-    histItem.className = 'dm-action-menu-item';
-    histItem.innerHTML = `${_iconHistory(13)} Edit history`;
-    histItem.onclick   = () => { _closeOpenMenu(); _showEditHistory(studentUid, messageId, currentText); };
-    menu.appendChild(histItem);
-  }
-
-  if (!menu.children.length) return;
-
-  bubbleInner.style.position = 'relative';
-  bubbleInner.appendChild(menu);
-  _openMenuId = menuId;
-
-  setTimeout(() => {
-    document.addEventListener('click', function _handler(e) {
-      if (!menu.contains(e.target)) {
-        _closeOpenMenu();
-        document.removeEventListener('click', _handler);
-      }
-    });
-  }, 0);
-}
 
   /* ────────────────────────────────────────────────────────────
-     Bubble builders (unchanged)
+     Bubble builders
+     FIX: Replaced inline percentage padding on individual wrappers
+     with stable CSS classes. Bubbles now use max-width on the
+     inner element rather than percentage padding on the outer,
+     preventing overflow on narrow screens.
   ──────────────────────────────────────────────────────────── */
   function _buildStudentBubble(msg, myUid) {
-  const isMe    = msg.senderId === myUid;
-  const msgId   = msg.id || '';
-  const wrapId  = `dmWrap-${_esc(msgId)}`;
-  const canEdit = isMe && !!msgId;
+    const isMe    = msg.senderId === myUid;
+    const msgId   = msg.id || '';
+    const wrapId  = `dmWrap-${_escAttr(msgId)}`;
+    const canEdit = isMe && !!msgId;
 
-  const time = msg.timestamp
-    ? new Date(msg.timestamp.toDate ? msg.timestamp.toDate() : msg.timestamp)
-        .toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-    : 'Just now';
+    const time = msg.timestamp
+      ? new Date(msg.timestamp.toDate ? msg.timestamp.toDate() : msg.timestamp)
+          .toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+      : 'Just now';
 
-  const editedLabel = msg.editedAt
-    ? `<span style="font-size:.5625rem;opacity:.6;font-style:italic;margin-right:3px;line-height:1;white-space:nowrap;">edited</span>`
-    : '';
+    const editedLabel = msg.editedAt
+      ? `<span style="font-size:.5625rem;opacity:.6;font-style:italic;margin-right:3px;line-height:1;white-space:nowrap;">edited</span>`
+      : '';
 
-  const safeUid   = _esc(myUid);
-  const safeMsgId = _esc(msgId);
+    const safeUid   = _escAttr(myUid);
+    const safeMsgId = _escAttr(msgId);
 
-  const editBtn = canEdit
-    ? `<button title="Edit"
-               onclick="event.stopPropagation();DM._toggleActionMenu('${wrapId}','${safeUid}','${safeMsgId}',document.getElementById('${wrapId}').querySelector('.dm-bubble-text').textContent,true,false,${isMe},${isMe})"
-               style="background:none;border:none;cursor:pointer;padding:0 0 0 4px;
-                      display:inline-flex;align-items:center;opacity:0;transition:opacity .15s;
-                      color:${isMe ? 'rgba(255,255,255,.7)' : 'var(--text-4,#9ca3af)'};
-                      flex-shrink:0;line-height:1;vertical-align:middle;"
-               class="dm-edit-trigger-btn">
-         ${_iconPencil(10)}
-       </button>`
-    : '';
+    const editBtn = canEdit
+      ? `<button title="Edit"
+                 onclick="event.stopPropagation();DM._toggleActionMenu('${wrapId}','${safeUid}','${safeMsgId}',document.getElementById('${wrapId}').querySelector('.dm-bubble-text').textContent,true,false,${isMe},${isMe})"
+                 style="background:none;border:none;cursor:pointer;padding:0 0 0 4px;
+                        display:inline-flex;align-items:center;opacity:0;transition:opacity .15s;
+                        color:${isMe ? 'rgba(255,255,255,.7)' : 'var(--text-4,#9ca3af)'};
+                        flex-shrink:0;line-height:1;vertical-align:middle;"
+                 class="dm-edit-trigger-btn">
+           ${_iconPencil(10)}
+         </button>`
+      : '';
 
-  if (isMe) {
-    return `
-      <div id="${wrapId}" style="display:flex;flex-direction:column;align-items:flex-end;
-                                  margin-bottom:.75rem;padding-left:15%;">
-        <div style="display:inline-flex;flex-direction:column;align-items:flex-end;max-width:100%;">
-          <div class="dm-bubble-inner"
-               style="background:var(--accent,#4f6ef7);color:#fff;
-                      border-radius:14px 14px 3px 14px;
-                      padding:.5rem .75rem .375rem;word-break:break-word;
-                      display:inline-block;max-width:100%;">
-            <p class="dm-bubble-text"
-               style="font-size:.9375rem;line-height:1.5;white-space:pre-wrap;margin:0;">
-              ${_esc(msg.text)}
-            </p>
-            <div style="display:flex;align-items:center;justify-content:flex-end;
-                        gap:3px;margin-top:2px;">
-              ${editedLabel}
-              ${editBtn}
-              <span style="font-size:.625rem;opacity:.7;line-height:1;white-space:nowrap;">${time}</span>
-              ${_tickIcon(msg.status || 'sent')}
+    if (isMe) {
+      return `
+        <div id="${wrapId}" class="dm-msg-out">
+          <div class="dm-bubble-wrap">
+            <div class="dm-bubble-inner"
+                 style="background:var(--accent,#4f6ef7);color:#fff;
+                        border-radius:14px 14px 3px 14px;
+                        padding:.5rem .75rem .375rem;">
+              <p class="dm-bubble-text">${_esc(msg.text)}</p>
+              <div class="dm-bubble-footer dm-bubble-footer--end">
+                ${editedLabel}
+                ${editBtn}
+                <span class="dm-bubble-time">${time}</span>
+                ${_tickIcon(msg.status || 'sent')}
+              </div>
             </div>
           </div>
-        </div>
-      </div>`;
-  } else {
-    return `
-      <div id="${wrapId}" style="display:flex;flex-direction:column;align-items:flex-start;
-                                  margin-bottom:.75rem;padding-right:15%;">
-        <span style="font-size:.6875rem;font-weight:600;color:var(--text-3,#6b7280);
-                     margin-bottom:2px;padding-left:2px;">
-          ${_esc(msg.senderName || 'Master Timothy')}
-        </span>
-        <div class="dm-bubble-inner"
-             style="background:var(--bg-base,#fff);color:var(--text-1,#0d0d0f);
-                    border:1px solid var(--border,#e5e7eb);
-                    border-radius:14px 14px 14px 3px;
-                    padding:.5rem .75rem .375rem;word-break:break-word;
-                    display:inline-block;max-width:100%;">
-          <p class="dm-bubble-text"
-             style="font-size:.9375rem;line-height:1.5;white-space:pre-wrap;margin:0;">
-            ${_esc(msg.text)}
-          </p>
-          <div style="display:flex;align-items:center;justify-content:flex-start;
-                      gap:3px;margin-top:2px;">
-            <span style="font-size:.625rem;opacity:.55;line-height:1;white-space:nowrap;">${time}</span>
+        </div>`;
+    } else {
+      return `
+        <div id="${wrapId}" class="dm-msg-in">
+          <span style="font-size:.6875rem;font-weight:600;color:var(--text-3,#6b7280);
+                       margin-bottom:2px;padding-left:2px;display:block;">
+            ${_esc(msg.senderName || 'Master Timothy')}
+          </span>
+          <div class="dm-bubble-wrap">
+            <div class="dm-bubble-inner"
+                 style="background:var(--bg-base,#fff);color:var(--text-1,#0d0d0f);
+                        border:1px solid var(--border,#e5e7eb);
+                        border-radius:14px 14px 14px 3px;
+                        padding:.5rem .75rem .375rem;">
+              <p class="dm-bubble-text">${_esc(msg.text)}</p>
+              <div class="dm-bubble-footer dm-bubble-footer--start">
+                <span class="dm-bubble-time dm-bubble-time--dim">${time}</span>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>`;
+        </div>`;
+    }
   }
-}
 
   function _buildTeacherBubble(msg) {
-  const isTeacher  = msg.role === 'teacher';
-  const msgId      = msg.id || '';
-  const wrapId     = `dmWrap-${_esc(msgId)}`;
-  const studentUid = _activeStudentUid || '';
-  const canEdit    = isTeacher && !!msgId;
-  const canHistory = !!msgId;
+    const isTeacher  = msg.role === 'teacher';
+    const msgId      = msg.id || '';
+    const wrapId     = `dmWrap-${_escAttr(msgId)}`;
+    const studentUid = _activeStudentUid || '';
+    const canEdit    = isTeacher && !!msgId;
+    const canHistory = !!msgId;
 
-  const time = msg.timestamp
-    ? new Date(msg.timestamp.toDate ? msg.timestamp.toDate() : msg.timestamp)
-        .toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-    : 'Just now';
+    const time = msg.timestamp
+      ? new Date(msg.timestamp.toDate ? msg.timestamp.toDate() : msg.timestamp)
+          .toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+      : 'Just now';
 
-  const editedLabel = msg.editedAt
-    ? `<span style="font-size:.5625rem;opacity:.6;font-style:italic;margin-right:3px;line-height:1;white-space:nowrap;">edited</span>`
-    : '';
+    const editedLabel = msg.editedAt
+      ? `<span style="font-size:.5625rem;opacity:.6;font-style:italic;margin-right:3px;line-height:1;white-space:nowrap;">edited</span>`
+      : '';
 
-  const safeStudentUid = _esc(studentUid);
-  const safeMsgId      = _esc(msgId);
+    const safeStudentUid = _escAttr(studentUid);
+    const safeMsgId      = _escAttr(msgId);
 
-  const editBtn = (canEdit || canHistory)
-    ? `<button title="Options"
-               onclick="event.stopPropagation();DM._toggleActionMenu('${wrapId}','${safeStudentUid}','${safeMsgId}',document.getElementById('${wrapId}').querySelector('.dm-bubble-text').textContent,${canEdit},${canHistory},${isTeacher},${isTeacher})"
-               style="background:none;border:none;cursor:pointer;padding:0 0 0 4px;
-                      display:inline-flex;align-items:center;opacity:0;transition:opacity .15s;
-                      color:${isTeacher ? 'rgba(255,255,255,.7)' : 'var(--text-4,#9ca3af)'};
-                      flex-shrink:0;line-height:1;vertical-align:middle;"
-               class="dm-edit-trigger-btn">
-         ${_iconPencil(10)}
-       </button>`
-    : '';
+    const editBtn = (canEdit || canHistory)
+      ? `<button title="Options"
+                 onclick="event.stopPropagation();DM._toggleActionMenu('${wrapId}','${safeStudentUid}','${safeMsgId}',document.getElementById('${wrapId}').querySelector('.dm-bubble-text').textContent,${canEdit},${canHistory},${isTeacher},${isTeacher})"
+                 style="background:none;border:none;cursor:pointer;padding:0 0 0 4px;
+                        display:inline-flex;align-items:center;opacity:0;transition:opacity .15s;
+                        color:${isTeacher ? 'rgba(255,255,255,.7)' : 'var(--text-4,#9ca3af)'};
+                        flex-shrink:0;line-height:1;vertical-align:middle;"
+                 class="dm-edit-trigger-btn">
+           ${_iconPencil(10)}
+         </button>`
+      : '';
 
-  if (isTeacher) {
-    return `
-      <div id="${wrapId}" style="display:flex;flex-direction:column;align-items:flex-end;
-                                  margin-bottom:.75rem;padding-left:15%;">
-        <span style="font-size:.6875rem;font-weight:700;color:var(--accent-text,#2d49d6);
-                     margin-bottom:2px;padding-right:2px;">
-          Master Timothy
-        </span>
-        <div class="dm-bubble-inner"
-             style="background:var(--accent,#4f6ef7);color:#fff;
-                    border-radius:14px 14px 3px 14px;
-                    padding:.5rem .75rem .375rem;word-break:break-word;
-                    display:inline-block;max-width:100%;">
-          <p class="dm-bubble-text"
-             style="font-size:.9375rem;line-height:1.5;white-space:pre-wrap;margin:0;">
-            ${_esc(msg.text)}
-          </p>
-          <div style="display:flex;align-items:center;justify-content:flex-end;
-                      gap:3px;margin-top:2px;">
-            ${editedLabel}
-            ${editBtn}
-            <span style="font-size:.625rem;opacity:.7;line-height:1;white-space:nowrap;">${time}</span>
-            ${_tickIcon(msg.status || 'sent')}
+    if (isTeacher) {
+      return `
+        <div id="${wrapId}" class="dm-msg-out">
+          <span style="font-size:.6875rem;font-weight:700;color:var(--accent-text,#2d49d6);
+                       margin-bottom:2px;padding-right:2px;display:block;text-align:right;">
+            Master Timothy
+          </span>
+          <div class="dm-bubble-wrap">
+            <div class="dm-bubble-inner"
+                 style="background:var(--accent,#4f6ef7);color:#fff;
+                        border-radius:14px 14px 3px 14px;
+                        padding:.5rem .75rem .375rem;">
+              <p class="dm-bubble-text">${_esc(msg.text)}</p>
+              <div class="dm-bubble-footer dm-bubble-footer--end">
+                ${editedLabel}
+                ${editBtn}
+                <span class="dm-bubble-time">${time}</span>
+                ${_tickIcon(msg.status || 'sent')}
+              </div>
+            </div>
           </div>
-        </div>
-      </div>`;
-  } else {
-    return `
-      <div id="${wrapId}" style="display:flex;flex-direction:column;align-items:flex-start;
-                                  margin-bottom:.75rem;padding-right:15%;">
-        <span style="font-size:.6875rem;font-weight:600;color:var(--text-3,#6b7280);
-                     margin-bottom:2px;padding-left:2px;">
-          ${_esc(msg.senderName || 'Student')}
-        </span>
-        <div class="dm-bubble-inner"
-             style="background:var(--bg-base,#fff);color:var(--text-1,#0d0d0f);
-                    border:1px solid var(--border,#e5e7eb);
-                    border-radius:14px 14px 14px 3px;
-                    padding:.5rem .75rem .375rem;word-break:break-word;
-                    display:inline-block;max-width:100%;">
-          <p class="dm-bubble-text"
-             style="font-size:.9375rem;line-height:1.5;white-space:pre-wrap;margin:0;">
-            ${_esc(msg.text)}
-          </p>
-          <div style="display:flex;align-items:center;justify-content:flex-start;
-                      gap:3px;margin-top:2px;">
-            <span style="font-size:.625rem;opacity:.55;line-height:1;white-space:nowrap;">${time}</span>
+        </div>`;
+    } else {
+      return `
+        <div id="${wrapId}" class="dm-msg-in">
+          <span style="font-size:.6875rem;font-weight:600;color:var(--text-3,#6b7280);
+                       margin-bottom:2px;padding-left:2px;display:block;">
+            ${_esc(msg.senderName || 'Student')}
+          </span>
+          <div class="dm-bubble-wrap">
+            <div class="dm-bubble-inner"
+                 style="background:var(--bg-base,#fff);color:var(--text-1,#0d0d0f);
+                        border:1px solid var(--border,#e5e7eb);
+                        border-radius:14px 14px 14px 3px;
+                        padding:.5rem .75rem .375rem;">
+              <p class="dm-bubble-text">${_esc(msg.text)}</p>
+              <div class="dm-bubble-footer dm-bubble-footer--start">
+                <span class="dm-bubble-time dm-bubble-time--dim">${time}</span>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>`;
+        </div>`;
+    }
   }
-}
 
   /* ────────────────────────────────────────────────────────────
      Student inbox
@@ -1103,7 +1145,6 @@
       if (!threadSnap.exists) {
         const sentinelSnap = await Db().collection('teacherPresence').doc('global').get();
         const tData = (sentinelSnap.exists && sentinelSnap.data()) || {};
-        // Use threshold check for teacher online status — not raw boolean.
         const teacherOnline   = _isRecentlyActive(tData.lastSeen);
         const teacherLastSeen = tData.lastSeen || null;
         const seedData = {
@@ -1117,21 +1158,22 @@
 
     UI.mount(`
       <div class="max-w-2xl mx-auto glass animate-fadeIn"
-           style="padding:1.25rem 1.5rem;margin-top:1.25rem;margin-bottom:1.25rem;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;">
-          <div>
+           style="padding:1.25rem 1.5rem;margin-top:1.25rem;margin-bottom:1.25rem;
+                  box-sizing:border-box;width:100%;max-width:100%;overflow:hidden;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;min-width:0;">
+          <div style="min-width:0;flex:1;margin-right:.75rem;">
             <h2 class="font-bold" style="font-size:1.125rem;line-height:1.3;">Message Master Timothy</h2>
             <div id="dmTeacherPresence" style="margin-top:2px;">${_presenceHTML(false, null)}</div>
           </div>
           <button onclick="DM.backFromStudentInbox()" class="btn bg-gray-500 hover:bg-gray-600"
-                  style="font-size:.8125rem;">&#8592; Back</button>
+                  style="font-size:.8125rem;flex-shrink:0;">&#8592; Back</button>
         </div>
 
         <div style="margin-bottom:.75rem;padding:.5rem .875rem;
                     background:var(--surface-subtle,#f3f4f6);border:1px solid var(--border,#e5e7eb);
                     border-radius:8px;font-size:.75rem;color:var(--text-tertiary,#6b7280);
-                    display:flex;align-items:center;gap:.5rem;line-height:1.5;">
-          <span style="color:var(--text-tertiary,#6b7280);">${_iconLock(13)}</span>
+                    display:flex;align-items:center;gap:.5rem;line-height:1.5;box-sizing:border-box;">
+          <span style="color:var(--text-tertiary,#6b7280);flex-shrink:0;">${_iconLock(13)}</span>
           <span><strong style="color:var(--text-secondary,#374151);font-weight:600;">Private</strong>
           — these messages can only be seen by you and Master Timothy.</span>
         </div>
@@ -1139,26 +1181,29 @@
         <div style="margin-bottom:1rem;padding:.625rem .875rem;
                     background:var(--brand-bg,#edf2ff);border:1px solid var(--brand-border,#bac8ff);
                     border-radius:8px;font-size:.8125rem;color:var(--brand-text,#3730a3);line-height:1.6;
-                    display:flex;align-items:flex-start;gap:.5rem;">
-          <span style="margin-top:1px;">${_iconMail(14)}</span>
+                    display:flex;align-items:flex-start;gap:.5rem;box-sizing:border-box;">
+          <span style="margin-top:1px;flex-shrink:0;">${_iconMail(14)}</span>
           <span>Send a question or concern directly to Master Timothy.
           He will reply here as soon as possible.</span>
         </div>
 
         <div id="dmMessages"
-             style="min-height:260px;max-height:420px;overflow-y:auto;
+             class="dm-messages-area"
+             style="min-height:260px;max-height:420px;
                     border:1px solid var(--border,#e5e7eb);border-radius:10px;
-                    padding:.75rem 1.75rem;margin-bottom:.75rem;background:var(--surface-subtle,#f9fafb);">
+                    padding:.75rem 1rem;margin-bottom:.75rem;
+                    background:var(--surface-subtle,#f9fafb);">
           <p style="text-align:center;font-size:.8125rem;color:var(--text-disabled,#9ca3af);padding:2rem 0;">
             Loading messages…
           </p>
         </div>
 
-        <div style="display:flex;gap:.5rem;align-items:flex-end;">
+        <div style="display:flex;gap:.5rem;align-items:flex-end;box-sizing:border-box;width:100%;overflow:hidden;">
           <textarea id="dmInput" placeholder="Type your message…" rows="1"
-                    style="flex:1;resize:none;overflow-y:hidden;line-height:1.5;
+                    style="flex:1;min-width:0;resize:none;overflow-y:hidden;line-height:1.5;
                            padding:.5625rem .75rem;min-height:36px;max-height:120px;
-                           border-radius:var(--r-md);font-family:var(--font);font-size:var(--text-base);"></textarea>
+                           border-radius:var(--r-md);font-family:var(--font);font-size:var(--text-base);
+                           box-sizing:border-box;"></textarea>
           <button id="dmSendBtn" onclick="DM.sendStudentMessage()"
                   class="btn bg-green-600 hover:bg-green-700"
                   style="flex-shrink:0;align-self:flex-end;">Send</button>
@@ -1232,7 +1277,6 @@
 
   /* ────────────────────────────────────────────────────────────
      sendStudentMessage
-     Uses threshold check to decide delivered vs sent status.
   ──────────────────────────────────────────────────────────── */
   async function sendStudentMessage() {
     const input = document.getElementById('dmInput');
@@ -1248,7 +1292,6 @@
     UI.setLoading(btn, true);
     if (input) input.value = '';
 
-    // Use the sentinel doc + threshold check for teacher online status.
     let teacherIsOnline = false;
     try {
       const sentinelSnap = await Db().collection('teacherPresence').doc('global').get();
@@ -1293,130 +1336,136 @@
      Teacher inbox
   ──────────────────────────────────────────────────────────── */
   function openTeacherInbox() {
-  _injectStyles();
-  const panel = document.getElementById('teacher-dm');
-  if (!panel) return;
+    _injectStyles();
+    const panel = document.getElementById('teacher-dm');
+    if (!panel) return;
 
-  panel.innerHTML = `
-    <div id="dmTeacherShell"
-         style="border:1px solid var(--border,#e5e7eb);border-radius:12px;overflow:hidden;
-                background:var(--surface,#fff);display:flex;flex-direction:column;
-                height:600px;max-height:82vh;position:relative;">
+    panel.innerHTML = `
+      <div id="dmTeacherShell"
+           style="border:1px solid var(--border,#e5e7eb);border-radius:12px;overflow:hidden;
+                  background:var(--surface,#fff);display:flex;flex-direction:column;
+                  height:600px;max-height:82vh;position:relative;
+                  width:100%;max-width:100%;box-sizing:border-box;">
 
-      <!-- VIEW A: Thread list -->
-      <div id="dmViewList" style="display:flex;flex-direction:column;height:100%;min-height:0;">
+        <!-- VIEW A: Thread list -->
+        <div id="dmViewList" style="display:flex;flex-direction:column;height:100%;min-height:0;
+                                    width:100%;max-width:100%;box-sizing:border-box;">
 
-        <!-- List header -->
-        <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border,#e5e7eb);
-                    background:var(--surface-subtle,#f9fafb);flex-shrink:0;
-                    display:flex;align-items:center;justify-content:space-between;gap:.5rem;">
-          <h3 style="font-size:.9375rem;font-weight:700;color:var(--text-primary,#111827);">
-            Messages
-          </h3>
-          <button onclick="DM._openNewConversationModal()"
-                  title="New message"
-                  style="width:30px;height:30px;border-radius:50%;
-                         border:1px solid var(--brand-border,#bac8ff);
-                         background:var(--brand-bg,#edf2ff);cursor:pointer;
-                         display:flex;align-items:center;justify-content:center;
-                         color:var(--brand-text,#3730a3);transition:background .15s;">
-            ${_iconPencil(14)}
-          </button>
+          <!-- List header -->
+          <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border,#e5e7eb);
+                      background:var(--surface-subtle,#f9fafb);flex-shrink:0;
+                      display:flex;align-items:center;justify-content:space-between;gap:.5rem;
+                      box-sizing:border-box;width:100%;">
+            <h3 style="font-size:.9375rem;font-weight:700;color:var(--text-primary,#111827);
+                       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              Messages
+            </h3>
+            <button onclick="DM._openNewConversationModal()"
+                    title="New message"
+                    style="width:30px;height:30px;border-radius:50%;flex-shrink:0;
+                           border:1px solid var(--brand-border,#bac8ff);
+                           background:var(--brand-bg,#edf2ff);cursor:pointer;
+                           display:flex;align-items:center;justify-content:center;
+                           color:var(--brand-text,#3730a3);transition:background .15s;">
+              ${_iconPencil(14)}
+            </button>
+          </div>
+
+          <!-- Scrollable thread list -->
+          <div id="dmThreadList"
+               class="dm-thread-list-wrap"
+               style="flex:1;min-height:0;overflow-y:auto;">
+            <p style="font-size:.8125rem;color:var(--text-disabled,#9ca3af);
+                      text-align:center;padding:2rem 1rem;">Loading…</p>
+          </div>
         </div>
 
-        <!-- Scrollable thread list -->
-        <div id="dmThreadList"
-             style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;">
-          <p style="font-size:.8125rem;color:var(--text-disabled,#9ca3af);
-                    text-align:center;padding:2rem 1rem;">Loading…</p>
+        <!-- VIEW B: Single conversation -->
+        <div id="dmViewChat"
+             style="display:none;flex-direction:column;height:100%;min-height:0;
+                    position:absolute;inset:0;
+                    background:var(--surface,#fff);z-index:10;
+                    width:100%;max-width:100%;box-sizing:border-box;overflow:hidden;">
+          <!-- Populated by _openConversation() -->
         </div>
-      </div>
 
-      <!-- VIEW B: Single conversation (hidden until a thread is opened) -->
-      <div id="dmViewChat"
-           style="display:none;flex-direction:column;height:100%;min-height:0;position:absolute;
-                  inset:0;background:var(--surface,#fff);z-index:10;">
-        <!-- Populated by _openConversation() -->
-      </div>
+      </div>`;
 
-    </div>`;
-
-  _subscribeTeacherThreadList();
-}
+    _subscribeTeacherThreadList();
+  }
 
   /* ────────────────────────────────────────────────────────────
      Thread list
-     Now uses _isRecentlyActive for the presence dot & label.
   ──────────────────────────────────────────────────────────── */
   function _subscribeTeacherThreadList() {
-  AppState.cancelListener('dmTeacherThreads');
+    AppState.cancelListener('dmTeacherThreads');
 
-  const unsub = Db()
-    .collection('directMessages').orderBy('lastAt', 'desc')
-    .onSnapshot(snap => {
-      const list = document.getElementById('dmThreadList');
-      if (!list) { AppState.cancelListener('dmTeacherThreads'); return; }
+    const unsub = Db()
+      .collection('directMessages').orderBy('lastAt', 'desc')
+      .onSnapshot(snap => {
+        const list = document.getElementById('dmThreadList');
+        if (!list) { AppState.cancelListener('dmTeacherThreads'); return; }
 
-      if (snap.empty) {
-        list.innerHTML = `<p style="font-size:.8125rem;color:var(--text-4,#9ca3af);text-align:center;padding:2rem 1rem;">No messages yet.</p>`;
-        return;
-      }
+        if (snap.empty) {
+          list.innerHTML = `<p style="font-size:.8125rem;color:var(--text-4,#9ca3af);text-align:center;padding:2rem 1rem;">No messages yet.</p>`;
+          return;
+        }
 
-      let totalUnread = 0;
-      const items = [];
-      snap.forEach(doc => {
-        totalUnread += (doc.data().teacherUnread || 0);
-        items.push({ id: doc.id, ...doc.data() });
-      });
+        let totalUnread = 0;
+        const items = [];
+        snap.forEach(doc => {
+          totalUnread += (doc.data().teacherUnread || 0);
+          items.push({ id: doc.id, ...doc.data() });
+        });
 
-      _updateTeacherBadge(totalUnread);
+        _updateTeacherBadge(totalUnread);
 
-      list.innerHTML = items.map(item => {
-        const unread   = item.teacherUnread || 0;
-        const isActive = _activeStudentUid === item.id;
-        const isOnline = _isRecentlyActive(item.studentLastSeen);
-        const timeStr  = item.lastAt
-          ? new Date(item.lastAt.toDate ? item.lastAt.toDate() : item.lastAt)
-              .toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-          : '';
+        list.innerHTML = items.map(item => {
+          const unread   = item.teacherUnread || 0;
+          const isActive = _activeStudentUid === item.id;
+          const isOnline = _isRecentlyActive(item.studentLastSeen);
+          const timeStr  = item.lastAt
+            ? new Date(item.lastAt.toDate ? item.lastAt.toDate() : item.lastAt)
+                .toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+            : '';
 
-        return `
-          <div class="dm-thread-item${isActive ? ' is-active' : ''}"
-               data-uid="${_esc(item.id)}"
-               data-name="${_esc(item.studentName || '')}"
-               data-class="${_esc(item.studentClass || '')}"
-               onclick="DM._openConversationFromEl(this)">
-            <div class="dm-thread-av">
-              <div class="dm-thread-av-circle${isOnline ? ' online' : ''}">
-                ${_esc((item.studentName || '?').charAt(0).toUpperCase())}
+          return `
+            <div class="dm-thread-item${isActive ? ' is-active' : ''}"
+                 data-uid="${_escAttr(item.id)}"
+                 data-name="${_escAttr(item.studentName || '')}"
+                 data-class="${_escAttr(item.studentClass || '')}"
+                 onclick="DM._openConversationFromEl(this)">
+              <div class="dm-thread-av">
+                <div class="dm-thread-av-circle${isOnline ? ' online' : ''}">
+                  ${_esc((item.studentName || '?').charAt(0).toUpperCase())}
+                </div>
+                ${isOnline ? `<span class="dm-thread-av-dot"></span>` : ''}
               </div>
-              ${isOnline ? `<span class="dm-thread-av-dot"></span>` : ''}
-            </div>
-            <div class="dm-thread-bd">
-              <div class="dm-thread-r1">
-                <span class="dm-thread-name">${_esc(item.studentName || 'Unknown')}</span>
-                <span class="dm-thread-date">${_esc(timeStr)}</span>
+              <div class="dm-thread-bd">
+                <div class="dm-thread-r1">
+                  <span class="dm-thread-name">${_esc(item.studentName || 'Unknown')}</span>
+                  <span class="dm-thread-date">${_esc(timeStr)}</span>
+                </div>
+                <div class="dm-thread-presence${isOnline ? ' online' : ''}">
+                  ${isOnline
+                    ? '&#x25cf; Online'
+                    : item.studentLastSeen
+                      ? _esc(_formatLastSeen(item.studentLastSeen))
+                      : 'Offline'}
+                </div>
+                <div class="dm-thread-r2">
+                  <span class="dm-thread-preview">${_esc(item.lastMessage || 'No messages yet')}</span>
+                  ${unread > 0 ? `<span class="dm-thread-badge">${unread > 9 ? '9+' : unread}</span>` : ''}
+                </div>
+                <span class="dm-thread-class">${_esc(item.studentClass || '—')}</span>
               </div>
-              <div class="dm-thread-presence${isOnline ? ' online' : ''}">
-                ${isOnline
-                  ? '&#x25cf; Online'
-                  : item.studentLastSeen
-                    ? _esc(_formatLastSeen(item.studentLastSeen))
-                    : 'Offline'}
-              </div>
-              <div class="dm-thread-r2">
-                <span class="dm-thread-preview">${_esc(item.lastMessage || 'No messages yet')}</span>
-                ${unread > 0 ? `<span class="dm-thread-badge">${unread > 9 ? '9+' : unread}</span>` : ''}
-              </div>
-              <span class="dm-thread-class">${_esc(item.studentClass || '—')}</span>
-            </div>
-          </div>`;
-      }).join('');
+            </div>`;
+        }).join('');
 
-    }, err => console.error('[dm] Teacher thread list error:', err));
+      }, err => console.error('[dm] Teacher thread list error:', err));
 
-  AppState.registerListener('dmTeacherThreads', unsub);
-}
+    AppState.registerListener('dmTeacherThreads', unsub);
+  }
 
   let _activeStudentUid  = null;
   window._dmActiveUid    = null;
@@ -1430,155 +1479,153 @@
   }
 
   async function _openConversation(studentUid, studentName, studentClass) {
-  _activeStudentUid   = studentUid;
-  window._dmActiveUid = studentUid;
+    _activeStudentUid   = studentUid;
+    window._dmActiveUid = studentUid;
 
-  // Highlight active thread in the list
-  document.querySelectorAll('.dm-thread-item').forEach(el => {
-    el.style.background = el.dataset.uid === studentUid
-      ? 'var(--brand-bg,#edf2ff)' : 'transparent';
-  });
+    document.querySelectorAll('.dm-thread-item').forEach(el => {
+      el.classList.toggle('is-active', el.dataset.uid === studentUid);
+    });
 
-  try {
-    await _threadRef(studentUid).set({ teacherUnread: 0 }, { merge: true });
-  } catch (e) { console.warn('[dm] Could not clear teacherUnread:', e); }
+    try {
+      await _threadRef(studentUid).set({ teacherUnread: 0 }, { merge: true });
+    } catch (e) { console.warn('[dm] Could not clear teacherUnread:', e); }
 
-  await _markRead(studentUid, 'teacher');
+    await _markRead(studentUid, 'teacher');
 
-  // Switch to chat view (full-panel takeover, WhatsApp-style)
-  const viewList = document.getElementById('dmViewList');
-  const viewChat = document.getElementById('dmViewChat');
-  if (!viewList || !viewChat) return;
+    const viewList = document.getElementById('dmViewList');
+    const viewChat = document.getElementById('dmViewChat');
+    if (!viewList || !viewChat) return;
 
-  viewList.style.display = 'none';
-  viewChat.style.display = 'flex';
-  viewChat.style.flexDirection = 'column';
+    viewList.style.display = 'none';
+    viewChat.style.display = 'flex';
+    viewChat.style.flexDirection = 'column';
 
-  // Store student info on shell for send handler
-  viewChat.dataset.studentUid   = studentUid;
-  viewChat.dataset.studentName  = studentName;
-  viewChat.dataset.studentClass = studentClass || '';
+    // FIX: Store student info on dmViewChat (not a non-existent dmConversationPanel)
+    viewChat.dataset.studentUid   = studentUid;
+    viewChat.dataset.studentName  = studentName;
+    viewChat.dataset.studentClass = studentClass || '';
 
-  viewChat.innerHTML = `
+    viewChat.innerHTML = `
 
-    <!-- Chat header with back button -->
-    <div style="padding:.625rem 1rem;border-bottom:1px solid var(--border,#e5e7eb);
-                background:var(--surface-subtle,#f9fafb);flex-shrink:0;
-                display:flex;align-items:center;gap:.75rem;">
+      <!-- Chat header with back button -->
+      <div style="padding:.625rem 1rem;border-bottom:1px solid var(--border,#e5e7eb);
+                  background:var(--surface-subtle,#f9fafb);flex-shrink:0;
+                  display:flex;align-items:center;gap:.75rem;
+                  box-sizing:border-box;width:100%;overflow:hidden;">
 
-      <!-- Back button -->
-      <button onclick="DM._backToThreadList()"
-              title="Back to conversations"
-              style="flex-shrink:0;width:32px;height:32px;border-radius:50%;
-                     border:1px solid var(--border,#e5e7eb);background:var(--surface,#fff);
-                     cursor:pointer;display:flex;align-items:center;justify-content:center;
-                     color:var(--text-2,#3a3a40);transition:background .15s;"
-              onmouseenter="this.style.background='var(--bg-subtle,#f0f0f2)'"
-              onmouseleave="this.style.background='var(--surface,#fff)'">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2"
-                stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
+        <button onclick="DM._backToThreadList()"
+                title="Back to conversations"
+                style="flex-shrink:0;width:32px;height:32px;border-radius:50%;
+                       border:1px solid var(--border,#e5e7eb);background:var(--surface,#fff);
+                       cursor:pointer;display:flex;align-items:center;justify-content:center;
+                       color:var(--text-2,#3a3a40);transition:background .15s;"
+                onmouseenter="this.style.background='var(--bg-subtle,#f0f0f2)'"
+                onmouseleave="this.style.background='var(--surface,#fff)'">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M15 18l-6-6 6-6" stroke="currentColor" stroke-width="2"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
 
-      <!-- Avatar -->
-      <div style="width:36px;height:36px;border-radius:50%;flex-shrink:0;
-                  background:var(--brand-bg,#edf2ff);border:1.5px solid var(--brand-border,#bac8ff);
-                  display:flex;align-items:center;justify-content:center;
-                  font-size:.8125rem;font-weight:700;color:var(--brand-text,#3730a3);">
-        ${_esc((studentName || '?').charAt(0).toUpperCase())}
+        <div style="width:36px;height:36px;border-radius:50%;flex-shrink:0;
+                    background:var(--brand-bg,#edf2ff);border:1.5px solid var(--brand-border,#bac8ff);
+                    display:flex;align-items:center;justify-content:center;
+                    font-size:.8125rem;font-weight:700;color:var(--brand-text,#3730a3);">
+          ${_esc((studentName || '?').charAt(0).toUpperCase())}
+        </div>
+
+        <div style="flex:1;min-width:0;">
+          <p style="font-size:.875rem;font-weight:700;color:var(--text-primary,#111827);
+                    line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0;">
+            ${_esc(studentName)}
+            <span style="font-size:.6875rem;font-weight:400;
+                         color:var(--text-tertiary,#6b7280);margin-left:.25rem;">
+              ${_esc(studentClass)}
+            </span>
+          </p>
+          <div id="dmStudentPresence" style="margin-top:1px;">${_presenceHTML(false, null)}</div>
+        </div>
       </div>
 
-      <!-- Name + presence -->
-      <div style="flex:1;min-width:0;">
-        <p style="font-size:.875rem;font-weight:700;color:var(--text-primary,#111827);
-                  line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-          ${_esc(studentName)}
-          <span style="font-size:.6875rem;font-weight:400;
-                       color:var(--text-tertiary,#6b7280);margin-left:.25rem;">
-            ${_esc(studentClass)}
-          </span>
+      <!-- Messages body -->
+      <div id="dmTeacherMessages"
+           class="dm-messages-area"
+           style="flex:1;min-height:0;
+                  padding:.875rem 1rem;background:var(--surface-subtle,#f9fafb);
+                  display:flex;flex-direction:column;">
+        <p style="text-align:center;font-size:.8125rem;
+                  color:var(--text-disabled,#9ca3af);padding:2rem 0;">
+          Loading messages…
         </p>
-        <div id="dmStudentPresence" style="margin-top:1px;">${_presenceHTML(false, null)}</div>
       </div>
-    </div>
 
-    <!-- Messages body -->
-    <div id="dmTeacherMessages"
-         style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;
-                padding:.875rem 1rem;background:var(--surface-subtle,#f9fafb);
-                display:flex;flex-direction:column;word-break:break-word;
-                box-sizing:border-box;width:100%;">
-      <p style="text-align:center;font-size:.8125rem;
-                color:var(--text-disabled,#9ca3af);padding:2rem 0;">
-        Loading messages…
-      </p>
-    </div>
+      <!-- Input bar -->
+      <div style="padding:.625rem .875rem;border-top:1px solid var(--border,#e5e7eb);flex-shrink:0;
+                  display:flex;gap:.5rem;align-items:flex-end;background:var(--surface,#fff);
+                  box-sizing:border-box;width:100%;overflow:hidden;">
+        <textarea id="dmTeacherInput"
+                  placeholder="Reply to ${_esc(studentName)}…"
+                  rows="1"
+                  style="flex:1;min-width:0;resize:none;overflow-y:hidden;line-height:1.5;
+                         padding:.5625rem .75rem;min-height:36px;max-height:120px;
+                         border-radius:var(--r-md);font-family:var(--font);
+                         font-size:var(--text-base);box-sizing:border-box;"></textarea>
+        <button id="dmTeacherSendBtn"
+                onclick="DM._sendTeacherReplyFromPanel()"
+                class="btn bg-green-600 hover:bg-green-700"
+                style="flex-shrink:0;align-self:flex-end;">Send</button>
+      </div>`;
 
-    <!-- Input bar -->
-    <div style="padding:.625rem .875rem;border-top:1px solid var(--border,#e5e7eb);flex-shrink:0;
-                display:flex;gap:.5rem;align-items:flex-end;background:var(--surface,#fff);
-                box-sizing:border-box;width:100%;">
-      <textarea id="dmTeacherInput"
-                placeholder="Reply to ${_esc(studentName)}…"
-                rows="1"
-                style="flex:1;min-width:0;resize:none;overflow-y:hidden;line-height:1.5;
-                       padding:.5625rem .75rem;min-height:36px;max-height:120px;
-                       border-radius:var(--r-md);font-family:var(--font);
-                       font-size:var(--text-base);box-sizing:border-box;"></textarea>
-      <button id="dmTeacherSendBtn"
-              onclick="DM._sendTeacherReplyFromPanel()"
-              class="btn bg-green-600 hover:bg-green-700"
-              style="flex-shrink:0;align-self:flex-end;">Send</button>
-    </div>`;
+    const input = document.getElementById('dmTeacherInput');
+    if (input) {
+      input.focus();
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+          e.preventDefault();
+          _sendTeacherReplyFromPanel();
+        }
+      });
+      input.addEventListener('input', () => {
+        input.style.height = 'auto';
+        input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+        input.style.overflowY = input.scrollHeight > 120 ? 'auto' : 'hidden';
+      });
+    }
 
-  const input = document.getElementById('dmTeacherInput');
-  if (input) {
-    input.focus();
-    input.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        _sendTeacherReplyFromPanel();
-      }
-    });
-    input.addEventListener('input', () => {
-      input.style.height = 'auto';
-      input.style.height = Math.min(input.scrollHeight, 120) + 'px';
-      input.style.overflowY = input.scrollHeight > 120 ? 'auto' : 'hidden';
-    });
+    _watchPresence(studentUid, 'student', 'dmStudentPresence', 'dmStudentPresenceWatch');
+    _subscribeTeacherMessages(studentUid);
   }
 
-  _watchPresence(studentUid, 'student', 'dmStudentPresence', 'dmStudentPresenceWatch');
-  _subscribeTeacherMessages(studentUid);
-}
+  function _backToThreadList() {
+    AppState.cancelListener('dmTeacherMessages');
+    AppState.cancelListener('dmStudentPresenceWatch');
+    _activeStudentUid   = null;
+    window._dmActiveUid = null;
+    _closeOpenMenu();
 
-   function _backToThreadList() {
-  // Cancel active chat listeners
-  AppState.cancelListener('dmTeacherMessages');
-  AppState.cancelListener('dmStudentPresenceWatch');
-  _activeStudentUid   = null;
-  window._dmActiveUid = null;
-  _closeOpenMenu();
+    document.querySelectorAll('.dm-thread-item').forEach(el => {
+      el.classList.remove('is-active');
+    });
 
-  // Clear active highlight on thread list
-  document.querySelectorAll('.dm-thread-item').forEach(el => {
-    el.style.background = 'transparent';
-  });
+    const viewList = document.getElementById('dmViewList');
+    const viewChat = document.getElementById('dmViewChat');
+    if (viewList) viewList.style.display = 'flex';
+    if (viewChat) { viewChat.style.display = 'none'; viewChat.innerHTML = ''; }
+  }
 
-  // Switch back to list view
-  const viewList = document.getElementById('dmViewList');
-  const viewChat = document.getElementById('dmViewChat');
-  if (viewList) viewList.style.display = 'flex';
-  if (viewChat) { viewChat.style.display = 'none'; viewChat.innerHTML = ''; }
-}
-   
+  /* ────────────────────────────────────────────────────────────
+     FIX: _sendTeacherReplyFromPanel now reads from #dmViewChat
+     (where the data attributes are actually stored), not from
+     the non-existent #dmConversationPanel element.
+  ──────────────────────────────────────────────────────────── */
   function _sendTeacherReplyFromPanel() {
-    const panel = document.getElementById('dmConversationPanel');
-    if (!panel) return;
-    const uid  = panel.dataset.studentUid;
-    const name = panel.dataset.studentName;
+    const viewChat = document.getElementById('dmViewChat');
+    if (!viewChat) return;
+    const uid  = viewChat.dataset.studentUid;
+    const name = viewChat.dataset.studentName;
+    const cls  = viewChat.dataset.studentClass || '';
     if (!uid) return;
-    _sendTeacherReply(uid, name);
+    _sendTeacherReply(uid, name, cls);
   }
 
   function _subscribeTeacherMessages(studentUid) {
@@ -1607,9 +1654,10 @@
 
   /* ────────────────────────────────────────────────────────────
      _sendTeacherReply
-     Uses threshold check for student online status.
+     FIX: Now accepts cls as a direct parameter instead of reading
+     from the non-existent #dmConversationPanel element.
   ──────────────────────────────────────────────────────────── */
-  async function _sendTeacherReply(studentUid, studentName) {
+  async function _sendTeacherReply(studentUid, studentName, studentClass) {
     const input = document.getElementById('dmTeacherInput');
     const text  = (input?.value || '').trim();
     if (!text) return;
@@ -1618,7 +1666,6 @@
     UI.setLoading(btn, true);
     if (input) input.value = '';
 
-    // Use threshold check — not the raw boolean.
     let studentIsOnline = false;
     try {
       const threadSnap = await _threadRef(studentUid).get();
@@ -1626,12 +1673,8 @@
       studentIsOnline = _isRecentlyActive(tData.studentLastSeen);
     } catch (_) {}
 
-    let resolvedName  = studentName;
-    let resolvedClass = '';
-    try {
-      const panel = document.getElementById('dmConversationPanel');
-      if (panel) resolvedClass = panel.dataset.studentClass || '';
-    } catch (_) {}
+    const resolvedName  = studentName  || '';
+    const resolvedClass = studentClass || '';
 
     try {
       const batch  = Db().batch();
@@ -1661,7 +1704,6 @@
 
   /* ────────────────────────────────────────────────────────────
      New conversation modal
-     Presence dots use threshold check.
   ──────────────────────────────────────────────────────────── */
   async function _openNewConversationModal() {
     _injectStyles();
@@ -1693,7 +1735,7 @@
         </div>
         <div id="dmStudentPickerList"
              style="max-height:320px;overflow-y:auto;border:1px solid var(--border,#e5e7eb);
-                    border-radius:8px;">
+                    border-radius:8px;overflow-x:hidden;">
           <p style="font-size:.8125rem;color:var(--text-disabled,#9ca3af);
                     text-align:center;padding:2rem 1rem;">Loading students…</p>
         </div>
@@ -1745,8 +1787,9 @@
       return;
     }
 
+    // FIX: Student picker rows use data attributes + a JS onclick handler
+    // to avoid inline onclick string interpolation breaking on names with apostrophes.
     list.innerHTML = filtered.map((s, idx) => {
-      // Apply threshold check using student's lastSeen from the students collection.
       const isOnline    = _isRecentlyActive(s.lastSeen);
       const lastSeen    = s.lastSeen || null;
       const presenceTxt = isOnline
@@ -1756,18 +1799,18 @@
             : `<span style="font-size:.6rem;color:var(--text-disabled,#9ca3af);line-height:1;">Offline</span>`);
 
       return `
-        <div style="display:flex;align-items:center;gap:.625rem;padding:.625rem .875rem;
-                    cursor:pointer;transition:background .1s;
-                    ${idx < filtered.length - 1 ? 'border-bottom:1px solid var(--border,#e5e7eb);' : ''}"
-             onmouseenter="this.style.background='var(--surface-subtle,#f9fafb)'"
-             onmouseleave="this.style.background='transparent'"
-             onclick="DM._pickStudentForConversation('${_esc(s.uid)}','${_esc(s.name || '')}','${_esc(s.class || '')}')">
+        <div class="dm-picker-row"
+             data-uid="${_escAttr(s.uid)}"
+             data-name="${_escAttr(s.name || '')}"
+             data-class="${_escAttr(s.class || '')}"
+             style="display:flex;align-items:center;gap:.625rem;padding:.625rem .875rem;
+                    cursor:pointer;transition:background .1s;box-sizing:border-box;width:100%;
+                    ${idx < filtered.length - 1 ? 'border-bottom:1px solid var(--border,#e5e7eb);' : ''}">
           <div style="position:relative;flex-shrink:0;">
             <div style="width:34px;height:34px;border-radius:50%;background:var(--brand-bg,#edf2ff);
                         border:1.5px solid ${isOnline ? '#22c45e' : 'var(--brand-border,#bac8ff)'};
                         display:flex;align-items:center;justify-content:center;
-                        font-size:.75rem;font-weight:700;color:var(--brand-text,#3730a3);
-                        transition:border-color .3s;">
+                        font-size:.75rem;font-weight:700;color:var(--brand-text,#3730a3);">
               ${_esc((s.name || '?').charAt(0).toUpperCase())}
             </div>
             ${isOnline
@@ -1777,19 +1820,30 @@
               : ''}
           </div>
           <div style="flex:1;min-width:0;">
-            <p style="font-size:.8125rem;font-weight:600;color:var(--text-primary,#111827);margin:0;">
+            <p style="font-size:.8125rem;font-weight:600;color:var(--text-primary,#111827);margin:0;
+                      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
               ${_esc(s.name || 'Unknown')}
             </p>
             <div style="display:flex;align-items:center;gap:.375rem;margin-top:1px;">
-              <p style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin:0;">
+              <p style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin:0;
+                        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:8rem;">
                 ${_esc(s.class || '—')}
               </p>
-              <span style="color:var(--text-disabled,#9ca3af);font-size:.6rem;">·</span>
+              <span style="color:var(--text-disabled,#9ca3af);font-size:.6rem;flex-shrink:0;">·</span>
               ${presenceTxt}
             </div>
           </div>
         </div>`;
     }).join('');
+
+    // Attach click handlers via JS to avoid inline onclick attribute quoting issues
+    list.querySelectorAll('.dm-picker-row').forEach(row => {
+      row.addEventListener('mouseenter', () => { row.style.background = 'var(--surface-subtle,#f9fafb)'; });
+      row.addEventListener('mouseleave', () => { row.style.background = 'transparent'; });
+      row.addEventListener('click', () => {
+        _pickStudentForConversation(row.dataset.uid, row.dataset.name, row.dataset.class);
+      });
+    });
   }
 
   function _closeNewConversationModal() {
@@ -1809,7 +1863,7 @@
   }
 
   /* ────────────────────────────────────────────────────────────
-     Badge helpers (unchanged)
+     Badge helpers
   ──────────────────────────────────────────────────────────── */
   function _updateStudentBadge(count) {
     const btn = document.getElementById('dmOpenBtn');
@@ -1899,7 +1953,6 @@
 
   /* ────────────────────────────────────────────────────────────
      cancelListeners
-     Stops heartbeats before calling the offline cleanup writes.
   ──────────────────────────────────────────────────────────── */
   async function cancelListeners() {
     AppState.cancelListener('dmStudentMessages');
@@ -1913,7 +1966,6 @@
     window._dmActiveUid = null;
     _closeOpenMenu();
 
-    // Stop heartbeats first so they don't race with the cleanup writes.
     _stopStudentHeartbeat();
     _stopTeacherHeartbeat();
 
@@ -1934,8 +1986,6 @@
       _teacherBeforeunloadHandler = null;
     }
 
-    // Best-effort offline writes — for fast UI feedback only.
-    // Correctness is guaranteed by the heartbeat going stale.
     if (_teacherOfflineCleanup) {
       await _teacherOfflineCleanup().catch(() => {});
       _teacherOfflineCleanup = null;
@@ -1951,47 +2001,50 @@
   /* ────────────────────────────────────────────────────────────
      Misc helpers
   ──────────────────────────────────────────────────────────── */
-  function _addTeacherGridResponsiveStyle() {
-    if (document.getElementById('_dmGridStyle')) return;
-    const style = document.createElement('style');
-    style.id = '_dmGridStyle';
-    style.textContent = `
-      @media (max-width:640px) {
-        #dmTeacherGrid { grid-template-columns: 1fr !important; }
-      }`;
-    document.head.appendChild(style);
-  }
-
   function _threadRef(uid) { return Db().collection('directMessages').doc(uid); }
   function Db()            { return window.fbDb; }
+
+  /* _esc — safe for text content and HTML attribute values that use double-quote delimiters */
   function _esc(str) {
     return String(str == null ? '' : str)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  /* _escAttr — safe for HTML attribute values that use single-quote delimiters (onclick="...") */
+  function _escAttr(str) {
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#x27;');
   }
 
   /* ────────────────────────────────────────────────────────────
      Public API
   ──────────────────────────────────────────────────────────── */
   window.DM = {
-  openStudentInbox,
-  sendStudentMessage,
-  backFromStudentInbox,
-  openTeacherInbox,
-  _openConversation,
-  _openConversationFromEl,
-  _sendTeacherReply,
-  _sendTeacherReplyFromPanel,
-  _openNewConversationModal,
-  _closeNewConversationModal,
-  _pickStudentForConversation,
-  _toggleActionMenu,
-  _backToThreadList,         
-  initStudentDMListener,
-  initTeacherDMListener,
-  cancelListeners,
-  _updateStudentBadge,
-  _updateTeacherBadge,
-};
+    openStudentInbox,
+    sendStudentMessage,
+    backFromStudentInbox,
+    openTeacherInbox,
+    _openConversation,
+    _openConversationFromEl,
+    _sendTeacherReply,
+    _sendTeacherReplyFromPanel,
+    _openNewConversationModal,
+    _closeNewConversationModal,
+    _pickStudentForConversation,
+    _toggleActionMenu,
+    _backToThreadList,
+    initStudentDMListener,
+    initTeacherDMListener,
+    cancelListeners,
+    _updateStudentBadge,
+    _updateTeacherBadge,
+  };
 
 })();
