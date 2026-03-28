@@ -751,9 +751,12 @@
      renderExam
      ══════════════════════════════════════════════════════════ */
   function renderExam() {
-    _questionRenderedAt = Date.now(); // now safe — declared at top of IIFE
+    _questionRenderedAt = Date.now();
     const exam = S().exam;
     if (!exam) return;
+
+    // Dismiss any pending message notifications — no distractions during exam
+    if (window.MsgNotif) MsgNotif.dismissAll();
 
     const subj    = exam.currentSubject;
     const qList   = exam.questions[subj];
