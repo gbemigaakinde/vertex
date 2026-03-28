@@ -1312,11 +1312,12 @@
     panel.innerHTML = `
       <div id="dmTeacherShell"
            style="border:1px solid var(--border,#e5e7eb);border-radius:12px;
-                  background:var(--surface,#fff);display:flex;flex-direction:column;
-                  height:600px;max-height:82vh;
-                  width:100%;box-sizing:border-box;">
+                  background:var(--surface,#fff);
+                  width:100%;max-width:100%;box-sizing:border-box;
+                  overflow:hidden;">
 
-        <div id="dmViewList" style="display:flex;flex-direction:column;height:100%;min-height:0;
+        <!-- LIST VIEW -->
+        <div id="dmViewList" style="display:flex;flex-direction:column;
                                     width:100%;box-sizing:border-box;">
 
           <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border,#e5e7eb);
@@ -1341,17 +1342,18 @@
 
           <div id="dmThreadList"
                class="dm-thread-list-wrap"
-               style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;width:100%;box-sizing:border-box;">
+               style="overflow-y:auto;overflow-x:hidden;width:100%;box-sizing:border-box;
+                      max-height:65vh;">
             <p style="font-size:.8125rem;color:var(--text-disabled,#9ca3af);
                       text-align:center;padding:2rem 1rem;">Loading…</p>
           </div>
         </div>
 
+        <!-- CHAT VIEW (hidden until a thread is opened) -->
         <div id="dmViewChat"
-             style="display:none;flex-direction:column;height:100%;min-height:0;
-                    position:absolute;inset:0;
-                    background:var(--surface,#fff);z-index:10;
-                    width:100%;box-sizing:border-box;">
+             style="display:none;flex-direction:column;
+                    width:100%;box-sizing:border-box;
+                    background:var(--surface,#fff);">
         </div>
 
       </div>`;
@@ -1458,6 +1460,7 @@
     const viewChat = document.getElementById('dmViewChat');
     if (!viewList || !viewChat) return;
 
+    // Hide list, show chat — both stay in normal document flow (no position:absolute)
     viewList.style.display = 'none';
     viewChat.style.display = 'flex';
     viewChat.style.flexDirection = 'column';
@@ -1508,9 +1511,8 @@
 
       <div id="dmTeacherMessages"
            class="dm-messages-area"
-           style="flex:1;min-height:0;
-                  padding:.875rem 1rem;background:var(--surface-subtle,#f9fafb);
-                  display:flex;flex-direction:column;">
+           style="overflow-y:auto;max-height:55vh;min-height:200px;
+                  padding:.875rem 1rem;background:var(--surface-subtle,#f9fafb);">
         <p style="text-align:center;font-size:.8125rem;
                   color:var(--text-disabled,#9ca3af);padding:2rem 0;">
           Loading messages…
@@ -1961,6 +1963,7 @@
     _pickStudentForConversation,
     _toggleActionMenu,
     _backToThreadList,
+    _showEditHistory,
     initStudentDMListener,
     initTeacherDMListener,
     cancelListeners,
