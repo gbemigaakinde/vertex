@@ -143,8 +143,6 @@
         min-width:0;
         box-sizing:border-box;
         overflow:hidden;
-        /* Prevent the shell from being measured at 0 width before paint */
-        contain:layout style;
       }
 
       /* Thread list rows */
@@ -160,7 +158,7 @@
         display:flex;
         align-items:flex-start;
         gap:.75rem;
-        padding:.75rem 1rem .75rem 1rem;
+        padding:.75rem 1rem;
         cursor:pointer;
         border-bottom:1px solid var(--border,#e5e7eb);
         background:transparent;
@@ -169,7 +167,7 @@
         width:100%;
         max-width:100%;
         min-width:0;
-        overflow:visible;
+        overflow:hidden;
       }
       .dm-thread-item:last-child { border-bottom:none; }
       .dm-thread-item:hover { background:var(--bg-subtle,#f5f5f7); }
