@@ -1411,27 +1411,61 @@ details.glass-dark[open] > summary::after,
 
 /* ── DM panel overrides ── */
 #teacher-dm {
-  overflow: hidden !important;
   min-width: 0 !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+  width: 100% !important;
+  max-width: 100% !important;
+}
+
+#dmTeacherShell {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+#dmViewList {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+}
+
+#dmViewChat {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  overflow: visible !important;
+}
+
+#dmThreadList {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
   box-sizing: border-box !important;
 }
 
-#dmTeacherShell,
-#dmViewList,
-#dmViewChat,
-#dmThreadList {
+.dm-thread-item {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important;
+}
+
+.dm-thread-bd {
+  flex: 1 1 0% !important;
   min-width: 0 !important;
   max-width: 100% !important;
-  box-sizing: border-box !important;
   overflow: hidden !important;
 }
 
-#dmThreadList {
-  overflow-y: auto !important;
-}
-
-.dm-thread-item,
-.dm-thread-bd,
 .dm-thread-r1,
 .dm-thread-r2 {
   min-width: 0 !important;
@@ -1446,15 +1480,12 @@ details.glass-dark[open] > summary::after,
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
+  max-width: 100% !important;
 }
 
 .dm-thread-av {
   flex-shrink: 0 !important;
   min-width: 42px !important;
-}
-
-.dm-thread-bd {
-  flex: 1 1 0% !important;
 }
 
 .dm-thread-preview {
