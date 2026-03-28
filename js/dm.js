@@ -996,6 +996,10 @@
     if (isMe) {
       return `
         <div id="${wrapId}" class="dm-msg-out">
+          <span style="font-size:.6875rem;font-weight:600;color:var(--text-3,#6b7280);
+                       margin-bottom:2px;padding-right:2px;display:block;text-align:right;">
+            You
+          </span>
           <div class="dm-bubble-wrap">
             <div class="dm-bubble-inner"
                  style="background:var(--accent,#4f6ef7);color:#fff;
@@ -1014,7 +1018,7 @@
     } else {
       return `
         <div id="${wrapId}" class="dm-msg-in">
-          <span style="font-size:.6875rem;font-weight:600;color:var(--text-3,#6b7280);
+          <span style="font-size:.6875rem;font-weight:600;color:var(--accent-text,#2d49d6);
                        margin-bottom:2px;padding-left:2px;display:block;">
             ${_esc(msg.senderName || 'Master Timothy')}
           </span>
@@ -1069,9 +1073,9 @@
     if (isTeacher) {
       return `
         <div id="${wrapId}" class="dm-msg-out">
-          <span style="font-size:.6875rem;font-weight:700;color:var(--accent-text,#2d49d6);
+          <span style="font-size:.6875rem;font-weight:600;color:var(--text-3,#6b7280);
                        margin-bottom:2px;padding-right:2px;display:block;text-align:right;">
-            Master Timothy
+            You
           </span>
           <div class="dm-bubble-wrap">
             <div class="dm-bubble-inner"
@@ -1091,7 +1095,7 @@
     } else {
       return `
         <div id="${wrapId}" class="dm-msg-in">
-          <span style="font-size:.6875rem;font-weight:600;color:var(--text-3,#6b7280);
+          <span style="font-size:.6875rem;font-weight:600;color:var(--accent-text,#2d49d6);
                        margin-bottom:2px;padding-left:2px;display:block;">
             ${_esc(msg.senderName || 'Student')}
           </span>
