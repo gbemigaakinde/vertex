@@ -1322,7 +1322,7 @@ function _cancelTypingListeners(threadUid) {
 
         <!-- Typing indicator bar (student sees teacher typing) -->
         <div id="dmStudentTypingBar"
-              style="height:0;padding:0 .25rem;display:none;align-items:center;margin-bottom:.25rem;">
+             style="height:0;padding:0 .25rem;display:none;align-items:center;">
           <span class="dm-typing-dots" aria-hidden="true">
             <span></span><span></span><span></span>
           </span>
@@ -1331,7 +1331,7 @@ function _cancelTypingListeners(threadUid) {
           </span>
         </div>
 
-        <div style="display:flex;gap:.5rem;align-items:flex-end;box-sizing:border-box;width:100%;overflow:hidden;">
+        <div style="display:flex;gap:.5rem;align-items:flex-end;box-sizing:border-box;width:100%;overflow:hidden;margin-top:.5rem;">
           <textarea id="dmInput" placeholder="Type your message…" rows="1"
                     style="flex:1;min-width:0;resize:none;overflow-y:hidden;line-height:1.5;
                            padding:.5625rem .75rem;min-height:36px;max-height:120px;
@@ -1353,18 +1353,15 @@ function _cancelTypingListeners(threadUid) {
         input.style.height = 'auto';
         input.style.height = Math.min(input.scrollHeight, 120) + 'px';
         input.style.overflowY = input.scrollHeight > 120 ? 'auto' : 'hidden';
-        // Typing indicator: tell the other side we're typing
         _startTyping(uid, 'student');
       });
       input.addEventListener('blur', () => {
-        // Stop typing indicator when student leaves the input
         _stopTyping(uid, 'student').catch(() => {});
       });
     }
 
     await _markRead(uid, 'student');
     _watchPresence(uid, 'teacher', 'dmTeacherPresence', 'dmTeacherPresenceWatch');
-    // Watch for teacher typing — update the bar student sees
     _watchTypingIndicator(uid, 'teacherTyping', 'dmStudentTypingBar', 'Master Timothy');
     _subscribeStudentMessages(uid);
   }
