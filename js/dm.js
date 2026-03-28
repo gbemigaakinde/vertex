@@ -140,6 +140,7 @@
         position:relative;
         width:100%;
         max-width:100%;
+        min-width:0;
         box-sizing:border-box;
         overflow:hidden;
       }
@@ -148,6 +149,7 @@
       .dm-thread-list-wrap {
         width:100%;
         max-width:100%;
+        min-width:0;
         overflow-x:hidden;
         box-sizing:border-box;
       }
@@ -164,19 +166,20 @@
         box-sizing:border-box;
         width:100%;
         max-width:100%;
-        overflow:hidden;
         min-width:0;
+        overflow:hidden;
       }
       .dm-thread-item:last-child { border-bottom:none; }
       .dm-thread-item:hover { background:var(--bg-subtle,#f5f5f7); }
       .dm-thread-item.is-active { background:var(--accent-subtle,rgba(79,110,247,.07)); }
 
-      /* Avatar */
+      /* Avatar — must NOT shrink */
       .dm-thread-av {
         flex-shrink:0;
         position:relative;
         width:42px;
         height:42px;
+        min-width:42px;
       }
       .dm-thread-av-circle {
         width:42px;height:42px;border-radius:50%;
@@ -193,26 +196,60 @@
         background:#22c45e;border:2px solid var(--bg-base,#fff);
       }
 
-      /* Thread body — MUST have min-width:0 inside flex to allow truncation */
-      .dm-thread-bd { flex:1;min-width:0;overflow:hidden; }
-      .dm-thread-r1 { display:flex;align-items:baseline;justify-content:space-between;gap:.375rem;margin-bottom:1px; }
+      /* Thread body — CRITICAL: flex:1 + min-width:0 + overflow:hidden
+         This is what allows text-overflow:ellipsis to actually fire.
+         Without min-width:0, a flex child defaults to min-width:auto
+         which is as wide as its content, breaking truncation. */
+      .dm-thread-bd {
+        flex:1;
+        min-width:0;
+        max-width:100%;
+        overflow:hidden;
+      }
+
+      .dm-thread-r1 {
+        display:flex;
+        align-items:baseline;
+        justify-content:space-between;
+        gap:.375rem;
+        margin-bottom:1px;
+        min-width:0;
+        overflow:hidden;
+      }
       .dm-thread-name {
         font-size:.875rem;font-weight:700;color:var(--text-1,#0d0d0f);
         white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
         flex:1;min-width:0;
       }
-      .dm-thread-date { font-size:.6875rem;color:var(--text-4,#9ca3af);flex-shrink:0;white-space:nowrap; }
+      .dm-thread-date {
+        font-size:.6875rem;color:var(--text-4,#9ca3af);
+        flex-shrink:0;white-space:nowrap;
+        /* Prevent date from being squeezed out entirely */
+        max-width:60px;
+      }
       .dm-thread-presence {
         font-size:.6875rem;color:var(--text-3,#6b7280);margin-bottom:1px;
         white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
         max-width:100%;
+        display:block;
       }
       .dm-thread-presence.online { color:#22c45e;font-weight:600; }
-      .dm-thread-r2 { display:flex;align-items:center;justify-content:space-between;gap:.375rem;min-width:0; }
+
+      /* Row 2: preview + badge. CRITICAL: min-width:0 on the row itself,
+         and flex:1 min-width:0 on the preview span. */
+      .dm-thread-r2 {
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:.375rem;
+        min-width:0;
+        overflow:hidden;
+      }
       .dm-thread-preview {
         font-size:.8125rem;color:var(--text-3,#6b7280);
         white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
         flex:1;min-width:0;
+        max-width:100%;
       }
       .dm-thread-badge {
         flex-shrink:0;min-width:20px;height:20px;border-radius:99px;
@@ -228,6 +265,10 @@
         border:1px solid var(--accent-border,rgba(79,110,247,.25));
         border-radius:4px;padding:1px 6px;margin-top:3px;white-space:nowrap;
         max-width:100%;overflow:hidden;text-overflow:ellipsis;
+        /* Block display so it sits on its own line and doesn't stretch row */
+        display:block;
+        width:fit-content;
+        max-width:100%;
       }
 
       /* Action menu */
@@ -309,20 +350,22 @@
         flex-direction:column;
         align-items:flex-end;
         margin-bottom:.75rem;
-        padding-left:20%;          /* fixed percentage — creates left indent for outgoing */
+        padding-left:20%;
         box-sizing:border-box;
         width:100%;
         max-width:100%;
+        min-width:0;
       }
       .dm-msg-in {
         display:flex;
         flex-direction:column;
         align-items:flex-start;
         margin-bottom:.75rem;
-        padding-right:20%;         /* fixed percentage — creates right indent for incoming */
+        padding-right:20%;
         box-sizing:border-box;
         width:100%;
         max-width:100%;
+        min-width:0;
       }
       .dm-bubble-wrap {
         display:inline-flex;
@@ -370,6 +413,13 @@
         box-sizing:border-box;
         width:100%;
         max-width:100%;
+        min-width:0;
+      }
+
+      /* ── Picker rows in new conversation modal ── */
+      .dm-picker-row {
+        min-width:0;
+        overflow:hidden;
       }
     `;
     document.head.appendChild(style);
@@ -1342,22 +1392,24 @@
 
     panel.innerHTML = `
       <div id="dmTeacherShell"
-           style="border:1px solid var(--border,#e5e7eb);border-radius:12px;overflow:hidden;
+           style="border:1px solid var(--border,#e5e7eb);border-radius:12px;
                   background:var(--surface,#fff);display:flex;flex-direction:column;
                   height:600px;max-height:82vh;position:relative;
-                  width:100%;max-width:100%;box-sizing:border-box;">
+                  width:100%;max-width:100%;box-sizing:border-box;
+                  overflow:hidden;min-width:0;">
 
         <!-- VIEW A: Thread list -->
         <div id="dmViewList" style="display:flex;flex-direction:column;height:100%;min-height:0;
-                                    width:100%;max-width:100%;box-sizing:border-box;">
+                                    width:100%;max-width:100%;box-sizing:border-box;overflow:hidden;">
 
           <!-- List header -->
           <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border,#e5e7eb);
                       background:var(--surface-subtle,#f9fafb);flex-shrink:0;
                       display:flex;align-items:center;justify-content:space-between;gap:.5rem;
-                      box-sizing:border-box;width:100%;">
+                      box-sizing:border-box;width:100%;min-width:0;overflow:hidden;">
             <h3 style="font-size:.9375rem;font-weight:700;color:var(--text-primary,#111827);
-                       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+                       flex:1;min-width:0;">
               Messages
             </h3>
             <button onclick="DM._openNewConversationModal()"
@@ -1374,7 +1426,7 @@
           <!-- Scrollable thread list -->
           <div id="dmThreadList"
                class="dm-thread-list-wrap"
-               style="flex:1;min-height:0;overflow-y:auto;">
+               style="flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;width:100%;box-sizing:border-box;">
             <p style="font-size:.8125rem;color:var(--text-disabled,#9ca3af);
                       text-align:center;padding:2rem 1rem;">Loading…</p>
           </div>
