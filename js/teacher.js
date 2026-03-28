@@ -103,8 +103,7 @@ function renderTeacherDashboard() {
       </div>
 
       <div style="display:flex;align-items:center;gap:0.25rem;padding:0.5rem 1.25rem;
-                  border-bottom:1px solid var(--border);flex-wrap:nowrap;overflow-x:auto;
-                  -webkit-overflow-scrolling:touch;scrollbar-width:none;min-width:0;">
+                  border-bottom:1px solid var(--border);flex-wrap:wrap;overflow-x:auto;">
         <button onclick="Teacher.showTab('students')" id="tab-students"
                 class="tab-btn btn">Students</button>
         <button onclick="Teacher.showTab('results')"  id="tab-results"
@@ -506,7 +505,19 @@ function showTab(tab) {
     if (btn) btn.classList.toggle('active', t === tab);
   });
 
+  /* When switching TO the DM tab, force the shell width to recalculate.
+     The shell is rendered before the tab is visible, so its flex
+     children never got a proper layout pass — this forces one. */
   if (tab === 'dm') {
+    const shell = document.getElementById('dmTeacherShell');
+    if (shell) {
+      shell.style.width = '0';
+      requestAnimationFrame(() => {
+        shell.style.width = '100%';
+        DM.openTeacherInbox();
+      });
+      return;
+    }
     DM.openTeacherInbox();
     return;
   }
