@@ -5,6 +5,8 @@
    Instrument Serif headings. DM Sans body. No emojis, no
    gradients, no cards. Typography does the work.
 
+   Dark mode: responds to [data-theme="dark"] on <html>.
+
    Navigation:
      Landing.render()       → renders this page
      Landing.goToLogin()    → Auth.renderLogin()
@@ -16,26 +18,57 @@
   var STYLES = `
     @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&display=swap');
 
+    /* ── Light mode tokens (default) ── */
     .lp {
-      --lp-ink:      #0e0e0f;
-      --lp-ink-2:    #3a3a40;
-      --lp-ink-3:    #6a6a70;
-      --lp-ink-4:    #a4a4aa;
-      --lp-ink-5:    #d8d8da;
-      --lp-cream:    #fafaf8;
-      --lp-cream-2:  #f5f4f0;
-      --lp-amber:    #b5641e;
-      --lp-amber-dk: #9a5218;
-      --lp-amber-lt: #fdf3eb;
-      --lp-rule:     #e4e2dc;
-      --lp-serif:    'Instrument Serif', Georgia, serif;
-      --lp-sans:     'DM Sans', system-ui, sans-serif;
+      --lp-ink:              #0e0e0f;
+      --lp-ink-2:            #3a3a40;
+      --lp-ink-3:            #6a6a70;
+      --lp-ink-4:            #a4a4aa;
+      --lp-ink-5:            #d8d8da;
+      --lp-cream:            #fafaf8;
+      --lp-cream-2:          #f5f4f0;
+      --lp-amber:            #b5641e;
+      --lp-amber-dk:         #9a5218;
+      --lp-amber-lt:         #fdf3eb;
+      --lp-rule:             #e4e2dc;
+      --lp-nav-bg:           rgba(250,250,248,0.88);
+      --lp-nav-bg-scrolled:  rgba(250,250,248,0.97);
+      --lp-quote-bg:         #0e0e0f;
+      --lp-quote-text:       #fafaf8;
+      --lp-quote-attr:       rgba(250,250,248,0.4);
+      --lp-quote-attr-name:  rgba(250,250,248,0.75);
+      --lp-quote-label:      rgba(250,250,248,0.3);
+      --lp-serif:            'Instrument Serif', Georgia, serif;
+      --lp-sans:             'DM Sans', system-ui, sans-serif;
       background: var(--lp-cream);
       color: var(--lp-ink);
       font-family: var(--lp-sans);
       min-height: 100vh;
       overflow-x: hidden;
       line-height: 1.6;
+      transition: background 0.25s, color 0.25s;
+    }
+
+    /* ── Dark mode: re-map every token so all downstream rules just work ── */
+    [data-theme="dark"] .lp {
+      --lp-ink:              #f0f0f2;
+      --lp-ink-2:            #c4c4cc;
+      --lp-ink-3:            #86868f;
+      --lp-ink-4:            #56565e;
+      --lp-ink-5:            #3a3a42;
+      --lp-cream:            #111113;
+      --lp-cream-2:          #18181b;
+      --lp-amber:            #d47c3a;
+      --lp-amber-dk:         #c06a28;
+      --lp-amber-lt:         rgba(212,124,58,0.1);
+      --lp-rule:             #2a2a30;
+      --lp-nav-bg:           rgba(17,17,19,0.88);
+      --lp-nav-bg-scrolled:  rgba(17,17,19,0.97);
+      --lp-quote-bg:         #0d0d0f;
+      --lp-quote-text:       #f0f0f2;
+      --lp-quote-attr:       rgba(240,240,242,0.4);
+      --lp-quote-attr-name:  rgba(240,240,242,0.75);
+      --lp-quote-label:      rgba(240,240,242,0.3);
     }
 
     /* ── NAV ── */
@@ -44,7 +77,7 @@
       height: 60px;
       display: flex; align-items:center; justify-content:space-between;
       padding: 0 clamp(1.25rem, 5vw, 4rem);
-      background: rgba(250,250,248,0.88);
+      background: var(--lp-nav-bg);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
       border-bottom: 1px solid transparent;
@@ -52,12 +85,13 @@
     }
     .lp-nav.scrolled {
       border-bottom-color: var(--lp-rule);
-      background: rgba(250,250,248,0.97);
+      background: var(--lp-nav-bg-scrolled);
     }
     .lp-brand { display:flex; align-items:center; gap:.625rem; text-decoration:none; }
     .lp-mark {
       width:28px; height:28px; background:var(--lp-ink); border-radius:4px;
       display:flex; align-items:center; justify-content:center; flex-shrink:0;
+      transition: background 0.25s;
     }
     .lp-mark svg { display:block; }
     .lp-brandname {
@@ -69,9 +103,9 @@
       font-family:var(--lp-sans); font-size:.8125rem; font-weight:500;
       color:var(--lp-ink-2); background:none; border:1px solid var(--lp-rule);
       cursor:pointer; padding:.4375rem .875rem; border-radius:4px;
-      transition: background .12s, border-color .12s;
+      transition: background .12s, border-color .12s, color .12s;
     }
-    .lp-btn-ghost:hover { background:var(--lp-cream-2); border-color:var(--lp-ink-5); }
+    .lp-btn-ghost:hover { background:var(--lp-cream-2); border-color:var(--lp-ink-5); color:var(--lp-ink); }
     .lp-btn-solid {
       font-family:var(--lp-sans); font-size:.8125rem; font-weight:600;
       color:#fff; background:var(--lp-amber); border:none; cursor:pointer;
@@ -141,7 +175,7 @@
       font-family:var(--lp-serif);
       font-size: clamp(12rem,26vw,22rem);
       font-weight:400; color:transparent;
-      -webkit-text-stroke: 1px rgba(14,14,15,.04);
+      -webkit-text-stroke: 1px var(--lp-rule);
       line-height:1; user-select:none; pointer-events:none;
       z-index:0; white-space:nowrap; letter-spacing:-.025em;
       font-style:italic;
@@ -232,7 +266,7 @@
       display:flex; align-items:center; justify-content:center;
       font-family:var(--lp-serif); font-size:.9375rem; font-weight:400; font-style:italic;
       color:var(--lp-ink); margin-bottom:1.25rem;
-      transition: background .18s, border-color .18s;
+      transition: background .18s, border-color .18s, color .18s;
     }
     .lp-step:hover .lp-step-circle {
       background:var(--lp-amber); color:#fff; border-color:var(--lp-amber);
@@ -247,7 +281,7 @@
 
     /* ── QUOTE BAND ── */
     .lp-quote-band {
-      background:var(--lp-ink); color:var(--lp-cream);
+      background:var(--lp-quote-bg);
       padding: clamp(3rem,8vh,6rem) clamp(1.25rem,5vw,4rem);
     }
     .lp-quote-inner {
@@ -256,7 +290,7 @@
     }
     .lp-quote-label {
       font-size:.625rem; font-weight:600; letter-spacing:.22em;
-      text-transform:uppercase; color:rgba(250,250,248,.3);
+      text-transform:uppercase; color:var(--lp-quote-label);
       white-space:nowrap; padding-top:.375rem; min-width:100px;
     }
     .lp-quote-right { flex:1; }
@@ -264,13 +298,13 @@
       font-family:var(--lp-serif);
       font-size: clamp(1.375rem,3.2vw,2.375rem);
       font-style:italic; font-weight:400; line-height:1.35;
-      letter-spacing:-.015em; color:var(--lp-cream); margin:0 0 1.5rem;
+      letter-spacing:-.015em; color:var(--lp-quote-text); margin:0 0 1.5rem;
     }
     .lp-quote-text em { font-style:normal; color:var(--lp-amber); }
     .lp-quote-attr {
-      font-size:.8125rem; color:rgba(250,250,248,.4);
+      font-size:.8125rem; color:var(--lp-quote-attr);
     }
-    .lp-quote-attr strong { color:rgba(250,250,248,.75); font-weight:500; }
+    .lp-quote-attr strong { color:var(--lp-quote-attr-name); font-weight:500; }
 
     /* ── FOOTER CTA ── */
     .lp-foot-cta {
@@ -343,6 +377,7 @@
 
   var ARROW_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
 
+  // Logo SVG uses currentColor so it inherits from .lp-mark's dark/light background
   var LOGO_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/><line x1="12" y1="22" x2="12" y2="15.5"/><polyline points="22 8.5 12 15.5 2 8.5"/></svg>';
 
   function _feat(n, title, body, cls) {
