@@ -877,10 +877,6 @@ async function _stopTyping(threadUid, role) {
 }
 
 function _watchTypingIndicator(threadUid, watchField, elementId, displayName) {
-  // watchField = 'studentTyping' or 'teacherTyping'
-  // elementId  = the id of the <div> bar to show/hide
-  // displayName = the name to display in the "... is typing" text
-
   const listenerKey = 'dmTypingWatch_' + threadUid + '_' + watchField;
   AppState.cancelListener(listenerKey);
 
@@ -889,8 +885,7 @@ function _watchTypingIndicator(threadUid, watchField, elementId, displayName) {
     if (!bar) { AppState.cancelListener(listenerKey); return; }
 
     const isTyping = !!(snap.exists && snap.data() && snap.data()[watchField]);
-    bar.style.visibility = isTyping ? 'visible' : 'hidden';
-    bar.style.opacity    = isTyping ? '1'       : '0';
+    bar.style.display = isTyping ? 'flex' : 'none';
   }, err => console.warn('[dm] _watchTypingIndicator error:', err));
 
   AppState.registerListener(listenerKey, unsub);
@@ -1326,9 +1321,7 @@ function _cancelTypingListeners(threadUid) {
 
         <!-- Typing indicator bar (student sees teacher typing) -->
         <div id="dmStudentTypingBar"
-             style="height:22px;padding:0 .25rem;display:flex;align-items:center;
-                    visibility:hidden;opacity:0;
-                    transition:opacity .2s ease;margin-bottom:.25rem;">
+          style="height:22px;padding:0 .25rem;display:none;align-items:center;margin-bottom:.25rem;">
           <span class="dm-typing-dots" aria-hidden="true">
             <span></span><span></span><span></span>
           </span>
@@ -1706,10 +1699,8 @@ function _cancelTypingListeners(threadUid) {
 
       <!-- Typing indicator bar (teacher sees student typing) -->
       <div id="dmTeacherTypingBar"
-           style="height:22px;padding:0 .875rem;display:flex;align-items:center;
-                  visibility:hidden;opacity:0;
-                  transition:opacity .2s ease;flex-shrink:0;
-                  background:var(--surface,#fff);">
+          style="height:22px;padding:0 .875rem;display:none;align-items:center;flex-shrink:0;
+                 background:var(--surface,#fff);">
         <span class="dm-typing-dots" aria-hidden="true">
           <span></span><span></span><span></span>
         </span>
