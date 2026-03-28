@@ -1408,3 +1408,92 @@ details.glass-dark[open] > summary::after,
   .glass, .glass-dark { background: white !important; box-shadow: none !important; }
   .btn, #toastContainer, .cbt-overlay { display: none !important; }
 }
+
+/* ── DM panel overrides ──
+   The global .glass rule applies border-radius and box-shadow with !important
+   which fights the DM shell's own geometry and causes layout bleed.
+   These rules restore correct containment for the teacher DM section. */
+
+#teacher-dm {
+  overflow: hidden;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+#dmTeacherShell {
+  /* Counteract any .glass rule that might be inherited */
+  border-radius: 12px !important;
+  overflow: hidden !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+  /* Ensure it never bleeds past its parent column */
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+/* The thread list container itself must clip its children */
+#dmThreadList {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  min-width: 0 !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+/* Thread items: the flex child rule that fixes ellipsis on long previews.
+   Without min-width:0 on both the row and its text child, flex will
+   size the child to its content width, making text-overflow:ellipsis
+   silently do nothing while the container overflows. */
+.dm-thread-item {
+  min-width: 0 !important;
+  max-width: 100% !important;
+  overflow: hidden !important;
+  box-sizing: border-box !important;
+}
+
+.dm-thread-bd {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  max-width: 100% !important;
+}
+
+.dm-thread-r2 {
+  min-width: 0 !important;
+  overflow: hidden !important;
+}
+
+.dm-thread-preview {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Presence line in thread list */
+.dm-thread-presence {
+  min-width: 0 !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
+}
+
+/* Avatar must never shrink — it's the fixed-size anchor */
+.dm-thread-av {
+  flex-shrink: 0 !important;
+  min-width: 42px !important;
+  width: 42px !important;
+}
+
+/* Chat view panel inside the shell */
+#dmViewChat {
+  overflow: hidden !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
+
+/* Messages scrolling area */
+.dm-messages-area {
+  overflow-x: hidden !important;
+  min-width: 0 !important;
+  box-sizing: border-box !important;
+}
