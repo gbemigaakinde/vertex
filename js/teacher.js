@@ -501,11 +501,14 @@ function showTab(tab) {
   ['students','results','schools','tasks','studyroom','chat','dm'].forEach(t => {
     const el  = document.getElementById(`teacher-${t}`);
     const btn = document.getElementById(`tab-${t}`);
+    // For dm and chat, hide first — they self-reveal after content is ready
     if (el)  el.classList.toggle('hidden', t !== tab);
     if (btn) btn.classList.toggle('active', t === tab);
   });
 
   if (tab === 'dm') {
+    // openTeacherInbox writes into #teacher-dm synchronously,
+    // so the panel is already populated before the browser paints.
     DM.openTeacherInbox();
     return;
   }
