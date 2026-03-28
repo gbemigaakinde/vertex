@@ -2881,7 +2881,255 @@ sss1: {
     {"q":"Turgor pressure in plant cells helps in","opts":["support and maintaining shape","transport","photosynthesis","respiration"],"ans":0,"exp":"Water-filled vacuoles make cells rigid."},
     {"q":"In a balanced ecosystem, the number of producers is usually","opts":["less than consumers","greater than consumers","equal to consumers","independent"],"ans":1,"exp":"Pyramid of numbers often widest at producer level."},
     {"q":"Symbiosis in which both organisms benefit is called","opts":["parasitism","commensalism","mutualism","competition"],"ans":2,"exp":"Example: lichens (alga + fungus)."}
-]
+],
+    'Further Mathematics': [
+    {
+      q: "Which of the following is the correct formula for the nth term of an arithmetic sequence with first term $a$ and common difference $d$?",
+      opts: ["$T_n = a + (n+1)d$", "$T_n = a + (n-1)d$", "$T_n = a \\times d^{n-1}$", "$T_n = nd + a$"],
+      ans: 1,
+      exp: "The nth term of an AP is $T_n = a + (n-1)d$, where $a$ is the first term and $d$ is the common difference."
+    },
+    {
+      q: "The 5th term of an arithmetic sequence is 17 and the 9th term is 29. Find the first term.",
+      opts: ["5", "3", "2", "7"],
+      ans: 0,
+      exp: "$T_5 = a + 4d = 17$ and $T_9 = a + 8d = 29$. Subtracting: $4d = 12 \\Rightarrow d = 3$. Then $a = 17 - 12 = 5$."
+    },
+    {
+      q: "How many terms are in the arithmetic sequence: 4, 9, 14, ..., 104?",
+      opts: ["18", "19", "20", "21"],
+      ans: 3,
+      exp: "$T_n = a + (n-1)d \\Rightarrow 104 = 4 + (n-1)(5) \\Rightarrow 100 = 5(n-1) \\Rightarrow n-1 = 20 \\Rightarrow n = 21$."
+    },
+    {
+      q: "The sum of the first 20 terms of an AP is 590. If the first term is 1, find the common difference.",
+      opts: ["2", "3", "4", "5"],
+      ans: 1,
+      exp: "$S_{20} = \\frac{20}{2}[2(1) + 19d] = 590 \\Rightarrow 10(2 + 19d) = 590 \\Rightarrow 2 + 19d = 59 \\Rightarrow 19d = 57 \\Rightarrow d = 3$."
+    },
+    {
+      q: "A geometric sequence has first term 3 and common ratio 2. What is the 6th term?",
+      opts: ["64", "96", "48", "192"],
+      ans: 1,
+      exp: "$T_6 = ar^5 = 3 \\times 2^5 = 3 \\times 32 = 96$."
+    },
+    {
+      q: "The 3rd and 6th terms of a GP are 8 and 64 respectively. Find the common ratio.",
+      opts: ["3", "4", "2", "5"],
+      ans: 2,
+      exp: "$\\frac{T_6}{T_3} = r^3 = \\frac{64}{8} = 8 \\Rightarrow r = \\sqrt[3]{8} = 2$."
+    },
+    {
+      q: "Find the sum of the first 5 terms of a GP with first term 2 and common ratio 3.",
+      opts: ["240", "242", "246", "180"],
+      ans: 1,
+      exp: "$S_5 = \\frac{a(r^n - 1)}{r - 1} = \\frac{2(3^5 - 1)}{3 - 1} = \\frac{2(243 - 1)}{2} = 242$."
+    },
+    {
+      q: "Which of the following correctly represents the sum to infinity of a GP with $|r| < 1$?",
+      opts: ["$S_\\infty = \\frac{a}{1+r}$", "$S_\\infty = \\frac{a}{r-1}$", "$S_\\infty = \\frac{a}{1-r}$", "$S_\\infty = a(1-r)$"],
+      ans: 2,
+      exp: "For a GP with $|r| < 1$, the terms shrink to zero and the sum to infinity is given by $S_\\infty = \\frac{a}{1-r}$."
+    },
+    {
+      q: "Solve the inequality: $3x - 7 > 2x + 1$.",
+      opts: ["$x > 8$", "$x < 8$", "$x > 6$", "$x < 6$"],
+      ans: 0,
+      exp: "Collect like terms: $3x - 2x > 1 + 7 \\Rightarrow x > 8$."
+    },
+    {
+      q: "Which of the following is the solution set of $-2 \\leq 3x + 1 < 7$?",
+      opts: ["$-1 \\leq x < 2$", "$-2 < x \\leq 2$", "$0 \\leq x < 2$", "$-1 < x \\leq 2$"],
+      ans: 0,
+      exp: "Subtract 1 throughout: $-3 \\leq 3x < 6$. Divide by 3: $-1 \\leq x < 2$."
+    },
+    {
+      q: "Which region on the number line represents the solution to $|x - 3| \\leq 4$?",
+      opts: ["$-1 \\leq x \\leq 7$", "$-4 \\leq x \\leq 4$", "$x \\leq -1$ or $x \\geq 7$", "$-1 < x < 7$"],
+      ans: 0,
+      exp: "$|x - 3| \\leq 4 \\Rightarrow -4 \\leq x - 3 \\leq 4$. Add 3 throughout: $-1 \\leq x \\leq 7$."
+    },
+    {
+      q: "A student earns at most ₦5,000 per day selling snacks but needs at least ₦1,500 to cover costs. If $x$ represents profit, which inequality models this?",
+      opts: ["$1500 < x < 5000$", "$1500 \\leq x \\leq 5000$", "$x \\geq 1500$ and $x > 5000$", "$x \\leq 1500$ or $x \\geq 5000$"],
+      ans: 1,
+      exp: "Profit is at least ₦1,500 (i.e. $x \\geq 1500$) and at most ₦5,000 (i.e. $x \\leq 5000$), giving $1500 \\leq x \\leq 5000$."
+    },
+    {
+      q: "Find the exact value of $\\sin 60° \\times \\cos 30°$.",
+      opts: ["$\\frac{1}{2}$", "$\\frac{\\sqrt{3}}{2}$", "$\\frac{3}{4}$", "$1$"],
+      ans: 2,
+      exp: "$\\sin 60° = \\frac{\\sqrt{3}}{2}$ and $\\cos 30° = \\frac{\\sqrt{3}}{2}$. Product $= \\frac{\\sqrt{3}}{2} \\times \\frac{\\sqrt{3}}{2} = \\frac{3}{4}$."
+    },
+    {
+      q: "Without a calculator, evaluate $\\tan 45° + \\cos 60°$.",
+      opts: ["$\\frac{3}{2}$", "$\\sqrt{2}$", "$2$", "$1$"],
+      ans: 0,
+      exp: "$\\tan 45° = 1$ and $\\cos 60° = \\frac{1}{2}$. Sum $= 1 + \\frac{1}{2} = \\frac{3}{2}$."
+    },
+    {
+      q: "If $\\sin \\theta = \\frac{\\sqrt{3}}{2}$ and $0° < \\theta < 90°$, find the exact value of $\\cos \\theta$.",
+      opts: ["$\\frac{1}{\\sqrt{2}}$", "$\\frac{1}{2}$", "$\\frac{\\sqrt{3}}{2}$", "$\\frac{\\sqrt{2}}{2}$"],
+      ans: 1,
+      exp: "$\\sin \\theta = \\frac{\\sqrt{3}}{2}$ corresponds to $\\theta = 60°$. Therefore $\\cos 60° = \\frac{1}{2}$."
+    },
+    {
+      q: "A vertical pole casts a shadow 10 m long when the angle of elevation of the sun is 30°. Find the height of the pole.",
+      opts: ["$\\frac{10\\sqrt{3}}{3}$ m", "$10\\sqrt{3}$ m", "$5\\sqrt{3}$ m", "$5$ m"],
+      ans: 0,
+      exp: "$\\tan 30° = \\frac{h}{10} \\Rightarrow h = 10 \\tan 30° = 10 \\times \\frac{1}{\\sqrt{3}} = \\frac{10}{\\sqrt{3}} = \\frac{10\\sqrt{3}}{3}$ m."
+    },
+    {
+      q: "Which of the following is the negation of the statement 'Some students are brilliant'?",
+      opts: ["All students are brilliant", "Some students are not brilliant", "No student is brilliant", "Most students are brilliant"],
+      ans: 2,
+      exp: "The negation of 'Some P are Q' is 'No P is Q'. Therefore the negation is 'No student is brilliant'."
+    },
+    {
+      q: "The statement 'If I study hard, then I will pass' is false only when:",
+      opts: ["I study hard and I pass", "I do not study hard and I fail", "I study hard and I do not pass", "I do not study hard and I pass"],
+      ans: 2,
+      exp: "A conditional $P \\Rightarrow Q$ is false only when P is true and Q is false — i.e. when I study hard but still do not pass."
+    },
+    {
+      q: "Which of the following is a conjunction?",
+      opts: ["It is raining or it is cold", "If it rains, the ground is wet", "It is raining and it is cold", "It is not raining"],
+      ans: 2,
+      exp: "A conjunction connects two statements with 'and' ($P \\land Q$) and is true only when both are true. 'It is raining and it is cold' is a conjunction."
+    },
+    {
+      q: "Given that P is true and Q is false, evaluate $P \\lor Q$.",
+      opts: ["False", "True", "Undefined", "Depends on context"],
+      ans: 1,
+      exp: "A disjunction $P \\lor Q$ is true when at least one of P or Q is true. Since P is true, $P \\lor Q$ is true."
+    },
+    {
+      q: "Convert the binary number $1101_2$ to base 10.",
+      opts: ["11", "12", "13", "14"],
+      ans: 2,
+      exp: "$1101_2 = 1(2^3) + 1(2^2) + 0(2^1) + 1(2^0) = 8 + 4 + 0 + 1 = 13_{10}$."
+    },
+    {
+      q: "What is $1011_2 + 110_2$ expressed in binary?",
+      opts: ["$10001_2$", "$10101_2$", "$11001_2$", "$10011_2$"],
+      ans: 0,
+      exp: "Align and add: $1011 + 0110$. Working right to left: $1+0=1$, $1+1=10$ (write 0 carry 1), $0+1+1=10$ (write 0 carry 1), $1+0+1=10$. Result: $10001_2$."
+    },
+    {
+      q: "Find the midpoint of the line segment joining the points $(3, -5)$ and $(7, 9)$.",
+      opts: ["$(5, 2)$", "$(4, 2)$", "$(5, 4)$", "$(2, 5)$"],
+      ans: 0,
+      exp: "Midpoint $= \\left(\\frac{3+7}{2},\\ \\frac{-5+9}{2}\\right) = \\left(5,\\ 2\\right)$."
+    },
+    {
+      q: "Calculate the distance between the points $(-1, 2)$ and $(3, -2)$.",
+      opts: ["$4\\sqrt{2}$", "$6$", "$2\\sqrt{5}$", "$\\sqrt{20}$"],
+      ans: 0,
+      exp: "$d = \\sqrt{(3-(-1))^2 + (-2-2)^2} = \\sqrt{16 + 16} = \\sqrt{32} = 4\\sqrt{2}$."
+    },
+    {
+      q: "Find the gradient of the straight line passing through the points $(2, 5)$ and $(6, 13)$.",
+      opts: ["$4$", "$\\frac{1}{2}$", "$2$", "$3$"],
+      ans: 2,
+      exp: "$m = \\frac{13 - 5}{6 - 2} = \\frac{8}{4} = 2$."
+    },
+    {
+      q: "What is the equation of the line with gradient 3 passing through the point $(1, 4)$?",
+      opts: ["$y = 3x + 1$", "$y = 3x - 1$", "$y = x + 3$", "$y = 3x + 4$"],
+      ans: 0,
+      exp: "Using point-slope form: $y - 4 = 3(x - 1) \\Rightarrow y = 3x - 3 + 4 = 3x + 1$."
+    },
+    {
+      q: "Two lines are parallel. One has equation $y = 4x - 3$. Which of the following could be the equation of the other line?",
+      opts: ["$y = -\\frac{1}{4}x + 2$", "$y = 4x + 7$", "$4y = x - 3$", "$y = 3x - 4$"],
+      ans: 1,
+      exp: "Parallel lines have equal gradients. The gradient of $y = 4x - 3$ is 4. Only $y = 4x + 7$ has gradient 4."
+    },
+    {
+      q: "A line has gradient 5. What is the gradient of any line perpendicular to it?",
+      opts: ["$-5$", "$\\frac{1}{5}$", "$-\\frac{1}{5}$", "$5$"],
+      ans: 2,
+      exp: "For perpendicular lines, $m_1 \\times m_2 = -1$. So $m_2 = -\\frac{1}{5}$."
+    },
+    {
+      q: "Find the x-intercept of the line $3x + 2y = 12$.",
+      opts: ["$(4, 0)$", "$(0, 6)$", "$(3, 0)$", "$(6, 0)$"],
+      ans: 0,
+      exp: "Set $y = 0$: $3x = 12 \\Rightarrow x = 4$. The x-intercept is $(4, 0)$."
+    },
+    {
+      q: "Which of the following correctly defines a one-to-one (injective) function?",
+      opts: ["Every output has at least two inputs", "Different inputs always give different outputs", "All elements of the range are mapped to", "The function maps onto itself"],
+      ans: 1,
+      exp: "A one-to-one function maps distinct inputs to distinct outputs: if $f(a) = f(b)$, then $a = b$."
+    },
+    {
+      q: "Given $f(x) = 2x + 1$ and $g(x) = x^2$, find $f(g(3))$.",
+      opts: ["$19$", "$49$", "$37$", "$7$"],
+      ans: 0,
+      exp: "First find $g(3) = 3^2 = 9$. Then $f(9) = 2(9) + 1 = 19$."
+    },
+    {
+      q: "If $f(x) = 3x - 2$, find $f^{-1}(x)$.",
+      opts: ["$\\frac{x+2}{3}$", "$\\frac{x-2}{3}$", "$3x + 2$", "$\\frac{3}{x-2}$"],
+      ans: 0,
+      exp: "Let $y = 3x - 2$. Swap $x$ and $y$: $x = 3y - 2 \\Rightarrow 3y = x + 2 \\Rightarrow y = \\frac{x+2}{3}$. So $f^{-1}(x) = \\frac{x+2}{3}$."
+    },
+    {
+      q: "The sum to infinity of a GP is 16 and its first term is 4. Find the common ratio.",
+      opts: ["$\\frac{1}{2}$", "$\\frac{3}{4}$", "$\\frac{1}{4}$", "$\\frac{2}{3}$"],
+      ans: 1,
+      exp: "$S_\\infty = \\frac{a}{1-r} \\Rightarrow 16 = \\frac{4}{1-r} \\Rightarrow 1 - r = \\frac{4}{16} = \\frac{1}{4} \\Rightarrow r = \\frac{3}{4}$."
+    },
+    {
+      q: "Find the 10th term of the AP: $-3, 1, 5, 9, \\ldots$",
+      opts: ["$33$", "$37$", "$41$", "$29$"],
+      ans: 0,
+      exp: "$a = -3$, $d = 4$. $T_{10} = a + 9d = -3 + 9(4) = -3 + 36 = 33$."
+    },
+    {
+      q: "Which of the following sequences is geometric?",
+      opts: ["$2, 4, 6, 8, \\ldots$", "$1, 3, 6, 10, \\ldots$", "$5, 10, 20, 40, \\ldots$", "$3, 6, 9, 12, \\ldots$"],
+      ans: 2,
+      exp: "In $5, 10, 20, 40, \\ldots$, each term is multiplied by a constant ratio of 2, so it is a geometric sequence."
+    },
+    {
+      q: "Solve the simultaneous inequalities: $x + 2 > 5$ and $2x < 12$.",
+      opts: ["$3 < x < 6$", "$x > 3$ only", "$x < 6$ only", "$x > 7$"],
+      ans: 0,
+      exp: "$x + 2 > 5 \\Rightarrow x > 3$ and $2x < 12 \\Rightarrow x < 6$. Combined: $3 < x < 6$."
+    },
+    {
+      q: "The contrapositive of 'If it is raining, the match is cancelled' is:",
+      opts: ["If the match is cancelled, it is raining", "If it is not raining, the match is not cancelled", "If the match is not cancelled, it is not raining", "It is raining and the match is not cancelled"],
+      ans: 2,
+      exp: "The contrapositive of $P \\Rightarrow Q$ is $\\neg Q \\Rightarrow \\neg P$. Here: 'If the match is not cancelled, then it is not raining'."
+    },
+    {
+      q: "Points $A(1, 3)$, $B(4, 3)$, and $C(4, 7)$ are vertices of a triangle. What is the area of the triangle?",
+      opts: ["6 sq units", "12 sq units", "8 sq units", "10 sq units"],
+      ans: 0,
+      exp: "AB is horizontal with length $4 - 1 = 3$. BC is vertical with length $7 - 3 = 4$. Angle B = 90°. Area $= \\frac{1}{2}(3)(4) = 6$ sq units."
+    },
+    {
+      q: "Given $f: x \\mapsto x^2 - 1$ and $g: x \\mapsto 2x + 3$, find $g(f(2))$.",
+      opts: ["$9$", "$7$", "$11$", "$5$"],
+      ans: 0,
+      exp: "$f(2) = 2^2 - 1 = 3$. Then $g(3) = 2(3) + 3 = 9$."
+    },
+    {
+      q: "Which value of $x$ satisfies both $2x + 3 \\geq 7$ and $x - 1 < 4$ simultaneously?",
+      opts: ["$x = 2$", "$x = 5$", "$x = 6$", "$x = 0$"],
+      ans: 0,
+      exp: "$2x + 3 \\geq 7 \\Rightarrow x \\geq 2$ and $x - 1 < 4 \\Rightarrow x < 5$. So $2 \\leq x < 5$. Only $x = 2$ from the options lies in this range."
+    },
+    {
+      q: "A line passes through the origin and is perpendicular to $2x - y = 5$. What is its equation?",
+      opts: ["$y = -\\frac{1}{2}x$", "$y = 2x$", "$y = \\frac{1}{2}x$", "$y = -2x$"],
+      ans: 0,
+      exp: "Rewrite $2x - y = 5$ as $y = 2x - 5$; gradient $= 2$. Perpendicular gradient $= -\\frac{1}{2}$. Through the origin: $y = -\\frac{1}{2}x$."
+    },
+  ]
   },
         sss2: {
    'Physics': [
