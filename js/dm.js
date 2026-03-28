@@ -575,6 +575,8 @@
               b.update(Db().collection('students').doc(uid), { isOnline: true, lastSeen: ts });
               await b.commit();
             } catch (_) {}
+            // Mark any messages that arrived while tab was hidden as delivered
+            await _markDelivered(uid, 'student').catch(() => {});
           })();
           _startStudentHeartbeat(uid);
         }
@@ -622,6 +624,17 @@
         if (firebase.auth().currentUser && !_teacherOfflineDone) {
           _broadcastTeacherPresence(true).catch(() => {});
           _startTeacherHeartbeat();
+          // Mark any messages that arrived while tab was hidden as delivered
+          (async () => {
+            try {
+              const allThreads = await Db().collection('directMessages').get();
+              const promises = [];
+              allThreads.forEach(doc => {
+                promises.push(_markDelivered(doc.id, 'teacher').catch(() => {}));
+              });
+              await Promise.all(promises);
+            } catch (e) { console.warn('[dm] Teacher tab-restore delivery sweep failed:', e); }
+          })();
         }
       }
     };
@@ -1383,6 +1396,9 @@ function _cancelTypingListeners(threadUid) {
         }
         const msgs = [];
         snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
+        // Mark all teacher messages as delivered as soon as they arrive
+        // (student is online and inbox is open — _markRead will handle read)
+        _markDelivered(uid, 'student').catch(() => {});
         _markRead(uid, 'student').catch(() => {});
         container.innerHTML = _renderMessagesWithDateSeps(msgs, uid, 'student');
         container.scrollTop = container.scrollHeight;
@@ -1793,6 +1809,8 @@ function _cancelTypingListeners(threadUid) {
         }
         const msgs = [];
         snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
+        // Mark student messages as delivered then read since teacher has this chat open
+        _markDelivered(studentUid, 'teacher').catch(() => {});
         _markRead(studentUid, 'teacher').catch(() => {});
         container.innerHTML = _renderMessagesWithDateSeps(msgs, AppConfig.TEACHER_UID, 'teacher');
         container.scrollTop = container.scrollHeight;
@@ -2051,11 +2069,20 @@ function _cancelTypingListeners(threadUid) {
 
   async function initStudentDMListener(uid) {
     AppState.cancelListener('dmStudentUnread');
+
     const unsub = _threadRef(uid).onSnapshot(snap => {
-      const count = (snap.exists && snap.data().studentUnread) || 0;
+      const data  = (snap.exists && snap.data()) || {};
+      const count = data.studentUnread || 0;
       AppState.dmStudentUnread = count;
       _updateStudentBadge(count);
+
+      // If there are unread messages from the teacher, mark them delivered
+      // immediately — student is online even if not inside the inbox
+      if (count > 0) {
+        _markDelivered(uid, 'student').catch(() => {});
+      }
     }, err => console.warn('[dm] Student unread listener error:', err));
+
     AppState.registerListener('dmStudentUnread', unsub);
 
     await _setStudentOnlineGlobal(uid);
@@ -2066,6 +2093,7 @@ function _cancelTypingListeners(threadUid) {
     AppState.cancelListener('dmTeacherUnread');
     await _setTeacherOnlineGlobal();
 
+    // Initial delivery sweep on login
     try {
       const allThreads = await Db().collection('directMessages').get();
       const deliveryPromises = [];
@@ -2077,9 +2105,19 @@ function _cancelTypingListeners(threadUid) {
 
     const unsub = Db().collection('directMessages').onSnapshot(snap => {
       let total = 0;
-      snap.forEach(doc => { total += (doc.data().teacherUnread || 0); });
+      snap.forEach(doc => {
+        const data = doc.data();
+        total += (data.teacherUnread || 0);
+
+        // If this thread has unread student messages, mark them delivered
+        // immediately — teacher is online even if not inside that conversation
+        if ((data.teacherUnread || 0) > 0) {
+          _markDelivered(doc.id, 'teacher').catch(() => {});
+        }
+      });
       _updateTeacherBadge(total);
     }, err => console.warn('[dm] Teacher unread listener error:', err));
+
     AppState.registerListener('dmTeacherUnread', unsub);
   }
 
