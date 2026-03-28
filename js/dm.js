@@ -1039,7 +1039,7 @@
       : 'Just now';
 
     const editedLabel = msg.editedAt
-      ? `<span style="font-size:.5625rem;opacity:.6;font-style:italic;margin-right:3px;line-height:1;white-space:nowrap;">edited</span>`
+      ? `<span class="dm-edited-label-wrap"><span class="dm-edited-label" style="font-size:.5625rem;opacity:.6;font-style:italic;margin-right:3px;line-height:1;white-space:nowrap;">edited</span></span>`
       : '';
 
     const safeStudentUid = _escAttr(studentUid);
@@ -1070,7 +1070,7 @@
                         border-radius:14px 14px 3px 14px;
                         padding:.5rem .75rem .375rem;">
               <p class="dm-bubble-text">${_esc(msg.text)}</p>
-              <div class="dm-bubble-footer dm-bubble-footer--end">
+              <div class="dm-bubble-footer dm-msg-footer dm-bubble-footer--end">
                 ${editedLabel}
                 ${editBtn}
                 <span class="dm-bubble-time">${time}</span>
@@ -1093,8 +1093,10 @@
                         border-radius:14px 14px 14px 3px;
                         padding:.5rem .75rem .375rem;">
               <p class="dm-bubble-text">${_esc(msg.text)}</p>
-              <div class="dm-bubble-footer dm-bubble-footer--start">
+              <div class="dm-bubble-footer dm-msg-footer dm-bubble-footer--start">
+                ${editedLabel}
                 <span class="dm-bubble-time dm-bubble-time--dim">${time}</span>
+                ${editBtn}
               </div>
             </div>
           </div>
@@ -1962,8 +1964,8 @@
     _closeNewConversationModal,
     _pickStudentForConversation,
     _toggleActionMenu,
-    _backToThreadList,
     _showEditHistory,
+    _backToThreadList,
     initStudentDMListener,
     initTeacherDMListener,
     cancelListeners,
