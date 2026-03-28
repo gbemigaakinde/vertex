@@ -832,6 +832,81 @@
     document.body.appendChild(overlay);
   }
 
+// ── Typing indicator ──────────────────────────────────────────
+// Each side writes their own flag to the shared thread doc.
+// A debounce timer auto-clears the flag after 4 seconds of no input.
+
+let _typingDebounceTimer = null;
+let _typingCurrentUid    = null;
+let _typingCurrentRole   = null; // 'student' | 'teacher'
+let _typingActive        = false;
+
+async function _startTyping(threadUid, role) {
+  // threadUid = the student's UID (used as the Firestore doc ID)
+  // role      = 'student' or 'teacher'
+
+  _typingCurrentUid  = threadUid;
+  _typingCurrentRole = role;
+
+  // Reset the auto-clear timer on every keystroke
+  if (_typingDebounceTimer) clearTimeout(_typingDebounceTimer);
+  _typingDebounceTimer = setTimeout(() => _stopTyping(threadUid, role), 4000);
+
+  // Only write to Firestore if not already flagged — avoids write spam
+  if (_typingActive) return;
+  _typingActive = true;
+
+  const field = role === 'student' ? 'studentTyping' : 'teacherTyping';
+  try {
+    await _threadRef(threadUid).set({ [field]: true }, { merge: true });
+  } catch (e) {
+    console.warn('[dm] _startTyping write failed:', e);
+  }
+}
+
+async function _stopTyping(threadUid, role) {
+  if (_typingDebounceTimer) { clearTimeout(_typingDebounceTimer); _typingDebounceTimer = null; }
+  _typingActive = false;
+
+  const field = role === 'student' ? 'studentTyping' : 'teacherTyping';
+  try {
+    await _threadRef(threadUid).set({ [field]: false }, { merge: true });
+  } catch (e) {
+    console.warn('[dm] _stopTyping write failed:', e);
+  }
+}
+
+function _watchTypingIndicator(threadUid, watchField, elementId, displayName) {
+  // watchField = 'studentTyping' or 'teacherTyping'
+  // elementId  = the id of the <div> bar to show/hide
+  // displayName = the name to display in the "... is typing" text
+
+  const listenerKey = 'dmTypingWatch_' + threadUid + '_' + watchField;
+  AppState.cancelListener(listenerKey);
+
+  const unsub = _threadRef(threadUid).onSnapshot(snap => {
+    const bar = document.getElementById(elementId);
+    if (!bar) { AppState.cancelListener(listenerKey); return; }
+
+    const isTyping = !!(snap.exists && snap.data() && snap.data()[watchField]);
+    bar.style.visibility = isTyping ? 'visible' : 'hidden';
+    bar.style.opacity    = isTyping ? '1'       : '0';
+  }, err => console.warn('[dm] _watchTypingIndicator error:', err));
+
+  AppState.registerListener(listenerKey, unsub);
+}
+
+function _cancelTypingListeners(threadUid) {
+  if (!threadUid) return;
+  AppState.cancelListener('dmTypingWatch_' + threadUid + '_studentTyping');
+  AppState.cancelListener('dmTypingWatch_' + threadUid + '_teacherTyping');
+  // Ensure our own typing flag is cleared
+  if (_typingActive && _typingCurrentUid === threadUid) {
+    _stopTyping(threadUid, _typingCurrentRole).catch(() => {});
+  }
+}
+// ── End typing indicator ──────────────────────────────────────
+
   function _activateInlineEdit(studentUid, messageId, currentText, isDarkBubble, wrapperId, isTeacher) {
   const wrapper = document.getElementById(wrapperId);
   if (!wrapper) return;
@@ -1242,11 +1317,24 @@
              class="dm-messages-area"
              style="min-height:260px;max-height:420px;
                     border:1px solid var(--border,#e5e7eb);border-radius:10px;
-                    padding:.75rem 1rem;margin-bottom:.75rem;
+                    padding:.75rem 1rem;margin-bottom:0;
                     background:var(--surface-subtle,#f9fafb);">
           <p style="text-align:center;font-size:.8125rem;color:var(--text-disabled,#9ca3af);padding:2rem 0;">
             Loading messages…
           </p>
+        </div>
+
+        <!-- Typing indicator bar (student sees teacher typing) -->
+        <div id="dmStudentTypingBar"
+             style="height:22px;padding:0 .25rem;display:flex;align-items:center;
+                    visibility:hidden;opacity:0;
+                    transition:opacity .2s ease;margin-bottom:.25rem;">
+          <span class="dm-typing-dots" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </span>
+          <span style="font-size:.6875rem;color:var(--text-3,#6b7280);margin-left:.375rem;font-style:italic;">
+            Master Timothy is typing…
+          </span>
         </div>
 
         <div style="display:flex;gap:.5rem;align-items:flex-end;box-sizing:border-box;width:100%;overflow:hidden;">
@@ -1271,11 +1359,19 @@
         input.style.height = 'auto';
         input.style.height = Math.min(input.scrollHeight, 120) + 'px';
         input.style.overflowY = input.scrollHeight > 120 ? 'auto' : 'hidden';
+        // Typing indicator: tell the other side we're typing
+        _startTyping(uid, 'student');
+      });
+      input.addEventListener('blur', () => {
+        // Stop typing indicator when student leaves the input
+        _stopTyping(uid, 'student').catch(() => {});
       });
     }
 
     await _markRead(uid, 'student');
     _watchPresence(uid, 'teacher', 'dmTeacherPresence', 'dmTeacherPresenceWatch');
+    // Watch for teacher typing — update the bar student sees
+    _watchTypingIndicator(uid, 'teacherTyping', 'dmStudentTypingBar', 'Master Timothy');
     _subscribeStudentMessages(uid);
   }
 
@@ -1347,6 +1443,9 @@
     const cls         = studentData.class || '';
     const btn         = document.getElementById('dmSendBtn');
 
+    // Clear typing indicator immediately on send
+    _stopTyping(uid, 'student').catch(() => {});
+
     UI.setLoading(btn, true);
     if (input) input.value = '';
 
@@ -1384,6 +1483,7 @@
   }
 
   function backFromStudentInbox() {
+    _cancelTypingListeners(AppState.userId);
     AppState.cancelListener('dmStudentMessages');
     AppState.cancelListener('dmTeacherPresenceWatch');
     _closeOpenMenu();
@@ -1546,7 +1646,6 @@
     const viewChat = document.getElementById('dmViewChat');
     if (!viewList || !viewChat) return;
 
-    // Hide list, show chat — both stay in normal document flow (no position:absolute)
     viewList.style.display = 'none';
     viewChat.style.display = 'flex';
     viewChat.style.flexDirection = 'column';
@@ -1605,6 +1704,20 @@
         </p>
       </div>
 
+      <!-- Typing indicator bar (teacher sees student typing) -->
+      <div id="dmTeacherTypingBar"
+           style="height:22px;padding:0 .875rem;display:flex;align-items:center;
+                  visibility:hidden;opacity:0;
+                  transition:opacity .2s ease;flex-shrink:0;
+                  background:var(--surface,#fff);">
+        <span class="dm-typing-dots" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </span>
+        <span style="font-size:.6875rem;color:var(--text-3,#6b7280);margin-left:.375rem;font-style:italic;">
+          ${_esc(studentName)} is typing…
+        </span>
+      </div>
+
       <div style="padding:.625rem .875rem;border-top:1px solid var(--border,#e5e7eb);flex-shrink:0;
                   display:flex;gap:.5rem;align-items:flex-end;background:var(--surface,#fff);
                   box-sizing:border-box;width:100%;">
@@ -1634,14 +1747,23 @@
         input.style.height = 'auto';
         input.style.height = Math.min(input.scrollHeight, 120) + 'px';
         input.style.overflowY = input.scrollHeight > 120 ? 'auto' : 'hidden';
+        // Typing indicator: tell student we're typing
+        _startTyping(studentUid, 'teacher');
+      });
+      input.addEventListener('blur', () => {
+        // Stop typing indicator when teacher leaves the input
+        _stopTyping(studentUid, 'teacher').catch(() => {});
       });
     }
 
     _watchPresence(studentUid, 'student', 'dmStudentPresence', 'dmStudentPresenceWatch');
+    // Watch for student typing — update the bar teacher sees
+    _watchTypingIndicator(studentUid, 'studentTyping', 'dmTeacherTypingBar', studentName);
     _subscribeTeacherMessages(studentUid);
   }
 
   function _backToThreadList() {
+    _cancelTypingListeners(_activeStudentUid);
     AppState.cancelListener('dmTeacherMessages');
     AppState.cancelListener('dmStudentPresenceWatch');
     _activeStudentUid   = null;
@@ -1698,6 +1820,10 @@
     if (!text) return;
 
     const btn = document.getElementById('dmTeacherSendBtn');
+
+    // Clear typing indicator immediately on send
+    _stopTyping(studentUid, 'teacher').catch(() => {});
+
     UI.setLoading(btn, true);
     if (input) input.value = '';
 
