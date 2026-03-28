@@ -1410,144 +1410,53 @@ details.glass-dark[open] > summary::after,
 }
 
 /* ── DM panel overrides ── */
-
 #teacher-dm {
   overflow: hidden !important;
   min-width: 0 !important;
   box-sizing: border-box !important;
-  max-width: 100% !important;
-  width: 100% !important;
 }
 
-/* The padding wrapper inside the teacher dashboard content area */
-.max-w-7xl.glass > div[style*="padding:1.25rem"] {
-  overflow: hidden;
-  min-width: 0;
-  box-sizing: border-box;
-  max-width: 100%;
-}
-
-#dmTeacherShell {
-  border-radius: 12px !important;
-  overflow: hidden !important;
-  min-width: 0 !important;
-  box-sizing: border-box !important;
-  max-width: 100% !important;
-  width: 100% !important;
-}
-
-#dmViewList {
-  overflow: hidden !important;
+#dmTeacherShell,
+#dmViewList,
+#dmViewChat,
+#dmThreadList {
   min-width: 0 !important;
   max-width: 100% !important;
-  width: 100% !important;
   box-sizing: border-box !important;
+  overflow: hidden !important;
 }
 
 #dmThreadList {
-  overflow-x: hidden !important;
   overflow-y: auto !important;
-  min-width: 0 !important;
-  width: 100% !important;
-  max-width: 100% !important;
-  box-sizing: border-box !important;
 }
 
-.dm-thread-item {
-  min-width: 0 !important;
-  max-width: 100% !important;
-  overflow: hidden !important;
-  box-sizing: border-box !important;
-  /* Prevent the item itself from becoming a flex container
-     that ignores its own width constraint */
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: flex-start !important;
-}
-
-.dm-thread-av {
-  flex-shrink: 0 !important;
-  min-width: 42px !important;
-  width: 42px !important;
-  max-width: 42px !important;
-}
-
-.dm-thread-bd {
-  flex: 1 1 0% !important;
-  min-width: 0 !important;
-  overflow: hidden !important;
-  max-width: calc(100% - 54px) !important;
-}
-
-.dm-thread-r1 {
-  min-width: 0 !important;
-  overflow: hidden !important;
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: baseline !important;
-}
-
+.dm-thread-item,
+.dm-thread-bd,
+.dm-thread-r1,
 .dm-thread-r2 {
   min-width: 0 !important;
-  overflow: hidden !important;
-  display: flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
-}
-
-.dm-thread-name {
-  flex: 1 1 0% !important;
-  min-width: 0 !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
   max-width: 100% !important;
-}
-
-.dm-thread-date {
-  flex-shrink: 0 !important;
-  white-space: nowrap !important;
-  max-width: 55px !important;
-}
-
-.dm-thread-preview {
-  flex: 1 1 0% !important;
-  min-width: 0 !important;
   overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
-  max-width: 100% !important;
 }
 
+.dm-thread-name,
+.dm-thread-preview,
 .dm-thread-presence {
   min-width: 0 !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
   white-space: nowrap !important;
-  display: block !important;
-  max-width: 100% !important;
 }
 
-.dm-thread-class {
-  display: block !important;
-  min-width: 0 !important;
-  overflow: hidden !important;
-  text-overflow: ellipsis !important;
-  white-space: nowrap !important;
-  max-width: 100% !important;
-  width: fit-content !important;
+.dm-thread-av {
+  flex-shrink: 0 !important;
+  min-width: 42px !important;
 }
 
-#dmViewChat {
-  overflow: hidden !important;
-  min-width: 0 !important;
-  max-width: 100% !important;
-  box-sizing: border-box !important;
+.dm-thread-bd {
+  flex: 1 1 0% !important;
 }
 
-.dm-messages-area {
-  overflow-x: hidden !important;
-  min-width: 0 !important;
-  max-width: 100% !important;
-  box-sizing: border-box !important;
+.dm-thread-preview {
+  flex: 1 1 0% !important;
 }
