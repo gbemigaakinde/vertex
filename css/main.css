@@ -1427,14 +1427,7 @@ details.glass-dark[open] > summary::after,
   overflow: hidden !important;
 }
 
-#dmViewList {
-  width: 100% !important;
-  max-width: 100% !important;
-  min-width: 0 !important;
-  box-sizing: border-box !important;
-  overflow: visible !important;
-}
-
+#dmViewList,
 #dmViewChat {
   width: 100% !important;
   max-width: 100% !important;
@@ -1491,4 +1484,51 @@ details.glass-dark[open] > summary::after,
 
 .dm-thread-preview {
   flex: 1 1 0% !important;
+}
+
+/* ── Mobile: neutralise the inline padding on the tab content div ── */
+@media (max-width: 768px) {
+  #teacher-dm {
+    /* Pull the DM panel out of the parent's inline padding:1.25rem 1.5rem */
+    margin-left: -1.25rem !important;
+    margin-right: -1.25rem !important;
+    width: calc(100% + 2.5rem) !important;
+    max-width: calc(100% + 2.5rem) !important;
+  }
+
+  #dmTeacherShell {
+    border-radius: 0 !important;
+    border-left: none !important;
+    border-right: none !important;
+  }
+
+  .dm-thread-item {
+    padding: 0.625rem 1rem !important;
+    gap: 0.625rem !important;
+  }
+
+  .dm-thread-av,
+  .dm-thread-av-circle {
+    width: 36px !important;
+    height: 36px !important;
+    min-width: 36px !important;
+  }
+
+  .dm-thread-date {
+    font-size: 0.625rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .dm-thread-class {
+    max-width: 140px !important;
+  }
+
+  /* Tighten the chat view header and input area too */
+  #dmViewChat > div:first-child {
+    padding: 0.5rem 0.875rem !important;
+  }
+
+  #dmViewChat > div:last-child {
+    padding: 0.5rem 0.875rem !important;
+  }
 }
