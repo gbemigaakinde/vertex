@@ -1,9 +1,12 @@
 /* ============================================================
    js/landing.js — Public marketing homepage
    ============================================================
-   Editorial homepage. Ink / warm white / amber accent.
+   Editorial homepage. Ink / warm white / indigo accent.
    Instrument Serif headings. DM Sans body. No emojis, no
    gradients, no cards. Typography does the work.
+
+   Accent colour: #4f6ef7 (indigo) — matches --accent in main.css.
+   Dark mode accent: #6b87f8 — matches dark --accent in main.css.
 
    Dark mode: responds to [data-theme="dark"] on <html>.
 
@@ -27,9 +30,11 @@
       --lp-ink-5:            #d8d8da;
       --lp-cream:            #fafaf8;
       --lp-cream-2:          #f5f4f0;
-      --lp-amber:            #b5641e;
-      --lp-amber-dk:         #9a5218;
-      --lp-amber-lt:         #fdf3eb;
+      /* Indigo accent — matches --accent in main.css */
+      --lp-accent:           #4f6ef7;
+      --lp-accent-dk:        #3a58e8;
+      --lp-accent-lt:        rgba(79, 110, 247, 0.08);
+      --lp-accent-border:    rgba(79, 110, 247, 0.22);
       --lp-rule:             #e4e2dc;
       --lp-nav-bg:           rgba(250,250,248,0.88);
       --lp-nav-bg-scrolled:  rgba(250,250,248,0.97);
@@ -49,7 +54,7 @@
       transition: background 0.25s, color 0.25s;
     }
 
-    /* ── Dark mode: re-map every token so all downstream rules just work ── */
+    /* ── Dark mode: re-map every token ── */
     [data-theme="dark"] .lp {
       --lp-ink:              #f0f0f2;
       --lp-ink-2:            #c4c4cc;
@@ -58,9 +63,11 @@
       --lp-ink-5:            #3a3a42;
       --lp-cream:            #111113;
       --lp-cream-2:          #18181b;
-      --lp-amber:            #d47c3a;
-      --lp-amber-dk:         #c06a28;
-      --lp-amber-lt:         rgba(212,124,58,0.1);
+      /* Dark indigo accent — matches dark --accent in main.css */
+      --lp-accent:           #6b87f8;
+      --lp-accent-dk:        #5a78f6;
+      --lp-accent-lt:        rgba(107, 135, 248, 0.1);
+      --lp-accent-border:    rgba(107, 135, 248, 0.28);
       --lp-rule:             #2a2a30;
       --lp-nav-bg:           rgba(17,17,19,0.88);
       --lp-nav-bg-scrolled:  rgba(17,17,19,0.97);
@@ -108,11 +115,15 @@
     .lp-btn-ghost:hover { background:var(--lp-cream-2); border-color:var(--lp-ink-5); color:var(--lp-ink); }
     .lp-btn-solid {
       font-family:var(--lp-sans); font-size:.8125rem; font-weight:600;
-      color:#fff; background:var(--lp-amber); border:none; cursor:pointer;
+      color:#fff; background:var(--lp-accent); border:none; cursor:pointer;
       padding:.5rem 1.125rem; border-radius:4px;
-      transition: background .12s, transform .15s;
+      transition: background .12s, transform .15s, box-shadow .15s;
     }
-    .lp-btn-solid:hover { background:var(--lp-amber-dk); transform:translateY(-1px); }
+    .lp-btn-solid:hover {
+      background:var(--lp-accent-dk);
+      transform:translateY(-1px);
+      box-shadow: 0 4px 12px rgba(79,110,247,0.28);
+    }
 
     /* ── HERO ── */
     .lp-hero {
@@ -129,17 +140,17 @@
     .lp-eyebrow {
       display:inline-flex; align-items:center; gap:.625rem;
       font-size:.6875rem; font-weight:600; letter-spacing:.2em;
-      text-transform:uppercase; color:var(--lp-amber);
+      text-transform:uppercase; color:var(--lp-accent);
       margin-bottom:1.75rem;
     }
-    .lp-eyebrow-line { width:24px; height:1px; background:var(--lp-amber); }
+    .lp-eyebrow-line { width:24px; height:1px; background:var(--lp-accent); }
     .lp-h1 {
       font-family:var(--lp-serif);
       font-size: clamp(2.75rem, 8vw, 6.25rem);
       font-weight:400; line-height:.94; letter-spacing:-.025em;
       color:var(--lp-ink); margin:0 0 2rem; max-width:720px;
     }
-    .lp-h1 i { font-style:italic; color:var(--lp-amber); }
+    .lp-h1 i { font-style:italic; color:var(--lp-accent); }
     .lp-hero-sub {
       font-size: clamp(.9375rem,1.8vw,1.0625rem);
       font-weight:300; color:var(--lp-ink-2); line-height:1.78;
@@ -148,16 +159,16 @@
     .lp-hero-actions { display:flex; align-items:center; gap:1.5rem; flex-wrap:wrap; }
     .lp-cta-main {
       font-family:var(--lp-sans); font-size:.9375rem; font-weight:600;
-      color:#fff; background:var(--lp-amber); border:none; cursor:pointer;
+      color:#fff; background:var(--lp-accent); border:none; cursor:pointer;
       padding:.875rem 1.875rem; border-radius:4px;
       display:inline-flex; align-items:center; gap:.5rem;
       transition: background .12s, transform .18s, box-shadow .18s;
       text-decoration:none;
     }
     .lp-cta-main:hover {
-      background:var(--lp-amber-dk);
+      background:var(--lp-accent-dk);
       transform:translateY(-2px);
-      box-shadow:0 6px 18px rgba(181,100,30,.22);
+      box-shadow:0 6px 20px rgba(79,110,247,0.3);
     }
     .lp-cta-main svg { transition:transform .12s; }
     .lp-cta-main:hover svg { transform:translateX(3px); }
@@ -222,7 +233,7 @@
       font-weight:400; line-height:1.1; letter-spacing:-.025em;
       color:var(--lp-ink); max-width:580px;
     }
-    .lp-h2 i { font-style:italic; color:var(--lp-amber); }
+    .lp-h2 i { font-style:italic; color:var(--lp-accent); }
 
     /* ── FEATURES ── */
     .lp-features { margin-top:3rem; }
@@ -239,7 +250,7 @@
     .lp-features-grid .lp-feature:nth-child(even) { padding-left:3rem; }
     .lp-feat-n {
       font-family:var(--lp-serif); font-size:.6875rem; font-weight:400;
-      color:var(--lp-amber); letter-spacing:.04em; padding-top:.15rem;
+      color:var(--lp-accent); letter-spacing:.04em; padding-top:.15rem;
       flex-shrink:0; min-width:1.75rem; font-style:italic;
     }
     .lp-feat-title {
@@ -269,7 +280,7 @@
       transition: background .18s, border-color .18s, color .18s;
     }
     .lp-step:hover .lp-step-circle {
-      background:var(--lp-amber); color:#fff; border-color:var(--lp-amber);
+      background:var(--lp-accent); color:#fff; border-color:var(--lp-accent);
     }
     .lp-step-title {
       font-family:var(--lp-serif); font-size:1rem; font-weight:400;
@@ -300,7 +311,14 @@
       font-style:italic; font-weight:400; line-height:1.35;
       letter-spacing:-.015em; color:var(--lp-quote-text); margin:0 0 1.5rem;
     }
-    .lp-quote-text em { font-style:normal; color:var(--lp-amber); }
+    /* Highlighted words in quote use indigo instead of amber */
+    .lp-quote-text em {
+      font-style:normal;
+      color: #6b87f8;
+    }
+    [data-theme="dark"] .lp-quote-text em {
+      color: #8da2fa;
+    }
     .lp-quote-attr {
       font-size:.8125rem; color:var(--lp-quote-attr);
     }
@@ -322,7 +340,7 @@
       font-weight:400; line-height:.96; letter-spacing:-.03em;
       color:var(--lp-ink); margin:0 0 .875rem;
     }
-    .lp-foot-h2 i { font-style:italic; color:var(--lp-amber); }
+    .lp-foot-h2 i { font-style:italic; color:var(--lp-accent); }
     .lp-foot-sub {
       font-size:.9375rem; font-weight:300; color:var(--lp-ink-3);
       line-height:1.7; max-width:360px;
@@ -342,7 +360,7 @@
       flex-wrap:wrap; gap:.625rem;
     }
     .lp-footer-copy { font-size:.75rem; color:var(--lp-ink-4); }
-    .lp-footer-copy strong { color:var(--lp-amber); font-weight:500; }
+    .lp-footer-copy strong { color:var(--lp-accent); font-weight:500; }
 
     /* ── SCROLL REVEAL ── */
     .lp-rv {
@@ -377,7 +395,6 @@
 
   var ARROW_SVG = '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>';
 
-  // Logo SVG uses currentColor so it inherits from .lp-mark's dark/light background
   var LOGO_SVG = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/><line x1="12" y1="22" x2="12" y2="15.5"/><polyline points="22 8.5 12 15.5 2 8.5"/></svg>';
 
   function _feat(n, title, body, cls) {
