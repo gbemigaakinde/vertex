@@ -261,6 +261,8 @@ html {
   font-size: 15px;
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
+  overflow-x: hidden;  
+  max-width: 100%;    
 }
 
 body {
@@ -1401,6 +1403,16 @@ details.glass-dark[open] > summary::after,
   #toastContainer { top: var(--sp-3); right: var(--sp-3); max-width: 280px; }
 
   .max-w-7xl.glass { padding: 0 !important; }
+
+  .max-w-7xl {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .max-w-7xl.glass > div:last-child {
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
+  }
 }
 
 /* ── Print ── */
