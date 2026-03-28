@@ -111,252 +111,162 @@
   const style = document.createElement('style');
   style.id = '_dmStyles';
   style.textContent = `
-    .dm-ticks {
-      display: inline-flex; align-items: center; margin-left: 4px;
-      vertical-align: middle; flex-shrink: 0; line-height: 1;
-    }
-    .dm-msg-footer {
-      display: flex; align-items: center; justify-content: flex-end;
-      gap: 4px; margin-top: 4px; flex-wrap: wrap;
-    }
-    .dm-msg-footer .dm-time { font-size: .625rem; opacity: 0.65; line-height: 1; }
-    .dm-presence {
-      display: inline-flex; align-items: center; gap: 5px;
-      font-size: .6875rem; line-height: 1; margin-top: 3px;
-    }
-    .dm-presence__dot {
-      width: 7px; height: 7px; border-radius: 50%;
-      flex-shrink: 0; transition: background .4s ease;
-    }
-    .dm-presence__dot--online {
-      background: #22c45e; box-shadow: 0 0 0 2px rgba(34,196,94,.2);
-    }
-    .dm-presence__dot--offline { background: var(--text-4, #9ca3af); }
-    .dm-presence__label { color: var(--text-tertiary, #6b7280); font-size: .6875rem; }
-    .dm-presence__label--online { color: #22c45e !important; font-weight: 500; }
-    .dm-date-sep {
-      display: flex; align-items: center; gap: .625rem;
-      margin: .875rem 0 .625rem; user-select: none;
-    }
-    .dm-date-sep__line { flex: 1; height: 1px; background: var(--border, #e5e7eb); }
+    /* Ticks */
+    .dm-ticks { display:inline-flex;align-items:center;margin-left:2px;vertical-align:middle;flex-shrink:0;line-height:1; }
+
+    /* Edit trigger — shown on bubble hover */
+    .dm-bubble-inner:hover .dm-edit-trigger-btn,
+    .dm-bubble-inner:focus-within .dm-edit-trigger-btn { opacity:1 !important; }
+
+    /* Presence */
+    .dm-presence { display:inline-flex;align-items:center;gap:5px;font-size:.6875rem;line-height:1;margin-top:3px; }
+    .dm-presence__dot { width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:background .4s; }
+    .dm-presence__dot--online { background:#22c45e;box-shadow:0 0 0 2px rgba(34,196,94,.2); }
+    .dm-presence__dot--offline { background:var(--text-4,#9ca3af); }
+    .dm-presence__label { color:var(--text-3,#6b7280);font-size:.6875rem; }
+    .dm-presence__label--online { color:#22c45e !important;font-weight:500; }
+
+    /* Date separator */
+    .dm-date-sep { display:flex;align-items:center;gap:.625rem;margin:.875rem 0 .625rem;user-select:none; }
+    .dm-date-sep__line { flex:1;height:1px;background:var(--border,#e5e7eb); }
     .dm-date-sep__label {
-      font-size: .625rem; font-weight: 600; letter-spacing: .04em;
-      color: var(--text-disabled, #9ca3af); white-space: nowrap;
-      padding: 2px 8px; border-radius: 99px;
-      background: var(--surface-subtle, #f3f4f6);
-      border: 1px solid var(--border, #e5e7eb);
+      font-size:.625rem;font-weight:600;letter-spacing:.04em;color:var(--text-4,#9ca3af);
+      white-space:nowrap;padding:2px 8px;border-radius:99px;
+      background:var(--bg-subtle,#f3f4f6);border:1px solid var(--border,#e5e7eb);
     }
 
-    /* ── Thread list ── */
+    /* Thread list rows */
     .dm-thread-item {
-      display: flex;
-      align-items: flex-start;
-      gap: .75rem;
-      padding: .875rem 1rem;
-      cursor: pointer;
-      border-bottom: 1px solid var(--border, #e5e7eb);
-      background: transparent;
-      transition: background .12s ease;
-      box-sizing: border-box;
-      width: 100%;
-      overflow: hidden;
-      text-align: left;
+      display:flex;align-items:flex-start;gap:.75rem;
+      padding:.75rem 1rem;cursor:pointer;
+      border-bottom:1px solid var(--border,#e5e7eb);
+      background:transparent;transition:background .12s ease;
+      box-sizing:border-box;width:100%;overflow:hidden;
     }
-    .dm-thread-item:last-child { border-bottom: none; }
-    .dm-thread-item:hover { background: var(--bg-subtle, #f5f5f7); }
-    .dm-thread-item.is-active { background: var(--accent-subtle, rgba(79,110,247,.07)); }
-    .dm-thread-avatar {
-      flex-shrink: 0;
-      position: relative;
-      width: 44px; height: 44px;
+    .dm-thread-item:last-child { border-bottom:none; }
+    .dm-thread-item:hover { background:var(--bg-subtle,#f5f5f7); }
+    .dm-thread-item.is-active { background:var(--accent-subtle,rgba(79,110,247,.07)); }
+
+    /* Avatar */
+    .dm-thread-av {
+      flex-shrink:0;position:relative;
+      width:42px;height:42px;
     }
-    .dm-thread-avatar-inner {
-      width: 44px; height: 44px; border-radius: 50%;
-      background: var(--accent-subtle, rgba(79,110,247,.08));
-      border: 1.5px solid var(--accent-border, rgba(79,110,247,.25));
-      display: flex; align-items: center; justify-content: center;
-      font-size: .9375rem; font-weight: 700;
-      color: var(--accent-text, #2d49d6);
-      transition: border-color .3s;
+    .dm-thread-av-circle {
+      width:42px;height:42px;border-radius:50%;
+      background:var(--accent-subtle,rgba(79,110,247,.08));
+      border:1.5px solid var(--accent-border,rgba(79,110,247,.25));
+      display:flex;align-items:center;justify-content:center;
+      font-size:.9375rem;font-weight:700;color:var(--accent-text,#2d49d6);
     }
-    .dm-thread-avatar-inner.is-online { border-color: #22c45e; }
-    .dm-thread-online-dot {
-      position: absolute; bottom: 1px; right: 1px;
-      width: 11px; height: 11px; border-radius: 50%;
-      background: #22c45e;
-      border: 2px solid var(--bg-base, #fff);
+    .dm-thread-av-circle.online { border-color:#22c45e; }
+    .dm-thread-av-dot {
+      position:absolute;bottom:1px;right:1px;
+      width:11px;height:11px;border-radius:50%;
+      background:#22c45e;border:2px solid var(--bg-base,#fff);
     }
-    .dm-thread-body {
-      flex: 1;
-      min-width: 0;
-      overflow: hidden;
-    }
-    .dm-thread-row1 {
-      display: flex; align-items: baseline;
-      justify-content: space-between; gap: .5rem;
-      margin-bottom: 1px;
-    }
+
+    /* Thread body */
+    .dm-thread-bd { flex:1;min-width:0;overflow:hidden; }
+    .dm-thread-r1 { display:flex;align-items:baseline;justify-content:space-between;gap:.375rem;margin-bottom:1px; }
     .dm-thread-name {
-      font-size: .875rem; font-weight: 700;
-      color: var(--text-1, #0d0d0f);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      flex: 1; min-width: 0;
+      font-size:.875rem;font-weight:700;color:var(--text-1,#0d0d0f);
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;
     }
-    .dm-thread-date {
-      font-size: .6875rem; color: var(--text-4, #9ca3af);
-      flex-shrink: 0; white-space: nowrap;
-    }
+    .dm-thread-date { font-size:.6875rem;color:var(--text-4,#9ca3af);flex-shrink:0;white-space:nowrap; }
     .dm-thread-presence {
-      font-size: .6875rem; color: var(--text-3, #6b7280);
-      margin-bottom: 2px; line-height: 1.4;
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      font-size:.6875rem;color:var(--text-3,#6b7280);margin-bottom:1px;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
     }
-    .dm-thread-presence.is-online { color: #22c45e; font-weight: 600; }
-    .dm-thread-row2 {
-      display: flex; align-items: center;
-      justify-content: space-between; gap: .5rem;
-    }
+    .dm-thread-presence.online { color:#22c45e;font-weight:600; }
+    .dm-thread-r2 { display:flex;align-items:center;justify-content:space-between;gap:.375rem; }
     .dm-thread-preview {
-      font-size: .8125rem; color: var(--text-3, #6b7280);
-      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-      flex: 1; min-width: 0;
+      font-size:.8125rem;color:var(--text-3,#6b7280);
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;
     }
-    .dm-thread-unread {
-      flex-shrink: 0; min-width: 20px; height: 20px;
-      border-radius: 99px; background: var(--danger, #e03b3b);
-      color: #fff; font-size: .625rem; font-weight: 700;
-      display: flex; align-items: center; justify-content: center;
-      padding: 0 5px; line-height: 1;
+    .dm-thread-badge {
+      flex-shrink:0;min-width:20px;height:20px;border-radius:99px;
+      background:var(--danger,#e03b3b);color:#fff;
+      font-size:.625rem;font-weight:700;
+      display:flex;align-items:center;justify-content:center;
+      padding:0 5px;line-height:1;
     }
-    .dm-thread-class-badge {
-      display: inline-block; font-size: .625rem; font-weight: 500;
-      color: var(--accent-text, #2d49d6);
-      background: var(--accent-subtle, rgba(79,110,247,.08));
-      border: 1px solid var(--accent-border, rgba(79,110,247,.25));
-      border-radius: 4px; padding: 1px 6px; margin-top: 3px;
-      white-space: nowrap;
+    .dm-thread-class {
+      display:inline-block;font-size:.625rem;font-weight:500;
+      color:var(--accent-text,#2d49d6);
+      background:var(--accent-subtle,rgba(79,110,247,.08));
+      border:1px solid var(--accent-border,rgba(79,110,247,.25));
+      border-radius:4px;padding:1px 6px;margin-top:3px;white-space:nowrap;
     }
 
-    /* ── Message bubbles ── */
+    /* Action menu */
     .dm-new-conv-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,.45);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 9999; animation: dmFadeIn .15s ease;
+      position:fixed;inset:0;background:rgba(0,0,0,.45);
+      display:flex;align-items:center;justify-content:center;
+      z-index:9999;animation:dmFadeIn .15s ease;
     }
-    @keyframes dmFadeIn { from { opacity:0 } to { opacity:1 } }
+    @keyframes dmFadeIn { from{opacity:0} to{opacity:1} }
     .dm-new-conv-modal {
-      background: var(--bg-base, #fff); border-radius: 14px;
-      width: min(480px, 94vw); padding: 1.25rem 1.5rem;
-      box-shadow: 0 20px 60px rgba(0,0,0,.2);
-      border: 1px solid var(--border, #e5e7eb);
+      background:var(--bg-base,#fff);border-radius:14px;
+      width:min(480px,94vw);padding:1.25rem 1.5rem;
+      box-shadow:0 20px 60px rgba(0,0,0,.2);
+      border:1px solid var(--border,#e5e7eb);
     }
-    .dm-bubble-name--mine {
-      color: var(--accent-text, #2d49d6);
-      font-size: .6875rem; font-weight: 700; margin-bottom: 3px;
-    }
-    .dm-bubble-name--theirs {
-      color: var(--text-3, #6b7280);
-      font-size: .6875rem; font-weight: 600; margin-bottom: 3px;
-    }
-
-    /* Edit button — now INSIDE bubble footer */
-    .dm-edit-trigger {
-      background: none; border: none; cursor: pointer; padding: 0;
-      display: inline-flex; align-items: center; justify-content: center;
-      opacity: 0; transition: opacity .15s;
-      color: rgba(255,255,255,.6); flex-shrink: 0; line-height: 1;
-      border-radius: 3px;
-    }
-    .dm-edit-trigger--theirs { color: var(--text-4, #9ca3af); }
-    .dm-bubble-inner:hover .dm-edit-trigger,
-    .dm-bubble-inner:focus-within .dm-edit-trigger { opacity: 1; }
-
     .dm-action-menu {
-      position: absolute; z-index: 200;
-      background: var(--bg-base, #fff);
-      border: 1px solid var(--border, #e5e7eb);
-      border-radius: 8px; box-shadow: 0 6px 20px rgba(0,0,0,.12);
-      min-width: 148px; overflow: hidden;
-      animation: dmFadeIn .1s ease;
+      position:absolute;z-index:200;
+      background:var(--bg-base,#fff);border:1px solid var(--border,#e5e7eb);
+      border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.12);
+      min-width:148px;overflow:hidden;animation:dmFadeIn .1s ease;
     }
     .dm-action-menu-item {
-      display: flex; align-items: center; gap: .5rem;
-      padding: .5rem .75rem; font-size: .8125rem;
-      color: var(--text-1, #0d0d0f); cursor: pointer;
-      transition: background .1s; white-space: nowrap;
-      border: none; background: none; width: 100%; text-align: left;
-      font-family: var(--font);
+      display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;
+      font-size:.8125rem;color:var(--text-1,#0d0d0f);cursor:pointer;
+      transition:background .1s;white-space:nowrap;
+      border:none;background:none;width:100%;text-align:left;font-family:var(--font);
     }
-    .dm-action-menu-item:hover { background: var(--bg-subtle, #f3f4f6); }
-    .dm-action-menu-item + .dm-action-menu-item {
-      border-top: 1px solid var(--border, #e5e7eb);
-    }
+    .dm-action-menu-item:hover { background:var(--bg-subtle,#f3f4f6); }
+    .dm-action-menu-item + .dm-action-menu-item { border-top:1px solid var(--border,#e5e7eb); }
+
+    /* Inline edit */
     .dm-edit-textarea {
-      width: 100%; resize: none; overflow-y: hidden; line-height: 1.55;
-      font-size: .875rem; font-family: var(--font); padding: .375rem .5rem;
-      border: 1px solid var(--accent, #4f6ef7); border-radius: 6px;
-      background: rgba(255,255,255,.15); color: inherit; outline: none;
-      box-shadow: 0 0 0 3px var(--accent-subtle, rgba(79,110,247,.12));
-      min-height: 2.4rem;
+      width:100%;resize:none;overflow-y:hidden;line-height:1.55;
+      font-size:.875rem;font-family:var(--font);padding:.375rem .5rem;
+      border:1px solid var(--accent,#4f6ef7);border-radius:6px;
+      background:rgba(255,255,255,.15);color:inherit;outline:none;
+      box-shadow:0 0 0 3px var(--accent-subtle,rgba(79,110,247,.12));min-height:2.4rem;
     }
-    .dm-edit-actions {
-      display: flex; gap: .375rem; margin-top: .375rem; justify-content: flex-end;
-    }
-    .dm-edit-btn {
-      font-size: .6875rem; font-weight: 600; padding: 3px 11px;
-      border-radius: 5px; border: none; cursor: pointer;
-      font-family: var(--font); transition: opacity .1s;
-    }
-    .dm-edit-btn--save   { background: #fff; color: var(--accent, #4f6ef7); }
-    .dm-edit-btn--cancel { background: rgba(255,255,255,.2); color: inherit; opacity: .75; }
-    .dm-edit-btn--save-light   { background: var(--accent, #4f6ef7); color: #fff; }
-    .dm-edit-btn--cancel-light {
-      background: var(--bg-subtle, #f3f4f6); color: var(--text-2, #3a3a40);
-      border: 1px solid var(--border, #e5e7eb);
-    }
-    .dm-edited-label {
-      font-size: .5625rem; opacity: .6; font-style: italic;
-      margin-left: 4px; line-height: 1; white-space: nowrap;
-    }
+    .dm-edit-actions { display:flex;gap:.375rem;margin-top:.375rem;justify-content:flex-end; }
+    .dm-edit-btn { font-size:.6875rem;font-weight:600;padding:3px 11px;border-radius:5px;border:none;cursor:pointer;font-family:var(--font); }
+    .dm-edit-btn--save { background:#fff;color:var(--accent,#4f6ef7); }
+    .dm-edit-btn--cancel { background:rgba(255,255,255,.2);color:inherit;opacity:.75; }
+    .dm-edit-btn--save-light { background:var(--accent,#4f6ef7);color:#fff; }
+    .dm-edit-btn--cancel-light { background:var(--bg-subtle,#f3f4f6);color:var(--text-2,#3a3a40);border:1px solid var(--border,#e5e7eb); }
+    .dm-edited-label { font-size:.5625rem;opacity:.6;font-style:italic;margin-left:4px;line-height:1;white-space:nowrap; }
+
+    /* History modal */
     .dm-history-overlay {
-      position: fixed; inset: 0; background: rgba(0,0,0,.5);
-      display: flex; align-items: center; justify-content: center;
-      z-index: 10000; padding: 1rem; animation: dmFadeIn .15s ease;
+      position:fixed;inset:0;background:rgba(0,0,0,.5);
+      display:flex;align-items:center;justify-content:center;
+      z-index:10000;padding:1rem;animation:dmFadeIn .15s ease;
     }
     .dm-history-modal {
-      background: var(--bg-base, #fff); border-radius: 12px;
-      width: min(460px, 96vw); max-height: 80vh;
-      display: flex; flex-direction: column;
-      box-shadow: 0 20px 60px rgba(0,0,0,.22);
-      border: 1px solid var(--border, #e5e7eb);
+      background:var(--bg-base,#fff);border-radius:12px;
+      width:min(460px,96vw);max-height:80vh;display:flex;flex-direction:column;
+      box-shadow:0 20px 60px rgba(0,0,0,.22);border:1px solid var(--border,#e5e7eb);
     }
     .dm-history-header {
-      display: flex; align-items: center; justify-content: space-between;
-      padding: .875rem 1.125rem;
-      border-bottom: 1px solid var(--border, #e5e7eb); flex-shrink: 0;
+      display:flex;align-items:center;justify-content:space-between;
+      padding:.875rem 1.125rem;border-bottom:1px solid var(--border,#e5e7eb);flex-shrink:0;
     }
-    .dm-history-body {
-      overflow-y: auto; padding: .75rem 1rem; flex: 1;
-      display: flex; flex-direction: column; gap: .625rem;
-    }
+    .dm-history-body { overflow-y:auto;padding:.75rem 1rem;flex:1;display:flex;flex-direction:column;gap:.625rem; }
     .dm-history-entry {
-      padding: .625rem .875rem; border-radius: 8px;
-      border: 1px solid var(--border, #e5e7eb);
-      background: var(--bg-subtle, #f9fafb);
+      padding:.625rem .875rem;border-radius:8px;
+      border:1px solid var(--border,#e5e7eb);background:var(--bg-subtle,#f9fafb);
     }
-    .dm-history-entry p {
-      font-size: .875rem; line-height: 1.55; color: var(--text-1, #0d0d0f);
-      white-space: pre-wrap; word-break: break-word; margin: 0;
-    }
-    .dm-history-entry time {
-      display: block; font-size: .625rem;
-      color: var(--text-4, #9ca3af); margin-top: .25rem;
-    }
-    .dm-history-current {
-      background: var(--accent-subtle, rgba(79,110,247,.08));
-      border-color: var(--accent-border, rgba(79,110,247,.25));
-    }
-    .dm-history-current p { font-weight: 500; }
+    .dm-history-entry p { font-size:.875rem;line-height:1.55;color:var(--text-1,#0d0d0f);white-space:pre-wrap;word-break:break-word;margin:0; }
+    .dm-history-entry time { display:block;font-size:.625rem;color:var(--text-4,#9ca3af);margin-top:.25rem; }
+    .dm-history-current { background:var(--accent-subtle,rgba(79,110,247,.08));border-color:var(--accent-border,rgba(79,110,247,.25)); }
+    .dm-history-current p { font-weight:500; }
   `;
   document.head.appendChild(style);
 }
@@ -961,39 +871,29 @@
   if (_openMenuId === menuId) { _closeOpenMenu(); return; }
   _closeOpenMenu();
 
-  const wrapper = document.getElementById(wrapperId);
-  if (!wrapper) return;
-
-  const bubbleInner = document.getElementById(`${wrapperId}-inner`);
+  const bubbleInner = document.querySelector(`#${wrapperId} .dm-bubble-inner`);
   if (!bubbleInner) return;
 
   const menu     = document.createElement('div');
   menu.className = 'dm-action-menu';
   menu.id        = menuId;
-  // Position above the bubble, aligned to the correct side
   menu.style.cssText = alignRight
-    ? 'right:0;bottom:calc(100% + 4px);'
-    : 'left:0;bottom:calc(100% + 4px);';
+    ? 'right:0;bottom:calc(100% + 6px);'
+    : 'left:0;bottom:calc(100% + 6px);';
 
   if (canEdit) {
-    const editItem       = document.createElement('button');
-    editItem.className   = 'dm-action-menu-item';
-    editItem.innerHTML   = `${_iconPencil(13)} Edit message`;
-    editItem.onclick     = () => {
-      _closeOpenMenu();
-      _activateInlineEdit(studentUid, messageId, currentText, isDarkBubble, wrapperId);
-    };
+    const editItem     = document.createElement('button');
+    editItem.className = 'dm-action-menu-item';
+    editItem.innerHTML = `${_iconPencil(13)} Edit message`;
+    editItem.onclick   = () => { _closeOpenMenu(); _activateInlineEdit(studentUid, messageId, currentText, isDarkBubble, wrapperId); };
     menu.appendChild(editItem);
   }
 
   if (canHistory) {
-    const histItem       = document.createElement('button');
-    histItem.className   = 'dm-action-menu-item';
-    histItem.innerHTML   = `${_iconHistory(13)} Edit history`;
-    histItem.onclick     = () => {
-      _closeOpenMenu();
-      _showEditHistory(studentUid, messageId, currentText);
-    };
+    const histItem     = document.createElement('button');
+    histItem.className = 'dm-action-menu-item';
+    histItem.innerHTML = `${_iconHistory(13)} Edit history`;
+    histItem.onclick   = () => { _closeOpenMenu(); _showEditHistory(studentUid, messageId, currentText); };
     menu.appendChild(histItem);
   }
 
@@ -1027,59 +927,74 @@
         .toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
     : 'Just now';
 
-  const bubbleStyle = isMe
-    ? `background:var(--accent,#4f6ef7);color:#fff;border-radius:14px 14px 3px 14px;margin-left:auto;`
-    : `background:var(--bg-base,#fff);color:var(--text-1,#0d0d0f);
-       border:1px solid var(--border,#e5e7eb);border-radius:14px 14px 14px 3px;margin-right:auto;`;
-
   const editedLabel = msg.editedAt
-    ? `<span class="dm-edited-label">edited</span>` : '';
+    ? `<span style="font-size:.5625rem;opacity:.6;font-style:italic;margin-right:3px;line-height:1;white-space:nowrap;">edited</span>`
+    : '';
 
   const safeUid   = _esc(myUid);
   const safeMsgId = _esc(msgId);
 
-  // Edit button lives INSIDE the footer, next to the timestamp
   const editBtn = canEdit
-    ? `<button class="dm-edit-trigger${isMe ? '' : ' dm-edit-trigger--theirs'}"
-               title="Edit message"
-               onclick="event.stopPropagation();DM._toggleActionMenu(
-                 '${wrapId}','${safeUid}','${safeMsgId}',
-                 document.getElementById('${wrapId}').querySelector('.dm-bubble-text').textContent,
-                 true,false,${isMe},${isMe})">
-         ${_iconPencil(11)}
+    ? `<button title="Edit"
+               onclick="event.stopPropagation();DM._toggleActionMenu('${wrapId}','${safeUid}','${safeMsgId}',document.getElementById('${wrapId}').querySelector('.dm-bubble-text').textContent,true,false,${isMe},${isMe})"
+               style="background:none;border:none;cursor:pointer;padding:0 0 0 4px;
+                      display:inline-flex;align-items:center;opacity:0;transition:opacity .15s;
+                      color:${isMe ? 'rgba(255,255,255,.7)' : 'var(--text-4,#9ca3af)'};
+                      flex-shrink:0;line-height:1;vertical-align:middle;"
+               class="dm-edit-trigger-btn">
+         ${_iconPencil(10)}
        </button>`
     : '';
 
-  const footer = isMe
-    ? `<div class="dm-msg-footer">
-         ${editedLabel}
-         ${editBtn}
-         <span class="dm-time">${time}</span>
-         ${_tickIcon(msg.status || 'sent')}
-       </div>`
-    : `<div class="dm-msg-footer" style="justify-content:flex-start;">
-         ${editedLabel}
-         ${editBtn}
-         <span class="dm-time">${time}</span>
-       </div>`;
-
-  return `
-    <div id="${wrapId}"
-         style="display:flex;flex-direction:column;max-width:78%;margin-bottom:.875rem;
-                ${isMe ? 'align-items:flex-end;margin-left:auto;' : 'align-items:flex-start;'}">
-      <span class="dm-bubble-name--${isMe ? 'mine' : 'theirs'}">
-        ${isMe ? 'You' : _esc(msg.senderName || 'Master Timothy')}
-      </span>
-      <div class="dm-bubble-inner" id="${wrapId}-inner"
-           style="position:relative;padding:.625rem .875rem .5rem;${bubbleStyle}
-                  word-break:break-word;max-width:100%;">
-        <p class="dm-bubble-text"
-           style="font-size:.875rem;line-height:1.55;white-space:pre-wrap;margin:0;">
-          ${_esc(msg.text)}
-        </p>
-        ${footer}
-      </div>
-    </div>`;
+  if (isMe) {
+    return `
+      <div id="${wrapId}" style="display:flex;flex-direction:column;align-items:flex-end;
+                                  margin-bottom:.75rem;padding-left:15%;">
+        <div style="display:inline-flex;flex-direction:column;align-items:flex-end;max-width:100%;">
+          <div class="dm-bubble-inner"
+               style="background:var(--accent,#4f6ef7);color:#fff;
+                      border-radius:14px 14px 3px 14px;
+                      padding:.5rem .75rem .375rem;word-break:break-word;
+                      display:inline-block;max-width:100%;">
+            <p class="dm-bubble-text"
+               style="font-size:.9375rem;line-height:1.5;white-space:pre-wrap;margin:0;">
+              ${_esc(msg.text)}
+            </p>
+            <div style="display:flex;align-items:center;justify-content:flex-end;
+                        gap:3px;margin-top:2px;">
+              ${editedLabel}
+              ${editBtn}
+              <span style="font-size:.625rem;opacity:.7;line-height:1;white-space:nowrap;">${time}</span>
+              ${_tickIcon(msg.status || 'sent')}
+            </div>
+          </div>
+        </div>
+      </div>`;
+  } else {
+    return `
+      <div id="${wrapId}" style="display:flex;flex-direction:column;align-items:flex-start;
+                                  margin-bottom:.75rem;padding-right:15%;">
+        <span style="font-size:.6875rem;font-weight:600;color:var(--text-3,#6b7280);
+                     margin-bottom:2px;padding-left:2px;">
+          ${_esc(msg.senderName || 'Master Timothy')}
+        </span>
+        <div class="dm-bubble-inner"
+             style="background:var(--bg-base,#fff);color:var(--text-1,#0d0d0f);
+                    border:1px solid var(--border,#e5e7eb);
+                    border-radius:14px 14px 14px 3px;
+                    padding:.5rem .75rem .375rem;word-break:break-word;
+                    display:inline-block;max-width:100%;">
+          <p class="dm-bubble-text"
+             style="font-size:.9375rem;line-height:1.5;white-space:pre-wrap;margin:0;">
+            ${_esc(msg.text)}
+          </p>
+          <div style="display:flex;align-items:center;justify-content:flex-start;
+                      gap:3px;margin-top:2px;">
+            <span style="font-size:.625rem;opacity:.55;line-height:1;white-space:nowrap;">${time}</span>
+          </div>
+        </div>
+      </div>`;
+  }
 }
 
   function _buildTeacherBubble(msg) {
@@ -1095,59 +1010,76 @@
         .toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
     : 'Just now';
 
-  const bubbleStyle = isTeacher
-    ? `background:var(--accent,#4f6ef7);color:#fff;border-radius:14px 14px 3px 14px;margin-left:auto;`
-    : `background:var(--bg-base,#fff);color:var(--text-1,#0d0d0f);
-       border:1px solid var(--border,#e5e7eb);border-radius:14px 14px 14px 3px;margin-right:auto;`;
-
   const editedLabel = msg.editedAt
-    ? `<span class="dm-edited-label">edited</span>` : '';
+    ? `<span style="font-size:.5625rem;opacity:.6;font-style:italic;margin-right:3px;line-height:1;white-space:nowrap;">edited</span>`
+    : '';
 
   const safeStudentUid = _esc(studentUid);
   const safeMsgId      = _esc(msgId);
 
-  // Edit/history button lives INSIDE the footer
   const editBtn = (canEdit || canHistory)
-    ? `<button class="dm-edit-trigger${isTeacher ? '' : ' dm-edit-trigger--theirs'}"
-               title="Message options"
-               onclick="event.stopPropagation();DM._toggleActionMenu(
-                 '${wrapId}','${safeStudentUid}','${safeMsgId}',
-                 document.getElementById('${wrapId}').querySelector('.dm-bubble-text').textContent,
-                 ${canEdit},${canHistory},${isTeacher},${isTeacher})">
-         ${_iconPencil(11)}
+    ? `<button title="Options"
+               onclick="event.stopPropagation();DM._toggleActionMenu('${wrapId}','${safeStudentUid}','${safeMsgId}',document.getElementById('${wrapId}').querySelector('.dm-bubble-text').textContent,${canEdit},${canHistory},${isTeacher},${isTeacher})"
+               style="background:none;border:none;cursor:pointer;padding:0 0 0 4px;
+                      display:inline-flex;align-items:center;opacity:0;transition:opacity .15s;
+                      color:${isTeacher ? 'rgba(255,255,255,.7)' : 'var(--text-4,#9ca3af)'};
+                      flex-shrink:0;line-height:1;vertical-align:middle;"
+               class="dm-edit-trigger-btn">
+         ${_iconPencil(10)}
        </button>`
     : '';
 
-  const footer = isTeacher
-    ? `<div class="dm-msg-footer">
-         ${editedLabel}
-         ${editBtn}
-         <span class="dm-time">${time}</span>
-         ${_tickIcon(msg.status || 'sent')}
-       </div>`
-    : `<div class="dm-msg-footer" style="justify-content:flex-start;">
-         ${editedLabel}
-         ${editBtn}
-         <span class="dm-time">${time}</span>
-       </div>`;
-
-  return `
-    <div id="${wrapId}"
-         style="display:flex;flex-direction:column;max-width:78%;margin-bottom:.875rem;
-                ${isTeacher ? 'align-items:flex-end;margin-left:auto;' : 'align-items:flex-start;'}">
-      <span class="dm-bubble-name--${isTeacher ? 'mine' : 'theirs'}">
-        ${isTeacher ? 'Master Timothy' : _esc(msg.senderName || 'Student')}
-      </span>
-      <div class="dm-bubble-inner" id="${wrapId}-inner"
-           style="position:relative;padding:.625rem .875rem .5rem;${bubbleStyle}
-                  word-break:break-word;max-width:100%;">
-        <p class="dm-bubble-text"
-           style="font-size:.875rem;line-height:1.55;white-space:pre-wrap;margin:0;">
-          ${_esc(msg.text)}
-        </p>
-        ${footer}
-      </div>
-    </div>`;
+  if (isTeacher) {
+    return `
+      <div id="${wrapId}" style="display:flex;flex-direction:column;align-items:flex-end;
+                                  margin-bottom:.75rem;padding-left:15%;">
+        <span style="font-size:.6875rem;font-weight:700;color:var(--accent-text,#2d49d6);
+                     margin-bottom:2px;padding-right:2px;">
+          Master Timothy
+        </span>
+        <div class="dm-bubble-inner"
+             style="background:var(--accent,#4f6ef7);color:#fff;
+                    border-radius:14px 14px 3px 14px;
+                    padding:.5rem .75rem .375rem;word-break:break-word;
+                    display:inline-block;max-width:100%;">
+          <p class="dm-bubble-text"
+             style="font-size:.9375rem;line-height:1.5;white-space:pre-wrap;margin:0;">
+            ${_esc(msg.text)}
+          </p>
+          <div style="display:flex;align-items:center;justify-content:flex-end;
+                      gap:3px;margin-top:2px;">
+            ${editedLabel}
+            ${editBtn}
+            <span style="font-size:.625rem;opacity:.7;line-height:1;white-space:nowrap;">${time}</span>
+            ${_tickIcon(msg.status || 'sent')}
+          </div>
+        </div>
+      </div>`;
+  } else {
+    return `
+      <div id="${wrapId}" style="display:flex;flex-direction:column;align-items:flex-start;
+                                  margin-bottom:.75rem;padding-right:15%;">
+        <span style="font-size:.6875rem;font-weight:600;color:var(--text-3,#6b7280);
+                     margin-bottom:2px;padding-left:2px;">
+          ${_esc(msg.senderName || 'Student')}
+        </span>
+        <div class="dm-bubble-inner"
+             style="background:var(--bg-base,#fff);color:var(--text-1,#0d0d0f);
+                    border:1px solid var(--border,#e5e7eb);
+                    border-radius:14px 14px 14px 3px;
+                    padding:.5rem .75rem .375rem;word-break:break-word;
+                    display:inline-block;max-width:100%;">
+          <p class="dm-bubble-text"
+             style="font-size:.9375rem;line-height:1.5;white-space:pre-wrap;margin:0;">
+            ${_esc(msg.text)}
+          </p>
+          <div style="display:flex;align-items:center;justify-content:flex-start;
+                      gap:3px;margin-top:2px;">
+            <span style="font-size:.625rem;opacity:.55;line-height:1;white-space:nowrap;">${time}</span>
+          </div>
+        </div>
+      </div>`;
+  }
 }
 
   /* ────────────────────────────────────────────────────────────
@@ -1426,9 +1358,7 @@
       if (!list) { AppState.cancelListener('dmTeacherThreads'); return; }
 
       if (snap.empty) {
-        list.innerHTML = `
-          <p style="font-size:.8125rem;color:var(--text-4,#9ca3af);
-                    text-align:center;padding:2rem 1rem;">No messages yet.</p>`;
+        list.innerHTML = `<p style="font-size:.8125rem;color:var(--text-4,#9ca3af);text-align:center;padding:2rem 1rem;">No messages yet.</p>`;
         return;
       }
 
@@ -1445,17 +1375,10 @@
         const unread   = item.teacherUnread || 0;
         const isActive = _activeStudentUid === item.id;
         const isOnline = _isRecentlyActive(item.studentLastSeen);
-
-        const timeStr = item.lastAt
+        const timeStr  = item.lastAt
           ? new Date(item.lastAt.toDate ? item.lastAt.toDate() : item.lastAt)
               .toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
           : '';
-
-        const presenceLabel = isOnline
-          ? `<div class="dm-thread-presence is-online">&#x25cf; Online</div>`
-          : item.studentLastSeen
-            ? `<div class="dm-thread-presence">${_esc(_formatLastSeen(item.studentLastSeen))}</div>`
-            : `<div class="dm-thread-presence">Offline</div>`;
 
         return `
           <div class="dm-thread-item${isActive ? ' is-active' : ''}"
@@ -1463,27 +1386,29 @@
                data-name="${_esc(item.studentName || '')}"
                data-class="${_esc(item.studentClass || '')}"
                onclick="DM._openConversationFromEl(this)">
-            <div class="dm-thread-avatar">
-              <div class="dm-thread-avatar-inner${isOnline ? ' is-online' : ''}">
+            <div class="dm-thread-av">
+              <div class="dm-thread-av-circle${isOnline ? ' online' : ''}">
                 ${_esc((item.studentName || '?').charAt(0).toUpperCase())}
               </div>
-              ${isOnline ? `<span class="dm-thread-online-dot"></span>` : ''}
+              ${isOnline ? `<span class="dm-thread-av-dot"></span>` : ''}
             </div>
-            <div class="dm-thread-body">
-              <div class="dm-thread-row1">
+            <div class="dm-thread-bd">
+              <div class="dm-thread-r1">
                 <span class="dm-thread-name">${_esc(item.studentName || 'Unknown')}</span>
                 <span class="dm-thread-date">${_esc(timeStr)}</span>
               </div>
-              ${presenceLabel}
-              <div class="dm-thread-row2">
-                <span class="dm-thread-preview">
-                  ${_esc(item.lastMessage || 'No messages yet')}
-                </span>
-                ${unread > 0
-                  ? `<span class="dm-thread-unread">${unread > 9 ? '9+' : unread}</span>`
-                  : ''}
+              <div class="dm-thread-presence${isOnline ? ' online' : ''}">
+                ${isOnline
+                  ? '&#x25cf; Online'
+                  : item.studentLastSeen
+                    ? _esc(_formatLastSeen(item.studentLastSeen))
+                    : 'Offline'}
               </div>
-              <span class="dm-thread-class-badge">${_esc(item.studentClass || '—')}</span>
+              <div class="dm-thread-r2">
+                <span class="dm-thread-preview">${_esc(item.lastMessage || 'No messages yet')}</span>
+                ${unread > 0 ? `<span class="dm-thread-badge">${unread > 9 ? '9+' : unread}</span>` : ''}
+              </div>
+              <span class="dm-thread-class">${_esc(item.studentClass || '—')}</span>
             </div>
           </div>`;
       }).join('');
