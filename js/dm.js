@@ -833,16 +833,17 @@
     const editedEl = wrapper.querySelector('.dm-edited-label-wrap');
     if (!textEl) return;
 
+    const inner = wrapper.querySelector('.dm-bubble-inner');
+    if (!inner) return;
+
+    // Prevent double-opening
+    if (inner.querySelector(`[id^="dmEditUI-"]`)) return;
+
     const saveClass   = isDarkBubble ? 'dm-edit-btn dm-edit-btn--save'   : 'dm-edit-btn dm-edit-btn--save-light';
     const cancelClass = isDarkBubble ? 'dm-edit-btn dm-edit-btn--cancel' : 'dm-edit-btn dm-edit-btn--cancel-light';
 
-    // Hide original content immediately so there's no flicker
-    if (textEl)   textEl.style.display   = 'none';
-    if (footerEl) footerEl.style.display = 'none';
-    if (editedEl) editedEl.style.display = 'none';
-
-    const editUI = document.createElement('div');
-    editUI.id = `dmEditUI-${messageId}`;
+    const editUI      = document.createElement('div');
+    editUI.id         = `dmEditUI-${messageId}`;
 
     const cancelBtn       = document.createElement('button');
     cancelBtn.className   = cancelClass;
@@ -854,111 +855,103 @@
       if (editedEl) editedEl.style.display = '';
     };
 
-    const inner = wrapper.querySelector('.dm-bubble-inner');
+    // Hide original content
+    if (textEl)   textEl.style.display   = 'none';
+    if (footerEl) footerEl.style.display = 'none';
+    if (editedEl) editedEl.style.display = 'none';
 
-    // For students only: check edit count before rendering the editor
-    if (!isTeacher) {
-      _msgHistoryRef(studentUid, messageId).get().then(snap => {
-        const editCount = snap.size;
+    // Show a loading placeholder immediately so there's no blank
+    const placeholder = document.createElement('p');
+    placeholder.style.cssText = 'font-size:.75rem;opacity:.5;padding:.25rem 0;margin:0;';
+    placeholder.textContent   = 'Loading…';
+    editUI.appendChild(placeholder);
+    inner.appendChild(editUI);
 
-        if (editCount >= 2) {
-          // Limit reached — show a notice instead of the editor
-          const notice = document.createElement('div');
-          notice.style.cssText = 'font-size:.75rem;line-height:1.5;padding:.25rem 0;';
+    const _buildEditor = () => {
+      // Clear placeholder
+      editUI.innerHTML = '';
 
-          const msg = document.createElement('p');
-          msg.style.cssText = `
-            margin:0 0 .375rem;
-            opacity:.85;
-            color:${isDarkBubble ? 'rgba(255,255,255,.9)' : 'var(--danger,#e03b3b)'};
-          `;
-          msg.textContent = 'Messages can only be edited twice.';
+      const ta     = document.createElement('textarea');
+      ta.className = 'dm-edit-textarea';
+      ta.value     = currentText;
+      ta.rows      = 1;
 
-          const actions = document.createElement('div');
-          actions.className = 'dm-edit-actions';
-          actions.appendChild(cancelBtn);
+      const actions     = document.createElement('div');
+      actions.className = 'dm-edit-actions';
 
-          notice.appendChild(msg);
-          notice.appendChild(actions);
-          editUI.appendChild(notice);
-          if (inner) inner.appendChild(editUI);
-          return;
+      const saveBtn       = document.createElement('button');
+      saveBtn.className   = saveClass;
+      saveBtn.textContent = 'Save';
+      saveBtn.onclick     = async () => {
+        const newText = ta.value.trim();
+        if (!newText) { UI.toast('Message cannot be empty.', 'warning'); return; }
+        if (newText === currentText) { cancelBtn.onclick(); return; }
+        saveBtn.disabled    = true;
+        saveBtn.textContent = 'Saving…';
+        try {
+          await _saveEdit(studentUid, messageId, currentText, newText);
+          if (textEl) textEl.textContent = newText;
+          cancelBtn.onclick();
+        } catch (err) {
+          console.error('[dm] inline edit save error:', err);
+          UI.toast('Could not save edit. Please try again.', 'error');
+          saveBtn.disabled    = false;
+          saveBtn.textContent = 'Save';
         }
+      };
 
-        // Under the limit — render the normal editor
-        _renderEditForm({
-          editUI, cancelBtn, saveClass, cancelClass,
-          studentUid, messageId, currentText,
-          isDarkBubble, inner, textEl, footerEl, editedEl,
-        });
-      }).catch(err => {
-        console.error('[dm] Could not check edit count:', err);
-        // On error, cancel gracefully
-        cancelBtn.onclick();
-      });
+      actions.appendChild(cancelBtn);
+      actions.appendChild(saveBtn);
+      editUI.appendChild(ta);
+      editUI.appendChild(actions);
 
-      if (inner) inner.appendChild(editUI);
-      return;
-    }
-
-    // Teacher side — no restriction, render editor directly
-    _renderEditForm({
-      editUI, cancelBtn, saveClass, cancelClass,
-      studentUid, messageId, currentText,
-      isDarkBubble, inner, textEl, footerEl, editedEl,
-    });
-    if (inner) inner.appendChild(editUI);
-  }
-  
-  function _renderEditForm({ editUI, cancelBtn, saveClass, studentUid, messageId,
-                           currentText, isDarkBubble, inner, textEl, footerEl, editedEl }) {
-
-    const ta = document.createElement('textarea');
-    ta.className = 'dm-edit-textarea';
-    ta.value     = currentText;
-    ta.rows      = 1;
-
-    const actions     = document.createElement('div');
-    actions.className = 'dm-edit-actions';
-
-    const saveBtn       = document.createElement('button');
-    saveBtn.className   = saveClass;
-    saveBtn.textContent = 'Save';
-    saveBtn.onclick     = async () => {
-      const newText = ta.value.trim();
-      if (!newText) { UI.toast('Message cannot be empty.', 'warning'); return; }
-      if (newText === currentText) { cancelBtn.onclick(); return; }
-      saveBtn.disabled    = true;
-      saveBtn.textContent = 'Saving…';
-      try {
-        await _saveEdit(studentUid, messageId, currentText, newText);
-        if (textEl) textEl.textContent = newText;
-        cancelBtn.onclick();
-      } catch (err) {
-        console.error('[dm] inline edit save error:', err);
-        UI.toast('Could not save edit. Please try again.', 'error');
-        saveBtn.disabled    = false;
-        saveBtn.textContent = 'Save';
-      }
-    };
-
-    actions.appendChild(cancelBtn);
-    actions.appendChild(saveBtn);
-    editUI.appendChild(ta);
-    editUI.appendChild(actions);
-
-    ta.focus();
-    ta.setSelectionRange(ta.value.length, ta.value.length);
-    ta.style.height = 'auto';
-    ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
-    ta.addEventListener('input', () => {
+      ta.focus();
+      ta.setSelectionRange(ta.value.length, ta.value.length);
       ta.style.height = 'auto';
       ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
-    });
-    ta.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveBtn.onclick(); }
-      if (e.key === 'Escape') cancelBtn.onclick();
-    });
+      ta.addEventListener('input', () => {
+        ta.style.height = 'auto';
+        ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+      });
+      ta.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveBtn.onclick(); }
+        if (e.key === 'Escape') cancelBtn.onclick();
+      });
+    };
+
+    const _buildLimitNotice = () => {
+      editUI.innerHTML = '';
+      const msg         = document.createElement('p');
+      msg.style.cssText = `font-size:.75rem;line-height:1.5;margin:0 0 .375rem;opacity:.85;
+                            color:${isDarkBubble ? 'rgba(255,255,255,.9)' : 'var(--danger,#e03b3b)'};`;
+      msg.textContent   = 'Messages can only be edited twice.';
+
+      const actions     = document.createElement('div');
+      actions.className = 'dm-edit-actions';
+      actions.appendChild(cancelBtn);
+
+      editUI.appendChild(msg);
+      editUI.appendChild(actions);
+    };
+
+    if (isTeacher) {
+      // No restriction for teacher — build editor immediately
+      _buildEditor();
+    } else {
+      // Check edit count first
+      _msgHistoryRef(studentUid, messageId).get()
+        .then(snap => {
+          if (snap.size >= 2) {
+            _buildLimitNotice();
+          } else {
+            _buildEditor();
+          }
+        })
+        .catch(err => {
+          console.error('[dm] Could not check edit count:', err);
+          cancelBtn.onclick();
+        });
+    }
   }
 
   let _openMenuId = null;
