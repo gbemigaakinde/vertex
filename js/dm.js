@@ -963,7 +963,7 @@
     }, 0);
   }
 
-  function _buildStudentBubble(msg, myUid) {
+  function _buildStudentBubble(msg, myUid, showLabel) {
     const isMe    = msg.senderId === myUid;
     const msgId   = msg.id || '';
     const wrapId  = `dmWrap-${_escAttr(msgId)}`;
@@ -995,11 +995,11 @@
 
     if (isMe) {
       return `
-        <div id="${wrapId}" class="dm-msg-out">
-          <span style="font-size:.6875rem;font-weight:600;color:var(--text-3,#6b7280);
+        <div id="${wrapId}" class="dm-msg-out" style="margin-bottom:${showLabel ? '.75rem' : '.25rem'}">
+          ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:var(--text-3,#6b7280);
                        margin-bottom:2px;padding-right:2px;display:block;text-align:right;">
             You
-          </span>
+          </span>` : ''}
           <div class="dm-bubble-wrap">
             <div class="dm-bubble-inner"
                  style="background:var(--accent,#4f6ef7);color:#fff;
@@ -1017,11 +1017,11 @@
         </div>`;
     } else {
       return `
-        <div id="${wrapId}" class="dm-msg-in">
-          <span style="font-size:.6875rem;font-weight:600;color:var(--accent-text,#2d49d6);
+        <div id="${wrapId}" class="dm-msg-in" style="margin-bottom:${showLabel ? '.75rem' : '.25rem'}">
+          ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:var(--accent-text,#2d49d6);
                        margin-bottom:2px;padding-left:2px;display:block;">
             ${_esc(msg.senderName || 'Master Timothy')}
-          </span>
+          </span>` : ''}
           <div class="dm-bubble-wrap">
             <div class="dm-bubble-inner"
                  style="background:var(--bg-base,#fff);color:var(--text-1,#0d0d0f);
@@ -1038,7 +1038,7 @@
     }
   }
 
-  function _buildTeacherBubble(msg) {
+  function _buildTeacherBubble(msg, showLabel) {
     const isTeacher  = msg.role === 'teacher';
     const msgId      = msg.id || '';
     const wrapId     = `dmWrap-${_escAttr(msgId)}`;
@@ -1072,11 +1072,11 @@
 
     if (isTeacher) {
       return `
-        <div id="${wrapId}" class="dm-msg-out">
-          <span style="font-size:.6875rem;font-weight:600;color:var(--text-3,#6b7280);
+        <div id="${wrapId}" class="dm-msg-out" style="margin-bottom:${showLabel ? '.75rem' : '.25rem'}">
+          ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:var(--text-3,#6b7280);
                        margin-bottom:2px;padding-right:2px;display:block;text-align:right;">
             You
-          </span>
+          </span>` : ''}
           <div class="dm-bubble-wrap">
             <div class="dm-bubble-inner"
                  style="background:var(--accent,#4f6ef7);color:#fff;
@@ -1094,11 +1094,11 @@
         </div>`;
     } else {
       return `
-        <div id="${wrapId}" class="dm-msg-in">
-          <span style="font-size:.6875rem;font-weight:600;color:var(--accent-text,#2d49d6);
+        <div id="${wrapId}" class="dm-msg-in" style="margin-bottom:${showLabel ? '.75rem' : '.25rem'}">
+          ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:var(--accent-text,#2d49d6);
                        margin-bottom:2px;padding-left:2px;display:block;">
             ${_esc(msg.senderName || 'Student')}
-          </span>
+          </span>` : ''}
           <div class="dm-bubble-wrap">
             <div class="dm-bubble-inner"
                  style="background:var(--bg-base,#fff);color:var(--text-1,#0d0d0f);
@@ -1243,12 +1243,16 @@
   }
 
   function _renderMessagesWithDateSeps(msgs, myUid, viewerRole) {
-    let lastDayKey = null;
-    const parts    = [];
+    let lastDayKey    = null;
+    let lastSenderId  = null;
+    const parts       = [];
+
     for (const msg of msgs) {
       const ts   = msg.timestamp;
       const date = ts ? (ts.toDate ? ts.toDate() : new Date(ts)) : null;
       const dk   = date ? _dayKey(date) : null;
+
+      // If the day changes, inject a date separator and reset grouping
       if (dk && dk !== lastDayKey) {
         parts.push(`
           <div class="dm-date-sep">
@@ -1256,11 +1260,17 @@
             <span class="dm-date-sep__label">${_esc(_dateLabelFor(date))}</span>
             <div class="dm-date-sep__line"></div>
           </div>`);
-        lastDayKey = dk;
+        lastDayKey   = dk;
+        lastSenderId = null; // reset grouping on new day
       }
+
+      const senderId  = msg.senderId || msg.role || null;
+      const showLabel = senderId !== lastSenderId;
+      lastSenderId    = senderId;
+
       parts.push(viewerRole === 'student'
-        ? _buildStudentBubble(msg, myUid)
-        : _buildTeacherBubble(msg));
+        ? _buildStudentBubble(msg, myUid, showLabel)
+        : _buildTeacherBubble(msg, showLabel));
     }
     return parts.join('');
   }
