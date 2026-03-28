@@ -886,6 +886,7 @@ function _watchTypingIndicator(threadUid, watchField, elementId, displayName) {
 
     const isTyping = !!(snap.exists && snap.data() && snap.data()[watchField]);
     bar.style.display = isTyping ? 'flex' : 'none';
+    bar.style.height  = isTyping ? '22px' : '0';
   }, err => console.warn('[dm] _watchTypingIndicator error:', err));
 
   AppState.registerListener(listenerKey, unsub);
@@ -1321,7 +1322,7 @@ function _cancelTypingListeners(threadUid) {
 
         <!-- Typing indicator bar (student sees teacher typing) -->
         <div id="dmStudentTypingBar"
-          style="height:22px;padding:0 .25rem;display:none;align-items:center;margin-bottom:.25rem;">
+              style="height:0;padding:0 .25rem;display:none;align-items:center;margin-bottom:.25rem;">
           <span class="dm-typing-dots" aria-hidden="true">
             <span></span><span></span><span></span>
           </span>
