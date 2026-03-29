@@ -2436,19 +2436,21 @@ function _renderExistingTasksList(docs) {
     const students = getStudentsForDocId(docId);
 
     function fmtDate(str) {
-      if (!str) return '—';
+      if (!str) return '-';
       const p = str.split('-');
       return new Date(+p[0], +p[1]-1, +p[2]).toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
     }
     function fmtDateShort(str) {
-      if (!str) return '—';
+      if (!str) return '-';
       const p = str.split('-');
       return new Date(+p[0], +p[1]-1, +p[2]).toLocaleDateString('en-GB', { day:'numeric', month:'short' });
     }
     function fmtDuration(ms) {
       if (!ms) return 'Default (2 hrs)';
       const h = Math.floor(ms/3600000), m = Math.floor((ms%3600000)/60000);
-      if (h===0) return `${m} min`; if (m===0) return `${h} hr`; return `${h} hr ${m} min`;
+      if (h===0) return m + ' min';
+      if (m===0) return h + ' hr';
+      return h + ' hr ' + m + ' min';
     }
     function scopeText(id) {
       if (id === 'global' || id === 'weekly') return 'All Students';
@@ -2479,9 +2481,9 @@ function _renderExistingTasksList(docs) {
       return { ...s, done, missed, total: allDates.length, pct, comp };
     }).sort((a, b) => b.pct - a.pct || a.name.localeCompare(b.name));
 
-    const cohortDone    = studentStats.reduce((n, s) => n + s.done, 0);
+    const cohortDone     = studentStats.reduce((n, s) => n + s.done, 0);
     const cohortPossible = studentStats.length * allDates.length;
-    const cohortPct     = cohortPossible > 0 ? Math.round((cohortDone / cohortPossible) * 100) : 0;
+    const cohortPct      = cohortPossible > 0 ? Math.round((cohortDone / cohortPossible) * 100) : 0;
 
     const byClass = {};
     studentStats.forEach(s => {
@@ -2493,9 +2495,9 @@ function _renderExistingTasksList(docs) {
 
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
-    const PAGE_W   = 210;
-    const PAGE_H   = 297;
-    const MARGIN   = 14;
+    const PAGE_W    = 210;
+    const PAGE_H    = 297;
+    const MARGIN    = 14;
     const CONTENT_W = PAGE_W - MARGIN * 2;
 
     const C = {
@@ -2535,6 +2537,20 @@ function _renderExistingTasksList(docs) {
       else { doc.roundedRect(x, ry, w, h, 2, 2, 'F'); }
     }
 
+    // Draws a real filled progress bar using jsPDF drawing primitives — no Unicode
+    function drawProgressBar(x, ry, w, h, pct, filledColor) {
+      const radius = h / 2;
+      // Track (background)
+      doc.setFillColor(...C.border);
+      doc.roundedRect(x, ry, w, h, radius, radius, 'F');
+      // Fill
+      if (pct > 0) {
+        const fillW = Math.max(w * pct / 100, h); // minimum fill = diameter so it stays rounded
+        doc.setFillColor(...filledColor);
+        doc.roundedRect(x, ry, fillW, h, radius, radius, 'F');
+      }
+    }
+
     function _drawPageHeader() {
       doc.setFillColor(...C.brand);
       doc.rect(0, 0, PAGE_W, 22, 'F');
@@ -2560,15 +2576,14 @@ function _renderExistingTasksList(docs) {
     }
 
     function _drawPageFooter() {
-      const pageCount = doc.internal.getNumberOfPages();
       doc.setDrawColor(...C.border);
       doc.setLineWidth(0.3);
       doc.line(MARGIN, PAGE_H - 10, PAGE_W - MARGIN, PAGE_H - 10);
       doc.setFontSize(7);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...C.textDis);
-      doc.text('Vertex Tutorial CBT — Confidential Report', MARGIN, PAGE_H - 5.5);
-      doc.text(`Page ${pageCount}`, PAGE_W - MARGIN, PAGE_H - 5.5, { align: 'right' });
+      doc.text('Vertex Tutorial CBT - Confidential Report', MARGIN, PAGE_H - 5.5);
+      doc.text('Page ' + doc.internal.getNumberOfPages(), PAGE_W - MARGIN, PAGE_H - 5.5, { align: 'right' });
     }
 
     function sectionHeading(text) {
@@ -2596,17 +2611,16 @@ function _renderExistingTasksList(docs) {
       y += 6.5;
     }
 
-    function miniProgressBar(x, ry, w, h, pct, color) {
-      doc.setFillColor(...C.border);
-      doc.roundedRect(x, ry, w, h, h/2, h/2, 'F');
-      if (pct > 0) {
-        doc.setFillColor(...color);
-        doc.roundedRect(x, ry, Math.max(w * pct / 100, h), h, h/2, h/2, 'F');
-      }
+    function pctColor(pct) {
+      if (pct >= 80) return C.success;
+      if (pct >= 50) return C.warning;
+      return C.danger;
     }
 
+    // ── PAGE 1 HEADER ──────────────────────────────────────────────
     _drawPageHeader();
 
+    // Title card
     fillRect(MARGIN, y, CONTENT_W, 28, C.brandLight, C.brandBorder);
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
@@ -2618,7 +2632,7 @@ function _renderExistingTasksList(docs) {
     if (taskDoc.active) {
       fillRect(badgeX, y + 4, 26, 7, C.success);
       doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
-      doc.text('● ACTIVE', badgeX + 13, y + 8.8, { align:'center' });
+      doc.text('ACTIVE', badgeX + 13, y + 8.8, { align:'center' });
     } else {
       fillRect(badgeX, y + 4, 26, 7, C.surfaceMuted, C.border);
       doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(...C.textDis);
@@ -2630,12 +2644,12 @@ function _renderExistingTasksList(docs) {
     fillRect(MARGIN + 5, y + 18, 40, 6, isRec ? C.purpleBg : C.surfaceMuted);
     doc.setFontSize(7); doc.setFont('helvetica','bold');
     doc.setTextColor(...(isRec ? C.purple : C.textTert));
-    doc.text((isRec ? '🔄 ' : '') + recTxt, MARGIN + 7, y + 22.2);
+    doc.text((isRec ? 'RECURRING  ' : '') + recTxt, MARGIN + 7, y + 22.2);
 
     y += 32;
 
+    // ── TASK DETAILS ───────────────────────────────────────────────
     sectionHeading('Task Details');
-
     kvRow('Scope',      scopeText(docId));
     kvRow('Recurrence', recurrenceText(taskDoc));
     kvRow('Status',     taskDoc.active ? 'Active (visible to students)' : 'Inactive', taskDoc.active ? C.success : C.textDis);
@@ -2650,7 +2664,6 @@ function _renderExistingTasksList(docs) {
       doc.setTextColor(...C.textTert);
       doc.text('Task Message', MARGIN + 2, y + 4);
       y += 6;
-      fillRect(MARGIN, y, CONTENT_W, 0, C.surfaceMuted);
       const msgLines = doc.splitTextToSize(taskDoc.message, CONTENT_W - 10);
       const msgH = msgLines.length * 4.5 + 5;
       checkPage(msgH + 4);
@@ -2662,14 +2675,15 @@ function _renderExistingTasksList(docs) {
 
     y += 2;
 
+    // ── TIMETABLE ─────────────────────────────────────────────────
     sectionHeading('Timetable & Schedule');
 
     if (taskDoc.recurrence && taskDoc.recurrence !== 'once') {
-      kvRow('Start Date', taskDoc.startDate ? fmtDate(taskDoc.startDate) : '—');
+      kvRow('Start Date', taskDoc.startDate ? fmtDate(taskDoc.startDate) : '-');
       kvRow('End Date',   taskDoc.endDate   ? fmtDate(taskDoc.endDate)   : 'Open-ended');
       kvRow('Active Days', (taskDoc.weeklyDays && taskDoc.weeklyDays.length > 0)
         ? taskDoc.weeklyDays.join(', ')
-        : taskDoc.recurrence === 'range' ? 'All calendar days' : '—');
+        : taskDoc.recurrence === 'range' ? 'All calendar days' : '-');
     }
 
     if (allDates.length > 0) {
@@ -2677,7 +2691,7 @@ function _renderExistingTasksList(docs) {
       doc.setFontSize(7.5);
       doc.setFont('helvetica','bold');
       doc.setTextColor(...C.textTert);
-      doc.text(`Scheduled Sessions to Date (${allDates.length} total)`, MARGIN + 2, y + 4);
+      doc.text('Scheduled Sessions to Date (' + allDates.length + ' total)', MARGIN + 2, y + 4);
       y += 7;
 
       const COLS = 4;
@@ -2685,40 +2699,39 @@ function _renderExistingTasksList(docs) {
       const chunks = [];
       for (let i = 0; i < allDates.length; i += COLS) chunks.push(allDates.slice(i, i + COLS));
 
-      const rowH = 7;
-      checkPage(chunks.length * rowH + 4);
+      const rowH = 8;
 
       chunks.forEach((row, ri) => {
-        const ry2 = y + ri * rowH;
-        if (ry2 + rowH > PAGE_H - 16) {
-          doc.addPage(); y = MARGIN - ri * rowH; _drawPageFooter();
-        }
+        checkPage(rowH + 2);
         row.forEach((dateStr, ci) => {
           const cx = MARGIN + ci * colW;
-          const isPast = dateStr < todayStr;
+          const ry2 = y;
+          const isPast  = dateStr < todayStr;
           const isToday = dateStr === todayStr;
 
           const completedCount = studentStats.filter(s => !!s.comp[dateStr]).length;
           const allDone = completedCount === studentStats.length && studentStats.length > 0;
 
-          const bgColor = isToday ? C.warningBg : allDone ? C.successBg : isPast ? C.surfaceMuted : C.surface;
-          const borderColor = isToday ? C.warning : allDone ? C.success : C.border;
+          const bgColor     = isToday ? C.warningBg : allDone ? C.successBg : isPast ? C.surfaceMuted : C.surface;
+          const borderColor = isToday ? C.warning   : allDone ? C.success   : C.border;
 
           fillRect(cx + 1, ry2, colW - 2, rowH - 1, bgColor, borderColor);
 
           doc.setFontSize(6.5); doc.setFont('helvetica','bold');
           doc.setTextColor(...(isToday ? C.warning : allDone ? C.success : C.text));
-          doc.text(fmtDateShort(dateStr), cx + 3, ry2 + 3.8);
+          doc.text(fmtDateShort(dateStr), cx + 3, ry2 + 4);
 
           doc.setFontSize(5.5); doc.setFont('helvetica','normal');
           doc.setTextColor(...C.textTert);
-          doc.text(completedCount + '/' + studentStats.length + ' done', cx + 3, ry2 + 6.5);
+          doc.text(completedCount + '/' + studentStats.length + ' done', cx + 3, ry2 + 7);
         });
+        y += rowH;
       });
 
-      y += chunks.length * rowH + 6;
+      y += 4;
     }
 
+    // ── SUBJECT RESTRICTIONS ───────────────────────────────────────
     const dsKeys = Object.keys(taskDoc.dateSubjects || {});
     if (dsKeys.length > 0) {
       sectionHeading('Subject Restrictions');
@@ -2753,12 +2766,14 @@ function _renderExistingTasksList(docs) {
 
     _drawPageFooter();
 
+    // ── PAGE 2: STUDENT ATTENDANCE & PROGRESS ─────────────────────
     doc.addPage();
     _drawPageHeader();
     _drawPageFooter();
 
     sectionHeading('Student Attendance & Progress');
 
+    // Cohort summary stat bar
     checkPage(24);
     fillRect(MARGIN, y, CONTENT_W, 20, C.brandLight, C.brandBorder);
 
@@ -2766,7 +2781,7 @@ function _renderExistingTasksList(docs) {
       { label:'Students Enrolled', value: students.length,    color: C.brand   },
       { label:'Sessions to Date',  value: allDates.length,    color: C.brand   },
       { label:'Total Completions', value: cohortDone,         color: C.success },
-      { label:'Cohort Attendance', value: cohortPct + '%',    color: cohortPct >= 70 ? C.success : cohortPct >= 50 ? C.warning : C.danger },
+      { label:'Cohort Attendance', value: cohortPct + '%',    color: pctColor(cohortPct) },
     ];
     const sw = CONTENT_W / statCols.length;
     statCols.forEach((sc, i) => {
@@ -2783,40 +2798,48 @@ function _renderExistingTasksList(docs) {
     });
     y += 24;
 
+    // ── MAIN ATTENDANCE TABLE ──────────────────────────────────────
+    // Show up to 10 most recent date columns
     const MAX_DATE_COLS = 10;
     const displayDates  = allDates.slice(-MAX_DATE_COLS);
     const hasMore       = allDates.length > MAX_DATE_COLS;
 
+    // Date column headers: short day + date e.g. "F 7/3"
     const dateHeaders = displayDates.map(d => {
-      const p = d.split('-');
+      const p  = d.split('-');
       const dt = new Date(+p[0], +p[1]-1, +p[2]);
-      return dt.toLocaleDateString('en-GB', { weekday:'narrow', day:'numeric', month:'numeric' });
+      const dayInitial = dt.toLocaleDateString('en-GB', { weekday:'narrow' });
+      const dayNum     = dt.getDate();
+      const month      = dt.getMonth() + 1;
+      return dayInitial + '\n' + dayNum + '/' + month;
     });
 
-    const tableHead = [
-      ['#', 'Student', 'Class', 'Done', 'Miss', '%', 'Progress', ...dateHeaders]
-    ];
+    // Progress column is drawn via willDrawCell — the cell text carries the numeric pct
+    // Status dot columns use plain ASCII: Y (done), N (missed), - (upcoming/today)
+    const tableHead = [['#', 'Student', 'Class', 'Done', 'Miss', '%', 'Progress', ...dateHeaders]];
+
+    const PROGRESS_COL_IDX = 6; // 0-based index of the "Progress" column
+    const FIRST_DATE_COL   = 7;
 
     const tableBody = studentStats.map((s, idx) => {
-      const progressBar = '█'.repeat(Math.round(s.pct / 10)) + '░'.repeat(10 - Math.round(s.pct / 10));
-      const dateDots    = displayDates.map(d => s.comp[d] ? '✓' : (d < todayStr ? '✗' : '·'));
+      // Status dots: Y / N / - only (ASCII — renders perfectly in Helvetica)
+      const dateDots = displayDates.map(d => {
+        if (s.comp[d])          return 'Y';   // completed
+        if (d < todayStr)       return 'N';   // past, not done
+        if (d === todayStr)     return 'O';   // today, not done yet
+        return '-';                            // future
+      });
       return [
         String(idx + 1),
         s.name,
-        s.cls || '—',
+        s.cls || '-',
         String(s.done),
         String(s.missed),
         s.pct + '%',
-        progressBar,
+        String(s.pct),   // numeric string — willDrawCell draws the bar, hides this text
         ...dateDots
       ];
     });
-
-    const pctColor = (pct) => {
-      if (pct >= 80) return C.success;
-      if (pct >= 50) return C.warning;
-      return C.danger;
-    };
 
     doc.autoTable({
       startY: y,
@@ -2827,40 +2850,109 @@ function _renderExistingTasksList(docs) {
         fillColor: C.brand,
         textColor: [255, 255, 255],
         fontStyle: 'bold',
-        fontSize: 6.5,
-        cellPadding: { top:3, bottom:3, left:2, right:2 },
+        fontSize: 6,
+        cellPadding: { top:2, bottom:2, left:2, right:2 },
         halign: 'center',
+        valign: 'middle',
       },
       columnStyles: {
         0: { cellWidth: 7,  halign:'center', fontSize: 6 },
-        1: { cellWidth: 32, halign:'left',   fontStyle:'bold', fontSize: 7 },
-        2: { cellWidth: 18, halign:'left',   fontSize: 6.5 },
-        3: { cellWidth: 9,  halign:'center', fontSize: 7, textColor: C.success },
-        4: { cellWidth: 9,  halign:'center', fontSize: 7, textColor: C.danger  },
-        5: { cellWidth: 11, halign:'center', fontStyle:'bold', fontSize: 7 },
-        6: { cellWidth: 26, halign:'left',   fontStyle:'normal', fontSize: 5.5, textColor: C.brand },
+        1: { cellWidth: 30, halign:'left',   fontStyle:'bold', fontSize: 7 },
+        2: { cellWidth: 16, halign:'left',   fontSize: 6.5 },
+        3: { cellWidth: 9,  halign:'center', fontSize: 7 },
+        4: { cellWidth: 9,  halign:'center', fontSize: 7 },
+        5: { cellWidth: 10, halign:'center', fontStyle:'bold', fontSize: 7 },
+        6: { cellWidth: 24, halign:'left',   fontSize: 1 }, // text hidden; bar drawn in willDrawCell
       },
       bodyStyles: {
         fontSize: 6,
         textColor: C.text,
-        cellPadding: { top: 2.5, bottom: 2.5, left: 2, right: 2 },
+        cellPadding: { top: 3, bottom: 3, left: 2, right: 2 },
         valign: 'middle',
       },
       alternateRowStyles: { fillColor: C.surfaceMuted },
       tableLineColor: C.border,
       tableLineWidth: 0.2,
       theme: 'grid',
-      willDrawCell: function(data) {
-        if (data.column.index === 5 && data.section === 'body') {
-          const pct = parseInt(data.cell.text[0], 10) || 0;
-          data.cell.styles.textColor = pctColor(pct);
+      didDrawCell: function(data) {
+        if (data.section !== 'body') return;
+
+        // ── Progress bar (column 6) ──────────────────────────────
+        if (data.column.index === PROGRESS_COL_IDX) {
+          const pct    = parseInt(data.cell.raw, 10) || 0;
+          const color  = pctColor(pct);
+          const pad    = 2;
+          const barX   = data.cell.x + pad;
+          const barW   = data.cell.width - pad * 2;
+          const barH   = 3;
+          const barY   = data.cell.y + (data.cell.height - barH) / 2;
+          // Track
+          doc.setFillColor(...C.border);
+          doc.roundedRect(barX, barY, barW, barH, barH/2, barH/2, 'F');
+          // Fill
+          if (pct > 0) {
+            const fillW = Math.max(barW * pct / 100, barH);
+            doc.setFillColor(...color);
+            doc.roundedRect(barX, barY, fillW, barH, barH/2, barH/2, 'F');
+          }
+          // Percentage label centered on bar
+          doc.setFontSize(5);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(pct > 55 ? 255 : color[0], pct > 55 ? 255 : color[1], pct > 55 ? 255 : color[2]);
+          doc.text(pct + '%', barX + barW / 2, barY + barH - 0.6, { align:'center' });
         }
-        if (data.column.index >= 7 && data.section === 'body') {
-          const txt = data.cell.text[0];
-          data.cell.styles.textColor = txt === '✓' ? C.success : txt === '✗' ? C.danger : C.textDis;
-          data.cell.styles.fontStyle = 'bold';
-          data.cell.styles.halign    = 'center';
-          data.cell.styles.fontSize  = 7;
+
+        // ── Date status dots (columns 7+) ────────────────────────
+        if (data.column.index >= FIRST_DATE_COL) {
+          const txt  = (data.cell.raw || '').toString().trim();
+          const cx   = data.cell.x + data.cell.width / 2;
+          const cy   = data.cell.y + data.cell.height / 2;
+          const r    = 2.2;
+
+          if (txt === 'Y') {
+            doc.setFillColor(...C.success);
+            doc.circle(cx, cy, r, 'F');
+            doc.setFontSize(5.5); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+            doc.text('Y', cx, cy + 1.8, { align:'center' });
+          } else if (txt === 'N') {
+            doc.setFillColor(...C.danger);
+            doc.circle(cx, cy, r, 'F');
+            doc.setFontSize(5.5); doc.setFont('helvetica','bold'); doc.setTextColor(255,255,255);
+            doc.text('N', cx, cy + 1.8, { align:'center' });
+          } else if (txt === 'O') {
+            doc.setDrawColor(...C.warning);
+            doc.setLineWidth(0.5);
+            doc.circle(cx, cy, r, 'S');
+            doc.setFontSize(5); doc.setFont('helvetica','normal'); doc.setTextColor(...C.warning);
+            doc.text('O', cx, cy + 1.8, { align:'center' });
+          } else {
+            // future: small grey dash
+            doc.setDrawColor(...C.border);
+            doc.setLineWidth(0.4);
+            doc.line(cx - 1.5, cy, cx + 1.5, cy);
+          }
+        }
+
+        // ── Colour %  column (col 5) ────────────────────────────
+        if (data.column.index === 5) {
+          const pct = parseInt(data.cell.raw, 10) || 0;
+          // Re-draw the text in the correct colour (autoTable draws it black first)
+          doc.setFillColor(...(data.row.index % 2 === 0 ? C.surface : C.surfaceMuted));
+          doc.rect(data.cell.x + 0.1, data.cell.y + 0.1, data.cell.width - 0.2, data.cell.height - 0.2, 'F');
+          doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(...pctColor(pct));
+          doc.text(pct + '%', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align:'center' });
+        }
+
+        // ── Colour Done / Miss columns (cols 3 & 4) ─────────────
+        if (data.column.index === 3 || data.column.index === 4) {
+          const val = parseInt(data.cell.raw, 10) || 0;
+          if (val > 0) {
+            const color = data.column.index === 3 ? C.success : C.danger;
+            doc.setFillColor(...(data.row.index % 2 === 0 ? C.surface : C.surfaceMuted));
+            doc.rect(data.cell.x + 0.1, data.cell.y + 0.1, data.cell.width - 0.2, data.cell.height - 0.2, 'F');
+            doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(...color);
+            doc.text(String(val), data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align:'center' });
+          }
         }
       },
     });
@@ -2870,10 +2962,14 @@ function _renderExistingTasksList(docs) {
     if (hasMore) {
       checkPage(8);
       doc.setFontSize(7); doc.setFont('helvetica','italic'); doc.setTextColor(...C.textTert);
-      doc.text(`* Showing most recent ${MAX_DATE_COLS} sessions. ${allDates.length - MAX_DATE_COLS} earlier session(s) omitted from date columns but included in totals.`, MARGIN, y + 4);
+      doc.text(
+        '* Showing most recent ' + MAX_DATE_COLS + ' sessions. ' + (allDates.length - MAX_DATE_COLS) + ' earlier session(s) omitted from date columns but included in totals.',
+        MARGIN, y + 4
+      );
       y += 8;
     }
 
+    // ── CLASS BREAKDOWN ────────────────────────────────────────────
     const classKeys = Object.keys(byClass);
     if (classKeys.length > 1) {
       checkPage(20);
@@ -2886,7 +2982,7 @@ function _renderExistingTasksList(docs) {
         body: classKeys.sort().map(cls => {
           const b   = byClass[cls];
           const pct = b.total > 0 ? Math.round((b.done / b.total) * 100) : 0;
-          return [cls || '—', String(b.count), String(b.total / b.count | 0), String(b.done), pct + '%'];
+          return [cls || '-', String(b.count), String(b.total / b.count | 0), String(b.done), pct + '%'];
         }),
         margin: { left: MARGIN, right: MARGIN },
         headStyles: {
@@ -2908,32 +3004,38 @@ function _renderExistingTasksList(docs) {
         tableLineColor: C.border,
         tableLineWidth: 0.2,
         theme: 'grid',
-        willDrawCell: function(data) {
+        didDrawCell: function(data) {
           if (data.column.index === 4 && data.section === 'body') {
-            const pct = parseInt(data.cell.text[0], 10) || 0;
-            data.cell.styles.textColor = pctColor(pct);
+            const pct = parseInt(data.cell.raw, 10) || 0;
+            doc.setFillColor(...(data.row.index % 2 === 0 ? C.surface : C.surfaceMuted));
+            doc.rect(data.cell.x + 0.1, data.cell.y + 0.1, data.cell.width - 0.2, data.cell.height - 0.2, 'F');
+            doc.setFontSize(7.5); doc.setFont('helvetica','bold'); doc.setTextColor(...pctColor(pct));
+            doc.text(pct + '%', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2.5, { align:'center' });
           }
         },
       });
       y = doc.lastAutoTable.finalY + 4;
     }
 
+    // ── PER-STUDENT DETAIL PAGES ───────────────────────────────────
     if (allDates.length > 0 && studentStats.length <= 30) {
-      studentStats.forEach((s, si) => {
+      studentStats.forEach((s) => {
         doc.addPage();
         _drawPageHeader();
         _drawPageFooter();
 
+        // Student header card
         fillRect(MARGIN, y, CONTENT_W, 22, C.brandLight, C.brandBorder);
         doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.setTextColor(...C.brand);
         doc.text(s.name, MARGIN + 5, y + 9);
         doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...C.textSec);
-        doc.text(s.cls || '—', MARGIN + 5, y + 15);
+        doc.text(s.cls || '-', MARGIN + 5, y + 15);
 
+        // Stat pills
         const pills = [
-          { label:'Done',    value: s.done,      color: C.success    },
-          { label:'Missed',  value: s.missed,    color: C.danger     },
-          { label:'Total',   value: s.total,     color: C.brand      },
+          { label:'Done',    value: s.done,      color: C.success      },
+          { label:'Missed',  value: s.missed,    color: C.danger       },
+          { label:'Total',   value: s.total,     color: C.brand        },
           { label:'Rate',    value: s.pct + '%', color: pctColor(s.pct) },
         ];
         pills.forEach((p, pi) => {
@@ -2947,24 +3049,30 @@ function _renderExistingTasksList(docs) {
 
         y += 26;
 
+        // Attendance progress bar
         checkPage(10);
         doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(...C.textTert);
         doc.text('ATTENDANCE PROGRESS', MARGIN, y + 4);
         doc.setTextColor(...pctColor(s.pct));
         doc.text(s.pct + '%', PAGE_W - MARGIN, y + 4, { align:'right' });
         y += 6;
-        miniProgressBar(MARGIN, y, CONTENT_W, 4, s.pct, pctColor(s.pct));
+        drawProgressBar(MARGIN, y, CONTENT_W, 4, s.pct, pctColor(s.pct));
         y += 9;
 
-        sectionHeading('Session Log — ' + s.name);
+        sectionHeading('Session Log - ' + s.name);
 
+        // Session log table: status as plain text labels, no Unicode
         const sessionRows = allDates.map((dateStr, i) => {
           const done    = !!s.comp[dateStr];
           const isPast  = dateStr < todayStr;
           const isToday = dateStr === todayStr;
-          const status  = done ? 'Completed ✓' : isToday ? 'Today ○' : isPast ? 'Missed ✗' : 'Upcoming –';
-          const p       = dateStr.split('-');
-          const dayName = new Date(+p[0], +p[1]-1, +p[2]).toLocaleDateString('en-GB', { weekday:'long' });
+          // Plain ASCII status text
+          const status  = done    ? 'Done'
+                        : isToday ? 'Today'
+                        : isPast  ? 'Missed'
+                        : 'Upcoming';
+          const p2 = dateStr.split('-');
+          const dayName = new Date(+p2[0], +p2[1]-1, +p2[2]).toLocaleDateString('en-GB', { weekday:'long' });
           const subjList = (taskDoc.dateSubjects || {})[dateStr] || (taskDoc.dateSubjects || {})[dayName] || [];
           return [
             String(i + 1),
@@ -3002,14 +3110,18 @@ function _renderExistingTasksList(docs) {
           tableLineColor: C.border,
           tableLineWidth: 0.2,
           theme: 'grid',
-          willDrawCell: function(data) {
+          didDrawCell: function(data) {
             if (data.column.index === 4 && data.section === 'body') {
-              const txt = data.cell.text[0] || '';
-              data.cell.styles.textColor =
-                txt.includes('✓') ? C.success :
-                txt.includes('✗') ? C.danger  :
-                txt.includes('○') ? C.warning :
-                C.textDis;
+              const txt   = (data.cell.raw || '').toString();
+              const color = txt === 'Done'     ? C.success
+                          : txt === 'Missed'   ? C.danger
+                          : txt === 'Today'    ? C.warning
+                          : C.textDis;
+              // Repaint cell background then re-draw coloured text
+              doc.setFillColor(...(data.row.index % 2 === 0 ? C.surface : C.surfaceMuted));
+              doc.rect(data.cell.x + 0.1, data.cell.y + 0.1, data.cell.width - 0.2, data.cell.height - 0.2, 'F');
+              doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(...color);
+              doc.text(txt, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2.3, { align:'center' });
             }
           },
         });
@@ -3018,9 +3130,10 @@ function _renderExistingTasksList(docs) {
       });
     }
 
-    const safeName = (taskDoc.title || 'task').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    // ── SAVE ──────────────────────────────────────────────────────
+    const safeName  = (taskDoc.title || 'task').replace(/[^a-z0-9]/gi, '_').toLowerCase();
     const dateStamp = todayStr.replace(/-/g,'');
-    doc.save(`vtx_report_${safeName}_${dateStamp}.pdf`);
+    doc.save('vtx_report_' + safeName + '_' + dateStamp + '.pdf');
     UI.toast('PDF report downloaded.', 'success');
   }
 
