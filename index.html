@@ -95,29 +95,6 @@
 
     /* ══════════════════════════════════════════════════════
        BOOK — completely rewritten for reliable centering
-       ──────────────────────────────────────────────────────
-       Strategy:
-         • Scene is 300px wide, 160px tall, centered in loader.
-         • The book cover (140px wide) sits centered in the scene
-           when CLOSED: left = (300 - 140) / 2 = 80px.
-         • The spine is on the LEFT edge of the cover, at x = 80px.
-         • When the cover opens (rotateY(-160deg)) it sweeps LEFT.
-           The pages fan to various open angles.
-         • The fully open spread has pages from ~–160° to 0°.
-           Visually the spread is roughly 260px wide.
-           To keep it centered we shift the whole book 60px right
-           (so spine is at x = 80+60 = 140 = scene center).
-           Wait — simpler: we use margin/translate on the scene
-           wrapper to compensate for the asymmetric spread.
-         • Cleanest approach: keep the book div centered, but
-           since all pages open to the LEFT (negative rotateY),
-           we shift the book RIGHT by ~half the spread so the
-           open state looks centered. We do this with a CSS
-           transform on .vtx-book.
-         • Open spread width ≈ 2 × 140px × sin(80°) ≈ 276px.
-           Half spread ≈ 138px. Book cover half ≈ 70px.
-           So shift right by (138 − 70) = 68px → use 60px (visual).
-         • We animate the shift in sync with the cover opening.
     ══════════════════════════════════════════════════════ */
 
     .vtx-book-scene {
@@ -127,23 +104,16 @@
       margin-bottom: 2.75rem;
       perspective: 900px;
       perspective-origin: 50% 50%;
-      /* Centering: flex child, scene is the stage */
       display: flex;
       align-items: flex-end;
       justify-content: center;
     }
 
-    /*
-      The book wrapper: starts centered, then shifts right as
-      pages fan open so the final spread looks centered.
-      Shift = 52px (tuned visually).
-    */
     .vtx-book {
       position: relative;
       width: 140px;
       height: 120px;
       transform-style: preserve-3d;
-      /* Closed: centered. Open: shifted right ~52px */
       animation: vtx-book-shift 2.6s cubic-bezier(0.45,0,0.15,1) 0.4s both;
       flex-shrink: 0;
     }
@@ -208,7 +178,6 @@
       background: linear-gradient(140deg, #2a2a30 0%, #18181b 100%);
     }
 
-    /* Inset border on cover face */
     .vtx-book-front::before {
       content: '';
       position: absolute;
@@ -217,7 +186,6 @@
       border-radius: 2px 8px 8px 2px;
     }
 
-    /* Cover text */
     .vtx-cover-title {
       position: absolute;
       inset: 0;
@@ -259,7 +227,6 @@
       transform-style: preserve-3d;
     }
 
-    /* Ruled lines on page faces */
     .vtx-page::after {
       content: '';
       position: absolute;
@@ -279,7 +246,6 @@
       );
     }
 
-    /* Cream pages */
     .vtx-page-1 { background: linear-gradient(90deg,#f0ede6,#ece8e0); animation: vtx-page-fan-1 2.6s cubic-bezier(0.45,0,0.15,1) 0.45s both; z-index:9; }
     .vtx-page-2 { background: linear-gradient(90deg,#f2efe8,#eeeae2); animation: vtx-page-fan-2 2.6s cubic-bezier(0.45,0,0.15,1) 0.50s both; z-index:8; }
     .vtx-page-3 { background: linear-gradient(90deg,#f3f0e9,#efebe3); animation: vtx-page-fan-3 2.6s cubic-bezier(0.45,0,0.15,1) 0.55s both; z-index:7; }
@@ -294,17 +260,11 @@
     [data-theme="dark"] .vtx-page-5 { background: linear-gradient(90deg,#323238,#2a2a2f); }
     [data-theme="dark"] .vtx-page-6 { background: linear-gradient(90deg,#34343a,#2c2c31); }
 
-    /* Cover opens to ~160° */
     @keyframes vtx-cover-open {
       0%   { transform: rotateY(0deg); }
       100% { transform: rotateY(-160deg); }
     }
 
-    /*
-      Pages fan: they rotate around the spine (left edge).
-      The spread goes from –160° (cover) down to ~–30° (last page).
-      This creates a natural open-book fan.
-    */
     @keyframes vtx-page-fan-1 { 0%{transform:rotateY(0deg)} 100%{transform:rotateY(-138deg)} }
     @keyframes vtx-page-fan-2 { 0%{transform:rotateY(0deg)} 100%{transform:rotateY(-116deg)} }
     @keyframes vtx-page-fan-3 { 0%{transform:rotateY(0deg)} 100%{transform:rotateY(-94deg)}  }
@@ -312,7 +272,6 @@
     @keyframes vtx-page-fan-5 { 0%{transform:rotateY(0deg)} 100%{transform:rotateY(-50deg)}  }
     @keyframes vtx-page-fan-6 { 0%{transform:rotateY(0deg)} 100%{transform:rotateY(-30deg)}  }
 
-    /* Shadow under the book */
     .vtx-book-shadow {
       position: absolute;
       bottom: -12px;
@@ -414,7 +373,8 @@
     /* ── Theme toggle ── */
     #themeToggle {
       position: fixed;
-      bottom: 16px; left: 16px;
+      bottom: 64px; /* Raised above the news ticker */
+      left: 16px;
       z-index: 9998;
       width: 32px; height: 32px;
       border-radius: 8px;
@@ -499,7 +459,7 @@
 
   </div>
 
-  <!-- Theme toggle -->
+  <!-- Theme toggle — raised above ticker -->
   <button id="themeToggle" aria-label="Toggle dark mode" onclick="VtxTheme.toggle()">
     <svg class="theme-icon-light" width="16" height="16" viewBox="0 0 24 24" fill="none"
          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -523,7 +483,7 @@
 
   <!-- PWA Install Prompt -->
   <div id="install-prompt"
-       style="display:none;position:fixed;bottom:16px;left:50%;transform:translateX(-50%);
+       style="display:none;position:fixed;bottom:64px;left:50%;transform:translateX(-50%);
               background:var(--bg-base);padding:1rem 1.5rem;border-radius:var(--r-xl);
               box-shadow:var(--shadow-xl);z-index:9999;max-width:90%;text-align:center;
               border:1px solid var(--border);">
@@ -624,6 +584,8 @@
   <script src="js/landing.js"></script>
   <script src="js/app.js"></script>
   <script src="js/installPrompt.js"></script>
+
+  <!-- News ticker — loaded LAST so body exists when JS injects the ticker HTML -->
   <script src="news-ticker.js"></script>
 
   <!-- Presentation enhancements -->
