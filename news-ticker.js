@@ -78,9 +78,10 @@ function updateTickerStyles() {
 function closeTicker() {
     var container = document.getElementById('newsTicker');
     if (container) {
-        // Use our own class — avoids conflict with main.css .hidden
         container.classList.add('ticker-hidden');
     }
+    var toggle = document.getElementById('themeToggle');
+    if (toggle) toggle.classList.add('ticker-gone');
 }
 
 // ── Show: reveal the ticker bar ─────────────────────
@@ -89,14 +90,16 @@ function showTicker() {
     if (container) {
         container.classList.remove('ticker-hidden');
     }
+    var toggle = document.getElementById('themeToggle');
+    if (toggle) toggle.classList.remove('ticker-gone');
 }
 
 // ── Dynamic update (for admin / future use) ──────────
 function updateTicker(newItems, speed, bgColor, txtColor) {
     if (newItems && Array.isArray(newItems)) tickerConfig.newsItems = newItems;
-    if (speed)   tickerConfig.speed           = speed;
-    if (bgColor) tickerConfig.backgroundColor = bgColor;
-    if (txtColor) tickerConfig.textColor      = txtColor;
+    if (speed)    tickerConfig.speed           = speed;
+    if (bgColor)  tickerConfig.backgroundColor = bgColor;
+    if (txtColor) tickerConfig.textColor       = txtColor;
 
     updateTickerContent();
     updateTickerStyles();
@@ -123,9 +126,9 @@ if (document.readyState === 'loading') {
     if (window.fbAuth && typeof window.fbAuth.onAuthStateChanged === 'function') {
         window.fbAuth.onAuthStateChanged(function (user) {
             if (user) {
-                closeTicker();
+                closeTicker(); // also drops the toggle down
             } else {
-                showTicker();
+                showTicker();  // also raises the toggle up
             }
         });
     } else {
