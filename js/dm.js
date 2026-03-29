@@ -1346,10 +1346,8 @@ function _cancelTypingListeners(threadUid) {
 
         <div style="display:flex;gap:.5rem;align-items:flex-end;box-sizing:border-box;width:100%;overflow:hidden;margin-top:.5rem;">
           <textarea id="dmInput" placeholder="Type your message…" rows="1"
-                    style="flex:1;min-width:0;resize:none;overflow-y:hidden;line-height:1.5;
-                           padding:.5625rem .75rem;min-height:36px;max-height:120px;
-                           border-radius:var(--r-md);font-family:var(--font);font-size:var(--text-base);
-                           box-sizing:border-box;"></textarea>
+                    style="flex:1;min-width:0;resize:none;overflow-y:hidden;
+                           min-height:36px;max-height:120px;box-sizing:border-box;"></textarea>
           <button id="dmSendBtn" onclick="DM.sendStudentMessage()"
                   class="btn bg-green-600 hover:bg-green-700"
                   style="flex-shrink:0;align-self:flex-end;">Send</button>
