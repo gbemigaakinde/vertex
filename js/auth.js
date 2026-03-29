@@ -211,26 +211,7 @@
           <span style="font-weight:600;color:var(--accent);">Master Timothy</span>
         </div>
 
-        <div class="news-ticker-container" role="region"
-             aria-label="Notice ticker" aria-live="polite"
-             style="margin-top:var(--sp-4);">
-          <div class="ticker-wrapper">
-            <div class="ticker-label">
-              <span class="ticker-label-icon" aria-hidden="true">•</span>
-              <span>NOTE</span>
-            </div>
-            <div class="ticker-content">
-              <div class="ticker-text speed-normal" id="tickerScroll"></div>
-            </div>
-            <button class="ticker-close" onclick="closeTicker()" aria-label="Close ticker">×</button>
-          </div>
-        </div>
-
       </div>`);
-
-    if (typeof initTicker === 'function' && document.getElementById('tickerScroll')) {
-      initTicker();
-    }
 
     _loginMode = 'email';
 
