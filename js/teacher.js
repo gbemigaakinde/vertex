@@ -916,6 +916,18 @@ async function _saveStudentEdit(uid, previousAdmno) {
       console.warn('[teacher] Could not update name in results:', e);
     }
 
+    // Update denormalized name in all public chat messages from this student
+    try {
+      const chatSnap = await Db().collection('publicChat').where('senderId', '==', uid).get();
+      if (!chatSnap.empty) {
+        const chatBatch = Db().batch();
+        chatSnap.forEach(d => chatBatch.update(d.ref, { senderName: name, senderClass: cls }));
+        await chatBatch.commit();
+      }
+    } catch (e) {
+      console.warn('[teacher] Could not update name in public chat:', e);
+    }
+
     UI.toast(`Student record updated successfully.`, 'success');
     document.getElementById('teacherEditStudentModal')?.remove();
 
