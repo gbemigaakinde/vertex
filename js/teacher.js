@@ -1,43 +1,9 @@
 /* ============================================================
    js/teacher.js — Teacher dashboard (UI v3)
-   ============================================================
-   CHANGES FROM v2:
-   ─────────────────────────────────────────────────────────────
-   A. Task creation form now exposes three recurrence modes:
-        • One-time  — manually pick specific calendar dates
-        • Weekly    — pick day(s) of week + start date + end date
-        • Range     — pick weekdays + date range (or "all days"
-                      by leaving weekdays empty)
-
-   B. Task document now stores:
-        recurrence: 'once' | 'weekly' | 'range'
-        startDate:  'YYYY-MM-DD'   (weekly / range tasks)
-        endDate:    'YYYY-MM-DD' | null
-        weeklyDays: ['Monday', ...]  (weekly / range tasks)
-        dateSubjects: { 'day-name-or-YYYY-MM-DD': [subjects] }
-        dates:      kept for 'once' tasks only
-
-   C. Progress table (_renderStudentProgress) now:
-        • Queries ALL historical dates via Tasks._resolveTaskDates
-        • Groups columns by ISO week (Mon–Sun)
-        • Shows each week as a collapsible section
-        • Each week row per student shows done/missed counts
-        • Expandable to see individual day dots
-        • No more unreadably wide tables for long tasks
-
-   D. Backward compatible: 'once' tasks (no recurrence field)
-      still render as before.
-   ─────────────────────────────────────────────────────────────
-   All other teacher functionality (students, results, schools,
-   private messaging) is unchanged from v2.
    ============================================================ */
 
 (function () {
   'use strict';
-
-  /* -------------------------------------------------- */
-  /* Active Firestore listeners                         */
-  /* -------------------------------------------------- */
 
   const _listeners = {};
 
@@ -56,10 +22,6 @@
   function _cancelAll() {
     Object.keys(_listeners).forEach(k => _cancel(k));
   }
-
-  /* -------------------------------------------------- */
-  /* Render dashboard shell                             */
-  /* -------------------------------------------------- */
 
 function renderTeacherDashboard() {
   AppState.isTeacher = true;
@@ -502,8 +464,6 @@ function showTab(tab) {
     const el  = document.getElementById(`teacher-${t}`);
     const btn = document.getElementById(`tab-${t}`);
     if (el) {
-      // Clear DM panel content BEFORE revealing it to prevent stale
-      // position:absolute content flashing and stretching the page
       if (t === 'dm' && t !== tab) {
         el.innerHTML = '';
       }
@@ -525,15 +485,11 @@ function showTab(tab) {
   if (tab === 'tasks')     _loadTasksManager();
 }
 
-  /* -------------------------------------------------- */
-  /* Students tab                                        */
-  /* -------------------------------------------------- */
-
   function _loadStudents() {
   const container = document.getElementById('studentsList');
   if (!container) return;
   container.innerHTML = `
-    <div style="text-align:center;padding:2rem;color:var(--c-text-3,#6b7280);font-size:.875rem;">
+    <div style="text-align:center;padding:2rem;color:var(--text-3);font-size:var(--text-sm);">
       Loading students...</div>`;
 
   _cancel('students');
@@ -549,7 +505,7 @@ function showTab(tab) {
       const schools = Object.keys(bySchool).sort();
       if (schools.length === 0) {
         container.innerHTML = `
-          <div style="text-align:center;padding:2rem;color:var(--c-text-3,#6b7280);font-size:.875rem;">
+          <div style="text-align:center;padding:2rem;color:var(--text-3);font-size:var(--text-sm);">
             No students registered yet.</div>`;
         return;
       }
@@ -558,10 +514,10 @@ function showTab(tab) {
         return `
           <details class="glass-dark overflow-hidden mb-3" style="border-radius:10px;" open>
             <summary style="cursor:pointer;">
-              <span style="font-weight:700;font-size:.9375rem;">${_esc(school)}</span>
-              <span style="margin-left:.5rem;font-size:.75rem;font-weight:500;
-                           background:var(--c-brand-light,#eef2ff);color:var(--c-brand-text,#3730a3);
-                           border:1px solid var(--c-brand-border,#c7d2fe);
+              <span style="font-weight:700;font-size:var(--text-base);">${_esc(school)}</span>
+              <span style="margin-left:.5rem;font-size:var(--text-xs);font-weight:500;
+                           background:var(--accent-subtle);color:var(--accent-text);
+                           border:1px solid var(--accent-border);
                            padding:1px 7px;border-radius:99px;">${students.length}</span>
             </summary>
             <div style="padding:.875rem 1rem;">
@@ -570,46 +526,43 @@ function showTab(tab) {
                   const joined = s.createdAt
                     ? new Date(s.createdAt.toDate ? s.createdAt.toDate() : s.createdAt).toLocaleDateString()
                     : '—';
-                  const admno = s.admissionNo ? `<p style="font-size:.6875rem;color:var(--brand,#3b5bdb);
+                  const admno = s.admissionNo ? `<p style="font-size:var(--text-xs);color:var(--accent);
                     margin-top:2px;font-weight:600;">🪪 ${_esc(s.admissionNo)}</p>` : '';
                   return `
-                    <div style="position:relative;background:var(--c-surface,#fff);
-                                border:1px solid var(--c-border,#e5e7eb);border-radius:8px;
+                    <div style="position:relative;background:var(--bg-base);
+                                border:1px solid var(--border);border-radius:8px;
                                 padding:.75rem .875rem .75rem 2.25rem;">
-                      <!-- Admin star toggle -->
                       <button class="teacher-toggle-admin"
                               data-uid="${_esc(s.id)}" data-name="${_esc(s.name)}"
                               data-is-admin="${s.isAdmin ? 'true' : 'false'}"
                               aria-label="Toggle admin for ${_esc(s.name)}"
                               style="position:absolute;top:.5rem;left:.5rem;background:none;border:none;
                                      cursor:pointer;font-size:.875rem;line-height:1;padding:2px;
-                                     color:${s.isAdmin ? '#d97706' : '#d1d5db'};">
+                                     color:${s.isAdmin ? 'var(--warning)' : 'var(--border-strong)'};">
                         ${s.isAdmin ? '★' : '☆'}
                       </button>
-                      <!-- Edit button -->
                       <button class="teacher-edit-student" data-uid="${_esc(s.id)}"
                               aria-label="Edit ${_esc(s.name)}"
                               style="position:absolute;top:.375rem;right:1.625rem;background:none;border:none;
                                      cursor:pointer;font-size:.75rem;line-height:1;padding:2px 4px;
-                                     color:var(--brand,#3b5bdb);font-weight:700;"
-                              onmouseenter="this.style.color='#1d3aaa'"
-                              onmouseleave="this.style.color='var(--brand,#3b5bdb)'">✎</button>
-                      <!-- Delete button -->
+                                     color:var(--accent);font-weight:700;"
+                              onmouseenter="this.style.color='var(--accent-hover)'"
+                              onmouseleave="this.style.color='var(--accent)'">✎</button>
                       <button class="teacher-delete-student" data-uid="${_esc(s.id)}"
                               aria-label="Delete ${_esc(s.name)}"
                               style="position:absolute;top:.375rem;right:.5rem;background:none;border:none;
                                      cursor:pointer;font-size:1rem;line-height:1;padding:2px 4px;
-                                     color:var(--c-text-4,#9ca3af);"
-                              onmouseenter="this.style.color='var(--c-danger,#dc2626)'"
-                              onmouseleave="this.style.color='var(--c-text-4,#9ca3af)'">×</button>
-                      <p style="font-size:.875rem;font-weight:700;color:var(--c-text,#111827);
+                                     color:var(--text-4);"
+                              onmouseenter="this.style.color='var(--danger)'"
+                              onmouseleave="this.style.color='var(--text-4)'">×</button>
+                      <p style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);
                                 white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:1rem;">
                         ${_esc(s.name)}</p>
-                      <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:1px;">${_esc(s.class || '—')}</p>
-                      <p style="font-size:.6875rem;color:var(--c-text-4,#9ca3af);margin-top:3px;
+                      <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:1px;">${_esc(s.class || '—')}</p>
+                      <p style="font-size:var(--text-xs);color:var(--text-4);margin-top:3px;
                                 overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_esc(s.email || '')}</p>
                       ${admno}
-                      <p style="font-size:.6875rem;color:var(--c-text-4,#9ca3af);margin-top:4px;">Joined ${joined}</p>
+                      <p style="font-size:var(--text-xs);color:var(--text-4);margin-top:4px;">Joined ${joined}</p>
                     </div>`;
                 }).join('')}
               </div>
@@ -619,7 +572,7 @@ function showTab(tab) {
     },
     err => {
       console.error('[teacher] Error loading students:', err);
-      container.innerHTML = `<p style="text-align:center;color:var(--c-danger,#dc2626);font-size:.875rem;">Error loading students.</p>`;
+      container.innerHTML = `<p style="text-align:center;color:var(--danger);font-size:var(--text-sm);">Error loading students.</p>`;
     }
   );
   _reg('students', unsub);
@@ -664,7 +617,6 @@ function showTab(tab) {
 async function editStudent(uid) {
   if (!uid) return;
 
-  // Fetch current data
   let studentData;
   try {
     const snap = await Db().collection('students').doc(uid).get();
@@ -676,7 +628,6 @@ async function editStudent(uid) {
     return;
   }
 
-  // Remove any existing modal
   const existing = document.getElementById('teacherEditStudentModal');
   if (existing) existing.remove();
 
@@ -684,108 +635,94 @@ async function editStudent(uid) {
     .map(c => `<option value="${c}" ${studentData.class === c ? 'selected' : ''}>${c}</option>`)
     .join('');
 
-  // Build school dropdown — populated after mount
   const overlay = document.createElement('div');
   overlay.id = 'teacherEditStudentModal';
-  overlay.style.cssText = `
-    position:fixed;inset:0;background:rgba(17,24,39,.55);z-index:1300;
-    display:flex;align-items:center;justify-content:center;
-    padding:1.25rem;overflow-y:auto;
-    backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px);
-    animation:cbt-overlay-in .16s ease-out both;`;
 
   overlay.innerHTML = `
-    <div style="background:var(--surface,#fff);border:1px solid var(--border,#e5e7eb);
+    <div style="background:var(--bg-base);border:1px solid var(--border);
                 border-radius:12px;padding:1.5rem;width:100%;max-width:440px;margin:auto;
-                box-shadow:0 8px 32px rgba(0,0,0,.14);
+                box-shadow:var(--shadow-xl);
                 animation:cbt-modal-in .22s cubic-bezier(.34,1.45,.64,1) both;">
 
-      <!-- Header -->
       <div style="display:flex;align-items:center;justify-content:space-between;
                   margin-bottom:1.25rem;padding-bottom:.875rem;
-                  border-bottom:1px solid var(--border,#e5e7eb);">
+                  border-bottom:1px solid var(--border);">
         <div>
-          <h2 style="font-size:1rem;font-weight:700;color:var(--text-primary,#111827);">Edit Student</h2>
-          <p style="font-size:.75rem;color:var(--text-tertiary,#6b7280);margin-top:2px;">
+          <h2 style="font-size:1rem;font-weight:700;color:var(--text-1);">Edit Student</h2>
+          <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">
             ${_esc(studentData.name || '')} &bull; UID: ${_esc(uid.slice(0,8))}…
           </p>
         </div>
         <button onclick="document.getElementById('teacherEditStudentModal').remove()"
                 style="background:none;border:none;cursor:pointer;font-size:1.25rem;
-                       line-height:1;color:var(--text-tertiary,#6b7280);padding:2px 6px;"
-                onmouseenter="this.style.color='var(--danger,#e03131)'"
-                onmouseleave="this.style.color='var(--text-tertiary,#6b7280)'">×</button>
+                       line-height:1;color:var(--text-3);padding:2px 6px;"
+                onmouseenter="this.style.color='var(--danger)'"
+                onmouseleave="this.style.color='var(--text-3)'">×</button>
       </div>
 
       <div style="display:flex;flex-direction:column;gap:.875rem;">
 
-        <!-- Full Name -->
         <div>
-          <label style="display:block;font-size:.75rem;font-weight:600;
-                        color:var(--text-secondary,#374151);margin-bottom:.3125rem;">Full Name</label>
+          <label style="display:block;font-size:var(--text-xs);font-weight:600;
+                        color:var(--text-2);margin-bottom:.3125rem;">Full Name</label>
           <input id="editStudentName" type="text" value="${_esc(studentData.name || '')}"
                  placeholder="Student's full name"
                  style="width:100%;box-sizing:border-box;" />
         </div>
 
-        <!-- Class -->
         <div>
-          <label style="display:block;font-size:.75rem;font-weight:600;
-                        color:var(--text-secondary,#374151);margin-bottom:.3125rem;">Class</label>
+          <label style="display:block;font-size:var(--text-xs);font-weight:600;
+                        color:var(--text-2);margin-bottom:.3125rem;">Class</label>
           <select id="editStudentClass" style="width:100%;box-sizing:border-box;">
             ${classOptions}
           </select>
         </div>
 
-        <!-- School -->
         <div>
-          <label style="display:block;font-size:.75rem;font-weight:600;
-                        color:var(--text-secondary,#374151);margin-bottom:.3125rem;">School</label>
+          <label style="display:block;font-size:var(--text-xs);font-weight:600;
+                        color:var(--text-2);margin-bottom:.3125rem;">School</label>
           <select id="editStudentSchool" style="width:100%;box-sizing:border-box;">
             <option value="" disabled>Loading schools…</option>
           </select>
         </div>
 
-        <!-- Admission Number -->
         <div>
-          <label style="display:block;font-size:.75rem;font-weight:600;
-                        color:var(--text-secondary,#374151);margin-bottom:.3125rem;">
+          <label style="display:block;font-size:var(--text-xs);font-weight:600;
+                        color:var(--text-2);margin-bottom:.3125rem;">
             Admission / Registration Number
-            <span style="font-weight:400;color:var(--text-tertiary,#6b7280);">— optional</span>
+            <span style="font-weight:400;color:var(--text-3);">— optional</span>
           </label>
           <input id="editStudentAdmno" type="text"
                  value="${_esc(studentData.admissionNo || '')}"
                  placeholder="e.g. VTX-2024-001"
                  style="width:100%;box-sizing:border-box;text-transform:uppercase;"
                  oninput="this.value=this.value.toUpperCase()" />
-          <p style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin-top:.25rem;line-height:1.5;">
+          <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:.25rem;line-height:1.5;">
             Must be unique. Students can use this to log in instead of their email.
             Leave blank to remove.
           </p>
         </div>
 
-        <!-- Info notice: email not editable here -->
-        <div style="padding:.625rem .875rem;background:var(--surface-muted,#f3f4f6);
-                    border:1px solid var(--border,#e5e7eb);border-radius:8px;
-                    font-size:.75rem;color:var(--text-tertiary,#6b7280);line-height:1.6;">
+        <div style="padding:.625rem .875rem;background:var(--bg-subtle);
+                    border:1px solid var(--border);border-radius:8px;
+                    font-size:var(--text-xs);color:var(--text-3);line-height:1.6;">
           ℹ️ Email address cannot be changed here. To update a student's email,
           the student must contact you and re-register with the new email.
         </div>
 
       </div>
 
-      <!-- Actions -->
       <div style="display:flex;gap:.625rem;margin-top:1.25rem;padding-top:.875rem;
-                  border-top:1px solid var(--border,#e5e7eb);">
+                  border-top:1px solid var(--border);">
         <button onclick="document.getElementById('teacherEditStudentModal').remove()"
                 class="btn bg-gray-500 hover:bg-gray-600"
-                style="flex:1;justify-content:center;font-size:.875rem;">
+                style="flex:1;justify-content:center;font-size:var(--text-sm);">
           Cancel
         </button>
         <button id="editStudentSaveBtn"
                 onclick="Teacher._saveStudentEdit('${_esc(uid)}', '${_esc(studentData.admissionNo || '')}')"
                 class="btn bg-blue-600 hover:bg-blue-700"
-                style="flex:1;justify-content:center;font-size:.875rem;">
+                style="flex:1;justify-content:center;font-size:var(--text-sm);">
           Save Changes
         </button>
       </div>
@@ -796,7 +733,6 @@ async function editStudent(uid) {
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
   overlay.addEventListener('keydown', e => { if (e.key === 'Escape') overlay.remove(); });
 
-  // Populate school dropdown from Firestore
   try {
     const schoolsSnap = await Db().collection('schools').orderBy('name').get();
     const schoolSel   = document.getElementById('editStudentSchool');
@@ -809,7 +745,6 @@ async function editStudent(uid) {
           const n = _esc(doc.data().name);
           html += `<option value="${n}" ${studentData.school === doc.data().name ? 'selected' : ''}>${n}</option>`;
         });
-        // If student's school isn't in the list, add it so we don't lose it
         const names = schoolsSnap.docs.map(d => d.data().name);
         if (studentData.school && !names.includes(studentData.school)) {
           html += `<option value="${_esc(studentData.school)}" selected>${_esc(studentData.school)} (current)</option>`;
@@ -838,13 +773,10 @@ async function _saveStudentEdit(uid, previousAdmno) {
   const school = (schoolEl?.value || '').trim();
   const admno  = (admnoEl?.value  || '').trim().toUpperCase();
 
-  // Basic validation
   if (!name)   { UI.toast('Name cannot be empty.',  'warning'); return; }
   if (!cls)    { UI.toast('Please select a class.', 'warning'); return; }
   if (!school) { UI.toast('Please select a school.','warning'); return; }
 
-  // Validate admission number format if provided
-  // Allow letters, digits, hyphens, underscores — max 30 chars
   if (admno && !/^[A-Z0-9\-_]{1,30}$/.test(admno)) {
     UI.toast(
       'Admission number can only contain letters, numbers, hyphens, and underscores (max 30 characters).',
@@ -861,7 +793,6 @@ async function _saveStudentEdit(uid, previousAdmno) {
     const removingAdmno    = admnoChanged && admno === '';
     const addingOrChanging = admnoChanged && admno !== '';
 
-    // ── Check uniqueness if a new admno is being set ──
     if (addingOrChanging) {
       const existingSnap = await Db().collection('admissionNumbers').doc(admno).get();
       if (existingSnap.exists && existingSnap.data().uid !== uid) {
@@ -875,7 +806,6 @@ async function _saveStudentEdit(uid, previousAdmno) {
       }
     }
 
-    // ── Fetch current email (needed for the index entry) ──
     const studentSnap = await Db().collection('students').doc(uid).get();
     if (!studentSnap.exists) {
       UI.toast('Student record not found. It may have been deleted.', 'error');
@@ -884,10 +814,8 @@ async function _saveStudentEdit(uid, previousAdmno) {
     }
     const email = studentSnap.data().email || '';
 
-    // ── Build Firestore batch ──
     const batch = Db().batch();
 
-    // Update student doc — only the safe editable fields
     batch.update(Db().collection('students').doc(uid), {
       name,
       class:       cls,
@@ -895,16 +823,12 @@ async function _saveStudentEdit(uid, previousAdmno) {
       admissionNo: admno || null,
     });
 
-    // Update admissionNumbers index
     if (addingOrChanging) {
-      // Write new index entry
       batch.set(Db().collection('admissionNumbers').doc(admno), { uid, email });
-      // Remove old index entry if one existed
       if (previousAdmno) {
         batch.delete(Db().collection('admissionNumbers').doc(previousAdmno.toUpperCase()));
       }
     } else if (removingAdmno && previousAdmno) {
-      // Just delete the old entry
       batch.delete(Db().collection('admissionNumbers').doc(previousAdmno.toUpperCase()));
     }
 
@@ -946,10 +870,6 @@ async function _saveStudentEdit(uid, previousAdmno) {
     }
   }
 
-  /* -------------------------------------------------- */
-  /* Results tab                                         */
-  /* -------------------------------------------------- */
-
   function _loadResults() {
     const container = document.getElementById('resultsList');
     if (!container) return;
@@ -959,16 +879,16 @@ async function _saveStudentEdit(uid, previousAdmno) {
         if (snap.empty) {
           container.innerHTML = `
             <p style="grid-column:1/-1;text-align:center;padding:2rem;
-                      color:var(--c-text-3,#6b7280);font-size:.875rem;">No results yet.</p>`;
+                      color:var(--text-3);font-size:var(--text-sm);">No results yet.</p>`;
           return;
         }
         container.innerHTML = snap.docs.map(doc => {
           const r = doc.data();
-          const gradeColor = r.grade === 'A' ? 'var(--c-success,#16a34a)'
-                           : r.grade === 'B' ? 'var(--c-info,#2563eb)'
-                           : r.grade === 'C' ? 'var(--c-warning,#d97706)'
-                           : r.grade === 'D' ? '#ea580c'
-                           : 'var(--c-danger,#dc2626)';
+          const gradeColor = r.grade === 'A' ? 'var(--success)'
+                           : r.grade === 'B' ? 'var(--info)'
+                           : r.grade === 'C' ? 'var(--warning)'
+                           : r.grade === 'D' ? 'var(--warning)'
+                           : 'var(--danger)';
           const pct = r.percentage || 0;
           const ts  = r.timestamp
             ? new Date(r.timestamp.toDate ? r.timestamp.toDate() : r.timestamp).toLocaleDateString()
@@ -977,46 +897,46 @@ async function _saveStudentEdit(uid, previousAdmno) {
           return `
             <div class="teacher-result-card" data-result-id="${_esc(doc.id)}"
                  title="${hasDetail ? 'Click to review full attempt' : 'No detailed data'}"
-                 style="position:relative;background:var(--c-surface,#fff);
-                        border:1px solid var(--c-border,#e5e7eb);border-radius:10px;
+                 style="position:relative;background:var(--bg-base);
+                        border:1px solid var(--border);border-radius:10px;
                         padding:.875rem 1rem;overflow:hidden;">
               <button class="teacher-delete-result" data-id="${_esc(doc.id)}" aria-label="Delete result"
                       style="position:absolute;top:.5rem;right:.625rem;background:none;border:none;
                              cursor:pointer;font-size:1rem;line-height:1;padding:2px 4px;
-                             color:var(--c-text-4,#9ca3af);z-index:2;"
-                      onmouseenter="this.style.color='var(--c-danger,#dc2626)'"
-                      onmouseleave="this.style.color='var(--c-text-4,#9ca3af)'">×</button>
+                             color:var(--text-4);z-index:2;"
+                      onmouseenter="this.style.color='var(--danger)'"
+                      onmouseleave="this.style.color='var(--text-4)'">×</button>
               <div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:.625rem;">
                 <div style="min-width:48px;height:48px;border-radius:8px;
-                            background:${gradeColor}12;border:1px solid ${gradeColor}40;
+                            background:var(--bg-subtle);border:1px solid var(--border);
                             display:flex;flex-direction:column;align-items:center;
                             justify-content:center;flex-shrink:0;">
-                  <span style="font-size:.6875rem;font-weight:700;color:${gradeColor};line-height:1;">${pct}%</span>
+                  <span style="font-size:var(--text-xs);font-weight:700;color:${gradeColor};line-height:1;">${pct}%</span>
                   <span style="font-size:1rem;font-weight:800;color:${gradeColor};line-height:1;margin-top:1px;">
                     ${_esc(r.grade || '?')}</span>
                 </div>
                 <div style="min-width:0;flex:1;padding-right:1.25rem;">
-                  <p style="font-size:.875rem;font-weight:700;color:var(--c-text,#111827);
+                  <p style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);
                              white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${_esc(r.name || '')}</p>
-                  <p style="font-size:.75rem;color:var(--c-text-3,#6b7280);margin-top:1px;">
+                  <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:1px;">
                     ${_esc(r.class || '')} · ${_esc(r.school || '')}</p>
                 </div>
               </div>
               <div style="display:flex;flex-wrap:wrap;gap:.25rem;margin-bottom:.5rem;">
                 ${(r.subjects || []).map(s => `
-                  <span style="font-size:.6875rem;font-weight:600;
-                               background:var(--c-surface-2,#f9fafb);border:1px solid var(--c-border,#e5e7eb);
-                               border-radius:4px;padding:1px 6px;color:var(--c-text-2,#374151);">
+                  <span style="font-size:var(--text-xs);font-weight:600;
+                               background:var(--bg-subtle);border:1px solid var(--border);
+                               border-radius:4px;padding:1px 6px;color:var(--text-2);">
                     ${_esc(s)}: ${r.scores?.[s] || 0}%
                   </span>`).join('')}
               </div>
               <div style="display:flex;align-items:center;justify-content:space-between;">
-                <p style="font-size:.6875rem;color:var(--c-text-4,#9ca3af);">${ts}</p>
+                <p style="font-size:var(--text-xs);color:var(--text-4);">${ts}</p>
                 ${hasDetail
-                  ? `<span style="font-size:.6875rem;font-weight:600;color:var(--brand,#3b5bdb);
-                                  background:var(--brand-bg,#edf2ff);border:1px solid var(--brand-border,#bac8ff);
+                  ? `<span style="font-size:var(--text-xs);font-weight:600;color:var(--accent-text);
+                                  background:var(--accent-subtle);border:1px solid var(--accent-border);
                                   border-radius:4px;padding:1px 7px;">View attempt →</span>`
-                  : `<span style="font-size:.6875rem;color:var(--c-text-4,#9ca3af);font-style:italic;">No detail</span>`}
+                  : `<span style="font-size:var(--text-xs);color:var(--text-4);font-style:italic;">No detail</span>`}
               </div>
             </div>`;
         }).join('');
@@ -1024,7 +944,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
       err => {
         console.error('[teacher] Error loading results:', err);
         container.innerHTML = `
-          <p style="grid-column:1/-1;text-align:center;color:var(--c-danger,#dc2626);font-size:.875rem;">
+          <p style="grid-column:1/-1;text-align:center;color:var(--danger);font-size:var(--text-sm);">
             Error loading results.</p>`;
       }
     );
@@ -1053,10 +973,6 @@ async function _saveStudentEdit(uid, previousAdmno) {
     }
   }
 
-  /* -------------------------------------------------- */
-  /* Review modal                                        */
-  /* -------------------------------------------------- */
-
   async function _openReviewModal(resultId) {
     const existing = document.getElementById('teacherReviewModal');
     if (existing) existing.remove();
@@ -1065,7 +981,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
     overlay.id = 'teacherReviewModal';
     overlay.innerHTML = `
       <div class="review-panel" style="text-align:center;padding:3rem 1.5rem;">
-        <div style="font-size:.9375rem;color:var(--text-tertiary,#6b7280);">Loading attempt…</div>
+        <div style="font-size:var(--text-base);color:var(--text-3);">Loading attempt…</div>
       </div>`;
     document.body.appendChild(overlay);
 
@@ -1077,7 +993,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
       const snap = await Db().collection('results').doc(resultId).get();
       if (!snap.exists) {
         overlay.querySelector('.review-panel').innerHTML = `
-          <p style="color:var(--danger,#e03131);font-size:.9375rem;">Result not found.</p>
+          <p style="color:var(--danger);font-size:var(--text-base);">Result not found.</p>
           <button onclick="document.getElementById('teacherReviewModal').remove()"
                   class="btn bg-gray-500" style="margin-top:1rem;">Close</button>`;
         return;
@@ -1085,17 +1001,17 @@ async function _saveStudentEdit(uid, previousAdmno) {
       r = snap.data();
     } catch (err) {
       overlay.querySelector('.review-panel').innerHTML = `
-        <p style="color:var(--danger,#e03131);font-size:.9375rem;">Failed to load result.</p>
+        <p style="color:var(--danger);font-size:var(--text-base);">Failed to load result.</p>
         <button onclick="document.getElementById('teacherReviewModal').remove()"
                 class="btn bg-gray-500" style="margin-top:1rem;">Close</button>`;
       return;
     }
 
-    const gradeColor = r.grade === 'A' ? 'var(--success,#2f9e44)'
-                     : r.grade === 'B' ? 'var(--info,#1971c2)'
-                     : r.grade === 'C' ? 'var(--warning,#e8890c)'
-                     : r.grade === 'D' ? '#ea580c'
-                     : 'var(--danger,#e03131)';
+    const gradeColor = r.grade === 'A' ? 'var(--success)'
+                     : r.grade === 'B' ? 'var(--info)'
+                     : r.grade === 'C' ? 'var(--warning)'
+                     : r.grade === 'D' ? 'var(--warning)'
+                     : 'var(--danger)';
     const ts = r.timestamp
       ? new Date(r.timestamp.toDate ? r.timestamp.toDate() : r.timestamp)
           .toLocaleString('en-GB', { dateStyle:'medium', timeStyle:'short' })
@@ -1105,19 +1021,19 @@ async function _saveStudentEdit(uid, previousAdmno) {
       overlay.querySelector('.review-panel').innerHTML = `
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;">
           <div>
-            <h2 style="font-size:1.125rem;font-weight:700;">${_esc(r.name || '')}</h2>
-            <p style="font-size:.8125rem;color:var(--text-tertiary,#6b7280);margin-top:2px;">
+            <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">${_esc(r.name || '')}</h2>
+            <p style="font-size:var(--text-sm);color:var(--text-3);margin-top:2px;">
               ${_esc(r.class || '')} · ${_esc(r.school || '')} · ${ts}</p>
           </div>
           <button onclick="document.getElementById('teacherReviewModal').remove()"
-                  class="btn bg-gray-500" style="font-size:.8125rem;">Close</button>
+                  class="btn bg-gray-500" style="font-size:var(--text-sm);">Close</button>
         </div>
-        <div style="padding:2rem;text-align:center;background:var(--surface-muted,#f3f4f6);
-                    border-radius:8px;border:1px solid var(--border,#e5e7eb);">
+        <div style="padding:2rem;text-align:center;background:var(--bg-subtle);
+                    border-radius:8px;border:1px solid var(--border);">
           <p style="font-size:2rem;">📋</p>
-          <p style="font-size:.9375rem;font-weight:600;color:var(--text-primary,#111827);margin-top:.5rem;">
+          <p style="font-size:var(--text-base);font-weight:600;color:var(--text-1);margin-top:.5rem;">
             Detailed attempt data not available</p>
-          <p style="font-size:.8125rem;color:var(--text-tertiary,#6b7280);margin-top:.375rem;line-height:1.6;">
+          <p style="font-size:var(--text-sm);color:var(--text-3);margin-top:.375rem;line-height:1.6;">
             This result was submitted before per-question tracking was introduced.</p>
         </div>`;
       return;
@@ -1131,78 +1047,78 @@ async function _saveStudentEdit(uid, previousAdmno) {
         const isSkipped = q.chosen === null || q.chosen === undefined;
         const isCorrect = !isSkipped && q.chosen === q.ans;
         const cardClass = isCorrect ? 'review-q-card--correct' : isSkipped ? 'review-q-card--skipped' : 'review-q-card--wrong';
-        const chosenColor = isCorrect ? 'var(--success,#2f9e44)' : isSkipped ? 'var(--text-disabled,#9ca3af)' : 'var(--danger,#e03131)';
+        const chosenColor = isCorrect ? 'var(--success)' : isSkipped ? 'var(--text-4)' : 'var(--danger)';
         const chosenText  = isSkipped ? 'Not answered' : _escQ(q.opts?.[q.chosen] ?? '—');
         const correctText = _escQ(q.opts?.[q.ans] ?? '—');
         return `
           <div class="review-q-card ${cardClass}">
-            <p style="font-size:.9375rem;font-weight:600;margin-bottom:.75rem;line-height:1.6;">
+            <p style="font-size:var(--text-base);font-weight:600;margin-bottom:.75rem;line-height:1.6;">
               ${i + 1}. ${_escQ(q.q)}</p>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;font-size:.8125rem;margin-bottom:.75rem;">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;font-size:var(--text-sm);margin-bottom:.75rem;">
               <div>
-                <span style="font-weight:600;color:var(--text-tertiary,#6b7280);">Student answered:</span>
+                <span style="font-weight:600;color:var(--text-3);">Student answered:</span>
                 <span style="display:block;margin-top:2px;font-weight:500;color:${chosenColor};">${chosenText}</span>
               </div>
               <div>
-                <span style="font-weight:600;color:var(--text-tertiary,#6b7280);">Correct answer:</span>
-                <span style="display:block;margin-top:2px;font-weight:500;color:var(--success,#2f9e44);">${correctText}</span>
+                <span style="font-weight:600;color:var(--text-3);">Correct answer:</span>
+                <span style="display:block;margin-top:2px;font-weight:500;color:var(--success);">${correctText}</span>
               </div>
             </div>
             ${q.exp ? `
-              <div style="background:var(--surface-muted,#f3f4f6);border:1px solid var(--border,#e5e7eb);
-                          border-radius:6px;padding:.5625rem .875rem;font-size:.8125rem;
-                          color:var(--text-secondary,#374151);line-height:1.6;">
+              <div style="background:var(--bg-subtle);border:1px solid var(--border);
+                          border-radius:6px;padding:.5625rem .875rem;font-size:var(--text-sm);
+                          color:var(--text-2);line-height:1.6;">
                 <span style="font-weight:600;">Explanation:</span> ${_escQ(q.exp)}
               </div>` : ''}
           </div>`;
       }).join('');
       return `
-        <details style="border:1px solid var(--border,#e5e7eb);border-radius:10px;overflow:hidden;margin-bottom:.75rem;">
-          <summary style="padding:.875rem 1.125rem;font-size:.9375rem;font-weight:700;cursor:pointer;
-                          background:var(--surface-subtle,#f9fafb);display:flex;align-items:center;
+        <details style="border:1px solid var(--border);border-radius:10px;overflow:hidden;margin-bottom:.75rem;">
+          <summary style="padding:.875rem 1.125rem;font-size:var(--text-base);font-weight:700;cursor:pointer;
+                          background:var(--bg-subtle);display:flex;align-items:center;
                           justify-content:space-between;list-style:none;user-select:none;">
             <span>${_esc(subj)}</span>
-            <span style="font-size:.8125rem;font-weight:600;
-                         color:${pct >= 50 ? 'var(--success,#2f9e44)' : 'var(--danger,#e03131)'};">
+            <span style="font-size:var(--text-sm);font-weight:600;
+                         color:${pct >= 50 ? 'var(--success)' : 'var(--danger)'};">
               ${correctCount}/${qs.length} correct · ${pct}%</span>
           </summary>
           <div style="padding:1rem;display:flex;flex-direction:column;gap:.75rem;">
-            ${questionsHtml || '<p style="font-size:.875rem;color:var(--text-tertiary,#6b7280);">No questions found.</p>'}
+            ${questionsHtml || '<p style="font-size:var(--text-sm);color:var(--text-3);">No questions found.</p>'}
           </div>
         </details>`;
     }).join('');
 
     overlay.querySelector('.review-panel').innerHTML = `
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;
-                  margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--border,#e5e7eb);">
+                  margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--border);">
         <div>
-          <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-primary,#111827);">${_esc(r.name || '')}</h2>
-          <p style="font-size:.8125rem;color:var(--text-tertiary,#6b7280);margin-top:3px;">
+          <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">${_esc(r.name || '')}</h2>
+          <p style="font-size:var(--text-sm);color:var(--text-3);margin-top:3px;">
             ${_esc(r.class || '')} · ${_esc(r.school || '')}</p>
-          <p style="font-size:.75rem;color:var(--text-disabled,#9ca3af);margin-top:2px;">${ts}</p>
+          <p style="font-size:var(--text-xs);color:var(--text-4);margin-top:2px;">${ts}</p>
         </div>
         <button onclick="document.getElementById('teacherReviewModal').remove()"
-                class="btn bg-gray-500" style="font-size:.8125rem;padding:.4375rem .875rem;flex-shrink:0;">Close</button>
+                class="btn bg-gray-500" style="font-size:var(--text-sm);flex-shrink:0;">Close</button>
       </div>
       <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;
-                  background:var(--surface-subtle,#f9fafb);border:1px solid var(--border,#e5e7eb);
+                  background:var(--bg-subtle);border:1px solid var(--border);
                   border-radius:8px;padding:.875rem 1.125rem;margin-bottom:1.25rem;">
         <div style="text-align:center;min-width:60px;">
           <div style="font-size:2rem;font-weight:800;color:${gradeColor};line-height:1;">${r.percentage || 0}%</div>
-          <div style="font-size:.875rem;font-weight:700;color:${gradeColor};">Grade ${_esc(r.grade || '?')}</div>
+          <div style="font-size:var(--text-sm);font-weight:700;color:${gradeColor};">Grade ${_esc(r.grade || '?')}</div>
         </div>
         <div style="flex:1;display:flex;flex-wrap:wrap;gap:.375rem;">
           ${(r.subjects || []).map(s => `
-            <div style="background:#fff;border:1px solid var(--border,#e5e7eb);border-radius:6px;
+            <div style="background:var(--bg-base);border:1px solid var(--border);border-radius:6px;
                         padding:.375rem .75rem;text-align:center;min-width:80px;">
-              <div style="font-size:.75rem;color:var(--text-tertiary,#6b7280);font-weight:500;">${_esc(s)}</div>
-              <div style="font-size:.9375rem;font-weight:700;color:var(--text-primary,#111827);">${r.scores?.[s] || 0}%</div>
-              <div style="font-size:.6875rem;color:var(--text-disabled,#9ca3af);">
+              <div style="font-size:var(--text-xs);color:var(--text-3);font-weight:500;">${_esc(s)}</div>
+              <div style="font-size:var(--text-base);font-weight:700;color:var(--text-1);">${r.scores?.[s] || 0}%</div>
+              <div style="font-size:var(--text-xs);color:var(--text-4);">
                 ${r.correctCounts?.[s] ?? '?'}/${(r.questionSnapshots?.[s] || []).length}</div>
             </div>`).join('')}
         </div>
       </div>
-      <div>${subjectBlocks || '<p style="font-size:.875rem;color:var(--text-tertiary,#6b7280);">No subjects found.</p>'}</div>`;
+      <div>${subjectBlocks || '<p style="font-size:var(--text-sm);color:var(--text-3);">No subjects found.</p>'}</div>`;
 
     if (window._katexAutoRenderReady && window.renderMathInElement) {
       requestAnimationFrame(() => {
@@ -1229,41 +1145,37 @@ async function _saveStudentEdit(uid, previousAdmno) {
       .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  /* -------------------------------------------------- */
-  /* Schools tab                                         */
-  /* -------------------------------------------------- */
-
   function _loadSchools() {
     const container = document.getElementById('schoolsList');
     if (!container) return;
-    container.innerHTML = `<p style="font-size:.875rem;color:var(--c-text-3,#6b7280);">Loading...</p>`;
+    container.innerHTML = `<p style="font-size:var(--text-sm);color:var(--text-3);">Loading...</p>`;
     _cancel('schools');
     const unsub = Db().collection('schools').orderBy('name').onSnapshot(
       snap => {
         if (snap.empty) {
-          container.innerHTML = `<p style="font-size:.875rem;color:var(--c-text-3,#6b7280);">No schools added yet.</p>`;
+          container.innerHTML = `<p style="font-size:var(--text-sm);color:var(--text-3);">No schools added yet.</p>`;
           return;
         }
         container.innerHTML = snap.docs.map(doc => `
           <div style="display:flex;align-items:center;justify-content:space-between;
-                      background:var(--c-surface,#fff);border:1px solid var(--c-border,#e5e7eb);
+                      background:var(--bg-base);border:1px solid var(--border);
                       border-radius:8px;padding:.625rem 1rem;">
-            <p style="font-size:.9375rem;font-weight:500;color:var(--c-text,#111827);">${_esc(doc.data().name)}</p>
+            <p style="font-size:var(--text-base);font-weight:500;color:var(--text-1);">${_esc(doc.data().name)}</p>
             <div style="display:flex;gap:.375rem;align-items:center;">
               <button class="teacher-rename-school btn bg-blue-600"
                       data-id="${_esc(doc.id)}" data-name="${_esc(doc.data().name)}"
-                      style="font-size:.75rem;padding:.3125rem .75rem;">Rename</button>
+                      style="font-size:var(--text-xs);padding:.3125rem .75rem;">Rename</button>
               <button class="teacher-delete-school" data-id="${_esc(doc.id)}" data-name="${_esc(doc.data().name)}"
                       style="background:none;border:none;cursor:pointer;font-size:1rem;
-                             line-height:1;padding:2px 4px;color:var(--c-text-4,#9ca3af);"
-                      onmouseenter="this.style.color='var(--c-danger,#dc2626)'"
-                      onmouseleave="this.style.color='var(--c-text-4,#9ca3af)'">×</button>
+                             line-height:1;padding:2px 4px;color:var(--text-4);"
+                      onmouseenter="this.style.color='var(--danger)'"
+                      onmouseleave="this.style.color='var(--text-4)'">×</button>
             </div>
           </div>`).join('');
       },
       err => {
         console.error('[teacher] Error loading schools:', err);
-        container.innerHTML = `<p style="color:var(--c-danger,#dc2626);font-size:.875rem;">Error loading schools.</p>`;
+        container.innerHTML = `<p style="color:var(--danger);font-size:var(--text-sm);">Error loading schools.</p>`;
       }
     );
     _reg('schools', unsub);
@@ -1334,18 +1246,9 @@ async function _saveStudentEdit(uid, previousAdmno) {
     }
   }
 
-  /* -------------------------------------------------- */
-  /* Tasks & Messages tab — state                        */
-  /* -------------------------------------------------- */
-
-  // _taskScope:   'once' | 'weekly' | 'range'
-  // _assignScope: 'all' | 'class' | 'student'
   let _taskScope   = 'once';
   let _assignScope = 'all';
 
-  /* ─────────────────────────────────────────────────── */
-  /* _setTaskScope                                       */
-  /* ─────────────────────────────────────────────────── */
   function _setTaskScope(scope) {
   _taskScope = scope;
 
@@ -1386,11 +1289,6 @@ async function _saveStudentEdit(uid, previousAdmno) {
   _clearTaskFormDates();
 }
 
-  /* ─────────────────────────────────────────────────── */
-  /* _renderDateConfigArea                               */
-  /* Injects the correct date-entry UI into              */
-  /* #taskDateConfigArea based on _taskScope.            */
-  /* ─────────────────────────────────────────────────── */
   function _renderDateConfigArea() {
     const area = document.getElementById('taskDateConfigArea');
     if (!area) return;
@@ -1398,72 +1296,65 @@ async function _saveStudentEdit(uid, previousAdmno) {
     if (_taskScope === 'once') {
       area.innerHTML = `
         <div style="margin-bottom:.875rem;">
-          <label style="display:block;font-size:.75rem;font-weight:600;
-                        color:var(--c-text-2,#374151);margin-bottom:.375rem;">
+          <label style="display:block;font-size:var(--text-xs);font-weight:600;
+                        color:var(--text-2);margin-bottom:.375rem;">
             Task Dates &amp; Subjects
           </label>
-          <p style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin-bottom:.5rem;line-height:1.5;">
+          <p style="font-size:var(--text-xs);color:var(--text-3);margin-bottom:.5rem;line-height:1.5;">
             Add each specific date, then choose which subjects are required for that day.
             Leave all unchecked = no subject restriction.
           </p>
           <div style="display:flex;gap:.5rem;align-items:center;margin-bottom:.5rem;">
             <input type="date" id="newTaskDate" style="flex:1;" />
             <button onclick="Teacher.addTaskDate()" class="btn"
-                    style="white-space:nowrap;padding:.5rem .875rem;font-size:.8125rem;">+ Add</button>
+                    style="white-space:nowrap;padding:.5rem .875rem;font-size:var(--text-sm);">+ Add</button>
           </div>
           <div id="tasksDates" class="space-y-1"></div>
         </div>`;
 
     } else {
-      // weekly or range — shared start/end date inputs + day-of-week checkboxes
       const dayNames = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
       const rangeLabel = _taskScope === 'range' ? 'Active weekdays' : 'Days of week';
 
       area.innerHTML = `
         <div style="margin-bottom:.875rem;">
-          <label style="display:block;font-size:.75rem;font-weight:600;
-                        color:var(--c-text-2,#374151);margin-bottom:.375rem;">Start Date <span style="color:var(--danger,#e03131);">*</span></label>
+          <label style="display:block;font-size:var(--text-xs);font-weight:600;
+                        color:var(--text-2);margin-bottom:.375rem;">Start Date <span style="color:var(--danger);">*</span></label>
           <input type="date" id="taskStartDate" style="width:100%;" />
         </div>
         <div style="margin-bottom:.875rem;">
-          <label style="display:block;font-size:.75rem;font-weight:600;
-                        color:var(--c-text-2,#374151);margin-bottom:.375rem;">
+          <label style="display:block;font-size:var(--text-xs);font-weight:600;
+                        color:var(--text-2);margin-bottom:.375rem;">
             End Date
-            <span style="font-weight:400;color:var(--text-tertiary,#6b7280);">— leave blank for open-ended</span>
+            <span style="font-weight:400;color:var(--text-3);">— leave blank for open-ended</span>
           </label>
           <input type="date" id="taskEndDate" style="width:100%;" />
         </div>
         <div style="margin-bottom:.875rem;">
-          <label style="display:block;font-size:.75rem;font-weight:600;
-                        color:var(--c-text-2,#374151);margin-bottom:.375rem;">${_esc(rangeLabel)}</label>
+          <label style="display:block;font-size:var(--text-xs);font-weight:600;
+                        color:var(--text-2);margin-bottom:.375rem;">${_esc(rangeLabel)}</label>
           <div style="display:flex;flex-wrap:wrap;gap:.375rem;">
             ${dayNames.map(day => `
-              <label style="display:flex;align-items:center;gap:.375rem;font-size:.8125rem;
+              <label style="display:flex;align-items:center;gap:.375rem;font-size:var(--text-sm);
                             cursor:pointer;padding:.3125rem .625rem;border-radius:6px;
-                            border:1px solid var(--c-border,#e5e7eb);background:var(--c-surface,#fff);">
+                            border:1px solid var(--border);background:var(--bg-base);">
                 <input type="checkbox" class="task-day-cb" value="${day}"
-                       style="width:.875rem;height:.875rem;accent-color:var(--brand,#3b5bdb);cursor:pointer;" />
+                       style="width:.875rem;height:.875rem;accent-color:var(--accent);cursor:pointer;" />
                 ${day.slice(0,3)}
               </label>`).join('')}
           </div>
           ${_taskScope === 'range'
-            ? `<p style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin-top:.375rem;line-height:1.4;">
+            ? `<p style="font-size:var(--text-xs);color:var(--text-3);margin-top:.375rem;line-height:1.4;">
                  Leave all unchecked to run every calendar day in the range.
                </p>`
             : ''}
         </div>`;
     }
 
-    // Show/hide the recurring subject picker wrapper
     const rswWrap = document.getElementById('taskRecurringSubjectsWrap');
     if (rswWrap) rswWrap.style.display = _taskScope !== 'once' ? '' : 'none';
   }
 
-  /* ─────────────────────────────────────────────────── */
-  /* _renderRecurringSubjectPicker                       */
-  /* For weekly/range tasks, shows one checkbox group    */
-  /* per day-of-week.                                    */
-  /* ─────────────────────────────────────────────────── */
   function _renderRecurringSubjectPicker() {
     const wrap = document.getElementById('taskRecurringSubjectsList');
     if (!wrap) return;
@@ -1471,39 +1362,39 @@ async function _saveStudentEdit(uid, previousAdmno) {
 
     const subjects = _getSubjectsForCurrentScope();
     if (subjects.length === 0) {
-      wrap.innerHTML = `<p style="font-size:.8125rem;color:var(--text-tertiary,#6b7280);font-style:italic;">
+      wrap.innerHTML = `<p style="font-size:var(--text-sm);color:var(--text-3);font-style:italic;">
         Select a target first to see available subjects.</p>`;
       return;
     }
 
     const dayNames = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
     wrap.innerHTML = dayNames.map(day => `
-      <details style="border:1px solid var(--c-border,#e5e7eb);border-radius:8px;
+      <details style="border:1px solid var(--border);border-radius:8px;
                       overflow:hidden;margin-bottom:.375rem;">
-        <summary style="padding:.4375rem .75rem;font-size:.8125rem;font-weight:600;cursor:pointer;
-                        background:var(--surface-subtle,#f9fafb);display:flex;align-items:center;
+        <summary style="padding:.4375rem .75rem;font-size:var(--text-sm);font-weight:600;cursor:pointer;
+                        background:var(--bg-subtle);display:flex;align-items:center;
                         justify-content:space-between;list-style:none;user-select:none;">
           <span>${day}</span>
-          <span class="recurring-day-count-${day}" style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);">
+          <span class="recurring-day-count-${day}" style="font-size:var(--text-xs);color:var(--text-3);">
             (all subjects)
           </span>
         </summary>
         <div style="padding:.5rem .75rem;">
           <div style="display:flex;gap:.5rem;margin-bottom:.375rem;">
             <button onclick="Teacher._selectAllDaySubjects('${day}')"
-                    style="font-size:.6875rem;font-weight:600;color:var(--brand,#3b5bdb);
+                    style="font-size:var(--text-xs);font-weight:600;color:var(--accent);
                            background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">All</button>
-            <span style="color:var(--border-medium,#d1d5db);">·</span>
+            <span style="color:var(--border-strong);">·</span>
             <button onclick="Teacher._clearDaySubjects('${day}')"
-                    style="font-size:.6875rem;font-weight:600;color:var(--text-tertiary,#6b7280);
+                    style="font-size:var(--text-xs);font-weight:600;color:var(--text-3);
                            background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">None</button>
           </div>
           ${subjects.map(subj => `
             <label style="display:flex;align-items:center;gap:.5rem;padding:.25rem 0;
-                          font-size:.8125rem;cursor:pointer;">
+                          font-size:var(--text-sm);cursor:pointer;">
               <input type="checkbox" class="recurring-day-subj-cb" data-day="${day}" value="${_esc(subj)}"
                      onchange="Teacher._updateDaySubjCount('${day}')"
-                     style="width:.875rem;height:.875rem;accent-color:var(--brand,#3b5bdb);cursor:pointer;" />
+                     style="width:.875rem;height:.875rem;accent-color:var(--accent);cursor:pointer;" />
               ${_esc(subj)}
             </label>`).join('')}
         </div>
@@ -1527,12 +1418,9 @@ async function _saveStudentEdit(uid, previousAdmno) {
     const label = document.querySelector(`.recurring-day-count-${day}`);
     if (!label) return;
     label.textContent = count === 0 ? '(all subjects)' : `(${count} restricted)`;
-    label.style.color = count === 0 ? 'var(--text-tertiary,#6b7280)' : 'var(--brand,#3b5bdb)';
+    label.style.color = count === 0 ? 'var(--text-3)' : 'var(--accent)';
   }
 
-  /* ─────────────────────────────────────────────────── */
-  /* _setAssignScope                                     */
-  /* ─────────────────────────────────────────────────── */
   function _setAssignScope(scope) {
   _assignScope = scope;
 
@@ -1586,12 +1474,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
     _clearTaskFormDates();
   }
 
-  /* ─────────────────────────────────────────────────── */
-  /* _currentTaskDocId                                   */
-  /* ─────────────────────────────────────────────────── */
   function _currentTaskDocId() {
-    // For weekly/range, doc IDs use the 'weekly_' prefix so the
-    // existing 6-listener architecture in tasks.js still finds them.
     const prefix = _taskScope !== 'once' ? 'weekly' : '';
 
     if (_assignScope === 'all') return prefix || 'global';
@@ -1616,17 +1499,11 @@ async function _saveStudentEdit(uid, previousAdmno) {
   }
 
   function _onTaskTargetChange() {
-    // For weekly/range tasks: re-render the per-day subject picker now that
-    // a class or student has been selected (subjects depend on the target).
-    // This was previously skipped by an early return, so the subject
-    // checkboxes never appeared after picking a class or student.
     if (_taskScope !== 'once') {
       _renderRecurringSubjectPicker();
       return;
     }
 
-    // For once tasks: rebuild any existing date rows so their subject
-    // checkboxes reflect the newly selected class/student's subjects.
     const datesEl = document.getElementById('tasksDates');
     if (!datesEl) return;
     const data = Array.from(datesEl.querySelectorAll('.task-date-row'))
@@ -1635,9 +1512,6 @@ async function _saveStudentEdit(uid, previousAdmno) {
     data.forEach(date => _appendDateItem(date, []));
   }
 
-  /* ─────────────────────────────────────────────────── */
-  /* _getSubjectsForCurrentScope                         */
-  /* ─────────────────────────────────────────────────── */
   function _getSubjectsForCurrentScope() {
     const qBank = window.questions || {};
 
@@ -1666,9 +1540,6 @@ async function _saveStudentEdit(uid, previousAdmno) {
     return [];
   }
 
-  /* ─────────────────────────────────────────────────── */
-  /* addTaskDate (one-time only)                         */
-  /* ─────────────────────────────────────────────────── */
   function addTaskDate() {
     const container = document.getElementById('tasksDates');
     if (!container) return;
@@ -1681,9 +1552,6 @@ async function _saveStudentEdit(uid, previousAdmno) {
     if (dateInput) dateInput.value = '';
   }
 
-  /* ─────────────────────────────────────────────────── */
-  /* _appendDateItem (one-time tasks)                    */
-  /* ─────────────────────────────────────────────────── */
   function _appendDateItem(dateStr, preselected) {
     const container = document.getElementById('tasksDates');
     if (!container) return;
@@ -1697,54 +1565,54 @@ async function _saveStudentEdit(uid, previousAdmno) {
     const subjectCheckboxesHtml = subjects.length > 0
       ? subjects.map(subj => `
           <label style="display:flex;align-items:center;gap:.5rem;padding:.3125rem .625rem;cursor:pointer;
-                        border-bottom:1px solid var(--border,#e5e7eb);"
-                 onmouseenter="this.style.background='var(--brand-bg,#edf2ff)'"
+                        border-bottom:1px solid var(--border);"
+                 onmouseenter="this.style.background='var(--accent-subtle)'"
                  onmouseleave="this.style.background=''">
             <input type="checkbox" class="date-subj-cb" value="${_esc(subj)}"
                    ${preselected.includes(subj) ? 'checked' : ''}
-                   style="width:.875rem;height:.875rem;accent-color:var(--brand,#3b5bdb);cursor:pointer;" />
-            <span style="font-size:.8125rem;color:var(--text-primary,#111827);">${_esc(subj)}</span>
+                   style="width:.875rem;height:.875rem;accent-color:var(--accent);cursor:pointer;" />
+            <span style="font-size:var(--text-sm);color:var(--text-1);">${_esc(subj)}</span>
           </label>`).join('')
-      : `<p style="font-size:.8125rem;color:var(--text-tertiary,#6b7280);padding:.5rem .75rem;font-style:italic;">
+      : `<p style="font-size:var(--text-sm);color:var(--text-3);padding:.5rem .75rem;font-style:italic;">
            No subjects available.</p>`;
 
     const div = document.createElement('div');
     div.className    = 'task-date-row';
     div.dataset.date = dateStr;
-    div.style.cssText = `border:1.5px solid var(--brand-border,#bac8ff);border-radius:8px;
-      overflow:hidden;margin-bottom:.5rem;background:var(--surface,#fff);`;
+    div.style.cssText = `border:1.5px solid var(--accent-border);border-radius:8px;
+      overflow:hidden;margin-bottom:.5rem;background:var(--bg-base);`;
 
     div.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:space-between;
-                  padding:.5rem .75rem;background:var(--brand-bg,#edf2ff);cursor:pointer;"
+                  padding:.5rem .75rem;background:var(--accent-subtle);cursor:pointer;"
            onclick="this.nextElementSibling.style.display =
                     this.nextElementSibling.style.display === 'none' ? '' : 'none'">
         <div style="display:flex;align-items:center;gap:.5rem;">
-          <span style="font-size:.8125rem;font-weight:700;color:var(--brand-text,#3730a3);">${_esc(label)}</span>
-          <span class="date-subj-count" style="font-size:.6875rem;font-weight:600;color:var(--text-tertiary,#6b7280);">
+          <span style="font-size:var(--text-sm);font-weight:700;color:var(--accent-text);">${_esc(label)}</span>
+          <span class="date-subj-count" style="font-size:var(--text-xs);font-weight:600;color:var(--text-3);">
             (all subjects)</span>
         </div>
         <div style="display:flex;align-items:center;gap:.375rem;">
-          <span style="font-size:.6875rem;color:var(--brand,#3b5bdb);">▾ subjects</span>
+          <span style="font-size:var(--text-xs);color:var(--accent);">▾ subjects</span>
           <button onclick="event.stopPropagation();this.closest('.task-date-row').remove()"
                   style="background:none;border:none;cursor:pointer;font-size:1rem;
-                         line-height:1;padding:2px 4px;color:var(--c-danger,#dc2626);">×</button>
+                         line-height:1;padding:2px 4px;color:var(--danger);">×</button>
         </div>
       </div>
-      <div style="border-top:1px solid var(--border,#e5e7eb);">
+      <div style="border-top:1px solid var(--border);">
         <div style="display:flex;align-items:center;justify-content:space-between;
-                    padding:.375rem .75rem;background:var(--surface-muted,#f9fafb);
-                    border-bottom:1px solid var(--border,#e5e7eb);">
-          <span style="font-size:.6875rem;font-weight:600;color:var(--text-tertiary,#6b7280);">
+                    padding:.375rem .75rem;background:var(--bg-subtle);
+                    border-bottom:1px solid var(--border);">
+          <span style="font-size:var(--text-xs);font-weight:600;color:var(--text-3);">
             Subjects <span style="font-weight:400;">(leave all unchecked = no restriction)</span>
           </span>
           <div style="display:flex;gap:.375rem;">
             <button onclick="Teacher._selectAllDateSubjects(this)"
-                    style="font-size:.6875rem;font-weight:600;color:var(--brand,#3b5bdb);
+                    style="font-size:var(--text-xs);font-weight:600;color:var(--accent);
                            background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">All</button>
-            <span style="color:var(--border-medium,#d1d5db);">·</span>
+            <span style="color:var(--border-strong);">·</span>
             <button onclick="Teacher._clearDateSubjects(this)"
-                    style="font-size:.6875rem;font-weight:600;color:var(--text-tertiary,#6b7280);
+                    style="font-size:var(--text-xs);font-weight:600;color:var(--text-3);
                            background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">None</button>
           </div>
         </div>
@@ -1765,7 +1633,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
     const label   = rowEl.querySelector('.date-subj-count');
     if (!label) return;
     label.textContent = checked === 0 ? '(all subjects)' : `(${checked} subject${checked !== 1 ? 's' : ''} required)`;
-    label.style.color = checked === 0 ? 'var(--text-tertiary,#6b7280)' : 'var(--brand,#3b5bdb)';
+    label.style.color = checked === 0 ? 'var(--text-3)' : 'var(--accent)';
   }
 
   function _selectAllDateSubjects(btn) {
@@ -1782,9 +1650,6 @@ async function _saveStudentEdit(uid, previousAdmno) {
     _updateDateSubjCount(row);
   }
 
-  /* ─────────────────────────────────────────────────── */
-  /* saveTasksConfig                                     */
-  /* ─────────────────────────────────────────────────── */
   async function saveTasksConfig() {
     const docId = _currentTaskDocId();
     if (!docId) {
@@ -1798,7 +1663,6 @@ async function _saveStudentEdit(uid, previousAdmno) {
     const title   = document.getElementById('tasksTitle')?.value.trim()   || '';
     const message = document.getElementById('tasksMessage')?.value.trim() || '';
 
-    // Duration: null means "use system default" — exam.js falls back to AppConfig.EXAM_DURATION_MS
     const durationRaw = document.getElementById('taskDurationMs')?.value;
     const durationMs  = durationRaw ? parseInt(durationRaw, 10) : null;
 
@@ -1840,7 +1704,6 @@ async function _saveStudentEdit(uid, previousAdmno) {
       }
 
     } else {
-      // weekly or range
       const startDate = document.getElementById('taskStartDate')?.value.trim() || '';
       const endDate   = document.getElementById('taskEndDate')?.value.trim()   || null;
 
@@ -1854,7 +1717,6 @@ async function _saveStudentEdit(uid, previousAdmno) {
         UI.toast('Please select at least one day of the week.', 'warning'); return;
       }
 
-      // Build dateSubjects from the per-day-of-week subject pickers
       const dateSubjects = {};
       const dayNames = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
       dayNames.forEach(day => {
@@ -1864,7 +1726,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
       });
 
       payload = {
-        recurrence:  _taskScope,          // 'weekly' or 'range' — exact value, not hardcoded
+        recurrence:  _taskScope,
         active, title,
         message:     message || 'Complete the required exams on the scheduled dates.',
         startDate,
@@ -1872,7 +1734,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
         weeklyDays:  checkedDays,
         dateSubjects,
         durationMs:  durationMs || null,
-        assignScope: _assignScope,        // 'all' | 'class' | 'student'
+        assignScope: _assignScope,
         updatedAt:   firebase.firestore.FieldValue.serverTimestamp(),
       };
 
@@ -1902,16 +1764,11 @@ async function _saveStudentEdit(uid, previousAdmno) {
     }
   }
 
-  /* -------------------------------------------------- */
-  /* _loadTasksManager                                   */
-  /* -------------------------------------------------- */
-
   function _loadTasksManager() {
     _cancel('tasksManager');
     _taskScope   = 'once';
     _assignScope = 'all';
 
-    // Populate class dropdown
     _cancel('taskClassList');
     const unsubClasses = Db().collection('students').onSnapshot(snap => {
       const classes = new Set();
@@ -1925,14 +1782,12 @@ async function _saveStudentEdit(uid, previousAdmno) {
     });
     _reg('taskClassList', unsubClasses);
 
-    // Listen to all task docs
     _cancel('tasksList');
     const unsubTasks = Db().collection('coachingTasks').onSnapshot(snap => {
       _renderExistingTasksList(snap.docs);
     });
     _reg('tasksList', unsubTasks);
 
-    // Load students for messaging + targeting
     _cancel('msgStudents');
     _msgStudentCache = [];
     const unsubStudents = Db().collection('students').orderBy('name').onSnapshot(snap => {
@@ -1965,12 +1820,6 @@ async function _saveStudentEdit(uid, previousAdmno) {
     sel.innerHTML = html;
   }
 
-  /* -------------------------------------------------- */
-  /* _renderExistingTasksList                            */
-  /* -------------------------------------------------- */
-
-  // REPLACE the _renderExistingTasksList function in teacher.js with this:
-
 function _renderExistingTasksList(docs) {
     let container = document.getElementById('existingTasksList');
     if (!container) {
@@ -1988,18 +1837,18 @@ function _renderExistingTasksList(docs) {
 
     function scopeLabel(docId) {
       if (docId === 'global')
-        return { label:'All Students', color:'var(--brand,#3b5bdb)', bg:'var(--brand-bg,#edf2ff)', border:'var(--brand-border,#bac8ff)' };
+        return { label:'All Students', color:'var(--accent-text)', bg:'var(--accent-subtle)', border:'var(--accent-border)' };
       if (docId === 'weekly')
-        return { label:'🔄 Recurring · All', color:'#7c3aed', bg:'#f5f3ff', border:'#ddd6fe' };
+        return { label:'🔄 Recurring · All', color:'var(--accent-text)', bg:'var(--accent-subtle)', border:'var(--accent-border)' };
       if (docId.startsWith('weekly_class_'))
-        return { label:'🔄 Recurring · Class: ' + docId.replace('weekly_class_','').toUpperCase(), color:'#7c3aed', bg:'#f5f3ff', border:'#ddd6fe' };
+        return { label:'🔄 Recurring · Class: ' + docId.replace('weekly_class_','').toUpperCase(), color:'var(--accent-text)', bg:'var(--accent-subtle)', border:'var(--accent-border)' };
       if (docId.startsWith('weekly_student_'))
-        return { label:'🔄 Recurring · Student', color:'#7c3aed', bg:'#f5f3ff', border:'#ddd6fe' };
+        return { label:'🔄 Recurring · Student', color:'var(--accent-text)', bg:'var(--accent-subtle)', border:'var(--accent-border)' };
       if (docId.startsWith('class_'))
-        return { label:'Class: ' + docId.replace('class_','').toUpperCase(), color:'var(--warning,#e8890c)', bg:'var(--warning-bg,#fff9db)', border:'var(--warning-border,#ffec99)' };
+        return { label:'Class: ' + docId.replace('class_','').toUpperCase(), color:'var(--warning-text)', bg:'var(--warning-subtle)', border:'var(--warning-border)' };
       if (docId.startsWith('student_'))
-        return { label:'Student', color:'var(--success,#2f9e44)', bg:'var(--success-bg,#ebfbee)', border:'var(--success-border,#b2f2bb)' };
-      return { label:docId, color:'var(--text-tertiary,#6b7280)', bg:'var(--surface-muted,#f3f4f6)', border:'var(--border,#e5e7eb)' };
+        return { label:'Student', color:'var(--success-text)', bg:'var(--success-subtle)', border:'var(--success-border)' };
+      return { label:docId, color:'var(--text-3)', bg:'var(--bg-subtle)', border:'var(--border)' };
     }
 
     function resolveStudentName(docId) {
@@ -2021,8 +1870,8 @@ function _renderExistingTasksList(docs) {
     }
 
     container.innerHTML =
-      '<div style="border-top:1px solid var(--c-border,#e5e7eb);padding-top:1rem;margin-top:.25rem;">' +
-      '<h3 style="font-size:.875rem;font-weight:700;color:var(--c-text,#111827);margin-bottom:.625rem;">Existing Tasks</h3>' +
+      '<div style="border-top:1px solid var(--border);padding-top:1rem;margin-top:.25rem;">' +
+      '<h3 style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);margin-bottom:.625rem;">Existing Tasks</h3>' +
       '<div style="display:flex;flex-direction:column;gap:.375rem;">' +
       tasks.map(doc => {
         const d           = doc.data();
@@ -2047,33 +1896,33 @@ function _renderExistingTasksList(docs) {
         }
 
         return '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem;' +
-          'background:var(--c-surface,#fff);border:1px solid var(--c-border,#e5e7eb);border-radius:8px;padding:.5rem .875rem;">' +
+          'background:var(--bg-base);border:1px solid var(--border);border-radius:8px;padding:.5rem .875rem;">' +
           '<div style="min-width:0;flex:1;">' +
           '<div style="display:flex;align-items:center;gap:.375rem;flex-wrap:wrap;margin-bottom:2px;">' +
-          `<span style="font-size:.8125rem;font-weight:700;color:var(--c-text,#111827);">${_esc(d.title || '—')}</span>` +
-          `<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;` +
+          `<span style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);">${_esc(d.title || '—')}</span>` +
+          `<span style="font-size:var(--text-xs);font-weight:600;padding:1px 7px;border-radius:99px;` +
           `background:${scope.bg};color:${scope.color};border:1px solid ${scope.border};">${_esc(scopeDisp)}</span>` +
-          `<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;` +
+          `<span style="font-size:var(--text-xs);font-weight:600;padding:1px 7px;border-radius:99px;` +
           (d.active
-            ? 'background:var(--success-bg,#ebfbee);color:var(--success-text,#1a5c29);border:1px solid var(--success-border,#b2f2bb);'
-            : 'background:var(--surface-muted,#f3f4f6);color:var(--text-disabled,#9ca3af);border:1px solid var(--border,#e5e7eb);') +
+            ? 'background:var(--success-subtle);color:var(--success-text);border:1px solid var(--success-border);'
+            : 'background:var(--bg-subtle);color:var(--text-4);border:1px solid var(--border);') +
           '">' + (d.active ? 'Active' : 'Inactive') + '</span>' +
           '</div>' +
-          `<p style="font-size:.6875rem;color:var(--c-text-4,#9ca3af);word-break:break-all;">${_esc(datesDisplay)}</p>` +
+          `<p style="font-size:var(--text-xs);color:var(--text-4);word-break:break-all;">${_esc(datesDisplay)}</p>` +
           '</div>' +
           '<div style="display:flex;gap:.375rem;align-items:center;flex-shrink:0;margin-top:1px;">' +
           `<button onclick="Teacher.exportTaskReportPDF('${_esc(doc.id)}')"` +
-          ` style="background:var(--brand,#3b5bdb);color:#fff;border:none;cursor:pointer;` +
-          `font-size:.6875rem;font-weight:700;padding:3px 9px;border-radius:4px;` +
+          ` style="background:var(--accent);color:var(--text-inverse);border:none;cursor:pointer;` +
+          `font-size:var(--text-xs);font-weight:700;padding:3px 9px;border-radius:4px;` +
           `white-space:nowrap;font-family:inherit;line-height:1.5;` +
           `transition:background .12s;" ` +
-          `onmouseenter="this.style.background='#2f4ac4'" onmouseleave="this.style.background='var(--brand,#3b5bdb)'"` +
+          `onmouseenter="this.style.background='var(--accent-hover)'" onmouseleave="this.style.background='var(--accent)'"` +
           `title="Export attendance & progress report as PDF">📄 PDF</button>` +
           `<button class="teacher-delete-task" data-task-id="${_esc(doc.id)}"` +
           ` style="background:none;border:none;cursor:pointer;font-size:1rem;line-height:1;` +
-          `padding:2px 4px;color:var(--c-text-4,#9ca3af);"` +
-          ` onmouseenter="this.style.color='var(--c-danger,#dc2626)'"` +
-          ` onmouseleave="this.style.color='var(--c-text-4,#9ca3af)'">&#215;</button>` +
+          `padding:2px 4px;color:var(--text-4);"` +
+          ` onmouseenter="this.style.color='var(--danger)'"` +
+          ` onmouseleave="this.style.color='var(--text-4)'">&times;</button>` +
           '</div>' +
           '</div>';
       }).join('') +
@@ -2082,14 +1931,6 @@ function _renderExistingTasksList(docs) {
     _renderStudentProgress(tasks);
   }
 
-  /* ══════════════════════════════════════════════════════════
-     _renderStudentProgress
-     ──────────────────────────────────────────────────────────
-     Groups dates by ISO week. Each active task gets its own
-     section. Within each section, weeks are collapsible rows.
-     Each week row shows a student's done/missed counts for
-     that week, expandable to individual day dots.
-     ══════════════════════════════════════════════════════════ */
   function _renderStudentProgress(taskDocs) {
     let container = document.getElementById('taskProgressPanel');
     if (!container) {
@@ -2107,7 +1948,6 @@ function _renderExistingTasksList(docs) {
 
     if (activeTasks.length === 0) { container.innerHTML = ''; return; }
 
-    // Safe local date string that doesn't depend on tasks.js being loaded
     function _localDate(d) {
       const dt = d || new Date();
       return dt.getFullYear() + '-' +
@@ -2195,8 +2035,6 @@ function _renderExistingTasksList(docs) {
       const weeksHTML = weeks.map((weekObj, wIdx) => {
         const { weekKey, dates: weekDates } = weekObj;
 
-        // ── FIX: compute allStudentsDone BEFORE the student row loop ──
-        // Each student's coachingCompleted is self-contained on the student object.
         const pastWeekDates = weekDates.filter(dt => dt <= todayStr);
         const allStudentsDone = pastWeekDates.length > 0 && students.every(student => {
           const comp = student.coachingCompleted || {};
@@ -2212,10 +2050,10 @@ function _renderExistingTasksList(docs) {
           const totalPast   = weekDates.filter(dt => dt <= todayStr).length;
 
           const statusColor = missedCount > 0
-            ? 'var(--danger,#e03131)'
+            ? 'var(--danger)'
             : doneCount === totalPast && totalPast > 0
-              ? 'var(--success,#2f9e44)'
-              : 'var(--text-tertiary,#6b7280)';
+              ? 'var(--success)'
+              : 'var(--text-3)';
 
           const dayDots = weekDates.map(dt => {
             const isDone   = !!completed[dt];
@@ -2223,28 +2061,28 @@ function _renderExistingTasksList(docs) {
             const isToday  = dt === todayStr;
             const isMissed = isPast && !isDone;
             const icon     = isDone ? '✓' : isMissed ? '✗' : isToday ? '○' : '–';
-            const color    = isDone    ? 'var(--success,#2f9e44)'
-                           : isMissed  ? 'var(--danger,#e03131)'
-                           : isToday   ? 'var(--warning,#e8890c)'
-                           : 'var(--border-medium,#d1d5db)';
+            const color    = isDone    ? 'var(--success)'
+                           : isMissed  ? 'var(--danger)'
+                           : isToday   ? 'var(--warning)'
+                           : 'var(--border-strong)';
             const parts2   = dt.split('-');
             const dayLabel = new Date(+parts2[0], +parts2[1] - 1, +parts2[2])
               .toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
             return `<div style="text-align:center;min-width:60px;">` +
-              `<div style="font-size:.5625rem;color:var(--text-disabled,#9ca3af);">${_esc(dayLabel)}</div>` +
+              `<div style="font-size:var(--text-xs);color:var(--text-4);">${_esc(dayLabel)}</div>` +
               `<div style="font-size:1rem;font-weight:700;color:${color};">${icon}</div>` +
               `</div>`;
           }).join('');
 
-          return `<tr style="border-bottom:1px solid var(--border,#e5e7eb);">
-            <td style="padding:.375rem .75rem;white-space:nowrap;border-right:1px solid var(--border,#e5e7eb);">
-              <div style="font-size:.8125rem;font-weight:700;color:var(--text-primary,#111827);">${_esc(student.name)}</div>
-              <div style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);">${_esc(student.cls)}</div>
+          return `<tr style="border-bottom:1px solid var(--border);">
+            <td style="padding:.375rem .75rem;white-space:nowrap;border-right:1px solid var(--border);">
+              <div style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);">${_esc(student.name)}</div>
+              <div style="font-size:var(--text-xs);color:var(--text-3);">${_esc(student.cls)}</div>
             </td>
-            <td style="padding:.375rem .75rem;text-align:center;border-right:1px solid var(--border,#e5e7eb);">
-              <span style="font-size:.875rem;font-weight:700;color:${statusColor};">${doneCount}/${totalPast}</span>
+            <td style="padding:.375rem .75rem;text-align:center;border-right:1px solid var(--border);">
+              <span style="font-size:var(--text-sm);font-weight:700;color:${statusColor};">${doneCount}/${totalPast}</span>
               ${missedCount > 0
-                ? `<div style="font-size:.5625rem;color:var(--danger,#e03131);">${missedCount} missed</div>` : ''}
+                ? `<div style="font-size:var(--text-xs);color:var(--danger);">${missedCount} missed</div>` : ''}
             </td>
             <td style="padding:.375rem .75rem;">
               <div style="display:flex;gap:.625rem;flex-wrap:wrap;">${dayDots}</div>
@@ -2256,32 +2094,32 @@ function _renderExistingTasksList(docs) {
 
         return `<details class="progress-week-row" ${wIdx === 0 ? 'open' : ''} style="margin-bottom:.375rem;">
           <summary style="padding:.5rem .875rem;border-radius:8px;
-                          background:${allStudentsDone ? 'var(--success-bg,#ebfbee)' : 'var(--surface-subtle,#f9fafb)'};
-                          border:1px solid ${allStudentsDone ? 'var(--success-border,#b2f2bb)' : 'var(--border,#e5e7eb)'};
+                          background:${allStudentsDone ? 'var(--success-subtle)' : 'var(--bg-subtle)'};
+                          border:1px solid ${allStudentsDone ? 'var(--success-border)' : 'var(--border)'};
                           display:flex;align-items:center;justify-content:space-between;">
             <div style="display:flex;align-items:center;gap:.5rem;">
-              <span style="font-size:.625rem;color:var(--text-tertiary,#6b7280);">▶</span>
-              <span style="font-size:.8125rem;font-weight:700;color:var(--text-primary,#111827);">${_esc(wLabel)}</span>
-              <span style="font-size:.6875rem;font-weight:600;padding:1px 6px;border-radius:4px;
-                           background:var(--surface-muted,#f3f4f6);color:var(--text-tertiary,#6b7280);">
+              <span style="font-size:var(--text-xs);color:var(--text-3);">▶</span>
+              <span style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);">${_esc(wLabel)}</span>
+              <span style="font-size:var(--text-xs);font-weight:600;padding:1px 6px;border-radius:4px;
+                           background:var(--bg-muted);color:var(--text-3);">
                 ${weekDates.length} session${weekDates.length !== 1 ? 's' : ''}
               </span>
             </div>
             ${allStudentsDone
-              ? `<span style="font-size:.6875rem;font-weight:700;color:var(--success-text,#1a5c29);">All done ✓</span>`
+              ? `<span style="font-size:var(--text-xs);font-weight:700;color:var(--success-text);">All done ✓</span>`
               : ''}
           </summary>
-          <div style="overflow-x:auto;border:1px solid var(--border,#e5e7eb);
+          <div style="overflow-x:auto;border:1px solid var(--border);
                       border-radius:0 0 8px 8px;border-top:none;margin-top:-1px;">
             <table style="width:100%;border-collapse:collapse;min-width:360px;">
               <thead>
-                <tr style="border-bottom:1.5px solid var(--border,#e5e7eb);background:var(--surface-subtle,#f9fafb);">
-                  <th style="text-align:left;padding:.375rem .75rem;border-right:1px solid var(--border,#e5e7eb);
-                             font-size:.6875rem;font-weight:700;color:var(--text-secondary,#374151);">Student</th>
-                  <th style="text-align:center;padding:.375rem .75rem;border-right:1px solid var(--border,#e5e7eb);
-                             font-size:.6875rem;font-weight:700;color:var(--text-secondary,#374151);">Done</th>
+                <tr style="border-bottom:1.5px solid var(--border);background:var(--bg-subtle);">
+                  <th style="text-align:left;padding:.375rem .75rem;border-right:1px solid var(--border);
+                             font-size:var(--text-xs);font-weight:700;color:var(--text-2);">Student</th>
+                  <th style="text-align:center;padding:.375rem .75rem;border-right:1px solid var(--border);
+                             font-size:var(--text-xs);font-weight:700;color:var(--text-2);">Done</th>
                   <th style="text-align:left;padding:.375rem .75rem;
-                             font-size:.6875rem;font-weight:700;color:var(--text-secondary,#374151);">Days</th>
+                             font-size:var(--text-xs);font-weight:700;color:var(--text-2);">Days</th>
                 </tr>
               </thead>
               <tbody>${studentRows}</tbody>
@@ -2290,7 +2128,6 @@ function _renderExistingTasksList(docs) {
         </details>`;
       }).join('');
 
-      // All-time summary (past sessions only — allDates already capped at today)
       const totalSessions = allDates.length;
       const totalDone     = students.reduce((sum, s) =>
         sum + allDates.filter(dt => !!((s.coachingCompleted || {})[dt])).length, 0);
@@ -2303,16 +2140,16 @@ function _renderExistingTasksList(docs) {
       return `<div style="margin-bottom:1.5rem;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.625rem;">
           <div>
-            <h4 style="font-size:.875rem;font-weight:700;color:var(--c-text,#111827);">
+            <h4 style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);">
               📊 ${_esc(title)}
               ${recurring
-                ? `<span style="font-size:.6875rem;font-weight:600;padding:1px 7px;border-radius:99px;
-                               background:#f5f3ff;color:#7c3aed;border:1px solid #ddd6fe;margin-left:.375rem;">
+                ? `<span style="font-size:var(--text-xs);font-weight:600;padding:1px 7px;border-radius:99px;
+                               background:var(--accent-subtle);color:var(--accent-text);border:1px solid var(--accent-border);margin-left:.375rem;">
                      🔄 ${_esc(recurrenceLabel)}
                    </span>`
                 : ''}
             </h4>
-            <p style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin-top:1px;">
+            <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:1px;">
               ${students.length} student${students.length !== 1 ? 's' : ''} ·
               ${totalSessions} session${totalSessions !== 1 ? 's' : ''} to date ·
               ${totalDone}/${possibleTotal} completions all-time
@@ -2320,7 +2157,7 @@ function _renderExistingTasksList(docs) {
           </div>
         </div>
         <div style="display:flex;flex-direction:column;gap:.25rem;">
-          ${weeksHTML || '<p style="font-size:.875rem;color:var(--text-tertiary,#6b7280);">No sessions yet.</p>'}
+          ${weeksHTML || '<p style="font-size:var(--text-sm);color:var(--text-3);">No sessions yet.</p>'}
         </div>
       </div>`;
     }).filter(Boolean).join('');
@@ -2357,7 +2194,6 @@ function _renderExistingTasksList(docs) {
     }
   }
 
-  /* ── Private messaging ── */
   let _msgStudentCache = [];
   let _msgMode = 'single';
 
@@ -2417,21 +2253,21 @@ function _renderExistingTasksList(docs) {
       ? _msgStudentCache.filter(s => s.name.toLowerCase().includes(q) || s.cls.toLowerCase().includes(q))
       : _msgStudentCache;
     if (filtered.length === 0) {
-      container.innerHTML = `<p style="font-size:.8125rem;color:var(--text-tertiary,#6b7280);padding:.5rem .75rem;">No students found.</p>`;
+      container.innerHTML = `<p style="font-size:var(--text-sm);color:var(--text-3);padding:.5rem .75rem;">No students found.</p>`;
       return;
     }
     container.innerHTML = filtered.map(s => `
       <label style="display:flex;align-items:center;gap:.625rem;padding:.4375rem .75rem;
-                    cursor:pointer;border-bottom:1px solid var(--border,#e5e7eb);"
-             onmouseenter="this.style.background='var(--brand-bg,#edf2ff)'"
+                    cursor:pointer;border-bottom:1px solid var(--border);"
+             onmouseenter="this.style.background='var(--accent-subtle)'"
              onmouseleave="this.style.background=''">
         <input type="checkbox" class="msg-student-cb" value="${_esc(s.id)}"
                onchange="Teacher._updateMsgSelectedCount()"
-               style="width:.9375rem;height:.9375rem;accent-color:var(--brand,#3b5bdb);flex-shrink:0;cursor:pointer;" />
-        <span style="font-size:.8125rem;color:var(--text-primary,#111827);flex:1;
+               style="width:.9375rem;height:.9375rem;accent-color:var(--accent);flex-shrink:0;cursor:pointer;" />
+        <span style="font-size:var(--text-sm);color:var(--text-1);flex:1;
                      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
           ${_esc(s.name)}
-          <span style="color:var(--text-tertiary,#6b7280);font-size:.75rem;"> — ${_esc(s.cls)}</span>
+          <span style="color:var(--text-3);font-size:var(--text-xs);"> — ${_esc(s.cls)}</span>
         </span>
       </label>`).join('');
     _updateMsgSelectedCount();
@@ -2503,10 +2339,6 @@ function _renderExistingTasksList(docs) {
     }
   }
 
-  /* -------------------------------------------------- */
-  /* Logout                                              */
-  /* -------------------------------------------------- */
-
   async function logout() {
   if (window.DM && typeof DM.cancelListeners === 'function') {
     await DM.cancelListeners();
@@ -2521,20 +2353,12 @@ function _renderExistingTasksList(docs) {
   }
 }
 
-  /* -------------------------------------------------- */
-  /* Private helpers                                     */
-  /* -------------------------------------------------- */
-
   function _esc(str) {
     return String(str == null ? '' : str)
       .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
   function Db() { return window.fbDb; }
-
-   /* -------------------------------------------------- */
-  /* _loadJsPDF — lazy-load jsPDF + autoTable from CDN  */
-  /* -------------------------------------------------- */
 
   function _loadJsPDF() {
     return new Promise((resolve, reject) => {
@@ -2555,10 +2379,6 @@ function _renderExistingTasksList(docs) {
     });
   }
 
-  /* -------------------------------------------------- */
-  /* exportTaskReportPDF                                 */
-  /* -------------------------------------------------- */
-
   async function exportTaskReportPDF(docId) {
     if (!docId) return;
 
@@ -2572,7 +2392,6 @@ function _renderExistingTasksList(docs) {
       return;
     }
 
-    /* ── Fetch task doc from Firestore ── */
     let taskDoc;
     try {
       const snap = await Db().collection('coachingTasks').doc(docId).get();
@@ -2584,7 +2403,6 @@ function _renderExistingTasksList(docs) {
       return;
     }
 
-    /* ── Resolve dates via tasks.js helper ── */
     const todayStr = (window.Tasks && Tasks._localDateStr) ? Tasks._localDateStr() : (() => {
       const d = new Date();
       return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
@@ -2594,7 +2412,6 @@ function _renderExistingTasksList(docs) {
       ? Tasks._resolveTaskDates(taskDoc, { upToDate: todayStr })
       : (taskDoc.dates || []).filter(d => d <= todayStr);
 
-    /* ── Determine scope: which students see this task ── */
     function getStudentsForDocId(id) {
       if (id === 'global' || id === 'weekly') return _msgStudentCache;
       if (id.startsWith('weekly_class_')) {
@@ -2618,7 +2435,6 @@ function _renderExistingTasksList(docs) {
 
     const students = getStudentsForDocId(docId);
 
-    /* ── Helpers ── */
     function fmtDate(str) {
       if (!str) return '—';
       const p = str.split('-');
@@ -2654,7 +2470,6 @@ function _renderExistingTasksList(docs) {
       return d.recurrence;
     }
 
-    /* ── Build per-student stats ── */
     const studentStats = students.map(s => {
       const comp = s.coachingCompleted || {};
       const done = allDates.filter(d => !!comp[d]).length;
@@ -2668,7 +2483,6 @@ function _renderExistingTasksList(docs) {
     const cohortPossible = studentStats.length * allDates.length;
     const cohortPct     = cohortPossible > 0 ? Math.round((cohortDone / cohortPossible) * 100) : 0;
 
-    /* ── Build class breakdown ── */
     const byClass = {};
     studentStats.forEach(s => {
       if (!byClass[s.cls]) byClass[s.cls] = { done:0, total:0, count:0 };
@@ -2677,9 +2491,6 @@ function _renderExistingTasksList(docs) {
       byClass[s.cls].count++;
     });
 
-    /* ════════════════════════════════════════════════════
-       PDF DOCUMENT
-       ════════════════════════════════════════════════════ */
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
 
     const PAGE_W   = 210;
@@ -2687,7 +2498,6 @@ function _renderExistingTasksList(docs) {
     const MARGIN   = 14;
     const CONTENT_W = PAGE_W - MARGIN * 2;
 
-    /* ── Colour palette ── */
     const C = {
       brand:       [59, 91, 219],
       brandLight:  [237, 242, 255],
@@ -2709,11 +2519,8 @@ function _renderExistingTasksList(docs) {
       purpleBg:    [245, 243, 255],
     };
 
-    let y = 0; // current Y cursor
+    let y = 0;
 
-    /* ────────────────────────────────────────────────────
-       Helper: add new page if needed
-    ──────────────────────────────────────────────────── */
     function checkPage(needed) {
       if (y + needed > PAGE_H - 16) {
         doc.addPage();
@@ -2722,24 +2529,16 @@ function _renderExistingTasksList(docs) {
       }
     }
 
-    /* ────────────────────────────────────────────────────
-       Helper: filled rounded rect (simulated with rect)
-    ──────────────────────────────────────────────────── */
     function fillRect(x, ry, w, h, color, stroke) {
       doc.setFillColor(...color);
       if (stroke) { doc.setDrawColor(...stroke); doc.roundedRect(x, ry, w, h, 2, 2, 'FD'); }
       else { doc.roundedRect(x, ry, w, h, 2, 2, 'F'); }
     }
 
-    /* ────────────────────────────────────────────────────
-       Helper: draw page header stripe
-    ──────────────────────────────────────────────────── */
     function _drawPageHeader() {
-      /* Top brand stripe */
       doc.setFillColor(...C.brand);
       doc.rect(0, 0, PAGE_W, 22, 'F');
 
-      /* Logo square */
       doc.setFillColor(255,255,255);
       doc.roundedRect(MARGIN, 5, 12, 12, 2, 2, 'F');
       doc.setTextColor(...C.brand);
@@ -2747,13 +2546,11 @@ function _renderExistingTasksList(docs) {
       doc.setFont('helvetica', 'bold');
       doc.text('V', MARGIN + 6, 13.5, { align: 'center' });
 
-      /* App name */
       doc.setTextColor(255, 255, 255);
       doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
       doc.text('Vertex Tutorial CBT', MARGIN + 16, 12.5);
 
-      /* Report label top-right */
       doc.setFontSize(7.5);
       doc.setFont('helvetica', 'normal');
       doc.text('COACHING TASK REPORT', PAGE_W - MARGIN, 9, { align: 'right' });
@@ -2762,9 +2559,6 @@ function _renderExistingTasksList(docs) {
       y = 28;
     }
 
-    /* ────────────────────────────────────────────────────
-       Helper: draw page footer
-    ──────────────────────────────────────────────────── */
     function _drawPageFooter() {
       const pageCount = doc.internal.getNumberOfPages();
       doc.setDrawColor(...C.border);
@@ -2777,9 +2571,6 @@ function _renderExistingTasksList(docs) {
       doc.text(`Page ${pageCount}`, PAGE_W - MARGIN, PAGE_H - 5.5, { align: 'right' });
     }
 
-    /* ────────────────────────────────────────────────────
-       Helper: section heading
-    ──────────────────────────────────────────────────── */
     function sectionHeading(text) {
       checkPage(14);
       doc.setFillColor(...C.surfaceMuted);
@@ -2793,9 +2584,6 @@ function _renderExistingTasksList(docs) {
       y += 11;
     }
 
-    /* ────────────────────────────────────────────────────
-       Helper: key-value row
-    ──────────────────────────────────────────────────── */
     function kvRow(label, value, accent) {
       checkPage(8);
       doc.setFontSize(8);
@@ -2808,9 +2596,6 @@ function _renderExistingTasksList(docs) {
       y += 6.5;
     }
 
-    /* ────────────────────────────────────────────────────
-       Helper: progress bar (text-mode)
-    ──────────────────────────────────────────────────── */
     function miniProgressBar(x, ry, w, h, pct, color) {
       doc.setFillColor(...C.border);
       doc.roundedRect(x, ry, w, h, h/2, h/2, 'F');
@@ -2820,12 +2605,8 @@ function _renderExistingTasksList(docs) {
       }
     }
 
-    /* ════════════════════════════════════════════════════
-       PAGE 1 — TITLE + TASK DETAILS + TIMETABLE
-       ════════════════════════════════════════════════════ */
     _drawPageHeader();
 
-    /* ── Task title hero block ── */
     fillRect(MARGIN, y, CONTENT_W, 28, C.brandLight, C.brandBorder);
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
@@ -2833,7 +2614,6 @@ function _renderExistingTasksList(docs) {
     const titleLines = doc.splitTextToSize(taskDoc.title || 'Untitled Task', CONTENT_W - 30);
     doc.text(titleLines, MARGIN + 5, y + 9);
 
-    /* Active badge */
     const badgeX = PAGE_W - MARGIN - 30;
     if (taskDoc.active) {
       fillRect(badgeX, y + 4, 26, 7, C.success);
@@ -2845,7 +2625,6 @@ function _renderExistingTasksList(docs) {
       doc.text('INACTIVE', badgeX + 13, y + 8.8, { align:'center' });
     }
 
-    /* Recurrence pill */
     const recTxt = recurrenceText(taskDoc);
     const isRec  = taskDoc.recurrence && taskDoc.recurrence !== 'once';
     fillRect(MARGIN + 5, y + 18, 40, 6, isRec ? C.purpleBg : C.surfaceMuted);
@@ -2855,7 +2634,6 @@ function _renderExistingTasksList(docs) {
 
     y += 32;
 
-    /* ── Task Details section ── */
     sectionHeading('Task Details');
 
     kvRow('Scope',      scopeText(docId));
@@ -2872,7 +2650,7 @@ function _renderExistingTasksList(docs) {
       doc.setTextColor(...C.textTert);
       doc.text('Task Message', MARGIN + 2, y + 4);
       y += 6;
-      fillRect(MARGIN, y, CONTENT_W, 0, C.surfaceMuted); // placeholder, height set below
+      fillRect(MARGIN, y, CONTENT_W, 0, C.surfaceMuted);
       const msgLines = doc.splitTextToSize(taskDoc.message, CONTENT_W - 10);
       const msgH = msgLines.length * 4.5 + 5;
       checkPage(msgH + 4);
@@ -2884,7 +2662,6 @@ function _renderExistingTasksList(docs) {
 
     y += 2;
 
-    /* ── Timetable section ── */
     sectionHeading('Timetable & Schedule');
 
     if (taskDoc.recurrence && taskDoc.recurrence !== 'once') {
@@ -2895,7 +2672,6 @@ function _renderExistingTasksList(docs) {
         : taskDoc.recurrence === 'range' ? 'All calendar days' : '—');
     }
 
-    /* Date list table */
     if (allDates.length > 0) {
       checkPage(14);
       doc.setFontSize(7.5);
@@ -2904,13 +2680,11 @@ function _renderExistingTasksList(docs) {
       doc.text(`Scheduled Sessions to Date (${allDates.length} total)`, MARGIN + 2, y + 4);
       y += 7;
 
-      /* Build date rows in columns of 4 */
       const COLS = 4;
       const colW = CONTENT_W / COLS;
       const chunks = [];
       for (let i = 0; i < allDates.length; i += COLS) chunks.push(allDates.slice(i, i + COLS));
 
-      // Check how many rows we need
       const rowH = 7;
       checkPage(chunks.length * rowH + 4);
 
@@ -2924,7 +2698,6 @@ function _renderExistingTasksList(docs) {
           const isPast = dateStr < todayStr;
           const isToday = dateStr === todayStr;
 
-          // Check how many students completed this date
           const completedCount = studentStats.filter(s => !!s.comp[dateStr]).length;
           const allDone = completedCount === studentStats.length && studentStats.length > 0;
 
@@ -2946,7 +2719,6 @@ function _renderExistingTasksList(docs) {
       y += chunks.length * rowH + 6;
     }
 
-    /* ── Subject restrictions ── */
     const dsKeys = Object.keys(taskDoc.dateSubjects || {});
     if (dsKeys.length > 0) {
       sectionHeading('Subject Restrictions');
@@ -2981,16 +2753,12 @@ function _renderExistingTasksList(docs) {
 
     _drawPageFooter();
 
-    /* ════════════════════════════════════════════════════
-       PAGE 2+ — STUDENT PROGRESS TABLE
-       ════════════════════════════════════════════════════ */
     doc.addPage();
     _drawPageHeader();
     _drawPageFooter();
 
     sectionHeading('Student Attendance & Progress');
 
-    /* Cohort summary stats bar */
     checkPage(24);
     fillRect(MARGIN, y, CONTENT_W, 20, C.brandLight, C.brandBorder);
 
@@ -3015,10 +2783,8 @@ function _renderExistingTasksList(docs) {
     });
     y += 24;
 
-    /* ── Main student progress table ── */
-    /* Decide how many date columns to include (max 10 for readability) */
     const MAX_DATE_COLS = 10;
-    const displayDates  = allDates.slice(-MAX_DATE_COLS); // most recent dates
+    const displayDates  = allDates.slice(-MAX_DATE_COLS);
     const hasMore       = allDates.length > MAX_DATE_COLS;
 
     const dateHeaders = displayDates.map(d => {
@@ -3085,12 +2851,10 @@ function _renderExistingTasksList(docs) {
       tableLineWidth: 0.2,
       theme: 'grid',
       willDrawCell: function(data) {
-        /* Colour the % cell by performance */
         if (data.column.index === 5 && data.section === 'body') {
           const pct = parseInt(data.cell.text[0], 10) || 0;
           data.cell.styles.textColor = pctColor(pct);
         }
-        /* Colour date dot cells */
         if (data.column.index >= 7 && data.section === 'body') {
           const txt = data.cell.text[0];
           data.cell.styles.textColor = txt === '✓' ? C.success : txt === '✗' ? C.danger : C.textDis;
@@ -3110,7 +2874,6 @@ function _renderExistingTasksList(docs) {
       y += 8;
     }
 
-    /* ── Class breakdown table (if multiple classes) ── */
     const classKeys = Object.keys(byClass);
     if (classKeys.length > 1) {
       checkPage(20);
@@ -3155,22 +2918,18 @@ function _renderExistingTasksList(docs) {
       y = doc.lastAutoTable.finalY + 4;
     }
 
-    /* ── Individual Student Detail Pages (one per student with full date log) ── */
     if (allDates.length > 0 && studentStats.length <= 30) {
-      // Only generate individual pages if small-enough cohort (prevents 200-page PDFs)
       studentStats.forEach((s, si) => {
         doc.addPage();
         _drawPageHeader();
         _drawPageFooter();
 
-        /* Student header card */
         fillRect(MARGIN, y, CONTENT_W, 22, C.brandLight, C.brandBorder);
         doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.setTextColor(...C.brand);
         doc.text(s.name, MARGIN + 5, y + 9);
         doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...C.textSec);
         doc.text(s.cls || '—', MARGIN + 5, y + 15);
 
-        /* Stats pills row */
         const pills = [
           { label:'Done',    value: s.done,      color: C.success    },
           { label:'Missed',  value: s.missed,    color: C.danger     },
@@ -3188,7 +2947,6 @@ function _renderExistingTasksList(docs) {
 
         y += 26;
 
-        /* Progress bar full width */
         checkPage(10);
         doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(...C.textTert);
         doc.text('ATTENDANCE PROGRESS', MARGIN, y + 4);
@@ -3198,7 +2956,6 @@ function _renderExistingTasksList(docs) {
         miniProgressBar(MARGIN, y, CONTENT_W, 4, s.pct, pctColor(s.pct));
         y += 9;
 
-        /* Session log table */
         sectionHeading('Session Log — ' + s.name);
 
         const sessionRows = allDates.map((dateStr, i) => {
@@ -3261,16 +3018,11 @@ function _renderExistingTasksList(docs) {
       });
     }
 
-    /* ── Save ── */
     const safeName = (taskDoc.title || 'task').replace(/[^a-z0-9]/gi, '_').toLowerCase();
     const dateStamp = todayStr.replace(/-/g,'');
     doc.save(`vtx_report_${safeName}_${dateStamp}.pdf`);
     UI.toast('PDF report downloaded.', 'success');
   }
-   
-  /* -------------------------------------------------- */
-  /* Expose                                              */
-  /* -------------------------------------------------- */
 
   window.Teacher = {
     renderTeacherDashboard,
