@@ -1060,10 +1060,10 @@
                     const userAns = exam.answers[`${subj}-${i}`];
                     const correct = userAns === q.ans;
                     const border  = correct
-                     ? 'border-color:var(--success);background:var(--success-bg);box-shadow:0 0 0 1px var(--success);'
+                     ? 'border:3px solid var(--success) !important;background:var(--success-bg) !important;'
                      : userAns === undefined
-                     ? 'border-color:var(--border-strong);background:var(--bg-subtle);box-shadow:0 0 0 1px var(--border-strong);'
-                     : 'border-color:var(--danger);background:var(--danger-bg);box-shadow:0 0 0 1px var(--danger);';
+                     ? 'border:3px solid var(--border-strong) !important;background:var(--bg-subtle) !important;'
+                     : 'border:3px solid var(--danger) !important;background:var(--danger-bg) !important;';
                     return `
                       <div class="glass rounded-lg" style="padding:1rem;border-width:2px;border-style:solid;${border}">
                         <p class="font-semibold mb-3" style="font-size:.9375rem;">${i + 1}. ${_safeQ(q.q)}</p>
