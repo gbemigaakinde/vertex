@@ -590,29 +590,83 @@ function showTab(tab) {
 });
 
   async function removeStudent(uid) {
-    if (!uid) return;
-    const ok = await UI.confirmAction('Permanently delete this student and all their data?');
-    if (!ok) return;
-    try {
-      const snap = await Db().collection('students').doc(uid).get();
-      const name = snap.exists ? snap.data().name : null;
-      await Db().collection('students').doc(uid).delete();
-      await Db().collection('ongoingExams').doc(uid).delete().catch(() => {});
-      let resultSnap = await Db().collection('results').where('uid', '==', uid).get();
-      if (resultSnap.empty && name) {
-        resultSnap = await Db().collection('results').where('name', '==', name).get();
-      }
-      if (!resultSnap.empty) {
-        const batch = Db().batch();
-        resultSnap.forEach(d => batch.delete(d.ref));
-        await batch.commit();
-      }
-      UI.toast('Student deleted.', 'success');
-    } catch (err) {
-      console.error('[teacher] removeStudent error:', err);
-      UI.toast('Failed to delete student.', 'error');
+  if (!uid) return;
+  const ok = await UI.confirmAction('Permanently delete this student and all their data?');
+  if (!ok) return;
+
+  try {
+    // 1. Fetch student record first (need name + admissionNo before deleting)
+    const studentSnap = await Db().collection('students').doc(uid).get();
+    const studentData = studentSnap.exists ? studentSnap.data() : null;
+    const name        = studentData ? studentData.name        : null;
+    const admissionNo = studentData ? studentData.admissionNo : null;
+
+    const batch = Db().batch();
+
+    // 2. Delete student profile
+    batch.delete(Db().collection('students').doc(uid));
+
+    // 3. Delete ongoing exam
+    batch.delete(Db().collection('ongoingExams').doc(uid));
+
+    // 4. Delete chat notification doc
+    batch.delete(Db().collection('chatNotifications').doc(uid));
+
+    // 5. Delete admission number lookup doc (if one exists)
+    if (admissionNo) {
+      batch.delete(Db().collection('admissionNumbers').doc(admissionNo.toUpperCase()));
     }
+
+    // 6. Delete student-specific coaching task docs
+    batch.delete(Db().collection('coachingTasks').doc('student_' + uid));
+    batch.delete(Db().collection('coachingTasks').doc('weekly_student_' + uid));
+
+    await batch.commit();
+
+    // 7. Delete exam results (query-based — can't batch without IDs upfront)
+    let resultSnap = await Db().collection('results').where('uid', '==', uid).get();
+    if (resultSnap.empty && name) {
+      resultSnap = await Db().collection('results').where('name', '==', name).get();
+    }
+    if (!resultSnap.empty) {
+      const resultBatch = Db().batch();
+      resultSnap.forEach(d => resultBatch.delete(d.ref));
+      await resultBatch.commit();
+    }
+
+    // 8. Delete private messages sent to this student
+    const privateMsgSnap = await Db()
+      .collection('privateMessages')
+      .where('recipientId', '==', uid)
+      .get();
+    if (!privateMsgSnap.empty) {
+      const pmBatch = Db().batch();
+      privateMsgSnap.forEach(d => pmBatch.delete(d.ref));
+      await pmBatch.commit();
+    }
+
+    // 9. Delete the DM thread subcollection messages, then the thread doc itself
+    //    Firestore does not auto-delete subcollections, so we must do it manually.
+    const dmThreadRef = Db().collection('directMessages').doc(uid);
+    const dmMsgSnap   = await dmThreadRef.collection('messages').get();
+    if (!dmMsgSnap.empty) {
+      // Delete in chunks of 400 to stay within batch limits
+      const allMsgRefs = dmMsgSnap.docs.map(d => d.ref);
+      for (let i = 0; i < allMsgRefs.length; i += 400) {
+        const msgBatch = Db().batch();
+        allMsgRefs.slice(i, i + 400).forEach(ref => msgBatch.delete(ref));
+        await msgBatch.commit();
+      }
+    }
+    await dmThreadRef.delete();
+
+    UI.toast('Student and all associated data deleted.', 'success');
+
+  } catch (err) {
+    console.error('[teacher] removeStudent error:', err);
+    UI.toast('Failed to delete student. Please try again.', 'error');
   }
+}
 
 async function editStudent(uid) {
   if (!uid) return;
