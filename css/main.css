@@ -5,6 +5,11 @@
    Corporate SaaS Design System
    Typography: Geist (body) + Geist Mono (timer/code)
    Themes: Light (default) + Dark ([data-theme="dark"])
+
+   Liquid Glass Layer — v2
+   Applied selectively to surface containers (cards, modals,
+   exam headers, sidebars). Interactive elements (buttons,
+   options, nav dots, badges) remain flat for legibility.
    ============================================================ */
 
 /* ── Design Tokens ── */
@@ -22,7 +27,7 @@
   --bg-page:        #f7f7f8;
   --bg-subtle:      #f0f0f2;
   --bg-muted:       #e8e8eb;
-  --bg-overlay:     rgba(0, 0, 0, 0.48);
+  --bg-overlay:     rgba(0, 0, 0, 0.36);
 
   /* Border */
   --border:         #e2e2e6;
@@ -107,6 +112,28 @@
   --t-slow:      220ms;
   --t-enter:     300ms;
 
+  /* ── Liquid Glass Tokens (light mode) ──────────────────────
+     These power the glass surface system. All glass effects
+     are opt-in via the .glass class — flat components are
+     unaffected. Adjust blur and saturation here globally.
+  ────────────────────────────────────────────────────────── */
+  --glass-blur:         16px;
+  --glass-saturate:     1.6;
+  --glass-bg:           rgba(255, 255, 255, 0.72);
+  --glass-bg-subtle:    rgba(248, 248, 250, 0.68);
+  --glass-border:       rgba(255, 255, 255, 0.55);
+  --glass-border-outer: rgba(0, 0, 0, 0.08);
+  --glass-highlight:    rgba(255, 255, 255, 0.9);  /* top-edge specular */
+  --glass-shadow:       0 8px 32px rgba(0, 0, 0, 0.10),
+                        0 2px 8px  rgba(0, 0, 0, 0.06),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  --glass-shadow-sm:    0 2px 12px rgba(0, 0, 0, 0.07),
+                        0 1px 3px  rgba(0, 0, 0, 0.05),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.85);
+  --glass-shadow-xl:    0 20px 60px rgba(0, 0, 0, 0.13),
+                        0 8px 20px  rgba(0, 0, 0, 0.08),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+
   /* Legacy aliases */
   --brand:           var(--accent);
   --brand-hover:     var(--accent-hover);
@@ -171,7 +198,7 @@
   --bg-page:        #0d0d0f;
   --bg-subtle:      #18181b;
   --bg-muted:       #222226;
-  --bg-overlay:     rgba(0, 0, 0, 0.72);
+  --bg-overlay:     rgba(0, 0, 0, 0.60);
 
   --border:         #2a2a30;
   --border-strong:  #3a3a42;
@@ -216,6 +243,26 @@
   --shadow-xl: 0 16px 40px rgba(0,0,0,.6), 0 6px 12px rgba(0,0,0,.3);
   --shadow-accent: 0 4px 14px rgba(107, 135, 248, 0.3);
 
+  /* Liquid Glass Tokens (dark mode)
+     Dark glass reads differently — less white fill, more
+     tinted dark fill, the highlight becomes a faint cool rim. */
+  --glass-blur:         20px;
+  --glass-saturate:     1.8;
+  --glass-bg:           rgba(20, 20, 24, 0.78);
+  --glass-bg-subtle:    rgba(24, 24, 28, 0.72);
+  --glass-border:       rgba(255, 255, 255, 0.08);
+  --glass-border-outer: rgba(255, 255, 255, 0.04);
+  --glass-highlight:    rgba(255, 255, 255, 0.06);
+  --glass-shadow:       0 8px 32px rgba(0, 0, 0, 0.50),
+                        0 2px 8px  rgba(0, 0, 0, 0.35),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --glass-shadow-sm:    0 2px 12px rgba(0, 0, 0, 0.40),
+                        0 1px 3px  rgba(0, 0, 0, 0.30),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --glass-shadow-xl:    0 20px 60px rgba(0, 0, 0, 0.60),
+                        0 8px 20px  rgba(0, 0, 0, 0.45),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
   /* Re-map all aliases so JS-rendered HTML using old var names still works */
   --brand:           var(--accent);
   --brand-hover:     var(--accent-hover);
@@ -257,6 +304,30 @@
   --info-text:       var(--info-text);
   --surface-muted:   var(--bg-muted);
   --surface-subtle:  var(--bg-subtle);
+}
+
+/* ── Reduced-motion: kill blur/backdrop on preference ─────────
+   Some users (especially on lower-powered devices) turn on
+   reduced motion. We gracefully fall back to a solid surface.
+─────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --glass-blur:    0px;
+    --glass-bg:      var(--bg-base);
+    --glass-bg-subtle: var(--bg-subtle);
+    --glass-shadow:  var(--shadow-md);
+    --glass-shadow-sm: var(--shadow-sm);
+    --glass-shadow-xl: var(--shadow-xl);
+  }
+
+  [data-theme="dark"] {
+    --glass-blur:    0px;
+    --glass-bg:      var(--bg-base);
+    --glass-bg-subtle: var(--bg-subtle);
+    --glass-shadow:  var(--shadow-md);
+    --glass-shadow-sm: var(--shadow-sm);
+    --glass-shadow-xl: var(--shadow-xl);
+  }
 }
 
 /* ── Reset ── */
@@ -314,23 +385,74 @@ body {
   padding: var(--sp-3);
 }
 
-/* ── Surface system ── */
+/* ═══════════════════════════════════════════════════════════
+   LIQUID GLASS SURFACE SYSTEM
+   ───────────────────────────────────────────────────────────
+   .glass      — primary surface: cards, panels, auth container
+   .glass-dark — secondary/nested surface: sub-panels, sidebars
+
+   Architecture notes:
+   • backdrop-filter does the frosting. The bg is semi-transparent
+     so the page background bleeds through.
+   • The inset box-shadow top-edge (--glass-highlight) simulates
+     the specular rim you see on physical glass lit from above.
+   • A dual border is used: the inner border (--glass-border) is
+     the bright inner edge of the glass; the element's own border
+     is the darker outer shell. Together they create depth.
+   • .glass-dark uses a tinted-down version of the same effect
+     to feel like a deeper layer of the same glass stack.
+   • Flat components (buttons, options, badges, nav dots) are
+     NOT touched — they live on top of glass surfaces and must
+     retain crisp, opaque fills for legibility and accessibility.
+═══════════════════════════════════════════════════════════ */
+
 .glass {
-  background: var(--bg-base) !important;
-  border: 1px solid var(--border) !important;
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  border: 1px solid var(--glass-border-outer) !important;
   border-radius: var(--r-xl) !important;
-  box-shadow: var(--shadow-sm) !important;
-  backdrop-filter: none !important;
+  box-shadow: var(--glass-shadow) !important;
+  position: relative;
 }
+
+/* Specular highlight — the bright top rim that sells the glass look */
+.glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid var(--glass-border);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Ensure child content sits above the ::before highlight layer */
+.glass > * { position: relative; z-index: 1; }
 
 .glass-dark {
-  background: var(--bg-subtle) !important;
-  border: 1px solid var(--border) !important;
+  background: var(--glass-bg-subtle) !important;
+  backdrop-filter: blur(calc(var(--glass-blur) * 0.75)) saturate(var(--glass-saturate)) !important;
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.75)) saturate(var(--glass-saturate)) !important;
+  border: 1px solid var(--glass-border-outer) !important;
   border-radius: var(--r-lg) !important;
-  box-shadow: none !important;
-  backdrop-filter: none !important;
+  box-shadow: var(--glass-shadow-sm) !important;
+  position: relative;
 }
 
+.glass-dark::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid var(--glass-border);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.glass-dark > * { position: relative; z-index: 1; }
+
+/* Padding resets (unchanged from original) */
 .glass.p-10, .glass.p-8 { padding: var(--sp-6) !important; }
 .glass.p-6               { padding: var(--sp-5) !important; }
 .glass-dark.p-8          { padding: var(--sp-5) !important; }
@@ -345,13 +467,26 @@ body {
   margin: auto;
 }
 
+/* cbt-card gets glass treatment — it's the auth card surface */
 .cbt-card {
-  background: var(--bg-base);
-  border: 1px solid var(--border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border-outer);
   border-radius: var(--r-xl);
   padding: var(--sp-6);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--glass-shadow);
   color: var(--text-1);
+  position: relative;
+}
+
+.cbt-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid var(--glass-border);
+  pointer-events: none;
 }
 
 /* ── Typography utilities ── */
@@ -416,7 +551,10 @@ body {
   .md\:text-5xl { font-size: var(--text-2xl) !important; }
 }
 
-/* ── Form elements ── */
+/* ── Form elements ─────────────────────────────────────────────
+   Inputs stay opaque. Frosted inputs are an anti-pattern —
+   placeholder text becomes illegible, especially in dark mode.
+─────────────────────────────────────────────────────────────── */
 .cbt-input,
 input[type="text"],
 input[type="email"],
@@ -480,7 +618,11 @@ textarea { resize: vertical; min-height: 5rem; }
 }
 .cbt-eye-btn:hover { color: var(--accent); }
 
-/* ── Button system ── */
+/* ── Button system ─────────────────────────────────────────────
+   Buttons are intentionally FLAT (opaque). They sit on top of
+   glass surfaces and must have full contrast. Frosted buttons
+   lose legibility quickly when the background shifts.
+─────────────────────────────────────────────────────────────── */
 .btn {
   display: inline-flex !important;
   align-items: center !important;
@@ -657,7 +799,7 @@ textarea { resize: vertical; min-height: 5rem; }
 .cbt-btn--full { width: 100%; justify-content: center; }
 .cbt-btn--lg   { height: 40px; padding: 0 1.25rem; font-size: var(--text-base); font-weight: 600; }
 
-/* ── Badges ── */
+/* ── Badges — flat, opaque ── */
 .cbt-badge {
   display: inline-flex;
   align-items: center;
@@ -692,7 +834,11 @@ textarea { resize: vertical; min-height: 5rem; }
   border: 1px solid var(--border);
 }
 
-/* ── MCQ Options ── */
+/* ── MCQ Options ─────────────────────────────────────────────
+   Options are flat — frosted options against a frosted card
+   create a confusing same-material stack. Flat options on a
+   glass card give the correct visual hierarchy.
+─────────────────────────────────────────────────────────────── */
 .option-label, .cbt-option {
   display: flex !important;
   align-items: flex-start !important;
@@ -750,27 +896,30 @@ textarea { resize: vertical; min-height: 5rem; }
   cursor: pointer !important;
 }
 
+/* Subject-selection labels use glass treatment — they're card-level surfaces */
 label.glass[class*="cursor-pointer"] {
   transition: transform var(--t-base) var(--ease), border-color var(--t-base) var(--ease), background var(--t-base) var(--ease) !important;
-  border: 1px solid var(--border) !important;
+  border: 1px solid var(--glass-border-outer) !important;
   padding: 0.875rem 1rem !important;
-  box-shadow: none !important;
 }
 
 label.glass[class*="cursor-pointer"]:hover {
   transform: translateY(-2px) !important;
   border-color: var(--accent) !important;
-  background: var(--accent-subtle) !important;
-  box-shadow: var(--shadow-sm) !important;
+  box-shadow: var(--glass-shadow) !important;
 }
 
 label.glass:has(.subject-checkbox:checked) {
   border-color: var(--accent) !important;
   background: var(--accent-subtle) !important;
-  box-shadow: 0 0 0 3px var(--accent-subtle) !important;
+  box-shadow: 0 0 0 3px var(--accent-subtle), var(--glass-shadow-sm) !important;
+  /* Override glass-bg so the selection tint reads clearly */
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  background: color-mix(in srgb, var(--accent-subtle) 80%, transparent) !important;
 }
 
-/* ── Question Navigator ── */
+/* ── Question Navigator — flat dots ── */
 .nav-btn, .cbt-nav-dot {
   width: 1.875rem !important;
   height: 1.875rem !important;
@@ -838,16 +987,23 @@ label.glass:has(.subject-checkbox:checked) {
   animation: cbt-pulse 0.9s ease-in-out infinite !important;
 }
 
-/* ── Exam header sticky ── */
+/* ── Exam header sticky — glass treatment ─────────────────────
+   The exam header is the one element where glass really earns
+   its place: it overlays the question content as you scroll,
+   and the blur makes the overlap feel intentional rather than
+   occlusive. The ::before highlight gives it a lifted feel.
+─────────────────────────────────────────────────────────────── */
 .exam-header-sticky, .cbt-exam-header {
   position: sticky !important;
   top: 0.5rem !important;
   z-index: 40 !important;
   transition: box-shadow var(--t-base) var(--ease) !important;
+  /* Inherit glass from .glass class but boost blur for the header */
 }
 
+/* When stuck (JS adds this class on scroll), deepen the glass */
 .exam-header-sticky.stuck, .cbt-exam-header.is-stuck {
-  box-shadow: var(--shadow-md) !important;
+  box-shadow: var(--glass-shadow) !important;
 }
 
 /* ── Subject tab strip ── */
@@ -856,9 +1012,22 @@ label.glass:has(.subject-checkbox:checked) {
   flex-wrap: wrap;
   gap: var(--sp-2);
   padding: var(--sp-3) var(--sp-4);
-  background: var(--bg-base);
-  border: 1px solid var(--border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(calc(var(--glass-blur) * 0.6)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.6)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border-outer);
   border-radius: var(--r-lg);
+  box-shadow: var(--glass-shadow-sm);
+  position: relative;
+}
+
+.cbt-tab-strip::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid var(--glass-border);
+  pointer-events: none;
 }
 
 .cbt-tab {
@@ -872,12 +1041,18 @@ label.glass:has(.subject-checkbox:checked) {
   cursor: pointer;
   transition: background var(--t-fast), color var(--t-fast);
   -webkit-tap-highlight-color: transparent;
+  position: relative;
+  z-index: 1;
 }
 
 .cbt-tab:hover { background: var(--accent-subtle); border-color: var(--accent-border); color: var(--accent-text); }
 .cbt-tab.is-active { background: var(--accent); border-color: var(--accent); color: var(--text-inverse); }
 
-/* ── Modals ── */
+/* ── Modals ─────────────────────────────────────────────────
+   The overlay uses a strong blur on the background content.
+   The modal itself is the most prominent glass surface in the
+   app — deepest blur, strongest highlight, most shadow.
+─────────────────────────────────────────────────────────────── */
 .cbt-overlay, .modal-overlay {
   position: fixed !important;
   inset: 0 !important;
@@ -887,24 +1062,40 @@ label.glass:has(.subject-checkbox:checked) {
   justify-content: center !important;
   z-index: 999 !important;
   padding: var(--sp-4) !important;
-  backdrop-filter: blur(6px) !important;
-  -webkit-backdrop-filter: blur(6px) !important;
+  backdrop-filter: blur(10px) !important;
+  -webkit-backdrop-filter: blur(10px) !important;
   animation: cbt-overlay-in var(--t-base) ease-out both !important;
   overflow-y: auto !important;
 }
 
 .cbt-modal, .modal-box {
-  background: var(--bg-base) !important;
-  border: 1px solid var(--border) !important;
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  border: 1px solid var(--glass-border-outer) !important;
   border-radius: var(--r-xl) !important;
   padding: var(--sp-6) !important;
   max-width: 400px;
   width: 100%;
-  box-shadow: var(--shadow-xl) !important;
+  box-shadow: var(--glass-shadow-xl) !important;
   animation: cbt-modal-in var(--t-slow) cubic-bezier(.34,1.45,.64,1) both !important;
   margin: auto;
   color: var(--text-1) !important;
+  position: relative;
 }
+
+/* Specular inner rim on modal */
+.cbt-modal::before, .modal-box::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid var(--glass-border);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.cbt-modal > *, .modal-box > * { position: relative; z-index: 1; }
 
 .modal-box h2, .modal-box h3 {
   font-size: var(--text-lg) !important;
@@ -926,7 +1117,10 @@ label.glass:has(.subject-checkbox:checked) {
 }
 #uiConfirmCancel:hover { background: var(--bg-muted) !important; }
 
-/* ── Toasts ── */
+/* ── Toasts ─────────────────────────────────────────────────
+   Toasts are floating so they feel right with a glass surface.
+   They sit above everything — the glass here signals "elevated".
+─────────────────────────────────────────────────────────────── */
 #toastContainer {
   position: fixed;
   top: var(--sp-4);
@@ -950,12 +1144,27 @@ label.glass:has(.subject-checkbox:checked) {
   font-size: var(--text-sm);
   font-weight: 400;
   line-height: 1.5;
-  box-shadow: var(--shadow-lg);
+  box-shadow: var(--glass-shadow);
   animation: cbt-toast-in var(--t-slow) cubic-bezier(.22,1,.36,1) both;
-  border: 1px solid var(--border);
-  background: var(--bg-base);
+  border: 1px solid var(--glass-border-outer);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   border-left: 3px solid var(--border);
   color: var(--text-1);
+  position: relative;
+}
+
+/* Inner highlight ring on toasts */
+.cbt-toast::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid var(--glass-border);
+  pointer-events: none;
+  /* Left border override — keep the semantic colour strip visible */
+  border-left: none;
 }
 
 .cbt-toast.is-dismissing { animation: cbt-toast-out var(--t-base) ease-in both; }
@@ -989,9 +1198,24 @@ label.glass:has(.subject-checkbox:checked) {
 }
 
 .cbt-accordion {
-  border: 1px solid var(--border);
+  border: 1px solid var(--glass-border-outer);
   border-radius: var(--r-lg);
   overflow: hidden;
+  background: var(--glass-bg);
+  backdrop-filter: blur(calc(var(--glass-blur) * 0.5)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.5)) saturate(var(--glass-saturate));
+  box-shadow: var(--glass-shadow-sm);
+  position: relative;
+}
+
+.cbt-accordion::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid var(--glass-border);
+  pointer-events: none;
+  z-index: 0;
 }
 
 .cbt-accordion + .cbt-accordion { margin-top: var(--sp-2); }
@@ -1005,11 +1229,13 @@ label.glass:has(.subject-checkbox:checked) {
   font-weight: 500;
   color: var(--text-1);
   cursor: pointer;
-  background: var(--bg-subtle);
+  background: rgba(255,255,255,0.04);
   list-style: none;
   user-select: none;
   border-bottom: 1px solid transparent;
   transition: background var(--t-fast);
+  position: relative;
+  z-index: 1;
 }
 
 .cbt-accordion summary::-webkit-details-marker { display: none; }
@@ -1130,7 +1356,7 @@ details.glass-dark > summary,
   cursor: pointer !important;
   user-select: none !important;
   padding: 0.75rem 1rem !important;
-  background: var(--bg-subtle) !important;
+  background: rgba(255,255,255,0.03) !important;
   font-size: var(--text-base) !important;
   font-weight: 500 !important;
   color: var(--text-1) !important;
@@ -1140,6 +1366,8 @@ details.glass-dark > summary,
   border-bottom: 1px solid transparent !important;
   border-radius: var(--r-lg) var(--r-lg) 0 0 !important;
   transition: background var(--t-fast) !important;
+  position: relative;
+  z-index: 1;
 }
 
 .teacher-tab details[open] summary,
@@ -1178,11 +1406,15 @@ details.glass-dark[open] > summary::after,
 
 .teacher-result-card:hover {
   transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
+  box-shadow: var(--glass-shadow);
   border-color: var(--accent-border) !important;
 }
 
-/* ── Chat ── */
+/* ── Chat ─────────────────────────────────────────────────
+   Chat messages are flat — legibility and contrast over glass.
+   The chat panel container (which uses .glass) provides the
+   frosted context. Individual messages stay flat.
+─────────────────────────────────────────────────────────── */
 #chatMessages {
   max-height: 380px !important;
   overflow-y: auto !important;
@@ -1269,8 +1501,11 @@ details.glass-dark[open] > summary::after,
 
 #mentionDropdown {
   border-radius: var(--r-lg) !important;
-  border: 1px solid var(--border) !important;
-  box-shadow: var(--shadow-lg) !important;
+  border: 1px solid var(--glass-border-outer) !important;
+  background: var(--glass-bg) !important;
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate)) !important;
+  box-shadow: var(--glass-shadow) !important;
 }
 
 .mention-item:last-child { border-bottom: none !important; }
@@ -1281,6 +1516,8 @@ details.glass-dark[open] > summary::after,
   border: 1px solid var(--accent-border) !important;
   border-radius: var(--r-xl) !important;
   padding: var(--sp-5) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 #tasksContainer .text-5xl { font-size: var(--text-xl) !important; }
@@ -1355,12 +1592,25 @@ details.glass-dark[open] > summary::after,
   flex-wrap: wrap;
   align-items: center;
   gap: 0.25rem 0.75rem;
-  background: var(--bg-subtle);
-  border: 1px solid var(--border);
+  background: var(--glass-bg-subtle);
+  backdrop-filter: blur(calc(var(--glass-blur) * 0.5)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.5)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border-outer);
   border-radius: var(--r-md);
   padding: 0.4375rem 0.875rem;
   font-size: var(--text-sm);
   color: var(--text-1);
+  box-shadow: var(--glass-shadow-sm);
+  position: relative;
+}
+
+.cbt-student-bar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid var(--glass-border);
+  pointer-events: none;
 }
 
 /* ── Score card ── */
@@ -1451,7 +1701,13 @@ details.glass-dark[open] > summary::after,
 /* ── Print ── */
 @media print {
   body { background: white; color: black; }
-  .glass, .glass-dark { background: white !important; box-shadow: none !important; }
+  .glass, .glass-dark {
+    background: white !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .glass::before, .glass-dark::before { display: none !important; }
   .btn, #toastContainer, .cbt-overlay { display: none !important; }
 }
 
