@@ -56,6 +56,7 @@
   --info:           #0284c7;
   --info-subtle:    rgba(2, 132, 199, 0.08);
   --info-border:    rgba(2, 132, 199, 0.24);
+  --info-text:      #075985;
 
   /* Typography */
   --font:           'Geist', 'DM Sans', system-ui, -apple-system, sans-serif;
@@ -203,6 +204,11 @@
   --warning-border: rgba(245, 158, 11, 0.25);
   --warning-text:   #fcd34d;
 
+  --info:           #38bdf8;
+  --info-subtle:    rgba(56, 189, 248, 0.1);
+  --info-border:    rgba(56, 189, 248, 0.25);
+  --info-text:      #7dd3fc;
+
   --shadow-xs: 0 1px 2px rgba(0,0,0,.3);
   --shadow-sm: 0 1px 3px rgba(0,0,0,.4), 0 1px 2px rgba(0,0,0,.3);
   --shadow-md: 0 4px 12px rgba(0,0,0,.4), 0 2px 4px rgba(0,0,0,.3);
@@ -248,6 +254,9 @@
   --danger-bg:       var(--danger-subtle);
   --warning-bg:      var(--warning-subtle);
   --info-bg:         var(--info-subtle);
+  --info-text:       var(--info-text);
+  --surface-muted:   var(--bg-muted);
+  --surface-subtle:  var(--bg-subtle);
 }
 
 /* ── Reset ── */
@@ -261,8 +270,8 @@ html {
   font-size: 15px;
   scroll-behavior: smooth;
   -webkit-text-size-adjust: 100%;
-  overflow-x: hidden;  
-  max-width: 100%;    
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 body {
@@ -498,7 +507,7 @@ textarea { resize: vertical; min-height: 5rem; }
   text-decoration: none !important;
   position: relative;
   background: var(--accent) !important;
-  color: #fff !important;
+  color: var(--text-inverse) !important;
   box-shadow: var(--shadow-xs) !important;
   line-height: 1 !important;
 }
@@ -553,7 +562,7 @@ textarea { resize: vertical; min-height: 5rem; }
   background: var(--info) !important;
 }
 .btn.bg-blue-600:hover:not(:disabled), .btn[class*="bg-blue"]:hover:not(:disabled) {
-  background: #0369a1 !important;
+  background: var(--info-text) !important;
 }
 
 .btn.bg-indigo-600, .btn[class*="bg-indigo"] {
@@ -633,11 +642,11 @@ textarea { resize: vertical; min-height: 5rem; }
   position: relative;
 }
 
-.cbt-btn--primary { background: var(--accent); color: #fff; }
-.cbt-btn--success { background: var(--success); color: #fff; }
-.cbt-btn--danger  { background: var(--danger); color: #fff; }
+.cbt-btn--primary { background: var(--accent); color: var(--text-inverse); }
+.cbt-btn--success { background: var(--success); color: var(--text-inverse); }
+.cbt-btn--danger  { background: var(--danger); color: var(--text-inverse); }
 .cbt-btn--ghost   { background: var(--bg-subtle); color: var(--text-2); border-color: var(--border); }
-.cbt-btn--info    { background: var(--info); color: #fff; }
+.cbt-btn--info    { background: var(--info); color: var(--text-inverse); }
 
 .cbt-btn:hover:not(:disabled) {
   transform: translateY(-1px);
@@ -792,13 +801,13 @@ label.glass:has(.subject-checkbox:checked) {
 .nav-btn.answered, .cbt-nav-dot.is-answered {
   background: var(--success) !important;
   border-color: transparent !important;
-  color: #fff !important;
+  color: var(--text-inverse) !important;
 }
 
 .nav-btn.current, .cbt-nav-dot.is-current {
   background: var(--accent) !important;
   border-color: var(--accent) !important;
-  color: #fff !important;
+  color: var(--text-inverse) !important;
   transform: scale(1.1) !important;
   box-shadow: var(--shadow-accent) !important;
 }
@@ -806,7 +815,7 @@ label.glass:has(.subject-checkbox:checked) {
 .nav-btn.current.answered, .cbt-nav-dot.is-current.is-answered {
   background: var(--accent) !important;
   border: 2px solid var(--success) !important;
-  color: #fff !important;
+  color: var(--text-inverse) !important;
   transform: scale(1.1) !important;
 }
 
@@ -866,7 +875,7 @@ label.glass:has(.subject-checkbox:checked) {
 }
 
 .cbt-tab:hover { background: var(--accent-subtle); border-color: var(--accent-border); color: var(--accent-text); }
-.cbt-tab.is-active { background: var(--accent); border-color: var(--accent); color: #fff; }
+.cbt-tab.is-active { background: var(--accent); border-color: var(--accent); color: var(--text-inverse); }
 
 /* ── Modals ── */
 .cbt-overlay, .modal-overlay {
@@ -903,13 +912,12 @@ label.glass:has(.subject-checkbox:checked) {
   color: var(--text-1) !important;
 }
 
-/* Fix: confirm modal paragraph uses hardcoded color in ui.js — override it */
 #uiConfirmModal p,
 #uiConfirmModal [id="uiConfirmTitle"] {
   color: var(--text-1) !important;
 }
 
-#uiConfirmOk { background: var(--danger) !important; color: #fff !important; }
+#uiConfirmOk { background: var(--danger) !important; color: var(--text-inverse) !important; }
 #uiConfirmOk:hover { background: var(--danger-text) !important; }
 #uiConfirmCancel {
   background: var(--bg-subtle) !important;
@@ -1085,14 +1093,14 @@ label.glass:has(.subject-checkbox:checked) {
 
 .tab-btn.active {
   background: var(--accent) !important;
-  color: #fff !important;
+  color: var(--text-inverse) !important;
   border-color: var(--accent) !important;
   font-weight: 600 !important;
 }
 
 #tab-chat.tab-btn, .tab-btn.bg-green-600 {
   background: var(--success) !important;
-  color: #fff !important;
+  color: var(--text-inverse) !important;
   border-color: var(--success) !important;
   font-weight: 600 !important;
 }
@@ -1103,7 +1111,7 @@ label.glass:has(.subject-checkbox:checked) {
 
 #tab-dm.tab-btn, .tab-btn.bg-indigo-600 {
   background: var(--accent) !important;
-  color: #fff !important;
+  color: var(--text-inverse) !important;
   border-color: var(--accent) !important;
   font-weight: 600 !important;
 }
@@ -1526,7 +1534,6 @@ details.glass-dark[open] > summary::after,
 /* ── Mobile: neutralise the inline padding on the tab content div ── */
 @media (max-width: 768px) {
   #teacher-dm {
-    /* Pull the DM panel out of the parent's inline padding:1.25rem 1.5rem */
     margin-left: -1.25rem !important;
     margin-right: -1.25rem !important;
     width: calc(100% + 2.5rem) !important;
@@ -1560,7 +1567,6 @@ details.glass-dark[open] > summary::after,
     max-width: 140px !important;
   }
 
-  /* Tighten the chat view header and input area too */
   #dmViewChat > div:first-child {
     padding: 0.5rem 0.875rem !important;
   }
