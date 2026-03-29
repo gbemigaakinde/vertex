@@ -8,6 +8,11 @@ body {
     padding-bottom: 52px !important;
 }
 
+/* When ticker is hidden, remove the body padding */
+body:has(.news-ticker-container.ticker-hidden) {
+    padding-bottom: 0 !important;
+}
+
 /* Ticker container — fixed to bottom of screen */
 .news-ticker-container {
     position: fixed;
@@ -70,7 +75,6 @@ body {
 .ticker-text {
     display: inline-block;
     white-space: nowrap;
-    /* Start from the right edge of the ticker-content */
     animation: vtx-ticker-scroll 80s linear infinite;
     font-size: 15px;
     line-height: 1.4;
@@ -134,6 +138,10 @@ body {
 @media (max-width: 768px) {
     body {
         padding-bottom: 46px !important;
+    }
+
+    body:has(.news-ticker-container.ticker-hidden) {
+        padding-bottom: 0 !important;
     }
 
     .ticker-wrapper {
