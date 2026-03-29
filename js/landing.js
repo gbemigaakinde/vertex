@@ -1,20 +1,7 @@
 /* ============================================================
    js/landing.js — Public marketing homepage
-   ============================================================
-   Editorial homepage. Ink / warm white / indigo accent.
-   Instrument Serif headings. DM Sans body. No emojis, no
-   gradients, no cards. Typography does the work.
-
-   Accent colour: #4f6ef7 (indigo) — matches --accent in main.css.
-   Dark mode accent: #6b87f8 — matches dark --accent in main.css.
-
-   Dark mode: responds to [data-theme="dark"] on <html>.
-
-   Navigation:
-     Landing.render()       → renders this page
-     Landing.goToLogin()    → Auth.renderLogin()
-     Landing.goToRegister() → Auth.renderLogin() + showRegister()
    ============================================================ */
+
 (function () {
   'use strict';
 
@@ -30,7 +17,6 @@
       --lp-ink-5:            #d8d8da;
       --lp-cream:            #fafaf8;
       --lp-cream-2:          #f5f4f0;
-      /* Indigo accent — matches --accent in main.css */
       --lp-accent:           #4f6ef7;
       --lp-accent-dk:        #3a58e8;
       --lp-accent-lt:        rgba(79, 110, 247, 0.08);
@@ -63,7 +49,6 @@
       --lp-ink-5:            #3a3a42;
       --lp-cream:            #111113;
       --lp-cream-2:          #18181b;
-      /* Dark indigo accent — matches dark --accent in main.css */
       --lp-accent:           #6b87f8;
       --lp-accent-dk:        #5a78f6;
       --lp-accent-lt:        rgba(107, 135, 248, 0.1);
@@ -311,7 +296,6 @@
       font-style:italic; font-weight:400; line-height:1.35;
       letter-spacing:-.015em; color:var(--lp-quote-text); margin:0 0 1.5rem;
     }
-    /* Highlighted words in quote use indigo instead of amber */
     .lp-quote-text em {
       font-style:normal;
       color: #6b87f8;
@@ -538,7 +522,7 @@
         /* FOOTER */
         '<footer class="lp-footer">' +
           '<div class="lp-footer-inner">' +
-            '<span class="lp-footer-copy">Vertex Tutorial Centre &mdash; Computer-Based Testing. With care from <strong>Master Timothy</strong>.</span>' +
+            '<span class="lp-footer-copy">Vertex Tutorial Centre. With care from <strong>Master Timothy</strong>.</span>' +
             '<span class="lp-footer-copy" style="opacity:.55;">For enrolled students only.</span>' +
           '</div>' +
         '</footer>' +
