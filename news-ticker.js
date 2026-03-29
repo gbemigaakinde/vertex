@@ -115,3 +115,21 @@ if (document.readyState === 'loading') {
 } else {
     initTicker();
 }
+
+// ── Auth visibility: hide inside portal, show on login screen ──
+// Waits for Firebase to be ready (it loads after this script),
+// then watches sign-in state. Signed in = ticker hidden.
+(function _watchAuth() {
+    if (window.fbAuth && typeof window.fbAuth.onAuthStateChanged === 'function') {
+        window.fbAuth.onAuthStateChanged(function (user) {
+            if (user) {
+                closeTicker();
+            } else {
+                showTicker();
+            }
+        });
+    } else {
+        // Firebase not ready yet — retry in 200ms
+        setTimeout(_watchAuth, 200);
+    }
+}());
