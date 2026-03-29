@@ -871,12 +871,27 @@ async function _saveStudentEdit(uid, previousAdmno) {
 
     const batch = Db().batch();
 
+    // Update student profile
     batch.update(Db().collection('students').doc(uid), {
       name,
       class:       cls,
       school,
       admissionNo: admno || null,
     });
+
+    // Update denormalized name in DM thread doc
+    batch.set(Db().collection('directMessages').doc(uid), {
+      studentName:  name,
+      studentClass: cls,
+    }, { merge: true });
+
+    // Update denormalized name in student-specific coaching task docs
+    batch.set(Db().collection('coachingTasks').doc('student_' + uid), {
+      studentName: name,
+    }, { merge: true });
+    batch.set(Db().collection('coachingTasks').doc('weekly_student_' + uid), {
+      studentName: name,
+    }, { merge: true });
 
     if (addingOrChanging) {
       batch.set(Db().collection('admissionNumbers').doc(admno), { uid, email });
@@ -888,6 +903,18 @@ async function _saveStudentEdit(uid, previousAdmno) {
     }
 
     await batch.commit();
+
+    // Update denormalized name in all result documents for this student
+    try {
+      const resultsSnap = await Db().collection('results').where('uid', '==', uid).get();
+      if (!resultsSnap.empty) {
+        const resultsBatch = Db().batch();
+        resultsSnap.forEach(d => resultsBatch.update(d.ref, { name }));
+        await resultsBatch.commit();
+      }
+    } catch (e) {
+      console.warn('[teacher] Could not update name in results:', e);
+    }
 
     UI.toast(`Student record updated successfully.`, 'success');
     document.getElementById('teacherEditStudentModal')?.remove();
