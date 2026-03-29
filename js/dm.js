@@ -2012,10 +2012,14 @@ function _cancelTypingListeners(threadUid) {
   async function _pickStudentForConversation(uid, name, cls) {
     _closeNewConversationModal();
     try {
-      await _threadRef(uid).set({
-        studentName: name, studentClass: cls,
-        studentUnread: 0, teacherUnread: 0, lastMessage: '',
-      }, { merge: true });
+      const threadSnap = await _threadRef(uid).get();
+      if (!threadSnap.exists) {
+        // Only seed for brand-new threads — never overwrite existing ones
+        await _threadRef(uid).set({
+          studentName: name, studentClass: cls,
+          studentUnread: 0, teacherUnread: 0, lastMessage: '',
+        }, { merge: true });
+      }
     } catch (e) { console.warn('[dm] Could not seed thread doc for new conv:', e); }
     await _openConversation(uid, name, cls);
   }
