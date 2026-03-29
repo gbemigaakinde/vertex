@@ -81,7 +81,7 @@
     }
     .lp-brand { display:flex; align-items:center; gap:.625rem; text-decoration:none; }
     .lp-mark {
-      width:28px; height:28px; background:var(--lp-ink); border-radius:4px;
+      width:28px; height:28px; background:var(--lp-accent); border-radius:4px;
       display:flex; align-items:center; justify-content:center; flex-shrink:0;
       transition: background 0.25s;
     }
