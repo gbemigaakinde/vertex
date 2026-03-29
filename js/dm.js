@@ -1887,11 +1887,12 @@ function _cancelTypingListeners(threadUid) {
         </div>
         <div style="position:relative;margin-bottom:.75rem;">
           <span style="position:absolute;left:.625rem;top:50%;transform:translateY(-50%);
-                       color:var(--text-4,#9ca3af);pointer-events:none;">
+                       color:var(--text-4,#9ca3af);pointer-events:none;z-index:1;
+                       display:flex;align-items:center;">
             ${_iconSearch(14)}
           </span>
           <input id="dmStudentSearch" type="text" placeholder="Search by name or class…"
-                 style="width:100%;box-sizing:border-box;padding:.5rem .75rem .5rem 2rem;
+                 style="width:100%;box-sizing:border-box;padding:.5rem .75rem .5rem 2.125rem !important;
                         border:1px solid var(--border,#e5e7eb);border-radius:8px;
                         font-family:var(--font);font-size:var(--text-base);outline:none;" />
         </div>
