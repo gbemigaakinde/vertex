@@ -59,18 +59,6 @@
     return [];
   }
 
-  /**
-   * Resolves the list of scheduled session dates for a task document.
-   *
-   * FIX (v4.1): The effective floor is always max(opts.fromDate, startDate).
-   * Previously, if opts.fromDate was supplied (e.g. the Monday of the current
-   * week) and it fell *before* the task's startDate, the loop would start from
-   * opts.fromDate and include days that predate the task — causing Mon/Tue of
-   * the starting week to appear even when the task only began on Wednesday.
-   * Now the floor is clamped to startDate so the starting week only ever
-   * contains dates on-or-after startDate, while all subsequent weeks are
-   * unaffected.
-   */
   function _resolveTaskDates(doc, opts) {
     if (!doc) return [];
     opts = opts || {};
