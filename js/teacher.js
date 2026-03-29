@@ -456,6 +456,7 @@ function renderTeacherDashboard() {
   `;
   document.head.appendChild(style);
 
+  _startGlobalStudentCache();
   showTab('students');
 }
 
@@ -1817,52 +1818,65 @@ async function _saveStudentEdit(uid, previousAdmno) {
       UI.setLoading(btn, false);
     }
   }
+  
+  function _startGlobalStudentCache() {
+  _cancel('msgStudents');
+  _msgStudentCache = [];
+  const unsub = Db().collection('students').orderBy('name').onSnapshot(snap => {
+    _msgStudentCache = [];
+    snap.forEach(doc => {
+      const s = doc.data();
+      _msgStudentCache.push({
+        id:                doc.id,
+        name:              s.name  || '',
+        cls:               s.class || '',
+        coachingCompleted: s.coachingCompleted || {},
+      });
+    });
+    _populateMsgSingleSelect();
+    _populateMsgCheckboxList();
+    _populateTaskStudentSelect();
+    const existingTasksList = document.getElementById('existingTasksList');
+    if (existingTasksList) {
+      Db().collection('coachingTasks').get().then(snap => {
+        _renderExistingTasksList(snap.docs);
+      }).catch(() => {});
+    }
+  });
+  _reg('msgStudents', unsub);
+}
 
   function _loadTasksManager() {
-    _cancel('tasksManager');
-    _taskScope   = 'once';
-    _assignScope = 'all';
+  _cancel('tasksManager');
+  _taskScope   = 'once';
+  _assignScope = 'all';
 
-    _cancel('taskClassList');
-    const unsubClasses = Db().collection('students').onSnapshot(snap => {
-      const classes = new Set();
-      snap.forEach(doc => { const c = doc.data().class; if (c) classes.add(c); });
-      const sel = document.getElementById('taskTargetClass');
-      if (sel) {
-        let html = '<option value="">Select a class...</option>';
-        [...classes].sort().forEach(c => { html += `<option value="${_esc(c)}">${_esc(c)}</option>`; });
-        sel.innerHTML = html;
-      }
-    });
-    _reg('taskClassList', unsubClasses);
+  _cancel('taskClassList');
+  const unsubClasses = Db().collection('students').onSnapshot(snap => {
+    const classes = new Set();
+    snap.forEach(doc => { const c = doc.data().class; if (c) classes.add(c); });
+    const sel = document.getElementById('taskTargetClass');
+    if (sel) {
+      let html = '<option value="">Select a class...</option>';
+      [...classes].sort().forEach(c => { html += `<option value="${_esc(c)}">${_esc(c)}</option>`; });
+      sel.innerHTML = html;
+    }
+  });
+  _reg('taskClassList', unsubClasses);
 
-    _cancel('tasksList');
-    const unsubTasks = Db().collection('coachingTasks').onSnapshot(snap => {
-      _renderExistingTasksList(snap.docs);
-    });
-    _reg('tasksList', unsubTasks);
+  _cancel('tasksList');
+  const unsubTasks = Db().collection('coachingTasks').onSnapshot(snap => {
+    _renderExistingTasksList(snap.docs);
+  });
+  _reg('tasksList', unsubTasks);
 
-    _cancel('msgStudents');
-    _msgStudentCache = [];
-    const unsubStudents = Db().collection('students').orderBy('name').onSnapshot(snap => {
-      _msgStudentCache = [];
-      snap.forEach(doc => {
-        const s = doc.data();
-        _msgStudentCache.push({
-          id:                doc.id,
-          name:              s.name  || '',
-          cls:               s.class || '',
-          coachingCompleted: s.coachingCompleted || {},
-        });
-      });
-      _populateMsgSingleSelect();
-      _populateMsgCheckboxList();
-      _populateTaskStudentSelect();
-    });
-    _reg('msgStudents', unsubStudents);
+  // Re-populate form dropdowns from the already-live global cache
+  _populateMsgSingleSelect();
+  _populateMsgCheckboxList();
+  _populateTaskStudentSelect();
 
-    _setTaskScope('once');
-  }
+  _setTaskScope('once');
+}
 
   function _populateTaskStudentSelect() {
     const sel = document.getElementById('taskTargetStudent');
