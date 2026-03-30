@@ -28,9 +28,6 @@ const CACHE_VERSION = 'v1.4.9';
 const STATIC_CACHE  = `static-${CACHE_VERSION}`;
 const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
 
-/*
- * Track whether this is a first-time install (no previous SW controller).
- */
 let _isFirstInstall = false;
 
 const BYPASS_ORIGINS = [
