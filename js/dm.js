@@ -361,7 +361,9 @@
     .dm-edit-btn--cancel { background:rgba(255,255,255,.2);color:inherit;opacity:.75; }
     .dm-edit-btn--save-light { background:var(--accent,#4f6ef7);color:#fff; }
     .dm-edit-btn--cancel-light { background:var(--bg-subtle,#f3f4f6);color:var(--text-2,#3a3a40);border:1px solid var(--border,#e5e7eb); }
-    .dm-edited-label { font-size:.5625rem;opacity:.6;font-style:italic;margin-left:4px;line-height:1;white-space:nowrap; }
+
+    .dm-edited-label-wrap { display:inline-flex;align-items:center;line-height:1; }
+    .dm-edited-label { font-size:.5625rem;opacity:.6;font-style:italic;margin-right:3px;line-height:1;white-space:nowrap; }
 
     .dm-history-overlay {
       position:fixed;inset:0;background:rgba(0,0,0,.5);
@@ -387,32 +389,60 @@
     .dm-history-current { background:var(--accent-subtle,rgba(79,110,247,.08));border-color:var(--accent-border,rgba(79,110,247,.25)); }
     .dm-history-current p { font-weight:500; }
 
+    /* ── Message rows ── */
     .dm-msg-out {
-      display:flex;flex-direction:column;align-items:flex-end;
-      margin-bottom:.75rem;padding-left:20%;box-sizing:border-box;width:100%;max-width:100%;min-width:0;
+      width:100%;box-sizing:border-box;
+      margin-bottom:.25rem;
     }
     .dm-msg-in {
-      display:flex;flex-direction:column;align-items:flex-start;
-      margin-bottom:.75rem;padding-right:20%;box-sizing:border-box;width:100%;max-width:100%;min-width:0;
+      width:100%;box-sizing:border-box;
+      margin-bottom:.25rem;
     }
-    .dm-bubble-wrap { display:inline-flex;flex-direction:column;max-width:100%;min-width:0; }
+
+    /* ── Swipe wrapper ── */
+    .dm-swipe-wrap {
+      position:relative;overflow:visible;
+      width:100%;max-width:100%;min-width:0;box-sizing:border-box;touch-action:pan-y;
+    }
+    .dm-swipe-wrap .dm-swipe-inner {
+      width:100%;box-sizing:border-box;
+      transition:transform .2s ease;will-change:transform;
+    }
+
+    /* ── Bubble alignment rows ── */
+    .dm-bubble-row {
+      display:flex;width:100%;box-sizing:border-box;
+    }
+    .dm-msg-out .dm-bubble-row { justify-content:flex-end;padding-left:20%; }
+    .dm-msg-in  .dm-bubble-row { justify-content:flex-start;padding-right:20%; }
+
+    /* ── Bubble itself ── */
     .dm-bubble-inner {
-      word-break:break-word;overflow-wrap:break-word;display:block;
-      max-width:100%;box-sizing:border-box;position:relative;
+      position:relative;box-sizing:border-box;
+      word-break:break-word;overflow-wrap:break-word;
+      /* Width shrinks to content but can never exceed the bubble-row's inner width */
+      max-width:100%;
+      min-width:0;
     }
-    .dm-bubble-text { font-size:.9375rem;line-height:1.5;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;margin:0; }
-    .dm-bubble-footer { display:flex;align-items:center;gap:3px;margin-top:2px; }
+
+    .dm-bubble-text {
+      font-size:.9375rem;line-height:1.5;
+      white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;
+      margin:0;
+    }
+    .dm-bubble-footer {
+      display:flex;align-items:center;gap:3px;margin-top:2px;
+    }
     .dm-bubble-footer--end   { justify-content:flex-end; }
     .dm-bubble-footer--start { justify-content:flex-start; }
     .dm-bubble-time { font-size:.625rem;opacity:.7;line-height:1;white-space:nowrap;flex-shrink:0; }
     .dm-bubble-time--dim { opacity:.55; }
 
-    .dm-messages-area { overflow-y:auto;overflow-x:hidden;box-sizing:border-box;width:100%;max-width:100%;min-width:0; }
+    .dm-messages-area {
+      overflow-y:auto;overflow-x:hidden;box-sizing:border-box;width:100%;
+    }
 
-    .dm-picker-row { min-width:0;overflow:hidden; }
-
-    #teacher-dm { overflow:hidden !important;min-width:0;box-sizing:border-box; }
-
+    /* ── Reply bar (above input) ── */
     .dm-reply-bar {
       display:none;align-items:center;gap:.5rem;
       padding:.375rem .625rem;margin:.375rem 0 0;
@@ -427,22 +457,35 @@
     .dm-reply-bar__close { flex-shrink:0;background:none;border:none;cursor:pointer;padding:0;line-height:1;color:var(--text-4,#9ca3af);display:flex;align-items:center; }
     .dm-reply-bar__close:hover { color:var(--text-2,#3a3a40); }
 
+    /* ── Reply card (inside bubble) ── */
     .dm-reply-card {
+      display:block;
       margin-bottom:.375rem;padding:.3rem .5rem;
       border-left:3px solid rgba(255,255,255,.5);border-radius:0 5px 5px 0;
-      background:rgba(0,0,0,.12);cursor:pointer;font-size:.75rem;line-height:1.4;overflow:hidden;
+      background:rgba(0,0,0,.12);cursor:pointer;
+      font-size:.75rem;line-height:1.4;
+      /* Key: never stretch wider than the bubble text above/below it */
+      width:100%;box-sizing:border-box;
+      overflow:hidden;
     }
-    .dm-msg-in .dm-reply-card { border-left-color:var(--accent,#4f6ef7);background:var(--accent-subtle,rgba(79,110,247,.08)); }
-    .dm-reply-card__name { font-weight:700;display:block;margin-bottom:1px; }
+    .dm-msg-in .dm-reply-card {
+      border-left-color:var(--accent,#4f6ef7);
+      background:var(--accent-subtle,rgba(79,110,247,.08));
+    }
+    .dm-reply-card__name {
+      font-weight:700;display:block;
+      margin-bottom:1px;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+    }
     .dm-msg-out .dm-reply-card__name { color:rgba(255,255,255,.9); }
     .dm-msg-in  .dm-reply-card__name { color:var(--accent-text,#2d49d6); }
-    .dm-reply-card__text { display:block;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%; }
-
-    .dm-swipe-wrap {
-      position:relative;overflow:visible;
-      width:100%;max-width:100%;min-width:0;box-sizing:border-box;touch-action:pan-y;
+    .dm-reply-card__text {
+      display:block;opacity:.8;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+      /* Inherits width from .dm-reply-card which is 100% of the bubble */
     }
-    .dm-swipe-wrap .dm-swipe-inner { transition:transform .2s ease;will-change:transform; }
+
+    /* ── Swipe hint dot ── */
     .dm-swipe-hint {
       position:absolute;top:50%;transform:translateY(-50%);
       display:flex;align-items:center;justify-content:center;
@@ -452,6 +495,11 @@
     }
     .dm-msg-out .dm-swipe-hint { right:calc(100% + 8px); }
     .dm-msg-in  .dm-swipe-hint { left:calc(100% + 8px); }
+
+    /* ── Picker row ── */
+    .dm-picker-row { min-width:0;overflow:hidden; }
+
+    #teacher-dm { overflow:hidden !important;min-width:0;box-sizing:border-box; }
   `;
   document.head.appendChild(style);
 }
@@ -1380,250 +1428,226 @@
 
   /* ── Bubble builders ───────────────────────────────────────── */
   function _buildStudentBubble(msg, myUid, showLabel) {
-    const isMe    = msg.senderId === myUid;
-    const msgId   = msg.id || '';
-    const wrapId  = `dmWrap-${_escAttr(msgId)}`;
-    const canEdit = isMe && !!msgId;
+  const isMe    = msg.senderId === myUid;
+  const msgId   = msg.id || '';
+  const wrapId  = `dmWrap-${_escAttr(msgId)}`;
+  const canEdit = isMe && !!msgId;
 
-    const time = msg.timestamp
-      ? new Date(msg.timestamp.toDate ? msg.timestamp.toDate() : msg.timestamp)
-          .toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-      : 'Just now';
+  const time = msg.timestamp
+    ? new Date(msg.timestamp.toDate ? msg.timestamp.toDate() : msg.timestamp)
+        .toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+    : 'Just now';
 
-    const editedLabel = msg.editedAt
-      ? `<span style="font-size:.5625rem;opacity:.6;font-style:italic;margin-right:3px;line-height:1;white-space:nowrap;">edited</span>`
-      : '';
+  const editedLabel = msg.editedAt
+    ? `<span class="dm-edited-label-wrap"><span class="dm-edited-label">edited</span></span>`
+    : '';
 
-    const safeUid   = _escAttr(myUid);
-    const safeMsgId = _escAttr(msgId);
+  const safeUid   = _escAttr(myUid);
+  const safeMsgId = _escAttr(msgId);
 
-    let replyCard = '';
-    if (msg.replyTo && msg.replyTo.id) {
-      const rName = _esc(msg.replyTo.senderName || 'Unknown');
-      const rText = _esc((msg.replyTo.text || '').substring(0, 80));
-      const rId   = _escAttr(msg.replyTo.id);
-      replyCard = `
-        <div class="dm-reply-card"
-             onclick="event.stopPropagation();DM._scrollToMsg('${rId}')"
-             title="Jump to original message"
-             style="overflow:hidden;max-width:100%;box-sizing:border-box;">
-          <span class="dm-reply-card__name">${rName}</span>
-          <span class="dm-reply-card__text"
-                style="display:block;white-space:nowrap;overflow:hidden;
-                       text-overflow:ellipsis;max-width:100%;word-break:break-word;">${rText}</span>
-        </div>`;
-    }
-
-    const editBtn = canEdit
-      ? `<button title="Edit"
-                 onclick="event.stopPropagation();DM._toggleActionMenu('${wrapId}','${safeUid}','${safeMsgId}',document.getElementById('${wrapId}').querySelector('.dm-bubble-text').textContent,true,false,${isMe},${isMe},false)"
-                 style="background:none;border:none;cursor:pointer;padding:0 0 0 4px;
-                        display:inline-flex;align-items:center;opacity:0;transition:opacity .15s;
-                        color:${isMe ? 'rgba(255,255,255,.7)' : 'var(--text-4,#9ca3af)'};
-                        flex-shrink:0;line-height:1;vertical-align:middle;"
-                 class="dm-edit-trigger-btn">
-           ${_iconPencil(10)}
-         </button>`
-      : '';
-
-    const replyBtnData = msgId
-      ? `data-reply-id="${safeMsgId}"
-         data-reply-text="${_escAttr((msg.text || '').substring(0, 80))}"
-         data-reply-sender="${_escAttr(isMe ? 'You' : (msg.senderName || 'Master Timothy'))}"`
-      : '';
-
-    if (isMe) {
-      return `
-        <div class="dm-swipe-wrap dm-msg-out" id="${wrapId}"
-             style="margin-bottom:${showLabel ? '.75rem' : '.25rem'};
-                    width:100%;max-width:100%;box-sizing:border-box;overflow:hidden;"
-             ${replyBtnData}>
-          <div class="dm-swipe-inner" style="width:100%;max-width:100%;box-sizing:border-box;">
-            <div class="dm-swipe-hint" aria-hidden="true">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M9 17L4 12m0 0l5-5M4 12h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-            ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:var(--text-3,#6b7280);
-                         margin-bottom:2px;padding-right:2px;display:block;text-align:right;">You</span>` : ''}
-            <div class="dm-bubble-wrap" style="max-width:100%;min-width:0;overflow:hidden;">
-              <div class="dm-bubble-inner"
-                   style="background:var(--accent,#4f6ef7);color:#fff;
-                          border-radius:14px 14px 3px 14px;padding:.5rem .75rem .375rem;
-                          max-width:100%;min-width:0;box-sizing:border-box;overflow:hidden;">
-                ${replyCard}
-                <p class="dm-bubble-text"
-                   style="white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;
-                          margin:0;max-width:100%;">${_esc(msg.text)}</p>
-                <div class="dm-bubble-footer dm-bubble-footer--end">
-                  ${editedLabel}${editBtn}
-                  <span class="dm-bubble-time">${time}</span>
-                  ${_tickIcon(msg.status || 'sent')}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>`;
-    } else {
-      return `
-        <div class="dm-swipe-wrap dm-msg-in" id="${wrapId}"
-             style="margin-bottom:${showLabel ? '.75rem' : '.25rem'};
-                    width:100%;max-width:100%;box-sizing:border-box;overflow:hidden;"
-             ${replyBtnData}>
-          <div class="dm-swipe-inner" style="width:100%;max-width:100%;box-sizing:border-box;">
-            <div class="dm-swipe-hint" aria-hidden="true">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M15 7l5 5m0 0l-5 5m5-5H4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-            ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:var(--accent-text,#2d49d6);
-                         margin-bottom:2px;padding-left:2px;display:block;">
-              ${_esc(msg.senderName || 'Master Timothy')}
-            </span>` : ''}
-            <div class="dm-bubble-wrap" style="max-width:100%;min-width:0;overflow:hidden;">
-              <div class="dm-bubble-inner"
-                   style="background:var(--bg-base,#fff);color:var(--text-1,#0d0d0f);
-                          border:1px solid var(--border,#e5e7eb);
-                          border-radius:14px 14px 14px 3px;padding:.5rem .75rem .375rem;
-                          max-width:100%;min-width:0;box-sizing:border-box;overflow:hidden;">
-                ${replyCard}
-                <p class="dm-bubble-text"
-                   style="white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;
-                          margin:0;max-width:100%;">${_esc(msg.text)}</p>
-                <div class="dm-bubble-footer dm-bubble-footer--start">
-                  <span class="dm-bubble-time dm-bubble-time--dim">${time}</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>`;
-    }
+  let replyCard = '';
+  if (msg.replyTo && msg.replyTo.id) {
+    const rName = _esc(msg.replyTo.senderName || 'Unknown');
+    const rText = _esc((msg.replyTo.text || '').substring(0, 80));
+    const rId   = _escAttr(msg.replyTo.id);
+    replyCard = `
+      <div class="dm-reply-card"
+           onclick="event.stopPropagation();DM._scrollToMsg('${rId}')"
+           title="Jump to original message">
+        <span class="dm-reply-card__name">${rName}</span>
+        <span class="dm-reply-card__text">${rText}</span>
+      </div>`;
   }
 
-  function _buildTeacherBubble(msg, showLabel) {
-    const isTeacher  = msg.role === 'teacher';
-    const msgId      = msg.id || '';
-    const wrapId     = `dmWrap-${_escAttr(msgId)}`;
-    const studentUid = _activeStudentUid || '';
-    const canEdit    = isTeacher && !!msgId;
-    const canHistory = !!msgId;
+  const editBtn = canEdit
+    ? `<button title="Edit"
+               onclick="event.stopPropagation();DM._toggleActionMenu('${wrapId}','${safeUid}','${safeMsgId}',document.getElementById('${wrapId}').querySelector('.dm-bubble-text').textContent,true,false,${isMe},${isMe},false)"
+               style="background:none;border:none;cursor:pointer;padding:0 0 0 4px;
+                      display:inline-flex;align-items:center;opacity:0;transition:opacity .15s;
+                      color:${isMe ? 'rgba(255,255,255,.7)' : 'var(--text-4,#9ca3af)'};
+                      flex-shrink:0;line-height:1;vertical-align:middle;"
+               class="dm-edit-trigger-btn">
+         ${_iconPencil(10)}
+       </button>`
+    : '';
 
-    const time = msg.timestamp
-      ? new Date(msg.timestamp.toDate ? msg.timestamp.toDate() : msg.timestamp)
-          .toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
-      : 'Just now';
+  const replyBtnData = msgId
+    ? `data-reply-id="${safeMsgId}"
+       data-reply-text="${_escAttr((msg.text || '').substring(0, 80))}"
+       data-reply-sender="${_escAttr(isMe ? 'You' : (msg.senderName || 'Master Timothy'))}"`
+    : '';
 
-    const editedLabel = msg.editedAt
-      ? `<span class="dm-edited-label-wrap"><span class="dm-edited-label" style="font-size:.5625rem;opacity:.6;font-style:italic;margin-right:3px;line-height:1;white-space:nowrap;">edited</span></span>`
-      : '';
-
-    const safeStudentUid = _escAttr(studentUid);
-    const safeMsgId      = _escAttr(msgId);
-
-    let replyCard = '';
-    if (msg.replyTo && msg.replyTo.id) {
-      const rName = _esc(msg.replyTo.senderName || 'Unknown');
-      const rText = _esc((msg.replyTo.text || '').substring(0, 80));
-      const rId   = _escAttr(msg.replyTo.id);
-      replyCard = `
-        <div class="dm-reply-card"
-             onclick="event.stopPropagation();DM._scrollToMsg('${rId}')"
-             title="Jump to original message"
-             style="overflow:hidden;max-width:100%;box-sizing:border-box;">
-          <span class="dm-reply-card__name">${rName}</span>
-          <span class="dm-reply-card__text"
-                style="display:block;white-space:nowrap;overflow:hidden;
-                       text-overflow:ellipsis;max-width:100%;word-break:break-word;">${rText}</span>
-        </div>`;
-    }
-
-    const editBtn = (canEdit || canHistory)
-      ? `<button title="Options"
-                 onclick="event.stopPropagation();DM._toggleActionMenu('${wrapId}','${safeStudentUid}','${safeMsgId}',document.getElementById('${wrapId}').querySelector('.dm-bubble-text').textContent,${canEdit},${canHistory},${isTeacher},${isTeacher},true)"
-                 style="background:none;border:none;cursor:pointer;padding:0 0 0 4px;
-                        display:inline-flex;align-items:center;opacity:0;transition:opacity .15s;
-                        color:${isTeacher ? 'rgba(255,255,255,.7)' : 'var(--text-4,#9ca3af)'};
-                        flex-shrink:0;line-height:1;vertical-align:middle;"
-                 class="dm-edit-trigger-btn">
-           ${_iconPencil(10)}
-         </button>`
-      : '';
-
-    const replyBtnData = msgId
-      ? `data-reply-id="${safeMsgId}"
-         data-reply-text="${_escAttr((msg.text || '').substring(0, 80))}"
-         data-reply-sender="${_escAttr(isTeacher ? 'Master Timothy' : (msg.senderName || 'Student'))}"`
-      : '';
-
-    if (isTeacher) {
-      return `
-        <div class="dm-swipe-wrap dm-msg-out" id="${wrapId}"
-             style="margin-bottom:${showLabel ? '.75rem' : '.25rem'};
-                    width:100%;max-width:100%;box-sizing:border-box;overflow:hidden;"
-             ${replyBtnData}>
-          <div class="dm-swipe-inner" style="width:100%;max-width:100%;box-sizing:border-box;">
-            <div class="dm-swipe-hint" aria-hidden="true">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M9 17L4 12m0 0l5-5M4 12h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-            ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:var(--text-3,#6b7280);
-                         margin-bottom:2px;padding-right:2px;display:block;text-align:right;">You</span>` : ''}
-            <div class="dm-bubble-wrap" style="max-width:100%;min-width:0;overflow:hidden;">
-              <div class="dm-bubble-inner"
-                   style="background:var(--accent,#4f6ef7);color:#fff;
-                          border-radius:14px 14px 3px 14px;padding:.5rem .75rem .375rem;
-                          max-width:100%;min-width:0;box-sizing:border-box;overflow:hidden;">
-                ${replyCard}
-                <p class="dm-bubble-text"
-                   style="white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;
-                          margin:0;max-width:100%;">${_esc(msg.text)}</p>
-                <div class="dm-bubble-footer dm-bubble-footer--end">
-                  ${editedLabel}${editBtn}
-                  <span class="dm-bubble-time">${time}</span>
-                  ${_tickIcon(msg.status || 'sent')}
-                </div>
+  if (isMe) {
+    return `
+      <div class="dm-swipe-wrap dm-msg-out" id="${wrapId}"
+           style="margin-bottom:${showLabel ? '.75rem' : '.25rem'};"
+           ${replyBtnData}>
+        <div class="dm-swipe-inner">
+          <div class="dm-swipe-hint" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M9 17L4 12m0 0l5-5M4 12h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:var(--text-3,#6b7280);
+                         margin-bottom:2px;display:block;text-align:right;">You</span>` : ''}
+          <div class="dm-bubble-row">
+            <div class="dm-bubble-inner"
+                 style="background:var(--accent,#4f6ef7);color:#fff;
+                        border-radius:14px 14px 3px 14px;padding:.5rem .75rem .375rem;">
+              ${replyCard}
+              <p class="dm-bubble-text">${_esc(msg.text)}</p>
+              <div class="dm-bubble-footer dm-bubble-footer--end">
+                ${editedLabel}${editBtn}
+                <span class="dm-bubble-time">${time}</span>
+                ${_tickIcon(msg.status || 'sent')}
               </div>
             </div>
           </div>
-        </div>`;
-    } else {
-      return `
-        <div class="dm-swipe-wrap dm-msg-in" id="${wrapId}"
-             style="margin-bottom:${showLabel ? '.75rem' : '.25rem'};
-                    width:100%;max-width:100%;box-sizing:border-box;overflow:hidden;"
-             ${replyBtnData}>
-          <div class="dm-swipe-inner" style="width:100%;max-width:100%;box-sizing:border-box;">
-            <div class="dm-swipe-hint" aria-hidden="true">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                <path d="M15 7l5 5m0 0l-5 5m5-5H4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-              </svg>
-            </div>
-            ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:var(--accent-text,#2d49d6);
-                         margin-bottom:2px;padding-left:2px;display:block;">
-              ${_esc(msg.senderName || 'Student')}
-            </span>` : ''}
-            <div class="dm-bubble-wrap" style="max-width:100%;min-width:0;overflow:hidden;">
-              <div class="dm-bubble-inner"
-                   style="background:var(--bg-base,#fff);color:var(--text-1,#0d0d0f);
-                          border:1px solid var(--border,#e5e7eb);
-                          border-radius:14px 14px 14px 3px;padding:.5rem .75rem .375rem;
-                          max-width:100%;min-width:0;box-sizing:border-box;overflow:hidden;">
-                ${replyCard}
-                <p class="dm-bubble-text"
-                   style="white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;
-                          margin:0;max-width:100%;">${_esc(msg.text)}</p>
-                <div class="dm-bubble-footer dm-bubble-footer--start">
-                  ${editedLabel}
-                  <span class="dm-bubble-time dm-bubble-time--dim">${time}</span>
-                  ${editBtn}
-                </div>
+        </div>
+      </div>`;
+  } else {
+    return `
+      <div class="dm-swipe-wrap dm-msg-in" id="${wrapId}"
+           style="margin-bottom:${showLabel ? '.75rem' : '.25rem'};"
+           ${replyBtnData}>
+        <div class="dm-swipe-inner">
+          <div class="dm-swipe-hint" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M15 7l5 5m0 0l-5 5m5-5H4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:var(--accent-text,#2d49d6);
+                         margin-bottom:2px;display:block;">${_esc(msg.senderName || 'Master Timothy')}</span>` : ''}
+          <div class="dm-bubble-row">
+            <div class="dm-bubble-inner"
+                 style="background:var(--bg-base,#fff);color:var(--text-1,#0d0d0f);
+                        border:1px solid var(--border,#e5e7eb);
+                        border-radius:14px 14px 14px 3px;padding:.5rem .75rem .375rem;">
+              ${replyCard}
+              <p class="dm-bubble-text">${_esc(msg.text)}</p>
+              <div class="dm-bubble-footer dm-bubble-footer--start">
+                ${editedLabel}
+                <span class="dm-bubble-time dm-bubble-time--dim">${time}</span>
               </div>
             </div>
           </div>
-        </div>`;
-    }
+        </div>
+      </div>`;
   }
+}
+
+function _buildTeacherBubble(msg, showLabel) {
+  const isTeacher  = msg.role === 'teacher';
+  const msgId      = msg.id || '';
+  const wrapId     = `dmWrap-${_escAttr(msgId)}`;
+  const studentUid = _activeStudentUid || '';
+  const canEdit    = isTeacher && !!msgId;
+  const canHistory = !!msgId;
+
+  const time = msg.timestamp
+    ? new Date(msg.timestamp.toDate ? msg.timestamp.toDate() : msg.timestamp)
+        .toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+    : 'Just now';
+
+  const editedLabel = msg.editedAt
+    ? `<span class="dm-edited-label-wrap"><span class="dm-edited-label">edited</span></span>`
+    : '';
+
+  const safeStudentUid = _escAttr(studentUid);
+  const safeMsgId      = _escAttr(msgId);
+
+  let replyCard = '';
+  if (msg.replyTo && msg.replyTo.id) {
+    const rName = _esc(msg.replyTo.senderName || 'Unknown');
+    const rText = _esc((msg.replyTo.text || '').substring(0, 80));
+    const rId   = _escAttr(msg.replyTo.id);
+    replyCard = `
+      <div class="dm-reply-card"
+           onclick="event.stopPropagation();DM._scrollToMsg('${rId}')"
+           title="Jump to original message">
+        <span class="dm-reply-card__name">${rName}</span>
+        <span class="dm-reply-card__text">${rText}</span>
+      </div>`;
+  }
+
+  const editBtn = (canEdit || canHistory)
+    ? `<button title="Options"
+               onclick="event.stopPropagation();DM._toggleActionMenu('${wrapId}','${safeStudentUid}','${safeMsgId}',document.getElementById('${wrapId}').querySelector('.dm-bubble-text').textContent,${canEdit},${canHistory},${isTeacher},${isTeacher},true)"
+               style="background:none;border:none;cursor:pointer;padding:0 0 0 4px;
+                      display:inline-flex;align-items:center;opacity:0;transition:opacity .15s;
+                      color:${isTeacher ? 'rgba(255,255,255,.7)' : 'var(--text-4,#9ca3af)'};
+                      flex-shrink:0;line-height:1;vertical-align:middle;"
+               class="dm-edit-trigger-btn">
+         ${_iconPencil(10)}
+       </button>`
+    : '';
+
+  const replyBtnData = msgId
+    ? `data-reply-id="${safeMsgId}"
+       data-reply-text="${_escAttr((msg.text || '').substring(0, 80))}"
+       data-reply-sender="${_escAttr(isTeacher ? 'Master Timothy' : (msg.senderName || 'Student'))}"`
+    : '';
+
+  if (isTeacher) {
+    return `
+      <div class="dm-swipe-wrap dm-msg-out" id="${wrapId}"
+           style="margin-bottom:${showLabel ? '.75rem' : '.25rem'};"
+           ${replyBtnData}>
+        <div class="dm-swipe-inner">
+          <div class="dm-swipe-hint" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M9 17L4 12m0 0l5-5M4 12h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:var(--text-3,#6b7280);
+                         margin-bottom:2px;display:block;text-align:right;">You</span>` : ''}
+          <div class="dm-bubble-row">
+            <div class="dm-bubble-inner"
+                 style="background:var(--accent,#4f6ef7);color:#fff;
+                        border-radius:14px 14px 3px 14px;padding:.5rem .75rem .375rem;">
+              ${replyCard}
+              <p class="dm-bubble-text">${_esc(msg.text)}</p>
+              <div class="dm-bubble-footer dm-bubble-footer--end">
+                ${editedLabel}${editBtn}
+                <span class="dm-bubble-time">${time}</span>
+                ${_tickIcon(msg.status || 'sent')}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  } else {
+    return `
+      <div class="dm-swipe-wrap dm-msg-in" id="${wrapId}"
+           style="margin-bottom:${showLabel ? '.75rem' : '.25rem'};"
+           ${replyBtnData}>
+        <div class="dm-swipe-inner">
+          <div class="dm-swipe-hint" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M15 7l5 5m0 0l-5 5m5-5H4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:var(--accent-text,#2d49d6);
+                         margin-bottom:2px;display:block;">${_esc(msg.senderName || 'Student')}</span>` : ''}
+          <div class="dm-bubble-row">
+            <div class="dm-bubble-inner"
+                 style="background:var(--bg-base,#fff);color:var(--text-1,#0d0d0f);
+                        border:1px solid var(--border,#e5e7eb);
+                        border-radius:14px 14px 14px 3px;padding:.5rem .75rem .375rem;">
+              ${replyCard}
+              <p class="dm-bubble-text">${_esc(msg.text)}</p>
+              <div class="dm-bubble-footer dm-bubble-footer--start">
+                ${editedLabel}
+                <span class="dm-bubble-time dm-bubble-time--dim">${time}</span>
+                <span style="flex:1;"></span>
+                ${editBtn}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+}
 
   /* ══════════════════════════════════════════════════════════════
      STUDENT INBOX
