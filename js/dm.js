@@ -8,6 +8,25 @@
   const HEARTBEAT_INTERVAL_MS = 25_000;
   const ONLINE_THRESHOLD_MS   = 60_000;
 
+  (function _enableOfflinePersistence() {
+    try {
+      const db = window.fbDb;
+      if (!db || db._persistenceEnabled) return;
+      db.enablePersistence({ synchronizeTabs: true })
+        .then(() => { db._persistenceEnabled = true; })
+        .catch(err => {
+          // "failed-precondition" → another tab already owns persistence (fine)
+          // "unimplemented"       → browser doesn't support it (fine, degrade silently)
+          if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') {
+            console.warn('[dm] Firestore persistence error:', err);
+          }
+          db._persistenceEnabled = true; // treat as done regardless
+        });
+    } catch (e) {
+      console.warn('[dm] Could not enable Firestore persistence:', e);
+    }
+  }());
+
   function _isRecentlyActive(ts) {
     if (!ts) return false;
     const date = ts.toDate ? ts.toDate() : new Date(ts);
@@ -87,6 +106,15 @@
         <svg width="16" height="10" viewBox="0 0 16 10" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M1 5L4.5 8.5L10.5 2" stroke="rgba(255,255,255,0.6)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
           <path d="M5.5 5L9 8.5L15 2" stroke="rgba(255,255,255,0.6)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </span>`;
+    }
+    if (status === 'pending') {
+      // FIX 4: Clock icon shown while Firestore is queuing an offline write
+      return `<span class="dm-ticks dm-ticks--pending" title="Pending — will send when online" aria-label="Pending">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="12" r="9" stroke="rgba(255,255,255,0.5)" stroke-width="1.75"/>
+          <path d="M12 7v5l3 3" stroke="rgba(255,255,255,0.5)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </span>`;
     }
@@ -507,25 +535,25 @@
   }
 
   function _presenceHTML(isOnlineFlagHint, lastSeen) {
-  const actuallyOnline = _isRecentlyActive(lastSeen);
+    const actuallyOnline = _isRecentlyActive(lastSeen);
 
-  if (actuallyOnline) {
+    if (actuallyOnline) {
+      return `<span class="dm-presence">
+        <span class="dm-presence__dot dm-presence__dot--online"></span>
+        <span class="dm-presence__label dm-presence__label--online">Online</span>
+      </span>`;
+    }
     return `<span class="dm-presence">
-      <span class="dm-presence__dot dm-presence__dot--online"></span>
-      <span class="dm-presence__label dm-presence__label--online">Online</span>
+      <span class="dm-presence__dot dm-presence__dot--offline"></span>
+      <span class="dm-presence__label">${_esc(_formatLastSeen(lastSeen))}</span>
     </span>`;
   }
-  return `<span class="dm-presence">
-    <span class="dm-presence__dot dm-presence__dot--offline"></span>
-    <span class="dm-presence__label">${_esc(_formatLastSeen(lastSeen))}</span>
-  </span>`;
-}
 
   let _studentOfflineCleanup      = null;
   let _teacherOfflineCleanup      = null;
   let _studentVisibilityHandler   = null;
-  let _studentBeforeunloadHandler = null;
   let _teacherVisibilityHandler   = null;
+  let _studentBeforeunloadHandler = null;
   let _teacherBeforeunloadHandler = null;
   let _studentOfflineDone         = false;
   let _teacherOfflineDone         = false;
@@ -570,7 +598,11 @@
       }
       if (document.visibilityState === 'hidden') return;
       try {
-        await _broadcastTeacherPresence(true);
+        const ts = firebase.firestore.FieldValue.serverTimestamp();
+        await Db().collection('teacherPresence').doc('global').set(
+          { online: true, lastSeen: ts },
+          { merge: true }
+        );
       } catch (e) {
         console.warn('[dm] Teacher heartbeat write failed:', e);
       }
@@ -585,71 +617,71 @@
   }
 
   async function _setStudentOnlineGlobal(uid) {
-  _studentOfflineDone = false;
-  try {
-    const ts    = firebase.firestore.FieldValue.serverTimestamp();
-    const batch = Db().batch();
-    batch.set(_threadRef(uid), { studentOnline: true, studentLastSeen: ts }, { merge: true });
-    batch.update(Db().collection('students').doc(uid), { isOnline: true, lastSeen: ts });
-    await batch.commit();
-  } catch (e) {
+    _studentOfflineDone = false;
     try {
-      const ts = firebase.firestore.FieldValue.serverTimestamp();
-      await _threadRef(uid).set({ studentOnline: true, studentLastSeen: ts }, { merge: true });
-    } catch (e2) {
-      console.warn('[dm] Could not set studentOnline=true:', e2);
-      return;
-    }
-  }
-  _startStudentHeartbeat(uid);
-
-  const offlineTs = () => new Date(Date.now() - (ONLINE_THRESHOLD_MS + 1000));
-
-  const goOffline = async () => {
-    if (_studentOfflineDone) return;
-    _studentOfflineDone = true;
-    _stopStudentHeartbeat();
-    try {
-      const ts = offlineTs();
-      const b = Db().batch();
-      b.set(_threadRef(uid), { studentOnline: false, studentLastSeen: ts }, { merge: true });
-      try { b.update(Db().collection('students').doc(uid), { isOnline: false, lastSeen: ts }); } catch (_) {}
-      await b.commit();
-    } catch (e) { console.warn('[dm] studentOffline write failed:', e); }
-  };
-  _studentOfflineCleanup = goOffline;
-
-  _studentVisibilityHandler = () => {
-    if (document.visibilityState === 'hidden') {
-      _stopStudentHeartbeat();
-    } else {
-      if (firebase.auth().currentUser && !_studentOfflineDone) {
-        (async () => {
-          const ts = firebase.firestore.FieldValue.serverTimestamp();
-          try {
-            const b = Db().batch();
-            b.set(_threadRef(uid), { studentOnline: true, studentLastSeen: ts }, { merge: true });
-            b.update(Db().collection('students').doc(uid), { isOnline: true, lastSeen: ts });
-            await b.commit();
-          } catch (_) {}
-          await _markDelivered(uid, 'student').catch(() => {});
-        })();
-        _startStudentHeartbeat(uid);
+      const ts    = firebase.firestore.FieldValue.serverTimestamp();
+      const batch = Db().batch();
+      batch.set(_threadRef(uid), { studentOnline: true, studentLastSeen: ts }, { merge: true });
+      batch.update(Db().collection('students').doc(uid), { isOnline: true, lastSeen: ts });
+      await batch.commit();
+    } catch (e) {
+      try {
+        const ts = firebase.firestore.FieldValue.serverTimestamp();
+        await _threadRef(uid).set({ studentOnline: true, studentLastSeen: ts }, { merge: true });
+      } catch (e2) {
+        console.warn('[dm] Could not set studentOnline=true:', e2);
+        return;
       }
     }
-  };
-  document.addEventListener('visibilitychange', _studentVisibilityHandler);
+    _startStudentHeartbeat(uid);
 
-  _studentBeforeunloadHandler = () => {
-    if (_studentOfflineDone) return;
-    _studentOfflineDone = true;
-    _stopStudentHeartbeat();
-    const ts = offlineTs();
-    try { _threadRef(uid).set({ studentOnline: false, studentLastSeen: ts }, { merge: true }); } catch (_) {}
-    try { Db().collection('students').doc(uid).update({ isOnline: false, lastSeen: ts }); } catch (_) {}
-  };
-  window.addEventListener('beforeunload', _studentBeforeunloadHandler);
-}
+    const offlineTs = () => new Date(Date.now() - (ONLINE_THRESHOLD_MS + 1000));
+
+    const goOffline = async () => {
+      if (_studentOfflineDone) return;
+      _studentOfflineDone = true;
+      _stopStudentHeartbeat();
+      try {
+        const ts = offlineTs();
+        const b = Db().batch();
+        b.set(_threadRef(uid), { studentOnline: false, studentLastSeen: ts }, { merge: true });
+        try { b.update(Db().collection('students').doc(uid), { isOnline: false, lastSeen: ts }); } catch (_) {}
+        await b.commit();
+      } catch (e) { console.warn('[dm] studentOffline write failed:', e); }
+    };
+    _studentOfflineCleanup = goOffline;
+
+    _studentVisibilityHandler = () => {
+      if (document.visibilityState === 'hidden') {
+        _stopStudentHeartbeat();
+      } else {
+        if (firebase.auth().currentUser && !_studentOfflineDone) {
+          (async () => {
+            const ts = firebase.firestore.FieldValue.serverTimestamp();
+            try {
+              const b = Db().batch();
+              b.set(_threadRef(uid), { studentOnline: true, studentLastSeen: ts }, { merge: true });
+              b.update(Db().collection('students').doc(uid), { isOnline: true, lastSeen: ts });
+              await b.commit();
+            } catch (_) {}
+            await _markDelivered(uid, 'student').catch(() => {});
+          })();
+          _startStudentHeartbeat(uid);
+        }
+      }
+    };
+    document.addEventListener('visibilitychange', _studentVisibilityHandler);
+
+    _studentBeforeunloadHandler = () => {
+      if (_studentOfflineDone) return;
+      _studentOfflineDone = true;
+      _stopStudentHeartbeat();
+      const ts = offlineTs();
+      try { _threadRef(uid).set({ studentOnline: false, studentLastSeen: ts }, { merge: true }); } catch (_) {}
+      try { Db().collection('students').doc(uid).update({ isOnline: false, lastSeen: ts }); } catch (_) {}
+    };
+    window.addEventListener('beforeunload', _studentBeforeunloadHandler);
+  }
 
   async function _setTeacherOnlineGlobal() {
     _teacherOfflineDone = false;
@@ -673,13 +705,21 @@
     };
     _teacherOfflineCleanup = goOffline;
 
+    // Tab-restore for teacher also writes only to global, not all threads.
     _teacherVisibilityHandler = () => {
       if (document.visibilityState === 'hidden') {
         _stopTeacherHeartbeat();
       } else {
         if (firebase.auth().currentUser && !_teacherOfflineDone) {
-          _broadcastTeacherPresence(true).catch(() => {});
+          // Write only to the single global presence document
+          const ts = firebase.firestore.FieldValue.serverTimestamp();
+          Db().collection('teacherPresence').doc('global')
+            .set({ online: true, lastSeen: ts }, { merge: true })
+            .catch(() => {});
           _startTeacherHeartbeat();
+          // Delivery sweep across all threads still runs — this is a read-then-write
+          // operation that only happens once on tab-restore, not on every heartbeat,
+          // so the cost is acceptable.
           (async () => {
             try {
               const allThreads = await Db().collection('directMessages').get();
@@ -696,77 +736,78 @@
     document.addEventListener('visibilitychange', _teacherVisibilityHandler);
 
     _teacherBeforeunloadHandler = () => {
-  if (_teacherOfflineDone) return;
-  _teacherOfflineDone = true;
-  _teacherIsOnline    = false;
-  _stopTeacherHeartbeat();
-  const db = Db();
-  const ts = new Date(Date.now() - (ONLINE_THRESHOLD_MS + 1000));
-  try { db.collection('teacherPresence').doc('global').set({ online: false, lastSeen: ts }, { merge: true }); } catch (_) {}
-  try {
-    db.collection('directMessages').get().then(snap => {
-      if (snap.empty) return;
-      const batch = db.batch();
-      snap.forEach(doc => batch.set(doc.ref, { teacherOnline: false, teacherLastSeen: ts }, { merge: true }));
-      batch.commit();
-    }).catch(() => {});
-  } catch (_) {}
-  };
+      if (_teacherOfflineDone) return;
+      _teacherOfflineDone = true;
+      _teacherIsOnline    = false;
+      _stopTeacherHeartbeat();
+      const db = Db();
+      const ts = new Date(Date.now() - (ONLINE_THRESHOLD_MS + 1000));
+      try { db.collection('teacherPresence').doc('global').set({ online: false, lastSeen: ts }, { merge: true }); } catch (_) {}
+      try {
+        db.collection('directMessages').get().then(snap => {
+          if (snap.empty) return;
+          const batch = db.batch();
+          snap.forEach(doc => batch.set(doc.ref, { teacherOnline: false, teacherLastSeen: ts }, { merge: true }));
+          batch.commit();
+        }).catch(() => {});
+      } catch (_) {}
+    };
     window.addEventListener('beforeunload', _teacherBeforeunloadHandler);
   }
 
   async function _broadcastTeacherPresence(isOnline) {
-  const db = Db();
-  const ts = firebase.auth().currentUser
-    ? firebase.firestore.FieldValue.serverTimestamp()
-    : new Date();
+    const db = Db();
+    const ts = firebase.auth().currentUser
+      ? firebase.firestore.FieldValue.serverTimestamp()
+      : new Date();
 
-  // When going offline, write a timestamp guaranteed to be outside the
-  // online threshold so _isRecentlyActive immediately returns false.
-  // This prevents students seeing the teacher as Online after a clean logout.
-  const presenceTs = isOnline
-    ? ts
-    : new Date(Date.now() - (ONLINE_THRESHOLD_MS + 1000));
+    // When going offline, write a timestamp guaranteed to be outside the
+    // online threshold so _isRecentlyActive immediately returns false.
+    const presenceTs = isOnline
+      ? ts
+      : new Date(Date.now() - (ONLINE_THRESHOLD_MS + 1000));
 
-  await db.collection('teacherPresence').doc('global').set(
-    { online: isOnline, lastSeen: presenceTs },
-    { merge: true }
-  );
-  const snap = await db.collection('directMessages').get();
-  if (snap.empty) return;
-  const refs = [];
-  snap.forEach(doc => refs.push(doc.ref));
-  for (let i = 0; i < refs.length; i += 400) {
-    const batch = db.batch();
-    refs.slice(i, i + 400).forEach(ref => batch.set(ref,
-      { teacherOnline: isOnline, teacherLastSeen: presenceTs },
+    // Always write to the global sentinel document
+    await db.collection('teacherPresence').doc('global').set(
+      { online: isOnline, lastSeen: presenceTs },
       { merge: true }
-    ));
-    await batch.commit();
+    );
+
+    const snap = await db.collection('directMessages').get();
+    if (snap.empty) return;
+    const refs = [];
+    snap.forEach(doc => refs.push(doc.ref));
+    for (let i = 0; i < refs.length; i += 400) {
+      const batch = db.batch();
+      refs.slice(i, i + 400).forEach(ref => batch.set(ref,
+        { teacherOnline: isOnline, teacherLastSeen: presenceTs },
+        { merge: true }
+      ));
+      await batch.commit();
+    }
   }
-}
 
   function _watchPresence(studentUid, watchRole, elementId, listenerKey) {
     AppState.cancelListener(listenerKey);
 
     if (watchRole === 'teacher') {
-      const unsub = _threadRef(studentUid).onSnapshot(snap => {
+      // Watch the single global presence document — 1 read shared across all students
+      const unsub = Db().collection('teacherPresence').doc('global').onSnapshot(snap => {
         const el = document.getElementById(elementId);
         if (!el) { AppState.cancelListener(listenerKey); return; }
         const data = (snap.exists && snap.data()) || {};
-        // Pass both the boolean flag and the timestamp — either is enough to show Online
-        el.innerHTML = _presenceHTML(!!data.teacherOnline, data.teacherLastSeen || null);
-      }, err => console.warn('[dm] Presence watch error:', err));
+        el.innerHTML = _presenceHTML(!!data.online, data.lastSeen || null);
+      }, err => console.warn('[dm] Teacher presence watch error:', err));
       AppState.registerListener(listenerKey, unsub);
       return;
     }
 
+    // Student presence: watch the thread document (unchanged)
     const unsub = _threadRef(studentUid).onSnapshot(snap => {
       const el = document.getElementById(elementId);
       if (!el) { AppState.cancelListener(listenerKey); return; }
       if (snap.exists) {
         const data = snap.data() || {};
-        // Pass both the boolean flag and the timestamp — either is enough to show Online
         el.innerHTML = _presenceHTML(!!data.studentOnline, data.studentLastSeen || null);
       } else {
         Db().collection('students').doc(studentUid).get().then(profileSnap => {
@@ -776,7 +817,7 @@
           el2.innerHTML = _presenceHTML(!!data.isOnline, data.lastSeen || null);
         }).catch(() => {});
       }
-    }, err => console.warn('[dm] Presence watch error:', err));
+    }, err => console.warn('[dm] Student presence watch error:', err));
     AppState.registerListener(listenerKey, unsub);
   }
 
@@ -806,7 +847,6 @@
     const msgCol     = _threadRef(studentUid).collection('messages');
 
     try {
-      // Two targeted queries instead of one full-collection read
       const [sentSnap, deliveredSnap] = await Promise.all([
         msgCol.where('role', '==', senderRole).where('status', '==', 'sent').get(),
         msgCol.where('role', '==', senderRole).where('status', '==', 'delivered').get(),
@@ -1167,13 +1207,13 @@
       if (wrap && wrap.dataset.replyId) _triggerReply(wrap);
     });
   }
-   
+
   function _activateInlineEdit(studentUid, messageId, currentText, isDarkBubble, wrapperId, isTeacher) {
     const wrapper = document.getElementById(wrapperId);
     if (!wrapper) return;
 
     const textEl   = wrapper.querySelector('.dm-bubble-text');
-    const footerEl = wrapper.querySelector('.dm-bubble-footer');   // FIX: was '.dm-msg-footer'
+    const footerEl = wrapper.querySelector('.dm-bubble-footer');
     const editedEl = wrapper.querySelector('.dm-edited-label-wrap');
     if (!textEl) return;
 
@@ -1595,121 +1635,121 @@
   }
 
   async function openStudentInbox() {
-  _injectStyles();
+    _injectStyles();
 
-  const uid         = AppState.userId;
-  const studentData = AppState.studentData || {};
-  const threadRef   = _threadRef(uid);
+    const uid         = AppState.userId;
+    const studentData = AppState.studentData || {};
+    const threadRef   = _threadRef(uid);
 
-  try {
-    await threadRef.set({ studentUnread: 0 }, { merge: true });
-    AppState.dmStudentUnread = 0;
-    _updateStudentBadge(0);
-  } catch (e) { console.warn('[dm] Could not clear studentUnread:', e); }
+    try {
+      await threadRef.set({ studentUnread: 0 }, { merge: true });
+      AppState.dmStudentUnread = 0;
+      _updateStudentBadge(0);
+    } catch (e) { console.warn('[dm] Could not clear studentUnread:', e); }
 
-  try {
-    const threadSnap = await threadRef.get();
-    if (!threadSnap.exists) {
-      const sentinelSnap = await Db().collection('teacherPresence').doc('global').get();
-      const tData = (sentinelSnap.exists && sentinelSnap.data()) || {};
-      const teacherOnline   = !!(tData.online) && _isRecentlyActive(tData.lastSeen);
-      const teacherLastSeen = tData.lastSeen || null;
-      const seedData = {
-        studentName: studentData.name || '', studentClass: studentData.class || '',
-        studentUnread: 0, teacherUnread: 0, teacherOnline,
-      };
-      if (teacherLastSeen) seedData.teacherLastSeen = teacherLastSeen;
-      await threadRef.set(seedData, { merge: true });
-    }
-  } catch (e) { console.warn('[dm] Could not seed thread doc:', e); }
+    try {
+      const threadSnap = await threadRef.get();
+      if (!threadSnap.exists) {
+        const sentinelSnap = await Db().collection('teacherPresence').doc('global').get();
+        const tData = (sentinelSnap.exists && sentinelSnap.data()) || {};
+        const teacherOnline   = !!(tData.online) && _isRecentlyActive(tData.lastSeen);
+        const teacherLastSeen = tData.lastSeen || null;
+        const seedData = {
+          studentName: studentData.name || '', studentClass: studentData.class || '',
+          studentUnread: 0, teacherUnread: 0, teacherOnline,
+        };
+        if (teacherLastSeen) seedData.teacherLastSeen = teacherLastSeen;
+        await threadRef.set(seedData, { merge: true });
+      }
+    } catch (e) { console.warn('[dm] Could not seed thread doc:', e); }
 
-  UI.mount(`
-    <div class="max-w-2xl mx-auto glass animate-fadeIn"
-         style="padding:1.25rem 1.5rem;margin-top:1.25rem;margin-bottom:1.25rem;
-                box-sizing:border-box;width:100%;max-width:100%;overflow:hidden;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;min-width:0;">
-        <div style="min-width:0;flex:1;margin-right:.75rem;">
-          <h2 class="font-bold" style="font-size:1.125rem;line-height:1.3;">Message Master Timothy</h2>
-          <div id="dmTeacherPresence" style="margin-top:2px;">${_presenceHTML(false, null)}</div>
+    UI.mount(`
+      <div class="max-w-2xl mx-auto glass animate-fadeIn"
+           style="padding:1.25rem 1.5rem;margin-top:1.25rem;margin-bottom:1.25rem;
+                  box-sizing:border-box;width:100%;max-width:100%;overflow:hidden;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;min-width:0;">
+          <div style="min-width:0;flex:1;margin-right:.75rem;">
+            <h2 class="font-bold" style="font-size:1.125rem;line-height:1.3;">Message Master Timothy</h2>
+            <div id="dmTeacherPresence" style="margin-top:2px;">${_presenceHTML(false, null)}</div>
+          </div>
+          <button onclick="DM.backFromStudentInbox()" class="btn bg-gray-500 hover:bg-gray-600"
+                  style="font-size:.8125rem;flex-shrink:0;">&#8592; Back</button>
         </div>
-        <button onclick="DM.backFromStudentInbox()" class="btn bg-gray-500 hover:bg-gray-600"
-                style="font-size:.8125rem;flex-shrink:0;">&#8592; Back</button>
-      </div>
 
-      <div style="margin-bottom:.5rem;padding:.375rem .625rem;
-       background:var(--surface-subtle,#f3f4f6);border:1px solid var(--border,#e5e7eb);
-       border-radius:8px;font-size:.7rem;color:var(--text-tertiary,#6b7280);
-       display:flex;align-items:center;gap:.375rem;line-height:1.3;box-sizing:border-box;">
-      <span style="color:var(--text-tertiary,#6b7280);flex-shrink:0;">${_iconLock(12)}</span>
-      <span><strong style="color:var(--text-secondary,#374151);font-weight:600;">Private</strong>
-       — these messages can only be seen by you and Master Timothy.</span>
-      </div>
+        <div style="margin-bottom:.5rem;padding:.375rem .625rem;
+         background:var(--surface-subtle,#f3f4f6);border:1px solid var(--border,#e5e7eb);
+         border-radius:8px;font-size:.7rem;color:var(--text-tertiary,#6b7280);
+         display:flex;align-items:center;gap:.375rem;line-height:1.3;box-sizing:border-box;">
+        <span style="color:var(--text-tertiary,#6b7280);flex-shrink:0;">${_iconLock(12)}</span>
+        <span><strong style="color:var(--text-secondary,#374151);font-weight:600;">Private</strong>
+         — these messages can only be seen by you and Master Timothy.</span>
+        </div>
 
-      <div style="margin-bottom:.625rem;padding:.5rem .625rem;
-         background:var(--brand-bg,#edf2ff);border:1px solid var(--brand-border,#bac8ff);
-         border-radius:8px;font-size:.75rem;color:var(--brand-text,#3730a3);line-height:1.4;
-         display:flex;align-items:flex-start;gap:.375rem;box-sizing:border-box;">
-      <span style="margin-top:1px;flex-shrink:0;">${_iconMail(12)}</span>
-      <span>Send a question or concern directly to Master Timothy.
-            He will reply here as soon as possible.</span>
-      </div>
+        <div style="margin-bottom:.625rem;padding:.5rem .625rem;
+           background:var(--brand-bg,#edf2ff);border:1px solid var(--brand-border,#bac8ff);
+           border-radius:8px;font-size:.75rem;color:var(--brand-text,#3730a3);line-height:1.4;
+           display:flex;align-items:flex-start;gap:.375rem;box-sizing:border-box;">
+        <span style="margin-top:1px;flex-shrink:0;">${_iconMail(12)}</span>
+        <span>Send a question or concern directly to Master Timothy.
+              He will reply here as soon as possible.</span>
+        </div>
 
-      <div id="dmMessages"
-           class="dm-messages-area"
-           style="min-height:260px;max-height:420px;
-                  border:1px solid var(--border,#e5e7eb);border-radius:10px;
-                  padding:.75rem 1rem;margin-bottom:0;
-                  background:var(--surface-subtle,#f9fafb);">
-        <p style="text-align:center;font-size:.8125rem;color:var(--text-disabled,#9ca3af);padding:2rem 0;">
-          Loading messages…
-        </p>
-      </div>
+        <div id="dmMessages"
+             class="dm-messages-area"
+             style="min-height:260px;max-height:420px;
+                    border:1px solid var(--border,#e5e7eb);border-radius:10px;
+                    padding:.75rem 1rem;margin-bottom:0;
+                    background:var(--surface-subtle,#f9fafb);">
+          <p style="text-align:center;font-size:.8125rem;color:var(--text-disabled,#9ca3af);padding:2rem 0;">
+            Loading messages…
+          </p>
+        </div>
 
-      <!-- Typing indicator bar (student sees teacher typing) -->
-      <div id="dmStudentTypingBar"
-           style="height:0;padding:0 .25rem;display:none;align-items:center;">
-        <span class="dm-typing-dots" aria-hidden="true">
-          <span></span><span></span><span></span>
-        </span>
-        <span style="font-size:.6875rem;color:var(--text-3,#6b7280);margin-left:.375rem;font-style:italic;">
-          Master Timothy is typing…
-        </span>
-      </div>
+        <!-- Typing indicator bar (student sees teacher typing) -->
+        <div id="dmStudentTypingBar"
+             style="height:0;padding:0 .25rem;display:none;align-items:center;">
+          <span class="dm-typing-dots" aria-hidden="true">
+            <span></span><span></span><span></span>
+          </span>
+          <span style="font-size:.6875rem;color:var(--text-3,#6b7280);margin-left:.375rem;font-style:italic;">
+            Master Timothy is typing…
+          </span>
+        </div>
 
-      ${_buildReplyBar('dmStudentReplyBar', 'DM._clearStudentReply()')}
-      <div style="display:flex;gap:.5rem;align-items:flex-end;box-sizing:border-box;width:100%;overflow:hidden;margin-top:.5rem;">
-        <textarea id="dmInput" placeholder="Type your message…" rows="1"
-                  style="flex:1;min-width:0;resize:none;overflow-y:hidden;
-                         min-height:36px;max-height:120px;box-sizing:border-box;"></textarea>
-        <button id="dmSendBtn" onclick="DM.sendStudentMessage()"
-                class="btn bg-green-600 hover:bg-green-700"
-                style="flex-shrink:0;align-self:flex-end;">Send</button>
-      </div>
-    </div>`);
+        ${_buildReplyBar('dmStudentReplyBar', 'DM._clearStudentReply()')}
+        <div style="display:flex;gap:.5rem;align-items:flex-end;box-sizing:border-box;width:100%;overflow:hidden;margin-top:.5rem;">
+          <textarea id="dmInput" placeholder="Type your message…" rows="1"
+                    style="flex:1;min-width:0;resize:none;overflow-y:hidden;
+                           min-height:36px;max-height:120px;box-sizing:border-box;"></textarea>
+          <button id="dmSendBtn" onclick="DM.sendStudentMessage()"
+                  class="btn bg-green-600 hover:bg-green-700"
+                  style="flex-shrink:0;align-self:flex-end;">Send</button>
+        </div>
+      </div>`);
 
-  const input = document.getElementById('dmInput');
-  if (input) {
-    input.focus();
-    input.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendStudentMessage(); }
-    });
-    input.addEventListener('input', () => {
-      input.style.height = 'auto';
-      input.style.height = Math.min(input.scrollHeight, 120) + 'px';
-      input.style.overflowY = input.scrollHeight > 120 ? 'auto' : 'hidden';
-      _startTyping(uid, 'student');
-    });
-    input.addEventListener('blur', () => {
-      _stopTyping(uid, 'student').catch(() => {});
-    });
+    const input = document.getElementById('dmInput');
+    if (input) {
+      input.focus();
+      input.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendStudentMessage(); }
+      });
+      input.addEventListener('input', () => {
+        input.style.height = 'auto';
+        input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+        input.style.overflowY = input.scrollHeight > 120 ? 'auto' : 'hidden';
+        _startTyping(uid, 'student');
+      });
+      input.addEventListener('blur', () => {
+        _stopTyping(uid, 'student').catch(() => {});
+      });
+    }
+
+    await _markRead(uid, 'student');
+    _watchPresence(uid, 'teacher', 'dmTeacherPresence', 'dmTeacherPresenceWatch');
+    _watchTypingIndicator(uid, 'teacherTyping', 'dmStudentTypingBar', 'Master Timothy');
+    _attachSwipeListeners('dmMessages', 'student');
+    _subscribeStudentMessages(uid);
   }
-
-  await _markRead(uid, 'student');
-  _watchPresence(uid, 'teacher', 'dmTeacherPresence', 'dmTeacherPresenceWatch');
-  _watchTypingIndicator(uid, 'teacherTyping', 'dmStudentTypingBar', 'Master Timothy');
-  _attachSwipeListeners('dmMessages', 'student');
-  _subscribeStudentMessages(uid);
-}
 
   function _subscribeStudentMessages(uid) {
     AppState.cancelListener('dmStudentMessages');
@@ -1769,68 +1809,69 @@
   }
 
   async function sendStudentMessage() {
-  const input = document.getElementById('dmInput');
-  const text  = (input?.value || '').trim();
-  if (!text) return;
+    const input = document.getElementById('dmInput');
+    const text  = (input?.value || '').trim();
+    if (!text) return;
 
-  const uid         = AppState.userId;
-  const studentData = AppState.studentData || {};
-  const name        = studentData.name  || 'Student';
-  const cls         = studentData.class || '';
-  const btn         = document.getElementById('dmSendBtn');
+    const uid         = AppState.userId;
+    const studentData = AppState.studentData || {};
+    const name        = studentData.name  || 'Student';
+    const cls         = studentData.class || '';
+    const btn         = document.getElementById('dmSendBtn');
 
-  _stopTyping(uid, 'student').catch(() => {});
+    _stopTyping(uid, 'student').catch(() => {});
 
-  UI.setLoading(btn, true);
-  if (input) input.value = '';
-
-  let teacherIsOnline = false;
-  try {
-    const sentinelSnap = await Db().collection('teacherPresence').doc('global').get();
-    const tData = (sentinelSnap.exists && sentinelSnap.data()) || {};
-    teacherIsOnline = !!(tData.online) && _isRecentlyActive(tData.lastSeen);
-  } catch (_) {}
-
-  try {
-    const batch  = Db().batch();
-    const msgRef = _threadRef(uid).collection('messages').doc();
-
-    const studentMsgData = {
-      text, senderId: uid, senderName: name, role: 'student',
-      status: teacherIsOnline ? 'delivered' : 'sent',
-      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-    };
-    if (_studentReplyTo && _studentReplyTo.id) {
-      studentMsgData.replyTo = {
-        id:         _studentReplyTo.id,
-        text:       _studentReplyTo.text,
-        senderName: _studentReplyTo.senderName,
-      };
-    }
-    batch.set(msgRef, studentMsgData);
-
-    batch.set(_threadRef(uid), {
-      studentName: name, studentClass: cls,
-      lastMessage: text.length > 80 ? text.substring(0, 80) + '…' : text,
-      lastAt: firebase.firestore.FieldValue.serverTimestamp(),
-      teacherUnread: firebase.firestore.FieldValue.increment(1),
-      studentUnread: 0, teacherOnline: teacherIsOnline,
-    }, { merge: true });
-    await batch.commit();
-  } catch (err) {
-    console.error('[dm] sendStudentMessage error:', err);
-    UI.toast('Failed to send message. Please try again.', 'error');
-    if (input) input.value = text;
-  } finally {
-    _clearStudentReply();
-    UI.setLoading(btn, false);
+    // Clear input immediately — the write will succeed from local cache
     if (input) {
+      input.value = '';
       input.style.height = 'auto';
       input.style.height = '36px';
-      input.focus();
+    }
+    UI.setLoading(btn, true);
+
+    let teacherIsOnline = false;
+    try {
+      const sentinelSnap = await Db().collection('teacherPresence').doc('global').get();
+      const tData = (sentinelSnap.exists && sentinelSnap.data()) || {};
+      teacherIsOnline = !!(tData.online) && _isRecentlyActive(tData.lastSeen);
+    } catch (_) {}
+
+    const replyPayload = (_studentReplyTo && _studentReplyTo.id)
+      ? { id: _studentReplyTo.id, text: _studentReplyTo.text, senderName: _studentReplyTo.senderName }
+      : null;
+
+    _clearStudentReply();
+
+    try {
+      const batch  = Db().batch();
+      const msgRef = _threadRef(uid).collection('messages').doc();
+
+      const studentMsgData = {
+        text, senderId: uid, senderName: name, role: 'student',
+        status: teacherIsOnline ? 'delivered' : 'sent',
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      };
+      if (replyPayload) studentMsgData.replyTo = replyPayload;
+
+      batch.set(msgRef, studentMsgData);
+      batch.set(_threadRef(uid), {
+        studentName: name, studentClass: cls,
+        lastMessage: text.length > 80 ? text.substring(0, 80) + '…' : text,
+        lastAt: firebase.firestore.FieldValue.serverTimestamp(),
+        teacherUnread: firebase.firestore.FieldValue.increment(1),
+        studentUnread: 0, teacherOnline: teacherIsOnline,
+      }, { merge: true });
+
+      await batch.commit();
+    } catch (err) {
+      console.error('[dm] sendStudentMessage error:', err);
+      UI.toast('Could not send message. Please try again.', 'error');
+      if (input) input.value = text;
+    } finally {
+      UI.setLoading(btn, false);
+      if (input) input.focus();
     }
   }
-}
 
   function backFromStudentInbox() {
     _cancelTypingListeners(AppState.userId);
@@ -1899,74 +1940,74 @@
   }
 
   function _subscribeTeacherThreadList() {
-  AppState.cancelListener('dmTeacherThreads');
+    AppState.cancelListener('dmTeacherThreads');
 
-  const unsub = Db()
-    .collection('directMessages').orderBy('lastAt', 'desc')
-    .onSnapshot(snap => {
-      const list = document.getElementById('dmThreadList');
-      if (!list) { AppState.cancelListener('dmTeacherThreads'); return; }
+    const unsub = Db()
+      .collection('directMessages').orderBy('lastAt', 'desc')
+      .onSnapshot(snap => {
+        const list = document.getElementById('dmThreadList');
+        if (!list) { AppState.cancelListener('dmTeacherThreads'); return; }
 
-      if (snap.empty) {
-        list.innerHTML = `<p style="font-size:.8125rem;color:var(--text-4,#9ca3af);text-align:center;padding:2rem 1rem;">No messages yet.</p>`;
-        return;
-      }
+        if (snap.empty) {
+          list.innerHTML = `<p style="font-size:.8125rem;color:var(--text-4,#9ca3af);text-align:center;padding:2rem 1rem;">No messages yet.</p>`;
+          return;
+        }
 
-      let totalUnread = 0;
-      const items = [];
-      snap.forEach(doc => {
-        totalUnread += (doc.data().teacherUnread || 0);
-        items.push({ id: doc.id, ...doc.data() });
-      });
+        let totalUnread = 0;
+        const items = [];
+        snap.forEach(doc => {
+          totalUnread += (doc.data().teacherUnread || 0);
+          items.push({ id: doc.id, ...doc.data() });
+        });
 
-      _updateTeacherBadge(totalUnread);
+        _updateTeacherBadge(totalUnread);
 
-      list.innerHTML = items.map(item => {
-        const unread   = item.teacherUnread || 0;
-        const isActive = _activeStudentUid === item.id;
-        const isOnline = _isRecentlyActive(item.studentLastSeen);
-        const timeStr  = item.lastAt
-          ? new Date(item.lastAt.toDate ? item.lastAt.toDate() : item.lastAt)
-              .toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-          : '';
+        list.innerHTML = items.map(item => {
+          const unread   = item.teacherUnread || 0;
+          const isActive = _activeStudentUid === item.id;
+          const isOnline = _isRecentlyActive(item.studentLastSeen);
+          const timeStr  = item.lastAt
+            ? new Date(item.lastAt.toDate ? item.lastAt.toDate() : item.lastAt)
+                .toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+            : '';
 
-        return `
-          <div class="dm-thread-item${isActive ? ' is-active' : ''}"
-               data-uid="${_escAttr(item.id)}"
-               data-name="${_escAttr(item.studentName || '')}"
-               data-class="${_escAttr(item.studentClass || '')}"
-               onclick="DM._openConversationFromEl(this)">
-            <div class="dm-thread-av">
-              <div class="dm-thread-av-circle${isOnline ? ' online' : ''}">
-                ${_esc((item.studentName || '?').charAt(0).toUpperCase())}
+          return `
+            <div class="dm-thread-item${isActive ? ' is-active' : ''}"
+                 data-uid="${_escAttr(item.id)}"
+                 data-name="${_escAttr(item.studentName || '')}"
+                 data-class="${_escAttr(item.studentClass || '')}"
+                 onclick="DM._openConversationFromEl(this)">
+              <div class="dm-thread-av">
+                <div class="dm-thread-av-circle${isOnline ? ' online' : ''}">
+                  ${_esc((item.studentName || '?').charAt(0).toUpperCase())}
+                </div>
+                ${isOnline ? `<span class="dm-thread-av-dot"></span>` : ''}
               </div>
-              ${isOnline ? `<span class="dm-thread-av-dot"></span>` : ''}
-            </div>
-            <div class="dm-thread-bd">
-              <div class="dm-thread-r1">
-                <span class="dm-thread-name">${_esc(item.studentName || 'Unknown')}</span>
-                <span class="dm-thread-date">${_esc(timeStr)}</span>
+              <div class="dm-thread-bd">
+                <div class="dm-thread-r1">
+                  <span class="dm-thread-name">${_esc(item.studentName || 'Unknown')}</span>
+                  <span class="dm-thread-date">${_esc(timeStr)}</span>
+                </div>
+                <div class="dm-thread-presence${isOnline ? ' online' : ''}">
+                  ${isOnline
+                    ? '&#x25cf; Online'
+                    : item.studentLastSeen
+                      ? _esc(_formatLastSeen(item.studentLastSeen))
+                      : 'Offline'}
+                </div>
+                <div class="dm-thread-r2">
+                  <span class="dm-thread-preview">${_esc(item.lastMessage || 'No messages yet')}</span>
+                  ${unread > 0 ? `<span class="dm-thread-badge">${unread > 9 ? '9+' : unread}</span>` : ''}
+                </div>
+                <span class="dm-thread-class">${_esc(item.studentClass || '—')}</span>
               </div>
-              <div class="dm-thread-presence${isOnline ? ' online' : ''}">
-                ${isOnline
-                  ? '&#x25cf; Online'
-                  : item.studentLastSeen
-                    ? _esc(_formatLastSeen(item.studentLastSeen))
-                    : 'Offline'}
-              </div>
-              <div class="dm-thread-r2">
-                <span class="dm-thread-preview">${_esc(item.lastMessage || 'No messages yet')}</span>
-                ${unread > 0 ? `<span class="dm-thread-badge">${unread > 9 ? '9+' : unread}</span>` : ''}
-              </div>
-              <span class="dm-thread-class">${_esc(item.studentClass || '—')}</span>
-            </div>
-          </div>`;
-      }).join('');
+            </div>`;
+        }).join('');
 
-    }, err => console.error('[dm] Teacher thread list error:', err));
+      }, err => console.error('[dm] Teacher thread list error:', err));
 
-  AppState.registerListener('dmTeacherThreads', unsub);
-}
+    AppState.registerListener('dmTeacherThreads', unsub);
+  }
 
   let _activeStudentUid  = null;
   window._dmActiveUid    = null;
@@ -2164,68 +2205,71 @@
     AppState.registerListener('dmTeacherMessages', unsub);
   }
 
+  // ── FIX 4: _sendTeacherReply — same offline-queue treatment as student send ──
   async function _sendTeacherReply(studentUid, studentName, studentClass) {
-  const input = document.getElementById('dmTeacherInput');
-  const text  = (input?.value || '').trim();
-  if (!text) return;
+    const input = document.getElementById('dmTeacherInput');
+    const text  = (input?.value || '').trim();
+    if (!text) return;
 
-  const btn = document.getElementById('dmTeacherSendBtn');
+    const btn = document.getElementById('dmTeacherSendBtn');
 
-  _stopTyping(studentUid, 'teacher').catch(() => {});
+    _stopTyping(studentUid, 'teacher').catch(() => {});
 
-  UI.setLoading(btn, true);
-  if (input) input.value = '';
-
-  let studentIsOnline = false;
-  try {
-    const threadSnap = await _threadRef(studentUid).get();
-    const tData = (threadSnap.exists && threadSnap.data()) || {};
-    studentIsOnline = _isRecentlyActive(tData.studentLastSeen);
-  } catch (_) {}
-
-  const resolvedName  = studentName  || '';
-  const resolvedClass = studentClass || '';
-
-  try {
-    const batch  = Db().batch();
-    const msgRef = _threadRef(studentUid).collection('messages').doc();
-
-    const teacherMsgData = {
-      text, senderId: AppConfig.TEACHER_UID, senderName: 'Master Timothy',
-      role: 'teacher', status: studentIsOnline ? 'delivered' : 'sent',
-      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-    };
-    if (_teacherReplyTo && _teacherReplyTo.id) {
-      teacherMsgData.replyTo = {
-        id:         _teacherReplyTo.id,
-        text:       _teacherReplyTo.text,
-        senderName: _teacherReplyTo.senderName,
-      };
-    }
-    batch.set(msgRef, teacherMsgData);
-
-    batch.set(_threadRef(studentUid), {
-      studentName: resolvedName, studentClass: resolvedClass,
-      lastMessage: text.length > 80 ? text.substring(0, 80) + '…' : text,
-      lastAt: firebase.firestore.FieldValue.serverTimestamp(),
-      studentUnread: firebase.firestore.FieldValue.increment(1),
-      teacherUnread: 0,
-    }, { merge: true });
-    await batch.commit();
-  } catch (err) {
-    console.error('[dm] _sendTeacherReply error:', err);
-    UI.toast('Failed to send reply. Please try again.', 'error');
-    if (input) input.value = text;
-  } finally {
-    _clearTeacherReply();
-    UI.setLoading(btn, false);
+    // Clear input immediately — persistence handles offline queuing
     if (input) {
+      input.value = '';
       input.style.height = 'auto';
       input.style.height = '36px';
-      input.focus();
+    }
+    UI.setLoading(btn, true);
+
+    let studentIsOnline = false;
+    try {
+      const threadSnap = await _threadRef(studentUid).get();
+      const tData = (threadSnap.exists && threadSnap.data()) || {};
+      studentIsOnline = _isRecentlyActive(tData.studentLastSeen);
+    } catch (_) {}
+
+    const resolvedName  = studentName  || '';
+    const resolvedClass = studentClass || '';
+
+    const replyPayload = (_teacherReplyTo && _teacherReplyTo.id)
+      ? { id: _teacherReplyTo.id, text: _teacherReplyTo.text, senderName: _teacherReplyTo.senderName }
+      : null;
+
+    _clearTeacherReply();
+
+    try {
+      const batch  = Db().batch();
+      const msgRef = _threadRef(studentUid).collection('messages').doc();
+
+      const teacherMsgData = {
+        text, senderId: AppConfig.TEACHER_UID, senderName: 'Master Timothy',
+        role: 'teacher', status: studentIsOnline ? 'delivered' : 'sent',
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      };
+      if (replyPayload) teacherMsgData.replyTo = replyPayload;
+
+      batch.set(msgRef, teacherMsgData);
+      batch.set(_threadRef(studentUid), {
+        studentName: resolvedName, studentClass: resolvedClass,
+        lastMessage: text.length > 80 ? text.substring(0, 80) + '…' : text,
+        lastAt: firebase.firestore.FieldValue.serverTimestamp(),
+        studentUnread: firebase.firestore.FieldValue.increment(1),
+        teacherUnread: 0,
+      }, { merge: true });
+
+      // Resolves immediately from local cache if offline; syncs when back online.
+      await batch.commit();
+    } catch (err) {
+      console.error('[dm] _sendTeacherReply error:', err);
+      UI.toast('Could not send reply. Please try again.', 'error');
+      if (input) input.value = text;
+    } finally {
+      UI.setLoading(btn, false);
+      if (input) input.focus();
     }
   }
-}
 
   async function _openNewConversationModal() {
     _injectStyles();
@@ -2294,77 +2338,77 @@
   }
 
   function _renderStudentPickerList(students, query) {
-  const list = document.getElementById('dmStudentPickerList');
-  if (!list) return;
+    const list = document.getElementById('dmStudentPickerList');
+    if (!list) return;
 
-  const q = query.toLowerCase().trim();
-  const filtered = q
-    ? students.filter(s =>
-        (s.name  || '').toLowerCase().includes(q) ||
-        (s.class || '').toLowerCase().includes(q))
-    : students;
+    const q = query.toLowerCase().trim();
+    const filtered = q
+      ? students.filter(s =>
+          (s.name  || '').toLowerCase().includes(q) ||
+          (s.class || '').toLowerCase().includes(q))
+      : students;
 
-  if (!filtered.length) {
-    list.innerHTML = `<p style="font-size:.8125rem;color:var(--text-disabled,#9ca3af);
-                        text-align:center;padding:2rem 1rem;">No students found.</p>`;
-    return;
-  }
+    if (!filtered.length) {
+      list.innerHTML = `<p style="font-size:.8125rem;color:var(--text-disabled,#9ca3af);
+                          text-align:center;padding:2rem 1rem;">No students found.</p>`;
+      return;
+    }
 
-  list.innerHTML = filtered.map((s, idx) => {
-    const isOnline = _isRecentlyActive(s.lastSeen);
-    const lastSeen = s.lastSeen || null;
-    const presenceTxt = isOnline
-      ? `<span style="color:#22c45e;font-size:.6rem;font-weight:600;line-height:1;">&#x25cf; Online</span>`
-      : (lastSeen
-          ? `<span style="font-size:.6rem;color:var(--text-disabled,#9ca3af);line-height:1;">${_esc(_formatLastSeen(lastSeen))}</span>`
-          : `<span style="font-size:.6rem;color:var(--text-disabled,#9ca3af);line-height:1;">Offline</span>`);
+    list.innerHTML = filtered.map((s, idx) => {
+      const isOnline = _isRecentlyActive(s.lastSeen);
+      const lastSeen = s.lastSeen || null;
+      const presenceTxt = isOnline
+        ? `<span style="color:#22c45e;font-size:.6rem;font-weight:600;line-height:1;">&#x25cf; Online</span>`
+        : (lastSeen
+            ? `<span style="font-size:.6rem;color:var(--text-disabled,#9ca3af);line-height:1;">${_esc(_formatLastSeen(lastSeen))}</span>`
+            : `<span style="font-size:.6rem;color:var(--text-disabled,#9ca3af);line-height:1;">Offline</span>`);
 
-    return `
-      <div class="dm-picker-row"
-           data-uid="${_escAttr(s.uid)}"
-           data-name="${_escAttr(s.name || '')}"
-           data-class="${_escAttr(s.class || '')}"
-           style="display:flex;align-items:center;gap:.625rem;padding:.625rem .875rem;
-                  cursor:pointer;transition:background .1s;box-sizing:border-box;width:100%;
-                  ${idx < filtered.length - 1 ? 'border-bottom:1px solid var(--border,#e5e7eb);' : ''}">
-        <div style="position:relative;flex-shrink:0;">
-          <div style="width:34px;height:34px;border-radius:50%;background:var(--brand-bg,#edf2ff);
-                      border:1.5px solid ${isOnline ? '#22c45e' : 'var(--brand-border,#bac8ff)'};
-                      display:flex;align-items:center;justify-content:center;
-                      font-size:.75rem;font-weight:700;color:var(--brand-text,#3730a3);">
-            ${_esc((s.name || '?').charAt(0).toUpperCase())}
+      return `
+        <div class="dm-picker-row"
+             data-uid="${_escAttr(s.uid)}"
+             data-name="${_escAttr(s.name || '')}"
+             data-class="${_escAttr(s.class || '')}"
+             style="display:flex;align-items:center;gap:.625rem;padding:.625rem .875rem;
+                    cursor:pointer;transition:background .1s;box-sizing:border-box;width:100%;
+                    ${idx < filtered.length - 1 ? 'border-bottom:1px solid var(--border,#e5e7eb);' : ''}">
+          <div style="position:relative;flex-shrink:0;">
+            <div style="width:34px;height:34px;border-radius:50%;background:var(--brand-bg,#edf2ff);
+                        border:1.5px solid ${isOnline ? '#22c45e' : 'var(--brand-border,#bac8ff)'};
+                        display:flex;align-items:center;justify-content:center;
+                        font-size:.75rem;font-weight:700;color:var(--brand-text,#3730a3);">
+              ${_esc((s.name || '?').charAt(0).toUpperCase())}
+            </div>
+            ${isOnline
+              ? `<span style="position:absolute;bottom:0;right:0;width:9px;height:9px;
+                              border-radius:50%;background:#22c45e;
+                              border:2px solid var(--surface,#fff);"></span>`
+              : ''}
           </div>
-          ${isOnline
-            ? `<span style="position:absolute;bottom:0;right:0;width:9px;height:9px;
-                            border-radius:50%;background:#22c45e;
-                            border:2px solid var(--surface,#fff);"></span>`
-            : ''}
-        </div>
-        <div style="flex:1;min-width:0;">
-          <p style="font-size:.8125rem;font-weight:600;color:var(--text-primary,#111827);margin:0;
-                    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-            ${_esc(s.name || 'Unknown')}
-          </p>
-          <div style="display:flex;align-items:center;gap:.375rem;margin-top:1px;">
-            <p style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin:0;
-                      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:8rem;">
-              ${_esc(s.class || '—')}
+          <div style="flex:1;min-width:0;">
+            <p style="font-size:.8125rem;font-weight:600;color:var(--text-primary,#111827);margin:0;
+                      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              ${_esc(s.name || 'Unknown')}
             </p>
-            <span style="color:var(--border-strong);">·</span>
-            ${presenceTxt}
+            <div style="display:flex;align-items:center;gap:.375rem;margin-top:1px;">
+              <p style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin:0;
+                        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:8rem;">
+                ${_esc(s.class || '—')}
+              </p>
+              <span style="color:var(--border-strong);">·</span>
+              ${presenceTxt}
+            </div>
           </div>
-        </div>
-      </div>`;
-  }).join('');
+        </div>`;
+    }).join('');
 
-  list.querySelectorAll('.dm-picker-row').forEach(row => {
-    row.addEventListener('mouseenter', () => { row.style.background = 'var(--surface-subtle,#f9fafb)'; });
-    row.addEventListener('mouseleave', () => { row.style.background = 'transparent'; });
-    row.addEventListener('click', () => {
-      _pickStudentForConversation(row.dataset.uid, row.dataset.name, row.dataset.class);
+    list.querySelectorAll('.dm-picker-row').forEach(row => {
+      row.addEventListener('mouseenter', () => { row.style.background = 'var(--surface-subtle,#f9fafb)'; });
+      row.addEventListener('mouseleave', () => { row.style.background = 'transparent'; });
+      row.addEventListener('click', () => {
+        _pickStudentForConversation(row.dataset.uid, row.dataset.name, row.dataset.class);
+      });
     });
-  });
-}
+  }
 
   function _closeNewConversationModal() {
     const overlay = document.getElementById('dmNewConvOverlay');
@@ -2432,24 +2476,24 @@
   }
 
   async function initStudentDMListener(uid) {
-  AppState.cancelListener('dmStudentUnread');
+    AppState.cancelListener('dmStudentUnread');
 
-  await _setStudentOnlineGlobal(uid);
-  await _markDelivered(uid, 'student');
+    await _setStudentOnlineGlobal(uid);
+    await _markDelivered(uid, 'student');
 
-  const unsub = _threadRef(uid).onSnapshot(snap => {
-    const data  = (snap.exists && snap.data()) || {};
-    const count = data.studentUnread || 0;
-    AppState.dmStudentUnread = count;
-    _updateStudentBadge(count);
+    const unsub = _threadRef(uid).onSnapshot(snap => {
+      const data  = (snap.exists && snap.data()) || {};
+      const count = data.studentUnread || 0;
+      AppState.dmStudentUnread = count;
+      _updateStudentBadge(count);
 
-    if (count > 0) {
-      _markDelivered(uid, 'student').catch(() => {});
-    }
-  }, err => console.warn('[dm] Student unread listener error:', err));
+      if (count > 0) {
+        _markDelivered(uid, 'student').catch(() => {});
+      }
+    }, err => console.warn('[dm] Student unread listener error:', err));
 
-  AppState.registerListener('dmStudentUnread', unsub);
-}
+    AppState.registerListener('dmStudentUnread', unsub);
+  }
 
   async function initTeacherDMListener() {
     AppState.cancelListener('dmTeacherUnread');
