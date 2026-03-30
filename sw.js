@@ -9,7 +9,6 @@
 
 'use strict';
 
-/* ── FCM SDK must be imported before firebase.initializeApp() ── */
 importScripts('https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js');
 
