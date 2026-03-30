@@ -27,13 +27,52 @@
    * using only the cached timestamp — zero extra Firestore reads.
    */
   function _refreshAllPresenceElements() {
-    document.querySelectorAll('[data-presence-ts]').forEach(el => {
-      const raw = el.dataset.presenceTs;
-      if (!raw) return;
-      const ts = raw === 'null' ? null : new Date(parseInt(raw, 10));
-      el.innerHTML = _presenceHTML(ts);
-    });
-  }
+  document.querySelectorAll('[data-presence-ts]').forEach(el => {
+    const raw  = el.dataset.presenceTs;
+    if (raw === undefined) return;
+    const tsMs = raw === 'null' ? null : parseInt(raw, 10);
+    const ts   = tsMs ? new Date(tsMs) : null;
+
+    // Thread-list presence span (has class dm-thread-presence)
+    if (el.classList.contains('dm-thread-presence')) {
+      const online = tsMs !== null && (Date.now() - tsMs) <= ONLINE_THRESHOLD_MS;
+
+      // Update the text content
+      if (online) {
+        el.textContent = '● Online';
+        el.classList.add('online');
+      } else {
+        el.textContent = ts ? _formatLastSeen(ts) : 'Offline';
+        el.classList.remove('online');
+      }
+
+      // Also update the avatar circle border and dot indicator in the same thread row
+      const threadItem = el.closest('.dm-thread-item');
+      if (threadItem) {
+        const circle = threadItem.querySelector('.dm-thread-av-circle');
+        const dot    = threadItem.querySelector('.dm-thread-av-dot');
+        if (circle) {
+          if (online) circle.classList.add('online');
+          else        circle.classList.remove('online');
+        }
+        if (online && !dot) {
+          const av = threadItem.querySelector('.dm-thread-av');
+          if (av) {
+            const newDot = document.createElement('span');
+            newDot.className = 'dm-thread-av-dot';
+            av.appendChild(newDot);
+          }
+        } else if (!online && dot) {
+          dot.remove();
+        }
+      }
+      return;
+    }
+
+    // Standard dm-presence widget (used in chat headers)
+    el.innerHTML = _presenceHTML(ts);
+  });
+}
 
   /* ── Offline-persistence bootstrap ────────────────────────── */
   (function _enableOfflinePersistence() {
@@ -1616,43 +1655,39 @@
   }
 
   function _subscribeStudentMessages(uid) {
-    AppState.cancelListener('dmStudentMessages');
-    let firstSnap = true;
+  AppState.cancelListener('dmStudentMessages');
 
-    const unsub = _threadRef(uid)
-      .collection('messages').orderBy('timestamp', 'asc')
-      .onSnapshot(snap => {
-        const container = document.getElementById('dmMessages');
-        if (!container) { AppState.cancelListener('dmStudentMessages'); return; }
+  const unsub = _threadRef(uid)
+    .collection('messages').orderBy('timestamp', 'asc')
+    .onSnapshot(snap => {
+      const container = document.getElementById('dmMessages');
+      if (!container) { AppState.cancelListener('dmStudentMessages'); return; }
 
-        if (snap.empty) {
-          container.innerHTML = `
-            <p style="text-align:center;font-size:.8125rem;
-                      color:var(--text-disabled,#9ca3af);padding:2rem 0;">
-              No messages yet. Say hello to Master Timothy!
-            </p>`;
-          firstSnap = false;
-          return;
-        }
+      if (snap.empty) {
+        container.innerHTML = `
+          <p style="text-align:center;font-size:.8125rem;
+                    color:var(--text-disabled,#9ca3af);padding:2rem 0;">
+            No messages yet. Say hello to Master Timothy!
+          </p>`;
+        return;
+      }
 
-        const msgs = [];
-        snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
+      const msgs = [];
+      snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
 
-        // Always upgrade any newly received "sent" messages from teacher to "delivered"
-        // since the student's tab is open and displaying the thread.
-        _markDeliveredFromSnapshot(snap, uid, 'student').catch(() => {});
+      // Student has the inbox open → upgrade any newly arrived teacher messages
+      // from "sent" to "delivered" (snapshot-scoped, no full collection scan).
+      // NOTE: We do NOT call _markRead here. _markRead was already called once
+      // in openStudentInbox() when the inbox mounted. Calling it again on every
+      // snapshot tick caused a write→snapshot→write feedback loop.
+      _markDeliveredFromSnapshot(snap, uid, 'student').catch(() => {});
 
-        // Mark read on every new incoming message while the thread is open
-        // (not just on the first load — if a new message arrives while viewing, mark it read)
-        _markRead(uid, 'student').catch(() => {});
+      container.innerHTML = _renderMessagesWithDateSeps(msgs, uid, 'student');
+      container.scrollTop = container.scrollHeight;
+    }, err => console.error('[dm] Student messages error:', err));
 
-        container.innerHTML = _renderMessagesWithDateSeps(msgs, uid, 'student');
-        container.scrollTop = container.scrollHeight;
-        firstSnap = false;
-      }, err => console.error('[dm] Student messages error:', err));
-
-    AppState.registerListener('dmStudentMessages', unsub);
-  }
+  AppState.registerListener('dmStudentMessages', unsub);
+}
 
   function _renderMessagesWithDateSeps(msgs, myUid, viewerRole) {
     let lastDayKey    = null;
@@ -1806,73 +1841,78 @@
   }
 
   function _subscribeTeacherThreadList() {
-    AppState.cancelListener('dmTeacherThreads');
+  AppState.cancelListener('dmTeacherThreads');
 
-    const unsub = Db()
-      .collection('directMessages').orderBy('lastAt', 'desc')
-      .onSnapshot(snap => {
-        const list = document.getElementById('dmThreadList');
-        if (!list) { AppState.cancelListener('dmTeacherThreads'); return; }
+  const unsub = Db()
+    .collection('directMessages').orderBy('lastAt', 'desc')
+    .onSnapshot(snap => {
+      const list = document.getElementById('dmThreadList');
+      if (!list) { AppState.cancelListener('dmTeacherThreads'); return; }
 
-        if (snap.empty) {
-          list.innerHTML = `<p style="font-size:.8125rem;color:var(--text-4,#9ca3af);text-align:center;padding:2rem 1rem;">No messages yet.</p>`;
-          return;
-        }
+      if (snap.empty) {
+        list.innerHTML = `<p style="font-size:.8125rem;color:var(--text-4,#9ca3af);text-align:center;padding:2rem 1rem;">No messages yet.</p>`;
+        return;
+      }
 
-        let totalUnread = 0;
-        const items = [];
-        snap.forEach(doc => {
-          totalUnread += (doc.data().teacherUnread || 0);
-          items.push({ id: doc.id, ...doc.data() });
-        });
-        _updateTeacherBadge(totalUnread);
+      let totalUnread = 0;
+      const items = [];
+      snap.forEach(doc => {
+        totalUnread += (doc.data().teacherUnread || 0);
+        items.push({ id: doc.id, ...doc.data() });
+      });
+      _updateTeacherBadge(totalUnread);
 
-        list.innerHTML = items.map(item => {
-          const unread   = item.teacherUnread || 0;
-          const isActive = _activeStudentUid === item.id;
-          const isOnline = _isRecentlyActive(item.studentLastSeen);
-          const timeStr  = item.lastAt
-            ? new Date(item.lastAt.toDate ? item.lastAt.toDate() : item.lastAt)
-                .toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-            : '';
+      list.innerHTML = items.map(item => {
+        const unread   = item.teacherUnread || 0;
+        const isActive = _activeStudentUid === item.id;
+        const isOnline = _isRecentlyActive(item.studentLastSeen);
+        const tsMs     = _tsToMs(item.studentLastSeen);
+        const timeStr  = item.lastAt
+          ? new Date(item.lastAt.toDate ? item.lastAt.toDate() : item.lastAt)
+              .toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+          : '';
 
-          return `
-            <div class="dm-thread-item${isActive ? ' is-active' : ''}"
-                 data-uid="${_escAttr(item.id)}"
-                 data-name="${_escAttr(item.studentName || '')}"
-                 data-class="${_escAttr(item.studentClass || '')}"
-                 onclick="DM._openConversationFromEl(this)">
-              <div class="dm-thread-av">
-                <div class="dm-thread-av-circle${isOnline ? ' online' : ''}">
-                  ${_esc((item.studentName || '?').charAt(0).toUpperCase())}
-                </div>
-                ${isOnline ? `<span class="dm-thread-av-dot"></span>` : ''}
+        // Presence text for the thread row — carries data-presence-ts so the
+        // 15-second local refresh timer can re-evaluate it without extra Firestore reads.
+        const presenceSpan = isOnline
+          ? `<span class="dm-thread-presence online"
+                  data-presence-ts="${tsMs ?? 'null'}">&#x25cf; Online</span>`
+          : `<span class="dm-thread-presence"
+                  data-presence-ts="${tsMs ?? 'null'}">
+               ${item.studentLastSeen ? _esc(_formatLastSeen(item.studentLastSeen)) : 'Offline'}
+             </span>`;
+
+        return `
+          <div class="dm-thread-item${isActive ? ' is-active' : ''}"
+               data-uid="${_escAttr(item.id)}"
+               data-name="${_escAttr(item.studentName || '')}"
+               data-class="${_escAttr(item.studentClass || '')}"
+               onclick="DM._openConversationFromEl(this)">
+            <div class="dm-thread-av">
+              <div class="dm-thread-av-circle${isOnline ? ' online' : ''}">
+                ${_esc((item.studentName || '?').charAt(0).toUpperCase())}
               </div>
-              <div class="dm-thread-bd">
-                <div class="dm-thread-r1">
-                  <span class="dm-thread-name">${_esc(item.studentName || 'Unknown')}</span>
-                  <span class="dm-thread-date">${_esc(timeStr)}</span>
-                </div>
-                <div class="dm-thread-presence${isOnline ? ' online' : ''}">
-                  ${isOnline
-                    ? '&#x25cf; Online'
-                    : item.studentLastSeen
-                      ? _esc(_formatLastSeen(item.studentLastSeen))
-                      : 'Offline'}
-                </div>
-                <div class="dm-thread-r2">
-                  <span class="dm-thread-preview">${_esc(item.lastMessage || 'No messages yet')}</span>
-                  ${unread > 0 ? `<span class="dm-thread-badge">${unread > 9 ? '9+' : unread}</span>` : ''}
-                </div>
-                <span class="dm-thread-class">${_esc(item.studentClass || '—')}</span>
+              ${isOnline ? `<span class="dm-thread-av-dot"></span>` : ''}
+            </div>
+            <div class="dm-thread-bd">
+              <div class="dm-thread-r1">
+                <span class="dm-thread-name">${_esc(item.studentName || 'Unknown')}</span>
+                <span class="dm-thread-date">${_esc(timeStr)}</span>
               </div>
-            </div>`;
-        }).join('');
+              ${presenceSpan}
+              <div class="dm-thread-r2">
+                <span class="dm-thread-preview">${_esc(item.lastMessage || 'No messages yet')}</span>
+                ${unread > 0 ? `<span class="dm-thread-badge">${unread > 9 ? '9+' : unread}</span>` : ''}
+              </div>
+              <span class="dm-thread-class">${_esc(item.studentClass || '—')}</span>
+            </div>
+          </div>`;
+      }).join('');
 
-      }, err => console.error('[dm] Teacher thread list error:', err));
+    }, err => console.error('[dm] Teacher thread list error:', err));
 
-    AppState.registerListener('dmTeacherThreads', unsub);
-  }
+  AppState.registerListener('dmTeacherThreads', unsub);
+}
 
   let _activeStudentUid  = null;
   window._dmActiveUid    = null;
@@ -2035,39 +2075,46 @@
   }
 
   function _subscribeTeacherMessages(studentUid) {
-    AppState.cancelListener('dmTeacherMessages');
+  AppState.cancelListener('dmTeacherMessages');
 
-    const unsub = _threadRef(studentUid)
-      .collection('messages').orderBy('timestamp', 'asc')
-      .onSnapshot(snap => {
-        const container = document.getElementById('dmTeacherMessages');
-        if (!container) { AppState.cancelListener('dmTeacherMessages'); return; }
+  const unsub = _threadRef(studentUid)
+    .collection('messages').orderBy('timestamp', 'asc')
+    .onSnapshot(snap => {
+      const container = document.getElementById('dmTeacherMessages');
+      if (!container) { AppState.cancelListener('dmTeacherMessages'); return; }
 
-        if (snap.empty) {
-          container.innerHTML = `
-            <p style="text-align:center;font-size:.8125rem;
-                      color:var(--text-disabled,#9ca3af);padding:2rem 0;">
-              No messages in this thread yet.
-            </p>`;
-          return;
-        }
+      if (snap.empty) {
+        container.innerHTML = `
+          <p style="text-align:center;font-size:.8125rem;
+                    color:var(--text-disabled,#9ca3af);padding:2rem 0;">
+            No messages in this thread yet.
+          </p>`;
+        return;
+      }
 
-        const msgs = [];
-        snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
+      const msgs = [];
+      snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
 
-        // Upgrade any newly arrived "sent" student messages to "delivered"
-        // since the teacher's tab is open and showing this thread.
-        _markDeliveredFromSnapshot(snap, studentUid, 'teacher').catch(() => {});
+      // Teacher has this thread open → upgrade any newly arrived student messages
+      // from "sent" to "delivered" via the snapshot (no full collection scan).
+      _markDeliveredFromSnapshot(snap, studentUid, 'teacher').catch(() => {});
 
-        // Mark read on every new incoming student message while this thread is open
+      // If a genuinely NEW student message just arrived while this thread is open,
+      // mark it read immediately (teacher is looking at it right now).
+      // We check docChanges to avoid calling _markRead on every status-update snapshot.
+      const hasNewIncoming = snap.docChanges().some(change =>
+        change.type === 'added' && change.doc.data().role === 'student'
+      );
+      if (hasNewIncoming) {
         _markRead(studentUid, 'teacher').catch(() => {});
+      }
 
-        container.innerHTML = _renderMessagesWithDateSeps(msgs, AppConfig.TEACHER_UID, 'teacher');
-        container.scrollTop = container.scrollHeight;
-      }, err => console.error('[dm] Teacher messages error:', err));
+      container.innerHTML = _renderMessagesWithDateSeps(msgs, AppConfig.TEACHER_UID, 'teacher');
+      container.scrollTop = container.scrollHeight;
+    }, err => console.error('[dm] Teacher messages error:', err));
 
-    AppState.registerListener('dmTeacherMessages', unsub);
-  }
+  AppState.registerListener('dmTeacherMessages', unsub);
+}
 
   async function _sendTeacherReply(studentUid, studentName, studentClass) {
     const input = document.getElementById('dmTeacherInput');
@@ -2327,58 +2374,59 @@
      INIT LISTENERS (called from app.js on login)
   ══════════════════════════════════════════════════════════════ */
   async function initStudentDMListener(uid) {
-    AppState.cancelListener('dmStudentUnread');
+  AppState.cancelListener('dmStudentUnread');
 
-    // Mark this student as online and start heartbeat
-    await _setStudentOnlineGlobal(uid);
+  // Mark student as online and start heartbeat
+  await _setStudentOnlineGlobal(uid);
 
-    // Sweep: any teacher messages that arrived while student was away → delivered
-    await _markDelivered(uid, 'student');
+  // Sweep: upgrade any teacher messages that arrived while student was away → delivered
+  // (student is now in the app — message is considered delivered even if not yet read)
+  await _markDelivered(uid, 'student').catch(e => console.warn('[dm] initStudentDMListener delivery sweep error:', e));
 
-    const unsub = _threadRef(uid).onSnapshot(snap => {
-      const data  = (snap.exists && snap.data()) || {};
-      const count = data.studentUnread || 0;
-      AppState.dmStudentUnread = count;
-      _updateStudentBadge(count);
+  const unsub = _threadRef(uid).onSnapshot(snap => {
+    const data  = (snap.exists && snap.data()) || {};
+    const count = data.studentUnread || 0;
+    AppState.dmStudentUnread = count;
+    _updateStudentBadge(count);
 
-      // If there are unread messages, upgrade sent→delivered since student is online
-      if (count > 0) {
-        _markDelivered(uid, 'student').catch(() => {});
-      }
-    }, err => console.warn('[dm] Student unread listener error:', err));
+    // If there are unread teacher messages and the student is in the app,
+    // upgrade sent→delivered (NOT read — read only happens when inbox is open).
+    if (count > 0) {
+      _markDelivered(uid, 'student').catch(() => {});
+    }
+    // NOTE: _markRead is intentionally NOT called here.
+    // It is only called from openStudentInbox() when the student actually opens the thread.
+  }, err => console.warn('[dm] Student unread listener error:', err));
 
-    AppState.registerListener('dmStudentUnread', unsub);
-  }
+  AppState.registerListener('dmStudentUnread', unsub);
+}
 
   async function initTeacherDMListener() {
-    AppState.cancelListener('dmTeacherUnread');
-    await _setTeacherOnlineGlobal();
+  AppState.cancelListener('dmTeacherUnread');
+  await _setTeacherOnlineGlobal();
 
-    // Sweep all threads: upgrade student→sent messages to delivered since teacher is now online
-    try {
-      const allThreads = await Db().collection('directMessages').get();
-      const deliveryPromises = [];
-      allThreads.forEach(doc => {
-        deliveryPromises.push(_markDelivered(doc.id, 'teacher').catch(() => {}));
-      });
-      await Promise.all(deliveryPromises);
-    } catch (e) { console.warn('[dm] initTeacherDMListener delivery sweep error:', e); }
-
-    const unsub = Db().collection('directMessages').onSnapshot(snap => {
-      let total = 0;
-      snap.forEach(doc => {
-        const data = doc.data();
-        total += (data.teacherUnread || 0);
-        // Each time a new student message arrives, upgrade to delivered
-        if ((data.teacherUnread || 0) > 0) {
-          _markDelivered(doc.id, 'teacher').catch(() => {});
-        }
-      });
-      _updateTeacherBadge(total);
-    }, err => console.warn('[dm] Teacher unread listener error:', err));
-
-    AppState.registerListener('dmTeacherUnread', unsub);
+  // One-time sweep on login: upgrade all student→sent messages to delivered
+  // across every thread, since teacher is now active in the app.
+  try {
+    const allThreads = await Db().collection('directMessages').get();
+    const deliveryPromises = [];
+    allThreads.forEach(doc => {
+      deliveryPromises.push(_markDelivered(doc.id, 'teacher').catch(() => {}));
+    });
+    await Promise.all(deliveryPromises);
+  } catch (e) {
+    console.warn('[dm] initTeacherDMListener delivery sweep error:', e);
   }
+
+  const unsub = Db().collection('directMessages').onSnapshot(snap => {
+    let total = 0;
+    snap.forEach(doc => { total += (doc.data().teacherUnread || 0); });
+    _updateTeacherBadge(total);
+
+  }, err => console.warn('[dm] Teacher unread listener error:', err));
+
+  AppState.registerListener('dmTeacherUnread', unsub);
+}
 
   /* ── Cleanup ───────────────────────────────────────────────── */
   async function cancelListeners() {
