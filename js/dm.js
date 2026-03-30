@@ -853,21 +853,37 @@
   }
 
   async function _saveEdit(studentUid, messageId, oldText, newText, isTeacher) {
-    const db         = Db();
-    const historyCol = _msgHistoryRef(studentUid, messageId);
-    const msgRef     = _threadRef(studentUid).collection('messages').doc(messageId);
-    const ts         = firebase.firestore.FieldValue.serverTimestamp();
+  const db         = Db();
+  const historyCol = _msgHistoryRef(studentUid, messageId);
+  const msgRef     = _threadRef(studentUid).collection('messages').doc(messageId);
+  const ts         = firebase.firestore.FieldValue.serverTimestamp();
 
-    if (!isTeacher) {
-      const countSnap = await historyCol.get();
-      if (countSnap.size >= 2) throw new Error('EDIT_LIMIT_REACHED');
-    }
-
-    const batch = db.batch();
-    batch.set(historyCol.doc(), { text: oldText, editedAt: ts });
-    batch.update(msgRef, { text: newText, editedAt: ts });
-    await batch.commit();
+  if (!isTeacher) {
+    const countSnap = await historyCol.get();
+    if (countSnap.size >= 2) throw new Error('EDIT_LIMIT_REACHED');
   }
+
+  // Check if this message is the last one in the thread
+  const lastMsgSnap = await _threadRef(studentUid)
+    .collection('messages')
+    .orderBy('timestamp', 'desc')
+    .limit(1)
+    .get();
+
+  const isLastMessage = !lastMsgSnap.empty && lastMsgSnap.docs[0].id === messageId;
+
+  const batch = db.batch();
+  batch.set(historyCol.doc(), { text: oldText, editedAt: ts });
+  batch.update(msgRef, { text: newText, editedAt: ts });
+
+  // Keep the thread preview in sync if this was the last message
+  if (isLastMessage) {
+    const preview = newText.length > 80 ? newText.substring(0, 80) + '…' : newText;
+    batch.set(_threadRef(studentUid), { lastMessage: preview }, { merge: true });
+  }
+
+  await batch.commit();
+}
 
   async function _showEditHistory(studentUid, messageId, currentText) {
     let entries = [];
@@ -1206,7 +1222,24 @@
       saveBtn.textContent = 'Saving…';
       try {
         await _saveEdit(studentUid, messageId, currentText, newText, isTeacher);
+
+        // Update the bubble text in the chat view
         if (textEl) textEl.textContent = newText;
+
+        // Optimistically update the thread list preview in the DOM (teacher side)
+        // so it reflects the edit instantly without waiting for the snapshot round-trip
+        const threadPreviewEl = document.querySelector(
+          `.dm-thread-item[data-uid="${CSS.escape(studentUid)}"] .dm-thread-preview`
+        );
+        if (threadPreviewEl) {
+          const oldPreview = currentText.length > 80 ? currentText.substring(0, 80) + '…' : currentText;
+          const currentPreview = threadPreviewEl.textContent.trim();
+          if (currentPreview === oldPreview || currentPreview === currentText) {
+            const newPreview = newText.length > 80 ? newText.substring(0, 80) + '…' : newText;
+            threadPreviewEl.textContent = newPreview;
+          }
+        }
+
         cancelBtn.onclick();
       } catch (err) {
         if (err.message === 'EDIT_LIMIT_REACHED') {
