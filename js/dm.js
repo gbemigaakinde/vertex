@@ -755,24 +755,7 @@
 
   /* ══════════════════════════════════════════════════════════════
      MESSAGE STATUS — delivered / read
-     ─────────────────────────────────────────────────────────────
-     Rules:
-       sent      → the sender's device wrote it to Firestore
-       delivered → the recipient's app received it (tab is open)
-       read      → the recipient has the specific thread open
-
-     _markDelivered(uid, recipientRole)
-       Upgrades sent → delivered for all messages FROM the other party
-       in this thread.  Called when the recipient's tab becomes active
-       or opens the app.
-
-     _markRead(uid, recipientRole)
-       Upgrades sent+delivered → read.  Called ONLY when the recipient
-       actually opens the specific thread UI on screen.
-
-     _readMarkMap — tracks which threads we've already called _markRead
-       for in the current session to avoid redundant batch writes.
-  ══════════════════════════════════════════════════════════════ */
+     ───────────────────────────────────────────────────────────── */
 
   const _readMarkMap = new Set(); // keys: "{uid}:{role}"
 
@@ -1422,9 +1405,12 @@
       replyCard = `
         <div class="dm-reply-card"
              onclick="event.stopPropagation();DM._scrollToMsg('${rId}')"
-             title="Jump to original message">
+             title="Jump to original message"
+             style="overflow:hidden;max-width:100%;box-sizing:border-box;">
           <span class="dm-reply-card__name">${rName}</span>
-          <span class="dm-reply-card__text">${rText}</span>
+          <span class="dm-reply-card__text"
+                style="display:block;white-space:nowrap;overflow:hidden;
+                       text-overflow:ellipsis;max-width:100%;word-break:break-word;">${rText}</span>
         </div>`;
     }
 
@@ -1449,9 +1435,10 @@
     if (isMe) {
       return `
         <div class="dm-swipe-wrap dm-msg-out" id="${wrapId}"
-             style="margin-bottom:${showLabel ? '.75rem' : '.25rem'}"
+             style="margin-bottom:${showLabel ? '.75rem' : '.25rem'};
+                    width:100%;max-width:100%;box-sizing:border-box;overflow:hidden;"
              ${replyBtnData}>
-          <div class="dm-swipe-inner">
+          <div class="dm-swipe-inner" style="width:100%;max-width:100%;box-sizing:border-box;">
             <div class="dm-swipe-hint" aria-hidden="true">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                 <path d="M9 17L4 12m0 0l5-5M4 12h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1459,12 +1446,15 @@
             </div>
             ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:var(--text-3,#6b7280);
                          margin-bottom:2px;padding-right:2px;display:block;text-align:right;">You</span>` : ''}
-            <div class="dm-bubble-wrap">
+            <div class="dm-bubble-wrap" style="max-width:100%;min-width:0;overflow:hidden;">
               <div class="dm-bubble-inner"
                    style="background:var(--accent,#4f6ef7);color:#fff;
-                          border-radius:14px 14px 3px 14px;padding:.5rem .75rem .375rem;">
+                          border-radius:14px 14px 3px 14px;padding:.5rem .75rem .375rem;
+                          max-width:100%;min-width:0;box-sizing:border-box;overflow:hidden;">
                 ${replyCard}
-                <p class="dm-bubble-text">${_esc(msg.text)}</p>
+                <p class="dm-bubble-text"
+                   style="white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;
+                          margin:0;max-width:100%;">${_esc(msg.text)}</p>
                 <div class="dm-bubble-footer dm-bubble-footer--end">
                   ${editedLabel}${editBtn}
                   <span class="dm-bubble-time">${time}</span>
@@ -1477,9 +1467,10 @@
     } else {
       return `
         <div class="dm-swipe-wrap dm-msg-in" id="${wrapId}"
-             style="margin-bottom:${showLabel ? '.75rem' : '.25rem'}"
+             style="margin-bottom:${showLabel ? '.75rem' : '.25rem'};
+                    width:100%;max-width:100%;box-sizing:border-box;overflow:hidden;"
              ${replyBtnData}>
-          <div class="dm-swipe-inner">
+          <div class="dm-swipe-inner" style="width:100%;max-width:100%;box-sizing:border-box;">
             <div class="dm-swipe-hint" aria-hidden="true">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                 <path d="M15 7l5 5m0 0l-5 5m5-5H4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1489,13 +1480,16 @@
                          margin-bottom:2px;padding-left:2px;display:block;">
               ${_esc(msg.senderName || 'Master Timothy')}
             </span>` : ''}
-            <div class="dm-bubble-wrap">
+            <div class="dm-bubble-wrap" style="max-width:100%;min-width:0;overflow:hidden;">
               <div class="dm-bubble-inner"
                    style="background:var(--bg-base,#fff);color:var(--text-1,#0d0d0f);
                           border:1px solid var(--border,#e5e7eb);
-                          border-radius:14px 14px 14px 3px;padding:.5rem .75rem .375rem;">
+                          border-radius:14px 14px 14px 3px;padding:.5rem .75rem .375rem;
+                          max-width:100%;min-width:0;box-sizing:border-box;overflow:hidden;">
                 ${replyCard}
-                <p class="dm-bubble-text">${_esc(msg.text)}</p>
+                <p class="dm-bubble-text"
+                   style="white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;
+                          margin:0;max-width:100%;">${_esc(msg.text)}</p>
                 <div class="dm-bubble-footer dm-bubble-footer--start">
                   <span class="dm-bubble-time dm-bubble-time--dim">${time}</span>
                 </div>
@@ -1534,9 +1528,12 @@
       replyCard = `
         <div class="dm-reply-card"
              onclick="event.stopPropagation();DM._scrollToMsg('${rId}')"
-             title="Jump to original message">
+             title="Jump to original message"
+             style="overflow:hidden;max-width:100%;box-sizing:border-box;">
           <span class="dm-reply-card__name">${rName}</span>
-          <span class="dm-reply-card__text">${rText}</span>
+          <span class="dm-reply-card__text"
+                style="display:block;white-space:nowrap;overflow:hidden;
+                       text-overflow:ellipsis;max-width:100%;word-break:break-word;">${rText}</span>
         </div>`;
     }
 
@@ -1561,9 +1558,10 @@
     if (isTeacher) {
       return `
         <div class="dm-swipe-wrap dm-msg-out" id="${wrapId}"
-             style="margin-bottom:${showLabel ? '.75rem' : '.25rem'}"
+             style="margin-bottom:${showLabel ? '.75rem' : '.25rem'};
+                    width:100%;max-width:100%;box-sizing:border-box;overflow:hidden;"
              ${replyBtnData}>
-          <div class="dm-swipe-inner">
+          <div class="dm-swipe-inner" style="width:100%;max-width:100%;box-sizing:border-box;">
             <div class="dm-swipe-hint" aria-hidden="true">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                 <path d="M9 17L4 12m0 0l5-5M4 12h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1571,12 +1569,15 @@
             </div>
             ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:var(--text-3,#6b7280);
                          margin-bottom:2px;padding-right:2px;display:block;text-align:right;">You</span>` : ''}
-            <div class="dm-bubble-wrap">
+            <div class="dm-bubble-wrap" style="max-width:100%;min-width:0;overflow:hidden;">
               <div class="dm-bubble-inner"
                    style="background:var(--accent,#4f6ef7);color:#fff;
-                          border-radius:14px 14px 3px 14px;padding:.5rem .75rem .375rem;">
+                          border-radius:14px 14px 3px 14px;padding:.5rem .75rem .375rem;
+                          max-width:100%;min-width:0;box-sizing:border-box;overflow:hidden;">
                 ${replyCard}
-                <p class="dm-bubble-text">${_esc(msg.text)}</p>
+                <p class="dm-bubble-text"
+                   style="white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;
+                          margin:0;max-width:100%;">${_esc(msg.text)}</p>
                 <div class="dm-bubble-footer dm-bubble-footer--end">
                   ${editedLabel}${editBtn}
                   <span class="dm-bubble-time">${time}</span>
@@ -1589,9 +1590,10 @@
     } else {
       return `
         <div class="dm-swipe-wrap dm-msg-in" id="${wrapId}"
-             style="margin-bottom:${showLabel ? '.75rem' : '.25rem'}"
+             style="margin-bottom:${showLabel ? '.75rem' : '.25rem'};
+                    width:100%;max-width:100%;box-sizing:border-box;overflow:hidden;"
              ${replyBtnData}>
-          <div class="dm-swipe-inner">
+          <div class="dm-swipe-inner" style="width:100%;max-width:100%;box-sizing:border-box;">
             <div class="dm-swipe-hint" aria-hidden="true">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                 <path d="M15 7l5 5m0 0l-5 5m5-5H4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -1601,13 +1603,16 @@
                          margin-bottom:2px;padding-left:2px;display:block;">
               ${_esc(msg.senderName || 'Student')}
             </span>` : ''}
-            <div class="dm-bubble-wrap">
+            <div class="dm-bubble-wrap" style="max-width:100%;min-width:0;overflow:hidden;">
               <div class="dm-bubble-inner"
                    style="background:var(--bg-base,#fff);color:var(--text-1,#0d0d0f);
                           border:1px solid var(--border,#e5e7eb);
-                          border-radius:14px 14px 14px 3px;padding:.5rem .75rem .375rem;">
+                          border-radius:14px 14px 14px 3px;padding:.5rem .75rem .375rem;
+                          max-width:100%;min-width:0;box-sizing:border-box;overflow:hidden;">
                 ${replyCard}
-                <p class="dm-bubble-text">${_esc(msg.text)}</p>
+                <p class="dm-bubble-text"
+                   style="white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;
+                          margin:0;max-width:100%;">${_esc(msg.text)}</p>
                 <div class="dm-bubble-footer dm-bubble-footer--start">
                   ${editedLabel}
                   <span class="dm-bubble-time dm-bubble-time--dim">${time}</span>
