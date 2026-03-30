@@ -13,7 +13,6 @@
 importScripts('https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js');
 
-/* ── Initialize Firebase inside this SW (required for FCM) ── */
 firebase.initializeApp({
   apiKey:            'AIzaSyCQk1Q5GyCVo3cKNcHaYHVzAnVeWlqkzns',
   authDomain:        'excellencecbt.firebaseapp.com',
