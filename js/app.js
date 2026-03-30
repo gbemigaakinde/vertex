@@ -1,27 +1,8 @@
 /* ============================================================
    js/app.js — Application entry point
    ============================================================
-   Key rule: DM.cancelListeners() MUST be awaited before EVERY
-   call to fbAuth.signOut(). This is because:
+ */
 
-   - cancelListeners() writes online:false to Firestore while
-     the auth token is still valid.
-   - signOut() clears the auth token synchronously.
-   - Any Firestore write after signOut() is rejected by the
-     security rules (which require isSignedIn()), leaving the
-     user stuck as "Online" indefinitely.
-
-   There are two signOut() call sites in this file:
-     1. _onLogin() — profile not found, signs out with error.
-     2. _onLogin() — access error, signs out with error.
-   Both now await DM.cancelListeners() first.
-
-   _onLogout() fires from onAuthStateChanged AFTER signOut()
-   has already happened, so it must NOT attempt any Firestore
-   writes itself. DM.cancelListeners() is safe to call there
-   too (it's idempotent — the cleanup functions will already
-   be null if cancelListeners was properly called pre-signOut).
-   ============================================================ */
 (function () {
   'use strict';
 
@@ -33,17 +14,17 @@
   });
 
   function _startAuthListener() {
-    if (window.VtxLoader) window.VtxLoader.progress(30, 'Checking session…');
+  if (window.VtxLoader) window.VtxLoader.progress(30, 'Checking session…');
 
-    window.fbAuth.onAuthStateChanged(async function (firebaseUser) {
-      if (firebaseUser) {
-        if (window._registrationInProgress) return;
-        await _onLogin(firebaseUser);
-      } else {
-        _onLogout();
-      }
-    });
-  }
+  window.fbAuth.onAuthStateChanged(async function (firebaseUser) {
+    if (firebaseUser) {
+      if (window._registrationInProgress) return;
+      await _onLogin(firebaseUser);
+    } else {
+      await _onLogout();
+    }
+  });
+}
 
   async function _onLogin(firebaseUser) {
     var uid = firebaseUser.uid;
@@ -148,29 +129,28 @@
     }
   }
 
-  function _onLogout() {
-    window._registrationInProgress = false;
+async function _onLogout() {
+  window._registrationInProgress = false;
 
-    // ── Cancel message notifications ──
-    if (window.MsgNotif) {
-      MsgNotif.cancel();
-    }
-
-    if (window.DM && typeof DM.cancelListeners === 'function') {
-      DM.cancelListeners();
-    }
-
-    Tasks.cancelListeners();
-    AppState.reset();
-
-    if (window.VtxLoader) window.VtxLoader.done();
-
-    if (window.Landing && typeof Landing.render === 'function') {
-      Landing.render();
-    } else {
-      Auth.renderLogin();
-    }
+  if (window.MsgNotif) {
+    MsgNotif.cancel();
   }
+
+  if (window.DM && typeof DM.cancelListeners === 'function') {
+    await DM.cancelListeners().catch(e => console.warn('[app] DM.cancelListeners error on logout:', e));
+  }
+
+  Tasks.cancelListeners();
+  AppState.reset();
+
+  if (window.VtxLoader) window.VtxLoader.done();
+
+  if (window.Landing && typeof Landing.render === 'function') {
+    Landing.render();
+  } else {
+    Auth.renderLogin();
+  }
+}
 
   function _registerGlobalErrorHandlers() {
     window.addEventListener('unhandledrejection', function (event) {
