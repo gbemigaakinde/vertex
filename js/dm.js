@@ -389,40 +389,28 @@
     .dm-history-current { background:var(--accent-subtle,rgba(79,110,247,.08));border-color:var(--accent-border,rgba(79,110,247,.25)); }
     .dm-history-current p { font-weight:500; }
 
-    /* ── Message rows ── */
-    .dm-msg-out {
-      width:100%;box-sizing:border-box;
-      margin-bottom:.25rem;
-    }
-    .dm-msg-in {
-      width:100%;box-sizing:border-box;
-      margin-bottom:.25rem;
-    }
+    .dm-msg-out { width:100%;box-sizing:border-box; }
+    .dm-msg-in  { width:100%;box-sizing:border-box; }
 
-    /* ── Swipe wrapper ── */
     .dm-swipe-wrap {
-      position:relative;overflow:visible;
-      width:100%;max-width:100%;min-width:0;box-sizing:border-box;touch-action:pan-y;
+      position:relative;width:100%;max-width:100%;min-width:0;
+      box-sizing:border-box;touch-action:pan-y;overflow:visible;
     }
     .dm-swipe-wrap .dm-swipe-inner {
       width:100%;box-sizing:border-box;
       transition:transform .2s ease;will-change:transform;
     }
 
-    /* ── Bubble alignment rows ── */
     .dm-bubble-row {
       display:flex;width:100%;box-sizing:border-box;
     }
     .dm-msg-out .dm-bubble-row { justify-content:flex-end;padding-left:20%; }
     .dm-msg-in  .dm-bubble-row { justify-content:flex-start;padding-right:20%; }
 
-    /* ── Bubble itself ── */
     .dm-bubble-inner {
       position:relative;box-sizing:border-box;
       word-break:break-word;overflow-wrap:break-word;
-      /* Width shrinks to content but can never exceed the bubble-row's inner width */
-      max-width:100%;
-      min-width:0;
+      max-width:100%;min-width:0;
     }
 
     .dm-bubble-text {
@@ -430,19 +418,14 @@
       white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;
       margin:0;
     }
-    .dm-bubble-footer {
-      display:flex;align-items:center;gap:3px;margin-top:2px;
-    }
+    .dm-bubble-footer { display:flex;align-items:center;gap:3px;margin-top:2px; }
     .dm-bubble-footer--end   { justify-content:flex-end; }
     .dm-bubble-footer--start { justify-content:flex-start; }
     .dm-bubble-time { font-size:.625rem;opacity:.7;line-height:1;white-space:nowrap;flex-shrink:0; }
     .dm-bubble-time--dim { opacity:.55; }
 
-    .dm-messages-area {
-      overflow-y:auto;overflow-x:hidden;box-sizing:border-box;width:100%;
-    }
+    .dm-messages-area { overflow-y:auto;overflow-x:hidden;box-sizing:border-box;width:100%; }
 
-    /* ── Reply bar (above input) ── */
     .dm-reply-bar {
       display:none;align-items:center;gap:.5rem;
       padding:.375rem .625rem;margin:.375rem 0 0;
@@ -457,24 +440,20 @@
     .dm-reply-bar__close { flex-shrink:0;background:none;border:none;cursor:pointer;padding:0;line-height:1;color:var(--text-4,#9ca3af);display:flex;align-items:center; }
     .dm-reply-bar__close:hover { color:var(--text-2,#3a3a40); }
 
-    /* ── Reply card (inside bubble) ── */
     .dm-reply-card {
       display:block;
       margin-bottom:.375rem;padding:.3rem .5rem;
       border-left:3px solid rgba(255,255,255,.5);border-radius:0 5px 5px 0;
       background:rgba(0,0,0,.12);cursor:pointer;
       font-size:.75rem;line-height:1.4;
-      /* Key: never stretch wider than the bubble text above/below it */
-      width:100%;box-sizing:border-box;
-      overflow:hidden;
+      width:100%;box-sizing:border-box;overflow:hidden;
     }
     .dm-msg-in .dm-reply-card {
       border-left-color:var(--accent,#4f6ef7);
       background:var(--accent-subtle,rgba(79,110,247,.08));
     }
     .dm-reply-card__name {
-      font-weight:700;display:block;
-      margin-bottom:1px;
+      font-weight:700;display:block;margin-bottom:1px;
       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
     }
     .dm-msg-out .dm-reply-card__name { color:rgba(255,255,255,.9); }
@@ -482,21 +461,8 @@
     .dm-reply-card__text {
       display:block;opacity:.8;
       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-      /* Inherits width from .dm-reply-card which is 100% of the bubble */
     }
 
-    /* ── Swipe hint dot ── */
-    .dm-swipe-hint {
-      position:absolute;top:50%;transform:translateY(-50%);
-      display:flex;align-items:center;justify-content:center;
-      width:32px;height:32px;border-radius:50%;
-      background:var(--accent-subtle,rgba(79,110,247,.15));color:var(--accent,#4f6ef7);
-      opacity:0;pointer-events:none;transition:opacity .15s;
-    }
-    .dm-msg-out .dm-swipe-hint { right:calc(100% + 8px); }
-    .dm-msg-in  .dm-swipe-hint { left:calc(100% + 8px); }
-
-    /* ── Picker row ── */
     .dm-picker-row { min-width:0;overflow:hidden; }
 
     #teacher-dm { overflow:hidden !important;min-width:0;box-sizing:border-box; }
@@ -1107,83 +1073,73 @@
   }
 
   function _attachSwipeListeners(containerId, role) {
-    const container = document.getElementById(containerId);
-    if (!container) return;
+  const container = document.getElementById(containerId);
+  if (!container) return;
 
-    const SWIPE_THRESHOLD  = 60;
-    const SWIPE_MAX_REVEAL = 72;
+  const SWIPE_THRESHOLD  = 60;
+  const SWIPE_MAX_REVEAL = 72;
 
-    let touchStartX    = 0;
-    let touchStartY    = 0;
-    let activeSwiping  = null;
-    let swipeTriggered = false;
+  let touchStartX    = 0;
+  let touchStartY    = 0;
+  let activeSwiping  = null;
+  let swipeTriggered = false;
 
-    function _getWrap(el)       { return el.closest('.dm-swipe-wrap'); }
-    function _getReplyData(wrap) {
-      return { id: wrap.dataset.replyId || '', text: wrap.dataset.replyText || '', senderName: wrap.dataset.replySender || '' };
-    }
-    function _triggerReply(wrap) {
-      const data = _getReplyData(wrap);
-      if (!data.id) return;
-      if (role === 'student') _showStudentReplyBar(data);
-      else _showTeacherReplyBar(data);
-    }
-    function _resetWrap(wrap) {
-      const inner = wrap.querySelector('.dm-swipe-inner');
-      const hint  = wrap.querySelector('.dm-swipe-hint');
-      if (inner) inner.style.transform = '';
-      if (hint)  hint.style.opacity = '0';
-    }
+  function _getWrap(el) { return el.closest('.dm-swipe-wrap'); }
 
-    container.addEventListener('touchstart', function (e) {
-      const wrap = _getWrap(e.target);
-      if (!wrap || !wrap.dataset.replyId) return;
-      touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
-      activeSwiping = wrap; swipeTriggered = false;
-    }, { passive: true });
-
-    container.addEventListener('touchmove', function (e) {
-      if (!activeSwiping) return;
-      const dx = e.touches[0].clientX - touchStartX;
-      const dy = e.touches[0].clientY - touchStartY;
-      if (Math.abs(dy) > Math.abs(dx) + 8) { activeSwiping = null; return; }
-      if (dx <= 0) return;
-      e.preventDefault();
-      const travel = Math.min(dx, SWIPE_MAX_REVEAL);
-      const inner  = activeSwiping.querySelector('.dm-swipe-inner');
-      const hint   = activeSwiping.querySelector('.dm-swipe-hint');
-      if (inner) { inner.style.transition = 'none'; inner.style.transform = `translateX(${travel}px)`; }
-      if (hint)  hint.style.opacity = String(Math.min(travel / SWIPE_THRESHOLD, 1));
-      if (dx >= SWIPE_THRESHOLD && !swipeTriggered) {
-        swipeTriggered = true;
-        if (navigator.vibrate) navigator.vibrate(30);
-        _triggerReply(activeSwiping);
-      }
-    }, { passive: false });
-
-    container.addEventListener('touchend',   function () { if (activeSwiping) { _resetWrap(activeSwiping); activeSwiping = null; swipeTriggered = false; } });
-    container.addEventListener('touchcancel',function () { if (activeSwiping) { _resetWrap(activeSwiping); activeSwiping = null; swipeTriggered = false; } });
-
-    container.addEventListener('mouseover', function (e) {
-      const wrap = _getWrap(e.target);
-      if (!wrap || !wrap.dataset.replyId) return;
-      const hint = wrap.querySelector('.dm-swipe-hint');
-      if (hint) { hint.style.opacity = '1'; hint.style.pointerEvents = 'auto'; }
-    });
-    container.addEventListener('mouseout', function (e) {
-      const wrap = _getWrap(e.target);
-      if (!wrap) return;
-      if (wrap.contains(e.relatedTarget)) return;
-      const hint = wrap.querySelector('.dm-swipe-hint');
-      if (hint) { hint.style.opacity = '0'; hint.style.pointerEvents = 'none'; }
-    });
-    container.addEventListener('click', function (e) {
-      const hint = e.target.closest('.dm-swipe-hint');
-      if (!hint) return;
-      const wrap = hint.closest('.dm-swipe-wrap');
-      if (wrap && wrap.dataset.replyId) _triggerReply(wrap);
-    });
+  function _getReplyData(wrap) {
+    return {
+      id:         wrap.dataset.replyId     || '',
+      text:       wrap.dataset.replyText   || '',
+      senderName: wrap.dataset.replySender || '',
+    };
   }
+
+  function _triggerReply(wrap) {
+    const data = _getReplyData(wrap);
+    if (!data.id) return;
+    if (role === 'student') _showStudentReplyBar(data);
+    else                    _showTeacherReplyBar(data);
+  }
+
+  function _resetWrap(wrap) {
+    const inner = wrap.querySelector('.dm-swipe-inner');
+    if (inner) inner.style.transform = '';
+  }
+
+  container.addEventListener('touchstart', function (e) {
+    const wrap = _getWrap(e.target);
+    if (!wrap || !wrap.dataset.replyId) return;
+    touchStartX    = e.touches[0].clientX;
+    touchStartY    = e.touches[0].clientY;
+    activeSwiping  = wrap;
+    swipeTriggered = false;
+  }, { passive: true });
+
+  container.addEventListener('touchmove', function (e) {
+    if (!activeSwiping) return;
+    const dx = e.touches[0].clientX - touchStartX;
+    const dy = e.touches[0].clientY - touchStartY;
+    if (Math.abs(dy) > Math.abs(dx) + 8) { activeSwiping = null; return; }
+    if (dx <= 0) return;
+    e.preventDefault();
+    const travel = Math.min(dx, SWIPE_MAX_REVEAL);
+    const inner  = activeSwiping.querySelector('.dm-swipe-inner');
+    if (inner) { inner.style.transition = 'none'; inner.style.transform = `translateX(${travel}px)`; }
+    if (dx >= SWIPE_THRESHOLD && !swipeTriggered) {
+      swipeTriggered = true;
+      if (navigator.vibrate) navigator.vibrate(30);
+      _triggerReply(activeSwiping);
+    }
+  }, { passive: false });
+
+  container.addEventListener('touchend', function () {
+    if (activeSwiping) { _resetWrap(activeSwiping); activeSwiping = null; swipeTriggered = false; }
+  });
+
+  container.addEventListener('touchcancel', function () {
+    if (activeSwiping) { _resetWrap(activeSwiping); activeSwiping = null; swipeTriggered = false; }
+  });
+}
 
   /* ── Inline edit UI ────────────────────────────────────────── */
   function _activateInlineEdit(studentUid, messageId, currentText, isDarkBubble, wrapperId, isTeacher) {
@@ -1483,11 +1439,6 @@
            style="margin-bottom:${showLabel ? '.75rem' : '.25rem'};"
            ${replyBtnData}>
         <div class="dm-swipe-inner">
-          <div class="dm-swipe-hint" aria-hidden="true">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <path d="M9 17L4 12m0 0l5-5M4 12h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
           ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:var(--text-3,#6b7280);
                          margin-bottom:2px;display:block;text-align:right;">You</span>` : ''}
           <div class="dm-bubble-row">
@@ -1511,11 +1462,6 @@
            style="margin-bottom:${showLabel ? '.75rem' : '.25rem'};"
            ${replyBtnData}>
         <div class="dm-swipe-inner">
-          <div class="dm-swipe-hint" aria-hidden="true">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <path d="M15 7l5 5m0 0l-5 5m5-5H4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
           ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:var(--accent-text,#2d49d6);
                          margin-bottom:2px;display:block;">${_esc(msg.senderName || 'Master Timothy')}</span>` : ''}
           <div class="dm-bubble-row">
@@ -1594,11 +1540,6 @@ function _buildTeacherBubble(msg, showLabel) {
            style="margin-bottom:${showLabel ? '.75rem' : '.25rem'};"
            ${replyBtnData}>
         <div class="dm-swipe-inner">
-          <div class="dm-swipe-hint" aria-hidden="true">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <path d="M9 17L4 12m0 0l5-5M4 12h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
           ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:var(--text-3,#6b7280);
                          margin-bottom:2px;display:block;text-align:right;">You</span>` : ''}
           <div class="dm-bubble-row">
@@ -1622,11 +1563,6 @@ function _buildTeacherBubble(msg, showLabel) {
            style="margin-bottom:${showLabel ? '.75rem' : '.25rem'};"
            ${replyBtnData}>
         <div class="dm-swipe-inner">
-          <div class="dm-swipe-hint" aria-hidden="true">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-              <path d="M15 7l5 5m0 0l-5 5m5-5H4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
           ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:var(--accent-text,#2d49d6);
                          margin-bottom:2px;display:block;">${_esc(msg.senderName || 'Student')}</span>` : ''}
           <div class="dm-bubble-row">
