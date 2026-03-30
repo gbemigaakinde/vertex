@@ -44,8 +44,8 @@ const BYPASS_ORIGINS = [
   'cloudfunctions.net',
   'fcm.googleapis.com',
   'fcmregistrations.googleapis.com',
-  'www.gstatic.com',      // FCM token registration + Firebase SDK scripts
-  'fonts.gstatic.com',    // Google Fonts glyphs — use browser font cache
+  'www.gstatic.com',     
+  'fonts.gstatic.com', 
 ];
 
 /*
