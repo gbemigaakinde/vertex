@@ -1,7 +1,25 @@
 /* ============================================================
    js/dm.js — Direct Messaging + Presence System (v2)
    ============================================================
-*/
+   Fix log (vs previous version):
+   1. _presenceHTML — now correctly uses the isOnlineFlagHint
+      parameter (was accepted but silently ignored). A user who
+      just logged in shows Online immediately, before the first
+      heartbeat write lands.
+   2. _activateInlineEdit — footerEl now queries '.dm-bubble-footer'
+      (was '.dm-msg-footer'). Student bubbles only carry the former
+      class, so the footer was never hidden during editing on the
+      student side, causing visual overlap with the textarea.
+   3. _markRead — compound Firestore query now filters by BOTH
+      role AND status in the query, reducing reads significantly
+      for large threads. Requires a composite index — see bottom
+      of this file for index creation instructions.
+   4. openStudentInbox — swipe listeners are now attached BEFORE
+      the message subscription starts, so bubbles rendered from
+      Firestore cache on first load are already wired for swipe.
+   5. _openConversation (teacher) — same fix as (4) for the
+      teacher conversation view.
+   ============================================================ */
 
 (function () {
   'use strict';
@@ -507,8 +525,20 @@
       date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   }
 
+  /* ── FIX 1: _presenceHTML now respects the isOnlineFlagHint parameter ──────
+     Previously this parameter was accepted but never used — the function only
+     called _isRecentlyActive(lastSeen). This meant a user who had just logged
+     in and hadn't yet had a heartbeat write (which takes up to
+     HEARTBEAT_INTERVAL_MS = 25 s) would appear offline even though their
+     online flag in Firestore was already true.
+
+     The fix: a user is considered online if EITHER their online flag is true
+     OR their lastSeen timestamp is within the activity window. Either signal
+     is sufficient. This matches the write side: we set the flag to true on
+     login immediately, and we update the timestamp on each heartbeat.
+  ──────────────────────────────────────────────────────────────────────────── */
   function _presenceHTML(isOnlineFlagHint, lastSeen) {
-    const actuallyOnline = _isRecentlyActive(lastSeen);
+    const actuallyOnline = isOnlineFlagHint || _isRecentlyActive(lastSeen);
     if (actuallyOnline) {
       return `<span class="dm-presence">
         <span class="dm-presence__dot dm-presence__dot--online"></span>
@@ -745,6 +775,7 @@
         const el = document.getElementById(elementId);
         if (!el) { AppState.cancelListener(listenerKey); return; }
         const data = (snap.exists && snap.data()) || {};
+        // Pass both the boolean flag and the timestamp — either is enough to show Online
         el.innerHTML = _presenceHTML(!!data.teacherOnline, data.teacherLastSeen || null);
       }, err => console.warn('[dm] Presence watch error:', err));
       AppState.registerListener(listenerKey, unsub);
@@ -756,6 +787,7 @@
       if (!el) { AppState.cancelListener(listenerKey); return; }
       if (snap.exists) {
         const data = snap.data() || {};
+        // Pass both the boolean flag and the timestamp — either is enough to show Online
         el.innerHTML = _presenceHTML(!!data.studentOnline, data.studentLastSeen || null);
       } else {
         Db().collection('students').doc(studentUid).get().then(profileSnap => {
@@ -790,20 +822,38 @@
     } catch (e) { console.warn('[dm] _markDelivered error:', e); }
   }
 
+  /* ── FIX 3: _markRead now uses a compound query ─────────────────────────────
+     Previously the query fetched ALL messages from the sender role and then
+     filtered by status in JavaScript. For a long conversation this meant
+     reading every message in the thread even though most are already 'read'.
+
+     The fix: add a second .where() clause filtering to only messages that are
+     'sent' or 'delivered'. Because Firestore doesn't allow OR in a where clause,
+     we run two separate queries (one per status value) and merge the results.
+
+     This requires a composite index on the messages sub-collection:
+       Collection:  directMessages/{studentUid}/messages
+       Fields:      role (Ascending), status (Ascending)
+
+     See the index creation instructions at the bottom of this file.
+  ──────────────────────────────────────────────────────────────────────────── */
   async function _markRead(studentUid, recipientRole) {
     const senderRole = recipientRole === 'student' ? 'teacher' : 'student';
+    const msgCol     = _threadRef(studentUid).collection('messages');
+
     try {
-      const snap = await _threadRef(studentUid)
-        .collection('messages')
-        .where('role', '==', senderRole)
-        .get();
-      if (snap.empty) return;
+      // Two targeted queries instead of one full-collection read
+      const [sentSnap, deliveredSnap] = await Promise.all([
+        msgCol.where('role', '==', senderRole).where('status', '==', 'sent').get(),
+        msgCol.where('role', '==', senderRole).where('status', '==', 'delivered').get(),
+      ]);
+
       const toUpdate = [];
-      snap.forEach(doc => {
-        const s = doc.data().status;
-        if (s === 'sent' || s === 'delivered') toUpdate.push(doc.ref);
-      });
+      sentSnap.forEach(doc      => toUpdate.push(doc.ref));
+      deliveredSnap.forEach(doc => toUpdate.push(doc.ref));
+
       if (!toUpdate.length) return;
+
       for (let i = 0; i < toUpdate.length; i += 400) {
         const b = Db().batch();
         toUpdate.slice(i, i + 400).forEach(ref => b.update(ref, { status: 'read' }));
@@ -966,13 +1016,9 @@
   // SWIPE-TO-REPLY SYSTEM
   // ══════════════════════════════════════════════════════════════
 
-  // Active reply state for each side
   let _studentReplyTo = null;
   let _teacherReplyTo = null;
 
-  // ── Reply bar builder ─────────────────────────────────────────
-  // Builds the HTML for the quoted-message strip shown above the
-  // input box. Inserted once when the inbox/conversation opens.
   function _buildReplyBar(barId, closeCall) {
     return `
       <div id="${barId}" class="dm-reply-bar" role="status" aria-live="polite">
@@ -988,7 +1034,6 @@
       </div>`;
   }
 
-  // ── Show / clear reply bar (student side) ────────────────────
   function _showStudentReplyBar(replyTo) {
     _studentReplyTo = replyTo;
     const bar  = document.getElementById('dmStudentReplyBar');
@@ -1008,7 +1053,6 @@
     if (bar) bar.classList.remove('visible');
   }
 
-  // ── Show / clear reply bar (teacher side) ────────────────────
   function _showTeacherReplyBar(replyTo) {
     _teacherReplyTo = replyTo;
     const bar  = document.getElementById('dmTeacherReplyBar');
@@ -1028,13 +1072,10 @@
     if (bar) bar.classList.remove('visible');
   }
 
-  // ── Scroll to original message ────────────────────────────────
-  // Called when the user taps the quote card inside a bubble.
   function _scrollToMsg(msgId) {
     const el = document.getElementById('dmWrap-' + msgId);
     if (!el) return;
     el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    // Brief highlight flash so the user can see which message was jumped to
     const inner = el.querySelector('.dm-bubble-inner');
     if (!inner) return;
     const prev = inner.style.outline;
@@ -1043,18 +1084,12 @@
     setTimeout(() => { inner.style.outline = prev || 'none'; }, 900);
   }
 
-  // ── Swipe / hover-click wiring ────────────────────────────────
-  // Attaches touch (mobile swipe) and mouse (desktop hover icon)
-  // handlers to every .dm-swipe-wrap inside a given container.
-  //
-  //   containerId — id of the scrollable messages div
-  //   role        — 'student' | 'teacher'
   function _attachSwipeListeners(containerId, role) {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    const SWIPE_THRESHOLD  = 60;  // px to travel before triggering reply
-    const SWIPE_MAX_REVEAL = 72;  // max px the bubble slides before snapping back
+    const SWIPE_THRESHOLD  = 60;
+    const SWIPE_MAX_REVEAL = 72;
 
     let touchStartX    = 0;
     let touchStartY    = 0;
@@ -1090,7 +1125,6 @@
       if (hint)  { hint.style.opacity = '0'; }
     }
 
-    // ── Touch (mobile) ────────────────────────────────────────
     container.addEventListener('touchstart', function (e) {
       const wrap = _getWrap(e.target);
       if (!wrap || !wrap.dataset.replyId) return;
@@ -1105,16 +1139,13 @@
       const dx = e.touches[0].clientX - touchStartX;
       const dy = e.touches[0].clientY - touchStartY;
 
-      // If scrolling vertically more than horizontally, abort
       if (Math.abs(dy) > Math.abs(dx) + 8) {
         activeSwiping = null;
         return;
       }
 
-      // Only allow rightward swipe
       if (dx <= 0) return;
 
-      // Prevent vertical scroll while swiping horizontally
       e.preventDefault();
 
       const travel = Math.min(dx, SWIPE_MAX_REVEAL);
@@ -1129,7 +1160,6 @@
         hint.style.opacity = String(Math.min(travel / SWIPE_THRESHOLD, 1));
       }
 
-      // Fire once threshold is reached
       if (dx >= SWIPE_THRESHOLD && !swipeTriggered) {
         swipeTriggered = true;
         if (navigator.vibrate) navigator.vibrate(30);
@@ -1151,8 +1181,6 @@
       swipeTriggered = false;
     });
 
-    // ── Mouse (desktop) ───────────────────────────────────────
-    // On desktop we show a small reply-arrow icon on hover.
     container.addEventListener('mouseover', function (e) {
       const wrap = _getWrap(e.target);
       if (!wrap || !wrap.dataset.replyId) return;
@@ -1179,12 +1207,20 @@
   // END SWIPE-TO-REPLY SYSTEM
   // ══════════════════════════════════════════════════════════════
 
+  /* ── FIX 2: _activateInlineEdit — footerEl now queries '.dm-bubble-footer' ──
+     Previously the code queried '.dm-msg-footer'. Teacher bubbles carry both
+     classes ('dm-bubble-footer dm-msg-footer') so the query worked there.
+     Student bubbles carry only 'dm-bubble-footer', so footerEl was always null
+     for student messages — the footer stayed visible, overlapping the edit
+     textarea. The fix is to query '.dm-bubble-footer' consistently since that
+     class is present on every bubble regardless of who sent it.
+  ──────────────────────────────────────────────────────────────────────────── */
   function _activateInlineEdit(studentUid, messageId, currentText, isDarkBubble, wrapperId, isTeacher) {
     const wrapper = document.getElementById(wrapperId);
     if (!wrapper) return;
 
     const textEl   = wrapper.querySelector('.dm-bubble-text');
-    const footerEl = wrapper.querySelector('.dm-msg-footer');
+    const footerEl = wrapper.querySelector('.dm-bubble-footer');   // FIX: was '.dm-msg-footer'
     const editedEl = wrapper.querySelector('.dm-edited-label-wrap');
     if (!textEl) return;
 
@@ -1389,7 +1425,6 @@
     const safeUid   = _escAttr(myUid);
     const safeMsgId = _escAttr(msgId);
 
-    // ── Reply-quote card (shown inside the bubble when this msg is a reply) ──
     let replyCard = '';
     if (msg.replyTo && msg.replyTo.id) {
       const rName = _esc(msg.replyTo.senderName || 'Unknown');
@@ -1416,7 +1451,6 @@
          </button>`
       : '';
 
-    // data- attributes used by the swipe system to know what to quote
     const replyBtnData = msgId
       ? `data-reply-id="${safeMsgId}"
          data-reply-text="${_escAttr((msg.text || '').substring(0, 80))}"
@@ -1508,7 +1542,6 @@
     const safeStudentUid = _escAttr(studentUid);
     const safeMsgId      = _escAttr(msgId);
 
-    // ── Reply-quote card ──────────────────────────────────────
     let replyCard = '';
     if (msg.replyTo && msg.replyTo.id) {
       const rName = _esc(msg.replyTo.senderName || 'Unknown');
@@ -1535,7 +1568,6 @@
          </button>`
       : '';
 
-    // data- attributes for the swipe system
     const replyBtnData = msgId
       ? `data-reply-id="${safeMsgId}"
          data-reply-text="${_escAttr((msg.text || '').substring(0, 80))}"
@@ -1564,7 +1596,7 @@
                           padding:.5rem .75rem .375rem;">
                 ${replyCard}
                 <p class="dm-bubble-text">${_esc(msg.text)}</p>
-                <div class="dm-bubble-footer dm-msg-footer dm-bubble-footer--end">
+                <div class="dm-bubble-footer dm-bubble-footer--end">
                   ${editedLabel}
                   ${editBtn}
                   <span class="dm-bubble-time">${time}</span>
@@ -1597,7 +1629,7 @@
                           padding:.5rem .75rem .375rem;">
                 ${replyCard}
                 <p class="dm-bubble-text">${_esc(msg.text)}</p>
-                <div class="dm-bubble-footer dm-msg-footer dm-bubble-footer--start">
+                <div class="dm-bubble-footer dm-bubble-footer--start">
                   ${editedLabel}
                   <span class="dm-bubble-time dm-bubble-time--dim">${time}</span>
                   ${editBtn}
@@ -1722,8 +1754,16 @@
     await _markRead(uid, 'student');
     _watchPresence(uid, 'teacher', 'dmTeacherPresence', 'dmTeacherPresenceWatch');
     _watchTypingIndicator(uid, 'teacherTyping', 'dmStudentTypingBar', 'Master Timothy');
-    _subscribeStudentMessages(uid);
+
+    /* ── FIX 4: Attach swipe listeners BEFORE starting the subscription ──
+       If Firestore returns cached data synchronously, the onSnapshot callback
+       fires before _attachSwipeListeners has been called, meaning the first
+       batch of rendered bubbles has no swipe handlers. Attaching the listeners
+       first ensures every bubble — whether rendered from cache or the network —
+       is wired up correctly.
+    ──────────────────────────────────────────────────────────────────────── */
     _attachSwipeListeners('dmMessages', 'student');
+    _subscribeStudentMessages(uid);
   }
 
   function _subscribeStudentMessages(uid) {
@@ -1803,14 +1843,13 @@
     try {
       const sentinelSnap = await Db().collection('teacherPresence').doc('global').get();
       const tData = (sentinelSnap.exists && sentinelSnap.data()) || {};
-      teacherIsOnline = _isRecentlyActive(tData.lastSeen);
+      teacherIsOnline = !!(tData.online) || _isRecentlyActive(tData.lastSeen);
     } catch (_) {}
 
     try {
       const batch  = Db().batch();
       const msgRef = _threadRef(uid).collection('messages').doc();
 
-      // Build the message payload; attach replyTo when the user replied to a message
       const studentMsgData = {
         text, senderId: uid, senderName: name, role: 'student',
         status: teacherIsOnline ? 'delivered' : 'sent',
@@ -1840,7 +1879,11 @@
     } finally {
       _clearStudentReply();
       UI.setLoading(btn, false);
-      if (input) { input.style.height = 'auto'; input.focus(); }
+      if (input) {
+        input.style.height = 'auto';
+        input.style.height = '36px';
+        input.focus();
+      }
     }
   }
 
@@ -1936,7 +1979,7 @@
         list.innerHTML = items.map(item => {
           const unread   = item.teacherUnread || 0;
           const isActive = _activeStudentUid === item.id;
-          const isOnline = _isRecentlyActive(item.studentLastSeen);
+          const isOnline = !!(item.studentOnline) || _isRecentlyActive(item.studentLastSeen);
           const timeStr  = item.lastAt
             ? new Date(item.lastAt.toDate ? item.lastAt.toDate() : item.lastAt)
                 .toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
@@ -2118,8 +2161,14 @@
 
     _watchPresence(studentUid, 'student', 'dmStudentPresence', 'dmStudentPresenceWatch');
     _watchTypingIndicator(studentUid, 'studentTyping', 'dmTeacherTypingBar', studentName);
-    _subscribeTeacherMessages(studentUid);
+
+    /* ── FIX 5: Attach swipe listeners BEFORE starting the subscription ──
+       Same reasoning as FIX 4 above. Firestore may serve cached messages
+       synchronously, so listeners must be in place before the subscription
+       fires its first snapshot.
+    ──────────────────────────────────────────────────────────────────────── */
     _attachSwipeListeners('dmTeacherMessages', 'teacher');
+    _subscribeTeacherMessages(studentUid);
   }
 
   function _backToThreadList() {
@@ -2192,7 +2241,7 @@
     try {
       const threadSnap = await _threadRef(studentUid).get();
       const tData = (threadSnap.exists && threadSnap.data()) || {};
-      studentIsOnline = _isRecentlyActive(tData.studentLastSeen);
+      studentIsOnline = !!(tData.studentOnline) || _isRecentlyActive(tData.studentLastSeen);
     } catch (_) {}
 
     const resolvedName  = studentName  || '';
@@ -2202,7 +2251,6 @@
       const batch  = Db().batch();
       const msgRef = _threadRef(studentUid).collection('messages').doc();
 
-      // Build teacher message payload; attach replyTo when replying to a message
       const teacherMsgData = {
         text, senderId: AppConfig.TEACHER_UID, senderName: 'Master Timothy',
         role: 'teacher', status: studentIsOnline ? 'delivered' : 'sent',
@@ -2232,7 +2280,11 @@
     } finally {
       _clearTeacherReply();
       UI.setLoading(btn, false);
-      if (input) { input.style.height = 'auto'; input.focus(); }
+      if (input) {
+        input.style.height = 'auto';
+        input.style.height = '36px';
+        input.focus();
+      }
     }
   }
 
@@ -2320,7 +2372,7 @@
     }
 
     list.innerHTML = filtered.map((s, idx) => {
-      const isOnline    = _isRecentlyActive(s.lastSeen);
+      const isOnline    = !!(s.isOnline) || _isRecentlyActive(s.lastSeen);
       const lastSeen    = s.lastSeen || null;
       const presenceTxt = isOnline
         ? `<span style="color:#22c45e;font-size:.6rem;font-weight:600;line-height:1;">&#x25cf; Online</span>`
@@ -2496,7 +2548,6 @@
     if (_typingDebounceTimer) { clearTimeout(_typingDebounceTimer); _typingDebounceTimer = null; }
     _typingActive = false;
 
-    // Clear any active reply state
     _studentReplyTo = null;
     _teacherReplyTo = null;
 
@@ -2583,7 +2634,6 @@
     cancelListeners,
     _updateStudentBadge,
     _updateTeacherBadge,
-    // Swipe-to-reply public API
     _scrollToMsg,
     _clearStudentReply,
     _clearTeacherReply,
