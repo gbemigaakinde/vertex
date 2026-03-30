@@ -585,71 +585,71 @@
   }
 
   async function _setStudentOnlineGlobal(uid) {
-    _studentOfflineDone = false;
+  _studentOfflineDone = false;
+  try {
+    const ts    = firebase.firestore.FieldValue.serverTimestamp();
+    const batch = Db().batch();
+    batch.set(_threadRef(uid), { studentOnline: true, studentLastSeen: ts }, { merge: true });
+    batch.update(Db().collection('students').doc(uid), { isOnline: true, lastSeen: ts });
+    await batch.commit();
+  } catch (e) {
     try {
-      const ts    = firebase.firestore.FieldValue.serverTimestamp();
-      const batch = Db().batch();
-      batch.set(_threadRef(uid), { studentOnline: true, studentLastSeen: ts }, { merge: true });
-      batch.update(Db().collection('students').doc(uid), { isOnline: true, lastSeen: ts });
-      await batch.commit();
-    } catch (e) {
-      try {
-        const ts = firebase.firestore.FieldValue.serverTimestamp();
-        await _threadRef(uid).set({ studentOnline: true, studentLastSeen: ts }, { merge: true });
-      } catch (e2) {
-        console.warn('[dm] Could not set studentOnline=true:', e2);
-        return;
+      const ts = firebase.firestore.FieldValue.serverTimestamp();
+      await _threadRef(uid).set({ studentOnline: true, studentLastSeen: ts }, { merge: true });
+    } catch (e2) {
+      console.warn('[dm] Could not set studentOnline=true:', e2);
+      return;
+    }
+  }
+  _startStudentHeartbeat(uid);
+
+  const offlineTs = () => new Date(Date.now() - (ONLINE_THRESHOLD_MS + 1000));
+
+  const goOffline = async () => {
+    if (_studentOfflineDone) return;
+    _studentOfflineDone = true;
+    _stopStudentHeartbeat();
+    try {
+      const ts = offlineTs();
+      const b = Db().batch();
+      b.set(_threadRef(uid), { studentOnline: false, studentLastSeen: ts }, { merge: true });
+      try { b.update(Db().collection('students').doc(uid), { isOnline: false, lastSeen: ts }); } catch (_) {}
+      await b.commit();
+    } catch (e) { console.warn('[dm] studentOffline write failed:', e); }
+  };
+  _studentOfflineCleanup = goOffline;
+
+  _studentVisibilityHandler = () => {
+    if (document.visibilityState === 'hidden') {
+      _stopStudentHeartbeat();
+    } else {
+      if (firebase.auth().currentUser && !_studentOfflineDone) {
+        (async () => {
+          const ts = firebase.firestore.FieldValue.serverTimestamp();
+          try {
+            const b = Db().batch();
+            b.set(_threadRef(uid), { studentOnline: true, studentLastSeen: ts }, { merge: true });
+            b.update(Db().collection('students').doc(uid), { isOnline: true, lastSeen: ts });
+            await b.commit();
+          } catch (_) {}
+          await _markDelivered(uid, 'student').catch(() => {});
+        })();
+        _startStudentHeartbeat(uid);
       }
     }
-    _startStudentHeartbeat(uid);
+  };
+  document.addEventListener('visibilitychange', _studentVisibilityHandler);
 
-    const goOffline = async () => {
-      if (_studentOfflineDone) return;
-      _studentOfflineDone = true;
-      _stopStudentHeartbeat();
-      try {
-        const ts = firebase.auth().currentUser
-          ? firebase.firestore.FieldValue.serverTimestamp()
-          : new Date();
-        const b = Db().batch();
-        b.set(_threadRef(uid), { studentOnline: false, studentLastSeen: ts }, { merge: true });
-        try { b.update(Db().collection('students').doc(uid), { isOnline: false, lastSeen: ts }); } catch (_) {}
-        await b.commit();
-      } catch (e) { console.warn('[dm] studentOffline write failed:', e); }
-    };
-    _studentOfflineCleanup = goOffline;
-
-    _studentVisibilityHandler = () => {
-      if (document.visibilityState === 'hidden') {
-        _stopStudentHeartbeat();
-      } else {
-        if (firebase.auth().currentUser && !_studentOfflineDone) {
-          (async () => {
-            const ts = firebase.firestore.FieldValue.serverTimestamp();
-            try {
-              const b = Db().batch();
-              b.set(_threadRef(uid), { studentOnline: true, studentLastSeen: ts }, { merge: true });
-              b.update(Db().collection('students').doc(uid), { isOnline: true, lastSeen: ts });
-              await b.commit();
-            } catch (_) {}
-            await _markDelivered(uid, 'student').catch(() => {});
-          })();
-          _startStudentHeartbeat(uid);
-        }
-      }
-    };
-    document.addEventListener('visibilitychange', _studentVisibilityHandler);
-
-    _studentBeforeunloadHandler = () => {
-      if (_studentOfflineDone) return;
-      _studentOfflineDone = true;
-      _stopStudentHeartbeat();
-      const now = new Date();
-      try { _threadRef(uid).set({ studentOnline: false, studentLastSeen: now }, { merge: true }); } catch (_) {}
-      try { Db().collection('students').doc(uid).update({ isOnline: false, lastSeen: now }); } catch (_) {}
-    };
-    window.addEventListener('beforeunload', _studentBeforeunloadHandler);
-  }
+  _studentBeforeunloadHandler = () => {
+    if (_studentOfflineDone) return;
+    _studentOfflineDone = true;
+    _stopStudentHeartbeat();
+    const ts = offlineTs();
+    try { _threadRef(uid).set({ studentOnline: false, studentLastSeen: ts }, { merge: true }); } catch (_) {}
+    try { Db().collection('students').doc(uid).update({ isOnline: false, lastSeen: ts }); } catch (_) {}
+  };
+  window.addEventListener('beforeunload', _studentBeforeunloadHandler);
+}
 
   async function _setTeacherOnlineGlobal() {
     _teacherOfflineDone = false;
@@ -696,46 +696,55 @@
     document.addEventListener('visibilitychange', _teacherVisibilityHandler);
 
     _teacherBeforeunloadHandler = () => {
-      if (_teacherOfflineDone) return;
-      _teacherOfflineDone = true;
-      _teacherIsOnline    = false;
-      _stopTeacherHeartbeat();
-      const db = Db(); const now = new Date();
-      try { db.collection('teacherPresence').doc('global').set({ online: false, lastSeen: now }, { merge: true }); } catch (_) {}
-      try {
-        db.collection('directMessages').get().then(snap => {
-          if (snap.empty) return;
-          const batch = db.batch();
-          snap.forEach(doc => batch.set(doc.ref, { teacherOnline: false, teacherLastSeen: now }, { merge: true }));
-          batch.commit();
-        }).catch(() => {});
-      } catch (_) {}
-    };
+  if (_teacherOfflineDone) return;
+  _teacherOfflineDone = true;
+  _teacherIsOnline    = false;
+  _stopTeacherHeartbeat();
+  const db = Db();
+  const ts = new Date(Date.now() - (ONLINE_THRESHOLD_MS + 1000));
+  try { db.collection('teacherPresence').doc('global').set({ online: false, lastSeen: ts }, { merge: true }); } catch (_) {}
+  try {
+    db.collection('directMessages').get().then(snap => {
+      if (snap.empty) return;
+      const batch = db.batch();
+      snap.forEach(doc => batch.set(doc.ref, { teacherOnline: false, teacherLastSeen: ts }, { merge: true }));
+      batch.commit();
+    }).catch(() => {});
+  } catch (_) {}
+  };
     window.addEventListener('beforeunload', _teacherBeforeunloadHandler);
   }
 
   async function _broadcastTeacherPresence(isOnline) {
-    const db = Db();
-    const ts = firebase.auth().currentUser
-      ? firebase.firestore.FieldValue.serverTimestamp()
-      : new Date();
-    await db.collection('teacherPresence').doc('global').set(
-      { online: isOnline, lastSeen: ts },
+  const db = Db();
+  const ts = firebase.auth().currentUser
+    ? firebase.firestore.FieldValue.serverTimestamp()
+    : new Date();
+
+  // When going offline, write a timestamp guaranteed to be outside the
+  // online threshold so _isRecentlyActive immediately returns false.
+  // This prevents students seeing the teacher as Online after a clean logout.
+  const presenceTs = isOnline
+    ? ts
+    : new Date(Date.now() - (ONLINE_THRESHOLD_MS + 1000));
+
+  await db.collection('teacherPresence').doc('global').set(
+    { online: isOnline, lastSeen: presenceTs },
+    { merge: true }
+  );
+  const snap = await db.collection('directMessages').get();
+  if (snap.empty) return;
+  const refs = [];
+  snap.forEach(doc => refs.push(doc.ref));
+  for (let i = 0; i < refs.length; i += 400) {
+    const batch = db.batch();
+    refs.slice(i, i + 400).forEach(ref => batch.set(ref,
+      { teacherOnline: isOnline, teacherLastSeen: presenceTs },
       { merge: true }
-    );
-    const snap = await db.collection('directMessages').get();
-    if (snap.empty) return;
-    const refs = [];
-    snap.forEach(doc => refs.push(doc.ref));
-    for (let i = 0; i < refs.length; i += 400) {
-      const batch = db.batch();
-      refs.slice(i, i + 400).forEach(ref => batch.set(ref,
-        { teacherOnline: isOnline, teacherLastSeen: ts },
-        { merge: true }
-      ));
-      await batch.commit();
-    }
+    ));
+    await batch.commit();
   }
+}
 
   function _watchPresence(studentUid, watchRole, elementId, listenerKey) {
     AppState.cancelListener(listenerKey);
