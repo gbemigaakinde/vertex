@@ -1585,121 +1585,121 @@
   }
 
   async function openStudentInbox() {
-    _injectStyles();
+  _injectStyles();
 
-    const uid         = AppState.userId;
-    const studentData = AppState.studentData || {};
-    const threadRef   = _threadRef(uid);
+  const uid         = AppState.userId;
+  const studentData = AppState.studentData || {};
+  const threadRef   = _threadRef(uid);
 
-    try {
-      await threadRef.set({ studentUnread: 0 }, { merge: true });
-      AppState.dmStudentUnread = 0;
-      _updateStudentBadge(0);
-    } catch (e) { console.warn('[dm] Could not clear studentUnread:', e); }
+  try {
+    await threadRef.set({ studentUnread: 0 }, { merge: true });
+    AppState.dmStudentUnread = 0;
+    _updateStudentBadge(0);
+  } catch (e) { console.warn('[dm] Could not clear studentUnread:', e); }
 
-    try {
-      const threadSnap = await threadRef.get();
-      if (!threadSnap.exists) {
-        const sentinelSnap = await Db().collection('teacherPresence').doc('global').get();
-        const tData = (sentinelSnap.exists && sentinelSnap.data()) || {};
-        const teacherOnline   = _isRecentlyActive(tData.lastSeen);
-        const teacherLastSeen = tData.lastSeen || null;
-        const seedData = {
-          studentName: studentData.name || '', studentClass: studentData.class || '',
-          studentUnread: 0, teacherUnread: 0, teacherOnline,
-        };
-        if (teacherLastSeen) seedData.teacherLastSeen = teacherLastSeen;
-        await threadRef.set(seedData, { merge: true });
-      }
-    } catch (e) { console.warn('[dm] Could not seed thread doc:', e); }
-
-    UI.mount(`
-      <div class="max-w-2xl mx-auto glass animate-fadeIn"
-           style="padding:1.25rem 1.5rem;margin-top:1.25rem;margin-bottom:1.25rem;
-                  box-sizing:border-box;width:100%;max-width:100%;overflow:hidden;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;min-width:0;">
-          <div style="min-width:0;flex:1;margin-right:.75rem;">
-            <h2 class="font-bold" style="font-size:1.125rem;line-height:1.3;">Message Master Timothy</h2>
-            <div id="dmTeacherPresence" style="margin-top:2px;">${_presenceHTML(false, null)}</div>
-          </div>
-          <button onclick="DM.backFromStudentInbox()" class="btn bg-gray-500 hover:bg-gray-600"
-                  style="font-size:.8125rem;flex-shrink:0;">&#8592; Back</button>
-        </div>
-
-        <div style="margin-bottom:.5rem;padding:.375rem .625rem;
-         background:var(--surface-subtle,#f3f4f6);border:1px solid var(--border,#e5e7eb);
-         border-radius:8px;font-size:.7rem;color:var(--text-tertiary,#6b7280);
-         display:flex;align-items:center;gap:.375rem;line-height:1.3;box-sizing:border-box;">
-        <span style="color:var(--text-tertiary,#6b7280);flex-shrink:0;">${_iconLock(12)}</span>
-        <span><strong style="color:var(--text-secondary,#374151);font-weight:600;">Private</strong>
-         — these messages can only be seen by you and Master Timothy.</span>
-        </div>
-
-        <div style="margin-bottom:.625rem;padding:.5rem .625rem;
-           background:var(--brand-bg,#edf2ff);border:1px solid var(--brand-border,#bac8ff);
-           border-radius:8px;font-size:.75rem;color:var(--brand-text,#3730a3);line-height:1.4;
-           display:flex;align-items:flex-start;gap:.375rem;box-sizing:border-box;">
-        <span style="margin-top:1px;flex-shrink:0;">${_iconMail(12)}</span>
-        <span>Send a question or concern directly to Master Timothy.
-              He will reply here as soon as possible.</span>
-        </div>
-
-        <div id="dmMessages"
-             class="dm-messages-area"
-             style="min-height:260px;max-height:420px;
-                    border:1px solid var(--border,#e5e7eb);border-radius:10px;
-                    padding:.75rem 1rem;margin-bottom:0;
-                    background:var(--surface-subtle,#f9fafb);">
-          <p style="text-align:center;font-size:.8125rem;color:var(--text-disabled,#9ca3af);padding:2rem 0;">
-            Loading messages…
-          </p>
-        </div>
-
-        <!-- Typing indicator bar (student sees teacher typing) -->
-        <div id="dmStudentTypingBar"
-             style="height:0;padding:0 .25rem;display:none;align-items:center;">
-          <span class="dm-typing-dots" aria-hidden="true">
-            <span></span><span></span><span></span>
-          </span>
-          <span style="font-size:.6875rem;color:var(--text-3,#6b7280);margin-left:.375rem;font-style:italic;">
-            Master Timothy is typing…
-          </span>
-        </div>
-
-        ${_buildReplyBar('dmStudentReplyBar', 'DM._clearStudentReply()')}
-        <div style="display:flex;gap:.5rem;align-items:flex-end;box-sizing:border-box;width:100%;overflow:hidden;margin-top:.5rem;">
-          <textarea id="dmInput" placeholder="Type your message…" rows="1"
-                    style="flex:1;min-width:0;resize:none;overflow-y:hidden;
-                           min-height:36px;max-height:120px;box-sizing:border-box;"></textarea>
-          <button id="dmSendBtn" onclick="DM.sendStudentMessage()"
-                  class="btn bg-green-600 hover:bg-green-700"
-                  style="flex-shrink:0;align-self:flex-end;">Send</button>
-        </div>
-      </div>`);
-
-    const input = document.getElementById('dmInput');
-    if (input) {
-      input.focus();
-      input.addEventListener('keydown', e => {
-        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendStudentMessage(); }
-      });
-      input.addEventListener('input', () => {
-        input.style.height = 'auto';
-        input.style.height = Math.min(input.scrollHeight, 120) + 'px';
-        input.style.overflowY = input.scrollHeight > 120 ? 'auto' : 'hidden';
-        _startTyping(uid, 'student');
-      });
-      input.addEventListener('blur', () => {
-        _stopTyping(uid, 'student').catch(() => {});
-      });
+  try {
+    const threadSnap = await threadRef.get();
+    if (!threadSnap.exists) {
+      const sentinelSnap = await Db().collection('teacherPresence').doc('global').get();
+      const tData = (sentinelSnap.exists && sentinelSnap.data()) || {};
+      const teacherOnline   = !!(tData.online) && _isRecentlyActive(tData.lastSeen);
+      const teacherLastSeen = tData.lastSeen || null;
+      const seedData = {
+        studentName: studentData.name || '', studentClass: studentData.class || '',
+        studentUnread: 0, teacherUnread: 0, teacherOnline,
+      };
+      if (teacherLastSeen) seedData.teacherLastSeen = teacherLastSeen;
+      await threadRef.set(seedData, { merge: true });
     }
+  } catch (e) { console.warn('[dm] Could not seed thread doc:', e); }
 
-    await _markRead(uid, 'student');
-    _watchPresence(uid, 'teacher', 'dmTeacherPresence', 'dmTeacherPresenceWatch');
-    _watchTypingIndicator(uid, 'teacherTyping', 'dmStudentTypingBar', 'Master Timothy');
-    _attachSwipeListeners('dmMessages', 'student');
-    _subscribeStudentMessages(uid);
+  UI.mount(`
+    <div class="max-w-2xl mx-auto glass animate-fadeIn"
+         style="padding:1.25rem 1.5rem;margin-top:1.25rem;margin-bottom:1.25rem;
+                box-sizing:border-box;width:100%;max-width:100%;overflow:hidden;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;min-width:0;">
+        <div style="min-width:0;flex:1;margin-right:.75rem;">
+          <h2 class="font-bold" style="font-size:1.125rem;line-height:1.3;">Message Master Timothy</h2>
+          <div id="dmTeacherPresence" style="margin-top:2px;">${_presenceHTML(false, null)}</div>
+        </div>
+        <button onclick="DM.backFromStudentInbox()" class="btn bg-gray-500 hover:bg-gray-600"
+                style="font-size:.8125rem;flex-shrink:0;">&#8592; Back</button>
+      </div>
+
+      <div style="margin-bottom:.5rem;padding:.375rem .625rem;
+       background:var(--surface-subtle,#f3f4f6);border:1px solid var(--border,#e5e7eb);
+       border-radius:8px;font-size:.7rem;color:var(--text-tertiary,#6b7280);
+       display:flex;align-items:center;gap:.375rem;line-height:1.3;box-sizing:border-box;">
+      <span style="color:var(--text-tertiary,#6b7280);flex-shrink:0;">${_iconLock(12)}</span>
+      <span><strong style="color:var(--text-secondary,#374151);font-weight:600;">Private</strong>
+       — these messages can only be seen by you and Master Timothy.</span>
+      </div>
+
+      <div style="margin-bottom:.625rem;padding:.5rem .625rem;
+         background:var(--brand-bg,#edf2ff);border:1px solid var(--brand-border,#bac8ff);
+         border-radius:8px;font-size:.75rem;color:var(--brand-text,#3730a3);line-height:1.4;
+         display:flex;align-items:flex-start;gap:.375rem;box-sizing:border-box;">
+      <span style="margin-top:1px;flex-shrink:0;">${_iconMail(12)}</span>
+      <span>Send a question or concern directly to Master Timothy.
+            He will reply here as soon as possible.</span>
+      </div>
+
+      <div id="dmMessages"
+           class="dm-messages-area"
+           style="min-height:260px;max-height:420px;
+                  border:1px solid var(--border,#e5e7eb);border-radius:10px;
+                  padding:.75rem 1rem;margin-bottom:0;
+                  background:var(--surface-subtle,#f9fafb);">
+        <p style="text-align:center;font-size:.8125rem;color:var(--text-disabled,#9ca3af);padding:2rem 0;">
+          Loading messages…
+        </p>
+      </div>
+
+      <!-- Typing indicator bar (student sees teacher typing) -->
+      <div id="dmStudentTypingBar"
+           style="height:0;padding:0 .25rem;display:none;align-items:center;">
+        <span class="dm-typing-dots" aria-hidden="true">
+          <span></span><span></span><span></span>
+        </span>
+        <span style="font-size:.6875rem;color:var(--text-3,#6b7280);margin-left:.375rem;font-style:italic;">
+          Master Timothy is typing…
+        </span>
+      </div>
+
+      ${_buildReplyBar('dmStudentReplyBar', 'DM._clearStudentReply()')}
+      <div style="display:flex;gap:.5rem;align-items:flex-end;box-sizing:border-box;width:100%;overflow:hidden;margin-top:.5rem;">
+        <textarea id="dmInput" placeholder="Type your message…" rows="1"
+                  style="flex:1;min-width:0;resize:none;overflow-y:hidden;
+                         min-height:36px;max-height:120px;box-sizing:border-box;"></textarea>
+        <button id="dmSendBtn" onclick="DM.sendStudentMessage()"
+                class="btn bg-green-600 hover:bg-green-700"
+                style="flex-shrink:0;align-self:flex-end;">Send</button>
+      </div>
+    </div>`);
+
+  const input = document.getElementById('dmInput');
+  if (input) {
+    input.focus();
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendStudentMessage(); }
+    });
+    input.addEventListener('input', () => {
+      input.style.height = 'auto';
+      input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+      input.style.overflowY = input.scrollHeight > 120 ? 'auto' : 'hidden';
+      _startTyping(uid, 'student');
+    });
+    input.addEventListener('blur', () => {
+      _stopTyping(uid, 'student').catch(() => {});
+    });
   }
+
+  await _markRead(uid, 'student');
+  _watchPresence(uid, 'teacher', 'dmTeacherPresence', 'dmTeacherPresenceWatch');
+  _watchTypingIndicator(uid, 'teacherTyping', 'dmStudentTypingBar', 'Master Timothy');
+  _attachSwipeListeners('dmMessages', 'student');
+  _subscribeStudentMessages(uid);
+}
 
   function _subscribeStudentMessages(uid) {
     AppState.cancelListener('dmStudentMessages');
@@ -1759,68 +1759,68 @@
   }
 
   async function sendStudentMessage() {
-    const input = document.getElementById('dmInput');
-    const text  = (input?.value || '').trim();
-    if (!text) return;
+  const input = document.getElementById('dmInput');
+  const text  = (input?.value || '').trim();
+  if (!text) return;
 
-    const uid         = AppState.userId;
-    const studentData = AppState.studentData || {};
-    const name        = studentData.name  || 'Student';
-    const cls         = studentData.class || '';
-    const btn         = document.getElementById('dmSendBtn');
+  const uid         = AppState.userId;
+  const studentData = AppState.studentData || {};
+  const name        = studentData.name  || 'Student';
+  const cls         = studentData.class || '';
+  const btn         = document.getElementById('dmSendBtn');
 
-    _stopTyping(uid, 'student').catch(() => {});
+  _stopTyping(uid, 'student').catch(() => {});
 
-    UI.setLoading(btn, true);
-    if (input) input.value = '';
+  UI.setLoading(btn, true);
+  if (input) input.value = '';
 
-    let teacherIsOnline = false;
-    try {
-      const sentinelSnap = await Db().collection('teacherPresence').doc('global').get();
-      const tData = (sentinelSnap.exists && sentinelSnap.data()) || {};
-      teacherIsOnline = !!(tData.online) || _isRecentlyActive(tData.lastSeen);
-    } catch (_) {}
+  let teacherIsOnline = false;
+  try {
+    const sentinelSnap = await Db().collection('teacherPresence').doc('global').get();
+    const tData = (sentinelSnap.exists && sentinelSnap.data()) || {};
+    teacherIsOnline = !!(tData.online) && _isRecentlyActive(tData.lastSeen);
+  } catch (_) {}
 
-    try {
-      const batch  = Db().batch();
-      const msgRef = _threadRef(uid).collection('messages').doc();
+  try {
+    const batch  = Db().batch();
+    const msgRef = _threadRef(uid).collection('messages').doc();
 
-      const studentMsgData = {
-        text, senderId: uid, senderName: name, role: 'student',
-        status: teacherIsOnline ? 'delivered' : 'sent',
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+    const studentMsgData = {
+      text, senderId: uid, senderName: name, role: 'student',
+      status: teacherIsOnline ? 'delivered' : 'sent',
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+    };
+    if (_studentReplyTo && _studentReplyTo.id) {
+      studentMsgData.replyTo = {
+        id:         _studentReplyTo.id,
+        text:       _studentReplyTo.text,
+        senderName: _studentReplyTo.senderName,
       };
-      if (_studentReplyTo && _studentReplyTo.id) {
-        studentMsgData.replyTo = {
-          id:         _studentReplyTo.id,
-          text:       _studentReplyTo.text,
-          senderName: _studentReplyTo.senderName,
-        };
-      }
-      batch.set(msgRef, studentMsgData);
+    }
+    batch.set(msgRef, studentMsgData);
 
-      batch.set(_threadRef(uid), {
-        studentName: name, studentClass: cls,
-        lastMessage: text.length > 80 ? text.substring(0, 80) + '…' : text,
-        lastAt: firebase.firestore.FieldValue.serverTimestamp(),
-        teacherUnread: firebase.firestore.FieldValue.increment(1),
-        studentUnread: 0, teacherOnline: teacherIsOnline,
-      }, { merge: true });
-      await batch.commit();
-    } catch (err) {
-      console.error('[dm] sendStudentMessage error:', err);
-      UI.toast('Failed to send message. Please try again.', 'error');
-      if (input) input.value = text;
-    } finally {
-      _clearStudentReply();
-      UI.setLoading(btn, false);
-      if (input) {
-        input.style.height = 'auto';
-        input.style.height = '36px';
-        input.focus();
-      }
+    batch.set(_threadRef(uid), {
+      studentName: name, studentClass: cls,
+      lastMessage: text.length > 80 ? text.substring(0, 80) + '…' : text,
+      lastAt: firebase.firestore.FieldValue.serverTimestamp(),
+      teacherUnread: firebase.firestore.FieldValue.increment(1),
+      studentUnread: 0, teacherOnline: teacherIsOnline,
+    }, { merge: true });
+    await batch.commit();
+  } catch (err) {
+    console.error('[dm] sendStudentMessage error:', err);
+    UI.toast('Failed to send message. Please try again.', 'error');
+    if (input) input.value = text;
+  } finally {
+    _clearStudentReply();
+    UI.setLoading(btn, false);
+    if (input) {
+      input.style.height = 'auto';
+      input.style.height = '36px';
+      input.focus();
     }
   }
+}
 
   function backFromStudentInbox() {
     _cancelTypingListeners(AppState.userId);
@@ -2155,67 +2155,67 @@
   }
 
   async function _sendTeacherReply(studentUid, studentName, studentClass) {
-    const input = document.getElementById('dmTeacherInput');
-    const text  = (input?.value || '').trim();
-    if (!text) return;
+  const input = document.getElementById('dmTeacherInput');
+  const text  = (input?.value || '').trim();
+  if (!text) return;
 
-    const btn = document.getElementById('dmTeacherSendBtn');
+  const btn = document.getElementById('dmTeacherSendBtn');
 
-    _stopTyping(studentUid, 'teacher').catch(() => {});
+  _stopTyping(studentUid, 'teacher').catch(() => {});
 
-    UI.setLoading(btn, true);
-    if (input) input.value = '';
+  UI.setLoading(btn, true);
+  if (input) input.value = '';
 
-    let studentIsOnline = false;
-    try {
-      const threadSnap = await _threadRef(studentUid).get();
-      const tData = (threadSnap.exists && threadSnap.data()) || {};
-      studentIsOnline = !!(tData.studentOnline) || _isRecentlyActive(tData.studentLastSeen);
-    } catch (_) {}
+  let studentIsOnline = false;
+  try {
+    const threadSnap = await _threadRef(studentUid).get();
+    const tData = (threadSnap.exists && threadSnap.data()) || {};
+    studentIsOnline = !!(tData.studentOnline) && _isRecentlyActive(tData.studentLastSeen);
+  } catch (_) {}
 
-    const resolvedName  = studentName  || '';
-    const resolvedClass = studentClass || '';
+  const resolvedName  = studentName  || '';
+  const resolvedClass = studentClass || '';
 
-    try {
-      const batch  = Db().batch();
-      const msgRef = _threadRef(studentUid).collection('messages').doc();
+  try {
+    const batch  = Db().batch();
+    const msgRef = _threadRef(studentUid).collection('messages').doc();
 
-      const teacherMsgData = {
-        text, senderId: AppConfig.TEACHER_UID, senderName: 'Master Timothy',
-        role: 'teacher', status: studentIsOnline ? 'delivered' : 'sent',
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+    const teacherMsgData = {
+      text, senderId: AppConfig.TEACHER_UID, senderName: 'Master Timothy',
+      role: 'teacher', status: studentIsOnline ? 'delivered' : 'sent',
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+    };
+    if (_teacherReplyTo && _teacherReplyTo.id) {
+      teacherMsgData.replyTo = {
+        id:         _teacherReplyTo.id,
+        text:       _teacherReplyTo.text,
+        senderName: _teacherReplyTo.senderName,
       };
-      if (_teacherReplyTo && _teacherReplyTo.id) {
-        teacherMsgData.replyTo = {
-          id:         _teacherReplyTo.id,
-          text:       _teacherReplyTo.text,
-          senderName: _teacherReplyTo.senderName,
-        };
-      }
-      batch.set(msgRef, teacherMsgData);
+    }
+    batch.set(msgRef, teacherMsgData);
 
-      batch.set(_threadRef(studentUid), {
-        studentName: resolvedName, studentClass: resolvedClass,
-        lastMessage: text.length > 80 ? text.substring(0, 80) + '…' : text,
-        lastAt: firebase.firestore.FieldValue.serverTimestamp(),
-        studentUnread: firebase.firestore.FieldValue.increment(1),
-        teacherUnread: 0,
-      }, { merge: true });
-      await batch.commit();
-    } catch (err) {
-      console.error('[dm] _sendTeacherReply error:', err);
-      UI.toast('Failed to send reply. Please try again.', 'error');
-      if (input) input.value = text;
-    } finally {
-      _clearTeacherReply();
-      UI.setLoading(btn, false);
-      if (input) {
-        input.style.height = 'auto';
-        input.style.height = '36px';
-        input.focus();
-      }
+    batch.set(_threadRef(studentUid), {
+      studentName: resolvedName, studentClass: resolvedClass,
+      lastMessage: text.length > 80 ? text.substring(0, 80) + '…' : text,
+      lastAt: firebase.firestore.FieldValue.serverTimestamp(),
+      studentUnread: firebase.firestore.FieldValue.increment(1),
+      teacherUnread: 0,
+    }, { merge: true });
+    await batch.commit();
+  } catch (err) {
+    console.error('[dm] _sendTeacherReply error:', err);
+    UI.toast('Failed to send reply. Please try again.', 'error');
+    if (input) input.value = text;
+  } finally {
+    _clearTeacherReply();
+    UI.setLoading(btn, false);
+    if (input) {
+      input.style.height = 'auto';
+      input.style.height = '36px';
+      input.focus();
     }
   }
+}
 
   async function _openNewConversationModal() {
     _injectStyles();
@@ -2422,24 +2422,24 @@
   }
 
   async function initStudentDMListener(uid) {
-    AppState.cancelListener('dmStudentUnread');
+  AppState.cancelListener('dmStudentUnread');
 
-    const unsub = _threadRef(uid).onSnapshot(snap => {
-      const data  = (snap.exists && snap.data()) || {};
-      const count = data.studentUnread || 0;
-      AppState.dmStudentUnread = count;
-      _updateStudentBadge(count);
+  await _setStudentOnlineGlobal(uid);
+  await _markDelivered(uid, 'student');
 
-      if (count > 0) {
-        _markDelivered(uid, 'student').catch(() => {});
-      }
-    }, err => console.warn('[dm] Student unread listener error:', err));
+  const unsub = _threadRef(uid).onSnapshot(snap => {
+    const data  = (snap.exists && snap.data()) || {};
+    const count = data.studentUnread || 0;
+    AppState.dmStudentUnread = count;
+    _updateStudentBadge(count);
 
-    AppState.registerListener('dmStudentUnread', unsub);
+    if (count > 0) {
+      _markDelivered(uid, 'student').catch(() => {});
+    }
+  }, err => console.warn('[dm] Student unread listener error:', err));
 
-    await _setStudentOnlineGlobal(uid);
-    await _markDelivered(uid, 'student');
-  }
+  AppState.registerListener('dmStudentUnread', unsub);
+}
 
   async function initTeacherDMListener() {
     AppState.cancelListener('dmTeacherUnread');
