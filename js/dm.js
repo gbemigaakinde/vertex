@@ -1,24 +1,5 @@
 /* ============================================================
    js/dm.js — Direct Messaging + Presence System (v2)
-   ============================================================
-   Fix log (vs previous version):
-   1. _presenceHTML — now correctly uses the isOnlineFlagHint
-      parameter (was accepted but silently ignored). A user who
-      just logged in shows Online immediately, before the first
-      heartbeat write lands.
-   2. _activateInlineEdit — footerEl now queries '.dm-bubble-footer'
-      (was '.dm-msg-footer'). Student bubbles only carry the former
-      class, so the footer was never hidden during editing on the
-      student side, causing visual overlap with the textarea.
-   3. _markRead — compound Firestore query now filters by BOTH
-      role AND status in the query, reducing reads significantly
-      for large threads. Requires a composite index — see bottom
-      of this file for index creation instructions.
-   4. openStudentInbox — swipe listeners are now attached BEFORE
-      the message subscription starts, so bubbles rendered from
-      Firestore cache on first load are already wired for swipe.
-   5. _openConversation (teacher) — same fix as (4) for the
-      teacher conversation view.
    ============================================================ */
 
 (function () {
@@ -525,18 +506,6 @@
       date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   }
 
-  /* ── FIX 1: _presenceHTML now respects the isOnlineFlagHint parameter ──────
-     Previously this parameter was accepted but never used — the function only
-     called _isRecentlyActive(lastSeen). This meant a user who had just logged
-     in and hadn't yet had a heartbeat write (which takes up to
-     HEARTBEAT_INTERVAL_MS = 25 s) would appear offline even though their
-     online flag in Firestore was already true.
-
-     The fix: a user is considered online if EITHER their online flag is true
-     OR their lastSeen timestamp is within the activity window. Either signal
-     is sufficient. This matches the write side: we set the flag to true on
-     login immediately, and we update the timestamp on each heartbeat.
-  ──────────────────────────────────────────────────────────────────────────── */
   function _presenceHTML(isOnlineFlagHint, lastSeen) {
     const actuallyOnline = isOnlineFlagHint || _isRecentlyActive(lastSeen);
     if (actuallyOnline) {
@@ -822,21 +791,6 @@
     } catch (e) { console.warn('[dm] _markDelivered error:', e); }
   }
 
-  /* ── FIX 3: _markRead now uses a compound query ─────────────────────────────
-     Previously the query fetched ALL messages from the sender role and then
-     filtered by status in JavaScript. For a long conversation this meant
-     reading every message in the thread even though most are already 'read'.
-
-     The fix: add a second .where() clause filtering to only messages that are
-     'sent' or 'delivered'. Because Firestore doesn't allow OR in a where clause,
-     we run two separate queries (one per status value) and merge the results.
-
-     This requires a composite index on the messages sub-collection:
-       Collection:  directMessages/{studentUid}/messages
-       Fields:      role (Ascending), status (Ascending)
-
-     See the index creation instructions at the bottom of this file.
-  ──────────────────────────────────────────────────────────────────────────── */
   async function _markRead(studentUid, recipientRole) {
     const senderRole = recipientRole === 'student' ? 'teacher' : 'student';
     const msgCol     = _threadRef(studentUid).collection('messages');
@@ -1203,18 +1157,7 @@
       if (wrap && wrap.dataset.replyId) _triggerReply(wrap);
     });
   }
-  // ══════════════════════════════════════════════════════════════
-  // END SWIPE-TO-REPLY SYSTEM
-  // ══════════════════════════════════════════════════════════════
-
-  /* ── FIX 2: _activateInlineEdit — footerEl now queries '.dm-bubble-footer' ──
-     Previously the code queried '.dm-msg-footer'. Teacher bubbles carry both
-     classes ('dm-bubble-footer dm-msg-footer') so the query worked there.
-     Student bubbles carry only 'dm-bubble-footer', so footerEl was always null
-     for student messages — the footer stayed visible, overlapping the edit
-     textarea. The fix is to query '.dm-bubble-footer' consistently since that
-     class is present on every bubble regardless of who sent it.
-  ──────────────────────────────────────────────────────────────────────────── */
+   
   function _activateInlineEdit(studentUid, messageId, currentText, isDarkBubble, wrapperId, isTeacher) {
     const wrapper = document.getElementById(wrapperId);
     if (!wrapper) return;
@@ -1754,14 +1697,6 @@
     await _markRead(uid, 'student');
     _watchPresence(uid, 'teacher', 'dmTeacherPresence', 'dmTeacherPresenceWatch');
     _watchTypingIndicator(uid, 'teacherTyping', 'dmStudentTypingBar', 'Master Timothy');
-
-    /* ── FIX 4: Attach swipe listeners BEFORE starting the subscription ──
-       If Firestore returns cached data synchronously, the onSnapshot callback
-       fires before _attachSwipeListeners has been called, meaning the first
-       batch of rendered bubbles has no swipe handlers. Attaching the listeners
-       first ensures every bubble — whether rendered from cache or the network —
-       is wired up correctly.
-    ──────────────────────────────────────────────────────────────────────── */
     _attachSwipeListeners('dmMessages', 'student');
     _subscribeStudentMessages(uid);
   }
@@ -2161,12 +2096,6 @@
 
     _watchPresence(studentUid, 'student', 'dmStudentPresence', 'dmStudentPresenceWatch');
     _watchTypingIndicator(studentUid, 'studentTyping', 'dmTeacherTypingBar', studentName);
-
-    /* ── FIX 5: Attach swipe listeners BEFORE starting the subscription ──
-       Same reasoning as FIX 4 above. Firestore may serve cached messages
-       synchronously, so listeners must be in place before the subscription
-       fires its first snapshot.
-    ──────────────────────────────────────────────────────────────────────── */
     _attachSwipeListeners('dmTeacherMessages', 'teacher');
     _subscribeTeacherMessages(studentUid);
   }
