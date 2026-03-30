@@ -2171,7 +2171,7 @@
   try {
     const threadSnap = await _threadRef(studentUid).get();
     const tData = (threadSnap.exists && threadSnap.data()) || {};
-    studentIsOnline = !!(tData.studentOnline) && _isRecentlyActive(tData.studentLastSeen);
+    studentIsOnline = _isRecentlyActive(tData.studentLastSeen);
   } catch (_) {}
 
   const resolvedName  = studentName  || '';
@@ -2285,77 +2285,77 @@
   }
 
   function _renderStudentPickerList(students, query) {
-    const list = document.getElementById('dmStudentPickerList');
-    if (!list) return;
+  const list = document.getElementById('dmStudentPickerList');
+  if (!list) return;
 
-    const q = query.toLowerCase().trim();
-    const filtered = q
-      ? students.filter(s =>
-          (s.name  || '').toLowerCase().includes(q) ||
-          (s.class || '').toLowerCase().includes(q))
-      : students;
+  const q = query.toLowerCase().trim();
+  const filtered = q
+    ? students.filter(s =>
+        (s.name  || '').toLowerCase().includes(q) ||
+        (s.class || '').toLowerCase().includes(q))
+    : students;
 
-    if (!filtered.length) {
-      list.innerHTML = `<p style="font-size:.8125rem;color:var(--text-disabled,#9ca3af);
-                          text-align:center;padding:2rem 1rem;">No students found.</p>`;
-      return;
-    }
-
-    list.innerHTML = filtered.map((s, idx) => {
-      const isOnline    = !!(s.isOnline) || _isRecentlyActive(s.lastSeen);
-      const lastSeen    = s.lastSeen || null;
-      const presenceTxt = isOnline
-        ? `<span style="color:#22c45e;font-size:.6rem;font-weight:600;line-height:1;">&#x25cf; Online</span>`
-        : (lastSeen
-            ? `<span style="font-size:.6rem;color:var(--text-disabled,#9ca3af);line-height:1;">${_esc(_formatLastSeen(lastSeen))}</span>`
-            : `<span style="font-size:.6rem;color:var(--text-disabled,#9ca3af);line-height:1;">Offline</span>`);
-
-      return `
-        <div class="dm-picker-row"
-             data-uid="${_escAttr(s.uid)}"
-             data-name="${_escAttr(s.name || '')}"
-             data-class="${_escAttr(s.class || '')}"
-             style="display:flex;align-items:center;gap:.625rem;padding:.625rem .875rem;
-                    cursor:pointer;transition:background .1s;box-sizing:border-box;width:100%;
-                    ${idx < filtered.length - 1 ? 'border-bottom:1px solid var(--border,#e5e7eb);' : ''}">
-          <div style="position:relative;flex-shrink:0;">
-            <div style="width:34px;height:34px;border-radius:50%;background:var(--brand-bg,#edf2ff);
-                        border:1.5px solid ${isOnline ? '#22c45e' : 'var(--brand-border,#bac8ff)'};
-                        display:flex;align-items:center;justify-content:center;
-                        font-size:.75rem;font-weight:700;color:var(--brand-text,#3730a3);">
-              ${_esc((s.name || '?').charAt(0).toUpperCase())}
-            </div>
-            ${isOnline
-              ? `<span style="position:absolute;bottom:0;right:0;width:9px;height:9px;
-                              border-radius:50%;background:#22c45e;
-                              border:2px solid var(--surface,#fff);"></span>`
-              : ''}
-          </div>
-          <div style="flex:1;min-width:0;">
-            <p style="font-size:.8125rem;font-weight:600;color:var(--text-primary,#111827);margin:0;
-                      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-              ${_esc(s.name || 'Unknown')}
-            </p>
-            <div style="display:flex;align-items:center;gap:.375rem;margin-top:1px;">
-              <p style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin:0;
-                        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:8rem;">
-                ${_esc(s.class || '—')}
-              </p>
-              <span style="color:var(--border-strong);">·</span>
-              ${presenceTxt}
-            </div>
-          </div>
-        </div>`;
-    }).join('');
-
-    list.querySelectorAll('.dm-picker-row').forEach(row => {
-      row.addEventListener('mouseenter', () => { row.style.background = 'var(--surface-subtle,#f9fafb)'; });
-      row.addEventListener('mouseleave', () => { row.style.background = 'transparent'; });
-      row.addEventListener('click', () => {
-        _pickStudentForConversation(row.dataset.uid, row.dataset.name, row.dataset.class);
-      });
-    });
+  if (!filtered.length) {
+    list.innerHTML = `<p style="font-size:.8125rem;color:var(--text-disabled,#9ca3af);
+                        text-align:center;padding:2rem 1rem;">No students found.</p>`;
+    return;
   }
+
+  list.innerHTML = filtered.map((s, idx) => {
+    const isOnline = _isRecentlyActive(s.lastSeen);
+    const lastSeen = s.lastSeen || null;
+    const presenceTxt = isOnline
+      ? `<span style="color:#22c45e;font-size:.6rem;font-weight:600;line-height:1;">&#x25cf; Online</span>`
+      : (lastSeen
+          ? `<span style="font-size:.6rem;color:var(--text-disabled,#9ca3af);line-height:1;">${_esc(_formatLastSeen(lastSeen))}</span>`
+          : `<span style="font-size:.6rem;color:var(--text-disabled,#9ca3af);line-height:1;">Offline</span>`);
+
+    return `
+      <div class="dm-picker-row"
+           data-uid="${_escAttr(s.uid)}"
+           data-name="${_escAttr(s.name || '')}"
+           data-class="${_escAttr(s.class || '')}"
+           style="display:flex;align-items:center;gap:.625rem;padding:.625rem .875rem;
+                  cursor:pointer;transition:background .1s;box-sizing:border-box;width:100%;
+                  ${idx < filtered.length - 1 ? 'border-bottom:1px solid var(--border,#e5e7eb);' : ''}">
+        <div style="position:relative;flex-shrink:0;">
+          <div style="width:34px;height:34px;border-radius:50%;background:var(--brand-bg,#edf2ff);
+                      border:1.5px solid ${isOnline ? '#22c45e' : 'var(--brand-border,#bac8ff)'};
+                      display:flex;align-items:center;justify-content:center;
+                      font-size:.75rem;font-weight:700;color:var(--brand-text,#3730a3);">
+            ${_esc((s.name || '?').charAt(0).toUpperCase())}
+          </div>
+          ${isOnline
+            ? `<span style="position:absolute;bottom:0;right:0;width:9px;height:9px;
+                            border-radius:50%;background:#22c45e;
+                            border:2px solid var(--surface,#fff);"></span>`
+            : ''}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <p style="font-size:.8125rem;font-weight:600;color:var(--text-primary,#111827);margin:0;
+                    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            ${_esc(s.name || 'Unknown')}
+          </p>
+          <div style="display:flex;align-items:center;gap:.375rem;margin-top:1px;">
+            <p style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin:0;
+                      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:8rem;">
+              ${_esc(s.class || '—')}
+            </p>
+            <span style="color:var(--border-strong);">·</span>
+            ${presenceTxt}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  list.querySelectorAll('.dm-picker-row').forEach(row => {
+    row.addEventListener('mouseenter', () => { row.style.background = 'var(--surface-subtle,#f9fafb)'; });
+    row.addEventListener('mouseleave', () => { row.style.background = 'transparent'; });
+    row.addEventListener('click', () => {
+      _pickStudentForConversation(row.dataset.uid, row.dataset.name, row.dataset.class);
+    });
+  });
+}
 
   function _closeNewConversationModal() {
     const overlay = document.getElementById('dmNewConvOverlay');
