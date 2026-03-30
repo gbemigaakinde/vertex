@@ -162,6 +162,15 @@
     </svg>`;
   }
 
+   function _iconReply(size) {
+  size = size || 14;
+  return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"
+            xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <path d="M9 10L4 15l5 5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M4 15h11a5 5 0 0 0 0-10h-2" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+  </svg>`;
+}
+   
   function _iconSearch(size) {
     size = size || 14;
     return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"
@@ -1083,7 +1092,7 @@
   let touchStartY    = 0;
   let activeSwiping  = null;
   let swipeTriggered = false;
-  let swipeDir       = 0; // +1 = right, -1 = left
+  let swipeDir       = 0;
 
   function _getWrap(el) { return el.closest('.dm-swipe-wrap'); }
 
@@ -1114,6 +1123,7 @@
     return wrap.classList.contains('dm-msg-out');
   }
 
+  /* ── Touch (mobile swipe) ── */
   container.addEventListener('touchstart', function (e) {
     const wrap = _getWrap(e.target);
     if (!wrap || !wrap.dataset.replyId) return;
@@ -1129,10 +1139,7 @@
     const dx = e.touches[0].clientX - touchStartX;
     const dy = e.touches[0].clientY - touchStartY;
 
-    // Cancel if more vertical than horizontal
     if (Math.abs(dy) > Math.abs(dx) + 8) { activeSwiping = null; return; }
-
-    // Must swipe in the correct direction for this bubble side
     if (dx * swipeDir <= 0) return;
 
     e.preventDefault();
@@ -1141,7 +1148,6 @@
     const inner  = activeSwiping.querySelector('.dm-swipe-inner');
     if (inner) {
       inner.style.transition = 'none';
-      // Outgoing bubbles slide left (negative), incoming slide right (positive)
       inner.style.transform  = `translateX(${swipeDir * travel}px)`;
     }
 
@@ -1158,6 +1164,106 @@
 
   container.addEventListener('touchcancel', function () {
     if (activeSwiping) { _resetWrap(activeSwiping); activeSwiping = null; swipeTriggered = false; swipeDir = 0; }
+  });
+
+  /* ── Desktop: hover reply button ── */
+  container.addEventListener('mouseover', function (e) {
+    const wrap = _getWrap(e.target);
+    if (!wrap || !wrap.dataset.replyId) return;
+    if (wrap.querySelector('.dm-hover-reply-btn')) return; // already added
+
+    const btn       = document.createElement('button');
+    btn.className   = 'dm-hover-reply-btn';
+    btn.title       = 'Reply';
+    btn.innerHTML   = _iconReply(13);
+    btn.style.cssText = [
+      'position:absolute',
+      _isOutgoing(wrap) ? 'left:-30px' : 'right:-30px',
+      'top:50%',
+      'transform:translateY(-50%)',
+      'background:var(--bg-base,#fff)',
+      'border:1px solid var(--border,#e5e7eb)',
+      'border-radius:50%',
+      'width:24px','height:24px',
+      'display:flex','align-items:center','justify-content:center',
+      'cursor:pointer',
+      'color:var(--text-3,#6b7280)',
+      'box-shadow:0 1px 4px rgba(0,0,0,.1)',
+      'opacity:0',
+      'transition:opacity .15s',
+      'z-index:10',
+      'padding:0',
+      'flex-shrink:0',
+    ].join(';');
+
+    // Attach to bubble-inner so it sits just outside the bubble
+    const inner = wrap.querySelector('.dm-bubble-inner');
+    if (!inner) return;
+    inner.style.position = 'relative';
+    inner.appendChild(btn);
+
+    // Fade in
+    requestAnimationFrame(() => { btn.style.opacity = '1'; });
+
+    btn.addEventListener('click', (ev) => {
+      ev.stopPropagation();
+      _triggerReply(wrap);
+    });
+  });
+
+  container.addEventListener('mouseout', function (e) {
+    const wrap = _getWrap(e.target);
+    if (!wrap) return;
+    // Only remove if the mouse left the wrap entirely (not just moved to a child)
+    if (wrap.contains(e.relatedTarget)) return;
+    const btn = wrap.querySelector('.dm-hover-reply-btn');
+    if (btn) btn.remove();
+  });
+
+  /* ── Desktop: right-click context menu ── */
+  container.addEventListener('contextmenu', function (e) {
+    const wrap = _getWrap(e.target);
+    if (!wrap || !wrap.dataset.replyId) return;
+    e.preventDefault();
+
+    // Remove any existing reply context menu
+    const existing = document.getElementById('dmReplyContextMenu');
+    if (existing) existing.remove();
+
+    const menu     = document.createElement('div');
+    menu.id        = 'dmReplyContextMenu';
+    menu.className = 'dm-action-menu';
+    menu.style.cssText = 'position:fixed;z-index:9999;';
+
+    const replyItem     = document.createElement('button');
+    replyItem.className = 'dm-action-menu-item';
+    replyItem.innerHTML = `${_iconReply(13)} Reply`;
+    replyItem.onclick   = () => {
+      menu.remove();
+      _triggerReply(wrap);
+    };
+    menu.appendChild(replyItem);
+
+    document.body.appendChild(menu);
+
+    // Position near cursor, clamped inside viewport
+    const menuRect = menu.getBoundingClientRect();
+    const x = Math.min(e.clientX, window.innerWidth  - menuRect.width  - 8);
+    const y = Math.min(e.clientY, window.innerHeight - menuRect.height - 8);
+    menu.style.left = `${x}px`;
+    menu.style.top  = `${y}px`;
+
+    // Close when clicking anywhere else
+    setTimeout(() => {
+      document.addEventListener('click', function _close() {
+        menu.remove();
+        document.removeEventListener('click', _close);
+      });
+      document.addEventListener('contextmenu', function _close2() {
+        menu.remove();
+        document.removeEventListener('contextmenu', _close2);
+      });
+    }, 0);
   });
 }
 
