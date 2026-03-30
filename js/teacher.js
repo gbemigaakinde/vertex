@@ -622,9 +622,22 @@ function showTab(tab) {
     batch.delete(Db().collection('coachingTasks').doc('student_' + uid));
     batch.delete(Db().collection('coachingTasks').doc('weekly_student_' + uid));
 
+    // Commit the core deletion first — this is the critical step.
+    // Even if cleanup steps below fail, the student IS deleted.
     await batch.commit();
 
-    // 7. Delete exam results (query-based — can't batch without IDs upfront)
+  } catch (err) {
+    console.error('[teacher] removeStudent core batch error:', err);
+    UI.toast('Failed to delete student. Please try again.', 'error');
+    return; // Only bail out here — if core batch fails, nothing was deleted
+  }
+
+  // --- Core deletion succeeded. Run cleanup steps independently. ---
+  // Failures here are logged but do NOT trigger the error toast,
+  // because the student record is already gone.
+
+  // 7. Delete exam results
+  try {
     let resultSnap = await Db().collection('results').where('uid', '==', uid).get();
     if (resultSnap.empty && name) {
       resultSnap = await Db().collection('results').where('name', '==', name).get();
@@ -634,8 +647,12 @@ function showTab(tab) {
       resultSnap.forEach(d => resultBatch.delete(d.ref));
       await resultBatch.commit();
     }
+  } catch (err) {
+    console.warn('[teacher] removeStudent: could not delete results (non-fatal):', err);
+  }
 
-    // 8. Delete private messages sent to this student
+  // 8. Delete private messages sent to this student
+  try {
     const privateMsgSnap = await Db()
       .collection('privateMessages')
       .where('recipientId', '==', uid)
@@ -645,13 +662,31 @@ function showTab(tab) {
       privateMsgSnap.forEach(d => pmBatch.delete(d.ref));
       await pmBatch.commit();
     }
+  } catch (err) {
+    console.warn('[teacher] removeStudent: could not delete private messages (non-fatal):', err);
+  }
 
-    // 9. Delete the DM thread subcollection messages, then the thread doc itself
-    //    Firestore does not auto-delete subcollections, so we must do it manually.
+  // 9. Delete DM thread subcollection messages (and their editHistory), then the thread doc
+  try {
     const dmThreadRef = Db().collection('directMessages').doc(uid);
     const dmMsgSnap   = await dmThreadRef.collection('messages').get();
+
     if (!dmMsgSnap.empty) {
-      // Delete in chunks of 400 to stay within batch limits
+      // Delete editHistory sub-subcollection for each message first
+      for (const msgDoc of dmMsgSnap.docs) {
+        try {
+          const editHistorySnap = await msgDoc.ref.collection('editHistory').get();
+          if (!editHistorySnap.empty) {
+            const ehBatch = Db().batch();
+            editHistorySnap.forEach(d => ehBatch.delete(d.ref));
+            await ehBatch.commit();
+          }
+        } catch (ehErr) {
+          console.warn('[teacher] removeStudent: could not delete editHistory (non-fatal):', ehErr);
+        }
+      }
+
+      // Now delete the messages themselves in chunks of 400
       const allMsgRefs = dmMsgSnap.docs.map(d => d.ref);
       for (let i = 0; i < allMsgRefs.length; i += 400) {
         const msgBatch = Db().batch();
@@ -659,14 +694,13 @@ function showTab(tab) {
         await msgBatch.commit();
       }
     }
+
     await dmThreadRef.delete();
-
-    UI.toast('Student and all associated data deleted.', 'success');
-
   } catch (err) {
-    console.error('[teacher] removeStudent error:', err);
-    UI.toast('Failed to delete student. Please try again.', 'error');
+    console.warn('[teacher] removeStudent: could not delete DM thread (non-fatal):', err);
   }
+
+  UI.toast('Student and all associated data deleted.', 'success');
 }
 
 async function editStudent(uid) {
