@@ -34,20 +34,6 @@ const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
  */
 let _isFirstInstall = false;
 
-/*
- * These origins are NEVER intercepted by this service worker.
- *
- * CRITICAL: www.gstatic.com is in this list, NOT in CDN_ORIGINS.
- * The Firebase/FCM SDK makes internal token-registration XHRs to
- * https://www.gstatic.com/iid/... endpoints. If this SW intercepts
- * those requests (even with stale-while-revalidate), FCM receives a
- * stale or error response, getToken() returns null or throws, and no
- * push token is ever saved to Firestore. Bypassing gstatic entirely
- * ensures every FCM call reaches the network unobstructed.
- *
- * fonts.gstatic.com is also bypassed — the browser has its own font
- * cache and this SW should not interfere with it.
- */
 const BYPASS_ORIGINS = [
   'firestore.googleapis.com',
   'firebaseapp.com',
