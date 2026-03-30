@@ -141,7 +141,6 @@ self.addEventListener('fetch', event => {
 
   if (request.method !== 'GET') return;
 
-  // Never intercept the service worker file itself
   if (url.pathname === '/sw.js') return;
 
   // Bypass Firebase, Google APIs, gstatic (FCM token endpoints), etc.
