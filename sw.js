@@ -48,10 +48,6 @@ const BYPASS_ORIGINS = [
   'fonts.gstatic.com', 
 ];
 
-/*
- * CDN_ORIGINS: third-party CDNs for app assets (NOT Firebase).
- * www.gstatic.com has been deliberately removed from this list.
- */
 const CDN_ORIGINS = [
   'cdn.tailwindcss.com',
   'cdn.jsdelivr.net',
