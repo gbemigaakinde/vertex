@@ -2265,140 +2265,213 @@
      NEW CONVERSATION MODAL
   ══════════════════════════════════════════════════════════════ */
   async function _openNewConversationModal() {
-    _injectStyles();
-    const overlay     = document.createElement('div');
-    overlay.className = 'dm-new-conv-overlay';
-    overlay.id        = 'dmNewConvOverlay';
-    overlay.innerHTML = `
-      <div class="dm-new-conv-modal">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
-          <h3 style="font-size:.9375rem;font-weight:700;color:var(--text-primary,#111827);">
-            Message a Student
-          </h3>
-          <button onclick="DM._closeNewConversationModal()"
-                  style="background:none;border:none;cursor:pointer;color:var(--text-tertiary,#6b7280);
-                         display:flex;align-items:center;padding:4px;border-radius:4px;">
-            ${_iconClose(16)}
-          </button>
-        </div>
-        <div style="position:relative;margin-bottom:.75rem;">
-          <span style="position:absolute;left:.625rem;top:50%;transform:translateY(-50%);
-                       color:var(--text-4,#9ca3af);pointer-events:none;z-index:1;
-                       display:flex;align-items:center;">
-            ${_iconSearch(14)}
-          </span>
-          <input id="dmStudentSearch" type="text" placeholder="Search by name or class…"
-                 style="width:100%;box-sizing:border-box;padding:.5rem .75rem .5rem 2.125rem !important;
-                        border:1px solid var(--border,#e5e7eb);border-radius:8px;
-                        font-family:var(--font);font-size:var(--text-base);outline:none;" />
-        </div>
-        <div id="dmStudentPickerList"
-             style="max-height:320px;overflow-y:auto;border:1px solid var(--border,#e5e7eb);
-                    border-radius:8px;overflow-x:hidden;">
-          <p style="font-size:.8125rem;color:var(--text-disabled,#9ca3af);
-                    text-align:center;padding:2rem 1rem;">Loading students…</p>
-        </div>
-      </div>`;
-    document.body.appendChild(overlay);
+  _injectStyles();
+  const overlay     = document.createElement('div');
+  overlay.className = 'dm-new-conv-overlay';
+  overlay.id        = 'dmNewConvOverlay';
+  overlay.innerHTML = `
+    <div class="dm-new-conv-modal">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+        <h3 style="font-size:.9375rem;font-weight:700;color:var(--text-primary,#111827);">
+          Message a Student
+        </h3>
+        <button onclick="DM._closeNewConversationModal()"
+                style="background:none;border:none;cursor:pointer;color:var(--text-tertiary,#6b7280);
+                       display:flex;align-items:center;padding:4px;border-radius:4px;">
+          ${_iconClose(16)}
+        </button>
+      </div>
+      <div style="position:relative;margin-bottom:.75rem;">
+        <span style="position:absolute;left:.625rem;top:50%;transform:translateY(-50%);
+                     color:var(--text-4,#9ca3af);pointer-events:none;z-index:1;
+                     display:flex;align-items:center;">
+          ${_iconSearch(14)}
+        </span>
+        <input id="dmStudentSearch" type="text" placeholder="Search by name or class…"
+               style="width:100%;box-sizing:border-box;padding:.5rem .75rem .5rem 2.125rem !important;
+                      border:1px solid var(--border,#e5e7eb);border-radius:8px;
+                      font-family:var(--font);font-size:var(--text-base);outline:none;" />
+      </div>
+      <div id="dmStudentPickerList"
+           style="max-height:320px;overflow-y:auto;border:1px solid var(--border,#e5e7eb);
+                  border-radius:8px;overflow-x:hidden;">
+        <p style="font-size:.8125rem;color:var(--text-disabled,#9ca3af);
+                  text-align:center;padding:2rem 1rem;">Loading students…</p>
+      </div>
+    </div>`;
+  document.body.appendChild(overlay);
 
-    overlay.addEventListener('click', e => { if (e.target === overlay) _closeNewConversationModal(); });
+  overlay.addEventListener('click', e => { if (e.target === overlay) _closeNewConversationModal(); });
 
-    const searchInput = document.getElementById('dmStudentSearch');
-    if (searchInput) searchInput.focus();
+  const searchInput = document.getElementById('dmStudentSearch');
+  if (searchInput) searchInput.focus();
 
-    let allStudents = [];
-    try {
-      const snap = await Db().collection('students').get();
-      snap.forEach(doc => allStudents.push({ uid: doc.id, ...doc.data() }));
-      allStudents.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-    } catch (e) {
-      console.error('[dm] _openNewConversationModal fetch error:', e);
-      const list = document.getElementById('dmStudentPickerList');
-      if (list) list.innerHTML = `<p style="font-size:.8125rem;color:var(--danger,#e03131);text-align:center;padding:2rem 1rem;">Failed to load students.</p>`;
-      return;
-    }
-
-    _renderStudentPickerList(allStudents, '');
-    if (searchInput) {
-      searchInput.addEventListener('input', () => _renderStudentPickerList(allStudents, searchInput.value));
-    }
+  let allStudents = [];
+  try {
+    const snap = await Db().collection('students').get();
+    snap.forEach(doc => allStudents.push({ uid: doc.id, ...doc.data() }));
+    allStudents.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
+  } catch (e) {
+    console.error('[dm] _openNewConversationModal fetch error:', e);
+    const list = document.getElementById('dmStudentPickerList');
+    if (list) list.innerHTML = `<p style="font-size:.8125rem;color:var(--danger,#e03131);text-align:center;padding:2rem 1rem;">Failed to load students.</p>`;
+    return;
   }
+
+  _renderStudentPickerList(allStudents, '');
+
+  if (searchInput) {
+    searchInput.addEventListener('input', () =>
+      _renderStudentPickerList(allStudents, searchInput.value)
+    );
+  }
+
+  // Subscribe to real-time presence updates for every student in the list.
+  // Store unsub handles on the overlay element so _closeNewConversationModal
+  // can tear them all down cleanly.
+  overlay._presenceUnsubs = [];
+  allStudents.forEach(s => {
+    const unsub = Db().collection('students').doc(s.uid).onSnapshot(snap => {
+      if (!document.getElementById('dmNewConvOverlay')) return;
+      const data  = (snap.exists && snap.data()) || {};
+      const tsMs  = _tsToMs(data.lastSeen || null);
+      const online = tsMs !== null && (Date.now() - tsMs) <= ONLINE_THRESHOLD_MS;
+
+      // Update the cached student object so re-renders from search are also fresh
+      const cached = allStudents.find(x => x.uid === s.uid);
+      if (cached) cached.lastSeen = data.lastSeen || null;
+
+      // Update the presence span directly in the DOM if the row is visible
+      const row = document.querySelector(
+        `#dmStudentPickerList .dm-picker-row[data-uid="${CSS.escape(s.uid)}"]`
+      );
+      if (!row) return;
+
+      const presenceEl = row.querySelector('[data-presence-ts]');
+      if (!presenceEl) return;
+
+      presenceEl.dataset.presenceTs = tsMs ?? 'null';
+
+      if (online) {
+        presenceEl.innerHTML = `<span style="color:#22c45e;font-size:.6rem;font-weight:600;line-height:1;">&#x25cf; Online</span>`;
+      } else {
+        const ts = data.lastSeen
+          ? (data.lastSeen.toDate ? data.lastSeen.toDate() : new Date(data.lastSeen))
+          : null;
+        presenceEl.innerHTML = ts
+          ? `<span style="font-size:.6rem;color:var(--text-disabled,#9ca3af);line-height:1;">${_esc(_formatLastSeen(ts))}</span>`
+          : `<span style="font-size:.6rem;color:var(--text-disabled,#9ca3af);line-height:1;">Offline</span>`;
+      }
+
+      // Also update the avatar border and online dot
+      const avatarCircle = row.querySelector('[data-avatar-circle]');
+      const avatarDot    = row.querySelector('[data-avatar-dot]');
+      if (avatarCircle) {
+        avatarCircle.style.borderColor = online ? '#22c45e' : 'var(--brand-border,#bac8ff)';
+      }
+      if (online && !avatarDot) {
+        const avatarWrap = row.querySelector('[data-avatar-wrap]');
+        if (avatarWrap) {
+          const dot = document.createElement('span');
+          dot.dataset.avatarDot = '1';
+          dot.style.cssText = 'position:absolute;bottom:0;right:0;width:9px;height:9px;' +
+            'border-radius:50%;background:#22c45e;border:2px solid var(--surface,#fff);';
+          avatarWrap.appendChild(dot);
+        }
+      } else if (!online && avatarDot) {
+        avatarDot.remove();
+      }
+    }, err => console.warn('[dm] Picker presence watch error:', err));
+
+    overlay._presenceUnsubs.push(unsub);
+  });
+}
 
   function _renderStudentPickerList(students, query) {
-    const list = document.getElementById('dmStudentPickerList');
-    if (!list) return;
+  const list = document.getElementById('dmStudentPickerList');
+  if (!list) return;
 
-    const q        = query.toLowerCase().trim();
-    const filtered = q
-      ? students.filter(s =>
-          (s.name || '').toLowerCase().includes(q) ||
-          (s.class || '').toLowerCase().includes(q))
-      : students;
+  const q        = query.toLowerCase().trim();
+  const filtered = q
+    ? students.filter(s =>
+        (s.name || '').toLowerCase().includes(q) ||
+        (s.class || '').toLowerCase().includes(q))
+    : students;
 
-    if (!filtered.length) {
-      list.innerHTML = `<p style="font-size:.8125rem;color:var(--text-disabled,#9ca3af);text-align:center;padding:2rem 1rem;">No students found.</p>`;
-      return;
-    }
-
-    list.innerHTML = filtered.map((s, idx) => {
-      const isOnline  = _isRecentlyActive(s.lastSeen);
-      const lastSeen  = s.lastSeen || null;
-      const presenceTxt = isOnline
-        ? `<span style="color:#22c45e;font-size:.6rem;font-weight:600;line-height:1;">&#x25cf; Online</span>`
-        : (lastSeen
-            ? `<span style="font-size:.6rem;color:var(--text-disabled,#9ca3af);line-height:1;">${_esc(_formatLastSeen(lastSeen))}</span>`
-            : `<span style="font-size:.6rem;color:var(--text-disabled,#9ca3af);line-height:1;">Offline</span>`);
-
-      return `
-        <div class="dm-picker-row"
-             data-uid="${_escAttr(s.uid)}"
-             data-name="${_escAttr(s.name || '')}"
-             data-class="${_escAttr(s.class || '')}"
-             style="display:flex;align-items:center;gap:.625rem;padding:.625rem .875rem;
-                    cursor:pointer;transition:background .1s;box-sizing:border-box;width:100%;
-                    ${idx < filtered.length - 1 ? 'border-bottom:1px solid var(--border,#e5e7eb);' : ''}">
-          <div style="position:relative;flex-shrink:0;">
-            <div style="width:34px;height:34px;border-radius:50%;background:var(--brand-bg,#edf2ff);
-                        border:1.5px solid ${isOnline ? '#22c45e' : 'var(--brand-border,#bac8ff)'};
-                        display:flex;align-items:center;justify-content:center;
-                        font-size:.75rem;font-weight:700;color:var(--brand-text,#3730a3);">
-              ${_esc((s.name || '?').charAt(0).toUpperCase())}
-            </div>
-            ${isOnline
-              ? `<span style="position:absolute;bottom:0;right:0;width:9px;height:9px;
-                              border-radius:50%;background:#22c45e;border:2px solid var(--surface,#fff);"></span>`
-              : ''}
-          </div>
-          <div style="flex:1;min-width:0;">
-            <p style="font-size:.8125rem;font-weight:600;color:var(--text-primary,#111827);margin:0;
-                      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-              ${_esc(s.name || 'Unknown')}
-            </p>
-            <div style="display:flex;align-items:center;gap:.375rem;margin-top:1px;">
-              <p style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin:0;
-                        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:8rem;">
-                ${_esc(s.class || '—')}
-              </p>
-              <span style="color:var(--border-strong);">·</span>
-              ${presenceTxt}
-            </div>
-          </div>
-        </div>`;
-    }).join('');
-
-    list.querySelectorAll('.dm-picker-row').forEach(row => {
-      row.addEventListener('mouseenter', () => { row.style.background = 'var(--surface-subtle,#f9fafb)'; });
-      row.addEventListener('mouseleave', () => { row.style.background = 'transparent'; });
-      row.addEventListener('click', () => {
-        _pickStudentForConversation(row.dataset.uid, row.dataset.name, row.dataset.class);
-      });
-    });
+  if (!filtered.length) {
+    list.innerHTML = `<p style="font-size:.8125rem;color:var(--text-disabled,#9ca3af);text-align:center;padding:2rem 1rem;">No students found.</p>`;
+    return;
   }
+
+  list.innerHTML = filtered.map((s, idx) => {
+    const tsMs      = _tsToMs(s.lastSeen || null);
+    const isOnline  = tsMs !== null && (Date.now() - tsMs) <= ONLINE_THRESHOLD_MS;
+    const lastSeen  = s.lastSeen || null;
+
+    const presenceTxt = isOnline
+      ? `<span style="color:#22c45e;font-size:.6rem;font-weight:600;line-height:1;">&#x25cf; Online</span>`
+      : (lastSeen
+          ? `<span style="font-size:.6rem;color:var(--text-disabled,#9ca3af);line-height:1;">${_esc(_formatLastSeen(lastSeen))}</span>`
+          : `<span style="font-size:.6rem;color:var(--text-disabled,#9ca3af);line-height:1;">Offline</span>`);
+
+    return `
+      <div class="dm-picker-row"
+           data-uid="${_escAttr(s.uid)}"
+           data-name="${_escAttr(s.name || '')}"
+           data-class="${_escAttr(s.class || '')}"
+           style="display:flex;align-items:center;gap:.625rem;padding:.625rem .875rem;
+                  cursor:pointer;transition:background .1s;box-sizing:border-box;width:100%;
+                  ${idx < filtered.length - 1 ? 'border-bottom:1px solid var(--border,#e5e7eb);' : ''}">
+        <div data-avatar-wrap style="position:relative;flex-shrink:0;">
+          <div data-avatar-circle
+               style="width:34px;height:34px;border-radius:50%;background:var(--brand-bg,#edf2ff);
+                      border:1.5px solid ${isOnline ? '#22c45e' : 'var(--brand-border,#bac8ff)'};
+                      display:flex;align-items:center;justify-content:center;
+                      font-size:.75rem;font-weight:700;color:var(--brand-text,#3730a3);">
+            ${_esc((s.name || '?').charAt(0).toUpperCase())}
+          </div>
+          ${isOnline
+            ? `<span data-avatar-dot style="position:absolute;bottom:0;right:0;width:9px;height:9px;
+                            border-radius:50%;background:#22c45e;border:2px solid var(--surface,#fff);"></span>`
+            : ''}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <p style="font-size:.8125rem;font-weight:600;color:var(--text-primary,#111827);margin:0;
+                    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            ${_esc(s.name || 'Unknown')}
+          </p>
+          <div data-presence-ts="${tsMs ?? 'null'}"
+               style="display:flex;align-items:center;gap:.375rem;margin-top:1px;">
+            <p style="font-size:.6875rem;color:var(--text-tertiary,#6b7280);margin:0;
+                      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:8rem;">
+              ${_esc(s.class || '—')}
+            </p>
+            <span style="color:var(--border-strong);">·</span>
+            ${presenceTxt}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+
+  list.querySelectorAll('.dm-picker-row').forEach(row => {
+    row.addEventListener('mouseenter', () => { row.style.background = 'var(--surface-subtle,#f9fafb)'; });
+    row.addEventListener('mouseleave', () => { row.style.background = 'transparent'; });
+    row.addEventListener('click', () => {
+      _pickStudentForConversation(row.dataset.uid, row.dataset.name, row.dataset.class);
+    });
+  });
+}
 
   function _closeNewConversationModal() {
-    const overlay = document.getElementById('dmNewConvOverlay');
-    if (overlay) overlay.remove();
+  const overlay = document.getElementById('dmNewConvOverlay');
+  if (overlay) {
+    // Tear down all per-student presence listeners attached at modal open time
+    if (Array.isArray(overlay._presenceUnsubs)) {
+      overlay._presenceUnsubs.forEach(unsub => { try { unsub(); } catch (_) {} });
+    }
+    overlay.remove();
   }
+}
 
   async function _pickStudentForConversation(uid, name, cls) {
     _closeNewConversationModal();
