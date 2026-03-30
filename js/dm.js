@@ -404,6 +404,63 @@
         min-width:0;
         box-sizing:border-box;
       }
+
+      /* ── Swipe-to-reply styles ── */
+      .dm-reply-bar {
+        display:none;align-items:center;gap:.5rem;
+        padding:.375rem .625rem;margin:.375rem 0 0;
+        background:var(--accent-subtle,rgba(79,110,247,.07));
+        border-left:3px solid var(--accent,#4f6ef7);
+        border-radius:0 6px 6px 0;
+        font-size:.75rem;color:var(--text-2,#3a3a40);
+        box-sizing:border-box;width:100%;overflow:hidden;
+        animation:dmFadeIn .12s ease;
+      }
+      .dm-reply-bar.visible { display:flex; }
+      .dm-reply-bar__name { font-weight:700;color:var(--accent-text,#2d49d6);white-space:nowrap;flex-shrink:0; }
+      .dm-reply-bar__text { white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;opacity:.8; }
+      .dm-reply-bar__close { flex-shrink:0;background:none;border:none;cursor:pointer;padding:0;line-height:1;color:var(--text-4,#9ca3af);display:flex;align-items:center; }
+      .dm-reply-bar__close:hover { color:var(--text-2,#3a3a40); }
+
+      .dm-reply-card {
+        margin-bottom:.375rem;
+        padding:.3rem .5rem;
+        border-left:3px solid rgba(255,255,255,.5);
+        border-radius:0 5px 5px 0;
+        background:rgba(0,0,0,.12);
+        cursor:pointer;
+        font-size:.75rem;line-height:1.4;
+        overflow:hidden;
+      }
+      .dm-msg-in .dm-reply-card {
+        border-left-color:var(--accent,#4f6ef7);
+        background:var(--accent-subtle,rgba(79,110,247,.08));
+      }
+      .dm-reply-card__name { font-weight:700;display:block;margin-bottom:1px; }
+      .dm-msg-out .dm-reply-card__name { color:rgba(255,255,255,.9); }
+      .dm-msg-in .dm-reply-card__name  { color:var(--accent-text,#2d49d6); }
+      .dm-reply-card__text { display:block;opacity:.8;
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%; }
+
+      .dm-swipe-wrap {
+        position:relative;overflow:hidden;
+        width:100%;max-width:100%;min-width:0;box-sizing:border-box;
+        touch-action:pan-y;
+      }
+      .dm-swipe-wrap .dm-swipe-inner {
+        transition:transform .2s ease;
+        will-change:transform;
+      }
+      .dm-swipe-hint {
+        position:absolute;top:50%;transform:translateY(-50%);
+        display:flex;align-items:center;justify-content:center;
+        width:32px;height:32px;border-radius:50%;
+        background:var(--accent-subtle,rgba(79,110,247,.15));
+        color:var(--accent,#4f6ef7);opacity:0;pointer-events:none;
+        transition:opacity .15s;
+      }
+      .dm-msg-out .dm-swipe-hint { right:calc(100% + 8px); }
+      .dm-msg-in  .dm-swipe-hint { left:calc(100% + 8px); }
     `;
     document.head.appendChild(style);
   }
@@ -575,7 +632,6 @@
               b.update(Db().collection('students').doc(uid), { isOnline: true, lastSeen: ts });
               await b.commit();
             } catch (_) {}
-            // Mark any messages that arrived while tab was hidden as delivered
             await _markDelivered(uid, 'student').catch(() => {});
           })();
           _startStudentHeartbeat(uid);
@@ -624,7 +680,6 @@
         if (firebase.auth().currentUser && !_teacherOfflineDone) {
           _broadcastTeacherPresence(true).catch(() => {});
           _startTeacherHeartbeat();
-          // Mark any messages that arrived while tab was hidden as delivered
           (async () => {
             try {
               const allThreads = await Db().collection('directMessages').get();
@@ -762,23 +817,23 @@
   }
 
   async function _saveEdit(studentUid, messageId, oldText, newText, isTeacher) {
-  const db         = Db();
-  const historyCol = _msgHistoryRef(studentUid, messageId);
-  const msgRef     = _threadRef(studentUid).collection('messages').doc(messageId);
-  const ts         = firebase.firestore.FieldValue.serverTimestamp();
+    const db         = Db();
+    const historyCol = _msgHistoryRef(studentUid, messageId);
+    const msgRef     = _threadRef(studentUid).collection('messages').doc(messageId);
+    const ts         = firebase.firestore.FieldValue.serverTimestamp();
 
-  if (!isTeacher) {
-    const countSnap = await historyCol.get();
-    if (countSnap.size >= 2) {
-      throw new Error('EDIT_LIMIT_REACHED');
+    if (!isTeacher) {
+      const countSnap = await historyCol.get();
+      if (countSnap.size >= 2) {
+        throw new Error('EDIT_LIMIT_REACHED');
+      }
     }
-  }
 
-  const batch = db.batch();
-  batch.set(historyCol.doc(), { text: oldText, editedAt: ts });
-  batch.update(msgRef, { text: newText, editedAt: ts });
-  await batch.commit();
-}
+    const batch = db.batch();
+    batch.set(historyCol.doc(), { text: oldText, editedAt: ts });
+    batch.update(msgRef, { text: newText, editedAt: ts });
+    await batch.commit();
+  }
 
   async function _showEditHistory(studentUid, messageId, currentText) {
     let entries = [];
@@ -845,206 +900,412 @@
     document.body.appendChild(overlay);
   }
 
-// ── Typing indicator ──────────────────────────────────────────
-// Each side writes their own flag to the shared thread doc.
-// A debounce timer auto-clears the flag after 4 seconds of no input.
+  // ── Typing indicator ──────────────────────────────────────────
+  let _typingDebounceTimer = null;
+  let _typingCurrentUid    = null;
+  let _typingCurrentRole   = null;
+  let _typingActive        = false;
 
-let _typingDebounceTimer = null;
-let _typingCurrentUid    = null;
-let _typingCurrentRole   = null; // 'student' | 'teacher'
-let _typingActive        = false;
+  async function _startTyping(threadUid, role) {
+    _typingCurrentUid  = threadUid;
+    _typingCurrentRole = role;
 
-async function _startTyping(threadUid, role) {
-  // threadUid = the student's UID (used as the Firestore doc ID)
-  // role      = 'student' or 'teacher'
+    if (_typingDebounceTimer) clearTimeout(_typingDebounceTimer);
+    _typingDebounceTimer = setTimeout(() => _stopTyping(threadUid, role), 4000);
 
-  _typingCurrentUid  = threadUid;
-  _typingCurrentRole = role;
+    if (_typingActive) return;
+    _typingActive = true;
 
-  // Reset the auto-clear timer on every keystroke
-  if (_typingDebounceTimer) clearTimeout(_typingDebounceTimer);
-  _typingDebounceTimer = setTimeout(() => _stopTyping(threadUid, role), 4000);
-
-  // Only write to Firestore if not already flagged — avoids write spam
-  if (_typingActive) return;
-  _typingActive = true;
-
-  const field = role === 'student' ? 'studentTyping' : 'teacherTyping';
-  try {
-    await _threadRef(threadUid).set({ [field]: true }, { merge: true });
-  } catch (e) {
-    console.warn('[dm] _startTyping write failed:', e);
+    const field = role === 'student' ? 'studentTyping' : 'teacherTyping';
+    try {
+      await _threadRef(threadUid).set({ [field]: true }, { merge: true });
+    } catch (e) {
+      console.warn('[dm] _startTyping write failed:', e);
+    }
   }
-}
 
-async function _stopTyping(threadUid, role) {
-  if (_typingDebounceTimer) { clearTimeout(_typingDebounceTimer); _typingDebounceTimer = null; }
-  _typingActive = false;
+  async function _stopTyping(threadUid, role) {
+    if (_typingDebounceTimer) { clearTimeout(_typingDebounceTimer); _typingDebounceTimer = null; }
+    _typingActive = false;
 
-  const field = role === 'student' ? 'studentTyping' : 'teacherTyping';
-  try {
-    await _threadRef(threadUid).set({ [field]: false }, { merge: true });
-  } catch (e) {
-    console.warn('[dm] _stopTyping write failed:', e);
+    const field = role === 'student' ? 'studentTyping' : 'teacherTyping';
+    try {
+      await _threadRef(threadUid).set({ [field]: false }, { merge: true });
+    } catch (e) {
+      console.warn('[dm] _stopTyping write failed:', e);
+    }
   }
-}
 
-function _watchTypingIndicator(threadUid, watchField, elementId, displayName) {
-  const listenerKey = 'dmTypingWatch_' + threadUid + '_' + watchField;
-  AppState.cancelListener(listenerKey);
+  function _watchTypingIndicator(threadUid, watchField, elementId, displayName) {
+    const listenerKey = 'dmTypingWatch_' + threadUid + '_' + watchField;
+    AppState.cancelListener(listenerKey);
 
-  const unsub = _threadRef(threadUid).onSnapshot(snap => {
-    const bar = document.getElementById(elementId);
-    if (!bar) { AppState.cancelListener(listenerKey); return; }
+    const unsub = _threadRef(threadUid).onSnapshot(snap => {
+      const bar = document.getElementById(elementId);
+      if (!bar) { AppState.cancelListener(listenerKey); return; }
 
-    const isTyping = !!(snap.exists && snap.data() && snap.data()[watchField]);
-    bar.style.display = isTyping ? 'flex' : 'none';
-    bar.style.height  = isTyping ? '22px' : '0';
-  }, err => console.warn('[dm] _watchTypingIndicator error:', err));
+      const isTyping = !!(snap.exists && snap.data() && snap.data()[watchField]);
+      bar.style.display = isTyping ? 'flex' : 'none';
+      bar.style.height  = isTyping ? '22px' : '0';
+    }, err => console.warn('[dm] _watchTypingIndicator error:', err));
 
-  AppState.registerListener(listenerKey, unsub);
-}
-
-function _cancelTypingListeners(threadUid) {
-  if (!threadUid) return;
-  AppState.cancelListener('dmTypingWatch_' + threadUid + '_studentTyping');
-  AppState.cancelListener('dmTypingWatch_' + threadUid + '_teacherTyping');
-  // Ensure our own typing flag is cleared
-  if (_typingActive && _typingCurrentUid === threadUid) {
-    _stopTyping(threadUid, _typingCurrentRole).catch(() => {});
+    AppState.registerListener(listenerKey, unsub);
   }
-}
-// ── End typing indicator ──────────────────────────────────────
+
+  function _cancelTypingListeners(threadUid) {
+    if (!threadUid) return;
+    AppState.cancelListener('dmTypingWatch_' + threadUid + '_studentTyping');
+    AppState.cancelListener('dmTypingWatch_' + threadUid + '_teacherTyping');
+    if (_typingActive && _typingCurrentUid === threadUid) {
+      _stopTyping(threadUid, _typingCurrentRole).catch(() => {});
+    }
+  }
+  // ── End typing indicator ──────────────────────────────────────
+
+  // ══════════════════════════════════════════════════════════════
+  // SWIPE-TO-REPLY SYSTEM
+  // ══════════════════════════════════════════════════════════════
+
+  // Active reply state for each side
+  let _studentReplyTo = null;
+  let _teacherReplyTo = null;
+
+  // ── Reply bar builder ─────────────────────────────────────────
+  // Builds the HTML for the quoted-message strip shown above the
+  // input box. Inserted once when the inbox/conversation opens.
+  function _buildReplyBar(barId, closeCall) {
+    return `
+      <div id="${barId}" class="dm-reply-bar" role="status" aria-live="polite">
+        <div style="flex:1;min-width:0;overflow:hidden;">
+          <span class="dm-reply-bar__name" id="${barId}-name"></span>
+          <span class="dm-reply-bar__text" id="${barId}-text"></span>
+        </div>
+        <button class="dm-reply-bar__close" onclick="${closeCall}" title="Cancel reply" aria-label="Cancel reply">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>`;
+  }
+
+  // ── Show / clear reply bar (student side) ────────────────────
+  function _showStudentReplyBar(replyTo) {
+    _studentReplyTo = replyTo;
+    const bar  = document.getElementById('dmStudentReplyBar');
+    const name = document.getElementById('dmStudentReplyBar-name');
+    const text = document.getElementById('dmStudentReplyBar-text');
+    if (!bar || !name || !text) return;
+    name.textContent = replyTo.senderName + ':  ';
+    text.textContent = replyTo.text;
+    bar.classList.add('visible');
+    const input = document.getElementById('dmInput');
+    if (input) input.focus();
+  }
+
+  function _clearStudentReply() {
+    _studentReplyTo = null;
+    const bar = document.getElementById('dmStudentReplyBar');
+    if (bar) bar.classList.remove('visible');
+  }
+
+  // ── Show / clear reply bar (teacher side) ────────────────────
+  function _showTeacherReplyBar(replyTo) {
+    _teacherReplyTo = replyTo;
+    const bar  = document.getElementById('dmTeacherReplyBar');
+    const name = document.getElementById('dmTeacherReplyBar-name');
+    const text = document.getElementById('dmTeacherReplyBar-text');
+    if (!bar || !name || !text) return;
+    name.textContent = replyTo.senderName + ':  ';
+    text.textContent = replyTo.text;
+    bar.classList.add('visible');
+    const input = document.getElementById('dmTeacherInput');
+    if (input) input.focus();
+  }
+
+  function _clearTeacherReply() {
+    _teacherReplyTo = null;
+    const bar = document.getElementById('dmTeacherReplyBar');
+    if (bar) bar.classList.remove('visible');
+  }
+
+  // ── Scroll to original message ────────────────────────────────
+  // Called when the user taps the quote card inside a bubble.
+  function _scrollToMsg(msgId) {
+    const el = document.getElementById('dmWrap-' + msgId);
+    if (!el) return;
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    // Brief highlight flash so the user can see which message was jumped to
+    const inner = el.querySelector('.dm-bubble-inner');
+    if (!inner) return;
+    const prev = inner.style.outline;
+    inner.style.transition = 'outline .1s';
+    inner.style.outline = '2px solid var(--accent,#4f6ef7)';
+    setTimeout(() => { inner.style.outline = prev || 'none'; }, 900);
+  }
+
+  // ── Swipe / hover-click wiring ────────────────────────────────
+  // Attaches touch (mobile swipe) and mouse (desktop hover icon)
+  // handlers to every .dm-swipe-wrap inside a given container.
+  //
+  //   containerId — id of the scrollable messages div
+  //   role        — 'student' | 'teacher'
+  function _attachSwipeListeners(containerId, role) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    const SWIPE_THRESHOLD  = 60;  // px to travel before triggering reply
+    const SWIPE_MAX_REVEAL = 72;  // max px the bubble slides before snapping back
+
+    let touchStartX    = 0;
+    let touchStartY    = 0;
+    let activeSwiping  = null;
+    let swipeTriggered = false;
+
+    function _getWrap(el) {
+      return el.closest('.dm-swipe-wrap');
+    }
+
+    function _getReplyData(wrap) {
+      return {
+        id:         wrap.dataset.replyId     || '',
+        text:       wrap.dataset.replyText   || '',
+        senderName: wrap.dataset.replySender || '',
+      };
+    }
+
+    function _triggerReply(wrap) {
+      const data = _getReplyData(wrap);
+      if (!data.id) return;
+      if (role === 'student') {
+        _showStudentReplyBar(data);
+      } else {
+        _showTeacherReplyBar(data);
+      }
+    }
+
+    function _resetWrap(wrap) {
+      const inner = wrap.querySelector('.dm-swipe-inner');
+      const hint  = wrap.querySelector('.dm-swipe-hint');
+      if (inner) { inner.style.transform = ''; }
+      if (hint)  { hint.style.opacity = '0'; }
+    }
+
+    // ── Touch (mobile) ────────────────────────────────────────
+    container.addEventListener('touchstart', function (e) {
+      const wrap = _getWrap(e.target);
+      if (!wrap || !wrap.dataset.replyId) return;
+      touchStartX    = e.touches[0].clientX;
+      touchStartY    = e.touches[0].clientY;
+      activeSwiping  = wrap;
+      swipeTriggered = false;
+    }, { passive: true });
+
+    container.addEventListener('touchmove', function (e) {
+      if (!activeSwiping) return;
+      const dx = e.touches[0].clientX - touchStartX;
+      const dy = e.touches[0].clientY - touchStartY;
+
+      // If scrolling vertically more than horizontally, abort
+      if (Math.abs(dy) > Math.abs(dx) + 8) {
+        activeSwiping = null;
+        return;
+      }
+
+      // Only allow rightward swipe
+      if (dx <= 0) return;
+
+      // Prevent vertical scroll while swiping horizontally
+      e.preventDefault();
+
+      const travel = Math.min(dx, SWIPE_MAX_REVEAL);
+      const inner  = activeSwiping.querySelector('.dm-swipe-inner');
+      const hint   = activeSwiping.querySelector('.dm-swipe-hint');
+
+      if (inner) {
+        inner.style.transition = 'none';
+        inner.style.transform  = `translateX(${travel}px)`;
+      }
+      if (hint) {
+        hint.style.opacity = String(Math.min(travel / SWIPE_THRESHOLD, 1));
+      }
+
+      // Fire once threshold is reached
+      if (dx >= SWIPE_THRESHOLD && !swipeTriggered) {
+        swipeTriggered = true;
+        if (navigator.vibrate) navigator.vibrate(30);
+        _triggerReply(activeSwiping);
+      }
+    }, { passive: false });
+
+    container.addEventListener('touchend', function () {
+      if (!activeSwiping) return;
+      _resetWrap(activeSwiping);
+      activeSwiping  = null;
+      swipeTriggered = false;
+    });
+
+    container.addEventListener('touchcancel', function () {
+      if (!activeSwiping) return;
+      _resetWrap(activeSwiping);
+      activeSwiping  = null;
+      swipeTriggered = false;
+    });
+
+    // ── Mouse (desktop) ───────────────────────────────────────
+    // On desktop we show a small reply-arrow icon on hover.
+    container.addEventListener('mouseover', function (e) {
+      const wrap = _getWrap(e.target);
+      if (!wrap || !wrap.dataset.replyId) return;
+      const hint = wrap.querySelector('.dm-swipe-hint');
+      if (hint) { hint.style.opacity = '1'; hint.style.pointerEvents = 'auto'; }
+    });
+
+    container.addEventListener('mouseout', function (e) {
+      const wrap = _getWrap(e.target);
+      if (!wrap) return;
+      if (wrap.contains(e.relatedTarget)) return;
+      const hint = wrap.querySelector('.dm-swipe-hint');
+      if (hint) { hint.style.opacity = '0'; hint.style.pointerEvents = 'none'; }
+    });
+
+    container.addEventListener('click', function (e) {
+      const hint = e.target.closest('.dm-swipe-hint');
+      if (!hint) return;
+      const wrap = hint.closest('.dm-swipe-wrap');
+      if (wrap && wrap.dataset.replyId) _triggerReply(wrap);
+    });
+  }
+  // ══════════════════════════════════════════════════════════════
+  // END SWIPE-TO-REPLY SYSTEM
+  // ══════════════════════════════════════════════════════════════
 
   function _activateInlineEdit(studentUid, messageId, currentText, isDarkBubble, wrapperId, isTeacher) {
-  const wrapper = document.getElementById(wrapperId);
-  if (!wrapper) return;
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
 
-  const textEl   = wrapper.querySelector('.dm-bubble-text');
-  const footerEl = wrapper.querySelector('.dm-msg-footer');
-  const editedEl = wrapper.querySelector('.dm-edited-label-wrap');
-  if (!textEl) return;
+    const textEl   = wrapper.querySelector('.dm-bubble-text');
+    const footerEl = wrapper.querySelector('.dm-msg-footer');
+    const editedEl = wrapper.querySelector('.dm-edited-label-wrap');
+    if (!textEl) return;
 
-  const inner = wrapper.querySelector('.dm-bubble-inner');
-  if (!inner) return;
+    const inner = wrapper.querySelector('.dm-bubble-inner');
+    if (!inner) return;
 
-  if (inner.querySelector(`[id^="dmEditUI-"]`)) return;
+    if (inner.querySelector(`[id^="dmEditUI-"]`)) return;
 
-  const saveClass   = isDarkBubble ? 'dm-edit-btn dm-edit-btn--save'   : 'dm-edit-btn dm-edit-btn--save-light';
-  const cancelClass = isDarkBubble ? 'dm-edit-btn dm-edit-btn--cancel' : 'dm-edit-btn dm-edit-btn--cancel-light';
+    const saveClass   = isDarkBubble ? 'dm-edit-btn dm-edit-btn--save'   : 'dm-edit-btn dm-edit-btn--save-light';
+    const cancelClass = isDarkBubble ? 'dm-edit-btn dm-edit-btn--cancel' : 'dm-edit-btn dm-edit-btn--cancel-light';
 
-  const editUI = document.createElement('div');
-  editUI.id    = `dmEditUI-${messageId}`;
+    const editUI = document.createElement('div');
+    editUI.id    = `dmEditUI-${messageId}`;
 
-  const cancelBtn       = document.createElement('button');
-  cancelBtn.className   = cancelClass;
-  cancelBtn.textContent = 'Cancel';
-  cancelBtn.onclick     = () => {
-    editUI.remove();
-    if (textEl)   textEl.style.display   = '';
-    if (footerEl) footerEl.style.display = '';
-    if (editedEl) editedEl.style.display = '';
-  };
-
-  if (textEl)   textEl.style.display   = 'none';
-  if (footerEl) footerEl.style.display = 'none';
-  if (editedEl) editedEl.style.display = 'none';
-
-  const placeholder         = document.createElement('p');
-  placeholder.style.cssText = 'font-size:.75rem;opacity:.5;padding:.25rem 0;margin:0;';
-  placeholder.textContent   = 'Loading…';
-  editUI.appendChild(placeholder);
-  inner.appendChild(editUI);
-
-  const _buildEditor = () => {
-    editUI.innerHTML = '';
-
-    const ta     = document.createElement('textarea');
-    ta.className = 'dm-edit-textarea';
-    ta.value     = currentText;
-    ta.rows      = 1;
-
-    const actions     = document.createElement('div');
-    actions.className = 'dm-edit-actions';
-
-    const saveBtn       = document.createElement('button');
-    saveBtn.className   = saveClass;
-    saveBtn.textContent = 'Save';
-    saveBtn.onclick     = async () => {
-      const newText = ta.value.trim();
-      if (!newText) { UI.toast('Message cannot be empty.', 'warning'); return; }
-      if (newText === currentText) { cancelBtn.onclick(); return; }
-      saveBtn.disabled    = true;
-      saveBtn.textContent = 'Saving…';
-      try {
-        await _saveEdit(studentUid, messageId, currentText, newText, isTeacher);
-        if (textEl) textEl.textContent = newText;
-        cancelBtn.onclick();
-      } catch (err) {
-        if (err.message === 'EDIT_LIMIT_REACHED') {
-          _buildLimitNotice();
-        } else {
-          console.error('[dm] inline edit save error:', err);
-          UI.toast('Could not save edit. Please try again.', 'error');
-          saveBtn.disabled    = false;
-          saveBtn.textContent = 'Save';
-        }
-      }
+    const cancelBtn       = document.createElement('button');
+    cancelBtn.className   = cancelClass;
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.onclick     = () => {
+      editUI.remove();
+      if (textEl)   textEl.style.display   = '';
+      if (footerEl) footerEl.style.display = '';
+      if (editedEl) editedEl.style.display = '';
     };
 
-    actions.appendChild(cancelBtn);
-    actions.appendChild(saveBtn);
-    editUI.appendChild(ta);
-    editUI.appendChild(actions);
+    if (textEl)   textEl.style.display   = 'none';
+    if (footerEl) footerEl.style.display = 'none';
+    if (editedEl) editedEl.style.display = 'none';
 
-    ta.focus();
-    ta.setSelectionRange(ta.value.length, ta.value.length);
-    ta.style.height = 'auto';
-    ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
-    ta.addEventListener('input', () => {
+    const placeholder         = document.createElement('p');
+    placeholder.style.cssText = 'font-size:.75rem;opacity:.5;padding:.25rem 0;margin:0;';
+    placeholder.textContent   = 'Loading…';
+    editUI.appendChild(placeholder);
+    inner.appendChild(editUI);
+
+    const _buildEditor = () => {
+      editUI.innerHTML = '';
+
+      const ta     = document.createElement('textarea');
+      ta.className = 'dm-edit-textarea';
+      ta.value     = currentText;
+      ta.rows      = 1;
+
+      const actions     = document.createElement('div');
+      actions.className = 'dm-edit-actions';
+
+      const saveBtn       = document.createElement('button');
+      saveBtn.className   = saveClass;
+      saveBtn.textContent = 'Save';
+      saveBtn.onclick     = async () => {
+        const newText = ta.value.trim();
+        if (!newText) { UI.toast('Message cannot be empty.', 'warning'); return; }
+        if (newText === currentText) { cancelBtn.onclick(); return; }
+        saveBtn.disabled    = true;
+        saveBtn.textContent = 'Saving…';
+        try {
+          await _saveEdit(studentUid, messageId, currentText, newText, isTeacher);
+          if (textEl) textEl.textContent = newText;
+          cancelBtn.onclick();
+        } catch (err) {
+          if (err.message === 'EDIT_LIMIT_REACHED') {
+            _buildLimitNotice();
+          } else {
+            console.error('[dm] inline edit save error:', err);
+            UI.toast('Could not save edit. Please try again.', 'error');
+            saveBtn.disabled    = false;
+            saveBtn.textContent = 'Save';
+          }
+        }
+      };
+
+      actions.appendChild(cancelBtn);
+      actions.appendChild(saveBtn);
+      editUI.appendChild(ta);
+      editUI.appendChild(actions);
+
+      ta.focus();
+      ta.setSelectionRange(ta.value.length, ta.value.length);
       ta.style.height = 'auto';
       ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
-    });
-    ta.addEventListener('keydown', e => {
-      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveBtn.onclick(); }
-      if (e.key === 'Escape') cancelBtn.onclick();
-    });
-  };
-
-  const _buildLimitNotice = () => {
-    editUI.innerHTML = '';
-    const msg         = document.createElement('p');
-    msg.style.cssText = `font-size:.75rem;line-height:1.5;margin:0 0 .375rem;opacity:.85;
-                          color:${isDarkBubble ? 'rgba(255,255,255,.9)' : 'var(--danger,#e03b3b)'};`;
-    msg.textContent   = 'Messages can only be edited twice.';
-
-    const actions     = document.createElement('div');
-    actions.className = 'dm-edit-actions';
-    actions.appendChild(cancelBtn);
-
-    editUI.appendChild(msg);
-    editUI.appendChild(actions);
-  };
-
-  if (isTeacher) {
-    _buildEditor();
-  } else {
-    _msgHistoryRef(studentUid, messageId).get()
-      .then(snap => {
-        if (snap.size >= 2) {
-          _buildLimitNotice();
-        } else {
-          _buildEditor();
-        }
-      })
-      .catch(err => {
-        // If the read fails for any reason, allow the edit —
-        // _saveEdit will enforce the hard limit on write anyway.
-        console.warn('[dm] Could not pre-check edit count, proceeding:', err);
-        _buildEditor();
+      ta.addEventListener('input', () => {
+        ta.style.height = 'auto';
+        ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
       });
+      ta.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveBtn.onclick(); }
+        if (e.key === 'Escape') cancelBtn.onclick();
+      });
+    };
+
+    const _buildLimitNotice = () => {
+      editUI.innerHTML = '';
+      const msg         = document.createElement('p');
+      msg.style.cssText = `font-size:.75rem;line-height:1.5;margin:0 0 .375rem;opacity:.85;
+                            color:${isDarkBubble ? 'rgba(255,255,255,.9)' : 'var(--danger,#e03b3b)'};`;
+      msg.textContent   = 'Messages can only be edited twice.';
+
+      const actions     = document.createElement('div');
+      actions.className = 'dm-edit-actions';
+      actions.appendChild(cancelBtn);
+
+      editUI.appendChild(msg);
+      editUI.appendChild(actions);
+    };
+
+    if (isTeacher) {
+      _buildEditor();
+    } else {
+      _msgHistoryRef(studentUid, messageId).get()
+        .then(snap => {
+          if (snap.size >= 2) {
+            _buildLimitNotice();
+          } else {
+            _buildEditor();
+          }
+        })
+        .catch(err => {
+          console.warn('[dm] Could not pre-check edit count, proceeding:', err);
+          _buildEditor();
+        });
+    }
   }
-}
 
   let _openMenuId = null;
 
@@ -1108,6 +1369,8 @@ function _cancelTypingListeners(threadUid) {
     }, 0);
   }
 
+  // ── Bubble builders ───────────────────────────────────────────
+
   function _buildStudentBubble(msg, myUid, showLabel) {
     const isMe    = msg.senderId === myUid;
     const msgId   = msg.id || '';
@@ -1126,6 +1389,21 @@ function _cancelTypingListeners(threadUid) {
     const safeUid   = _escAttr(myUid);
     const safeMsgId = _escAttr(msgId);
 
+    // ── Reply-quote card (shown inside the bubble when this msg is a reply) ──
+    let replyCard = '';
+    if (msg.replyTo && msg.replyTo.id) {
+      const rName = _esc(msg.replyTo.senderName || 'Unknown');
+      const rText = _esc((msg.replyTo.text || '').substring(0, 80));
+      const rId   = _escAttr(msg.replyTo.id);
+      replyCard = `
+        <div class="dm-reply-card"
+             onclick="event.stopPropagation();DM._scrollToMsg('${rId}')"
+             title="Jump to original message">
+          <span class="dm-reply-card__name">${rName}</span>
+          <span class="dm-reply-card__text">${rText}</span>
+        </div>`;
+    }
+
     const editBtn = canEdit
       ? `<button title="Edit"
                  onclick="event.stopPropagation();DM._toggleActionMenu('${wrapId}','${safeUid}','${safeMsgId}',document.getElementById('${wrapId}').querySelector('.dm-bubble-text').textContent,true,false,${isMe},${isMe},false)"
@@ -1138,44 +1416,71 @@ function _cancelTypingListeners(threadUid) {
          </button>`
       : '';
 
+    // data- attributes used by the swipe system to know what to quote
+    const replyBtnData = msgId
+      ? `data-reply-id="${safeMsgId}"
+         data-reply-text="${_escAttr((msg.text || '').substring(0, 80))}"
+         data-reply-sender="${_escAttr(isMe ? 'You' : (msg.senderName || 'Master Timothy'))}"`
+      : '';
+
     if (isMe) {
       return `
-        <div id="${wrapId}" class="dm-msg-out" style="margin-bottom:${showLabel ? '.75rem' : '.25rem'}">
-          ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:var(--text-3,#6b7280);
-                       margin-bottom:2px;padding-right:2px;display:block;text-align:right;">
-            You
-          </span>` : ''}
-          <div class="dm-bubble-wrap">
-            <div class="dm-bubble-inner"
-                 style="background:var(--accent,#4f6ef7);color:#fff;
-                        border-radius:14px 14px 3px 14px;
-                        padding:.5rem .75rem .375rem;">
-              <p class="dm-bubble-text">${_esc(msg.text)}</p>
-              <div class="dm-bubble-footer dm-bubble-footer--end">
-                ${editedLabel}
-                ${editBtn}
-                <span class="dm-bubble-time">${time}</span>
-                ${_tickIcon(msg.status || 'sent')}
+        <div class="dm-swipe-wrap dm-msg-out" id="${wrapId}"
+             style="margin-bottom:${showLabel ? '.75rem' : '.25rem'}"
+             ${replyBtnData}>
+          <div class="dm-swipe-inner">
+            <div class="dm-swipe-hint" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M9 17L4 12m0 0l5-5M4 12h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:var(--text-3,#6b7280);
+                         margin-bottom:2px;padding-right:2px;display:block;text-align:right;">
+              You
+            </span>` : ''}
+            <div class="dm-bubble-wrap">
+              <div class="dm-bubble-inner"
+                   style="background:var(--accent,#4f6ef7);color:#fff;
+                          border-radius:14px 14px 3px 14px;
+                          padding:.5rem .75rem .375rem;">
+                ${replyCard}
+                <p class="dm-bubble-text">${_esc(msg.text)}</p>
+                <div class="dm-bubble-footer dm-bubble-footer--end">
+                  ${editedLabel}
+                  ${editBtn}
+                  <span class="dm-bubble-time">${time}</span>
+                  ${_tickIcon(msg.status || 'sent')}
+                </div>
               </div>
             </div>
           </div>
         </div>`;
     } else {
       return `
-        <div id="${wrapId}" class="dm-msg-in" style="margin-bottom:${showLabel ? '.75rem' : '.25rem'}">
-          ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:var(--accent-text,#2d49d6);
-                       margin-bottom:2px;padding-left:2px;display:block;">
-            ${_esc(msg.senderName || 'Master Timothy')}
-          </span>` : ''}
-          <div class="dm-bubble-wrap">
-            <div class="dm-bubble-inner"
-                 style="background:var(--bg-base,#fff);color:var(--text-1,#0d0d0f);
-                        border:1px solid var(--border,#e5e7eb);
-                        border-radius:14px 14px 14px 3px;
-                        padding:.5rem .75rem .375rem;">
-              <p class="dm-bubble-text">${_esc(msg.text)}</p>
-              <div class="dm-bubble-footer dm-bubble-footer--start">
-                <span class="dm-bubble-time dm-bubble-time--dim">${time}</span>
+        <div class="dm-swipe-wrap dm-msg-in" id="${wrapId}"
+             style="margin-bottom:${showLabel ? '.75rem' : '.25rem'}"
+             ${replyBtnData}>
+          <div class="dm-swipe-inner">
+            <div class="dm-swipe-hint" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M15 7l5 5m0 0l-5 5m5-5H4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:var(--accent-text,#2d49d6);
+                         margin-bottom:2px;padding-left:2px;display:block;">
+              ${_esc(msg.senderName || 'Master Timothy')}
+            </span>` : ''}
+            <div class="dm-bubble-wrap">
+              <div class="dm-bubble-inner"
+                   style="background:var(--bg-base,#fff);color:var(--text-1,#0d0d0f);
+                          border:1px solid var(--border,#e5e7eb);
+                          border-radius:14px 14px 14px 3px;
+                          padding:.5rem .75rem .375rem;">
+                ${replyCard}
+                <p class="dm-bubble-text">${_esc(msg.text)}</p>
+                <div class="dm-bubble-footer dm-bubble-footer--start">
+                  <span class="dm-bubble-time dm-bubble-time--dim">${time}</span>
+                </div>
               </div>
             </div>
           </div>
@@ -1203,6 +1508,21 @@ function _cancelTypingListeners(threadUid) {
     const safeStudentUid = _escAttr(studentUid);
     const safeMsgId      = _escAttr(msgId);
 
+    // ── Reply-quote card ──────────────────────────────────────
+    let replyCard = '';
+    if (msg.replyTo && msg.replyTo.id) {
+      const rName = _esc(msg.replyTo.senderName || 'Unknown');
+      const rText = _esc((msg.replyTo.text || '').substring(0, 80));
+      const rId   = _escAttr(msg.replyTo.id);
+      replyCard = `
+        <div class="dm-reply-card"
+             onclick="event.stopPropagation();DM._scrollToMsg('${rId}')"
+             title="Jump to original message">
+          <span class="dm-reply-card__name">${rName}</span>
+          <span class="dm-reply-card__text">${rText}</span>
+        </div>`;
+    }
+
     const editBtn = (canEdit || canHistory)
       ? `<button title="Options"
                  onclick="event.stopPropagation();DM._toggleActionMenu('${wrapId}','${safeStudentUid}','${safeMsgId}',document.getElementById('${wrapId}').querySelector('.dm-bubble-text').textContent,${canEdit},${canHistory},${isTeacher},${isTeacher},true)"
@@ -1215,46 +1535,73 @@ function _cancelTypingListeners(threadUid) {
          </button>`
       : '';
 
+    // data- attributes for the swipe system
+    const replyBtnData = msgId
+      ? `data-reply-id="${safeMsgId}"
+         data-reply-text="${_escAttr((msg.text || '').substring(0, 80))}"
+         data-reply-sender="${_escAttr(isTeacher ? 'Master Timothy' : (msg.senderName || 'Student'))}"`
+      : '';
+
     if (isTeacher) {
       return `
-        <div id="${wrapId}" class="dm-msg-out" style="margin-bottom:${showLabel ? '.75rem' : '.25rem'}">
-          ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:var(--text-3,#6b7280);
-                       margin-bottom:2px;padding-right:2px;display:block;text-align:right;">
-            You
-          </span>` : ''}
-          <div class="dm-bubble-wrap">
-            <div class="dm-bubble-inner"
-                 style="background:var(--accent,#4f6ef7);color:#fff;
-                        border-radius:14px 14px 3px 14px;
-                        padding:.5rem .75rem .375rem;">
-              <p class="dm-bubble-text">${_esc(msg.text)}</p>
-              <div class="dm-bubble-footer dm-msg-footer dm-bubble-footer--end">
-                ${editedLabel}
-                ${editBtn}
-                <span class="dm-bubble-time">${time}</span>
-                ${_tickIcon(msg.status || 'sent')}
+        <div class="dm-swipe-wrap dm-msg-out" id="${wrapId}"
+             style="margin-bottom:${showLabel ? '.75rem' : '.25rem'}"
+             ${replyBtnData}>
+          <div class="dm-swipe-inner">
+            <div class="dm-swipe-hint" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M9 17L4 12m0 0l5-5M4 12h16" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:var(--text-3,#6b7280);
+                         margin-bottom:2px;padding-right:2px;display:block;text-align:right;">
+              You
+            </span>` : ''}
+            <div class="dm-bubble-wrap">
+              <div class="dm-bubble-inner"
+                   style="background:var(--accent,#4f6ef7);color:#fff;
+                          border-radius:14px 14px 3px 14px;
+                          padding:.5rem .75rem .375rem;">
+                ${replyCard}
+                <p class="dm-bubble-text">${_esc(msg.text)}</p>
+                <div class="dm-bubble-footer dm-msg-footer dm-bubble-footer--end">
+                  ${editedLabel}
+                  ${editBtn}
+                  <span class="dm-bubble-time">${time}</span>
+                  ${_tickIcon(msg.status || 'sent')}
+                </div>
               </div>
             </div>
           </div>
         </div>`;
     } else {
       return `
-        <div id="${wrapId}" class="dm-msg-in" style="margin-bottom:${showLabel ? '.75rem' : '.25rem'}">
-          ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:var(--accent-text,#2d49d6);
-                       margin-bottom:2px;padding-left:2px;display:block;">
-            ${_esc(msg.senderName || 'Student')}
-          </span>` : ''}
-          <div class="dm-bubble-wrap">
-            <div class="dm-bubble-inner"
-                 style="background:var(--bg-base,#fff);color:var(--text-1,#0d0d0f);
-                        border:1px solid var(--border,#e5e7eb);
-                        border-radius:14px 14px 14px 3px;
-                        padding:.5rem .75rem .375rem;">
-              <p class="dm-bubble-text">${_esc(msg.text)}</p>
-              <div class="dm-bubble-footer dm-msg-footer dm-bubble-footer--start">
-                ${editedLabel}
-                <span class="dm-bubble-time dm-bubble-time--dim">${time}</span>
-                ${editBtn}
+        <div class="dm-swipe-wrap dm-msg-in" id="${wrapId}"
+             style="margin-bottom:${showLabel ? '.75rem' : '.25rem'}"
+             ${replyBtnData}>
+          <div class="dm-swipe-inner">
+            <div class="dm-swipe-hint" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                <path d="M15 7l5 5m0 0l-5 5m5-5H4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:var(--accent-text,#2d49d6);
+                         margin-bottom:2px;padding-left:2px;display:block;">
+              ${_esc(msg.senderName || 'Student')}
+            </span>` : ''}
+            <div class="dm-bubble-wrap">
+              <div class="dm-bubble-inner"
+                   style="background:var(--bg-base,#fff);color:var(--text-1,#0d0d0f);
+                          border:1px solid var(--border,#e5e7eb);
+                          border-radius:14px 14px 14px 3px;
+                          padding:.5rem .75rem .375rem;">
+                ${replyCard}
+                <p class="dm-bubble-text">${_esc(msg.text)}</p>
+                <div class="dm-bubble-footer dm-msg-footer dm-bubble-footer--start">
+                  ${editedLabel}
+                  <span class="dm-bubble-time dm-bubble-time--dim">${time}</span>
+                  ${editBtn}
+                </div>
               </div>
             </div>
           </div>
@@ -1344,6 +1691,7 @@ function _cancelTypingListeners(threadUid) {
           </span>
         </div>
 
+        ${_buildReplyBar('dmStudentReplyBar', 'DM._clearStudentReply()')}
         <div style="display:flex;gap:.5rem;align-items:flex-end;box-sizing:border-box;width:100%;overflow:hidden;margin-top:.5rem;">
           <textarea id="dmInput" placeholder="Type your message…" rows="1"
                     style="flex:1;min-width:0;resize:none;overflow-y:hidden;
@@ -1375,6 +1723,7 @@ function _cancelTypingListeners(threadUid) {
     _watchPresence(uid, 'teacher', 'dmTeacherPresence', 'dmTeacherPresenceWatch');
     _watchTypingIndicator(uid, 'teacherTyping', 'dmStudentTypingBar', 'Master Timothy');
     _subscribeStudentMessages(uid);
+    _attachSwipeListeners('dmMessages', 'student');
   }
 
   function _subscribeStudentMessages(uid) {
@@ -1394,8 +1743,6 @@ function _cancelTypingListeners(threadUid) {
         }
         const msgs = [];
         snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
-        // Mark all teacher messages as delivered as soon as they arrive
-        // (student is online and inbox is open — _markRead will handle read)
         _markDelivered(uid, 'student').catch(() => {});
         _markRead(uid, 'student').catch(() => {});
         container.innerHTML = _renderMessagesWithDateSeps(msgs, uid, 'student');
@@ -1414,7 +1761,6 @@ function _cancelTypingListeners(threadUid) {
       const date = ts ? (ts.toDate ? ts.toDate() : new Date(ts)) : null;
       const dk   = date ? _dayKey(date) : null;
 
-      // If the day changes, inject a date separator and reset grouping
       if (dk && dk !== lastDayKey) {
         parts.push(`
           <div class="dm-date-sep">
@@ -1423,7 +1769,7 @@ function _cancelTypingListeners(threadUid) {
             <div class="dm-date-sep__line"></div>
           </div>`);
         lastDayKey   = dk;
-        lastSenderId = null; // reset grouping on new day
+        lastSenderId = null;
       }
 
       const senderId  = msg.senderId || msg.role || null;
@@ -1448,7 +1794,6 @@ function _cancelTypingListeners(threadUid) {
     const cls         = studentData.class || '';
     const btn         = document.getElementById('dmSendBtn');
 
-    // Clear typing indicator immediately on send
     _stopTyping(uid, 'student').catch(() => {});
 
     UI.setLoading(btn, true);
@@ -1464,11 +1809,22 @@ function _cancelTypingListeners(threadUid) {
     try {
       const batch  = Db().batch();
       const msgRef = _threadRef(uid).collection('messages').doc();
-      batch.set(msgRef, {
+
+      // Build the message payload; attach replyTo when the user replied to a message
+      const studentMsgData = {
         text, senderId: uid, senderName: name, role: 'student',
         status: teacherIsOnline ? 'delivered' : 'sent',
         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-      });
+      };
+      if (_studentReplyTo && _studentReplyTo.id) {
+        studentMsgData.replyTo = {
+          id:         _studentReplyTo.id,
+          text:       _studentReplyTo.text,
+          senderName: _studentReplyTo.senderName,
+        };
+      }
+      batch.set(msgRef, studentMsgData);
+
       batch.set(_threadRef(uid), {
         studentName: name, studentClass: cls,
         lastMessage: text.length > 80 ? text.substring(0, 80) + '…' : text,
@@ -1482,6 +1838,7 @@ function _cancelTypingListeners(threadUid) {
       UI.toast('Failed to send message. Please try again.', 'error');
       if (input) input.value = text;
     } finally {
+      _clearStudentReply();
       UI.setLoading(btn, false);
       if (input) { input.style.height = 'auto'; input.focus(); }
     }
@@ -1489,6 +1846,7 @@ function _cancelTypingListeners(threadUid) {
 
   function backFromStudentInbox() {
     _cancelTypingListeners(AppState.userId);
+    _clearStudentReply();
     AppState.cancelListener('dmStudentMessages');
     AppState.cancelListener('dmTeacherPresenceWatch');
     _closeOpenMenu();
@@ -1721,6 +2079,7 @@ function _cancelTypingListeners(threadUid) {
         </span>
       </div>
 
+      ${_buildReplyBar('dmTeacherReplyBar', 'DM._clearTeacherReply()')}
       <div style="padding:.625rem .875rem;border-top:1px solid var(--border,#e5e7eb);flex-shrink:0;
                   display:flex;gap:.5rem;align-items:flex-end;background:var(--surface,#fff);
                   box-sizing:border-box;width:100%;margin-top:.5rem;">
@@ -1760,10 +2119,12 @@ function _cancelTypingListeners(threadUid) {
     _watchPresence(studentUid, 'student', 'dmStudentPresence', 'dmStudentPresenceWatch');
     _watchTypingIndicator(studentUid, 'studentTyping', 'dmTeacherTypingBar', studentName);
     _subscribeTeacherMessages(studentUid);
+    _attachSwipeListeners('dmTeacherMessages', 'teacher');
   }
 
   function _backToThreadList() {
     _cancelTypingListeners(_activeStudentUid);
+    _clearTeacherReply();
     AppState.cancelListener('dmTeacherMessages');
     AppState.cancelListener('dmStudentPresenceWatch');
     _activeStudentUid   = null;
@@ -1807,7 +2168,6 @@ function _cancelTypingListeners(threadUid) {
         }
         const msgs = [];
         snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
-        // Mark student messages as delivered then read since teacher has this chat open
         _markDelivered(studentUid, 'teacher').catch(() => {});
         _markRead(studentUid, 'teacher').catch(() => {});
         container.innerHTML = _renderMessagesWithDateSeps(msgs, AppConfig.TEACHER_UID, 'teacher');
@@ -1823,7 +2183,6 @@ function _cancelTypingListeners(threadUid) {
 
     const btn = document.getElementById('dmTeacherSendBtn');
 
-    // Clear typing indicator immediately on send
     _stopTyping(studentUid, 'teacher').catch(() => {});
 
     UI.setLoading(btn, true);
@@ -1842,11 +2201,22 @@ function _cancelTypingListeners(threadUid) {
     try {
       const batch  = Db().batch();
       const msgRef = _threadRef(studentUid).collection('messages').doc();
-      batch.set(msgRef, {
+
+      // Build teacher message payload; attach replyTo when replying to a message
+      const teacherMsgData = {
         text, senderId: AppConfig.TEACHER_UID, senderName: 'Master Timothy',
         role: 'teacher', status: studentIsOnline ? 'delivered' : 'sent',
         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-      });
+      };
+      if (_teacherReplyTo && _teacherReplyTo.id) {
+        teacherMsgData.replyTo = {
+          id:         _teacherReplyTo.id,
+          text:       _teacherReplyTo.text,
+          senderName: _teacherReplyTo.senderName,
+        };
+      }
+      batch.set(msgRef, teacherMsgData);
+
       batch.set(_threadRef(studentUid), {
         studentName: resolvedName, studentClass: resolvedClass,
         lastMessage: text.length > 80 ? text.substring(0, 80) + '…' : text,
@@ -1860,6 +2230,7 @@ function _cancelTypingListeners(threadUid) {
       UI.toast('Failed to send reply. Please try again.', 'error');
       if (input) input.value = text;
     } finally {
+      _clearTeacherReply();
       UI.setLoading(btn, false);
       if (input) { input.style.height = 'auto'; input.focus(); }
     }
@@ -2014,7 +2385,6 @@ function _cancelTypingListeners(threadUid) {
     try {
       const threadSnap = await _threadRef(uid).get();
       if (!threadSnap.exists) {
-        // Only seed for brand-new threads — never overwrite existing ones
         await _threadRef(uid).set({
           studentName: name, studentClass: cls,
           studentUnread: 0, teacherUnread: 0, lastMessage: '',
@@ -2079,8 +2449,6 @@ function _cancelTypingListeners(threadUid) {
       AppState.dmStudentUnread = count;
       _updateStudentBadge(count);
 
-      // If there are unread messages from the teacher, mark them delivered
-      // immediately — student is online even if not inside the inbox
       if (count > 0) {
         _markDelivered(uid, 'student').catch(() => {});
       }
@@ -2096,7 +2464,6 @@ function _cancelTypingListeners(threadUid) {
     AppState.cancelListener('dmTeacherUnread');
     await _setTeacherOnlineGlobal();
 
-    // Initial delivery sweep on login
     try {
       const allThreads = await Db().collection('directMessages').get();
       const deliveryPromises = [];
@@ -2112,8 +2479,6 @@ function _cancelTypingListeners(threadUid) {
         const data = doc.data();
         total += (data.teacherUnread || 0);
 
-        // If this thread has unread student messages, mark them delivered
-        // immediately — teacher is online even if not inside that conversation
         if ((data.teacherUnread || 0) > 0) {
           _markDelivered(doc.id, 'teacher').catch(() => {});
         }
@@ -2125,12 +2490,15 @@ function _cancelTypingListeners(threadUid) {
   }
 
   async function cancelListeners() {
-    // Clean up any active typing state before everything else
     if (_typingActive && _typingCurrentUid && _typingCurrentRole) {
       _stopTyping(_typingCurrentUid, _typingCurrentRole).catch(() => {});
     }
     if (_typingDebounceTimer) { clearTimeout(_typingDebounceTimer); _typingDebounceTimer = null; }
     _typingActive = false;
+
+    // Clear any active reply state
+    _studentReplyTo = null;
+    _teacherReplyTo = null;
 
     AppState.cancelListener('dmStudentMessages');
     AppState.cancelListener('dmTeacherThreads');
@@ -2215,6 +2583,10 @@ function _cancelTypingListeners(threadUid) {
     cancelListeners,
     _updateStudentBadge,
     _updateTeacherBadge,
+    // Swipe-to-reply public API
+    _scrollToMsg,
+    _clearStudentReply,
+    _clearTeacherReply,
   };
 
-})();
+}());
