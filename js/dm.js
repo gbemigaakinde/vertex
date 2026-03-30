@@ -507,18 +507,19 @@
   }
 
   function _presenceHTML(isOnlineFlagHint, lastSeen) {
-    const actuallyOnline = isOnlineFlagHint || _isRecentlyActive(lastSeen);
-    if (actuallyOnline) {
-      return `<span class="dm-presence">
-        <span class="dm-presence__dot dm-presence__dot--online"></span>
-        <span class="dm-presence__label dm-presence__label--online">Online</span>
-      </span>`;
-    }
+  const actuallyOnline = _isRecentlyActive(lastSeen);
+
+  if (actuallyOnline) {
     return `<span class="dm-presence">
-      <span class="dm-presence__dot dm-presence__dot--offline"></span>
-      <span class="dm-presence__label">${_esc(_formatLastSeen(lastSeen))}</span>
+      <span class="dm-presence__dot dm-presence__dot--online"></span>
+      <span class="dm-presence__label dm-presence__label--online">Online</span>
     </span>`;
   }
+  return `<span class="dm-presence">
+    <span class="dm-presence__dot dm-presence__dot--offline"></span>
+    <span class="dm-presence__label">${_esc(_formatLastSeen(lastSeen))}</span>
+  </span>`;
+}
 
   let _studentOfflineCleanup      = null;
   let _teacherOfflineCleanup      = null;
@@ -1889,74 +1890,74 @@
   }
 
   function _subscribeTeacherThreadList() {
-    AppState.cancelListener('dmTeacherThreads');
+  AppState.cancelListener('dmTeacherThreads');
 
-    const unsub = Db()
-      .collection('directMessages').orderBy('lastAt', 'desc')
-      .onSnapshot(snap => {
-        const list = document.getElementById('dmThreadList');
-        if (!list) { AppState.cancelListener('dmTeacherThreads'); return; }
+  const unsub = Db()
+    .collection('directMessages').orderBy('lastAt', 'desc')
+    .onSnapshot(snap => {
+      const list = document.getElementById('dmThreadList');
+      if (!list) { AppState.cancelListener('dmTeacherThreads'); return; }
 
-        if (snap.empty) {
-          list.innerHTML = `<p style="font-size:.8125rem;color:var(--text-4,#9ca3af);text-align:center;padding:2rem 1rem;">No messages yet.</p>`;
-          return;
-        }
+      if (snap.empty) {
+        list.innerHTML = `<p style="font-size:.8125rem;color:var(--text-4,#9ca3af);text-align:center;padding:2rem 1rem;">No messages yet.</p>`;
+        return;
+      }
 
-        let totalUnread = 0;
-        const items = [];
-        snap.forEach(doc => {
-          totalUnread += (doc.data().teacherUnread || 0);
-          items.push({ id: doc.id, ...doc.data() });
-        });
+      let totalUnread = 0;
+      const items = [];
+      snap.forEach(doc => {
+        totalUnread += (doc.data().teacherUnread || 0);
+        items.push({ id: doc.id, ...doc.data() });
+      });
 
-        _updateTeacherBadge(totalUnread);
+      _updateTeacherBadge(totalUnread);
 
-        list.innerHTML = items.map(item => {
-          const unread   = item.teacherUnread || 0;
-          const isActive = _activeStudentUid === item.id;
-          const isOnline = !!(item.studentOnline) || _isRecentlyActive(item.studentLastSeen);
-          const timeStr  = item.lastAt
-            ? new Date(item.lastAt.toDate ? item.lastAt.toDate() : item.lastAt)
-                .toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-            : '';
+      list.innerHTML = items.map(item => {
+        const unread   = item.teacherUnread || 0;
+        const isActive = _activeStudentUid === item.id;
+        const isOnline = _isRecentlyActive(item.studentLastSeen);
+        const timeStr  = item.lastAt
+          ? new Date(item.lastAt.toDate ? item.lastAt.toDate() : item.lastAt)
+              .toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+          : '';
 
-          return `
-            <div class="dm-thread-item${isActive ? ' is-active' : ''}"
-                 data-uid="${_escAttr(item.id)}"
-                 data-name="${_escAttr(item.studentName || '')}"
-                 data-class="${_escAttr(item.studentClass || '')}"
-                 onclick="DM._openConversationFromEl(this)">
-              <div class="dm-thread-av">
-                <div class="dm-thread-av-circle${isOnline ? ' online' : ''}">
-                  ${_esc((item.studentName || '?').charAt(0).toUpperCase())}
-                </div>
-                ${isOnline ? `<span class="dm-thread-av-dot"></span>` : ''}
+        return `
+          <div class="dm-thread-item${isActive ? ' is-active' : ''}"
+               data-uid="${_escAttr(item.id)}"
+               data-name="${_escAttr(item.studentName || '')}"
+               data-class="${_escAttr(item.studentClass || '')}"
+               onclick="DM._openConversationFromEl(this)">
+            <div class="dm-thread-av">
+              <div class="dm-thread-av-circle${isOnline ? ' online' : ''}">
+                ${_esc((item.studentName || '?').charAt(0).toUpperCase())}
               </div>
-              <div class="dm-thread-bd">
-                <div class="dm-thread-r1">
-                  <span class="dm-thread-name">${_esc(item.studentName || 'Unknown')}</span>
-                  <span class="dm-thread-date">${_esc(timeStr)}</span>
-                </div>
-                <div class="dm-thread-presence${isOnline ? ' online' : ''}">
-                  ${isOnline
-                    ? '&#x25cf; Online'
-                    : item.studentLastSeen
-                      ? _esc(_formatLastSeen(item.studentLastSeen))
-                      : 'Offline'}
-                </div>
-                <div class="dm-thread-r2">
-                  <span class="dm-thread-preview">${_esc(item.lastMessage || 'No messages yet')}</span>
-                  ${unread > 0 ? `<span class="dm-thread-badge">${unread > 9 ? '9+' : unread}</span>` : ''}
-                </div>
-                <span class="dm-thread-class">${_esc(item.studentClass || '—')}</span>
+              ${isOnline ? `<span class="dm-thread-av-dot"></span>` : ''}
+            </div>
+            <div class="dm-thread-bd">
+              <div class="dm-thread-r1">
+                <span class="dm-thread-name">${_esc(item.studentName || 'Unknown')}</span>
+                <span class="dm-thread-date">${_esc(timeStr)}</span>
               </div>
-            </div>`;
-        }).join('');
+              <div class="dm-thread-presence${isOnline ? ' online' : ''}">
+                ${isOnline
+                  ? '&#x25cf; Online'
+                  : item.studentLastSeen
+                    ? _esc(_formatLastSeen(item.studentLastSeen))
+                    : 'Offline'}
+              </div>
+              <div class="dm-thread-r2">
+                <span class="dm-thread-preview">${_esc(item.lastMessage || 'No messages yet')}</span>
+                ${unread > 0 ? `<span class="dm-thread-badge">${unread > 9 ? '9+' : unread}</span>` : ''}
+              </div>
+              <span class="dm-thread-class">${_esc(item.studentClass || '—')}</span>
+            </div>
+          </div>`;
+      }).join('');
 
-      }, err => console.error('[dm] Teacher thread list error:', err));
+    }, err => console.error('[dm] Teacher thread list error:', err));
 
-    AppState.registerListener('dmTeacherThreads', unsub);
-  }
+  AppState.registerListener('dmTeacherThreads', unsub);
+}
 
   let _activeStudentUid  = null;
   window._dmActiveUid    = null;
