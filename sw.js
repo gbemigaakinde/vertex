@@ -143,7 +143,6 @@ self.addEventListener('fetch', event => {
 
   if (url.pathname === '/sw.js') return;
 
-  // Bypass Firebase, Google APIs, gstatic (FCM token endpoints), etc.
   if (BYPASS_ORIGINS.some(origin => url.hostname.includes(origin))) return;
 
   if (!url.protocol.startsWith('http')) return;
