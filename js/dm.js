@@ -1,13 +1,41 @@
 /* ============================================================
-   js/dm.js — Direct Messaging + Presence System (v2)
+   js/dm.js — Direct Messaging + Presence System (v3)
    ============================================================ */
 
 (function () {
   'use strict';
 
-  const HEARTBEAT_INTERVAL_MS = 25_000;
-  const ONLINE_THRESHOLD_MS   = 60_000;
+  /* ── Constants ─────────────────────────────────────────────── */
+  const HEARTBEAT_INTERVAL_MS  = 20_000;   // write online every 20 s
+  const ONLINE_THRESHOLD_MS    = 55_000;   // grace: 2 missed beats + margin
+  const PRESENCE_REFRESH_MS    = 15_000;   // re-evaluate dots locally
 
+  /* ── Module-level presence refresh timer ───────────────────── */
+  let _presenceRefreshTimer = null;
+
+  function _startPresenceRefreshTimer() {
+    if (_presenceRefreshTimer) return;
+    _presenceRefreshTimer = setInterval(_refreshAllPresenceElements, PRESENCE_REFRESH_MS);
+  }
+
+  function _stopPresenceRefreshTimer() {
+    if (_presenceRefreshTimer) { clearInterval(_presenceRefreshTimer); _presenceRefreshTimer = null; }
+  }
+
+  /**
+   * Re-renders every [data-presence-ts] element already in the DOM
+   * using only the cached timestamp — zero extra Firestore reads.
+   */
+  function _refreshAllPresenceElements() {
+    document.querySelectorAll('[data-presence-ts]').forEach(el => {
+      const raw = el.dataset.presenceTs;
+      if (!raw) return;
+      const ts = raw === 'null' ? null : new Date(parseInt(raw, 10));
+      el.innerHTML = _presenceHTML(ts);
+    });
+  }
+
+  /* ── Offline-persistence bootstrap ────────────────────────── */
   (function _enableOfflinePersistence() {
     try {
       const db = window.fbDb;
@@ -15,24 +43,49 @@
       db.enablePersistence({ synchronizeTabs: true })
         .then(() => { db._persistenceEnabled = true; })
         .catch(err => {
-          // "failed-precondition" → another tab already owns persistence (fine)
-          // "unimplemented"       → browser doesn't support it (fine, degrade silently)
           if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') {
             console.warn('[dm] Firestore persistence error:', err);
           }
-          db._persistenceEnabled = true; // treat as done regardless
+          db._persistenceEnabled = true;
         });
     } catch (e) {
       console.warn('[dm] Could not enable Firestore persistence:', e);
     }
   }());
 
+  /* ── Presence helpers ──────────────────────────────────────── */
   function _isRecentlyActive(ts) {
     if (!ts) return false;
     const date = ts.toDate ? ts.toDate() : new Date(ts);
     return (Date.now() - date.getTime()) <= ONLINE_THRESHOLD_MS;
   }
 
+  /** Returns the millisecond epoch for a Firestore or JS timestamp, or null. */
+  function _tsToMs(ts) {
+    if (!ts) return null;
+    if (ts.toDate) return ts.toDate().getTime();
+    if (ts instanceof Date) return ts.getTime();
+    return parseInt(ts, 10) || null;
+  }
+
+  function _presenceHTML(ts) {
+    const tsMs = _tsToMs(ts);
+    const online = tsMs !== null && (Date.now() - tsMs) <= ONLINE_THRESHOLD_MS;
+    const attr   = `data-presence-ts="${tsMs ?? 'null'}"`;
+
+    if (online) {
+      return `<span class="dm-presence" ${attr}>
+        <span class="dm-presence__dot dm-presence__dot--online"></span>
+        <span class="dm-presence__label dm-presence__label--online">Online</span>
+      </span>`;
+    }
+    return `<span class="dm-presence" ${attr}>
+      <span class="dm-presence__dot dm-presence__dot--offline"></span>
+      <span class="dm-presence__label">${_esc(_formatLastSeen(ts))}</span>
+    </span>`;
+  }
+
+  /* ── SVG icon helpers ──────────────────────────────────────── */
   function _iconLock(size) {
     size = size || 14;
     return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none"
@@ -110,7 +163,6 @@
       </span>`;
     }
     if (status === 'pending') {
-      // FIX 4: Clock icon shown while Firestore is queuing an offline write
       return `<span class="dm-ticks dm-ticks--pending" title="Pending — will send when online" aria-label="Pending">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <circle cx="12" cy="12" r="9" stroke="rgba(255,255,255,0.5)" stroke-width="1.75"/>
@@ -125,6 +177,7 @@
     </span>`;
   }
 
+  /* ── CSS injection ─────────────────────────────────────────── */
   function _injectStyles() {
     if (document.getElementById('_dmStyles')) return;
     const style = document.createElement('style');
@@ -151,64 +204,36 @@
       }
 
       #dmTeacherShell {
-        position:relative;
-        width:100%;
-        max-width:100%;
-        min-width:0;
-        box-sizing:border-box;
-        overflow:hidden;
+        position:relative;width:100%;max-width:100%;min-width:0;
+        box-sizing:border-box;overflow:hidden;
       }
 
       #teacher-dm {
-        width:100%;
-        max-width:100%;
-        min-width:0;
-        box-sizing:border-box;
-        overflow:hidden;
+        width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow:hidden;
       }
 
       .dm-thread-list-wrap {
-        width:100%;
-        max-width:100%;
-        min-width:0;
-        overflow-x:hidden;
-        overflow-y:auto;
-        box-sizing:border-box;
+        width:100%;max-width:100%;min-width:0;
+        overflow-x:hidden;overflow-y:auto;box-sizing:border-box;
       }
 
       .dm-thread-item {
-        display:flex;
-        align-items:flex-start;
-        gap:.75rem;
-        padding:.75rem 1rem;
-        cursor:pointer;
-        border-bottom:1px solid var(--border,#e5e7eb);
-        background:transparent;
-        transition:background .12s ease;
-        box-sizing:border-box;
-        width:100%;
-        max-width:100%;
-        min-width:0;
-        overflow:hidden;
+        display:flex;align-items:flex-start;gap:.75rem;padding:.75rem 1rem;cursor:pointer;
+        border-bottom:1px solid var(--border,#e5e7eb);background:transparent;
+        transition:background .12s ease;box-sizing:border-box;
+        width:100%;max-width:100%;min-width:0;overflow:hidden;
       }
       .dm-thread-item:last-child { border-bottom:none; }
       .dm-thread-item:hover { background:var(--bg-subtle,#f5f5f7); }
       .dm-thread-item.is-active { background:var(--accent-subtle,rgba(79,110,247,.07)); }
 
-      .dm-thread-av {
-        flex-shrink:0;
-        position:relative;
-        width:42px;
-        height:42px;
-        min-width:42px;
-      }
+      .dm-thread-av { flex-shrink:0;position:relative;width:42px;height:42px;min-width:42px; }
       .dm-thread-av-circle {
         width:42px;height:42px;border-radius:50%;
         background:var(--accent-subtle,rgba(79,110,247,.08));
         border:1.5px solid var(--accent-border,rgba(79,110,247,.25));
         display:flex;align-items:center;justify-content:center;
-        font-size:.9375rem;font-weight:700;color:var(--accent-text,#2d49d6);
-        flex-shrink:0;
+        font-size:.9375rem;font-weight:700;color:var(--accent-text,#2d49d6);flex-shrink:0;
       }
       .dm-thread-av-circle.online { border-color:#22c45e; }
       .dm-thread-av-dot {
@@ -217,68 +242,42 @@
         background:#22c45e;border:2px solid var(--bg-base,#fff);
       }
 
-      .dm-thread-bd {
-        flex:1 1 0%;
-        min-width:0;
-        max-width:100%;
-        overflow:hidden;
-      }
-
+      .dm-thread-bd { flex:1 1 0%;min-width:0;max-width:100%;overflow:hidden; }
       .dm-thread-r1 {
-        display:flex;
-        align-items:baseline;
-        justify-content:space-between;
-        gap:.375rem;
-        margin-bottom:1px;
-        min-width:0;
-        overflow:hidden;
+        display:flex;align-items:baseline;justify-content:space-between;
+        gap:.375rem;margin-bottom:1px;min-width:0;overflow:hidden;
       }
       .dm-thread-name {
         font-size:.875rem;font-weight:700;color:var(--text-1,#0d0d0f);
-        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-        flex:1 1 0%;min-width:0;
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1 1 0%;min-width:0;
       }
-      .dm-thread-date {
-        font-size:.6875rem;color:var(--text-4,#9ca3af);
-        flex-shrink:0;white-space:nowrap;
-      }
+      .dm-thread-date { font-size:.6875rem;color:var(--text-4,#9ca3af);flex-shrink:0;white-space:nowrap; }
       .dm-thread-presence {
         font-size:.6875rem;color:var(--text-3,#6b7280);margin-bottom:1px;
-        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-        max-width:100%;
-        display:block;
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;display:block;
       }
       .dm-thread-presence.online { color:#22c45e;font-weight:600; }
 
       .dm-thread-r2 {
-        display:flex;
-        align-items:center;
-        justify-content:space-between;
-        gap:.375rem;
-        min-width:0;
-        overflow:hidden;
+        display:flex;align-items:center;justify-content:space-between;
+        gap:.375rem;min-width:0;overflow:hidden;
       }
       .dm-thread-preview {
         font-size:.8125rem;color:var(--text-3,#6b7280);
-        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-        flex:1 1 0%;min-width:0;
+        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1 1 0%;min-width:0;
       }
       .dm-thread-badge {
         flex-shrink:0;min-width:20px;height:20px;border-radius:99px;
         background:var(--danger,#e03b3b);color:#fff;
         font-size:.625rem;font-weight:700;
-        display:flex;align-items:center;justify-content:center;
-        padding:0 5px;line-height:1;
+        display:flex;align-items:center;justify-content:center;padding:0 5px;line-height:1;
       }
       .dm-thread-class {
-        display:block;
-        font-size:.625rem;font-weight:500;
-        color:var(--accent-text,#2d49d6);
-        background:var(--accent-subtle,rgba(79,110,247,.08));
+        display:block;font-size:.625rem;font-weight:500;
+        color:var(--accent-text,#2d49d6);background:var(--accent-subtle,rgba(79,110,247,.08));
         border:1px solid var(--accent-border,rgba(79,110,247,.25));
         border-radius:4px;padding:1px 6px;margin-top:3px;white-space:nowrap;
-        max-width:100%;overflow:hidden;text-overflow:ellipsis;
-        width:fit-content;
+        max-width:100%;overflow:hidden;text-overflow:ellipsis;width:fit-content;
       }
 
       .dm-new-conv-overlay {
@@ -291,14 +290,12 @@
         background:var(--bg-base,#fff);border-radius:14px;
         width:min(480px,94vw);padding:1.25rem 1.5rem;
         box-shadow:0 20px 60px rgba(0,0,0,.2);
-        border:1px solid var(--border,#e5e7eb);
-        box-sizing:border-box;
+        border:1px solid var(--border,#e5e7eb);box-sizing:border-box;
       }
       .dm-action-menu {
-        position:absolute;z-index:200;
-        background:var(--bg-base,#fff);border:1px solid var(--border,#e5e7eb);
-        border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.12);
-        min-width:148px;overflow:hidden;animation:dmFadeIn .1s ease;
+        position:absolute;z-index:200;background:var(--bg-base,#fff);
+        border:1px solid var(--border,#e5e7eb);border-radius:8px;
+        box-shadow:0 6px 20px rgba(0,0,0,.12);min-width:148px;overflow:hidden;animation:dmFadeIn .1s ease;
       }
       .dm-action-menu-item {
         display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;
@@ -328,14 +325,12 @@
       .dm-history-overlay {
         position:fixed;inset:0;background:rgba(0,0,0,.5);
         display:flex;align-items:center;justify-content:center;
-        z-index:10000;padding:1rem;animation:dmFadeIn .15s ease;
-        box-sizing:border-box;
+        z-index:10000;padding:1rem;animation:dmFadeIn .15s ease;box-sizing:border-box;
       }
       .dm-history-modal {
         background:var(--bg-base,#fff);border-radius:12px;
         width:min(460px,96vw);max-height:80vh;display:flex;flex-direction:column;
-        box-shadow:0 20px 60px rgba(0,0,0,.22);border:1px solid var(--border,#e5e7eb);
-        box-sizing:border-box;
+        box-shadow:0 20px 60px rgba(0,0,0,.22);border:1px solid var(--border,#e5e7eb);box-sizing:border-box;
       }
       .dm-history-header {
         display:flex;align-items:center;justify-content:space-between;
@@ -352,96 +347,38 @@
       .dm-history-current p { font-weight:500; }
 
       .dm-msg-out {
-        display:flex;
-        flex-direction:column;
-        align-items:flex-end;
-        margin-bottom:.75rem;
-        padding-left:20%;
-        box-sizing:border-box;
-        width:100%;
-        max-width:100%;
-        min-width:0;
+        display:flex;flex-direction:column;align-items:flex-end;
+        margin-bottom:.75rem;padding-left:20%;box-sizing:border-box;width:100%;max-width:100%;min-width:0;
       }
       .dm-msg-in {
-        display:flex;
-        flex-direction:column;
-        align-items:flex-start;
-        margin-bottom:.75rem;
-        padding-right:20%;
-        box-sizing:border-box;
-        width:100%;
-        max-width:100%;
-        min-width:0;
+        display:flex;flex-direction:column;align-items:flex-start;
+        margin-bottom:.75rem;padding-right:20%;box-sizing:border-box;width:100%;max-width:100%;min-width:0;
       }
-      .dm-bubble-wrap {
-        display:inline-flex;
-        flex-direction:column;
-        max-width:100%;
-        min-width:0;
-      }
+      .dm-bubble-wrap { display:inline-flex;flex-direction:column;max-width:100%;min-width:0; }
       .dm-bubble-inner {
-        word-break:break-word;
-        overflow-wrap:break-word;
-        display:block;
-        max-width:100%;
-        box-sizing:border-box;
-        position:relative;
+        word-break:break-word;overflow-wrap:break-word;display:block;
+        max-width:100%;box-sizing:border-box;position:relative;
       }
-      .dm-bubble-text {
-        font-size:.9375rem;
-        line-height:1.5;
-        white-space:pre-wrap;
-        word-break:break-word;
-        overflow-wrap:break-word;
-        margin:0;
-      }
-      .dm-bubble-footer {
-        display:flex;
-        align-items:center;
-        gap:3px;
-        margin-top:2px;
-      }
-      .dm-bubble-footer--end  { justify-content:flex-end; }
-      .dm-bubble-footer--start{ justify-content:flex-start; }
-      .dm-bubble-time {
-        font-size:.625rem;
-        opacity:.7;
-        line-height:1;
-        white-space:nowrap;
-        flex-shrink:0;
-      }
+      .dm-bubble-text { font-size:.9375rem;line-height:1.5;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;margin:0; }
+      .dm-bubble-footer { display:flex;align-items:center;gap:3px;margin-top:2px; }
+      .dm-bubble-footer--end   { justify-content:flex-end; }
+      .dm-bubble-footer--start { justify-content:flex-start; }
+      .dm-bubble-time { font-size:.625rem;opacity:.7;line-height:1;white-space:nowrap;flex-shrink:0; }
       .dm-bubble-time--dim { opacity:.55; }
 
-      .dm-messages-area {
-        overflow-y:auto;
-        overflow-x:hidden;
-        box-sizing:border-box;
-        width:100%;
-        max-width:100%;
-        min-width:0;
-      }
+      .dm-messages-area { overflow-y:auto;overflow-x:hidden;box-sizing:border-box;width:100%;max-width:100%;min-width:0; }
 
-      .dm-picker-row {
-        min-width:0;
-        overflow:hidden;
-      }
+      .dm-picker-row { min-width:0;overflow:hidden; }
 
-      #teacher-dm {
-        overflow:hidden !important;
-        min-width:0;
-        box-sizing:border-box;
-      }
+      #teacher-dm { overflow:hidden !important;min-width:0;box-sizing:border-box; }
 
-      /* ── Swipe-to-reply styles ── */
       .dm-reply-bar {
         display:none;align-items:center;gap:.5rem;
         padding:.375rem .625rem;margin:.375rem 0 0;
         background:var(--accent-subtle,rgba(79,110,247,.07));
-        border-left:3px solid var(--accent,#4f6ef7);
-        border-radius:0 6px 6px 0;
+        border-left:3px solid var(--accent,#4f6ef7);border-radius:0 6px 6px 0;
         font-size:.75rem;color:var(--text-2,#3a3a40);
-        box-sizing:border-box;width:100%;overflow:hidden;
-        animation:dmFadeIn .12s ease;
+        box-sizing:border-box;width:100%;overflow:hidden;animation:dmFadeIn .12s ease;
       }
       .dm-reply-bar.visible { display:flex; }
       .dm-reply-bar__name { font-weight:700;color:var(--accent-text,#2d49d6);white-space:nowrap;flex-shrink:0; }
@@ -450,41 +387,27 @@
       .dm-reply-bar__close:hover { color:var(--text-2,#3a3a40); }
 
       .dm-reply-card {
-        margin-bottom:.375rem;
-        padding:.3rem .5rem;
-        border-left:3px solid rgba(255,255,255,.5);
-        border-radius:0 5px 5px 0;
-        background:rgba(0,0,0,.12);
-        cursor:pointer;
-        font-size:.75rem;line-height:1.4;
-        overflow:hidden;
+        margin-bottom:.375rem;padding:.3rem .5rem;
+        border-left:3px solid rgba(255,255,255,.5);border-radius:0 5px 5px 0;
+        background:rgba(0,0,0,.12);cursor:pointer;font-size:.75rem;line-height:1.4;overflow:hidden;
       }
-      .dm-msg-in .dm-reply-card {
-        border-left-color:var(--accent,#4f6ef7);
-        background:var(--accent-subtle,rgba(79,110,247,.08));
-      }
+      .dm-msg-in .dm-reply-card { border-left-color:var(--accent,#4f6ef7);background:var(--accent-subtle,rgba(79,110,247,.08)); }
       .dm-reply-card__name { font-weight:700;display:block;margin-bottom:1px; }
       .dm-msg-out .dm-reply-card__name { color:rgba(255,255,255,.9); }
-      .dm-msg-in .dm-reply-card__name  { color:var(--accent-text,#2d49d6); }
-      .dm-reply-card__text { display:block;opacity:.8;
-        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%; }
+      .dm-msg-in  .dm-reply-card__name { color:var(--accent-text,#2d49d6); }
+      .dm-reply-card__text { display:block;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%; }
 
       .dm-swipe-wrap {
         position:relative;overflow:hidden;
-        width:100%;max-width:100%;min-width:0;box-sizing:border-box;
-        touch-action:pan-y;
+        width:100%;max-width:100%;min-width:0;box-sizing:border-box;touch-action:pan-y;
       }
-      .dm-swipe-wrap .dm-swipe-inner {
-        transition:transform .2s ease;
-        will-change:transform;
-      }
+      .dm-swipe-wrap .dm-swipe-inner { transition:transform .2s ease;will-change:transform; }
       .dm-swipe-hint {
         position:absolute;top:50%;transform:translateY(-50%);
         display:flex;align-items:center;justify-content:center;
         width:32px;height:32px;border-radius:50%;
-        background:var(--accent-subtle,rgba(79,110,247,.15));
-        color:var(--accent,#4f6ef7);opacity:0;pointer-events:none;
-        transition:opacity .15s;
+        background:var(--accent-subtle,rgba(79,110,247,.15));color:var(--accent,#4f6ef7);
+        opacity:0;pointer-events:none;transition:opacity .15s;
       }
       .dm-msg-out .dm-swipe-hint { right:calc(100% + 8px); }
       .dm-msg-in  .dm-swipe-hint { left:calc(100% + 8px); }
@@ -492,6 +415,7 @@
     document.head.appendChild(style);
   }
 
+  /* ── Date/time helpers ─────────────────────────────────────── */
   function _dateLabelFor(date) {
     const now       = new Date();
     const today     = new Date(now.getFullYear(), now.getMonth(), now.getDate());
@@ -519,14 +443,11 @@
     if (diffMins < 60) return `Last seen: ${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
     const isToday = date.toDateString() === now.toDateString();
     if (isToday) {
-      return 'Last seen today at ' +
-        date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      return 'Last seen today at ' + date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     }
-    const yesterday = new Date(now);
-    yesterday.setDate(now.getDate() - 1);
+    const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
     if (date.toDateString() === yesterday.toDateString()) {
-      return 'Last seen yesterday at ' +
-        date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+      return 'Last seen yesterday at ' + date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
     }
     return 'Last seen ' +
       date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) +
@@ -534,20 +455,11 @@
       date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   }
 
-  function _presenceHTML(isOnlineFlagHint, lastSeen) {
-    const actuallyOnline = _isRecentlyActive(lastSeen);
-
-    if (actuallyOnline) {
-      return `<span class="dm-presence">
-        <span class="dm-presence__dot dm-presence__dot--online"></span>
-        <span class="dm-presence__label dm-presence__label--online">Online</span>
-      </span>`;
-    }
-    return `<span class="dm-presence">
-      <span class="dm-presence__dot dm-presence__dot--offline"></span>
-      <span class="dm-presence__label">${_esc(_formatLastSeen(lastSeen))}</span>
-    </span>`;
-  }
+  /* ══════════════════════════════════════════════════════════════
+     PRESENCE — STUDENT
+     Writes to BOTH directMessages/{uid} AND students/{uid} so that
+     watchers on either document always see a fresh lastSeen.
+  ══════════════════════════════════════════════════════════════ */
 
   let _studentOfflineCleanup      = null;
   let _teacherOfflineCleanup      = null;
@@ -562,6 +474,32 @@
   let _studentHeartbeatHandle = null;
   let _teacherHeartbeatHandle = null;
 
+  /** Write a single student heartbeat to both docs. */
+  async function _writeStudentOnline(uid) {
+    const ts    = firebase.firestore.FieldValue.serverTimestamp();
+    const batch = Db().batch();
+    batch.set(_threadRef(uid),
+      { studentLastSeen: ts, studentOnline: true },
+      { merge: true });
+    batch.set(Db().collection('students').doc(uid),
+      { lastSeen: ts, isOnline: true },
+      { merge: true });
+    await batch.commit();
+  }
+
+  /** Write student offline (stale timestamp) to both docs. */
+  async function _writeStudentOffline(uid) {
+    const ts    = new Date(Date.now() - (ONLINE_THRESHOLD_MS + 2000));
+    const batch = Db().batch();
+    batch.set(_threadRef(uid),
+      { studentOnline: false, studentLastSeen: ts },
+      { merge: true });
+    batch.set(Db().collection('students').doc(uid),
+      { isOnline: false, lastSeen: ts },
+      { merge: true });
+    await batch.commit();
+  }
+
   function _startStudentHeartbeat(uid) {
     _stopStudentHeartbeat();
     _studentHeartbeatHandle = setInterval(async () => {
@@ -570,12 +508,8 @@
         return;
       }
       if (document.visibilityState === 'hidden') return;
-      const ts = firebase.firestore.FieldValue.serverTimestamp();
       try {
-        const b = Db().batch();
-        b.set(_threadRef(uid), { studentLastSeen: ts, studentOnline: true }, { merge: true });
-        b.update(Db().collection('students').doc(uid), { lastSeen: ts, isOnline: true });
-        await b.commit();
+        await _writeStudentOnline(uid);
       } catch (e) {
         console.warn('[dm] Student heartbeat write failed:', e);
       }
@@ -583,10 +517,7 @@
   }
 
   function _stopStudentHeartbeat() {
-    if (_studentHeartbeatHandle) {
-      clearInterval(_studentHeartbeatHandle);
-      _studentHeartbeatHandle = null;
-    }
+    if (_studentHeartbeatHandle) { clearInterval(_studentHeartbeatHandle); _studentHeartbeatHandle = null; }
   }
 
   function _startTeacherHeartbeat() {
@@ -600,9 +531,7 @@
       try {
         const ts = firebase.firestore.FieldValue.serverTimestamp();
         await Db().collection('teacherPresence').doc('global').set(
-          { online: true, lastSeen: ts },
-          { merge: true }
-        );
+          { online: true, lastSeen: ts }, { merge: true });
       } catch (e) {
         console.warn('[dm] Teacher heartbeat write failed:', e);
       }
@@ -610,44 +539,25 @@
   }
 
   function _stopTeacherHeartbeat() {
-    if (_teacherHeartbeatHandle) {
-      clearInterval(_teacherHeartbeatHandle);
-      _teacherHeartbeatHandle = null;
-    }
+    if (_teacherHeartbeatHandle) { clearInterval(_teacherHeartbeatHandle); _teacherHeartbeatHandle = null; }
   }
 
   async function _setStudentOnlineGlobal(uid) {
     _studentOfflineDone = false;
     try {
-      const ts    = firebase.firestore.FieldValue.serverTimestamp();
-      const batch = Db().batch();
-      batch.set(_threadRef(uid), { studentOnline: true, studentLastSeen: ts }, { merge: true });
-      batch.update(Db().collection('students').doc(uid), { isOnline: true, lastSeen: ts });
-      await batch.commit();
+      await _writeStudentOnline(uid);
     } catch (e) {
-      try {
-        const ts = firebase.firestore.FieldValue.serverTimestamp();
-        await _threadRef(uid).set({ studentOnline: true, studentLastSeen: ts }, { merge: true });
-      } catch (e2) {
-        console.warn('[dm] Could not set studentOnline=true:', e2);
-        return;
-      }
+      console.warn('[dm] Could not set studentOnline=true:', e);
+      return;
     }
     _startStudentHeartbeat(uid);
-
-    const offlineTs = () => new Date(Date.now() - (ONLINE_THRESHOLD_MS + 1000));
+    _startPresenceRefreshTimer();
 
     const goOffline = async () => {
       if (_studentOfflineDone) return;
       _studentOfflineDone = true;
       _stopStudentHeartbeat();
-      try {
-        const ts = offlineTs();
-        const b = Db().batch();
-        b.set(_threadRef(uid), { studentOnline: false, studentLastSeen: ts }, { merge: true });
-        try { b.update(Db().collection('students').doc(uid), { isOnline: false, lastSeen: ts }); } catch (_) {}
-        await b.commit();
-      } catch (e) { console.warn('[dm] studentOffline write failed:', e); }
+      try { await _writeStudentOffline(uid); } catch (e) { console.warn('[dm] studentOffline write failed:', e); }
     };
     _studentOfflineCleanup = goOffline;
 
@@ -656,16 +566,8 @@
         _stopStudentHeartbeat();
       } else {
         if (firebase.auth().currentUser && !_studentOfflineDone) {
-          (async () => {
-            const ts = firebase.firestore.FieldValue.serverTimestamp();
-            try {
-              const b = Db().batch();
-              b.set(_threadRef(uid), { studentOnline: true, studentLastSeen: ts }, { merge: true });
-              b.update(Db().collection('students').doc(uid), { isOnline: true, lastSeen: ts });
-              await b.commit();
-            } catch (_) {}
-            await _markDelivered(uid, 'student').catch(() => {});
-          })();
+          _writeStudentOnline(uid).catch(() => {});
+          _markDelivered(uid, 'student').catch(() => {});
           _startStudentHeartbeat(uid);
         }
       }
@@ -676,9 +578,9 @@
       if (_studentOfflineDone) return;
       _studentOfflineDone = true;
       _stopStudentHeartbeat();
-      const ts = offlineTs();
+      const ts = new Date(Date.now() - (ONLINE_THRESHOLD_MS + 2000));
       try { _threadRef(uid).set({ studentOnline: false, studentLastSeen: ts }, { merge: true }); } catch (_) {}
-      try { Db().collection('students').doc(uid).update({ isOnline: false, lastSeen: ts }); } catch (_) {}
+      try { Db().collection('students').doc(uid).set({ isOnline: false, lastSeen: ts }, { merge: true }); } catch (_) {}
     };
     window.addEventListener('beforeunload', _studentBeforeunloadHandler);
   }
@@ -693,6 +595,7 @@
       return;
     }
     _startTeacherHeartbeat();
+    _startPresenceRefreshTimer();
 
     const goOffline = async () => {
       if (_teacherOfflineDone) return;
@@ -705,21 +608,18 @@
     };
     _teacherOfflineCleanup = goOffline;
 
-    // Tab-restore for teacher also writes only to global, not all threads.
     _teacherVisibilityHandler = () => {
       if (document.visibilityState === 'hidden') {
         _stopTeacherHeartbeat();
       } else {
         if (firebase.auth().currentUser && !_teacherOfflineDone) {
-          // Write only to the single global presence document
           const ts = firebase.firestore.FieldValue.serverTimestamp();
           Db().collection('teacherPresence').doc('global')
             .set({ online: true, lastSeen: ts }, { merge: true })
             .catch(() => {});
           _startTeacherHeartbeat();
-          // Delivery sweep across all threads still runs — this is a read-then-write
-          // operation that only happens once on tab-restore, not on every heartbeat,
-          // so the cost is acceptable.
+          // Delivery sweep: upgrade sent → delivered for messages the teacher
+          // receives across all threads now that they're back.
           (async () => {
             try {
               const allThreads = await Db().collection('directMessages').get();
@@ -741,7 +641,7 @@
       _teacherIsOnline    = false;
       _stopTeacherHeartbeat();
       const db = Db();
-      const ts = new Date(Date.now() - (ONLINE_THRESHOLD_MS + 1000));
+      const ts = new Date(Date.now() - (ONLINE_THRESHOLD_MS + 2000));
       try { db.collection('teacherPresence').doc('global').set({ online: false, lastSeen: ts }, { merge: true }); } catch (_) {}
       try {
         db.collection('directMessages').get().then(snap => {
@@ -760,18 +660,10 @@
     const ts = firebase.auth().currentUser
       ? firebase.firestore.FieldValue.serverTimestamp()
       : new Date();
+    const presenceTs = isOnline ? ts : new Date(Date.now() - (ONLINE_THRESHOLD_MS + 2000));
 
-    // When going offline, write a timestamp guaranteed to be outside the
-    // online threshold so _isRecentlyActive immediately returns false.
-    const presenceTs = isOnline
-      ? ts
-      : new Date(Date.now() - (ONLINE_THRESHOLD_MS + 1000));
-
-    // Always write to the global sentinel document
     await db.collection('teacherPresence').doc('global').set(
-      { online: isOnline, lastSeen: presenceTs },
-      { merge: true }
-    );
+      { online: isOnline, lastSeen: presenceTs }, { merge: true });
 
     const snap = await db.collection('directMessages').get();
     if (snap.empty) return;
@@ -779,70 +671,91 @@
     snap.forEach(doc => refs.push(doc.ref));
     for (let i = 0; i < refs.length; i += 400) {
       const batch = db.batch();
-      refs.slice(i, i + 400).forEach(ref => batch.set(ref,
-        { teacherOnline: isOnline, teacherLastSeen: presenceTs },
-        { merge: true }
-      ));
+      refs.slice(i, i + 400).forEach(ref =>
+        batch.set(ref, { teacherOnline: isOnline, teacherLastSeen: presenceTs }, { merge: true }));
       await batch.commit();
     }
   }
 
+  /* ── Presence watchers ─────────────────────────────────────── */
   function _watchPresence(studentUid, watchRole, elementId, listenerKey) {
     AppState.cancelListener(listenerKey);
 
     if (watchRole === 'teacher') {
-      // Watch the single global presence document — 1 read shared across all students
       const unsub = Db().collection('teacherPresence').doc('global').onSnapshot(snap => {
         const el = document.getElementById(elementId);
         if (!el) { AppState.cancelListener(listenerKey); return; }
         const data = (snap.exists && snap.data()) || {};
-        el.innerHTML = _presenceHTML(!!data.online, data.lastSeen || null);
+        el.innerHTML = _presenceHTML(data.lastSeen || null);
       }, err => console.warn('[dm] Teacher presence watch error:', err));
       AppState.registerListener(listenerKey, unsub);
       return;
     }
 
-    // Student presence: watch the thread document (unchanged)
+    // Student presence: watch thread doc (has studentLastSeen from heartbeat)
     const unsub = _threadRef(studentUid).onSnapshot(snap => {
       const el = document.getElementById(elementId);
       if (!el) { AppState.cancelListener(listenerKey); return; }
       if (snap.exists) {
         const data = snap.data() || {};
-        el.innerHTML = _presenceHTML(!!data.studentOnline, data.studentLastSeen || null);
+        el.innerHTML = _presenceHTML(data.studentLastSeen || null);
       } else {
+        // Thread doc doesn't exist yet — fall back to the students profile doc
         Db().collection('students').doc(studentUid).get().then(profileSnap => {
           const el2 = document.getElementById(elementId);
           if (!el2) return;
           const data = (profileSnap.exists && profileSnap.data()) || {};
-          el2.innerHTML = _presenceHTML(!!data.isOnline, data.lastSeen || null);
+          el2.innerHTML = _presenceHTML(data.lastSeen || null);
         }).catch(() => {});
       }
     }, err => console.warn('[dm] Student presence watch error:', err));
     AppState.registerListener(listenerKey, unsub);
   }
 
+  /* ══════════════════════════════════════════════════════════════
+     MESSAGE STATUS — delivered / read
+     ─────────────────────────────────────────────────────────────
+     Rules:
+       sent      → the sender's device wrote it to Firestore
+       delivered → the recipient's app received it (tab is open)
+       read      → the recipient has the specific thread open
+
+     _markDelivered(uid, recipientRole)
+       Upgrades sent → delivered for all messages FROM the other party
+       in this thread.  Called when the recipient's tab becomes active
+       or opens the app.
+
+     _markRead(uid, recipientRole)
+       Upgrades sent+delivered → read.  Called ONLY when the recipient
+       actually opens the specific thread UI on screen.
+
+     _readMarkMap — tracks which threads we've already called _markRead
+       for in the current session to avoid redundant batch writes.
+  ══════════════════════════════════════════════════════════════ */
+
+  const _readMarkMap = new Set(); // keys: "{uid}:{role}"
+
   async function _markDelivered(studentUid, recipientRole) {
     const senderRole = recipientRole === 'student' ? 'teacher' : 'student';
     try {
       const snap = await _threadRef(studentUid)
         .collection('messages')
+        .where('role', '==', senderRole)
         .where('status', '==', 'sent')
         .get();
       if (snap.empty) return;
-      const toUpdate = [];
-      snap.forEach(doc => {
-        if (doc.data().role === senderRole) toUpdate.push(doc.ref);
-      });
-      if (!toUpdate.length) return;
-      for (let i = 0; i < toUpdate.length; i += 400) {
+      const refs = [];
+      snap.forEach(doc => refs.push(doc.ref));
+      for (let i = 0; i < refs.length; i += 400) {
         const b = Db().batch();
-        toUpdate.slice(i, i + 400).forEach(ref => b.update(ref, { status: 'delivered' }));
+        refs.slice(i, i + 400).forEach(ref => b.update(ref, { status: 'delivered' }));
         await b.commit();
       }
     } catch (e) { console.warn('[dm] _markDelivered error:', e); }
   }
 
   async function _markRead(studentUid, recipientRole) {
+    const key        = `${studentUid}:${recipientRole}`;
     const senderRole = recipientRole === 'student' ? 'teacher' : 'student';
     const msgCol     = _threadRef(studentUid).collection('messages');
 
@@ -852,20 +765,48 @@
         msgCol.where('role', '==', senderRole).where('status', '==', 'delivered').get(),
       ]);
 
-      const toUpdate = [];
-      sentSnap.forEach(doc      => toUpdate.push(doc.ref));
-      deliveredSnap.forEach(doc => toUpdate.push(doc.ref));
+      const refs = [];
+      sentSnap.forEach(doc      => refs.push(doc.ref));
+      deliveredSnap.forEach(doc => refs.push(doc.ref));
 
-      if (!toUpdate.length) return;
+      if (!refs.length) {
+        _readMarkMap.add(key);
+        return;
+      }
 
-      for (let i = 0; i < toUpdate.length; i += 400) {
+      for (let i = 0; i < refs.length; i += 400) {
         const b = Db().batch();
-        toUpdate.slice(i, i + 400).forEach(ref => b.update(ref, { status: 'read' }));
+        refs.slice(i, i + 400).forEach(ref => b.update(ref, { status: 'read' }));
         await b.commit();
       }
+      _readMarkMap.add(key);
     } catch (e) { console.warn('[dm] _markRead error:', e); }
   }
 
+  /**
+   * Called inside each messages onSnapshot for the ACTIVE thread viewer.
+   * Upgrades any newly arrived "sent" messages to "delivered" without
+   * doing a full read — only processes docs from the current snapshot.
+   */
+  async function _markDeliveredFromSnapshot(snap, studentUid, recipientRole) {
+    const senderRole = recipientRole === 'student' ? 'teacher' : 'student';
+    const refs       = [];
+    snap.forEach(doc => {
+      if (doc.data().role === senderRole && doc.data().status === 'sent') {
+        refs.push(doc.ref);
+      }
+    });
+    if (!refs.length) return;
+    try {
+      for (let i = 0; i < refs.length; i += 400) {
+        const b = Db().batch();
+        refs.slice(i, i + 400).forEach(ref => b.update(ref, { status: 'delivered' }));
+        await b.commit();
+      }
+    } catch (e) { console.warn('[dm] _markDeliveredFromSnapshot error:', e); }
+  }
+
+  /* ── Edit history helpers ──────────────────────────────────── */
   function _msgHistoryRef(studentUid, messageId) {
     return _threadRef(studentUid).collection('messages').doc(messageId).collection('editHistory');
   }
@@ -878,9 +819,7 @@
 
     if (!isTeacher) {
       const countSnap = await historyCol.get();
-      if (countSnap.size >= 2) {
-        throw new Error('EDIT_LIMIT_REACHED');
-      }
+      if (countSnap.size >= 2) throw new Error('EDIT_LIMIT_REACHED');
     }
 
     const batch = db.batch();
@@ -948,13 +887,11 @@
         </div>
       </div>`;
 
-    overlay.addEventListener('click', e => {
-      if (e.target === overlay) overlay.remove();
-    });
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
     document.body.appendChild(overlay);
   }
 
-  // ── Typing indicator ──────────────────────────────────────────
+  /* ── Typing indicator ──────────────────────────────────────── */
   let _typingDebounceTimer = null;
   let _typingCurrentUid    = null;
   let _typingCurrentRole   = null;
@@ -973,9 +910,7 @@
     const field = role === 'student' ? 'studentTyping' : 'teacherTyping';
     try {
       await _threadRef(threadUid).set({ [field]: true }, { merge: true });
-    } catch (e) {
-      console.warn('[dm] _startTyping write failed:', e);
-    }
+    } catch (e) { console.warn('[dm] _startTyping write failed:', e); }
   }
 
   async function _stopTyping(threadUid, role) {
@@ -985,19 +920,16 @@
     const field = role === 'student' ? 'studentTyping' : 'teacherTyping';
     try {
       await _threadRef(threadUid).set({ [field]: false }, { merge: true });
-    } catch (e) {
-      console.warn('[dm] _stopTyping write failed:', e);
-    }
+    } catch (e) { console.warn('[dm] _stopTyping write failed:', e); }
   }
 
-  function _watchTypingIndicator(threadUid, watchField, elementId, displayName) {
+  function _watchTypingIndicator(threadUid, watchField, elementId) {
     const listenerKey = 'dmTypingWatch_' + threadUid + '_' + watchField;
     AppState.cancelListener(listenerKey);
 
     const unsub = _threadRef(threadUid).onSnapshot(snap => {
       const bar = document.getElementById(elementId);
       if (!bar) { AppState.cancelListener(listenerKey); return; }
-
       const isTyping = !!(snap.exists && snap.data() && snap.data()[watchField]);
       bar.style.display = isTyping ? 'flex' : 'none';
       bar.style.height  = isTyping ? '22px' : '0';
@@ -1014,12 +946,10 @@
       _stopTyping(threadUid, _typingCurrentRole).catch(() => {});
     }
   }
-  // ── End typing indicator ──────────────────────────────────────
 
-  // ══════════════════════════════════════════════════════════════
-  // SWIPE-TO-REPLY SYSTEM
-  // ══════════════════════════════════════════════════════════════
-
+  /* ══════════════════════════════════════════════════════════════
+     SWIPE-TO-REPLY
+  ══════════════════════════════════════════════════════════════ */
   let _studentReplyTo = null;
   let _teacherReplyTo = null;
 
@@ -1100,70 +1030,42 @@
     let activeSwiping  = null;
     let swipeTriggered = false;
 
-    function _getWrap(el) {
-      return el.closest('.dm-swipe-wrap');
-    }
-
+    function _getWrap(el)       { return el.closest('.dm-swipe-wrap'); }
     function _getReplyData(wrap) {
-      return {
-        id:         wrap.dataset.replyId     || '',
-        text:       wrap.dataset.replyText   || '',
-        senderName: wrap.dataset.replySender || '',
-      };
+      return { id: wrap.dataset.replyId || '', text: wrap.dataset.replyText || '', senderName: wrap.dataset.replySender || '' };
     }
-
     function _triggerReply(wrap) {
       const data = _getReplyData(wrap);
       if (!data.id) return;
-      if (role === 'student') {
-        _showStudentReplyBar(data);
-      } else {
-        _showTeacherReplyBar(data);
-      }
+      if (role === 'student') _showStudentReplyBar(data);
+      else _showTeacherReplyBar(data);
     }
-
     function _resetWrap(wrap) {
       const inner = wrap.querySelector('.dm-swipe-inner');
       const hint  = wrap.querySelector('.dm-swipe-hint');
-      if (inner) { inner.style.transform = ''; }
-      if (hint)  { hint.style.opacity = '0'; }
+      if (inner) inner.style.transform = '';
+      if (hint)  hint.style.opacity = '0';
     }
 
     container.addEventListener('touchstart', function (e) {
       const wrap = _getWrap(e.target);
       if (!wrap || !wrap.dataset.replyId) return;
-      touchStartX    = e.touches[0].clientX;
-      touchStartY    = e.touches[0].clientY;
-      activeSwiping  = wrap;
-      swipeTriggered = false;
+      touchStartX = e.touches[0].clientX; touchStartY = e.touches[0].clientY;
+      activeSwiping = wrap; swipeTriggered = false;
     }, { passive: true });
 
     container.addEventListener('touchmove', function (e) {
       if (!activeSwiping) return;
       const dx = e.touches[0].clientX - touchStartX;
       const dy = e.touches[0].clientY - touchStartY;
-
-      if (Math.abs(dy) > Math.abs(dx) + 8) {
-        activeSwiping = null;
-        return;
-      }
-
+      if (Math.abs(dy) > Math.abs(dx) + 8) { activeSwiping = null; return; }
       if (dx <= 0) return;
-
       e.preventDefault();
-
       const travel = Math.min(dx, SWIPE_MAX_REVEAL);
       const inner  = activeSwiping.querySelector('.dm-swipe-inner');
       const hint   = activeSwiping.querySelector('.dm-swipe-hint');
-
-      if (inner) {
-        inner.style.transition = 'none';
-        inner.style.transform  = `translateX(${travel}px)`;
-      }
-      if (hint) {
-        hint.style.opacity = String(Math.min(travel / SWIPE_THRESHOLD, 1));
-      }
-
+      if (inner) { inner.style.transition = 'none'; inner.style.transform = `translateX(${travel}px)`; }
+      if (hint)  hint.style.opacity = String(Math.min(travel / SWIPE_THRESHOLD, 1));
       if (dx >= SWIPE_THRESHOLD && !swipeTriggered) {
         swipeTriggered = true;
         if (navigator.vibrate) navigator.vibrate(30);
@@ -1171,19 +1073,8 @@
       }
     }, { passive: false });
 
-    container.addEventListener('touchend', function () {
-      if (!activeSwiping) return;
-      _resetWrap(activeSwiping);
-      activeSwiping  = null;
-      swipeTriggered = false;
-    });
-
-    container.addEventListener('touchcancel', function () {
-      if (!activeSwiping) return;
-      _resetWrap(activeSwiping);
-      activeSwiping  = null;
-      swipeTriggered = false;
-    });
+    container.addEventListener('touchend',   function () { if (activeSwiping) { _resetWrap(activeSwiping); activeSwiping = null; swipeTriggered = false; } });
+    container.addEventListener('touchcancel',function () { if (activeSwiping) { _resetWrap(activeSwiping); activeSwiping = null; swipeTriggered = false; } });
 
     container.addEventListener('mouseover', function (e) {
       const wrap = _getWrap(e.target);
@@ -1191,7 +1082,6 @@
       const hint = wrap.querySelector('.dm-swipe-hint');
       if (hint) { hint.style.opacity = '1'; hint.style.pointerEvents = 'auto'; }
     });
-
     container.addEventListener('mouseout', function (e) {
       const wrap = _getWrap(e.target);
       if (!wrap) return;
@@ -1199,7 +1089,6 @@
       const hint = wrap.querySelector('.dm-swipe-hint');
       if (hint) { hint.style.opacity = '0'; hint.style.pointerEvents = 'none'; }
     });
-
     container.addEventListener('click', function (e) {
       const hint = e.target.closest('.dm-swipe-hint');
       if (!hint) return;
@@ -1208,18 +1097,16 @@
     });
   }
 
+  /* ── Inline edit UI ────────────────────────────────────────── */
   function _activateInlineEdit(studentUid, messageId, currentText, isDarkBubble, wrapperId, isTeacher) {
     const wrapper = document.getElementById(wrapperId);
     if (!wrapper) return;
-
     const textEl   = wrapper.querySelector('.dm-bubble-text');
     const footerEl = wrapper.querySelector('.dm-bubble-footer');
     const editedEl = wrapper.querySelector('.dm-edited-label-wrap');
     if (!textEl) return;
-
     const inner = wrapper.querySelector('.dm-bubble-inner');
     if (!inner) return;
-
     if (inner.querySelector(`[id^="dmEditUI-"]`)) return;
 
     const saveClass   = isDarkBubble ? 'dm-edit-btn dm-edit-btn--save'   : 'dm-edit-btn dm-edit-btn--save-light';
@@ -1250,7 +1137,6 @@
 
     const _buildEditor = () => {
       editUI.innerHTML = '';
-
       const ta     = document.createElement('textarea');
       ta.className = 'dm-edit-textarea';
       ta.value     = currentText;
@@ -1309,11 +1195,9 @@
       msg.style.cssText = `font-size:.75rem;line-height:1.5;margin:0 0 .375rem;opacity:.85;
                             color:${isDarkBubble ? 'rgba(255,255,255,.9)' : 'var(--danger,#e03b3b)'};`;
       msg.textContent   = 'Messages can only be edited twice.';
-
       const actions     = document.createElement('div');
       actions.className = 'dm-edit-actions';
       actions.appendChild(cancelBtn);
-
       editUI.appendChild(msg);
       editUI.appendChild(actions);
     };
@@ -1322,17 +1206,8 @@
       _buildEditor();
     } else {
       _msgHistoryRef(studentUid, messageId).get()
-        .then(snap => {
-          if (snap.size >= 2) {
-            _buildLimitNotice();
-          } else {
-            _buildEditor();
-          }
-        })
-        .catch(err => {
-          console.warn('[dm] Could not pre-check edit count, proceeding:', err);
-          _buildEditor();
-        });
+        .then(snap => { if (snap.size >= 2) _buildLimitNotice(); else _buildEditor(); })
+        .catch(() => _buildEditor());
     }
   }
 
@@ -1359,9 +1234,7 @@
     const menu     = document.createElement('div');
     menu.className = 'dm-action-menu';
     menu.id        = menuId;
-    menu.style.cssText = alignRight
-      ? 'right:0;bottom:calc(100% + 6px);'
-      : 'left:0;bottom:calc(100% + 6px);';
+    menu.style.cssText = alignRight ? 'right:0;bottom:calc(100% + 6px);' : 'left:0;bottom:calc(100% + 6px);';
 
     if (canEdit) {
       const editItem     = document.createElement('button');
@@ -1398,8 +1271,7 @@
     }, 0);
   }
 
-  // ── Bubble builders ───────────────────────────────────────────
-
+  /* ── Bubble builders ───────────────────────────────────────── */
   function _buildStudentBubble(msg, myUid, showLabel) {
     const isMe    = msg.senderId === myUid;
     const msgId   = msg.id || '';
@@ -1462,19 +1334,15 @@
               </svg>
             </div>
             ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:var(--text-3,#6b7280);
-                         margin-bottom:2px;padding-right:2px;display:block;text-align:right;">
-              You
-            </span>` : ''}
+                         margin-bottom:2px;padding-right:2px;display:block;text-align:right;">You</span>` : ''}
             <div class="dm-bubble-wrap">
               <div class="dm-bubble-inner"
                    style="background:var(--accent,#4f6ef7);color:#fff;
-                          border-radius:14px 14px 3px 14px;
-                          padding:.5rem .75rem .375rem;">
+                          border-radius:14px 14px 3px 14px;padding:.5rem .75rem .375rem;">
                 ${replyCard}
                 <p class="dm-bubble-text">${_esc(msg.text)}</p>
                 <div class="dm-bubble-footer dm-bubble-footer--end">
-                  ${editedLabel}
-                  ${editBtn}
+                  ${editedLabel}${editBtn}
                   <span class="dm-bubble-time">${time}</span>
                   ${_tickIcon(msg.status || 'sent')}
                 </div>
@@ -1501,8 +1369,7 @@
               <div class="dm-bubble-inner"
                    style="background:var(--bg-base,#fff);color:var(--text-1,#0d0d0f);
                           border:1px solid var(--border,#e5e7eb);
-                          border-radius:14px 14px 14px 3px;
-                          padding:.5rem .75rem .375rem;">
+                          border-radius:14px 14px 14px 3px;padding:.5rem .75rem .375rem;">
                 ${replyCard}
                 <p class="dm-bubble-text">${_esc(msg.text)}</p>
                 <div class="dm-bubble-footer dm-bubble-footer--start">
@@ -1579,19 +1446,15 @@
               </svg>
             </div>
             ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:var(--text-3,#6b7280);
-                         margin-bottom:2px;padding-right:2px;display:block;text-align:right;">
-              You
-            </span>` : ''}
+                         margin-bottom:2px;padding-right:2px;display:block;text-align:right;">You</span>` : ''}
             <div class="dm-bubble-wrap">
               <div class="dm-bubble-inner"
                    style="background:var(--accent,#4f6ef7);color:#fff;
-                          border-radius:14px 14px 3px 14px;
-                          padding:.5rem .75rem .375rem;">
+                          border-radius:14px 14px 3px 14px;padding:.5rem .75rem .375rem;">
                 ${replyCard}
                 <p class="dm-bubble-text">${_esc(msg.text)}</p>
                 <div class="dm-bubble-footer dm-bubble-footer--end">
-                  ${editedLabel}
-                  ${editBtn}
+                  ${editedLabel}${editBtn}
                   <span class="dm-bubble-time">${time}</span>
                   ${_tickIcon(msg.status || 'sent')}
                 </div>
@@ -1618,8 +1481,7 @@
               <div class="dm-bubble-inner"
                    style="background:var(--bg-base,#fff);color:var(--text-1,#0d0d0f);
                           border:1px solid var(--border,#e5e7eb);
-                          border-radius:14px 14px 14px 3px;
-                          padding:.5rem .75rem .375rem;">
+                          border-radius:14px 14px 14px 3px;padding:.5rem .75rem .375rem;">
                 ${replyCard}
                 <p class="dm-bubble-text">${_esc(msg.text)}</p>
                 <div class="dm-bubble-footer dm-bubble-footer--start">
@@ -1634,6 +1496,9 @@
     }
   }
 
+  /* ══════════════════════════════════════════════════════════════
+     STUDENT INBOX
+  ══════════════════════════════════════════════════════════════ */
   async function openStudentInbox() {
     _injectStyles();
 
@@ -1641,12 +1506,14 @@
     const studentData = AppState.studentData || {};
     const threadRef   = _threadRef(uid);
 
+    // Clear the unread count since the student is now looking at the thread
     try {
       await threadRef.set({ studentUnread: 0 }, { merge: true });
       AppState.dmStudentUnread = 0;
       _updateStudentBadge(0);
     } catch (e) { console.warn('[dm] Could not clear studentUnread:', e); }
 
+    // Seed thread doc if it doesn't exist yet
     try {
       const threadSnap = await threadRef.get();
       if (!threadSnap.exists) {
@@ -1670,7 +1537,7 @@
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;min-width:0;">
           <div style="min-width:0;flex:1;margin-right:.75rem;">
             <h2 class="font-bold" style="font-size:1.125rem;line-height:1.3;">Message Master Timothy</h2>
-            <div id="dmTeacherPresence" style="margin-top:2px;">${_presenceHTML(false, null)}</div>
+            <div id="dmTeacherPresence" style="margin-top:2px;">${_presenceHTML(null)}</div>
           </div>
           <button onclick="DM.backFromStudentInbox()" class="btn bg-gray-500 hover:bg-gray-600"
                   style="font-size:.8125rem;flex-shrink:0;">&#8592; Back</button>
@@ -1680,18 +1547,18 @@
          background:var(--surface-subtle,#f3f4f6);border:1px solid var(--border,#e5e7eb);
          border-radius:8px;font-size:.7rem;color:var(--text-tertiary,#6b7280);
          display:flex;align-items:center;gap:.375rem;line-height:1.3;box-sizing:border-box;">
-        <span style="color:var(--text-tertiary,#6b7280);flex-shrink:0;">${_iconLock(12)}</span>
-        <span><strong style="color:var(--text-secondary,#374151);font-weight:600;">Private</strong>
-         — these messages can only be seen by you and Master Timothy.</span>
+          <span style="color:var(--text-tertiary,#6b7280);flex-shrink:0;">${_iconLock(12)}</span>
+          <span><strong style="color:var(--text-secondary,#374151);font-weight:600;">Private</strong>
+           — these messages can only be seen by you and Master Timothy.</span>
         </div>
 
         <div style="margin-bottom:.625rem;padding:.5rem .625rem;
            background:var(--brand-bg,#edf2ff);border:1px solid var(--brand-border,#bac8ff);
            border-radius:8px;font-size:.75rem;color:var(--brand-text,#3730a3);line-height:1.4;
            display:flex;align-items:flex-start;gap:.375rem;box-sizing:border-box;">
-        <span style="margin-top:1px;flex-shrink:0;">${_iconMail(12)}</span>
-        <span>Send a question or concern directly to Master Timothy.
-              He will reply here as soon as possible.</span>
+          <span style="margin-top:1px;flex-shrink:0;">${_iconMail(12)}</span>
+          <span>Send a question or concern directly to Master Timothy.
+                He will reply here as soon as possible.</span>
         </div>
 
         <div id="dmMessages"
@@ -1705,12 +1572,9 @@
           </p>
         </div>
 
-        <!-- Typing indicator bar (student sees teacher typing) -->
         <div id="dmStudentTypingBar"
              style="height:0;padding:0 .25rem;display:none;align-items:center;">
-          <span class="dm-typing-dots" aria-hidden="true">
-            <span></span><span></span><span></span>
-          </span>
+          <span class="dm-typing-dots" aria-hidden="true"><span></span><span></span><span></span></span>
           <span style="font-size:.6875rem;color:var(--text-3,#6b7280);margin-left:.375rem;font-style:italic;">
             Master Timothy is typing…
           </span>
@@ -1739,40 +1603,54 @@
         input.style.overflowY = input.scrollHeight > 120 ? 'auto' : 'hidden';
         _startTyping(uid, 'student');
       });
-      input.addEventListener('blur', () => {
-        _stopTyping(uid, 'student').catch(() => {});
-      });
+      input.addEventListener('blur', () => _stopTyping(uid, 'student').catch(() => {}));
     }
 
+    // Mark read NOW — the student is looking at the thread
     await _markRead(uid, 'student');
+
     _watchPresence(uid, 'teacher', 'dmTeacherPresence', 'dmTeacherPresenceWatch');
-    _watchTypingIndicator(uid, 'teacherTyping', 'dmStudentTypingBar', 'Master Timothy');
+    _watchTypingIndicator(uid, 'teacherTyping', 'dmStudentTypingBar');
     _attachSwipeListeners('dmMessages', 'student');
     _subscribeStudentMessages(uid);
   }
 
   function _subscribeStudentMessages(uid) {
     AppState.cancelListener('dmStudentMessages');
+    let firstSnap = true;
+
     const unsub = _threadRef(uid)
       .collection('messages').orderBy('timestamp', 'asc')
       .onSnapshot(snap => {
         const container = document.getElementById('dmMessages');
         if (!container) { AppState.cancelListener('dmStudentMessages'); return; }
+
         if (snap.empty) {
           container.innerHTML = `
             <p style="text-align:center;font-size:.8125rem;
                       color:var(--text-disabled,#9ca3af);padding:2rem 0;">
               No messages yet. Say hello to Master Timothy!
             </p>`;
+          firstSnap = false;
           return;
         }
+
         const msgs = [];
         snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
-        _markDelivered(uid, 'student').catch(() => {});
+
+        // Always upgrade any newly received "sent" messages from teacher to "delivered"
+        // since the student's tab is open and displaying the thread.
+        _markDeliveredFromSnapshot(snap, uid, 'student').catch(() => {});
+
+        // Mark read on every new incoming message while the thread is open
+        // (not just on the first load — if a new message arrives while viewing, mark it read)
         _markRead(uid, 'student').catch(() => {});
+
         container.innerHTML = _renderMessagesWithDateSeps(msgs, uid, 'student');
         container.scrollTop = container.scrollHeight;
+        firstSnap = false;
       }, err => console.error('[dm] Student messages error:', err));
+
     AppState.registerListener('dmStudentMessages', unsub);
   }
 
@@ -1821,14 +1699,10 @@
 
     _stopTyping(uid, 'student').catch(() => {});
 
-    // Clear input immediately — the write will succeed from local cache
-    if (input) {
-      input.value = '';
-      input.style.height = 'auto';
-      input.style.height = '36px';
-    }
+    if (input) { input.value = ''; input.style.height = 'auto'; input.style.height = '36px'; }
     UI.setLoading(btn, true);
 
+    // Check teacher presence from the single global doc
     let teacherIsOnline = false;
     try {
       const sentinelSnap = await Db().collection('teacherPresence').doc('global').get();
@@ -1839,7 +1713,6 @@
     const replyPayload = (_studentReplyTo && _studentReplyTo.id)
       ? { id: _studentReplyTo.id, text: _studentReplyTo.text, senderName: _studentReplyTo.senderName }
       : null;
-
     _clearStudentReply();
 
     try {
@@ -1848,7 +1721,8 @@
 
       const studentMsgData = {
         text, senderId: uid, senderName: name, role: 'student',
-        status: teacherIsOnline ? 'delivered' : 'sent',
+        // sent = message left this device; delivered only once teacher opens
+        status: 'sent',
         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
       };
       if (replyPayload) studentMsgData.replyTo = replyPayload;
@@ -1859,7 +1733,7 @@
         lastMessage: text.length > 80 ? text.substring(0, 80) + '…' : text,
         lastAt: firebase.firestore.FieldValue.serverTimestamp(),
         teacherUnread: firebase.firestore.FieldValue.increment(1),
-        studentUnread: 0, teacherOnline: teacherIsOnline,
+        studentUnread: 0,
       }, { merge: true });
 
       await batch.commit();
@@ -1882,6 +1756,9 @@
     Exam.renderSubjectSelection();
   }
 
+  /* ══════════════════════════════════════════════════════════════
+     TEACHER INBOX
+  ══════════════════════════════════════════════════════════════ */
   function openTeacherInbox() {
     _injectStyles();
     const panel = document.getElementById('teacher-dm');
@@ -1891,20 +1768,15 @@
       <div id="dmTeacherShell"
            style="border:1px solid var(--border,#e5e7eb);border-radius:12px;
                   background:var(--surface,#fff);
-                  width:100%;max-width:100%;box-sizing:border-box;
-                  overflow:hidden;">
+                  width:100%;max-width:100%;box-sizing:border-box;overflow:hidden;">
 
-        <!-- LIST VIEW -->
-        <div id="dmViewList" style="display:flex;flex-direction:column;
-                                    width:100%;box-sizing:border-box;">
-
+        <div id="dmViewList" style="display:flex;flex-direction:column;width:100%;box-sizing:border-box;">
           <div style="padding:.75rem 1rem;border-bottom:1px solid var(--border,#e5e7eb);
                       background:var(--surface-subtle,#f9fafb);flex-shrink:0;
                       display:flex;align-items:center;justify-content:space-between;gap:.5rem;
                       box-sizing:border-box;width:100%;">
             <h3 style="font-size:.9375rem;font-weight:700;color:var(--text-primary,#111827);
-                       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-                       flex:1;min-width:0;">
+                       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;">
               Messages
             </h3>
             <button onclick="DM._openNewConversationModal()"
@@ -1917,23 +1789,17 @@
               ${_iconPencil(14)}
             </button>
           </div>
-
           <div id="dmThreadList"
                class="dm-thread-list-wrap"
-               style="overflow-y:auto;overflow-x:hidden;width:100%;box-sizing:border-box;
-                      max-height:65vh;">
+               style="overflow-y:auto;overflow-x:hidden;width:100%;box-sizing:border-box;max-height:65vh;">
             <p style="font-size:.8125rem;color:var(--text-disabled,#9ca3af);
                       text-align:center;padding:2rem 1rem;">Loading…</p>
           </div>
         </div>
 
-        <!-- CHAT VIEW (hidden until a thread is opened) -->
         <div id="dmViewChat"
-             style="display:none;flex-direction:column;
-                    width:100%;box-sizing:border-box;
-                    background:var(--surface,#fff);">
+             style="display:none;flex-direction:column;width:100%;box-sizing:border-box;background:var(--surface,#fff);">
         </div>
-
       </div>`;
 
     _subscribeTeacherThreadList();
@@ -1959,7 +1825,6 @@
           totalUnread += (doc.data().teacherUnread || 0);
           items.push({ id: doc.id, ...doc.data() });
         });
-
         _updateTeacherBadge(totalUnread);
 
         list.innerHTML = items.map(item => {
@@ -2028,10 +1893,12 @@
       el.classList.toggle('is-active', el.dataset.uid === studentUid);
     });
 
+    // Clear unread count for this thread
     try {
       await _threadRef(studentUid).set({ teacherUnread: 0 }, { merge: true });
     } catch (e) { console.warn('[dm] Could not clear teacherUnread:', e); }
 
+    // Mark as read — teacher just opened this specific thread
     await _markRead(studentUid, 'teacher');
 
     const viewList = document.getElementById('dmViewList');
@@ -2041,7 +1908,6 @@
     viewList.style.display = 'none';
     viewChat.style.display = 'flex';
     viewChat.style.flexDirection = 'column';
-
     viewChat.dataset.studentUid   = studentUid;
     viewChat.dataset.studentName  = studentName;
     viewChat.dataset.studentClass = studentClass || '';
@@ -2077,12 +1943,11 @@
           <p style="font-size:.875rem;font-weight:700;color:var(--text-primary,#111827);
                     line-height:1.3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0;">
             ${_esc(studentName)}
-            <span style="font-size:.6875rem;font-weight:400;
-                         color:var(--text-tertiary,#6b7280);margin-left:.25rem;">
+            <span style="font-size:.6875rem;font-weight:400;color:var(--text-tertiary,#6b7280);margin-left:.25rem;">
               ${_esc(studentClass)}
             </span>
           </p>
-          <div id="dmStudentPresence" style="margin-top:1px;">${_presenceHTML(false, null)}</div>
+          <div id="dmStudentPresence" style="margin-top:1px;">${_presenceHTML(null)}</div>
         </div>
       </div>
 
@@ -2096,13 +1961,9 @@
         </p>
       </div>
 
-      <!-- Typing indicator bar (teacher sees student typing) -->
       <div id="dmTeacherTypingBar"
-           style="height:0;padding:0 .875rem;display:none;align-items:center;
-                  background:var(--surface,#fff);">
-        <span class="dm-typing-dots" aria-hidden="true">
-          <span></span><span></span><span></span>
-        </span>
+           style="height:0;padding:0 .875rem;display:none;align-items:center;background:var(--surface,#fff);">
+        <span class="dm-typing-dots" aria-hidden="true"><span></span><span></span><span></span></span>
         <span style="font-size:.6875rem;color:var(--text-3,#6b7280);margin-left:.375rem;font-style:italic;">
           ${_esc(studentName)} is typing…
         </span>
@@ -2129,10 +1990,7 @@
     if (input) {
       input.focus();
       input.addEventListener('keydown', e => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-          e.preventDefault();
-          _sendTeacherReplyFromPanel();
-        }
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); _sendTeacherReplyFromPanel(); }
       });
       input.addEventListener('input', () => {
         input.style.height = 'auto';
@@ -2140,13 +1998,11 @@
         input.style.overflowY = input.scrollHeight > 120 ? 'auto' : 'hidden';
         _startTyping(studentUid, 'teacher');
       });
-      input.addEventListener('blur', () => {
-        _stopTyping(studentUid, 'teacher').catch(() => {});
-      });
+      input.addEventListener('blur', () => _stopTyping(studentUid, 'teacher').catch(() => {}));
     }
 
     _watchPresence(studentUid, 'student', 'dmStudentPresence', 'dmStudentPresenceWatch');
-    _watchTypingIndicator(studentUid, 'studentTyping', 'dmTeacherTypingBar', studentName);
+    _watchTypingIndicator(studentUid, 'studentTyping', 'dmTeacherTypingBar');
     _attachSwipeListeners('dmTeacherMessages', 'teacher');
     _subscribeTeacherMessages(studentUid);
   }
@@ -2160,9 +2016,7 @@
     window._dmActiveUid = null;
     _closeOpenMenu();
 
-    document.querySelectorAll('.dm-thread-item').forEach(el => {
-      el.classList.remove('is-active');
-    });
+    document.querySelectorAll('.dm-thread-item').forEach(el => el.classList.remove('is-active'));
 
     const viewList = document.getElementById('dmViewList');
     const viewChat = document.getElementById('dmViewChat');
@@ -2182,11 +2036,13 @@
 
   function _subscribeTeacherMessages(studentUid) {
     AppState.cancelListener('dmTeacherMessages');
+
     const unsub = _threadRef(studentUid)
       .collection('messages').orderBy('timestamp', 'asc')
       .onSnapshot(snap => {
         const container = document.getElementById('dmTeacherMessages');
         if (!container) { AppState.cancelListener('dmTeacherMessages'); return; }
+
         if (snap.empty) {
           container.innerHTML = `
             <p style="text-align:center;font-size:.8125rem;
@@ -2195,34 +2051,36 @@
             </p>`;
           return;
         }
+
         const msgs = [];
         snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
-        _markDelivered(studentUid, 'teacher').catch(() => {});
+
+        // Upgrade any newly arrived "sent" student messages to "delivered"
+        // since the teacher's tab is open and showing this thread.
+        _markDeliveredFromSnapshot(snap, studentUid, 'teacher').catch(() => {});
+
+        // Mark read on every new incoming student message while this thread is open
         _markRead(studentUid, 'teacher').catch(() => {});
+
         container.innerHTML = _renderMessagesWithDateSeps(msgs, AppConfig.TEACHER_UID, 'teacher');
         container.scrollTop = container.scrollHeight;
       }, err => console.error('[dm] Teacher messages error:', err));
+
     AppState.registerListener('dmTeacherMessages', unsub);
   }
 
-  // ── FIX 4: _sendTeacherReply — same offline-queue treatment as student send ──
   async function _sendTeacherReply(studentUid, studentName, studentClass) {
     const input = document.getElementById('dmTeacherInput');
     const text  = (input?.value || '').trim();
     if (!text) return;
 
     const btn = document.getElementById('dmTeacherSendBtn');
-
     _stopTyping(studentUid, 'teacher').catch(() => {});
 
-    // Clear input immediately — persistence handles offline queuing
-    if (input) {
-      input.value = '';
-      input.style.height = 'auto';
-      input.style.height = '36px';
-    }
+    if (input) { input.value = ''; input.style.height = 'auto'; input.style.height = '36px'; }
     UI.setLoading(btn, true);
 
+    // Check student presence from the thread doc (updated by student heartbeat)
     let studentIsOnline = false;
     try {
       const threadSnap = await _threadRef(studentUid).get();
@@ -2236,7 +2094,6 @@
     const replyPayload = (_teacherReplyTo && _teacherReplyTo.id)
       ? { id: _teacherReplyTo.id, text: _teacherReplyTo.text, senderName: _teacherReplyTo.senderName }
       : null;
-
     _clearTeacherReply();
 
     try {
@@ -2245,7 +2102,9 @@
 
       const teacherMsgData = {
         text, senderId: AppConfig.TEACHER_UID, senderName: 'Master Timothy',
-        role: 'teacher', status: studentIsOnline ? 'delivered' : 'sent',
+        role: 'teacher',
+        // Always start as "sent"; student's open snapshot will upgrade to delivered/read
+        status: 'sent',
         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
       };
       if (replyPayload) teacherMsgData.replyTo = replyPayload;
@@ -2259,7 +2118,6 @@
         teacherUnread: 0,
       }, { merge: true });
 
-      // Resolves immediately from local cache if offline; syncs when back online.
       await batch.commit();
     } catch (err) {
       console.error('[dm] _sendTeacherReply error:', err);
@@ -2271,10 +2129,12 @@
     }
   }
 
+  /* ══════════════════════════════════════════════════════════════
+     NEW CONVERSATION MODAL
+  ══════════════════════════════════════════════════════════════ */
   async function _openNewConversationModal() {
     _injectStyles();
-
-    const overlay = document.createElement('div');
+    const overlay     = document.createElement('div');
     overlay.className = 'dm-new-conv-overlay';
     overlay.id        = 'dmNewConvOverlay';
     overlay.innerHTML = `
@@ -2309,9 +2169,7 @@
       </div>`;
     document.body.appendChild(overlay);
 
-    overlay.addEventListener('click', e => {
-      if (e.target === overlay) _closeNewConversationModal();
-    });
+    overlay.addEventListener('click', e => { if (e.target === overlay) _closeNewConversationModal(); });
 
     const searchInput = document.getElementById('dmStudentSearch');
     if (searchInput) searchInput.focus();
@@ -2324,16 +2182,13 @@
     } catch (e) {
       console.error('[dm] _openNewConversationModal fetch error:', e);
       const list = document.getElementById('dmStudentPickerList');
-      if (list) list.innerHTML = `<p style="font-size:.8125rem;color:var(--danger,#e03131);
-                                     text-align:center;padding:2rem 1rem;">Failed to load students.</p>`;
+      if (list) list.innerHTML = `<p style="font-size:.8125rem;color:var(--danger,#e03131);text-align:center;padding:2rem 1rem;">Failed to load students.</p>`;
       return;
     }
 
     _renderStudentPickerList(allStudents, '');
     if (searchInput) {
-      searchInput.addEventListener('input', () => {
-        _renderStudentPickerList(allStudents, searchInput.value);
-      });
+      searchInput.addEventListener('input', () => _renderStudentPickerList(allStudents, searchInput.value));
     }
   }
 
@@ -2341,22 +2196,21 @@
     const list = document.getElementById('dmStudentPickerList');
     if (!list) return;
 
-    const q = query.toLowerCase().trim();
+    const q        = query.toLowerCase().trim();
     const filtered = q
       ? students.filter(s =>
-          (s.name  || '').toLowerCase().includes(q) ||
+          (s.name || '').toLowerCase().includes(q) ||
           (s.class || '').toLowerCase().includes(q))
       : students;
 
     if (!filtered.length) {
-      list.innerHTML = `<p style="font-size:.8125rem;color:var(--text-disabled,#9ca3af);
-                          text-align:center;padding:2rem 1rem;">No students found.</p>`;
+      list.innerHTML = `<p style="font-size:.8125rem;color:var(--text-disabled,#9ca3af);text-align:center;padding:2rem 1rem;">No students found.</p>`;
       return;
     }
 
     list.innerHTML = filtered.map((s, idx) => {
-      const isOnline = _isRecentlyActive(s.lastSeen);
-      const lastSeen = s.lastSeen || null;
+      const isOnline  = _isRecentlyActive(s.lastSeen);
+      const lastSeen  = s.lastSeen || null;
       const presenceTxt = isOnline
         ? `<span style="color:#22c45e;font-size:.6rem;font-weight:600;line-height:1;">&#x25cf; Online</span>`
         : (lastSeen
@@ -2380,8 +2234,7 @@
             </div>
             ${isOnline
               ? `<span style="position:absolute;bottom:0;right:0;width:9px;height:9px;
-                              border-radius:50%;background:#22c45e;
-                              border:2px solid var(--surface,#fff);"></span>`
+                              border-radius:50%;background:#22c45e;border:2px solid var(--surface,#fff);"></span>`
               : ''}
           </div>
           <div style="flex:1;min-width:0;">
@@ -2429,6 +2282,7 @@
     await _openConversation(uid, name, cls);
   }
 
+  /* ── Badge helpers ─────────────────────────────────────────── */
   function _updateStudentBadge(count) {
     const btn = document.getElementById('dmOpenBtn');
     if (!btn) return;
@@ -2439,13 +2293,10 @@
       badge.className   = 'dm-notif-badge';
       badge.textContent = count > 9 ? '9+' : String(count);
       badge.style.cssText = [
-        'position:absolute', 'top:-6px', 'right:-6px',
-        'min-width:18px', 'height:18px',
-        'background:var(--danger,#e03131)', 'color:#fff',
-        'font-size:.625rem', 'font-weight:700', 'border-radius:99px',
-        'display:flex', 'align-items:center', 'justify-content:center',
-        'padding:0 4px', 'pointer-events:none',
-        'border:2px solid var(--surface,#fff)', 'line-height:1',
+        'position:absolute','top:-6px','right:-6px','min-width:18px','height:18px',
+        'background:var(--danger,#e03131)','color:#fff','font-size:.625rem','font-weight:700',
+        'border-radius:99px','display:flex','align-items:center','justify-content:center',
+        'padding:0 4px','pointer-events:none','border:2px solid var(--surface,#fff)','line-height:1',
       ].join(';');
       btn.style.position = 'relative';
       btn.appendChild(badge);
@@ -2462,23 +2313,26 @@
       badge.className   = 'dm-notif-badge';
       badge.textContent = count > 9 ? '9+' : String(count);
       badge.style.cssText = [
-        'position:absolute', 'top:-6px', 'right:-6px',
-        'min-width:18px', 'height:18px',
-        'background:var(--danger,#e03131)', 'color:#fff',
-        'font-size:.625rem', 'font-weight:700', 'border-radius:99px',
-        'display:flex', 'align-items:center', 'justify-content:center',
-        'padding:0 4px', 'pointer-events:none',
-        'border:2px solid var(--surface,#fff)', 'line-height:1',
+        'position:absolute','top:-6px','right:-6px','min-width:18px','height:18px',
+        'background:var(--danger,#e03131)','color:#fff','font-size:.625rem','font-weight:700',
+        'border-radius:99px','display:flex','align-items:center','justify-content:center',
+        'padding:0 4px','pointer-events:none','border:2px solid var(--surface,#fff)','line-height:1',
       ].join(';');
       btn.style.position = 'relative';
       btn.appendChild(badge);
     }
   }
 
+  /* ══════════════════════════════════════════════════════════════
+     INIT LISTENERS (called from app.js on login)
+  ══════════════════════════════════════════════════════════════ */
   async function initStudentDMListener(uid) {
     AppState.cancelListener('dmStudentUnread');
 
+    // Mark this student as online and start heartbeat
     await _setStudentOnlineGlobal(uid);
+
+    // Sweep: any teacher messages that arrived while student was away → delivered
     await _markDelivered(uid, 'student');
 
     const unsub = _threadRef(uid).onSnapshot(snap => {
@@ -2487,6 +2341,7 @@
       AppState.dmStudentUnread = count;
       _updateStudentBadge(count);
 
+      // If there are unread messages, upgrade sent→delivered since student is online
       if (count > 0) {
         _markDelivered(uid, 'student').catch(() => {});
       }
@@ -2499,6 +2354,7 @@
     AppState.cancelListener('dmTeacherUnread');
     await _setTeacherOnlineGlobal();
 
+    // Sweep all threads: upgrade student→sent messages to delivered since teacher is now online
     try {
       const allThreads = await Db().collection('directMessages').get();
       const deliveryPromises = [];
@@ -2513,7 +2369,7 @@
       snap.forEach(doc => {
         const data = doc.data();
         total += (data.teacherUnread || 0);
-
+        // Each time a new student message arrives, upgrade to delivered
         if ((data.teacherUnread || 0) > 0) {
           _markDelivered(doc.id, 'teacher').catch(() => {});
         }
@@ -2524,7 +2380,10 @@
     AppState.registerListener('dmTeacherUnread', unsub);
   }
 
+  /* ── Cleanup ───────────────────────────────────────────────── */
   async function cancelListeners() {
+    _stopPresenceRefreshTimer();
+
     if (_typingActive && _typingCurrentUid && _typingCurrentRole) {
       _stopTyping(_typingCurrentUid, _typingCurrentRole).catch(() => {});
     }
@@ -2533,6 +2392,7 @@
 
     _studentReplyTo = null;
     _teacherReplyTo = null;
+    _readMarkMap.clear();
 
     AppState.cancelListener('dmStudentMessages');
     AppState.cancelListener('dmTeacherThreads');
@@ -2577,26 +2437,22 @@
     _teacherIsOnline = false;
   }
 
+  /* ── Firestore shorthand ───────────────────────────────────── */
   function _threadRef(uid) { return Db().collection('directMessages').doc(uid); }
   function Db()            { return window.fbDb; }
 
+  /* ── Escaping ──────────────────────────────────────────────── */
   function _esc(str) {
     return String(str == null ? '' : str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
-
   function _escAttr(str) {
     return String(str == null ? '' : str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#x27;');
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
   }
 
+  /* ── Public API ────────────────────────────────────────────── */
   window.DM = {
     openStudentInbox,
     sendStudentMessage,
