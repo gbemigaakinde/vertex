@@ -5,29 +5,6 @@
      - CDN assets     : Stale-while-revalidate (separate cache)
      - Firebase/Auth  : Bypass entirely — never intercepted
      - Navigation     : Cache-first with offline fallback
-
-   UPDATE v2:
-   - Added FCM background message handler and notificationclick
-     handler directly in this file.
-
-   UPDATE v3:
-   - Added /js/landing.js to the cached asset list.
-   - Removed duplicate STATIC_ASSETS declaration.
-
-   UPDATE v4 — FCM TOKEN BUG FIX:
-   - Moved www.gstatic.com from CDN_ORIGINS into BYPASS_ORIGINS.
-     The Firebase/FCM SDK makes internal registration XHRs to
-     https://www.gstatic.com/iid/... to obtain and refresh push
-     tokens. When this SW intercepted those requests with its
-     stale-while-revalidate strategy, the responses were either
-     served from a stale cache entry or failed with a network
-     error — both cases cause getToken() to return null or throw
-     silently, so no token was ever saved to Firestore.
-     www.gstatic.com MUST be bypassed unconditionally so every
-     FCM registration call goes straight to the network.
-   - Also moved fonts.gstatic.com to BYPASS_ORIGINS for the same
-     reason (it should never be cached by this SW — the browser
-     has its own font cache).
    ============================================================ */
 
 'use strict';
