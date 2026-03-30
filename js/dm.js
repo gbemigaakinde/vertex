@@ -1913,7 +1913,6 @@ function _buildTeacherBubble(msg, showLabel) {
     if (input) { input.value = ''; input.style.height = 'auto'; input.style.height = '36px'; }
     UI.setLoading(btn, true);
 
-    // Check teacher presence from the single global doc
     let teacherIsOnline = false;
     try {
       const sentinelSnap = await Db().collection('teacherPresence').doc('global').get();
@@ -1932,7 +1931,6 @@ function _buildTeacherBubble(msg, showLabel) {
 
       const studentMsgData = {
         text, senderId: uid, senderName: name, role: 'student',
-        // sent = message left this device; delivered only once teacher opens
         status: 'sent',
         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
       };
@@ -1945,6 +1943,8 @@ function _buildTeacherBubble(msg, showLabel) {
         lastAt: firebase.firestore.FieldValue.serverTimestamp(),
         teacherUnread: firebase.firestore.FieldValue.increment(1),
         studentUnread: 0,
+        lastMessageRole: 'student',
+        lastMessageStatus: 'sent',
       }, { merge: true });
 
       await batch.commit();
@@ -2019,13 +2019,94 @@ function _buildTeacherBubble(msg, showLabel) {
   function _subscribeTeacherThreadList() {
   AppState.cancelListener('dmTeacherThreads');
 
+  if (!window._dmThreadTypingUnsubs) window._dmThreadTypingUnsubs = {};
+
+  function _teardownTypingWatchers() {
+    Object.values(window._dmThreadTypingUnsubs).forEach(fn => { try { fn(); } catch (_) {} });
+    window._dmThreadTypingUnsubs = {};
+  }
+
+  function _renderPreviewLine(item) {
+    const isTyping   = !!item._studentTyping;
+    const lastRole   = item.lastMessageRole   || null;
+    const lastStatus = item.lastMessageStatus || null;
+    const previewText = item.lastMessage || 'No messages yet';
+    const unread     = item.teacherUnread || 0;
+
+    if (isTyping) {
+      return `
+        <div class="dm-thread-r2">
+          <span class="dm-thread-preview" style="color:var(--accent,#4f6ef7);font-style:italic;font-weight:500;">
+            typing…
+          </span>
+          ${unread > 0 ? `<span class="dm-thread-badge">${unread > 9 ? '9+' : unread}</span>` : ''}
+        </div>`;
+    }
+
+    let tickHtml = '';
+    if (lastRole === 'teacher' && lastStatus) {
+      if (lastStatus === 'read') {
+        tickHtml = `<span title="Read" style="display:inline-flex;align-items:center;flex-shrink:0;margin-right:2px;">
+          <svg width="14" height="9" viewBox="0 0 16 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1 5L4.5 8.5L10.5 2" stroke="#53c8f5" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M5.5 5L9 8.5L15 2" stroke="#53c8f5" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>`;
+      } else if (lastStatus === 'delivered') {
+        tickHtml = `<span title="Delivered" style="display:inline-flex;align-items:center;flex-shrink:0;margin-right:2px;">
+          <svg width="14" height="9" viewBox="0 0 16 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1 5L4.5 8.5L10.5 2" stroke="var(--text-4,#9ca3af)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M5.5 5L9 8.5L15 2" stroke="var(--text-4,#9ca3af)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>`;
+      } else {
+        tickHtml = `<span title="Sent" style="display:inline-flex;align-items:center;flex-shrink:0;margin-right:2px;">
+          <svg width="10" height="9" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1.5 5L4 7.5L8.5 2" stroke="var(--text-4,#9ca3af)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>`;
+      }
+    }
+
+    return `
+      <div class="dm-thread-r2">
+        <span class="dm-thread-preview" style="display:inline-flex;align-items:center;gap:0;min-width:0;overflow:hidden;">
+          ${tickHtml}<span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${_esc(previewText)}</span>
+        </span>
+        ${unread > 0 ? `<span class="dm-thread-badge">${unread > 9 ? '9+' : unread}</span>` : ''}
+      </div>`;
+  }
+
+  function _attachTypingWatcher(item) {
+    const uid = item.id;
+    if (window._dmThreadTypingUnsubs[uid]) return;
+
+    const unsub = _threadRef(uid).onSnapshot(snap => {
+      const row = document.querySelector(`.dm-thread-item[data-uid="${CSS.escape(uid)}"]`);
+      if (!row) return;
+      const data = (snap.exists && snap.data()) || {};
+
+      item._studentTyping    = !!data.studentTyping;
+      item.lastMessage       = data.lastMessage       ?? item.lastMessage;
+      item.lastMessageRole   = data.lastMessageRole   ?? item.lastMessageRole;
+      item.lastMessageStatus = data.lastMessageStatus ?? item.lastMessageStatus;
+      item.teacherUnread     = data.teacherUnread     ?? item.teacherUnread;
+
+      const r2 = row.querySelector('.dm-thread-r2');
+      if (r2) r2.outerHTML = _renderPreviewLine(item);
+    }, () => {});
+
+    window._dmThreadTypingUnsubs[uid] = unsub;
+  }
+
   const unsub = Db()
     .collection('directMessages').orderBy('lastAt', 'desc')
     .onSnapshot(snap => {
       const list = document.getElementById('dmThreadList');
-      if (!list) { AppState.cancelListener('dmTeacherThreads'); return; }
+      if (!list) { AppState.cancelListener('dmTeacherThreads'); _teardownTypingWatchers(); return; }
 
       if (snap.empty) {
+        _teardownTypingWatchers();
         list.innerHTML = `<p style="font-size:.8125rem;color:var(--text-4,#9ca3af);text-align:center;padding:2rem 1rem;">No messages yet.</p>`;
         return;
       }
@@ -2044,32 +2125,25 @@ function _buildTeacherBubble(msg, showLabel) {
         const isOnline = _isRecentlyActive(item.studentLastSeen);
         const tsMs     = _tsToMs(item.studentLastSeen);
 
-        // WhatsApp-style timestamp for last message
         let timeStr = '';
         if (item.lastAt) {
-          const lastAtDate = new Date(item.lastAt.toDate ? item.lastAt.toDate() : item.lastAt);
-          const now        = new Date();
-          const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const lastAtDate     = new Date(item.lastAt.toDate ? item.lastAt.toDate() : item.lastAt);
+          const now            = new Date();
+          const todayStart     = new Date(now.getFullYear(), now.getMonth(), now.getDate());
           const yesterdayStart = new Date(todayStart); yesterdayStart.setDate(todayStart.getDate() - 1);
 
           if (lastAtDate >= todayStart) {
-            // Today → show time only (e.g. 14:32)
             timeStr = lastAtDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
           } else if (lastAtDate >= yesterdayStart) {
-            // Yesterday
             timeStr = 'Yesterday';
           } else {
-            // Older → show date without year (e.g. 30 Mar)
             timeStr = lastAtDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
           }
         }
 
-        // Presence text for the thread row
         const presenceSpan = isOnline
-          ? `<span class="dm-thread-presence online"
-                  data-presence-ts="${tsMs ?? 'null'}">&#x25cf; Online</span>`
-          : `<span class="dm-thread-presence"
-                  data-presence-ts="${tsMs ?? 'null'}">
+          ? `<span class="dm-thread-presence online" data-presence-ts="${tsMs ?? 'null'}">&#x25cf; Online</span>`
+          : `<span class="dm-thread-presence" data-presence-ts="${tsMs ?? 'null'}">
                ${item.studentLastSeen ? _esc(_formatLastSeen(item.studentLastSeen)) : 'Offline'}
              </span>`;
 
@@ -2096,13 +2170,12 @@ function _buildTeacherBubble(msg, showLabel) {
                 <span class="dm-thread-date">${_esc(timeStr)}</span>
               </div>
               ${presenceSpan}
-              <div class="dm-thread-r2">
-                <span class="dm-thread-preview">${_esc(item.lastMessage || 'No messages yet')}</span>
-                ${unread > 0 ? `<span class="dm-thread-badge">${unread > 9 ? '9+' : unread}</span>` : ''}
-              </div>
+              ${_renderPreviewLine(item)}
             </div>
           </div>`;
       }).join('');
+
+      items.forEach(item => _attachTypingWatcher(item));
 
     }, err => console.error('[dm] Teacher thread list error:', err));
 
@@ -2251,6 +2324,12 @@ function _buildTeacherBubble(msg, showLabel) {
     window._dmActiveUid = null;
     _closeOpenMenu();
 
+    // Tear down per-thread typing watchers before re-subscribing the list
+    if (window._dmThreadTypingUnsubs) {
+      Object.values(window._dmThreadTypingUnsubs).forEach(fn => { try { fn(); } catch (_) {} });
+      window._dmThreadTypingUnsubs = {};
+    }
+
     document.querySelectorAll('.dm-thread-item').forEach(el => el.classList.remove('is-active'));
 
     const viewList = document.getElementById('dmViewList');
@@ -2290,13 +2369,8 @@ function _buildTeacherBubble(msg, showLabel) {
       const msgs = [];
       snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
 
-      // Teacher has this thread open → upgrade any newly arrived student messages
-      // from "sent" to "delivered" via the snapshot (no full collection scan).
       _markDeliveredFromSnapshot(snap, studentUid, 'teacher').catch(() => {});
 
-      // If a genuinely NEW student message just arrived while this thread is open,
-      // mark it read immediately (teacher is looking at it right now).
-      // We check docChanges to avoid calling _markRead on every status-update snapshot.
       const hasNewIncoming = snap.docChanges().some(change =>
         change.type === 'added' && change.doc.data().role === 'student'
       );
@@ -2306,6 +2380,17 @@ function _buildTeacherBubble(msg, showLabel) {
 
       container.innerHTML = _renderMessagesWithDateSeps(msgs, AppConfig.TEACHER_UID, 'teacher');
       container.scrollTop = container.scrollHeight;
+
+      // Sync lastMessageStatus on the thread doc from the most recent teacher message
+      // so the thread list preview tick stays accurate
+      const lastTeacherMsg = [...msgs].reverse().find(m => m.role === 'teacher');
+      if (lastTeacherMsg && lastTeacherMsg.status) {
+        _threadRef(studentUid).set(
+          { lastMessageStatus: lastTeacherMsg.status },
+          { merge: true }
+        ).catch(() => {});
+      }
+
     }, err => console.error('[dm] Teacher messages error:', err));
 
   AppState.registerListener('dmTeacherMessages', unsub);
@@ -2322,7 +2407,6 @@ function _buildTeacherBubble(msg, showLabel) {
     if (input) { input.value = ''; input.style.height = 'auto'; input.style.height = '36px'; }
     UI.setLoading(btn, true);
 
-    // Check student presence from the thread doc (updated by student heartbeat)
     let studentIsOnline = false;
     try {
       const threadSnap = await _threadRef(studentUid).get();
@@ -2345,7 +2429,6 @@ function _buildTeacherBubble(msg, showLabel) {
       const teacherMsgData = {
         text, senderId: AppConfig.TEACHER_UID, senderName: 'Master Timothy',
         role: 'teacher',
-        // Always start as "sent"; student's open snapshot will upgrade to delivered/read
         status: 'sent',
         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
       };
@@ -2358,6 +2441,8 @@ function _buildTeacherBubble(msg, showLabel) {
         lastAt: firebase.firestore.FieldValue.serverTimestamp(),
         studentUnread: firebase.firestore.FieldValue.increment(1),
         teacherUnread: 0,
+        lastMessageRole: 'teacher',
+        lastMessageStatus: 'sent',
       }, { merge: true });
 
       await batch.commit();
