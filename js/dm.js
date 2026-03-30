@@ -2043,13 +2043,28 @@ function _buildTeacherBubble(msg, showLabel) {
         const isActive = _activeStudentUid === item.id;
         const isOnline = _isRecentlyActive(item.studentLastSeen);
         const tsMs     = _tsToMs(item.studentLastSeen);
-        const timeStr  = item.lastAt
-          ? new Date(item.lastAt.toDate ? item.lastAt.toDate() : item.lastAt)
-              .toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
-          : '';
 
-        // Presence text for the thread row — carries data-presence-ts so the
-        // 15-second local refresh timer can re-evaluate it without extra Firestore reads.
+        // WhatsApp-style timestamp for last message
+        let timeStr = '';
+        if (item.lastAt) {
+          const lastAtDate = new Date(item.lastAt.toDate ? item.lastAt.toDate() : item.lastAt);
+          const now        = new Date();
+          const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+          const yesterdayStart = new Date(todayStart); yesterdayStart.setDate(todayStart.getDate() - 1);
+
+          if (lastAtDate >= todayStart) {
+            // Today → show time only (e.g. 14:32)
+            timeStr = lastAtDate.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+          } else if (lastAtDate >= yesterdayStart) {
+            // Yesterday
+            timeStr = 'Yesterday';
+          } else {
+            // Older → show date without year (e.g. 30 Mar)
+            timeStr = lastAtDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+          }
+        }
+
+        // Presence text for the thread row
         const presenceSpan = isOnline
           ? `<span class="dm-thread-presence online"
                   data-presence-ts="${tsMs ?? 'null'}">&#x25cf; Online</span>`
@@ -2072,7 +2087,12 @@ function _buildTeacherBubble(msg, showLabel) {
             </div>
             <div class="dm-thread-bd">
               <div class="dm-thread-r1">
-                <span class="dm-thread-name">${_esc(item.studentName || 'Unknown')}</span>
+                <span class="dm-thread-name">
+                  ${_esc(item.studentName || 'Unknown')}
+                  ${item.studentClass
+                    ? `<span style="font-size:.6875rem;font-weight:400;color:var(--text-3,#6b7280);margin-left:.3rem;">${_esc(item.studentClass)}</span>`
+                    : ''}
+                </span>
                 <span class="dm-thread-date">${_esc(timeStr)}</span>
               </div>
               ${presenceSpan}
@@ -2080,7 +2100,6 @@ function _buildTeacherBubble(msg, showLabel) {
                 <span class="dm-thread-preview">${_esc(item.lastMessage || 'No messages yet')}</span>
                 ${unread > 0 ? `<span class="dm-thread-badge">${unread > 9 ? '9+' : unread}</span>` : ''}
               </div>
-              <span class="dm-thread-class">${_esc(item.studentClass || '—')}</span>
             </div>
           </div>`;
       }).join('');
