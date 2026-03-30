@@ -1083,6 +1083,7 @@
   let touchStartY    = 0;
   let activeSwiping  = null;
   let swipeTriggered = false;
+  let swipeDir       = 0; // +1 = right, -1 = left
 
   function _getWrap(el) { return el.closest('.dm-swipe-wrap'); }
 
@@ -1103,7 +1104,14 @@
 
   function _resetWrap(wrap) {
     const inner = wrap.querySelector('.dm-swipe-inner');
-    if (inner) inner.style.transform = '';
+    if (inner) {
+      inner.style.transition = '';
+      inner.style.transform  = '';
+    }
+  }
+
+  function _isOutgoing(wrap) {
+    return wrap.classList.contains('dm-msg-out');
   }
 
   container.addEventListener('touchstart', function (e) {
@@ -1113,19 +1121,31 @@
     touchStartY    = e.touches[0].clientY;
     activeSwiping  = wrap;
     swipeTriggered = false;
+    swipeDir       = _isOutgoing(wrap) ? -1 : 1;
   }, { passive: true });
 
   container.addEventListener('touchmove', function (e) {
     if (!activeSwiping) return;
     const dx = e.touches[0].clientX - touchStartX;
     const dy = e.touches[0].clientY - touchStartY;
+
+    // Cancel if more vertical than horizontal
     if (Math.abs(dy) > Math.abs(dx) + 8) { activeSwiping = null; return; }
-    if (dx <= 0) return;
+
+    // Must swipe in the correct direction for this bubble side
+    if (dx * swipeDir <= 0) return;
+
     e.preventDefault();
-    const travel = Math.min(dx, SWIPE_MAX_REVEAL);
+
+    const travel = Math.min(Math.abs(dx), SWIPE_MAX_REVEAL);
     const inner  = activeSwiping.querySelector('.dm-swipe-inner');
-    if (inner) { inner.style.transition = 'none'; inner.style.transform = `translateX(${travel}px)`; }
-    if (dx >= SWIPE_THRESHOLD && !swipeTriggered) {
+    if (inner) {
+      inner.style.transition = 'none';
+      // Outgoing bubbles slide left (negative), incoming slide right (positive)
+      inner.style.transform  = `translateX(${swipeDir * travel}px)`;
+    }
+
+    if (Math.abs(dx) >= SWIPE_THRESHOLD && !swipeTriggered) {
       swipeTriggered = true;
       if (navigator.vibrate) navigator.vibrate(30);
       _triggerReply(activeSwiping);
@@ -1133,11 +1153,11 @@
   }, { passive: false });
 
   container.addEventListener('touchend', function () {
-    if (activeSwiping) { _resetWrap(activeSwiping); activeSwiping = null; swipeTriggered = false; }
+    if (activeSwiping) { _resetWrap(activeSwiping); activeSwiping = null; swipeTriggered = false; swipeDir = 0; }
   });
 
   container.addEventListener('touchcancel', function () {
-    if (activeSwiping) { _resetWrap(activeSwiping); activeSwiping = null; swipeTriggered = false; }
+    if (activeSwiping) { _resetWrap(activeSwiping); activeSwiping = null; swipeTriggered = false; swipeDir = 0; }
   });
 }
 
