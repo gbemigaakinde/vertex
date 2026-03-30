@@ -218,241 +218,243 @@
 
   /* ── CSS injection ─────────────────────────────────────────── */
   function _injectStyles() {
-    if (document.getElementById('_dmStyles')) return;
-    const style = document.createElement('style');
-    style.id = '_dmStyles';
-    style.textContent = `
-      .dm-ticks { display:inline-flex;align-items:center;margin-left:2px;vertical-align:middle;flex-shrink:0;line-height:1; }
+  if (document.getElementById('_dmStyles')) return;
+  const style = document.createElement('style');
+  style.id = '_dmStyles';
+  style.textContent = `
+    .dm-ticks { display:inline-flex;align-items:center;margin-left:2px;vertical-align:middle;flex-shrink:0;line-height:1; }
 
-      .dm-bubble-inner:hover .dm-edit-trigger-btn,
-      .dm-bubble-inner:focus-within .dm-edit-trigger-btn { opacity:1 !important; }
+    .dm-bubble-inner:hover .dm-edit-trigger-btn,
+    .dm-bubble-inner:focus-within .dm-edit-trigger-btn,
+    .dm-bubble-inner.menu-open .dm-edit-trigger-btn { opacity:1 !important; }
+    @media (hover: none) {
+      .dm-edit-trigger-btn { opacity:0.45 !important; }
+    }
 
-      .dm-presence { display:inline-flex;align-items:center;gap:5px;font-size:.6875rem;line-height:1;margin-top:3px; }
-      .dm-presence__dot { width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:background .4s; }
-      .dm-presence__dot--online { background:#22c45e;box-shadow:0 0 0 2px rgba(34,196,94,.2); }
-      .dm-presence__dot--offline { background:var(--text-4,#9ca3af); }
-      .dm-presence__label { color:var(--text-3,#6b7280);font-size:.6875rem; }
-      .dm-presence__label--online { color:#22c45e !important;font-weight:500; }
+    .dm-presence { display:inline-flex;align-items:center;gap:5px;font-size:.6875rem;line-height:1;margin-top:3px; }
+    .dm-presence__dot { width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:background .4s; }
+    .dm-presence__dot--online { background:#22c45e;box-shadow:0 0 0 2px rgba(34,196,94,.2); }
+    .dm-presence__dot--offline { background:var(--text-4,#9ca3af); }
+    .dm-presence__label { color:var(--text-3,#6b7280);font-size:.6875rem; }
+    .dm-presence__label--online { color:#22c45e !important;font-weight:500; }
 
-      .dm-date-sep { display:flex;align-items:center;gap:.625rem;margin:.875rem 0 .625rem;user-select:none; }
-      .dm-date-sep__line { flex:1;height:1px;background:var(--border,#e5e7eb); }
-      .dm-date-sep__label {
-        font-size:.625rem;font-weight:600;letter-spacing:.04em;color:var(--text-4,#9ca3af);
-        white-space:nowrap;padding:2px 8px;border-radius:99px;
-        background:var(--bg-subtle,#f3f4f6);border:1px solid var(--border,#e5e7eb);
-      }
+    .dm-date-sep { display:flex;align-items:center;gap:.625rem;margin:.875rem 0 .625rem;user-select:none; }
+    .dm-date-sep__line { flex:1;height:1px;background:var(--border,#e5e7eb); }
+    .dm-date-sep__label {
+      font-size:.625rem;font-weight:600;letter-spacing:.04em;color:var(--text-4,#9ca3af);
+      white-space:nowrap;padding:2px 8px;border-radius:99px;
+      background:var(--bg-subtle,#f3f4f6);border:1px solid var(--border,#e5e7eb);
+    }
 
-      #dmTeacherShell {
-        position:relative;width:100%;max-width:100%;min-width:0;
-        box-sizing:border-box;overflow:hidden;
-      }
+    #dmTeacherShell {
+      position:relative;width:100%;max-width:100%;min-width:0;
+      box-sizing:border-box;overflow:hidden;
+    }
 
-      #teacher-dm {
-        width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow:hidden;
-      }
+    #teacher-dm {
+      width:100%;max-width:100%;min-width:0;box-sizing:border-box;overflow:hidden;
+    }
 
-      .dm-thread-list-wrap {
-        width:100%;max-width:100%;min-width:0;
-        overflow-x:hidden;overflow-y:auto;box-sizing:border-box;
-      }
+    .dm-thread-list-wrap {
+      width:100%;max-width:100%;min-width:0;
+      overflow-x:hidden;overflow-y:auto;box-sizing:border-box;
+    }
 
-      .dm-thread-item {
-        display:flex;align-items:flex-start;gap:.75rem;padding:.75rem 1rem;cursor:pointer;
-        border-bottom:1px solid var(--border,#e5e7eb);background:transparent;
-        transition:background .12s ease;box-sizing:border-box;
-        width:100%;max-width:100%;min-width:0;overflow:hidden;
-      }
-      .dm-thread-item:last-child { border-bottom:none; }
-      .dm-thread-item:hover { background:var(--bg-subtle,#f5f5f7); }
-      .dm-thread-item.is-active { background:var(--accent-subtle,rgba(79,110,247,.07)); }
+    .dm-thread-item {
+      display:flex;align-items:flex-start;gap:.75rem;padding:.75rem 1rem;cursor:pointer;
+      border-bottom:1px solid var(--border,#e5e7eb);background:transparent;
+      transition:background .12s ease;box-sizing:border-box;
+      width:100%;max-width:100%;min-width:0;overflow:hidden;
+    }
+    .dm-thread-item:last-child { border-bottom:none; }
+    .dm-thread-item:hover { background:var(--bg-subtle,#f5f5f7); }
+    .dm-thread-item.is-active { background:var(--accent-subtle,rgba(79,110,247,.07)); }
 
-      .dm-thread-av { flex-shrink:0;position:relative;width:42px;height:42px;min-width:42px; }
-      .dm-thread-av-circle {
-        width:42px;height:42px;border-radius:50%;
-        background:var(--accent-subtle,rgba(79,110,247,.08));
-        border:1.5px solid var(--accent-border,rgba(79,110,247,.25));
-        display:flex;align-items:center;justify-content:center;
-        font-size:.9375rem;font-weight:700;color:var(--accent-text,#2d49d6);flex-shrink:0;
-      }
-      .dm-thread-av-circle.online { border-color:#22c45e; }
-      .dm-thread-av-dot {
-        position:absolute;bottom:1px;right:1px;
-        width:11px;height:11px;border-radius:50%;
-        background:#22c45e;border:2px solid var(--bg-base,#fff);
-      }
+    .dm-thread-av { flex-shrink:0;position:relative;width:42px;height:42px;min-width:42px; }
+    .dm-thread-av-circle {
+      width:42px;height:42px;border-radius:50%;
+      background:var(--accent-subtle,rgba(79,110,247,.08));
+      border:1.5px solid var(--accent-border,rgba(79,110,247,.25));
+      display:flex;align-items:center;justify-content:center;
+      font-size:.9375rem;font-weight:700;color:var(--accent-text,#2d49d6);flex-shrink:0;
+    }
+    .dm-thread-av-circle.online { border-color:#22c45e; }
+    .dm-thread-av-dot {
+      position:absolute;bottom:1px;right:1px;
+      width:11px;height:11px;border-radius:50%;
+      background:#22c45e;border:2px solid var(--bg-base,#fff);
+    }
 
-      .dm-thread-bd { flex:1 1 0%;min-width:0;max-width:100%;overflow:hidden; }
-      .dm-thread-r1 {
-        display:flex;align-items:baseline;justify-content:space-between;
-        gap:.375rem;margin-bottom:1px;min-width:0;overflow:hidden;
-      }
-      .dm-thread-name {
-        font-size:.875rem;font-weight:700;color:var(--text-1,#0d0d0f);
-        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1 1 0%;min-width:0;
-      }
-      .dm-thread-date { font-size:.6875rem;color:var(--text-4,#9ca3af);flex-shrink:0;white-space:nowrap; }
-      .dm-thread-presence {
-        font-size:.6875rem;color:var(--text-3,#6b7280);margin-bottom:1px;
-        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;display:block;
-      }
-      .dm-thread-presence.online { color:#22c45e;font-weight:600; }
+    .dm-thread-bd { flex:1 1 0%;min-width:0;max-width:100%;overflow:hidden; }
+    .dm-thread-r1 {
+      display:flex;align-items:baseline;justify-content:space-between;
+      gap:.375rem;margin-bottom:1px;min-width:0;overflow:hidden;
+    }
+    .dm-thread-name {
+      font-size:.875rem;font-weight:700;color:var(--text-1,#0d0d0f);
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1 1 0%;min-width:0;
+    }
+    .dm-thread-date { font-size:.6875rem;color:var(--text-4,#9ca3af);flex-shrink:0;white-space:nowrap; }
+    .dm-thread-presence {
+      font-size:.6875rem;color:var(--text-3,#6b7280);margin-bottom:1px;
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;display:block;
+    }
+    .dm-thread-presence.online { color:#22c45e;font-weight:600; }
 
-      .dm-thread-r2 {
-        display:flex;align-items:center;justify-content:space-between;
-        gap:.375rem;min-width:0;overflow:hidden;
-      }
-      .dm-thread-preview {
-        font-size:.8125rem;color:var(--text-3,#6b7280);
-        white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1 1 0%;min-width:0;
-      }
-      .dm-thread-badge {
-        flex-shrink:0;min-width:20px;height:20px;border-radius:99px;
-        background:var(--danger,#e03b3b);color:#fff;
-        font-size:.625rem;font-weight:700;
-        display:flex;align-items:center;justify-content:center;padding:0 5px;line-height:1;
-      }
-      .dm-thread-class {
-        display:block;font-size:.625rem;font-weight:500;
-        color:var(--accent-text,#2d49d6);background:var(--accent-subtle,rgba(79,110,247,.08));
-        border:1px solid var(--accent-border,rgba(79,110,247,.25));
-        border-radius:4px;padding:1px 6px;margin-top:3px;white-space:nowrap;
-        max-width:100%;overflow:hidden;text-overflow:ellipsis;width:fit-content;
-      }
+    .dm-thread-r2 {
+      display:flex;align-items:center;justify-content:space-between;
+      gap:.375rem;min-width:0;overflow:hidden;
+    }
+    .dm-thread-preview {
+      font-size:.8125rem;color:var(--text-3,#6b7280);
+      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1 1 0%;min-width:0;
+    }
+    .dm-thread-badge {
+      flex-shrink:0;min-width:20px;height:20px;border-radius:99px;
+      background:var(--danger,#e03b3b);color:#fff;
+      font-size:.625rem;font-weight:700;
+      display:flex;align-items:center;justify-content:center;padding:0 5px;line-height:1;
+    }
+    .dm-thread-class {
+      display:block;font-size:.625rem;font-weight:500;
+      color:var(--accent-text,#2d49d6);background:var(--accent-subtle,rgba(79,110,247,.08));
+      border:1px solid var(--accent-border,rgba(79,110,247,.25));
+      border-radius:4px;padding:1px 6px;margin-top:3px;white-space:nowrap;
+      max-width:100%;overflow:hidden;text-overflow:ellipsis;width:fit-content;
+    }
 
-      .dm-new-conv-overlay {
-        position:fixed;inset:0;background:rgba(0,0,0,.45);
-        display:flex;align-items:center;justify-content:center;
-        z-index:9999;animation:dmFadeIn .15s ease;
-      }
-      @keyframes dmFadeIn { from{opacity:0} to{opacity:1} }
-      .dm-new-conv-modal {
-        background:var(--bg-base,#fff);border-radius:14px;
-        width:min(480px,94vw);padding:1.25rem 1.5rem;
-        box-shadow:0 20px 60px rgba(0,0,0,.2);
-        border:1px solid var(--border,#e5e7eb);box-sizing:border-box;
-      }
-      .dm-action-menu {
-        position:absolute;z-index:200;background:var(--bg-base,#fff);
-        border:1px solid var(--border,#e5e7eb);border-radius:8px;
-        box-shadow:0 6px 20px rgba(0,0,0,.12);min-width:148px;overflow:hidden;animation:dmFadeIn .1s ease;
-      }
-      .dm-action-menu-item {
-        display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;
-        font-size:.8125rem;color:var(--text-1,#0d0d0f);cursor:pointer;
-        transition:background .1s;white-space:nowrap;
-        border:none;background:none;width:100%;text-align:left;font-family:var(--font);
-      }
-      .dm-action-menu-item:hover { background:var(--bg-subtle,#f3f4f6); }
-      .dm-action-menu-item + .dm-action-menu-item { border-top:1px solid var(--border,#e5e7eb); }
+    .dm-new-conv-overlay {
+      position:fixed;inset:0;background:rgba(0,0,0,.45);
+      display:flex;align-items:center;justify-content:center;
+      z-index:9999;animation:dmFadeIn .15s ease;
+    }
+    @keyframes dmFadeIn { from{opacity:0} to{opacity:1} }
+    .dm-new-conv-modal {
+      background:var(--bg-base,#fff);border-radius:14px;
+      width:min(480px,94vw);padding:1.25rem 1.5rem;
+      box-shadow:0 20px 60px rgba(0,0,0,.2);
+      border:1px solid var(--border,#e5e7eb);box-sizing:border-box;
+    }
+    .dm-action-menu {
+      position:fixed;z-index:9999;background:var(--bg-base,#fff);
+      border:1px solid var(--border,#e5e7eb);border-radius:8px;
+      box-shadow:0 6px 20px rgba(0,0,0,.12);min-width:148px;overflow:hidden;animation:dmFadeIn .1s ease;
+    }
+    .dm-action-menu-item {
+      display:flex;align-items:center;gap:.5rem;padding:.5rem .75rem;
+      font-size:.8125rem;color:var(--text-1,#0d0d0f);cursor:pointer;
+      transition:background .1s;white-space:nowrap;
+      border:none;background:none;width:100%;text-align:left;font-family:var(--font);
+    }
+    .dm-action-menu-item:hover { background:var(--bg-subtle,#f3f4f6); }
+    .dm-action-menu-item + .dm-action-menu-item { border-top:1px solid var(--border,#e5e7eb); }
 
-      .dm-edit-textarea {
-        width:100%;resize:none;overflow-y:hidden;line-height:1.55;
-        font-size:.875rem;font-family:var(--font);padding:.375rem .5rem;
-        border:1px solid var(--accent,#4f6ef7);border-radius:6px;
-        background:rgba(255,255,255,.15);color:inherit;outline:none;
-        box-shadow:0 0 0 3px var(--accent-subtle,rgba(79,110,247,.12));
-        min-height:2.4rem;box-sizing:border-box;
-      }
-      .dm-edit-actions { display:flex;gap:.375rem;margin-top:.375rem;justify-content:flex-end; }
-      .dm-edit-btn { font-size:.6875rem;font-weight:600;padding:3px 11px;border-radius:5px;border:none;cursor:pointer;font-family:var(--font); }
-      .dm-edit-btn--save { background:#fff;color:var(--accent,#4f6ef7); }
-      .dm-edit-btn--cancel { background:rgba(255,255,255,.2);color:inherit;opacity:.75; }
-      .dm-edit-btn--save-light { background:var(--accent,#4f6ef7);color:#fff; }
-      .dm-edit-btn--cancel-light { background:var(--bg-subtle,#f3f4f6);color:var(--text-2,#3a3a40);border:1px solid var(--border,#e5e7eb); }
-      .dm-edited-label { font-size:.5625rem;opacity:.6;font-style:italic;margin-left:4px;line-height:1;white-space:nowrap; }
+    .dm-edit-textarea {
+      width:100%;resize:none;overflow-y:hidden;line-height:1.55;
+      font-size:.875rem;font-family:var(--font);padding:.375rem .5rem;
+      border-radius:6px;outline:none;
+      min-height:2.4rem;box-sizing:border-box;
+    }
+    .dm-edit-actions { display:flex;gap:.375rem;margin-top:.375rem;justify-content:flex-end; }
+    .dm-edit-btn { font-size:.6875rem;font-weight:600;padding:3px 11px;border-radius:5px;border:none;cursor:pointer;font-family:var(--font); }
+    .dm-edit-btn--save { background:#fff;color:var(--accent,#4f6ef7); }
+    .dm-edit-btn--cancel { background:rgba(255,255,255,.2);color:inherit;opacity:.75; }
+    .dm-edit-btn--save-light { background:var(--accent,#4f6ef7);color:#fff; }
+    .dm-edit-btn--cancel-light { background:var(--bg-subtle,#f3f4f6);color:var(--text-2,#3a3a40);border:1px solid var(--border,#e5e7eb); }
+    .dm-edited-label { font-size:.5625rem;opacity:.6;font-style:italic;margin-left:4px;line-height:1;white-space:nowrap; }
 
-      .dm-history-overlay {
-        position:fixed;inset:0;background:rgba(0,0,0,.5);
-        display:flex;align-items:center;justify-content:center;
-        z-index:10000;padding:1rem;animation:dmFadeIn .15s ease;box-sizing:border-box;
-      }
-      .dm-history-modal {
-        background:var(--bg-base,#fff);border-radius:12px;
-        width:min(460px,96vw);max-height:80vh;display:flex;flex-direction:column;
-        box-shadow:0 20px 60px rgba(0,0,0,.22);border:1px solid var(--border,#e5e7eb);box-sizing:border-box;
-      }
-      .dm-history-header {
-        display:flex;align-items:center;justify-content:space-between;
-        padding:.875rem 1.125rem;border-bottom:1px solid var(--border,#e5e7eb);flex-shrink:0;
-      }
-      .dm-history-body { overflow-y:auto;padding:.75rem 1rem;flex:1;display:flex;flex-direction:column;gap:.625rem; }
-      .dm-history-entry {
-        padding:.625rem .875rem;border-radius:8px;
-        border:1px solid var(--border,#e5e7eb);background:var(--bg-subtle,#f9fafb);
-      }
-      .dm-history-entry p { font-size:.875rem;line-height:1.55;color:var(--text-1,#0d0d0f);white-space:pre-wrap;word-break:break-word;margin:0; }
-      .dm-history-entry time { display:block;font-size:.625rem;color:var(--text-4,#9ca3af);margin-top:.25rem; }
-      .dm-history-current { background:var(--accent-subtle,rgba(79,110,247,.08));border-color:var(--accent-border,rgba(79,110,247,.25)); }
-      .dm-history-current p { font-weight:500; }
+    .dm-history-overlay {
+      position:fixed;inset:0;background:rgba(0,0,0,.5);
+      display:flex;align-items:center;justify-content:center;
+      z-index:10000;padding:1rem;animation:dmFadeIn .15s ease;box-sizing:border-box;
+    }
+    .dm-history-modal {
+      background:var(--bg-base,#fff);border-radius:12px;
+      width:min(460px,96vw);max-height:80vh;display:flex;flex-direction:column;
+      box-shadow:0 20px 60px rgba(0,0,0,.22);border:1px solid var(--border,#e5e7eb);box-sizing:border-box;
+    }
+    .dm-history-header {
+      display:flex;align-items:center;justify-content:space-between;
+      padding:.875rem 1.125rem;border-bottom:1px solid var(--border,#e5e7eb);flex-shrink:0;
+    }
+    .dm-history-body { overflow-y:auto;padding:.75rem 1rem;flex:1;display:flex;flex-direction:column;gap:.625rem; }
+    .dm-history-entry {
+      padding:.625rem .875rem;border-radius:8px;
+      border:1px solid var(--border,#e5e7eb);background:var(--bg-subtle,#f9fafb);
+    }
+    .dm-history-entry p { font-size:.875rem;line-height:1.55;color:var(--text-1,#0d0d0f);white-space:pre-wrap;word-break:break-word;margin:0; }
+    .dm-history-entry time { display:block;font-size:.625rem;color:var(--text-4,#9ca3af);margin-top:.25rem; }
+    .dm-history-current { background:var(--accent-subtle,rgba(79,110,247,.08));border-color:var(--accent-border,rgba(79,110,247,.25)); }
+    .dm-history-current p { font-weight:500; }
 
-      .dm-msg-out {
-        display:flex;flex-direction:column;align-items:flex-end;
-        margin-bottom:.75rem;padding-left:20%;box-sizing:border-box;width:100%;max-width:100%;min-width:0;
-      }
-      .dm-msg-in {
-        display:flex;flex-direction:column;align-items:flex-start;
-        margin-bottom:.75rem;padding-right:20%;box-sizing:border-box;width:100%;max-width:100%;min-width:0;
-      }
-      .dm-bubble-wrap { display:inline-flex;flex-direction:column;max-width:100%;min-width:0; }
-      .dm-bubble-inner {
-        word-break:break-word;overflow-wrap:break-word;display:block;
-        max-width:100%;box-sizing:border-box;position:relative;
-      }
-      .dm-bubble-text { font-size:.9375rem;line-height:1.5;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;margin:0; }
-      .dm-bubble-footer { display:flex;align-items:center;gap:3px;margin-top:2px; }
-      .dm-bubble-footer--end   { justify-content:flex-end; }
-      .dm-bubble-footer--start { justify-content:flex-start; }
-      .dm-bubble-time { font-size:.625rem;opacity:.7;line-height:1;white-space:nowrap;flex-shrink:0; }
-      .dm-bubble-time--dim { opacity:.55; }
+    .dm-msg-out {
+      display:flex;flex-direction:column;align-items:flex-end;
+      margin-bottom:.75rem;padding-left:20%;box-sizing:border-box;width:100%;max-width:100%;min-width:0;
+    }
+    .dm-msg-in {
+      display:flex;flex-direction:column;align-items:flex-start;
+      margin-bottom:.75rem;padding-right:20%;box-sizing:border-box;width:100%;max-width:100%;min-width:0;
+    }
+    .dm-bubble-wrap { display:inline-flex;flex-direction:column;max-width:100%;min-width:0; }
+    .dm-bubble-inner {
+      word-break:break-word;overflow-wrap:break-word;display:block;
+      max-width:100%;box-sizing:border-box;position:relative;
+    }
+    .dm-bubble-text { font-size:.9375rem;line-height:1.5;white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word;margin:0; }
+    .dm-bubble-footer { display:flex;align-items:center;gap:3px;margin-top:2px; }
+    .dm-bubble-footer--end   { justify-content:flex-end; }
+    .dm-bubble-footer--start { justify-content:flex-start; }
+    .dm-bubble-time { font-size:.625rem;opacity:.7;line-height:1;white-space:nowrap;flex-shrink:0; }
+    .dm-bubble-time--dim { opacity:.55; }
 
-      .dm-messages-area { overflow-y:auto;overflow-x:hidden;box-sizing:border-box;width:100%;max-width:100%;min-width:0; }
+    .dm-messages-area { overflow-y:auto;overflow-x:hidden;box-sizing:border-box;width:100%;max-width:100%;min-width:0; }
 
-      .dm-picker-row { min-width:0;overflow:hidden; }
+    .dm-picker-row { min-width:0;overflow:hidden; }
 
-      #teacher-dm { overflow:hidden !important;min-width:0;box-sizing:border-box; }
+    #teacher-dm { overflow:hidden !important;min-width:0;box-sizing:border-box; }
 
-      .dm-reply-bar {
-        display:none;align-items:center;gap:.5rem;
-        padding:.375rem .625rem;margin:.375rem 0 0;
-        background:var(--accent-subtle,rgba(79,110,247,.07));
-        border-left:3px solid var(--accent,#4f6ef7);border-radius:0 6px 6px 0;
-        font-size:.75rem;color:var(--text-2,#3a3a40);
-        box-sizing:border-box;width:100%;overflow:hidden;animation:dmFadeIn .12s ease;
-      }
-      .dm-reply-bar.visible { display:flex; }
-      .dm-reply-bar__name { font-weight:700;color:var(--accent-text,#2d49d6);white-space:nowrap;flex-shrink:0; }
-      .dm-reply-bar__text { white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;opacity:.8; }
-      .dm-reply-bar__close { flex-shrink:0;background:none;border:none;cursor:pointer;padding:0;line-height:1;color:var(--text-4,#9ca3af);display:flex;align-items:center; }
-      .dm-reply-bar__close:hover { color:var(--text-2,#3a3a40); }
+    .dm-reply-bar {
+      display:none;align-items:center;gap:.5rem;
+      padding:.375rem .625rem;margin:.375rem 0 0;
+      background:var(--accent-subtle,rgba(79,110,247,.07));
+      border-left:3px solid var(--accent,#4f6ef7);border-radius:0 6px 6px 0;
+      font-size:.75rem;color:var(--text-2,#3a3a40);
+      box-sizing:border-box;width:100%;overflow:hidden;animation:dmFadeIn .12s ease;
+    }
+    .dm-reply-bar.visible { display:flex; }
+    .dm-reply-bar__name { font-weight:700;color:var(--accent-text,#2d49d6);white-space:nowrap;flex-shrink:0; }
+    .dm-reply-bar__text { white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;opacity:.8; }
+    .dm-reply-bar__close { flex-shrink:0;background:none;border:none;cursor:pointer;padding:0;line-height:1;color:var(--text-4,#9ca3af);display:flex;align-items:center; }
+    .dm-reply-bar__close:hover { color:var(--text-2,#3a3a40); }
 
-      .dm-reply-card {
-        margin-bottom:.375rem;padding:.3rem .5rem;
-        border-left:3px solid rgba(255,255,255,.5);border-radius:0 5px 5px 0;
-        background:rgba(0,0,0,.12);cursor:pointer;font-size:.75rem;line-height:1.4;overflow:hidden;
-      }
-      .dm-msg-in .dm-reply-card { border-left-color:var(--accent,#4f6ef7);background:var(--accent-subtle,rgba(79,110,247,.08)); }
-      .dm-reply-card__name { font-weight:700;display:block;margin-bottom:1px; }
-      .dm-msg-out .dm-reply-card__name { color:rgba(255,255,255,.9); }
-      .dm-msg-in  .dm-reply-card__name { color:var(--accent-text,#2d49d6); }
-      .dm-reply-card__text { display:block;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%; }
+    .dm-reply-card {
+      margin-bottom:.375rem;padding:.3rem .5rem;
+      border-left:3px solid rgba(255,255,255,.5);border-radius:0 5px 5px 0;
+      background:rgba(0,0,0,.12);cursor:pointer;font-size:.75rem;line-height:1.4;overflow:hidden;
+    }
+    .dm-msg-in .dm-reply-card { border-left-color:var(--accent,#4f6ef7);background:var(--accent-subtle,rgba(79,110,247,.08)); }
+    .dm-reply-card__name { font-weight:700;display:block;margin-bottom:1px; }
+    .dm-msg-out .dm-reply-card__name { color:rgba(255,255,255,.9); }
+    .dm-msg-in  .dm-reply-card__name { color:var(--accent-text,#2d49d6); }
+    .dm-reply-card__text { display:block;opacity:.8;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%; }
 
-      .dm-swipe-wrap {
-        position:relative;overflow:hidden;
-        width:100%;max-width:100%;min-width:0;box-sizing:border-box;touch-action:pan-y;
-      }
-      .dm-swipe-wrap .dm-swipe-inner { transition:transform .2s ease;will-change:transform; }
-      .dm-swipe-hint {
-        position:absolute;top:50%;transform:translateY(-50%);
-        display:flex;align-items:center;justify-content:center;
-        width:32px;height:32px;border-radius:50%;
-        background:var(--accent-subtle,rgba(79,110,247,.15));color:var(--accent,#4f6ef7);
-        opacity:0;pointer-events:none;transition:opacity .15s;
-      }
-      .dm-msg-out .dm-swipe-hint { right:calc(100% + 8px); }
-      .dm-msg-in  .dm-swipe-hint { left:calc(100% + 8px); }
-    `;
-    document.head.appendChild(style);
-  }
+    .dm-swipe-wrap {
+      position:relative;overflow:visible;
+      width:100%;max-width:100%;min-width:0;box-sizing:border-box;touch-action:pan-y;
+    }
+    .dm-swipe-wrap .dm-swipe-inner { transition:transform .2s ease;will-change:transform; }
+    .dm-swipe-hint {
+      position:absolute;top:50%;transform:translateY(-50%);
+      display:flex;align-items:center;justify-content:center;
+      width:32px;height:32px;border-radius:50%;
+      background:var(--accent-subtle,rgba(79,110,247,.15));color:var(--accent,#4f6ef7);
+      opacity:0;pointer-events:none;transition:opacity .15s;
+    }
+    .dm-msg-out .dm-swipe-hint { right:calc(100% + 8px); }
+    .dm-msg-in  .dm-swipe-hint { left:calc(100% + 8px); }
+  `;
+  document.head.appendChild(style);
+}
 
   /* ── Date/time helpers ─────────────────────────────────────── */
   function _dateLabelFor(date) {
@@ -1138,177 +1140,227 @@
 
   /* ── Inline edit UI ────────────────────────────────────────── */
   function _activateInlineEdit(studentUid, messageId, currentText, isDarkBubble, wrapperId, isTeacher) {
-    const wrapper = document.getElementById(wrapperId);
-    if (!wrapper) return;
-    const textEl   = wrapper.querySelector('.dm-bubble-text');
-    const footerEl = wrapper.querySelector('.dm-bubble-footer');
-    const editedEl = wrapper.querySelector('.dm-edited-label-wrap');
-    if (!textEl) return;
-    const inner = wrapper.querySelector('.dm-bubble-inner');
-    if (!inner) return;
-    if (inner.querySelector(`[id^="dmEditUI-"]`)) return;
+  const wrapper = document.getElementById(wrapperId);
+  if (!wrapper) return;
+  const textEl   = wrapper.querySelector('.dm-bubble-text');
+  const footerEl = wrapper.querySelector('.dm-bubble-footer');
+  const editedEl = wrapper.querySelector('.dm-edited-label-wrap');
+  if (!textEl) return;
+  const inner = wrapper.querySelector('.dm-bubble-inner');
+  if (!inner) return;
+  if (inner.querySelector(`[id^="dmEditUI-"]`)) return;
 
-    const saveClass   = isDarkBubble ? 'dm-edit-btn dm-edit-btn--save'   : 'dm-edit-btn dm-edit-btn--save-light';
-    const cancelClass = isDarkBubble ? 'dm-edit-btn dm-edit-btn--cancel' : 'dm-edit-btn dm-edit-btn--cancel-light';
+  const saveClass    = isDarkBubble ? 'dm-edit-btn dm-edit-btn--save'   : 'dm-edit-btn dm-edit-btn--save-light';
+  const cancelClass  = isDarkBubble ? 'dm-edit-btn dm-edit-btn--cancel' : 'dm-edit-btn dm-edit-btn--cancel-light';
+  const taBackground = isDarkBubble ? 'rgba(255,255,255,0.15)' : 'var(--bg-base,#fff)';
+  const taColor      = isDarkBubble ? '#fff'                   : 'var(--text-1,#0d0d0f)';
+  const taBorder     = isDarkBubble ? '1px solid rgba(255,255,255,0.3)' : '1px solid var(--accent,#4f6ef7)';
+  const taBoxShadow  = isDarkBubble ? '0 0 0 3px rgba(255,255,255,0.1)' : '0 0 0 3px var(--accent-subtle,rgba(79,110,247,.12))';
 
-    const editUI = document.createElement('div');
-    editUI.id    = `dmEditUI-${messageId}`;
+  const editUI = document.createElement('div');
+  editUI.id    = `dmEditUI-${messageId}`;
 
-    const cancelBtn       = document.createElement('button');
-    cancelBtn.className   = cancelClass;
-    cancelBtn.textContent = 'Cancel';
-    cancelBtn.onclick     = () => {
-      editUI.remove();
-      if (textEl)   textEl.style.display   = '';
-      if (footerEl) footerEl.style.display = '';
-      if (editedEl) editedEl.style.display = '';
+  const cancelBtn       = document.createElement('button');
+  cancelBtn.className   = cancelClass;
+  cancelBtn.textContent = 'Cancel';
+  cancelBtn.onclick     = () => {
+    editUI.remove();
+    if (textEl)   textEl.style.display   = '';
+    if (footerEl) footerEl.style.display = '';
+    if (editedEl) editedEl.style.display = '';
+  };
+
+  if (textEl)   textEl.style.display   = 'none';
+  if (footerEl) footerEl.style.display = 'none';
+  if (editedEl) editedEl.style.display = 'none';
+
+  const placeholder         = document.createElement('p');
+  placeholder.style.cssText = 'font-size:.75rem;opacity:.5;padding:.25rem 0;margin:0;';
+  placeholder.textContent   = 'Loading…';
+  editUI.appendChild(placeholder);
+  inner.appendChild(editUI);
+
+  const _buildEditor = () => {
+    editUI.innerHTML = '';
+
+    const ta            = document.createElement('textarea');
+    ta.className        = 'dm-edit-textarea';
+    ta.value            = currentText;
+    ta.rows             = 1;
+    ta.style.background = taBackground;
+    ta.style.color      = taColor;
+    ta.style.border     = taBorder;
+    ta.style.boxShadow  = taBoxShadow;
+
+    const actions     = document.createElement('div');
+    actions.className = 'dm-edit-actions';
+
+    const saveBtn       = document.createElement('button');
+    saveBtn.className   = saveClass;
+    saveBtn.textContent = 'Save';
+    saveBtn.onclick     = async () => {
+      const newText = ta.value.trim();
+      if (!newText) { UI.toast('Message cannot be empty.', 'warning'); return; }
+      if (newText === currentText) { cancelBtn.onclick(); return; }
+      saveBtn.disabled    = true;
+      saveBtn.textContent = 'Saving…';
+      try {
+        await _saveEdit(studentUid, messageId, currentText, newText, isTeacher);
+        if (textEl) textEl.textContent = newText;
+        cancelBtn.onclick();
+      } catch (err) {
+        if (err.message === 'EDIT_LIMIT_REACHED') {
+          _buildLimitNotice();
+        } else {
+          console.error('[dm] inline edit save error:', err);
+          UI.toast('Could not save edit. Please try again.', 'error');
+          saveBtn.disabled    = false;
+          saveBtn.textContent = 'Save';
+        }
+      }
     };
 
-    if (textEl)   textEl.style.display   = 'none';
-    if (footerEl) footerEl.style.display = 'none';
-    if (editedEl) editedEl.style.display = 'none';
+    actions.appendChild(cancelBtn);
+    actions.appendChild(saveBtn);
+    editUI.appendChild(ta);
+    editUI.appendChild(actions);
 
-    const placeholder         = document.createElement('p');
-    placeholder.style.cssText = 'font-size:.75rem;opacity:.5;padding:.25rem 0;margin:0;';
-    placeholder.textContent   = 'Loading…';
-    editUI.appendChild(placeholder);
-    inner.appendChild(editUI);
-
-    const _buildEditor = () => {
-      editUI.innerHTML = '';
-      const ta     = document.createElement('textarea');
-      ta.className = 'dm-edit-textarea';
-      ta.value     = currentText;
-      ta.rows      = 1;
-
-      const actions     = document.createElement('div');
-      actions.className = 'dm-edit-actions';
-
-      const saveBtn       = document.createElement('button');
-      saveBtn.className   = saveClass;
-      saveBtn.textContent = 'Save';
-      saveBtn.onclick     = async () => {
-        const newText = ta.value.trim();
-        if (!newText) { UI.toast('Message cannot be empty.', 'warning'); return; }
-        if (newText === currentText) { cancelBtn.onclick(); return; }
-        saveBtn.disabled    = true;
-        saveBtn.textContent = 'Saving…';
-        try {
-          await _saveEdit(studentUid, messageId, currentText, newText, isTeacher);
-          if (textEl) textEl.textContent = newText;
-          cancelBtn.onclick();
-        } catch (err) {
-          if (err.message === 'EDIT_LIMIT_REACHED') {
-            _buildLimitNotice();
-          } else {
-            console.error('[dm] inline edit save error:', err);
-            UI.toast('Could not save edit. Please try again.', 'error');
-            saveBtn.disabled    = false;
-            saveBtn.textContent = 'Save';
-          }
-        }
-      };
-
-      actions.appendChild(cancelBtn);
-      actions.appendChild(saveBtn);
-      editUI.appendChild(ta);
-      editUI.appendChild(actions);
-
-      ta.focus();
-      ta.setSelectionRange(ta.value.length, ta.value.length);
+    ta.focus();
+    ta.setSelectionRange(ta.value.length, ta.value.length);
+    ta.style.height = 'auto';
+    ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+    ta.addEventListener('input', () => {
       ta.style.height = 'auto';
       ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
-      ta.addEventListener('input', () => {
-        ta.style.height = 'auto';
-        ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
-      });
-      ta.addEventListener('keydown', e => {
-        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveBtn.onclick(); }
-        if (e.key === 'Escape') cancelBtn.onclick();
-      });
-    };
+    });
+    ta.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveBtn.onclick(); }
+      if (e.key === 'Escape') cancelBtn.onclick();
+    });
+  };
 
-    const _buildLimitNotice = () => {
-      editUI.innerHTML = '';
-      const msg         = document.createElement('p');
-      msg.style.cssText = `font-size:.75rem;line-height:1.5;margin:0 0 .375rem;opacity:.85;
-                            color:${isDarkBubble ? 'rgba(255,255,255,.9)' : 'var(--danger,#e03b3b)'};`;
-      msg.textContent   = 'Messages can only be edited twice.';
-      const actions     = document.createElement('div');
-      actions.className = 'dm-edit-actions';
-      actions.appendChild(cancelBtn);
-      editUI.appendChild(msg);
-      editUI.appendChild(actions);
-    };
+  const _buildLimitNotice = () => {
+    editUI.innerHTML = '';
+    const msg         = document.createElement('p');
+    msg.style.cssText = `font-size:.75rem;line-height:1.5;margin:0 0 .375rem;opacity:.85;
+                          color:${isDarkBubble ? 'rgba(255,255,255,.9)' : 'var(--danger,#e03b3b)'};`;
+    msg.textContent   = 'Messages can only be edited twice.';
+    const actions     = document.createElement('div');
+    actions.className = 'dm-edit-actions';
+    actions.appendChild(cancelBtn);
+    editUI.appendChild(msg);
+    editUI.appendChild(actions);
+  };
 
-    if (isTeacher) {
-      _buildEditor();
-    } else {
-      _msgHistoryRef(studentUid, messageId).get()
-        .then(snap => { if (snap.size >= 2) _buildLimitNotice(); else _buildEditor(); })
-        .catch(() => _buildEditor());
-    }
+  if (isTeacher) {
+    _buildEditor();
+  } else {
+    _msgHistoryRef(studentUid, messageId).get()
+      .then(snap => { if (snap.size >= 2) _buildLimitNotice(); else _buildEditor(); })
+      .catch(() => _buildEditor());
   }
+}
 
   let _openMenuId = null;
 
   function _closeOpenMenu() {
-    if (_openMenuId) {
-      const m = document.getElementById(_openMenuId);
-      if (m) m.remove();
-      const btn = document.querySelector('.dm-action-btn--open');
-      if (btn) btn.classList.remove('dm-action-btn--open');
-      _openMenuId = null;
-    }
+  if (_openMenuId) {
+    const m = document.getElementById(_openMenuId);
+    if (m) m.remove();
+    document.querySelectorAll('.dm-bubble-inner.menu-open').forEach(el => {
+      el.classList.remove('menu-open');
+    });
+    _openMenuId = null;
   }
+}
 
   function _toggleActionMenu(wrapperId, studentUid, messageId, currentText, canEdit, canHistory, isDarkBubble, alignRight, isTeacher) {
-    const menuId = `dmMenu-${messageId}`;
-    if (_openMenuId === menuId) { _closeOpenMenu(); return; }
-    _closeOpenMenu();
+  const menuId = `dmMenu-${messageId}`;
+  if (_openMenuId === menuId) { _closeOpenMenu(); return; }
+  _closeOpenMenu();
 
-    const bubbleInner = document.querySelector(`#${wrapperId} .dm-bubble-inner`);
-    if (!bubbleInner) return;
+  const wrapper = document.getElementById(wrapperId);
+  if (!wrapper) return;
+  const bubbleInner = wrapper.querySelector('.dm-bubble-inner');
+  if (!bubbleInner) return;
 
-    const menu     = document.createElement('div');
-    menu.className = 'dm-action-menu';
-    menu.id        = menuId;
-    menu.style.cssText = alignRight ? 'right:0;bottom:calc(100% + 6px);' : 'left:0;bottom:calc(100% + 6px);';
+  // Always re-read text from the DOM — the inline onclick passes textContent
+  // which can sometimes be stale or undefined if the element was mutated.
+  const textEl      = bubbleInner.querySelector('.dm-bubble-text');
+  const resolvedText = (currentText && String(currentText).trim())
+    ? String(currentText).trim()
+    : (textEl ? textEl.textContent.trim() : '');
 
-    if (canEdit) {
-      const editItem     = document.createElement('button');
-      editItem.className = 'dm-action-menu-item';
-      editItem.innerHTML = `${_iconPencil(13)} Edit message`;
-      editItem.onclick   = () => {
-        _closeOpenMenu();
-        _activateInlineEdit(studentUid, messageId, currentText, isDarkBubble, wrapperId, isTeacher);
-      };
-      menu.appendChild(editItem);
-    }
+  const menu     = document.createElement('div');
+  menu.className = 'dm-action-menu';
+  menu.id        = menuId;
 
-    if (canHistory) {
-      const histItem     = document.createElement('button');
-      histItem.className = 'dm-action-menu-item';
-      histItem.innerHTML = `${_iconHistory(13)} Edit history`;
-      histItem.onclick   = () => { _closeOpenMenu(); _showEditHistory(studentUid, messageId, currentText); };
-      menu.appendChild(histItem);
-    }
-
-    if (!menu.children.length) return;
-
-    bubbleInner.style.position = 'relative';
-    bubbleInner.appendChild(menu);
-    _openMenuId = menuId;
-
-    setTimeout(() => {
-      document.addEventListener('click', function _handler(e) {
-        if (!menu.contains(e.target)) {
-          _closeOpenMenu();
-          document.removeEventListener('click', _handler);
-        }
-      });
-    }, 0);
+  if (canEdit) {
+    const editItem     = document.createElement('button');
+    editItem.className = 'dm-action-menu-item';
+    editItem.innerHTML = `${_iconPencil(13)} Edit message`;
+    editItem.onclick   = () => {
+      _closeOpenMenu();
+      _activateInlineEdit(studentUid, messageId, resolvedText, isDarkBubble, wrapperId, isTeacher);
+    };
+    menu.appendChild(editItem);
   }
+
+  if (canHistory) {
+    const histItem     = document.createElement('button');
+    histItem.className = 'dm-action-menu-item';
+    histItem.innerHTML = `${_iconHistory(13)} Edit history`;
+    histItem.onclick   = () => {
+      _closeOpenMenu();
+      _showEditHistory(studentUid, messageId, resolvedText);
+    };
+    menu.appendChild(histItem);
+  }
+
+  if (!menu.children.length) return;
+
+  // Attach to body with fixed positioning so it escapes any overflow:hidden ancestor
+  menu.style.position = 'fixed';
+  menu.style.zIndex   = '9999';
+  menu.style.top      = '-9999px'; // hide off-screen until measured
+  menu.style.left     = '-9999px';
+  document.body.appendChild(menu);
+  _openMenuId = menuId;
+
+  // Mark bubble so the pencil icon stays visible while menu is open
+  bubbleInner.classList.add('menu-open');
+
+  // Measure and position after paint
+  requestAnimationFrame(() => {
+    const rect     = bubbleInner.getBoundingClientRect();
+    const menuRect = menu.getBoundingClientRect();
+
+    // Prefer opening above the bubble; fall back to below if not enough room
+    const spaceAbove = rect.top;
+    if (spaceAbove >= menuRect.height + 8) {
+      menu.style.top = `${rect.top - menuRect.height - 6}px`;
+    } else {
+      menu.style.top = `${rect.bottom + 6}px`;
+    }
+
+    // Align to the right or left edge of the bubble, clamped inside the viewport
+    if (alignRight) {
+      menu.style.left = `${Math.max(4, rect.right - menuRect.width)}px`;
+    } else {
+      menu.style.left = `${Math.min(rect.left, window.innerWidth - menuRect.width - 4)}px`;
+    }
+  });
+
+  // Close when clicking anywhere outside the menu
+  setTimeout(() => {
+    document.addEventListener('click', function _handler(e) {
+      if (!menu.contains(e.target)) {
+        _closeOpenMenu();
+        document.removeEventListener('click', _handler);
+      }
+    });
+  }, 0);
+}
 
   /* ── Bubble builders ───────────────────────────────────────── */
   function _buildStudentBubble(msg, myUid, showLabel) {
