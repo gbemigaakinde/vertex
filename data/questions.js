@@ -1214,244 +1214,256 @@ window.questions = {
 jss2: {
     'English Language': [
     {
-        q: "In the sentence, 'The scientist's discovery was a **bolt from the blue**,' what does the idiomatic expression imply?",
-        opts: ["A scientific experiment involving electricity", "A predicted weather pattern", "A complete surprise or unexpected event", "A blue-colored chemical reaction"],
+        q: "Which of the following is an example of a consonant cluster?",
+        opts: ["'str' in 'street'", "'a' in 'apple'", "'ou' in 'cloud'", "'ee' in 'sleep'"],
+        ans: 0,
+        exp: "A consonant cluster is a group of two or more consonant sounds together with no vowel between them. 'str' in 'street' has three consonants together — /s/, /t/, /r/ — making it a consonant cluster. The other options contain vowels."
+    },
+    {
+        q: "Which word begins with a consonant cluster?",
+        opts: ["Oven", "Umbrella", "Spring", "Eagle"],
         ans: 2,
-        exp: "The idiom 'bolt from the blue' refers to something sudden and unexpected."
+        exp: "'Spring' begins with the consonant cluster 'spr' — three consonants (/s/, /p/, /r/) before the first vowel. The other words all begin with vowel sounds."
     },
     {
-        q: "Change the following direct question into reported speech: 'Why did the researcher abandon the experiment yesterday?' asked the supervisor.",
-        opts: ["The supervisor asked why the researcher had abandoned the experiment the previous day.", "The supervisor asked why did the researcher abandon the experiment the day before.", "The supervisor asked that why the researcher abandoned the experiment yesterday.", "The supervisor asked why the researcher has abandoned the experiment the previous day."],
-        ans: 0,
-        exp: "In reported speech, 'did abandon' shifts to 'had abandoned', 'yesterday' becomes 'the previous day', and the question word order becomes statement order."
-    },
-    {
-        q: "Identify the word that contains the consonant sound /ŋ/.",
-        opts: ["Management", "Running", "Money", "Pneumonia"],
+        q: "Which of the following words contains the diphthong /eɪ/?",
+        opts: ["Sit", "Rain", "Hot", "Cup"],
         ans: 1,
-        exp: "The 'ng' in 'Running' represents the velar nasal sound /ŋ/."
+        exp: "The word 'Rain' contains the diphthong /eɪ/ — a gliding sound that starts at /e/ and moves towards /ɪ/. A diphthong is a vowel sound that glides from one position to another within the same syllable."
     },
     {
-        q: "Which of the following is a 'Pure Vowel' (Monophthong) and not a Diphthong?",
-        opts: ["/eɪ/ as in 'Play'", "/i:/ as in 'Meet'", "/aɪ/ as in 'Fly'", "/əʊ/ as in 'Go'"],
+        q: "Identify the word that contains the diphthong /ɔɪ/.",
+        opts: ["Boat", "Bait", "Boy", "Boot"],
+        ans: 2,
+        exp: "The word 'Boy' contains the diphthong /ɔɪ/. This sound glides from /ɔ/ to /ɪ/. 'Boat' has /əʊ/, 'Bait' has /eɪ/, and 'Boot' has the pure vowel /uː/."
+    },
+    {
+        q: "Which of the following words contains the diphthong /aɪ/?",
+        opts: ["Coat", "Fly", "Fool", "Feed"],
         ans: 1,
-        exp: "/i:/ is a long pure vowel; the others are diphthongs (gliding vowels)."
+        exp: "The diphthong /aɪ/ is heard in 'Fly'. The sound glides from /a/ towards /ɪ/. This same sound appears in words like 'sky', 'night', and 'my'."
     },
     {
-        q: "In a formal letter to a Local Government Chairman, what is the most appropriate subscription?",
-        opts: ["Yours faithfully,", "Yours sincerely,", "Your best friend,", "Warmest regards,"],
-        ans: 0,
-        exp: "Since you do not have a personal relationship with the Chairman, 'Yours faithfully' is required."
+        q: "A diphthong is best described as:",
+        opts: ["A consonant sound made at the back of the throat", "A single vowel sound that does not change", "A vowel sound that glides from one position to another in the same syllable", "Two consonants that appear together"],
+        ans: 2,
+        exp: "A diphthong is a vowel sound where the mouth moves from one position to another during the same syllable, producing a gliding sound. Examples include /eɪ/ in 'make', /aɪ/ in 'like', and /ɔɪ/ in 'boy'."
     },
     {
-        q: "Choose the word that has a different stress pattern from the others.",
-        opts: ["Laboratory", "Calculator", "Television", "Entrepreneur"],
+        q: "What type of intonation is used at the end of a yes/no question like 'Are you coming to school today?'",
+        opts: ["Falling intonation", "Level intonation", "Rising intonation", "Falling-rising intonation"],
+        ans: 2,
+        exp: "Yes/No questions end with a rising intonation — the voice goes UP at the end. This signals to the listener that a yes or no answer is expected."
+    },
+    {
+        q: "Which intonation pattern is used for commands such as 'Sit down immediately!'?",
+        opts: ["Rising intonation", "Rising-falling intonation", "Level intonation", "Falling intonation"],
         ans: 3,
-        exp: "Entrepreneur is stressed on the last syllable (en-tre-pre-NEUR), whereas others are stressed on the first or second."
+        exp: "Commands use falling intonation — the voice drops at the end. This expresses authority, finality, or a firm instruction."
     },
     {
-        q: "Which punctuation mark is used to introduce a list of items after a complete sentence?",
-        opts: ["Comma", "Semicolon", "Colon", "Apostrophe"],
-        ans: 2,
-        exp: "A colon (:) is used to introduce lists, explanations, or quotes."
-    },
-    {
-        q: "Identify the intonation pattern for this command: 'Leave the stadium immediately!'",
-        opts: ["Rising Intonation", "Falling Intonation", "Rising-Falling Intonation", "Level Intonation"],
+        q: "Report this statement: 'I am reading a novel,' said Kemi.",
+        opts: ["Kemi said she is reading a novel.", "Kemi said she was reading a novel.", "Kemi said I am reading a novel.", "Kemi said she has been reading a novel."],
         ans: 1,
-        exp: "Commands typically take a falling intonation to express authority and finality."
+        exp: "In reported speech, the present continuous 'am reading' shifts back one tense to the past continuous 'was reading'. The pronoun 'I' also changes to 'she' to match the third-person reference."
     },
     {
-        q: "Which of the following is an IRREGULAR verb?",
-        opts: ["Walk", "Program", "Build", "Launch"],
+        q: "Change to reported speech: 'We will visit the museum tomorrow,' the students said.",
+        opts: ["The students said they will visit the museum tomorrow.", "The students said we would visit the museum the next day.", "The students said they would visit the museum the next day.", "The students said they would visit the museum tomorrow."],
         ans: 2,
-        exp: "'Build' becomes 'Built' (not Builded), making it irregular."
+        exp: "'Will' changes to 'would', 'we' changes to 'they', and 'tomorrow' changes to 'the next day'. All three changes must be made correctly in reported speech."
     },
     {
-        q: "In 'Minutes of a Meeting', under which heading would you find the names of people who were supposed to attend but didn't?",
-        opts: ["Attendance", "Apologies", "Matters Arising", "A.O.B"],
+        q: "Report this question: 'Where did you put my bag?' Amara asked her brother.",
+        opts: ["Amara asked her brother where did he put her bag.", "Amara asked her brother where he had put her bag.", "Amara asked her brother where he put her bag.", "Amara asked her brother where had he put her bag."],
         ans: 1,
-        exp: "Apologies are recorded for members who sent notice of their absence."
+        exp: "When reporting a question, the question word order ('where did he put') changes to statement order ('where he had put'). The past tense 'did put' shifts back to 'had put'. Note also the pronoun changes: 'you' → 'he', 'my' → 'her'."
     },
     {
-        q: "Select the sentence with the correct use of prepositions.",
-        opts: ["The athlete congratulated him for his victory.", "The athlete congratulated him on his victory.", "The athlete congratulated him with his victory.", "The athlete congratulated him at his victory."],
-        ans: 1,
-        exp: "We congratulate someone 'on' an achievement."
-    },
-    {
-        q: "In a poem, the regular pattern of stressed and unstressed syllables is known as:",
-        opts: ["Rhyme", "Rhythm", "Stanza", "Alliteration"],
-        ans: 1,
-        exp: "Rhythm (or meter) is the beat or flow of the poem."
-    },
-    {
-        q: "Which of these words contains the sound /z/ and not /s/?",
-        opts: ["Face", "Rice", "Phase", "Price"],
-        ans: 2,
-        exp: "In 'Phase', the 's' is voiced, producing the /z/ sound."
-    },
-    {
-        q: "What is the primary purpose of an 'Expository Essay'?",
-        opts: ["To tell a story about a birthday", "To argue against a point of view", "To explain or provide information on a topic", "To describe a beautiful scene"],
-        ans: 2,
-        exp: "Expository writing is meant to explain, inform, or define a specific topic."
-    },
-    {
-        q: "Identify the adverbial in this sentence: 'The computer system crashed quite unexpectedly.'",
-        opts: ["The computer", "system", "crashed", "quite unexpectedly"],
-        ans: 3,
-        exp: "'Quite unexpectedly' is an adverbial phrase of manner/degree."
-    },
-    {
-        q: "Which sound is the voiceless counterpart to the voiced /g/?",
-        opts: ["/p/", "/k/", "/t/", "/s/"],
-        ans: 1,
-        exp: "/k/ is the voiceless velar plosive; /g/ is the voiced velar plosive."
-    },
-    {
-        q: "In an argumentative essay, what is the role of the 'Rebuttal'?",
-        opts: ["To agree with the opponent", "To introduce the topic", "To prove the opposing argument is wrong", "To list the references"],
-        ans: 2,
-        exp: "A rebuttal is used to counter or disprove the opposing side's points."
-    },
-    {
-        q: "Which word contains the consonant sound /l/?",
-        opts: ["Walk", "Talk", "Colonel", "Could"],
-        ans: 2,
-        exp: "In 'Walk', 'Talk', and 'Could', the 'l' is silent. In 'Colonel' (pronounced /'kɜːnl/), the /l/ sound is heard at the end."
-    },
-    {
-        q: "Report this statement: 'I will finish the report tomorrow,' said the clerk.",
-        opts: ["The clerk said he would finish the report the next day.", "The clerk said I will finish the report tomorrow.", "The clerk said he will finish the report the next day.", "The clerk said he would finish the report tomorrow."],
+        q: "Report this command: 'Open your textbooks to page 40,' the teacher told the students.",
+        opts: ["The teacher told the students to open their textbooks to page 40.", "The teacher told the students open your textbooks to page 40.", "The teacher said the students should open their textbooks to page 40.", "The teacher asked the students to opened their textbooks to page 40."],
         ans: 0,
-        exp: "'Will' changes to 'would' and 'tomorrow' changes to 'the next day'."
+        exp: "Reported commands use 'told + object + to + infinitive'. The imperative 'Open' becomes 'to open', and 'your' changes to 'their'."
     },
     {
-        q: "Which of these is a 'Time Phrase' used to indicate the past?",
-        opts: ["At the moment", "In a fortnight", "Formerly", "Henceforth"],
-        ans: 2,
-        exp: "'Formerly' refers to a time in the past."
-    },
-    {
-        q: "Identify the word with a diphthong.",
-        opts: ["Cat", "Boy", "Sit", "Hot"],
+        q: "Report this request: 'Please help me carry this bag,' Tobi said to his friend.",
+        opts: ["Tobi requested his friend to please help him carry the bag.", "Tobi asked his friend if he could help him carry the bag.", "Tobi told his friend to help him carry the bag.", "Tobi said please help him carry the bag."],
         ans: 1,
-        exp: "The 'oy' in 'Boy' is the diphthong /ɔɪ/."
+        exp: "Polite requests in reported speech are often expressed using 'asked + object + if/whether + subject + could'. The 'please' is dropped, and the structure becomes more formal and indirect."
     },
     {
-        q: "What is the function of an apostrophe in the word 'Students'?'",
-        opts: ["To show singular possession", "To show plural possession", "To show a contraction", "To show a plural noun"],
+        q: "Which sentence uses the SIMPLE PAST tense correctly?",
+        opts: ["She is going to the market yesterday.", "They were eating when I arrived.", "He kicked the ball and scored a goal.", "I have seen that film last week."],
+        ans: 2,
+        exp: "'Kicked' and 'scored' are both simple past tense verbs, correctly describing completed actions. Option A mixes present continuous with 'yesterday'. Option D incorrectly uses 'have seen' (present perfect) with 'last week' (a definite past time)."
+    },
+    {
+        q: "Which sentence correctly uses the PRESENT CONTINUOUS tense?",
+        opts: ["She reads a book right now.", "He is playing football at the moment.", "They studied hard every day.", "We are went to the park last Sunday."],
         ans: 1,
-        exp: "The apostrophe after the 's' indicates that the item belongs to more than one student."
+        exp: "The present continuous tense = 'is/am/are + verb-ing'. 'He is playing' is correctly formed and used with 'at the moment', which shows an action happening right now."
     },
     {
-        q: "In technical reading, what is a 'Main Idea'?",
-        opts: ["The smallest detail in a paragraph", "The author's hidden biography", "The central point the author is trying to communicate", "The list of definitions at the bottom"],
-        ans: 2,
-        exp: "The main idea is the primary message or 'thesis' of the text."
-    },
-    {
-        q: "Which of these is the correct phonetic symbol for the first sound in 'Match'?",
-        opts: ["/n/", "/ŋ/", "/m/", "/p/"],
-        ans: 2,
-        exp: "'Match' starts with the bilabial nasal /m/."
-    },
-    {
-        q: "Identify the greeting used in an INFORMAL letter.",
-        opts: ["Dear Sir/Madam,", "Dear Mr. Chairman,", "Dearest Tolu,", "To whom it may concern,"],
-        ans: 2,
-        exp: "Informal letters use first names or affectionate terms."
-    },
-    {
-        q: "Which of these words is related to the vocabulary of 'Sports'?",
-        opts: ["Syllable", "Algorithm", "Tournament", "Entrepreneurship"],
-        ans: 2,
-        exp: "A tournament is a series of contests in sports."
-    },
-    {
-        q: "What does 'Reading to Summarize' require a student to do?",
-        opts: ["Copy the entire text word-for-word", "Translate the text into another language", "Identify and condense the most important points", "Count the number of verbs in the text"],
-        ans: 2,
-        exp: "Summarizing involves extracting the gist of the text concisely."
-    },
-    {
-        q: "Select the sentence that requires a Question Mark.",
-        opts: ["He asked if I was hungry", "I wonder why she left", "Will you be attending the sports meet", "Tell me your name"],
-        ans: 2,
-        exp: "Option 2 is a direct question; Options 0 and 1 are indirect statements."
-    },
-    {
-        q: "Which of these is a bilabial plosive consonant?",
-        opts: ["/k/", "/g/", "/p/", "/l/"],
-        ans: 2,
-        exp: "/p/ is produced by blocking airflow with both lips."
-    },
-    {
-        q: "What intonation is used for a Yes/No question?",
-        opts: ["Falling Intonation", "Rising Intonation", "Monotone", "Falling-Rising Intonation"],
+        q: "Choose the sentence with the correct PAST CONTINUOUS tense.",
+        opts: ["We was watching TV when the light went out.", "They were sleeping when the alarm rang.", "She were cooking when I arrived.", "He was went to school this morning."],
         ans: 1,
-        exp: "Yes/No questions generally end with a rise in pitch."
+        exp: "The past continuous tense = 'was/were + verb-ing'. 'They were sleeping' is correctly formed. 'Was' is used with singular subjects (he, she, it, I) and 'were' with plural subjects or 'you'."
     },
     {
-        q: "In 'Minutes of a Meeting', 'A.O.B' stands for:",
-        opts: ["All Other Businesses", "Any Other Business", "Always Offer Bread", "After Office Business"],
+        q: "Which sentence uses the FUTURE tense correctly?",
+        opts: ["She will goes to Abuja tomorrow.", "We shall attended the meeting next week.", "He will travel to London next month.", "They will be went home soon."],
+        ans: 2,
+        exp: "Future tense = 'will/shall + base form of verb'. 'He will travel' is correct — the base form 'travel' follows 'will'. Options A, B, and D all incorrectly add extra verb endings after 'will/shall'."
+    },
+    {
+        q: "Select the correct COMPARATIVE form: 'Bolu is _____ than Tunde.'",
+        opts: ["more tall", "tallest", "taller", "most tall"],
+        ans: 2,
+        exp: "Short adjectives (one syllable) like 'tall' form their comparative by adding '-er': taller. 'More tall' and 'most tall' are incorrect. 'Tallest' is the superlative (used for three or more), not the comparative (used for two)."
+    },
+    {
+        q: "Which sentence uses a SUPERLATIVE adjective correctly?",
+        opts: ["This is the most fastest car in the race.", "She is the most intelligent student in the class.", "He is more tallest than his brother.", "It is the goodest result we have seen."],
         ans: 1,
-        exp: "Any Other Business is for items not on the formal agenda."
+        exp: "'Most intelligent' is the correct superlative for a long adjective (three syllables). 'Most fastest' is wrong because 'fastest' already carries the superlative '-est'. 'More tallest' mixes comparative and superlative forms."
     },
     {
-        q: "Which word has the stress on the first syllable?",
-        opts: ["Refuse (Verb)", "Produce (Noun)", "Record (Verb)", "Present (Verb)"],
+        q: "Identify the ADVERBIAL of MANNER in this sentence: 'The soldier marched proudly down the street.'",
+        opts: ["The soldier", "marched", "proudly", "down the street"],
+        ans: 2,
+        exp: "An adverbial of manner answers the question 'How?' 'Proudly' tells us HOW the soldier marched. 'Down the street' is an adverbial of place (where), not manner."
+    },
+    {
+        q: "Which underlined word is an INTENSIFIER in the sentence: 'She is very happy about her results'?",
+        opts: ["She", "very", "happy", "results"],
         ans: 1,
-        exp: "When 'Produce' is a noun (meaning fruits/vegetables), the stress is on the first syllable. As a verb, it is on the second."
+        exp: "An intensifier is a word that strengthens or increases the degree of an adjective or adverb. 'Very' intensifies the adjective 'happy'. Other common intensifiers include 'quite', 'rather', 'extremely', and 'so'."
     },
     {
-        q: "Identify the preposition in: 'The information is stored on the hard drive.'",
-        opts: ["The", "Information", "Stored", "On"],
+        q: "Choose the correct preposition: 'The principal's office is _____ the second floor.'",
+        opts: ["in", "at", "on", "by"],
+        ans: 2,
+        exp: "We use 'on' with floors of a building: 'on the second floor', 'on the ground floor'. 'In' is used for enclosed spaces generally, 'at' for specific locations or addresses, but 'on' is the correct choice for floors."
+    },
+    {
+        q: "Which sentence uses a preposition of LOCATION correctly?",
+        opts: ["The book is at the table.", "She sat between her two friends.", "He is on the school.", "They arrived to the station."],
+        ans: 1,
+        exp: "'Between' correctly shows a location in the middle of two things (her two friends). 'At the table' is sometimes acceptable but 'on the table' is more precise for objects resting on surfaces. 'On the school' and 'arrived to' are incorrect preposition uses."
+    },
+    {
+        q: "Which of the following is the correct use of the FULL STOP?",
+        opts: ["She went to the market, she bought tomatoes.", "Did you complete the assignment.", "The match ended in a draw.", "How wonderful the sunset is!"],
+        ans: 2,
+        exp: "A full stop ends a declarative (statement) sentence. 'The match ended in a draw.' is a statement, correctly ending with a full stop. Option B is a question (needs a question mark). Option D is an exclamation (needs an exclamation mark)."
+    },
+    {
+        q: "Where is a COMMA correctly used in the following sentences?",
+        opts: ["She, bought bread milk and eggs.", "After eating dinner, we went for a walk.", "He ran, and jumped.", "The boy, is tall."],
+        ans: 1,
+        exp: "A comma is correctly placed after an introductory phrase or clause: 'After eating dinner,' sets the scene before the main clause. Commas are not placed between a subject and its verb (options C and D are over-punctuated)."
+    },
+    {
+        q: "Which of the following is a FORMAL letter greeting?",
+        opts: ["Dearest Auntie Bisi,", "Hi Emeka,", "Dear Sir/Madam,", "Hey, what's up,"],
+        ans: 2,
+        exp: "'Dear Sir/Madam,' is the correct greeting for a formal letter when you do not know the recipient's name personally. Informal greetings use first names or affectionate terms."
+    },
+    {
+        q: "In a formal letter, which subscription is correct when you DO NOT know the name of the person you are writing to?",
+        opts: ["Yours sincerely,", "Your loving friend,", "Yours faithfully,", "Yours truly,"],
+        ans: 2,
+        exp: "The rule is: if you open with 'Dear Sir/Madam' (not knowing the name), you close with 'Yours faithfully'. If you open with a name like 'Dear Mr. Adeyemi', you close with 'Yours sincerely'."
+    },
+    {
+        q: "Which of the following is the MAIN PURPOSE of a narrative essay?",
+        opts: ["To explain the causes of climate change", "To argue for or against a topic", "To tell a story about an event or experience", "To describe the features of a place"],
+        ans: 2,
+        exp: "A narrative essay tells a story — it recounts an event, experience, or sequence of happenings. It answers the question: 'What happened?' An expository essay explains; an argumentative essay argues for a position."
+    },
+    {
+        q: "In an argumentative essay on the topic 'Social media does more harm than good', which option is a strong ARGUMENT FOR this position?",
+        opts: ["Social media helps people stay connected with family.", "Social media exposes young people to cyberbullying and misinformation.", "Some social media platforms have educational content.", "Social media was invented in the 21st century."],
+        ans: 1,
+        exp: "A strong argument directly supports the stated position. 'Social media exposes young people to cyberbullying and misinformation' directly supports the claim that it does 'more harm than good'. The other options either support the opposing side or are irrelevant facts."
+    },
+    {
+        q: "What is the PRIMARY purpose of an expository essay?",
+        opts: ["To narrate a personal experience", "To persuade the reader to take action", "To explain or provide information clearly on a topic", "To describe a person's physical appearance"],
+        ans: 2,
+        exp: "An expository essay exposes, explains, or informs — it presents facts, definitions, and explanations on a topic without personal opinions or attempts to persuade. Examples include essays explaining how something works or what a concept means."
+    },
+    {
+        q: "Which sentence best describes the MAIN IDEA of a paragraph?",
+        opts: ["A specific example used to support a point", "The central point that the entire paragraph is about", "The last sentence in the paragraph", "The title of the essay"],
+        ans: 1,
+        exp: "The main idea is the central point or most important message of a paragraph. All other sentences in the paragraph — examples, details, and explanations — exist to support this central point."
+    },
+    {
+        q: "When reading a comprehension passage to find the meaning of an unfamiliar word, what is the best strategy?",
+        opts: ["Skip the word and continue reading", "Look at the words and sentences around it for clues", "Replace it with any word that sounds similar", "Count the number of letters in the word"],
+        ans: 1,
+        exp: "Using context clues — the surrounding words, phrases, and sentences — is the most effective way to determine the meaning of an unfamiliar word in a passage. This is called 'reading in context'."
+    },
+    {
+        q: "Which of the following is a feature of PROSE as a form of literature?",
+        opts: ["It is written in verses and stanzas", "It has a fixed rhyme scheme", "It is written in ordinary sentences and paragraphs", "It must have a chorus or refrain"],
+        ans: 2,
+        exp: "Prose is written in ordinary sentences and paragraphs, the way people naturally speak and write. Novels, short stories, and folk tales are all examples of prose. Poetry uses verses/stanzas, and drama uses dialogue and stage directions."
+    },
+    {
+        q: "Which of the following is a feature of POETRY?",
+        opts: ["It is divided into chapters", "It uses stage directions to describe actions", "It is organized into stanzas and may use rhyme and rhythm", "It always tells a story with a beginning, middle, and end"],
+        ans: 2,
+        exp: "Poetry is typically organized into stanzas (groups of lines) and often uses rhyme, rhythm, and figurative language to convey meaning and emotion. Chapters belong to prose, and stage directions belong to drama."
+    },
+    {
+        q: "Which of the following is a unique feature of DRAMA as a literary form?",
+        opts: ["It is written in stanzas", "It contains stage directions and is written in dialogue", "It is always told from a first-person point of view", "It uses rhyme and meter throughout"],
+        ans: 1,
+        exp: "Drama is written in dialogue (characters speaking to each other) and includes stage directions — instructions about setting, movement, and action. It is designed to be performed, unlike prose and poetry."
+    },
+    {
+        q: "Folk tales are a type of:",
+        opts: ["Drama", "Poetry", "Prose narrative", "Argumentative essay"],
+        ans: 2,
+        exp: "Folk tales are traditional stories passed down through generations, usually told in prose (ordinary narrative form). They often feature moral lessons, animals that talk, and elements of fantasy. They belong to oral and written prose literature."
+    },
+    {
+        q: "Which of the following best describes a MYTH?",
+        opts: ["A story written by a known author to entertain children", "A traditional story that explains natural phenomena or the origins of the world", "A humorous poem with five lines", "A formal letter written to a government official"],
+        ans: 1,
+        exp: "A myth is a traditional story, often of unknown origin, that a culture uses to explain natural events, creation, or human behaviour (e.g. how the sun was made, why the sky is blue). Myths are part of a culture's oral and literary heritage."
+    },
+    {
+        q: "Which vocabulary word is most closely related to the theme of 'LAW AND ORDER'?",
+        opts: ["Preposition", "Verdict", "Diphthong", "Stanza"],
+        ans: 1,
+        exp: "A 'verdict' is the decision made by a judge or jury at the end of a trial — it belongs directly to the vocabulary of law and order. The other options belong to grammar (preposition), speech work (diphthong), and poetry (stanza)."
+    },
+    {
+        q: "Which of the following belongs to vocabulary about 'THE LIBRARY'?",
+        opts: ["Penalty kick", "Catalogue", "Diphthong", "Comma splice"],
+        ans: 1,
+        exp: "A 'catalogue' is a systematically arranged list of books, resources, or items available in a library. Penalty kick belongs to sports, diphthong to speech work, and comma splice to grammar."
+    },
+    {
+        q: "Which of the following is a vocabulary word related to 'CHILD LABOUR AND TRAFFICKING'?",
+        opts: ["Metaphor", "Exploitation", "Rhyme scheme", "Conjunction"],
+        ans: 1,
+        exp: "'Exploitation' means using someone unfairly for your own benefit — it is a key term in discussing child labour and trafficking. Metaphor and rhyme scheme belong to literature, and conjunction to grammar."
+    },
+    {
+        q: "Identify the type of sentence: 'What an incredible performance the students gave!'",
+        opts: ["Interrogative", "Declarative", "Imperative", "Exclamatory"],
         ans: 3,
-        exp: "'On' shows the relationship between the information and the drive."
+        exp: "This is an exclamatory sentence — it expresses strong emotion or admiration and ends with an exclamation mark (!). Declarative sentences state facts, interrogative sentences ask questions, and imperative sentences give commands."
     },
     {
-        q: "Which idiomatic expression means 'to perform a task very well'?",
-        opts: ["To hit the nail on the head", "To carry the day", "To be a wet blanket", "To bark up the wrong tree"],
-        ans: 1,
-        exp: "To 'carry the day' means to be successful or victorious."
-    },
-    {
-        q: "What is the correct punctuation for the end of a narrative essay about your birthday?",
-        opts: ["Comma", "Colon", "Full stop", "Semicolon"],
+        q: "Which of the following is an IMPERATIVE sentence?",
+        opts: ["She finished her homework early.", "Did you remember to lock the door?", "Switch off the generator before you leave.", "What a brilliant idea that was!"],
         ans: 2,
-        exp: "A full stop signifies the end of a declarative sentence or essay."
-    },
-    {
-        q: "Which consonant sound is made with the back of the tongue against the soft palate (velum)?",
-        opts: ["/m/", "/n/", "/ŋ/", "/p/"],
-        ans: 2,
-        exp: "/ŋ/ is a velar nasal consonant."
-    },
-    {
-        q: "An informal letter usually has how many addresses?",
-        opts: ["One (the sender's)", "Two (sender's and receiver's)", "None", "Three"],
-        ans: 0,
-        exp: "Only the sender's address is required in an informal letter."
-    },
-    {
-        q: "Which verb tense is most used in 'Report Writing'?",
-        opts: ["Simple Present", "Future Tense", "Past Tense", "Present Continuous"],
-        ans: 2,
-        exp: "Reports usually describe events that have already occurred."
-    },
-    {
-        q: "Which of these is a 'Supporting Idea' in a text?",
-        opts: ["The main title", "A specific example or detail that explains the main idea", "The author's name", "The concluding sentence of the whole book"],
-        ans: 1,
-        exp: "Supporting ideas provide evidence or elaboration for the main point."
-    },
-    {
-        q: "In the word 'Technology', which syllable is stressed?",
-        opts: ["First", "Second", "Third", "Fourth"],
-        ans: 1,
-        exp: "The stress is on the second syllable: tech-NOL-o-gy."
+        exp: "An imperative sentence gives a command, instruction, or request. 'Switch off the generator before you leave' is a direct instruction. It typically has no stated subject — the subject 'you' is understood."
     }
 ],
 'Mathematics': [
@@ -1697,46 +1709,258 @@ jss2: {
     }
 ],
 'Basic Science': [
-    { q: "A patient has a blockage in the bile duct. Which digestive consequence will MOST likely occur first?", opts: ["Poor emulsification and reduced fat digestion", "Inability to digest proteins in the stomach", "Failure of peristalsis in the oesophagus", "Complete stoppage of glucose absorption"], ans: 0, exp: "Bile emulsifies fats. Without it, fat digestion is severely reduced." },
-    { q: "Which combination of organs carries out both excretion and homeostatic regulation?", opts: ["Kidney and skin", "Large intestine and anus", "Stomach and liver", "Pancreas and gall bladder"], ans: 0, exp: "Kidneys regulate water and salts; skin removes sweat and aids temperature control." },
-    { q: "Two identical iron nails are exposed to air. One is partly dipped in salt water. After 5 days, which is correct?", opts: ["The nail in salt water rusts faster due to electrolyte action", "Both rust at same rate", "The dry nail rusts faster", "Neither rusts without sunlight"], ans: 0, exp: "Salt water speeds rusting by enhancing electrochemical reactions." },
-    { q: "In an ecosystem, removal of all decomposers would MOST directly lead to:", opts: ["Accumulation of dead organic matter", "Increase in producers", "Immediate increase in oxygen", "Faster nutrient cycling"], ans: 0, exp: "Without decomposers, dead matter accumulates and nutrients are not recycled." },
-    { q: "During adolescence, rapid emotional and physical changes are largely influenced by:", opts: ["Hormonal activity", "Digestive enzymes", "External parasites", "Weather changes"], ans: 0, exp: "Hormones regulate developmental changes." },
-    { q: "Which statement BEST distinguishes egestion from excretion?", opts: ["Egestion removes undigested food; excretion removes metabolic waste", "Egestion removes urea; excretion removes faeces", "Both are identical processes", "Excretion occurs only in plants"], ans: 0, exp: "Egestion is removal of undigested food, excretion removes metabolic wastes." },
-    { q: "A desert animal produces very concentrated urine. This adaptation primarily helps to:", opts: ["Conserve body water", "Improve digestion", "Increase body temperature", "Enhance reproduction"], ans: 0, exp: "Concentrated urine reduces water loss." },
-    { q: "If the villi of the small intestine are damaged, which effect is MOST expected?", opts: ["Reduced nutrient absorption", "Increased bile production", "Faster peristalsis", "Increased saliva secretion"], ans: 0, exp: "Villi increase surface area for absorption." },
-    { q: "Which structure in humans is evidence that man is a higher animal?", opts: ["Highly developed cerebrum", "Presence of tail", "External fertilization", "Cold-blooded system"], ans: 0, exp: "Advanced cerebrum enables reasoning and intelligence." },
-    { q: "The chemical process of rusting involves:", opts: ["Oxidation of iron in presence of water", "Evaporation of iron", "Reduction of oxygen", "Condensation of hydrogen"], ans: 0, exp: "Rusting is oxidation of iron requiring oxygen and moisture." },
-    { q: "Which scenario BEST illustrates abstinence as a preventive strategy?", opts: ["Refusing all sexual activity despite peer pressure", "Using antibiotics after infection", "Sharing needles carefully", "Early marriage"], ans: 0, exp: "Abstinence means refraining from sexual intercourse." },
-    { q: "A food chain reads: Grass → Goat → Man → Bacteria. Bacteria function as:", opts: ["Decomposers", "Primary consumers", "Producers", "Secondary consumers"], ans: 0, exp: "Bacteria break down dead organisms." },
-    { q: "Which pair correctly matches organ and waste removed?", opts: ["Lungs – carbon dioxide", "Kidney – faeces", "Skin – oxygen", "Large intestine – urea"], ans: 0, exp: "Lungs remove carbon dioxide." },
-    { q: "If population of herbivores suddenly declines drastically, producers will MOST likely:", opts: ["Increase temporarily", "Disappear immediately", "Begin rusting", "Stop photosynthesis"], ans: 0, exp: "Reduced grazing allows plant increase." },
-    { q: "Which hormone primarily controls body growth in children?", opts: ["Growth hormone", "Insulin", "Adrenaline", "Bile"], ans: 0, exp: "Growth hormone regulates increase in size." },
-    { q: "Painting an iron gate prevents rusting mainly because it:", opts: ["Prevents contact with air and moisture", "Changes iron to plastic", "Adds more oxygen", "Makes iron heavier"], ans: 0, exp: "Paint blocks oxygen and water." },
-    { q: "Which digestive enzyme acts specifically on proteins?", opts: ["Pepsin", "Amylase", "Lipase", "Maltase"], ans: 0, exp: "Pepsin digests proteins in stomach." },
-    { q: "Which is NOT a biotic component of an ecosystem?", opts: ["Temperature", "Animals", "Plants", "Bacteria"], ans: 0, exp: "Temperature is abiotic." },
-    { q: "Which human feature supports upright walking?", opts: ["S-shaped backbone", "Gills", "Feathers", "Scales"], ans: 0, exp: "Spinal structure supports bipedal posture." },
-    { q: "Kidney failure will directly cause accumulation of:", opts: ["Urea in blood", "Oxygen in blood", "Glucose in lungs", "Bile in skin"], ans: 0, exp: "Kidneys remove urea." },
-    { q: "Which adaptation enables aquatic plants to float?", opts: ["Air spaces in tissues", "Deep tap roots", "Thick waxy cuticle", "Spines"], ans: 0, exp: "Air spaces provide buoyancy." },
-    { q: "Which best explains why rusting is faster in coastal areas?", opts: ["High humidity and salt in air", "Lower temperature", "Absence of oxygen", "Dry wind"], ans: 0, exp: "Salt and moisture accelerate oxidation." },
-    { q: "Which stage directly follows adolescence?", opts: ["Adulthood", "Infancy", "Prenatal stage", "Childhood"], ans: 0, exp: "Development progresses to adulthood." },
-    { q: "The process by which food is moved along the alimentary canal is:", opts: ["Peristalsis", "Diffusion", "Osmosis", "Filtration"], ans: 0, exp: "Muscular contractions move food." },
-    { q: "In a balanced ecosystem, energy flow begins with:", opts: ["Producers", "Consumers", "Decomposers", "Carnivores"], ans: 0, exp: "Producers capture solar energy." },
-    { q: "Which organ stores urine temporarily before release?", opts: ["Urinary bladder", "Kidney", "Ureter", "Skin"], ans: 0, exp: "Bladder holds urine." },
-    { q: "Abstinence protects individuals primarily from:", opts: ["Sexually transmitted infections", "Common cold", "Malaria", "Ulcers"], ans: 0, exp: "Avoiding sex prevents STI transmission." },
-    { q: "Which mineral is essential for strong bone development during growth?", opts: ["Calcium", "Iron", "Sodium", "Iodine"], ans: 0, exp: "Calcium strengthens bones." },
-    { q: "Which factor would slow down decomposition in an ecosystem?", opts: ["Low temperature", "High moisture", "Abundant bacteria", "Warm conditions"], ans: 0, exp: "Cold reduces microbial activity." },
-    { q: "Which part of the brain controls voluntary actions and reasoning?", opts: ["Cerebrum", "Medulla", "Spinal cord", "Cerebellum"], ans: 0, exp: "Cerebrum handles reasoning." },
-    { q: "Deficiency of growth hormone in childhood results in:", opts: ["Stunted growth", "Gigantism", "Obesity", "Hypertension"], ans: 0, exp: "Low growth hormone limits height." },
-    { q: "Which organism is both consumer and decomposer?", opts: ["Certain bacteria", "Grass", "Goat", "Hawk"], ans: 0, exp: "Some bacteria consume and decompose." },
-    { q: "Which condition is necessary for rusting?", opts: ["Presence of oxygen", "Complete dryness", "Absence of moisture", "Lack of air"], ans: 0, exp: "Oxygen is required." },
-    { q: "Which waste is eliminated through lungs?", opts: ["Carbon dioxide", "Urea", "Bile", "Faeces"], ans: 0, exp: "Lungs remove CO2." },
-    { q: "Which adaptation reduces water loss in desert plants?", opts: ["Spines instead of leaves", "Broad leaves", "Large stomata", "Thin cuticle"], ans: 0, exp: "Spines reduce transpiration." },
-    { q: "Which part of the digestive system absorbs most nutrients?", opts: ["Small intestine", "Large intestine", "Stomach", "Oesophagus"], ans: 0, exp: "Major absorption occurs in small intestine." },
-    { q: "Human intelligence compared to other animals is mainly due to:", opts: ["Advanced brain development", "Number of legs", "Skin colour", "Body size"], ans: 0, exp: "Brain complexity gives higher reasoning." },
-    { q: "If all producers in an ecosystem die, what happens first?", opts: ["Consumers starve due to lack of energy source", "Decomposers disappear", "Rusting stops", "Oxygen increases"], ans: 0, exp: "Energy flow stops without producers." },
-    { q: "Which organ converts ammonia to urea?", opts: ["Liver", "Kidney", "Skin", "Lung"], ans: 0, exp: "Liver converts ammonia to urea." },
-    { q: "Which decision reflects maturity in growth and development?", opts: ["Resisting harmful peer pressure", "Skipping school", "Ignoring hygiene", "Abusing substances"], ans: 0, exp: "Maturity includes responsible decision making." }
+    {
+        q: "Which of the following is the correct order of the digestive process?",
+        opts: ["Ingestion → Digestion → Absorption → Egestion", "Digestion → Ingestion → Absorption → Egestion", "Absorption → Ingestion → Digestion → Egestion", "Ingestion → Absorption → Digestion → Egestion"],
+        ans: 0,
+        exp: "Food is first taken in (ingestion), then broken down (digestion), then nutrients are absorbed into the blood (absorption), and finally undigested waste is passed out (egestion). This is the correct sequence of the digestive process."
+    },
+    {
+        q: "Where does the digestion of starch begin in the human body?",
+        opts: ["Stomach", "Small intestine", "Mouth", "Large intestine"],
+        ans: 2,
+        exp: "Starch digestion begins in the mouth, where the salivary glands produce saliva containing the enzyme salivary amylase. This enzyme starts breaking starch down into simpler sugars. Many students mistakenly say the stomach — but no starch digestion happens there."
+    },
+    {
+        q: "Which digestive enzyme is responsible for breaking down proteins in the stomach?",
+        opts: ["Amylase", "Lipase", "Maltase", "Pepsin"],
+        ans: 3,
+        exp: "Pepsin is the enzyme produced in the stomach that digests proteins by breaking them into smaller polypeptides. Amylase digests starch, lipase digests fats, and maltase breaks down maltose into glucose."
+    },
+    {
+        q: "What is the main function of bile in digestion?",
+        opts: ["It digests proteins directly", "It produces energy for the stomach", "It emulsifies fats into smaller droplets for easier digestion", "It absorbs glucose into the blood"],
+        ans: 2,
+        exp: "Bile, produced by the liver and stored in the gall bladder, does NOT contain digestive enzymes. Its role is to emulsify fats — breaking large fat globules into tiny droplets, increasing the surface area for the enzyme lipase to work on."
+    },
+    {
+        q: "Which part of the alimentary canal absorbs most of the digested nutrients into the bloodstream?",
+        opts: ["Oesophagus", "Large intestine", "Stomach", "Small intestine"],
+        ans: 3,
+        exp: "The small intestine is the main site of nutrient absorption. Its inner wall is lined with millions of tiny finger-like projections called villi, which greatly increase the surface area available for absorbing digested food into the blood."
+    },
+    {
+        q: "The villi in the small intestine are important because they:",
+        opts: ["Produce bile for fat digestion", "Increase the surface area for absorption of nutrients", "Generate acid to kill bacteria in food", "Move food along by contractions"],
+        ans: 1,
+        exp: "Villi are tiny finger-like projections on the inner wall of the small intestine. They greatly increase the surface area available for absorbing digested nutrients (glucose, amino acids, fatty acids) into the blood. Without them, absorption would be very slow and inefficient."
+    },
+    {
+        q: "What is the difference between EGESTION and EXCRETION?",
+        opts: ["They are the same process", "Egestion is removal of metabolic waste; excretion is removal of undigested food", "Egestion is removal of undigested food; excretion is removal of metabolic waste products", "Excretion only happens in plants"],
+        ans: 2,
+        exp: "Egestion is the removal of undigested food (faeces) through the anus — this food was never absorbed into the body. Excretion is the removal of metabolic waste products (like urea, CO₂, sweat) that were produced inside the body's cells."
+    },
+    {
+        q: "Which excretory organ removes carbon dioxide and water vapour from the body?",
+        opts: ["Kidney", "Liver", "Skin", "Lungs"],
+        ans: 3,
+        exp: "The lungs excrete carbon dioxide and water vapour, which are by-products of cellular respiration. When we breathe out, these waste gases are expelled. The lungs therefore serve as both respiratory and excretory organs."
+    },
+    {
+        q: "The kidneys remove which waste product from the blood?",
+        opts: ["Carbon dioxide", "Oxygen", "Urea", "Bile"],
+        ans: 2,
+        exp: "The kidneys filter urea from the blood. Urea is produced in the liver when excess amino acids are broken down. It is dissolved in water to form urine, which passes to the bladder and is excreted. If the kidneys fail, urea builds up dangerously in the blood."
+    },
+    {
+        q: "Which of the following correctly matches an excretory organ with the waste it removes?",
+        opts: ["Skin — carbon dioxide", "Lungs — urea", "Kidney — urine (containing urea and water)", "Liver — faeces"],
+        ans: 2,
+        exp: "The kidneys produce urine, which contains urea, excess water, and mineral salts. The lungs remove CO₂ and water vapour. The skin removes water and salts in sweat. The liver breaks down toxins but does not directly excrete them — the kidneys do. Faeces is egestion, not excretion."
+    },
+    {
+        q: "What is the main function of the urinary bladder?",
+        opts: ["To filter waste from the blood", "To produce urine", "To temporarily store urine before it is passed out", "To convert ammonia to urea"],
+        ans: 2,
+        exp: "The urinary bladder is a muscular sac that temporarily stores urine produced by the kidneys. When it is full, nerve signals trigger the urge to urinate and urine is released through the urethra."
+    },
+    {
+        q: "Which organ converts toxic ammonia into the less harmful waste product urea?",
+        opts: ["Kidney", "Skin", "Lung", "Liver"],
+        ans: 3,
+        exp: "The liver converts ammonia (a very toxic waste from protein breakdown) into urea, which is much less harmful. The urea is then transported in the blood to the kidneys, which filter it out and excrete it in urine."
+    },
+    {
+        q: "What is the correct definition of GROWTH?",
+        opts: ["The ability to respond to stimuli", "A permanent increase in the size and number of cells of an organism", "The process of producing offspring", "A temporary change in body temperature"],
+        ans: 1,
+        exp: "Growth is defined as a permanent, irreversible increase in the size and mass of an organism, caused by an increase in the number and size of cells through cell division. This is different from development, which refers to the ability to perform new functions."
+    },
+    {
+        q: "Which stage of human development is characterised by the MOST rapid physical growth after birth?",
+        opts: ["Adolescence", "Adulthood", "Infancy", "Childhood"],
+        ans: 2,
+        exp: "Infancy (birth to about 18 months) is the period of most rapid physical growth after birth. A baby's weight typically triples in the first year. Brain development is also extremely rapid during this stage."
+    },
+    {
+        q: "Adolescence is the stage between:",
+        opts: ["Birth and infancy", "Infancy and childhood", "Childhood and adulthood", "Adulthood and old age"],
+        ans: 2,
+        exp: "Adolescence is the transitional stage between childhood and adulthood. It is marked by puberty — rapid physical, emotional, and hormonal changes that prepare the body for reproduction and adult responsibilities."
+    },
+    {
+        q: "The physical and emotional changes that occur during adolescence are primarily controlled by:",
+        opts: ["Digestive enzymes", "Hormones produced by glands", "The lungs", "Weather and climate"],
+        ans: 1,
+        exp: "Hormones are chemical messengers produced by endocrine glands. During adolescence, sex hormones (oestrogen in girls, testosterone in boys) and growth hormone trigger rapid physical changes such as increase in height, development of secondary sexual characteristics, and emotional changes."
+    },
+    {
+        q: "Which type of habitat is found in rivers, ponds, and lakes?",
+        opts: ["Terrestrial habitat", "Arboreal habitat", "Desert habitat", "Freshwater aquatic habitat"],
+        ans: 3,
+        exp: "A freshwater aquatic habitat is found in rivers, ponds, lakes, and streams. It is different from a marine habitat (sea/ocean, which contains salt water). Terrestrial habitats are on land, and arboreal habitats are found in trees."
+    },
+    {
+        q: "Which adaptive feature helps a fish survive in water?",
+        opts: ["Thick fur coat", "Streamlined body and gills for breathing", "Wings for flying above the surface", "Spines to reduce water loss"],
+        ans: 1,
+        exp: "Fish have a streamlined (torpedo-shaped) body that reduces water resistance for easy movement. They also have gills that extract dissolved oxygen from water. These are adaptations to the aquatic habitat."
+    },
+    {
+        q: "Desert plants such as cacti have spines instead of leaves. This adaptation helps them to:",
+        opts: ["Attract insects for pollination", "Capture more sunlight", "Reduce water loss through transpiration", "Increase water absorption from rain"],
+        ans: 2,
+        exp: "In deserts, water conservation is critical. Cacti have spines instead of broad leaves to greatly reduce the surface area from which water can evaporate (transpire). They also store water in their thick, fleshy stems."
+    },
+    {
+        q: "In a food chain: Grass → Grasshopper → Frog → Snake → Eagle, which organism is the PRIMARY PRODUCER?",
+        opts: ["Grasshopper", "Grass", "Frog", "Eagle"],
+        ans: 1,
+        exp: "The grass is the primary producer because it manufactures its own food through photosynthesis using sunlight. All other organisms in the chain are consumers — they obtain energy by eating other organisms. Energy flow always begins with producers."
+    },
+    {
+        q: "What is the role of DECOMPOSERS in an ecosystem?",
+        opts: ["They manufacture food using sunlight", "They hunt and eat other animals", "They break down dead organisms and return nutrients to the soil", "They store energy in their bodies"],
+        ans: 2,
+        exp: "Decomposers (bacteria and fungi) break down the bodies of dead plants and animals, releasing nutrients back into the soil. Without decomposers, dead matter would accumulate and nutrients could not be recycled for use by producers again."
+    },
+    {
+        q: "Which of the following is an ABIOTIC component of an ecosystem?",
+        opts: ["Bacteria", "Grasses", "Rainfall and temperature", "Fungi"],
+        ans: 2,
+        exp: "Abiotic components are the non-living physical and chemical parts of an ecosystem, such as sunlight, temperature, rainfall, soil, water, and air. Bacteria, grasses, and fungi are all biotic (living) components."
+    },
+    {
+        q: "If all the decomposers were removed from an ecosystem, the MOST immediate consequence would be:",
+        opts: ["Producers would grow faster", "Dead organic matter would accumulate and nutrients would not be recycled", "Consumers would increase in number", "Oxygen levels would rise immediately"],
+        ans: 1,
+        exp: "Without decomposers, dead plants and animals would pile up and not be broken down. This means nutrients locked in dead matter could not be returned to the soil, so producers (plants) would eventually run out of minerals. Nutrient cycling would stop."
+    },
+    {
+        q: "In the food chain: Grass → Goat → Lion → Bacteria, what is the role of BACTERIA at the end?",
+        opts: ["Secondary consumer", "Primary producer", "Decomposer", "Primary consumer"],
+        ans: 2,
+        exp: "Bacteria at the end of a food chain act as decomposers — they break down the dead body of the lion (or any dead organism) into simpler substances, recycling nutrients back into the environment."
+    },
+    {
+        q: "Which characteristic makes human beings UNIQUE among other animals?",
+        opts: ["They have four limbs", "They can reproduce", "They have a highly developed cerebrum for reasoning and problem-solving", "They need food and water to survive"],
+        ans: 2,
+        exp: "Humans are classified as 'higher animals' because of their highly developed cerebrum (the largest part of the brain). This enables complex reasoning, problem-solving, language, observation, and memory — abilities far beyond those of other animals."
+    },
+    {
+        q: "Human beings belong to which group of animals?",
+        opts: ["Reptiles", "Amphibians", "Birds", "Mammals"],
+        ans: 3,
+        exp: "Humans are mammals. Mammals have hair or fur on their bodies, give birth to live young (rather than laying eggs), and feed their young with milk. Other examples of mammals include dogs, whales, and bats."
+    },
+    {
+        q: "Which TWO conditions are BOTH necessary for iron to rust?",
+        opts: ["Heat and sunlight", "Oxygen and water (moisture)", "Carbon dioxide and oil", "Salt and nitrogen"],
+        ans: 1,
+        exp: "Rusting requires both oxygen and water (moisture) to be present. Iron reacts with oxygen in the presence of water to form iron oxide (rust). If either condition is absent, rusting will not occur — this is why keeping iron dry or away from air prevents rust."
+    },
+    {
+        q: "Which experiment setup would cause an iron nail to rust the FASTEST?",
+        opts: ["Nail in dry air with no moisture", "Nail in boiled water sealed with oil", "Nail in salt water exposed to air", "Nail painted and kept in a dry box"],
+        ans: 2,
+        exp: "Salt water contains dissolved electrolytes that speed up the electrochemical rusting process. Combined with oxygen in the air, the nail in salt water exposed to air will rust fastest. This is why metal structures near the sea rust more quickly."
+    },
+    {
+        q: "How does PAINTING an iron surface prevent rusting?",
+        opts: ["It makes the iron heavier so oxygen cannot reach it", "It creates a chemical reaction that destroys oxygen", "It forms a barrier that prevents oxygen and moisture from contacting the iron", "It converts iron into a different metal"],
+        ans: 2,
+        exp: "Paint forms a physical barrier (coating) on the surface of iron that prevents air (oxygen) and water (moisture) from reaching the iron. Without contact between iron, oxygen, and water, rusting cannot occur."
+    },
+    {
+        q: "Which of the following is GALVANISATION as a method of preventing rusting?",
+        opts: ["Coating iron with a layer of zinc", "Painting the iron with red oxide", "Keeping iron in a vacuum", "Mixing iron with carbon to make steel"],
+        ans: 0,
+        exp: "Galvanisation is the process of coating iron or steel with a thin layer of zinc. The zinc acts as a protective barrier. Even if the zinc coating is scratched, zinc is more reactive than iron and rusts (corrodes) in preference to the iron, still protecting it."
+    },
+    {
+        q: "Rusting is similar to both burning and respiration because all three processes involve:",
+        opts: ["Production of water only", "The use of glucose as fuel", "The process of oxidation", "Release of light energy"],
+        ans: 2,
+        exp: "Rusting (iron + oxygen → iron oxide), burning (fuel + oxygen → oxides + energy), and respiration (glucose + oxygen → CO₂ + water + energy) are all examples of oxidation — they all involve a substance reacting with oxygen."
+    },
+    {
+        q: "What is the meaning of ABSTINENCE in the context of health education?",
+        opts: ["Taking medication to prevent infection after exposure", "Choosing to refrain from sexual intercourse", "Eating a healthy diet and exercising regularly", "Using protective devices during sexual activity"],
+        ans: 1,
+        exp: "Abstinence means deliberately choosing not to engage in sexual intercourse. It is considered the only 100% effective method of preventing sexually transmitted infections (STIs) and unwanted pregnancies among adolescents."
+    },
+    {
+        q: "Which of the following is an example of DELAYED ABSTINENCE?",
+        opts: ["A married couple who permanently stop having sex", "A teenager who decides to delay sexual activity until marriage or later in life", "A person who abstains only during certain religious periods", "A young person who has already been sexually active"],
+        ans: 1,
+        exp: "Delayed abstinence means a young person decides to postpone sexual activity until they are older, more mature, or married. It is one of the three types of abstinence: lifelong (never), delayed (wait until later), and periodic (abstaining at certain times)."
+    },
+    {
+        q: "Which of the following is a MYTH (false belief) about sexual abstinence?",
+        opts: ["Abstinence prevents sexually transmitted infections", "It is impossible for young people to practise abstinence", "Abstinence eliminates the risk of unwanted pregnancy", "Abstinence is a personal choice that can be practised"],
+        ans: 1,
+        exp: "The idea that it is 'impossible' for young people to practise abstinence is a MYTH. With the right information, values, and peer support, adolescents can and do practise abstinence. This myth is used to pressure young people into sexual activity."
+    },
+    {
+        q: "Abstinence primarily protects adolescents from which of the following?",
+        opts: ["Malaria and typhoid fever", "Sexually transmitted infections and unintended pregnancy", "Nutritional deficiencies", "Poor academic performance only"],
+        ans: 1,
+        exp: "Abstinence from sexual intercourse directly prevents sexually transmitted infections (such as HIV/AIDS, gonorrhoea, syphilis) and unintended pregnancy. It does not protect against diseases spread by mosquitoes (malaria) or contaminated food/water."
+    },
+    {
+        q: "A student notices a reddish-brown coating on an iron gate left outside for weeks. This coating is:",
+        opts: ["A layer of paint peeling off", "Carbon build-up from pollution", "Iron oxide, commonly known as rust", "A natural protective coating"],
+        ans: 2,
+        exp: "The reddish-brown coating is iron oxide (Fe₂O₃), commonly called rust. It forms when iron reacts with oxygen in the presence of moisture. Unlike the original iron, rust is brittle and weak, causing the metal to deteriorate."
+    },
+    {
+        q: "Which of the following methods of preventing rusting works by EXCLUDING both air and moisture from the iron surface?",
+        opts: ["Galvanisation with zinc", "Alloying iron with carbon", "Applying grease or oil", "Using electrical currents"],
+        ans: 2,
+        exp: "Applying grease or oil creates a physical barrier over the iron surface, preventing both air (oxygen) and moisture from contacting it. This method is commonly used on machine parts, bicycle chains, and tools. Galvanisation uses zinc's reactivity, not physical exclusion."
+    },
+    {
+        q: "Which of these correctly describes a TERRESTRIAL habitat?",
+        opts: ["A habitat found in oceans and seas", "A habitat found on land, such as forests, deserts, and grasslands", "A habitat found in the branches of trees only", "A habitat found deep underground with no sunlight"],
+        ans: 1,
+        exp: "A terrestrial habitat is any land-based environment. Examples include forests, grasslands, deserts, and farmland. Organisms in terrestrial habitats are adapted to survive in air, cope with gravity, and deal with varying temperatures and rainfall."
+    },
+    {
+        q: "Which feature helps an arboreal (tree-dwelling) animal like a monkey survive in its habitat?",
+        opts: ["Gills for extracting oxygen from water", "Streamlined body for fast swimming", "Strong gripping hands and feet for climbing and holding branches", "Thick layers of fat for surviving cold oceans"],
+        ans: 2,
+        exp: "Arboreal animals live in trees. They have adaptive features like strong, flexible gripping hands and feet (and often a prehensile tail) to hold onto branches, balance, and swing. Gills are for aquatic organisms; streamlined bodies help swimmers; fat stores help marine animals."
+    },
+    {
+        q: "Why does a camel survive in the desert without drinking water for many days?",
+        opts: ["It absorbs water directly from the sand through its skin", "It never needs water because it eats only dry food", "It stores fat in its hump, which can be metabolised to produce water", "It has special kidneys that create water from air"],
+        ans: 2,
+        exp: "A camel stores fat (not water) in its hump. When needed, this fat is broken down through metabolism and produces water and energy as by-products. Camels also produce very concentrated urine and dry faeces to conserve water — all adaptations to the desert habitat."
+    },
+    {
+        q: "Which of the following is the correct sequence of energy flow in a food chain?",
+        opts: ["Consumer → Producer → Decomposer", "Decomposer → Producer → Consumer", "Producer → Consumer → Decomposer", "Consumer → Decomposer → Producer"],
+        ans: 2,
+        exp: "Energy flows from producers (plants that capture solar energy through photosynthesis) to consumers (herbivores, then carnivores) and finally to decomposers (bacteria and fungi that break down dead matter). At each stage, some energy is lost as heat."
+    },
+    {
+        q: "Deficiency of growth hormone during childhood MOST likely results in:",
+        opts: ["Gigantism (abnormally large growth)", "Obesity and excessive fat storage", "Stunted growth and short stature", "Very rapid adolescence"],
+        ans: 2,
+        exp: "Growth hormone, produced by the pituitary gland, stimulates growth of bones and tissues. If it is deficient during childhood, the child will experience stunted growth, resulting in short stature. Excess growth hormone causes gigantism (abnormally tall stature)."
+    }
 ],
 'Basic Technology': [
     { q: "You are required to construct a 75° angle using only a compass and straightedge. Which combination of standard constructions will MOST accurately produce this angle?", opts: ["Construct 60° and 90°, then bisect the angle between them", "Construct 45° and 30°, then add them", "Construct 120° and subtract 45° geometrically", "Construct 30° and double it"], ans: 1, exp: "75° can be obtained by constructing 45° and 30° accurately and combining them." },
