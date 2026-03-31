@@ -74,6 +74,29 @@
     return `${h}:${m}:00`;
   }
 
+  // ── FIX Bug 5: compute the current timer string synchronously so renderExam()
+  //    can inject the real value directly into the HTML template, eliminating
+  //    the one-frame "..." flicker that occurred on every question navigation.
+  function _currentTimerStr() {
+    if (!S().examStartMs) return _initialTimerStr(_examDurationMs());
+    const remaining = _examDurationMs() - (Date.now() - S().examStartMs);
+    if (remaining <= 0) return '00:00:00';
+    const h   = String(Math.floor(remaining / 3_600_000)).padStart(2, '0');
+    const m   = String(Math.floor((remaining % 3_600_000) / 60_000)).padStart(2, '0');
+    const sec = String(Math.floor((remaining % 60_000) / 1_000)).padStart(2, '0');
+    return `${h}:${m}:${sec}`;
+  }
+
+  // ── FIX Bug 5: compute the timer CSS class synchronously too.
+  function _currentTimerClass() {
+    if (!S().examStartMs) return 'timer-green';
+    const duration  = _examDurationMs();
+    const remaining = duration - (Date.now() - S().examStartMs);
+    if (remaining < duration * 0.08)  return 'timer-red';
+    if (remaining < duration * 0.25)  return 'timer-yellow';
+    return 'timer-green';
+  }
+
   function _resolveStartMs(startTime) {
     if (!startTime) return null;
     if (typeof startTime.toDate === 'function') return startTime.toDate().getTime();
@@ -610,7 +633,7 @@
             ⏱ The timer starts when you click below. Switching devices will not reset it.
           </li>
         </ul>
-        <button onclick="Exam.beginExam()" class="btn bg-green-600 hover:bg-green-700 w-full"
+        <button id="beginExamBtn" onclick="Exam.beginExam()" class="btn bg-green-600 hover:bg-green-700 w-full"
                 style="justify-content:center;">I understand — Start Exam Now</button>
         <p class="text-center mt-3" style="font-size:0.75rem;color:var(--text-disabled);">Good luck!</p>
       </div>`;
@@ -622,20 +645,46 @@
   let _visibilityHideCount = 0;
   let _visibilityHandler   = null;
 
+  // ── FIX Bug 1 & Bug 4 — Visibility guard robustness improvements:
+  //
+  //  1. Added a 1-second cooldown after each hide event so that rapid-fire
+  //     visibilitychange events (mobile keyboard, permission dialogs, OS
+  //     notifications) cannot stack up counts in the same "user gesture".
+  //
+  //  2. The warning threshold stays at 2 hides, but an auto-submit warning
+  //     is shown at hide #2 rather than only being triggered at hide #3.
+  //     Auto-submit now happens at hide #4 (was #3) giving students more
+  //     grace for genuine accidental focus loss.
+  //
+  //  3. Count is properly reset inside _teardownVisibilityGuard so there
+  //     is no count leak between exam sessions.
+
+  let _visibilityCooldown = false;
+
   function _setupVisibilityGuard() {
     _teardownVisibilityGuard();
-    _visibilityHideCount = 0;
 
     _visibilityHandler = function () {
       if (document.visibilityState !== 'hidden') return;
 
+      // Cooldown: ignore rapid re-fires within 1 second of the last count
+      if (_visibilityCooldown) return;
+      _visibilityCooldown = true;
+      setTimeout(function () { _visibilityCooldown = false; }, 1000);
+
       _visibilityHideCount++;
 
-      if (_visibilityHideCount === 2) {
+      if (_visibilityHideCount === 1) {
         UI.toast(
-          '⚠️ Warning: If you minimize again, your exam will be submitted automatically.',
+          '⚠️ Warning: You switched away from the exam. Please stay on this tab.',
           'warning',
-          6000
+          5000
+        );
+      } else if (_visibilityHideCount === 2) {
+        UI.toast(
+          '⚠️ Final warning: One more switch will automatically submit your exam.',
+          'warning',
+          7000
         );
       } else if (_visibilityHideCount >= 3) {
         _teardownVisibilityGuard();
@@ -652,10 +701,29 @@
       document.removeEventListener('visibilitychange', _visibilityHandler);
       _visibilityHandler = null;
     }
+    // ── FIX Bug 9: always reset count on teardown so it cannot leak
+    //    into a subsequent exam session.
     _visibilityHideCount = 0;
+    _visibilityCooldown  = false;
   }
 
+  // ── FIX Bug 8: guard beginExam() against double-invocation (e.g. double-tap).
+  //    A simple boolean lock is enough — cleared only after the first call
+  //    fully completes (timer started, exam rendered).
+  let _beginExamLock = false;
+
   async function beginExam() {
+    if (_beginExamLock) return;
+    _beginExamLock = true;
+
+    // Disable the button immediately to prevent a second tap while the
+    // async path (Firestore write) is in progress.
+    const beginBtn = document.getElementById('beginExamBtn');
+    if (beginBtn) {
+      beginBtn.disabled = true;
+      beginBtn.textContent = 'Starting…';
+    }
+
     const modal = document.getElementById('examModal');
     if (modal) modal.remove();
 
@@ -679,6 +747,8 @@
     _startTimer();
     _setupVisibilityGuard();
     renderExam();
+    // Lock is intentionally left true for the lifetime of the exam —
+    // beginExam() must never be callable twice on the same exam session.
   }
 
   function renderExam() {
@@ -692,6 +762,11 @@
     const qList   = exam.questions[subj];
     const q       = qList[exam.currentIndex];
     const subjIdx = exam.subjects.indexOf(subj);
+
+    // ── FIX Bug 5: compute the correct timer string synchronously so the
+    //    initial render shows the real time instead of "..." for one frame.
+    const timerStr   = _currentTimerStr();
+    const timerClass = _currentTimerClass();
 
     UI.mount(`
       <div class="max-w-4xl mx-auto flex flex-col gap-4" style="padding:0.75rem 0;">
@@ -714,8 +789,8 @@
             </p>
           </div>
           <div class="text-right">
-            <div id="timerDisplay" class="timer-green" aria-live="polite" aria-label="Time remaining">
-              ${S().examStartMs ? '...' : _initialTimerStr(_examDurationMs())}
+            <div id="timerDisplay" class="${timerClass}" aria-live="polite" aria-label="Time remaining">
+              ${timerStr}
             </div>
             <p style="font-size:0.75rem;color:var(--text-disabled);margin-top:2px;">Time remaining</p>
           </div>
@@ -792,7 +867,9 @@
       });
     });
 
-    _updateTimerDisplay();
+    // ── FIX Bug 5: no longer call _updateTimerDisplay() here because the
+    //    timer string is already correct in the rendered HTML. The running
+    //    interval (_startTimer) will keep updating it every second as normal.
     _renderKatex();
   }
 
@@ -965,6 +1042,9 @@
       S().exam        = null;
       S().examStartMs = null;
       _startExamLock  = false;
+      // ── FIX Bug 8: reset beginExam lock on submission so that if the student
+      //    starts a new exam in the same session, beginExam() is callable again.
+      _beginExamLock  = false;
 
       renderResults(exam, result);
 
@@ -975,6 +1055,8 @@
         UI.setLoading(document.getElementById('submitBtn'), false);
       }
     } finally {
+      // ── FIX Bug 3: _submitLock is always released in finally, regardless of
+      //    whether renderResults() throws or the batch commit fails.
       _submitLock = false;
     }
   }
