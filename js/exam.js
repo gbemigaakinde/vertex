@@ -645,20 +645,6 @@
   let _visibilityHideCount = 0;
   let _visibilityHandler   = null;
 
-  // ── FIX Bug 1 & Bug 4 — Visibility guard robustness improvements:
-  //
-  //  1. Added a 1-second cooldown after each hide event so that rapid-fire
-  //     visibilitychange events (mobile keyboard, permission dialogs, OS
-  //     notifications) cannot stack up counts in the same "user gesture".
-  //
-  //  2. The warning threshold stays at 2 hides, but an auto-submit warning
-  //     is shown at hide #2 rather than only being triggered at hide #3.
-  //     Auto-submit now happens at hide #4 (was #3) giving students more
-  //     grace for genuine accidental focus loss.
-  //
-  //  3. Count is properly reset inside _teardownVisibilityGuard so there
-  //     is no count leak between exam sessions.
-
   let _visibilityCooldown = false;
 
   function _setupVisibilityGuard() {
@@ -701,23 +687,17 @@
       document.removeEventListener('visibilitychange', _visibilityHandler);
       _visibilityHandler = null;
     }
-    // ── FIX Bug 9: always reset count on teardown so it cannot leak
-    //    into a subsequent exam session.
+
     _visibilityHideCount = 0;
     _visibilityCooldown  = false;
   }
 
-  // ── FIX Bug 8: guard beginExam() against double-invocation (e.g. double-tap).
-  //    A simple boolean lock is enough — cleared only after the first call
-  //    fully completes (timer started, exam rendered).
   let _beginExamLock = false;
 
   async function beginExam() {
     if (_beginExamLock) return;
     _beginExamLock = true;
 
-    // Disable the button immediately to prevent a second tap while the
-    // async path (Firestore write) is in progress.
     const beginBtn = document.getElementById('beginExamBtn');
     if (beginBtn) {
       beginBtn.disabled = true;
@@ -747,8 +727,6 @@
     _startTimer();
     _setupVisibilityGuard();
     renderExam();
-    // Lock is intentionally left true for the lifetime of the exam —
-    // beginExam() must never be callable twice on the same exam session.
   }
 
   function renderExam() {
@@ -763,8 +741,6 @@
     const q       = qList[exam.currentIndex];
     const subjIdx = exam.subjects.indexOf(subj);
 
-    // ── FIX Bug 5: compute the correct timer string synchronously so the
-    //    initial render shows the real time instead of "..." for one frame.
     const timerStr   = _currentTimerStr();
     const timerClass = _currentTimerClass();
 
@@ -866,10 +842,7 @@
         _updateNavButton(exam.currentIndex);
       });
     });
-
-    // ── FIX Bug 5: no longer call _updateTimerDisplay() here because the
-    //    timer string is already correct in the rendered HTML. The running
-    //    interval (_startTimer) will keep updating it every second as normal.
+     
     _renderKatex();
   }
 
@@ -1042,8 +1015,6 @@
       S().exam        = null;
       S().examStartMs = null;
       _startExamLock  = false;
-      // ── FIX Bug 8: reset beginExam lock on submission so that if the student
-      //    starts a new exam in the same session, beginExam() is callable again.
       _beginExamLock  = false;
 
       renderResults(exam, result);
@@ -1055,8 +1026,6 @@
         UI.setLoading(document.getElementById('submitBtn'), false);
       }
     } finally {
-      // ── FIX Bug 3: _submitLock is always released in finally, regardless of
-      //    whether renderResults() throws or the batch commit fails.
       _submitLock = false;
     }
   }
