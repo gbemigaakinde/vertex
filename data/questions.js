@@ -1455,48 +1455,246 @@ jss2: {
     }
 ],
 'Mathematics': [
-    { q: "A trader bought 40 exercise books at ₦250 each and sold 35 of them at ₦320 each while the remaining were sold at ₦200 each. Calculate the total profit or loss.", opts: ["₦2,700 profit", "₦2,300 profit", "₦2,700 loss", "₦3,000 profit"], ans: 0, exp: "Cost = 40 × 250 = 10,000. Selling price = (35 × 320) + (5 × 200) = 11,200 + 1,000 = 12,200. Profit = 2,200. Closest structured correction gives ₦2,200 profit." },
-    { q: "Solve for x: 5(2x − 3) = 3x + 21.", opts: ["6", "−6", "3", "−3"], ans: 0, exp: "10x − 15 = 3x + 21. 7x = 36. x = 6." },
-    { q: "On a scale of 1 : 25,000, what distance is represented by 8 cm on the map?", opts: ["2 km", "20 km", "200 m", "0.2 km"], ans: 0, exp: "1 cm = 25,000 cm. 8 × 25,000 = 200,000 cm = 2 km." },
-    { q: "Solve the inequality: 3(2x − 5) ≥ 4x + 1.", opts: ["x ≥ 8", "x ≤ 8", "x ≥ −8", "x ≤ −8"], ans: 0, exp: "6x − 15 ≥ 4x + 1. 2x ≥ 16. x ≥ 8." },
-    { q: "The sum of interior angles of an octagon is:", opts: ["1080°", "900°", "720°", "1260°"], ans: 0, exp: "(8 − 2) × 180 = 1080°." },
-    { q: "If y = 4x − 7, find y when x = 5.", opts: ["13", "−13", "27", "−27"], ans: 0, exp: "4(5) − 7 = 13." },
-    { q: "A rectangular hall measures 25 m by 18 m. Find its perimeter.", opts: ["86 m", "76 m", "96 m", "70 m"], ans: 0, exp: "2(25 + 18) = 86 m." },
-    { q: "Solve: 7 − 3x = 4x + 14.", opts: ["−1", "1", "−3", "3"], ans: 0, exp: "7 − 3x = 4x + 14. −7x = 7. x = −1." },
-    { q: "Which of the following represents all values greater than 2 but less than or equal to 7?", opts: ["2 < x ≤ 7", "2 ≤ x < 7", "x ≥ 2", "x ≤ 7"], ans: 0, exp: "Compound inequality correctly expressed as 2 < x ≤ 7." },
-    { q: "The area of a triangle with base 16 cm and height 9 cm is:", opts: ["72 cm²", "144 cm²", "100 cm²", "80 cm²"], ans: 0, exp: "½ × 16 × 9 = 72 cm²." },
-    { q: "If 2x + 5 = 19, find x.", opts: ["7", "−7", "12", "−12"], ans: 0, exp: "2x = 14. x = 7." },
-    { q: "A car moves at constant speed. The graph of distance against time will be:", opts: ["Straight line through origin", "Horizontal line", "Curve", "Vertical line"], ans: 0, exp: "Constant speed produces linear graph." },
-    { q: "The area of a circle of radius 7 cm (π = 22/7) is:", opts: ["154 cm²", "49 cm²", "308 cm²", "144 cm²"], ans: 0, exp: "πr² = 22/7 × 49 = 154 cm²." },
-    { q: "Solve: 4x − 9 = 3(x + 2).", opts: ["15", "−15", "9", "−9"], ans: 0, exp: "4x − 9 = 3x + 6. x = 15." },
-    { q: "A map scale is 1:100,000. What actual distance does 5 cm represent?", opts: ["5 km", "0.5 km", "50 km", "500 m"], ans: 0, exp: "5 × 100,000 = 500,000 cm = 5 km." },
-    { q: "Find the perimeter of a square whose area is 121 cm².", opts: ["44 cm", "22 cm", "33 cm", "55 cm"], ans: 0, exp: "Side = 11. Perimeter = 44 cm." },
-    { q: "Solve inequality: −4x < 12.", opts: ["x > −3", "x < −3", "x > 3", "x < 3"], ans: 0, exp: "Divide by −4 and reverse sign: x > −3." },
-    { q: "The gradient of a straight line is defined as:", opts: ["Change in y over change in x", "Area under curve", "Intercept", "Scale factor"], ans: 0, exp: "Gradient = rise/run." },
-    { q: "If 9x − 5 = 4x + 20, find x.", opts: ["5", "−5", "3", "−3"], ans: 0, exp: "5x = 25. x = 5." },
-    { q: "The sum of the angles in a quadrilateral is:", opts: ["360°", "180°", "720°", "540°"], ans: 0, exp: "Sum = (4 − 2) × 180 = 360°." },
-    { q: "The ratio of boys to girls in a class is 5 : 3. If there are 40 students altogether, how many girls are in the class?", opts: ["15", "20", "25", "18"], ans: 0, exp: "Total parts = 8. Each part = 40 ÷ 8 = 5. Girls = 3 × 5 = 15." },
-    { q: "Factorise completely: x² − 9.", opts: ["(x − 3)(x + 3)", "(x − 9)(x + 1)", "(x − 1)(x + 9)", "(x − 3)²"], ans: 0, exp: "It is a difference of two squares: x² − 3² = (x − 3)(x + 3)." },
-    { q: "A cylindrical tank has radius 7 cm and height 10 cm. Find its volume. (π = 22/7)", opts: ["1540 cm³", "490 cm³", "3080 cm³", "1078 cm³"], ans: 0, exp: "Volume = πr²h = 22/7 × 49 × 10 = 1540 cm³." },
-    { q: "If 3x − 2y = 4 and x + y = 5, what is the value of x?", opts: ["14/5", "3", "2", "4"], ans: 0, exp: "From x + y = 5, y = 5 − x. Substitute: 3x − 2(5 − x) = 4 → 5x = 14 → x = 14/5." },
-    { q: "0.375 expressed as a fraction in its lowest terms is:", opts: ["3/8", "5/8", "37/100", "1/4"], ans: 0, exp: "0.375 = 375/1000 = 3/8 after simplification." },
-    { q: "The exterior angle of a regular polygon is 30°. Determine the number of its sides.", opts: ["12", "6", "10", "8"], ans: 0, exp: "Number of sides = 360 ÷ 30 = 12." },
-    { q: "A sum of ₦80,000 is invested at 5% simple interest per annum for 3 years. Calculate the interest earned.", opts: ["₦12,000", "₦10,000", "₦8,000", "₦15,000"], ans: 0, exp: "I = PRT = 80,000 × 0.05 × 3 = ₦12,000." },
-    { q: "Solve the equation: (x/3) + (x/6) = 9.", opts: ["12", "18", "9", "6"], ans: 1, exp: "Multiply through by 6: 2x + x = 54 → 3x = 54 → x = 18." },
-    { q: "The mean of 6, 8, 10, 12 and k is 9. Find k.", opts: ["9", "7", "8", "6"], ans: 0, exp: "Required total = 9 × 5 = 45. Known sum = 36. k = 9." },
-    { q: "The area of a parallelogram with base 14 cm and height 11 cm equals:", opts: ["154 cm²", "140 cm²", "125 cm²", "168 cm²"], ans: 0, exp: "Area = base × height = 14 × 11 = 154 cm²." },
-    { q: "If tan θ = 3/4, what is the value of sin θ?", opts: ["3/5", "4/5", "5/3", "4/3"], ans: 0, exp: "Opposite = 3, adjacent = 4, hypotenuse = 5. So sin θ = 3/5." },
-    { q: "The bearing of B from A is 045°. What is the bearing of A from B?", opts: ["225°", "135°", "180°", "315°"], ans: 0, exp: "Reverse bearing = 045° + 180° = 225°." },
-    { q: "A ladder 5 m long rests against a wall. If the base is 3 m from the wall, how high does it reach?", opts: ["4 m", "3 m", "2 m", "5 m"], ans: 0, exp: "By Pythagoras: height² = 25 − 9 = 16. Height = 4 m." },
-    { q: "Simplify: 2a − (3a − 4).", opts: ["−a + 4", "a − 4", "5a − 4", "−a − 4"], ans: 0, exp: "2a − 3a + 4 = −a + 4." },
-    { q: "The probability of selecting a red ball from a bag containing 3 red and 7 blue balls is:", opts: ["3/10", "7/10", "1/3", "1/7"], ans: 0, exp: "Total balls = 10. Probability = 3/10." },
-    { q: "Solve simultaneously: 2x + y = 7 and x − y = 1.", opts: ["x = 2, y = 3", "x = 3, y = 1", "x = 8/3, y = 5/3", "x = 4, y = −1"], ans: 2, exp: "Add equations: 3x = 8 → x = 8/3. Substitute to get y = 5/3." },
-    { q: "The circumference of a circle of diameter 21 cm is:", opts: ["66 cm", "132 cm", "44 cm", "77 cm"], ans: 0, exp: "C = πd = 22/7 × 21 = 66 cm." },
-    { q: "If 4 workers complete a task in 6 days, how many days will 8 workers take at the same rate?", opts: ["3 days", "12 days", "6 days", "2 days"], ans: 0, exp: "Time is inversely proportional. 6 × 4/8 = 3 days." },
-    { q: "Evaluate: 5² − 3².", opts: ["16", "4", "34", "25"], ans: 0, exp: "25 − 9 = 16." },
-    { q: "If the simple interest on ₦50,000 for 2 years is ₦5,000, the rate of interest is:", opts: ["5%", "10%", "8%", "6%"], ans: 0, exp: "5,000 = 50,000 × R × 2. R = 0.05 = 5%." },
-    { q: "The interior angle of a regular hexagon is:", opts: ["120°", "135°", "140°", "150°"], ans: 0, exp: "Interior angle = (6 − 2) × 180 ÷ 6 = 120°." },
-    { q: "Express 2.75 as a percentage.", opts: ["275%", "27.5%", "2.75%", "0.275%"], ans: 0, exp: "2.75 × 100 = 275%." }
+    {
+      q: "Expand: $3(2x + 5)$.",
+      opts: ["$6x + 8$", "$6x + 15$", "$5x + 15$", "$6x - 15$"],
+      ans: 1,
+      exp: "Multiply each term inside the bracket by 3: $3 \\times 2x = 6x$ and $3 \\times 5 = 15$. So the answer is $6x + 15$."
+    },
+    {
+      q: "Expand and simplify: $(x + 4)(x + 3)$.",
+      opts: ["$x^2 + 7x + 7$", "$x^2 + 12x + 7$", "$x^2 + 7x + 12$", "$x^2 + 12$"],
+      ans: 2,
+      exp: "Multiply every term in the first bracket by every term in the second: $x \\times x + x \\times 3 + 4 \\times x + 4 \\times 3 = x^2 + 3x + 4x + 12 = x^2 + 7x + 12$."
+    },
+    {
+      q: "Expand and simplify: $(2x - 3)(x + 5)$.",
+      opts: ["$2x^2 + 7x - 15$", "$2x^2 - 7x - 15$", "$2x^2 + 13x - 15$", "$2x^2 - 13x + 15$"],
+      ans: 0,
+      exp: "$2x(x) + 2x(5) + (-3)(x) + (-3)(5) = 2x^2 + 10x - 3x - 15 = 2x^2 + 7x - 15$."
+    },
+    {
+      q: "Factorise completely: $12x^2 + 8x$.",
+      opts: ["$4(3x^2 + 2x)$", "$x(12x + 8)$", "$4x(3x + 2)$", "$2x(6x + 4)$"],
+      ans: 2,
+      exp: "The highest common factor (HCF) of $12x^2$ and $8x$ is $4x$. Dividing out: $12x^2 + 8x = 4x(3x + 2)$. Always take out the HIGHEST possible factor."
+    },
+    {
+      q: "Factorise: $x^2 + 6x + 8$.",
+      opts: ["$(x + 4)(x + 2)$", "$(x + 8)(x + 1)$", "$(x + 3)(x + 3)$", "$(x - 4)(x - 2)$"],
+      ans: 0,
+      exp: "Find two numbers that multiply to $+8$ and add to $+6$: those are $4$ and $2$. So $x^2 + 6x + 8 = (x + 4)(x + 2)$."
+    },
+    {
+      q: "Simplify the algebraic fraction: $\\dfrac{6x}{9x^2}$.",
+      opts: ["$\\dfrac{3}{x}$", "$\\dfrac{2}{3x}$", "$\\dfrac{x}{3}$", "$\\dfrac{2x}{3}$"],
+      ans: 1,
+      exp: "Divide numerator and denominator by the common factor $3x$: $\\dfrac{6x}{9x^2} = \\dfrac{6x \\div 3x}{9x^2 \\div 3x} = \\dfrac{2}{3x}$."
+    },
+    {
+      q: "Simplify: $\\dfrac{3}{x} + \\dfrac{5}{2x}$.",
+      opts: ["$\\dfrac{8}{3x}$", "$\\dfrac{8}{x}$", "$\\dfrac{11}{2x}$", "$\\dfrac{6}{2x}$"],
+      ans: 2,
+      exp: "The LCM of $x$ and $2x$ is $2x$. Rewrite $\\frac{3}{x} = \\frac{6}{2x}$. Then $\\frac{6}{2x} + \\frac{5}{2x} = \\frac{11}{2x}$."
+    },
+    {
+      q: "Solve: $\\dfrac{x}{3} + \\dfrac{x}{6} = 9$.",
+      opts: ["$x = 12$", "$x = 27$", "$x = 6$", "$x = 18$"],
+      ans: 3,
+      exp: "Multiply every term by 6 (the LCM of 3 and 6): $2x + x = 54$. So $3x = 54$, giving $x = 18$."
+    },
+    {
+      q: "The sum of three consecutive even numbers is 54. If the smallest is $n$, which equation correctly represents this?",
+      opts: ["$3n + 3 = 54$", "$n + (n+2) + (n+4) = 54$", "$n + (n+1) + (n+2) = 54$", "$n + 2n + 4n = 54$"],
+      ans: 1,
+      exp: "Consecutive even numbers differ by 2. The three numbers are $n$, $n+2$, and $n+4$. Their sum: $n + (n+2) + (n+4) = 3n + 6 = 54$, giving $n = 16$."
+    },
+    {
+      q: "Solve for $x$: $\\dfrac{2x - 1}{5} = 3$.",
+      opts: ["$x = 7$", "$x = 8$", "$x = 4$", "$x = 6$"],
+      ans: 1,
+      exp: "Multiply both sides by 5: $2x - 1 = 15$. Add 1: $2x = 16$. Divide by 2: $x = 8$."
+    },
+    {
+      q: "Solve: $4(x - 2) = 2(x + 6)$.",
+      opts: ["$x = 5$", "$x = 10$", "$x = -10$", "$x = 14$"],
+      ans: 1,
+      exp: "Expand: $4x - 8 = 2x + 12$. Subtract $2x$: $2x - 8 = 12$. Add 8: $2x = 20$. Divide: $x = 10$."
+    },
+    {
+      q: "Solve the inequality: $3x + 4 > 13$.",
+      opts: ["$x > 3$", "$x < 3$", "$x \\geq 3$", "$x > 17$"],
+      ans: 0,
+      exp: "Subtract 4 from both sides: $3x > 9$. Divide by 3: $x > 3$. On a number line, use an open circle at 3 with an arrow pointing right."
+    },
+    {
+      q: "Solve: $2(x + 5) \\leq 3x - 1$.",
+      opts: ["$x \\leq 11$", "$x \\geq 11$", "$x \\leq -11$", "$x \\geq -11$"],
+      ans: 1,
+      exp: "Expand: $2x + 10 \\leq 3x - 1$. Subtract $2x$: $10 \\leq x - 1$. Add 1 to both sides: $x \\geq 11$."
+    },
+    {
+      q: "Which of the following correctly describes the solution of $-4x < 20$?",
+      opts: ["$x < -5$", "$x > -5$", "$x < 5$", "$x > 5$"],
+      ans: 1,
+      exp: "Divide both sides by $-4$. Because we divide by a NEGATIVE number, the inequality sign REVERSES: $x > -5$. This reversal rule is essential."
+    },
+    {
+      q: "A number is multiplied by 3 and then 5 is added. The result is less than 26. Which inequality represents this?",
+      opts: ["$3x - 5 < 26$", "$3(x + 5) < 26$", "$3x + 5 < 26$", "$5x + 3 < 26$"],
+      ans: 2,
+      exp: "'Multiplied by 3' gives $3x$; 'then 5 is added' gives $3x + 5$; 'less than 26' gives $3x + 5 < 26$. Solving: $3x < 21$, so $x < 7$."
+    },
+    {
+      q: "On a number line, the solution of $x \\geq -3$ is shown by:",
+      opts: ["An open circle at $-3$ pointing right", "A filled circle at $-3$ pointing left", "A filled circle at $-3$ pointing right", "An open circle at $-3$ pointing left"],
+      ans: 2,
+      exp: "The symbol $\\geq$ means 'greater than OR equal to', so $-3$ IS included — use a FILLED (closed) circle. Since values are greater than $-3$, the arrow points RIGHT."
+    },
+    {
+      q: "A parallelogram has one angle of $72°$. What is the size of the adjacent angle?",
+      opts: ["$72°$", "$144°$", "$108°$", "$90°$"],
+      ans: 2,
+      exp: "In a parallelogram, adjacent angles are supplementary — they add up to $180°$. So the adjacent angle $= 180° - 72° = 108°$."
+    },
+    {
+      q: "Which of the following is a property of a RHOMBUS but NOT of a general parallelogram?",
+      opts: ["Opposite angles are equal", "Diagonals bisect each other", "All four sides are equal in length", "Opposite sides are parallel"],
+      ans: 2,
+      exp: "A rhombus is a special parallelogram where all four sides are equal. A general parallelogram only requires opposite sides to be equal. The other three properties are common to all parallelograms."
+    },
+    {
+      q: "In a kite, which statement about its diagonals is CORRECT?",
+      opts: ["Both diagonals bisect each other at equal lengths", "The diagonals are equal in length and parallel", "One diagonal bisects the other at right angles ($90°$)", "Both diagonals are the same length"],
+      ans: 2,
+      exp: "In a kite, the longer diagonal (the 'main' diagonal) perpendicularly bisects the shorter one — it cuts it into two equal halves at $90°$. The diagonals are not equal and do not bisect each other equally."
+    },
+    {
+      q: "The sum of interior angles of a hexagon is:",
+      opts: ["$540°$", "$1080°$", "$900°$", "$720°$"],
+      ans: 3,
+      exp: "Formula: $(n-2) \\times 180°$ where $n$ = number of sides. Hexagon has $n = 6$: $(6-2) \\times 180 = 4 \\times 180 = 720°$."
+    },
+    {
+      q: "Each interior angle of a regular polygon is $135°$. How many sides does the polygon have?",
+      opts: ["$6$", "$10$", "$8$", "$12$"],
+      ans: 2,
+      exp: "Each exterior angle $= 180° - 135° = 45°$. Number of sides $= \\dfrac{360°}{45°} = 8$. This is a regular octagon."
+    },
+    {
+      q: "A polygon has 9 sides. What is the sum of its interior angles?",
+      opts: ["$1080°$", "$1620°$", "$1260°$", "$900°$"],
+      ans: 2,
+      exp: "$(n-2) \\times 180° = (9-2) \\times 180 = 7 \\times 180 = 1260°$."
+    },
+    {
+      q: "The exterior angle of a regular polygon is $40°$. How many sides does it have?",
+      opts: ["$8$", "$12$", "$6$", "$9$"],
+      ans: 3,
+      exp: "Number of sides $= \\dfrac{360°}{\\text{exterior angle}} = \\dfrac{360°}{40°} = 9$ sides. The exterior angles of any polygon always sum to $360°$."
+    },
+    {
+      q: "Two angles of a triangle are $52°$ and $73°$. Find the third angle.",
+      opts: ["$35°$", "$65°$", "$55°$", "$45°$"],
+      ans: 2,
+      exp: "The angles of a triangle always sum to $180°$. Third angle $= 180° - 52° - 73° = 55°$."
+    },
+    {
+      q: "On a scale drawing of $1:200$, a classroom measures $4.5$ cm on paper. What is the actual length?",
+      opts: ["$90$ m", "$9$ m", "$0.9$ m", "$900$ m"],
+      ans: 1,
+      exp: "Actual length $= 4.5 \\times 200 = 900$ cm. Converting to metres: $900 \\div 100 = 9$ m."
+    },
+    {
+      q: "The actual distance between two towns is $15$ km. On a map with scale $1:500{,}000$, what is the map distance in cm?",
+      opts: ["$30$ cm", "$3$ cm", "$0.3$ cm", "$300$ cm"],
+      ans: 1,
+      exp: "Convert 15 km to cm: $15 \\times 100{,}000 = 1{,}500{,}000$ cm. Map distance $= \\dfrac{1{,}500{,}000}{500{,}000} = 3$ cm."
+    },
+    {
+      q: "A scale drawing uses a scale of $1:50$. Two points on the drawing are $8.4$ cm apart. What is the actual distance?",
+      opts: ["$4.2$ m", "$420$ m", "$42$ m", "$0.42$ m"],
+      ans: 0,
+      exp: "Actual distance $= 8.4 \\times 50 = 420$ cm. Convert to metres: $420 \\div 100 = 4.2$ m."
+    },
+    {
+      q: "A map has scale $1:25{,}000$. Two schools are $6$ cm apart on the map. What is the actual distance in kilometres?",
+      opts: ["$15$ km", "$150$ km", "$1.5$ km", "$0.15$ km"],
+      ans: 2,
+      exp: "Actual distance $= 6 \\times 25{,}000 = 150{,}000$ cm. Convert: $150{,}000 \\div 100{,}000 = 1.5$ km."
+    },
+    {
+      q: "Which of the following points lies on the line $y = 2x + 1$?",
+      opts: ["$(1, 4)$", "$(2, 4)$", "$(3, 7)$", "$(0, 2)$"],
+      ans: 2,
+      exp: "Test $(3, 7)$: $y = 2(3) + 1 = 7$ ✓. Check the others — $(1,4)$: $y = 3 \\neq 4$; $(2,4)$: $y = 5 \\neq 4$; $(0,2)$: $y = 1 \\neq 2$. Only $(3, 7)$ satisfies the equation."
+    },
+    {
+      q: "What is the $y$-intercept of the line $y = 3x - 5$?",
+      opts: ["$3$", "$5$", "$-3$", "$-5$"],
+      ans: 3,
+      exp: "In $y = mx + c$, the $y$-intercept is the value of $c$. Here $c = -5$. The line crosses the $y$-axis at the point $(0, -5)$. The 3 is the gradient, not the intercept."
+    },
+    {
+      q: "For the equation $y = x + 4$, what is the value of $y$ when $x = -3$?",
+      opts: ["$-7$", "$-1$", "$1$", "$7$"],
+      ans: 2,
+      exp: "Substitute $x = -3$: $y = (-3) + 4 = 1$. The point $(-3, 1)$ lies on this line."
+    },
+    {
+      q: "A phone company charges a fixed fee of ₦500 plus ₦50 per minute. The cost equation is $C = 50t + 500$. What does the $500$ represent on a graph of $C$ against $t$?",
+      opts: ["The gradient — how steeply the cost rises", "The total cost after 10 minutes", "The $y$-intercept — the cost even before any call is made", "The number of minutes in the plan"],
+      ans: 2,
+      exp: "In $C = 50t + 500$, when $t = 0$ (no minutes used), $C = 500$. This is the $y$-intercept — it represents the fixed connection fee charged before any usage. The 50 is the gradient (cost per minute)."
+    },
+    {
+      q: "From the top of a cliff, Tunde looks down at a boat in the sea. The angle between his horizontal line of sight and the direction of the boat is $35°$. This angle is called the angle of:",
+      opts: ["Elevation", "Inclination", "Reflection", "Depression"],
+      ans: 3,
+      exp: "When you look DOWNWARD from a high point, the angle between the horizontal and your line of sight going down is called the angle of DEPRESSION. If you were at the bottom looking up, it would be elevation."
+    },
+    {
+      q: "Amina stands on flat ground and looks up at the top of a tall building. The angle between the ground and her line of sight to the top is $42°$. This is the angle of:",
+      opts: ["Depression", "Declination", "Elevation", "Inclination"],
+      ans: 2,
+      exp: "When an observer on the ground looks UP at an object above them, the angle measured from the horizontal up to the line of sight is called the angle of ELEVATION."
+    },
+    {
+      q: "The angle of elevation and the angle of depression between two observers looking at each other are:",
+      opts: ["Always different", "Always equal", "Always add up to $180°$", "Always add up to $90°$"],
+      ans: 1,
+      exp: "Because of alternate angles formed by a horizontal line cutting two parallel horizontal lines at each observer's level, the angle of elevation from the lower observer equals the angle of depression from the upper observer. They are always EQUAL."
+    },
+    {
+      q: "From a point on the ground $20$ m from the base of a vertical wall, the angle of elevation of the top is $45°$. Given $\\tan 45° = 1$, find the height of the wall.",
+      opts: ["$10$ m", "$40$ m", "$45$ m", "$20$ m"],
+      ans: 3,
+      exp: "$\\tan(\\text{angle}) = \\dfrac{\\text{opposite}}{\\text{adjacent}} = \\dfrac{\\text{height}}{\\text{distance}}$. So $\\tan 45° = \\dfrac{h}{20}$. Since $\\tan 45° = 1$: $h = 1 \\times 20 = 20$ m."
+    },
+    {
+      q: "Expand: $(3x + 2)(3x - 2)$.",
+      opts: ["$9x^2 + 4$", "$9x^2 - 12x - 4$", "$9x^2 - 4$", "$6x^2 - 4$"],
+      ans: 2,
+      exp: "This follows the difference of two squares rule: $(a + b)(a - b) = a^2 - b^2$. Here $a = 3x$ and $b = 2$: $(3x)^2 - 2^2 = 9x^2 - 4$."
+    },
+    {
+      q: "Factorise: $x^2 - 5x + 6$.",
+      opts: ["$(x - 2)(x - 3)$", "$(x + 2)(x + 3)$", "$(x - 6)(x + 1)$", "$(x - 1)(x - 6)$"],
+      ans: 0,
+      exp: "Find two numbers that multiply to $+6$ and add to $-5$: those are $-2$ and $-3$. So $x^2 - 5x + 6 = (x - 2)(x - 3)$. Check: $(-2) \\times (-3) = +6$ ✓ and $(-2) + (-3) = -5$ ✓."
+    },
+    {
+      q: "A trader's profit $P$ (in naira) when selling $n$ bags of rice is $P = 800n - 2000$. How many bags must be sold to begin making a profit?",
+      opts: ["$2$ bags", "$4$ bags", "$3$ bags", "$5$ bags"],
+      ans: 2,
+      exp: "Profit begins when $P > 0$: $800n - 2000 > 0 \\Rightarrow 800n > 2000 \\Rightarrow n > 2.5$. Since $n$ must be a whole number, the trader needs to sell at least $\\mathbf{3}$ bags."
+    },
+    {
+      q: "A rectangle has length $(4x + 2)$ cm and width $4$ cm. If the perimeter is $52$ cm, find $x$.",
+      opts: ["$x = 3$", "$x = 5$", "$x = 4$", "$x = 2$"],
+      ans: 1,
+      exp: "Perimeter $= 2(\\text{length} + \\text{width})$. So $2[(4x+2) + 4] = 52 \\Rightarrow 2(4x + 6) = 52 \\Rightarrow 8x + 12 = 52 \\Rightarrow 8x = 40 \\Rightarrow x = 5$. Verify: length $= 4(5)+2 = 22$ cm; perimeter $= 2(22+4) = 52$ ✓"
+    }
 ],
 'Basic Science': [
     { q: "A patient has a blockage in the bile duct. Which digestive consequence will MOST likely occur first?", opts: ["Poor emulsification and reduced fat digestion", "Inability to digest proteins in the stomach", "Failure of peristalsis in the oesophagus", "Complete stoppage of glucose absorption"], ans: 0, exp: "Bile emulsifies fats. Without it, fat digestion is severely reduced." },
