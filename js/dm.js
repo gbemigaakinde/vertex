@@ -798,12 +798,18 @@
         refs.slice(i, i + 400).forEach(ref => b.update(ref, { status: 'delivered' }));
         await b.commit();
       }
-      // Keep thread doc in sync so the preview tick updates on the sender's thread list
+      // Only sync lastMessageStatus if the last message in the thread is actually
+      // from the sender whose messages we just upgraded — otherwise we'd overwrite
+      // a student-last-message thread doc with a stale teacher status.
       if (senderRole === 'teacher') {
-        await _threadRef(studentUid).set(
-          { lastMessageStatus: 'delivered' },
-          { merge: true }
-        );
+        const threadSnap = await _threadRef(studentUid).get();
+        const threadData = (threadSnap.exists && threadSnap.data()) || {};
+        if (threadData.lastMessageRole === 'teacher') {
+          await _threadRef(studentUid).set(
+            { lastMessageStatus: 'delivered' },
+            { merge: true }
+          );
+        }
       }
     } catch (e) { console.warn('[dm] _markDelivered error:', e); }
   }
@@ -835,12 +841,18 @@
       }
       _readMarkMap.add(key);
 
-      // Keep thread doc in sync so the preview tick updates on the sender's thread list
+      // Only sync lastMessageStatus if the last message in the thread is actually
+      // from the sender whose messages we just upgraded — otherwise we'd overwrite
+      // a student-last-message thread doc with a stale teacher status.
       if (senderRole === 'teacher') {
-        await _threadRef(studentUid).set(
-          { lastMessageStatus: 'read' },
-          { merge: true }
-        );
+        const threadSnap = await _threadRef(studentUid).get();
+        const threadData = (threadSnap.exists && threadSnap.data()) || {};
+        if (threadData.lastMessageRole === 'teacher') {
+          await _threadRef(studentUid).set(
+            { lastMessageStatus: 'read' },
+            { merge: true }
+          );
+        }
       }
     } catch (e) { console.warn('[dm] _markRead error:', e); }
   }
@@ -865,12 +877,18 @@
         refs.slice(i, i + 400).forEach(ref => b.update(ref, { status: 'delivered' }));
         await b.commit();
       }
-      // Keep thread doc in sync so the preview tick updates on the sender's thread list
+      // Only sync lastMessageStatus if the last message in the thread is actually
+      // from the sender whose messages we just upgraded — otherwise we'd overwrite
+      // a student-last-message thread doc with a stale teacher status.
       if (senderRole === 'teacher') {
-        await _threadRef(studentUid).set(
-          { lastMessageStatus: 'delivered' },
-          { merge: true }
-        );
+        const threadSnap = await _threadRef(studentUid).get();
+        const threadData = (threadSnap.exists && threadSnap.data()) || {};
+        if (threadData.lastMessageRole === 'teacher') {
+          await _threadRef(studentUid).set(
+            { lastMessageStatus: 'delivered' },
+            { merge: true }
+          );
+        }
       }
     } catch (e) { console.warn('[dm] _markDeliveredFromSnapshot error:', e); }
   }
