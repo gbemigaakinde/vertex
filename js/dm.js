@@ -798,6 +798,13 @@
         refs.slice(i, i + 400).forEach(ref => b.update(ref, { status: 'delivered' }));
         await b.commit();
       }
+      // Keep thread doc in sync so the preview tick updates on the sender's thread list
+      if (senderRole === 'teacher') {
+        await _threadRef(studentUid).set(
+          { lastMessageStatus: 'delivered' },
+          { merge: true }
+        );
+      }
     } catch (e) { console.warn('[dm] _markDelivered error:', e); }
   }
 
@@ -827,6 +834,14 @@
         await b.commit();
       }
       _readMarkMap.add(key);
+
+      // Keep thread doc in sync so the preview tick updates on the sender's thread list
+      if (senderRole === 'teacher') {
+        await _threadRef(studentUid).set(
+          { lastMessageStatus: 'read' },
+          { merge: true }
+        );
+      }
     } catch (e) { console.warn('[dm] _markRead error:', e); }
   }
 
@@ -849,6 +864,13 @@
         const b = Db().batch();
         refs.slice(i, i + 400).forEach(ref => b.update(ref, { status: 'delivered' }));
         await b.commit();
+      }
+      // Keep thread doc in sync so the preview tick updates on the sender's thread list
+      if (senderRole === 'teacher') {
+        await _threadRef(studentUid).set(
+          { lastMessageStatus: 'delivered' },
+          { merge: true }
+        );
       }
     } catch (e) { console.warn('[dm] _markDeliveredFromSnapshot error:', e); }
   }
@@ -1851,12 +1873,19 @@ function _buildTeacherBubble(msg, showLabel) {
       const msgs = [];
       snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
 
-      // Student has the inbox open → upgrade any newly arrived teacher messages
-      // from "sent" to "delivered" (snapshot-scoped, no full collection scan).
-      // NOTE: We do NOT call _markRead here. _markRead was already called once
-      // in openStudentInbox() when the inbox mounted. Calling it again on every
-      // snapshot tick caused a write→snapshot→write feedback loop.
+      // Upgrade any teacher messages from sent → delivered via snapshot docs
       _markDeliveredFromSnapshot(snap, uid, 'student').catch(() => {});
+
+      // Any teacher messages that are now delivered (or just arrived) should be
+      // marked read immediately — the student is actively looking at the inbox.
+      // Check docChanges for newly added OR newly delivered teacher messages.
+      const hasNewTeacherMsg = snap.docChanges().some(change =>
+        (change.type === 'added' || change.type === 'modified') &&
+        change.doc.data().role === 'teacher'
+      );
+      if (hasNewTeacherMsg) {
+        _markRead(uid, 'student').catch(() => {});
+      }
 
       container.innerHTML = _renderMessagesWithDateSeps(msgs, uid, 'student');
       container.scrollTop = container.scrollHeight;
@@ -2369,8 +2398,12 @@ function _buildTeacherBubble(msg, showLabel) {
       const msgs = [];
       snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
 
+      // Teacher has this thread open — upgrade any newly arrived student messages
+      // from sent → delivered via snapshot docs (no full collection scan)
       _markDeliveredFromSnapshot(snap, studentUid, 'teacher').catch(() => {});
 
+      // If a genuinely NEW student message just arrived while this thread is open,
+      // mark it read immediately — teacher is looking at it right now
       const hasNewIncoming = snap.docChanges().some(change =>
         change.type === 'added' && change.doc.data().role === 'student'
       );
@@ -2381,14 +2414,20 @@ function _buildTeacherBubble(msg, showLabel) {
       container.innerHTML = _renderMessagesWithDateSeps(msgs, AppConfig.TEACHER_UID, 'teacher');
       container.scrollTop = container.scrollHeight;
 
-      // Sync lastMessageStatus on the thread doc from the most recent teacher message
-      // so the thread list preview tick stays accurate
+      // Sync the thread doc's lastMessageStatus from the actual last teacher message
+      // status so the thread list preview tick stays accurate. Only write when the
+      // status has genuinely changed to avoid a write→snapshot loop.
       const lastTeacherMsg = [...msgs].reverse().find(m => m.role === 'teacher');
       if (lastTeacherMsg && lastTeacherMsg.status) {
-        _threadRef(studentUid).set(
-          { lastMessageStatus: lastTeacherMsg.status },
-          { merge: true }
-        ).catch(() => {});
+        _threadRef(studentUid).get().then(threadSnap => {
+          const current = (threadSnap.exists && threadSnap.data().lastMessageStatus) || null;
+          if (current !== lastTeacherMsg.status) {
+            _threadRef(studentUid).set(
+              { lastMessageStatus: lastTeacherMsg.status },
+              { merge: true }
+            ).catch(() => {});
+          }
+        }).catch(() => {});
       }
 
     }, err => console.error('[dm] Teacher messages error:', err));
@@ -2733,7 +2772,6 @@ function _buildTeacherBubble(msg, showLabel) {
   await _setStudentOnlineGlobal(uid);
 
   // Sweep: upgrade any teacher messages that arrived while student was away → delivered
-  // (student is now in the app — message is considered delivered even if not yet read)
   await _markDelivered(uid, 'student').catch(e => console.warn('[dm] initStudentDMListener delivery sweep error:', e));
 
   const unsub = _threadRef(uid).onSnapshot(snap => {
@@ -2742,13 +2780,11 @@ function _buildTeacherBubble(msg, showLabel) {
     AppState.dmStudentUnread = count;
     _updateStudentBadge(count);
 
-    // If there are unread teacher messages and the student is in the app,
-    // upgrade sent→delivered (NOT read — read only happens when inbox is open).
-    if (count > 0) {
-      _markDelivered(uid, 'student').catch(() => {});
-    }
-    // NOTE: _markRead is intentionally NOT called here.
-    // It is only called from openStudentInbox() when the student actually opens the thread.
+    // Always attempt delivery sweep when thread doc changes — not gated on unread
+    // count because unread and delivery are independent concerns. A message can be
+    // delivered (recipient is in the app) without being read (inbox not open yet).
+    _markDelivered(uid, 'student').catch(() => {});
+
   }, err => console.warn('[dm] Student unread listener error:', err));
 
   AppState.registerListener('dmStudentUnread', unsub);
