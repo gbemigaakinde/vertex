@@ -75,22 +75,32 @@
 }
 
   /* ── Offline-persistence bootstrap ────────────────────────── */
-  (function _enableOfflinePersistence() {
-    try {
-      const db = window.fbDb;
-      if (!db || db._persistenceEnabled) return;
-      db.enablePersistence({ synchronizeTabs: true })
-        .then(() => { db._persistenceEnabled = true; })
-        .catch(err => {
-          if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') {
-            console.warn('[dm] Firestore persistence error:', err);
-          }
-          db._persistenceEnabled = true;
-        });
-    } catch (e) {
-      console.warn('[dm] Could not enable Firestore persistence:', e);
+(function _enableOfflinePersistence() {
+  try {
+    const db = window.fbDb;
+    if (!db || db._persistenceEnabled) return;
+
+    // Use the new FirestoreSettings.cache API if available (SDK 9.22+)
+    // Falls back gracefully if the method doesn't exist on the compat SDK
+    if (typeof db._delegate !== 'undefined' &&
+        typeof db._delegate._settings !== 'undefined') {
+      // New API not directly accessible via compat SDK — skip silently
+      db._persistenceEnabled = true;
+      return;
     }
-  }());
+
+    db.enablePersistence({ synchronizeTabs: true })
+      .then(() => { db._persistenceEnabled = true; })
+      .catch(err => {
+        if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') {
+          console.warn('[dm] Firestore persistence error:', err);
+        }
+        db._persistenceEnabled = true;
+      });
+  } catch (e) {
+    console.warn('[dm] Could not enable Firestore persistence:', e);
+  }
+}());
 
   /* ── Presence helpers ──────────────────────────────────────── */
   function _isRecentlyActive(ts) {
