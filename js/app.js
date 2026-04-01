@@ -20,8 +20,9 @@
   let _slowNetTimer    = null;
   let _cacheBootRetry  = null;
 
-  // True while _onLogout() is running. Blocks the post-signOut
-  // onAuthStateChanged(null) callback from re-entering _onLogout().
+  // True while logout teardown is in progress. Blocks the
+  // onAuthStateChanged(null) event that Firebase fires after
+  // signOut() from calling _onLogout() a second time.
   let _loggingOut = false;
 
   function _cancelPendingTimers() {
@@ -34,8 +35,6 @@
     if (window.VtxLoader) window.VtxLoader.progress(30, 'Checking session…');
 
     // ── Offline-first fast path ──────────────────────────────
-    // Only start the offline timer when we are actually offline.
-    // The slow-network timer runs unconditionally and is separate.
     if (!navigator.onLine) {
       _offlineTimer = setTimeout(function () {
         _offlineTimer = null;
@@ -45,10 +44,10 @@
 
     // ── Normal Firebase Auth path ────────────────────────────
     window.fbAuth.onAuthStateChanged(async function (firebaseUser) {
-      // Guard 1: already handled this auth event — do nothing.
+      // Already handled this auth event — do nothing.
       if (_authResolved) return;
-      // Guard 2: mid-logout — the null event fired by signOut()
-      // must not re-enter _onLogout() and cause a double-render.
+      // Mid-logout — the null event fired by signOut() must not
+      // re-enter _onLogout() while teardown is still running.
       if (_loggingOut) return;
 
       _authResolved = true;
@@ -63,7 +62,6 @@
     });
 
     // ── Slow-connection safety net ───────────────────────────
-    // Separate timer — does NOT share the variable with the offline timer.
     _slowNetTimer = setTimeout(function () {
       _slowNetTimer = null;
       if (!_authResolved) {
@@ -142,11 +140,6 @@
 
     if (window.VtxLoader) window.VtxLoader.progress(60, 'Loading from device…');
 
-    // ── Load coaching tasks from IndexedDB when offline ──────
-    // listenForStudentUpdates() sets up onSnapshot listeners which silently
-    // hang offline (Firestore persistence is disabled). We attempt it anyway
-    // because it also calls loadStudentMessages() and caches task docs.
-    // If it fails or hangs, _loadOfflineCoachingTasks() fills AppState from LocalDB.
     await _loadOfflineCoachingTasks(uid);
 
     await Tasks.listenForStudentUpdates().catch((err) => {
@@ -175,9 +168,6 @@
   }
 
   // ── Offline coaching task loader ─────────────────────────────
-  // Reads the same doc keys that tasks.js writes via SyncManager.cacheCoachingTask().
-  // Populates AppState.currentTaskConfig so renderSubjectSelection() shows the
-  // correct task widget even with no network.
   async function _loadOfflineCoachingTasks(uid) {
     if (!window.LocalDB || !window.Tasks) return;
 
@@ -193,10 +183,10 @@
 
     const docs = { global: null, class: null, student: null, weekly: null, weeklyClass: null, weeklyStudent: null };
     const keyMap = {
-      global:               'global',
-      [classKey]:           'class',
-      'weekly':             'weekly',
-      ['weekly_' + classKey]: 'weeklyClass',
+      global:                  'global',
+      [classKey]:              'class',
+      'weekly':                'weekly',
+      ['weekly_' + classKey]:  'weeklyClass',
     };
     if (studentKey) {
       keyMap[studentKey]             = 'student';
@@ -215,10 +205,7 @@
       return;
     }
 
-    // Use the same resolution logic tasks.js uses
     if (window.Tasks && typeof Tasks._resolveTask === 'function') {
-      // tasks.js doesn't expose _resolveTask publicly; we replicate the
-      // priority order here: student > weeklyStudent > class > weeklyClass > weekly > global
       const _expand = (doc) => doc && typeof Tasks._expandTaskDoc === 'function'
         ? Tasks._expandTaskDoc(doc)
         : null;
@@ -239,7 +226,6 @@
         (globalExp      && globalExp.active       ? globalExp      : null) ||
         { active: false };
 
-      // Only set if tasks.js hasn't already resolved something (race guard)
       if (!AppState.currentTaskConfig || !AppState.currentTaskConfig.active) {
         AppState.currentTaskConfig = resolved;
         console.log('[app] Offline task config loaded from LocalDB:', resolved.active ? resolved.title : 'none active');
@@ -339,7 +325,7 @@
             if (window.DM && typeof DM.cancelListeners === 'function') {
               await DM.cancelListeners();
             }
-            await window.fbAuth.signOut();
+            await _teardownAndSignOut();
             return;
           }
           studentData = snap.data();
@@ -403,16 +389,46 @@
       if (window.DM && typeof DM.cancelListeners === 'function') {
         await DM.cancelListeners();
       }
-      await window.fbAuth.signOut();
+      await _teardownAndSignOut();
     }
   }
 
-  async function _onLogout() {
-    // Raise the logout guard immediately. This prevents the
-    // onAuthStateChanged(null) event that Firebase fires after
-    // signOut() from calling _onLogout() a second time while
-    // this one is still running — which was the original bug
-    // causing a blank screen / broken UI on logout.
+  // ── Shared teardown used inside _onLogin error paths ─────────
+  // Cancels all listeners silently then calls signOut(). The
+  // _loggingOut guard prevents the resulting onAuthStateChanged
+  // null event from double-calling _onLogout().
+  async function _teardownAndSignOut() {
+    _loggingOut = true;
+    Tasks.cancelListeners();
+    AppState.cancelAllListeners();
+    AppState.reset();
+    if (window.SyncManager) SyncManager.destroy();
+    try {
+      await window.fbAuth.signOut();
+    } catch (e) {
+      console.warn('[app] signOut error:', e);
+    }
+    setTimeout(function () { _loggingOut = false; }, 500);
+  }
+
+  // ── Public logout — called by ALL sign-out buttons ───────────
+  //
+  // This is the heart of the fix. Previously every sign-out button
+  // called window.fbAuth.signOut() directly, which:
+  //   1. Revoked the auth token immediately
+  //   2. Left every Firestore listener still alive and now
+  //      unauthorised → flood of "Missing or insufficient
+  //      permissions" errors in the console
+  //   3. Triggered onAuthStateChanged(null) → _onLogout() ran
+  //      AGAIN while the first call was still in progress →
+  //      double-render / blank screen
+  //
+  // Now every sign-out surface (student button in exam.js,
+  // Teacher.logout() in teacher.js) calls App.logout() instead.
+  // We cancel every listener FIRST, then sign out, so Firebase
+  // never tries to push data to a now-anonymous client.
+  async function logout() {
+    if (_loggingOut) return;    // prevent double-tap
     _loggingOut = true;
 
     _sessionToken++;
@@ -420,6 +436,9 @@
 
     window._registrationInProgress = false;
 
+    // ── Cancel every active listener BEFORE revoking the token ──
+    // Order matters: each of these unsubscribes its Firestore
+    // listeners synchronously before we call signOut().
     if (window.MsgNotif) {
       MsgNotif.cancel();
     }
@@ -430,9 +449,64 @@
       );
     }
 
+    Tasks.cancelListeners();
+    AppState.cancelAllListeners();
+
     if (window.SyncManager) {
       SyncManager.destroy();
     }
+
+    AppState.reset();
+
+    // ── Now it is safe to revoke the token ──────────────────────
+    // All listeners are dead. signOut() will still fire
+    // onAuthStateChanged(null) but _loggingOut blocks _onLogout()
+    // from running a second time.
+    try {
+      await window.fbAuth.signOut();
+    } catch (e) {
+      console.warn('[app] signOut error (non-fatal):', e);
+    }
+
+    if (window.VtxLoader) window.VtxLoader.done();
+
+    // ── Render the post-logout screen ────────────────────────────
+    if (window.Landing && typeof Landing.render === 'function') {
+      Landing.render();
+    } else {
+      Auth.renderLogin();
+    }
+
+    // ── Re-open the gate for the next sign-in ────────────────────
+    // Wait long enough for Firebase to finish emitting the
+    // post-signOut null event before we clear the guards.
+    setTimeout(function () {
+      _authResolved = false;
+      _loggingOut   = false;
+    }, 500);
+  }
+
+  // ── Internal logout (called when Firebase boots with no user) ─
+  async function _onLogout() {
+    // This path is only reached on initial page load when no user
+    // is signed in (cold start). The logout() function above
+    // handles every user-initiated sign-out.
+    _loggingOut = true;
+
+    _sessionToken++;
+    _cancelPendingTimers();
+
+    window._registrationInProgress = false;
+
+    if (window.MsgNotif) MsgNotif.cancel();
+
+    if (window.DM && typeof DM.cancelListeners === 'function') {
+      await DM.cancelListeners().catch(e =>
+        console.warn('[app] DM.cancelListeners error on logout:', e)
+      );
+    }
+
+    if (window.SyncManager) SyncManager.destroy();
 
     Tasks.cancelListeners();
     AppState.reset();
@@ -445,9 +519,6 @@
       Auth.renderLogin();
     }
 
-    // Reset state flags after a short delay so the Firebase SDK
-    // has time to finish emitting the post-signOut null event
-    // before we re-open the gate for the next sign-in.
     setTimeout(function () {
       _authResolved = false;
       _loggingOut   = false;
@@ -459,5 +530,8 @@
       console.error('[app] Unhandled promise rejection:', event.reason);
     });
   }
+
+  // ── Public API ────────────────────────────────────────────────
+  window.App = { logout: logout };
 
 }());
