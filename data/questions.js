@@ -5955,7 +5955,7 @@ sss1: {
       "$x = \\frac{11}{9}$"
     ],
     ans: 0,
-    exp: "Cross-multiply: $2(2x+1) = 5(x-3) \\Rightarrow 4x + 2 = 5x - 15 \\Rightarrow -x = -17 \\Rightarrow x = 17$. Wait — $4x + 2 = 5x - 15 \\Rightarrow 2 + 15 = 5x - 4x \\Rightarrow x = 17$. Check: $x \\neq 3$ and $x \\neq -\\frac{1}{2}$, so $x = 17$ is valid. The answer should be $x = 17$ — always verify by substitution."
+    exp: "Cross-multiply: $2(2x+1) = 5(x-3) \\Rightarrow 4x + 2 = 5x - 15 \\Rightarrow -x = -17 \\Rightarrow x = 17$."
   },
   {
     q: "The perpendicular bisector of a chord passes through the centre. A chord $PQ$ of length $16$ cm is at a distance of $6$ cm from the centre $O$. A second chord $RS$ is at a distance of $10$ cm from $O$. Find the length of $RS$.",
