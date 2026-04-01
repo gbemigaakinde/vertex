@@ -13,77 +13,105 @@
     window._appReady = true;
   });
 
-  // Track whether auth has already resolved, so the offline
-  // fallback and the Firebase callback don't both try to run.
-  let _authResolved = false;
+  // ── Auth session state ───────────────────────────────────────
+  // Each "session" gets its own token. When a session is torn
+  // down (logout) we increment the token so any async callbacks
+  // that were inflight for the OLD session silently no-op.
+  let _sessionToken    = 0;   // incremented on every logout
+  let _authResolved    = false;
+  let _offlineTimer    = null; // the 5-second fallback setTimeout
+  let _cacheBootRetry  = null; // retry timer for LocalDB-not-ready
+
+  // Cancel all pending timers for the current session
+  function _cancelPendingTimers() {
+    if (_offlineTimer   !== null) { clearTimeout(_offlineTimer);   _offlineTimer   = null; }
+    if (_cacheBootRetry !== null) { clearTimeout(_cacheBootRetry); _cacheBootRetry = null; }
+  }
 
   function _startAuthListener() {
     if (window.VtxLoader) window.VtxLoader.progress(30, 'Checking session…');
 
     // ── Offline-first fast path ──────────────────────────────
     // If the device is offline, Firebase Auth will never call back.
-    // Instead of leaving the user on a blank screen, we immediately
-    // check IndexedDB for a cached session and boot from that.
+    // We wait a short moment to let Firebase attempt its cached
+    // credential first (it stores one in localStorage), then fall
+    // back to our IndexedDB cache only if still unresolved.
     if (!navigator.onLine) {
-      _tryBootFromCache();
+      _offlineTimer = setTimeout(function () {
+        _offlineTimer = null;
+        if (!_authResolved) _tryBootFromCache(_sessionToken);
+      }, 800);
     }
 
     // ── Normal Firebase Auth path ────────────────────────────
-    // This fires whether online or offline eventually, but offline
-    // it may take a long time or never fire. The _authResolved flag
-    // ensures only one path wins.
     window.fbAuth.onAuthStateChanged(async function (firebaseUser) {
-      if (_authResolved) return;   // offline path already handled it
+      // If we already handled this session (offline path won), ignore.
+      if (_authResolved) return;
       _authResolved = true;
+
+      // Cancel the offline fallback timer — Firebase responded.
+      _cancelPendingTimers();
 
       if (firebaseUser) {
         if (window._registrationInProgress) return;
         await _onLogin(firebaseUser);
       } else {
+        // Firebase explicitly says "no user" — go to landing/login.
+        // Do NOT attempt cache boot here; the user is logged out.
         await _onLogout();
       }
     });
 
     // ── Slow-connection safety net ───────────────────────────
-    // If we're online but Firebase Auth is taking unusually long
-    // (slow network, captive portal, etc.), try cache after 5 seconds.
-    // This prevents an indefinite blank/spinning state.
-    setTimeout(function () {
+    // If Firebase Auth is taking unusually long (slow network,
+    // captive portal, etc.), try cache after 5 s so the user
+    // isn't stuck on a spinner.
+    _offlineTimer = setTimeout(function () {
+      _offlineTimer = null;
       if (!_authResolved) {
         console.warn('[app] Firebase Auth taking too long — attempting cache boot.');
-        _tryBootFromCache();
+        _tryBootFromCache(_sessionToken);
       }
     }, 5000);
   }
 
   // ── Boot from IndexedDB cache (no network needed) ────────────
-  async function _tryBootFromCache() {
-    if (_authResolved) return;   // Firebase Auth already responded
+  // We pass the session token at call-time and check it before
+  // doing anything side-effectful, so a stale callback from a
+  // previous session can never log someone back in.
+  async function _tryBootFromCache(token) {
+    // Stale call from a previous session — abort.
+    if (token !== _sessionToken) return;
 
-    // We need LocalDB to be open first
+    // Already handled by Firebase Auth — abort.
+    if (_authResolved) return;
+
+    // LocalDB not loaded yet — schedule one retry.
     if (!window.LocalDB) {
-      // LocalDB not loaded yet — wait a moment and retry once
-      setTimeout(_tryBootFromCache, 300);
+      _cacheBootRetry = setTimeout(function () {
+        _cacheBootRetry = null;
+        _tryBootFromCache(token);
+      }, 300);
       return;
     }
 
     try {
-      // Find the most recently saved student profile in IndexedDB
       const allProfiles = await LocalDB.getAll(LocalDB.STORES.STUDENT_PROFILE);
 
+      // Guard again after the async gap.
+      if (token !== _sessionToken || _authResolved) return;
+
       if (!allProfiles || allProfiles.length === 0) {
-        // No cached profile at all — user has genuinely never logged in
-        // on this device. Nothing we can do without a connection.
         if (!navigator.onLine) {
           if (window.VtxLoader) window.VtxLoader.done();
-          // Show a friendly message instead of a blank screen
           _renderOfflineNoCache();
         }
         return;
       }
 
-      // Pick the most recently saved profile
-      const latest = allProfiles.sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))[0];
+      // Pick the most recently saved profile.
+      const latest = allProfiles
+        .sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))[0];
 
       if (!latest || !latest.uid || !latest.data) {
         if (!navigator.onLine) {
@@ -93,19 +121,16 @@
         return;
       }
 
-      // We have a cached profile — mark auth as resolved so
-      // the Firebase callback (if it eventually fires) does nothing
-      if (_authResolved) return;
+      // Guard once more.
+      if (token !== _sessionToken || _authResolved) return;
       _authResolved = true;
 
       console.log('[app] Booting from cached profile for uid:', latest.uid);
-
-      // Boot the app with cached data
       await _onLoginFromCache(latest.uid, latest.data);
 
     } catch (err) {
       console.warn('[app] Cache boot failed:', err);
-      if (!navigator.onLine && !_authResolved) {
+      if (!navigator.onLine && !_authResolved && token === _sessionToken) {
         if (window.VtxLoader) window.VtxLoader.done();
         _renderOfflineNoCache();
       }
@@ -117,7 +142,7 @@
     AppState.cancelAllListeners();
     AppState.userId      = uid;
     AppState.studentData = studentData;
-    AppState.isTeacher   = false;  // Teacher always needs to be online
+    AppState.isTeacher   = false;
     AppState.chatUnread  = 0;
 
     if (window.LocalDB) {
@@ -129,14 +154,12 @@
 
     if (window.VtxLoader) window.VtxLoader.progress(60, 'Loading from device…');
 
-    // Load coaching tasks from cache
     await Tasks.listenForStudentUpdates().catch((err) => {
       console.warn('[app] Tasks listener error (offline, non-fatal):', err);
     });
 
     if (window.VtxLoader) window.VtxLoader.progress(85, 'Almost ready…');
 
-    // Load exam state from cache
     await Exam.loadOrStart().catch((err) => {
       console.warn('[app] Exam loadOrStart error (offline, non-fatal):', err);
     });
@@ -144,11 +167,10 @@
     if (window.VtxLoader) window.VtxLoader.done();
 
     // When connection returns, do a proper Firebase Auth check
-    // to refresh the session and pull any server updates
+    // to refresh the session and pull any server updates.
     window.addEventListener('online', function _onReconnect() {
       window.removeEventListener('online', _onReconnect);
       console.log('[app] Connection restored — refreshing session from server.');
-      // Force a fresh auth check by reloading auth state
       window.fbAuth.currentUser
         ? _onLogin(window.fbAuth.currentUser).catch(console.error)
         : window.fbAuth.onAuthStateChanged(function onceHandler(user) {
@@ -190,7 +212,6 @@
     AppState.cancelAllListeners();
     AppState.userId = uid;
 
-    // ── Initialize offline infrastructure first ──────────────
     if (window.LocalDB) {
       LocalDB.init().catch((e) => console.warn('[app] LocalDB init error (non-fatal):', e));
     }
@@ -223,7 +244,6 @@
       if (window.DM && typeof DM.initTeacherDMListener === 'function') {
         DM.initTeacherDMListener();
       }
-
       if (window.MsgNotif) {
         MsgNotif.initForTeacher();
       }
@@ -235,8 +255,9 @@
     // ── Student path ──
     AppState.isTeacher = false;
     try {
-      // 1. Try local profile first (works offline)
       let studentData = null;
+
+      // 1. Try local profile first (works offline)
       if (window.LocalDB) {
         try {
           studentData = await LocalDB.getStudentProfile(uid);
@@ -259,7 +280,6 @@
             return;
           }
           studentData = snap.data();
-          // Cache for offline use
           if (window.SyncManager) {
             SyncManager.cacheStudentProfile(uid, studentData).catch(() => {});
           }
@@ -305,7 +325,6 @@
       if (window.DM && typeof DM.initStudentDMListener === 'function') {
         DM.initStudentDMListener(uid);
       }
-
       if (window.MsgNotif) {
         MsgNotif.initForStudent(uid);
       }
@@ -326,6 +345,19 @@
   }
 
   async function _onLogout() {
+    // ── Increment session token FIRST ───────────────────────
+    // This invalidates any in-flight _tryBootFromCache calls
+    // from the previous session so they silently no-op.
+    _sessionToken++;
+
+    // Cancel any pending timers so they can never fire for the
+    // just-ended session.
+    _cancelPendingTimers();
+
+    // Reset auth flag so the next login/auth cycle works correctly.
+    _authResolved = false;
+
+    // ── Tear down session ────────────────────────────────────
     window._registrationInProgress = false;
 
     if (window.MsgNotif) {
@@ -333,22 +365,24 @@
     }
 
     if (window.DM && typeof DM.cancelListeners === 'function') {
-      await DM.cancelListeners().catch(e => console.warn('[app] DM.cancelListeners error on logout:', e));
+      await DM.cancelListeners().catch(e =>
+        console.warn('[app] DM.cancelListeners error on logout:', e)
+      );
     }
 
-    // Destroy sync manager on logout
     if (window.SyncManager) {
       SyncManager.destroy();
     }
-
-    // Reset the auth flag so the next login works correctly
-    _authResolved = false;
 
     Tasks.cancelListeners();
     AppState.reset();
 
     if (window.VtxLoader) window.VtxLoader.done();
 
+    // Show the landing page (which has Sign In / Register buttons).
+    // Do NOT call _startAuthListener again — Firebase's own
+    // onAuthStateChanged listener (set up once at boot) will
+    // handle the next sign-in automatically.
     if (window.Landing && typeof Landing.render === 'function') {
       Landing.render();
     } else {
