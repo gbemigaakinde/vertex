@@ -12,13 +12,13 @@
 (function () {
   'use strict';
 
-  const SYNC_INTERVAL_MS    = 30_000;  // 30s periodic sync
-  const MAX_ATTEMPTS        = 5;
-  const BACK_OFF_BASE_MS    = 2_000;
+  const SYNC_INTERVAL_MS = 30_000;  // 30s periodic sync
+  const MAX_ATTEMPTS     = 5;
+  const BACK_OFF_BASE_MS = 2_000;
 
-  let _syncTimer     = null;
-  let _isSyncing     = false;
-  let _initialized   = false;
+  let _syncTimer   = null;
+  let _isSyncing   = false;
+  let _initialized = false;
 
   /* ── Online/offline detection ──────────────────────────── */
 
@@ -49,6 +49,7 @@
     document.removeEventListener('visibilitychange', _onVisibilityChange);
     _stopPeriodicSync();
     _initialized = false;
+    _isSyncing   = false;
   }
 
   /* ── Event handlers ────────────────────────────────────── */
@@ -56,6 +57,7 @@
   function _onOnline() {
     console.log('[SyncManager] Connection restored — syncing.');
     _syncSoon(300);
+    _startPeriodicSync();
   }
 
   function _onOffline() {
@@ -116,7 +118,8 @@
   async function _syncExamResults() {
     let pending;
     try {
-      pending = await LocalDB.getUnsynedResults();
+      // NOTE: correct spelling — getUnsyncedResults (not getUnsynedResults)
+      pending = await LocalDB.getUnsyncedResults();
     } catch (e) {
       console.warn('[SyncManager] Could not read unsynced results:', e);
       return;
@@ -131,9 +134,9 @@
       if ((item.attempts || 0) >= MAX_ATTEMPTS) continue;
 
       try {
-        const db      = window.fbDb;
-        const batch   = db.batch();
-        const ts      = firebase.firestore.FieldValue.serverTimestamp();
+        const db    = window.fbDb;
+        const batch = db.batch();
+        const ts    = firebase.firestore.FieldValue.serverTimestamp();
 
         const resultPayload = {
           ...item.resultData,
@@ -145,7 +148,6 @@
         batch.set(db.collection('results').doc(), resultPayload);
         batch.delete(db.collection('ongoingExams').doc(item.uid));
 
-        // Mark coaching completed if this was a task day
         if (item.sessionDate && item.taskDay) {
           batch.update(db.collection('students').doc(item.uid), {
             [`coachingCompleted.${item.sessionDate}`]: true,
@@ -188,7 +190,6 @@
       }
     }
 
-    // Clean up successfully synced items
     try {
       await LocalDB.clearSyncedQueue();
     } catch (e) {
@@ -235,40 +236,25 @@
 
   /* ── Cache seeders (Firebase → IndexedDB) ─────────────── */
 
-  /**
-   * Called from tasks.js onSnapshot handlers to cache task docs locally.
-   */
   async function cacheCoachingTask(docId, data) {
     try {
-      if (data) {
-        await LocalDB.saveCoachingTask(docId, data);
-      }
+      if (data) await LocalDB.saveCoachingTask(docId, data);
     } catch (e) {
       console.warn('[SyncManager] cacheCoachingTask error:', e);
     }
   }
 
-  /**
-   * Called from studyroom.js after fetching lessons.
-   */
   async function cacheLessons(lessons) {
     try {
-      if (lessons && lessons.length > 0) {
-        await LocalDB.saveLessons(lessons);
-      }
+      if (lessons && lessons.length > 0) await LocalDB.saveLessons(lessons);
     } catch (e) {
       console.warn('[SyncManager] cacheLessons error:', e);
     }
   }
 
-  /**
-   * Called from app.js after loading student profile.
-   */
   async function cacheStudentProfile(uid, data) {
     try {
-      if (uid && data) {
-        await LocalDB.saveStudentProfile(uid, data);
-      }
+      if (uid && data) await LocalDB.saveStudentProfile(uid, data);
     } catch (e) {
       console.warn('[SyncManager] cacheStudentProfile error:', e);
     }
@@ -286,17 +272,17 @@
   async function getStatus() {
     const [pending, results, messages, lastSync] = await Promise.allSettled([
       LocalDB.getPendingQueue(),
-      LocalDB.getUnsynedResults(),
+      LocalDB.getUnsyncedResults(),
       LocalDB.getUnsyncedMessages(),
       LocalDB.getMeta('lastSync'),
     ]);
     return {
-      queuedOps:       (pending.value  || []).length,
-      unsyncedResults: (results.value  || []).length,
-      unsyncedMessages:(messages.value || []).length,
-      lastSync:         lastSync.value || null,
-      isSyncing:        _isSyncing,
-      isOnline:         _isOnline(),
+      queuedOps:        (pending.value  || []).length,
+      unsyncedResults:  (results.value  || []).length,
+      unsyncedMessages: (messages.value || []).length,
+      lastSync:          lastSync.value || null,
+      isSyncing:         _isSyncing,
+      isOnline:          _isOnline(),
     };
   }
 
