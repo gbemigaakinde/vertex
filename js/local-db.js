@@ -1,6 +1,6 @@
 /* ============================================================
    js/local-db.js — IndexedDB wrapper for offline-first data
-   
+
    Provides typed CRUD operations for all app data stores.
    All operations are Promise-based. Errors are caught and
    logged; they do NOT propagate to crash the app — Firebase
@@ -25,8 +25,17 @@
     APP_METADATA:     'app_metadata',
   };
 
-  let _db = null;
+  let _db          = null;
   let _initPromise = null;
+
+  /* ── UUID generator ────────────────────────────────────── */
+
+  function _uuid() {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+      const r = Math.random() * 16 | 0;
+      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+    });
+  }
 
   /* ── Open / upgrade DB ─────────────────────────────────── */
 
@@ -39,57 +48,48 @@
       req.onupgradeneeded = (event) => {
         const db = event.target.result;
 
-        // student_profile
         if (!db.objectStoreNames.contains(STORES.STUDENT_PROFILE)) {
           db.createObjectStore(STORES.STUDENT_PROFILE, { keyPath: 'uid' });
         }
 
-        // exam_sessions
         if (!db.objectStoreNames.contains(STORES.EXAM_SESSIONS)) {
           db.createObjectStore(STORES.EXAM_SESSIONS, { keyPath: 'uid' });
         }
 
-        // exam_results
         if (!db.objectStoreNames.contains(STORES.EXAM_RESULTS)) {
           const rs = db.createObjectStore(STORES.EXAM_RESULTS, { keyPath: 'localId' });
           rs.createIndex('by_uid',    'uid',    { unique: false });
           rs.createIndex('by_synced', 'synced', { unique: false });
         }
 
-        // coaching_tasks
         if (!db.objectStoreNames.contains(STORES.COACHING_TASKS)) {
           db.createObjectStore(STORES.COACHING_TASKS, { keyPath: 'docId' });
         }
 
-        // lessons
         if (!db.objectStoreNames.contains(STORES.LESSONS)) {
           const ls = db.createObjectStore(STORES.LESSONS, { keyPath: 'id' });
           ls.createIndex('by_class', 'class', { unique: false });
         }
 
-        // dm_threads
         if (!db.objectStoreNames.contains(STORES.DM_THREADS)) {
           db.createObjectStore(STORES.DM_THREADS, { keyPath: 'uid' });
         }
 
-        // dm_messages
         if (!db.objectStoreNames.contains(STORES.DM_MESSAGES)) {
           const ms = db.createObjectStore(STORES.DM_MESSAGES, { keyPath: 'localId' });
           ms.createIndex('by_thread', 'threadUid', { unique: false });
           ms.createIndex('by_synced', 'synced',    { unique: false });
         }
 
-        // offline_queue
+        // offline_queue uses explicit queueId (UUID string), NOT autoIncrement.
+        // This guarantees every record always carries its own key as a field,
+        // so items fetched via getAll() can always identify themselves.
         if (!db.objectStoreNames.contains(STORES.OFFLINE_QUEUE)) {
-          const qs = db.createObjectStore(STORES.OFFLINE_QUEUE, {
-            keyPath:       'queueId',
-            autoIncrement: true,
-          });
-          qs.createIndex('by_synced',   'synced',    { unique: false });
-          qs.createIndex('by_priority', 'priority',  { unique: false });
+          const qs = db.createObjectStore(STORES.OFFLINE_QUEUE, { keyPath: 'queueId' });
+          qs.createIndex('by_synced',   'synced',   { unique: false });
+          qs.createIndex('by_priority', 'priority', { unique: false });
         }
 
-        // app_metadata
         if (!db.objectStoreNames.contains(STORES.APP_METADATA)) {
           db.createObjectStore(STORES.APP_METADATA, { keyPath: 'key' });
         }
@@ -116,6 +116,11 @@
 
   /* ── Low-level transaction helpers ────────────────────── */
 
+  /**
+   * Run a single-store transaction.
+   * fn receives the IDBObjectStore and should return an IDBRequest.
+   * Resolves with req.result when the request succeeds.
+   */
   async function _tx(storeName, mode, fn) {
     try {
       const db = await _open();
@@ -124,32 +129,14 @@
         const store = tx.objectStore(storeName);
         const req   = fn(store);
 
-        if (req && typeof req.onsuccess !== 'undefined') {
-          req.onsuccess = () => resolve(req.result);
-          req.onerror   = () => reject(req.error);
-        } else {
-          tx.oncomplete = () => resolve(req);
-          tx.onerror    = () => reject(tx.error);
-        }
+        req.onsuccess = () => resolve(req.result);
+        req.onerror   = () => reject(req.error);
+
+        // Also catch transaction-level errors (e.g. quota exceeded)
+        tx.onerror = () => reject(tx.error);
       });
     } catch (err) {
       console.error(`[LocalDB] Transaction error on "${storeName}" (${mode}):`, err);
-      throw err;
-    }
-  }
-
-  async function _txMulti(storeNames, mode, fn) {
-    try {
-      const db = await _open();
-      return new Promise((resolve, reject) => {
-        const tx     = db.transaction(storeNames, mode);
-        const result = fn(tx);
-        tx.oncomplete = () => resolve(result);
-        tx.onerror    = () => reject(tx.error);
-        tx.onabort    = () => reject(new Error('Transaction aborted'));
-      });
-    } catch (err) {
-      console.error('[LocalDB] Multi-store transaction error:', err);
       throw err;
     }
   }
@@ -180,8 +167,9 @@
         const store = tx.objectStore(storeName);
         const index = store.index(indexName);
         const req   = index.getAll(value);
-        req.onsuccess = () => resolve(req.result);
+        req.onsuccess = () => resolve(req.result || []);
         req.onerror   = () => reject(req.error);
+        tx.onerror    = () => reject(tx.error);
       });
     } catch (err) {
       console.error('[LocalDB] getByIndex error:', err);
@@ -199,8 +187,8 @@
     return put(STORES.STUDENT_PROFILE, {
       uid,
       data,
-      savedAt:  Date.now(),
-      isDirty:  false,
+      savedAt: Date.now(),
+      isDirty: false,
     });
   }
 
@@ -238,9 +226,9 @@
   async function updateExamStartTime(uid, startTime) {
     const rec = await get(STORES.EXAM_SESSIONS, uid);
     if (!rec) return;
-    rec.examData              = rec.examData || {};
-    rec.examData.startTime    = startTime;
-    rec.savedAt               = Date.now();
+    rec.examData           = rec.examData || {};
+    rec.examData.startTime = startTime;
+    rec.savedAt            = Date.now();
     return put(STORES.EXAM_SESSIONS, rec);
   }
 
@@ -250,16 +238,9 @@
 
   /* ── Typed helpers: Exam Results ───────────────────────── */
 
-  function _uuid() {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
-      const r = Math.random() * 16 | 0;
-      return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-    });
-  }
-
   async function saveExamResult(uid, resultData, questionSnapshots, sessionDate) {
     const localId = _uuid();
-    return put(STORES.EXAM_RESULTS, {
+    await put(STORES.EXAM_RESULTS, {
       localId,
       uid,
       resultData,
@@ -268,7 +249,9 @@
       synced:    false,
       createdAt: Date.now(),
       error:     null,
+      attempts:  0,
     });
+    return localId;
   }
 
   async function getUnsynedResults() {
@@ -349,10 +332,19 @@
 
   /* ── Typed helpers: Offline Queue ──────────────────────── */
 
+  /**
+   * Enqueue an operation.
+   * IMPORTANT: queueId is a UUID string generated here, NOT autoIncrement.
+   * This guarantees every record stores its own key, so items fetched via
+   * getAll() / getByIndex() always know their own queueId.
+   * Returns the queueId string.
+   */
   async function enqueue(operation, collection, docId, data, priority) {
     priority = priority || 5;
-    return put(STORES.OFFLINE_QUEUE, {
-      operation,   // 'set' | 'update' | 'delete' | 'add' | 'batch'
+    const queueId = _uuid();
+    await put(STORES.OFFLINE_QUEUE, {
+      queueId,        // explicitly stored in the record
+      operation,      // 'set' | 'update' | 'delete' | 'add' | 'batch' | 'set_merge'
       collection,
       docId,
       data,
@@ -362,11 +354,12 @@
       createdAt: Date.now(),
       error:     null,
     });
+    return queueId;   // return the key so callers can reference it
   }
 
   async function getPendingQueue() {
     const all = await getAll(STORES.OFFLINE_QUEUE);
-    return all
+    return (all || [])
       .filter((item) => !item.synced && item.attempts < 5)
       .sort((a, b) => a.priority - b.priority || a.createdAt - b.createdAt);
   }
@@ -383,14 +376,15 @@
     const rec = await get(STORES.OFFLINE_QUEUE, queueId);
     if (!rec) return;
     rec.attempts++;
-    rec.error    = String(error);
-    rec.lastTry  = Date.now();
+    rec.error   = String(error);
+    rec.lastTry = Date.now();
     return put(STORES.OFFLINE_QUEUE, rec);
   }
 
   async function clearSyncedQueue() {
     const all = await getAll(STORES.OFFLINE_QUEUE);
-    const db  = await _open();
+    if (!all || all.length === 0) return;
+    const db = await _open();
     return new Promise((resolve, reject) => {
       const tx    = db.transaction(STORES.OFFLINE_QUEUE, 'readwrite');
       const store = tx.objectStore(STORES.OFFLINE_QUEUE);
