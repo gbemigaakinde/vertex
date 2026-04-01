@@ -5,6 +5,10 @@
    All operations are Promise-based. Errors are caught and
    logged; they do NOT propagate to crash the app — Firebase
    remains the authoritative fallback.
+
+   NOTE: IDBIndex.getAll(key) rejects boolean keys in some
+   browsers (Chrome/Edge on Windows). All "by_synced" index
+   queries use getAll() + JS filter instead of getByIndex().
    ============================================================ */
 
 (function () {
@@ -82,8 +86,6 @@
         }
 
         // offline_queue uses explicit queueId (UUID string), NOT autoIncrement.
-        // This guarantees every record always carries its own key as a field,
-        // so items fetched via getAll() can always identify themselves.
         if (!db.objectStoreNames.contains(STORES.OFFLINE_QUEUE)) {
           const qs = db.createObjectStore(STORES.OFFLINE_QUEUE, { keyPath: 'queueId' });
           qs.createIndex('by_synced',   'synced',   { unique: false });
@@ -116,11 +118,6 @@
 
   /* ── Low-level transaction helpers ────────────────────── */
 
-  /**
-   * Run a single-store transaction.
-   * fn receives the IDBObjectStore and should return an IDBRequest.
-   * Resolves with req.result when the request succeeds.
-   */
   async function _tx(storeName, mode, fn) {
     try {
       const db = await _open();
@@ -158,6 +155,11 @@
     return _tx(storeName, 'readwrite', (store) => store.delete(key));
   }
 
+  // NOTE: Boolean keys passed to IDBIndex.getAll() throw a
+  // DataError in Chrome/Edge on Windows ("parameter is not a
+  // valid key"). Use _getAllAndFilter() for any store that
+  // indexes a boolean field. Only use getByIndex() for string
+  // or number keys (e.g. 'by_class', 'by_thread', 'by_uid').
   async function getByIndex(storeName, indexName, value) {
     try {
       const db = await _open();
@@ -172,6 +174,18 @@
       });
     } catch (err) {
       console.error('[LocalDB] getByIndex error:', err);
+      return [];
+    }
+  }
+
+  // Safe alternative: fetch all records and filter in JS.
+  // Use this whenever the index key is a boolean.
+  async function _getAllAndFilter(storeName, predicate) {
+    try {
+      const all = await getAll(storeName);
+      return (all || []).filter(predicate);
+    } catch (err) {
+      console.error('[LocalDB] _getAllAndFilter error:', err);
       return [];
     }
   }
@@ -253,10 +267,10 @@
     return localId;
   }
 
-  // NOTE: Correctly spelled — was "getUnsynedResults" (missing 'c') in the original.
-  // sync-manager.js calls this as LocalDB.getUnsyncedResults().
+  // Uses getAll + JS filter instead of getByIndex(…, false)
+  // to avoid the IDBIndex boolean-key DataError in Chrome/Edge.
   async function getUnsyncedResults() {
-    return getByIndex(STORES.EXAM_RESULTS, 'by_synced', false);
+    return _getAllAndFilter(STORES.EXAM_RESULTS, (r) => r.synced === false);
   }
 
   async function markResultSynced(localId) {
@@ -319,8 +333,9 @@
     });
   }
 
+  // Uses getAll + JS filter for the same boolean-key reason.
   async function getUnsyncedMessages() {
-    return getByIndex(STORES.DM_MESSAGES, 'by_synced', false);
+    return _getAllAndFilter(STORES.DM_MESSAGES, (r) => r.synced === false);
   }
 
   async function markMessageSynced(localId) {
@@ -333,17 +348,12 @@
 
   /* ── Typed helpers: Offline Queue ──────────────────────── */
 
-  /**
-   * Enqueue an operation.
-   * queueId is a UUID string generated here, NOT autoIncrement.
-   * Returns the queueId string so callers can reference it.
-   */
   async function enqueue(operation, collection, docId, data, priority) {
     priority = priority || 5;
     const queueId = _uuid();
     await put(STORES.OFFLINE_QUEUE, {
       queueId,
-      operation,      // 'set' | 'update' | 'delete' | 'add' | 'batch' | 'set_merge'
+      operation,
       collection,
       docId,
       data,
@@ -356,10 +366,11 @@
     return queueId;
   }
 
+  // Uses getAll + JS filter for the boolean-key reason.
   async function getPendingQueue() {
     const all = await getAll(STORES.OFFLINE_QUEUE);
     return (all || [])
-      .filter((item) => !item.synced && item.attempts < 5)
+      .filter((item) => item.synced === false && (item.attempts || 0) < 5)
       .sort((a, b) => a.priority - b.priority || a.createdAt - b.createdAt);
   }
 
@@ -387,7 +398,7 @@
     return new Promise((resolve, reject) => {
       const tx    = db.transaction(STORES.OFFLINE_QUEUE, 'readwrite');
       const store = tx.objectStore(STORES.OFFLINE_QUEUE);
-      all.filter((item) => item.synced).forEach((item) => store.delete(item.queueId));
+      all.filter((item) => item.synced === true).forEach((item) => store.delete(item.queueId));
       tx.oncomplete = () => resolve();
       tx.onerror    = () => reject(tx.error);
     });
