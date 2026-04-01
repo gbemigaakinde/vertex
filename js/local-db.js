@@ -132,7 +132,6 @@
         req.onsuccess = () => resolve(req.result);
         req.onerror   = () => reject(req.error);
 
-        // Also catch transaction-level errors (e.g. quota exceeded)
         tx.onerror = () => reject(tx.error);
       });
     } catch (err) {
@@ -254,7 +253,9 @@
     return localId;
   }
 
-  async function getUnsynedResults() {
+  // NOTE: Correctly spelled — was "getUnsynedResults" (missing 'c') in the original.
+  // sync-manager.js calls this as LocalDB.getUnsyncedResults().
+  async function getUnsyncedResults() {
     return getByIndex(STORES.EXAM_RESULTS, 'by_synced', false);
   }
 
@@ -334,16 +335,14 @@
 
   /**
    * Enqueue an operation.
-   * IMPORTANT: queueId is a UUID string generated here, NOT autoIncrement.
-   * This guarantees every record stores its own key, so items fetched via
-   * getAll() / getByIndex() always know their own queueId.
-   * Returns the queueId string.
+   * queueId is a UUID string generated here, NOT autoIncrement.
+   * Returns the queueId string so callers can reference it.
    */
   async function enqueue(operation, collection, docId, data, priority) {
     priority = priority || 5;
     const queueId = _uuid();
     await put(STORES.OFFLINE_QUEUE, {
-      queueId,        // explicitly stored in the record
+      queueId,
       operation,      // 'set' | 'update' | 'delete' | 'add' | 'batch' | 'set_merge'
       collection,
       docId,
@@ -354,7 +353,7 @@
       createdAt: Date.now(),
       error:     null,
     });
-    return queueId;   // return the key so callers can reference it
+    return queueId;
   }
 
   async function getPendingQueue() {
@@ -443,7 +442,7 @@
     clearExamSession,
 
     saveExamResult,
-    getUnsynedResults,
+    getUnsyncedResults,
     markResultSynced,
     markResultError,
 
