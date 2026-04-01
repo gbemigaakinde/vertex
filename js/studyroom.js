@@ -246,13 +246,9 @@
      DEFAULT TERM — offline-aware read / write
      ══════════════════════════════════════════════════ */
 
-  // Cache key used in LocalDB app_metadata store
   const _META_DEFAULT_TERM = 'studyroom_defaultTerm';
 
   function _loadDefaultTerm(callback) {
-    // ── Offline path: read from LocalDB immediately ──────────
-    // We always read the cached value first so the UI can render
-    // instantly even while the Firebase fetch is in-flight.
     if (window.LocalDB) {
       LocalDB.getMeta(_META_DEFAULT_TERM)
         .then(cached => {
@@ -264,11 +260,7 @@
         .catch(() => {});
     }
 
-    // ── Online path: fetch from Firebase and update cache ────
     if (!navigator.onLine) {
-      // Already handled above via cache; nothing more to do.
-      // If cache was empty, callback was never called — call it
-      // with empty string so the UI still renders.
       if (window.LocalDB) {
         LocalDB.getMeta(_META_DEFAULT_TERM)
           .then(cached => {
@@ -287,14 +279,12 @@
       .then(snap => {
         const term = (snap.exists && snap.data().defaultTerm) ? snap.data().defaultTerm : '';
         _defaultTerm = term;
-        // Update local cache
         if (window.LocalDB) {
           LocalDB.setMeta(_META_DEFAULT_TERM, term).catch(() => {});
         }
         if (callback) callback(term);
       })
       .catch(() => {
-        // Firebase failed — fall back to whatever cache gave us
         if (callback) callback(_defaultTerm || '');
       });
   }
@@ -357,7 +347,7 @@
     if (window.Exam && Exam.renderSubjectSelection) Exam.renderSubjectSelection();
   }
 
-  /* ── Offline-aware lesson loader ───────────────────────────
+  /* ── Offline-aware lesson loader ───────────────────────────────
      Priority:
        1. If online  → fetch from Firebase, cache result, render
        2. If offline → load from IndexedDB, render from cache
@@ -365,7 +355,6 @@
   ─────────────────────────────────────────────────────────── */
   function _loadStudentLessons(studentClass) {
     if (navigator.onLine) {
-      // ── Online: fetch from Firebase ──────────────────────
       window.fbDb.collection('lessons')
         .where('class', '==', studentClass)
         .get()
@@ -373,11 +362,9 @@
           const lessons = [];
           snap.forEach(doc => lessons.push({ id: doc.id, ...doc.data() }));
 
-          // Cache in IndexedDB for offline use
           if (window.LocalDB && lessons.length > 0) {
             LocalDB.saveLessons(lessons).catch(() => {});
           }
-          // Also cache via SyncManager helper if available
           if (window.SyncManager && lessons.length > 0) {
             SyncManager.cacheLessons(lessons).catch(() => {});
           }
@@ -389,28 +376,64 @@
           _loadStudentLessonsFromCache(studentClass);
         });
     } else {
-      // ── Offline: load from IndexedDB ─────────────────────
       _loadStudentLessonsFromCache(studentClass);
     }
   }
 
+  // ── FIX: Normalise class string before querying the cache ──────
+  // Firestore stores the class field exactly as the student registered
+  // (e.g. "SSS1"). IndexedDB's by_class index is case-sensitive. If
+  // AppState.studentData.class comes back with different casing from
+  // the cached lesson documents, the index returns nothing and the
+  // student sees an error screen even though lessons ARE cached.
+  // We try the exact string first, then fall back to a full-scan
+  // match so any casing combination is handled gracefully.
   function _loadStudentLessonsFromCache(studentClass) {
     if (!window.LocalDB) {
-      _showLessonLoadError('You are offline and no lessons are cached yet.');
+      _showLessonLoadError(
+        navigator.onLine
+          ? 'Failed to load lessons. Please refresh.'
+          : 'You are offline. Lessons will appear here after your first online visit to the Study Room.'
+      );
       return;
     }
 
     LocalDB.getLessonsByClass(studentClass)
       .then(lessons => {
-        if (!lessons || lessons.length === 0) {
-          _showLessonLoadError(
-            navigator.onLine
-              ? 'Failed to load lessons. Please refresh.'
-              : 'You are offline. Lessons will appear here after your first online visit to the Study Room.'
-          );
+        // Primary: exact match worked
+        if (lessons && lessons.length > 0) {
+          _renderStudentLessons(lessons);
           return;
         }
-        _renderStudentLessons(lessons);
+
+        // Fallback: scan all cached lessons and match case-insensitively.
+        // This covers the common case where a teacher saved "sss1" but the
+        // student's class is stored as "SSS1" (or vice versa).
+        return LocalDB.getAll(LocalDB.STORES.LESSONS).then(all => {
+          if (!all || all.length === 0) {
+            _showLessonLoadError(
+              navigator.onLine
+                ? 'Failed to load lessons. Please refresh.'
+                : 'You are offline. Lessons will appear here after your first online visit to the Study Room.'
+            );
+            return;
+          }
+
+          const normClass = (studentClass || '').trim().toLowerCase();
+          const matched = all.filter(l =>
+            (l.class || '').trim().toLowerCase() === normClass
+          );
+
+          if (matched.length > 0) {
+            _renderStudentLessons(matched);
+          } else {
+            _showLessonLoadError(
+              navigator.onLine
+                ? 'Failed to load lessons. Please refresh.'
+                : 'You are offline. Lessons will appear here after your first online visit to the Study Room.'
+            );
+          }
+        });
       })
       .catch(err => {
         console.error('[studyroom] Cache read error:', err);
@@ -517,7 +540,6 @@
      ══════════════════════════════════════════════════ */
 
   function _openLesson(lessonId) {
-    // Check in-memory cache first (always populated if we got here)
     const lesson = _studentLessonsCache.find(l => l.id === lessonId);
     if (lesson) {
       const siblings = _studentLessonsCache
@@ -527,13 +549,11 @@
       return;
     }
 
-    // Not in memory — try Firebase (online only), then LocalDB
     if (navigator.onLine) {
       window.fbDb.collection('lessons').doc(lessonId).get()
         .then(snap => {
           if (!snap.exists) { UI.toast('Lesson not found.', 'error'); return; }
           const fetched = { id: snap.id, ...snap.data() };
-          // Cache it
           if (window.LocalDB) LocalDB.saveLessons([fetched]).catch(() => {});
           _renderReader(fetched, []);
         })
@@ -542,7 +562,6 @@
           UI.toast('Failed to load lesson.', 'error');
         });
     } else {
-      // Offline and not in memory cache — try LocalDB directly
       if (window.LocalDB) {
         LocalDB.get(LocalDB.STORES.LESSONS, lessonId)
           .then(rec => {
@@ -1058,7 +1077,6 @@
     _saveDefaultTerm(term)
       .then(() => {
         _defaultTerm = term;
-        // Update local cache too
         if (window.LocalDB) {
           LocalDB.setMeta(_META_DEFAULT_TERM, term).catch(() => {});
         }
