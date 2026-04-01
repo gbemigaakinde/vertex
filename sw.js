@@ -24,7 +24,7 @@ firebase.initializeApp({
 const _fcmMessaging = firebase.messaging();
 
 // ── BUMPED: v1.0.8 — adds offline-first infrastructure files ──
-const CACHE_VERSION = 'v1.0.0';
+const CACHE_VERSION = 'v1.0.1';
 const STATIC_CACHE  = `static-${CACHE_VERSION}`;
 const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
 
