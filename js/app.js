@@ -20,6 +20,11 @@
   let _slowNetTimer    = null;
   let _cacheBootRetry  = null;
 
+  // Holds the Firebase onAuthStateChanged unsubscribe function.
+  // We keep exactly ONE active listener at all times and tear it
+  // down before registering a new one (e.g. after logout).
+  let _authUnsub = null;
+
   function _cancelPendingTimers() {
     if (_offlineTimer   !== null) { clearTimeout(_offlineTimer);   _offlineTimer   = null; }
     if (_slowNetTimer   !== null) { clearTimeout(_slowNetTimer);   _slowNetTimer   = null; }
@@ -27,6 +32,12 @@
   }
 
   function _startAuthListener() {
+    // Tear down any existing listener first so we never have two running.
+    if (_authUnsub) {
+      _authUnsub();
+      _authUnsub = null;
+    }
+
     if (window.VtxLoader) window.VtxLoader.progress(30, 'Checking session…');
 
     // ── Offline-first fast path ──────────────────────────────
@@ -40,7 +51,9 @@
     }
 
     // ── Normal Firebase Auth path ────────────────────────────
-    window.fbAuth.onAuthStateChanged(async function (firebaseUser) {
+    // Store the unsubscribe function so _onLogout() can stop this
+    // listener before signOut() fires another state change.
+    _authUnsub = window.fbAuth.onAuthStateChanged(async function (firebaseUser) {
       if (_authResolved) return;
       _authResolved = true;
       _cancelPendingTimers();
@@ -134,10 +147,6 @@
     if (window.VtxLoader) window.VtxLoader.progress(60, 'Loading from device…');
 
     // ── Load coaching tasks from IndexedDB when offline ──────
-    // listenForStudentUpdates() sets up onSnapshot listeners which silently
-    // hang offline (Firestore persistence is disabled). We attempt it anyway
-    // because it also calls loadStudentMessages() and caches task docs.
-    // If it fails or hangs, _loadOfflineCoachingTasks() fills AppState from LocalDB.
     await _loadOfflineCoachingTasks(uid);
 
     await Tasks.listenForStudentUpdates().catch((err) => {
@@ -166,9 +175,6 @@
   }
 
   // ── Offline coaching task loader ─────────────────────────────
-  // Reads the same doc keys that tasks.js writes via SyncManager.cacheCoachingTask().
-  // Populates AppState.currentTaskConfig so renderSubjectSelection() shows the
-  // correct task widget even with no network.
   async function _loadOfflineCoachingTasks(uid) {
     if (!window.LocalDB || !window.Tasks) return;
 
@@ -206,10 +212,7 @@
       return;
     }
 
-    // Use the same resolution logic tasks.js uses
     if (window.Tasks && typeof Tasks._resolveTask === 'function') {
-      // tasks.js doesn't expose _resolveTask publicly; we replicate the
-      // priority order here: student > weeklyStudent > class > weeklyClass > weekly > global
       const _expand = (doc) => doc && typeof Tasks._expandTaskDoc === 'function'
         ? Tasks._expandTaskDoc(doc)
         : null;
@@ -230,7 +233,6 @@
         (globalExp      && globalExp.active       ? globalExp      : null) ||
         { active: false };
 
-      // Only set if tasks.js hasn't already resolved something (race guard)
       if (!AppState.currentTaskConfig || !AppState.currentTaskConfig.active) {
         AppState.currentTaskConfig = resolved;
         console.log('[app] Offline task config loaded from LocalDB:', resolved.active ? resolved.title : 'none active');
@@ -399,8 +401,24 @@
   }
 
   async function _onLogout() {
+    // ── Step 1: Increment token and cancel timers FIRST.
+    // This guards against any in-flight cache boot or slow-net
+    // fallback from interfering with the logout render.
     _sessionToken++;
     _cancelPendingTimers();
+
+    // ── Step 2: Unsubscribe the current Firebase Auth listener
+    // BEFORE calling signOut(). This is the critical fix:
+    // without this, signOut() triggers onAuthStateChanged(null)
+    // which calls _onLogout() a second time while the first is
+    // still in progress, causing a double-render race that leaves
+    // the UI in a broken blank state.
+    if (_authUnsub) {
+      _authUnsub();
+      _authUnsub = null;
+    }
+
+    // ── Step 3: Reset resolved flag now that the listener is gone.
     _authResolved = false;
 
     window._registrationInProgress = false;
@@ -424,11 +442,21 @@
 
     if (window.VtxLoader) window.VtxLoader.done();
 
+    // ── Step 4: Render the post-logout screen.
     if (window.Landing && typeof Landing.render === 'function') {
       Landing.render();
     } else {
       Auth.renderLogin();
     }
+
+    // ── Step 5: Register a fresh auth listener so future
+    // sign-ins are caught. We do this AFTER rendering the
+    // login/landing screen so any immediate onAuthStateChanged
+    // callback (e.g. if signOut hasn't completed yet on the
+    // Firebase side) doesn't re-trigger _onLogout() again —
+    // because _authResolved starts as false and will correctly
+    // wait for the next real sign-in event.
+    _startAuthListener();
   }
 
   function _registerGlobalErrorHandlers() {
