@@ -14,17 +14,15 @@
   });
 
   // ── Auth session state ───────────────────────────────────────
-  // Each "session" gets its own token. When a session is torn
-  // down (logout) we increment the token so any async callbacks
-  // that were inflight for the OLD session silently no-op.
-  let _sessionToken    = 0;   // incremented on every logout
+  let _sessionToken    = 0;
   let _authResolved    = false;
-  let _offlineTimer    = null; // the 5-second fallback setTimeout
-  let _cacheBootRetry  = null; // retry timer for LocalDB-not-ready
+  let _offlineTimer    = null;
+  let _slowNetTimer    = null;
+  let _cacheBootRetry  = null;
 
-  // Cancel all pending timers for the current session
   function _cancelPendingTimers() {
     if (_offlineTimer   !== null) { clearTimeout(_offlineTimer);   _offlineTimer   = null; }
+    if (_slowNetTimer   !== null) { clearTimeout(_slowNetTimer);   _slowNetTimer   = null; }
     if (_cacheBootRetry !== null) { clearTimeout(_cacheBootRetry); _cacheBootRetry = null; }
   }
 
@@ -32,10 +30,8 @@
     if (window.VtxLoader) window.VtxLoader.progress(30, 'Checking session…');
 
     // ── Offline-first fast path ──────────────────────────────
-    // If the device is offline, Firebase Auth will never call back.
-    // We wait a short moment to let Firebase attempt its cached
-    // credential first (it stores one in localStorage), then fall
-    // back to our IndexedDB cache only if still unresolved.
+    // Only start the offline timer when we are actually offline.
+    // The slow-network timer runs unconditionally and is separate.
     if (!navigator.onLine) {
       _offlineTimer = setTimeout(function () {
         _offlineTimer = null;
@@ -45,29 +41,22 @@
 
     // ── Normal Firebase Auth path ────────────────────────────
     window.fbAuth.onAuthStateChanged(async function (firebaseUser) {
-      // If we already handled this session (offline path won), ignore.
       if (_authResolved) return;
       _authResolved = true;
-
-      // Cancel the offline fallback timer — Firebase responded.
       _cancelPendingTimers();
 
       if (firebaseUser) {
         if (window._registrationInProgress) return;
         await _onLogin(firebaseUser);
       } else {
-        // Firebase explicitly says "no user" — go to landing/login.
-        // Do NOT attempt cache boot here; the user is logged out.
         await _onLogout();
       }
     });
 
     // ── Slow-connection safety net ───────────────────────────
-    // If Firebase Auth is taking unusually long (slow network,
-    // captive portal, etc.), try cache after 5 s so the user
-    // isn't stuck on a spinner.
-    _offlineTimer = setTimeout(function () {
-      _offlineTimer = null;
+    // Separate timer — does NOT share the variable with the offline timer.
+    _slowNetTimer = setTimeout(function () {
+      _slowNetTimer = null;
       if (!_authResolved) {
         console.warn('[app] Firebase Auth taking too long — attempting cache boot.');
         _tryBootFromCache(_sessionToken);
@@ -76,17 +65,10 @@
   }
 
   // ── Boot from IndexedDB cache (no network needed) ────────────
-  // We pass the session token at call-time and check it before
-  // doing anything side-effectful, so a stale callback from a
-  // previous session can never log someone back in.
   async function _tryBootFromCache(token) {
-    // Stale call from a previous session — abort.
     if (token !== _sessionToken) return;
-
-    // Already handled by Firebase Auth — abort.
     if (_authResolved) return;
 
-    // LocalDB not loaded yet — schedule one retry.
     if (!window.LocalDB) {
       _cacheBootRetry = setTimeout(function () {
         _cacheBootRetry = null;
@@ -98,7 +80,6 @@
     try {
       const allProfiles = await LocalDB.getAll(LocalDB.STORES.STUDENT_PROFILE);
 
-      // Guard again after the async gap.
       if (token !== _sessionToken || _authResolved) return;
 
       if (!allProfiles || allProfiles.length === 0) {
@@ -109,7 +90,6 @@
         return;
       }
 
-      // Pick the most recently saved profile.
       const latest = allProfiles
         .sort((a, b) => (b.savedAt || 0) - (a.savedAt || 0))[0];
 
@@ -121,7 +101,6 @@
         return;
       }
 
-      // Guard once more.
       if (token !== _sessionToken || _authResolved) return;
       _authResolved = true;
 
@@ -154,6 +133,13 @@
 
     if (window.VtxLoader) window.VtxLoader.progress(60, 'Loading from device…');
 
+    // ── Load coaching tasks from IndexedDB when offline ──────
+    // listenForStudentUpdates() sets up onSnapshot listeners which silently
+    // hang offline (Firestore persistence is disabled). We attempt it anyway
+    // because it also calls loadStudentMessages() and caches task docs.
+    // If it fails or hangs, _loadOfflineCoachingTasks() fills AppState from LocalDB.
+    await _loadOfflineCoachingTasks(uid);
+
     await Tasks.listenForStudentUpdates().catch((err) => {
       console.warn('[app] Tasks listener error (offline, non-fatal):', err);
     });
@@ -166,8 +152,6 @@
 
     if (window.VtxLoader) window.VtxLoader.done();
 
-    // When connection returns, do a proper Firebase Auth check
-    // to refresh the session and pull any server updates.
     window.addEventListener('online', function _onReconnect() {
       window.removeEventListener('online', _onReconnect);
       console.log('[app] Connection restored — refreshing session from server.');
@@ -181,7 +165,79 @@
     });
   }
 
-  // ── Friendly screen when offline with no cached data ─────────
+  // ── Offline coaching task loader ─────────────────────────────
+  // Reads the same doc keys that tasks.js writes via SyncManager.cacheCoachingTask().
+  // Populates AppState.currentTaskConfig so renderSubjectSelection() shows the
+  // correct task widget even with no network.
+  async function _loadOfflineCoachingTasks(uid) {
+    if (!window.LocalDB || !window.Tasks) return;
+
+    const classStr   = (AppState.studentData || {}).class || '';
+    const classKey   = Tasks._classDocId(classStr);
+    const studentKey = uid ? Tasks._studentDocId(uid) : null;
+
+    const keys = ['global', classKey, 'weekly', 'weekly_' + classKey];
+    if (studentKey) {
+      keys.push(studentKey);
+      keys.push('weekly_' + studentKey);
+    }
+
+    const docs = { global: null, class: null, student: null, weekly: null, weeklyClass: null, weeklyStudent: null };
+    const keyMap = {
+      global:               'global',
+      [classKey]:           'class',
+      'weekly':             'weekly',
+      ['weekly_' + classKey]: 'weeklyClass',
+    };
+    if (studentKey) {
+      keyMap[studentKey]             = 'student';
+      keyMap['weekly_' + studentKey] = 'weeklyStudent';
+    }
+
+    try {
+      await Promise.all(keys.map(async (key) => {
+        try {
+          const data = await LocalDB.getCoachingTask(key);
+          if (data && keyMap[key]) docs[keyMap[key]] = data;
+        } catch (_) {}
+      }));
+    } catch (e) {
+      console.warn('[app] _loadOfflineCoachingTasks error (non-fatal):', e);
+      return;
+    }
+
+    // Use the same resolution logic tasks.js uses
+    if (window.Tasks && typeof Tasks._resolveTask === 'function') {
+      // tasks.js doesn't expose _resolveTask publicly; we replicate the
+      // priority order here: student > weeklyStudent > class > weeklyClass > weekly > global
+      const _expand = (doc) => doc && typeof Tasks._expandTaskDoc === 'function'
+        ? Tasks._expandTaskDoc(doc)
+        : null;
+
+      const studentExp     = _expand(docs.student);
+      const weeklyStudExp  = _expand(docs.weeklyStudent);
+      const classExp       = _expand(docs.class);
+      const weeklyClassExp = _expand(docs.weeklyClass);
+      const weeklyExp      = _expand(docs.weekly);
+      const globalExp      = _expand(docs.global);
+
+      const resolved =
+        (studentExp     && studentExp.active     ? studentExp     : null) ||
+        (weeklyStudExp  && weeklyStudExp.active   ? weeklyStudExp  : null) ||
+        (classExp       && classExp.active        ? classExp       : null) ||
+        (weeklyClassExp && weeklyClassExp.active  ? weeklyClassExp : null) ||
+        (weeklyExp      && weeklyExp.active       ? weeklyExp      : null) ||
+        (globalExp      && globalExp.active       ? globalExp      : null) ||
+        { active: false };
+
+      // Only set if tasks.js hasn't already resolved something (race guard)
+      if (!AppState.currentTaskConfig || !AppState.currentTaskConfig.active) {
+        AppState.currentTaskConfig = resolved;
+        console.log('[app] Offline task config loaded from LocalDB:', resolved.active ? resolved.title : 'none active');
+      }
+    }
+  }
+
   function _renderOfflineNoCache() {
     const app = document.getElementById('app');
     if (!app) return;
@@ -257,7 +313,6 @@
     try {
       let studentData = null;
 
-      // 1. Try local profile first (works offline)
       if (window.LocalDB) {
         try {
           studentData = await LocalDB.getStudentProfile(uid);
@@ -266,7 +321,6 @@
         }
       }
 
-      // 2. If online, fetch from Firebase (authoritative) and update local cache
       if (navigator.onLine) {
         try {
           const snap = await window.fbDb.collection('students').doc(uid).get();
@@ -345,19 +399,10 @@
   }
 
   async function _onLogout() {
-    // ── Increment session token FIRST ───────────────────────
-    // This invalidates any in-flight _tryBootFromCache calls
-    // from the previous session so they silently no-op.
     _sessionToken++;
-
-    // Cancel any pending timers so they can never fire for the
-    // just-ended session.
     _cancelPendingTimers();
-
-    // Reset auth flag so the next login/auth cycle works correctly.
     _authResolved = false;
 
-    // ── Tear down session ────────────────────────────────────
     window._registrationInProgress = false;
 
     if (window.MsgNotif) {
@@ -379,10 +424,6 @@
 
     if (window.VtxLoader) window.VtxLoader.done();
 
-    // Show the landing page (which has Sign In / Register buttons).
-    // Do NOT call _startAuthListener again — Firebase's own
-    // onAuthStateChanged listener (set up once at boot) will
-    // handle the next sign-in automatically.
     if (window.Landing && typeof Landing.render === 'function') {
       Landing.render();
     } else {
