@@ -23,7 +23,8 @@ firebase.initializeApp({
 
 const _fcmMessaging = firebase.messaging();
 
-const CACHE_VERSION = 'v1.0.7';
+// ── BUMPED: v1.0.8 — adds offline-first infrastructure files ──
+const CACHE_VERSION = 'v1.0.8';
 const STATIC_CACHE  = `static-${CACHE_VERSION}`;
 const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
 
@@ -39,8 +40,8 @@ const BYPASS_ORIGINS = [
   'cloudfunctions.net',
   'fcm.googleapis.com',
   'fcmregistrations.googleapis.com',
-  'www.gstatic.com',     
-  'fonts.gstatic.com', 
+  'www.gstatic.com',
+  'fonts.gstatic.com',
 ];
 
 const CDN_ORIGINS = [
@@ -77,6 +78,11 @@ self.addEventListener('install', event => {
         '/js/app.js',
         '/js/notifications.js',
         '/js/installPrompt.js',
+        // ── Offline-first infrastructure (added v1.0.8) ──────
+        '/js/local-db.js',
+        '/js/offline-queue.js',
+        '/js/sync-manager.js',
+        // ─────────────────────────────────────────────────────
         '/data/questions.js',
         '/news-ticker.css',
         '/news-ticker.js',
