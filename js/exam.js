@@ -516,7 +516,7 @@
           ${subjectsHtml}
 
           <div class="mt-6 pt-5 border-t border-gray-100">
-            <button onclick="window.fbAuth.signOut()"
+            <button onclick="App.logout()"
                     class="text-xs text-gray-400 hover:text-gray-600 underline">Sign out</button>
           </div>
         </div>`);
