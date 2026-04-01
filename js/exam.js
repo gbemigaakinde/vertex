@@ -140,15 +140,45 @@
 
   async function loadOrStart() {
     try {
-      const snap = await Db().collection('ongoingExams').doc(S().userId).get();
+      // ── STEP 1: Check IndexedDB first (works offline) ────────
+      let localExam = null;
+      if (window.LocalDB) {
+        try {
+          localExam = await LocalDB.getExamSession(S().userId);
+        } catch (e) {
+          console.warn('[exam] LocalDB exam session read failed:', e);
+        }
+      }
 
-      if (!snap.exists) {
+      // ── STEP 2: Check Firebase (authoritative, requires network) ─
+      let firebaseExam = null;
+      if (navigator.onLine) {
+        try {
+          const snap = await window.fbDb.collection('ongoingExams').doc(S().userId).get();
+          if (snap.exists) {
+            firebaseExam = snap.data();
+            // Cache the Firebase copy locally for next time
+            if (window.LocalDB) {
+              LocalDB.saveExamSession(S().userId, firebaseExam).catch(() => {});
+            }
+          }
+        } catch (err) {
+          console.warn('[exam] Firebase ongoingExams read failed — using local copy if available:', err);
+        }
+      }
+
+      // ── STEP 3: Pick the best source ─────────────────────────
+      // Firebase is authoritative when online; local is fallback when offline.
+      const examData = firebaseExam || localExam;
+
+      if (!examData) {
+        // No ongoing exam anywhere
         await renderSubjectSelection();
         return;
       }
 
-      S().exam = snap.data();
-      const startMs = _resolveStartMs(S().exam.startTime);
+      S().exam = examData;
+      const startMs = _resolveStartMs(examData.startTime);
 
       if (startMs) {
         S().examStartMs = startMs;
@@ -545,8 +575,7 @@
     }
 
     const classKey = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
-
-    const _qBank = window.questions || {};
+    const _qBank   = window.questions || {};
 
     if (!_qBank[classKey]) {
       UI.toast(`No subjects found for class "${S().studentData.class}". Contact Master Timothy.`, 'error', 0);
@@ -594,7 +623,17 @@
     _startExamLock = true;
 
     try {
-      await Db().collection('ongoingExams').doc(S().userId).set(examDoc);
+      // 1. Save to IndexedDB first (instant, offline-safe)
+      if (window.LocalDB) {
+        await LocalDB.saveExamSession(S().userId, examDoc);
+      }
+
+      // 2. Persist to Firebase (best-effort, non-blocking on failure)
+      if (navigator.onLine) {
+        window.fbDb.collection('ongoingExams').doc(S().userId).set(examDoc)
+          .catch((err) => console.warn('[exam] Firebase exam creation failed (local copy saved):', err));
+      }
+
       S().exam = examDoc;
       renderExam();
       _showInstructionsModal();
@@ -707,21 +746,29 @@
     const modal = document.getElementById('examModal');
     if (modal) modal.remove();
 
-    const startMs = Date.now();
-    S().examStartMs = startMs;
+    const startMs   = Date.now();
     const startDate = new Date(startMs);
-    S().exam.startTime = startDate;
+    S().examStartMs         = startMs;
+    S().exam.startTime      = startDate;
 
     if (!S().exam.sessionDate) {
       S().exam.sessionDate = _todayStr();
     }
 
+    // 1. Persist start time locally (instant, offline-safe)
+    if (window.LocalDB) {
+      LocalDB.updateExamStartTime(S().userId, startDate).catch((err) => {
+        console.warn('[exam] LocalDB startTime save failed (non-fatal):', err);
+      });
+    }
+
+    // 2. Persist to Firebase (best-effort)
     try {
-      await Db().collection('ongoingExams').doc(S().userId).set(
+      await window.fbDb.collection('ongoingExams').doc(S().userId).set(
         { startTime: startDate, sessionDate: S().exam.sessionDate }, { merge: true }
       );
     } catch (err) {
-      console.warn('[exam] Could not persist startTime, timer continues from local value.', err);
+      console.warn('[exam] Could not persist startTime to Firebase, local copy saved.', err);
     }
 
     _startTimer();
@@ -846,13 +893,24 @@
     _renderKatex();
   }
 
+  // ── MODIFIED: local-first answer save ──────────────────────
   function _saveAnswer(subj, idx, val) {
     S().exam.answers[`${subj}-${idx}`] = val;
+
+    // 1. Write to IndexedDB immediately (survives tab close / offline)
+    if (window.LocalDB) {
+      LocalDB.updateExamAnswers(S().userId, S().exam.answers).catch((err) => {
+        console.warn('[exam] LocalDB answer save failed (non-fatal):', err);
+      });
+    }
+
+    // 2. Debounced Firebase write (background, best-effort)
     clearTimeout(_saveAnswer._debounce);
     _saveAnswer._debounce = setTimeout(() => {
-      Db().collection('ongoingExams').doc(S().userId)
+      if (!navigator.onLine) return; // skip — LocalDB already has it
+      window.fbDb.collection('ongoingExams').doc(S().userId)
         .update({ answers: S().exam.answers })
-        .catch(err => console.warn('[exam] Answer save error:', err));
+        .catch((err) => console.warn('[exam] Firebase answer save error (non-fatal):', err));
     }, 800);
   }
 
@@ -981,31 +1039,48 @@
 
       const sessionDate = exam.sessionDate || _todayStr();
 
-      const batch = Db().batch();
-
-      batch.set(Db().collection('results').doc(), {
-        ...result,
-        questionSnapshots,
-        sessionDate,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-      });
-
-      batch.delete(Db().collection('ongoingExams').doc(S().userId));
-
       const taskCfg   = S().currentTaskConfig;
       const isTaskDay = taskCfg &&
                         taskCfg.active &&
                         Array.isArray(taskCfg.dates) &&
                         taskCfg.dates.includes(sessionDate);
 
-      if (isTaskDay) {
-        batch.update(Db().collection('students').doc(S().userId), {
-          [`coachingCompleted.${sessionDate}`]: true,
-        });
+      // ── STEP 1: Save result to IndexedDB immediately ──────────
+      // This ensures the result is preserved even if Firebase fails.
+      let localResultId = null;
+      if (window.LocalDB) {
+        try {
+          // saveExamResult returns the localId via put(); we need to read it back.
+          // We store the extra taskDay flag for the sync manager.
+          const rec = {
+            localId: ('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx').replace(/[xy]/g, (c) => {
+              const r = Math.random() * 16 | 0;
+              return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+            }),
+            uid:               S().userId,
+            resultData:        result,
+            questionSnapshots,
+            sessionDate,
+            taskDay:           isTaskDay,
+            synced:            false,
+            createdAt:         Date.now(),
+            error:             null,
+            attempts:          0,
+          };
+          await LocalDB.put(LocalDB.STORES.EXAM_RESULTS, rec);
+          localResultId = rec.localId;
+        } catch (e) {
+          console.warn('[exam] LocalDB result save failed (non-fatal):', e);
+        }
       }
 
-      await batch.commit();
+      // ── STEP 2: Clear local exam session ─────────────────────
+      if (window.LocalDB) {
+        LocalDB.clearExamSession(S().userId).catch(() => {});
+      }
 
+      // ── STEP 3: Update AppState immediately ──────────────────
+      // Do this before the Firebase write so the UI responds instantly.
       if (isTaskDay) {
         if (!S().studentData) S().studentData = {};
         if (!S().studentData.coachingCompleted) S().studentData.coachingCompleted = {};
@@ -1017,14 +1092,69 @@
       _startExamLock  = false;
       _beginExamLock  = false;
 
+      // ── STEP 4: Attempt Firebase write ───────────────────────
+      // If online → write now. If offline → SyncManager will handle it.
+      let firebaseSuccess = false;
+      if (navigator.onLine) {
+        try {
+          const batch = window.fbDb.batch();
+
+          batch.set(window.fbDb.collection('results').doc(), {
+            ...result,
+            questionSnapshots,
+            sessionDate,
+            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          });
+
+          batch.delete(window.fbDb.collection('ongoingExams').doc(S().userId));
+
+          if (isTaskDay) {
+            batch.update(window.fbDb.collection('students').doc(S().userId), {
+              [`coachingCompleted.${sessionDate}`]: true,
+            });
+          }
+
+          await batch.commit();
+          firebaseSuccess = true;
+
+          // Mark local copy as synced since Firebase batch succeeded
+          if (localResultId && window.LocalDB) {
+            LocalDB.markResultSynced(localResultId).catch(() => {});
+          }
+        } catch (fbErr) {
+          console.error('[exam] Firebase submission failed — result is saved locally for retry:', fbErr);
+          // Do NOT re-throw — we have the local copy; SyncManager will retry.
+        }
+      } else {
+        console.warn('[exam] Offline — result saved locally. SyncManager will upload when online.');
+        // Trigger sync as soon as connection returns
+        if (window.SyncManager) {
+          window.addEventListener('online', function _retryOnOnline() {
+            window.removeEventListener('online', _retryOnOnline);
+            SyncManager.syncAll();
+          });
+        }
+      }
+
+      // ── STEP 5: Render results (always succeeds — local data) ─
       renderResults(exam, result);
 
+      if (!firebaseSuccess) {
+        // Inform student their result is saved and will upload automatically
+        UI.toast(
+          '✓ Result saved locally. It will sync to the server automatically when you reconnect.',
+          'info',
+          8000
+        );
+      }
+
     } catch (err) {
-      console.error('[exam] submitExam error:', err);
-      UI.toast('Submission failed. Please try again.', 'error');
+      console.error('[exam] submitExam unexpected error:', err);
+      UI.toast('Submission error. Please try again.', 'error');
       if (document.getElementById('submitBtn')) {
         UI.setLoading(document.getElementById('submitBtn'), false);
       }
+      _submitLock = false;
     } finally {
       _submitLock = false;
     }
