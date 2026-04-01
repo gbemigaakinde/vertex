@@ -2481,17 +2481,9 @@ function _renderExistingTasksList(docs) {
   }
 
   async function logout() {
-  if (window.DM && typeof DM.cancelListeners === 'function') {
-    await DM.cancelListeners();
-  }
   _cancelAll();
   AppState.isTeacher = false;
-  try {
-    await window.fbAuth.signOut();
-  } catch (err) {
-    console.error('[teacher] logout error:', err);
-    UI.toast('Logout failed. Please try again.', 'error');
-  }
+  await App.logout();
 }
 
   function _esc(str) {
