@@ -31,6 +31,14 @@
     AppState.cancelAllListeners();
     AppState.userId = uid;
 
+    // ── Initialize offline infrastructure first ──────────────
+    if (window.LocalDB) {
+      LocalDB.init().catch((e) => console.warn('[app] LocalDB init error (non-fatal):', e));
+    }
+    if (window.SyncManager) {
+      SyncManager.init();
+    }
+
     if (window.VtxLoader) window.VtxLoader.progress(50, 'Loading your profile…');
 
     // ── Teacher path ──
@@ -57,7 +65,6 @@
         DM.initTeacherDMListener();
       }
 
-      // ── Init teacher message notifications ──
       if (window.MsgNotif) {
         MsgNotif.initForTeacher();
       }
@@ -69,18 +76,51 @@
     // ── Student path ──
     AppState.isTeacher = false;
     try {
-      var snap = await window.fbDb.collection('students').doc(uid).get();
-      if (!snap.exists) {
-        if (window.VtxLoader) window.VtxLoader.done();
-        UI.toast('Profile not found. Please register again.', 'error', 0);
-        if (window.DM && typeof DM.cancelListeners === 'function') {
-          await DM.cancelListeners();
+      // 1. Try local profile first (works offline)
+      let studentData = null;
+      if (window.LocalDB) {
+        try {
+          studentData = await LocalDB.getStudentProfile(uid);
+        } catch (e) {
+          console.warn('[app] LocalDB profile read failed:', e);
         }
-        await window.fbAuth.signOut();
+      }
+
+      // 2. If online, fetch from Firebase (authoritative) and update local cache
+      if (navigator.onLine) {
+        try {
+          const snap = await window.fbDb.collection('students').doc(uid).get();
+          if (!snap.exists) {
+            if (window.VtxLoader) window.VtxLoader.done();
+            UI.toast('Profile not found. Please register again.', 'error', 0);
+            if (window.DM && typeof DM.cancelListeners === 'function') {
+              await DM.cancelListeners();
+            }
+            await window.fbAuth.signOut();
+            return;
+          }
+          studentData = snap.data();
+          // Cache for offline use
+          if (window.SyncManager) {
+            SyncManager.cacheStudentProfile(uid, studentData).catch(() => {});
+          }
+        } catch (networkErr) {
+          console.warn('[app] Firebase profile fetch failed — using local copy:', networkErr);
+          if (!studentData) {
+            // No local copy and Firebase failed — can't proceed
+            if (window.VtxLoader) window.VtxLoader.done();
+            UI.toast('Could not load profile. Please check your connection.', 'error', 0);
+            return;
+          }
+        }
+      } else if (!studentData) {
+        // Offline with no cached profile
+        if (window.VtxLoader) window.VtxLoader.done();
+        UI.toast('You are offline and no cached profile was found. Please connect and try again.', 'error', 0);
         return;
       }
 
-      AppState.studentData = snap.data();
+      AppState.studentData = studentData;
       AppState.chatUnread  = 0;
 
       if (window.VtxLoader) window.VtxLoader.progress(70, 'Loading your tasks…');
@@ -109,7 +149,6 @@
         DM.initStudentDMListener(uid);
       }
 
-      // ── Init student message notifications ──
       if (window.MsgNotif) {
         MsgNotif.initForStudent(uid);
       }
@@ -129,28 +168,33 @@
     }
   }
 
-async function _onLogout() {
-  window._registrationInProgress = false;
+ async function _onLogout() {
+    window._registrationInProgress = false;
 
-  if (window.MsgNotif) {
-    MsgNotif.cancel();
+    if (window.MsgNotif) {
+      MsgNotif.cancel();
+    }
+
+    if (window.DM && typeof DM.cancelListeners === 'function') {
+      await DM.cancelListeners().catch(e => console.warn('[app] DM.cancelListeners error on logout:', e));
+    }
+
+    // Destroy sync manager on logout
+    if (window.SyncManager) {
+      SyncManager.destroy();
+    }
+
+    Tasks.cancelListeners();
+    AppState.reset();
+
+    if (window.VtxLoader) window.VtxLoader.done();
+
+    if (window.Landing && typeof Landing.render === 'function') {
+      Landing.render();
+    } else {
+      Auth.renderLogin();
+    }
   }
-
-  if (window.DM && typeof DM.cancelListeners === 'function') {
-    await DM.cancelListeners().catch(e => console.warn('[app] DM.cancelListeners error on logout:', e));
-  }
-
-  Tasks.cancelListeners();
-  AppState.reset();
-
-  if (window.VtxLoader) window.VtxLoader.done();
-
-  if (window.Landing && typeof Landing.render === 'function') {
-    Landing.render();
-  } else {
-    Auth.renderLogin();
-  }
-}
 
   function _registerGlobalErrorHandlers() {
     window.addEventListener('unhandledrejection', function (event) {
