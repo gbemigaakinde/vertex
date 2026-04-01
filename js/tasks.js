@@ -264,6 +264,17 @@
 
     AppState.currentTaskConfig = resolved;
 
+    // Cache each received task doc locally for offline use
+    if (window.SyncManager) {
+      const docMap = {
+        global: docs.global, class: docs.class, student: docs.student,
+        weekly: docs.weekly, weeklyClass: docs.weeklyClass, weeklyStudent: docs.weeklyStudent,
+      };
+      Object.entries(docMap).forEach(([key, data]) => {
+        if (data) SyncManager.cacheCoachingTask(key, data).catch(() => {});
+      });
+    }
+
     if (document.getElementById('tasksContainer')) {
       renderTasksHTML();
     }
