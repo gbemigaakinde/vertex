@@ -489,18 +489,22 @@
           <div id="tasksContainer" class="mb-6"></div>
 
           <div class="mb-6" style="display:flex;gap:.625rem;flex-wrap:wrap;justify-content:center;">
-            <button id="chatOpenBtn" onclick="Chat.openPublicChat()" class="btn bg-green-600 hover:bg-green-700" style="position:relative;">
-              Public Discussion Chat
-            </button>
-            <button onclick="StudyRoom.openForStudent()" class="btn bg-blue-600 hover:bg-blue-700"
-                    style="position:relative;">
-              📖 Study Room
-            </button>
-            <button id="dmOpenBtn" onclick="DM.openStudentInbox()" class="btn bg-indigo-600 hover:bg-indigo-700"
-                    style="position:relative;">
-              ✉️ Message Teacher
-            </button>
-          </div>
+           <button id="chatOpenBtn" onclick="Chat.openPublicChat()" class="btn bg-green-600 hover:bg-green-700" style="position:relative;">
+           Public Discussion Chat
+           </button>
+           <button onclick="StudyRoom.openForStudent()" class="btn bg-blue-600 hover:bg-blue-700"
+            style="position:relative;">
+            📖 Study Room
+           </button>
+           <button onclick="ThreeDClass.openForStudent()" class="btn bg-indigo-600 hover:bg-indigo-700"
+             style="position:relative;">
+           🧪 3D Class
+           </button>
+           <button id="dmOpenBtn" onclick="DM.openStudentInbox()" class="btn bg-indigo-600 hover:bg-indigo-700"
+             style="position:relative;">
+           ✉️ Message Teacher
+           </button>
+         </div>
 
           ${offDayBannerHtml}
           ${todayTaskDone ? '' : restrictionBannerHtml}
