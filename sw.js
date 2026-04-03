@@ -73,6 +73,8 @@ self.addEventListener('install', event => {
         '/js/teacher.js',
         '/js/exam.js',
         '/js/studyroom.js',
+        '/js/threedclass.js',
+        '/js/threedclass-periodic.js',
         '/js/landing.js',
         '/js/app.js',
         '/js/notifications.js',
