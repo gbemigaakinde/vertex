@@ -1,19 +1,20 @@
 /* ============================================================
    js/threedclass-periodic.js — Interactive 3D Periodic Table
    ============================================================
-   Architecture:
-     - CSS 3D transforms (no Three.js) for mobile performance
-     - All 118 elements with full property data
-     - Touch gesture support: swipe rotate, pinch zoom, tap select
-     - Element detail panel slides up on selection
-     - Keyboard navigation on desktop
-     - Renders into #app via UI.mount(), integrates fully with SPA
-
-   Called by:
-     ThreeDPeriodic.open(onBackCallback)
-
-   Returns:
-     onBackCallback() when the user navigates back
+   v2 — fixes & improvements:
+     • Category filters NOW WORK — dimming is done via direct
+       style.opacity / style.filter on each cell, avoiding all
+       CSS specificity fights with inline transform styles.
+     • Pan (translateX/Y) added alongside rotate, so mobile
+       users can scroll the full width of the table.
+     • Mode toggle: Rotate ↔ Pan (button + keyboard P key)
+     • Quick pan arrow buttons (‹ ›) always visible on sides
+     • Two-finger drag pans the table while pinch zooms
+     • Shift+drag on desktop always pans
+     • Search auto-selects when exactly one element matches
+     • Filter buttons show element count per category
+     • Filter label shows active category + count
+     • Detail panel is more compact to leave more table visible
    ============================================================ */
 
 (function () {
@@ -152,87 +153,90 @@
   ];
 
   /* ══════════════════════════════════════════════════
-     CATEGORY COLOURS (mapped to CSS vars)
+     CATEGORY COLOURS
   ══════════════════════════════════════════════════ */
 
   const CAT_COLORS = {
-    'alkali-metal':   { bg: '#fef3c7', text: '#92400e', dark_bg: '#451a03', dark_text: '#fcd34d', label: 'Alkali Metal' },
-    'alkaline-earth': { bg: '#fef9c3', text: '#713f12', dark_bg: '#422006', dark_text: '#fde68a', label: 'Alkaline Earth' },
-    'transition':     { bg: '#dbeafe', text: '#1e3a8a', dark_bg: '#1e3a8a', dark_text: '#93c5fd', label: 'Transition Metal' },
-    'post-transition':{ bg: '#e0e7ff', text: '#3730a3', dark_bg: '#312e81', dark_text: '#a5b4fc', label: 'Post-transition' },
-    'metalloid':      { bg: '#d1fae5', text: '#065f46', dark_bg: '#064e3b', dark_text: '#6ee7b7', label: 'Metalloid' },
-    'nonmetal':       { bg: '#dcfce7', text: '#14532d', dark_bg: '#14532d', dark_text: '#86efac', label: 'Nonmetal' },
-    'halogen':        { bg: '#f0fdf4', text: '#166534', dark_bg: '#052e16', dark_text: '#4ade80', label: 'Halogen' },
-    'noble-gas':      { bg: '#fae8ff', text: '#6b21a8', dark_bg: '#3b0764', dark_text: '#e879f9', label: 'Noble Gas' },
-    'lanthanide':     { bg: '#ffedd5', text: '#9a3412', dark_bg: '#431407', dark_text: '#fdba74', label: 'Lanthanide' },
-    'actinide':       { bg: '#ffe4e6', text: '#9f1239', dark_bg: '#4c0519', dark_text: '#fda4af', label: 'Actinide' },
+    'alkali-metal':   { bg:'#fef3c7', text:'#92400e', dark_bg:'#451a03', dark_text:'#fcd34d', label:'Alkali Metal' },
+    'alkaline-earth': { bg:'#fef9c3', text:'#713f12', dark_bg:'#422006', dark_text:'#fde68a', label:'Alkaline Earth' },
+    'transition':     { bg:'#dbeafe', text:'#1e3a8a', dark_bg:'#1e3a8a', dark_text:'#93c5fd', label:'Transition Metal' },
+    'post-transition':{ bg:'#e0e7ff', text:'#3730a3', dark_bg:'#312e81', dark_text:'#a5b4fc', label:'Post-transition' },
+    'metalloid':      { bg:'#d1fae5', text:'#065f46', dark_bg:'#064e3b', dark_text:'#6ee7b7', label:'Metalloid' },
+    'nonmetal':       { bg:'#dcfce7', text:'#14532d', dark_bg:'#14532d', dark_text:'#86efac', label:'Nonmetal' },
+    'halogen':        { bg:'#f0fdf4', text:'#166534', dark_bg:'#052e16', dark_text:'#4ade80', label:'Halogen' },
+    'noble-gas':      { bg:'#fae8ff', text:'#6b21a8', dark_bg:'#3b0764', dark_text:'#e879f9', label:'Noble Gas' },
+    'lanthanide':     { bg:'#ffedd5', text:'#9a3412', dark_bg:'#431407', dark_text:'#fdba74', label:'Lanthanide' },
+    'actinide':       { bg:'#ffe4e6', text:'#9f1239', dark_bg:'#4c0519', dark_text:'#fda4af', label:'Actinide' },
   };
 
+  /* ── Count elements per category ── */
+  const CAT_COUNTS = {};
+  ELEMENTS.forEach(el => { CAT_COUNTS[el.cat] = (CAT_COUNTS[el.cat] || 0) + 1; });
+
   /* ══════════════════════════════════════════════════
-     PERIODIC TABLE LAYOUT
-     Standard layout: row = period, position = group
-     Lanthanides/Actinides: separate rows at bottom
+     LAYOUT HELPER
   ══════════════════════════════════════════════════ */
 
-  // Standard table layout:  [atomicNumber, row, col]  (1-indexed)
-  // row 1-7 = periods, row 9 = lanthanides, row 10 = actinides
-  // col 1-18 = groups
-
   function _getPosition(el) {
-    if (el.cat === 'lanthanide') {
-      // La-Lu: n 57-71, cols 3-17 in row 9
-      return { row: 9, col: 3 + (el.n - 57) };
-    }
-    if (el.cat === 'actinide' && el.n >= 90) {
-      // Th-Lr: n 90-103, row 10
-      return { row: 10, col: 3 + (el.n - 90) };
-    }
-    if (el.n === 57) return { row: 6, col: 3 };  // La placeholder in main table
-    if (el.n === 89) return { row: 7, col: 3 };  // Ac placeholder
-
-    // All others: use period + group
+    if (el.cat === 'lanthanide') return { row:9,  col:3 + (el.n - 57) };
+    if (el.cat === 'actinide' && el.n >= 90) return { row:10, col:3 + (el.n - 90) };
+    if (el.n === 57) return { row:6, col:3 };
+    if (el.n === 89) return { row:7, col:3 };
     const grp = el.group;
     if (!grp) return null;
-    return { row: el.period, col: grp };
+    return { row:el.period, col:grp };
   }
 
   /* ══════════════════════════════════════════════════
      MODULE STATE
   ══════════════════════════════════════════════════ */
 
-  let _onBack         = null;
-  let _selectedEl     = null;
-  let _filterCat      = null;
-  let _searchQuery    = '';
+  let _onBack       = null;
+  let _selectedEl   = null;
+  let _filterCat    = null;
+  let _searchQuery  = '';
 
-  // 3D rotation state
-  let _rotX    = -8;    // pitch (deg) — slight tilt toward viewer
-  let _rotY    = 0;     // yaw (deg)
-  let _scale   = 1;
-  let _isDragging     = false;
-  let _lastX          = 0;
-  let _lastY          = 0;
-  let _lastTouchDist  = 0;
-  let _velocity       = { x: 0, y: 0 };
-  let _rafId          = null;
-  let _animFrame      = null;
+  // Transform state
+  let _rotX  = -8;
+  let _rotY  = 0;
+  let _panX  = 0;
+  let _panY  = 0;
+  let _scale = 1;
 
-  const MIN_SCALE = 0.45;
-  const MAX_SCALE = 2.5;
+  // Interaction state
+  let _isDragging    = false;
+  let _lastX         = 0;
+  let _lastY         = 0;
+  let _lastTouchDist = 0;
+  let _touchMidX     = 0;
+  let _touchMidY     = 0;
+  let _velocity      = { x:0, y:0 };
+  let _panVelocity   = { x:0, y:0 };
+  let _rafId         = null;
+
+  // 'rotate' or 'pan'
+  let _interactMode  = 'rotate';
+
+  const MIN_SCALE = 0.32;
+  const MAX_SCALE = 2.8;
 
   /* ══════════════════════════════════════════════════
-     OPEN — entry point
+     OPEN
   ══════════════════════════════════════════════════ */
 
   function open(onBackCallback) {
-    _onBack      = onBackCallback || null;
-    _selectedEl  = null;
-    _filterCat   = null;
-    _searchQuery = '';
-    _rotX        = -8;
-    _rotY        = 0;
-    _scale       = 1;
-    _velocity    = { x: 0, y: 0 };
+    _onBack       = onBackCallback || null;
+    _selectedEl   = null;
+    _filterCat    = null;
+    _searchQuery  = '';
+    _rotX         = -8;
+    _rotY         = 0;
+    _panX         = 0;
+    _panY         = 0;
+    _scale        = 1;
+    _velocity     = { x:0, y:0 };
+    _panVelocity  = { x:0, y:0 };
+    _interactMode = 'rotate';
 
     _render();
     _bindEvents();
@@ -244,45 +248,58 @@
   ══════════════════════════════════════════════════ */
 
   function _render() {
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-
     UI.mount(`
       <div id="pt-shell" style="
         display:flex;flex-direction:column;height:100dvh;
         background:var(--bg-page);overflow:hidden;
-        font-family:var(--font);user-select:none;
-        -webkit-user-select:none;
+        font-family:var(--font);user-select:none;-webkit-user-select:none;
       ">
 
         ${_buildTopBar()}
 
-        <!-- Legend & filters row -->
+        <!-- Category filter pills -->
         <div id="pt-filters" style="
-          flex-shrink:0;display:flex;align-items:center;gap:.5rem;
-          padding:.375rem .875rem;border-bottom:1px solid var(--border);
-          overflow-x:auto;-webkit-overflow-scrolling:touch;
-          scrollbar-width:none;
+          flex-shrink:0;display:flex;align-items:center;gap:.35rem;
+          padding:.3rem .75rem;border-bottom:1px solid var(--border);
+          overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
         ">
-          <button onclick="ThreeDPeriodic._setFilter(null)"
-                  id="pt-filter-all"
-                  style="flex-shrink:0;font-size:.625rem;font-weight:700;letter-spacing:.05em;
+          <button onclick="ThreeDPeriodic._setFilter(null)" id="pt-filter-all"
+                  style="flex-shrink:0;font-size:.575rem;font-weight:800;letter-spacing:.05em;
                          text-transform:uppercase;padding:3px 9px;border-radius:99px;
-                         border:1px solid var(--border);background:var(--accent);
+                         border:1px solid var(--accent);background:var(--accent);
                          color:#fff;cursor:pointer;white-space:nowrap;font-family:var(--font);">
-            All
+            All · 118
           </button>
           ${Object.entries(CAT_COLORS).map(([cat, c]) => `
-            <button onclick="ThreeDPeriodic._setFilter('${cat}')"
-                    id="pt-filter-${cat}"
-                    style="flex-shrink:0;font-size:.625rem;font-weight:700;letter-spacing:.04em;
+            <button onclick="ThreeDPeriodic._setFilter('${cat}')" id="pt-filter-${cat}"
+                    data-cat="${cat}"
+                    style="flex-shrink:0;font-size:.575rem;font-weight:700;letter-spacing:.04em;
                            text-transform:uppercase;padding:3px 9px;border-radius:99px;
-                           border:1px solid var(--border);
-                           background:var(--bg-subtle);color:var(--text-3);
-                           cursor:pointer;white-space:nowrap;font-family:var(--font);
-                           transition:background var(--t-fast),color var(--t-fast);"
-                    data-cat="${cat}">
-              ${c.label}
+                           border:1px solid var(--border);background:var(--bg-subtle);
+                           color:var(--text-3);cursor:pointer;white-space:nowrap;
+                           font-family:var(--font);transition:all .1s ease;">
+              ${c.label} · ${CAT_COUNTS[cat] || 0}
             </button>`).join('')}
+        </div>
+
+        <!-- Mode + status bar -->
+        <div style="
+          flex-shrink:0;display:flex;align-items:center;gap:.5rem;
+          padding:.275rem .75rem;background:var(--bg-base);
+          border-bottom:1px solid var(--border);min-height:1.875rem;
+        ">
+          <button id="pt-mode-rotate" onclick="ThreeDPeriodic._setMode('rotate')"
+                  style="font-size:.575rem;font-weight:700;padding:2px 9px;border-radius:99px;
+                         border:1px solid var(--accent);background:var(--accent);color:#fff;
+                         cursor:pointer;font-family:var(--font);flex-shrink:0;">↻ Rotate</button>
+          <button id="pt-mode-pan" onclick="ThreeDPeriodic._setMode('pan')"
+                  style="font-size:.575rem;font-weight:700;padding:2px 9px;border-radius:99px;
+                         border:1px solid var(--border);background:var(--bg-subtle);color:var(--text-3);
+                         cursor:pointer;font-family:var(--font);flex-shrink:0;">✥ Pan / Scroll</button>
+          <span id="pt-status-label"
+                style="font-size:.575rem;color:var(--text-4);flex:1;overflow:hidden;
+                       text-overflow:ellipsis;white-space:nowrap;text-align:right;
+                       letter-spacing:.03em;"></span>
         </div>
 
         <!-- 3D stage -->
@@ -292,18 +309,15 @@
           display:flex;align-items:center;justify-content:center;
         ">
 
-          <!-- Hint -->
+          <!-- Initial hint -->
           <div id="pt-hint" style="
-            position:absolute;bottom:.75rem;left:50%;transform:translateX(-50%);
-            font-size:.625rem;font-weight:500;letter-spacing:.05em;
-            color:var(--text-4);text-transform:uppercase;pointer-events:none;
-            white-space:nowrap;z-index:5;
-            animation:pt-hint-fade 3s ease 1.5s forwards;
-          ">
-            Drag to rotate · Pinch to zoom · Tap element
-          </div>
+            position:absolute;bottom:.625rem;left:50%;transform:translateX(-50%);
+            font-size:.575rem;font-weight:500;letter-spacing:.05em;color:var(--text-4);
+            text-transform:uppercase;pointer-events:none;white-space:nowrap;z-index:5;
+            animation:pt-hint-fade 3.5s ease 1.5s forwards;
+          ">Tap an element · Use Pan mode to scroll left/right</div>
 
-          <!-- Table wrapper — 3D perspective container -->
+          <!-- Perspective container -->
           <div id="pt-perspective" style="
             perspective:1800px;perspective-origin:50% 50%;
             width:100%;height:100%;display:flex;
@@ -311,70 +325,74 @@
           ">
             <div id="pt-table-3d" style="
               transform-style:preserve-3d;
-              transform:rotateX(${_rotX}deg) rotateY(${_rotY}deg) scale(${_scale});
-              transition:none;
-              position:relative;
+              transform:translateX(${_panX}px) translateY(${_panY}px) rotateX(${_rotX}deg) rotateY(${_rotY}deg) scale(${_scale});
+              transition:none;position:relative;
             ">
               ${_buildTable()}
             </div>
           </div>
 
-          <!-- Zoom controls -->
-          <div style="
-            position:absolute;right:.75rem;top:50%;transform:translateY(-50%);
-            display:flex;flex-direction:column;gap:.375rem;z-index:10;
-          ">
+          <!-- Zoom buttons (right) -->
+          <div style="position:absolute;right:.5rem;top:50%;transform:translateY(-50%);
+                      display:flex;flex-direction:column;gap:.3rem;z-index:10;">
             <button onclick="ThreeDPeriodic._zoom(0.15)"
-                    style="width:32px;height:32px;border-radius:var(--r-md);
+                    style="width:28px;height:28px;border-radius:var(--r-md);
                            background:var(--glass-bg);border:1px solid var(--border);
-                           font-size:1.1rem;cursor:pointer;display:flex;align-items:center;
+                           font-size:1.05rem;cursor:pointer;display:flex;align-items:center;
                            justify-content:center;color:var(--text-2);
-                           backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-                           font-family:var(--font);">+</button>
+                           backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);">+</button>
             <button onclick="ThreeDPeriodic._zoom(-0.15)"
-                    style="width:32px;height:32px;border-radius:var(--r-md);
+                    style="width:28px;height:28px;border-radius:var(--r-md);
                            background:var(--glass-bg);border:1px solid var(--border);
-                           font-size:1.1rem;cursor:pointer;display:flex;align-items:center;
+                           font-size:1.05rem;cursor:pointer;display:flex;align-items:center;
                            justify-content:center;color:var(--text-2);
-                           backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-                           font-family:var(--font);">−</button>
+                           backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);">−</button>
             <button onclick="ThreeDPeriodic._resetView()"
-                    style="width:32px;height:32px;border-radius:var(--r-md);
+                    style="width:28px;height:28px;border-radius:var(--r-md);
                            background:var(--glass-bg);border:1px solid var(--border);
-                           font-size:.65rem;cursor:pointer;display:flex;align-items:center;
-                           justify-content:center;color:var(--text-3);
-                           backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);
-                           font-family:var(--font);font-weight:700;">⟳</button>
+                           font-size:.6rem;cursor:pointer;display:flex;align-items:center;
+                           justify-content:center;color:var(--text-3);font-weight:700;
+                           backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);">⟳</button>
           </div>
+
+          <!-- Pan arrow buttons — always accessible for left/right scrolling -->
+          <button onclick="ThreeDPeriodic._panStep(-130, 0)"
+                  style="position:absolute;left:.3rem;top:50%;transform:translateY(-50%);
+                         width:26px;height:48px;border-radius:var(--r-md);z-index:10;
+                         background:var(--glass-bg);border:1px solid var(--border);
+                         color:var(--text-2);cursor:pointer;font-size:1.1rem;
+                         display:flex;align-items:center;justify-content:center;
+                         backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);">‹</button>
+          <button onclick="ThreeDPeriodic._panStep(130, 0)"
+                  style="position:absolute;right:2.25rem;top:50%;transform:translateY(-50%);
+                         width:26px;height:48px;border-radius:var(--r-md);z-index:10;
+                         background:var(--glass-bg);border:1px solid var(--border);
+                         color:var(--text-2);cursor:pointer;font-size:1.1rem;
+                         display:flex;align-items:center;justify-content:center;
+                         backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);">›</button>
+
         </div>
 
-        <!-- Element detail panel (slides up on selection) -->
+        <!-- Element detail panel (slides up on tap) -->
         <div id="pt-detail" style="
           flex-shrink:0;max-height:0;overflow:hidden;
-          transition:max-height .35s cubic-bezier(0.16,1,0.3,1);
+          transition:max-height .32s cubic-bezier(0.16,1,0.3,1);
           background:var(--bg-base);border-top:1px solid var(--border);
           position:relative;z-index:20;
         ">
-          <div id="pt-detail-inner" style="padding:.875rem 1rem 1.25rem;"></div>
+          <div id="pt-detail-inner" style="padding:.625rem .875rem .875rem;"></div>
         </div>
 
       </div>
 
       <style>
         @keyframes pt-hint-fade {
-          0%   { opacity:1; }
-          80%  { opacity:1; }
-          100% { opacity:0; pointer-events:none; }
+          0%,70% { opacity:1; }
+          100%    { opacity:0; pointer-events:none; }
         }
         #pt-filters::-webkit-scrollbar { display:none; }
-        .pt-cell {
-          box-sizing:border-box;
-          transition:filter .12s ease, transform .12s ease;
-          will-change:filter,transform;
-        }
-        .pt-cell:active { transform:scale(0.92) !important; }
-        .pt-cell.is-dimmed { filter:opacity(0.2) grayscale(0.8); }
-        .pt-cell.is-highlighted { filter:brightness(1.08) !important; }
+        /* Cells use direct style.opacity/filter — no class specificity issue */
+        .pt-cell { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
       </style>`);
   }
 
@@ -383,38 +401,31 @@
     return `
       <div style="
         display:flex;align-items:center;gap:.5rem;
-        padding:.5rem .875rem;border-bottom:1px solid var(--border);
-        background:var(--bg-base);flex-shrink:0;min-height:3rem;
+        padding:.4rem .75rem;border-bottom:1px solid var(--border);
+        background:var(--bg-base);flex-shrink:0;min-height:2.625rem;
       ">
         <button onclick="ThreeDPeriodic._back()"
-                style="display:inline-flex;align-items:center;gap:.375rem;
+                style="display:inline-flex;align-items:center;gap:.3rem;
                        font-size:var(--text-sm);font-weight:500;color:var(--text-2);
                        background:var(--bg-subtle);border:1px solid var(--border);
-                       border-radius:var(--r-md);padding:.3rem .625rem;
-                       cursor:pointer;white-space:nowrap;font-family:var(--font);flex-shrink:0;">
-          ← Back
-        </button>
+                       border-radius:var(--r-md);padding:.275rem .6rem;
+                       cursor:pointer;white-space:nowrap;font-family:var(--font);flex-shrink:0;">← Back</button>
         <div style="flex:1;min-width:0;">
           <div style="font-size:var(--text-base);font-weight:700;color:var(--text-1);
                       letter-spacing:-0.015em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
             ⚗️ Periodic Table
           </div>
-          <div style="font-size:.625rem;color:var(--text-4);letter-spacing:.03em;margin-top:1px;">
-            118 ELEMENTS · TAP TO EXPLORE
-          </div>
         </div>
-        <!-- Search -->
         <div style="position:relative;flex-shrink:0;">
           <input id="pt-search" type="text" placeholder="Search…"
                  oninput="ThreeDPeriodic._onSearch(this.value)"
-                 style="width:110px;padding:.3125rem .5rem .3125rem 1.75rem;
+                 style="width:96px;padding:.275rem .45rem .275rem 1.5rem;
                         font-size:var(--text-xs);border-radius:var(--r-md);
                         border:1px solid var(--border);background:var(--bg-subtle);
-                        color:var(--text-1);font-family:var(--font);
-                        transition:width var(--t-base);outline:none;" />
-          <svg style="position:absolute;left:.5rem;top:50%;transform:translateY(-50%);
+                        color:var(--text-1);font-family:var(--font);outline:none;" />
+          <svg style="position:absolute;left:.4rem;top:50%;transform:translateY(-50%);
                       pointer-events:none;color:var(--text-4);"
-               width="12" height="12" viewBox="0 0 24 24" fill="none"
+               width="10" height="10" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
           </svg>
@@ -422,179 +433,113 @@
       </div>`;
   }
 
-  /* ── Build the periodic table HTML grid ── */
+  /* ── Build the full periodic table HTML ── */
   function _buildTable() {
-    const CELL_W = 40;   // px per cell (desktop-ish)
-    const CELL_H = 42;
-    const GAP    = 2;
-    const COLS   = 18;
+    const CELL_W = 40, CELL_H = 42, GAP = 2;
 
-    // Map elements to grid positions
-    const grid = {};  // key: "row,col" -> element
-
+    const grid = {};
     ELEMENTS.forEach(el => {
       const pos = _getPosition(el);
-      if (!pos) return;
-      grid[`${pos.row},${pos.col}`] = el;
+      if (pos) grid[`${pos.row},${pos.col}`] = el;
     });
 
-    // Determine dimensions
-    const maxRow = 10;
-    const maxCol = 18;
+    const tableW = 18 * (CELL_W + GAP);
+    const tableH = 11 * (CELL_H + GAP);
 
-    const tableW = maxCol * (CELL_W + GAP);
-    const tableH = (maxRow + 1) * (CELL_H + GAP); // +1 for lanthanide/actinide gap row
+    let html = `<div style="position:relative;width:${tableW}px;height:${tableH}px;">`;
 
-    let html = `<div style="
-      position:relative;
-      width:${tableW}px;
-      height:${tableH + 30}px;
-    ">`;
-
-    // Row labels
+    // Period (row) labels
     for (let r = 1; r <= 7; r++) {
-      html += `<div style="
-        position:absolute;
-        left:-18px;top:${(r - 1) * (CELL_H + GAP) + CELL_H / 2}px;
-        transform:translateY(-50%);
-        font-size:9px;font-weight:700;color:var(--text-4);
-        width:14px;text-align:right;line-height:1;
-      ">${r}</div>`;
+      html += `<div style="position:absolute;left:-18px;top:${(r-1)*(CELL_H+GAP)+CELL_H/2}px;
+        transform:translateY(-50%);font-size:9px;font-weight:700;color:var(--text-4);
+        width:14px;text-align:right;line-height:1;">${r}</div>`;
     }
 
-    // Lanthanide/actinide separator marker
-    html += `<div style="
-      position:absolute;
-      left:${2 * (CELL_W + GAP)}px;
-      top:${7.5 * (CELL_H + GAP)}px;
-      width:${CELL_W}px;height:${CELL_H}px;
-      display:flex;align-items:center;justify-content:center;
-      font-size:7px;color:var(--text-4);font-weight:700;
-      border:1px dashed var(--border);border-radius:3px;
-      box-sizing:border-box;
-    ">*</div>`;
+    // Group number labels
+    for (let g = 1; g <= 18; g++) {
+      html += `<div style="position:absolute;left:${(g-1)*(CELL_W+GAP)}px;top:-16px;
+        width:${CELL_W}px;height:14px;display:flex;align-items:center;justify-content:center;
+        font-size:8px;font-weight:700;color:var(--text-4);line-height:1;">${g}</div>`;
+    }
 
-    // Render all cells
+    // f-block gap placeholders in main table
+    const phStyle = `position:absolute;display:flex;align-items:center;justify-content:center;
+      font-size:7px;color:var(--text-4);font-weight:700;border:1px dashed var(--border);
+      border-radius:3px;box-sizing:border-box;`;
+    html += `<div style="${phStyle}left:${2*(CELL_W+GAP)}px;top:${5*(CELL_H+GAP)}px;width:${CELL_W}px;height:${CELL_H}px;">*</div>`;
+    html += `<div style="${phStyle}left:${2*(CELL_W+GAP)}px;top:${6*(CELL_H+GAP)}px;width:${CELL_W}px;height:${CELL_H}px;">**</div>`;
+
+    // All element cells
     for (let r = 1; r <= 10; r++) {
-      for (let c = 1; c <= maxCol; c++) {
+      for (let c = 1; c <= 18; c++) {
         const el = grid[`${r},${c}`];
-
-        // Calculate pixel position (offset row 9,10 down by half a row for separation)
-        const yOffset = r >= 9 ? (CELL_H + GAP) * 0.6 : 0;
+        if (!el) continue;
+        const yOffset = r >= 9 ? (CELL_H + GAP) * 0.65 : 0;
         const px = (c - 1) * (CELL_W + GAP);
         const py = (r - 1) * (CELL_H + GAP) + yOffset;
-
-        if (el) {
-          const colors = CAT_COLORS[el.cat] || CAT_COLORS['transition'];
-          html += _buildCell(el, px, py, CELL_W, CELL_H, colors);
-        }
+        html += _buildCell(el, px, py, CELL_W, CELL_H);
       }
     }
 
-    // Group number labels (top)
-    const groupLabels = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18];
-    groupLabels.forEach(g => {
-      const px = (g - 1) * (CELL_W + GAP);
-      html += `<div style="
-        position:absolute;
-        left:${px}px;top:-16px;
-        width:${CELL_W}px;height:14px;
-        display:flex;align-items:center;justify-content:center;
-        font-size:8px;font-weight:700;color:var(--text-4);line-height:1;
-      ">${g}</div>`;
-    });
-
-    // Section labels for lanthanides/actinides
-    html += `<div style="
-      position:absolute;
-      left:-2px;top:${8 * (CELL_H + GAP) + (CELL_H + GAP) * 0.6}px;
-      font-size:7px;font-weight:700;color:var(--text-4);
-      writing-mode:horizontal-tb;line-height:1.3;
-      width:${2 * (CELL_W + GAP) - GAP}px;text-align:right;
-    ">Lanthanides</div>`;
-
-    html += `<div style="
-      position:absolute;
-      left:-2px;top:${9 * (CELL_H + GAP) + (CELL_H + GAP) * 0.6}px;
-      font-size:7px;font-weight:700;color:var(--text-4);
-      writing-mode:horizontal-tb;line-height:1.3;
-      width:${2 * (CELL_W + GAP) - GAP}px;text-align:right;
-    ">Actinides</div>`;
+    // Lanthanide / Actinide row labels
+    html += `<div style="position:absolute;left:-2px;top:${8*(CELL_H+GAP)+(CELL_H+GAP)*0.65}px;
+      font-size:6.5px;font-weight:700;color:var(--text-4);
+      width:${2*(CELL_W+GAP)-GAP}px;text-align:right;line-height:1.3;">Lanthanides</div>`;
+    html += `<div style="position:absolute;left:-2px;top:${9*(CELL_H+GAP)+(CELL_H+GAP)*0.65}px;
+      font-size:6.5px;font-weight:700;color:var(--text-4);
+      width:${2*(CELL_W+GAP)-GAP}px;text-align:right;line-height:1.3;">Actinides</div>`;
 
     html += '</div>';
     return html;
   }
 
-  /* ── Build a single element cell ── */
-  function _buildCell(el, px, py, w, h, colors) {
+  /* ── Single element cell ── */
+  function _buildCell(el, px, py, w, h) {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const colors = CAT_COLORS[el.cat] || CAT_COLORS['transition'];
     const bg     = isDark ? colors.dark_bg   : colors.bg;
     const fg     = isDark ? colors.dark_text : colors.text;
-
-    // Z-depth: vary by atomic number for subtle 3D layering (cosmetic, not functional)
     const zDepth = Math.sin(el.n * 0.15) * 3;
 
     return `
       <div class="pt-cell" id="pt-cell-${el.n}"
            data-n="${el.n}" data-cat="${el.cat}"
            onclick="ThreeDPeriodic._selectElement(${el.n})"
-           style="
-             position:absolute;
-             left:${px}px;top:${py}px;
-             width:${w}px;height:${h}px;
-             background:${bg};
-             color:${fg};
-             border-radius:4px;
-             border:1px solid rgba(0,0,0,${isDark ? '0.3' : '0.08'});
-             display:flex;flex-direction:column;
-             align-items:center;justify-content:center;
-             gap:0;
-             cursor:pointer;
-             box-shadow:${isDark
-               ? '0 1px 3px rgba(0,0,0,0.4)'
-               : '0 1px 2px rgba(0,0,0,0.08)'};
-             transform:translateZ(${zDepth}px);
-             box-sizing:border-box;
-             overflow:hidden;
-             -webkit-tap-highlight-color:transparent;
-           ">
-        <div style="font-size:7.5px;font-weight:700;color:${fg};opacity:0.7;line-height:1;margin-top:2px;">
-          ${el.n}
-        </div>
-        <div style="font-size:13px;font-weight:800;color:${fg};line-height:1.1;letter-spacing:-0.02em;">
-          ${el.sym}
-        </div>
-        <div style="font-size:5.5px;font-weight:600;color:${fg};opacity:0.8;
-                    line-height:1;text-align:center;padding:0 2px;
-                    overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;">
-          ${el.name.length > 9 ? el.name.slice(0, 8) + '.' : el.name}
+           style="position:absolute;left:${px}px;top:${py}px;
+                  width:${w}px;height:${h}px;
+                  background:${bg};color:${fg};border-radius:4px;
+                  border:1px solid rgba(0,0,0,${isDark?'0.3':'0.08'});
+                  display:flex;flex-direction:column;align-items:center;
+                  justify-content:center;cursor:pointer;
+                  box-shadow:${isDark?'0 1px 3px rgba(0,0,0,.4)':'0 1px 2px rgba(0,0,0,.08)'};
+                  transform:translateZ(${zDepth}px);
+                  box-sizing:border-box;overflow:hidden;opacity:1;">
+        <div style="font-size:7px;font-weight:700;opacity:.7;line-height:1;margin-top:2px;">${el.n}</div>
+        <div style="font-size:13px;font-weight:800;line-height:1.1;letter-spacing:-.02em;">${el.sym}</div>
+        <div style="font-size:5.5px;font-weight:600;opacity:.8;line-height:1;
+                    text-align:center;padding:0 2px;overflow:hidden;
+                    text-overflow:ellipsis;white-space:nowrap;max-width:100%;">
+          ${el.name.length > 9 ? el.name.slice(0,8)+'.' : el.name}
         </div>
       </div>`;
   }
 
   /* ══════════════════════════════════════════════════
-     BIND EVENTS — mouse, touch, keyboard
+     BIND / UNBIND EVENTS
   ══════════════════════════════════════════════════ */
 
   function _bindEvents() {
     const stage = document.getElementById('pt-stage');
     if (!stage) return;
 
-    // Mouse drag
-    stage.addEventListener('mousedown', _onMouseDown, { passive: false });
-    window.addEventListener('mousemove', _onMouseMove, { passive: true });
-    window.addEventListener('mouseup',   _onMouseUp,   { passive: true });
-
-    // Touch
-    stage.addEventListener('touchstart', _onTouchStart, { passive: false });
-    stage.addEventListener('touchmove',  _onTouchMove,  { passive: false });
-    stage.addEventListener('touchend',   _onTouchEnd,   { passive: true });
-
-    // Mouse wheel zoom
-    stage.addEventListener('wheel', _onWheel, { passive: false });
-
-    // Keyboard navigation
-    window.addEventListener('keydown', _onKeyDown);
+    stage.addEventListener('mousedown',  _onMouseDown,  { passive:false });
+    window.addEventListener('mousemove', _onMouseMove,  { passive:true  });
+    window.addEventListener('mouseup',   _onMouseUp,    { passive:true  });
+    stage.addEventListener('touchstart', _onTouchStart, { passive:false });
+    stage.addEventListener('touchmove',  _onTouchMove,  { passive:false });
+    stage.addEventListener('touchend',   _onTouchEnd,   { passive:true  });
+    stage.addEventListener('wheel',      _onWheel,      { passive:false });
+    window.addEventListener('keydown',   _onKeyDown);
   }
 
   function _unbindEvents() {
@@ -602,17 +547,15 @@
     window.removeEventListener('mouseup',   _onMouseUp);
     window.removeEventListener('keydown',   _onKeyDown);
     if (_rafId) { cancelAnimationFrame(_rafId); _rafId = null; }
-    if (_animFrame) { cancelAnimationFrame(_animFrame); _animFrame = null; }
   }
 
-  /* ── Mouse handlers ── */
+  /* ── Mouse ── */
 
   function _onMouseDown(e) {
     if (e.target.closest('.pt-cell') || e.target.closest('button') || e.target.closest('input')) return;
     _isDragging = true;
-    _lastX = e.clientX;
-    _lastY = e.clientY;
-    _velocity = { x: 0, y: 0 };
+    _lastX = e.clientX; _lastY = e.clientY;
+    _velocity = { x:0, y:0 }; _panVelocity = { x:0, y:0 };
     const stage = document.getElementById('pt-stage');
     if (stage) stage.style.cursor = 'grabbing';
     e.preventDefault();
@@ -622,12 +565,17 @@
     if (!_isDragging) return;
     const dx = e.clientX - _lastX;
     const dy = e.clientY - _lastY;
-    _velocity = { x: dx * 0.4, y: dy * 0.4 };
-    _rotY += dx * 0.35;
-    _rotX += dy * 0.25;
-    _rotX = Math.max(-40, Math.min(40, _rotX));
-    _lastX = e.clientX;
-    _lastY = e.clientY;
+    // Shift key = pan regardless of mode
+    const forcePan = e.shiftKey || e.buttons === 4;
+    if (_interactMode === 'pan' || forcePan) {
+      _panX += dx; _panY += dy;
+      _panVelocity = { x: dx * 0.5, y: dy * 0.5 };
+    } else {
+      _rotY += dx * 0.35;
+      _rotX  = Math.max(-40, Math.min(40, _rotX + dy * 0.25));
+      _velocity = { x: dx * 0.4, y: dy * 0.4 };
+    }
+    _lastX = e.clientX; _lastY = e.clientY;
     _applyTransform();
   }
 
@@ -635,26 +583,26 @@
     if (!_isDragging) return;
     _isDragging = false;
     const stage = document.getElementById('pt-stage');
-    if (stage) stage.style.cursor = 'grab';
+    if (stage) stage.style.cursor = _interactMode === 'pan' ? 'move' : 'grab';
     _startInertia();
   }
 
-  /* ── Touch handlers ── */
+  /* ── Touch ── */
 
   function _onTouchStart(e) {
     if (e.touches.length === 1) {
       const t = e.touches[0];
       if (t.target.closest('.pt-cell') || t.target.closest('button') || t.target.closest('input')) return;
       _isDragging = true;
-      _lastX = t.clientX;
-      _lastY = t.clientY;
-      _velocity = { x: 0, y: 0 };
+      _lastX = t.clientX; _lastY = t.clientY;
+      _velocity = { x:0, y:0 }; _panVelocity = { x:0, y:0 };
       e.preventDefault();
     } else if (e.touches.length === 2) {
       _isDragging = false;
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      _lastTouchDist = Math.hypot(dx, dy);
+      const t0 = e.touches[0], t1 = e.touches[1];
+      _lastTouchDist = Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY);
+      _touchMidX = (t0.clientX + t1.clientX) / 2;
+      _touchMidY = (t0.clientY + t1.clientY) / 2;
       e.preventDefault();
     }
   }
@@ -662,93 +610,115 @@
   function _onTouchMove(e) {
     if (e.touches.length === 1 && _isDragging) {
       const t = e.touches[0];
-      const dx = t.clientX - _lastX;
-      const dy = t.clientY - _lastY;
-      _velocity = { x: dx * 0.4, y: dy * 0.4 };
-      _rotY += dx * 0.35;
-      _rotX += dy * 0.25;
-      _rotX = Math.max(-40, Math.min(40, _rotX));
-      _lastX = t.clientX;
-      _lastY = t.clientY;
+      const dx = t.clientX - _lastX, dy = t.clientY - _lastY;
+      if (_interactMode === 'pan') {
+        _panX += dx; _panY += dy;
+        _panVelocity = { x: dx * 0.5, y: dy * 0.5 };
+      } else {
+        _rotY += dx * 0.35;
+        _rotX  = Math.max(-40, Math.min(40, _rotX + dy * 0.25));
+        _velocity = { x: dx * 0.4, y: dy * 0.4 };
+      }
+      _lastX = t.clientX; _lastY = t.clientY;
       _applyTransform();
       e.preventDefault();
     } else if (e.touches.length === 2) {
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      const dist = Math.hypot(dx, dy);
-      const delta = (dist - _lastTouchDist) * 0.004;
-      _scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, _scale + delta));
-      _lastTouchDist = dist;
+      const t0 = e.touches[0], t1 = e.touches[1];
+      const dist  = Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY);
+      const midX  = (t0.clientX + t1.clientX) / 2;
+      const midY  = (t0.clientY + t1.clientY) / 2;
+      // Pinch zoom
+      _scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, _scale + (dist - _lastTouchDist) * 0.004));
+      // Two-finger pan (midpoint drift)
+      _panX += midX - _touchMidX;
+      _panY += midY - _touchMidY;
+      _lastTouchDist = dist; _touchMidX = midX; _touchMidY = midY;
       _applyTransform();
       e.preventDefault();
     }
   }
 
-  function _onTouchEnd() {
-    _isDragging = false;
-    _startInertia();
-  }
+  function _onTouchEnd() { _isDragging = false; _startInertia(); }
 
-  /* ── Wheel zoom ── */
-
+  /* ── Wheel ── */
   function _onWheel(e) {
     e.preventDefault();
-    const delta = e.deltaY > 0 ? -0.08 : 0.08;
-    _scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, _scale + delta));
+    _scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, _scale + (e.deltaY > 0 ? -0.09 : 0.09)));
     _applyTransform();
   }
 
-  /* ── Keyboard nav ── */
-
+  /* ── Keyboard ── */
   function _onKeyDown(e) {
     if (e.target.tagName === 'INPUT') return;
     if (!document.getElementById('pt-shell')) return;
-
-    if (e.key === 'ArrowLeft')  { _rotY -= 8; _applyTransform(); }
-    if (e.key === 'ArrowRight') { _rotY += 8; _applyTransform(); }
-    if (e.key === 'ArrowUp')    { _rotX -= 5; _rotX = Math.max(-40, _rotX); _applyTransform(); }
-    if (e.key === 'ArrowDown')  { _rotX += 5; _rotX = Math.min(40,  _rotX); _applyTransform(); }
-    if (e.key === '+' || e.key === '=') _zoom(0.1);
-    if (e.key === '-')                  _zoom(-0.1);
+    const pan = _interactMode === 'pan';
+    if (e.key === 'ArrowLeft')  { pan ? (_panX -= 80) : (_rotY -= 8);  _applyTransform(); }
+    if (e.key === 'ArrowRight') { pan ? (_panX += 80) : (_rotY += 8);  _applyTransform(); }
+    if (e.key === 'ArrowUp')    { pan ? (_panY -= 50) : (_rotX = Math.max(-40, _rotX - 5)); _applyTransform(); }
+    if (e.key === 'ArrowDown')  { pan ? (_panY += 50) : (_rotX = Math.min(40,  _rotX + 5)); _applyTransform(); }
+    if (e.key === '+' || e.key === '=') _zoom(0.12);
+    if (e.key === '-') _zoom(-0.12);
     if (e.key === 'r' || e.key === 'R') _resetView();
-    if (e.key === 'Escape') {
-      if (_selectedEl) _deselectElement();
-      else _back();
-    }
+    if (e.key === 'p' || e.key === 'P') _setMode(_interactMode === 'pan' ? 'rotate' : 'pan');
+    if (e.key === 'Escape') { if (_selectedEl) _deselectElement(); else _back(); }
   }
 
   /* ══════════════════════════════════════════════════
-     APPLY 3D TRANSFORM
+     APPLY TRANSFORM
   ══════════════════════════════════════════════════ */
 
   function _applyTransform(animated) {
     const el = document.getElementById('pt-table-3d');
     if (!el) return;
-    el.style.transition = animated ? 'transform .4s cubic-bezier(0.16,1,0.3,1)' : 'none';
-    el.style.transform = `rotateX(${_rotX}deg) rotateY(${_rotY}deg) scale(${_scale})`;
+    el.style.transition = animated ? 'transform .38s cubic-bezier(0.16,1,0.3,1)' : 'none';
+    el.style.transform  = `translateX(${_panX}px) translateY(${_panY}px) rotateX(${_rotX}deg) rotateY(${_rotY}deg) scale(${_scale})`;
   }
 
-  /* ── Inertia (momentum scrolling after drag ends) ── */
-
+  /* ── Inertia ── */
   function _startInertia() {
     if (_rafId) cancelAnimationFrame(_rafId);
-    const decay = 0.92;
-
+    const decay = 0.89;
     function tick() {
-      if (Math.abs(_velocity.x) < 0.05 && Math.abs(_velocity.y) < 0.05) {
-        _velocity = { x: 0, y: 0 };
-        return;
+      let dirty = false;
+      if (Math.abs(_velocity.x) > 0.05 || Math.abs(_velocity.y) > 0.05) {
+        _rotY += _velocity.x * 0.35;
+        _rotX  = Math.max(-40, Math.min(40, _rotX + _velocity.y * 0.25));
+        _velocity.x *= decay; _velocity.y *= decay;
+        dirty = true;
       }
-      _rotY += _velocity.x * 0.35;
-      _rotX += _velocity.y * 0.25;
-      _rotX = Math.max(-40, Math.min(40, _rotX));
-      _velocity.x *= decay;
-      _velocity.y *= decay;
-      _applyTransform();
-      _rafId = requestAnimationFrame(tick);
+      if (Math.abs(_panVelocity.x) > 0.05 || Math.abs(_panVelocity.y) > 0.05) {
+        _panX += _panVelocity.x; _panY += _panVelocity.y;
+        _panVelocity.x *= decay; _panVelocity.y *= decay;
+        dirty = true;
+      }
+      if (dirty) { _applyTransform(); _rafId = requestAnimationFrame(tick); }
     }
-
     _rafId = requestAnimationFrame(tick);
+  }
+
+  /* ══════════════════════════════════════════════════
+     MODE TOGGLE
+  ══════════════════════════════════════════════════ */
+
+  function _setMode(mode) {
+    _interactMode = mode;
+    const rBtn  = document.getElementById('pt-mode-rotate');
+    const pBtn  = document.getElementById('pt-mode-pan');
+    const stage = document.getElementById('pt-stage');
+    const lbl   = document.getElementById('pt-status-label');
+
+    function _styleBtn(btn, active) {
+      if (!btn) return;
+      btn.style.background  = active ? 'var(--accent)' : 'var(--bg-subtle)';
+      btn.style.color       = active ? '#fff'          : 'var(--text-3)';
+      btn.style.borderColor = active ? 'var(--accent)' : 'var(--border)';
+    }
+    _styleBtn(rBtn, mode === 'rotate');
+    _styleBtn(pBtn, mode === 'pan');
+    if (stage) stage.style.cursor = mode === 'pan' ? 'move' : 'grab';
+    if (lbl)   lbl.textContent    = mode === 'pan'
+      ? 'Drag left/right to scroll the table'
+      : 'Drag to rotate · Shift+drag to pan';
   }
 
   /* ══════════════════════════════════════════════════
@@ -758,125 +728,141 @@
   function _selectElement(n) {
     const el = ELEMENTS.find(e => e.n === n);
     if (!el) return;
-
     _selectedEl = el;
-
-    // Highlight selected, dim others
-    document.querySelectorAll('.pt-cell').forEach(cell => {
-      const cellN = parseInt(cell.dataset.n, 10);
-      cell.classList.toggle('is-dimmed', cellN !== n);
-      cell.classList.toggle('is-highlighted', cellN === n);
-    });
-
-    // Animate selected cell a bit
-    const cellEl = document.getElementById(`pt-cell-${n}`);
-    if (cellEl) {
-      cellEl.style.transform = `translateZ(12px) scale(1.08)`;
-      cellEl.style.boxShadow = '0 8px 24px rgba(79,110,247,0.35)';
-      cellEl.style.border    = '2px solid var(--accent)';
-    }
-
+    _updateCellVisuals();
     _showDetailPanel(el);
   }
 
   function _deselectElement() {
     _selectedEl = null;
-
-    document.querySelectorAll('.pt-cell').forEach(cell => {
-      const n = parseInt(cell.dataset.n, 10);
-      const el = ELEMENTS.find(e => e.n === n);
-      if (!el) return;
-      const zDepth = Math.sin(n * 0.15) * 3;
-      cell.classList.remove('is-dimmed', 'is-highlighted');
-      cell.style.transform = `translateZ(${zDepth}px)`;
-      cell.style.boxShadow = '';
-      cell.style.border    = '';
-    });
-
+    _updateCellVisuals();
     const panel = document.getElementById('pt-detail');
     if (panel) panel.style.maxHeight = '0';
+  }
+
+  /* ══════════════════════════════════════════════════
+     CELL VISUALS — THE FIX
+     All opacity/filter changes go through here using
+     direct style assignment. No class toggling = no
+     CSS specificity conflicts with inline transforms.
+  ══════════════════════════════════════════════════ */
+
+  function _updateCellVisuals() {
+    document.querySelectorAll('.pt-cell').forEach(cell => {
+      const n   = parseInt(cell.dataset.n, 10);
+      const cat = cell.dataset.cat;
+      const el  = ELEMENTS.find(e => e.n === n);
+      if (!el) return;
+
+      // Does this cell pass the active filter / search?
+      let passes = true;
+      if (_filterCat) {
+        passes = (cat === _filterCat);
+      }
+      if (_searchQuery && passes) {
+        passes = (
+          el.sym.toLowerCase().includes(_searchQuery)  ||
+          el.name.toLowerCase().includes(_searchQuery) ||
+          String(el.n).includes(_searchQuery)          ||
+          (CAT_COLORS[cat]?.label || '').toLowerCase().includes(_searchQuery)
+        );
+      }
+
+      if (_selectedEl) {
+        // One element selected: highlight it, dim everything else
+        if (n === _selectedEl.n) {
+          cell.style.opacity      = '1';
+          cell.style.filter       = 'brightness(1.15)';
+          cell.style.outline      = '2px solid var(--accent)';
+          cell.style.outlineOffset = '1px';
+          cell.style.zIndex       = '5';
+        } else {
+          cell.style.opacity      = passes ? '0.16' : '0.06';
+          cell.style.filter       = 'grayscale(0.7)';
+          cell.style.outline      = 'none';
+          cell.style.outlineOffset = '0';
+          cell.style.zIndex       = '';
+        }
+      } else {
+        // No selection — only filter/search dimming
+        if (passes) {
+          cell.style.opacity      = '1';
+          cell.style.filter       = 'none';
+          cell.style.outline      = 'none';
+          cell.style.outlineOffset = '0';
+          cell.style.zIndex       = '';
+        } else {
+          cell.style.opacity      = '0.1';
+          cell.style.filter       = 'grayscale(1)';
+          cell.style.outline      = 'none';
+          cell.style.outlineOffset = '0';
+          cell.style.zIndex       = '';
+        }
+      }
+    });
   }
 
   /* ── Detail panel ── */
 
   function _showDetailPanel(el) {
-    const panel  = document.getElementById('pt-detail');
-    const inner  = document.getElementById('pt-detail-inner');
+    const panel = document.getElementById('pt-detail');
+    const inner = document.getElementById('pt-detail-inner');
     if (!panel || !inner) return;
 
     const colors = CAT_COLORS[el.cat] || CAT_COLORS['transition'];
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     const bg     = isDark ? colors.dark_bg   : colors.bg;
     const fg     = isDark ? colors.dark_text : colors.text;
-
-    const fmt = v => (v === null || v === undefined) ? '—' : v;
-    const fmtTemp = v => v === null ? '—' : v + ' °C';
-    const fmtYear = v => v === null ? 'Ancient' : v;
+    const fmtT   = v => v === null ? '—' : v + ' °C';
+    const fmtY   = v => v === null ? 'Ancient' : v;
 
     inner.innerHTML = `
-      <div style="display:flex;align-items:flex-start;gap:.875rem;margin-bottom:.75rem;">
-
-        <!-- Big symbol -->
-        <div style="
-          width:56px;height:56px;border-radius:8px;flex-shrink:0;
-          background:${bg};border:2px solid ${fg};
-          display:flex;flex-direction:column;align-items:center;justify-content:center;
-          box-shadow:var(--shadow-sm);
-        ">
-          <div style="font-size:9px;font-weight:700;color:${fg};opacity:0.8;line-height:1;">${el.n}</div>
-          <div style="font-size:22px;font-weight:800;color:${fg};line-height:1.1;">${el.sym}</div>
+      <div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:.5rem;">
+        <div style="width:50px;height:50px;border-radius:7px;flex-shrink:0;
+                    background:${bg};border:2px solid ${fg};
+                    display:flex;flex-direction:column;align-items:center;justify-content:center;">
+          <div style="font-size:7.5px;font-weight:700;color:${fg};opacity:.8;line-height:1;">${el.n}</div>
+          <div style="font-size:19px;font-weight:800;color:${fg};line-height:1.1;">${el.sym}</div>
         </div>
-
-        <!-- Name & category -->
         <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:3px;">
-            <h2 style="font-size:var(--text-md);font-weight:800;color:var(--text-1);
-                       margin:0;letter-spacing:-0.02em;">${el.name}</h2>
-            <span style="font-size:.625rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
-                         padding:2px 8px;border-radius:99px;background:${bg};color:${fg};flex-shrink:0;">
+          <div style="display:flex;align-items:center;gap:.375rem;flex-wrap:wrap;margin-bottom:2px;">
+            <h2 style="font-size:var(--text-md);font-weight:800;color:var(--text-1);margin:0;
+                       letter-spacing:-.02em;">${el.name}</h2>
+            <span style="font-size:.55rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+                         padding:2px 7px;border-radius:99px;background:${bg};color:${fg};flex-shrink:0;">
               ${colors.label}
             </span>
           </div>
           <div style="font-size:var(--text-xs);color:var(--text-3);">
-            Atomic mass: <strong style="color:var(--text-1);">${el.mass}</strong> u
-            &nbsp;·&nbsp; Config: <strong style="color:var(--text-1);font-family:var(--font-mono);">${el.config}</strong>
+            Mass <strong style="color:var(--text-1);">${el.mass}</strong> u
+            · Period <strong style="color:var(--text-1);">${el.period}</strong>
+            ${el.group ? `· Group <strong style="color:var(--text-1);">${el.group}</strong>` : ''}
+            · Discovered <strong style="color:var(--text-1);">${fmtY(el.discovered)}</strong>
           </div>
-          <div style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">
-            Discovered: <strong style="color:var(--text-1);">${fmtYear(el.discovered)}</strong>
-          </div>
+          <div style="font-size:.6rem;color:var(--text-4);margin-top:1px;font-family:var(--font-mono);">${el.config}</div>
         </div>
-
-        <!-- Close -->
         <button onclick="ThreeDPeriodic._deselectElement()"
                 style="flex-shrink:0;background:none;border:none;cursor:pointer;
-                       font-size:1.25rem;line-height:1;padding:4px;color:var(--text-4);">×</button>
+                       font-size:1.2rem;line-height:1;padding:2px;color:var(--text-4);">×</button>
       </div>
-
-      <!-- Description -->
-      <p style="font-size:var(--text-sm);color:var(--text-2);line-height:1.6;
-                margin-bottom:.75rem;border-left:2px solid ${fg};padding-left:.75rem;">
+      <p style="font-size:var(--text-sm);color:var(--text-2);line-height:1.55;
+                margin-bottom:.5rem;border-left:2px solid ${fg};padding-left:.5rem;">
         ${el.desc}
       </p>
-
-      <!-- Properties grid -->
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.375rem;">
-        ${_propBadge('Melting Pt', fmtTemp(el.melt))}
-        ${_propBadge('Boiling Pt', fmtTemp(el.boil))}
-        ${_propBadge('Density',    el.density !== null ? el.density + ' g/cm³' : '—')}
-        ${_propBadge('Period',     el.period)}
-        ${_propBadge('Group',      fmt(el.group))}
-        ${_propBadge('At. No.',    el.n)}
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.275rem;">
+        ${_propBadge('Melting Pt', fmtT(el.melt))}
+        ${_propBadge('Boiling Pt', fmtT(el.boil))}
+        ${_propBadge('Density', el.density !== null ? el.density + ' g/cm³' : '—')}
       </div>`;
 
-    // Animate open
-    panel.style.maxHeight = '320px';
+    panel.style.maxHeight = '290px';
   }
 
   function _propBadge(label, value) {
     return `
       <div style="background:var(--bg-subtle);border:1px solid var(--border);
-                  border-radius:var(--r-sm);padding:.3125rem .5rem;">
-        <div style="font-size:.5625rem;font-weight:700;text-transform:uppercase;
+                  border-radius:var(--r-sm);padding:.225rem .4rem;">
+        <div style="font-size:.5rem;font-weight:700;text-transform:uppercase;
                     letter-spacing:.04em;color:var(--text-4);margin-bottom:1px;">${label}</div>
         <div style="font-size:var(--text-xs);font-weight:600;color:var(--text-1);">${value}</div>
       </div>`;
@@ -887,80 +873,83 @@
   ══════════════════════════════════════════════════ */
 
   function _setFilter(cat) {
-    _filterCat = cat;
+    _filterCat   = cat;
     _searchQuery = '';
+    _selectedEl  = null;
+
     const searchEl = document.getElementById('pt-search');
     if (searchEl) searchEl.value = '';
-    _applyFilter();
+    const panel = document.getElementById('pt-detail');
+    if (panel) panel.style.maxHeight = '0';
+
+    _updateCellVisuals();
     _updateFilterButtons(cat);
-    _deselectElement();
+    _updateStatusLabel();
   }
 
   function _onSearch(query) {
     _searchQuery = query.toLowerCase().trim();
     _filterCat   = null;
-    _applyFilter();
+    _selectedEl  = null;
+    const panel  = document.getElementById('pt-detail');
+    if (panel) panel.style.maxHeight = '0';
+
+    _updateCellVisuals();
     _updateFilterButtons(null);
-  }
+    _updateStatusLabel();
 
-  function _applyFilter() {
-    const cells = document.querySelectorAll('.pt-cell');
-
-    cells.forEach(cell => {
-      const n = parseInt(cell.dataset.n, 10);
-      const el = ELEMENTS.find(e => e.n === n);
-      if (!el) return;
-
-      let visible = true;
-
-      if (_filterCat) {
-        visible = el.cat === _filterCat;
-      }
-
-      if (_searchQuery && visible) {
-        visible = (
-          el.sym.toLowerCase().includes(_searchQuery) ||
-          el.name.toLowerCase().includes(_searchQuery) ||
-          String(el.n).includes(_searchQuery) ||
-          (CAT_COLORS[el.cat]?.label || '').toLowerCase().includes(_searchQuery)
-        );
-      }
-
-      const zDepth = Math.sin(n * 0.15) * 3;
-      cell.classList.toggle('is-dimmed', !visible);
-      cell.style.transform = visible ? `translateZ(${zDepth}px)` : `translateZ(${zDepth}px)`;
-    });
+    // Auto-select on exact match (number, symbol, or name)
+    if (_searchQuery.length >= 1) {
+      const exact = ELEMENTS.find(el =>
+        el.sym.toLowerCase()  === _searchQuery ||
+        el.name.toLowerCase() === _searchQuery ||
+        String(el.n)          === _searchQuery
+      );
+      if (exact) _selectElement(exact.n);
+    }
   }
 
   function _updateFilterButtons(activeCat) {
     const allBtn = document.getElementById('pt-filter-all');
+    const isAll  = activeCat === null && _searchQuery === '';
     if (allBtn) {
-      allBtn.style.background = activeCat === null ? 'var(--accent)' : 'var(--bg-subtle)';
-      allBtn.style.color      = activeCat === null ? '#fff'          : 'var(--text-3)';
-      allBtn.style.border     = activeCat === null ? '1px solid var(--accent)' : '1px solid var(--border)';
+      allBtn.style.background  = isAll ? 'var(--accent)' : 'var(--bg-subtle)';
+      allBtn.style.color       = isAll ? '#fff'          : 'var(--text-3)';
+      allBtn.style.borderColor = isAll ? 'var(--accent)' : 'var(--border)';
     }
 
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     Object.keys(CAT_COLORS).forEach(cat => {
-      const btn = document.getElementById(`pt-filter-${cat}`);
+      const btn    = document.getElementById(`pt-filter-${cat}`);
       if (!btn) return;
-      const colors = CAT_COLORS[cat];
-      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-      const isActive = cat === activeCat;
-
-      if (isActive) {
-        btn.style.background = isDark ? colors.dark_bg   : colors.bg;
-        btn.style.color      = isDark ? colors.dark_text : colors.text;
-        btn.style.border     = `1px solid ${isDark ? colors.dark_text : colors.text}`;
-      } else {
-        btn.style.background = 'var(--bg-subtle)';
-        btn.style.color      = 'var(--text-3)';
-        btn.style.border     = '1px solid var(--border)';
-      }
+      const c      = CAT_COLORS[cat];
+      const active = cat === activeCat;
+      btn.style.background  = active ? (isDark ? c.dark_bg   : c.bg)   : 'var(--bg-subtle)';
+      btn.style.color       = active ? (isDark ? c.dark_text : c.text) : 'var(--text-3)';
+      btn.style.borderColor = active ? (isDark ? c.dark_text : c.text) : 'var(--border)';
+      btn.style.fontWeight  = active ? '800' : '700';
     });
   }
 
+  function _updateStatusLabel() {
+    const lbl = document.getElementById('pt-status-label');
+    if (!lbl) return;
+    if (_filterCat) {
+      lbl.textContent = `${CAT_COLORS[_filterCat].label} — ${CAT_COUNTS[_filterCat]} elements`;
+    } else if (_searchQuery) {
+      const count = ELEMENTS.filter(el =>
+        el.sym.toLowerCase().includes(_searchQuery)  ||
+        el.name.toLowerCase().includes(_searchQuery) ||
+        String(el.n).includes(_searchQuery)
+      ).length;
+      lbl.textContent = `"${_searchQuery}" — ${count} result${count !== 1 ? 's' : ''}`;
+    } else {
+      lbl.textContent = 'Drag to rotate · Use Pan to scroll';
+    }
+  }
+
   /* ══════════════════════════════════════════════════
-     ZOOM & RESET
+     ZOOM · PAN STEP · RESET
   ══════════════════════════════════════════════════ */
 
   function _zoom(delta) {
@@ -968,16 +957,19 @@
     _applyTransform(true);
   }
 
+  function _panStep(dx, dy) {
+    _panX += dx; _panY += dy;
+    _applyTransform(true);
+  }
+
   function _resetView() {
-    _rotX  = -8;
-    _rotY  = 0;
-    _scale = 1;
-    _velocity = { x: 0, y: 0 };
+    _rotX = -8; _rotY = 0; _panX = 0; _panY = 0; _scale = 1;
+    _velocity = { x:0, y:0 }; _panVelocity = { x:0, y:0 };
     _applyTransform(true);
   }
 
   /* ══════════════════════════════════════════════════
-     BACK NAVIGATION
+     BACK
   ══════════════════════════════════════════════════ */
 
   function _back() {
@@ -998,7 +990,9 @@
     _setFilter,
     _onSearch,
     _zoom,
+    _panStep,
     _resetView,
+    _setMode,
   };
 
 }());
