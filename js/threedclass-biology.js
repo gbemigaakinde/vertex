@@ -233,51 +233,52 @@
   ══════════════════════════════════════════════════ */
 
   const ANIMAL_LAYOUT = [
-    { id:'cytoplasm',    x:50, y:50, rx:46, ry:43, shape:'ellipse', z:0, size:3 },
-    { id:'nucleus',      x:50, y:46, rx:14, ry:13, shape:'ellipse', z:3, size:3 },
-    { id:'nucleolus',    x:50, y:44, rx:5,  ry:4,  shape:'ellipse', z:4, size:2 },
-    { id:'rough_er',     x:67, y:44, shape:'rough_er', z:2, size:2 },
-    { id:'smooth_er',    x:68, y:60, shape:'smooth_er', z:2, size:2 },
-    { id:'golgi',        x:38, y:62, shape:'golgi', z:2, size:2 },
-    { id:'mitochondria', x:28, y:42, rx:7, ry:4.5, shape:'mito', z:2, size:2, rotate:-20 },
-    { id:'mitochondria', x:70, y:30, rx:6, ry:4,   shape:'mito', z:2, size:2, rotate:30, instance:2 },
-    { id:'mitochondria', x:34, y:70, rx:7, ry:4,   shape:'mito', z:2, size:2, rotate:10, instance:3 },
-    { id:'ribosome',     x:60, y:38, shape:'dot', z:5, size:1 },
-    { id:'ribosome',     x:62, y:40, shape:'dot', z:5, size:1, instance:2 },
-    { id:'ribosome',     x:58, y:42, shape:'dot', z:5, size:1, instance:3 },
-    { id:'ribosome',     x:72, y:48, shape:'dot', z:5, size:1, instance:4 },
-    { id:'ribosome',     x:40, y:35, shape:'dot', z:5, size:1, instance:5 },
-    { id:'lysosome',     x:60, y:66, rx:4, ry:3.5,shape:'ellipse', z:2, size:1 },
-    { id:'lysosome',     x:42, y:74, rx:3, ry:3,  shape:'ellipse', z:2, size:1, instance:2 },
-    { id:'centriole',    x:52, y:60, shape:'centriole', z:3, size:1 },
-    { id:'vacuole',      x:26, y:60, rx:5, ry:5,  shape:'ellipse', z:2, size:1 },
-    { id:'peroxisome',   x:74, y:66, rx:3.5,ry:3, shape:'ellipse', z:2, size:1 },
-    { id:'cytoskeleton', x:50, y:50, shape:'cyto', z:1, size:1 },
-    { id:'cell_membrane',x:50, y:50, rx:47, ry:44, shape:'membrane', z:5, size:1 },
+    // z:0 = background fill, z:1 = cytoskeleton, z:2 = organelles, z:3 = nucleus shell, z:4 = nucleolus, z:5 = membrane/dots
+    { id:'cytoplasm',    x:100, y:100, rx:88, ry:82, shape:'ellipse', z:0, size:3 },
+    { id:'cytoskeleton', x:100, y:100, shape:'cyto', z:1, size:1 },
+    { id:'rough_er',     x:138, y:80,  shape:'rough_er', z:2, size:2 },
+    { id:'smooth_er',    x:148, y:118, shape:'smooth_er', z:2, size:2 },
+    { id:'golgi',        x:72,  y:130, shape:'golgi', z:2, size:2 },
+    { id:'mitochondria', x:48,  y:75,  rx:18, ry:11, shape:'mito', z:2, size:2, rotate:-25 },
+    { id:'mitochondria', x:152, y:55,  rx:15, ry:9,  shape:'mito', z:2, size:2, rotate:20, instance:2 },
+    { id:'mitochondria', x:60,  y:148, rx:16, ry:10, shape:'mito', z:2, size:2, rotate:15, instance:3 },
+    { id:'lysosome',     x:125, y:148, rx:9,  ry:8,  shape:'ellipse', z:2, size:1 },
+    { id:'lysosome',     x:80,  y:162, rx:8,  ry:7,  shape:'ellipse', z:2, size:1, instance:2 },
+    { id:'vacuole',      x:44,  y:118, rx:13, ry:12, shape:'ellipse', z:2, size:1 },
+    { id:'peroxisome',   x:158, y:148, rx:8,  ry:7,  shape:'ellipse', z:2, size:1 },
+    { id:'ribosome',     x:122, y:68,  shape:'dot', z:5, size:1 },
+    { id:'ribosome',     x:128, y:74,  shape:'dot', z:5, size:1, instance:2 },
+    { id:'ribosome',     x:118, y:78,  shape:'dot', z:5, size:1, instance:3 },
+    { id:'ribosome',     x:148, y:84,  shape:'dot', z:5, size:1, instance:4 },
+    { id:'ribosome',     x:80,  y:62,  shape:'dot', z:5, size:1, instance:5 },
+    { id:'nucleus',      x:100, y:95,  rx:30, ry:27, shape:'ellipse', z:3, size:3 },
+    { id:'nucleolus',    x:100, y:92,  rx:11, ry:9,  shape:'ellipse', z:4, size:2 },
+    { id:'centriole',    x:103, y:130, shape:'centriole', z:3, size:1 },
+    { id:'cell_membrane',x:100, y:100, rx:90, ry:84, shape:'membrane', z:5, size:1 },
   ];
 
   const PLANT_LAYOUT = [
-    { id:'cell_wall',       x:50, y:50, rx:47, ry:46, shape:'wall', z:0, size:3 },
-    { id:'cytoplasm',       x:50, y:50, rx:43, ry:42, shape:'ellipse', z:0, size:3 },
-    { id:'central_vacuole', x:50, y:50, rx:24, ry:25, shape:'ellipse', z:1, size:3 },
-    { id:'nucleus',         x:72, y:68, rx:10, ry:9,  shape:'ellipse', z:3, size:3 },
-    { id:'nucleolus',       x:72, y:67, rx:4,  ry:3.5,shape:'ellipse', z:4, size:2 },
-    { id:'rough_er',        x:60, y:60, shape:'rough_er', z:2, size:2 },
-    { id:'smooth_er',       x:58, y:76, shape:'smooth_er', z:2, size:2 },
-    { id:'golgi',           x:78, y:52, shape:'golgi', z:2, size:2 },
-    { id:'mitochondria',    x:28, y:35, rx:7, ry:4.5, shape:'mito', z:2, size:2, rotate:-15 },
-    { id:'mitochondria',    x:76, y:38, rx:6, ry:4,   shape:'mito', z:2, size:2, rotate:20, instance:2 },
-    { id:'chloroplast',     x:26, y:50, shape:'chloro', z:2, size:2 },
-    { id:'chloroplast',     x:26, y:68, shape:'chloro', z:2, size:2, instance:2 },
-    { id:'chloroplast',     x:38, y:30, shape:'chloro', z:2, size:2, instance:3 },
-    { id:'ribosome',        x:64, y:56, shape:'dot', z:5, size:1 },
-    { id:'ribosome',        x:66, y:58, shape:'dot', z:5, size:1, instance:2 },
-    { id:'ribosome',        x:62, y:62, shape:'dot', z:5, size:1, instance:3 },
-    { id:'vacuole',         x:38, y:82, rx:4, ry:3.5, shape:'ellipse', z:2, size:1 },
-    { id:'peroxisome',      x:84, y:60, rx:3, ry:2.5, shape:'ellipse', z:2, size:1 },
-    { id:'cytoskeleton',    x:50, y:50, shape:'cyto', z:1, size:1 },
-    { id:'plasmodesmata',   x:50, y:4,  shape:'plasmo', z:5, size:1 },
-    { id:'cell_membrane',   x:50, y:50, rx:44, ry:43, shape:'membrane', z:5, size:1 },
+    { id:'cell_wall',       x:100, y:100, rx:92, ry:90, shape:'wall', z:0, size:3 },
+    { id:'cytoplasm',       x:100, y:100, rx:84, ry:82, shape:'ellipse', z:0, size:3 },
+    { id:'cytoskeleton',    x:100, y:100, shape:'cyto', z:1, size:1 },
+    { id:'central_vacuole', x:100, y:97,  rx:46, ry:48, shape:'ellipse', z:1, size:3 },
+    { id:'chloroplast',     x:42,  y:58,  shape:'chloro', z:2, size:2 },
+    { id:'chloroplast',     x:42,  y:148, shape:'chloro', z:2, size:2, instance:2 },
+    { id:'chloroplast',     x:158, y:58,  shape:'chloro', z:2, size:2, instance:3 },
+    { id:'mitochondria',    x:46,  y:100, rx:16, ry:10, shape:'mito', z:2, size:2, rotate:-15 },
+    { id:'mitochondria',    x:160, y:130, rx:14, ry:9,  shape:'mito', z:2, size:2, rotate:20, instance:2 },
+    { id:'rough_er',        x:138, y:148, shape:'rough_er', z:2, size:2 },
+    { id:'smooth_er',       x:155, y:100, shape:'smooth_er', z:2, size:2 },
+    { id:'golgi',           x:158, y:170, shape:'golgi', z:2, size:2 },
+    { id:'vacuole',         x:60,  y:172, rx:9,  ry:8,  shape:'ellipse', z:2, size:1 },
+    { id:'peroxisome',      x:42,  y:175, rx:7,  ry:6,  shape:'ellipse', z:2, size:1 },
+    { id:'ribosome',        x:130, y:140, shape:'dot', z:5, size:1 },
+    { id:'ribosome',        x:136, y:146, shape:'dot', z:5, size:1, instance:2 },
+    { id:'ribosome',        x:126, y:152, shape:'dot', z:5, size:1, instance:3 },
+    { id:'nucleus',         x:148, y:168, rx:20, ry:18, shape:'ellipse', z:3, size:3 },
+    { id:'nucleolus',       x:148, y:166, rx:8,  ry:7,  shape:'ellipse', z:4, size:2 },
+    { id:'plasmodesmata',   x:100, y:100, shape:'plasmo', z:5, size:1 },
+    { id:'cell_membrane',   x:100, y:100, rx:86, ry:84, shape:'membrane', z:5, size:1 },
   ];
 
   /* ══════════════════════════════════════════════════
@@ -537,7 +538,7 @@
 
         <!-- SVG Cell diagram -->
         <div style="flex:1 1 0;overflow:hidden;position:relative;min-width:0;">
-          <svg id="bio-svg-${type}" viewBox="0 0 100 100" preserveAspectRatio="xMidYMid meet"
+          <svg id="bio-svg-${type}" viewBox="0 0 200 200" preserveAspectRatio="xMidYMid meet"
                style="width:100%;height:100%;display:block;">
             ${_buildCellSVG(type, layout, isDark)}
           </svg>
@@ -599,208 +600,248 @@
   function _buildOrganelleShape(item, org, clr, key, isDark) {
     const onclick = `onclick="ThreeDCell._selectOrg('${item.id}')"`;
     const cls     = `class="bio-org-shape"`;
+    // No text labels drawn on SVG — labels live in the sidebar legend only
 
     switch (item.shape) {
-      // ── Membrane (outermost ring) ──
+
+      // ── Plasma membrane (outermost dashed ring) ──
       case 'membrane':
         return `
           <ellipse ${cls} ${onclick} cx="${item.x}" cy="${item.y}"
             rx="${item.rx}" ry="${item.ry}"
-            fill="none" stroke="${clr}" stroke-width="1.2"
-            stroke-dasharray="0" opacity="0.9"/>`;
+            fill="none" stroke="${clr}" stroke-width="2"
+            stroke-dasharray="5,3" opacity="0.9"/>`;
 
-      // ── Cell wall (plant — double ring) ──
+      // ── Cell wall (plant — thick solid outer + thinner inner) ──
       case 'wall':
         return `
           <ellipse cx="${item.x}" cy="${item.y}" rx="${item.rx}" ry="${item.ry}"
-            fill="${clr}22" stroke="${clr}" stroke-width="2.5" opacity="0.7"/>
+            fill="${clr}18" stroke="${clr}" stroke-width="5" opacity="0.7" pointer-events="none"/>
           <ellipse ${cls} ${onclick} cx="${item.x}" cy="${item.y}"
-            rx="${item.rx-1.2}" ry="${item.ry-1.2}"
-            fill="none" stroke="${clr}" stroke-width="0.8" stroke-dasharray="2,1" opacity="0.5"/>`;
+            rx="${item.rx-3}" ry="${item.ry-3}"
+            fill="none" stroke="${clr}" stroke-width="1.5" stroke-dasharray="4,2" opacity="0.5"/>`;
 
-      // ── Generic ellipse (nucleus, vacuoles, etc.) ──
+      // ── Generic filled ellipse (nucleus, vacuoles, lysosomes, etc.) ──
       case 'ellipse': {
         const gid = `grad-${key}`;
-        const isNucleus = item.id === 'nucleus';
-        const opacity = item.id === 'cytoplasm' ? 0.18
-                      : item.id === 'central_vacuole' ? 0.22 : 0.85;
-        const strokeW = isNucleus ? 1.2 : 0.7;
-        const strokeD = isNucleus ? '0' : '';
-        const lighterFill = item.id === 'cytoplasm' || item.id === 'central_vacuole'
-          ? `${clr}30` : `${clr}cc`;
+        const isNucleus  = item.id === 'nucleus';
+        const isCyto     = item.id === 'cytoplasm' || item.id === 'central_vacuole';
+        const fillAlpha  = isCyto ? '18' : isNucleus ? 'cc' : 'aa';
+        const strokeW    = isNucleus ? 2.5 : isCyto ? 0 : 1.5;
         return `
           <defs>
-            <radialGradient id="${gid}" cx="35%" cy="30%" r="70%">
-              <stop offset="0%" stop-color="${clr}" stop-opacity="0.5"/>
-              <stop offset="100%" stop-color="${clr}" stop-opacity="${item.id === 'cytoplasm' || item.id === 'central_vacuole' ? 0.08 : 0.3}"/>
+            <radialGradient id="${gid}" cx="35%" cy="28%" r="72%">
+              <stop offset="0%" stop-color="${clr}" stop-opacity="${isCyto ? 0.12 : 0.6}"/>
+              <stop offset="100%" stop-color="${clr}" stop-opacity="${isCyto ? 0.04 : 0.18}"/>
             </radialGradient>
           </defs>
           <ellipse ${cls} ${onclick} cx="${item.x}" cy="${item.y}"
             rx="${item.rx}" ry="${item.ry}"
-            fill="url(#${gid})" stroke="${clr}" stroke-width="${strokeW}"
-            ${strokeD ? `stroke-dasharray="${strokeD}"` : ''}/>
-          ${isNucleus ? `<ellipse cx="${item.x}" cy="${item.y}" rx="${item.rx-1}" ry="${item.ry-1}"
-            fill="none" stroke="${clr}" stroke-width="0.5" stroke-dasharray="1.5,1" opacity="0.6" pointer-events="none"/>` : ''}
-          <text class="bio-org-label" x="${item.x}" y="${item.y+item.ry+2.5}"
-            font-size="${Math.max(4, Math.min(5.5, item.ry * 0.7))}px"
-            ${onclick}>${org.label}</text>`;
+            fill="url(#${gid})"
+            stroke="${isCyto ? 'none' : clr}" stroke-width="${strokeW}" opacity="0.92"/>
+          ${isNucleus ? `
+            <ellipse cx="${item.x}" cy="${item.y}" rx="${item.rx-2}" ry="${item.ry-2}"
+              fill="none" stroke="${clr}" stroke-width="1" stroke-dasharray="3,2"
+              opacity="0.5" pointer-events="none"/>
+            <!-- Nuclear pores — tiny notches on the envelope -->
+            ${[0,45,90,135,180,225,270,315].map(deg => {
+              const rad = deg * Math.PI / 180;
+              const px  = item.x + item.rx * Math.cos(rad);
+              const py  = item.y + item.ry * Math.sin(rad);
+              return `<circle cx="${px}" cy="${py}" r="1.8" fill="${clr}" opacity="0.6" pointer-events="none"/>`;
+            }).join('')}` : ''}`;
       }
 
-      // ── Mitochondria ──
+      // ── Mitochondria (oval with inner cristae folds) ──
       case 'mito': {
-        const r = item.rotate || 0;
+        const r   = item.rotate || 0;
         const gid = `grad-mito-${key}`;
+        const rx  = item.rx, ry = item.ry;
         return `
           <defs>
-            <radialGradient id="${gid}" cx="30%" cy="30%" r="70%">
-              <stop offset="0%" stop-color="${clr}" stop-opacity="0.7"/>
-              <stop offset="100%" stop-color="${clr}" stop-opacity="0.3"/>
+            <radialGradient id="${gid}" cx="30%" cy="28%" r="72%">
+              <stop offset="0%" stop-color="${clr}" stop-opacity="0.75"/>
+              <stop offset="100%" stop-color="${clr}" stop-opacity="0.25"/>
             </radialGradient>
           </defs>
-          <g transform="rotate(${r}, ${item.x}, ${item.y})" ${cls} ${onclick}>
-            <ellipse cx="${item.x}" cy="${item.y}" rx="${item.rx}" ry="${item.ry}"
-              fill="url(#${gid})" stroke="${clr}" stroke-width="0.8"/>
-            <!-- Cristae lines -->
-            <line x1="${item.x - item.rx*0.35}" y1="${item.y - item.ry*0.6}"
-                  x2="${item.x - item.rx*0.35}" y2="${item.y + item.ry*0.6}"
-                  stroke="${clr}" stroke-width="0.5" opacity="0.6"/>
-            <line x1="${item.x + item.rx*0.1}" y1="${item.y - item.ry*0.7}"
-                  x2="${item.x + item.rx*0.1}" y2="${item.y + item.ry*0.7}"
-                  stroke="${clr}" stroke-width="0.5" opacity="0.6"/>
-            <line x1="${item.x + item.rx*0.45}" y1="${item.y - item.ry*0.55}"
-                  x2="${item.x + item.rx*0.45}" y2="${item.y + item.ry*0.55}"
-                  stroke="${clr}" stroke-width="0.5" opacity="0.6"/>
-          </g>
-          <text class="bio-org-label" x="${item.x}" y="${item.y + item.ry + 2.5}"
-            font-size="4.2px" ${onclick}>Mitochondria</text>`;
+          <g transform="rotate(${r},${item.x},${item.y})" ${cls} ${onclick}>
+            <!-- Outer membrane -->
+            <ellipse cx="${item.x}" cy="${item.y}" rx="${rx}" ry="${ry}"
+              fill="url(#${gid})" stroke="${clr}" stroke-width="1.5"/>
+            <!-- Inner membrane outline -->
+            <ellipse cx="${item.x}" cy="${item.y}" rx="${rx-3}" ry="${ry-2.5}"
+              fill="none" stroke="${clr}" stroke-width="0.8" opacity="0.5"/>
+            <!-- Cristae (inner folds) -->
+            <path d="M${item.x-rx*0.4},${item.y-ry*0.55} Q${item.x-rx*0.15},${item.y} ${item.x-rx*0.4},${item.y+ry*0.55}"
+              fill="none" stroke="${clr}" stroke-width="1" opacity="0.65"/>
+            <path d="M${item.x+rx*0.05},${item.y-ry*0.65} Q${item.x+rx*0.3},${item.y} ${item.x+rx*0.05},${item.y+ry*0.65}"
+              fill="none" stroke="${clr}" stroke-width="1" opacity="0.65"/>
+            <path d="M${item.x+rx*0.45},${item.y-ry*0.5} Q${item.x+rx*0.65},${item.y} ${item.x+rx*0.45},${item.y+ry*0.5}"
+              fill="none" stroke="${clr}" stroke-width="1" opacity="0.65"/>
+          </g>`;
       }
 
-      // ── Rough ER (wavy with dots) ──
+      // ── Rough ER (parallel wavy ribbons with ribosome dots on top edge) ──
       case 'rough_er': {
         const ox = item.x, oy = item.y;
         return `
           <g ${cls} ${onclick}>
-            <path d="M${ox-10},${oy-5} C${ox-7},${oy-8} ${ox-3},${oy-2} ${ox},${oy-5}
-                     C${ox+3},${oy-8} ${ox+7},${oy-2} ${ox+10},${oy-5}"
-              fill="none" stroke="${clr}" stroke-width="1.2" opacity="0.85"/>
-            <path d="M${ox-10},${oy} C${ox-7},${oy-3} ${ox-3},${oy+3} ${ox},${oy}
-                     C${ox+3},${oy-3} ${ox+7},${oy+3} ${ox+10},${oy}"
-              fill="none" stroke="${clr}" stroke-width="1.2" opacity="0.85"/>
-            <path d="M${ox-10},${oy+5} C${ox-7},${oy+2} ${ox-3},${oy+8} ${ox},${oy+5}
-                     C${ox+3},${oy+2} ${ox+7},${oy+8} ${ox+10},${oy+5}"
-              fill="none" stroke="${clr}" stroke-width="1.2" opacity="0.85"/>
-            <!-- Ribosome dots -->
-            ${[-8,-4,0,4,8].map(dx => `
-              <circle cx="${ox+dx}" cy="${oy-5.6}" r="0.8" fill="${clr}" opacity="0.9"/>
-              <circle cx="${ox+dx}" cy="${oy-0.6}" r="0.8" fill="${clr}" opacity="0.9"/>
-              <circle cx="${ox+dx}" cy="${oy+4.4}" r="0.8" fill="${clr}" opacity="0.9"/>
+            <!-- Three membrane layers -->
+            ${[-10, 0, 10].map((dy, li) => `
+              <path d="M${ox-22},${oy+dy} C${ox-15},${oy+dy-7} ${ox-7},${oy+dy+7}
+                       ${ox},${oy+dy} C${ox+7},${oy+dy-7} ${ox+15},${oy+dy+7} ${ox+22},${oy+dy}"
+                fill="none" stroke="${clr}" stroke-width="${li===1?1.8:1.2}" opacity="${li===1?0.9:0.65}"/>
+              <!-- Ribosomes on top face of each ribbon -->
+              ${[-18,-9,0,9,18].map(dx => `
+                <circle cx="${ox+dx}" cy="${oy+dy-3.5}" r="1.8" fill="${clr}" opacity="0.85"/>
+              `).join('')}
             `).join('')}
-          </g>
-          <text class="bio-org-label" x="${ox}" y="${oy+9}" font-size="4.5px" ${onclick}>Rough ER</text>`;
+          </g>`;
       }
 
-      // ── Smooth ER (wavy, no dots) ──
+      // ── Smooth ER (wavy ribbons, NO ribosome dots) ──
       case 'smooth_er': {
         const ox = item.x, oy = item.y;
         return `
           <g ${cls} ${onclick}>
-            <path d="M${ox-10},${oy-3} C${ox-6},${oy-7} ${ox-2},${oy+1} ${ox+2},${oy-3}
-                     C${ox+6},${oy-7} ${ox+10},${oy+1} ${ox+14},${oy-3}"
-              fill="none" stroke="${clr}" stroke-width="1.3" opacity="0.8"/>
-            <path d="M${ox-10},${oy+3} C${ox-6},${oy-1} ${ox-2},${oy+7} ${ox+2},${oy+3}
-                     C${ox+6},${oy-1} ${ox+10},${oy+7} ${ox+14},${oy+3}"
-              fill="none" stroke="${clr}" stroke-width="1.3" opacity="0.8"/>
-          </g>
-          <text class="bio-org-label" x="${ox+2}" y="${oy+8}" font-size="4.5px" ${onclick}>Smooth ER</text>`;
+            ${[-7, 0, 7].map((dy, li) => `
+              <path d="M${ox-20},${oy+dy} C${ox-13},${oy+dy-6} ${ox-6},${oy+dy+6}
+                       ${ox+1},${oy+dy} C${ox+8},${oy+dy-6} ${ox+15},${oy+dy+6} ${ox+22},${oy+dy}"
+                fill="none" stroke="${clr}" stroke-width="${li===1?1.8:1.2}" opacity="${li===1?0.9:0.6}"/>
+            `).join('')}
+            <!-- Rounded end caps to show tube structure -->
+            <circle cx="${ox-20}" cy="${oy}" r="3" fill="${clr}" opacity="0.25"/>
+            <circle cx="${ox+22}" cy="${oy}" r="3" fill="${clr}" opacity="0.25"/>
+          </g>`;
       }
 
-      // ── Golgi (stacked arcs) ──
+      // ── Golgi (stacked curved cisternae, cis → trans, with budding vesicles) ──
       case 'golgi': {
         const ox = item.x, oy = item.y;
-        const arcs = [-5, -2, 1, 4, 7];
+        // 5 stacked arcs, widening cis→trans, with vesicle buds on trans (bottom)
+        const cisternae = [
+          { dy:-14, w:16, sw:1.2, op:0.55 },
+          { dy:-7,  w:20, sw:1.4, op:0.65 },
+          { dy: 0,  w:23, sw:1.8, op:0.85 },
+          { dy: 7,  w:25, sw:1.6, op:0.75 },
+          { dy:14,  w:22, sw:1.3, op:0.6  },
+        ];
         return `
           <g ${cls} ${onclick}>
-            ${arcs.map((dy, i) => {
-              const w = 12 - i * 0.8;
-              const opacity = 0.65 + i * 0.07;
-              return `<path d="M${ox - w},${oy + dy} Q${ox},${oy + dy - 4} ${ox + w},${oy + dy}"
-                fill="none" stroke="${clr}" stroke-width="${1 + i * 0.1}" opacity="${opacity}"/>`;
-            }).join('')}
-            <!-- Vesicle buds -->
-            <circle cx="${ox+14}" cy="${oy+2}" r="1.8" fill="${clr}" opacity="0.75"/>
-            <circle cx="${ox+16}" cy="${oy+6}" r="1.4" fill="${clr}" opacity="0.6"/>
-          </g>
-          <text class="bio-org-label" x="${ox}" y="${oy+13}" font-size="4.5px" ${onclick}>Golgi</text>`;
+            ${cisternae.map(c => `
+              <path d="M${ox-c.w},${oy+c.dy} Q${ox},${oy+c.dy-6} ${ox+c.w},${oy+c.dy}"
+                fill="none" stroke="${clr}" stroke-width="${c.sw}" opacity="${c.op}"
+                stroke-linecap="round"/>
+            `).join('')}
+            <!-- Trans face vesicle buds (bottom) -->
+            <circle cx="${ox+28}" cy="${oy+10}" r="4" fill="${clr}" opacity="0.7"/>
+            <circle cx="${ox+34}" cy="${oy+2}"  r="3" fill="${clr}" opacity="0.5"/>
+            <circle cx="${ox-30}" cy="${oy+8}"  r="3.5" fill="${clr}" opacity="0.6"/>
+            <!-- Cis face label line -->
+            <line x1="${ox-24}" y1="${oy-14}" x2="${ox-30}" y2="${oy-14}"
+              stroke="${clr}" stroke-width="0.8" opacity="0.4"/>
+            <line x1="${ox-24}" y1="${oy+14}" x2="${ox-30}" y2="${oy+14}"
+              stroke="${clr}" stroke-width="0.8" opacity="0.4"/>
+          </g>`;
       }
 
-      // ── Ribosome (tiny dot pair) ──
+      // ── Ribosome (two-subunit dot pair) ──
       case 'dot':
         return `
           <g ${cls} ${onclick}>
-            <circle cx="${item.x}" cy="${item.y}" r="1.2" fill="${clr}" opacity="0.9"/>
-            <circle cx="${item.x+1.5}" cy="${item.y+0.8}" r="0.9" fill="${clr}" opacity="0.75"/>
+            <circle cx="${item.x}"   cy="${item.y}"   r="2.8" fill="${clr}" opacity="0.9"/>
+            <circle cx="${item.x+3}" cy="${item.y+2}" r="2.1" fill="${clr}" opacity="0.75"/>
           </g>`;
 
-      // ── Centriole (cross-shaped pair) ──
+      // ── Centrioles (two perpendicular barrels with internal rings) ──
       case 'centriole': {
         const ox = item.x, oy = item.y;
         return `
           <g ${cls} ${onclick}>
-            <!-- First centriole -->
-            <rect x="${ox-5}" y="${oy-1.5}" width="9" height="3"
-              rx="1.2" fill="${clr}" opacity="0.8"/>
-            <!-- Second centriole (perpendicular) -->
-            <rect x="${ox-1.5}" y="${oy+2}" width="3" height="8"
-              rx="1.2" fill="${clr}" opacity="0.8"/>
-          </g>
-          <text class="bio-org-label" x="${ox}" y="${oy+13}" font-size="4.5px" ${onclick}>Centrioles</text>`;
+            <!-- Centriole 1 (horizontal barrel) -->
+            <rect x="${ox-13}" y="${oy-4}" width="26" height="8" rx="4"
+              fill="${clr}" opacity="0.75"/>
+            <!-- Internal ring markings -->
+            ${[-7,0,7].map(dx => `
+              <ellipse cx="${ox+dx}" cy="${oy}" rx="1.5" ry="3.5"
+                fill="none" stroke="rgba(0,0,0,0.3)" stroke-width="0.8" opacity="0.6"/>
+            `).join('')}
+            <!-- Centriole 2 (vertical barrel, perpendicular) -->
+            <rect x="${ox-4}" y="${oy+6}" width="8" height="20" rx="4"
+              fill="${clr}" opacity="0.75"/>
+            ${[-5,0,5].map(dy => `
+              <ellipse cx="${ox}" cy="${oy+6+10+dy}" rx="3.5" ry="1.5"
+                fill="none" stroke="rgba(0,0,0,0.3)" stroke-width="0.8" opacity="0.6"/>
+            `).join('')}
+          </g>`;
       }
 
-      // ── Chloroplast (lens shape with grana) ──
+      // ── Chloroplast (lens-shaped with visible grana stacks) ──
       case 'chloro': {
         const ox = item.x, oy = item.y;
         const gid = `grad-chloro-${key}`;
         return `
           <defs>
-            <radialGradient id="${gid}" cx="30%" cy="30%" r="70%">
-              <stop offset="0%" stop-color="${clr}" stop-opacity="0.8"/>
-              <stop offset="100%" stop-color="${clr}" stop-opacity="0.35"/>
+            <radialGradient id="${gid}" cx="30%" cy="28%" r="72%">
+              <stop offset="0%" stop-color="${clr}" stop-opacity="0.85"/>
+              <stop offset="100%" stop-color="${clr}" stop-opacity="0.3"/>
             </radialGradient>
           </defs>
           <g ${cls} ${onclick}>
-            <ellipse cx="${ox}" cy="${oy}" rx="9" ry="5"
-              fill="url(#${gid})" stroke="${clr}" stroke-width="0.7"/>
-            <!-- Thylakoid stacks (grana) -->
-            <rect x="${ox-6}" y="${oy-1.5}" width="3" height="3" rx="0.5"
-              fill="${clr}" opacity="0.7"/>
-            <rect x="${ox-2}" y="${oy-2}" width="3" height="4" rx="0.5"
-              fill="${clr}" opacity="0.7"/>
-            <rect x="${ox+2}" y="${oy-1.5}" width="3" height="3" rx="0.5"
-              fill="${clr}" opacity="0.7"/>
-          </g>
-          <text class="bio-org-label" x="${ox}" y="${oy+7.5}" font-size="4.5px" ${onclick}>Chloroplast</text>`;
+            <!-- Outer double membrane (lens shape) -->
+            <ellipse cx="${ox}" cy="${oy}" rx="20" ry="11"
+              fill="url(#${gid})" stroke="${clr}" stroke-width="1.8"/>
+            <ellipse cx="${ox}" cy="${oy}" rx="17" ry="8.5"
+              fill="none" stroke="${clr}" stroke-width="0.8" opacity="0.45"/>
+            <!-- Grana stacks (thylakoid discs) -->
+            ${[[-8,0,3],[-1,0,4],[7,0,3]].map(([dx,_,h]) => `
+              <rect x="${ox+dx-2.5}" y="${oy-h}" width="5" height="${h*2}"
+                fill="${clr}" opacity="0.6" rx="1"/>
+              <!-- Individual thylakoid lines -->
+              <line x1="${ox+dx-2.5}" y1="${oy-h/2}" x2="${ox+dx+2.5}" y2="${oy-h/2}"
+                stroke="rgba(255,255,255,0.25)" stroke-width="0.6"/>
+              <line x1="${ox+dx-2.5}" y1="${oy+h/2}" x2="${ox+dx+2.5}" y2="${oy+h/2}"
+                stroke="rgba(255,255,255,0.25)" stroke-width="0.6"/>
+            `).join('')}
+          </g>`;
       }
 
-      // ── Cytoskeleton (faint diagonal lines) ──
+      // ── Cytoskeleton (faint diagonal fibres) ──
       case 'cyto':
         return `
-          <g ${cls} ${onclick} opacity="0.25">
-            <line x1="20" y1="20" x2="80" y2="75" stroke="${clr}" stroke-width="0.5" stroke-dasharray="2,3"/>
-            <line x1="35" y1="15" x2="70" y2="80" stroke="${clr}" stroke-width="0.4" stroke-dasharray="1.5,3"/>
-            <line x1="15" y1="55" x2="85" y2="40" stroke="${clr}" stroke-width="0.5" stroke-dasharray="2,3"/>
-            <line x1="25" y1="75" x2="78" y2="30" stroke="${clr}" stroke-width="0.4" stroke-dasharray="1.5,3"/>
+          <g ${cls} ${onclick} opacity="0.18">
+            <line x1="30"  y1="30"  x2="170" y2="155" stroke="${clr}" stroke-width="1"   stroke-dasharray="4,6"/>
+            <line x1="60"  y1="20"  x2="155" y2="170" stroke="${clr}" stroke-width="0.8" stroke-dasharray="3,6"/>
+            <line x1="20"  y1="110" x2="180" y2="82"  stroke="${clr}" stroke-width="1"   stroke-dasharray="4,6"/>
+            <line x1="30"  y1="155" x2="170" y2="45"  stroke="${clr}" stroke-width="0.8" stroke-dasharray="3,6"/>
+            <line x1="100" y1="18"  x2="100" y2="182" stroke="${clr}" stroke-width="0.7" stroke-dasharray="3,6"/>
           </g>`;
 
-      // ── Plasmodesmata (small channels on border) ──
+      // ── Plasmodesmata (channels on cell wall — top and bottom edges) ──
       case 'plasmo':
         return `
           <g ${cls} ${onclick}>
-            ${[-15,-5,5,15].map(dx => `
-              <rect x="${50+dx-0.8}" y="1.5" width="1.6" height="5"
-                fill="${clr}" opacity="0.8" rx="0.4"/>
+            <!-- Top wall channels -->
+            ${[-30,-15,0,15,30].map(dx => `
+              <rect x="${100+dx-1.5}" y="8" width="3" height="11"
+                fill="${clr}" opacity="0.85" rx="0.8"/>
             `).join('')}
-          </g>
-          <text class="bio-org-label" x="50" y="10" font-size="4.2px" ${onclick}>Plasmodesmata</text>`;
+            <!-- Bottom wall channels -->
+            ${[-30,-15,0,15,30].map(dx => `
+              <rect x="${100+dx-1.5}" y="181" width="3" height="11"
+                fill="${clr}" opacity="0.85" rx="0.8"/>
+            `).join('')}
+            <!-- Left wall channels -->
+            ${[-25,-8,10].map(dy => `
+              <rect x="8" y="${100+dy-1.5}" width="11" height="3"
+                fill="${clr}" opacity="0.7" rx="0.8"/>
+            `).join('')}
+            <!-- Right wall channels -->
+            ${[-25,-8,10].map(dy => `
+              <rect x="181" y="${100+dy-1.5}" width="11" height="3"
+                fill="${clr}" opacity="0.7" rx="0.8"/>
+            `).join('')}
+          </g>`;
 
       default:
         return '';
@@ -840,7 +881,7 @@
                         padding:.5rem;text-align:center;">
               <div style="font-size:.625rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
                           color:var(--text-3);margin-bottom:.3rem;">🐾 Animal Cell</div>
-              <svg viewBox="0 0 100 100" style="width:100%;height:140px;">
+              <svg viewBox="0 0 200 200" style="width:100%;height:140px;">
                 ${_buildCellSVG('animal', ANIMAL_LAYOUT, isDark)}
               </svg>
             </div>
@@ -848,7 +889,7 @@
                         padding:.5rem;text-align:center;">
               <div style="font-size:.625rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
                           color:var(--text-3);margin-bottom:.3rem;">🌿 Plant Cell</div>
-              <svg viewBox="0 0 100 100" style="width:100%;height:140px;">
+              <svg viewBox="0 0 200 200" style="width:100%;height:140px;">
                 ${_buildCellSVG('plant', PLANT_LAYOUT, isDark)}
               </svg>
             </div>
