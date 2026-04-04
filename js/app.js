@@ -13,16 +13,12 @@
   });
 
   // ── Auth session state ───────────────────────────────────────
-  let _sessionToken    = 0;
-  let _authResolved    = false;
-  let _offlineTimer    = null;
-  let _slowNetTimer    = null;
-  let _cacheBootRetry  = null;
-
-  let _loggingOut = false;
-
-  // Tracks whether a cache boot is currently in progress so the
-  // Firebase Auth path cannot also proceed simultaneously.
+  let _sessionToken        = 0;
+  let _authResolved        = false;
+  let _offlineTimer        = null;
+  let _slowNetTimer        = null;
+  let _cacheBootRetry      = null;
+  let _loggingOut          = false;
   let _cacheBootInProgress = false;
 
   function _cancelPendingTimers() {
@@ -34,7 +30,6 @@
   function _startAuthListener() {
     if (window.VtxLoader) window.VtxLoader.progress(30, 'Checking session…');
 
-    // ── Offline-first fast path ──────────────────────────────
     if (!navigator.onLine) {
       _offlineTimer = setTimeout(function () {
         _offlineTimer = null;
@@ -42,15 +37,9 @@
       }, 800);
     }
 
-    // ── Normal Firebase Auth path ────────────────────────────
     window.fbAuth.onAuthStateChanged(async function (firebaseUser) {
-      // Already handled this auth event — do nothing.
-      if (_authResolved) return;
-      // Mid-logout — the null event fired by signOut() must not
-      // re-enter _onLogout() while teardown is still running.
-      if (_loggingOut) return;
-      // A cache boot is already running — let it finish.
-      // Firebase resolved quickly but we must not double-execute.
+      if (_authResolved)        return;
+      if (_loggingOut)          return;
       if (_cacheBootInProgress) return;
 
       _authResolved = true;
@@ -64,10 +53,6 @@
       }
     });
 
-    // ── Slow-connection safety net ───────────────────────────
-    // Firebase is taking too long (>5 s). Attempt a cache boot so
-    // students on weak connections are not stuck on a blank screen.
-    // If no cache exists we show a helpful UI rather than silence.
     _slowNetTimer = setTimeout(function () {
       _slowNetTimer = null;
       if (!_authResolved && !_cacheBootInProgress) {
@@ -77,17 +62,15 @@
     }, 5000);
   }
 
-  // ── Boot from IndexedDB cache (no network needed) ────────────
+  // ── Boot from IndexedDB cache ────────────────────────────────
   async function _tryBootFromCache(token) {
     if (token !== _sessionToken) return;
     if (_authResolved) return;
-    // Prevent the Firebase onAuthStateChanged handler from also
-    // proceeding while we are mid-boot.
     _cacheBootInProgress = true;
 
     if (!window.LocalDB) {
       _cacheBootRetry = setTimeout(function () {
-        _cacheBootRetry = null;
+        _cacheBootRetry      = null;
         _cacheBootInProgress = false;
         _tryBootFromCache(token);
       }, 300);
@@ -104,8 +87,6 @@
 
       if (!allProfiles || allProfiles.length === 0) {
         _cacheBootInProgress = false;
-        // No cached profile — show a useful offline message rather
-        // than a blank screen.
         if (window.VtxLoader) window.VtxLoader.done();
         _renderOfflineNoCache();
         return;
@@ -126,9 +107,7 @@
         return;
       }
 
-      // Mark as resolved BEFORE the async _onLoginFromCache call so
-      // the Firebase handler cannot slip through during the await.
-      _authResolved = true;
+      _authResolved        = true;
       _cacheBootInProgress = false;
 
       console.log('[app] Booting from cached profile for uid:', latest.uid);
@@ -147,6 +126,8 @@
   // ── Load the student dashboard using only cached data ────────
   async function _onLoginFromCache(uid, studentData) {
     AppState.cancelAllListeners();
+    AppState.reset();
+
     AppState.userId      = uid;
     AppState.studentData = studentData;
     AppState.isTeacher   = false;
@@ -169,6 +150,13 @@
 
     if (window.VtxLoader) window.VtxLoader.progress(85, 'Almost ready…');
 
+    if (!AppState.studentData || !AppState.userId) {
+      console.warn('[app] AppState lost during offline boot — aborting.');
+      if (window.VtxLoader) window.VtxLoader.done();
+      _renderOfflineNoCache();
+      return;
+    }
+
     await Exam.loadOrStart().catch((err) => {
       console.warn('[app] Exam loadOrStart error (offline, non-fatal):', err);
     });
@@ -178,13 +166,20 @@
     window.addEventListener('online', function _onReconnect() {
       window.removeEventListener('online', _onReconnect);
       console.log('[app] Connection restored — refreshing session from server.');
-      window.fbAuth.currentUser
-        ? _onLogin(window.fbAuth.currentUser).catch(console.error)
-        : window.fbAuth.onAuthStateChanged(function onceHandler(user) {
-            onceHandler = null;
-            if (user) _onLogin(user).catch(console.error);
-          });
+
+      _authResolved = false;
+
       if (window.SyncManager) SyncManager.syncAll();
+
+      const currentUser = window.fbAuth.currentUser;
+      if (currentUser) {
+        _onLogin(currentUser).catch(console.error);
+      } else {
+        const unsub = window.fbAuth.onAuthStateChanged(function (user) {
+          unsub();
+          if (user) _onLogin(user).catch(console.error);
+        });
+      }
     });
   }
 
@@ -204,10 +199,10 @@
 
     const docs = { global: null, class: null, student: null, weekly: null, weeklyClass: null, weeklyStudent: null };
     const keyMap = {
-      global:                  'global',
-      [classKey]:              'class',
-      'weekly':                'weekly',
-      ['weekly_' + classKey]:  'weeklyClass',
+      global:                 'global',
+      [classKey]:             'class',
+      'weekly':               'weekly',
+      ['weekly_' + classKey]: 'weeklyClass',
     };
     if (studentKey) {
       keyMap[studentKey]             = 'student';
@@ -278,11 +273,9 @@
         <span style="font-size: 0.8rem; color: #e53e3e; font-weight: 600;">No connection</span>
       </div>`;
 
-    // If the network comes back, reload so Firebase can authenticate properly.
     window.addEventListener('online', function _onBack() {
       window.removeEventListener('online', _onBack);
       console.log('[app] Connection restored after offline-no-cache — reloading auth.');
-      // Reset all guards so the auth listener can fire cleanly.
       _authResolved        = false;
       _cacheBootInProgress = false;
       _sessionToken++;
@@ -341,8 +334,6 @@
     try {
       let studentData = null;
 
-      // Always try to load from cache first so we have a fallback
-      // before the network call, regardless of online status.
       if (window.LocalDB) {
         try {
           studentData = await LocalDB.getStudentProfile(uid);
@@ -355,7 +346,6 @@
         try {
           const snap = await window.fbDb.collection('students').doc(uid).get();
           if (!snap.exists) {
-            // Profile truly does not exist in Firestore.
             if (window.VtxLoader) window.VtxLoader.done();
             UI.toast('Profile not found. Please register again.', 'error', 0);
             if (window.DM && typeof DM.cancelListeners === 'function') {
@@ -369,25 +359,19 @@
             SyncManager.cacheStudentProfile(uid, studentData).catch(() => {});
           }
         } catch (networkErr) {
-          // Network error during Firestore fetch.
           console.warn('[app] Firebase profile fetch failed — using local copy:', networkErr);
           if (!studentData) {
-            // No cache either — we cannot proceed. Tear down cleanly
-            // so AppState is not left in a zombie partial state.
             if (window.VtxLoader) window.VtxLoader.done();
             UI.toast('Could not load your profile. Please check your connection and try again.', 'error', 0);
             await _teardownAndSignOut();
             return;
           }
-          // Cache exists — fall through and use it.
           console.log('[app] Using cached profile for uid:', uid);
           UI.toast('Offline mode — loaded your cached profile.', 'info', 4000);
         }
       } else if (!studentData) {
-        // Fully offline and no cache.
         if (window.VtxLoader) window.VtxLoader.done();
         UI.toast('You are offline and no cached profile was found. Please connect and try again.', 'error', 0);
-        // Tear down so AppState is clean for the next attempt.
         await _teardownAndSignOut();
         return;
       }
@@ -439,6 +423,7 @@
     }
   }
 
+  // ── Shared teardown ──────────────────────────────────────────
   async function _teardownAndSignOut() {
     _loggingOut = true;
     Tasks.cancelListeners();
@@ -450,8 +435,6 @@
     } catch (e) {
       console.warn('[app] signOut error:', e);
     }
-    // Re-open all guards so the user can attempt to sign in again
-    // from the login screen without needing a full page reload.
     setTimeout(function () {
       _authResolved        = false;
       _cacheBootInProgress = false;
@@ -459,8 +442,9 @@
     }, 500);
   }
 
+  // ── Public logout ────────────────────────────────────────────
   async function logout() {
-    if (_loggingOut) return;    // prevent double-tap
+    if (_loggingOut) return;
     _loggingOut = true;
 
     _sessionToken++;
@@ -495,7 +479,6 @@
 
     if (window.VtxLoader) window.VtxLoader.done();
 
-    // ── Render the post-logout screen ────────────────────────────
     if (window.Landing && typeof Landing.render === 'function') {
       Landing.render();
     } else {
@@ -509,7 +492,7 @@
     }, 500);
   }
 
-  // ── Internal logout (called when Firebase boots with no user) ─
+  // ── Internal logout (cold start, no user signed in) ─────────
   async function _onLogout() {
     _loggingOut = true;
 
