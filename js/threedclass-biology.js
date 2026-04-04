@@ -424,8 +424,10 @@
         </div>
       </div>
       <style>
-        .bio-org-shape { cursor:pointer; transition:filter .15s, opacity .15s; }
-        .bio-org-shape:hover { filter:brightness(1.15); }
+        .bio-org-shape { cursor:pointer; transition:filter .25s ease, opacity .25s ease; }
+        .bio-org-shape:hover { filter:brightness(1.2); }
+        .bio-org-dim { opacity:0.12 !important; filter:saturate(0.2) !important; }
+        .bio-org-highlight { opacity:1 !important; filter:brightness(1.3) drop-shadow(0 0 6px currentColor) !important; }
         .bio-org-label {
           font-size:6.5px;font-weight:700;text-anchor:middle;
           dominant-baseline:middle;pointer-events:none;
@@ -1292,12 +1294,31 @@
   function _selectOrg(orgId) {
     _selectedOrg = orgId;
     _showDetail(orgId);
+    _applyHighlight(orgId);
+  }
+
+  function _applyHighlight(orgId) {
+    const shapes = document.querySelectorAll('.bio-org-shape');
+    shapes.forEach(el => {
+      const elOrg = el.getAttribute('onclick') && el.getAttribute('onclick').match(/'([^']+)'/);
+      const elId  = elOrg ? elOrg[1] : null;
+      if (!orgId) {
+        el.classList.remove('bio-org-dim', 'bio-org-highlight');
+      } else if (elId === orgId) {
+        el.classList.remove('bio-org-dim');
+        el.classList.add('bio-org-highlight');
+      } else {
+        el.classList.remove('bio-org-highlight');
+        el.classList.add('bio-org-dim');
+      }
+    });
   }
 
   function _closeDetail() {
     _selectedOrg = null;
     const panel  = document.getElementById('bio-detail');
     if (panel) panel.style.maxHeight = '0';
+    _applyHighlight(null);
   }
 
   function _setSystem(idx) {
