@@ -1,38 +1,24 @@
 /* ============================================================
    js/threedclass.js — 3D Class Hub
    ============================================================
-   SPA Integration:
-     ThreeDClass.openForStudent()  — called from exam.js subject selection
-     ThreeDClass._close()          — returns to exam.js subject selection
-
-   Architecture:
-     - Renders a subject selection hub ("3D Class Room")
-     - Each subject card launches a dedicated 3D module
-     - Currently available: Periodic Table (Chemistry)
-     - Scalable: Biology, Physics, Commerce slots are ready
-
    Routing:
      openForStudent() → renderHub() → [subject card click] →
-     ThreeDPeriodic.open() → [back button] → renderHub()
-
-   All navigation is function-based. No page reloads.
+       ThreeDPeriodic.open()  (Chemistry)
+       ThreeDCell.open()      (Biology)
+     → [back button] → renderHub()
    ============================================================ */
 
 (function () {
   'use strict';
 
-  /* ── State ── */
   let _activeModule = null;
 
-  /* ── Subject catalogue ──────────────────────────────────────
-     Add new 3D subjects here. Set available:false until ready.
-  ─────────────────────────────────────────────────────────── */
   const SUBJECTS = [
     {
       id:          'chemistry',
       title:       'Chemistry',
       subtitle:    'Interactive Periodic Table',
-      description: 'Explore all 118 elements in 3D. Tap any element for detailed properties, electron config, and group info.',
+      description: 'Explore all 118 elements in 3D. Tap any element for detailed properties, electron configuration, discovery history, and group information.',
       icon:        '⚗️',
       color:       'var(--accent)',
       colorBg:     'var(--accent-subtle)',
@@ -50,13 +36,19 @@
       id:          'biology',
       title:       'Biology',
       subtitle:    'Cell Structure & Systems',
-      description: 'Coming soon — interactive 3D cell models, organ systems, and biological processes.',
+      description: 'Interactive 3D animal and plant cells. Tap any organelle to learn its function, structure, and exam tips. Compare cells, explore pathways, and test yourself.',
       icon:        '🧬',
       color:       'var(--success)',
       colorBg:     'var(--success-subtle)',
       colorBorder: 'var(--success-border)',
-      available:   false,
-      launch:      null,
+      available:   true,
+      launch:      () => {
+        if (window.ThreeDCell) {
+          ThreeDCell.open(_backToHub);
+        } else {
+          UI.toast('Biology module not loaded. Please refresh.', 'error');
+        }
+      },
     },
     {
       id:          'physics',
@@ -85,7 +77,7 @@
   ];
 
   /* ══════════════════════════════════════════════════
-     OPEN FOR STUDENT — entry point from exam.js
+     OPEN FOR STUDENT
   ══════════════════════════════════════════════════ */
 
   function openForStudent() {
@@ -94,32 +86,26 @@
   }
 
   /* ══════════════════════════════════════════════════
-     CLOSE — return to subject selection in exam.js
+     CLOSE — back to exam.js subject selection
   ══════════════════════════════════════════════════ */
 
   function _close() {
     _activeModule = null;
     const app = document.getElementById('app');
-    if (app) {
-      app.classList.remove('exam-active');
-      app.style.padding = '';
-    }
+    if (app) { app.classList.remove('exam-active'); app.style.padding = ''; }
     if (window.Exam && typeof Exam.renderSubjectSelection === 'function') {
       Exam.renderSubjectSelection();
     }
   }
 
   /* ══════════════════════════════════════════════════
-     BACK TO HUB — return from a subject module
+     BACK TO HUB — from a subject module
   ══════════════════════════════════════════════════ */
 
   function _backToHub() {
     _activeModule = null;
     const app = document.getElementById('app');
-    if (app) {
-      app.classList.remove('exam-active');
-      app.style.padding = '';
-    }
+    if (app) { app.classList.remove('exam-active'); app.style.padding = ''; }
     _renderHub();
   }
 
@@ -131,7 +117,8 @@
     const cardsHtml = SUBJECTS.map(subj => _buildSubjectCard(subj)).join('');
 
     UI.mount(`
-      <div style="max-width:860px;margin:0 auto;padding:var(--sp-5) var(--sp-4);min-height:100dvh;box-sizing:border-box;">
+      <div style="max-width:860px;margin:0 auto;padding:var(--sp-5) var(--sp-4);
+                  min-height:100dvh;box-sizing:border-box;">
 
         <!-- Top bar -->
         <div style="display:flex;align-items:center;gap:var(--sp-3);margin-bottom:var(--sp-6);">
@@ -148,9 +135,7 @@
           </button>
           <div style="min-width:0;flex:1;">
             <h1 style="font-size:var(--text-xl);font-weight:700;color:var(--text-1);
-                       letter-spacing:-0.02em;line-height:1.2;margin:0;">
-              3D Class
-            </h1>
+                       letter-spacing:-0.02em;line-height:1.2;margin:0;">3D Class</h1>
             <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">
               Interactive 3D learning modules
             </p>
@@ -162,7 +147,6 @@
           ${cardsHtml}
         </div>
 
-        <!-- Footer note -->
         <p style="text-align:center;font-size:var(--text-xs);color:var(--text-4);
                   margin-top:var(--sp-8);padding-bottom:var(--sp-4);">
           More subjects coming soon. All modules work offline once loaded.
@@ -171,7 +155,6 @@
       </div>`);
   }
 
-  /* ── Build a single subject card ── */
   function _buildSubjectCard(subj) {
     if (subj.available) {
       return `
@@ -183,7 +166,6 @@
              onmouseenter="this.style.borderColor='${subj.color}';this.style.boxShadow='var(--shadow-md)';this.style.transform='translateY(-2px)'"
              onmouseleave="this.style.borderColor='var(--border)';this.style.boxShadow='none';this.style.transform='translateY(0)'">
 
-          <!-- Available badge -->
           <div style="position:absolute;top:var(--sp-3);right:var(--sp-3);
                       font-size:.625rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
                       padding:2px 7px;border-radius:var(--r-sm);
@@ -191,22 +173,16 @@
             Available
           </div>
 
-          <!-- Icon -->
-          <div style="font-size:2.25rem;margin-bottom:var(--sp-3);line-height:1;">
-            ${subj.icon}
-          </div>
+          <div style="font-size:2.25rem;margin-bottom:var(--sp-3);line-height:1;">${subj.icon}</div>
 
-          <!-- Title -->
           <div style="font-size:var(--text-md);font-weight:700;color:var(--text-1);
                       letter-spacing:-0.015em;margin-bottom:3px;">${_esc(subj.title)}</div>
           <div style="font-size:var(--text-xs);font-weight:600;color:${subj.color};
                       margin-bottom:var(--sp-3);">${_esc(subj.subtitle)}</div>
 
-          <!-- Description -->
           <p style="font-size:var(--text-sm);color:var(--text-3);line-height:1.6;
                     margin:0 0 var(--sp-4) 0;">${_esc(subj.description)}</p>
 
-          <!-- Launch hint -->
           <div style="display:flex;align-items:center;gap:.375rem;">
             <span style="font-size:var(--text-xs);font-weight:600;color:${subj.color};">
               Open 3D Module →
@@ -215,23 +191,17 @@
         </div>`;
     }
 
-    /* Coming soon card */
     return `
       <div style="background:var(--bg-subtle);border:1.5px solid var(--border);
                   border-radius:var(--r-xl);padding:var(--sp-5);
                   position:relative;overflow:hidden;opacity:0.65;">
-
-        <!-- Coming soon badge -->
         <div style="position:absolute;top:var(--sp-3);right:var(--sp-3);
                     font-size:.625rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
                     padding:2px 7px;border-radius:var(--r-sm);
                     background:var(--bg-muted);color:var(--text-4);border:1px solid var(--border);">
           Soon
         </div>
-
-        <div style="font-size:2.25rem;margin-bottom:var(--sp-3);line-height:1;filter:grayscale(1);">
-          ${subj.icon}
-        </div>
+        <div style="font-size:2.25rem;margin-bottom:var(--sp-3);line-height:1;filter:grayscale(1);">${subj.icon}</div>
         <div style="font-size:var(--text-md);font-weight:700;color:var(--text-2);
                     letter-spacing:-0.015em;margin-bottom:3px;">${_esc(subj.title)}</div>
         <div style="font-size:var(--text-xs);font-weight:600;color:var(--text-4);
@@ -243,7 +213,7 @@
   }
 
   /* ══════════════════════════════════════════════════
-     LAUNCH a subject by id
+     LAUNCH
   ══════════════════════════════════════════════════ */
 
   function _launch(id) {
@@ -256,7 +226,6 @@
     subj.launch();
   }
 
-  /* ── HTML escape ── */
   function _esc(str) {
     if (str == null) return '';
     return String(str)
