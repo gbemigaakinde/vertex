@@ -360,19 +360,20 @@
             Periodic Table
           </div>
         </div>
-        <div style="position:relative;flex-shrink:0;">
-          <input id="pt-search" type="text" placeholder="Search…"
-                 oninput="ThreeDPeriodic._onSearch(this.value)"
-                 style="width:110px;padding:.275rem .45rem .275rem 1.9rem;
-                        font-size:var(--text-xs);border-radius:var(--r-md);
-                        border:1px solid var(--border);background:var(--bg-subtle);
-                        color:var(--text-1);font-family:var(--font);outline:none;box-sizing:border-box;" />
-          <svg style="position:absolute;left:.52rem;top:50%;transform:translateY(-50%);
-                      pointer-events:none;color:var(--text-4);"
-               width="12" height="12" viewBox="0 0 24 24" fill="none"
+        <div style="position:relative;flex-shrink:0;display:flex;align-items:center;">
+          <svg style="position:absolute;left:.55rem;top:50%;transform:translateY(-50%);
+                      pointer-events:none;color:var(--text-4);z-index:1;"
+               width="13" height="13" viewBox="0 0 24 24" fill="none"
                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
           </svg>
+          <input id="pt-search" type="text" placeholder="Search…"
+                 oninput="ThreeDPeriodic._onSearch(this.value)"
+                 style="width:120px;padding:.35rem .55rem .35rem 2.1rem;
+                        font-size:var(--text-xs);border-radius:var(--r-md);
+                        border:1px solid var(--border);background:var(--bg-subtle);
+                        color:var(--text-1);font-family:var(--font);outline:none;
+                        box-sizing:border-box;position:relative;" />
         </div>
       </div>`;
   }
