@@ -5,6 +5,7 @@
      openForStudent() → renderHub() → [subject card click] →
        ThreeDPeriodic.open()  (Chemistry)
        ThreeDCell.open()      (Biology)
+       ThreeDPhysics.open()   (Physics)
      → [back button] → renderHub()
    ============================================================ */
 
@@ -53,14 +54,20 @@
     {
       id:          'physics',
       title:       'Physics',
-      subtitle:    'Forces & Motion',
-      description: 'Coming soon — 3D visualisations of forces, waves, circuits, and quantum concepts.',
+      subtitle:    'Forces, Waves & Energy',
+      description: 'Animated 3D visualisations of Newton\'s Laws, waves, electricity circuits, and energy transfer. Live canvas animations make every concept "alive". Includes a timed quiz.',
       icon:        '⚛️',
       color:       'var(--warning)',
       colorBg:     'var(--warning-subtle)',
       colorBorder: 'var(--warning-border)',
-      available:   false,
-      launch:      null,
+      available:   true,
+      launch:      () => {
+        if (window.ThreeDPhysics) {
+          ThreeDPhysics.open(_backToHub);
+        } else {
+          UI.toast('Physics module not loaded. Please refresh.', 'error');
+        }
+      },
     },
     {
       id:          'commerce',
