@@ -76,6 +76,7 @@ self.addEventListener('install', event => {
         '/js/threedclass.js',
         '/js/threedclass-periodic.js',
         '/js/threedclass-biology.js',
+        '/js/threedclass-physics.js',
         '/js/landing.js',
         '/js/app.js',
         '/js/notifications.js',
