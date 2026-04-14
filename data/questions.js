@@ -2732,7 +2732,7 @@ sss1: {
       "$60°$",
       "$90°$"
     ],
-    ans: 2,
+    ans: 1,
     exp: "$77 = \\frac{\\theta}{360} \\times \\frac{22}{7} \\times 196 = \\frac{\\theta}{360} \\times 616$. So $\\frac{\\theta}{360} = \\frac{77}{616} = \\frac{1}{8}$... wait: $\\frac{1}{8} \\times 360 = 45°$. Let's recheck: $\\frac{22}{7} \\times 196 = \\frac{22 \\times 196}{7} = 22 \\times 28 = 616$. $\\frac{77}{616} = \\frac{1}{8}$. $\\theta = \\frac{360}{8} = 45°$. The answer is $45°$."
   },
   {
