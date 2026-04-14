@@ -76,6 +76,8 @@ function renderTeacherDashboard() {
                 class="tab-btn btn">Tasks &amp; Messages</button>
         <button onclick="Teacher.showTab('studyroom')" id="tab-studyroom"
                 class="tab-btn btn">Study Room</button>
+        <button onclick="Teacher.showTab('games')" id="tab-games"
+                class="tab-btn btn">Games</button>
         <div style="width:1px;height:20px;background:var(--border);margin:0 0.25rem;flex-shrink:0;"></div>
         <button onclick="Teacher.showTab('chat')" id="tab-chat"
                 class="tab-btn btn bg-green-600"
@@ -406,6 +408,17 @@ function renderTeacherDashboard() {
         </div>
 
         <div id="teacher-studyroom" class="teacher-tab hidden"></div>
+        <div id="teacher-games" class="teacher-tab hidden">
+          <div style="margin-bottom:1rem;">
+            <h2 style="font-size:var(--text-md);font-weight:600;color:var(--text-1);letter-spacing:-0.015em;">
+              Student Game Stats
+            </h2>
+            <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">
+              Live leaderboard — sorted by XP earned
+            </p>
+          </div>
+          <div id="teacherGameStatsContainer"></div>
+        </div>
         <div id="teacher-dm" class="teacher-tab hidden"></div>
 
       </div>
@@ -461,7 +474,7 @@ function renderTeacherDashboard() {
 }
 
 function showTab(tab) {
-  ['students','results','schools','tasks','studyroom','chat','dm'].forEach(t => {
+  ['students','results','schools','tasks','studyroom','games','chat','dm'].forEach(t => {
     const el  = document.getElementById(`teacher-${t}`);
     const btn = document.getElementById(`tab-${t}`);
     if (el) {
@@ -480,6 +493,7 @@ function showTab(tab) {
 
   if (tab === 'chat')      { Chat.openPublicChat();       return; }
   if (tab === 'studyroom') { StudyRoom.openForTeacher();  return; }
+  if (tab === 'games')     { Game.renderTeacherGameStats('teacherGameStatsContainer'); return; }
   if (tab === 'students')  _loadStudents();
   if (tab === 'results')   _loadResults();
   if (tab === 'schools')   _loadSchools();
