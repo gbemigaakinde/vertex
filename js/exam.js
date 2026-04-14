@@ -500,6 +500,10 @@
              style="position:relative;">
            🧪 3D Class
            </button>
+           <button id="gameOpenBtn" onclick="Game.openGameLobby()" class="btn"
+             style="position:relative;background:linear-gradient(135deg,#7c3aed,#4f6ef7);color:#fff;">
+           🎮 Games
+           </button>
            <button id="dmOpenBtn" onclick="DM.openStudentInbox()" class="btn bg-indigo-600 hover:bg-indigo-700"
              style="position:relative;">
            ✉️ Message Teacher
