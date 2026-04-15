@@ -463,7 +463,10 @@
     }
 
     Tasks.cancelListeners();
-    AppState.cancelAllListeners();
+  AppState.cancelAllListeners();
+  if (window.Game && typeof Game._stopChallengeListener === 'function') {
+    Game._stopChallengeListener();
+  }
 
     if (window.SyncManager) {
       SyncManager.destroy();
@@ -513,6 +516,10 @@
 
     Tasks.cancelListeners();
     AppState.reset();
+    
+    if (window.Game && typeof Game._stopChallengeListener === 'function') {
+    Game._stopChallengeListener();
+  }
 
     if (window.VtxLoader) window.VtxLoader.done();
 
