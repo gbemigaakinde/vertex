@@ -408,6 +408,12 @@
         MsgNotif.initForStudent(uid);
       }
 
+      // Start challenge listener at login so popup notifications fire
+      // immediately whenever a challenge arrives — even outside the game.
+      if (window.Game && typeof Game._startChallengeListener === 'function') {
+        Game._startChallengeListener();
+      }
+
       if (window.VtxLoader) window.VtxLoader.progress(90, 'Almost ready…');
       await Exam.loadOrStart();
       if (window.VtxLoader) window.VtxLoader.done();
