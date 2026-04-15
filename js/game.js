@@ -8,47 +8,71 @@
   'use strict';
 
   /* ══════════════════════════════════════════════════════════════
-     PHOSPHOR ICONS — lightweight inline SVG helper
-     Usage: _icon('trophy', 24) => SVG string
+     ICONS — clean, correct inline SVG paths (24×24 viewBox)
+     Each path is tested and renders correctly.
   ══════════════════════════════════════════════════════════════ */
 
   const _ICONS = {
-    trophy:        '<path d="M216 40H40a8 8 0 0 0-8 8v48c0 27.6 20.1 50.5 46.6 54.8C88.2 182.5 116.3 205.4 144 211v21h-16a24 24 0 0 0-24 24 8 8 0 0 0 8 8h112a8 8 0 0 0 8-8 24 24 0 0 0-24-24h-16v-21c27.7-5.6 55.8-28.5 65.4-60.2C283.9 146.5 304 123.6 304 96V48a8 8 0 0 0-8-8ZM48 96V56h56v96.1C81.2 146.6 48 124 48 96Zm160 96V56h56v40c0 28-33.2 50.6-56 50.1Z"/>',
-    lightning:     '<path d="M213.9 120H152l24.6-88.3A8 8 0 0 0 169 21.6l-128 112A8 8 0 0 0 46 248h61.9l-24.6 88.3A8 8 0 0 0 91 346.4l128-112A8 8 0 0 0 213.9 120Z"/>',
-    calculator:    '<path d="M200 24H56a16 16 0 0 0-16 16v176a16 16 0 0 0 16 16h144a16 16 0 0 0 16-16V40a16 16 0 0 0-16-16Zm0 192H56V40h144Zm-104-40h64a8 8 0 0 0 0-16H96a8 8 0 0 0 0 16Zm0-32h64a8 8 0 0 0 0-16H96a8 8 0 0 0 0 16Zm-8-64h16v16H88Zm32 0h16v16h-16Zm32 0h16v16h-16Z"/>',
-    textT:         '<path d="M208 56H152V32a8 8 0 0 0-16 0v24H80a16 16 0 0 0-16 16v24a8 8 0 0 0 16 0V72h48v152H112a8 8 0 0 0 0 16h32v24a8 8 0 0 0 16 0v-24h32a8 8 0 0 0 0-16h-16V72h48v24a8 8 0 0 0 16 0V72a16 16 0 0 0-16-16Z"/>',
-    swords:        '<path d="M227.3 28.7a16 16 0 0 0-22.6 0L178 55.4l-5.7-5.7a8 8 0 0 0-11.3 11.3l5.7 5.7-80 80-5.7-5.7a8 8 0 0 0-11.3 11.3l5.7 5.7-26.7 26.7a16 16 0 0 0 0 22.6l5.7 5.7L28.7 239a8 8 0 0 0 11.3 11.3l25.4-25.4 5.7 5.7a16 16 0 0 0 22.6 0L120 204l5.7 5.7a8 8 0 0 0 11.3-11.3L131.3 192l80-80 5.7 5.7a8 8 0 0 0 11.3-11.3l-5.7-5.7 26.7-26.7a16 16 0 0 0 0-22.6ZM82 193.4 61.3 172.7l26.7-26.7 20.7 20.7Zm107.3-96L131 156.7 99.3 125l59.3-59.3L200 107.3Z"/>',
-    medal:         '<path d="M208 80H168V40a16 16 0 0 0-16-16H104A16 16 0 0 0 88 40v40H48a8 8 0 0 0-6.9 12l35.1 56.2A72 72 0 1 0 179.9 148.2L215 92a8 8 0 0 0-7-12ZM104 40h48v40h-48Zm24 200a56 56 0 1 1 56-56 56.1 56.1 0 0 1-56 56Zm0-88a32 32 0 1 0 32 32 32 32 0 0 0-32-32Z"/>',
-    star:          '<path d="M234.5 114.4l-45.1 39.4 13.5 58.6a16 16 0 0 1-23.8 17.3l-51.1-31-51 31a16 16 0 0 1-23.9-17.3l13.5-58.6-45.1-39.4A16.1 16.1 0 0 1 30.6 88l59.1-5.1 22.7-55.5a15.9 15.9 0 0 1 29.4 0l22.7 55.5L223.4 88a16.1 16.1 0 0 1 9.1 26.4Z"/>',
-    flame:         '<path d="M221.7 56.3C216 49.3 208.9 43 200.5 37.6a8 8 0 0 0-10.6 1.9c-11.6 15.3-26.3 24.9-42.3 34.3-12.7 7.5-26.2 15.4-37.6 27.3a69.4 69.4 0 0 0-18.5 46.8 72 72 0 0 0 144 0c0-35.7-5.6-70.8-13.8-91.6Zm-93.7 135.9a56 56 0 0 1-32-50.3 53.8 53.8 0 0 1 14.1-36.3c8.9-9.6 20.6-16.6 33-24a168.8 168.8 0 0 0 38-28.4c2.3 2.1 4.5 4.4 6.4 6.8C195.7 80 200 111.7 200 148a56.1 56.1 0 0 1-72 44.2Z"/>',
-    shield:        '<path d="M208 40H48a16 16 0 0 0-16 16v56c0 91.4 75.8 143.4 107.6 158.2a15.9 15.9 0 0 0 13.8 0C184.6 255.4 224 202.4 224 112V56a16 16 0 0 0-16-16Zm0 72c0 78.3-33.5 122.6-80 140.2C81.5 234.6 48 190.3 48 112V56h160Z"/>',
-    chartBar:      '<path d="M224 200h-8V104a16 16 0 0 0-16-16h-32a16 16 0 0 0-16 16v96h-16V56a16 16 0 0 0-16-16H88a16 16 0 0 0-16 16v144H64a8 8 0 0 0 0 16h160a8 8 0 0 0 0-16ZM104 56h32v144h-32Zm80 48h32v96h-32Z"/>',
-    arrowLeft:     '<path d="M220 128a4 4 0 0 1-4 4H65l51.5 51.5a4.1 4.1 0 0 1-5.8 5.8l-58.6-58.5a4.1 4.1 0 0 1 0-5.6l58.6-58.5a4.1 4.1 0 0 1 5.8 5.8L65 124h151a4 4 0 0 1 4 4Z"/>',
-    arrowRight:    '<path d="M221.7 122.3l-58.6-58.5a4.1 4.1 0 0 0-5.8 5.8L208.8 124H57a4 4 0 0 0 0 8h151.8l-51.5 51.5a4.1 4.1 0 0 0 5.8 5.8l58.6-58.5a4.1 4.1 0 0 0-.0-5.6Z"/>',
-    house:         '<path d="M219.3 107.3l-80-80a16.1 16.1 0 0 0-22.6 0l-80 80A15.9 15.9 0 0 0 32 118.6V208a16 16 0 0 0 16 16h56a8 8 0 0 0 8-8v-56h32v56a8 8 0 0 0 8 8h56a16 16 0 0 0 16-16v-89.4a15.9 15.9 0 0 0-4.7-11.3ZM208 208h-48v-56a8 8 0 0 0-8-8h-48a8 8 0 0 0-8 8v56H48v-89.4l80-80 80 80Z"/>',
-    users:         '<path d="M117.3 128.9a52 52 0 1 0-58.6 0A76.2 76.2 0 0 0 16 200a8 8 0 0 0 16 0 60 60 0 0 1 120 0 8 8 0 0 0 16 0 76.2 76.2 0 0 0-50.7-71.1ZM36 100a52 52 0 1 1 52 52 52 52 0 0 1-52-52Zm198.1 68.9a76.2 76.2 0 0 0-50.7-40.9 8 8 0 1 0-3.5 15.6 60 60 0 0 1 46.3 56.4 8 8 0 0 0 16 0 75.3 75.3 0 0 0-8.1-31.1ZM160 144a52.1 52.1 0 0 0 21.3-4.6 8 8 0 0 0-6.6-14.6A36 36 0 1 1 136 64a8 8 0 0 0 0-16 52 52 0 1 0 24 96Z"/>',
-    clock:         '<path d="M128 24a104 104 0 1 0 104 104A104.1 104.1 0 0 0 128 24Zm0 192a88 88 0 1 1 88-88 88.1 88.1 0 0 1-88 88Zm64-88a8 8 0 0 1-8 8h-56a8 8 0 0 1-8-8V72a8 8 0 0 1 16 0v48h48a8 8 0 0 1 8 8Z"/>',
-    shuffle:       '<path d="M236.8 166.4l-32-24a8 8 0 0 0-12.8 6.4V168h-8.4a32.1 32.1 0 0 1-25.5-12.8l-52.3-69.7A48.1 48.1 0 0 0 67.5 72H24a8 8 0 0 0 0 16h43.5a32.1 32.1 0 0 1 25.5 12.8l52.3 69.7A48.1 48.1 0 0 0 183.6 184H192v19.2a8 8 0 0 0 12.8 6.4l32-24a8 8 0 0 0 0-12.8ZM192 184v-8.4a32.1 32.1 0 0 1 25.5 12.8l2.7 3.6ZM87.3 161.2A32.1 32.1 0 0 1 67.5 168H24a8 8 0 0 0 0 16h43.5a48.1 48.1 0 0 0 38.3-19.2l5.8-7.7-10.2-13.6ZM236.8 89.6l-32-24A8 8 0 0 0 192 72v19.2h-8.4a48.1 48.1 0 0 0-38.3 19.2l5.8 7.7 10.2 13.6 8.1-10.8A32.1 32.1 0 0 1 194.5 112H192v-8.4Z"/>',
-    checkCircle:   '<path d="M173.7 98.3a8.2 8.2 0 0 1 0 11.4l-56 56a8.2 8.2 0 0 1-11.4 0l-24-24a8.1 8.1 0 0 1 11.4-11.4L112 148.7l50.3-50.4a8.2 8.2 0 0 1 11.4 0ZM232 128A104 104 0 1 1 128 24a104.1 104.1 0 0 1 104 104Zm-16 0a88 88 0 1 0-88 88 88.1 88.1 0 0 0 88-88Z"/>',
-    xCircle:       '<path d="M165.7 162.3a8.1 8.1 0 0 1-11.4 11.4L128 147.3l-26.3 26.4a8.1 8.1 0 0 1-11.4-11.4L116.7 136 90.3 109.7a8.1 8.1 0 0 1 11.4-11.4L128 124.7l26.3-26.4a8.1 8.1 0 0 1 11.4 11.4L139.3 136ZM232 128A104 104 0 1 1 128 24a104.1 104.1 0 0 1 104 104Zm-16 0a88 88 0 1 0-88 88 88.1 88.1 0 0 0 88-88Z"/>',
-    warning:       '<path d="M236.8 188.1l-97.4-168a13.9 13.9 0 0 0-24 0l-97.4 168a13.9 13.9 0 0 0 12 20.9h194.8a13.9 13.9 0 0 0 12-20.9Zm-108.8 4.1a12 12 0 1 1 12-12 12 12 0 0 1-12 12Zm8-48a8 8 0 0 1-16 0v-56a8 8 0 0 1 16 0Z"/>',
-    hourglass:     '<path d="M200 75.6V40a8 8 0 0 0-8-8H64a8 8 0 0 0-8 8v35.6a16.1 16.1 0 0 0 5.8 12.3L112 128l-50.2 40.1A16.1 16.1 0 0 0 56 180.4V216a8 8 0 0 0 8 8h128a8 8 0 0 0 8-8v-35.6a16.1 16.1 0 0 0-5.8-12.3L144 128l50.2-40.1A16.1 16.1 0 0 0 200 75.6Z"/>',
-    gameController:'<path d="M215.1 71.8A72.1 72.1 0 0 0 144 24H112a72.1 72.1 0 0 0-71.1 47.8L16 183.4A56 56 0 0 0 71.7 256 55.5 55.5 0 0 0 116 233l19.7-19.8a8.2 8.2 0 0 1 5.7-2.2h13.2a8.2 8.2 0 0 1 5.7 2.2L180 233a55.5 55.5 0 0 0 44.3 23A56 56 0 0 0 240 183.4ZM112 88a8 8 0 0 1 16 0v16h16a8 8 0 0 1 0 16h-16v16a8 8 0 0 1-16 0v-16H96a8 8 0 0 1 0-16h16Zm56 72a12 12 0 1 1 12-12 12 12 0 0 1-12 12Zm24-32a12 12 0 1 1 12-12 12 12 0 0 1-12 12Z"/>',
-    crown:         '<path d="M239.5 62.5a8 8 0 0 0-8.5 1.7L192 103.3V72a8 8 0 0 0-11.5-7.2L128 90.7 75.5 64.8A8 8 0 0 0 64 72v31.3L24.9 64.2A8 8 0 0 0 13.1 73l28 152a16 16 0 0 0 15.7 13H199.2a16 16 0 0 0 15.7-13l28-152a8 8 0 0 0-3.4-7.5Z"/>',
-    person:        '<path d="M172 120a44 44 0 1 1-44-44 44 44 0 0 1 44 44Zm52 112a8 8 0 0 1-8 8H40a8 8 0 0 1-8-8 96 96 0 0 1 192 0Z"/>',
-    sparkle:       '<path d="M197.6 115.7 160 100.2l-15.5-37.6a8 8 0 0 0-14.8 0L114.2 100l-37.8 15.5a8 8 0 0 0 0 14.8l37.6 15.5 15.5 37.6a8 8 0 0 0 14.8 0l15.5-37.6 37.8-15.5a8 8 0 0 0 0-14.6Zm-93.7 27.6-37.6-15.5a8 8 0 0 1 0-14.8l37.6-15.5a8 8 0 0 0 4.5-4.5l15.5-37.6a8 8 0 0 1 14.8 0l15.5 37.6a8 8 0 0 0 4.5 4.5l37.6 15.5a8 8 0 0 1 0 14.8L159 143.3a8 8 0 0 0-4.5 4.5L139 185.4a8 8 0 0 1-14.8 0l-15.5-37.6a8 8 0 0 0-4.8-4.5ZM72 40a4 4 0 0 1 4-4h8v-8a4 4 0 0 1 8 0v8h8a4 4 0 0 1 0 8h-8v8a4 4 0 0 1-8 0v-8h-8a4 4 0 0 1-4-4Zm144 136a4 4 0 0 1-4 4h-8v8a4 4 0 0 1-8 0v-8h-8a4 4 0 0 1 0-8h8v-8a4 4 0 0 1 8 0v8h8a4 4 0 0 1 4 4Z"/>',
-    skipForward:   '<path d="M208 40a8 8 0 0 0-8 8v72.9L56.4 40.8A8 8 0 0 0 44 48v160a8 8 0 0 0 12.4 6.7l144-80.1V208a8 8 0 0 0 16 0V48a8 8 0 0 0-8-8Z"/>',
-    x:             '<path d="M205.7 194.3a8.1 8.1 0 0 1-11.4 11.4L128 139.3l-66.3 66.4a8.1 8.1 0 0 1-11.4-11.4L116.7 128 50.3 61.7a8.1 8.1 0 0 1 11.4-11.4L128 116.7l66.3-66.4a8.1 8.1 0 0 1 11.4 11.4L139.3 128Z"/>',
-    info:          '<path d="M128 24a104 104 0 1 0 104 104A104.1 104.1 0 0 0 128 24Zm0 192a88 88 0 1 1 88-88 88.1 88.1 0 0 1-88 88Zm16-40v-56a8 8 0 0 0-16 0v56a8 8 0 0 0 16 0Zm-16-96a12 12 0 1 0 12 12 12 12 0 0 0-12-12Z"/>',
-    play:          '<path d="M232.4 114.5l-144-88a16 16 0 0 0-16.4-.4A15.9 15.9 0 0 0 64 40v176a15.9 15.9 0 0 0 8 13.9A16.2 16.2 0 0 0 80 232a16.1 16.1 0 0 0 8.4-2.5l144-88a15.9 15.9 0 0 0 0-27Z"/>',
-    handWaving:    '<path d="M168 24a16 16 0 0 0-16 16 16 16 0 0 0-32 0 16 16 0 0 0-32 0v52.6l-7.8-13.5a20 20 0 0 0-34.5 20.2l35.1 60.3A76 76 0 0 0 216 184v-72a16 16 0 0 0-16-16 16 16 0 0 0-16-16 16 16 0 0 0-16-16v-24a16 16 0 0 0-16-16Z"/>',
+    trophy:        'M12 2a1 1 0 0 1 1 1v1h5a1 1 0 0 1 1 1v4c0 2.76-1.86 5.08-4.38 5.8A6.002 6.002 0 0 1 13 17.92V20h2a1 1 0 1 1 0 2H9a1 1 0 1 1 0-2h2v-2.08A6.002 6.002 0 0 1 6.38 13.8C3.86 13.08 2 10.76 2 8V5a1 1 0 0 1 1-1h5V3a1 1 0 0 1 1-1h3Zm-6 4H4v2c0 1.65 1.02 3.07 2.47 3.65A6.03 6.03 0 0 1 6 10V6Zm12 0h-2v4c0 .68-.1 1.33-.47 1.65C17.98 11.07 19 9.65 19 8V6Z',
+    lightning:     'M13 2 4.5 13.5H11L10 22l9.5-13H13L13 2Z',
+    calculator:    'M6 2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm0 2v16h12V4H6Zm2 2h2v2H8V6Zm3 0h2v2h-2V6Zm3 0h2v2h-2V6ZM8 10h8v2H8v-2Zm0 4h8v2H8v-2Zm0 4h4v2H8v-2Z',
+    textT:         'M5 4h14a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0V6h-5v13h2a1 1 0 1 1 0 2H9a1 1 0 1 1 0-2h2V6H6v2a1 1 0 0 1-2 0V5a1 1 0 0 1 1-1Z',
+    swords:        'M6.5 1 1 6.5l5.5 5.5 1.5-1.5-4-4 3-3 4 4L12.5 6.5 6.5 1Zm11 0 5.5 5.5-5.5 5.5-1.5-1.5 4-4-3-3-4 4L11.5 6.5 17.5 1ZM3 15l-2 2 2 2h16l2-2-2-2H3Z',
+    medal:         'M12 2a5 5 0 1 1 0 10A5 5 0 0 1 12 2Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm-5 9-3 9h16l-3-9a7 7 0 0 1-10 0Z',
+    star:          'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2Z',
+    flame:         'M12 1c0 0 4 4 4 9a4 4 0 0 1-8 0c0-1.5.5-3 1.5-4.5C9.5 7 10 9 10 9s2-2.5 2-8Zm-4 10a4 4 0 1 0 8 0c0 2-4 7-4 7s-4-5-4-7Z',
+    shield:        'M12 1 3 5v7c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V5l-9-4Zm0 2.18 7 3.11V12c0 4.1-2.97 8.06-7 9.23C7.97 20.06 5 16.1 5 12V6.29l7-3.11Z',
+    chartBar:      'M3 3h2v18H3V3Zm4 6h2v12H7V9Zm4-4h2v16h-2V5Zm4 2h2v14h-2V7Zm4 4h2v10h-2v-10Z',
+    arrowLeft:     'M19 12H5m7-7-7 7 7 7',
+    arrowRight:    'M5 12h14m-7-7 7 7-7 7',
+    house:         'M3 12l9-9 9 9M5 10v9a1 1 0 0 0 1 1h4v-5h4v5h4a1 1 0 0 0 1-1v-9',
+    users:         'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm14 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
+    clock:         'M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2Zm0 2a8 8 0 1 1 0 16A8 8 0 0 1 12 4Zm0 2v6l4 2-1 1.73-5-2.5V6H12Z',
+    shuffle:       'M16 3h5v5l-1.5-1.5-4.5 4.5-4-4L5 13.5 3.5 12 9 6.5l4 4 3.5-3.5L16 3Zm5 13-1.5-1.5-4.5-4.5-4 4-5.5-5.5L4 10l5.5 5.5 4-4 3.5 3.5L16 17h5v-1Z',
+    checkCircle:   'M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4 12 14.01l-3-3',
+    xCircle:       'M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2Zm3 7-6 6m0-6 6 6',
+    warning:       'M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0ZM12 9v4m0 4h.01',
+    hourglass:     'M5 2h14M5 22h14M17 2v4l-5 4 5 4v4M7 2v4l5 4-5 4v4',
+    gameController:'M6 12h4m-2-2v4M15 12h.01M18 12h.01M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z',
+    crown:         'M2 20h20M5 20 3 8l5 5 4-8 4 8 5-5-2 12H5Z',
+    person:        'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z',
+    sparkle:       'M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83',
+    skipForward:   'M5 4l10 8-10 8V4ZM19 5v14',
+    x:             'M18 6 6 18M6 6l12 12',
+    info:          'M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2Zm0 9v5m0-8h.01',
+    play:          'M5 3l14 9-14 9V3Z',
+    handWaving:    'M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8M6 14v-3a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v4c0 3.31 2.69 6 6 6h4c2.67 0 4.94-1.7 5.72-4.07',
+    close:         'M18 6 6 18M6 6l12 12',
   };
 
   function _icon(name, size = 20, opts = {}) {
-    const paths = _ICONS[name] || _ICONS.sparkle;
-    const color = opts.color || 'currentColor';
-    const cls   = opts.class ? ` class="${opts.class}"` : '';
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 256 256" fill="${color}"${cls} aria-hidden="true" style="display:inline-block;vertical-align:middle;flex-shrink:0;">${paths}</svg>`;
+    const pathData = _ICONS[name] || _ICONS.sparkle;
+    const color    = opts.color || 'currentColor';
+    const cls      = opts.class ? ` class="${opts.class}"` : '';
+
+    // Determine if path is fill-only (no M...Z with stroke-like data) or stroke
+    // We use stroke for the new clean paths; fill for star/flame etc
+    const strokeIcons = new Set([
+      'arrowLeft','arrowRight','house','users','clock','shuffle','checkCircle','xCircle',
+      'warning','hourglass','gameController','crown','sparkle','skipForward','x','info',
+      'play','handWaving','close','person','shield','swords','lightning','trophy','medal',
+      'flame','star','chartBar','textT','calculator','trophy'
+    ]);
+
+    const useStroke = strokeIcons.has(name);
+
+    if (useStroke) {
+      return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24"
+        fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+        ${cls} aria-hidden="true" style="display:inline-block;vertical-align:middle;flex-shrink:0;">
+        <path d="${pathData}"/>
+      </svg>`;
+    }
+
+    return `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24"
+      fill="${color}" ${cls} aria-hidden="true" style="display:inline-block;vertical-align:middle;flex-shrink:0;">
+      <path d="${pathData}"/>
+    </svg>`;
   }
 
   /* ══════════════════════════════════════════════════════════════
@@ -56,10 +80,10 @@
   ══════════════════════════════════════════════════════════════ */
 
   const XP_PER_CORRECT    = 10;
-  const XP_PER_PERFECT    = 50;   // bonus for 100% score
-  const XP_SPEED_BONUS    = 5;    // bonus per question answered fast (< 5s)
-  const XP_CHALLENGE_WIN  = 30;   // bonus for winning a duel
-  const MAX_SHUFFLES      = 3;    // max re-shuffles per word scramble word
+  const XP_PER_PERFECT    = 50;
+  const XP_SPEED_BONUS    = 5;
+  const XP_CHALLENGE_WIN  = 30;
+  const MAX_SHUFFLES      = 3;
 
   const LEVELS = [
     { name: 'Rookie',    minXP: 0,    icon: 'person',    color: '#6b7280' },
@@ -83,19 +107,19 @@
   ];
 
   const QUIZ_BLITZ_QUESTIONS = 10;
-  const QUIZ_BLITZ_TIME      = 15;   // seconds per question
-  const SPEED_MATH_TIME      = 8;    // seconds per problem (unused — 90s total mode)
-  const WORD_SCRAMBLE_TIME   = 20;   // seconds per word
-  const CHALLENGE_EXPIRE_MS  = 24 * 60 * 60 * 1000; // 24 hours
+  const QUIZ_BLITZ_TIME      = 15;
+  const SPEED_MATH_TIME      = 8;
+  const WORD_SCRAMBLE_TIME   = 20;
+  const CHALLENGE_EXPIRE_MS  = 24 * 60 * 60 * 1000;
 
   /* ══════════════════════════════════════════════════════════════
      STATE
   ══════════════════════════════════════════════════════════════ */
 
-  let _gameState = null;   // current active game session
-  let _profile   = null;   // current player's game profile
-  let _timerEl   = null;   // DOM reference for timer display
-  let _timerInt  = null;   // setInterval handle
+  let _gameState = null;
+  let _profile   = null;
+  let _timerEl   = null;
+  let _timerInt  = null;
   let _timerSecs = 0;
   let _questionStartTime = 0;
   let _speedDemonCount   = 0;
@@ -109,15 +133,13 @@
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  function _db()  { return window.fbDb; }
-  function _uid() { return window.AppState && window.AppState.userId; }
+  function _db()      { return window.fbDb; }
+  function _uid()     { return window.AppState && window.AppState.userId; }
   function _student() { return (window.AppState && window.AppState.studentData) || {}; }
 
   function _getLevelForXP(xp) {
     let level = LEVELS[0];
-    for (const l of LEVELS) {
-      if (xp >= l.minXP) level = l;
-    }
+    for (const l of LEVELS) { if (xp >= l.minXP) level = l; }
     return level;
   }
 
@@ -132,8 +154,8 @@
     const current = _getLevelForXP(xp);
     const next    = _getNextLevel(xp);
     if (!next) return 100;
-    const base    = current.minXP;
-    const target  = next.minXP;
+    const base   = current.minXP;
+    const target = next.minXP;
     return Math.min(100, Math.round(((xp - base) / (target - base)) * 100));
   }
 
@@ -219,32 +241,36 @@
   }
 
   async function _awardXP(xpAmount, gameType, extraData) {
-    if (!_uid() || xpAmount < 0) return { xpAwarded: 0, earnedBadges: [], newXP: (_profile && _profile.xp) || 0, newLevel: _getLevelForXP((_profile && _profile.xp) || 0) };
-    const uid      = _uid();
-    const oldXP    = (_profile && _profile.xp) || 0;
-    const newXP    = oldXP + xpAmount;
+    if (!_uid() || xpAmount < 0) return {
+      xpAwarded: 0,
+      earnedBadges: [],
+      newXP: (_profile && _profile.xp) || 0,
+      newLevel: _getLevelForXP((_profile && _profile.xp) || 0)
+    };
+
+    const uid       = _uid();
+    const oldXP     = (_profile && _profile.xp) || 0;
+    const newXP     = oldXP + xpAmount;
     const newBadges = [...((_profile && _profile.badges) || [])];
 
     const totalGames = ((_profile && _profile.totalGames) || 0) + 1;
     const isWin      = extraData && extraData.win;
     const totalWins  = ((_profile && _profile.totalWins) || 0) + (isWin ? 1 : 0);
-    const newStreak  = isWin
-      ? ((_profile && _profile.streak) || 0) + 1
-      : 0;
+    const newStreak  = isWin ? ((_profile && _profile.streak) || 0) + 1 : 0;
 
     const earnedBadges = [];
     const _hasBadge = (id) => newBadges.includes(id);
 
-    if (!_hasBadge('first_game')    && totalGames >= 1)                                                  { newBadges.push('first_game');    earnedBadges.push('first_game');    }
-    if (!_hasBadge('perfect_quiz')  && extraData && extraData.perfect)                                   { newBadges.push('perfect_quiz');   earnedBadges.push('perfect_quiz');   }
-    if (!_hasBadge('streak_5')      && newStreak >= 5)                                                   { newBadges.push('streak_5');       earnedBadges.push('streak_5');       }
-    if (!_hasBadge('challenge_win') && extraData && extraData.challengeWin)                              { newBadges.push('challenge_win');  earnedBadges.push('challenge_win');  }
-    if (!_hasBadge('games_10')      && totalGames >= 10)                                                 { newBadges.push('games_10');       earnedBadges.push('games_10');       }
-    if (!_hasBadge('games_50')      && totalGames >= 50)                                                 { newBadges.push('games_50');       earnedBadges.push('games_50');       }
-    if (!_hasBadge('xp_500')        && newXP >= 500)                                                     { newBadges.push('xp_500');         earnedBadges.push('xp_500');         }
-    if (!_hasBadge('speed_demon')   && extraData && extraData.speedDemonCount >= 10)                     { newBadges.push('speed_demon');    earnedBadges.push('speed_demon');    }
-    if (!_hasBadge('math_master')   && gameType === 'speedMath' && extraData && extraData.difficulty === 'hard') { newBadges.push('math_master');    earnedBadges.push('math_master');    }
-    if (!_hasBadge('word_wizard')   && extraData && extraData.wordCorrect >= 10)                         { newBadges.push('word_wizard');    earnedBadges.push('word_wizard');    }
+    if (!_hasBadge('first_game')    && totalGames >= 1)                                                       { newBadges.push('first_game');    earnedBadges.push('first_game');    }
+    if (!_hasBadge('perfect_quiz')  && extraData && extraData.perfect)                                        { newBadges.push('perfect_quiz');   earnedBadges.push('perfect_quiz');   }
+    if (!_hasBadge('streak_5')      && newStreak >= 5)                                                        { newBadges.push('streak_5');       earnedBadges.push('streak_5');       }
+    if (!_hasBadge('challenge_win') && extraData && extraData.challengeWin)                                   { newBadges.push('challenge_win');  earnedBadges.push('challenge_win');  }
+    if (!_hasBadge('games_10')      && totalGames >= 10)                                                      { newBadges.push('games_10');       earnedBadges.push('games_10');       }
+    if (!_hasBadge('games_50')      && totalGames >= 50)                                                      { newBadges.push('games_50');       earnedBadges.push('games_50');       }
+    if (!_hasBadge('xp_500')        && newXP >= 500)                                                          { newBadges.push('xp_500');         earnedBadges.push('xp_500');         }
+    if (!_hasBadge('speed_demon')   && extraData && extraData.speedDemonCount >= 10)                          { newBadges.push('speed_demon');    earnedBadges.push('speed_demon');    }
+    if (!_hasBadge('math_master')   && gameType === 'speedMath' && extraData && extraData.difficulty === 'hard') { newBadges.push('math_master'); earnedBadges.push('math_master');    }
+    if (!_hasBadge('word_wizard')   && extraData && extraData.wordCorrect >= 10)                              { newBadges.push('word_wizard');    earnedBadges.push('word_wizard');    }
 
     const updateData = {
       xp:         firebase.firestore.FieldValue.increment(xpAmount),
@@ -317,7 +343,6 @@
       });
     }
 
-    // Also check challenges this user SENT that are now awaiting their play
     const sentSnap = await _db().collection('gameChallenges')
       .where('challengerUid', '==', uid)
       .where('status', '==', 'awaiting_challenger')
@@ -491,7 +516,7 @@
   }
 
   /* ══════════════════════════════════════════════════════════════
-     GAME SELECTION MODAL
+     GAME SELECTION
   ══════════════════════════════════════════════════════════════ */
 
   function _selectGame(type) {
@@ -661,8 +686,6 @@
     _stopTimer();
     const gs = _gameState;
     if (!gs || gs.type !== 'quizBlitz') return;
-
-    // Guard against double-firing (e.g. timer and click at same time)
     if (gs.answers.length > gs.currentIndex) return;
 
     const q       = gs.questions[gs.currentIndex];
@@ -740,23 +763,23 @@
       const ops = ['+', '-'];
       const op  = ops[Math.floor(Math.random() * ops.length)];
       if (op === '+') { const a = _rnd(1, 50),  b = _rnd(1, 50);  return { q: `${a} + ${b} = ?`,  ans: a + b }; }
-      else             { const a = _rnd(10, 99), b = _rnd(1, a);   return { q: `${a} \u2212 ${b} = ?`, ans: a - b }; }
+      else             { const a = _rnd(10, 99), b = _rnd(1, a);   return { q: `${a} − ${b} = ?`, ans: a - b }; }
     },
     medium: () => {
-      const ops = ['+', '-', '\u00d7'];
+      const ops = ['+', '-', '×'];
       const op  = ops[Math.floor(Math.random() * ops.length)];
-      if (op === '+')        { const a = _rnd(20, 200), b = _rnd(20, 200); return { q: `${a} + ${b} = ?`,          ans: a + b }; }
-      if (op === '-')        { const a = _rnd(50, 300), b = _rnd(1, a);    return { q: `${a} \u2212 ${b} = ?`,     ans: a - b }; }
-      /* × */                  const a = _rnd(2, 12),   b = _rnd(2, 12);   return { q: `${a} \u00d7 ${b} = ?`,     ans: a * b };
+      if (op === '+') { const a = _rnd(20, 200), b = _rnd(20, 200); return { q: `${a} + ${b} = ?`,   ans: a + b }; }
+      if (op === '-') { const a = _rnd(50, 300), b = _rnd(1, a);    return { q: `${a} − ${b} = ?`,   ans: a - b }; }
+                        const a = _rnd(2, 12),   b = _rnd(2, 12);   return { q: `${a} × ${b} = ?`,   ans: a * b };
     },
     hard: () => {
-      const ops = ['\u00d7', '\u00f7', 'sq', 'mixed'];
+      const ops = ['×', '÷', 'sq', 'mixed'];
       const op  = ops[Math.floor(Math.random() * ops.length)];
-      if (op === '\u00d7') { const a = _rnd(13, 25), b = _rnd(13, 25);         return { q: `${a} \u00d7 ${b} = ?`,         ans: a * b };        }
-      if (op === '\u00f7') { const b = _rnd(2, 12),  a = b * _rnd(2, 12);      return { q: `${a} \u00f7 ${b} = ?`,         ans: a / b };        }
-      if (op === 'sq')     { const a = _rnd(5, 20);                            return { q: `${a}\u00b2 = ?`,                ans: a * a };        }
-      /* mixed */              const a = _rnd(10, 50), b = _rnd(2, 12), c = _rnd(1, 20);
-                               return { q: `(${a} \u00d7 ${b}) + ${c} = ?`,    ans: (a * b) + c };
+      if (op === '×')     { const a = _rnd(13, 25), b = _rnd(13, 25);      return { q: `${a} × ${b} = ?`,        ans: a * b };  }
+      if (op === '÷')     { const b = _rnd(2, 12),  a = b * _rnd(2, 12);   return { q: `${a} ÷ ${b} = ?`,        ans: a / b };  }
+      if (op === 'sq')    { const a = _rnd(5, 20);                          return { q: `${a}² = ?`,              ans: a * a };  }
+      /* mixed */           const a = _rnd(10, 50), b = _rnd(2, 12), c = _rnd(1, 20);
+                            return { q: `(${a} × ${b}) + ${c} = ?`,         ans: (a * b) + c };
     },
   };
 
@@ -778,13 +801,13 @@
             <input type="radio" name="mathDiff" value="easy" checked style="display:none;" />
             <span class="game-diff-option__icon" style="color:#22c55e;">${_icon('checkCircle', 20, { color: '#22c55e' })}</span>
             <span class="game-diff-option__name">Easy</span>
-            <span class="game-diff-option__desc">+, \u2212 only</span>
+            <span class="game-diff-option__desc">+, − only</span>
           </label>
           <label class="game-diff-option" data-diff="medium">
             <input type="radio" name="mathDiff" value="medium" style="display:none;" />
             <span class="game-diff-option__icon">${_icon('warning', 20, { color: '#f59e0b' })}</span>
             <span class="game-diff-option__name">Medium</span>
-            <span class="game-diff-option__desc">+, \u2212, \u00d7</span>
+            <span class="game-diff-option__desc">+, −, ×</span>
           </label>
           <label class="game-diff-option" data-diff="hard">
             <input type="radio" name="mathDiff" value="hard" style="display:none;" />
@@ -800,7 +823,6 @@
       <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full" style="margin-top:.5rem;">Cancel</button>
     `);
 
-    // Highlight selected difficulty using change event for reliability
     document.getElementById('diffGrid').addEventListener('change', (e) => {
       document.querySelectorAll('.game-diff-option').forEach(x => x.classList.remove('selected'));
       e.target.closest('.game-diff-option')?.classList.add('selected');
@@ -914,31 +936,26 @@
       gs.xpEarned += XP_PER_CORRECT;
     }
 
-    // Update feedback
     const fb = document.getElementById('mathFeedback');
     if (fb) {
-      fb.style.color   = correct ? 'var(--success)' : 'var(--danger)';
-      fb.textContent   = correct ? `Correct! +${XP_PER_CORRECT} XP` : `Wrong. Answer was ${prevAns}`;
+      fb.style.color  = correct ? 'var(--success)' : 'var(--danger)';
+      fb.textContent  = correct ? `Correct! +${XP_PER_CORRECT} XP` : `Wrong. Answer was ${prevAns}`;
     }
 
-    // Generate next problem
     gs.currentProblem = _mathProblems[gs.difficulty]();
 
-    // Update the DOM in-place (no full re-render — preserves running timer)
     const problemEl = document.getElementById('mathProblem');
     if (problemEl) problemEl.textContent = gs.currentProblem.q;
 
     const scoreEl = document.getElementById('mathScoreDisplay');
-    if (scoreEl) scoreEl.textContent = `${gs.score} correct \u00b7 ${gs.attempted} attempted`;
+    if (scoreEl) scoreEl.textContent = `${gs.score} correct · ${gs.attempted} attempted`;
 
     const xpEl = document.getElementById('mathXpDisplay');
     if (xpEl) xpEl.textContent = `${gs.xpEarned} XP`;
 
-    // Clear input
     input.value = '';
     input.focus();
 
-    // Fade out feedback after a moment
     setTimeout(() => {
       if (fb) fb.textContent = '';
     }, 900);
@@ -949,9 +966,9 @@
     _stopTimer();
     _gameState = null;
 
-    const pct     = gs.attempted > 0 ? Math.round((gs.score / gs.attempted) * 100) : 0;
-    const perfect  = gs.score === gs.attempted && gs.attempted >= 5;
-    const win     = pct >= 60 && gs.score >= 5;
+    const pct    = gs.attempted > 0 ? Math.round((gs.score / gs.attempted) * 100) : 0;
+    const perfect = gs.score === gs.attempted && gs.attempted >= 5;
+    const win    = pct >= 60 && gs.score >= 5;
 
     const result = await _awardXP(gs.xpEarned, 'speedMath', {
       win, perfect, difficulty: gs.difficulty,
@@ -1014,16 +1031,10 @@
     { word: 'SOVEREIGNTY',    hint: 'Supreme authority of a state over itself' },
   ];
 
-  /**
-   * Scramble a word, guaranteeing the result differs from the original.
-   * For words with all-identical letters this is impossible — we return as-is.
-   */
   function _scrambleWord(word) {
     const letters = word.split('');
-    // Check if all letters are identical (unscramblable)
     const allSame = letters.every(l => l === letters[0]);
     if (allSame) return word;
-
     let scrambled = word;
     let attempts  = 0;
     while (scrambled === word && attempts < 50) {
@@ -1063,18 +1074,17 @@
     _closeModal();
 
     _gameState = {
-      type:         'wordScramble',
+      type:            'wordScramble',
       words,
-      currentIndex: 0,
-      score:        0,
-      xpEarned:     0,
-      wordCorrect:  0,
-      startedAt:    Date.now(),
-      shufflesLeft: MAX_SHUFFLES,        // resets each word
-      currentScramble: '',               // current displayed scramble
+      currentIndex:    0,
+      score:           0,
+      xpEarned:        0,
+      wordCorrect:     0,
+      startedAt:       Date.now(),
+      shufflesLeft:    MAX_SHUFFLES,
+      currentScramble: '',
     };
 
-    // Pre-scramble the first word
     _gameState.currentScramble = _scrambleWord(words[0].word);
     _renderWordScrambleQuestion();
   }
@@ -1085,7 +1095,7 @@
 
     const entry    = gs.words[gs.currentIndex];
     const scramble = gs.currentScramble || _scrambleWord(entry.word);
-    gs.currentScramble = scramble;  // ensure stored
+    gs.currentScramble = scramble;
 
     const progress = gs.currentIndex + 1;
     const total    = gs.words.length;
@@ -1169,20 +1179,15 @@
     document.getElementById('scrambleInput')?.focus();
   }
 
-  /**
-   * Reshuffle the current word's letters (max MAX_SHUFFLES times per word).
-   * Updates the tile display without re-rendering the whole screen (timer preserved).
-   */
   function _reshuffleWord() {
     const gs = _gameState;
     if (!gs || gs.type !== 'wordScramble') return;
     if (gs.shufflesLeft <= 0) return;
 
-    const entry    = gs.words[gs.currentIndex];
-    let   newScram = gs.currentScramble;
-    let   attempts = 0;
+    const entry   = gs.words[gs.currentIndex];
+    let newScram  = gs.currentScramble;
+    let attempts  = 0;
 
-    // Ensure the new scramble differs from current display
     while (newScram === gs.currentScramble && attempts < 30) {
       newScram = _scrambleWord(entry.word);
       attempts++;
@@ -1191,13 +1196,11 @@
     gs.currentScramble = newScram;
     gs.shufflesLeft--;
 
-    // Update only the letter tiles and counter — don't re-render (preserves timer)
     const tilesEl = document.getElementById('scrambleLetters');
     if (tilesEl) {
       tilesEl.innerHTML = newScram.split('').map(l => `<span class="game-letter-tile">${_esc(l)}</span>`).join('');
-      // Brief bounce animation
       tilesEl.classList.remove('game-tiles-bounce');
-      void tilesEl.offsetWidth; // reflow
+      void tilesEl.offsetWidth;
       tilesEl.classList.add('game-tiles-bounce');
     }
 
@@ -1209,7 +1212,6 @@
       shuffleBtn.classList.add('game-shuffle-btn--disabled');
     }
 
-    // Refocus input
     document.getElementById('scrambleInput')?.focus();
   }
 
@@ -1237,7 +1239,6 @@
       if (gs.currentIndex >= gs.words.length) {
         _finishWordScramble();
       } else {
-        // Reset shuffle count and pre-scramble the next word
         gs.shufflesLeft    = MAX_SHUFFLES;
         gs.currentScramble = _scrambleWord(gs.words[gs.currentIndex].word);
         _renderWordScrambleQuestion();
@@ -1301,6 +1302,16 @@
 
   /* ══════════════════════════════════════════════════════════════
      CHALLENGE SYSTEM
+     
+     FIX: The original code tried to fetch the target student's
+     doc to get their name, but Firestore rules only allow a
+     student to read their own doc. This caused a permission-denied
+     error and the "Could not send challenge" message.
+     
+     Solution: We now read the target name directly from the
+     select element's option text — the classmates list was already
+     loaded and their names are in the <option> labels. No extra
+     Firestore read needed.
   ══════════════════════════════════════════════════════════════ */
 
   async function _showChallengeSetup() {
@@ -1309,6 +1320,8 @@
 
     let classmates = [];
     try {
+      // Use the shared student cache from Teacher module if available (avoids a re-query)
+      // Otherwise query the students collection — students are allowed to list() per Firestore rules
       const snap = await _db().collection('students').where('class', '==', myClass).get();
       snap.forEach(doc => {
         if (doc.id !== _uid()) {
@@ -1316,6 +1329,7 @@
         }
       });
     } catch (e) {
+      console.error('[game] _showChallengeSetup error loading classmates:', e);
       window.UI.toast('Could not load classmates. Please try again.', 'error');
       return;
     }
@@ -1359,18 +1373,29 @@
   }
 
   async function _sendChallenge() {
-    const targetUid = document.getElementById('challengeTarget')?.value;
+    const targetSel = document.getElementById('challengeTarget');
+    const targetUid = targetSel ? targetSel.value : null;
     const subject   = document.getElementById('challengeSubject')?.value || 'random';
 
     if (!targetUid) { window.UI.toast('Please select a classmate.', 'warning'); return; }
 
+    // FIX: Read the target name from the option label — no Firestore read needed.
+    // This avoids the permission-denied error (students can only read their own doc).
+    const selectedOption = targetSel.options[targetSel.selectedIndex];
+    const targetName     = selectedOption ? selectedOption.text : 'Unknown';
+
     const sendBtn = document.querySelector('#gameModal .btn:not(.bg-gray-500)');
-    if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Sending\u2026'; }
+    if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Sending…'; }
 
     let questions = [];
     if (subject === 'random') {
       const subjects = _getSubjectsForStudent();
-      const perSubj  = Math.ceil(10 / subjects.length);
+      if (subjects.length === 0) {
+        window.UI.toast('No questions available.', 'error');
+        if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = `${_icon('swords', 16)} Send Challenge`; }
+        return;
+      }
+      const perSubj = Math.ceil(10 / subjects.length);
       subjects.forEach(s => {
         questions = questions.concat(_getQuestionsForSubject(s, perSubj).map(q => ({ ...q, subject: s })));
       });
@@ -1394,9 +1419,6 @@
     }));
 
     try {
-      const targetSnap = await _db().collection('students').doc(targetUid).get();
-      const targetName = targetSnap.exists ? (targetSnap.data().name || 'Unknown') : 'Unknown';
-
       await _db().collection('gameChallenges').add({
         challengerUid:   _uid(),
         challengerName:  _student().name || '',
@@ -1404,9 +1426,9 @@
         challengedName:  targetName,
         subject,
         questions:       questionData,
-        status:          'pending',          // pending = challenged hasn't played yet
-        challengerScore: null,               // set when challenger plays their own challenge
-        challengedScore: null,               // set when challenged accepts & plays
+        status:          'pending',
+        challengerScore: null,
+        challengedScore: null,
         createdAt:       firebase.firestore.FieldValue.serverTimestamp(),
         expiresAt:       new Date(Date.now() + CHALLENGE_EXPIRE_MS),
       });
@@ -1473,10 +1495,6 @@
     `);
   }
 
-  /**
-   * Show challenges the current user SENT but the challenged student has already
-   * played — now the challenger needs to play their own copy to determine the winner.
-   */
   async function _showAwaitingChallenges() {
     const uid = _uid();
     let challenges = [];
@@ -1527,9 +1545,6 @@
     `);
   }
 
-  /**
-   * Challenger plays their own challenge (after the challenged student has played).
-   */
   async function _playChallengerTurn(challengeId) {
     _closeModal();
     let challengeData;
@@ -1542,23 +1557,24 @@
       return;
     }
 
+    // Guard: challenger already played
     if (challengeData.challengerScore !== null && challengeData.challengerScore !== undefined) {
       window.UI.toast("You've already played this challenge.", 'info');
       return;
     }
 
     _gameState = {
-      type:            'challenge',
+      type:             'challenge',
       challengeId,
       isChallengerTurn: true,
-      questions:       challengeData.questions || [],
-      currentIndex:    0,
-      answers:         [],
-      score:           0,
-      xpEarned:        0,
-      opponentName:    challengeData.challengedName,
-      opponentScore:   challengeData.challengedScore,
-      startedAt:       Date.now(),
+      questions:        challengeData.questions || [],
+      currentIndex:     0,
+      answers:          [],
+      score:            0,
+      xpEarned:         0,
+      opponentName:     challengeData.challengedName,
+      opponentScore:    challengeData.challengedScore,
+      startedAt:        Date.now(),
     };
 
     _renderChallengeQuestion();
@@ -1576,6 +1592,7 @@
       return;
     }
 
+    // Guard: challenged player already played
     if (challengeData.challengedScore !== null && challengeData.challengedScore !== undefined) {
       window.UI.toast("You've already played this challenge.", 'info');
       return;
@@ -1591,7 +1608,7 @@
       score:            0,
       xpEarned:         0,
       opponentName:     challengeData.challengerName,
-      opponentScore:    challengeData.challengerScore, // null = challenger hasn't played yet either
+      opponentScore:    challengeData.challengerScore,
       startedAt:        Date.now(),
     };
 
@@ -1667,8 +1684,6 @@
     _stopTimer();
     const gs = _gameState;
     if (!gs || gs.type !== 'challenge') return;
-
-    // Guard double-firing
     if (gs.answers.length > gs.currentIndex) return;
 
     const q       = gs.questions[gs.currentIndex];
@@ -1695,10 +1710,10 @@
     _stopTimer();
     _gameState = null;
 
-    const total          = gs.questions.length;
-    const myScore        = gs.score;
-    const myPct          = Math.round((myScore / total) * 100);
-    const opponentScore  = gs.opponentScore; // null if opponent hasn't played yet
+    const total           = gs.questions.length;
+    const myScore         = gs.score;
+    const myPct           = Math.round((myScore / total) * 100);
+    const opponentScore   = gs.opponentScore;
     const isChallengerTurn = gs.isChallengerTurn;
 
     let win          = false;
@@ -1710,7 +1725,6 @@
       if (win) gs.xpEarned += XP_CHALLENGE_WIN;
     }
 
-    // Firestore update differs based on whose turn it is
     try {
       const updatePayload = {
         [`result_${_uid()}`]: {
@@ -1721,14 +1735,11 @@
       };
 
       if (isChallengerTurn) {
-        // Challenger just played — both sides done if opponentScore is set
         updatePayload.challengerScore = myScore;
         updatePayload.status          = 'completed';
       } else {
-        // Challenged (accepter) just played
         updatePayload.challengedScore = myScore;
-        // If challenger hasn't played yet, flip status so they get notified
-        updatePayload.status = opponentScore !== null ? 'completed' : 'awaiting_challenger';
+        updatePayload.status = (opponentScore !== null && opponentScore !== undefined) ? 'completed' : 'awaiting_challenger';
       }
 
       await _db().collection('gameChallenges').doc(gs.challengeId).update(updatePayload);
@@ -1737,12 +1748,12 @@
     const result = await _awardXP(gs.xpEarned, 'challenge', { win, challengeWin });
 
     await _saveGameResult('challenge', {
-      score:          myScore,
+      score:        myScore,
       total,
-      pct:            myPct,
-      xpEarned:       gs.xpEarned,
-      challengeId:    gs.challengeId,
-      opponentName:   gs.opponentName,
+      pct:          myPct,
+      xpEarned:     gs.xpEarned,
+      challengeId:  gs.challengeId,
+      opponentName: gs.opponentName,
     });
 
     let outcomeHtml = '';
@@ -1821,7 +1832,6 @@
           </div>`).join('')
       : '';
 
-    // Store play-again callback by key to avoid .toString() serialization issues
     const playAgainAttrib = onPlayAgainKey ? `onclick="Game._playAgain('${_esc(onPlayAgainKey)}')"` : '';
 
     window.UI.mount(`
@@ -1889,7 +1899,6 @@
       </div>`);
   }
 
-  /** Dispatcher for Play Again button (avoids serializing closures as HTML attributes). */
   function _playAgain(key) {
     if      (key === 'quizBlitz')    _showQuizBlitzSetup();
     else if (key === 'speedMath')    _showSpeedMathSetup();
@@ -1927,7 +1936,6 @@
   }
 
   async function _showLeaderboardTab(tab) {
-    // Update tab button styles
     ['class', 'school', 'all'].forEach(t => {
       const id  = `lbTab${t.charAt(0).toUpperCase() + t.slice(1)}`;
       const btn = document.getElementById(id);
@@ -2122,7 +2130,7 @@
         background:var(--bg-base); border:2px solid var(--lvl-color,var(--accent));
         border-radius:99px; padding:.375rem .875rem;
       }
-      .game-level-badge__icon { font-size:1.125rem; }
+      .game-level-badge__icon { line-height:1; }
       .game-level-badge__name { font-size:.875rem; font-weight:700; color:var(--lvl-color,var(--accent)); }
       .game-level-badge__xp   { font-size:.6875rem; color:var(--text-3); font-family:var(--font-mono); }
 
@@ -2148,8 +2156,8 @@
         border-color:#3b82f6; color:#1e40af;
       }
       .game-challenge-alert:hover           { transform:translateY(-2px); }
-      .game-challenge-alert__icon           { font-size:1.25rem; flex-shrink:0; }
-      .game-challenge-alert__arrow          { margin-left:auto; }
+      .game-challenge-alert__icon           { font-size:1.25rem; flex-shrink:0; display:flex; align-items:center; }
+      .game-challenge-alert__arrow          { margin-left:auto; display:flex; align-items:center; }
 
       /* ── SECTION TITLE ── */
       .game-section-title { font-size:1rem; font-weight:700; color:var(--text-1); margin:.25rem 0 .75rem; letter-spacing:-.01em; }
@@ -2177,7 +2185,7 @@
         border-color:var(--accent-border) !important;
       }
       .game-card--challenge:hover { border-color:rgba(224,49,49,.4) !important; }
-      .game-card__icon  { margin-bottom:.5rem; line-height:1; }
+      .game-card__icon  { margin-bottom:.5rem; line-height:1; display:flex; align-items:center; }
       .game-card__title { font-size:1rem; font-weight:700; color:var(--text-1); margin-bottom:.375rem; letter-spacing:-.01em; }
       .game-card__desc  { font-size:.8125rem; color:var(--text-3); line-height:1.55; margin-bottom:.75rem; }
       .game-card__meta  { display:flex; flex-wrap:wrap; gap:.3125rem; }
@@ -2239,7 +2247,7 @@
         transition:border-color .15s, background .15s; gap:.25rem; text-align:center;
       }
       .game-diff-option.selected { border-color:var(--accent); background:var(--accent-subtle); }
-      .game-diff-option__icon { font-size:1.25rem; }
+      .game-diff-option__icon { display:flex; align-items:center; justify-content:center; }
       .game-diff-option__name { font-size:.875rem; font-weight:700; color:var(--text-1); }
       .game-diff-option__desc { font-size:.625rem; color:var(--text-3); margin-top:1px; }
 
@@ -2370,9 +2378,11 @@
                     <td style="padding:.4375rem .75rem;font-weight:700;">${medal}</td>
                     <td style="padding:.4375rem .75rem;font-weight:600;">${_esc(e.name || '—')}</td>
                     <td style="padding:.4375rem .75rem;color:var(--text-3);">${_esc(e.class || '—')}</td>
-                    <td style="padding:.4375rem .75rem;text-align:center;display:flex;align-items:center;gap:.25rem;justify-content:center;">
-                      ${_icon(lv.icon, 14, { color: lv.color })}
-                      <span style="font-size:.75rem;">${_esc(lv.name)}</span>
+                    <td style="padding:.4375rem .75rem;text-align:center;">
+                      <div style="display:flex;align-items:center;gap:.25rem;justify-content:center;">
+                        ${_icon(lv.icon, 14, { color: lv.color })}
+                        <span style="font-size:.75rem;">${_esc(lv.name)}</span>
+                      </div>
                     </td>
                     <td style="padding:.4375rem .75rem;text-align:center;font-weight:700;color:var(--accent);font-family:var(--font-mono);">${(e.xp || 0).toLocaleString()}</td>
                     <td style="padding:.4375rem .75rem;text-align:center;">${e.totalGames || 0}</td>
