@@ -440,22 +440,79 @@
     const uid = _uid();
     if (!uid || _challengeListener) return;
 
-    _challengeListener = _db()
+    // Inject popup animation styles immediately so popups work
+    // even if the game lobby has never been opened
+    if (!document.getElementById('_gameChallengePopupStyles')) {
+      const style = document.createElement('style');
+      style.id = '_gameChallengePopupStyles';
+      style.textContent = `
+        @keyframes gameChallengePopIn {
+          from { opacity:0; transform:translateX(110%) scale(.9); }
+          to   { opacity:1; transform:translateX(0) scale(1); }
+        }
+        @keyframes gameChallengePopOut {
+          from { opacity:1; transform:translateX(0) scale(1); max-height:300px; }
+          to   { opacity:0; transform:translateX(110%) scale(.9); max-height:0; }
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    // Build a baseline of already-existing pending challenges so we
+    // don't fire popups for old challenges on page load
+    _db()
       .collection('gameChallenges')
       .where('challengedUid', '==', uid)
       .where('status', '==', 'pending')
-      .onSnapshot(snap => {
-        snap.docChanges().forEach(change => {
-          if (change.type !== 'added' && change.type !== 'modified') return;
-          const doc  = change.doc;
-          const data = doc.data();
-          const exp  = data.expiresAt && data.expiresAt.toDate ? data.expiresAt.toDate() : null;
-          if (exp && exp < new Date()) return; // already expired
-          if (_notifiedChallenges.has(doc.id)) return;
+      .get()
+      .then(function(existingSnap) {
+        existingSnap.forEach(function(doc) {
           _notifiedChallenges.add(doc.id);
-          _showChallengePopup(doc.id, data);
         });
-      }, err => console.warn('[game] challenge listener error:', err));
+
+        // Now attach the real-time listener — only NEW challenges will trigger popups
+        _challengeListener = _db()
+          .collection('gameChallenges')
+          .where('challengedUid', '==', uid)
+          .where('status', '==', 'pending')
+          .onSnapshot(function(snap) {
+            snap.docChanges().forEach(function(change) {
+              if (change.type !== 'added' && change.type !== 'modified') return;
+              const doc  = change.doc;
+              const data = doc.data();
+              const exp  = data.expiresAt && data.expiresAt.toDate ? data.expiresAt.toDate() : null;
+              if (exp && exp < new Date()) return;
+              if (_notifiedChallenges.has(doc.id)) return;
+              _notifiedChallenges.add(doc.id);
+              _showChallengePopup(doc.id, data);
+            });
+          }, function(err) {
+            console.warn('[game] challenge listener error:', err);
+          });
+      })
+      .catch(function(err) {
+        console.warn('[game] challenge baseline fetch error — attaching listener without baseline:', err);
+
+        // Fallback: attach listener anyway, mark all current as seen first
+        _challengeListener = _db()
+          .collection('gameChallenges')
+          .where('challengedUid', '==', uid)
+          .where('status', '==', 'pending')
+          .onSnapshot(function(snap) {
+            snap.docChanges().forEach(function(change) {
+              if (change.type !== 'added' && change.type !== 'modified') return;
+              const doc  = change.doc;
+              const data = doc.data();
+              const exp  = data.expiresAt && data.expiresAt.toDate ? data.expiresAt.toDate() : null;
+              if (exp && exp < new Date()) return;
+              if (_notifiedChallenges.has(doc.id)) return;
+              _notifiedChallenges.add(doc.id);
+              _showChallengePopup(doc.id, data);
+            });
+          }, function(err) {
+            console.warn('[game] challenge listener error:', err);
+          });
+      });
   }
 
   function _stopChallengeListener() {
@@ -2141,6 +2198,7 @@
     _showLeaderboardTab,
     _playAgain,
     _backToHome,
+    _startChallengeListener,
     _stopChallengeListener,
     renderTeacherGameStats,
   };
