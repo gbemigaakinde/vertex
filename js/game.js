@@ -1,12 +1,11 @@
 /* ============================================================
-   js/game.js — Vertex Tutorial Game Engine v3
-   
-   Changes from v2:
-   - Challenge notification popup for challenged student
-   - 2go-style level system (20 levels, much higher XP thresholds)
-   - Post-max-level prestige / legend handling
-   - KaTeX / LaTeX rendering in quiz questions
-   - Offline-first: LocalDB cache for profiles, queued Firebase writes
+   js/game.js — Vertex Tutorial Game Engine v4
+
+   Changes from v3:
+   - New game: True or False Blitz — rapid T/F statements
+     drawn from the MCQ question bank, with streak multipliers.
+   - New game: Sudden Death — answer correctly to keep going;
+     one wrong answer ends the run. XP compounds per correct.
    ============================================================ */
 
 (function () {
@@ -17,53 +16,62 @@
   ══════════════════════════════════════════════════════════════ */
 
   const _ICONS = {
-    trophy:        'M12 2a1 1 0 0 1 1 1v1h5a1 1 0 0 1 1 1v4c0 2.76-1.86 5.08-4.38 5.8A6.002 6.002 0 0 1 13 17.92V20h2a1 1 0 1 1 0 2H9a1 1 0 1 1 0-2h2v-2.08A6.002 6.002 0 0 1 6.38 13.8C3.86 13.08 2 10.76 2 8V5a1 1 0 0 1 1-1h5V3a1 1 0 0 1 1-1h3Zm-6 4H4v2c0 1.65 1.02 3.07 2.47 3.65A6.03 6.03 0 0 1 6 10V6Zm12 0h-2v4c0 .68-.1 1.33-.47 1.65C17.98 11.07 19 9.65 19 8V6Z',
-    lightning:     'M13 2 4.5 13.5H11L10 22l9.5-13H13L13 2Z',
-    calculator:    'M6 2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm0 2v16h12V4H6Zm2 2h2v2H8V6Zm3 0h2v2h-2V6Zm3 0h2v2h-2V6ZM8 10h8v2H8v-2Zm0 4h8v2H8v-2Zm0 4h4v2H8v-2Z',
-    textT:         'M5 4h14a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0V6h-5v13h2a1 1 0 1 1 0 2H9a1 1 0 1 1 0-2h2V6H6v2a1 1 0 0 1-2 0V5a1 1 0 0 1 1-1Z',
-    swords:        'M6.5 1 1 6.5l5.5 5.5 1.5-1.5-4-4 3-3 4 4L12.5 6.5 6.5 1Zm11 0 5.5 5.5-5.5 5.5-1.5-1.5 4-4-3-3-4 4L11.5 6.5 17.5 1ZM3 15l-2 2 2 2h16l2-2-2-2H3Z',
-    medal:         'M12 2a5 5 0 1 1 0 10A5 5 0 0 1 12 2Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm-5 9-3 9h16l-3-9a7 7 0 0 1-10 0Z',
-    star:          'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2Z',
-    flame:         'M12 1c0 0 4 4 4 9a4 4 0 0 1-8 0c0-1.5.5-3 1.5-4.5C9.5 7 10 9 10 9s2-2.5 2-8Zm-4 10a4 4 0 1 0 8 0c0 2-4 7-4 7s-4-5-4-7Z',
-    shield:        'M12 1 3 5v7c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V5l-9-4Zm0 2.18 7 3.11V12c0 4.1-2.97 8.06-7 9.23C7.97 20.06 5 16.1 5 12V6.29l7-3.11Z',
-    chartBar:      'M3 3h2v18H3V3Zm4 6h2v12H7V9Zm4-4h2v16h-2V5Zm4 2h2v14h-2V7Zm4 4h2v10h-2v-10Z',
-    arrowLeft:     'M19 12H5m7-7-7 7 7 7',
-    arrowRight:    'M5 12h14m-7-7 7 7-7 7',
-    house:         'M3 12l9-9 9 9M5 10v9a1 1 0 0 0 1 1h4v-5h4v5h4a1 1 0 0 0 1-1v-9',
-    users:         'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm14 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
-    clock:         'M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2Zm0 2a8 8 0 1 1 0 16A8 8 0 0 1 12 4Zm0 2v6l4 2-1 1.73-5-2.5V6H12Z',
-    shuffle:       'M16 3h5v5l-1.5-1.5-4.5 4.5-4-4L5 13.5 3.5 12 9 6.5l4 4 3.5-3.5L16 3Zm5 13-1.5-1.5-4.5-4.5-4 4-5.5-5.5L4 10l5.5 5.5 4-4 3.5 3.5L16 17h5v-1Z',
-    checkCircle:   'M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4 12 14.01l-3-3',
-    xCircle:       'M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2Zm3 7-6 6m0-6 6 6',
-    warning:       'M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0ZM12 9v4m0 4h.01',
-    hourglass:     'M5 2h14M5 22h14M17 2v4l-5 4 5 4v4M7 2v4l5 4-5 4v4',
-    gameController:'M6 12h4m-2-2v4M15 12h.01M18 12h.01M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z',
-    crown:         'M2 20h20M5 20 3 8l5 5 4-8 4 8 5-5-2 12H5Z',
-    person:        'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z',
-    sparkle:       'M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83',
-    skipForward:   'M5 4l10 8-10 8V4ZM19 5v14',
-    x:             'M18 6 6 18M6 6l12 12',
-    info:          'M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2Zm0 9v5m0-8h.01',
-    play:          'M5 3l14 9-14 9V3Z',
-    handWaving:    'M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8M6 14v-3a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v4c0 3.31 2.69 6 6 6h4c2.67 0 4.94-1.7 5.72-4.07',
-    close:         'M18 6 6 18M6 6l12 12',
-    infinity:      'M12 12c-2-2.5-4-4-6-4a4 4 0 0 0 0 8c2 0 4-1.5 6-4Zm0 0c2 2.5 4 4 6 4a4 4 0 0 0 0-8c-2 0-4 1.5-6 4Z',
-    zap:           'M13 2 4.5 13.5H11L10 22l9.5-13H13L13 2Z',
-    gift:          'M20 12v10H4V12M22 7H2v5h20V7ZM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7ZM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7Z',
-    award:         'M12 15a7 7 0 1 0 0-14 7 7 0 0 0 0 14Zm0 0v7M8.5 18.5l7 3M15.5 18.5l-7 3',
-    diamond:       'M2.7 10.3a2.41 2.41 0 0 0 0 3.41l7.59 7.59a2.41 2.41 0 0 0 3.41 0l7.59-7.59a2.41 2.41 0 0 0 0-3.41L13.7 2.71a2.41 2.41 0 0 0-3.41 0L2.7 10.3Z',
+    trophy:         'M12 2a1 1 0 0 1 1 1v1h5a1 1 0 0 1 1 1v4c0 2.76-1.86 5.08-4.38 5.8A6.002 6.002 0 0 1 13 17.92V20h2a1 1 0 1 1 0 2H9a1 1 0 1 1 0-2h2v-2.08A6.002 6.002 0 0 1 6.38 13.8C3.86 13.08 2 10.76 2 8V5a1 1 0 0 1 1-1h5V3a1 1 0 0 1 1-1h3Zm-6 4H4v2c0 1.65 1.02 3.07 2.47 3.65A6.03 6.03 0 0 1 6 10V6Zm12 0h-2v4c0 .68-.1 1.33-.47 1.65C17.98 11.07 19 9.65 19 8V6Z',
+    lightning:      'M13 2 4.5 13.5H11L10 22l9.5-13H13L13 2Z',
+    calculator:     'M6 2h12a2 2 0 0 1 2 2v16a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2Zm0 2v16h12V4H6Zm2 2h2v2H8V6Zm3 0h2v2h-2V6Zm3 0h2v2h-2V6ZM8 10h8v2H8v-2Zm0 4h8v2H8v-2Zm0 4h4v2H8v-2Z',
+    textT:          'M5 4h14a1 1 0 0 1 1 1v3a1 1 0 1 1-2 0V6h-5v13h2a1 1 0 1 1 0 2H9a1 1 0 1 1 0-2h2V6H6v2a1 1 0 0 1-2 0V5a1 1 0 0 1 1-1Z',
+    swords:         'M6.5 1 1 6.5l5.5 5.5 1.5-1.5-4-4 3-3 4 4L12.5 6.5 6.5 1Zm11 0 5.5 5.5-5.5 5.5-1.5-1.5 4-4-3-3-4 4L11.5 6.5 17.5 1ZM3 15l-2 2 2 2h16l2-2-2-2H3Z',
+    medal:          'M12 2a5 5 0 1 1 0 10A5 5 0 0 1 12 2Zm0 2a3 3 0 1 0 0 6 3 3 0 0 0 0-6Zm-5 9-3 9h16l-3-9a7 7 0 0 1-10 0Z',
+    star:           'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2Z',
+    flame:          'M12 1c0 0 4 4 4 9a4 4 0 0 1-8 0c0-1.5.5-3 1.5-4.5C9.5 7 10 9 10 9s2-2.5 2-8Zm-4 10a4 4 0 1 0 8 0c0 2-4 7-4 7s-4-5-4-7Z',
+    shield:         'M12 1 3 5v7c0 5.25 3.75 10.15 9 11.25C17.25 22.15 21 17.25 21 12V5l-9-4Zm0 2.18 7 3.11V12c0 4.1-2.97 8.06-7 9.23C7.97 20.06 5 16.1 5 12V6.29l7-3.11Z',
+    chartBar:       'M3 3h2v18H3V3Zm4 6h2v12H7V9Zm4-4h2v16h-2V5Zm4 2h2v14h-2V7Zm4 4h2v10h-2v-10Z',
+    arrowLeft:      'M19 12H5m7-7-7 7 7 7',
+    arrowRight:     'M5 12h14m-7-7 7 7-7 7',
+    house:          'M3 12l9-9 9 9M5 10v9a1 1 0 0 0 1 1h4v-5h4v5h4a1 1 0 0 0 1-1v-9',
+    users:          'M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm14 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75',
+    clock:          'M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2Zm0 2a8 8 0 1 1 0 16A8 8 0 0 1 12 4Zm0 2v6l4 2-1 1.73-5-2.5V6H12Z',
+    shuffle:        'M16 3h5v5l-1.5-1.5-4.5 4.5-4-4L5 13.5 3.5 12 9 6.5l4 4 3.5-3.5L16 3Zm5 13-1.5-1.5-4.5-4.5-4 4-5.5-5.5L4 10l5.5 5.5 4-4 3.5 3.5L16 17h5v-1Z',
+    checkCircle:    'M22 11.08V12a10 10 0 1 1-5.93-9.14M22 4 12 14.01l-3-3',
+    xCircle:        'M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2Zm3 7-6 6m0-6 6 6',
+    warning:        'M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0ZM12 9v4m0 4h.01',
+    hourglass:      'M5 2h14M5 22h14M17 2v4l-5 4 5 4v4M7 2v4l5 4-5 4v4',
+    gameController: 'M6 12h4m-2-2v4M15 12h.01M18 12h.01M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78Z',
+    crown:          'M2 20h20M5 20 3 8l5 5 4-8 4 8 5-5-2 12H5Z',
+    person:         'M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Z',
+    sparkle:        'M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83',
+    skipForward:    'M5 4l10 8-10 8V4ZM19 5v14',
+    x:              'M18 6 6 18M6 6l12 12',
+    info:           'M12 2a10 10 0 1 0 0 20A10 10 0 0 0 12 2Zm0 9v5m0-8h.01',
+    play:           'M5 3l14 9-14 9V3Z',
+    handWaving:     'M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v0M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v2M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8M6 14v-3a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v4c0 3.31 2.69 6 6 6h4c2.67 0 4.94-1.7 5.72-4.07',
+    close:          'M18 6 6 18M6 6l12 12',
+    infinity:       'M12 12c-2-2.5-4-4-6-4a4 4 0 0 0 0 8c2 0 4-1.5 6-4Zm0 0c2 2.5 4 4 6 4a4 4 0 0 0 0-8c-2 0-4 1.5-6 4Z',
+    zap:            'M13 2 4.5 13.5H11L10 22l9.5-13H13L13 2Z',
+    gift:           'M20 12v10H4V12M22 7H2v5h20V7ZM12 22V7M12 7H7.5a2.5 2.5 0 0 1 0-5C11 2 12 7 12 7ZM12 7h4.5a2.5 2.5 0 0 0 0-5C13 2 12 7 12 7Z',
+    award:          'M12 15a7 7 0 1 0 0-14 7 7 0 0 0 0 14Zm0 0v7M8.5 18.5l7 3M15.5 18.5l-7 3',
+    diamond:        'M2.7 10.3a2.41 2.41 0 0 0 0 3.41l7.59 7.59a2.41 2.41 0 0 0 3.41 0l7.59-7.59a2.41 2.41 0 0 0 0-3.41L13.7 2.71a2.41 2.41 0 0 0-3.41 0L2.7 10.3Z',
+    // New icons for new games
+    checkSquare:    'M9 11l3 3L22 4M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11',
+    alertTriangle: 'M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0ZM12 9v4m0 4h.01',
+    skull:          'M12 2a9 9 0 0 1 9 9c0 3.18-1.65 5.97-4.14 7.62L16 21H8l-.86-2.38A9 9 0 0 1 3 11a9 9 0 0 1 9-9ZM9 17h6M9 14h.01M15 14h.01',
+    target:         'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20Zm0-6a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0-2a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z',
+    bolt:           'M13 2 4.5 13.5H11L10 22l9.5-13H13L13 2Z',
+    heartPulse:     'M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7ZM3.22 12H9.5l1.5-3 2 4.5 1.5-3h3.27',
+    zeroOneBit:     'M9 8h1v8H9zM14 8c1.1 0 2 .9 2 2v4c0 1.1-.9 2-2 2h-1V8h1z',
   };
 
   function _icon(name, size = 20, opts = {}) {
-    const pathData   = _ICONS[name] || _ICONS.sparkle;
-    const color      = opts.color || 'currentColor';
-    const cls        = opts.class ? ` class="${opts.class}"` : '';
+    const pathData    = _ICONS[name] || _ICONS.sparkle;
+    const color       = opts.color || 'currentColor';
+    const cls         = opts.class ? ` class="${opts.class}"` : '';
     const strokeIcons = new Set([
       'arrowLeft','arrowRight','house','users','clock','shuffle','checkCircle','xCircle',
       'warning','hourglass','gameController','crown','sparkle','skipForward','x','info',
       'play','handWaving','close','person','shield','swords','lightning','trophy','medal',
       'flame','star','chartBar','textT','calculator','trophy','infinity','zap','gift',
-      'award','diamond',
+      'award','diamond','checkSquare','alertTriangle','skull','target','bolt','heartPulse',
+      'zeroOneBit',
     ]);
     const useStroke = strokeIcons.has(name);
     if (useStroke) {
@@ -81,31 +89,29 @@
 
   /* ══════════════════════════════════════════════════════════════
      2GO-STYLE LEVEL SYSTEM
-     20 tiers with steep curves — early levels feel achievable,
-     top tiers require real dedication.
   ══════════════════════════════════════════════════════════════ */
 
   const LEVELS = [
-    { name: 'Newbie',       minXP: 0,       icon: 'person',     color: '#9ca3af', rank: 1  },
-    { name: 'Learner',      minXP: 150,     icon: 'textT',      color: '#6b7280', rank: 2  },
-    { name: 'Curious',      minXP: 400,     icon: 'sparkle',    color: '#60a5fa', rank: 3  },
-    { name: 'Scholar',      minXP: 900,     icon: 'award',      color: '#3b82f6', rank: 4  },
-    { name: 'Apprentice',   minXP: 1_800,   icon: 'star',       color: '#818cf8', rank: 5  },
-    { name: 'Achiever',     minXP: 3_200,   icon: 'chartBar',   color: '#a78bfa', rank: 6  },
-    { name: 'Challenger',   minXP: 5_500,   icon: 'swords',     color: '#7c3aed', rank: 7  },
-    { name: 'Expert',       minXP: 9_000,   icon: 'flame',      color: '#f59e0b', rank: 8  },
-    { name: 'Specialist',   minXP: 14_000,  icon: 'shield',     color: '#f97316', rank: 9  },
-    { name: 'Prodigy',      minXP: 21_000,  icon: 'lightning',  color: '#ef4444', rank: 10 },
-    { name: 'Elite',        minXP: 30_000,  icon: 'medal',      color: '#e11d48', rank: 11 },
-    { name: 'Veteran',      minXP: 42_000,  icon: 'crown',      color: '#ec4899', rank: 12 },
-    { name: 'Master',       minXP: 58_000,  icon: 'trophy',     color: '#d946ef', rank: 13 },
-    { name: 'Grandmaster',  minXP: 80_000,  icon: 'diamond',    color: '#a855f7', rank: 14 },
-    { name: 'Champion',     minXP: 110_000, icon: 'zap',        color: '#0ea5e9', rank: 15 },
-    { name: 'Legend',       minXP: 150_000, icon: 'star',       color: '#06b6d4', rank: 16 },
-    { name: 'Mythic',       minXP: 200_000, icon: 'flame',      color: '#10b981', rank: 17 },
-    { name: 'Titan',        minXP: 260_000, icon: 'shield',     color: '#84cc16', rank: 18 },
-    { name: 'Immortal',     minXP: 330_000, icon: 'infinity',   color: '#eab308', rank: 19 },
-    { name: 'Absolute',     minXP: 420_000, icon: 'sparkle',    color: '#f43f5e', rank: 20 },
+    { name: 'Newbie',      minXP: 0,       icon: 'person',    color: '#9ca3af', rank: 1  },
+    { name: 'Learner',     minXP: 150,     icon: 'textT',     color: '#6b7280', rank: 2  },
+    { name: 'Curious',     minXP: 400,     icon: 'sparkle',   color: '#60a5fa', rank: 3  },
+    { name: 'Scholar',     minXP: 900,     icon: 'award',     color: '#3b82f6', rank: 4  },
+    { name: 'Apprentice',  minXP: 1_800,   icon: 'star',      color: '#818cf8', rank: 5  },
+    { name: 'Achiever',    minXP: 3_200,   icon: 'chartBar',  color: '#a78bfa', rank: 6  },
+    { name: 'Challenger',  minXP: 5_500,   icon: 'swords',    color: '#7c3aed', rank: 7  },
+    { name: 'Expert',      minXP: 9_000,   icon: 'flame',     color: '#f59e0b', rank: 8  },
+    { name: 'Specialist',  minXP: 14_000,  icon: 'shield',    color: '#f97316', rank: 9  },
+    { name: 'Prodigy',     minXP: 21_000,  icon: 'lightning', color: '#ef4444', rank: 10 },
+    { name: 'Elite',       minXP: 30_000,  icon: 'medal',     color: '#e11d48', rank: 11 },
+    { name: 'Veteran',     minXP: 42_000,  icon: 'crown',     color: '#ec4899', rank: 12 },
+    { name: 'Master',      minXP: 58_000,  icon: 'trophy',    color: '#d946ef', rank: 13 },
+    { name: 'Grandmaster', minXP: 80_000,  icon: 'diamond',   color: '#a855f7', rank: 14 },
+    { name: 'Champion',    minXP: 110_000, icon: 'zap',       color: '#0ea5e9', rank: 15 },
+    { name: 'Legend',      minXP: 150_000, icon: 'star',      color: '#06b6d4', rank: 16 },
+    { name: 'Mythic',      minXP: 200_000, icon: 'flame',     color: '#10b981', rank: 17 },
+    { name: 'Titan',       minXP: 260_000, icon: 'shield',    color: '#84cc16', rank: 18 },
+    { name: 'Immortal',    minXP: 330_000, icon: 'infinity',  color: '#eab308', rank: 19 },
+    { name: 'Absolute',    minXP: 420_000, icon: 'sparkle',   color: '#f43f5e', rank: 20 },
   ];
 
   /* ══════════════════════════════════════════════════════════════
@@ -113,19 +119,22 @@
   ══════════════════════════════════════════════════════════════ */
 
   const BADGES = [
-    { id: 'first_game',    name: 'First Steps',     desc: 'Play your first game',               icon: 'gameController', xp: 0 },
-    { id: 'perfect_quiz',  name: 'Perfect Score',   desc: 'Get 100% on any quiz',               icon: 'checkCircle',    xp: 0 },
-    { id: 'streak_5',      name: 'On Fire',         desc: 'Win 5 games in a row',               icon: 'flame',          xp: 0 },
-    { id: 'challenge_win', name: 'Duelist',         desc: 'Win your first challenge',           icon: 'swords',         xp: 0 },
-    { id: 'games_10',      name: 'Dedicated',       desc: 'Play 10 games total',                icon: 'medal',          xp: 0 },
-    { id: 'games_50',      name: 'Veteran',         desc: 'Play 50 games total',                icon: 'shield',         xp: 0 },
-    { id: 'xp_500',        name: 'Rising Star',     desc: 'Earn 500 XP',                        icon: 'star',           xp: 0 },
-    { id: 'xp_5000',       name: 'High Scorer',     desc: 'Earn 5,000 XP',                      icon: 'chartBar',       xp: 0 },
-    { id: 'xp_25000',      name: 'XP Hoarder',      desc: 'Earn 25,000 XP',                     icon: 'trophy',         xp: 0 },
-    { id: 'speed_demon',   name: 'Speed Demon',     desc: 'Answer 10 questions in < 5s each',   icon: 'lightning',      xp: 0 },
-    { id: 'math_master',   name: 'Math Wizard',     desc: 'Complete Speed Math on Hard',        icon: 'calculator',     xp: 0 },
-    { id: 'word_wizard',   name: 'Word Wizard',     desc: 'Unscramble 10 words correctly',      icon: 'textT',          xp: 0 },
-    { id: 'max_level',     name: 'Absolute Power',  desc: 'Reach max level — Absolute',         icon: 'sparkle',        xp: 0 },
+    { id: 'first_game',      name: 'First Steps',      desc: 'Play your first game',                       icon: 'gameController', xp: 0 },
+    { id: 'perfect_quiz',    name: 'Perfect Score',     desc: 'Get 100% on any quiz',                       icon: 'checkCircle',    xp: 0 },
+    { id: 'streak_5',        name: 'On Fire',           desc: 'Win 5 games in a row',                       icon: 'flame',          xp: 0 },
+    { id: 'challenge_win',   name: 'Duelist',           desc: 'Win your first challenge',                   icon: 'swords',         xp: 0 },
+    { id: 'games_10',        name: 'Dedicated',         desc: 'Play 10 games total',                        icon: 'medal',          xp: 0 },
+    { id: 'games_50',        name: 'Veteran',           desc: 'Play 50 games total',                        icon: 'shield',         xp: 0 },
+    { id: 'xp_500',          name: 'Rising Star',       desc: 'Earn 500 XP',                                icon: 'star',           xp: 0 },
+    { id: 'xp_5000',         name: 'High Scorer',       desc: 'Earn 5,000 XP',                              icon: 'chartBar',       xp: 0 },
+    { id: 'xp_25000',        name: 'XP Hoarder',        desc: 'Earn 25,000 XP',                             icon: 'trophy',         xp: 0 },
+    { id: 'speed_demon',     name: 'Speed Demon',       desc: 'Answer 10 questions in < 5s each',           icon: 'lightning',      xp: 0 },
+    { id: 'math_master',     name: 'Math Wizard',       desc: 'Complete Speed Math on Hard',                icon: 'calculator',     xp: 0 },
+    { id: 'word_wizard',     name: 'Word Wizard',       desc: 'Unscramble 10 words correctly',              icon: 'textT',          xp: 0 },
+    { id: 'max_level',       name: 'Absolute Power',    desc: 'Reach max level — Absolute',                 icon: 'sparkle',        xp: 0 },
+    { id: 'tf_streak_10',    name: 'Truth Seeker',      desc: 'Get a 10-answer streak in True or False',    icon: 'checkSquare',    xp: 0 },
+    { id: 'sudden_death_15', name: 'Untouchable',       desc: 'Survive 15 questions in Sudden Death',       icon: 'skull',          xp: 0 },
+    { id: 'sudden_death_30', name: 'Immortal Run',      desc: 'Survive 30 questions in Sudden Death',       icon: 'infinity',       xp: 0 },
   ];
 
   /* ══════════════════════════════════════════════════════════════
@@ -138,11 +147,23 @@
   const XP_CHALLENGE_WIN  = 30;
   const MAX_SHUFFLES      = 3;
 
-  const QUIZ_BLITZ_QUESTIONS = 10;
-  const QUIZ_BLITZ_TIME      = 15;
-  const SPEED_MATH_TIME      = 8;
-  const WORD_SCRAMBLE_TIME   = 20;
-  const CHALLENGE_EXPIRE_MS  = 24 * 60 * 60 * 1000;
+  const QUIZ_BLITZ_QUESTIONS     = 10;
+  const QUIZ_BLITZ_TIME          = 15;
+  const SPEED_MATH_TIME          = 8;
+  const WORD_SCRAMBLE_TIME       = 20;
+  const CHALLENGE_EXPIRE_MS      = 24 * 60 * 60 * 1000;
+
+  // True or False constants
+  const TF_TIME_PER_QUESTION     = 10; // seconds — tight but fair
+  const TF_XP_PER_CORRECT        = 8;
+  const TF_XP_STREAK_BONUS       = 4;  // bonus per question when streak >= 3
+  const TF_STREAK_THRESHOLD      = 3;
+
+  // Sudden Death constants
+  const SD_TIME_PER_QUESTION     = 12; // seconds
+  const SD_XP_BASE               = 5;
+  const SD_XP_INCREMENT          = 2;  // extra XP per question (compounds)
+  const SD_MAX_QUESTIONS         = 50; // safety ceiling
 
   /* ══════════════════════════════════════════════════════════════
      STATE
@@ -156,9 +177,8 @@
   let _questionStartTime  = 0;
   let _speedDemonCount    = 0;
 
-  // Firestore listener for incoming challenges (student only)
   let _challengeListener  = null;
-  let _notifiedChallenges = new Set(); // IDs already notified this session
+  let _notifiedChallenges = new Set();
 
   /* ══════════════════════════════════════════════════════════════
      HELPERS
@@ -169,10 +189,6 @@
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  /**
-   * Safe question renderer: applies LaTeX preprocessing then HTML-escapes.
-   * Mirrors Exam._safeQ so questions look the same in both contexts.
-   */
   function _safeQ(str) {
     if (str == null) return '';
     const processed = (window.Exam && typeof window.Exam.preprocessLatex === 'function')
@@ -181,7 +197,6 @@
     return _esc(processed);
   }
 
-  /** Trigger KaTeX auto-render on the current app root after a render cycle. */
   function _renderKatex() {
     requestAnimationFrame(function () {
       if (window._katexAutoRenderReady && window.renderMathInElement) {
@@ -203,10 +218,10 @@
     });
   }
 
-  function _db()      { return window.fbDb; }
-  function _uid()     { return window.AppState && window.AppState.userId; }
-  function _student() { return (window.AppState && window.AppState.studentData) || {}; }
-  function _isOnline(){ return navigator.onLine !== false; }
+  function _db()       { return window.fbDb; }
+  function _uid()      { return window.AppState && window.AppState.userId; }
+  function _student()  { return (window.AppState && window.AppState.studentData) || {}; }
+  function _isOnline() { return navigator.onLine !== false; }
 
   function _getLevelForXP(xp) {
     let level = LEVELS[0];
@@ -218,21 +233,17 @@
     for (let i = 0; i < LEVELS.length - 1; i++) {
       if (xp < LEVELS[i + 1].minXP) return LEVELS[i + 1];
     }
-    return null; // already at max
+    return null;
   }
 
-  function _isMaxLevel(xp) {
-    return xp >= LEVELS[LEVELS.length - 1].minXP;
-  }
+  function _isMaxLevel(xp)  { return xp >= LEVELS[LEVELS.length - 1].minXP; }
 
   function _xpProgressPct(xp) {
     if (_isMaxLevel(xp)) return 100;
     const current = _getLevelForXP(xp);
     const next    = _getNextLevel(xp);
     if (!next) return 100;
-    const base   = current.minXP;
-    const target = next.minXP;
-    return Math.min(100, Math.round(((xp - base) / (target - base)) * 100));
+    return Math.min(100, Math.round(((xp - current.minXP) / (next.minXP - current.minXP)) * 100));
   }
 
   function _shuffleArray(arr) {
@@ -299,11 +310,8 @@
   async function _loadProfile() {
     const uid = _uid();
     if (!uid) return null;
-
-    // Always try cache first (instant)
     const cached = await _loadProfileFromCache();
     if (cached) _profile = cached;
-
     if (_isOnline()) {
       try {
         const snap = await _db().collection('gameProfiles').doc(uid).get();
@@ -335,7 +343,7 @@
       totalWins:  0,
       streak:     0,
       badges:     [],
-      stats:      { quizBlitz: 0, speedMath: 0, wordScramble: 0, challenges: 0 },
+      stats:      { quizBlitz: 0, speedMath: 0, wordScramble: 0, challenges: 0, trueOrFalse: 0, suddenDeath: 0 },
       createdAt:  new Date().toISOString(),
     };
   }
@@ -354,23 +362,25 @@
     const earnedBadges = [];
     const _has = (id) => newBadges.includes(id);
 
-    if (!_has('first_game')    && totalGames >= 1)                                                             { newBadges.push('first_game');    earnedBadges.push('first_game');    }
-    if (!_has('perfect_quiz')  && extraData && extraData.perfect)                                              { newBadges.push('perfect_quiz');   earnedBadges.push('perfect_quiz');   }
-    if (!_has('streak_5')      && newStreak >= 5)                                                              { newBadges.push('streak_5');       earnedBadges.push('streak_5');       }
-    if (!_has('challenge_win') && extraData && extraData.challengeWin)                                         { newBadges.push('challenge_win');  earnedBadges.push('challenge_win');  }
-    if (!_has('games_10')      && totalGames >= 10)                                                            { newBadges.push('games_10');       earnedBadges.push('games_10');       }
-    if (!_has('games_50')      && totalGames >= 50)                                                            { newBadges.push('games_50');       earnedBadges.push('games_50');       }
-    if (!_has('xp_500')        && newXP >= 500)                                                                { newBadges.push('xp_500');         earnedBadges.push('xp_500');         }
-    if (!_has('xp_5000')       && newXP >= 5000)                                                               { newBadges.push('xp_5000');        earnedBadges.push('xp_5000');        }
-    if (!_has('xp_25000')      && newXP >= 25000)                                                              { newBadges.push('xp_25000');       earnedBadges.push('xp_25000');       }
-    if (!_has('speed_demon')   && extraData && extraData.speedDemonCount >= 10)                                { newBadges.push('speed_demon');    earnedBadges.push('speed_demon');    }
-    if (!_has('math_master')   && gameType === 'speedMath' && extraData && extraData.difficulty === 'hard')   { newBadges.push('math_master');    earnedBadges.push('math_master');    }
-    if (!_has('word_wizard')   && extraData && extraData.wordCorrect >= 10)                                    { newBadges.push('word_wizard');    earnedBadges.push('word_wizard');    }
-    if (!_has('max_level')     && _isMaxLevel(newXP))                                                          { newBadges.push('max_level');      earnedBadges.push('max_level');      }
+    if (!_has('first_game')      && totalGames >= 1)                                                              { newBadges.push('first_game');      earnedBadges.push('first_game');      }
+    if (!_has('perfect_quiz')    && extraData && extraData.perfect)                                               { newBadges.push('perfect_quiz');     earnedBadges.push('perfect_quiz');     }
+    if (!_has('streak_5')        && newStreak >= 5)                                                               { newBadges.push('streak_5');         earnedBadges.push('streak_5');         }
+    if (!_has('challenge_win')   && extraData && extraData.challengeWin)                                          { newBadges.push('challenge_win');    earnedBadges.push('challenge_win');    }
+    if (!_has('games_10')        && totalGames >= 10)                                                             { newBadges.push('games_10');         earnedBadges.push('games_10');         }
+    if (!_has('games_50')        && totalGames >= 50)                                                             { newBadges.push('games_50');         earnedBadges.push('games_50');         }
+    if (!_has('xp_500')          && newXP >= 500)                                                                 { newBadges.push('xp_500');           earnedBadges.push('xp_500');           }
+    if (!_has('xp_5000')         && newXP >= 5000)                                                                { newBadges.push('xp_5000');          earnedBadges.push('xp_5000');          }
+    if (!_has('xp_25000')        && newXP >= 25000)                                                               { newBadges.push('xp_25000');         earnedBadges.push('xp_25000');         }
+    if (!_has('speed_demon')     && extraData && extraData.speedDemonCount >= 10)                                 { newBadges.push('speed_demon');      earnedBadges.push('speed_demon');      }
+    if (!_has('math_master')     && gameType === 'speedMath' && extraData && extraData.difficulty === 'hard')    { newBadges.push('math_master');      earnedBadges.push('math_master');      }
+    if (!_has('word_wizard')     && extraData && extraData.wordCorrect >= 10)                                     { newBadges.push('word_wizard');      earnedBadges.push('word_wizard');      }
+    if (!_has('max_level')       && _isMaxLevel(newXP))                                                           { newBadges.push('max_level');        earnedBadges.push('max_level');        }
+    if (!_has('tf_streak_10')    && extraData && extraData.tfBestStreak >= 10)                                    { newBadges.push('tf_streak_10');     earnedBadges.push('tf_streak_10');     }
+    if (!_has('sudden_death_15') && extraData && extraData.sdSurvived >= 15)                                      { newBadges.push('sudden_death_15');  earnedBadges.push('sudden_death_15');  }
+    if (!_has('sudden_death_30') && extraData && extraData.sdSurvived >= 30)                                      { newBadges.push('sudden_death_30');  earnedBadges.push('sudden_death_30');  }
 
     const levelData = _getLevelForXP(newXP);
 
-    // Update local profile immediately (works offline)
     if (_profile) {
       _profile.xp         = newXP;
       _profile.totalGames = totalGames;
@@ -414,7 +424,6 @@
         console.warn('[game] _awardXP Firebase failed (local saved):', e);
       }
     } else {
-      // Queue the XP update for when we reconnect
       if (window.LocalDB) {
         LocalDB.enqueue('set', 'gameProfiles', uid, {
           xp:         newXP,
@@ -432,16 +441,12 @@
 
   /* ══════════════════════════════════════════════════════════════
      CHALLENGE NOTIFICATION LISTENER
-     Attaches when a student opens the game lobby.
-     Fires a popup whenever a new pending challenge arrives.
   ══════════════════════════════════════════════════════════════ */
 
   function _startChallengeListener() {
     const uid = _uid();
     if (!uid || _challengeListener) return;
 
-    // Inject popup animation styles immediately so popups work
-    // even if the game lobby has never been opened
     if (!document.getElementById('_gameChallengePopupStyles')) {
       const style = document.createElement('style');
       style.id = '_gameChallengePopupStyles';
@@ -458,19 +463,13 @@
       document.head.appendChild(style);
     }
 
-    // Build a baseline of already-existing pending challenges so we
-    // don't fire popups for old challenges on page load
     _db()
       .collection('gameChallenges')
       .where('challengedUid', '==', uid)
       .where('status', '==', 'pending')
       .get()
       .then(function(existingSnap) {
-        existingSnap.forEach(function(doc) {
-          _notifiedChallenges.add(doc.id);
-        });
-
-        // Now attach the real-time listener — only NEW challenges will trigger popups
+        existingSnap.forEach(function(doc) { _notifiedChallenges.add(doc.id); });
         _challengeListener = _db()
           .collection('gameChallenges')
           .where('challengedUid', '==', uid)
@@ -486,14 +485,10 @@
               _notifiedChallenges.add(doc.id);
               _showChallengePopup(doc.id, data);
             });
-          }, function(err) {
-            console.warn('[game] challenge listener error:', err);
-          });
+          }, function(err) { console.warn('[game] challenge listener error:', err); });
       })
       .catch(function(err) {
         console.warn('[game] challenge baseline fetch error — attaching listener without baseline:', err);
-
-        // Fallback: attach listener anyway, mark all current as seen first
         _challengeListener = _db()
           .collection('gameChallenges')
           .where('challengedUid', '==', uid)
@@ -509,35 +504,23 @@
               _notifiedChallenges.add(doc.id);
               _showChallengePopup(doc.id, data);
             });
-          }, function(err) {
-            console.warn('[game] challenge listener error:', err);
-          });
+          }, function(err) { console.warn('[game] challenge listener error:', err); });
       });
   }
 
   function _stopChallengeListener() {
-    if (_challengeListener) {
-      _challengeListener();
-      _challengeListener = null;
-    }
+    if (_challengeListener) { _challengeListener(); _challengeListener = null; }
   }
 
-  /**
-   * Shows an in-app popup notification when a new challenge arrives.
-   * Accepts → starts the challenged player's turn immediately.
-   * Declines → updates Firestore and dismisses.
-   */
   function _showChallengePopup(challengeId, data) {
-    // Don't show during an active exam
     if (window.AppState && window.AppState.exam && window.AppState.exam.step === 'exam') return;
-
     const existing = document.getElementById('gameChallengePopup_' + challengeId);
     if (existing) return;
 
-    const subject  = data.subject === 'random' ? 'Mixed Subjects' : _esc(data.subject || 'Unknown');
-    const from     = _esc(data.challengerName || 'A classmate');
-    const exp      = data.expiresAt && data.expiresAt.toDate ? data.expiresAt.toDate() : null;
-    const expStr   = exp
+    const subject = data.subject === 'random' ? 'Mixed Subjects' : _esc(data.subject || 'Unknown');
+    const from    = _esc(data.challengerName || 'A classmate');
+    const exp     = data.expiresAt && data.expiresAt.toDate ? data.expiresAt.toDate() : null;
+    const expStr  = exp
       ? exp.toLocaleString('en-GB', { weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })
       : '24 hours';
 
@@ -590,55 +573,24 @@
         </button>
       </div>`;
 
-    // Inject animation keyframes once
-    if (!document.getElementById('_gameChallengePopupStyles')) {
-      const style = document.createElement('style');
-      style.id = '_gameChallengePopupStyles';
-      style.textContent = `
-        @keyframes gameChallengePopIn {
-          from { opacity:0; transform:translateX(110%) scale(.9); }
-          to   { opacity:1; transform:translateX(0) scale(1); }
-        }
-        @keyframes gameChallengePopOut {
-          from { opacity:1; transform:translateX(0) scale(1); max-height:300px; }
-          to   { opacity:0; transform:translateX(110%) scale(.9); max-height:0; }
-        }
-      `;
-      document.head.appendChild(style);
-    }
-
     document.body.appendChild(popup);
-
-    // Auto-dismiss after 30 seconds
     const autoTimer = setTimeout(() => _dismissChallengePopup(challengeId), 30_000);
 
-    function _dismiss() {
-      clearTimeout(autoTimer);
-      _dismissChallengePopup(challengeId);
-    }
+    function _dismiss() { clearTimeout(autoTimer); _dismissChallengePopup(challengeId); }
 
-    document.getElementById('gameChallengePopupDismiss_' + challengeId)
-      .addEventListener('click', _dismiss);
-
-    document.getElementById('gameChallengeAcceptBtn_' + challengeId)
-      .addEventListener('click', async () => {
-        _dismiss();
-        await _loadProfile(); // refresh profile before starting
-        await _acceptChallenge(challengeId);
-      });
-
-    document.getElementById('gameChallengeDeclineBtn_' + challengeId)
-      .addEventListener('click', async () => {
-        _dismiss();
-        try {
-          await _db().collection('gameChallenges').doc(challengeId).update({
-            status: 'declined',
-          });
-          window.UI && window.UI.toast('Challenge declined.', 'info', 3000);
-        } catch (e) {
-          console.warn('[game] decline challenge error:', e);
-        }
-      });
+    document.getElementById('gameChallengePopupDismiss_' + challengeId).addEventListener('click', _dismiss);
+    document.getElementById('gameChallengeAcceptBtn_' + challengeId).addEventListener('click', async () => {
+      _dismiss();
+      await _loadProfile();
+      await _acceptChallenge(challengeId);
+    });
+    document.getElementById('gameChallengeDeclineBtn_' + challengeId).addEventListener('click', async () => {
+      _dismiss();
+      try {
+        await _db().collection('gameChallenges').doc(challengeId).update({ status: 'declined' });
+        window.UI && window.UI.toast('Challenge declined.', 'info', 3000);
+      } catch (e) { console.warn('[game] decline challenge error:', e); }
+    });
   }
 
   function _dismissChallengePopup(challengeId) {
@@ -665,7 +617,6 @@
     const xpPct     = _xpProgressPct(_profile.xp || 0);
     const maxed     = _isMaxLevel(_profile.xp || 0);
 
-    // Fetch pending challenges (offline-safe: skip quietly if offline)
     let pendingChallenges = [];
     let awaitingPlay      = [];
     if (_isOnline()) {
@@ -688,9 +639,7 @@
             if (!exp || exp > new Date()) awaitingPlay.push({ id: doc.id, ...d });
           });
         }
-      } catch (e) {
-        console.warn('[game] challenge fetch error (offline?):', e);
-      }
+      } catch (e) { console.warn('[game] challenge fetch error (offline?):', e); }
     }
 
     const offlineBanner = !_isOnline()
@@ -725,8 +674,7 @@
         }).join('')
       : `<span style="font-size:.8125rem;color:var(--text-4);font-style:italic;">No badges yet — play games to earn them.</span>`;
 
-    // Level progression strip — show surrounding levels for context
-    const currentRank = level.rank;
+    const currentRank    = level.rank;
     const levelStripHtml = _renderLevelStrip(currentRank, _profile.xp || 0);
 
     window.UI.mount(`
@@ -753,7 +701,6 @@
           </div>
         </div>
 
-        <!-- XP Progress bar -->
         <div class="glass-dark game-xp-bar-wrap">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
             <span style="font-size:.8125rem;font-weight:700;color:var(--text-2);display:flex;align-items:center;gap:.3rem;">
@@ -772,9 +719,7 @@
             You have reached the highest rank. Your legacy is permanent.</p>` : ''}
         </div>
 
-        <!-- Level progression strip -->
         ${levelStripHtml}
-
         ${offlineBanner}
         ${challengeNotif}
         ${awaitingNotif}
@@ -821,6 +766,26 @@
               <span class="game-card__tag game-card__tag--xp">+${XP_PER_CORRECT} XP per word</span>
             </div>
           </div>
+          <div class="game-card" onclick="Game._selectGame('trueOrFalse')">
+            <div class="game-card__icon">${_icon('checkSquare', 32, { color: '#10b981' })}</div>
+            <div class="game-card__title">True or False Blitz</div>
+            <div class="game-card__desc">Rapid-fire T/F statements from your subjects. Build streaks for bonus XP.</div>
+            <div class="game-card__meta">
+              <span class="game-card__tag">T/F</span>
+              <span class="game-card__tag">10s / question</span>
+              <span class="game-card__tag game-card__tag--xp">+streak multiplier</span>
+            </div>
+          </div>
+          <div class="game-card game-card--sudden-death" onclick="Game._selectGame('suddenDeath')">
+            <div class="game-card__icon">${_icon('skull', 32, { color: '#e11d48' })}</div>
+            <div class="game-card__title">Sudden Death</div>
+            <div class="game-card__desc">One wrong answer and it's over. Survive as long as possible for compounding XP.</div>
+            <div class="game-card__meta">
+              <span class="game-card__tag">High Risk</span>
+              <span class="game-card__tag">12s / question</span>
+              <span class="game-card__tag game-card__tag--xp">XP compounds</span>
+            </div>
+          </div>
           <div class="game-card game-card--challenge" onclick="Game._selectGame('challenge')">
             <div class="game-card__icon">${_icon('swords', 32, { color: 'var(--danger)' })}</div>
             <div class="game-card__title">Challenge a Classmate</div>
@@ -863,7 +828,6 @@
     _updateGameNavBadge(pendingChallenges.length + awaitingPlay.length);
   }
 
-  /** Renders a horizontal strip showing nearby levels (current ±2). */
   function _renderLevelStrip(currentRank, xp) {
     const start = Math.max(0, currentRank - 3);
     const end   = Math.min(LEVELS.length - 1, currentRank + 2);
@@ -908,6 +872,8 @@
     if      (type === 'quizBlitz')    _showQuizBlitzSetup();
     else if (type === 'speedMath')    _showSpeedMathSetup();
     else if (type === 'wordScramble') _showWordScrambleSetup();
+    else if (type === 'trueOrFalse')  _showTrueOrFalseSetup();
+    else if (type === 'suddenDeath')  _showSuddenDeathSetup();
     else if (type === 'challenge')    _showChallengeSetup();
   }
 
@@ -1023,7 +989,6 @@
       </div>`);
 
     _renderKatex();
-
     _timerEl = document.getElementById('quizTimer');
     _startTimer(QUIZ_BLITZ_TIME,
       (s) => { if (_timerEl) { _timerEl.textContent = s; _timerEl.className = 'game-timer ' + (s <= 5 ? 'timer-red' : s <= 10 ? 'timer-yellow' : 'timer-green'); } },
@@ -1422,7 +1387,669 @@
   }
 
   /* ══════════════════════════════════════════════════════════════
-     CHALLENGE SYSTEM
+     TRUE OR FALSE BLITZ  (NEW)
+     ─────────────────────────────────────────────────────────────
+     Each round presents a statement drawn from the MCQ bank.
+     The statement is either the question + the CORRECT option
+     (label = TRUE) or the question + a WRONG option (label = FALSE).
+     Students tap TRUE or FALSE. Streaks of 3+ earn a bonus per Q.
+  ══════════════════════════════════════════════════════════════ */
+
+  /**
+   * Build a pool of T/F items from the MCQ question bank.
+   * Each item:  { statement, isTrue, subject, explanation }
+   */
+  function _buildTFPool(subjects, maxPerSubject) {
+    const qBank    = window.questions || {};
+    const classKey = (_student().class || '').replace(/\s+/g, '').toLowerCase();
+    const pool     = [];
+
+    for (const subj of subjects) {
+      const all = (qBank[classKey] || {})[subj] || [];
+      const sample = _shuffleArray(all).slice(0, maxPerSubject);
+      for (const q of sample) {
+        if (!q.opts || q.opts.length < 2 || q.ans == null) continue;
+
+        // TRUE item: correct answer presented as a completion of the question
+        pool.push({
+          statement:   q.q,
+          candidate:   q.opts[q.ans],
+          isTrue:      true,
+          subject:     subj,
+          explanation: q.exp || '',
+        });
+
+        // FALSE item: a random wrong option
+        const wrongOpts = q.opts.filter((_, i) => i !== q.ans);
+        if (wrongOpts.length > 0) {
+          const wrongOpt = wrongOpts[Math.floor(Math.random() * wrongOpts.length)];
+          pool.push({
+            statement:   q.q,
+            candidate:   wrongOpt,
+            isTrue:      false,
+            subject:     subj,
+            correctAns:  q.opts[q.ans],
+            explanation: q.exp || '',
+          });
+        }
+      }
+    }
+    return _shuffleArray(pool);
+  }
+
+  function _showTrueOrFalseSetup() {
+    const subjects = _getSubjectsForStudent();
+    if (subjects.length === 0) {
+      window.UI.toast('No subjects found for your class. Contact your teacher.', 'error');
+      return;
+    }
+    const subjectOptions = subjects.map(s => `<option value="${_esc(s)}">${_esc(s)}</option>`).join('');
+
+    _showModal(`
+      <div style="text-align:center;margin-bottom:1.25rem;">
+        <div style="margin-bottom:.5rem;">${_icon('checkSquare', 40, { color: '#10b981' })}</div>
+        <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">True or False Blitz</h2>
+        <p style="font-size:.875rem;color:var(--text-3);margin-top:.375rem;">
+          ${TF_TIME_PER_QUESTION}s per statement &middot; build streaks for bonus XP &middot; +${TF_XP_STREAK_BONUS} XP per answer on a streak of ${TF_STREAK_THRESHOLD}+
+        </p>
+      </div>
+      <div style="margin-bottom:1rem;">
+        <label style="display:block;font-size:.75rem;font-weight:600;color:var(--text-2);margin-bottom:.375rem;">Subject</label>
+        <select id="tfSubject" style="width:100%;">
+          <option value="random">Random Mix (all subjects)</option>
+          ${subjectOptions}
+        </select>
+      </div>
+      <div style="margin-bottom:1.5rem;">
+        <label style="display:block;font-size:.75rem;font-weight:600;color:var(--text-2);margin-bottom:.375rem;">Number of Statements</label>
+        <select id="tfCount" style="width:100%;">
+          <option value="10">10 statements</option>
+          <option value="15">15 statements</option>
+          <option value="20">20 statements</option>
+        </select>
+      </div>
+      <button onclick="Game._startTrueOrFalse()" class="btn btn-lg w-full" style="background:#10b981;color:#fff;">Start True or False</button>
+      <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full" style="margin-top:.5rem;">Cancel</button>
+    `);
+  }
+
+  function _startTrueOrFalse() {
+    const subjectSel = document.getElementById('tfSubject')?.value || 'random';
+    const count      = parseInt(document.getElementById('tfCount')?.value || '10', 10);
+    let subjects     = [];
+
+    if (subjectSel === 'random') {
+      subjects = _getSubjectsForStudent();
+    } else {
+      subjects = [subjectSel];
+    }
+
+    if (subjects.length === 0) { window.UI.toast('No subjects found.', 'error'); return; }
+
+    const perSubj = Math.max(5, Math.ceil(count / subjects.length) + 2);
+    const pool    = _buildTFPool(subjects, perSubj);
+
+    if (pool.length === 0) { window.UI.toast('Not enough questions to build T/F statements.', 'error'); return; }
+
+    const items = pool.slice(0, count);
+
+    _closeModal();
+    _gameState = {
+      type:        'trueOrFalse',
+      items,
+      currentIndex: 0,
+      score:        0,
+      streak:       0,
+      bestStreak:   0,
+      xpEarned:     0,
+      lastWasCorrect: false,
+      startedAt:    Date.now(),
+    };
+    _renderTFQuestion();
+  }
+
+  function _renderTFQuestion() {
+    const gs = _gameState;
+    if (!gs || gs.type !== 'trueOrFalse') return;
+
+    const item     = gs.items[gs.currentIndex];
+    const progress = gs.currentIndex + 1;
+    const total    = gs.items.length;
+    const pctWidth = Math.round((progress / total) * 100);
+    const streakOn = gs.streak >= TF_STREAK_THRESHOLD;
+
+    _questionStartTime = Date.now();
+
+    window.UI.mount(`
+      <div class="max-w-xl mx-auto animate-fadeIn" style="padding-bottom:2rem;">
+
+        <div class="glass game-quiz-header" style="border-top:3px solid #10b981;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;">
+            <div>
+              <span style="font-size:.75rem;font-weight:700;color:#10b981;text-transform:uppercase;letter-spacing:.05em;">
+                ${_icon('checkSquare', 13, { color: '#10b981' })} True or False
+              </span>
+              <div style="font-size:.875rem;color:var(--text-2);margin-top:1px;">${_esc(item.subject)} &middot; ${progress} of ${total}</div>
+            </div>
+            <div style="text-align:right;">
+              <div id="tfTimer" class="game-timer timer-green">${TF_TIME_PER_QUESTION}</div>
+              <div style="font-size:.6875rem;color:var(--text-4);">seconds</div>
+            </div>
+          </div>
+          <div class="game-progress-track"><div class="game-progress-fill" style="width:${pctWidth}%;background:#10b981;"></div></div>
+          <div style="display:flex;justify-content:space-between;margin-top:.375rem;align-items:center;">
+            <span style="font-size:.6875rem;color:var(--text-4);">${gs.score} correct</span>
+            ${streakOn
+              ? `<span style="font-size:.6875rem;font-weight:800;color:#f59e0b;display:flex;align-items:center;gap:.25rem;">
+                   ${_icon('flame', 12, { color: '#f59e0b' })} Streak x${gs.streak} &middot; +${TF_XP_STREAK_BONUS} XP bonus
+                 </span>`
+              : `<span style="font-size:.6875rem;color:var(--text-4);">Streak: ${gs.streak}</span>`}
+            <span style="font-size:.6875rem;color:var(--accent);font-weight:700;">${gs.xpEarned} XP</span>
+          </div>
+        </div>
+
+        <div class="glass" style="padding:1.5rem;margin:.75rem 0;text-align:center;">
+          <p style="font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+                    color:var(--text-3);margin-bottom:.625rem;">Is this statement TRUE or FALSE?</p>
+
+          <!-- The question stem -->
+          <div style="background:var(--bg-subtle);border:1px solid var(--border);border-radius:10px;
+                      padding:1rem 1.125rem;margin-bottom:.875rem;text-align:left;">
+            <p style="font-size:.6875rem;font-weight:700;color:var(--text-3);margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.06em;">
+              Question
+            </p>
+            <p style="font-size:.9375rem;font-weight:500;line-height:1.65;color:var(--text-1);">
+              ${_safeQ(item.statement)}
+            </p>
+          </div>
+
+          <!-- The candidate answer -->
+          <div style="background:var(--accent-subtle);border:2px solid var(--accent-border);border-radius:10px;
+                      padding:.875rem 1.125rem;margin-bottom:1.25rem;text-align:left;">
+            <p style="font-size:.6875rem;font-weight:700;color:var(--text-3);margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.06em;">
+              Proposed Answer
+            </p>
+            <p style="font-size:1.0625rem;font-weight:700;color:var(--accent-text);line-height:1.5;" id="tfCandidateText">
+              ${_safeQ(item.candidate)}
+            </p>
+          </div>
+
+          <!-- TRUE / FALSE buttons -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;">
+            <button id="tfTrueBtn" onclick="Game._answerTF(true)"
+                    class="game-tf-btn game-tf-btn--true">
+              ${_icon('checkCircle', 22, { color: '#fff' })}
+              TRUE
+            </button>
+            <button id="tfFalseBtn" onclick="Game._answerTF(false)"
+                    class="game-tf-btn game-tf-btn--false">
+              ${_icon('xCircle', 22, { color: '#fff' })}
+              FALSE
+            </button>
+          </div>
+        </div>
+
+        <div id="tfFeedback" style="min-height:3rem;"></div>
+
+        <div style="text-align:center;margin-top:.5rem;">
+          <button onclick="Game._abandonGame()" class="btn bg-gray-500" style="font-size:.8125rem;display:inline-flex;align-items:center;gap:.3rem;">
+            ${_icon('x', 13)} Quit Game
+          </button>
+        </div>
+      </div>`);
+
+    _renderKatex();
+    _timerEl = document.getElementById('tfTimer');
+    _startTimer(TF_TIME_PER_QUESTION,
+      (s) => {
+        if (_timerEl) {
+          _timerEl.textContent = s;
+          _timerEl.className = 'game-timer ' + (s <= 3 ? 'timer-red' : s <= 6 ? 'timer-yellow' : 'timer-green');
+        }
+      },
+      () => { _answerTF(null); }
+    );
+  }
+
+  function _answerTF(chosenTrue) {
+    _stopTimer();
+    const gs = _gameState;
+    if (!gs || gs.type !== 'trueOrFalse') return;
+    if (gs._answered) return;
+    gs._answered = true;
+
+    const item    = gs.items[gs.currentIndex];
+    const correct = chosenTrue !== null && (chosenTrue === item.isTrue);
+    const timedOut = chosenTrue === null;
+
+    // Visual feedback on buttons
+    const trueBtn  = document.getElementById('tfTrueBtn');
+    const falseBtn = document.getElementById('tfFalseBtn');
+    if (trueBtn)  { trueBtn.disabled  = true; }
+    if (falseBtn) { falseBtn.disabled = true; }
+
+    if (item.isTrue) {
+      if (trueBtn)  trueBtn.classList.add('game-tf-btn--revealed-correct');
+      if (falseBtn) falseBtn.classList.add('game-tf-btn--revealed-wrong');
+    } else {
+      if (falseBtn) falseBtn.classList.add('game-tf-btn--revealed-correct');
+      if (trueBtn)  trueBtn.classList.add('game-tf-btn--revealed-wrong');
+    }
+
+    // Highlight which button the student pressed
+    if (!timedOut) {
+      const pressedBtn = chosenTrue ? trueBtn : falseBtn;
+      if (pressedBtn && correct)  pressedBtn.classList.add('game-tf-btn--pressed-correct');
+      if (pressedBtn && !correct) pressedBtn.classList.add('game-tf-btn--pressed-wrong');
+    }
+
+    // XP & streak logic
+    let xpThis = 0;
+    if (correct) {
+      xpThis += TF_XP_PER_CORRECT;
+      gs.streak++;
+      if (gs.streak > gs.bestStreak) gs.bestStreak = gs.streak;
+      if (gs.streak >= TF_STREAK_THRESHOLD) xpThis += TF_XP_STREAK_BONUS;
+      gs.score++;
+    } else {
+      gs.streak = 0;
+    }
+    gs.xpEarned += xpThis;
+    gs._answered = false;
+
+    // Inline feedback
+    const feedbackEl = document.getElementById('tfFeedback');
+    if (feedbackEl) {
+      if (timedOut) {
+        const correctLabel = item.isTrue ? 'TRUE' : 'FALSE';
+        feedbackEl.innerHTML = `
+          <div style="background:var(--danger-subtle);border:1px solid var(--danger-border);border-radius:8px;
+                      padding:.625rem 1rem;text-align:center;font-size:.875rem;font-weight:700;color:var(--danger);">
+            ${_icon('hourglass', 14, { color: 'var(--danger)' })} Time up! Answer was <strong>${correctLabel}</strong>
+            ${item.explanation ? `<div style="font-size:.75rem;font-weight:400;color:var(--text-2);margin-top:.25rem;">${_safeQ(item.explanation)}</div>` : ''}
+          </div>`;
+      } else if (correct) {
+        feedbackEl.innerHTML = `
+          <div style="background:var(--success-subtle);border:1px solid var(--success-border);border-radius:8px;
+                      padding:.625rem 1rem;text-align:center;font-size:.875rem;font-weight:700;color:var(--success);">
+            ${_icon('checkCircle', 14, { color: 'var(--success)' })} Correct! +${xpThis} XP
+            ${gs.streak >= TF_STREAK_THRESHOLD ? `<span style="margin-left:.375rem;font-size:.75rem;color:#f59e0b;">(streak bonus included)</span>` : ''}
+          </div>`;
+      } else {
+        const correctLabel = item.isTrue ? 'TRUE' : 'FALSE';
+        const correctAns   = item.isTrue ? item.candidate : (item.correctAns || '');
+        feedbackEl.innerHTML = `
+          <div style="background:var(--danger-subtle);border:1px solid var(--danger-border);border-radius:8px;
+                      padding:.625rem 1rem;text-align:center;font-size:.875rem;font-weight:700;color:var(--danger);">
+            ${_icon('xCircle', 14, { color: 'var(--danger)' })} Wrong! It was <strong>${correctLabel}</strong>
+            ${correctAns ? `<div style="font-size:.75rem;font-weight:400;color:var(--text-2);margin-top:.25rem;">Correct answer: ${_safeQ(correctAns)}</div>` : ''}
+            ${item.explanation ? `<div style="font-size:.75rem;font-weight:400;color:var(--text-2);margin-top:.25rem;">${_safeQ(item.explanation)}</div>` : ''}
+          </div>`;
+      }
+    }
+
+    setTimeout(() => {
+      gs.currentIndex++;
+      if (gs.currentIndex >= gs.items.length) _finishTrueOrFalse();
+      else _renderTFQuestion();
+    }, 1600);
+  }
+
+  async function _finishTrueOrFalse() {
+    const gs = _gameState;
+    _stopTimer();
+    _gameState = null;
+
+    const total   = gs.items.length;
+    const correct = gs.score;
+    const pct     = Math.round((correct / total) * 100);
+    const perfect = correct === total;
+    const win     = pct >= 60;
+    let xpFinal   = gs.xpEarned;
+    if (perfect) xpFinal += XP_PER_PERFECT;
+
+    const result = await _awardXP(xpFinal, 'trueOrFalse', { win, perfect, tfBestStreak: gs.bestStreak });
+    await _saveGameResult('trueOrFalse', { correct, total, pct, xpEarned: xpFinal, bestStreak: gs.bestStreak });
+
+    _renderGameResult({
+      gameIcon:      'checkSquare',
+      gameName:      'True or False Blitz',
+      score:         `${correct} / ${total}`,
+      pct,
+      xpEarned:      xpFinal,
+      perfect,
+      win,
+      result,
+      extras: [
+        { label: 'Best Streak',   value: `${gs.bestStreak} in a row` },
+        { label: 'Perfect Bonus', value: perfect ? `+${XP_PER_PERFECT} XP` : '—' },
+      ],
+      onPlayAgainKey: 'trueOrFalse',
+    });
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     SUDDEN DEATH  (NEW)
+     ─────────────────────────────────────────────────────────────
+     Standard MCQ format, but ONE wrong answer ends the game.
+     XP per correct answer starts at SD_XP_BASE and increases by
+     SD_XP_INCREMENT for every subsequent correct answer, so
+     surviving longer is exponentially more rewarding.
+     A 12-second timer per question adds pressure.
+  ══════════════════════════════════════════════════════════════ */
+
+  function _showSuddenDeathSetup() {
+    const subjects = _getSubjectsForStudent();
+    if (subjects.length === 0) {
+      window.UI.toast('No subjects found for your class. Contact your teacher.', 'error');
+      return;
+    }
+    const subjectOptions = subjects.map(s => `<option value="${_esc(s)}">${_esc(s)}</option>`).join('');
+
+    _showModal(`
+      <div style="text-align:center;margin-bottom:1.25rem;">
+        <div style="margin-bottom:.5rem;">${_icon('skull', 40, { color: '#e11d48' })}</div>
+        <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">Sudden Death</h2>
+        <p style="font-size:.875rem;color:var(--text-3);margin-top:.375rem;">
+          One wrong answer ends everything. XP compounds with every correct answer. How far can you go?
+        </p>
+      </div>
+      <div style="margin-bottom:1rem;padding:.75rem 1rem;background:var(--danger-subtle);border:1px solid var(--danger-border);border-radius:8px;">
+        <p style="font-size:.8125rem;font-weight:700;color:var(--danger);margin-bottom:.375rem;display:flex;align-items:center;gap:.375rem;">
+          ${_icon('alertTriangle', 14, { color: 'var(--danger)' })} Rules
+        </p>
+        <ul style="font-size:.8125rem;color:var(--text-2);padding-left:1rem;margin:0;line-height:1.9;">
+          <li>One wrong answer = game over immediately</li>
+          <li>Running out of time = game over</li>
+          <li>XP per correct answer starts at ${SD_XP_BASE} and grows by +${SD_XP_INCREMENT} each round</li>
+          <li>${SD_TIME_PER_QUESTION} seconds per question</li>
+        </ul>
+      </div>
+      <div style="margin-bottom:1rem;">
+        <label style="display:block;font-size:.75rem;font-weight:600;color:var(--text-2);margin-bottom:.375rem;">Subject</label>
+        <select id="sdSubject" style="width:100%;">
+          <option value="random">Random Mix (all subjects)</option>
+          ${subjectOptions}
+        </select>
+      </div>
+      <button onclick="Game._startSuddenDeath()" class="btn btn-lg w-full" style="background:#e11d48;color:#fff;">
+        ${_icon('skull', 16, { color: '#fff' })} Accept the Challenge
+      </button>
+      <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full" style="margin-top:.5rem;">Cancel</button>
+    `);
+  }
+
+  function _startSuddenDeath() {
+    const subjectSel = document.getElementById('sdSubject')?.value || 'random';
+    let pool         = [];
+
+    if (subjectSel === 'random') {
+      const subjects = _getSubjectsForStudent();
+      if (subjects.length === 0) { window.UI.toast('No subjects found.', 'error'); return; }
+      subjects.forEach(s => {
+        pool = pool.concat(_getQuestionsForSubject(s, 20).map(q => ({ ...q, subject: s })));
+      });
+    } else {
+      pool = _getQuestionsForSubject(subjectSel, SD_MAX_QUESTIONS).map(q => ({ ...q, subject: subjectSel }));
+    }
+
+    pool = _shuffleArray(pool).slice(0, SD_MAX_QUESTIONS);
+    if (pool.length === 0) { window.UI.toast('Not enough questions available.', 'error'); return; }
+
+    _closeModal();
+    _gameState = {
+      type:        'suddenDeath',
+      pool,
+      currentIndex: 0,
+      survived:    0,
+      xpEarned:    0,
+      dead:        false,
+      currentXPValue: SD_XP_BASE,
+      startedAt:   Date.now(),
+    };
+    _renderSDQuestion();
+  }
+
+  function _renderSDQuestion() {
+    const gs = _gameState;
+    if (!gs || gs.type !== 'suddenDeath') return;
+
+    const q        = gs.pool[gs.currentIndex];
+    const survived = gs.survived;
+    const nextXP   = gs.currentXPValue;
+
+    _questionStartTime = Date.now();
+
+    // Colour shifts more intense as you survive more
+    const dangerLevel = Math.min(survived / 20, 1); // 0 → 1
+    const accentColor = dangerLevel < 0.3
+      ? '#f59e0b'
+      : dangerLevel < 0.6
+        ? '#f97316'
+        : '#e11d48';
+
+    window.UI.mount(`
+      <div class="max-w-2xl mx-auto animate-fadeIn" style="padding-bottom:2rem;">
+
+        <div class="glass game-quiz-header" style="border-top:3px solid ${accentColor};">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;">
+            <div>
+              <span style="font-size:.75rem;font-weight:700;color:${accentColor};text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:.25rem;">
+                ${_icon('skull', 13, { color: accentColor })} Sudden Death
+              </span>
+              <div style="font-size:.875rem;color:var(--text-2);margin-top:1px;">
+                ${_esc(q.subject || '')} &middot; Question ${gs.currentIndex + 1}
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <div id="sdTimer" class="game-timer timer-green">${SD_TIME_PER_QUESTION}</div>
+              <div style="font-size:.6875rem;color:var(--text-4);">seconds</div>
+            </div>
+          </div>
+
+          <!-- Survival counter -->
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <div style="display:flex;align-items:center;gap:.625rem;">
+              <div style="display:flex;align-items:center;gap:.25rem;">
+                <span style="font-size:.75rem;color:var(--text-3);">Survived:</span>
+                <span style="font-size:1rem;font-weight:800;color:${accentColor};font-family:var(--font-mono);">${survived}</span>
+              </div>
+              <div style="width:1px;height:16px;background:var(--border);"></div>
+              <div style="display:flex;align-items:center;gap:.25rem;">
+                <span style="font-size:.75rem;color:var(--text-3);">XP banked:</span>
+                <span style="font-size:.9375rem;font-weight:700;color:var(--accent);">${gs.xpEarned}</span>
+              </div>
+            </div>
+            <div style="text-align:right;">
+              <span style="font-size:.6875rem;color:var(--text-3);">Next correct worth:</span>
+              <span style="font-size:.875rem;font-weight:800;color:${accentColor};margin-left:.25rem;">+${nextXP} XP</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="glass" style="padding:1.25rem 1.5rem;margin:.75rem 0;">
+          <p style="font-size:1.0625rem;font-weight:500;line-height:1.65;margin-bottom:1.25rem;">
+            ${_safeQ(q.q)}
+          </p>
+          <div id="sdOptions">
+            ${q.opts.map((opt, idx) => `
+              <button class="game-option-btn" id="sdOpt${idx}" onclick="Game._answerSD(${idx})">
+                <span class="game-option-btn__letter">${String.fromCharCode(65 + idx)}</span>
+                <span>${_safeQ(opt)}</span>
+              </button>`).join('')}
+          </div>
+        </div>
+
+        <div id="sdFeedback" style="min-height:3rem;"></div>
+
+        <div style="text-align:center;margin-top:.5rem;">
+          <button onclick="Game._abandonGame()" class="btn bg-gray-500" style="font-size:.8125rem;display:inline-flex;align-items:center;gap:.3rem;">
+            ${_icon('x', 13)} Quit Game
+          </button>
+        </div>
+      </div>`);
+
+    _renderKatex();
+    _timerEl = document.getElementById('sdTimer');
+    _startTimer(SD_TIME_PER_QUESTION,
+      (s) => {
+        if (_timerEl) {
+          _timerEl.textContent = s;
+          _timerEl.className = 'game-timer ' + (s <= 4 ? 'timer-red' : s <= 8 ? 'timer-yellow' : 'timer-green');
+        }
+      },
+      () => { _answerSD(null); }          // timeout = death
+    );
+  }
+
+  function _answerSD(chosenIdx) {
+    _stopTimer();
+    const gs = _gameState;
+    if (!gs || gs.type !== 'suddenDeath') return;
+    if (gs._answering) return;
+    gs._answering = true;
+
+    const q       = gs.pool[gs.currentIndex];
+    const correct = chosenIdx !== null && chosenIdx === q.ans;
+    const timedOut = chosenIdx === null;
+
+    // Reveal correct/wrong states
+    document.querySelectorAll('.game-option-btn').forEach((btn, i) => {
+      btn.disabled = true;
+      if (i === q.ans)          btn.classList.add('game-option-btn--correct');
+      else if (i === chosenIdx) btn.classList.add('game-option-btn--wrong');
+    });
+
+    const feedbackEl = document.getElementById('sdFeedback');
+
+    if (correct) {
+      const earned = gs.currentXPValue;
+      gs.xpEarned      += earned;
+      gs.survived++;
+      gs.currentXPValue = gs.currentXPValue + SD_XP_INCREMENT;
+      gs._answering     = false;
+
+      if (feedbackEl) {
+        feedbackEl.innerHTML = `
+          <div style="background:var(--success-subtle);border:1px solid var(--success-border);border-radius:8px;
+                      padding:.625rem 1rem;text-align:center;font-size:.875rem;font-weight:700;color:var(--success);">
+            ${_icon('checkCircle', 14, { color: 'var(--success)' })} Correct! +${earned} XP &mdash; next question worth +${gs.currentXPValue} XP
+          </div>`;
+      }
+
+      // Check if pool is exhausted — treat as victory
+      if (gs.currentIndex + 1 >= gs.pool.length) {
+        setTimeout(() => _finishSuddenDeath(false), 1400);
+        return;
+      }
+
+      setTimeout(() => {
+        gs.currentIndex++;
+        _renderSDQuestion();
+      }, 1400);
+
+    } else {
+      // DEAD
+      gs.dead      = true;
+      gs._answering = false;
+
+      if (feedbackEl) {
+        const deathMsg = timedOut ? 'Time ran out!' : 'Wrong answer!';
+        const correct_text = timedOut ? _safeQ(q.opts[q.ans]) : null;
+        feedbackEl.innerHTML = `
+          <div style="background:var(--danger-subtle);border:2px solid var(--danger-border);border-radius:8px;
+                      padding:.75rem 1rem;text-align:center;">
+            <p style="font-size:1rem;font-weight:800;color:var(--danger);margin-bottom:.25rem;">
+              ${_icon('skull', 18, { color: 'var(--danger)' })} ${deathMsg} — Game Over!
+            </p>
+            ${correct_text ? `<p style="font-size:.8125rem;color:var(--text-2);">Correct answer: ${correct_text}</p>` : ''}
+            <p style="font-size:.8125rem;color:var(--text-2);margin-top:.25rem;">You survived <strong>${gs.survived}</strong> question${gs.survived !== 1 ? 's' : ''}.</p>
+          </div>`;
+      }
+
+      setTimeout(() => _finishSuddenDeath(true), 2200);
+    }
+  }
+
+  async function _finishSuddenDeath(died) {
+    const gs = _gameState;
+    _stopTimer();
+    _gameState = null;
+
+    const survived    = gs.survived;
+    const total       = gs.pool.length;
+    const xpFinal     = gs.xpEarned;
+    // For scoring display: treat each survived Q as a "correct" out of however many were seen
+    const questionsAttempted = gs.currentIndex + (died ? 1 : 0);
+    const pct         = questionsAttempted > 0 ? Math.round((survived / questionsAttempted) * 100) : 0;
+    const win         = survived >= 5;
+    const perfect     = !died && survived === total;
+
+    const result = await _awardXP(xpFinal, 'suddenDeath', {
+      win,
+      perfect,
+      sdSurvived: survived,
+    });
+    await _saveGameResult('suddenDeath', {
+      survived,
+      total: questionsAttempted,
+      pct,
+      xpEarned: xpFinal,
+      died,
+    });
+
+    // Custom extra HTML — dramatic survival report
+    const survivalColor = survived >= 20 ? 'var(--success)'
+                        : survived >= 10 ? 'var(--warning)'
+                        : survived >= 5  ? '#f97316'
+                        : 'var(--danger)';
+
+    const survivalTitle = survived >= 30 ? 'Legendary Run!'
+                        : survived >= 20 ? 'Incredible!'
+                        : survived >= 15 ? 'Outstanding!'
+                        : survived >= 10 ? 'Impressive!'
+                        : survived >= 5  ? 'Not bad!'
+                        : 'Better luck next time!';
+
+    const extraHtml = `
+      <div style="margin:.75rem 0;padding:1.25rem;border-radius:10px;text-align:center;
+                  background:var(--bg-subtle);border:2px solid ${survivalColor}30;">
+        <div style="font-size:2.5rem;font-weight:900;color:${survivalColor};font-family:var(--font-mono);line-height:1;">
+          ${survived}
+        </div>
+        <p style="font-size:.875rem;font-weight:700;color:${survivalColor};margin:.25rem 0;">
+          Questions Survived
+        </p>
+        <p style="font-size:1rem;font-weight:800;color:var(--text-1);margin-top:.5rem;">${survivalTitle}</p>
+        ${died
+          ? `<p style="font-size:.8125rem;color:var(--text-3);margin-top:.375rem;">
+               Eliminated on question ${questionsAttempted}
+             </p>`
+          : `<p style="font-size:.8125rem;color:var(--success);font-weight:700;margin-top:.375rem;">
+               You survived the entire pool — flawless!
+             </p>`}
+      </div>`;
+
+    _renderGameResult({
+      gameIcon:      'skull',
+      gameName:      'Sudden Death',
+      score:         `${survived} survived`,
+      pct,
+      xpEarned:      xpFinal,
+      perfect,
+      win,
+      result,
+      extras: [
+        { label: 'Questions Attempted', value: String(questionsAttempted) },
+        { label: 'Final XP per Question', value: `${gs.currentXPValue - SD_XP_INCREMENT} XP` },
+      ],
+      extraHtml,
+      onPlayAgainKey: 'suddenDeath',
+    });
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     CHALLENGE SYSTEM  (unchanged)
   ══════════════════════════════════════════════════════════════ */
 
   async function _showChallengeSetup() {
@@ -1553,7 +2180,7 @@
   async function _declineChallenge(challengeId) {
     try {
       await _db().collection('gameChallenges').doc(challengeId).update({ status: 'declined' });
-      _notifiedChallenges.add(challengeId); // don't re-notify
+      _notifiedChallenges.add(challengeId);
       _closeModal();
       window.UI.toast('Challenge declined.', 'info', 3000);
     } catch (e) {
@@ -1607,7 +2234,7 @@
 
   async function _acceptChallenge(challengeId) {
     _closeModal();
-    _dismissChallengePopup(challengeId); // dismiss any popup too
+    _dismissChallengePopup(challengeId);
     let challengeData;
     try {
       const snap = await _db().collection('gameChallenges').doc(challengeId).get();
@@ -1647,14 +2274,14 @@
         </div>
 
         <div class="glass" style="padding:1.25rem 1.5rem;margin:.75rem 0;">
-          <p style="font-size:1.0625rem;font-weight:500;line-height:1.65;margin-bottom:1.25rem;" id="challengeQuestionText">
+          <p style="font-size:1.0625rem;font-weight:500;line-height:1.65;margin-bottom:1.25rem;">
             ${_safeQ(q.q)}
           </p>
           <div id="challengeOptions">
             ${q.opts.map((opt, idx) => `
               <button class="game-option-btn" id="chOpt${idx}" onclick="Game._answerChallenge(${idx})">
                 <span class="game-option-btn__letter">${String.fromCharCode(65 + idx)}</span>
-                <span id="chOptText${idx}">${_safeQ(opt)}</span>
+                <span>${_safeQ(opt)}</span>
               </button>`).join('')}
           </div>
         </div>
@@ -1667,7 +2294,6 @@
       </div>`);
 
     _renderKatex();
-
     _timerEl = document.getElementById('challengeTimer');
     _startTimer(QUIZ_BLITZ_TIME,
       (s) => { if (_timerEl) { _timerEl.textContent = s; _timerEl.className = 'game-timer ' + (s <= 5 ? 'timer-red' : s <= 10 ? 'timer-yellow' : 'timer-green'); } },
@@ -1753,10 +2379,9 @@
     const maxed       = _isMaxLevel(xp);
     const gradeColor  = pct >= 80 ? 'var(--success)' : pct >= 60 ? 'var(--warning)' : 'var(--danger)';
 
-    // Level-up detection
     let levelUpHtml = '';
     if (result && result.newLevel) {
-      const prevXP   = xp - (xpEarned || 0);
+      const prevXP    = xp - (xpEarned || 0);
       const prevLevel = _getLevelForXP(prevXP);
       if (result.newLevel.rank > prevLevel.rank) {
         levelUpHtml = `
@@ -1801,7 +2426,7 @@
             <div style="width:1px;height:40px;background:var(--border);"></div>
             <div style="text-align:center;">
               <div style="font-size:1.5rem;font-weight:700;color:var(--text-1);">${_esc(score)}</div>
-              <div style="font-size:.75rem;color:var(--text-3);margin-top:.25rem;">Correct</div>
+              <div style="font-size:.75rem;color:var(--text-3);margin-top:.25rem;">Result</div>
             </div>
             <div style="width:1px;height:40px;background:var(--border);"></div>
             <div style="text-align:center;">
@@ -1844,6 +2469,8 @@
     if      (key === 'quizBlitz')    _showQuizBlitzSetup();
     else if (key === 'speedMath')    _showSpeedMathSetup();
     else if (key === 'wordScramble') _showWordScrambleSetup();
+    else if (key === 'trueOrFalse')  _showTrueOrFalseSetup();
+    else if (key === 'suddenDeath')  _showSuddenDeathSetup();
     else if (key === 'challenge')    _showChallengeSetup();
     else openGameLobby();
   }
@@ -1860,7 +2487,7 @@
           <button onclick="Game.openGameLobby()" class="btn bg-gray-500" style="display:inline-flex;align-items:center;gap:.3rem;">${_icon('arrowLeft', 14)} Back</button>
         </div>
         <div style="display:flex;gap:.5rem;margin-bottom:1rem;flex-wrap:wrap;">
-          <button id="lbTabClass"  onclick="Game._showLeaderboardTab('class')"  class="btn"          style="font-size:.8125rem;">My Class</button>
+          <button id="lbTabClass"  onclick="Game._showLeaderboardTab('class')"  class="btn"           style="font-size:.8125rem;">My Class</button>
           <button id="lbTabSchool" onclick="Game._showLeaderboardTab('school')" class="btn bg-gray-500" style="font-size:.8125rem;">My School</button>
           <button id="lbTabAll"    onclick="Game._showLeaderboardTab('all')"    class="btn bg-gray-500" style="font-size:.8125rem;">All Students</button>
         </div>
@@ -1896,9 +2523,9 @@
             <span>#</span><span>Player</span><span>Level</span><span>XP</span>
           </div>
           ${entries.map((e, i) => {
-            const isMe   = e.id === myUid || e.uid === myUid;
-            const medal  = i === 0 ? '1st' : i === 1 ? '2nd' : i === 2 ? '3rd' : `${i + 1}`;
-            const lv     = _getLevelForXP(e.xp || 0);
+            const isMe  = e.id === myUid || e.uid === myUid;
+            const medal = i === 0 ? '1st' : i === 1 ? '2nd' : i === 2 ? '3rd' : `${i + 1}`;
+            const lv    = _getLevelForXP(e.xp || 0);
             return `
               <div style="display:grid;grid-template-columns:2.5rem 1fr auto auto;gap:.5rem;align-items:center;padding:.625rem 1rem;
                           ${isMe ? 'background:var(--accent-subtle);border-left:3px solid var(--accent);' : 'border-left:3px solid transparent;'}
@@ -2041,14 +2668,17 @@
 
       .game-section-title { font-size:1rem;font-weight:700;color:var(--text-1);margin:.25rem 0 .75rem;letter-spacing:-.01em; }
 
-      .game-cards-grid { display:grid;grid-template-columns:1fr 1fr;gap:.75rem; }
-      @media (max-width:480px) { .game-cards-grid { grid-template-columns:1fr; } }
+      /* Grid: 3-col on desktop (6 cards) → 2-col on tablet → 1-col on small mobile */
+      .game-cards-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem; }
+      @media (max-width:720px) { .game-cards-grid { grid-template-columns:1fr 1fr; } }
+      @media (max-width:420px) { .game-cards-grid { grid-template-columns:1fr; } }
 
       .game-card { background:var(--glass-bg);backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-saturate));-webkit-backdrop-filter:blur(var(--glass-blur)) saturate(var(--glass-saturate));border:1px solid var(--glass-border-outer);border-radius:var(--r-xl);padding:1.125rem;cursor:pointer;transition:transform .18s var(--ease),box-shadow .18s var(--ease),border-color .18s;position:relative;overflow:hidden; }
       .game-card::before { content:'';position:absolute;inset:0;border-radius:inherit;border:1px solid var(--glass-border);pointer-events:none; }
       .game-card > * { position:relative;z-index:1; }
       .game-card:hover { transform:translateY(-4px);box-shadow:var(--shadow-lg);border-color:var(--accent-border) !important; }
-      .game-card--challenge:hover { border-color:rgba(224,49,49,.4) !important; }
+      .game-card--challenge:hover    { border-color:rgba(224,49,49,.4) !important; }
+      .game-card--sudden-death:hover { border-color:rgba(225,29,72,.45) !important; }
       .game-card__icon  { margin-bottom:.5rem;line-height:1;display:flex;align-items:center; }
       .game-card__title { font-size:1rem;font-weight:700;color:var(--text-1);margin-bottom:.375rem;letter-spacing:-.01em; }
       .game-card__desc  { font-size:.8125rem;color:var(--text-3);line-height:1.55;margin-bottom:.75rem; }
@@ -2074,6 +2704,28 @@
       .game-option-btn--correct .game-option-btn__letter { background:var(--success) !important;color:#fff !important;border-color:var(--success) !important; }
       .game-option-btn--wrong   { border-color:var(--danger)  !important;background:var(--danger-subtle)  !important; }
       .game-option-btn--wrong   .game-option-btn__letter { background:var(--danger) !important;color:#fff !important;border-color:var(--danger) !important; }
+
+      /* ── True or False buttons ── */
+      .game-tf-btn {
+        display:inline-flex;align-items:center;justify-content:center;gap:.625rem;
+        padding:1rem;border-radius:var(--r-lg);font-size:1.125rem;font-weight:800;
+        border:none;cursor:pointer;font-family:var(--font);letter-spacing:.02em;
+        transition:transform .12s,opacity .12s,box-shadow .12s;
+      }
+      .game-tf-btn:hover:not(:disabled) { transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,.15); }
+      .game-tf-btn:active:not(:disabled) { transform:translateY(0); }
+      .game-tf-btn--true  { background:#10b981;color:#fff; }
+      .game-tf-btn--false { background:#e11d48;color:#fff; }
+      .game-tf-btn--true:hover:not(:disabled)  { background:#059669; }
+      .game-tf-btn--false:hover:not(:disabled) { background:#be123c; }
+      .game-tf-btn:disabled { opacity:.6;cursor:default; }
+      /* Post-answer reveals */
+      .game-tf-btn--revealed-correct { outline:3px solid var(--success);box-shadow:0 0 0 5px rgba(34,197,94,.18) !important; }
+      .game-tf-btn--revealed-wrong   { opacity:.5; }
+      .game-tf-btn--pressed-correct  { animation:game-tf-pop-correct .35s ease both; }
+      .game-tf-btn--pressed-wrong    { animation:game-tf-shake .35s ease both; }
+      @keyframes game-tf-pop-correct { 0%{transform:scale(1)}40%{transform:scale(1.08)}100%{transform:scale(1)} }
+      @keyframes game-tf-shake { 0%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}100%{transform:translateX(0)} }
 
       .game-diff-option { display:flex;flex-direction:column;align-items:center;justify-content:center;padding:.75rem .5rem;border-radius:var(--r-lg);border:2px solid var(--border);background:var(--bg-base);cursor:pointer;transition:border-color .15s,background .15s;gap:.25rem;text-align:center; }
       .game-diff-option.selected { border-color:var(--accent);background:var(--accent-subtle); }
@@ -2185,6 +2837,15 @@
     _reshuffleWord,
     _submitScrambleAnswer,
     _skipScramble,
+    // True or False
+    _showTrueOrFalseSetup,
+    _startTrueOrFalse,
+    _answerTF,
+    // Sudden Death
+    _showSuddenDeathSetup,
+    _startSuddenDeath,
+    _answerSD,
+    // Challenge
     _showChallengeSetup,
     _sendChallenge,
     _showPendingChallenges,
@@ -2193,6 +2854,7 @@
     _acceptChallenge,
     _playChallengerTurn,
     _answerChallenge,
+    // Shared
     _abandonGame,
     _closeModal,
     _showLeaderboardTab,
