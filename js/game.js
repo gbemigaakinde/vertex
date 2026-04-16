@@ -1,12 +1,6 @@
 /* ============================================================
    js/game.js — Vertex Tutorial Game Engine v4
-
-   Changes from v3:
-   - New game: True or False Blitz — rapid T/F statements
-     drawn from the MCQ question bank, with streak multipliers.
-   - New game: Sudden Death — answer correctly to keep going;
-     one wrong answer ends the run. XP compounds per correct.
-   ============================================================ */
+*/
 
 (function () {
   'use strict';
@@ -133,8 +127,8 @@
     { id: 'word_wizard',     name: 'Word Wizard',       desc: 'Unscramble 10 words correctly',              icon: 'textT',          xp: 0 },
     { id: 'max_level',       name: 'Absolute Power',    desc: 'Reach max level — Absolute',                 icon: 'sparkle',        xp: 0 },
     { id: 'tf_streak_10',    name: 'Truth Seeker',      desc: 'Get a 10-answer streak in True or False',    icon: 'checkSquare',    xp: 0 },
-    { id: 'sudden_death_15', name: 'Untouchable',       desc: 'Survive 15 questions in Sudden Death',       icon: 'skull',          xp: 0 },
-    { id: 'sudden_death_30', name: 'Immortal Run',      desc: 'Survive 30 questions in Sudden Death',       icon: 'infinity',       xp: 0 },
+    { id: 'sudden_death_15', name: 'Untouchable',       desc: 'Survive 15 questions in Perfect Run',        icon: 'skull',          xp: 0 },
+    { id: 'sudden_death_30', name: 'Immortal Run',      desc: 'Survive 30 questions in Perfect Run',        icon: 'infinity',       xp: 0 },
   ];
 
   /* ══════════════════════════════════════════════════════════════
@@ -159,7 +153,7 @@
   const TF_XP_STREAK_BONUS       = 4;  // bonus per question when streak >= 3
   const TF_STREAK_THRESHOLD      = 3;
 
-  // Sudden Death constants
+  // Perfect Run constants
   const SD_TIME_PER_QUESTION     = 12; // seconds
   const SD_XP_BASE               = 5;
   const SD_XP_INCREMENT          = 2;  // extra XP per question (compounds)
@@ -778,7 +772,7 @@
           </div>
           <div class="game-card game-card--sudden-death" onclick="Game._selectGame('suddenDeath')">
             <div class="game-card__icon">${_icon('skull', 32, { color: '#e11d48' })}</div>
-            <div class="game-card__title">Sudden Death</div>
+            <div class="game-card__title">Perfect Run</div>
             <div class="game-card__desc">One wrong answer and it's over. Survive as long as possible for compounding XP.</div>
             <div class="game-card__meta">
               <span class="game-card__tag">High Risk</span>
@@ -1729,7 +1723,7 @@
   }
 
   /* ══════════════════════════════════════════════════════════════
-     SUDDEN DEATH  (NEW)
+     PERFECT RUN  (NEW)
      ─────────────────────────────────────────────────────────────
      Standard MCQ format, but ONE wrong answer ends the game.
      XP per correct answer starts at SD_XP_BASE and increases by
@@ -1749,7 +1743,7 @@
     _showModal(`
       <div style="text-align:center;margin-bottom:1.25rem;">
         <div style="margin-bottom:.5rem;">${_icon('skull', 40, { color: '#e11d48' })}</div>
-        <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">Sudden Death</h2>
+        <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">Perfect Run</h2>
         <p style="font-size:.875rem;color:var(--text-3);margin-top:.375rem;">
           One wrong answer ends everything. XP compounds with every correct answer. How far can you go?
         </p>
@@ -1835,7 +1829,7 @@
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.75rem;">
             <div>
               <span style="font-size:.75rem;font-weight:700;color:${accentColor};text-transform:uppercase;letter-spacing:.05em;display:flex;align-items:center;gap:.25rem;">
-                ${_icon('skull', 13, { color: accentColor })} Sudden Death
+                ${_icon('skull', 13, { color: accentColor })} Perfect Run
               </span>
               <div style="font-size:.875rem;color:var(--text-2);margin-top:1px;">
                 ${_esc(q.subject || '')} &middot; Question ${gs.currentIndex + 1}
@@ -2032,7 +2026,7 @@
 
     _renderGameResult({
       gameIcon:      'skull',
-      gameName:      'Sudden Death',
+      gameName:      'Perfect Run',
       score:         `${survived} survived`,
       pct,
       xpEarned:      xpFinal,
@@ -2841,7 +2835,7 @@
     _showTrueOrFalseSetup,
     _startTrueOrFalse,
     _answerTF,
-    // Sudden Death
+    // Perfect Run
     _showSuddenDeathSetup,
     _startSuddenDeath,
     _answerSD,
