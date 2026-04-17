@@ -113,23 +113,61 @@
   ══════════════════════════════════════════════════════════════ */
 
   const BADGES = [
-    { id: 'first_game',      name: 'First Steps',      desc: 'Play your first game',                       icon: 'gameController', xp: 0 },
-    { id: 'perfect_quiz',    name: 'Perfect Score',     desc: 'Get 100% on any quiz',                       icon: 'checkCircle',    xp: 0 },
-    { id: 'streak_5',        name: 'On Fire',           desc: 'Win 5 games in a row',                       icon: 'flame',          xp: 0 },
-    { id: 'challenge_win',   name: 'Duelist',           desc: 'Win your first challenge',                   icon: 'swords',         xp: 0 },
-    { id: 'games_10',        name: 'Dedicated',         desc: 'Play 10 games total',                        icon: 'medal',          xp: 0 },
-    { id: 'games_50',        name: 'Veteran',           desc: 'Play 50 games total',                        icon: 'shield',         xp: 0 },
-    { id: 'xp_500',          name: 'Rising Star',       desc: 'Earn 500 XP',                                icon: 'star',           xp: 0 },
-    { id: 'xp_5000',         name: 'High Scorer',       desc: 'Earn 5,000 XP',                              icon: 'chartBar',       xp: 0 },
-    { id: 'xp_25000',        name: 'XP Hoarder',        desc: 'Earn 25,000 XP',                             icon: 'trophy',         xp: 0 },
-    { id: 'speed_demon',     name: 'Speed Demon',       desc: 'Answer 10 questions in < 5s each',           icon: 'lightning',      xp: 0 },
-    { id: 'math_master',     name: 'Math Wizard',       desc: 'Complete Speed Math on Hard',                icon: 'calculator',     xp: 0 },
-    { id: 'word_wizard',     name: 'Word Wizard',       desc: 'Unscramble 10 words correctly',              icon: 'textT',          xp: 0 },
-    { id: 'max_level',       name: 'Absolute Power',    desc: 'Reach max level — Absolute',                 icon: 'sparkle',        xp: 0 },
-    { id: 'tf_streak_10',    name: 'Truth Seeker',      desc: 'Get a 10-answer streak in True or False',    icon: 'checkSquare',    xp: 0 },
-    { id: 'sudden_death_15', name: 'Untouchable',       desc: 'Survive 15 questions in Perfect Run',        icon: 'skull',          xp: 0 },
-    { id: 'sudden_death_30', name: 'Immortal Run',      desc: 'Survive 30 questions in Perfect Run',        icon: 'infinity',       xp: 0 },
-  ];
+  { id: 'first_game',        name: 'First Steps',        desc: 'Play your first game',                         icon: 'gameController', xp: 0 },
+  { id: 'perfect_quiz',      name: 'Perfect Score',       desc: 'Get 100% on any quiz',                         icon: 'checkCircle',    xp: 0 },
+  { id: 'streak_5',          name: 'On Fire',             desc: 'Win 5 games in a row',                         icon: 'flame',          xp: 0 },
+  { id: 'streak_10',         name: 'Unstoppable',         desc: 'Win 10 games in a row',                        icon: 'zap',            xp: 0 },
+  { id: 'streak_20',         name: 'Legend Streak',       desc: 'Win 20 games in a row',                        icon: 'crown',          xp: 0 },
+  { id: 'challenge_win',     name: 'Duelist',             desc: 'Win your first challenge',                     icon: 'swords',         xp: 0 },
+  { id: 'challenge_5',       name: 'Champion Duelist',    desc: 'Win 5 challenges against classmates',          icon: 'swords',         xp: 0 },
+  { id: 'challenge_10',      name: 'Gladiator',           desc: 'Win 10 challenges',                            icon: 'trophy',         xp: 0 },
+  { id: 'games_5',           name: 'Getting Started',     desc: 'Play 5 games total',                           icon: 'play',           xp: 0 },
+  { id: 'games_10',          name: 'Dedicated',           desc: 'Play 10 games total',                          icon: 'medal',          xp: 0 },
+  { id: 'games_25',          name: 'Regular Player',      desc: 'Play 25 games total',                          icon: 'star',           xp: 0 },
+  { id: 'games_50',          name: 'Veteran',             desc: 'Play 50 games total',                          icon: 'shield',         xp: 0 },
+  { id: 'games_100',         name: 'Centurion',           desc: 'Play 100 games total',                         icon: 'award',          xp: 0 },
+  { id: 'games_250',         name: 'Iron Will',           desc: 'Play 250 games total',                         icon: 'diamond',        xp: 0 },
+  { id: 'xp_100',            name: 'Spark',               desc: 'Earn 100 XP',                                  icon: 'sparkle',        xp: 0 },
+  { id: 'xp_500',            name: 'Rising Star',         desc: 'Earn 500 XP',                                  icon: 'star',           xp: 0 },
+  { id: 'xp_1000',           name: 'Power Up',            desc: 'Earn 1,000 XP',                                icon: 'lightning',      xp: 0 },
+  { id: 'xp_2500',           name: 'Committed',           desc: 'Earn 2,500 XP',                                icon: 'chartBar',       xp: 0 },
+  { id: 'xp_5000',           name: 'High Scorer',         desc: 'Earn 5,000 XP',                                icon: 'chartBar',       xp: 0 },
+  { id: 'xp_10000',          name: 'Elite Scholar',       desc: 'Earn 10,000 XP',                               icon: 'medal',          xp: 0 },
+  { id: 'xp_25000',          name: 'XP Hoarder',          desc: 'Earn 25,000 XP',                               icon: 'trophy',         xp: 0 },
+  { id: 'xp_50000',          name: 'Hall of Fame',        desc: 'Earn 50,000 XP',                               icon: 'crown',          xp: 0 },
+  { id: 'xp_100000',         name: 'Mythic Scholar',      desc: 'Earn 100,000 XP',                              icon: 'infinity',       xp: 0 },
+  { id: 'speed_demon',       name: 'Speed Demon',         desc: 'Answer 10 questions in under 5 seconds each',  icon: 'lightning',      xp: 0 },
+  { id: 'speed_demon_pro',   name: 'Flash Mind',          desc: 'Answer 30 questions in under 5 seconds each',  icon: 'zap',            xp: 0 },
+  { id: 'math_master',       name: 'Math Wizard',         desc: 'Complete Speed Math on Hard difficulty',        icon: 'calculator',     xp: 0 },
+  { id: 'math_perfect',      name: 'Perfect Calculator',  desc: 'Score 100% on Speed Math (Hard, 10+ problems)',icon: 'calculator',     xp: 0 },
+  { id: 'word_wizard',       name: 'Word Wizard',         desc: 'Unscramble 10 words correctly',                icon: 'textT',          xp: 0 },
+  { id: 'word_master',       name: 'Lexicon Master',      desc: 'Unscramble 50 words correctly across games',   icon: 'textT',          xp: 0 },
+  { id: 'tf_streak_5',       name: 'True Believer',       desc: 'Get a 5-answer streak in True or False',       icon: 'checkSquare',    xp: 0 },
+  { id: 'tf_streak_10',      name: 'Truth Seeker',        desc: 'Get a 10-answer streak in True or False',      icon: 'checkSquare',    xp: 0 },
+  { id: 'tf_streak_20',      name: 'Oracle',              desc: 'Get a 20-answer streak in True or False',      icon: 'target',         xp: 0 },
+  { id: 'sudden_death_5',    name: 'Survivor',            desc: 'Survive 5 questions in Perfect Run',           icon: 'skull',          xp: 0 },
+  { id: 'sudden_death_10',   name: 'Tough Cookie',        desc: 'Survive 10 questions in Perfect Run',          icon: 'skull',          xp: 0 },
+  { id: 'sudden_death_15',   name: 'Untouchable',         desc: 'Survive 15 questions in Perfect Run',          icon: 'skull',          xp: 0 },
+  { id: 'sudden_death_25',   name: 'Iron Mind',           desc: 'Survive 25 questions in Perfect Run',          icon: 'shield',         xp: 0 },
+  { id: 'sudden_death_30',   name: 'Immortal Run',        desc: 'Survive 30 questions in Perfect Run',          icon: 'infinity',       xp: 0 },
+  { id: 'sudden_death_50',   name: 'Absolute Survivor',   desc: 'Survive all 50 questions in Perfect Run',      icon: 'diamond',        xp: 0 },
+  { id: 'perfect_tf',        name: 'Binary Genius',       desc: 'Get 100% in True or False Blitz',              icon: 'checkCircle',    xp: 0 },
+  { id: 'perfect_scramble',  name: 'Spelling Bee',        desc: 'Get 100% in Word Scramble',                    icon: 'textT',          xp: 0 },
+  { id: 'perfect_blitz',     name: 'Blitz Master',        desc: 'Get 100% in Quiz Blitz',                       icon: 'lightning',      xp: 0 },
+  { id: 'early_bird',        name: 'Early Bird',          desc: 'Play a game before 7 AM',                      icon: 'clock',          xp: 0 },
+  { id: 'night_owl',         name: 'Night Owl',           desc: 'Play a game after 10 PM',                      icon: 'clock',          xp: 0 },
+  { id: 'weekend_warrior',   name: 'Weekend Warrior',     desc: 'Play 5 games on a Saturday or Sunday',         icon: 'star',           xp: 0 },
+  { id: 'daily_player_3',    name: 'Consistent',          desc: 'Play at least one game for 3 days in a row',   icon: 'flame',          xp: 0 },
+  { id: 'daily_player_7',    name: 'Devoted',             desc: 'Play at least one game for 7 days in a row',   icon: 'award',          xp: 0 },
+  { id: 'first_challenge',   name: 'Challenger',          desc: 'Send your first challenge to a classmate',     icon: 'swords',         xp: 0 },
+  { id: 'wins_5',            name: 'Victor',              desc: 'Win 5 games total',                            icon: 'trophy',         xp: 0 },
+  { id: 'wins_25',           name: 'Champion',            desc: 'Win 25 games total',                           icon: 'crown',          xp: 0 },
+  { id: 'wins_50',           name: 'Dominator',           desc: 'Win 50 games total',                           icon: 'diamond',        xp: 0 },
+  { id: 'rank_5',            name: 'Apprentice Achieved', desc: 'Reach Rank 5 (Apprentice)',                    icon: 'star',           xp: 0 },
+  { id: 'rank_10',           name: 'Prodigy Achieved',    desc: 'Reach Rank 10 (Prodigy)',                      icon: 'lightning',      xp: 0 },
+  { id: 'rank_15',           name: 'Champion Achieved',   desc: 'Reach Rank 15 (Champion)',                     icon: 'trophy',         xp: 0 },
+  { id: 'max_level',         name: 'Absolute Power',      desc: 'Reach the highest rank: Absolute',             icon: 'sparkle',        xp: 0 },
+];
 
   /* ══════════════════════════════════════════════════════════════
      CONSTANTS
@@ -343,95 +381,142 @@
   }
 
   async function _awardXP(xpAmount, gameType, extraData) {
-    const uid   = _uid();
-    const oldXP = (_profile && _profile.xp) || 0;
-    const newXP = Math.max(0, oldXP + (xpAmount || 0));
+  const uid    = _uid();
+  const oldXP  = (_profile && _profile.xp) || 0;
+  const newXP  = Math.max(0, oldXP + (xpAmount || 0));
 
-    const newBadges  = [...((_profile && _profile.badges) || [])];
-    const totalGames = ((_profile && _profile.totalGames) || 0) + 1;
-    const isWin      = extraData && extraData.win;
-    const totalWins  = ((_profile && _profile.totalWins) || 0) + (isWin ? 1 : 0);
-    const newStreak  = isWin ? ((_profile && _profile.streak) || 0) + 1 : 0;
+  const newBadges  = [...((_profile && _profile.badges) || [])];
+  const totalGames = ((_profile && _profile.totalGames) || 0) + 1;
+  const isWin      = extraData && extraData.win;
+  const totalWins  = ((_profile && _profile.totalWins) || 0) + (isWin ? 1 : 0);
+  const newStreak  = isWin ? ((_profile && _profile.streak) || 0) + 1 : 0;
 
-    const earnedBadges = [];
-    const _has = (id) => newBadges.includes(id);
+  const earnedBadges = [];
+  const _has = (id) => newBadges.includes(id);
+  const _earn = (id) => { if (!_has(id)) { newBadges.push(id); earnedBadges.push(id); } };
 
-    if (!_has('first_game')      && totalGames >= 1)                                                              { newBadges.push('first_game');      earnedBadges.push('first_game');      }
-    if (!_has('perfect_quiz')    && extraData && extraData.perfect)                                               { newBadges.push('perfect_quiz');     earnedBadges.push('perfect_quiz');     }
-    if (!_has('streak_5')        && newStreak >= 5)                                                               { newBadges.push('streak_5');         earnedBadges.push('streak_5');         }
-    if (!_has('challenge_win')   && extraData && extraData.challengeWin)                                          { newBadges.push('challenge_win');    earnedBadges.push('challenge_win');    }
-    if (!_has('games_10')        && totalGames >= 10)                                                             { newBadges.push('games_10');         earnedBadges.push('games_10');         }
-    if (!_has('games_50')        && totalGames >= 50)                                                             { newBadges.push('games_50');         earnedBadges.push('games_50');         }
-    if (!_has('xp_500')          && newXP >= 500)                                                                 { newBadges.push('xp_500');           earnedBadges.push('xp_500');           }
-    if (!_has('xp_5000')         && newXP >= 5000)                                                                { newBadges.push('xp_5000');          earnedBadges.push('xp_5000');          }
-    if (!_has('xp_25000')        && newXP >= 25000)                                                               { newBadges.push('xp_25000');         earnedBadges.push('xp_25000');         }
-    if (!_has('speed_demon')     && extraData && extraData.speedDemonCount >= 10)                                 { newBadges.push('speed_demon');      earnedBadges.push('speed_demon');      }
-    if (!_has('math_master')     && gameType === 'speedMath' && extraData && extraData.difficulty === 'hard')    { newBadges.push('math_master');      earnedBadges.push('math_master');      }
-    if (!_has('word_wizard')     && extraData && extraData.wordCorrect >= 10)                                     { newBadges.push('word_wizard');      earnedBadges.push('word_wizard');      }
-    if (!_has('max_level')       && _isMaxLevel(newXP))                                                           { newBadges.push('max_level');        earnedBadges.push('max_level');        }
-    if (!_has('tf_streak_10')    && extraData && extraData.tfBestStreak >= 10)                                    { newBadges.push('tf_streak_10');     earnedBadges.push('tf_streak_10');     }
-    if (!_has('sudden_death_15') && extraData && extraData.sdSurvived >= 15)                                      { newBadges.push('sudden_death_15');  earnedBadges.push('sudden_death_15');  }
-    if (!_has('sudden_death_30') && extraData && extraData.sdSurvived >= 30)                                      { newBadges.push('sudden_death_30');  earnedBadges.push('sudden_death_30');  }
+  const hour = new Date().getHours();
+  const day  = new Date().getDay();
 
-    const levelData = _getLevelForXP(newXP);
+  _earn('first_game');
+  if (totalGames >= 5)   _earn('games_5');
+  if (totalGames >= 10)  _earn('games_10');
+  if (totalGames >= 25)  _earn('games_25');
+  if (totalGames >= 50)  _earn('games_50');
+  if (totalGames >= 100) _earn('games_100');
+  if (totalGames >= 250) _earn('games_250');
 
-    if (_profile) {
-      _profile.xp         = newXP;
-      _profile.totalGames = totalGames;
-      _profile.totalWins  = totalWins;
-      _profile.streak     = newStreak;
-      _profile.badges     = newBadges;
-      if (!_profile.stats) _profile.stats = {};
-      _profile.stats[gameType] = (_profile.stats[gameType] || 0) + 1;
-    }
-    await _saveProfileLocally(_profile);
+  if (isWin && totalWins >= 5)  _earn('wins_5');
+  if (isWin && totalWins >= 25) _earn('wins_25');
+  if (isWin && totalWins >= 50) _earn('wins_50');
 
-    if (_isOnline()) {
-      try {
-        const updateData = {
-          xp:         firebase.firestore.FieldValue.increment(xpAmount || 0),
-          totalGames: firebase.firestore.FieldValue.increment(1),
-          totalWins:  firebase.firestore.FieldValue.increment(isWin ? 1 : 0),
-          streak:     newStreak,
-          badges:     newBadges,
-          name:       _student().name   || '',
-          class:      _student().class  || '',
-          school:     _student().school || '',
-          [`stats.${gameType}`]: firebase.firestore.FieldValue.increment(1),
-        };
-        const batch = _db().batch();
-        batch.set(_db().collection('gameProfiles').doc(uid), updateData, { merge: true });
-        batch.set(_db().collection('gameLeaderboard').doc(uid), {
-          uid,
-          name:       _student().name   || '',
-          class:      _student().class  || '',
-          school:     _student().school || '',
-          xp:         newXP,
-          totalGames,
-          totalWins,
-          level:      levelData.name,
-          levelIcon:  levelData.icon,
-          updatedAt:  firebase.firestore.FieldValue.serverTimestamp(),
-        }, { merge: false });
-        await batch.commit();
-      } catch (e) {
-        console.warn('[game] _awardXP Firebase failed (local saved):', e);
-      }
-    } else {
-      if (window.LocalDB) {
-        LocalDB.enqueue('set', 'gameProfiles', uid, {
-          xp:         newXP,
-          totalGames,
-          totalWins,
-          streak:     newStreak,
-          badges:     newBadges,
-          [`stats.${gameType}`]: (_profile.stats || {})[gameType] || 1,
-        }, 3).catch(() => {});
-      }
-    }
+  if (newStreak >= 5)  _earn('streak_5');
+  if (newStreak >= 10) _earn('streak_10');
+  if (newStreak >= 20) _earn('streak_20');
 
-    return { xpAwarded: xpAmount || 0, earnedBadges, newXP, newLevel: levelData };
+  if (newXP >= 100)    _earn('xp_100');
+  if (newXP >= 500)    _earn('xp_500');
+  if (newXP >= 1000)   _earn('xp_1000');
+  if (newXP >= 2500)   _earn('xp_2500');
+  if (newXP >= 5000)   _earn('xp_5000');
+  if (newXP >= 10000)  _earn('xp_10000');
+  if (newXP >= 25000)  _earn('xp_25000');
+  if (newXP >= 50000)  _earn('xp_50000');
+  if (newXP >= 100000) _earn('xp_100000');
+
+  if (extraData && extraData.perfect)           _earn('perfect_quiz');
+  if (extraData && extraData.challengeWin)      _earn('challenge_win');
+  if (extraData && extraData.challengeWin && ((_profile && _profile.challengeWins) || 0) + 1 >= 5)  _earn('challenge_5');
+  if (extraData && extraData.challengeWin && ((_profile && _profile.challengeWins) || 0) + 1 >= 10) _earn('challenge_10');
+  if (extraData && extraData.sentChallenge)     _earn('first_challenge');
+
+  if (extraData && extraData.speedDemonCount >= 10) _earn('speed_demon');
+  if (extraData && extraData.speedDemonCount >= 30) _earn('speed_demon_pro');
+
+  if (gameType === 'speedMath' && extraData && extraData.difficulty === 'hard')                                  _earn('math_master');
+  if (gameType === 'speedMath' && extraData && extraData.difficulty === 'hard' && extraData.perfect)            _earn('math_perfect');
+  if (gameType === 'wordScramble' && extraData && extraData.wordCorrect >= 10)                                   _earn('word_wizard');
+  if (gameType === 'wordScramble' && extraData && extraData.perfect)                                             _earn('perfect_scramble');
+  if (gameType === 'quizBlitz'   && extraData && extraData.perfect)                                              _earn('perfect_blitz');
+  if (gameType === 'trueOrFalse' && extraData && extraData.perfect)                                              _earn('perfect_tf');
+
+  if (extraData && extraData.tfBestStreak >= 5)  _earn('tf_streak_5');
+  if (extraData && extraData.tfBestStreak >= 10) _earn('tf_streak_10');
+  if (extraData && extraData.tfBestStreak >= 20) _earn('tf_streak_20');
+
+  if (extraData && extraData.sdSurvived >= 5)  _earn('sudden_death_5');
+  if (extraData && extraData.sdSurvived >= 10) _earn('sudden_death_10');
+  if (extraData && extraData.sdSurvived >= 15) _earn('sudden_death_15');
+  if (extraData && extraData.sdSurvived >= 25) _earn('sudden_death_25');
+  if (extraData && extraData.sdSurvived >= 30) _earn('sudden_death_30');
+  if (extraData && extraData.sdSurvived >= 50) _earn('sudden_death_50');
+
+  if (gameType === 'wordScramble') {
+    const cumWords = ((_profile && _profile.cumWordCorrect) || 0) + (extraData && extraData.wordCorrect || 0);
+    if (cumWords >= 50) _earn('word_master');
+    if (_profile) _profile.cumWordCorrect = cumWords;
   }
+
+  if (hour < 7)  _earn('early_bird');
+  if (hour >= 22) _earn('night_owl');
+  if (day === 0 || day === 6) {
+    const weekendGames = ((_profile && _profile.weekendGames) || 0) + 1;
+    if (_profile) _profile.weekendGames = weekendGames;
+    if (weekendGames >= 5) _earn('weekend_warrior');
+  }
+
+  const levelData = _getLevelForXP(newXP);
+  if (levelData.rank >= 5)  _earn('rank_5');
+  if (levelData.rank >= 10) _earn('rank_10');
+  if (levelData.rank >= 15) _earn('rank_15');
+  if (_isMaxLevel(newXP))   _earn('max_level');
+
+  if (_profile) {
+    _profile.xp         = newXP;
+    _profile.totalGames = totalGames;
+    _profile.totalWins  = totalWins;
+    _profile.streak     = newStreak;
+    _profile.badges     = newBadges;
+    if (!_profile.stats) _profile.stats = {};
+    _profile.stats[gameType] = (_profile.stats[gameType] || 0) + 1;
+  }
+  await _saveProfileLocally(_profile);
+
+  if (_isOnline()) {
+    try {
+      const updateData = {
+        xp:         firebase.firestore.FieldValue.increment(xpAmount || 0),
+        totalGames: firebase.firestore.FieldValue.increment(1),
+        totalWins:  firebase.firestore.FieldValue.increment(isWin ? 1 : 0),
+        streak:     newStreak,
+        badges:     newBadges,
+        name:       _student().name   || '',
+        class:      _student().class  || '',
+        school:     _student().school || '',
+        [`stats.${gameType}`]: firebase.firestore.FieldValue.increment(1),
+      };
+      const batch = _db().batch();
+      batch.set(_db().collection('gameProfiles').doc(uid), updateData, { merge: true });
+      batch.set(_db().collection('gameLeaderboard').doc(uid), {
+        uid,
+        name:       _student().name   || '',
+        class:      _student().class  || '',
+        school:     _student().school || '',
+        xp:         newXP,
+        totalGames,
+        totalWins,
+        level:      levelData.name,
+        levelIcon:  levelData.icon,
+        updatedAt:  firebase.firestore.FieldValue.serverTimestamp(),
+      }, { merge: false });
+      await batch.commit();
+    } catch (e) {
+      console.warn('[game] _awardXP Firebase failed (local saved):', e);
+    }
+  }
+
+  return { xpAwarded: xpAmount || 0, earnedBadges, newXP, newLevel: levelData };
+}
 
   /* ══════════════════════════════════════════════════════════════
      CHALLENGE NOTIFICATION LISTENER
@@ -823,40 +908,115 @@
   }
 
   function _renderLevelStrip(currentRank, xp) {
-    const start = Math.max(0, currentRank - 3);
-    const end   = Math.min(LEVELS.length - 1, currentRank + 2);
-    const slice = LEVELS.slice(start, end + 1);
+  const start = Math.max(0, currentRank - 3);
+  const end   = Math.min(LEVELS.length - 1, currentRank + 2);
+  const slice = LEVELS.slice(start, end + 1);
 
-    const items = slice.map(l => {
-      const isCurrent  = l.rank === currentRank;
-      const isUnlocked = xp >= l.minXP;
-      return `
-        <div style="text-align:center;flex:1;min-width:0;padding:.25rem .125rem;
-                    opacity:${isUnlocked ? '1' : '0.35'};
-                    ${isCurrent ? 'transform:scale(1.12);' : ''}">
-          <div style="width:30px;height:30px;border-radius:50%;margin:0 auto;
-                      background:${isCurrent ? l.color : 'var(--bg-muted)'};
-                      border:2px solid ${isCurrent ? l.color : 'var(--border)'};
-                      display:flex;align-items:center;justify-content:center;
-                      box-shadow:${isCurrent ? '0 0 12px ' + l.color + '55' : 'none'};">
-            ${_icon(l.icon, 15, { color: isCurrent ? '#fff' : (isUnlocked ? l.color : 'var(--text-4)') })}
-          </div>
-          <p style="font-size:.5625rem;font-weight:${isCurrent ? '800' : '500'};
-                    color:${isCurrent ? l.color : 'var(--text-3)'};
-                    margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-            ${_esc(l.name)}
-          </p>
-          <p style="font-size:.5rem;color:var(--text-4);margin-top:1px;">${l.minXP.toLocaleString()}</p>
-        </div>`;
-    }).join('');
+  const items = slice.map(l => {
+    const isCurrent  = l.rank === currentRank;
+    const isUnlocked = xp >= l.minXP;
+    return `
+      <div style="text-align:center;flex:1;min-width:0;padding:.25rem .125rem;
+                  opacity:${isUnlocked ? '1' : '0.35'};
+                  ${isCurrent ? 'transform:scale(1.12);' : ''}">
+        <div style="width:30px;height:30px;border-radius:50%;margin:0 auto;
+                    background:${isCurrent ? l.color : 'var(--bg-muted)'};
+                    border:2px solid ${isCurrent ? l.color : 'var(--border)'};
+                    display:flex;align-items:center;justify-content:center;
+                    box-shadow:${isCurrent ? '0 0 12px ' + l.color + '55' : 'none'};">
+          ${_icon(l.icon, 15, { color: isCurrent ? '#fff' : (isUnlocked ? l.color : 'var(--text-4)') })}
+        </div>
+        <p style="font-size:.5625rem;font-weight:${isCurrent ? '800' : '500'};
+                  color:${isCurrent ? l.color : 'var(--text-3)'};
+                  margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+          ${_esc(l.name)}
+        </p>
+        <p style="font-size:.5rem;color:var(--text-4);margin-top:1px;">${l.minXP.toLocaleString()}</p>
+      </div>`;
+  }).join('');
+
+  return `
+    <div class="glass-dark" style="padding:.625rem .875rem;border-radius:var(--r-lg);margin:.5rem 0;cursor:pointer;"
+         onclick="Game._showAllLevelsModal(${xp})" title="Click to see all ranks">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;">
+        <p style="font-size:.625rem;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;margin:0;">
+          Level Progression
+        </p>
+        <span style="font-size:.625rem;color:var(--accent);font-weight:600;display:flex;align-items:center;gap:.2rem;">
+          ${_icon('arrowRight', 11)} View all ${LEVELS.length} ranks
+        </span>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:.25rem;overflow-x:auto;">${items}</div>
+    </div>`;
+}
+
+function _showAllLevelsModal(currentXP) {
+  const rows = LEVELS.map(l => {
+    const isUnlocked = currentXP >= l.minXP;
+    const isCurrent  = currentXP >= l.minXP && (
+      LEVELS.indexOf(l) === LEVELS.length - 1 || currentXP < LEVELS[LEVELS.indexOf(l) + 1].minXP
+    );
+    const nextL      = LEVELS[LEVELS.indexOf(l) + 1];
+    const xpNeeded   = isUnlocked ? 0 : l.minXP - currentXP;
 
     return `
-      <div class="glass-dark" style="padding:.625rem .875rem;border-radius:var(--r-lg);margin:.5rem 0;">
-        <p style="font-size:.625rem;font-weight:700;color:var(--text-3);text-transform:uppercase;
-                  letter-spacing:.06em;margin-bottom:.5rem;">Level Progression</p>
-        <div style="display:flex;align-items:flex-end;gap:.25rem;overflow-x:auto;">${items}</div>
+      <div style="display:flex;align-items:center;gap:.75rem;padding:.625rem .875rem;
+                  border-radius:8px;margin-bottom:.375rem;
+                  background:${isCurrent ? l.color + '18' : 'var(--bg-subtle)'};
+                  border:1.5px solid ${isCurrent ? l.color : 'var(--border)'};
+                  opacity:${isUnlocked ? '1' : '0.55'};">
+        <div style="width:36px;height:36px;border-radius:50%;flex-shrink:0;
+                    background:${isUnlocked ? l.color : 'var(--bg-muted)'};
+                    border:2px solid ${isUnlocked ? l.color : 'var(--border)'};
+                    display:flex;align-items:center;justify-content:center;">
+          ${_icon(l.icon, 18, { color: isUnlocked ? '#fff' : 'var(--text-4)' })}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:.375rem;flex-wrap:wrap;">
+            <span style="font-size:.9375rem;font-weight:700;color:${isCurrent ? l.color : 'var(--text-1)'};">
+              ${_esc(l.name)}
+            </span>
+            <span style="font-size:.625rem;background:var(--bg-muted);color:var(--text-3);
+                          border-radius:4px;padding:1px 5px;">Rank ${l.rank}</span>
+            ${isCurrent ? `<span style="font-size:.625rem;background:${l.color};color:#fff;
+                            border-radius:4px;padding:1px 6px;font-weight:700;">YOU ARE HERE</span>` : ''}
+          </div>
+          <div style="font-size:.75rem;color:var(--text-3);margin-top:2px;">
+            ${isUnlocked
+              ? `${_icon('checkCircle', 11, { color: 'var(--success)' })} Unlocked at ${l.minXP.toLocaleString()} XP`
+              : `${_icon('hourglass', 11)} Need ${xpNeeded.toLocaleString()} more XP`}
+          </div>
+          ${isCurrent && nextL
+            ? `<div style="margin-top:.375rem;">
+                 <div style="width:100%;height:4px;background:var(--bg-muted);border-radius:99px;overflow:hidden;">
+                   <div style="height:100%;border-radius:99px;background:${l.color};
+                               width:${Math.min(100, Math.round(((currentXP - l.minXP) / (nextL.minXP - l.minXP)) * 100))}%;
+                               transition:width .6s ease;"></div>
+                 </div>
+                 <div style="font-size:.5625rem;color:var(--text-4);margin-top:2px;">
+                   ${currentXP.toLocaleString()} / ${nextL.minXP.toLocaleString()} XP to ${_esc(nextL.name)}
+                 </div>
+               </div>`
+            : ''}
+        </div>
       </div>`;
-  }
+  }).join('');
+
+  _showModal(`
+    <div style="text-align:center;margin-bottom:1rem;">
+      <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">
+        ${_icon('chartBar', 20)} All Ranks
+      </h2>
+      <p style="font-size:.8125rem;color:var(--text-3);margin-top:.25rem;">
+        ${LEVELS.length} ranks total. Keep earning XP to climb higher.
+      </p>
+    </div>
+    <div style="max-height:65vh;overflow-y:auto;padding-right:.25rem;">
+      ${rows}
+    </div>
+    <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full" style="margin-top:.75rem;">Close</button>
+  `);
+}
 
   /* ══════════════════════════════════════════════════════════════
      GAME SELECTION
@@ -1183,32 +1343,151 @@
   ══════════════════════════════════════════════════════════════ */
 
   const _wordBank = [
-    { word: 'PHOTOSYNTHESIS', hint: 'Process plants use to make food from sunlight' },
-    { word: 'MITOSIS',        hint: 'Cell division that produces identical cells' },
-    { word: 'OSMOSIS',        hint: 'Movement of water across a membrane' },
-    { word: 'VELOCITY',       hint: 'Speed in a given direction' },
-    { word: 'ACCELERATION',   hint: 'Rate of change of velocity' },
-    { word: 'REFRACTION',     hint: 'Bending of light as it passes between media' },
-    { word: 'CHROMOSOMES',    hint: 'Structures in cells that carry genes' },
-    { word: 'EVOLUTION',      hint: 'Change in species over time by natural selection' },
-    { word: 'PERIODIC',       hint: 'Arranged in a recurring pattern (as the elements)' },
-    { word: 'NEUTRALIZATION', hint: 'Acid + base reaction to form salt and water' },
-    { word: 'ELECTROMAGNET',  hint: 'Magnet created by electric current' },
-    { word: 'HYPOTHESIS',     hint: 'A testable explanation for an observation' },
-    { word: 'DIFFUSION',      hint: 'Spreading of particles from high to low concentration' },
-    { word: 'RESPIRATION',    hint: 'Process of releasing energy from glucose in cells' },
-    { word: 'GRAVITATIONAL',  hint: 'Force of attraction between masses' },
-    { word: 'POLYNOMIAL',     hint: 'Mathematical expression with many terms' },
-    { word: 'QUADRATIC',      hint: 'Equation involving a variable to the power of 2' },
-    { word: 'PERPENDICULAR',  hint: 'Lines that meet at a right angle' },
-    { word: 'EQUIVALENT',     hint: 'Having the same value or effect' },
-    { word: 'METABOLISM',     hint: 'All chemical reactions in a living organism' },
-    { word: 'DEMOCRACY',      hint: 'System of government by the people' },
-    { word: 'PARLIAMENT',     hint: 'Legislative body of a country' },
-    { word: 'JUDICIARY',      hint: 'Branch of government that interprets laws' },
-    { word: 'CONSTITUTION',   hint: 'Fundamental law of a country' },
-    { word: 'SOVEREIGNTY',    hint: 'Supreme authority of a state over itself' },
-  ];
+  { word: 'PHOTOSYNTHESIS', hint: 'Process plants use to make food from sunlight' },
+  { word: 'MITOSIS', hint: 'Cell division that produces identical cells' },
+  { word: 'OSMOSIS', hint: 'Movement of water across a membrane' },
+  { word: 'VELOCITY', hint: 'Speed in a given direction' },
+  { word: 'ACCELERATION', hint: 'Rate of change of velocity' },
+  { word: 'REFRACTION', hint: 'Bending of light as it passes between media' },
+  { word: 'CHROMOSOMES', hint: 'Structures in cells that carry genes' },
+  { word: 'EVOLUTION', hint: 'Change in species over time by natural selection' },
+  { word: 'NEUTRALIZATION', hint: 'Acid plus base reaction forming salt and water' },
+  { word: 'ELECTROMAGNET', hint: 'Magnet created by electric current' },
+  { word: 'HYPOTHESIS', hint: 'A testable explanation for an observation' },
+  { word: 'DIFFUSION', hint: 'Spreading of particles from high to low concentration' },
+  { word: 'RESPIRATION', hint: 'Process of releasing energy from glucose in cells' },
+  { word: 'POLYNOMIAL', hint: 'Mathematical expression with many terms' },
+  { word: 'QUADRATIC', hint: 'Equation involving a variable to the power of two' },
+  { word: 'PERPENDICULAR', hint: 'Lines that meet at a right angle' },
+  { word: 'EQUIVALENT', hint: 'Having the same value or effect' },
+  { word: 'METABOLISM', hint: 'All chemical reactions in a living organism' },
+  { word: 'DEMOCRACY', hint: 'System of government by the people' },
+  { word: 'PARLIAMENT', hint: 'Legislative body of a country' },
+  { word: 'JUDICIARY', hint: 'Branch of government that interprets laws' },
+  { word: 'CONSTITUTION', hint: 'Fundamental law of a country' },
+  { word: 'SOVEREIGNTY', hint: 'Supreme authority of a state over itself' },
+  { word: 'ANTIBIOTICS', hint: 'Drugs that kill or inhibit bacterial growth' },
+  { word: 'COMBUSTION', hint: 'Chemical process of burning with oxygen' },
+  { word: 'CONDUCTOR', hint: 'Material that allows electricity to flow through it' },
+  { word: 'ECOSYSTEM', hint: 'Community of organisms and their environment' },
+  { word: 'FERTILIZATION', hint: 'Union of male and female reproductive cells' },
+  { word: 'GERMINATION', hint: 'Process by which a seed begins to sprout' },
+  { word: 'INHERITANCE', hint: 'Passing of traits from parent to offspring' },
+  { word: 'LONGITUDE', hint: 'Angular distance east or west of the prime meridian' },
+  { word: 'MAGNETISM', hint: 'Force of attraction or repulsion between poles' },
+  { word: 'NUTRITION', hint: 'Process by which organisms obtain food and energy' },
+  { word: 'OXIDATION', hint: 'Chemical reaction involving loss of electrons' },
+  { word: 'PHOTOSYSTEM', hint: 'Cluster of pigments in chloroplasts that absorb light' },
+  { word: 'REFLECTION', hint: 'Bouncing of light off a surface' },
+  { word: 'RESPIRATION', hint: 'Breakdown of glucose to release energy' },
+  { word: 'SEDIMENTARY', hint: 'Type of rock formed by compressed layers' },
+  { word: 'TEMPERATURE', hint: 'Measure of how hot or cold something is' },
+  { word: 'TRANSPIRATION', hint: 'Loss of water vapour from plant leaves' },
+  { word: 'VACCINATION', hint: 'Introducing a weakened pathogen to build immunity' },
+  { word: 'WAVELENGTH', hint: 'Distance between two successive peaks of a wave' },
+  { word: 'ADAPTATION', hint: 'Feature that improves an organism survival' },
+  { word: 'CAPITALISM', hint: 'Economic system based on private ownership' },
+  { word: 'DEFORESTATION', hint: 'Large scale removal of forest trees' },
+  { word: 'ELASTICITY', hint: 'Ability of an object to return to its original shape' },
+  { word: 'FEDERATION', hint: 'Political union of self-governing states' },
+  { word: 'GLOBALISATION', hint: 'Process linking economies and cultures worldwide' },
+  { word: 'HYDROELECTRIC', hint: 'Electricity generated by moving water' },
+  { word: 'INFLAMMATION', hint: 'Bodily response to infection or injury' },
+  { word: 'JURISDICTION', hint: 'Authority to apply legal rules in a territory' },
+  { word: 'LEGISLATION', hint: 'Laws made by a governing body' },
+  { word: 'METAMORPHOSIS', hint: 'Transformation of an organism during its life cycle' },
+  { word: 'NITROGENOUS', hint: 'Containing or relating to nitrogen compounds' },
+  { word: 'OLIGOPOLY', hint: 'Market dominated by a small number of sellers' },
+  { word: 'POLLINATION', hint: 'Transfer of pollen from anther to stigma' },
+  { word: 'RADIOACTIVE', hint: 'Emitting radiation due to unstable atomic nucleus' },
+  { word: 'SUSTAINABLE', hint: 'Able to be maintained without harming future resources' },
+  { word: 'THERMOMETER', hint: 'Instrument used to measure temperature' },
+  { word: 'URBANISATION', hint: 'Growth of towns and cities over time' },
+  { word: 'CHLOROPHYLL', hint: 'Green pigment in plants that absorbs sunlight' },
+  { word: 'DISPLACEMENT', hint: 'Distance moved in a specified direction' },
+  { word: 'EVAPORATION', hint: 'Change of liquid to vapour at the surface' },
+  { word: 'FERMENTATION', hint: 'Breakdown of sugars by microorganisms' },
+  { word: 'GRAVITATIONAL', hint: 'Force of attraction between masses' },
+  { word: 'HAEMOGLOBIN', hint: 'Protein in red blood cells that carries oxygen' },
+  { word: 'INSULATION', hint: 'Material that reduces heat or electricity transfer' },
+  { word: 'JURISDICTION', hint: 'Official power to make legal decisions' },
+  { word: 'KINETIC', hint: 'Relating to the energy of motion' },
+  { word: 'LEGISLATURE', hint: 'Body that makes laws in a government' },
+  { word: 'MICROSCOPE', hint: 'Instrument used to magnify tiny objects' },
+  { word: 'NUCLEOTIDE', hint: 'Building block of DNA and RNA' },
+  { word: 'OPPORTUNITY', hint: 'Favourable set of circumstances for progress' },
+  { word: 'PRECIPITATION', hint: 'Water falling from the atmosphere as rain or snow' },
+  { word: 'QUATERNARY', hint: 'Fourth in order or belonging to the fourth period' },
+  { word: 'REFERENDUM', hint: 'Direct vote by the public on a political question' },
+  { word: 'STOICHIOMETRY', hint: 'Calculation of reactants and products in chemistry' },
+  { word: 'TERRESTRIAL', hint: 'Relating to the Earth or land environments' },
+  { word: 'ULTRAVIOLET', hint: 'Radiation just beyond the violet end of the spectrum' },
+  { word: 'VERTEBRATES', hint: 'Animals with a backbone or spinal column' },
+  { word: 'WEATHERING', hint: 'Breakdown of rocks by environmental factors' },
+  { word: 'XYLEM', hint: 'Plant tissue that transports water upward from roots' },
+  { word: 'CHROMOSOME', hint: 'Thread-like structure carrying genetic information' },
+  { word: 'DEMOCRACY', hint: 'Political system where citizens vote for leaders' },
+  { word: 'EXCRETION', hint: 'Removal of metabolic waste from the body' },
+  { word: 'FREQUENCY', hint: 'Number of wave cycles per second' },
+  { word: 'GREENHOUSE', hint: 'Effect trapping heat in the atmosphere' },
+  { word: 'HOMEOSTASIS', hint: 'Maintaining a stable internal body environment' },
+  { word: 'IMMUNISATION', hint: 'Making a person immune to an infectious disease' },
+  { word: 'JUDICIARY', hint: 'The system of law courts in a country' },
+  { word: 'KINETICS', hint: 'Study of rates of chemical reactions' },
+  { word: 'LYSOSOMES', hint: 'Organelles that break down waste in cells' },
+  { word: 'MEIOSIS', hint: 'Cell division that produces sex cells with half the chromosomes' },
+  { word: 'NEUTRALITY', hint: 'State of not supporting either side in a conflict' },
+  { word: 'ORGANELLE', hint: 'Specialised structure within a living cell' },
+  { word: 'PHOTON', hint: 'Particle of light carrying a quantum of energy' },
+  { word: 'QUANTUM', hint: 'Discrete amount of energy in physics' },
+  { word: 'REDUCTION', hint: 'Gain of electrons in a chemical reaction' },
+  { word: 'SYMBIOSIS', hint: 'Close relationship between two different organisms' },
+  { word: 'TOPOGRAPHY', hint: 'Physical features and arrangement of a landscape' },
+  { word: 'UNICELLULAR', hint: 'Organism consisting of only one cell' },
+];
+
+function _buildWordPoolForStudent() {
+  const qBank    = window.questions || {};
+  const classKey = (_student().class || '').replace(/\s+/g, '').toLowerCase();
+  const classQs  = qBank[classKey] || {};
+  const extracted = [];
+
+  for (const subj of Object.keys(classQs)) {
+    const questions = classQs[subj] || [];
+    for (const q of questions) {
+      const allText = [q.q || '', ...(q.opts || []), q.exp || ''];
+      for (const text of allText) {
+        const words = text.replace(/[^a-zA-Z\s]/g, ' ').split(/\s+/);
+        for (const raw of words) {
+          const w = raw.toUpperCase().trim();
+          if (w.length >= 6 && w.length <= 14 && /^[A-Z]+$/.test(w)) {
+            extracted.push({ word: w, hint: 'From your ' + subj + ' syllabus' });
+          }
+        }
+      }
+    }
+  }
+
+  const seen = new Set();
+  const unique = [];
+  for (const item of extracted) {
+    if (!seen.has(item.word)) {
+      seen.add(item.word);
+      unique.push(item);
+    }
+  }
+
+  const combined = _shuffleArray([...unique, ..._wordBank]);
+  const deduped  = [];
+  const deduped_set = new Set();
+  for (const item of combined) {
+    if (!deduped_set.has(item.word)) {
+      deduped_set.add(item.word);
+      deduped.push(item);
+    }
+  }
+  return deduped;
+}
 
   function _scrambleWord(word) {
     const letters = word.split('');
@@ -1238,13 +1517,24 @@
   }
 
   function _startWordScramble() {
-    const count = parseInt(document.getElementById('scrambleCount')?.value || '10', 10);
-    const words = _shuffleArray([..._wordBank]).slice(0, count);
-    _closeModal();
-    _gameState = { type: 'wordScramble', words, currentIndex: 0, score: 0, xpEarned: 0, wordCorrect: 0, startedAt: Date.now(), shufflesLeft: MAX_SHUFFLES, currentScramble: '' };
-    _gameState.currentScramble = _scrambleWord(words[0].word);
-    _renderWordScrambleQuestion();
-  }
+  const count    = parseInt(document.getElementById('scrambleCount')?.value || '10', 10);
+  const fullPool = _buildWordPoolForStudent();
+  const words    = _shuffleArray(fullPool).slice(0, count);
+  _closeModal();
+  _gameState = {
+    type:           'wordScramble',
+    words,
+    currentIndex:   0,
+    score:          0,
+    xpEarned:       0,
+    wordCorrect:    0,
+    startedAt:      Date.now(),
+    shufflesLeft:   MAX_SHUFFLES,
+    currentScramble: '',
+  };
+  _gameState.currentScramble = _scrambleWord(words[0].word);
+  _renderWordScrambleQuestion();
+}
 
   function _renderWordScrambleQuestion() {
     const gs = _gameState;
@@ -2854,6 +3144,8 @@
     _showLeaderboardTab,
     _playAgain,
     _backToHome,
+    _showAllLevelsModal,
+    _buildWordPoolForStudent,
     _startChallengeListener,
     _stopChallengeListener,
     renderTeacherGameStats,
