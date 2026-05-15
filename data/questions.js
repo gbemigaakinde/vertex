@@ -1212,6 +1212,430 @@ window.questions = {
 ]
 },
 jss2: {
+   'General Test': [
+    // ── ENGLISH LANGUAGE ──
+    {
+        q: "Choose the word that contains the long vowel sound /u:/ as in 'Food'.",
+        opts: ["Book", "Look", "Foot", "Moon"],
+        ans: 3,
+        exp: "'Moon' has the long /u:/ sound, while the others use the short /ʊ/ sound."
+    },
+    {
+        q: "In the sentence 'The boy ran quickly to the tap,' what type of adverb is 'quickly'?",
+        opts: ["Adverb of Place", "Adverb of Manner", "Adverb of Frequency", "Adverb of Time"],
+        ans: 1,
+        exp: "Adverbs of manner tell us 'how' an action is done. He ran 'quickly'."
+    },
+    {
+        q: "Which of the following is the correct way to write the date in a formal letter?",
+        opts: ["25/02/2026", "Feb 25th '26", "25th February, 2026.", "25th Feb. 2026"],
+        ans: 2,
+        exp: "In formal writing, the month should be written in full with proper punctuation."
+    },
+    {
+        q: "Folktales are often called 'didactic' stories. What does this mean?",
+        opts: ["They are very long and take a lot of time to read.", "They are written by famous kings of old kingdoms.", "They are about modern technology and city life.", "They are meant to teach a moral lesson to the reader."],
+        ans: 3,
+        exp: "Didactic means intended to teach, particularly having moral instruction as an ulterior motive."
+    },
+    {
+        q: "Complete the sentence with the correct form: 'The earth ____ round the sun.'",
+        opts: ["revolves", "revolve", "revolving", "revolved"],
+        ans: 0,
+        exp: "We use the simple present tense (with an 's' for singular subjects) for universal truths."
+    },
+    {
+        q: "Identify the simple present tense in this list:",
+        opts: ["I am eating", "I will eat", "I eat", "I ate"],
+        ans: 2,
+        exp: "'I eat' is the simple present tense form."
+    },
+    {
+        q: "What is the 'setting' of a story in a prose text?",
+        opts: ["The list of characters in the story.", "The name of the author who wrote it.", "The end or conclusion of the story.", "The time and place the story happens."],
+        ans: 3,
+        exp: "Setting refers to where and when the events of a story take place."
+    },
+    {
+        q: "Which word has a different vowel sound from the others?",
+        opts: ["Pool", "Pull", "Full", "Bull"],
+        ans: 0,
+        exp: "'Pool' has the long /u:/ sound, while pull, full, and bull have the short /ʊ/ sound."
+    },
+    {
+        q: "What is the past tense of the verb 'Go'?",
+        opts: ["Goed", "Going", "Gone", "Went"],
+        ans: 3,
+        exp: "'Go' is an irregular verb; its past tense form is 'went'."
+    },
+    {
+        q: "When writing a 'Guided Composition', you must:",
+        opts: ["Write only one sentence as your response.", "Use the points provided to build your story.", "Write a letter to someone instead of a story.", "Ignore all the hints and points that are given."],
+        ans: 1,
+        exp: "Guided compositions provide points or an outline to help you structure your writing."
+    },
+    {
+        q: "Choose the correct past tense sentence:",
+        opts: ["He seed the teacher yesterday.", "He sees the teacher yesterday.", "He is seeing the teacher yesterday.", "He saw the teacher yesterday."],
+        ans: 3,
+        exp: "The past tense of 'see' is 'saw'."
+    },
+    {
+        q: "Which word contains the vowel sound /3:/ as in 'Girl'?",
+        opts: ["Shirt", "Get", "Gate", "Gat"],
+        ans: 0,
+        exp: "The 'ir' in shirt produces the /3:/ sound."
+    },
+    {
+        q: "What is the present continuous form of 'Play' for the subject 'We'?",
+        opts: ["We playing", "We played", "We is playing", "We are playing"],
+        ans: 3,
+        exp: "Present continuous uses 'am/is/are' + verb-ing. 'We' takes 'are'."
+    },
+    {
+        q: "Which of these is the best opening for a Narrative Essay?",
+        opts: ["Dear Sir, I want to apply for the post...", "Once upon a time, in a small village...", "The reasons why smoking is bad are...", "I am writing to tell you about..."],
+        ans: 1,
+        exp: "Narrative essays tell stories and often begin by setting the scene or time."
+    },
+    {
+        q: "Complete the sentence: 'While I ____ my homework, the light went out.'",
+        opts: ["am doing", "did", "were doing", "was doing"],
+        ans: 3,
+        exp: "We use the past continuous (was/were + ing) for an action that was ongoing in the past."
+    },
+    {
+        q: "In an argumentative essay, what is the 'opposition'?",
+        opts: ["The person who marks the script at the end.", "The side that argues against your point of view.", "The title or heading of the essay itself.", "The person who fully agrees with your argument."],
+        ans: 1,
+        exp: "The opposition represents the counter-argument or the 'other side' of the debate."
+    },
+    {
+        q: "Identify the word with the /3:/ sound:",
+        opts: ["Port", "Park", "Work", "Back"],
+        ans: 2,
+        exp: "In 'work', the 'or' is pronounced as the /3:/ sound."
+    },
+    {
+        q: "Contrast the sounds: Which word has the short /ɪ/ sound as in 'Bit'?",
+        opts: ["Beat", "Meat", "Seat", "Sit"],
+        ans: 3,
+        exp: "'Sit' has the short /ɪ/ sound, while the others have the long /i:/ sound."
+    },
+    {
+        q: "What is an 'Expository' essay meant to do?",
+        opts: ["Argue a strong point and persuade the reader.", "Explain or give information about a topic clearly.", "Tell a funny or entertaining story to the reader.", "Describe a person's physical appearance in detail."],
+        ans: 1,
+        exp: "Expository writing is informative and explains a subject like HIV/AIDS."
+    },
+    {
+        q: "Which vowel sound is in the word 'Cat'?",
+        opts: ["/e/", "/ɪ/", "/a:/", "/æ/"],
+        ans: 3,
+        exp: "The word 'cat' uses the /æ/ sound."
+    },
+    {
+        q: "What makes a 'Myth' different from a normal story?",
+        opts: ["It is always factually true and can be proven.", "It is written in a newspaper for public reading.", "It has no characters at all in the entire story.", "It explains how nature started using gods or spirits."],
+        ans: 3,
+        exp: "Myths are ancient stories used to explain natural events or origins, often involving supernatural beings."
+    },
+    {
+        q: "Which sentence is in the Future Tense?",
+        opts: ["She goes home early today.", "She is going home right now.", "She will go home tomorrow.", "She went home yesterday."],
+        ans: 2,
+        exp: "The word 'will' is a primary marker for the future tense."
+    },
+    {
+        q: "In a drama text, what are 'Stage Directions'?",
+        opts: ["The price of tickets sold to the audience.", "The names and list of the audience members.", "The lines that the actors speak during the play.", "Instructions on how actors should move or look."],
+        ans: 3,
+        exp: "Stage directions tell the actors and director what to do on stage."
+    },
+    {
+        q: "Contrast /e/ and /æ/: Which word contains the /e/ sound as in 'Egg'?",
+        opts: ["Pan", "Pun", "Pen", "Pin"],
+        ans: 2,
+        exp: "'Pen' uses the /e/ sound, while 'pan' uses /æ/."
+    },
+    {
+        q: "Which of these words contains a diphthong (two vowel sounds joined)?",
+        opts: ["Hot", "Cat", "Sit", "Boy"],
+        ans: 3,
+        exp: "'Boy' contains the diphthong /ɔɪ/."
+    },
+    {
+        q: "Identify the diphthong in the word 'Gate'.",
+        opts: ["/ɔɪ/", "/eɪ/", "/aɪ/", "/əʊ/"],
+        ans: 1,
+        exp: "The word 'gate' uses the /eɪ/ diphthong."
+    },
+    {
+        q: "When writing about 'A Festival in my Village' that happened last year, which tense is best?",
+        opts: ["Present Continuous", "Future Tense", "Simple Past", "Simple Present"],
+        ans: 2,
+        exp: "Since the festival happened in the past, the simple past tense is correct."
+    },
+    {
+        q: "Which word does NOT belong to the /ʊ/ (short) group?",
+        opts: ["Wood", "Could", "Shoot", "Foot"],
+        ans: 2,
+        exp: "'Shoot' has the long /u:/ sound, unlike the others."
+    },
+    {
+        q: "Find the adverb of frequency in: 'I always brush my teeth.'",
+        opts: ["Teeth", "Brush", "Always", "I"],
+        ans: 2,
+        exp: "'Always' tells us how often the action happens."
+    },
+    {
+        q: "What is the correct salutation for a formal letter to a Principal whose name you don't use?",
+        opts: ["Hello Sir,", "Hi Principal,", "Dear Friend,", "Dear Sir/Ma'am,"],
+        ans: 3,
+        exp: "Formal letters use 'Dear Sir' or 'Dear Ma'am' when addressing officials."
+    },
+    // ── MATHEMATICS ──
+    {
+        q: "If $0.00003579$ is written in the form $3.579 \\times 10^n$, what is the value of $n + 1$?",
+        opts: ["-4", "-6", "6", "-5"],
+        ans: 0,
+        exp: "Standard form is $3.579 \\times 10^{-5}$. Therefore, $n = -5$. $n + 1 = -5 + 1 = -4$."
+    },
+    {
+        q: "Find the sum of $111_{two}, 111_{three},$ and $111_{four}$ in base ten.",
+        opts: ["43", "42", "40", "41"],
+        ans: 3,
+        exp: "$111_2 = 7$; $111_3 = 9+3+1 = 13$; $111_4 = 16+4+1 = 21$. Total: $7+13+21 = 41$."
+    },
+    {
+        q: "A number was rounded to 2 significant figures to get 400. What is the smallest possible whole number it could have been?",
+        opts: ["401", "399", "395", "350"],
+        ans: 3,
+        exp: "To 2 S.F., 350 rounds up to 400. 349 would round to 300 (2 S.F.), so 350 is the smallest."
+    },
+    {
+        q: "Simplify: $5(2a - 3b) - 2(4a - 7b) - a$.",
+        opts: ["$a - b$", "$-a - b$", "$b - a$", "$a + b$"],
+        ans: 0,
+        exp: "$10a - 15b - 8a + 14b - a$. Collecting like terms: $(10-8-1)a + (-15+14)b = a - b$."
+    },
+    {
+        q: "If $x = -2$ and $y = -3$, evaluate $\\frac{x^2 - y^2}{x + y}$.",
+        opts: ["5", "-1", "-5", "1"],
+        ans: 3,
+        exp: "$(4 - 9) / (-2 + -3) = -5 / -5 = 1$."
+    },
+    {
+        q: "Which of the following numbers, when rounded to the nearest tenth, results in 10.0?",
+        opts: ["10.05", "9.949", "10.11", "9.951"],
+        ans: 3,
+        exp: "9.951: the hundredths digit is 5, so the tenths digit 9 rounds up, carrying over to give 10.0."
+    },
+    {
+        q: "Solve for $k$ in base ten if $102_k = 27_{ten}$.",
+        opts: ["3", "4", "6", "5"],
+        ans: 3,
+        exp: "$k^2 + 0k + 2 = 27 \\implies k^2 = 25 \\implies k = 5$."
+    },
+    {
+        q: "Calculate the exact value of $(0.12 \\times 0.5) \\div 0.003$.",
+        opts: ["200", "0.2", "2", "20"],
+        ans: 3,
+        exp: "$0.06 \\div 0.003 = 60 \\div 3 = 20$."
+    },
+    {
+        q: "A man's debt is represented by $-8x$. If he pays off half and then incurs a new debt of $3x$, what is his new balance?",
+        opts: ["$-4x$", "$-11x$", "$-x$", "$-7x$"],
+        ans: 3,
+        exp: "Half of $-8x$ is $-4x$. Remaining debt: $-4x$. New debt added: $-4x - 3x = -7x$."
+    },
+    {
+        q: "Convert $0.625$ to a fraction in its lowest terms.",
+        opts: ["$5/8$", "$5/4$", "$3/4$", "$625/1000$"],
+        ans: 0,
+        exp: "$625/1000 = 125/200 = 25/40 = 5/8$."
+    },
+    {
+        q: "Express 72 as a product of its prime factors in index form.",
+        opts: ["$2 \\times 3^4$", "$8 \\times 9$", "$2^3 \\times 3^2$", "$2^2 \\times 3^3$"],
+        ans: 2,
+        exp: "$72 = 8 \\times 9 = 2 \\times 2 \\times 2 \\times 3 \\times 3 = 2^3 \\times 3^2$."
+    },
+    {
+        q: "If $1011_{two} + x_{two} = 11000_{two}$, find $x$.",
+        opts: ["$1011_{two}$", "$1111_{two}$", "$1100_{two}$", "$1101_{two}$"],
+        ans: 3,
+        exp: "$11000_2 (24) - 1011_2 (11) = 13$. 13 in binary is $1101_{two}$."
+    },
+    {
+        q: "What is the H.C.F. of $18a^2b$ and $24ab^2$?",
+        opts: ["$72a^2b^2$", "$6a^2b^2$", "$6ab$", "$12ab$"],
+        ans: 2,
+        exp: "HCF of 18 and 24 is 6. The lowest power of $a$ is $a^1$. The lowest power of $b$ is $b^1$. So, $6ab$."
+    },
+    {
+        q: "Approximate $0.004997$ to 3 significant figures.",
+        opts: ["0.00499", "0.004", "0.005", "0.00500"],
+        ans: 3,
+        exp: "Sig figs start at 4. The 4th figure (7) rounds the 3rd figure (9) up, which carries over. Result: 0.00500."
+    },
+    {
+        q: "Find the reciprocal of $1\\frac{2}{3} + 2\\frac{1}{2}$.",
+        opts: ["$25/6$", "$12/5$", "$5/12$", "$6/25$"],
+        ans: 3,
+        exp: "$5/3 + 5/2 = (10+15)/6 = 25/6$. Reciprocal is $6/25$."
+    },
+    {
+        q: "In base 6, what is the next number after $55_6$?",
+        opts: ["56", "66", "60", "100"],
+        ans: 3,
+        exp: "Just like 99 is followed by 100 in base 10, the maximum digits $55$ in base 6 are followed by $100_6$."
+    },
+    {
+        q: "Simplify: $\\frac{x}{2} - \\frac{x - 2}{3}$.",
+        opts: ["$\\frac{x-4}{6}$", "$\\frac{x+2}{6}$", "$\\frac{5x-4}{6}$", "$\\frac{x+4}{6}$"],
+        ans: 3,
+        exp: "$(3x - 2(x - 2)) / 6 = (3x - 2x + 4) / 6 = (x + 4) / 6$."
+    },
+    {
+        q: "If a car travels $d$ km in $t$ hours, what is the speed when $d=150$ and $t=2.5$?",
+        opts: ["75 km/h", "375 km/h", "0.016 km/h", "60 km/h"],
+        ans: 3,
+        exp: "$Speed = d / t = 150 / 2.5 = 60$ km/h."
+    },
+    {
+        q: "Subtract $11_{two}$ from $100_{two}$.",
+        opts: ["$0_{two}$", "$10_{two}$", "$11_{two}$", "$1_{two}$"],
+        ans: 3,
+        exp: "$4_{10} - 3_{10} = 1_{10}$. 1 in binary is $1_{two}$."
+    },
+    {
+        q: "Round 0.0954 to 1 significant figure.",
+        opts: ["0.1", "0.01", "0.09", "0.10"],
+        ans: 0,
+        exp: "The first S.F. is 9. The next digit is 5, so 9 rounds up to 10, making it 0.1."
+    },
+    {
+        q: "What is the value of $2^5 \\div 2^2$?",
+        opts: ["6", "4", "32", "8"],
+        ans: 3,
+        exp: "$2^{5-2} = 2^3 = 8$."
+    },
+    {
+        q: "Convert $124_{five}$ to base three.",
+        opts: ["$1010_{three}$", "$1111_{three}$", "$1201_{three}$", "$1110_{three}$"],
+        ans: 3,
+        exp: "$124_5 = 25+10+4 = 39_{10}$. $39 \\div 3 = 13 R 0; 13 \\div 3 = 4 R 1; 4 \\div 3 = 1 R 1; 1 \\div 3 = 0 R 1$. Result: $1110_3$."
+    },
+    {
+        q: "A square has an area of $144x^2$. What is the length of one side?",
+        opts: ["$144x$", "$12x^2$", "$72x$", "$12x$"],
+        ans: 3,
+        exp: "$\\sqrt{144x^2} = 12x$."
+    },
+    {
+        q: "Solve for $x$: $3(x - 2) = 2(x + 4)$.",
+        opts: ["6", "10", "2", "14"],
+        ans: 3,
+        exp: "$3x - 6 = 2x + 8 \\implies 3x - 2x = 8 + 6 \\implies x = 14$."
+    },
+    {
+        q: "Evaluate $0.4^2 + 0.3^2$.",
+        opts: ["0.49", "0.7", "0.25", "0.5"],
+        ans: 2,
+        exp: "$0.16 + 0.09 = 0.25$."
+    },
+    {
+        q: "How many significant figures are in the result of $2.0 \\times 3.00$?",
+        opts: ["1", "2", "5", "3"],
+        ans: 1,
+        exp: "In multiplication, the result should have the same number of S.F. as the factor with the least S.F. (2.0 has two)."
+    },
+    {
+        q: "Which base ten number is equivalent to $E_{sixteen}$ (where A=10, B=11...)?",
+        opts: ["16", "13", "15", "14"],
+        ans: 3,
+        exp: "A=10, B=11, C=12, D=13, E=14."
+    },
+    {
+        q: "Simplify: $a^2b \\times ab^2$.",
+        opts: ["$2a^3b^3$", "$a^3b^2$", "$a^2b^2$", "$a^3b^3$"],
+        ans: 3,
+        exp: "Add the powers: $a^{2+1}b^{1+2} = a^3b^3$."
+    },
+    {
+        q: "What is the smallest number that must be added to 45 to make it a perfect square?",
+        opts: ["5", "9", "3", "4"],
+        ans: 3,
+        exp: "The next perfect square after 45 is $49 (7^2)$. $49 - 45 = 4$."
+    },
+    {
+        q: "Calculate $101_{two} \\times 101_{two}$.",
+        opts: ["$10001_{two}$", "$11111_{two}$", "$10101_{two}$", "$11001_{two}$"],
+        ans: 3,
+        exp: "$5 \\times 5 = 25$. 25 in binary is $11001_{two}$."
+    },
+    {
+        q: "Find the value of $m$ if $2m - 5 = m + 10$.",
+        opts: ["5", "20", "7.5", "15"],
+        ans: 3,
+        exp: "$2m - m = 10 + 5 \\implies m = 15$."
+    },
+    {
+        q: "Approximate $1/3$ to 2 significant figures.",
+        opts: ["0.30", "0.34", "0.3", "0.33"],
+        ans: 3,
+        exp: "$0.3333...$ to 2 S.F. is 0.33."
+    },
+    {
+        q: "If $14_x = 9_{ten}$, what is $x$?",
+        opts: ["6", "Impossible", "7", "5"],
+        ans: 3,
+        exp: "$1x + 4 = 9 \\implies x = 5$."
+    },
+    {
+        q: "Simplify $2(x+y) - 3(x-y)$.",
+        opts: ["$5x + 5y$", "$-x - y$", "$x + 5y$", "$-x + 5y$"],
+        ans: 3,
+        exp: "$2x + 2y - 3x + 3y = -x + 5y$."
+    },
+    {
+        q: "What is the square of $0.01$?",
+        opts: ["0.1", "0.001", "0.02", "0.0001"],
+        ans: 3,
+        exp: "$0.01 \\times 0.01 = 0.0001$."
+    },
+    {
+        q: "Express 0.00000012 in standard form.",
+        opts: ["$1.2 \\times 10^7$", "$12 \\times 10^{-8}$", "$1.2 \\times 10^{-8}$", "$1.2 \\times 10^{-7}$"],
+        ans: 3,
+        exp: "Move decimal 7 places to the right: $1.2 \\times 10^{-7}$."
+    },
+    {
+        q: "Evaluate $10^3 - 10^2$.",
+        opts: ["10", "100", "900", "1000"],
+        ans: 2,
+        exp: "$1000 - 100 = 900$."
+    },
+    {
+        q: "If $y$ is a negative integer, which of these must be positive?",
+        opts: ["$y + 2$", "$2y$", "$y^2$", "$y/2$"],
+        ans: 2,
+        exp: "Any non-zero number squared is always positive."
+    },
+    {
+        q: "Find the value of $3x^2$ when $x = 2$.",
+        opts: ["6", "18", "36", "12"],
+        ans: 3,
+        exp: "$3 \\times (2^2) = 3 \\times 4 = 12$."
+    },
+    {
+        q: "The product of a number $n$ and 5 is added to 10 to give 35. Find $n$.",
+        opts: ["4", "9", "7", "5"],
+        ans: 3,
+        exp: "$5n + 10 = 35 \\implies 5n = 25 \\implies n = 5$."
+    }
+],
     'English Language': [
     {
         q: "Which of the following is an example of a consonant cluster?",
@@ -2048,7 +2472,329 @@ jss2: {
 ]
 },
 jss3: {
-    'English Language': [
+  'General Test': [
+    // ── ENGLISH LANGUAGE (20 questions) ──
+    {
+        q: "Which sentence correctly uses the Past Perfect Tense?",
+        opts: ["She finished her homework before her mother arrived home.", "She had finished her homework before her mother arrived home.", "She was finishing her homework when her mother arrived home.", "She has finished her homework before her mother arrived home."],
+        ans: 1,
+        exp: "Past Perfect uses 'had + past participle' to show one past action completed before another past action. 'Had finished' is correct."
+    },
+    {
+        q: "Identify the figure of speech in: 'The pen is mightier than the sword.'",
+        opts: ["Simile, because two things are compared using 'like' or 'as'.", "Hyperbole, because the statement is a wild exaggeration of fact.", "Personification, because an object is given a human quality.", "Metaphor, because pen and sword represent writing and physical force."],
+        ans: 3,
+        exp: "This is a metaphor. 'Pen' represents intellectual power; 'sword' represents physical force. No 'like' or 'as' is used."
+    },
+    {
+        q: "Choose the option that fills the gap correctly: 'The jury ____ unable to reach a unanimous verdict.'",
+        opts: ["are", "were", "have been", "was"],
+        ans: 3,
+        exp: "In formal English, collective nouns like 'jury' are treated as singular, so 'was' is the correct verb form."
+    },
+    {
+        q: "Which of the following sentences contains a DANGLING MODIFIER?",
+        opts: ["Amaka tripped and fell while she was running quickly to the bus stop.", "Running quickly to the bus stop, Amaka tripped and fell badly.", "Running quickly to the bus stop, the rain suddenly began to fall.", "While running to the bus stop, Amaka noticed the rain beginning to fall."],
+        ans: 2,
+        exp: "A dangling modifier has no clear subject to attach to. 'Running quickly' implies a person is running, but the sentence says 'the rain' was running."
+    },
+    {
+        q: "Convert to Indirect Speech: She said, 'I have never been to Lagos before.'",
+        opts: ["She said she had never been to Lagos before.", "She said she has never been to Lagos before.", "She told she never went to Lagos before that time.", "She said she never had gone to Lagos before then."],
+        ans: 0,
+        exp: "In Indirect Speech, Present Perfect ('have been') shifts back to Past Perfect ('had been'). 'She said she had never been to Lagos before' is correct."
+    },
+    {
+        q: "Which word is the correct ANTONYM of 'verbose'?",
+        opts: ["eloquent", "talkative", "fluent", "concise"],
+        ans: 3,
+        exp: "'Verbose' means using far more words than necessary. Its antonym is 'concise', meaning brief and direct."
+    },
+    {
+        q: "Read this: 'Year after year, we watch the same broken promises. Yet we are told to be patient.' What is the tone?",
+        opts: ["Joyful and celebratory, expressing gratitude for all progress made.", "Neutral and factual, presenting only objective observations without bias.", "Hopeful and encouraging, urging the reader to remain positive.", "Bitter and sarcastic, expressing frustration with repeated failures."],
+        ans: 3,
+        exp: "The writer is frustrated by repeated failures and uses the irony of being told to be patient to express bitterness and sarcasm."
+    },
+    {
+        q: "Which of these is a correct example of a Type 2 Conditional sentence?",
+        opts: ["If it rained heavily, the match would be postponed tomorrow.", "If it rains heavily, the match will be postponed tomorrow.", "If it had rained heavily, the match would have been postponed.", "If it is raining heavily, the match is being postponed now."],
+        ans: 0,
+        exp: "Type 2 conditional uses 'If + past simple, would + infinitive'. It describes an unlikely or imaginary present/future situation."
+    },
+    {
+        q: "What is the function of a RELATIVE PRONOUN in a sentence?",
+        opts: ["It joins two independent clauses of equal importance together.", "It links a subordinate clause to the noun or pronoun it describes.", "It replaces the subject completely to avoid repeating the noun.", "It shows the relationship between a preposition and its object."],
+        ans: 1,
+        exp: "Relative pronouns (who, whom, which, that) introduce relative clauses that modify a noun in the main clause."
+    },
+    {
+        q: "Which option identifies the THEME of a prose text about a student who steals and later faces serious consequences?",
+        opts: ["Family values and the importance of parental discipline at home.", "Education and the rewards of hard work and dedication in school.", "Crime and its inevitable consequences for anyone who commits it.", "Friendship and loyalty between students and their classroom teachers."],
+        ans: 2,
+        exp: "The central idea running through the story is that crime leads to punishment — this is the theme."
+    },
+    {
+        q: "Identify the grammatical name of the underlined portion: 'The woman *who sells vegetables* is my aunt.'",
+        opts: ["A noun phrase that modifies the noun 'woman' directly.", "An adverbial clause that modifies the verb 'is' in the sentence.", "A noun clause acting as the subject of the main sentence.", "A relative clause that modifies the noun 'woman' in the sentence."],
+        ans: 3,
+        exp: "'Who sells vegetables' is a relative clause. It begins with the relative pronoun 'who' and describes the noun 'woman'."
+    },
+    {
+        q: "Which of these sentences contains a correctly used SEMICOLON?",
+        opts: ["She; studied very hard but she still failed the exam.", "She studied very hard; but she still failed the exam.", "She studied very hard; she still failed the exam.", "She studied; very hard and she still failed the exam."],
+        ans: 2,
+        exp: "A semicolon joins two closely related independent clauses without a conjunction. Both 'She studied very hard' and 'she still failed the exam' can stand alone."
+    },
+    {
+        q: "What is the literary term for a story-within-a-story where a character narrates another complete tale?",
+        opts: ["Foreshadowing, because it gives hints of events that are yet to come.", "Stream of consciousness, because it follows a character's inner thoughts.", "Frame narrative, because an outer story contains a complete inner tale.", "Flashback, because it interrupts the present story with past events."],
+        ans: 2,
+        exp: "A frame narrative is a technique where one story serves as a container or 'frame' for another story told inside it."
+    },
+    {
+        q: "Choose the sentence with the CORRECT subject-verb agreement:",
+        opts: ["A group of soldiers were marching down the street loudly.", "The group of soldiers are marching down the street together.", "Groups of soldier was marching down the street yesterday.", "A group of soldiers was marching down the street loudly."],
+        ans: 3,
+        exp: "'A group' is the singular collective noun subject. It takes the singular verb 'was'. The prepositional phrase 'of soldiers' does not change this."
+    },
+    {
+        q: "In a DEBATE speech, what is the purpose of the REBUTTAL section?",
+        opts: ["To introduce the speaker and clearly explain the motion to all.", "To narrate personal stories that directly support the speaker's stand.", "To respond directly to and counter the arguments of the opposition.", "To summarise all the speaker's main points at the end of the speech."],
+        ans: 2,
+        exp: "A rebuttal directly addresses and attempts to disprove the opposing team's arguments using logic and evidence."
+    },
+    {
+        q: "Identify the device used in: 'And the sea said, Come.'",
+        opts: ["Onomatopoeia, because the word imitates a natural sound in nature.", "Simile, because it compares the sea to a person calling others over.", "Metaphor, because it directly compares the sea to a powerful being.", "Personification, because a non-living thing (sea) is given the ability to speak."],
+        ans: 3,
+        exp: "Personification gives the sea — a non-living thing — the human ability to speak. This is the defining feature of personification."
+    },
+    {
+        q: "Which option correctly PUNCTUATES this sentence: 'My three favourite subjects are mathematics english and biology'",
+        opts: ["My three favourite subjects are mathematics, english, and biology.", "My three favourite subjects are Mathematics, English and Biology.", "My three favourite subjects are Mathematics, English, and Biology.", "my three favourite subjects are Mathematics, English, and Biology."],
+        ans: 2,
+        exp: "Subject names used as proper nouns in a list are capitalised. Items in a list need commas. The sentence must begin with a capital letter."
+    },
+    {
+        q: "What is the key difference between a TRAGEDY and a COMEDY in drama?",
+        opts: ["A tragedy is written in verse only while a comedy is written in prose.", "A tragedy ends in suffering or death while a comedy ends happily.", "A comedy deals with serious real-life issues while a tragedy is light-hearted.", "A comedy features only clowns while a tragedy features only royalty."],
+        ans: 1,
+        exp: "The defining difference: a tragedy ends in suffering, defeat, or death; a comedy resolves happily for the main characters."
+    },
+    {
+        q: "Which is the correct word to use in the sentence? 'The principal's speech had a great ____ on all the students.'",
+        opts: ["affect", "defect", "effect", "infect"],
+        ans: 2,
+        exp: "'Effect' is a noun meaning result or impact. 'Affect' is a verb. The sentence needs a noun after 'a great', so 'effect' is correct."
+    },
+    {
+        q: "Which of the following correctly describes ONOMATOPOEIA?",
+        opts: ["It is the repetition of the same consonant sound at the start of nearby words.", "It is the use of a word whose sound imitates the thing or action it describes.", "It is a direct comparison between two unlike things without using 'like' or 'as'.", "It is a figure of speech where extreme exaggeration is used for emphasis."],
+        ans: 1,
+        exp: "Onomatopoeia uses words that sound like what they mean. Examples include 'buzz', 'crash', 'hiss', 'bang', and 'sizzle'."
+    },
+    // ── MATHEMATICS (30 questions) ──
+    // Simultaneous Equations
+    {
+        q: "Solve the simultaneous equations: $x + y = 10$ and $x - y = 4$.",
+        opts: ["$x = 8, y = 2$", "$x = 6, y = 4$", "$x = 7, y = 3$", "$x = 5, y = 5$"],
+        ans: 2,
+        exp: "Adding both equations: $2x = 14 \\implies x = 7$. Substituting: $7 + y = 10 \\implies y = 3$."
+    },
+    {
+        q: "Using the elimination method, solve: $2x + 3y = 16$ and $x + 3y = 11$.",
+        opts: ["$x = 4, y = 2$", "$x = 3, y = 3$", "$x = 6, y = 1$", "$x = 5, y = 2$"],
+        ans: 3,
+        exp: "Subtracting equation 2 from equation 1: $x = 5$. Substituting: $5 + 3y = 11 \\implies 3y = 6 \\implies y = 2$."
+    },
+    {
+        q: "Solve by substitution: $y = 2x - 1$ and $x + y = 8$.",
+        opts: ["$x = 2, y = 3$", "$x = 4, y = 7$", "$x = 3, y = 5$", "$x = 5, y = 3$"],
+        ans: 2,
+        exp: "Substitute $y = 2x-1$ into $x + y = 8$: $x + 2x - 1 = 8 \\implies 3x = 9 \\implies x = 3$. Then $y = 2(3)-1 = 5$."
+    },
+    {
+        q: "Which pair of values satisfies both $3x - y = 7$ and $x + 2y = 14$?",
+        opts: ["$x = 1, y = 4$", "$x = 3, y = 4$", "$x = 2, y = 3$", "$x = 4, y = 5$"],
+        ans: 3,
+        exp: "From eq1: $y = 3x - 7$. Substitute into eq2: $x + 2(3x - 7) = 14 \\implies 7x = 28 \\implies x = 4$. Then $y = 3(4) - 7 = 5$. Check eq2: $4 + 10 = 14$ ✓."
+    },
+    {
+        q: "Two numbers have a sum of 20 and a difference of 6. What are the two numbers?",
+        opts: ["8 and 12", "7 and 13", "9 and 11", "10 and 10"],
+        ans: 1,
+        exp: "Let the numbers be $x$ and $y$. $x + y = 20$ and $x - y = 6$. Adding: $2x = 26 \\implies x = 13$. So $y = 7$. The numbers are 13 and 7."
+    },
+    {
+        q: "The graphical method of solving simultaneous equations gives the solution at:",
+        opts: ["The highest point on either of the two drawn lines.", "The point where either line cuts the vertical y-axis.", "The point where the two straight lines cross each other.", "The midpoint between the two lines on the graph."],
+        ans: 2,
+        exp: "When solving simultaneous equations graphically, the solution is the coordinates of the point of intersection of the two lines."
+    },
+    // Statistics II
+    {
+        q: "The ages of 7 pupils are: 10, 12, 11, 13, 12, 10, 14. What is the median age?",
+        opts: ["10", "13", "12", "11"],
+        ans: 2,
+        exp: "Arranged in order: 10, 10, 11, 12, 12, 13, 14. The middle (4th) value of 7 is 12."
+    },
+    {
+        q: "The scores of 5 students are 60, 75, 80, 55, and 70. What is their mean score?",
+        opts: ["72", "68", "70", "75"],
+        ans: 1,
+        exp: "Mean $= \\frac{60+75+80+55+70}{5} = \\frac{340}{5} = 68$."
+    },
+    {
+        q: "In a set of numbers, the value that appears most often is called the:",
+        opts: ["Mean, because it is the calculated average of all values.", "Median, because it is the middle value when data is arranged.", "Mode, because it is the value with the highest frequency.", "Range, because it shows the spread between highest and lowest."],
+        ans: 2,
+        exp: "The MODE is the value that occurs most frequently in a data set."
+    },
+    {
+        q: "The marks scored by 6 students are 45, 60, 55, 70, 60, and 50. What is the mode?",
+        opts: ["55", "70", "45", "60"],
+        ans: 3,
+        exp: "The mode is the value that appears most often. 60 appears twice; all others appear once. Mode = 60."
+    },
+    {
+        q: "A data set has values: 5, 8, 12, 7, 8, 10, 6. Which measure of central tendency best represents the most common value?",
+        opts: ["The range, because it shows the spread of the data values.", "The median, because it is the value exactly in the middle.", "The mean, because it uses all the values in the calculation.", "The mode, because it shows the value that appears most often."],
+        ans: 3,
+        exp: "The MODE best represents the most common value. In this data, 8 appears twice and is the mode."
+    },
+    {
+        q: "The mean of four numbers is 15. Three of them are 12, 18, and 14. What is the fourth number?",
+        opts: ["14", "16", "15", "18"],
+        ans: 1,
+        exp: "Total = $4 \\times 15 = 60$. Sum of three known values $= 12 + 18 + 14 = 44$. Fourth number $= 60 - 44 = 16$."
+    },
+    // Variation
+    {
+        q: "If $y$ varies directly as $x$, and $y = 12$ when $x = 4$, find $y$ when $x = 9$.",
+        opts: ["27", "18", "36", "24"],
+        ans: 0,
+        exp: "Direct variation: $y = kx$. $12 = 4k \\implies k = 3$. When $x = 9$: $y = 3 \\times 9 = 27$."
+    },
+    {
+        q: "If $y$ varies inversely as $x$, and $y = 6$ when $x = 4$, find $y$ when $x = 8$.",
+        opts: ["12", "6", "3", "9"],
+        ans: 2,
+        exp: "Inverse variation: $y = \\frac{k}{x}$. $6 = \\frac{k}{4} \\implies k = 24$. When $x = 8$: $y = \\frac{24}{8} = 3$."
+    },
+    {
+        q: "Which of the following correctly describes INVERSE variation?",
+        opts: ["As one quantity increases, the other quantity also increases equally.", "As one quantity doubles, the other quantity also doubles in value.", "As one quantity increases, the other quantity decreases proportionally.", "As one quantity increases, the other quantity remains constant always."],
+        ans: 2,
+        exp: "In inverse variation, the two quantities change in opposite directions. If one goes up, the other goes down, and their product stays constant."
+    },
+    {
+        q: "The time $t$ taken to do a job varies inversely as the number of workers $n$. If 6 workers finish in 8 days, how many days will 12 workers take?",
+        opts: ["6 days", "4 days", "2 days", "16 days"],
+        ans: 1,
+        exp: "$t = \\frac{k}{n}$. $8 = \\frac{k}{6} \\implies k = 48$. When $n = 12$: $t = \\frac{48}{12} = 4$ days."
+    },
+    {
+        q: "If $z$ varies jointly as $x$ and $y$, and $z = 30$ when $x = 3$ and $y = 5$, find $z$ when $x = 4$ and $y = 6$.",
+        opts: ["48", "60", "36", "72"],
+        ans: 0,
+        exp: "Joint variation: $z = kxy$. $30 = k(3)(5) = 15k \\implies k = 2$. When $x=4, y=6$: $z = 2 \\times 4 \\times 6 = 48$."
+    },
+    {
+        q: "If $y$ varies directly as $x^2$ and $y = 50$ when $x = 5$, find $y$ when $x = 3$.",
+        opts: ["15", "30", "18", "27"],
+        ans: 2,
+        exp: "$y = kx^2$. $50 = k(25) \\implies k = 2$. When $x = 3$: $y = 2 \\times 9 = 18$."
+    },
+    // Trigonometric Ratios
+    {
+        q: "In a right-angled triangle, which ratio correctly defines the SINE of an angle?",
+        opts: ["$\\frac{Adjacent}{Hypotenuse}$", "$\\frac{Adjacent}{Opposite}$", "$\\frac{Hypotenuse}{Opposite}$", "$\\frac{Opposite}{Hypotenuse}$"],
+        ans: 3,
+        exp: "SOH-CAH-TOA: Sine = Opposite ÷ Hypotenuse. This is the definition of sin for an acute angle in a right triangle."
+    },
+    {
+        q: "Find the value of $\\sin 30° + \\cos 60°$.",
+        opts: ["0", "2", "1.5", "1"],
+        ans: 3,
+        exp: "$\\sin 30° = 0.5$ and $\\cos 60° = 0.5$. Sum $= 0.5 + 0.5 = 1$."
+    },
+    {
+        q: "In triangle ABC, angle C = 90°, BC = 6 cm and AC = 8 cm. Find $\\tan A$.",
+        opts: ["$\\frac{4}{3}$", "$\\frac{3}{5}$", "$\\frac{4}{5}$", "$\\frac{3}{4}$"],
+        ans: 3,
+        exp: "In right triangle, $\\tan A = \\frac{opposite}{adjacent} = \\frac{BC}{AC} = \\frac{6}{8} = \\frac{3}{4}$."
+    },
+    {
+        q: "If $\\cos \\theta = \\frac{5}{13}$, find $\\sin \\theta$ for an acute angle.",
+        opts: ["$\\frac{13}{12}$", "$\\frac{5}{12}$", "$\\frac{12}{13}$", "$\\frac{13}{5}$"],
+        ans: 2,
+        exp: "Using Pythagoras: opposite $= \\sqrt{13^2 - 5^2} = \\sqrt{144} = 12$. $\\sin \\theta = \\frac{12}{13}$."
+    },
+    {
+        q: "What is the value of $\\tan 45°$?",
+        opts: ["$\\frac{\\sqrt{3}}{2}$", "$0$", "$\\frac{1}{2}$", "$1$"],
+        ans: 3,
+        exp: "$\\tan 45° = 1$. This is a standard trigonometric value every student must memorise."
+    },
+    // Angles of Elevation and Depression
+    {
+        q: "The angle of elevation of the top of a tree from a point on the ground is measured from:",
+        opts: ["A vertical line going upward from where the observer stands.", "A horizontal line at the observer's level upward to the object.", "A line drawn from the object down to the observer's position.", "A diagonal line connecting the ground to the top of the object."],
+        ans: 1,
+        exp: "The angle of elevation is measured upward from the horizontal line at the observer's eye level to the object being viewed."
+    },
+    {
+        q: "A boy stands 20 m from the base of a building. The angle of elevation of the top is 30°. Find the height of the building. (Take $\\tan 30° = \\frac{1}{\\sqrt{3}}$)",
+        opts: ["$10\\sqrt{3}$ m", "$20\\sqrt{3}$ m", "$\\frac{20}{\\sqrt{3}}$ m", "$\\frac{20\\sqrt{3}}{3}$ m"],
+        ans: 2,
+        exp: "$\\tan 30° = \\frac{height}{20} \\implies height = 20 \\times \\tan 30° = 20 \\times \\frac{1}{\\sqrt{3}} = \\frac{20}{\\sqrt{3}}$ m."
+    },
+    {
+        q: "The angle of DEPRESSION is measured from:",
+        opts: ["Upward from a horizontal line at the base of the object.", "Upward from the observer's position to the top of the object.", "Downward from a horizontal line at the observer's level to the object below.", "Downward from the vertical line at the observer's position."],
+        ans: 2,
+        exp: "The angle of depression is measured downward from the horizontal line at the observer's eye level to the object being observed below."
+    },
+    {
+        q: "A bird at the top of a 15 m pole looks down at a cat on the ground at an angle of depression of 45°. How far is the cat from the base of the pole?",
+        opts: ["30 m", "7.5 m", "22.5 m", "15 m"],
+        ans: 3,
+        exp: "$\\tan 45° = 1 = \\frac{15}{distance}$. Distance $= 15$ m. The cat is 15 m from the base of the pole."
+    },
+    // Bearing and Distances
+    {
+        q: "A bearing is always measured:",
+        opts: ["From the South, moving in an anticlockwise direction around.", "From the North, moving in a clockwise direction around a point.", "From the East, moving in a clockwise direction around a point.", "From the North, moving in an anticlockwise direction around."],
+        ans: 1,
+        exp: "Bearings are three-digit angles measured from due North (000°) in a clockwise direction."
+    },
+    {
+        q: "What is the three-figure bearing of due EAST?",
+        opts: ["180°", "270°", "360°", "090°"],
+        ans: 3,
+        exp: "Due East is directly to the right of North. Measured clockwise from North, East = 090°."
+    },
+    {
+        q: "The bearing of town B from town A is 050°. What is the bearing of town A from town B?",
+        opts: ["130°", "310°", "230°", "140°"],
+        ans: 2,
+        exp: "Back bearing $= 050° + 180° = 230°$. This gives the bearing of A looking back from B."
+    },
+    {
+        q: "A ship sails 60 km due North, then 80 km due East. What is the straight-line distance from its starting point?",
+        opts: ["100 km", "120 km", "140 km", "80 km"],
+        ans: 0,
+        exp: "Using Pythagoras: distance $= \\sqrt{60^2 + 80^2} = \\sqrt{3600 + 6400} = \\sqrt{10000} = 100$ km."
+    },
+    {
+        q: "Which instrument is used in the field to measure the bearing of a distant object?",
+        opts: ["A protractor placed on a graph sheet on a flat surface.", "A clinometer attached to a long measuring tape outdoors.", "A magnetic compass or surveyor's bearing instrument outside.", "A ruler and set square placed together on the drawing board."],
+        ans: 2,
+        exp: "A magnetic compass (or surveyor's compass/theodolite) is the field instrument used to take bearings of distant objects."
+    }
+],
+ 'English Language': [
     { q: "Which of the following sentences correctly uses 'except'?", opts: ["All students went to the hall except John.", "All students went to the hall except for John.", "All students went to the hall but John.", "All students went to the hall apart from John."], ans: 0, exp: "The word 'except' is correctly used to exclude John from the group." },
     { q: "Identify the pair with contrasting /t/ and /θ/ sounds:", opts: ["tin/think", "tick/tick", "ten/tan", "tin/tin"], ans: 0, exp: "The words 'tin' and 'think' illustrate /t/ versus /θ/." },
     { q: "Which sentence expresses exception using 'apart from'?", opts: ["Apart from Sara, everyone attended the event.", "Everyone attended apart Sara.", "Sara attended apart from everyone.", "Everyone apart from attended Sara."], ans: 0, exp: "'Apart from Sara' correctly excludes Sara from the group." },
