@@ -74,9 +74,6 @@
     return `${h}:${m}:00`;
   }
 
-  // ── FIX Bug 5: compute the current timer string synchronously so renderExam()
-  //    can inject the real value directly into the HTML template, eliminating
-  //    the one-frame "..." flicker that occurred on every question navigation.
   function _currentTimerStr() {
     if (!S().examStartMs) return _initialTimerStr(_examDurationMs());
     const remaining = _examDurationMs() - (Date.now() - S().examStartMs);
@@ -87,7 +84,6 @@
     return `${h}:${m}:${sec}`;
   }
 
-  // ── FIX Bug 5: compute the timer CSS class synchronously too.
   function _currentTimerClass() {
     if (!S().examStartMs) return 'timer-green';
     const duration  = _examDurationMs();
@@ -138,9 +134,18 @@
     return null;
   }
 
+  // Returns true if the current restricted subjects come from an active task
+  // (meaning the minimum subject requirement should be 1 instead of 2)
+  function _isTaskRestricted() {
+    const taskCfg = S().currentTaskConfig || {};
+    if (!taskCfg.active) return false;
+    const today = _todayStr();
+    const dates = Array.isArray(taskCfg.dates) ? taskCfg.dates : [];
+    return dates.includes(today);
+  }
+
   async function loadOrStart() {
     try {
-      // ── STEP 1: Check IndexedDB first (works offline) ────────
       let localExam = null;
       if (window.LocalDB) {
         try {
@@ -150,14 +155,12 @@
         }
       }
 
-      // ── STEP 2: Check Firebase (authoritative, requires network) ─
       let firebaseExam = null;
       if (navigator.onLine) {
         try {
           const snap = await window.fbDb.collection('ongoingExams').doc(S().userId).get();
           if (snap.exists) {
             firebaseExam = snap.data();
-            // Cache the Firebase copy locally for next time
             if (window.LocalDB) {
               LocalDB.saveExamSession(S().userId, firebaseExam).catch(() => {});
             }
@@ -167,12 +170,9 @@
         }
       }
 
-      // ── STEP 3: Pick the best source ─────────────────────────
-      // Firebase is authoritative when online; local is fallback when offline.
       const examData = firebaseExam || localExam;
 
       if (!examData) {
-        // No ongoing exam anywhere
         await renderSubjectSelection();
         return;
       }
@@ -344,6 +344,10 @@
         ? allAvailable.filter(s => restrictedSubjs.includes(s))
         : allAvailable;
 
+      // ── KEY CHANGE: minimum subject count depends on whether this is a task day
+      const isTaskDay = _isTaskRestricted();
+      const minSubjects = (restrictedSubjs && isTaskDay) ? 1 : 2;
+
       const messages = S().studentMessages || [];
 
       let messagesHtml = '';
@@ -439,8 +443,10 @@
               ? 'The subjects assigned for today are not available for your class. Please contact Master Timothy.'
               : 'No subjects available for your class.'}
           </p>`;
+
       } else if (restrictedSubjs) {
-        const enoughSubjects = available.length >= 2;
+        // ── KEY CHANGE: allow start as long as available.length >= minSubjects (1 for tasks)
+        const enoughSubjects = available.length >= minSubjects;
         subjectsHtml = `
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
             ${available.map(subj => `
@@ -457,9 +463,10 @@
                  Start Exam
                </button>`
             : `<p class="text-red-500 text-sm">
-                 Only ${available.length} required subject${available.length !== 1 ? 's' : ''} found.
-                 At least 2 are needed. Please contact Master Timothy.
+                 The assigned subject is not available for your class.
+                 Please contact Master Timothy.
                </p>`}`;
+
       } else {
         subjectsHtml = `
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
@@ -577,8 +584,14 @@
     }
 
     const chosen = _getSelectedSubjects();
-    if (chosen.length < 2) {
-      UI.toast('Select at least 2 subjects.', 'warning');
+
+    // ── KEY CHANGE: use minSubjects (1 for task days, 2 for free exams)
+    const restrictedSubjs = _getRestrictedSubjectsForToday();
+    const isTaskDay       = _isTaskRestricted();
+    const minSubjects     = (restrictedSubjs && isTaskDay) ? 1 : 2;
+
+    if (chosen.length < minSubjects) {
+      UI.toast(`Select at least ${minSubjects} subject${minSubjects !== 1 ? 's' : ''}.`, 'warning');
       return;
     }
 
@@ -590,12 +603,12 @@
       return;
     }
 
-    const restrictedSubjs = _getRestrictedSubjectsForToday();
-    const finalChosen     = restrictedSubjs
+    const finalChosen = restrictedSubjs
       ? chosen.filter(s => restrictedSubjs.includes(s))
       : chosen;
 
-    if (finalChosen.length < 2) {
+    // ── KEY CHANGE: same minimum applies to finalChosen
+    if (finalChosen.length < minSubjects) {
       UI.toast('Not enough allowed subjects selected. Please contact Master Timothy.', 'error');
       return;
     }
@@ -631,12 +644,10 @@
     _startExamLock = true;
 
     try {
-      // 1. Save to IndexedDB first (instant, offline-safe)
       if (window.LocalDB) {
         await LocalDB.saveExamSession(S().userId, examDoc);
       }
 
-      // 2. Persist to Firebase (best-effort, non-blocking on failure)
       if (navigator.onLine) {
         window.fbDb.collection('ongoingExams').doc(S().userId).set(examDoc)
           .catch((err) => console.warn('[exam] Firebase exam creation failed (local copy saved):', err));
@@ -700,7 +711,6 @@
     _visibilityHandler = function () {
       if (document.visibilityState !== 'hidden') return;
 
-      // Cooldown: ignore rapid re-fires within 1 second of the last count
       if (_visibilityCooldown) return;
       _visibilityCooldown = true;
       setTimeout(function () { _visibilityCooldown = false; }, 1000);
@@ -763,14 +773,12 @@
       S().exam.sessionDate = _todayStr();
     }
 
-    // 1. Persist start time locally (instant, offline-safe)
     if (window.LocalDB) {
       LocalDB.updateExamStartTime(S().userId, startDate).catch((err) => {
         console.warn('[exam] LocalDB startTime save failed (non-fatal):', err);
       });
     }
 
-    // 2. Persist to Firebase (best-effort)
     try {
       await window.fbDb.collection('ongoingExams').doc(S().userId).set(
         { startTime: startDate, sessionDate: S().exam.sessionDate }, { merge: true }
@@ -901,21 +909,18 @@
     _renderKatex();
   }
 
-  // ── MODIFIED: local-first answer save ──────────────────────
   function _saveAnswer(subj, idx, val) {
     S().exam.answers[`${subj}-${idx}`] = val;
 
-    // 1. Write to IndexedDB immediately (survives tab close / offline)
     if (window.LocalDB) {
       LocalDB.updateExamAnswers(S().userId, S().exam.answers).catch((err) => {
         console.warn('[exam] LocalDB answer save failed (non-fatal):', err);
       });
     }
 
-    // 2. Debounced Firebase write (background, best-effort)
     clearTimeout(_saveAnswer._debounce);
     _saveAnswer._debounce = setTimeout(() => {
-      if (!navigator.onLine) return; // skip — LocalDB already has it
+      if (!navigator.onLine) return;
       window.fbDb.collection('ongoingExams').doc(S().userId)
         .update({ answers: S().exam.answers })
         .catch((err) => console.warn('[exam] Firebase answer save error (non-fatal):', err));
@@ -1053,13 +1058,9 @@
                         Array.isArray(taskCfg.dates) &&
                         taskCfg.dates.includes(sessionDate);
 
-      // ── STEP 1: Save result to IndexedDB immediately ──────────
-      // This ensures the result is preserved even if Firebase fails.
       let localResultId = null;
       if (window.LocalDB) {
         try {
-          // saveExamResult returns the localId via put(); we need to read it back.
-          // We store the extra taskDay flag for the sync manager.
           const rec = {
             localId: ('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx').replace(/[xy]/g, (c) => {
               const r = Math.random() * 16 | 0;
@@ -1082,13 +1083,10 @@
         }
       }
 
-      // ── STEP 2: Clear local exam session ─────────────────────
       if (window.LocalDB) {
         LocalDB.clearExamSession(S().userId).catch(() => {});
       }
 
-      // ── STEP 3: Update AppState immediately ──────────────────
-      // Do this before the Firebase write so the UI responds instantly.
       if (isTaskDay) {
         if (!S().studentData) S().studentData = {};
         if (!S().studentData.coachingCompleted) S().studentData.coachingCompleted = {};
@@ -1100,8 +1098,6 @@
       _startExamLock  = false;
       _beginExamLock  = false;
 
-      // ── STEP 4: Attempt Firebase write ───────────────────────
-      // If online → write now. If offline → SyncManager will handle it.
       let firebaseSuccess = false;
       if (navigator.onLine) {
         try {
@@ -1125,17 +1121,14 @@
           await batch.commit();
           firebaseSuccess = true;
 
-          // Mark local copy as synced since Firebase batch succeeded
           if (localResultId && window.LocalDB) {
             LocalDB.markResultSynced(localResultId).catch(() => {});
           }
         } catch (fbErr) {
           console.error('[exam] Firebase submission failed — result is saved locally for retry:', fbErr);
-          // Do NOT re-throw — we have the local copy; SyncManager will retry.
         }
       } else {
         console.warn('[exam] Offline — result saved locally. SyncManager will upload when online.');
-        // Trigger sync as soon as connection returns
         if (window.SyncManager) {
           window.addEventListener('online', function _retryOnOnline() {
             window.removeEventListener('online', _retryOnOnline);
@@ -1144,11 +1137,9 @@
         }
       }
 
-      // ── STEP 5: Render results (always succeeds — local data) ─
       renderResults(exam, result);
 
       if (!firebaseSuccess) {
-        // Inform student their result is saved and will upload automatically
         UI.toast(
           '✓ Result saved locally. It will sync to the server automatically when you reconnect.',
           'info',
