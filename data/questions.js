@@ -3052,6 +3052,282 @@ jss3: {
 ]
 },
 sss1: {
+    'General Test': [
+
+  // ── ACIDS ──────────────────────────────────────────────────
+
+  {
+    q: "Which of the following is an example of an ORGANIC acid found in daily life?",
+    opts: ["Hydrochloric acid", "Sulphuric acid", "Citric acid", "Nitric acid"],
+    ans: 2,
+    exp: "Citric acid is an organic acid found in fruits like oranges and lemons. Hydrochloric, sulphuric, and nitric acids are inorganic (mineral) acids."
+  },
+  {
+    q: "A student tests a solution with litmus paper. The blue litmus turns red. What does this indicate?",
+    opts: ["The solution is a base", "The solution is neutral", "The solution is an acid", "The solution is a salt"],
+    ans: 2,
+    exp: "Acids turn blue litmus paper red. This is one of the simplest chemical tests for acidity."
+  },
+  {
+    q: "Which property is SHARED by all acids?",
+    opts: ["They are all liquids at room temperature", "They all have a soapy feel", "They all react with metals to produce hydrogen gas", "They all turn red litmus blue"],
+    ans: 2,
+    exp: "All acids react with reactive metals (like zinc or magnesium) to release hydrogen gas. The soapy feel and blue litmus belong to bases."
+  },
+  {
+    q: "Hydrochloric acid (HCl) is described as a 'strong acid'. What does 'strong' mean in this context?",
+    opts: ["It has a high concentration", "It completely ionises in water to produce a high concentration of H⁺ ions", "It is very corrosive and burns skin badly", "It reacts only with strong bases"],
+    ans: 1,
+    exp: "A strong acid fully dissociates (ionises) in water. Strength refers to degree of ionisation, NOT concentration. A strong acid can be dilute."
+  },
+  {
+    q: "Ethanoic acid (vinegar) is a weak acid. Which statement correctly explains this?",
+    opts: ["It is always diluted before use", "It only partially ionises in water, producing few H⁺ ions", "It cannot react with bases", "It is organic so it cannot be strong"],
+    ans: 1,
+    exp: "Weak acids do not fully dissociate in solution. Only a fraction of the molecules release H⁺ ions, making the solution less acidic than a strong acid of the same concentration."
+  },
+  {
+    q: "A concentrated acid differs from a dilute acid in that:",
+    opts: ["A concentrated acid is always stronger", "A concentrated acid contains a greater amount of acid dissolved per unit volume of solution", "A concentrated acid does not react with metals", "A dilute acid is more dangerous than a concentrated acid"],
+    ans: 1,
+    exp: "Concentration refers to how much acid is dissolved per litre of solution. A concentrated acid has a large amount; a dilute acid has a small amount. Strength and concentration are different properties."
+  },
+  {
+    q: "Which of the following is the correct laboratory test to confirm the presence of an acid?",
+    opts: ["Add the substance to water and observe if it dissolves", "Test with blue litmus paper — if it turns red, the substance is an acid", "Heat the substance and observe the colour of fumes", "Add sodium chloride and observe if gas is produced"],
+    ans: 1,
+    exp: "The standard lab test for an acid is the blue litmus test — an acid turns blue litmus red. This is the most direct and reliable simple test."
+  },
+  {
+    q: "Sulphuric acid is prepared industrially by the Contact Process. Which gas is a key raw material in this process?",
+    opts: ["Hydrogen chloride", "Sulphur dioxide", "Carbon dioxide", "Nitrogen dioxide"],
+    ans: 1,
+    exp: "In the Contact Process, sulphur is burned to make sulphur dioxide (SO₂), which is then oxidised to SO₃ and dissolved in water (via oleum) to produce H₂SO₄."
+  },
+  {
+    q: "Which of the following is NOT a use of hydrochloric acid?",
+    opts: ["Cleaning metal surfaces (pickling)", "Manufacturing of fertilisers directly", "Production of PVC plastics", "Making of medicines and pharmaceuticals"],
+    ans: 1,
+    exp: "HCl is used in metal pickling, making PVC, and pharmaceuticals. Fertiliser manufacture is a major use of NITRIC acid (for ammonium nitrate) and sulphuric acid, not HCl directly."
+  },
+  {
+    q: "When zinc metal is added to dilute sulphuric acid, the products are:",
+    opts: ["Zinc oxide and water", "Zinc sulphate and hydrogen gas", "Zinc chloride and carbon dioxide", "Zinc sulphide and oxygen"],
+    ans: 1,
+    exp: "Acid + Metal → Salt + Hydrogen. Zn + H₂SO₄ → ZnSO₄ + H₂↑. The salt formed is zinc sulphate and hydrogen gas is released."
+  },
+
+  // ── BASES ──────────────────────────────────────────────────
+
+  {
+    q: "All alkalis are bases, but not all bases are alkalis. Which statement correctly explains this?",
+    opts: ["Alkalis are stronger than other bases", "An alkali is a base that is soluble in water", "Bases only react with acids in the solid state", "Alkalis are only found in the laboratory"],
+    ans: 1,
+    exp: "A base is any substance that neutralises an acid. An alkali is specifically a base that dissolves in water to produce OH⁻ ions. Sodium hydroxide (NaOH) is both a base and an alkali; copper(II) oxide is a base but NOT an alkali because it is insoluble."
+  },
+  {
+    q: "A student touches an unknown solution and notices it feels soapy or slippery. This most likely indicates:",
+    opts: ["The solution is a strong acid", "The solution is a neutral salt", "The solution is a base/alkali", "The solution is pure water"],
+    ans: 2,
+    exp: "The soapy or slippery feel is a characteristic physical property of bases and alkalis. (However, caution: strong bases are caustic and should not be touched!)"
+  },
+  {
+    q: "Which pair correctly classifies the base as either 'weak' or 'strong'?",
+    opts: ["Ammonia solution — Strong base; Sodium hydroxide — Weak base", "Sodium hydroxide — Strong base; Ammonia solution — Weak base", "Calcium hydroxide — Weak base; Potassium hydroxide — Strong base... they're equal", "All hydroxides are weak bases"],
+    ans: 1,
+    exp: "NaOH and KOH are strong bases (fully ionise). Ammonia (NH₃) dissolved in water forms a weak base because it only partially ionises: NH₃ + H₂O ⇌ NH₄⁺ + OH⁻."
+  },
+  {
+    q: "The chemical formula of calcium hydroxide is Ca(OH)₂. What is its common name?",
+    opts: ["Caustic soda", "Slaked lime", "Washing soda", "Baking soda"],
+    ans: 1,
+    exp: "Ca(OH)₂ is commonly called slaked lime. Caustic soda is NaOH, washing soda is Na₂CO₃·10H₂O, and baking soda is NaHCO₃."
+  },
+  {
+    q: "Which of the following best describes a 'neutralisation' reaction?",
+    opts: ["An acid reacting with a metal to form a salt", "A base reacting with water to form an alkali", "An acid reacting with a base to form a salt and water only", "A salt dissolving in water to form ions"],
+    ans: 2,
+    exp: "Neutralisation: Acid + Base → Salt + Water. The acid and base cancel each other out, producing a neutral (or near-neutral) salt solution and water."
+  },
+  {
+    q: "A student performs a simple base test by adding red litmus paper to a solution. The litmus turns blue. The student then adds a few drops of phenolphthalein indicator. What colour change should be observed if the solution is indeed a strong alkali?",
+    opts: ["The indicator turns yellow", "The indicator turns colourless", "The indicator turns pink/magenta", "The indicator turns orange"],
+    ans: 2,
+    exp: "Phenolphthalein is colourless in acid and neutral solutions, and turns pink/magenta in alkaline solutions. It confirms the presence of a base/alkali."
+  },
+  {
+    q: "Sodium hydroxide solution reacts with dilute nitric acid. Which of the following is the salt produced?",
+    opts: ["Sodium sulphate", "Sodium carbonate", "Sodium nitrate", "Sodium chloride"],
+    ans: 2,
+    exp: "NaOH + HNO₃ → NaNO₃ + H₂O. The salt is sodium nitrate. The anion of the salt always comes from the acid (nitric acid → nitrate)."
+  },
+
+  // ── pH SCALE & ACIDITY/ALKALINITY ──────────────────────────
+
+  {
+    q: "The pH scale runs from 0 to 14. A solution with pH 7 is best described as:",
+    opts: ["Weakly acidic", "Strongly alkaline", "Neutral", "Weakly alkaline"],
+    ans: 2,
+    exp: "pH 7 is the neutral point on the scale — pure water has a pH of 7. pH < 7 is acidic; pH > 7 is alkaline."
+  },
+  {
+    q: "Which of the following solutions has the LOWEST pH value?",
+    opts: ["A solution of pH 3", "A solution of pH 7", "A solution of pH 11", "A solution of pH 6"],
+    ans: 0,
+    exp: "The lower the pH, the more acidic the solution. pH 3 is the most acidic of the options listed."
+  },
+  {
+    q: "What does 'pOH' measure?",
+    opts: ["The concentration of H⁺ ions in solution", "The concentration of OH⁻ ions — a measure of alkalinity", "The pressure of oxygen in a solution", "The percentage of oxygen in a base"],
+    ans: 1,
+    exp: "pOH measures the concentration of hydroxide ions (OH⁻). At 25°C, pH + pOH = 14. A high pOH means a low OH⁻ concentration (acidic), and vice versa."
+  },
+  {
+    q: "A universal indicator shows an orange colour in a solution. What is the MOST LIKELY pH range?",
+    opts: ["pH 1–2 (very strongly acidic)", "pH 4–6 (weakly acidic)", "pH 8–10 (weakly alkaline)", "pH 12–14 (strongly alkaline)"],
+    ans: 1,
+    exp: "Universal indicator colour chart: red = very acidic (1–3), orange/yellow = weakly acidic (4–6), green = neutral (7), blue = weakly alkaline (8–10), purple/violet = strongly alkaline (11–14)."
+  },
+  {
+    q: "The significance of pH in daily life is BEST illustrated by which example?",
+    opts: ["The colour of clothing dye depends on pH", "Stomach acid (pH ~2) digests food, and antacids (pH > 7) relieve excess acidity", "pH determines the melting point of metals", "The pH of a metal affects its conductivity"],
+    ans: 1,
+    exp: "Gastric acid in the stomach has a pH of about 1–2 for digestion. Antacids are bases that neutralise excess acid, raising the pH and relieving pain. This is a direct daily-life application of pH and neutralisation."
+  },
+  {
+    q: "Which instrument is used in the laboratory to measure pH accurately (beyond a colour indicator)?",
+    opts: ["Voltmeter", "pH meter (glass electrode)", "Thermometer", "Burette"],
+    ans: 1,
+    exp: "A pH meter uses a glass electrode to measure the concentration of H⁺ ions electronically, giving a precise numerical pH reading — far more accurate than colour indicators."
+  },
+  {
+    q: "If the pH of a solution changes from 5 to 3, what has happened to the concentration of H⁺ ions?",
+    opts: ["It has decreased by 2 units", "It has increased by a factor of 100 (10²)", "It has doubled", "It has decreased by half"],
+    ans: 1,
+    exp: "pH is a logarithmic scale (base 10). A decrease of 2 pH units means [H⁺] has increased by 10² = 100 times. This is why small pH changes can be very significant."
+  },
+
+  // ── SALTS ──────────────────────────────────────────────────
+
+  {
+    q: "Which of the following is the CORRECT definition of a salt?",
+    opts: ["Any white crystalline substance", "A compound formed when the H⁺ of an acid is replaced by a metal ion or ammonium ion", "A substance that always dissolves in water", "A compound formed when two metals react"],
+    ans: 1,
+    exp: "A salt is formed when the hydrogen ion(s) of an acid are wholly or partially replaced by a metal ion or ammonium ion (NH₄⁺). For example, HCl → NaCl (table salt)."
+  },
+  {
+    q: "Copper(II) sulphate is prepared in the lab by reacting excess copper(II) oxide with dilute sulphuric acid. Why is the copper(II) oxide added in EXCESS?",
+    opts: ["To make the reaction faster", "To ensure all the acid is used up, so no acid remains in the final salt crystals", "To increase the concentration of the salt", "To change the colour of the product"],
+    ans: 1,
+    exp: "Excess base (CuO) is added to ensure all the sulphuric acid is neutralised. Unreacted excess solid CuO is then filtered off, leaving a pure copper(II) sulphate solution for crystallisation."
+  },
+  {
+    q: "Na₂CO₃ reacts with HCl to form NaCl, H₂O, and CO₂. What type of salt is Na₂CO₃ in this reaction?",
+    opts: ["An acid salt", "A normal salt acting as a base", "A double salt", "A complex salt"],
+    ans: 1,
+    exp: "Na₂CO₃ (sodium carbonate) is a normal salt, but it acts as a base in this reaction by neutralising HCl. The CO₂ released is the typical effervescence seen when a carbonate reacts with an acid."
+  },
+  {
+    q: "What is an 'acid salt'?",
+    opts: ["A salt that tastes sour", "A salt formed when an acid with more than one ionisable H⁺ is only partially neutralised", "A salt dissolved in acid", "A salt with a pH below 7 only because of hydrolysis"],
+    ans: 1,
+    exp: "An acid salt is formed when a polyprotic acid (one with multiple H⁺) is only partially neutralised. Example: H₂SO₄ partially neutralised by NaOH gives NaHSO₄ (sodium hydrogensulphate) — an acid salt."
+  },
+  {
+    q: "Alum [KAl(SO₄)₂·12H₂O] is an example of which type of salt?",
+    opts: ["Normal salt", "Acid salt", "Double salt", "Complex salt"],
+    ans: 2,
+    exp: "A double salt contains two different cations (K⁺ and Al³⁺ in this case) but produces all its component ions when dissolved in water. Alum is the classic example of a double salt."
+  },
+  {
+    q: "During the hydrolysis of a salt of a weak acid and strong base (e.g. sodium ethanoate), what is the pH of the resulting solution?",
+    opts: ["Exactly 7 (neutral)", "Less than 7 (acidic)", "Greater than 7 (alkaline)", "It cannot be determined"],
+    ans: 2,
+    exp: "When a salt of a weak acid and strong base hydrolyses, the weak acid anion reacts with water to produce OH⁻ ions, making the solution alkaline (pH > 7). Sodium ethanoate solution is alkaline."
+  },
+  {
+    q: "Which method is most suitable for preparing an INSOLUBLE salt like barium sulphate?",
+    opts: ["Evaporation and crystallisation", "Precipitation (mixing two soluble salt solutions)", "Direct combination of elements", "Electrolysis"],
+    ans: 1,
+    exp: "Insoluble salts cannot be made by dissolving in water. They are made by precipitation — mixing two solutions each containing one of the required ions. E.g., BaCl₂(aq) + Na₂SO₄(aq) → BaSO₄(s) ↓ + 2NaCl(aq)."
+  },
+  {
+    q: "A hydrated salt is heated until its mass becomes constant. The process is called:",
+    opts: ["Hydrolysis", "Dehydration / Efforescence", "Deliquescence", "Crystallisation"],
+    ans: 1,
+    exp: "Heating a hydrated salt drives off its water of crystallisation. This is called dehydration. The mass becomes constant when all water molecules have been removed."
+  },
+
+  // ── CARBON ─────────────────────────────────────────────────
+
+  {
+    q: "Carbon occupies which GROUP and PERIOD in the Periodic Table?",
+    opts: ["Group IV, Period 2", "Group II, Period 4", "Group VI, Period 2", "Group IV, Period 4"],
+    ans: 0,
+    exp: "Carbon (C) has atomic number 6. It is in Group IV (or Group 14 in modern notation) and Period 2 of the Periodic Table."
+  },
+  {
+    q: "The electronic configuration of carbon (atomic number 6) is:",
+    opts: ["2, 4", "2, 8, 4", "2, 2, 2", "4, 2"],
+    ans: 0,
+    exp: "Carbon has 6 electrons: 2 fill the first shell, and 4 remain in the second shell. Configuration: 2, 4. This gives carbon 4 valence electrons — the basis of its unique bonding ability."
+  },
+  {
+    q: "The ability of carbon atoms to bond with one another in long chains or rings is called:",
+    opts: ["Isotopy", "Catenation", "Allotropy", "Polymerisation only"],
+    ans: 1,
+    exp: "Catenation is the unique ability of carbon to form bonds with other carbon atoms, resulting in long chains, branches, and rings — the foundation of organic chemistry."
+  },
+  {
+    q: "Diamond and graphite are both allotropes of carbon. What does 'allotrope' mean?",
+    opts: ["Compounds of carbon with different elements", "Different structural forms of the SAME element", "Isotopes of carbon with different masses", "Carbon molecules of different sizes"],
+    ans: 1,
+    exp: "Allotropes are different physical forms of the same element in the same physical state. Diamond and graphite are both pure carbon but have completely different crystal structures and properties."
+  },
+  {
+    q: "Graphite conducts electricity, but diamond does NOT. The best explanation for this difference is:",
+    opts: ["Graphite contains more carbon atoms than diamond", "In graphite, each carbon atom has one free (delocalised) electron per layer that can carry charge; diamond has no free electrons", "Diamond is harder so electricity cannot pass through it", "Graphite is an impure form of carbon"],
+    ans: 1,
+    exp: "In graphite, each C atom forms 3 covalent bonds, leaving one electron delocalised between layers — these mobile electrons conduct electricity. In diamond, all 4 valence electrons are used in bonds, so there are no free electrons."
+  },
+  {
+    q: "During the destructive distillation of coal, which product is collected as a liquid tar-like substance?",
+    opts: ["Coke", "Coal gas", "Ammonia liquor", "Coal tar"],
+    ans: 3,
+    exp: "Destructive distillation of coal yields: coke (solid residue), coal gas (gaseous fuel — H₂, CH₄, CO), ammonia liquor (aqueous liquid containing NH₃), and coal tar (the dark, oily liquid from which many organic chemicals are extracted)."
+  },
+  {
+    q: "Coke, a product of coal's destructive distillation, is mainly used for:",
+    opts: ["Making petrol for vehicles", "Smelting iron ore in a blast furnace as a reducing agent", "Producing electricity in power stations directly", "Manufacturing ammonia by the Haber process"],
+    ans: 1,
+    exp: "Coke is almost pure carbon. In a blast furnace, it burns to produce CO₂, which then reduces to CO, which in turn reduces iron ore (Fe₂O₃) to molten iron. Coke also provides heat energy for the process."
+  },
+  {
+    q: "Carbon dioxide is a natural substance of carbon. When it dissolves in rainwater, it forms:",
+    opts: ["Carbonic acid (H₂CO₃), making rain slightly acidic", "Hydrochloric acid, causing acid rain", "Sodium carbonate, making rain alkaline", "Pure water with no pH change"],
+    ans: 0,
+    exp: "CO₂ + H₂O ⇌ H₂CO₃ (carbonic acid). This gives natural rain a slightly acidic pH of about 5.6. Acid rain (below pH 5.6) is caused by SO₂ and NOₓ from burning fossil fuels."
+  },
+  {
+    q: "Which allotrope of carbon is used as a lubricant and in pencils?",
+    opts: ["Diamond", "Buckminsterfullerene (C₆₀)", "Graphite", "Carbon black"],
+    ans: 2,
+    exp: "Graphite's layered structure allows layers to slide over each other easily, making it an excellent solid lubricant. The same slipperiness makes it useful as pencil 'lead'."
+  },
+  {
+    q: "The structure of Buckminsterfullerene (C₆₀) is best described as:",
+    opts: ["A flat sheet of carbon atoms in hexagonal rings", "60 carbon atoms arranged in a spherical cage of pentagons and hexagons (like a football)", "An infinite 3D network of carbon atoms", "A chain of 60 carbon atoms bonded in a line"],
+    ans: 1,
+    exp: "C₆₀ (Buckminsterfullerene or 'buckyball') consists of 60 carbon atoms arranged in 20 hexagons and 12 pentagons forming a hollow spherical cage — resembling a football. It is a third major allotrope of carbon."
+  },
+  {
+    q: "Which of the following is a use of activated carbon (charcoal) relevant to daily life?",
+    opts: ["As a structural building material", "In gas masks and water filters to adsorb (trap) impurities and toxic gases", "As an electrical conductor in batteries", "In the manufacture of glass"],
+    ans: 1,
+    exp: "Activated charcoal has an enormous surface area due to its porous structure. It adsorbs toxic gases, chemicals, and impurities — used in gas masks, water purification, and even in hospitals to treat poisoning."
+  }
+
+],
     'English Language': [
     {
         "q": "Passage: 'The quantum computing paradigm, though heralded as a panacea for intractable problems in cryptography and materials simulation, remains hamstrung by qubit decoherence and error rates that render large-scale fault-tolerant systems a distant prospect rather than an imminent reality.' What is the author's primary stance?",
@@ -5344,6 +5620,257 @@ sss1: {
   ]
   },
         sss2: {
+   'General Test': [
+
+  // ── WAVES ──────────────────────────────────────────────────
+
+  {
+    q: "Which of the following correctly defines a 'wave'?",
+    opts: ["A movement of particles from one place to another permanently", "A disturbance that transfers energy from one point to another without the permanent transfer of matter", "A flow of electrons through a conductor", "The vibration of only sound particles in air"],
+    ans: 1,
+    exp: "A wave is a propagating disturbance that carries energy. Crucially, the medium's particles oscillate about their equilibrium positions — they do NOT travel with the wave."
+  },
+  {
+    q: "Transverse waves differ from longitudinal waves in that:",
+    opts: ["Transverse waves require a medium; longitudinal waves do not", "In transverse waves, particle vibration is perpendicular to wave propagation; in longitudinal waves it is parallel", "Longitudinal waves travel faster than transverse waves", "Transverse waves cannot be reflected"],
+    ans: 1,
+    exp: "In a transverse wave (e.g. light, water surface), displacement is at 90° to the direction of energy travel. In a longitudinal wave (e.g. sound), displacement is along the same direction as energy travel — causing compressions and rarefactions."
+  },
+  {
+    q: "The number of complete oscillations (cycles) a wave makes per second is called its:",
+    opts: ["Wavelength", "Amplitude", "Frequency", "Period"],
+    ans: 2,
+    exp: "Frequency (f) is the number of complete cycles per second, measured in Hertz (Hz). It is the reciprocal of the period T: f = 1/T."
+  },
+  {
+    q: "A wave has a frequency of 50 Hz and a wavelength of 4 m. What is its speed?",
+    opts: ["12.5 m/s", "54 m/s", "200 m/s", "46 m/s"],
+    ans: 2,
+    exp: "Wave speed v = f × λ = 50 Hz × 4 m = 200 m/s. This is the fundamental wave equation."
+  },
+  {
+    q: "What does the AMPLITUDE of a wave represent?",
+    opts: ["The distance between two successive crests", "The time for one complete wave cycle", "The maximum displacement of a particle from its rest (equilibrium) position", "The speed at which the wave travels"],
+    ans: 2,
+    exp: "Amplitude is the maximum distance a particle moves from its equilibrium position. It is related to the energy carried by the wave — a larger amplitude means more energy."
+  },
+  {
+    q: "When a wave moves from a less dense medium to a more dense medium, it undergoes refraction. What happens to its speed and wavelength?",
+    opts: ["Speed increases, wavelength increases", "Speed decreases, wavelength decreases, frequency stays the same", "Speed decreases, frequency decreases", "Speed stays the same, only direction changes"],
+    ans: 1,
+    exp: "During refraction, frequency never changes (it is fixed by the source). When entering a denser medium, speed decreases and since v = fλ, wavelength also decreases proportionally."
+  },
+  {
+    q: "Diffraction of waves is MOST noticeable when:",
+    opts: ["The wavelength is much smaller than the gap/obstacle", "The wavelength is approximately equal to or larger than the size of the gap/obstacle", "The wave speed is very high", "The wave travels in a vacuum"],
+    ans: 1,
+    exp: "Significant diffraction occurs when the wavelength is comparable to (or larger than) the size of the gap or obstacle. This is why long radio waves diffract around buildings but light (very short wavelength) does not."
+  },
+  {
+    q: "A stationary (standing) wave is formed by:",
+    opts: ["A single wave reflecting off a hard wall only", "The superposition of two waves of equal frequency and amplitude travelling in OPPOSITE directions", "Two waves of different frequencies meeting", "A wave speeding up as it travels"],
+    ans: 1,
+    exp: "Standing waves form when two identical waves travel in opposite directions and superpose. Points of no displacement (nodes) and maximum displacement (antinodes) are formed at fixed positions."
+  },
+
+  // ── LENSES ─────────────────────────────────────────────────
+
+  {
+    q: "A converging (convex) lens is also known as a:",
+    opts: ["Diverging lens", "Concave lens", "Convex or converging lens — it brings parallel rays to a real focus", "Plane lens"],
+    ans: 2,
+    exp: "A convex lens is thicker at the centre than at the edges. It refracts parallel rays of light so they converge (meet) at a point called the principal focus (focal point)."
+  },
+  {
+    q: "The principal focus (F) of a diverging (concave) lens is described as:",
+    opts: ["A real point where refracted rays actually meet", "A virtual point from which refracted rays appear to diverge", "The midpoint of the lens", "The point where the object must be placed"],
+    ans: 1,
+    exp: "A concave lens spreads rays outward. When produced backward, the diverging rays appear to come from a point on the same side as the incoming light — this is a virtual focus."
+  },
+  {
+    q: "An object is placed at the centre of curvature (2F) of a converging lens. The image formed is:",
+    opts: ["Virtual, upright, and magnified", "Real, inverted, and the same size as the object, formed at 2F on the other side", "Virtual, inverted, and diminished", "Real, upright, and magnified"],
+    ans: 1,
+    exp: "When the object is at 2F of a convex lens, the image is formed at 2F on the other side — real, inverted, and the same size as the object. This is used in photocopiers for 1:1 copying."
+  },
+  {
+    q: "The formula relating object distance (u), image distance (v), and focal length (f) for a lens is:",
+    opts: ["1/f = 1/u + 1/v", "f = u + v", "1/f = 1/u − 1/v", "f = u × v"],
+    ans: 0,
+    exp: "The thin lens formula (lens equation) is 1/f = 1/v + 1/u (using real-is-positive sign convention) or 1/f = 1/v − 1/u depending on the convention used. The standard form is 1/f = 1/u + 1/v."
+  },
+  {
+    q: "The power of a lens is measured in dioptres (D). If a lens has a focal length of 25 cm, what is its power?",
+    opts: ["0.04 D", "25 D", "4 D", "0.25 D"],
+    ans: 2,
+    exp: "Power P = 1/f (in metres). f = 25 cm = 0.25 m. P = 1 ÷ 0.25 = 4 D. A shorter focal length means a more powerful (more curved) lens."
+  },
+  {
+    q: "A person with myopia (short-sightedness) cannot see distant objects clearly. Which type of lens corrects this defect?",
+    opts: ["Convex (converging) lens", "Plane glass lens", "Concave (diverging) lens", "Cylindrical lens only"],
+    ans: 2,
+    exp: "Myopia occurs because the eye converges light to a focus in FRONT of the retina. A concave (diverging) lens diverges the rays first so that the eye can then converge them properly onto the retina."
+  },
+  {
+    q: "A magnifying glass works best when the object is placed:",
+    opts: ["Beyond 2F of the convex lens", "At exactly F of the convex lens", "Between F and the optical centre of the convex lens", "At 2F of the concave lens"],
+    ans: 2,
+    exp: "When the object is between F and the lens, the convex lens produces a virtual, upright, and magnified image on the same side as the object. This is the principle of the magnifying glass."
+  },
+
+  // ── OPTICAL INSTRUMENTS ────────────────────────────────────
+
+  {
+    q: "In a compound microscope, the lens that is closest to the object being viewed is called the:",
+    opts: ["Eyepiece lens", "Objective lens", "Field lens", "Condenser lens"],
+    ans: 1,
+    exp: "The objective lens is closest to the specimen and produces a real, inverted, and magnified intermediate image. The eyepiece then magnifies this image further for the observer's eye."
+  },
+  {
+    q: "The total magnification of a compound microscope with an eyepiece of power ×10 and an objective lens of power ×40 is:",
+    opts: ["50×", "400×", "4×", "30×"],
+    ans: 1,
+    exp: "Total magnification = Eyepiece magnification × Objective magnification = 10 × 40 = 400×."
+  },
+  {
+    q: "An astronomical telescope produces an image that is:",
+    opts: ["Virtual, upright, and diminished", "Real, upright, and magnified", "Virtual, inverted, and magnified", "Real, inverted, and the same size"],
+    ans: 2,
+    exp: "A simple astronomical (refracting) telescope produces a final image that is virtual, inverted (upside down), and magnified. The inversion is acceptable for astronomy since stars and planets look the same upside down."
+  },
+  {
+    q: "The magnifying power of a telescope in normal adjustment is given by:",
+    opts: ["fo + fe", "fo / fe", "fe / fo", "fo × fe"],
+    ans: 1,
+    exp: "Magnifying power M = fo/fe, where fo is the focal length of the objective lens and fe is the focal length of the eyepiece. A large objective focal length relative to the eyepiece gives high magnification."
+  },
+  {
+    q: "A camera uses which type of lens to form an image on the film or sensor?",
+    opts: ["Concave lens, producing a virtual image", "Convex lens, producing a real, inverted, diminished image", "Plane mirror, reflecting the image", "Concave mirror, forming a real image"],
+    ans: 1,
+    exp: "A camera's lens is convex. The object (scene) is beyond 2F, so the lens produces a real, inverted, and diminished image on the film/sensor. The shutter controls how long light hits the sensor."
+  },
+  {
+    q: "The human eye adjusts to see objects at different distances by changing the curvature of its lens. This ability is called:",
+    opts: ["Diffraction", "Dispersion", "Accommodation", "Resolution"],
+    ans: 2,
+    exp: "Accommodation is the process by which the eye's ciliary muscles change the shape (and hence focal length) of the crystalline lens — flattening for distant objects and thickening (more curved) for near objects."
+  },
+
+  // ── DISPERSION OF WHITE LIGHT ───────────────────────────────
+
+  {
+    q: "When white light passes through a glass prism, it splits into a spectrum of colours. This phenomenon is called:",
+    opts: ["Refraction only", "Reflection", "Dispersion", "Diffraction"],
+    ans: 2,
+    exp: "Dispersion occurs because different colours (frequencies) of light travel at slightly different speeds in glass — they have slightly different refractive indices. The prism bends each colour by a different amount, separating them."
+  },
+  {
+    q: "In the visible spectrum produced by dispersion, which colour is deviated (bent) the MOST by a prism?",
+    opts: ["Red", "Yellow", "Green", "Violet"],
+    ans: 3,
+    exp: "Violet light has the highest frequency in the visible spectrum and the highest refractive index in glass, so it is slowed down the most and bent the most. Red light is bent the least."
+  },
+  {
+    q: "The correct order of colours in the visible spectrum from least deviated to most deviated is:",
+    opts: ["Violet, Indigo, Blue, Green, Yellow, Orange, Red", "Red, Orange, Yellow, Green, Blue, Indigo, Violet", "Red, Yellow, Blue, Green, Orange, Indigo, Violet", "Blue, Green, Red, Orange, Yellow, Indigo, Violet"],
+    ans: 1,
+    exp: "ROYGBIV — Red, Orange, Yellow, Green, Blue, Indigo, Violet. Red is deviated least (longest wavelength) and violet is deviated most (shortest wavelength)."
+  },
+  {
+    q: "A rainbow is a natural example of dispersion. Which statement about a rainbow is correct?",
+    opts: ["Red appears on the inner arc and violet on the outer arc", "Violet appears on the inner arc and red on the outer arc of a primary rainbow", "Rainbows are only formed by reflection, not refraction", "A rainbow is only visible when the sun is directly overhead"],
+    ans: 1,
+    exp: "In a primary rainbow: violet is on the inside (bottom) and red on the outside (top). This is because light entering raindrops undergoes refraction, internal reflection, and then refraction again — dispersing the colours."
+  },
+  {
+    q: "If red light and violet light enter the same glass block, which travels FASTER inside the glass?",
+    opts: ["Violet light, because it has more energy", "Red light, because it has a lower frequency and smaller refractive index in glass", "Both travel at the same speed inside the glass", "Red light, because it is deviated less"],
+    ans: 1,
+    exp: "Red light has a lower refractive index in glass than violet, meaning it is slowed less. Speed v = c/n; a lower n gives a higher speed. Red is faster in glass; violet is slower."
+  },
+  {
+    q: "When the seven colours of the spectrum are recombined (e.g. by a second prism or a spinning Newton's colour disc), the result is:",
+    opts: ["Black light", "White light", "Yellow light only", "Grey light"],
+    ans: 1,
+    exp: "Dispersion is reversible. Recombining all colours of the visible spectrum gives back white light. Newton's disc demonstrates this — spinning the coloured sectors produces an apparent white (or light grey) colour."
+  },
+  {
+    q: "The refractive index (n) of a medium is defined as:",
+    opts: ["n = speed of light in medium ÷ speed of light in vacuum", "n = speed of light in vacuum ÷ speed of light in medium", "n = wavelength in vacuum ÷ frequency", "n = angle of incidence ÷ angle of refraction"],
+    ans: 1,
+    exp: "n = c/v, where c is the speed of light in vacuum (~3 × 10⁸ m/s) and v is the speed in the medium. Since light always slows in a medium, n is always ≥ 1."
+  },
+  {
+    q: "Total internal reflection can only occur when light travels:",
+    opts: ["From a less dense optical medium into a more dense optical medium", "From a more dense optical medium into a less dense optical medium, and the angle of incidence exceeds the critical angle", "At exactly the critical angle in any medium", "In a vacuum toward a glass surface"],
+    ans: 1,
+    exp: "TIR requires two conditions: (1) light must travel from optically denser to optically less dense medium, AND (2) the angle of incidence must exceed the critical angle. It is used in optical fibres and diamonds."
+  },
+
+  // ── SOUND WAVES ────────────────────────────────────────────
+
+  {
+    q: "Sound waves are longitudinal waves. This means that:",
+    opts: ["Sound can travel through a vacuum", "The particles of the medium vibrate in the same direction as the energy is travelling, creating compressions and rarefactions", "Sound waves have crests and troughs like water waves", "Sound requires a transverse medium to propagate"],
+    ans: 1,
+    exp: "In longitudinal waves, particle displacement is parallel to wave propagation. Sound creates alternating regions of high pressure (compressions) and low pressure (rarefactions) in the medium."
+  },
+  {
+    q: "An experiment is set up with a bell ringing inside a glass jar. As the air is pumped out, the sound of the bell becomes fainter and eventually inaudible. This proves that:",
+    opts: ["Sound travels faster in a vacuum", "Sound requires a material medium (matter) to travel — it cannot travel through a vacuum", "Sound is a transverse wave that needs air", "A vacuum amplifies sound"],
+    ans: 1,
+    exp: "Sound needs a medium of particles to propagate — it cannot travel through a vacuum. As air is removed, there are fewer particles to transmit the vibrations, so the sound diminishes to zero."
+  },
+  {
+    q: "The speed of sound in air at room temperature (20°C) is approximately:",
+    opts: ["3 × 10⁸ m/s", "1500 m/s", "340 m/s", "100 m/s"],
+    ans: 2,
+    exp: "Sound travels at approximately 340 m/s in air at 20°C. It travels much faster in liquids (~1500 m/s in water) and even faster in solids (up to ~5000 m/s in steel). Light (3×10⁸ m/s) is far faster."
+  },
+  {
+    q: "A student claps near a large wall and hears an echo 0.6 seconds later. If the speed of sound is 340 m/s, how far away is the wall?",
+    opts: ["204 m", "102 m", "340 m", "68 m"],
+    ans: 1,
+    exp: "Sound travels to the wall and back. Total distance = speed × time = 340 × 0.6 = 204 m. Distance to wall = 204 ÷ 2 = 102 m."
+  },
+  {
+    q: "The PITCH of a sound is determined by its:",
+    opts: ["Amplitude", "Speed in the medium", "Frequency", "Wavelength in vacuum"],
+    ans: 2,
+    exp: "Pitch is the subjective perception of frequency. A high-frequency sound is perceived as a high-pitched (shrill) sound; a low-frequency sound is perceived as low-pitched (deep). Amplitude determines loudness, not pitch."
+  },
+  {
+    q: "Ultrasound has a frequency ABOVE the upper limit of human hearing. This upper limit is approximately:",
+    opts: ["200 Hz", "2,000 Hz", "20,000 Hz (20 kHz)", "200,000 Hz"],
+    ans: 2,
+    exp: "Humans can hear sounds between approximately 20 Hz and 20,000 Hz (20 kHz). Sounds above 20 kHz are called ultrasound. Ultrasound is used in medical scanning, sonar, and industrial cleaning."
+  },
+  {
+    q: "The LOUDNESS of a sound depends on which wave property?",
+    opts: ["Frequency — louder sounds have higher frequency", "Amplitude — louder sounds have greater amplitude (more energy)", "Wavelength — louder sounds have shorter wavelengths", "Speed — louder sounds travel faster"],
+    ans: 1,
+    exp: "Loudness is determined by the amplitude of the sound wave. A larger amplitude means more energy is carried per second, which the ear perceives as a louder sound. Loudness is measured in decibels (dB)."
+  },
+  {
+    q: "Resonance in sound occurs when:",
+    opts: ["A vibrating source forces another object with a DIFFERENT natural frequency to vibrate", "A sound wave is reflected off a surface", "A vibrating source causes another object with the SAME natural frequency to vibrate at large amplitude", "Two sounds of different speeds meet"],
+    ans: 2,
+    exp: "Resonance occurs when a driving force matches an object's natural frequency — the object vibrates with maximum amplitude. Example: soldiers break step on a bridge to avoid resonance. Musical instruments exploit resonance."
+  },
+  {
+    q: "Which of the following is a correct application of the SONAR (Sound Navigation and Ranging) principle?",
+    opts: ["Using sound to measure the temperature of the ocean", "Emitting ultrasonic pulses from a ship and timing their echo from the seabed to measure ocean depth", "Using sound to cook food in a microwave", "Measuring wind speed using low-frequency sound"],
+    ans: 1,
+    exp: "SONAR works by emitting ultrasonic pulses into the sea. The time taken for the echo to return is measured. Depth = (speed of sound in water × time) ÷ 2. It is also used to detect submarines and fish shoals."
+  },
+  {
+    q: "A vibrating guitar string produces a note. If the tension in the string is INCREASED (while length and mass remain constant), the pitch of the note will:",
+    opts: ["Decrease, because higher tension makes the string stiffer", "Remain unchanged", "Increase, because higher tension increases the frequency of vibration", "Decrease then increase unpredictably"],
+    ans: 2,
+    exp: "Frequency of a string increases with tension (f ∝ √T). Tighter strings vibrate faster → higher frequency → higher pitch. This is why guitar players tune their instruments by tightening or loosening the strings."
+  }
+],
    'Physics': [
     {
         q: "A lever of the third order has the effort arm ___.",
@@ -5590,7 +6117,7 @@ sss1: {
         opts: ["It is cheaper to manufacture", "It can measure very high temperatures and respond rapidly to change", "It requires no calibration", "It is more accurate at room temperature"],
         ans: 1,
         exp: "Thermocouples can measure very high temperatures (up to 1600°C+) and respond almost instantaneously to temperature changes, unlike liquid-in-glass thermometers."
-    },
+    }
 ],
 
 'Chemistry': [
@@ -5833,7 +6360,7 @@ sss1: {
         opts: ["readily donate electrons", "readily accept electrons", "form covalent bonds with metals", "are all gases at room temperature"],
         ans: 1,
         exp: "Halogens are strong oxidising agents because they have high electronegativities and readily accept electrons (gain electrons) from other species."
-    },
+    }
 ],
 
 'Biology': [
@@ -6076,7 +6603,7 @@ sss1: {
         opts: ["digest proteins with enzymes", "absorb most nutrients from digested food", "absorb water and form solid faeces", "produce bile for fat digestion"],
         ans: 2,
         exp: "The large intestine reabsorbs water from undigested material, compacting it into faeces. It also houses beneficial bacteria that synthesise some vitamins."
-    },
+    }
 ],
 
 'English': [
@@ -6325,7 +6852,7 @@ sss1: {
         opts: ["Simile", "Personification", "Metaphor", "Hyperbole"],
         ans: 2,
         exp: "This is a metaphor — a direct comparison between the classroom and a zoo without using 'like' or 'as'. It implies the class was chaotic and unruly."
-    },
+    }
 ],
 
 'Mathematics': [
