@@ -1891,246 +1891,215 @@ jss2: {
     }
 ],
 'Mathematics': [
-    {
-      q: "Expand: $3(2x + 5)$.",
-      opts: ["$6x + 8$", "$6x + 15$", "$5x + 15$", "$6x - 15$"],
-      ans: 1,
-      exp: "Multiply each term inside the bracket by 3: $3 \\times 2x = 6x$ and $3 \\times 5 = 15$. So the answer is $6x + 15$."
-    },
-    {
-      q: "Expand and simplify: $(x + 4)(x + 3)$.",
-      opts: ["$x^2 + 7x + 7$", "$x^2 + 12x + 7$", "$x^2 + 7x + 12$", "$x^2 + 12$"],
-      ans: 2,
-      exp: "Multiply every term in the first bracket by every term in the second: $x \\times x + x \\times 3 + 4 \\times x + 4 \\times 3 = x^2 + 3x + 4x + 12 = x^2 + 7x + 12$."
-    },
-    {
-      q: "Expand and simplify: $(2x - 3)(x + 5)$.",
-      opts: ["$2x^2 + 7x - 15$", "$2x^2 - 7x - 15$", "$2x^2 + 13x - 15$", "$2x^2 - 13x + 15$"],
-      ans: 0,
-      exp: "$2x(x) + 2x(5) + (-3)(x) + (-3)(5) = 2x^2 + 10x - 3x - 15 = 2x^2 + 7x - 15$."
-    },
-    {
-      q: "Factorise completely: $12x^2 + 8x$.",
-      opts: ["$4(3x^2 + 2x)$", "$x(12x + 8)$", "$4x(3x + 2)$", "$2x(6x + 4)$"],
-      ans: 2,
-      exp: "The highest common factor (HCF) of $12x^2$ and $8x$ is $4x$. Dividing out: $12x^2 + 8x = 4x(3x + 2)$. Always take out the HIGHEST possible factor."
-    },
-    {
-      q: "Factorise: $x^2 + 6x + 8$.",
-      opts: ["$(x + 4)(x + 2)$", "$(x + 8)(x + 1)$", "$(x + 3)(x + 3)$", "$(x - 4)(x - 2)$"],
-      ans: 0,
-      exp: "Find two numbers that multiply to $+8$ and add to $+6$: those are $4$ and $2$. So $x^2 + 6x + 8 = (x + 4)(x + 2)$."
-    },
-    {
-      q: "Simplify the algebraic fraction: $\\dfrac{6x}{9x^2}$.",
-      opts: ["$\\dfrac{3}{x}$", "$\\dfrac{2}{3x}$", "$\\dfrac{x}{3}$", "$\\dfrac{2x}{3}$"],
-      ans: 1,
-      exp: "Divide numerator and denominator by the common factor $3x$: $\\dfrac{6x}{9x^2} = \\dfrac{6x \\div 3x}{9x^2 \\div 3x} = \\dfrac{2}{3x}$."
-    },
-    {
-      q: "Simplify: $\\dfrac{3}{x} + \\dfrac{5}{2x}$.",
-      opts: ["$\\dfrac{8}{3x}$", "$\\dfrac{8}{x}$", "$\\dfrac{11}{2x}$", "$\\dfrac{6}{2x}$"],
-      ans: 2,
-      exp: "The LCM of $x$ and $2x$ is $2x$. Rewrite $\\frac{3}{x} = \\frac{6}{2x}$. Then $\\frac{6}{2x} + \\frac{5}{2x} = \\frac{11}{2x}$."
-    },
-    {
-      q: "Solve: $\\dfrac{x}{3} + \\dfrac{x}{6} = 9$.",
-      opts: ["$x = 12$", "$x = 27$", "$x = 6$", "$x = 18$"],
-      ans: 3,
-      exp: "Multiply every term by 6 (the LCM of 3 and 6): $2x + x = 54$. So $3x = 54$, giving $x = 18$."
-    },
-    {
-      q: "The sum of three consecutive even numbers is 54. If the smallest is $n$, which equation correctly represents this?",
-      opts: ["$3n + 3 = 54$", "$n + (n+2) + (n+4) = 54$", "$n + (n+1) + (n+2) = 54$", "$n + 2n + 4n = 54$"],
-      ans: 1,
-      exp: "Consecutive even numbers differ by 2. The three numbers are $n$, $n+2$, and $n+4$. Their sum: $n + (n+2) + (n+4) = 3n + 6 = 54$, giving $n = 16$."
-    },
-    {
-      q: "Solve for $x$: $\\dfrac{2x - 1}{5} = 3$.",
-      opts: ["$x = 7$", "$x = 8$", "$x = 4$", "$x = 6$"],
-      ans: 1,
-      exp: "Multiply both sides by 5: $2x - 1 = 15$. Add 1: $2x = 16$. Divide by 2: $x = 8$."
-    },
-    {
-      q: "Solve: $4(x - 2) = 2(x + 6)$.",
-      opts: ["$x = 5$", "$x = 10$", "$x = -10$", "$x = 14$"],
-      ans: 1,
-      exp: "Expand: $4x - 8 = 2x + 12$. Subtract $2x$: $2x - 8 = 12$. Add 8: $2x = 20$. Divide: $x = 10$."
-    },
-    {
-      q: "Solve the inequality: $3x + 4 > 13$.",
-      opts: ["$x > 3$", "$x < 3$", "$x \\geq 3$", "$x > 17$"],
-      ans: 0,
-      exp: "Subtract 4 from both sides: $3x > 9$. Divide by 3: $x > 3$. On a number line, use an open circle at 3 with an arrow pointing right."
-    },
-    {
-      q: "Solve: $2(x + 5) \\leq 3x - 1$.",
-      opts: ["$x \\leq 11$", "$x \\geq 11$", "$x \\leq -11$", "$x \\geq -11$"],
-      ans: 1,
-      exp: "Expand: $2x + 10 \\leq 3x - 1$. Subtract $2x$: $10 \\leq x - 1$. Add 1 to both sides: $x \\geq 11$."
-    },
-    {
-      q: "Which of the following correctly describes the solution of $-4x < 20$?",
-      opts: ["$x < -5$", "$x > -5$", "$x < 5$", "$x > 5$"],
-      ans: 1,
-      exp: "Divide both sides by $-4$. Because we divide by a NEGATIVE number, the inequality sign REVERSES: $x > -5$. This reversal rule is essential."
-    },
-    {
-      q: "A number is multiplied by 3 and then 5 is added. The result is less than 26. Which inequality represents this?",
-      opts: ["$3x - 5 < 26$", "$3(x + 5) < 26$", "$3x + 5 < 26$", "$5x + 3 < 26$"],
-      ans: 2,
-      exp: "'Multiplied by 3' gives $3x$; 'then 5 is added' gives $3x + 5$; 'less than 26' gives $3x + 5 < 26$. Solving: $3x < 21$, so $x < 7$."
-    },
-    {
-      q: "On a number line, the solution of $x \\geq -3$ is shown by:",
-      opts: ["An open circle at $-3$ pointing right", "A filled circle at $-3$ pointing left", "A filled circle at $-3$ pointing right", "An open circle at $-3$ pointing left"],
-      ans: 2,
-      exp: "The symbol $\\geq$ means 'greater than OR equal to', so $-3$ IS included — use a FILLED (closed) circle. Since values are greater than $-3$, the arrow points RIGHT."
-    },
-    {
-      q: "A parallelogram has one angle of $72°$. What is the size of the adjacent angle?",
-      opts: ["$72°$", "$144°$", "$108°$", "$90°$"],
-      ans: 2,
-      exp: "In a parallelogram, adjacent angles are supplementary — they add up to $180°$. So the adjacent angle $= 180° - 72° = 108°$."
-    },
-    {
-      q: "Which of the following is a property of a RHOMBUS but NOT of a general parallelogram?",
-      opts: ["Opposite angles are equal", "Diagonals bisect each other", "All four sides are equal in length", "Opposite sides are parallel"],
-      ans: 2,
-      exp: "A rhombus is a special parallelogram where all four sides are equal. A general parallelogram only requires opposite sides to be equal. The other three properties are common to all parallelograms."
-    },
-    {
-      q: "In a kite, which statement about its diagonals is CORRECT?",
-      opts: ["Both diagonals bisect each other at equal lengths", "The diagonals are equal in length and parallel", "One diagonal bisects the other at right angles ($90°$)", "Both diagonals are the same length"],
-      ans: 2,
-      exp: "In a kite, the longer diagonal (the 'main' diagonal) perpendicularly bisects the shorter one — it cuts it into two equal halves at $90°$. The diagonals are not equal and do not bisect each other equally."
-    },
-    {
-      q: "The sum of interior angles of a hexagon is:",
-      opts: ["$540°$", "$1080°$", "$900°$", "$720°$"],
-      ans: 3,
-      exp: "Formula: $(n-2) \\times 180°$ where $n$ = number of sides. Hexagon has $n = 6$: $(6-2) \\times 180 = 4 \\times 180 = 720°$."
-    },
-    {
-      q: "Each interior angle of a regular polygon is $135°$. How many sides does the polygon have?",
-      opts: ["$6$", "$10$", "$8$", "$12$"],
-      ans: 2,
-      exp: "Each exterior angle $= 180° - 135° = 45°$. Number of sides $= \\dfrac{360°}{45°} = 8$. This is a regular octagon."
-    },
-    {
-      q: "A polygon has 9 sides. What is the sum of its interior angles?",
-      opts: ["$1080°$", "$1620°$", "$1260°$", "$900°$"],
-      ans: 2,
-      exp: "$(n-2) \\times 180° = (9-2) \\times 180 = 7 \\times 180 = 1260°$."
-    },
-    {
-      q: "The exterior angle of a regular polygon is $40°$. How many sides does it have?",
-      opts: ["$8$", "$12$", "$6$", "$9$"],
-      ans: 3,
-      exp: "Number of sides $= \\dfrac{360°}{\\text{exterior angle}} = \\dfrac{360°}{40°} = 9$ sides. The exterior angles of any polygon always sum to $360°$."
-    },
-    {
-      q: "Two angles of a triangle are $52°$ and $73°$. Find the third angle.",
-      opts: ["$35°$", "$65°$", "$55°$", "$45°$"],
-      ans: 2,
-      exp: "The angles of a triangle always sum to $180°$. Third angle $= 180° - 52° - 73° = 55°$."
-    },
-    {
-      q: "On a scale drawing of $1:200$, a classroom measures $4.5$ cm on paper. What is the actual length?",
-      opts: ["$90$ m", "$9$ m", "$0.9$ m", "$900$ m"],
-      ans: 1,
-      exp: "Actual length $= 4.5 \\times 200 = 900$ cm. Converting to metres: $900 \\div 100 = 9$ m."
-    },
-    {
-      q: "The actual distance between two towns is $15$ km. On a map with scale $1:500{,}000$, what is the map distance in cm?",
-      opts: ["$30$ cm", "$3$ cm", "$0.3$ cm", "$300$ cm"],
-      ans: 1,
-      exp: "Convert 15 km to cm: $15 \\times 100{,}000 = 1{,}500{,}000$ cm. Map distance $= \\dfrac{1{,}500{,}000}{500{,}000} = 3$ cm."
-    },
-    {
-      q: "A scale drawing uses a scale of $1:50$. Two points on the drawing are $8.4$ cm apart. What is the actual distance?",
-      opts: ["$4.2$ m", "$420$ m", "$42$ m", "$0.42$ m"],
-      ans: 0,
-      exp: "Actual distance $= 8.4 \\times 50 = 420$ cm. Convert to metres: $420 \\div 100 = 4.2$ m."
-    },
-    {
-      q: "A map has scale $1:25{,}000$. Two schools are $6$ cm apart on the map. What is the actual distance in kilometres?",
-      opts: ["$15$ km", "$150$ km", "$1.5$ km", "$0.15$ km"],
-      ans: 2,
-      exp: "Actual distance $= 6 \\times 25{,}000 = 150{,}000$ cm. Convert: $150{,}000 \\div 100{,}000 = 1.5$ km."
-    },
-    {
-      q: "Which of the following points lies on the line $y = 2x + 1$?",
-      opts: ["$(1, 4)$", "$(2, 4)$", "$(3, 7)$", "$(0, 2)$"],
-      ans: 2,
-      exp: "Test $(3, 7)$: $y = 2(3) + 1 = 7$ ✓. Check the others — $(1,4)$: $y = 3 \\neq 4$; $(2,4)$: $y = 5 \\neq 4$; $(0,2)$: $y = 1 \\neq 2$. Only $(3, 7)$ satisfies the equation."
-    },
-    {
-      q: "What is the $y$-intercept of the line $y = 3x - 5$?",
-      opts: ["$3$", "$5$", "$-3$", "$-5$"],
-      ans: 3,
-      exp: "In $y = mx + c$, the $y$-intercept is the value of $c$. Here $c = -5$. The line crosses the $y$-axis at the point $(0, -5)$. The 3 is the gradient, not the intercept."
-    },
-    {
-      q: "For the equation $y = x + 4$, what is the value of $y$ when $x = -3$?",
-      opts: ["$-7$", "$-1$", "$1$", "$7$"],
-      ans: 2,
-      exp: "Substitute $x = -3$: $y = (-3) + 4 = 1$. The point $(-3, 1)$ lies on this line."
-    },
-    {
-      q: "A phone company charges a fixed fee of ₦500 plus ₦50 per minute. The cost equation is $C = 50t + 500$. What does the $500$ represent on a graph of $C$ against $t$?",
-      opts: ["The gradient — how steeply the cost rises", "The total cost after 10 minutes", "The $y$-intercept — the cost even before any call is made", "The number of minutes in the plan"],
-      ans: 2,
-      exp: "In $C = 50t + 500$, when $t = 0$ (no minutes used), $C = 500$. This is the $y$-intercept — it represents the fixed connection fee charged before any usage. The 50 is the gradient (cost per minute)."
-    },
-    {
-      q: "From the top of a cliff, Tunde looks down at a boat in the sea. The angle between his horizontal line of sight and the direction of the boat is $35°$. This angle is called the angle of:",
-      opts: ["Elevation", "Inclination", "Reflection", "Depression"],
-      ans: 3,
-      exp: "When you look DOWNWARD from a high point, the angle between the horizontal and your line of sight going down is called the angle of DEPRESSION. If you were at the bottom looking up, it would be elevation."
-    },
-    {
-      q: "Amina stands on flat ground and looks up at the top of a tall building. The angle between the ground and her line of sight to the top is $42°$. This is the angle of:",
-      opts: ["Depression", "Declination", "Elevation", "Inclination"],
-      ans: 2,
-      exp: "When an observer on the ground looks UP at an object above them, the angle measured from the horizontal up to the line of sight is called the angle of ELEVATION."
-    },
-    {
-      q: "The angle of elevation and the angle of depression between two observers looking at each other are:",
-      opts: ["Always different", "Always equal", "Always add up to $180°$", "Always add up to $90°$"],
-      ans: 1,
-      exp: "Because of alternate angles formed by a horizontal line cutting two parallel horizontal lines at each observer's level, the angle of elevation from the lower observer equals the angle of depression from the upper observer. They are always EQUAL."
-    },
-    {
-      q: "From a point on the ground $20$ m from the base of a vertical wall, the angle of elevation of the top is $45°$. Given $\\tan 45° = 1$, find the height of the wall.",
-      opts: ["$10$ m", "$40$ m", "$45$ m", "$20$ m"],
-      ans: 3,
-      exp: "$\\tan(\\text{angle}) = \\dfrac{\\text{opposite}}{\\text{adjacent}} = \\dfrac{\\text{height}}{\\text{distance}}$. So $\\tan 45° = \\dfrac{h}{20}$. Since $\\tan 45° = 1$: $h = 1 \\times 20 = 20$ m."
-    },
-    {
-      q: "Expand: $(3x + 2)(3x - 2)$.",
-      opts: ["$9x^2 + 4$", "$9x^2 - 12x - 4$", "$9x^2 - 4$", "$6x^2 - 4$"],
-      ans: 2,
-      exp: "This follows the difference of two squares rule: $(a + b)(a - b) = a^2 - b^2$. Here $a = 3x$ and $b = 2$: $(3x)^2 - 2^2 = 9x^2 - 4$."
-    },
-    {
-      q: "Factorise: $x^2 - 5x + 6$.",
-      opts: ["$(x - 2)(x - 3)$", "$(x + 2)(x + 3)$", "$(x - 6)(x + 1)$", "$(x - 1)(x - 6)$"],
-      ans: 0,
-      exp: "Find two numbers that multiply to $+6$ and add to $-5$: those are $-2$ and $-3$. So $x^2 - 5x + 6 = (x - 2)(x - 3)$. Check: $(-2) \\times (-3) = +6$ ✓ and $(-2) + (-3) = -5$ ✓."
-    },
-    {
-      q: "A trader's profit $P$ (in naira) when selling $n$ bags of rice is $P = 800n - 2000$. How many bags must be sold to begin making a profit?",
-      opts: ["$2$ bags", "$4$ bags", "$3$ bags", "$5$ bags"],
-      ans: 2,
-      exp: "Profit begins when $P > 0$: $800n - 2000 > 0 \\Rightarrow 800n > 2000 \\Rightarrow n > 2.5$. Since $n$ must be a whole number, the trader needs to sell at least $\\mathbf{3}$ bags."
-    },
-    {
-      q: "A rectangle has length $(4x + 2)$ cm and width $4$ cm. If the perimeter is $52$ cm, find $x$.",
-      opts: ["$x = 3$", "$x = 5$", "$x = 4$", "$x = 2$"],
-      ans: 1,
-      exp: "Perimeter $= 2(\\text{length} + \\text{width})$. So $2[(4x+2) + 4] = 52 \\Rightarrow 2(4x + 6) = 52 \\Rightarrow 8x + 12 = 52 \\Rightarrow 8x = 40 \\Rightarrow x = 5$. Verify: length $= 4(5)+2 = 22$ cm; perimeter $= 2(22+4) = 52$ ✓"
-    }
+
+  // ── 10 with ans:0 (A is correct) ──
+
+  { q: "Using a ruler and compass only, the first step in constructing a 60° angle at point P on a line is to:",
+    opts: ["Draw an arc centred at P that cuts the line, then use the same radius to mark off a second arc", "Draw a perpendicular bisector of the line segment and bisect the resulting right angle", "Mark a point Q anywhere on the line and draw a circle centred at Q through P", "Extend the line beyond P and draw an arc centred at the far end of the extension"],
+    ans: 0,
+    exp: "To construct 60°, draw an arc centred at P cutting the line at A; then, with the same radius centred at A, draw another arc cutting the first at B. The angle APB = 60°." },
+
+  { q: "The sum of all interior angles of a polygon with n sides is given by the formula:",
+    opts: ["(n − 2) × 180°", "(n + 2) × 180°", "(n − 2) × 90°", "n × 180°"],
+    ans: 0,
+    exp: "The sum of interior angles of any n-sided polygon is (n − 2) × 180°. For a triangle (n=3) this gives 180°, for a quadrilateral (n=4) it gives 360°, and so on." },
+
+  { q: "A boy standing on level ground observes the top of a building at an angle of elevation of 35°. If he is 50 m from the base of the building, the height of the building is approximately:",
+    opts: ["50 × tan 35° metres", "50 × sin 35° metres", "50 ÷ cos 35° metres", "50 × cos 35° metres"],
+    ans: 0,
+    exp: "Using trigonometry with the adjacent side (50 m) and the opposite side (height): tan 35° = height/50, so height = 50 × tan 35°." },
+
+  { q: "A ship leaves port and sails on a bearing of 070° for 40 km, then turns and sails on a bearing of 160° for 30 km. Which expression gives the straight-line distance from the port to the final position?",
+    opts: ["√(40² + 30²) km, because the two legs are perpendicular to each other", "40 + 30 km, because distances along bearings are always added directly", "40 × 30 km, because the two bearings form a right angle at the turning point", "√(40² − 30²) km, because the bearings form a complementary pair"],
+    ans: 0,
+    exp: "A bearing of 070° followed by 160° produces legs that are perpendicular (160° − 070° = 90°), so by Pythagoras the distance = √(40² + 30²) = 50 km." },
+
+  { q: "A bag contains 4 red balls, 3 blue balls, and 5 green balls. If one ball is picked at random, the probability that it is NOT green is:",
+    opts: ["7/12", "5/12", "3/12", "4/12"],
+    ans: 0,
+    exp: "Total balls = 4 + 3 + 5 = 12. Non-green balls = 4 + 3 = 7. P(not green) = 7/12." },
+
+  { q: "The mean of the data set 8, 12, 15, 9, 11, 7, and 10 is:",
+    opts: ["72/7, which simplifies to approximately 10.3", "75/7, which simplifies to approximately 10.7", "70/7, which equals exactly 10.0", "68/7, which simplifies to approximately 9.7"],
+    ans: 0,
+    exp: "Sum = 8+12+15+9+11+7+10 = 72. Mean = 72 ÷ 7 ≈ 10.3." },
+
+  { q: "Which of the following describes a regular polygon?",
+    opts: ["A polygon in which all sides are equal in length and all interior angles are equal in size", "A polygon that has at least one interior angle greater than 180°", "A polygon with an even number of sides where opposite sides are parallel", "A polygon in which all diagonals are equal but the sides may differ in length"],
+    ans: 0,
+    exp: "A regular polygon has all sides equal (equilateral) and all interior angles equal (equiangular), such as an equilateral triangle or a square." },
+
+  { q: "Two events A and B are said to be mutually exclusive if:",
+    opts: ["They cannot both occur at the same time, so P(A and B) = 0", "They must both occur together, so P(A and B) = 1", "The occurrence of A makes B twice as likely to occur", "P(A) + P(B) always equals 1 regardless of the sample space"],
+    ans: 0,
+    exp: "Mutually exclusive events cannot occur simultaneously, meaning P(A ∩ B) = 0, and therefore P(A or B) = P(A) + P(B)." },
+
+  { q: "Using a compass and ruler, a 90° angle can be constructed by:",
+    opts: ["First constructing a 60° angle and then bisecting the remaining 120° to obtain two 60° sectors, then bisecting one to produce 30°, and adding 60° + 30°", "Drawing any triangle and measuring the largest angle with a protractor", "Drawing a straight line and marking off equal segments until the angle looks right", "Constructing a 45° angle and doubling it using the same arc radius"],
+    ans: 0,
+    exp: "A 90° angle is constructed by building a 60° angle, then bisecting the remaining 120° reflex to get a 30° addition: 60° + 30° = 90°. Alternatively, a perpendicular bisector creates 90° directly." },
+
+  { q: "On a bar chart showing students' scores, the frequency of scores between 60 and 69 is represented by a bar of height 8. If 40 students were surveyed in total, the relative frequency of this class is:",
+    opts: ["8/40 = 0.2, or 20%", "8/40 = 0.8, or 80%", "40/8 = 5, or 500%", "8 × 40 = 320, or 320%"],
+    ans: 0,
+    exp: "Relative frequency = frequency ÷ total = 8 ÷ 40 = 0.2, expressed as 20%." },
+
+  // ── 10 with ans:1 (B is correct) ──
+
+  { q: "The exterior angle of a regular hexagon is:",
+    opts: ["30°, because a hexagon has 12 exterior angles that sum to 360°", "60°, because the sum of exterior angles of any polygon is 360° and a hexagon has 6 sides", "120°, because each interior angle of a regular hexagon is 120°", "72°, because the exterior angle equals 360° divided by 5"],
+    ans: 1,
+    exp: "The exterior angle of a regular polygon = 360° ÷ n. For a hexagon, n = 6, so exterior angle = 360° ÷ 6 = 60°." },
+
+  { q: "A ladder leans against a vertical wall. The foot of the ladder is 3 m from the wall and the ladder makes an angle of depression of 25° with the top of the wall. The length of the ladder is closest to:",
+    opts: ["3 × tan 25°", "3 ÷ cos 25°", "3 × cos 25°", "3 ÷ tan 25°"],
+    ans: 1,
+    exp: "The horizontal distance (3 m) is adjacent to the angle at the top of the wall (25°). cos 25° = 3/ladder, so ladder = 3 ÷ cos 25°." },
+
+  { q: "The median of the ordered data set 3, 7, 9, 12, 15, 18, 22 is:",
+    opts: ["9, because it is the third value in the ordered list", "12, because it is the middle (4th) value in a set of 7 items", "15, because it is the fifth value in the ordered list", "9.5, because it is the average of the 3rd and 4th values"],
+    ans: 1,
+    exp: "With 7 values, the median is the (7+1)/2 = 4th value. Counting 3, 7, 9, 12 — the 4th value is 12." },
+
+  { q: "A bearing of S45°E is equivalent to which three-figure bearing?",
+    opts: ["045°", "135°", "225°", "315°"],
+    ans: 1,
+    exp: "S45°E means 45° east of south. Starting from north (000°), south is 180°, then 45° towards east gives 180° − 45° = 135°." },
+
+  { q: "A fair coin is tossed twice. What is the probability of getting exactly one head?",
+    opts: ["1/4, because the only favourable outcome is HH", "1/2, because the favourable outcomes are HT and TH out of four equally likely outcomes", "3/4, because three outcomes contain at least one head", "1, because at least one head always appears in two tosses"],
+    ans: 1,
+    exp: "Sample space: HH, HT, TH, TT — four outcomes. Exactly one head: HT and TH = 2 outcomes. P = 2/4 = 1/2." },
+
+  { q: "To bisect an angle using only a compass and ruler, after drawing an arc centred at the vertex that cuts both arms, the next step is to:",
+    opts: ["Draw a straight line from the vertex to the midpoint of the line joining the two arc intersections", "Draw equal arcs centred at each intersection point of the first arc and the arms, then join the vertex to where these arcs cross", "Measure the angle with a protractor and mark exactly half the angle on the diagram", "Draw a perpendicular from one arm of the angle to the other arm"],
+    ans: 1,
+    exp: "After the first arc cuts both arms at two points, draw equal-radius arcs from each of these points. Where these two arcs intersect gives a point on the angle bisector — join this to the vertex." },
+
+  { q: "Which of the following data representations is most appropriate for showing how the scores of 100 students are distributed across class intervals?",
+    opts: ["A pie chart divided into sectors proportional to each student's individual score", "A frequency distribution table or histogram grouping scores into equal class intervals", "A line graph plotting each student's rank against their actual score", "A pictogram using one symbol to represent each of the 100 students"],
+    ans: 1,
+    exp: "A frequency distribution table or histogram is most appropriate for grouped data, showing how many observations fall within each class interval." },
+
+  { q: "The sum of the interior angles of a nonagon (9 sides) is:",
+    opts: ["1080°", "1260°", "1440°", "900°"],
+    ans: 1,
+    exp: "Sum of interior angles = (n − 2) × 180° = (9 − 2) × 180° = 7 × 180° = 1260°." },
+
+  { q: "From the top of a cliff 80 m high, the angle of depression of a boat at sea is 30°. The horizontal distance from the base of the cliff to the boat is:",
+    opts: ["80 × sin 30° metres", "80 ÷ tan 30° metres", "80 × tan 30° metres", "80 ÷ sin 30° metres"],
+    ans: 1,
+    exp: "The angle of depression from the top = 30°. tan 30° = opposite/adjacent = 80/d, so d = 80 ÷ tan 30° = 80√3 ≈ 138.6 m." },
+
+  { q: "A die is rolled once. What is the probability of getting a prime number?",
+    opts: ["2/6, because only 2 and 3 are prime numbers on a standard die", "3/6 = 1/2, because 2, 3, and 5 are prime numbers on a standard die", "4/6, because 1, 2, 3, and 5 qualify as prime on a standard die", "1/6, because only the number 2 is a prime on a standard die"],
+    ans: 1,
+    exp: "Prime numbers on a standard die (1–6) are 2, 3, and 5 — three outcomes. P(prime) = 3/6 = 1/2." },
+
+  // ── 10 with ans:2 (C is correct) ──
+
+  { q: "The interior angle of a regular pentagon is:",
+    opts: ["72°, because the exterior angle of a pentagon is 72° and interior = exterior", "90°, because a pentagon's angles can be divided into right angles", "108°, because (5 − 2) × 180° ÷ 5 = 540° ÷ 5 = 108°", "120°, because the interior angle formula gives 600° ÷ 5 = 120°"],
+    ans: 2,
+    exp: "Interior angle of a regular pentagon = (n − 2) × 180° ÷ n = (5 − 2) × 180° ÷ 5 = 540° ÷ 5 = 108°." },
+
+  { q: "A point P has a bearing of 240° from point Q. What is the bearing of Q from P?",
+    opts: ["060°, because 240° − 180° = 60°", "120°, because bearings that are directly opposite always differ by 120°", "060°, because the reverse bearing is found by subtracting 180° from 240°", "300°, because you add 60° to the original bearing to find the reverse"],
+    ans: 2,
+    exp: "The reverse (back) bearing is found by adding or subtracting 180°. Since 240° > 180°, subtract: 240° − 180° = 060°. The bearing of Q from P is 060°." },
+
+  { q: "A data set has values 5, 8, 8, 10, 12, 12, 12, 15. The mode of this data set is:",
+    opts: ["8, because it appears twice which is more than 5, 10, and 15", "10, because it is the middle value of the data set", "12, because it appears three times, more than any other value", "15, because it is the largest value in the data set"],
+    ans: 2,
+    exp: "The mode is the value that occurs most frequently. 12 appears three times, which is more than any other value in the data set." },
+
+  { q: "Two cards are drawn at random from a standard deck of 52 cards without replacement. What is the probability that both cards are aces?",
+    opts: ["4/52 × 4/52 = 16/2704", "4/52 × 3/51 is correct only when cards are drawn with replacement", "4/52 × 3/51 = 12/2652 = 1/221, because after the first ace is drawn, 3 aces remain in 51 cards", "2/52 × 1/51, because only two of the four aces count for this calculation"],
+    ans: 2,
+    exp: "Without replacement: P(first ace) = 4/52; P(second ace | first ace drawn) = 3/51. P(both aces) = (4/52) × (3/51) = 12/2652 = 1/221." },
+
+  { q: "A student constructs a 45° angle. Which of the following correctly describes the construction steps?",
+    opts: ["Construct a 60° angle and subtract 15° using a protractor to leave exactly 45°", "Construct a 30° angle and add a 15° angle using a compass arc method", "Construct a 90° angle first using perpendicular bisection, then bisect it to obtain two 45° angles", "Construct an equilateral triangle and then bisect its 60° angles to produce 45°"],
+    ans: 2,
+    exp: "The standard method for constructing 45° is to first construct a 90° angle (using perpendicular bisection), then bisect it to produce two equal 45° angles." },
+
+  { q: "The range of the data set 14, 22, 8, 35, 19, 11, 27 is:",
+    opts: ["22, because 35 minus 13 equals 22", "19, because 35 minus 16 equals 19", "27, because the largest value minus the smallest value is 35 − 8 = 27", "14, because the mode subtracted from the maximum gives 14"],
+    ans: 2,
+    exp: "Range = maximum value − minimum value = 35 − 8 = 27." },
+
+  { q: "Which of the following correctly states the addition rule of probability for two mutually exclusive events A and B?",
+    opts: ["P(A or B) = P(A) × P(B), because the events occur independently", "P(A or B) = P(A) + P(B) − P(A) × P(B), to account for overlapping outcomes", "P(A or B) = P(A) + P(B), because mutually exclusive events have no outcomes in common", "P(A or B) = 1 − P(A) × P(B), because at least one event must occur"],
+    ans: 2,
+    exp: "For mutually exclusive events, P(A ∩ B) = 0, so the addition rule simplifies to P(A ∪ B) = P(A) + P(B)." },
+
+  { q: "The bearing of town Y from town X is 310°. What type of direction does this bearing correspond to approximately?",
+    opts: ["South-East, because 310° lies between 270° and 360° on the eastern side", "North-East, because any bearing less than 360° can be classified as north-easterly", "North-West, because 310° lies between 270° (West) and 360°/000° (North)", "South-West, because 310° is greater than 270° and south-west lies beyond due west"],
+    ans: 2,
+    exp: "310° lies between 270° (West) and 360° (North), so it points in the North-West direction." },
+
+  { q: "On a histogram, the class interval 20–30 has a frequency of 15 and the class interval 30–40 has a frequency of 25. The total number of data values in both classes combined is:",
+    opts: ["25, because only the higher frequency is counted in histogram analysis", "37.5, because the frequencies are averaged across the two class intervals", "40, because 15 + 25 = 40 data values fall within the two class intervals", "10, because 25 − 15 = 10 gives the difference between the classes"],
+    ans: 2,
+    exp: "The total number of data values in the two classes is simply 15 + 25 = 40." },
+
+  { q: "In a class of 30 students, the probability that a randomly chosen student studies French is 2/5. How many students study French?",
+    opts: ["10 students, because 30 ÷ 5 = 6 and 6 × 1 = 10 under an incorrect formula", "14 students, because 2/5 of 30 is calculated incorrectly as 14", "12 students, because (2/5) × 30 = 60/5 = 12", "15 students, because half of 30 students is the expected result"],
+    ans: 2,
+    exp: "Number of French students = (2/5) × 30 = 60/5 = 12 students." },
+
+  // ── 10 with ans:3 (D is correct) ──
+
+  { q: "Which of the following is true about the exterior angles of any convex polygon, regardless of the number of sides?",
+    opts: ["They always sum to 180°, the same as the interior angles of a triangle", "They always sum to (n − 2) × 180°, where n is the number of sides", "They always sum to 720°, which is twice the sum of a quadrilateral's interior angles", "They always sum to 360°, no matter how many sides the polygon has"],
+    ans: 3,
+    exp: "The sum of exterior angles of any convex polygon is always 360°, regardless of the number of sides." },
+
+  { q: "A surveyor stands at point A and observes a tower at point B on a bearing of 035°. He then walks to point C, due east of A, and observes the same tower at a bearing of 330°. If AC = 100 m, which method should he use to find the distance AB?",
+    opts: ["Use the Pythagorean theorem directly, because the triangle ABC is always right-angled at B", "Use the cosine rule, because angle B is always obtuse in this type of survey problem", "Use the formula AB = AC × sin(angle ACB), because the sine rule requires only two sides", "Use the sine rule, applying the known side AC and the angles of the triangle to find AB"],
+    ans: 3,
+    exp: "With one known side (AC = 100 m) and known angles in the triangle, the sine rule is used: AB/sin(ACB) = AC/sin(ABC), allowing AB to be calculated." },
+
+  { q: "A data set of 50 values is organised in a frequency table. The cumulative frequency at the class boundary 50 is 38. The number of values greater than 50 is:",
+    opts: ["38, because cumulative frequency always equals the total count for the last boundary", "50, because the data set contains exactly 50 values in total", "88, because cumulative frequency and remaining frequency are always added together", "12, because 50 − 38 = 12 values lie above the class boundary of 50"],
+    ans: 3,
+    exp: "Cumulative frequency up to 50 is 38, meaning 38 values are ≤ 50. Values above 50 = total − cumulative = 50 − 38 = 12." },
+
+  { q: "Which of the following is the correct formula for the number of diagonals in a polygon with n sides?",
+    opts: ["n(n − 1) ÷ 2, which counts all line segments between vertices including sides", "n(n + 1) ÷ 2, which overestimates by including extended lines beyond vertices", "(n + 2)(n − 1) ÷ 2, which adjusts for irregular polygons with re-entrant angles", "n(n − 3) ÷ 2, because each vertex connects to (n − 3) non-adjacent vertices"],
+    ans: 3,
+    exp: "Each vertex connects to (n − 3) other non-adjacent vertices (excluding itself and the two adjacent vertices). Total diagonals = n(n − 3) ÷ 2." },
+
+  { q: "A man walks 5 km due North and then 12 km due East. His bearing from the starting point is approximately:",
+    opts: ["22.6°, because tan θ = 5/12 and the angle is measured from the east", "30°, because the 5-12-13 triangle always produces a 30° bearing", "45°, because due north then due east always produces a 45° bearing", "67.4°, because tan θ = 12/5 and the bearing is measured clockwise from north"],
+    ans: 3,
+    exp: "Bearing is measured clockwise from North. tan θ = opposite/adjacent = 12/5, so θ = arctan(2.4) ≈ 67.4°. The bearing from start is approximately 067.4°." },
+
+  { q: "When constructing a perpendicular to a line from a point NOT on the line using only compass and ruler, the method involves:",
+    opts: ["Drawing a semicircle of any radius centred at the point and marking where it crosses itself on the line", "Extending the line to double its length and then constructing a bisector at the new endpoint", "Measuring the distance from the point to the line with a ruler and marking the midpoint", "Drawing arcs from the external point that intersect the line at two places, then bisecting the segment between those intersections"],
+    ans: 3,
+    exp: "To drop a perpendicular from an external point: draw arcs from the point cutting the line at two places, then construct the perpendicular bisector of those two intersection points — which passes through the external point." },
+
+  { q: "A pie chart represents the results of a survey of 360 students' favourite subjects. Mathematics has a sector angle of 90°. How many students chose Mathematics?",
+    opts: ["9 students, because 90 ÷ 360 × 10 = 9", "36 students, because 90 out of 360 degrees represents 10% of 360 students", "180 students, because a 90° sector is one-quarter and one-quarter of 360 is 90", "90 students, because (90/360) × 360 = 90"],
+    ans: 3,
+    exp: "Number of students = (sector angle/360°) × total = (90/360) × 360 = 90 students." },
+
+  { q: "A bag contains 6 red and 4 blue beads. Two beads are drawn without replacement. What is the probability that both beads are red?",
+    opts: ["6/10 × 6/10 = 36/100, using replacement probability incorrectly", "6/10 × 5/9 is wrong because the second draw should use 4 remaining red beads", "3/10, because 6/10 simplified and halved gives 3/10 for two draws", "6/10 × 5/9 = 30/90 = 1/3, because after one red bead is drawn, 5 red beads remain in 9"],
+    ans: 3,
+    exp: "P(first red) = 6/10; P(second red | first red) = 5/9 (5 reds left in 9 beads). P(both red) = (6/10) × (5/9) = 30/90 = 1/3." },
+
+  { q: "The angle of elevation of the top of a tree from a point 20 m away on the ground is 50°. Which of the following correctly gives the height of the tree?",
+    opts: ["Height = 20 × cos 50°, using the adjacent and hypotenuse relationship", "Height = 20 ÷ sin 50°, using the hypotenuse and opposite relationship", "Height = 20 × sin 50°, using the hypotenuse and opposite instead of the tangent", "Height = 20 × tan 50°, using the opposite and adjacent relationship with the ground distance"],
+    ans: 3,
+    exp: "With the horizontal distance (adjacent = 20 m) and the angle of elevation (50°), tan 50° = height/20, so height = 20 × tan 50°." },
+
+  { q: "Which of the following correctly describes how to construct a 120° angle using only a compass and ruler?",
+    opts: ["Construct a 60° angle, then use a protractor to add another 60° to reach 120°", "Construct a 90° angle and add a 30° angle using compass arcs to total 120°", "Construct a 45° angle and triple it using successive compass constructions to reach 135° then subtract", "Construct a 60° angle, then on the other side of one arm construct another 60° angle to produce a total of 120°"],
+    ans: 3,
+    exp: "120° = 60° + 60°. Construct a 60° angle at point P, then from the same base construct a second 60° angle adjacent to it on the same side, giving a total of 120° between the outer arms." }
+
 ],
 'Basic Science': [
     {
@@ -2428,47 +2397,215 @@ jss2: {
     { q: "Which stage in metal processing increases hardness by rapid cooling?", opts: ["Quenching", "Annealing", "Tempering", "Casting"], ans: 0, exp: "Rapid cooling hardens metal." }
 ],
 'Business Studies': [
-    { q: "A shopkeeper insures his warehouse against fire. Three months later, he deliberately sets the warehouse ablaze to claim compensation. Which insurance principle is violated?", opts: ["Indemnity", "Utmost good faith", "Subrogation", "Insurable interest"], ans: 1, exp: "Utmost good faith requires honesty and full disclosure. Deliberately causing loss is a breach." },
-    { q: "An entrepreneur identifies recycling waste as a profitable venture. This is an example of:", opts: ["Consumer responsibility", "Business opportunity identification", "Insurance evaluation", "Ledger posting"], ans: 1, exp: "Recognising unmet needs or trends signals a business opportunity." },
-    { q: "Which account is credited when goods are sold on credit?", opts: ["Purchases account", "Sales account", "Cash account", "Capital account"], ans: 1, exp: "Sales account increases on credit side when goods are sold." },
-    { q: "A consumer keeps all receipts after shopping. This demonstrates:", opts: ["Right to redress", "Responsibility to be informed", "Right to choose", "Impulse buying"], ans: 1, exp: "Maintaining records allows consumers to act responsibly and seek redress if needed." },
-    { q: "Impulse buying mainly violates which shopping principle?", opts: ["Budgeting", "Comparative shopping", "Saving receipts", "Brand loyalty"], ans: 0, exp: "Budgeting requires planned spending; impulse purchases disrupt it." },
-    { q: "Rent paid in cash is recorded by:", opts: ["Debiting Cash account", "Crediting Rent account", "Debiting Rent account", "Crediting Capital account"], ans: 2, exp: "Expenses are increased on the debit side; thus, Rent account is debited." },
-    { q: "Which quality is least desirable in an entrepreneur?", opts: ["Indecisiveness", "Innovation", "Risk-taking", "Persistence"], ans: 0, exp: "Indecisiveness impedes action; entrepreneurs must make decisions confidently." },
-    { q: "Premium in insurance refers to:", opts: ["Compensation after loss", "Profit of insurer", "Periodic payment by insured", "Loan granted to policyholder"], ans: 2, exp: "Premium is the regular payment made to maintain the policy." },
-    { q: "Which consumer right ensures protection from hazardous products?", opts: ["Right to choose", "Right to redress", "Right to safety", "Right to information"], ans: 2, exp: "Right to safety protects against unsafe products or services." },
-    { q: "Balancing a cash book involves:", opts: ["Ignoring errors", "Comparing debit and credit totals", "Closing the business", "Transferring to petty cash"], ans: 1, exp: "Balancing determines the remaining cash by comparing totals." },
-    { q: "Deliberate omission of material facts in an insurance contract is called:", opts: ["Indemnity", "Underwriting", "Breach of utmost good faith", "Subrogation"], ans: 2, exp: "Utmost good faith requires full disclosure; omission breaches this principle." },
-    { q: "Which book serves as both book of original entry and ledger for cash?", opts: ["Journal", "Cash book", "Trial balance", "Invoice"], ans: 1, exp: "Cash book records cash transactions and classifies them simultaneously." },
-    { q: "Which ledger entry reduces money owed to a supplier?", opts: ["Debit Purchases", "Credit Returns Outward", "Debit Sales", "Credit Cash"], ans: 1, exp: "Returning goods reduces liability, recorded in Returns Outward account." },
-    { q: "The main purpose of insurance is to:", opts: ["Eliminate risk completely", "Increase sales", "Reduce financial uncertainty", "Provide loans"], ans: 2, exp: "Insurance mitigates financial losses from unexpected events." },
-    { q: "Petty cash vouchers are used to:", opts: ["Authorise major purchases", "Provide evidence for small expenses", "Replace invoices", "Record sales"], ans: 1, exp: "They support and justify minor cash payments." },
-    { q: "Which action violates consumer responsibility?", opts: ["Reading labels", "Using products negligently", "Reporting defects", "Comparing prices"], ans: 1, exp: "Consumers must use products responsibly to avoid harm." },
-    { q: "Overstating revenue in records breaches:", opts: ["Insurance principles", "Accounting ethics", "Consumer rights", "Shopping principles"], ans: 1, exp: "Accuracy and integrity are essential in accounting ethics." },
-    { q: "Which is NOT a consumer right?", opts: ["Right to safety", "Right to redress", "Right to unlimited credit", "Right to choose"], ans: 2, exp: "Unlimited credit is not legally recognized as a consumer right." },
-    { q: "The principle of indemnity in insurance ensures:", opts: ["Compensation beyond loss", "Restoration to original financial position", "Guaranteed profit", "Avoidance of premium"], ans: 1, exp: "Indemnity prevents enrichment; insured is restored, not profited." },
-    { q: "Which book is a day book for credit purchases?", opts: ["Cash book", "Purchases journal", "Sales journal", "Ledger"], ans: 1, exp: "Purchases journal records all credit purchases." },
-    { q: "From which book are transactions posted to ledger accounts?", opts: ["Trial balance", "Journal", "Balance sheet", "Invoice"], ans: 1, exp: "Journals are the source of ledger postings." },
-    { q: "An entrepreneur takes savings and invests in a poultry business. Which skill is demonstrated?", opts: ["Risk avoidance", "Initiative and opportunity recognition", "Following instructions", "Routine work"], ans: 1, exp: "Entrepreneurs spot opportunities and act on them." },
-    { q: "Keeping personal and business transactions separate ensures:", opts: ["Accuracy in financial records", "Higher profits", "Tax evasion", "Faster sales"], ans: 0, exp: "Separation prevents errors and misstatements in accounts." },
-    { q: "Which is a calculated risk in entrepreneurship?", opts: ["Investing without research", "Analyzing market trends before investing", "Ignoring market conditions", "Relying on luck"], ans: 1, exp: "Entrepreneurs assess potential returns and losses before acting." },
-    { q: "The double-entry principle states that every transaction affects:", opts: ["One account only", "At least two accounts", "Cash only", "Profit only"], ans: 1, exp: "Each debit has a corresponding credit." },
-    { q: "A consumer refuses to buy goods sold in unsafe packaging. This is an example of:", opts: ["Consumer irresponsibility", "Consumer activism", "Impulse buying", "Negligence"], ans: 1, exp: "Consumers exercise rights to influence business behaviour." },
-    { q: "Which entry increases an expense account?", opts: ["Debit expense", "Credit expense", "Debit capital", "Credit sales"], ans: 0, exp: "Expenses are recorded on the debit side." },
-    { q: "A business owner reimburses petty cash via the imprest system. The amount replenished is:", opts: ["Random", "Equal to expenses incurred", "Full capital", "Twice the expenses"], ans: 1, exp: "Imprest restores petty cash to the predetermined float amount." },
-    { q: "Which is the main effect of effective customer care?", opts: ["Higher costs only", "Customer loyalty and repeat business", "Complaints increase", "Market confusion"], ans: 1, exp: "Satisfied customers return and recommend the business." },
-    { q: "Which right allows consumers to demand safe and quality goods?", opts: ["Right to profit", "Right to safety", "Right to choice", "Right to leisure"], ans: 1, exp: "Consumers are entitled to protection against unsafe products." },
-    { q: "Which activity shows social responsibility by a business?", opts: ["Polluting the environment", "Providing fair wages and community support", "Tax evasion", "Overpricing"], ans: 1, exp: "Socially responsible businesses contribute positively to society." },
-    { q: "Which principle requires honesty from both insurer and insured?", opts: ["Contribution", "Utmost good faith", "Indemnity", "Subrogation"], ans: 1, exp: "Both parties must fully disclose relevant facts." },
-    { q: "The ledger account for a supplier is usually found in:", opts: ["Nominal ledger", "Purchases ledger", "Sales ledger", "Cash book"], ans: 1, exp: "Purchases ledger tracks payables to suppliers." },
-    { q: "A debit entry in the ledger may increase:", opts: ["Liabilities only", "Assets or expenses", "Income only", "Capital only"], ans: 1, exp: "Debits increase assets and expenses." },
-    { q: "Which book is used to post daily cash transactions and summarize cash inflow/outflow?", opts: ["Journal", "Cash book", "Purchases journal", "Trial balance"], ans: 1, exp: "Cash book records and classifies all cash transactions." },
-    { q: "A consumer returns a defective product and receives a credit note. This action exercises:", opts: ["Right to redress", "Right to choose", "Right to safety", "Right to information"], ans: 0, exp: "Credit note provides remedy for returned or faulty goods." },
-    { q: "A business plan primarily helps an entrepreneur to:", opts: ["Avoid banks", "Secure funding and guide operations", "Hide ideas", "Increase taxes"], ans: 1, exp: "It outlines objectives, strategy, and financial projections." },
-    { q: "Why is time management important for an entrepreneur?", opts: ["Work is always easy", "It increases productivity and reduces stress", "They have unlimited time", "No deadlines exist"], ans: 1, exp: "Prioritizing tasks ensures efficient use of limited time." },
-    { q: "Which action violates bookkeeping ethics?", opts: ["Recording all transactions accurately", "Overstating income to reduce tax liability", "Segregating personal and business expenses", "Using petty cash for minor payments"], ans: 1, exp: "Integrity in recording transactions is essential; overstating income is unethical." },
-    { q: "Which entry records reduction in liability to supplier due to returned goods?", opts: ["Debit Purchases", "Credit Returns Outward", "Debit Sales", "Credit Capital"], ans: 1, exp: "Returns outward decreases the amount owed to the supplier." },
-    { q: "The main feature of the imprest system is:", opts: ["Cash is replenished to a fixed amount", "Cash is spent freely", "Cash is unlimited", "No record is kept"], ans: 0, exp: "Petty cash is restored to the predetermined float periodically." }
+
+  // ── 10 with ans:0 (A is correct) ──
+
+  { q: "Which of the following proofreading marks instructs a typist to delete a word or character without replacing it?",
+    opts: ["A dele sign (ƍ) crossed through the text", "A caret (^) inserted below the line", "Three underlines beneath the text", "A circle drawn around the word"],
+    ans: 0,
+    exp: "The dele sign (ƍ) is the standard printer's correction mark used to indicate that a character or word should be deleted entirely." },
+
+  { q: "In keyboarding technique development, the correct resting position for fingers on a standard QWERTY keyboard is called:",
+    opts: ["The home row position, with fingers resting on ASDF and JKL;", "The middle row position, with fingers resting on QWER and UIOP", "The shift position, with one finger on the shift key at all times", "The number row position, with fingers on 1234 and 7890"],
+    ans: 0,
+    exp: "The home row (ASDF for the left hand and JKL; for the right hand) is the standard resting position in touch-typing technique." },
+
+  { q: "Which of the following best describes a memorandum in a business context?",
+    opts: ["An internal written communication used within an organisation to pass information between staff", "A formal letter sent to clients outside the organisation requesting payment", "A legal document filed with the government to register a business name", "A printed advertisement distributed to members of the public"],
+    ans: 0,
+    exp: "A memorandum (memo) is an internal document used for communication within an organisation, not for external correspondence." },
+
+  { q: "When measuring keyboarding speed, the standard unit used is:",
+    opts: ["Words per minute (WPM), where one word is counted as five keystrokes", "Characters per second (CPS), where spaces are excluded from the count", "Lines per hour (LPH), calculated from the number of completed lines", "Pages per day (PPD), based on the total pages typed in eight hours"],
+    ans: 0,
+    exp: "Keyboarding speed is measured in Words Per Minute (WPM), with each 'word' defined as five keystrokes including spaces." },
+
+  { q: "Which proofreader's mark is used to indicate that a new paragraph should begin at a specific point in the text?",
+    opts: ["The paragraph sign (¶) placed at the point where the break should start", "The stet mark written below the line to preserve the original text", "Three horizontal lines drawn under the first letter of the sentence", "A circle with a cross placed in the left margin of the page"],
+    ans: 0,
+    exp: "The pilcrow or paragraph sign (¶) is the standard proofreading mark used to signal that a new paragraph should begin at that point." },
+
+  { q: "In a standard business email, which section contains the subject of the message and must be completed to indicate the email's purpose?",
+    opts: ["The subject line, located between the address fields and the message body", "The CC field, used to send copies to additional recipients simultaneously", "The BCC field, which hides secondary recipients from each other", "The signature block, which appears at the bottom of the email body"],
+    ans: 0,
+    exp: "The subject line is a required field in a business email that briefly states the purpose or topic of the message." },
+
+  { q: "Which of the following best describes the petty cash book in office accounting?",
+    opts: ["A record used to track small, everyday cash payments made within the office", "A document that records only large transactions above a specified threshold", "A ledger used exclusively for recording staff salary payments each month", "A book that lists all purchases made using the company's credit card"],
+    ans: 0,
+    exp: "The petty cash book records minor day-to-day cash expenditures such as postage, stationery, and small office supplies." },
+
+  { q: "The office procedure of filing involves:",
+    opts: ["Systematically arranging and storing documents so they can be retrieved easily and quickly", "Typing correspondence from handwritten drafts given by the manager", "Answering telephone calls and recording messages for office staff", "Sorting incoming mail and distributing it to the appropriate departments"],
+    ans: 0,
+    exp: "Filing is the systematic organisation and storage of documents for easy retrieval, and is a core office procedure." },
+
+  { q: "Which of the following is a correct feature of a well-formatted memorandum heading?",
+    opts: ["It includes TO, FROM, DATE, and SUBJECT fields at the top of the document", "It begins with a salutation such as 'Dear Sir' or 'Dear Madam'", "It contains a complimentary close such as 'Yours faithfully' or 'Yours sincerely'", "It includes the recipient's full postal address and postcode"],
+    ans: 0,
+    exp: "A memorandum heading contains four standard fields: TO (recipient), FROM (sender), DATE, and SUBJECT, with no salutation or postal address." },
+
+  { q: "Which of the following pieces of office equipment is primarily used to make multiple copies of a document quickly?",
+    opts: ["A photocopier, which scans and reproduces documents on paper", "A paper shredder, which cuts documents into small strips for disposal", "A laminator, which seals documents between layers of clear plastic film", "A binding machine, which fastens pages together using a comb or wire spine"],
+    ans: 0,
+    exp: "A photocopier is used to scan an original document and reproduce multiple copies quickly, making it essential office equipment." },
+
+  // ── 10 with ans:1 (B is correct) ──
+
+  { q: "A typist receives a manuscript with the letters 'trs' written in the margin beside a word. What does this proofreader's instruction mean?",
+    opts: ["Delete the word and leave no space in its place", "Transpose the letters or words to correct their order", "Insert a space between the letters indicated", "Replace the word with the one written above it"],
+    ans: 1,
+    exp: "'Trs' or 'tr' is the standard printer's correction mark meaning 'transpose' — to reverse the order of letters, words, or lines." },
+
+  { q: "Which of the following keyboarding techniques is most effective for achieving high speed without sacrificing accuracy?",
+    opts: ["Looking at the keyboard frequently to locate less familiar keys", "Touch-typing using muscle memory, keeping eyes on the source document", "Using only the index fingers of both hands for all keystrokes", "Typing as fast as possible and correcting all errors at the end"],
+    ans: 1,
+    exp: "Touch-typing, which relies on muscle memory rather than sight, allows a typist to achieve high speed and accuracy simultaneously." },
+
+  { q: "A cash book that contains only one column on each side is known as a:",
+    opts: ["Three-column cash book, which records cash, bank, and discount columns", "Single-column cash book, which records only cash transactions", "Petty cash book, which records minor expenditures using an imprest system", "Analytical cash book, which breaks down all expenses into categories"],
+    ans: 1,
+    exp: "A single-column cash book records only cash transactions (receipts and payments) and has one amount column on the debit and one on the credit side." },
+
+  { q: "In paragraphing a typed document, what is the primary purpose of indenting the first line of each paragraph?",
+    opts: ["To reduce the number of characters that fit on the first line of each paragraph", "To visually signal the start of a new thought or idea, improving readability", "To automatically trigger spell-check in most word processing software", "To align the paragraph with the right margin of the document"],
+    ans: 1,
+    exp: "Indenting the first line of a paragraph is a visual convention that clearly marks the beginning of a new idea, improving the document's readability." },
+
+  { q: "Which of the following is a key difference between an email and a memorandum?",
+    opts: ["A memorandum can be sent to recipients outside the organisation, while an email cannot", "An email is transmitted electronically and can carry attachments, while a memo is a paper-based internal document", "A memorandum requires a postage stamp, while an email requires a fax machine", "An email must always be printed and signed before it is considered official"],
+    ans: 1,
+    exp: "The key difference is that an email is electronic and can carry file attachments and be sent globally, while a memo is traditionally a paper-based internal communication." },
+
+  { q: "In a double-entry cash book, the bank column on the debit side records:",
+    opts: ["All payments made from the bank account during the period", "All receipts deposited into the bank account during the period", "The opening balance of the petty cash fund at the start of the month", "All discount amounts allowed to credit customers during the period"],
+    ans: 1,
+    exp: "In a double-entry cash book, the debit (left) side records money coming in, so the bank column on the debit side records all deposits into the bank account." },
+
+  { q: "Which of the following best explains the term 'imprest system' as it applies to petty cash?",
+    opts: ["A method of recording all cash transactions in a single column without analysis", "A system where petty cash is restored to a fixed amount at the start of each period", "A system that requires the cashier to seek approval before spending any petty cash", "A method of converting petty cash receipts directly into journal entries"],
+    ans: 1,
+    exp: "Under the imprest system, petty cash is topped up to a fixed (imprest) amount at the start of each period, so the fund always starts with the same balance." },
+
+  { q: "Which office equipment would be most appropriate for a manager who needs to give a presentation to staff using projected slides?",
+    opts: ["A document scanner, which converts paper documents into digital files", "A digital projector, which displays images from a computer onto a large screen", "A multifunction printer, which prints, scans, copies, and faxes documents", "An electric typewriter, which produces typed text on paper using a keyboard"],
+    ans: 1,
+    exp: "A digital projector is used to display presentation slides from a computer onto a screen, making it ideal for staff presentations and meetings." },
+
+  { q: "Which of the following describes the correct format for writing the date in a formal business memorandum?",
+    opts: ["Using abbreviations only, such as '25/05/26' with no month name written out", "Writing the date in full, such as '25 May 2026', to avoid ambiguity", "Placing the date at the bottom of the memorandum after the subject line", "Omitting the date entirely because memos are only for internal use"],
+    ans: 1,
+    exp: "In a formal business memo, the date should be written in full (e.g., 25 May 2026) to avoid any ambiguity, especially between different date formats." },
+
+  { q: "In developing keyboarding accuracy, which of the following drills is most commonly recommended?",
+    opts: ["Practising only the number row and special characters daily", "Practising specific letter combinations and common words repeatedly at a controlled pace", "Typing complete essays without pausing to correct any errors", "Memorising the keyboard layout visually before touching the keys at all"],
+    ans: 1,
+    exp: "Accuracy drills focus on repeating specific letter combinations and high-frequency words at a controlled speed until the fingers develop reliable muscle memory." },
+
+  // ── 10 with ans:2 (C is correct) ──
+
+  { q: "A proofreader writes the word 'stet' in the margin beside a correction already marked on a manuscript. This instruction tells the typist to:",
+    opts: ["Delete the passage marked and replace it with the marginal note", "Move the underlined text to the position indicated by the arrow", "Ignore the correction and retain the original text as it was written", "Insert the missing punctuation mark shown in the margin"],
+    ans: 2,
+    exp: "'Stet' is a Latin term meaning 'let it stand.' It cancels a previous correction and instructs the typist to retain the original text." },
+
+  { q: "Which of the following statements about office filing systems is most accurate?",
+    opts: ["Alphabetical filing is the least used system because it requires expensive equipment", "Numerical filing does not require an index because numbers are self-explanatory", "Alphabetical filing arranges documents by the names of persons or organisations in A–Z order", "Geographical filing can only be used by organisations that operate in one city"],
+    ans: 2,
+    exp: "Alphabetical filing organises documents by name in A–Z order and is one of the most widely used filing systems due to its simplicity." },
+
+  { q: "When composing a business email, the BCC (Blind Carbon Copy) field is used to:",
+    opts: ["Send the email only to the primary recipient without any copies to others", "Allow all recipients to see each other's email addresses in the recipient list", "Send a copy of the email to additional recipients whose addresses remain hidden from others", "Forward the email automatically to a backup server for data storage"],
+    ans: 2,
+    exp: "BCC sends a copy to additional recipients while hiding their email addresses from all other recipients, protecting their privacy." },
+
+  { q: "In a three-column cash book, the three columns on each side represent:",
+    opts: ["Date, particulars, and folio reference only, with no amount columns", "Cash, cheque, and discount, but only on the credit side of the book", "Discount, cash, and bank — recorded on both the debit and credit sides", "Bank, petty cash, and wages — representing the three most common payments"],
+    ans: 2,
+    exp: "A three-column cash book has three amount columns — discount, cash, and bank — on both the debit (receipts) and credit (payments) sides." },
+
+  { q: "Which of the following correctly describes a 'block paragraph' style in typewritten documents?",
+    opts: ["Each paragraph is indented five spaces from the left margin and ends with a blank line", "Each paragraph uses a hanging indent where all lines except the first are indented", "All lines in each paragraph begin at the left margin with a blank line separating paragraphs", "Paragraphs alternate between left-aligned and right-aligned text throughout the document"],
+    ans: 2,
+    exp: "In block paragraph style, every line starts at the left margin with no indentation, and paragraphs are separated by a blank line." },
+
+  { q: "Which of the following is the most accurate description of a contra entry in a cash book?",
+    opts: ["An entry recorded only in the bank column when cash is received from debtors", "An entry made when a supplier's invoice is paid using a company cheque", "An entry recorded in both the cash and bank columns on opposite sides to reflect an internal transfer", "An entry that cancels a previously recorded error in the discount column"],
+    ans: 2,
+    exp: "A contra entry occurs when money is transferred between the cash account and the bank account (e.g., cash deposited into the bank), so it appears on both sides of the cash book marked with a 'C'." },
+
+  { q: "Which of the following describes the role of a receptionist in office procedures?",
+    opts: ["Managing the company's bank account and preparing monthly bank reconciliation statements", "Supervising all other office staff and assigning tasks to junior employees daily", "Welcoming visitors, answering calls, and directing enquiries to the appropriate staff members", "Typing all the organisation's outgoing correspondence and filing incoming documents"],
+    ans: 2,
+    exp: "A receptionist's primary role involves receiving visitors, answering telephone calls, and directing enquiries, forming the first point of contact for the organisation." },
+
+  { q: "Which of the following correctly identifies a photocopier's key advantage over a duplicating machine?",
+    opts: ["A photocopier uses a stencil to produce copies, making it cheaper per page than digital methods", "A photocopier requires a master copy to be typed before any reproduction can take place", "A photocopier can reproduce an original document directly without any intermediate stencil or master copy", "A photocopier produces only black-and-white copies and cannot handle colour documents at all"],
+    ans: 2,
+    exp: "The main advantage of a photocopier is that it can reproduce an original directly — no stencil, spirit master, or other intermediate step is needed." },
+
+  { q: "In keyboarding, the technique of using the correct finger for each key regardless of speed is referred to as:",
+    opts: ["Rapid random typing, where fingers are assigned keys based on comfort rather than position", "Two-finger typing, which is used by professionals to increase speed in data entry roles", "Correct finger assignment, where each key is always struck by its designated finger", "Floating technique, where both hands move freely across the keyboard as needed"],
+    ans: 2,
+    exp: "Correct finger assignment means each key is always struck by the same designated finger as taught in standard touch-typing methodology, building consistent muscle memory." },
+
+  { q: "The abbreviation 'CC' at the bottom of a business memorandum or letter means:",
+    opts: ["Confirmed Copy — the document has been verified by a senior manager", "Corrected Copy — the document has been revised after the initial draft was reviewed", "Carbon Copy — a copy of the document has been sent to the person(s) named", "Courtesy Call — a phone call will follow the written communication"],
+    ans: 2,
+    exp: "CC stands for Carbon Copy (or Courtesy Copy), indicating that a copy of the memo or letter has been sent to the named individual(s)." },
+
+  // ── 10 with ans:3 (D is correct) ──
+
+  { q: "A proofreading mark that looks like a caret (^) inserted between two words instructs the typist to:",
+    opts: ["Remove the word immediately following the caret from the final text", "Swap the positions of the two words on either side of the caret sign", "Begin a new paragraph at the point where the caret has been inserted", "Insert the character or word written in the margin at that position"],
+    ans: 3,
+    exp: "A caret (^) is used to show where something should be inserted. The text to be inserted is written in the margin adjacent to the caret mark." },
+
+  { q: "Which of the following statements about the debit side of a cash book is correct?",
+    opts: ["The debit side records all payments made by the business during the period", "The debit side records all credit purchases made from suppliers on account", "The debit side records all expenses paid to staff as wages and salaries", "The debit side records all money received by the business, including cash and bank receipts"],
+    ans: 3,
+    exp: "In a cash book, the debit (left) side is the receipts side — it records all money coming into the business, whether in cash or via the bank." },
+
+  { q: "Which of the following is NOT a standard field found in a memorandum heading?",
+    opts: ["TO — indicating the recipient of the memo", "FROM — indicating the sender of the memo", "SUBJECT — indicating the main topic of the memo", "YOURS FAITHFULLY — a complimentary close at the top of the memo"],
+    ans: 3,
+    exp: "'Yours faithfully' is a complimentary close used at the end of formal letters, not in memoranda. Memo headings only include TO, FROM, DATE, and SUBJECT." },
+
+  { q: "In an office, the procedure of 'mail handling' includes which of the following steps performed in the correct sequence?",
+    opts: ["Compose, print, sign, stamp, deliver — for outgoing mail only", "Receive, open, shred, and discard — for all incoming mail without exception", "Sort by colour, seal, weigh, and post — for both incoming and outgoing mail", "Receive, sort, open, record, and distribute — for incoming mail to the right staff"],
+    ans: 3,
+    exp: "The correct incoming mail procedure is: receive, sort, open, date-stamp/record, and distribute to the appropriate departments or individuals." },
+
+  { q: "Which of the following items would be correctly recorded in the petty cash book rather than the main cash book?",
+    opts: ["A salary payment of ₦150,000 transferred to an employee's bank account", "A supplier invoice of ₦500,000 paid by company cheque through the bank", "A loan repayment of ₦200,000 made to a financial institution via transfer", "A ₦1,500 payment for office cleaning materials bought with petty cash"],
+    ans: 3,
+    exp: "Small, routine payments like buying cleaning materials are recorded in the petty cash book. Large transactions go through the main cash book." },
+
+  { q: "Which of the following best describes the purpose of the 'folio' column in a cash book?",
+    opts: ["It records the names of all customers who made payments during the period", "It shows the date on which each transaction was entered into the cash book", "It calculates the running balance after each transaction is recorded", "It contains a reference number linking the cash book entry to the relevant ledger account"],
+    ans: 3,
+    exp: "The folio column contains a cross-reference number that links each cash book entry to the corresponding account in the ledger, aiding audit and verification." },
+
+  { q: "A business sends an email with an attachment of its price list to a customer. Which of the following email etiquette rules is most important to observe?",
+    opts: ["Write the entire email message in capital letters to make it easy to read", "Use only informal language and emoticons to make the customer feel comfortable", "Always use 'Reply All' when responding to ensure all staff receive the message", "Inform the recipient in the email body that an attachment is included and describe what it contains"],
+    ans: 3,
+    exp: "Good email etiquette requires you to mention in the body that an attachment is included and to briefly describe its contents, preventing confusion." },
+
+  { q: "Which of the following is the correct definition of 'speed development' in keyboarding training?",
+    opts: ["Learning to repair and maintain keyboard hardware to reduce downtime in the office", "Practising shorthand writing techniques to record speech faster than normal typing", "Memorising keyboard shortcuts for common software functions to save time", "Gradually increasing typing rate through timed drills while maintaining an acceptable level of accuracy"],
+    ans: 3,
+    exp: "Speed development in keyboarding involves progressively increasing typing speed through timed practice exercises while keeping error rates within an acceptable range." },
+
+  { q: "Which of the following correctly describes the term 'hanging indent' in document formatting?",
+    opts: ["A style where the entire paragraph is indented five spaces from both margins", "A style where the first line of the paragraph is further indented than the rest of the lines", "A style where all lines of a paragraph are aligned to the right margin of the page", "A style where the first line begins at the left margin and all subsequent lines are indented"],
+    ans: 3,
+    exp: "A hanging indent means the first line of a paragraph starts at the left margin while all remaining lines are indented, commonly used in reference lists and bibliographies." },
+
+  { q: "Which of the following office machines is specifically designed to destroy confidential documents to prevent unauthorised access to sensitive information?",
+    opts: ["A binding machine, which fastens multiple pages together using a plastic comb", "A laminator, which protects documents by sealing them in transparent plastic film", "A photocopier, which makes duplicate copies of documents for distribution", "A paper shredder, which cuts documents into small strips or particles for secure disposal"],
+    ans: 3,
+    exp: "A paper shredder is used to destroy confidential documents securely, preventing unauthorised persons from reading sensitive information." }
+
 ]
 },
 jss3: {
@@ -7299,541 +7436,7 @@ sss1: {
 ]
   },
   sss3: {
-    'English Language': [
-    {"q":"Passage: 'The meteoric ascent of artificial intelligence has precipitated a paradigm shift in labour markets, displacing rote cognitive tasks while simultaneously engendering novel vocations that demand advanced metacognitive faculties. Yet this technological cornucopia exacts a toll: widening chasms of inequality as those bereft of requisite digital literacy are inexorably marginalised.' What is the author's primary concern?","opts":["AI will eliminate all human jobs.","Technological progress creates new opportunities but exacerbates social inequality.","AI advancement is slower than anticipated.","Digital literacy is irrelevant in modern economies."],"ans":1,"exp":"The passage acknowledges benefits ('engendering novel vocations') but emphasises the negative consequence of inequality for those lacking skills ('widening chasms... marginalised')."},
-    {"q":"From the same passage, the phrase 'technological cornucopia' is best understood as","opts":["a dangerous overabundance","an abundant supply of benefits","a mythical horn of plenty","a deceptive illusion"],"ans":1,"exp":"'Cornucopia' metaphorically denotes abundance; here it ironically highlights the plentiful technological advances before introducing their social cost."},
-    {"q":"Which inference is most strongly supported by the passage?","opts":["All displaced workers can easily retrain for new roles.","Inequality arises primarily from lack of access to education in digital skills.","Governments have successfully mitigated AI-driven inequality.","AI only affects manual labour."],"ans":1,"exp":"The marginalisation of those 'bereft of requisite digital literacy' directly links inequality to skill gaps."},
-    {"q":"The tone of the passage can best be described as","opts":["unqualified optimism","cautious ambivalence","vehement condemnation","indifferent neutrality"],"ans":1,"exp":"Balanced acknowledgement of positives ('paradigm shift', 'novel vocations') alongside serious concerns ('exacts a toll', 'inexorably marginalised')."},
-    {"q":"In a formal debate on 'Technology widens rather than bridges social divides', which side would the passage most strongly support?","opts":["The proposition (widens)","The opposition (bridges)","Neither","Both equally"],"ans":0,"exp":"The passage explicitly highlights widening inequality as a consequence of technological progress."},
-    {"q":"When listening to a poem read aloud, falling intonation at the end of a line typically signals","opts":["a question","continuation of thought","completion of a syntactic unit","emphasis on the final word"],"ans":2,"exp":"Falling intonation marks declarative closure; rising or level intonation often indicates enjambment or continuation."},
-    {"q":"In oral delivery of poetry, a sudden rise in pitch followed by a pause is most likely used to","opts":["indicate boredom","create suspense or highlight contrast","denote the end of the poem","reduce volume"],"ans":1,"exp":"Pitch variation and strategic pausing build tension, emphasise antithesis, or draw attention to key images."},
-    {"q":"The figure of speech in 'The algorithms devoured human jobs with insatiable appetite' is","opts":["simile","metaphor","personification","hyperbole"],"ans":2,"exp":"Algorithms are given human quality of appetite and action of devouring."},
-    {"q":"'Her voice was a soothing balm on the raw wounds of grief.' This employs","opts":["metaphor","synecdoche","oxymoron","alliteration"],"ans":0,"exp":"Voice directly equated to balm without 'like' or 'as'."},
-    {"q":"Identify the figure: 'The world wide web weaves worldwide worries.'","opts":["pun","antithesis","apostrophe","anaphora"],"ans":0,"exp":"Play on 'web/weaves' and alliterative repetition."},
-    {"q":"The word 'ubiquitous' is closest in meaning to","opts":["rare","omnipresent","obsolete","transient"],"ans":1,"exp":"'Ubiquitous' means present everywhere."},
-    {"q":"'Ephemeral' most nearly means","opts":["eternal","fleeting","substantial","profound"],"ans":1,"exp":"'Ephemeral' denotes short-lived or transitory."},
-    {"q":"In an argumentative essay defending 'Social media does more harm than good', which organisational structure is most effective?","opts":["Chronological","Narrative","Block comparison then refutation","Point-by-point comparison"],"ans":2,"exp":"Present harms comprehensively, then systematically refute counterarguments for persuasive impact."},
-    {"q":"A narrative essay on 'A life-changing encounter' should prioritise","opts":["statistical evidence","chronological sequencing with sensory detail and reflection","formal register throughout","impersonal third-person narration"],"ans":1,"exp":"Narrative relies on vivid sequencing, sensory immersion, and introspective insight."},
-    {"q":"Which punctuation is incorrect: 'The minister said; “We must prioritise education, healthcare and infrastructure.”'","opts":["The semicolon after 'said'","The comma after 'education'","The comma after 'healthcare'","No error"],"ans":0,"exp":"Direct speech after reporting verb uses colon, not semicolon."},
-    {"q":"Choose the correct pronoun: 'Neither the director nor the actors knew _____ lines.'","opts":["their","his","her","his or her"],"ans":0,"exp":"When subjects joined by 'neither...nor' are plural or mixed, pronoun agrees with nearer; here 'actors' plural → 'their'."},
-    {"q":"The sentence 'Being a rainy day, we stayed indoors' is an example of","opts":["dangling modifier","correct participle phrase","fused sentence","comma splice"],"ans":0,"exp":"The participle 'being' illogically modifies 'we' instead of 'day' or 'it'."},
-    {"q":"The word 'ameliorate' belongs to which class?","opts":["noun","adjective","adverb","verb"],"ans":3,"exp":"'Ameliorate' means to improve (verb)."},
-    {"q":"Which pair shows antonyms?","opts":["mitigate – exacerbate","complacent – vigilant","ephemeral – transient","ubiquitous – rare"],"ans":3,"exp":"'Ubiquitous' and 'rare' are direct opposites."},
-    {"q":"Paraphrase concisely: 'In the contemporary socio-political landscape, the proliferation of disinformation via digital platforms has precipitated an erosion of public trust in institutional narratives.'","opts":["Fake news on social media has reduced trust in authorities.","Modern politics is full of lies.","Digital platforms spread truth quickly.","People now trust institutions more."],"ans":0,"exp":"Captures proliferation of disinformation, digital medium, and erosion of trust without excess verbiage."},
-    {"q":"Which is the most effective summary of a 300-word passage arguing that remote work enhances productivity but risks employee isolation?","opts":["Remote work is always better.","Remote work boosts productivity yet may increase isolation.","Employees prefer office work.","Companies should ban remote work."],"ans":1,"exp":"Balanced summary preserves both benefit and drawback."},
-    {"q":"In a formal letter of application for employment, the appropriate salutation when the recipient's name is unknown is","opts":["Dear Mr.","Dear Sir/Madam","To Whom It May Concern","Hello HR Manager"],"ans":1,"exp":"'Dear Sir/Madam' is standard formal address for unknown recipient in British/Nigerian English."},
-    {"q":"The complimentary close for a formal letter is","opts":["Yours lovingly","Best wishes","Yours faithfully","Cheers"],"ans":2,"exp":"'Yours faithfully' used with 'Dear Sir/Madam'; 'Yours sincerely' with named recipient."},
-    {"q":"In an informal letter to a friend describing a recent trip, which opening is most appropriate?","opts":["Dear Sir","My dear friend","How are you? I hope this letter finds you well.","Hi John, Guess what!"],"ans":3,"exp":"Informal letters use casual, friendly greetings."},
-    {"q":"Stress the word 'record' in 'Please record the minutes' (verb) versus 'Keep a record of attendance' (noun). The stress pattern is","opts":["RE-cord (verb) vs re-CORD (noun)","re-CORD (verb) vs RE-cord (noun)","Both stressed on first syllable","Both stressed on second syllable"],"ans":0,"exp":"Verb stress on second syllable; noun on first."},
-    {"q":"The word 'photograph' as noun has stress on","opts":["first syllable","second syllable","third syllable","equal stress"],"ans":0,"exp":"PHO-to-graph (noun); pho-TOG-raph-er (noun); pho-to-GRAPH (verb)."},
-    {"q":"In the sentence 'I didn't see the film', contrastive stress on 'didn't' implies","opts":["someone else saw it","I saw it but didn't enjoy it","I intended to see it but couldn't","denial of the accusation of not seeing it"],"ans":3,"exp":"Contrastive stress refutes a presumed claim."},
-    {"q":"The underlined syllable in 'international' receives primary stress on","opts":["in-","-ter-","-na-","-tion-"],"ans":1,"exp":"in-ter-NA-tion-al."},
-    {"q":"Passage: 'Quantum entanglement, once dismissed as “spooky action at a distance”, now underpins technologies from secure communication to quantum computing. Yet its philosophical implications—challenging local realism—continue to unsettle foundational assumptions about the universe.' What does 'local realism' most likely refer to?","opts":["Belief that objects have definite properties independent of measurement and influences are local.","Quantum particles are realistic only locally.","Technology is limited to local applications.","Einstein preferred classical realism."],"ans":0,"exp":"Inferred from context: entanglement violates the idea that properties exist independently and effects are limited to speed of light."},
-    {"q":"The rhetorical device dominant in 'We shall fight on the beaches, we shall fight on the landing grounds, we shall fight...' is","opts":["anaphora","epistrophe","metaphor","irony"],"ans":0,"exp":"Repetition at the beginning of successive clauses."},
-    {"q":"'The pen is mightier than the sword' is an example of","opts":["paradox","antithesis","metonymy","synecdoche"],"ans":1,"exp":"Juxtaposition of opposing ideas (writing vs violence) for emphasis."},
-    {"q":"In formal speech writing, the most effective way to engage the audience initially is through","opts":["a lengthy historical background","a rhetorical question or startling statistic","complex vocabulary","immediate presentation of all arguments"],"ans":1,"exp":"Hooks attention and establishes relevance."},
-    {"q":"Correct the sentence: 'The team comprises of five players, whom are all talented.'","opts":["comprises five players, who are","comprises of five players who are","consists five talented players who are","comprises of five players, whom are"],"ans":0,"exp":"'Comprises' does not take 'of'; relative pronoun 'who' for people."},
-    {"q":"The term for words like 'however', 'therefore', 'moreover' is","opts":["conjunctions","adverbs","prepositions","discourse markers"],"ans":3,"exp":"They signal relationships between ideas in discourse."},
-    {"q":"Which is the most precise synonym for 'intransigent'?","opts":["flexible","uncompromising","temporary","superficial"],"ans":1,"exp":"'Intransigent' means stubbornly unwilling to compromise."},
-    {"q":"In a formal complaint letter about poor service, the tone should be","opts":["aggressive and accusatory","polite but firm","casual and friendly","emotional and pleading"],"ans":1,"exp":"Maintains professionalism while clearly stating grievance."},
-    {"q":"Rising intonation is typically used in","opts":["statements","yes/no questions","wh-questions","commands"],"ans":1,"exp":"Yes/no questions rise at the end; wh-questions usually fall."}
-],
-'Mathematics': [
-  {
-    q: "If all Zigs are Zags and some Zags are Zogs, which of the following must be true?",
-    opts: ["All Zigs are Zogs", "Some Zigs are Zogs", "No Zigs are Zogs", "None of these must be true"],
-    ans: 3,
-    exp: "The statements confirm that Zigs are a subset of Zags and some Zags are Zogs, but Zigs could be entirely in the non-Zog part of Zags. No conclusion about Zigs and Zogs is necessary."
-  },
-  {
-    q: "In a group of 50 students, 30 like Mathematics and 25 like English. If 10 like both, how many like neither?",
-    opts: ["5", "10", "15", "20"],
-    ans: 0,
-    exp: "Students liking at least one subject = 30 + 25 - 10 = 45. Students liking neither = 50 - 45 = 5."
-  },
-  {
-    q: "If x is an integer and 3 < 2x < 10, how many possible values are there for x?",
-    opts: ["3", "4", "5", "6"],
-    ans: 0,
-    exp: "Divide by 2: 1.5 < x < 5. Integer values: x = 2, 3, 4 → 3 values."
-  },
-  {
-    q: "A bar chart shows sales of products A, B, C, D as 20, 30, 25, 15 units respectively. Which product sold the most?",
-    opts: ["A", "B", "C", "D"],
-    ans: 1,
-    exp: "Product B has the highest sales at 30 units."
-  },
-  {
-    q: "In a pie chart, expenses are: rent 40%, food 30%, transport 20%, others 10%. What percentage is spent on food and transport combined?",
-    opts: ["40%", "50%", "60%", "70%"],
-    ans: 1,
-    exp: "Food + transport = 30% + 20% = 50%."
-  },
-  {
-    q: "A line graph shows temperatures over 5 days: 25°C, 28°C, 26°C, 30°C, 27°C. On which day was the temperature highest?",
-    opts: ["Day 1", "Day 2", "Day 3", "Day 4", "Day 5"],
-    ans: 3,
-    exp: "The highest temperature is 30°C on day 4."
-  },
-  {
-    q: "Solve the inequality 2x + 5 > 13.",
-    opts: ["x > 4", "x ≥ 4", "x > 9", "x ≥ 9"],
-    ans: 0,
-    exp: "2x > 8 → x > 4."
-  },
-  {
-    q: "Solve 3(x - 2) ≤ 12.",
-    opts: ["x ≤ 6", "x ≥ 6", "x ≤ 2", "x ≥ 2"],
-    ans: 0,
-    exp: "3x - 6 ≤ 12 → 3x ≤ 18 → x ≤ 6."
-  },
-  {
-    q: "Solve the simultaneous inequalities: x + y ≥ 5 and x - y ≤ 3.",
-    opts: ["Many solutions exist", "No solution", "Only one solution", "x = 4, y = 1 only"],
-    ans: 0,
-    exp: "These inequalities define a region in the coordinate plane with infinitely many solutions."
-  },
-  {
-    q: "Simplify (x² - 9)/(x - 3).",
-    opts: ["x + 3", "x - 3", "x² + 3", "x² - 3"],
-    ans: 0,
-    exp: "Factor numerator: (x - 3)(x + 3)/(x - 3) = x + 3 (provided x ≠ 3)."
-  },
-  {
-    q: "Simplify (2x + 4)/(x² - 4).",
-    opts: ["2/(x - 2)", "2/(x + 2)", "2/(x² - 4)", "Cannot simplify"],
-    ans: 0,
-    exp: "Factor: 2(x + 2)/[(x - 2)(x + 2)] = 2/(x - 2) (provided x ≠ -2)."
-  },
-  {
-    q: "Multiply (x + 1)/(x - 2) × (x² - 4)/(x + 3).",
-    opts: ["(x + 2)/(x + 3)", "(x - 2)/(x + 3)", "(x + 1)(x + 2)/(x + 3)", "(x + 1)(x - 2)/(x + 3)"],
-    ans: 2,
-    exp: "x² - 4 = (x - 2)(x + 2). Numerator: (x + 1)(x - 2)(x + 2). Denominator: (x - 2)(x + 3). Cancel (x - 2): (x + 1)(x + 2)/(x + 3)."
-  },
-  {
-    q: "In a circle with centre O, chord AB is perpendicular to radius OC where C is on AB. Then:",
-    opts: ["AC = AB", "AC = BC", "AC = OB", "Cannot determine"],
-    ans: 1,
-    exp: "The perpendicular from the centre to a chord bisects the chord → AC = BC."
-  },
-  {
-    q: "The angle subtended by an arc at the centre is:",
-    opts: ["equal to the angle at the same point", "twice the angle at the circumference", "half the angle at the diameter", "equal to the angle at the tangent"],
-    ans: 1,
-    exp: "Circle theorem: angle at the centre is twice the angle at the circumference for the same arc."
-  },
-  {
-    q: "If a tangent and a chord are drawn from an external point, then:",
-    opts: ["they are equal in length", "they are perpendicular", "the angle between them equals the angle in the alternate segment", "they are parallel"],
-    ans: 2,
-    exp: "Alternate segment theorem."
-  },
-  {
-    q: "In triangle ABC inscribed in a circle, if angle B = 90°, then:",
-    opts: ["AC is the diameter", "AB is the diameter", "BC is the diameter", "The centre is at B"],
-    ans: 0,
-    exp: "Angle in a semicircle is 90° → the hypotenuse AC is the diameter."
-  },
-  {
-    q: "Two chords AB and CD intersect at P inside the circle. Then:",
-    opts: ["AP × PB = CP × PD", "AP + PB = CP + PD", "AP = CP", "Vertical angles are equal only"],
-    ans: 0,
-    exp: "Intersecting chords theorem: products of segment lengths are equal."
-  },
-  {
-    q: "The radius of a circle is 5 cm. A chord is 8 cm long. Find the distance from the centre to the chord.",
-    opts: ["3 cm", "4 cm", "5 cm", "6 cm"],
-    ans: 0,
-    exp: "Half chord = 4 cm. Distance d = √(r² - 4²) = √(25 - 16) = √9 = 3 cm."
-  },
-  {
-    q: "Angle in a semicircle is:",
-    opts: ["90°", "180°", "60°", "45°"],
-    ans: 0,
-    exp: "Theorem: the angle subtended by a diameter at the circumference is 90°."
-  },
-  {
-    q: "Solve 5 - 2x ≥ 11.",
-    opts: ["x ≤ -3", "x ≥ -3", "x ≤ 3", "x ≥ 3"],
-    ans: 0,
-    exp: "Subtract 5: -2x ≥ 6. Divide by -2 (reverse inequality): x ≤ -3."
-  },
-  {
-    q: "In a pie chart, a sector of 72° represents transport. What fraction of the total is transport?",
-    opts: ["1/5", "1/4", "1/3", "2/5"],
-    ans: 0,
-    exp: "Fraction = 72° / 360° = 1/5."
-  },
-  {
-    q: "If cos θ = 5/13 and θ is acute, find tan θ.",
-    opts: ["12/5", "5/12", "13/12", "12/13"],
-    ans: 0,
-    exp: "sin θ = √(1 - (5/13)²) = √(144/169) = 12/13 → tan θ = (12/13) / (5/13) = 12/5."
-  },
-  {
-    q: "Intersecting chords AB and CD meet at P. If AP = 4 cm, PB = 6 cm, CP = 3 cm, find PD.",
-    opts: ["6 cm", "8 cm", "9 cm", "12 cm"],
-    ans: 1,
-    exp: "AP × PB = CP × PD → 4 × 6 = 3 × PD → 24 = 3PD → PD = 8 cm."
-  },
-  {
-    q: "Simplify (a² - b²)/(a - b) + (a + b).",
-    opts: ["2a", "a + b", "2(a + b)", "a - b"],
-    ans: 2,
-    exp: "(a² - b²)/(a - b) = a + b → (a + b) + (a + b) = 2(a + b)."
-  },
-  {
-    q: "A graph shows profit increasing linearly from $1000 in month 1 to $4000 in month 4. What is the profit in month 3?",
-    opts: ["$2500", "$3000", "$3500", "$4000"],
-    ans: 1,
-    exp: "Increase of $3000 over 3 months → $1000 per month. Month 3: $1000 + 2 × $1000 = $3000."
-  },
-  {
-    q: "Solve |x - 3| ≤ 4.",
-    opts: ["-1 ≤ x ≤ 7", "1 ≤ x ≤ 7", "-7 ≤ x ≤ 1", "x ≤ 7"],
-    ans: 0,
-    exp: "-4 ≤ x - 3 ≤ 4 → add 3: -1 ≤ x ≤ 7."
-  },
-  {
-    q: "How many integer solutions are there for x in -5 < x ≤ 3?",
-    opts: ["7", "8", "9", "10"],
-    ans: 1,
-    exp: "x = -4, -3, -2, -1, 0, 1, 2, 3 → 8 values."
-  },
-  {
-    q: "If a tangent is drawn at point P on a circle, the radius OP is:",
-    opts: ["parallel to the tangent", "perpendicular to the tangent", "equal in length to the tangent", "at 45° to the tangent"],
-    ans: 1,
-    exp: "The radius to the point of contact is always perpendicular to the tangent."
-  }
-],
-'Physics': [
-  { 
-    q: "Newton’s law of universal gravitation states that gravitational force varies inversely with the square of the distance between two masses. What follows if the distance between the masses is doubled?", 
-    opts: ["The force becomes four times greater", "The force becomes half as great", "The force reduces to one-quarter of its original value", "The force remains unchanged"], 
-    ans: 2, 
-    exp: "Since force ∝ 1/r², doubling the distance gives (1/2)² = 1/4 of the original force." 
-  },
-  { 
-    q: "Neglecting air resistance, which statement correctly describes the acceleration of a body in free fall near the Earth’s surface?", 
-    opts: ["It depends on the mass of the object", "It increases uniformly with time", "It is zero throughout the motion", "It is approximately constant at 9.8 m/s² downward"], 
-    ans: 3, 
-    exp: "In free fall, all bodies experience the same constant gravitational acceleration regardless of mass." 
-  },
-  { 
-    q: "A projectile is thrown vertically upward with a kinetic energy of 50 J. At its highest point, how is its mechanical energy distributed?", 
-    opts: ["Kinetic energy is 50 J; potential energy is 0 J", "Kinetic energy is 25 J; potential energy is 25 J", "Kinetic energy is 0 J; potential energy is 50 J", "Both kinetic and potential energies are zero"], 
-    ans: 2, 
-    exp: "At maximum height, velocity is zero, so all initial kinetic energy is converted into gravitational potential energy." 
-  },
-  { 
-    q: "A 2 kg mass falls freely from a height of 10 m (g = 10 m/s²). What can be inferred about its energy just before impact?", 
-    opts: ["Potential energy is 200 J and kinetic energy is 0 J", "Potential energy is 200 J and kinetic energy is 200 J", "Potential energy is 0 J and kinetic energy is 0 J", "Potential energy is 0 J and kinetic energy is 200 J"], 
-    ans: 3, 
-    exp: "Initial potential energy mgh = 200 J converts entirely to kinetic energy just before impact." 
-  },
-  { 
-    q: "Pascal’s principle underlies the operation of which of the following systems?", 
-    opts: ["Mercury barometer", "Hydraulic lift", "Clinical thermometer", "U-tube manometer"], 
-    ans: 1, 
-    exp: "Hydraulic systems rely on the uniform transmission of pressure through an enclosed fluid." 
-  },
-  { 
-    q: "Ignoring atmospheric pressure, how does hydrostatic pressure change if the depth of a liquid column is tripled?", 
-    opts: ["It remains constant", "It doubles", "It triples", "It increases ninefold"], 
-    ans: 2, 
-    exp: "Hydrostatic pressure is directly proportional to depth, so tripling depth triples the pressure." 
-  },
-  { 
-    q: "In a mass-spring system undergoing simple harmonic motion, the mass is increased fourfold. What is the resulting effect on the period?", 
-    opts: ["It is reduced by half", "It doubles", "It remains unchanged", "It becomes four times larger"], 
-    ans: 1, 
-    exp: "The period depends on the square root of mass, so quadrupling the mass doubles the period." 
-  },
-  { 
-    q: "A simple pendulum is transferred from Earth to the Moon, where gravitational acceleration is approximately one-sixth that of Earth. What happens to its time period?", 
-    opts: ["It decreases by a factor of six", "It increases by a factor of √6", "It remains unchanged", "It decreases by a factor of √6"], 
-    ans: 1, 
-    exp: "Since T ∝ 1/√g, reducing g to one-sixth increases the period by √6." 
-  },
-  { 
-    q: "Sound waves propagating through air are best classified as:", 
-    opts: ["Transverse waves", "Electromagnetic waves", "Longitudinal waves", "Surface waves"], 
-    ans: 2, 
-    exp: "Sound travels through successive compressions and rarefactions, characteristic of longitudinal waves." 
-  },
-  { 
-    q: "If the frequency of a wave is doubled while its speed remains constant, what change occurs in its wavelength?", 
-    opts: ["It doubles", "It quadruples", "It remains constant", "It is reduced to half"], 
-    ans: 3, 
-    exp: "From v = fλ, wavelength is inversely proportional to frequency when speed is constant." 
-  },
-  { 
-    q: "A substance requires 4200 J of heat to raise the temperature of 1 kg by 1°C. What does this indicate?", 
-    opts: ["Its latent heat of fusion", "Its thermal conductivity", "Its specific heat capacity is 4200 J/kg°C", "Its heat capacity is 4200 J"], 
-    ans: 2, 
-    exp: "Specific heat capacity is defined as the heat required per kilogram per degree Celsius." 
-  },
-  { 
-    q: "During the melting of a solid at its melting point, what happens to its temperature?", 
-    opts: ["It increases steadily", "It decreases gradually", "It remains constant", "It fluctuates unpredictably"], 
-    ans: 2, 
-    exp: "Energy supplied during melting is used to overcome intermolecular forces, not to raise temperature." 
-  },
-  { 
-    q: "Which statement best explains why artificial satellites remain in stable orbits around the Earth?", 
-    opts: ["Their weight is zero in space", "They continuously fall toward Earth while moving forward", "There is no gravitational force acting on them", "Their speed exactly cancels gravitational attraction"], 
-    ans: 1, 
-    exp: "Orbital motion is a result of continuous free fall combined with sufficient tangential velocity." 
-  },
-  { 
-    q: "A body moves with uniform circular motion. Which physical quantity continuously changes even if speed remains constant?", 
-    opts: ["Mass", "Speed", "Velocity", "Kinetic energy"], 
-    ans: 2, 
-    exp: "Velocity changes because its direction changes continuously in circular motion." 
-  },
-  { 
-    q: "What is the primary cause of centripetal acceleration in circular motion?", 
-    opts: ["Tangential force", "Inertia of the body", "Force directed toward the center", "Gravitational attraction only"], 
-    ans: 2, 
-    exp: "Centripetal acceleration arises from a net force acting toward the center of the circular path." 
-  },
-  { 
-    q: "Two resistors are connected in parallel. Compared with a single resistor, the equivalent resistance is:", 
-    opts: ["Greater", "Equal", "Less", "Zero"], 
-    ans: 2, 
-    exp: "Parallel connections provide multiple current paths, reducing total resistance." 
-  },
-  { 
-    q: "Which condition must be satisfied for mechanical equilibrium?", 
-    opts: ["Net force is zero only", "Net torque is zero only", "Both net force and net torque are zero", "Acceleration must be constant"], 
-    ans: 2, 
-    exp: "Equilibrium requires both translational and rotational balance." 
-  },
-  { 
-    q: "A force produces rotation about a pivot. Which factor does NOT affect the turning effect?", 
-    opts: ["Magnitude of force", "Perpendicular distance from pivot", "Direction of force", "Mass of the object"], 
-    ans: 3, 
-    exp: "Moment of force depends on force and distance, not directly on mass." 
-  },
-  { 
-    q: "Which graph correctly represents the motion of an object with constant acceleration?", 
-    opts: ["Velocity-time graph is a straight line", "Distance-time graph is a straight line", "Acceleration-time graph is curved", "Speed-time graph is horizontal"], 
-    ans: 0, 
-    exp: "Constant acceleration produces a linear velocity-time relationship." 
-  },
-  { 
-    q: "An electric current flows when:", 
-    opts: ["Electrons move randomly", "Charges move uniformly in one direction", "Potential difference is zero", "Resistance is infinite"], 
-    ans: 1, 
-    exp: "Current is defined as the ordered flow of electric charge." 
-  },
-  { 
-    q: "Which statement best distinguishes heat from temperature?", 
-    opts: ["Heat measures average kinetic energy", "Temperature depends on mass", "Heat is energy in transit due to temperature difference", "Temperature is measured in joules"], 
-    ans: 2, 
-    exp: "Heat is energy transfer, while temperature measures average molecular kinetic energy." 
-  },
-  { 
-    q: "Why does a steel ship float on water despite steel being denser than water?", 
-    opts: ["Steel repels water molecules", "The ship contains air, reducing average density", "Water exerts no downward force", "Steel loses mass in water"], 
-    ans: 1, 
-    exp: "Floating depends on average density, not material density alone." 
-  },
-  { 
-    q: "Which phenomenon provides direct evidence for the wave nature of light?", 
-    opts: ["Photoelectric effect", "Diffraction", "Reflection", "Refraction"], 
-    ans: 1, 
-    exp: "Diffraction is uniquely associated with wave behavior." 
-  },
-  { 
-    q: "In a vacuum, electromagnetic waves travel at:", 
-    opts: ["A speed dependent on frequency", "A speed dependent on wavelength", "A constant speed independent of frequency", "Zero speed"], 
-    ans: 2, 
-    exp: "All electromagnetic waves propagate at the speed of light in vacuum." 
-  },
-  { 
-    q: "Which change increases the capacitance of a parallel-plate capacitor?", 
-    opts: ["Increasing plate separation", "Reducing plate area", "Introducing a dielectric material", "Removing the plates"], 
-    ans: 2, 
-    exp: "A dielectric increases the ability of the capacitor to store charge." 
-  },
-  { 
-    q: "Ohm’s law applies strictly to materials that:", 
-    opts: ["Conduct electricity", "Have constant resistance at constant temperature", "Are metallic", "Carry alternating current only"], 
-    ans: 1, 
-    exp: "Ohmic materials show a linear V–I relationship under constant physical conditions." 
-  },
-  { 
-    q: "Why is alternating current preferred for long-distance power transmission?", 
-    opts: ["It produces less heat", "It can be easily transformed to high voltages", "It flows faster than direct current", "It requires thicker cables"], 
-    ans: 1, 
-    exp: "High voltages reduce power losses, and AC can be efficiently transformed." 
-  },
-  { 
-    q: "A body immersed fully in a liquid experiences an upthrust equal to:", 
-    opts: ["Its weight", "The volume of the liquid", "The weight of displaced liquid", "The pressure at the bottom"], 
-    ans: 2, 
-    exp: "This is a direct statement of Archimedes’ principle." 
-  },
-  { 
-    q: "Which factor does NOT affect the resistance of a conductor?", 
-    opts: ["Length", "Cross-sectional area", "Material", "Applied voltage"], 
-    ans: 3, 
-    exp: "Resistance depends on physical properties, not on applied voltage." 
-  },
-  { 
-    q: "The energy stored in a stretched spring depends on:", 
-    opts: ["Extension only", "Force only", "Extension squared", "Mass of the spring"], 
-    ans: 2, 
-    exp: "Elastic potential energy is proportional to the square of the extension." 
-  },
-  { 
-    q: "Which principle explains why a jet engine produces thrust?", 
-    opts: ["Bernoulli’s principle", "Conservation of momentum", "Pascal’s principle", "Archimedes’ principle"], 
-    ans: 1, 
-    exp: "Thrust results from momentum change of expelled gases." 
-  },
-  { 
-    q: "What happens to the internal energy of an ideal gas when its temperature increases?", 
-    opts: ["It decreases", "It remains constant", "It increases", "It fluctuates randomly"], 
-    ans: 2, 
-    exp: "Internal energy of an ideal gas depends directly on temperature." 
-  },
-  { 
-    q: "Which observation supports the particle theory of matter?", 
-    opts: ["Reflection of light", "Brownian motion", "Diffraction patterns", "Sound echoes"], 
-    ans: 1, 
-    exp: "Brownian motion reveals random motion of particles due to molecular collisions." 
-  },
-  { 
-    q: "Why does pressure decrease with increasing altitude?", 
-    opts: ["Temperature increases", "Air density decreases", "Gravity disappears", "Wind speed increases"], 
-    ans: 1, 
-    exp: "Fewer air molecules above means less weight of air pressing downward." 
-  },
-  { 
-    q: "Which factor determines the pitch of a sound?", 
-    opts: ["Amplitude", "Speed", "Frequency", "Intensity"], 
-    ans: 2, 
-    exp: "Pitch is a perception directly related to frequency." 
-  },
-  { 
-    q: "Which statement correctly describes induced electromotive force?", 
-    opts: ["It occurs only in conductors at rest", "It depends on changing magnetic flux", "It is independent of time", "It requires permanent magnets only"], 
-    ans: 1, 
-    exp: "Faraday’s law links induced EMF to changing magnetic flux." 
-  },
-  { 
-    q: "Why does a moving conductor in a magnetic field experience an induced current?", 
-    opts: ["Due to electric attraction", "Due to gravitational effects", "Because charges cut magnetic field lines", "Because resistance disappears"], 
-    ans: 2, 
-    exp: "Motion through a magnetic field causes charge separation and EMF generation." 
-  },
-  { 
-    q: "Which condition is necessary for resonance to occur?", 
-    opts: ["Large damping", "Different natural frequencies", "Equal driving and natural frequencies", "Zero amplitude"], 
-    ans: 2, 
-    exp: "Resonance occurs when driving frequency matches natural frequency." 
-  },
-  { 
-    q: "Which statement best explains why real gases deviate from ideal gas behavior at high pressures?", 
-    opts: ["Molecules move faster", "Intermolecular forces and molecular volumes become significant", "Temperature becomes constant", "Gas particles lose kinetic energy"], 
-    ans: 1, 
-    exp: "At high pressures, the assumptions of negligible molecular volume and forces no longer hold." 
-  },
-  { 
-    q: "What is the primary reason terminal velocity is eventually reached by a falling object in a fluid?", 
-    opts: ["Gravitational force disappears", "Upthrust exceeds weight", "Air resistance equals gravitational force", "Mass of the object decreases"], 
-    ans: 2, 
-    exp: "Terminal velocity occurs when resistive force balances weight, producing zero net force." 
-  }
-],
-'Chemistry': [
-  { q: "Which atmospheric component contributes most significantly to acid rain formation?", opts: ["Carbon monoxide", "Sulphur dioxide", "Nitrogen gas", "Methane"], ans: 1, exp: "Sulphur dioxide oxidizes in the atmosphere to form sulphuric acid, a major component of acid rain." },
-  { q: "Photochemical smog is most commonly associated with high concentrations of:", opts: ["Sulphur dioxide", "Carbon dioxide", "Nitrogen oxides and hydrocarbons", "Ozone alone"], ans: 2, exp: "Photochemical smog forms from nitrogen oxides and hydrocarbons reacting under sunlight." },
-  { q: "Which effect of air pollution directly interferes with photosynthesis?", opts: ["Global warming", "Acid rain", "Ozone depletion", "Thermal inversion"], ans: 1, exp: "Acid rain damages leaf tissues and reduces chlorophyll efficiency." },
-  { q: "The gas primarily responsible for ozone layer depletion is:", opts: ["Sulphur dioxide", "Carbon monoxide", "Chlorofluorocarbons", "Nitrogen"], ans: 2, exp: "CFCs release chlorine radicals that catalytically destroy ozone molecules." },
-  { q: "Which pollutant is most associated with incomplete combustion of fuels?", opts: ["Carbon dioxide", "Carbon monoxide", "Sulphur trioxide", "Nitric acid vapor"], ans: 1, exp: "Incomplete combustion produces carbon monoxide due to insufficient oxygen." },
-  { q: "Hydrogen is classified as a non-metal primarily because it:", opts: ["Is gaseous at room temperature", "Forms covalent compounds", "Has a single electron in its outer shell", "Is the lightest element"], ans: 2, exp: "Its single valence electron determines its chemical behavior and classification." },
-  { q: "Which property of hydrogen makes it suitable for use in oxy-hydrogen flames?", opts: ["High density", "Low ignition temperature", "High calorific value", "Inertness"], ans: 2, exp: "Hydrogen releases large amounts of energy upon combustion." },
-  { q: "The reaction between hydrogen and chlorine occurs:", opts: ["Only in darkness", "Only in the presence of a catalyst", "Explosively in sunlight", "Only at high pressure"], ans: 2, exp: "Ultraviolet light initiates a chain reaction between hydrogen and chlorine." },
-  { q: "Which compound demonstrates hydrogen’s reducing ability most clearly?", opts: ["Hydrogen peroxide", "Ammonia", "Water", "Metal oxides reduced by hydrogen"], ans: 3, exp: "Hydrogen reduces metal oxides to metals while being oxidized to water." },
-  { q: "Why is hydrogen not commonly used as a domestic fuel despite its abundance?", opts: ["It is toxic", "It is difficult to liquefy", "It burns incompletely", "It forms acidic products"], ans: 1, exp: "Hydrogen has very low density, making storage and liquefaction challenging." },
-  { q: "Oxygen can be prepared in the laboratory by heating:", opts: ["Sodium chloride", "Potassium chlorate with manganese dioxide", "Calcium carbonate", "Ammonium chloride"], ans: 1, exp: "Potassium chlorate decomposes to release oxygen when heated with a catalyst." },
-  { q: "Which property of oxygen supports combustion but does not itself burn?", opts: ["Oxidizing ability", "High density", "Neutrality", "Solubility in water"], ans: 0, exp: "Oxygen acts as an oxidizing agent, enabling other substances to burn." },
-  { q: "The role of oxygen in respiration is to:", opts: ["Supply energy directly", "Oxidize glucose to release energy", "Cool body tissues", "Neutralize acids"], ans: 1, exp: "Oxygen enables oxidative breakdown of glucose during cellular respiration." },
-  { q: "Which allotrope of oxygen is most reactive?", opts: ["Diatomic oxygen", "Liquid oxygen", "Ozone", "Compressed oxygen"], ans: 2, exp: "Ozone is a powerful oxidizing agent due to its unstable structure." },
-  { q: "Industrial production of oxygen commonly uses:", opts: ["Electrolysis of water", "Fractional distillation of liquid air", "Thermal decomposition of nitrates", "Chemical oxidation"], ans: 1, exp: "Fractional distillation efficiently separates oxygen from liquefied air." },
-  { q: "Which halogen is liquid at room temperature?", opts: ["Chlorine", "Fluorine", "Bromine", "Iodine"], ans: 2, exp: "Bromine exists as a reddish-brown liquid under standard conditions." },
-  { q: "Reactivity of halogens generally:", opts: ["Increases down the group", "Decreases down the group", "Remains constant", "Varies randomly"], ans: 1, exp: "Atomic size increases down the group, reducing ability to gain electrons." },
-  { q: "Which halogen can displace all others from their salts?", opts: ["Chlorine", "Bromine", "Iodine", "Fluorine"], ans: 3, exp: "Fluorine is the most reactive halogen." },
-  { q: "The bleaching action of chlorine is due to:", opts: ["Reduction", "Hydrolysis", "Oxidation", "Neutralization"], ans: 2, exp: "Chlorine oxidizes colored substances, destroying chromophores." },
-  { q: "Hydrogen halides dissolve in water to form:", opts: ["Salts", "Weak bases", "Acids", "Neutral solutions"], ans: 2, exp: "Hydrogen halides ionize in water to produce acidic solutions." },
-  { q: "Nitrogen is relatively unreactive at room temperature because:", opts: ["It has low atomic mass", "It is a noble gas", "Of the strong triple bond", "It lacks valence electrons"], ans: 2, exp: "The strong N≡N bond requires high energy to break." },
-  { q: "Which process is used industrially to produce ammonia?", opts: ["Contact process", "Haber process", "Ostwald process", "Solvay process"], ans: 1, exp: "The Haber process synthesizes ammonia from nitrogen and hydrogen." },
-  { q: "Ammonia exhibits basic properties because it:", opts: ["Donates electrons", "Accepts protons", "Produces hydroxide ions in water", "Releases hydrogen gas"], ans: 2, exp: "Ammonia reacts with water to form ammonium and hydroxide ions." },
-  { q: "Which nitrogen oxide is a major air pollutant from vehicle exhausts?", opts: ["Nitrous oxide", "Nitric oxide", "Nitrogen dioxide", "Dinitrogen tetroxide"], ans: 2, exp: "Nitrogen dioxide contributes to smog and acid rain." },
-  { q: "The pungent smell of ammonia is due to its:", opts: ["Low solubility", "High volatility", "Strong acidity", "Oxidizing nature"], ans: 1, exp: "Ammonia vaporizes easily and irritates sensory receptors." },
-  { q: "Sulphur exists in nature mainly as:", opts: ["Sulphates", "Sulphides and free sulphur", "Sulphuric acid", "Sulphur dioxide"], ans: 1, exp: "Sulphur commonly occurs in mineral sulphides and elemental form." },
-  { q: "Which compound is produced when sulphur burns in excess oxygen?", opts: ["Sulphur monoxide", "Sulphur dioxide", "Sulphur trioxide", "Sulphuric acid"], ans: 1, exp: "Sulphur burns to form sulphur dioxide under normal conditions." },
-  { q: "Sulphur dioxide acts as a reducing agent because it:", opts: ["Gains electrons", "Loses electrons", "Forms acids", "Is acidic"], ans: 1, exp: "Sulphur dioxide can be oxidized to sulphur trioxide." },
-  { q: "The Contact process is used for the manufacture of:", opts: ["Sulphur", "Sulphur dioxide", "Sulphuric acid", "Sulphates"], ans: 2, exp: "The Contact process produces sulphuric acid industrially." },
-  { q: "Which property makes sulphuric acid useful as a drying agent?", opts: ["Volatility", "High density", "Strong oxidizing ability", "High affinity for water"], ans: 3, exp: "Concentrated sulphuric acid readily absorbs water." },
-  { q: "Which sulphur compound is primarily responsible for acid rain?", opts: ["Hydrogen sulphide", "Sulphur trioxide", "Sulphur dioxide", "Sulphuric acid vapor"], ans: 2, exp: "Sulphur dioxide oxidizes in the atmosphere to form sulphuric acid." },
-  { q: "Hydrogen sulphide can be distinguished from sulphur dioxide because it:", opts: ["Turns litmus red", "Has a rotten egg smell", "Is colorless", "Is acidic"], ans: 1, exp: "Hydrogen sulphide is identifiable by its characteristic odor." },
-  { q: "Which gas is released when dilute hydrochloric acid reacts with zinc?", opts: ["Oxygen", "Chlorine", "Hydrogen", "Nitrogen"], ans: 2, exp: "Zinc reacts with dilute acids to liberate hydrogen gas." },
-  { q: "Why is hydrogen peroxide considered both an oxidizing and a reducing agent?", opts: ["It decomposes easily", "It contains oxygen", "It can either gain or lose oxygen depending on the reaction", "It reacts violently with metals"], ans: 2, exp: "Hydrogen peroxide can donate oxygen in some reactions and accept electrons in others." },
-  { q: "Which method is most suitable for drying ammonia gas?", opts: ["Concentrated sulphuric acid", "Anhydrous calcium chloride", "Quicklime", "Phosphorus pentoxide"], ans: 2, exp: "Quicklime dries ammonia without reacting with it." },
-  { q: "Which oxide of nitrogen is colorless but readily oxidizes to a brown gas in air?", opts: ["Nitrogen dioxide", "Nitrous oxide", "Nitric oxide", "Dinitrogen tetroxide"], ans: 2, exp: "Nitric oxide is colorless and oxidizes in air to nitrogen dioxide." },
-  { q: "Which halogen is extracted commercially by electrolysis of molten salts?", opts: ["Chlorine", "Bromine", "Iodine", "Fluorine"], ans: 3, exp: "Fluorine is too reactive to be obtained by chemical displacement and requires electrolysis." },
-  { q: "The brown fumes observed during the thermal decomposition of lead(II) nitrate are due to:", opts: ["Nitric oxide", "Nitrogen dioxide", "Nitrous oxide", "Ozone"], ans: 1, exp: "Nitrogen dioxide is a brown gas produced during the decomposition." },
-  { q: "Which statement correctly describes sulphur trioxide?", opts: ["It is less acidic than sulphur dioxide", "It reacts readily with water to form sulphuric acid", "It is a reducing agent", "It is insoluble in water"], ans: 1, exp: "Sulphur trioxide reacts vigorously with water to form sulphuric acid." },
-  { q: "Why is nitrogen used in food packaging?", opts: ["It improves flavor", "It reacts with fats", "It prevents oxidation by being relatively inert", "It acts as a preservative"], ans: 2, exp: "Nitrogen displaces oxygen, slowing oxidation and spoilage." }
-],
-'Biology': [
-  { q: "Which structure is primarily responsible for selective reabsorption in the mammalian kidney?", opts: ["Bowman’s capsule", "Loop of Henle", "Proximal convoluted tubule", "Collecting duct"], ans: 2, exp: "Most useful substances such as glucose, amino acids, and ions are selectively reabsorbed in the proximal convoluted tubule." },
-  { q: "The functional unit of the kidney that performs filtration, reabsorption, and secretion is the:", opts: ["Neuron", "Nephron", "Ureter", "Glomerulus"], ans: 1, exp: "The nephron integrates all processes involved in urine formation." },
-  { q: "Which substance is normally present in urine but absent from blood plasma?", opts: ["Glucose", "Urea", "Plasma proteins", "Amino acids"], ans: 1, exp: "Urea is a nitrogenous waste product filtered and excreted in urine." },
-  { q: "Which tissue type is specialized for rapid transmission of electrical impulses?", opts: ["Epithelial tissue", "Connective tissue", "Muscle tissue", "Nervous tissue"], ans: 3, exp: "Nervous tissue conducts electrical signals for coordination and control." },
-  { q: "Cartilage differs from bone mainly because cartilage:", opts: ["Contains blood vessels", "Is softer and more flexible", "Is made of dead cells", "Contains calcium salts"], ans: 1, exp: "Cartilage lacks blood vessels and is flexible compared to rigid bone." },
-  { q: "Which connective tissue binds muscle to bone?", opts: ["Ligament", "Cartilage", "Tendon", "Adipose tissue"], ans: 2, exp: "Tendons attach muscles to bones." },
-  { q: "The axial skeleton includes the:", opts: ["Pelvic girdle", "Limbs", "Vertebral column and skull", "Pectoral girdle"], ans: 2, exp: "The axial skeleton forms the central axis of the body." },
-  { q: "Which bone protects the brain?", opts: ["Femur", "Scapula", "Cranium", "Vertebra"], ans: 2, exp: "The cranium encloses and protects the brain." },
-  { q: "Red bone marrow is mainly involved in:", opts: ["Fat storage", "Movement", "Blood cell formation", "Mineral storage"], ans: 2, exp: "Red marrow produces red blood cells, white blood cells, and platelets." },
-  { q: "Which type of joint allows movement in only one plane, such as the elbow?", opts: ["Ball-and-socket joint", "Pivot joint", "Hinge joint", "Gliding joint"], ans: 2, exp: "Hinge joints permit flexion and extension in one direction." },
-  { q: "The joint between the atlas and axis vertebrae is classified as a:", opts: ["Hinge joint", "Ball-and-socket joint", "Pivot joint", "Gliding joint"], ans: 2, exp: "Pivot joints allow rotational movement, such as head rotation." },
-  { q: "Which structure prevents bone ends from rubbing directly against each other at joints?", opts: ["Ligament", "Synovial fluid", "Tendon", "Periosteum"], ans: 1, exp: "Synovial fluid lubricates joints and reduces friction." },
-  { q: "Chemical digestion of carbohydrates begins in the:", opts: ["Stomach", "Duodenum", "Mouth", "Ileum"], ans: 2, exp: "Salivary amylase begins carbohydrate digestion in the mouth." },
-  { q: "Which organ produces bile, a substance important for fat emulsification?", opts: ["Pancreas", "Gall bladder", "Liver", "Small intestine"], ans: 2, exp: "The liver produces bile, which emulsifies fats." },
-  { q: "The primary function of the large intestine is to:", opts: ["Digest proteins", "Absorb water", "Produce enzymes", "Store bile"], ans: 1, exp: "The large intestine absorbs water and mineral salts." },
-  { q: "Ruminant animals differ from non-ruminants because they:", opts: ["Lack a stomach", "Possess a four-chambered stomach", "Digest cellulose enzymatically", "Feed exclusively on meat"], ans: 1, exp: "Ruminants have specialized stomach chambers for cellulose digestion." },
-  { q: "Which feeding habit is characteristic of animals that scrape surfaces for food?", opts: ["Filter feeding", "Browsing", "Grazing", "Scavenging"], ans: 2, exp: "Grazers feed on grasses and scrape plant surfaces." },
-  { q: "Parasitic organisms typically show which feeding adaptation?", opts: ["Strong jaws", "Hooks or suckers", "Grinding teeth", "Filtering structures"], ans: 1, exp: "Parasites use hooks or suckers to attach to hosts." },
-  { q: "In insects, oxygen is transported directly to tissues by the:", opts: ["Blood", "Tracheal system", "Heart", "Gills"], ans: 1, exp: "Insects use tracheae to deliver oxygen directly to cells." },
-  { q: "Which blood vessel carries oxygenated blood away from the heart?", opts: ["Pulmonary vein", "Vena cava", "Aorta", "Pulmonary artery"], ans: 2, exp: "The aorta distributes oxygenated blood to the body." },
-  { q: "The main function of red blood cells is to:", opts: ["Defend against pathogens", "Transport oxygen", "Produce antibodies", "Clot blood"], ans: 1, exp: "Red blood cells contain hemoglobin for oxygen transport." },
-  { q: "Which component of blood is responsible for clot formation?", opts: ["Plasma", "Platelets", "Red blood cells", "Lymphocytes"], ans: 1, exp: "Platelets initiate blood clotting." },
-  { q: "The right side of the mammalian heart pumps blood to the:", opts: ["Brain", "Lungs", "Body tissues", "Kidneys"], ans: 1, exp: "The right ventricle pumps deoxygenated blood to the lungs." },
-  { q: "Which vessel returns oxygenated blood from the lungs to the heart?", opts: ["Pulmonary artery", "Aorta", "Pulmonary vein", "Vena cava"], ans: 2, exp: "Pulmonary veins carry oxygenated blood to the left atrium." },
-  { q: "Xylem tissue is primarily responsible for transporting:", opts: ["Food substances", "Water and mineral salts", "Hormones", "Oxygen"], ans: 1, exp: "Xylem conducts water and dissolved minerals." },
-  { q: "Which plant tissue transports manufactured food?", opts: ["Xylem", "Cambium", "Phloem", "Cortex"], ans: 2, exp: "Phloem translocates sugars and organic nutrients." },
-  { q: "Transpiration pull contributes to water movement by:", opts: ["Root pressure alone", "Creating tension in xylem vessels", "Osmosis in phloem", "Capillary action only"], ans: 1, exp: "Evaporation at leaves generates tension that pulls water upward." },
-  { q: "Which mechanism explains movement of food in phloem?", opts: ["Root pressure theory", "Diffusion theory", "Mass flow hypothesis", "Transpiration stream"], ans: 2, exp: "The mass flow hypothesis explains phloem translocation." },
-  { q: "The loss of excess water from plant leaves occurs mainly through:", opts: ["Lenticels", "Stomata", "Root hairs", "Cuticle"], ans: 1, exp: "Stomata regulate transpiration." },
-  { q: "Which factor increases the rate of transpiration?", opts: ["High humidity", "Low temperature", "Strong wind", "Darkness"], ans: 2, exp: "Wind removes moist air, increasing transpiration rate." },
-  { q: "Which structure regulates entry and exit of gases in leaves?", opts: ["Guard cells", "Xylem vessels", "Mesophyll", "Phloem sieve tubes"], ans: 0, exp: "Guard cells control the opening and closing of stomata." },
-  { q: "In mammals, lymph differs from blood because lymph:", opts: ["Contains red blood cells", "Lacks plasma proteins", "Contains no white blood cells", "Has no platelets"], ans: 3, exp: "Lymph lacks platelets but contains white blood cells." },
-  { q: "Which system complements the circulatory system by returning tissue fluid to the bloodstream?", opts: ["Respiratory system", "Excretory system", "Lymphatic system", "Nervous system"], ans: 2, exp: "The lymphatic system returns excess tissue fluid to circulation." },
-  { q: "Which digestive enzyme breaks down proteins in the stomach?", opts: ["Amylase", "Pepsin", "Lipase", "Maltase"], ans: 1, exp: "Pepsin digests proteins into peptides in acidic conditions." },
-  { q: "The ileum is structurally adapted for absorption because it has:", opts: ["Thick muscular walls", "Villi and microvilli", "Large lumen", "Numerous glands"], ans: 1, exp: "Villi increase surface area for efficient absorption." },
-  { q: "Which feeding habit is characteristic of organisms that consume dead organic matter?", opts: ["Parasitism", "Herbivory", "Saprophytism", "Carnivory"], ans: 2, exp: "Saprophytes feed on decaying organic material." },
-  { q: "The main advantage of a closed circulatory system is that it:", opts: ["Uses less energy", "Allows faster transport of substances", "Occurs only in mammals", "Prevents blood loss completely"], ans: 1, exp: "Closed systems permit higher pressure and efficient transport." },
-  { q: "Which structural feature of red blood cells maximizes their efficiency in oxygen transport?", opts: ["Presence of a nucleus", "Biconcave shape", "Large size", "Rough surface"], ans: 1, exp: "The biconcave shape increases surface area and reduces diffusion distance for oxygen." },
-  { q: "Why does phloem transport require living cells, unlike xylem transport?", opts: ["Phloem carries water", "Phloem transport depends on metabolic energy", "Xylem vessels are narrower", "Xylem lacks cell walls"], ans: 1, exp: "Phloem translocation involves active loading and unloading that requires energy from living cells." },
-  { q: "Which adaptation best explains the efficiency of the mammalian digestive system compared to simpler organisms?", opts: ["Presence of a single stomach", "Short alimentary canal", "Regional specialization of digestive organs", "Absence of enzymes"], ans: 2, exp: "Specialized regions allow different stages of digestion and absorption to occur efficiently." }
-]
+    'English Language': [ ]
 },
 tutorial: {
         'English Language': [
