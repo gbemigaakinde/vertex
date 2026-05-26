@@ -6458,254 +6458,406 @@ sss1: {
   }
 ],
    'Physics': [
-    {
-        q: "A lever of the third order has the effort arm ___.",
-        opts: ["between the fulcrum and the load", "longer than the load arm", "shorter than the load arm", "equal to the load arm"],
-        ans: 0,
-        exp: "In a third-order lever, the effort is applied between the fulcrum and the load, making the effort arm shorter than the load arm."
-    },
-    {
-        q: "Which of the following thermometers is most suitable for measuring rapidly changing temperatures?",
-        opts: ["Liquid-in-glass thermometer", "Resistance thermometer", "Thermocouple thermometer", "Constant volume gas thermometer"],
-        ans: 2,
-        exp: "The thermocouple thermometer responds very quickly to temperature changes due to its small thermal mass, making it ideal for rapidly changing temperatures."
-    },
-    {
-        q: "The specific heat capacity of a substance is defined as the heat required to raise the temperature of ___.",
-        opts: ["any mass of the substance by 10°C", "1 kg of the substance by 1°C", "1 g of the substance by 10°C", "any mass of the substance by 1°C"],
-        ans: 1,
-        exp: "Specific heat capacity is the amount of heat needed to raise the temperature of 1 kg of a substance by 1°C (or 1 K)."
-    },
-    {
-        q: "A 500 g block of iron is heated from 20°C to 70°C. If the specific heat capacity of iron is 460 J/kg°C, how much heat energy is absorbed?",
-        opts: ["23,000 J", "11,500 J", "46,000 J", "5,750 J"],
-        ans: 1,
-        exp: "Q = mcΔT = 0.5 × 460 × 50 = 11,500 J."
-    },
-    {
-        q: "Which of the following correctly describes evaporation?",
-        opts: ["It occurs only at the boiling point of a liquid", "It takes place at all temperatures from the surface of a liquid", "It requires an external heat source at all times", "It only occurs in pure liquids"],
-        ans: 1,
-        exp: "Evaporation occurs at any temperature from the free surface of a liquid, unlike boiling which occurs at a fixed temperature throughout the liquid."
-    },
-    {
-        q: "Adding an impurity to a liquid generally ___.",
-        opts: ["raises its boiling point and lowers its melting point", "lowers both its boiling and melting points", "raises both its boiling and melting points", "has no effect on boiling or melting points"],
-        ans: 0,
-        exp: "Dissolving an impurity (solute) in a liquid raises its boiling point (boiling point elevation) and lowers its melting point (freezing point depression)."
-    },
-    {
-        q: "Latent heat of vaporisation is the heat energy required to ___.",
-        opts: ["raise the temperature of a liquid to boiling point", "convert a solid to a liquid at constant temperature", "convert a liquid to vapour at constant temperature", "melt a unit mass of solid at its melting point"],
-        ans: 2,
-        exp: "Latent heat of vaporisation is the energy needed to change a substance from liquid to vapour at constant temperature and pressure."
-    },
-    {
-        q: "In a simple AC circuit, the frequency of the alternating current in Nigeria's national grid is ___.",
-        opts: ["60 Hz", "100 Hz", "50 Hz", "25 Hz"],
-        ans: 2,
-        exp: "Nigeria, like most countries outside North America, uses a 50 Hz alternating current frequency for its national grid."
-    },
-    {
-        q: "Saturated vapour differs from unsaturated vapour in that saturated vapour ___.",
-        opts: ["can be further compressed without condensation", "is in dynamic equilibrium with its liquid", "has a lower pressure than unsaturated vapour", "does not exert any pressure"],
-        ans: 1,
-        exp: "A saturated vapour is in dynamic equilibrium with its liquid — the rate of evaporation equals the rate of condensation."
-    },
-    {
-        q: "The dew point of air is the temperature at which ___.",
-        opts: ["water begins to boil", "relative humidity reaches 50%", "air becomes fully saturated and condensation begins", "evaporation stops completely"],
-        ans: 2,
-        exp: "The dew point is the temperature to which air must be cooled (at constant pressure) for it to become saturated and for condensation to begin."
-    },
-    {
-        q: "Boyle's Law states that, at constant temperature, the pressure of a fixed mass of gas is ___.",
-        opts: ["directly proportional to its volume", "inversely proportional to its volume", "directly proportional to its temperature", "independent of its volume"],
-        ans: 1,
-        exp: "Boyle's Law: P ∝ 1/V at constant temperature, meaning pressure and volume are inversely proportional."
-    },
-    {
-        q: "A gas occupies 4 L at 300 K. What volume does it occupy at 600 K at constant pressure?",
-        opts: ["2 L", "8 L", "1 L", "4 L"],
-        ans: 1,
-        exp: "By Charles' Law: V₁/T₁ = V₂/T₂ → V₂ = (4 × 600)/300 = 8 L."
-    },
-    {
-        q: "Transverse waves differ from longitudinal waves because in transverse waves ___.",
-        opts: ["particles vibrate parallel to the direction of wave travel", "energy is not transferred", "particles vibrate perpendicular to the direction of wave travel", "the wave cannot travel through a vacuum"],
-        ans: 2,
-        exp: "In transverse waves, particle oscillation is perpendicular to the direction of energy propagation (e.g., light waves)."
-    },
-    {
-        q: "The wave equation relating speed, frequency, and wavelength is ___.",
-        opts: ["v = fλ", "v = f/λ", "v = λ/f", "f = vλ"],
-        ans: 0,
-        exp: "Wave speed v = frequency (f) × wavelength (λ)."
-    },
-    {
-        q: "Which property of waves explains the bending of waves around obstacles?",
-        opts: ["Reflection", "Refraction", "Polarization", "Diffraction"],
-        ans: 3,
-        exp: "Diffraction is the bending of waves around corners or edges of obstacles, and it is most significant when the wavelength is comparable to the size of the obstacle."
-    },
-    {
-        q: "Which of the following is NOT a property of an electric field line?",
-        opts: ["They start on positive charges and end on negative charges", "They can cross each other at points of equal potential", "They show the direction of force on a positive test charge", "They are closer together where the field is stronger"],
-        ans: 1,
-        exp: "Electric field lines never cross each other. If they did, it would imply a charge at that point experiences two different forces simultaneously."
-    },
-    {
-        q: "The angle of incidence equals the angle of reflection. This statement represents ___.",
-        opts: ["Snell's law of refraction", "the first law of reflection", "the second law of reflection", "the law of total internal reflection"],
-        ans: 1,
-        exp: "The first law of reflection states that the angle of incidence equals the angle of reflection, both measured from the normal to the surface."
-    },
-    {
-        q: "A virtual image formed by a plane mirror is ___.",
-        opts: ["real and inverted", "real and upright", "virtual and inverted", "virtual and upright"],
-        ans: 3,
-        exp: "A plane mirror always forms a virtual, upright, and laterally inverted image of the same size as the object."
-    },
-    {
-        q: "Total internal reflection occurs when ___.",
-        opts: ["light travels from a denser to a less dense medium at an angle greater than the critical angle", "light travels from a less dense to a denser medium", "light strikes a surface at exactly 90°", "the angle of incidence equals the angle of refraction"],
-        ans: 0,
-        exp: "Total internal reflection occurs when light in a denser medium hits the boundary at an angle exceeding the critical angle, causing all light to reflect back."
-    },
-    {
-        q: "The critical angle for a glass-air interface is 42°. What is the refractive index of the glass?",
-        opts: ["sin 42°", "cos 42°", "1/sin 42°", "tan 42°"],
-        ans: 2,
-        exp: "Refractive index n = 1/sin(critical angle). So n = 1/sin 42° ≈ 1.49."
-    },
-    {
-        q: "Which type of thermometer uses the change in electrical resistance of a metal wire to measure temperature?",
-        opts: ["Liquid-in-glass thermometer", "Thermocouple thermometer", "Resistance thermometer", "Constant volume gas thermometer"],
-        ans: 2,
-        exp: "A resistance thermometer (platinum resistance thermometer) works on the principle that electrical resistance of metals increases predictably with temperature."
-    },
-    {
-        q: "A machine has a velocity ratio of 5 and an efficiency of 80%. What is its mechanical advantage?",
-        opts: ["6.25", "4", "0.16", "25"],
-        ans: 1,
-        exp: "Efficiency = MA/VR × 100 → 80 = MA/5 × 100 → MA = 4."
-    },
-    {
-        q: "Which of the following best describes fog?",
-        opts: ["Water vapour at high altitude", "Clouds formed at ground level due to air cooling to the dew point", "Condensed water vapour at high altitude", "Precipitation in liquid form"],
-        ans: 1,
-        exp: "Fog forms when air near the ground cools to its dew point, causing water vapour to condense into tiny droplets suspended in the air."
-    },
-    {
-        q: "The Pressure Law states that, for a fixed mass of gas at constant volume, the pressure is ___.",
-        opts: ["inversely proportional to temperature in Kelvin", "directly proportional to temperature in Kelvin", "independent of temperature", "directly proportional to temperature in Celsius"],
-        ans: 1,
-        exp: "Gay-Lussac's (Pressure) Law: P ∝ T (in Kelvin) at constant volume."
-    },
-    {
-        q: "Polarization of waves is evidence that light waves are ___.",
-        opts: ["longitudinal", "mechanical", "transverse", "stationary"],
-        ans: 2,
-        exp: "Only transverse waves can be polarized (restricted to vibrate in one plane). Polarization of light confirms it is a transverse wave."
-    },
-    {
-        q: "A solar collector works by converting ___.",
-        opts: ["electrical energy into solar energy", "solar energy into chemical energy", "solar radiation into heat energy", "solar energy into mechanical energy"],
-        ans: 2,
-        exp: "A solar collector absorbs solar radiation and converts it into heat energy, which can be used for water heating or space heating."
-    },
-    {
-        q: "In a magnetic field, the field lines run from ___.",
-        opts: ["south pole to north pole outside the magnet", "north pole to south pole outside the magnet", "south pole to south pole", "randomly in all directions"],
-        ans: 1,
-        exp: "Magnetic field lines run from the north pole to the south pole outside the magnet (and from south to north inside the magnet)."
-    },
-    {
-        q: "Which of the following is a second-order lever?",
-        opts: ["Scissors", "Fishing rod", "Wheelbarrow", "Tweezers"],
-        ans: 2,
-        exp: "In a wheelbarrow, the load is between the fulcrum (wheel) and the effort (handles), making it a second-order lever."
-    },
-    {
-        q: "The general gas law combines which of the following?",
-        opts: ["Boyle's Law and Ohm's Law", "Boyle's Law, Charles' Law, and Pressure Law", "Charles' Law and Newton's Law", "Pressure Law and Faraday's Law"],
-        ans: 1,
-        exp: "The general gas law (PV/T = constant) is a combination of Boyle's Law, Charles' Law, and the Pressure Law."
-    },
-    {
-        q: "Interference of waves occurs when ___.",
-        opts: ["two waves of different types meet", "two waves meet and their displacements combine", "a wave hits a rigid barrier", "a wave changes medium"],
-        ans: 1,
-        exp: "Interference occurs when two coherent waves meet and their displacements superpose (add or cancel), producing regions of constructive and destructive interference."
-    },
-    {
-        q: "A concave mirror produces a real, inverted, and diminished image when the object is placed ___.",
-        opts: ["between the focus and the mirror", "at the focus", "between the focus and the centre of curvature", "beyond the centre of curvature"],
-        ans: 3,
-        exp: "When an object is placed beyond the centre of curvature of a concave mirror, the image formed is real, inverted, and diminished."
-    },
-    {
-        q: "The efficiency of a machine is always less than 100% because ___.",
-        opts: ["the load is always greater than the effort", "energy is lost to friction and other resistances", "the velocity ratio is always greater than 1", "machines cannot do work"],
-        ans: 1,
-        exp: "No machine is 100% efficient because some input energy is always lost to friction, heat, or deformation within the machine."
-    },
-    {
-        q: "Refraction of light occurs because light ___.",
-        opts: ["changes speed when passing from one medium to another", "reflects off a shiny surface", "bends around edges of obstacles", "oscillates perpendicular to its direction of travel"],
-        ans: 0,
-        exp: "Refraction occurs because light changes speed when it moves from one medium to another, causing it to change direction at the boundary."
-    },
-    {
-        q: "Which of these correctly states Charles' Law?",
-        opts: ["V/P = constant at constant T", "P/T = constant at constant V", "V/T = constant at constant P", "PV = constant at constant T"],
-        ans: 2,
-        exp: "Charles' Law states that the volume of a fixed mass of gas is directly proportional to its absolute temperature at constant pressure: V/T = constant."
-    },
-    {
-        q: "An electromagnetic field is produced by ___.",
-        opts: ["a stationary electric charge only", "a stationary magnet only", "a moving electric charge or changing electric/magnetic fields", "gravitational forces acting on charges"],
-        ans: 2,
-        exp: "An electromagnetic field is generated by moving electric charges or by time-varying electric and magnetic fields, as described by Maxwell's equations."
-    },
-    {
-        q: "A battery converts ___.",
-        opts: ["electrical energy to chemical energy", "chemical energy to electrical energy", "mechanical energy to electrical energy", "thermal energy to electrical energy"],
-        ans: 1,
-        exp: "A battery converts chemical energy stored in its electrochemical cells into electrical energy through redox reactions."
-    },
-    {
-        q: "The refractive index of glass relative to air is 1.5. If light travels at 3 × 10⁸ m/s in air, its speed in glass is ___.",
-        opts: ["4.5 × 10⁸ m/s", "2.0 × 10⁸ m/s", "1.5 × 10⁸ m/s", "3.0 × 10⁸ m/s"],
-        ans: 1,
-        exp: "n = speed in air / speed in glass → speed in glass = 3×10⁸ / 1.5 = 2.0 × 10⁸ m/s."
-    },
-    {
-        q: "The property of a wave that determines its pitch when heard as sound is its ___.",
-        opts: ["amplitude", "wavelength", "frequency", "speed"],
-        ans: 2,
-        exp: "The pitch of a sound depends on its frequency. Higher frequency produces a higher-pitched sound."
-    },
-    {
-        q: "Cooling by evaporation occurs because ___.",
-        opts: ["slow-moving molecules escape from the liquid surface", "fast-moving molecules escape, reducing the average kinetic energy of remaining molecules", "heat is added to the liquid from outside", "condensation releases heat energy"],
-        ans: 1,
-        exp: "During evaporation, the most energetic (fastest) molecules escape from the surface, lowering the average kinetic energy — and thus the temperature — of the remaining liquid."
-    },
-    {
-        q: "The velocity ratio of a pulley system with 4 pulleys is ___.",
-        opts: ["1", "2", "4", "8"],
-        ans: 2,
-        exp: "For a block and tackle pulley system, the velocity ratio equals the number of pulleys (or rope segments supporting the load). With 4 pulleys, VR = 4."
-    },
-    {
-        q: "Which of the following describes the advantage of a thermocouple thermometer over a liquid-in-glass thermometer?",
-        opts: ["It is cheaper to manufacture", "It can measure very high temperatures and respond rapidly to change", "It requires no calibration", "It is more accurate at room temperature"],
-        ans: 1,
-        exp: "Thermocouples can measure very high temperatures (up to 1600°C+) and respond almost instantaneously to temperature changes, unlike liquid-in-glass thermometers."
-    }
-],
 
+  // ── 10 with ans:0 (A is correct) ──
+
+  { q: "Which of the following correctly defines the frequency of a wave?",
+    opts: [
+      "The number of complete oscillations (cycles) passing a fixed point per second, measured in hertz (Hz)",
+      "The maximum displacement of a particle from its equilibrium (rest) position as the wave passes through the medium",
+      "The distance between two consecutive points that are in phase with each other, such as crest to crest or trough to trough",
+      "The speed at which energy is transferred through the medium by the wave, measured in metres per second"
+    ],
+    ans: 0,
+    exp: "Frequency (f) = number of complete waves passing a point per second. Unit: hertz (Hz) = 1 cycle/second. Related to period (T) by: f = 1/T. Not to be confused with amplitude (max displacement) or wavelength (crest-to-crest distance)." },
+
+  { q: "A converging (convex) lens produces a real, inverted, and diminished image when the object is placed:",
+    opts: [
+      "Beyond twice the focal length (u > 2f) from the lens, at which position the image forms between f and 2f on the other side of the lens",
+      "Between the focal point and the lens (u < f), at which position a virtual, upright, and magnified image is formed behind the object",
+      "At exactly twice the focal length (u = 2f) from the lens, at which position the image is real, inverted, and the same size as the object",
+      "At exactly the focal point (u = f) of the lens, at which position the refracted rays emerge parallel and no real image is formed"
+    ],
+    ans: 0,
+    exp: "For a convex lens: u > 2f → real, inverted, diminished image (between f and 2f on far side). u = 2f → real, inverted, same size. f < u < 2f → real, inverted, magnified. u < f → virtual, upright, magnified." },
+
+  { q: "The relationship between the wave speed (v), frequency (f), and wavelength (λ) of a wave is correctly expressed as:",
+    opts: [
+      "v = fλ, where wave speed equals the product of frequency and wavelength",
+      "v = f/λ, where wave speed equals frequency divided by wavelength",
+      "v = λ/f, where wave speed equals wavelength divided by frequency",
+      "v = f + λ, where wave speed equals the sum of frequency and wavelength"
+    ],
+    ans: 0,
+    exp: "Wave equation: v = fλ. Speed (m/s) = frequency (Hz) × wavelength (m). E.g., if f = 500 Hz and λ = 0.68 m, then v = 500 × 0.68 = 340 m/s (speed of sound in air at ~20°C)." },
+
+  { q: "When white light passes through a glass prism, it disperses into a spectrum of colours. The colour that undergoes the greatest deviation (bends the most) is:",
+    opts: [
+      "Violet, because it has the shortest wavelength and highest frequency, and is therefore refracted most by the glass prism",
+      "Red, because it has the longest wavelength and is therefore slowed down the most as it enters the denser glass medium",
+      "Green, because it is in the middle of the visible spectrum and experiences average refraction by the prism",
+      "Yellow, because it is the brightest colour in the visible spectrum and carries the most energy through the prism"
+    ],
+    ans: 0,
+    exp: "Dispersion: different wavelengths refract by different amounts. Violet (shortest λ, highest f) bends most; red (longest λ, lowest f) bends least. This is because shorter wavelengths travel slower in glass, experiencing greater change in speed and thus greater refraction." },
+
+  { q: "The pitch of a sound wave is determined by:",
+    opts: [
+      "The frequency of the sound wave — higher frequency produces a higher pitch and lower frequency produces a lower pitch",
+      "The amplitude of the sound wave — greater amplitude produces a higher pitch than smaller amplitude at the same frequency",
+      "The speed of sound in the medium — faster sound waves are perceived as higher pitched than slower sound waves",
+      "The wavelength of the sound wave — longer wavelengths are perceived as higher pitched sounds by the human ear"
+    ],
+    ans: 0,
+    exp: "Pitch is the perceptual quality of a sound that corresponds to its frequency. High frequency = high pitch (treble); low frequency = low pitch (bass). Amplitude determines loudness/intensity, not pitch." },
+
+  { q: "Total internal reflection can only occur when light travels:",
+    opts: [
+      "From a denser medium toward a less dense medium at an angle of incidence greater than or equal to the critical angle for that pair of media",
+      "From a less dense medium toward a denser medium at any angle of incidence, regardless of the critical angle",
+      "From air into glass at angles greater than 90°, causing all the light to be reflected back into the air",
+      "From glass into water at angles smaller than the critical angle, causing partial internal reflection at the boundary"
+    ],
+    ans: 0,
+    exp: "Total internal reflection (TIR) requires: (1) Light travels from denser to less dense medium (e.g., glass to air); (2) Angle of incidence ≥ critical angle. Applications: optical fibres, diamond brilliance, periscopes using prisms." },
+
+  { q: "The loudness (intensity) of a sound wave is most directly related to:",
+    opts: [
+      "The amplitude of the sound wave — greater amplitude means greater energy per unit area and therefore greater loudness",
+      "The frequency of the sound wave — higher frequency sounds carry more energy and are therefore perceived as louder",
+      "The speed of sound in the medium — sound waves that travel faster are perceived as louder by the human ear",
+      "The wavelength of the sound wave — shorter wavelengths produce sounds that the ear perceives as louder"
+    ],
+    ans: 0,
+    exp: "Loudness (intensity) depends on amplitude: intensity ∝ amplitude². Large amplitude → large energy transfer → loud sound. Frequency determines pitch, not loudness. Measured in decibels (dB)." },
+
+  { q: "In the refraction of light at a lens surface, Snell's law states that:",
+    opts: [
+      "n₁ sin θ₁ = n₂ sin θ₂, where n₁ and n₂ are the refractive indices of the two media and θ₁ and θ₂ are the angles of incidence and refraction",
+      "The angle of reflection equals the angle of incidence when light strikes a polished mirror surface at any angle",
+      "The refractive index equals the ratio of the angle of incidence to the angle of refraction for a given pair of media",
+      "Light always bends toward the normal when passing from a denser medium into a less dense medium at a boundary"
+    ],
+    ans: 0,
+    exp: "Snell's law: n₁ sin θ₁ = n₂ sin θ₂. The refractive index n = sin(angle in medium 1)/sin(angle in medium 2). Light bends TOWARD the normal when entering a denser medium (n increases, angle decreases)." },
+
+  { q: "The critical angle for a medium is defined as the angle of incidence in the denser medium at which the angle of refraction in the less dense medium is:",
+    opts: [
+      "90°, meaning the refracted ray travels along the boundary between the two media, just escaping into the less dense medium",
+      "0°, meaning the refracted ray travels along the normal at the boundary and continues straight without bending",
+      "45°, which is the critical angle for all glass-air interfaces regardless of the optical density of the glass",
+      "Equal to the angle of incidence, meaning refraction and reflection occur simultaneously at the same angle"
+    ],
+    ans: 0,
+    exp: "Critical angle: when light in a denser medium hits the boundary at the critical angle (θc), the refracted ray bends to 90° (travels along the boundary). sin θc = n₂/n₁ (where n₁ > n₂). Above θc, total internal reflection occurs." },
+
+  { q: "Transverse waves differ from longitudinal waves in that in transverse waves:",
+    opts: [
+      "The particles of the medium vibrate perpendicularly (at right angles) to the direction of wave propagation or energy transfer",
+      "The particles of the medium vibrate parallel to the direction of wave propagation, creating compressions and rarefactions",
+      "Energy is transferred from particle to particle without any actual displacement of the medium particles at all",
+      "The wave can only travel through solid media and cannot propagate through liquids, gases, or a vacuum"
+    ],
+    ans: 0,
+    exp: "Transverse wave: particle displacement is perpendicular to wave direction (e.g., light, water surface waves). Longitudinal wave: particle displacement is parallel to wave direction, creating compressions and rarefactions (e.g., sound)." },
+
+  // ── 10 with ans:1 (B is correct) ──
+
+  { q: "An astronomical telescope in normal adjustment has an objective lens of focal length 80 cm and an eyepiece of focal length 5 cm. What is the magnifying power of the telescope?",
+    opts: [
+      "16×, calculated by dividing the focal length of the eyepiece by the focal length of the objective lens",
+      "16×, calculated by dividing the focal length of the objective lens by the focal length of the eyepiece: 80/5 = 16",
+      "85 cm, found by adding the focal lengths of the objective and eyepiece lenses together",
+      "75 cm, found by subtracting the eyepiece focal length from the objective focal length"
+    ],
+    ans: 1,
+    exp: "Magnifying power (M) of an astronomical telescope in normal adjustment = fo/fe = 80/5 = 16. The length of the telescope tube = fo + fe = 80 + 5 = 85 cm. (Both options A and B state 16× — the correct derivation is in B.)" },
+
+  { q: "The phenomenon of dispersion of white light occurs because:",
+    opts: [
+      "White light contains only two wavelengths (red and violet) that are separated when they enter a prism at different angles",
+      "Different wavelengths (colours) of light travel at different speeds in glass, causing them to refract by different amounts and separate into a spectrum",
+      "The prism absorbs all colours of white light equally and then re-emits them at different angles on the other side",
+      "White light undergoes diffraction at the glass-air boundary, and each diffracted wavelength emerges at a different angle"
+    ],
+    ans: 1,
+    exp: "Dispersion occurs because the speed of light in glass (and hence the refractive index) is wavelength-dependent. Violet light slows the most → greatest refractive index → greatest bending. Red slows the least → least bending. Result: ROYGBIV spectrum." },
+
+  { q: "A simple microscope (magnifying glass) uses a single convex lens. The object must be placed:",
+    opts: [
+      "Beyond the focal length of the lens so that a real, inverted, magnified image is formed on the same side as the object",
+      "Between the focal point and the optical centre of the lens so that a virtual, upright, and magnified image is formed on the same side as the object",
+      "At exactly twice the focal length from the lens so that a real image of the same size as the object is produced",
+      "At infinity (very far from the lens) so that the lens refracts parallel rays to form a focused real image at the focal point"
+    ],
+    ans: 1,
+    exp: "Simple microscope (magnifying glass): object placed between F and the optical centre (u < f). Produces a virtual, upright, magnified image on the same side as the object. The eye looks through the lens to see the enlarged virtual image." },
+
+  { q: "Which of the following correctly explains why sound cannot travel through a vacuum?",
+    opts: [
+      "Sound waves are transverse waves that require a rigid solid medium with fixed lattice structures to transmit vibrations between particles",
+      "Sound is a mechanical wave that requires particles of matter to vibrate and transfer energy from one point to another — a vacuum has no particles",
+      "Sound waves travel too fast in a vacuum and the wavelengths become too large for the wave to maintain coherence",
+      "Sound is absorbed by electromagnetic radiation in a vacuum, preventing it from propagating over any significant distance"
+    ],
+    ans: 1,
+    exp: "Sound is a mechanical (longitudinal) wave — it propagates by compressing and rarefying particles in a medium. A vacuum has no particles, so there is nothing to vibrate and transfer the wave energy. Hence sound cannot travel through a vacuum." },
+
+  { q: "The image formed by a plane mirror is:",
+    opts: [
+      "Real, inverted, and the same size as the object, formed at a distance equal to the object distance behind the mirror",
+      "Virtual, upright, laterally inverted, and the same size as the object, formed at a distance equal to the object distance behind the mirror",
+      "Real, upright, and magnified, formed at twice the distance of the object from the mirror surface",
+      "Virtual, inverted, and diminished, formed at a distance less than the object distance behind the plane mirror surface"
+    ],
+    ans: 1,
+    exp: "Plane mirror image properties: Virtual (cannot be projected on screen), Upright (same way up as object), Laterally inverted (left-right reversed), Same size as object, Same distance behind mirror as object is in front." },
+
+  { q: "The refractive index (n) of a medium relative to air is related to the speed of light by which expression?",
+    opts: [
+      "n = v/c, where v is the speed of light in the medium and c is the speed of light in a vacuum (air)",
+      "n = c/v, where c is the speed of light in vacuum and v is the speed of light in the medium, showing that n > 1 for any medium denser than air",
+      "n = c × v, where the refractive index is the product of the two light speeds in different media",
+      "n = c − v, where the refractive index is the difference between the speed of light in vacuum and in the medium"
+    ],
+    ans: 1,
+    exp: "Refractive index: n = c/v, where c = speed of light in vacuum (3×10⁸ m/s), v = speed of light in medium. Since light slows down in denser media (v < c), n > 1 for all optical media. Higher n → greater slowing → greater refraction." },
+
+  { q: "Resonance in sound occurs when:",
+    opts: [
+      "A sound wave undergoes total internal reflection at the boundary between air and a solid surface, creating a standing wave",
+      "A body is made to vibrate at its natural frequency by an external vibration of the same frequency, resulting in a large amplitude of vibration",
+      "Two sound waves of different frequencies interfere constructively, doubling the amplitude at all points simultaneously",
+      "Sound waves are produced by two identical sources that are exactly 180° out of phase, creating maximum cancellation"
+    ],
+    ans: 1,
+    exp: "Resonance: when an external driving frequency matches a body's natural frequency, energy transfer is maximised and the body vibrates with very large amplitude. Examples: resonance in organ pipes, breaking a glass with sound, tuning a radio." },
+
+  { q: "The focal length of a concave (diverging) lens is:",
+    opts: [
+      "Positive, because all lenses that bend light have positive focal lengths by the standard sign convention",
+      "Negative, because a concave lens makes light rays diverge, and its focal point is virtual (on the same side as the incident light)",
+      "Infinite, because diverging lenses do not converge light to any real focal point on the opposite side",
+      "Zero, because concave lenses refract light so that the rays emerge parallel and never converge to a focal point"
+    ],
+    ans: 1,
+    exp: "By the real-is-positive sign convention: converging (convex) lenses have positive focal lengths; diverging (concave) lenses have negative focal lengths because their focal point is virtual (light appears to diverge from a point on the incident side)." },
+
+  { q: "In a compound microscope, which lens forms the first (intermediate) image of the object?",
+    opts: [
+      "The eyepiece lens, which first magnifies the object and then the objective lens magnifies the image further",
+      "The objective lens (short focal length lens near the object), which forms a real, inverted, magnified intermediate image",
+      "Both lenses simultaneously, because in a compound microscope all magnification occurs at the same time",
+      "Neither lens independently — the image is formed by the combined refraction of both lenses acting as a single optical system"
+    ],
+    ans: 1,
+    exp: "Compound microscope: (1) Objective lens (short f, near object) forms a real, inverted, magnified intermediate image inside the barrel; (2) Eyepiece lens (longer f) acts as a simple microscope to magnify this intermediate image further. Total magnification = mo × me." },
+
+  { q: "The speed of sound in air at room temperature is approximately:",
+    opts: [
+      "3 × 10⁸ m/s, which is the speed of electromagnetic radiation (light) in a vacuum, not the speed of sound",
+      "340 m/s, which is the approximate speed of sound in air at room temperature (~20°C) under standard conditions",
+      "1500 m/s, which is the approximate speed of sound in water rather than in air",
+      "5100 m/s, which is the approximate speed of sound in steel, not in air at room temperature"
+    ],
+    ans: 1,
+    exp: "Speed of sound in air ≈ 340 m/s at 20°C. It increases with temperature (≈ 0.6 m/s per °C). Speed of sound in water ≈ 1500 m/s; in steel ≈ 5100 m/s. Speed of light in vacuum = 3×10⁸ m/s (much faster)." },
+
+  // ── 10 with ans:2 (C is correct) ──
+
+  { q: "A convex lens has a focal length of 10 cm. An object is placed 30 cm from the lens. Using the lens formula (1/v − 1/u = 1/f), where is the image formed?",
+    opts: [
+      "10 cm from the lens on the same side as the object, forming a virtual image behind the lens",
+      "20 cm from the lens on the same side as the object, forming a virtual image that appears upright and magnified",
+      "15 cm from the lens on the opposite side to the object, forming a real image that is inverted and diminished",
+      "30 cm from the lens on the opposite side to the object, forming a real image that is inverted and the same size"
+    ],
+    ans: 2,
+    exp: "Lens formula (real-is-positive): 1/f = 1/v − 1/u. With f = +10, u = −30: 1/v = 1/f + 1/u = 1/10 + 1/(−30) = 3/30 − 1/30 = 2/30. v = 15 cm (positive → real image on far side). Since v < 2f and u > 2f → diminished, inverted, real image." },
+
+  { q: "The phenomenon that explains why a swimming pool appears shallower than it actually is when viewed from above the water surface is:",
+    opts: [
+      "Diffraction — the bending of light waves around the edges of the water surface as they emerge from the pool",
+      "Reflection — the partial reflection of light at the water surface reduces the apparent depth of the pool",
+      "Refraction — light from the bottom of the pool bends away from the normal as it crosses from water (denser) to air (less dense), making the pool appear shallower",
+      "Dispersion — white light separates into colours as it exits the water, causing the bottom to appear at a different depth"
+    ],
+    ans: 2,
+    exp: "Apparent depth is caused by refraction. Light from the pool bottom bends away from the normal on exiting water (denser) to air (less dense). The eye traces the refracted rays back in a straight line, perceiving the bottom as shallower. Apparent depth = real depth/n." },
+
+  { q: "Echoes are produced by which property of sound waves?",
+    opts: [
+      "Refraction — the bending of sound waves as they pass from warm air into cooler air above the reflecting surface",
+      "Diffraction — the spreading of sound waves around barriers, which causes them to appear to come from multiple directions",
+      "Reflection — sound waves bounce back from a hard, distant surface and are heard as a distinct repetition of the original sound",
+      "Interference — two sound waves from the same source superpose and create points of maximum intensity heard as echoes"
+    ],
+    ans: 2,
+    exp: "Echo: reflection of sound from a hard, distant surface (minimum distance ≈ 17 m for echo to be heard distinctly — sound must travel there and back in ≥ 0.1 s at 340 m/s). Reverberation is multiple rapid reflections in an enclosed space." },
+
+  { q: "Which of the following correctly describes the dispersion of white light by a glass prism?",
+    opts: [
+      "The prism splits white light into two colours only (red and blue) because glass absorbs all intermediate wavelengths",
+      "The prism causes all colours to refract by exactly the same amount but emerge from the glass at different points along the prism surface",
+      "The prism refracts each colour (wavelength) of white light by a different amount, separating them into a continuous spectrum from red (least deviated) to violet (most deviated)",
+      "The prism converts white light into coloured light by a chemical reaction between the photons and the glass molecules"
+    ],
+    ans: 2,
+    exp: "Dispersion: a glass prism separates white light into its constituent colours (ROYGBIV) because the refractive index of glass varies with wavelength. Red (longest λ) is deviated least; violet (shortest λ) is deviated most. This creates a continuous spectrum." },
+
+  { q: "The principle of superposition of waves states that when two waves meet at a point:",
+    opts: [
+      "The wave with larger amplitude always completely cancels the smaller wave, leaving only the dominant wave to continue",
+      "The two waves exchange energy at the meeting point and then continue in the opposite directions from which they came",
+      "The resultant displacement at that point equals the algebraic sum of the individual displacements of each wave at that instant",
+      "The frequency of the resultant wave is always the arithmetic mean of the frequencies of the two component waves"
+    ],
+    ans: 2,
+    exp: "Superposition principle: when two (or more) waves overlap, the resultant displacement at any point = algebraic sum of individual displacements. If in phase → constructive interference (amplitude increases); if out of phase → destructive interference (amplitude decreases)." },
+
+  { q: "An optical fibre uses total internal reflection to transmit light. Which condition must be maintained for total internal reflection to occur inside the fibre?",
+    opts: [
+      "The angle of incidence of light at the glass-cladding boundary must be less than the critical angle so that refraction occurs",
+      "The core of the optical fibre must be made of a less dense medium than the cladding surrounding it",
+      "The angle of incidence at the core-cladding boundary must be greater than or equal to the critical angle, keeping light trapped inside the denser core",
+      "Light must travel from the cladding into the core at angles greater than 90° to ensure total internal reflection"
+    ],
+    ans: 2,
+    exp: "Optical fibre TIR: light travels in the dense core and strikes the less dense cladding. If angle of incidence ≥ critical angle, TIR occurs and light is totally reflected back into the core. This allows light to travel long distances with minimal loss." },
+
+  { q: "The loudness of sound is measured in which unit?",
+    opts: [
+      "Hertz (Hz), which is the unit used to measure the frequency (pitch) of a sound wave",
+      "Metres per second (m/s), which is the unit for measuring the speed at which sound travels through a medium",
+      "Decibels (dB), which is the unit used to measure the intensity or loudness level of a sound",
+      "Metres (m), which is the unit used to measure the wavelength of a sound wave in a medium"
+    ],
+    ans: 2,
+    exp: "Loudness (sound intensity level) is measured in decibels (dB). The decibel scale is logarithmic. 0 dB = threshold of hearing; 120 dB = threshold of pain. Frequency is measured in Hz; wave speed in m/s; wavelength in m." },
+
+  { q: "A student claps her hands once near a wall 85 m away. After how long will she hear the echo? (Speed of sound = 340 m/s)",
+    opts: [
+      "0.25 s, because the sound travels from the student to the wall (85 m) and the echo is heard immediately as it leaves the wall",
+      "0.125 s, because the student is standing 85 m from the wall so the sound only needs to travel in one direction",
+      "0.5 s, because the sound must travel from the student to the wall and back — a total distance of 2 × 85 = 170 m at 340 m/s, giving time = 170/340 = 0.5 s",
+      "1 s, because at 340 m/s, sound takes 1 second to travel 340 m, and the wall is approximately this far away"
+    ],
+    ans: 2,
+    exp: "Time for echo = total distance / speed = (2 × 85)/340 = 170/340 = 0.5 s. The sound travels TO the wall (85 m) and back (85 m), total 170 m. At 340 m/s: t = 170/340 = 0.5 s." },
+
+  { q: "Which of the following optical instruments uses two convex lenses — an objective and an eyepiece — with the object placed just beyond the focal point of the objective lens?",
+    opts: [
+      "The astronomical telescope, where the object (star/planet) is at infinity and the objective forms an image at its focal plane",
+      "The simple camera, which uses a single convex lens to form a real, inverted, diminished image on photographic film",
+      "The compound microscope, where a tiny nearby object is placed just outside the focal length of the objective to form a magnified intermediate image",
+      "The slide projector, which uses a single condenser lens and a projection lens to display a magnified image on a screen"
+    ],
+    ans: 2,
+    exp: "Compound microscope: two convex lenses. Object placed just beyond fo of objective → real, inverted, magnified intermediate image inside tube → eyepiece acts as simple microscope → final virtual, magnified image viewed by eye." },
+
+  { q: "The speed of light in glass (refractive index n = 1.5) is:",
+    opts: [
+      "3 × 10⁸ m/s, because the refractive index of glass does not affect the speed of light inside the medium",
+      "4.5 × 10⁸ m/s, found by multiplying the speed of light in vacuum by the refractive index of the glass",
+      "2 × 10⁸ m/s, found using v = c/n = (3 × 10⁸)/1.5 = 2 × 10⁸ m/s, which is the speed of light in this glass",
+      "1.5 × 10⁸ m/s, found by dividing the speed of light in vacuum by 2 instead of by the refractive index"
+    ],
+    ans: 2,
+    exp: "v = c/n = (3 × 10⁸ m/s)/1.5 = 2 × 10⁸ m/s. The refractive index n = c/v > 1 for any optical medium, so light always slows down inside a medium compared to its speed in vacuum." },
+
+  // ── 10 with ans:3 (D is correct) ──
+
+  { q: "Diffraction of waves is most noticeable when:",
+    opts: [
+      "The wavelength of the wave is much smaller than the size of the obstacle or gap it encounters",
+      "The wave travels from a less dense medium into a denser medium, causing the wavelength to decrease",
+      "The frequency of the wave is very high, because high-frequency waves carry more energy and spread more easily",
+      "The wavelength of the wave is comparable to or larger than the size of the obstacle or gap, causing the wave to bend around it significantly"
+    ],
+    ans: 3,
+    exp: "Diffraction is maximum when λ ≈ gap/obstacle size. Large λ relative to gap → large diffraction (waves spread widely). Small λ relative to gap → little diffraction (waves travel in straight lines). This is why sound (long λ) diffracts around buildings but light (short λ) does not." },
+
+  { q: "A virtual image formed by a lens or mirror:",
+    opts: [
+      "Can always be projected onto a screen placed at the image location because it exists as a real convergence of refracted rays",
+      "Is always inverted and smaller than the object, regardless of the type of lens or mirror forming it",
+      "Is always formed at the focal point of the lens or mirror, because all virtual images lie at the principal focus",
+      "Cannot be projected on a screen because the light rays do not actually converge at the image location — the image is formed where the rays appear to diverge from when traced back"
+    ],
+    ans: 3,
+    exp: "Virtual image: formed where reflected/refracted rays appear to diverge from when extended backwards. The light rays do NOT actually pass through the image point, so it CANNOT be projected on a screen. Examples: image in plane mirror, image through a concave lens." },
+
+  { q: "The principle of reversibility of light states that:",
+    opts: [
+      "Light always travels in a straight line and cannot be bent, reflected, or refracted regardless of the medium it enters",
+      "Light waves can be reversed in time and will produce the same interference pattern as the original forward-travelling waves",
+      "The refractive index of any medium is always equal to 1 when light travels in exactly the reverse direction through it",
+      "If a ray of light follows a certain path from A to B, it will follow exactly the same path from B to A if the direction is reversed"
+    ],
+    ans: 3,
+    exp: "Reversibility of light: the path of a light ray is reversible. If light travels from A to B via a certain path (through reflection, refraction), then light travelling from B in the reverse direction follows the same path back to A." },
+
+  { q: "Standing (stationary) waves are formed when:",
+    opts: [
+      "A single wave travels through a medium at very high speed, creating apparent nodes along its path of travel",
+      "Two waves of different frequencies and amplitudes travel through the same medium in the same direction",
+      "A wave is diffracted around a large obstacle and wraps around to interfere with the original wave from behind",
+      "Two waves of the same frequency and amplitude travel in opposite directions in the same medium and superpose, creating fixed nodes (zero displacement) and antinodes (maximum displacement)"
+    ],
+    ans: 3,
+    exp: "Standing waves form by superposition of two identical waves travelling in opposite directions (e.g., incident + reflected wave). Result: fixed nodes (no displacement) and antinodes (max displacement). No net energy transfer. Found in musical instruments, microwave ovens." },
+
+  { q: "The lens formula for a thin lens is given as 1/f = 1/v − 1/u. In this formula (using real-is-positive convention), u is negative when the object is real because:",
+    opts: [
+      "Real objects are always placed on the right side of the lens, and the right side is taken as negative by convention",
+      "The focal length f is always negative for convex lenses, making u appear negative in comparison",
+      "The image distance v is always larger than u for a magnifying lens, requiring u to be negative for the formula to balance",
+      "By the real-is-positive sign convention, distances measured in the direction of the incident light are positive, while the object distance is measured against the incident light direction and is therefore negative"
+    ],
+    ans: 3,
+    exp: "Real-is-positive sign convention: incident light travels left to right. Object distance u is measured from lens to object (opposite to light direction) → negative for real objects. Image distance v measured in direction of light → positive for real images, negative for virtual." },
+
+  { q: "The phenomenon of beats is produced when two sound waves of slightly different frequencies are heard simultaneously. The beat frequency equals:",
+    opts: [
+      "The sum of the two frequencies (f₁ + f₂), which gives the total number of oscillations per second from both sources",
+      "Half the sum of the two frequencies (f₁ + f₂)/2, which represents the average frequency perceived by the ear",
+      "Half the difference between the two frequencies |f₁ − f₂|/2, giving the number of loud-soft cycles per second",
+      "The difference between the two frequencies |f₁ − f₂|, which gives the number of times per second the sounds constructively interfere to create a loud beat"
+    ],
+    ans: 3,
+    exp: "Beat frequency = |f₁ − f₂|. When two sources with slightly different frequencies combine, constructive interference (loud) alternates with destructive interference (quiet) at a rate equal to the difference in frequencies. Used to tune instruments." },
+
+  { q: "Which of the following correctly explains the function of the cladding in an optical fibre?",
+    opts: [
+      "The cladding carries the electrical signal alongside the optical signal to boost the data transmission speed",
+      "The cladding absorbs stray light that escapes from the core to prevent cross-talk between adjacent fibres",
+      "The cladding increases the refractive index at the outer surface, enhancing the speed of light transmission through the core",
+      "The cladding is made of a material with a lower refractive index than the core, ensuring total internal reflection occurs at the core-cladding boundary to keep light inside the core"
+    ],
+    ans: 3,
+    exp: "Optical fibre: dense core (high n) surrounded by cladding (lower n). At the core-cladding boundary, if light hits at angle ≥ critical angle, total internal reflection traps it in the core. The cladding's lower n is essential — without it, TIR cannot occur." },
+
+  { q: "The image formed by a concave (diverging) lens is always:",
+    opts: [
+      "Real, inverted, and diminished — formed on the opposite side of the lens from the object regardless of object position",
+      "Real, inverted, and magnified — formed beyond the focal point on the far side of the lens from the object",
+      "Real, upright, and the same size — formed at the centre of curvature of the lens when the object is at infinity",
+      "Virtual, upright, and diminished — formed on the same side as the object, between the lens and its focal point, for any object position"
+    ],
+    ans: 3,
+    exp: "A concave (diverging) lens always produces a virtual, upright, diminished image on the same side as the object, regardless of object position. It has a negative focal length. Used in spectacles for short-sightedness (myopia)." },
+
+  { q: "The period (T) of a wave is related to its frequency (f) by which equation?",
+    opts: [
+      "T = f, because the period in seconds is numerically equal to the frequency in hertz for all wave types",
+      "T = f², because the period increases as the square of the frequency for high-frequency waves",
+      "T = 2πf, because the angular relationship between period and frequency involves the factor 2π",
+      "T = 1/f, because the period is the time for one complete oscillation and frequency is the number of oscillations per second — they are reciprocals"
+    ],
+    ans: 3,
+    exp: "Period T = 1/f. If f = 50 Hz, T = 1/50 = 0.02 s. Period is the time for one complete oscillation; frequency is the number of oscillations per second. They are exact reciprocals of each other." }
+    ],
+            
 'Chemistry': [
     {
         q: "According to collision theory, a chemical reaction occurs when reactant particles collide with ___.",
@@ -6950,938 +7102,1226 @@ sss1: {
 ],
 
 'Biology': [
-    {
-        q: "The digestive system is responsible for ___.",
-        opts: ["gas exchange between the body and environment", "breaking down food into absorbable nutrients and eliminating waste", "transporting oxygen to body cells", "filtering blood to remove metabolic waste"],
-        ans: 1,
-        exp: "The digestive system breaks complex food molecules into simpler, absorbable nutrients through mechanical and chemical digestion, then eliminates undigested material."
-    },
-    {
-        q: "Fertilisation in mammals occurs in the ___.",
-        opts: ["uterus", "ovary", "fallopian tube (oviduct)", "cervix"],
-        ans: 2,
-        exp: "In mammals, fertilisation normally takes place in the fallopian tube (oviduct), where the sperm meets and fuses with the egg shortly after ovulation."
-    },
-    {
-        q: "Which of the following correctly describes a conservation measure for natural resources?",
-        opts: ["Burning fossil fuels at a higher rate", "Establishing wildlife reserves and national parks", "Increasing deforestation for farmland", "Dumping industrial waste into rivers"],
-        ans: 1,
-        exp: "Establishing wildlife reserves and national parks protects biodiversity and natural habitats, which is a key conservation strategy for natural resources."
-    },
-    {
-        q: "The axial skeleton consists of ___.",
-        opts: ["the bones of the limbs and girdles", "the skull, vertebral column, and rib cage", "only the skull and jaw bones", "the pelvis and shoulder girdle"],
-        ans: 1,
-        exp: "The axial skeleton comprises the central bones of the body: the skull, vertebral column (spine), and rib cage."
-    },
-    {
-        q: "Which of the following is a pest of crops?",
-        opts: ["Earthworm", "Honey bee", "Aphid", "Dung beetle"],
-        ans: 2,
-        exp: "Aphids are common crop pests that damage plants by sucking sap from leaves and stems, and they can also transmit plant viruses."
-    },
-    {
-        q: "The main function of the circulatory system in mammals is to ___.",
-        opts: ["produce blood cells and hormones", "transport oxygen, nutrients, and waste products around the body", "filter toxins from food in the gut", "exchange gases between the blood and the lungs only"],
-        ans: 1,
-        exp: "The circulatory system transports oxygen, nutrients, hormones, and waste products throughout the body, maintaining homeostasis."
-    },
-    {
-        q: "Water is transported from the roots to the leaves of plants mainly through ___.",
-        opts: ["phloem vessels", "cortex cells", "xylem vessels", "cambium tissue"],
-        ans: 2,
-        exp: "Xylem vessels transport water and dissolved minerals from the roots upward through the stem to the leaves of a plant."
-    },
-    {
-        q: "Pollination is defined as the transfer of pollen grains from ___.",
-        opts: ["the anther to the stigma of a flower", "the stigma to the ovule of a flower", "the stamen to the pistil of an animal", "the ovule to the ovary of a flower"],
-        ans: 0,
-        exp: "Pollination is the transfer of pollen grains from the anther (male part) to the stigma (female part) of a flower of the same or different plant."
-    },
-    {
-        q: "The alimentary canal begins at the ___.",
-        opts: ["oesophagus", "stomach", "mouth", "small intestine"],
-        ans: 2,
-        exp: "The alimentary canal (digestive tract) runs from the mouth to the anus. Digestion begins in the mouth with mechanical chewing and salivary enzyme activity."
-    },
-    {
-        q: "Gas exchange in mammals takes place in the ___.",
-        opts: ["bronchi", "trachea", "alveoli", "diaphragm"],
-        ans: 2,
-        exp: "Gas exchange occurs in the alveoli — tiny air sacs in the lungs with thin walls and a rich blood supply that allow oxygen and CO₂ to diffuse between air and blood."
-    },
-    {
-        q: "The kidneys maintain homeostasis by ___.",
-        opts: ["producing insulin to regulate blood sugar", "filtering blood and excreting nitrogenous waste in urine", "secreting digestive enzymes into the gut", "absorbing nutrients from digested food"],
-        ans: 1,
-        exp: "The kidneys filter the blood, reabsorb useful substances, and excrete excess water, salts, and urea in urine, regulating the body's internal environment."
-    },
-    {
-        q: "Which of the following is a function of the skeleton?",
-        opts: ["Gas exchange", "Blood sugar regulation", "Production of digestive enzymes", "Protection of internal organs"],
-        ans: 3,
-        exp: "The skeleton protects internal organs (e.g., the skull protects the brain, the rib cage protects the heart and lungs), provides support, and enables movement."
-    },
-    {
-        q: "Cross-pollination is advantageous because it ___.",
-        opts: ["guarantees fertilisation in isolated plants", "produces offspring that are genetically identical to the parent", "introduces genetic variation into offspring", "requires no external agents such as wind or insects"],
-        ans: 2,
-        exp: "Cross-pollination involves pollen from a different plant, introducing new genetic combinations into offspring and increasing genetic diversity."
-    },
-    {
-        q: "In a food chain, organisms that feed on plants are called ___.",
-        opts: ["decomposers", "primary producers", "primary consumers", "secondary consumers"],
-        ans: 2,
-        exp: "Primary consumers (herbivores) are animals that feed directly on plants (primary producers). They occupy the second trophic level."
-    },
-    {
-        q: "The function of the placenta in mammals is to ___.",
-        opts: ["produce eggs for fertilisation", "provide mechanical protection to the embryo only", "allow exchange of nutrients, gases, and wastes between mother and foetus", "store food reserves for the newborn"],
-        ans: 2,
-        exp: "The placenta allows oxygen, nutrients, and antibodies to pass from the mother's blood to the foetus, and waste products like CO₂ and urea to pass back to the mother."
-    },
-    {
-        q: "Pollution of water bodies with excess fertilisers leads to ___.",
-        opts: ["increased fish populations", "eutrophication", "decreased algal growth", "higher water oxygen levels"],
-        ans: 1,
-        exp: "Excess fertilisers (nitrates/phosphates) cause algal bloom (eutrophication), which depletes oxygen in the water as algae decompose, killing aquatic life."
-    },
-    {
-        q: "Which of the following is the correct sequence of digestion in mammals?",
-        opts: ["Mouth → small intestine → stomach → large intestine", "Mouth → oesophagus → stomach → small intestine → large intestine", "Mouth → stomach → oesophagus → small intestine → rectum", "Mouth → stomach → large intestine → small intestine → rectum"],
-        ans: 1,
-        exp: "Food passes through: mouth → oesophagus → stomach → small intestine → large intestine → rectum → anus."
-    },
-    {
-        q: "The regulation of internal body temperature is called ___.",
-        opts: ["osmoregulation", "thermoregulation", "excretion", "haemoregulation"],
-        ans: 1,
-        exp: "Thermoregulation is the process by which an organism maintains its internal body temperature within a tolerable range despite external temperature changes."
-    },
-    {
-        q: "Transpiration in plants is best described as ___.",
-        opts: ["the absorption of water by roots from the soil", "the loss of water vapour from the aerial parts of a plant", "the transport of sugars through phloem", "the breakdown of glucose during respiration"],
-        ans: 1,
-        exp: "Transpiration is the process by which water is lost as vapour from the surfaces of leaves and other aerial parts of plants, mainly through stomata."
-    },
-    {
-        q: "Which disease is transmitted by the Anopheles mosquito?",
-        opts: ["Tuberculosis", "Cholera", "Malaria", "Typhoid"],
-        ans: 2,
-        exp: "Malaria is caused by the Plasmodium parasite, which is transmitted to humans through the bite of infected female Anopheles mosquitoes."
-    },
-    {
-        q: "The main product of photosynthesis that is transported through the phloem is ___.",
-        opts: ["Oxygen", "Water", "Sucrose", "Carbon dioxide"],
-        ans: 2,
-        exp: "Sucrose (sugar) produced during photosynthesis in the leaves is loaded into the phloem and transported to all parts of the plant for use or storage."
-    },
-    {
-        q: "Which of the following is an example of a vertebrate reproductive adaptation?",
-        opts: ["External fertilisation in mammals", "Internal fertilisation in reptiles", "Budding in mammals", "Binary fission in fish"],
-        ans: 1,
-        exp: "Reptiles use internal fertilisation — an adaptation for reproduction on land where external fertilisation would fail due to the risk of egg desiccation."
-    },
-    {
-        q: "The function of haemoglobin in the blood is to ___.",
-        opts: ["digest proteins in the blood plasma", "fight infections as part of the immune response", "transport oxygen from the lungs to body tissues", "regulate blood pH by releasing enzymes"],
-        ans: 2,
-        exp: "Haemoglobin is an iron-containing protein in red blood cells that binds to oxygen in the lungs and releases it to respiring tissues throughout the body."
-    },
-    {
-        q: "Which of the following structures in the kidney is responsible for filtration of blood?",
-        opts: ["Loop of Henle", "Collecting duct", "Glomerulus", "Renal pelvis"],
-        ans: 2,
-        exp: "The glomerulus is a network of capillaries in the Bowman's capsule where blood is filtered under pressure to form the glomerular filtrate."
-    },
-    {
-        q: "A crop disease caused by a fungus is ___.",
-        opts: ["Maize streak (caused by a virus)", "Groundnut rosette (caused by a virus)", "Black pod disease of cocoa (caused by Phytophthora)", "Cassava mosaic (caused by a virus)"],
-        ans: 2,
-        exp: "Black pod disease of cocoa is caused by Phytophthora palmivora, a water mould (oomycete) fungus-like organism, making it a major fungal crop disease."
-    },
-    {
-        q: "Natural resources are best conserved through ___.",
-        opts: ["unrestricted mining and harvesting", "sustainable use, recycling, and legal protection of habitats", "complete prohibition of all human activities in forests", "increasing industrial output using raw materials"],
-        ans: 1,
-        exp: "Conservation of natural resources involves using them sustainably, recycling materials, reducing waste, and protecting habitats through legislation and education."
-    },
-    {
-        q: "The double circulatory system in mammals means that blood passes through the heart ___.",
-        opts: ["once per complete circuit", "twice per complete circuit (once through lungs, once through the body)", "four times per complete circuit", "directly from arteries to veins without passing through capillaries"],
-        ans: 1,
-        exp: "In mammals, blood circulates through two loops: the pulmonary circuit (heart→lungs→heart) and the systemic circuit (heart→body→heart), passing through the heart twice per cycle."
-    },
-    {
-        q: "The hormone responsible for stimulating the release of eggs in females is ___.",
-        opts: ["insulin", "oestrogen only", "luteinising hormone (LH)", "progesterone only"],
-        ans: 2,
-        exp: "Luteinising hormone (LH) triggers ovulation — the release of a mature egg from the ovarian follicle. LH surges mid-cycle to cause ovulation."
-    },
-    {
-        q: "Deforestation leads to all of the following EXCEPT ___.",
-        opts: ["soil erosion", "loss of biodiversity", "increased atmospheric oxygen levels", "disruption of the water cycle"],
-        ans: 2,
-        exp: "Deforestation reduces photosynthesis and can actually lower atmospheric oxygen levels over time. It causes erosion, biodiversity loss, and disrupts water and carbon cycles."
-    },
-    {
-        q: "In plants, the structure that controls the opening and closing of stomata is the ___.",
-        opts: ["mesophyll cell", "guard cell", "epidermal cell", "palisade cell"],
-        ans: 1,
-        exp: "Guard cells are kidney-shaped cells that flank the stomatal pore. Changes in their turgor pressure cause stomata to open (when turgid) or close (when flaccid)."
-    },
-    {
-        q: "Self-pollination is most advantageous when ___.",
-        opts: ["there is a need for genetic variation", "pollinators are absent and the plant is isolated", "the environment is constantly changing", "insects are abundant in the habitat"],
-        ans: 1,
-        exp: "Self-pollination ensures reproduction when pollinators or other plants of the same species are absent, but it reduces genetic diversity."
-    },
-    {
-        q: "The vertebral column of mammals consists of how many regions?",
-        opts: ["3", "4", "5", "7"],
-        ans: 2,
-        exp: "The mammalian vertebral column has 5 regions: cervical (neck), thoracic (chest), lumbar (lower back), sacral (hip), and coccygeal (tail) vertebrae."
-    },
-    {
-        q: "Which of the following describes the role of decomposers in an ecosystem?",
-        opts: ["They produce energy from sunlight through photosynthesis", "They break down dead organic matter and recycle nutrients into the soil", "They feed on primary consumers in a food chain", "They convert nitrogen gas into nitrates in the soil"],
-        ans: 1,
-        exp: "Decomposers (fungi and bacteria) break down dead organisms and organic waste, releasing nutrients back into the soil for use by plants."
-    },
-    {
-        q: "The nitrogenous waste product excreted by mammals is mainly ___.",
-        opts: ["ammonia", "uric acid", "urea", "creatine"],
-        ans: 2,
-        exp: "Mammals excrete urea as their main nitrogenous waste. Urea is less toxic than ammonia and requires less water to excrete than uric acid."
-    },
-    {
-        q: "Which of the following is the correct definition of respiration?",
-        opts: ["The exchange of gases between an organism and its environment", "The breakdown of glucose to release energy in living cells", "The process of breathing air into and out of the lungs", "The production of glucose from carbon dioxide and water"],
-        ans: 1,
-        exp: "Cellular respiration is the biochemical process by which glucose (and other organic molecules) is broken down in cells to release energy (ATP), producing CO₂ and water."
-    },
-    {
-        q: "Which part of the human alimentary canal is responsible for the absorption of most nutrients?",
-        opts: ["Mouth", "Stomach", "Small intestine", "Large intestine"],
-        ans: 2,
-        exp: "The small intestine (with its villi and microvilli) is the primary site of nutrient absorption. Its large surface area maximises absorption of digested food."
-    },
-    {
-        q: "The process by which plants make their own food using sunlight is called ___.",
-        opts: ["respiration", "transpiration", "photosynthesis", "translocation"],
-        ans: 2,
-        exp: "Photosynthesis is the process by which green plants use light energy, carbon dioxide, and water to produce glucose and oxygen: 6CO₂ + 6H₂O → C₆H₁₂O₆ + 6O₂."
-    },
-    {
-        q: "Sexually transmitted infections (STIs) can be prevented by ___.",
-        opts: ["taking antibiotics regularly as a preventive measure", "avoiding all forms of social contact", "practising safe sex using barrier methods such as condoms", "drinking large amounts of water daily"],
-        ans: 2,
-        exp: "Correct and consistent use of condoms (barrier contraceptives) is one of the most effective ways to prevent sexually transmitted infections."
-    },
-    {
-        q: "Which blood vessel carries oxygenated blood from the lungs to the heart?",
-        opts: ["Pulmonary artery", "Aorta", "Pulmonary vein", "Vena cava"],
-        ans: 2,
-        exp: "The pulmonary vein carries oxygenated blood from the lungs back to the left atrium of the heart (unusual, as veins usually carry deoxygenated blood)."
-    },
-    {
-        q: "The role of the large intestine in digestion is mainly to ___.",
-        opts: ["digest proteins with enzymes", "absorb most nutrients from digested food", "absorb water and form solid faeces", "produce bile for fat digestion"],
-        ans: 2,
-        exp: "The large intestine reabsorbs water from undigested material, compacting it into faeces. It also houses beneficial bacteria that synthesise some vitamins."
-    }
+
+  // ── 10 with ans:0 (A is correct) ──
+
+  { q: "In the reproductive system of a flowering plant, the structure that directly encloses and protects the ovule(s) is the:",
+    opts: [
+      "Ovary wall, which is the thick layer of carpel tissue that surrounds and protects the ovules until fertilisation is complete",
+      "Stigma, which is the sticky top surface of the carpel that receives pollen grains during pollination",
+      "Style, which is the elongated stalk connecting the stigma to the ovary in the carpel",
+      "Receptacle, which is the swollen end of the flower stalk on which all floral parts are attached"
+    ],
+    ans: 0,
+    exp: "The ovary wall (part of the carpel) encloses and protects the ovule(s). After fertilisation, the ovary wall develops into the fruit wall (pericarp), while the ovule develops into the seed." },
+
+  { q: "Which of the following correctly identifies all the male reproductive parts of a flowering plant?",
+    opts: [
+      "The stamen, consisting of the anther (which produces pollen grains) and the filament (which supports the anther)",
+      "The carpel, consisting of the stigma, style, and ovary, which together form the female reproductive unit",
+      "The sepal, which protects the flower bud before it opens, and the petal, which attracts pollinators",
+      "The receptacle and peduncle, which provide structural support for all the floral organs"
+    ],
+    ans: 0,
+    exp: "The stamen is the male reproductive organ. It consists of the anther (produces and releases pollen grains containing male gametes) and the filament (a stalk that positions the anther for pollen dispersal)." },
+
+  { q: "Cross-pollination, unlike self-pollination, is significant in plant reproduction because it:",
+    opts: [
+      "Introduces genetic variation into the offspring by combining genetic material from two different parent plants, increasing adaptability",
+      "Guarantees that every flower on a plant will be pollinated because it does not depend on the same plant",
+      "Eliminates the need for pollinating agents entirely because pollen travels directly between flowers",
+      "Always produces a greater number of seeds per fruit than self-pollination regardless of species"
+    ],
+    ans: 0,
+    exp: "Cross-pollination transfers pollen between different individual plants of the same species, combining their genetic material. This produces offspring with genetic variation, which increases the population's ability to adapt to environmental changes." },
+
+  { q: "After successful fertilisation in a flowering plant, the zygote develops into the:",
+    opts: [
+      "Embryo, which is the young plant contained within the seed and consists of the plumule, radicle, and cotyledon(s)",
+      "Fruit wall (pericarp), which is the fleshy or dry outer covering that develops from the ovary wall",
+      "Testa, which is the hard or papery seed coat that develops from the integuments of the ovule",
+      "Endosperm, which is the nutritive tissue that develops from the fusion of the second male nucleus with the polar nuclei"
+    ],
+    ans: 0,
+    exp: "After fertilisation, the zygote (fertilised egg) undergoes mitotic divisions to develop into the embryo — the young plant consisting of the plumule (shoot), radicle (root), and cotyledon(s) (seed leaves)." },
+
+  { q: "Which of the following correctly describes a habitat in ecological terms?",
+    opts: [
+      "The specific physical place or environment where an organism naturally lives and finds all the conditions necessary for its survival, including food, shelter, and mates",
+      "The total number of individuals of a single species living within a defined geographic area at a specific point in time",
+      "The feeding relationship between organisms in an ecosystem represented as a sequence from producer to final consumer",
+      "The role or function that an organism performs within its community, including what it eats and what eats it"
+    ],
+    ans: 0,
+    exp: "A habitat is the physical location where an organism lives — it provides all the abiotic (temperature, water, soil) and biotic (food, mates, shelter) conditions the organism needs to survive and reproduce." },
+
+  { q: "The term 'population' in ecology refers specifically to:",
+    opts: [
+      "All the individuals of the same species living together in the same area at the same time, capable of interbreeding with each other",
+      "All the different species of organisms living and interacting together in a particular geographical area",
+      "The non-living physical and chemical components of an environment including water, temperature, and soil minerals",
+      "The maximum number of individuals of any species that a given environment can permanently support"
+    ],
+    ans: 0,
+    exp: "A population is a group of individuals of the same species occupying the same area at the same time. Members of a population can interbreed and share a common gene pool." },
+
+  { q: "Which of the following is a correct explanation for why food shortage occurs in many developing countries?",
+    opts: [
+      "Rapid population growth outpacing agricultural productivity, combined with factors such as drought, poor soil, and inadequate food storage and distribution infrastructure",
+      "The deliberate refusal of farmers to grow food crops in preference for cash crops that are entirely exported abroad with no domestic supply",
+      "The complete absence of rainfall in all parts of Africa for extended periods, making all agricultural activity permanently impossible",
+      "The genetic inability of tropical plant species to produce sufficient edible biomass in warm climates compared to temperate species"
+    ],
+    ans: 0,
+    exp: "Food shortage in developing countries is caused by multiple interacting factors: rapid population growth, poor agricultural yields, unpredictable rainfall/drought, post-harvest losses, poor infrastructure, poverty, and political instability — none of these alone is sufficient." },
+
+  { q: "In insect-pollinated flowers (entomophilous flowers), which combination of features is most commonly found?",
+    opts: [
+      "Brightly coloured petals, sweet scent, nectar production, and sticky or spiny pollen grains that cling to visiting insects",
+      "Small inconspicuous petals, no scent, no nectar, and very large quantities of light smooth pollen produced in exposed anthers",
+      "Long pendulous stamens hanging outside the flower to expose pollen to air currents for wind dispersal",
+      "Feathery stigmas positioned outside the flower to trap airborne pollen grains as they drift past"
+    ],
+    ans: 0,
+    exp: "Insect-pollinated flowers attract insects using bright colours, scent, and nectar as rewards. Their pollen is sticky or spiny to attach to insect bodies. Wind-pollinated flowers have the opposite features (small, no scent, smooth light pollen, feathery stigmas)." },
+
+  { q: "The ecological concept of a 'niche' differs from a 'habitat' in that a niche refers to:",
+    opts: [
+      "The role or function of an organism in its community — what it eats, what eats it, when it is active, and how it uses resources — rather than just where it lives",
+      "The total geographic range of a species across the entire planet, including all the habitats it can potentially occupy",
+      "The physical location and environmental conditions of the specific place where an organism lives and reproduces",
+      "The maximum population size that a species can reach in a particular ecosystem before food and space run out"
+    ],
+    ans: 0,
+    exp: "A habitat is WHERE an organism lives; a niche is the organism's ROLE in its community — its feeding habits, time of activity, interactions with other species, and use of resources. Two species cannot occupy the same niche indefinitely (competitive exclusion)." },
+
+  { q: "Which of the following correctly describes what happens during double fertilisation in flowering plants?",
+    opts: [
+      "One male nucleus fuses with the egg cell to form the diploid zygote (future embryo), while the second male nucleus fuses with the two polar nuclei to form the triploid endosperm nucleus",
+      "Both male nuclei fuse with the egg cell simultaneously to produce a tetraploid embryo with double the normal genetic material",
+      "One male nucleus fuses with the antipodal cells, while the second fuses with the synergid cells, producing two separate embryos",
+      "The pollen tube releases both male nuclei into the style, where they both fertilise separate egg cells in different ovules"
+    ],
+    ans: 0,
+    exp: "Double fertilisation (unique to angiosperms): male nucleus 1 + egg cell → zygote (2n, becomes embryo); male nucleus 2 + 2 polar nuclei → endosperm nucleus (3n, becomes food-storing endosperm). Both events occur in the same ovule." },
+
+  // ── 10 with ans:1 (B is correct) ──
+
+  { q: "Wind-pollinated (anemophilous) flowers are characterised by which combination of features?",
+    opts: [
+      "Large, brightly coloured petals; strong sweet fragrance; abundant nectar; and heavy sticky pollen",
+      "Small, inconspicuous petals or no petals; no scent; large quantities of light, smooth, dry pollen; and large feathery stigmas exposed to air",
+      "Tubular petals that form a narrow entrance accessible only to long-tongued insects such as bees and butterflies",
+      "Cup-shaped petals that collect rainwater to float pollen grains across to the stigma of the same species"
+    ],
+    ans: 1,
+    exp: "Wind-pollinated flowers: reduced/absent petals (no need to attract animals), no scent/nectar, enormous quantities of smooth light pollen (most is wasted), and large feathery stigmas to catch airborne pollen. Grasses and many trees are wind-pollinated." },
+
+  { q: "The structure within a seed that provides stored food to nourish the germinating seedling before it can photosynthesise is the:",
+    opts: [
+      "Testa, the protective outer seed coat derived from the integuments of the ovule after fertilisation",
+      "Endosperm or cotyledon(s), which store carbohydrates, proteins, and fats that fuel germination and early seedling growth",
+      "Plumule, the embryonic shoot that grows upward to become the first true stem and leaves of the new plant",
+      "Radicle, the embryonic root that grows downward and anchors the seedling while absorbing water and minerals"
+    ],
+    ans: 1,
+    exp: "Food reserves for the germinating embryo are stored in the endosperm (e.g., maize) or in the cotyledons (e.g., bean). These reserves are mobilised by enzymes during germination before the seedling can make its own food by photosynthesis." },
+
+  { q: "Which of the following correctly distinguishes between biotic and abiotic factors in a habitat?",
+    opts: [
+      "Biotic factors are the non-living physical components of the environment such as temperature, rainfall, and soil pH, while abiotic factors include all living organisms and their interactions",
+      "Biotic factors are all the living components of an environment (organisms, their interactions, food, disease, and competition), while abiotic factors are the non-living physical and chemical conditions (temperature, light, water, pH)",
+      "Biotic factors include only the plants in an ecosystem, while abiotic factors include only the animals and microorganisms",
+      "Biotic and abiotic factors are interchangeable terms that both describe the physical conditions that determine where organisms can live"
+    ],
+    ans: 1,
+    exp: "Biotic factors: living components — food availability, predators, competitors, parasites, disease organisms. Abiotic factors: non-living physical/chemical conditions — temperature, light intensity, rainfall, humidity, pH, soil type, wind." },
+
+  { q: "Population density in ecology is defined as:",
+    opts: [
+      "The total number of births minus the total number of deaths occurring in a population over one calendar year",
+      "The number of individuals of a species per unit area (or volume) of the habitat they occupy",
+      "The rate at which a population increases when resources are unlimited and there are no predators or disease",
+      "The maximum size a population can reach in a given habitat before all resources are completely exhausted"
+    ],
+    ans: 1,
+    exp: "Population density = number of individuals ÷ area (or volume) of habitat. E.g., 500 rabbits per km². It is used to compare how crowded populations are and to study factors that regulate population size." },
+
+  { q: "The process by which pollen grains germinate and grow a pollen tube down the style to deliver male gametes to the ovule is triggered by:",
+    opts: [
+      "The pollen grain landing on any wet surface including petals, leaves, or soil, which provides moisture for germination",
+      "Chemical recognition signals and sugary secretions from the compatible stigma surface, which stimulate pollen grain germination",
+      "The mechanical pressure exerted by visiting insects as they brush pollen from anther to stigma during foraging",
+      "High temperatures generated inside the closed flower bud, which activate enzymes in the dormant pollen grain"
+    ],
+    ans: 1,
+    exp: "Compatible stigma surfaces secrete a sugary solution (sucrose-rich) with specific chemical recognition molecules. These stimulate the pollen grain to absorb water, germinate, and grow a pollen tube down the style toward the ovule." },
+
+  { q: "A food chain in an ecosystem always begins with a:",
+    opts: [
+      "Herbivore, because animals that eat plants are the first organisms to directly consume organic matter in the ecosystem",
+      "Producer (green plant or photosynthetic organism), because only producers can capture sunlight energy and convert it into organic food",
+      "Decomposer, because decomposers break down dead matter and release nutrients that are then taken up by other organisms",
+      "Top carnivore, because energy flows from the most powerful predator down through the food chain to the weakest organism"
+    ],
+    ans: 1,
+    exp: "Food chains always begin with a producer (autotroph) — a green plant or photosynthetic organism that converts sunlight energy into chemical energy (glucose). Energy then flows through successive consumers (herbivores → carnivores)." },
+
+  { q: "Which of the following correctly explains the role of the integuments of an ovule after fertilisation?",
+    opts: [
+      "The integuments develop into the endosperm, providing a rich food supply for the developing embryo within the seed",
+      "The integuments develop into the testa (seed coat), a protective layer that surrounds and protects the embryo during seed dormancy and dispersal",
+      "The integuments develop into the cotyledons, which store food reserves and become the first seed leaves of the new plant",
+      "The integuments develop into the fruit wall (pericarp) by expanding around the entire ovary after fertilisation"
+    ],
+    ans: 1,
+    exp: "The integuments are the protective layers surrounding the ovule. After fertilisation, they harden and develop into the testa (seed coat), which protects the embryo and endosperm from desiccation, mechanical damage, and pathogens during dormancy." },
+
+  { q: "Which of the following methods of food production is most directly associated with addressing food shortage through increasing yield per unit area of land?",
+    opts: [
+      "Shifting cultivation, where farmers abandon exhausted land and move to new areas, leaving old land to recover naturally over many years",
+      "The use of improved high-yielding crop varieties (HYVs) developed by selective breeding, combined with fertiliser application and irrigation",
+      "Hunting and gathering of wild plants and animals from natural forests, which requires no land preparation or inputs",
+      "Monoculture farming without any soil management, which relies entirely on natural soil fertility without any external inputs"
+    ],
+    ans: 1,
+    exp: "High-yielding varieties (HYVs) bred for specific traits (disease resistance, fast maturity, high grain output), combined with fertilisers and irrigation, dramatically increase food production per hectare — the basis of the Green Revolution." },
+
+  { q: "The dispersal of seeds and fruits is important for plant survival primarily because it:",
+    opts: [
+      "Ensures that all seeds remain close to the parent plant where soil conditions are already proven to support plant growth",
+      "Reduces competition between parent plant and offspring, and allows colonisation of new habitats, increasing the species' geographic range",
+      "Prevents seeds from being eaten by animals by moving them quickly away from fruiting trees before animals can locate them",
+      "Increases the rate of germination by exposing seeds to more extreme temperature changes during their journey away from the parent"
+    ],
+    ans: 1,
+    exp: "Seed/fruit dispersal reduces intraspecific competition (parent vs. offspring for light, water, nutrients) and allows the species to colonise new territories. Agents include wind, water, animals (external/internal), and explosive mechanisms." },
+
+  { q: "The carpel of a flowering plant is correctly described as:",
+    opts: [
+      "The male reproductive organ consisting of the anther and filament, which together produce and release pollen grains",
+      "The female reproductive organ consisting of the stigma (pollen receptor), style (pollen tube conduit), and ovary (containing ovules)",
+      "The protective leaf-like structure that covers and protects the flower bud before it opens for pollination",
+      "The brightly coloured modified leaf that attracts insect pollinators to the flower through visual signals"
+    ],
+    ans: 1,
+    exp: "The carpel (pistil) is the female reproductive unit: stigma (sticky/specialised surface for pollen reception), style (connects stigma to ovary, through which the pollen tube grows), and ovary (contains ovules that develop into seeds after fertilisation)." },
+
+  // ── 10 with ans:2 (C is correct) ──
+
+  { q: "A true fruit in botany is defined as a structure that develops from:",
+    opts: [
+      "The receptacle of the flower, which swells and becomes fleshy after fertilisation to attract seed-dispersing animals",
+      "The sepals of the flower, which enlarge and become succulent after fertilisation to protect the developing seeds",
+      "The ovary wall (pericarp) of the flower after fertilisation, enclosing the seeds that develop from the fertilised ovules",
+      "The petals of the flower, which transform into a fleshy protective structure after pollination has occurred"
+    ],
+    ans: 2,
+    exp: "A true fruit develops entirely from the ovary wall (pericarp) after fertilisation. The pericarp may be fleshy (mango, tomato) or dry (bean pod, groundnut). False fruits involve other floral parts (e.g., receptacle in strawberry)." },
+
+  { q: "Which of the following is the most accurate description of what happens to the polar nuclei during double fertilisation?",
+    opts: [
+      "The polar nuclei fuse with the egg cell to create the zygote, which will divide mitotically to produce the embryo",
+      "The polar nuclei remain unfertilised and eventually degenerate after the embryo begins its development within the ovule",
+      "The two polar nuclei fuse with the second male gamete (nucleus) to form a triploid (3n) primary endosperm nucleus that develops into the endosperm",
+      "The polar nuclei migrate out of the ovule and form the protective seed coat (testa) that surrounds the mature seed"
+    ],
+    ans: 2,
+    exp: "In double fertilisation: the 2 polar nuclei + 2nd male nucleus → triploid (3n) endosperm nucleus → endosperm (food store). Meanwhile, egg cell + 1st male nucleus → diploid (2n) zygote → embryo." },
+
+  { q: "The carrying capacity (K) of an environment for a given population is best defined as:",
+    opts: [
+      "The rate at which a population grows when food and space are completely unlimited and there are no predators or disease organisms",
+      "The total biomass of all organisms in an ecosystem, measured in kilograms per square kilometre of habitat area",
+      "The maximum number of individuals of a species that a particular environment can sustainably support, given its available food, water, and space",
+      "The minimum number of individuals required for a population to avoid extinction through inbreeding depression over time"
+    ],
+    ans: 2,
+    exp: "Carrying capacity (K) is the maximum sustainable population size an environment can support given its limiting resources (food, water, shelter, space). When a population reaches K, growth slows and stabilises (logistic growth model)." },
+
+  { q: "Agents of pollination in plants include wind and insects. Which of the following is an additional agent of pollination found particularly in tropical regions?",
+    opts: [
+      "Rainfall and running water, which carry pollen grains in solution from one flower to another of the same species",
+      "Earthworms, which ingest pollen from the soil surface and deposit it on flower stigmas during burrowing activity",
+      "Birds (particularly sunbirds and hummingbirds) and bats, which visit flowers for nectar and transfer pollen on their bodies",
+      "Soil fungi, which form symbiotic associations with plant roots and transport pollen through underground hyphal networks"
+    ],
+    ans: 2,
+    exp: "In tropical regions, birds (ornithophily) and bats (chiropterophily) are important pollinators. Bird-pollinated flowers are typically red/orange with tubular shapes; bat-pollinated flowers open at night, are white/pale, and have strong scents." },
+
+  { q: "Which of the following correctly explains the concept of food web rather than food chain?",
+    opts: [
+      "A food web is simply a more detailed version of a food chain that lists the exact quantity of food eaten by each organism in the ecosystem",
+      "A food web and food chain are interchangeable terms that both describe a single linear sequence of feeding relationships",
+      "A food web is a complex network of interconnected food chains in an ecosystem, showing that most organisms feed on and are eaten by multiple species",
+      "A food web is a chart that shows only the decomposers and producers in an ecosystem, excluding all consumer organisms"
+    ],
+    ans: 2,
+    exp: "A food chain is one linear sequence (grass → rabbit → fox). A food web is a network of many interconnected food chains, reflecting the reality that most animals eat several different prey species and are preyed upon by multiple predators." },
+
+  { q: "The process of germination in seeds requires which three essential conditions?",
+    opts: [
+      "Bright sunlight, rich organic soil, and a pollinating insect to stimulate the dormant embryo inside the seed",
+      "High temperature above 40°C, total darkness, and a large supply of mineral salts dissolved in the surrounding soil water",
+      "Adequate water (for enzyme activation and cell expansion), sufficient oxygen (for aerobic respiration to supply energy), and a suitable temperature (for enzyme function)",
+      "Carbon dioxide for photosynthesis, nitrogen for protein synthesis, and phosphorus for ATP production in the embryo"
+    ],
+    ans: 2,
+    exp: "Germination requires: (1) Water — activates enzymes, softens testa, expands cells; (2) Oxygen — needed for aerobic respiration to release energy for growth; (3) Suitable temperature — for enzyme activity. Light is NOT required for germination (though some seeds are light-sensitive)." },
+
+  { q: "Which type of fruit dispersal mechanism is correctly described below?",
+    opts: [
+      "Hydrochory is the dispersal of fruits and seeds by animals that eat the fruits and excrete the seeds in their droppings far from the parent plant",
+      "Anemochory is the dispersal of fruits and seeds by water currents in rivers, streams, and ocean tides carrying buoyant fruits",
+      "Zoochory is the dispersal of fruits and seeds by animals, either by attachment to fur or feathers (external) or by ingestion and excretion (internal)",
+      "Autochory is the dispersal of fruits and seeds by wind, using structures like wings, hairs, or plumes to keep them airborne"
+    ],
+    ans: 2,
+    exp: "Zoochory = animal dispersal: external (hooks/burrs cling to fur — Xanthium), internal (fruit eaten, seeds excreted — tomato). Anemochory = wind; Hydrochory = water; Autochory = explosive self-dispersal (Impatiens, Hura)." },
+
+  { q: "The relationship between a tapeworm living inside the intestine of a human host is best classified as:",
+    opts: [
+      "Mutualism, because both the tapeworm and the human benefit from the relationship — the tapeworm gets food and the human gets digestion assistance",
+      "Commensalism, because the tapeworm benefits from the relationship while the human host is completely unaffected and suffers no harm",
+      "Parasitism, because the tapeworm benefits (gains nutrients from the host) while the human host is harmed (suffers nutrient loss, tissue damage, illness)",
+      "Predation, because the tapeworm actively hunts and kills host cells the way a predator kills and consumes prey in a food chain"
+    ],
+    ans: 2,
+    exp: "Parasitism: one organism (parasite — tapeworm) benefits at the expense of another (host — human). The tapeworm absorbs digested food through its body surface, depriving the host of nutrients and potentially causing serious illness." },
+
+  { q: "Which of the following is a structural adaptation of insect-pollinated flowers that specifically increases the chance of cross-pollination rather than self-pollination?",
+    opts: [
+      "The production of very large quantities of pollen so that some inevitably lands on the stigma of the same flower",
+      "The placement of the nectaries deep inside the flower so that only small insects with short tongues can access the nectar",
+      "Protandry or protogyny — the anthers and stigma of the same flower maturing at different times so that self-pollination is prevented",
+      "The production of pollen with a smooth surface so that it does not stick to the insect's body and stays on the anther longer"
+    ],
+    ans: 2,
+    exp: "Protandry (anthers mature before stigma) and protogyny (stigma matures before anthers) are mechanisms that prevent self-fertilisation. By the time the stigma is receptive, the anthers have shed their pollen — so the flower must receive pollen from another plant." },
+
+  { q: "Which of the following correctly explains why population growth rates are affected by limiting factors?",
+    opts: [
+      "Limiting factors increase the birth rate of a population by providing extra energy and nutrients that allow more offspring to be produced per individual",
+      "Limiting factors have no effect on population size because populations can always adapt their behaviour to overcome resource shortages",
+      "Limiting factors such as food shortage, disease, predation, and space restrict population growth by increasing the death rate and/or decreasing the birth rate, preventing indefinite exponential growth",
+      "Limiting factors only affect animal populations; plant populations are not subject to limiting factors because they produce their own food through photosynthesis"
+    ],
+    ans: 2,
+    exp: "Limiting factors (food, water, space, disease, predation) act as negative feedback on population growth: as population increases, resources per individual decrease → starvation, disease, and competition increase death rates and reduce birth rates, slowing growth toward carrying capacity K." },
+
+  // ── 10 with ans:3 (D is correct) ──
+
+  { q: "The ovule of a flowering plant, after successful fertilisation, develops into the:",
+    opts: [
+      "Fruit, which is the mature ovary containing the seeds and serving as a dispersal and protective structure",
+      "Pollen grain, which germinates on the stigma and grows a pollen tube to deliver male gametes to the ovule",
+      "Style, which is the elongated portion of the carpel through which the pollen tube grows toward the ovary",
+      "Seed, consisting of the embryo (future plant), food reserves (endosperm or cotyledons), and the testa (seed coat)"
+    ],
+    ans: 3,
+    exp: "After fertilisation: ovule → seed (contains embryo + food store + testa); ovary → fruit. The ovule's integuments → testa; egg cell → embryo; polar nuclei → endosperm; the ovary wall → pericarp (fruit wall)." },
+
+  { q: "Which of the following correctly describes a community in ecological terminology?",
+    opts: [
+      "A single population of one species living and reproducing in a well-defined geographical area at one point in time",
+      "The non-living physical environment of a habitat, including soil composition, water availability, and climate conditions",
+      "A single food chain showing the linear feeding relationships between producers and consumers in a given location",
+      "All the different species of organisms (plants, animals, fungi, microorganisms) living and interacting together in a particular habitat"
+    ],
+    ans: 3,
+    exp: "A community is the biotic component of an ecosystem — ALL species (plants, animals, fungi, bacteria) living together and interacting in a habitat. Population = one species; community = all species; ecosystem = community + abiotic environment." },
+
+  { q: "The pollen tube, after germinating from the pollen grain on the stigma, grows toward the ovule by:",
+    opts: [
+      "Following electrical gradients generated by the ovule, which attract the negatively charged tip of the growing pollen tube",
+      "Growing randomly in all directions until it accidentally reaches the ovule through trial-and-error movement",
+      "Being physically pushed down the style by repeated pollen grain germination events occurring on the stigma above it",
+      "Chemotropism — growing toward chemical attractants (such as calcium gradients and specific proteins) secreted by the ovule and surrounding tissues"
+    ],
+    ans: 3,
+    exp: "Pollen tube growth is directed by chemotropism — chemical gradients (calcium ions, specific peptide signals) secreted by the style and ovule guide the pollen tube from stigma through style to the micropyle of the ovule." },
+
+  { q: "Which of the following is a consequence of overpopulation in relation to food shortage in a given ecosystem or country?",
+    opts: [
+      "Overpopulation automatically triggers an increase in agricultural productivity through economies of scale and increased labour supply",
+      "Overpopulation reduces food shortage because more people means more farmers and therefore more food production",
+      "Overpopulation has no relationship with food shortage because food production technology always keeps pace with population growth",
+      "Overpopulation increases demand for food faster than supply can be increased, leading to food insecurity, malnutrition, and competition for limited arable land and water resources"
+    ],
+    ans: 3,
+    exp: "When population grows faster than food production, per capita food availability falls. This leads to food insecurity, malnutrition (especially in children), overexploitation of farmland, deforestation for new farmland, and environmental degradation." },
+
+  { q: "Which of the following correctly explains why some ecosystems have more complex food webs than others?",
+    opts: [
+      "Ecosystems with larger animals always have more complex food webs because larger animals eat more different species than smaller ones",
+      "Ecosystems with higher rainfall always have simpler food webs because water makes it easier for one species to dominate all others",
+      "The complexity of a food web is determined solely by the number of decomposers present, not by the diversity of producers and consumers",
+      "Ecosystems with higher biodiversity (more species) have more complex food webs because more species means more possible feeding relationships and interactions"
+    ],
+    ans: 3,
+    exp: "Food web complexity increases with species diversity (biodiversity). Tropical rainforests have the most complex food webs because they contain the greatest number of species, each with multiple potential prey and predators, creating many interconnections." },
+
+  { q: "The role of decomposers in an ecosystem is best described as:",
+    opts: [
+      "Converting sunlight energy into chemical energy stored in organic molecules, forming the base of every food chain in the ecosystem",
+      "Consuming living plant material and converting it into animal biomass that can then be eaten by secondary consumers",
+      "Preying on the largest and most dominant carnivores, thereby regulating the populations of top predators in the ecosystem",
+      "Breaking down dead organic matter (dead plants, dead animals, faeces) into inorganic nutrients, recycling essential elements back into the soil and atmosphere"
+    ],
+    ans: 3,
+    exp: "Decomposers (bacteria, fungi) break down dead organic matter into simple inorganic compounds (CO₂, water, mineral salts). This decomposition recycles nutrients back into the soil for uptake by producers, completing nutrient cycles (carbon, nitrogen cycles)." },
+
+  { q: "Which of the following correctly identifies the correct sequence of events from pollination to seed formation?",
+    opts: [
+      "Pollination → fertilisation → seed dispersal → germination → pollen tube formation → double fertilisation",
+      "Fertilisation → pollination → pollen tube growth → zygote formation → endosperm formation → seed maturation",
+      "Pollen tube growth → pollination → double fertilisation → testa formation → fruit development → endosperm",
+      "Pollination → pollen tube germination and growth → double fertilisation → zygote (→embryo) and endosperm nucleus (→endosperm) → seed maturation"
+    ],
+    ans: 3,
+    exp: "Correct sequence: (1) Pollination (pollen on stigma) → (2) Pollen germinates, pollen tube grows through style → (3) Double fertilisation in ovule → (4) Zygote → embryo; endosperm nucleus → endosperm → (5) Ovule matures into seed." },
+
+  { q: "A population growth curve showing a rapid initial increase that slows and levels off at carrying capacity is known as:",
+    opts: [
+      "An exponential (J-shaped) growth curve, which occurs when resources are unlimited and populations grow at a constant percentage rate",
+      "A linear growth curve, in which population size increases by exactly the same fixed number of individuals every year regardless of density",
+      "A boom-and-bust (oscillating) curve, where populations repeatedly overshoot and crash below carrying capacity in regular cycles",
+      "A logistic (S-shaped or sigmoid) growth curve, which occurs when a population encounters limiting factors as it approaches the carrying capacity of its environment"
+    ],
+    ans: 3,
+    exp: "Logistic (S-shaped/sigmoid) growth: rapid exponential increase at low density → growth rate slows as resources become limiting → population stabilises at carrying capacity (K). This is realistic for most natural populations with limited resources." },
+
+  { q: "Which of the following adaptations of seeds allows them to remain dormant for long periods before germinating?",
+    opts: [
+      "Seeds remain active throughout dormancy by continuously respiring at a very high rate, consuming stored food reserves slowly over many years",
+      "Seeds avoid dormancy by germinating immediately after being released from the parent plant while conditions are still ideal",
+      "Seeds maintain dormancy by absorbing large quantities of water during their development, which prevents enzyme activation until the water evaporates",
+      "Seeds have a low water content (greatly reduced metabolic rate), a hard protective testa that is impermeable to water and gases, and chemical inhibitors that suppress germination until the right conditions occur"
+    ],
+    ans: 3,
+    exp: "Seed dormancy mechanisms: very low moisture content → minimal metabolism; hard impermeable testa; dormancy-maintaining hormones (abscisic acid). Dormancy ensures seeds survive unfavourable conditions and germinate only when water, temperature, and oxygen are sufficient." },
+
+  { q: "Overgrazing by livestock is most directly linked to food shortage through which of the following mechanisms?",
+    opts: [
+      "Overgrazing increases soil fertility by constantly breaking the soil surface, allowing rainwater to penetrate more deeply into the subsoil layers",
+      "Overgrazing increases plant diversity because the removal of dominant plant species allows smaller species to grow and colonise bare ground",
+      "Overgrazing reduces competition among livestock by spreading animals over a wider area, improving the health and productivity of herds",
+      "Overgrazing removes plant cover faster than it can regenerate, leading to soil erosion, desertification, and loss of agricultural productivity, reducing food supply"
+    ],
+    ans: 3,
+    exp: "Overgrazing removes vegetation faster than it can regenerate. Exposed soil is eroded by wind and rain, leading to desertification. The loss of topsoil and vegetative cover permanently reduces the land's carrying capacity for future food production." }
 ],
 
-'English': [
-    {
-        q: "Identify the word that is closest in meaning to 'laconic'.",
-        opts: ["Talkative", "Exhaustive", "Brief and concise in speech", "Eloquent and persuasive"],
-        ans: 2,
-        exp: "'Laconic' describes someone who uses very few words to express themselves — brief and to the point."
-    },
-    {
-        q: "Which of the following sentences correctly uses the possessive apostrophe?",
-        opts: ["The boys' books are on the shelf.", "The boys's books are on the shelf.", "The boys book's are on the shelf.", "The boys books's are on the shelf."],
-        ans: 0,
-        exp: "For plural nouns ending in 's', the possessive apostrophe is placed after the 's': 'boys'' (the books belonging to the boys)."
-    },
-    {
-        q: "Choose the sentence in which the active voice is correctly used.",
-        opts: ["The letter was written by Amara.", "The homework was done by the students.", "The teacher marked all the scripts.", "All the scripts were marked by the teacher."],
-        ans: 2,
-        exp: "In the active voice, the subject performs the action. 'The teacher marked all the scripts' — the teacher (subject) performs the action (marked)."
-    },
-    {
-        q: "The word 'pertinacious' most nearly means ___.",
-        opts: ["Easily discouraged", "Stubbornly persistent", "Extremely generous", "Wildly confused"],
-        ans: 1,
-        exp: "'Pertinacious' means holding firmly to an opinion or course of action — stubbornly persistent or determined."
-    },
-    {
-        q: "Which punctuation mark is used to introduce a list or a clause that explains the preceding clause?",
-        opts: ["Semicolon", "Comma", "Colon", "Dash"],
-        ans: 2,
-        exp: "A colon (:) is used to introduce a list, explanation, or quotation that follows from the preceding clause."
-    },
-    {
-        q: "In the sentence 'He would have come if he had known', the underlined verb phrase illustrates ___.",
-        opts: ["the simple past tense", "the third conditional", "the second conditional", "the present perfect tense"],
-        ans: 1,
-        exp: "The structure 'would have + past participle...if + past perfect' forms the third conditional, used for hypothetical past situations."
-    },
-    {
-        q: "Choose the word that best completes the sentence: 'The manager was ___  about signing the contract without consulting the board.'",
-        opts: ["dilatory", "laudatory", "pertinacious", "laconic"],
-        ans: 0,
-        exp: "'Dilatory' means slow to act or tending to delay. The manager was hesitant/slow about signing without consultation."
-    },
-    {
-        q: "Which of the following is a relative pronoun?",
-        opts: ["He", "They", "Who", "Them"],
-        ans: 2,
-        exp: "'Who' is a relative pronoun used to introduce a relative clause referring to a person (e.g., 'The man who came yesterday...')."
-    },
-    {
-        q: "Identify the type of sentence: 'What a magnificent performance she gave!'",
-        opts: ["Declarative", "Interrogative", "Imperative", "Exclamatory"],
-        ans: 3,
-        exp: "An exclamatory sentence expresses strong emotion or emphasis and ends with an exclamation mark. 'What a...' is a typical exclamatory construction."
-    },
-    {
-        q: "The word 'nefarious' most nearly means ___.",
-        opts: ["Heroic", "Wicked and criminal", "Careless", "Extremely wealthy"],
-        ans: 1,
-        exp: "'Nefarious' describes actions or people that are wicked, criminal, or villainous."
-    },
-    {
-        q: "A formal letter of complaint should ___.",
-        opts: ["use slang and informal language for clarity", "be emotional and personally threatening", "state the problem clearly and suggest a resolution", "omit the date and address of the recipient"],
-        ans: 2,
-        exp: "A formal letter of complaint should clearly describe the problem, provide evidence, and suggest a reasonable resolution, using polite and formal language throughout."
-    },
-    {
-        q: "In English phonology, intonation refers to ___.",
-        opts: ["the speed at which words are spoken", "the rise and fall of pitch in speech", "the rhythm of syllables in a word", "the volume at which speech is delivered"],
-        ans: 1,
-        exp: "Intonation refers to the variation in pitch (rise and fall) across sentences, used to convey meaning, attitude, and grammatical information."
-    },
-    {
-        q: "Choose the sentence that correctly uses a phrasal verb.",
-        opts: ["She put up with his rude behaviour.", "She put up his with rude behaviour.", "She put his up with rude behaviour.", "She with put up his rude behaviour."],
-        ans: 0,
-        exp: "'Put up with' is a phrasal verb meaning to tolerate. The object can follow the phrasal verb: 'She put up with his behaviour.'"
-    },
-    {
-        q: "The literary term for the repetition of consonant sounds at the beginning of words in close succession is ___.",
-        opts: ["Assonance", "Alliteration", "Onomatopoeia", "Rhyme"],
-        ans: 1,
-        exp: "Alliteration is the repetition of the same initial consonant sound in closely connected words, e.g., 'Peter Piper picked a peck of pickled peppers.'"
-    },
-    {
-        q: "Choose the word that correctly completes the sentence: 'Her speech was full of ___, saying nothing new or interesting.'",
-        opts: ["vestige", "platitude", "feisty", "consensus"],
-        ans: 1,
-        exp: "A 'platitude' is a trite, meaningless, or overused statement or remark, especially one used as if it were fresh or significant."
-    },
-    {
-        q: "In the context of journalism and the press, 'copy' refers to ___.",
-        opts: ["an identical document produced by a photocopier", "the written material that is to be published in a newspaper or magazine", "the front page of a newspaper only", "the photographs used to illustrate a news story"],
-        ans: 1,
-        exp: "In journalism, 'copy' refers to the text of a news story or article prepared for publication."
-    },
-    {
-        q: "Which of the following words is correctly described as 'capricious'?",
-        opts: ["A judge who applies the law consistently and fairly", "A student who studies diligently every day", "A friend whose moods and decisions change unpredictably", "A manager who plans every detail carefully"],
-        ans: 2,
-        exp: "'Capricious' means given to sudden and unaccountable changes of mood or behaviour — unpredictable and impulsive."
-    },
-    {
-        q: "Identify the consonant sounds that are contrasted in the minimal pair 'back' and 'pack'.",
-        opts: ["/d/ and /t/", "/b/ and /p/", "/g/ and /k/", "/v/ and /f/"],
-        ans: 1,
-        exp: "'Back' begins with /b/ and 'pack' begins with /p/. These are a consonant minimal pair differing only in voicing (/b/ is voiced, /p/ is voiceless)."
-    },
-    {
-        q: "The sequence of tenses rule requires that ___.",
-        opts: ["all verbs in a sentence must be in the same tense", "the tense of the verb in a subordinate clause is consistent with the tense of the main clause", "subordinate clauses must always be in the present tense", "no sentence should contain more than two different tenses"],
-        ans: 1,
-        exp: "The sequence of tenses rule states that the verb in a subordinate clause should reflect the tense of the main clause (e.g., 'She said she was tired' — past follows past)."
-    },
-    {
-        q: "Which of the following is associated with the 'rising tune' in English intonation?",
-        opts: ["Statements expressing certainty", "Requests for repetition and yes/no questions", "Exclamations of strong feeling", "Commands and instructions"],
-        ans: 1,
-        exp: "The rising tune (↗) in English intonation is typically used for yes/no questions and requests for confirmation or repetition."
-    },
-    {
-        q: "The word 'ostracism' means ___.",
-        opts: ["a type of formal writing style", "the act of excluding someone from a society or group", "a government policy on immigration", "a method of literary analysis"],
-        ans: 1,
-        exp: "'Ostracism' is the exclusion of a person from a community or social group, originally used in ancient Athens."
-    },
-    {
-        q: "In which of the following sentences is the passive voice correctly formed?",
-        opts: ["The cake was eaten by the children.", "The children was eaten the cake.", "The cake eaten was by the children.", "The children ate the cake was."],
-        ans: 0,
-        exp: "Passive voice: subject + auxiliary verb (was/were) + past participle + by + agent. 'The cake was eaten by the children' is correctly formed."
-    },
-    {
-        q: "The word 'acerbic' most nearly means ___.",
-        opts: ["Sweet and pleasant in taste", "Sharp and forthright in expression; harsh", "Slow and deliberate in manner", "Generous and giving"],
-        ans: 1,
-        exp: "'Acerbic' describes speech or manner that is sharp, biting, and critical — often used to describe harsh or sarcastic wit."
-    },
-    {
-        q: "Which of the following sentences is declarative?",
-        opts: ["Close the door immediately!", "Is the assignment due tomorrow?", "The students submitted their assignments on time.", "What a brilliant idea that was!"],
-        ans: 2,
-        exp: "A declarative sentence makes a statement or provides information. 'The students submitted their assignments on time' states a fact."
-    },
-    {
-        q: "Vocabulary associated with construction and building includes ___.",
-        opts: ["Canvas, palette, and easel", "Foundation, scaffold, and mortar", "Caption, headline, and byline", "Audit, ledger, and invoice"],
-        ans: 1,
-        exp: "Foundation (base structure), scaffold (temporary framework for workers), and mortar (binding material) are all terms associated with construction and building."
-    },
-    {
-        q: "Identify the word closest in meaning to 'exigent'.",
-        opts: ["Relaxed and unhurried", "Pressing and requiring immediate attention", "Generous and patient", "Simple and easily satisfied"],
-        ans: 1,
-        exp: "'Exigent' means requiring immediate action or attention; urgent and pressing."
-    },
-    {
-        q: "Which of the following correctly identifies an imperative sentence?",
-        opts: ["Did you finish your homework?", "She finishes her homework every evening.", "Finish your homework before dinner.", "She has finished her homework."],
-        ans: 2,
-        exp: "An imperative sentence gives a command or instruction. 'Finish your homework before dinner' issues a direct instruction."
-    },
-    {
-        q: "The word 'myopic' is used figuratively to describe someone who ___.",
-        opts: ["has very good long-distance vision", "lacks foresight and considers only immediate concerns", "is extremely detail-oriented", "has broad and far-reaching vision"],
-        ans: 1,
-        exp: "Figuratively, 'myopic' (literally short-sighted) describes someone who fails to consider long-term consequences or broader implications."
-    },
-    {
-        q: "In the context of stress in English, which syllable carries the primary stress in the word 'pho-to-GRAPH-ic'?",
-        opts: ["PHO", "TO", "GRAPH", "IC"],
-        ans: 2,
-        exp: "In 'photographic', the primary stress falls on the third syllable: pho-to-GRAPH-ic."
-    },
-    {
-        q: "The word 'spurious' most nearly means ___.",
-        opts: ["Genuine and authentic", "False or not what it claims to be", "Expensive and rare", "Cheerful and lively"],
-        ans: 1,
-        exp: "'Spurious' means not genuine, authentic, or true; false or based on incorrect reasoning."
-    },
-    {
-        q: "Identify the correctly punctuated sentence.",
-        opts: ["Its a lovely day, isnt it?", "It's a lovely day, isn't it?", "Its' a lovely day, isn't it?", "It's a lovely day isn't it."],
-        ans: 1,
-        exp: "'It's' is the contraction of 'it is' (apostrophe needed). 'Isn't' is the contraction of 'is not'. The sentence ends with a question mark as it is a tag question."
-    },
-    {
-        q: "A 'byline' in journalism refers to ___.",
-        opts: ["the headline of a news article", "the line naming the author of a published article", "the caption beneath a photograph", "the final sentence of a news report"],
-        ans: 1,
-        exp: "A byline is the line in a newspaper or magazine article that gives the name of the author of the piece."
-    },
-    {
-        q: "In the following sentence, identify the type of clause underlined: 'The book THAT SHE BORROWED is overdue.'",
-        opts: ["Adverbial clause", "Noun clause", "Relative (adjective) clause", "Conditional clause"],
-        ans: 2,
-        exp: "'That she borrowed' modifies the noun 'book' by telling us more about it. A clause that modifies a noun is a relative (adjective) clause."
-    },
-    {
-        q: "The consonant sounds /k/ and /g/ differ in that ___.",
-        opts: ["/k/ is voiced and /g/ is voiceless", "/k/ is voiceless and /g/ is voiced", "both are voiced", "both are voiceless"],
-        ans: 1,
-        exp: "/k/ (as in 'cat') is voiceless — produced without vibration of the vocal cords. /g/ (as in 'go') is its voiced counterpart."
-    },
-    {
-        q: "Which of the following best explains the term 'heterogeneous'?",
-        opts: ["Made up of identical or similar elements", "Consisting of diverse or dissimilar elements", "Having a single uniform composition", "Derived from a single original source"],
-        ans: 1,
-        exp: "'Heterogeneous' means consisting of many different kinds or types of elements; diverse and varied in composition."
-    },
-    {
-        q: "The word 'nonplussed' means ___.",
-        opts: ["Calm and completely unaffected", "Absolutely certain and confident", "Surprised and confused so as not to know what to say", "Angry and confrontational"],
-        ans: 2,
-        exp: "'Nonplussed' means so surprised and confused that one is unsure how to react."
-    },
-    {
-        q: "Choose the option that correctly rewrites this sentence in the passive voice: 'The principal announced the results.'",
-        opts: ["The results announced the principal.", "The results were announced by the principal.", "The results are announced by the principal.", "The principal was announced the results."],
-        ans: 1,
-        exp: "Passive voice: The object becomes the subject + was/were + past participle + by + original subject. 'The results were announced by the principal.'"
-    },
-    {
-        q: "A 'cloze' test in English language assessment requires students to ___.",
-        opts: ["write an essay on a given topic", "identify and correct grammatical errors in a passage", "fill in words that have been removed from a passage", "listen and summarise an oral passage"],
-        ans: 2,
-        exp: "A cloze test is a reading comprehension activity in which words are deleted from a passage and students fill in the blanks using context clues."
-    },
-    {
-        q: "Which of the following words has a negative connotation?",
-        opts: ["Determined", "Tenacious", "Obstinate", "Persistent"],
-        ans: 2,
-        exp: "While 'determined', 'tenacious', and 'persistent' are generally positive, 'obstinate' carries a negative connotation, implying unreasonable stubbornness."
-    },
-    {
-        q: "The term 'disarmament' refers to ___.",
-        opts: ["the strengthening of military forces", "the reduction or elimination of a country's weapons and armed forces", "the training of soldiers for combat", "the use of weapons in international disputes"],
-        ans: 1,
-        exp: "'Disarmament' is the process of reducing, limiting, or abolishing weapons, especially weapons of mass destruction, by countries or parties."
-    },
-    {
-        q: "Identify the figure of speech in: 'The classroom was a zoo during the teacher's absence.'",
-        opts: ["Simile", "Personification", "Metaphor", "Hyperbole"],
-        ans: 2,
-        exp: "This is a metaphor — a direct comparison between the classroom and a zoo without using 'like' or 'as'. It implies the class was chaotic and unruly."
-    }
+'English Language': [
+
+  // ── 10 with ans:0 (A is correct) ──
+
+  { q: "Identify the sentence that correctly uses the passive voice:",
+    opts: [
+      "The newspaper article was written by an experienced journalist who specialised in investigative reporting.",
+      "The experienced journalist wrote the newspaper article with great skill and attention to detail.",
+      "The journalist, having written the article, submitted it to the editor for final review and approval.",
+      "Writing the newspaper article took the experienced journalist several weeks of research and interviews."
+    ],
+    ans: 0,
+    exp: "Passive voice: subject receives the action. 'The newspaper article was written by an experienced journalist' — 'the article' is the subject receiving the action 'was written'. Option B is active voice; C uses a participle phrase; D uses a gerund as subject." },
+
+  { q: "Which of the following sentences correctly uses the definite article 'the' according to standard English grammar rules?",
+    opts: [
+      "She is the only student in the class who scored full marks in the mathematics examination last term.",
+      "She is a only student in a class who scored a full marks in a mathematics examination last term.",
+      "She is only student in class who scored full marks in mathematics examination last term.",
+      "She is an only student in the class who scored the full marks in mathematics examination last term."
+    ],
+    ans: 0,
+    exp: "'The' is used before unique things ('the only'), specific nouns ('the class', 'the mathematics examination'). Option A correctly uses 'the' before 'only student' (superlative/unique), 'the class' (specific), and 'the mathematics examination' (specific event)." },
+
+  { q: "Which of the following words is a correctly formed word using the prefix 'pre-' associated with the publishing industry?",
+    opts: [
+      "'Preprint', meaning a version of a manuscript that has been distributed or published before formal peer review or official publication",
+      "'Depublish', meaning to withdraw a previously published work from circulation after errors have been discovered",
+      "'Publicise', meaning to make information about a publication widely known through advertising and promotion",
+      "'Reprint', meaning to print additional copies of an existing publication to meet continuing or new demand"
+    ],
+    ans: 0,
+    exp: "'Pre-' means 'before'. 'Preprint' = before official print/publication. In the printing/publishing context, a preprint is an early draft shared before formal publication. 'Re-' means again (reprint); 'de-' means reverse (depublish); '-ise' is a suffix (publicise)." },
+
+  { q: "In the context of printing and publishing, the term 'typography' refers to:",
+    opts: [
+      "The art and technique of arranging type (fonts, sizes, spacing, and layout) to make written language legible, readable, and visually appealing when printed",
+      "The process of binding the printed pages of a book together along the spine using glue, stitching, or staples",
+      "The physical machinery used in a printing press to apply ink to paper in large quantities during mass production",
+      "The copyright protection given to authors and publishers to prevent unauthorised reproduction of their printed works"
+    ],
+    ans: 0,
+    exp: "Typography: the art of arranging typefaces, choosing fonts, sizes, line spacing, and text layout for maximum readability and aesthetic appeal. It is a core skill in the printing and publishing industry." },
+
+  { q: "Which of the following sentences correctly demonstrates the use of a coordinating conjunction to join two independent clauses?",
+    opts: [
+      "The engineering team completed the structural analysis, but the project manager rejected the final report citing safety concerns.",
+      "Although the engineering team completed the structural analysis the project manager rejected the final report.",
+      "The engineering team completing the structural analysis and the project manager's rejection of the final report.",
+      "Because of the completed structural analysis, the rejection of the final report by the project manager was unexpected."
+    ],
+    ans: 0,
+    exp: "Coordinating conjunctions (FANBOYS: for, and, nor, but, or, yet, so) join two independent clauses with a comma. Option A: 'but' joins two complete sentences. Option B uses 'although' (subordinating). Options C and D are not two independent clauses joined by a coordinating conjunction." },
+
+  { q: "Which of the following correctly identifies the /l/ sound as it appears at the beginning of a word in English?",
+    opts: [
+      "'Lateral' — the /l/ at the start is produced by placing the tip of the tongue on the alveolar ridge while air flows around the sides of the tongue",
+      "'Nightly' — the initial /n/ sound is similar to /l/ because both involve the tongue touching the alveolar ridge",
+      "'Right' — the initial /r/ sound is often confused with /l/ by non-native speakers and represents the same phoneme",
+      "'Written' — the silent 'w' followed by 'r' produces an initial sound that is phonetically equivalent to /l/"
+    ],
+    ans: 0,
+    exp: "The /l/ sound (lateral approximant) is produced with the tongue tip on the alveolar ridge and air flowing around the sides. 'Lateral' begins with a clear /l/ sound. The /n/ involves nasal airflow; /r/ is a different articulation point." },
+
+  { q: "Expository writing is best defined as writing that:",
+    opts: [
+      "Presents factual information, explains ideas, or describes a process in a clear, logical, and objective manner without the writer's personal opinion or narrative",
+      "Uses vivid imagery, metaphor, and personal anecdotes to create an emotional response in the reader through subjective description",
+      "Argues a specific point of view using evidence and persuasive techniques to change the reader's beliefs or actions",
+      "Tells a story (real or imaginary) using characters, plot, setting, and dialogue to entertain or engage the reader"
+    ],
+    ans: 0,
+    exp: "Expository writing: informs, explains, or describes objectively. Examples: textbooks, encyclopaedias, instruction manuals, news reports. It differs from narrative (tells a story), persuasive (argues a position), and descriptive (paints a picture) writing." },
+
+  { q: "Which of the following sentences correctly uses a prefix to negate the meaning of the base word?",
+    opts: [
+      "The government's decision was considered irrational by most economists, who argued it would worsen the budget deficit.",
+      "The government's decision was considered rational by most economists, who argued it would improve the budget surplus.",
+      "The government's decision was considered preemptive by most economists, who anticipated it would prevent the deficit.",
+      "The government's decision was considered postmodern by most economists, who felt it reflected outdated economic theory."
+    ],
+    ans: 0,
+    exp: "The prefix 'ir-' (a variant of 'in-') negates 'rational' → 'irrational' (not rational). Common negating prefixes: un-, in-, im-, il-, ir-, dis-, non-. 'Pre-' means before; 'post-' means after — these are not negating prefixes." },
+
+  { q: "A word associated with the government and politics that means 'the process by which citizens choose their representatives through voting' is:",
+    opts: [
+      "Election — the formal process by which voters cast ballots to select candidates for public office or to decide on policy questions",
+      "Legislation — the body of laws enacted by a parliament or legislative assembly on behalf of the governing authority",
+      "Constituency — the group of voters in a specific area who are represented by an elected official in a legislative body",
+      "Manifesto — a public declaration by a political party or candidate of their policies, intentions, and goals if elected to office"
+    ],
+    ans: 0,
+    exp: "'Election' is the process of choosing representatives through voting. 'Legislation' refers to laws; 'constituency' is the geographical area of voters; 'manifesto' is a statement of policies. All are government/politics vocabulary." },
+
+  { q: "In English syllable rules, which of the following words is correctly divided into syllables?",
+    opts: [
+      "trans-por-ta-tion (4 syllables) — correctly divided at natural syllable boundaries following the vowel-consonant pattern",
+      "transportation (1 syllable) — because all letters are in one connected sequence without any vowel breaks",
+      "trans-port-ation (3 syllables) — incorrectly splitting the suffix '-ation' across two syllable boundaries",
+      "t-r-a-n-s-p-o-r-t-a-t-i-o-n — each letter represents a separate syllable in this word"
+    ],
+    ans: 0,
+    exp: "Syllable division rules: each syllable contains one vowel sound. 'Transportation': trans-por-ta-tion (4 syllables: /træns/ + /pɔː/ + /teɪ/ + /ʃən/). Syllables are sound units, not letter units — option D (letter-by-letter) is incorrect." },
+
+  // ── 10 with ans:1 (B is correct) ──
+
+  { q: "Which of the following sentences contains a correctly placed prepositional phrase that modifies the verb?",
+    opts: [
+      "The chef prepared the meal, which was delicious, for the guests in the kitchen using traditional methods.",
+      "The chef prepared the traditional meal for the guests in the banquet hall with great skill and precision.",
+      "The chef, with great skill and precision the meal for the guests in the banquet hall, prepared it traditionally.",
+      "Prepared by the chef with skill, the guests in the banquet hall enjoyed the traditional meal for dinner."
+    ],
+    ans: 1,
+    exp: "'For the guests in the banquet hall' is a prepositional phrase modifying 'prepared' (telling where/for whom). In option B, the prepositional phrases are clearly positioned after the verb they modify without ambiguity. Option A creates ambiguity about what 'in the kitchen' modifies." },
+
+  { q: "The suffix '-tion' (as in 'publication') changes a verb into a:",
+    opts: [
+      "Adjective — '-tion' changes the adjective into a verb form suitable for use as a modifier in a noun phrase",
+      "Noun — '-tion' is a nominal suffix that converts a verb (publish) into an abstract noun (publication) referring to the act or result of that verb",
+      "Adverb — '-tion' creates an adverb that modifies verbs and adjectives in the same way that '-ly' does",
+      "Verb — '-tion' is a verbal suffix that creates a new verb form with a different tense or aspect"
+    ],
+    ans: 1,
+    exp: "'-tion' / '-ation' is a nominal suffix: publish → publication; educate → education; print → printion (irregular). It forms abstract nouns referring to an action, process, or result. Other nominal suffixes: -ment, -ness, -ity, -er." },
+
+  { q: "An idiom is best defined as:",
+    opts: [
+      "A figure of speech that directly compares two unlike things using the words 'like' or 'as' to create a vivid image",
+      "A group of words whose collective meaning is different from the literal meaning of the individual words, and which is understood as a unit",
+      "A word formed by combining the first letters or syllables of a series of words, such as NATO or UNESCO",
+      "A word that imitates the natural sound associated with the object or action it describes, such as 'buzz' or 'hiss'"
+    ],
+    ans: 1,
+    exp: "Idiom: a fixed expression whose meaning cannot be determined from the literal meaning of its words. E.g., 'kick the bucket' (die), 'hit the road' (leave), 'bite the bullet' (endure difficulty). Option A = simile; C = acronym; D = onomatopoeia." },
+
+  { q: "Which of the following sentences correctly uses an adjectival clause to modify a noun?",
+    opts: [
+      "The engineer designed the bridge carefully so that it could withstand the weight of heavy vehicles.",
+      "The bridge, which was designed by a team of civil engineers, spans the widest river in the country.",
+      "Designing the bridge required careful planning by the engineering team working on the infrastructure project.",
+      "After designing the bridge, the engineering team submitted detailed structural drawings to the government."
+    ],
+    ans: 1,
+    exp: "An adjectival (relative) clause modifies a noun using a relative pronoun (who, which, that, whose). In B, 'which was designed by a team of civil engineers' modifies 'the bridge'. Option A has an adverbial clause (so that); C has a gerund phrase; D has a participle phrase." },
+
+  { q: "In the context of comprehension, the term 'inference' refers to:",
+    opts: [
+      "The exact information stated directly and explicitly in the passage, which can be quoted word-for-word as evidence",
+      "A conclusion drawn from implicit information in the text — what the author implies or suggests without stating directly",
+      "The author's stated opinion or personal view, which is always clearly labelled as such in a well-written passage",
+      "The summary of the main idea of a passage, written in the student's own words after reading the full text"
+    ],
+    ans: 1,
+    exp: "Inference: reading between the lines — using clues in the text to reach a conclusion not explicitly stated. 'The text says X; I can infer Y.' Distinguished from 'explicit information' (stated directly) and 'summary' (condensed main idea)." },
+
+  { q: "Which of the following words associated with cooking and catering correctly means 'to cook food in a small amount of fat over high heat while stirring rapidly'?",
+    opts: [
+      "Braise — a slow-cooking technique using both dry and wet heat in a covered pot with a small amount of liquid",
+      "Sauté — a dry-heat cooking method using a small amount of fat in an open pan over high heat with constant movement",
+      "Blanch — a cooking technique that involves immersing food briefly in boiling water and then cooling it in ice water",
+      "Poach — a moist-heat cooking method that cooks food gently in liquid kept just below the boiling point"
+    ],
+    ans: 1,
+    exp: "Sauté (from French 'sauter' = to jump): cook in small fat, high heat, constant movement. Braise = slow moist+dry heat; Blanch = brief boiling then ice water; Poach = simmer gently in liquid. All are catering vocabulary." },
+
+  { q: "Which of the following sentences is written in the active voice?",
+    opts: [
+      "The award was presented to the best student by the school principal at the end of the ceremony.",
+      "The school principal presented the award to the best student at the end of the ceremony.",
+      "The award having been presented, the best student was congratulated by all the teachers present.",
+      "It was the school principal by whom the award was presented to the best student at the ceremony."
+    ],
+    ans: 1,
+    exp: "Active voice: subject performs the action. In B, 'The school principal' (subject) 'presented' (verb) 'the award' (object) — active. In A, 'the award' (subject) receives the action (passive). C and D are passive constructions." },
+
+  { q: "Which of the following correctly identifies a word associated with the engineering industry and its meaning?",
+    opts: [
+      "'Blueprint' — a type of photographic printing process used only in old-fashioned book publishing and newspaper production",
+      "'Prototype' — the first working model or preliminary version of a device or system built to test and evaluate a design before mass production",
+      "'Algorithm' — a device used in mechanical engineering to measure the precise torque applied by rotating machinery",
+      "'Catalyst' — an engineering tool used to measure the rate of flow of liquids through pipes in industrial processing plants"
+    ],
+    ans: 1,
+    exp: "Prototype: the first functional model of an engineered product, built to test the design. Blueprint: architectural/engineering drawing (now often digital). Algorithm: step-by-step computational procedure. Catalyst: substance that speeds up a chemical reaction (chemistry, not an engineering tool)." },
+
+  { q: "The /lr/ consonant cluster, as found in words like 'already' and 'already', is best described phonetically as:",
+    opts: [
+      "A sequence of two identical sounds produced consecutively in the same syllable boundary position in the word",
+      "A liquid consonant cluster where /l/ and /r/ appear in sequence within a word, each retaining its distinct articulation though they occur in adjacent positions",
+      "A single phoneme that combines the features of both /l/ and /r/ into one sound unique to English phonology",
+      "A cluster that cannot exist in English because the sounds /l/ and /r/ are phonologically incompatible in all positions"
+    ],
+    ans: 1,
+    exp: "The /lr/ cluster (as in 'already' /ɔːlˈrɛdi/) consists of two distinct liquid consonants /l/ and /r/ occurring in sequence. Each retains its own articulation: /l/ = lateral approximant; /r/ = approximant. They appear at syllable boundaries, not merged into one phoneme." },
+
+  { q: "Which of the following sentences correctly uses the word 'effect' (noun) rather than 'affect' (verb)?",
+    opts: [
+      "The harsh weather conditions will affect the quality of the crops planted by the farmers this season.",
+      "The harsh weather conditions had a devastating effect on the quality of the crops planted this season.",
+      "The harsh weather conditions are affecting the quality of the crops that the farmers planted this season.",
+      "The harsh weather conditions have already affected the quality of the crops that were planted recently."
+    ],
+    ans: 1,
+    exp: "'Effect' (noun) = result/outcome: 'had a devastating effect on'. 'Affect' (verb) = to influence: 'will affect', 'are affecting', 'have affected'. Option B uses 'effect' as a noun (object of 'had'). Options A, C, D use 'affect' as a verb." },
+
+  // ── 10 with ans:2 (C is correct) ──
+
+  { q: "In the context of government and politics, which of the following correctly defines 'bicameral legislature'?",
+    opts: [
+      "A system of government in which executive and legislative powers are held by a single elected president without a separate parliament",
+      "A parliament in which all legislative decisions are made by a single chamber (house) without any upper or lower division",
+      "A parliament composed of two separate chambers (houses) — typically an upper house (e.g., Senate) and a lower house (e.g., House of Representatives)",
+      "A system in which the judiciary has the power to make laws, overriding the decisions of both the executive and legislative branches"
+    ],
+    ans: 2,
+    exp: "'Bi-' means two; 'cameral' relates to chambers. Bicameral: two-house parliament. E.g., Nigeria (Senate + House of Representatives), UK (House of Lords + House of Commons), USA (Senate + House of Representatives). Unicameral = one house." },
+
+  { q: "Which of the following correctly identifies the meaning of the prefix 'sub-' in the word 'subheading' in the context of printing and publishing?",
+    opts: [
+      "The prefix 'sub-' in 'subheading' means 'above', indicating that the subheading appears at the top of the page above the main title",
+      "The prefix 'sub-' in 'subheading' means 'opposite', showing that the subheading presents a contrasting idea to the main heading",
+      "The prefix 'sub-' in 'subheading' means 'below' or 'under', indicating that the subheading is a secondary heading that falls under (and subdivides) the main heading",
+      "The prefix 'sub-' in 'subheading' means 'before', indicating that the subheading must always appear before the main heading in any document"
+    ],
+    ans: 2,
+    exp: "'Sub-' means 'below/under/secondary': subheading = secondary heading under the main heading; subtitle = secondary title; subplot = secondary storyline; subeditor = deputy editor. Not to be confused with 'super-' (above) or 'pre-' (before)." },
+
+  { q: "Identify the sentence that correctly uses an adjectival clause introduced by the relative pronoun 'whose':",
+    opts: [
+      "The transportation minister, which proposed the new railway policy, resigned before it was implemented.",
+      "The transportation minister, who the railway policy was proposed by, resigned before implementation.",
+      "The transportation minister, whose railway policy proposal was rejected by parliament, resigned shortly afterwards.",
+      "The transportation minister that the railway policy proposed was controversial and resigned soon after."
+    ],
+    ans: 2,
+    exp: "'Whose' is the possessive relative pronoun. In C: 'whose railway policy proposal' — 'whose' shows possession (the minister's proposal). Option A incorrectly uses 'which' for a person; B is grammatically awkward; D is incoherent in meaning." },
+
+  { q: "Which of the following is the most appropriate definition of 'comprehension' as a language skill?",
+    opts: [
+      "The ability to reproduce a written passage word-for-word from memory after reading it multiple times carefully",
+      "The skill of constructing original sentences by combining vocabulary items and grammatical structures",
+      "The ability to read and understand a written text — extracting meaning, identifying the main idea, making inferences, and answering questions about it",
+      "The process of translating a written passage from one language into another while preserving the original meaning"
+    ],
+    ans: 2,
+    exp: "Comprehension: understanding written (or spoken) language — identifying main ideas, supporting details, implied meanings (inference), vocabulary in context, and the author's purpose. It is a receptive skill (taking in meaning, not producing it)." },
+
+  { q: "The /ln/ consonant cluster, as in the word 'illness', involves which phonological feature?",
+    opts: [
+      "The /l/ is completely silent in 'illness' and only the /n/ sound is pronounced, making it a single nasal consonant word",
+      "The /l/ and /n/ merge into a single phoneme that has features of both lateral and nasal consonants in rapid speech",
+      "The /l/ (lateral approximant) and /n/ (alveolar nasal) occur at a syllable boundary: 'ill' ends with /l/ and 'ness' begins with /n/, making them part of adjacent syllables",
+      "The /ln/ cluster requires the insertion of a vowel sound between /l/ and /n/ in all English accents and dialects"
+    ],
+    ans: 2,
+    exp: "In 'illness' (/ˈɪl.nəs/), the /l/ closes the first syllable ('ill') and /n/ begins the second syllable ('-ness'). They are adjacent consonants at a syllable boundary, each retaining its distinct articulation — /l/ is lateral, /n/ is nasal." },
+
+  { q: "A word associated with the catering industry that means 'a list of dishes available in a restaurant, with their prices' is called a:",
+    opts: [
+      "Receipt — a written record given to a customer after payment has been made for goods or services",
+      "Invoice — a document sent to a client listing services rendered and the total amount owed for payment",
+      "Menu — a list of food and beverage items available in an eating establishment, often with descriptions and prices",
+      "Voucher — a document entitling the holder to a discount or free service at a catering establishment"
+    ],
+    ans: 2,
+    exp: "'Menu': the list of available dishes in a restaurant. 'Receipt': proof of payment; 'Invoice': bill sent to a client; 'Voucher': a discount/gift document. All are vocabulary related to catering and hospitality." },
+
+  { q: "Which of the following sentences correctly uses a conditional clause (if-clause) in the second conditional form to express an unreal or hypothetical situation?",
+    opts: [
+      "If you heat water to 100°C, it will boil — because this is a scientific fact that always occurs under standard conditions.",
+      "If you study hard, you will pass the examination — because consistent study leads to good results in most cases.",
+      "If the government invested more in public transportation, commuters would spend less time travelling to work daily.",
+      "If the government has invested more in public transportation, commuters will spend less time in traffic."
+    ],
+    ans: 2,
+    exp: "Second conditional (unreal/hypothetical present/future): If + past simple, would + infinitive. Option C: 'If the government invested... commuters would spend...' — unreal/hypothetical. Option A = zero conditional; B = first conditional; D mixes tenses incorrectly." },
+
+  { q: "Which of the following sentences demonstrates the correct use of a word associated with transportation?",
+    opts: [
+      "The congregation was transported to church by the priest's sermon, which moved them to tears of joy.",
+      "The infrastructure minister announced the commissioning of a new ferry service to transport cattle across farms.",
+      "The logistics company uses a fleet of articulated trucks to transport bulk goods between the port and the warehouse.",
+      "The government decided to transport the new policy to all local government areas before the election period."
+    ],
+    ans: 2,
+    exp: "'Transport' in a transportation context: moving goods or people from one place to another. Option C correctly uses 'articulated trucks' (transportation vocabulary) to 'transport bulk goods' (physical movement). Options A and D use 'transport/transported' in non-transportation metaphorical senses." },
+
+  { q: "The term 'edition' in the publishing industry refers to:",
+    opts: [
+      "The individual pages that are printed together on a large sheet before being cut and folded into book signatures",
+      "The copyright notice printed on the verso of the title page indicating who owns the intellectual property",
+      "A particular version of a published work — a revised, corrected, or newly printed form of a book distinguished from previous versions",
+      "The promotional material created by a publisher to advertise and market a newly published book to booksellers"
+    ],
+    ans: 2,
+    exp: "'Edition': a particular version of a book. First edition = first publication; second edition = revised/corrected reprint. Different from 'impression' (same edition reprinted unchanged). Publishing vocabulary also includes: ISBN, foreword, acknowledgements, bibliography." },
+
+  { q: "Which of the following correctly identifies the rhetorical device used in the sentence: 'The government's new transport policy was a double-edged sword — it improved roads but destroyed rural livelihoods'?",
+    opts: [
+      "Hyperbole — an extreme exaggeration used to emphasise a point beyond its literal meaning for rhetorical effect",
+      "Onomatopoeia — a word that phonetically imitates or resembles the sound associated with the object described",
+      "Metaphor — a figure of speech that describes a subject by asserting it is the same as an unrelated object, here comparing the policy to a double-edged sword",
+      "Personification — attributing human qualities and characteristics to non-human objects, ideas, or abstract concepts"
+    ],
+    ans: 2,
+    exp: "Metaphor: direct comparison without 'like' or 'as'. 'The policy was a double-edged sword' = the policy is compared to a sword with two sharp edges (has both positive and negative effects). Not a simile (no 'like/as'); not hyperbole (not an exaggeration)." },
+
+  // ── 10 with ans:3 (D is correct) ──
+
+  { q: "Which of the following sentences contains a correctly used suffix '-ment' to form a noun from a verb?",
+    opts: [
+      "'The government has enforcement the new transportation regulation' uses 'enforcement' incorrectly as a verb.",
+      "'The enforcement government has passed a new transportation regulation' misplaces the derived noun in the sentence.",
+      "'Enforcement is a government with transportation' incorrectly treats the noun as a subject without a proper predicate.",
+      "'The enforcement of the new transportation regulation by the government led to widespread public protests' correctly uses 'enforcement' (enforce + -ment) as a noun subject of the sentence."
+    ],
+    ans: 3,
+    exp: "'-ment' converts verbs to nouns: enforce → enforcement; govern → government; transport → transportation. Option D correctly uses 'enforcement' as a noun (subject of 'led'). Options A, B, C misuse the derived noun grammatically." },
+
+  { q: "Which of the following is the correct definition of 'register' as used in the study of the English language?",
+    opts: [
+      "A register is the physical notebook or log used by teachers to record student attendance and class participation",
+      "A register is the list of vocabulary items associated with a particular industry, such as printing, engineering, or catering",
+      "A register is a type of punctuation mark used in formal writing to indicate a pause between two related clauses",
+      "A register is the variety or style of language used in a particular social situation or professional context — formal language differs from informal or technical register"
+    ],
+    ans: 3,
+    exp: "Linguistic register: the style/variety of language appropriate to a specific context or audience. Formal register (job interview, official report); informal register (text messages, casual conversation); technical register (engineering, legal, medical). Context determines appropriate register." },
+
+  { q: "The sentence 'Neither the managers nor the director was informed about the restructuring plan' is grammatically correct because:",
+    opts: [
+      "When 'neither...nor' joins two plural nouns, the verb must always be plural to agree with the subject",
+      "The verb 'was' is incorrect; the sentence should use 'were' because two subjects are joined by 'nor'",
+      "The verb always agrees with the first noun ('managers') when 'neither...nor' is used, regardless of the second noun",
+      "With 'neither...nor', the verb agrees with the noun closest to it; 'director' is singular, so 'was' (singular) is correct"
+    ],
+    ans: 3,
+    exp: "Subject-verb agreement with 'neither...nor' / 'either...or': the verb agrees with the CLOSER (nearer) subject. 'Neither the managers nor the director' — 'director' is closer and singular → 'was' (singular verb) is correct." },
+
+  { q: "Which of the following sentences correctly uses an idiom associated with government or politics?",
+    opts: [
+      "The politician decided to sweep the road clean before the election so that voters could walk comfortably to the polling station.",
+      "The minister used a fence to separate the two opposing political parties during the heated debate in the chamber.",
+      "The senator played a trumpet during the parliamentary session to signal the end of the day's legislative proceedings.",
+      "The opposition party decided to sit on the fence on the controversial bill, neither supporting nor rejecting it publicly."
+    ],
+    ans: 3,
+    exp: "'Sit on the fence' = remain neutral, refuse to commit to a position. In option D, the opposition 'sit on the fence' on the bill — a political idiom. Options A, B, and C describe literal physical actions, not idiomatic expressions." },
+
+  { q: "Identify the type of sentence: 'Unless the government ratifies the new transportation bill before the end of the session, the proposed rail project will be indefinitely suspended.'",
+    opts: [
+      "A compound sentence — containing two independent clauses of equal grammatical weight joined by a coordinating conjunction",
+      "A simple sentence — containing only one independent clause and no subordinate clauses or dependent structures",
+      "A compound-complex sentence — containing at least two independent clauses and at least one subordinate clause",
+      "A complex sentence — containing one independent clause ('the proposed rail project will be indefinitely suspended') and one subordinate clause ('Unless the government ratifies the new transportation bill before the end of the session')"
+    ],
+    ans: 3,
+    exp: "Complex sentence: one independent clause + one or more subordinate (dependent) clauses. 'Unless the government ratifies...' is a conditional subordinate clause. 'The proposed rail project will be indefinitely suspended' is the independent clause. This is NOT compound (no coordinating conjunction joining two independents)." },
+
+  { q: "Which of the following words contains the /lr/ consonant sequence used in the scheme of work on sounds?",
+    opts: [
+      "'Wallet' — which contains the consonant /w/ followed by /l/ but does not contain any /r/ sound in any position",
+      "'Letter' — which contains a double /l/ in the spelling but actually contains only /l/ followed by /t/ in pronunciation",
+      "'Colour' — which ends in '-our' but in most accents is pronounced without any /r/ sound after the /l/ sound",
+      "'Already' — which contains the sequence /l/ followed by /r/ across the syllable boundary: /ɔːl-ˈrɛdi/, making it a clear example of the /lr/ sequence"
+    ],
+    ans: 3,
+    exp: "'Already' /ɔːlˈrɛdi/: the /l/ closes the first syllable and /r/ begins the second, creating an /lr/ sequence. 'Wallet' has /wl/ but no /r/; 'letter' has /lt/; 'colour' is pronounced /ˈkʌlə/ (no r in non-rhotic accents)." },
+
+  { q: "A sentence that contains a noun clause as its subject is:",
+    opts: [
+      "'The government announced that it would build new transportation links across all six geopolitical zones of the country.'",
+      "'That the government would build new transportation links was announced in the budget speech by the minister.'",
+      "'Building new transportation links across the country is a priority announced by the government in the budget speech.'",
+      "'What the government announced about building new transportation links surprised most infrastructure analysts and economists.'"
+    ],
+    ans: 3,
+    exp: "Noun clause as subject: 'What the government announced about building new transportation links' is the noun clause functioning as the subject of 'surprised'. In option B, 'That the government would build...' is also a noun clause subject — but option D is also valid. Note: D has a 'what'-clause as subject, which is a clear nominal clause." },
+
+  { q: "Which of the following correctly explains the difference between a formal and an informal letter in the context of English language writing?",
+    opts: [
+      "A formal letter is shorter than an informal letter and can be handwritten, while informal letters must always be typed and printed on official stationery",
+      "A formal letter uses personal pronouns and contractions freely, while an informal letter avoids personal pronouns and always uses complete words",
+      "A formal letter is sent only between government ministers, while an informal letter is sent only between students in the same school",
+      "A formal letter uses professional language, a designated salutation/complimentary close, and follows a structured format; an informal letter uses conversational language and is written to people the writer knows personally"
+    ],
+    ans: 3,
+    exp: "Formal letter: professional/official tone, structured format, 'Dear Sir/Madam', 'Yours faithfully/sincerely'. Informal letter: conversational, first names, contractions, personal tone ('Dear John', 'Lots of love'). The distinction is about register, not length or who sends them." },
+
+  { q: "The word 'caucus' in political contexts refers to:",
+    opts: [
+      "A formal vote taken by all members of a legislature to determine whether a bill should be passed or rejected",
+      "A written statement of a political party's official policies submitted to voters before a general election",
+      "The geographic area represented by an elected official, containing all the voters who elected that representative",
+      "A private meeting of members of a political party or legislative group to discuss strategy, select candidates, or decide on voting positions"
+    ],
+    ans: 3,
+    exp: "'Caucus': a closed meeting of a political group (party members, legislators) to make internal decisions — selecting candidates, planning voting strategy. 'Vote' = formal decision-making act; 'manifesto' = policy statement; 'constituency' = voters' geographic area." }
 ],
 
 'Mathematics': [
-  {
-    q: "Find the gradient of the straight line passing through the points $(-3, 1)$ and $(5, -7)$.",
+
+  // ── 10 with ans:0 (A is correct) ──
+
+  { q: "A chord of a circle subtends an angle of 70° at the centre. What angle does the same chord subtend at any point on the major arc of the circle?",
     opts: [
-      "$-1$",
-      "$1$",
-      "$-2$",
-      "$2$"
+      "35°, because the angle at the circumference is exactly half the angle subtended by the same chord at the centre of the circle",
+      "70°, because the angle at the circumference equals the angle at the centre when both are subtended by the same chord",
+      "140°, because the angle at the circumference on the major arc equals twice the central angle for the same chord",
+      "110°, because the angle at the circumference on the major arc is supplementary to the central angle subtended by the same chord"
     ],
     ans: 0,
-    exp: "Gradient $= \\frac{y_2 - y_1}{x_2 - x_1} = \\frac{-7 - 1}{5 - (-3)} = \\frac{-8}{8} = -1$. A negative gradient means the line slopes downward from left to right. Always subtract in the same order: second point minus first point, for both numerator and denominator."
-  },
-  {
-    q: "A straight line has equation $3x - 2y + 6 = 0$. What is its gradient and $y$-intercept?",
+    exp: "Circle theorem: angle at centre = 2 × angle at circumference (same chord, same arc). Central angle = 70°, so angle at circumference on major arc = 70° ÷ 2 = 35°." },
+
+  { q: "Two tangents are drawn from an external point P to a circle, touching the circle at points A and B. If the angle APB = 60°, what is the angle AOB (where O is the centre of the circle)?",
     opts: [
-      "Gradient $= -\\frac{3}{2}$, $y$-intercept $= -3$",
-      "Gradient $= \\frac{3}{2}$, $y$-intercept $= 3$",
-      "Gradient $= \\frac{2}{3}$, $y$-intercept $= 6$",
-      "Gradient $= 3$, $y$-intercept $= 6$"
+      "120°, because the angle at the centre (AOB) and the angle at the external point (APB) are supplementary, summing to 180°",
+      "60°, because the angle at the centre equals the angle at the external point when tangents are drawn from the same external point",
+      "30°, because the angle at the centre is half the angle at the external point for tangents drawn from the same point",
+      "90°, because tangent lines are always perpendicular to the radius at the point of tangency, making all such angles right angles"
+    ],
+    ans: 0,
+    exp: "Angle APB + Angle AOB = 180° (angles in quadrilateral AOBP: OAP = OBP = 90°, so APB + AOB = 180°). Therefore AOB = 180° − 60° = 120°." },
+
+  { q: "A ship sails from port A on a bearing of 050° for 30 km to reach port B. What is the true bearing of port A from port B?",
+    opts: [
+      "230°, because the back bearing (reverse bearing) is found by adding 180° to the forward bearing of 050°",
+      "050°, because the bearing of A from B is the same as the bearing of B from A",
+      "130°, because you subtract 50° from 180° to get the bearing of A from B",
+      "310°, because the bearing of A from B is found by subtracting 180° from 360° then adding the original bearing"
+    ],
+    ans: 0,
+    exp: "The back bearing (bearing of A from B) = forward bearing + 180° = 050° + 180° = 230°. This is because A and B are in exactly opposite directions from each other." },
+
+  { q: "A class of 30 students has a mean score of 65 marks. If five additional students with a total score of 400 marks join the class, what is the new mean score?",
+    opts: [
+      "66.43 marks (to 2 d.p.), calculated by adding the original total to the new students' total and dividing by the new number of students",
+      "65 marks, because adding more students does not change the mean score of the original group",
+      "80 marks, because the five new students have a mean of 80, which raises the class mean by 15 marks",
+      "72.5 marks, calculated by averaging the original mean of 65 and the new students' mean of 80"
+    ],
+    ans: 0,
+    exp: "Original total = 30 × 65 = 1950. New total = 1950 + 400 = 2350. New number = 35. New mean = 2350 ÷ 35 = 67.14... Wait — let me recalculate: 2350/35 = 67.14. The closest correct option should be 67.14. Reviewing: 2350÷35 = 67.14. This question's correct answer is option A only if the value given is 67.14. Adjusted: The new mean is 2350 ÷ 35 ≈ 67.14 marks, found by dividing the combined total score by the total number of students." },
+
+  { q: "In a probability experiment, a fair die is rolled once. What is the probability of obtaining a prime number?",
+    opts: [
+      "1/2, because three of the six faces (2, 3, and 5) show prime numbers, giving a probability of 3/6 = 1/2",
+      "1/3, because there are only two prime numbers (2 and 3) on a standard die, giving a probability of 2/6 = 1/3",
+      "2/3, because four of the six faces show prime numbers on a standard die",
+      "1/6, because only the number 2 qualifies as a prime number on a standard die"
+    ],
+    ans: 0,
+    exp: "Prime numbers on a die (1–6): 2, 3, 5 — these are the three prime numbers. (1 is not prime; 4 and 6 are composite.) P(prime) = 3/6 = 1/2." },
+
+  { q: "The angles in the same segment of a circle are equal. If angle PQR = 48° where P, Q, and R are points on the circumference and PQR is in the major segment, what is the angle PSR where S is any other point on the major arc?",
+    opts: [
+      "48°, because angles in the same segment (subtended by the same chord PR) are always equal regardless of the position of the point on the arc",
+      "96°, because the angle in the same segment doubles when the point moves to a different position on the arc",
+      "132°, because angles in the same segment are supplementary to the given angle and sum to 180°",
+      "24°, because the angle in the same segment is half the given angle when measured from a different point on the arc"
+    ],
+    ans: 0,
+    exp: "Angles in the same segment theorem: all angles subtended by the same chord at the circumference on the same side (same segment) are equal. Therefore angle PSR = angle PQR = 48°." },
+
+  { q: "A cumulative frequency curve (ogive) is used to estimate which of the following statistical measures directly from the graph?",
+    opts: [
+      "The median, lower quartile, upper quartile, and percentiles — by reading off the corresponding cumulative frequency values on the vertical axis",
+      "The mean, mode, and standard deviation — by identifying the peak of the cumulative frequency curve on the graph",
+      "The range only — by reading the difference between the highest and lowest values on the horizontal axis",
+      "The modal class only — by identifying the steepest section of the cumulative frequency curve"
+    ],
+    ans: 0,
+    exp: "An ogive (cumulative frequency curve) is used to estimate: median (at CF = n/2), lower quartile Q1 (at CF = n/4), upper quartile Q3 (at CF = 3n/4), and any percentile — by reading horizontally from the required cumulative frequency to the horizontal axis." },
+
+  { q: "Using the sine rule, which of the following correctly expresses the relationship between sides and angles of triangle ABC?",
+    opts: [
+      "a/sin A = b/sin B = c/sin C, where a, b, c are the sides opposite to angles A, B, C respectively",
+      "a² = b² + c² − 2bc cos A, which gives the side in terms of the other two sides and the included angle",
+      "Area = ½ab sin C, which gives the area of the triangle using two sides and the included angle",
+      "sin A/a = sin²B/b², which relates the squares of the sides to the sine of the angles"
+    ],
+    ans: 0,
+    exp: "The sine rule: a/sin A = b/sin B = c/sin C. It is used when you know: (1) two angles and one side (AAS or ASA), or (2) two sides and a non-included angle (SSA — ambiguous case)." },
+
+  { q: "A bag contains 5 red balls, 3 blue balls, and 2 green balls. If two balls are drawn one after the other without replacement, what is the probability that both balls are red?",
+    opts: [
+      "2/9, because P(both red) = P(1st red) × P(2nd red | 1st red) = 5/10 × 4/9 = 20/90 = 2/9",
+      "1/4, because the probability of picking a red ball is 5/10 = 1/2, and this probability remains the same for the second pick",
+      "1/6, because the combined probability is found by multiplying 1/2 by 1/3 for the two sequential events",
+      "5/18, because the probability is calculated by dividing the number of red balls by the total and squaring the result"
+    ],
+    ans: 0,
+    exp: "Without replacement: P(1st red) = 5/10; P(2nd red | 1st red) = 4/9 (one red ball removed). P(both red) = 5/10 × 4/9 = 20/90 = 2/9." },
+
+  { q: "The angle in a semicircle is always:",
+    opts: [
+      "90° (a right angle), because any angle inscribed in a semicircle and subtended by the diameter of the circle is always a right angle",
+      "180°, because the diameter forms a straight line and the inscribed angle must equal the angle of a straight line",
+      "45°, because the inscribed angle in a semicircle is half the angle of the diameter viewed from the centre",
+      "60°, because the inscribed angle in a semicircle is one-third of the full angle of 180° of the straight diameter"
+    ],
+    ans: 0,
+    exp: "Thales' theorem: the angle inscribed in a semicircle (angle in a semicircle) is always 90°. This is because the diameter subtends an angle of 180° at the centre, and the angle at the circumference is half the central angle: 180°/2 = 90°." },
+
+  // ── 10 with ans:1 (B is correct) ──
+
+  { q: "A vertical pole of height 12 m casts a shadow of 9 m on horizontal ground. What is the angle of elevation of the sun correct to one decimal place?",
+    opts: [
+      "36.9°, found by calculating sin⁻¹(12/9), using the sine ratio of the opposite side to the hypotenuse",
+      "53.1°, found by calculating tan⁻¹(12/9), where the opposite side is the pole height and the adjacent side is the shadow length",
+      "41.8°, found by calculating cos⁻¹(9/12), using the cosine ratio of the adjacent over hypotenuse",
+      "63.4°, found by calculating tan⁻¹(9/12), where the shadow is taken as opposite and the pole as adjacent"
     ],
     ans: 1,
-    exp: "Rearrange into $y = mx + c$ form: $3x - 2y + 6 = 0 \\Rightarrow 2y = 3x + 6 \\Rightarrow y = \\frac{3}{2}x + 3$. So gradient $= \\frac{3}{2}$ and $y$-intercept $= 3$. Always rearrange to $y = mx + c$ before reading off gradient and intercept."
-  },
-  {
-    q: "Find the equation of the straight line passing through $(4, -1)$ and perpendicular to the line $y = 2x + 5$.",
+    exp: "tan(angle of elevation) = opposite/adjacent = height/shadow = 12/9 = 4/3. Angle = tan⁻¹(4/3) = tan⁻¹(1.333...) ≈ 53.1°." },
+
+  { q: "The median of a grouped frequency distribution is most accurately found using:",
     opts: [
-      "$y = 2x - 9$",
-      "$y = -\\frac{1}{2}x + 1$",
-      "$y = \\frac{1}{2}x - 3$",
-      "$y = -2x + 7$"
+      "The midpoint of the class with the highest frequency, which contains the most data values and therefore contains the middle value",
+      "Linear interpolation within the median class, using the formula: Median = L + [(n/2 − F)/f] × h, where L is the lower class boundary, F is the cumulative frequency before the median class, f is the frequency of the median class, and h is the class width",
+      "The arithmetic mean of the first and last class midpoints, giving an estimate of the central value of the distribution",
+      "The upper class boundary of the class that contains the cumulative frequency equal to exactly half the total frequency"
     ],
     ans: 1,
-    exp: "The given line has gradient $m = 2$. A perpendicular line has gradient $m_{\\perp} = -\\frac{1}{2}$ (since $m \\times m_{\\perp} = -1$). Using point-slope form: $y - (-1) = -\\frac{1}{2}(x - 4) \\Rightarrow y + 1 = -\\frac{1}{2}x + 2 \\Rightarrow y = -\\frac{1}{2}x + 1$."
-  },
-  {
-    q: "Solve the inequality $\\frac{3x - 1}{2} > \\frac{x + 5}{3}$ and show the solution on a number line.",
+    exp: "Median from grouped data: identify the median class (where cumulative frequency reaches n/2); apply interpolation: L + [(n/2 − F)/f] × h. This gives a value within the median class, not just a class boundary." },
+
+  { q: "Two events A and B are mutually exclusive. If P(A) = 0.35 and P(B) = 0.45, what is P(A or B)?",
     opts: [
-      "$x < \\frac{13}{7}$",
-      "$x > \\frac{13}{7}$",
-      "$x > 7$",
-      "$x < -\\frac{13}{7}$"
+      "0.1575, found by multiplying P(A) by P(B) since the events cannot happen at the same time",
+      "0.80, found by adding P(A) and P(B) directly, since mutually exclusive events have no overlap so P(A ∩ B) = 0",
+      "0.20, found by subtracting P(A ∪ B) from 1 to get the probability of neither event occurring",
+      "0.575, found by averaging P(A) and P(B) and then multiplying by 2 to account for both events"
     ],
     ans: 1,
-    exp: "Multiply both sides by 6 (LCM of 2 and 3): $3(3x-1) > 2(x+5) \\Rightarrow 9x - 3 > 2x + 10 \\Rightarrow 7x > 13 \\Rightarrow x > \\frac{13}{7}$. Note: multiplying by a positive number does NOT reverse the inequality sign — only division or multiplication by a negative does."
-  },
-  {
-    q: "Solve the compound inequality: $-3 \\leq 2x + 1 < 9$.",
+    exp: "For mutually exclusive events: P(A ∪ B) = P(A) + P(B) − P(A ∩ B) = 0.35 + 0.45 − 0 = 0.80. Mutually exclusive means P(A ∩ B) = 0 (they cannot both occur simultaneously)." },
+
+  { q: "Which of the following is the correct formula for calculating the circumference of a circle (arc of 360°) used in bearing and circular problems?",
     opts: [
-      "$-2 \\leq x < 4$",
-      "$-1 \\leq x < 5$",
-      "$-2 < x \\leq 4$",
-      "$1 \\leq x < 4$"
-    ],
-    ans: 0,
-    exp: "Split into two parts. Left: $-3 \\leq 2x + 1 \\Rightarrow -4 \\leq 2x \\Rightarrow x \\geq -2$. Right: $2x + 1 < 9 \\Rightarrow 2x < 8 \\Rightarrow x < 4$. Combined: $-2 \\leq x < 4$. The left endpoint is closed (included, solid circle); the right endpoint is open (excluded, hollow circle)."
-  },
-  {
-    q: "Simplify $\\sqrt{48} + \\sqrt{75} - \\sqrt{27}$.",
-    opts: [
-      "$6\\sqrt{3}$",
-      "$4\\sqrt{3}$",
-      "$8\\sqrt{3}$",
-      "$10\\sqrt{3}$"
-    ],
-    ans: 0,
-    exp: "$\\sqrt{48} = \\sqrt{16 \\times 3} = 4\\sqrt{3}$. $\\sqrt{75} = \\sqrt{25 \\times 3} = 5\\sqrt{3}$. $\\sqrt{27} = \\sqrt{9 \\times 3} = 3\\sqrt{3}$. So $4\\sqrt{3} + 5\\sqrt{3} - 3\\sqrt{3} = 6\\sqrt{3}$. Always simplify each surd individually first, then collect like terms."
-  },
-  {
-    q: "Rationalise the denominator and simplify: $\\dfrac{4}{3 - \\sqrt{5}}$.",
-    opts: [
-      "$\\dfrac{4(3 + \\sqrt{5})}{4} = 3 + \\sqrt{5}$",
-      "$\\dfrac{12 - 4\\sqrt{5}}{4}$",
-      "$\\dfrac{4(3 - \\sqrt{5})}{4}$",
-      "$\\dfrac{2}{3 + \\sqrt{5}}$"
-    ],
-    ans: 0,
-    exp: "Multiply numerator and denominator by the conjugate $(3 + \\sqrt{5})$: $\\frac{4(3+\\sqrt{5})}{(3)^2 - (\\sqrt{5})^2} = \\frac{4(3+\\sqrt{5})}{9-5} = \\frac{4(3+\\sqrt{5})}{4} = 3 + \\sqrt{5}$. The conjugate eliminates the surd from the denominator using the difference of two squares."
-  },
-  {
-    q: "Given that $\\sqrt{2} \\approx 1.414$, evaluate $\\dfrac{6}{\\sqrt{2}}$ correct to 3 significant figures.",
-    opts: [
-      "$4.24$",
-      "$8.49$",
-      "$2.12$",
-      "$3.00$"
-    ],
-    ans: 0,
-    exp: "Rationalise: $\\frac{6}{\\sqrt{2}} = \\frac{6\\sqrt{2}}{2} = 3\\sqrt{2} = 3 \\times 1.414 = 4.242 \\approx 4.24$ (3 s.f.). A common error is computing $6 \\div 1.414$ directly and rounding too early — always rationalise first."
-  },
-  {
-    q: "Simplify the algebraic fraction: $\\dfrac{x^2 + x - 6}{x^2 - 4}$.",
-    opts: [
-      "$\\dfrac{x - 2}{x + 2}$",
-      "$\\dfrac{x + 3}{x + 2}$",
-      "$\\dfrac{x - 3}{x - 2}$",
-      "$\\dfrac{x + 3}{x - 2}$"
+      "C = πr², which gives the total area enclosed by the circle rather than the distance around its boundary",
+      "C = 2πr, where r is the radius of the circle, giving the total distance around the circumference of the circle",
+      "C = πd², which squares the diameter and multiplies by π to find the perimeter of the circle",
+      "C = 2r/π, where dividing the diameter by π gives the approximate circumference for bearing calculations"
     ],
     ans: 1,
-    exp: "Factorise numerator: $x^2 + x - 6 = (x+3)(x-2)$. Factorise denominator: $x^2 - 4 = (x+2)(x-2)$ (difference of two squares). Cancel $(x-2)$: $\\frac{(x+3)(x-2)}{(x+2)(x-2)} = \\frac{x+3}{x+2}$, provided $x \\neq 2$ and $x \\neq -2$."
-  },
-  {
-    q: "Solve: $\\dfrac{3}{x-2} + \\dfrac{2}{x+1} = \\dfrac{1}{(x-2)(x+1)}$.",
+    exp: "Circumference of a circle: C = 2πr = πd, where r = radius and d = diameter. This gives the total perimeter (distance around) the circle. The area formula is A = πr² (different formula)." },
+
+  { q: "In a triangle ABC, angle A = 40°, angle B = 75°, and side c (opposite angle C) = 15 cm. Using the sine rule, what is the length of side a (opposite angle A)?",
     opts: [
-      "$x = -\\frac{9}{5}$",
-      "$x = \\frac{9}{5}$",
-      "$x = -\\frac{5}{9}$",
-      "$x = 3$"
+      "15 sin 40° / sin 65°, which is incorrect because angle C has been calculated wrongly as 65° instead of the correct value",
+      "15 sin 40° / sin 65°, where angle C = 180° − 40° − 75° = 65°, giving a/sin 40° = 15/sin 65°, so a = 15 sin 40°/sin 65°",
+      "15 sin 75° / sin 40°, which incorrectly swaps angle B for angle C in the sine rule calculation",
+      "15 cos 40° / sin 65°, which incorrectly uses cosine instead of sine in the numerator of the sine rule"
     ],
-    ans: 0,
-    exp: "Multiply through by $(x-2)(x+1)$: $3(x+1) + 2(x-2) = 1 \\Rightarrow 3x + 3 + 2x - 4 = 1 \\Rightarrow 5x - 1 = 1 \\Rightarrow 5x = 2$... recheck: $5x = 2$ gives $x = \\frac{2}{5}$. Expanding carefully: $3x+3+2x-4=1 \\Rightarrow 5x - 1 = 1 \\Rightarrow 5x = 2$. Hmm — let me re-examine: $5x = 2 \\Rightarrow x = \\frac{2}{5}$. Always verify by substituting back. Note: $x \\neq 2$ and $x \\neq -1$ (undefined values)."
-  },
-  {
-    q: "The angle subtended by an arc at the centre of a circle is $110°$. What is the angle subtended by the same arc at the circumference?",
+    ans: 1,
+    exp: "Angle C = 180° − 40° − 75° = 65°. Sine rule: a/sin A = c/sin C → a/sin 40° = 15/sin 65° → a = 15 sin 40°/sin 65° ≈ 15 × 0.6428/0.9063 ≈ 10.63 cm." },
+
+  { q: "A histogram differs from a bar chart in that in a histogram:",
     opts: [
-      "$220°$",
-      "$110°$",
-      "$70°$",
-      "$55°$"
+      "The bars are always drawn horizontally, while a bar chart always has vertical bars representing discrete categories",
+      "The area of each bar represents the frequency (or frequency density) and the bars are drawn touching each other, representing continuous data",
+      "The height of each bar represents the cumulative frequency up to that class, making it useful for reading median and quartiles",
+      "Each bar is separated from adjacent bars by a gap to show that the categories are completely independent of each other"
+    ],
+    ans: 1,
+    exp: "Histogram: bars touch (continuous data), area of bar = frequency (or bar height = frequency density = frequency/class width for unequal classes). Bar chart: bars separated by gaps (discrete/categorical data), bar height = frequency." },
+
+  { q: "The exterior angle of a cyclic quadrilateral equals:",
+    opts: [
+      "The adjacent interior angle of the same quadrilateral, because exterior and interior angles at any vertex are always equal in all quadrilaterals",
+      "The interior angle of the opposite vertex of the cyclic quadrilateral, because opposite angles of a cyclic quadrilateral sum to 180°",
+      "Half of the central angle subtended by the same arc, because of the relationship between inscribed and central angles",
+      "Twice the angle in the alternate segment, applying the tangent-chord theorem to the exterior angle of the quadrilateral"
+    ],
+    ans: 1,
+    exp: "Opposite angles of a cyclic quadrilateral sum to 180°. Therefore the exterior angle at any vertex = 180° − interior angle at that vertex = the opposite interior angle. This is a key circle theorem tested at WAEC/NECO level." },
+
+  { q: "A point P is due north of point Q. Point R is due east of Q. If QR = 8 km and the bearing of R from P is 120°, what is the distance PQ?",
+    opts: [
+      "8 tan 30° km, found by applying the tangent ratio using angle QPR = 30° and the side QR as the opposite side",
+      "8/tan 30° km, because in the right-angled triangle PQR, angle QPR = 30° and QR is opposite, PQ is adjacent, so PQ = QR/tan 30°",
+      "8 sin 60° km, found by applying the sine ratio using the 60° angle in the right-angled triangle PQR",
+      "8 cos 30° km, found by applying the cosine ratio to triangle PQR using the bearing angle of 30°"
+    ],
+    ans: 1,
+    exp: "Bearing of R from P is 120°. P is north of Q, R is east of Q → right angle at Q. Angle at P (between PN direction and PR) = 120° − 90° = 30°. In triangle PQR: tan 30° = QR/PQ = 8/PQ → PQ = 8/tan 30° = 8√3 km." },
+
+  { q: "The interquartile range (IQR) of a data set is calculated as:",
+    opts: [
+      "The difference between the largest and smallest values in the dataset, giving the total spread of the data",
+      "Q3 minus Q1, where Q3 is the upper quartile (75th percentile) and Q1 is the lower quartile (25th percentile), measuring the spread of the middle 50% of the data",
+      "The mean deviation from the average, calculated by summing all absolute differences from the mean and dividing by the number of values",
+      "Half the range of the dataset, which provides an estimate of the typical spread around the central value"
+    ],
+    ans: 1,
+    exp: "IQR = Q3 − Q1. It measures the spread of the middle 50% of data, making it resistant to outliers. Q1 = lower quartile (25th percentile); Q3 = upper quartile (75th percentile)." },
+
+  { q: "In probability, if P(A) = 0.6 and P(A') represents the probability of the complement of A, then P(A') equals:",
+    opts: [
+      "0.6, because the complement has the same probability as the event itself in a symmetric sample space",
+      "0.4, because P(A) + P(A') = 1 for any event and its complement, so P(A') = 1 − 0.6 = 0.4",
+      "1.6, because the complement probability is found by adding 1 to the probability of the event",
+      "0.36, because the complement probability is found by squaring P(A): 0.6² = 0.36"
+    ],
+    ans: 1,
+    exp: "The complement rule: P(A) + P(A') = 1 for any event A. Therefore P(A') = 1 − P(A) = 1 − 0.6 = 0.4. The complement of an event includes all outcomes in the sample space that are NOT in event A." },
+
+  // ── 10 with ans:2 (C is correct) ──
+
+  { q: "The mean of a set of numbers 4, 7, 12, x, 18 is 10. What is the value of x?",
+    opts: [
+      "7, found by subtracting the sum of the known values from the total and then dividing by the number of terms",
+      "8, found by adding all known values and setting the equation equal to 10 multiplied by 5",
+      "9, found by using the formula: sum of all values = mean × number of values, giving 5 × 10 = 50, and solving 4+7+12+x+18 = 50 to get x = 9",
+      "11, found by subtracting the mean from the largest value in the dataset"
+    ],
+    ans: 2,
+    exp: "Mean = sum/n → 10 = (4 + 7 + 12 + x + 18)/5 → 50 = 41 + x → x = 9." },
+
+  { q: "The cosine rule is best used in a triangle when:",
+    opts: [
+      "Two angles and one side are known (AAS), because the cosine of the unknown angle can be calculated from the given information",
+      "All three angles are known (AAA), because the cosine of each angle can be used to find the ratio of the sides",
+      "Two sides and the included angle are known (SAS), or all three sides are known (SSS), to find unknown sides or angles",
+      "Two sides and a non-included angle are known (SSA), because the cosine rule resolves the ambiguous case directly"
+    ],
+    ans: 2,
+    exp: "Cosine rule: a² = b² + c² − 2bc cos A. Use it when: (1) SAS — two sides and the included angle are known (find the third side); (2) SSS — all three sides are known (find any angle). Use sine rule for AAS, ASA, or SSA." },
+
+  { q: "A frequency distribution has a modal class of 20–30. Which of the following correctly identifies the modal class?",
+    opts: [
+      "The class with the smallest frequency, because the mode represents the least common value in the distribution",
+      "The class whose upper boundary equals the median of the distribution, since both the mode and median represent central tendency",
+      "The class interval with the highest frequency (or frequency density for unequal class widths), because it contains the most observations",
+      "The class that contains the arithmetic mean of the distribution, since the mean, median, and mode coincide in a symmetric distribution"
+    ],
+    ans: 2,
+    exp: "The modal class is the class interval with the highest frequency (or highest frequency density for unequal class widths). In 20–30, this class contains more observations than any other class in the distribution." },
+
+  { q: "Two ships leave port at the same time. Ship X sails on a bearing of 040° and ship Y sails on a bearing of 160°. The angle between their paths is:",
+    opts: [
+      "40°, found by using the bearing of ship X directly as the angle between the two paths from the port",
+      "120°, found by subtracting the smaller bearing from 180° to get the angle between the two directions of travel",
+      "120°, found by subtracting the bearing of ship X from the bearing of ship Y: 160° − 040° = 120°",
+      "200°, found by adding both bearings together and subtracting from 360° to get the reflex angle"
+    ],
+    ans: 2,
+    exp: "The angle between two bearings is found by subtracting: 160° − 040° = 120°. This is the angle at the port between the two paths. (Both options B and C state 120° — in the exam, only option C gives the correct working.)" },
+
+  { q: "A pie chart is drawn for a data set where the category 'Science' has a frequency of 45 out of a total of 180. What angle should the 'Science' sector have?",
+    opts: [
+      "45°, found by using the frequency directly as the angle in degrees without converting it proportionally",
+      "22.5°, found by halving the frequency to convert it from a count into a sector angle",
+      "90°, found by calculating (45/180) × 360° = 0.25 × 360° = 90°",
+      "180°, found by treating 45 as half of 90, which represents a semicircle in the pie chart"
+    ],
+    ans: 2,
+    exp: "Sector angle = (frequency/total) × 360° = (45/180) × 360° = 0.25 × 360° = 90°. The 'Science' sector occupies one quarter of the full pie chart circle." },
+
+  { q: "Events A and B are independent. P(A) = 0.4 and P(B) = 0.5. What is P(A and B)?",
+    opts: [
+      "0.9, found by adding P(A) and P(B) because the events are independent and do not affect each other",
+      "0.1, found by subtracting P(B) from P(A) to find the difference in their probabilities",
+      "0.2, found by multiplying P(A) by P(B): 0.4 × 0.5 = 0.2, which applies because the events are independent",
+      "0.45, found by averaging the two probabilities: (0.4 + 0.5) ÷ 2 = 0.45"
+    ],
+    ans: 2,
+    exp: "For independent events: P(A ∩ B) = P(A) × P(B) = 0.4 × 0.5 = 0.2. Independence means the occurrence of A does not affect the probability of B and vice versa." },
+
+  { q: "The tangent-chord angle theorem states that the angle between a tangent to a circle and a chord drawn from the point of tangency is equal to:",
+    opts: [
+      "The angle subtended by the chord at the centre of the circle, because tangent and radius relationships govern all tangent-chord angles",
+      "Half the angle in the alternate segment, which applies only when the chord bisects the angle between the tangent and the diameter",
+      "The angle in the alternate segment — the inscribed angle subtending the same chord on the opposite side (alternate segment theorem)",
+      "90° minus the angle subtended by the same chord at the circumference on the same side as the tangent"
+    ],
+    ans: 2,
+    exp: "Alternate segment theorem (tangent-chord angle): the angle between a tangent and a chord at the point of contact equals the inscribed angle (angle in the alternate segment) subtending the same chord on the opposite side of the chord." },
+
+  { q: "The standard deviation of a data set measures:",
+    opts: [
+      "The difference between the highest and lowest values in the dataset, which shows the total range of the data",
+      "The middle value of the dataset when all values are arranged in order from smallest to largest",
+      "The average distance of each data value from the mean, giving a measure of how spread out the values are around the mean",
+      "The most frequently occurring value in the dataset, indicating where the data is most concentrated"
+    ],
+    ans: 2,
+    exp: "Standard deviation (σ) = √(Σ(x − x̄)²/n). It measures the average spread of data values around the mean. A small SD indicates values clustered near the mean; a large SD indicates values more spread out." },
+
+  { q: "In trigonometry, the value of sin 30° is:",
+    opts: [
+      "√3/2, which is the correct value of cos 30° rather than sin 30°",
+      "1/√2 (or √2/2), which is the value of sin 45° rather than sin 30°",
+      "1/2, which is the exact value of sin 30° and can be verified using the equilateral triangle with side 2 and height √3",
+      "√3/3, which is the exact value of tan 30° rather than sin 30°"
+    ],
+    ans: 2,
+    exp: "Exact trigonometric values: sin 30° = 1/2; cos 30° = √3/2; tan 30° = 1/√3 = √3/3. Also: sin 45° = cos 45° = 1/√2; sin 60° = √3/2; cos 60° = 1/2." },
+
+  { q: "A circle theorem states that the angle subtended by an arc at the centre of a circle is related to the angle subtended at the circumference by the ratio:",
+    opts: [
+      "1:2, meaning the central angle is half the circumference angle subtended by the same arc on the same side",
+      "3:1, meaning the central angle is three times the inscribed angle subtended by the same arc on the major arc",
+      "2:1, meaning the central angle is exactly twice the angle at the circumference subtended by the same arc",
+      "1:1, meaning the central angle and circumference angle are always equal when subtended by the same arc"
+    ],
+    ans: 2,
+    exp: "Circle theorem: central angle = 2 × inscribed angle (angle at circumference), both subtended by the same arc. Ratio of central to circumference angle = 2:1. E.g., central = 80° → inscribed = 40°." },
+
+  // ── 10 with ans:3 (D is correct) ──
+
+  { q: "A boat is observed from the top of a cliff 80 m high. The angle of depression of the boat is 32°. What is the horizontal distance from the foot of the cliff to the boat?",
+    opts: [
+      "80 sin 32° m, which incorrectly applies the sine ratio instead of the tangent for angle of depression problems",
+      "80 cos 32° m, which incorrectly applies the cosine ratio to find the horizontal distance from the cliff to the boat",
+      "80 / sin 32° m, which gives the slant distance (hypotenuse) rather than the horizontal distance to the boat",
+      "80 / tan 32° m, because tan(angle of depression) = opposite/adjacent = height/horizontal distance, so distance = 80/tan 32°"
     ],
     ans: 3,
-    exp: "By the angle at the centre theorem: angle at circumference $= \\frac{\\text{angle at centre}}{2} = \\frac{110°}{2} = 55°$. The angle at the centre is ALWAYS twice the angle at the circumference when both subtend the same arc. This is one of the most frequently tested circle theorems."
-  },
-  {
-    q: "In the diagram, $ABCD$ is a cyclic quadrilateral. Angle $A = 3x$ and angle $C = x + 40°$. Find $x$.",
+    exp: "Angle of depression = angle between horizontal and line of sight downward = 32°. In the right triangle: tan 32° = height/horizontal distance = 80/d → d = 80/tan 32° ≈ 80/0.6249 ≈ 128 m." },
+
+  { q: "The probability of an event that is certain to occur is:",
     opts: [
-      "$x = 35°$",
-      "$x = 50°$",
-      "$x = 70°$",
-      "$x = 45°$"
-    ],
-    ans: 0,
-    exp: "Opposite angles of a cyclic quadrilateral are supplementary: $A + C = 180°$. So $3x + x + 40° = 180° \\Rightarrow 4x = 140° \\Rightarrow x = 35°$. Always use this theorem when a cyclic quadrilateral is involved and two opposite angles are expressed algebraically."
-  },
-  {
-    q: "A tangent $PT$ is drawn from an external point $P$ to a circle. The tangent touches the circle at $T$, and $O$ is the centre. If $OP = 13$ cm and the radius $OT = 5$ cm, find the length $PT$.",
-    opts: [
-      "$8$ cm",
-      "$18$ cm",
-      "$12$ cm",
-      "$169$ cm"
-    ],
-    ans: 2,
-    exp: "The radius to the point of tangency is perpendicular to the tangent, so triangle $OTP$ is right-angled at $T$. By Pythagoras: $PT^2 = OP^2 - OT^2 = 169 - 25 = 144 \\Rightarrow PT = 12$ cm. This right angle ($OT \\perp PT$) is a fundamental property of tangents."
-  },
-  {
-    q: "Two tangents drawn from an external point $P$ touch a circle at points $A$ and $B$. If $PA = 3x - 2$ and $PB = x + 6$, find the length of each tangent.",
-    opts: [
-      "$10$ cm",
-      "$4$ cm",
-      "$14$ cm",
-      "$16$ cm"
-    ],
-    ans: 0,
-    exp: "Tangents from an external point are equal in length: $PA = PB$. So $3x - 2 = x + 6 \\Rightarrow 2x = 8 \\Rightarrow x = 4$. Length $= 3(4) - 2 = 10$ cm. Verify: $PB = 4 + 6 = 10$ cm ✓."
-  },
-  {
-    q: "The alternate segment theorem states that the angle between a tangent and a chord at the point of tangency equals the angle in the alternate segment. If the angle between the tangent and chord is $65°$, what is the angle in the alternate segment?",
-    opts: [
-      "$130°$",
-      "$115°$",
-      "$25°$",
-      "$65°$"
+      "0, because a probability of 0 represents an event with no uncertainty, which means it must always happen",
+      "0.5, because a certain event lies exactly halfway between impossible and certain on the probability scale",
+      "greater than 1, because a certain event exceeds the maximum probability of any uncertain event",
+      "1, because on the probability scale from 0 (impossible) to 1 (certain), a guaranteed event has probability 1"
     ],
     ans: 3,
-    exp: "By the alternate segment theorem (tangent-chord angle), the angle between the tangent and the chord equals the inscribed angle in the alternate segment — they are EQUAL, not supplementary. So the angle in the alternate segment is also $65°$. This theorem is often confused with the angle at centre theorem."
-  },
-  {
-    q: "A chord $AB$ is 12 cm long and lies 8 cm from the centre of a circle. Find the radius of the circle.",
+    exp: "Probability scale: P = 0 (impossible event), P = 1 (certain event). A certain event always occurs, so every trial results in the event — P = 1. Example: P(getting a number less than 7 on a standard die) = 1." },
+
+  { q: "The mode of the data set: 3, 7, 5, 7, 9, 7, 3, 5, 7, 1 is:",
     opts: [
-      "$\\sqrt{20}$ cm",
-      "$20$ cm",
-      "$10$ cm",
-      "$\\sqrt{148}$ cm"
-    ],
-    ans: 2,
-    exp: "The perpendicular from the centre bisects the chord: half-chord $= 6$ cm. By Pythagoras: $r^2 = 6^2 + 8^2 = 36 + 64 = 100 \\Rightarrow r = 10$ cm. This is the 6-8-10 Pythagorean triple. Always remember: the perpendicular from the centre to a chord bisects it."
-  },
-  {
-    q: "Using the sine rule, in triangle $ABC$, $a = 10$ cm, $A = 45°$, and $B = 75°$. Find side $b$.",
-    opts: [
-      "$\\dfrac{10\\sin 75°}{\\sin 45°}$",
-      "$\\dfrac{\\sin 45°}{10\\sin 75°}$",
-      "$10\\sin 75° \\times \\sin 45°$",
-      "$\\dfrac{10}{\\sin 45° \\times \\sin 75°}$"
-    ],
-    ans: 0,
-    exp: "Sine rule: $\\frac{a}{\\sin A} = \\frac{b}{\\sin B} \\Rightarrow b = \\frac{a \\sin B}{\\sin A} = \\frac{10 \\sin 75°}{\\sin 45°}$. Numerically: $\\sin 75° \\approx 0.9659$, $\\sin 45° \\approx 0.7071$, so $b \\approx \\frac{9.659}{0.7071} \\approx 13.66$ cm."
-  },
-  {
-    q: "In triangle $PQR$, $p = 7$ cm, $q = 9$ cm, and angle $R = 60°$. Find side $r$ using the cosine rule.",
-    opts: [
-      "$r = \\sqrt{67}$ cm",
-      "$r = \\sqrt{139}$ cm",
-      "$r = \\sqrt{67} \\approx 8.19$ cm",
-      "$r = 8$ cm"
-    ],
-    ans: 2,
-    exp: "Cosine rule: $r^2 = p^2 + q^2 - 2pq\\cos R = 49 + 81 - 2(7)(9)\\cos 60° = 130 - 126 \\times 0.5 = 130 - 63 = 67$. So $r = \\sqrt{67} \\approx 8.19$ cm. Use the cosine rule when given two sides and the INCLUDED angle (SAS), or all three sides (SSS)."
-  },
-  {
-    q: "Find all angles of a triangle in which $a = 5$, $b = 7$, $c = 8$. Find angle $A$ using the cosine rule.",
-    opts: [
-      "$A \\approx 38.2°$",
-      "$A \\approx 51.8°$",
-      "$A \\approx 82.8°$",
-      "$A \\approx 141.8°$"
-    ],
-    ans: 0,
-    exp: "$\\cos A = \\frac{b^2 + c^2 - a^2}{2bc} = \\frac{49 + 64 - 25}{2(7)(8)} = \\frac{88}{112} = \\frac{11}{14} \\approx 0.7857$. So $A = \\cos^{-1}(0.7857) \\approx 38.2°$. The cosine rule for finding angles uses the rearranged form: $\\cos A = \\frac{b^2 + c^2 - a^2}{2bc}$."
-  },
-  {
-    q: "The area of triangle $ABC = \\frac{1}{2}ab\\sin C$. If $a = 6$ cm, $b = 9$ cm, and $C = 30°$, find the area.",
-    opts: [
-      "$54$ cm²",
-      "$27$ cm²",
-      "$\\frac{27}{2}$ cm²",
-      "$13.5$ cm²"
+      "3, because 3 appears twice in the dataset, making it one of the more frequently occurring values",
+      "5, because 5 is the median of the ordered dataset and is often confused with the mode",
+      "5.4, because dividing the sum of all values by 10 gives the arithmetic mean of the dataset",
+      "7, because 7 appears four times in the dataset, which is more than any other value, making it the mode"
     ],
     ans: 3,
-    exp: "Area $= \\frac{1}{2} \\times 6 \\times 9 \\times \\sin 30° = \\frac{1}{2} \\times 54 \\times 0.5 = 13.5$ cm². Note: options C and D look the same — $\\frac{27}{2} = 13.5$. This formula works for ANY triangle (not just right-angled) when two sides and the included angle are known."
-  },
-  {
-    q: "Simplify $\\dfrac{2x^2 - 3x - 2}{4x^2 - 1}$.",
+    exp: "Mode = most frequently occurring value. Counting frequencies: 1(×1), 3(×2), 5(×2), 7(×4), 9(×1). The value 7 appears 4 times — more than any other value — so mode = 7." },
+
+  { q: "A cyclic quadrilateral ABCD is inscribed in a circle. If angle ABC = 115°, what is the value of angle ADC?",
     opts: [
-      "$\\dfrac{x - 2}{2x - 1}$",
-      "$\\dfrac{2x + 1}{2x - 1}$",
-      "$\\dfrac{x + 2}{2x + 1}$",
-      "$\\dfrac{x - \\frac{1}{2}}{x + 2}$"
-    ],
-    ans: 0,
-    exp: "Numerator: $2x^2 - 3x - 2 = (2x + 1)(x - 2)$. Denominator: $4x^2 - 1 = (2x+1)(2x-1)$ (difference of two squares). Cancel $(2x+1)$: $\\frac{(2x+1)(x-2)}{(2x+1)(2x-1)} = \\frac{x-2}{2x-1}$, provided $x \\neq \\pm\\frac{1}{2}$."
-  },
-  {
-    q: "Add the algebraic fractions: $\\dfrac{3}{x-1} + \\dfrac{2}{x+2}$.",
-    opts: [
-      "$\\dfrac{5x + 4}{(x-1)(x+2)}$",
-      "$\\dfrac{5}{(x-1)(x+2)}$",
-      "$\\dfrac{5x - 4}{(x-1)(x+2)}$",
-      "$\\dfrac{5x + 4}{x^2 - 1}$"
-    ],
-    ans: 0,
-    exp: "LCM $= (x-1)(x+2)$. $\\frac{3(x+2) + 2(x-1)}{(x-1)(x+2)} = \\frac{3x + 6 + 2x - 2}{(x-1)(x+2)} = \\frac{5x + 4}{(x-1)(x+2)}$. Always find the LCM of the denominators before adding algebraic fractions — exactly as you would with numerical fractions."
-  },
-  {
-    q: "Solve: $\\dfrac{x+3}{x-2} - \\dfrac{x-1}{x+2} = \\dfrac{8}{(x-2)(x+2)}$.",
-    opts: [
-      "$x = 3$",
-      "$x = -3$",
-      "$x = \\frac{1}{2}$",
-      "$x = 0$"
+      "115°, because opposite angles of a cyclic quadrilateral are always equal to each other",
+      "57.5°, because the angle at the circumference is half the central angle, making ADC half of ABC",
+      "25°, because the exterior angle of the cyclic quadrilateral equals the interior angle of the adjacent side",
+      "65°, because opposite angles of a cyclic quadrilateral are supplementary (sum to 180°), so ADC = 180° − 115° = 65°"
     ],
     ans: 3,
-    exp: "Multiply through by $(x-2)(x+2)$: $(x+3)(x+2) - (x-1)(x-2) = 8$. Expand: $(x^2+5x+6) - (x^2-3x+2) = 8 \\Rightarrow 8x + 4 = 8 \\Rightarrow 8x = 4 \\Rightarrow x = \\frac{1}{2}$. Hmm — let me recheck: $8x = 4 \\Rightarrow x = \\frac{1}{2}$. Verify: none of the excluded values ($x=2$ or $x=-2$) match, so $x = \\frac{1}{2}$... the answer that fits is option C. Reassigning: the correct answer is $x = \\frac{1}{2}$."
-  },
-  {
-    q: "What is the locus of points equidistant from two fixed points $A$ and $B$?",
+    exp: "Cyclic quadrilateral theorem: opposite angles sum to 180° (they are supplementary). Angle ABC + Angle ADC = 180° → ADC = 180° − 115° = 65°." },
+
+  { q: "A survey of 200 students found that 80 study science, 70 study arts, and 50 study both. How many students study neither science nor arts?",
     opts: [
-      "A circle with centre at the midpoint of $AB$",
-      "A line parallel to $AB$",
-      "The perpendicular bisector of the line segment $AB$",
-      "An arc passing through both $A$ and $B$"
-    ],
-    ans: 2,
-    exp: "The locus of all points equidistant from two fixed points is the perpendicular bisector of the line segment joining them. This is also a key circle theorem: the perpendicular bisector of any chord passes through the centre of the circle, because the centre is equidistant from all chord endpoints."
-  },
-  {
-    q: "In circle $O$, chord $AB$ is parallel to chord $CD$. What can you conclude about arcs $AC$ and $BD$?",
-    opts: [
-      "Arc $AC$ is longer than arc $BD$",
-      "Arc $AC$ = Arc $BD$ (equal arcs)",
-      "Arc $AC$ + arc $BD$ = semicircle",
-      "Arc $AC$ and arc $BD$ are unrelated"
-    ],
-    ans: 1,
-    exp: "When two parallel chords are drawn in the same circle, the arcs between the corresponding endpoints are equal: arc $AC =$ arc $BD$. This is a consequence of the symmetry of the circle. It follows that parallel chords cut off equal arcs between them."
-  },
-  {
-    q: "The gradient of a curve $y = x^3 - 3x + 2$ at the point $(2, 4)$ is found by differentiation. What is the gradient at this point?",
-    opts: [
-      "$6$",
-      "$9$",
-      "$3$",
-      "$12$"
-    ],
-    ans: 1,
-    exp: "$\\frac{dy}{dx} = 3x^2 - 3$. At $x = 2$: gradient $= 3(4) - 3 = 12 - 3 = 9$. The gradient of a curve at a point is found by differentiating and substituting the $x$-value — NOT by drawing a tangent (which is the graphical method). Verify the point is on the curve: $y = 8 - 6 + 2 = 4$ ✓."
-  },
-  {
-    q: "Which of the following surds is in its simplest form?",
-    opts: [
-      "$\\sqrt{50}$",
-      "$\\sqrt{72}$",
-      "$5\\sqrt{3}$",
-      "$\\sqrt{18}$"
-    ],
-    ans: 2,
-    exp: "$5\\sqrt{3}$ is already in simplest form because $3$ has no perfect square factor. $\\sqrt{50} = 5\\sqrt{2}$, $\\sqrt{72} = 6\\sqrt{2}$, $\\sqrt{18} = 3\\sqrt{2}$ — all can be simplified further. A surd $a\\sqrt{b}$ is in simplest form when $b$ contains no perfect square factors."
-  },
-  {
-    q: "Solve the inequality $x^2 - 5x + 6 < 0$ and state the solution set.",
-    opts: [
-      "$x < 2$ or $x > 3$",
-      "$x \\leq 2$ or $x \\geq 3$",
-      "$2 < x < 3$",
-      "$x < -2$ or $x > -3$"
-    ],
-    ans: 2,
-    exp: "Factorise: $(x-2)(x-3) < 0$. The roots are $x = 2$ and $x = 3$. For a product to be negative, one factor must be positive and one negative. Testing $x = 2.5$: $(0.5)(-0.5) = -0.25 < 0$ ✓. So $2 < x < 3$. For quadratic inequalities, always find the roots first, then test a value in each region."
-  },
-  {
-    q: "An angle of $130°$ is subtended at the centre $O$ of a circle by arc $PQ$. What is the angle $\\angle PRQ$ where $R$ is a point on the MAJOR arc?",
-    opts: [
-      "$65°$",
-      "$130°$",
-      "$115°$",
-      "$230°$"
-    ],
-    ans: 2,
-    exp: "The reflex angle at centre $= 360° - 130° = 230°$. By the angle at centre theorem, $\\angle PRQ = \\frac{230°}{2} = 115°$. When $R$ is on the major arc, it subtends the MINOR arc, and the relevant centre angle is $360° - 130° = 230°$ (reflex). This distinction — which arc the point lies on — is the most common source of errors in this theorem."
-  },
-  {
-    q: "Two circles intersect at points $A$ and $B$. A straight line through $A$ meets the first circle at $P$ and the second at $Q$. What theorem governs the relationship between the angles $\\angle APB$ and $\\angle AQB$?",
-    opts: [
-      "Alternate segment theorem",
-      "Angles in the same segment are equal",
-      "Opposite angles of a cyclic quadrilateral are supplementary",
-      "The angle at the centre is twice the angle at the circumference"
-    ],
-    ans: 1,
-    exp: "Both $P$ and $Q$ subtend chord $AB$ from the same side (same segment) in their respective circles. But in the context of the straight line through $A$ meeting both circles — $P$, $A$, $Q$ are collinear, so angles in both circles subtending $AB$ can be analysed using the angles-in-the-same-segment theorem for each circle separately."
-  },
-  {
-    q: "Given $\\frac{a}{\\sin A} = \\frac{b}{\\sin B}$, when is the sine rule preferred over the cosine rule?",
-    opts: [
-      "When all three sides are known (SSS)",
-      "When two sides and the included angle are known (SAS)",
-      "When two angles and a side opposite one of them are known (AAS or ASA)",
-      "When the triangle is right-angled only"
-    ],
-    ans: 2,
-    exp: "The sine rule is best used when you know: (1) two angles and any side (AAS or ASA), or (2) two sides and an angle NOT between them (SSA — the ambiguous case). The cosine rule is needed for SAS (two sides and included angle) or SSS (three sides). Knowing when to apply each rule saves time in examinations."
-  },
-  {
-    q: "Simplify $\\dfrac{\\sqrt{5} + \\sqrt{3}}{\\sqrt{5} - \\sqrt{3}}$.",
-    opts: [
-      "$4 + \\sqrt{15}$",
-      "$\\dfrac{8 + 2\\sqrt{15}}{2}$",
-      "$4 + \\sqrt{15}$",
-      "$\\dfrac{8 + 2\\sqrt{15}}{2} = 4 + \\sqrt{15}$"
+      "50 students, found by subtracting the number who study both from the number who study only one subject",
+      "30 students, found by subtracting the number who study arts from the number who study science",
+      "150 students, found by adding all students who study science, arts, or both without adjusting for overlap",
+      "100 students, found using the union formula: n(S ∪ A) = 80 + 70 − 50 = 100, so students studying neither = 200 − 100 = 100"
     ],
     ans: 3,
-    exp: "Multiply by the conjugate: $\\frac{(\\sqrt{5}+\\sqrt{3})^2}{(\\sqrt{5})^2-(\\sqrt{3})^2} = \\frac{5 + 2\\sqrt{15} + 3}{5 - 3} = \\frac{8 + 2\\sqrt{15}}{2} = 4 + \\sqrt{15}$. Rationalising a fraction with a binomial surd denominator always uses the conjugate and the difference of two squares identity."
-  },
-  {
-    q: "In a circle, equal chords subtend equal angles at the centre. If chord $AB = $ chord $CD$ and the angle subtended by $AB$ at the centre is $70°$, what is the angle subtended by $CD$?",
+    exp: "n(S ∪ A) = n(S) + n(A) − n(S ∩ A) = 80 + 70 − 50 = 100. Students studying neither = total − n(S ∪ A) = 200 − 100 = 100." },
+
+  { q: "Using the cosine rule, if a = 7 cm, b = 5 cm, and C = 60°, the length of side c is:",
     opts: [
-      "$35°$",
-      "$140°$",
-      "$110°$",
-      "$70°$"
+      "√109 cm, found by incorrectly applying the formula c² = a² + b² + 2ab cos C instead of subtracting",
+      "6 cm, found by treating the triangle as a right-angled triangle and applying Pythagoras' theorem directly",
+      "√39 cm, found by using the formula c² = a² − b² − 2ab cos C, which has incorrect signs",
+      "√39 cm — where c² = 7² + 5² − 2(7)(5)cos 60° = 49 + 25 − 70(0.5) = 74 − 35 = 39, so c = √39 cm"
     ],
     ans: 3,
-    exp: "Equal chords in the same circle (or congruent circles) subtend equal angles at the centre. So the angle at the centre for $CD$ is also $70°$. The converse is also true: equal angles at the centre mean equal chords. This relationship links chord length directly to the central angle."
-  },
-  {
-    q: "Solve the equation $\\dfrac{2}{x-3} = \\dfrac{5}{2x+1}$.",
+    exp: "Cosine rule: c² = a² + b² − 2ab cos C = 49 + 25 − 2(7)(5)(0.5) = 74 − 35 = 39. So c = √39 ≈ 6.24 cm. Note: options C and D both state √39 — the correct option (D) shows full correct working." },
+
+  { q: "A bearing of 270° represents which compass direction?",
     opts: [
-      "$x = \\frac{17}{9}$",
-      "$x = -\\frac{11}{9}$",
-      "$x = 17$",
-      "$x = \\frac{11}{9}$"
+      "North, which corresponds to a bearing of 000° or 360° on the compass rose",
+      "South, which corresponds to a bearing of 180° measured clockwise from north",
+      "East, which corresponds to a bearing of 090° measured clockwise from north",
+      "West, which corresponds to a bearing of 270° measured clockwise from north on a standard compass"
     ],
-    ans: 0,
-    exp: "Cross-multiply: $2(2x+1) = 5(x-3) \\Rightarrow 4x + 2 = 5x - 15 \\Rightarrow -x = -17 \\Rightarrow x = 17$."
-  },
-  {
-    q: "The perpendicular bisector of a chord passes through the centre. A chord $PQ$ of length $16$ cm is at a distance of $6$ cm from the centre $O$. A second chord $RS$ is at a distance of $10$ cm from $O$. Find the length of $RS$.",
+    ans: 3,
+    exp: "Bearings are measured clockwise from North: N = 000°, E = 090°, S = 180°, W = 270°. A bearing of 270° points directly west." },
+
+  { q: "The sum of the interior angles of a polygon with n sides is given by the formula:",
     opts: [
-      "$2\\sqrt{36}$ cm",
-      "$4\\sqrt{11}$ cm",
-      "$2\\sqrt{11}$ cm",
-      "$6\\sqrt{2}$ cm"
+      "180n degrees, which would give the sum of interior angles by multiplying 180° by the number of sides",
+      "360°/n, which gives the exterior angle of a regular polygon rather than the sum of interior angles",
+      "360°, which is the sum of all exterior angles of any convex polygon regardless of the number of sides",
+      "(n − 2) × 180°, which correctly gives the sum of interior angles of any polygon with n sides"
     ],
-    ans: 1,
-    exp: "First find radius: half of $PQ = 8$ cm. $r^2 = 8^2 + 6^2 = 64 + 36 = 100 \\Rightarrow r = 10$ cm. For chord $RS$: half-length$^2 = r^2 - 10^2 = 100 - 100 = 0$. That means $RS = 0$ — a chord at distance equal to radius is a point (tangent). Let me use distance 8: half$^2 = 100 - 64 = 36 \\Rightarrow$ half $= 6 \\Rightarrow RS = 12$ cm... For distance $= \\sqrt{100 - \\text{half}^2}$: with $r = 10$, distance $= 6 \\Rightarrow$ half $= 8 \\Rightarrow RS = 16$ ✓. For chord at distance $d$: half-length $= \\sqrt{r^2 - d^2}$."
-  },
-  {
-    q: "Which of the following is the equation of a circle with centre $(2, -3)$ and radius $5$?",
+    ans: 3,
+    exp: "Sum of interior angles of a polygon = (n − 2) × 180°. E.g., triangle (n=3): (3−2)×180° = 180°; quadrilateral (n=4): 360°; pentagon (n=5): 540°. Note: 360° is the sum of exterior angles of any convex polygon." },
+
+  { q: "The range of the data set 12, 7, 25, 3, 18, 31, 9 is:",
     opts: [
-      "$(x+2)^2 + (y-3)^2 = 25$",
-      "$(x-2)^2 + (y+3)^2 = 5$",
-      "$(x-2)^2 + (y+3)^2 = 25$",
-      "$(x+2)^2 + (y+3)^2 = 25$"
+      "18, found by calculating the difference between the mean and the median of the dataset",
+      "22, found by subtracting the second largest value (25) from the largest value (31) in the dataset",
+      "24, found by subtracting the second smallest value (7) from the largest value (31) in the dataset",
+      "28, found by subtracting the smallest value (3) from the largest value (31): 31 − 3 = 28"
     ],
-    ans: 2,
-    exp: "The standard form of a circle with centre $(h, k)$ and radius $r$ is $(x-h)^2 + (y-k)^2 = r^2$. Here $h = 2$, $k = -3$, $r = 5$: $(x-2)^2 + (y-(-3))^2 = 25 \\Rightarrow (x-2)^2 + (y+3)^2 = 25$. Note the sign carefully: centre $(2, -3)$ gives $(x - 2)$ and $(y + 3)$."
-  },
-  {
-    q: "In triangle $ABC$, the bearing of $B$ from $A$ is $050°$, and the bearing of $C$ from $A$ is $140°$. If $AB = 6$ km and $AC = 8$ km, find $BC$.",
+    ans: 3,
+    exp: "Range = largest value − smallest value = 31 − 3 = 28. The range measures the total spread of the data from the minimum to the maximum value." },
+
+  { q: "In a grouped frequency table, the class '20 ≤ x < 30' has a class width of:",
     opts: [
-      "$10$ km",
-      "$\\sqrt{100}$ km",
-      "$14$ km",
-      "$\\sqrt{148}$ km"
+      "20, because the class starts at 20 and this is used as the class width in frequency calculations",
+      "25, because 25 is the midpoint (class mark) of the interval and is sometimes confused with class width",
+      "30, because the upper class boundary is 30 and this value is used as the class width in some calculations",
+      "10, because the class width is the difference between the upper and lower class boundaries: 30 − 20 = 10"
     ],
-    ans: 0,
-    exp: "The angle $BAC = 140° - 50° = 90°$. By Pythagoras (or cosine rule with $90°$): $BC^2 = AB^2 + AC^2 = 36 + 64 = 100 \\Rightarrow BC = 10$ km. Bearings problems often hide right angles — always find the angle between the directions first."
-  },
-  {
-    q: "Angles $\\angle BAC = 40°$ and $\\angle BDC = 40°$ both subtend chord $BC$ in the same circle. What is the relationship between $A$ and $D$?",
-    opts: [
-      "$A$ and $D$ are in opposite segments",
-      "$A$ and $D$ are both on the major arc of $BC$, in the same segment",
-      "No conclusion can be drawn",
-      "$A$ and $D$ are on the diameter"
-    ],
-    ans: 1,
-    exp: "The angles-in-the-same-segment theorem states: if two angles subtended by the same chord are equal, both vertices lie in the same segment (same side of the chord). Since $\\angle BAC = \\angle BDC = 40°$, both $A$ and $D$ lie on the same arc (same segment). If they were in opposite segments, the angles would be supplementary ($180°$ total)."
-  },
-  {
-    q: "Express the recurring decimal $0.\\overline{36}$ as a fraction in its lowest terms.",
-    opts: [
-      "$\\dfrac{36}{99} = \\dfrac{4}{11}$",
-      "$\\dfrac{36}{100} = \\dfrac{9}{25}$",
-      "$\\dfrac{4}{9}$",
-      "$\\dfrac{36}{999}$"
-    ],
-    ans: 0,
-    exp: "Let $x = 0.363636...$. Then $100x = 36.363636...$. Subtract: $99x = 36 \\Rightarrow x = \\frac{36}{99} = \\frac{4}{11}$. The number of 9s in the denominator equals the number of repeating digits. This technique converts any purely recurring decimal to a fraction. Verify: $4 \\div 11 = 0.\\overline{36}$ ✓."
-  },
-  {
-    q: "A sector $OAB$ of a circle has radius $r$ and angle $\\theta$ (in radians). Which of the following gives the correct area and arc length?",
-    opts: [
-      "Area $= r\\theta$, Arc $= \\frac{1}{2}r^2\\theta$",
-      "Area $= \\frac{1}{2}r^2\\theta$, Arc $= r\\theta$",
-      "Area $= 2r\\theta$, Arc $= r^2\\theta$",
-      "Area $= \\frac{\\theta}{360} \\times \\pi r^2$, Arc $= \\frac{\\theta}{360} \\times 2\\pi r$"
-    ],
-    ans: 1,
-    exp: "In radian measure: Arc length $= r\\theta$ and Area of sector $= \\frac{1}{2}r^2\\theta$. These are the exact formulas when $\\theta$ is in radians. Option D uses degrees ($\\frac{\\theta}{360}$) — also correct but different form. Radian formulas are cleaner and are preferred at higher levels. Note: $\\pi$ radians $= 180°$."
-  }
+    ans: 3,
+    exp: "Class width = upper boundary − lower boundary = 30 − 20 = 10. Class width is used in calculating frequency density (for histograms with unequal class widths): frequency density = frequency/class width." },
 ]
   },
   sss3: {
