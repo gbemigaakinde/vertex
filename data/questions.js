@@ -6860,245 +6860,245 @@ sss1: {
             
 'Chemistry': [
     {
-        q: "According to collision theory, a chemical reaction occurs when reactant particles collide with ___.",
-        opts: ["any amount of energy and in any orientation", "sufficient energy and the correct orientation", "low energy but high frequency", "high frequency regardless of energy"],
-        ans: 1,
-        exp: "Collision theory states that reactions occur only when molecules collide with sufficient activation energy and in the proper geometric orientation."
-    },
-    {
-        q: "Which of the following will INCREASE the rate of a chemical reaction?",
-        opts: ["Decreasing the concentration of reactants", "Increasing the particle size of a solid reactant", "Decreasing the temperature", "Adding a suitable catalyst"],
-        ans: 3,
-        exp: "A catalyst provides an alternative reaction pathway with lower activation energy, increasing the rate of reaction without being consumed."
-    },
-    {
-        q: "Saponification is the process by which ___.",
-        opts: ["fats and oils are hydrolysed by an alkali to produce soap and glycerol", "alcohols are oxidised to form carboxylic acids", "esters are formed from alcohols and acids", "proteins are broken down into amino acids"],
-        ans: 0,
-        exp: "Saponification is the alkaline hydrolysis of fats/oils (esters of glycerol and fatty acids) to yield soap (fatty acid salts) and glycerol."
-    },
-    {
-        q: "Nuclear fission is best described as ___.",
-        opts: ["the combination of two light nuclei to form a heavier nucleus", "the splitting of a heavy nucleus into smaller nuclei with release of energy", "the emission of beta particles from a nucleus", "the absorption of neutrons without any nuclear change"],
-        ans: 1,
-        exp: "Nuclear fission is the splitting of a heavy atomic nucleus (e.g., uranium-235) into two lighter nuclei, releasing a large amount of energy and neutrons."
-    },
-    {
-        q: "An exothermic reaction is one in which ___.",
-        opts: ["energy is absorbed from the surroundings", "the activation energy is zero", "heat energy is released to the surroundings", "entropy always decreases"],
-        ans: 2,
-        exp: "In exothermic reactions, the products have less energy than the reactants, and the difference is released as heat to the surroundings (ΔH is negative)."
-    },
-    {
-        q: "Which of the following is a halogen?",
-        opts: ["Sodium", "Calcium", "Bromine", "Argon"],
-        ans: 2,
-        exp: "Bromine (Br) is a halogen — a Group 17 element. Halogens include fluorine, chlorine, bromine, iodine, and astatine."
-    },
-    {
-        q: "Gibbs free energy (G) determines whether a reaction is spontaneous. A reaction is spontaneous when ΔG is ___.",
-        opts: ["positive", "zero", "negative", "equal to ΔH"],
-        ans: 2,
-        exp: "A reaction is thermodynamically spontaneous (can occur without external energy input) when the change in Gibbs free energy ΔG < 0 (negative)."
-    },
-    {
-        q: "Alkali metals are stored under oil because they ___.",
-        opts: ["are good conductors of electricity", "react violently with water and oxygen in air", "dissolve readily in organic solvents", "are radioactive elements"],
-        ans: 1,
-        exp: "Alkali metals (Group 1) react vigorously with moisture and oxygen in the air, so they are stored under oil to prevent contact with air or water."
-    },
-    {
-        q: "At chemical equilibrium, which of the following statements is TRUE?",
-        opts: ["The concentrations of reactants and products are always equal", "The forward and reverse reaction rates are equal", "All reactions have stopped", "Only the forward reaction is occurring"],
-        ans: 1,
-        exp: "At dynamic equilibrium, both forward and reverse reactions continue but at equal rates, so the concentrations of reactants and products remain constant."
-    },
-    {
-        q: "Hydrogen gas is prepared in the laboratory by reacting ___.",
-        opts: ["copper with dilute sulphuric acid", "zinc with dilute hydrochloric acid", "sodium with concentrated nitric acid", "carbon with steam"],
-        ans: 1,
-        exp: "Hydrogen is produced in the lab by reacting zinc (Zn) with dilute hydrochloric acid: Zn + 2HCl → ZnCl₂ + H₂."
-    },
-    {
-        q: "Which of the following is a transition metal?",
-        opts: ["Potassium", "Calcium", "Iron", "Barium"],
-        ans: 2,
-        exp: "Iron (Fe) is a transition metal found in the d-block of the periodic table. Potassium, calcium, and barium are s-block metals."
-    },
-    {
-        q: "The activation energy of a reaction is ___.",
-        opts: ["the energy released when products form", "the minimum energy required for a collision to result in a reaction", "the total energy of all reactant molecules", "the energy difference between reactants and products"],
-        ans: 1,
-        exp: "Activation energy is the minimum energy that colliding particles must possess for a reaction to occur."
-    },
-    {
-        q: "Which oxide is amphoteric?",
-        opts: ["Sodium oxide (Na₂O)", "Aluminium oxide (Al₂O₃)", "Sulphur dioxide (SO₂)", "Carbon dioxide (CO₂)"],
-        ans: 1,
-        exp: "Aluminium oxide is amphoteric — it reacts with both acids (acting as a base) and bases (acting as an acid)."
-    },
-    {
-        q: "The process of using microorganisms to produce useful substances is called ___.",
-        opts: ["saponification", "polymerisation", "biotechnology", "electrolysis"],
-        ans: 2,
-        exp: "Biotechnology involves using living organisms (especially microorganisms) to develop or make products, such as in fermentation, antibiotics production, and genetic engineering."
-    },
-    {
-        q: "Entropy is best described as a measure of ___.",
-        opts: ["the heat content of a system", "the degree of disorder or randomness in a system", "the free energy available to do work", "the activation energy of a reaction"],
-        ans: 1,
-        exp: "Entropy (S) is a thermodynamic quantity representing the degree of disorder or randomness in a system. Higher entropy means greater disorder."
-    },
-    {
-        q: "Oxygen is prepared in the laboratory by the catalytic decomposition of hydrogen peroxide. The catalyst used is ___.",
-        opts: ["iron filings", "copper powder", "manganese(IV) oxide", "activated carbon"],
-        ans: 2,
-        exp: "Manganese(IV) oxide (MnO₂) acts as a catalyst in the decomposition of hydrogen peroxide: 2H₂O₂ → 2H₂O + O₂."
-    },
-    {
-        q: "Air is approximately composed of ___.",
-        opts: ["78% oxygen and 21% nitrogen", "21% oxygen and 78% nitrogen", "50% oxygen and 50% nitrogen", "78% carbon dioxide and 21% oxygen"],
-        ans: 1,
-        exp: "Dry air is approximately 78% nitrogen, 21% oxygen, 0.9% argon, and 0.04% carbon dioxide by volume."
-    },
-    {
-        q: "The electronic configuration of chlorine (atomic number 17) is ___.",
-        opts: ["2, 8, 8", "2, 8, 7", "2, 8, 6", "2, 7, 8"],
-        ans: 1,
-        exp: "Chlorine has 17 electrons arranged as 2, 8, 7 across its three shells."
-    },
-    {
-        q: "Which of the following best describes a non-renewable source of energy?",
-        opts: ["Solar energy", "Wind energy", "Petroleum", "Hydroelectric power"],
-        ans: 2,
-        exp: "Petroleum (fossil fuel) is non-renewable because it takes millions of years to form and is being consumed much faster than it is replenished."
-    },
-    {
-        q: "In the Haber process, nitrogen and hydrogen combine to form ammonia. This reaction is ___.",
-        opts: ["irreversible and exothermic", "reversible and exothermic", "irreversible and endothermic", "reversible and endothermic"],
-        ans: 1,
-        exp: "The Haber process (N₂ + 3H₂ ⇌ 2NH₃) is reversible and exothermic (releases heat), which is why lower temperatures favour ammonia production at equilibrium."
-    },
-    {
-        q: "What is the general property that distinguishes metals from non-metals?",
-        opts: ["Metals are poor conductors of heat", "Metals have low melting points", "Metals are good conductors of heat and electricity", "Metals are brittle and dull"],
-        ans: 2,
-        exp: "Metals are generally good conductors of heat and electricity, lustrous, malleable, and ductile — properties that distinguish them from non-metals."
-    },
-    {
-        q: "Nitrogen forms approximately what percentage of the atmosphere?",
-        opts: ["21%", "0.04%", "78%", "50%"],
-        ans: 2,
-        exp: "Nitrogen makes up approximately 78% of the Earth's atmosphere by volume."
-    },
-    {
-        q: "Which of the following gases causes acid rain?",
-        opts: ["Nitrogen gas (N₂)", "Sulphur dioxide (SO₂)", "Oxygen (O₂)", "Argon (Ar)"],
-        ans: 1,
-        exp: "Sulphur dioxide (SO₂) released from burning fossil fuels reacts with water in the atmosphere to form sulphurous and sulphuric acids, causing acid rain."
-    },
-    {
-        q: "Water is described as a universal solvent because ___.",
-        opts: ["it dissolves all substances completely", "it dissolves more substances than any other common solvent", "it has the highest boiling point of all solvents", "it is found everywhere on Earth"],
-        ans: 1,
-        exp: "Water is called a universal solvent because its polar nature allows it to dissolve more ionic and polar substances than virtually any other liquid solvent."
-    },
-    {
-        q: "The type of flame produced when there is insufficient oxygen for complete combustion is called ___.",
-        opts: ["a blue flame", "a Bunsen flame", "a luminous yellow flame", "a non-luminous flame"],
-        ans: 2,
-        exp: "Insufficient oxygen causes incomplete combustion, producing a luminous yellow (sooty) flame due to unburnt carbon particles."
-    },
-    {
-        q: "Alkaline earth metals belong to which group of the periodic table?",
-        opts: ["Group 1", "Group 17", "Group 2", "Group 18"],
-        ans: 2,
-        exp: "Alkaline earth metals (Be, Mg, Ca, Sr, Ba, Ra) occupy Group 2 of the periodic table."
-    },
-    {
-        q: "An endothermic reaction is one in which ___.",
-        opts: ["heat is released to the surroundings", "ΔH is negative", "the products have more energy than the reactants", "no energy change occurs"],
-        ans: 2,
-        exp: "In endothermic reactions, heat is absorbed from the surroundings. The products have more energy than the reactants, so ΔH is positive."
-    },
-    {
-        q: "The rate of a chemical reaction can be calculated as ___.",
-        opts: ["change in concentration × time", "change in concentration / time", "time / change in concentration", "activation energy / time"],
-        ans: 1,
-        exp: "Rate of reaction = change in concentration of reactant or product ÷ time taken. It is expressed in mol/L/s."
-    },
-    {
-        q: "Which of the following is a compound of sulphur commonly causing environmental pollution?",
-        opts: ["Sulphur dioxide (SO₂)", "Oxygen (O₂)", "Nitrogen (N₂)", "Argon (Ar)"],
-        ans: 0,
-        exp: "Sulphur dioxide (SO₂) is a major air pollutant released during the burning of sulphur-containing fossil fuels, contributing to acid rain and respiratory problems."
-    },
-    {
-        q: "A detergent works by ___.",
-        opts: ["reacting with the dirt to form a gas", "lowering surface tension and forming micelles that trap grease", "hardening grease so it can be scraped off", "converting grease into water-soluble compounds through oxidation"],
-        ans: 1,
-        exp: "Detergent molecules have hydrophilic (water-loving) heads and hydrophobic (water-repelling) tails. They surround grease particles in micelles, allowing them to be washed away."
-    },
-    {
-        q: "Isotopes of an element have the same number of ___.",
-        opts: ["neutrons but different protons", "protons but different neutrons", "nucleons but different electrons", "electrons but different protons"],
-        ans: 1,
-        exp: "Isotopes are atoms of the same element with the same atomic number (protons) but different mass numbers (different numbers of neutrons)."
-    },
-    {
-        q: "Which of the following is NOT an effect of environmental pollution on air quality?",
-        opts: ["Formation of acid rain", "Depletion of the ozone layer", "Greenhouse effect and global warming", "Increased biodiversity"],
-        ans: 3,
-        exp: "Increased biodiversity is not an effect of air pollution. Air pollution causes acid rain, ozone depletion, global warming, and respiratory diseases."
-    },
-    {
-        q: "In radioactive decay, which emission has the greatest penetrating power?",
-        opts: ["Alpha (α) particles", "Beta (β) particles", "Gamma (γ) rays", "All have equal penetrating power"],
-        ans: 2,
-        exp: "Gamma (γ) rays have the greatest penetrating power. Alpha particles are stopped by paper, beta particles by aluminium, but gamma rays require thick lead or concrete."
-    },
-    {
-        q: "Which of the following describes the contact process?",
-        opts: ["Industrial preparation of nitric acid", "Industrial preparation of sulphuric acid", "Industrial preparation of ammonia", "Industrial preparation of hydrochloric acid"],
-        ans: 1,
-        exp: "The contact process is the industrial method for producing sulphuric acid: SO₂ is oxidised to SO₃ over a vanadium(V) oxide catalyst, then dissolved in water."
-    },
-    {
-        q: "The chemical formula for ammonia is ___.",
-        opts: ["NO₂", "NH₃", "N₂O", "NaOH"],
-        ans: 1,
-        exp: "Ammonia has the chemical formula NH₃ — one nitrogen atom bonded to three hydrogen atoms."
-    },
-    {
-        q: "When a piece of sodium is dropped into water, which gas is evolved?",
-        opts: ["Oxygen", "Carbon dioxide", "Hydrogen", "Nitrogen"],
-        ans: 2,
-        exp: "2Na + 2H₂O → 2NaOH + H₂. Sodium reacts vigorously with water to produce sodium hydroxide and hydrogen gas."
-    },
-    {
-        q: "What type of reaction involves the transfer of electrons from one species to another?",
-        opts: ["Acid-base neutralisation", "Redox reaction", "Precipitation reaction", "Hydrolysis reaction"],
-        ans: 1,
-        exp: "Redox (reduction-oxidation) reactions involve the transfer of electrons. The species losing electrons is oxidised; the one gaining electrons is reduced."
-    },
-    {
-        q: "Which of the following gases is used to test for the presence of moisture?",
-        opts: ["Anhydrous calcium chloride", "Anhydrous cobalt(II) chloride", "Concentrated sulphuric acid", "Silica gel"],
-        ans: 1,
-        exp: "Anhydrous cobalt(II) chloride turns from blue to pink in the presence of water, making it a reliable indicator/test for moisture."
-    },
-    {
-        q: "The valency of nitrogen in ammonia (NH₃) is ___.",
-        opts: ["1", "2", "3", "5"],
-        ans: 2,
-        exp: "In NH₃, nitrogen forms three covalent bonds with hydrogen, so its valency is 3."
-    },
-    {
-        q: "Halogens are oxidising agents because they ___.",
-        opts: ["readily donate electrons", "readily accept electrons", "form covalent bonds with metals", "are all gases at room temperature"],
-        ans: 1,
-        exp: "Halogens are strong oxidising agents because they have high electronegativities and readily accept electrons (gain electrons) from other species."
-    }
+  q: "The molar mass of calcium bicarbonate, Ca(HCO₃)₂, which is responsible for temporary hardness of water, is:",
+  opts: ["162 g/mol", "200 g/mol", "178 g/mol", "146 g/mol"],
+  ans: 0,
+  exp: "Ca = 40, H = 1, C = 12, O = 16. Ca(HCO₃)₂ = 40 + 2(1 + 12 + 48) = 40 + 2(61) = 40 + 122 = 162 g/mol."
+},
+{
+  q: "A student prepared a solution by dissolving 5.85 g of sodium chloride (NaCl) in 500 cm³ of water. What is the molar concentration of the solution? (Na = 23, Cl = 35.5)",
+  opts: ["0.500 mol/dm³", "0.200 mol/dm³", "0.100 mol/dm³", "0.400 mol/dm³"],
+  ans: 1,
+  exp: "Molar mass of NaCl = 58.5 g/mol. Moles = 5.85 ÷ 58.5 = 0.1 mol. Volume = 500 cm³ = 0.5 dm³. Concentration = 0.1 ÷ 0.5 = 0.200 mol/dm³."
+},
+{
+  q: "Which of the following correctly describes the behaviour of water as a universal solvent?",
+  opts: ["Water dissolves only ionic compounds due to its non-polar nature", "Water dissolves only covalent compounds through dispersion forces", "Water dissolves many ionic and polar covalent substances because of its high dielectric constant and ability to form hydrogen bonds", "Water dissolves all substances equally regardless of polarity"],
+  ans: 2,
+  exp: "Water is an effective universal solvent because its high dielectric constant weakens electrostatic forces between ions, and its ability to form hydrogen bonds allows it to solvate polar molecules and ions through hydration."
+},
+{
+  q: "A saturated solution differs from a supersaturated solution in that a saturated solution:",
+  opts: ["Contains the maximum amount of solute that can dissolve at a given temperature and remains stable when a seed crystal is added", "Contains less solute than its maximum capacity and will dissolve more solute readily", "Precipitates solute when cooled to a temperature below the point of saturation", "Contains more dissolved solute than a supersaturated solution at the same temperature"],
+  ans: 0,
+  exp: "A saturated solution holds the maximum amount of solute that can dissolve at a specific temperature and remains in equilibrium — it does not precipitate when a seed crystal is added, unlike a supersaturated solution which is unstable and crystallises upon seeding."
+},
+{
+  q: "Henry's Law states that the amount of a gas dissolved in a liquid at a given temperature is proportional to the partial pressure of that gas above the liquid. Which of the following scenarios is a correct application of this law?",
+  opts: ["Carbonated drinks fizz vigorously when the bottle is opened because the partial pressure of CO₂ above the liquid drops sharply, reducing CO₂ solubility and causing dissolved gas to escape", "Hot water holds more dissolved oxygen than cold water because high temperature increases gas solubility according to Henry's Law", "A saturated sugar solution cannot dissolve any more sugar because the partial pressure of sugar vapour above the solution is zero", "The solubility of NaCl in water decreases when pressure is increased, in accordance with Henry's Law"],
+  ans: 0,
+  exp: "Henry's Law applies to gases dissolved in liquids. When a carbonated drink bottle is opened, the pressure of CO₂ above the solution decreases sharply, so the solubility of CO₂ drops and gas escapes as bubbles. Henry's Law actually shows that gas solubility decreases with increasing temperature, making option B incorrect."
+},
+{
+  q: "Permanent hardness of water is caused by dissolved calcium sulphate and magnesium sulphate. Which of the following methods correctly removes ONLY permanent hardness?",
+  opts: ["Boiling the water", "Adding sodium carbonate (washing soda) to precipitate Ca²⁺ and Mg²⁺ as their respective carbonates", "Allowing the water to stand for 24 hours", "Filtering the water through charcoal"],
+  ans: 1,
+  exp: "Boiling removes only temporary hardness by decomposing Ca(HCO₃)₂ and Mg(HCO₃)₂. Permanent hardness, caused by sulphates and chlorides of Ca²⁺ and Mg²⁺, is removed by adding Na₂CO₃ (washing soda), which precipitates these ions as insoluble carbonates. Charcoal filtration and standing are not effective."
+},
+{
+  q: "When water containing magnesium hydrogen carbonate is boiled, which products are formed?",
+  opts: ["MgO, CO₂ and H₂O only", "MgCO₃, CO₂ and H₂O", "Mg(OH)₂, CO₂ and H₂O", "MgSO₄, CO₂ and H₂O"],
+  ans: 2,
+  exp: "The thermal decomposition of Mg(HCO₃)₂ proceeds as: Mg(HCO₃)₂ → Mg(OH)₂ + 2CO₂. Magnesium carbonate, if formed, further reacts with water to produce Mg(OH)₂. The final products of boiling are Mg(OH)₂ (insoluble precipitate), CO₂ (gas), and H₂O."
+},
+{
+  q: "The ion exchange method of water softening works by:",
+  opts: ["Precipitating Ca²⁺ and Mg²⁺ ions as their respective sulphates using barium chloride solution", "Replacing Ca²⁺ and Mg²⁺ ions in hard water with Na⁺ or H⁺ ions from a resin, eliminating hardness without forming precipitates", "Converting temporary hardness to permanent hardness through the addition of concentrated sulphuric acid", "Absorbing Ca²⁺ and Mg²⁺ ions onto the surface of activated charcoal and releasing them as insoluble carbonates"],
+  ans: 1,
+  exp: "In the ion exchange method, hard water is passed through a synthetic resin containing Na⁺ or H⁺ ions. As water flows through, Ca²⁺ and Mg²⁺ ions exchange positions with Na⁺ or H⁺ ions in the resin, producing softened water with no precipitate formed."
+},
+{
+  q: "A water sample has both temporary and permanent hardness. After boiling, the residual hardness is found to be 120 mg/dm³ as CaCO₃ equivalent. Before boiling, the total hardness was 310 mg/dm³. What is the temporary hardness of the original sample?",
+  opts: ["250 mg/dm³", "190 mg/dm³", "430 mg/dm³", "120 mg/dm³"],
+  ans: 1,
+  exp: "Temporary hardness = Total hardness − Permanent hardness. Permanent hardness is the hardness remaining after boiling = 120 mg/dm³. Therefore, temporary hardness = 310 − 120 = 190 mg/dm³."
+},
+{
+  q: "Which of the following statements about Clark's process for removing temporary hardness is chemically accurate?",
+  opts: ["Slaked lime (Ca(OH)₂) is added to convert soluble bicarbonates into insoluble carbonates: Ca(HCO₃)₂ + Ca(OH)₂ → 2CaCO₃↓ + 2H₂O", "Quicklime (CaO) is added directly to water to neutralise dissolved carbon dioxide and precipitate magnesium sulphate", "Soda ash (Na₂CO₃) is added to convert permanent hardness ions into soluble calcium carbonate which is then filtered off", "Alum (Al₂(SO₄)₃) is added to flocculate the bicarbonate ions and settle them as a gelatinous precipitate at the base of the tank"],
+  ans: 0,
+  exp: "Clark's process uses calculated amounts of slaked lime Ca(OH)₂. The reaction: Ca(HCO₃)₂ + Ca(OH)₂ → 2CaCO₃↓ + 2H₂O. The insoluble calcium carbonate precipitates and is removed by filtration. Adding excess lime would re-introduce hardness."
+},
+{
+  q: "In the Contact Process for manufacturing sulphuric acid, the catalyst used in the oxidation of SO₂ to SO₃, and the temperature range maintained, are respectively:",
+  opts: ["Vanadium(V) oxide (V₂O₅) at 450–500°C", "Platinum at 200–250°C", "Iron(III) oxide (Fe₂O₃) at 450–550°C", "Manganese dioxide (MnO₂) at 350–400°C"],
+  ans: 0,
+  exp: "In the Contact Process, SO₂ is oxidised to SO₃ over vanadium(V) oxide (V₂O₅) catalyst at 450–500°C. Below this range the reaction is too slow; above it, equilibrium shifts left, reducing yield. Platinum was used historically but is too expensive and easily poisoned."
+},
+{
+  q: "When concentrated sulphuric acid reacts with copper metal, which pair of products is formed?",
+  opts: ["CuSO₄, SO₃ and H₂O", "CuSO₄, SO₂ and H₂O", "Cu₂SO₄, SO₂ and H₂O", "CuO, SO₂ and H₂O"],
+  ans: 1,
+  exp: "Concentrated H₂SO₄ oxidises copper: Cu + 2H₂SO₄(conc) → CuSO₄ + SO₂↑ + 2H₂O. Sulphur is reduced from +6 in H₂SO₄ to +4 in SO₂."
+},
+{
+  q: "Sulphur exists in several allotropic forms. Which of the following correctly describes the stable allotrope of sulphur at room temperature and the structural reason for its stability?",
+  opts: ["Monoclinic sulphur; it consists of S₆ ring molecules arranged in a needle-like crystal lattice that is thermodynamically stable below 96°C", "Plastic sulphur; it consists of long interlocking chain molecules of sulphur atoms that resist phase transitions at room temperature", "Rhombic sulphur; it consists of S₈ ring molecules packed in an orthorhombic crystal lattice and is the thermodynamically stable form below 96°C", "Amorphous sulphur; it has no defined crystal structure, making it the lowest energy form of sulphur at standard conditions"],
+  ans: 2,
+  exp: "Rhombic sulphur (α-sulphur) is the stable allotrope at room temperature. It consists of puckered S₈ rings in an orthorhombic crystal lattice and is thermodynamically stable below 96°C (the transition temperature), above which monoclinic sulphur becomes stable."
+},
+{
+  q: "Which of the following correctly explains why SO₂ acts as a reducing agent in its reaction with acidified potassium permanganate (KMnO₄)?",
+  opts: ["SO₂ donates electrons by being oxidised from the +4 to the +6 oxidation state, thereby reducing Mn⁷⁺ to Mn²⁺, causing decolorisation of the purple solution", "SO₂ accepts electrons by being reduced from the +6 to the +4 oxidation state, causing the oxidation of Mn²⁺ to Mn⁷⁺", "SO₂ reduces KMnO₄ by donating oxygen atoms to the permanganate ion, converting it to MnO₂ which appears as a brown precipitate", "SO₂ acts as a reducing agent by reducing the pH of the KMnO₄ solution, which spontaneously causes the Mn⁷⁺ ion to decompose"],
+  ans: 0,
+  exp: "SO₂ acts as a reducing agent because sulphur is in the +4 oxidation state and can be oxidised to +6 (SO₄²⁻). In the reaction with acidified KMnO₄, SO₂ is oxidised to SO₄²⁻ while Mn⁷⁺ is reduced to Mn²⁺ (colourless), causing the purple colour to disappear."
+},
+{
+  q: "The Frasch process is used to extract sulphur from underground deposits. Which of the following sequences correctly describes the operating principle of this process?",
+  opts: ["Superheated steam at 170°C is pumped down the outermost pipe to melt the sulphur; compressed hot air is then forced down the innermost pipe to push the molten sulphur up through the middle pipe to the surface", "Hot water at 100°C is pumped into the deposit to dissolve the sulphur; the resulting solution is pumped to the surface and evaporated to recover solid sulphur", "Compressed air at high pressure is pumped down to fracture the sulphur-bearing rock; the broken rock is then hauled to the surface and subjected to chemical extraction", "An electric current is passed through the underground deposit, generating heat that vaporises the sulphur, which is then condensed at the surface into solid form"],
+  ans: 0,
+  exp: "In the Frasch process, a triple-pipe system is used. Superheated water (~170°C, above sulphur's melting point of 119°C) is pumped down the outermost pipe to melt the sulphur. Compressed hot air down the innermost pipe creates a frothy mixture that rises up the middle pipe. Sulphur obtained is approximately 99.5% pure."
+},
+{
+  q: "Ethene (C₂H₄) decolorises bromine water rapidly at room temperature without UV light. This reaction proceeds by which mechanism and what type of reaction is it?",
+  opts: ["Free radical substitution; UV light initiates the homolytic cleavage of the C–C double bond", "Electrophilic addition; the π electrons of the C=C double bond attract the electrophilic bromine molecule, forming a cyclic bromonium ion intermediate that is then attacked by Br⁻", "Nucleophilic substitution; the bromine molecule acts as a nucleophile attacking the electron-deficient carbon of the double bond", "Electrophilic substitution; bromine replaces a hydrogen atom on the double-bonded carbon in a two-step mechanism involving an arenium ion intermediate"],
+  ans: 1,
+  exp: "Alkenes react with bromine via electrophilic addition. The electron-rich π bond attacks the electrophilic Br₂ molecule, forming a cyclic bromonium ion. The bromide ion (Br⁻) then attacks from the opposite face (anti addition), producing 1,2-dibromoethane."
+},
+{
+  q: "Cracking of petroleum is carried out to increase the yield of petrol from crude oil. Which of the following correctly distinguishes thermal cracking from catalytic cracking?",
+  opts: ["Thermal cracking uses high temperatures (450–750°C) and high pressures without a catalyst, producing a higher proportion of alkenes; catalytic cracking uses moderate temperatures (450–500°C) with a zeolite catalyst and produces a higher proportion of branched alkanes and aromatic hydrocarbons", "Thermal cracking uses a vanadium catalyst at 500°C to crack long-chain alkanes into shorter alkanes; catalytic cracking uses superheated steam at 800°C to crack naphtha into ethene for the plastics industry", "Thermal cracking produces only straight-chain alkanes, while catalytic cracking exclusively produces cycloalkanes that are used as aviation fuel", "Thermal cracking requires UV radiation to initiate free radical chain reactions, while catalytic cracking requires hydrogen gas and a nickel catalyst at 200°C"],
+  ans: 0,
+  exp: "Thermal cracking operates at 450–750°C and high pressures without a catalyst, producing a large proportion of alkenes. Catalytic cracking uses ~450–500°C, lower pressures, and a zeolite catalyst, producing mainly branched alkanes and aromatics with better antiknock properties."
+},
+{
+  q: "Methane undergoes chlorination in the presence of UV light. If excess chlorine is used, what is the final organic product of the reaction?",
+  opts: ["CH₂Cl₂ (dichloromethane)", "CHCl₃ (trichloromethane / chloroform)", "CCl₄ (tetrachloromethane / carbon tetrachloride)", "CH₃Cl (chloromethane / methyl chloride)"],
+  ans: 2,
+  exp: "Free radical substitution of methane proceeds stepwise: CH₄ → CH₃Cl → CH₂Cl₂ → CHCl₃ → CCl₄. With excess chlorine, all four hydrogen atoms are progressively replaced. The final product is CCl₄ (tetrachloromethane)."
+},
+{
+  q: "Which of the following is the correct IUPAC name for the hydrocarbon with the structural formula CH₃–CH(CH₃)–CH₂–CH₂–CH₃?",
+  opts: ["2-methylpentane", "4-methylpentane", "2-ethylbutane", "3-methylhexane"],
+  ans: 0,
+  exp: "The longest chain containing the branch is 5 carbons (pentane). The methyl branch is on C2, counting from the end closest to the branch. IUPAC name: 2-methylpentane. Numbering from the other end would give position 4, which is incorrect (use lowest locant)."
+},
+{
+  q: "Alkanes are generally less reactive than alkenes. The primary reason for this difference in reactivity is that:",
+  opts: ["Alkanes contain only C–H and C–C sigma bonds which are strong, non-polar, and difficult to break heterolytically, making them resistant to attack by electrophiles and nucleophiles; alkenes contain a reactive π bond that is easily attacked by electrophiles", "Alkanes have higher boiling points than alkenes, so they require more energy to reach the activation energy for most reactions", "Alkanes are gases at room temperature and cannot react with liquid reagents as efficiently as alkenes, which are predominantly liquids", "Alkanes contain delocalised pi electrons that repel incoming reagents, while alkenes have no pi electrons and can therefore attract nucleophiles more readily"],
+  ans: 0,
+  exp: "Alkanes consist of only C–H and C–C sigma bonds — strong, relatively non-polar bonds that can only be broken homolytically (by UV light). Alkenes possess a weaker, electron-rich π bond readily attacked by electrophiles, explaining their higher reactivity."
+},
+{
+  q: "The Kekulé structure of benzene proposed alternating single and double bonds. Modern understanding rejects this model because experimental evidence shows that:",
+  opts: ["All six C–C bond lengths in benzene are equal at 0.139 nm, intermediate between a C–C single bond (0.154 nm) and a C=C double bond (0.134 nm), indicating delocalisation of π electrons over the entire ring", "Benzene has six distinct C–C bonds of differing lengths, confirming the alternating single and double bond pattern proposed by Kekulé", "Benzene rapidly decolorises bromine water by electrophilic addition, which would be impossible if the π electrons were delocalised", "The standard enthalpy of hydrogenation of benzene is exactly three times that of cyclohexene, proving that the three double bonds behave independently"],
+  ans: 0,
+  exp: "X-ray diffraction shows all six C–C bonds in benzene are equal (0.139 nm), between C–C (0.154 nm) and C=C (0.134 nm), proving delocalisation. Benzene does NOT readily decolorise bromine water, and its enthalpy of hydrogenation (−208 kJ/mol) is much less than 3 × (−120) = −360 kJ/mol, confirming extra stability."
+},
+{
+  q: "Nitration of benzene involves treating it with a mixture of concentrated nitric acid and concentrated sulphuric acid. The electrophile responsible for the reaction and the role of sulphuric acid are respectively:",
+  opts: ["NO₂⁺ (nitronium ion); sulphuric acid protonates HNO₃ to generate the nitronium ion: HNO₃ + H₂SO₄ → NO₂⁺ + HSO₄⁻ + H₂O", "NO₃⁻ (nitrate ion); sulphuric acid acts as a dehydrating agent to remove water from the reaction mixture and shift equilibrium", "N₂O₅; sulphuric acid oxidises nitric acid to dinitrogen pentoxide which then acts as the electrophile attacking the benzene ring", "HNO₃ itself; sulphuric acid acts merely as a solvent to dissolve the nitric acid and maintain a homogeneous reaction medium"],
+  ans: 0,
+  exp: "Concentrated H₂SO₄ protonates HNO₃ to generate the nitronium ion: HNO₃ + H₂SO₄ → NO₂⁺ + HSO₄⁻ + H₂O. This NO₂⁺ electrophile attacks the delocalised π electrons of benzene in an electrophilic aromatic substitution, producing nitrobenzene."
+},
+{
+  q: "Methylbenzene (toluene) is more reactive than benzene towards electrophilic substitution reactions. Which of the following provides the correct explanation for this observation and predicts the preferred position of substitution?",
+  opts: ["The methyl group withdraws electron density from the benzene ring through an inductive effect, making the ring more electron-poor and susceptible to attack; substitution occurs preferentially at the meta position", "The methyl group donates electron density into the benzene ring by hyperconjugation and a weak +I inductive effect, activating the ring; substitution is directed preferentially to the ortho and para positions", "The methyl group reacts directly with the incoming electrophile before it can attack the benzene ring, forming a stabilised benzylic intermediate that then undergoes rearrangement", "The methyl group increases the boiling point of methylbenzene relative to benzene, requiring higher activation energy for electrophilic attack and making methylbenzene less reactive"],
+  ans: 1,
+  exp: "The methyl group is an electron-donating group (+I and hyperconjugation), releasing electron density into the ring. This increases electron density at ortho and para positions, making methylbenzene more reactive than benzene and directing electrophiles to ortho/para positions."
+},
+{
+  q: "When benzene is treated with chloroethane (CH₃CH₂Cl) in the presence of anhydrous AlCl₃, which product is formed and what type of reaction occurs?",
+  opts: ["Chlorobenzene via free radical substitution", "Ethylbenzene via Friedel-Crafts alkylation", "Acetophenone via Friedel-Crafts acylation", "Cyclohexane via catalytic hydrogenation"],
+  ans: 1,
+  exp: "This is Friedel-Crafts alkylation. Anhydrous AlCl₃ generates a carbocation (CH₃CH₂⁺) from chloroethane: CH₃CH₂Cl + AlCl₃ → CH₃CH₂⁺ + AlCl₄⁻. This electrophile attacks the benzene ring by electrophilic aromatic substitution, producing ethylbenzene. Acylation would require an acyl chloride (RCOCl)."
+},
+{
+  q: "The standard enthalpy of hydrogenation of benzene is −208 kJ/mol, while that of cyclohexene (one double bond) is −120 kJ/mol. The resonance stabilisation energy (delocalisation energy) of benzene is therefore approximately:",
+  opts: ["−88 kJ/mol", "−152 kJ/mol", "+152 kJ/mol", "+208 kJ/mol"],
+  ans: 2,
+  exp: "If benzene had three isolated double bonds, expected ΔH = 3 × (−120) = −360 kJ/mol. Actual value is −208 kJ/mol. Resonance stabilisation energy = (−208) − (−360) = +152 kJ/mol. The positive value shows benzene releases 152 kJ/mol less energy than expected, confirming extra stability from delocalisation."
+},
+{
+  q: "Ethanol undergoes oxidation with acidified potassium dichromate (K₂Cr₂O₇). If the oxidation is carefully controlled using gentle heat and the product is distilled off as it forms, the primary product obtained is:",
+  opts: ["Ethanoic acid (CH₃COOH)", "Ethanal (CH₃CHO)", "Ethene (C₂H₄)", "Diethyl ether (C₂H₅OC₂H₅)"],
+  ans: 1,
+  exp: "Primary alcohols oxidised with acidified K₂Cr₂O₇ under gentle heat with the product distilled off as it forms gives the aldehyde: CH₃CH₂OH → CH₃CHO (ethanal). Allowing the aldehyde to remain with excess oxidising agent would give ethanoic acid."
+},
+{
+  q: "The reaction of ethanol with concentrated sulphuric acid at 170°C produces which product, and what type of reaction is this?",
+  opts: ["Diethyl ether by intermolecular dehydration at 170°C", "Ethene by intramolecular dehydration (elimination) at 170°C", "Ethyl hydrogen sulphate by esterification at 170°C", "Acetaldehyde by oxidative dehydrogenation at 170°C"],
+  ans: 1,
+  exp: "At 170°C, concentrated H₂SO₄ causes intramolecular elimination (dehydration) of ethanol, producing ethene (CH₂=CH₂) and water. At 140°C, intermolecular dehydration occurs instead, producing diethyl ether. The sulphuric acid acts as a dehydrating agent and catalyst."
+},
+{
+  q: "Which of the following correctly explains why the boiling point of ethanol (78°C) is significantly higher than that of its isomer, dimethyl ether (−24°C), despite both having the same molecular formula (C₂H₆O)?",
+  opts: ["Ethanol has a higher molar mass than dimethyl ether due to the presence of the hydroxyl group, which contains heavier oxygen atoms arranged differently", "Dimethyl ether has stronger London dispersion forces because its molecules are larger and more polarisable than those of ethanol", "Ethanol molecules form intermolecular hydrogen bonds through the O–H group, requiring significantly more energy to overcome during vaporisation, while dimethyl ether cannot form hydrogen bonds as it has no O–H group", "Ethanol is ionic in nature due to the polarised O–H bond, giving it lattice energy that must be overcome during vaporisation, unlike the purely covalent dimethyl ether"],
+  ans: 2,
+  exp: "Ethanol (CH₃CH₂OH) has an –OH group capable of forming strong intermolecular hydrogen bonds (O–H···O). Dimethyl ether (CH₃–O–CH₃) has no O–H bond and cannot form hydrogen bonds between its own molecules. Consequently, much more energy is required to separate ethanol molecules during vaporisation, giving it a significantly higher boiling point."
+},
+{
+  q: "Which test correctly distinguishes ethanol from propan-2-ol (a secondary alcohol), and what is the chemical basis for the distinction?",
+  opts: ["Lucas test: ethanol (primary) reacts slowly with Lucas reagent (ZnCl₂/conc. HCl) at room temperature, while propan-2-ol (secondary) reacts faster, turning the mixture cloudy within minutes", "Iodoform test: ethanol gives a yellow precipitate of CHI₃ (iodoform) with I₂/NaOH because it contains the CH₃CH(OH)– group; propan-2-ol does not give this test", "Fehling's test: ethanol reduces Fehling's solution to give a brick-red precipitate of Cu₂O, while propan-2-ol does not reduce Fehling's solution", "Oxidation with acidified K₂Cr₂O₇: ethanol produces a carboxylic acid as the final oxidation product while propan-2-ol produces a ketone, which can be confirmed by the absence of a colour change with Fehling's solution"],
+  ans: 0,
+  exp: "The Lucas test distinguishes primary, secondary, and tertiary alcohols by rate of reaction. Tertiary alcohols react immediately, secondary alcohols (propan-2-ol) react within 5 minutes at room temperature, and primary alcohols (ethanol) react only slowly or require heating. Both ethanol and propan-2-ol give the iodoform test, so it would not distinguish them reliably."
+},
+{
+  q: "The fermentation of glucose to produce ethanol is represented by: C₆H₁₂O₆ → 2C₂H₅OH + 2CO₂. If 180 g of glucose is fermented, what is the maximum theoretical mass of ethanol produced? (C = 12, H = 1, O = 16)",
+  opts: ["184 g", "92 g", "46 g", "138 g"],
+  ans: 1,
+  exp: "Molar mass of glucose = 180 g/mol. Moles of glucose = 180 ÷ 180 = 1 mol. From the equation, 1 mol glucose → 2 mol ethanol. Molar mass of ethanol = 46 g/mol. Mass of ethanol = 2 × 46 = 92 g."
+},
+{
+  q: "Sulphur dioxide can be detected in the laboratory by its reaction with filter paper soaked in acidified potassium dichromate solution. The colour change observed is:",
+  opts: ["Orange to green, as SO₂ reduces Cr₂O₇²⁻ (orange) to Cr³⁺ (green)", "Yellow to colourless, as SO₂ reduces MnO₄⁻ to Mn²⁺", "Blue to colourless, as SO₂ bleaches the starch-iodine complex", "Purple to colourless, as SO₂ reduces I₂ to I⁻ in the potassium dichromate solution"],
+  ans: 0,
+  exp: "Acidified potassium dichromate is orange (Cr₂O₇²⁻). SO₂ (a reducing agent) reduces Cr₂O₇²⁻ (Cr at +6, orange) to Cr³⁺ (green). The colour change from orange to green is the confirmatory test for SO₂ using acidified potassium dichromate."
+},
+{
+  q: "Which of the following correctly explains why benzene undergoes electrophilic substitution rather than electrophilic addition, despite having a π bond system?",
+  opts: ["The heat of combustion of benzene is too low to provide the activation energy required for addition reactions to proceed", "Benzene's delocalised π electron system gives it extra stability (resonance energy of ~152 kJ/mol); addition reactions would destroy the aromatic ring and eliminate this stability, whereas substitution preserves the aromatic ring", "Benzene undergoes substitution because it has no π bonds — the delocalised electrons are entirely sigma in character and can only be displaced, not added to", "Benzene prefers substitution because the C–H bonds in benzene are weaker than those in alkanes, making hydrogen loss more energetically favourable than addition of the incoming electrophile"],
+  ans: 1,
+  exp: "The delocalised π system confers ~152 kJ/mol of extra stability (resonance energy). Electrophilic addition would destroy the aromatic ring, eliminating this stabilisation. Electrophilic substitution restores the aromatic ring after reaction, preserving the resonance energy — this thermodynamic advantage explains why benzene undergoes substitution rather than addition."
+},
+{
+  q: "A hydrocarbon sample decolorises bromine water in the cold without UV light and also decolorises acidified potassium permanganate. It does NOT form a precipitate with ammoniacal silver nitrate (Tollens-equivalent test for terminal alkynes). The hydrocarbon is most likely:",
+  opts: ["An alkene (contains a C=C double bond with no terminal alkyne group)", "A terminal alkyne (contains –C≡CH) that reacts with Ag⁺ to form a precipitate", "A cycloalkane with ring strain sufficient to react with Br₂ without UV light", "An aromatic compound that decolorises KMnO₄ by side-chain oxidation"],
+  ans: 0,
+  exp: "Decolourisation of bromine water without UV (π bond reacts by addition) and decolourisation of acidified KMnO₄ (oxidises C=C) both confirm an alkene. Terminal alkynes (–C≡CH) give a white precipitate with ammoniacal AgNO₃ — this sample does not, ruling out terminal alkynes. Cycloalkanes do not decolourise Br₂ without UV. The compound is an alkene."
+},
+{
+  q: "The industrial manufacture of sulphuric acid involves: 2SO₂(g) + O₂(g) ⇌ 2SO₃(g), ΔH = −197 kJ/mol. Which set of conditions would theoretically give the maximum yield of SO₃?",
+  opts: ["Low temperature, high pressure, and no catalyst", "High temperature, low pressure, and V₂O₅ catalyst", "Low temperature, high pressure, and V₂O₅ catalyst", "High temperature, high pressure, and V₂O₅ catalyst"],
+  ans: 2,
+  exp: "The reaction is exothermic (ΔH < 0) with fewer moles of gas in products (2 mol) than reactants (3 mol). By Le Chatelier's principle: low temperature favours the forward exothermic reaction; high pressure favours the side with fewer gas molecules (products). Both conditions shift equilibrium right, maximising SO₃ yield. A catalyst increases rate but does not shift equilibrium."
+},
+{
+  q: "Which of the following correctly describes the role of water in SO₃ absorption during the Contact Process, and why SO₃ is NOT absorbed directly into water in industrial practice?",
+  opts: ["SO₃ is absorbed directly into water to form H₂SO₄ at 100% efficiency; the process is avoided industrially only because water is expensive", "SO₃ reacts exothermically with water to form a stable acid mist (aerosol of tiny H₂SO₄ droplets) that is extremely difficult to condense and collect; instead, SO₃ is absorbed into 98% H₂SO₄ to form oleum (H₂S₂O₇) which is then carefully diluted with water", "SO₃ cannot react with water at all because it is a non-polar molecule that is insoluble in polar solvents; it must be converted to SO₂ first", "SO₃ is absorbed into dilute H₂SO₄ (50% concentration) to prevent the formation of oleum, which is a hazardous byproduct of the direct water absorption method"],
+  ans: 1,
+  exp: "Direct absorption of SO₃ into water creates a fine acid mist (aerosol) that is very difficult to capture and causes pollution. Instead, SO₃ is absorbed into 98% concentrated H₂SO₄ to form oleum: SO₃ + H₂SO₄ → H₂S₂O₇. This oleum is then carefully diluted with water to produce concentrated H₂SO₄."
+},
+{
+  q: "A student tested three water samples with soap solution: Sample X needed 2 drops, Sample Y needed 15 drops, Sample Z needed 8 drops. After boiling for 10 minutes, Sample Y now needs 5 drops; Sample Z shows no change. Which conclusion is correct?",
+  opts: ["Sample X is hard water; Sample Y has only temporary hardness; Sample Z has only permanent hardness", "Sample Y has both temporary and permanent hardness; Sample Z has only permanent hardness; Sample X is soft water", "Sample Z has temporary hardness that was not removed because it was not boiled long enough; Sample Y has permanent hardness only", "All three samples have the same type of hardness but different concentrations of dissolved salts"],
+  ans: 1,
+  exp: "Sample X (2 drops) is soft water. Sample Y initially needed 15 drops but only 5 after boiling — boiling removed some hardness (temporary) but not all (5 drops = permanent hardness remains); Y has both types. Sample Z showed no change after boiling, meaning its hardness cannot be removed by boiling — it has only permanent hardness."
+},
+{
+  q: "Alkanols undergo esterification. The reaction of ethanol with ethanoic acid using concentrated sulphuric acid produces ethyl ethanoate. Which of the following correctly states the type of reaction, the role of H₂SO₄, and the bond broken during ester formation?",
+  opts: ["Condensation reaction; H₂SO₄ acts as a dehydrating agent; the O–H bond of the carboxylic acid is broken and the –OH is removed as water", "Addition reaction; H₂SO₄ acts as an oxidising agent; the C–O bond of the alcohol is broken and oxygen is added to the carbonyl carbon", "Substitution reaction; H₂SO₄ acts as a catalyst; the C–H bond of the alcohol is broken and hydrogen replaces the –OH of the acid", "Elimination reaction; H₂SO₄ acts as a dehydrating agent; the O–H bond of the alcohol is broken as water is eliminated from both molecules"],
+  ans: 0,
+  exp: "Esterification is a reversible condensation reaction. Isotope labelling with ¹⁸O confirms the water comes from the –OH of the carboxylic acid and the –H of the alcohol. Concentrated H₂SO₄ acts as both catalyst and dehydrating agent (removing water shifts equilibrium right). The O–H bond of the carboxylic acid breaks."
+},
+{
+  q: "An organic compound has the molecular formula C₅H₁₂O. It does not react with sodium metal to produce hydrogen gas, does not decolorise acidified KMnO₄, and does not react with PCl₅ to give misty fumes. The compound is most likely:",
+  opts: ["Pentan-1-ol, a primary alcohol", "2-methylbutan-2-ol, a tertiary alcohol", "A diethyl methyl ether or similar ether (e.g. methoxylbutane)", "Pentanal, an aldehyde with formula C₅H₁₀O"],
+  ans: 2,
+  exp: "Alcohols react with sodium metal to liberate H₂ gas — this compound does not, eliminating all alcohols. Alcohols also react with PCl₅ to give HCl fumes, and primary/secondary alcohols are oxidised by KMnO₄. Since none of these reactions occur and C₅H₁₂O fits an ether, the compound is an ether such as methoxylbutane (CH₃–O–C₄H₉). Ethers are generally unreactive towards Na, KMnO₄, and PCl₅."
+},
+{
+  q: "Which of the following correctly explains why temporary hardness can be removed by boiling, while permanent hardness cannot?",
+  opts: ["Temporary hardness is caused by dissolved CO₂ gas, which is simply expelled on boiling; permanent hardness is caused by dissolved NaCl which requires electrolysis to remove", "Temporary hardness is due to dissolved Ca(HCO₃)₂ and Mg(HCO₃)₂, which decompose on boiling to form insoluble CaCO₃ and Mg(OH)₂ that precipitate out; permanent hardness is due to dissolved CaSO₄ and MgSO₄, which are thermally stable and do not decompose on boiling", "Temporary hardness caused by MgCl₂ decomposes on boiling into MgO and HCl gas which escape; permanent hardness caused by CaCO₃ is too insoluble to be further precipitated", "Temporary hardness is removed because heat converts the soluble sulphates into insoluble bicarbonates; permanent hardness cannot be removed because the sulphates are protected by a calcium carbonate layer"],
+  ans: 1,
+  exp: "Temporary hardness: Ca(HCO₃)₂ → CaCO₃↓ + CO₂↑ + H₂O and Mg(HCO₃)₂ → Mg(OH)₂↓ + 2CO₂↑ on boiling. The precipitates are removable by filtration. Permanent hardness (CaSO₄, MgSO₄, their chlorides) involves thermally stable salts that do not decompose on boiling, so it cannot be removed this way."
+},
+{
+  q: "The following reactions occur sequentially starting from ethene: Ethene → (Br₂/H₂O) → Product A → (KOH/alcohol, heat) → Product B. What are Products A and B respectively, and what type of reaction is Step II?",
+  opts: ["A = 1,2-dibromoethane; B = vinyl bromide (bromoethene); Step II = elimination (dehydrohalogenation)", "A = bromoethanol; B = ethene oxide; Step II = intramolecular substitution", "A = 1,2-dibromoethane; B = ethyne; Step II = double elimination", "A = bromoethanol; B = ethanal; Step II = oxidation by the alkoxide intermediate"],
+  ans: 0,
+  exp: "Step I: Ethene + Br₂/H₂O → 1,2-dibromoethane (BrCH₂CH₂Br) by electrophilic addition — Product A. Step II: 1,2-dibromoethane + KOH/alcohol (heat) → elimination (dehydrohalogenation). KOH abstracts a β-hydrogen, Br⁻ leaves, forming a C=C. The product is vinyl bromide (CH₂=CHBr, bromoethene) — Product B."
+}
 ],
 
 'Biology': [
