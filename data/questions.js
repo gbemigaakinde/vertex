@@ -1637,258 +1637,415 @@ jss2: {
     }
 ],
     'English Language': [
-    {
-        q: "Which of the following is an example of a consonant cluster?",
-        opts: ["'str' in 'street'", "'a' in 'apple'", "'ou' in 'cloud'", "'ee' in 'sleep'"],
-        ans: 0,
-        exp: "A consonant cluster is a group of two or more consonant sounds together with no vowel between them. 'str' in 'street' has three consonants together — /s/, /t/, /r/ — making it a consonant cluster. The other options contain vowels."
-    },
-    {
-        q: "Which word begins with a consonant cluster?",
-        opts: ["Oven", "Umbrella", "Spring", "Eagle"],
-        ans: 2,
-        exp: "'Spring' begins with the consonant cluster 'spr' — three consonants (/s/, /p/, /r/) before the first vowel. The other words all begin with vowel sounds."
-    },
-    {
-        q: "Which of the following words contains the diphthong /eɪ/?",
-        opts: ["Sit", "Rain", "Hot", "Cup"],
-        ans: 1,
-        exp: "The word 'Rain' contains the diphthong /eɪ/ — a gliding sound that starts at /e/ and moves towards /ɪ/. A diphthong is a vowel sound that glides from one position to another within the same syllable."
-    },
-    {
-        q: "Identify the word that contains the diphthong /ɔɪ/.",
-        opts: ["Boat", "Bait", "Boy", "Boot"],
-        ans: 2,
-        exp: "The word 'Boy' contains the diphthong /ɔɪ/. This sound glides from /ɔ/ to /ɪ/. 'Boat' has /əʊ/, 'Bait' has /eɪ/, and 'Boot' has the pure vowel /uː/."
-    },
-    {
-        q: "Which of the following words contains the diphthong /aɪ/?",
-        opts: ["Coat", "Fly", "Fool", "Feed"],
-        ans: 1,
-        exp: "The diphthong /aɪ/ is heard in 'Fly'. The sound glides from /a/ towards /ɪ/. This same sound appears in words like 'sky', 'night', and 'my'."
-    },
-    {
-        q: "A diphthong is best described as:",
-        opts: ["A consonant sound made at the back of the throat", "A single vowel sound that does not change", "A vowel sound that glides from one position to another in the same syllable", "Two consonants that appear together"],
-        ans: 2,
-        exp: "A diphthong is a vowel sound where the mouth moves from one position to another during the same syllable, producing a gliding sound. Examples include /eɪ/ in 'make', /aɪ/ in 'like', and /ɔɪ/ in 'boy'."
-    },
-    {
-        q: "What type of intonation is used at the end of a yes/no question like 'Are you coming to school today?'",
-        opts: ["Falling intonation", "Level intonation", "Rising intonation", "Falling-rising intonation"],
-        ans: 2,
-        exp: "Yes/No questions end with a rising intonation — the voice goes UP at the end. This signals to the listener that a yes or no answer is expected."
-    },
-    {
-        q: "Which intonation pattern is used for commands such as 'Sit down immediately!'?",
-        opts: ["Rising intonation", "Rising-falling intonation", "Level intonation", "Falling intonation"],
-        ans: 3,
-        exp: "Commands use falling intonation — the voice drops at the end. This expresses authority, finality, or a firm instruction."
-    },
-    {
-        q: "Report this statement: 'I am reading a novel,' said Kemi.",
-        opts: ["Kemi said she is reading a novel.", "Kemi said she was reading a novel.", "Kemi said I am reading a novel.", "Kemi said she has been reading a novel."],
-        ans: 1,
-        exp: "In reported speech, the present continuous 'am reading' shifts back one tense to the past continuous 'was reading'. The pronoun 'I' also changes to 'she' to match the third-person reference."
-    },
-    {
-        q: "Change to reported speech: 'We will visit the museum tomorrow,' the students said.",
-        opts: ["The students said they will visit the museum tomorrow.", "The students said we would visit the museum the next day.", "The students said they would visit the museum the next day.", "The students said they would visit the museum tomorrow."],
-        ans: 2,
-        exp: "'Will' changes to 'would', 'we' changes to 'they', and 'tomorrow' changes to 'the next day'. All three changes must be made correctly in reported speech."
-    },
-    {
-        q: "Report this question: 'Where did you put my bag?' Amara asked her brother.",
-        opts: ["Amara asked her brother where did he put her bag.", "Amara asked her brother where he had put her bag.", "Amara asked her brother where he put her bag.", "Amara asked her brother where had he put her bag."],
-        ans: 1,
-        exp: "When reporting a question, the question word order ('where did he put') changes to statement order ('where he had put'). The past tense 'did put' shifts back to 'had put'. Note also the pronoun changes: 'you' → 'he', 'my' → 'her'."
-    },
-    {
-        q: "Report this command: 'Open your textbooks to page 40,' the teacher told the students.",
-        opts: ["The teacher told the students to open their textbooks to page 40.", "The teacher told the students open your textbooks to page 40.", "The teacher said the students should open their textbooks to page 40.", "The teacher asked the students to opened their textbooks to page 40."],
-        ans: 0,
-        exp: "Reported commands use 'told + object + to + infinitive'. The imperative 'Open' becomes 'to open', and 'your' changes to 'their'."
-    },
-    {
-        q: "Report this request: 'Please help me carry this bag,' Tobi said to his friend.",
-        opts: ["Tobi requested his friend to please help him carry the bag.", "Tobi asked his friend if he could help him carry the bag.", "Tobi told his friend to help him carry the bag.", "Tobi said please help him carry the bag."],
-        ans: 1,
-        exp: "Polite requests in reported speech are often expressed using 'asked + object + if/whether + subject + could'. The 'please' is dropped, and the structure becomes more formal and indirect."
-    },
-    {
-        q: "Which sentence uses the SIMPLE PAST tense correctly?",
-        opts: ["She is going to the market yesterday.", "They were eating when I arrived.", "He kicked the ball and scored a goal.", "I have seen that film last week."],
-        ans: 2,
-        exp: "'Kicked' and 'scored' are both simple past tense verbs, correctly describing completed actions. Option A mixes present continuous with 'yesterday'. Option D incorrectly uses 'have seen' (present perfect) with 'last week' (a definite past time)."
-    },
-    {
-        q: "Which sentence correctly uses the PRESENT CONTINUOUS tense?",
-        opts: ["She reads a book right now.", "He is playing football at the moment.", "They studied hard every day.", "We are went to the park last Sunday."],
-        ans: 1,
-        exp: "The present continuous tense = 'is/am/are + verb-ing'. 'He is playing' is correctly formed and used with 'at the moment', which shows an action happening right now."
-    },
-    {
-        q: "Choose the sentence with the correct PAST CONTINUOUS tense.",
-        opts: ["We was watching TV when the light went out.", "They were sleeping when the alarm rang.", "She were cooking when I arrived.", "He was went to school this morning."],
-        ans: 1,
-        exp: "The past continuous tense = 'was/were + verb-ing'. 'They were sleeping' is correctly formed. 'Was' is used with singular subjects (he, she, it, I) and 'were' with plural subjects or 'you'."
-    },
-    {
-        q: "Which sentence uses the FUTURE tense correctly?",
-        opts: ["She will goes to Abuja tomorrow.", "We shall attended the meeting next week.", "He will travel to London next month.", "They will be went home soon."],
-        ans: 2,
-        exp: "Future tense = 'will/shall + base form of verb'. 'He will travel' is correct — the base form 'travel' follows 'will'. Options A, B, and D all incorrectly add extra verb endings after 'will/shall'."
-    },
-    {
-        q: "Select the correct COMPARATIVE form: 'Bolu is _____ than Tunde.'",
-        opts: ["more tall", "tallest", "taller", "most tall"],
-        ans: 2,
-        exp: "Short adjectives (one syllable) like 'tall' form their comparative by adding '-er': taller. 'More tall' and 'most tall' are incorrect. 'Tallest' is the superlative (used for three or more), not the comparative (used for two)."
-    },
-    {
-        q: "Which sentence uses a SUPERLATIVE adjective correctly?",
-        opts: ["This is the most fastest car in the race.", "She is the most intelligent student in the class.", "He is more tallest than his brother.", "It is the goodest result we have seen."],
-        ans: 1,
-        exp: "'Most intelligent' is the correct superlative for a long adjective (three syllables). 'Most fastest' is wrong because 'fastest' already carries the superlative '-est'. 'More tallest' mixes comparative and superlative forms."
-    },
-    {
-        q: "Identify the ADVERBIAL of MANNER in this sentence: 'The soldier marched proudly down the street.'",
-        opts: ["The soldier", "marched", "proudly", "down the street"],
-        ans: 2,
-        exp: "An adverbial of manner answers the question 'How?' 'Proudly' tells us HOW the soldier marched. 'Down the street' is an adverbial of place (where), not manner."
-    },
-    {
-        q: "Which underlined word is an INTENSIFIER in the sentence: 'She is very happy about her results'?",
-        opts: ["She", "very", "happy", "results"],
-        ans: 1,
-        exp: "An intensifier is a word that strengthens or increases the degree of an adjective or adverb. 'Very' intensifies the adjective 'happy'. Other common intensifiers include 'quite', 'rather', 'extremely', and 'so'."
-    },
-    {
-        q: "Choose the correct preposition: 'The principal's office is _____ the second floor.'",
-        opts: ["in", "at", "on", "by"],
-        ans: 2,
-        exp: "We use 'on' with floors of a building: 'on the second floor', 'on the ground floor'. 'In' is used for enclosed spaces generally, 'at' for specific locations or addresses, but 'on' is the correct choice for floors."
-    },
-    {
-        q: "Which sentence uses a preposition of LOCATION correctly?",
-        opts: ["The book is at the table.", "She sat between her two friends.", "He is on the school.", "They arrived to the station."],
-        ans: 1,
-        exp: "'Between' correctly shows a location in the middle of two things (her two friends). 'At the table' is sometimes acceptable but 'on the table' is more precise for objects resting on surfaces. 'On the school' and 'arrived to' are incorrect preposition uses."
-    },
-    {
-        q: "Which of the following is the correct use of the FULL STOP?",
-        opts: ["She went to the market, she bought tomatoes.", "Did you complete the assignment.", "The match ended in a draw.", "How wonderful the sunset is!"],
-        ans: 2,
-        exp: "A full stop ends a declarative (statement) sentence. 'The match ended in a draw.' is a statement, correctly ending with a full stop. Option B is a question (needs a question mark). Option D is an exclamation (needs an exclamation mark)."
-    },
-    {
-        q: "Where is a COMMA correctly used in the following sentences?",
-        opts: ["She, bought bread milk and eggs.", "After eating dinner, we went for a walk.", "He ran, and jumped.", "The boy, is tall."],
-        ans: 1,
-        exp: "A comma is correctly placed after an introductory phrase or clause: 'After eating dinner,' sets the scene before the main clause. Commas are not placed between a subject and its verb (options C and D are over-punctuated)."
-    },
-    {
-        q: "Which of the following is a FORMAL letter greeting?",
-        opts: ["Dearest Auntie Bisi,", "Hi Emeka,", "Dear Sir/Madam,", "Hey, what's up,"],
-        ans: 2,
-        exp: "'Dear Sir/Madam,' is the correct greeting for a formal letter when you do not know the recipient's name personally. Informal greetings use first names or affectionate terms."
-    },
-    {
-        q: "In a formal letter, which subscription is correct when you DO NOT know the name of the person you are writing to?",
-        opts: ["Yours sincerely,", "Your loving friend,", "Yours faithfully,", "Yours truly,"],
-        ans: 2,
-        exp: "The rule is: if you open with 'Dear Sir/Madam' (not knowing the name), you close with 'Yours faithfully'. If you open with a name like 'Dear Mr. Adeyemi', you close with 'Yours sincerely'."
-    },
-    {
-        q: "Which of the following is the MAIN PURPOSE of a narrative essay?",
-        opts: ["To explain the causes of climate change", "To argue for or against a topic", "To tell a story about an event or experience", "To describe the features of a place"],
-        ans: 2,
-        exp: "A narrative essay tells a story — it recounts an event, experience, or sequence of happenings. It answers the question: 'What happened?' An expository essay explains; an argumentative essay argues for a position."
-    },
-    {
-        q: "In an argumentative essay on the topic 'Social media does more harm than good', which option is a strong ARGUMENT FOR this position?",
-        opts: ["Social media helps people stay connected with family.", "Social media exposes young people to cyberbullying and misinformation.", "Some social media platforms have educational content.", "Social media was invented in the 21st century."],
-        ans: 1,
-        exp: "A strong argument directly supports the stated position. 'Social media exposes young people to cyberbullying and misinformation' directly supports the claim that it does 'more harm than good'. The other options either support the opposing side or are irrelevant facts."
-    },
-    {
-        q: "What is the PRIMARY purpose of an expository essay?",
-        opts: ["To narrate a personal experience", "To persuade the reader to take action", "To explain or provide information clearly on a topic", "To describe a person's physical appearance"],
-        ans: 2,
-        exp: "An expository essay exposes, explains, or informs — it presents facts, definitions, and explanations on a topic without personal opinions or attempts to persuade. Examples include essays explaining how something works or what a concept means."
-    },
-    {
-        q: "Which sentence best describes the MAIN IDEA of a paragraph?",
-        opts: ["A specific example used to support a point", "The central point that the entire paragraph is about", "The last sentence in the paragraph", "The title of the essay"],
-        ans: 1,
-        exp: "The main idea is the central point or most important message of a paragraph. All other sentences in the paragraph — examples, details, and explanations — exist to support this central point."
-    },
-    {
-        q: "When reading a comprehension passage to find the meaning of an unfamiliar word, what is the best strategy?",
-        opts: ["Skip the word and continue reading", "Look at the words and sentences around it for clues", "Replace it with any word that sounds similar", "Count the number of letters in the word"],
-        ans: 1,
-        exp: "Using context clues — the surrounding words, phrases, and sentences — is the most effective way to determine the meaning of an unfamiliar word in a passage. This is called 'reading in context'."
-    },
-    {
-        q: "Which of the following is a feature of PROSE as a form of literature?",
-        opts: ["It is written in verses and stanzas", "It has a fixed rhyme scheme", "It is written in ordinary sentences and paragraphs", "It must have a chorus or refrain"],
-        ans: 2,
-        exp: "Prose is written in ordinary sentences and paragraphs, the way people naturally speak and write. Novels, short stories, and folk tales are all examples of prose. Poetry uses verses/stanzas, and drama uses dialogue and stage directions."
-    },
-    {
-        q: "Which of the following is a feature of POETRY?",
-        opts: ["It is divided into chapters", "It uses stage directions to describe actions", "It is organized into stanzas and may use rhyme and rhythm", "It always tells a story with a beginning, middle, and end"],
-        ans: 2,
-        exp: "Poetry is typically organized into stanzas (groups of lines) and often uses rhyme, rhythm, and figurative language to convey meaning and emotion. Chapters belong to prose, and stage directions belong to drama."
-    },
-    {
-        q: "Which of the following is a unique feature of DRAMA as a literary form?",
-        opts: ["It is written in stanzas", "It contains stage directions and is written in dialogue", "It is always told from a first-person point of view", "It uses rhyme and meter throughout"],
-        ans: 1,
-        exp: "Drama is written in dialogue (characters speaking to each other) and includes stage directions — instructions about setting, movement, and action. It is designed to be performed, unlike prose and poetry."
-    },
-    {
-        q: "Folk tales are a type of:",
-        opts: ["Drama", "Poetry", "Prose narrative", "Argumentative essay"],
-        ans: 2,
-        exp: "Folk tales are traditional stories passed down through generations, usually told in prose (ordinary narrative form). They often feature moral lessons, animals that talk, and elements of fantasy. They belong to oral and written prose literature."
-    },
-    {
-        q: "Which of the following best describes a MYTH?",
-        opts: ["A story written by a known author to entertain children", "A traditional story that explains natural phenomena or the origins of the world", "A humorous poem with five lines", "A formal letter written to a government official"],
-        ans: 1,
-        exp: "A myth is a traditional story, often of unknown origin, that a culture uses to explain natural events, creation, or human behaviour (e.g. how the sun was made, why the sky is blue). Myths are part of a culture's oral and literary heritage."
-    },
-    {
-        q: "Which vocabulary word is most closely related to the theme of 'LAW AND ORDER'?",
-        opts: ["Preposition", "Verdict", "Diphthong", "Stanza"],
-        ans: 1,
-        exp: "A 'verdict' is the decision made by a judge or jury at the end of a trial — it belongs directly to the vocabulary of law and order. The other options belong to grammar (preposition), speech work (diphthong), and poetry (stanza)."
-    },
-    {
-        q: "Which of the following belongs to vocabulary about 'THE LIBRARY'?",
-        opts: ["Penalty kick", "Catalogue", "Diphthong", "Comma splice"],
-        ans: 1,
-        exp: "A 'catalogue' is a systematically arranged list of books, resources, or items available in a library. Penalty kick belongs to sports, diphthong to speech work, and comma splice to grammar."
-    },
-    {
-        q: "Which of the following is a vocabulary word related to 'CHILD LABOUR AND TRAFFICKING'?",
-        opts: ["Metaphor", "Exploitation", "Rhyme scheme", "Conjunction"],
-        ans: 1,
-        exp: "'Exploitation' means using someone unfairly for your own benefit — it is a key term in discussing child labour and trafficking. Metaphor and rhyme scheme belong to literature, and conjunction to grammar."
-    },
-    {
-        q: "Identify the type of sentence: 'What an incredible performance the students gave!'",
-        opts: ["Interrogative", "Declarative", "Imperative", "Exclamatory"],
-        ans: 3,
-        exp: "This is an exclamatory sentence — it expresses strong emotion or admiration and ends with an exclamation mark (!). Declarative sentences state facts, interrogative sentences ask questions, and imperative sentences give commands."
-    },
-    {
-        q: "Which of the following is an IMPERATIVE sentence?",
-        opts: ["She finished her homework early.", "Did you remember to lock the door?", "Switch off the generator before you leave.", "What a brilliant idea that was!"],
-        ans: 2,
-        exp: "An imperative sentence gives a command, instruction, or request. 'Switch off the generator before you leave' is a direct instruction. It typically has no stated subject — the subject 'you' is understood."
-    }
+
+  // ── 10 with ans:0 (A is correct) ──
+
+  { q: "Which sentence correctly uses the conjunction 'although' to express contrast?",
+    opts: [
+      "Although it was raining heavily, the students refused to leave the field.",
+      "The students refused to leave although was raining the field heavily.",
+      "It was raining heavily the students although refused to leave the field.",
+      "Although the students refused, it was raining heavily to leave the field."
+    ],
+    ans: 0,
+    exp: "'Although' introduces a subordinate clause of contrast. The correct structure is: Although + [contrasting clause], [main clause]." },
+
+  { q: "Identify the sentence in which the word 'had' is used correctly as a past perfect auxiliary verb.",
+    opts: [
+      "By the time the teacher arrived, the students had already submitted their assignments.",
+      "The students had submit their assignments when the teacher arrived.",
+      "The teacher had arrive before the students were submitting their work.",
+      "By the time the assignments had, the students submitted them to the teacher."
+    ],
+    ans: 0,
+    exp: "The past perfect (had + past participle) is used to show that one past action (submitting) was completed before another past action (teacher arriving)." },
+
+  { q: "Which of the following sentences contains a causative verb used correctly?",
+    opts: [
+      "The manager had the report typed by his secretary before the meeting began.",
+      "The manager caused the report to typed by his secretary before the meeting.",
+      "The manager made the report was typed by his secretary before the meeting.",
+      "The manager let the report had been typed by his secretary before meeting."
+    ],
+    ans: 0,
+    exp: "Causative verbs (have, make, let, get) show that the subject causes someone else to perform an action. 'Had + object + past participle' is the correct structure." },
+
+  { q: "Which sentence uses an adverb of time correctly to modify the verb?",
+    opts: [
+      "She will submit her project tomorrow without fail.",
+      "She will submit tomorrow her project without fail.",
+      "Tomorrow she project will submit without fail.",
+      "She will submit her project without fail tomorrow is coming."
+    ],
+    ans: 0,
+    exp: "Adverbs of time typically appear at the beginning or end of a sentence. 'Tomorrow' is correctly placed at the end of the sentence to indicate when the action will occur." },
+
+  { q: "In the word 'unhappy', the morpheme 'un-' is an example of a:",
+    opts: [
+      "Prefix — a word-forming element added to the beginning of a root word to change its meaning",
+      "Suffix — a word-forming element added to the end of a root word to change its grammatical class",
+      "Infix — a morpheme inserted within the middle of a root word",
+      "Free morpheme — a morpheme that can stand alone as an independent word"
+    ],
+    ans: 0,
+    exp: "'Un-' is a prefix (added before the root 'happy') that reverses or negates the meaning of the root word, changing 'happy' to its opposite." },
+
+  { q: "Which of the following question tags correctly completes the sentence: 'She has never been to London, ___?'",
+    opts: [
+      "has she?",
+      "hasn't she?",
+      "did she?",
+      "didn't she?"
+    ],
+    ans: 0,
+    exp: "When the main clause is negative ('has never'), the question tag must be positive. The auxiliary in the main clause is 'has', so the tag is 'has she?' " },
+
+  { q: "Which of the following sentences illustrates the use of 'despite' as a conjunction of contrast?",
+    opts: [
+      "Despite the heavy traffic, she arrived at the office on time.",
+      "Despite of the heavy traffic, she arrived at the office on time.",
+      "She arrived on time despite she was caught in heavy traffic.",
+      "She arrived on time despite of that there was heavy traffic."
+    ],
+    ans: 0,
+    exp: "'Despite' is a preposition followed directly by a noun phrase (not a clause). 'Despite the heavy traffic' is correct. 'Despite of' and 'despite + clause' are grammatically wrong." },
+
+  { q: "The primary word stress in the word 'photography' falls on which syllable?",
+    opts: [
+      "The second syllable: pho-TO-gra-phy",
+      "The first syllable: PHO-to-gra-phy",
+      "The third syllable: pho-to-GRA-phy",
+      "The fourth syllable: pho-to-gra-PHY"
+    ],
+    ans: 0,
+    exp: "In 'photography', the primary stress falls on the second syllable: pho-TO-gra-phy. This is a standard rule for words ending in '-graphy'." },
+
+  { q: "Which of the following word pairs correctly illustrates a synonym relationship?",
+    opts: [
+      "Brave — Courageous, because both words mean having or showing courage in the face of danger",
+      "Brave — Cowardly, because both words describe extreme emotional reactions to fear",
+      "Brave — Reckless, because both words involve taking action in dangerous situations",
+      "Brave — Cautious, because both words describe how people respond to challenging situations"
+    ],
+    ans: 0,
+    exp: "Synonyms are words with the same or very similar meanings. 'Brave' and 'courageous' are true synonyms — both mean showing courage. 'Cowardly' is an antonym, while 'reckless' and 'cautious' have different meanings." },
+
+  { q: "In the sentence 'The rich also cry', which literary device is demonstrated by using 'the rich' to refer to wealthy people in general?",
+    opts: [
+      "Synecdoche — using a descriptive class ('the rich') to refer to all individuals in that group",
+      "Personification — giving human characteristics to a non-human concept",
+      "Hyperbole — an exaggerated statement used for emphasis or dramatic effect",
+      "Oxymoron — combining two contradictory ideas in the same phrase for effect"
+    ],
+    ans: 0,
+    exp: "Using 'the rich' (a descriptive adjective used as a noun) to refer to all wealthy people is an example of synecdoche — a part or category is used to represent the whole group." },
+
+  // ── 10 with ans:1 (B is correct) ──
+
+  { q: "Which of the following sentences uses the word 'whereas' correctly to show contrast?",
+    opts: [
+      "Whereas Emeka is very good at mathematics whereas his brother prefers literature.",
+      "Emeka excels in mathematics, whereas his brother prefers literature.",
+      "Emeka whereas his brother prefers literature, excels in mathematics.",
+      "Whereas of Emeka's strength in mathematics, his brother prefers literature."
+    ],
+    ans: 1,
+    exp: "'Whereas' is a coordinating subordinator that joins two contrasting clauses. The correct structure places it between or before the two contrasting main clauses without repetition." },
+
+  { q: "Read the following: 'Pride goes before a fall.' Which genre of composition writing does this statement best serve as the moral for?",
+    opts: [
+      "A formal report about the dangers of overconfidence in professional environments",
+      "A narrative essay or prose story in which a proud character suffers failure as a result of arrogance",
+      "An argumentative essay defending the importance of self-confidence in achieving success",
+      "A descriptive essay depicting the physical appearance of a proud individual"
+    ],
+    ans: 1,
+    exp: "The moral 'Pride goes before a fall' is the lesson drawn from a narrative story in which a character's arrogance leads to their downfall — this is the hallmark of a narrative/moral essay." },
+
+  { q: "The consonant contrast between /tʃ/ and /dʒ/ is correctly illustrated in which of the following word pairs?",
+    opts: [
+      "chair — chair, which demonstrates the same consonant sound repeated in identical words",
+      "cheer — jeer, where /tʃ/ appears in 'cheer' and /dʒ/ appears in 'jeer'",
+      "sheep — jeep, which contrasts the /ʃ/ sound with the /dʒ/ sound, not /tʃ/ with /dʒ/",
+      "church — much, which only demonstrates the /tʃ/ sound without a contrasting /dʒ/ partner"
+    ],
+    ans: 1,
+    exp: "/tʃ/ (as in 'cheese') and /dʒ/ (as in 'jeez') are the two affricates of English. 'Cheer' (/tʃɪə/) vs 'jeer' (/dʒɪə/) is a minimal pair that perfectly contrasts these two sounds." },
+
+  { q: "Which of the following sentences uses 'has' as an auxiliary verb (not a main verb)?",
+    opts: [
+      "She has a brilliant idea for the school project.",
+      "She has finished writing the report before the deadline.",
+      "He has three younger sisters who attend the same school.",
+      "The school has an excellent library with thousands of books."
+    ],
+    ans: 1,
+    exp: "In 'She has finished writing', 'has' is an auxiliary verb forming the present perfect tense with the main verb 'finished'. In all other options, 'has' is a main verb meaning 'possesses'." },
+
+  { q: "A student is writing an essay titled 'A Day I Would Not Like to Remember'. Which type of composition is this most likely to be?",
+    opts: [
+      "An argumentative essay, because it defends a position about an unpleasant past experience",
+      "A personal narrative essay, because it recounts a real past event from the writer's own experience",
+      "A descriptive essay, because its only purpose is to describe the physical setting of the day",
+      "A formal report, because it presents factual findings from an unpleasant investigation"
+    ],
+    ans: 1,
+    exp: "This title calls for a personal narrative — the writer tells a story from their own life, recounting what happened on a memorable (unpleasant) day in chronological sequence." },
+
+  { q: "Which of the following correctly explains falling intonation in English speech?",
+    opts: [
+      "The pitch of the voice rises at the end of the utterance, signalling that the speaker has not finished",
+      "The pitch of the voice drops at the end of the utterance, signalling a completed statement, command, or wh- question",
+      "The pitch of the voice remains constant throughout the sentence, signalling a neutral statement",
+      "The pitch of the voice alternates between high and low syllables throughout the entire sentence"
+    ],
+    ans: 1,
+    exp: "Falling intonation (↘) occurs at the end of declarative statements, commands, and wh- questions — it signals that the speaker has finished and the utterance is complete." },
+
+  { q: "Which of the following is the correct antonym of the word 'generous'?",
+    opts: [
+      "Charitable — a word that means willing to give help or money to those in need",
+      "Miserly — a word that describes someone extremely unwilling to spend or share",
+      "Opulent — a word that describes something ostentatiously wealthy or luxurious",
+      "Lavish — a word that describes spending or giving in a very large and extravagant way"
+    ],
+    ans: 1,
+    exp: "An antonym has the opposite meaning. 'Generous' means freely giving; 'miserly' means extremely reluctant to give or spend — they are direct antonyms." },
+
+  { q: "In the sentence 'The government is responsible for the welfare of its citizens', which of the following correctly describes the role of the word 'responsible'?",
+    opts: [
+      "It is an adverb modifying the verb 'is' in the sentence",
+      "It is a predicate adjective (subject complement) describing the subject 'government' after a linking verb",
+      "It is the main verb of the sentence acting as a transitive verb with 'welfare' as its object",
+      "It is a noun phrase functioning as the subject of the subordinate clause"
+    ],
+    ans: 1,
+    exp: "'Responsible' follows the linking verb 'is' and describes the subject ('the government'). This is a predicate adjective (subject complement), not an adverb or a verb." },
+
+  { q: "Which of the following sentences correctly uses an adverb of place?",
+    opts: [
+      "She studied very diligently for the examination throughout the entire week.",
+      "The teacher asked the students to sit here during the examination.",
+      "He completed the assignment quickly before the deadline set by the teacher.",
+      "They performed exceptionally well during the school's annual prize-giving day."
+    ],
+    ans: 1,
+    exp: "'Here' is an adverb of place that tells us where the students should sit. The other options use adverbs of manner ('diligently', 'quickly') or degree ('exceptionally')." },
+
+  { q: "Which of the following words contains a suffix that changes a verb into a noun denoting a person who performs an action?",
+    opts: [
+      "Quickly — where '-ly' changes the adjective 'quick' into an adverb of manner",
+      "Teacher — where '-er' is added to the verb 'teach' to create a noun meaning one who teaches",
+      "Happiness — where '-ness' changes the adjective 'happy' into an abstract noun",
+      "Beautiful — where '-ful' changes the noun 'beauty' into a descriptive adjective"
+    ],
+    ans: 1,
+    exp: "The suffix '-er'/'-or' added to a verb forms an agent noun (a person who does something). 'Teach' + '-er' = 'teacher' (one who teaches)." },
+
+  // ── 10 with ans:2 (C is correct) ──
+
+  { q: "Which of the following sentences correctly uses the conjunction 'despite of'?",
+    opts: [
+      "Despite of the rain, the match was played to a finish at the stadium.",
+      "He passed the exam despite of not studying consistently throughout the term.",
+      "There is no grammatically correct use of 'despite of' — the correct form is simply 'despite' followed by a noun phrase",
+      "Despite of her talent, the judges awarded the first prize to another contestant."
+    ],
+    ans: 2,
+    exp: "'Despite of' is always grammatically incorrect in standard English. The correct form is 'despite' (without 'of') followed by a noun phrase, or 'in spite of' followed by a noun phrase." },
+
+  { q: "Which of the following best describes rising intonation in English and when it is typically used?",
+    opts: [
+      "Rising intonation is used in commands to add urgency and authority to the speaker's voice",
+      "Rising intonation occurs when a speaker's voice drops at the end of a completed statement",
+      "Rising intonation occurs when the pitch rises at the end of a yes/no question or to signal that the speaker has not finished",
+      "Rising intonation is a feature only of written English and cannot be detected in spoken language"
+    ],
+    ans: 2,
+    exp: "Rising intonation (↗) is used in yes/no questions ('Are you ready?') and in lists to signal continuation, indicating the speaker has more to say or inviting a yes/no response." },
+
+  { q: "In the composition topic 'A Memorable Journey I Once Made', the word 'memorable' most accurately means:",
+    opts: [
+      "Something that is impossible to recall clearly because it happened long ago",
+      "Something that was frightening and traumatic, leaving the traveller distressed",
+      "Something worth remembering because it was significant, exciting, or unusual",
+      "Something that was ordinary and routine, making it typical of most journeys"
+    ],
+    ans: 2,
+    exp: "'Memorable' means worthy of being remembered, typically because the experience was significant, exciting, or somehow remarkable — not necessarily frightening or traumatic." },
+
+  { q: "Which of the following question tags correctly completes the sentence: 'They can solve the problem, ___?'",
+    opts: [
+      "can they?",
+      "could they?",
+      "can't they?",
+      "couldn't they?"
+    ],
+    ans: 2,
+    exp: "The main clause is positive ('They can solve'), so the question tag must be negative using the same auxiliary: 'can't they?' is correct." },
+
+  { q: "Which of the following contrasting vowel sound pairs is correctly identified?",
+    opts: [
+      "/p/ and /b/ — these are consonant sounds, not vowel sounds",
+      "/tʃ/ and /dʒ/ — these are affricate consonants, not vowel sounds",
+      "/ɔ:/ and /u:/ — these are two distinct long vowel sounds that form a minimal contrast pair",
+      "/s/ and /z/ — these are fricative consonants, not vowel sounds"
+    ],
+    ans: 2,
+    exp: "/ɔ:/ (as in 'caught') and /u:/ (as in 'boot') are both long vowels. Contrasting them helps learners distinguish sounds that non-native speakers often confuse." },
+
+  { q: "An argumentative essay is best described as a piece of writing that:",
+    opts: [
+      "Tells a story from the writer's personal experience in chronological order",
+      "Describes a scene, person, or place using rich sensory and figurative language",
+      "Presents a clear position on a debatable issue and supports it with logical reasons and evidence",
+      "Explains a process step by step in a neutral and objective tone without taking sides"
+    ],
+    ans: 2,
+    exp: "An argumentative essay states a debatable claim (thesis) and defends it with evidence and reasoning, often acknowledging and refuting counterarguments." },
+
+  { q: "Which of the following correctly explains the use of the suffix '-tion' in English word formation?",
+    opts: [
+      "The suffix '-tion' is added to adjectives to form comparative forms, e.g., 'fast' → 'fastion'",
+      "The suffix '-tion' is a prefix placed before verbs to reverse their meaning, e.g., 'act' → 'tion-act'",
+      "The suffix '-tion' is added to verbs to form abstract nouns, e.g., 'educate' → 'education'",
+      "The suffix '-tion' is added to nouns to form verbs, e.g., 'nation' → 'nationate'"
+    ],
+    ans: 2,
+    exp: "The suffix '-tion' (and its variants '-ation', '-ition') converts verbs into abstract nouns: educate → education, communicate → communication, satisfy → satisfaction." },
+
+  { q: "In the consonant contrast /s/ and /z/, which of the following word pairs provides a correct minimal pair?",
+    opts: [
+      "sheep — jeep, which contrasts /ʃ/ with /dʒ/, not /s/ with /z/",
+      "sun — fun, which contrasts /s/ with /f/, not /s/ with /z/",
+      "seal — zeal, where /s/ appears in 'seal' and /z/ appears in 'zeal'",
+      "sit — ship, which contrasts /s/ with /ʃ/, not /s/ with /z/"
+    ],
+    ans: 2,
+    exp: "'Seal' (/siːl/) and 'zeal' (/ziːl/) are a minimal pair that differ only in the initial consonant: /s/ (voiceless) vs /z/ (voiced). All other options contrast different phonemes." },
+
+  { q: "Which of the following best defines a dialogue as a composition type?",
+    opts: [
+      "A one-sided account narrated entirely from the point of view of a single character",
+      "A detailed description of a conversation setting without including any direct speech",
+      "A written or spoken exchange of words between two or more participants, each taking turns",
+      "A formal essay that argues for or against a position using the voices of imaginary characters"
+    ],
+    ans: 2,
+    exp: "A dialogue is a conversation between two or more people (or characters), written with each speaker's words clearly identified, often using direct speech and speech markers." },
+
+  { q: "In reading comprehension, which of the following skills is a student using when they understand an idea that is suggested but not directly stated in the text?",
+    opts: [
+      "Skimming — reading quickly to get the general gist of the passage",
+      "Scanning — searching rapidly through the text for a specific piece of information",
+      "Making inferences — using clues in the text plus prior knowledge to interpret unstated meanings",
+      "Summarising — condensing the main ideas of the passage into a shorter version"
+    ],
+    ans: 2,
+    exp: "Inference involves reading 'between the lines' — using textual clues and background knowledge to understand what the writer implies but does not explicitly state." },
+
+  // ── 10 with ans:3 (D is correct) ──
+
+  { q: "Which of the following sentences contains a correctly formed negative question tag for a positive statement with 'have'?",
+    opts: [
+      "You have completed the assignment, do you?",
+      "You have completed the assignment, are you not?",
+      "You have completed the assignment, haven't you not?",
+      "You have completed the assignment, haven't you?"
+    ],
+    ans: 3,
+    exp: "For a positive statement using 'have' as an auxiliary, the negative question tag is 'haven't + subject'. 'Haven't you?' is the only grammatically correct tag here." },
+
+  { q: "The consonant sounds /p/ and /b/ are described as a minimal pair because they:",
+    opts: [
+      "Both appear at the end of words only and can never appear at the beginning of a syllable",
+      "Are both vowel sounds produced with the mouth fully open and the tongue flat",
+      "Are produced in completely different parts of the mouth with no articulatory similarity",
+      "Are both bilabial plosives that differ only in voicing — /p/ is voiceless and /b/ is voiced"
+    ],
+    ans: 3,
+    exp: "/p/ and /b/ are both produced by bringing the two lips together (bilabial plosives). The only difference is that /b/ is voiced (vocal cords vibrate) and /p/ is voiceless." },
+
+  { q: "In an essay titled 'Responsibilities of the Government', which of the following would be the most appropriate opening sentence for the body of the essay?",
+    opts: [
+      "In my own opinion, I personally feel that the government is always doing its best for citizens.",
+      "A government is a very important thing and without it no country can exist anywhere.",
+      "Once upon a time there was a government that was very responsible to its people.",
+      "A responsible government is obligated to provide its citizens with security, education, healthcare, and infrastructure."
+    ],
+    ans: 3,
+    exp: "The best opening for the body of an expository essay on government responsibilities directly states the main point clearly and formally, setting up the points to be discussed." },
+
+  { q: "Which of the following correctly explains the concept of word stress and gives an example of how it changes meaning?",
+    opts: [
+      "Word stress refers to the number of syllables in a word; more syllables always result in greater stress",
+      "Word stress is determined entirely by spelling; words with double letters always carry primary stress on those letters",
+      "Word stress refers to the speed at which a word is pronounced; faster pronunciation always creates more stress",
+      "Word stress is the emphasis placed on a syllable; e.g., 'REcord' (noun) vs 're-CORD' (verb) differ in meaning based on stress"
+    ],
+    ans: 3,
+    exp: "In English, shifting the primary stress changes both the grammatical class and meaning of some words. 'REcord' (stress on 1st syllable) is a noun; 'reCORD' (stress on 2nd syllable) is a verb." },
+
+  { q: "Which of the following best describes the essay writing approach needed for the topic 'Pride Goes Before a Fall'?",
+    opts: [
+      "Write a formal report documenting historical examples of proud leaders who failed",
+      "Write a discursive essay presenting arguments for and against the concept of pride",
+      "Write a descriptive essay focusing on the physical appearance of a proud person",
+      "Write a narrative or moral story that illustrates, through characters and plot, how pride leads to failure"
+    ],
+    ans: 3,
+    exp: "This is a proverbial topic best handled as a narrative with a moral lesson — tell a story in which a character's pride causes their downfall, demonstrating the truth of the proverb." },
+
+  { q: "Which of the following is the correct meaning of the prefix 're-' in the word 'rewrite'?",
+    opts: [
+      "The prefix 're-' means 'before', so 'rewrite' means to write something before seeing the original",
+      "The prefix 're-' means 'not', so 'rewrite' means to refuse to write or to avoid writing",
+      "The prefix 're-' means 'badly', so 'rewrite' means to write something in an incorrect or poor manner",
+      "The prefix 're-' means 'again', so 'rewrite' means to write something again or in a new version"
+    ],
+    ans: 3,
+    exp: "The prefix 're-' means 'again' or 'back'. 'Rewrite' means to write again; similarly, 'redo' means to do again and 'return' means to come back." },
+
+  { q: "Which of the following correctly distinguishes between a vowel sound and a consonant sound in English phonetics?",
+    opts: [
+      "Vowel sounds are always louder than consonant sounds because the mouth opens wider",
+      "Consonant sounds are always longer in duration than vowel sounds in all English words",
+      "Vowel sounds are only the five letters A, E, I, O, U; all other letters automatically produce consonant sounds",
+      "Vowel sounds are produced with an unobstructed airflow through the vocal tract, while consonant sounds involve some form of obstruction or constriction"
+    ],
+    ans: 3,
+    exp: "Phonetically, vowels are produced with free, unimpeded airflow through the mouth. Consonants involve the articulators (lips, teeth, tongue) creating partial or complete obstruction of the airstream." },
+
+  { q: "In a formal letter of application reviewed during essay writing, which of the following belongs in the conclusion paragraph?",
+    opts: [
+      "The applicant's full postal address and the date of writing the letter",
+      "The name and full address of the organisation to which the letter is directed",
+      "The specific qualifications and work experience that make the applicant suitable",
+      "A polite expression of hope for a positive response and availability for an interview"
+    ],
+    ans: 3,
+    exp: "The concluding paragraph of a formal application letter typically thanks the reader, expresses willingness to attend an interview, and politely requests a positive consideration." },
+
+  { q: "Which of the following sentences correctly uses the causative structure 'get + object + past participle'?",
+    opts: [
+      "She got her hair cut by the salon stylist, but she got them cut it wrong.",
+      "She got the salon stylist to cutting her hair before the occasion.",
+      "She got her hair to be cut at the salon by the stylist attending.",
+      "She got her hair cut at the salon before the celebration began."
+    ],
+    ans: 3,
+    exp: "The correct causative structure is: subject + get + object + past participle. 'She got her hair cut' means she arranged for someone to cut it — the structure is correct and complete in option D." },
+
+  { q: "Which of the following correctly identifies the /ð/ sound and provides a word in which it appears?",
+    opts: [
+      "/ð/ is a voiceless velar plosive that appears at the beginning of the word 'king'",
+      "/ð/ is a voiceless bilabial fricative that appears at the beginning of the word 'fine'",
+      "/ð/ is a voiceless dental fricative that appears at the beginning of the word 'think'",
+      "/ð/ is a voiced dental fricative that appears at the beginning of words like 'the', 'this', and 'that'"
+    ],
+    ans: 3,
+    exp: "/ð/ is the voiced dental fricative — the tongue touches the upper teeth and air passes through with voicing. It appears in grammatical words like 'the', 'this', 'that', 'they', 'there'." }
+
 ],
 'Mathematics': [
 
@@ -2102,299 +2259,826 @@ jss2: {
 
 ],
 'Basic Science': [
-    {
-        q: "Which of the following is the correct order of the digestive process?",
-        opts: ["Ingestion → Digestion → Absorption → Egestion", "Digestion → Ingestion → Absorption → Egestion", "Absorption → Ingestion → Digestion → Egestion", "Ingestion → Absorption → Digestion → Egestion"],
-        ans: 0,
-        exp: "Food is first taken in (ingestion), then broken down (digestion), then nutrients are absorbed into the blood (absorption), and finally undigested waste is passed out (egestion). This is the correct sequence of the digestive process."
-    },
-    {
-        q: "Where does the digestion of starch begin in the human body?",
-        opts: ["Stomach", "Small intestine", "Mouth", "Large intestine"],
-        ans: 2,
-        exp: "Starch digestion begins in the mouth, where the salivary glands produce saliva containing the enzyme salivary amylase. This enzyme starts breaking starch down into simpler sugars. Many students mistakenly say the stomach — but no starch digestion happens there."
-    },
-    {
-        q: "Which digestive enzyme is responsible for breaking down proteins in the stomach?",
-        opts: ["Amylase", "Lipase", "Maltase", "Pepsin"],
-        ans: 3,
-        exp: "Pepsin is the enzyme produced in the stomach that digests proteins by breaking them into smaller polypeptides. Amylase digests starch, lipase digests fats, and maltase breaks down maltose into glucose."
-    },
-    {
-        q: "What is the main function of bile in digestion?",
-        opts: ["It digests proteins directly", "It produces energy for the stomach", "It emulsifies fats into smaller droplets for easier digestion", "It absorbs glucose into the blood"],
-        ans: 2,
-        exp: "Bile, produced by the liver and stored in the gall bladder, does NOT contain digestive enzymes. Its role is to emulsify fats — breaking large fat globules into tiny droplets, increasing the surface area for the enzyme lipase to work on."
-    },
-    {
-        q: "Which part of the alimentary canal absorbs most of the digested nutrients into the bloodstream?",
-        opts: ["Oesophagus", "Large intestine", "Stomach", "Small intestine"],
-        ans: 3,
-        exp: "The small intestine is the main site of nutrient absorption. Its inner wall is lined with millions of tiny finger-like projections called villi, which greatly increase the surface area available for absorbing digested food into the blood."
-    },
-    {
-        q: "The villi in the small intestine are important because they:",
-        opts: ["Produce bile for fat digestion", "Increase the surface area for absorption of nutrients", "Generate acid to kill bacteria in food", "Move food along by contractions"],
-        ans: 1,
-        exp: "Villi are tiny finger-like projections on the inner wall of the small intestine. They greatly increase the surface area available for absorbing digested nutrients (glucose, amino acids, fatty acids) into the blood. Without them, absorption would be very slow and inefficient."
-    },
-    {
-        q: "What is the difference between EGESTION and EXCRETION?",
-        opts: ["They are the same process", "Egestion is removal of metabolic waste; excretion is removal of undigested food", "Egestion is removal of undigested food; excretion is removal of metabolic waste products", "Excretion only happens in plants"],
-        ans: 2,
-        exp: "Egestion is the removal of undigested food (faeces) through the anus — this food was never absorbed into the body. Excretion is the removal of metabolic waste products (like urea, CO₂, sweat) that were produced inside the body's cells."
-    },
-    {
-        q: "Which excretory organ removes carbon dioxide and water vapour from the body?",
-        opts: ["Kidney", "Liver", "Skin", "Lungs"],
-        ans: 3,
-        exp: "The lungs excrete carbon dioxide and water vapour, which are by-products of cellular respiration. When we breathe out, these waste gases are expelled. The lungs therefore serve as both respiratory and excretory organs."
-    },
-    {
-        q: "The kidneys remove which waste product from the blood?",
-        opts: ["Carbon dioxide", "Oxygen", "Urea", "Bile"],
-        ans: 2,
-        exp: "The kidneys filter urea from the blood. Urea is produced in the liver when excess amino acids are broken down. It is dissolved in water to form urine, which passes to the bladder and is excreted. If the kidneys fail, urea builds up dangerously in the blood."
-    },
-    {
-        q: "Which of the following correctly matches an excretory organ with the waste it removes?",
-        opts: ["Skin — carbon dioxide", "Lungs — urea", "Kidney — urine (containing urea and water)", "Liver — faeces"],
-        ans: 2,
-        exp: "The kidneys produce urine, which contains urea, excess water, and mineral salts. The lungs remove CO₂ and water vapour. The skin removes water and salts in sweat. The liver breaks down toxins but does not directly excrete them — the kidneys do. Faeces is egestion, not excretion."
-    },
-    {
-        q: "What is the main function of the urinary bladder?",
-        opts: ["To filter waste from the blood", "To produce urine", "To temporarily store urine before it is passed out", "To convert ammonia to urea"],
-        ans: 2,
-        exp: "The urinary bladder is a muscular sac that temporarily stores urine produced by the kidneys. When it is full, nerve signals trigger the urge to urinate and urine is released through the urethra."
-    },
-    {
-        q: "Which organ converts toxic ammonia into the less harmful waste product urea?",
-        opts: ["Kidney", "Skin", "Lung", "Liver"],
-        ans: 3,
-        exp: "The liver converts ammonia (a very toxic waste from protein breakdown) into urea, which is much less harmful. The urea is then transported in the blood to the kidneys, which filter it out and excrete it in urine."
-    },
-    {
-        q: "What is the correct definition of GROWTH?",
-        opts: ["The ability to respond to stimuli", "A permanent increase in the size and number of cells of an organism", "The process of producing offspring", "A temporary change in body temperature"],
-        ans: 1,
-        exp: "Growth is defined as a permanent, irreversible increase in the size and mass of an organism, caused by an increase in the number and size of cells through cell division. This is different from development, which refers to the ability to perform new functions."
-    },
-    {
-        q: "Which stage of human development is characterised by the MOST rapid physical growth after birth?",
-        opts: ["Adolescence", "Adulthood", "Infancy", "Childhood"],
-        ans: 2,
-        exp: "Infancy (birth to about 18 months) is the period of most rapid physical growth after birth. A baby's weight typically triples in the first year. Brain development is also extremely rapid during this stage."
-    },
-    {
-        q: "Adolescence is the stage between:",
-        opts: ["Birth and infancy", "Infancy and childhood", "Childhood and adulthood", "Adulthood and old age"],
-        ans: 2,
-        exp: "Adolescence is the transitional stage between childhood and adulthood. It is marked by puberty — rapid physical, emotional, and hormonal changes that prepare the body for reproduction and adult responsibilities."
-    },
-    {
-        q: "The physical and emotional changes that occur during adolescence are primarily controlled by:",
-        opts: ["Digestive enzymes", "Hormones produced by glands", "The lungs", "Weather and climate"],
-        ans: 1,
-        exp: "Hormones are chemical messengers produced by endocrine glands. During adolescence, sex hormones (oestrogen in girls, testosterone in boys) and growth hormone trigger rapid physical changes such as increase in height, development of secondary sexual characteristics, and emotional changes."
-    },
-    {
-        q: "Which type of habitat is found in rivers, ponds, and lakes?",
-        opts: ["Terrestrial habitat", "Arboreal habitat", "Desert habitat", "Freshwater aquatic habitat"],
-        ans: 3,
-        exp: "A freshwater aquatic habitat is found in rivers, ponds, lakes, and streams. It is different from a marine habitat (sea/ocean, which contains salt water). Terrestrial habitats are on land, and arboreal habitats are found in trees."
-    },
-    {
-        q: "Which adaptive feature helps a fish survive in water?",
-        opts: ["Thick fur coat", "Streamlined body and gills for breathing", "Wings for flying above the surface", "Spines to reduce water loss"],
-        ans: 1,
-        exp: "Fish have a streamlined (torpedo-shaped) body that reduces water resistance for easy movement. They also have gills that extract dissolved oxygen from water. These are adaptations to the aquatic habitat."
-    },
-    {
-        q: "Desert plants such as cacti have spines instead of leaves. This adaptation helps them to:",
-        opts: ["Attract insects for pollination", "Capture more sunlight", "Reduce water loss through transpiration", "Increase water absorption from rain"],
-        ans: 2,
-        exp: "In deserts, water conservation is critical. Cacti have spines instead of broad leaves to greatly reduce the surface area from which water can evaporate (transpire). They also store water in their thick, fleshy stems."
-    },
-    {
-        q: "In a food chain: Grass → Grasshopper → Frog → Snake → Eagle, which organism is the PRIMARY PRODUCER?",
-        opts: ["Grasshopper", "Grass", "Frog", "Eagle"],
-        ans: 1,
-        exp: "The grass is the primary producer because it manufactures its own food through photosynthesis using sunlight. All other organisms in the chain are consumers — they obtain energy by eating other organisms. Energy flow always begins with producers."
-    },
-    {
-        q: "What is the role of DECOMPOSERS in an ecosystem?",
-        opts: ["They manufacture food using sunlight", "They hunt and eat other animals", "They break down dead organisms and return nutrients to the soil", "They store energy in their bodies"],
-        ans: 2,
-        exp: "Decomposers (bacteria and fungi) break down the bodies of dead plants and animals, releasing nutrients back into the soil. Without decomposers, dead matter would accumulate and nutrients could not be recycled for use by producers again."
-    },
-    {
-        q: "Which of the following is an ABIOTIC component of an ecosystem?",
-        opts: ["Bacteria", "Grasses", "Rainfall and temperature", "Fungi"],
-        ans: 2,
-        exp: "Abiotic components are the non-living physical and chemical parts of an ecosystem, such as sunlight, temperature, rainfall, soil, water, and air. Bacteria, grasses, and fungi are all biotic (living) components."
-    },
-    {
-        q: "If all the decomposers were removed from an ecosystem, the MOST immediate consequence would be:",
-        opts: ["Producers would grow faster", "Dead organic matter would accumulate and nutrients would not be recycled", "Consumers would increase in number", "Oxygen levels would rise immediately"],
-        ans: 1,
-        exp: "Without decomposers, dead plants and animals would pile up and not be broken down. This means nutrients locked in dead matter could not be returned to the soil, so producers (plants) would eventually run out of minerals. Nutrient cycling would stop."
-    },
-    {
-        q: "In the food chain: Grass → Goat → Lion → Bacteria, what is the role of BACTERIA at the end?",
-        opts: ["Secondary consumer", "Primary producer", "Decomposer", "Primary consumer"],
-        ans: 2,
-        exp: "Bacteria at the end of a food chain act as decomposers — they break down the dead body of the lion (or any dead organism) into simpler substances, recycling nutrients back into the environment."
-    },
-    {
-        q: "Which characteristic makes human beings UNIQUE among other animals?",
-        opts: ["They have four limbs", "They can reproduce", "They have a highly developed cerebrum for reasoning and problem-solving", "They need food and water to survive"],
-        ans: 2,
-        exp: "Humans are classified as 'higher animals' because of their highly developed cerebrum (the largest part of the brain). This enables complex reasoning, problem-solving, language, observation, and memory — abilities far beyond those of other animals."
-    },
-    {
-        q: "Human beings belong to which group of animals?",
-        opts: ["Reptiles", "Amphibians", "Birds", "Mammals"],
-        ans: 3,
-        exp: "Humans are mammals. Mammals have hair or fur on their bodies, give birth to live young (rather than laying eggs), and feed their young with milk. Other examples of mammals include dogs, whales, and bats."
-    },
-    {
-        q: "Which TWO conditions are BOTH necessary for iron to rust?",
-        opts: ["Heat and sunlight", "Oxygen and water (moisture)", "Carbon dioxide and oil", "Salt and nitrogen"],
-        ans: 1,
-        exp: "Rusting requires both oxygen and water (moisture) to be present. Iron reacts with oxygen in the presence of water to form iron oxide (rust). If either condition is absent, rusting will not occur — this is why keeping iron dry or away from air prevents rust."
-    },
-    {
-        q: "Which experiment setup would cause an iron nail to rust the FASTEST?",
-        opts: ["Nail in dry air with no moisture", "Nail in boiled water sealed with oil", "Nail in salt water exposed to air", "Nail painted and kept in a dry box"],
-        ans: 2,
-        exp: "Salt water contains dissolved electrolytes that speed up the electrochemical rusting process. Combined with oxygen in the air, the nail in salt water exposed to air will rust fastest. This is why metal structures near the sea rust more quickly."
-    },
-    {
-        q: "How does PAINTING an iron surface prevent rusting?",
-        opts: ["It makes the iron heavier so oxygen cannot reach it", "It creates a chemical reaction that destroys oxygen", "It forms a barrier that prevents oxygen and moisture from contacting the iron", "It converts iron into a different metal"],
-        ans: 2,
-        exp: "Paint forms a physical barrier (coating) on the surface of iron that prevents air (oxygen) and water (moisture) from reaching the iron. Without contact between iron, oxygen, and water, rusting cannot occur."
-    },
-    {
-        q: "Which of the following is GALVANISATION as a method of preventing rusting?",
-        opts: ["Coating iron with a layer of zinc", "Painting the iron with red oxide", "Keeping iron in a vacuum", "Mixing iron with carbon to make steel"],
-        ans: 0,
-        exp: "Galvanisation is the process of coating iron or steel with a thin layer of zinc. The zinc acts as a protective barrier. Even if the zinc coating is scratched, zinc is more reactive than iron and rusts (corrodes) in preference to the iron, still protecting it."
-    },
-    {
-        q: "Rusting is similar to both burning and respiration because all three processes involve:",
-        opts: ["Production of water only", "The use of glucose as fuel", "The process of oxidation", "Release of light energy"],
-        ans: 2,
-        exp: "Rusting (iron + oxygen → iron oxide), burning (fuel + oxygen → oxides + energy), and respiration (glucose + oxygen → CO₂ + water + energy) are all examples of oxidation — they all involve a substance reacting with oxygen."
-    },
-    {
-        q: "What is the meaning of ABSTINENCE in the context of health education?",
-        opts: ["Taking medication to prevent infection after exposure", "Choosing to refrain from sexual intercourse", "Eating a healthy diet and exercising regularly", "Using protective devices during sexual activity"],
-        ans: 1,
-        exp: "Abstinence means deliberately choosing not to engage in sexual intercourse. It is considered the only 100% effective method of preventing sexually transmitted infections (STIs) and unwanted pregnancies among adolescents."
-    },
-    {
-        q: "Which of the following is an example of DELAYED ABSTINENCE?",
-        opts: ["A married couple who permanently stop having sex", "A teenager who decides to delay sexual activity until marriage or later in life", "A person who abstains only during certain religious periods", "A young person who has already been sexually active"],
-        ans: 1,
-        exp: "Delayed abstinence means a young person decides to postpone sexual activity until they are older, more mature, or married. It is one of the three types of abstinence: lifelong (never), delayed (wait until later), and periodic (abstaining at certain times)."
-    },
-    {
-        q: "Which of the following is a MYTH (false belief) about sexual abstinence?",
-        opts: ["Abstinence prevents sexually transmitted infections", "It is impossible for young people to practise abstinence", "Abstinence eliminates the risk of unwanted pregnancy", "Abstinence is a personal choice that can be practised"],
-        ans: 1,
-        exp: "The idea that it is 'impossible' for young people to practise abstinence is a MYTH. With the right information, values, and peer support, adolescents can and do practise abstinence. This myth is used to pressure young people into sexual activity."
-    },
-    {
-        q: "Abstinence primarily protects adolescents from which of the following?",
-        opts: ["Malaria and typhoid fever", "Sexually transmitted infections and unintended pregnancy", "Nutritional deficiencies", "Poor academic performance only"],
-        ans: 1,
-        exp: "Abstinence from sexual intercourse directly prevents sexually transmitted infections (such as HIV/AIDS, gonorrhoea, syphilis) and unintended pregnancy. It does not protect against diseases spread by mosquitoes (malaria) or contaminated food/water."
-    },
-    {
-        q: "A student notices a reddish-brown coating on an iron gate left outside for weeks. This coating is:",
-        opts: ["A layer of paint peeling off", "Carbon build-up from pollution", "Iron oxide, commonly known as rust", "A natural protective coating"],
-        ans: 2,
-        exp: "The reddish-brown coating is iron oxide (Fe₂O₃), commonly called rust. It forms when iron reacts with oxygen in the presence of moisture. Unlike the original iron, rust is brittle and weak, causing the metal to deteriorate."
-    },
-    {
-        q: "Which of the following methods of preventing rusting works by EXCLUDING both air and moisture from the iron surface?",
-        opts: ["Galvanisation with zinc", "Alloying iron with carbon", "Applying grease or oil", "Using electrical currents"],
-        ans: 2,
-        exp: "Applying grease or oil creates a physical barrier over the iron surface, preventing both air (oxygen) and moisture from contacting it. This method is commonly used on machine parts, bicycle chains, and tools. Galvanisation uses zinc's reactivity, not physical exclusion."
-    },
-    {
-        q: "Which of these correctly describes a TERRESTRIAL habitat?",
-        opts: ["A habitat found in oceans and seas", "A habitat found on land, such as forests, deserts, and grasslands", "A habitat found in the branches of trees only", "A habitat found deep underground with no sunlight"],
-        ans: 1,
-        exp: "A terrestrial habitat is any land-based environment. Examples include forests, grasslands, deserts, and farmland. Organisms in terrestrial habitats are adapted to survive in air, cope with gravity, and deal with varying temperatures and rainfall."
-    },
-    {
-        q: "Which feature helps an arboreal (tree-dwelling) animal like a monkey survive in its habitat?",
-        opts: ["Gills for extracting oxygen from water", "Streamlined body for fast swimming", "Strong gripping hands and feet for climbing and holding branches", "Thick layers of fat for surviving cold oceans"],
-        ans: 2,
-        exp: "Arboreal animals live in trees. They have adaptive features like strong, flexible gripping hands and feet (and often a prehensile tail) to hold onto branches, balance, and swing. Gills are for aquatic organisms; streamlined bodies help swimmers; fat stores help marine animals."
-    },
-    {
-        q: "Why does a camel survive in the desert without drinking water for many days?",
-        opts: ["It absorbs water directly from the sand through its skin", "It never needs water because it eats only dry food", "It stores fat in its hump, which can be metabolised to produce water", "It has special kidneys that create water from air"],
-        ans: 2,
-        exp: "A camel stores fat (not water) in its hump. When needed, this fat is broken down through metabolism and produces water and energy as by-products. Camels also produce very concentrated urine and dry faeces to conserve water — all adaptations to the desert habitat."
-    },
-    {
-        q: "Which of the following is the correct sequence of energy flow in a food chain?",
-        opts: ["Consumer → Producer → Decomposer", "Decomposer → Producer → Consumer", "Producer → Consumer → Decomposer", "Consumer → Decomposer → Producer"],
-        ans: 2,
-        exp: "Energy flows from producers (plants that capture solar energy through photosynthesis) to consumers (herbivores, then carnivores) and finally to decomposers (bacteria and fungi that break down dead matter). At each stage, some energy is lost as heat."
-    },
-    {
-        q: "Deficiency of growth hormone during childhood MOST likely results in:",
-        opts: ["Gigantism (abnormally large growth)", "Obesity and excessive fat storage", "Stunted growth and short stature", "Very rapid adolescence"],
-        ans: 2,
-        exp: "Growth hormone, produced by the pituitary gland, stimulates growth of bones and tissues. If it is deficient during childhood, the child will experience stunted growth, resulting in short stature. Excess growth hormone causes gigantism (abnormally tall stature)."
-    }
+
+  // ── 10 with ans:0 (A is correct) ──
+
+  { q: "Which of the following correctly describes sexual reproduction in flowering plants?",
+    opts: [
+      "The fusion of a male gamete (pollen nucleus) with a female gamete (egg cell) to form a zygote",
+      "The production of new plants from vegetative parts such as stems, roots, or leaves",
+      "The splitting of a parent plant into two equal halves each capable of growing independently",
+      "The release of spores that germinate without fertilisation to produce new plants"
+    ],
+    ans: 0,
+    exp: "Sexual reproduction in plants involves fertilisation — the male gamete from pollen fuses with the egg cell in the ovule to form a zygote, which develops into a seed." },
+
+  { q: "A bar magnet is cut in half through its middle. The result is:",
+    opts: [
+      "Two complete magnets each with a north pole and a south pole of weaker strength",
+      "One piece with only a north pole and another piece with only a south pole",
+      "Two demagnetised pieces because cutting breaks the magnetic domains permanently",
+      "One stronger full magnet and one inert piece with no magnetic properties"
+    ],
+    ans: 0,
+    exp: "Cutting a magnet always produces two complete magnets, each with its own north and south pole, because magnetic poles cannot be isolated — every magnet has both poles." },
+
+  { q: "The loudness of a sound wave is determined by its:",
+    opts: [
+      "Amplitude — the greater the amplitude of vibration, the louder the sound produced",
+      "Frequency — the higher the frequency of vibration, the louder the sound heard",
+      "Wavelength — the longer the wavelength, the greater the loudness of the sound",
+      "Speed — the faster the sound travels through a medium, the louder it appears"
+    ],
+    ans: 0,
+    exp: "Loudness (intensity) of sound depends on the amplitude of the sound wave. Greater amplitude means more energy and therefore a louder sound." },
+
+  { q: "The transfer of heat through a solid material without the material itself moving is called:",
+    opts: [
+      "Conduction, where heat energy is passed from atom to atom through the solid",
+      "Convection, where heated fluid rises and cooler fluid sinks in a circulating current",
+      "Radiation, where heat travels as electromagnetic waves without needing a medium",
+      "Evaporation, where molecules leave the liquid surface and carry heat energy away"
+    ],
+    ans: 0,
+    exp: "Conduction is heat transfer through a solid (or stationary fluid) via direct molecule-to-molecule energy transfer without bulk movement of the material." },
+
+  { q: "According to the kinetic theory of matter, which state of matter has particles that are closely packed in a fixed regular arrangement with only vibrational motion?",
+    opts: [
+      "Solid, where particles vibrate in fixed positions within a rigid lattice structure",
+      "Liquid, where particles are close together but can flow and slide past each other",
+      "Gas, where particles move rapidly and randomly with large spaces between them",
+      "Plasma, where particles are ionised and exist in a high-energy state"
+    ],
+    ans: 0,
+    exp: "In solids, particles are tightly packed in a fixed regular lattice and can only vibrate about their fixed positions — they cannot move from place to place." },
+
+  { q: "Which of the following is a product of the fractional distillation of crude oil used primarily as fuel for jet aircraft?",
+    opts: [
+      "Kerosene (aviation fuel), which is collected at temperatures between approximately 150°C and 250°C",
+      "Petrol (gasoline), which is collected at the lowest temperatures between 40°C and 75°C",
+      "Diesel oil, which is collected at temperatures between approximately 250°C and 350°C",
+      "Bitumen (asphalt), which is the thick residue remaining at the bottom after distillation"
+    ],
+    ans: 0,
+    exp: "Kerosene (paraffin/aviation fuel) is the fraction of crude oil that condenses at approximately 150–250°C during fractional distillation and is used as jet fuel." },
+
+  { q: "In plants, the process by which pollen is carried from the anther of one flower to the stigma of another flower of the same species is called:",
+    opts: [
+      "Cross-pollination, which transfers pollen between different individual plants of the same species",
+      "Self-pollination, which transfers pollen from an anther to the stigma of the same flower",
+      "Fertilisation, which is the fusion of the male and female gametes within the ovule",
+      "Germination, which is the process of a seed sprouting into a new seedling"
+    ],
+    ans: 0,
+    exp: "Cross-pollination is the transfer of pollen from the anther of one plant to the stigma of a different individual of the same species, typically by wind, insects, water, or animals." },
+
+  { q: "Which property of a magnet is demonstrated when iron filings are sprinkled around a bar magnet and they arrange themselves in curved lines from pole to pole?",
+    opts: [
+      "The magnetic field pattern, showing the direction and relative strength of the magnetic field",
+      "The process of magnetic induction, showing how the magnet creates new magnets",
+      "The Curie point, showing the temperature at which the magnet loses its magnetism",
+      "Magnetic saturation, showing that the magnet has reached its maximum possible strength"
+    ],
+    ans: 0,
+    exp: "Iron filings align themselves along the magnetic field lines, revealing the shape and direction of the magnetic field — strongest at the poles where lines are closest together." },
+
+  { q: "The pitch of a sound is determined by its:",
+    opts: [
+      "Frequency — higher frequency vibrations produce a higher-pitched sound",
+      "Amplitude — greater amplitude vibrations produce a higher-pitched sound",
+      "Speed — faster-moving sound waves produce a higher-pitched sound",
+      "Wavelength in isolation — longer wavelengths always produce higher-pitched sounds"
+    ],
+    ans: 0,
+    exp: "Pitch is the perceived quality of highness or lowness of a sound, and it is directly determined by the frequency of vibration — higher frequency = higher pitch." },
+
+  { q: "Which of the following correctly describes the menstrual cycle in human females?",
+    opts: [
+      "A monthly hormonal cycle approximately 28 days long that prepares the uterus for potential pregnancy",
+      "A weekly hormonal cycle that controls the release of eggs from the ovaries every seven days",
+      "A yearly biological cycle triggered by seasonal changes in temperature and daylight",
+      "A continuous hormonal process that begins at birth and ends at puberty"
+    ],
+    ans: 0,
+    exp: "The menstrual cycle is approximately 28 days long and involves the monthly preparation of the uterine lining for implantation; if fertilisation does not occur, the lining is shed." },
+
+  // ── 10 with ans:1 (B is correct) ──
+
+  { q: "Which of the following best explains why metals are better conductors of heat than non-metals?",
+    opts: [
+      "Metal atoms are heavier than non-metal atoms, so they carry more thermal energy per collision",
+      "Metals have free electrons that can move rapidly through the structure and transfer thermal energy efficiently",
+      "Metal atoms are arranged in a hexagonal pattern that allows heat to flow in straight lines",
+      "Metals have lower melting points than non-metals, making them better at absorbing heat"
+    ],
+    ans: 1,
+    exp: "Metals are good conductors because their delocalised (free) electrons can move quickly through the metal lattice, transferring kinetic energy (heat) much faster than lattice vibrations alone." },
+
+  { q: "A student holds two magnets with their north poles facing each other. What will happen when the magnets are released?",
+    opts: [
+      "The magnets will attract each other because north poles always attract when close together",
+      "The magnets will repel each other because like poles always repel",
+      "Nothing will happen because magnets only react when they touch each other directly",
+      "The magnets will rotate until their north and south poles face each other, then attract"
+    ],
+    ans: 1,
+    exp: "The fundamental law of magnetism: like poles (N-N or S-S) repel each other; unlike poles (N-S) attract each other." },
+
+  { q: "During the fractional distillation of crude oil, fractions with shorter carbon chains:",
+    opts: [
+      "Condense at higher temperatures and are collected near the bottom of the fractionating column",
+      "Have lower boiling points and are collected as vapour near the top of the fractionating column",
+      "Are denser and more viscous than fractions with longer carbon chains",
+      "Are always solid at room temperature because of their compact molecular structure"
+    ],
+    ans: 1,
+    exp: "Shorter carbon-chain hydrocarbons have weaker intermolecular forces and therefore lower boiling points — they remain as vapour longer and are collected from the top of the column." },
+
+  { q: "Which of the following is an example of asexual reproduction in plants that involves the production of new plants from underground modified stems?",
+    opts: [
+      "Pollination, where pollen from the anther is transferred to the stigma of another flower",
+      "Bulb formation, where structures such as onions produce new bulblets around the parent",
+      "Seed dispersal, where seeds are carried away from the parent plant by wind or animals",
+      "Fertilisation, where the male gamete fuses with the egg cell inside the ovary"
+    ],
+    ans: 1,
+    exp: "Bulbs (e.g., onions, tulips) are modified underground storage stems that produce smaller daughter bulbs (offsets) around the parent — a form of vegetative (asexual) reproduction." },
+
+  { q: "Which of the following best describes the process of evaporation and how it causes cooling?",
+    opts: [
+      "Evaporation occurs when a liquid freezes and releases latent heat to the surroundings",
+      "Evaporation occurs when the most energetic surface molecules escape as vapour, reducing the average kinetic energy (temperature) of the remaining liquid",
+      "Evaporation requires an external heat source and always occurs at the boiling point of a liquid",
+      "Evaporation occurs when a gas condenses into liquid form, absorbing heat from the container"
+    ],
+    ans: 1,
+    exp: "During evaporation, the fastest-moving molecules escape the liquid surface, leaving behind molecules of lower average kinetic energy — this lowers the temperature of the liquid, causing cooling." },
+
+  { q: "The kinetic theory of matter explains that when a substance is heated, its particles:",
+    opts: [
+      "Become heavier and move closer together, increasing the substance's density",
+      "Gain kinetic energy and move faster, increasing the average separation between particles",
+      "Lose potential energy and bond more tightly to neighbouring particles",
+      "Decrease in number through a process of thermal decomposition"
+    ],
+    ans: 1,
+    exp: "Heating gives particles more kinetic energy, causing them to vibrate or move faster. This increases the average distance between particles and causes thermal expansion." },
+
+  { q: "Which of the following describes sexually transmitted infections (STIs) and their relevance to reproductive health?",
+    opts: [
+      "STIs are infections passed only through contaminated water and food, not through sexual contact",
+      "STIs are infections spread primarily through sexual contact that can impair reproductive organs and fertility if untreated",
+      "STIs are genetic disorders inherited from parents that affect the reproductive system",
+      "STIs only affect adults over the age of 40 and have no impact on young people's fertility"
+    ],
+    ans: 1,
+    exp: "Sexually transmitted infections (STIs) are spread mainly through sexual contact. Many, if untreated, cause damage to the reproductive organs, leading to infertility and other serious health problems." },
+
+  { q: "Which of the following best describes the process of echo and how it is used in industry?",
+    opts: [
+      "An echo is produced when a sound wave bends around an obstacle and arrives before the original wave",
+      "An echo is a reflected sound wave; in industry, ultrasound echoes are used in sonar and medical imaging to detect objects and measure distances",
+      "An echo is caused when two identical sound waves travel in opposite directions and cancel each other",
+      "An echo is the amplification of sound that occurs when a wave passes from a dense medium to a less dense medium"
+    ],
+    ans: 1,
+    exp: "An echo is reflected sound. In sonar (ships detecting depth/objects) and medical ultrasound (imaging organs), timing of reflected sound pulses reveals distances and structures." },
+
+  { q: "The process by which a seed absorbs water and begins to sprout into a new plant is called:",
+    opts: [
+      "Pollination, which is the transfer of pollen from one flower to another",
+      "Germination, which begins when conditions of adequate water, warmth, and oxygen are met",
+      "Photosynthesis, which is the manufacture of food by green plants using sunlight",
+      "Fertilisation, which is the fusion of the male and female gametes in the ovule"
+    ],
+    ans: 1,
+    exp: "Germination is the process by which a dormant seed absorbs water (imbibition), activates metabolic processes, and sprouts a radicle (root) and plumule (shoot)." },
+
+  { q: "In the context of crude oil and petrochemicals, cracking refers to:",
+    opts: [
+      "The physical process of allowing crude oil fractions to solidify and crack at low temperatures",
+      "The industrial process of breaking down large hydrocarbon molecules into smaller, more useful ones using heat and a catalyst",
+      "The geological process by which organic matter is compressed over millions of years to form crude oil",
+      "The chemical process of combining small hydrocarbon molecules together to form larger polymer chains"
+    ],
+    ans: 1,
+    exp: "Cracking is an industrial process that uses heat (thermal cracking) or a catalyst (catalytic cracking) to break large, less useful hydrocarbon molecules into smaller, more valuable ones such as petrol and alkenes." },
+
+  // ── 10 with ans:2 (C is correct) ──
+
+  { q: "A substance that is attracted to a magnet is described as:",
+    opts: [
+      "Diamagnetic — it is weakly repelled by both poles of a magnet",
+      "Non-magnetic — it has no interaction with any magnetic field",
+      "Ferromagnetic — it is strongly attracted to a magnet and can itself be magnetised",
+      "Paramagnetic — it shows only very slight attraction to a strong magnetic field"
+    ],
+    ans: 2,
+    exp: "Ferromagnetic materials (e.g., iron, cobalt, nickel) are strongly attracted to magnets and can be permanently or temporarily magnetised. This is the everyday meaning of 'magnetic material'." },
+
+  { q: "Which of the following is the correct sequence of events in the reproduction of a flowering plant?",
+    opts: [
+      "Fertilisation → pollination → seed dispersal → germination → growth",
+      "Germination → pollination → fertilisation → seed dispersal → growth",
+      "Pollination → fertilisation → seed and fruit formation → seed dispersal → germination",
+      "Seed dispersal → pollination → germination → fertilisation → fruit formation"
+    ],
+    ans: 2,
+    exp: "The correct sequence: pollination (pollen reaches stigma) → fertilisation (pollen nucleus fuses with egg) → seed/fruit development → dispersal → germination." },
+
+  { q: "Which of the following correctly explains why sound cannot travel through a vacuum?",
+    opts: [
+      "Sound travels too slowly to exist in a vacuum because there is no gravity to accelerate it",
+      "Sound waves are electromagnetic and are absorbed by the electromagnetic fields in a vacuum",
+      "Sound requires a material medium (particles) to vibrate and transfer energy, and a vacuum has no particles",
+      "Sound is converted into light energy when it enters a vacuum and can no longer be detected as sound"
+    ],
+    ans: 2,
+    exp: "Sound is a mechanical longitudinal wave that requires a medium (solid, liquid, or gas) to propagate. In a vacuum there are no particles to vibrate, so sound cannot travel." },
+
+  { q: "Global warming is closely linked to crude oil combustion because:",
+    opts: [
+      "Burning crude oil fractions produces ozone gas that fills the atmosphere and traps cold air",
+      "Crude oil releases radioactive particles when burned that ionise the atmosphere",
+      "Combustion of fossil fuels releases carbon dioxide, a greenhouse gas that traps heat in the atmosphere",
+      "Burning crude oil produces nitrogen gas that reacts with oxygen to block sunlight"
+    ],
+    ans: 2,
+    exp: "Burning fossil fuels releases CO₂ (a greenhouse gas) into the atmosphere. CO₂ absorbs outgoing infrared radiation from Earth's surface, causing the greenhouse effect and global warming." },
+
+  { q: "Which of the following thermal energy transfer processes does NOT require any material medium?",
+    opts: [
+      "Conduction, which transfers heat through particle-to-particle collisions in solids",
+      "Convection, which transfers heat through the bulk movement of heated fluid",
+      "Radiation, which transfers heat as infrared electromagnetic waves through empty space",
+      "Evaporative cooling, which transfers heat through the escape of energetic molecules"
+    ],
+    ans: 2,
+    exp: "Radiation transfers heat as electromagnetic (infrared) waves and is the only heat transfer method that can travel through a vacuum — it does not require a material medium." },
+
+  { q: "A student notices that a magnet loses its magnetism when it is repeatedly dropped on a hard floor. The best explanation for this is that:",
+    opts: [
+      "The impact increases the temperature of the magnet above its Curie point permanently",
+      "The chemical composition of the magnet changes when it collides with the floor",
+      "The repeated shocks cause the magnetic domains within the magnet to become randomly oriented, destroying the net magnetic alignment",
+      "The magnet transfers its north pole to the floor upon impact, leaving only the south pole"
+    ],
+    ans: 2,
+    exp: "A magnet's strength depends on the alignment of its magnetic domains. Repeated physical shocks cause domains to randomise in direction, cancelling the net magnetism." },
+
+  { q: "Which of the following describes the role of the placenta during human foetal development?",
+    opts: [
+      "It produces sperm cells that fertilise the egg in the fallopian tube",
+      "It is the organ where fertilisation of the egg by the sperm takes place",
+      "It facilitates the exchange of oxygen, nutrients, and waste products between the mother and the developing foetus",
+      "It produces the amniotic fluid that cushions and protects the developing foetus"
+    ],
+    ans: 2,
+    exp: "The placenta is the organ that allows oxygen and nutrients to pass from the mother's blood to the foetus, and waste products such as CO₂ to pass from the foetus to the mother, without direct blood mixing." },
+
+  { q: "The speed of sound in air at room temperature is approximately:",
+    opts: [
+      "3 × 10⁸ m/s, which is the speed of light in a vacuum",
+      "1500 m/s, which is the speed of sound in water at room temperature",
+      "340 m/s, which is the approximate speed of sound in air at 20°C",
+      "1 m/s, which represents the speed of sound in a near-vacuum environment"
+    ],
+    ans: 2,
+    exp: "Sound travels through air at approximately 340 m/s (343 m/s) at 20°C. It travels faster in water (~1500 m/s) and even faster in solids." },
+
+  { q: "Diffusion in gases is best explained by the kinetic theory of matter because:",
+    opts: [
+      "Gas particles are stationary but transfer energy by vibrating in their fixed positions",
+      "Gas particles travel only in straight lines and never collide with each other",
+      "Gas particles move rapidly in random directions and mix naturally without needing external energy",
+      "Gas particles only move when external pressure forces them from high to low concentration"
+    ],
+    ans: 2,
+    exp: "According to kinetic theory, gas particles are in constant rapid random motion. This random motion naturally causes them to spread out and mix — a process called diffusion." },
+
+  { q: "Which of the following petrochemical products is derived from crude oil and used to make plastic bags, bottles, and packaging materials?",
+    opts: [
+      "Bitumen, which is used primarily for road surfacing and waterproofing",
+      "Lubricating oil, which is used to reduce friction in engines and machinery",
+      "Polythene (polyethylene), a polymer manufactured from ethene derived from crude oil fractions",
+      "Diesel, which is used as fuel for heavy vehicles, generators, and marine engines"
+    ],
+    ans: 2,
+    exp: "Polythene (polyethylene) is a plastic made by polymerising ethene, which is produced by cracking crude oil fractions. It is widely used for packaging, bags, and bottles." },
+
+  // ── 10 with ans:3 (D is correct) ──
+
+  { q: "Which of the following correctly explains the difference between a permanent magnet and a temporary (induced) magnet?",
+    opts: [
+      "A permanent magnet can be demagnetised by heating; a temporary magnet cannot be demagnetised at all",
+      "A permanent magnet attracts only iron; a temporary magnet attracts all metals including aluminium",
+      "A temporary magnet has stronger magnetic poles than a permanent magnet of the same size",
+      "A permanent magnet retains its magnetism without an external field; a temporary magnet loses its magnetism when removed from the magnetising field"
+    ],
+    ans: 3,
+    exp: "A permanent magnet (e.g., steel) keeps its magnetism after the magnetising field is removed. A temporary magnet (e.g., soft iron) only remains magnetic while within a magnetic field." },
+
+  { q: "Which of the following processes in plant reproduction involves the development of a fruit from the ovary wall after fertilisation?",
+    opts: [
+      "Germination, where the seed absorbs water and sprouts into a seedling",
+      "Pollination, where pollen grains are transferred from anther to stigma",
+      "Transpiration, where water vapour is lost through the stomata of leaves",
+      "Fruit formation, where the ovary wall develops into the fruit around the seed after fertilisation"
+    ],
+    ans: 3,
+    exp: "After fertilisation, the ovule develops into a seed and the ovary wall develops into the fruit. The fruit protects the seed and often aids its dispersal." },
+
+  { q: "Which of the following describes the condition necessary for resonance to occur in a sound system?",
+    opts: [
+      "The sound source must be louder than 80 decibels for resonance to begin",
+      "The sound must travel through water, as resonance cannot occur in air",
+      "The medium must be a perfect vacuum so the sound wave is not absorbed",
+      "The natural frequency of an object must match the frequency of an applied sound wave"
+    ],
+    ans: 3,
+    exp: "Resonance occurs when the frequency of an external sound wave matches the natural (resonant) frequency of an object, causing it to vibrate with large amplitude." },
+
+  { q: "A student heats a bimetallic strip made of brass and iron bonded together. The strip bends towards the iron side. This demonstrates that:",
+    opts: [
+      "Iron has a higher thermal conductivity than brass and absorbs heat faster",
+      "Brass is denser than iron and contracts more when heated",
+      "Iron and brass have the same rate of expansion, causing equal bending on both sides",
+      "Brass has a greater coefficient of linear expansion than iron and expands more, bending the strip towards the iron side"
+    ],
+    ans: 3,
+    exp: "Brass expands more than iron for the same temperature rise (higher coefficient of thermal expansion). Since they are bonded, the brass side becomes longer, forcing the strip to curve towards the iron side." },
+
+  { q: "Which of the following correctly distinguishes between renewable and non-renewable sources of energy in relation to crude oil?",
+    opts: [
+      "Crude oil is renewable because new oil forms continuously from decomposed marine organisms",
+      "Crude oil is renewable because refineries can produce it artificially from atmospheric gases",
+      "Crude oil is neither renewable nor non-renewable because its energy comes from nuclear reactions",
+      "Crude oil is non-renewable because it takes millions of years to form and is being consumed faster than it can be replaced"
+    ],
+    ans: 3,
+    exp: "Crude oil is a non-renewable fossil fuel — it took millions of years to form from ancient organic matter and is being extracted and consumed at a rate far exceeding its rate of formation." },
+
+  { q: "Which of the following correctly explains the role of the hormone testosterone in male reproductive health?",
+    opts: [
+      "Testosterone is produced by the pituitary gland and stimulates the development of eggs in males",
+      "Testosterone controls the menstrual cycle and is released in monthly surges in males",
+      "Testosterone is produced in the adrenal gland only and has no effect on the reproductive organs",
+      "Testosterone is produced in the testes and is responsible for the development of male secondary sexual characteristics and sperm production"
+    ],
+    ans: 3,
+    exp: "Testosterone is the primary male sex hormone produced by the testes. It drives the development of male secondary sexual characteristics (voice deepening, muscle growth, facial hair) and is essential for sperm production." },
+
+  { q: "Which of the following best explains why cooking pots are made of metal but their handles are made of plastic or wood?",
+    opts: [
+      "Metal is cheaper than plastic, so using metal for the entire pot would be too expensive",
+      "Plastic handles are heavier than metal, balancing the weight of the pot when full",
+      "Metal reflects heat better than plastic, so the handle needs a reflective coating",
+      "Metal is a good conductor of heat (needed for cooking) while plastic and wood are poor conductors (insulators), making handles safe to touch"
+    ],
+    ans: 3,
+    exp: "Metal conducts heat well — ideal for the pot body to transfer heat to the food. Plastic and wood are poor conductors (insulators) — ideal for handles to prevent burns when touching." },
+
+  { q: "The process of fractional distillation used to separate crude oil fractions works because different fractions:",
+    opts: [
+      "Have different colours that allow them to be separated by passing light through the mixture",
+      "Have different electrical charges that allow them to be separated in an electromagnetic field",
+      "Have different densities only, with denser fractions sinking to the bottom of the column",
+      "Have different boiling points, so each fraction condenses and is collected at a different level in the column"
+    ],
+    ans: 3,
+    exp: "Fractional distillation separates crude oil by exploiting the different boiling points of the fractions. Each fraction vaporises, rises to a tray at its condensation temperature, and is collected." },
+
+  { q: "Which of the following is a consequence of the depletion of the ozone layer, which is linked to the use of petrochemical products?",
+    opts: [
+      "Increased rainfall worldwide because the thinner atmosphere holds more water vapour",
+      "Decreased wind speeds globally because ozone normally drives atmospheric circulation",
+      "Lower surface temperatures on Earth because less solar radiation reaches the ground",
+      "Increased ultraviolet (UV) radiation reaching Earth's surface, raising the risk of skin cancer and eye damage"
+    ],
+    ans: 3,
+    exp: "The ozone layer absorbs most of the Sun's harmful UV radiation. Its depletion (partly caused by CFCs from aerosols and refrigerants — petrochemical products) allows more UV to reach the surface, increasing health risks." },
+
+  { q: "Absolute zero, which is the temperature at which particle motion theoretically ceases completely according to the kinetic theory, is equal to:",
+    opts: [
+      "0°C, the temperature at which pure water freezes under standard atmospheric pressure",
+      "−100°C, the lowest temperature achievable in a standard laboratory freezer",
+      "−200°C, the temperature at which most gases condense into liquid form",
+      "−273°C (0 K), the theoretical minimum temperature where all particle kinetic energy reaches zero"
+    ],
+    ans: 3,
+    exp: "Absolute zero is −273.15°C (0 Kelvin). At this temperature, the kinetic theory predicts that all particle motion ceases, though in practice quantum effects prevent this completely." }
+
 ],
 'Basic Technology': [
-    { q: "You are required to construct a 75° angle using only a compass and straightedge. Which combination of standard constructions will MOST accurately produce this angle?", opts: ["Construct 60° and 90°, then bisect the angle between them", "Construct 45° and 30°, then add them", "Construct 120° and subtract 45° geometrically", "Construct 30° and double it"], ans: 1, exp: "75° can be obtained by constructing 45° and 30° accurately and combining them." },
-    { q: "When bisecting a given line AB, the arcs drawn from A and B must:", opts: ["Have equal radius greater than half of AB", "Have different radii", "Be less than half of AB", "Touch only at one point"], ans: 0, exp: "Equal radius greater than half ensures intersection above and below the line." },
-    { q: "Which condition must be satisfied to construct a triangle with sides 5 cm, 6 cm and 12 cm?", opts: ["Construction is impossible because sum of two sides is less than third", "All triangles can be constructed with any dimensions", "It forms a right triangle", "It forms an equilateral triangle"], ans: 0, exp: "5 + 6 < 12, violates triangle inequality." },
-    { q: "The locus of points equidistant from two intersecting straight lines is:", opts: ["The angle bisector", "The perpendicular bisector", "A circle", "A polygon"], ans: 0, exp: "Angle bisectors are equidistant from both lines." },
-    { q: "A regular hexagon inscribed in a circle has each interior angle equal to:", opts: ["120°", "108°", "135°", "150°"], ans: 0, exp: "Interior angle of regular hexagon = 120°." },
-    { q: "When constructing the perpendicular bisector of line XY, the intersection of arcs determines:", opts: ["Points equidistant from X and Y", "Midpoint only", "Length of XY", "Circumference"], ans: 0, exp: "All points on perpendicular bisector are equidistant from endpoints." },
-    { q: "Which quadrilateral always has diagonals that bisect each other at right angles?", opts: ["Rhombus", "Trapezium", "Rectangle", "Parallelogram"], ans: 0, exp: "Rhombus diagonals bisect at 90°." },
-    { q: "To circumscribe a circle about a triangle, you must locate the intersection of:", opts: ["Perpendicular bisectors of the sides", "Angle bisectors", "Medians", "Altitudes"], ans: 0, exp: "Intersection gives circumcenter." },
-    { q: "In dividing a circle into 8 equal parts, the MOST efficient first step is to:", opts: ["Construct two perpendicular diameters", "Draw random chords", "Construct 30° angles repeatedly", "Bisect a radius only once"], ans: 0, exp: "Two perpendicular diameters give four parts, then bisect each." },
-    { q: "Which of the following polygons CANNOT be constructed using equal arcs stepped around a circle?", opts: ["Regular pentagon (without approximation)", "Regular hexagon", "Equilateral triangle", "Square"], ans: 0, exp: "Regular pentagon requires special construction, not simple stepping like hexagon." },
-    { q: "If a triangle is inscribed in a circle such that one side is the diameter, the triangle must be:", opts: ["Right-angled", "Equilateral", "Obtuse", "Isosceles only"], ans: 0, exp: "Angle in semicircle is 90°." },
-    { q: "Which angle type is greater than 90° but less than 180°?", opts: ["Obtuse", "Reflex", "Acute", "Complementary"], ans: 0, exp: "Obtuse angles lie between 90° and 180°." },
-    { q: "The point where three angle bisectors of a triangle meet is called:", opts: ["Incenter", "Circumcenter", "Centroid", "Orthocenter"], ans: 0, exp: "Angle bisectors meet at incenter." },
-    { q: "Which construction method ensures highest accuracy in technical drawing?", opts: ["Using compass and straightedge", "Freehand sketching", "Estimating with ruler only", "Tracing"], ans: 0, exp: "Geometric instruments ensure precision." },
-    { q: "A quadrilateral with exactly one pair of parallel sides is a:", opts: ["Trapezium", "Rhombus", "Square", "Rectangle"], ans: 0, exp: "Trapezium has one pair of parallel sides." },
-    { q: "The shortest distance between a point and a line is constructed by drawing:", opts: ["A perpendicular", "A parallel line", "A tangent", "A diagonal"], ans: 0, exp: "Perpendicular gives shortest distance." },
-    { q: "Which property distinguishes a square from a rhombus?", opts: ["All angles are 90°", "All sides equal", "Diagonals bisect each other", "Opposite sides parallel"], ans: 0, exp: "Square has right angles." },
-    { q: "In material processing, annealing is used mainly to:", opts: ["Reduce hardness and improve ductility", "Increase brittleness", "Add colour", "Polish surface only"], ans: 0, exp: "Annealing softens material." },
-    { q: "The locus of points equidistant from a fixed point is:", opts: ["Circle", "Line", "Polygon", "Angle"], ans: 0, exp: "Definition of circle." },
-    { q: "Which triangle can be constructed given only three equal sides?", opts: ["Equilateral", "Scalene", "Right", "Obtuse"], ans: 0, exp: "Three equal sides define equilateral." },
-    { q: "Galvanizing protects iron primarily by:", opts: ["Coating with zinc to prevent corrosion", "Painting with water", "Heating repeatedly", "Scratching surface"], ans: 0, exp: "Zinc prevents rust." },
-    { q: "The sum of interior angles of a regular pentagon is:", opts: ["540°", "360°", "720°", "600°"], ans: 0, exp: "(5−2)×180=540°." },
-    { q: "Which construction gives the centroid of a triangle?", opts: ["Intersection of medians", "Intersection of altitudes", "Intersection of diagonals", "Intersection of arcs"], ans: 0, exp: "Medians meet at centroid." },
-    { q: "A circle touching only one point on a line is said to be:", opts: ["Tangent", "Secant", "Chordal", "Parallel"], ans: 0, exp: "Touches at exactly one point." },
-    { q: "Tempering in material processing is done after:", opts: ["Hardening", "Melting", "Casting", "Polishing"], ans: 0, exp: "Tempering reduces brittleness after hardening." },
-    { q: "Which polygon has each exterior angle equal to 45°?", opts: ["Octagon", "Hexagon", "Pentagon", "Nonagon"], ans: 0, exp: "360 ÷ 45 = 8 sides." },
-    { q: "The diagonals of a rectangle are:", opts: ["Equal and bisect each other", "Perpendicular only", "Unequal", "Not bisecting"], ans: 0, exp: "Rectangle diagonals are equal." },
-    { q: "A chord passing through the center of a circle is a:", opts: ["Diameter", "Radius", "Secant", "Tangent"], ans: 0, exp: "Diameter is longest chord." },
-    { q: "Which construction produces a 90° angle directly?", opts: ["Perpendicular from a point on a line", "Angle trisection", "Parallel line construction", "Random arc"], ans: 0, exp: "Perpendicular forms right angle." },
-    { q: "Case hardening affects mainly the:", opts: ["Surface layer", "Entire material", "Core only", "Colour only"], ans: 0, exp: "Surface becomes hard." },
-    { q: "The incenter of a triangle is equidistant from:", opts: ["Its sides", "Its vertices", "Its angles", "Its medians"], ans: 0, exp: "Incenter distance equals radius of inscribed circle." },
-    { q: "A regular polygon with 10 sides is called:", opts: ["Decagon", "Dodecagon", "Pentagon", "Nonagon"], ans: 0, exp: "10 sides is decagon." },
-    { q: "Which line divides an angle into two equal parts?", opts: ["Angle bisector", "Median", "Tangent", "Diagonal"], ans: 0, exp: "Definition of angle bisector." },
-    { q: "Which property is common to all parallelograms?", opts: ["Opposite sides equal and parallel", "All angles right", "All sides equal", "Diagonals perpendicular"], ans: 0, exp: "Basic parallelogram property." },
-    { q: "Normalizing in material processing primarily refines:", opts: ["Grain structure", "Colour", "Thickness", "Length"], ans: 0, exp: "Normalizing refines grain." },
-    { q: "Which triangle has one angle greater than 90°?", opts: ["Obtuse triangle", "Right triangle", "Acute triangle", "Equilateral triangle"], ans: 0, exp: "Definition." },
-    { q: "The distance around a circle is called:", opts: ["Circumference", "Diameter", "Chord", "Sector"], ans: 0, exp: "Perimeter of circle is circumference." },
-    { q: "Which construction determines a line parallel to a given line through a point?", opts: ["Alternate angle method", "Perpendicular bisector", "Random arc method", "Midpoint construction"], ans: 0, exp: "Parallel lines via alternate angles." },
-    { q: "Which stage in metal processing increases hardness by rapid cooling?", opts: ["Quenching", "Annealing", "Tempering", "Casting"], ans: 0, exp: "Rapid cooling hardens metal." }
+
+  // ── 10 with ans:0 (A is correct) ──
+
+  { q: "Which of the following best describes the process of enlargement in plane figures?",
+    opts: [
+      "Producing a larger similar figure where all dimensions are multiplied by a scale factor greater than 1",
+      "Rotating a figure about a fixed point without changing its size or orientation",
+      "Reflecting a figure across a line of symmetry to produce a mirror image",
+      "Translating a figure from one position to another on a plane"
+    ],
+    ans: 0,
+    exp: "Enlargement produces a geometrically similar figure where every dimension is multiplied by a scale factor greater than 1, keeping all angles the same." },
+
+  { q: "The area of a trapezium with parallel sides of 8 cm and 12 cm and a perpendicular height of 5 cm is:",
+    opts: [
+      "½ × (8 + 12) × 5 = 50 cm²",
+      "½ × (8 × 12) × 5 = 240 cm²",
+      "(8 + 12) × 5 = 100 cm²",
+      "8 × 12 × 5 = 480 cm²"
+    ],
+    ans: 0,
+    exp: "Area of a trapezium = ½ × (sum of parallel sides) × height = ½ × (8 + 12) × 5 = ½ × 20 × 5 = 50 cm²." },
+
+  { q: "Which of the following woodwork machines is specifically designed to cut irregular curved shapes from flat timber?",
+    opts: [
+      "A band saw, which has a continuous looped blade running between two wheels",
+      "A circular saw, which uses a rotating disc blade to make straight rip cuts",
+      "A surface planer, which removes thin layers to produce a flat even surface",
+      "A mortising machine, which cuts square or rectangular slots into timber"
+    ],
+    ans: 0,
+    exp: "A band saw's continuous looped blade allows it to follow curved cutting lines and cut irregular shapes from flat boards." },
+
+  { q: "In building construction, the component that transfers the load of the entire structure from the walls and columns to the ground is called the:",
+    opts: [
+      "Foundation, which distributes the building's load safely into the earth below",
+      "Lintel, which spans across door and window openings to carry the wall load above",
+      "Sill, which forms the lowest horizontal member across the base of a window frame",
+      "Purlin, which runs horizontally across the roof rafters to support the roof covering"
+    ],
+    ans: 0,
+    exp: "The foundation is the structural element at the base of a building that transfers all loads from the superstructure into the supporting ground." },
+
+  { q: "A simple machine is said to have a mechanical advantage of 4. This means:",
+    opts: [
+      "The load overcome is 4 times greater than the effort applied to the machine",
+      "The effort applied is 4 times greater than the load that is overcome",
+      "The machine moves 4 times faster than an equivalent machine without gears",
+      "Energy input into the machine is 4 times greater than the energy output"
+    ],
+    ans: 0,
+    exp: "Mechanical Advantage = Load ÷ Effort. An MA of 4 means the load is 4 times the effort — the machine multiplies the force applied." },
+
+  { q: "Hydraulic systems are able to multiply force because they operate on the principle that:",
+    opts: [
+      "Pressure applied to a confined liquid is transmitted equally in all directions throughout the liquid",
+      "A liquid always flows from a region of low pressure to a region of high pressure",
+      "The volume of liquid decreases when pressure is applied, allowing force to increase",
+      "Liquid molecules are loosely packed and therefore absorb applied forces gradually"
+    ],
+    ans: 0,
+    exp: "Pascal's Principle states that pressure applied to an enclosed fluid is transmitted undiminished in all directions — this is the basis of hydraulic force multiplication." },
+
+  { q: "In a belt drive system connecting two pulleys, if the driver pulley has a diameter of 20 cm and rotates at 300 rpm, and the driven pulley has a diameter of 10 cm, the speed of the driven pulley is:",
+    opts: [
+      "600 rpm, because the smaller pulley rotates faster in inverse proportion to its diameter",
+      "150 rpm, because the smaller pulley rotates slower in proportion to its diameter",
+      "300 rpm, because both pulleys always rotate at the same speed regardless of size",
+      "60 rpm, because the speed ratio equals the product of both diameters divided by 100"
+    ],
+    ans: 0,
+    exp: "Speed ratio: N₂/N₁ = D₁/D₂. N₂ = (D₁/D₂) × N₁ = (20/10) × 300 = 600 rpm. The smaller pulley rotates faster." },
+
+  { q: "Which of the following correctly describes kinetic friction?",
+    opts: [
+      "The friction force acting between two surfaces that are already in relative motion against each other",
+      "The maximum friction force that prevents an object from beginning to move from rest",
+      "The friction that acts on an object moving through a fluid such as air or water",
+      "The friction produced when a round object rolls along a surface without slipping"
+    ],
+    ans: 0,
+    exp: "Kinetic (or sliding) friction is the resistive force between two surfaces already in motion relative to each other, and it is always less than static friction." },
+
+  { q: "The component in a pneumatic system that converts compressed air energy into mechanical linear motion is called a:",
+    opts: [
+      "Pneumatic cylinder (actuator), which uses air pressure to push a piston rod in and out",
+      "Compressor, which draws in atmospheric air and increases its pressure",
+      "Air receiver (reservoir), which stores compressed air for use by the system",
+      "Control valve, which directs the flow of compressed air to different parts of the circuit"
+    ],
+    ans: 0,
+    exp: "A pneumatic cylinder (actuator) is the output device in a pneumatic system that converts compressed air energy into linear mechanical motion via a piston." },
+
+  { q: "When two meshing spur gears of 20 teeth and 40 teeth are used in a gear train, the gear ratio is:",
+    opts: [
+      "2:1, meaning the larger gear rotates at half the speed of the smaller driver gear",
+      "1:2, meaning the larger gear rotates twice as fast as the smaller driver gear",
+      "1:1, meaning both gears rotate at exactly the same speed regardless of tooth count",
+      "4:1, meaning the larger gear rotates at one-quarter the speed of the smaller gear"
+    ],
+    ans: 0,
+    exp: "Gear ratio = teeth on driven ÷ teeth on driver = 40 ÷ 20 = 2:1. The larger gear (40T) rotates at half the speed of the smaller gear (20T)." },
+
+  // ── 10 with ans:1 (B is correct) ──
+
+  { q: "A plane figure is reduced using a scale factor of 0.5. If the original rectangle measured 10 cm by 8 cm, what are the dimensions of the reduced figure?",
+    opts: [
+      "20 cm by 16 cm, because the scale factor doubles each dimension",
+      "5 cm by 4 cm, because each dimension is multiplied by 0.5",
+      "10 cm by 4 cm, because only the length is multiplied by the scale factor",
+      "5 cm by 8 cm, because only the width is multiplied by the scale factor"
+    ],
+    ans: 1,
+    exp: "Scale factor of 0.5 means each dimension is multiplied by 0.5: 10 × 0.5 = 5 cm and 8 × 0.5 = 4 cm." },
+
+  { q: "Which of the following is the main function of a surface planer in a woodwork machine shop?",
+    opts: [
+      "To drill holes of precise diameter vertically into the surface of a timber workpiece",
+      "To produce a flat, smooth, and level surface on the face side of a timber board",
+      "To cut long timber boards into shorter pieces of a desired specific length",
+      "To cut a series of equally spaced teeth along the edge of a timber rack"
+    ],
+    ans: 1,
+    exp: "A surface planer (or surfacer) removes thin shavings from the face of a timber board to produce a perfectly flat and smooth reference surface." },
+
+  { q: "In building construction, a damp-proof course (DPC) is installed primarily to:",
+    opts: [
+      "Strengthen the foundation by acting as a reinforcing layer between the footing and the wall",
+      "Prevent moisture from rising through the walls from the ground into the structure above",
+      "Insulate the building against heat loss through the ground floor and lower walls",
+      "Provide a level surface on which the first course of bricks can be accurately laid"
+    ],
+    ans: 1,
+    exp: "A damp-proof course is a horizontal barrier (usually bitumen felt or slate) built into walls at low level to stop rising damp from penetrating into the building." },
+
+  { q: "The coefficient of friction between two surfaces is defined as:",
+    opts: [
+      "The product of the normal reaction force and the frictional force between the surfaces",
+      "The ratio of the frictional force to the normal reaction force between the surfaces",
+      "The difference between the applied force and the maximum static friction force",
+      "The sum of all forces acting on an object resting on a rough horizontal surface"
+    ],
+    ans: 1,
+    exp: "Coefficient of friction (μ) = Friction Force (F) ÷ Normal Reaction (N). It is a dimensionless ratio that characterises the roughness between two surfaces." },
+
+  { q: "In a chain drive system, which component prevents the chain from slipping off the sprocket teeth during operation?",
+    opts: [
+      "A rubber belt tensioner, which keeps constant outward pressure on the chain links",
+      "The interlocking of the chain's rollers or link pins with the sprocket teeth",
+      "A smooth flat idler pulley that runs against the outside of the chain",
+      "A fluid coupling that absorbs shock loads and prevents mechanical slippage"
+    ],
+    ans: 1,
+    exp: "Unlike a belt drive, a chain drive uses positive engagement — the chain's rollers mesh directly with the sprocket teeth, which prevents any slipping." },
+
+  { q: "Which of the following best describes the term 'velocity ratio' of a machine?",
+    opts: [
+      "The ratio of the output force (load) produced by the machine to the input force (effort) applied",
+      "The ratio of the distance moved by the effort to the distance moved by the load in the same time",
+      "The ratio of the useful work output to the total work input expressed as a percentage",
+      "The ratio of the speed of the driver gear to the speed of the driven gear in a gear train"
+    ],
+    ans: 1,
+    exp: "Velocity Ratio (VR) = Distance moved by effort ÷ Distance moved by load. It is a theoretical ratio that does not account for friction losses." },
+
+  { q: "Which part of the roof structure runs from the ridge at the top down to the wall plate at the bottom on each side, providing the main sloping structural member?",
+    opts: [
+      "The purlin, which is a horizontal beam spanning between trusses to support the rafters",
+      "The rafter, which is the inclined timber running from the ridge board down to the wall plate",
+      "The ridge board, which is the horizontal member at the apex of the roof",
+      "The ceiling joist, which spans horizontally between wall plates below the rafters"
+    ],
+    ans: 1,
+    exp: "The rafter is the inclined structural timber that runs from the ridge at the top of the roof down to the wall plate, forming the slope of the roof on each side." },
+
+  { q: "In a hydraulic press, the small piston has an area of 2 cm² and the large piston has an area of 20 cm². If a force of 50 N is applied to the small piston, the force produced at the large piston is:",
+    opts: [
+      "5 N, because the force is reduced in proportion to the area difference",
+      "500 N, because pressure = force/area is constant, and force scales with area",
+      "250 N, because the force is divided equally between the two pistons",
+      "1000 N, because the area ratio squared gives the force multiplication factor"
+    ],
+    ans: 1,
+    exp: "Pressure is constant: P = F₁/A₁ = F₂/A₂. F₂ = F₁ × (A₂/A₁) = 50 × (20/2) = 50 × 10 = 500 N." },
+
+  { q: "Which of the following best describes the function of a mortising machine in a woodwork shop?",
+    opts: [
+      "To sand and smooth the curved and flat surfaces of a turned wooden workpiece",
+      "To chop or drill out square or rectangular recesses (mortises) in timber for jointing",
+      "To rip-cut long planks along their length into narrower strips of uniform width",
+      "To shape the edge of a timber board into a specific profile such as a rebate or chamfer"
+    ],
+    ans: 1,
+    exp: "A mortising machine is used specifically to cut mortises — square or rectangular slots cut into timber to receive a tenon as part of a mortise-and-tenon joint." },
+
+  { q: "Static friction differs from kinetic friction in that static friction:",
+    opts: [
+      "Always has a fixed constant value regardless of how much force is applied to the object",
+      "Can vary from zero up to a maximum value before the object begins to move",
+      "Only acts on objects that are already in motion along a surface",
+      "Decreases as the normal reaction force between the two surfaces increases"
+    ],
+    ans: 1,
+    exp: "Static friction is variable — it increases to match the applied force until it reaches its maximum value (limiting friction), after which the object starts to move." },
+
+  // ── 10 with ans:2 (C is correct) ──
+
+  { q: "A gear wheel with 15 teeth drives a second gear with 45 teeth. If the driver gear makes 90 revolutions per minute, the driven gear makes:",
+    opts: [
+      "270 rpm, because the driven gear is smaller and spins faster",
+      "90 rpm, because gears always rotate at the same speed in a simple gear train",
+      "30 rpm, because the driven gear has 3 times more teeth and rotates 3 times slower",
+      "45 rpm, because the speed is halved when the tooth ratio exceeds 2:1"
+    ],
+    ans: 2,
+    exp: "Speed ratio: N₂ = N₁ × (T₁/T₂) = 90 × (15/45) = 90 × 1/3 = 30 rpm. More teeth = slower rotation." },
+
+  { q: "The efficiency of a machine is defined as:",
+    opts: [
+      "The ratio of the mechanical advantage to the velocity ratio, expressed as a whole number",
+      "The ratio of the effort applied to the load overcome, multiplied by one hundred",
+      "The ratio of useful work output to total work input, expressed as a percentage",
+      "The ratio of the load distance to the effort distance, expressed as a fraction"
+    ],
+    ans: 2,
+    exp: "Efficiency = (Useful Work Output ÷ Total Work Input) × 100%. It can also be expressed as (MA/VR) × 100%." },
+
+  { q: "Which of the following correctly describes the function of a fly wheel in a machine?",
+    opts: [
+      "To increase the speed of rotation by storing energy during the power stroke",
+      "To reverse the direction of rotation of a shaft when required by the operator",
+      "To store rotational kinetic energy and smooth out fluctuations in speed during operation",
+      "To convert the rotary motion of the engine into the linear motion needed by the machine"
+    ],
+    ans: 2,
+    exp: "A flywheel stores rotational kinetic energy during high-power strokes and releases it during low-power strokes, smoothing out speed variations in the machine." },
+
+  { q: "In building construction, what is the primary purpose of a lintel?",
+    opts: [
+      "To provide a waterproof barrier along the base of external walls above ground level",
+      "To anchor the roof structure securely to the top of the load-bearing walls",
+      "To span across openings such as doors and windows and support the wall load above them",
+      "To tie opposite walls together horizontally and prevent them from spreading outward"
+    ],
+    ans: 2,
+    exp: "A lintel is a horizontal structural beam placed over door and window openings to carry the weight of the wall (and any loads above) across the gap." },
+
+  { q: "Which of the following describes a V-belt drive and its main advantage over a flat belt?",
+    opts: [
+      "A V-belt is completely flat and relies entirely on friction between its smooth face and the pulley",
+      "A V-belt is made from pure metal links and grips the pulley by direct tooth engagement",
+      "A V-belt has a trapezoidal cross-section that wedges into a matching groove, giving greater grip with less slippage",
+      "A V-belt is a hollow tube filled with pressurised fluid that grips the pulley by hydraulic force"
+    ],
+    ans: 2,
+    exp: "A V-belt's wedge-shaped cross-section fits into the V-groove of the pulley. The wedging action increases contact pressure and significantly reduces slippage." },
+
+  { q: "Pneumatics and hydraulics are both fluid power systems. The key difference between them is that:",
+    opts: [
+      "Pneumatics uses oil as its working fluid while hydraulics uses water as its working fluid",
+      "Hydraulics can only produce rotary motion while pneumatics can only produce linear motion",
+      "Pneumatics uses compressed air (a compressible gas) while hydraulics uses a liquid (incompressible fluid)",
+      "Hydraulics operates at low pressure while pneumatics operates exclusively at very high pressure"
+    ],
+    ans: 2,
+    exp: "Pneumatics uses compressed air, which is compressible — this makes it ideal for lighter, faster operations. Hydraulics uses oil (incompressible), allowing much higher forces." },
+
+  { q: "Which part of a woodwork lathe holds and rotates the workpiece while the cutting tool is applied by the operator?",
+    opts: [
+      "The tool rest, which supports the cutting chisel during the turning operation",
+      "The tailstock, which supports the free end of long workpieces during turning",
+      "The headstock with its chuck or faceplate, which grips and drives the workpiece",
+      "The bed, which is the horizontal base along which the tailstock and tool rest slide"
+    ],
+    ans: 2,
+    exp: "The headstock contains the main spindle driven by the motor, and the chuck or faceplate attached to it grips and rotates the workpiece during turning." },
+
+  { q: "A scale drawing of a building plot uses a scale of 1:500. If a wall on the drawing measures 4 cm, the actual length of the wall is:",
+    opts: [
+      "4 m, because each centimetre equals 1 metre at this scale",
+      "200 cm, because the drawing length is multiplied by half the scale factor",
+      "2000 cm (20 m), because 4 cm × 500 = 2000 cm",
+      "400 cm (4 m), because 4 cm × 100 = 400 cm and 100 is used instead of 500"
+    ],
+    ans: 2,
+    exp: "Actual length = drawing length × scale factor = 4 cm × 500 = 2000 cm = 20 m." },
+
+  { q: "In a building construction project, the wall plate is the component that:",
+    opts: [
+      "Forms the decorative facing on the external surface of the building's outer walls",
+      "Acts as a damp-proof barrier inserted horizontally within the thickness of a cavity wall",
+      "Is a horizontal timber fixed to the top of a wall on which the roof rafters bear and are anchored",
+      "Provides the vertical formwork into which wet concrete is poured for a reinforced concrete wall"
+    ],
+    ans: 2,
+    exp: "The wall plate is a horizontal timber bedded on top of the masonry wall. It distributes the roof load evenly and provides an anchoring point for the feet of the rafters." },
+
+  { q: "Which of the following correctly explains why lubrication reduces friction between moving machine parts?",
+    opts: [
+      "Lubricants increase the normal reaction between surfaces, which reduces the friction coefficient",
+      "Lubricants bond to metal surfaces and create a harder surface that resists wear",
+      "Lubricants form a thin film between surfaces, separating them and replacing solid-to-solid contact with fluid shear",
+      "Lubricants absorb heat produced by friction and convert it directly into useful mechanical work"
+    ],
+    ans: 2,
+    exp: "A lubricant separates the two solid surfaces with a thin fluid film, so instead of high-friction solid contact, the surfaces glide on low-shear fluid — greatly reducing friction and wear." },
+
+  // ── 10 with ans:3 (D is correct) ──
+
+  { q: "Which of the following woodwork machines would be most appropriate for reducing a wide board to a precise uniform thickness throughout its length?",
+    opts: [
+      "A band saw, which cuts curves and irregular shapes in timber",
+      "A mortising machine, which creates rectangular recesses for joints in timber",
+      "A wood lathe, which rotates timber for turning cylindrical and bowl shapes",
+      "A thickness planer (thicknesser), which planes the underside of a board to produce uniform thickness"
+    ],
+    ans: 3,
+    exp: "A thickness planer (thicknesser) feeds the board through at a set height and planes the underside to produce a board of precise, uniform thickness throughout." },
+
+  { q: "In a simple gear train, the idler gear placed between the driver and the driven gear has what effect on the final output speed?",
+    opts: [
+      "It doubles the output speed because it adds an extra stage of speed increase",
+      "It halves the output speed because every additional gear reduces rotational speed",
+      "It increases the output torque while simultaneously reducing the output speed",
+      "It reverses the direction of rotation of the driven gear without affecting its speed"
+    ],
+    ans: 3,
+    exp: "An idler gear changes the direction of rotation of the output gear but does not change the gear ratio or speed between the driver and the final driven gear." },
+
+  { q: "A hydraulic system develops a leak in one of its pipes while in operation. The most serious consequence of this leak is:",
+    opts: [
+      "The system pressure doubles because the fluid volume decreases inside the closed circuit",
+      "The system automatically switches from hydraulic to pneumatic operation to continue working",
+      "The oil temperature rises sharply because the pump now works against zero resistance",
+      "Loss of pressure means the system can no longer transmit force effectively, causing it to fail"
+    ],
+    ans: 3,
+    exp: "Hydraulic systems depend on a sealed incompressible fluid circuit. A leak causes loss of pressure, and without adequate pressure the force transmission breaks down entirely." },
+
+  { q: "Which of the following building materials is classified as a natural material used in traditional construction?",
+    opts: [
+      "Reinforced concrete, made by combining cement, aggregate, water, and steel reinforcement",
+      "Galvanised steel sheet, which is iron coated with zinc to prevent rusting in construction",
+      "Glass blocks, which are manufactured by fusing silica sand at high temperatures in a furnace",
+      "Timber, which is a naturally grown organic material cut and shaped for structural use"
+    ],
+    ans: 3,
+    exp: "Timber is a naturally occurring material (harvested from trees) that has been used in construction for thousands of years, unlike concrete, steel, or glass which are manufactured." },
+
+  { q: "The turning moment (torque) produced by a force is calculated as:",
+    opts: [
+      "The sum of the force and the perpendicular distance from the pivot to the line of action",
+      "The ratio of the applied force to the perpendicular distance from the pivot",
+      "The product of the mass of the object and its acceleration in the direction of motion",
+      "The product of the force and the perpendicular distance from the pivot to the line of action"
+    ],
+    ans: 3,
+    exp: "Torque (T) = Force (F) × Perpendicular distance (d) from the pivot to the line of action of the force. It is measured in Newton-metres (N·m)." },
+
+  { q: "In building construction, the term 'cavity wall' refers to a wall that:",
+    opts: [
+      "Is built from a single leaf of brick with no internal void or air space",
+      "Contains steel reinforcement bars cast into the concrete during construction",
+      "Is built with a timber frame infilled with lightweight masonry blocks on both faces",
+      "Consists of two parallel skins of masonry separated by an air gap, tied together with wall ties"
+    ],
+    ans: 3,
+    exp: "A cavity wall has two separate masonry leaves with an air (or insulated) gap between them, connected by metal wall ties. The cavity reduces heat loss and prevents damp penetration." },
+
+  { q: "Which type of belt drive is used when the driver and driven shafts need to rotate in opposite directions?",
+    opts: [
+      "An open belt drive, where the belt runs straight between two pulleys on parallel shafts",
+      "A quarter-turn belt drive, where the shafts are at 90° to each other",
+      "A compound belt drive, where intermediate pulleys increase the overall speed ratio",
+      "A crossed belt drive, where the belt is twisted into a figure-of-eight between the pulleys"
+    ],
+    ans: 3,
+    exp: "A crossed belt drive crosses the belt between the pulleys in a figure-of-eight, causing the driven pulley to rotate in the opposite direction to the driver." },
+
+  { q: "A compound gear train differs from a simple gear train in that a compound gear train:",
+    opts: [
+      "Uses only one gear on each shaft and can only achieve small speed changes",
+      "Uses gears with helical teeth instead of straight teeth to reduce noise",
+      "Always includes an idler gear to reverse the direction of the output shaft",
+      "Has two or more gears on at least one intermediate shaft, allowing large speed or torque changes"
+    ],
+    ans: 3,
+    exp: "In a compound gear train, at least one shaft carries two gears fixed together. This arrangement allows large speed reductions or increases that would be impractical with a single gear pair." },
+
+  { q: "In a pneumatic system, the component whose primary role is to remove moisture and contaminants from the compressed air before it reaches the control valves is the:",
+    opts: [
+      "Actuator, which converts air pressure energy into the required mechanical output",
+      "Compressor, which draws in atmospheric air and increases its pressure for the system",
+      "Pressure regulator, which reduces and maintains the air pressure at the desired working level",
+      "Air filter and dryer unit, which separates water droplets and particles from the compressed air"
+    ],
+    ans: 3,
+    exp: "The air filter/dryer (often combined with a regulator and lubricator in an FRL unit) removes moisture and particulates from compressed air to protect valves and actuators." },
+
+  { q: "The main structural purpose of a ring beam (collar beam) in a roof truss is to:",
+    opts: [
+      "Carry the weight of the roof tiles directly from the ridge down to the wall plate",
+      "Provide a horizontal surface on which the ceiling boards of the room below are fixed",
+      "Act as a ridge board running along the apex of the roof between successive trusses",
+      "Tie opposite rafters together horizontally to prevent them from spreading and pushing the walls outward"
+    ],
+    ans: 3,
+    exp: "A collar beam (or tie beam) connects opposite rafters horizontally, resisting the outward thrust that the roof load generates — preventing the walls from being pushed apart." }
+
 ],
 'Business Studies': [
 
