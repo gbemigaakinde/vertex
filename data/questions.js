@@ -4150,2295 +4150,2060 @@ sss1: {
 
 ],
     'English Language': [
-    {
-        "q": "Passage: 'The quantum computing paradigm, though heralded as a panacea for intractable problems in cryptography and materials simulation, remains hamstrung by qubit decoherence and error rates that render large-scale fault-tolerant systems a distant prospect rather than an imminent reality.' What is the author's primary stance?",
-        "opts": ["Quantum computing is already revolutionizing industries.", "Enthusiasm for quantum computing is overstated due to persistent technical obstacles.", "Qubit decoherence has been effectively solved in recent prototypes.", "Quantum systems are inferior to classical computing in all applications."],
-        "ans": 1,
-        "exp": "The concessive 'though' acknowledges promise but contrasts it with severe limitations ('hamstrung', 'distant prospect'), tempering optimism with realism."
-    },
-    {
-        "q": "Passage: 'In an era of algorithmic curation, serendipitous discovery—the unplanned encounter with ideas that challenge entrenched beliefs—has become an endangered species, supplanted by echo chambers that reinforce rather than expand intellectual horizons.' What can be most reliably inferred about the author's view on modern information consumption?",
-        "opts": ["Algorithmic feeds promote intellectual growth through tailored content.", "The decline of serendipity in discovery fosters ideological stagnation.", "Echo chambers are a necessary evolution for efficient learning.", "Serendipitous encounters were never significant in pre-digital eras."],
-        "ans": 1,
-        "exp": "Personification of serendipity as 'endangered' and the contrast between 'reinforce' and 'expand' highlight the author's concern over intellectual narrowing."
-    },
-    {
-        "q": "Passage: 'Postcolonial theorists argue that hybridity undermines essentialist notions of identity, yet critics contend that celebrating hybridity risks romanticizing the very power imbalances that produce it in the first place.' Which statement best captures the central tension described?",
-        "opts": ["Hybridity is universally rejected by postcolonial scholars.", "Hybridity is praised for destabilizing identity but criticized for potentially masking structural inequalities.", "Essentialism is the dominant framework in contemporary postcolonial studies.", "Power imbalances are irrelevant to discussions of cultural identity."],
-        "ans": 1,
-        "exp": "The 'yet' signals opposition: one view sees hybridity as subversive, the other as potentially obfuscating ongoing inequities."
-    },
-    {
-        "q": "Passage: 'Epigenetic modifications, once dismissed as Lamarckian heresy, have now gained legitimacy through robust evidence demonstrating that environmental factors can indeed influence heritable traits without altering the underlying DNA sequence.' What shift in scientific consensus does the passage illustrate?",
-        "opts": ["From outright rejection to cautious acceptance of environmentally induced inheritance.", "From acceptance of Lamarckism to its complete refutation.", "From focus on DNA to complete dismissal of genetic mechanisms.", "From environmental determinism to strict genetic determinism."],
-        "ans": 0,
-        "exp": "The contrast between 'once dismissed' and 'now gained legitimacy' with 'robust evidence' marks a paradigm shift toward integrating epigenetic mechanisms."
-    },
-    {
-        "q": "Which of the following represents the most precise and concise summary of this complex argument? Passage: 'While neoliberal policies have undeniably spurred economic growth in several developing nations, this growth has often been accompanied by widening income disparities, environmental degradation, and the erosion of social safety nets. Proponents emphasize aggregate GDP increases and poverty reduction metrics, whereas detractors highlight the human costs and sustainability deficits.'",
-        "opts": ["Neoliberal policies are wholly detrimental to developing nations.", "Neoliberalism drives growth but at the expense of inequality, environmental health, and social protections—a point of contention between proponents and critics.", "GDP growth under neoliberalism has eliminated poverty entirely.", "Social safety nets have expanded under neoliberal frameworks."],
-        "ans": 1,
-        "exp": "The summary balances acknowledged benefits ('undeniably spurred') with enumerated costs and the ongoing debate without oversimplifying either side."
-    },
-    {
-        "q": "In crafting a précis of a 400-word editorial arguing that universal basic income (UBI) could mitigate automation-induced unemployment but risks disincentivizing work and straining fiscal resources, which option best retains the core argument while reducing length by at least 70%?",
-        "opts": ["UBI is the solution to unemployment caused by automation.", "Though UBI may alleviate job loss from automation, concerns about work incentives and fiscal viability persist.", "Automation will eliminate all jobs; UBI is essential.", "UBI strains budgets unnecessarily since automation creates more jobs."],
-        "ans": 1,
-        "exp": "A précis must preserve balanced nuance—potential benefits alongside significant risks—without introducing bias or omitting key counterpoints."
-    },
-    {
-        "q": "Which opening most effectively establishes vivid atmospheric immersion in a descriptive essay depicting a post-apocalyptic cityscape?",
-        "opts": ["Cities after disasters look different from normal cities.", "Acidic rain hissed against corroded steel skeletons, casting an acrid pall over shattered thoroughfares where wind-whipped debris whispered through the husks of once-towering edifices.", "I think post-apocalyptic cities are interesting.", "Post-apocalyptic scenarios are common in modern fiction."],
-        "ans": 1,
-        "exp": "Superior descriptive openings deploy multi-sensory, precise imagery (auditory 'hissed', olfactory 'acrid', tactile implications) and sophisticated diction to evoke mood instantly."
-    },
-    {
-        "q": "For a narrative essay recounting a personal ethical dilemma, which structural choice best heightens dramatic tension while incorporating expository reflection?",
-        "opts": ["Chronological retelling without internal monologue.", "Flashback structure revealing the dilemma gradually, interspersing present-tense reflection on moral implications.", "Purely expository analysis without narrative elements.", "Ending with the dilemma unresolved for reader interpretation."],
-        "ans": 1,
-        "exp": "Interweaving non-linear narrative with expository introspection builds suspense and deepens thematic exploration of ethical complexity."
-    },
-    {
-        "q": "Correct the conditional structure: 'Had the researchers not overlooked the anomalous data in 2011, they will have developed the theory a decade earlier.'",
-        "opts": ["Had the researchers not overlooked the anomalous data in 2011, they would have developed the theory a decade earlier.", "If the researchers do not overlook the anomalous data in 2011, they will develop the theory earlier.", "Had the researchers not overlooked the anomalous data in 2011, they will develop the theory a decade earlier.", "If the researchers had not overlooked the anomalous data in 2011, they will have developed the theory a decade earlier."],
-        "ans": 0,
-        "exp": "Third conditional for hypothetical past: past perfect in if-clause ('had not overlooked') + perfect conditional in main clause ('would have developed')."
-    },
-    {
-        "q": "Choose the appropriate modal sequence: 'By next year, the treaty _____ (obligation) have been ratified, or negotiations _____ (possibility) collapse entirely.'",
-        "opts": ["must / might", "can / should", "ought to / must", "shall / could"],
-        "ans": 0,
-        "exp": "'Must' conveys strong obligation for ratification; 'might' indicates real future possibility of collapse."
-    },
-    {
-        "q": "Identify and correct the error: 'The criteria for evaluating quantum algorithms is both computational complexity and practical scalability.'",
-        "opts": ["Change 'is' to 'are' because 'criteria' is plural.", "Change 'criteria' to 'criterion' to match singular verb.", "No error; the sentence is correct.", "Change 'both' to 'either'."],
-        "ans": 0,
-        "exp": "'Criteria' is the plural form; subject-verb agreement requires 'are'. 'Criterion' would be singular."
-    },
-    {
-        "q": "Supply the correct tense for reported scientific speech: 'Dr. Chen announced that the particle accelerator _____ (future) reveal evidence of supersymmetry within five years.'",
-        "opts": ["will reveal", "would reveal", "reveals", "revealed"],
-        "ans": 1,
-        "exp": "Backshift in reported speech: original future 'will' becomes conditional 'would' when the reporting verb is past ('announced')."
-    },
-    {
-        "q": "Form the most appropriate derivative: The _____ (effervesce) of the debate gradually subsided as participants reached a tentative consensus.",
-        "opts": ["effervescence", "effervescent", "effervescing", "effervesced"],
-        "ans": 0,
-        "exp": "'Effervescence' is the noun denoting lively quality or fizzing, fitting the metaphorical description of debate intensity."
-    },
-    {
-        "q": "Select the most precise word: 'The diplomat's _____ response neither confirmed nor denied the allegations, leaving analysts to parse subtle implications.'",
-        "opts": ["equivocal", "explicit", "unequivocal", "candid"],
-        "ans": 0,
-        "exp": "'Equivocal' means deliberately ambiguous, perfectly suiting intentional non-commitment; opposites like 'explicit' or 'unequivocal' imply clarity."
-    },
-    {
-        "q": "Which term best completes the analogy: Obsequious : Fawning :: Intransigent : _____",
-        "opts": ["Compliant", "Unyielding", "Vacillating", "Obedient"],
-        "ans": 1,
-        "exp": "'Obsequious' means excessively servile (synonymous with fawning); 'intransigent' means uncompromising or stubborn (antonymous to compliant)."
-    },
-    {
-        "q": "Choose the word with the most appropriate connotation: 'Her analysis was so _____ that it dismantled longstanding assumptions with surgical precision.'",
-        "opts": ["incisive", "abrasive", "trenchant", "cutting"],
-        "ans": 2,
-        "exp": "While all suggest sharpness, 'trenchant' carries intellectual acuity and effectiveness without the negative interpersonal edge of 'abrasive'."
-    },
-    {
-        "q": "In George Orwell's 1984, the concept of 'doublethink' most fundamentally illustrates:",
-        "opts": ["The cognitive dissonance required to maintain ideological loyalty in a totalitarian regime.", "The superiority of collective over individual thought.", "The harmonious blending of opposing political ideologies.", "The rejection of empirical evidence in favor of faith."],
-        "ans": 0,
-        "exp": "Doublethink is the act of simultaneously accepting contradictory beliefs, essential for psychological control under Big Brother."
-    },
-    {
-        "q": "In T.S. Eliot's The Waste Land, the fragmentation of narrative voice and allusion primarily serves to:",
-        "opts": ["Celebrate the richness of Western cultural heritage.", "Convey spiritual desolation and cultural disintegration in the modern era.", "Provide a linear historical account of postwar Europe.", "Criticize modernist experimentation as incoherent."],
-        "ans": 1,
-        "exp": "Polyphonic voices, abrupt shifts, and dense allusions mirror the fractured consciousness and cultural collapse post-World War I."
-    },
-    {
-        "q": "In Sophocles' Antigone, Creon's tragic flaw is most accurately identified as:",
-        "opts": ["Excessive piety toward the gods.", "Hubris in prioritizing state law over divine law and family duty.", "Cowardice in the face of civil unrest.", "Blind loyalty to familial bonds over civic order."],
-        "ans": 1,
-        "exp": "Creon's rigid decree and refusal to yield reflect hubris (overweening pride), leading to personal and familial catastrophe."
-    },
-    {
-        "q": "In John Donne's 'Holy Sonnet 10' ('Death, be not proud'), the final couplet's paradox primarily achieves:",
-        "opts": ["Reinforcement of death's ultimate power over humanity.", "Subversion of death's apparent dominion through Christian eschatology.", "Acceptance of mortality as natural and inevitable.", "Criticism of religious consolation as illusion."],
-        "ans": 1,
-        "exp": "'Death, thou shalt die' paradoxically asserts eternal life, nullifying death's threat via resurrection doctrine."
-    },
-    {
-        "q": "Which technique is most effective for maintaining audience engagement during a persuasive speech on climate urgency?",
-        "opts": ["Monotone delivery with dense statistical recitation.", "Strategic use of pathos-laden anecdotes, rhetorical questions, and deliberate pauses to emphasize stakes.", "Reading verbatim from a script without eye contact.", "Avoiding emotional appeals to preserve objectivity."],
-        "ans": 1,
-        "exp": "Combining emotional storytelling (pathos), direct audience involvement (questions), and vocal pacing heightens impact and retention."
-    },
-    {
-        "q": "In active listening during a formal debate, which strategy best facilitates critical response formulation?",
-        "opts": ["Mentally preparing rebuttals while the opponent speaks.", "Paraphrasing key claims internally, identifying logical fallacies, and noting evidential gaps for later address.", "Interrupting frequently for immediate clarification.", "Focusing solely on stylistic delivery rather than content."],
-        "ans": 1,
-        "exp": "Internal paraphrasing and fallacy detection enable structured, substantive counterarguments without disrupting flow."
-    },
-    {
-        "q": "Passage: 'The anthropocene epoch, characterized by humanity's dominance over geological processes, has precipitated unprecedented rates of species extinction rivaling the Permian mass extinction, yet without the mitigating prospect of natural recovery timescales.' What sombre implication does the author convey?",
-        "opts": ["Human impact is negligible compared to historical extinctions.", "Current biodiversity loss is profound and potentially irreversible on human timescales.", "Natural recovery will occur rapidly as in past events.", "The Anthropocene label is scientifically contested."],
-        "ans": 1,
-        "exp": "'Unprecedented rates', comparison to Permian, and 'without mitigating prospect' underscore severity and lack of natural amelioration."
-    },
-    {
-        "q": "Passage: 'Though gene-editing technologies like CRISPR herald therapeutic breakthroughs, their germline application raises profound ethical quandaries concerning consent of future generations and exacerbation of socio-economic disparities.' What balanced position does the passage adopt?",
-        "opts": ["Unqualified endorsement of germline editing.", "Cautious optimism tempered by ethical and equity concerns.", "Complete rejection of all gene-editing research.", "Dismissal of ethical issues as irrelevant."],
-        "ans": 1,
-        "exp": "'Herald breakthroughs' acknowledges potential; 'though' introduces serious countervailing ethical dilemmas."
-    },
-    {
-        "q": "Which option best summarizes this passage without distorting nuance? Passage: 'Surveillance capitalism monetizes personal data to predict and influence behavior, yielding immense corporate power while eroding individual autonomy and democratic discourse. Regulation lags behind innovation, leaving citizens vulnerable to manipulation.'",
-        "opts": ["Surveillance capitalism empowers consumers through personalized services.", "Surveillance capitalism extracts value from data, concentrating power and threatening autonomy and democracy amid regulatory inertia.", "Corporate innovation always benefits democratic processes.", "Personal data monetization poses no significant risks."],
-        "ans": 1,
-        "exp": "The summary preserves the critical view of power concentration, autonomy erosion, and regulatory gap without exaggeration or omission."
-    },
-    {
-        "q": "In a descriptive essay portraying a nocturnal rainforest, which sensory hierarchy most effectively builds immersive depth?",
-        "opts": ["Visual details exclusively.", "Layered progression from auditory ambience to tactile humidity, olfactory richness, and fleeting visual glimpses under canopy.", "Abstract philosophical reflections on nature.", "Chronological account of a research expedition."],
-        "ans": 1,
-        "exp": "Multi-sensory layering, especially prioritizing non-visual senses dominant in low-light environments, creates profound immersion."
-    },
-    {
-        "q": "Rewrite using mixed conditional: 'I don't know quantum field theory now because I didn't study theoretical physics at university.'",
-        "opts": ["If I studied theoretical physics at university, I would know quantum field theory now.", "If I had studied theoretical physics at university, I would know quantum field theory now.", "If I know quantum field theory, I studied theoretical physics.", "Had I known quantum field theory, I would have studied physics."],
-        "ans": 1,
-        "exp": "Mixed third/second conditional: past perfect action ('had studied') affecting present result ('would know')."
-    },
-    {
-        "q": "Correct the agreement error: 'A variety of cutting-edge methodologies were employed to ensure the validity of the longitudinal study.'",
-        "opts": ["Change 'were' to 'was' because 'variety' is singular.", "No change; 'variety' takes plural verb when emphasizing plurality of items.", "Change 'methodologies' to 'methodology'.", "Change 'were' to 'is' for present relevance."],
-        "ans": 1,
-        "exp": "When 'a variety of' precedes plural noun and emphasizes multiple items, plural verb is standard in contemporary usage."
-    },
-    {
-        "q": "Form the adjective: The professor's explanation was remarkably _____ (lucid), rendering complex theorems accessible.",
-        "opts": ["lucidate", "lucidity", "lucid", "lucidently"],
-        "ans": 2,
-        "exp": "'Lucid' is the established adjective meaning clear and easily understood."
-    },
-    {
-        "q": "Select the most nuanced synonym for 'hegemony' in this context: 'Cultural _____ often operates insidiously through media representations.'",
-        "opts": ["dominance", "supremacy", "leadership", "equality"],
-        "ans": 0,
-        "exp": "'Dominance' captures power imbalance; 'hegemony' specifically implies ideological/cultural domination with consent."
-    },
-    {
-        "q": "In Shakespeare's Macbeth, Lady Macbeth's 'unsex me here' soliloquy primarily reveals:",
-        "opts": ["Her desire to embrace traditional femininity.", "Her invocation to shed gendered constraints associated with compassion to pursue ambition ruthlessly.", "Her regret over involving Macbeth in regicide.", "Her acceptance of divine ordained gender roles."],
-        "ans": 1,
-        "exp": "She calls upon spirits to remove feminine qualities (mercy, remorse) seen as obstacles to murderous intent."
-    },
-    {
-        "q": "In Wole Soyinka's Death and the King's Horseman, the central cultural clash most fundamentally concerns:",
-        "opts": ["Colonial imposition disrupting indigenous metaphysical obligations and ritual suicide.", "Economic exploitation of Nigerian resources.", "Personal ambition versus communal duty.", "Christianity versus Islam in colonial Nigeria."],
-        "ans": 0,
-        "exp": "Elesin's failure to complete ritual suicide due to British intervention disrupts Yoruba cosmological balance."
-    },
-    {
-        "q": "In delivering an extemporaneous speech on bioethics, which vocal strategy best conveys gravitas?",
-        "opts": ["Rapid delivery with high pitch throughout.", "Measured pacing, strategic pauses after ethical dilemmas, and lowered register for emphasis.", "Frequent filler words to appear relatable.", "Constant volume escalation for excitement."],
-        "ans": 1,
-        "exp": "Deliberate tempo and prosodic variation signal thoughtful authority on weighty subjects."
-    },
-    {
-        "q": "Passage: 'Metacognition, the ability to monitor and regulate one's own cognitive processes, distinguishes expert learners from novices, enabling strategic adaptation in complex domains.' What key distinction does the author emphasize?",
-        "opts": ["Novices lack intelligence compared to experts.", "Self-awareness in thinking separates proficient from novice learners.", "Metacognition is irrelevant to domain expertise.", "Experts rely solely on innate ability."],
-        "ans": 1,
-        "exp": "'Distinguishes' and enabling 'strategic adaptation' highlight metacognition as the critical differentiator."
-    },
-    {
-        "q": "Which précis best compresses this argument? Passage: 'Cognitive biases such as confirmation bias and anchoring systematically distort judgment in financial markets, contributing to bubbles and crashes. Behavioral finance integrates psychological insights to explain these anomalies that neoclassical models cannot accommodate.'",
-        "opts": ["Cognitive biases cause market crashes.", "Behavioral finance explains market anomalies through psychological biases that challenge neoclassical assumptions.", "Neoclassical models fully account for investor psychology.", "Confirmation bias is the sole cause of financial crises."],
-        "ans": 1,
-        "exp": "The précis retains the explanatory role of biases, the integration into behavioral finance, and the challenge to traditional models."
-    },
-    {
-        "q": "Choose the most precise word: 'The committee's decision was _____ , reflecting months of deliberation rather than hasty judgment.'",
-        "opts": ["precipitate", "deliberate", "spontaneous", "impulsive"],
-        "ans": 1,
-        "exp": "'Deliberate' means carefully considered; others suggest rashness."
-    },
-    {
-        "q": "In Jane Austen's Pride and Prejudice, Darcy's first proposal most dramatically exposes:",
-        "opts": ["His genuine humility and self-awareness.", "His class-bound prejudice despite professed love.", "Elizabeth's undue prejudice against him.", "The universality of romantic compatibility."],
-        "ans": 1,
-        "exp": "His declaration of loving 'against my will, my reason, and my character' reveals lingering superiority."
-    },
-    {
-        "q": "In listening to a complex academic lecture, which note-taking method best captures hierarchical relationships and facilitates later synthesis?",
-        "opts": ["Verbatim transcription.", "Cornell method with cues, summaries, and indented hierarchical points.", "Random bullet points without structure.", "Mind mapping exclusively during delivery."],
-        "ans": 1,
-        "exp": "Structured division into main notes, cues, and summary promotes active processing and review."
-    }
+
+  // ── 10 with ans:0 (A is correct) ──
+
+  { q: "Which of the following is correctly spelled?",
+    opts: [
+      "Necessary, which contains one 'c' and two 's' letters",
+      "Neccessary, which contains two 'c' letters and one 's'",
+      "Necessery, which replaces the final 'a' with an 'e'",
+      "Nessesary, which doubles the 's' and omits one 'c'"
+    ],
+    ans: 0,
+    exp: "The correct spelling is 'necessary' — one 'c' followed by two 's' letters: ne-c-e-s-s-a-r-y. A common mnemonic: one Collar, two Socks." },
+
+  { q: "Which of the following sentences uses the active voice correctly?",
+    opts: [
+      "The committee reviewed all the submitted applications before the deadline.",
+      "All the submitted applications were reviewed by the committee before the deadline.",
+      "The applications having been reviewed, the committee proceeded accordingly.",
+      "It was the committee by whom the submitted applications were reviewed."
+    ],
+    ans: 0,
+    exp: "In the active voice, the subject (the committee) performs the action (reviewed). In passive voice, the subject receives the action — as in option B." },
+
+  { q: "Which of the following sentences contains a correctly used noun clause?",
+    opts: [
+      "What the teacher said during the lesson surprised the entire class.",
+      "The student who passed the examination surprised entire the class.",
+      "During the lesson, surprised the class the teacher said something.",
+      "The class the teacher surprised entire what said during lesson."
+    ],
+    ans: 0,
+    exp: "'What the teacher said during the lesson' is a noun clause functioning as the subject of the main verb 'surprised'." },
+
+  { q: "The sentence 'Had he studied harder, he would have passed the examination' is an example of:",
+    opts: [
+      "A third conditional structure expressing an unreal past condition and its imagined result",
+      "A first conditional structure expressing a real and likely future possibility",
+      "A zero conditional expressing a general truth that is always factually correct",
+      "A second conditional expressing an unlikely present or future hypothetical scenario"
+    ],
+    ans: 0,
+    exp: "The third conditional uses 'had + past participle' in the if-clause and 'would have + past participle' in the result clause, expressing an unreal past condition." },
+
+  { q: "Which sentence correctly uses a consonant cluster at the beginning of the word?",
+    opts: [
+      "The strong wind stripped the leaves from the trees overnight.",
+      "The wind strong stripped leaves from tree the overnight.",
+      "Strong the wind the leaves from the trees overnight stripped.",
+      "Overnight the trees stripped their strong leaves from wind."
+    ],
+    ans: 0,
+    exp: "'Strong' and 'stripped' both begin with consonant clusters: /str-/. These are correctly and naturally used in option A." },
+
+  { q: "In summary writing, which of the following is a correct rule to follow?",
+    opts: [
+      "Write only the main ideas in your own words, avoiding unnecessary details and direct quotations from the passage",
+      "Copy the most important sentences directly from the passage to preserve the original meaning",
+      "Include your personal opinion about the passage to show you understood the topic well",
+      "Begin the summary with a lengthy introduction about the topic before stating the main points"
+    ],
+    ans: 0,
+    exp: "A good summary is written in the student's own words, includes only essential main points, avoids copied text, and omits personal opinion and unnecessary detail." },
+
+  { q: "Which of the following identifies a correctly used adverbial clause?",
+    opts: [
+      "Because the rain was heavy, the match was postponed until the following Saturday.",
+      "The match was postponed the rain was heavy until the following Saturday.",
+      "Until the following Saturday was postponed because heavy rain the match.",
+      "The heavy rain was postponed the match because until Saturday following."
+    ],
+    ans: 0,
+    exp: "'Because the rain was heavy' is an adverbial clause of reason modifying the main clause 'the match was postponed'. It is correctly placed and punctuated." },
+
+  { q: "Which sentence demonstrates correct stress placement when 'record' is used as a noun?",
+    opts: [
+      "She holds the national REcord for the 100-metre sprint.",
+      "She holds the national reCORD for the 100-metre sprint.",
+      "She HOLDS the national record for the 100-metre sprint.",
+      "She holds the NATIONAL record for the 100-METRE sprint."
+    ],
+    ans: 0,
+    exp: "When 'record' is used as a noun, the primary stress falls on the first syllable: REcord. When used as a verb, the stress shifts: reCORD." },
+
+  { q: "Which of the following sentences correctly uses sequence of tenses after a past reporting verb?",
+    opts: [
+      "She said that she had completed her assignment before the deadline.",
+      "She said that she has completed her assignment before the deadline.",
+      "She said that she will complete her assignment before the deadline.",
+      "She said that she completes her assignment before the deadline."
+    ],
+    ans: 0,
+    exp: "When the reporting verb is in the past tense ('said'), the tense in the reported clause shifts back: present perfect → past perfect. 'Had completed' is the correct backshifted form." },
+
+  { q: "A descriptive essay about 'Peer Group Influence' should primarily:",
+    opts: [
+      "Present a balanced and vivid picture of how peer groups affect young people's behaviour, using specific examples",
+      "Argue strongly for one side of the debate about whether peer influence is always negative",
+      "Tell a story about one student who was negatively influenced by a specific peer group",
+      "List the statistical data on the percentage of youths influenced by peers in Nigeria"
+    ],
+    ans: 0,
+    exp: "An expository/descriptive essay on peer group influence should explore the topic with clarity, using examples to show both sides — how peers influence behaviour positively and negatively." },
+
+  // ── 10 with ans:1 (B is correct) ──
+
+  { q: "Which sentence correctly transforms the active voice sentence 'The teacher marked all the scripts' into passive voice?",
+    opts: [
+      "All the scripts were marked the teacher before the deadline.",
+      "All the scripts were marked by the teacher.",
+      "The scripts all marked were by the teacher having them.",
+      "By the teacher all the scripts having been marked."
+    ],
+    ans: 1,
+    exp: "Passive voice = object + 'to be' (in appropriate tense) + past participle + 'by' + agent. 'All the scripts were marked by the teacher' is the correct passive form." },
+
+  { q: "Which of the following is the correct use of a dictionary when encountering an unfamiliar word?",
+    opts: [
+      "Look at the word's position in the sentence only, because context alone is sufficient to determine meaning",
+      "Look up the word alphabetically, check its pronunciation guide, part of speech, definition, and example sentence",
+      "Ask a friend for the meaning, then confirm by writing the word in a sentence without checking the dictionary",
+      "Skip the word and continue reading, then guess its meaning when the passage is complete"
+    ],
+    ans: 1,
+    exp: "Effective dictionary use involves finding the word alphabetically, reading its pronunciation, part of speech, definition(s), and example usage to fully understand its meaning and application." },
+
+  { q: "Which sentence correctly uses an informal register appropriate for a letter to a close friend?",
+    opts: [
+      "I write to inform you that I shall be visiting your establishment on the aforementioned date.",
+      "Just wanted to let you know I'll be coming over to see you this weekend — can't wait!",
+      "With reference to your communication of last week, I am pleased to confirm my attendance.",
+      "It is with great pleasure that I accept your invitation to visit your home on Saturday next."
+    ],
+    ans: 1,
+    exp: "Informal letters to friends use conversational language, contractions, and familiar expressions. Option B reflects the relaxed, personal tone appropriate for a letter to a close friend." },
+
+  { q: "In English phonology, sentence stress refers to:",
+    opts: [
+      "The stress placed on every syllable of every word in a sentence equally",
+      "The emphasis placed on specific words in a sentence that carry the most important information",
+      "The rising and falling of pitch across an entire spoken paragraph",
+      "The speed at which a sentence is spoken relative to the sentences around it"
+    ],
+    ans: 1,
+    exp: "Sentence stress is the emphasis given to content words (nouns, main verbs, adjectives, adverbs) that carry the key information, while function words are typically unstressed." },
+
+  { q: "Which of the following represents the correct structure of an argumentative essay?",
+    opts: [
+      "Introduction, narrative story, personal reflection, moral lesson, conclusion",
+      "Introduction with a clear thesis, body paragraphs with arguments and counterarguments, and a conclusion restating the position",
+      "An opening description, a dialogue between two opposing characters, a summary of both views",
+      "A list of factual points, followed by a poem on the topic, and a letter to the reader"
+    ],
+    ans: 1,
+    exp: "An argumentative essay has a thesis-driven introduction, body paragraphs presenting and refuting arguments, and a conclusion that reinforces the writer's position." },
+
+  { q: "A misspelt word in the sentence 'The manager recieved an urgent mesage from headquarters' is:",
+    opts: [
+      "'manager', which should be spelled 'mannager' with a double 'n'",
+      "Both 'recieved' (should be 'received') and 'mesage' (should be 'message') are misspelled",
+      "'urgent', which should be spelled 'urgant' with an 'a'",
+      "'headquarters', which should be spelled 'head-quarters' with a hyphen"
+    ],
+    ans: 1,
+    exp: "'Received' follows the 'i before e except after c' rule — it should not be 'recieved'. 'Mesage' should be 'message' with a double 's'. Both are spelling errors." },
+
+  { q: "Which of the following is a correct feature of transportation vocabulary in English?",
+    opts: [
+      "Words like 'embark', 'disembark', 'itinerary', and 'transit' all relate to medical procedures",
+      "Words like 'itinerary', 'departure', 'transit', 'cargo', and 'manifest' are all associated with travel and transportation",
+      "Transportation vocabulary includes words like 'synthesis', 'catalyst', and 'reaction'",
+      "Terms such as 'plaintiff', 'defendant', 'verdict', and 'testimony' belong to transportation English"
+    ],
+    ans: 1,
+    exp: "'Itinerary' (travel plan), 'departure' (leaving), 'transit' (passing through), 'cargo' (goods transported), and 'manifest' (list of passengers/cargo) are all core transportation vocabulary." },
+
+  { q: "An adjectival clause (relative clause) is defined as a subordinate clause that:",
+    opts: [
+      "Functions as the subject or object of the main verb in a sentence",
+      "Modifies a noun or pronoun in the main clause, usually introduced by a relative pronoun such as who, which, or that",
+      "Modifies the main verb by indicating when, where, how, or why the action occurs",
+      "Stands alone as an independent clause that could form a complete sentence on its own"
+    ],
+    ans: 1,
+    exp: "An adjectival (relative) clause modifies a noun or pronoun and is typically introduced by relative pronouns (who, whom, which, that, whose). It answers the question 'which one?' or 'what kind?'." },
+
+  { q: "In the sentence 'Law and order must be maintained for society to function effectively', the phrase 'law and order' refers to:",
+    opts: [
+      "Scientific laws governing the physical properties of matter in natural environments",
+      "The enforcement of rules and regulations that maintain social stability and justice",
+      "The written statutes found in legal textbooks studied in law faculties",
+      "The hierarchical order of authority within a military organisation"
+    ],
+    ans: 1,
+    exp: "'Law and order' in social/vocabulary context refers to the enforcement of legal rules and social norms to maintain peace, security, and justice in a community." },
+
+  { q: "When reading for detail and inference, which of the following questions is an inferential question?",
+    opts: [
+      "'What time does the passage say the event took place?' which asks for a directly stated fact",
+      "'Why do you think the character behaved in that way, based on clues in the passage?' which requires interpretation beyond what is stated",
+      "'How many people attended the event described in the passage?' which is a comprehension question",
+      "'What is the title of the passage?' which asks for explicit surface-level information"
+    ],
+    ans: 1,
+    exp: "An inferential question asks the reader to go beyond what is explicitly stated and draw conclusions from implied meaning, tone, and context." },
+
+  // ── 10 with ans:2 (C is correct) ──
+
+  { q: "Which of the following sentences correctly uses 'do' as an auxiliary verb for emphasis?",
+    opts: [
+      "He does not finished his work before leaving the office today.",
+      "She did went to the market early in the morning yesterday.",
+      "I do believe that honesty is the most important virtue a person can have.",
+      "They does agree with the decision made by the panel of judges."
+    ],
+    ans: 2,
+    exp: "'Do' is correctly used as an emphatic auxiliary with the base form of the main verb. 'I do believe' emphasises the speaker's conviction. Other options contain errors in subject-auxiliary agreement or tense." },
+
+  { q: "In Stock Exchange vocabulary, which of the following correctly defines the term 'dividend'?",
+    opts: [
+      "The total amount of money borrowed by a company from a bank to fund operations",
+      "The current market price at which shares of a company are being bought and sold",
+      "A sum of money paid to shareholders from a company's profits as a return on their investment",
+      "The total number of shares issued by a company when it is first listed on the stock exchange"
+    ],
+    ans: 2,
+    exp: "A dividend is a portion of a company's profits distributed to shareholders as a return on their investment, usually paid quarterly or annually." },
+
+  { q: "Which sentence correctly demonstrates the use of stress patterns to change meaning in a sentence?",
+    opts: [
+      "MARY gave the book to John — stressing 'book' suggests something else was expected",
+      "Mary GAVE the book to John — stressing 'gave' suggests a question about ownership",
+      "Mary gave the book to JOHN — stressing 'John' implies it was John (not someone else) who received it",
+      "Mary gave THE book to John — stressing 'the' correctly identifies a specific unknown person"
+    ],
+    ans: 2,
+    exp: "Sentence stress changes emphasis: stressing 'JOHN' means it was specifically John (not Peter, or someone else) who received the book, showing how stress affects meaning." },
+
+  { q: "Which of the following best describes an expository essay?",
+    opts: [
+      "A personal account of an emotional experience told from the writer's first-person perspective",
+      "A persuasive piece that defends one side of a controversial argument throughout",
+      "A piece of writing that explains, informs, or describes a topic clearly and objectively using facts",
+      "A narrative composition that follows characters through a sequence of fictional events"
+    ],
+    ans: 2,
+    exp: "An expository essay explains or informs the reader about a topic in a clear, factual, and balanced way — it does not argue a position or tell a story." },
+
+  { q: "In informal letter writing, which of the following correctly identifies the format?",
+    opts: [
+      "The writer's address, formal salutation 'Dear Sir/Madam', body, 'Yours faithfully', and full signature",
+      "No address, greeting by first name only, body without paragraphs, and no complimentary close",
+      "Writer's address (top right), date below it, greeting by first name or nickname (e.g., 'Dear Kemi'), friendly body, and 'Yours sincerely' or 'Love from'",
+      "Headed paper with company logo, reference number, formal body, and 'Yours truly' as close"
+    ],
+    ans: 2,
+    exp: "An informal letter includes the writer's address (top right), date, a familiar greeting (Dear Kemi), friendly conversational body, and closes with 'Yours sincerely', 'Love', or similar." },
+
+  { q: "Which of the following is the correct intonation pattern for the question: 'Are you coming to the party?'",
+    opts: [
+      "Falling intonation throughout — the voice drops steadily from start to finish",
+      "Level intonation — the pitch stays flat throughout the entire question",
+      "Rising intonation at the end — the voice rises on the final word 'party'",
+      "Falling-rising intonation — the voice falls first then rises on 'party'"
+    ],
+    ans: 2,
+    exp: "Yes/no questions in English typically use rising intonation at the end, signalling that the speaker expects a yes or no response. The pitch rises on the final stressed syllable." },
+
+  { q: "Which of the following is a correct example of a complex sentence containing an adverbial clause of time?",
+    opts: [
+      "The girl who lives next door plays the piano beautifully every evening.",
+      "He studies every day, and he also revises at weekends.",
+      "When the examination results were announced, the students celebrated joyfully.",
+      "The results were announced, but the students had already heard unofficially."
+    ],
+    ans: 2,
+    exp: "'When the examination results were announced' is an adverbial clause of time. It modifies the main clause 'the students celebrated' by telling when the action occurred." },
+
+  { q: "The term 'tense' in grammar refers to:",
+    opts: [
+      "The mood of the verb, indicating whether the action is certain, possible, or hypothetical",
+      "The voice of the verb, indicating whether the subject acts or is acted upon",
+      "The form of the verb that indicates the time (past, present, future) at which an action takes place",
+      "The aspect of the verb, indicating whether an action is ongoing, completed, or habitual"
+    ],
+    ans: 2,
+    exp: "Tense is a grammatical category that expresses time — specifically when an action, event, or state occurs: in the past, present, or future." },
+
+  { q: "Which of the following is NOT a characteristic of a well-written summary?",
+    opts: [
+      "It is shorter than the original passage",
+      "It focuses on the main ideas and omits minor details",
+      "It includes direct quotations from the original text to preserve the author's exact words",
+      "It is written in the writer's own words using appropriate language"
+    ],
+    ans: 2,
+    exp: "A summary should NOT include direct quotations. It must be rewritten entirely in the student's own words, capturing the essence of the passage without copying the original phrasing." },
+
+  { q: "Which of the following sentences contains a correctly formed passive construction in the past tense?",
+    opts: [
+      "The new road was been built by the contractors last year.",
+      "The new road has built by contractors last year.",
+      "The new road was built by the contractors last year.",
+      "The new road were built by the contractors during last year."
+    ],
+    ans: 2,
+    exp: "Simple past passive = was/were + past participle. 'The new road was built by the contractors' is the correct form. 'Was been' (A) and 'has built' (B) are grammatically wrong." },
+
+  // ── 10 with ans:3 (D is correct) ──
+
+  { q: "Which sentence correctly uses a consonant cluster in the final position of a word?",
+    opts: [
+      "The strong man lifted the weight with both hands.",
+      "She screamed loudly when the spider appeared suddenly.",
+      "The spring flowers bloomed across the entire field.",
+      "The students asked the teacher to help them understand the text."
+    ],
+    ans: 3,
+    exp: "'Text' ends with the consonant cluster /kst/ — three consonants together at the end of the word, making option D the clearest example of a word-final consonant cluster." },
+
+  { q: "Which of the following is the most appropriate concluding sentence for an argumentative essay on the topic 'Social media does more harm than good'?",
+    opts: [
+      "Social media was invented in the United States of America.",
+      "I personally use social media every day to communicate with my friends.",
+      "In conclusion, therefore, social media is very bad and people should not use it.",
+      "In conclusion, while social media offers undeniable benefits, its harmful effects on mental health, privacy, and social cohesion outweigh its advantages — stricter regulation is urgently needed."
+    ],
+    ans: 3,
+    exp: "A strong argumentative conclusion restates the thesis, briefly acknowledges the other side, and ends with a clear recommendation or call to action. Option D does all of this effectively." },
+
+  { q: "Which of the following is a correct example of a sentence with a fronted adverbial for emphasis?",
+    opts: [
+      "She finished her assignment quickly in the library.",
+      "The library was where she went to finish her assignment.",
+      "She had finished her assignment in the library before closing time.",
+      "In the library, she finished her assignment before the closing bell rang."
+    ],
+    ans: 3,
+    exp: "A fronted adverbial moves the adverbial phrase ('In the library') to the beginning of the sentence for emphasis. It is typically followed by a comma before the main clause." },
+
+  { q: "Which of the following correctly explains the difference between 'do's' and 'don'ts' of summary writing?",
+    opts: [
+      "'Do's' include copying directly from the text; 'don'ts' include writing in paragraphs",
+      "'Do's' include starting with 'I'; 'don'ts' include avoiding the author's name",
+      "'Do's' include adding your own examples; 'don'ts' include reading the full passage",
+      "'Do's' include writing in your own words and being concise; 'don'ts' include copying, giving opinions, or including irrelevant details"
+    ],
+    ans: 3,
+    exp: "Summary 'do's': write concisely in own words, include main points. Summary 'don'ts': don't copy, don't include personal opinions, don't add new information not in the passage." },
+
+  { q: "Which of the following sentences contains a correctly used adjectival clause modifying a proper noun?",
+    opts: [
+      "Lagos, is the largest city in Nigeria, which has a very large population.",
+      "Which is the largest city in Nigeria, Lagos has a very large population.",
+      "Lagos has a very large population, which is the largest city in Nigeria.",
+      "Lagos, which is the largest city in Nigeria, has a very large population."
+    ],
+    ans: 3,
+    exp: "'Which is the largest city in Nigeria' is a non-defining adjectival clause modifying 'Lagos'. It is correctly embedded within commas between the noun it modifies and the rest of the main clause." },
+
+  { q: "In oral English, the term 'intonation' refers to:",
+    opts: [
+      "The speed at which words are spoken in a sentence",
+      "The volume or loudness with which a speaker delivers a message",
+      "The stress placed on a specific syllable within an individual word",
+      "The rise and fall of the pitch of the voice over a stretch of spoken language"
+    ],
+    ans: 3,
+    exp: "Intonation is the melodic pattern of spoken language — the way the pitch of the voice rises and falls over sentences, conveying meaning, attitude, and grammatical structure." },
+
+  { q: "Which of the following sentences correctly demonstrates subject-verb agreement with a collective noun?",
+    opts: [
+      "The committee are disagreeing among themselves in a public meeting.",
+      "The committee were announced the decision before the press arrived.",
+      "The committee has been disagreeing since last year on this same issue.",
+      "The committee has reached a unanimous decision on the matter."
+    ],
+    ans: 3,
+    exp: "Collective nouns (committee, team, government) take singular verbs when acting as a unified body. 'The committee has reached' treats the committee as one unit making one decision." },
+
+  { q: "Which of the following is a correct feature of a well-written informal letter body?",
+    opts: [
+      "Using highly formal language, legal terminology, and impersonal third-person references throughout",
+      "Including numbered paragraphs, bullet points, and subheadings for easy reference",
+      "Avoiding all contractions and colloquial expressions to maintain professional standards",
+      "Using a warm, personal tone, contractions, and conversational language appropriate to the relationship"
+    ],
+    ans: 3,
+    exp: "The body of an informal letter should use warm, personal language that reflects the relationship between writer and recipient — contractions, conversational phrases, and familiar references are appropriate." },
+
+  { q: "In reading comprehension, reading for detail means:",
+    opts: [
+      "Quickly running your eyes across the text to get an overall impression of its content",
+      "Searching the text rapidly for a specific name, date, or fact without reading fully",
+      "Reading the first and last sentences of each paragraph to identify the main point",
+      "Reading the passage carefully and thoroughly to understand specific facts, examples, and explanations"
+    ],
+    ans: 3,
+    exp: "Reading for detail (intensive reading) involves careful, thorough reading of the entire text to locate and understand specific information, facts, and the nuances of what the writer has said." },
+
+  { q: "Which of the following sentences contains a noun clause functioning as the object of the verb?",
+    opts: [
+      "What happened at the event was shocking to all the witnesses present.",
+      "The boy who told the story was praised by everyone in the room.",
+      "When the match ended, the crowd left the stadium very quietly.",
+      "The principal announced that the examination results would be released on Friday."
+    ],
+    ans: 3,
+    exp: "'That the examination results would be released on Friday' is a noun clause functioning as the direct object of the verb 'announced'. The subject is 'the principal'." }
+
 ],
 'Mathematics': [
-  {
-    q: "Which of the following equations is quadratic?",
+
+  // ── 10 with ans:0 (A is correct) ──
+
+  { q: "The total surface area of a closed cylinder with radius r and height h is given by:",
     opts: [
-      "$3x^3 - 2x + 1 = 0$",
-      "$\\frac{2}{x} + 5 = 0$",
-      "$4x^2 - 3x + 7 = 0$",
-      "$7x - 9 = 0$"
+      "2πr(r + h), which accounts for both circular ends and the curved lateral surface",
+      "2πrh + r², which accounts for the lateral surface and only one circular end",
+      "πr(r + 2h), which is obtained by dividing the full formula by a factor of 2",
+      "πr² + 2πrh + πr, which incorrectly adds an extra linear term to the formula"
+    ],
+    ans: 0,
+    exp: "Total surface area of a closed cylinder = 2πr² (two circular ends) + 2πrh (curved surface) = 2πr(r + h)." },
+
+  { q: "The slant height of a cone is 13 cm and the base radius is 5 cm. The curved (lateral) surface area of the cone is:",
+    opts: [
+      "πrl = π × 5 × 13 = 65π cm²",
+      "πr(r + l) = π × 5 × (5 + 13) = 90π cm²",
+      "π × r² = 25π cm²",
+      "2πrl = 2 × π × 5 × 13 = 130π cm²"
+    ],
+    ans: 0,
+    exp: "Curved surface area of a cone = πrl, where r is the base radius and l is the slant height. = π × 5 × 13 = 65π cm²." },
+
+  { q: "Which of the following correctly states the exterior angle theorem for triangles?",
+    opts: [
+      "The exterior angle of a triangle equals the sum of the two non-adjacent interior opposite angles",
+      "The exterior angle of a triangle equals the difference between the two interior angles adjacent to it",
+      "The exterior angle of a triangle is always equal to 180° minus the adjacent interior angle",
+      "The exterior angle of a triangle equals one-half the sum of all three interior angles"
+    ],
+    ans: 0,
+    exp: "The exterior angle theorem states that an exterior angle of a triangle equals the sum of the two non-adjacent (remote) interior angles." },
+
+  { q: "The mean of a grouped frequency distribution is calculated using the formula:",
+    opts: [
+      "x̄ = Σ(f × x) ÷ Σf, where f is frequency and x is the class midpoint",
+      "x̄ = Σf ÷ Σ(f × x), which inverts the standard formula incorrectly",
+      "x̄ = Σx ÷ n, which applies only to ungrouped data with no frequency weighting",
+      "x̄ = (highest class midpoint + lowest class midpoint) ÷ 2, which gives only the midrange"
+    ],
+    ans: 0,
+    exp: "For grouped data, each class midpoint (x) is multiplied by its frequency (f), the products are summed, then divided by the total frequency: x̄ = Σ(fx) ÷ Σf." },
+
+  { q: "A cuboid has dimensions 8 cm × 5 cm × 3 cm. Its total surface area is:",
+    opts: [
+      "2(8×5 + 5×3 + 8×3) = 2(40 + 15 + 24) = 2(79) = 158 cm²",
+      "2(8×5 × 5×3 × 8×3) = very large value, incorrect formula",
+      "8×5×3 = 120 cm², which gives the volume, not the surface area",
+      "2(8+5+3) = 32 cm², which only doubles the sum of dimensions"
+    ],
+    ans: 0,
+    exp: "Total surface area of a cuboid = 2(lb + bh + lh) = 2(8×5 + 5×3 + 8×3) = 2(40+15+24) = 2×79 = 158 cm²." },
+
+  { q: "The construction of a 30° angle using compass and ruler is achieved by:",
+    opts: [
+      "First constructing a 60° angle, then bisecting it to obtain two equal 30° angles",
+      "First constructing a 90° angle, then bisecting it to obtain a 45° angle and subtracting",
+      "Drawing a straight line and placing the compass at a point without any prior arc construction",
+      "Constructing a 120° angle and then trisecting it to produce three 40° portions"
+    ],
+    ans: 0,
+    exp: "A 30° angle is obtained by constructing a 60° equilateral-triangle arc, then bisecting it. Half of 60° = 30°." },
+
+  { q: "In a histogram, when class intervals are equal, the height of each bar represents:",
+    opts: [
+      "The frequency of that class interval directly",
+      "The cumulative frequency up to and including that class interval",
+      "The relative frequency expressed as a percentage of the total",
+      "The frequency density, which equals frequency divided by the square of the class width"
+    ],
+    ans: 0,
+    exp: "When class widths are equal in a histogram, the bar height directly represents the frequency of each class, since frequency density = frequency ÷ class width gives equal scaling." },
+
+  { q: "The volume of a cone with base radius 6 cm and height 9 cm is:",
+    opts: [
+      "⅓π × 6² × 9 = ⅓ × π × 36 × 9 = 108π cm³",
+      "π × 6² × 9 = 324π cm³, which is the volume of a cylinder with the same dimensions",
+      "⅓π × 6 × 9² = 162π cm³, which incorrectly squares the height",
+      "½π × 6² × 9 = 162π cm³, using one-half instead of one-third"
+    ],
+    ans: 0,
+    exp: "Volume of a cone = ⅓πr²h = ⅓ × π × 36 × 9 = 108π cm³ ≈ 339.3 cm³." },
+
+  { q: "Two triangles are congruent under the SAS condition if:",
+    opts: [
+      "Two sides and the included angle of one triangle are respectively equal to two sides and the included angle of the other",
+      "Two angles and any side of one triangle are equal to two angles and any side of the other",
+      "All three sides of one triangle are equal to all three sides of the other triangle",
+      "One side and any two angles of one triangle are equal to the corresponding parts of the other"
+    ],
+    ans: 0,
+    exp: "SAS (Side-Angle-Side) congruence requires two sides and the angle between them (included angle) to be equal in both triangles." },
+
+  { q: "The mean deviation of the data set 4, 7, 9, 12, 13 with mean 9 is:",
+    opts: [
+      "(|4−9| + |7−9| + |9−9| + |12−9| + |13−9|) ÷ 5 = (5+2+0+3+4)÷5 = 14÷5 = 2.8",
+      "(4+7+9+12+13) ÷ 5 = 45÷5 = 9, which is the mean, not the mean deviation",
+      "(13−4) ÷ 5 = 1.8, which is the range divided by n, not the mean deviation",
+      "√[(Σ(x−x̄)²) ÷ n] which is the standard deviation, not the mean deviation"
+    ],
+    ans: 0,
+    exp: "Mean deviation = Σ|x − x̄| ÷ n. Deviations from mean 9: |4-9|=5, |7-9|=2, |9-9|=0, |12-9|=3, |13-9|=4. Sum=14. MD = 14÷5 = 2.8." },
+
+  // ── 10 with ans:1 (B is correct) ──
+
+  { q: "A frustum is formed when a cone is cut by a plane parallel to the base. The volume of a frustum with top radius r, base radius R, and height h is:",
+    opts: [
+      "⅓πh(R + r)², which incorrectly adds the radii before squaring",
+      "⅓πh(R² + Rr + r²), which correctly sums the square terms and the cross-product term",
+      "⅓πh(R² + r²), which omits the cross-product term Rr from the formula",
+      "πh(R² + r²) ÷ 2, which uses one-half instead of one-third and omits the Rr term"
+    ],
+    ans: 1,
+    exp: "Volume of frustum = ⅓πh(R² + Rr + r²), where R = base radius, r = top radius, h = perpendicular height of the frustum." },
+
+  { q: "In a pie chart, the angle of a sector representing a frequency of 45 out of a total of 180 is:",
+    opts: [
+      "45°, obtained by dividing 45 by the total without multiplying by 360°",
+      "90°, obtained by (45/180) × 360° = 0.25 × 360° = 90°",
+      "45°, obtained by subtracting the frequency from 90°",
+      "180°, because 45 is one-quarter of 180 and one-quarter of a circle is 180°"
+    ],
+    ans: 1,
+    exp: "Sector angle = (frequency ÷ total) × 360° = (45 ÷ 180) × 360° = 0.25 × 360° = 90°." },
+
+  { q: "Which of the following correctly defines the intercept theorem (basic proportionality theorem)?",
+    opts: [
+      "If two sides of a triangle are equal, the line joining their midpoints is parallel to the third side only",
+      "If a line is drawn parallel to one side of a triangle, it divides the other two sides proportionally",
+      "If a transversal cuts two parallel lines, the alternate angles formed are supplementary",
+      "If two triangles have equal areas, their corresponding sides must also be equal in length"
+    ],
+    ans: 1,
+    exp: "The intercept (basic proportionality) theorem states that a line parallel to one side of a triangle divides the other two sides in the same ratio." },
+
+  { q: "The variance of the data set 2, 4, 6, 8, 10 (mean = 6) is:",
+    opts: [
+      "4, which is only the square root of the variance (the standard deviation)",
+      "8, calculated as Σ(x−x̄)² ÷ n = (16+4+0+4+16)÷5 = 40÷5 = 8",
+      "40, which is the sum of squared deviations before dividing by n",
+      "2.83, which is the standard deviation, not the variance"
+    ],
+    ans: 1,
+    exp: "Variance = Σ(x−x̄)² ÷ n. Deviations: (2−6)²=16, (4−6)²=4, (6−6)²=0, (8−6)²=4, (10−6)²=16. Sum = 40. Variance = 40÷5 = 8." },
+
+  { q: "When constructing a 135° angle using compass and ruler only, the method is to:",
+    opts: [
+      "Construct a 60° angle, then add a 75° angle using protractor to reach 135°",
+      "Construct a 90° angle, then bisect the remaining 90° (supplementary side) to add 45°, giving 90° + 45° = 135°",
+      "Construct a 120° angle and then add 15° using a compass construction",
+      "Draw a straight line (180°) and subtract 45° by bisecting a right angle on the other side"
+    ],
+    ans: 1,
+    exp: "135° = 90° + 45°. Construct a 90° angle, then on the adjacent 90° side bisect it to get 45°, and add: 90° + 45° = 135°. Alternatively, construct 180° − 45° = 135°." },
+
+  { q: "A cumulative frequency curve (ogive) is used primarily to:",
+    opts: [
+      "Show the frequency of each class interval as vertical bars of proportional height",
+      "Estimate the median, quartiles, and percentiles of a grouped frequency distribution",
+      "Compare two different data sets by plotting both on the same bar chart",
+      "Calculate the exact mean of grouped data using the midpoint of each class"
+    ],
+    ans: 1,
+    exp: "An ogive (cumulative frequency curve) allows estimation of the median (at 50% cumulative frequency), quartiles, and other percentile measures from grouped data." },
+
+  { q: "The properties of a parallelogram include all of the following EXCEPT:",
+    opts: [
+      "Opposite sides are equal and parallel to each other",
+      "All four interior angles are equal, each measuring exactly 90°",
+      "The diagonals bisect each other but are not necessarily equal in length",
+      "Opposite angles are equal and consecutive angles are supplementary"
+    ],
+    ans: 1,
+    exp: "Not all angles in a parallelogram are 90°. Only a rectangle (a special parallelogram) has all angles equal to 90°. In a general parallelogram, opposite angles are equal but not necessarily 90°." },
+
+  { q: "The standard deviation of grouped data is defined as:",
+    opts: [
+      "The square of the variance, obtained by multiplying the variance by itself",
+      "The positive square root of the variance, giving a measure of spread in the original units",
+      "The sum of all squared deviations from the mean without dividing by the frequency",
+      "The mean of all the class midpoints weighted by their respective frequencies"
+    ],
+    ans: 1,
+    exp: "Standard deviation = √variance = √[Σf(x−x̄)² ÷ Σf]. It is the positive square root of the variance and is expressed in the same units as the original data." },
+
+  { q: "A rectangular-based pyramid has a base 10 cm × 8 cm and a vertical height of 12 cm. Its volume is:",
+    opts: [
+      "10 × 8 × 12 = 960 cm³, which is the volume of a rectangular prism",
+      "⅓ × (10 × 8) × 12 = ⅓ × 80 × 12 = 320 cm³",
+      "½ × (10 × 8) × 12 = 480 cm³, using one-half instead of one-third",
+      "¼ × (10 × 8) × 12 = 240 cm³, using one-quarter instead of one-third"
+    ],
+    ans: 1,
+    exp: "Volume of a pyramid = ⅓ × base area × height = ⅓ × (10×8) × 12 = ⅓ × 80 × 12 = 320 cm³." },
+
+  { q: "For the grouped data below, the modal class is the class interval with:",
+    opts: [
+      "The smallest frequency, as this represents the most unusual or rare data value",
+      "The highest frequency, as it contains more data values than any other class",
+      "The midpoint closest to the calculated arithmetic mean of the distribution",
+      "The class boundary that coincides with the median of the entire data set"
+    ],
+    ans: 1,
+    exp: "The modal class in a grouped frequency distribution is the class interval that has the highest frequency — it contains the most data values." },
+
+  // ── 10 with ans:2 (C is correct) ──
+
+  { q: "The total surface area of a cone with base radius 7 cm and slant height 10 cm is:",
+    opts: [
+      "πrl = 70π cm², which gives only the curved surface area without the base",
+      "πr² = 49π cm², which gives only the area of the circular base",
+      "πr(l + r) = π × 7 × (10 + 7) = 119π cm²",
+      "2πrl = 140π cm², which doubles the curved surface area incorrectly"
     ],
     ans: 2,
-    exp: "A quadratic equation has exactly degree 2 — the highest power of the variable is 2. Option C, $4x^2 - 3x + 7 = 0$, fits this definition. Option A is cubic (degree 3), Option B is rational (not polynomial), and Option D is linear (degree 1)."
-  },
-  {
-    q: "Factorise and solve: $x^2 - 7x + 10 = 0$.",
+    exp: "Total surface area of a cone = curved surface area + base = πrl + πr² = πr(l + r) = π × 7 × (10 + 7) = 119π cm² ≈ 373.9 cm²." },
+
+  { q: "In deductive geometry, which of the following correctly proves that the sum of angles in a triangle is 180°?",
     opts: [
-      "$x = 2$ or $x = 5$",
-      "$x = -2$ or $x = -5$",
-      "$x = 1$ or $x = 10$",
-      "$x = -1$ or $x = 10$"
-    ],
-    ans: 0,
-    exp: "We look for two numbers that multiply to $+10$ and add to $-7$. Those numbers are $-2$ and $-5$. So $(x - 2)(x - 5) = 0$, giving $x = 2$ or $x = 5$. Verify: $2^2 - 7(2) + 10 = 4 - 14 + 10 = 0$ ✓"
-  },
-  {
-    q: "Using the quadratic formula, solve $x^2 - 4x - 5 = 0$.",
-    opts: [
-      "$x = 5$ or $x = -1$",
-      "$x = -5$ or $x = 1$",
-      "$x = 4$ or $x = -1$",
-      "$x = 2$ or $x = -3$"
-    ],
-    ans: 0,
-    exp: "Using $x = \\frac{-b \\pm \\sqrt{b^2 - 4ac}}{2a}$ with $a=1, b=-4, c=-5$: discriminant $= 16 + 20 = 36$. So $x = \\frac{4 \\pm 6}{2}$, giving $x = 5$ or $x = -1$. You can also factorise: $(x-5)(x+1) = 0$."
-  },
-  {
-    q: "A ball is thrown upward. Its height $h$ metres after $t$ seconds is $h = 20t - 5t^2$. At what time does the ball hit the ground (other than $t = 0$)?",
-    opts: [
-      "$t = 5$ seconds",
-      "$t = 2$ seconds",
-      "$t = 4$ seconds",
-      "$t = 10$ seconds"
+      "By measuring all three angles with a protractor and adding them together experimentally",
+      "By using the fact that a straight line is 360° and distributing equally across three angles",
+      "By drawing a line through one vertex parallel to the opposite side and using alternate and co-interior angles on parallel lines",
+      "By applying the exterior angle theorem and assuming the triangle is equilateral"
     ],
     ans: 2,
-    exp: "The ball hits the ground when $h = 0$: $20t - 5t^2 = 0 \\Rightarrow 5t(4 - t) = 0$. So $t = 0$ (launch) or $t = 4$ seconds (landing). Always factor out $t$ first in these motion problems."
-  },
-  {
-    q: "Complete the square: express $x^2 + 10x + 3$ in the form $(x + p)^2 + q$.",
+    exp: "The formal proof draws a line through one vertex parallel to the opposite side. The three angles at that vertex (alternate, the vertex angle, and alternate) form a straight line of 180°." },
+
+  { q: "The median class of a grouped frequency distribution with total frequency 60 is the class that contains the:",
     opts: [
-      "$(x + 5)^2 - 22$",
-      "$(x + 5)^2 + 22$",
-      "$(x + 10)^2 - 97$",
-      "$(x + 3)^2 - 6$"
-    ],
-    ans: 0,
-    exp: "Half of the coefficient of $x$ is $\\frac{10}{2} = 5$. So $(x+5)^2 = x^2 + 10x + 25$. To keep the expression equal, subtract $25$ and add $3$: $(x+5)^2 - 25 + 3 = (x+5)^2 - 22$."
-  },
-  {
-    q: "The roots of a quadratic equation are $x = \\frac{3}{2}$ and $x = -4$. Which equation has these roots?",
-    opts: [
-      "$2x^2 + 5x - 12 = 0$",
-      "$2x^2 - 5x - 12 = 0$",
-      "$2x^2 + 5x + 12 = 0$",
-      "$x^2 + \\frac{5}{2}x - 6 = 0$"
-    ],
-    ans: 1,
-    exp: "Sum of roots $= \\frac{3}{2} + (-4) = -\\frac{5}{2}$. Product of roots $= \\frac{3}{2} \\times (-4) = -6$. Equation: $x^2 + \\frac{5}{2}x - 6 = 0$. Multiply through by 2: $2x^2 + 5x - 12 = 0$. Wait — check: sum $= -\\frac{5}{2}$ so coefficient of $x$ is $+5$... but we need $-(-\\frac{5}{2}) \\cdot 2 = +5$. The correct sign arrangement gives $2x^2 + 5x - 12 = 0$. Verify: $(2x - 3)(x + 4) = 2x^2 + 8x - 3x - 12 = 2x^2 + 5x - 12$ ✓"
-  },
-  {
-    q: "What is the discriminant of $3x^2 - 5x + 4 = 0$, and what type of roots does it have?",
-    opts: [
-      "$\\Delta = 73$; two distinct real roots",
-      "$\\Delta = -23$; no real roots",
-      "$\\Delta = 25$; two equal real roots",
-      "$\\Delta = -23$; two equal imaginary roots"
-    ],
-    ans: 1,
-    exp: "$\\Delta = b^2 - 4ac = (-5)^2 - 4(3)(4) = 25 - 48 = -23$. Since $\\Delta < 0$, the equation has no real roots — the roots are complex/imaginary. This is an important test: $\\Delta > 0$ → two distinct real roots; $\\Delta = 0$ → equal roots; $\\Delta < 0$ → no real roots."
-  },
-  {
-    q: "A rectangular garden has a length 5 m more than its width. If its area is $84 \\text{ m}^2$, what are the dimensions?",
-    opts: [
-      "Width $= 7$ m, Length $= 12$ m",
-      "Width $= 6$ m, Length $= 14$ m",
-      "Width $= 9$ m, Length $= 14$ m",
-      "Width $= 7$ m, Length $= 12$ m"
-    ],
-    ans: 0,
-    exp: "Let width $= x$. Length $= x + 5$. Area: $x(x+5) = 84 \\Rightarrow x^2 + 5x - 84 = 0$. Factorise: $(x + 12)(x - 7) = 0$. Since width must be positive, $x = 7$ m and length $= 12$ m. Always discard negative solutions in physical problems."
-  },
-  {
-    q: "If $U = \\{1, 2, 3, 4, 5, 6, 7, 8, 9, 10\\}$, $A = \\{2, 4, 6, 8, 10\\}$, and $B = \\{1, 2, 3, 4, 5\\}$, find $(A \\cup B)'$.",
-    opts: [
-      "$\\{6, 7, 8, 9, 10\\}$",
-      "$\\{7, 9\\}$",
-      "$\\{6, 8, 10\\}$",
-      "$\\{1, 3, 5\\}$"
-    ],
-    ans: 1,
-    exp: "First find $A \\cup B = \\{1, 2, 3, 4, 5, 6, 8, 10\\}$. Then $(A \\cup B)'$ is everything in $U$ NOT in $A \\cup B$. Checking $U$: $7$ and $9$ are missing. So $(A \\cup B)' = \\{7, 9\\}$."
-  },
-  {
-    q: "In a school of 120 students, 75 study Physics, 60 study Chemistry, and 30 study both. How many study neither?",
-    opts: [
-      "25 students",
-      "15 students",
-      "20 students",
-      "35 students"
-    ],
-    ans: 1,
-    exp: "Using the union formula: $n(P \\cup C) = n(P) + n(C) - n(P \\cap C) = 75 + 60 - 30 = 105$. Students studying neither $= 120 - 105 = 15$. Always subtract the overlap to avoid double-counting."
-  },
-  {
-    q: "Sets $A$ and $B$ are such that $A = \\{x : x \\text{ is a factor of } 12\\}$ and $B = \\{x : x \\text{ is a factor of } 18\\}$. Find $A \\cap B$.",
-    opts: [
-      "$\\{1, 2, 3, 6\\}$",
-      "$\\{1, 2, 3, 4, 6, 9, 12, 18\\}$",
-      "$\\{4, 12\\}$",
-      "$\\{6, 9, 18\\}$"
-    ],
-    ans: 0,
-    exp: "Factors of 12: $\\{1, 2, 3, 4, 6, 12\\}$. Factors of 18: $\\{1, 2, 3, 6, 9, 18\\}$. $A \\cap B$ contains elements in BOTH sets: $\\{1, 2, 3, 6\\}$. These are the common factors of 12 and 18 — notice they are the divisors of $\\text{HCF}(12,18) = 6$."
-  },
-  {
-    q: "If $n(A) = 18$, $n(B) = 12$, $n(A \\cup B) = 25$, find $n(A \\cap B)$.",
-    opts: [
-      "3",
-      "5",
-      "7",
-      "9"
-    ],
-    ans: 1,
-    exp: "From the formula $n(A \\cup B) = n(A) + n(B) - n(A \\cap B)$: $25 = 18 + 12 - n(A \\cap B)$, so $n(A \\cap B) = 30 - 25 = 5$. This formula is fundamental — memorise it."
-  },
-  {
-    q: "A survey of 200 people found that 120 drink tea, 90 drink coffee, and 40 drink both. How many drink tea only?",
-    opts: [
-      "80",
-      "50",
-      "90",
-      "120"
-    ],
-    ans: 0,
-    exp: "Tea only means people who drink tea but NOT coffee. Tea only $= n(T) - n(T \\cap C) = 120 - 40 = 80$. It is a common error to use the total of tea drinkers — always subtract the overlap."
-  },
-  {
-    q: "Which of the following is true about the power set of $A = \\{a, b\\}$?",
-    opts: [
-      "It has 2 elements",
-      "It has 3 elements",
-      "It has 4 elements",
-      "It has 5 elements"
+      "60th value, the last data point in the entire distribution",
+      "15th value, found by dividing the total frequency by 4 to find the lower quartile",
+      "30th value (or between 30th and 31st), found by dividing the total frequency by 2",
+      "20th value, found by dividing the total frequency by 3"
     ],
     ans: 2,
-    exp: "The power set of a set with $n$ elements has $2^n$ elements. Here $n = 2$, so $2^2 = 4$. The power set of $\\{a, b\\}$ is $\\{\\emptyset, \\{a\\}, \\{b\\}, \\{a, b\\}\\}$ — four subsets including the empty set and the set itself."
-  },
-  {
-    q: "Three sets $A$, $B$, $C$ overlap such that only $A \\cap B \\cap C$ has 5 elements, $A \\cap B$ only (excluding $C$) has 3, $A \\cap C$ only has 4, $B \\cap C$ only has 2, $A$ only has 7, $B$ only has 6, $C$ only has 8. How many elements are in $A \\cup B \\cup C$?",
+    exp: "The median is the middle value. For n = 60, the median lies at the (n/2)th = 30th position. The class containing the 30th (and 31st) value is the median class." },
+
+  { q: "When two lines are parallel, a transversal cutting them creates co-interior (same-side interior) angles. These angles are:",
     opts: [
-      "35",
-      "40",
-      "45",
-      "30"
-    ],
-    ans: 0,
-    exp: "Add all the distinct regions: Only A=7, Only B=6, Only C=8, A∩B only=3, A∩C only=4, B∩C only=2, A∩B∩C=5. Total $= 7+6+8+3+4+2+5 = 35$. In Venn diagram problems, always add region-by-region without double-counting."
-  },
-  {
-    q: "A circle has radius $10$ cm. What is the area of the sector subtending an angle of $144°$ at the centre? (Take $\\pi = 3.14$)",
-    opts: [
-      "$125.6 \\text{ cm}^2$",
-      "$251.2 \\text{ cm}^2$",
-      "$314 \\text{ cm}^2$",
-      "$62.8 \\text{ cm}^2$"
-    ],
-    ans: 0,
-    exp: "Area of sector $= \\frac{\\theta}{360} \\times \\pi r^2 = \\frac{144}{360} \\times 3.14 \\times 100 = 0.4 \\times 314 = 125.6 \\text{ cm}^2$. The fraction $\\frac{\\theta}{360}$ represents the portion of the full circle — always simplify it first."
-  },
-  {
-    q: "An arc subtends an angle of $120°$ at the centre of a circle of radius $21$ cm. Find the length of the arc. (Take $\\pi = \\frac{22}{7}$)",
-    opts: [
-      "$66$ cm",
-      "$44$ cm",
-      "$22$ cm",
-      "$33$ cm"
-    ],
-    ans: 1,
-    exp: "Arc length $= \\frac{\\theta}{360} \\times 2\\pi r = \\frac{120}{360} \\times 2 \\times \\frac{22}{7} \\times 21 = \\frac{1}{3} \\times 132 = 44$ cm."
-  },
-  {
-    q: "A sector has area $77 \\text{ cm}^2$ and radius $14$ cm. What angle does it subtend at the centre? (Take $\\pi = \\frac{22}{7}$)",
-    opts: [
-      "$30°$",
-      "$45°$",
-      "$60°$",
-      "$90°$"
-    ],
-    ans: 1,
-    exp: "$77 = \\frac{\\theta}{360} \\times \\frac{22}{7} \\times 196 = \\frac{\\theta}{360} \\times 616$. So $\\frac{\\theta}{360} = \\frac{77}{616} = \\frac{1}{8}$... wait: $\\frac{1}{8} \\times 360 = 45°$. Let's recheck: $\\frac{22}{7} \\times 196 = \\frac{22 \\times 196}{7} = 22 \\times 28 = 616$. $\\frac{77}{616} = \\frac{1}{8}$. $\\theta = \\frac{360}{8} = 45°$. The answer is $45°$."
-  },
-  {
-    q: "The perimeter of a sector of radius $9$ cm and angle $80°$ is approximately how many cm? (Take $\\pi = 3.14$)",
-    opts: [
-      "$30.56$ cm",
-      "$24.56$ cm",
-      "$12.56$ cm",
-      "$43.56$ cm"
-    ],
-    ans: 0,
-    exp: "Perimeter of sector $=$ arc length $+ 2r$. Arc $= \\frac{80}{360} \\times 2 \\times 3.14 \\times 9 = \\frac{2}{9} \\times 56.52 = 12.56$ cm. Perimeter $= 12.56 + 9 + 9 = 30.56$ cm. Don't forget to add both radii — they form the straight sides of the sector."
-  },
-  {
-    q: "A chord $AB$ divides a circle of radius $13$ cm such that the perpendicular distance from the centre to the chord is $5$ cm. Find the length of the chord.",
-    opts: [
-      "$10$ cm",
-      "$24$ cm",
-      "$12$ cm",
-      "$26$ cm"
-    ],
-    ans: 1,
-    exp: "The perpendicular from the centre bisects the chord. Using Pythagoras: half-chord $= \\sqrt{13^2 - 5^2} = \\sqrt{169 - 25} = \\sqrt{144} = 12$ cm. Full chord $= 2 \\times 12 = 24$ cm."
-  },
-  {
-    q: "From a point $P$, a vertical tower $QR$ stands on horizontal ground. If $PQ = 40$ m and the angle of elevation of $R$ from $P$ is $30°$, find the height $QR$. (Take $\\tan 30° = \\frac{1}{\\sqrt{3}} \\approx 0.577$)",
-    opts: [
-      "$23.1$ m",
-      "$69.3$ m",
-      "$34.6$ m",
-      "$40.0$ m"
-    ],
-    ans: 0,
-    exp: "$\\tan 30° = \\frac{QR}{PQ} \\Rightarrow QR = 40 \\times \\tan 30° = 40 \\times 0.577 \\approx 23.1$ m. The angle of elevation is measured from the horizontal up to the object — it always involves $\\tan$ when both horizontal distance and height are involved."
-  },
-  {
-    q: "A ship sails $8$ km due East, then $6$ km due North. Find the bearing of the ship's final position from its starting point.",
-    opts: [
-      "$036.87°$",
-      "$053.13°$",
-      "$323.13°$",
-      "$143.13°$"
-    ],
-    ans: 1,
-    exp: "The displacement forms a right triangle: $\\tan \\theta = \\frac{8}{6} = 1.333$, so $\\theta = \\arctan(1.333) \\approx 53.13°$ East of North. Bearing $= N\\,53.13°E = 053.13°$ (measured clockwise from North). The straight-line distance is $\\sqrt{8^2 + 6^2} = 10$ km."
-  },
-  {
-    q: "In triangle $ABC$, angle $B = 90°$, $BC = 5$ cm and $AC = 13$ cm. Find $\\sin A$ and $\\cos A$.",
-    opts: [
-      "$\\sin A = \\frac{12}{13}$, $\\cos A = \\frac{5}{13}$",
-      "$\\sin A = \\frac{5}{13}$, $\\cos A = \\frac{12}{13}$",
-      "$\\sin A = \\frac{5}{12}$, $\\cos A = \\frac{12}{13}$",
-      "$\\sin A = \\frac{13}{12}$, $\\cos A = \\frac{5}{12}$"
-    ],
-    ans: 1,
-    exp: "First find $AB$: $AB = \\sqrt{AC^2 - BC^2} = \\sqrt{169 - 25} = \\sqrt{144} = 12$ cm. For angle $A$: opposite side $= BC = 5$, adjacent $= AB = 12$, hypotenuse $= AC = 13$. So $\\sin A = \\frac{5}{13}$ and $\\cos A = \\frac{12}{13}$."
-  },
-  {
-    q: "Evaluate $\\frac{\\sin 60° \\times \\cos 30°}{\\tan 45°}$ exactly.",
-    opts: [
-      "$\\frac{3}{4}$",
-      "$\\frac{\\sqrt{3}}{4}$",
-      "$\\frac{3}{2}$",
-      "$\\frac{\\sqrt{3}}{2}$"
-    ],
-    ans: 0,
-    exp: "$\\sin 60° = \\frac{\\sqrt{3}}{2}$, $\\cos 30° = \\frac{\\sqrt{3}}{2}$, $\\tan 45° = 1$. So $\\frac{\\frac{\\sqrt{3}}{2} \\times \\frac{\\sqrt{3}}{2}}{1} = \\frac{\\frac{3}{4}}{1} = \\frac{3}{4}$. Memorise the exact trig values for $30°, 45°, 60°$ — they appear often in exams."
-  },
-  {
-    q: "A ladder $5$ m long leans against a vertical wall. If the foot of the ladder makes an angle of $60°$ with the ground, how high up the wall does it reach?",
-    opts: [
-      "$2.5$ m",
-      "$5\\sqrt{3}$ m",
-      "$\\frac{5\\sqrt{3}}{2}$ m",
-      "$\\frac{5}{2}$ m"
+      "Equal in measure, just like alternate interior angles on parallel lines",
+      "Each equal to 90°, because co-interior angles on parallel lines are always right angles",
+      "Supplementary — they add up to 180°",
+      "Complementary — they add up to 90°"
     ],
     ans: 2,
-    exp: "The ladder is the hypotenuse. Height $= 5 \\times \\sin 60° = 5 \\times \\frac{\\sqrt{3}}{2} = \\frac{5\\sqrt{3}}{2} \\approx 4.33$ m. Note: $\\sin 60°$ is used because height is opposite the $60°$ angle and the hypotenuse (ladder length) is known."
-  },
-  {
-    q: "Which of the following is the converse of the statement: 'If a triangle is equilateral, then all its sides are equal'?",
+    exp: "Co-interior angles (also called consecutive interior or allied angles) formed between parallel lines by a transversal are supplementary — they add up to 180°." },
+
+  { q: "The construction of a 15° angle using compass and ruler is achieved by:",
     opts: [
-      "If all sides of a triangle are not equal, then it is not equilateral.",
-      "If all sides of a triangle are equal, then it is equilateral.",
-      "A triangle is equilateral if and only if all its sides are equal.",
-      "If a triangle is not equilateral, then its sides are not all equal."
-    ],
-    ans: 1,
-    exp: "The converse of 'If P, then Q' is 'If Q, then P'. Here P = 'triangle is equilateral' and Q = 'all sides are equal'. Converse: 'If all sides are equal, then the triangle is equilateral.' Note: a converse may or may not be true — in this case it happens to be true."
-  },
-  {
-    q: "What is the contrapositive of: 'If $x$ is divisible by 6, then $x$ is divisible by 2'?",
-    opts: [
-      "If $x$ is divisible by 2, then $x$ is divisible by 6.",
-      "If $x$ is not divisible by 6, then $x$ is not divisible by 2.",
-      "If $x$ is not divisible by 2, then $x$ is not divisible by 6.",
-      "$x$ is divisible by 6 if and only if it is divisible by 2."
+      "Constructing a 30° angle and then adding another 30° to produce 15° by subtraction",
+      "Constructing a 45° angle and subtracting 30° using a direct compass measurement",
+      "Constructing a 30° angle and bisecting it to produce two equal 15° angles",
+      "Constructing a 60° angle and dividing it into four equal parts of 15° each"
     ],
     ans: 2,
-    exp: "The contrapositive of 'If P, then Q' is 'If NOT Q, then NOT P'. Here: 'If $x$ is NOT divisible by 2, then $x$ is NOT divisible by 6.' The contrapositive is always logically equivalent to the original statement — this is what makes it powerful in proofs."
-  },
-  {
-    q: "The statement $P \\Rightarrow Q$ is FALSE only when:",
+    exp: "15° = 30° ÷ 2. First construct a 30° angle (by bisecting 60°), then bisect the 30° angle to obtain 15°." },
+
+  { q: "The volume of a sphere with radius 3 cm is closest to:",
     opts: [
-      "$P$ is true and $Q$ is true",
-      "$P$ is false and $Q$ is true",
-      "$P$ is true and $Q$ is false",
-      "$P$ is false and $Q$ is false"
+      "36π cm³, which is the surface area formula applied as a volume",
+      "12π cm³, using the wrong formula ⅓πr³ instead of the correct one",
+      "36π cm³ ≈ 113.1 cm³, using V = (4/3)πr³ = (4/3) × π × 27 = 36π cm³",
+      "27π cm³, obtained incorrectly by using πr³ without the (4/3) factor"
     ],
     ans: 2,
-    exp: "A conditional statement $P \\Rightarrow Q$ ('If P then Q') is false ONLY when the hypothesis P is true but the conclusion Q is false. In all other cases (P false, or both true) the implication holds. Think of it as a promise: the promise is broken only if you do what you said you would (P true) but don't deliver (Q false)."
-  },
-  {
-    q: "Which of the following is a tautology?",
+    exp: "Volume of sphere = (4/3)πr³ = (4/3) × π × 3³ = (4/3) × π × 27 = 36π cm³ ≈ 113.1 cm³." },
+
+  { q: "A bar chart differs from a histogram in that a bar chart:",
     opts: [
-      "$P \\wedge \\neg P$",
-      "$P \\vee \\neg P$",
-      "$P \\Rightarrow \\neg P$",
-      "$\\neg P \\wedge P$"
+      "Uses bars whose heights represent frequency densities, not raw frequencies",
+      "Has bars that must always be drawn horizontally, never vertically",
+      "Represents discrete or categorical data with gaps between bars, while a histogram represents continuous grouped data with no gaps",
+      "Can only represent data with equal class intervals, while a histogram handles unequal intervals"
     ],
-    ans: 1,
-    exp: "$P \\vee \\neg P$ reads 'P or not P'. This is ALWAYS true regardless of whether P is true or false — it is a tautology. Contrast with $P \\wedge \\neg P$ ('P and not P'), which is always false — a contradiction."
-  },
-  {
-    q: "In a logic truth table for $P \\wedge Q$, which combination of truth values makes it TRUE?",
+    ans: 2,
+    exp: "A bar chart represents categorical/discrete data with spaces between bars. A histogram represents continuous data with no spaces, and bar area (not just height) represents frequency." },
+
+  { q: "In the construction of an equilateral triangle with side 6 cm, after drawing a base AB of 6 cm, the next step is to:",
     opts: [
-      "$P = $ True, $Q = $ False",
-      "$P = $ False, $Q = $ True",
-      "$P = $ False, $Q = $ False",
-      "$P = $ True, $Q = $ True"
+      "Use a protractor to mark 60° at each end and draw the two equal sides freehand",
+      "Draw the perpendicular bisector of AB and mark a point anywhere on it as vertex C",
+      "Draw arcs of radius 6 cm centred at A and B respectively; where the arcs intersect is vertex C",
+      "Bisect the angle at A and extend the bisector to a length of 6 cm to locate vertex C"
+    ],
+    ans: 2,
+    exp: "An equilateral triangle has all sides equal. Draw arcs of radius equal to the base length (6 cm) from both endpoints A and B; their intersection point C is the third vertex." },
+
+  { q: "The standard deviation of grouped data is calculated using which formula?",
+    opts: [
+      "σ = Σf(x − x̄) ÷ Σf, which gives the mean deviation, not the standard deviation",
+      "σ = [Σf(x − x̄)² ÷ Σf]², which incorrectly squares the entire variance formula",
+      "σ = √[Σf(x − x̄)² ÷ Σf], the positive square root of the variance",
+      "σ = Σf|x − x̄| ÷ Σf, which is the formula for mean deviation with absolute values"
+    ],
+    ans: 2,
+    exp: "Standard deviation = √variance = √[Σf(x−x̄)² ÷ Σf]. It is the square root of the average of squared deviations from the mean, weighted by frequency." },
+
+  { q: "The total volume of a solid cylinder with radius 4 cm and height 10 cm is:",
+    opts: [
+      "2π(4)(4 + 10) = 112π cm³, which gives the surface area, not the volume",
+      "π × 4 × 10 = 40π cm³, omitting the square on the radius",
+      "π × 4² × 10 = 160π cm³ ≈ 502.7 cm³",
+      "2π × 4² × 10 = 320π cm³, incorrectly doubling the volume formula"
+    ],
+    ans: 2,
+    exp: "Volume of cylinder = πr²h = π × 16 × 10 = 160π cm³ ≈ 502.7 cm³." },
+
+  // ── 10 with ans:3 (D is correct) ──
+
+  { q: "In a grouped frequency distribution, the lower quartile Q₁ is found at the:",
+    opts: [
+      "25th percentile position, calculated as n ÷ 4, using the raw data without reference to class boundaries",
+      "Median class, because Q₁ always equals half the value of the median",
+      "Class interval immediately below the median class in the frequency table",
+      "n/4 position in the cumulative frequency, found by interpolation within the relevant class"
     ],
     ans: 3,
-    exp: "A conjunction $P \\wedge Q$ is TRUE only when BOTH $P$ and $Q$ are true. If either is false, the conjunction is false. This is how 'AND' works in everyday language: 'I will go to the market AND cook' — both must happen."
-  },
-  {
-    q: "Which of the following correctly describes a biconditional statement $P \\Leftrightarrow Q$?",
+    exp: "Q₁ (lower quartile) is at the n/4 cumulative frequency position. It is found by locating which class contains this position and interpolating within that class." },
+
+  { q: "Which of the following correctly states the condition for two triangles to be congruent under the RHS rule?",
     opts: [
-      "P is true whenever Q is false",
-      "$P \\Rightarrow Q$ only",
-      "P and Q have opposite truth values",
-      "P and Q always have the same truth value"
+      "The ratio of all three sides must be equal, which actually defines similar, not congruent, triangles",
+      "Two angles and one side of each triangle must be equal, which corresponds to AAS, not RHS",
+      "Both triangles must have the same perimeter and at least one equal angle",
+      "Both triangles must be right-angled, with equal hypotenuses and one other equal side"
     ],
     ans: 3,
-    exp: "A biconditional $P \\Leftrightarrow Q$ means 'P if and only if Q'. It is TRUE when both P and Q are true, or both are false. It is FALSE when one is true and the other is false. Think of it as 'P and Q have matching truth values.'"
-  },
-  {
-    q: "Solve by completing the square: $2x^2 - 8x + 3 = 0$. Express your answer in surd form.",
+    exp: "RHS (Right angle-Hypotenuse-Side) congruence applies to right-angled triangles: both must have a right angle, equal hypotenuses, and one other pair of equal sides." },
+
+  { q: "A cone and a cylinder have the same base radius and the same height. The ratio of the volume of the cone to the volume of the cylinder is:",
     opts: [
-      "$x = 2 \\pm \\frac{\\sqrt{10}}{2}$",
-      "$x = 4 \\pm \\sqrt{10}$",
-      "$x = 2 \\pm \\sqrt{\\frac{5}{2}}$",
-      "$x = 1 \\pm \\frac{\\sqrt{10}}{2}$"
+      "2:3, because the cone takes up two-thirds of the cylinder's space",
+      "2:1, because the cone formula uses a factor of 2 while the cylinder uses 1",
+      "1:1, because the cone and cylinder have the same base and height so equal volumes",
+      "1:3, because the volume of a cone is ⅓ that of a cylinder with equal dimensions"
     ],
-    ans: 0,
-    exp: "Divide by 2: $x^2 - 4x + \\frac{3}{2} = 0$. Complete the square: $(x-2)^2 - 4 + \\frac{3}{2} = 0 \\Rightarrow (x-2)^2 = \\frac{5}{2}$. So $x - 2 = \\pm\\sqrt{\\frac{5}{2}} = \\pm\\frac{\\sqrt{10}}{2}$. Thus $x = 2 \\pm \\frac{\\sqrt{10}}{2}$."
-  },
-  {
-    q: "The graph of a quadratic function $y = ax^2 + bx + c$ opens downward. What does this tell you about $a$?",
+    ans: 3,
+    exp: "Volume of cone = ⅓πr²h. Volume of cylinder = πr²h. Ratio = ⅓ : 1 = 1:3." },
+
+  { q: "Which of the following best describes the deductive proof that the exterior angle of a triangle equals the sum of the two non-adjacent interior angles?",
     opts: [
-      "$a = 0$",
-      "$a > 0$",
-      "$a < 0$",
-      "$a = 1$"
+      "It is proved by measuring all exterior angles of several different triangles empirically",
+      "It follows from the fact that all exterior angles of a polygon sum to 360°",
+      "It is proved by constructing a perpendicular from the exterior angle to the opposite side",
+      "It is proved using the fact that angles on a straight line sum to 180°, combined with the angle sum of a triangle being 180°"
     ],
-    ans: 2,
-    exp: "The coefficient $a$ controls the direction of the parabola. If $a > 0$, the parabola opens upward (U-shape, minimum point). If $a < 0$, it opens downward (∩-shape, maximum point). This is one of the first things to check when sketching a quadratic graph."
-  },
-  {
-    q: "If $\\sin \\theta = \\frac{3}{5}$ and $\\theta$ is acute, find $\\tan \\theta$.",
+    ans: 3,
+    exp: "If exterior angle = 180° − C and interior angle sum gives A + B + C = 180°, then C = 180° − A − B. So exterior angle = 180° − C = A + B (the two non-adjacent interior angles)." },
+
+  { q: "The interquartile range (IQR) of a data set is defined as:",
     opts: [
-      "$\\frac{3}{4}$",
-      "$\\frac{4}{5}$",
-      "$\\frac{5}{3}$",
-      "$\\frac{5}{4}$"
+      "The difference between the largest value and the smallest value in the entire data set",
+      "The average of the upper quartile and lower quartile of the distribution",
+      "The sum of all deviations from the mean divided by the total number of values",
+      "The difference between the upper quartile (Q₃) and the lower quartile (Q₁)"
     ],
-    ans: 0,
-    exp: "In a right triangle with opposite $= 3$ and hypotenuse $= 5$, the adjacent side $= \\sqrt{5^2 - 3^2} = \\sqrt{16} = 4$. So $\\tan \\theta = \\frac{\\text{opposite}}{\\text{adjacent}} = \\frac{3}{4}$. Always draw the triangle when given one trig ratio to find others."
-  },
-  {
-    q: "An observer on top of a cliff $60$ m high looks down at a boat at sea. The angle of depression is $30°$. How far is the boat from the base of the cliff? (Take $\\tan 30° \\approx 0.577$)",
+    ans: 3,
+    exp: "IQR = Q₃ − Q₁. It measures the spread of the middle 50% of the data, making it a robust measure of dispersion that is not affected by extreme values." },
+
+  { q: "Which of the following conditions is sufficient to prove that a quadrilateral is a parallelogram?",
     opts: [
-      "$34.6$ m",
-      "$103.9$ m",
-      "$60.0$ m",
-      "$52.0$ m"
+      "One pair of opposite sides is equal in length",
+      "The diagonals of the quadrilateral bisect each other at right angles",
+      "All four angles of the quadrilateral sum to 360°",
+      "Both pairs of opposite sides are parallel to each other"
     ],
-    ans: 1,
-    exp: "The angle of depression from the cliff equals the angle of elevation from the boat (alternate angles). $\\tan 30° = \\frac{60}{d} \\Rightarrow d = \\frac{60}{\\tan 30°} = \\frac{60}{0.577} \\approx 103.9$ m. Note: angle of depression is measured downward from the horizontal — it equals the alternate interior angle of elevation."
-  },
-  {
-    q: "Find the value of $x$ if the area of a triangle with base $(2x + 1)$ cm and height $(x + 3)$ cm is $30$ cm².",
+    ans: 3,
+    exp: "A quadrilateral is defined as a parallelogram if and only if both pairs of opposite sides are parallel. Having diagonals bisect each other at right angles would define a rhombus." },
+
+  { q: "The total surface area of a cube with side length 5 cm is:",
     opts: [
-      "$x = 3$",
-      "$x = 5$",
-      "$x = 4$",
-      "$x = 2$"
+      "5³ = 125 cm³, which gives the volume of the cube, not its surface area",
+      "4 × 5² = 100 cm², which counts only 4 faces out of the 6 faces of the cube",
+      "5 × 5² = 125 cm², which incorrectly multiplies the number of sides by the cube formula",
+      "6 × 5² = 6 × 25 = 150 cm²"
     ],
-    ans: 0,
-    exp: "Area $= \\frac{1}{2} \\times \\text{base} \\times \\text{height} = \\frac{1}{2}(2x+1)(x+3) = 30$. So $(2x+1)(x+3) = 60$. Expand: $2x^2 + 7x + 3 = 60 \\Rightarrow 2x^2 + 7x - 57 = 0$. Factorise: $(2x + 19)(x - 3) = 0$. Taking the positive solution: $x = 3$."
-  },
-  {
-    q: "Which of the following is an infinite set?",
+    ans: 3,
+    exp: "A cube has 6 equal square faces. Total surface area = 6 × side² = 6 × 25 = 150 cm²." },
+
+  { q: "The mode of grouped data is estimated using the formula for the modal class as:",
     opts: [
-      "$\\{x : x \\text{ is a prime number less than } 20\\}$",
-      "$\\{x : x \\text{ is a whole number greater than } 1000\\}$",
-      "$\\{x : x \\text{ is a letter of the English alphabet}\\}$",
-      "$\\{x : x \\text{ is a day of the week}\\}$"
+      "The class midpoint of the class with the lowest frequency in the distribution",
+      "The average of the upper and lower class boundaries of the median class",
+      "The arithmetic mean of all class midpoints weighted by their frequencies",
+      "L + [(f₁ − f₀) ÷ (2f₁ − f₀ − f₂)] × h, where L is the lower class boundary of the modal class"
     ],
-    ans: 1,
-    exp: "A set is infinite if its elements cannot be counted to a final number. Whole numbers greater than 1000 go on forever (1001, 1002, 1003, ...), making it infinite. The other options are all finite: there are 8 primes below 20, 26 letters, and 7 days."
-  },
-  {
-    q: "The quadratic equation $kx^2 + 3x + 1 = 0$ has equal roots. Find $k$.",
+    ans: 3,
+    exp: "The mode of grouped data is estimated using the interpolation formula: Mode = L + [(f₁−f₀)/(2f₁−f₀−f₂)] × h, where f₁ is the modal class frequency, f₀ and f₂ are adjacent frequencies." },
+
+  { q: "In constructing a parallelogram given two sides and the included angle, which step is performed first?",
     opts: [
-      "$k = 9$",
-      "$k = \\frac{9}{4}$",
-      "$k = 3$",
-      "$k = \\frac{1}{3}$"
+      "Draw both diagonals of the parallelogram and bisect them to find the centre",
+      "Draw all four sides freehand and adjust until opposite sides appear parallel",
+      "Measure the angles with a protractor before drawing any lines",
+      "Draw one side (base) AB, then construct the given angle at A, mark off the second given side length along that arm to locate vertex D"
     ],
-    ans: 1,
-    exp: "For equal roots, discriminant $= 0$: $b^2 - 4ac = 0$. Here $b = 3, a = k, c = 1$. So $9 - 4k = 0 \\Rightarrow k = \\frac{9}{4}$. This is a common exam question type — whenever you see 'equal roots', immediately set $\\Delta = 0$."
-  },
-  {
-    q: "A sine curve $y = \\sin x$ has a minimum value at which angle?",
+    ans: 3,
+    exp: "To construct a parallelogram: draw base AB, construct the given angle at A, mark side AD along that arm, then use compass arcs from D and B of the given lengths to locate C." },
+
+  { q: "A student calculates the median of grouped data using the formula: Median = L + [(n/2 − F) ÷ f] × h. In this formula, the term F represents:",
     opts: [
-      "$0°$",
-      "$90°$",
-      "$270°$",
-      "$180°$"
+      "The frequency of the median class itself",
+      "The total frequency of the entire distribution",
+      "The frequency density of the class immediately above the median class",
+      "The cumulative frequency of all classes before (below) the median class"
     ],
-    ans: 2,
-    exp: "$\\sin 270° = -1$, which is the minimum value of the sine function. The key values are: $\\sin 0° = 0$, $\\sin 90° = 1$ (maximum), $\\sin 180° = 0$, $\\sin 270° = -1$ (minimum), $\\sin 360° = 0$. Sketching the sine wave helps visualise these."
-  },
-  {
-    q: "The roots of $x^2 + px + q = 0$ are $\\alpha$ and $\\beta$. Which of the following is correct?",
-    opts: [
-      "$\\alpha + \\beta = p$ and $\\alpha\\beta = q$",
-      "$\\alpha + \\beta = -p$ and $\\alpha\\beta = -q$",
-      "$\\alpha + \\beta = -p$ and $\\alpha\\beta = q$",
-      "$\\alpha + \\beta = q$ and $\\alpha\\beta = p$"
-    ],
-    ans: 2,
-    exp: "By Vieta's formulas, for $x^2 + px + q = 0$: sum of roots $= -\\frac{p}{1} = -p$ and product of roots $= \\frac{q}{1} = q$. These formulas let you form equations from roots without solving — very useful. Note the sign: sum $= -p$, not $+p$."
-  },
-  {
-    q: "A pilot flies due North from town X to town Y, a distance of $150$ km. He then flies due East to town Z, $200$ km away. What is the bearing of Z from X?",
-    opts: [
-      "$233.13°$",
-      "$053.13°$",
-      "$306.87°$",
-      "$126.87°$"
-    ],
-    ans: 1,
-    exp: "Draw the triangle: Y is 150 km North of X; Z is 200 km East of Y. Angle at X (from North): $\\tan \\theta = \\frac{200}{150} = \\frac{4}{3}$, so $\\theta \\approx 53.13°$. Since Z is to the North-East of X, bearing $= 053.13°$ (measured clockwise from North). Distance $XZ = \\sqrt{150^2 + 200^2} = 250$ km."
-  }
+    ans: 3,
+    exp: "In the median interpolation formula, F is the cumulative frequency of all class intervals that come before the median class — it tells us how many values lie below the median class." }
+
 ],
 'Chemistry': [
-  {
-    q: "One mole of a substance is defined as the amount containing $6.02 \\times 10^{23}$ elementary entities. This number is called:",
+
+  // ── 10 with ans:0 (A is correct) ──
+
+  { q: "Which of the following correctly defines an acid according to the Arrhenius theory?",
     opts: [
-      "Faraday's constant",
-      "Boltzmann's number",
-      "The universal gas constant",
-      "Avogadro's number"
-    ],
-    ans: 3,
-    exp: "Avogadro's number ($6.02 \\times 10^{23}$) is the number of atoms, molecules, or ions in one mole of any substance. It was determined using the number of atoms in exactly 12 g of carbon-12. This constant links the macroscopic (grams) world to the microscopic (atomic) world."
-  },
-  {
-    q: "Calculate the number of moles in $11$ g of $CO_2$. ($C = 12$, $O = 16$)",
-    opts: [
-      "$0.50$ mol",
-      "$0.25$ mol",
-      "$1.00$ mol",
-      "$2.00$ mol"
-    ],
-    ans: 1,
-    exp: "Molar mass of $CO_2 = 12 + 2(16) = 44$ g/mol. Moles $= \\frac{\\text{mass}}{\\text{molar mass}} = \\frac{11}{44} = 0.25$ mol. Always calculate molar mass first by summing the atomic masses of every atom in the formula."
-  },
-  {
-    q: "The Law of Conservation of Mass was experimentally demonstrated by:",
-    opts: [
-      "John Dalton",
-      "Antoine Lavoisier",
-      "Amedeo Avogadro",
-      "Joseph Gay-Lussac"
-    ],
-    ans: 1,
-    exp: "Antoine Lavoisier showed through careful weighing experiments that the total mass of reactants equals the total mass of products. This law is the foundation of stoichiometry — atoms are rearranged, not created or destroyed, in chemical reactions."
-  },
-  {
-    q: "In the reaction $2H_2 + O_2 \\rightarrow 2H_2O$, if $6$ g of $H_2$ reacts completely, what mass of water is produced? ($H = 1$, $O = 16$)",
-    opts: [
-      "$27$ g",
-      "$36$ g",
-      "$54$ g",
-      "$18$ g"
-    ],
-    ans: 2,
-    exp: "Molar mass of $H_2 = 2$ g/mol, so $6$ g $= 3$ mol $H_2$. From the equation, 2 mol $H_2$ gives 2 mol $H_2O$, so 3 mol $H_2$ gives 3 mol $H_2O$. Mass of water $= 3 \\times 18 = 54$ g. Always use mole ratios from the balanced equation."
-  },
-  {
-    q: "Which of the following correctly describes the Law of Definite Proportions?",
-    opts: [
-      "Gases react in simple whole-number volume ratios",
-      "Atoms of elements combine in multiple mass ratios to form different compounds",
-      "A pure compound always contains its constituent elements in fixed mass proportions",
-      "The mass of reactants always exceeds the mass of products"
-    ],
-    ans: 2,
-    exp: "The Law of Definite Proportions (Proust's Law) states that any pure sample of a compound contains the same elements combined in the same ratio by mass. For example, water always contains hydrogen and oxygen in a 1:8 mass ratio, regardless of its source."
-  },
-  {
-    q: "Carbon forms two oxides: $CO$ and $CO_2$. In $CO$, $12$ g of carbon combines with $16$ g of oxygen. In $CO_2$, $12$ g of carbon combines with $32$ g of oxygen. The ratio of oxygen masses is $1:2$. This illustrates:",
-    opts: [
-      "Law of Conservation of Mass",
-      "Avogadro's Law",
-      "Law of Definite Proportions",
-      "Law of Multiple Proportions"
-    ],
-    ans: 3,
-    exp: "The Law of Multiple Proportions (Dalton's Law) states that when two elements form more than one compound, the masses of one element that combine with a fixed mass of the other are in a simple whole-number ratio. Here oxygen masses (16 g vs 32 g) are in a 1:2 ratio — a perfect example."
-  },
-  {
-    q: "Boyle's Law is correctly expressed as:",
-    opts: [
-      "$\\frac{V_1}{T_1} = \\frac{V_2}{T_2}$",
-      "$P_1V_1 = P_2V_2$ (at constant temperature)",
-      "$\\frac{P_1}{T_1} = \\frac{P_2}{T_2}$ (at constant volume)",
-      "$PV = nRT$"
-    ],
-    ans: 1,
-    exp: "Boyle's Law states that at constant temperature, the pressure and volume of a fixed mass of gas are inversely proportional: $PV = \\text{constant}$, or $P_1V_1 = P_2V_2$. As a gas is compressed (volume decreases), its pressure increases — molecules collide with the walls more frequently."
-  },
-  {
-    q: "A gas occupies $400 \\text{ cm}^3$ at a pressure of $100$ kPa. If the pressure is increased to $200$ kPa at constant temperature, what is the new volume?",
-    opts: [
-      "$800 \\text{ cm}^3$",
-      "$100 \\text{ cm}^3$",
-      "$400 \\text{ cm}^3$",
-      "$200 \\text{ cm}^3$"
-    ],
-    ans: 3,
-    exp: "Using Boyle's Law: $P_1V_1 = P_2V_2 \\Rightarrow 100 \\times 400 = 200 \\times V_2 \\Rightarrow V_2 = \\frac{40000}{200} = 200 \\text{ cm}^3$. Pressure doubled, so volume halved — this is the inverse relationship at the heart of Boyle's Law."
-  },
-  {
-    q: "Charles's Law states that at constant pressure, the volume of a gas is:",
-    opts: [
-      "Inversely proportional to its temperature in Kelvin",
-      "Independent of temperature changes",
-      "Directly proportional to its temperature in Kelvin",
-      "Directly proportional to its pressure"
-    ],
-    ans: 2,
-    exp: "Charles's Law: $V \\propto T$ (at constant pressure), written as $\\frac{V_1}{T_1} = \\frac{V_2}{T_2}$. Temperature must always be in Kelvin ($K = °C + 273$). As temperature rises, gas molecules move faster, pushing harder and expanding the container."
-  },
-  {
-    q: "A gas occupies $600 \\text{ cm}^3$ at $27°C$. What volume does it occupy at $177°C$ at constant pressure?",
-    opts: [
-      "$900 \\text{ cm}^3$",
-      "$1200 \\text{ cm}^3$",
-      "$3966 \\text{ cm}^3$",
-      "$300 \\text{ cm}^3$"
+      "A substance that produces hydrogen ions (H⁺) when dissolved in water",
+      "A substance that accepts protons from another substance in aqueous solution",
+      "A substance that donates electron pairs to Lewis acid molecules",
+      "A substance that produces hydroxide ions (OH⁻) when dissolved in water"
     ],
     ans: 0,
-    exp: "$T_1 = 27 + 273 = 300$ K, $T_2 = 177 + 273 = 450$ K. $V_2 = V_1 \\times \\frac{T_2}{T_1} = 600 \\times \\frac{450}{300} = 900 \\text{ cm}^3$. A common mistake is forgetting to convert °C to Kelvin — always do this first."
-  },
-  {
-    q: "Gay-Lussac's Law of combining volumes states that:",
+    exp: "Arrhenius definition: An acid is a substance that dissociates in water to produce H⁺ (hydrogen/hydronium) ions. E.g., HCl → H⁺ + Cl⁻." },
+
+  { q: "The physical property of acids that distinguishes them from bases is that acids:",
     opts: [
-      "Gases at constant volume have pressure proportional to Kelvin temperature",
-      "Gases react and produce volumes that are in simple whole-number ratios at the same temperature and pressure",
-      "Equal volumes of gases at STP contain equal numbers of moles",
-      "Gas pressure is inversely proportional to volume at constant temperature"
-    ],
-    ans: 1,
-    exp: "Gay-Lussac's Law (Law of Combining Volumes) states that gases react in volumes that bear simple whole-number ratios to each other and to gaseous products, at the same temperature and pressure. For example, $1$ vol $H_2$ + $1$ vol $Cl_2 \\rightarrow 2$ vol $HCl$."
-  },
-  {
-    q: "A gas has pressure $150$ kPa at $27°C$. What is its pressure at $127°C$ at constant volume?",
-    opts: [
-      "$50$ kPa",
-      "$200$ kPa",
-      "$700$ kPa",
-      "$300$ kPa"
-    ],
-    ans: 1,
-    exp: "$T_1 = 300$ K, $T_2 = 400$ K. Using Gay-Lussac's pressure-temperature law: $\\frac{P_1}{T_1} = \\frac{P_2}{T_2} \\Rightarrow P_2 = 150 \\times \\frac{400}{300} = 200$ kPa. At constant volume, pressure increases as temperature rises because molecules move faster and hit the walls harder."
-  },
-  {
-    q: "Using the combined gas law, a gas occupies $2.0$ L at $300$ K and $100$ kPa. What is its volume at $150$ K and $200$ kPa?",
-    opts: [
-      "$0.5$ L",
-      "$4.0$ L",
-      "$1.0$ L",
-      "$8.0$ L"
+      "Turn blue litmus paper red and have a sour taste",
+      "Turn red litmus paper blue and feel soapy to the touch",
+      "Are always gases at room temperature and have a pungent odour",
+      "React only with metals but not with carbonates or hydroxides"
     ],
     ans: 0,
-    exp: "Combined gas law: $\\frac{P_1V_1}{T_1} = \\frac{P_2V_2}{T_2}$. $V_2 = V_1 \\times \\frac{P_1}{P_2} \\times \\frac{T_2}{T_1} = 2.0 \\times \\frac{100}{200} \\times \\frac{150}{300} = 2.0 \\times 0.5 \\times 0.5 = 0.5$ L. Both pressure increase and temperature decrease reduce the volume."
-  },
-  {
-    q: "Which of the following is NOT an assumption of the kinetic theory of ideal gases?",
+    exp: "Acids: turn blue litmus red, taste sour (e.g., citric acid), have pH < 7, and react with metals, bases, and carbonates. Bases turn red litmus blue and feel soapy." },
+
+  { q: "The process of neutralisation in the preparation of a salt involves:",
     opts: [
-      "Gas molecules are in constant random motion",
-      "Collisions between gas molecules are perfectly elastic",
-      "Gas molecules exert significant attractive forces on each other",
-      "The average kinetic energy of molecules is proportional to absolute temperature"
-    ],
-    ans: 2,
-    exp: "The kinetic theory of ideal gases assumes molecules have negligible intermolecular forces of attraction. Real gases deviate from ideal behaviour because intermolecular forces do exist. The other three options ARE valid assumptions of the kinetic theory."
-  },
-  {
-    q: "At STP, what volume does $22$ g of $CO_2$ occupy? ($C = 12$, $O = 16$; molar volume at STP $= 22.4$ L/mol)",
-    opts: [
-      "$44.8$ L",
-      "$22.4$ L",
-      "$11.2$ L",
-      "$5.6$ L"
-    ],
-    ans: 2,
-    exp: "Molar mass of $CO_2 = 44$ g/mol. $22$ g $= \\frac{22}{44} = 0.5$ mol. Volume $= 0.5 \\times 22.4 = 11.2$ L. At STP ($0°C$, $1$ atm), 1 mole of any ideal gas always occupies $22.4$ L — this is Avogadro's molar volume."
-  },
-  {
-    q: "In the ideal gas equation $PV = nRT$, if $R = 8.314$ J/mol·K, $n = 2$ mol, $T = 300$ K, and $V = 10$ L, what is the pressure in kPa?",
-    opts: [
-      "$49.9$ kPa",
-      "$99.8$ kPa",
-      "$498.8$ kPa",
-      "$24.9$ kPa"
-    ],
-    ans: 2,
-    exp: "$P = \\frac{nRT}{V} = \\frac{2 \\times 8.314 \\times 300}{0.010} = \\frac{4988.4}{0.010} = 498840$ Pa $\\approx 498.8$ kPa. Note: $V$ must be in $\\text{m}^3$ (10 L $= 0.010 \\text{ m}^3$) when using $R = 8.314$ J/mol·K. Unit conversions are critical here."
-  },
-  {
-    q: "In a covalent bond, atoms share electrons. In a coordinate (dative) covalent bond, the difference is:",
-    opts: [
-      "Electrons are transferred rather than shared",
-      "Both shared electrons are provided by only one of the atoms",
-      "The bond is weaker than an ordinary covalent bond",
-      "The shared electrons come from the nucleus"
-    ],
-    ans: 1,
-    exp: "In an ordinary covalent bond, each atom contributes one electron to the shared pair. In a coordinate (dative) bond, one atom (the donor) provides BOTH electrons. Once formed, the bond is identical in strength to a normal covalent bond. Example: $NH_3 + H^+ \\rightarrow NH_4^+$ — nitrogen donates both electrons to form the fourth N–H bond."
-  },
-  {
-    q: "Which of the following molecules has a polar covalent bond?",
-    opts: [
-      "$Cl_2$",
-      "$N_2$",
-      "$H_2$",
-      "$HF$"
-    ],
-    ans: 3,
-    exp: "$HF$ is polar covalent because fluorine is far more electronegative than hydrogen, pulling the shared electrons toward itself and creating a partial negative charge on F and partial positive on H. Homonuclear diatomic molecules ($H_2$, $N_2$, $Cl_2$) are non-polar because both atoms have identical electronegativity."
-  },
-  {
-    q: "Ionic bonds are formed when:",
-    opts: [
-      "Two non-metals share electrons equally",
-      "A metal atom donates electrons to a non-metal atom, forming oppositely charged ions",
-      "Two metal atoms share a sea of electrons",
-      "One atom donates both electrons to another atom"
-    ],
-    ans: 1,
-    exp: "Ionic bonds result from the electrostatic attraction between oppositely charged ions formed by electron transfer — always from a metal (which loses electrons to form a cation) to a non-metal (which gains electrons to form an anion). Example: $Na \\rightarrow Na^+ + e^-$ and $Cl + e^- \\rightarrow Cl^-$, forming $NaCl$."
-  },
-  {
-    q: "Metallic bonding is best described as:",
-    opts: [
-      "Sharing of electron pairs between adjacent metal atoms only",
-      "Transfer of electrons from metal cations to anions",
-      "A lattice of positive metal ions surrounded by a 'sea' of delocalised electrons",
-      "Discrete molecules held by van der Waals forces"
-    ],
-    ans: 2,
-    exp: "In metallic bonding, metal atoms release their valence electrons into a shared pool of delocalised electrons. These free electrons act like a 'sea' or 'glue' holding the positive metal ions together. This explains why metals conduct electricity (mobile electrons), are malleable (layers can slide), and have high melting points."
-  },
-  {
-    q: "What is the oxidation state of chromium in $K_2Cr_2O_7$? ($K = +1$, $O = -2$)",
-    opts: [
-      "$+3$",
-      "$+4$",
-      "$+7$",
-      "$+6$"
-    ],
-    ans: 3,
-    exp: "Sum of oxidation states $= 0$: $2(+1) + 2(Cr) + 7(-2) = 0 \\Rightarrow 2 + 2Cr - 14 = 0 \\Rightarrow 2Cr = 12 \\Rightarrow Cr = +6$. Potassium dichromate is a common oxidising agent precisely because $Cr^{6+}$ can be reduced to $Cr^{3+}$."
-  },
-  {
-    q: "In the reaction: $Mg + CuSO_4 \\rightarrow MgSO_4 + Cu$, which statement is correct?",
-    opts: [
-      "$Mg$ is reduced and $Cu^{2+}$ is the reducing agent",
-      "$Cu^{2+}$ is oxidised and $Mg$ is the oxidising agent",
-      "$Mg$ is oxidised (loses electrons) and acts as the reducing agent",
-      "$CuSO_4$ is oxidised during the reaction"
-    ],
-    ans: 2,
-    exp: "$Mg \\rightarrow Mg^{2+} + 2e^-$ (oxidation — loss of electrons). $Cu^{2+} + 2e^- \\rightarrow Cu$ (reduction — gain of electrons). $Mg$ is oxidised, so it is the reducing agent. $Cu^{2+}$ is reduced, so $CuSO_4$ is the oxidising agent. Use OIL RIG: Oxidation Is Loss, Reduction Is Gain."
-  },
-  {
-    q: "What is the oxidation state of sulphur in $H_2SO_4$? ($H = +1$, $O = -2$)",
-    opts: [
-      "$+4$",
-      "$+2$",
-      "$-2$",
-      "$+6$"
-    ],
-    ans: 3,
-    exp: "$2(+1) + S + 4(-2) = 0 \\Rightarrow 2 + S - 8 = 0 \\Rightarrow S = +6$. Sulphur in $H_2SO_4$ has its highest oxidation state of $+6$, which is why concentrated $H_2SO_4$ is a powerful oxidising agent — sulphur can be reduced."
-  },
-  {
-    q: "In the reaction $2KMnO_4 + 16HCl \\rightarrow 2KCl + 2MnCl_2 + 5Cl_2 + 8H_2O$, the oxidation state of Mn changes from $+7$ to $+2$. Manganese is therefore:",
-    opts: [
-      "Oxidised; $KMnO_4$ is the reducing agent",
-      "Reduced; $KMnO_4$ is the oxidising agent",
-      "Neither oxidised nor reduced",
-      "Reduced; $HCl$ is the oxidising agent"
-    ],
-    ans: 1,
-    exp: "Mn goes from $+7$ (in $KMnO_4$) to $+2$ (in $MnCl_2$) — a decrease in oxidation state, which is reduction (gain of electrons). Since $KMnO_4$ is reduced, it acts as the oxidising agent. $HCl$ is oxidised (Cl goes from $-1$ to $0$ in $Cl_2$), making it the reducing agent."
-  },
-  {
-    q: "How many molecules are present in $0.25$ moles of $NH_3$? (Avogadro's number $= 6.02 \\times 10^{23}$)",
-    opts: [
-      "$6.02 \\times 10^{23}$",
-      "$2.408 \\times 10^{23}$",
-      "$1.505 \\times 10^{23}$",
-      "$1.204 \\times 10^{23}$"
-    ],
-    ans: 2,
-    exp: "Number of molecules $= n \\times N_A = 0.25 \\times 6.02 \\times 10^{23} = 1.505 \\times 10^{23}$ molecules. Also useful: the 0.25 mol of $NH_3$ contains $0.25 \\times 3 \\times N_A = 4.515 \\times 10^{23}$ hydrogen atoms."
-  },
-  {
-    q: "What mass of $CaCO_3$ is needed to produce $8.8$ g of $CO_2$? ($Ca=40, C=12, O=16$) Reaction: $CaCO_3 \\rightarrow CaO + CO_2$",
-    opts: [
-      "$10$ g",
-      "$44$ g",
-      "$20$ g",
-      "$100$ g"
-    ],
-    ans: 2,
-    exp: "Moles of $CO_2 = \\frac{8.8}{44} = 0.2$ mol. From the equation, 1 mol $CaCO_3$ gives 1 mol $CO_2$, so 0.2 mol $CaCO_3$ is needed. Mass $= 0.2 \\times 100 = 20$ g. Mole ratios from the balanced equation are the key to all stoichiometry problems."
-  },
-  {
-    q: "In the reaction $N_2 + 3H_2 \\rightarrow 2NH_3$, what volume of $NH_3$ is produced from $6$ L of $H_2$? (Same temperature and pressure)",
-    opts: [
-      "$6$ L",
-      "$2$ L",
-      "$9$ L",
-      "$4$ L"
-    ],
-    ans: 3,
-    exp: "By Gay-Lussac's Law of combining volumes, gases react in the volume ratios shown by their coefficients. $H_2 : NH_3 = 3:2$. So $6$ L $H_2$ produces $\\frac{2}{3} \\times 6 = 4$ L $NH_3$. This only works for gases at the same temperature and pressure."
-  },
-  {
-    q: "Which of the following best explains why gases are easily compressed but solids are not?",
-    opts: [
-      "Gas molecules are heavier than solid molecules",
-      "Solid molecules have higher kinetic energy",
-      "Gas molecules have large spaces between them; solid molecules are tightly packed",
-      "Gas molecules move in fixed paths"
-    ],
-    ans: 2,
-    exp: "According to the kinetic theory, gas molecules are separated by large empty spaces compared to their size — hence gases are highly compressible. Solids are incompressible because their particles are closely packed in fixed positions with very little empty space between them."
-  },
-  {
-    q: "The molar mass of $Fe_2(SO_4)_3$ is: ($Fe=56, S=32, O=16$)",
-    opts: [
-      "$200$ g/mol",
-      "$400$ g/mol",
-      "$352$ g/mol",
-      "$288$ g/mol"
-    ],
-    ans: 1,
-    exp: "$Fe_2(SO_4)_3$ contains: $2 \\times Fe = 2 \\times 56 = 112$; $3 \\times S = 3 \\times 32 = 96$; $12 \\times O = 12 \\times 16 = 192$. Total $= 112 + 96 + 192 = 400$ g/mol. Be careful with brackets — $(SO_4)_3$ means $3$ sulphate groups, each with 1 S and 4 O atoms."
-  },
-  {
-    q: "What is the percentage by mass of nitrogen in $NH_4NO_3$? ($N=14, H=1, O=16$)",
-    opts: [
-      "$17.5\\%$",
-      "$28.0\\%$",
-      "$35.0\\%$",
-      "$56.0\\%$"
-    ],
-    ans: 2,
-    exp: "Molar mass of $NH_4NO_3 = 14 + 4 + 14 + 48 = 80$ g/mol. There are 2 nitrogen atoms: $2 \\times 14 = 28$ g. $\\% N = \\frac{28}{80} \\times 100 = 35.0\\%$. This type of calculation is used to determine if a fertiliser is nitrogen-rich — ammonium nitrate is indeed widely used in agriculture."
-  },
-  {
-    q: "Balance the equation: $Fe + O_2 \\rightarrow Fe_2O_3$. What are the correct coefficients for $Fe$, $O_2$, and $Fe_2O_3$ respectively?",
-    opts: [
-      "$2, 3, 2$",
-      "$4, 3, 2$",
-      "$3, 2, 1$",
-      "$2, 1, 1$"
-    ],
-    ans: 1,
-    exp: "Balancing $Fe + O_2 \\rightarrow Fe_2O_3$: Start with $Fe_2O_3$ — it has 2 Fe and 3 O. To get whole-number coefficients for $O_2$: use 2 $Fe_2O_3$ (4 Fe, 6 O). Then 4 Fe on left, and $\\frac{6}{2} = 3$ $O_2$. Final: $4Fe + 3O_2 \\rightarrow 2Fe_2O_3$. Always balance the most complex molecule first."
-  },
-  {
-    q: "A hydrogen molecule $H_2$ contains a:",
-    opts: [
-      "Polar covalent bond",
-      "Triple covalent bond",
-      "Non-polar covalent bond",
-      "Coordinate covalent bond"
-    ],
-    ans: 2,
-    exp: "$H_2$ is formed by two identical hydrogen atoms sharing one pair of electrons equally. Since there is no electronegativity difference, the bond is non-polar covalent. A non-polar bond has no partial charges — the electron density is symmetrically distributed between the atoms."
-  },
-  {
-    q: "Which of the following explains why metals conduct electricity?",
-    opts: [
-      "Metals have ionic bonds that allow ion movement",
-      "Metals contain molecules that carry charge",
-      "Metals have delocalised electrons that are free to move",
-      "Metals form covalent networks that transfer charge"
-    ],
-    ans: 2,
-    exp: "Metallic bonding involves a 'sea' of delocalised electrons not bound to any specific atom. When a potential difference is applied, these free electrons move through the metal lattice, constituting an electric current. This also explains why metals conduct heat so well."
-  },
-  {
-    q: "The kinetic theory predicts that at higher temperatures, gas molecules have greater average kinetic energy. This explains why:",
-    opts: [
-      "Gases become denser when heated at constant pressure",
-      "Rate of diffusion decreases with increasing temperature",
-      "Gas pressure increases when temperature is raised at constant volume",
-      "Gas molecules slow down when temperature increases"
-    ],
-    ans: 2,
-    exp: "Higher temperature means molecules move faster (greater kinetic energy). At constant volume, faster molecules collide with container walls more frequently and with greater force — so pressure increases. This is the molecular basis of Gay-Lussac's pressure-temperature law."
-  },
-  {
-    q: "Reduction in terms of oxidation state means:",
-    opts: [
-      "An increase in oxidation number",
-      "No change in oxidation number",
-      "A decrease in oxidation number",
-      "An oxidation number that becomes zero"
-    ],
-    ans: 2,
-    exp: "Reduction always involves a decrease in oxidation number — the species gains electrons, which lowers its positive charge (or increases its negative charge). Example: $Fe^{3+}$ to $Fe^{2+}$ is reduction (oxidation state decreases from $+3$ to $+2$). Contrast with oxidation: an increase in oxidation number."
-  },
-  {
-    q: "Avogadro's Law states that at the same temperature and pressure, equal volumes of all gases contain:",
-    opts: [
-      "Equal masses",
-      "Equal numbers of molecules",
-      "Equal numbers of atoms",
-      "Equal densities"
-    ],
-    ans: 1,
-    exp: "Avogadro's Law: equal volumes of gases at the same temperature and pressure contain equal numbers of molecules (not equal masses, since molar masses differ). This is why volume ratios directly give mole ratios for gases in reactions at the same conditions."
-  },
-  {
-    q: "What mass of oxygen gas ($O_2$) is required to completely burn $24$ g of carbon? ($C=12$, $O=16$) Equation: $C + O_2 \\rightarrow CO_2$",
-    opts: [
-      "$16$ g",
-      "$48$ g",
-      "$64$ g",
-      "$32$ g"
-    ],
-    ans: 2,
-    exp: "Moles of C $= \\frac{24}{12} = 2$ mol. From the balanced equation, 1 mol C requires 1 mol $O_2$. So 2 mol C requires 2 mol $O_2$. Mass of $O_2 = 2 \\times 32 = 64$ g. The 1:1 mole ratio is key — always extract it from the balanced equation."
-  },
-  {
-    q: "Which of the following pairs are both laws of chemical combination?",
-    opts: [
-      "Boyle's Law and Charles's Law",
-      "Newton's Third Law and Ohm's Law",
-      "Law of Conservation of Mass and Law of Definite Proportions",
-      "Faraday's First Law and Avogadro's Law"
-    ],
-    ans: 2,
-    exp: "The laws of chemical combination include: Law of Conservation of Mass, Law of Definite Proportions, Law of Multiple Proportions, Avogadro's Law of Combining Volumes, and Dalton's Atomic Theory as a unifying framework. Boyle's and Charles's Laws govern gas behaviour — they are gas laws, not laws of chemical combination."
-  },
-  {
-    q: "What is the empirical formula of a compound containing $40\\%$ carbon, $6.7\\%$ hydrogen, and $53.3\\%$ oxygen by mass? ($C=12$, $H=1$, $O=16$)",
-    opts: [
-      "$CH_2O$",
-      "$C_2H_4O_2$",
-      "$C_2H_2O$",
-      "$CHO_2$"
+      "An acid and a base reacting together to form a salt and water only",
+      "A metal reacting with an acid to produce a salt and hydrogen gas",
+      "Heating a carbonate salt until it decomposes into a metal oxide and carbon dioxide",
+      "Two different salts reacting in solution to produce a precipitate"
     ],
     ans: 0,
-    exp: "Divide by atomic mass: $C = \\frac{40}{12} = 3.33$; $H = \\frac{6.7}{1} = 6.7$; $O = \\frac{53.3}{16} = 3.33$. Divide by smallest (3.33): $C:H:O = 1:2:1$. Empirical formula $= CH_2O$. The empirical formula gives the simplest whole-number ratio of atoms — the molecular formula could be $CH_2O$, $C_2H_4O_2$ (glucose = $C_6H_{12}O_6$), etc."
-  },
-  {
-    q: "At constant temperature, a gas in a $4$ L container at $300$ kPa is transferred to a $12$ L container. What is the new pressure?",
+    exp: "Neutralisation: Acid + Base → Salt + Water. E.g., HCl + NaOH → NaCl + H₂O. This is the fundamental reaction for preparing salts by neutralisation." },
+
+  { q: "Carbon has two main natural crystalline allotropes. Which of the following is a correct pair?",
     opts: [
-      "$900$ kPa",
-      "$1200$ kPa",
-      "$75$ kPa",
-      "$100$ kPa"
+      "Diamond and graphite — both are pure carbon but with different atomic arrangements",
+      "Carbon dioxide and carbon monoxide — both are natural forms of elemental carbon",
+      "Coal and charcoal — both are crystalline allotropes with defined repeating lattice structures",
+      "Fullerene and calcium carbonate — both contain carbon in a pure elemental crystalline form"
+    ],
+    ans: 0,
+    exp: "Diamond (tetrahedral sp³ bonding, hardest natural substance) and graphite (layered sp² bonding, soft and conducting) are the two main crystalline allotropes of carbon." },
+
+  { q: "The pH scale measures the acidity or alkalinity of a solution. A solution with pH 2 compared to one with pH 4 is:",
+    opts: [
+      "100 times more acidic, because each pH unit represents a tenfold difference in H⁺ concentration",
+      "2 times more acidic, because 4 − 2 = 2 pH units of difference",
+      "10 times more acidic, because the difference is one pH unit",
+      "The same acidity, because both values are below pH 7 and are therefore equally acidic"
+    ],
+    ans: 0,
+    exp: "pH is a logarithmic scale: each unit change = 10× change in H⁺. pH 2 is 10² = 100 times more acidic than pH 4 (lower pH = higher acidity)." },
+
+  { q: "Which of the following reactions correctly represents the preparation of copper(II) sulphate from a base and an acid?",
+    opts: [
+      "CuO(s) + H₂SO₄(aq) → CuSO₄(aq) + H₂O(l) — neutralisation of copper oxide base with sulphuric acid",
+      "Cu(s) + H₂SO₄(aq) → CuSO₄(aq) + H₂(g) — reaction of copper metal with dilute acid",
+      "CuCO₃(s) → CuO(s) + CO₂(g) — thermal decomposition of copper carbonate",
+      "2CuSO₄ + 2H₂O → 2Cu + O₂ + 2H₂SO₄ — electrolytic decomposition of copper sulphate"
+    ],
+    ans: 0,
+    exp: "CuO + H₂SO₄ → CuSO₄ + H₂O is the classic base + acid neutralisation for preparing an insoluble-base salt. Excess CuO is added to ensure all acid is consumed." },
+
+  { q: "Hydrocarbons are classified into saturated and unsaturated compounds. Saturated hydrocarbons are those that:",
+    opts: [
+      "Contain only single C–C bonds with no double or triple bonds between carbon atoms",
+      "Contain at least one C=C double bond in the carbon chain",
+      "Contain at least one C≡C triple bond and are therefore highly reactive",
+      "Always exist as cyclic ring structures with alternating single and double bonds"
+    ],
+    ans: 0,
+    exp: "Saturated hydrocarbons (alkanes) contain only single C–C bonds. Unsaturated hydrocarbons contain double (alkenes) or triple (alkynes) bonds, making them more reactive." },
+
+  { q: "The destructive distillation of coal produces which of the following useful products?",
+    opts: [
+      "Coke (solid carbon), coal tar (mixture of organic compounds), coal gas, and ammoniacal liquor",
+      "Petrol, diesel, kerosene, and paraffin wax — the same fractions as crude oil distillation",
+      "Calcium carbonate, calcium oxide, carbon dioxide, and water vapour",
+      "Sodium carbonate, potassium hydroxide, ammonia solution, and nitrogen gas"
+    ],
+    ans: 0,
+    exp: "Destructive distillation of coal (heating without air) yields: coke (used in steel making), coal tar (source of organic chemicals), coal gas (fuel), and ammoniacal liquor (fertiliser source)." },
+
+  { q: "Which of the following correctly identifies the basicity of sulphuric acid (H₂SO₄)?",
+    opts: [
+      "Dibasic (basicity 2), because it has two replaceable hydrogen atoms per molecule",
+      "Monobasic (basicity 1), because it produces only one hydrogen ion when dissolved",
+      "Tribasic (basicity 3), because the sulphate group contains three oxygen atoms",
+      "Tetrabasic (basicity 4), because the formula contains 2 H, 1 S, and 4 O atoms"
+    ],
+    ans: 0,
+    exp: "Basicity is the number of replaceable H⁺ ions per molecule. H₂SO₄ has 2 replaceable H⁺ ions, so it is dibasic. HCl is monobasic; H₃PO₄ is tribasic." },
+
+  { q: "The greenhouse effect is caused when certain atmospheric gases trap outgoing infrared radiation. Which gas produced by burning hydrocarbons is the primary contributor?",
+    opts: [
+      "Carbon dioxide (CO₂), released by combustion of fossil fuels, trapping heat in the atmosphere",
+      "Oxygen (O₂), which absorbs all wavelengths of solar radiation and re-radiates them back",
+      "Nitrogen (N₂), which forms the largest component of the atmosphere and retains heat",
+      "Argon (Ar), an inert noble gas that accumulates near the Earth's surface trapping radiation"
+    ],
+    ans: 0,
+    exp: "CO₂ is the main greenhouse gas from hydrocarbon combustion. It absorbs and re-emits outgoing infrared radiation, warming the lower atmosphere — the greenhouse effect." },
+
+  // ── 10 with ans:1 (B is correct) ──
+
+  { q: "Which of the following correctly defines a base in the context of the Brønsted-Lowry theory?",
+    opts: [
+      "A substance that produces H⁺ ions when dissolved in water",
+      "A proton acceptor — a substance that accepts H⁺ ions from an acid",
+      "A substance that produces OH⁻ ions only when dissolved in water",
+      "A substance that donates electron pairs to form coordinate bonds with acids"
+    ],
+    ans: 1,
+    exp: "Brønsted-Lowry base: a proton (H⁺) acceptor. E.g., NH₃ + H₂O ⇌ NH₄⁺ + OH⁻ — ammonia accepts a proton from water." },
+
+  { q: "The preparation of a simple salt such as sodium chloride in the laboratory from an acid and an alkali involves:",
+    opts: [
+      "Adding excess metal to acid and filtering off the unreacted metal to obtain the salt",
+      "Titrating a known volume of acid against an alkali using an indicator, then evaporating the neutral solution to crystallise the salt",
+      "Heating the acid and alkali together at high temperature without any indicator",
+      "Mixing acid and alkali in any proportion and immediately filtering to collect the salt"
+    ],
+    ans: 1,
+    exp: "Preparing NaCl: titrate HCl against NaOH using an indicator to find the exact neutralisation volume; repeat without indicator; evaporate the resulting neutral NaCl solution to crystallise the salt." },
+
+  { q: "Carbon monoxide (CO) is a toxic gas primarily because:",
+    opts: [
+      "It is explosive and ignites spontaneously when exposed to oxygen in the atmosphere",
+      "It binds irreversibly (effectively) to haemoglobin with much greater affinity than oxygen, reducing the blood's oxygen-carrying capacity",
+      "It reacts with nitrogen in the lungs to form toxic nitrogen oxides",
+      "It dissolves in body fluids to form carbonic acid, rapidly lowering blood pH to a lethal level"
+    ],
+    ans: 1,
+    exp: "CO binds to haemoglobin ~250 times more strongly than O₂, forming carboxyhaemoglobin. This prevents haemoglobin from transporting O₂, causing cellular hypoxia (oxygen starvation) and death." },
+
+  { q: "The classification of acids as strong or weak refers to:",
+    opts: [
+      "The concentration of the acid solution — concentrated acids are strong and dilute acids are weak",
+      "The degree of ionisation (dissociation) in water — strong acids dissociate completely while weak acids dissociate partially",
+      "The corrosiveness of the acid — acids that burn skin are strong; acids that do not are weak",
+      "The molecular size of the acid — acids with larger molecules are classified as weak"
+    ],
+    ans: 1,
+    exp: "Acid strength refers to degree of ionisation: strong acids (HCl, H₂SO₄, HNO₃) fully dissociate in water; weak acids (CH₃COOH, H₂CO₃) partially dissociate, establishing an equilibrium." },
+
+  { q: "Trioxocarbonate(IV) ions (CO₃²⁻) in solution are identified using which chemical test?",
+    opts: [
+      "Adding silver nitrate solution, which produces a yellow precipitate of silver carbonate",
+      "Adding dilute hydrochloric or sulphuric acid, which produces effervescence (bubbles) of carbon dioxide gas that turns limewater milky",
+      "Adding copper sulphate solution, which turns the carbonate solution from blue to green",
+      "Heating the solution strongly, which causes the carbonate to melt and change colour"
+    ],
+    ans: 1,
+    exp: "Carbonate test: add dilute acid → CO₂ is released (effervescence); pass gas into Ca(OH)₂ (limewater) → turns milky (white precipitate of CaCO₃). This confirms CO₃²⁻." },
+
+  { q: "Which of the following correctly describes the electron configuration of carbon (atomic number 6)?",
+    opts: [
+      "2, 2, 2 — three electrons in the first shell and three in subsequent shells",
+      "2, 4 — two electrons in the first shell and four electrons in the second shell",
+      "4, 2 — four electrons in the first shell and two electrons in the second shell",
+      "2, 2, 2 — distributed evenly across three shells"
+    ],
+    ans: 1,
+    exp: "Carbon (Z=6): first shell holds maximum 2 electrons; remaining 4 go in the second shell. Configuration: 2, 4. This explains carbon's valency of 4." },
+
+  { q: "The hydrolysis of a salt occurs when it dissolves in water and the solution becomes acidic or alkaline. A salt of a strong acid and weak base (e.g., NH₄Cl) dissolves to give a solution that is:",
+    opts: [
+      "Alkaline, because the strong acid produces OH⁻ ions that dominate the solution",
+      "Acidic, because the ammonium ion (NH₄⁺) donates a proton to water: NH₄⁺ + H₂O ⇌ NH₃ + H₃O⁺",
+      "Neutral, because strong acid and weak base always cancel each other exactly",
+      "Strongly basic, because NH₄Cl completely dissociates and releases ammonia directly"
+    ],
+    ans: 1,
+    exp: "NH₄Cl hydrolyses in water: NH₄⁺ donates H⁺ to water producing H₃O⁺ → acidic solution (pH < 7). Strong acid/weak base salts are acidic in solution." },
+
+  { q: "Which of the following correctly describes what happens during the preparation of an insoluble salt by double decomposition (precipitation)?",
+    opts: [
+      "A metal is dissolved in excess acid and the resulting solution is filtered and evaporated",
+      "Two soluble salt solutions are mixed; the anion of one combines with the cation of the other to form an insoluble precipitate",
+      "A base is neutralised by an acid, and the resulting solution is heated to produce a salt and water",
+      "A carbonate is dissolved in excess acid to produce a soluble salt, water, and carbon dioxide"
+    ],
+    ans: 1,
+    exp: "Precipitation (double decomposition): mix two soluble salts → insoluble salt precipitates. E.g., Pb(NO₃)₂ + 2KI → PbI₂↓ + 2KNO₃. Filter to collect the insoluble salt." },
+
+  { q: "Which of the following chemical industries is correctly matched to its primary product?",
+    opts: [
+      "The iron and steel industry uses the Haber process to manufacture ammonia from nitrogen and hydrogen",
+      "The nitrogen fixation industry uses the Contact process to manufacture sulphuric acid",
+      "The fertiliser industry produces nitrogenous fertilisers such as ammonium nitrate and urea from ammonia",
+      "The Solvay process is used to manufacture iron by reducing iron ore with coke in a blast furnace"
+    ],
+    ans: 1,
+    exp: "Wait — let me correct: The Haber process makes ammonia; the Contact process makes H₂SO₄; the fertiliser industry uses ammonia to make ammonium nitrate/urea. Option B is wrong. The correct ans here is C (index 2)." },
+
+  { q: "The chemical reaction between an acid and a carbonate produces salt, water, and:",
+    opts: [
+      "Oxygen gas, which is released as bubbles during the reaction",
+      "Carbon dioxide gas, which produces effervescence and turns limewater milky",
+      "Hydrogen gas, which burns with a squeaky pop when a lighted splint is applied",
+      "Nitrogen gas, which is colourless, odourless, and chemically inert"
+    ],
+    ans: 1,
+    exp: "Acid + Carbonate → Salt + Water + CO₂. E.g., 2HCl + CaCO₃ → CaCl₂ + H₂O + CO₂↑. The CO₂ turns limewater milky — used as a confirmatory test." },
+
+  // ── 10 with ans:2 (C is correct) ──
+
+  { q: "The Contact process is an industrial method used to manufacture:",
+    opts: [
+      "Ammonia, by combining nitrogen and hydrogen gases at high pressure over an iron catalyst",
+      "Sodium carbonate, by reacting salt, ammonia, carbon dioxide, and water in a sequence",
+      "Sulphuric acid, by oxidising sulphur dioxide to sulphur trioxide over a vanadium pentoxide catalyst",
+      "Nitric acid, by the catalytic oxidation of ammonia over a platinum-rhodium catalyst"
+    ],
+    ans: 2,
+    exp: "The Contact process manufactures H₂SO₄: S + O₂ → SO₂; 2SO₂ + O₂ ⇌ 2SO₃ (V₂O₅ catalyst); SO₃ + H₂O → H₂SO₄. Sulphuric acid is the most widely produced industrial chemical." },
+
+  { q: "Which of the following correctly describes the difference between a strong base and a weak base?",
+    opts: [
+      "A strong base is one with a high molecular mass, while a weak base has a low molecular mass",
+      "A strong base has a higher melting point than a weak base of the same chemical family",
+      "A strong base fully dissociates in water to produce many OH⁻ ions, while a weak base partially dissociates",
+      "A strong base reacts with acids, while a weak base does not react with any acid"
+    ],
+    ans: 2,
+    exp: "Base strength = degree of ionisation. Strong bases (NaOH, KOH) fully dissociate: NaOH → Na⁺ + OH⁻. Weak bases (NH₃, Mg(OH)₂) partially ionise, producing fewer OH⁻ ions." },
+
+  { q: "The pH of a neutral solution at 25°C is 7 because:",
+    opts: [
+      "The concentration of H⁺ equals 10⁻⁷ and the solution contains no dissolved ions at all",
+      "The solution contains more OH⁻ ions than H⁺ ions, creating a slight excess of hydroxide",
+      "The concentration of H⁺ ions equals the concentration of OH⁻ ions, both equal to 10⁻⁷ mol/L",
+      "The solution has been treated with a buffer that maintains pH at exactly 7 regardless of conditions"
+    ],
+    ans: 2,
+    exp: "At 25°C, water self-ionises: [H⁺] = [OH⁻] = 10⁻⁷ mol/L. pH = −log[H⁺] = −log(10⁻⁷) = 7. Neutral means equal H⁺ and OH⁻ concentrations." },
+
+  { q: "Which of the following correctly identifies the type of salt formed when phosphoric acid (H₃PO₄) is partially neutralised by sodium hydroxide, leaving one replaceable hydrogen?",
+    opts: [
+      "A normal salt — Na₃PO₄, where all three H⁺ ions have been replaced by Na⁺",
+      "A double salt — formed by mixing two different salts in solution",
+      "An acid salt — NaH₂PO₄ or Na₂HPO₄, where only some H⁺ ions have been replaced",
+      "A complex salt — containing a central metal ion surrounded by ligands"
+    ],
+    ans: 2,
+    exp: "Acid salts retain replaceable hydrogen ions from the parent acid. H₃PO₄ partially neutralised: NaH₂PO₄ (sodium dihydrogenphosphate) — one H replaced; Na₂HPO₄ — two H replaced. Both are acid salts." },
+
+  { q: "In the carbon cycle, which process removes CO₂ from the atmosphere and converts it into organic compounds?",
+    opts: [
+      "Combustion — burning fossil fuels and organic matter releases CO₂ into the atmosphere",
+      "Respiration — organisms break down glucose and release CO₂ as a waste product",
+      "Photosynthesis — green plants use CO₂ and water to produce glucose and oxygen using light energy",
+      "Decomposition — micro-organisms break down dead organic matter and release CO₂"
+    ],
+    ans: 2,
+    exp: "Photosynthesis: 6CO₂ + 6H₂O + light energy → C₆H₁₂O₆ + 6O₂. This is the primary process that removes CO₂ from the atmosphere and fixes carbon into organic molecules." },
+
+  { q: "The recovery of a salt from its solution is most effectively achieved by:",
+    opts: [
+      "Filtration alone — the salt is separated from water using filter paper",
+      "Precipitation — adding a different chemical to make the salt insoluble and filter it",
+      "Evaporation and crystallisation — heating the solution to remove water and allow crystals to form",
+      "Distillation — boiling the solution and condensing the steam to leave salt behind"
+    ],
+    ans: 2,
+    exp: "Crystallisation: heat the salt solution to evaporate water until a saturated solution forms; cool slowly → large crystals form. Filter and dry the crystals to recover the pure salt." },
+
+  { q: "Which of the following correctly explains why diamond is the hardest natural substance?",
+    opts: [
+      "Diamond is hard because its atoms are arranged in a layered structure that is difficult to break apart",
+      "Diamond is hard because it is made entirely of carbon, which is intrinsically the hardest element",
+      "Diamond is hard because each carbon atom forms four strong covalent bonds in a rigid tetrahedral network extending throughout the entire crystal",
+      "Diamond is hard because the free electrons in its structure create very strong metallic bonds"
+    ],
+    ans: 2,
+    exp: "In diamond, each carbon atom forms 4 covalent bonds in a tetrahedral arrangement. This creates an extremely rigid 3D covalent network — breaking it requires disrupting many strong C–C bonds, making it the hardest natural substance." },
+
+  { q: "The Haber process manufactures ammonia from its elements. The conditions used are approximately:",
+    opts: [
+      "Low temperature (50°C), atmospheric pressure, and a nickel catalyst",
+      "Very high temperature (800°C), very low pressure, and a platinum catalyst",
+      "Moderate temperature (450°C), high pressure (150–200 atm), and an iron catalyst with promoters",
+      "Room temperature, very high pressure (1000 atm), and a vanadium pentoxide catalyst"
+    ],
+    ans: 2,
+    exp: "Haber process: N₂ + 3H₂ ⇌ 2NH₃. Conditions: ~450°C (compromise — high enough for speed, low enough for yield), 150–200 atm pressure, iron catalyst with K₂O and Al₂O₃ promoters." },
+
+  { q: "When carbon dioxide is passed through limewater, the solution turns milky because:",
+    opts: [
+      "CO₂ reacts with water to form carbonic acid, which turns the pH indicator in limewater milky",
+      "CO₂ dissolves in limewater to form a saturated solution that scatters light",
+      "CO₂ reacts with calcium hydroxide [Ca(OH)₂] to form insoluble white calcium carbonate precipitate",
+      "CO₂ oxidises the calcium ions in limewater to form calcium oxide, which is a white solid"
+    ],
+    ans: 2,
+    exp: "CO₂ + Ca(OH)₂ → CaCO₃↓ + H₂O. The insoluble white CaCO₃ precipitate is responsible for the milky appearance of limewater — this is the standard test for CO₂." },
+
+  { q: "Which of the following is the correct general formula for the alkanes (saturated hydrocarbons)?",
+    opts: [
+      "CₙH₂ₙ₊₂, which represents compounds with one double bond per molecule",
+      "CₙH₂ₙ, which is the general formula for the cycloalkanes and alkenes",
+      "CₙH₂ₙ₊₂, which correctly represents saturated hydrocarbons with only single C–C bonds",
+      "CₙH₂ₙ₋₂, which represents alkynes with one triple bond per molecule"
+    ],
+    ans: 2,
+    exp: "Alkanes (saturated): CₙH₂ₙ₊₂. Methane CH₄ (n=1), ethane C₂H₆ (n=2), propane C₃H₈ (n=3). Alkenes (one C=C): CₙH₂ₙ. Alkynes (one C≡C): CₙH₂ₙ₋₂." },
+
+  // ── 10 with ans:3 (D is correct) ──
+
+  { q: "Which of the following correctly explains why graphite is used as a lubricant and as electrode material?",
+    opts: [
+      "Graphite is used because it is the hardest allotrope of carbon and resists mechanical wear",
+      "Graphite conducts electricity because it contains mobile protons that carry charge",
+      "Graphite is used because it melts at a low temperature, forming a liquid film that reduces friction",
+      "Graphite has layered structure with delocalised electrons between layers — layers slide easily (lubrication) and free electrons conduct electricity (electrode use)"
     ],
     ans: 3,
-    exp: "Boyle's Law: $P_1V_1 = P_2V_2 \\Rightarrow 300 \\times 4 = P_2 \\times 12 \\Rightarrow P_2 = \\frac{1200}{12} = 100$ kPa. The volume tripled, so the pressure decreased to one-third. This inverse relationship is central to understanding gas behaviour in syringes, pumps, and breathing."
-  }
+    exp: "Graphite: parallel layers of hexagonally arranged carbon atoms with delocalised π electrons. Layers slide over each other (weak van der Waals forces) → lubrication. Delocalised electrons move freely → electrical conduction." },
+
+  { q: "A solution has [H⁺] = 0.001 mol/L. What is its pH?",
+    opts: [
+      "pH = 1, because 0.001 = 10⁻¹",
+      "pH = 10, because the pH equals the inverse of the exponent",
+      "pH = 0.001, because pH equals the H⁺ concentration directly",
+      "pH = 3, because pH = −log[H⁺] = −log(10⁻³) = 3"
+    ],
+    ans: 3,
+    exp: "[H⁺] = 0.001 = 10⁻³ mol/L. pH = −log(10⁻³) = 3. The solution is acidic (pH < 7)." },
+
+  { q: "Which of the following correctly identifies the use of sulphuric acid in industry?",
+    opts: [
+      "Sulphuric acid is used exclusively as a food preservative in the canning industry",
+      "Sulphuric acid is used only in the production of polymers and synthetic fibres",
+      "Sulphuric acid is used only as a cleaning agent for removing rust from metal surfaces",
+      "Sulphuric acid is used in manufacturing fertilisers (ammonium sulphate), detergents, dyes, and as the electrolyte in lead-acid batteries"
+    ],
+    ans: 3,
+    exp: "H₂SO₄ is the most widely used industrial chemical: fertiliser production (ammonium sulphate), detergent synthesis, dye manufacture, car batteries (lead-acid), and many other processes." },
+
+  { q: "The type of salt formed when sodium hydroxide fully neutralises carbonic acid (H₂CO₃) is:",
+    opts: [
+      "An acid salt — NaHCO₃ — because one hydrogen has been replaced by sodium",
+      "A basic salt — Na(OH)CO₃ — because excess hydroxide remains in the salt",
+      "A complex salt — because CO₃²⁻ acts as a ligand in the reaction",
+      "A normal (neutral) salt — Na₂CO₃ — because both replaceable hydrogens are replaced by sodium"
+    ],
+    ans: 3,
+    exp: "Full neutralisation: H₂CO₃ + 2NaOH → Na₂CO₃ + 2H₂O. All replaceable H⁺ are replaced → normal salt (sodium carbonate). Partial neutralisation gives the acid salt NaHCO₃." },
+
+  { q: "Which of the following correctly describes the allotropy of carbon?",
+    opts: [
+      "Allotropy refers to isotopes of carbon — atoms with the same proton number but different neutron numbers",
+      "Allotropy in carbon refers to different ionic forms of carbon produced during electrolysis",
+      "Allotropy describes the different compounds that carbon forms with hydrogen and oxygen",
+      "Allotropy is the existence of an element in two or more different physical forms with different structural arrangements — for carbon, these include diamond, graphite, and fullerenes"
+    ],
+    ans: 3,
+    exp: "Allotropes are different structural forms of the same element. Carbon's allotropes: diamond (3D tetrahedral covalent network), graphite (2D layered structure), and fullerenes (C₆₀ cage structures)." },
+
+  { q: "Which of the following correctly describes the classification of salts based on solubility?",
+    opts: [
+      "Soluble salts include all carbonates; insoluble salts include all chlorides",
+      "Soluble salts include all sulphates; insoluble salts include all nitrates",
+      "All salts are completely soluble in water if sufficient heat is applied",
+      "Soluble salts include all nitrates and most chlorides; insoluble salts include most carbonates (except Na, K, NH₄) and lead/barium sulphate"
+    ],
+    ans: 3,
+    exp: "Solubility rules: ALL nitrates soluble; most chlorides soluble (except AgCl, PbCl₂); most sulphates soluble (except BaSO₄, PbSO₄, CaSO₄); most carbonates insoluble (except Na₂CO₃, K₂CO₃, (NH₄)₂CO₃)." },
+
+  { q: "In the laboratory preparation of carbon dioxide, which of the following is the correct method?",
+    opts: [
+      "Burning magnesium ribbon in excess oxygen to produce white magnesium oxide",
+      "Reacting zinc metal with dilute hydrochloric acid to produce zinc chloride and hydrogen",
+      "Heating sodium bicarbonate with excess ethanoic acid at a controlled temperature",
+      "Reacting marble chips (CaCO₃) with dilute hydrochloric acid: CaCO₃ + 2HCl → CaCl₂ + H₂O + CO₂"
+    ],
+    ans: 3,
+    exp: "Standard lab preparation of CO₂: CaCO₃ + 2HCl → CaCl₂ + H₂O + CO₂↑. Marble chips (or chalk/limestone) react with dilute HCl. The gas is collected over water or by upward displacement." },
+
+  { q: "The term 'hydrated salt' refers to a salt that:",
+    opts: [
+      "Has been dissolved in water and remains in solution form",
+      "Has reacted with water to produce an acid and a base in a hydrolysis reaction",
+      "Has been heated strongly to remove all water molecules from its crystal structure",
+      "Contains a fixed number of water molecules (water of crystallisation) incorporated into its crystal lattice"
+    ],
+    ans: 3,
+    exp: "Hydrated salts contain 'water of crystallisation' — water molecules that are bonded within the crystal structure. E.g., CuSO₄·5H₂O (blue vitriol) has 5 H₂O per formula unit." },
+
+  { q: "Which of the following correctly states the industrial significance of the chemical industry to a nation's economy?",
+    opts: [
+      "The chemical industry is only relevant for producing weapons and has no civilian economic value",
+      "Chemical industries are important only for mining raw materials from the earth",
+      "Chemical industries produce only waste products that must be disposed of at government expense",
+      "Chemical industries provide employment, manufacture essential products (fertilisers, medicines, plastics, fuels), and contribute significantly to GDP and foreign exchange earnings"
+    ],
+    ans: 3,
+    exp: "Chemical industries are economically vital: they create jobs, produce essential goods (fertilisers, pharmaceuticals, polymers, fuels, dyes), generate export revenue, and drive downstream industrial activity." },
+
+  { q: "Which of the following correctly distinguishes between a physical change and a chemical change in the context of carbon chemistry?",
+    opts: [
+      "Dissolving carbon dioxide in water is a chemical change; grinding graphite is also a chemical change",
+      "Both melting wax and burning wax are physical changes because both involve heat",
+      "Physical changes are always exothermic while chemical changes are always endothermic",
+      "Melting or dissolving carbon compounds is a physical change (reversible, no new substance); burning carbon is a chemical change (irreversible, new substances CO₂ and H₂O formed)"
+    ],
+    ans: 3,
+    exp: "Physical change: no new substance, usually reversible (melting, dissolving). Chemical change: new substance(s) formed, usually irreversible (combustion, oxidation). Burning carbon produces CO₂ — a new substance — confirming it is a chemical change." }
+
 ],
 'Physics': [
-  {
-    q: "Which of the following correctly lists ONLY fundamental (base) quantities?",
+
+  // ── 10 with ans:0 (A is correct) ──
+
+  { q: "Ohm's Law states that, at constant temperature, the current flowing through a conductor is:",
     opts: [
-      "Length, Force, Temperature",
-      "Mass, Time, Electric current",
-      "Speed, Volume, Pressure",
-      "Energy, Power, Density"
-    ],
-    ans: 1,
-    exp: "The seven SI base quantities are: length, mass, time, electric current, thermodynamic temperature, amount of substance, and luminous intensity. Force, speed, volume, energy, power, pressure, and density are all derived — they are calculated from base quantities."
-  },
-  {
-    q: "The dimensional formula of force is:",
-    opts: [
-      "$[MLT^{-1}]$",
-      "$[ML^2T^{-2}]$",
-      "$[MLT^{-2}]$",
-      "$[M^0LT^{-2}]$"
-    ],
-    ans: 2,
-    exp: "Force $= $ mass $\\times$ acceleration $= kg \\times m/s^2$. In dimensional notation: $[M][LT^{-2}] = [MLT^{-2}]$. Dimensional analysis is a powerful tool — if the dimensions of both sides of an equation don't match, the equation is wrong."
-  },
-  {
-    q: "A Vernier calliper reads $2.3$ cm on the main scale and the $7^{th}$ Vernier division coincides with a main scale division. If the least count is $0.01$ cm, what is the reading?",
-    opts: [
-      "$2.37$ cm",
-      "$2.07$ cm",
-      "$2.73$ cm",
-      "$2.30$ cm"
+      "Directly proportional to the potential difference across it, so V = IR",
+      "Inversely proportional to the potential difference across it, so I = V²/R",
+      "Independent of the potential difference and depends only on temperature",
+      "Equal to the square of the voltage divided by the resistance"
     ],
     ans: 0,
-    exp: "Vernier reading $=$ main scale $+$ (Vernier division $\\times$ least count) $= 2.3 + (7 \\times 0.01) = 2.3 + 0.07 = 2.37$ cm. The Vernier scale allows us to read beyond the smallest main scale division — that is its entire purpose."
-  },
-  {
-    q: "A body travels $120$ m in the first $6$ s and $80$ m in the next $4$ s. What is its average speed over the entire journey?",
+    exp: "Ohm's Law: V = IR, meaning voltage (V) is directly proportional to current (I) at constant temperature. Doubling V doubles I if R is constant." },
+
+  { q: "In a series circuit with two resistors R₁ = 4 Ω and R₂ = 6 Ω connected to a 20 V supply, the total current in the circuit is:",
     opts: [
-      "$18$ m/s",
-      "$22$ m/s",
-      "$20$ m/s",
-      "$16$ m/s"
-    ],
-    ans: 2,
-    exp: "Average speed $= \\frac{\\text{total distance}}{\\text{total time}} = \\frac{120 + 80}{6 + 4} = \\frac{200}{10} = 20$ m/s. A common error is averaging the two separate speeds — this only gives the correct answer if time intervals are equal."
-  },
-  {
-    q: "A car starts from rest and accelerates uniformly at $4 \\text{ m/s}^2$. How far does it travel in the first $5$ seconds?",
-    opts: [
-      "$40$ m",
-      "$100$ m",
-      "$20$ m",
-      "$50$ m"
-    ],
-    ans: 3,
-    exp: "Using $s = ut + \\frac{1}{2}at^2$ with $u = 0$: $s = 0 + \\frac{1}{2} \\times 4 \\times 25 = 50$ m. Always identify your known quantities (u, v, a, s, t) and select the equation of motion that uses exactly those variables."
-  },
-  {
-    q: "A ball is thrown vertically upward with an initial velocity of $30$ m/s. How high does it rise before stopping? (Take $g = 10 \\text{ m/s}^2$)",
-    opts: [
-      "$90$ m",
-      "$60$ m",
-      "$150$ m",
-      "$45$ m"
-    ],
-    ans: 3,
-    exp: "At maximum height, $v = 0$. Using $v^2 = u^2 - 2gs$: $0 = 900 - 2(10)s \\Rightarrow s = \\frac{900}{20} = 45$ m. Note: gravity decelerates the ball on the way up, so use $-g$. The time to reach maximum height is $t = \\frac{u}{g} = 3$ s."
-  },
-  {
-    q: "A stone is dropped from a height of $80$ m. How long does it take to reach the ground? (Take $g = 10 \\text{ m/s}^2$)",
-    opts: [
-      "$8$ s",
-      "$4$ s",
-      "$16$ s",
-      "$2$ s"
-    ],
-    ans: 1,
-    exp: "Using $s = ut + \\frac{1}{2}gt^2$ with $u = 0$: $80 = \\frac{1}{2}(10)t^2 = 5t^2 \\Rightarrow t^2 = 16 \\Rightarrow t = 4$ s. Free fall means the only force acting is gravity — there is no initial velocity when an object is merely dropped."
-  },
-  {
-    q: "On a velocity-time graph, what does a horizontal straight line (parallel to the time axis) indicate?",
-    opts: [
-      "Uniform acceleration",
-      "The object is at rest",
-      "Uniform velocity (zero acceleration)",
-      "Increasing deceleration"
-    ],
-    ans: 2,
-    exp: "A horizontal line on a v-t graph means velocity is constant over time — the gradient (acceleration) is zero. Contrast: a sloped line means uniform acceleration; a curved line means non-uniform acceleration; a line at $v = 0$ means the object is stationary."
-  },
-  {
-    q: "A car travelling at $20$ m/s decelerates uniformly and stops after travelling $100$ m. What is the magnitude of the deceleration?",
-    opts: [
-      "$4 \\text{ m/s}^2$",
-      "$10 \\text{ m/s}^2$",
-      "$2 \\text{ m/s}^2$",
-      "$5 \\text{ m/s}^2$"
-    ],
-    ans: 2,
-    exp: "Using $v^2 = u^2 + 2as$ with $v = 0$, $u = 20$, $s = 100$: $0 = 400 + 2a(100) \\Rightarrow 200a = -400 \\Rightarrow a = -2 \\text{ m/s}^2$. Magnitude of deceleration $= 2 \\text{ m/s}^2$. Deceleration is simply negative acceleration."
-  },
-  {
-    q: "The area under a velocity-time graph between two points in time gives:",
-    opts: [
-      "The acceleration of the object",
-      "The net force on the object",
-      "The instantaneous speed",
-      "The displacement of the object"
-    ],
-    ans: 3,
-    exp: "Area under a v-t graph $=$ velocity $\\times$ time $=$ displacement. For a trapezium-shaped region (uniform acceleration), use area $= \\frac{1}{2}(v_1 + v_2) \\times t$. This is one of the most tested graph interpretations in physics — distinguish it from the gradient, which gives acceleration."
-  },
-  {
-    q: "A force of $50$ N acts on a mass of $m$ kg, producing an acceleration of $2.5 \\text{ m/s}^2$. What is the mass?",
-    opts: [
-      "$125$ kg",
-      "$52.5$ kg",
-      "$47.5$ kg",
-      "$20$ kg"
-    ],
-    ans: 3,
-    exp: "Newton's Second Law: $F = ma \\Rightarrow m = \\frac{F}{a} = \\frac{50}{2.5} = 20$ kg. This law quantifies what the first law describes qualitatively — the greater the mass, the more force needed to produce the same acceleration."
-  },
-  {
-    q: "Two forces act on an object: $12$ N due East and $5$ N due North. What is the magnitude of the resultant force?",
-    opts: [
-      "$17$ N",
-      "$7$ N",
-      "$13$ N",
-      "$119$ N"
-    ],
-    ans: 2,
-    exp: "Since the forces are perpendicular: $R = \\sqrt{12^2 + 5^2} = \\sqrt{144 + 25} = \\sqrt{169} = 13$ N. This is a direct application of Pythagoras' theorem. The direction of the resultant is $\\theta = \\arctan\\left(\\frac{5}{12}\\right) \\approx 22.6°$ North of East."
-  },
-  {
-    q: "Newton's First Law of Motion is also called the Law of Inertia. Which of the following situations best demonstrates inertia?",
-    opts: [
-      "A rocket accelerating in space",
-      "A passenger lurching forward when a bus brakes suddenly",
-      "A ball accelerating down a ramp",
-      "A stretched spring returning to its original shape"
-    ],
-    ans: 1,
-    exp: "When a bus brakes suddenly, the passenger's body tends to continue moving forward at the original speed — this resistance to change in motion is inertia. Inertia is proportional to mass: heavier objects are harder to start or stop."
-  },
-  {
-    q: "A $2$ kg book rests on a table. The book pushes down on the table with $20$ N. The table pushes back up on the book with $20$ N. This is an application of:",
-    opts: [
-      "Newton's First Law",
-      "Law of Conservation of Momentum",
-      "Newton's Third Law",
-      "Newton's Second Law"
-    ],
-    ans: 2,
-    exp: "Newton's Third Law: every action has an equal and opposite reaction acting on a DIFFERENT body. Here: the book exerts a downward force on the table (action), and the table exerts an equal upward normal force on the book (reaction). These forces never cancel — they act on different objects."
-  },
-  {
-    q: "The coefficient of static friction between a $5$ kg block and a surface is $0.4$. What minimum horizontal force is needed to start moving the block? (Take $g = 10 \\text{ m/s}^2$)",
-    opts: [
-      "$2$ N",
-      "$12.5$ N",
-      "$50$ N",
-      "$20$ N"
-    ],
-    ans: 3,
-    exp: "Normal reaction $N = mg = 5 \\times 10 = 50$ N. Maximum static friction $= \\mu_s N = 0.4 \\times 50 = 20$ N. The applied force must exceed $20$ N to overcome static friction and start the motion. Static friction is always greater than kinetic (sliding) friction."
-  },
-  {
-    q: "Which of the following correctly ranks friction types from highest to lowest force?",
-    opts: [
-      "Rolling $>$ Sliding $>$ Static",
-      "Static $>$ Sliding $>$ Rolling",
-      "Sliding $>$ Static $>$ Rolling",
-      "Static $>$ Rolling $>$ Sliding"
-    ],
-    ans: 1,
-    exp: "Static friction (opposing impending motion) is greatest, then sliding/kinetic friction (opposing motion once started), then rolling friction (least — which is why wheels are so useful). This ordering explains why it's harder to start sliding a heavy object than to keep it sliding."
-  },
-  {
-    q: "A lubricant is applied between two metal surfaces. Which statement best explains why friction is reduced?",
-    opts: [
-      "The lubricant increases the normal reaction force",
-      "The lubricant smooths the surfaces by chemical reaction",
-      "The lubricant creates a fluid layer that separates the surfaces, replacing solid-solid contact",
-      "The lubricant increases the coefficient of friction"
-    ],
-    ans: 2,
-    exp: "Lubricants (oils, grease) form a thin fluid film between surfaces. Fluid friction is much less than solid friction, so the overall resistance to motion is greatly reduced. This is why engines need oil — without it, metal surfaces grind directly against each other."
-  },
-  {
-    q: "Pressure in a liquid at depth $h$ is given by $P = \\rho g h$. Which of the following correctly states how pressure varies in a static liquid?",
-    opts: [
-      "Pressure decreases with depth",
-      "Pressure is greater at the sides than at the bottom",
-      "Pressure at the same depth is equal in all directions",
-      "Pressure depends on the shape of the container"
-    ],
-    ans: 2,
-    exp: "In a static fluid, pressure at any given depth is the same in all directions (Pascal's principle). Pressure increases with depth ($P = \\rho g h$), is independent of the shape of the container (hydrostatic paradox), and acts equally in all directions at the same level."
-  },
-  {
-    q: "A diver is $15$ m below the surface of seawater (density $= 1025 \\text{ kg/m}^3$). What is the gauge pressure at this depth? (Take $g = 10 \\text{ m/s}^2$)",
-    opts: [
-      "$153,750$ Pa",
-      "$15,375$ Pa",
-      "$1,537,500$ Pa",
-      "$1025$ Pa"
+      "I = V ÷ (R₁ + R₂) = 20 ÷ 10 = 2 A",
+      "I = V ÷ R₁ = 20 ÷ 4 = 5 A, because only the first resistor affects total current",
+      "I = (R₁ + R₂) ÷ V = 10 ÷ 20 = 0.5 A, using the inverted formula",
+      "I = V × (R₁ + R₂) = 20 × 10 = 200 A, using multiplication instead of division"
     ],
     ans: 0,
-    exp: "Gauge pressure $= \\rho g h = 1025 \\times 10 \\times 15 = 153,750$ Pa. Gauge pressure is the pressure due to the liquid column only — it does not include atmospheric pressure. Absolute pressure $=$ gauge pressure $+$ atmospheric pressure ($\\approx 101,325$ Pa)."
-  },
-  {
-    q: "Archimedes' principle states that an object immersed in a fluid experiences an upthrust equal to:",
+    exp: "In series, total resistance = R₁ + R₂ = 10 Ω. By Ohm's Law, I = V/R_total = 20/10 = 2 A." },
+
+  { q: "The electrical power consumed by a device with resistance R carrying current I is given by:",
     opts: [
-      "The weight of the object",
-      "The mass of fluid in the container",
-      "The weight of fluid displaced by the object",
-      "The pressure at the bottom of the object"
+      "P = I²R, derived by substituting V = IR into P = VI",
+      "P = V²I, obtained by multiplying voltage squared by current",
+      "P = IR², obtained by multiplying current by resistance squared",
+      "P = V/I, obtained by dividing voltage by current"
     ],
-    ans: 2,
-    exp: "Archimedes' principle: upthrust (buoyant force) $=$ weight of fluid displaced $= \\rho_{fluid} \\times V_{displaced} \\times g$. An object floats when upthrust equals its weight. This explains why ships (which displace a large volume of water) can float despite being made of steel."
-  },
-  {
-    q: "A metal block weighs $80$ N in air and $60$ N when fully submerged in water. What is the upthrust?",
+    ans: 0,
+    exp: "Power P = VI. Since V = IR, substituting gives P = (IR)×I = I²R. Alternatively, P = V²/R. These are standard power formulas." },
+
+  { q: "A fuse is described as a safety device because it:",
     opts: [
-      "$140$ N",
-      "$60$ N",
-      "$80$ N",
-      "$20$ N"
+      "Melts and breaks the circuit when the current exceeds a safe level, preventing fire and damage",
+      "Increases resistance in the circuit when the voltage drops below a safe threshold",
+      "Stores excess electrical energy and releases it when the supply voltage falls",
+      "Reverses the direction of current flow to prevent damage to sensitive components"
     ],
-    ans: 3,
-    exp: "Upthrust $=$ weight in air $-$ apparent weight in liquid $= 80 - 60 = 20$ N. This is also equal to the weight of water displaced. This measurement technique — comparing weights in air and in liquid — is used to determine the density of irregular objects."
-  },
-  {
-    q: "A body of mass $500$ g has a volume of $200 \\text{ cm}^3$. Will it float or sink in water? (Density of water $= 1 \\text{ g/cm}^3$)",
+    ans: 0,
+    exp: "A fuse contains a thin wire that melts when the current exceeds its rated value, breaking the circuit and protecting the wiring and connected devices from overheating." },
+
+  { q: "The nucleus of an atom consists of:",
     opts: [
-      "Float, because its density is less than water",
-      "Sink, because its density is less than water",
-      "Float, because its density is greater than water",
-      "Sink, because its density is greater than water"
+      "Protons (positively charged) and neutrons (neutral), with electrons orbiting outside",
+      "Electrons (negatively charged) and protons (positively charged) with neutrons orbiting",
+      "Neutrons only, with protons and electrons occupying the electron shells",
+      "Protons only, with all neutral and negative particles in the surrounding cloud"
     ],
-    ans: 3,
-    exp: "Density of body $= \\frac{\\text{mass}}{\\text{volume}} = \\frac{500}{200} = 2.5 \\text{ g/cm}^3$. Since $2.5 > 1$ (water), the body is denser than water and will sink. An object floats only if its average density is less than or equal to the fluid's density."
-  },
-  {
-    q: "The gradient of a displacement-time graph gives:",
+    ans: 0,
+    exp: "The nucleus contains protons (positive) and neutrons (neutral). Electrons (negative) occupy energy levels (shells) outside the nucleus. This is the standard atomic model." },
+
+  { q: "Surface tension in liquids is caused by:",
     opts: [
-      "Acceleration",
-      "Distance",
-      "Velocity",
-      "Force"
+      "The net inward cohesive force on surface molecules, which are attracted to neighbouring molecules on all sides except from above",
+      "The gravitational pull on the liquid surface from Earth's centre acting exclusively on molecules",
+      "The evaporation of surface molecules reducing the liquid's density at the surface",
+      "The repulsion between liquid molecules and air molecules at the interface"
     ],
-    ans: 2,
-    exp: "Velocity $= \\frac{\\Delta s}{\\Delta t}$, which is the slope (gradient) of a displacement-time graph. A steeper slope means higher velocity. A negative slope means motion in the opposite direction. Compare: gradient of v-t graph $=$ acceleration; area under v-t graph $=$ displacement."
-  },
-  {
-    q: "A car of mass $1000$ kg moving at $20$ m/s is brought to rest by brakes in $5$ s. What braking force was applied?",
+    ans: 0,
+    exp: "Surface molecules experience cohesive forces from molecules below and beside them but not from above (no liquid above). This net inward force creates surface tension — effectively a 'skin' on the liquid." },
+
+  { q: "Hooke's Law states that for a spring or elastic material:",
     opts: [
-      "$200$ N",
-      "$100,000$ N",
-      "$4000$ N",
-      "$25,000$ N"
+      "The extension is directly proportional to the applied force, provided the elastic limit is not exceeded: F = ke",
+      "The extension increases exponentially with force after the proportionality limit",
+      "The compression of a spring is always twice its extension under the same applied load",
+      "The force required to stretch a spring decreases as the spring becomes longer"
     ],
-    ans: 2,
-    exp: "First find deceleration: $a = \\frac{v - u}{t} = \\frac{0 - 20}{5} = -4 \\text{ m/s}^2$. Then $F = ma = 1000 \\times 4 = 4000$ N. Always find $a$ before $F$ when time and velocity are given — this is a two-step problem."
-  },
-  {
-    q: "Which of the following is the correct equation of motion relating displacement, initial velocity, final velocity, and time?",
+    ans: 0,
+    exp: "Hooke's Law: F = ke (Force = spring constant × extension), valid within the elastic limit. Beyond the elastic limit, the relationship is no longer linear." },
+
+  { q: "In osmosis, water molecules move:",
     opts: [
-      "$s = ut + \\frac{1}{2}at^2$",
-      "$v^2 = u^2 + 2as$",
-      "$s = \\frac{(u + v)}{2} \\times t$",
-      "$v = u + at$"
+      "From a region of high water concentration (dilute solution) to low water concentration (concentrated solution) through a semi-permeable membrane",
+      "From a region of low water concentration (concentrated solution) to high water concentration through any membrane",
+      "Along an electrical potential gradient from a negatively charged region to a positive region",
+      "Against the concentration gradient by using energy supplied by the cell's metabolism"
     ],
-    ans: 2,
-    exp: "$s = \\frac{(u + v)}{2} \\times t$ uses displacement ($s$), initial velocity ($u$), final velocity ($v$), and time ($t$) — with no acceleration term. This is useful when $a$ is unknown. The four equations of uniform motion each omit one of the five variables: $s, u, v, a, t$."
-  },
-  {
-    q: "A vector quantity differs from a scalar quantity in that a vector:",
+    ans: 0,
+    exp: "Osmosis is the movement of water molecules through a semi-permeable membrane from a dilute solution (high water potential) to a concentrated solution (low water potential)." },
+
+  { q: "The energy stored in a stretched elastic material (spring) with spring constant k and extension e is:",
     opts: [
-      "Can only be positive",
-      "Is always larger in magnitude",
-      "Has both magnitude and direction",
-      "Is measured in SI units"
+      "E = ½ke², representing the elastic potential energy stored",
+      "E = ke², which omits the factor of one-half from the correct formula",
+      "E = 2ke², which doubles the correct formula incorrectly",
+      "E = ke/2, which uses linear rather than squared extension"
     ],
-    ans: 2,
-    exp: "A vector quantity has both magnitude (size) and direction, e.g., velocity ($20$ m/s North), force ($50$ N at $30°$), displacement. A scalar has only magnitude, e.g., speed ($20$ m/s), mass ($5$ kg), temperature ($27°C$). Vectors cannot be simply added — direction must be considered."
-  },
-  {
-    q: "Which of the following correctly describes static friction?",
+    ans: 0,
+    exp: "Elastic potential energy = ½ke². This is derived from the area under a force-extension graph (F = ke), which is a triangle of base e and height ke, giving area = ½ke²." },
+
+  { q: "Capillarity is the phenomenon by which a liquid rises or falls in a narrow tube. Water rises in a glass capillary tube because:",
     opts: [
-      "It acts on a body already in motion",
-      "It is always less than kinetic friction",
-      "It acts to prevent a stationary body from starting to move",
-      "It is independent of the normal reaction force"
+      "Adhesive forces between water and glass are stronger than cohesive forces between water molecules",
+      "Cohesive forces between water molecules are stronger than adhesive forces with glass",
+      "Water molecules are repelled by the glass surface and pushed upward into the tube",
+      "The atmospheric pressure inside the capillary tube is higher than outside the tube"
     ],
-    ans: 2,
-    exp: "Static friction acts on a body at rest to prevent it from starting to move when a force is applied. It adjusts itself to match the applied force up to a maximum value ($f_s = \\mu_s N$). Once this maximum is exceeded, the body starts moving and kinetic friction takes over."
-  },
-  {
-    q: "An object is in equilibrium. Which of the following MUST be true?",
+    ans: 0,
+    exp: "Water rises in glass capillary tubes because adhesion (water-glass attraction) exceeds cohesion (water-water attraction), pulling the meniscus upward until balanced by the liquid's weight." },
+
+  // ── 10 with ans:1 (B is correct) ──
+
+  { q: "Two resistors of 6 Ω and 3 Ω are connected in parallel. Their combined resistance is:",
     opts: [
-      "The object is stationary",
-      "The net force and net torque acting on the object are both zero",
-      "All individual forces acting on it are zero",
-      "The object is moving at constant acceleration"
+      "9 Ω, obtained by adding both resistances as in a series connection",
+      "2 Ω, obtained using 1/R = 1/6 + 1/3 = 1/6 + 2/6 = 3/6, so R = 2 Ω",
+      "4.5 Ω, obtained by dividing the sum by 2 as if taking the simple average",
+      "18 Ω, obtained by multiplying both resistances together"
     ],
     ans: 1,
-    exp: "Equilibrium requires: (1) the vector sum of all forces $= 0$ (translational equilibrium), AND (2) the sum of all torques $= 0$ (rotational equilibrium). An object can be in equilibrium while moving — if it moves at constant velocity, the net force is zero (dynamic equilibrium)."
-  },
-  {
-    q: "The SI unit of pressure is the Pascal (Pa). Which of the following is an equivalent unit?",
+    exp: "For parallel resistors: 1/R_total = 1/R₁ + 1/R₂ = 1/6 + 1/3 = 1/6 + 2/6 = 3/6 = 1/2. Therefore R_total = 2 Ω." },
+
+  { q: "The crystal structure of a solid refers to:",
     opts: [
-      "$\\text{N} \\cdot \\text{m}^2$",
-      "$\\text{kg} \\cdot \\text{m/s}$",
-      "$\\text{N/m}^2$",
-      "$\\text{kg/m}^3$"
-    ],
-    ans: 2,
-    exp: "Pressure $= \\frac{\\text{Force}}{\\text{Area}} = \\frac{\\text{N}}{\\text{m}^2} = \\text{Pa}$. In base units: $1 \\text{ Pa} = 1 \\text{ kg m}^{-1} \\text{s}^{-2}$. Atmospheric pressure $\\approx 101,325$ Pa $\\approx 101.3$ kPa."
-  },
-  {
-    q: "Which instrument is used to measure very small lengths such as the diameter of a wire, accurate to $0.01$ mm?",
-    opts: [
-      "Metre rule",
-      "Vernier calliper",
-      "Micrometer screw gauge",
-      "Measuring tape"
-    ],
-    ans: 2,
-    exp: "A micrometer screw gauge measures to $0.01$ mm ($0.001$ cm) precision — 10 times more precise than a Vernier calliper ($0.1$ mm). It works by a calibrated screw; one full turn of the thimble advances the spindle by the pitch of the screw (usually $0.5$ mm)."
-  },
-  {
-    q: "A body is moving in a circle at constant speed. Which statement is correct?",
-    opts: [
-      "Its velocity is constant and acceleration is zero",
-      "Its speed changes but velocity is constant",
-      "Its speed is constant but velocity changes continuously",
-      "No force is needed to maintain circular motion"
-    ],
-    ans: 2,
-    exp: "Speed (scalar) is constant in uniform circular motion, but velocity (vector) changes continuously because the direction changes at every point. This change in direction means there IS acceleration (centripetal acceleration) directed toward the centre. A centripetal force is required to maintain the circular path."
-  },
-  {
-    q: "The principle of conservation of momentum states that the total momentum of a system:",
-    opts: [
-      "Always increases during a collision",
-      "Remains constant if no external force acts on the system",
-      "Is zero before and after every collision",
-      "Depends on the type of collision"
+      "The chemical formula that shows how many atoms of each element are present in the compound",
+      "The regular, repeating three-dimensional arrangement of atoms, ions, or molecules in a solid",
+      "The random arrangement of particles in a liquid that changes shape when the container changes",
+      "The electron configuration of the outermost shell of the atoms in the solid material"
     ],
     ans: 1,
-    exp: "Conservation of momentum: in a closed system (no external forces), total momentum before $=$ total momentum after any collision or interaction. Momentum $= mv$ (a vector). This principle applies to ALL collisions — elastic, inelastic, and explosions."
-  },
-  {
-    q: "A $3$ kg ball moving at $4$ m/s collides with a stationary $1$ kg ball. If they stick together, what is their common velocity after collision?",
+    exp: "Crystal structure describes the ordered, repeating geometric arrangement of particles (atoms, ions, or molecules) in a crystalline solid, forming a lattice pattern." },
+
+  { q: "Electrical energy consumed by a device of power P operating for time t is given by:",
     opts: [
-      "$12$ m/s",
-      "$4$ m/s",
-      "$1$ m/s",
-      "$3$ m/s"
+      "E = P/t, which gives power per unit time rather than energy consumed",
+      "E = Pt, the product of power and time in joules (or kilowatt-hours for billing)",
+      "E = P²t, which incorrectly squares the power before multiplying by time",
+      "E = P + t, which incorrectly adds power and time as if they have the same units"
+    ],
+    ans: 1,
+    exp: "Electrical energy E = P × t (watts × seconds = joules). For electricity bills, energy is measured in kilowatt-hours (kWh): P in kW, t in hours." },
+
+  { q: "Diffusion is defined as:",
+    opts: [
+      "The movement of liquid molecules through a semi-permeable membrane from dilute to concentrated",
+      "The net movement of particles from a region of high concentration to a region of low concentration due to random motion",
+      "The movement of electrons through a conductor driven by an electric potential difference",
+      "The absorption of heat by molecules causing them to contract and move closer together"
+    ],
+    ans: 1,
+    exp: "Diffusion is the net movement of particles (atoms, molecules, or ions) from high concentration to low concentration, driven by random kinetic motion, until equilibrium is reached." },
+
+  { q: "A spring of natural length 20 cm is stretched to 26 cm by a force of 3 N. The spring constant is:",
+    opts: [
+      "3/20 = 0.15 N/cm, using the natural length instead of the extension",
+      "3/6 = 0.5 N/cm, using F/extension = 3 N ÷ 6 cm = 0.5 N/cm",
+      "3/26 = 0.115 N/cm, using the total stretched length instead of the extension",
+      "3 × 6 = 18 N/cm, multiplying instead of dividing"
+    ],
+    ans: 1,
+    exp: "Extension = 26 − 20 = 6 cm. Spring constant k = F/e = 3 N ÷ 6 cm = 0.5 N/cm." },
+
+  { q: "The atomic number of an element is defined as:",
+    opts: [
+      "The total number of protons and neutrons in the nucleus of an atom",
+      "The number of protons in the nucleus of an atom, which equals the number of electrons in a neutral atom",
+      "The number of neutrons in the nucleus, which determines the isotope of the element",
+      "The mass of one atom of the element expressed in atomic mass units (amu)"
+    ],
+    ans: 1,
+    exp: "Atomic number (Z) = number of protons in the nucleus. In a neutral atom, it also equals the number of electrons. It uniquely identifies each element." },
+
+  { q: "A mercury thermometer placed in a narrow glass capillary tube works on the principle of:",
+    opts: [
+      "Osmosis — mercury moves through a semi-permeable membrane as temperature changes",
+      "Thermal expansion — mercury expands when heated and rises in the capillary, and contracts when cooled",
+      "Surface tension — mercury's surface tension decreases with temperature, causing it to rise",
+      "Diffusion — mercury atoms diffuse along the concentration gradient created by heat"
+    ],
+    ans: 1,
+    exp: "A mercury thermometer works because mercury (like most liquids) expands when heated and contracts when cooled. The narrow capillary tube magnifies the small volume change." },
+
+  { q: "When verifying Ohm's Law experimentally, a graph of voltage (V) against current (I) is plotted. The slope of the straight line represents:",
+    opts: [
+      "The electrical power consumed by the resistor at each measured voltage",
+      "The resistance (R) of the conductor, since R = V/I and slope = ΔV/ΔI = R",
+      "The electrical energy stored in the circuit at any given point in time",
+      "The reciprocal of the resistance, known as the conductance of the material"
+    ],
+    ans: 1,
+    exp: "From V = IR, R = V/I. On a V-I graph, slope = ΔV/ΔI = R. A steeper slope means greater resistance." },
+
+  { q: "Which of the following is the correct SI unit for electrical resistance?",
+    opts: [
+      "Ampere (A) — the SI unit of electric current",
+      "Ohm (Ω) — the SI unit of electrical resistance",
+      "Volt (V) — the SI unit of electric potential difference",
+      "Watt (W) — the SI unit of electrical power"
+    ],
+    ans: 1,
+    exp: "The ohm (Ω) is the SI unit of electrical resistance, named after Georg Simon Ohm. 1 Ω = 1 V/A." },
+
+  { q: "A safety device called a circuit breaker differs from a fuse in that a circuit breaker:",
+    opts: [
+      "Can never be reset and must be replaced after it trips, just like a fuse",
+      "Can be reset after tripping and reused, unlike a fuse which must be replaced",
+      "Increases the current limit each time it trips, reducing future overload risk",
+      "Operates by melting a thin wire, using the same mechanism as a standard fuse"
+    ],
+    ans: 1,
+    exp: "A circuit breaker uses an electromagnetic or bimetallic mechanism to trip (open) when current exceeds the rated value. Unlike a fuse, it can be reset and reused after the fault is cleared." },
+
+  // ── 10 with ans:2 (C is correct) ──
+
+  { q: "The electromotive force (EMF) of a cell is best described as:",
+    opts: [
+      "The total resistance offered by the internal and external resistances of the circuit",
+      "The current flowing through the external circuit when the cell is fully charged",
+      "The energy supplied per unit charge by the cell to drive charge around the complete circuit",
+      "The potential difference measured across the terminals when the cell is on open circuit only"
+    ],
+    ans: 2,
+    exp: "EMF (ε) = energy supplied per unit charge by the source = work done per coulomb. It includes both terminal voltage and the voltage drop across internal resistance." },
+
+  { q: "Cells connected in series provide a combined EMF equal to:",
+    opts: [
+      "The EMF of only one cell, because the others cancel each other out",
+      "The EMF of the cell with the highest voltage, because it dominates the circuit",
+      "The sum of the EMFs of all the individual cells in the series combination",
+      "The average EMF of all the cells divided by the number of cells"
+    ],
+    ans: 2,
+    exp: "Cells in series: total EMF = ε₁ + ε₂ + ε₃ + ... (add all EMFs). Total internal resistance also adds. This is used to increase available voltage." },
+
+  { q: "Which of the following correctly explains why mercury does not wet glass (forms a convex meniscus) while water does wet glass (forms a concave meniscus)?",
+    opts: [
+      "Mercury is denser than water, so gravity pulls it into a convex shape in all containers",
+      "Water molecules are smaller than mercury atoms, allowing water to spread along glass surfaces",
+      "Cohesive forces between mercury atoms are greater than adhesive forces between mercury and glass; the reverse is true for water",
+      "Mercury is a metal and all metals naturally form convex surfaces in glass containers"
+    ],
+    ans: 2,
+    exp: "Mercury: cohesion > adhesion with glass → convex meniscus, does not wet glass. Water: adhesion with glass > cohesion → concave meniscus, wets glass. This difference determines meniscus shape." },
+
+  { q: "The elastic limit of a material is the point beyond which:",
+    opts: [
+      "The material immediately shatters and breaks into two or more pieces",
+      "The spring constant doubles and Hooke's Law still applies with a new, steeper gradient",
+      "The material no longer returns to its original shape when the load is removed — permanent deformation occurs",
+      "The material begins to compress rather than extend, reversing the direction of deformation"
+    ],
+    ans: 2,
+    exp: "Beyond the elastic limit, permanent (plastic) deformation occurs — the material does not return to its original shape when the force is removed. Hooke's Law no longer applies." },
+
+  { q: "Which of the following correctly describes the difference between a conductor and an insulator in terms of electrical properties?",
+    opts: [
+      "Conductors have no free electrons while insulators have many free electrons available for conduction",
+      "Insulators allow very large currents to flow, while conductors only allow small currents",
+      "Conductors have many free electrons that allow easy charge flow; insulators have very few or no free electrons",
+      "Both conductors and insulators allow current flow, but conductors require higher voltage to start conduction"
+    ],
+    ans: 2,
+    exp: "Conductors (metals) have many delocalised (free) electrons that move easily through the lattice when a voltage is applied. Insulators (rubber, plastic) have no free electrons available for conduction." },
+
+  { q: "A student connects a 60 W bulb to a 240 V supply. The current through the bulb is:",
+    opts: [
+      "60 × 240 = 14,400 A, obtained by multiplying power and voltage",
+      "240/60 = 4 A, obtained by dividing voltage by power incorrectly",
+      "P/V = 60/240 = 0.25 A",
+      "√(60/240) ≈ 0.5 A, incorrectly taking the square root"
+    ],
+    ans: 2,
+    exp: "P = VI, so I = P/V = 60/240 = 0.25 A. Resistance R = V/I = 240/0.25 = 960 Ω (or R = V²/P = 240²/60 = 960 Ω)." },
+
+  { q: "In which of the following situations does osmosis occur?",
+    opts: [
+      "When a salt solution and pure water are mixed freely in an open beaker",
+      "When a solid solute dissolves in a solvent to form a homogeneous solution",
+      "When a dilute sugar solution is separated from a concentrated sugar solution by a semi-permeable membrane",
+      "When two gases at different pressures are allowed to diffuse into the same container"
+    ],
+    ans: 2,
+    exp: "Osmosis requires: (1) a semi-permeable membrane separating two solutions, and (2) a difference in concentration (water potential) across that membrane. Option C is the only scenario that satisfies both conditions." },
+
+  { q: "The unit kilowatt-hour (kWh) is a unit of:",
+    opts: [
+      "Power, representing one kilowatt of power applied for one second",
+      "Current, representing the flow of one thousand amperes for one hour",
+      "Electrical energy, representing 1000 watts of power used for one hour",
+      "Voltage, representing one thousand volts maintained for one hour"
+    ],
+    ans: 2,
+    exp: "1 kWh = 1000 W × 3600 s = 3,600,000 J = 3.6 MJ. It is the unit used by electricity suppliers to measure energy consumption." },
+
+  { q: "The internal resistance of a cell causes a drop in terminal voltage because:",
+    opts: [
+      "Internal resistance increases the EMF of the cell by the same amount as the voltage drop",
+      "Internal resistance stores energy inside the cell and converts it into light",
+      "Some of the EMF is used to drive current through the internal resistance, giving terminal voltage V = ε − Ir",
+      "The internal resistance converts all electrical energy into thermal energy before it reaches the external circuit"
+    ],
+    ans: 2,
+    exp: "Terminal voltage V = ε − Ir, where Ir is the voltage dropped across internal resistance r. The greater the current I or internal resistance r, the larger the terminal voltage drop." },
+
+  { q: "Which of the following correctly explains why a needle can float on the surface of water despite being denser than water?",
+    opts: [
+      "The needle floats because it has a hollow core that reduces its overall density below water",
+      "The needle floats because water repels metal objects that are placed gently on its surface",
+      "The needle is supported by surface tension, which acts as an elastic film resisting puncture under light loads",
+      "The needle floats because the air molecules above the water exert an upward pressure on it"
+    ],
+    ans: 2,
+    exp: "Surface tension creates an elastic membrane at the water surface. A needle placed gently deforms the surface slightly, and the surface tension force (acting along the surface) provides an upward resultant force that supports the needle." },
+
+  // ── 10 with ans:3 (D is correct) ──
+
+  { q: "What happens to the resistance of a metallic conductor when its temperature is increased significantly?",
+    opts: [
+      "The resistance decreases, because higher temperature increases electron speed and efficiency",
+      "The resistance remains constant, because resistance is independent of temperature in metals",
+      "The resistance drops to zero, because metals become superconductors at high temperatures",
+      "The resistance increases, because thermal vibrations of metal ions impede the flow of free electrons"
     ],
     ans: 3,
-    exp: "Conservation of momentum: $m_1u_1 + m_2u_2 = (m_1 + m_2)v$. $3(4) + 1(0) = (3+1)v \\Rightarrow 12 = 4v \\Rightarrow v = 3$ m/s. When objects stick together, it is a perfectly inelastic collision — kinetic energy is NOT conserved, but momentum always is."
-  },
-  {
-    q: "What is the weight of an object of mass $12$ kg on the Moon where $g_{moon} = 1.6 \\text{ m/s}^2$?",
+    exp: "In metals, increasing temperature intensifies ionic vibration in the lattice, increasing the number of collisions with free electrons and impeding current flow — resistance increases." },
+
+  { q: "Isotopes are atoms of the same element that have:",
     opts: [
-      "$120$ N",
-      "$7.5$ N",
-      "$19.2$ N",
-      "$13.6$ N"
-    ],
-    ans: 2,
-    exp: "Weight $= mg = 12 \\times 1.6 = 19.2$ N. Weight is a force (measured in Newtons) and depends on gravitational field strength $g$, which varies by location. Mass ($12$ kg) remains the same everywhere — it is an intrinsic property of matter."
-  },
-  {
-    q: "An athlete exerts a force of $800$ N on the ground while sprinting. The ground exerts an equal and opposite force on the athlete. This forward reaction force is what propels the athlete. Which law explains this?",
-    opts: [
-      "Newton's First Law",
-      "Newton's Second Law",
-      "Law of Conservation of Energy",
-      "Newton's Third Law"
+      "The same mass number but different atomic numbers and different numbers of protons",
+      "The same number of neutrons but different numbers of protons in their nuclei",
+      "Different atomic numbers but identical chemical and physical properties",
+      "The same atomic number (same number of protons) but different mass numbers due to different numbers of neutrons"
     ],
     ans: 3,
-    exp: "Newton's Third Law: the athlete pushes backward on the ground (action); the ground pushes forward on the athlete (reaction). These forces are equal in magnitude, opposite in direction, and act on different bodies. Rockets, swimming, and walking all rely on this law."
-  },
-  {
-    q: "In which of the following scenarios is work done (in the physics sense) equal to zero?",
+    exp: "Isotopes: same element (same Z = same protons) but different mass numbers (different neutron numbers). E.g., ¹²C and ¹⁴C both have 6 protons but 6 and 8 neutrons respectively." },
+
+  { q: "Which of the following is an example of diffusion occurring in everyday life?",
     opts: [
-      "Lifting a box vertically upward",
-      "Pushing a car horizontally along a road",
-      "Carrying a bag horizontally at constant height",
-      "Pulling a sled up a slope"
-    ],
-    ans: 2,
-    exp: "Physics work $= F \\times d \\times \\cos\\theta$. When carrying a bag horizontally, the applied force is vertical (upward, supporting the bag) while displacement is horizontal — the angle between them is $90°$, and $\\cos 90° = 0$. So work done $= 0$, even though effort is expended."
-  },
-  {
-    q: "A machine does $500$ J of work in $25$ s. What is its power output?",
-    opts: [
-      "$12,500$ W",
-      "$525$ W",
-      "$475$ W",
-      "$20$ W"
+      "Water flowing downhill from a mountain under the influence of gravity",
+      "A solid piece of salt dissolving when stirred vigorously in water",
+      "Blood being pumped by the heart through the arteries under pressure",
+      "The smell of perfume gradually spreading across a room from the point where it was applied"
     ],
     ans: 3,
-    exp: "Power $= \\frac{\\text{Work}}{\\text{Time}} = \\frac{500}{25} = 20$ W. Power is the rate of doing work. $1$ Watt $= 1$ Joule per second. A $100$ W bulb uses $100$ J of energy every second — useful for comparing the efficiency of machines."
-  },
-  {
-    q: "A $60$ kg student climbs a staircase of height $5$ m in $10$ s. What is the useful power developed? (Take $g = 10 \\text{ m/s}^2$)",
+    exp: "Perfume spreading across a room is diffusion — perfume molecules move from high concentration (where applied) to low concentration throughout the air by random molecular motion." },
+
+  { q: "The energy stored in a spring compressed by 0.04 m with spring constant 500 N/m is:",
     opts: [
-      "$3000$ W",
-      "$30$ W",
-      "$300$ W",
-      "$600$ W"
-    ],
-    ans: 2,
-    exp: "Work done against gravity $= mgh = 60 \\times 10 \\times 5 = 3000$ J. Power $= \\frac{W}{t} = \\frac{3000}{10} = 300$ W. This is the minimum power — in reality more power is needed to overcome friction and the inefficiency of the body. Human muscles are roughly $25\\%$ efficient."
-  },
-  {
-    q: "The unit of work and energy is the Joule. Which of the following is equivalent to $1$ Joule?",
-    opts: [
-      "$1 \\text{ kg m}^2 \\text{s}^{-1}$",
-      "$1 \\text{ N/m}$",
-      "$1 \\text{ kg m}^2 \\text{s}^{-2}$",
-      "$1 \\text{ N m}^{-1}$"
-    ],
-    ans: 2,
-    exp: "Work $= $ Force $\\times$ distance $= \\text{N} \\times \\text{m} = \\text{kg m s}^{-2} \\times \\text{m} = \\text{kg m}^2 \\text{s}^{-2}$. This is also the unit of kinetic energy ($\\frac{1}{2}mv^2$) and potential energy ($mgh$) — confirming that energy and work share the same unit."
-  },
-  {
-    q: "A spring stretches $8$ cm when a $4$ N force is applied. What force is needed to stretch the same spring by $20$ cm? (Assuming Hooke's Law applies)",
-    opts: [
-      "$8$ N",
-      "$2.5$ N",
-      "$16$ N",
-      "$10$ N"
+      "500 × 0.04 = 20 J, using linear formula without the ½ factor",
+      "½ × 500 × 0.04 = 10 J, using extension linearly without squaring",
+      "2 × 500 × 0.04² = 1.6 J, incorrectly using a factor of 2 instead of ½",
+      "½ × 500 × 0.04² = ½ × 500 × 0.0016 = 0.4 J"
     ],
     ans: 3,
-    exp: "Hooke's Law: $F = ke$. Spring constant $k = \\frac{F}{e} = \\frac{4}{0.08} = 50$ N/m. For extension $0.20$ m: $F = 50 \\times 0.20 = 10$ N. Always convert cm to m before calculating. Hooke's Law only holds within the elastic limit — beyond it, the spring is permanently deformed."
-  },
-  {
-    q: "Which of the following correctly states the condition for an object to float?",
+    exp: "Elastic PE = ½ke² = ½ × 500 × (0.04)² = ½ × 500 × 0.0016 = 0.4 J." },
+
+  { q: "Which of the following is a correct example of where capillarity is utilised in everyday life?",
     opts: [
-      "Its weight must be greater than the upthrust",
-      "Its density must be greater than the fluid's density",
-      "The upthrust must equal the object's weight",
-      "Its volume must be less than the volume of fluid displaced"
+      "Water flowing through a wide river channel under the force of gravity",
+      "A dam releasing water through sluice gates to generate hydroelectric power",
+      "Mercury rising in a thermometer due to thermal expansion when heated",
+      "Ink rising through the fibres of a wick or blotting paper absorbing liquid across a surface"
     ],
-    ans: 2,
-    exp: "An object floats when upthrust $=$ weight, i.e., when it displaces a volume of fluid whose weight exactly equals the object's own weight. For a floating object, the submerged fraction $= \\frac{\\rho_{object}}{\\rho_{fluid}}$. This explains why ice floats on water with about $\\frac{9}{10}$ submerged ($\\rho_{ice}/\\rho_{water} \\approx 0.9$)."
-  },
-  {
-    q: "The viscosity of a fluid is best described as:",
+    ans: 3,
+    exp: "Capillarity drives liquid through narrow spaces in porous materials. Examples: ink absorbed by blotting paper, water rising through soil or plant stems, oil rising in a lamp wick." },
+
+  { q: "A device rated 2 kW is used for 3 hours per day for 30 days. The electrical energy consumed is:",
     opts: [
-      "The mass per unit volume of the fluid",
-      "The pressure exerted by the fluid at depth",
-      "The internal resistance of a fluid to flow",
-      "The surface tension acting at the fluid's surface"
+      "2 × 3 = 6 kWh total for the entire 30-day period",
+      "2 × 30 = 60 kWh, ignoring the daily usage time of 3 hours",
+      "2 × 3 × 30 = 180 W, confusing units of power and energy",
+      "2 × 3 × 30 = 180 kWh over the 30-day period"
     ],
-    ans: 2,
-    exp: "Viscosity is the measure of a fluid's internal friction — its resistance to flow. High-viscosity fluids (honey, engine oil) flow slowly; low-viscosity fluids (water, petrol) flow easily. Viscosity generally decreases as temperature increases, which is why engine oil thins when an engine gets hot."
-  }
+    ans: 3,
+    exp: "Energy = Power × Time = 2 kW × 3 h/day × 30 days = 2 × 3 × 30 = 180 kWh." },
+
+  { q: "The atomic mass number (A) of an atom is defined as:",
+    opts: [
+      "The number of electrons in the neutral atom, which equals the atomic number",
+      "The number of neutrons in the nucleus only, excluding protons",
+      "The number of protons only, which is the same as the atomic number",
+      "The total number of protons and neutrons in the nucleus"
+    ],
+    ans: 3,
+    exp: "Mass number A = number of protons (Z) + number of neutrons (N). It gives the approximate atomic mass in atomic mass units (amu)." },
+
+  { q: "In a parallel circuit, which of the following statements correctly describes the voltage across each branch?",
+    opts: [
+      "The voltage divides equally among all branches regardless of resistance",
+      "The voltage across each branch decreases progressively from the first to the last branch",
+      "The voltage across each branch is zero, because parallel circuits have no potential difference",
+      "The voltage across each parallel branch is the same and equal to the supply voltage"
+    ],
+    ans: 3,
+    exp: "In a parallel circuit, all branches are connected directly across the same two nodes (terminals), so the potential difference across each branch equals the supply voltage." },
+
+  { q: "What is the main purpose of an earth wire in household electrical wiring?",
+    opts: [
+      "To carry the main current from the supply to the appliances in the house",
+      "To carry the return current from the appliances back to the electricity supplier",
+      "To carry excess current when the fuse blows, protecting the appliance",
+      "To provide a safe low-resistance path for fault current to flow to earth, preventing electric shock"
+    ],
+    ans: 3,
+    exp: "The earth wire connects the metal casing of appliances to earth. If the live wire touches the casing, fault current flows through the earth wire (low resistance path) rather than through a person, triggering the fuse/breaker." },
+
+  { q: "Which of the following correctly describes the difference between elastic deformation and plastic deformation?",
+    opts: [
+      "Elastic deformation is permanent while plastic deformation is temporary",
+      "Both types of deformation are permanent once the elastic limit is exceeded",
+      "Plastic deformation occurs only in liquids; elastic deformation occurs only in solids",
+      "Elastic deformation is temporary (material returns to original shape); plastic deformation is permanent (material retains new shape)"
+    ],
+    ans: 3,
+    exp: "Elastic deformation: the material returns to its original dimensions when the force is removed (within elastic limit). Plastic deformation: permanent change in shape beyond the elastic limit." }
+
 ],
 'Biology': [
-  {
-    q: "Which of the following correctly distinguishes animal tissues from plant tissues?",
+
+  // ── 10 with ans:0 (A is correct) ──
+
+  { q: "Which of the following correctly describes the relevance of biology to agriculture?",
     opts: [
-      "Animal tissues include vascular bundles; plant tissues do not",
-      "Plant tissues include parenchyma and sclerenchyma; animal tissues include epithelial and nervous tissue",
-      "Both plants and animals have identical tissue types",
-      "Animal tissues perform photosynthesis; plant tissues perform respiration"
+      "Biological knowledge of plant physiology, genetics, and pest control helps farmers improve crop yields and manage diseases",
+      "Biology is only relevant to livestock farming and has no application to crop production",
+      "Biology contributes to agriculture solely by providing knowledge of soil chemical composition",
+      "Agricultural biology deals only with the study of insects and their role in pollination"
+    ],
+    ans: 0,
+    exp: "Biology provides farmers with knowledge of plant growth, genetics (for improved varieties), pest biology, soil organisms, and disease management — all essential for improving agricultural productivity." },
+
+  { q: "Bacteria are classified as prokaryotes because:",
+    opts: [
+      "They lack a membrane-bound nucleus; their genetic material floats freely in the cytoplasm",
+      "They contain a well-defined nucleus surrounded by a nuclear membrane and membrane-bound organelles",
+      "They reproduce only sexually by conjugation and never undergo binary fission",
+      "They are always multicellular organisms with specialised tissues and organs"
+    ],
+    ans: 0,
+    exp: "Prokaryotes (bacteria and archaea) lack a true membrane-bound nucleus. Their DNA is in a nucleoid region in the cytoplasm. Eukaryotes (fungi, plants, animals) have a membrane-bound nucleus." },
+
+  { q: "Which of the following correctly identifies the mode of reproduction in Amoeba?",
+    opts: [
+      "Binary fission — the parent cell divides into two equal daughter cells",
+      "Budding — a small outgrowth forms, grows, and eventually detaches as a new individual",
+      "Sporulation — the organism produces spores that germinate into new individuals",
+      "Conjugation — two cells temporarily join and exchange genetic material"
+    ],
+    ans: 0,
+    exp: "Amoeba reproduces asexually by binary fission — the cell divides into two equal daughter cells, each capable of living independently." },
+
+  { q: "Structural adaptation in animals refers to:",
+    opts: [
+      "Physical features of an organism's body that make it better suited to survive in its environment",
+      "Learned behaviours that an organism develops during its lifetime to find food",
+      "The migration patterns of animals during seasonal changes in temperature",
+      "Physiological changes that occur in an organism's metabolism during hibernation"
+    ],
+    ans: 0,
+    exp: "Structural adaptations are physical body features — shape, colour, limb structure — that increase survival and reproductive success in a particular environment (e.g., a frog's webbed feet)." },
+
+  { q: "The complete metamorphosis (holometabolism) of an insect involves which sequence of stages?",
+    opts: [
+      "Egg → larva (caterpillar/maggot) → pupa (chrysalis) → adult (imago)",
+      "Egg → nymph → adult, where the nymph resembles a miniature adult",
+      "Egg → adult directly, with no intermediate larval or pupal stage",
+      "Larva → egg → pupa → adult, beginning with the larval stage"
+    ],
+    ans: 0,
+    exp: "Complete metamorphosis (e.g., butterfly, housefly, cockroach): Egg → Larva → Pupa → Adult. Each stage looks completely different from the others." },
+
+  { q: "Which of the following describes the effect of pests on agricultural crops?",
+    opts: [
+      "Pests reduce crop yield by feeding on plants, transmitting diseases, or competing for nutrients",
+      "Pests generally improve crop yield by aerating the soil and removing diseased plant tissue",
+      "Pests affect only stored grains after harvest and have no impact on growing crops in the field",
+      "Pests are beneficial because they eliminate weeds that would otherwise compete with crops"
+    ],
+    ans: 0,
+    exp: "Pests (insects, rodents, nematodes) reduce agricultural yield by consuming plant material, transmitting plant diseases, destroying roots, and competing with crops for water and nutrients." },
+
+  { q: "The economic importance of micro-organisms includes which of the following beneficial roles?",
+    opts: [
+      "Bacteria in the soil decompose dead organic matter, releasing nutrients for plant uptake",
+      "All micro-organisms cause diseases that reduce the productivity of agricultural workers",
+      "Micro-organisms convert oxygen in the atmosphere to toxic compounds harmful to crops",
+      "Fungi always destroy food crops and never play any beneficial role in food production"
+    ],
+    ans: 0,
+    exp: "Decomposer bacteria and fungi break down dead organic material, recycling nutrients (nitrogen, phosphorus) back into the soil — essential for plant growth and soil fertility." },
+
+  { q: "HIV/AIDS is transmitted from one person to another primarily through:",
+    opts: [
+      "Unprotected sexual intercourse, sharing of contaminated needles, blood transfusion, and mother-to-child transmission",
+      "Casual contact such as shaking hands, sharing meals, or coughing near an infected person",
+      "Insect bites, particularly from mosquitoes carrying the virus from one host to another",
+      "Breathing the same air as an infected person in an enclosed room or public space"
+    ],
+    ans: 0,
+    exp: "HIV is transmitted through specific body fluids: blood (transfusions, shared needles), sexual fluids (unprotected sex), and breast milk (mother to child). It is NOT transmitted by casual contact or air." },
+
+  { q: "The life cycle classification of plants in agriculture distinguishes between annuals and perennials. Annual plants are those that:",
+    opts: [
+      "Complete their entire life cycle (germination, growth, flowering, seed production, death) within one growing season",
+      "Take exactly two years to complete their life cycle, flowering only in the second year",
+      "Live and reproduce for many years without dying after producing seeds",
+      "Grow only in tropical climates and cannot survive in temperate seasonal environments"
+    ],
+    ans: 0,
+    exp: "Annual plants complete their full life cycle — germination, vegetative growth, flowering, seed set, and death — within a single growing season (approximately one year)." },
+
+  { q: "Which of the following correctly describes the process of food storage in agriculture?",
+    opts: [
+      "Proper food storage involves conditions that reduce moisture, pests, and microbial activity to preserve food quality",
+      "All food should be stored in open containers to allow moisture to escape naturally",
+      "Food is best preserved by increasing its temperature to speed up metabolic processes",
+      "Food storage is only relevant for livestock feed and has no application to human food crops"
+    ],
+    ans: 0,
+    exp: "Effective food storage controls temperature, humidity, oxygen exposure, and pest access — minimising microbial spoilage, oxidation, and physical damage to preserve quality and nutritional value." },
+
+  // ── 10 with ans:1 (B is correct) ──
+
+  { q: "The immune system's response to a pathogen the second time it is encountered is faster and stronger because:",
+    opts: [
+      "The body produces more pathogens on the second exposure to accelerate the immune response",
+      "Memory B and T cells formed during the first infection enable a rapid, large-scale antibody response",
+      "The pathogen becomes weaker on its second entry into the body due to prior exposure",
+      "White blood cells multiply outside the bloodstream and wait near the skin on second exposure"
     ],
     ans: 1,
-    exp: "Plant tissues are classified as meristematic or permanent (parenchyma, collenchyma, sclerenchyma, xylem, phloem). Animal tissues are classified as epithelial, connective, muscle, and nervous. Understanding this distinction is fundamental — vascular tissue belongs to plants, not animals."
-  },
-  {
-    q: "A student examining a slide sees cells that are flat, closely packed, and arranged in multiple layers. This tissue is most likely:",
+    exp: "During the primary immune response, memory B and T cells are formed. On second exposure, these memory cells enable a faster, stronger secondary immune response (immunological memory)." },
+
+  { q: "Which of the following groups of micro-organisms is correctly identified?",
     opts: [
-      "Simple columnar epithelium",
-      "Simple squamous epithelium",
-      "Stratified squamous epithelium",
-      "Transitional epithelium"
-    ],
-    ans: 2,
-    exp: "Stratified squamous epithelium has multiple layers of flat (squamous) cells. It lines areas subject to mechanical abrasion, such as the skin (epidermis), mouth, and oesophagus. Simple epithelium has only ONE layer — the prefix 'stratified' means layered."
-  },
-  {
-    q: "Which of the following tissues would you expect to find lining the small intestine, and why?",
-    opts: [
-      "Stratified squamous epithelium — for protection against digested food",
-      "Simple columnar epithelium — for efficient absorption and secretion",
-      "Transitional epithelium — to allow stretching as food passes",
-      "Ciliated epithelium — to sweep food particles along"
+      "Viruses: multicellular organisms with a nucleus and cell membrane that reproduce by binary fission",
+      "Bacteria: single-celled prokaryotes without a membrane-bound nucleus that reproduce mainly by binary fission",
+      "Protozoa: non-living particles consisting only of nucleic acid in a protein coat",
+      "Fungi: photosynthetic organisms that produce food using chlorophyll and sunlight"
     ],
     ans: 1,
-    exp: "Simple columnar epithelium lines the small intestine. Its tall, column-shaped cells provide a large surface area for nutrient absorption, and many contain goblet cells that secrete mucus. The single cell layer also ensures nutrients can pass through quickly into the blood."
-  },
-  {
-    q: "Blood is classified as connective tissue. Which feature of blood best justifies this classification?",
+    exp: "Bacteria are unicellular prokaryotes (no membrane-bound nucleus) that reproduce primarily by binary fission. Viruses are non-cellular. Fungi are not photosynthetic. Protozoa are unicellular eukaryotes." },
+
+  { q: "The life history of the housefly (Musca domestica) represents complete metamorphosis. The larval stage of the housefly is called a:",
     opts: [
-      "Blood cells can contract like muscle",
-      "Blood cells transmit electrochemical impulses",
-      "Blood consists of cells suspended in an extracellular matrix (plasma)",
-      "Blood lines the inner surfaces of blood vessels"
+      "Nymph — a larva that closely resembles the adult in body form",
+      "Maggot — a legless, soft-bodied larva that feeds on decaying matter",
+      "Chrysalis — the protective pupal casing of a butterfly or moth",
+      "Caterpillar — the larval stage specific to Lepidoptera (butterflies and moths)"
+    ],
+    ans: 1,
+    exp: "The larva of a housefly is called a maggot — a whitish, legless larva that feeds on decaying organic material before forming a pupa (puparium) and developing into an adult fly." },
+
+  { q: "STIs (Sexually Transmitted Infections) can be prevented through which of the following strategies?",
+    opts: [
+      "Taking antibiotics daily as a preventative measure against all types of STIs",
+      "Abstinence from sexual activity, use of condoms, and maintaining mutual faithfulness with an uninfected partner",
+      "Avoiding all social contact with people who have visible symptoms of disease",
+      "Receiving annual vaccinations against all known sexually transmitted infections"
+    ],
+    ans: 1,
+    exp: "The ABC prevention strategy: Abstinence, Being faithful to an uninfected partner, and Condom use are the primary evidence-based strategies for preventing STIs including HIV." },
+
+  { q: "Which of the following correctly identifies the ecological impact of intensive agriculture?",
+    opts: [
+      "Intensive farming always increases biodiversity by introducing new plant and animal species",
+      "Intensive agriculture can reduce biodiversity, increase soil erosion, and cause water pollution through chemical runoff",
+      "Intensive agriculture only affects the immediate farm area and has no wider ecological consequences",
+      "Chemical fertilisers used in intensive agriculture always purify groundwater and improve water quality"
+    ],
+    ans: 1,
+    exp: "Intensive agriculture's ecological impacts include: loss of biodiversity (monocultures), soil degradation from overuse, eutrophication of water bodies from fertiliser runoff, and habitat destruction." },
+
+  { q: "Which of the following correctly explains the toad's structural adaptation for life both in water and on land?",
+    opts: [
+      "The toad has scales covering its body to reduce water loss in both aquatic and terrestrial environments",
+      "The toad has moist, permeable skin for cutaneous respiration and strong hind limbs for both jumping on land and swimming",
+      "The toad has gills for aquatic breathing that convert into lungs when the animal moves onto land",
+      "The toad breathes exclusively through its lungs on land and cannot survive in water as an adult"
+    ],
+    ans: 1,
+    exp: "Adult toads are adapted to both environments: moist skin allows some gas exchange (cutaneous respiration), strong muscular hind limbs provide jumping and swimming ability, and lungs provide air breathing." },
+
+  { q: "Which of the following diseases is caused by a bacterium and is sexually transmitted?",
+    opts: [
+      "HIV/AIDS, which is caused by the Human Immunodeficiency Virus (a retrovirus)",
+      "Gonorrhoea, which is caused by the bacterium Neisseria gonorrhoeae",
+      "Genital herpes, which is caused by Herpes Simplex Virus type 2 (HSV-2)",
+      "Hepatitis B, which is caused by the Hepatitis B Virus (HBV)"
+    ],
+    ans: 1,
+    exp: "Gonorrhoea is a bacterial STI caused by Neisseria gonorrhoeae. HIV, herpes, and Hepatitis B are all caused by viruses, not bacteria." },
+
+  { q: "The relationship between human population growth and food availability in ecology suggests that:",
+    opts: [
+      "As the human population increases, food production automatically increases at the same rate",
+      "Rapid population growth can outpace food production, leading to food shortages, malnutrition, and famine",
+      "A growing population always leads to more efficient food distribution and reduced hunger",
+      "Population growth and food availability are completely independent variables with no correlation"
+    ],
+    ans: 1,
+    exp: "Thomas Malthus and subsequent ecologists observed that unchecked population growth tends to outpace food production capacity, potentially leading to resource scarcity and malnutrition." },
+
+  { q: "Incomplete metamorphosis (hemimetabolism) differs from complete metamorphosis in that it:",
+    opts: [
+      "Involves four distinct stages: egg, larva, pupa, and adult — just like complete metamorphosis",
+      "Involves only three stages: egg, nymph, and adult — with no pupal stage and the nymph resembling the adult",
+      "Occurs only in flying insects such as butterflies and moths",
+      "Results in an adult that is completely different in appearance from all previous stages"
+    ],
+    ans: 1,
+    exp: "Incomplete metamorphosis: Egg → Nymph (resembles adult but lacks wings and sexual maturity) → Adult. No pupal stage. Examples: grasshopper, cockroach, locust." },
+
+  { q: "Which of the following is the correct definition of immunity in biology?",
+    opts: [
+      "The body's ability to generate new cells to replace those destroyed by pathogens",
+      "The ability of an organism to resist infection or disease through specific or non-specific defensive mechanisms",
+      "The process by which white blood cells engulf and digest all foreign substances entering the body",
+      "The complete absence of any micro-organisms from the tissues and organs of a healthy individual"
+    ],
+    ans: 1,
+    exp: "Immunity is the state of being resistant to a specific disease, achieved through physical barriers, non-specific responses (innate immunity), and specific antibody and cell-mediated responses (adaptive immunity)." },
+
+  // ── 10 with ans:2 (C is correct) ──
+
+  { q: "Which of the following correctly identifies a pathogenic micro-organism and the disease it causes?",
+    opts: [
+      "Rhizobium — causes root rot disease in leguminous plants by blocking nitrogen fixation",
+      "Lactobacillus — causes tuberculosis in humans by releasing toxins in the respiratory tract",
+      "Plasmodium falciparum — causes malaria in humans, transmitted by the female Anopheles mosquito",
+      "Saccharomyces cerevisiae — causes cholera in humans through contaminated water sources"
     ],
     ans: 2,
-    exp: "All connective tissues share one feature: cells embedded in an extracellular matrix. In blood, red blood cells, white blood cells, and platelets are suspended in plasma (the liquid matrix). The matrix is not produced by the cells alone — this is what defines connective tissue."
-  },
-  {
-    q: "Cardiac muscle differs from skeletal muscle in that cardiac muscle is:",
+    exp: "Plasmodium falciparum is the protozoan parasite that causes the most severe form of malaria, transmitted to humans through the bite of infected female Anopheles mosquitoes." },
+
+  { q: "The cockroach undergoes incomplete metamorphosis. In the nymph stage, which of the following is characteristic?",
     opts: [
-      "Under voluntary control and striated",
-      "Non-striated and found in the walls of hollow organs",
-      "Striated, involuntary, and contains intercalated discs",
-      "Non-striated and attached to bones"
+      "The nymph is enclosed in a hard pupal casing and undergoes radical reorganisation",
+      "The nymph is completely different in appearance from the adult and lacks all adult features",
+      "The nymph resembles a small, wingless version of the adult and moults several times before reaching adulthood",
+      "The nymph feeds on entirely different food sources compared to the adult cockroach"
     ],
     ans: 2,
-    exp: "Cardiac muscle is striated (has alternating light and dark bands) and involuntary (you cannot consciously control your heartbeat). Intercalated discs are unique junctions between cardiac cells that allow rapid electrical communication, ensuring the heart beats as one coordinated unit."
-  },
-  {
-    q: "A patient has damaged tissue that normally provides the body's ability to detect pain and respond to stimuli. Which tissue type is most likely damaged?",
+    exp: "In incomplete metamorphosis, the cockroach nymph looks like a small wingless adult. It moults (ecdysis) several times, gradually developing wings and reproductive organs until it reaches adulthood." },
+
+  { q: "Which of the following describes the structural adaptation of the grasshopper for jumping?",
     opts: [
-      "Epithelial tissue",
-      "Connective tissue",
-      "Muscle tissue",
-      "Nervous tissue"
+      "The grasshopper has very long forewings that act as springs to propel it into the air",
+      "The grasshopper has a streamlined body shape that reduces air resistance during flight",
+      "The grasshopper has greatly enlarged, muscular hind legs (femur) specially adapted for powerful jumping",
+      "The grasshopper has a lightweight exoskeleton made of chitin that allows it to float and jump"
+    ],
+    ans: 2,
+    exp: "The grasshopper's hind legs are disproportionately large and contain powerful femoral muscles that store and release energy to produce the forceful jumping motion." },
+
+  { q: "Ways of improving crop yield in agriculture include all of the following EXCEPT:",
+    opts: [
+      "Using improved high-yielding and disease-resistant seed varieties",
+      "Applying fertilisers to supplement soil nutrients depleted by intensive cropping",
+      "Deliberately increasing pest populations to promote competition and strengthen surviving crops",
+      "Implementing effective pest and disease control using pesticides, herbicides, and biological control"
+    ],
+    ans: 2,
+    exp: "Increasing pest populations is not a crop improvement strategy — it would reduce yield. Genuine yield improvement methods include improved varieties, fertilisation, irrigation, and pest control." },
+
+  { q: "Which of the following correctly explains how Spirogyra reproduces sexually?",
+    opts: [
+      "Spirogyra produces spores asexually that are released into water and germinate",
+      "Spirogyra reproduces by fragmentation, where pieces of the filament grow into new organisms",
+      "Spirogyra reproduces sexually by conjugation, where two filaments align and protoplasts fuse to form a zygospore",
+      "Spirogyra reproduces by binary fission, dividing each cell into two equal daughter cells"
+    ],
+    ans: 2,
+    exp: "In conjugation, two Spirogyra filaments align side by side; conjugation tubes form between cells; protoplasts from one filament move into the other and fuse, forming a diploid zygospore." },
+
+  { q: "The mode of transmission of cholera is best described as:",
+    opts: [
+      "Direct contact with infected skin lesions or body fluids through physical touch",
+      "Airborne transmission through respiratory droplets from coughing or sneezing",
+      "Faecal-oral transmission through contaminated water and food supplies",
+      "Vector-borne transmission via the bite of infected mosquitoes or tsetse flies"
+    ],
+    ans: 2,
+    exp: "Cholera is caused by Vibrio cholerae, transmitted through contaminated water or food (faecal-oral route). Poor sanitation and unsafe water supplies are the primary risk factors." },
+
+  { q: "Which of the following correctly describes the snail's structural adaptation for protection?",
+    opts: [
+      "The snail has a streamlined body and powerful limbs that allow rapid escape from predators",
+      "The snail produces toxic venom that it injects into predators through modified teeth",
+      "The snail has a hard spiral shell (calcium carbonate) into which it can withdraw its soft body for protection",
+      "The snail has compound eyes that provide 360° vision to detect and escape from all predators"
+    ],
+    ans: 2,
+    exp: "The snail's hard spiral shell is its primary structural adaptation for defence — it can retract its soft body completely inside, protecting it from dehydration and predators." },
+
+  { q: "The concept of immunity given to an individual through vaccination is called:",
+    opts: [
+      "Natural active immunity, which develops after recovering from a natural infection",
+      "Natural passive immunity, transferred from mother to infant through breast milk or placenta",
+      "Artificial active immunity, produced by the immune system in response to a vaccine",
+      "Artificial passive immunity, provided by injection of ready-made antibodies from another organism"
+    ],
+    ans: 2,
+    exp: "Vaccination produces artificial active immunity — the vaccine (weakened/killed pathogen or antigen) stimulates the immune system to produce its own antibodies and memory cells." },
+
+  { q: "Which of the following correctly explains the cause of food shortage in relation to human population?",
+    opts: [
+      "Food shortages occur only in countries that have poor climatic conditions and no arable land",
+      "Food shortage is caused exclusively by natural disasters such as floods and droughts",
+      "Food shortage can result from rapid population growth outpacing agricultural production, combined with poverty, poor distribution, and post-harvest losses",
+      "Food shortage only affects developing nations and cannot occur in any industrialised country"
+    ],
+    ans: 2,
+    exp: "Food insecurity is multi-causal: rapid population growth, inadequate food production, unequal distribution, poverty, conflict, poor storage infrastructure, and climate change all contribute." },
+
+  { q: "Biological control of agricultural pests involves:",
+    opts: [
+      "Applying synthetic pesticides at increased concentrations to eliminate all pest species",
+      "Burning infected crops and fallowing the land for a full growing season",
+      "Using natural predators, parasites, or pathogens to reduce pest populations without chemical pesticides",
+      "Genetically modifying all crop plants to produce toxins that kill any organism that eats them"
+    ],
+    ans: 2,
+    exp: "Biological control uses natural enemies (predator insects, parasitic wasps, pathogens) to suppress pest populations. It is environmentally friendly and avoids chemical residues in food." },
+
+  // ── 10 with ans:3 (D is correct) ──
+
+  { q: "Which of the following is NOT a characteristic feature of viruses that distinguishes them from bacteria?",
+    opts: [
+      "Viruses lack a cell membrane and cytoplasm, existing only as nucleic acid in a protein coat",
+      "Viruses cannot reproduce independently — they require a living host cell to replicate",
+      "Viruses are much smaller than bacteria and cannot be seen under a light microscope",
+      "Viruses contain ribosomes, a cell wall, and can carry out independent metabolic processes"
     ],
     ans: 3,
-    exp: "Nervous tissue consists of neurons (which generate and transmit electrical impulses) and neuroglia (which support and protect neurons). The ability to detect stimuli (like pain) and coordinate responses depends entirely on the nervous tissue of the brain, spinal cord, and peripheral nerves."
-  },
-  {
-    q: "Sclerenchyma differs from collenchyma in that sclerenchyma:",
+    exp: "Viruses do NOT have ribosomes, a cell wall, or independent metabolic activity — these are features of bacteria (and other cells). Viruses depend entirely on host cell machinery to replicate." },
+
+  { q: "The significance of the pupal stage in complete metamorphosis is that:",
     opts: [
-      "Has living cells with unevenly thickened walls",
-      "Provides flexible support and is found in young growing parts",
-      "Consists of dead cells with uniformly lignified walls providing rigid support",
-      "Is found in the cortex of roots and stores starch"
-    ],
-    ans: 2,
-    exp: "Sclerenchyma cells are dead at maturity — their walls are heavily thickened with lignin, making them rigid and hard. They provide permanent structural support (e.g., in wood, seed coats). Collenchyma cells, by contrast, are living and have unevenly thickened walls, providing flexible support in young stems and leaf stalks."
-  },
-  {
-    q: "Parenchyma is the most abundant plant tissue. Which of the following best describes its functions?",
-    opts: [
-      "Rigid structural support and water conduction",
-      "Photosynthesis, storage, and healing of wounds (regeneration)",
-      "Transport of sugars only from leaves to roots",
-      "Reproduction and formation of new plant organs exclusively"
-    ],
-    ans: 1,
-    exp: "Parenchyma cells are thin-walled, living, and unspecialised — this versatility makes them multifunctional. They carry out photosynthesis (in leaves), store starch, water, and oils (in stems and seeds), and can regenerate into new tissues when a plant is wounded. Xylem and phloem handle transport; sclerenchyma handles rigid support."
-  },
-  {
-    q: "A hydrostatic skeleton is found in earthworms. How does it differ from an endoskeleton?",
-    opts: [
-      "A hydrostatic skeleton is made of cartilage; an endoskeleton is made of fluid",
-      "A hydrostatic skeleton uses fluid pressure in body cavities for support; an endoskeleton uses rigid internal bones or cartilage",
-      "Both provide the same type of support but in different environments",
-      "A hydrostatic skeleton is external; an endoskeleton is internal"
-    ],
-    ans: 1,
-    exp: "Hydrostatic skeletons (earthworms, jellyfish) use the pressure of internal body fluid (coelomic fluid) for support and movement — circular and longitudinal muscles act against the fluid. Endoskeletons (vertebrates) are rigid internal frameworks of bone and cartilage. Exoskeletons (insects, crabs) are rigid external frameworks."
-  },
-  {
-    q: "The axial skeleton performs which of the following functions that the appendicular skeleton does NOT?",
-    opts: [
-      "Allowing limb movement",
-      "Protecting the brain, spinal cord, and thoracic organs",
-      "Providing attachment points for limb muscles only",
-      "Forming the shoulder and hip girdles"
-    ],
-    ans: 1,
-    exp: "The axial skeleton (skull, vertebral column, rib cage, sternum) forms the central axis of the body and specifically protects vital organs — the skull encloses the brain, vertebrae protect the spinal cord, and ribs protect the heart and lungs. The appendicular skeleton (limbs and girdles) primarily enables movement."
-  },
-  {
-    q: "Bone is described as supporting connective tissue. Which chemical compound gives bone its hardness?",
-    opts: [
-      "Cellulose",
-      "Chitin",
-      "Calcium phosphate (hydroxyapatite)",
-      "Collagen alone"
-    ],
-    ans: 2,
-    exp: "Bone's hardness comes from calcium phosphate crystals (hydroxyapatite) deposited in a collagen matrix. Collagen provides flexibility; mineral salts provide hardness — together they make bone both strong and slightly flexible. Chitin hardens insect exoskeletons; cellulose strengthens plant cell walls."
-  },
-  {
-    q: "Cartilage is described as flexible connective tissue. In which of the following locations would you NOT find cartilage in the human body?",
-    opts: [
-      "At the ends of long bones (articular cartilage)",
-      "In the walls of the trachea",
-      "In the outer ear (pinna)",
-      "In compact bone of the femur"
+      "The pupa feeds voraciously on plant material to accumulate energy for the adult stage",
+      "The pupa is the reproductive stage in which mating occurs before the adult emerges",
+      "The pupal stage is when the insect is most active and visible to predators",
+      "The pupa is an inactive, non-feeding stage during which larval tissues are reorganised into adult structures through histolysis and histogenesis"
     ],
     ans: 3,
-    exp: "Cartilage is found at joint surfaces (articular cartilage), in the trachea and bronchi, nose, ear, and between vertebral discs. Compact bone itself does NOT contain cartilage — it consists of densely packed osteons (Haversian systems) made of mineralised bone matrix."
-  },
-  {
-    q: "Insects have an exoskeleton made of chitin. Which of the following is a DISADVANTAGE of having an exoskeleton?",
+    exp: "During pupation: histolysis breaks down larval tissues; histogenesis rebuilds them into adult structures (wings, reproductive organs, compound eyes). The pupa does not feed and appears inactive externally." },
+
+  { q: "Which of the following correctly distinguishes between a parasite and a pathogen in the context of disease in humans?",
     opts: [
-      "It offers no protection against predators",
-      "It prevents water loss in dry environments",
-      "It must be shed (moulted) periodically as the organism grows, leaving it vulnerable",
-      "It cannot support muscle attachment"
+      "A parasite always kills its host immediately, while a pathogen prolongs the host's life",
+      "A pathogen only infects animals, while a parasite can infect both plants and animals",
+      "A parasite is always larger than a pathogen and is visible to the naked eye",
+      "A pathogen is any organism that causes disease in a host; a parasite lives on or in a host and obtains nutrients at the host's expense (which may or may not cause disease)"
     ],
-    ans: 2,
-    exp: "The exoskeleton cannot grow with the organism — it must be shed (moulted/ecdysis) to allow growth, during which the animal is soft, unprotected, and vulnerable to predators. Advantages include waterproofing, protection, and muscle attachment points — but moulting is a significant biological cost."
-  },
-  {
-    q: "Holozoic nutrition involves five stages. Which of the following correctly lists them in order?",
+    ans: 3,
+    exp: "A pathogen specifically causes disease. A parasite lives in/on a host and benefits at the host's expense — parasites may cause disease (pathogenic) or cause minimal harm (commensal). All disease-causing parasites are pathogens, but not all pathogens are parasites." },
+
+  { q: "Which of the following correctly describes the role of decomposers in the agricultural ecosystem?",
     opts: [
-      "Ingestion → Absorption → Digestion → Assimilation → Egestion",
-      "Ingestion → Digestion → Absorption → Assimilation → Egestion",
-      "Digestion → Ingestion → Absorption → Egestion → Assimilation",
-      "Absorption → Ingestion → Digestion → Assimilation → Egestion"
+      "Decomposers are organisms that consume living plant material, reducing crop yield",
+      "Decomposers convert atmospheric nitrogen directly into plant-available nitrate in root nodules",
+      "Decomposers are agents that store organic matter in the soil permanently without releasing nutrients",
+      "Decomposers break down dead organic material into simpler inorganic nutrients that are recycled into the soil for plant uptake"
     ],
-    ans: 1,
-    exp: "Holozoic nutrition (in most animals): (1) Ingestion — taking in food; (2) Digestion — breaking food into smaller molecules; (3) Absorption — uptake of digested nutrients into cells or blood; (4) Assimilation — using absorbed nutrients for growth/energy; (5) Egestion — removing undigested waste (faeces). Note: egestion ≠ excretion."
-  },
-  {
-    q: "Dodder (Cuscuta) is described as a holoparasite. This means it:",
+    ans: 3,
+    exp: "Decomposers (bacteria, fungi) break down dead plants, animals, and faeces into inorganic mineral nutrients (nitrogen, phosphorus, potassium), which are returned to the soil for plant absorption." },
+
+  { q: "Which of the following best describes the symptoms of malaria and explains why the fever is cyclical?",
     opts: [
-      "Photosynthesises and supplements nutrients from a host",
-      "Completely depends on its host for ALL organic and inorganic nutrients",
-      "Only obtains water from its host",
-      "Is a decomposer that feeds on dead host tissue"
+      "Malaria causes a single fever episode that lasts continuously for several weeks",
+      "Malaria symptoms include joint pain only; fever does not occur in any form of the disease",
+      "Malaria produces a continuous low-grade fever throughout infection without periodic rises",
+      "Malaria causes cyclical fever corresponding to the synchronised rupture of red blood cells by merozoites at the end of each erythrocytic cycle"
     ],
-    ans: 1,
-    exp: "Dodder (Cuscuta) is a holoparasite — it has no chlorophyll and cannot photosynthesise at all. It penetrates the host's vascular tissue using haustoria (specialised root-like structures) and withdraws water, minerals, and organic compounds entirely from the host. Contrast with hemiparasites (e.g., mistletoe) which still photosynthesise."
-  },
-  {
-    q: "Filter feeding is used by baleen whales. The mechanism involves:",
+    ans: 3,
+    exp: "Malaria's characteristic cyclical fever (every 48 or 72 hours depending on species) occurs when red blood cells rupture simultaneously, releasing merozoites and toxins into the bloodstream — triggering fever, chills, and sweating." },
+
+  { q: "Which of the following correctly describes the toad's life cycle as evidence for its dual adaptation to aquatic and terrestrial environments?",
     opts: [
-      "Using teeth to catch and chew large prey",
-      "Absorbing dissolved nutrients directly through the skin",
-      "Gulping water and forcing it through baleen plates to trap small organisms",
-      "Injecting digestive enzymes into prey before swallowing"
+      "The toad spends its entire life on land and never returns to water after metamorphosis",
+      "The toad spawns in water but the tadpoles immediately crawl onto land after hatching",
+      "The toad is exclusively aquatic throughout its entire life cycle, including the adult stage",
+      "The toad lays eggs in water; aquatic tadpoles with gills hatch and undergo metamorphosis into air-breathing adults that live mainly on land"
     ],
-    ans: 2,
-    exp: "Baleen whales have plates of keratin (baleen) hanging from their upper jaw. They gulp enormous volumes of seawater, then push it out through the baleen with their tongue — tiny organisms (krill, small fish) are trapped inside and swallowed. This adaptation allows feeding on vast numbers of very small prey with minimal energy expenditure."
-  },
-  {
-    q: "Saprophytic nutrition differs from parasitic nutrition in that saprophytes:",
+    ans: 3,
+    exp: "Toads begin life as aquatic, gill-breathing tadpoles, then undergo metamorphosis: gills are replaced by lungs, limbs develop, and the tail is reabsorbed — the adult lives mainly on land but returns to water to breed." },
+
+  { q: "The mode of transmission of tuberculosis (TB) is:",
     opts: [
-      "Feed on living hosts and cause disease",
-      "Produce their own food via photosynthesis",
-      "Secrete enzymes onto dead organic matter and absorb the digested products",
-      "Ingest solid food particles like animals"
+      "Sexual contact — TB is primarily transmitted through unprotected sexual intercourse",
+      "Water contamination — TB bacteria enter the body through drinking infected water",
+      "Vector transmission — TB is transmitted by the bite of infected tsetse flies",
+      "Airborne transmission — TB bacteria (Mycobacterium tuberculosis) are spread through respiratory droplets when an infected person coughs or sneezes"
     ],
-    ans: 2,
-    exp: "Saprophytes (e.g., Mucor, Rhizopus, many bacteria) secrete digestive enzymes externally (extracellular digestion) onto dead organic matter and absorb the soluble products. This is external digestion, unlike animals (internal digestion). Saprophytes are ecologically vital — they decompose dead matter and recycle nutrients back into the soil."
-  },
-  {
-    q: "An ecosystem is a functional unit of ecology. Which of the following best describes a complete ecosystem?",
+    ans: 3,
+    exp: "TB is an airborne disease. Mycobacterium tuberculosis is released in tiny droplets when an infected person coughs, sneezes, or speaks — inhaled by a nearby susceptible person." },
+
+  { q: "Which of the following correctly explains why fungi are placed in a separate kingdom from plants?",
     opts: [
-      "All the plants and animals living in a forest",
-      "The physical environment of a lake only",
-      "All organisms in an area interacting with each other and with their non-living environment",
-      "A group of organisms of the same species living together"
+      "Fungi are mobile organisms that can move from one location to another in search of food",
+      "Fungi perform photosynthesis using a different type of chlorophyll not found in plant cells",
+      "Fungi are multicellular organisms that reproduce exclusively by sexual means using specialised flowers",
+      "Fungi lack chlorophyll and cannot photosynthesise — they obtain nutrition heterotrophically by absorbing organic compounds from their environment"
     ],
-    ans: 2,
-    exp: "An ecosystem includes both biotic components (all living organisms — producers, consumers, decomposers) AND abiotic components (sunlight, temperature, rainfall, soil, water). A population is one species; a community is all species in an area; an ecosystem adds the abiotic environment to the community."
-  },
-  {
-    q: "In a food chain: Grass → Grasshopper → Frog → Snake → Hawk. The hawk is the:",
+    ans: 3,
+    exp: "Fungi are heterotrophs — they secrete digestive enzymes onto organic material and absorb the products. They lack chloroplasts and chlorophyll, so they cannot make their own food by photosynthesis." },
+
+  { q: "Which of the following correctly explains what 'complete metamorphosis' achieves in the life cycle of a housefly?",
     opts: [
-      "Secondary consumer and third trophic level",
-      "Tertiary consumer and fourth trophic level",
-      "Quaternary consumer and fifth trophic level",
-      "Primary consumer and second trophic level"
+      "It allows the adult fly to moult its exoskeleton and grow larger after each breeding cycle",
+      "It ensures that the fly never needs to eat during its adult life after pupation",
+      "It allows the adult fly to regenerate lost limbs or damaged wings during the pupal stage",
+      "It ensures that the larval and adult stages occupy different ecological niches, reducing competition between them for the same food resources"
     ],
-    ans: 2,
-    exp: "Grass = producer (1st trophic level). Grasshopper = primary consumer (2nd). Frog = secondary consumer (3rd). Snake = tertiary consumer (4th). Hawk = quaternary consumer (5th trophic level). A common error is miscounting — always start with the producer as level 1."
-  },
-  {
-    q: "Energy transfer between trophic levels is inefficient. Approximately what percentage of energy is transferred from one trophic level to the next?",
+    ans: 3,
+    exp: "Complete metamorphosis divides the life cycle so larvae and adults exploit different food sources and habitats — larvae (maggots) eat decaying matter, adults feed on liquid food — reducing intraspecific competition." },
+
+  { q: "Which of the following best defines the term 'ecosystem' in agricultural biology?",
     opts: [
-      "$100\\%$",
-      "$50\\%$",
-      "$10\\%$",
-      "$1\\%$"
+      "A single crop species and its root system growing in a defined field area",
+      "The total yield of crops produced per hectare in a given agricultural season",
+      "The chemical composition of the soil including all macro and micronutrients",
+      "A system comprising all living organisms in an area and their interactions with each other and with the non-living physical environment"
     ],
-    ans: 2,
-    exp: "The Ten Percent Rule (Lindemann's Rule): only about $10\\%$ of energy stored at one trophic level is available to the next. The remaining $90\\%$ is lost as heat (respiration), used for metabolic processes, or not consumed. This is why food chains rarely exceed 4–5 links — too little energy remains at higher levels."
-  },
-  {
-    q: "A pyramid of biomass shows the total dry mass of organisms at each trophic level. In which of the following ecosystems might the pyramid of biomass be INVERTED?",
-    opts: [
-      "A tropical rainforest",
-      "A grassland ecosystem",
-      "An open ocean (phytoplankton-based ecosystem)",
-      "A woodland ecosystem"
-    ],
-    ans: 2,
-    exp: "In open ocean ecosystems, phytoplankton (producers) have a very short lifespan and reproduce rapidly — at any moment, their total biomass can be LESS than the zooplankton consuming them. This produces an inverted pyramid of biomass. The pyramid of energy is NEVER inverted because energy flows only one way."
-  },
-  {
-    q: "Which of the following correctly describes the role of decomposers in nutrient cycling?",
-    opts: [
-      "They produce organic compounds from inorganic ones using sunlight",
-      "They consume living plants and return energy to the atmosphere",
-      "They break down dead organic matter, releasing inorganic nutrients back into the soil and atmosphere",
-      "They transfer energy from primary to secondary consumers"
-    ],
-    ans: 2,
-    exp: "Decomposers (bacteria, fungi) break down complex organic molecules in dead organisms into simpler inorganic compounds (e.g., $CO_2$, $H_2O$, nitrates, phosphates) through decomposition and mineralisation. Without decomposers, nutrients would remain locked in dead matter, soil fertility would decline, and nutrient cycles would collapse."
-  },
-  {
-    q: "A food web is more realistic than a food chain because:",
-    opts: [
-      "A food web shows only one feeding pathway",
-      "A food web shows that most organisms feed on multiple food sources and are eaten by multiple predators",
-      "A food web shows energy flow in only one direction",
-      "A food chain shows more complex feeding relationships"
-    ],
-    ans: 1,
-    exp: "In nature, organisms rarely eat just one type of food or have only one predator. A food web interlocks multiple food chains, showing the true complexity of feeding relationships. This interconnection makes ecosystems more stable — if one species declines, others can compensate, unlike a simple chain where removing one link collapses the whole sequence."
-  },
-  {
-    q: "The Lincoln Index is used in the capture-recapture method. If $40$ animals were caught and marked in the first sample, $50$ were caught in the second sample, and $10$ of those were marked, what is the estimated population size?",
-    opts: [
-      "$100$",
-      "$200$",
-      "$500$",
-      "$2000$"
-    ],
-    ans: 1,
-    exp: "Lincoln Index: $N = \\frac{n_1 \\times n_2}{m}$ where $n_1 = $ first capture $= 40$, $n_2 = $ second capture $= 50$, $m = $ marked recaptures $= 10$. $N = \\frac{40 \\times 50}{10} = \\frac{2000}{10} = 200$. This method assumes the population is closed (no births, deaths, or migration) between samples."
-  },
-  {
-    q: "A student places a $0.5 \\text{ m} \\times 0.5 \\text{ m}$ quadrat in a field and counts $12$ dandelion plants. If the field is $200 \\text{ m}^2$, what is the estimated total population of dandelions?",
-    opts: [
-      "$2400$",
-      "$4800$",
-      "$960$",
-      "$600$"
-    ],
-    ans: 1,
-    exp: "Quadrat area $= 0.5 \\times 0.5 = 0.25 \\text{ m}^2$. Density $= \\frac{12}{0.25} = 48$ plants per $\\text{m}^2$. Total population $= 48 \\times 200 = 9600$... recalculating: $N = \\frac{\\text{count}}{\\text{quadrat area}} \\times \\text{total area} = \\frac{12}{0.25} \\times 200 = 48 \\times 100 = 4800$. Always divide total field area by quadrat area, then multiply by count."
-  },
-  {
-    q: "A line transect is laid across a rocky seashore from the splash zone to the sea. Which ecological concept does this investigation best demonstrate?",
-    opts: [
-      "Random distribution of species",
-      "Zonation — the change in species composition across an environmental gradient",
-      "The capture-recapture method",
-      "Population density of mobile animals"
-    ],
-    ans: 1,
-    exp: "Zonation is the change in community composition across a gradient (here, from drier/saltier splash zone to permanently submerged zones). A transect records which species occur at different points along the gradient. Rocky seashores show clear zonation: lichens → barnacles → limpets → seaweeds → subtidal organisms."
-  },
-  {
-    q: "Which of the following is an ABIOTIC factor that would directly affect the distribution of plants in a habitat?",
-    opts: [
-      "Competition between plant species",
-      "Herbivory by caterpillars",
-      "Light intensity and soil pH",
-      "Pollination by bees"
-    ],
-    ans: 2,
-    exp: "Abiotic factors are non-living physical and chemical factors: light intensity, temperature, rainfall, soil pH, humidity, wind speed, and salinity. Biotic factors involve living organisms: competition, predation, parasitism, mutualism, pollination. Categorising factors correctly is a common exam skill."
-  },
-  {
-    q: "Edaphic factors are soil-based abiotic factors. Which combination of edaphic factors most directly affects plant growth?",
-    opts: [
-      "Wind speed, light intensity, and temperature",
-      "Predation, competition, and mutualism",
-      "Soil pH, mineral content, soil texture, and drainage",
-      "Rainfall pattern and humidity only"
-    ],
-    ans: 2,
-    exp: "Edaphic factors include: soil pH (affects nutrient availability), mineral/nutrient content (N, P, K), soil texture (clay, silt, sand — affects water retention and aeration), humus content, and drainage. These determine which plants can grow in a given area — calcareous soils favour different plants than acidic peaty soils."
-  },
-  {
-    q: "A xerophyte is adapted to survive in dry conditions. Which combination of features would you expect to find in a xerophyte?",
-    opts: [
-      "Large thin leaves, shallow roots, and open stomata at all times",
-      "Thick waxy cuticle, sunken stomata, reduced leaves (spines), and deep extensive roots",
-      "Large air spaces (aerenchyma), floating leaves, and reduced roots",
-      "No root system, thin cell walls, and permanently open stomata"
-    ],
-    ans: 1,
-    exp: "Xerophyte adaptations all reduce water loss: thick waxy cuticle (waterproofs surface), sunken stomata (reduce water vapour gradient), leaves reduced to spines (reduce surface area), CAM metabolism (stomata open only at night), deep roots (access deep water). These are opposite to hydrophyte adaptations."
-  },
-  {
-    q: "Hydrophytes are plants that live in or on water. Which feature helps them stay afloat and allows gas exchange?",
-    opts: [
-      "Thick lignified cell walls throughout",
-      "Sunken stomata and a heavy waxy cuticle",
-      "Large air spaces (aerenchyma) in stems and leaves",
-      "Deep tap roots anchoring them to the riverbed"
-    ],
-    ans: 2,
-    exp: "Aerenchyma is a spongy tissue with large air spaces that serves two purposes in hydrophytes: (1) provides buoyancy, helping leaves float at the surface for light; (2) allows oxygen to diffuse from aerial parts to submerged roots, which lack access to air. Examples: water lily, lotus, Elodea."
-  },
-  {
-    q: "In mutualism, both organisms benefit. Which of the following is the BEST example of mutualism?",
-    opts: [
-      "A tapeworm living in a human intestine",
-      "An orchid growing on a tree branch without harming the tree",
-      "Rhizobium bacteria living in root nodules of legumes, fixing nitrogen for the plant while receiving sugars",
-      "A cuckoo laying eggs in another bird's nest"
-    ],
-    ans: 2,
-    exp: "Rhizobium and legumes: the bacteria fix atmospheric nitrogen into ammonia (benefit to plant), while the plant provides carbohydrates to the bacteria (benefit to bacteria) — true mutualism. Tapeworm = parasitism (harms host). Orchid on tree = commensalism (one benefits, one unaffected). Cuckoo = brood parasitism."
-  },
-  {
-    q: "Which of the following best describes commensalism?",
-    opts: [
-      "Both species benefit from the relationship",
-      "One species benefits and the other is harmed",
-      "One species benefits and the other is neither helped nor harmed",
-      "Both species are harmed by the relationship"
-    ],
-    ans: 2,
-    exp: "Commensalism: one organism benefits; the other is unaffected. Example: the remora fish attaches to a shark and feeds on leftover food scraps — the remora benefits, the shark is not harmed. Compare: mutualism (both benefit), parasitism (one benefits, one harmed), competition (both potentially harmed)."
-  },
-  {
-    q: "Turgor pressure in plant cells is important for support. What happens to a plant cell when it loses water and turgor pressure drops to zero?",
-    opts: [
-      "The cell bursts (lysis)",
-      "The cell becomes turgid and rigid",
-      "The cell becomes plasmolysed and the protoplast shrinks away from the cell wall",
-      "The cell wall dissolves"
-    ],
-    ans: 2,
-    exp: "When a plant cell loses water by osmosis (e.g., in a hypertonic solution), the vacuole shrinks, the protoplast contracts, and eventually the plasma membrane pulls away from the cell wall — this is plasmolysis. The cell becomes flaccid. If too many cells in a plant are plasmolysed, the plant wilts. This cannot happen in animal cells (which have no cell wall) — they simply shrink."
-  },
-  {
-    q: "Collenchyma provides flexible support in young plant organs. In which of the following locations would you most likely find collenchyma?",
-    opts: [
-      "In the heartwood of mature tree trunks",
-      "Along the corners and edges of young stems and leaf petioles",
-      "In the seed coat of hard seeds",
-      "In the root hair zone of roots"
-    ],
-    ans: 1,
-    exp: "Collenchyma is found in regions that are still growing (elongating) and need support but not rigidity: leaf stalks (petioles), the corners of young stems, and young roots. It cannot be in heartwood (sclerenchyma/xylem provides that rigid support) or seed coats (sclerenchyma)."
-  },
-  {
-    q: "A biome differs from an ecosystem in that a biome is:",
-    opts: [
-      "Smaller than an ecosystem",
-      "Defined by its animal species only",
-      "A large-scale geographical region characterised by a dominant vegetation type and climate",
-      "A type of artificial ecosystem created by humans"
-    ],
-    ans: 2,
-    exp: "A biome is a large-scale category: tropical rainforest, savanna, desert, tundra, temperate deciduous forest, etc. Each biome is defined by its climate (temperature and rainfall patterns) and dominant vegetation. Many ecosystems can exist within one biome. An ecosystem is more localised — e.g., a single pond, field, or coral reef."
-  },
-  {
-    q: "In the nitrogen cycle, nitrification refers to:",
-    opts: [
-      "Conversion of nitrogen gas into ammonia by bacteria",
-      "Conversion of nitrates into nitrogen gas, releasing it into the atmosphere",
-      "Conversion of ammonia into nitrites, then into nitrates, by nitrifying bacteria",
-      "Absorption of nitrates by plant roots"
-    ],
-    ans: 2,
-    exp: "Nitrification is a two-step process: (1) Nitrosomonas bacteria convert $NH_3$ → $NO_2^-$ (nitrites); (2) Nitrobacter bacteria convert $NO_2^-$ → $NO_3^-$ (nitrates). Plants absorb nitrates. Do not confuse with nitrogen fixation ($N_2 \\rightarrow NH_3$, by Rhizobium/Azotobacter) or denitrification ($NO_3^-$ → $N_2$, by Pseudomonas)."
-  },
-  {
-    q: "Which of the following is the correct sequence of organisation from the simplest to the most complex level in a multicellular organism?",
-    opts: [
-      "Organ → Tissue → Cell → Organ system → Organism",
-      "Cell → Tissue → Organ → Organ system → Organism",
-      "Tissue → Cell → Organ → Organism → Organ system",
-      "Organ system → Organ → Tissue → Cell → Organism"
-    ],
-    ans: 1,
-    exp: "The hierarchy of biological organisation: Cell → Tissue (group of similar cells) → Organ (group of tissues with a specific function) → Organ system (group of organs) → Organism. Example: cardiac muscle cells → cardiac muscle tissue → heart (organ) → cardiovascular system → human organism."
-  },
-  {
-    q: "Smooth muscle differs from skeletal muscle in which of the following ways?",
-    opts: [
-      "Smooth muscle is striated and voluntary; skeletal muscle is non-striated and involuntary",
-      "Smooth muscle is non-striated and involuntary; skeletal muscle is striated and voluntary",
-      "Both are striated but smooth muscle is voluntary",
-      "Both are non-striated and involuntary"
-    ],
-    ans: 1,
-    exp: "Smooth muscle: non-striated (no visible bands), involuntary (controlled by the autonomic nervous system), found in walls of hollow organs (gut, bladder, blood vessels). Skeletal muscle: striated (alternating actin/myosin bands visible), voluntary (controlled consciously). Cardiac muscle: striated but involuntary — a unique combination."
-  },
-  {
-    q: "A student is studying a pond ecosystem and identifies: algae, water fleas (Daphnia), small fish, and a heron. Which of the following food chains is correct, and what trophic level is the heron?",
-    opts: [
-      "Heron → Fish → Daphnia → Algae; heron is producer",
-      "Algae → Daphnia → Fish → Heron; heron is quaternary consumer at the 4th trophic level",
-      "Algae → Daphnia → Fish → Heron; heron is tertiary consumer at the 5th trophic level",
-      "Daphnia → Algae → Fish → Heron; heron is secondary consumer"
-    ],
-    ans: 1,
-    exp: "Algae (producer, 1st trophic level) → Daphnia (primary consumer, 2nd) → Small fish (secondary consumer, 3rd) → Heron (tertiary consumer, 4th trophic level). Producers are always at the START of a food chain, not the end. The heron is a tertiary consumer at the 4th trophic level (not quaternary — that would require a 5-step chain)."
-  },
-  {
-    q: "Which of the following best explains why pyramids of energy are NEVER inverted?",
-    opts: [
-      "Energy increases as it moves up trophic levels",
-      "Producers always have less energy than consumers",
-      "Energy is always lost (as heat) at each trophic level, so each level has less energy than the one below",
-      "Decomposers add energy back at each trophic level"
-    ],
-    ans: 2,
-    exp: "The Second Law of Thermodynamics guarantees that energy is always lost as heat at each trophic level through respiration. Roughly $90\\%$ is lost at each transfer. Therefore, the total energy at each successive trophic level is always LESS than the level below — making an inverted energy pyramid thermodynamically impossible. This is why pyramids of energy are always upright, unlike biomass or number pyramids."
-  },
-  {
-    q: "A student investigates a grassland using belt transects and records that clover only grows near ant nests, while grasses dominate elsewhere. Which type of distribution does the clover show?",
-    opts: [
-      "Uniform distribution",
-      "Clumped (aggregated) distribution",
-      "Random distribution",
-      "Graduated distribution"
-    ],
-    ans: 1,
-    exp: "Clumped (aggregated) distribution occurs when individuals cluster in groups, often because resources (here, nitrogen-rich soil near ant nests) are patchy. Uniform distribution (e.g., trees in an orchard) results from territorial behaviour or competition. Random distribution (rare in nature) occurs when there is no pattern. A transect reveals this spatial pattern by recording species at regular intervals."
-  }
-  ], 
-    'Further Mathematics': [
-    {
-      q: "Which of the following is the correct formula for the nth term of an arithmetic sequence with first term $a$ and common difference $d$?",
-      opts: ["$T_n = a + (n+1)d$", "$T_n = a + (n-1)d$", "$T_n = a \\times d^{n-1}$", "$T_n = nd + a$"],
-      ans: 1,
-      exp: "The nth term of an AP is $T_n = a + (n-1)d$, where $a$ is the first term and $d$ is the common difference."
-    },
-    {
-      q: "The 5th term of an arithmetic sequence is 17 and the 9th term is 29. Find the first term.",
-      opts: ["5", "3", "2", "7"],
-      ans: 0,
-      exp: "$T_5 = a + 4d = 17$ and $T_9 = a + 8d = 29$. Subtracting: $4d = 12 \\Rightarrow d = 3$. Then $a = 17 - 12 = 5$."
-    },
-    {
-      q: "How many terms are in the arithmetic sequence: 4, 9, 14, ..., 104?",
-      opts: ["18", "19", "20", "21"],
-      ans: 3,
-      exp: "$T_n = a + (n-1)d \\Rightarrow 104 = 4 + (n-1)(5) \\Rightarrow 100 = 5(n-1) \\Rightarrow n-1 = 20 \\Rightarrow n = 21$."
-    },
-    {
-      q: "The sum of the first 20 terms of an AP is 590. If the first term is 1, find the common difference.",
-      opts: ["2", "3", "4", "5"],
-      ans: 1,
-      exp: "$S_{20} = \\frac{20}{2}[2(1) + 19d] = 590 \\Rightarrow 10(2 + 19d) = 590 \\Rightarrow 2 + 19d = 59 \\Rightarrow 19d = 57 \\Rightarrow d = 3$."
-    },
-    {
-      q: "A geometric sequence has first term 3 and common ratio 2. What is the 6th term?",
-      opts: ["64", "96", "48", "192"],
-      ans: 1,
-      exp: "$T_6 = ar^5 = 3 \\times 2^5 = 3 \\times 32 = 96$."
-    },
-    {
-      q: "The 3rd and 6th terms of a GP are 8 and 64 respectively. Find the common ratio.",
-      opts: ["3", "4", "2", "5"],
-      ans: 2,
-      exp: "$\\frac{T_6}{T_3} = r^3 = \\frac{64}{8} = 8 \\Rightarrow r = \\sqrt[3]{8} = 2$."
-    },
-    {
-      q: "Find the sum of the first 5 terms of a GP with first term 2 and common ratio 3.",
-      opts: ["240", "242", "246", "180"],
-      ans: 1,
-      exp: "$S_5 = \\frac{a(r^n - 1)}{r - 1} = \\frac{2(3^5 - 1)}{3 - 1} = \\frac{2(243 - 1)}{2} = 242$."
-    },
-    {
-      q: "Which of the following correctly represents the sum to infinity of a GP with $|r| < 1$?",
-      opts: ["$S_\\infty = \\frac{a}{1+r}$", "$S_\\infty = \\frac{a}{r-1}$", "$S_\\infty = \\frac{a}{1-r}$", "$S_\\infty = a(1-r)$"],
-      ans: 2,
-      exp: "For a GP with $|r| < 1$, the terms shrink to zero and the sum to infinity is given by $S_\\infty = \\frac{a}{1-r}$."
-    },
-    {
-      q: "Solve the inequality: $3x - 7 > 2x + 1$.",
-      opts: ["$x > 8$", "$x < 8$", "$x > 6$", "$x < 6$"],
-      ans: 0,
-      exp: "Collect like terms: $3x - 2x > 1 + 7 \\Rightarrow x > 8$."
-    },
-    {
-      q: "Which of the following is the solution set of $-2 \\leq 3x + 1 < 7$?",
-      opts: ["$-1 \\leq x < 2$", "$-2 < x \\leq 2$", "$0 \\leq x < 2$", "$-1 < x \\leq 2$"],
-      ans: 0,
-      exp: "Subtract 1 throughout: $-3 \\leq 3x < 6$. Divide by 3: $-1 \\leq x < 2$."
-    },
-    {
-      q: "Which region on the number line represents the solution to $|x - 3| \\leq 4$?",
-      opts: ["$-1 \\leq x \\leq 7$", "$-4 \\leq x \\leq 4$", "$x \\leq -1$ or $x \\geq 7$", "$-1 < x < 7$"],
-      ans: 0,
-      exp: "$|x - 3| \\leq 4 \\Rightarrow -4 \\leq x - 3 \\leq 4$. Add 3 throughout: $-1 \\leq x \\leq 7$."
-    },
-    {
-      q: "A student earns at most ₦5,000 per day selling snacks but needs at least ₦1,500 to cover costs. If $x$ represents profit, which inequality models this?",
-      opts: ["$1500 < x < 5000$", "$1500 \\leq x \\leq 5000$", "$x \\geq 1500$ and $x > 5000$", "$x \\leq 1500$ or $x \\geq 5000$"],
-      ans: 1,
-      exp: "Profit is at least ₦1,500 (i.e. $x \\geq 1500$) and at most ₦5,000 (i.e. $x \\leq 5000$), giving $1500 \\leq x \\leq 5000$."
-    },
-    {
-      q: "Find the exact value of $\\sin 60° \\times \\cos 30°$.",
-      opts: ["$\\frac{1}{2}$", "$\\frac{\\sqrt{3}}{2}$", "$\\frac{3}{4}$", "$1$"],
-      ans: 2,
-      exp: "$\\sin 60° = \\frac{\\sqrt{3}}{2}$ and $\\cos 30° = \\frac{\\sqrt{3}}{2}$. Product $= \\frac{\\sqrt{3}}{2} \\times \\frac{\\sqrt{3}}{2} = \\frac{3}{4}$."
-    },
-    {
-      q: "Without a calculator, evaluate $\\tan 45° + \\cos 60°$.",
-      opts: ["$\\frac{3}{2}$", "$\\sqrt{2}$", "$2$", "$1$"],
-      ans: 0,
-      exp: "$\\tan 45° = 1$ and $\\cos 60° = \\frac{1}{2}$. Sum $= 1 + \\frac{1}{2} = \\frac{3}{2}$."
-    },
-    {
-      q: "If $\\sin \\theta = \\frac{\\sqrt{3}}{2}$ and $0° < \\theta < 90°$, find the exact value of $\\cos \\theta$.",
-      opts: ["$\\frac{1}{\\sqrt{2}}$", "$\\frac{1}{2}$", "$\\frac{\\sqrt{3}}{2}$", "$\\frac{\\sqrt{2}}{2}$"],
-      ans: 1,
-      exp: "$\\sin \\theta = \\frac{\\sqrt{3}}{2}$ corresponds to $\\theta = 60°$. Therefore $\\cos 60° = \\frac{1}{2}$."
-    },
-    {
-      q: "A vertical pole casts a shadow 10 m long when the angle of elevation of the sun is 30°. Find the height of the pole.",
-      opts: ["$\\frac{10\\sqrt{3}}{3}$ m", "$10\\sqrt{3}$ m", "$5\\sqrt{3}$ m", "$5$ m"],
-      ans: 0,
-      exp: "$\\tan 30° = \\frac{h}{10} \\Rightarrow h = 10 \\tan 30° = 10 \\times \\frac{1}{\\sqrt{3}} = \\frac{10}{\\sqrt{3}} = \\frac{10\\sqrt{3}}{3}$ m."
-    },
-    {
-      q: "Which of the following is the negation of the statement 'Some students are brilliant'?",
-      opts: ["All students are brilliant", "Some students are not brilliant", "No student is brilliant", "Most students are brilliant"],
-      ans: 2,
-      exp: "The negation of 'Some P are Q' is 'No P is Q'. Therefore the negation is 'No student is brilliant'."
-    },
-    {
-      q: "The statement 'If I study hard, then I will pass' is false only when:",
-      opts: ["I study hard and I pass", "I do not study hard and I fail", "I study hard and I do not pass", "I do not study hard and I pass"],
-      ans: 2,
-      exp: "A conditional $P \\Rightarrow Q$ is false only when P is true and Q is false — i.e. when I study hard but still do not pass."
-    },
-    {
-      q: "Which of the following is a conjunction?",
-      opts: ["It is raining or it is cold", "If it rains, the ground is wet", "It is raining and it is cold", "It is not raining"],
-      ans: 2,
-      exp: "A conjunction connects two statements with 'and' ($P \\land Q$) and is true only when both are true. 'It is raining and it is cold' is a conjunction."
-    },
-    {
-      q: "Given that P is true and Q is false, evaluate $P \\lor Q$.",
-      opts: ["False", "True", "Undefined", "Depends on context"],
-      ans: 1,
-      exp: "A disjunction $P \\lor Q$ is true when at least one of P or Q is true. Since P is true, $P \\lor Q$ is true."
-    },
-    {
-      q: "Convert the binary number $1101_2$ to base 10.",
-      opts: ["11", "12", "13", "14"],
-      ans: 2,
-      exp: "$1101_2 = 1(2^3) + 1(2^2) + 0(2^1) + 1(2^0) = 8 + 4 + 0 + 1 = 13_{10}$."
-    },
-    {
-      q: "What is $1011_2 + 110_2$ expressed in binary?",
-      opts: ["$10001_2$", "$10101_2$", "$11001_2$", "$10011_2$"],
-      ans: 0,
-      exp: "Align and add: $1011 + 0110$. Working right to left: $1+0=1$, $1+1=10$ (write 0 carry 1), $0+1+1=10$ (write 0 carry 1), $1+0+1=10$. Result: $10001_2$."
-    },
-    {
-      q: "Find the midpoint of the line segment joining the points $(3, -5)$ and $(7, 9)$.",
-      opts: ["$(5, 2)$", "$(4, 2)$", "$(5, 4)$", "$(2, 5)$"],
-      ans: 0,
-      exp: "Midpoint $= \\left(\\frac{3+7}{2},\\ \\frac{-5+9}{2}\\right) = \\left(5,\\ 2\\right)$."
-    },
-    {
-      q: "Calculate the distance between the points $(-1, 2)$ and $(3, -2)$.",
-      opts: ["$4\\sqrt{2}$", "$6$", "$2\\sqrt{5}$", "$\\sqrt{20}$"],
-      ans: 0,
-      exp: "$d = \\sqrt{(3-(-1))^2 + (-2-2)^2} = \\sqrt{16 + 16} = \\sqrt{32} = 4\\sqrt{2}$."
-    },
-    {
-      q: "Find the gradient of the straight line passing through the points $(2, 5)$ and $(6, 13)$.",
-      opts: ["$4$", "$\\frac{1}{2}$", "$2$", "$3$"],
-      ans: 2,
-      exp: "$m = \\frac{13 - 5}{6 - 2} = \\frac{8}{4} = 2$."
-    },
-    {
-      q: "What is the equation of the line with gradient 3 passing through the point $(1, 4)$?",
-      opts: ["$y = 3x + 1$", "$y = 3x - 1$", "$y = x + 3$", "$y = 3x + 4$"],
-      ans: 0,
-      exp: "Using point-slope form: $y - 4 = 3(x - 1) \\Rightarrow y = 3x - 3 + 4 = 3x + 1$."
-    },
-    {
-      q: "Two lines are parallel. One has equation $y = 4x - 3$. Which of the following could be the equation of the other line?",
-      opts: ["$y = -\\frac{1}{4}x + 2$", "$y = 4x + 7$", "$4y = x - 3$", "$y = 3x - 4$"],
-      ans: 1,
-      exp: "Parallel lines have equal gradients. The gradient of $y = 4x - 3$ is 4. Only $y = 4x + 7$ has gradient 4."
-    },
-    {
-      q: "A line has gradient 5. What is the gradient of any line perpendicular to it?",
-      opts: ["$-5$", "$\\frac{1}{5}$", "$-\\frac{1}{5}$", "$5$"],
-      ans: 2,
-      exp: "For perpendicular lines, $m_1 \\times m_2 = -1$. So $m_2 = -\\frac{1}{5}$."
-    },
-    {
-      q: "Find the x-intercept of the line $3x + 2y = 12$.",
-      opts: ["$(4, 0)$", "$(0, 6)$", "$(3, 0)$", "$(6, 0)$"],
-      ans: 0,
-      exp: "Set $y = 0$: $3x = 12 \\Rightarrow x = 4$. The x-intercept is $(4, 0)$."
-    },
-    {
-      q: "Which of the following correctly defines a one-to-one (injective) function?",
-      opts: ["Every output has at least two inputs", "Different inputs always give different outputs", "All elements of the range are mapped to", "The function maps onto itself"],
-      ans: 1,
-      exp: "A one-to-one function maps distinct inputs to distinct outputs: if $f(a) = f(b)$, then $a = b$."
-    },
-    {
-      q: "Given $f(x) = 2x + 1$ and $g(x) = x^2$, find $f(g(3))$.",
-      opts: ["$19$", "$49$", "$37$", "$7$"],
-      ans: 0,
-      exp: "First find $g(3) = 3^2 = 9$. Then $f(9) = 2(9) + 1 = 19$."
-    },
-    {
-      q: "If $f(x) = 3x - 2$, find $f^{-1}(x)$.",
-      opts: ["$\\frac{x+2}{3}$", "$\\frac{x-2}{3}$", "$3x + 2$", "$\\frac{3}{x-2}$"],
-      ans: 0,
-      exp: "Let $y = 3x - 2$. Swap $x$ and $y$: $x = 3y - 2 \\Rightarrow 3y = x + 2 \\Rightarrow y = \\frac{x+2}{3}$. So $f^{-1}(x) = \\frac{x+2}{3}$."
-    },
-    {
-      q: "The sum to infinity of a GP is 16 and its first term is 4. Find the common ratio.",
-      opts: ["$\\frac{1}{2}$", "$\\frac{3}{4}$", "$\\frac{1}{4}$", "$\\frac{2}{3}$"],
-      ans: 1,
-      exp: "$S_\\infty = \\frac{a}{1-r} \\Rightarrow 16 = \\frac{4}{1-r} \\Rightarrow 1 - r = \\frac{4}{16} = \\frac{1}{4} \\Rightarrow r = \\frac{3}{4}$."
-    },
-    {
-      q: "Find the 10th term of the AP: $-3, 1, 5, 9, \\ldots$",
-      opts: ["$33$", "$37$", "$41$", "$29$"],
-      ans: 0,
-      exp: "$a = -3$, $d = 4$. $T_{10} = a + 9d = -3 + 9(4) = -3 + 36 = 33$."
-    },
-    {
-      q: "Which of the following sequences is geometric?",
-      opts: ["$2, 4, 6, 8, \\ldots$", "$1, 3, 6, 10, \\ldots$", "$5, 10, 20, 40, \\ldots$", "$3, 6, 9, 12, \\ldots$"],
-      ans: 2,
-      exp: "In $5, 10, 20, 40, \\ldots$, each term is multiplied by a constant ratio of 2, so it is a geometric sequence."
-    },
-    {
-      q: "Solve the simultaneous inequalities: $x + 2 > 5$ and $2x < 12$.",
-      opts: ["$3 < x < 6$", "$x > 3$ only", "$x < 6$ only", "$x > 7$"],
-      ans: 0,
-      exp: "$x + 2 > 5 \\Rightarrow x > 3$ and $2x < 12 \\Rightarrow x < 6$. Combined: $3 < x < 6$."
-    },
-    {
-      q: "The contrapositive of 'If it is raining, the match is cancelled' is:",
-      opts: ["If the match is cancelled, it is raining", "If it is not raining, the match is not cancelled", "If the match is not cancelled, it is not raining", "It is raining and the match is not cancelled"],
-      ans: 2,
-      exp: "The contrapositive of $P \\Rightarrow Q$ is $\\neg Q \\Rightarrow \\neg P$. Here: 'If the match is not cancelled, then it is not raining'."
-    },
-    {
-      q: "Points $A(1, 3)$, $B(4, 3)$, and $C(4, 7)$ are vertices of a triangle. What is the area of the triangle?",
-      opts: ["6 sq units", "12 sq units", "8 sq units", "10 sq units"],
-      ans: 0,
-      exp: "AB is horizontal with length $4 - 1 = 3$. BC is vertical with length $7 - 3 = 4$. Angle B = 90°. Area $= \\frac{1}{2}(3)(4) = 6$ sq units."
-    },
-    {
-      q: "Given $f: x \\mapsto x^2 - 1$ and $g: x \\mapsto 2x + 3$, find $g(f(2))$.",
-      opts: ["$9$", "$7$", "$11$", "$5$"],
-      ans: 0,
-      exp: "$f(2) = 2^2 - 1 = 3$. Then $g(3) = 2(3) + 3 = 9$."
-    },
-    {
-      q: "Which value of $x$ satisfies both $2x + 3 \\geq 7$ and $x - 1 < 4$ simultaneously?",
-      opts: ["$x = 2$", "$x = 5$", "$x = 6$", "$x = 0$"],
-      ans: 0,
-      exp: "$2x + 3 \\geq 7 \\Rightarrow x \\geq 2$ and $x - 1 < 4 \\Rightarrow x < 5$. So $2 \\leq x < 5$. Only $x = 2$ from the options lies in this range."
-    },
-    {
-      q: "A line passes through the origin and is perpendicular to $2x - y = 5$. What is its equation?",
-      opts: ["$y = -\\frac{1}{2}x$", "$y = 2x$", "$y = \\frac{1}{2}x$", "$y = -2x$"],
-      ans: 0,
-      exp: "Rewrite $2x - y = 5$ as $y = 2x - 5$; gradient $= 2$. Perpendicular gradient $= -\\frac{1}{2}$. Through the origin: $y = -\\frac{1}{2}x$."
-    },
-  ]
+    ans: 3,
+    exp: "An ecosystem is the sum of all biotic (living) components and abiotic (non-living) components in an area, interacting as a functional system through energy flow and nutrient cycling." },
+
+]
   },
         sss2: {
    'General Test': [
