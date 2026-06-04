@@ -494,6 +494,7 @@
           ${messagesHtml}
 
           <div id="tasksContainer" class="mb-6"></div>
+          ${weeklyTimetableHtml}
 
           <div class="mb-6" style="display:flex;gap:.625rem;flex-wrap:wrap;justify-content:center;">
            <button id="chatOpenBtn" onclick="Chat.openPublicChat()" class="btn bg-green-600 hover:bg-green-700" style="position:relative;">
@@ -596,7 +597,83 @@
     }
 
     const classKey = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
-    const _qBank   = window.questions || {};
+
+      const _qBank = window.questions || {};
+
+      // ── Fetch this week's timetable ──────────────────────────────
+      let weeklyTimetableHtml = '';
+      try {
+        const ttSnap = await window.fbDb
+          .collection('weeklyTimetable')
+          .doc(classKey)
+          .get();
+
+        if (ttSnap.exists) {
+          const ttData    = ttSnap.data() || {};
+          const allWeeks  = ttData.weeks || {};
+
+          // Get current ISO week key
+          function _isoWk(date) {
+            const d        = date ? new Date(date) : new Date();
+            const thursday = new Date(d);
+            thursday.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
+            const yearStart = new Date(thursday.getFullYear(), 0, 4);
+            const wn       = Math.round(((thursday - yearStart) / 86400000 + 1) / 7);
+            return thursday.getFullYear() + '-W' + String(wn).padStart(2, '0');
+          }
+
+          const currentWk = _isoWk();
+          const topics    = allWeeks[currentWk] || {};
+          const entries   = Object.entries(topics).filter(([, v]) => v && v.trim());
+
+          if (entries.length > 0) {
+            // Get Monday/Sunday labels for display
+            const d   = new Date();
+            const dow = d.getDay();
+            const diff = dow === 0 ? -6 : 1 - dow;
+            const monday = new Date(d);
+            monday.setDate(d.getDate() + diff);
+            const sunday = new Date(monday);
+            sunday.setDate(monday.getDate() + 6);
+            const rangeLabel = monday.toLocaleDateString('en-GB', { day:'numeric', month:'short' }) +
+                               ' – ' +
+                               sunday.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
+
+            const rows = entries.map(([subj, topic]) => `
+              <div style="display:flex;align-items:flex-start;gap:.625rem;
+                          padding:.4375rem 0;border-bottom:1px solid var(--border);">
+                <span style="font-size:.8125rem;font-weight:700;color:var(--accent-text);
+                             min-width:100px;flex-shrink:0;">${_escHtml(subj)}</span>
+                <span style="font-size:.8125rem;color:var(--text-1);line-height:1.5;">
+                  ${_escHtml(topic)}
+                </span>
+              </div>`).join('');
+
+            weeklyTimetableHtml = `
+              <div style="margin-bottom:1.25rem;border:1px solid var(--accent-border);
+                          border-left:3px solid var(--accent);border-radius:8px;
+                          background:var(--accent-subtle);padding:.875rem 1rem;text-align:left;">
+                <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.625rem;">
+                  <span style="font-size:1rem;flex-shrink:0;">📚</span>
+                  <div>
+                    <p style="font-size:.875rem;font-weight:700;color:var(--accent-text);">
+                      This Week's Study Topics
+                    </p>
+                    <p style="font-size:.75rem;color:var(--text-3);margin-top:1px;">
+                      ${_escHtml(rangeLabel)}
+                    </p>
+                  </div>
+                </div>
+                <div style="padding-top:.125rem;">
+                  ${rows}
+                </div>
+              </div>`;
+          }
+        }
+      } catch (ttErr) {
+        console.warn('[exam] Could not load weekly timetable (non-fatal):', ttErr);
+      }
+      // ── End timetable fetch ─────────────────────────────────────
 
     if (!_qBank[classKey]) {
       UI.toast(`No subjects found for class "${S().studentData.class}". Contact Master Timothy.`, 'error', 0);
