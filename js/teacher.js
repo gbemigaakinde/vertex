@@ -78,6 +78,8 @@ function renderTeacherDashboard() {
                 class="tab-btn btn">Study Room</button>
         <button onclick="Teacher.showTab('games')" id="tab-games"
                 class="tab-btn btn">Games</button>
+        <button onclick="Teacher.showTab('timetable')" id="tab-timetable"
+                class="tab-btn btn">Timetable</button>
         <div style="width:1px;height:20px;background:var(--border);margin:0 0.25rem;flex-shrink:0;"></div>
         <button onclick="Teacher.showTab('chat')" id="tab-chat"
                 class="tab-btn btn bg-green-600"
@@ -408,6 +410,7 @@ function renderTeacherDashboard() {
         </div>
 
         <div id="teacher-studyroom" class="teacher-tab hidden"></div>
+        <div id="teacher-timetable" class="teacher-tab hidden"></div>
         <div id="teacher-games" class="teacher-tab hidden">
           <div style="margin-bottom:1rem;">
             <h2 style="font-size:var(--text-md);font-weight:600;color:var(--text-1);letter-spacing:-0.015em;">
@@ -474,7 +477,7 @@ function renderTeacherDashboard() {
 }
 
 function showTab(tab) {
-  ['students','results','schools','tasks','studyroom','games','chat','dm'].forEach(t => {
+  ['students','results','schools','tasks','studyroom','games','timetable','chat','dm'].forEach(t => {
     const el  = document.getElementById(`teacher-${t}`);
     const btn = document.getElementById(`tab-${t}`);
     if (el) {
@@ -494,6 +497,7 @@ function showTab(tab) {
   if (tab === 'chat')      { Chat.openPublicChat();       return; }
   if (tab === 'studyroom') { StudyRoom.openForTeacher();  return; }
   if (tab === 'games')     { Game.renderTeacherGameStats('teacherGameStatsContainer'); return; }
+  if (tab === 'timetable') { _loadTimetableManager();    return; }
   if (tab === 'students')  _loadStudents();
   if (tab === 'results')   _loadResults();
   if (tab === 'schools')   _loadSchools();
@@ -2500,6 +2504,433 @@ function _renderExistingTasksList(docs) {
   await App.logout();
 }
 
+  // ═══════════════════════════════════════════════════════════
+  //  WEEKLY TIMETABLE MANAGER
+  // ═══════════════════════════════════════════════════════════
+
+  // Returns "YYYY-Www" ISO week key for a given Date (or today)
+  function _isoWeekKey(date) {
+    const d = date ? new Date(date) : new Date();
+    // Thursday in current week decides the year
+    const thursday = new Date(d);
+    thursday.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
+    const yearStart = new Date(thursday.getFullYear(), 0, 4);
+    const weekNum   = Math.round(((thursday - yearStart) / 86400000 + 1) / 7);
+    return thursday.getFullYear() + '-W' + String(weekNum).padStart(2, '0');
+  }
+
+  // Returns the Monday of the ISO week that contains a given date
+  function _weekMonday(date) {
+    const d   = date ? new Date(date) : new Date();
+    const dow = d.getDay();
+    const diff = dow === 0 ? -6 : 1 - dow;
+    const monday = new Date(d);
+    monday.setDate(d.getDate() + diff);
+    monday.setHours(0, 0, 0, 0);
+    return monday;
+  }
+
+  // Formats a Monday date for display: "Mon 2 Jun – Sun 8 Jun 2025"
+  function _weekRangeLabel(mondayDate) {
+    const sunday = new Date(mondayDate);
+    sunday.setDate(mondayDate.getDate() + 6);
+    const opts = { day: 'numeric', month: 'short' };
+    return mondayDate.toLocaleDateString('en-GB', opts) +
+           ' – ' +
+           sunday.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  }
+
+  // Returns the class key (same as used in questions.js) from a class name string
+  function _classKeyFromStr(classStr) {
+    return (classStr || '').replace(/\s+/g, '').toLowerCase();
+  }
+
+  // Collect all unique class names from the student cache
+  function _getAllClasses() {
+    const seen = new Set();
+    _msgStudentCache.forEach(s => { if (s.cls) seen.add(s.cls); });
+    return [...seen].sort();
+  }
+
+  // Collect subjects for a given class from the question bank
+  function _getSubjectsForClass(classStr) {
+    const key   = _classKeyFromStr(classStr);
+    const qBank = window.questions || {};
+    return Object.keys(qBank[key] || {}).sort();
+  }
+
+  // State for the timetable manager
+  let _ttSelectedClass = '';
+  let _ttSelectedWeek  = '';   // ISO week key e.g. "2025-W23"
+  let _ttUnsubAll      = null;
+
+  function _loadTimetableManager() {
+    const container = document.getElementById('teacher-timetable');
+    if (!container) return;
+
+    const classes   = _getAllClasses();
+    const thisWeek  = _isoWeekKey();
+
+    // Build week options: 4 past weeks + this week + 4 future weeks
+    const weekOptions = [];
+    for (let i = -4; i <= 4; i++) {
+      const d = new Date();
+      d.setDate(d.getDate() + i * 7);
+      const key     = _isoWeekKey(d);
+      const monday  = _weekMonday(d);
+      const label   = _weekRangeLabel(monday);
+      if (!weekOptions.find(w => w.key === key)) {
+        weekOptions.push({ key, label });
+      }
+    }
+    weekOptions.sort((a, b) => a.key.localeCompare(b.key));
+
+    if (!_ttSelectedClass && classes.length > 0) _ttSelectedClass = classes[0];
+    if (!_ttSelectedWeek) _ttSelectedWeek = thisWeek;
+
+    container.innerHTML = `
+      <div style="margin-bottom:1rem;">
+        <h2 style="font-size:var(--text-md);font-weight:600;color:var(--text-1);letter-spacing:-0.015em;">
+          Weekly Study Timetable
+        </h2>
+        <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">
+          Set a topic per subject for each class, each week. Students see the current week's timetable on their dashboard.
+        </p>
+      </div>
+
+      <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1.25rem;align-items:flex-end;">
+
+        <div style="flex:1;min-width:160px;">
+          <label style="display:block;font-size:var(--text-xs);font-weight:600;color:var(--text-3);
+                        margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.04em;">Class</label>
+          <select id="ttClassSelect" onchange="Teacher._onTTClassChange()"
+                  style="width:100%;">
+            ${classes.length === 0
+              ? '<option value="">No classes found — register students first</option>'
+              : classes.map(c => `<option value="${_esc(c)}" ${c === _ttSelectedClass ? 'selected' : ''}>${_esc(c)}</option>`).join('')}
+          </select>
+        </div>
+
+        <div style="flex:1;min-width:200px;">
+          <label style="display:block;font-size:var(--text-xs);font-weight:600;color:var(--text-3);
+                        margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.04em;">Week</label>
+          <select id="ttWeekSelect" onchange="Teacher._onTTWeekChange()"
+                  style="width:100%;">
+            ${weekOptions.map(w => `
+              <option value="${_esc(w.key)}" ${w.key === _ttSelectedWeek ? 'selected' : ''}>
+                ${w.key === thisWeek ? '★ This week: ' : ''}${_esc(w.label)} (${_esc(w.key)})
+              </option>`).join('')}
+          </select>
+        </div>
+
+      </div>
+
+      <div id="ttEditorWrap" style="display:flex;flex-direction:column;gap:1.25rem;">
+        <div style="text-align:center;padding:2rem;color:var(--text-3);font-size:var(--text-sm);">
+          Loading…
+        </div>
+      </div>
+
+      <div style="margin-top:2rem;padding-top:1.25rem;border-top:1px solid var(--border);">
+        <h3 style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);margin-bottom:.75rem;">
+          All Saved Timetables
+        </h3>
+        <div id="ttAllList" style="display:flex;flex-direction:column;gap:.5rem;"></div>
+      </div>`;
+
+    _ttRenderEditor();
+    _ttListenAll();
+  }
+
+  function _onTTClassChange() {
+    const sel = document.getElementById('ttClassSelect');
+    if (sel) _ttSelectedClass = sel.value;
+    _ttRenderEditor();
+    _ttListenAll();
+  }
+
+  function _onTTWeekChange() {
+    const sel = document.getElementById('ttWeekSelect');
+    if (sel) _ttSelectedWeek = sel.value;
+    _ttRenderEditor();
+  }
+
+  // Live-listen to all docs for the selected class, update the "All Saved" list
+  function _ttListenAll() {
+    if (typeof _ttUnsubAll === 'function') { _ttUnsubAll(); _ttUnsubAll = null; }
+    if (!_ttSelectedClass) return;
+
+    const docId = _classKeyFromStr(_ttSelectedClass);
+    _ttUnsubAll = Db().collection('weeklyTimetable').doc(docId)
+      .onSnapshot(snap => {
+        _ttRenderAllList(snap.exists ? snap.data() : {});
+      }, err => {
+        console.warn('[timetable] listen error:', err);
+      });
+  }
+
+  function _ttRenderAllList(docData) {
+    const container = document.getElementById('ttAllList');
+    if (!container) return;
+
+    // docData shape: { weeks: { "2025-W23": { "Maths": "Algebra", "English": "Essay writing" }, ... } }
+    const weeks = (docData && docData.weeks) ? docData.weeks : {};
+    const weekKeys = Object.keys(weeks).sort().reverse();
+
+    if (weekKeys.length === 0) {
+      container.innerHTML = `<p style="font-size:var(--text-sm);color:var(--text-3);font-style:italic;">
+        No timetables saved yet for ${_esc(_ttSelectedClass)}.</p>`;
+      return;
+    }
+
+    const thisWeek = _isoWeekKey();
+    container.innerHTML = weekKeys.map(wk => {
+      const subjects = weeks[wk] || {};
+      const subjectList = Object.entries(subjects)
+        .map(([subj, topic]) => `
+          <div style="display:flex;align-items:flex-start;gap:.5rem;padding:.3rem 0;
+                      border-bottom:1px solid var(--border);">
+            <span style="font-size:var(--text-xs);font-weight:700;color:var(--text-2);
+                         min-width:90px;flex-shrink:0;">${_esc(subj)}</span>
+            <span style="font-size:var(--text-xs);color:var(--text-1);">${_esc(topic || '—')}</span>
+          </div>`)
+        .join('');
+
+      // Parse the ISO week key to get a label
+      const [year, weekPart] = wk.split('-W');
+      const weekNum = parseInt(weekPart, 10);
+      // Get Monday of that week
+      const jan4 = new Date(+year, 0, 4);
+      const mondayOfWeek1 = _weekMonday(jan4);
+      const targetMonday = new Date(mondayOfWeek1);
+      targetMonday.setDate(mondayOfWeek1.getDate() + (weekNum - 1) * 7);
+      const rangeLabel = _weekRangeLabel(targetMonday);
+
+      const isThisWeek = wk === thisWeek;
+
+      return `
+        <div style="border:1px solid ${isThisWeek ? 'var(--accent-border)' : 'var(--border)'};
+                    border-radius:8px;overflow:hidden;background:var(--bg-base);">
+          <div style="display:flex;align-items:center;justify-content:space-between;
+                      padding:.5rem .875rem;
+                      background:${isThisWeek ? 'var(--accent-subtle)' : 'var(--bg-subtle)'};">
+            <div style="display:flex;align-items:center;gap:.5rem;">
+              <span style="font-size:var(--text-sm);font-weight:700;
+                           color:${isThisWeek ? 'var(--accent-text)' : 'var(--text-1)'};">
+                ${_esc(rangeLabel)}
+              </span>
+              <span style="font-size:var(--text-xs);font-weight:600;padding:1px 7px;border-radius:99px;
+                           background:${isThisWeek ? 'var(--accent)' : 'var(--bg-muted)'};
+                           color:${isThisWeek ? '#fff' : 'var(--text-3)'};">
+                ${isThisWeek ? '★ Current' : _esc(wk)}
+              </span>
+            </div>
+            <div style="display:flex;gap:.375rem;align-items:center;">
+              <button onclick="Teacher._editTimetableWeek('${_esc(wk)}')"
+                      style="font-size:var(--text-xs);font-weight:600;color:var(--accent);
+                             background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">
+                Edit
+              </button>
+              <span style="color:var(--border-strong);">·</span>
+              <button onclick="Teacher._deleteTimetableWeek('${_esc(wk)}')"
+                      style="font-size:var(--text-xs);font-weight:600;color:var(--danger);
+                             background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">
+                Delete
+              </button>
+            </div>
+          </div>
+          <div style="padding:.5rem .875rem;">
+            ${subjectList || '<p style="font-size:var(--text-xs);color:var(--text-3);font-style:italic;">No topics entered.</p>'}
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  // Renders the input form for the selected class + week
+  async function _ttRenderEditor() {
+    const wrap = document.getElementById('ttEditorWrap');
+    if (!wrap) return;
+
+    if (!_ttSelectedClass) {
+      wrap.innerHTML = `<p style="font-size:var(--text-sm);color:var(--text-3);">Please select a class above.</p>`;
+      return;
+    }
+
+    const subjects = _getSubjectsForClass(_ttSelectedClass);
+    if (subjects.length === 0) {
+      wrap.innerHTML = `<p style="font-size:var(--text-sm);color:var(--text-3);">
+        No subjects found for "${_esc(_ttSelectedClass)}". Make sure the question bank has entries for this class.</p>`;
+      return;
+    }
+
+    const thisWeek  = _isoWeekKey();
+    const isThisWk  = _ttSelectedWeek === thisWeek;
+    const docId     = _classKeyFromStr(_ttSelectedClass);
+
+    // Load existing data for this week
+    let existingTopics = {};
+    try {
+      const snap = await Db().collection('weeklyTimetable').doc(docId).get();
+      if (snap.exists) {
+        existingTopics = ((snap.data().weeks || {})[_ttSelectedWeek]) || {};
+      }
+    } catch (e) {
+      console.warn('[timetable] load error:', e);
+    }
+
+    // Parse week key to label
+    const [year, weekPart] = _ttSelectedWeek.split('-W');
+    const weekNum = parseInt(weekPart, 10);
+    const jan4 = new Date(+year, 0, 4);
+    const mondayOfWeek1 = _weekMonday(jan4);
+    const targetMonday = new Date(mondayOfWeek1);
+    targetMonday.setDate(mondayOfWeek1.getDate() + (weekNum - 1) * 7);
+    const weekLabel = _weekRangeLabel(targetMonday);
+
+    wrap.innerHTML = `
+      <div class="glass-dark" style="padding:1.25rem;border-radius:var(--r-lg);">
+        <div style="display:flex;align-items:center;justify-content:space-between;
+                    margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border);">
+          <div>
+            <h3 style="font-size:var(--text-base);font-weight:700;color:var(--text-1);">
+              ${_esc(_ttSelectedClass)} — ${_esc(weekLabel)}
+            </h3>
+            <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">
+              ${isThisWk ? '★ Students will see this timetable right now' : _esc(_ttSelectedWeek)}
+            </p>
+          </div>
+          ${isThisWk
+            ? `<span style="font-size:var(--text-xs);font-weight:700;padding:2px 9px;border-radius:99px;
+                            background:var(--accent);color:#fff;">Current Week</span>`
+            : ''}
+        </div>
+
+        <p style="font-size:var(--text-xs);color:var(--text-3);margin-bottom:1rem;line-height:1.6;">
+          Enter the topic to be studied this week for each subject. Leave a field blank to hide that subject from the timetable.
+        </p>
+
+        <div style="display:flex;flex-direction:column;gap:.625rem;margin-bottom:1.25rem;" id="ttSubjectInputs">
+          ${subjects.map(subj => `
+            <div style="display:flex;align-items:center;gap:.75rem;">
+              <label style="font-size:var(--text-sm);font-weight:600;color:var(--text-2);
+                            min-width:110px;flex-shrink:0;">${_esc(subj)}</label>
+              <input type="text"
+                     id="ttInput_${_esc(subj.replace(/\s+/g,'_'))}"
+                     placeholder="e.g. Quadratic Equations"
+                     value="${_esc(existingTopics[subj] || '')}"
+                     style="flex:1;" />
+            </div>`).join('')}
+        </div>
+
+        <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">
+          <button id="ttSaveBtn" onclick="Teacher._saveTimetableWeek()"
+                  class="btn bg-green-600 hover:bg-green-700"
+                  style="font-size:var(--text-sm);">
+            Save Timetable
+          </button>
+          <button onclick="Teacher._clearTimetableInputs()"
+                  class="btn bg-gray-500"
+                  style="font-size:var(--text-sm);">
+            Clear All
+          </button>
+        </div>
+      </div>`;
+  }
+
+  function _clearTimetableInputs() {
+    document.querySelectorAll('#ttSubjectInputs input[type="text"]').forEach(inp => {
+      inp.value = '';
+    });
+  }
+
+  async function _saveTimetableWeek() {
+    if (!_ttSelectedClass || !_ttSelectedWeek) {
+      UI.toast('Please select a class and week.', 'warning'); return;
+    }
+
+    const subjects = _getSubjectsForClass(_ttSelectedClass);
+    const topics   = {};
+
+    subjects.forEach(subj => {
+      const inputId = 'ttInput_' + subj.replace(/\s+/g, '_');
+      const el      = document.getElementById(inputId);
+      const val     = el ? el.value.trim() : '';
+      if (val) topics[subj] = val;
+    });
+
+    const btn   = document.getElementById('ttSaveBtn');
+    const docId = _classKeyFromStr(_ttSelectedClass);
+    UI.setLoading(btn, true);
+
+    try {
+      await Db().collection('weeklyTimetable').doc(docId).set({
+        className:   _ttSelectedClass,
+        classKey:    docId,
+        weeks: {
+          [_ttSelectedWeek]: topics,
+        },
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      }, { merge: true });
+
+      UI.toast('Timetable saved for ' + _ttSelectedClass + ' — ' + _ttSelectedWeek + '.', 'success');
+    } catch (err) {
+      console.error('[timetable] save error:', err);
+      UI.toast('Failed to save timetable.', 'error');
+    } finally {
+      UI.setLoading(btn, false);
+    }
+  }
+
+  function _editTimetableWeek(weekKey) {
+    _ttSelectedWeek = weekKey;
+
+    // Update the week selector dropdown to match
+    const sel = document.getElementById('ttWeekSelect');
+    if (sel) {
+      // See if the option exists; if not, add it
+      let found = false;
+      for (let i = 0; i < sel.options.length; i++) {
+        if (sel.options[i].value === weekKey) {
+          sel.selectedIndex = i;
+          found = true;
+          break;
+        }
+      }
+      if (!found) {
+        const opt = document.createElement('option');
+        opt.value = weekKey;
+        opt.text  = weekKey;
+        sel.appendChild(opt);
+        sel.value = weekKey;
+      }
+    }
+    _ttRenderEditor();
+  }
+
+  async function _deleteTimetableWeek(weekKey) {
+    if (!_ttSelectedClass || !weekKey) return;
+    const ok = await UI.confirmAction(
+      'Delete the timetable for ' + _ttSelectedClass + ' — ' + weekKey + '? This cannot be undone.'
+    );
+    if (!ok) return;
+
+    const docId = _classKeyFromStr(_ttSelectedClass);
+    try {
+      // Use FieldValue.delete() to remove just this week key from the map
+      await Db().collection('weeklyTimetable').doc(docId).update({
+        [`weeks.${weekKey}`]: firebase.firestore.FieldValue.delete(),
+      });
+      UI.toast('Timetable week deleted.', 'success');
+    } catch (err) {
+      console.error('[timetable] delete week error:', err);
+      UI.toast('Failed to delete week.', 'error');
+    }
+  }
+
+  // ═══════════════════════════════════════════════════════════
+  //  END WEEKLY TIMETABLE MANAGER
+  // ═══════════════════════════════════════════════════════════
+
   function _esc(str) {
     return String(str == null ? '' : str)
       .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -3316,6 +3747,13 @@ function _renderExistingTasksList(docs) {
     _clearDaySubjects,
     _updateDaySubjCount,
     exportTaskReportPDF,
+    _loadTimetableManager,
+    _onTTClassChange,
+    _onTTWeekChange,
+    _saveTimetableWeek,
+    _editTimetableWeek,
+    _deleteTimetableWeek,
+    _clearTimetableInputs,
     get _msgStudentCache() { return _msgStudentCache; },
   };
 
