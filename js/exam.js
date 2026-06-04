@@ -11,6 +11,9 @@
 
   let _questionRenderedAt = 0;
 
+  // ── Render lock: prevents concurrent renders of renderSubjectSelection ──
+  let _renderSubjectSelectionInProgress = false;
+
   function preprocessLatex(str) {
     if (str == null) return '';
     str = String(str);
@@ -134,8 +137,6 @@
     return null;
   }
 
-  // Returns true if the current restricted subjects come from an active task
-  // (meaning the minimum subject requirement should be 1 instead of 2)
   function _isTaskRestricted() {
     const taskCfg = S().currentTaskConfig || {};
     if (!taskCfg.active) return false;
@@ -324,11 +325,113 @@
     return goWitty ? _pick(wittyLateNight) : `Late night hustle, ${n}! Respect the dedication.`;
   }
 
+  // ── Helper: compute ISO week key for any Date (or today) ──
+  function _isoWeekKey(date) {
+    const d        = date ? new Date(date) : new Date();
+    const thursday = new Date(d);
+    thursday.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
+    const yearStart = new Date(thursday.getFullYear(), 0, 4);
+    const wn        = Math.round(((thursday - yearStart) / 86400000 + 1) / 7);
+    return thursday.getFullYear() + '-W' + String(wn).padStart(2, '0');
+  }
+
+  // ── Fetch the weekly timetable for the student's class ──
+  // Returns an HTML string, or '' if nothing to show.
+  // This function is FULLY ISOLATED — it never throws.
+  async function _fetchWeeklyTimetableHtml(classKey) {
+    try {
+      if (!navigator.onLine)    return '';
+      if (!window.fbDb)         return '';
+      if (!classKey)            return '';
+
+      const snap = await window.fbDb
+        .collection('weeklyTimetable')
+        .doc(classKey)
+        .get();
+
+      if (!snap || !snap.exists) return '';
+
+      const ttData   = snap.data() || {};
+      const allWeeks = ttData.weeks || {};
+      const currentWk = _isoWeekKey();
+      const topics    = allWeeks[currentWk] || {};
+      const entries   = Object.entries(topics).filter(function (pair) {
+        return pair[1] && String(pair[1]).trim();
+      });
+
+      if (entries.length === 0) return '';
+
+      const d      = new Date();
+      const dow    = d.getDay();
+      const diff   = dow === 0 ? -6 : 1 - dow;
+      const monday = new Date(d);
+      monday.setDate(d.getDate() + diff);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      const rangeLabel =
+        monday.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) +
+        ' – ' +
+        sunday.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+      const rows = entries.map(function (pair) {
+        return '<div style="display:flex;align-items:flex-start;gap:.625rem;' +
+          'padding:.4375rem 0;border-bottom:1px solid var(--border);">' +
+          '<span style="font-size:.8125rem;font-weight:700;color:var(--accent-text);' +
+          'min-width:100px;flex-shrink:0;">' + _escHtml(pair[0]) + '</span>' +
+          '<span style="font-size:.8125rem;color:var(--text-1);line-height:1.5;">' +
+          _escHtml(pair[1]) + '</span>' +
+          '</div>';
+      }).join('');
+
+      return '<div style="margin-bottom:1.25rem;border:1px solid var(--accent-border);' +
+        'border-left:3px solid var(--accent);border-radius:8px;' +
+        'background:var(--accent-subtle);padding:.875rem 1rem;text-align:left;">' +
+        '<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.625rem;">' +
+        '<span style="font-size:1rem;flex-shrink:0;">📚</span>' +
+        '<div>' +
+        '<p style="font-size:.875rem;font-weight:700;color:var(--accent-text);">' +
+        'This Week\'s Study Topics</p>' +
+        '<p style="font-size:.75rem;color:var(--text-3);margin-top:1px;">' +
+        _escHtml(rangeLabel) + '</p>' +
+        '</div></div>' +
+        '<div style="padding-top:.125rem;">' + rows + '</div>' +
+        '</div>';
+
+    } catch (err) {
+      // Timetable is decorative — never crash the exam screen
+      console.warn('[exam] Weekly timetable fetch failed (non-fatal):', err);
+      return '';
+    }
+  }
+
   async function renderSubjectSelection() {
+    // ── Guard 1: prevent concurrent renders ──────────────────────
+    if (_renderSubjectSelectionInProgress) {
+      console.warn('[exam] renderSubjectSelection already in progress — skipping duplicate call.');
+      return;
+    }
+
+    // ── Guard 2: require valid state before doing anything ────────
+    if (!S().studentData || !S().userId) {
+      console.warn('[exam] renderSubjectSelection called with no studentData/userId — aborting.');
+      return;
+    }
+
+    _renderSubjectSelectionInProgress = true;
+
     try {
       const classKey = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
+      const _qBank   = window.questions || {};
 
-      const _qBank = window.questions || {};
+      // ── Guard 3: check state is still valid after the first sync point ──
+      if (!S().studentData || !S().userId) {
+        console.warn('[exam] State lost before timetable fetch — aborting render.');
+        return;
+      }
+
+      // Fetch timetable in parallel with the rest of the render logic.
+      // _fetchWeeklyTimetableHtml never throws — returns '' on any error.
+      const weeklyTimetableHtmlPromise = _fetchWeeklyTimetableHtml(classKey);
 
       if (!_qBank[classKey]) {
         console.error('[exam] No questions for classKey:', classKey, '| keys:', Object.keys(_qBank));
@@ -344,8 +447,7 @@
         ? allAvailable.filter(s => restrictedSubjs.includes(s))
         : allAvailable;
 
-      // ── KEY CHANGE: minimum subject count depends on whether this is a task day
-      const isTaskDay = _isTaskRestricted();
+      const isTaskDay   = _isTaskRestricted();
       const minSubjects = (restrictedSubjs && isTaskDay) ? 1 : 2;
 
       const messages = S().studentMessages || [];
@@ -445,7 +547,6 @@
           </p>`;
 
       } else if (restrictedSubjs) {
-        // ── KEY CHANGE: allow start as long as available.length >= minSubjects (1 for tasks)
         const enoughSubjects = available.length >= minSubjects;
         subjectsHtml = `
           <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
@@ -482,6 +583,18 @@
           </button>`;
       }
 
+      // ── Guard 4: await timetable now that all sync HTML is built ──
+      // If state was lost during the sync HTML build (very unlikely but possible),
+      // the timetable HTML will just be '' because _fetchWeeklyTimetableHtml
+      // is isolated. We check state one more time before mounting.
+      const weeklyTimetableHtml = await weeklyTimetableHtmlPromise;
+
+      // ── Guard 5: final state check before touching the DOM ────────
+      if (!S().studentData || !S().userId) {
+        console.warn('[exam] State lost before DOM mount — aborting render.');
+        return;
+      }
+
       UI.mount(`
         <div class="max-w-4xl mx-auto glass p-6 mt-6 rounded-2xl text-center animate-fadeIn">
           <div class="mb-5">
@@ -494,6 +607,7 @@
           ${messagesHtml}
 
           <div id="tasksContainer" class="mb-6"></div>
+
           ${weeklyTimetableHtml}
 
           <div class="mb-6" style="display:flex;gap:.625rem;flex-wrap:wrap;justify-content:center;">
@@ -539,17 +653,17 @@
 
       Tasks.renderTasksHTML();
 
-    if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updateChatBadge) {
-      requestAnimationFrame(function () {
-        Chat._updateChatBadge(AppState.chatUnread);
-      });
-    }
+      if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updateChatBadge) {
+        requestAnimationFrame(function () {
+          Chat._updateChatBadge(AppState.chatUnread);
+        });
+      }
 
-    if (AppState.dmStudentUnread && AppState.dmStudentUnread > 0 && window.DM && DM._updateStudentBadge) {
-      requestAnimationFrame(function () {
-        DM._updateStudentBadge(AppState.dmStudentUnread);
-      });
-    }
+      if (AppState.dmStudentUnread && AppState.dmStudentUnread > 0 && window.DM && DM._updateStudentBadge) {
+        requestAnimationFrame(function () {
+          DM._updateStudentBadge(AppState.dmStudentUnread);
+        });
+      }
 
       if (!restrictedSubjs && !todayTaskDone) {
         document.querySelectorAll('.subject-checkbox').forEach(cb => {
@@ -559,7 +673,16 @@
 
     } catch (err) {
       console.error('[exam] renderSubjectSelection error:', err);
+      // Only show the error toast if we still have a valid session.
+      // If state was lost, this is a benign logout/reset race — stay silent.
+      if (!S().studentData || !S().userId) {
+        console.warn('[exam] Caught error but state is gone — likely a logout race. Not showing toast.');
+        return;
+      }
       UI.toast('Failed to load subject selection. Please refresh the page.', 'error', 0);
+    } finally {
+      // Always release the lock, even on error
+      _renderSubjectSelectionInProgress = false;
     }
   }
 
@@ -586,7 +709,6 @@
 
     const chosen = _getSelectedSubjects();
 
-    // ── KEY CHANGE: use minSubjects (1 for task days, 2 for free exams)
     const restrictedSubjs = _getRestrictedSubjectsForToday();
     const isTaskDay       = _isTaskRestricted();
     const minSubjects     = (restrictedSubjs && isTaskDay) ? 1 : 2;
@@ -597,83 +719,7 @@
     }
 
     const classKey = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
-
-      const _qBank = window.questions || {};
-
-      // ── Fetch this week's timetable ──────────────────────────────
-      let weeklyTimetableHtml = '';
-      try {
-        const ttSnap = await window.fbDb
-          .collection('weeklyTimetable')
-          .doc(classKey)
-          .get();
-
-        if (ttSnap.exists) {
-          const ttData    = ttSnap.data() || {};
-          const allWeeks  = ttData.weeks || {};
-
-          // Get current ISO week key
-          function _isoWk(date) {
-            const d        = date ? new Date(date) : new Date();
-            const thursday = new Date(d);
-            thursday.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
-            const yearStart = new Date(thursday.getFullYear(), 0, 4);
-            const wn       = Math.round(((thursday - yearStart) / 86400000 + 1) / 7);
-            return thursday.getFullYear() + '-W' + String(wn).padStart(2, '0');
-          }
-
-          const currentWk = _isoWk();
-          const topics    = allWeeks[currentWk] || {};
-          const entries   = Object.entries(topics).filter(([, v]) => v && v.trim());
-
-          if (entries.length > 0) {
-            // Get Monday/Sunday labels for display
-            const d   = new Date();
-            const dow = d.getDay();
-            const diff = dow === 0 ? -6 : 1 - dow;
-            const monday = new Date(d);
-            monday.setDate(d.getDate() + diff);
-            const sunday = new Date(monday);
-            sunday.setDate(monday.getDate() + 6);
-            const rangeLabel = monday.toLocaleDateString('en-GB', { day:'numeric', month:'short' }) +
-                               ' – ' +
-                               sunday.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
-
-            const rows = entries.map(([subj, topic]) => `
-              <div style="display:flex;align-items:flex-start;gap:.625rem;
-                          padding:.4375rem 0;border-bottom:1px solid var(--border);">
-                <span style="font-size:.8125rem;font-weight:700;color:var(--accent-text);
-                             min-width:100px;flex-shrink:0;">${_escHtml(subj)}</span>
-                <span style="font-size:.8125rem;color:var(--text-1);line-height:1.5;">
-                  ${_escHtml(topic)}
-                </span>
-              </div>`).join('');
-
-            weeklyTimetableHtml = `
-              <div style="margin-bottom:1.25rem;border:1px solid var(--accent-border);
-                          border-left:3px solid var(--accent);border-radius:8px;
-                          background:var(--accent-subtle);padding:.875rem 1rem;text-align:left;">
-                <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.625rem;">
-                  <span style="font-size:1rem;flex-shrink:0;">📚</span>
-                  <div>
-                    <p style="font-size:.875rem;font-weight:700;color:var(--accent-text);">
-                      This Week's Study Topics
-                    </p>
-                    <p style="font-size:.75rem;color:var(--text-3);margin-top:1px;">
-                      ${_escHtml(rangeLabel)}
-                    </p>
-                  </div>
-                </div>
-                <div style="padding-top:.125rem;">
-                  ${rows}
-                </div>
-              </div>`;
-          }
-        }
-      } catch (ttErr) {
-        console.warn('[exam] Could not load weekly timetable (non-fatal):', ttErr);
-      }
-      // ── End timetable fetch ─────────────────────────────────────
+    const _qBank   = window.questions || {};
 
     if (!_qBank[classKey]) {
       UI.toast(`No subjects found for class "${S().studentData.class}". Contact Master Timothy.`, 'error', 0);
@@ -684,7 +730,6 @@
       ? chosen.filter(s => restrictedSubjs.includes(s))
       : chosen;
 
-    // ── KEY CHANGE: same minimum applies to finalChosen
     if (finalChosen.length < minSubjects) {
       UI.toast('Not enough allowed subjects selected. Please contact Master Timothy.', 'error');
       return;
@@ -779,8 +824,7 @@
 
   let _visibilityHideCount = 0;
   let _visibilityHandler   = null;
-
-  let _visibilityCooldown = false;
+  let _visibilityCooldown  = false;
 
   function _setupVisibilityGuard() {
     _teardownVisibilityGuard();
@@ -821,7 +865,6 @@
       document.removeEventListener('visibilitychange', _visibilityHandler);
       _visibilityHandler = null;
     }
-
     _visibilityHideCount = 0;
     _visibilityCooldown  = false;
   }
@@ -834,7 +877,7 @@
 
     const beginBtn = document.getElementById('beginExamBtn');
     if (beginBtn) {
-      beginBtn.disabled = true;
+      beginBtn.disabled    = true;
       beginBtn.textContent = 'Starting…';
     }
 
@@ -982,7 +1025,7 @@
         _updateNavButton(exam.currentIndex);
       });
     });
-     
+
     _renderKatex();
   }
 
