@@ -378,6 +378,14 @@ body {
   align-items: flex-start;
   justify-content: center;
   padding: var(--sp-6) var(--sp-4);
+  overflow-x: hidden;
+}
+
+#app > div {
+  min-width: 0;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 #app.exam-active {
@@ -1798,8 +1806,9 @@ details.glass-dark[open] > summary::after,
 
 /* ── Responsive ── */
 @media (max-width: 640px) {
-  #app { padding: var(--sp-3) !important; }
+  #app { padding: var(--sp-3) !important; overflow-x: hidden !important; }
   #app.exam-active { padding: 0.4rem !important; }
+  #app > div { min-width: 0; width: 100%; max-width: 100% !important; box-sizing: border-box; }
 
   .glass { padding: var(--sp-4) !important; border-radius: var(--r-lg) !important; }
   .cbt-modal, .modal-box { padding: var(--sp-4) !important; border-radius: var(--r-lg) !important; }
