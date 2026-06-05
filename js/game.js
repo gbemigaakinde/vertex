@@ -874,6 +874,15 @@
               <span class="game-card__tag">1v1</span>
               <span class="game-card__tag game-card__tag--xp">+${XP_CHALLENGE_WIN} bonus XP</span>
             </div>
+          <div class="game-card game-card--runner" onclick="Game._selectGame('knowledgeRunner')">
+            <div class="game-card__icon">${_icon('bolt', 32, { color: '#06b6d4' })}</div>
+            <div class="game-card__title">Knowledge Runner</div>
+            <div class="game-card__desc">Run, jump, and dodge! Collect correct answers mid-air. One wrong grab and you stumble. How far can you run?</div>
+            <div class="game-card__meta">
+              <span class="game-card__tag">Action</span>
+              <span class="game-card__tag">Endless Runner</span>
+              <span class="game-card__tag game-card__tag--xp">XP per collect</span>
+            </div>
           </div>
         </div>
 
@@ -1023,12 +1032,13 @@ function _showAllLevelsModal(currentXP) {
   ══════════════════════════════════════════════════════════════ */
 
   function _selectGame(type) {
-    if      (type === 'quizBlitz')    _showQuizBlitzSetup();
-    else if (type === 'speedMath')    _showSpeedMathSetup();
-    else if (type === 'wordScramble') _showWordScrambleSetup();
-    else if (type === 'trueOrFalse')  _showTrueOrFalseSetup();
-    else if (type === 'suddenDeath')  _showSuddenDeathSetup();
-    else if (type === 'challenge')    _showChallengeSetup();
+    if      (type === 'quizBlitz')       _showQuizBlitzSetup();
+    else if (type === 'speedMath')       _showSpeedMathSetup();
+    else if (type === 'wordScramble')    _showWordScrambleSetup();
+    else if (type === 'trueOrFalse')     _showTrueOrFalseSetup();
+    else if (type === 'suddenDeath')     _showSuddenDeathSetup();
+    else if (type === 'challenge')       _showChallengeSetup();
+    else if (type === 'knowledgeRunner') _showKnowledgeRunnerSetup();
   }
 
   /* ══════════════════════════════════════════════════════════════
@@ -2750,15 +2760,671 @@ function _buildWordPoolForStudent() {
   }
 
   function _playAgain(key) {
-    if      (key === 'quizBlitz')    _showQuizBlitzSetup();
-    else if (key === 'speedMath')    _showSpeedMathSetup();
-    else if (key === 'wordScramble') _showWordScrambleSetup();
-    else if (key === 'trueOrFalse')  _showTrueOrFalseSetup();
-    else if (key === 'suddenDeath')  _showSuddenDeathSetup();
-    else if (key === 'challenge')    _showChallengeSetup();
+    if      (key === 'quizBlitz')       _showQuizBlitzSetup();
+    else if (key === 'speedMath')       _showSpeedMathSetup();
+    else if (key === 'wordScramble')    _showWordScrambleSetup();
+    else if (key === 'trueOrFalse')     _showTrueOrFalseSetup();
+    else if (key === 'suddenDeath')     _showSuddenDeathSetup();
+    else if (key === 'challenge')       _showChallengeSetup();
+    else if (key === 'knowledgeRunner') _showKnowledgeRunnerSetup();
     else openGameLobby();
   }
 
+/* ══════════════════════════════════════════════════════════════
+     KNOWLEDGE RUNNER  — Endless runner with subject Q&A
+     ─────────────────────────────────────────────────────────────
+     The player runs automatically. Questions appear on screen.
+     Correct answer tokens float above; wrong answer tokens roll
+     on the ground as obstacles. Tap / Space / Click to jump.
+     Collect correct = +XP. Hit wrong = stumble (3 lives).
+     Game ends when all lives are lost.
+  ══════════════════════════════════════════════════════════════ */
+
+  const KR_XP_PER_CORRECT  = 12;
+  const KR_XP_SPEED_BONUS  = 5;
+  const KR_LIVES           = 3;
+  const KR_CANVAS_W        = 640;
+  const KR_CANVAS_H        = 220;
+  const KR_GROUND_Y        = 160;
+  const KR_GRAVITY         = 0.55;
+  const KR_JUMP_FORCE      = -12;
+  const KR_BASE_SPEED      = 3.5;
+  const KR_SPEED_INCREMENT = 0.0004;
+
+  let _krState = null;
+  let _krAnimFrame = null;
+  let _krCanvas = null;
+  let _krCtx = null;
+  let _krLastTime = 0;
+
+  // ── Build Q&A pool for runner ──
+  function _buildKRPool(subjects) {
+    const qBank    = window.questions || {};
+    const classKey = (_student().class || '').replace(/\s+/g, '').toLowerCase();
+    const pool     = [];
+
+    for (const subj of subjects) {
+      const all = (qBank[classKey] || {})[subj] || [];
+      for (const q of _shuffleArray(all).slice(0, 30)) {
+        if (!q.opts || q.opts.length < 2 || q.ans == null) continue;
+        const wrongOpts = q.opts.filter((_, i) => i !== q.ans);
+        pool.push({
+          question:   q.q,
+          correct:    String(q.opts[q.ans]).substring(0, 28),
+          wrongs:     wrongOpts.map(w => String(w).substring(0, 28)),
+          subject:    subj,
+        });
+      }
+    }
+    return _shuffleArray(pool);
+  }
+
+  function _showKnowledgeRunnerSetup() {
+    const subjects = _getSubjectsForStudent();
+    if (subjects.length === 0) {
+      window.UI.toast('No subjects found for your class.', 'error');
+      return;
+    }
+    const subjectOptions = subjects.map(s => `<option value="${_esc(s)}">${_esc(s)}</option>`).join('');
+
+    _showModal(`
+      <div style="text-align:center;margin-bottom:1.25rem;">
+        <div style="margin-bottom:.5rem;font-size:2.5rem;">🏃</div>
+        <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">Knowledge Runner</h2>
+        <p style="font-size:.875rem;color:var(--text-3);margin-top:.375rem;">
+          Run and jump! Collect the correct answer — dodge the wrong ones. 3 lives per run.
+        </p>
+      </div>
+      <div style="margin-bottom:1rem;padding:.75rem 1rem;background:var(--accent-subtle);border:1px solid var(--accent-border);border-radius:8px;text-align:left;font-size:.8125rem;color:var(--text-2);">
+        <strong style="display:block;margin-bottom:.375rem;">How to play:</strong>
+        <ul style="padding-left:1rem;line-height:2;">
+          <li>A question appears at the top</li>
+          <li>🟢 Green tokens = correct answers (jump to collect!)</li>
+          <li>🔴 Red tokens = wrong answers (jump over them!)</li>
+          <li>Tap, click, or press Space to jump</li>
+          <li>3 lives — wrong collision loses a life</li>
+        </ul>
+      </div>
+      <div style="margin-bottom:1.25rem;">
+        <label style="display:block;font-size:.75rem;font-weight:600;color:var(--text-2);margin-bottom:.375rem;">Subject</label>
+        <select id="krSubject" style="width:100%;">
+          <option value="random">Random Mix (all subjects)</option>
+          ${subjectOptions}
+        </select>
+      </div>
+      <button onclick="Game._startKnowledgeRunner()" class="btn btn-lg w-full" style="background:#06b6d4;color:#fff;">
+        🏃 Start Running!
+      </button>
+      <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full" style="margin-top:.5rem;">Cancel</button>
+    `);
+  }
+
+  function _startKnowledgeRunner() {
+    const subjectSel = document.getElementById('krSubject')?.value || 'random';
+    let subjects = subjectSel === 'random' ? _getSubjectsForStudent() : [subjectSel];
+    if (subjects.length === 0) { window.UI.toast('No subjects found.', 'error'); return; }
+
+    const pool = _buildKRPool(subjects);
+    if (pool.length < 3) { window.UI.toast('Not enough questions for this subject.', 'error'); return; }
+
+    _closeModal();
+
+    // Mount the runner container into #app
+    window.UI.mount(`
+      <div class="max-w-2xl mx-auto animate-fadeIn" style="padding-bottom:1rem;">
+        <div id="krWrapper" style="position:relative;width:100%;max-width:640px;margin:0 auto;">
+          <canvas id="krCanvas" width="${KR_CANVAS_W}" height="${KR_CANVAS_H}"
+            style="width:100%;border-radius:12px;border:2px solid var(--border);
+                   background:#0f172a;display:block;cursor:pointer;touch-action:manipulation;">
+          </canvas>
+          <div id="krHUD" style="margin-top:.625rem;display:flex;align-items:center;
+                                  justify-content:space-between;padding:0 .25rem;">
+            <div id="krLives" style="font-size:1.25rem;letter-spacing:.1em;"></div>
+            <div style="font-size:.8125rem;font-weight:700;color:var(--accent);">
+              Score: <span id="krScore">0</span> &nbsp;|&nbsp; XP: <span id="krXP">0</span>
+            </div>
+            <div style="font-size:.75rem;color:var(--text-3);">Dist: <span id="krDist">0</span>m</div>
+          </div>
+          <div id="krQuestion" style="margin-top:.5rem;padding:.625rem 1rem;
+               background:var(--accent-subtle);border:1px solid var(--accent-border);
+               border-radius:8px;font-size:.875rem;font-weight:600;color:var(--accent-text);
+               text-align:center;min-height:2.5rem;line-height:1.5;"></div>
+          <div style="text-align:center;margin-top:.625rem;">
+            <button onclick="Game._krQuit()" class="btn bg-gray-500" style="font-size:.8125rem;">✕ Quit</button>
+          </div>
+        </div>
+      </div>`);
+
+    _krCanvas = document.getElementById('krCanvas');
+    _krCtx    = _krCanvas.getContext('2d');
+
+    // Touch / click / keyboard jump
+    const _jumpHandler = (e) => {
+      e.preventDefault();
+      _krJump();
+    };
+    _krCanvas.addEventListener('click',      _jumpHandler);
+    _krCanvas.addEventListener('touchstart', _jumpHandler, { passive: false });
+    document.addEventListener('keydown', function _krKey(e) {
+      if (e.code === 'Space' || e.code === 'ArrowUp') {
+        e.preventDefault();
+        _krJump();
+        if (_krState && _krState.gameOver) {
+          document.removeEventListener('keydown', _krKey);
+        }
+      }
+    });
+
+    _krState = {
+      pool,
+      poolIndex:    0,
+      lives:        KR_LIVES,
+      score:        0,
+      xpEarned:     0,
+      distance:     0,
+      speed:        KR_BASE_SPEED,
+      gameOver:     false,
+      paused:       false,
+      // Player
+      player: {
+        x: 80, y: KR_GROUND_Y, vy: 0, onGround: true,
+        frame: 0, frameTimer: 0, stumble: 0, invincible: 0,
+      },
+      // Current question
+      currentQ:     null,
+      // Tokens on screen
+      tokens:       [],
+      tokenCooldown: 0,
+      // Scenery
+      bgStars:      Array.from({ length: 40 }, () => ({
+        x: Math.random() * KR_CANVAS_W,
+        y: Math.random() * (KR_GROUND_Y - 40),
+        r: Math.random() * 1.5 + 0.5,
+        speed: Math.random() * 0.5 + 0.2,
+      })),
+      groundTiles:  Array.from({ length: 22 }, (_, i) => ({ x: i * 30 })),
+      particles:    [],
+      combo:        0,
+    };
+
+    _krNextQuestion();
+    _krLastTime = performance.now();
+    _krLoop(_krLastTime);
+  }
+
+  function _krJump() {
+    if (!_krState) return;
+    if (_krState.gameOver) { _krRestart(); return; }
+    const p = _krState.player;
+    if (p.onGround) {
+      p.vy = KR_JUMP_FORCE;
+      p.onGround = false;
+      // Particle burst from feet
+      for (let i = 0; i < 6; i++) {
+        _krState.particles.push({
+          x: p.x + 10, y: KR_GROUND_Y + 18,
+          vx: (Math.random() - 0.5) * 3,
+          vy: -(Math.random() * 2 + 1),
+          life: 20, color: '#06b6d4',
+        });
+      }
+    }
+  }
+
+  function _krNextQuestion() {
+    const s = _krState;
+    if (s.poolIndex >= s.pool.length) {
+      // Reshuffle
+      s.pool = _shuffleArray(s.pool);
+      s.poolIndex = 0;
+    }
+    s.currentQ = s.pool[s.poolIndex++];
+    // Update HUD question text
+    const qEl = document.getElementById('krQuestion');
+    if (qEl) {
+      const subj = s.currentQ.subject ? `[${s.currentQ.subject}] ` : '';
+      qEl.textContent = subj + s.currentQ.question.substring(0, 120);
+    }
+    s.tokenCooldown = 90; // frames before next token wave
+  }
+
+  function _krSpawnTokenWave() {
+    const s = _krState;
+    if (!s.currentQ) return;
+
+    // Pick 1 correct + 1-2 wrongs
+    const wrongs = _shuffleArray(s.currentQ.wrongs).slice(0, 2);
+    const all = [
+      { text: s.currentQ.correct, isCorrect: true },
+      ...wrongs.map(w => ({ text: w, isCorrect: false })),
+    ];
+    const shuffled = _shuffleArray(all);
+
+    // Spawn them spread across incoming lane
+    shuffled.forEach((item, i) => {
+      const isAir = item.isCorrect; // correct answers float in the air
+      const yPos  = isAir
+        ? KR_GROUND_Y - 50 - Math.random() * 20  // floating
+        : KR_GROUND_Y + 5;                         // ground level
+
+      s.tokens.push({
+        x:         KR_CANVAS_W + 60 + i * 200,
+        y:         yPos,
+        w:         Math.min(item.text.length * 7 + 20, 180),
+        h:         28,
+        text:      item.text,
+        isCorrect: item.isCorrect,
+        hit:       false,
+        bounce:    0,
+      });
+    });
+
+    s.tokenCooldown = 160 + Math.floor(Math.random() * 60);
+  }
+
+  function _krLoop(timestamp) {
+    if (!_krState || _krState.gameOver) return;
+    _krAnimFrame = requestAnimationFrame(_krLoop);
+
+    const dt = Math.min(timestamp - _krLastTime, 50);
+    _krLastTime = timestamp;
+    const s = _krState;
+
+    // ── Speed up over time ──
+    s.speed = KR_BASE_SPEED + s.distance * KR_SPEED_INCREMENT;
+
+    // ── Update player ──
+    const p = s.player;
+    p.vy += KR_GRAVITY;
+    p.y  += p.vy;
+    if (p.y >= KR_GROUND_Y) {
+      p.y = KR_GROUND_Y;
+      p.vy = 0;
+      p.onGround = true;
+    }
+
+    // Running animation frame
+    if (p.onGround) {
+      p.frameTimer++;
+      if (p.frameTimer > 6) { p.frame = (p.frame + 1) % 4; p.frameTimer = 0; }
+    }
+    if (p.stumble > 0) p.stumble--;
+    if (p.invincible > 0) p.invincible--;
+
+    // ── Distance & score ──
+    s.distance += s.speed * 0.02;
+
+    // ── Tokens ──
+    s.tokenCooldown--;
+    if (s.tokenCooldown <= 0) _krSpawnTokenWave();
+
+    s.tokens.forEach(t => {
+      t.x -= s.speed;
+      t.bounce = Math.sin(timestamp / 400) * 3;
+    });
+
+    // ── Collision detection ──
+    if (p.invincible === 0) {
+      s.tokens.forEach(t => {
+        if (t.hit) return;
+        const px = p.x + 4, py = p.y + 2, pw = 18, ph = 34;
+        const tx = t.x + 2, ty = t.y - t.h + (t.isCorrect ? t.bounce : 0);
+        const tw = t.w - 4, th = t.h;
+
+        const collide = px < tx + tw && px + pw > tx && py < ty + th && py + ph > ty;
+
+        if (collide) {
+          t.hit = true;
+          if (t.isCorrect) {
+            // ✅ Correct collect
+            s.score++;
+            s.combo++;
+            const xp = KR_XP_PER_CORRECT + (s.combo >= 3 ? KR_XP_SPEED_BONUS : 0);
+            s.xpEarned += xp;
+            // Burst particles
+            for (let i = 0; i < 12; i++) {
+              s.particles.push({
+                x: t.x + t.w / 2, y: t.y - t.h / 2,
+                vx: (Math.random() - 0.5) * 5,
+                vy: -(Math.random() * 4 + 1),
+                life: 30, color: '#22c55e',
+              });
+            }
+            _krNextQuestion();
+          } else {
+            // ❌ Wrong hit
+            s.combo = 0;
+            s.lives--;
+            p.stumble = 40;
+            p.invincible = 80;
+            // Red particles
+            for (let i = 0; i < 10; i++) {
+              s.particles.push({
+                x: p.x + 10, y: p.y + 10,
+                vx: (Math.random() - 0.5) * 4,
+                vy: -(Math.random() * 3 + 1),
+                life: 25, color: '#ef4444',
+              });
+            }
+            if (s.lives <= 0) {
+              s.gameOver = true;
+              _krEndGame();
+              return;
+            }
+          }
+        }
+      });
+    }
+
+    // Remove off-screen tokens
+    s.tokens = s.tokens.filter(t => !t.hit && t.x > -200);
+
+    // ── Particles ──
+    s.particles.forEach(pt => {
+      pt.x += pt.vx; pt.y += pt.vy; pt.vy += 0.2; pt.life--;
+    });
+    s.particles = s.particles.filter(pt => pt.life > 0);
+
+    // ── Ground scroll ──
+    s.groundTiles.forEach(tile => {
+      tile.x -= s.speed;
+      if (tile.x < -30) tile.x += 22 * 30;
+    });
+
+    // ── Stars ──
+    s.bgStars.forEach(star => {
+      star.x -= star.speed;
+      if (star.x < 0) star.x = KR_CANVAS_W;
+    });
+
+    // ── HUD ──
+    const livesEl = document.getElementById('krLives');
+    const scoreEl = document.getElementById('krScore');
+    const xpEl    = document.getElementById('krXP');
+    const distEl  = document.getElementById('krDist');
+    if (livesEl) livesEl.textContent = '❤️'.repeat(s.lives) + '🖤'.repeat(KR_LIVES - s.lives);
+    if (scoreEl) scoreEl.textContent = s.score;
+    if (xpEl)    xpEl.textContent    = s.xpEarned;
+    if (distEl)  distEl.textContent  = Math.floor(s.distance);
+
+    _krDraw(timestamp);
+  }
+
+  function _krDraw(timestamp) {
+    const ctx = _krCtx;
+    const s   = _krState;
+    const W   = KR_CANVAS_W;
+    const H   = KR_CANVAS_H;
+
+    // ── Sky gradient ──
+    const sky = ctx.createLinearGradient(0, 0, 0, KR_GROUND_Y);
+    sky.addColorStop(0, '#0f172a');
+    sky.addColorStop(1, '#1e3a5f');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, W, H);
+
+    // ── Stars ──
+    s.bgStars.forEach(star => {
+      ctx.beginPath();
+      ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${0.3 + Math.sin(timestamp / 1000 + star.x) * 0.2})`;
+      ctx.fill();
+    });
+
+    // ── Ground ──
+    const groundGrad = ctx.createLinearGradient(0, KR_GROUND_Y + 18, 0, H);
+    groundGrad.addColorStop(0, '#1d4ed8');
+    groundGrad.addColorStop(1, '#0f172a');
+    ctx.fillStyle = groundGrad;
+    ctx.fillRect(0, KR_GROUND_Y + 18, W, H - KR_GROUND_Y - 18);
+
+    // Ground line
+    ctx.strokeStyle = '#60a5fa';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, KR_GROUND_Y + 18);
+    ctx.lineTo(W, KR_GROUND_Y + 18);
+    ctx.stroke();
+
+    // Ground tiles
+    s.groundTiles.forEach(tile => {
+      ctx.fillStyle = 'rgba(96,165,250,0.08)';
+      ctx.fillRect(tile.x, KR_GROUND_Y + 18, 28, 6);
+    });
+
+    // ── Tokens ──
+    s.tokens.forEach(t => {
+      if (t.hit) return;
+      const ty = t.isCorrect ? t.y - t.h + t.bounce : t.y - t.h;
+
+      // Shadow
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      ctx.beginPath();
+      ctx.ellipse(t.x + t.w / 2, KR_GROUND_Y + 20, t.w / 2 - 4, 4, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Token body
+      const grad = ctx.createLinearGradient(t.x, ty, t.x, ty + t.h);
+      if (t.isCorrect) {
+        grad.addColorStop(0, '#bbf7d0');
+        grad.addColorStop(1, '#16a34a');
+      } else {
+        grad.addColorStop(0, '#fecaca');
+        grad.addColorStop(1, '#dc2626');
+      }
+
+      ctx.fillStyle = grad;
+      _krRoundRect(ctx, t.x, ty, t.w, t.h, 6);
+      ctx.fill();
+
+      // Border glow
+      ctx.strokeStyle = t.isCorrect ? '#4ade80' : '#f87171';
+      ctx.lineWidth = 1.5;
+      _krRoundRect(ctx, t.x, ty, t.w, t.h, 6);
+      ctx.stroke();
+
+      // Token icon
+      ctx.font = 'bold 13px sans-serif';
+      ctx.fillStyle = t.isCorrect ? '#14532d' : '#7f1d1d';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      const label = t.isCorrect ? '✓ ' : '✗ ';
+      ctx.fillText(label + t.text, t.x + t.w / 2, ty + t.h / 2);
+    });
+
+    // ── Particles ──
+    s.particles.forEach(pt => {
+      ctx.globalAlpha = pt.life / 30;
+      ctx.beginPath();
+      ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = pt.color;
+      ctx.fill();
+    });
+    ctx.globalAlpha = 1;
+
+    // ── Player (vector stick figure) ──
+    _krDrawPlayer(ctx, s.player, timestamp);
+
+    // ── Speed indicator (subtle) ──
+    const speedPct = Math.min((s.speed - KR_BASE_SPEED) / 4, 1);
+    ctx.fillStyle = `rgba(251,191,36,${speedPct * 0.6})`;
+    ctx.fillRect(0, 0, W * speedPct, 3);
+
+    // ── Game over overlay ──
+    if (s.gameOver) {
+      ctx.fillStyle = 'rgba(0,0,0,0.7)';
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = '#f87171';
+      ctx.font = 'bold 28px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('GAME OVER', W / 2, H / 2 - 18);
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '14px sans-serif';
+      ctx.fillText('Tap or press Space to play again', W / 2, H / 2 + 14);
+    }
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  function _krDrawPlayer(ctx, p, timestamp) {
+    const x = p.x;
+    const y = p.y;
+    const stumbling = p.stumble > 0;
+    const invincible = p.invincible > 0;
+    const alpha = invincible ? (Math.sin(timestamp / 80) > 0 ? 0.4 : 1) : 1;
+
+    ctx.globalAlpha = alpha;
+
+    // Running leg animation offsets
+    const legPhase = (p.frame / 4) * Math.PI * 2;
+    const leg1Swing = Math.sin(legPhase) * (stumbling ? 20 : 12);
+    const leg2Swing = -Math.sin(legPhase) * (stumbling ? 20 : 12);
+    const arm1Swing = -Math.sin(legPhase) * 8;
+    const arm2Swing = Math.sin(legPhase) * 8;
+    const bodyTilt  = stumbling ? 15 : Math.sin(legPhase) * 2;
+
+    ctx.save();
+    ctx.translate(x + 12, y + 10);
+    ctx.rotate((bodyTilt * Math.PI) / 180);
+
+    // ── Backpack ──
+    ctx.fillStyle = '#7c3aed';
+    ctx.fillRect(-2, -12, 8, 12);
+    ctx.strokeStyle = '#a78bfa';
+    ctx.lineWidth = 1;
+    ctx.strokeRect(-2, -12, 8, 12);
+
+    // ── Body ──
+    ctx.strokeStyle = '#e0e7ff';
+    ctx.lineWidth = 3;
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    // Torso
+    ctx.beginPath();
+    ctx.moveTo(0, -8);
+    ctx.lineTo(0, 8);
+    ctx.stroke();
+
+    // Head (circle)
+    ctx.beginPath();
+    ctx.arc(0, -14, 8, 0, Math.PI * 2);
+    ctx.fillStyle = '#fde68a';
+    ctx.fill();
+    ctx.strokeStyle = '#f59e0b';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Face
+    ctx.fillStyle = '#92400e';
+    // Eyes
+    const eyeOffX = stumbling ? 2 : 1;
+    ctx.beginPath(); ctx.arc(-eyeOffX - 1, -14, 1.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(eyeOffX + 1, -14, 1.5, 0, Math.PI * 2); ctx.fill();
+    // Mouth
+    ctx.beginPath();
+    if (stumbling) {
+      ctx.arc(0, -11, 2.5, 0, Math.PI); // sad mouth
+    } else {
+      ctx.arc(0, -13, 2, Math.PI, 0);   // smile
+    }
+    ctx.strokeStyle = '#92400e'; ctx.lineWidth = 1.2; ctx.stroke();
+
+    // Hair
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath(); ctx.arc(0, -20, 5, Math.PI, 0); ctx.fill();
+
+    // Arms
+    ctx.strokeStyle = '#e0e7ff'; ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(0, -4);
+    ctx.lineTo(-8, -4 + arm1Swing);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, -4);
+    ctx.lineTo(8, -4 + arm2Swing);
+    ctx.stroke();
+
+    // Legs
+    ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(0, 8);
+    ctx.lineTo(-6, 8 + leg1Swing);
+    ctx.lineTo(-6, 22 + Math.abs(leg1Swing) * 0.3);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(0, 8);
+    ctx.lineTo(6, 8 + leg2Swing);
+    ctx.lineTo(6, 22 + Math.abs(leg2Swing) * 0.3);
+    ctx.stroke();
+
+    // Shoes
+    ctx.fillStyle = '#1d4ed8';
+    ctx.beginPath(); ctx.ellipse(-6, 22 + Math.abs(leg1Swing) * 0.3, 5, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(6, 22 + Math.abs(leg2Swing) * 0.3, 5, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+
+  function _krRoundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    ctx.lineTo(x + r, y + h);
+    ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+    ctx.lineTo(x, y + r);
+    ctx.quadraticCurveTo(x, y, x + r, y);
+    ctx.closePath();
+  }
+
+  async function _krEndGame() {
+    if (_krAnimFrame) { cancelAnimationFrame(_krAnimFrame); _krAnimFrame = null; }
+    const s = _krState;
+    _krState = null;
+
+    const pct    = s.score > 0 ? Math.min(100, Math.round((s.score / Math.max(s.score + 3, 10)) * 100)) : 0;
+    const win    = s.score >= 5;
+    const perfect = false;
+    const result = await _awardXP(s.xpEarned, 'knowledgeRunner', { win, perfect, sdSurvived: s.score });
+    await _saveGameResult('knowledgeRunner', {
+      score: s.score, distance: Math.floor(s.distance),
+      xpEarned: s.xpEarned, pct,
+    });
+
+    _renderGameResult({
+      gameIcon:      'bolt',
+      gameName:      'Knowledge Runner',
+      score:         `${s.score} correct collected`,
+      pct,
+      xpEarned:      s.xpEarned,
+      perfect,
+      win,
+      result,
+      extras: [
+        { label: 'Distance Run',   value: `${Math.floor(s.distance)}m` },
+        { label: 'Combo Bonus XP', value: s.xpEarned > s.score * KR_XP_PER_CORRECT ? `+${s.xpEarned - s.score * KR_XP_PER_CORRECT} XP` : '—' },
+      ],
+      onPlayAgainKey: 'knowledgeRunner',
+    });
+  }
+
+  function _krRestart() {
+    if (_krAnimFrame) { cancelAnimationFrame(_krAnimFrame); _krAnimFrame = null; }
+    _krState = null;
+    _showKnowledgeRunnerSetup();
+  }
+
+  function _krQuit() {
+    if (_krAnimFrame) { cancelAnimationFrame(_krAnimFrame); _krAnimFrame = null; }
+    _krState = null;
+    openGameLobby();
+  }
+  
   /* ══════════════════════════════════════════════════════════════
      LEADERBOARD
   ══════════════════════════════════════════════════════════════ */
@@ -3149,6 +3815,8 @@ function _buildWordPoolForStudent() {
     _startChallengeListener,
     _stopChallengeListener,
     renderTeacherGameStats,
+    _showKnowledgeRunnerSetup,
+    _startKnowledgeRunner,
   };
 
 })();
