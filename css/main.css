@@ -1668,6 +1668,8 @@ details.glass-dark[open] > summary::after,
 /* ── News Ticker ── */
 .vtx-ticker-wrap {
   width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
   overflow: hidden;
   background: linear-gradient(90deg, #b91c1c 0%, #dc2626 40%, #b91c1c 100%);
   border-radius: 8px;
@@ -1703,12 +1705,12 @@ details.glass-dark[open] > summary::after,
 }
 
 .vtx-ticker-viewport {
-  flex: 1;
+  flex: 1 1 0%;
+  min-width: 0;
   overflow: hidden;
   display: flex;
   align-items: center;
   position: relative;
-  /* Fade edges for a polished entry/exit effect */
   -webkit-mask-image: linear-gradient(
     to right,
     transparent 0%,
@@ -1735,7 +1737,7 @@ details.glass-dark[open] > summary::after,
   font-weight: 600;
   padding: 0 2rem;
   will-change: transform;
-  gap: 0;
+  flex-shrink: 0;
 }
 
 .vtx-ticker-track:hover {
@@ -1756,17 +1758,21 @@ details.glass-dark[open] > summary::after,
   100% { transform: translateX(-50%); }
 }
 
-/* Pause on reduced motion; render stacked instead */
 @media (prefers-reduced-motion: reduce) {
   .vtx-ticker-wrap {
     flex-direction: column;
     min-height: unset;
-    border-radius: 8px;
+  }
+  .vtx-ticker-label {
+    border-right: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+    padding: 0.5rem 0.875rem;
   }
   .vtx-ticker-viewport {
     -webkit-mask-image: none;
     mask-image: none;
     overflow: visible;
+    min-width: unset;
   }
   .vtx-ticker-track {
     animation: none !important;
@@ -1776,12 +1782,11 @@ details.glass-dark[open] > summary::after,
     gap: 0.5rem;
     line-height: 1.6;
   }
-  .vtx-ticker-track .vtx-ticker-clone {
+  .vtx-ticker-clone {
     display: none !important;
   }
 }
 
-/* Dark mode — keep the red vivid but slightly adjusted */
 [data-theme="dark"] .vtx-ticker-wrap {
   background: linear-gradient(90deg, #991b1b 0%, #b91c1c 40%, #991b1b 100%);
   box-shadow: 0 2px 10px rgba(185, 28, 28, 0.35);
