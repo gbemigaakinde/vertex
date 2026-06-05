@@ -1764,11 +1764,6 @@ details.glass-dark[open] > summary::after,
   letter-spacing: 0.05em;
 }
 
-@keyframes vtxTickerScroll {
-  0%   { transform: translate3d(0, 0, 0); }
-  100% { transform: translate3d(-50%, 0, 0); }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .vtx-ticker-wrap {
     flex-direction: column;
