@@ -447,34 +447,28 @@
 
     const messages = S().studentMessages || [];
 
-    // ── News ticker (replaces old message cards) ──────────────
+    // ── News ticker ───────────────────────────────────────────
     let tickerHtml = '';
     if (messages.length > 0) {
-      // Join multiple messages with a decorative separator
       const tickerItems = messages
         .map(function (m) {
           return '<span class="vtx-ticker-item">' + _escHtml(m.message) + '</span>';
         })
         .join('<span class="vtx-ticker-sep">✦ ✦ ✦</span>');
 
-      const tickerHalf =
-  '<span class="vtx-ticker-half">' +
-    tickerItems +
-    '<span class="vtx-ticker-sep">✦✦✦</span>' +
-  '</span>';
-
-tickerHtml =
-  '<div class="vtx-ticker-wrap">' +
-    '<div class="vtx-ticker-label">' +
-      'INFO' +
-    '</div>' +
-    '<div class="vtx-ticker-viewport">' +
-      '<div class="vtx-ticker-track" id="vtxTickerTrack">' +
-        tickerHalf +
-        '<span class="vtx-ticker-clone">' + tickerHalf + '</span>' +
-      '</div>' +
-    '</div>' +
-  '</div>';
+      // Build one half only — JS clones it after layout settles
+      tickerHtml =
+        '<div class="vtx-ticker-wrap">' +
+          '<div class="vtx-ticker-label">INFO</div>' +
+          '<div class="vtx-ticker-viewport">' +
+            '<div class="vtx-ticker-track" id="vtxTickerTrack">' +
+              '<span class="vtx-ticker-half" id="vtxTickerHalf">' +
+                tickerItems +
+                '<span class="vtx-ticker-sep">✦✦✦</span>' +
+              '</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
     }
 
     const restrictionBannerHtml = restrictedSubjs
@@ -660,37 +654,58 @@ tickerHtml =
 
     Tasks.renderTasksHTML();
 
-     // ── Ticker JS scroll (replaces CSS animation to fix flash) ──
-(function () {
-  const track = document.getElementById('vtxTickerTrack');
-  if (!track) return;
+    // ── Ticker JS scroll ──────────────────────────────────────
+    (function () {
+      const track = document.getElementById('vtxTickerTrack');
+      const half  = document.getElementById('vtxTickerHalf');
+      if (!track || !half) return;
 
-  let pos = 0;
-  let rafId = null;
-  const speed = 0.45; // pixels per frame — adjust for faster/slower
+      let pos   = 0;
+      let rafId = null;
+      let halfW = 0;
+      const speed = 0.45; // px per frame
 
-  function step() {
-    pos += speed;
-    const halfWidth = track.scrollWidth / 2;
-    if (pos >= halfWidth) {
-      pos = 0; // reset invisibly because pos 0 looks identical to pos halfWidth
-    }
-    track.style.transform = 'translate3d(-' + pos + 'px, 0, 0)';
-    rafId = requestAnimationFrame(step);
-  }
+      function step() {
+        pos += speed;
+        if (pos >= halfW) {
+          pos -= halfW; // subtract, not reset — eliminates jump at the seam
+        }
+        track.style.transform = 'translate3d(-' + pos + 'px, 0, 0)';
+        rafId = requestAnimationFrame(step);
+      }
 
-  rafId = requestAnimationFrame(step);
+      function start() {
+        // Clone after layout so the measurement is accurate
+        const clone = half.cloneNode(true);
+        clone.removeAttribute('id');
+        clone.setAttribute('aria-hidden', 'true');
+        track.appendChild(clone);
 
-  // Clean up when the page changes
-  const observer = new MutationObserver(function () {
-    if (!document.getElementById('vtxTickerTrack')) {
-      cancelAnimationFrame(rafId);
-      observer.disconnect();
-    }
-  });
-  observer.observe(document.getElementById('app'), { childList: true, subtree: false });
-})();
-     
+        // Two frames: first ensures DOM paint, second ensures layout settle
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            halfW = Math.round(
+              half.getBoundingClientRect().width || half.scrollWidth
+            );
+            if (halfW === 0) return;
+            rafId = requestAnimationFrame(step);
+          });
+        });
+      }
+
+      start();
+
+      // Cancel loop when the page navigates away
+      const observer = new MutationObserver(function () {
+        if (!document.getElementById('vtxTickerTrack')) {
+          cancelAnimationFrame(rafId);
+          observer.disconnect();
+        }
+      });
+      const appEl = document.getElementById('app');
+      if (appEl) observer.observe(appEl, { childList: true, subtree: false });
+    })();
+
     if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updateChatBadge) {
       requestAnimationFrame(function () {
         Chat._updateChatBadge(AppState.chatUnread);
