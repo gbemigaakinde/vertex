@@ -594,10 +594,6 @@
 
     const subject = data.subject === 'random' ? 'Mixed Subjects' : _esc(data.subject || 'Unknown');
     const from    = _esc(data.challengerName || 'A classmate');
-    const exp     = data.expiresAt && data.expiresAt.toDate ? data.expiresAt.toDate() : null;
-    const expStr  = exp
-      ? exp.toLocaleString('en-GB', { weekday:'short', day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })
-      : '24 hours';
 
     const popup = document.createElement('div');
     popup.id    = 'gameChallengePopup_' + challengeId;
