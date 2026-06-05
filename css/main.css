@@ -1739,7 +1739,6 @@ details.glass-dark[open] > summary::after,
   display: inline-flex;
   align-items: center;
   white-space: nowrap;
-  animation: vtxTickerScroll 32s linear infinite;
   color: #fff;
   font-size: var(--text-sm);
   font-weight: 600;
