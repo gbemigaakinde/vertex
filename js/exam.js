@@ -405,286 +405,289 @@
   }
 
   async function renderSubjectSelection() {
-    // ── Guard 1: prevent concurrent renders ──────────────────────
-    if (_renderSubjectSelectionInProgress) {
-      console.warn('[exam] renderSubjectSelection already in progress — skipping duplicate call.');
-      return;
-    }
+  if (_renderSubjectSelectionInProgress) {
+    console.warn('[exam] renderSubjectSelection already in progress — skipping duplicate call.');
+    return;
+  }
 
-    // ── Guard 2: require valid state before doing anything ────────
+  if (!S().studentData || !S().userId) {
+    console.warn('[exam] renderSubjectSelection called with no studentData/userId — aborting.');
+    return;
+  }
+
+  _renderSubjectSelectionInProgress = true;
+
+  try {
+    const classKey = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
+    const _qBank   = window.questions || {};
+
     if (!S().studentData || !S().userId) {
-      console.warn('[exam] renderSubjectSelection called with no studentData/userId — aborting.');
+      console.warn('[exam] State lost before timetable fetch — aborting render.');
       return;
     }
 
-    _renderSubjectSelectionInProgress = true;
+    const weeklyTimetableHtmlPromise = _fetchWeeklyTimetableHtml(classKey);
 
-    try {
-      const classKey = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
-      const _qBank   = window.questions || {};
+    if (!_qBank[classKey]) {
+      console.error('[exam] No questions for classKey:', classKey, '| keys:', Object.keys(_qBank));
+      UI.toast(`No subjects found for class "${S().studentData.class}". Contact Master Timothy.`, 'error', 0);
+      return;
+    }
 
-      // ── Guard 3: check state is still valid after the first sync point ──
-      if (!S().studentData || !S().userId) {
-        console.warn('[exam] State lost before timetable fetch — aborting render.');
-        return;
-      }
+    const todayTaskDone = _isTodayTaskDayCompleted();
 
-      // Fetch timetable in parallel with the rest of the render logic.
-      // _fetchWeeklyTimetableHtml never throws — returns '' on any error.
-      const weeklyTimetableHtmlPromise = _fetchWeeklyTimetableHtml(classKey);
+    const allAvailable    = Object.keys(_qBank[classKey]);
+    const restrictedSubjs = _getRestrictedSubjectsForToday();
+    const available       = restrictedSubjs
+      ? allAvailable.filter(s => restrictedSubjs.includes(s))
+      : allAvailable;
 
-      if (!_qBank[classKey]) {
-        console.error('[exam] No questions for classKey:', classKey, '| keys:', Object.keys(_qBank));
-        UI.toast(`No subjects found for class "${S().studentData.class}". Contact Master Timothy.`, 'error', 0);
-        return;
-      }
+    const isTaskDay   = _isTaskRestricted();
+    const minSubjects = (restrictedSubjs && isTaskDay) ? 1 : 2;
 
-      const todayTaskDone = _isTodayTaskDayCompleted();
+    const messages = S().studentMessages || [];
 
-      const allAvailable    = Object.keys(_qBank[classKey]);
-      const restrictedSubjs = _getRestrictedSubjectsForToday();
-      const available       = restrictedSubjs
-        ? allAvailable.filter(s => restrictedSubjs.includes(s))
-        : allAvailable;
+    // ── News ticker (replaces old message cards) ──────────────
+    let tickerHtml = '';
+    if (messages.length > 0) {
+      // Join multiple messages with a decorative separator
+      const tickerItems = messages
+        .map(function (m) {
+          return '<span class="vtx-ticker-item">' + _escHtml(m.message) + '</span>';
+        })
+        .join('<span class="vtx-ticker-sep">✦ ✦ ✦</span>');
 
-      const isTaskDay   = _isTaskRestricted();
-      const minSubjects = (restrictedSubjs && isTaskDay) ? 1 : 2;
+      // The track is duplicated so the scroll loop is seamless.
+      // The second copy carries class vtx-ticker-clone so reduced-motion
+      // CSS can hide it, leaving only one readable copy.
+      tickerHtml =
+        '<div class="vtx-ticker-wrap">' +
+          '<div class="vtx-ticker-label">' +
+            '<span class="vtx-ticker-label-icon">📢</span>' +
+            'Notice' +
+          '</div>' +
+          '<div class="vtx-ticker-viewport">' +
+            '<div class="vtx-ticker-track">' +
+              tickerItems +
+              '<span class="vtx-ticker-sep vtx-ticker-clone">✦ ✦ ✦</span>' +
+              '<span class="vtx-ticker-clone">' + tickerItems + '</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+    }
 
-      const messages = S().studentMessages || [];
+    const restrictionBannerHtml = restrictedSubjs
+      ? `<div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:1rem;
+                     background:var(--warning-bg);border:1px solid var(--warning-border);
+                     border-left:3px solid var(--warning);border-radius:8px;
+                     padding:.75rem 1rem;text-align:left;">
+           <span style="font-size:1.125rem;flex-shrink:0;margin-top:1px;">📋</span>
+           <div>
+             <p style="font-size:.875rem;font-weight:700;color:var(--warning-text);margin-bottom:.25rem;">
+               Subject restriction active for today
+             </p>
+             <p style="font-size:.8125rem;color:var(--text-secondary);line-height:1.6;">
+               Your coaching task requires you to attempt only:
+               <strong>${available.map(s => _escHtml(s)).join(', ') || 'no subjects'}</strong>.
+               Other subjects are not available for this session.
+             </p>
+           </div>
+         </div>`
+      : '';
 
-      let messagesHtml = '';
-      if (messages.length > 0) {
-        messagesHtml = `
-          <div class="space-y-3 mb-6">
-            <h3 class="text-base font-bold text-center text-red-600">Messages from Master Timothy</h3>
-            ${messages.map(m => `
-              <div class="glass-dark rounded-xl border border-red-300 bg-red-50 px-4 py-3">
-                <p class="text-sm font-medium mb-1">${_escHtml(m.message)}</p>
-                <p class="text-xs opacity-60 text-right">
-                  Expires: ${new Date(m.expiresAt && m.expiresAt.toDate ? m.expiresAt.toDate() : m.expiresAt).toLocaleString()}
-                </p>
-              </div>`).join('')}
-          </div>`;
-      }
+    const taskCfgForBanner = S().currentTaskConfig;
+    const offDayNextLabel  = _nextUnlockedDateLabel();
+    const offDayBannerHtml = (
+      taskCfgForBanner && taskCfgForBanner.active &&
+      !_isTodayATaskDay() && offDayNextLabel
+    )
+      ? `<div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:1rem;
+                     background:var(--brand-bg);border:1px solid var(--brand-border);
+                     border-left:3px solid var(--brand);border-radius:8px;
+                     padding:.75rem 1rem;text-align:left;">
+           <span style="font-size:1.125rem;flex-shrink:0;margin-top:1px;">📅</span>
+           <div>
+             <p style="font-size:.875rem;font-weight:700;color:var(--brand-text);margin-bottom:.25rem;">
+               No task session today
+             </p>
+             <p style="font-size:.8125rem;color:var(--text-secondary);line-height:1.6;">
+               You can take a free practice exam now. Your next required session is on
+               <strong>${offDayNextLabel}</strong>.
+             </p>
+           </div>
+         </div>`
+      : '';
 
-      const restrictionBannerHtml = restrictedSubjs
-        ? `<div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:1rem;
-                       background:var(--warning-bg);border:1px solid var(--warning-border);
-                       border-left:3px solid var(--warning);border-radius:8px;
-                       padding:.75rem 1rem;text-align:left;">
-             <span style="font-size:1.125rem;flex-shrink:0;margin-top:1px;">📋</span>
-             <div>
-               <p style="font-size:.875rem;font-weight:700;color:var(--warning-text);margin-bottom:.25rem;">
-                 Subject restriction active for today
-               </p>
-               <p style="font-size:.8125rem;color:var(--text-secondary);line-height:1.6;">
-                 Your coaching task requires you to attempt only:
-                 <strong>${available.map(s => _escHtml(s)).join(', ') || 'no subjects'}</strong>.
-                 Other subjects are not available for this session.
-               </p>
-             </div>
-           </div>`
-        : '';
+    let subjectsHtml;
 
-      const taskCfgForBanner = S().currentTaskConfig;
-      const offDayNextLabel  = _nextUnlockedDateLabel();
-      const offDayBannerHtml = (
-        taskCfgForBanner && taskCfgForBanner.active &&
-        !_isTodayATaskDay() && offDayNextLabel
-      )
-        ? `<div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:1rem;
-                       background:var(--brand-bg);border:1px solid var(--brand-border);
-                       border-left:3px solid var(--brand);border-radius:8px;
-                       padding:.75rem 1rem;text-align:left;">
-             <span style="font-size:1.125rem;flex-shrink:0;margin-top:1px;">📅</span>
-             <div>
-               <p style="font-size:.875rem;font-weight:700;color:var(--brand-text);margin-bottom:.25rem;">
-                 No task session today
-               </p>
-               <p style="font-size:.8125rem;color:var(--text-secondary);line-height:1.6;">
-                 You can take a free practice exam now. Your next required session is on
-                 <strong>${offDayNextLabel}</strong>.
-               </p>
-             </div>
-           </div>`
-        : '';
+    if (todayTaskDone) {
+      const nextLabel = _nextUnlockedDateLabel();
+      const nextLine  = nextLabel
+        ? `Your next session opens on <strong>${nextLabel}</strong>.`
+        : 'There are no upcoming sessions scheduled right now.';
 
-      let subjectsHtml;
+      subjectsHtml = `
+        <div style="margin-bottom:1.25rem;padding:1.25rem 1.5rem;border-radius:12px;
+                    background:var(--success-bg);border:2px solid var(--success-border);
+                    text-align:center;">
+          <div style="font-size:2rem;margin-bottom:.5rem;">✅</div>
+          <p style="font-size:1rem;font-weight:700;color:var(--success-text);margin-bottom:.375rem;">
+            Today's session complete!
+          </p>
+          <p style="font-size:.875rem;color:var(--text-secondary);line-height:1.6;">
+            You've already submitted your exam for today's task. ${nextLine}
+          </p>
+        </div>
+        <button disabled
+                style="display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
+                       padding:.75rem 2rem;border-radius:8px;font-size:.9375rem;font-weight:700;
+                       background:var(--surface-muted);color:var(--text-disabled);
+                       border:1.5px solid var(--border);cursor:not-allowed;
+                       width:100%;max-width:20rem;">
+          🔒 Exam Locked for Today
+        </button>`;
 
-      if (todayTaskDone) {
-        const nextLabel = _nextUnlockedDateLabel();
-        const nextLine  = nextLabel
-          ? `Your next session opens on <strong>${nextLabel}</strong>.`
-          : 'There are no upcoming sessions scheduled right now.';
+    } else if (available.length === 0) {
+      subjectsHtml = `
+        <p class="text-red-500 text-sm">
+          ${restrictedSubjs
+            ? 'The subjects assigned for today are not available for your class. Please contact Master Timothy.'
+            : 'No subjects available for your class.'}
+        </p>`;
 
-        subjectsHtml = `
-          <div style="margin-bottom:1.25rem;padding:1.25rem 1.5rem;border-radius:12px;
-                      background:var(--success-bg);border:2px solid var(--success-border);
-                      text-align:center;">
-            <div style="font-size:2rem;margin-bottom:.5rem;">✅</div>
-            <p style="font-size:1rem;font-weight:700;color:var(--success-text);margin-bottom:.375rem;">
-              Today's session complete!
-            </p>
-            <p style="font-size:.875rem;color:var(--text-secondary);line-height:1.6;">
-              You've already submitted your exam for today's task. ${nextLine}
-            </p>
-          </div>
-          <button disabled
-                  style="display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
-                         padding:.75rem 2rem;border-radius:8px;font-size:.9375rem;font-weight:700;
-                         background:var(--surface-muted);color:var(--text-disabled);
-                         border:1.5px solid var(--border);cursor:not-allowed;
-                         width:100%;max-width:20rem;">
-            🔒 Exam Locked for Today
-          </button>`;
+    } else if (restrictedSubjs) {
+      const enoughSubjects = available.length >= minSubjects;
+      subjectsHtml = `
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          ${available.map(subj => `
+            <label class="glass p-4 rounded-xl shadow block" style="opacity:.9;cursor:default;">
+              <input type="checkbox" value="${_escAttr(subj)}"
+                     class="subject-checkbox w-4 h-4 accent-indigo-600" checked disabled />
+              <span class="block mt-2 text-sm font-semibold">${_escHtml(subj)}</span>
+              <span style="display:block;font-size:.6875rem;color:var(--success);
+                            font-weight:600;margin-top:3px;">✓ Required today</span>
+            </label>`).join('')}
+        </div>
+        ${enoughSubjects
+          ? `<button id="startExamBtn" onclick="Exam.startExam()" class="btn btn-lg w-full max-w-xs">
+               Start Exam
+             </button>`
+          : `<p class="text-red-500 text-sm">
+               The assigned subject is not available for your class.
+               Please contact Master Timothy.
+             </p>`}`;
 
-      } else if (available.length === 0) {
-        subjectsHtml = `
-          <p class="text-red-500 text-sm">
-            ${restrictedSubjs
-              ? 'The subjects assigned for today are not available for your class. Please contact Master Timothy.'
-              : 'No subjects available for your class.'}
-          </p>`;
+    } else {
+      subjectsHtml = `
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+          ${allAvailable.map(subj => `
+            <label class="glass p-4 rounded-xl cursor-pointer hover:scale-105 transition shadow block">
+              <input type="checkbox" value="${_escAttr(subj)}"
+                     class="subject-checkbox w-4 h-4 accent-indigo-600" />
+              <span class="block mt-2 text-sm font-semibold">${_escHtml(subj)}</span>
+            </label>`).join('')}
+        </div>
+        <button id="startExamBtn" onclick="Exam.startExam()" disabled class="btn btn-lg w-full max-w-xs">
+          Start Exam
+        </button>`;
+    }
 
-      } else if (restrictedSubjs) {
-        const enoughSubjects = available.length >= minSubjects;
-        subjectsHtml = `
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            ${available.map(subj => `
-              <label class="glass p-4 rounded-xl shadow block" style="opacity:.9;cursor:default;">
-                <input type="checkbox" value="${_escAttr(subj)}"
-                       class="subject-checkbox w-4 h-4 accent-indigo-600" checked disabled />
-                <span class="block mt-2 text-sm font-semibold">${_escHtml(subj)}</span>
-                <span style="display:block;font-size:.6875rem;color:var(--success);
-                              font-weight:600;margin-top:3px;">✓ Required today</span>
-              </label>`).join('')}
-          </div>
-          ${enoughSubjects
-            ? `<button id="startExamBtn" onclick="Exam.startExam()" class="btn btn-lg w-full max-w-xs">
-                 Start Exam
-               </button>`
-            : `<p class="text-red-500 text-sm">
-                 The assigned subject is not available for your class.
-                 Please contact Master Timothy.
-               </p>`}`;
+    // ── Guard: await timetable now that all sync HTML is built ──
+    const weeklyTimetableHtml = await weeklyTimetableHtmlPromise;
 
-      } else {
-        subjectsHtml = `
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            ${allAvailable.map(subj => `
-              <label class="glass p-4 rounded-xl cursor-pointer hover:scale-105 transition shadow block">
-                <input type="checkbox" value="${_escAttr(subj)}"
-                       class="subject-checkbox w-4 h-4 accent-indigo-600" />
-                <span class="block mt-2 text-sm font-semibold">${_escHtml(subj)}</span>
-              </label>`).join('')}
-          </div>
-          <button id="startExamBtn" onclick="Exam.startExam()" disabled class="btn btn-lg w-full max-w-xs">
-            Start Exam
-          </button>`;
-      }
+    // ── Guard: final state check before touching the DOM ─────────
+    if (!S().studentData || !S().userId) {
+      console.warn('[exam] State lost before DOM mount — aborting render.');
+      return;
+    }
 
-      // ── Guard 4: await timetable now that all sync HTML is built ──
-      // If state was lost during the sync HTML build (very unlikely but possible),
-      // the timetable HTML will just be '' because _fetchWeeklyTimetableHtml
-      // is isolated. We check state one more time before mounting.
-      const weeklyTimetableHtml = await weeklyTimetableHtmlPromise;
+    UI.mount(`
+      <div class="max-w-4xl mx-auto glass p-6 mt-6 rounded-2xl text-center animate-fadeIn">
+        <div class="mb-5">
+          <h1 class="text-2xl font-bold mb-1">${_getGreeting(S().studentData.name)}</h1>
+          <p class="text-sm text-gray-500">
+            ${_escHtml(S().studentData.class)} &bull; ${_escHtml(S().studentData.school)}
+          </p>
+        </div>
 
-      // ── Guard 5: final state check before touching the DOM ────────
-      if (!S().studentData || !S().userId) {
-        console.warn('[exam] State lost before DOM mount — aborting render.');
-        return;
-      }
+        ${tickerHtml}
 
-      UI.mount(`
-        <div class="max-w-4xl mx-auto glass p-6 mt-6 rounded-2xl text-center animate-fadeIn">
-          <div class="mb-5">
-            <h1 class="text-2xl font-bold mb-1">${_getGreeting(S().studentData.name)}</h1>
-            <p class="text-sm text-gray-500">
-              ${_escHtml(S().studentData.class)} &bull; ${_escHtml(S().studentData.school)}
-            </p>
-          </div>
+        <div id="tasksContainer" class="mb-6"></div>
 
-          ${messagesHtml}
+        ${weeklyTimetableHtml}
 
-          <div id="tasksContainer" class="mb-6"></div>
-
-          ${weeklyTimetableHtml}
-
-          <div class="mb-6" style="display:flex;gap:.625rem;flex-wrap:wrap;justify-content:center;">
-           <button id="chatOpenBtn" onclick="Chat.openPublicChat()" class="btn bg-green-600 hover:bg-green-700" style="position:relative;">
-           Public Discussion Chat
-           </button>
-           <button onclick="StudyRoom.openForStudent()" class="btn bg-blue-600 hover:bg-blue-700"
+        <div class="mb-6" style="display:flex;gap:.625rem;flex-wrap:wrap;justify-content:center;">
+          <button id="chatOpenBtn" onclick="Chat.openPublicChat()" class="btn bg-green-600 hover:bg-green-700" style="position:relative;">
+            Public Discussion Chat
+          </button>
+          <button onclick="StudyRoom.openForStudent()" class="btn bg-blue-600 hover:bg-blue-700"
             style="position:relative;">
             📖 Study Room
-           </button>
-           <button onclick="ThreeDClass.openForStudent()" class="btn bg-indigo-600 hover:bg-indigo-700"
-             style="position:relative;">
-           🧪 3D Class
-           </button>
-           <button id="gameOpenBtn" onclick="Game.openGameLobby()" class="btn"
-             style="position:relative;background:linear-gradient(135deg,#7c3aed,#4f6ef7);color:#fff;">
-           🎮 Games
-           </button>
-           <button id="dmOpenBtn" onclick="DM.openStudentInbox()" class="btn bg-indigo-600 hover:bg-indigo-700"
-             style="position:relative;">
-           ✉️ Message Teacher
-           </button>
-         </div>
+          </button>
+          <button onclick="ThreeDClass.openForStudent()" class="btn bg-indigo-600 hover:bg-indigo-700"
+            style="position:relative;">
+            🧪 3D Class
+          </button>
+          <button id="gameOpenBtn" onclick="Game.openGameLobby()" class="btn"
+            style="position:relative;background:linear-gradient(135deg,#7c3aed,#4f6ef7);color:#fff;">
+            🎮 Games
+          </button>
+          <button id="dmOpenBtn" onclick="DM.openStudentInbox()" class="btn bg-indigo-600 hover:bg-indigo-700"
+            style="position:relative;">
+            ✉️ Message Teacher
+          </button>
+        </div>
 
-          ${offDayBannerHtml}
-          ${todayTaskDone ? '' : restrictionBannerHtml}
+        ${offDayBannerHtml}
+        ${todayTaskDone ? '' : restrictionBannerHtml}
 
-          <div class="text-left mb-3">
-            ${todayTaskDone ? '' : `<p class="text-sm font-semibold text-gray-600">
-              ${restrictedSubjs
-                ? 'Your required subjects for today:'
-                : 'Select at least 2 subjects to begin'}
-            </p>`}
-          </div>
+        <div class="text-left mb-3">
+          ${todayTaskDone ? '' : `<p class="text-sm font-semibold text-gray-600">
+            ${restrictedSubjs
+              ? 'Your required subjects for today:'
+              : 'Select at least 2 subjects to begin'}
+          </p>`}
+        </div>
 
-          ${subjectsHtml}
+        ${subjectsHtml}
 
-          <div class="mt-6 pt-5 border-t border-gray-100">
-            <button onclick="App.logout()"
-                    class="text-xs text-gray-400 hover:text-gray-600 underline">Sign out</button>
-          </div>
-        </div>`);
+        <div class="mt-6 pt-5 border-t border-gray-100">
+          <button onclick="App.logout()"
+                  class="text-xs text-gray-400 hover:text-gray-600 underline">Sign out</button>
+        </div>
+      </div>`);
 
-      Tasks.renderTasksHTML();
+    Tasks.renderTasksHTML();
 
-      if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updateChatBadge) {
-        requestAnimationFrame(function () {
-          Chat._updateChatBadge(AppState.chatUnread);
-        });
-      }
-
-      if (AppState.dmStudentUnread && AppState.dmStudentUnread > 0 && window.DM && DM._updateStudentBadge) {
-        requestAnimationFrame(function () {
-          DM._updateStudentBadge(AppState.dmStudentUnread);
-        });
-      }
-
-      if (!restrictedSubjs && !todayTaskDone) {
-        document.querySelectorAll('.subject-checkbox').forEach(cb => {
-          cb.addEventListener('change', _updateStartBtn);
-        });
-      }
-
-    } catch (err) {
-      console.error('[exam] renderSubjectSelection error:', err);
-      // Only show the error toast if we still have a valid session.
-      // If state was lost, this is a benign logout/reset race — stay silent.
-      if (!S().studentData || !S().userId) {
-        console.warn('[exam] Caught error but state is gone — likely a logout race. Not showing toast.');
-        return;
-      }
-      UI.toast('Failed to load subject selection. Please refresh the page.', 'error', 0);
-    } finally {
-      // Always release the lock, even on error
-      _renderSubjectSelectionInProgress = false;
+    if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updateChatBadge) {
+      requestAnimationFrame(function () {
+        Chat._updateChatBadge(AppState.chatUnread);
+      });
     }
+
+    if (AppState.dmStudentUnread && AppState.dmStudentUnread > 0 && window.DM && DM._updateStudentBadge) {
+      requestAnimationFrame(function () {
+        DM._updateStudentBadge(AppState.dmStudentUnread);
+      });
+    }
+
+    if (!restrictedSubjs && !todayTaskDone) {
+      document.querySelectorAll('.subject-checkbox').forEach(cb => {
+        cb.addEventListener('change', _updateStartBtn);
+      });
+    }
+
+  } catch (err) {
+    console.error('[exam] renderSubjectSelection error:', err);
+    if (!S().studentData || !S().userId) {
+      console.warn('[exam] Caught error but state is gone — likely a logout race. Not showing toast.');
+      return;
+    }
+    UI.toast('Failed to load subject selection. Please refresh the page.', 'error', 0);
+  } finally {
+    _renderSubjectSelectionInProgress = false;
   }
+}
 
   function _updateStartBtn() {
     const selected = document.querySelectorAll('.subject-checkbox:checked').length;
