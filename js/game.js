@@ -874,6 +874,7 @@
               <span class="game-card__tag">1v1</span>
               <span class="game-card__tag game-card__tag--xp">+${XP_CHALLENGE_WIN} bonus XP</span>
             </div>
+          </div>
           <div class="game-card game-card--runner" onclick="Game._selectGame('knowledgeRunner')">
             <div class="game-card__icon">${_icon('bolt', 32, { color: '#06b6d4' })}</div>
             <div class="game-card__title">Knowledge Runner</div>
