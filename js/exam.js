@@ -457,22 +457,24 @@
         })
         .join('<span class="vtx-ticker-sep">✦ ✦ ✦</span>');
 
-      // The track is duplicated so the scroll loop is seamless.
-      // The second copy carries class vtx-ticker-clone so reduced-motion
-      // CSS can hide it, leaving only one readable copy.
-      tickerHtml =
-        '<div class="vtx-ticker-wrap">' +
-          '<div class="vtx-ticker-label">' +
-            'INFO' +
-          '</div>' +
-          '<div class="vtx-ticker-viewport">' +
-            '<div class="vtx-ticker-track">' +
-              tickerItems +
-              '<span class="vtx-ticker-sep vtx-ticker-clone">✦ ✦ ✦</span>' +
-              '<span class="vtx-ticker-clone">' + tickerItems + '</span>' +
-            '</div>' +
-          '</div>' +
-        '</div>';
+      const tickerHalf =
+  '<span class="vtx-ticker-half">' +
+    tickerItems +
+    '<span class="vtx-ticker-sep">✦✦✦</span>' +
+  '</span>';
+
+tickerHtml =
+  '<div class="vtx-ticker-wrap">' +
+    '<div class="vtx-ticker-label">' +
+      'INFO' +
+    '</div>' +
+    '<div class="vtx-ticker-viewport">' +
+      '<div class="vtx-ticker-track" id="vtxTickerTrack">' +
+        tickerHalf +
+        '<span class="vtx-ticker-clone">' + tickerHalf + '</span>' +
+      '</div>' +
+    '</div>' +
+  '</div>';
     }
 
     const restrictionBannerHtml = restrictedSubjs
@@ -658,6 +660,37 @@
 
     Tasks.renderTasksHTML();
 
+     // ── Ticker JS scroll (replaces CSS animation to fix flash) ──
+(function () {
+  const track = document.getElementById('vtxTickerTrack');
+  if (!track) return;
+
+  let pos = 0;
+  let rafId = null;
+  const speed = 0.45; // pixels per frame — adjust for faster/slower
+
+  function step() {
+    pos += speed;
+    const halfWidth = track.scrollWidth / 2;
+    if (pos >= halfWidth) {
+      pos = 0; // reset invisibly because pos 0 looks identical to pos halfWidth
+    }
+    track.style.transform = 'translate3d(-' + pos + 'px, 0, 0)';
+    rafId = requestAnimationFrame(step);
+  }
+
+  rafId = requestAnimationFrame(step);
+
+  // Clean up when the page changes
+  const observer = new MutationObserver(function () {
+    if (!document.getElementById('vtxTickerTrack')) {
+      cancelAnimationFrame(rafId);
+      observer.disconnect();
+    }
+  });
+  observer.observe(document.getElementById('app'), { childList: true, subtree: false });
+})();
+     
     if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updateChatBadge) {
       requestAnimationFrame(function () {
         Chat._updateChatBadge(AppState.chatUnread);
