@@ -665,35 +665,30 @@ tickerHtml =
   const track = document.getElementById('vtxTickerTrack');
   if (!track) return;
 
-  // Wait one extra frame so layout is fully settled before measuring
-  requestAnimationFrame(function () {
-    // Snapshot once — never re-read scrollWidth in the loop
+  let pos = 0;
+  let rafId = null;
+  const speed = 0.45; // pixels per frame — adjust for faster/slower
+
+  function step() {
+    pos += speed;
     const halfWidth = track.scrollWidth / 2;
-    if (halfWidth <= 0) return;
-
-    let pos = 0;
-    let rafId = null;
-    const speed = 0.45;
-
-    function step() {
-      pos += speed;
-      if (pos >= halfWidth) {
-        pos -= halfWidth; // subtract instead of reset to 0 — avoids any jump
-      }
-      track.style.transform = 'translate3d(-' + pos + 'px, 0, 0)';
-      rafId = requestAnimationFrame(step);
+    if (pos >= halfWidth) {
+      pos = 0; // reset invisibly because pos 0 looks identical to pos halfWidth
     }
-
+    track.style.transform = 'translate3d(-' + pos + 'px, 0, 0)';
     rafId = requestAnimationFrame(step);
+  }
 
-    const observer = new MutationObserver(function () {
-      if (!document.getElementById('vtxTickerTrack')) {
-        cancelAnimationFrame(rafId);
-        observer.disconnect();
-      }
-    });
-    observer.observe(document.getElementById('app'), { childList: true, subtree: false });
+  rafId = requestAnimationFrame(step);
+
+  // Clean up when the page changes
+  const observer = new MutationObserver(function () {
+    if (!document.getElementById('vtxTickerTrack')) {
+      cancelAnimationFrame(rafId);
+      observer.disconnect();
+    }
   });
+  observer.observe(document.getElementById('app'), { childList: true, subtree: false });
 })();
      
     if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updateChatBadge) {
