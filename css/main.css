@@ -1746,6 +1746,10 @@ details.glass-dark[open] > summary::after,
   padding: 0 2rem;
   will-change: transform;
   flex-shrink: 0;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
 }
 
 .vtx-ticker-track:hover {
@@ -1762,8 +1766,8 @@ details.glass-dark[open] > summary::after,
 }
 
 @keyframes vtxTickerScroll {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-50%); }
+  0%   { transform: translate3d(0, 0, 0); }
+  100% { transform: translate3d(-50%, 0, 0); }
 }
 
 @media (prefers-reduced-motion: reduce) {
