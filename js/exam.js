@@ -457,24 +457,22 @@
         })
         .join('<span class="vtx-ticker-sep">✦ ✦ ✦</span>');
 
-      const tickerHalf =
-  '<span class="vtx-ticker-half">' +
-    tickerItems +
-    '<span class="vtx-ticker-sep">✦✦✦</span>' +
-  '</span>';
-
-tickerHtml =
-  '<div class="vtx-ticker-wrap">' +
-    '<div class="vtx-ticker-label">' +
-      'INFO' +
-    '</div>' +
-    '<div class="vtx-ticker-viewport">' +
-      '<div class="vtx-ticker-track">' +
-        tickerHalf +
-        '<span class="vtx-ticker-clone">' + tickerHalf + '</span>' +
-      '</div>' +
-    '</div>' +
-  '</div>';
+      // The track is duplicated so the scroll loop is seamless.
+      // The second copy carries class vtx-ticker-clone so reduced-motion
+      // CSS can hide it, leaving only one readable copy.
+      tickerHtml =
+        '<div class="vtx-ticker-wrap">' +
+          '<div class="vtx-ticker-label">' +
+            'INFO' +
+          '</div>' +
+          '<div class="vtx-ticker-viewport">' +
+            '<div class="vtx-ticker-track">' +
+              tickerItems +
+              '<span class="vtx-ticker-sep vtx-ticker-clone">✦ ✦ ✦</span>' +
+              '<span class="vtx-ticker-clone">' + tickerItems + '</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
     }
 
     const restrictionBannerHtml = restrictedSubjs
