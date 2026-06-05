@@ -463,8 +463,7 @@
       tickerHtml =
         '<div class="vtx-ticker-wrap">' +
           '<div class="vtx-ticker-label">' +
-            '<span class="vtx-ticker-label-icon">📢</span>' +
-            'Notice' +
+            'INFO' +
           '</div>' +
           '<div class="vtx-ticker-viewport">' +
             '<div class="vtx-ticker-track">' +
