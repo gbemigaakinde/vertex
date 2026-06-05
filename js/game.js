@@ -558,8 +558,6 @@
               if (change.type !== 'added' && change.type !== 'modified') return;
               const doc  = change.doc;
               const data = doc.data();
-              const exp  = data.expiresAt && data.expiresAt.toDate ? data.expiresAt.toDate() : null;
-              if (exp && exp < new Date()) return;
               if (_notifiedChallenges.has(doc.id)) return;
               _notifiedChallenges.add(doc.id);
               _showChallengePopup(doc.id, data);
@@ -577,8 +575,6 @@
               if (change.type !== 'added' && change.type !== 'modified') return;
               const doc  = change.doc;
               const data = doc.data();
-              const exp  = data.expiresAt && data.expiresAt.toDate ? data.expiresAt.toDate() : null;
-              if (exp && exp < new Date()) return;
               if (_notifiedChallenges.has(doc.id)) return;
               _notifiedChallenges.add(doc.id);
               _showChallengePopup(doc.id, data);
@@ -630,7 +626,7 @@
             <strong>${from}</strong> challenged you to a quiz!
           </p>
           <p style="font-size:.6875rem;color:var(--text-3);margin:0;">
-            Subject: ${subject} &middot; Expires ${_esc(expStr)}
+            Subject: ${subject} &middot; Open until accepted or declined
           </p>
         </div>
         <button id="gameChallengePopupDismiss_${challengeId}"
@@ -704,18 +700,14 @@
           .where('challengedUid', '==', uid).where('status', '==', 'pending').get();
         if (!challengeSnap.empty) {
           challengeSnap.docs.forEach(doc => {
-            const d = doc.data();
-            const exp = d.expiresAt && d.expiresAt.toDate ? d.expiresAt.toDate() : null;
-            if (!exp || exp > new Date()) pendingChallenges.push({ id: doc.id, ...d });
+            pendingChallenges.push({ id: doc.id, ...doc.data() });
           });
         }
         const sentSnap = await _db().collection('gameChallenges')
           .where('challengerUid', '==', uid).where('status', '==', 'awaiting_challenger').get();
         if (!sentSnap.empty) {
           sentSnap.docs.forEach(doc => {
-            const d = doc.data();
-            const exp = d.expiresAt && d.expiresAt.toDate ? d.expiresAt.toDate() : null;
-            if (!exp || exp > new Date()) awaitingPlay.push({ id: doc.id, ...d });
+            awaitingPlay.push({ id: doc.id, ...doc.data() });
           });
         }
       } catch (e) { console.warn('[game] challenge fetch error (offline?):', e); }
@@ -2418,13 +2410,16 @@ function _buildWordPoolForStudent() {
         challengerName:  _student().name || '',
         challengedUid:   targetUid,
         challengedName:  targetName,
-        subject, questions: questionData, status: 'pending',
-        challengerScore: null, challengedScore: null,
-        createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-        expiresAt: new Date(Date.now() + CHALLENGE_EXPIRE_MS),
+        subject,
+        questions:       questionData,
+        status:          'pending',
+        challengerScore: null,
+        challengedScore: null,
+        createdAt:       firebase.firestore.FieldValue.serverTimestamp(),
+        expiresAt:       null,
       });
       _closeModal();
-      window.UI.toast(`Challenge sent to ${targetName}! They have 24 hours to respond.`, 'success', 5000);
+      window.UI.toast(`Challenge sent to ${targetName}! It will remain open until they respond.`, 'success', 5000);
     } catch (e) {
       console.error('[game] _sendChallenge error:', e);
       window.UI.toast('Could not send challenge. Please try again.', 'error');
@@ -2436,24 +2431,34 @@ function _buildWordPoolForStudent() {
     const uid = _uid();
     let challenges = [];
     try {
-      const snap = await _db().collection('gameChallenges').where('challengedUid', '==', uid).where('status', '==', 'pending').get();
+      const snap = await _db().collection('gameChallenges')
+        .where('challengedUid', '==', uid)
+        .where('status', '==', 'pending')
+        .get();
       snap.docs.forEach(doc => {
-        const d = doc.data();
-        const exp = d.expiresAt && d.expiresAt.toDate ? d.expiresAt.toDate() : null;
-        if (!exp || exp > new Date()) challenges.push({ id: doc.id, ...d });
+        challenges.push({ id: doc.id, ...doc.data() });
       });
     } catch (e) { window.UI.toast('Could not load challenges.', 'error'); return; }
 
     if (challenges.length === 0) { window.UI.toast('No pending challenges right now.', 'info'); return; }
 
     const listHtml = challenges.map(c => {
-      const exp    = c.expiresAt && c.expiresAt.toDate ? c.expiresAt.toDate() : null;
-      const expStr = exp ? exp.toLocaleDateString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
+      const createdAt = c.createdAt && c.createdAt.toDate ? c.createdAt.toDate() : null;
+      const sentStr   = createdAt
+        ? createdAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+        : '—';
       return `
-        <div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;background:var(--bg-base);border:1px solid var(--border);border-radius:8px;padding:.75rem 1rem;margin-bottom:.5rem;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;
+                    background:var(--bg-base);border:1px solid var(--border);border-radius:8px;
+                    padding:.75rem 1rem;margin-bottom:.5rem;">
           <div>
-            <p style="font-size:.9375rem;font-weight:700;color:var(--text-1);">${_icon('swords', 15)} ${_esc(c.challengerName)} challenged you!</p>
-            <p style="font-size:.8125rem;color:var(--text-3);">Subject: ${_esc(c.subject === 'random' ? 'Mixed' : c.subject)} &middot; Expires ${_esc(expStr)}</p>
+            <p style="font-size:.9375rem;font-weight:700;color:var(--text-1);">
+              ${_icon('swords', 15)} ${_esc(c.challengerName)} challenged you!
+            </p>
+            <p style="font-size:.8125rem;color:var(--text-3);">
+              Subject: ${_esc(c.subject === 'random' ? 'Mixed' : c.subject)}
+              &middot; Sent: ${_esc(sentStr)}
+            </p>
           </div>
           <div style="display:flex;gap:.375rem;flex-shrink:0;">
             <button onclick="Game._acceptChallenge('${_esc(c.id)}')" class="btn" style="white-space:nowrap;">Accept</button>
@@ -2464,8 +2469,13 @@ function _buildWordPoolForStudent() {
 
     _showModal(`
       <div style="margin-bottom:1rem;">
-        <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">${_icon('swords', 18)} Pending Challenges</h2>
-        <p style="font-size:.8125rem;color:var(--text-3);margin-top:.25rem;">Accept to play the same quiz and see who scores higher.</p>
+        <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">
+          ${_icon('swords', 18)} Pending Challenges
+        </h2>
+        <p style="font-size:.8125rem;color:var(--text-3);margin-top:.25rem;">
+          Accept to play the same quiz and see who scores higher.
+          Challenges remain open until you respond.
+        </p>
       </div>
       <div>${listHtml}</div>
       <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full" style="margin-top:.5rem;">Close</button>
@@ -2488,26 +2498,50 @@ function _buildWordPoolForStudent() {
     const uid = _uid();
     let challenges = [];
     try {
-      const snap = await _db().collection('gameChallenges').where('challengerUid', '==', uid).where('status', '==', 'awaiting_challenger').get();
+      const snap = await _db().collection('gameChallenges')
+        .where('challengerUid', '==', uid)
+        .where('status', '==', 'awaiting_challenger')
+        .get();
       snap.docs.forEach(doc => {
-        const d = doc.data();
-        const exp = d.expiresAt && d.expiresAt.toDate ? d.expiresAt.toDate() : null;
-        if (!exp || exp > new Date()) challenges.push({ id: doc.id, ...d });
+        challenges.push({ id: doc.id, ...doc.data() });
       });
     } catch (e) { window.UI.toast('Could not load challenges.', 'error'); return; }
+
     if (challenges.length === 0) { window.UI.toast('No challenges waiting for your play.', 'info'); return; }
-    const listHtml = challenges.map(c => `
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;background:var(--bg-base);border:1px solid var(--border);border-radius:8px;padding:.75rem 1rem;margin-bottom:.5rem;">
-        <div>
-          <p style="font-size:.9375rem;font-weight:700;color:var(--text-1);">${_icon('hourglass', 15)} ${_esc(c.challengedName)} responded!</p>
-          <p style="font-size:.8125rem;color:var(--text-3);">Subject: ${_esc(c.subject === 'random' ? 'Mixed' : c.subject)} &middot; Your turn to play!</p>
-        </div>
-        <button onclick="Game._playChallengerTurn('${_esc(c.id)}')" class="btn" style="white-space:nowrap;flex-shrink:0;background:var(--danger);color:#fff;">Play Now</button>
-      </div>`).join('');
+
+    const listHtml = challenges.map(c => {
+      const createdAt = c.createdAt && c.createdAt.toDate ? c.createdAt.toDate() : null;
+      const sentStr   = createdAt
+        ? createdAt.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
+        : '—';
+      return `
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;
+                    background:var(--bg-base);border:1px solid var(--border);border-radius:8px;
+                    padding:.75rem 1rem;margin-bottom:.5rem;">
+          <div>
+            <p style="font-size:.9375rem;font-weight:700;color:var(--text-1);">
+              ${_icon('hourglass', 15)} ${_esc(c.challengedName)} responded!
+            </p>
+            <p style="font-size:.8125rem;color:var(--text-3);">
+              Subject: ${_esc(c.subject === 'random' ? 'Mixed' : c.subject)}
+              &middot; Sent: ${_esc(sentStr)}
+            </p>
+          </div>
+          <button onclick="Game._playChallengerTurn('${_esc(c.id)}')"
+                  class="btn" style="white-space:nowrap;flex-shrink:0;background:var(--danger);color:#fff;">
+            Play Now
+          </button>
+        </div>`;
+    }).join('');
+
     _showModal(`
       <div style="margin-bottom:1rem;">
-        <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">${_icon('hourglass', 18)} Your Turn to Play</h2>
-        <p style="font-size:.8125rem;color:var(--text-3);margin-top:.25rem;">Your classmate already played. Play now to determine the winner.</p>
+        <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">
+          ${_icon('hourglass', 18)} Your Turn to Play
+        </h2>
+        <p style="font-size:.8125rem;color:var(--text-3);margin-top:.25rem;">
+          Your classmate already played. Play now to determine the winner.
+        </p>
       </div>
       <div>${listHtml}</div>
       <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full" style="margin-top:.5rem;">Close</button>
