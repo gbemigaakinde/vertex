@@ -2958,9 +2958,8 @@ function _buildWordPoolForStudent() {
     if (_krState.gameOver) { _krRestart(); return; }
     const p = _krState.player;
     if (p.onGround) {
-      p.vy = KR_JUMP_FORCE;
+      p.vy = -14;            // stronger jump — reaches coin at y = KR_GROUND_Y - 72
       p.onGround = false;
-      // Particle burst from feet
       for (let i = 0; i < 6; i++) {
         _krState.particles.push({
           x: p.x + 10, y: KR_GROUND_Y + 18,
@@ -2993,7 +2992,7 @@ function _buildWordPoolForStudent() {
     const s = _krState;
     if (!s.currentQ) return;
 
-    // Pick 1 correct + 1-2 wrongs
+    // Pick 1 correct + 1-2 wrongs, but limit text length aggressively
     const wrongs = _shuffleArray(s.currentQ.wrongs).slice(0, 2);
     const all = [
       { text: s.currentQ.correct, isCorrect: true },
@@ -3001,26 +3000,38 @@ function _buildWordPoolForStudent() {
     ];
     const shuffled = _shuffleArray(all);
 
-    // Spawn them spread across incoming lane
     shuffled.forEach((item, i) => {
-      const isAir = item.isCorrect; // correct answers float in the air
-      const yPos  = isAir
-        ? KR_GROUND_Y - 50 - Math.random() * 20  // floating
-        : KR_GROUND_Y + 5;                         // ground level
-
-      s.tokens.push({
-        x:         KR_CANVAS_W + 60 + i * 200,
-        y:         yPos,
-        w:         Math.min(item.text.length * 7 + 20, 180),
-        h:         28,
-        text:      item.text,
-        isCorrect: item.isCorrect,
-        hit:       false,
-        bounce:    0,
-      });
+      if (item.isCorrect) {
+        // ✅ Correct = floating COIN above jump height — player jumps to collect
+        s.tokens.push({
+          x:         KR_CANVAS_W + 80 + i * 240,
+          y:         KR_GROUND_Y - 72,   // high enough that jumping reaches it
+          w:         36,                  // fixed coin size — no text in hitbox
+          h:         36,
+          text:      item.text,
+          isCorrect: true,
+          hit:       false,
+          bounce:    0,
+          type:      'coin',
+        });
+      } else {
+        // ❌ Wrong = narrow HURDLE on the ground — player must jump over it
+        // The hitbox is a narrow pillar (24px wide). Text label sits above it.
+        s.tokens.push({
+          x:         KR_CANVAS_W + 80 + i * 240,
+          y:         KR_GROUND_Y + 18,   // sits on the ground line
+          w:         24,                  // narrow — jumpable if timed right
+          h:         54,                  // tall enough to block running player
+          text:      item.text,
+          isCorrect: false,
+          hit:       false,
+          bounce:    0,
+          type:      'hurdle',
+        });
+      }
     });
 
-    s.tokenCooldown = 160 + Math.floor(Math.random() * 60);
+    s.tokenCooldown = 200 + Math.floor(Math.random() * 80);
   }
 
   function _krLoop(timestamp) {
@@ -3068,24 +3079,39 @@ function _buildWordPoolForStudent() {
     if (p.invincible === 0) {
       s.tokens.forEach(t => {
         if (t.hit) return;
-        const px = p.x + 4, py = p.y + 2, pw = 18, ph = 34;
-        const tx = t.x + 2, ty = t.y - t.h + (t.isCorrect ? t.bounce : 0);
-        const tw = t.w - 4, th = t.h;
+
+        // Player hitbox — kept tight to feel fair on mobile
+        const px = p.x + 6,  py = p.y - 28;   // top-left of player body
+        const pw = 14,        ph = 46;           // narrow width, full height
+
+        let tx, ty, tw, th;
+
+        if (t.type === 'coin') {
+          // Coin hitbox = circle approximated as a square, centered on coin
+          tx = t.x;
+          ty = t.y - t.w / 2 + t.bounce;   // t.y is coin centre-y
+          tw = t.w;
+          th = t.w;
+        } else {
+          // Hurdle hitbox = the pillar only (not the label above it)
+          tx = t.x;
+          ty = t.y - t.h;                  // top of hurdle
+          tw = t.w;
+          th = t.h;
+        }
 
         const collide = px < tx + tw && px + pw > tx && py < ty + th && py + ph > ty;
 
         if (collide) {
           t.hit = true;
           if (t.isCorrect) {
-            // ✅ Correct collect
             s.score++;
             s.combo++;
             const xp = KR_XP_PER_CORRECT + (s.combo >= 3 ? KR_XP_SPEED_BONUS : 0);
             s.xpEarned += xp;
-            // Burst particles
             for (let i = 0; i < 12; i++) {
               s.particles.push({
-                x: t.x + t.w / 2, y: t.y - t.h / 2,
+                x: t.x + t.w / 2, y: t.y,
                 vx: (Math.random() - 0.5) * 5,
                 vy: -(Math.random() * 4 + 1),
                 life: 30, color: '#22c55e',
@@ -3093,15 +3119,13 @@ function _buildWordPoolForStudent() {
             }
             _krNextQuestion();
           } else {
-            // ❌ Wrong hit
             s.combo = 0;
             s.lives--;
-            p.stumble = 40;
+            p.stumble   = 40;
             p.invincible = 80;
-            // Red particles
             for (let i = 0; i < 10; i++) {
               s.particles.push({
-                x: p.x + 10, y: p.y + 10,
+                x: p.x + 10, y: p.y,
                 vx: (Math.random() - 0.5) * 4,
                 vy: -(Math.random() * 3 + 1),
                 life: 25, color: '#ef4444',
@@ -3196,41 +3220,98 @@ function _buildWordPoolForStudent() {
     // ── Tokens ──
     s.tokens.forEach(t => {
       if (t.hit) return;
-      const ty = t.isCorrect ? t.y - t.h + t.bounce : t.y - t.h;
 
-      // Shadow
-      ctx.fillStyle = 'rgba(0,0,0,0.25)';
-      ctx.beginPath();
-      ctx.ellipse(t.x + t.w / 2, KR_GROUND_Y + 20, t.w / 2 - 4, 4, 0, 0, Math.PI * 2);
-      ctx.fill();
+      if (t.type === 'coin') {
+        // ── CORRECT = floating coin ──
+        const cx = t.x + t.w / 2;
+        const cy = t.y + t.bounce;
+        const r  = t.w / 2;
 
-      // Token body
-      const grad = ctx.createLinearGradient(t.x, ty, t.x, ty + t.h);
-      if (t.isCorrect) {
+        // Outer glow
+        ctx.beginPath();
+        ctx.arc(cx, cy, r + 4, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(34,197,94,0.18)';
+        ctx.fill();
+
+        // Coin body
+        const grad = ctx.createRadialGradient(cx - 4, cy - 4, 2, cx, cy, r);
         grad.addColorStop(0, '#bbf7d0');
         grad.addColorStop(1, '#16a34a');
+        ctx.beginPath();
+        ctx.arc(cx, cy, r, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.fill();
+        ctx.strokeStyle = '#4ade80';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+
+        // ✓ tick inside coin
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 16px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('✓', cx, cy);
+
+        // Label BELOW the coin (not part of hitbox)
+        const shortText = t.text.length > 18 ? t.text.substring(0, 16) + '…' : t.text;
+        ctx.font = 'bold 9px sans-serif';
+        ctx.fillStyle = '#4ade80';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        ctx.fillText(shortText, cx, cy + r + 5);
+
       } else {
-        grad.addColorStop(0, '#fecaca');
+        // ── WRONG = narrow hurdle ──
+        const hx = t.x;
+        const hy = t.y - t.h;   // top of hurdle (t.y is ground level)
+        const hw = t.w;
+        const hh = t.h;
+
+        // Shadow under hurdle
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fillRect(hx - 2, t.y, hw + 4, 4);
+
+        // Hurdle body — striped red pillar
+        const grad = ctx.createLinearGradient(hx, hy, hx + hw, hy);
+        grad.addColorStop(0, '#dc2626');
+        grad.addColorStop(0.5, '#ef4444');
         grad.addColorStop(1, '#dc2626');
+        ctx.fillStyle = grad;
+        _krRoundRect(ctx, hx, hy, hw, hh, 4);
+        ctx.fill();
+
+        // Warning stripes
+        ctx.save();
+        ctx.beginPath();
+        _krRoundRect(ctx, hx, hy, hw, hh, 4);
+        ctx.clip();
+        ctx.fillStyle = 'rgba(0,0,0,0.15)';
+        for (let stripe = 0; stripe < 6; stripe++) {
+          ctx.fillRect(hx - 4 + stripe * 8, hy, 4, hh);
+        }
+        ctx.restore();
+
+        // Border
+        ctx.strokeStyle = '#f87171';
+        ctx.lineWidth = 1.5;
+        _krRoundRect(ctx, hx, hy, hw, hh, 4);
+        ctx.stroke();
+
+        // ✗ icon on hurdle
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 13px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('✗', hx + hw / 2, hy + hh / 2);
+
+        // Label ABOVE the hurdle (not part of hitbox)
+        const shortText = t.text.length > 18 ? t.text.substring(0, 16) + '…' : t.text;
+        ctx.font = 'bold 9px sans-serif';
+        ctx.fillStyle = '#f87171';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText(shortText, hx + hw / 2, hy - 4);
       }
-
-      ctx.fillStyle = grad;
-      _krRoundRect(ctx, t.x, ty, t.w, t.h, 6);
-      ctx.fill();
-
-      // Border glow
-      ctx.strokeStyle = t.isCorrect ? '#4ade80' : '#f87171';
-      ctx.lineWidth = 1.5;
-      _krRoundRect(ctx, t.x, ty, t.w, t.h, 6);
-      ctx.stroke();
-
-      // Token icon
-      ctx.font = 'bold 13px sans-serif';
-      ctx.fillStyle = t.isCorrect ? '#14532d' : '#7f1d1d';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      const label = t.isCorrect ? '✓ ' : '✗ ';
-      ctx.fillText(label + t.text, t.x + t.w / 2, ty + t.h / 2);
     });
 
     // ── Particles ──
@@ -3243,10 +3324,10 @@ function _buildWordPoolForStudent() {
     });
     ctx.globalAlpha = 1;
 
-    // ── Player (vector stick figure) ──
+    // ── Player ──
     _krDrawPlayer(ctx, s.player, timestamp);
 
-    // ── Speed indicator (subtle) ──
+    // ── Speed bar ──
     const speedPct = Math.min((s.speed - KR_BASE_SPEED) / 4, 1);
     ctx.fillStyle = `rgba(251,191,36,${speedPct * 0.6})`;
     ctx.fillRect(0, 0, W * speedPct, 3);
@@ -3264,6 +3345,7 @@ function _buildWordPoolForStudent() {
       ctx.font = '14px sans-serif';
       ctx.fillText('Tap or press Space to play again', W / 2, H / 2 + 14);
     }
+
     ctx.textAlign = 'left';
     ctx.textBaseline = 'alphabetic';
   }
