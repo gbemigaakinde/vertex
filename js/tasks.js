@@ -1,5 +1,5 @@
 /* ============================================================
-   js/tasks.js  — v4.1
+   js/tasks.js  — v4.2
    ============================================================
  */
 
@@ -83,8 +83,6 @@
     const startDate = doc.startDate || (Array.isArray(doc.dates) && doc.dates[0]) || null;
     if (!startDate) return [];
 
-    // KEY FIX: always clamp floor to startDate so no date before the task
-    // start can ever be included, regardless of what fromDate is passed in.
     const candidateFloor = opts.fromDate || startDate;
     const floor = candidateFloor > startDate ? candidateFloor : startDate;
 
@@ -326,8 +324,33 @@
       .onSnapshot(
         snap => {
           if (snap.exists) {
-            AppState.studentData = Object.assign({}, AppState.studentData, snap.data());
-            if (document.getElementById('tasksContainer')) renderTasksHTML();
+            const incoming = snap.data();
+
+            // ── FIX: Deep-merge coachingCompleted so that optimistic local
+            // updates made during exam submission are never overwritten by a
+            // stale snapshot that arrives before Firestore finishes the write.
+            // We union the two maps: any date already marked true locally is
+            // preserved even if the incoming snapshot doesn't carry it yet.
+            const existingCompleted =
+              (AppState.studentData && AppState.studentData.coachingCompleted) || {};
+            const incomingCompleted = incoming.coachingCompleted || {};
+
+            const mergedCompleted = Object.assign(
+              {},
+              incomingCompleted,   // start with what Firestore says
+              existingCompleted    // overlay any locally-known completions on top
+            );
+
+            AppState.studentData = Object.assign(
+              {},
+              AppState.studentData,
+              incoming,
+              { coachingCompleted: mergedCompleted }  // use the merged map
+            );
+
+            if (document.getElementById('tasksContainer')) {
+              renderTasksHTML();
+            }
           }
         },
         err => console.error('[tasks] Student update listener error:', err)
