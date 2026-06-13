@@ -2510,14 +2510,14 @@ function _renderExistingTasksList(docs) {
 
   // Returns "YYYY-Www" ISO week key for a given Date (or today)
   function _isoWeekKey(date) {
-    const d = date ? new Date(date) : new Date();
-    // Thursday in current week decides the year
-    const thursday = new Date(d);
-    thursday.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
-    const yearStart = new Date(thursday.getFullYear(), 0, 4);
-    const weekNum   = Math.round(((thursday - yearStart) / 86400000 + 1) / 7);
-    return thursday.getFullYear() + '-W' + String(weekNum).padStart(2, '0');
-  }
+  const d = date ? new Date(date) : new Date();
+  // Thursday in current week decides the year
+  const thursday = new Date(d);
+  thursday.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
+  const yearStart = new Date(thursday.getFullYear(), 0, 4);
+  const weekNum   = Math.round(((thursday - yearStart) / 86400000 + 1) / 7);
+  return thursday.getFullYear() + '-W' + String(weekNum).padStart(2, '0');
+}
 
   // Returns the Monday of the ISO week that contains a given date
   function _weekMonday(date) {
@@ -2743,17 +2743,15 @@ function _mondayFromIsoWeekKey(weekKey) {
   const year    = +yearStr;
   const weekNum = +weekPart;
 
-  // Find Jan 4 of the given year (always in week 1 by ISO definition)
-  const jan4 = new Date(year, 0, 4);
+  // Jan 4 of the given year is always in ISO week 1
+  const jan4    = new Date(year, 0, 4);
+  const jan4Dow = jan4.getDay(); // 0=Sun,1=Mon,...,6=Sat
 
-  // Find the Thursday of that week (ISO week starts on Monday, Thursday defines the year)
-  const jan4Day = jan4.getDay(); // 0=Sun,1=Mon,...,6=Sat
-  const jan4Thursday = new Date(jan4);
-  jan4Thursday.setDate(jan4.getDate() + (4 - (jan4Day === 0 ? 7 : jan4Day)));
-
-  // Week 1 Monday is 3 days before that Thursday
-  const week1Monday = new Date(jan4Thursday);
-  week1Monday.setDate(jan4Thursday.getDate() - 3);
+  // Monday of the week containing Jan 4
+  // ISO week starts Monday; Sunday (0) is treated as day 7
+  const jan4MondayOffset = jan4Dow === 0 ? -6 : 1 - jan4Dow;
+  const week1Monday = new Date(jan4);
+  week1Monday.setDate(jan4.getDate() + jan4MondayOffset);
   week1Monday.setHours(0, 0, 0, 0);
 
   // Target Monday = week1Monday + (weekNum - 1) * 7 days
