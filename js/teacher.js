@@ -2742,12 +2742,21 @@ function _mondayFromIsoWeekKey(weekKey) {
   const [yearStr, weekPart] = weekKey.split('-W');
   const year    = +yearStr;
   const weekNum = +weekPart;
-  const jan4    = new Date(year, 0, 4);
-  const dow     = jan4.getDay();
-  const diff    = dow === 0 ? -6 : 1 - dow;
-  const week1Monday = new Date(jan4);
-  week1Monday.setDate(jan4.getDate() + diff);
+
+  // Find Jan 4 of the given year (always in week 1 by ISO definition)
+  const jan4 = new Date(year, 0, 4);
+
+  // Find the Thursday of that week (ISO week starts on Monday, Thursday defines the year)
+  const jan4Day = jan4.getDay(); // 0=Sun,1=Mon,...,6=Sat
+  const jan4Thursday = new Date(jan4);
+  jan4Thursday.setDate(jan4.getDate() + (4 - (jan4Day === 0 ? 7 : jan4Day)));
+
+  // Week 1 Monday is 3 days before that Thursday
+  const week1Monday = new Date(jan4Thursday);
+  week1Monday.setDate(jan4Thursday.getDate() - 3);
   week1Monday.setHours(0, 0, 0, 0);
+
+  // Target Monday = week1Monday + (weekNum - 1) * 7 days
   const targetMonday = new Date(week1Monday);
   targetMonday.setDate(week1Monday.getDate() + (weekNum - 1) * 7);
   return targetMonday;
