@@ -2673,7 +2673,6 @@ function _renderExistingTasksList(docs) {
     const container = document.getElementById('ttAllList');
     if (!container) return;
 
-    // docData shape: { weeks: { "2025-W23": { "Maths": "Algebra", "English": "Essay writing" }, ... } }
     const weeks = (docData && docData.weeks) ? docData.weeks : {};
     const weekKeys = Object.keys(weeks).sort().reverse();
 
@@ -2696,14 +2695,7 @@ function _renderExistingTasksList(docs) {
           </div>`)
         .join('');
 
-      // Parse the ISO week key to get a label
-      const [year, weekPart] = wk.split('-W');
-      const weekNum = parseInt(weekPart, 10);
-      // Get Monday of that week
-      const jan4 = new Date(+year, 0, 4);
-      const mondayOfWeek1 = _weekMonday(jan4);
-      const targetMonday = new Date(mondayOfWeek1);
-      targetMonday.setDate(mondayOfWeek1.getDate() + (weekNum - 1) * 7);
+      const targetMonday = _mondayFromIsoWeekKey(wk);
       const rangeLabel = _weekRangeLabel(targetMonday);
 
       const isThisWeek = wk === thisWeek;
@@ -2746,6 +2738,21 @@ function _renderExistingTasksList(docs) {
     }).join('');
   }
 
+function _mondayFromIsoWeekKey(weekKey) {
+  const [yearStr, weekPart] = weekKey.split('-W');
+  const year    = +yearStr;
+  const weekNum = +weekPart;
+  const jan4    = new Date(year, 0, 4);
+  const dow     = jan4.getDay();
+  const diff    = dow === 0 ? -6 : 1 - dow;
+  const week1Monday = new Date(jan4);
+  week1Monday.setDate(jan4.getDate() + diff);
+  week1Monday.setHours(0, 0, 0, 0);
+  const targetMonday = new Date(week1Monday);
+  targetMonday.setDate(week1Monday.getDate() + (weekNum - 1) * 7);
+  return targetMonday;
+}
+
   // Renders the input form for the selected class + week
   async function _ttRenderEditor() {
     const wrap = document.getElementById('ttEditorWrap');
@@ -2767,7 +2774,6 @@ function _renderExistingTasksList(docs) {
     const isThisWk  = _ttSelectedWeek === thisWeek;
     const docId     = _classKeyFromStr(_ttSelectedClass);
 
-    // Load existing data for this week
     let existingTopics = {};
     try {
       const snap = await Db().collection('weeklyTimetable').doc(docId).get();
@@ -2778,13 +2784,7 @@ function _renderExistingTasksList(docs) {
       console.warn('[timetable] load error:', e);
     }
 
-    // Parse week key to label
-    const [year, weekPart] = _ttSelectedWeek.split('-W');
-    const weekNum = parseInt(weekPart, 10);
-    const jan4 = new Date(+year, 0, 4);
-    const mondayOfWeek1 = _weekMonday(jan4);
-    const targetMonday = new Date(mondayOfWeek1);
-    targetMonday.setDate(mondayOfWeek1.getDate() + (weekNum - 1) * 7);
+    const targetMonday = _mondayFromIsoWeekKey(_ttSelectedWeek);
     const weekLabel = _weekRangeLabel(targetMonday);
 
     wrap.innerHTML = `
