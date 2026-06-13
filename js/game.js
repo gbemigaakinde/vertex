@@ -2812,22 +2812,23 @@ function _buildWordPoolForStudent() {
   ══════════════════════════════════════════════════════════════ */
 
   const KR_XP_PER_CORRECT  = 12;
-  const KR_XP_SPEED_BONUS  = 5;
-  const KR_LIVES           = 3;
-  const KR_CANVAS_W        = 640;
-  const KR_CANVAS_H        = 280;
-  const KR_LANE_COUNT      = 3;
-  const KR_LANE_Y          = [110, 160, 210]; // y positions for 3 lanes (top, mid, bot)
-  const KR_PLAYER_LANE_Y   = [112, 162, 212]; // foot y for player in each lane
-  const KR_GROUND_Y        = 230;             // floor line
-  const KR_GRAVITY         = 0.7;
-  const KR_JUMP_FORCE      = -15;
-  const KR_ROLL_DURATION   = 45;              // frames
-  const KR_BASE_SPEED      = 4;
-  const KR_SPEED_INCREMENT = 0.0003;
-  const KR_COIN_ROWS       = [100, 150, 200]; // coin y per lane
-  const KR_OBSTACLE_ROWS   = [100, 150, 200]; // obstacle y per lane
-  const KR_PLAYER_X        = 90;
+const KR_XP_SPEED_BONUS  = 5;
+const KR_LIVES           = 3;
+const KR_CANVAS_W        = 360;   // portrait width
+const KR_CANVAS_H        = 560;   // portrait height
+const KR_LANE_COUNT      = 3;
+const KR_LANE_X          = [60, 180, 300];  // centre X of each vertical lane
+const KR_PLAYER_Y        = 460;             // player's fixed Y (near bottom)
+const KR_GRAVITY         = 0.65;
+const KR_JUMP_FORCE      = -14;            // upward impulse (negative Y = up)
+const KR_ROLL_DURATION   = 45;
+const KR_BASE_SPEED      = 3.5;            // pixels per frame (objects fall down)
+const KR_SPEED_INCREMENT = 0.0003;
+const KR_PLAYER_W        = 30;             // player hitbox width
+const KR_PLAYER_H        = 50;             // player hitbox height (standing)
+const KR_PLAYER_H_ROLL   = 24;             // player hitbox height (rolling)
+const KR_COIN_SPACING    = 28;             // vertical gap between coins in a row
+const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
 
   let _krState     = null;
   let _krAnimFrame = null;
@@ -2903,183 +2904,184 @@ function _buildWordPoolForStudent() {
   }
 
   function _startKnowledgeRunner() {
-    const subjectSel = document.getElementById('krSubject')?.value || 'random';
-    let subjects = subjectSel === 'random' ? _getSubjectsForStudent() : [subjectSel];
-    if (subjects.length === 0) { window.UI.toast('No subjects found.', 'error'); return; }
+  const subjectSel = document.getElementById('krSubject')?.value || 'random';
+  let subjects = subjectSel === 'random' ? _getSubjectsForStudent() : [subjectSel];
+  if (subjects.length === 0) { window.UI.toast('No subjects found.', 'error'); return; }
 
-    const pool = _buildKRPool(subjects);
-    if (pool.length < 3) { window.UI.toast('Not enough questions for this subject.', 'error'); return; }
+  const pool = _buildKRPool(subjects);
+  if (pool.length < 3) { window.UI.toast('Not enough questions for this subject.', 'error'); return; }
 
-    _closeModal();
+  _closeModal();
 
-    window.UI.mount(`
-      <div class="max-w-2xl mx-auto animate-fadeIn" style="padding-bottom:1rem;">
-        <div id="krWrapper" style="position:relative;width:100%;max-width:640px;margin:0 auto;">
+  window.UI.mount(`
+    <div class="max-w-2xl mx-auto animate-fadeIn" style="padding-bottom:1rem;">
+      <div id="krWrapper" style="position:relative;width:100%;max-width:${KR_CANVAS_W}px;margin:0 auto;">
 
-          <!-- Top HUD bar (Subway Surfers style) -->
-          <div id="krHUD" style="display:flex;align-items:center;justify-content:space-between;
-                                  padding:.5rem .75rem;margin-bottom:.375rem;
-                                  background:linear-gradient(135deg,#1e293b,#0f172a);
-                                  border-radius:10px;border:1px solid #334155;">
-            <div style="display:flex;align-items:center;gap:.5rem;">
-              <div id="krLives" style="font-size:1.1rem;letter-spacing:.05em;"></div>
-            </div>
-            <div style="text-align:center;">
-              <div style="font-size:.625rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;">Score</div>
-              <div id="krScore" style="font-size:1.5rem;font-weight:900;color:#fbbf24;font-family:var(--font-mono);line-height:1;">0</div>
-            </div>
-            <div style="display:flex;align-items:center;gap:.5rem;">
-              <div style="text-align:right;">
-                <div style="font-size:.625rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;">XP</div>
-                <div id="krXP" style="font-size:.875rem;font-weight:700;color:#38bdf8;">0</div>
-              </div>
-              <div style="text-align:right;">
-                <div style="font-size:.625rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;">Dist</div>
-                <div id="krDist" style="font-size:.875rem;font-weight:700;color:#a78bfa;"><span id="krDistVal">0</span>m</div>
-              </div>
-            </div>
+        <!-- HUD bar above canvas -->
+        <div id="krHUD" style="display:flex;align-items:center;justify-content:space-between;
+                                padding:.5rem .75rem;margin-bottom:.375rem;
+                                background:linear-gradient(135deg,#1e293b,#0f172a);
+                                border-radius:10px;border:1px solid #334155;">
+          <div>
+            <div style="font-size:.5rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;">Lives</div>
+            <div id="krLives" style="font-size:.9rem;letter-spacing:.05em;line-height:1.2;"></div>
           </div>
-
-          <!-- The canvas -->
-          <canvas id="krCanvas" width="${KR_CANVAS_W}" height="${KR_CANVAS_H}"
-            style="width:100%;border-radius:12px;border:2px solid #334155;
-                   display:block;cursor:pointer;touch-action:none;
-                   background:#0f172a;">
-          </canvas>
-
-          <!-- Question panel (Subway Surfers HUD card) -->
-          <div id="krQuestionPanel" style="margin-top:.5rem;padding:.625rem 1rem;
-               background:linear-gradient(135deg,#1e293b,#0f172a);
-               border:1px solid #334155;border-radius:10px;">
-            <div style="font-size:.5625rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;
-                        color:#94a3b8;margin-bottom:.25rem;">Current Question</div>
-            <div id="krQuestion" style="font-size:.875rem;font-weight:600;color:#f1f5f9;
-                                         line-height:1.5;min-height:2.25rem;"></div>
+          <div style="text-align:center;">
+            <div style="font-size:.5rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;">Score</div>
+            <div id="krScore" style="font-size:1.5rem;font-weight:900;color:#fbbf24;font-family:var(--font-mono);line-height:1;">0</div>
           </div>
-
-          <!-- Lane labels -->
-          <div id="krLaneLabels" style="margin-top:.375rem;display:grid;grid-template-columns:1fr 1fr 1fr;gap:.375rem;text-align:center;">
-            <div id="krLabel0" style="font-size:.6875rem;font-weight:700;padding:.375rem .5rem;
-                                       border-radius:6px;background:#1e293b;border:1.5px solid #334155;
-                                       color:#94a3b8;min-height:2.5rem;display:flex;align-items:center;
-                                       justify-content:center;line-height:1.3;transition:all .2s;"></div>
-            <div id="krLabel1" style="font-size:.6875rem;font-weight:700;padding:.375rem .5rem;
-                                       border-radius:6px;background:#1e293b;border:1.5px solid #334155;
-                                       color:#94a3b8;min-height:2.5rem;display:flex;align-items:center;
-                                       justify-content:center;line-height:1.3;transition:all .2s;"></div>
-            <div id="krLabel2" style="font-size:.6875rem;font-weight:700;padding:.375rem .5rem;
-                                       border-radius:6px;background:#1e293b;border:1.5px solid #334155;
-                                       color:#94a3b8;min-height:2.5rem;display:flex;align-items:center;
-                                       justify-content:center;line-height:1.3;transition:all .2s;"></div>
-          </div>
-
-          <div style="text-align:center;margin-top:.625rem;">
-            <button onclick="Game._krQuit()" class="btn bg-gray-500" style="font-size:.8125rem;">✕ Quit</button>
+          <div style="text-align:right;">
+            <div style="font-size:.5rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;">XP / Dist</div>
+            <div style="line-height:1.3;">
+              <span id="krXP" style="font-size:.8rem;font-weight:700;color:#38bdf8;">0</span>
+              <span style="font-size:.65rem;color:#64748b;"> xp · </span>
+              <span id="krDistVal" style="font-size:.8rem;font-weight:700;color:#a78bfa;">0</span>
+              <span style="font-size:.65rem;color:#64748b;">m</span>
+            </div>
           </div>
         </div>
-      </div>`);
 
-    _krCanvas = document.getElementById('krCanvas');
-    _krCtx    = _krCanvas.getContext('2d');
+        <!-- Portrait canvas — objects fall from top, player at bottom -->
+        <canvas id="krCanvas" width="${KR_CANVAS_W}" height="${KR_CANVAS_H}"
+          style="width:100%;border-radius:12px;border:2px solid #334155;
+                 display:block;cursor:pointer;touch-action:none;
+                 background:#0f172a;">
+        </canvas>
 
-    // ── Input: Keyboard ──
-    _krKeys = { left: false, right: false, up: false, down: false };
-    const _krKeyDown = (e) => {
-      if (e.code === 'ArrowLeft')  { e.preventDefault(); if (!_krKeys.left)  { _krKeys.left  = true; _krChangeLane(-1); } }
-      if (e.code === 'ArrowRight') { e.preventDefault(); if (!_krKeys.right) { _krKeys.right = true; _krChangeLane(1);  } }
-      if (e.code === 'ArrowUp' || e.code === 'Space') { e.preventDefault(); _krJump(); }
-      if (e.code === 'ArrowDown') { e.preventDefault(); _krRoll(); }
-    };
-    const _krKeyUp = (e) => {
-      if (e.code === 'ArrowLeft')  _krKeys.left  = false;
-      if (e.code === 'ArrowRight') _krKeys.right = false;
-    };
-    document.addEventListener('keydown', _krKeyDown);
-    document.addEventListener('keyup',   _krKeyUp);
+        <!-- Current question panel -->
+        <div id="krQuestionPanel" style="margin-top:.5rem;padding:.625rem 1rem;
+             background:linear-gradient(135deg,#1e293b,#0f172a);
+             border:1px solid #334155;border-radius:10px;">
+          <div style="font-size:.5rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;
+                      color:#94a3b8;margin-bottom:.25rem;">Current Question</div>
+          <div id="krQuestion" style="font-size:.875rem;font-weight:600;color:#f1f5f9;
+                                       line-height:1.5;min-height:2.25rem;"></div>
+        </div>
 
-    // ── Input: Touch swipe ──
-    _krCanvas.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      const t = e.touches[0];
-      _krSwipe = { startX: t.clientX, startY: t.clientY, active: true };
-    }, { passive: false });
-    _krCanvas.addEventListener('touchend', (e) => {
-      e.preventDefault();
-      if (!_krSwipe.active) return;
-      const t   = e.changedTouches[0];
-      const dx  = t.clientX - _krSwipe.startX;
-      const dy  = t.clientY - _krSwipe.startY;
-      const adx = Math.abs(dx), ady = Math.abs(dy);
-      _krSwipe.active = false;
-      if (adx < 10 && ady < 10) { _krJump(); return; } // tap = jump
-      if (adx > ady) {
-        if (dx < 0) _krChangeLane(-1);
-        else         _krChangeLane(1);
-      } else {
-        if (dy < 0) _krJump();
-        else         _krRoll();
-      }
-    }, { passive: false });
+        <!-- Lane labels: 3 columns matching the 3 canvas lanes -->
+        <div id="krLaneLabels" style="margin-top:.375rem;display:grid;grid-template-columns:1fr 1fr 1fr;gap:.375rem;text-align:center;">
+          <div id="krLabel0" style="font-size:.6875rem;font-weight:700;padding:.375rem .5rem;
+                                     border-radius:6px;background:#1e293b;border:1.5px solid #334155;
+                                     color:#94a3b8;min-height:2.5rem;display:flex;align-items:center;
+                                     justify-content:center;line-height:1.3;transition:all .2s;"></div>
+          <div id="krLabel1" style="font-size:.6875rem;font-weight:700;padding:.375rem .5rem;
+                                     border-radius:6px;background:#1e293b;border:1.5px solid #334155;
+                                     color:#94a3b8;min-height:2.5rem;display:flex;align-items:center;
+                                     justify-content:center;line-height:1.3;transition:all .2s;"></div>
+          <div id="krLabel2" style="font-size:.6875rem;font-weight:700;padding:.375rem .5rem;
+                                     border-radius:6px;background:#1e293b;border:1.5px solid #334155;
+                                     color:#94a3b8;min-height:2.5rem;display:flex;align-items:center;
+                                     justify-content:center;line-height:1.3;transition:all .2s;"></div>
+        </div>
 
-    // ── Mouse click = jump ──
-    _krCanvas.addEventListener('click', (e) => {
-      e.preventDefault();
-      if (_krState && _krState.gameOver) { _krRestart(); return; }
-      _krJump();
-    });
+        <!-- Controls hint -->
+        <div style="margin-top:.375rem;font-size:.6rem;color:#475569;text-align:center;line-height:1.8;">
+          ← → arrows / swipe left·right to change lane &nbsp;|&nbsp; ↑ / swipe up to jump &nbsp;|&nbsp; ↓ / swipe down to roll
+        </div>
 
-    // ── Build initial state ──
-    _krState = {
-      pool,
-      poolIndex:      0,
-      lives:          KR_LIVES,
-      score:          0,
-      xpEarned:       0,
-      distance:       0,
-      speed:          KR_BASE_SPEED,
-      gameOver:       false,
-      combo:          0,
-      // Player
-      player: {
-        lane:         1,           // 0=left, 1=centre, 2=right
-        targetLane:   1,
-        x:            KR_PLAYER_X,
-        y:            KR_LANE_Y[1],
-        vy:           0,
-        jumping:      false,
-        rolling:      false,
-        rollTimer:    0,
-        invincible:   0,
-        stumble:      0,
-        frame:        0,
-        frameTimer:   0,
-        laneOffset:   0,           // smooth lane slide
-      },
-      // Obstacles / coins on screen
-      objects:        [],
-      spawnTimer:     60,
-      // Current Q
-      currentQ:       null,
-      correctLane:    -1,
-      // Scenery
-      tunnelOffset:   0,
-      bgOffset:       0,
-      floorOffset:    0,
-      particles:      [],
-      // Inspector behind
-      inspector: {
-        x:  -60,
-        gap: 200,      // how far behind
-      },
-      // keys attached to loop (for cleanup)
-      _keyDown: _krKeyDown,
-      _keyUp:   _krKeyUp,
-    };
+        <div style="text-align:center;margin-top:.625rem;">
+          <button onclick="Game._krQuit()" class="btn bg-gray-500" style="font-size:.8125rem;">✕ Quit</button>
+        </div>
+      </div>
+    </div>`);
 
-    _krNextQuestion();
-    _krLastTime = performance.now();
-    _krLoop(_krLastTime);
-  }
+  _krCanvas = document.getElementById('krCanvas');
+  _krCtx    = _krCanvas.getContext('2d');
+
+  /* ── Keyboard ── */
+  _krKeys = { left: false, right: false, up: false, down: false };
+  const _krKeyDown = (e) => {
+    if (e.code === 'ArrowLeft')  { e.preventDefault(); if (!_krKeys.left)  { _krKeys.left  = true; _krChangeLane(-1); } }
+    if (e.code === 'ArrowRight') { e.preventDefault(); if (!_krKeys.right) { _krKeys.right = true; _krChangeLane(1);  } }
+    if (e.code === 'ArrowUp' || e.code === 'Space') { e.preventDefault(); _krJump(); }
+    if (e.code === 'ArrowDown') { e.preventDefault(); _krRoll(); }
+  };
+  const _krKeyUp = (e) => {
+    if (e.code === 'ArrowLeft')  _krKeys.left  = false;
+    if (e.code === 'ArrowRight') _krKeys.right = false;
+  };
+  document.addEventListener('keydown', _krKeyDown);
+  document.addEventListener('keyup',   _krKeyUp);
+
+  /* ── Touch swipe ── */
+  _krCanvas.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    const t = e.touches[0];
+    _krSwipe = { startX: t.clientX, startY: t.clientY, active: true };
+  }, { passive: false });
+  _krCanvas.addEventListener('touchend', (e) => {
+    e.preventDefault();
+    if (!_krSwipe.active) return;
+    const t   = e.changedTouches[0];
+    const dx  = t.clientX - _krSwipe.startX;
+    const dy  = t.clientY - _krSwipe.startY;
+    const adx = Math.abs(dx), ady = Math.abs(dy);
+    _krSwipe.active = false;
+    if (adx < 10 && ady < 10) { _krJump(); return; }
+    if (adx > ady) {
+      if (dx < 0) _krChangeLane(-1);
+      else         _krChangeLane(1);
+    } else {
+      if (dy < 0) _krJump();
+      else         _krRoll();
+    }
+  }, { passive: false });
+
+  /* ── Mouse click = jump ── */
+  _krCanvas.addEventListener('click', (e) => {
+    e.preventDefault();
+    if (_krState && _krState.gameOver) { _krRestart(); return; }
+    _krJump();
+  });
+
+  /* ── Initial game state ── */
+  _krState = {
+    pool,
+    poolIndex:       0,
+    lives:           KR_LIVES,
+    score:           0,
+    xpEarned:        0,
+    distance:        0,
+    speed:           KR_BASE_SPEED,
+    gameOver:        false,
+    combo:           0,
+    /* Player — x = lane centre, y = near bottom, vy = vertical velocity */
+    player: {
+      lane:          1,           // 0=left, 1=centre, 2=right
+      x:             KR_LANE_X[1],
+      y:             KR_PLAYER_Y,
+      vy:            0,
+      jumping:       false,
+      rolling:       false,
+      rollTimer:     0,
+      invincible:    0,
+      stumble:       0,
+      frame:         0,
+      frameTimer:    0,
+      /* smooth horizontal lane slide */
+      targetX:       KR_LANE_X[1],
+    },
+    objects:         [],
+    spawnTimer:      80,
+    currentQ:        null,
+    correctLane:     -1,
+    laneOptions:     null,
+    /* Scrolling scenery */
+    bgOffset:        0,
+    particles:       [],
+    /* Inspector rises from below */
+    inspector: {
+      y:    KR_INSPECTOR_START,  // starts far below the canvas
+      gap:  220,                 // vertical distance below player
+    },
+    _keyDown: _krKeyDown,
+    _keyUp:   _krKeyUp,
+  };
+
+  _krNextQuestion();
+  _krLastTime = performance.now();
+  _krLoop(_krLastTime);
+}
 
   function _krJump() {
     if (!_krState) return;
@@ -3128,1045 +3130,971 @@ function _buildWordPoolForStudent() {
   }
 
   function _krNextQuestion() {
-    const s = _krState;
-    if (s.poolIndex >= s.pool.length) {
-      s.pool      = _shuffleArray(s.pool);
-      s.poolIndex = 0;
-    }
-    s.currentQ   = s.pool[s.poolIndex++];
-    s.correctLane = Math.floor(Math.random() * KR_LANE_COUNT); // which lane holds the correct coin
-
-    // Update question display
-    const qEl = document.getElementById('krQuestion');
-    if (qEl) {
-      const subj = s.currentQ.subject ? `[${s.currentQ.subject}] ` : '';
-      qEl.textContent = subj + s.currentQ.question.substring(0, 130);
-    }
-
-    // Update lane labels — show answer options per lane
-    const wrongs   = _shuffleArray(s.currentQ.wrongs);
-    const options  = [];          // one per lane
-    let wrongIdx   = 0;
-    for (let lane = 0; lane < KR_LANE_COUNT; lane++) {
-      if (lane === s.correctLane) {
-        options.push({ text: s.currentQ.correct, isCorrect: true });
-      } else {
-        options.push({ text: (wrongs[wrongIdx] || 'Wrong'), isCorrect: false });
-        wrongIdx++;
-      }
-    }
-    s.laneOptions = options;
-
-    for (let lane = 0; lane < KR_LANE_COUNT; lane++) {
-      const el = document.getElementById('krLabel' + lane);
-      if (el) {
-        const opt = options[lane];
-        const isCorrect = opt.isCorrect;
-        el.style.background    = isCorrect ? 'rgba(251,191,36,0.15)' : 'rgba(239,68,68,0.10)';
-        el.style.borderColor   = isCorrect ? '#fbbf24'               : '#ef4444';
-        el.style.color         = isCorrect ? '#fbbf24'               : '#f87171';
-        el.style.fontWeight    = '700';
-        el.textContent         = opt.text.substring(0, 36);
-      }
-    }
-
-    s.spawnTimer = 80; // frames until next wave
+  const s = _krState;
+  if (s.poolIndex >= s.pool.length) {
+    s.pool      = _shuffleArray(s.pool);
+    s.poolIndex = 0;
   }
+  s.currentQ    = s.pool[s.poolIndex++];
+  s.correctLane = Math.floor(Math.random() * KR_LANE_COUNT);
+
+  const qEl = document.getElementById('krQuestion');
+  if (qEl) {
+    const subj = s.currentQ.subject ? `[${s.currentQ.subject}] ` : '';
+    qEl.textContent = subj + s.currentQ.question.substring(0, 130);
+  }
+
+  const wrongs  = _shuffleArray(s.currentQ.wrongs);
+  const options = [];
+  let wrongIdx  = 0;
+  for (let lane = 0; lane < KR_LANE_COUNT; lane++) {
+    if (lane === s.correctLane) {
+      options.push({ text: s.currentQ.correct, isCorrect: true });
+    } else {
+      options.push({ text: (wrongs[wrongIdx] || 'Wrong'), isCorrect: false });
+      wrongIdx++;
+    }
+  }
+  s.laneOptions = options;
+
+  for (let lane = 0; lane < KR_LANE_COUNT; lane++) {
+    const el  = document.getElementById('krLabel' + lane);
+    if (!el) continue;
+    const opt = options[lane];
+    el.style.background  = opt.isCorrect ? 'rgba(251,191,36,0.15)' : 'rgba(239,68,68,0.10)';
+    el.style.borderColor = opt.isCorrect ? '#fbbf24'               : '#ef4444';
+    el.style.color       = opt.isCorrect ? '#fbbf24'               : '#f87171';
+    el.style.fontWeight  = '700';
+    el.textContent       = opt.text.substring(0, 36);
+  }
+
+  s.spawnTimer = 90;
+}
 
   function _krSpawnWave() {
-    const s = _krState;
-    if (!s.currentQ || !s.laneOptions) return;
+  const s = _krState;
+  if (!s.currentQ || !s.laneOptions) return;
 
-    // Each lane gets either a coin row (correct) or a train obstacle (wrong)
-    for (let lane = 0; lane < KR_LANE_COUNT; lane++) {
-      const opt       = s.laneOptions[lane];
-      const laneY     = KR_LANE_Y[lane];
-      const baseX     = KR_CANVAS_W + 30 + lane * 15; // slight stagger per lane
+  for (let lane = 0; lane < KR_LANE_COUNT; lane++) {
+    const opt  = s.laneOptions[lane];
+    const cx   = KR_LANE_X[lane]; // centre X of this vertical lane
+    const baseY = -60 - lane * 20; // slight vertical stagger per lane
 
-      if (opt.isCorrect) {
-        // ── CORRECT LANE: row of 5 coins ──
-        for (let c = 0; c < 5; c++) {
-          s.objects.push({
-            type:      'coin',
-            lane,
-            x:         baseX + c * 30,
-            y:         laneY - 18,
-            w:         18,
-            h:         18,
-            hit:       false,
-            bobPhase:  Math.random() * Math.PI * 2,
-            isCorrect: true,
-          });
-        }
-      } else {
-        // ── WRONG LANE: a train / barrier obstacle ──
-        // Randomly: 'train' (tall, can jump) or 'barrier' (low, must roll)
-        const kind = Math.random() < 0.55 ? 'train' : 'barrier';
+    if (opt.isCorrect) {
+      /* 5 coins stacked vertically (they'll fall as a column) */
+      for (let c = 0; c < 5; c++) {
         s.objects.push({
-          type:      'obstacle',
-          kind,
+          type:      'coin',
           lane,
-          x:         baseX,
-          y:         laneY,
-          w:         kind === 'train' ? 64 : 48,
-          h:         kind === 'train' ? 56 : 24,
+          x:         cx,
+          y:         baseY - c * KR_COIN_SPACING,  // stacked above each other
+          w:         18,
+          h:         18,
           hit:       false,
-          isCorrect: false,
-          label:     opt.text.substring(0, 22),
+          bobPhase:  Math.random() * Math.PI * 2,
+          isCorrect: true,
         });
       }
-    }
-
-    s.spawnTimer = 160 + Math.floor(Math.random() * 60);
-  }
-
-  function _krLoop(timestamp) {
-    if (!_krState || _krState.gameOver) return;
-    _krAnimFrame = requestAnimationFrame(_krLoop);
-
-    const dt = Math.min(timestamp - _krLastTime, 50);
-    _krLastTime = timestamp;
-    const s  = _krState;
-    const p  = s.player;
-
-    // ── Speed ──
-    s.speed    = KR_BASE_SPEED + s.distance * KR_SPEED_INCREMENT;
-    s.distance += s.speed * 0.018;
-
-    // ── Tunnel / floor scroll ──
-    s.tunnelOffset = (s.tunnelOffset + s.speed) % 80;
-    s.bgOffset     = (s.bgOffset     + s.speed * 0.3) % KR_CANVAS_W;
-    s.floorOffset  = (s.floorOffset  + s.speed) % 40;
-
-    // ── Player Y (jump physics) ──
-    const baseLaneY = KR_LANE_Y[p.lane];
-    if (p.jumping) {
-      p.vy += KR_GRAVITY;
-      p.y  += p.vy;
-      if (p.y >= baseLaneY) {
-        p.y       = baseLaneY;
-        p.vy      = 0;
-        p.jumping = false;
-      }
     } else {
-      p.y = baseLaneY; // snap to lane
-    }
-
-    // ── Roll timer ──
-    if (p.rolling) {
-      p.rollTimer--;
-      if (p.rollTimer <= 0) p.rolling = false;
-    }
-
-    // ── Invincibility / stumble countdown ──
-    if (p.invincible > 0) p.invincible--;
-    if (p.stumble    > 0) p.stumble--;
-
-    // ── Running frame ──
-    p.frameTimer++;
-    if (p.frameTimer > 5) { p.frame = (p.frame + 1) % 6; p.frameTimer = 0; }
-
-    // ── Inspector closing gap when stumbling ──
-    s.inspector.gap = Math.max(60, s.inspector.gap - (p.stumble > 0 ? 0.6 : -0.15));
-
-    // ── Spawn objects ──
-    s.spawnTimer--;
-    if (s.spawnTimer <= 0) _krSpawnWave();
-
-    // ── Move objects ──
-    s.objects.forEach(o => { o.x -= s.speed; });
-    s.objects = s.objects.filter(o => !o.hit && o.x > -120);
-
-    // ── Collision ──
-    if (p.invincible === 0) {
-      s.objects.forEach(obj => {
-        if (obj.hit) return;
-        if (obj.lane !== p.lane) return;   // different lane, no collision
-
-        // Player hitbox
-        const px = p.x + 4, py = p.jumping ? p.y - 32 : (p.rolling ? p.y - 10 : p.y - 46);
-        const pw = 18,       ph = p.rolling ? 18 : 46;
-
-        // Object hitbox
-        let ox, oy, ow, oh;
-        if (obj.type === 'coin') {
-          ox = obj.x - obj.w / 2;
-          oy = obj.y - obj.h / 2;
-          ow = obj.w; oh = obj.h;
-        } else {
-          // obstacle
-          ox = obj.x;
-          oy = obj.y - obj.h;
-          ow = obj.w; oh = obj.h;
-        }
-
-        const hit = px < ox + ow && px + pw > ox && py < oy + oh && py + ph > oy;
-        if (!hit) return;
-
-        obj.hit = true;
-
-        if (obj.type === 'coin') {
-          // ── Correct coin collected ──
-          s.score++;
-          s.combo++;
-          const xp = KR_XP_PER_CORRECT + (s.combo >= 3 ? KR_XP_SPEED_BONUS : 0);
-          s.xpEarned += xp;
-          // Gold burst
-          for (let i = 0; i < 14; i++) {
-            s.particles.push({
-              x: obj.x, y: obj.y,
-              vx: (Math.random() - 0.5) * 6,
-              vy: -(Math.random() * 5 + 1),
-              life: 28, maxLife: 28, color: '#fbbf24', size: 4,
-            });
-          }
-          // Check if all correct coins collected → next question
-          const coinsLeft = s.objects.filter(o => !o.hit && o.type === 'coin');
-          if (coinsLeft.length === 0) _krNextQuestion();
-
-        } else {
-          // ── Wrong obstacle hit ──
-          // Can we escape? jump clears 'barrier', roll has no effect on train
-          if (obj.kind === 'barrier' && p.rolling) { obj.hit = true; return; }  // rolled under
-          if (obj.kind === 'train'   && p.jumping && p.y < obj.y - obj.h + 10) { obj.hit = true; return; } // jumped over
-
-          // HIT
-          s.combo = 0;
-          s.lives--;
-          p.invincible = 100;
-          p.stumble    = 50;
-          s.inspector.gap = Math.max(60, s.inspector.gap - 40);
-
-          for (let i = 0; i < 12; i++) {
-            s.particles.push({
-              x: p.x + 10, y: p.y,
-              vx: (Math.random() - 0.5) * 5,
-              vy: -(Math.random() * 4 + 1),
-              life: 26, maxLife: 26, color: '#ef4444', size: 4,
-            });
-          }
-
-          if (s.lives <= 0) {
-            s.gameOver = true;
-            _krEndGame();
-          }
-        }
+      const kind = Math.random() < 0.55 ? 'train' : 'barrier';
+      s.objects.push({
+        type:      'obstacle',
+        kind,
+        lane,
+        x:         cx,
+        y:         baseY,
+        w:         kind === 'train' ? 52 : 44,
+        h:         kind === 'train' ? 60 : 22,
+        hit:       false,
+        isCorrect: false,
+        label:     opt.text.substring(0, 22),
       });
     }
-
-    // ── Particles ──
-    s.particles.forEach(pt => { pt.x += pt.vx; pt.y += pt.vy; pt.vy += 0.18; pt.life--; });
-    s.particles = s.particles.filter(pt => pt.life > 0);
-
-    // ── HUD ──
-    const livesEl = document.getElementById('krLives');
-    const scoreEl = document.getElementById('krScore');
-    const xpEl    = document.getElementById('krXP');
-    const distEl  = document.getElementById('krDistVal');
-    if (livesEl) livesEl.textContent = '❤️'.repeat(Math.max(0,s.lives)) + '🖤'.repeat(Math.max(0, KR_LIVES - s.lives));
-    if (scoreEl) scoreEl.textContent = s.score;
-    if (xpEl)    xpEl.textContent    = s.xpEarned;
-    if (distEl)  distEl.textContent  = Math.floor(s.distance);
-
-    _krDraw(timestamp);
   }
 
-  function _krDraw(timestamp) {
-    const ctx = _krCtx;
-    const s   = _krState;
-    const p   = s.player;
-    const W   = KR_CANVAS_W;
-    const H   = KR_CANVAS_H;
+  s.spawnTimer = 170 + Math.floor(Math.random() * 60);
+}
 
-    // ══════════════════════════════════════════════
-    //  BACKGROUND — subway tunnel (Subway Surfers)
-    // ══════════════════════════════════════════════
-    // Sky/tunnel bg
-    const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
-    bgGrad.addColorStop(0, '#0f172a');
-    bgGrad.addColorStop(0.45, '#1e293b');
-    bgGrad.addColorStop(1,    '#0f172a');
-    ctx.fillStyle = bgGrad;
-    ctx.fillRect(0, 0, W, H);
+  function _krLoop(timestamp) {
+  if (!_krState || _krState.gameOver) return;
+  _krAnimFrame = requestAnimationFrame(_krLoop);
 
-    // ── Tunnel arch (vanishing point perspective) ──
-    const VP = { x: W * 0.5, y: 80 };  // vanishing point
-    ctx.save();
-    // Outer tunnel ring
-    for (let ring = 0; ring < 8; ring++) {
-      const t      = ((ring / 8) + (s.tunnelOffset / 80)) % 1;
-      const scale  = 0.15 + t * 0.85;
-      const cx     = W / 2;
-      const cy     = H * 0.38;
-      const rw     = W * 0.55 * scale;
-      const rh     = H * 0.48 * scale;
-      const alpha  = t * 0.45;
-      ctx.strokeStyle = `rgba(56,189,248,${alpha})`;
-      ctx.lineWidth   = 1.5;
-      ctx.beginPath();
-      ctx.ellipse(cx, cy, rw, rh, 0, 0, Math.PI * 2);
-      ctx.stroke();
+  const dt = Math.min(timestamp - _krLastTime, 50);
+  _krLastTime = timestamp;
+  const s  = _krState;
+  const p  = s.player;
 
-      // Tunnel side bars
-      ctx.strokeStyle = `rgba(99,102,241,${alpha * 0.6})`;
-      ctx.lineWidth   = 1;
-      // Left bar
-      ctx.beginPath();
-      ctx.moveTo(cx - rw, cy);
-      ctx.lineTo(cx - rw, cy + rh * 0.15);
-      ctx.stroke();
-      // Right bar
-      ctx.beginPath();
-      ctx.moveTo(cx + rw, cy);
-      ctx.lineTo(cx + rw, cy + rh * 0.15);
-      ctx.stroke();
+  /* ── Speed & distance ── */
+  s.speed    = KR_BASE_SPEED + s.distance * KR_SPEED_INCREMENT;
+  s.distance += s.speed * 0.022;
+
+  /* ── Background scroll (downward) ── */
+  s.bgOffset = (s.bgOffset + s.speed) % 80;
+
+  /* ── Smooth horizontal lane slide ── */
+  const targetX = KR_LANE_X[p.lane];
+  p.x += (targetX - p.x) * 0.18;
+
+  /* ── Vertical jump physics ──
+       Jump moves player UP (y decreases). Gravity pulls y back to KR_PLAYER_Y. */
+  if (p.jumping) {
+    p.vy += KR_GRAVITY;
+    p.y  += p.vy;
+    if (p.y >= KR_PLAYER_Y) {
+      p.y       = KR_PLAYER_Y;
+      p.vy      = 0;
+      p.jumping = false;
     }
-    ctx.restore();
+  } else {
+    p.y = KR_PLAYER_Y;
+  }
 
-    // ── Overhead lights ──
-    const lightSpacing = 120;
-    const lightCount   = Math.ceil(W / lightSpacing) + 2;
-    const lightOff     = s.tunnelOffset % lightSpacing;
-    for (let i = 0; i < lightCount; i++) {
-      const lx   = i * lightSpacing - lightOff;
-      const glow = ctx.createRadialGradient(lx, 12, 0, lx, 12, 28);
-      glow.addColorStop(0, 'rgba(251,191,36,0.55)');
-      glow.addColorStop(1, 'rgba(251,191,36,0)');
-      ctx.fillStyle = glow;
-      ctx.fillRect(lx - 28, 0, 56, 40);
-      ctx.fillStyle = '#fef9c3';
-      ctx.beginPath();
-      ctx.ellipse(lx, 8, 5, 3, 0, 0, Math.PI * 2);
-      ctx.fill();
-      // Light beam down
-      const beam = ctx.createLinearGradient(lx, 8, lx, H * 0.55);
-      beam.addColorStop(0, 'rgba(251,191,36,0.15)');
-      beam.addColorStop(1, 'rgba(251,191,36,0)');
-      ctx.fillStyle = beam;
-      ctx.beginPath();
-      ctx.moveTo(lx - 5, 8);
-      ctx.lineTo(lx - 18, H * 0.55);
-      ctx.lineTo(lx + 18, H * 0.55);
-      ctx.lineTo(lx + 5, 8);
-      ctx.closePath();
-      ctx.fill();
-    }
+  /* ── Roll timer ── */
+  if (p.rolling) {
+    p.rollTimer--;
+    if (p.rollTimer <= 0) p.rolling = false;
+  }
 
-    // ══════════════════════════════════════════════
-    //  3 LANE TRACKS (Subway Surfers style rails)
-    // ══════════════════════════════════════════════
-    const laneColors = ['#6366f1', '#22c55e', '#f59e0b'];  // left, mid, right
-    const activeLane = p.lane;
+  /* ── Invincibility / stumble countdown ── */
+  if (p.invincible > 0) p.invincible--;
+  if (p.stumble    > 0) p.stumble--;
 
-    for (let lane = 0; lane < KR_LANE_COUNT; lane++) {
-      const ly       = KR_LANE_Y[lane];
-      const isActive = lane === activeLane;
+  /* ── Running frame animation ── */
+  p.frameTimer++;
+  if (p.frameTimer > 5) { p.frame = (p.frame + 1) % 6; p.frameTimer = 0; }
 
-      // Track bed
-      const trackGrad = ctx.createLinearGradient(0, ly - 2, 0, ly + 26);
-      trackGrad.addColorStop(0, isActive ? laneColors[lane] + '55' : '#1e293b');
-      trackGrad.addColorStop(1, '#0f172a');
-      ctx.fillStyle = trackGrad;
-      ctx.fillRect(0, ly + 10, W, 20);
+  /* ── Inspector: rises from below (y decreases) when gap closes ──
+       Normal: gap grows slightly (player pulling away).
+       Stumble: gap shrinks fast (inspector catches up). */
+  if (p.stumble > 0) {
+    s.inspector.gap = Math.max(60, s.inspector.gap - 1.2);
+  } else {
+    s.inspector.gap = Math.min(260, s.inspector.gap + 0.12);
+  }
+  s.inspector.y = KR_PLAYER_Y + s.inspector.gap;
 
-      // ── Rail lines ──
-      const railAlpha = isActive ? 0.9 : 0.35;
-      ctx.strokeStyle = `rgba(148,163,184,${railAlpha})`;
-      ctx.lineWidth   = 2.5;
-      // Left rail
-      ctx.beginPath();
-      ctx.moveTo(0, ly + 14);
-      ctx.lineTo(W, ly + 14);
-      ctx.stroke();
-      // Right rail
-      ctx.beginPath();
-      ctx.moveTo(0, ly + 22);
-      ctx.lineTo(W, ly + 22);
-      ctx.stroke();
+  /* ── Move objects downward ── */
+  s.objects.forEach(o => { o.y += s.speed; });
+  /* Remove objects that have fallen off the bottom */
+  s.objects = s.objects.filter(o => !o.hit && o.y < KR_CANVAS_H + 100);
 
-      // ── Rail ties (sleepers) ──
-      const tieSpacing = 28;
-      const tieCount   = Math.ceil(W / tieSpacing) + 2;
-      const tieOff     = s.floorOffset % tieSpacing;
-      ctx.fillStyle = `rgba(71,85,105,${isActive ? 0.8 : 0.4})`;
-      for (let t = 0; t < tieCount; t++) {
-        const tx = t * tieSpacing - tieOff;
-        ctx.fillRect(tx - 3, ly + 11, 6, 13);
-      }
+  /* ── Spawn timer ── */
+  s.spawnTimer--;
+  if (s.spawnTimer <= 0) _krSpawnWave();
 
-      // Active lane highlight glow
-      if (isActive) {
-        const glow2 = ctx.createLinearGradient(0, ly + 10, 0, ly + 30);
-        glow2.addColorStop(0, laneColors[lane] + '44');
-        glow2.addColorStop(1, 'transparent');
-        ctx.fillStyle = glow2;
-        ctx.fillRect(0, ly + 10, W, 20);
-      }
+  /* ── Collision detection ──
+       Player hitbox: centred on p.x, top = p.y - height, bottom = p.y */
+  if (p.invincible === 0) {
+    const ph = p.rolling ? KR_PLAYER_H_ROLL : KR_PLAYER_H;
+    const pLeft   = p.x - KR_PLAYER_W / 2;
+    const pRight  = p.x + KR_PLAYER_W / 2;
+    const pTop    = p.y - (p.jumping ? KR_PLAYER_H : ph);
+    const pBottom = p.y;
 
-      // ── Lane dividers (between lanes) ──
-      if (lane < KR_LANE_COUNT - 1) {
-        const divY = ly + 36;
-        ctx.strokeStyle = 'rgba(71,85,105,0.4)';
-        ctx.lineWidth   = 1;
-        ctx.setLineDash([12, 10]);
-        ctx.beginPath();
-        ctx.moveTo(0, divY);
-        ctx.lineTo(W, divY);
-        ctx.stroke();
-        ctx.setLineDash([]);
-      }
-    }
-
-    // ══════════════════════════════════════════════
-    //  OBJECTS — coins & obstacles
-    // ══════════════════════════════════════════════
     s.objects.forEach(obj => {
       if (obj.hit) return;
-      const laneY = KR_LANE_Y[obj.lane];
+      if (obj.lane !== p.lane) return; // different column — safe
+
+      let oLeft, oRight, oTop, oBottom;
 
       if (obj.type === 'coin') {
-        // ── Gold coin (correct answer) ──
-        const bob = Math.sin(timestamp / 350 + obj.bobPhase) * 3;
-        const cx  = obj.x;
-        const cy  = laneY - 18 + bob;
+        oLeft   = obj.x - obj.w / 2;
+        oRight  = obj.x + obj.w / 2;
+        oTop    = obj.y - obj.h / 2;
+        oBottom = obj.y + obj.h / 2;
+      } else {
+        /* Obstacles: centred on obj.x, height extends UPWARD from obj.y */
+        oLeft   = obj.x - obj.w / 2;
+        oRight  = obj.x + obj.w / 2;
+        oTop    = obj.y - obj.h;
+        oBottom = obj.y;
+      }
 
-        // Outer glow
-        const coinGlow = ctx.createRadialGradient(cx, cy, 0, cx, cy, 18);
-        coinGlow.addColorStop(0, 'rgba(251,191,36,0.55)');
-        coinGlow.addColorStop(1, 'rgba(251,191,36,0)');
-        ctx.fillStyle = coinGlow;
-        ctx.beginPath();
-        ctx.arc(cx, cy, 18, 0, Math.PI * 2);
-        ctx.fill();
+      const hit = pLeft < oRight && pRight > oLeft && pTop < oBottom && pBottom > oTop;
+      if (!hit) return;
 
-        // Coin body — 3D gradient
-        const coinBody = ctx.createRadialGradient(cx - 3, cy - 3, 1, cx, cy, 9);
-        coinBody.addColorStop(0, '#fef3c7');
-        coinBody.addColorStop(0.5, '#fbbf24');
-        coinBody.addColorStop(1, '#b45309');
-        ctx.fillStyle = coinBody;
-        ctx.beginPath();
-        ctx.arc(cx, cy, 9, 0, Math.PI * 2);
-        ctx.fill();
+      obj.hit = true;
 
-        // Coin rim
-        ctx.strokeStyle = '#f59e0b';
-        ctx.lineWidth   = 1.5;
-        ctx.beginPath();
-        ctx.arc(cx, cy, 9, 0, Math.PI * 2);
-        ctx.stroke();
-
-        // $ symbol
-        ctx.fillStyle    = '#92400e';
-        ctx.font         = 'bold 9px sans-serif';
-        ctx.textAlign    = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('✓', cx, cy);
+      if (obj.type === 'coin') {
+        /* ── Correct coin collected ── */
+        s.score++;
+        s.combo++;
+        const xp = KR_XP_PER_CORRECT + (s.combo >= 3 ? KR_XP_SPEED_BONUS : 0);
+        s.xpEarned += xp;
+        /* Gold burst particles */
+        for (let i = 0; i < 14; i++) {
+          s.particles.push({
+            x: obj.x, y: obj.y,
+            vx: (Math.random() - 0.5) * 6,
+            vy: (Math.random() - 0.5) * 6,
+            life: 28, maxLife: 28, color: '#fbbf24', size: 4,
+          });
+        }
+        /* All correct coins collected → advance to next question */
+        const coinsLeft = s.objects.filter(o => !o.hit && o.type === 'coin');
+        if (coinsLeft.length === 0) _krNextQuestion();
 
       } else {
-        // ── OBSTACLE (train or barrier) ──
-        const ox = obj.x;
-        const oy = laneY;
+        /* ── Obstacle collision ──
+             Barrier (low): player can ROLL under it.
+             Train  (tall): player can JUMP over it. */
+        if (obj.kind === 'barrier' && p.rolling)                           { obj.hit = true; return; }
+        if (obj.kind === 'train'   && p.jumping && p.y < oTop + 10)       { obj.hit = true; return; }
 
-        if (obj.kind === 'train') {
-          // ── TRAIN (tall — must jump over) ──
-          const tw = obj.w, th = obj.h;
-          const ty = oy - th;
+        /* HIT */
+        s.combo = 0;
+        s.lives--;
+        p.invincible = 110;
+        p.stumble    = 55;
+        s.inspector.gap = Math.max(60, s.inspector.gap - 45);
 
-          // Train body shadow
-          ctx.fillStyle = 'rgba(0,0,0,0.4)';
-          ctx.fillRect(ox + 4, ty + 4, tw, th);
-
-          // Train body
-          const trainGrad = ctx.createLinearGradient(ox, ty, ox + tw, ty);
-          trainGrad.addColorStop(0, '#dc2626');
-          trainGrad.addColorStop(0.3, '#ef4444');
-          trainGrad.addColorStop(0.7, '#dc2626');
-          trainGrad.addColorStop(1, '#991b1b');
-          ctx.fillStyle = trainGrad;
-          _krRoundRect(ctx, ox, ty, tw, th, 6);
-          ctx.fill();
-
-          // Train windows
-          ctx.fillStyle = 'rgba(186,230,253,0.85)';
-          _krRoundRect(ctx, ox + 6, ty + 8, 18, 12, 3);
-          ctx.fill();
-          _krRoundRect(ctx, ox + 30, ty + 8, 18, 12, 3);
-          ctx.fill();
-
-          // Window reflection
-          ctx.fillStyle = 'rgba(255,255,255,0.3)';
-          ctx.fillRect(ox + 7, ty + 9, 5, 4);
-          ctx.fillRect(ox + 31, ty + 9, 5, 4);
-
-          // Train underbody / wheels
-          ctx.fillStyle = '#1e293b';
-          ctx.fillRect(ox + 4, oy - 8, tw - 8, 8);
-          ctx.fillStyle = '#374151';
-          [ox + 8, ox + tw - 18].forEach(wx => {
-            ctx.beginPath();
-            ctx.arc(wx, oy, 7, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.strokeStyle = '#6b7280';
-            ctx.lineWidth   = 1.5;
-            ctx.stroke();
+        for (let i = 0; i < 12; i++) {
+          s.particles.push({
+            x: p.x, y: p.y - 20,
+            vx: (Math.random() - 0.5) * 5,
+            vy: (Math.random() - 0.5) * 5,
+            life: 26, maxLife: 26, color: '#ef4444', size: 4,
           });
+        }
 
-          // "WRONG" label strip on train
-          ctx.fillStyle = '#7f1d1d';
-          ctx.fillRect(ox, ty + th - 14, tw, 14);
-          ctx.fillStyle = '#fca5a5';
-          ctx.font      = 'bold 7px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText('✗ WRONG', ox + tw / 2, ty + th - 7);
-
-          // Label above train
-          const shortLabel = obj.label.length > 16 ? obj.label.substring(0, 14) + '…' : obj.label;
-          ctx.fillStyle    = 'rgba(15,23,42,0.8)';
-          const lw         = Math.max(60, shortLabel.length * 5.5 + 12);
-          _krRoundRect(ctx, ox + tw/2 - lw/2, ty - 18, lw, 16, 4);
-          ctx.fill();
-          ctx.fillStyle    = '#f87171';
-          ctx.font         = 'bold 8px sans-serif';
-          ctx.textAlign    = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText(shortLabel, ox + tw / 2, ty - 10);
-
-          // Border
-          ctx.strokeStyle = '#f87171';
-          ctx.lineWidth   = 1.5;
-          _krRoundRect(ctx, ox, ty, tw, th, 6);
-          ctx.stroke();
-
-        } else {
-          // ── BARRIER (low — must roll under) ──
-          const bw = obj.w, bh = obj.h;
-          const by = oy - bh;
-
-          // Shadow
-          ctx.fillStyle = 'rgba(0,0,0,0.3)';
-          ctx.fillRect(ox + 3, by + 3, bw, bh);
-
-          // Yellow/black striped barrier (like subway gates)
-          const barGrad = ctx.createLinearGradient(ox, by, ox + bw, by + bh);
-          barGrad.addColorStop(0, '#f59e0b');
-          barGrad.addColorStop(0.5, '#fbbf24');
-          barGrad.addColorStop(1, '#f59e0b');
-          ctx.fillStyle = barGrad;
-          _krRoundRect(ctx, ox, by, bw, bh, 4);
-          ctx.fill();
-
-          // Black warning stripes
-          ctx.save();
-          ctx.beginPath();
-          _krRoundRect(ctx, ox, by, bw, bh, 4);
-          ctx.clip();
-          ctx.fillStyle = 'rgba(0,0,0,0.25)';
-          for (let stripe = 0; stripe < 7; stripe++) {
-            ctx.fillRect(ox - 4 + stripe * 8, by, 4, bh);
-          }
-          ctx.restore();
-
-          // Border
-          ctx.strokeStyle = '#d97706';
-          ctx.lineWidth   = 1.5;
-          _krRoundRect(ctx, ox, by, bw, bh, 4);
-          ctx.stroke();
-
-          // "ROLL" hint text
-          ctx.fillStyle    = '#78350f';
-          ctx.font         = 'bold 7px sans-serif';
-          ctx.textAlign    = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText('⬇ ROLL', ox + bw / 2, by + bh / 2);
-
-          // Label above
-          const shortLabel2 = obj.label.length > 16 ? obj.label.substring(0, 14) + '…' : obj.label;
-          ctx.fillStyle     = 'rgba(15,23,42,0.8)';
-          const lw2         = Math.max(55, shortLabel2.length * 5 + 12);
-          _krRoundRect(ctx, ox + bw/2 - lw2/2, by - 18, lw2, 16, 4);
-          ctx.fill();
-          ctx.fillStyle     = '#fbbf24';
-          ctx.font          = 'bold 8px sans-serif';
-          ctx.textAlign     = 'center';
-          ctx.textBaseline  = 'middle';
-          ctx.fillText(shortLabel2, ox + bw / 2, by - 10);
-          ctx.strokeStyle   = '#f59e0b';
-          ctx.lineWidth     = 1;
-          _krRoundRect(ctx, ox + bw/2 - lw2/2, by - 18, lw2, 16, 4);
-          ctx.stroke();
+        if (s.lives <= 0) {
+          s.gameOver = true;
+          _krEndGame();
         }
       }
     });
+  }
+
+  /* ── Particles ── */
+  s.particles.forEach(pt => {
+    pt.x  += pt.vx;
+    pt.y  += pt.vy;
+    pt.vy += 0.15;
+    pt.life--;
+  });
+  s.particles = s.particles.filter(pt => pt.life > 0);
+
+  /* ── HUD update ── */
+  const livesEl = document.getElementById('krLives');
+  const scoreEl = document.getElementById('krScore');
+  const xpEl    = document.getElementById('krXP');
+  const distEl  = document.getElementById('krDistVal');
+  if (livesEl) livesEl.textContent = '❤️'.repeat(Math.max(0, s.lives)) + '🖤'.repeat(Math.max(0, KR_LIVES - s.lives));
+  if (scoreEl) scoreEl.textContent = s.score;
+  if (xpEl)    xpEl.textContent    = s.xpEarned;
+  if (distEl)  distEl.textContent  = Math.floor(s.distance);
+
+  _krDraw(timestamp);
+}
+
+  function _krDraw(timestamp) {
+  const ctx = _krCtx;
+  const s   = _krState;
+  const p   = s.player;
+  const W   = KR_CANVAS_W;
+  const H   = KR_CANVAS_H;
+
+  /* ── Background (deep tunnel, vertical perspective) ── */
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+  bgGrad.addColorStop(0,    '#060d1a');
+  bgGrad.addColorStop(0.55, '#0f172a');
+  bgGrad.addColorStop(1,    '#1e293b');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, W, H);
+
+  /* ── Tunnel vanishing-point rings ── (top = vanishing point) */
+  const VP = { x: W / 2, y: 40 };
+  for (let ring = 0; ring < 9; ring++) {
+    const t     = ((ring / 9) + (s.bgOffset / 80)) % 1;
+    const scale = 0.08 + t * 0.92;
+    const rw    = W * 0.5 * scale;
+    const rh    = H * 0.48 * scale;
+    const cy    = VP.y + (H - VP.y) * scale;
+    const alpha = t * 0.4;
+    ctx.strokeStyle = `rgba(56,189,248,${alpha})`;
+    ctx.lineWidth   = 1.5;
+    ctx.beginPath();
+    ctx.ellipse(VP.x, cy, rw, rh * 0.35, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  /* ── Overhead lights scrolling downward ── */
+  const lightSpacing = 110;
+  const lightCount   = Math.ceil(H / lightSpacing) + 2;
+  const lightOff     = s.bgOffset % lightSpacing;
+  for (let i = 0; i < lightCount; i++) {
+    const ly   = i * lightSpacing - lightOff;
+    const glow = ctx.createRadialGradient(W / 2, ly, 0, W / 2, ly, 30);
+    glow.addColorStop(0, 'rgba(251,191,36,0.45)');
+    glow.addColorStop(1, 'rgba(251,191,36,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(W / 2 - 30, ly - 10, 60, 40);
+    ctx.fillStyle = '#fef9c3';
+    ctx.beginPath();
+    ctx.ellipse(W / 2, ly, 4, 2.5, 0, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  /* ── 3 vertical lane tracks ──
+       Each lane is a vertical strip with two rails running top-to-bottom. */
+  const laneColors  = ['#6366f1', '#22c55e', '#f59e0b'];
+  const laneNames   = ['LEFT', 'CENTRE', 'RIGHT'];
+  const laneWidth   = W / KR_LANE_COUNT;  // 120 px per lane
+
+  for (let lane = 0; lane < KR_LANE_COUNT; lane++) {
+    const cx       = KR_LANE_X[lane];
+    const isActive = lane === p.lane;
+    const lx       = lane * laneWidth;
+
+    /* Lane background glow for active lane */
+    if (isActive) {
+      const laneGlow = ctx.createLinearGradient(lx, 0, lx + laneWidth, 0);
+      laneGlow.addColorStop(0,   'rgba(0,0,0,0)');
+      laneGlow.addColorStop(0.5, laneColors[lane] + '18');
+      laneGlow.addColorStop(1,   'rgba(0,0,0,0)');
+      ctx.fillStyle = laneGlow;
+      ctx.fillRect(lx, 0, laneWidth, H);
+    }
+
+    /* Vertical divider lines between lanes */
+    if (lane > 0) {
+      ctx.strokeStyle = 'rgba(51,65,85,0.7)';
+      ctx.lineWidth   = 1;
+      ctx.setLineDash([10, 8]);
+      ctx.beginPath();
+      ctx.moveTo(lx, 0);
+      ctx.lineTo(lx, H);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+
+    /* Left and right rail lines for this lane */
+    const railAlpha = isActive ? 0.85 : 0.3;
+    const railL     = cx - 18;
+    const railR     = cx + 18;
+
+    ctx.strokeStyle = `rgba(148,163,184,${railAlpha})`;
+    ctx.lineWidth   = 2;
+    ctx.beginPath();
+    ctx.moveTo(railL, 0);
+    ctx.lineTo(railL, H);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(railR, 0);
+    ctx.lineTo(railR, H);
+    ctx.stroke();
+
+    /* Rail cross-ties (horizontal, scrolling downward) */
+    const tieSpacing = 30;
+    const tieCount   = Math.ceil(H / tieSpacing) + 2;
+    const tieOff     = s.bgOffset % tieSpacing;
+    ctx.fillStyle    = `rgba(51,65,85,${isActive ? 0.8 : 0.4})`;
+    for (let t = 0; t < tieCount; t++) {
+      const ty = t * tieSpacing - tieOff;
+      ctx.fillRect(railL - 2, ty, railR - railL + 4, 5);
+    }
+
+    /* Lane name label near the top (subtle) */
+    ctx.fillStyle    = isActive ? laneColors[lane] + 'bb' : '#1e293b99';
+    ctx.font         = 'bold 8px sans-serif';
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(laneNames[lane], cx, 8);
+  }
+
+  ctx.textAlign    = 'left';
+  ctx.textBaseline = 'alphabetic';
+
+  /* ── Objects (coins & obstacles) ──
+       All objects fall downward. Coins appear as gold circles.
+       Trains (tall) and barriers (low) appear as obstacles. */
+  s.objects.forEach(obj => {
+    if (obj.hit) return;
+    const cx = KR_LANE_X[obj.lane];
+
+    if (obj.type === 'coin') {
+      const bob = Math.sin(timestamp / 300 + obj.bobPhase) * 2;
+      const ox  = cx;
+      const oy  = obj.y + bob;
+
+      /* Outer glow */
+      const coinGlow = ctx.createRadialGradient(ox, oy, 0, ox, oy, 16);
+      coinGlow.addColorStop(0, 'rgba(251,191,36,0.5)');
+      coinGlow.addColorStop(1, 'rgba(251,191,36,0)');
+      ctx.fillStyle = coinGlow;
+      ctx.beginPath();
+      ctx.arc(ox, oy, 16, 0, Math.PI * 2);
+      ctx.fill();
+
+      /* Coin body */
+      const coinBody = ctx.createRadialGradient(ox - 2, oy - 2, 1, ox, oy, 9);
+      coinBody.addColorStop(0, '#fef3c7');
+      coinBody.addColorStop(0.5, '#fbbf24');
+      coinBody.addColorStop(1, '#b45309');
+      ctx.fillStyle = coinBody;
+      ctx.beginPath();
+      ctx.arc(ox, oy, 9, 0, Math.PI * 2);
+      ctx.fill();
+
+      /* Rim */
+      ctx.strokeStyle = '#f59e0b';
+      ctx.lineWidth   = 1.5;
+      ctx.beginPath();
+      ctx.arc(ox, oy, 9, 0, Math.PI * 2);
+      ctx.stroke();
+
+      /* Check mark */
+      ctx.fillStyle    = '#92400e';
+      ctx.font         = 'bold 8px sans-serif';
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('✓', ox, oy);
+
+    } else {
+      /* ── Obstacles — centred on lane X, bottom at obj.y ── */
+      const ow = obj.w;
+      const oh = obj.h;
+      const ox = cx - ow / 2;
+      const oy = obj.y - oh;       // top of obstacle
+
+      if (obj.kind === 'train') {
+        /* ── TRAIN (tall — jump over it) ── */
+        /* Shadow */
+        ctx.fillStyle = 'rgba(0,0,0,0.35)';
+        ctx.fillRect(ox + 4, oy + 4, ow, oh);
+
+        /* Body gradient */
+        const trainGrad = ctx.createLinearGradient(ox, oy, ox + ow, oy);
+        trainGrad.addColorStop(0, '#991b1b');
+        trainGrad.addColorStop(0.35, '#ef4444');
+        trainGrad.addColorStop(0.65, '#dc2626');
+        trainGrad.addColorStop(1, '#7f1d1d');
+        ctx.fillStyle = trainGrad;
+        _krRoundRect(ctx, ox, oy, ow, oh, 6);
+        ctx.fill();
+
+        /* Windows */
+        ctx.fillStyle = 'rgba(186,230,253,0.85)';
+        _krRoundRect(ctx, ox + 5, oy + 8, 16, 10, 3); ctx.fill();
+        _krRoundRect(ctx, ox + ow - 21, oy + 8, 16, 10, 3); ctx.fill();
+
+        /* Window reflection */
+        ctx.fillStyle = 'rgba(255,255,255,0.3)';
+        ctx.fillRect(ox + 6, oy + 9, 4, 3);
+        ctx.fillRect(ox + ow - 20, oy + 9, 4, 3);
+
+        /* Bottom strip "WRONG" */
+        ctx.fillStyle = '#7f1d1d';
+        ctx.fillRect(ox, oy + oh - 14, ow, 14);
+        ctx.fillStyle    = '#fca5a5';
+        ctx.font         = 'bold 7px sans-serif';
+        ctx.textAlign    = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('✗ WRONG', cx, oy + oh - 7);
+
+        /* ↑ JUMP label above */
+        ctx.fillStyle = '#ef4444';
+        ctx.font      = 'bold 7px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'bottom';
+        ctx.fillText('↑ JUMP', cx, oy - 4);
+
+        /* Answer label */
+        const lbl = obj.label.length > 14 ? obj.label.substring(0, 12) + '…' : obj.label;
+        ctx.fillStyle = 'rgba(15,23,42,0.8)';
+        const lw = Math.max(50, lbl.length * 5 + 10);
+        _krRoundRect(ctx, cx - lw / 2, oy - 28, lw, 15, 3); ctx.fill();
+        ctx.fillStyle    = '#f87171';
+        ctx.font         = 'bold 8px sans-serif';
+        ctx.textAlign    = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(lbl, cx, oy - 20);
+
+        /* Border */
+        ctx.strokeStyle = '#f87171';
+        ctx.lineWidth   = 1.5;
+        _krRoundRect(ctx, ox, oy, ow, oh, 6);
+        ctx.stroke();
+
+      } else {
+        /* ── BARRIER (low — roll/slide under it) ── */
+        /* Shadow */
+        ctx.fillStyle = 'rgba(0,0,0,0.3)';
+        ctx.fillRect(ox + 3, oy + 3, ow, oh);
+
+        /* Yellow/black striped barrier */
+        const barGrad = ctx.createLinearGradient(ox, oy, ox, oy + oh);
+        barGrad.addColorStop(0, '#fbbf24');
+        barGrad.addColorStop(0.5, '#f59e0b');
+        barGrad.addColorStop(1, '#fbbf24');
+        ctx.fillStyle = barGrad;
+        _krRoundRect(ctx, ox, oy, ow, oh, 4); ctx.fill();
+
+        /* Black warning stripes */
+        ctx.save();
+        ctx.beginPath();
+        _krRoundRect(ctx, ox, oy, ow, oh, 4);
+        ctx.clip();
+        ctx.fillStyle = 'rgba(0,0,0,0.22)';
+        for (let stripe = 0; stripe < 8; stripe++) {
+          ctx.fillRect(ox - 4 + stripe * 7, oy, 3.5, oh);
+        }
+        ctx.restore();
+
+        /* Border */
+        ctx.strokeStyle = '#d97706';
+        ctx.lineWidth   = 1.5;
+        _krRoundRect(ctx, ox, oy, ow, oh, 4);
+        ctx.stroke();
+
+        /* ↓ ROLL hint */
+        ctx.fillStyle    = '#78350f';
+        ctx.font         = 'bold 7px sans-serif';
+        ctx.textAlign    = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('↓ ROLL', cx, oy + oh / 2);
+
+        /* Answer label above */
+        const lbl2 = obj.label.length > 14 ? obj.label.substring(0, 12) + '…' : obj.label;
+        ctx.fillStyle = 'rgba(15,23,42,0.8)';
+        const lw2 = Math.max(48, lbl2.length * 5 + 10);
+        _krRoundRect(ctx, cx - lw2 / 2, oy - 22, lw2, 15, 3); ctx.fill();
+        ctx.fillStyle    = '#fbbf24';
+        ctx.font         = 'bold 8px sans-serif';
+        ctx.textAlign    = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(lbl2, cx, oy - 14);
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth   = 1;
+        _krRoundRect(ctx, cx - lw2 / 2, oy - 22, lw2, 15, 3);
+        ctx.stroke();
+      }
+    }
+  });
+
+  ctx.textAlign    = 'left';
+  ctx.textBaseline = 'alphabetic';
+
+  /* ── Particles ── */
+  s.particles.forEach(pt => {
+    const alpha = pt.life / pt.maxLife;
+    ctx.globalAlpha = alpha;
+    ctx.beginPath();
+    ctx.arc(pt.x, pt.y, pt.size * alpha, 0, Math.PI * 2);
+    ctx.fillStyle = pt.color;
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+
+  /* ── Inspector (rises from bottom of canvas) ── */
+  _krDrawInspector(ctx, s, timestamp);
+
+  /* ── Player (at bottom of canvas) ── */
+  _krDrawPlayer(ctx, p, timestamp);
+
+  /* ── Speed indicator (left edge bar, fills upward as speed increases) ── */
+  const speedPct = Math.min((s.speed - KR_BASE_SPEED) / 5, 1);
+  const barH     = H * speedPct;
+  ctx.fillStyle  = '#38bdf844';
+  ctx.fillRect(0, H - barH, 3, barH);
+  ctx.fillStyle  = '#38bdf8';
+  ctx.fillRect(0, H - barH, 3, 3);
+
+  /* ── Combo display (top-right) ── */
+  if (s.combo >= 3) {
+    ctx.save();
+    const comboAlpha = Math.min(1, s.combo / 10);
+    ctx.fillStyle    = `rgba(251,191,36,${comboAlpha})`;
+    ctx.font         = `bold ${Math.min(18, 10 + s.combo)}px sans-serif`;
+    ctx.textAlign    = 'right';
+    ctx.textBaseline = 'top';
+    ctx.fillText(`🔥 x${s.combo}`, W - 8, 6);
+    ctx.restore();
+  }
+
+  /* ── Stumble flash overlay ── */
+  if (p.stumble > 0 && p.stumble % 6 < 3) {
+    ctx.fillStyle = 'rgba(239,68,68,0.1)';
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  /* ── Inspector-close warning (top strip) ── */
+  if (s.inspector.gap < 150) {
+    const warnAlpha = Math.sin(timestamp / 100) * 0.5 + 0.5;
+    ctx.save();
+    ctx.globalAlpha  = warnAlpha * 0.85;
+    ctx.fillStyle    = '#ef4444';
+    ctx.font         = 'bold 9px sans-serif';
+    ctx.textAlign    = 'left';
+    ctx.textBaseline = 'top';
+    ctx.fillText('⚠ INSPECTOR CLOSE!', 8, 6);
+    ctx.restore();
+  }
+
+  /* ── Game over overlay ── */
+  if (s.gameOver) {
+    ctx.fillStyle = 'rgba(0,0,0,0.8)';
+    ctx.fillRect(0, 0, W, H);
+
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle    = '#ef4444';
+    ctx.font         = 'bold 28px sans-serif';
+    ctx.fillText('GAME OVER', W / 2, H / 2 - 28);
+
+    ctx.fillStyle = '#fbbf24';
+    ctx.font      = 'bold 18px sans-serif';
+    ctx.fillText(`Score: ${s.score}`, W / 2, H / 2 + 4);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font      = '12px sans-serif';
+    ctx.fillText('Tap or ↑ to play again', W / 2, H / 2 + 28);
 
     ctx.textAlign    = 'left';
     ctx.textBaseline = 'alphabetic';
-
-    // ══════════════════════════════════════════════
-    //  PARTICLES
-    // ══════════════════════════════════════════════
-    s.particles.forEach(pt => {
-      const alpha = pt.life / pt.maxLife;
-      ctx.globalAlpha = alpha;
-      ctx.beginPath();
-      ctx.arc(pt.x, pt.y, pt.size * alpha, 0, Math.PI * 2);
-      ctx.fillStyle = pt.color;
-      ctx.fill();
-    });
-    ctx.globalAlpha = 1;
-
-    // ══════════════════════════════════════════════
-    //  PLAYER (Subway Surfers style character)
-    // ══════════════════════════════════════════════
-    _krDrawPlayer(ctx, p, timestamp);
-
-    // ══════════════════════════════════════════════
-    //  INSPECTOR (chasing from behind — Subway Surfers!)
-    // ══════════════════════════════════════════════
-    _krDrawInspector(ctx, s, timestamp);
-
-    // ══════════════════════════════════════════════
-    //  SPEED INDICATOR (top bar — Subway Surfers style)
-    // ══════════════════════════════════════════════
-    const speedPct = Math.min((s.speed - KR_BASE_SPEED) / 5, 1);
-    // Speed bar at very top
-    const speedBarGrad = ctx.createLinearGradient(0, 0, W, 0);
-    speedBarGrad.addColorStop(0, '#38bdf8');
-    speedBarGrad.addColorStop(0.5, '#a78bfa');
-    speedBarGrad.addColorStop(1, '#f43f5e');
-    ctx.fillStyle = speedBarGrad;
-    ctx.fillRect(0, 0, W * speedPct, 4);
-
-    // Combo display
-    if (s.combo >= 3) {
-      ctx.save();
-      const comboAlpha = Math.min(1, s.combo / 10);
-      ctx.fillStyle = `rgba(251,191,36,${comboAlpha})`;
-      ctx.font      = `bold ${Math.min(22, 12 + s.combo)}px sans-serif`;
-      ctx.textAlign = 'right';
-      ctx.textBaseline = 'top';
-      ctx.fillText(`🔥 x${s.combo} COMBO`, W - 8, 10);
-      ctx.restore();
-    }
-
-    // Stumble flash overlay
-    if (p.stumble > 0 && p.stumble % 6 < 3) {
-      ctx.fillStyle = 'rgba(239,68,68,0.12)';
-      ctx.fillRect(0, 0, W, H);
-    }
-
-    // ══════════════════════════════════════════════
-    //  GAME OVER OVERLAY
-    // ══════════════════════════════════════════════
-    if (s.gameOver) {
-      ctx.fillStyle = 'rgba(0,0,0,0.78)';
-      ctx.fillRect(0, 0, W, H);
-
-      // Title
-      ctx.textAlign    = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillStyle    = '#ef4444';
-      ctx.font         = 'bold 32px sans-serif';
-      ctx.fillText('GAME OVER', W / 2, H / 2 - 28);
-
-      // Score
-      ctx.fillStyle = '#fbbf24';
-      ctx.font      = 'bold 20px sans-serif';
-      ctx.fillText(`Score: ${s.score}`, W / 2, H / 2 + 4);
-
-      // Hint
-      ctx.fillStyle = '#94a3b8';
-      ctx.font      = '13px sans-serif';
-      ctx.fillText('Tap or press Space to play again', W / 2, H / 2 + 30);
-
-      ctx.textAlign    = 'left';
-      ctx.textBaseline = 'alphabetic';
-    }
   }
+}
 
   function _krDrawPlayer(ctx, p, timestamp) {
-    const x          = p.x;
-    const y          = p.y;
-    const stumbling  = p.stumble    > 0;
-    const rolling    = p.rolling;
-    const invincible = p.invincible > 0;
-    const alpha      = invincible ? (Math.sin(timestamp / 70) > 0 ? 0.35 : 1) : 1;
+  const x          = p.x;
+  const y          = p.y;        // foot position
+  const stumbling  = p.stumble    > 0;
+  const rolling    = p.rolling;
+  const invincible = p.invincible > 0;
+  const alpha      = invincible ? (Math.sin(timestamp / 65) > 0 ? 0.3 : 1) : 1;
 
-    ctx.globalAlpha = alpha;
+  ctx.globalAlpha = alpha;
+  ctx.save();
+  ctx.translate(x, y);
+
+  /* ── Shadow on ground ── */
+  ctx.fillStyle = 'rgba(0,0,0,0.35)';
+  ctx.beginPath();
+  ctx.ellipse(0, 0, rolling ? 18 : 12, rolling ? 6 : 4, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  if (rolling) {
+    /* ── ROLL: player is a flat spinning disc seen from above ── */
     ctx.save();
-    ctx.translate(x + 12, y);
-
-    if (rolling) {
-      // ── ROLL MODE: squished ball ──
-      ctx.translate(0, 14);
-      ctx.scale(1.4, 0.55);
-      // Body
-      ctx.beginPath();
-      ctx.arc(0, 0, 14, 0, Math.PI * 2);
-      ctx.fillStyle = '#6366f1';
-      ctx.fill();
-      // Head
-      ctx.beginPath();
-      ctx.arc(6, -8, 8, 0, Math.PI * 2);
-      ctx.fillStyle = '#fde68a';
-      ctx.fill();
-      // Speed lines
-      ctx.restore();
-      for (let i = 0; i < 3; i++) {
-        ctx.strokeStyle = `rgba(99,102,241,${0.6 - i * 0.2})`;
-        ctx.lineWidth   = 2;
-        ctx.beginPath();
-        ctx.moveTo(x - 10 - i * 12, y + 8 + i * 3);
-        ctx.lineTo(x - 2  - i * 12, y + 8 + i * 3);
-        ctx.stroke();
-      }
-      ctx.globalAlpha = 1;
-      return;
-    }
-
-    // ── NORMAL / JUMP MODE ──
-    const legPhase  = (p.frame / 6) * Math.PI * 2;
-    const leg1      = Math.sin(legPhase)  * (stumbling ? 22 : 14);
-    const leg2      = -Math.sin(legPhase) * (stumbling ? 22 : 14);
-    const arm1      = -Math.sin(legPhase) * 10;
-    const arm2      = Math.sin(legPhase)  * 10;
-    const bodyTilt  = stumbling ? 18 : (p.jumping ? -8 : Math.sin(legPhase) * 2);
-    const bobY      = p.jumping ? 0 : Math.abs(Math.sin(legPhase)) * 2;
-
-    ctx.rotate((bodyTilt * Math.PI) / 180);
-    ctx.translate(0, bobY);
-
-    // ── Backpack ──
-    ctx.fillStyle = '#7c3aed';
-    _krRoundRect(ctx, -4, -28, 10, 16, 3);
+    ctx.rotate(timestamp / 150);    // spinning animation
+    /* Body disc */
+    ctx.fillStyle = '#4f46e5';
+    ctx.beginPath();
+    ctx.ellipse(0, -8, 16, 8, 0, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = '#a78bfa';
-    ctx.lineWidth   = 1;
-    _krRoundRect(ctx, -4, -28, 10, 16, 3);
-    ctx.stroke();
-    // Strap
-    ctx.strokeStyle = '#6d28d9';
+    ctx.strokeStyle = '#818cf8';
     ctx.lineWidth   = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(-4, -24);
-    ctx.lineTo(2, -18);
     ctx.stroke();
-
-    // ── Torso / Body ──
-    // Jacket
-    ctx.fillStyle = p.stumble > 0 ? '#dc2626' : '#4f46e5';
-    _krRoundRect(ctx, -7, -18, 18, 26, 5);
-    ctx.fill();
-    // Jacket stripe
-    ctx.fillStyle = '#818cf8';
-    ctx.fillRect(-7, -18, 4, 26);
-    // Jacket outline
-    ctx.strokeStyle = '#6366f1';
-    ctx.lineWidth   = 1;
-    _krRoundRect(ctx, -7, -18, 18, 26, 5);
-    ctx.stroke();
-
-    // ── Arms ──
-    ctx.strokeStyle = '#4f46e5';
-    ctx.lineWidth   = 5;
-    ctx.lineCap     = 'round';
-    // Left arm
-    ctx.beginPath();
-    ctx.moveTo(-6, -14);
-    ctx.quadraticCurveTo(-14 + arm1, -8, -10 + arm1, 2);
-    ctx.stroke();
-    // Right arm
-    ctx.beginPath();
-    ctx.moveTo(8, -14);
-    ctx.quadraticCurveTo(16 + arm2, -8, 12 + arm2, 2);
-    ctx.stroke();
-
-    // ── Hands ──
+    /* Face on disc */
     ctx.fillStyle = '#fde68a';
-    ctx.beginPath(); ctx.arc(-10 + arm1, 3, 3.5, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(12  + arm2, 3, 3.5, 0, Math.PI * 2); ctx.fill();
-
-    // ── Legs ──
-    ctx.strokeStyle = '#1d4ed8';
-    ctx.lineWidth   = 6;
-    // Left leg
     ctx.beginPath();
-    ctx.moveTo(-2, 8);
-    ctx.quadraticCurveTo(-6 + leg1 * 0.4, 18, -4 + leg1 * 0.6, 28);
-    ctx.stroke();
-    // Right leg
-    ctx.beginPath();
-    ctx.moveTo(6, 8);
-    ctx.quadraticCurveTo(10 + leg2 * 0.4, 18, 8 + leg2 * 0.6, 28);
-    ctx.stroke();
-
-    // ── Shoes ──
-    ctx.fillStyle = '#0f172a';
-    ctx.beginPath(); ctx.ellipse(-4 + leg1 * 0.6, 30, 7, 3.5, (leg1 * 0.02), 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(8  + leg2 * 0.6, 30, 7, 3.5, (leg2 * 0.02), 0, Math.PI * 2); ctx.fill();
-    // Shoe sole stripe
-    ctx.fillStyle = '#ef4444';
-    ctx.fillRect(-9  + leg1 * 0.6, 30, 10, 2);
-    ctx.fillRect(3   + leg2 * 0.6, 30, 10, 2);
-
-    // ── Head ──
-    // Neck
-    ctx.fillStyle = '#fde68a';
-    ctx.fillRect(-3, -24, 8, 8);
-
-    // Head shape
-    const headGrad = ctx.createRadialGradient(-2, -34, 2, 0, -30, 11);
-    headGrad.addColorStop(0, '#fef3c7');
-    headGrad.addColorStop(1, '#fde68a');
-    ctx.fillStyle = headGrad;
-    ctx.beginPath();
-    ctx.arc(0, -32, 11, 0, Math.PI * 2);
+    ctx.arc(0, -10, 5, 0, Math.PI * 2);
     ctx.fill();
-    ctx.strokeStyle = '#f59e0b';
-    ctx.lineWidth   = 1;
-    ctx.stroke();
+    ctx.restore();
 
-    // ── Hair / cap ──
-    ctx.fillStyle = p.stumble > 0 ? '#dc2626' : '#4f46e5';
-    ctx.beginPath();
-    ctx.ellipse(0, -40, 11, 6, 0, Math.PI, 0);
-    ctx.fill();
-    // Cap brim
-    ctx.fillStyle = p.stumble > 0 ? '#991b1b' : '#312e81';
-    ctx.fillRect(-11, -37, 22, 4);
-    // Cap dot
-    ctx.fillStyle = '#fbbf24';
-    ctx.beginPath();
-    ctx.arc(0, -43, 2, 0, Math.PI * 2);
-    ctx.fill();
-
-    // ── Face ──
-    ctx.fillStyle = '#92400e';
-    // Eyes
-    if (stumbling) {
-      // X eyes when stumbling
-      ctx.strokeStyle = '#92400e';
-      ctx.lineWidth   = 1.5;
-      [[-4, -34], [3, -34]].forEach(([ex, ey]) => {
-        ctx.beginPath(); ctx.moveTo(ex - 2, ey - 2); ctx.lineTo(ex + 2, ey + 2); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(ex + 2, ey - 2); ctx.lineTo(ex - 2, ey + 2); ctx.stroke();
-      });
-    } else if (p.jumping) {
-      // Wide open eyes when jumping
-      ctx.beginPath(); ctx.arc(-4, -34, 2.5, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(3,  -34, 2.5, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#fff';
-      ctx.beginPath(); ctx.arc(-3.5, -34.5, 1, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(3.5,  -34.5, 1, 0, Math.PI * 2); ctx.fill();
-    } else {
-      ctx.beginPath(); ctx.arc(-4, -34, 2, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(3,  -34, 2, 0, Math.PI * 2); ctx.fill();
-    }
-    // Mouth
-    ctx.strokeStyle = '#92400e';
-    ctx.lineWidth   = 1.2;
-    ctx.beginPath();
-    if (stumbling) {
-      ctx.arc(0, -28, 3, 0, Math.PI);   // sad
-    } else {
-      ctx.arc(0, -30, 3, Math.PI, 0);   // smile
-    }
-    ctx.stroke();
-
-    // ── Spray can (held by right hand) ──
-    if (!stumbling && !p.jumping) {
-      ctx.save();
-      ctx.translate(14 + arm2, 0);
-      ctx.rotate(0.4);
-      ctx.fillStyle = '#f43f5e';
-      _krRoundRect(ctx, -2, -6, 6, 12, 2);
-      ctx.fill();
-      ctx.fillStyle = '#94a3b8';
-      ctx.fillRect(-1, -8, 4, 3);
-      ctx.restore();
+    /* Speed streak lines */
+    for (let i = 0; i < 3; i++) {
+      ctx.strokeStyle = `rgba(99,102,241,${0.55 - i * 0.15})`;
+      ctx.lineWidth   = 2;
+      ctx.beginPath();
+      ctx.moveTo(-6 - i * 8, 4 + i * 3);
+      ctx.lineTo(6  + i * 8, 4 + i * 3);
+      ctx.stroke();
     }
 
     ctx.restore();
     ctx.globalAlpha = 1;
+    return;
   }
+
+  /* ── Standing / jumping: seen from behind (3/4 top-down view) ── */
+  const legPhase  = (p.frame / 6) * Math.PI * 2;
+  const leg1      = Math.sin(legPhase)  * (stumbling ? 8 : 5);
+  const leg2      = -Math.sin(legPhase) * (stumbling ? 8 : 5);
+  const bodyBob   = p.jumping ? 0 : Math.abs(Math.sin(legPhase)) * 1.5;
+  const bodyTilt  = stumbling ? Math.sin(timestamp / 80) * 12 : (p.jumping ? -5 : 0);
+
+  ctx.rotate((bodyTilt * Math.PI) / 180);
+  ctx.translate(0, -bodyBob);
+
+  /* ── Legs (visible at bottom, moving outward/inward as player runs) ── */
+  ctx.strokeStyle = '#1d4ed8';
+  ctx.lineWidth   = 7;
+  ctx.lineCap     = 'round';
+  /* Left leg */
+  ctx.beginPath();
+  ctx.moveTo(-6, -5);
+  ctx.lineTo(-8 + leg1, 14);
+  ctx.stroke();
+  /* Right leg */
+  ctx.beginPath();
+  ctx.moveTo(6, -5);
+  ctx.lineTo(8 + leg2, 14);
+  ctx.stroke();
+
+  /* ── Shoes ── */
+  ctx.fillStyle = '#0f172a';
+  ctx.beginPath(); ctx.ellipse(-8 + leg1, 16, 7, 4, 0.15, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(8  + leg2, 16, 7, 4, -0.15, 0, Math.PI * 2); ctx.fill();
+  /* Shoe stripe */
+  ctx.fillStyle = '#ef4444';
+  ctx.fillRect(-13 + leg1, 15, 9, 2);
+  ctx.fillRect(3   + leg2, 15, 9, 2);
+
+  /* ── Backpack (visible from behind) ── */
+  ctx.fillStyle = '#7c3aed';
+  _krRoundRect(ctx, -8, -40, 16, 22, 4);
+  ctx.fill();
+  ctx.strokeStyle = '#a78bfa';
+  ctx.lineWidth   = 1;
+  _krRoundRect(ctx, -8, -40, 16, 22, 4);
+  ctx.stroke();
+  /* Backpack pocket */
+  ctx.fillStyle = '#6d28d9';
+  _krRoundRect(ctx, -5, -33, 10, 9, 2);
+  ctx.fill();
+
+  /* ── Body / jacket (seen from behind) ── */
+  ctx.fillStyle = stumbling ? '#dc2626' : '#4f46e5';
+  _krRoundRect(ctx, -10, -18, 20, 22, 5);
+  ctx.fill();
+  ctx.strokeStyle = '#6366f1';
+  ctx.lineWidth   = 1;
+  _krRoundRect(ctx, -10, -18, 20, 22, 5);
+  ctx.stroke();
+  /* Jacket collar */
+  ctx.fillStyle = '#818cf8';
+  ctx.beginPath();
+  ctx.moveTo(-4, -18);
+  ctx.lineTo(0, -14);
+  ctx.lineTo(4, -18);
+  ctx.closePath();
+  ctx.fill();
+
+  /* ── Arms (swinging as player runs) ── */
+  const arm1 = -Math.sin(legPhase) * 8;
+  const arm2 =  Math.sin(legPhase) * 8;
+  ctx.strokeStyle = '#4f46e5';
+  ctx.lineWidth   = 5;
+  ctx.lineCap     = 'round';
+  ctx.beginPath(); ctx.moveTo(-9, -14); ctx.lineTo(-14 + arm1, -2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(9,  -14); ctx.lineTo(14  + arm2, -2); ctx.stroke();
+  /* Hands */
+  ctx.fillStyle = '#fde68a';
+  ctx.beginPath(); ctx.arc(-14 + arm1, -1, 3.5, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(14  + arm2, -1, 3.5, 0, Math.PI * 2); ctx.fill();
+
+  /* ── Head (seen from behind) ── */
+  /* Neck */
+  ctx.fillStyle = '#fde68a';
+  ctx.fillRect(-3.5, -26, 7, 9);
+  /* Head shape */
+  ctx.fillStyle = '#fde68a';
+  ctx.beginPath();
+  ctx.arc(0, -34, 12, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = '#f59e0b';
+  ctx.lineWidth   = 1;
+  ctx.stroke();
+
+  /* ── Cap / hair seen from behind ── */
+  ctx.fillStyle = stumbling ? '#dc2626' : '#4f46e5';
+  ctx.beginPath();
+  ctx.ellipse(0, -34, 13, 8, 0, 0, Math.PI);   // top of head
+  ctx.fill();
+  /* Cap brim at the back (just a strip) */
+  ctx.fillStyle = stumbling ? '#991b1b' : '#312e81';
+  ctx.fillRect(-13, -30, 26, 4);
+
+  /* ── Ear details ── */
+  ctx.fillStyle = '#fde68a';
+  ctx.beginPath(); ctx.ellipse(-12, -34, 3, 4.5, 0.3, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(12,  -34, 3, 4.5, -0.3, 0, Math.PI * 2); ctx.fill();
+
+  /* ── Jump dust cloud if airborne ── */
+  if (p.jumping) {
+    const dustAlpha = Math.max(0, 0.6 - (KR_PLAYER_Y - p.y) / 100);
+    ctx.fillStyle = `rgba(99,102,241,${dustAlpha})`;
+    ctx.beginPath(); ctx.ellipse(-8 + leg1, 16, 5, 3, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(8  + leg2, 16, 5, 3, 0, 0, Math.PI * 2); ctx.fill();
+  }
+
+  /* ── Stumble stars ── */
+  if (stumbling) {
+    for (let i = 0; i < 3; i++) {
+      const angle = timestamp / 200 + (i * Math.PI * 2) / 3;
+      const sx    = Math.cos(angle) * 18;
+      const sy    = Math.sin(angle) * 10 - 42;
+      ctx.fillStyle = '#fbbf24';
+      ctx.font      = '10px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('★', sx, sy);
+    }
+  }
+
+  ctx.textAlign    = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.restore();
+  ctx.globalAlpha = 1;
+}
   
   function _krDrawInspector(ctx, s, timestamp) {
-    const p   = s.player;
-    const gap = s.inspector.gap;
-    const ix  = p.x - gap;
-    if (ix < -80) return;
+  const p      = s.player;
+  const inspX  = p.x;          // same horizontal lane as player
+  const inspY  = s.inspector.y; // large = far below; shrinks when stumbling
 
-    const iy        = KR_LANE_Y[p.lane];
-    const bobY      = Math.abs(Math.sin(timestamp / 200)) * 3;
-    const legPhase  = (timestamp / 150) % (Math.PI * 2);
-    const leg1      = Math.sin(legPhase)  * 16;
-    const leg2      = -Math.sin(legPhase) * 16;
-    const arm1      = -Math.sin(legPhase) * 10;
-    const arm2      = Math.sin(legPhase)  * 10;
-    const angry     = gap < 120;
+  /* Only draw if inspector is within canvas bounds */
+  if (inspY - 100 > KR_CANVAS_H + 10) return;
 
-    ctx.save();
-    ctx.translate(ix + 10, iy + bobY);
+  const legPhase = (timestamp / 140) % (Math.PI * 2);
+  const leg1     = Math.sin(legPhase)  * 5;
+  const leg2     = -Math.sin(legPhase) * 5;
+  const arm1     = -Math.sin(legPhase) * 8;
+  const arm2     =  Math.sin(legPhase) * 8;
+  const angry    = s.inspector.gap < 120;
+  const bobY     = Math.abs(Math.sin(legPhase)) * 1.5;
 
-    // ── Inspector shadow ──
-    ctx.fillStyle = 'rgba(0,0,0,0.2)';
-    ctx.beginPath();
-    ctx.ellipse(2, 32, 12, 4, 0, 0, Math.PI * 2);
-    ctx.fill();
+  ctx.save();
+  ctx.translate(inspX, inspY - bobY);
 
-    // ── Inspector uniform body ──
-    ctx.fillStyle = angry ? '#1e3a8a' : '#1d4ed8';
-    _krRoundRect(ctx, -7, -18, 18, 26, 4);
-    ctx.fill();
-    ctx.strokeStyle = angry ? '#1e40af' : '#2563eb';
-    ctx.lineWidth   = 1;
-    _krRoundRect(ctx, -7, -18, 18, 26, 4);
-    ctx.stroke();
+  /* ── Inspector shadow ── */
+  ctx.fillStyle = 'rgba(0,0,0,0.25)';
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 12, 4, 0, 0, Math.PI * 2);
+  ctx.fill();
 
-    // Badge
-    ctx.fillStyle = '#fbbf24';
-    ctx.fillRect(-3, -14, 8, 5);
-    ctx.fillStyle = '#92400e';
-    ctx.font      = '4px sans-serif';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('★', 1, -11.5);
+  /* ── Legs ── */
+  ctx.strokeStyle = '#1e3a8a';
+  ctx.lineWidth   = 7;
+  ctx.lineCap     = 'round';
+  ctx.beginPath(); ctx.moveTo(-5, -5); ctx.lineTo(-7 + leg1, 14); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(5,  -5); ctx.lineTo(7  + leg2, 14); ctx.stroke();
 
-    // ── Arms ──
-    ctx.strokeStyle = angry ? '#1e3a8a' : '#1d4ed8';
-    ctx.lineWidth   = 5;
-    ctx.lineCap     = 'round';
-    ctx.beginPath(); ctx.moveTo(-6, -12); ctx.lineTo(-10 + arm1, -2); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(8,  -12); ctx.lineTo(12  + arm2, -2); ctx.stroke();
+  /* Shoes */
+  ctx.fillStyle = '#0f172a';
+  ctx.beginPath(); ctx.ellipse(-7 + leg1, 16, 7, 3.5, 0, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(7  + leg2, 16, 7, 3.5, 0, 0, Math.PI * 2); ctx.fill();
 
-    // Hands
-    ctx.fillStyle = '#fde68a';
-    ctx.beginPath(); ctx.arc(-10 + arm1, -1, 3, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(12  + arm2, -1, 3, 0, Math.PI * 2); ctx.fill();
+  /* ── Body — blue inspector uniform ── */
+  ctx.fillStyle = angry ? '#1e3a8a' : '#1d4ed8';
+  _krRoundRect(ctx, -10, -18, 20, 22, 4);
+  ctx.fill();
+  ctx.strokeStyle = '#2563eb';
+  ctx.lineWidth   = 1;
+  _krRoundRect(ctx, -10, -18, 20, 22, 4);
+  ctx.stroke();
 
-    // Baton in right hand
-    ctx.save();
-    ctx.translate(13 + arm2, -1);
-    ctx.rotate(-0.5 + Math.sin(legPhase) * 0.3);
-    ctx.fillStyle = '#78350f';
-    ctx.fillRect(-1.5, -14, 3, 14);
-    ctx.fillStyle = '#92400e';
-    ctx.beginPath();
-    ctx.arc(0, -15, 3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
+  /* Badge */
+  ctx.fillStyle = '#fbbf24';
+  ctx.fillRect(-3, -13, 6, 5);
+  ctx.fillStyle = '#92400e';
+  ctx.font      = '4px sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText('★', 0, -10.5);
 
-    // ── Legs ──
-    ctx.strokeStyle = '#1e3a8a';
-    ctx.lineWidth   = 6;
-    ctx.beginPath(); ctx.moveTo(-2, 8); ctx.lineTo(-4 + leg1 * 0.5, 28); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(6,  8); ctx.lineTo(8  + leg2 * 0.5, 28); ctx.stroke();
+  /* ── Arms ── */
+  ctx.strokeStyle = angry ? '#1e3a8a' : '#1d4ed8';
+  ctx.lineWidth   = 5;
+  ctx.lineCap     = 'round';
+  ctx.beginPath(); ctx.moveTo(-9, -12); ctx.lineTo(-13 + arm1, -2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(9,  -12); ctx.lineTo(13  + arm2, -2); ctx.stroke();
 
-    // Shoes
-    ctx.fillStyle = '#0f172a';
-    ctx.beginPath(); ctx.ellipse(-4 + leg1 * 0.5, 30, 7, 3, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(8  + leg2 * 0.5, 30, 7, 3, 0, 0, Math.PI * 2); ctx.fill();
+  /* Hands */
+  ctx.fillStyle = '#fde68a';
+  ctx.beginPath(); ctx.arc(-13 + arm1, -1, 3, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.arc(13  + arm2, -1, 3, 0, Math.PI * 2); ctx.fill();
 
-    // ── Head ──
-    ctx.fillStyle = '#fde68a';
-    ctx.beginPath(); ctx.arc(0, -28, 10, 0, Math.PI * 2); ctx.fill();
-    ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 1; ctx.stroke();
+  /* Baton in right hand */
+  ctx.save();
+  ctx.translate(13 + arm2, -1);
+  ctx.rotate(-0.4 + Math.sin(legPhase) * 0.25);
+  ctx.fillStyle = '#78350f';
+  ctx.fillRect(-1.5, -12, 3, 12);
+  ctx.fillStyle = '#92400e';
+  ctx.beginPath(); ctx.arc(0, -13, 3, 0, Math.PI * 2); ctx.fill();
+  ctx.restore();
 
-    // ── Cap ──
-    ctx.fillStyle = angry ? '#0c2461' : '#1e3a8a';
-    ctx.beginPath(); ctx.ellipse(0, -36, 11, 5, 0, Math.PI, 0); ctx.fill();
-    ctx.fillRect(-11, -33, 22, 4);
-    // Badge on cap
-    ctx.fillStyle = '#fbbf24';
-    ctx.beginPath(); ctx.arc(0, -35, 3, 0, Math.PI * 2); ctx.fill();
+  /* ── Head ── */
+  ctx.fillStyle = '#fde68a';
+  ctx.beginPath(); ctx.arc(0, -26, 11, 0, Math.PI * 2); ctx.fill();
+  ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 1; ctx.stroke();
 
-    // ── Face ──
-    ctx.fillStyle = '#92400e';
-    if (angry) {
-      // Angry eyes (downward slant inward)
-      ctx.beginPath(); ctx.arc(-4, -30, 2.5, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(3,  -30, 2.5, 0, Math.PI * 2); ctx.fill();
-      // Angry brows
-      ctx.strokeStyle = '#78350f'; ctx.lineWidth = 2;
-      ctx.beginPath(); ctx.moveTo(-7, -34); ctx.lineTo(-2, -32); ctx.stroke();
-      ctx.beginPath(); ctx.moveTo(6,  -34); ctx.lineTo(1,  -32); ctx.stroke();
-      // Gritted teeth
-      ctx.fillStyle = '#fff';
-      ctx.fillRect(-4, -25, 8, 4);
-      ctx.strokeStyle = '#92400e'; ctx.lineWidth = 0.8;
-      for (let t = 0; t < 4; t++) {
-        ctx.beginPath(); ctx.moveTo(-4 + t * 2.7, -25); ctx.lineTo(-4 + t * 2.7, -21); ctx.stroke();
-      }
-    } else {
-      ctx.beginPath(); ctx.arc(-4, -30, 2, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.arc(3,  -30, 2, 0, Math.PI * 2); ctx.fill();
-      ctx.strokeStyle = '#92400e'; ctx.lineWidth = 1.2;
-      ctx.beginPath(); ctx.arc(0, -25, 3, 0, Math.PI); ctx.stroke();
+  /* Cap */
+  ctx.fillStyle = angry ? '#0c2461' : '#1e3a8a';
+  ctx.beginPath(); ctx.ellipse(0, -34, 12, 6, 0, Math.PI, 0); ctx.fill();
+  ctx.fillRect(-13, -31, 26, 4);
+  /* Cap badge */
+  ctx.fillStyle = '#fbbf24';
+  ctx.beginPath(); ctx.arc(0, -33, 3, 0, Math.PI * 2); ctx.fill();
+
+  /* Face */
+  ctx.fillStyle = '#92400e';
+  if (angry) {
+    ctx.beginPath(); ctx.arc(-4, -28, 2.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(3,  -28, 2.5, 0, Math.PI * 2); ctx.fill();
+    /* Angry brows */
+    ctx.strokeStyle = '#78350f'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(-7, -32); ctx.lineTo(-2, -30); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(6,  -32); ctx.lineTo(1,  -30); ctx.stroke();
+    /* Gritted teeth */
+    ctx.fillStyle = '#fff'; ctx.fillRect(-4, -24, 8, 4);
+    ctx.strokeStyle = '#92400e'; ctx.lineWidth = 0.8;
+    for (let t = 0; t < 4; t++) {
+      ctx.beginPath(); ctx.moveTo(-4 + t * 2.7, -24); ctx.lineTo(-4 + t * 2.7, -20); ctx.stroke();
     }
-
-    // ── Dog on a leash ──
-    const dogX = -18 - Math.sin(legPhase * 0.7) * 5;
-    const dogY = 20;
-
-    // Leash
-    ctx.strokeStyle = '#78350f';
-    ctx.lineWidth   = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(-7 + arm1, -1);
-    ctx.quadraticCurveTo(dogX + 4, dogY - 10, dogX + 12, dogY);
-    ctx.stroke();
-
-    // Dog body
-    ctx.fillStyle = '#d97706';
-    ctx.beginPath(); ctx.ellipse(dogX + 10, dogY, 12, 7, -0.2, 0, Math.PI * 2); ctx.fill();
-
-    // Dog head
-    ctx.beginPath(); ctx.arc(dogX + 20, dogY - 4, 7, 0, Math.PI * 2); ctx.fill();
-
-    // Ears
-    ctx.beginPath(); ctx.ellipse(dogX + 16, dogY - 10, 4, 6, -0.5, 0, Math.PI * 2);
-    ctx.fillStyle = '#b45309'; ctx.fill();
-    ctx.beginPath(); ctx.ellipse(dogX + 24, dogY - 10, 4, 6, 0.5, 0, Math.PI * 2); ctx.fill();
-
-    // Eye
-    ctx.fillStyle = '#0f172a';
-    ctx.beginPath(); ctx.arc(dogX + 23, dogY - 5, 2, 0, Math.PI * 2); ctx.fill();
-
-    // Mouth / tongue
-    ctx.fillStyle = '#ef4444';
-    ctx.beginPath(); ctx.ellipse(dogX + 24, dogY, 3, 4, 0.3, 0, Math.PI); ctx.fill();
-
-    // Dog legs (running)
-    ctx.strokeStyle = '#d97706'; ctx.lineWidth = 3;
-    const dogLeg = Math.sin(legPhase * 1.5) * 8;
-    [[dogX + 4, dogY + 5], [dogX + 8, dogY + 5], [dogX + 13, dogY + 5], [dogX + 17, dogY + 5]].forEach(([lx, ly], i) => {
-      const swing = (i % 2 === 0) ? dogLeg : -dogLeg;
-      ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx + swing * 0.3, ly + 10); ctx.stroke();
-    });
-
-    // Tail
-    ctx.strokeStyle = '#d97706'; ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(dogX - 2, dogY - 2);
-    ctx.quadraticCurveTo(dogX - 14, dogY - 16, dogX - 8, dogY - 22);
-    ctx.stroke();
-
-    ctx.restore();
-
-    // ── Warning if close ──
-    if (gap < 140) {
-      const warnAlpha = Math.sin(timestamp / 120) * 0.5 + 0.5;
-      ctx.save();
-      ctx.globalAlpha = warnAlpha * 0.7;
-      ctx.fillStyle   = '#ef4444';
-      ctx.font        = 'bold 10px sans-serif';
-      ctx.textAlign   = 'left';
-      ctx.textBaseline = 'top';
-      ctx.fillText('⚠ INSPECTOR CLOSE!', 8, 8);
-      ctx.restore();
-    }
+  } else {
+    ctx.beginPath(); ctx.arc(-4, -28, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(3,  -28, 2, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#92400e'; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.arc(0, -23, 3, 0, Math.PI); ctx.stroke();
   }
+
+  /* ── Dog on leash (to the side) ── */
+  const dogOff = 28 + Math.sin(legPhase * 0.8) * 5;
+  const dogX   = dogOff;   // to the right of inspector
+  const dogY   = -2;
+
+  /* Leash */
+  ctx.strokeStyle = '#78350f'; ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.moveTo(13 + arm2, -1);
+  ctx.quadraticCurveTo(dogX - 5, dogY - 8, dogX, dogY);
+  ctx.stroke();
+
+  /* Dog body */
+  ctx.fillStyle = '#d97706';
+  ctx.beginPath(); ctx.ellipse(dogX + 8, dogY, 10, 6, -0.15, 0, Math.PI * 2); ctx.fill();
+  /* Dog head */
+  ctx.beginPath(); ctx.arc(dogX + 17, dogY - 3, 6, 0, Math.PI * 2); ctx.fill();
+  /* Ears */
+  ctx.fillStyle = '#b45309';
+  ctx.beginPath(); ctx.ellipse(dogX + 14, dogY - 9, 3.5, 5, -0.4, 0, Math.PI * 2); ctx.fill();
+  ctx.beginPath(); ctx.ellipse(dogX + 21, dogY - 9, 3.5, 5, 0.4, 0, Math.PI * 2); ctx.fill();
+  /* Eye / tongue */
+  ctx.fillStyle = '#0f172a';
+  ctx.beginPath(); ctx.arc(dogX + 20, dogY - 4, 2, 0, Math.PI * 2); ctx.fill();
+  ctx.fillStyle = '#ef4444';
+  ctx.beginPath(); ctx.ellipse(dogX + 21, dogY + 1, 2.5, 3.5, 0.3, 0, Math.PI); ctx.fill();
+  /* Dog legs */
+  ctx.strokeStyle = '#d97706'; ctx.lineWidth = 2.5;
+  const dleg = Math.sin(legPhase * 1.6) * 6;
+  [[dogX + 3, dogY + 4], [dogX + 7, dogY + 4], [dogX + 12, dogY + 4], [dogX + 16, dogY + 4]].forEach(([lx, ly], i) => {
+    const sw = (i % 2 === 0) ? dleg : -dleg;
+    ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx + sw * 0.3, ly + 9); ctx.stroke();
+  });
+  /* Tail */
+  ctx.strokeStyle = '#d97706'; ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(dogX - 2, dogY - 1);
+  ctx.quadraticCurveTo(dogX - 12, dogY - 14, dogX - 7, dogY - 18);
+  ctx.stroke();
+
+  ctx.textAlign    = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.restore();
+}
 
   function _krRoundRect(ctx, x, y, w, h, r) {
     ctx.beginPath();
