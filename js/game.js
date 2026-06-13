@@ -865,8 +865,8 @@
           </div>
           <div class="game-card game-card--runner" onclick="Game._selectGame('knowledgeRunner')">
             <div class="game-card__icon">${_icon('bolt', 32, { color: '#06b6d4' })}</div>
-            <div class="game-card__title">Knowledge Runner</div>
-            <div class="game-card__desc">Run, jump, and dodge! Collect correct answers mid-air. One wrong grab and you stumble. How far can you run?</div>
+            <div class="game-card__title">Knowledge Surfer</div>
+            <div class="game-card__desc">Subway Surfers-style! Swipe across 3 lanes. Collect correct answer coins. Dodge wrong-answer trains & barriers. Inspector chases you!</div>
             <div class="game-card__meta">
               <span class="game-card__tag">Action</span>
               <span class="game-card__tag">Endless Runner</span>
@@ -2815,18 +2815,27 @@ function _buildWordPoolForStudent() {
   const KR_XP_SPEED_BONUS  = 5;
   const KR_LIVES           = 3;
   const KR_CANVAS_W        = 640;
-  const KR_CANVAS_H        = 220;
-  const KR_GROUND_Y        = 160;
-  const KR_GRAVITY         = 0.55;
-  const KR_JUMP_FORCE      = -12;
-  const KR_BASE_SPEED      = 3.5;
-  const KR_SPEED_INCREMENT = 0.0004;
+  const KR_CANVAS_H        = 280;
+  const KR_LANE_COUNT      = 3;
+  const KR_LANE_Y          = [110, 160, 210]; // y positions for 3 lanes (top, mid, bot)
+  const KR_PLAYER_LANE_Y   = [112, 162, 212]; // foot y for player in each lane
+  const KR_GROUND_Y        = 230;             // floor line
+  const KR_GRAVITY         = 0.7;
+  const KR_JUMP_FORCE      = -15;
+  const KR_ROLL_DURATION   = 45;              // frames
+  const KR_BASE_SPEED      = 4;
+  const KR_SPEED_INCREMENT = 0.0003;
+  const KR_COIN_ROWS       = [100, 150, 200]; // coin y per lane
+  const KR_OBSTACLE_ROWS   = [100, 150, 200]; // obstacle y per lane
+  const KR_PLAYER_X        = 90;
 
-  let _krState = null;
+  let _krState     = null;
   let _krAnimFrame = null;
-  let _krCanvas = null;
-  let _krCtx = null;
-  let _krLastTime = 0;
+  let _krCanvas    = null;
+  let _krCtx       = null;
+  let _krLastTime  = 0;
+  let _krKeys      = { left: false, right: false, up: false, down: false };
+  let _krSwipe     = { startX: 0, startY: 0, active: false };
 
   // ── Build Q&A pool for runner ──
   function _buildKRPool(subjects) {
@@ -2860,21 +2869,24 @@ function _buildWordPoolForStudent() {
 
     _showModal(`
       <div style="text-align:center;margin-bottom:1.25rem;">
-        <div style="margin-bottom:.5rem;font-size:2.5rem;">🏃</div>
-        <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">Knowledge Runner</h2>
+        <div style="margin-bottom:.5rem;font-size:2.5rem;">🏄</div>
+        <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">Knowledge Surfer</h2>
         <p style="font-size:.875rem;color:var(--text-3);margin-top:.375rem;">
-          Run and jump! Collect the correct answer — dodge the wrong ones. 3 lives per run.
+          Run through 3 lanes! Swipe into the correct answer lane. Dodge wrong answers. 3 lives per run.
         </p>
       </div>
       <div style="margin-bottom:1rem;padding:.75rem 1rem;background:var(--accent-subtle);border:1px solid var(--accent-border);border-radius:8px;text-align:left;font-size:.8125rem;color:var(--text-2);">
-        <strong style="display:block;margin-bottom:.375rem;">How to play:</strong>
-        <ul style="padding-left:1rem;line-height:2;">
-          <li>A question appears at the top</li>
-          <li>🟢 Green tokens = correct answers (jump to collect!)</li>
-          <li>🔴 Red tokens = wrong answers (jump over them!)</li>
-          <li>Tap, click, or press Space to jump</li>
-          <li>3 lives — wrong collision loses a life</li>
-        </ul>
+        <strong style="display:block;margin-bottom:.375rem;">Controls:</strong>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.375rem .75rem;line-height:1.8;">
+          <span>⬅️ / ➡️ Arrow</span><span>Change lane</span>
+          <span>⬆️ Swipe Up / Space</span><span>Jump</span>
+          <span>⬇️ Swipe Down</span><span>Roll / Slide</span>
+          <span>📱 Swipe left/right</span><span>Change lane</span>
+        </div>
+        <div style="margin-top:.5rem;padding:.375rem .5rem;background:var(--bg-subtle);border-radius:6px;font-size:.75rem;color:var(--text-3);">
+          🟡 Gold coins = correct answer lane &mdash; steer into them!<br>
+          🚂 Trains / barriers = wrong answers &mdash; dodge or jump over them!
+        </div>
       </div>
       <div style="margin-bottom:1.25rem;">
         <label style="display:block;font-size:.75rem;font-weight:600;color:var(--text-2);margin-bottom:.375rem;">Subject</label>
@@ -2883,8 +2895,8 @@ function _buildWordPoolForStudent() {
           ${subjectOptions}
         </select>
       </div>
-      <button onclick="Game._startKnowledgeRunner()" class="btn btn-lg w-full" style="background:#06b6d4;color:#fff;">
-        🏃 Start Running!
+      <button onclick="Game._startKnowledgeRunner()" class="btn btn-lg w-full" style="background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;font-weight:800;font-size:1rem;">
+        🏄 Start Surfing!
       </button>
       <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full" style="margin-top:.5rem;">Cancel</button>
     `);
@@ -2900,26 +2912,67 @@ function _buildWordPoolForStudent() {
 
     _closeModal();
 
-    // Mount the runner container into #app
     window.UI.mount(`
       <div class="max-w-2xl mx-auto animate-fadeIn" style="padding-bottom:1rem;">
         <div id="krWrapper" style="position:relative;width:100%;max-width:640px;margin:0 auto;">
-          <canvas id="krCanvas" width="${KR_CANVAS_W}" height="${KR_CANVAS_H}"
-            style="width:100%;border-radius:12px;border:2px solid var(--border);
-                   background:#0f172a;display:block;cursor:pointer;touch-action:manipulation;">
-          </canvas>
-          <div id="krHUD" style="margin-top:.625rem;display:flex;align-items:center;
-                                  justify-content:space-between;padding:0 .25rem;">
-            <div id="krLives" style="font-size:1.25rem;letter-spacing:.1em;"></div>
-            <div style="font-size:.8125rem;font-weight:700;color:var(--accent);">
-              Score: <span id="krScore">0</span> &nbsp;|&nbsp; XP: <span id="krXP">0</span>
+
+          <!-- Top HUD bar (Subway Surfers style) -->
+          <div id="krHUD" style="display:flex;align-items:center;justify-content:space-between;
+                                  padding:.5rem .75rem;margin-bottom:.375rem;
+                                  background:linear-gradient(135deg,#1e293b,#0f172a);
+                                  border-radius:10px;border:1px solid #334155;">
+            <div style="display:flex;align-items:center;gap:.5rem;">
+              <div id="krLives" style="font-size:1.1rem;letter-spacing:.05em;"></div>
             </div>
-            <div style="font-size:.75rem;color:var(--text-3);">Dist: <span id="krDist">0</span>m</div>
+            <div style="text-align:center;">
+              <div style="font-size:.625rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;">Score</div>
+              <div id="krScore" style="font-size:1.5rem;font-weight:900;color:#fbbf24;font-family:var(--font-mono);line-height:1;">0</div>
+            </div>
+            <div style="display:flex;align-items:center;gap:.5rem;">
+              <div style="text-align:right;">
+                <div style="font-size:.625rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;">XP</div>
+                <div id="krXP" style="font-size:.875rem;font-weight:700;color:#38bdf8;">0</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:.625rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.08em;">Dist</div>
+                <div id="krDist" style="font-size:.875rem;font-weight:700;color:#a78bfa;"><span id="krDistVal">0</span>m</div>
+              </div>
+            </div>
           </div>
-          <div id="krQuestion" style="margin-top:.5rem;padding:.625rem 1rem;
-               background:var(--accent-subtle);border:1px solid var(--accent-border);
-               border-radius:8px;font-size:.875rem;font-weight:600;color:var(--accent-text);
-               text-align:center;min-height:2.5rem;line-height:1.5;"></div>
+
+          <!-- The canvas -->
+          <canvas id="krCanvas" width="${KR_CANVAS_W}" height="${KR_CANVAS_H}"
+            style="width:100%;border-radius:12px;border:2px solid #334155;
+                   display:block;cursor:pointer;touch-action:none;
+                   background:#0f172a;">
+          </canvas>
+
+          <!-- Question panel (Subway Surfers HUD card) -->
+          <div id="krQuestionPanel" style="margin-top:.5rem;padding:.625rem 1rem;
+               background:linear-gradient(135deg,#1e293b,#0f172a);
+               border:1px solid #334155;border-radius:10px;">
+            <div style="font-size:.5625rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;
+                        color:#94a3b8;margin-bottom:.25rem;">Current Question</div>
+            <div id="krQuestion" style="font-size:.875rem;font-weight:600;color:#f1f5f9;
+                                         line-height:1.5;min-height:2.25rem;"></div>
+          </div>
+
+          <!-- Lane labels -->
+          <div id="krLaneLabels" style="margin-top:.375rem;display:grid;grid-template-columns:1fr 1fr 1fr;gap:.375rem;text-align:center;">
+            <div id="krLabel0" style="font-size:.6875rem;font-weight:700;padding:.375rem .5rem;
+                                       border-radius:6px;background:#1e293b;border:1.5px solid #334155;
+                                       color:#94a3b8;min-height:2.5rem;display:flex;align-items:center;
+                                       justify-content:center;line-height:1.3;transition:all .2s;"></div>
+            <div id="krLabel1" style="font-size:.6875rem;font-weight:700;padding:.375rem .5rem;
+                                       border-radius:6px;background:#1e293b;border:1.5px solid #334155;
+                                       color:#94a3b8;min-height:2.5rem;display:flex;align-items:center;
+                                       justify-content:center;line-height:1.3;transition:all .2s;"></div>
+            <div id="krLabel2" style="font-size:.6875rem;font-weight:700;padding:.375rem .5rem;
+                                       border-radius:6px;background:#1e293b;border:1.5px solid #334155;
+                                       color:#94a3b8;min-height:2.5rem;display:flex;align-items:center;
+                                       justify-content:center;line-height:1.3;transition:all .2s;"></div>
+          </div>
+
           <div style="text-align:center;margin-top:.625rem;">
             <button onclick="Game._krQuit()" class="btn bg-gray-500" style="font-size:.8125rem;">✕ Quit</button>
           </div>
@@ -2929,53 +2982,98 @@ function _buildWordPoolForStudent() {
     _krCanvas = document.getElementById('krCanvas');
     _krCtx    = _krCanvas.getContext('2d');
 
-    // Touch / click / keyboard jump
-    const _jumpHandler = (e) => {
-      e.preventDefault();
-      _krJump();
+    // ── Input: Keyboard ──
+    _krKeys = { left: false, right: false, up: false, down: false };
+    const _krKeyDown = (e) => {
+      if (e.code === 'ArrowLeft')  { e.preventDefault(); if (!_krKeys.left)  { _krKeys.left  = true; _krChangeLane(-1); } }
+      if (e.code === 'ArrowRight') { e.preventDefault(); if (!_krKeys.right) { _krKeys.right = true; _krChangeLane(1);  } }
+      if (e.code === 'ArrowUp' || e.code === 'Space') { e.preventDefault(); _krJump(); }
+      if (e.code === 'ArrowDown') { e.preventDefault(); _krRoll(); }
     };
-    _krCanvas.addEventListener('click',      _jumpHandler);
-    _krCanvas.addEventListener('touchstart', _jumpHandler, { passive: false });
-    document.addEventListener('keydown', function _krKey(e) {
-      if (e.code === 'Space' || e.code === 'ArrowUp') {
-        e.preventDefault();
-        _krJump();
-        if (_krState && _krState.gameOver) {
-          document.removeEventListener('keydown', _krKey);
-        }
+    const _krKeyUp = (e) => {
+      if (e.code === 'ArrowLeft')  _krKeys.left  = false;
+      if (e.code === 'ArrowRight') _krKeys.right = false;
+    };
+    document.addEventListener('keydown', _krKeyDown);
+    document.addEventListener('keyup',   _krKeyUp);
+
+    // ── Input: Touch swipe ──
+    _krCanvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      const t = e.touches[0];
+      _krSwipe = { startX: t.clientX, startY: t.clientY, active: true };
+    }, { passive: false });
+    _krCanvas.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      if (!_krSwipe.active) return;
+      const t   = e.changedTouches[0];
+      const dx  = t.clientX - _krSwipe.startX;
+      const dy  = t.clientY - _krSwipe.startY;
+      const adx = Math.abs(dx), ady = Math.abs(dy);
+      _krSwipe.active = false;
+      if (adx < 10 && ady < 10) { _krJump(); return; } // tap = jump
+      if (adx > ady) {
+        if (dx < 0) _krChangeLane(-1);
+        else         _krChangeLane(1);
+      } else {
+        if (dy < 0) _krJump();
+        else         _krRoll();
       }
+    }, { passive: false });
+
+    // ── Mouse click = jump ──
+    _krCanvas.addEventListener('click', (e) => {
+      e.preventDefault();
+      if (_krState && _krState.gameOver) { _krRestart(); return; }
+      _krJump();
     });
 
+    // ── Build initial state ──
     _krState = {
       pool,
-      poolIndex:    0,
-      lives:        KR_LIVES,
-      score:        0,
-      xpEarned:     0,
-      distance:     0,
-      speed:        KR_BASE_SPEED,
-      gameOver:     false,
-      paused:       false,
+      poolIndex:      0,
+      lives:          KR_LIVES,
+      score:          0,
+      xpEarned:       0,
+      distance:       0,
+      speed:          KR_BASE_SPEED,
+      gameOver:       false,
+      combo:          0,
       // Player
       player: {
-        x: 80, y: KR_GROUND_Y, vy: 0, onGround: true,
-        frame: 0, frameTimer: 0, stumble: 0, invincible: 0,
+        lane:         1,           // 0=left, 1=centre, 2=right
+        targetLane:   1,
+        x:            KR_PLAYER_X,
+        y:            KR_LANE_Y[1],
+        vy:           0,
+        jumping:      false,
+        rolling:      false,
+        rollTimer:    0,
+        invincible:   0,
+        stumble:      0,
+        frame:        0,
+        frameTimer:   0,
+        laneOffset:   0,           // smooth lane slide
       },
-      // Current question
-      currentQ:     null,
-      // Tokens on screen
-      tokens:       [],
-      tokenCooldown: 0,
+      // Obstacles / coins on screen
+      objects:        [],
+      spawnTimer:     60,
+      // Current Q
+      currentQ:       null,
+      correctLane:    -1,
       // Scenery
-      bgStars:      Array.from({ length: 40 }, () => ({
-        x: Math.random() * KR_CANVAS_W,
-        y: Math.random() * (KR_GROUND_Y - 40),
-        r: Math.random() * 1.5 + 0.5,
-        speed: Math.random() * 0.5 + 0.2,
-      })),
-      groundTiles:  Array.from({ length: 22 }, (_, i) => ({ x: i * 30 })),
-      particles:    [],
-      combo:        0,
+      tunnelOffset:   0,
+      bgOffset:       0,
+      floorOffset:    0,
+      particles:      [],
+      // Inspector behind
+      inspector: {
+        x:  -60,
+        gap: 200,      // how far behind
+      },
+      // keys attached to loop (for cleanup)
+      _keyDown: _krKeyDown,
+      _keyUp:   _krKeyUp,
     };
 
     _krNextQuestion();
@@ -2987,81 +3085,139 @@ function _buildWordPoolForStudent() {
     if (!_krState) return;
     if (_krState.gameOver) { _krRestart(); return; }
     const p = _krState.player;
-    if (p.onGround) {
-      p.vy = -14;            // stronger jump — reaches coin at y = KR_GROUND_Y - 72
-      p.onGround = false;
-      for (let i = 0; i < 6; i++) {
+    if (!p.jumping && !p.rolling) {
+      p.vy      = KR_JUMP_FORCE;
+      p.jumping = true;
+      // Dust particles
+      for (let i = 0; i < 8; i++) {
         _krState.particles.push({
-          x: p.x + 10, y: KR_GROUND_Y + 18,
+          x: p.x + 10, y: p.y + 30,
           vx: (Math.random() - 0.5) * 3,
-          vy: -(Math.random() * 2 + 1),
-          life: 20, color: '#06b6d4',
+          vy: -(Math.random() * 2 + 0.5),
+          life: 18, maxLife: 18, color: '#fbbf24', size: 3,
         });
       }
+    }
+  }
+  
+  function _krRoll() {
+    if (!_krState) return;
+    const p = _krState.player;
+    if (!p.jumping && !p.rolling) {
+      p.rolling   = true;
+      p.rollTimer = KR_ROLL_DURATION;
+    }
+  }
+
+  function _krChangeLane(dir) {
+    if (!_krState || _krState.gameOver) return;
+    const p       = _krState.player;
+    const newLane = Math.max(0, Math.min(KR_LANE_COUNT - 1, p.lane + dir));
+    if (newLane === p.lane) return;
+    p.lane       = newLane;
+    p.targetLane = newLane;
+    // Brief lane-change particles
+    for (let i = 0; i < 5; i++) {
+      _krState.particles.push({
+        x: p.x + 10, y: p.y,
+        vx: dir * (Math.random() * 3 + 1),
+        vy: (Math.random() - 0.5) * 2,
+        life: 14, maxLife: 14, color: '#38bdf8', size: 2,
+      });
     }
   }
 
   function _krNextQuestion() {
     const s = _krState;
     if (s.poolIndex >= s.pool.length) {
-      // Reshuffle
-      s.pool = _shuffleArray(s.pool);
+      s.pool      = _shuffleArray(s.pool);
       s.poolIndex = 0;
     }
-    s.currentQ = s.pool[s.poolIndex++];
-    // Update HUD question text
+    s.currentQ   = s.pool[s.poolIndex++];
+    s.correctLane = Math.floor(Math.random() * KR_LANE_COUNT); // which lane holds the correct coin
+
+    // Update question display
     const qEl = document.getElementById('krQuestion');
     if (qEl) {
       const subj = s.currentQ.subject ? `[${s.currentQ.subject}] ` : '';
-      qEl.textContent = subj + s.currentQ.question.substring(0, 120);
+      qEl.textContent = subj + s.currentQ.question.substring(0, 130);
     }
-    s.tokenCooldown = 90; // frames before next token wave
+
+    // Update lane labels — show answer options per lane
+    const wrongs   = _shuffleArray(s.currentQ.wrongs);
+    const options  = [];          // one per lane
+    let wrongIdx   = 0;
+    for (let lane = 0; lane < KR_LANE_COUNT; lane++) {
+      if (lane === s.correctLane) {
+        options.push({ text: s.currentQ.correct, isCorrect: true });
+      } else {
+        options.push({ text: (wrongs[wrongIdx] || 'Wrong'), isCorrect: false });
+        wrongIdx++;
+      }
+    }
+    s.laneOptions = options;
+
+    for (let lane = 0; lane < KR_LANE_COUNT; lane++) {
+      const el = document.getElementById('krLabel' + lane);
+      if (el) {
+        const opt = options[lane];
+        const isCorrect = opt.isCorrect;
+        el.style.background    = isCorrect ? 'rgba(251,191,36,0.15)' : 'rgba(239,68,68,0.10)';
+        el.style.borderColor   = isCorrect ? '#fbbf24'               : '#ef4444';
+        el.style.color         = isCorrect ? '#fbbf24'               : '#f87171';
+        el.style.fontWeight    = '700';
+        el.textContent         = opt.text.substring(0, 36);
+      }
+    }
+
+    s.spawnTimer = 80; // frames until next wave
   }
 
-  function _krSpawnTokenWave() {
+  function _krSpawnWave() {
     const s = _krState;
-    if (!s.currentQ) return;
+    if (!s.currentQ || !s.laneOptions) return;
 
-    // Pick 1 correct + 1-2 wrongs, but limit text length aggressively
-    const wrongs = _shuffleArray(s.currentQ.wrongs).slice(0, 2);
-    const all = [
-      { text: s.currentQ.correct, isCorrect: true },
-      ...wrongs.map(w => ({ text: w, isCorrect: false })),
-    ];
-    const shuffled = _shuffleArray(all);
+    // Each lane gets either a coin row (correct) or a train obstacle (wrong)
+    for (let lane = 0; lane < KR_LANE_COUNT; lane++) {
+      const opt       = s.laneOptions[lane];
+      const laneY     = KR_LANE_Y[lane];
+      const baseX     = KR_CANVAS_W + 30 + lane * 15; // slight stagger per lane
 
-    shuffled.forEach((item, i) => {
-      if (item.isCorrect) {
-        // ✅ Correct = floating COIN above jump height — player jumps to collect
-        s.tokens.push({
-          x:         KR_CANVAS_W + 80 + i * 240,
-          y:         KR_GROUND_Y - 72,   // high enough that jumping reaches it
-          w:         36,                  // fixed coin size — no text in hitbox
-          h:         36,
-          text:      item.text,
-          isCorrect: true,
-          hit:       false,
-          bounce:    0,
-          type:      'coin',
-        });
+      if (opt.isCorrect) {
+        // ── CORRECT LANE: row of 5 coins ──
+        for (let c = 0; c < 5; c++) {
+          s.objects.push({
+            type:      'coin',
+            lane,
+            x:         baseX + c * 30,
+            y:         laneY - 18,
+            w:         18,
+            h:         18,
+            hit:       false,
+            bobPhase:  Math.random() * Math.PI * 2,
+            isCorrect: true,
+          });
+        }
       } else {
-        // ❌ Wrong = narrow HURDLE on the ground — player must jump over it
-        // The hitbox is a narrow pillar (24px wide). Text label sits above it.
-        s.tokens.push({
-          x:         KR_CANVAS_W + 80 + i * 240,
-          y:         KR_GROUND_Y + 18,   // sits on the ground line
-          w:         24,                  // narrow — jumpable if timed right
-          h:         54,                  // tall enough to block running player
-          text:      item.text,
-          isCorrect: false,
+        // ── WRONG LANE: a train / barrier obstacle ──
+        // Randomly: 'train' (tall, can jump) or 'barrier' (low, must roll)
+        const kind = Math.random() < 0.55 ? 'train' : 'barrier';
+        s.objects.push({
+          type:      'obstacle',
+          kind,
+          lane,
+          x:         baseX,
+          y:         laneY,
+          w:         kind === 'train' ? 64 : 48,
+          h:         kind === 'train' ? 56 : 24,
           hit:       false,
-          bounce:    0,
-          type:      'hurdle',
+          isCorrect: false,
+          label:     opt.text.substring(0, 22),
         });
       }
-    });
+    }
 
-    s.tokenCooldown = 200 + Math.floor(Math.random() * 80);
+    s.spawnTimer = 160 + Math.floor(Math.random() * 60);
   }
 
   function _krLoop(timestamp) {
@@ -3070,134 +3226,144 @@ function _buildWordPoolForStudent() {
 
     const dt = Math.min(timestamp - _krLastTime, 50);
     _krLastTime = timestamp;
-    const s = _krState;
+    const s  = _krState;
+    const p  = s.player;
 
-    // ── Speed up over time ──
-    s.speed = KR_BASE_SPEED + s.distance * KR_SPEED_INCREMENT;
+    // ── Speed ──
+    s.speed    = KR_BASE_SPEED + s.distance * KR_SPEED_INCREMENT;
+    s.distance += s.speed * 0.018;
 
-    // ── Update player ──
-    const p = s.player;
-    p.vy += KR_GRAVITY;
-    p.y  += p.vy;
-    if (p.y >= KR_GROUND_Y) {
-      p.y = KR_GROUND_Y;
-      p.vy = 0;
-      p.onGround = true;
+    // ── Tunnel / floor scroll ──
+    s.tunnelOffset = (s.tunnelOffset + s.speed) % 80;
+    s.bgOffset     = (s.bgOffset     + s.speed * 0.3) % KR_CANVAS_W;
+    s.floorOffset  = (s.floorOffset  + s.speed) % 40;
+
+    // ── Player Y (jump physics) ──
+    const baseLaneY = KR_LANE_Y[p.lane];
+    if (p.jumping) {
+      p.vy += KR_GRAVITY;
+      p.y  += p.vy;
+      if (p.y >= baseLaneY) {
+        p.y       = baseLaneY;
+        p.vy      = 0;
+        p.jumping = false;
+      }
+    } else {
+      p.y = baseLaneY; // snap to lane
     }
 
-    // Running animation frame
-    if (p.onGround) {
-      p.frameTimer++;
-      if (p.frameTimer > 6) { p.frame = (p.frame + 1) % 4; p.frameTimer = 0; }
+    // ── Roll timer ──
+    if (p.rolling) {
+      p.rollTimer--;
+      if (p.rollTimer <= 0) p.rolling = false;
     }
-    if (p.stumble > 0) p.stumble--;
+
+    // ── Invincibility / stumble countdown ──
     if (p.invincible > 0) p.invincible--;
+    if (p.stumble    > 0) p.stumble--;
 
-    // ── Distance & score ──
-    s.distance += s.speed * 0.02;
+    // ── Running frame ──
+    p.frameTimer++;
+    if (p.frameTimer > 5) { p.frame = (p.frame + 1) % 6; p.frameTimer = 0; }
 
-    // ── Tokens ──
-    s.tokenCooldown--;
-    if (s.tokenCooldown <= 0) _krSpawnTokenWave();
+    // ── Inspector closing gap when stumbling ──
+    s.inspector.gap = Math.max(60, s.inspector.gap - (p.stumble > 0 ? 0.6 : -0.15));
 
-    s.tokens.forEach(t => {
-      t.x -= s.speed;
-      t.bounce = Math.sin(timestamp / 400) * 3;
-    });
+    // ── Spawn objects ──
+    s.spawnTimer--;
+    if (s.spawnTimer <= 0) _krSpawnWave();
 
-    // ── Collision detection ──
+    // ── Move objects ──
+    s.objects.forEach(o => { o.x -= s.speed; });
+    s.objects = s.objects.filter(o => !o.hit && o.x > -120);
+
+    // ── Collision ──
     if (p.invincible === 0) {
-      s.tokens.forEach(t => {
-        if (t.hit) return;
+      s.objects.forEach(obj => {
+        if (obj.hit) return;
+        if (obj.lane !== p.lane) return;   // different lane, no collision
 
-        // Player hitbox — kept tight to feel fair on mobile
-        const px = p.x + 6,  py = p.y - 28;   // top-left of player body
-        const pw = 14,        ph = 46;           // narrow width, full height
+        // Player hitbox
+        const px = p.x + 4, py = p.jumping ? p.y - 32 : (p.rolling ? p.y - 10 : p.y - 46);
+        const pw = 18,       ph = p.rolling ? 18 : 46;
 
-        let tx, ty, tw, th;
-
-        if (t.type === 'coin') {
-          // Coin hitbox = circle approximated as a square, centered on coin
-          tx = t.x;
-          ty = t.y - t.w / 2 + t.bounce;   // t.y is coin centre-y
-          tw = t.w;
-          th = t.w;
+        // Object hitbox
+        let ox, oy, ow, oh;
+        if (obj.type === 'coin') {
+          ox = obj.x - obj.w / 2;
+          oy = obj.y - obj.h / 2;
+          ow = obj.w; oh = obj.h;
         } else {
-          // Hurdle hitbox = the pillar only (not the label above it)
-          tx = t.x;
-          ty = t.y - t.h;                  // top of hurdle
-          tw = t.w;
-          th = t.h;
+          // obstacle
+          ox = obj.x;
+          oy = obj.y - obj.h;
+          ow = obj.w; oh = obj.h;
         }
 
-        const collide = px < tx + tw && px + pw > tx && py < ty + th && py + ph > ty;
+        const hit = px < ox + ow && px + pw > ox && py < oy + oh && py + ph > oy;
+        if (!hit) return;
 
-        if (collide) {
-          t.hit = true;
-          if (t.isCorrect) {
-            s.score++;
-            s.combo++;
-            const xp = KR_XP_PER_CORRECT + (s.combo >= 3 ? KR_XP_SPEED_BONUS : 0);
-            s.xpEarned += xp;
-            for (let i = 0; i < 12; i++) {
-              s.particles.push({
-                x: t.x + t.w / 2, y: t.y,
-                vx: (Math.random() - 0.5) * 5,
-                vy: -(Math.random() * 4 + 1),
-                life: 30, color: '#22c55e',
-              });
-            }
-            _krNextQuestion();
-          } else {
-            s.combo = 0;
-            s.lives--;
-            p.stumble   = 40;
-            p.invincible = 80;
-            for (let i = 0; i < 10; i++) {
-              s.particles.push({
-                x: p.x + 10, y: p.y,
-                vx: (Math.random() - 0.5) * 4,
-                vy: -(Math.random() * 3 + 1),
-                life: 25, color: '#ef4444',
-              });
-            }
-            if (s.lives <= 0) {
-              s.gameOver = true;
-              _krEndGame();
-              return;
-            }
+        obj.hit = true;
+
+        if (obj.type === 'coin') {
+          // ── Correct coin collected ──
+          s.score++;
+          s.combo++;
+          const xp = KR_XP_PER_CORRECT + (s.combo >= 3 ? KR_XP_SPEED_BONUS : 0);
+          s.xpEarned += xp;
+          // Gold burst
+          for (let i = 0; i < 14; i++) {
+            s.particles.push({
+              x: obj.x, y: obj.y,
+              vx: (Math.random() - 0.5) * 6,
+              vy: -(Math.random() * 5 + 1),
+              life: 28, maxLife: 28, color: '#fbbf24', size: 4,
+            });
+          }
+          // Check if all correct coins collected → next question
+          const coinsLeft = s.objects.filter(o => !o.hit && o.type === 'coin');
+          if (coinsLeft.length === 0) _krNextQuestion();
+
+        } else {
+          // ── Wrong obstacle hit ──
+          // Can we escape? jump clears 'barrier', roll has no effect on train
+          if (obj.kind === 'barrier' && p.rolling) { obj.hit = true; return; }  // rolled under
+          if (obj.kind === 'train'   && p.jumping && p.y < obj.y - obj.h + 10) { obj.hit = true; return; } // jumped over
+
+          // HIT
+          s.combo = 0;
+          s.lives--;
+          p.invincible = 100;
+          p.stumble    = 50;
+          s.inspector.gap = Math.max(60, s.inspector.gap - 40);
+
+          for (let i = 0; i < 12; i++) {
+            s.particles.push({
+              x: p.x + 10, y: p.y,
+              vx: (Math.random() - 0.5) * 5,
+              vy: -(Math.random() * 4 + 1),
+              life: 26, maxLife: 26, color: '#ef4444', size: 4,
+            });
+          }
+
+          if (s.lives <= 0) {
+            s.gameOver = true;
+            _krEndGame();
           }
         }
       });
     }
 
-    // Remove off-screen tokens
-    s.tokens = s.tokens.filter(t => !t.hit && t.x > -200);
-
     // ── Particles ──
-    s.particles.forEach(pt => {
-      pt.x += pt.vx; pt.y += pt.vy; pt.vy += 0.2; pt.life--;
-    });
+    s.particles.forEach(pt => { pt.x += pt.vx; pt.y += pt.vy; pt.vy += 0.18; pt.life--; });
     s.particles = s.particles.filter(pt => pt.life > 0);
-
-    // ── Ground scroll ──
-    s.groundTiles.forEach(tile => {
-      tile.x -= s.speed;
-      if (tile.x < -30) tile.x += 22 * 30;
-    });
-
-    // ── Stars ──
-    s.bgStars.forEach(star => {
-      star.x -= star.speed;
-      if (star.x < 0) star.x = KR_CANVAS_W;
-    });
 
     // ── HUD ──
     const livesEl = document.getElementById('krLives');
     const scoreEl = document.getElementById('krScore');
     const xpEl    = document.getElementById('krXP');
-    const distEl  = document.getElementById('krDist');
-    if (livesEl) livesEl.textContent = '❤️'.repeat(s.lives) + '🖤'.repeat(KR_LIVES - s.lives);
+    const distEl  = document.getElementById('krDistVal');
+    if (livesEl) livesEl.textContent = '❤️'.repeat(Math.max(0,s.lives)) + '🖤'.repeat(Math.max(0, KR_LIVES - s.lives));
     if (scoreEl) scoreEl.textContent = s.score;
     if (xpEl)    xpEl.textContent    = s.xpEarned;
     if (distEl)  distEl.textContent  = Math.floor(s.distance);
@@ -3208,277 +3374,798 @@ function _buildWordPoolForStudent() {
   function _krDraw(timestamp) {
     const ctx = _krCtx;
     const s   = _krState;
+    const p   = s.player;
     const W   = KR_CANVAS_W;
     const H   = KR_CANVAS_H;
 
-    // ── Sky gradient ──
-    const sky = ctx.createLinearGradient(0, 0, 0, KR_GROUND_Y);
-    sky.addColorStop(0, '#0f172a');
-    sky.addColorStop(1, '#1e3a5f');
-    ctx.fillStyle = sky;
+    // ══════════════════════════════════════════════
+    //  BACKGROUND — subway tunnel (Subway Surfers)
+    // ══════════════════════════════════════════════
+    // Sky/tunnel bg
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, H);
+    bgGrad.addColorStop(0, '#0f172a');
+    bgGrad.addColorStop(0.45, '#1e293b');
+    bgGrad.addColorStop(1,    '#0f172a');
+    ctx.fillStyle = bgGrad;
     ctx.fillRect(0, 0, W, H);
 
-    // ── Stars ──
-    s.bgStars.forEach(star => {
+    // ── Tunnel arch (vanishing point perspective) ──
+    const VP = { x: W * 0.5, y: 80 };  // vanishing point
+    ctx.save();
+    // Outer tunnel ring
+    for (let ring = 0; ring < 8; ring++) {
+      const t      = ((ring / 8) + (s.tunnelOffset / 80)) % 1;
+      const scale  = 0.15 + t * 0.85;
+      const cx     = W / 2;
+      const cy     = H * 0.38;
+      const rw     = W * 0.55 * scale;
+      const rh     = H * 0.48 * scale;
+      const alpha  = t * 0.45;
+      ctx.strokeStyle = `rgba(56,189,248,${alpha})`;
+      ctx.lineWidth   = 1.5;
       ctx.beginPath();
-      ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(255,255,255,${0.3 + Math.sin(timestamp / 1000 + star.x) * 0.2})`;
+      ctx.ellipse(cx, cy, rw, rh, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      // Tunnel side bars
+      ctx.strokeStyle = `rgba(99,102,241,${alpha * 0.6})`;
+      ctx.lineWidth   = 1;
+      // Left bar
+      ctx.beginPath();
+      ctx.moveTo(cx - rw, cy);
+      ctx.lineTo(cx - rw, cy + rh * 0.15);
+      ctx.stroke();
+      // Right bar
+      ctx.beginPath();
+      ctx.moveTo(cx + rw, cy);
+      ctx.lineTo(cx + rw, cy + rh * 0.15);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // ── Overhead lights ──
+    const lightSpacing = 120;
+    const lightCount   = Math.ceil(W / lightSpacing) + 2;
+    const lightOff     = s.tunnelOffset % lightSpacing;
+    for (let i = 0; i < lightCount; i++) {
+      const lx   = i * lightSpacing - lightOff;
+      const glow = ctx.createRadialGradient(lx, 12, 0, lx, 12, 28);
+      glow.addColorStop(0, 'rgba(251,191,36,0.55)');
+      glow.addColorStop(1, 'rgba(251,191,36,0)');
+      ctx.fillStyle = glow;
+      ctx.fillRect(lx - 28, 0, 56, 40);
+      ctx.fillStyle = '#fef9c3';
+      ctx.beginPath();
+      ctx.ellipse(lx, 8, 5, 3, 0, 0, Math.PI * 2);
       ctx.fill();
-    });
+      // Light beam down
+      const beam = ctx.createLinearGradient(lx, 8, lx, H * 0.55);
+      beam.addColorStop(0, 'rgba(251,191,36,0.15)');
+      beam.addColorStop(1, 'rgba(251,191,36,0)');
+      ctx.fillStyle = beam;
+      ctx.beginPath();
+      ctx.moveTo(lx - 5, 8);
+      ctx.lineTo(lx - 18, H * 0.55);
+      ctx.lineTo(lx + 18, H * 0.55);
+      ctx.lineTo(lx + 5, 8);
+      ctx.closePath();
+      ctx.fill();
+    }
 
-    // ── Ground ──
-    const groundGrad = ctx.createLinearGradient(0, KR_GROUND_Y + 18, 0, H);
-    groundGrad.addColorStop(0, '#1d4ed8');
-    groundGrad.addColorStop(1, '#0f172a');
-    ctx.fillStyle = groundGrad;
-    ctx.fillRect(0, KR_GROUND_Y + 18, W, H - KR_GROUND_Y - 18);
+    // ══════════════════════════════════════════════
+    //  3 LANE TRACKS (Subway Surfers style rails)
+    // ══════════════════════════════════════════════
+    const laneColors = ['#6366f1', '#22c55e', '#f59e0b'];  // left, mid, right
+    const activeLane = p.lane;
 
-    // Ground line
-    ctx.strokeStyle = '#60a5fa';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(0, KR_GROUND_Y + 18);
-    ctx.lineTo(W, KR_GROUND_Y + 18);
-    ctx.stroke();
+    for (let lane = 0; lane < KR_LANE_COUNT; lane++) {
+      const ly       = KR_LANE_Y[lane];
+      const isActive = lane === activeLane;
 
-    // Ground tiles
-    s.groundTiles.forEach(tile => {
-      ctx.fillStyle = 'rgba(96,165,250,0.08)';
-      ctx.fillRect(tile.x, KR_GROUND_Y + 18, 28, 6);
-    });
+      // Track bed
+      const trackGrad = ctx.createLinearGradient(0, ly - 2, 0, ly + 26);
+      trackGrad.addColorStop(0, isActive ? laneColors[lane] + '55' : '#1e293b');
+      trackGrad.addColorStop(1, '#0f172a');
+      ctx.fillStyle = trackGrad;
+      ctx.fillRect(0, ly + 10, W, 20);
 
-    // ── Tokens ──
-    s.tokens.forEach(t => {
-      if (t.hit) return;
+      // ── Rail lines ──
+      const railAlpha = isActive ? 0.9 : 0.35;
+      ctx.strokeStyle = `rgba(148,163,184,${railAlpha})`;
+      ctx.lineWidth   = 2.5;
+      // Left rail
+      ctx.beginPath();
+      ctx.moveTo(0, ly + 14);
+      ctx.lineTo(W, ly + 14);
+      ctx.stroke();
+      // Right rail
+      ctx.beginPath();
+      ctx.moveTo(0, ly + 22);
+      ctx.lineTo(W, ly + 22);
+      ctx.stroke();
 
-      if (t.type === 'coin') {
-        // ── CORRECT = floating coin ──
-        const cx = t.x + t.w / 2;
-        const cy = t.y + t.bounce;
-        const r  = t.w / 2;
+      // ── Rail ties (sleepers) ──
+      const tieSpacing = 28;
+      const tieCount   = Math.ceil(W / tieSpacing) + 2;
+      const tieOff     = s.floorOffset % tieSpacing;
+      ctx.fillStyle = `rgba(71,85,105,${isActive ? 0.8 : 0.4})`;
+      for (let t = 0; t < tieCount; t++) {
+        const tx = t * tieSpacing - tieOff;
+        ctx.fillRect(tx - 3, ly + 11, 6, 13);
+      }
+
+      // Active lane highlight glow
+      if (isActive) {
+        const glow2 = ctx.createLinearGradient(0, ly + 10, 0, ly + 30);
+        glow2.addColorStop(0, laneColors[lane] + '44');
+        glow2.addColorStop(1, 'transparent');
+        ctx.fillStyle = glow2;
+        ctx.fillRect(0, ly + 10, W, 20);
+      }
+
+      // ── Lane dividers (between lanes) ──
+      if (lane < KR_LANE_COUNT - 1) {
+        const divY = ly + 36;
+        ctx.strokeStyle = 'rgba(71,85,105,0.4)';
+        ctx.lineWidth   = 1;
+        ctx.setLineDash([12, 10]);
+        ctx.beginPath();
+        ctx.moveTo(0, divY);
+        ctx.lineTo(W, divY);
+        ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+
+    // ══════════════════════════════════════════════
+    //  OBJECTS — coins & obstacles
+    // ══════════════════════════════════════════════
+    s.objects.forEach(obj => {
+      if (obj.hit) return;
+      const laneY = KR_LANE_Y[obj.lane];
+
+      if (obj.type === 'coin') {
+        // ── Gold coin (correct answer) ──
+        const bob = Math.sin(timestamp / 350 + obj.bobPhase) * 3;
+        const cx  = obj.x;
+        const cy  = laneY - 18 + bob;
 
         // Outer glow
+        const coinGlow = ctx.createRadialGradient(cx, cy, 0, cx, cy, 18);
+        coinGlow.addColorStop(0, 'rgba(251,191,36,0.55)');
+        coinGlow.addColorStop(1, 'rgba(251,191,36,0)');
+        ctx.fillStyle = coinGlow;
         ctx.beginPath();
-        ctx.arc(cx, cy, r + 4, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(34,197,94,0.18)';
+        ctx.arc(cx, cy, 18, 0, Math.PI * 2);
         ctx.fill();
 
-        // Coin body
-        const grad = ctx.createRadialGradient(cx - 4, cy - 4, 2, cx, cy, r);
-        grad.addColorStop(0, '#bbf7d0');
-        grad.addColorStop(1, '#16a34a');
+        // Coin body — 3D gradient
+        const coinBody = ctx.createRadialGradient(cx - 3, cy - 3, 1, cx, cy, 9);
+        coinBody.addColorStop(0, '#fef3c7');
+        coinBody.addColorStop(0.5, '#fbbf24');
+        coinBody.addColorStop(1, '#b45309');
+        ctx.fillStyle = coinBody;
         ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, Math.PI * 2);
-        ctx.fillStyle = grad;
+        ctx.arc(cx, cy, 9, 0, Math.PI * 2);
         ctx.fill();
-        ctx.strokeStyle = '#4ade80';
-        ctx.lineWidth = 2;
+
+        // Coin rim
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth   = 1.5;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 9, 0, Math.PI * 2);
         ctx.stroke();
 
-        // ✓ tick inside coin
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 16px sans-serif';
-        ctx.textAlign = 'center';
+        // $ symbol
+        ctx.fillStyle    = '#92400e';
+        ctx.font         = 'bold 9px sans-serif';
+        ctx.textAlign    = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('✓', cx, cy);
 
-        // Label BELOW the coin (not part of hitbox)
-        const shortText = t.text.length > 18 ? t.text.substring(0, 16) + '…' : t.text;
-        ctx.font = 'bold 9px sans-serif';
-        ctx.fillStyle = '#4ade80';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'top';
-        ctx.fillText(shortText, cx, cy + r + 5);
-
       } else {
-        // ── WRONG = narrow hurdle ──
-        const hx = t.x;
-        const hy = t.y - t.h;   // top of hurdle (t.y is ground level)
-        const hw = t.w;
-        const hh = t.h;
+        // ── OBSTACLE (train or barrier) ──
+        const ox = obj.x;
+        const oy = laneY;
 
-        // Shadow under hurdle
-        ctx.fillStyle = 'rgba(0,0,0,0.3)';
-        ctx.fillRect(hx - 2, t.y, hw + 4, 4);
+        if (obj.kind === 'train') {
+          // ── TRAIN (tall — must jump over) ──
+          const tw = obj.w, th = obj.h;
+          const ty = oy - th;
 
-        // Hurdle body — striped red pillar
-        const grad = ctx.createLinearGradient(hx, hy, hx + hw, hy);
-        grad.addColorStop(0, '#dc2626');
-        grad.addColorStop(0.5, '#ef4444');
-        grad.addColorStop(1, '#dc2626');
-        ctx.fillStyle = grad;
-        _krRoundRect(ctx, hx, hy, hw, hh, 4);
-        ctx.fill();
+          // Train body shadow
+          ctx.fillStyle = 'rgba(0,0,0,0.4)';
+          ctx.fillRect(ox + 4, ty + 4, tw, th);
 
-        // Warning stripes
-        ctx.save();
-        ctx.beginPath();
-        _krRoundRect(ctx, hx, hy, hw, hh, 4);
-        ctx.clip();
-        ctx.fillStyle = 'rgba(0,0,0,0.15)';
-        for (let stripe = 0; stripe < 6; stripe++) {
-          ctx.fillRect(hx - 4 + stripe * 8, hy, 4, hh);
+          // Train body
+          const trainGrad = ctx.createLinearGradient(ox, ty, ox + tw, ty);
+          trainGrad.addColorStop(0, '#dc2626');
+          trainGrad.addColorStop(0.3, '#ef4444');
+          trainGrad.addColorStop(0.7, '#dc2626');
+          trainGrad.addColorStop(1, '#991b1b');
+          ctx.fillStyle = trainGrad;
+          _krRoundRect(ctx, ox, ty, tw, th, 6);
+          ctx.fill();
+
+          // Train windows
+          ctx.fillStyle = 'rgba(186,230,253,0.85)';
+          _krRoundRect(ctx, ox + 6, ty + 8, 18, 12, 3);
+          ctx.fill();
+          _krRoundRect(ctx, ox + 30, ty + 8, 18, 12, 3);
+          ctx.fill();
+
+          // Window reflection
+          ctx.fillStyle = 'rgba(255,255,255,0.3)';
+          ctx.fillRect(ox + 7, ty + 9, 5, 4);
+          ctx.fillRect(ox + 31, ty + 9, 5, 4);
+
+          // Train underbody / wheels
+          ctx.fillStyle = '#1e293b';
+          ctx.fillRect(ox + 4, oy - 8, tw - 8, 8);
+          ctx.fillStyle = '#374151';
+          [ox + 8, ox + tw - 18].forEach(wx => {
+            ctx.beginPath();
+            ctx.arc(wx, oy, 7, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#6b7280';
+            ctx.lineWidth   = 1.5;
+            ctx.stroke();
+          });
+
+          // "WRONG" label strip on train
+          ctx.fillStyle = '#7f1d1d';
+          ctx.fillRect(ox, ty + th - 14, tw, 14);
+          ctx.fillStyle = '#fca5a5';
+          ctx.font      = 'bold 7px sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('✗ WRONG', ox + tw / 2, ty + th - 7);
+
+          // Label above train
+          const shortLabel = obj.label.length > 16 ? obj.label.substring(0, 14) + '…' : obj.label;
+          ctx.fillStyle    = 'rgba(15,23,42,0.8)';
+          const lw         = Math.max(60, shortLabel.length * 5.5 + 12);
+          _krRoundRect(ctx, ox + tw/2 - lw/2, ty - 18, lw, 16, 4);
+          ctx.fill();
+          ctx.fillStyle    = '#f87171';
+          ctx.font         = 'bold 8px sans-serif';
+          ctx.textAlign    = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(shortLabel, ox + tw / 2, ty - 10);
+
+          // Border
+          ctx.strokeStyle = '#f87171';
+          ctx.lineWidth   = 1.5;
+          _krRoundRect(ctx, ox, ty, tw, th, 6);
+          ctx.stroke();
+
+        } else {
+          // ── BARRIER (low — must roll under) ──
+          const bw = obj.w, bh = obj.h;
+          const by = oy - bh;
+
+          // Shadow
+          ctx.fillStyle = 'rgba(0,0,0,0.3)';
+          ctx.fillRect(ox + 3, by + 3, bw, bh);
+
+          // Yellow/black striped barrier (like subway gates)
+          const barGrad = ctx.createLinearGradient(ox, by, ox + bw, by + bh);
+          barGrad.addColorStop(0, '#f59e0b');
+          barGrad.addColorStop(0.5, '#fbbf24');
+          barGrad.addColorStop(1, '#f59e0b');
+          ctx.fillStyle = barGrad;
+          _krRoundRect(ctx, ox, by, bw, bh, 4);
+          ctx.fill();
+
+          // Black warning stripes
+          ctx.save();
+          ctx.beginPath();
+          _krRoundRect(ctx, ox, by, bw, bh, 4);
+          ctx.clip();
+          ctx.fillStyle = 'rgba(0,0,0,0.25)';
+          for (let stripe = 0; stripe < 7; stripe++) {
+            ctx.fillRect(ox - 4 + stripe * 8, by, 4, bh);
+          }
+          ctx.restore();
+
+          // Border
+          ctx.strokeStyle = '#d97706';
+          ctx.lineWidth   = 1.5;
+          _krRoundRect(ctx, ox, by, bw, bh, 4);
+          ctx.stroke();
+
+          // "ROLL" hint text
+          ctx.fillStyle    = '#78350f';
+          ctx.font         = 'bold 7px sans-serif';
+          ctx.textAlign    = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('⬇ ROLL', ox + bw / 2, by + bh / 2);
+
+          // Label above
+          const shortLabel2 = obj.label.length > 16 ? obj.label.substring(0, 14) + '…' : obj.label;
+          ctx.fillStyle     = 'rgba(15,23,42,0.8)';
+          const lw2         = Math.max(55, shortLabel2.length * 5 + 12);
+          _krRoundRect(ctx, ox + bw/2 - lw2/2, by - 18, lw2, 16, 4);
+          ctx.fill();
+          ctx.fillStyle     = '#fbbf24';
+          ctx.font          = 'bold 8px sans-serif';
+          ctx.textAlign     = 'center';
+          ctx.textBaseline  = 'middle';
+          ctx.fillText(shortLabel2, ox + bw / 2, by - 10);
+          ctx.strokeStyle   = '#f59e0b';
+          ctx.lineWidth     = 1;
+          _krRoundRect(ctx, ox + bw/2 - lw2/2, by - 18, lw2, 16, 4);
+          ctx.stroke();
         }
-        ctx.restore();
-
-        // Border
-        ctx.strokeStyle = '#f87171';
-        ctx.lineWidth = 1.5;
-        _krRoundRect(ctx, hx, hy, hw, hh, 4);
-        ctx.stroke();
-
-        // ✗ icon on hurdle
-        ctx.fillStyle = '#fff';
-        ctx.font = 'bold 13px sans-serif';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText('✗', hx + hw / 2, hy + hh / 2);
-
-        // Label ABOVE the hurdle (not part of hitbox)
-        const shortText = t.text.length > 18 ? t.text.substring(0, 16) + '…' : t.text;
-        ctx.font = 'bold 9px sans-serif';
-        ctx.fillStyle = '#f87171';
-        ctx.textAlign = 'center';
-        ctx.textBaseline = 'bottom';
-        ctx.fillText(shortText, hx + hw / 2, hy - 4);
       }
     });
 
-    // ── Particles ──
+    ctx.textAlign    = 'left';
+    ctx.textBaseline = 'alphabetic';
+
+    // ══════════════════════════════════════════════
+    //  PARTICLES
+    // ══════════════════════════════════════════════
     s.particles.forEach(pt => {
-      ctx.globalAlpha = pt.life / 30;
+      const alpha = pt.life / pt.maxLife;
+      ctx.globalAlpha = alpha;
       ctx.beginPath();
-      ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2);
+      ctx.arc(pt.x, pt.y, pt.size * alpha, 0, Math.PI * 2);
       ctx.fillStyle = pt.color;
       ctx.fill();
     });
     ctx.globalAlpha = 1;
 
-    // ── Player ──
-    _krDrawPlayer(ctx, s.player, timestamp);
+    // ══════════════════════════════════════════════
+    //  PLAYER (Subway Surfers style character)
+    // ══════════════════════════════════════════════
+    _krDrawPlayer(ctx, p, timestamp);
 
-    // ── Speed bar ──
-    const speedPct = Math.min((s.speed - KR_BASE_SPEED) / 4, 1);
-    ctx.fillStyle = `rgba(251,191,36,${speedPct * 0.6})`;
-    ctx.fillRect(0, 0, W * speedPct, 3);
+    // ══════════════════════════════════════════════
+    //  INSPECTOR (chasing from behind — Subway Surfers!)
+    // ══════════════════════════════════════════════
+    _krDrawInspector(ctx, s, timestamp);
 
-    // ── Game over overlay ──
-    if (s.gameOver) {
-      ctx.fillStyle = 'rgba(0,0,0,0.7)';
-      ctx.fillRect(0, 0, W, H);
-      ctx.fillStyle = '#f87171';
-      ctx.font = 'bold 28px sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText('GAME OVER', W / 2, H / 2 - 18);
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = '14px sans-serif';
-      ctx.fillText('Tap or press Space to play again', W / 2, H / 2 + 14);
+    // ══════════════════════════════════════════════
+    //  SPEED INDICATOR (top bar — Subway Surfers style)
+    // ══════════════════════════════════════════════
+    const speedPct = Math.min((s.speed - KR_BASE_SPEED) / 5, 1);
+    // Speed bar at very top
+    const speedBarGrad = ctx.createLinearGradient(0, 0, W, 0);
+    speedBarGrad.addColorStop(0, '#38bdf8');
+    speedBarGrad.addColorStop(0.5, '#a78bfa');
+    speedBarGrad.addColorStop(1, '#f43f5e');
+    ctx.fillStyle = speedBarGrad;
+    ctx.fillRect(0, 0, W * speedPct, 4);
+
+    // Combo display
+    if (s.combo >= 3) {
+      ctx.save();
+      const comboAlpha = Math.min(1, s.combo / 10);
+      ctx.fillStyle = `rgba(251,191,36,${comboAlpha})`;
+      ctx.font      = `bold ${Math.min(22, 12 + s.combo)}px sans-serif`;
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'top';
+      ctx.fillText(`🔥 x${s.combo} COMBO`, W - 8, 10);
+      ctx.restore();
     }
 
-    ctx.textAlign = 'left';
-    ctx.textBaseline = 'alphabetic';
+    // Stumble flash overlay
+    if (p.stumble > 0 && p.stumble % 6 < 3) {
+      ctx.fillStyle = 'rgba(239,68,68,0.12)';
+      ctx.fillRect(0, 0, W, H);
+    }
+
+    // ══════════════════════════════════════════════
+    //  GAME OVER OVERLAY
+    // ══════════════════════════════════════════════
+    if (s.gameOver) {
+      ctx.fillStyle = 'rgba(0,0,0,0.78)';
+      ctx.fillRect(0, 0, W, H);
+
+      // Title
+      ctx.textAlign    = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillStyle    = '#ef4444';
+      ctx.font         = 'bold 32px sans-serif';
+      ctx.fillText('GAME OVER', W / 2, H / 2 - 28);
+
+      // Score
+      ctx.fillStyle = '#fbbf24';
+      ctx.font      = 'bold 20px sans-serif';
+      ctx.fillText(`Score: ${s.score}`, W / 2, H / 2 + 4);
+
+      // Hint
+      ctx.fillStyle = '#94a3b8';
+      ctx.font      = '13px sans-serif';
+      ctx.fillText('Tap or press Space to play again', W / 2, H / 2 + 30);
+
+      ctx.textAlign    = 'left';
+      ctx.textBaseline = 'alphabetic';
+    }
   }
 
   function _krDrawPlayer(ctx, p, timestamp) {
-    const x = p.x;
-    const y = p.y;
-    const stumbling = p.stumble > 0;
+    const x          = p.x;
+    const y          = p.y;
+    const stumbling  = p.stumble    > 0;
+    const rolling    = p.rolling;
     const invincible = p.invincible > 0;
-    const alpha = invincible ? (Math.sin(timestamp / 80) > 0 ? 0.4 : 1) : 1;
+    const alpha      = invincible ? (Math.sin(timestamp / 70) > 0 ? 0.35 : 1) : 1;
 
     ctx.globalAlpha = alpha;
-
-    // Running leg animation offsets
-    const legPhase = (p.frame / 4) * Math.PI * 2;
-    const leg1Swing = Math.sin(legPhase) * (stumbling ? 20 : 12);
-    const leg2Swing = -Math.sin(legPhase) * (stumbling ? 20 : 12);
-    const arm1Swing = -Math.sin(legPhase) * 8;
-    const arm2Swing = Math.sin(legPhase) * 8;
-    const bodyTilt  = stumbling ? 15 : Math.sin(legPhase) * 2;
-
     ctx.save();
-    ctx.translate(x + 12, y + 10);
+    ctx.translate(x + 12, y);
+
+    if (rolling) {
+      // ── ROLL MODE: squished ball ──
+      ctx.translate(0, 14);
+      ctx.scale(1.4, 0.55);
+      // Body
+      ctx.beginPath();
+      ctx.arc(0, 0, 14, 0, Math.PI * 2);
+      ctx.fillStyle = '#6366f1';
+      ctx.fill();
+      // Head
+      ctx.beginPath();
+      ctx.arc(6, -8, 8, 0, Math.PI * 2);
+      ctx.fillStyle = '#fde68a';
+      ctx.fill();
+      // Speed lines
+      ctx.restore();
+      for (let i = 0; i < 3; i++) {
+        ctx.strokeStyle = `rgba(99,102,241,${0.6 - i * 0.2})`;
+        ctx.lineWidth   = 2;
+        ctx.beginPath();
+        ctx.moveTo(x - 10 - i * 12, y + 8 + i * 3);
+        ctx.lineTo(x - 2  - i * 12, y + 8 + i * 3);
+        ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+      return;
+    }
+
+    // ── NORMAL / JUMP MODE ──
+    const legPhase  = (p.frame / 6) * Math.PI * 2;
+    const leg1      = Math.sin(legPhase)  * (stumbling ? 22 : 14);
+    const leg2      = -Math.sin(legPhase) * (stumbling ? 22 : 14);
+    const arm1      = -Math.sin(legPhase) * 10;
+    const arm2      = Math.sin(legPhase)  * 10;
+    const bodyTilt  = stumbling ? 18 : (p.jumping ? -8 : Math.sin(legPhase) * 2);
+    const bobY      = p.jumping ? 0 : Math.abs(Math.sin(legPhase)) * 2;
+
     ctx.rotate((bodyTilt * Math.PI) / 180);
+    ctx.translate(0, bobY);
 
     // ── Backpack ──
     ctx.fillStyle = '#7c3aed';
-    ctx.fillRect(-2, -12, 8, 12);
+    _krRoundRect(ctx, -4, -28, 10, 16, 3);
+    ctx.fill();
     ctx.strokeStyle = '#a78bfa';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(-2, -12, 8, 12);
-
-    // ── Body ──
-    ctx.strokeStyle = '#e0e7ff';
-    ctx.lineWidth = 3;
-    ctx.lineCap = 'round';
-    ctx.lineJoin = 'round';
-
-    // Torso
+    ctx.lineWidth   = 1;
+    _krRoundRect(ctx, -4, -28, 10, 16, 3);
+    ctx.stroke();
+    // Strap
+    ctx.strokeStyle = '#6d28d9';
+    ctx.lineWidth   = 1.5;
     ctx.beginPath();
-    ctx.moveTo(0, -8);
-    ctx.lineTo(0, 8);
+    ctx.moveTo(-4, -24);
+    ctx.lineTo(2, -18);
     ctx.stroke();
 
-    // Head (circle)
+    // ── Torso / Body ──
+    // Jacket
+    ctx.fillStyle = p.stumble > 0 ? '#dc2626' : '#4f46e5';
+    _krRoundRect(ctx, -7, -18, 18, 26, 5);
+    ctx.fill();
+    // Jacket stripe
+    ctx.fillStyle = '#818cf8';
+    ctx.fillRect(-7, -18, 4, 26);
+    // Jacket outline
+    ctx.strokeStyle = '#6366f1';
+    ctx.lineWidth   = 1;
+    _krRoundRect(ctx, -7, -18, 18, 26, 5);
+    ctx.stroke();
+
+    // ── Arms ──
+    ctx.strokeStyle = '#4f46e5';
+    ctx.lineWidth   = 5;
+    ctx.lineCap     = 'round';
+    // Left arm
     ctx.beginPath();
-    ctx.arc(0, -14, 8, 0, Math.PI * 2);
+    ctx.moveTo(-6, -14);
+    ctx.quadraticCurveTo(-14 + arm1, -8, -10 + arm1, 2);
+    ctx.stroke();
+    // Right arm
+    ctx.beginPath();
+    ctx.moveTo(8, -14);
+    ctx.quadraticCurveTo(16 + arm2, -8, 12 + arm2, 2);
+    ctx.stroke();
+
+    // ── Hands ──
     ctx.fillStyle = '#fde68a';
+    ctx.beginPath(); ctx.arc(-10 + arm1, 3, 3.5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(12  + arm2, 3, 3.5, 0, Math.PI * 2); ctx.fill();
+
+    // ── Legs ──
+    ctx.strokeStyle = '#1d4ed8';
+    ctx.lineWidth   = 6;
+    // Left leg
+    ctx.beginPath();
+    ctx.moveTo(-2, 8);
+    ctx.quadraticCurveTo(-6 + leg1 * 0.4, 18, -4 + leg1 * 0.6, 28);
+    ctx.stroke();
+    // Right leg
+    ctx.beginPath();
+    ctx.moveTo(6, 8);
+    ctx.quadraticCurveTo(10 + leg2 * 0.4, 18, 8 + leg2 * 0.6, 28);
+    ctx.stroke();
+
+    // ── Shoes ──
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath(); ctx.ellipse(-4 + leg1 * 0.6, 30, 7, 3.5, (leg1 * 0.02), 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(8  + leg2 * 0.6, 30, 7, 3.5, (leg2 * 0.02), 0, Math.PI * 2); ctx.fill();
+    // Shoe sole stripe
+    ctx.fillStyle = '#ef4444';
+    ctx.fillRect(-9  + leg1 * 0.6, 30, 10, 2);
+    ctx.fillRect(3   + leg2 * 0.6, 30, 10, 2);
+
+    // ── Head ──
+    // Neck
+    ctx.fillStyle = '#fde68a';
+    ctx.fillRect(-3, -24, 8, 8);
+
+    // Head shape
+    const headGrad = ctx.createRadialGradient(-2, -34, 2, 0, -30, 11);
+    headGrad.addColorStop(0, '#fef3c7');
+    headGrad.addColorStop(1, '#fde68a');
+    ctx.fillStyle = headGrad;
+    ctx.beginPath();
+    ctx.arc(0, -32, 11, 0, Math.PI * 2);
     ctx.fill();
     ctx.strokeStyle = '#f59e0b';
-    ctx.lineWidth = 1.5;
+    ctx.lineWidth   = 1;
     ctx.stroke();
 
-    // Face
+    // ── Hair / cap ──
+    ctx.fillStyle = p.stumble > 0 ? '#dc2626' : '#4f46e5';
+    ctx.beginPath();
+    ctx.ellipse(0, -40, 11, 6, 0, Math.PI, 0);
+    ctx.fill();
+    // Cap brim
+    ctx.fillStyle = p.stumble > 0 ? '#991b1b' : '#312e81';
+    ctx.fillRect(-11, -37, 22, 4);
+    // Cap dot
+    ctx.fillStyle = '#fbbf24';
+    ctx.beginPath();
+    ctx.arc(0, -43, 2, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ── Face ──
     ctx.fillStyle = '#92400e';
     // Eyes
-    const eyeOffX = stumbling ? 2 : 1;
-    ctx.beginPath(); ctx.arc(-eyeOffX - 1, -14, 1.5, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.arc(eyeOffX + 1, -14, 1.5, 0, Math.PI * 2); ctx.fill();
+    if (stumbling) {
+      // X eyes when stumbling
+      ctx.strokeStyle = '#92400e';
+      ctx.lineWidth   = 1.5;
+      [[-4, -34], [3, -34]].forEach(([ex, ey]) => {
+        ctx.beginPath(); ctx.moveTo(ex - 2, ey - 2); ctx.lineTo(ex + 2, ey + 2); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(ex + 2, ey - 2); ctx.lineTo(ex - 2, ey + 2); ctx.stroke();
+      });
+    } else if (p.jumping) {
+      // Wide open eyes when jumping
+      ctx.beginPath(); ctx.arc(-4, -34, 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(3,  -34, 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.fillStyle = '#fff';
+      ctx.beginPath(); ctx.arc(-3.5, -34.5, 1, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(3.5,  -34.5, 1, 0, Math.PI * 2); ctx.fill();
+    } else {
+      ctx.beginPath(); ctx.arc(-4, -34, 2, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(3,  -34, 2, 0, Math.PI * 2); ctx.fill();
+    }
     // Mouth
+    ctx.strokeStyle = '#92400e';
+    ctx.lineWidth   = 1.2;
     ctx.beginPath();
     if (stumbling) {
-      ctx.arc(0, -11, 2.5, 0, Math.PI); // sad mouth
+      ctx.arc(0, -28, 3, 0, Math.PI);   // sad
     } else {
-      ctx.arc(0, -13, 2, Math.PI, 0);   // smile
+      ctx.arc(0, -30, 3, Math.PI, 0);   // smile
     }
-    ctx.strokeStyle = '#92400e'; ctx.lineWidth = 1.2; ctx.stroke();
-
-    // Hair
-    ctx.fillStyle = '#1e293b';
-    ctx.beginPath(); ctx.arc(0, -20, 5, Math.PI, 0); ctx.fill();
-
-    // Arms
-    ctx.strokeStyle = '#e0e7ff'; ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(0, -4);
-    ctx.lineTo(-8, -4 + arm1Swing);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(0, -4);
-    ctx.lineTo(8, -4 + arm2Swing);
     ctx.stroke();
 
-    // Legs
-    ctx.strokeStyle = '#6366f1'; ctx.lineWidth = 3;
-    ctx.beginPath();
-    ctx.moveTo(0, 8);
-    ctx.lineTo(-6, 8 + leg1Swing);
-    ctx.lineTo(-6, 22 + Math.abs(leg1Swing) * 0.3);
-    ctx.stroke();
-    ctx.beginPath();
-    ctx.moveTo(0, 8);
-    ctx.lineTo(6, 8 + leg2Swing);
-    ctx.lineTo(6, 22 + Math.abs(leg2Swing) * 0.3);
-    ctx.stroke();
-
-    // Shoes
-    ctx.fillStyle = '#1d4ed8';
-    ctx.beginPath(); ctx.ellipse(-6, 22 + Math.abs(leg1Swing) * 0.3, 5, 2.5, 0, 0, Math.PI * 2); ctx.fill();
-    ctx.beginPath(); ctx.ellipse(6, 22 + Math.abs(leg2Swing) * 0.3, 5, 2.5, 0, 0, Math.PI * 2); ctx.fill();
+    // ── Spray can (held by right hand) ──
+    if (!stumbling && !p.jumping) {
+      ctx.save();
+      ctx.translate(14 + arm2, 0);
+      ctx.rotate(0.4);
+      ctx.fillStyle = '#f43f5e';
+      _krRoundRect(ctx, -2, -6, 6, 12, 2);
+      ctx.fill();
+      ctx.fillStyle = '#94a3b8';
+      ctx.fillRect(-1, -8, 4, 3);
+      ctx.restore();
+    }
 
     ctx.restore();
     ctx.globalAlpha = 1;
+  }
+  
+  function _krDrawInspector(ctx, s, timestamp) {
+    const p   = s.player;
+    const gap = s.inspector.gap;
+    const ix  = p.x - gap;
+    if (ix < -80) return;
+
+    const iy        = KR_LANE_Y[p.lane];
+    const bobY      = Math.abs(Math.sin(timestamp / 200)) * 3;
+    const legPhase  = (timestamp / 150) % (Math.PI * 2);
+    const leg1      = Math.sin(legPhase)  * 16;
+    const leg2      = -Math.sin(legPhase) * 16;
+    const arm1      = -Math.sin(legPhase) * 10;
+    const arm2      = Math.sin(legPhase)  * 10;
+    const angry     = gap < 120;
+
+    ctx.save();
+    ctx.translate(ix + 10, iy + bobY);
+
+    // ── Inspector shadow ──
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath();
+    ctx.ellipse(2, 32, 12, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ── Inspector uniform body ──
+    ctx.fillStyle = angry ? '#1e3a8a' : '#1d4ed8';
+    _krRoundRect(ctx, -7, -18, 18, 26, 4);
+    ctx.fill();
+    ctx.strokeStyle = angry ? '#1e40af' : '#2563eb';
+    ctx.lineWidth   = 1;
+    _krRoundRect(ctx, -7, -18, 18, 26, 4);
+    ctx.stroke();
+
+    // Badge
+    ctx.fillStyle = '#fbbf24';
+    ctx.fillRect(-3, -14, 8, 5);
+    ctx.fillStyle = '#92400e';
+    ctx.font      = '4px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('★', 1, -11.5);
+
+    // ── Arms ──
+    ctx.strokeStyle = angry ? '#1e3a8a' : '#1d4ed8';
+    ctx.lineWidth   = 5;
+    ctx.lineCap     = 'round';
+    ctx.beginPath(); ctx.moveTo(-6, -12); ctx.lineTo(-10 + arm1, -2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(8,  -12); ctx.lineTo(12  + arm2, -2); ctx.stroke();
+
+    // Hands
+    ctx.fillStyle = '#fde68a';
+    ctx.beginPath(); ctx.arc(-10 + arm1, -1, 3, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(12  + arm2, -1, 3, 0, Math.PI * 2); ctx.fill();
+
+    // Baton in right hand
+    ctx.save();
+    ctx.translate(13 + arm2, -1);
+    ctx.rotate(-0.5 + Math.sin(legPhase) * 0.3);
+    ctx.fillStyle = '#78350f';
+    ctx.fillRect(-1.5, -14, 3, 14);
+    ctx.fillStyle = '#92400e';
+    ctx.beginPath();
+    ctx.arc(0, -15, 3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+
+    // ── Legs ──
+    ctx.strokeStyle = '#1e3a8a';
+    ctx.lineWidth   = 6;
+    ctx.beginPath(); ctx.moveTo(-2, 8); ctx.lineTo(-4 + leg1 * 0.5, 28); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(6,  8); ctx.lineTo(8  + leg2 * 0.5, 28); ctx.stroke();
+
+    // Shoes
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath(); ctx.ellipse(-4 + leg1 * 0.5, 30, 7, 3, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.ellipse(8  + leg2 * 0.5, 30, 7, 3, 0, 0, Math.PI * 2); ctx.fill();
+
+    // ── Head ──
+    ctx.fillStyle = '#fde68a';
+    ctx.beginPath(); ctx.arc(0, -28, 10, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 1; ctx.stroke();
+
+    // ── Cap ──
+    ctx.fillStyle = angry ? '#0c2461' : '#1e3a8a';
+    ctx.beginPath(); ctx.ellipse(0, -36, 11, 5, 0, Math.PI, 0); ctx.fill();
+    ctx.fillRect(-11, -33, 22, 4);
+    // Badge on cap
+    ctx.fillStyle = '#fbbf24';
+    ctx.beginPath(); ctx.arc(0, -35, 3, 0, Math.PI * 2); ctx.fill();
+
+    // ── Face ──
+    ctx.fillStyle = '#92400e';
+    if (angry) {
+      // Angry eyes (downward slant inward)
+      ctx.beginPath(); ctx.arc(-4, -30, 2.5, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(3,  -30, 2.5, 0, Math.PI * 2); ctx.fill();
+      // Angry brows
+      ctx.strokeStyle = '#78350f'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(-7, -34); ctx.lineTo(-2, -32); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(6,  -34); ctx.lineTo(1,  -32); ctx.stroke();
+      // Gritted teeth
+      ctx.fillStyle = '#fff';
+      ctx.fillRect(-4, -25, 8, 4);
+      ctx.strokeStyle = '#92400e'; ctx.lineWidth = 0.8;
+      for (let t = 0; t < 4; t++) {
+        ctx.beginPath(); ctx.moveTo(-4 + t * 2.7, -25); ctx.lineTo(-4 + t * 2.7, -21); ctx.stroke();
+      }
+    } else {
+      ctx.beginPath(); ctx.arc(-4, -30, 2, 0, Math.PI * 2); ctx.fill();
+      ctx.beginPath(); ctx.arc(3,  -30, 2, 0, Math.PI * 2); ctx.fill();
+      ctx.strokeStyle = '#92400e'; ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.arc(0, -25, 3, 0, Math.PI); ctx.stroke();
+    }
+
+    // ── Dog on a leash ──
+    const dogX = -18 - Math.sin(legPhase * 0.7) * 5;
+    const dogY = 20;
+
+    // Leash
+    ctx.strokeStyle = '#78350f';
+    ctx.lineWidth   = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(-7 + arm1, -1);
+    ctx.quadraticCurveTo(dogX + 4, dogY - 10, dogX + 12, dogY);
+    ctx.stroke();
+
+    // Dog body
+    ctx.fillStyle = '#d97706';
+    ctx.beginPath(); ctx.ellipse(dogX + 10, dogY, 12, 7, -0.2, 0, Math.PI * 2); ctx.fill();
+
+    // Dog head
+    ctx.beginPath(); ctx.arc(dogX + 20, dogY - 4, 7, 0, Math.PI * 2); ctx.fill();
+
+    // Ears
+    ctx.beginPath(); ctx.ellipse(dogX + 16, dogY - 10, 4, 6, -0.5, 0, Math.PI * 2);
+    ctx.fillStyle = '#b45309'; ctx.fill();
+    ctx.beginPath(); ctx.ellipse(dogX + 24, dogY - 10, 4, 6, 0.5, 0, Math.PI * 2); ctx.fill();
+
+    // Eye
+    ctx.fillStyle = '#0f172a';
+    ctx.beginPath(); ctx.arc(dogX + 23, dogY - 5, 2, 0, Math.PI * 2); ctx.fill();
+
+    // Mouth / tongue
+    ctx.fillStyle = '#ef4444';
+    ctx.beginPath(); ctx.ellipse(dogX + 24, dogY, 3, 4, 0.3, 0, Math.PI); ctx.fill();
+
+    // Dog legs (running)
+    ctx.strokeStyle = '#d97706'; ctx.lineWidth = 3;
+    const dogLeg = Math.sin(legPhase * 1.5) * 8;
+    [[dogX + 4, dogY + 5], [dogX + 8, dogY + 5], [dogX + 13, dogY + 5], [dogX + 17, dogY + 5]].forEach(([lx, ly], i) => {
+      const swing = (i % 2 === 0) ? dogLeg : -dogLeg;
+      ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx + swing * 0.3, ly + 10); ctx.stroke();
+    });
+
+    // Tail
+    ctx.strokeStyle = '#d97706'; ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.moveTo(dogX - 2, dogY - 2);
+    ctx.quadraticCurveTo(dogX - 14, dogY - 16, dogX - 8, dogY - 22);
+    ctx.stroke();
+
+    ctx.restore();
+
+    // ── Warning if close ──
+    if (gap < 140) {
+      const warnAlpha = Math.sin(timestamp / 120) * 0.5 + 0.5;
+      ctx.save();
+      ctx.globalAlpha = warnAlpha * 0.7;
+      ctx.fillStyle   = '#ef4444';
+      ctx.font        = 'bold 10px sans-serif';
+      ctx.textAlign   = 'left';
+      ctx.textBaseline = 'top';
+      ctx.fillText('⚠ INSPECTOR CLOSE!', 8, 8);
+      ctx.restore();
+    }
   }
 
   function _krRoundRect(ctx, x, y, w, h, r) {
@@ -3497,43 +4184,70 @@ function _buildWordPoolForStudent() {
 
   async function _krEndGame() {
     if (_krAnimFrame) { cancelAnimationFrame(_krAnimFrame); _krAnimFrame = null; }
+    // Clean up keyboard listeners
+    if (_krState && _krState._keyDown) document.removeEventListener('keydown', _krState._keyDown);
+    if (_krState && _krState._keyUp)   document.removeEventListener('keyup',   _krState._keyUp);
+
     const s = _krState;
     _krState = null;
 
     const pct    = s.score > 0 ? Math.min(100, Math.round((s.score / Math.max(s.score + 3, 10)) * 100)) : 0;
     const win    = s.score >= 5;
-    const perfect = false;
-    const result = await _awardXP(s.xpEarned, 'knowledgeRunner', { win, perfect, sdSurvived: s.score });
+    const result = await _awardXP(s.xpEarned, 'knowledgeRunner', { win, perfect: false, sdSurvived: s.score });
     await _saveGameResult('knowledgeRunner', {
       score: s.score, distance: Math.floor(s.distance),
       xpEarned: s.xpEarned, pct,
     });
 
+    const distanceTitle = s.distance >= 500 ? 'Legend Surfer!'
+                        : s.distance >= 300 ? 'Master Surfer!'
+                        : s.distance >= 150 ? 'Great Run!'
+                        : s.distance >= 80  ? 'Good Effort!'
+                        : 'Keep Practising!';
+
+    const extraHtml = `
+      <div style="margin:.75rem 0;padding:1.25rem;border-radius:10px;text-align:center;
+                  background:linear-gradient(135deg,rgba(251,191,36,0.12),rgba(99,102,241,0.12));
+                  border:2px solid rgba(251,191,36,0.3);">
+        <div style="font-size:2rem;font-weight:900;color:#fbbf24;font-family:var(--font-mono);line-height:1;">
+          ${Math.floor(s.distance)}m
+        </div>
+        <p style="font-size:.875rem;font-weight:700;color:#f1f5f9;margin:.25rem 0;">${distanceTitle}</p>
+        <p style="font-size:.8125rem;color:var(--text-3);margin-top:.375rem;">
+          🏄 ${s.score} correct coins collected &nbsp;|&nbsp; 🔥 Best combo: ${s.combo > 0 ? s.combo : 1}x
+        </p>
+      </div>`;
+
     _renderGameResult({
       gameIcon:      'bolt',
-      gameName:      'Knowledge Runner',
-      score:         `${s.score} correct collected`,
+      gameName:      'Knowledge Surfer',
+      score:         `${s.score} coins collected`,
       pct,
       xpEarned:      s.xpEarned,
-      perfect,
+      perfect:       false,
       win,
       result,
       extras: [
         { label: 'Distance Run',   value: `${Math.floor(s.distance)}m` },
         { label: 'Combo Bonus XP', value: s.xpEarned > s.score * KR_XP_PER_CORRECT ? `+${s.xpEarned - s.score * KR_XP_PER_CORRECT} XP` : '—' },
       ],
+      extraHtml,
       onPlayAgainKey: 'knowledgeRunner',
     });
   }
 
   function _krRestart() {
     if (_krAnimFrame) { cancelAnimationFrame(_krAnimFrame); _krAnimFrame = null; }
+    if (_krState && _krState._keyDown) document.removeEventListener('keydown', _krState._keyDown);
+    if (_krState && _krState._keyUp)   document.removeEventListener('keyup',   _krState._keyUp);
     _krState = null;
     _showKnowledgeRunnerSetup();
   }
 
   function _krQuit() {
     if (_krAnimFrame) { cancelAnimationFrame(_krAnimFrame); _krAnimFrame = null; }
+    if (_krState && _krState._keyDown) document.removeEventListener('keydown', _krState._keyDown);
+    if (_krState && _krState._keyUp)   document.removeEventListener('keyup',   _krState._keyUp);
     _krState = null;
     openGameLobby();
   }
@@ -3930,6 +4644,8 @@ function _buildWordPoolForStudent() {
     renderTeacherGameStats,
     _showKnowledgeRunnerSetup,
     _startKnowledgeRunner,
+    _krChangeLane,
+    _krRoll,
   };
 
 })();
