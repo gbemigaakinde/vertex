@@ -1046,6 +1046,13 @@ async function _saveStudentEdit(uid, previousAdmno) {
                  style="position:relative;background:var(--bg-base);
                         border:1px solid var(--border);border-radius:10px;
                         padding:.875rem 1rem;overflow:hidden;">
+              <button class="teacher-export-result" data-id="${_esc(doc.id)}" aria-label="Export result as PDF"
+                      title="Export this result as a PDF"
+                      style="position:absolute;top:.5rem;right:1.75rem;background:none;border:none;
+                             cursor:pointer;font-size:.8125rem;line-height:1;padding:2px 4px;
+                             color:var(--text-4);z-index:2;"
+                      onmouseenter="this.style.color='var(--accent)'"
+                      onmouseleave="this.style.color='var(--text-4)'">📄</button>
               <button class="teacher-delete-result" data-id="${_esc(doc.id)}" aria-label="Delete result"
                       style="position:absolute;top:.5rem;right:.625rem;background:none;border:none;
                              cursor:pointer;font-size:1rem;line-height:1;padding:2px 4px;
@@ -1061,7 +1068,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
                   <span style="font-size:1rem;font-weight:800;color:${gradeColor};line-height:1;margin-top:1px;">
                     ${_esc(r.grade || '?')}</span>
                 </div>
-                <div style="min-width:0;flex:1;padding-right:1.25rem;">
+                <div style="min-width:0;flex:1;padding-right:2.25rem;">
                   <p style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);
                              white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${_esc(r.name || '')}</p>
                   <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:1px;">
@@ -1100,6 +1107,8 @@ async function _saveStudentEdit(uid, previousAdmno) {
   document.addEventListener('click', async e => {
     const deleteBtn = e.target.closest('.teacher-delete-result');
     if (deleteBtn) { e.stopPropagation(); await deleteResult(deleteBtn.dataset.id); return; }
+    const exportBtn = e.target.closest('.teacher-export-result');
+    if (exportBtn) { e.stopPropagation(); await exportResultPDF(exportBtn.dataset.id); return; }
     const card = e.target.closest('.teacher-result-card');
     if (card && card.dataset.resultId) { await _openReviewModal(card.dataset.resultId); }
     const taskBtn = e.target.closest('.teacher-delete-task');
@@ -1165,14 +1174,20 @@ async function _saveStudentEdit(uid, previousAdmno) {
 
     if (!r.questionSnapshots) {
       overlay.querySelector('.review-panel').innerHTML = `
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;">
-          <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;gap:.75rem;">
+          <div style="min-width:0;">
             <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">${_esc(r.name || '')}</h2>
             <p style="font-size:var(--text-sm);color:var(--text-3);margin-top:2px;">
               ${_esc(r.class || '')} · ${_esc(r.school || '')} · ${ts}</p>
           </div>
-          <button onclick="document.getElementById('teacherReviewModal').remove()"
-                  class="btn bg-gray-500" style="font-size:var(--text-sm);">Close</button>
+          <div style="display:flex;gap:.5rem;flex-shrink:0;">
+            <button onclick="Teacher.exportResultPDF('${_esc(resultId)}')"
+                    class="btn bg-blue-600 hover:bg-blue-700" style="font-size:var(--text-sm);white-space:nowrap;">
+              📄 Export PDF
+            </button>
+            <button onclick="document.getElementById('teacherReviewModal').remove()"
+                    class="btn bg-gray-500" style="font-size:var(--text-sm);">Close</button>
+          </div>
         </div>
         <div style="padding:2rem;text-align:center;background:var(--bg-subtle);
                     border-radius:8px;border:1px solid var(--border);">
@@ -1237,14 +1252,20 @@ async function _saveStudentEdit(uid, previousAdmno) {
     overlay.querySelector('.review-panel').innerHTML = `
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;
                   margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--border);">
-        <div>
+        <div style="min-width:0;">
           <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">${_esc(r.name || '')}</h2>
           <p style="font-size:var(--text-sm);color:var(--text-3);margin-top:3px;">
             ${_esc(r.class || '')} · ${_esc(r.school || '')}</p>
           <p style="font-size:var(--text-xs);color:var(--text-4);margin-top:2px;">${ts}</p>
         </div>
-        <button onclick="document.getElementById('teacherReviewModal').remove()"
-                class="btn bg-gray-500" style="font-size:var(--text-sm);flex-shrink:0;">Close</button>
+        <div style="display:flex;gap:.5rem;flex-shrink:0;">
+          <button onclick="Teacher.exportResultPDF('${_esc(resultId)}')"
+                  class="btn bg-blue-600 hover:bg-blue-700" style="font-size:var(--text-sm);white-space:nowrap;">
+            📄 Export PDF
+          </button>
+          <button onclick="document.getElementById('teacherReviewModal').remove()"
+                  class="btn bg-gray-500" style="font-size:var(--text-sm);">Close</button>
+        </div>
       </div>
       <div style="display:flex;align-items:center;gap:1rem;flex-wrap:wrap;
                   background:var(--bg-subtle);border:1px solid var(--border);
@@ -3724,6 +3745,318 @@ function _mondayFromIsoWeekKey(weekKey) {
     UI.toast('PDF report downloaded.', 'success');
   }
 
+async function exportResultPDF(resultId) {
+    if (!resultId) return;
+
+    UI.toast('Generating PDF report…', 'info', 3000);
+
+    let jsPDF;
+    try {
+      jsPDF = await _loadJsPDF();
+    } catch (e) {
+      UI.toast('Could not load PDF library. Check your internet connection.', 'error');
+      return;
+    }
+
+    let r;
+    try {
+      const snap = await Db().collection('results').doc(resultId).get();
+      if (!snap.exists) { UI.toast('Result not found.', 'error'); return; }
+      r = snap.data();
+    } catch (e) {
+      console.error('[teacher] exportResultPDF fetch error:', e);
+      UI.toast('Failed to fetch result data.', 'error');
+      return;
+    }
+
+    function _pdfText(str) {
+      if (str == null) return '';
+      return String(str).replace(/\s+/g, ' ').trim();
+    }
+
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    const PAGE_W    = 210;
+    const PAGE_H    = 297;
+    const MARGIN    = 16;
+    const CONTENT_W = PAGE_W - MARGIN * 2;
+
+    const C = {
+      text:    [30, 30, 30],
+      muted:   [120, 120, 120],
+      faint:   [165, 165, 165],
+      divider: [222, 222, 222],
+      accent:  [59, 91, 219],
+      success: [34, 140, 60],
+      danger:  [200, 45, 45],
+      warning: [190, 130, 10],
+    };
+
+    function pctColor(pct) {
+      if (pct >= 75) return C.success;
+      if (pct >= 50) return C.warning;
+      return C.danger;
+    }
+
+    let y = 0;
+
+    function _drawPageHeader() {
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...C.muted);
+      doc.text('VERTEX TUTORIAL CBT', MARGIN, 12);
+
+      doc.setFont('helvetica', 'normal');
+      doc.text('Exam Result Report', PAGE_W - MARGIN, 10, { align: 'right' });
+      doc.setFontSize(6.5);
+      doc.setTextColor(...C.faint);
+      doc.text(
+        'Generated ' + new Date().toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }),
+        PAGE_W - MARGIN, 14, { align: 'right' }
+      );
+
+      doc.setDrawColor(...C.divider);
+      doc.setLineWidth(0.3);
+      doc.line(MARGIN, 17, PAGE_W - MARGIN, 17);
+
+      y = 25;
+    }
+
+    function _drawPageFooter() {
+      doc.setDrawColor(...C.divider);
+      doc.setLineWidth(0.3);
+      doc.line(MARGIN, PAGE_H - 12, PAGE_W - MARGIN, PAGE_H - 12);
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...C.faint);
+      doc.text('Vertex Tutorial CBT — Confidential', MARGIN, PAGE_H - 7);
+      doc.text('Page ' + doc.internal.getNumberOfPages(), PAGE_W - MARGIN, PAGE_H - 7, { align: 'right' });
+    }
+
+    function checkPage(needed) {
+      if (y + needed > PAGE_H - 16) {
+        doc.addPage();
+        _drawPageHeader();
+        _drawPageFooter();
+      }
+    }
+
+    function divider() {
+      doc.setDrawColor(...C.divider);
+      doc.setLineWidth(0.2);
+      doc.line(MARGIN, y, PAGE_W - MARGIN, y);
+      y += 5;
+    }
+
+    // ── PAGE 1 ──────────────────────────────────────────────────
+    _drawPageHeader();
+    _drawPageFooter();
+
+    // Student name
+    doc.setFontSize(17);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.text);
+    doc.text(_pdfText(r.name) || 'Unnamed Student', MARGIN, y);
+    y += 7;
+
+    // Meta line: class / school (left) — date (right)
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...C.muted);
+    const metaLeft = [r.class, r.school].filter(Boolean).map(_pdfText).join('   ·   ');
+    doc.text(metaLeft, MARGIN, y);
+
+    const ts = r.timestamp
+      ? new Date(r.timestamp.toDate ? r.timestamp.toDate() : r.timestamp)
+          .toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })
+      : '—';
+    doc.text(ts, PAGE_W - MARGIN, y, { align: 'right' });
+    y += 8;
+
+    divider();
+
+    // ── OVERALL SCORE + SUBJECT TABLE ─────────────────────────────
+    const pct      = r.percentage || 0;
+    const gradeClr = pctColor(pct);
+    const subjects = r.subjects || [];
+    const blockStartY = y;
+
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.muted);
+    doc.text('OVERALL SCORE', MARGIN, blockStartY);
+
+    doc.setFontSize(30);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...gradeClr);
+    doc.text(pct + '%', MARGIN, blockStartY + 17);
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.text);
+    doc.text('Grade ' + (r.grade || '—'), MARGIN, blockStartY + 23);
+
+    let rightBlockH = 0;
+    if (subjects.length > 0) {
+      const tblX = MARGIN + 95;
+      const tblW = CONTENT_W - 95;
+      let ty = blockStartY + 2;
+
+      doc.setFontSize(7.5);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...C.muted);
+      doc.text('SUBJECT', tblX, ty);
+      doc.text('SCORE', tblX + tblW, ty, { align: 'right' });
+      ty += 4;
+      doc.setDrawColor(...C.divider);
+      doc.setLineWidth(0.2);
+      doc.line(tblX, ty, tblX + tblW, ty);
+      ty += 5;
+
+      subjects.forEach(subj => {
+        const sp    = r.scores?.[subj] ?? 0;
+        const cc    = r.correctCounts?.[subj];
+        const total = (r.questionSnapshots?.[subj] || []).length;
+
+        doc.setFontSize(8.5);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...C.text);
+        doc.text(_pdfText(subj), tblX, ty);
+
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...pctColor(sp));
+        const scoreLabel = sp + '%' + (cc != null && total ? '  (' + cc + '/' + total + ')' : '');
+        doc.text(scoreLabel, tblX + tblW, ty, { align: 'right' });
+        ty += 5.5;
+      });
+
+      rightBlockH = ty - blockStartY;
+    }
+
+    y = blockStartY + Math.max(28, rightBlockH) + 6;
+    divider();
+
+    // ── NO DETAILED DATA FALLBACK ─────────────────────────────────
+    if (!r.questionSnapshots) {
+      checkPage(20);
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'italic');
+      doc.setTextColor(...C.muted);
+      const noteLines = doc.splitTextToSize(
+        'A detailed question-by-question breakdown is not available for this result. ' +
+        'It was submitted before per-question tracking was introduced.',
+        CONTENT_W
+      );
+      doc.text(noteLines, MARGIN, y + 4);
+
+      const safeName = (r.name || 'student').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      doc.save('vtx_result_' + safeName + '.pdf');
+      UI.toast('PDF downloaded.', 'success');
+      return;
+    }
+
+    // ── QUESTION BREAKDOWN ───────────────────────────────────────
+    checkPage(12);
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.muted);
+    doc.text('QUESTION BREAKDOWN', MARGIN, y);
+    y += 8;
+
+    subjects.forEach(subj => {
+      const qs = r.questionSnapshots[subj] || [];
+      if (qs.length === 0) return;
+
+      const correctCount = r.correctCounts?.[subj] ?? qs.filter(q => q.chosen === q.ans).length;
+      const subjPct      = r.scores?.[subj] ?? 0;
+
+      checkPage(14);
+      doc.setFontSize(11.5);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...C.accent);
+      doc.text(_pdfText(subj), MARGIN, y);
+
+      doc.setFontSize(8.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...pctColor(subjPct));
+      doc.text(correctCount + '/' + qs.length + ' correct   ·   ' + subjPct + '%', PAGE_W - MARGIN, y, { align: 'right' });
+      y += 3;
+      doc.setDrawColor(...C.accent);
+      doc.setLineWidth(0.5);
+      doc.line(MARGIN, y, PAGE_W - MARGIN, y);
+      y += 6;
+
+      qs.forEach((q, i) => {
+        const isSkipped = q.chosen === null || q.chosen === undefined;
+        const isCorrect = !isSkipped && q.chosen === q.ans;
+        const statusWord  = isCorrect ? 'Correct' : isSkipped ? 'Skipped' : 'Incorrect';
+        const statusColor = isCorrect ? C.success : isSkipped ? C.faint : C.danger;
+
+        const qText  = _pdfText(q.q || '');
+        const qLines = doc.splitTextToSize((i + 1) + '. ' + qText, CONTENT_W - 2);
+
+        const chosenText  = isSkipped ? 'Not answered' : _pdfText(q.opts?.[q.chosen] ?? '—');
+        const answerLines = doc.splitTextToSize('Answer (' + statusWord + '): ' + chosenText, CONTENT_W - 4);
+
+        const showCorrect  = !isCorrect;
+        const correctText  = _pdfText(q.opts?.[q.ans] ?? '—');
+        const correctLines = showCorrect ? doc.splitTextToSize('Correct answer: ' + correctText, CONTENT_W - 4) : [];
+
+        const expText  = q.exp ? _pdfText(q.exp) : '';
+        const expLines = expText ? doc.splitTextToSize('Explanation: ' + expText, CONTENT_W - 4) : [];
+
+        const neededH =
+          qLines.length * 4.3 + 2 +
+          answerLines.length * 4 + 1.5 +
+          (correctLines.length ? correctLines.length * 4 + 1.5 : 0) +
+          (expLines.length ? expLines.length * 3.8 + 2 : 0) + 6;
+
+        checkPage(neededH);
+
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...C.text);
+        doc.text(qLines, MARGIN, y);
+        y += qLines.length * 4.3 + 2;
+
+        doc.setFontSize(8.3);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...statusColor);
+        doc.text(answerLines, MARGIN + 2, y);
+        y += answerLines.length * 4 + 1.5;
+
+        if (showCorrect) {
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(...C.success);
+          doc.text(correctLines, MARGIN + 2, y);
+          y += correctLines.length * 4 + 1.5;
+        }
+
+        if (expLines.length) {
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'italic');
+          doc.setTextColor(...C.muted);
+          doc.text(expLines, MARGIN + 2, y);
+          y += expLines.length * 3.8 + 2;
+        }
+
+        y += 2.5;
+        if (i < qs.length - 1) {
+          doc.setDrawColor(...C.divider);
+          doc.setLineWidth(0.15);
+          doc.line(MARGIN, y, PAGE_W - MARGIN, y);
+          y += 4;
+        }
+      });
+
+      y += 4;
+    });
+
+    const safeName = (r.name || 'student').replace(/[^a-z0-9]/gi, '_').toLowerCase();
+    doc.save('vtx_result_' + safeName + '.pdf');
+    UI.toast('PDF downloaded.', 'success');
+  }
+  
   window.Teacher = {
     renderTeacherDashboard,
     showTab,
@@ -3756,6 +4089,7 @@ function _mondayFromIsoWeekKey(weekKey) {
     _clearDaySubjects,
     _updateDaySubjCount,
     exportTaskReportPDF,
+    exportResultPDF,
     _loadTimetableManager,
     _onTTClassChange,
     _onTTWeekChange,
