@@ -3769,9 +3769,59 @@ async function exportResultPDF(resultId) {
       return;
     }
 
+    // ── Strip LaTeX/KaTeX math delimiters and convert to readable plain text ──
+    function _stripLatex(str) {
+      if (str == null) return '';
+      return String(str)
+        // Display math: $$...$$ or \[...\]
+        .replace(/\$\$([\s\S]*?)\$\$/g, (_, m) => m.trim())
+        .replace(/\\\[([\s\S]*?)\\\]/g, (_, m) => m.trim())
+        // Inline math: $...$ or \(...\)
+        .replace(/\$([\s\S]*?)\$/g, (_, m) => m.trim())
+        .replace(/\\\(([\s\S]*?)\\\)/g, (_, m) => m.trim())
+        // Common LaTeX commands to readable text
+        .replace(/\\frac\{([^}]*)\}\{([^}]*)\}/g, '($1)/($2)')
+        .replace(/\\sqrt\{([^}]*)\}/g, 'sqrt($1)')
+        .replace(/\\sqrt\s/g, 'sqrt ')
+        .replace(/\^2/g, '²')
+        .replace(/\^3/g, '³')
+        .replace(/\^\{([^}]*)\}/g, '^($1)')
+        .replace(/\_\{([^}]*)\}/g, '_($1)')
+        .replace(/\\times/g, '×')
+        .replace(/\\div/g, '÷')
+        .replace(/\\pm/g, '±')
+        .replace(/\\leq/g, '≤')
+        .replace(/\\geq/g, '≥')
+        .replace(/\\neq/g, '≠')
+        .replace(/\\approx/g, '≈')
+        .replace(/\\cdot/g, '·')
+        .replace(/\\pi/g, 'π')
+        .replace(/\\alpha/g, 'α')
+        .replace(/\\beta/g, 'β')
+        .replace(/\\theta/g, 'θ')
+        .replace(/\\Delta/g, 'Δ')
+        .replace(/\\implies/g, '⟹')
+        .replace(/\\text\{([^}]*)\}/g, '$1')
+        .replace(/\\mathbf\{([^}]*)\}/g, '$1')
+        .replace(/\\mathrm\{([^}]*)\}/g, '$1')
+        .replace(/\{|\}/g, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+    }
+
     function _pdfText(str) {
       if (str == null) return '';
-      return String(str).replace(/\s+/g, ' ').trim();
+      return _stripLatex(String(str)).replace(/\s+/g, ' ').trim();
+    }
+
+    // ── PascalCase file naming (no underscores or hyphens) ──
+    function _toPascalCase(str) {
+      return (str || '')
+        .replace(/[^a-zA-Z0-9\s]/g, ' ')
+        .trim()
+        .split(/\s+/)
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join('');
     }
 
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
@@ -3898,8 +3948,8 @@ async function exportResultPDF(resultId) {
 
     let rightBlockH = 0;
     if (subjects.length > 0) {
-      const tblX = MARGIN + 95;
-      const tblW = CONTENT_W - 95;
+      const tblX = MARGIN + 55;
+      const tblW = CONTENT_W - 55;
       let ty = blockStartY + 2;
 
       doc.setFontSize(7.5);
@@ -3918,16 +3968,19 @@ async function exportResultPDF(resultId) {
         const cc    = r.correctCounts?.[subj];
         const total = (r.questionSnapshots?.[subj] || []).length;
 
+        // Subject name — wrap if needed
         doc.setFontSize(8.5);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(...C.text);
-        doc.text(_pdfText(subj), tblX, ty);
+        const subjLabel = _pdfText(subj);
+        const subjLines = doc.splitTextToSize(subjLabel, tblW - 40);
+        doc.text(subjLines, tblX, ty);
 
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(...pctColor(sp));
         const scoreLabel = sp + '%' + (cc != null && total ? '  (' + cc + '/' + total + ')' : '');
         doc.text(scoreLabel, tblX + tblW, ty, { align: 'right' });
-        ty += 5.5;
+        ty += subjLines.length * 5.5;
       });
 
       rightBlockH = ty - blockStartY;
@@ -3949,8 +4002,8 @@ async function exportResultPDF(resultId) {
       );
       doc.text(noteLines, MARGIN, y + 4);
 
-      const safeName = (r.name || 'student').replace(/[^a-z0-9]/gi, '_').toLowerCase();
-      doc.save('vtx_result_' + safeName + '.pdf');
+      const safeName = _toPascalCase(r.name || 'Student');
+      doc.save('VtxResult' + safeName + '.pdf');
       UI.toast('PDF downloaded.', 'success');
       return;
     }
@@ -3992,15 +4045,16 @@ async function exportResultPDF(resultId) {
         const statusWord  = isCorrect ? 'Correct' : isSkipped ? 'Skipped' : 'Incorrect';
         const statusColor = isCorrect ? C.success : isSkipped ? C.faint : C.danger;
 
+        // Clean all text through _pdfText which strips LaTeX
         const qText  = _pdfText(q.q || '');
-        const qLines = doc.splitTextToSize((i + 1) + '. ' + qText, CONTENT_W - 2);
+        const qLines = doc.splitTextToSize((i + 1) + '. ' + qText, CONTENT_W);
 
-        const chosenText  = isSkipped ? 'Not answered' : _pdfText(q.opts?.[q.chosen] ?? '—');
-        const answerLines = doc.splitTextToSize('Answer (' + statusWord + '): ' + chosenText, CONTENT_W - 4);
+        const chosenRaw   = isSkipped ? 'Not answered' : _pdfText(q.opts?.[q.chosen] ?? '—');
+        const answerLines = doc.splitTextToSize('Answer (' + statusWord + '): ' + chosenRaw, CONTENT_W - 4);
 
         const showCorrect  = !isCorrect;
-        const correctText  = _pdfText(q.opts?.[q.ans] ?? '—');
-        const correctLines = showCorrect ? doc.splitTextToSize('Correct answer: ' + correctText, CONTENT_W - 4) : [];
+        const correctRaw   = _pdfText(q.opts?.[q.ans] ?? '—');
+        const correctLines = showCorrect ? doc.splitTextToSize('Correct answer: ' + correctRaw, CONTENT_W - 4) : [];
 
         const expText  = q.exp ? _pdfText(q.exp) : '';
         const expLines = expText ? doc.splitTextToSize('Explanation: ' + expText, CONTENT_W - 4) : [];
@@ -4052,8 +4106,8 @@ async function exportResultPDF(resultId) {
       y += 4;
     });
 
-    const safeName = (r.name || 'student').replace(/[^a-z0-9]/gi, '_').toLowerCase();
-    doc.save('vtx_result_' + safeName + '.pdf');
+    const safeName = _toPascalCase(r.name || 'Student');
+    doc.save('VtxResult' + safeName + '.pdf');
     UI.toast('PDF downloaded.', 'success');
   }
   
