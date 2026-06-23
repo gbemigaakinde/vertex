@@ -820,6 +820,47 @@ function _krStartCountdownTick(getEl) {
     const currentRank    = level.rank;
     const levelStripHtml = _renderLevelStrip(currentRank, _profile.xp || 0);
 
+    // ── Knowledge Surfer card: compute limit state before building HTML ──
+    const _krLimited   = _krIsLimitReached();
+    const _krPlaysUsed = _krGetRecentPlays().length;
+    const _krPlaysLeft = Math.max(0, KR_MAX_PLAYS - _krPlaysUsed);
+    const _krCountdown = _krCooldownLabel();
+    const _krCardId    = 'krLobbyCountdown';
+
+    const knowledgeSurferCard = `
+      <div class="game-card game-card--runner${_krLimited ? ' game-card--locked' : ''}"
+           onclick="Game._selectGame('knowledgeRunner')"
+           style="${_krLimited ? 'opacity:.7;cursor:pointer;' : ''}">
+        <div class="game-card__icon">
+          ${_krLimited ? '🔒' : _icon('bolt', 32, { color: '#06b6d4' })}
+        </div>
+        <div class="game-card__title">
+          Knowledge Surfer
+          ${_krLimited
+            ? `<span style="font-size:.625rem;background:#ef4444;color:#fff;
+                           border-radius:4px;padding:1px 6px;font-weight:700;
+                           margin-left:.375rem;vertical-align:middle;">COOLDOWN</span>`
+            : ''}
+        </div>
+        <div class="game-card__desc">
+          ${_krLimited
+            ? `On a break! Back in&nbsp;<strong id="${_krCardId}" style="color:#ef4444;font-family:var(--font-mono);">${_krCountdown}</strong>.
+               Try Quiz Blitz or Word Scramble in the meantime.`
+            : 'Subway Surfers-style! Swipe across 3 lanes. Collect correct answer coins. Dodge wrong-answer trains &amp; barriers. Inspector chases you!'}
+        </div>
+        <div class="game-card__meta">
+          <span class="game-card__tag">Action</span>
+          <span class="game-card__tag">Endless Runner</span>
+          ${_krLimited
+            ? `<span class="game-card__tag" style="background:rgba(239,68,68,0.1);color:#ef4444;border-color:rgba(239,68,68,0.3);">
+                 ${_krPlaysUsed}/${KR_MAX_PLAYS} plays used
+               </span>`
+            : `<span class="game-card__tag game-card__tag--xp">
+                 ${_krPlaysLeft} play${_krPlaysLeft !== 1 ? 's' : ''} left
+               </span>`}
+        </div>
+      </div>`;
+
     window.UI.mount(`
       <div class="max-w-4xl mx-auto animate-fadeIn" style="padding-bottom:2rem;">
 
@@ -939,46 +980,7 @@ function _krStartCountdownTick(getEl) {
               <span class="game-card__tag game-card__tag--xp">+${XP_CHALLENGE_WIN} bonus XP</span>
             </div>
           </div>
-          (() => {
-            const _krLimited    = _krIsLimitReached();
-            const _krPlaysUsed  = _krGetRecentPlays().length;
-            const _krPlaysLeft  = Math.max(0, KR_MAX_PLAYS - _krPlaysUsed);
-            const _krCountdown  = _krCooldownLabel();
-            const _krCardId     = 'krLobbyCountdown';
-            return `
-              <div class="game-card game-card--runner${_krLimited ? ' game-card--locked' : ''}"
-                   onclick="Game._selectGame('knowledgeRunner')"
-                   style="${_krLimited ? 'opacity:.7;cursor:pointer;' : ''}">
-                <div class="game-card__icon">
-                  ${_krLimited ? '🔒' : _icon('bolt', 32, { color: '#06b6d4' })}
-                </div>
-                <div class="game-card__title">
-                  Knowledge Surfer
-                  ${_krLimited
-                    ? `<span style="font-size:.625rem;background:#ef4444;color:#fff;
-                                   border-radius:4px;padding:1px 6px;font-weight:700;
-                                   margin-left:.375rem;vertical-align:middle;">COOLDOWN</span>`
-                    : ''}
-                </div>
-                <div class="game-card__desc">
-                  ${_krLimited
-                    ? `On a break! Back in&nbsp;<strong id="${_krCardId}" style="color:#ef4444;font-family:var(--font-mono);">${_krCountdown}</strong>.
-                       Try Quiz Blitz or Word Scramble in the meantime.`
-                    : 'Subway Surfers-style! Swipe across 3 lanes. Collect correct answer coins. Dodge wrong-answer trains &amp; barriers. Inspector chases you!'}
-                </div>
-                <div class="game-card__meta">
-                  <span class="game-card__tag">Action</span>
-                  <span class="game-card__tag">Endless Runner</span>
-                  ${_krLimited
-                    ? `<span class="game-card__tag" style="background:rgba(239,68,68,0.1);color:#ef4444;border-color:rgba(239,68,68,0.3);">
-                         ${_krPlaysUsed}/${KR_MAX_PLAYS} plays used
-                       </span>`
-                    : `<span class="game-card__tag game-card__tag--xp">
-                         ${_krPlaysLeft} play${_krPlaysLeft !== 1 ? 's' : ''} left
-                       </span>`}
-                </div>
-              </div>`;
-          })()
+          ${knowledgeSurferCard}
         </div>
 
         <h2 class="game-section-title" style="margin-top:1.5rem;">Your Badges</h2>
@@ -1011,8 +1013,8 @@ function _krStartCountdownTick(getEl) {
     _updateGameNavBadge(pendingChallenges.length + awaitingPlay.length);
 
     // If Knowledge Surfer is on cooldown, start live countdown on the lobby card
-    if (_krIsLimitReached()) {
-      _krStartCountdownTick(() => document.getElementById('krLobbyCountdown'));
+    if (_krLimited) {
+      _krStartCountdownTick(() => document.getElementById(_krCardId));
     }
     } catch (err) {
       console.error('[game] openGameLobby crashed:', err);
