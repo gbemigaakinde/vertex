@@ -197,6 +197,1301 @@
   const SD_XP_INCREMENT          = 2;  // extra XP per question (compounds)
   const SD_MAX_QUESTIONS         = 50; // safety ceiling
 
+/* ══════════════════════════════════════════════════════════════
+   WORD SCRABBLE CONSTANTS
+══════════════════════════════════════════════════════════════ */
+
+const WS_BOARD_SIZE   = 15;
+const WS_RACK_SIZE    = 7;
+const WS_BINGO_BONUS  = 50;
+const WS_TURN_MS      = 3 * 60 * 1000; // 3 minutes per turn
+
+// Official English Scrabble tile distribution
+// [letter, count, points]
+const WS_TILES = [
+  ['A',9,1],['B',2,3],['C',2,3],['D',4,2],['E',12,1],
+  ['F',2,4],['G',3,2],['H',2,4],['I',9,1],['J',1,8],
+  ['K',1,5],['L',4,1],['M',2,3],['N',6,1],['O',8,1],
+  ['P',2,3],['Q',1,10],['R',6,1],['S',4,1],['T',6,1],
+  ['U',4,1],['V',2,4],['W',2,4],['X',1,8],['Y',2,4],
+  ['Z',1,10],['?',2,0], // ? = blank
+];
+
+// Premium square layout for 15×15 board
+// TW=triple word, DW=double word, TL=triple letter, DL=double letter, ST=start
+const WS_PREMIUM = (function() {
+  const B = Array.from({ length: 15 }, () => Array(15).fill(''));
+
+  // Triple Word
+  [[0,0],[0,7],[0,14],[7,0],[7,14],[14,0],[14,7],[14,14]].forEach(([r,c]) => B[r][c] = 'TW');
+
+  // Double Word (includes centre diagonals)
+  [[1,1],[2,2],[3,3],[4,4],[7,7],
+   [1,13],[2,12],[3,11],[4,10],
+   [10,4],[11,3],[12,2],[13,1],
+   [10,10],[11,11],[12,12],[13,13]].forEach(([r,c]) => B[r][c] = 'DW');
+
+  // Triple Letter
+  [[1,5],[1,9],[5,1],[5,5],[5,9],[5,13],
+   [9,1],[9,5],[9,9],[9,13],[13,5],[13,9]].forEach(([r,c]) => B[r][c] = 'TL');
+
+  // Double Letter
+  [[0,3],[0,11],[2,6],[2,8],[3,0],[3,7],[3,14],
+   [6,2],[6,6],[6,8],[6,12],[7,3],[7,11],
+   [8,2],[8,6],[8,8],[8,12],[11,0],[11,7],[11,14],
+   [12,6],[12,8],[14,3],[14,11]].forEach(([r,c]) => B[r][c] = 'DL');
+
+  B[7][7] = 'ST'; // centre star
+  return B;
+})();
+
+// Compact but solid word list for secondary school Scrabble
+// ~500 common valid words — enough for fair gameplay
+const WS_WORDLIST = new Set([
+  // 2-letter words (essential for adjacency plays)
+  'AA','AB','AD','AE','AG','AH','AI','AL','AM','AN','AR','AS','AT','AW','AX','AY',
+  'BA','BE','BI','BO','BY',
+  'DA','DE','DO',
+  'ED','EF','EH','EL','EM','EN','ER','ES','ET','EX',
+  'FA','FE',
+  'GI','GO',
+  'HA','HE','HI','HM','HO',
+  'ID','IF','IN','IS','IT',
+  'JO',
+  'KA','KI',
+  'LA','LI','LO',
+  'MA','ME','MI','MM','MO','MU','MY',
+  'NA','NE','NO','NU',
+  'OD','OE','OF','OH','OI','OM','ON','OP','OR','OS','OW','OX','OY',
+  'PA','PE','PI',
+  'QI',
+  'RE',
+  'SH','SI','SO',
+  'TA','TI','TO',
+  'UH','UM','UN','UP','UR','US','UT',
+  'WE','WO',
+  'XI','XU',
+  'YA','YE','YO',
+  'ZA',
+  // 3-letter words
+  'ACE','ACT','ADD','AGE','AGO','AID','AIM','AIR','ALL','AND','ANT','ANY','APE',
+  'APP','APT','ARC','ARE','ARK','ARM','ART','ASH','ASK','ATE','AXE',
+  'BAD','BAG','BAN','BAR','BAT','BAY','BED','BEG','BET','BIG','BIT','BOW','BOX','BOY','BUD','BUG','BUN','BUS','BUT','BUY',
+  'CAB','CAN','CAP','CAR','CAT','COP','COT','COW','CRY','CUB','CUP','CUT',
+  'DAD','DAM','DAY','DEN','DEW','DID','DIG','DIM','DIP','DOE','DOG','DOT','DRY','DUG','DUO','DYE',
+  'EAR','EAT','EEL','EGG','ELM','EMU','END','ERA','EVE','EWE','EYE',
+  'FAD','FAN','FAR','FAT','FAX','FED','FEW','FIG','FIN','FIT','FLY','FOE','FOG','FUN','FUR',
+  'GAP','GAS','GAY','GEL','GEM','GET','GOD','GOT','GUM','GUN','GUT','GUY','GYM',
+  'HAD','HAM','HAS','HAT','HAY','HEN','HER','HIM','HIS','HIT','HOG','HOP','HOT','HOW','HUB','HUG','HUM',
+  'ICE','ILL','INN','ION','IRE','IRK',
+  'JAB','JAM','JAR','JAW','JAY','JET','JOB','JOG','JOT','JOY','JUG','JUT',
+  'KEG','KEN','KIT',
+  'LAB','LAD','LAG','LAP','LAW','LAX','LAY','LEA','LED','LEG','LET','LID','LIP','LIT','LOG','LOT','LOW',
+  'MAD','MAN','MAP','MAR','MAT','MAW','MAY','MEN','MET','MID','MIX','MOB','MOD','MOM','MOP','MUD','MUG',
+  'NAB','NAG','NAP','NAY','NET','NEW','NIL','NIT','NOB','NOD','NOR','NOT','NOW','NUN','NUT',
+  'OAK','OAR','OAT','ODD','ODE','OFF','OFT','OHM','OIL','OLD','ONE','OPT','ORB','ORE','OWE','OWL','OWN',
+  'PAD','PAL','PAN','PAP','PAR','PAT','PAW','PAY','PEA','PEG','PEN','PEP','PER','PET','PEW','PIE','PIG','PIN','PIT','PIX','PLY','POD','POP','POT','POW','PRY','PUB','PUN','PUP','PUS','PUT',
+  'RAG','RAM','RAN','RAP','RAT','RAW','RAY','RED','REF','RIB','RID','RIG','RIM','RIP','ROB','ROD','ROT','ROW','RUB','RUG','RUN','RUT','RYE',
+  'SAC','SAD','SAG','SAP','SAT','SAW','SAY','SEA','SET','SEW','SIP','SIR','SIT','SIX','SKI','SKY','SLY','SOB','SOD','SON','SOP','SOT','SOW','SOY','SPA','SPY','STY','SUB','SUM','SUN','SUP',
+  'TAB','TAD','TAN','TAP','TAR','TAT','TAX','TEA','TEN','THE','TIE','TIN','TIP','TOE','TON','TOO','TOP','TOW','TOY','TUB','TUG','TUN','TWO',
+  'URN','USE',
+  'VAN','VAR','VAT','VET','VIA','VIE','VOW',
+  'WAD','WAR','WAS','WAX','WAY','WEB','WED','WET','WHO','WHY','WIG','WIN','WIT','WOE','WOK','WON','WOO','WOW',
+  'YAK','YAM','YAP','YAW','YEA','YEP','YET','YEW',
+  'ZAP','ZED','ZEN','ZIG','ZIP','ZIT',
+  // 4-letter words
+  'ABLE','ACHE','ACID','ACNE','ACRE','ACTS','AGED','AGES','AIDE','AIDS','AIMS','AIRS','AJAR','AKIN','ALOE','ALSO','ALTO','ALUM','AMEN','AMID','AMOK','AMPS','ANTE','ANTI','ANTS','APES','APEX','ARCH','AREA','ARKS','ARMS','ARMY','ARTS','ASHY',
+  'ATOM','ATOP','AUNT','AUTO','AVID','AWAY','AWED','AWRY',
+  'BABY','BACK','BADE','BAIT','BALD','BALE','BALL','BAND','BANE','BANG','BANK','BARE','BARK','BARN','BASE','BASH','BASK','BASS','BAST','BATH','BATS','BEAD','BEAK','BEAM','BEAN','BEAR','BEAT','BEES','BEET','BELL','BELT','BEND','BEST','BIAS','BIKE','BILE','BILL','BIND','BIRD','BITE','BLOT','BLOW','BLUE','BLUR','BOAR','BOAT','BODY','BOLD','BOLT','BONE','BOOK','BOOM','BOOT','BORE','BORN','BOSS','BOTH','BOUT','BOWL','BRAG','BRAN','BRAT','BRAY','BRED','BREW','BROW','BUCK','BUFF','BULK','BULL','BUMP','BUNK','BURN','BURP','BURR','BUST','BUZZ',
+  'CAFE','CAGE','CAKE','CALF','CALL','CALM','CAME','CAMP','CANE','CAPE','CARD','CARE','CARP','CART','CASE','CASH','CAST','CAVE','CENT','CHAD','CHAP','CHAT','CHEW','CHIP','CHOP','CLAD','CLAM','CLAP','CLAW','CLAY','CLIP','CLOD','CLOP','CLOT','CLUB','CLUE','COAT','CODE','COIL','COIN','COKE','COLD','COLE','COLT','COMA','COME','CONE','COOK','COOL','COPE','CORD','CORE','CORN','COST','COUP','COVE','COZY','CRAB','CREW','CROP','CROW','CUBE','CURB','CURE','CURL','CUSP',
+  'DABS','DADS','DAMP','DARE','DARK','DART','DASH','DATA','DATE','DAZE','DEAD','DEAL','DEAR','DEBT','DECK','DEED','DEEM','DEEP','DEER','DEFT','DELI','DELL','DEMO','DENY','DESK','DIAL','DICE','DIET','DIRE','DIRK','DISC','DISH','DISK','DIVE','DOCK','DOLE','DOME','DONE','DOOM','DOOR','DOSE','DOTE','DOVE','DOWN','DRAB','DRAG','DRAW','DRIP','DROP','DRUM','DUAL','DUEL','DULY','DUMB','DUNE','DUNK','DUPE','DUSK','DUST',
+  'EACH','EARL','EARN','EASE','EAST','EASY','EDGE','ELSE','EMIT','ENVY','EPIC','EVEN','EVER','EVIL','EXAM',
+  'FACE','FACT','FAIL','FAIR','FAKE','FALL','FAME','FARE','FARM','FAST','FATE','FAWN','FEAT','FEEL','FEET','FELL','FELT','FEND','FERN','FILE','FILL','FILM','FIND','FIRE','FIRM','FISH','FIST','FIZZ','FLAG','FLAP','FLAT','FLAW','FLEA','FLEX','FLIP','FLIT','FLOG','FLOP','FLOW','FOAM','FOIL','FOLD','FOLK','FOND','FOOD','FOOL','FORD','FORE','FORK','FORM','FORT','FOUL','FOUR','FOWL','FREE','FROM','FUEL','FULL','FUME','FUND','FUSE','FUSS',
+  'GALE','GAME','GANG','GAPE','GARB','GASH','GAVE','GAZE','GEAR','GERM','GIFT','GILD','GILT','GIVE','GLAD','GLEE','GLOB','GLOW','GLUE','GNAW','GOAL','GOAT','GOLD','GOLF','GONE','GONG','GOOD','GOOF','GORE','GOWN','GRAB','GRAM','GRAY','GREW','GREY','GRIM','GRIP','GRIT','GUST','GUTS',
+  'HACK','HAIL','HAIR','HALF','HALL','HALT','HAND','HANG','HARD','HARE','HARM','HARP','HASH','HASTE','HATE','HAUL','HEAL','HEAP','HEAT','HEEL','HELD','HELM','HELP','HEMP','HERB','HERD','HERE','HERO','HIDE','HIGH','HIKE','HILL','HINT','HIRE','HISS','HIVE','HOAX','HOLD','HOLE','HOME','HOOK','HOPE','HORN','HOST','HOUR','HUGE','HULL','HUNG','HUNT','HURL','HYMN',
+  'IDEA','IDLE','INCH','IRIS','IRON',
+  'JACK','JADE','JAIL','JEST','JOLT','JUMP','JUNK','JURY','JUST',
+  'KEEN','KEEP','KELP','KICK','KIND','KING','KNOB','KNOT','KNOW',
+  'LACE','LACK','LAKE','LAMP','LAND','LANE','LARK','LASH','LAST','LATE','LAUD','LAWN','LAZY','LEAD','LEAF','LEAK','LEAN','LEAP','LEND','LENS','LESS','LICK','LIED','LIFE','LIFT','LIKE','LIME','LIMP','LINE','LINK','LION','LIST','LIVE','LOAD','LOAF','LOAN','LOCK','LOFT','LONE','LONG','LOOK','LOOM','LOOP','LORE','LOSE','LOSS','LOST','LOUD','LOUT','LOVE','LULL','LURE','LUST',
+  'MADE','MAID','MAIL','MAIN','MAKE','MALL','MANE','MANY','MARE','MARK','MASK','MASS','MAST','MATE','MATH','MAZE','MEAL','MEAN','MEAT','MELT','MEMO','MERE','MESH','MESS','MILD','MILE','MILK','MILL','MIME','MIND','MINE','MINT','MISS','MIST','MODE','MOLD','MONK','MOON','MOOR','MORE','MOTE','MUCK','MULE','MUSE','MUSK','MUST',
+  'NAIL','NAME','NAPE','NAVY','NEAR','NECK','NEED','NEWS','NEXT','NICE','NINE','NODE','NONE','NOON','NORM','NOSE','NOTE','NULL',
+  'OATH','OBOE','ODDS','OKAY','OMEN','ONCE','ONLY','OPEN','ORAL','ORCA','OVAL','OVEN','OVER','OXEN',
+  'PACE','PACK','PAGE','PAIN','PAIR','PALE','PALM','PANE','PARK','PART','PASS','PAST','PATH','PAVE','PAWN','PEAK','PEAL','PEAR','PEEL','PEEL','PEER','PEST','PICK','PILE','PINK','PIPE','PLAN','PLAY','PLEA','PLOW','PLOY','PLUG','PLUM','PLUS','POEM','POET','POKE','POLE','POLL','POND','PONY','POOL','POOR','POPE','PORE','PORT','POSE','POUR','PREY','PRIM','PROD','PROP','PULL','PULP','PUMP','PURE','PUSH',
+  'QUIP','QUIZ',
+  'RACE','RACK','RAGE','RAID','RAIL','RAIN','RAKE','RAMP','RANG','RANK','RANT','RASH','RATE','RAVE','RAYS','RAZZ','READ','REAL','REAP','REEL','RELY','REND','RENT','RICE','RICH','RIDE','RIND','RING','RINK','RIOT','RISE','RISK','ROAM','ROAR','ROBE','ROCK','ROLE','ROLL','ROOF','ROOK','ROOM','ROOT','ROSE','ROUT','RUDE','RUIN','RULE','RUSH','RUST',
+  'SAFE','SAGE','SAID','SAIL','SAKE','SALT','SAME','SAND','SANE','SANG','SASH','SAVE','SCAM','SCAN','SCAR','SEAM','SEAT','SEED','SEEK','SEEM','SEEN','SELF','SELL','SEND','SENT','SHED','SHIN','SHIP','SHOE','SHOP','SHOT','SHOW','SHUT','SICK','SIDE','SIFT','SIGN','SILK','SING','SINK','SIZE','SKIP','SLAB','SLAP','SLIM','SLIP','SLOT','SLOW','SLUG','SNAP','SNOB','SNOW','SOAK','SOAP','SOAR','SOCK','SOIL','SOLD','SOLE','SOME','SONG','SORT','SOUL','SOUP','SOUR','SPAN','SPIN','SPIT','SPOT','SPUR','STAR','STAY','STEM','STEP','STEW','STIR','STOP','STUB','STUN','SUCH','SUIT','SULK','SURF','SWAP','SWIM',
+  'TACK','TALE','TALK','TALL','TAME','TANK','TAPE','TASK','TEAR','TEAT','TELL','TEND','TENT','TEST','TEXT','THAW','THEM','THEN','THIN','THIS','THUD','THUS','TICK','TIDE','TIED','TILE','TILL','TILT','TINT','TIRE','TOAD','TOLL','TOMB','TOME','TONE','TOOL','TORE','TORN','TOSS','TOTE','TOUR','TOWN','TRAP','TRAY','TREE','TRIM','TRIP','TROD','TRUE','TUBE','TUCK','TUFT','TUNE','TURF','TUSK','TWIN',
+  'UGLY','UNDO','UNIT','UPON','USER',
+  'VALE','VANE','VARY','VASE','VAST','VEIL','VEIN','VENT','VERY','VIEW','VINE','VOID',
+  'WADE','WAGE','WAIL','WAKE','WAND','WANE','WARP','WARY','WASH','WASP','WAVE','WAYS','WEAK','WEAL','WEAN','WEED','WEEK','WELD','WELL','WENT','WEST','WHIM','WHIP','WHIT','WHOM','WICK','WIDE','WILE','WILL','WILT','WIND','WINE','WING','WIRE','WISE','WISH','WITH','WOKE','WOLF','WOOD','WOOL','WORD','WORE','WORK','WORM','WORN','WREN','WRIT',
+  'YARD','YARN','YAWN','YEAR','YELL','YOGA','YORE','YOUR',
+  'ZEAL','ZERO','ZEST','ZINC','ZONE','ZOOM',
+  // 5-letter words (selection)
+  'ABBEY','ABIDE','ABORT','ABOUT','ABOVE','ABUSE','ABYSS','ACIDS','ACHED','ACRES','ACUTE','ADULT','AFTER','AGAIN','AGATE','AGENT','AGILE','AGREE','AHEAD','AIDED','AISLE','ALARM','ALERT','ALIKE','ALIVE','ALLAY','ALOFT','ALONE','ALOUD','ANGEL','ANGER','ANGLE','ANGRY','ANIME','ANNEX','ANVIL','APART','APPLE','APPLY','ARENA','ARGUE','ARISE','ARMOR','AROSE','ARROW','ASIDE','ASKEW','ATTIC','AUDIT','AVAIL','AVOID','AWAIT','AWAKE','AWARD','AWARE','AWFUL',
+  'BADGE','BADLY','BAKER','BASIC','BASIS','BATCH','BEACH','BEAST','BEGIN','BEING','BELOW','BENCH','BLACK','BLADE','BLAME','BLAND','BLANK','BLAZE','BLEAK','BLEED','BLEND','BLESS','BLIND','BLOCK','BLOOD','BLOOM','BLOWN','BLUNT','BLURB','BOARD','BONUS','BOOST','BOUND','BRACE','BRAID','BRAKE','BRAVE','BREAD','BREAK','BREED','BRIBE','BRIDE','BRIEF','BRING','BROAD','BROKE','BROOK','BROOM','BROTH','BROWN','BRUNT','BRUSH','BUILD','BUILT','BULGE','BUNCH','BURNS','BURST',
+  'CAMEL','CANDY','CARGO','CARRY','CATCH','CAUSE','CHAIR','CHAOS','CHARM','CHASE','CHEAP','CHECK','CHEEK','CHEER','CHESS','CHEST','CHIEF','CHILD','CHILL','CHOSE','CIVIC','CIVIL','CLAIM','CLASS','CLEAN','CLEAR','CLIMB','CLING','CLOCK','CLOSE','CLOUD','CLOWN','COAST','COMET','COMIC','COMMA','COUCH','COULD','COUNT','COURT','COVER','CRACK','CRAFT','CRANE','CRASH','CRAZY','CREAM','CREEK','CRIME','CRISP','CROSS','CROWD','CROWN','CRUEL','CRUSH','CURVE',
+  'DAILY','DAIRY','DANCE','DATUM','DEALS','DEALT','DECAY','DECOY','DEFER','DELAY','DEPOT','DEPTH','DERBY','DEVIL','DIRTY','DISCO','DIZZY','DOZEN','DRAFT','DRAIN','DRAMA','DRANK','DRAPE','DRAWL','DREAM','DRESS','DRIFT','DRILL','DRINK','DRIVE','DROVE','DYING',
+  'EAGER','EARLY','EARTH','EIGHT','ELITE','EMBER','EMERY','EMPTY','ENEMY','ENJOY','ENTER','EQUAL','ERROR','ERUPT','ESSAY','ETHER','EVERY','EXACT','EXCEL','EXIST','EXTRA',
+  'FABLE','FACET','FAITH','FALSE','FANCY','FEAST','FERRY','FEVER','FIBER','FIELD','FIGHT','FINAL','FIRST','FIXED','FLANK','FLASH','FLESH','FLICK','FLING','FLOOD','FLOOR','FLOSS','FLOUR','FLUID','FLUSH','FOCUS','FOGGY','FORGE','FORTH','FOUND','FRAME','FRANK','FRAUD','FRESH','FRONT','FROST','FROWN','FROZE','FRUIT','FULLY',
+  'GHOST','GIVEN','GLARE','GLIDE','GLINT','GLOBE','GLOSS','GLOVE','GOING','GRACE','GRADE','GRAND','GRANT','GRASP','GRASS','GRAVE','GRAZE','GREAT','GREEN','GREET','GRIEF','GRILL','GRIND','GROAN','GROUP','GROVE','GROWL','GROWN','GRUEL','GUARD','GUEST','GUIDE','GUILD','GUILE','GUISE','GULCH','GULLY',
+  'HABIT','HAPPY','HARSH','HASTY','HAUNT','HEART','HEAVE','HEAVY','HEDGE','HELIX','HENCE','HINGE','HOBBY','HOLLY','HOMER','HONEY','HONOR','HORSE','HOTEL','HOUSE','HUMAN','HUMID','HUMOR','HURRY',
+  'IMAGE','IMPEL','INDEX','INFER','INNER','INPUT','INTER','INTRO','ISSUE',
+  'JEWEL','JOUST','JUDGE','JUICE','JUICY','JUMBO','JUROR',
+  'KNEEL','KNIFE','KNOCK','KNOLL',
+  'LABEL','LANCE','LARGE','LASER','LATER','LATTE','LAUGH','LAYER','LEARN','LEASE','LEAST','LEAVE','LEDGE','LEGAL','LEMON','LEVEL','LIGHT','LINEN','LIVER','LOCAL','LODGE','LOGIC','LOOSE','LOWER','LUCID','LUCKY','LUNAR','LUNCH','LUSTY',
+  'MAGIC','MAJOR','MAKER','MANOR','MAPLE','MARCH','MARSH','MATCH','MAVEN','MAYOR','MEANS','MEDAL','MEDIA','MERIT','MIGHT','MINOR','MINUS','MIRTH','MISER','MIXED','MODEL','MONEY','MONTH','MORAL','MOTOR','MOTTO','MOUNT','MOURN','MOUTH','MOVIE','MUCKY','MUDDY','MUSIC',
+  'NAIVE','NASTY','NIGHT','NIFTY','NOBLE','NOISY','NORTH','NUDGE','NURSE',
+  'OCCUR','OCEAN','OFFER','OFTEN','OLIVE','ONSET','OPTIC','ORBIT','ORDER','OTHER','OUGHT','OUTER','OUTDO','OVARY','OXIDE',
+  'PANDA','PANIC','PANEL','PAPER','PARTY','PASTA','PATCH','PAUSE','PEACE','PEACH','PEARL','PEDAL','PENNY','PHASE','PHONE','PIANO','PIECE','PILOT','PINCH','PITCH','PIXEL','PLACE','PLAIN','PLANT','PLATE','PLAZA','PLEAD','PLUCK','PLUME','POINT','POLAR','POSIT','POUCH','PRANK','PRESS','PRICE','PRIDE','PRIME','PRIOR','PRISM','PRIZE','PROBE','PRONE','PROOF','PROSE','PROUD','PROVE','PSALM','PULSE',
+  'QUERY','QUEEN','QUEST','QUEUE','QUOTA','QUOTE',
+  'RADAR','RADIO','RAISE','RALLY','RANCH','RANGE','RAPID','RATIO','REACH','READY','REALM','REBEL','REFER','REIGN','RELAX','REPAY','REPLY','RIDER','RIDGE','RISKY','RIVAL','RIVER','ROBIN','ROBOT','ROCKY','ROUGE','ROUGH','ROUND','ROUTE','ROVER','ROYAL','RUGBY','RULER',
+  'SADLY','SAINT','SALAD','SAUCE','SCALD','SCALE','SCALP','SCENE','SCENT','SCORE','SCORN','SCOUT','SENSE','SERVE','SEVEN','SHADE','SHAFT','SHAKE','SHALL','SHAME','SHAPE','SHARE','SHARK','SHARP','SHAVE','SHEEP','SHEET','SHELF','SHELL','SHIFT','SHOAL','SHOCK','SHORE','SHORT','SHOUT','SKILL','SKULL','SKUNK','SLATE','SLAVE','SLEEP','SLEEK','SLEET','SLICE','SLIDE','SLIME','SLING','SLOPE','SMART','SMELL','SMILE','SMOKE','SNARE','SOLID','SOLVE','SOUTH','SPACE','SPARE','SPARK','SPEAK','SPEAR','SPEED','SPELL','SPEND','SPILL','SPOKE','SPOON','SPRAY','SQUAD','SQUAT','SQUID','STACK','STAFF','STAGE','STAIN','STAIR','STAKE','STALE','STALL','STAMP','STAND','STANK','STARK','START','STATE','STAVE','STEAL','STEAM','STEEL','STEEP','STERN','STICK','STIFF','STILL','STOCK','STOLE','STONE','STORM','STORY','STOVE','STRAP','STRAW','STRAY','STRIP','STRUT','STUCK','STUDY','STYLE','SUPER','SURGE','SWAMP','SWEAR','SWEEP','SWEET','SWELL','SWEPT','SWIFT','SWIRL',
+  'TABLE','TAUNT','TEACH','TEASE','TEMPO','TENSE','THANK','THEIR','THERE','THESE','THICK','THING','THINK','THORN','THOSE','THREE','THROW','TIGHT','TIMER','TIRED','TITLE','TOAST','TODAY','TOPIC','TORCH','TOTAL','TOUCH','TOUGH','TOWEL','TRACE','TRACK','TRADE','TRAIL','TRAIN','TREAT','TRIBE','TRICK','TROOP','TRUCK','TRULY','TRUNK','TRUST','TRUTH','TUMOR','TUTOR','TWICE','TWIST','TYING',
+  'ULCER','ULTRA','UNCLE','UNDER','UNIFY','UNION','UNITY','UNTIL','UPPER','UPSET','URBAN','USAGE','USUAL',
+  'VAGUE','VALID','VALVE','VALUE','VAPOR','VAULT','VERSE','VIGOR','VIRAL','VISIT','VISTA','VOICE','VOTED',
+  'WAFER','WAGER','WALTZ','WASTE','WATCH','WATER','WEARY','WEAVE','WEIGH','WEIRD','WHALE','WHEAT','WHEEL','WHERE','WHILE','WHIRL','WHOSE','WITCH','WOMAN','WOMEN','WORLD','WORRY','WORSE','WORST','WORTH','WOULD','WOUND','WRECK','WRIST','WROTE',
+  'YACHT','YIELD','YOUNG','YOUTH',
+  'ZONAL',
+]);
+
+/* ══════════════════════════════════════════════════════════════
+   WORD SCRABBLE — HELPERS
+══════════════════════════════════════════════════════════════ */
+
+/** Build a fresh shuffled bag of 100 tiles */
+function _wsBuildBag() {
+  const bag = [];
+  WS_TILES.forEach(([letter, count, points]) => {
+    for (let i = 0; i < count; i++) bag.push({ letter, points, id: `${letter}_${i}_${Math.random()}` });
+  });
+  return _shuffleArray(bag);
+}
+
+/** Draw n tiles from bag (mutates bag array), returns drawn tiles */
+function _wsDraw(bag, n) {
+  return bag.splice(0, Math.min(n, bag.length));
+}
+
+/** Refill rack from bag up to WS_RACK_SIZE, returns new rack */
+function _wsRefillRack(rack, bag) {
+  const needed = WS_RACK_SIZE - rack.length;
+  if (needed > 0) rack.push(..._wsDraw(bag, needed));
+  return rack;
+}
+
+/** Return letter point value */
+function _wsPoints(letter) {
+  const entry = WS_TILES.find(([l]) => l === letter);
+  return entry ? entry[2] : 0;
+}
+
+/** Get premium type for cell */
+function _wsPremium(row, col) {
+  return (WS_PREMIUM[row] && WS_PREMIUM[row][col]) || '';
+}
+
+/** Check whether a word is valid */
+function _wsValidWord(word) {
+  return WS_WORDLIST.has(word.toUpperCase());
+}
+
+/** 
+ * Given the board (15x15 array of {letter,points,blank} or null)
+ * and a set of newly placed cells [{row,col,letter,points,blank}],
+ * collect ALL words formed (the main word + any cross words).
+ * Returns [{word, cells, score}] or null if placement is invalid.
+ */
+function _wsCollectWords(board, newCells) {
+  if (newCells.length === 0) return null;
+
+  // All new cells must be in same row or same column
+  const rows = [...new Set(newCells.map(c => c.row))];
+  const cols = [...new Set(newCells.map(c => c.col))];
+  if (rows.length > 1 && cols.length > 1) return null; // diagonal — invalid
+
+  const horizontal = rows.length === 1;
+  const words = [];
+
+  /** Scan from anchor cell in given direction, return full word cells */
+  function scanWord(r, c, isHorizontal) {
+    // Walk backward to start of word
+    let sr = r, sc = c;
+    if (isHorizontal) { while (sc > 0 && board[sr][sc - 1]) sc--; }
+    else              { while (sr > 0 && board[sr - 1][sc]) sr--; }
+
+    const cells = [];
+    let cr = sr, cc = sc;
+    while (cr < WS_BOARD_SIZE && cc < WS_BOARD_SIZE && board[cr][cc]) {
+      cells.push({ row: cr, col: cc, ...board[cr][cc] });
+      if (isHorizontal) cc++; else cr++;
+    }
+    return cells;
+  }
+
+  // Temporary: merge new cells into a copy of the board for scanning
+  const tempBoard = board.map(row => row.map(cell => cell ? { ...cell } : null));
+  newCells.forEach(({ row, col, letter, points, blank }) => {
+    tempBoard[row][col] = { letter, points, blank: !!blank };
+  });
+
+  const newCellSet = new Set(newCells.map(c => `${c.row},${c.col}`));
+
+  // Main word
+  const mainCells = scanWord(newCells[0].row, newCells[0].col, horizontal);
+  if (mainCells.length >= 2) {
+    const word = mainCells.map(c => c.letter).join('');
+    const score = _wsScoreWord(mainCells, newCellSet);
+    words.push({ word, cells: mainCells, score });
+  } else if (newCells.length === 1) {
+    // Single tile placed — also check perpendicular as main
+  }
+
+  // Cross words (each new tile may create a perpendicular word)
+  newCells.forEach(nc => {
+    const crossCells = scanWord(nc.row, nc.col, !horizontal);
+    if (crossCells.length >= 2) {
+      const word = crossCells.map(c => c.letter).join('');
+      const score = _wsScoreWord(crossCells, newCellSet);
+      words.push({ word, cells: crossCells, score });
+    }
+  });
+
+  // For a single tile placed, check both directions
+  if (newCells.length === 1) {
+    const hCells = scanWord(newCells[0].row, newCells[0].col, true);
+    const vCells = scanWord(newCells[0].row, newCells[0].col, false);
+    words.length = 0; // reset
+    if (hCells.length >= 2) words.push({ word: hCells.map(c=>c.letter).join(''), cells: hCells, score: _wsScoreWord(hCells, newCellSet) });
+    if (vCells.length >= 2) words.push({ word: vCells.map(c=>c.letter).join(''), cells: vCells, score: _wsScoreWord(vCells, newCellSet) });
+  }
+
+  return words.length > 0 ? words : null;
+}
+
+/**
+ * Score a word given its cells and the set of newly placed cell keys.
+ * Premium squares only apply to newly placed tiles.
+ */
+function _wsScoreWord(cells, newCellSet) {
+  let wordScore = 0;
+  let wordMult  = 1;
+
+  cells.forEach(({ row, col, letter, points, blank }) => {
+    const key  = `${row},${col}`;
+    const prem = newCellSet.has(key) ? _wsPremium(row, col) : '';
+    let lp     = blank ? 0 : (points || _wsPoints(letter));
+
+    if (prem === 'DL') lp *= 2;
+    if (prem === 'TL') lp *= 3;
+    if (prem === 'DW' || prem === 'ST') wordMult *= 2;
+    if (prem === 'TW') wordMult *= 3;
+
+    wordScore += lp;
+  });
+
+  return wordScore * wordMult;
+}
+
+/**
+ * Validate a full move:
+ * - All new cells connected
+ * - First move must cover centre (7,7)
+ * - Non-first move must connect to existing tiles
+ * - All words formed are valid
+ * Returns { valid, words, totalScore, error }
+ */
+function _wsValidateMove(board, newCells, isFirstMove) {
+  if (newCells.length === 0) return { valid: false, error: 'No tiles placed.' };
+
+  const rows = [...new Set(newCells.map(c => c.row))];
+  const cols = [...new Set(newCells.map(c => c.col))];
+  if (rows.length > 1 && cols.length > 1) {
+    return { valid: false, error: 'All tiles must be in the same row or column.' };
+  }
+
+  // Check no gaps between placed tiles
+  if (newCells.length > 1) {
+    const horizontal = rows.length === 1;
+    const sorted = [...newCells].sort((a, b) => horizontal ? a.col - b.col : a.row - b.row);
+    for (let i = 0; i < sorted.length - 1; i++) {
+      const curr = sorted[i], next = sorted[i + 1];
+      const diff = horizontal ? next.col - curr.col : next.row - curr.row;
+      if (diff > 1) {
+        // Gap only valid if filled by existing board tile
+        const gapFilled = horizontal
+          ? Array.from({ length: diff - 1 }, (_, k) => board[curr.row][curr.col + k + 1]).every(Boolean)
+          : Array.from({ length: diff - 1 }, (_, k) => board[curr.row + k + 1][curr.col]).every(Boolean);
+        if (!gapFilled) return { valid: false, error: 'Tiles must be placed continuously (no gaps).' };
+      }
+    }
+  }
+
+  if (isFirstMove) {
+    const coversCentre = newCells.some(c => c.row === 7 && c.col === 7);
+    if (!coversCentre) return { valid: false, error: 'First word must cover the centre square (★).' };
+    if (newCells.length < 2) return { valid: false, error: 'First word must be at least 2 letters.' };
+  } else {
+    // Must touch at least one existing tile
+    const tempBoard = board.map(row => row.map(cell => cell ? { ...cell } : null));
+    newCells.forEach(({ row, col, letter, points }) => { tempBoard[row][col] = { letter, points }; });
+    const adjacent = newCells.some(({ row, col }) => {
+      return (row > 0 && board[row-1][col]) ||
+             (row < 14 && board[row+1][col]) ||
+             (col > 0 && board[row][col-1]) ||
+             (col < 14 && board[row][col+1]);
+    });
+    if (!adjacent) return { valid: false, error: 'Word must connect to an existing tile on the board.' };
+  }
+
+  const words = _wsCollectWords(board, newCells);
+  if (!words || words.length === 0) return { valid: false, error: 'No valid word formed.' };
+
+  const invalidWords = words.filter(w => !_wsValidWord(w.word));
+  if (invalidWords.length > 0) {
+    return { valid: false, error: `"${invalidWords[0].word}" is not a valid word.` };
+  }
+
+  let totalScore = words.reduce((s, w) => s + w.score, 0);
+  if (newCells.length === 7) totalScore += WS_BINGO_BONUS; // Bingo!
+
+  return { valid: true, words, totalScore };
+}
+
+/** Blank board — 15×15 of nulls */
+function _wsBlankBoard() {
+  return Array.from({ length: WS_BOARD_SIZE }, () => Array(WS_BOARD_SIZE).fill(null));
+}
+
+/** Serialise board for Firestore (null → 0, cell → {l,p,b}) */
+function _wsSerialiseBoard(board) {
+  return board.map(row => row.map(cell => cell
+    ? { l: cell.letter, p: cell.points, b: cell.blank ? 1 : 0 }
+    : 0
+  ));
+}
+
+/** Deserialise board from Firestore */
+function _wsDeserialiseBoard(raw) {
+  return raw.map(row => row.map(cell => cell === 0 || cell === null
+    ? null
+    : { letter: cell.l, points: cell.p, blank: !!cell.b }
+  ));
+}
+
+/* ══════════════════════════════════════════════════════════════
+   WORD SCRABBLE — GAME FLOW
+══════════════════════════════════════════════════════════════ */
+
+let _wsState = null; // active local scrabble game state
+
+// ── Setup modal ──────────────────────────────────────────────
+async function _showScrabbleSetup() {
+  const myClass = _student().class || '';
+  if (!myClass) { window.UI.toast('Your class is not set. Contact your teacher.', 'error'); return; }
+
+  let classmates = [];
+  if (_isOnline()) {
+    try {
+      const snap = await _db().collection('students').where('class', '==', myClass).get();
+      snap.forEach(doc => {
+        if (doc.id !== _uid()) classmates.push({ id: doc.id, name: doc.data().name || 'Unknown' });
+      });
+    } catch (e) {
+      window.UI.toast('Could not load classmates. Please check your connection.', 'error');
+      return;
+    }
+  } else {
+    window.UI.toast('Word Scrabble requires an internet connection to challenge a classmate.', 'warning');
+    return;
+  }
+
+  if (classmates.length === 0) {
+    window.UI.toast("No classmates found — you're the only one in your class!", 'info');
+    return;
+  }
+
+  const classmateOptions = classmates
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(c => `<option value="${_esc(c.id)}">${_esc(c.name)}</option>`)
+    .join('');
+
+  _showModal(`
+    <div style="text-align:center;margin-bottom:1.25rem;">
+      <div style="margin-bottom:.5rem;font-size:2.5rem;">🔤</div>
+      <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">Word Scrabble</h2>
+      <p style="font-size:.875rem;color:var(--text-3);margin-top:.375rem;line-height:1.6;">
+        Classic Scrabble against a classmate. Place words on the 15×15 board,
+        score points with premium squares, and race to empty your rack.
+      </p>
+    </div>
+
+    <div style="margin-bottom:1rem;padding:.875rem 1rem;background:var(--accent-subtle);
+                border:1px solid var(--accent-border);border-radius:8px;
+                font-size:.8125rem;color:var(--text-2);line-height:1.8;">
+      <strong style="display:block;margin-bottom:.375rem;">Quick Rules</strong>
+      • Each player draws 7 tiles. Take turns placing words.<br>
+      • Every new word must connect to an existing word on the board.<br>
+      • Premium squares (DL, TL, DW, TW) multiply your score.<br>
+      • Use all 7 tiles in one turn for a <strong>+50 BINGO bonus</strong>.<br>
+      • You can swap tiles instead of playing (costs your turn).<br>
+      • Game ends when the tile bag is empty and one player uses their last tile.
+    </div>
+
+    <div style="margin-bottom:1.25rem;">
+      <label style="display:block;font-size:.75rem;font-weight:600;color:var(--text-2);margin-bottom:.375rem;">
+        Challenge Who?
+      </label>
+      <select id="scrabbleTarget" style="width:100%;">${classmateOptions}</select>
+    </div>
+
+    <button onclick="Game._sendScrabbleChallenge()" class="btn btn-lg w-full"
+            style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;">
+      🔤 Send Scrabble Challenge
+    </button>
+    <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full" style="margin-top:.5rem;">Cancel</button>
+  `);
+}
+
+// ── Send challenge ───────────────────────────────────────────
+async function _sendScrabbleChallenge() {
+  const targetSel = document.getElementById('scrabbleTarget');
+  const targetUid = targetSel ? targetSel.value : null;
+  if (!targetUid) { window.UI.toast('Please select a classmate.', 'warning'); return; }
+  const targetName = targetSel.options[targetSel.selectedIndex]?.text || 'Unknown';
+
+  const sendBtn = document.querySelector('#gameModal .btn:not(.bg-gray-500)');
+  if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Sending…'; }
+
+  // Build initial game state
+  const bag       = _wsBuildBag();
+  const rack1     = _wsDraw(bag, WS_RACK_SIZE); // challenger's rack
+  const rack2     = _wsDraw(bag, WS_RACK_SIZE); // challenged's rack
+  const board     = _wsBlankBoard();
+
+  try {
+    await _db().collection('scrabbleGames').add({
+      player1Uid:   _uid(),
+      player1Name:  _student().name || '',
+      player2Uid:   targetUid,
+      player2Name:  targetName,
+      class:        _student().class || '',
+      school:       _student().school || '',
+      status:       'pending',           // pending → active → finished
+      turn:         _uid(),              // player1 goes first
+      board:        _wsSerialiseBoard(board),
+      bag:          bag.map(t => ({ l: t.letter, p: t.points })),
+      rack1:        rack1.map(t => ({ l: t.letter, p: t.points })),
+      rack2:        rack2.map(t => ({ l: t.letter, p: t.points })),
+      score1:       0,
+      score2:       0,
+      passCount:    0,   // consecutive passes — 6 ends game
+      moveLog:      [],
+      createdAt:    firebase.firestore.FieldValue.serverTimestamp(),
+      lastMoveAt:   firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    _closeModal();
+    window.UI.toast(`Scrabble challenge sent to ${targetName}! Waiting for them to accept.`, 'success', 5000);
+  } catch (e) {
+    console.error('[scrabble] _sendScrabbleChallenge error:', e);
+    window.UI.toast('Could not send challenge. Please try again.', 'error');
+    if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = '🔤 Send Scrabble Challenge'; }
+  }
+}
+
+// ── Show pending scrabble games ──────────────────────────────
+async function _showScrabblePending() {
+  const uid = _uid();
+  let games = [];
+  try {
+    // Games where I was challenged and status is pending
+    const snap = await _db().collection('scrabbleGames')
+      .where('player2Uid', '==', uid)
+      .where('status', '==', 'pending')
+      .get();
+    snap.docs.forEach(doc => games.push({ id: doc.id, ...doc.data() }));
+  } catch (e) { window.UI.toast('Could not load Scrabble invitations.', 'error'); return; }
+
+  // Also get active games (my turn)
+  let activeGames = [];
+  try {
+    const snap2 = await _db().collection('scrabbleGames')
+      .where('player1Uid', '==', uid)
+      .where('status', '==', 'active')
+      .get();
+    const snap3 = await _db().collection('scrabbleGames')
+      .where('player2Uid', '==', uid)
+      .where('status', '==', 'active')
+      .get();
+    [...snap2.docs, ...snap3.docs].forEach(doc => {
+      const d = doc.data();
+      if (d.turn === uid) activeGames.push({ id: doc.id, ...d });
+    });
+  } catch (e) { /* non-fatal */ }
+
+  if (games.length === 0 && activeGames.length === 0) {
+    window.UI.toast('No pending Scrabble games right now.', 'info');
+    return;
+  }
+
+  const pendingHtml = games.map(g => `
+    <div style="background:var(--bg-base);border:1px solid var(--border);border-radius:8px;
+                padding:.75rem 1rem;margin-bottom:.5rem;">
+      <p style="font-size:.9375rem;font-weight:700;color:var(--text-1);">
+        🔤 ${_esc(g.player1Name)} challenged you to Scrabble!
+      </p>
+      <div style="display:flex;gap:.375rem;margin-top:.5rem;">
+        <button onclick="Game._acceptScrabble('${_esc(g.id)}')"
+                class="btn" style="flex:1;font-size:.8125rem;">Accept</button>
+        <button onclick="Game._declineScrabble('${_esc(g.id)}')"
+                class="btn bg-gray-500" style="flex:1;font-size:.8125rem;">Decline</button>
+      </div>
+    </div>`).join('');
+
+  const activeHtml = activeGames.map(g => {
+    const opp = g.player1Uid === uid ? g.player2Name : g.player1Name;
+    return `
+    <div style="background:var(--accent-subtle);border:1px solid var(--accent-border);border-radius:8px;
+                padding:.75rem 1rem;margin-bottom:.5rem;">
+      <p style="font-size:.9375rem;font-weight:700;color:var(--accent-text);">
+        🔤 Your turn vs ${_esc(opp)}
+      </p>
+      <button onclick="Game._openScrabbleGame('${_esc(g.id)}')"
+              class="btn w-full" style="margin-top:.5rem;font-size:.8125rem;">Open Board</button>
+    </div>`;
+  }).join('');
+
+  _showModal(`
+    <div style="margin-bottom:1rem;">
+      <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">
+        🔤 Scrabble Games
+      </h2>
+    </div>
+    ${pendingHtml}
+    ${activeHtml}
+    <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full" style="margin-top:.5rem;">Close</button>
+  `);
+}
+
+async function _acceptScrabble(gameId) {
+  try {
+    await _db().collection('scrabbleGames').doc(gameId).update({ status: 'active' });
+    _closeModal();
+    await _openScrabbleGame(gameId);
+  } catch (e) {
+    window.UI.toast('Could not accept game.', 'error');
+  }
+}
+
+async function _declineScrabble(gameId) {
+  try {
+    await _db().collection('scrabbleGames').doc(gameId).update({ status: 'declined' });
+    _closeModal();
+    window.UI.toast('Scrabble game declined.', 'info');
+  } catch (e) {
+    window.UI.toast('Could not decline game.', 'error');
+  }
+}
+
+// ── Open and render the Scrabble board ───────────────────────
+let _wsListener = null;
+
+async function _openScrabbleGame(gameId) {
+  _closeModal();
+  if (_wsListener) { _wsListener(); _wsListener = null; }
+
+  window.UI.mount(`
+    <div style="text-align:center;padding:3rem;color:var(--text-3);">
+      Loading Scrabble board…
+    </div>`);
+
+  _wsListener = _db().collection('scrabbleGames').doc(gameId)
+    .onSnapshot(snap => {
+      if (!snap.exists) { window.UI.toast('This game no longer exists.', 'error'); return; }
+      _wsRenderGame(gameId, snap.data());
+    }, err => {
+      console.error('[scrabble] listener error:', err);
+      window.UI.toast('Lost connection to the game. Please refresh.', 'error');
+    });
+}
+
+// ── Render the full Scrabble game UI ────────────────────────
+function _wsRenderGame(gameId, data) {
+  const uid      = _uid();
+  const isP1     = data.player1Uid === uid;
+  const myRack   = isP1
+    ? (data.rack1 || []).map(t => ({ letter: t.l, points: t.p }))
+    : (data.rack2 || []).map(t => ({ letter: t.l, points: t.p }));
+  const myScore  = isP1 ? data.score1 : data.score2;
+  const oppScore = isP1 ? data.score2 : data.score1;
+  const oppName  = isP1 ? data.player2Name : data.player1Name;
+  const myName   = isP1 ? data.player1Name : data.player2Name;
+  const isMyTurn = data.turn === uid;
+  const board    = _wsDeserialiseBoard(data.board);
+  const bagLeft  = (data.bag || []).length;
+  const finished = data.status === 'finished';
+
+  // Build local game state for tile placement
+  if (!_wsState || _wsState.gameId !== gameId) {
+    _wsState = {
+      gameId,
+      isP1,
+      placed:     [],     // tiles placed this turn [{row,col,letter,points,blank,rackIdx}]
+      selected:   null,   // index of selected rack tile
+      blankLetter: null,  // letter chosen for blank tile being placed
+    };
+  }
+  // Don't reset placed tiles if we're just re-rendering from a snapshot
+  // but DO reset if it's not our turn (opponent just moved)
+  if (!isMyTurn) {
+    _wsState.placed   = [];
+    _wsState.selected = null;
+  }
+
+  // Premium square colours
+  const premColour = { TW:'#ef4444', DW:'#f9a8d4', TL:'#3b82f6', DL:'#93c5fd', ST:'#fbbf24', '':'transparent' };
+  const premLabel  = { TW:'TW', DW:'DW', TL:'TL', DL:'DL', ST:'★', '':'' };
+
+  // Build board HTML — each cell is clickable
+  let boardHtml = '';
+  for (let r = 0; r < WS_BOARD_SIZE; r++) {
+    for (let c = 0; c < WS_BOARD_SIZE; c++) {
+      const cell    = board[r][c];
+      const prem    = _wsPremium(r, c);
+      const placed  = _wsState.placed.find(p => p.row === r && p.col === c);
+      const bgColor = premColour[prem] || 'transparent';
+      const onclick = isMyTurn && !finished ? `Game._wsCellClick(${r},${c})` : '';
+
+      let cellContent = '';
+      let cellStyle   = `background:${bgColor};`;
+
+      if (cell) {
+        // Permanent tile
+        cellStyle += 'background:#d4b483;border:1px solid #a0845c;';
+        cellContent = `
+          <span style="font-size:clamp(7px,1.8vw,12px);font-weight:800;color:#1a0a00;line-height:1;">${_esc(cell.letter)}</span>
+          <span style="font-size:clamp(4px,1vw,7px);color:#5a3000;font-weight:600;position:absolute;bottom:1px;right:2px;">${cell.blank ? '' : cell.points}</span>`;
+      } else if (placed) {
+        // Freshly placed tile this turn
+        cellStyle += 'background:#fde68a;border:2px solid #f59e0b;';
+        cellContent = `
+          <span style="font-size:clamp(7px,1.8vw,12px);font-weight:800;color:#78350f;line-height:1;">${_esc(placed.letter)}</span>
+          <span style="font-size:clamp(4px,1vw,7px);color:#92400e;font-weight:600;position:absolute;bottom:1px;right:2px;">${placed.blank ? '' : placed.points}</span>`;
+      } else {
+        // Empty cell
+        if (prem) {
+          cellContent = `<span style="font-size:clamp(4px,1vw,7px);font-weight:700;color:${prem==='TW'||prem==='TL'?'#fff':'#1e3a8a'};opacity:.9;">${premLabel[prem]}</span>`;
+        }
+      }
+
+      boardHtml += `
+        <div onclick="${onclick}"
+             style="position:relative;width:100%;padding-bottom:100%;border:1px solid rgba(0,0,0,0.12);
+                    box-sizing:border-box;${cellStyle}cursor:${onclick?'pointer':'default'};
+                    display:flex;align-items:center;justify-content:center;overflow:hidden;
+                    ${placed ? 'box-shadow:inset 0 0 0 2px #f59e0b;' : ''}">
+          <div style="position:absolute;inset:0;display:flex;flex-direction:column;
+                      align-items:center;justify-content:center;">
+            ${cellContent}
+          </div>
+        </div>`;
+    }
+  }
+
+  // Rack HTML
+  const rackHtml = myRack.map((tile, idx) => {
+    const isSelected = _wsState.selected === idx;
+    const isPlaced   = _wsState.placed.some(p => p.rackIdx === idx);
+    return `
+      <button onclick="Game._wsRackClick(${idx})"
+              ${isPlaced ? 'disabled' : ''}
+              style="width:clamp(32px,9vw,44px);height:clamp(38px,10vw,50px);
+                     border-radius:6px;font-weight:800;
+                     font-size:clamp(12px,3vw,18px);
+                     border:2px solid ${isSelected ? '#7c3aed' : '#a0845c'};
+                     background:${isPlaced ? '#e5e7eb' : isSelected ? '#ede9fe' : '#f5deb3'};
+                     color:${isPlaced ? '#9ca3af' : isSelected ? '#7c3aed' : '#1a0a00'};
+                     cursor:${isPlaced ? 'not-allowed' : 'pointer'};
+                     position:relative;box-shadow:${isSelected ? '0 0 0 3px #c4b5fd' : '0 2px 4px rgba(0,0,0,.15)'};
+                     transition:all .12s;font-family:var(--font);
+                     display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:0;">
+        ${_esc(tile.letter === '?' ? '★' : tile.letter)}
+        <span style="font-size:clamp(6px,1.5vw,9px);font-weight:600;color:${isPlaced?'#9ca3af':isSelected?'#7c3aed':'#5a3000'};">
+          ${tile.letter === '?' ? '0' : tile.points}
+        </span>
+      </button>`;
+  }).join('');
+
+  // Move log (last 5 moves)
+  const log = (data.moveLog || []).slice(-5).reverse();
+  const logHtml = log.length > 0
+    ? log.map(m => `
+        <div style="font-size:.75rem;color:var(--text-3);padding:.25rem 0;border-bottom:1px solid var(--border);">
+          <span style="font-weight:700;color:var(--text-2);">${_esc(m.name)}</span>
+          ${m.type === 'play'
+            ? ` played <strong>${_esc(m.word)}</strong> for <strong style="color:var(--accent);">+${m.score} pts</strong>`
+            : m.type === 'swap'
+            ? ' swapped tiles'
+            : ' passed'}
+        </div>`).join('')
+    : '<div style="font-size:.75rem;color:var(--text-4);font-style:italic;">No moves yet.</div>';
+
+  const turnBanner = finished
+    ? `<div style="text-align:center;padding:.625rem 1rem;border-radius:8px;margin-bottom:.75rem;
+                   background:var(--success-subtle);border:1px solid var(--success-border);">
+         <span style="font-size:.9375rem;font-weight:700;color:var(--success);">🏁 Game Over!</span>
+       </div>`
+    : isMyTurn
+    ? `<div style="text-align:center;padding:.625rem 1rem;border-radius:8px;margin-bottom:.75rem;
+                   background:var(--accent-subtle);border:1px solid var(--accent-border);
+                   animation:gameChallengePopIn .3s ease both;">
+         <span style="font-size:.875rem;font-weight:700;color:var(--accent-text);">⚡ Your turn — place a word!</span>
+       </div>`
+    : `<div style="text-align:center;padding:.625rem 1rem;border-radius:8px;margin-bottom:.75rem;
+                   background:var(--bg-subtle);border:1px solid var(--border);">
+         <span style="font-size:.875rem;color:var(--text-3);">⏳ Waiting for ${_esc(oppName)}…</span>
+       </div>`;
+      
+      // Cache for lightweight re-renders
+  _wsCachedData   = data;
+  _wsCachedBoard  = board;
+  _wsCachedMyRack = myRack;
+
+  window.UI.mount(`
+    <div class="max-w-2xl mx-auto animate-fadeIn" style="padding-bottom:2rem;">
+
+      <!-- Header -->
+      <div class="glass" style="padding:.875rem 1.125rem;margin-bottom:.625rem;border-radius:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;">
+          <div style="text-align:center;flex:1;">
+            <div style="font-size:.75rem;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;">${_esc(myName)} (You)</div>
+            <div style="font-size:1.75rem;font-weight:900;color:var(--accent);font-family:var(--font-mono);">${myScore}</div>
+          </div>
+          <div style="text-align:center;flex-shrink:0;padding:0 .75rem;">
+            <div style="font-size:.625rem;color:var(--text-4);text-transform:uppercase;letter-spacing:.06em;">Tiles left</div>
+            <div style="font-size:1.125rem;font-weight:700;color:var(--text-2);">${bagLeft}</div>
+            <div style="font-size:.5625rem;color:var(--text-4);">in bag</div>
+          </div>
+          <div style="text-align:center;flex:1;">
+            <div style="font-size:.75rem;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.05em;">${_esc(oppName)}</div>
+            <div style="font-size:1.75rem;font-weight:900;color:var(--danger);font-family:var(--font-mono);">${oppScore}</div>
+          </div>
+        </div>
+      </div>
+
+      ${turnBanner}
+
+      <!-- Board -->
+      <div id="wsBoard" style="display:grid;grid-template-columns:repeat(15,1fr);
+                  background:#5c8a3e;padding:4px;border-radius:8px;
+                  box-shadow:0 4px 16px rgba(0,0,0,.25);margin-bottom:.75rem;
+                  border:3px solid #4a7032;">
+        ${boardHtml}
+      </div>
+
+      <!-- Premium square legend -->
+      <div style="display:flex;gap:.375rem;flex-wrap:wrap;justify-content:center;margin-bottom:.75rem;">
+        ${Object.entries({TW:'Triple Word',DW:'Double Word',TL:'Triple Letter',DL:'Double Letter'}).map(([k,v])=>`
+          <span style="font-size:.625rem;font-weight:700;padding:2px 7px;border-radius:4px;
+                       background:${premColour[k]};color:${k==='DW'||k==='DL'?'#1e3a8a':'#fff'};">${k} = ${v}</span>
+        `).join('')}
+      </div>
+
+      ${isMyTurn && !finished ? `
+      <!-- Rack -->
+      <div class="glass" style="padding:.875rem;border-radius:10px;margin-bottom:.625rem;text-align:center;">
+        <p style="font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+                  color:var(--text-3);margin-bottom:.625rem;">Your Tiles — Tap a tile, then tap a board square</p>
+        <div style="display:flex;gap:.375rem;justify-content:center;flex-wrap:wrap;" id="wsRack">
+          ${rackHtml}
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div id="wsWordPreview" style="min-height:2rem;text-align:center;margin-bottom:.375rem;font-size:.875rem;font-weight:700;color:var(--accent);"></div>
+
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;margin-bottom:.75rem;">
+        <button onclick="Game._wsConfirmPlay('${_esc(gameId)}')"
+                id="wsPlayBtn"
+                class="btn" style="background:#16a34a;color:#fff;display:flex;align-items:center;gap:.375rem;">
+          ✓ Play Word
+        </button>
+        <button onclick="Game._wsRecall()"
+                class="btn bg-gray-500" style="display:flex;align-items:center;gap:.375rem;">
+          ↩ Recall
+        </button>
+        <button onclick="Game._wsSwapTiles('${_esc(gameId)}')"
+                class="btn bg-gray-500" style="display:flex;align-items:center;gap:.375rem;"
+                ${bagLeft < 1 ? 'disabled' : ''}>
+          ⇄ Swap
+        </button>
+        <button onclick="Game._wsPass('${_esc(gameId)}')"
+                class="btn bg-gray-500" style="display:flex;align-items:center;gap:.375rem;">
+          ⏭ Pass
+        </button>
+      </div>
+      ` : ''}
+
+      ${finished ? `
+      <!-- Final result -->
+      <div class="glass" style="padding:1.25rem;border-radius:10px;text-align:center;margin-bottom:.75rem;">
+        ${myScore > oppScore
+          ? `<p style="font-size:1.125rem;font-weight:800;color:var(--success);">🏆 You Win!</p>`
+          : myScore < oppScore
+          ? `<p style="font-size:1.125rem;font-weight:800;color:var(--danger);">You Lost. Better luck next time!</p>`
+          : `<p style="font-size:1.125rem;font-weight:800;color:var(--warning);">It's a Tie!</p>`}
+        <p style="font-size:.875rem;color:var(--text-3);margin-top:.375rem;">
+          ${_esc(myName)}: ${myScore} pts &nbsp;|&nbsp; ${_esc(oppName)}: ${oppScore} pts
+        </p>
+        <button onclick="Game._wsLeave()" class="btn bg-gray-500" style="margin-top:.875rem;">Back to Games</button>
+      </div>
+      ` : `
+      <!-- Move log -->
+      <div class="glass-dark" style="padding:.875rem;border-radius:10px;margin-bottom:.75rem;">
+        <p style="font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+                  color:var(--text-3);margin-bottom:.5rem;">Recent Moves</p>
+        ${logHtml}
+      </div>
+      <div style="text-align:center;">
+        <button onclick="Game._wsLeave()" class="btn bg-gray-500" style="font-size:.8125rem;">
+          ← Back to Games
+        </button>
+      </div>
+      `}
+    </div>
+  `);
+
+  // Update word preview if tiles already placed
+  if (_wsState.placed.length > 0) _wsUpdatePreview(board);
+}
+
+// ── Tile interaction ─────────────────────────────────────────
+
+function _wsRackClick(idx) {
+  if (!_wsState) return;
+  if (_wsState.placed.some(p => p.rackIdx === idx)) return; // already placed
+  _wsState.selected = _wsState.selected === idx ? null : idx;
+  // Re-render rack only (cheap)
+  _wsRefreshRack();
+}
+
+function _wsCellClick(row, col) {
+  if (!_wsState) return;
+  const gameId = _wsState.gameId;
+
+  // If clicking a placed tile — recall just that tile
+  const placedIdx = _wsState.placed.findIndex(p => p.row === row && p.col === col);
+  if (placedIdx !== -1) {
+    _wsState.placed.splice(placedIdx, 1);
+    _wsState.selected = null;
+    _wsRefreshBoard();
+    _wsRefreshRack();
+    // Rebuild preview
+    const data = _wsCachedData;
+    if (data) _wsUpdatePreview(_wsDeserialiseBoard(data.board));
+    return;
+  }
+
+  // No tile selected
+  if (_wsState.selected === null) {
+    window.UI.toast('Tap a tile from your rack first.', 'info', 1800);
+    return;
+  }
+
+  // Cell already has a permanent tile
+  if (_wsCachedBoard && _wsCachedBoard[row] && _wsCachedBoard[row][col]) {
+    window.UI.toast('That square is already occupied.', 'warning', 1800);
+    return;
+  }
+
+  // Another placed tile here
+  if (_wsState.placed.some(p => p.row === row && p.col === col)) {
+    window.UI.toast('You already placed a tile there.', 'warning', 1800);
+    return;
+  }
+
+  // Handle blank tile
+  const myRack = _wsCachedMyRack;
+  const tile   = myRack && myRack[_wsState.selected];
+  if (!tile) return;
+
+  if (tile.letter === '?') {
+    // Prompt for letter choice
+    _wsChooseBlankLetter(row, col, _wsState.selected);
+    return;
+  }
+
+  _wsState.placed.push({
+    row, col,
+    letter:   tile.letter,
+    points:   tile.points,
+    blank:    false,
+    rackIdx:  _wsState.selected,
+  });
+  _wsState.selected = null;
+  _wsRefreshBoard();
+  _wsRefreshRack();
+  if (_wsCachedBoard) _wsUpdatePreview(_wsCachedBoard);
+}
+
+function _wsChooseBlankLetter(row, col, rackIdx) {
+  const alpha = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  _showModal(`
+    <div style="text-align:center;margin-bottom:1rem;">
+      <h2 style="font-size:1rem;font-weight:700;">Choose a letter for the blank tile</h2>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:.375rem;justify-content:center;margin-bottom:1rem;">
+      ${alpha.map(l => `
+        <button onclick="Game._wsPlaceBlank(${row},${col},${rackIdx},'${l}')"
+                class="game-option-btn"
+                style="width:2.25rem;height:2.25rem;padding:0;justify-content:center;font-size:.9375rem;font-weight:800;">
+          ${l}
+        </button>`).join('')}
+    </div>
+    <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full">Cancel</button>
+  `);
+}
+
+function _wsPlaceBlank(row, col, rackIdx, letter) {
+  _closeModal();
+  _wsState.placed.push({ row, col, letter, points: 0, blank: true, rackIdx });
+  _wsState.selected = null;
+  _wsRefreshBoard();
+  _wsRefreshRack();
+  if (_wsCachedBoard) _wsUpdatePreview(_wsCachedBoard);
+}
+
+// Cached references for lightweight re-renders
+let _wsCachedData    = null;
+let _wsCachedBoard   = null;
+let _wsCachedMyRack  = null;
+
+// Intercept onSnapshot to cache data
+const _wsOrigRender = _wsRenderGame;
+
+// Lightweight rack refresh (no full re-render)
+function _wsRefreshRack() {
+  const rack    = document.getElementById('wsRack');
+  if (!rack || !_wsCachedMyRack) return;
+  const myRack  = _wsCachedMyRack;
+  rack.innerHTML = myRack.map((tile, idx) => {
+    const isSelected = _wsState.selected === idx;
+    const isPlaced   = _wsState.placed.some(p => p.rackIdx === idx);
+    return `
+      <button onclick="Game._wsRackClick(${idx})"
+              ${isPlaced ? 'disabled' : ''}
+              style="width:clamp(32px,9vw,44px);height:clamp(38px,10vw,50px);
+                     border-radius:6px;font-weight:800;
+                     font-size:clamp(12px,3vw,18px);
+                     border:2px solid ${isSelected ? '#7c3aed' : '#a0845c'};
+                     background:${isPlaced ? '#e5e7eb' : isSelected ? '#ede9fe' : '#f5deb3'};
+                     color:${isPlaced ? '#9ca3af' : isSelected ? '#7c3aed' : '#1a0a00'};
+                     cursor:${isPlaced ? 'not-allowed' : 'pointer'};
+                     position:relative;box-shadow:${isSelected ? '0 0 0 3px #c4b5fd' : '0 2px 4px rgba(0,0,0,.15)'};
+                     transition:all .12s;font-family:var(--font);
+                     display:inline-flex;flex-direction:column;align-items:center;justify-content:center;gap:0;">
+        ${_esc(tile.letter === '?' ? '★' : tile.letter)}
+        <span style="font-size:clamp(6px,1.5vw,9px);font-weight:600;color:${isPlaced?'#9ca3af':isSelected?'#7c3aed':'#5a3000'};">
+          ${tile.letter === '?' ? '0' : tile.points}
+        </span>
+      </button>`;
+  }).join('');
+}
+
+function _wsRefreshBoard() {
+  // Only repaint the cells that changed (placed tiles)
+  if (!_wsCachedBoard) return;
+  const board = _wsCachedBoard;
+  const premColour = { TW:'#ef4444', DW:'#f9a8d4', TL:'#3b82f6', DL:'#93c5fd', ST:'#fbbf24' };
+  const premLabel  = { TW:'TW', DW:'DW', TL:'TL', DL:'DL', ST:'★' };
+  const boardEl    = document.getElementById('wsBoard');
+  if (!boardEl) return;
+
+  const cells = boardEl.children;
+  for (let r = 0; r < WS_BOARD_SIZE; r++) {
+    for (let c = 0; c < WS_BOARD_SIZE; c++) {
+      const cellEl = cells[r * WS_BOARD_SIZE + c];
+      if (!cellEl) continue;
+      const existing = board[r][c];
+      if (existing) continue; // permanent tiles never change visually
+
+      const placed  = _wsState.placed.find(p => p.row === r && p.col === c);
+      const prem    = _wsPremium(r, c);
+      const inner   = cellEl.querySelector('div');
+      if (!inner) continue;
+
+      if (placed) {
+        cellEl.style.background = '#fde68a';
+        cellEl.style.border     = '2px solid #f59e0b';
+        inner.innerHTML = `
+          <span style="font-size:clamp(7px,1.8vw,12px);font-weight:800;color:#78350f;line-height:1;">${_esc(placed.letter)}</span>
+          <span style="font-size:clamp(4px,1vw,7px);color:#92400e;font-weight:600;position:absolute;bottom:1px;right:2px;">${placed.blank ? '' : placed.points}</span>`;
+      } else {
+        cellEl.style.background = premColour[prem] || 'transparent';
+        cellEl.style.border     = '1px solid rgba(0,0,0,0.12)';
+        inner.innerHTML = prem
+          ? `<span style="font-size:clamp(4px,1vw,7px);font-weight:700;color:${prem==='TW'||prem==='TL'?'#fff':'#1e3a8a'};opacity:.9;">${premLabel[prem]||''}</span>`
+          : '';
+      }
+    }
+  }
+}
+
+function _wsUpdatePreview(board) {
+  const el = document.getElementById('wsWordPreview');
+  if (!el || _wsState.placed.length === 0) { if (el) el.textContent = ''; return; }
+  const result = _wsValidateMove(board, _wsState.placed, _wsIsFirstMove(board));
+  if (result.valid) {
+    const wordList = result.words.map(w => w.word).join(', ');
+    const bingo    = _wsState.placed.length === 7 ? ' ⚡ BINGO +50!' : '';
+    el.innerHTML   = `<span style="color:var(--success);">✓ ${wordList}</span> <span style="color:var(--accent);font-weight:800;">+${result.totalScore} pts${bingo}</span>`;
+  } else {
+    el.innerHTML = `<span style="color:var(--danger);font-size:.8125rem;">${_esc(result.error)}</span>`;
+  }
+}
+
+function _wsIsFirstMove(board) {
+  return !board.some(row => row.some(cell => cell !== null));
+}
+
+// ── Game actions ─────────────────────────────────────────────
+
+async function _wsConfirmPlay(gameId) {
+  if (!_wsState || _wsState.placed.length === 0) {
+    window.UI.toast('Place at least one tile on the board first.', 'warning');
+    return;
+  }
+
+  if (!_wsCachedData) return;
+  const data  = _wsCachedData;
+  const board = _wsDeserialiseBoard(data.board);
+
+  const result = _wsValidateMove(board, _wsState.placed, _wsIsFirstMove(board));
+  if (!result.valid) {
+    window.UI.toast(result.error, 'error', 4000);
+    return;
+  }
+
+  const btn = document.getElementById('wsPlayBtn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
+
+  // Commit placed tiles to board
+  _wsState.placed.forEach(({ row, col, letter, points, blank }) => {
+    board[row][col] = { letter, points, blank: !!blank };
+  });
+
+  const uid   = _uid();
+  const isP1  = data.player1Uid === uid;
+  const myScore = (isP1 ? data.score1 : data.score2) + result.totalScore;
+
+  // Refill rack from bag
+  const bag     = (data.bag || []).map(t => ({ letter: t.l, points: t.p, id: `${t.l}_${Math.random()}` }));
+  const usedIdxs = new Set(_wsState.placed.map(p => p.rackIdx));
+  const myRackRaw = isP1 ? data.rack1 : data.rack2;
+  let newRack    = myRackRaw
+    .filter((_, i) => !usedIdxs.has(i))
+    .map(t => ({ letter: t.l, points: t.p }));
+  const drawn    = _wsDraw(bag, WS_RACK_SIZE - newRack.length);
+  newRack        = [...newRack, ...drawn];
+
+  // Check game-end conditions
+  const opponentRack = isP1 ? data.rack2 : data.rack1;
+  const gameOver     = newRack.length === 0 && bag.length === 0;
+  let finalScore1    = isP1 ? myScore : data.score1;
+  let finalScore2    = isP1 ? data.score2 : myScore;
+
+  if (gameOver) {
+    // Deduct unplayed tiles from opponent
+    const oppUnplayed = opponentRack.reduce((s, t) => s + (t.p || 0), 0);
+    if (isP1) { finalScore1 += oppUnplayed; }
+    else       { finalScore2 += oppUnplayed; }
+  }
+
+  const wordStr = result.words.map(w => w.word).join('/');
+  const newLog  = [...(data.moveLog || []).slice(-29), {
+    name: _student().name || '',
+    type: 'play',
+    word: wordStr,
+    score: result.totalScore,
+  }];
+
+  const nextTurn = isP1 ? data.player2Uid : data.player1Uid;
+
+  try {
+    const update = {
+      board:      _wsSerialiseBoard(board),
+      bag:        bag.map(t => ({ l: t.letter, p: t.points })),
+      turn:       gameOver ? null : nextTurn,
+      passCount:  0,
+      moveLog:    newLog,
+      lastMoveAt: firebase.firestore.FieldValue.serverTimestamp(),
+      status:     gameOver ? 'finished' : 'active',
+    };
+    if (isP1) {
+      update.rack1   = newRack.map(t => ({ l: t.letter, p: t.points }));
+      update.score1  = gameOver ? finalScore1 : myScore;
+      if (gameOver) update.score2 = finalScore2;
+    } else {
+      update.rack2   = newRack.map(t => ({ l: t.letter, p: t.points }));
+      update.score2  = gameOver ? finalScore2 : myScore;
+      if (gameOver) update.score1 = finalScore1;
+    }
+
+    await _db().collection('scrabbleGames').doc(gameId).update(update);
+    _wsState.placed   = [];
+    _wsState.selected = null;
+
+    if (gameOver) {
+      const winner = finalScore1 > finalScore2 ? data.player1Name : finalScore2 > finalScore1 ? data.player2Name : null;
+      window.UI.toast(winner ? `Game over! ${winner} wins! 🏆` : "Game over! It's a tie!", 'success', 6000);
+      // Award XP
+      const win = (isP1 && finalScore1 > finalScore2) || (!isP1 && finalScore2 > finalScore1);
+      const xpGain = Math.min(200, Math.max(20, myScore));
+      await _awardXP(xpGain, 'wordScrabble', { win });
+    }
+  } catch (e) {
+    console.error('[scrabble] _wsConfirmPlay error:', e);
+    window.UI.toast('Could not submit move. Please try again.', 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '✓ Play Word'; }
+  }
+}
+
+function _wsRecall() {
+  if (!_wsState) return;
+  _wsState.placed   = [];
+  _wsState.selected = null;
+  _wsRefreshBoard();
+  _wsRefreshRack();
+  const el = document.getElementById('wsWordPreview');
+  if (el) el.textContent = '';
+}
+
+async function _wsSwapTiles(gameId) {
+  if (!_wsCachedMyRack || _wsCachedMyRack.length === 0) return;
+  const myRack = _wsCachedMyRack;
+
+  _showModal(`
+    <div style="text-align:center;margin-bottom:1rem;">
+      <h2 style="font-size:1rem;font-weight:700;">Swap Tiles</h2>
+      <p style="font-size:.8125rem;color:var(--text-3);">Tap the tiles you want to swap, then confirm.</p>
+    </div>
+    <div id="swapRackPicker" style="display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;margin-bottom:1.25rem;">
+      ${myRack.map((tile, idx) => `
+        <button id="swapTile${idx}" onclick="Game._wsToggleSwap(${idx})"
+                style="width:44px;height:50px;border-radius:6px;font-weight:800;font-size:1.125rem;
+                       border:2px solid #a0845c;background:#f5deb3;color:#1a0a00;cursor:pointer;
+                       font-family:var(--font);display:inline-flex;flex-direction:column;
+                       align-items:center;justify-content:center;transition:all .12s;">
+          ${_esc(tile.letter === '?' ? '★' : tile.letter)}
+          <span style="font-size:7px;color:#5a3000;">${tile.letter === '?' ? 0 : tile.points}</span>
+        </button>`).join('')}
+    </div>
+    <button onclick="Game._wsConfirmSwap('${_esc(gameId)}')"
+            class="btn w-full" style="background:#7c3aed;color:#fff;">Swap Selected</button>
+    <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full" style="margin-top:.5rem;">Cancel</button>
+  `);
+  _wsState._swapSelected = new Set();
+}
+
+function _wsToggleSwap(idx) {
+  if (!_wsState) return;
+  if (!_wsState._swapSelected) _wsState._swapSelected = new Set();
+  const btn = document.getElementById(`swapTile${idx}`);
+  if (_wsState._swapSelected.has(idx)) {
+    _wsState._swapSelected.delete(idx);
+    if (btn) { btn.style.background = '#f5deb3'; btn.style.borderColor = '#a0845c'; }
+  } else {
+    _wsState._swapSelected.add(idx);
+    if (btn) { btn.style.background = '#ede9fe'; btn.style.borderColor = '#7c3aed'; }
+  }
+}
+
+async function _wsConfirmSwap(gameId) {
+  if (!_wsState || !_wsState._swapSelected || _wsState._swapSelected.size === 0) {
+    window.UI.toast('Select at least one tile to swap.', 'warning');
+    return;
+  }
+  if (!_wsCachedData) return;
+  const data   = _wsCachedData;
+  const isP1   = data.player1Uid === _uid();
+  const myRack = _wsCachedMyRack;
+  const bag    = (data.bag || []).map(t => ({ letter: t.l, points: t.p }));
+
+  if (bag.length < 1) {
+    window.UI.toast('Not enough tiles in the bag to swap.', 'warning');
+    _closeModal();
+    return;
+  }
+
+  const swapIdxs = [..._wsState._swapSelected];
+  const returning = swapIdxs.map(i => myRack[i]);
+  const drawn     = _wsDraw(bag, returning.length);
+
+  // Put returning tiles back into bag randomly
+  returning.forEach(t => {
+    const pos = Math.floor(Math.random() * (bag.length + 1));
+    bag.splice(pos, 0, t);
+  });
+
+  let newRack = myRack.filter((_, i) => !_wsState._swapSelected.has(i));
+  newRack     = [...newRack, ...drawn];
+
+  const nextTurn = isP1 ? data.player2Uid : data.player1Uid;
+  const newLog   = [...(data.moveLog || []).slice(-29), {
+    name: _student().name || '', type: 'swap',
+  }];
+
+  const update = {
+    bag:        bag.map(t => ({ l: t.letter, p: t.points })),
+    turn:       nextTurn,
+    passCount:  (data.passCount || 0) + 1,
+    moveLog:    newLog,
+    lastMoveAt: firebase.firestore.FieldValue.serverTimestamp(),
+  };
+  if (isP1) update.rack1 = newRack.map(t => ({ l: t.letter, p: t.points }));
+  else       update.rack2 = newRack.map(t => ({ l: t.letter, p: t.points }));
+
+  try {
+    await _db().collection('scrabbleGames').doc(gameId).update(update);
+    _wsState._swapSelected = new Set();
+    _closeModal();
+    window.UI.toast('Tiles swapped. Your opponent\'s turn.', 'info', 3000);
+  } catch (e) {
+    window.UI.toast('Could not swap tiles.', 'error');
+  }
+}
+
+async function _wsPass(gameId) {
+  if (!_wsCachedData) return;
+  const data     = _wsCachedData;
+  const isP1     = data.player1Uid === _uid();
+  const nextTurn = isP1 ? data.player2Uid : data.player1Uid;
+  const newPass  = (data.passCount || 0) + 1;
+  const gameOver = newPass >= 6;
+  const newLog   = [...(data.moveLog || []).slice(-29), {
+    name: _student().name || '', type: 'pass',
+  }];
+
+  try {
+    await _db().collection('scrabbleGames').doc(gameId).update({
+      turn:       gameOver ? null : nextTurn,
+      passCount:  newPass,
+      status:     gameOver ? 'finished' : 'active',
+      moveLog:    newLog,
+      lastMoveAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    window.UI.toast(gameOver ? 'Game ended after 6 consecutive passes.' : 'Passed. Opponent\'s turn.', 'info', 3000);
+  } catch (e) {
+    window.UI.toast('Could not pass.', 'error');
+  }
+}
+
+function _wsLeave() {
+  if (_wsListener) { _wsListener(); _wsListener = null; }
+  _wsState      = null;
+  _wsCachedData = null;
+  openGameLobby();
+}
+
   /* ══════════════════════════════════════════════════════════════
      STATE
   ══════════════════════════════════════════════════════════════ */
@@ -981,6 +2276,19 @@ function _krStartCountdownTick(getEl) {
             </div>
           </div>
           ${knowledgeSurferCard}
+          <div class="game-card game-card--scrabble" onclick="Game._selectGame('wordScrabble')">
+            <div class="game-card__icon">🔤</div>
+            <div class="game-card__title">Word Scrabble</div>
+            <div class="game-card__desc">
+              Classic Scrabble vs a classmate. Place words on the 15×15 board,
+              hit premium squares, and outscore your opponent.
+            </div>
+            <div class="game-card__meta">
+              <span class="game-card__tag">1v1</span>
+              <span class="game-card__tag">Turn-based</span>
+              <span class="game-card__tag game-card__tag--xp">Up to +200 XP</span>
+            </div>
+          </div>
         </div>
 
         <h2 class="game-section-title" style="margin-top:1.5rem;">Your Badges</h2>
@@ -1140,14 +2448,15 @@ function _showAllLevelsModal(currentXP) {
   ══════════════════════════════════════════════════════════════ */
 
   function _selectGame(type) {
-    if      (type === 'quizBlitz')       _showQuizBlitzSetup();
-    else if (type === 'speedMath')       _showSpeedMathSetup();
-    else if (type === 'wordScramble')    _showWordScrambleSetup();
-    else if (type === 'trueOrFalse')     _showTrueOrFalseSetup();
-    else if (type === 'suddenDeath')     _showSuddenDeathSetup();
-    else if (type === 'challenge')       _showChallengeSetup();
-    else if (type === 'knowledgeRunner') _showKnowledgeRunnerSetup();
-  }
+  if      (type === 'quizBlitz')       _showQuizBlitzSetup();
+  else if (type === 'speedMath')       _showSpeedMathSetup();
+  else if (type === 'wordScramble')    _showWordScrambleSetup();
+  else if (type === 'trueOrFalse')     _showTrueOrFalseSetup();
+  else if (type === 'suddenDeath')     _showSuddenDeathSetup();
+  else if (type === 'challenge')       _showChallengeSetup();
+  else if (type === 'knowledgeRunner') _showKnowledgeRunnerSetup();
+  else if (type === 'wordScrabble')    _showScrabbleSetup();     // ← NEW
+}
 
   /* ══════════════════════════════════════════════════════════════
      QUIZ BLITZ
@@ -2969,21 +4278,25 @@ function _buildWordPoolForStudent() {
             <button onclick="Game.openGameLobby()" class="btn bg-gray-500" style="display:inline-flex;align-items:center;gap:.3rem;">${_icon('house', 15)} Back to Games</button>
             <button ${playAgainAttrib} class="btn" style="display:inline-flex;align-items:center;gap:.3rem;">${_icon('play', 15)} Play Again</button>
             <button onclick="Game.openLeaderboard()" class="btn bg-gray-500" style="display:inline-flex;align-items:center;gap:.3rem;">${_icon('trophy', 15)} Leaderboard</button>
+            <button onclick="Game._showScrabblePending()" class="btn bg-gray-500" style="display:flex;align-items:center;gap:.375rem;">
+            🔤 Scrabble Games
+          </button>
           </div>
         </div>
       </div>`);
   }
 
   function _playAgain(key) {
-    if      (key === 'quizBlitz')       _showQuizBlitzSetup();
-    else if (key === 'speedMath')       _showSpeedMathSetup();
-    else if (key === 'wordScramble')    _showWordScrambleSetup();
-    else if (key === 'trueOrFalse')     _showTrueOrFalseSetup();
-    else if (key === 'suddenDeath')     _showSuddenDeathSetup();
-    else if (key === 'challenge')       _showChallengeSetup();
-    else if (key === 'knowledgeRunner') _showKnowledgeRunnerSetup();
-    else openGameLobby();
-  }
+  if      (key === 'quizBlitz')       _showQuizBlitzSetup();
+  else if (key === 'speedMath')       _showSpeedMathSetup();
+  else if (key === 'wordScramble')    _showWordScrambleSetup();
+  else if (key === 'trueOrFalse')     _showTrueOrFalseSetup();
+  else if (key === 'suddenDeath')     _showSuddenDeathSetup();
+  else if (key === 'challenge')       _showChallengeSetup();
+  else if (key === 'knowledgeRunner') _showKnowledgeRunnerSetup();
+  else if (key === 'wordScrabble')    _showScrabbleSetup();      // ← NEW
+  else openGameLobby();
+}
 
 /* ══════════════════════════════════════════════════════════════
      KNOWLEDGE RUNNER  — Endless runner with subject Q&A
@@ -4671,6 +5984,8 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
       .game-option-btn--wrong   { border-color:var(--danger)  !important;background:var(--danger-subtle)  !important; }
       .game-option-btn--wrong   .game-option-btn__letter { background:var(--danger) !important;color:#fff !important;border-color:var(--danger) !important; }
 
+      .game-card--scrabble:hover { border-color:rgba(124,58,237,.4) !important; }
+
       /* ── True or False buttons ── */
       .game-tf-btn {
         display:inline-flex;align-items:center;justify-content:center;gap:.625rem;
@@ -4835,6 +6150,23 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
     _startKnowledgeRunner,
     _krChangeLane,
     _krRoll,
+        _showScrabbleSetup,
+    _sendScrabbleChallenge,
+    _showScrabblePending,
+    _acceptScrabble,
+    _declineScrabble,
+    _openScrabbleGame,
+    _wsCellClick,
+    _wsRackClick,
+    _wsPlaceBlank,
+    _wsToggleSwap,
+    _wsConfirmSwap,
+    _wsConfirmPlay,
+    _wsRecall,
+    _wsSwapTiles,
+    _wsPass,
+    _wsLeave,
+    _wsChooseBlankLetter,
   };
 
 })();
