@@ -623,10 +623,24 @@
             style="position:relative;">
             🧪 3D Class
           </button>
-          <button id="gameOpenBtn" onclick="Game.openGameLobby()" class="btn"
-            style="position:relative;background:linear-gradient(135deg,#7c3aed,#4f6ef7);color:#fff;">
-            🎮 Games
-          </button>
+          <button id="gameOpenBtn" onclick="(function(){
+  if (!window.Game || typeof Game.openGameLobby !== 'function') {
+    alert('Games are not loaded yet. Please wait a moment and try again.');
+    return;
+  }
+  Promise.resolve().then(function(){ return Game.openGameLobby(); })
+    .catch(function(err){
+      console.error('[game] openGameLobby error:', err);
+      if (window.UI && window.UI.toast) {
+        UI.toast('Could not open Games. Please try again.', 'error', 4000);
+      } else {
+        alert('Could not open Games. Please refresh the page.');
+      }
+    });
+})()" class="btn"
+    style="position:relative;background:linear-gradient(135deg,#7c3aed,#4f6ef7);color:#fff;">
+  🎮 Games
+</button>
           <button id="dmOpenBtn" onclick="DM.openStudentInbox()" class="btn bg-indigo-600 hover:bg-indigo-700"
             style="position:relative;">
             ✉️ Message Teacher
