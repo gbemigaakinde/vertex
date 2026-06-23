@@ -564,18 +564,31 @@ function _wsBlankBoard() {
 
 /** Serialise board for Firestore (null → 0, cell → {l,p,b}) */
 function _wsSerialiseBoard(board) {
-  return board.map(row => row.map(cell => cell
-    ? { l: cell.letter, p: cell.points, b: cell.blank ? 1 : 0 }
-    : 0
-  ));
+  const flat = [];
+  for (let r = 0; r < WS_BOARD_SIZE; r++) {
+    for (let c = 0; c < WS_BOARD_SIZE; c++) {
+      const cell = board[r][c];
+      flat.push(cell ? { l: cell.letter, p: cell.points, b: cell.blank ? 1 : 0 } : 0);
+    }
+  }
+  return flat;
 }
 
-/** Deserialise board from Firestore */
 function _wsDeserialiseBoard(raw) {
-  return raw.map(row => row.map(cell => cell === 0 || cell === null
-    ? null
-    : { letter: cell.l, points: cell.p, blank: !!cell.b }
-  ));
+  const board = Array.from({ length: WS_BOARD_SIZE }, () => Array(WS_BOARD_SIZE).fill(null));
+  for (let r = 0; r < WS_BOARD_SIZE; r++) {
+    for (let c = 0; c < WS_BOARD_SIZE; c++) {
+      const cell = raw[r * WS_BOARD_SIZE + c];
+      board[r][c] = (cell === 0 || cell === null)
+        ? null
+        : { letter: cell.l, points: cell.p, blank: !!cell.b };
+    }
+  }
+  return board;
+}
+
+function _wsBlankBoard() {
+  return Array.from({ length: WS_BOARD_SIZE }, () => Array(WS_BOARD_SIZE).fill(null));
 }
 
 /* ══════════════════════════════════════════════════════════════
