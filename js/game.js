@@ -1914,65 +1914,94 @@ function _krStartCountdownTick(getEl) {
   ══════════════════════════════════════════════════════════════ */
 
   function _startChallengeListener() {
-    const uid = _uid();
-    if (!uid || _challengeListener) return;
+  const uid = _uid();
+  if (!uid || _challengeListener) return;
 
-    if (!document.getElementById('_gameChallengePopupStyles')) {
-      const style = document.createElement('style');
-      style.id = '_gameChallengePopupStyles';
-      style.textContent = `
-        @keyframes gameChallengePopIn {
-          from { opacity:0; transform:translateX(110%) scale(.9); }
-          to   { opacity:1; transform:translateX(0) scale(1); }
-        }
-        @keyframes gameChallengePopOut {
-          from { opacity:1; transform:translateX(0) scale(1); max-height:300px; }
-          to   { opacity:0; transform:translateX(110%) scale(.9); max-height:0; }
-        }
-      `;
-      document.head.appendChild(style);
-    }
-
-    _db()
-      .collection('gameChallenges')
-      .where('challengedUid', '==', uid)
-      .where('status', '==', 'pending')
-      .get()
-      .then(function(existingSnap) {
-        existingSnap.forEach(function(doc) { _notifiedChallenges.add(doc.id); });
-        _challengeListener = _db()
-          .collection('gameChallenges')
-          .where('challengedUid', '==', uid)
-          .where('status', '==', 'pending')
-          .onSnapshot(function(snap) {
-            snap.docChanges().forEach(function(change) {
-              if (change.type !== 'added' && change.type !== 'modified') return;
-              const doc  = change.doc;
-              const data = doc.data();
-              if (_notifiedChallenges.has(doc.id)) return;
-              _notifiedChallenges.add(doc.id);
-              _showChallengePopup(doc.id, data);
-            });
-          }, function(err) { console.warn('[game] challenge listener error:', err); });
-      })
-      .catch(function(err) {
-        console.warn('[game] challenge baseline fetch error — attaching listener without baseline:', err);
-        _challengeListener = _db()
-          .collection('gameChallenges')
-          .where('challengedUid', '==', uid)
-          .where('status', '==', 'pending')
-          .onSnapshot(function(snap) {
-            snap.docChanges().forEach(function(change) {
-              if (change.type !== 'added' && change.type !== 'modified') return;
-              const doc  = change.doc;
-              const data = doc.data();
-              if (_notifiedChallenges.has(doc.id)) return;
-              _notifiedChallenges.add(doc.id);
-              _showChallengePopup(doc.id, data);
-            });
-          }, function(err) { console.warn('[game] challenge listener error:', err); });
-      });
+  if (!document.getElementById('_gameChallengePopupStyles')) {
+    const style = document.createElement('style');
+    style.id = '_gameChallengePopupStyles';
+    style.textContent = `
+      @keyframes gameChallengePopIn {
+        from { opacity:0; transform:translateX(110%) scale(.9); }
+        to   { opacity:1; transform:translateX(0) scale(1); }
+      }
+      @keyframes gameChallengePopOut {
+        from { opacity:1; transform:translateX(0) scale(1); max-height:300px; }
+        to   { opacity:0; transform:translateX(110%) scale(.9); max-height:0; }
+      }
+    `;
+    document.head.appendChild(style);
   }
+
+  // ── Existing quiz challenge listener ──
+  _db()
+    .collection('gameChallenges')
+    .where('challengedUid', '==', uid)
+    .where('status', '==', 'pending')
+    .get()
+    .then(function(existingSnap) {
+      existingSnap.forEach(function(doc) { _notifiedChallenges.add(doc.id); });
+      _challengeListener = _db()
+        .collection('gameChallenges')
+        .where('challengedUid', '==', uid)
+        .where('status', '==', 'pending')
+        .onSnapshot(function(snap) {
+          snap.docChanges().forEach(function(change) {
+            if (change.type !== 'added' && change.type !== 'modified') return;
+            const doc  = change.doc;
+            const data = doc.data();
+            if (_notifiedChallenges.has(doc.id)) return;
+            _notifiedChallenges.add(doc.id);
+            _showChallengePopup(doc.id, data);
+          });
+        }, function(err) { console.warn('[game] challenge listener error:', err); });
+    })
+    .catch(function(err) {
+      console.warn('[game] challenge baseline fetch error:', err);
+      _challengeListener = _db()
+        .collection('gameChallenges')
+        .where('challengedUid', '==', uid)
+        .where('status', '==', 'pending')
+        .onSnapshot(function(snap) {
+          snap.docChanges().forEach(function(change) {
+            if (change.type !== 'added' && change.type !== 'modified') return;
+            const doc  = change.doc;
+            const data = doc.data();
+            if (_notifiedChallenges.has(doc.id)) return;
+            _notifiedChallenges.add(doc.id);
+            _showChallengePopup(doc.id, data);
+          });
+        }, function(err) { console.warn('[game] challenge listener error:', err); });
+    });
+
+  // ── NEW: Scrabble challenge listener ──
+  _db()
+    .collection('scrabbleGames')
+    .where('player2Uid', '==', uid)
+    .where('status', '==', 'pending')
+    .get()
+    .then(function(existingSnap) {
+      existingSnap.forEach(function(doc) { _notifiedChallenges.add('scrabble_' + doc.id); });
+      _db()
+        .collection('scrabbleGames')
+        .where('player2Uid', '==', uid)
+        .where('status', '==', 'pending')
+        .onSnapshot(function(snap) {
+          snap.docChanges().forEach(function(change) {
+            if (change.type !== 'added' && change.type !== 'modified') return;
+            const doc  = change.doc;
+            const data = doc.data();
+            const key  = 'scrabble_' + doc.id;
+            if (_notifiedChallenges.has(key)) return;
+            _notifiedChallenges.add(key);
+            _showScrabbleChallengePopup(doc.id, data);
+          });
+        }, function(err) { console.warn('[game] scrabble listener error:', err); });
+    })
+    .catch(function(err) {
+      console.warn('[game] scrabble baseline fetch error:', err);
+    });
+}
 
   function _stopChallengeListener() {
     if (_challengeListener) { _challengeListener(); _challengeListener = null; }
@@ -2062,6 +2091,92 @@ function _krStartCountdownTick(getEl) {
     popup.addEventListener('animationend', () => popup.remove(), { once: true });
   }
 
+function _showScrabbleChallengePopup(gameId, data) {
+  if (window.AppState && window.AppState.exam && window.AppState.exam.step === 'exam') return;
+  const existing = document.getElementById('scrabbleChallengePopup_' + gameId);
+  if (existing) return;
+
+  const from = _esc(data.player1Name || 'A classmate');
+
+  const popup = document.createElement('div');
+  popup.id    = 'scrabbleChallengePopup_' + gameId;
+  popup.style.cssText = [
+    'position:fixed', 'bottom:5rem', 'right:1.25rem',
+    'z-index:9500', 'max-width:320px', 'width:calc(100vw - 2.5rem)',
+    'background:var(--bg-base)', 'border:2px solid #7c3aed',
+    'border-radius:14px', 'padding:1rem 1.125rem',
+    'box-shadow:0 8px 32px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.1)',
+    'animation:gameChallengePopIn .35s cubic-bezier(.34,1.45,.64,1) both',
+    'pointer-events:auto',
+  ].join(';');
+
+  popup.innerHTML = `
+    <div style="display:flex;align-items:flex-start;gap:.625rem;">
+      <div style="width:38px;height:38px;border-radius:50%;background:#ede9fe;
+                  border:2px solid #c4b5fd;display:flex;align-items:center;
+                  justify-content:center;flex-shrink:0;font-size:1.25rem;">
+        🔤
+      </div>
+      <div style="flex:1;min-width:0;">
+        <p style="font-size:.8125rem;font-weight:800;color:var(--text-1);margin:0 0 2px;">
+          Scrabble Challenge!
+        </p>
+        <p style="font-size:.75rem;color:var(--text-2);margin:0 0 3px;line-height:1.4;">
+          <strong>${from}</strong> challenged you to Word Scrabble!
+        </p>
+        <p style="font-size:.6875rem;color:var(--text-3);margin:0;">
+          Classic board game — place words, score points
+        </p>
+      </div>
+      <button id="scrabblePopupDismiss_${gameId}"
+              style="background:none;border:none;cursor:pointer;color:var(--text-4);font-size:1rem;
+                     line-height:1;padding:2px;flex-shrink:0;"
+              aria-label="Dismiss">&#x2715;</button>
+    </div>
+    <div style="display:flex;gap:.5rem;margin-top:.875rem;">
+      <button id="scrabblePopupAccept_${gameId}"
+              style="flex:1;padding:.5rem;border-radius:8px;font-size:.8125rem;font-weight:700;
+                     background:#7c3aed;color:#fff;border:none;cursor:pointer;font-family:var(--font);">
+        Accept &amp; Play
+      </button>
+      <button id="scrabblePopupDecline_${gameId}"
+              style="flex:1;padding:.5rem;border-radius:8px;font-size:.8125rem;font-weight:600;
+                     background:var(--bg-subtle);color:var(--text-2);border:1px solid var(--border);
+                     cursor:pointer;font-family:var(--font);">
+        Decline
+      </button>
+    </div>`;
+
+  document.body.appendChild(popup);
+  const autoTimer = setTimeout(() => _dismissScrabblePopup(gameId), 30_000);
+
+  function _dismiss() { clearTimeout(autoTimer); _dismissScrabblePopup(gameId); }
+
+  document.getElementById('scrabblePopupDismiss_' + gameId).addEventListener('click', _dismiss);
+
+  document.getElementById('scrabblePopupAccept_' + gameId).addEventListener('click', async () => {
+    _dismiss();
+    await _acceptScrabble(gameId);
+  });
+
+  document.getElementById('scrabblePopupDecline_' + gameId).addEventListener('click', async () => {
+    _dismiss();
+    try {
+      await _db().collection('scrabbleGames').doc(gameId).update({ status: 'declined' });
+      window.UI && window.UI.toast('Scrabble challenge declined.', 'info', 3000);
+    } catch (e) {
+      console.warn('[scrabble] decline error:', e);
+    }
+  });
+}
+
+function _dismissScrabblePopup(gameId) {
+  const popup = document.getElementById('scrabbleChallengePopup_' + gameId);
+  if (!popup) return;
+  popup.style.animation = 'gameChallengePopOut .25s ease-in both';
+  popup.addEventListener('animationend', () => popup.remove(), { once: true });
+}
+
   /* ══════════════════════════════════════════════════════════════
      LOBBY
   ══════════════════════════════════════════════════════════════ */
@@ -2081,25 +2196,29 @@ function _krStartCountdownTick(getEl) {
     const maxed     = _isMaxLevel(_profile.xp || 0);
 
     let pendingChallenges = [];
-    let awaitingPlay      = [];
-    if (_isOnline()) {
-      try {
-        const challengeSnap = await _db().collection('gameChallenges')
-          .where('challengedUid', '==', uid).where('status', '==', 'pending').get();
-        if (!challengeSnap.empty) {
-          challengeSnap.docs.forEach(doc => {
-            pendingChallenges.push({ id: doc.id, ...doc.data() });
-          });
-        }
-        const sentSnap = await _db().collection('gameChallenges')
-          .where('challengerUid', '==', uid).where('status', '==', 'awaiting_challenger').get();
-        if (!sentSnap.empty) {
-          sentSnap.docs.forEach(doc => {
-            awaitingPlay.push({ id: doc.id, ...doc.data() });
-          });
-        }
-      } catch (e) { console.warn('[game] challenge fetch error (offline?):', e); }
-    }
+let awaitingPlay      = [];
+let pendingScrabble   = [];
+if (_isOnline()) {
+  try {
+    const [challengeSnap, sentSnap, scrabbleSnap] = await Promise.all([
+      _db().collection('gameChallenges')
+           .where('challengedUid', '==', uid)
+           .where('status', '==', 'pending').get(),
+      _db().collection('gameChallenges')
+           .where('challengerUid', '==', uid)
+           .where('status', '==', 'awaiting_challenger').get(),
+      _db().collection('scrabbleGames')
+           .where('player2Uid', '==', uid)
+           .where('status', '==', 'pending').get(),
+    ]);
+    if (!challengeSnap.empty)
+      challengeSnap.docs.forEach(doc => pendingChallenges.push({ id: doc.id, ...doc.data() }));
+    if (!sentSnap.empty)
+      sentSnap.docs.forEach(doc => awaitingPlay.push({ id: doc.id, ...doc.data() }));
+    if (!scrabbleSnap.empty)
+      scrabbleSnap.docs.forEach(doc => pendingScrabble.push({ id: doc.id, ...doc.data() }));
+  } catch (e) { console.warn('[game] challenge fetch error:', e); }
+}
 
     const offlineBanner = !_isOnline()
       ? `<div style="display:flex;align-items:center;gap:.5rem;margin:.5rem 0;
@@ -2113,11 +2232,19 @@ function _krStartCountdownTick(getEl) {
       : '';
 
     const challengeNotif = pendingChallenges.length > 0 ? `
-      <div class="game-challenge-alert" onclick="Game._showPendingChallenges()">
-        <span class="game-challenge-alert__icon">${_icon('swords', 20)}</span>
-        <span>${pendingChallenges.length} pending challenge${pendingChallenges.length > 1 ? 's' : ''} — tap to view.</span>
-        <span class="game-challenge-alert__arrow">${_icon('arrowRight', 16)}</span>
-      </div>` : '';
+  <div class="game-challenge-alert" onclick="Game._showPendingChallenges()">
+    <span class="game-challenge-alert__icon">${_icon('swords', 20)}</span>
+    <span>${pendingChallenges.length} pending challenge${pendingChallenges.length > 1 ? 's' : ''} — tap to view.</span>
+    <span class="game-challenge-alert__arrow">${_icon('arrowRight', 16)}</span>
+  </div>` : '';
+
+const scrabbleNotif = pendingScrabble.length > 0 ? `
+  <div class="game-challenge-alert" onclick="Game._showScrabblePending()"
+       style="border-color:#7c3aed;background:linear-gradient(135deg,#ede9fe,#ddd6fe);">
+    <span class="game-challenge-alert__icon">🔤</span>
+    <span style="color:#5b21b6;">${pendingScrabble.length} pending Scrabble challenge${pendingScrabble.length > 1 ? 's' : ''} — tap to view.</span>
+    <span class="game-challenge-alert__arrow">${_icon('arrowRight', 16)}</span>
+  </div>` : '';
 
     const awaitingNotif = awaitingPlay.length > 0 ? `
       <div class="game-challenge-alert game-challenge-alert--info" onclick="Game._showAwaitingChallenges()">
@@ -6171,7 +6298,7 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
     _startKnowledgeRunner,
     _krChangeLane,
     _krRoll,
-        _showScrabbleSetup,
+    _showScrabbleSetup,
     _sendScrabbleChallenge,
     _showScrabblePending,
     _acceptScrabble,
@@ -6188,6 +6315,7 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
     _wsPass,
     _wsLeave,
     _wsChooseBlankLetter,
+    _updateGameNavBadge(pendingChallenges.length + awaitingPlay.length + pendingScrabble.length);
   };
 
 })();
