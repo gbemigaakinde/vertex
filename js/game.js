@@ -663,28 +663,32 @@ async function _sendScrabbleChallenge() {
   if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Sending…'; }
 
   // Build initial game state
-  const bag       = _wsBuildBag();
-  const rack1     = _wsDraw(bag, WS_RACK_SIZE); // challenger's rack
-  const rack2     = _wsDraw(bag, WS_RACK_SIZE); // challenged's rack
-  const board     = _wsBlankBoard();
+  const bag   = _wsBuildBag();
+  const rack1 = _wsDraw(bag, WS_RACK_SIZE);
+  const rack2 = _wsDraw(bag, WS_RACK_SIZE);
+  const board = _wsBlankBoard();
+
+  // Serialise tiles — strip the internal id field, keep only l and p
+  const _serialiseTiles = (tiles) => tiles.map(t => ({ l: t.letter, p: t.points }));
+  const _serialiseBag   = (tiles) => tiles.map(t => ({ l: t.letter, p: t.points }));
 
   try {
     await _db().collection('scrabbleGames').add({
       player1Uid:   _uid(),
-      player1Name:  _student().name || '',
+      player1Name:  _student().name  || '',
       player2Uid:   targetUid,
       player2Name:  targetName,
-      class:        _student().class || '',
+      class:        _student().class  || '',
       school:       _student().school || '',
-      status:       'pending',           // pending → active → finished
-      turn:         _uid(),              // player1 goes first
+      status:       'pending',
+      turn:         _uid(),
       board:        _wsSerialiseBoard(board),
-      bag:          bag.map(t => ({ l: t.letter, p: t.points })),
-      rack1:        rack1.map(t => ({ l: t.letter, p: t.points })),
-      rack2:        rack2.map(t => ({ l: t.letter, p: t.points })),
+      bag:          _serialiseBag(bag),
+      rack1:        _serialiseTiles(rack1),
+      rack2:        _serialiseTiles(rack2),
       score1:       0,
       score2:       0,
-      passCount:    0,   // consecutive passes — 6 ends game
+      passCount:    0,
       moveLog:      [],
       createdAt:    firebase.firestore.FieldValue.serverTimestamp(),
       lastMoveAt:   firebase.firestore.FieldValue.serverTimestamp(),
@@ -692,7 +696,7 @@ async function _sendScrabbleChallenge() {
     _closeModal();
     window.UI.toast(`Scrabble challenge sent to ${targetName}! Waiting for them to accept.`, 'success', 5000);
   } catch (e) {
-    console.error('[scrabble] _sendScrabbleChallenge error:', e);
+    console.error('[scrabble] _sendScrabbleChallenge error:', e.code, e.message, e);
     window.UI.toast('Could not send challenge. Please try again.', 'error');
     if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = '🔤 Send Scrabble Challenge'; }
   }
@@ -703,30 +707,34 @@ async function _showScrabblePending() {
   const uid = _uid();
   let games = [];
   try {
-    // Games where I was challenged and status is pending
     const snap = await _db().collection('scrabbleGames')
       .where('player2Uid', '==', uid)
       .where('status', '==', 'pending')
       .get();
     snap.docs.forEach(doc => games.push({ id: doc.id, ...doc.data() }));
-  } catch (e) { window.UI.toast('Could not load Scrabble invitations.', 'error'); return; }
+  } catch (e) {
+    console.error('[scrabble] _showScrabblePending pending fetch error:', e.code, e.message);
+    window.UI.toast('Could not load Scrabble invitations.', 'error');
+    return;
+  }
 
-  // Also get active games (my turn)
   let activeGames = [];
   try {
-    const snap2 = await _db().collection('scrabbleGames')
-      .where('player1Uid', '==', uid)
-      .where('status', '==', 'active')
-      .get();
-    const snap3 = await _db().collection('scrabbleGames')
-      .where('player2Uid', '==', uid)
-      .where('status', '==', 'active')
-      .get();
+    const [snap2, snap3] = await Promise.all([
+      _db().collection('scrabbleGames').where('player1Uid', '==', uid).where('status', '==', 'active').get(),
+      _db().collection('scrabbleGames').where('player2Uid', '==', uid).where('status', '==', 'active').get(),
+    ]);
+    const seen = new Set();
     [...snap2.docs, ...snap3.docs].forEach(doc => {
+      if (seen.has(doc.id)) return;
+      seen.add(doc.id);
       const d = doc.data();
       if (d.turn === uid) activeGames.push({ id: doc.id, ...d });
     });
-  } catch (e) { /* non-fatal */ }
+  } catch (e) {
+    console.warn('[scrabble] _showScrabblePending active fetch error:', e.code, e.message);
+    // non-fatal — continue showing pending invitations
+  }
 
   if (games.length === 0 && activeGames.length === 0) {
     window.UI.toast('No pending Scrabble games right now.', 'info');
