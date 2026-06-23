@@ -186,7 +186,7 @@
   const CHALLENGE_EXPIRE_MS      = 24 * 60 * 60 * 1000;
 
   // True or False constants
-  const TF_TIME_PER_QUESTION     = 10; // seconds — tight but fair
+  const TF_TIME_PER_QUESTION     = 15; // seconds — tight but fair
   const TF_XP_PER_CORRECT        = 8;
   const TF_XP_STREAK_BONUS       = 4;  // bonus per question when streak >= 3
   const TF_STREAK_THRESHOLD      = 3;
