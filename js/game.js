@@ -751,6 +751,7 @@ function _krStartCountdownTick(getEl) {
   ══════════════════════════════════════════════════════════════ */
 
   async function openGameLobby() {
+    try {
     _injectStyles();
     const uid = _uid();
     if (!uid) { window.UI.toast('Please sign in to play games.', 'error'); return; }
@@ -1012,6 +1013,12 @@ function _krStartCountdownTick(getEl) {
     // If Knowledge Surfer is on cooldown, start live countdown on the lobby card
     if (_krIsLimitReached()) {
       _krStartCountdownTick(() => document.getElementById('krLobbyCountdown'));
+    }
+    } catch (err) {
+      console.error('[game] openGameLobby crashed:', err);
+      if (window.UI && window.UI.toast) {
+        window.UI.toast('Games failed to load. Please try again.', 'error', 4000);
+      }
     }
   }
 
