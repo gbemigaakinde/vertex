@@ -2466,7 +2466,7 @@ const scrabbleNotif = pendingScrabble.length > 0 ? `
 
       </div>`);
 
-    _updateGameNavBadge(pendingChallenges.length + awaitingPlay.length);
+    _updateGameNavBadge(pendingChallenges.length + awaitingPlay.length + pendingScrabble.length);
 
     // If Knowledge Surfer is on cooldown, start live countdown on the lobby card
     if (_krLimited) {
@@ -6315,7 +6315,6 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
     _wsPass,
     _wsLeave,
     _wsChooseBlankLetter,
-    _updateGameNavBadge(pendingChallenges.length + awaitingPlay.length + pendingScrabble.length);
   };
 
 })();
