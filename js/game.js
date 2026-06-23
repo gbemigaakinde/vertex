@@ -742,7 +742,8 @@ async function _showScrabblePending() {
       if (seen.has(doc.id)) return;
       seen.add(doc.id);
       const d = doc.data();
-      if (d.turn === uid) activeGames.push({ id: doc.id, ...d });
+      // FIXED: Show ALL active games where user is a participant, regardless of whose turn
+      activeGames.push({ id: doc.id, ...d });
     });
   } catch (e) {
     console.warn('[scrabble] _showScrabblePending active fetch error:', e.code, e.message);
@@ -770,14 +771,17 @@ async function _showScrabblePending() {
 
   const activeHtml = activeGames.map(g => {
     const opp = g.player1Uid === uid ? g.player2Name : g.player1Name;
+    const isMyTurn = g.turn === uid;
     return `
-    <div style="background:var(--accent-subtle);border:1px solid var(--accent-border);border-radius:8px;
-                padding:.75rem 1rem;margin-bottom:.5rem;">
-      <p style="font-size:.9375rem;font-weight:700;color:var(--accent-text);">
-        🔤 Your turn vs ${_esc(opp)}
+    <div style="background:${isMyTurn ? 'var(--accent-subtle)' : 'var(--warning-subtle)'};
+                border:1px solid ${isMyTurn ? 'var(--accent-border)' : 'var(--warning-border)'};
+                border-radius:8px;padding:.75rem 1rem;margin-bottom:.5rem;">
+      <p style="font-size:.9375rem;font-weight:700;color:${isMyTurn ? 'var(--accent-text)' : 'var(--warning-text)'};">
+        🔤 ${isMyTurn ? '⚡ Your turn vs' : '⏳ Waiting for'} ${_esc(opp)}
       </p>
       <button onclick="Game._openScrabbleGame('${_esc(g.id)}')"
-              class="btn w-full" style="margin-top:.5rem;font-size:.8125rem;">Open Board</button>
+              class="btn w-full" style="margin-top:.5rem;font-size:.8125rem;${isMyTurn ? 'background:var(--accent);color:#fff;' : ''}"
+              >Open Board</button>
     </div>`;
   }).join('');
 
