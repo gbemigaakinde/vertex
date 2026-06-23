@@ -270,6 +270,81 @@
 
   function _isMaxLevel(xp)  { return xp >= LEVELS[LEVELS.length - 1].minXP; }
 
+  
+  /* ══════════════════════════════════════════════════════════════
+   KNOWLEDGE SURFER PLAY LIMIT  (leisure cap)
+   ─────────────────────────────────────────────────────────────
+   Students may play Knowledge Surfer up to KR_MAX_PLAYS times
+   within KR_COOLDOWN_MS. After that, a countdown is shown and
+   the game is locked until the window resets.
+══════════════════════════════════════════════════════════════ */
+
+const KR_MAX_PLAYS    = 3;
+const KR_COOLDOWN_MS  = 8 * 60 * 60 * 1000; // 8 hours in ms
+const KR_STORAGE_KEY  = () => 'kr_plays_' + (_uid() || 'guest');
+
+/** Return the array of timestamps (ms) of recent plays, pruned to the cooldown window. */
+function _krGetRecentPlays() {
+  try {
+    const raw  = localStorage.getItem(KR_STORAGE_KEY());
+    const list = raw ? JSON.parse(raw) : [];
+    const now  = Date.now();
+    // Keep only plays within the last KR_COOLDOWN_MS
+    return list.filter(ts => now - ts < KR_COOLDOWN_MS);
+  } catch (e) {
+    return [];
+  }
+}
+
+/** Record a new play session now. */
+function _krRecordPlay() {
+  try {
+    const plays = _krGetRecentPlays();
+    plays.push(Date.now());
+    localStorage.setItem(KR_STORAGE_KEY(), JSON.stringify(plays));
+  } catch (e) {
+    console.warn('[game] _krRecordPlay: localStorage write failed:', e);
+  }
+}
+
+/** Returns true if the student has hit the play limit. */
+function _krIsLimitReached() {
+  return _krGetRecentPlays().length >= KR_MAX_PLAYS;
+}
+
+/**
+ * Returns a human-readable countdown string (H:MM:SS or MM:SS)
+ * showing how long until the earliest play expires and frees a slot.
+ * Returns '' if not currently limited.
+ */
+function _krCooldownLabel() {
+  const plays = _krGetRecentPlays();
+  if (plays.length < KR_MAX_PLAYS) return '';
+  const oldest   = Math.min(...plays);
+  const unlockAt = oldest + KR_COOLDOWN_MS;
+  const msLeft   = Math.max(0, unlockAt - Date.now());
+  if (msLeft <= 0) return '';
+  const h   = Math.floor(msLeft / 3_600_000);
+  const m   = Math.floor((msLeft % 3_600_000) / 60_000);
+  const s   = Math.floor((msLeft % 60_000) / 1_000);
+  if (h > 0) return `${h}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
+}
+
+/** Start a 1-second interval that keeps a DOM element's text updated with
+ *  the cooldown countdown. Clears itself when the element leaves the DOM
+ *  or the limit is no longer active. Returns the interval ID. */
+function _krStartCountdownTick(getEl) {
+  const id = setInterval(() => {
+    const el = typeof getEl === 'function' ? getEl() : getEl;
+    if (!el || !document.body.contains(el)) { clearInterval(id); return; }
+    const label = _krCooldownLabel();
+    if (!label) { clearInterval(id); el.textContent = ''; return; }
+    el.textContent = label;
+  }, 1_000);
+  return id;
+}
+
   function _xpProgressPct(xp) {
     if (_isMaxLevel(xp)) return 100;
     const current = _getLevelForXP(xp);
@@ -863,16 +938,46 @@
               <span class="game-card__tag game-card__tag--xp">+${XP_CHALLENGE_WIN} bonus XP</span>
             </div>
           </div>
-          <div class="game-card game-card--runner" onclick="Game._selectGame('knowledgeRunner')">
-            <div class="game-card__icon">${_icon('bolt', 32, { color: '#06b6d4' })}</div>
-            <div class="game-card__title">Knowledge Surfer</div>
-            <div class="game-card__desc">Subway Surfers-style! Swipe across 3 lanes. Collect correct answer coins. Dodge wrong-answer trains & barriers. Inspector chases you!</div>
-            <div class="game-card__meta">
-              <span class="game-card__tag">Action</span>
-              <span class="game-card__tag">Endless Runner</span>
-              <span class="game-card__tag game-card__tag--xp">XP per collect</span>
-            </div>
-          </div>
+          (() => {
+            const _krLimited    = _krIsLimitReached();
+            const _krPlaysUsed  = _krGetRecentPlays().length;
+            const _krPlaysLeft  = Math.max(0, KR_MAX_PLAYS - _krPlaysUsed);
+            const _krCountdown  = _krCooldownLabel();
+            const _krCardId     = 'krLobbyCountdown';
+            return `
+              <div class="game-card game-card--runner${_krLimited ? ' game-card--locked' : ''}"
+                   onclick="Game._selectGame('knowledgeRunner')"
+                   style="${_krLimited ? 'opacity:.7;cursor:pointer;' : ''}">
+                <div class="game-card__icon">
+                  ${_krLimited ? '🔒' : _icon('bolt', 32, { color: '#06b6d4' })}
+                </div>
+                <div class="game-card__title">
+                  Knowledge Surfer
+                  ${_krLimited
+                    ? `<span style="font-size:.625rem;background:#ef4444;color:#fff;
+                                   border-radius:4px;padding:1px 6px;font-weight:700;
+                                   margin-left:.375rem;vertical-align:middle;">COOLDOWN</span>`
+                    : ''}
+                </div>
+                <div class="game-card__desc">
+                  ${_krLimited
+                    ? `On a break! Back in&nbsp;<strong id="${_krCardId}" style="color:#ef4444;font-family:var(--font-mono);">${_krCountdown}</strong>.
+                       Try Quiz Blitz or Word Scramble in the meantime.`
+                    : 'Subway Surfers-style! Swipe across 3 lanes. Collect correct answer coins. Dodge wrong-answer trains &amp; barriers. Inspector chases you!'}
+                </div>
+                <div class="game-card__meta">
+                  <span class="game-card__tag">Action</span>
+                  <span class="game-card__tag">Endless Runner</span>
+                  ${_krLimited
+                    ? `<span class="game-card__tag" style="background:rgba(239,68,68,0.1);color:#ef4444;border-color:rgba(239,68,68,0.3);">
+                         ${_krPlaysUsed}/${KR_MAX_PLAYS} plays used
+                       </span>`
+                    : `<span class="game-card__tag game-card__tag--xp">
+                         ${_krPlaysLeft} play${_krPlaysLeft !== 1 ? 's' : ''} left
+                       </span>`}
+                </div>
+              </div>`;
+          })()
         </div>
 
         <h2 class="game-section-title" style="margin-top:1.5rem;">Your Badges</h2>
@@ -903,6 +1008,11 @@
       </div>`);
 
     _updateGameNavBadge(pendingChallenges.length + awaitingPlay.length);
+
+    // If Knowledge Surfer is on cooldown, start live countdown on the lobby card
+    if (_krIsLimitReached()) {
+      _krStartCountdownTick(() => document.getElementById('krLobbyCountdown'));
+    }
   }
 
   function _renderLevelStrip(currentRank, xp) {
@@ -2861,55 +2971,132 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
   }
 
   function _showKnowledgeRunnerSetup() {
-    const subjects = _getSubjectsForStudent();
-    if (subjects.length === 0) {
-      window.UI.toast('No subjects found for your class.', 'error');
-      return;
-    }
-    const subjectOptions = subjects.map(s => `<option value="${_esc(s)}">${_esc(s)}</option>`).join('');
-
-    _showModal(`
-      <div style="text-align:center;margin-bottom:1.25rem;">
-        <div style="margin-bottom:.5rem;font-size:2.5rem;">🏄</div>
-        <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">Knowledge Surfer</h2>
-        <p style="font-size:.875rem;color:var(--text-3);margin-top:.375rem;">
-          Run through 3 lanes! Swipe into the correct answer lane. Dodge wrong answers. 3 lives per run.
-        </p>
-      </div>
-      <div style="margin-bottom:1rem;padding:.75rem 1rem;background:var(--accent-subtle);border:1px solid var(--accent-border);border-radius:8px;text-align:left;font-size:.8125rem;color:var(--text-2);">
-        <strong style="display:block;margin-bottom:.375rem;">Controls:</strong>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.375rem .75rem;line-height:1.8;">
-          <span>⬅️ / ➡️ Arrow</span><span>Change lane</span>
-          <span>⬆️ Swipe Up / Space</span><span>Jump</span>
-          <span>⬇️ Swipe Down</span><span>Roll / Slide</span>
-          <span>📱 Swipe left/right</span><span>Change lane</span>
-        </div>
-        <div style="margin-top:.5rem;padding:.375rem .5rem;background:var(--bg-subtle);border-radius:6px;font-size:.75rem;color:var(--text-3);">
-          🟡 Gold coins = correct answer lane &mdash; steer into them!<br>
-          🚂 Trains / barriers = wrong answers &mdash; dodge or jump over them!
-        </div>
-      </div>
-      <div style="margin-bottom:1.25rem;">
-        <label style="display:block;font-size:.75rem;font-weight:600;color:var(--text-2);margin-bottom:.375rem;">Subject</label>
-        <select id="krSubject" style="width:100%;">
-          <option value="random">Random Mix (all subjects)</option>
-          ${subjectOptions}
-        </select>
-      </div>
-      <button onclick="Game._startKnowledgeRunner()" class="btn btn-lg w-full" style="background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;font-weight:800;font-size:1rem;">
-        🏄 Start Surfing!
-      </button>
-      <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full" style="margin-top:.5rem;">Cancel</button>
-    `);
+  const subjects = _getSubjectsForStudent();
+  if (subjects.length === 0) {
+    window.UI.toast('No subjects found for your class.', 'error');
+    return;
   }
 
+  const limited     = _krIsLimitReached();
+  const playsLeft   = Math.max(0, KR_MAX_PLAYS - _krGetRecentPlays().length);
+  const subjectOptions = subjects.map(s => `<option value="${_esc(s)}">${_esc(s)}</option>`).join('');
+
+  if (limited) {
+    // ── BLOCKED: show a locked modal with live countdown ──────
+    _showModal(`
+      <div style="text-align:center;margin-bottom:1.25rem;">
+        <div style="margin-bottom:.5rem;font-size:2.5rem;">🔒</div>
+        <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">Knowledge Surfer — Taking a Break</h2>
+        <p style="font-size:.875rem;color:var(--text-3);margin-top:.375rem;line-height:1.6;">
+          You've played <strong>${KR_MAX_PLAYS} times</strong> in the last 8 hours.
+          This game is for leisure — come back after a short break!
+        </p>
+      </div>
+
+      <div style="margin:.75rem 0 1.25rem;padding:1.25rem 1rem;
+                  background:linear-gradient(135deg,rgba(239,68,68,0.08),rgba(239,68,68,0.04));
+                  border:2px solid rgba(239,68,68,0.25);border-radius:12px;text-align:center;">
+        <p style="font-size:.6875rem;font-weight:700;text-transform:uppercase;
+                  letter-spacing:.08em;color:var(--text-3);margin-bottom:.5rem;">
+          Available again in
+        </p>
+        <div id="krModalCountdown"
+             style="font-size:2.25rem;font-weight:900;color:#ef4444;
+                    font-family:var(--font-mono);line-height:1;letter-spacing:.04em;">
+          ${_krCooldownLabel()}
+        </div>
+        <p style="font-size:.75rem;color:var(--text-3);margin-top:.5rem;">
+          ${KR_MAX_PLAYS} plays used &middot; resets 8 hours after your first play
+        </p>
+      </div>
+
+      <div style="margin-bottom:1rem;padding:.75rem 1rem;
+                  background:var(--accent-subtle);border:1px solid var(--accent-border);
+                  border-radius:8px;text-align:left;font-size:.8125rem;color:var(--text-2);
+                  line-height:1.6;">
+        While you wait, try <strong>Quiz Blitz</strong>, <strong>True or False Blitz</strong>,
+        or <strong>Word Scramble</strong> — they count towards your XP and badges!
+      </div>
+
+      <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full">Back to Games</button>
+    `);
+
+    // Tick the countdown inside the modal every second
+    _krStartCountdownTick(() => document.getElementById('krModalCountdown'));
+    return;
+  }
+
+  // ── NOT LIMITED: show normal setup ────────────────────────────
+  _showModal(`
+    <div style="text-align:center;margin-bottom:1.25rem;">
+      <div style="margin-bottom:.5rem;font-size:2.5rem;">🏄</div>
+      <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">Knowledge Surfer</h2>
+      <p style="font-size:.875rem;color:var(--text-3);margin-top:.375rem;">
+        Run through 3 lanes! Swipe into the correct answer lane. Dodge wrong answers. 3 lives per run.
+      </p>
+    </div>
+    <div style="margin-bottom:1rem;padding:.75rem 1rem;background:var(--accent-subtle);border:1px solid var(--accent-border);border-radius:8px;text-align:left;font-size:.8125rem;color:var(--text-2);">
+      <strong style="display:block;margin-bottom:.375rem;">Controls:</strong>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.375rem .75rem;line-height:1.8;">
+        <span>⬅️ / ➡️ Arrow</span><span>Change lane</span>
+        <span>⬆️ Swipe Up / Space</span><span>Jump</span>
+        <span>⬇️ Swipe Down</span><span>Roll / Slide</span>
+        <span>📱 Swipe left/right</span><span>Change lane</span>
+      </div>
+      <div style="margin-top:.5rem;padding:.375rem .5rem;background:var(--bg-subtle);border-radius:6px;font-size:.75rem;color:var(--text-3);">
+        🟡 Gold coins = correct answer lane &mdash; steer into them!<br>
+        🚂 Trains / barriers = wrong answers &mdash; dodge or jump over them!
+      </div>
+    </div>
+
+    <!-- Play limit indicator -->
+    <div style="margin-bottom:1rem;padding:.5rem .875rem;
+                background:${playsLeft === 1 ? 'rgba(245,158,11,0.10)' : 'var(--bg-subtle)'};
+                border:1px solid ${playsLeft === 1 ? 'rgba(245,158,11,0.35)' : 'var(--border)'};
+                border-radius:8px;display:flex;align-items:center;justify-content:space-between;
+                font-size:.8125rem;">
+      <span style="color:var(--text-2);">
+        ${_icon(playsLeft === 1 ? 'warning' : 'info', 13, { color: playsLeft === 1 ? '#f59e0b' : 'var(--text-3)' })}
+        &nbsp;Leisure plays used today:
+        <strong style="color:${playsLeft === 1 ? '#f59e0b' : 'var(--text-1)'};">
+          ${_krGetRecentPlays().length} / ${KR_MAX_PLAYS}
+        </strong>
+      </span>
+      <span style="font-size:.75rem;color:var(--text-3);">${playsLeft} left (8hr window)</span>
+    </div>
+
+    <div style="margin-bottom:1.25rem;">
+      <label style="display:block;font-size:.75rem;font-weight:600;color:var(--text-2);margin-bottom:.375rem;">Subject</label>
+      <select id="krSubject" style="width:100%;">
+        <option value="random">Random Mix (all subjects)</option>
+        ${subjectOptions}
+      </select>
+    </div>
+    <button onclick="Game._startKnowledgeRunner()" class="btn btn-lg w-full"
+            style="background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;font-weight:800;font-size:1rem;">
+      🏄 Start Surfing!
+    </button>
+    <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full" style="margin-top:.5rem;">Cancel</button>
+  `);
+}
+
   function _startKnowledgeRunner() {
+  // ── Leisure limit: double-check before launching ──
+  if (_krIsLimitReached()) {
+    _closeModal();
+    _showKnowledgeRunnerSetup(); // shows the locked modal with countdown
+    return;
+  }
+
   const subjectSel = document.getElementById('krSubject')?.value || 'random';
   let subjects = subjectSel === 'random' ? _getSubjectsForStudent() : [subjectSel];
   if (subjects.length === 0) { window.UI.toast('No subjects found.', 'error'); return; }
 
   const pool = _buildKRPool(subjects);
   if (pool.length < 3) { window.UI.toast('Not enough questions for this subject.', 'error'); return; }
+
+  // Record this play session now (after all checks pass)
+  _krRecordPlay();
 
   _closeModal();
 
