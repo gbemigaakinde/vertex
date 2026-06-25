@@ -404,31 +404,13 @@ function _wsValidWord(word) {
 function _wsCollectWords(board, newCells) {
   if (newCells.length === 0) return null;
 
-  // All new cells must be in same row or same column
   const rows = [...new Set(newCells.map(c => c.row))];
   const cols = [...new Set(newCells.map(c => c.col))];
-  if (rows.length > 1 && cols.length > 1) return null; // diagonal — invalid
+  if (rows.length > 1 && cols.length > 1) return null;
 
   const horizontal = rows.length === 1;
-  const words = [];
 
-  /** Scan from anchor cell in given direction, return full word cells */
-  function scanWord(r, c, isHorizontal) {
-    // Walk backward to start of word
-    let sr = r, sc = c;
-    if (isHorizontal) { while (sc > 0 && board[sr][sc - 1]) sc--; }
-    else              { while (sr > 0 && board[sr - 1][sc]) sr--; }
-
-    const cells = [];
-    let cr = sr, cc = sc;
-    while (cr < WS_BOARD_SIZE && cc < WS_BOARD_SIZE && board[cr][cc]) {
-      cells.push({ row: cr, col: cc, ...board[cr][cc] });
-      if (isHorizontal) cc++; else cr++;
-    }
-    return cells;
-  }
-
-  // Temporary: merge new cells into a copy of the board for scanning
+  // Merge new cells into a copy of the board for scanning
   const tempBoard = board.map(row => row.map(cell => cell ? { ...cell } : null));
   newCells.forEach(({ row, col, letter, points, blank }) => {
     tempBoard[row][col] = { letter, points, blank: !!blank };
@@ -436,33 +418,47 @@ function _wsCollectWords(board, newCells) {
 
   const newCellSet = new Set(newCells.map(c => `${c.row},${c.col}`));
 
-  // Main word
-  const mainCells = scanWord(newCells[0].row, newCells[0].col, horizontal);
-  if (mainCells.length >= 2) {
-    const word = mainCells.map(c => c.letter).join('');
-    const score = _wsScoreWord(mainCells, newCellSet);
-    words.push({ word, cells: mainCells, score });
-  } else if (newCells.length === 1) {
-    // Single tile placed — also check perpendicular as main
+  // Scan using tempBoard so newly placed tiles are visible
+  function scanWord(r, c, isHorizontal) {
+    let sr = r, sc = c;
+    if (isHorizontal) { while (sc > 0 && tempBoard[sr][sc - 1]) sc--; }
+    else              { while (sr > 0 && tempBoard[sr - 1][sc]) sr--; }
+
+    const cells = [];
+    let cr = sr, cc = sc;
+    while (cr < WS_BOARD_SIZE && cc < WS_BOARD_SIZE && tempBoard[cr][cc]) {
+      cells.push({ row: cr, col: cc, ...tempBoard[cr][cc] });
+      if (isHorizontal) cc++; else cr++;
+    }
+    return cells;
   }
 
-  // Cross words (each new tile may create a perpendicular word)
-  newCells.forEach(nc => {
-    const crossCells = scanWord(nc.row, nc.col, !horizontal);
-    if (crossCells.length >= 2) {
-      const word = crossCells.map(c => c.letter).join('');
-      const score = _wsScoreWord(crossCells, newCellSet);
-      words.push({ word, cells: crossCells, score });
-    }
-  });
+  const words = [];
 
-  // For a single tile placed, check both directions
   if (newCells.length === 1) {
+    // Single tile: check both directions
     const hCells = scanWord(newCells[0].row, newCells[0].col, true);
     const vCells = scanWord(newCells[0].row, newCells[0].col, false);
-    words.length = 0; // reset
-    if (hCells.length >= 2) words.push({ word: hCells.map(c=>c.letter).join(''), cells: hCells, score: _wsScoreWord(hCells, newCellSet) });
-    if (vCells.length >= 2) words.push({ word: vCells.map(c=>c.letter).join(''), cells: vCells, score: _wsScoreWord(vCells, newCellSet) });
+    if (hCells.length >= 2) words.push({ word: hCells.map(c => c.letter).join(''), cells: hCells, score: _wsScoreWord(hCells, newCellSet) });
+    if (vCells.length >= 2) words.push({ word: vCells.map(c => c.letter).join(''), cells: vCells, score: _wsScoreWord(vCells, newCellSet) });
+  } else {
+    // Main word along the primary direction
+    const mainCells = scanWord(newCells[0].row, newCells[0].col, horizontal);
+    if (mainCells.length >= 2) {
+      const word = mainCells.map(c => c.letter).join('');
+      const score = _wsScoreWord(mainCells, newCellSet);
+      words.push({ word, cells: mainCells, score });
+    }
+
+    // Cross words: each newly placed tile may form a perpendicular word
+    newCells.forEach(nc => {
+      const crossCells = scanWord(nc.row, nc.col, !horizontal);
+      if (crossCells.length >= 2) {
+        const word = crossCells.map(c => c.letter).join('');
+        const score = _wsScoreWord(crossCells, newCellSet);
+        words.push({ word, cells: crossCells, score });
+      }
+    });
   }
 
   return words.length > 0 ? words : null;
@@ -745,7 +741,6 @@ async function _showScrabblePending() {
     });
   } catch (e) {
     console.warn('[scrabble] active fetch error:', e.code, e.message);
-    // non-fatal — still show pending invitations below
   }
 
   if (pendingGames.length === 0 && activeGames.length === 0) {
@@ -808,6 +803,9 @@ async function _showScrabblePending() {
     ${pendingHtml}
     ${activeHtml}
     <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full" style="margin-top:.5rem;">Close</button>
+    <button onclick="Game._closeModal();Game.openGameLobby();" class="btn bg-gray-500 w-full" style="margin-top:.375rem;">
+      ← Back to Games Lobby
+    </button>
   `);
 }
 
