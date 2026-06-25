@@ -675,13 +675,11 @@ async function _sendScrabbleChallenge() {
   const sendBtn = document.querySelector('#gameModal .btn:not(.bg-gray-500)');
   if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Sending…'; }
 
-  // Build initial game state
   const bag   = _wsBuildBag();
   const rack1 = _wsDraw(bag, WS_RACK_SIZE);
   const rack2 = _wsDraw(bag, WS_RACK_SIZE);
   const board = _wsBlankBoard();
 
-  // Serialise tiles — strip the internal id field, keep only l and p
   const _serialiseTiles = (tiles) => tiles.map(t => ({ l: t.letter, p: t.points }));
   const _serialiseBag   = (tiles) => tiles.map(t => ({ l: t.letter, p: t.points }));
 
@@ -694,7 +692,8 @@ async function _sendScrabbleChallenge() {
       class:        _student().class  || '',
       school:       _student().school || '',
       status:       'pending',
-      turn:         _uid(),
+      // First turn goes to player2 (challenged student) so they play immediately after accepting
+      turn:         targetUid,
       board:        _wsSerialiseBoard(board),
       bag:          _serialiseBag(bag),
       rack1:        _serialiseTiles(rack1),
@@ -718,44 +717,43 @@ async function _sendScrabbleChallenge() {
 // ── Show pending scrabble games ──────────────────────────────
 async function _showScrabblePending() {
   const uid = _uid();
-  let games = [];
+  let pendingGames = [];
+  let activeGames  = [];
+
   try {
     const snap = await _db().collection('scrabbleGames')
       .where('player2Uid', '==', uid)
       .where('status', '==', 'pending')
       .get();
-    snap.docs.forEach(doc => games.push({ id: doc.id, ...doc.data() }));
+    snap.docs.forEach(doc => pendingGames.push({ id: doc.id, ...doc.data() }));
   } catch (e) {
-    console.error('[scrabble] _showScrabblePending pending fetch error:', e.code, e.message);
+    console.error('[scrabble] pending fetch error:', e.code, e.message);
     window.UI.toast('Could not load Scrabble invitations.', 'error');
     return;
   }
 
-  let activeGames = [];
   try {
-    const [snap2, snap3] = await Promise.all([
+    const [snap1, snap2] = await Promise.all([
       _db().collection('scrabbleGames').where('player1Uid', '==', uid).where('status', '==', 'active').get(),
       _db().collection('scrabbleGames').where('player2Uid', '==', uid).where('status', '==', 'active').get(),
     ]);
     const seen = new Set();
-    [...snap2.docs, ...snap3.docs].forEach(doc => {
+    [...snap1.docs, ...snap2.docs].forEach(doc => {
       if (seen.has(doc.id)) return;
       seen.add(doc.id);
-      const d = doc.data();
-      // FIXED: Show ALL active games where user is a participant, regardless of whose turn
-      activeGames.push({ id: doc.id, ...d });
+      activeGames.push({ id: doc.id, ...doc.data() });
     });
   } catch (e) {
-    console.warn('[scrabble] _showScrabblePending active fetch error:', e.code, e.message);
-    // non-fatal — continue showing pending invitations
+    console.warn('[scrabble] active fetch error:', e.code, e.message);
+    // non-fatal — still show pending invitations below
   }
 
-  if (games.length === 0 && activeGames.length === 0) {
-    window.UI.toast('No pending Scrabble games right now.', 'info');
+  if (pendingGames.length === 0 && activeGames.length === 0) {
+    window.UI.toast('No Scrabble games right now.', 'info');
     return;
   }
 
-  const pendingHtml = games.map(g => `
+  const pendingHtml = pendingGames.map(g => `
     <div style="background:var(--bg-base);border:1px solid var(--border);border-radius:8px;
                 padding:.75rem 1rem;margin-bottom:.5rem;">
       <p style="font-size:.9375rem;font-weight:700;color:var(--text-1);">
@@ -763,25 +761,41 @@ async function _showScrabblePending() {
       </p>
       <div style="display:flex;gap:.375rem;margin-top:.5rem;">
         <button onclick="Game._acceptScrabble('${_esc(g.id)}')"
-                class="btn" style="flex:1;font-size:.8125rem;">Accept</button>
+                class="btn" style="flex:1;font-size:.8125rem;">Accept &amp; Play</button>
         <button onclick="Game._declineScrabble('${_esc(g.id)}')"
                 class="btn bg-gray-500" style="flex:1;font-size:.8125rem;">Decline</button>
       </div>
     </div>`).join('');
 
   const activeHtml = activeGames.map(g => {
-    const opp = g.player1Uid === uid ? g.player2Name : g.player1Name;
+    const isP1     = g.player1Uid === uid;
+    const oppName  = isP1 ? g.player2Name : g.player1Name;
+    const myScore  = isP1 ? g.score1 : g.score2;
+    const oppScore = isP1 ? g.score2 : g.score1;
     const isMyTurn = g.turn === uid;
     return `
-    <div style="background:${isMyTurn ? 'var(--accent-subtle)' : 'var(--warning-subtle)'};
-                border:1px solid ${isMyTurn ? 'var(--accent-border)' : 'var(--warning-border)'};
+    <div style="background:${isMyTurn ? 'var(--accent-subtle)' : 'var(--bg-subtle)'};
+                border:1.5px solid ${isMyTurn ? 'var(--accent-border)' : 'var(--border)'};
                 border-radius:8px;padding:.75rem 1rem;margin-bottom:.5rem;">
-      <p style="font-size:.9375rem;font-weight:700;color:${isMyTurn ? 'var(--accent-text)' : 'var(--warning-text)'};">
-        🔤 ${isMyTurn ? '⚡ Your turn vs' : '⏳ Waiting for'} ${_esc(opp)}
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.375rem;">
+        <p style="font-size:.9375rem;font-weight:700;
+                  color:${isMyTurn ? 'var(--accent-text)' : 'var(--text-2)'};">
+          ${isMyTurn ? '⚡ Your turn' : '⏳ Their turn'} vs ${_esc(oppName)}
+        </p>
+        <span style="font-size:.8125rem;font-weight:700;color:var(--text-3);">
+          ${myScore} – ${oppScore}
+        </span>
+      </div>
+      <p style="font-size:.75rem;color:var(--text-3);margin-bottom:.5rem;">
+        ${isMyTurn
+          ? 'It\'s your move — open the board and place a word.'
+          : `Waiting for ${_esc(oppName)} to play.`}
       </p>
       <button onclick="Game._openScrabbleGame('${_esc(g.id)}')"
-              class="btn w-full" style="margin-top:.5rem;font-size:.8125rem;${isMyTurn ? 'background:var(--accent);color:#fff;' : ''}"
-              >Open Board</button>
+              class="btn w-full"
+              style="font-size:.8125rem;${isMyTurn ? 'background:var(--accent);color:#fff;' : ''}">
+        Open Board
+      </button>
     </div>`;
   }).join('');
 
@@ -799,10 +813,12 @@ async function _showScrabblePending() {
 
 async function _acceptScrabble(gameId) {
   try {
+    // Set status to active. Turn is already set to player2 from _sendScrabbleChallenge.
     await _db().collection('scrabbleGames').doc(gameId).update({ status: 'active' });
     _closeModal();
     await _openScrabbleGame(gameId);
   } catch (e) {
+    console.error('[scrabble] _acceptScrabble error:', e);
     window.UI.toast('Could not accept game.', 'error');
   }
 }
@@ -1304,28 +1320,29 @@ async function _wsConfirmPlay(gameId) {
     board[row][col] = { letter, points, blank: !!blank };
   });
 
-  const uid   = _uid();
-  const isP1  = data.player1Uid === uid;
+  const uid     = _uid();
+  const isP1    = data.player1Uid === uid;
   const myScore = (isP1 ? data.score1 : data.score2) + result.totalScore;
 
   // Refill rack from bag
-  const bag     = (data.bag || []).map(t => ({ letter: t.l, points: t.p, id: `${t.l}_${Math.random()}` }));
+  const bag      = (data.bag || []).map(t => ({ letter: t.l, points: t.p, id: `${t.l}_${Math.random()}` }));
   const usedIdxs = new Set(_wsState.placed.map(p => p.rackIdx));
   const myRackRaw = isP1 ? data.rack1 : data.rack2;
-  let newRack    = myRackRaw
+  let newRack     = myRackRaw
     .filter((_, i) => !usedIdxs.has(i))
     .map(t => ({ letter: t.l, points: t.p }));
-  const drawn    = _wsDraw(bag, WS_RACK_SIZE - newRack.length);
-  newRack        = [...newRack, ...drawn];
+  const drawn     = _wsDraw(bag, WS_RACK_SIZE - newRack.length);
+  newRack         = [...newRack, ...drawn];
 
-  // Check game-end conditions
+  // Check game-end: player emptied rack AND bag is also empty
   const opponentRack = isP1 ? data.rack2 : data.rack1;
   const gameOver     = newRack.length === 0 && bag.length === 0;
-  let finalScore1    = isP1 ? myScore : data.score1;
-  let finalScore2    = isP1 ? data.score2 : myScore;
+
+  let finalScore1 = isP1 ? myScore : data.score1;
+  let finalScore2 = isP1 ? data.score2 : myScore;
 
   if (gameOver) {
-    // Deduct unplayed tiles from opponent
+    // Deduct opponent's unplayed tile values from their score, add to ours
     const oppUnplayed = opponentRack.reduce((s, t) => s + (t.p || 0), 0);
     if (isP1) { finalScore1 += oppUnplayed; }
     else       { finalScore2 += oppUnplayed; }
@@ -1333,31 +1350,39 @@ async function _wsConfirmPlay(gameId) {
 
   const wordStr = result.words.map(w => w.word).join('/');
   const newLog  = [...(data.moveLog || []).slice(-29), {
-    name: _student().name || '',
-    type: 'play',
-    word: wordStr,
+    name:  _student().name || '',
+    type:  'play',
+    word:  wordStr,
     score: result.totalScore,
   }];
 
+  // Pass turn to the OTHER player
   const nextTurn = isP1 ? data.player2Uid : data.player1Uid;
 
   try {
     const update = {
       board:      _wsSerialiseBoard(board),
       bag:        bag.map(t => ({ l: t.letter, p: t.points })),
-      turn:       gameOver ? null : nextTurn,
       passCount:  0,
       moveLog:    newLog,
       lastMoveAt: firebase.firestore.FieldValue.serverTimestamp(),
       status:     gameOver ? 'finished' : 'active',
     };
+
+    // Only set turn if game is not over
+    if (!gameOver) {
+      update.turn = nextTurn;
+    } else {
+      update.turn = null;
+    }
+
     if (isP1) {
-      update.rack1   = newRack.map(t => ({ l: t.letter, p: t.points }));
-      update.score1  = gameOver ? finalScore1 : myScore;
+      update.rack1  = newRack.map(t => ({ l: t.letter, p: t.points }));
+      update.score1 = gameOver ? finalScore1 : myScore;
       if (gameOver) update.score2 = finalScore2;
     } else {
-      update.rack2   = newRack.map(t => ({ l: t.letter, p: t.points }));
-      update.score2  = gameOver ? finalScore2 : myScore;
+      update.rack2  = newRack.map(t => ({ l: t.letter, p: t.points }));
+      update.score2 = gameOver ? finalScore2 : myScore;
       if (gameOver) update.score1 = finalScore1;
     }
 
@@ -1366,10 +1391,13 @@ async function _wsConfirmPlay(gameId) {
     _wsState.selected = null;
 
     if (gameOver) {
-      const winner = finalScore1 > finalScore2 ? data.player1Name : finalScore2 > finalScore1 ? data.player2Name : null;
+      const winner = finalScore1 > finalScore2
+        ? data.player1Name
+        : finalScore2 > finalScore1
+          ? data.player2Name
+          : null;
       window.UI.toast(winner ? `Game over! ${winner} wins! 🏆` : "Game over! It's a tie!", 'success', 6000);
-      // Award XP
-      const win = (isP1 && finalScore1 > finalScore2) || (!isP1 && finalScore2 > finalScore1);
+      const win    = (isP1 && finalScore1 > finalScore2) || (!isP1 && finalScore2 > finalScore1);
       const xpGain = Math.min(200, Math.max(20, myScore));
       await _awardXP(xpGain, 'wordScrabble', { win });
     }
@@ -1488,7 +1516,8 @@ async function _wsConfirmSwap(gameId) {
 async function _wsPass(gameId) {
   if (!_wsCachedData) return;
   const data     = _wsCachedData;
-  const isP1     = data.player1Uid === _uid();
+  const uid      = _uid();
+  const isP1     = data.player1Uid === uid;
   const nextTurn = isP1 ? data.player2Uid : data.player1Uid;
   const newPass  = (data.passCount || 0) + 1;
   const gameOver = newPass >= 6;
@@ -1504,9 +1533,73 @@ async function _wsPass(gameId) {
       moveLog:    newLog,
       lastMoveAt: firebase.firestore.FieldValue.serverTimestamp(),
     });
-    window.UI.toast(gameOver ? 'Game ended after 6 consecutive passes.' : 'Passed. Opponent\'s turn.', 'info', 3000);
+    if (gameOver) {
+      window.UI.toast('Game ended after 6 consecutive passes.', 'info', 4000);
+      await _awardXP(10, 'wordScrabble', { win: false });
+    } else {
+      window.UI.toast("Passed. Opponent's turn.", 'info', 2500);
+    }
   } catch (e) {
+    console.error('[scrabble] _wsPass error:', e);
     window.UI.toast('Could not pass.', 'error');
+  }
+}
+
+async function _wsConfirmSwap(gameId) {
+  if (!_wsState || !_wsState._swapSelected || _wsState._swapSelected.size === 0) {
+    window.UI.toast('Select at least one tile to swap.', 'warning');
+    return;
+  }
+  if (!_wsCachedData) return;
+  const data   = _wsCachedData;
+  const uid    = _uid();
+  const isP1   = data.player1Uid === uid;
+  const myRack = _wsCachedMyRack;
+  const bag    = (data.bag || []).map(t => ({ letter: t.l, points: t.p }));
+
+  if (bag.length < 1) {
+    window.UI.toast('Not enough tiles in the bag to swap.', 'warning');
+    _closeModal();
+    return;
+  }
+
+  const swapIdxs  = [..._wsState._swapSelected];
+  const returning = swapIdxs.map(i => myRack[i]);
+  const drawn     = _wsDraw(bag, returning.length);
+
+  // Shuffle returning tiles back into random positions in the bag
+  returning.forEach(t => {
+    const pos = Math.floor(Math.random() * (bag.length + 1));
+    bag.splice(pos, 0, t);
+  });
+
+  let newRack = myRack.filter((_, i) => !_wsState._swapSelected.has(i));
+  newRack     = [...newRack, ...drawn];
+
+  // Pass turn to the other player
+  const nextTurn = isP1 ? data.player2Uid : data.player1Uid;
+  const newLog   = [...(data.moveLog || []).slice(-29), {
+    name: _student().name || '', type: 'swap',
+  }];
+
+  const update = {
+    bag:        bag.map(t => ({ l: t.letter, p: t.points })),
+    turn:       nextTurn,
+    passCount:  (data.passCount || 0) + 1,
+    moveLog:    newLog,
+    lastMoveAt: firebase.firestore.FieldValue.serverTimestamp(),
+  };
+  if (isP1) update.rack1 = newRack.map(t => ({ l: t.letter, p: t.points }));
+  else       update.rack2 = newRack.map(t => ({ l: t.letter, p: t.points }));
+
+  try {
+    await _db().collection('scrabbleGames').doc(gameId).update(update);
+    _wsState._swapSelected = new Set();
+    _closeModal();
+    window.UI.toast("Tiles swapped. Opponent's turn.", 'info', 3000);
+  } catch (e) {
+    console.error('[scrabble] _wsConfirmSwap error:', e);
+    window.UI.toast('Could not swap tiles.', 'error');
   }
 }
 
@@ -1514,7 +1607,9 @@ function _wsLeave() {
   if (_wsListener) { _wsListener(); _wsListener = null; }
   _wsState      = null;
   _wsCachedData = null;
-  openGameLobby();
+  // Return to the Scrabble games list, not the lobby root,
+  // so both players can always re-enter their active game.
+  _showScrabblePending();
 }
 
   /* ══════════════════════════════════════════════════════════════
@@ -2200,29 +2295,47 @@ function _dismissScrabblePopup(gameId) {
     const maxed     = _isMaxLevel(_profile.xp || 0);
 
     let pendingChallenges = [];
-let awaitingPlay      = [];
-let pendingScrabble   = [];
-if (_isOnline()) {
-  try {
-    const [challengeSnap, sentSnap, scrabbleSnap] = await Promise.all([
-      _db().collection('gameChallenges')
-           .where('challengedUid', '==', uid)
-           .where('status', '==', 'pending').get(),
-      _db().collection('gameChallenges')
-           .where('challengerUid', '==', uid)
-           .where('status', '==', 'awaiting_challenger').get(),
-      _db().collection('scrabbleGames')
-           .where('player2Uid', '==', uid)
-           .where('status', '==', 'pending').get(),
-    ]);
-    if (!challengeSnap.empty)
-      challengeSnap.docs.forEach(doc => pendingChallenges.push({ id: doc.id, ...doc.data() }));
-    if (!sentSnap.empty)
-      sentSnap.docs.forEach(doc => awaitingPlay.push({ id: doc.id, ...doc.data() }));
-    if (!scrabbleSnap.empty)
-      scrabbleSnap.docs.forEach(doc => pendingScrabble.push({ id: doc.id, ...doc.data() }));
-  } catch (e) { console.warn('[game] challenge fetch error:', e); }
-}
+    let awaitingPlay      = [];
+    let pendingScrabble   = [];
+    let activeScrabble    = [];
+
+    if (_isOnline()) {
+      try {
+        const [challengeSnap, sentSnap, scrabblePendingSnap, scrabbleActive1Snap, scrabbleActive2Snap] = await Promise.all([
+          _db().collection('gameChallenges')
+               .where('challengedUid', '==', uid)
+               .where('status', '==', 'pending').get(),
+          _db().collection('gameChallenges')
+               .where('challengerUid', '==', uid)
+               .where('status', '==', 'awaiting_challenger').get(),
+          _db().collection('scrabbleGames')
+               .where('player2Uid', '==', uid)
+               .where('status', '==', 'pending').get(),
+          _db().collection('scrabbleGames')
+               .where('player1Uid', '==', uid)
+               .where('status', '==', 'active').get(),
+          _db().collection('scrabbleGames')
+               .where('player2Uid', '==', uid)
+               .where('status', '==', 'active').get(),
+        ]);
+
+        if (!challengeSnap.empty)
+          challengeSnap.docs.forEach(doc => pendingChallenges.push({ id: doc.id, ...doc.data() }));
+        if (!sentSnap.empty)
+          sentSnap.docs.forEach(doc => awaitingPlay.push({ id: doc.id, ...doc.data() }));
+        if (!scrabblePendingSnap.empty)
+          scrabblePendingSnap.docs.forEach(doc => pendingScrabble.push({ id: doc.id, ...doc.data() }));
+
+        // Merge active scrabble games (deduplicate)
+        const seen = new Set();
+        [...scrabbleActive1Snap.docs, ...scrabbleActive2Snap.docs].forEach(doc => {
+          if (seen.has(doc.id)) return;
+          seen.add(doc.id);
+          activeScrabble.push({ id: doc.id, ...doc.data() });
+        });
+
+      } catch (e) { console.warn('[game] lobby fetch error:', e); }
+    }
 
     const offlineBanner = !_isOnline()
       ? `<div style="display:flex;align-items:center;gap:.5rem;margin:.5rem 0;
@@ -2242,11 +2355,32 @@ if (_isOnline()) {
     <span class="game-challenge-alert__arrow">${_icon('arrowRight', 16)}</span>
   </div>` : '';
 
-const scrabbleNotif = pendingScrabble.length > 0 ? `
+    const scrabbleNotif = pendingScrabble.length > 0 ? `
   <div class="game-challenge-alert" onclick="Game._showScrabblePending()"
        style="border-color:#7c3aed;background:linear-gradient(135deg,#ede9fe,#ddd6fe);">
     <span class="game-challenge-alert__icon">🔤</span>
     <span style="color:#5b21b6;">${pendingScrabble.length} pending Scrabble challenge${pendingScrabble.length > 1 ? 's' : ''} — tap to view.</span>
+    <span class="game-challenge-alert__arrow">${_icon('arrowRight', 16)}</span>
+  </div>` : '';
+
+    // Active scrabble games notification
+    const myTurnScrabble  = activeScrabble.filter(g => g.turn === uid);
+    const theirTurnScrabble = activeScrabble.filter(g => g.turn !== uid);
+
+    const activeScrabbleNotif = activeScrabble.length > 0 ? `
+  <div class="game-challenge-alert" onclick="Game._showScrabblePending()"
+       style="border-color:${myTurnScrabble.length > 0 ? '#7c3aed' : '#6b7280'};
+              background:${myTurnScrabble.length > 0
+                ? 'linear-gradient(135deg,#ede9fe,#ddd6fe)'
+                : 'linear-gradient(135deg,#f3f4f6,#e5e7eb)'
+              };">
+    <span class="game-challenge-alert__icon">🔤</span>
+    <span style="color:${myTurnScrabble.length > 0 ? '#5b21b6' : '#374151'};">
+      ${myTurnScrabble.length > 0
+        ? `⚡ ${myTurnScrabble.length} Scrabble game${myTurnScrabble.length > 1 ? 's' : ''} waiting for YOUR move!`
+        : `${theirTurnScrabble.length} Scrabble game${theirTurnScrabble.length > 1 ? 's' : ''} — waiting for opponent.`
+      }
+    </span>
     <span class="game-challenge-alert__arrow">${_icon('arrowRight', 16)}</span>
   </div>` : '';
 
@@ -2267,7 +2401,6 @@ const scrabbleNotif = pendingScrabble.length > 0 ? `
     const currentRank    = level.rank;
     const levelStripHtml = _renderLevelStrip(currentRank, _profile.xp || 0);
 
-    // ── Knowledge Surfer card: compute limit state before building HTML ──
     const _krLimited   = _krIsLimitReached();
     const _krPlaysUsed = _krGetRecentPlays().length;
     const _krPlaysLeft = Math.max(0, KR_MAX_PLAYS - _krPlaysUsed);
@@ -2354,6 +2487,8 @@ const scrabbleNotif = pendingScrabble.length > 0 ? `
         ${offlineBanner}
         ${challengeNotif}
         ${awaitingNotif}
+        ${scrabbleNotif}
+        ${activeScrabbleNotif}
 
         <div style="display:flex;gap:.625rem;flex-wrap:wrap;justify-content:center;margin:.75rem 0;">
           <button onclick="Game.openLeaderboard()" class="btn bg-gray-500" style="display:flex;align-items:center;gap:.375rem;">
@@ -2470,9 +2605,8 @@ const scrabbleNotif = pendingScrabble.length > 0 ? `
 
       </div>`);
 
-    _updateGameNavBadge(pendingChallenges.length + awaitingPlay.length + pendingScrabble.length);
+    _updateGameNavBadge(pendingChallenges.length + awaitingPlay.length + pendingScrabble.length + myTurnScrabble.length);
 
-    // If Knowledge Surfer is on cooldown, start live countdown on the lobby card
     if (_krLimited) {
       _krStartCountdownTick(() => document.getElementById(_krCardId));
     }
