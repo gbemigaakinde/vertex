@@ -146,6 +146,12 @@ self.addEventListener('fetch', event => {
 
   if (url.pathname === '/sw.js') return;
 
+  /* Never cache english.html */
+  if (url.pathname === '/english.html') {
+    event.respondWith(fetch(request));
+    return;
+  }
+
   if (BYPASS_ORIGINS.some(origin => url.hostname.includes(origin))) return;
 
   if (!url.protocol.startsWith('http')) return;
@@ -258,6 +264,13 @@ async function _staleWhileRevalidate(request, cacheName) {
 }
 
 async function _navigationHandler(request) {
+  const url = new URL(request.url);
+
+  // Never cache or intercept english.html
+  if (url.pathname === '/english.html') {
+    return fetch(request);
+  }
+
   try {
     const cachedShell = await caches.match('/index.html');
     if (cachedShell) return cachedShell;
