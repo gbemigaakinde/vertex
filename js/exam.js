@@ -612,40 +612,49 @@
         ${weeklyTimetableHtml}
 
         <div class="mb-6" style="display:flex;gap:.625rem;flex-wrap:wrap;justify-content:center;">
-          <button id="chatOpenBtn" onclick="Chat.openPublicChat()" class="btn bg-green-600 hover:bg-green-700" style="position:relative;">
-            Public Discussion Chat
-          </button>
-          <button onclick="StudyRoom.openForStudent()" class="btn bg-blue-600 hover:bg-blue-700"
-            style="position:relative;">
-            📖 Study Room
-          </button>
-          <button onclick="ThreeDClass.openForStudent()" class="btn bg-indigo-600 hover:bg-indigo-700"
-            style="position:relative;">
-            🧪 3D Class
-          </button>
-          <button id="gameOpenBtn" onclick="(function(){
-  if (!window.Game || typeof Game.openGameLobby !== 'function') {
-    alert('Games are not loaded yet. Please wait a moment and try again.');
-    return;
-  }
-  Promise.resolve().then(function(){ return Game.openGameLobby(); })
-    .catch(function(err){
-      console.error('[game] openGameLobby error:', err);
-      if (window.UI && window.UI.toast) {
-        UI.toast('Could not open Games. Please try again.', 'error', 4000);
-      } else {
-        alert('Could not open Games. Please refresh the page.');
-      }
-    });
+  <button id="chatOpenBtn" onclick="Chat.openPublicChat()" class="btn bg-green-600 hover:bg-green-700" style="position:relative;">
+    Public Discussion Chat
+  </button>
+
+  <button onclick="StudyRoom.openForStudent()" class="btn bg-blue-600 hover:bg-blue-700"
+    style="position:relative;">
+    📖 Study Room
+  </button>
+
+  <button onclick="ThreeDClass.openForStudent()" class="btn bg-indigo-600 hover:bg-indigo-700"
+    style="position:relative;">
+    🧪 3D Class
+  </button>
+
+  <button onclick="window.open('english.html', '_blank')" class="btn bg-purple-600 hover:bg-purple-700"
+    style="position:relative;">
+    📘 English Mastery
+  </button>
+
+  <button id="gameOpenBtn" onclick="(function(){
+if (!window.Game || typeof Game.openGameLobby !== 'function') {
+  alert('Games are not loaded yet. Please wait a moment and try again.');
+  return;
+}
+Promise.resolve().then(function(){ return Game.openGameLobby(); })
+  .catch(function(err){
+    console.error('[game] openGameLobby error:', err);
+    if (window.UI && window.UI.toast) {
+      UI.toast('Could not open Games. Please try again.', 'error', 4000);
+    } else {
+      alert('Could not open Games. Please refresh the page.');
+    }
+  });
 })()" class="btn"
-    style="position:relative;background:linear-gradient(135deg,#7c3aed,#4f6ef7);color:#fff;">
-  🎮 Games
+style="position:relative;background:linear-gradient(135deg,#7c3aed,#4f6ef7);color:#fff;">
+🎮 Games
 </button>
-          <button id="dmOpenBtn" onclick="DM.openStudentInbox()" class="btn bg-indigo-600 hover:bg-indigo-700"
-            style="position:relative;">
-            ✉️ Message Teacher
-          </button>
-        </div>
+
+  <button id="dmOpenBtn" onclick="DM.openStudentInbox()" class="btn bg-indigo-600 hover:bg-indigo-700"
+    style="position:relative;">
+    ✉️ Message Teacher
+  </button>
+</div>
 
         ${offDayBannerHtml}
         ${todayTaskDone ? '' : restrictionBannerHtml}
