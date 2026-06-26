@@ -1,0 +1,2151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>English Grammar Mastery</title>
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.js"></script>
+<style>
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  --navy:   #1a2744;
+  --navy2:  #243560;
+  --amber:  #e8a020;
+  --amber2: #f0b840;
+  --slate:  #4a6fa5;
+  --sage:   #6b9e78;
+  --coral:  #c85a3a;
+  --paper:  #fafaf8;
+  --paper2: #f2efe8;
+  --ink:    #1e1e1e;
+  --ink2:   #3a3a3a;
+  --muted:  #6b6b6b;
+  --border: #d8d3c8;
+  --white:  #ffffff;
+  --radius: 10px;
+  --shadow: 0 4px 24px rgba(26,39,68,0.13);
+}
+
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: var(--navy);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: var(--ink);
+  -webkit-text-size-adjust: 100%;
+}
+
+/* ── SHELL ─────────────────────────────────── */
+#shell {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+  background: var(--paper);
+  position: relative;
+  overflow: hidden;
+}
+
+/* ── TOPBAR ────────────────────────────────── */
+#topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--navy);
+  color: var(--white);
+  flex-shrink: 0;
+  gap: 10px;
+  min-height: 54px;
+}
+
+#topbar-title {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#toc-btn {
+  background: none;
+  border: none;
+  color: var(--white);
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+#toc-btn:hover { background: rgba(255,255,255,0.12); }
+
+/* ── PROGRESS BAR ──────────────────────────── */
+#progress-track {
+  height: 3px;
+  background: var(--navy2);
+  flex-shrink: 0;
+}
+#progress-fill {
+  height: 100%;
+  background: var(--amber);
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+/* ── PAGE VIEWPORT ─────────────────────────── */
+#viewport {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ── PAGES ─────────────────────────────────── */
+.page {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 0 0 16px;
+  display: none;
+  background: var(--paper);
+}
+.page.active { display: block; }
+.page.slide-in-right {
+  animation: slideInRight 0.28s cubic-bezier(.25,.46,.45,.94) both;
+}
+.page.slide-in-left {
+  animation: slideInLeft 0.28s cubic-bezier(.25,.46,.45,.94) both;
+}
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0.4; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); opacity: 0.4; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+
+/* ── COVER PAGE ────────────────────────────── */
+#page-0 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, var(--navy) 0%, var(--navy2) 100%);
+  color: var(--white);
+  padding: 40px 24px 32px;
+  text-align: center;
+  min-height: 100%;
+}
+#page-0.active { display: flex; }
+
+.cover-icon-wrap {
+  width: 90px;
+  height: 90px;
+  background: rgba(255,255,255,0.08);
+  border: 2px solid rgba(232,160,32,0.5);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 28px;
+}
+.cover-title {
+  font-family: Georgia, serif;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-bottom: 10px;
+  color: var(--white);
+}
+.cover-subtitle {
+  font-size: 15px;
+  color: rgba(255,255,255,0.65);
+  margin-bottom: 36px;
+  line-height: 1.5;
+}
+.cover-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 40px;
+}
+.cover-chip {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.8);
+}
+.cover-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--amber);
+  color: var(--navy);
+  font-weight: 700;
+  font-size: 15px;
+  padding: 14px 32px;
+  border-radius: 30px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  letter-spacing: 0.3px;
+}
+.cover-btn:active { transform: scale(0.97); }
+.cover-btn:hover { background: var(--amber2); }
+
+/* ── TOC PAGE ──────────────────────────────── */
+#page-1 { padding: 0 0 24px; }
+
+.toc-header {
+  background: var(--navy);
+  color: var(--white);
+  padding: 24px 20px 20px;
+  margin-bottom: 4px;
+}
+.toc-header h1 {
+  font-family: Georgia, serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--white);
+  border: none;
+  padding: 0;
+  margin: 0 0 6px;
+}
+.toc-header p {
+  font-size: 13px;
+  color: rgba(255,255,255,0.6);
+  margin: 0;
+  text-align: left;
+}
+
+.toc-list { list-style: none; padding: 12px 16px 0; }
+.toc-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 16px 14px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  border: 1.5px solid var(--border);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  text-align: left;
+}
+.toc-item:active { background: var(--paper2); }
+.toc-item:hover {
+  border-color: var(--slate);
+  box-shadow: 0 2px 12px rgba(74,111,165,0.12);
+}
+.toc-num {
+  width: 36px;
+  height: 36px;
+  background: var(--navy);
+  color: var(--amber);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Georgia, serif;
+  font-size: 15px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.toc-text { flex: 1; }
+.toc-chapter-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+.toc-chapter-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.3;
+}
+.toc-arrow { color: var(--muted); flex-shrink: 0; }
+
+/* ── CHAPTER BANNER ────────────────────────── */
+.chapter-banner {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 100%);
+  color: var(--white);
+  padding: 32px 20px 28px;
+  margin-bottom: 0;
+  position: relative;
+  overflow: hidden;
+}
+.chapter-banner::after {
+  content: '';
+  position: absolute;
+  bottom: -30px;
+  right: -30px;
+  width: 120px;
+  height: 120px;
+  background: rgba(232,160,32,0.12);
+  border-radius: 50%;
+}
+.chapter-eyebrow {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--amber);
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+.chapter-banner h1 {
+  font-family: Georgia, serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--white);
+  line-height: 1.25;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* ── PAGE BODY ─────────────────────────────── */
+.page-body {
+  padding: 20px 18px 8px;
+}
+
+/* ── TYPOGRAPHY ────────────────────────────── */
+h1 {
+  font-family: Georgia, serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 14px;
+  line-height: 1.3;
+  border-bottom: 3px solid var(--amber);
+  padding-bottom: 10px;
+}
+h2 {
+  font-family: Georgia, serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--navy);
+  margin: 26px 0 10px;
+  line-height: 1.3;
+}
+h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--slate);
+  margin: 20px 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+p {
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--ink2);
+  margin-bottom: 12px;
+  text-align: left;
+}
+ul, ol {
+  margin: 8px 0 12px 20px;
+}
+li {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--ink2);
+  margin-bottom: 5px;
+}
+
+/* ── OBJECTIVES BOX ────────────────────────── */
+.objectives {
+  background: rgba(74,111,165,0.07);
+  border-left: 4px solid var(--slate);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 16px;
+  margin: 0 0 20px;
+}
+.objectives-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--slate);
+  margin-bottom: 10px;
+}
+.objectives ul { margin: 0 0 0 16px; }
+.objectives li { font-size: 13.5px; }
+
+/* ── EXAMPLE BOX ───────────────────────────── */
+.example {
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-left: 4px solid var(--coral);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 14px 14px 12px;
+  margin: 14px 0;
+}
+.example-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--coral);
+  margin-bottom: 10px;
+}
+.ex-line {
+  font-style: italic;
+  font-size: 14px;
+  color: var(--ink);
+  padding: 4px 0 4px 10px;
+  border-left: 2px solid var(--border);
+  margin: 5px 0;
+  line-height: 1.5;
+}
+
+/* ── CALLOUT VARIANTS ──────────────────────── */
+.callout {
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 14px;
+  margin: 14px 0;
+  border-left-width: 4px;
+  border-left-style: solid;
+}
+.callout-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 8px;
+}
+.callout-tip  { background: rgba(107,158,120,0.08); border-color: var(--sage); }
+.callout-tip .callout-label  { color: var(--sage); }
+.callout-key  { background: rgba(74,111,165,0.07); border-color: var(--slate); }
+.callout-key .callout-label  { color: var(--slate); }
+.callout-warn { background: rgba(200,90,58,0.07);  border-color: var(--coral); }
+.callout-warn .callout-label { color: var(--coral); }
+.callout p, .callout ul, .callout li { font-size: 14px; margin-bottom: 6px; }
+.callout ul { margin-top: 4px; }
+
+/* ── TABLE ─────────────────────────────────── */
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 14px 0;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--border);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 320px;
+}
+thead { background: var(--navy); }
+thead th {
+  padding: 11px 12px;
+  text-align: left;
+  color: var(--white);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.3px;
+}
+tbody td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--ink2);
+  line-height: 1.5;
+  vertical-align: top;
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:nth-child(even) { background: var(--paper2); }
+
+/* ── PRACTICE SECTION ──────────────────────── */
+.practice {
+  background: rgba(74,111,165,0.05);
+  border: 1.5px dashed var(--slate);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin: 18px 0;
+}
+.practice-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--slate);
+  margin-bottom: 14px;
+}
+.exercise {
+  background: var(--white);
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  padding: 14px;
+  margin-bottom: 10px;
+}
+.exercise:last-child { margin-bottom: 0; }
+.exercise-num {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--slate);
+  letter-spacing: 0.5px;
+  margin-bottom: 7px;
+}
+.exercise p { font-size: 14px; margin-bottom: 10px; }
+.reveal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--sage);
+  color: var(--white);
+  border: none;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.reveal-btn:hover { background: #5a8d67; }
+.reveal-btn:active { transform: scale(0.97); }
+.answer-box {
+  display: none;
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(107,158,120,0.1);
+  border-left: 3px solid var(--sage);
+  border-radius: 0 6px 6px 0;
+  font-size: 13.5px;
+  color: var(--ink2);
+  line-height: 1.6;
+}
+.answer-box.open { display: block; }
+
+/* ── SUMMARY BOX ───────────────────────────── */
+.summary {
+  background: linear-gradient(135deg, rgba(26,39,68,0.05), rgba(74,111,165,0.06));
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin: 22px 0 10px;
+}
+.summary-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: Georgia, serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 12px;
+}
+.summary-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--ink2);
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+.summary-item ph-icon { flex-shrink: 0; margin-top: 2px; }
+
+/* ── DIVIDER ───────────────────────────────── */
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 20px 0;
+}
+
+/* ── MISTAKE BLOCK ─────────────────────────── */
+.mistake {
+  background: rgba(200,90,58,0.06);
+  border-left: 4px solid var(--coral);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 14px;
+  margin: 14px 0;
+}
+.mistake-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--coral);
+  margin-bottom: 8px;
+}
+.mistake p { font-size: 14px; margin-bottom: 6px; }
+.mistake p:last-child { margin: 0; }
+
+/* ── BOTTOM NAV ────────────────────────────── */
+#bottom-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--white);
+  border-top: 1.5px solid var(--border);
+  flex-shrink: 0;
+  gap: 8px;
+}
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--navy);
+  color: var(--white);
+  border: none;
+  border-radius: 8px;
+  padding: 11px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  flex-shrink: 0;
+  min-width: 90px;
+  justify-content: center;
+}
+.nav-btn:active { transform: scale(0.96); }
+.nav-btn:hover  { background: var(--navy2); }
+.nav-btn:disabled {
+  background: var(--border);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+#page-counter {
+  font-family: Georgia, serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--navy);
+  text-align: center;
+  flex: 1;
+  white-space: nowrap;
+}
+
+/* ── TOC DRAWER ────────────────────────────── */
+#toc-overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  background: rgba(10,16,32,0.55);
+  backdrop-filter: blur(3px);
+}
+#toc-overlay.open { display: block; }
+#toc-drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: min(320px, 88vw);
+  height: 100%;
+  background: var(--paper);
+  box-shadow: -4px 0 32px rgba(0,0,0,0.22);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(.25,.46,.45,.94);
+}
+#toc-overlay.open #toc-drawer {
+  transform: translateX(0);
+}
+.drawer-header {
+  background: var(--navy);
+  color: var(--white);
+  padding: 20px 16px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.drawer-header h2 {
+  font-family: Georgia, serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--white);
+  margin: 0;
+}
+#close-toc {
+  background: rgba(255,255,255,0.12);
+  border: none;
+  border-radius: 6px;
+  color: var(--white);
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  transition: background 0.2s;
+}
+#close-toc:hover { background: rgba(255,255,255,0.22); }
+.drawer-list {
+  list-style: none;
+  overflow-y: auto;
+  flex: 1;
+  padding: 12px;
+}
+.drawer-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-bottom: 4px;
+}
+.drawer-item:hover { background: var(--paper2); }
+.drawer-item:active { background: var(--border); }
+.drawer-num {
+  width: 30px;
+  height: 30px;
+  background: var(--navy);
+  color: var(--amber);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Georgia, serif;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.drawer-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.35;
+}
+.drawer-sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.drawer-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0 8px;
+}
+</style>
+</head>
+<body>
+<div id="shell">
+
+  <!-- TOPBAR -->
+  <div id="topbar">
+    <span id="topbar-title">English Grammar Mastery</span>
+    <button id="toc-btn" onclick="openToc()" aria-label="Table of Contents">
+      <ph-icon name="list" size="22"></ph-icon>
+    </button>
+  </div>
+
+  <!-- PROGRESS -->
+  <div id="progress-track">
+    <div id="progress-fill"></div>
+  </div>
+
+  <!-- PAGE VIEWPORT -->
+  <div id="viewport">
+
+    <!-- ══════════════════════════════════════
+         PAGE 0 — COVER
+    ═══════════════════════════════════════ -->
+    <div class="page active" id="page-0">
+      <div class="cover-icon-wrap">
+        <ph-icon name="book-open" size="48" color="#e8a020"></ph-icon>
+      </div>
+      <div class="cover-title">English Grammar Mastery</div>
+      <div class="cover-subtitle">A complete interactive textbook — from simple concepts to advanced structures</div>
+      <div class="cover-chips">
+        <span class="cover-chip">5 Chapters</span>
+        <span class="cover-chip">Practice Exercises</span>
+        <span class="cover-chip">Self-Check Answers</span>
+      </div>
+      <button class="cover-btn" onclick="goToPage(1, 1)">
+        <ph-icon name="arrow-right" size="18"></ph-icon>
+        Begin Reading
+      </button>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PAGE 1 — TABLE OF CONTENTS
+    ═══════════════════════════════════════ -->
+    <div class="page" id="page-1">
+      <div class="toc-header">
+        <h1>Contents</h1>
+        <p>Tap any chapter to jump straight to it.</p>
+      </div>
+      <ul class="toc-list">
+        <li class="toc-item" onclick="goToPage(2, 1)">
+          <div class="toc-num">1</div>
+          <div class="toc-text">
+            <div class="toc-chapter-label">Chapter 1</div>
+            <div class="toc-chapter-name">The Use of Have, Has, and Had</div>
+          </div>
+          <div class="toc-arrow"><ph-icon name="caret-right" size="18"></ph-icon></div>
+        </li>
+        <li class="toc-item" onclick="goToPage(6, 1)">
+          <div class="toc-num">2</div>
+          <div class="toc-text">
+            <div class="toc-chapter-label">Chapter 2</div>
+            <div class="toc-chapter-name">Antonyms and Synonyms</div>
+          </div>
+          <div class="toc-arrow"><ph-icon name="caret-right" size="18"></ph-icon></div>
+        </li>
+        <li class="toc-item" onclick="goToPage(10, 1)">
+          <div class="toc-num">3</div>
+          <div class="toc-text">
+            <div class="toc-chapter-label">Chapter 3</div>
+            <div class="toc-chapter-name">Causative Verbs</div>
+          </div>
+          <div class="toc-arrow"><ph-icon name="caret-right" size="18"></ph-icon></div>
+        </li>
+        <li class="toc-item" onclick="goToPage(13, 1)">
+          <div class="toc-num">4</div>
+          <div class="toc-text">
+            <div class="toc-chapter-label">Chapter 4</div>
+            <div class="toc-chapter-name">Adverbs of Place and Composition</div>
+          </div>
+          <div class="toc-arrow"><ph-icon name="caret-right" size="18"></ph-icon></div>
+        </li>
+        <li class="toc-item" onclick="goToPage(17, 1)">
+          <div class="toc-num">5</div>
+          <div class="toc-text">
+            <div class="toc-chapter-label">Chapter 5</div>
+            <div class="toc-chapter-name">Prefixes and Suffixes</div>
+          </div>
+          <div class="toc-arrow"><ph-icon name="caret-right" size="18"></ph-icon></div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PAGE 2 — CHAPTER 1 INTRO
+    ═══════════════════════════════════════ -->
+    <div class="page" id="page-2">
+      <div class="chapter-banner">
+        <div class="chapter-eyebrow">Chapter 1</div>
+        <h1>The Use of Have, Has, and Had</h1>
+      </div>
+      <div class="page-body">
+        <div class="objectives">
+          <div class="objectives-label">
+            <ph-icon name="target" size="15"></ph-icon>
+            Learning Objectives
+          </div>
+          <ul>
+            <li>Understand what auxiliary (helping) verbs are</li>
+            <li>Learn the difference between main verbs and helping verbs</li>
+            <li>Master when to use have, has, and had</li>
+            <li>Apply correct subject-verb agreement</li>
+            <li>Form questions and negatives correctly</li>
+            <li>Recognise and fix common mistakes</li>
+          </ul>
+        </div>
+
+        <h2>What Are Helping Verbs?</h2>
+        <p>In English, we have two types of verbs:</p>
+
+        <div class="example">
+          <div class="example-label"><ph-icon name="info" size="13"></ph-icon> Two Types of Verbs</div>
+          <p><strong>Main Verbs</strong> — action words that tell us what someone does: <em>run, eat, sleep, walk, play</em></p>
+          <p style="margin-bottom:0;"><strong>Helping Verbs (Auxiliary Verbs)</strong> — verbs that help the main verb and come before it: <em>is running, has eaten, will play</em></p>
+        </div>
+
+        <h2>Understanding Helping Verbs</h2>
+        <p>A <strong>helping verb</strong> works together with a main verb to create meaning. Think of it as the main verb's assistant.</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Full Sentence</th><th>Helping Verb</th><th>Main Verb</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>She is running</td><td>is</td><td>running</td></tr>
+              <tr><td>They have finished</td><td>have</td><td>finished</td></tr>
+              <tr><td>We will go</td><td>will</td><td>go</td></tr>
+              <tr><td>He had left</td><td>had</td><td>left</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>The Three Forms</h2>
+        <p>Think of <strong>have</strong>, <strong>has</strong>, and <strong>had</strong> as the same verb in different forms:</p>
+        <ul>
+          <li><strong>Have</strong> — present tense for I, you, we, they</li>
+          <li><strong>Has</strong> — present tense for he, she, it</li>
+          <li><strong>Had</strong> — past tense for all subjects</li>
+        </ul>
+        <p>This is called <strong>subject-verb agreement</strong> — the verb must match the subject.</p>
+
+        <div class="callout callout-tip">
+          <div class="callout-label"><ph-icon name="lightbulb" size="14"></ph-icon> Memory Trick</div>
+          <p><strong>HAVE</strong> = for I, you, we, they (more than one or first/second person)<br>
+          <strong>HAS</strong> = only for he, she, it (one person or thing)</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PAGE 3 — HAVE and HAS
+    ═══════════════════════════════════════ -->
+    <div class="page" id="page-3">
+      <div class="page-body">
+        <h1>When to Use HAVE</h1>
+        <p>Use <strong>have</strong> with: I, you, we, they, and plural nouns.</p>
+
+        <div class="example">
+          <div class="example-label"><ph-icon name="text-aa" size="13"></ph-icon> Examples with HAVE</div>
+          <div class="ex-line">I have a pen.</div>
+          <div class="ex-line">You have done excellent work.</div>
+          <div class="ex-line">We have completed the project.</div>
+          <div class="ex-line">They have arrived at the station.</div>
+          <div class="ex-line">The students have finished their homework.</div>
+        </div>
+
+        <h1>When to Use HAS</h1>
+        <p>Use <strong>has</strong> only with: he, she, it, and singular nouns.</p>
+
+        <div class="example">
+          <div class="example-label"><ph-icon name="text-aa" size="13"></ph-icon> Examples with HAS</div>
+          <div class="ex-line">He has a new car.</div>
+          <div class="ex-line">She has completed the race.</div>
+          <div class="ex-line">It has been raining all day.</div>
+          <div class="ex-line">Aisha has finished her project.</div>
+          <div class="ex-line">The dog has eaten its food.</div>
+        </div>
+
+        <div class="callout callout-key">
+          <div class="callout-label"><ph-icon name="key" size="14"></ph-icon> Key Rule</div>
+          <p>If you can replace the subject with <em>he</em>, <em>she</em>, or <em>it</em>, use <strong>HAS</strong>. Otherwise, use <strong>HAVE</strong>.</p>
+        </div>
+
+        <h1>When to Use HAD</h1>
+        <p><strong>Had</strong> is the past tense form. It works with <strong>all subjects</strong> — no exceptions.</p>
+
+        <div class="example">
+          <div class="example-label"><ph-icon name="text-aa" size="13"></ph-icon> Examples with HAD</div>
+          <div class="ex-line">I had finished before they arrived.</div>
+          <div class="ex-line">She had completed the work.</div>
+          <div class="ex-line">They had arrived early.</div>
+          <div class="ex-line">The team had won three times before.</div>
+        </div>
+
+        <p>Because <strong>had</strong> stays the same for all subjects, it is the easiest of the three!</p>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PAGE 4 — PERFECT TENSES & NEGATIVES
+    ═══════════════════════════════════════ -->
+    <div class="page" id="page-4">
+      <div class="page-body">
+        <h1>Perfect Tenses</h1>
+        <p>Have, has, and had are used to create <strong>perfect tenses</strong> — tenses that connect one event to another in time.</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Tense</th><th>Helping Verb</th><th>Example</th><th>Meaning</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Present Perfect</td><td>have / has</td><td>I have eaten</td><td>Started in past, connected to now</td></tr>
+              <tr><td>Past Perfect</td><td>had</td><td>I had eaten</td><td>Happened before another past event</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h1>Forming Negatives</h1>
+        <p>Add <strong>not</strong> after the helping verb to make a sentence negative:</p>
+
+        <div class="example">
+          <div class="example-label"><ph-icon name="minus-circle" size="13"></ph-icon> Negative Forms</div>
+          <div class="ex-line">I have not finished &rarr; I haven't finished</div>
+          <div class="ex-line">She has not arrived &rarr; She hasn't arrived</div>
+          <div class="ex-line">They had not called &rarr; They hadn't called</div>
+        </div>
+
+        <h1>Forming Questions</h1>
+        <p>Move the helping verb to the beginning of the sentence:</p>
+
+        <div class="example">
+          <div class="example-label"><ph-icon name="question" size="13"></ph-icon> Questions</div>
+          <p><strong>Statement:</strong> You have finished your work.</p>
+          <p><strong>Question:</strong> Have you finished your work?</p>
+          <div class="divider"></div>
+          <p><strong>Statement:</strong> She has arrived.</p>
+          <p><strong>Question:</strong> Has she arrived?</p>
+        </div>
+
+        <h1>Short Answers</h1>
+
+        <div class="example">
+          <div class="example-label"><ph-icon name="chat-circle" size="13"></ph-icon> Short Answer Examples</div>
+          <p><strong>Q: Have you eaten?</strong><br>A: Yes, I have. / No, I haven't.</p>
+          <p><strong>Q: Has he finished?</strong><br>A: Yes, he has. / No, he hasn't.</p>
+          <p style="margin-bottom:0;"><strong>Q: Had they arrived?</strong><br>A: Yes, they had. / No, they hadn't.</p>
+        </div>
+
+        <div class="mistake">
+          <div class="mistake-label"><ph-icon name="x-circle" size="14"></ph-icon> Common Mistake</div>
+          <p><strong>Wrong:</strong> "He have finished." / "She have arrived."</p>
+          <p><strong>Correct:</strong> "He has finished." / "She has arrived."</p>
+          <p style="font-size:13px; color:var(--muted); margin:0;">He, she, and it always need HAS, never HAVE.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PAGE 5 — CH1 PRACTICE & SUMMARY
+    ═══════════════════════════════════════ -->
+    <div class="page" id="page-5">
+      <div class="page-body">
+        <h1>Common Mistakes</h1>
+
+        <div class="mistake">
+          <div class="mistake-label"><ph-icon name="x-circle" size="14"></ph-icon> Mistake 1 — Wrong form with singular noun</div>
+          <p><strong>Wrong:</strong> "The student have finished."</p>
+          <p style="margin-bottom:0;"><strong>Correct:</strong> "The student <em>has</em> finished." — singular noun needs HAS.</p>
+        </div>
+        <div class="mistake">
+          <div class="mistake-label"><ph-icon name="x-circle" size="14"></ph-icon> Mistake 2 — Wrong form with plural noun</div>
+          <p><strong>Wrong:</strong> "The students has finished."</p>
+          <p style="margin-bottom:0;"><strong>Correct:</strong> "The students <em>have</em> finished." — plural noun needs HAVE.</p>
+        </div>
+        <div class="mistake">
+          <div class="mistake-label"><ph-icon name="x-circle" size="14"></ph-icon> Mistake 3 — Wrong tense with time word</div>
+          <p><strong>Wrong:</strong> "I have finished yesterday."</p>
+          <p style="margin-bottom:0;"><strong>Correct:</strong> "I <em>finished</em> yesterday." — use simple past with a specific past time.</p>
+        </div>
+
+        <h1>Quick Reference Chart</h1>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Subject</th><th>Present</th><th>Past</th><th>Example</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>I</td><td>have</td><td>had</td><td>I have gone</td></tr>
+              <tr><td>You</td><td>have</td><td>had</td><td>You have gone</td></tr>
+              <tr><td>He / She / It</td><td>has</td><td>had</td><td>She has gone</td></tr>
+              <tr><td>We</td><td>have</td><td>had</td><td>We have gone</td></tr>
+              <tr><td>They</td><td>have</td><td>had</td><td>They have gone</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="practice">
+          <div class="practice-title"><ph-icon name="pencil" size="14"></ph-icon> Practice — Fill in the Correct Form</div>
+          <div class="exercise">
+            <div class="exercise-num">Question 1</div>
+            <p>She _____ (have / has) a beautiful garden.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box"><strong>has</strong> — She is singular, so we use has.</div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 2</div>
+            <p>We _____ (have / has) been friends for five years.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box"><strong>have</strong> — We is plural, so we use have.</div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 3</div>
+            <p>The children _____ (have / has) finished their dinner.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box"><strong>have</strong> — Children is plural, so we use have.</div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 4</div>
+            <p>It _____ (have / has) been raining since morning.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box"><strong>has</strong> — It is singular, so we use has.</div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 5</div>
+            <p>I _____ (had / have) already eaten when they called.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box"><strong>had</strong> — The eating happened before another past event (the phone call), so we use had.</div>
+          </div>
+        </div>
+
+        <div class="summary">
+          <div class="summary-title"><ph-icon name="check-circle" size="17" color="#1a2744"></ph-icon> Chapter 1 Summary</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Have, has, and had are auxiliary (helping) verbs.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Use <strong>have</strong> with I, you, we, they and plural nouns.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Use <strong>has</strong> with he, she, it and singular nouns.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Use <strong>had</strong> for all subjects in the past.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> To make negatives, add "not" after the helping verb.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> To make questions, move the helping verb to the beginning.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PAGE 6 — CHAPTER 2 INTRO
+    ═══════════════════════════════════════ -->
+    <div class="page" id="page-6">
+      <div class="chapter-banner">
+        <div class="chapter-eyebrow">Chapter 2</div>
+        <h1>Antonyms and Synonyms</h1>
+      </div>
+      <div class="page-body">
+        <div class="objectives">
+          <div class="objectives-label"><ph-icon name="target" size="15"></ph-icon> Learning Objectives</div>
+          <ul>
+            <li>Understand what synonyms are</li>
+            <li>Understand what antonyms are</li>
+            <li>Identify both in context</li>
+            <li>Use them to improve your writing</li>
+            <li>Expand your vocabulary naturally</li>
+          </ul>
+        </div>
+
+        <h2>What Are Synonyms?</h2>
+        <p>Synonyms are words that have very similar meanings. They look and sound different but mean roughly the same thing.</p>
+
+        <div class="example">
+          <div class="example-label"><ph-icon name="info" size="13"></ph-icon> Synonym Examples</div>
+          <div class="ex-line">Happy = Joyful, Cheerful, Glad</div>
+          <div class="ex-line">Big = Large, Huge, Enormous</div>
+          <div class="ex-line">Fast = Quick, Rapid, Swift</div>
+          <div class="ex-line">Sad = Unhappy, Sorrowful, Depressed</div>
+        </div>
+
+        <h2>What Are Antonyms?</h2>
+        <p>Antonyms are words that have <strong>opposite</strong> meanings.</p>
+
+        <div class="example">
+          <div class="example-label"><ph-icon name="info" size="13"></ph-icon> Antonym Examples</div>
+          <div class="ex-line">Hot &ne; Cold</div>
+          <div class="ex-line">Big &ne; Small</div>
+          <div class="ex-line">Fast &ne; Slow</div>
+          <div class="ex-line">Happy &ne; Sad</div>
+        </div>
+
+        <div class="callout callout-tip">
+          <div class="callout-label"><ph-icon name="lightbulb" size="14"></ph-icon> Easy Way to Remember</div>
+          <p><strong>Synonym</strong> — S for Same. Synonyms have similar meanings.</p>
+          <p style="margin-bottom:0;"><strong>Antonym</strong> — A for Against. Antonyms are against each other (opposites).</p>
+        </div>
+
+        <h2>Why They Both Matter</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Type</th><th>Meaning</th><th>Example</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Synonym</strong></td><td>Same or similar</td><td>Happy, Joyful, Glad</td></tr>
+              <tr><td><strong>Antonym</strong></td><td>Opposite</td><td>Happy &ne; Sad</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PAGE 7 — SYNONYM & ANTONYM CHARTS
+    ═══════════════════════════════════════ -->
+    <div class="page" id="page-7">
+      <div class="page-body">
+        <h1>Common Synonyms</h1>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Word</th><th>Synonyms (weakest to strongest)</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Good</td><td>Nice, Fine, Excellent, Outstanding, Superb</td></tr>
+              <tr><td>Bad</td><td>Poor, Terrible, Awful, Horrible, Abysmal</td></tr>
+              <tr><td>Happy</td><td>Pleased, Joyful, Delighted, Thrilled, Ecstatic</td></tr>
+              <tr><td>Sad</td><td>Unhappy, Gloomy, Sorrowful, Miserable, Devastated</td></tr>
+              <tr><td>Smart</td><td>Clever, Intelligent, Brilliant, Genius</td></tr>
+              <tr><td>Tired</td><td>Weary, Exhausted, Drained, Fatigued</td></tr>
+              <tr><td>Beautiful</td><td>Pretty, Lovely, Gorgeous, Stunning, Breathtaking</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h1>Common Antonyms</h1>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Word</th><th>Antonym (opposite)</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Hot</td><td>Cold</td></tr>
+              <tr><td>Big / Large</td><td>Small / Tiny</td></tr>
+              <tr><td>Fast / Quick</td><td>Slow</td></tr>
+              <tr><td>Happy</td><td>Sad</td></tr>
+              <tr><td>Beautiful</td><td>Ugly</td></tr>
+              <tr><td>Day</td><td>Night</td></tr>
+              <tr><td>Young</td><td>Old</td></tr>
+              <tr><td>Beginning</td><td>End</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h1>Synonyms Have Different Strengths</h1>
+        <p>Synonyms can express different intensities of the same feeling:</p>
+
+        <div class="example">
+          <div class="example-label"><ph-icon name="arrows-out-line-vertical" size="13"></ph-icon> Strength Scale</div>
+          <div class="ex-line">Weak: "I like chocolate."</div>
+          <div class="ex-line">Medium: "I enjoy chocolate."</div>
+          <div class="ex-line">Strong: "I love chocolate."</div>
+        </div>
+
+        <div class="callout callout-tip">
+          <div class="callout-label"><ph-icon name="lightbulb" size="14"></ph-icon> Choosing the Right Synonym</div>
+          <ul>
+            <li>Is this formal or casual writing?</li>
+            <li>Do I want a strong or mild meaning?</li>
+            <li>Does the exact meaning fit this sentence?</li>
+            <li>Only use words you fully understand.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PAGE 8 — CH2 PRACTICE
+    ═══════════════════════════════════════ -->
+    <div class="page" id="page-8">
+      <div class="page-body">
+        <h1>Using Synonyms to Improve Writing</h1>
+
+        <div class="example">
+          <div class="example-label"><ph-icon name="x" size="13"></ph-icon> Before (Repetitive)</div>
+          <div class="ex-line">"The story was good. The characters were good. The ending was good."</div>
+        </div>
+        <div class="example">
+          <div class="example-label"><ph-icon name="check" size="13"></ph-icon> After (Using Synonyms)</div>
+          <div class="ex-line">"The story was excellent. The characters were wonderful. The ending was satisfying."</div>
+        </div>
+
+        <div class="mistake">
+          <div class="mistake-label"><ph-icon name="warning" size="14"></ph-icon> Be Careful</div>
+          <p><strong>Wrong:</strong> "The explanation was pellucid." (if you don't know what pellucid means)</p>
+          <p style="margin-bottom:0;"><strong>Better:</strong> "The explanation was clear." — a simple word used correctly beats a fancy word used wrongly.</p>
+        </div>
+
+        <div class="practice">
+          <div class="practice-title"><ph-icon name="pencil" size="14"></ph-icon> Practice Exercises</div>
+
+          <div class="exercise">
+            <div class="exercise-num">Match Synonyms</div>
+            <p>1. Happy &nbsp;&nbsp; 2. Tired &nbsp;&nbsp; 3. Smart &nbsp;&nbsp; 4. Big<br>
+            A. Exhausted &nbsp;&nbsp; B. Joyful &nbsp;&nbsp; C. Intelligent &nbsp;&nbsp; D. Large</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">1-B &nbsp; 2-A &nbsp; 3-C &nbsp; 4-D</div>
+          </div>
+
+          <div class="exercise">
+            <div class="exercise-num">Match Antonyms</div>
+            <p>1. Hot &nbsp;&nbsp; 2. Fast &nbsp;&nbsp; 3. Beautiful &nbsp;&nbsp; 4. Day<br>
+            A. Night &nbsp;&nbsp; B. Ugly &nbsp;&nbsp; C. Slow &nbsp;&nbsp; D. Cold</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">1-D &nbsp; 2-C &nbsp; 3-B &nbsp; 4-A</div>
+          </div>
+
+          <div class="exercise">
+            <div class="exercise-num">Rewrite with Synonyms</div>
+            <p>"The children were happy. They ran fast. They were happy to play in the big park."</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">"The children were <strong>delighted</strong>. They <strong>sprinted</strong> quickly. They were <strong>thrilled</strong> to play in the <strong>spacious</strong> park." (Your answer may vary, but avoid repeating "happy" and "big")</div>
+          </div>
+        </div>
+
+        <div class="summary">
+          <div class="summary-title"><ph-icon name="check-circle" size="17" color="#1a2744"></ph-icon> Chapter 2 Summary</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Synonyms = words with the same or similar meanings.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Antonyms = words with opposite meanings.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Synonyms help you avoid repetition in writing.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Synonyms can have different strengths or intensities.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Always use words you fully understand.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Antonyms help show contrast and comparison.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PAGE 9 — CHAPTER 3 INTRO
+    ═══════════════════════════════════════ -->
+    <div class="page" id="page-9">
+      <div class="chapter-banner">
+        <div class="chapter-eyebrow">Chapter 3</div>
+        <h1>Causative Verbs</h1>
+      </div>
+      <div class="page-body">
+        <div class="objectives">
+          <div class="objectives-label"><ph-icon name="target" size="15"></ph-icon> Learning Objectives</div>
+          <ul>
+            <li>Understand what causation means</li>
+            <li>Learn the difference between doing something yourself and arranging for it</li>
+            <li>Master have, get, make, let, and help</li>
+            <li>Form causative sentences correctly</li>
+          </ul>
+        </div>
+
+        <h2>What Is Causation?</h2>
+        <p>Causation means to cause or arrange for something to happen. A <strong>causative verb</strong> shows that the subject makes another person do something — or arranges for it to be done.</p>
+
+        <div class="example">
+          <div class="example-label"><ph-icon name="info" size="13"></ph-icon> The Key Difference</div>
+          <p><strong>YOU do it:</strong> "I washed the car." (you washed it yourself)</p>
+          <p style="margin-bottom:0;"><strong>You HAVE someone else do it:</strong> "I had the car washed." (someone else washed it for you)</p>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Regular Action</th><th>Causative Action</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>I cut my hair.</td><td>I had my hair cut. (by a barber)</td></tr>
+              <tr><td>She baked the cake.</td><td>She had the cake baked. (by someone else)</td></tr>
+              <tr><td>He fixed the car.</td><td>He had the car fixed. (by a mechanic)</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout callout-key">
+          <div class="callout-label"><ph-icon name="key" size="14"></ph-icon> Key Concept</div>
+          <p style="margin-bottom:0;">Causative verbs show that you made something happen — but you did not do the action yourself.</p>
+        </div>
+
+        <h2>The Five Causative Verbs</h2>
+        <ol>
+          <li><strong>HAVE</strong></li>
+          <li><strong>GET</strong></li>
+          <li><strong>MAKE</strong></li>
+          <li><strong>LET</strong></li>
+          <li><strong>HELP</strong></li>
+        </ol>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PAGE 10 — CAUSATIVE VERBS DETAILS
+    ═══════════════════════════════════════ -->
+    <div class="page" id="page-10">
+      <div class="page-body">
+        <h1>HAVE and GET</h1>
+        <p><strong>Structure:</strong> have / get + object + past participle</p>
+        <p>Both mean you arranged for someone else to do something. GET is more informal.</p>
+
+        <div class="example">
+          <div class="example-label"><ph-icon name="text-aa" size="13"></ph-icon> HAVE Examples</div>
+          <div class="ex-line">I have my shoes cleaned. (someone cleans them)</div>
+          <div class="ex-line">She has her car repaired. (a mechanic repairs it)</div>
+          <div class="ex-line">They had their house painted. (a painter did it)</div>
+        </div>
+        <div class="example">
+          <div class="example-label"><ph-icon name="text-aa" size="13"></ph-icon> GET Examples</div>
+          <div class="ex-line">I got my teeth cleaned. (at the dentist)</div>
+          <div class="ex-line">She got her hair dyed. (at the salon)</div>
+        </div>
+
+        <h1>MAKE</h1>
+        <p><strong>Structure:</strong> make + object + base verb (no "to")</p>
+        <p>You force or require someone to do something.</p>
+
+        <div class="example">
+          <div class="example-label"><ph-icon name="text-aa" size="13"></ph-icon> MAKE Examples</div>
+          <div class="ex-line">The teacher made the students write an essay.</div>
+          <div class="ex-line">My mother made me clean my room.</div>
+        </div>
+
+        <h1>LET</h1>
+        <p><strong>Structure:</strong> let + object + base verb (no "to")</p>
+        <p>You permit or allow someone to do something.</p>
+
+        <div class="example">
+          <div class="example-label"><ph-icon name="text-aa" size="13"></ph-icon> LET Examples</div>
+          <div class="ex-line">The parents let their children play outside.</div>
+          <div class="ex-line">The manager let me leave early.</div>
+        </div>
+
+        <h1>HELP</h1>
+        <p><strong>Structure:</strong> help + object + (to) base verb</p>
+        <p>You assist someone. The "to" is optional with HELP.</p>
+
+        <div class="example">
+          <div class="example-label"><ph-icon name="text-aa" size="13"></ph-icon> HELP Examples</div>
+          <div class="ex-line">I helped him fix the car.</div>
+          <div class="ex-line">I helped him to fix the car. (both are correct)</div>
+        </div>
+
+        <div class="mistake">
+          <div class="mistake-label"><ph-icon name="x-circle" size="14"></ph-icon> Common Mistake</div>
+          <p><strong>Wrong:</strong> "I made him to go." / "She let me to leave."</p>
+          <p style="margin-bottom:0;"><strong>Correct:</strong> "I made him go." / "She let me leave." — never use "to" with MAKE or LET.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PAGE 11 — CH3 REFERENCE & PRACTICE
+    ═══════════════════════════════════════ -->
+    <div class="page" id="page-11">
+      <div class="page-body">
+        <h1>Comparison Chart</h1>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Verb</th><th>Structure</th><th>Meaning</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>HAVE</strong></td><td>+ past participle</td><td>Arrange / pay someone</td></tr>
+              <tr><td><strong>GET</strong></td><td>+ past participle</td><td>Arrange (informal)</td></tr>
+              <tr><td><strong>MAKE</strong></td><td>+ base verb</td><td>Force someone</td></tr>
+              <tr><td><strong>LET</strong></td><td>+ base verb</td><td>Allow someone</td></tr>
+              <tr><td><strong>HELP</strong></td><td>+ (to) base verb</td><td>Assist someone</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="practice">
+          <div class="practice-title"><ph-icon name="pencil" size="14"></ph-icon> Practice — Choose the Correct Verb</div>
+
+          <div class="exercise">
+            <div class="exercise-num">Question 1</div>
+            <p>The teacher _____ the students complete their assignments. (made / let / had)</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box"><strong>made</strong> — The teacher forced the students to complete them.</div>
+          </div>
+
+          <div class="exercise">
+            <div class="exercise-num">Question 2</div>
+            <p>I _____ my suit cleaned at the dry cleaners. (made / let / had)</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box"><strong>had</strong> — I arranged for someone to clean the suit.</div>
+          </div>
+
+          <div class="exercise">
+            <div class="exercise-num">Question 3</div>
+            <p>The coach _____ the players take a break after practice. (made / let / helped)</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box"><strong>let</strong> — The coach allowed the players to rest.</div>
+          </div>
+
+          <div class="exercise">
+            <div class="exercise-num">Question 4 — Correct the Sentence</div>
+            <p>Wrong: "I made him to finish his homework."</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">Correct: "I made him <strong>finish</strong> his homework." — remove "to" with MAKE.</div>
+          </div>
+        </div>
+
+        <div class="summary">
+          <div class="summary-title"><ph-icon name="check-circle" size="17" color="#1a2744"></ph-icon> Chapter 3 Summary</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Causative verbs show you made something happen.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> HAVE / GET — arrange for someone else to do it.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> MAKE — force someone to do it.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> LET — allow someone to do it.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> HELP — assist someone in doing it.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> MAKE and LET never use "to" before the verb.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> HAVE and GET use the past participle form.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PAGE 12 — CHAPTER 4 INTRO
+    ═══════════════════════════════════════ -->
+    <div class="page" id="page-12">
+      <div class="chapter-banner">
+        <div class="chapter-eyebrow">Chapter 4</div>
+        <h1>Adverbs of Place and Composition</h1>
+      </div>
+      <div class="page-body">
+        <div class="objectives">
+          <div class="objectives-label"><ph-icon name="target" size="15"></ph-icon> Learning Objectives</div>
+          <ul>
+            <li>Understand what adverbs of place are</li>
+            <li>Learn where they appear in sentences</li>
+            <li>Master movement and location vocabulary</li>
+            <li>Understand the structure of a composition</li>
+            <li>Learn to organise ideas clearly</li>
+          </ul>
+        </div>
+
+        <h2>What Are Adverbs of Place?</h2>
+        <p>An <strong>adverb of place</strong> tells you <strong>WHERE</strong> something happens. It describes the location, direction, or position of an action.</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Location</th><th>Direction</th><th>Position</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Here, There, Where</td><td>Up, Down, Forward, Backward</td><td>Inside, Outside, Above, Below</td></tr>
+              <tr><td>Home, Abroad</td><td>Left, Right, Towards, Away</td><td>In, Out, Near, Far</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="example">
+          <div class="example-label"><ph-icon name="text-aa" size="13"></ph-icon> Adverbs of Place in Sentences</div>
+          <div class="ex-line">She sat <strong>here</strong> waiting for the bus. (location)</div>
+          <div class="ex-line">The ball rolled <strong>down</strong> the hill. (direction)</div>
+          <div class="ex-line">The bird flew <strong>above</strong> the clouds. (position)</div>
+          <div class="ex-line">They drove <strong>towards</strong> the mountains. (movement)</div>
+        </div>
+
+        <h2>Position in a Sentence</h2>
+        <p>Adverbs of place usually go <strong>at the end</strong> of a sentence, or at the beginning for emphasis:</p>
+
+        <div class="example">
+          <div class="example-label"><ph-icon name="info" size="13"></ph-icon> Placement</div>
+          <div class="ex-line">End (most common): "The children were playing <strong>outside</strong>."</div>
+          <div class="ex-line">Beginning (emphasis): "<strong>Outside</strong>, the children were playing."</div>
+        </div>
+
+        <div class="callout callout-key">
+          <div class="callout-label"><ph-icon name="key" size="14"></ph-icon> Remember</div>
+          <p style="margin-bottom:0;">Adverbs of place answer the question: <strong>WHERE?</strong></p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PAGE 13 — COMPOSITION TYPES
+    ═══════════════════════════════════════ -->
+    <div class="page" id="page-13">
+      <div class="page-body">
+        <h1>What Is a Composition?</h1>
+        <p>A <strong>composition</strong> is a written piece that expresses ideas, tells a story, describes something, or argues a point — in an organised way.</p>
+
+        <h2>Basic Structure</h2>
+        <p>All good compositions have three parts:</p>
+
+        <div class="example">
+          <div class="example-label"><ph-icon name="list-numbers" size="13"></ph-icon> The Three-Part Structure</div>
+          <p><strong>1. Introduction</strong> — introduces the topic, grabs attention (2–3 sentences)</p>
+          <p><strong>2. Body</strong> — develops the main ideas (2–4 paragraphs, one idea each)</p>
+          <p style="margin-bottom:0;"><strong>3. Conclusion</strong> — summarises and leaves a final impression (2–3 sentences)</p>
+        </div>
+
+        <h2>Types of Compositions</h2>
+
+        <h3>1. Narrative</h3>
+        <p>Tells a story with characters and events in time order.</p>
+        <div class="example">
+          <div class="example-label"><ph-icon name="text-aa" size="13"></ph-icon> Narrative Example</div>
+          <div class="ex-line">"Last summer, I had the most exciting adventure at the beach..."</div>
+          <div class="ex-line">"First, we built a sandcastle. Then, we saw dolphins..."</div>
+          <div class="ex-line">"It was the best day, and I'll never forget those memories."</div>
+        </div>
+
+        <h3>2. Descriptive</h3>
+        <p>Paints a picture with words — describing how something looks, sounds, or feels.</p>
+        <div class="example">
+          <div class="example-label"><ph-icon name="text-aa" size="13"></ph-icon> Descriptive Example</div>
+          <div class="ex-line">"My grandmother's kitchen is the heart of her home."</div>
+          <div class="ex-line">"The walls are a warm cream. Fresh flowers sit on the windowsill..."</div>
+          <div class="ex-line">"Every time I enter, I feel welcomed and loved."</div>
+        </div>
+
+        <h3>3. Expository</h3>
+        <p>Explains or informs using facts and details about a topic.</p>
+
+        <h3>4. Argumentative</h3>
+        <p>Persuades the reader to agree with your opinion.</p>
+
+        <div class="callout callout-tip">
+          <div class="callout-label"><ph-icon name="lightbulb" size="14"></ph-icon> The Writing Process</div>
+          <ul>
+            <li><strong>Plan</strong> — brainstorm and organise your ideas</li>
+            <li><strong>Draft</strong> — write without stopping to fix mistakes</li>
+            <li><strong>Edit</strong> — check structure, flow, and content</li>
+            <li><strong>Proofread</strong> — fix grammar, spelling, and punctuation</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PAGE 14 — TRANSITIONS & CH4 PRACTICE
+    ═══════════════════════════════════════ -->
+    <div class="page" id="page-14">
+      <div class="page-body">
+        <h1>Using Transitions</h1>
+        <p>Transitions connect your ideas and make your composition flow smoothly:</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Purpose</th><th>Words to Use</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Add ideas</td><td>Also, Furthermore, In addition, Moreover</td></tr>
+              <tr><td>Show time</td><td>First, Next, Then, Finally, After, Later</td></tr>
+              <tr><td>Show contrast</td><td>However, But, Although, On the other hand</td></tr>
+              <tr><td>Cause / Effect</td><td>Because, Therefore, As a result, Since</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h1>Common Mistakes in Composition</h1>
+
+        <div class="mistake">
+          <div class="mistake-label"><ph-icon name="x-circle" size="14"></ph-icon> No Introduction</div>
+          <p style="margin-bottom:0;">Never jump straight into events. Start with 2–3 sentences introducing your topic.</p>
+        </div>
+        <div class="mistake">
+          <div class="mistake-label"><ph-icon name="x-circle" size="14"></ph-icon> Everything in One Paragraph</div>
+          <p style="margin-bottom:0;">Create a new paragraph for each new main idea or event.</p>
+        </div>
+        <div class="mistake">
+          <div class="mistake-label"><ph-icon name="x-circle" size="14"></ph-icon> No Conclusion</div>
+          <p style="margin-bottom:0;">Always wrap up with 2–3 sentences that close your composition.</p>
+        </div>
+
+        <div class="practice">
+          <div class="practice-title"><ph-icon name="pencil" size="14"></ph-icon> Practice — Plan a Narrative</div>
+          <div class="exercise">
+            <div class="exercise-num">Topic: A Day I Will Never Forget</div>
+            <p>Answer these planning questions:<br>
+            1. Who are the main characters?<br>
+            2. Where does the story take place?<br>
+            3. What are the main events (in order)?<br>
+            4. What is the ending?</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Sample</button>
+            <div class="answer-box">
+              1. Me and my best friend<br>
+              2. The amusement park<br>
+              3. We arrived early → rode the roller coaster → got lost → found the exit<br>
+              4. We had an amazing adventure and laughed about getting lost
+            </div>
+          </div>
+        </div>
+
+        <div class="summary">
+          <div class="summary-title"><ph-icon name="check-circle" size="17" color="#1a2744"></ph-icon> Chapter 4 Summary</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Adverbs of place answer WHERE.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> They show location, direction, or position.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> They usually go at the end of a sentence.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> A composition has Introduction, Body, and Conclusion.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Four types: Narrative, Descriptive, Expository, Argumentative.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Use the Writing Process: Plan, Draft, Edit, Proofread.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PAGE 15 — CHAPTER 5 INTRO
+    ═══════════════════════════════════════ -->
+    <div class="page" id="page-15">
+      <div class="chapter-banner">
+        <div class="chapter-eyebrow">Chapter 5</div>
+        <h1>Prefixes and Suffixes</h1>
+      </div>
+      <div class="page-body">
+        <div class="objectives">
+          <div class="objectives-label"><ph-icon name="target" size="15"></ph-icon> Learning Objectives</div>
+          <ul>
+            <li>Understand what prefixes and suffixes are</li>
+            <li>Learn common prefixes and their meanings</li>
+            <li>Learn common suffixes and their meanings</li>
+            <li>Recognise spelling changes when adding affixes</li>
+            <li>Build vocabulary by understanding word parts</li>
+          </ul>
+        </div>
+
+        <h2>What Are Affixes?</h2>
+        <p>An <strong>affix</strong> is a word part added to a root word to create a new word with a different meaning.</p>
+
+        <div class="example">
+          <div class="example-label"><ph-icon name="info" size="13"></ph-icon> Prefix vs Suffix</div>
+          <p><strong>Prefix</strong> — added at the BEGINNING: <em>un</em> + happy = <strong>unhappy</strong></p>
+          <p style="margin-bottom:0;"><strong>Suffix</strong> — added at the END: happy + <em>ly</em> = <strong>happily</strong></p>
+        </div>
+
+        <h2>Common Prefixes</h2>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Prefix</th><th>Meaning</th><th>Examples</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>UN-</strong></td><td>Not</td><td>unhappy, unkind, unclear</td></tr>
+              <tr><td><strong>RE-</strong></td><td>Again</td><td>rebuild, rewrite, restart</td></tr>
+              <tr><td><strong>PRE-</strong></td><td>Before</td><td>preview, precook, preschool</td></tr>
+              <tr><td><strong>DIS-</strong></td><td>Not / opposite</td><td>disagree, dishonest, dislike</td></tr>
+              <tr><td><strong>MIS-</strong></td><td>Wrong</td><td>mistake, misunderstand, misplace</td></tr>
+              <tr><td><strong>IN- / IM-</strong></td><td>Not</td><td>incomplete, impossible, incorrect</td></tr>
+              <tr><td><strong>NON-</strong></td><td>Not</td><td>nonfiction, nonstop, nonprofit</td></tr>
+              <tr><td><strong>SUB-</strong></td><td>Under / below</td><td>subway, submarine, subtitle</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout callout-key">
+          <div class="callout-label"><ph-icon name="key" size="14"></ph-icon> Remember</div>
+          <p style="margin-bottom:0;">Prefixes come at the BEGINNING and usually make the word negative or give it an opposite meaning.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PAGE 16 — SUFFIXES
+    ═══════════════════════════════════════ -->
+    <div class="page" id="page-16">
+      <div class="page-body">
+        <h1>Common Suffixes</h1>
+        <p>A suffix changes the meaning and often the part of speech of a word:</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Suffix</th><th>Part of Speech</th><th>Meaning</th><th>Examples</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>-TION / -SION</strong></td><td>Noun</td><td>Action / State</td><td>celebration, decision</td></tr>
+              <tr><td><strong>-MENT</strong></td><td>Noun</td><td>State / Quality</td><td>enjoyment, movement</td></tr>
+              <tr><td><strong>-NESS</strong></td><td>Noun</td><td>State / Quality</td><td>happiness, kindness</td></tr>
+              <tr><td><strong>-FUL</strong></td><td>Adjective</td><td>Full of</td><td>beautiful, helpful</td></tr>
+              <tr><td><strong>-LESS</strong></td><td>Adjective</td><td>Without</td><td>hopeless, careless</td></tr>
+              <tr><td><strong>-LY</strong></td><td>Adverb</td><td>In a way</td><td>quickly, happily</td></tr>
+              <tr><td><strong>-ABLE / -IBLE</strong></td><td>Adjective</td><td>Can be done</td><td>readable, possible</td></tr>
+              <tr><td><strong>-ER / -OR</strong></td><td>Noun</td><td>Person who does</td><td>teacher, actor</td></tr>
+              <tr><td><strong>-ISH</strong></td><td>Adjective</td><td>Somewhat like</td><td>childish, foolish</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="example">
+          <div class="example-label"><ph-icon name="text-aa" size="13"></ph-icon> -FUL vs -LESS</div>
+          <div class="ex-line">Hope + ful = <strong>Hopeful</strong> (full of hope)</div>
+          <div class="ex-line">Hope + less = <strong>Hopeless</strong> (without hope)</div>
+          <div class="ex-line">Care + ful = <strong>Careful</strong> (full of care)</div>
+          <div class="ex-line">Care + less = <strong>Careless</strong> (without care)</div>
+        </div>
+
+        <div class="example">
+          <div class="example-label"><ph-icon name="text-aa" size="13"></ph-icon> -ER Suffix</div>
+          <div class="ex-line">Teach + er = <strong>Teacher</strong> (one who teaches)</div>
+          <div class="ex-line">Play + er = <strong>Player</strong> (one who plays)</div>
+          <div class="ex-line">Write + r = <strong>Writer</strong> (one who writes)</div>
+        </div>
+
+        <div class="callout callout-key">
+          <div class="callout-label"><ph-icon name="key" size="14"></ph-icon> Remember</div>
+          <p style="margin-bottom:0;">Suffixes come at the END and usually change the part of speech or add information about meaning.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PAGE 17 — SPELLING RULES & WORD FAMILIES
+    ═══════════════════════════════════════ -->
+    <div class="page" id="page-17">
+      <div class="page-body">
+        <h1>Spelling Rules When Adding Suffixes</h1>
+
+        <h3>Rule 1 — Silent E</h3>
+        <p>When a suffix starts with a vowel, drop the final "e" from the root word:</p>
+        <div class="example">
+          <div class="example-label"><ph-icon name="text-aa" size="13"></ph-icon> Silent E Rule</div>
+          <div class="ex-line">Hope + ing = <strong>Hoping</strong> (drop the e)</div>
+          <div class="ex-line">Smile + ing = <strong>Smiling</strong> (drop the e)</div>
+          <div class="ex-line">Fine + ly = <strong>Finely</strong> (keep the e — suffix starts with consonant)</div>
+        </div>
+
+        <h3>Rule 2 — Double the Consonant</h3>
+        <p>When a short vowel is followed by one consonant, double the consonant before adding a vowel suffix:</p>
+        <div class="example">
+          <div class="example-label"><ph-icon name="text-aa" size="13"></ph-icon> Doubling Rule</div>
+          <div class="ex-line">Run + ing = <strong>Running</strong> (double the n)</div>
+          <div class="ex-line">Stop + ing = <strong>Stopping</strong> (double the p)</div>
+          <div class="ex-line">Hot + er = <strong>Hotter</strong> (double the t)</div>
+        </div>
+
+        <h3>Rule 3 — Y to I</h3>
+        <p>When a word ends in "y", change it to "i" before most suffixes:</p>
+        <div class="example">
+          <div class="example-label"><ph-icon name="text-aa" size="13"></ph-icon> Y to I Rule</div>
+          <div class="ex-line">Happy + ness = <strong>Happiness</strong> (y &rarr; i)</div>
+          <div class="ex-line">Heavy + ly = <strong>Heavily</strong> (y &rarr; i)</div>
+          <div class="ex-line">Study + ing = <strong>Studying</strong> (y stays before -ing)</div>
+        </div>
+
+        <h1>Guessing Unknown Words</h1>
+        <p>Break any unknown word into parts to guess its meaning:</p>
+
+        <div class="example">
+          <div class="example-label"><ph-icon name="magnifying-glass" size="13"></ph-icon> Breaking Down Words</div>
+          <p><strong>UNCOMFORTABLE</strong><br>
+          UN (not) + COMFORT + ABLE (can be) = Not able to be comfortable</p>
+          <p><strong>DISAGREEMENT</strong><br>
+          DIS (opposite) + AGREE + MENT (state) = The state of not agreeing</p>
+          <p style="margin-bottom:0;"><strong>UNHELPFULLY</strong><br>
+          UN + HELP + FUL + LY = In an unhelpful way</p>
+        </div>
+
+        <div class="callout callout-tip">
+          <div class="callout-label"><ph-icon name="lightbulb" size="14"></ph-icon> Strategy for Unknown Words</div>
+          <ol>
+            <li>Look for a prefix at the beginning</li>
+            <li>Identify the root word</li>
+            <li>Look for a suffix at the end</li>
+            <li>Combine the meanings</li>
+            <li>Check if your guess makes sense in context</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PAGE 18 — CH5 PRACTICE & SUMMARY
+    ═══════════════════════════════════════ -->
+    <div class="page" id="page-18">
+      <div class="page-body">
+        <h1>Word Families</h1>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Root</th><th>With Prefix</th><th>With Suffix</th><th>With Both</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Happy</td><td>Unhappy</td><td>Happiness</td><td>Unhappily</td></tr>
+              <tr><td>Clear</td><td>Unclear</td><td>Clearly</td><td>Unclearly</td></tr>
+              <tr><td>Like</td><td>Dislike</td><td>Likeable</td><td>Dislikeable</td></tr>
+              <tr><td>Build</td><td>Rebuild</td><td>Building</td><td>Rebuilding</td></tr>
+              <tr><td>Agree</td><td>Disagree</td><td>Agreement</td><td>Disagreement</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="practice">
+          <div class="practice-title"><ph-icon name="pencil" size="14"></ph-icon> Practice — Word Building</div>
+
+          <div class="exercise">
+            <div class="exercise-num">Question 1</div>
+            <p>un + lucky = _____</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box"><strong>unlucky</strong></div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 2</div>
+            <p>happy + ness = _____</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box"><strong>happiness</strong> (y changes to i)</div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 3</div>
+            <p>Using "view" — create a word meaning "see before"</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box"><strong>preview</strong> (pre + view)</div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 4</div>
+            <p>What does "unbelievable" mean? Break it down.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">UN (not) + BELIEVE + ABLE (can be) = Not able to be believed / Hard to believe</div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 5</div>
+            <p>run + er = _____ (remember the spelling rule!)</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box"><strong>runner</strong> — short vowel + one consonant, so double the n before adding -er.</div>
+          </div>
+        </div>
+
+        <div class="summary">
+          <div class="summary-title"><ph-icon name="check-circle" size="17" color="#1a2744"></ph-icon> Chapter 5 Summary</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Prefixes are added at the BEGINNING of words.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Suffixes are added at the END of words.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Common prefixes: UN-, RE-, PRE-, DIS-, MIS-, IN-, NON-, SUB-.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Common suffixes: -TION, -NESS, -FUL, -LESS, -LY, -ER, -ABLE, -MENT.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Follow the three spelling rules when adding suffixes.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Break unknown words into parts to guess their meaning.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ══════════════════════════════════════
+         PAGE 19 — BACK COVER
+    ═══════════════════════════════════════ -->
+    <div class="page" id="page-19">
+      <div style="
+        background: linear-gradient(160deg, var(--navy) 0%, var(--navy2) 100%);
+        min-height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 48px 28px;
+        text-align: center;
+        color: var(--white);
+      ">
+        <div style="
+          width: 64px; height: 64px;
+          background: rgba(232,160,32,0.15);
+          border: 2px solid var(--amber);
+          border-radius: 16px;
+          display: flex; align-items: center; justify-content: center;
+          margin: 0 auto 28px;
+        ">
+          <ph-icon name="graduation-cap" size="34" color="#e8a020"></ph-icon>
+        </div>
+        <div style="font-family: Georgia, serif; font-size: 26px; font-weight: 700; margin-bottom: 12px;">Well Done!</div>
+        <p style="color: rgba(255,255,255,0.7); font-size: 15px; line-height: 1.7; max-width: 340px; text-align: center; margin-bottom: 32px;">
+          You have completed all five chapters of<br><strong style="color:var(--white);">English Grammar Mastery</strong>.<br><br>
+          Keep practising, keep reading, and keep improving. Language learning is a journey — every page brings you further.
+        </p>
+        <div style="
+          background: rgba(255,255,255,0.07);
+          border: 1px solid rgba(255,255,255,0.15);
+          border-radius: var(--radius);
+          padding: 18px 22px;
+          max-width: 340px;
+          margin-bottom: 36px;
+          font-size: 13px;
+          color: rgba(255,255,255,0.6);
+          font-style: italic;
+          line-height: 1.6;
+        ">
+          "Education is the most powerful weapon which you can use to change the world."<br>
+          <span style="color: rgba(255,255,255,0.4); margin-top: 8px; display:block;">— Nelson Mandela</span>
+        </div>
+        <button class="cover-btn" onclick="goToPage(1, -1)">
+          <ph-icon name="list" size="18"></ph-icon>
+          Back to Contents
+        </button>
+      </div>
+    </div>
+
+  </div><!-- end #viewport -->
+
+  <!-- BOTTOM NAV -->
+  <div id="bottom-nav">
+    <button class="nav-btn" id="prev-btn" onclick="navigate(-1)" disabled>
+      <ph-icon name="arrow-left" size="16"></ph-icon>
+      Prev
+    </button>
+    <div id="page-counter">1 / 20</div>
+    <button class="nav-btn" id="next-btn" onclick="navigate(1)">
+      Next
+      <ph-icon name="arrow-right" size="16"></ph-icon>
+    </button>
+  </div>
+
+</div><!-- end #shell -->
+
+<!-- TOC DRAWER OVERLAY -->
+<div id="toc-overlay" onclick="handleOverlayClick(event)">
+  <div id="toc-drawer">
+    <div class="drawer-header">
+      <h2>Chapters</h2>
+      <button id="close-toc" onclick="closeToc()">
+        <ph-icon name="x" size="20"></ph-icon>
+      </button>
+    </div>
+    <ul class="drawer-list">
+      <li class="drawer-item" onclick="drawerGo(0)">
+        <div class="drawer-num" style="background:rgba(26,39,68,0.12); color:var(--navy);">
+          <ph-icon name="house" size="15"></ph-icon>
+        </div>
+        <div>
+          <div class="drawer-name">Cover</div>
+        </div>
+      </li>
+      <li class="drawer-item" onclick="drawerGo(1)">
+        <div class="drawer-num" style="background:rgba(26,39,68,0.12); color:var(--navy);">
+          <ph-icon name="list" size="15"></ph-icon>
+        </div>
+        <div>
+          <div class="drawer-name">Table of Contents</div>
+        </div>
+      </li>
+      <div class="drawer-divider"></div>
+      <li class="drawer-item" onclick="drawerGo(2)">
+        <div class="drawer-num">1</div>
+        <div>
+          <div class="drawer-name">Have, Has, and Had</div>
+          <div class="drawer-sub">Pages 3 – 6</div>
+        </div>
+      </li>
+      <li class="drawer-item" onclick="drawerGo(6)">
+        <div class="drawer-num">2</div>
+        <div>
+          <div class="drawer-name">Antonyms and Synonyms</div>
+          <div class="drawer-sub">Pages 7 – 9</div>
+        </div>
+      </li>
+      <li class="drawer-item" onclick="drawerGo(9)">
+        <div class="drawer-num">3</div>
+        <div>
+          <div class="drawer-name">Causative Verbs</div>
+          <div class="drawer-sub">Pages 10 – 12</div>
+        </div>
+      </li>
+      <li class="drawer-item" onclick="drawerGo(12)">
+        <div class="drawer-num">4</div>
+        <div>
+          <div class="drawer-name">Adverbs of Place and Composition</div>
+          <div class="drawer-sub">Pages 13 – 15</div>
+        </div>
+      </li>
+      <li class="drawer-item" onclick="drawerGo(15)">
+        <div class="drawer-num">5</div>
+        <div>
+          <div class="drawer-name">Prefixes and Suffixes</div>
+          <div class="drawer-sub">Pages 16 – 19</div>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<script>
+const TOTAL = 20;
+let current = 0;
+
+function getPage(n) {
+  return document.getElementById('page-' + n);
+}
+
+function goToPage(n, dir) {
+  if (n < 0 || n >= TOTAL) return;
+  const prev = getPage(current);
+  const next = getPage(n);
+  if (!next) return;
+
+  prev.classList.remove('active');
+  next.classList.remove('slide-in-right', 'slide-in-left');
+
+  if (typeof dir === 'number' && dir !== 0) {
+    next.classList.add(dir > 0 ? 'slide-in-right' : 'slide-in-left');
+  }
+
+  next.classList.add('active');
+  next.scrollTop = 0;
+  current = n;
+  updateUI();
+}
+
+function navigate(dir) {
+  goToPage(current + dir, dir);
+}
+
+function updateUI() {
+  document.getElementById('prev-btn').disabled = current === 0;
+  document.getElementById('next-btn').disabled = current === TOTAL - 1;
+  document.getElementById('page-counter').textContent = (current + 1) + ' / ' + TOTAL;
+
+  const fill = ((current + 1) / TOTAL) * 100;
+  document.getElementById('progress-fill').style.width = fill + '%';
+
+  const titles = [
+    'English Grammar Mastery',
+    'Contents',
+    'Ch.1 — Have, Has, Had',
+    'Ch.1 — Have, Has, Had',
+    'Ch.1 — Have, Has, Had',
+    'Ch.1 — Have, Has, Had',
+    'Ch.2 — Antonyms & Synonyms',
+    'Ch.2 — Antonyms & Synonyms',
+    'Ch.2 — Antonyms & Synonyms',
+    'Ch.3 — Causative Verbs',
+    'Ch.3 — Causative Verbs',
+    'Ch.3 — Causative Verbs',
+    'Ch.4 — Adverbs of Place',
+    'Ch.4 — Composition',
+    'Ch.4 — Composition',
+    'Ch.5 — Prefixes & Suffixes',
+    'Ch.5 — Prefixes & Suffixes',
+    'Ch.5 — Prefixes & Suffixes',
+    'Ch.5 — Prefixes & Suffixes',
+    'Completed'
+  ];
+  document.getElementById('topbar-title').textContent = titles[current] || 'English Grammar Mastery';
+}
+
+function toggleAnswer(btn) {
+  const box = btn.nextElementSibling;
+  const isOpen = box.classList.toggle('open');
+  const icon = btn.querySelector('ph-icon');
+  if (icon) icon.setAttribute('name', isOpen ? 'eye-slash' : 'eye');
+  btn.childNodes.forEach(n => {
+    if (n.nodeType === 3) n.textContent = isOpen ? ' Hide Answer' : ' Show Answer';
+  });
+}
+
+function openToc() {
+  document.getElementById('toc-overlay').classList.add('open');
+}
+function closeToc() {
+  document.getElementById('toc-overlay').classList.remove('open');
+}
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('toc-overlay')) closeToc();
+}
+function drawerGo(n) {
+  closeToc();
+  const dir = n > current ? 1 : (n < current ? -1 : 0);
+  goToPage(n, dir);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') navigate(1);
+  if (e.key === 'ArrowLeft')  navigate(-1);
+});
+
+// Swipe support for mobile
+(function() {
+  let startX = 0, startY = 0;
+  const vp = document.getElementById('viewport');
+  vp.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+  vp.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    if (Math.abs(dx) > Math.abs(dy) * 1.5 && Math.abs(dx) > 50) {
+      navigate(dx < 0 ? 1 : -1);
+    }
+  }, { passive: true });
+})();
+
+updateUI();
+</script>
+</body>
+</html>
