@@ -2781,6 +2781,58 @@ function _showAllLevelsModal(currentXP) {
     `);
   }
 
+// ── Game Session Tracker ─────────────────────────────────────
+// Creates a Firestore doc at game start, updates it at game end.
+// Returns the session doc ID so _awardXP can close it.
+
+let _currentSessionId = null;
+
+async function _startGameSession(gameType, extraMeta) {
+  const uid = _uid();
+  if (!uid || !_isOnline()) return null;
+  try {
+    const ref = await _db().collection('gameSessions').add({
+      uid,
+      name:      _student().name   || '',
+      class:     _student().class  || '',
+      school:    _student().school || '',
+      gameType,
+      status:    'playing',
+      startedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      endedAt:   null,
+      xpEarned:  0,
+      score:     null,
+      pct:       null,
+      win:       null,
+      meta:      extraMeta || {},
+    });
+    _currentSessionId = ref.id;
+    return ref.id;
+  } catch (e) {
+    console.warn('[game] _startGameSession error (non-fatal):', e);
+    return null;
+  }
+}
+
+async function _endGameSession(sessionId, resultData) {
+  if (!sessionId || !_isOnline()) return;
+  try {
+    await _db().collection('gameSessions').doc(sessionId).update({
+      status:   'finished',
+      endedAt:  firebase.firestore.FieldValue.serverTimestamp(),
+      xpEarned: resultData.xpEarned  || 0,
+      score:    resultData.score      ?? null,
+      pct:      resultData.pct        ?? null,
+      win:      resultData.win        ?? null,
+      grade:    resultData.grade      || null,
+      meta:     resultData.meta       || {},
+    });
+  } catch (e) {
+    console.warn('[game] _endGameSession error (non-fatal):', e);
+  }
+  if (_currentSessionId === sessionId) _currentSessionId = null;
+}
+
   function _startQuizBlitz() {
     const subject = document.getElementById('quizBlitzSubject')?.value || 'random';
     const count   = parseInt(document.getElementById('quizBlitzCount')?.value || '10', 10);
@@ -2795,7 +2847,10 @@ function _showAllLevelsModal(currentXP) {
       questions = _getQuestionsForSubject(subject, count).map(q => ({ ...q, subject }));
     }
     if (questions.length === 0) { window.UI.toast('No questions available for that subject.', 'error'); return; }
-    _gameState = { type: 'quizBlitz', questions, currentIndex: 0, answers: [], score: 0, xpEarned: 0, speedBonuses: 0, startedAt: Date.now() };
+    _gameState = { type: 'quizBlitz', questions, currentIndex: 0, answers: [], score: 0, xpEarned: 0, speedBonuses: 0, startedAt: Date.now(), _sessionId: null };
+    _startGameSession('quizBlitz', { subject, count }).then(id => {
+      if (_gameState && _gameState.type === 'quizBlitz') _gameState._sessionId = id;
+    });
     _closeModal();
     _speedDemonCount = 0;
     _renderQuizBlitzQuestion();
@@ -2902,6 +2957,7 @@ function _showAllLevelsModal(currentXP) {
     if (perfect) xpFinal += XP_PER_PERFECT;
     const result = await _awardXP(xpFinal, 'quizBlitz', { win, perfect, speedDemonCount: _speedDemonCount });
     await _saveGameResult('quizBlitz', { correct, total, pct, xpEarned: xpFinal, perfect });
+    await _endGameSession(gs._sessionId, { xpEarned: xpFinal, score: correct, pct, win, meta: { total, perfect } });
     _renderGameResult({ gameIcon: 'lightning', gameName: 'Quiz Blitz', score: `${correct} / ${total}`, pct, xpEarned: xpFinal, perfect, win, result, extras: [{ label: 'Speed Bonuses', value: `+${gs.speedBonuses * XP_SPEED_BONUS} XP` }, { label: 'Perfect Bonus', value: perfect ? `+${XP_PER_PERFECT} XP` : '—' }], onPlayAgainKey: 'quizBlitz' });
   }
 
@@ -2956,7 +3012,10 @@ function _showAllLevelsModal(currentXP) {
     const radio = document.querySelector('input[name="mathDiff"]:checked');
     const diff  = radio ? radio.value : 'easy';
     _closeModal();
-    _gameState = { type: 'speedMath', difficulty: diff, totalTime: 90, score: 0, attempted: 0, xpEarned: 0, startedAt: Date.now(), currentProblem: _mathProblems[diff]() };
+    _gameState = { type: 'speedMath', difficulty: diff, totalTime: 90, score: 0, attempted: 0, xpEarned: 0, startedAt: Date.now(), currentProblem: _mathProblems[diff](), _sessionId: null };
+    _startGameSession('speedMath', { difficulty: diff }).then(id => {
+      if (_gameState && _gameState.type === 'speedMath') _gameState._sessionId = id;
+    });
     _renderSpeedMathQuestion();
   }
 
@@ -3046,6 +3105,7 @@ function _showAllLevelsModal(currentXP) {
     const win    = pct >= 60 && gs.score >= 5;
     const result = await _awardXP(gs.xpEarned, 'speedMath', { win, perfect, difficulty: gs.difficulty });
     await _saveGameResult('speedMath', { score: gs.score, attempted: gs.attempted, pct, xpEarned: gs.xpEarned, difficulty: gs.difficulty });
+    await _endGameSession(gs._sessionId, { xpEarned: gs.xpEarned, score: gs.score, pct, win, meta: { attempted: gs.attempted, difficulty: gs.difficulty, perfect } });
     _renderGameResult({ gameIcon: 'calculator', gameName: 'Speed Math', score: `${gs.score} / ${gs.attempted}`, pct, xpEarned: gs.xpEarned, perfect, win, result, extras: [{ label: 'Difficulty', value: gs.difficulty.charAt(0).toUpperCase() + gs.difficulty.slice(1) }, { label: 'Accuracy', value: pct + '%' }], onPlayAgainKey: 'speedMath' });
   }
 
@@ -3307,7 +3367,11 @@ function _buildWordPoolForStudent() {
     startedAt:      Date.now(),
     shufflesLeft:   MAX_SHUFFLES,
     currentScramble: '',
+    _sessionId:     null,
   };
+  _startGameSession('wordScramble', { count }).then(id => {
+    if (_gameState && _gameState.type === 'wordScramble') _gameState._sessionId = id;
+  });
   _gameState.currentScramble = _scrambleWord(words[0].word);
   _renderWordScrambleQuestion();
 }
@@ -3443,6 +3507,7 @@ function _buildWordPoolForStudent() {
     const win     = pct >= 60;
     const result  = await _awardXP(gs.xpEarned, 'wordScramble', { win, perfect, wordCorrect: gs.wordCorrect });
     await _saveGameResult('wordScramble', { correct, total, pct, xpEarned: gs.xpEarned });
+    await _endGameSession(gs._sessionId, { xpEarned: gs.xpEarned, score: correct, pct, win, meta: { total, perfect } });
     _renderGameResult({ gameIcon: 'textT', gameName: 'Word Scramble', score: `${correct} / ${total}`, pct, xpEarned: gs.xpEarned, perfect, win, result, extras: [], onPlayAgainKey: 'wordScramble' });
   }
 
@@ -3564,7 +3629,11 @@ function _buildWordPoolForStudent() {
       xpEarned:     0,
       lastWasCorrect: false,
       startedAt:    Date.now(),
+      _sessionId:   null,
     };
+    _startGameSession('trueOrFalse', { subject: subjectSel, count }).then(id => {
+      if (_gameState && _gameState.type === 'trueOrFalse') _gameState._sessionId = id;
+    });
     _renderTFQuestion();
   }
 
@@ -3770,6 +3839,7 @@ function _buildWordPoolForStudent() {
 
     const result = await _awardXP(xpFinal, 'trueOrFalse', { win, perfect, tfBestStreak: gs.bestStreak });
     await _saveGameResult('trueOrFalse', { correct, total, pct, xpEarned: xpFinal, bestStreak: gs.bestStreak });
+    await _endGameSession(gs._sessionId, { xpEarned: xpFinal, score: correct, pct, win, meta: { total, perfect, bestStreak: gs.bestStreak } });
 
     _renderGameResult({
       gameIcon:      'checkSquare',
@@ -3866,7 +3936,11 @@ function _buildWordPoolForStudent() {
       dead:        false,
       currentXPValue: SD_XP_BASE,
       startedAt:   Date.now(),
+      _sessionId:  null,
     };
+    _startGameSession('suddenDeath', { subject: subjectSel }).then(id => {
+      if (_gameState && _gameState.type === 'suddenDeath') _gameState._sessionId = id;
+    });
     _renderSDQuestion();
   }
 
@@ -4039,7 +4113,6 @@ function _buildWordPoolForStudent() {
     const survived    = gs.survived;
     const total       = gs.pool.length;
     const xpFinal     = gs.xpEarned;
-    // For scoring display: treat each survived Q as a "correct" out of however many were seen
     const questionsAttempted = gs.currentIndex + (died ? 1 : 0);
     const pct         = questionsAttempted > 0 ? Math.round((survived / questionsAttempted) * 100) : 0;
     const win         = survived >= 5;
@@ -4057,8 +4130,8 @@ function _buildWordPoolForStudent() {
       xpEarned: xpFinal,
       died,
     });
+    await _endGameSession(gs._sessionId, { xpEarned: xpFinal, score: survived, pct, win, meta: { questionsAttempted, died, perfect } });
 
-    // Custom extra HTML — dramatic survival report
     const survivalColor = survived >= 20 ? 'var(--success)'
                         : survived >= 10 ? 'var(--warning)'
                         : survived >= 5  ? '#f97316'
@@ -4330,7 +4403,10 @@ function _buildWordPoolForStudent() {
       challengeData = { id: snap.id, ...snap.data() };
     } catch (e) { window.UI.toast('Could not load challenge.', 'error'); return; }
     if (challengeData.challengerScore !== null && challengeData.challengerScore !== undefined) { window.UI.toast("You've already played this challenge.", 'info'); return; }
-    _gameState = { type: 'challenge', challengeId, isChallengerTurn: true, questions: challengeData.questions || [], currentIndex: 0, answers: [], score: 0, xpEarned: 0, opponentName: challengeData.challengedName, opponentScore: challengeData.challengedScore, startedAt: Date.now() };
+    _gameState = { type: 'challenge', challengeId, isChallengerTurn: true, questions: challengeData.questions || [], currentIndex: 0, answers: [], score: 0, xpEarned: 0, opponentName: challengeData.challengedName, opponentScore: challengeData.challengedScore, startedAt: Date.now(), _sessionId: null };
+    _startGameSession('challenge', { opponentName: challengeData.challengerName || challengeData.challengedName }).then(id => {
+      if (_gameState && _gameState.type === 'challenge') _gameState._sessionId = id;
+    });
     _renderChallengeQuestion();
   }
 
@@ -4344,7 +4420,10 @@ function _buildWordPoolForStudent() {
       challengeData = { id: snap.id, ...snap.data() };
     } catch (e) { window.UI.toast('Could not load challenge.', 'error'); return; }
     if (challengeData.challengedScore !== null && challengeData.challengedScore !== undefined) { window.UI.toast("You've already played this challenge.", 'info'); return; }
-    _gameState = { type: 'challenge', challengeId, isChallengerTurn: false, questions: challengeData.questions || [], currentIndex: 0, answers: [], score: 0, xpEarned: 0, opponentName: challengeData.challengerName, opponentScore: challengeData.challengerScore, startedAt: Date.now() };
+    _gameState = { type: 'challenge', challengeId, isChallengerTurn: false, questions: challengeData.questions || [], currentIndex: 0, answers: [], score: 0, xpEarned: 0, opponentName: challengeData.challengerName, opponentScore: challengeData.challengerScore, startedAt: Date.now(), _sessionId: null };
+    _startGameSession('challenge', { opponentName: challengeData.challengerName || challengeData.challengedName }).then(id => {
+      if (_gameState && _gameState.type === 'challenge') _gameState._sessionId = id;
+    });
     _renderChallengeQuestion();
   }
 
@@ -4445,6 +4524,7 @@ function _buildWordPoolForStudent() {
       else { updatePayload.challengedScore = myScore; updatePayload.status = (opponentScore !== null && opponentScore !== undefined) ? 'completed' : 'awaiting_challenger'; }
       await _db().collection('gameChallenges').doc(gs.challengeId).update(updatePayload);
     } catch (e) { console.warn('[game] _finishChallenge update error:', e); }
+    await _endGameSession(gs._sessionId, { xpEarned: gs.xpEarned, score: myScore, pct: myPct, win, meta: { opponentName: gs.opponentName, opponentScore, challengeId: gs.challengeId } });
     const result = await _awardXP(gs.xpEarned, 'challenge', { win, challengeWin });
     await _saveGameResult('challenge', { score: myScore, total, pct: myPct, xpEarned: gs.xpEarned, challengeId: gs.challengeId, opponentName: gs.opponentName });
     let outcomeHtml = '';
@@ -4934,8 +5014,12 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
     },
     _keyDown: _krKeyDown,
     _keyUp:   _krKeyUp,
+    _sessionId: null
   };
-
+  
+  _startGameSession('knowledgeRunner', { subject: subjectSel }).then(id => {
+    if (_krState) _krState._sessionId = id;
+  });
   _krNextQuestion();
   _krLastTime = performance.now();
   _krLoop(_krLastTime);
@@ -5970,7 +6054,6 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
 
   async function _krEndGame() {
     if (_krAnimFrame) { cancelAnimationFrame(_krAnimFrame); _krAnimFrame = null; }
-    // Clean up keyboard listeners
     if (_krState && _krState._keyDown) document.removeEventListener('keydown', _krState._keyDown);
     if (_krState && _krState._keyUp)   document.removeEventListener('keyup',   _krState._keyUp);
 
@@ -5984,6 +6067,7 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
       score: s.score, distance: Math.floor(s.distance),
       xpEarned: s.xpEarned, pct,
     });
+    await _endGameSession(s._sessionId, { xpEarned: s.xpEarned, score: s.score, pct, win, meta: { distance: Math.floor(s.distance) } });
 
     const distanceTitle = s.distance >= 500 ? 'Legend Surfer!'
                         : s.distance >= 300 ? 'Master Surfer!'
@@ -6334,53 +6418,422 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
   async function renderTeacherGameStats(containerId) {
     const container = document.getElementById(containerId);
     if (!container) return;
-    container.innerHTML = '<p style="color:var(--text-3);font-size:var(--text-sm);">Loading game stats&hellip;</p>';
-    try {
-      const snap = await _db().collection('gameLeaderboard').orderBy('xp', 'desc').limit(100).get();
-      const entries = [];
-      snap.forEach(doc => entries.push({ id: doc.id, ...doc.data() }));
-      if (entries.length === 0) { container.innerHTML = '<p style="color:var(--text-3);font-size:var(--text-sm);">No game activity yet.</p>'; return; }
-      container.innerHTML = `
-        <div style="overflow-x:auto;">
-          <table style="width:100%;border-collapse:collapse;font-size:var(--text-sm);">
-            <thead>
-              <tr style="background:var(--bg-subtle);border-bottom:1.5px solid var(--border);">
-                <th style="text-align:left;padding:.5rem .75rem;font-size:.75rem;font-weight:700;color:var(--text-3);">#</th>
-                <th style="text-align:left;padding:.5rem .75rem;font-size:.75rem;font-weight:700;color:var(--text-3);">Student</th>
-                <th style="text-align:left;padding:.5rem .75rem;font-size:.75rem;font-weight:700;color:var(--text-3);">Class</th>
-                <th style="text-align:center;padding:.5rem .75rem;font-size:.75rem;font-weight:700;color:var(--text-3);">Level</th>
-                <th style="text-align:center;padding:.5rem .75rem;font-size:.75rem;font-weight:700;color:var(--text-3);">XP</th>
-                <th style="text-align:center;padding:.5rem .75rem;font-size:.75rem;font-weight:700;color:var(--text-3);">Games</th>
-                <th style="text-align:center;padding:.5rem .75rem;font-size:.75rem;font-weight:700;color:var(--text-3);">Wins</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${entries.map((e, i) => {
-                const lv    = _getLevelForXP(e.xp || 0);
-                const medal = i === 0 ? '1st' : i === 1 ? '2nd' : i === 2 ? '3rd' : (i + 1);
-                return `
-                  <tr style="border-bottom:1px solid var(--border);">
-                    <td style="padding:.4375rem .75rem;font-weight:700;">${medal}</td>
-                    <td style="padding:.4375rem .75rem;font-weight:600;">${_esc(e.name || '—')}</td>
-                    <td style="padding:.4375rem .75rem;color:var(--text-3);">${_esc(e.class || '—')}</td>
-                    <td style="padding:.4375rem .75rem;text-align:center;">
-                      <div style="display:flex;align-items:center;gap:.25rem;justify-content:center;">
-                        ${_icon(lv.icon, 14, { color: lv.color })}
-                        <span style="font-size:.75rem;">${_esc(lv.name)}</span>
-                      </div>
-                    </td>
-                    <td style="padding:.4375rem .75rem;text-align:center;font-weight:700;color:var(--accent);font-family:var(--font-mono);">${(e.xp || 0).toLocaleString()}</td>
-                    <td style="padding:.4375rem .75rem;text-align:center;">${e.totalGames || 0}</td>
-                    <td style="padding:.4375rem .75rem;text-align:center;">${e.totalWins || 0}</td>
-                  </tr>`;
-              }).join('')}
-            </tbody>
-          </table>
-        </div>`;
-    } catch (e) {
-      console.error('[game] renderTeacherGameStats error:', e);
-      container.innerHTML = '<p style="color:var(--danger);font-size:var(--text-sm);">Could not load game stats.</p>';
+
+    // ── GAME TYPE LABELS ─────────────────────────────────────
+    const GAME_LABELS = {
+      quizBlitz:      'Quiz Blitz',
+      speedMath:      'Speed Math',
+      wordScramble:   'Word Scramble',
+      trueOrFalse:    'True or False',
+      suddenDeath:    'Perfect Run',
+      challenge:      'Challenge',
+      knowledgeRunner:'Knowledge Surfer',
+      wordScrabble:   'Word Scrabble',
+    };
+
+    const GAME_ICONS = {
+      quizBlitz:      '⚡',
+      speedMath:      '🧮',
+      wordScramble:   '🔡',
+      trueOrFalse:    '✅',
+      suddenDeath:    '💀',
+      challenge:      '⚔️',
+      knowledgeRunner:'🏄',
+      wordScrabble:   '🔤',
+    };
+
+    function gameLabel(type) { return GAME_LABELS[type] || type || '—'; }
+    function gameIcon(type)  { return GAME_ICONS[type]  || '🎮'; }
+
+    function _esc2(str) {
+      return String(str == null ? '' : str)
+        .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
     }
+
+    function _fmtTime(firestoreTs) {
+      if (!firestoreTs) return '—';
+      const d = firestoreTs.toDate ? firestoreTs.toDate() : new Date(firestoreTs);
+      return d.toLocaleString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+    }
+
+    function _duration(start, end) {
+      if (!start || !end) return '—';
+      const s = start.toDate ? start.toDate() : new Date(start);
+      const e = end.toDate   ? end.toDate()   : new Date(end);
+      const ms = e - s;
+      if (ms < 0) return '—';
+      const m = Math.floor(ms / 60000);
+      const sec = Math.floor((ms % 60000) / 1000);
+      if (m === 0) return sec + 's';
+      return m + 'm ' + sec + 's';
+    }
+
+    function _pctColor(pct) {
+      if (pct == null) return 'var(--text-3)';
+      if (pct >= 70) return 'var(--success)';
+      if (pct >= 50) return 'var(--warning)';
+      return 'var(--danger)';
+    }
+
+    // ── INITIAL RENDER WITH LOADING STATE ────────────────────
+    container.innerHTML = `
+      <div style="margin-bottom:1rem;">
+        <h2 style="font-size:var(--text-md);font-weight:600;color:var(--text-1);letter-spacing:-0.015em;">
+          Student Game Activity
+        </h2>
+        <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">
+          Live tracking — updates in real time as students play
+        </p>
+      </div>
+
+      <!-- CURRENTLY PLAYING (live) -->
+      <div class="glass-dark" style="padding:1rem;border-radius:var(--r-lg);margin-bottom:1rem;">
+        <div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.75rem;">
+          <span style="width:8px;height:8px;border-radius:50%;background:#22c55e;
+                       display:inline-block;animation:cbt-pulse .9s ease-in-out infinite;"></span>
+          <h3 style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);">Currently Playing</h3>
+        </div>
+        <div id="teacherLiveGames" style="font-size:var(--text-sm);color:var(--text-3);font-style:italic;">
+          Checking for active players…
+        </div>
+      </div>
+
+      <!-- TABS -->
+      <div style="display:flex;gap:.375rem;margin-bottom:1rem;flex-wrap:wrap;">
+        <button id="gTabHistory" onclick="Game._teacherGameTab('history')"
+                class="btn" style="font-size:var(--text-xs);">Recent Activity</button>
+        <button id="gTabLeaderboard" onclick="Game._teacherGameTab('leaderboard')"
+                class="btn bg-gray-500" style="font-size:var(--text-xs);">Leaderboard</button>
+        <button id="gTabStats" onclick="Game._teacherGameTab('stats')"
+                class="btn bg-gray-500" style="font-size:var(--text-xs);">Game Stats</button>
+      </div>
+
+      <!-- TAB CONTENT -->
+      <div id="gTabContent">
+        <div style="text-align:center;padding:2rem;color:var(--text-3);">Loading…</div>
+      </div>
+    `;
+
+    // ── LIVE LISTENER: currently playing ─────────────────────
+    let _liveUnsub = null;
+    let _historyUnsub = null;
+
+    function _stopTeacherListeners() {
+      if (_liveUnsub)    { _liveUnsub();    _liveUnsub    = null; }
+      if (_historyUnsub) { _historyUnsub(); _historyUnsub = null; }
+    }
+
+    // Expose cleanup so showTab() can call it when switching away
+    window._teacherGameStatsCleanup = _stopTeacherListeners;
+
+    _liveUnsub = _db().collection('gameSessions')
+      .where('status', '==', 'playing')
+      .onSnapshot(snap => {
+        const liveEl = document.getElementById('teacherLiveGames');
+        if (!liveEl) { _stopTeacherListeners(); return; }
+
+        if (snap.empty) {
+          liveEl.innerHTML = `<p style="font-size:var(--text-sm);color:var(--text-3);font-style:italic;margin:0;">
+            No students are playing right now.</p>`;
+          return;
+        }
+
+        const rows = snap.docs.map(doc => {
+          const d = doc.data();
+          const startedAt = d.startedAt;
+          let elapsed = '—';
+          if (startedAt) {
+            const s = startedAt.toDate ? startedAt.toDate() : new Date(startedAt);
+            const ms = Date.now() - s.getTime();
+            const m  = Math.floor(ms / 60000);
+            const sec = Math.floor((ms % 60000) / 1000);
+            elapsed = m > 0 ? m + 'm ' + sec + 's' : sec + 's';
+          }
+          return `
+            <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem .75rem;
+                        background:var(--bg-base);border:1px solid var(--success-border);
+                        border-left:3px solid var(--success);border-radius:8px;margin-bottom:.375rem;">
+              <span style="font-size:1.125rem;flex-shrink:0;">${gameIcon(d.gameType)}</span>
+              <div style="flex:1;min-width:0;">
+                <div style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);
+                            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                  ${_esc2(d.name || '—')}
+                </div>
+                <div style="font-size:var(--text-xs);color:var(--text-3);">
+                  ${_esc2(d.class || '')} · ${gameLabel(d.gameType)}
+                </div>
+              </div>
+              <div style="text-align:right;flex-shrink:0;">
+                <div style="font-size:var(--text-xs);font-weight:700;color:var(--success);">● LIVE</div>
+                <div style="font-size:var(--text-xs);color:var(--text-4);">${_esc2(elapsed)}</div>
+              </div>
+            </div>`;
+        }).join('');
+
+        liveEl.innerHTML = rows || `<p style="font-size:var(--text-sm);color:var(--text-3);font-style:italic;margin:0;">
+          No students are playing right now.</p>`;
+      }, err => {
+        console.warn('[teacher] live games listener error:', err);
+      });
+
+    // ── TAB SWITCHING ─────────────────────────────────────────
+    window._teacherGameTab = function(tab) {
+      ['history','leaderboard','stats'].forEach(t => {
+        const btn = document.getElementById('gTab' + t.charAt(0).toUpperCase() + t.slice(1));
+        if (btn) {
+          btn.className = t === tab ? 'btn' : 'btn bg-gray-500';
+          btn.style.fontSize = 'var(--text-xs)';
+        }
+      });
+
+      if (_historyUnsub) { _historyUnsub(); _historyUnsub = null; }
+
+      if (tab === 'history')     _loadHistoryTab();
+      if (tab === 'leaderboard') _loadLeaderboardTab();
+      if (tab === 'stats')       _loadStatsTab();
+    };
+
+    // ── HISTORY TAB (live, last 100 sessions) ─────────────────
+    function _loadHistoryTab() {
+      const content = document.getElementById('gTabContent');
+      if (!content) return;
+      content.innerHTML = `<div style="text-align:center;padding:1.5rem;color:var(--text-3);">Loading activity…</div>`;
+
+      _historyUnsub = _db().collection('gameSessions')
+        .orderBy('startedAt', 'desc')
+        .limit(100)
+        .onSnapshot(snap => {
+          const content2 = document.getElementById('gTabContent');
+          if (!content2) { if (_historyUnsub) { _historyUnsub(); _historyUnsub = null; } return; }
+
+          if (snap.empty) {
+            content2.innerHTML = `<p style="text-align:center;padding:2rem;color:var(--text-3);font-size:var(--text-sm);">
+              No game sessions recorded yet. Students need to play games first.</p>`;
+            return;
+          }
+
+          const rows = snap.docs.map(doc => {
+            const d      = doc.data();
+            const isLive = d.status === 'playing';
+            const pct    = d.pct ?? null;
+            const score  = d.score ?? null;
+            const dur    = _duration(d.startedAt, d.endedAt);
+            const when   = _fmtTime(d.startedAt);
+
+            return `
+              <div style="display:flex;align-items:center;gap:.625rem;padding:.5625rem .875rem;
+                          border-bottom:1px solid var(--border);
+                          ${isLive ? 'background:rgba(34,197,94,0.04);' : ''}">
+                <span style="font-size:1rem;flex-shrink:0;width:1.5rem;text-align:center;">${gameIcon(d.gameType)}</span>
+                <div style="flex:1;min-width:0;">
+                  <div style="display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap;">
+                    <span style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);">${_esc2(d.name || '—')}</span>
+                    <span style="font-size:var(--text-xs);color:var(--text-3);">${_esc2(d.class || '')}</span>
+                  </div>
+                  <div style="font-size:var(--text-xs);color:var(--text-3);margin-top:1px;">
+                    ${gameLabel(d.gameType)}
+                    ${d.meta && d.meta.difficulty ? ' · ' + _esc2(d.meta.difficulty) : ''}
+                    ${d.meta && d.meta.subject && d.meta.subject !== 'random' ? ' · ' + _esc2(d.meta.subject) : ''}
+                  </div>
+                </div>
+                <div style="text-align:right;flex-shrink:0;min-width:80px;">
+                  ${isLive
+                    ? `<div style="font-size:var(--text-xs);font-weight:700;color:var(--success);">● Playing now</div>`
+                    : `<div style="font-size:var(--text-sm);font-weight:700;color:${_pctColor(pct)};">
+                         ${pct !== null ? pct + '%' : score !== null ? score + ' pts' : '—'}
+                       </div>`}
+                  <div style="font-size:var(--text-xs);color:var(--text-4);">
+                    ${isLive ? '' : dur + ' · '}${when}
+                  </div>
+                  ${!isLive && d.xpEarned ? `<div style="font-size:var(--text-xs);font-weight:600;color:var(--accent);">+${d.xpEarned} XP</div>` : ''}
+                </div>
+              </div>`;
+          }).join('');
+
+          content2.innerHTML = `
+            <div class="glass-dark" style="border-radius:var(--r-lg);overflow:hidden;padding:0;">
+              <div style="padding:.625rem 1rem;border-bottom:1px solid var(--border);
+                          background:var(--bg-subtle);display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:var(--text-xs);font-weight:700;color:var(--text-2);">
+                  Recent Game Sessions (last 100)
+                </span>
+                <span style="font-size:var(--text-xs);color:var(--text-4);">Updates live ●</span>
+              </div>
+              ${rows}
+            </div>`;
+        }, err => {
+          console.warn('[teacher] history tab error:', err);
+        });
+    }
+
+    // ── LEADERBOARD TAB ──────────────────────────────────────
+    async function _loadLeaderboardTab() {
+      const content = document.getElementById('gTabContent');
+      if (!content) return;
+      content.innerHTML = `<div style="text-align:center;padding:1.5rem;color:var(--text-3);">Loading leaderboard…</div>`;
+
+      if (!_isOnline()) {
+        content.innerHTML = `<p style="text-align:center;padding:2rem;color:var(--text-3);">Leaderboard requires an internet connection.</p>`;
+        return;
+      }
+
+      try {
+        const snap = await _db().collection('gameLeaderboard').orderBy('xp', 'desc').limit(50).get();
+        if (snap.empty) {
+          content.innerHTML = `<p style="text-align:center;padding:2rem;color:var(--text-3);">No leaderboard data yet.</p>`;
+          return;
+        }
+        const rows = snap.docs.map((doc, i) => {
+          const e      = doc.data();
+          const lv     = _getLevelForXP(e.xp || 0);
+          const medal  = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
+          return `
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:.4375rem .75rem;text-align:center;font-weight:700;font-size:var(--text-sm);">${medal}</td>
+              <td style="padding:.4375rem .75rem;font-weight:600;font-size:var(--text-sm);">${_esc2(e.name || '—')}</td>
+              <td style="padding:.4375rem .75rem;color:var(--text-3);font-size:var(--text-xs);">${_esc2(e.class || '—')}</td>
+              <td style="padding:.4375rem .75rem;font-size:var(--text-xs);white-space:nowrap;">
+                ${_icon(lv.icon, 12, { color: lv.color })} ${_esc2(lv.name)}
+              </td>
+              <td style="padding:.4375rem .75rem;font-weight:700;color:var(--accent);font-family:var(--font-mono);font-size:var(--text-sm);">${(e.xp || 0).toLocaleString()}</td>
+              <td style="padding:.4375rem .75rem;text-align:center;font-size:var(--text-xs);">${e.totalGames || 0}</td>
+              <td style="padding:.4375rem .75rem;text-align:center;font-size:var(--text-xs);">${e.totalWins || 0}</td>
+            </tr>`;
+        }).join('');
+
+        content.innerHTML = `
+          <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;font-size:var(--text-sm);">
+              <thead>
+                <tr style="background:var(--bg-subtle);border-bottom:1.5px solid var(--border);">
+                  <th style="text-align:center;padding:.5rem .75rem;font-size:var(--text-xs);font-weight:700;color:var(--text-3);">#</th>
+                  <th style="text-align:left;padding:.5rem .75rem;font-size:var(--text-xs);font-weight:700;color:var(--text-3);">Student</th>
+                  <th style="text-align:left;padding:.5rem .75rem;font-size:var(--text-xs);font-weight:700;color:var(--text-3);">Class</th>
+                  <th style="text-align:left;padding:.5rem .75rem;font-size:var(--text-xs);font-weight:700;color:var(--text-3);">Level</th>
+                  <th style="text-align:left;padding:.5rem .75rem;font-size:var(--text-xs);font-weight:700;color:var(--text-3);">XP</th>
+                  <th style="text-align:center;padding:.5rem .75rem;font-size:var(--text-xs);font-weight:700;color:var(--text-3);">Games</th>
+                  <th style="text-align:center;padding:.5rem .75rem;font-size:var(--text-xs);font-weight:700;color:var(--text-3);">Wins</th>
+                </tr>
+              </thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>`;
+      } catch (e) {
+        console.error('[teacher] leaderboard tab error:', e);
+        content.innerHTML = `<p style="text-align:center;padding:2rem;color:var(--danger);">Could not load leaderboard.</p>`;
+      }
+    }
+
+    // ── STATS TAB (aggregate counts per game type) ────────────
+    async function _loadStatsTab() {
+      const content = document.getElementById('gTabContent');
+      if (!content) return;
+      content.innerHTML = `<div style="text-align:center;padding:1.5rem;color:var(--text-3);">Loading stats…</div>`;
+
+      try {
+        const snap = await _db().collection('gameSessions')
+          .where('status', '==', 'finished')
+          .orderBy('startedAt', 'desc')
+          .limit(500)
+          .get();
+
+        if (snap.empty) {
+          content.innerHTML = `<p style="text-align:center;padding:2rem;color:var(--text-3);">No completed sessions yet.</p>`;
+          return;
+        }
+
+        const byType = {};
+        const byStudent = {};
+
+        snap.docs.forEach(doc => {
+          const d = doc.data();
+          const type = d.gameType || 'unknown';
+          if (!byType[type]) byType[type] = { count: 0, totalXP: 0, wins: 0, totalPct: 0, pctCount: 0 };
+          byType[type].count++;
+          byType[type].totalXP += d.xpEarned || 0;
+          if (d.win) byType[type].wins++;
+          if (d.pct != null) { byType[type].totalPct += d.pct; byType[type].pctCount++; }
+
+          const uid = d.uid || d.name;
+          if (!byStudent[uid]) byStudent[uid] = { name: d.name || '—', class: d.class || '—', count: 0, xp: 0, wins: 0 };
+          byStudent[uid].count++;
+          byStudent[uid].xp    += d.xpEarned || 0;
+          if (d.win) byStudent[uid].wins++;
+        });
+
+        const typeRows = Object.entries(byType)
+          .sort((a, b) => b[1].count - a[1].count)
+          .map(([type, s]) => {
+            const avgPct = s.pctCount > 0 ? Math.round(s.totalPct / s.pctCount) : null;
+            const winRate = s.count > 0 ? Math.round((s.wins / s.count) * 100) : 0;
+            return `
+              <tr style="border-bottom:1px solid var(--border);">
+                <td style="padding:.4375rem .875rem;">
+                  <span style="font-size:1rem;">${gameIcon(type)}</span>
+                  <span style="font-size:var(--text-sm);font-weight:600;margin-left:.375rem;">${_esc2(gameLabel(type))}</span>
+                </td>
+                <td style="padding:.4375rem .875rem;text-align:center;font-size:var(--text-sm);font-weight:700;">${s.count}</td>
+                <td style="padding:.4375rem .875rem;text-align:center;font-size:var(--text-sm);font-weight:700;color:var(--accent);">${s.totalXP.toLocaleString()}</td>
+                <td style="padding:.4375rem .875rem;text-align:center;font-size:var(--text-sm);font-weight:700;color:${_pctColor(avgPct)}">${avgPct !== null ? avgPct + '%' : '—'}</td>
+                <td style="padding:.4375rem .875rem;text-align:center;font-size:var(--text-sm);">${winRate}%</td>
+              </tr>`;
+          }).join('');
+
+        const topStudents = Object.entries(byStudent)
+          .sort((a, b) => b[1].count - a[1].count)
+          .slice(0, 10)
+          .map(([, s], i) => `
+            <tr style="border-bottom:1px solid var(--border);">
+              <td style="padding:.375rem .75rem;text-align:center;font-weight:700;font-size:var(--text-xs);">${i + 1}</td>
+              <td style="padding:.375rem .75rem;font-weight:600;font-size:var(--text-sm);">${_esc2(s.name)}</td>
+              <td style="padding:.375rem .75rem;color:var(--text-3);font-size:var(--text-xs);">${_esc2(s.class)}</td>
+              <td style="padding:.375rem .75rem;text-align:center;font-weight:700;font-size:var(--text-sm);">${s.count}</td>
+              <td style="padding:.375rem .75rem;text-align:center;font-weight:700;color:var(--accent);font-size:var(--text-sm);">${s.xp.toLocaleString()}</td>
+            </tr>`).join('');
+
+        content.innerHTML = `
+          <div style="margin-bottom:1.25rem;">
+            <h3 style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);margin-bottom:.75rem;">Plays by Game Type</h3>
+            <div style="overflow-x:auto;">
+              <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                  <tr style="background:var(--bg-subtle);border-bottom:1.5px solid var(--border);">
+                    <th style="text-align:left;padding:.5rem .875rem;font-size:var(--text-xs);font-weight:700;color:var(--text-3);">Game</th>
+                    <th style="text-align:center;padding:.5rem .875rem;font-size:var(--text-xs);font-weight:700;color:var(--text-3);">Plays</th>
+                    <th style="text-align:center;padding:.5rem .875rem;font-size:var(--text-xs);font-weight:700;color:var(--text-3);">Total XP Earned</th>
+                    <th style="text-align:center;padding:.5rem .875rem;font-size:var(--text-xs);font-weight:700;color:var(--text-3);">Avg Score</th>
+                    <th style="text-align:center;padding:.5rem .875rem;font-size:var(--text-xs);font-weight:700;color:var(--text-3);">Win Rate</th>
+                  </tr>
+                </thead>
+                <tbody>${typeRows}</tbody>
+              </table>
+            </div>
+          </div>
+          <div>
+            <h3 style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);margin-bottom:.75rem;">Most Active Students (Top 10)</h3>
+            <div style="overflow-x:auto;">
+              <table style="width:100%;border-collapse:collapse;">
+                <thead>
+                  <tr style="background:var(--bg-subtle);border-bottom:1.5px solid var(--border);">
+                    <th style="text-align:center;padding:.5rem .75rem;font-size:var(--text-xs);font-weight:700;color:var(--text-3);">#</th>
+                    <th style="text-align:left;padding:.5rem .75rem;font-size:var(--text-xs);font-weight:700;color:var(--text-3);">Student</th>
+                    <th style="text-align:left;padding:.5rem .75rem;font-size:var(--text-xs);font-weight:700;color:var(--text-3);">Class</th>
+                    <th style="text-align:center;padding:.5rem .75rem;font-size:var(--text-xs);font-weight:700;color:var(--text-3);">Total Plays</th>
+                    <th style="text-align:center;padding:.5rem .75rem;font-size:var(--text-xs);font-weight:700;color:var(--text-3);">XP Earned</th>
+                  </tr>
+                </thead>
+                <tbody>${topStudents}</tbody>
+              </table>
+            </div>
+          </div>`;
+      } catch (e) {
+        console.error('[teacher] stats tab error:', e);
+        content.innerHTML = `<p style="text-align:center;padding:2rem;color:var(--danger);">Could not load stats.</p>`;
+      }
+    }
+
+    // ── LOAD DEFAULT TAB ─────────────────────────────────────
+    window._teacherGameTab('history');
   }
 
   /* ══════════════════════════════════════════════════════════════
@@ -6451,6 +6904,7 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
     _wsPass,
     _wsLeave,
     _wsChooseBlankLetter,
+    _teacherGameTab: function(tab) { if (typeof window._teacherGameTab === 'function') window._teacherGameTab(tab); },
   };
 
 })();
