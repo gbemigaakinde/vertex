@@ -489,6 +489,9 @@ function showTab(tab) {
     if (btn) btn.classList.toggle('active', t === tab);
   });
 
+    if (tab !== 'games' && typeof window._teacherGameStatsCleanup === 'function') {
+      window._teacherGameStatsCleanup();
+    }
   if (tab === 'dm') {
     DM.openTeacherInbox();
     return;
@@ -496,7 +499,14 @@ function showTab(tab) {
 
   if (tab === 'chat')      { Chat.openPublicChat();       return; }
   if (tab === 'studyroom') { StudyRoom.openForTeacher();  return; }
-  if (tab === 'games')     { Game.renderTeacherGameStats('teacherGameStatsContainer'); return; }
+  if (tab === 'games') {
+    // Clean up any previous game stat listeners before re-rendering
+    if (typeof window._teacherGameStatsCleanup === 'function') {
+      window._teacherGameStatsCleanup();
+    }
+    Game.renderTeacherGameStats('teacherGameStatsContainer');
+    return;
+  }
   if (tab === 'timetable') { _loadTimetableManager();    return; }
   if (tab === 'students')  _loadStudents();
   if (tab === 'results')   _loadResults();
