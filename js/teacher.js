@@ -412,14 +412,6 @@ function renderTeacherDashboard() {
         <div id="teacher-studyroom" class="teacher-tab hidden"></div>
         <div id="teacher-timetable" class="teacher-tab hidden"></div>
         <div id="teacher-games" class="teacher-tab hidden">
-          <div style="margin-bottom:1rem;">
-            <h2 style="font-size:var(--text-md);font-weight:600;color:var(--text-1);letter-spacing:-0.015em;">
-              Student Game Stats
-            </h2>
-            <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">
-              Live leaderboard — sorted by XP earned
-            </p>
-          </div>
           <div id="teacherGameStatsContainer"></div>
         </div>
         <div id="teacher-dm" class="teacher-tab hidden"></div>
