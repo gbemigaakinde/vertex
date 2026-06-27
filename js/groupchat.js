@@ -318,7 +318,72 @@
       .gc-action-menu-item + .gc-action-menu-item { border-top:1px solid var(--border); }
       .gc-action-menu-item.danger { color:var(--danger); }
 
+      /* ── Edit UI ── */
+      .gc-edit-trigger-btn {
+        background:none;border:none;cursor:pointer;padding:0 0 0 4px;
+        display:inline-flex;align-items:center;opacity:0;transition:opacity .15s;
+        flex-shrink:0;line-height:1;vertical-align:middle;
+      }
+      .gc-bubble:hover .gc-edit-trigger-btn,
+      .gc-bubble.menu-open .gc-edit-trigger-btn { opacity:1 !important; }
+      @media (hover:none) { .gc-edit-trigger-btn { opacity:.45 !important; } }
+
+      .gc-edited-label {
+        font-size:.5625rem;opacity:.6;font-style:italic;margin-right:3px;
+        line-height:1;white-space:nowrap;
+      }
+
+      .gc-edit-textarea {
+        width:100%;resize:none;overflow-y:hidden;line-height:1.55;
+        font-size:.875rem;font-family:var(--font);padding:.375rem .5rem;
+        border-radius:6px;outline:none;
+        min-height:2.4rem;box-sizing:border-box;
+      }
+      .gc-edit-actions { display:flex;gap:.375rem;margin-top:.375rem;justify-content:flex-end; }
+      .gc-edit-btn {
+        font-size:.6875rem;font-weight:600;padding:3px 11px;border-radius:5px;
+        border:none;cursor:pointer;font-family:var(--font);
+      }
+      .gc-edit-btn--save-dark   { background:#fff;color:var(--accent); }
+      .gc-edit-btn--cancel-dark { background:rgba(255,255,255,.2);color:inherit;opacity:.75; }
+      .gc-edit-btn--save-light  { background:var(--accent);color:#fff; }
+      .gc-edit-btn--cancel-light { background:var(--bg-subtle);color:var(--text-2);border:1px solid var(--border); }
+
+      .gc-history-overlay {
+        position:fixed;inset:0;background:rgba(0,0,0,.5);
+        display:flex;align-items:center;justify-content:center;
+        z-index:10001;padding:1rem;animation:gcFadeIn .15s ease;box-sizing:border-box;
+      }
+      .gc-history-modal {
+        background:var(--bg-base);border-radius:12px;
+        width:min(460px,96vw);max-height:80vh;display:flex;flex-direction:column;
+        box-shadow:0 20px 60px rgba(0,0,0,.22);border:1px solid var(--border);box-sizing:border-box;
+      }
+      .gc-history-header {
+        display:flex;align-items:center;justify-content:space-between;
+        padding:.875rem 1.125rem;border-bottom:1px solid var(--border);flex-shrink:0;
+      }
+      .gc-history-body {
+        overflow-y:auto;padding:.75rem 1rem;flex:1;display:flex;flex-direction:column;gap:.625rem;
+      }
+      .gc-history-entry {
+        padding:.625rem .875rem;border-radius:8px;
+        border:1px solid var(--border);background:var(--bg-subtle);
+      }
+      .gc-history-entry p {
+        font-size:.875rem;line-height:1.55;color:var(--text-1);
+        white-space:pre-wrap;word-break:break-word;margin:0;
+      }
+      .gc-history-entry time {
+        display:block;font-size:.625rem;color:var(--text-4);margin-top:.25rem;
+      }
+      .gc-history-current {
+        background:var(--accent-subtle);border-color:var(--accent-border);
+      }
+      .gc-history-current p { font-weight:500; }
+
       [data-theme="dark"] .gc-modal { background:var(--bg-subtle); }
+      [data-theme="dark"] .gc-history-modal { background:var(--bg-subtle); }
     `;
     document.head.appendChild(s);
   }
@@ -364,6 +429,7 @@
 
   function _subscribeStudentGroupList(uid) {
     _cancel('gcStudentGroups');
+
     const unsub = Db()
       .collection('groupChats')
       .where('memberUids', 'array-contains', uid)
@@ -371,11 +437,22 @@
       .onSnapshot(snap => {
         const list = document.getElementById('gcStudentGroupList');
         if (!list) { _cancel('gcStudentGroups'); return; }
+
         if (snap.empty) {
-          list.innerHTML = `<p style="text-align:center;padding:2rem;font-size:.8125rem;color:var(--text-4);">
-            You haven't been added to any group chats yet.</p>`;
+          list.innerHTML = `
+            <div style="text-align:center;padding:2.5rem 1.5rem;">
+              <div style="font-size:2rem;margin-bottom:.75rem;">💬</div>
+              <p style="font-size:.9375rem;font-weight:600;color:var(--text-1);margin-bottom:.375rem;">
+                No group chats yet
+              </p>
+              <p style="font-size:.8125rem;color:var(--text-3);line-height:1.6;">
+                You haven't been added to any group chats yet.<br>
+                Your teacher will add you when a group is created.
+              </p>
+            </div>`;
           return;
         }
+
         let html = '';
         snap.forEach(doc => {
           const g    = doc.data();
@@ -408,7 +485,34 @@
             </div>`;
         });
         list.innerHTML = html;
-      }, err => console.error('[gc] Student group list error:', err));
+
+      }, err => {
+        console.error('[gc] Student group list error:', err);
+        const list = document.getElementById('gcStudentGroupList');
+        if (!list) return;
+
+        if (err.code === 'failed-precondition' || (err.message && err.message.toLowerCase().includes('index'))) {
+          list.innerHTML = `
+            <div style="text-align:center;padding:2rem 1.5rem;">
+              <p style="font-size:.8125rem;color:var(--text-3);">
+                Group chats are being set up. Please check back shortly.
+              </p>
+            </div>`;
+        } else {
+          list.innerHTML = `
+            <div style="text-align:center;padding:2.5rem 1.5rem;">
+              <div style="font-size:2rem;margin-bottom:.75rem;">💬</div>
+              <p style="font-size:.9375rem;font-weight:600;color:var(--text-1);margin-bottom:.375rem;">
+                No group chats yet
+              </p>
+              <p style="font-size:.8125rem;color:var(--text-3);line-height:1.6;">
+                You haven't been added to any group chats yet.<br>
+                Your teacher will add you when a group is created.
+              </p>
+            </div>`;
+        }
+      });
+
     _reg('gcStudentGroups', unsub);
   }
 
@@ -604,8 +708,8 @@
   /* ══════════════════════════════════════════════════════
      MESSAGES — subscribe and render (student & teacher share this)
   ══════════════════════════════════════════════════════ */
-  function _subscribeGroupMessages(groupId, viewerUid, isTeacher) {
-    const containerId = isTeacher ? 'gcTeacherMessages' : 'gcChatMessages';
+  function _subscribeGroupMessages(groupId, viewerUid, isTeacherViewer) {
+    const containerId = isTeacherViewer ? 'gcTeacherMessages' : 'gcChatMessages';
     _cancel('gcMessages_' + groupId);
 
     const unsub = Db()
@@ -614,23 +718,328 @@
       .onSnapshot(snap => {
         const container = document.getElementById(containerId);
         if (!container) { _cancel('gcMessages_' + groupId); return; }
+
         if (snap.empty) {
           container.innerHTML = `<p style="text-align:center;font-size:.8125rem;color:var(--text-4);padding:2rem 0;">
             No messages yet. Say something!</p>`;
           return;
         }
+
         const msgs = [];
         snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
 
-        container.innerHTML = _renderMessages(msgs, viewerUid);
+        container.innerHTML = _renderMessages(msgs, viewerUid, groupId, isTeacherViewer);
         container.scrollTop = container.scrollHeight;
-        _attachSwipeListeners(containerId, isTeacher);
+        _attachSwipeListeners(containerId, isTeacherViewer);
+
       }, err => console.error('[gc] Messages error:', err));
 
     _reg('gcMessages_' + groupId, unsub);
   }
+  
+  let _openGcMenuId = null;
 
-  function _renderMessages(msgs, viewerUid) {
+  function _closeOpenGcMenu() {
+    if (_openGcMenuId) {
+      const m = document.getElementById(_openGcMenuId);
+      if (m) m.remove();
+      document.querySelectorAll('.gc-bubble.menu-open').forEach(el => el.classList.remove('menu-open'));
+      _openGcMenuId = null;
+    }
+  }
+
+  function _toggleActionMenu(wrapperId, groupId, messageId, currentText, canEdit, canHistory, isDarkBubble, alignRight, isTeacherViewer) {
+    const menuId = `gcMenu-${messageId}`;
+    if (_openGcMenuId === menuId) { _closeOpenGcMenu(); return; }
+    _closeOpenGcMenu();
+
+    const wrapper = document.getElementById(wrapperId);
+    if (!wrapper) return;
+    const bubbleEl = wrapper.querySelector('.gc-bubble');
+    if (!bubbleEl) return;
+
+    const textEl      = bubbleEl.querySelector('.gc-bubble-text');
+    const resolvedText = (currentText && String(currentText).trim())
+      ? String(currentText).trim()
+      : (textEl ? textEl.textContent.trim() : '');
+
+    const menu = document.createElement('div');
+    menu.className = 'gc-action-menu';
+    menu.id = menuId;
+    menu.style.position = 'fixed';
+    menu.style.zIndex   = '9999';
+    menu.style.top      = '-9999px';
+    menu.style.left     = '-9999px';
+    document.body.appendChild(menu);
+    _openGcMenuId = menuId;
+    bubbleEl.classList.add('menu-open');
+
+    if (canEdit) {
+      const editItem = document.createElement('button');
+      editItem.className = 'gc-action-menu-item';
+      editItem.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit message`;
+      editItem.onclick = () => {
+        _closeOpenGcMenu();
+        _activateInlineEdit(groupId, messageId, resolvedText, isDarkBubble, wrapperId, isTeacherViewer);
+      };
+      menu.appendChild(editItem);
+    }
+
+    if (canHistory) {
+      const histItem = document.createElement('button');
+      histItem.className = 'gc-action-menu-item';
+      histItem.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg> Edit history`;
+      histItem.onclick = () => {
+        _closeOpenGcMenu();
+        _showEditHistory(groupId, messageId, resolvedText);
+      };
+      menu.appendChild(histItem);
+    }
+
+    if (!menu.children.length) { menu.remove(); _openGcMenuId = null; return; }
+
+    requestAnimationFrame(() => {
+      const rect     = bubbleEl.getBoundingClientRect();
+      const menuRect = menu.getBoundingClientRect();
+      const spaceAbove = rect.top;
+      if (spaceAbove >= menuRect.height + 8) {
+        menu.style.top = `${rect.top - menuRect.height - 6}px`;
+      } else {
+        menu.style.top = `${rect.bottom + 6}px`;
+      }
+      if (alignRight) {
+        menu.style.left = `${Math.max(4, rect.right - menuRect.width)}px`;
+      } else {
+        menu.style.left = `${Math.min(rect.left, window.innerWidth - menuRect.width - 4)}px`;
+      }
+    });
+
+    setTimeout(() => {
+      document.addEventListener('click', function _handler(e) {
+        if (!menu.contains(e.target)) {
+          _closeOpenGcMenu();
+          document.removeEventListener('click', _handler);
+        }
+      });
+    }, 0);
+  }
+  
+  function _activateInlineEdit(groupId, messageId, currentText, isDarkBubble, wrapperId, isTeacherViewer) {
+    const wrapper   = document.getElementById(wrapperId);
+    if (!wrapper) return;
+    const bubbleEl  = wrapper.querySelector('.gc-bubble');
+    const textEl    = bubbleEl && bubbleEl.querySelector('.gc-bubble-text');
+    const footerEl  = bubbleEl && bubbleEl.querySelector('.gc-bubble-footer');
+    const editedEl  = bubbleEl && bubbleEl.querySelector('.gc-edited-label');
+    if (!bubbleEl || !textEl) return;
+    if (bubbleEl.querySelector('[id^="gcEditUI-"]')) return;
+
+    const saveClass   = isDarkBubble ? 'gc-edit-btn gc-edit-btn--save-dark'   : 'gc-edit-btn gc-edit-btn--save-light';
+    const cancelClass = isDarkBubble ? 'gc-edit-btn gc-edit-btn--cancel-dark' : 'gc-edit-btn gc-edit-btn--cancel-light';
+    const taBg        = isDarkBubble ? 'rgba(255,255,255,0.15)' : 'var(--bg-base)';
+    const taColor     = isDarkBubble ? '#fff'                   : 'var(--text-1)';
+    const taBorder    = isDarkBubble ? '1px solid rgba(255,255,255,0.3)' : '1px solid var(--accent)';
+    const taBoxShadow = isDarkBubble ? '0 0 0 3px rgba(255,255,255,0.1)' : '0 0 0 3px var(--accent-subtle)';
+
+    if (textEl)   textEl.style.display   = 'none';
+    if (footerEl) footerEl.style.display = 'none';
+    if (editedEl) editedEl.style.display = 'none';
+
+    const editUI = document.createElement('div');
+    editUI.id    = `gcEditUI-${messageId}`;
+
+    const cancelBtn = document.createElement('button');
+    cancelBtn.className   = cancelClass;
+    cancelBtn.textContent = 'Cancel';
+    cancelBtn.onclick     = () => {
+      editUI.remove();
+      if (textEl)   textEl.style.display   = '';
+      if (footerEl) footerEl.style.display = '';
+      if (editedEl) editedEl.style.display = '';
+    };
+
+    const placeholder = document.createElement('p');
+    placeholder.style.cssText = 'font-size:.75rem;opacity:.5;padding:.25rem 0;margin:0;';
+    placeholder.textContent   = 'Loading…';
+    editUI.appendChild(placeholder);
+    bubbleEl.appendChild(editUI);
+
+    const _buildEditor = () => {
+      editUI.innerHTML = '';
+
+      const ta = document.createElement('textarea');
+      ta.className        = 'gc-edit-textarea';
+      ta.value            = currentText;
+      ta.rows             = 1;
+      ta.style.background = taBg;
+      ta.style.color      = taColor;
+      ta.style.border     = taBorder;
+      ta.style.boxShadow  = taBoxShadow;
+
+      const actions     = document.createElement('div');
+      actions.className = 'gc-edit-actions';
+
+      const saveBtn = document.createElement('button');
+      saveBtn.className   = saveClass;
+      saveBtn.textContent = 'Save';
+      saveBtn.onclick     = async () => {
+        const newText = ta.value.trim();
+        if (!newText) { UI.toast('Message cannot be empty.', 'warning'); return; }
+        if (newText === currentText) { cancelBtn.onclick(); return; }
+        saveBtn.disabled    = true;
+        saveBtn.textContent = 'Saving…';
+        try {
+          await _saveEdit(groupId, messageId, currentText, newText, isTeacherViewer);
+          if (textEl) textEl.textContent = newText;
+          cancelBtn.onclick();
+        } catch (err) {
+          if (err.message === 'EDIT_LIMIT_REACHED') {
+            _buildLimitNotice();
+          } else {
+            console.error('[gc] inline edit save error:', err);
+            UI.toast('Could not save edit. Please try again.', 'error');
+            saveBtn.disabled    = false;
+            saveBtn.textContent = 'Save';
+          }
+        }
+      };
+
+      actions.appendChild(cancelBtn);
+      actions.appendChild(saveBtn);
+      editUI.appendChild(ta);
+      editUI.appendChild(actions);
+
+      ta.focus();
+      ta.setSelectionRange(ta.value.length, ta.value.length);
+      ta.style.height = 'auto';
+      ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+      ta.addEventListener('input', () => {
+        ta.style.height = 'auto';
+        ta.style.height = Math.min(ta.scrollHeight, 120) + 'px';
+      });
+      ta.addEventListener('keydown', e => {
+        if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveBtn.onclick(); }
+        if (e.key === 'Escape') cancelBtn.onclick();
+      });
+    };
+
+    const _buildLimitNotice = () => {
+      editUI.innerHTML = '';
+      const msg         = document.createElement('p');
+      msg.style.cssText = `font-size:.75rem;line-height:1.5;margin:0 0 .375rem;opacity:.85;
+                            color:${isDarkBubble ? 'rgba(255,255,255,.9)' : 'var(--danger)'};`;
+      msg.textContent   = 'Messages can only be edited twice.';
+      const actions     = document.createElement('div');
+      actions.className = 'gc-edit-actions';
+      actions.appendChild(cancelBtn);
+      editUI.appendChild(msg);
+      editUI.appendChild(actions);
+    };
+
+    if (isTeacherViewer) {
+      _buildEditor();
+    } else {
+      _msgHistoryRef(groupId, messageId).get()
+        .then(snap => { if (snap.size >= 2) _buildLimitNotice(); else _buildEditor(); })
+        .catch(() => _buildEditor());
+    }
+  }
+  
+  function _msgHistoryRef(groupId, messageId) {
+    return Db()
+      .collection('groupChats').doc(groupId)
+      .collection('messages').doc(messageId)
+      .collection('editHistory');
+  }
+
+  async function _saveEdit(groupId, messageId, oldText, newText, isTeacherViewer) {
+    const historyCol = _msgHistoryRef(groupId, messageId);
+    const msgRef     = Db()
+      .collection('groupChats').doc(groupId)
+      .collection('messages').doc(messageId);
+    const ts         = firebase.firestore.FieldValue.serverTimestamp();
+
+    if (!isTeacherViewer) {
+      const countSnap = await historyCol.get();
+      if (countSnap.size >= 2) throw new Error('EDIT_LIMIT_REACHED');
+    }
+
+    const batch = Db().batch();
+    batch.set(historyCol.doc(), { text: oldText, editedAt: ts });
+    batch.update(msgRef, { text: newText, editedAt: ts });
+    await batch.commit();
+  }
+  
+  async function _showEditHistory(groupId, messageId, currentText) {
+    let entries = [];
+    try {
+      const snap = await _msgHistoryRef(groupId, messageId)
+        .orderBy('editedAt', 'asc').get();
+      snap.forEach(doc => entries.push({ id: doc.id, ...doc.data() }));
+    } catch (e) {
+      console.error('[gc] _showEditHistory error:', e);
+      UI.toast('Could not load edit history.', 'error');
+      return;
+    }
+
+    const existing = document.getElementById('gcHistoryOverlay');
+    if (existing) existing.remove();
+
+    const fmt = ts => {
+      if (!ts) return '—';
+      const d = ts.toDate ? ts.toDate() : new Date(ts);
+      return d.toLocaleString('en-GB', {
+        day:'numeric', month:'short', year:'numeric',
+        hour:'2-digit', minute:'2-digit',
+      });
+    };
+
+    const historyRows = entries.length === 0
+      ? `<p style="font-size:.8125rem;color:var(--text-4);text-align:center;padding:1.5rem 0;">
+           No prior edits recorded for this message.
+         </p>`
+      : entries.map((e, i) => `
+          <div class="gc-history-entry">
+            <p>${_esc(e.text)}</p>
+            <time>Version ${i + 1} — ${_esc(fmt(e.editedAt))}</time>
+          </div>`).join('');
+
+    const overlay = document.createElement('div');
+    overlay.className = 'gc-history-overlay';
+    overlay.id        = 'gcHistoryOverlay';
+    overlay.innerHTML = `
+      <div class="gc-history-modal">
+        <div class="gc-history-header">
+          <div style="display:flex;align-items:center;gap:.5rem;">
+            <span style="color:var(--accent);">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
+                <path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>
+              </svg>
+            </span>
+            <span style="font-size:.9375rem;font-weight:700;color:var(--text-1);">Edit History</span>
+          </div>
+          <button onclick="document.getElementById('gcHistoryOverlay').remove()"
+                  style="background:none;border:none;cursor:pointer;color:var(--text-3);
+                         display:flex;align-items:center;padding:4px;border-radius:4px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+              <path d="M18 6 6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="gc-history-body">
+          <div class="gc-history-entry gc-history-current">
+            <p>${_esc(currentText)}</p>
+            <time>Current version</time>
+          </div>
+          ${historyRows}
+        </div>
+      </div>`;
+    overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+    document.body.appendChild(overlay);
+  }
+
+  function _renderMessages(msgs, viewerUid, groupId, isTeacherViewer) {
     let lastDayKey   = null;
     let lastSenderId = null;
     const parts      = [];
@@ -666,22 +1075,30 @@
       const isMe      = msg.senderId === viewerUid;
       const showLabel = msg.senderId !== lastSenderId;
       lastSenderId    = msg.senderId;
-      parts.push(_buildBubble(msg, isMe, showLabel));
+      parts.push(_buildBubble(msg, isMe, showLabel, viewerUid, groupId, isTeacherViewer));
     }
     return parts.join('');
   }
 
-  function _buildBubble(msg, isMe, showLabel) {
-    const msgId   = msg.id || '';
-    const wrapId  = `gcWrap-${_escAttr(msgId)}`;
-    const time    = _timeStr(msg.timestamp);
+  function _buildBubble(msg, isMe, showLabel, viewerUid, groupId, isTeacherViewer) {
+    const msgId  = msg.id || '';
+    const wrapId = `gcWrap-${_escAttr(msgId)}`;
+    const time   = _timeStr(msg.timestamp);
+
+    // Who can edit this message:
+    // - the original sender (student: up to 2 edits; teacher: unlimited)
+    // - teacher viewer can always edit any message
+    const canEdit    = !!msgId && (isMe || isTeacherViewer);
+    const canHistory = !!msgId && (isMe || isTeacherViewer);
 
     let replyCard = '';
     if (msg.replyTo && msg.replyTo.id) {
       const rName = _esc(msg.replyTo.senderName || 'Unknown');
       const rText = _esc((msg.replyTo.text || '').substring(0, 80));
       const rId   = _escAttr(msg.replyTo.id);
-      replyCard = `<div class="gc-reply-card" onclick="event.stopPropagation();GroupChat._scrollToMsg('${rId}')" title="Jump to original">
+      replyCard = `<div class="gc-reply-card"
+           onclick="event.stopPropagation();GroupChat._scrollToMsg('${rId}')"
+           title="Jump to original">
         <span class="gc-reply-card__name">${rName}</span>
         <span class="gc-reply-card__text">${rText}</span>
       </div>`;
@@ -691,6 +1108,26 @@
       ? `data-reply-id="${_escAttr(msgId)}"
          data-reply-text="${_escAttr((msg.text||'').substring(0,80))}"
          data-reply-sender="${_escAttr(msg.senderName||'Unknown')}"`
+      : '';
+
+    const editedLabel = msg.editedAt
+      ? `<span class="gc-edited-label">edited</span>`
+      : '';
+
+    const safeGid    = _escAttr(groupId || _activeGroupId || '');
+    const safeMsgId  = _escAttr(msgId);
+    const safeVUid   = _escAttr(viewerUid || '');
+
+    const editBtn = (canEdit || canHistory)
+      ? `<button title="Options"
+                 onclick="event.stopPropagation();GroupChat._toggleActionMenu('${wrapId}','${safeGid}','${safeMsgId}',document.getElementById('${wrapId}').querySelector('.gc-bubble-text').textContent,${canEdit},${canHistory},${isMe},${isMe},${!!isTeacherViewer})"
+                 style="color:${isMe ? 'rgba(255,255,255,.7)' : 'var(--text-4)'}"
+                 class="gc-edit-trigger-btn">
+           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+             <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+             <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+           </svg>
+         </button>`
       : '';
 
     if (isMe) {
@@ -708,6 +1145,8 @@
                 ${replyCard}
                 <p class="gc-bubble-text">${_esc(msg.text)}</p>
                 <div class="gc-bubble-footer gc-bubble-footer--end">
+                  ${editedLabel}
+                  ${editBtn}
                   <span class="gc-bubble-time">${time}</span>
                 </div>
               </div>
@@ -715,8 +1154,8 @@
           </div>
         </div>`;
     } else {
-      const isTeacher = msg.senderId === TEACHER_UID();
-      const nameBg    = isTeacher ? 'var(--warning-text)' : 'var(--accent-text)';
+      const isTeacherMsg = msg.senderId === TEACHER_UID();
+      const nameBg       = isTeacherMsg ? 'var(--warning-text)' : 'var(--accent-text)';
       return `
         <div class="gc-swipe-wrap gc-msg-in" id="${wrapId}"
              style="margin-bottom:${showLabel?'.75rem':'.25rem'};"
@@ -725,7 +1164,7 @@
             ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:${nameBg};
                            margin-bottom:2px;display:block;">
                            ${_esc(msg.senderName||'Unknown')}
-                           ${isTeacher ? '<span style="font-size:.5625rem;font-weight:400;color:var(--warning);margin-left:4px;">(Teacher)</span>' : ''}
+                           ${isTeacherMsg ? '<span style="font-size:.5625rem;font-weight:400;color:var(--warning);margin-left:4px;">(Teacher)</span>' : ''}
                            </span>` : ''}
             <div class="gc-bubble-row">
               <div class="gc-bubble"
@@ -735,7 +1174,10 @@
                 ${replyCard}
                 <p class="gc-bubble-text">${_esc(msg.text)}</p>
                 <div class="gc-bubble-footer gc-bubble-footer--start">
+                  ${editedLabel}
                   <span class="gc-bubble-time" style="opacity:.55;">${time}</span>
+                  <span style="flex:1;"></span>
+                  ${editBtn}
                 </div>
               </div>
             </div>
@@ -1999,6 +2441,9 @@
     _deleteGroup,
     _openTeacherChat,
     _backToTeacherList,
+    _toggleActionMenu,
+    _showEditHistory,
+    _scrollToMsg,
   };
 
 }());
