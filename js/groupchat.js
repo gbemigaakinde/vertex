@@ -2198,39 +2198,132 @@
     }
   }
 
-  async function _removeMemberFromGroup(groupId, uid, name) {
-    const ok = await UI.confirmAction(`Remove ${name} from this group?`);
-    if (!ok) return;
-    try {
-      const snap = await Db().collection('groupChats').doc(groupId).get();
-      if (!snap.exists) return;
-      const g          = snap.data();
-      const newMembers = (g.members || []).filter(m => m.uid !== uid);
-      const newUids    = (g.memberUids || []).filter(id => id !== uid);
-      const newMuted   = (g.mutedUids || []).filter(id => id !== uid);
+  function _showCustomConfirmation(title, message, onConfirm) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = `
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.6);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10001;
+    padding: 1rem;
+    box-sizing: border-box;
+  `;
 
-      await Db().collection('groupChats').doc(groupId).update({
-        members:    newMembers,
-        memberUids: newUids,
-        mutedUids:  newMuted,
-      });
+  const modal = document.createElement('div');
+  modal.style.cssText = `
+    background: var(--bg-base);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 1.5rem;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 20px 60px rgba(0,0,0,.3);
+    box-sizing: border-box;
+  `;
 
-      await Db().collection('groupChats').doc(groupId).collection('messages').doc().set({
-        type:      'event',
-        text:      `${name} was removed from the group.`,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-        deletedForAll: false,
-      });
+  modal.innerHTML = `
+    <p style="font-size: 1rem; font-weight: 700; color: var(--text-1); margin: 0 0 0.75rem 0;">
+      ${_esc(title)}
+    </p>
+    <p style="font-size: 0.875rem; color: var(--text-2); margin: 0 0 1.5rem 0; line-height: 1.6;">
+      ${_esc(message)}
+    </p>
+    <div style="display: flex; gap: 0.5rem; justify-content: flex-end;">
+      <button id="gcConfirmCancel" class="btn bg-gray-500" style="flex: 1; justify-content: center;">
+        Cancel
+      </button>
+      <button id="gcConfirmOk" class="btn bg-red-600 hover:bg-red-700" style="flex: 1; justify-content: center;">
+        Confirm
+      </button>
+    </div>
+  `;
 
-      _activeGroupData = (await Db().collection('groupChats').doc(groupId).get()).data();
-      UI.toast(`${name} removed.`, 'success');
-      document.getElementById('gcSettingsModal')?.remove();
-      _openGroupSettingsModal(groupId);
-    } catch (err) {
-      console.error('[gc] _removeMemberFromGroup error:', err);
-      UI.toast('Failed to remove member.', 'error');
+  overlay.appendChild(modal);
+  document.body.appendChild(overlay);
+
+  document.getElementById('gcConfirmCancel').onclick = () => {
+    overlay.remove();
+  };
+
+  document.getElementById('gcConfirmOk').onclick = () => {
+    overlay.remove();
+    if (onConfirm) onConfirm();
+  };
+
+  overlay.addEventListener('click', e => {
+    if (e.target === overlay) {
+      overlay.remove();
     }
-  }
+  });
+}
+
+async function _removeMemberFromGroup(groupId, uid, name) {
+  _showCustomConfirmation(
+    'Remove Member',
+    `Remove ${name} from this group?`,
+    async () => {
+      try {
+        const snap = await Db().collection('groupChats').doc(groupId).get();
+        if (!snap.exists) return;
+        const g = snap.data();
+        const newMembers = (g.members || []).filter(m => m.uid !== uid);
+        const newUids = (g.memberUids || []).filter(id => id !== uid);
+        const newMuted = (g.mutedUids || []).filter(id => id !== uid);
+
+        await Db().collection('groupChats').doc(groupId).update({
+          members: newMembers,
+          memberUids: newUids,
+          mutedUids: newMuted,
+        });
+
+        await Db().collection('groupChats').doc(groupId).collection('messages').doc().set({
+          type: 'event',
+          text: `${name} was removed from the group.`,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+          deletedForAll: false,
+        });
+
+        _activeGroupData = (await Db().collection('groupChats').doc(groupId).get()).data();
+        UI.toast(`${name} removed.`, 'success');
+        document.getElementById('gcSettingsModal')?.remove();
+        _openGroupSettingsModal(groupId);
+      } catch (err) {
+        console.error('[gc] _removeMemberFromGroup error:', err);
+        UI.toast('Failed to remove member.', 'error');
+      }
+    }
+  );
+}
+
+async function _deleteGroup(groupId) {
+  _showCustomConfirmation(
+    'Delete Group',
+    'Permanently delete this group and ALL its messages? This cannot be undone.',
+    async () => {
+      try {
+        const msgsSnap = await Db().collection('groupChats').doc(groupId).collection('messages').get();
+        if (!msgsSnap.empty) {
+          const refs = msgsSnap.docs.map(d => d.ref);
+          for (let i = 0; i < refs.length; i += 400) {
+            const batch = Db().batch();
+            refs.slice(i, i + 400).forEach(r => batch.delete(r));
+            await batch.commit();
+          }
+        }
+        await Db().collection('groupChats').doc(groupId).delete();
+        document.getElementById('gcSettingsModal')?.remove();
+        _backToTeacherList();
+        UI.toast('Group deleted.', 'success');
+      } catch (err) {
+        console.error('[gc] _deleteGroup error:', err);
+        UI.toast('Failed to delete group.', 'error');
+      }
+    }
+  );
+}
 
   async function _toggleMuteMember(groupId, uid, name, currentlyMuted) {
     try {
@@ -2312,30 +2405,6 @@
       UI.toast('Failed to save settings.', 'error');
     } finally {
       UI.setLoading(btn, false);
-    }
-  }
-
-  async function _deleteGroup(groupId) {
-    const ok = await UI.confirmAction('Permanently delete this group and ALL its messages? This cannot be undone.');
-    if (!ok) return;
-
-    try {
-      const msgsSnap = await Db().collection('groupChats').doc(groupId).collection('messages').get();
-      if (!msgsSnap.empty) {
-        const refs = msgsSnap.docs.map(d => d.ref);
-        for (let i = 0; i < refs.length; i += 400) {
-          const batch = Db().batch();
-          refs.slice(i, i + 400).forEach(r => batch.delete(r));
-          await batch.commit();
-        }
-      }
-      await Db().collection('groupChats').doc(groupId).delete();
-      document.getElementById('gcSettingsModal')?.remove();
-      _backToTeacherList();
-      UI.toast('Group deleted.', 'success');
-    } catch (err) {
-      console.error('[gc] _deleteGroup error:', err);
-      UI.toast('Failed to delete group.', 'error');
     }
   }
 
