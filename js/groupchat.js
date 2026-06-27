@@ -495,7 +495,7 @@
           list.innerHTML = `
             <div style="text-align:center;padding:2rem 1.5rem;">
               <p style="font-size:.8125rem;color:var(--text-3);">
-                Group chats are being set up. Please check back shortly.
+                Group chats are being set up. Please contact Master Timothy or check back later.
               </p>
             </div>`;
         } else {
