@@ -81,6 +81,18 @@ function renderTeacherDashboard() {
         <button onclick="Teacher.showTab('timetable')" id="tab-timetable"
                 class="tab-btn btn">Timetable</button>
         <div style="width:1px;height:20px;background:var(--border);margin:0 0.25rem;flex-shrink:0;"></div>
+        <button onclick="Teacher.showTab('groups')" id="tab-groups"
+                class="tab-btn btn"
+                style="position:relative;">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          Groups
+        </button>
         <button onclick="Teacher.showTab('chat')" id="tab-chat"
                 class="tab-btn btn bg-green-600"
                 style="position:relative;">
@@ -414,6 +426,7 @@ function renderTeacherDashboard() {
         <div id="teacher-games" class="teacher-tab hidden">
           <div id="teacherGameStatsContainer"></div>
         </div>
+        <div id="teacher-groups" class="teacher-tab hidden"></div>
         <div id="teacher-dm" class="teacher-tab hidden"></div>
 
       </div>
@@ -469,11 +482,11 @@ function renderTeacherDashboard() {
 }
 
 function showTab(tab) {
-  ['students','results','schools','tasks','studyroom','games','timetable','chat','dm'].forEach(t => {
+  ['students','results','schools','tasks','studyroom','games','timetable','groups','chat','dm'].forEach(t => {
     const el  = document.getElementById(`teacher-${t}`);
     const btn = document.getElementById(`tab-${t}`);
     if (el) {
-      if (t === 'dm' && t !== tab) {
+      if ((t === 'dm' || t === 'groups') && t !== tab) {
         el.innerHTML = '';
       }
       el.classList.toggle('hidden', t !== tab);
@@ -481,25 +494,22 @@ function showTab(tab) {
     if (btn) btn.classList.toggle('active', t === tab);
   });
 
-    if (tab !== 'games' && typeof window._teacherGameStatsCleanup === 'function') {
-      window._teacherGameStatsCleanup();
-    }
-  if (tab === 'dm') {
-    DM.openTeacherInbox();
-    return;
+  if (tab !== 'games' && typeof window._teacherGameStatsCleanup === 'function') {
+    window._teacherGameStatsCleanup();
   }
 
-  if (tab === 'chat')      { Chat.openPublicChat();       return; }
-  if (tab === 'studyroom') { StudyRoom.openForTeacher();  return; }
+  if (tab === 'dm')        { DM.openTeacherInbox();          return; }
+  if (tab === 'chat')      { Chat.openPublicChat();           return; }
+  if (tab === 'studyroom') { StudyRoom.openForTeacher();      return; }
+  if (tab === 'groups')    { GroupChat.openForTeacher();      return; }
   if (tab === 'games') {
-    // Clean up any previous game stat listeners before re-rendering
     if (typeof window._teacherGameStatsCleanup === 'function') {
       window._teacherGameStatsCleanup();
     }
     Game.renderTeacherGameStats('teacherGameStatsContainer');
     return;
   }
-  if (tab === 'timetable') { _loadTimetableManager();    return; }
+  if (tab === 'timetable') { _loadTimetableManager();        return; }
   if (tab === 'students')  _loadStudents();
   if (tab === 'results')   _loadResults();
   if (tab === 'schools')   _loadSchools();
