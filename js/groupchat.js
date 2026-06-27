@@ -443,11 +443,11 @@
             <div style="text-align:center;padding:2.5rem 1.5rem;">
               <div style="font-size:2rem;margin-bottom:.75rem;">💬</div>
               <p style="font-size:.9375rem;font-weight:600;color:var(--text-1);margin-bottom:.375rem;">
-                No group chats yet
+                No group chats for you yet
               </p>
               <p style="font-size:.8125rem;color:var(--text-3);line-height:1.6;">
                 You haven't been added to any group chats yet.<br>
-                Your teacher will add you when a group is created.
+                Contact Master Timothy to create a group chat for you and your friends.
               </p>
             </div>`;
           return;
