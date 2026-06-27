@@ -650,6 +650,11 @@ style="position:relative;background:linear-gradient(135deg,#7c3aed,#4f6ef7);colo
 🎮 Games
 </button>
 
+  <button id="gcOpenBtn" onclick="GroupChat.openForStudent()" class="btn"
+    style="position:relative;background:var(--success);color:#fff;">
+    💬 Group Chats
+  </button>
+
   <button id="dmOpenBtn" onclick="DM.openStudentInbox()" class="btn bg-indigo-600 hover:bg-indigo-700"
     style="position:relative;">
     ✉️ Message Teacher
