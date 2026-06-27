@@ -414,6 +414,11 @@
         Game._startChallengeListener();
       }
 
+      // Start group chat unread listener so the badge updates in real time.
+      if (window.GroupChat && typeof GroupChat.initStudentGroupListener === 'function') {
+        GroupChat.initStudentGroupListener(uid);
+      }
+
       if (window.VtxLoader) window.VtxLoader.progress(90, 'Almost ready…');
       await Exam.loadOrStart();
       if (window.VtxLoader) window.VtxLoader.done();
@@ -525,6 +530,9 @@
     
     if (window.Game && typeof Game._stopChallengeListener === 'function') {
     Game._stopChallengeListener();
+  }
+  if (window.GroupChat && typeof GroupChat.cancelListeners === 'function') {
+    GroupChat.cancelListeners();
   }
 
     if (window.VtxLoader) window.VtxLoader.done();
