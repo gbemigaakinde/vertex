@@ -354,6 +354,103 @@ const WS_WORDLIST = new Set([
   'ZONAL',
 ]);
 
+function _showBadgeDetails(badgeId) {
+  const badge = BADGES.find(b => b.id === badgeId);
+  if (!badge) return;
+
+  const rarityMap = {
+    'max_level': { label: '⭐ Legendary', color: '#f43f5e' },
+    'sudden_death_50': { label: '⭐ Legendary', color: '#f43f5e' },
+    'immortal': { label: '⭐ Legendary', color: '#f43f5e' },
+    'titan': { label: '⭐ Legendary', color: '#f43f5e' },
+    'absolute': { label: '⭐ Legendary', color: '#f43f5e' },
+    'rank_15': { label: '⭐⭐ Epic', color: '#8b5cf6' },
+    'rank_10': { label: '⭐⭐ Epic', color: '#8b5cf6' },
+    'xp_100000': { label: '⭐⭐ Epic', color: '#8b5cf6' },
+    'mythic_scholar': { label: '⭐⭐ Epic', color: '#8b5cf6' },
+    'hall_of_fame': { label: '⭐⭐ Epic', color: '#8b5cf6' },
+    'perfect_quiz': { label: '⭐⭐⭐ Rare', color: '#06b6d4' },
+    'perfect_scramble': { label: '⭐⭐⭐ Rare', color: '#06b6d4' },
+    'perfect_blitz': { label: '⭐⭐⭐ Rare', color: '#06b6d4' },
+    'perfect_tf': { label: '⭐⭐⭐ Rare', color: '#06b6d4' },
+    'math_perfect': { label: '⭐⭐⭐ Rare', color: '#06b6d4' },
+    'streak_20': { label: '⭐⭐⭐ Rare', color: '#06b6d4' },
+    'streak_10': { label: '⭐⭐⭐ Rare', color: '#06b6d4' },
+    'challenge_10': { label: '⭐⭐⭐ Rare', color: '#06b6d4' },
+    'sudden_death_30': { label: '⭐⭐⭐ Rare', color: '#06b6d4' },
+    'sudden_death_25': { label: '⭐⭐⭐ Rare', color: '#06b6d4' },
+  };
+
+  const rarity = rarityMap[badgeId] || { label: 'Common', color: '#22c55e' };
+
+  _showModal(`
+    <div style="text-align:center;margin-bottom:1.5rem;">
+      <div style="margin-bottom:1rem;padding:1rem;background:${rarity.color}22;border-radius:16px;display:inline-block;">
+        ${_icon(badge.icon, 64, { color: rarity.color })}
+      </div>
+      <h2 style="font-size:1.375rem;font-weight:800;color:var(--text-1);margin-bottom:.5rem;">
+        ${_esc(badge.name)}
+      </h2>
+      <p style="font-size:.875rem;color:var(--text-3);line-height:1.6;margin:0;">
+        ${_esc(badge.desc)}
+      </p>
+    </div>
+
+    <div style="background:var(--bg-subtle);border:2px solid var(--border);border-radius:12px;
+                padding:1.125rem;margin-bottom:1rem;">
+      <p style="font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+                color:var(--text-3);margin-bottom:.75rem;">How to Earn</p>
+      <p style="font-size:.9375rem;color:var(--text-2);line-height:1.7;margin:0;">
+        ${_esc(badge.desc)}
+      </p>
+    </div>
+
+    <div style="background:var(--success-subtle);border:2px solid var(--success-border);border-radius:12px;
+                padding:1.125rem;margin-bottom:1rem;text-align:center;">
+      <p style="font-size:.6875rem;font-weight:700;color:var(--success);text-transform:uppercase;
+                letter-spacing:.08em;margin-bottom:.625rem;">Badge Status</p>
+      <div style="display:flex;align-items:center;justify-content:center;gap:.625rem;">
+        <span style="font-size:1.5rem;color:var(--success);">✓</span>
+        <span style="font-size:.9375rem;font-weight:700;color:var(--text-1);">Earned & Unlocked</span>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1rem;">
+      <div style="background:var(--bg-subtle);border:1px solid var(--border);border-radius:10px;
+                  padding:.875rem;text-align:center;">
+        <div style="font-size:.6875rem;font-weight:700;color:var(--text-3);text-transform:uppercase;
+                    letter-spacing:.06em;margin-bottom:.375rem;">Badge ID</div>
+        <div style="font-size:.8125rem;color:var(--text-1);font-family:var(--font-mono);word-break:break-all;">
+          ${_esc(badge.id)}
+        </div>
+      </div>
+      <div style="background:var(--bg-subtle);border:1px solid var(--border);border-radius:10px;
+                  padding:.875rem;text-align:center;">
+        <div style="font-size:.6875rem;font-weight:700;color:var(--text-3);text-transform:uppercase;
+                    letter-spacing:.06em;margin-bottom:.375rem;">Rarity</div>
+        <div style="font-size:.9375rem;font-weight:800;color:${rarity.color};">
+          ${rarity.label}
+        </div>
+      </div>
+    </div>
+
+    <div style="padding:1rem;background:linear-gradient(135deg,${rarity.color}15,${rarity.color}08);
+                border:1px solid ${rarity.color}40;border-radius:10px;margin-bottom:1.25rem;">
+      <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+                color:${rarity.color};margin-bottom:.5rem;display:flex;align-items:center;gap:.375rem;">
+        ${_icon('star', 13, { color: rarity.color })} Achievement Unlocked!
+      </p>
+      <p style="font-size:.8125rem;color:var(--text-2);line-height:1.6;margin:0;">
+        You've proven your dedication by earning this badge. Keep playing to unlock more badges and climb the ranks towards the top!
+      </p>
+    </div>
+
+    <button onclick="Game._closeModal()" class="btn w-full" style="background:var(--accent);color:#fff;font-weight:700;">
+      Close
+    </button>
+  `);
+}
+
 /* ══════════════════════════════════════════════════════════════
    WORD SCRABBLE — HELPERS
 ══════════════════════════════════════════════════════════════ */
@@ -581,10 +678,6 @@ function _wsDeserialiseBoard(raw) {
     }
   }
   return board;
-}
-
-function _wsBlankBoard() {
-  return Array.from({ length: WS_BOARD_SIZE }, () => Array(WS_BOARD_SIZE).fill(null));
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -1463,93 +1556,6 @@ async function _wsConfirmSwap(gameId) {
   }
   if (!_wsCachedData) return;
   const data   = _wsCachedData;
-  const isP1   = data.player1Uid === _uid();
-  const myRack = _wsCachedMyRack;
-  const bag    = (data.bag || []).map(t => ({ letter: t.l, points: t.p }));
-
-  if (bag.length < 1) {
-    window.UI.toast('Not enough tiles in the bag to swap.', 'warning');
-    _closeModal();
-    return;
-  }
-
-  const swapIdxs = [..._wsState._swapSelected];
-  const returning = swapIdxs.map(i => myRack[i]);
-  const drawn     = _wsDraw(bag, returning.length);
-
-  // Put returning tiles back into bag randomly
-  returning.forEach(t => {
-    const pos = Math.floor(Math.random() * (bag.length + 1));
-    bag.splice(pos, 0, t);
-  });
-
-  let newRack = myRack.filter((_, i) => !_wsState._swapSelected.has(i));
-  newRack     = [...newRack, ...drawn];
-
-  const nextTurn = isP1 ? data.player2Uid : data.player1Uid;
-  const newLog   = [...(data.moveLog || []).slice(-29), {
-    name: _student().name || '', type: 'swap',
-  }];
-
-  const update = {
-    bag:        bag.map(t => ({ l: t.letter, p: t.points })),
-    turn:       nextTurn,
-    passCount:  (data.passCount || 0) + 1,
-    moveLog:    newLog,
-    lastMoveAt: firebase.firestore.FieldValue.serverTimestamp(),
-  };
-  if (isP1) update.rack1 = newRack.map(t => ({ l: t.letter, p: t.points }));
-  else       update.rack2 = newRack.map(t => ({ l: t.letter, p: t.points }));
-
-  try {
-    await _db().collection('scrabbleGames').doc(gameId).update(update);
-    _wsState._swapSelected = new Set();
-    _closeModal();
-    window.UI.toast('Tiles swapped. Your opponent\'s turn.', 'info', 3000);
-  } catch (e) {
-    window.UI.toast('Could not swap tiles.', 'error');
-  }
-}
-
-async function _wsPass(gameId) {
-  if (!_wsCachedData) return;
-  const data     = _wsCachedData;
-  const uid      = _uid();
-  const isP1     = data.player1Uid === uid;
-  const nextTurn = isP1 ? data.player2Uid : data.player1Uid;
-  const newPass  = (data.passCount || 0) + 1;
-  const gameOver = newPass >= 6;
-  const newLog   = [...(data.moveLog || []).slice(-29), {
-    name: _student().name || '', type: 'pass',
-  }];
-
-  try {
-    await _db().collection('scrabbleGames').doc(gameId).update({
-      turn:       gameOver ? null : nextTurn,
-      passCount:  newPass,
-      status:     gameOver ? 'finished' : 'active',
-      moveLog:    newLog,
-      lastMoveAt: firebase.firestore.FieldValue.serverTimestamp(),
-    });
-    if (gameOver) {
-      window.UI.toast('Game ended after 6 consecutive passes.', 'info', 4000);
-      await _awardXP(10, 'wordScrabble', { win: false });
-    } else {
-      window.UI.toast("Passed. Opponent's turn.", 'info', 2500);
-    }
-  } catch (e) {
-    console.error('[scrabble] _wsPass error:', e);
-    window.UI.toast('Could not pass.', 'error');
-  }
-}
-
-async function _wsConfirmSwap(gameId) {
-  if (!_wsState || !_wsState._swapSelected || _wsState._swapSelected.size === 0) {
-    window.UI.toast('Select at least one tile to swap.', 'warning');
-    return;
-  }
-  if (!_wsCachedData) return;
-  const data   = _wsCachedData;
   const uid    = _uid();
   const isP1   = data.player1Uid === uid;
   const myRack = _wsCachedMyRack;
@@ -1598,6 +1604,38 @@ async function _wsConfirmSwap(gameId) {
   } catch (e) {
     console.error('[scrabble] _wsConfirmSwap error:', e);
     window.UI.toast('Could not swap tiles.', 'error');
+  }
+}
+
+async function _wsPass(gameId) {
+  if (!_wsCachedData) return;
+  const data     = _wsCachedData;
+  const uid      = _uid();
+  const isP1     = data.player1Uid === uid;
+  const nextTurn = isP1 ? data.player2Uid : data.player1Uid;
+  const newPass  = (data.passCount || 0) + 1;
+  const gameOver = newPass >= 6;
+  const newLog   = [...(data.moveLog || []).slice(-29), {
+    name: _student().name || '', type: 'pass',
+  }];
+
+  try {
+    await _db().collection('scrabbleGames').doc(gameId).update({
+      turn:       gameOver ? null : nextTurn,
+      passCount:  newPass,
+      status:     gameOver ? 'finished' : 'active',
+      moveLog:    newLog,
+      lastMoveAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    if (gameOver) {
+      window.UI.toast('Game ended after 6 consecutive passes.', 'info', 4000);
+      await _awardXP(10, 'wordScrabble', { win: false });
+    } else {
+      window.UI.toast("Passed. Opponent's turn.", 'info', 2500);
+    }
+  } catch (e) {
+    console.error('[scrabble] _wsPass error:', e);
+    window.UI.toast('Could not pass.', 'error');
   }
 }
 
@@ -2392,7 +2430,17 @@ function _dismissScrabblePopup(gameId) {
     const badgesHtml = (_profile.badges || []).length > 0
       ? (_profile.badges || []).map(bid => {
           const b = BADGES.find(x => x.id === bid);
-          return b ? `<span class="game-badge-chip" title="${_esc(b.name)}: ${_esc(b.desc)}">${_icon(b.icon, 13)} ${_esc(b.name)}</span>` : '';
+          return b ? `<button onclick="Game._showBadgeDetails('${_esc(bid)}')" 
+                               style="background:var(--accent-subtle);border:1px solid var(--accent-border);
+                                       color:var(--accent-text);border-radius:99px;padding:2px 9px;
+                                       font-size:.6875rem;font-weight:600;transition:all .15s;
+                                       font-family:var(--font);display:inline-flex;align-items:center;gap:.3125rem;
+                                       cursor:pointer;padding:4px 12px;margin-bottom:.375rem;"
+                               title="Click to view badge details"
+                               onmouseover="this.style.transform='scale(1.08)';this.style.boxShadow='0 4px 12px rgba(79,110,247,0.25)'"
+                               onmouseout="this.style.transform='scale(1)';this.style.boxShadow='none'">
+                       ${_icon(b.icon, 13)} ${_esc(b.name)}
+                     </button>` : '';
         }).join('')
       : `<span style="font-size:.8125rem;color:var(--text-4);font-style:italic;">No badges yet — play games to earn them.</span>`;
 
@@ -3458,7 +3506,20 @@ function _buildWordPoolForStudent() {
         </div>
 
         <div class="glass" style="padding:1.75rem 1.5rem;margin:.75rem 0;text-align:center;">
-          <p style="font-size:.8125rem;color:var(--text-3);margin-bottom:.625rem;font-style:italic;">${_icon('info', 13)} ${_esc(entry.hint)}</p>
+          <!-- HINT: Prominently displayed -->
+          <div style="background:linear-gradient(135deg,rgba(124,58,237,0.15),rgba(107,135,248,0.10));
+                      border:2px solid rgba(124,58,237,0.4);border-radius:12px;
+                      padding:1rem;margin-bottom:1.25rem;box-shadow:0 2px 8px rgba(124,58,237,0.08);">
+            <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;
+                      letter-spacing:.08em;color:#7c3aed;margin-bottom:.375rem;display:flex;align-items:center;gap:.375rem;justify-content:center;">
+              ${_icon('lightbulb', 14, { color: '#7c3aed' })} Hint
+            </p>
+            <p style="font-size:1rem;font-weight:600;color:var(--text-1);
+                      line-height:1.5;margin:0;">
+              ${_esc(entry.hint || 'Related to your subjects')}
+            </p>
+          </div>
+
           <div class="game-scrambled-letters" id="scrambleLetters">
             ${scramble.split('').map(l => `<span class="game-letter-tile">${_esc(l)}</span>`).join('')}
           </div>
@@ -6454,6 +6515,9 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
 
       .game-badge-chip { display:inline-flex;align-items:center;gap:.3125rem;background:var(--accent-subtle);border:1px solid var(--accent-border);color:var(--accent-text);border-radius:99px;padding:2px 9px;font-size:.6875rem;font-weight:600;transition:transform .1s;cursor:default; }
       .game-badge-chip:hover { transform:scale(1.05); }
+      
+      .game-badge-chip { display:inline-flex;align-items:center;gap:.3125rem;background:var(--accent-subtle);border:1px solid var(--accent-border);color:var(--accent-text);border-radius:99px;padding:2px 9px;font-size:.6875rem;font-weight:600;transition:transform .1s,box-shadow .15s;cursor:pointer;font-family:var(--font); }
+      .game-badge-chip:hover { transform:scale(1.08);box-shadow:0 4px 12px rgba(79,110,247,0.25); }
 
       [data-theme="dark"] .game-card       { border-color:var(--glass-border-outer) !important; }
       [data-theme="dark"] .game-option-btn { background:var(--bg-subtle);border-color:var(--border); }
