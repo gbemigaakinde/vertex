@@ -3466,12 +3466,16 @@ function _buildWordPoolForStudent() {
     startedAt:      Date.now(),
     shufflesLeft:   MAX_SHUFFLES,
     currentScramble: '',
+    placedLetters:  [],
+    sourceLetters:  [],
     _sessionId:     null,
   };
   _startGameSession('wordScramble', { count }).then(id => {
     if (_gameState && _gameState.type === 'wordScramble') _gameState._sessionId = id;
   });
   _gameState.currentScramble = _scrambleWord(words[0].word);
+  _gameState.sourceLetters   = _gameState.currentScramble.split('').map((l, i) => ({ letter: l, id: i, placed: false }));
+  _gameState.placedLetters   = [];
   _renderWordScrambleQuestion();
 }
 
@@ -3481,9 +3485,62 @@ function _buildWordPoolForStudent() {
     const entry    = gs.words[gs.currentIndex];
     const scramble = gs.currentScramble || _scrambleWord(entry.word);
     gs.currentScramble = scramble;
+
+    // Initialize placement state for this word
+    if (!gs.placedLetters) gs.placedLetters = [];
+    if (!gs.sourceLetters) {
+      gs.sourceLetters = scramble.split('').map((l, i) => ({ letter: l, id: i, placed: false }));
+    }
+
     const progress = gs.currentIndex + 1;
     const total    = gs.words.length;
     const pctWidth = Math.round((progress / total) * 100);
+    const wordLen  = entry.word.length;
+
+    // Build answer slots HTML
+    const answerSlotsHtml = Array.from({ length: wordLen }, (_, i) => {
+      const placed = gs.placedLetters[i];
+      return `
+        <div class="ws-answer-slot ${placed ? 'ws-answer-slot--filled' : ''}"
+             id="wsSlot${i}"
+             onclick="Game._wsRemoveLetter(${i})"
+             style="width:clamp(28px,8vw,40px);height:clamp(32px,9vw,46px);
+                    border-radius:6px;
+                    border:2px solid ${placed ? '#7c3aed' : 'rgba(124,58,237,0.35)'};
+                    background:${placed ? 'rgba(124,58,237,0.18)' : 'rgba(124,58,237,0.06)'};
+                    display:inline-flex;align-items:center;justify-content:center;
+                    cursor:${placed ? 'pointer' : 'default'};
+                    font-size:clamp(13px,3.5vw,20px);font-weight:800;
+                    color:#a78bfa;font-family:var(--font);
+                    transition:all .15s;position:relative;">
+          ${placed ? _esc(placed.letter) : ''}
+        </div>`;
+    }).join('');
+
+    // Build source letter pool HTML
+    const sourceHtml = gs.sourceLetters.map((src, i) => {
+      if (src.placed) {
+        return `<div style="width:clamp(28px,8vw,40px);height:clamp(32px,9vw,46px);
+                            border-radius:6px;border:2px dashed rgba(124,58,237,0.2);
+                            background:transparent;display:inline-flex;
+                            align-items:center;justify-content:center;opacity:0.3;">
+                </div>`;
+      }
+      return `
+        <button id="wsSrc${i}"
+                onclick="Game._wsPlaceLetter(${i})"
+                style="width:clamp(28px,8vw,40px);height:clamp(32px,9vw,46px);
+                       border-radius:6px;font-weight:800;
+                       font-size:clamp(13px,3.5vw,20px);
+                       border:2px solid #a0845c;
+                       background:linear-gradient(145deg,#f5deb3,#e8c97e);
+                       color:#1a0a00;cursor:pointer;
+                       box-shadow:0 2px 6px rgba(0,0,0,0.2),inset 0 1px 0 rgba(255,255,255,0.4);
+                       transition:all .12s;font-family:var(--font);
+                       display:inline-flex;align-items:center;justify-content:center;">
+          ${_esc(src.letter)}
+        </button>`;
+    }).join('');
 
     window.UI.mount(`
       <div class="max-w-xl mx-auto animate-fadeIn" style="padding-bottom:2rem;">
@@ -3505,46 +3562,74 @@ function _buildWordPoolForStudent() {
           </div>
         </div>
 
-        <div class="glass" style="padding:1.75rem 1.5rem;margin:.75rem 0;text-align:center;">
-          <!-- HINT: Prominently displayed -->
-          <div style="background:linear-gradient(135deg,rgba(124,58,237,0.15),rgba(107,135,248,0.10));
-                      border:2px solid rgba(124,58,237,0.4);border-radius:12px;
-                      padding:1rem;margin-bottom:1.25rem;box-shadow:0 2px 8px rgba(124,58,237,0.08);">
-            <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;
-                      letter-spacing:.08em;color:#7c3aed;margin-bottom:.375rem;display:flex;align-items:center;gap:.375rem;justify-content:center;">
-              ${_icon('lightbulb', 14, { color: '#7c3aed' })} Hint
-            </p>
-            <p style="font-size:1rem;font-weight:600;color:var(--text-1);
-                      line-height:1.5;margin:0;">
-              ${_esc(entry.hint || 'Related to your subjects')}
-            </p>
+        <div class="glass" style="padding:1.25rem 1rem;margin:.75rem 0;text-align:center;">
+
+          <!-- Compact hint chip -->
+          <div style="display:inline-flex;align-items:center;gap:.375rem;
+                      background:rgba(124,58,237,0.12);border:1px solid rgba(124,58,237,0.3);
+                      border-radius:99px;padding:.3rem .875rem;margin-bottom:1rem;">
+            <span style="font-size:.6875rem;font-weight:800;text-transform:uppercase;
+                         letter-spacing:.08em;color:#a78bfa;">💡 Hint</span>
+            <span style="width:1px;height:10px;background:rgba(124,58,237,0.3);"></span>
+            <span style="font-size:.8125rem;font-weight:500;color:var(--text-2);">
+              ${_esc(entry.hint || 'Unscramble the word')}
+            </span>
           </div>
 
-          <div class="game-scrambled-letters" id="scrambleLetters">
-            ${scramble.split('').map(l => `<span class="game-letter-tile">${_esc(l)}</span>`).join('')}
+          <!-- Answer slots -->
+          <div style="margin-bottom:1.25rem;">
+            <p style="font-size:.625rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+                      color:var(--text-4);margin-bottom:.625rem;">Arrange the letters</p>
+            <div style="display:flex;gap:.3125rem;justify-content:center;flex-wrap:wrap;" id="wsAnswerSlots">
+              ${answerSlotsHtml}
+            </div>
           </div>
-          <div style="display:flex;align-items:center;justify-content:center;gap:.5rem;margin:.25rem 0 .75rem;">
-            <p style="font-size:.75rem;color:var(--text-4);margin:0;">${entry.word.length} letters</p>
-            <button id="shuffleBtn" onclick="Game._reshuffleWord()"
-                    class="game-shuffle-btn ${gs.shufflesLeft <= 0 ? 'game-shuffle-btn--disabled' : ''}"
-                    ${gs.shufflesLeft <= 0 ? 'disabled' : ''} title="Reshuffle letters (${gs.shufflesLeft} left)">
-              ${_icon('shuffle', 14)} Reshuffle <span class="game-shuffle-count">${gs.shufflesLeft}</span>
+
+          <!-- Divider with word length -->
+          <div style="display:flex;align-items:center;gap:.75rem;margin-bottom:1.125rem;">
+            <div style="flex:1;height:1px;background:var(--border);"></div>
+            <span style="font-size:.6875rem;color:var(--text-4);white-space:nowrap;">
+              ${wordLen} letters
+              <button id="shuffleBtn" onclick="Game._reshuffleWord()"
+                      style="background:none;border:none;cursor:${gs.shufflesLeft <= 0 ? 'not-allowed' : 'pointer'};
+                             color:${gs.shufflesLeft <= 0 ? 'var(--text-4)' : '#a78bfa'};
+                             font-size:.6875rem;font-weight:700;margin-left:.5rem;padding:0;font-family:var(--font);"
+                      ${gs.shufflesLeft <= 0 ? 'disabled' : ''}>
+                ${_icon('shuffle', 11)} Reshuffle (${gs.shufflesLeft})
+              </button>
+            </span>
+            <div style="flex:1;height:1px;background:var(--border);"></div>
+          </div>
+
+          <!-- Source letter pool -->
+          <div style="display:flex;gap:.375rem;justify-content:center;flex-wrap:wrap;
+                      min-height:clamp(36px,10vw,50px);margin-bottom:1.25rem;" id="wsSourcePool">
+            ${sourceHtml}
+          </div>
+
+          <!-- Action buttons -->
+          <div style="display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;">
+            <button onclick="Game._wsSubmitArranged()" class="btn"
+                    style="background:#7c3aed;color:#fff;min-width:100px;">
+              ✓ Submit
             </button>
-          </div>
-          <input id="scrambleInput" type="text" placeholder="Type the word here..."
-                 style="font-size:1.125rem;text-align:center;text-transform:uppercase;max-width:280px;width:100%;letter-spacing:.1em;"
-                 autofocus maxlength="${entry.word.length + 2}"
-                 onkeydown="if(event.key==='Enter')Game._submitScrambleAnswer()" />
-          <div style="margin-top:1rem;display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;">
-            <button onclick="Game._submitScrambleAnswer()" class="btn" style="background:#7c3aed;color:#fff;">Submit</button>
-            <button onclick="Game._skipScramble()" class="btn bg-gray-500" style="display:inline-flex;align-items:center;gap:.3rem;">
+            <button onclick="Game._wsClearArranged()" class="btn bg-gray-500">
+              ✕ Clear
+            </button>
+            <button onclick="Game._skipScramble()" class="btn bg-gray-500"
+                    style="display:inline-flex;align-items:center;gap:.3rem;">
               ${_icon('skipForward', 13)} Skip
             </button>
           </div>
         </div>
+
         <div id="scrambleFeedback" style="text-align:center;min-height:1.5rem;font-size:.9375rem;font-weight:700;"></div>
-        <div style="text-align:center;margin-top:1rem;">
-          <button onclick="Game._abandonGame()" class="btn bg-gray-500" style="font-size:.8125rem;display:inline-flex;align-items:center;gap:.3rem;">${_icon('x', 13)} Quit Game</button>
+
+        <div style="text-align:center;margin-top:.75rem;">
+          <button onclick="Game._abandonGame()" class="btn bg-gray-500"
+                  style="font-size:.8125rem;display:inline-flex;align-items:center;gap:.3rem;">
+            ${_icon('x', 13)} Quit Game
+          </button>
         </div>
       </div>`);
 
@@ -3553,29 +3638,24 @@ function _buildWordPoolForStudent() {
       (s) => { if (_timerEl) { _timerEl.textContent = s; _timerEl.className = 'game-timer ' + (s <= 5 ? 'timer-red' : s <= 10 ? 'timer-yellow' : 'timer-green'); } },
       () => { _skipScramble(); }
     );
-    document.getElementById('scrambleInput')?.focus();
   }
 
   function _reshuffleWord() {
     const gs = _gameState;
     if (!gs || gs.type !== 'wordScramble' || gs.shufflesLeft <= 0) return;
     const entry  = gs.words[gs.currentIndex];
+
+    // First, return all placed letters back to pool
+    gs.placedLetters = [];
+
+    // Reshuffle the source pool
     let newScram = gs.currentScramble, attempts = 0;
     while (newScram === gs.currentScramble && attempts < 30) { newScram = _scrambleWord(entry.word); attempts++; }
     gs.currentScramble = newScram;
+    gs.sourceLetters = newScram.split('').map((l, i) => ({ letter: l, id: i, placed: false }));
     gs.shufflesLeft--;
-    const tilesEl = document.getElementById('scrambleLetters');
-    if (tilesEl) {
-      tilesEl.innerHTML = newScram.split('').map(l => `<span class="game-letter-tile">${_esc(l)}</span>`).join('');
-      tilesEl.classList.remove('game-tiles-bounce');
-      void tilesEl.offsetWidth;
-      tilesEl.classList.add('game-tiles-bounce');
-    }
-    const shuffleBtn = document.getElementById('shuffleBtn');
-    const countEl    = shuffleBtn?.querySelector('.game-shuffle-count');
-    if (countEl) countEl.textContent = gs.shufflesLeft;
-    if (gs.shufflesLeft <= 0 && shuffleBtn) { shuffleBtn.disabled = true; shuffleBtn.classList.add('game-shuffle-btn--disabled'); }
-    document.getElementById('scrambleInput')?.focus();
+
+    _renderWordScrambleQuestion();
   }
 
   function _submitScrambleAnswer() {
@@ -3604,8 +3684,166 @@ function _buildWordPoolForStudent() {
     setTimeout(() => {
       gs.currentIndex++;
       if (gs.currentIndex >= gs.words.length) _finishWordScramble();
-      else { gs.shufflesLeft = MAX_SHUFFLES; gs.currentScramble = _scrambleWord(gs.words[gs.currentIndex].word); _renderWordScrambleQuestion(); }
+      else {
+        gs.shufflesLeft      = MAX_SHUFFLES;
+        gs.currentScramble   = _scrambleWord(gs.words[gs.currentIndex].word);
+        gs.sourceLetters     = gs.currentScramble.split('').map((l, i) => ({ letter: l, id: i, placed: false }));
+        gs.placedLetters     = [];
+        _renderWordScrambleQuestion();
+      }
     }, 1200);
+  }
+  
+  function _wsPlaceLetter(srcIdx) {
+    const gs = _gameState;
+    if (!gs || gs.type !== 'wordScramble') return;
+    const src = gs.sourceLetters[srcIdx];
+    if (!src || src.placed) return;
+
+    const wordLen     = gs.words[gs.currentIndex].word.length;
+    const nextSlotIdx = gs.placedLetters.length;
+    if (nextSlotIdx >= wordLen) return; // all slots filled
+
+    src.placed = true;
+    gs.placedLetters.push({ letter: src.letter, srcIdx });
+
+    // Update source pool: grey out the placed tile
+    const srcBtn = document.getElementById('wsSrc' + srcIdx);
+    if (srcBtn) {
+      srcBtn.disabled = true;
+      srcBtn.style.opacity = '0.25';
+      srcBtn.style.cursor  = 'not-allowed';
+      srcBtn.style.background = 'rgba(124,58,237,0.08)';
+      srcBtn.style.borderColor = 'rgba(124,58,237,0.2)';
+      srcBtn.style.color = '#a78bfa';
+      srcBtn.style.boxShadow = 'none';
+    }
+
+    // Update the answer slot
+    const slotEl = document.getElementById('wsSlot' + nextSlotIdx);
+    if (slotEl) {
+      slotEl.textContent  = src.letter;
+      slotEl.style.border = '2px solid #7c3aed';
+      slotEl.style.background = 'rgba(124,58,237,0.18)';
+      slotEl.style.cursor = 'pointer';
+      // Bounce animation
+      slotEl.style.transform = 'scale(1.18)';
+      setTimeout(() => { if (slotEl) slotEl.style.transform = 'scale(1)'; }, 150);
+    }
+
+    // If all slots filled, auto-check after brief delay
+    if (gs.placedLetters.length === wordLen) {
+      setTimeout(() => _wsSubmitArranged(), 320);
+    }
+  }
+
+  function _wsRemoveLetter(slotIdx) {
+    const gs = _gameState;
+    if (!gs || gs.type !== 'wordScramble') return;
+    if (slotIdx >= gs.placedLetters.length) return; // slot is empty
+
+    // Remove this letter and all letters after it (shift them back)
+    const removed = gs.placedLetters.splice(slotIdx);
+
+    // Re-mark source letters as unplaced for all removed
+    removed.forEach(p => {
+      const src = gs.sourceLetters[p.srcIdx];
+      if (src) src.placed = false;
+
+      const srcBtn = document.getElementById('wsSrc' + p.srcIdx);
+      if (srcBtn) {
+        srcBtn.disabled = false;
+        srcBtn.style.opacity = '1';
+        srcBtn.style.cursor  = 'pointer';
+        srcBtn.style.background = 'linear-gradient(145deg,#f5deb3,#e8c97e)';
+        srcBtn.style.borderColor = '#a0845c';
+        srcBtn.style.color = '#1a0a00';
+        srcBtn.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2),inset 0 1px 0 rgba(255,255,255,0.4)';
+      }
+    });
+
+    // Clear affected slots visually
+    const wordLen = gs.words[gs.currentIndex].word.length;
+    for (let i = slotIdx; i < wordLen; i++) {
+      const slotEl = document.getElementById('wsSlot' + i);
+      if (!slotEl) continue;
+      const stillPlaced = gs.placedLetters[i];
+      slotEl.textContent = stillPlaced ? stillPlaced.letter : '';
+      slotEl.style.border    = stillPlaced ? '2px solid #7c3aed' : '2px solid rgba(124,58,237,0.35)';
+      slotEl.style.background = stillPlaced ? 'rgba(124,58,237,0.18)' : 'rgba(124,58,237,0.06)';
+      slotEl.style.cursor    = stillPlaced ? 'pointer' : 'default';
+    }
+  }
+
+  function _wsSubmitArranged() {
+    const gs = _gameState;
+    if (!gs || gs.type !== 'wordScramble') return;
+    _stopTimer();
+
+    const wordLen = gs.words[gs.currentIndex].word.length;
+    if (gs.placedLetters.length < wordLen) {
+      window.UI.toast('Place all letters before submitting.', 'warning', 1800);
+      // Restart timer
+      _timerEl = document.getElementById('scrambleTimer');
+      _startTimer(WORD_SCRAMBLE_TIME,
+        (s) => { if (_timerEl) { _timerEl.textContent = s; _timerEl.className = 'game-timer ' + (s <= 5 ? 'timer-red' : s <= 10 ? 'timer-yellow' : 'timer-green'); } },
+        () => { _skipScramble(); }
+      );
+      return;
+    }
+
+    const formed  = gs.placedLetters.map(p => p.letter).join('');
+    const correct = formed === gs.words[gs.currentIndex].word;
+    const fb      = document.getElementById('scrambleFeedback');
+    if (fb) { fb.style.color = correct ? 'var(--success)' : 'var(--danger)'; fb.textContent = correct ? `Correct! +${XP_PER_CORRECT} XP` : `Wrong! The word was ${gs.words[gs.currentIndex].word}`; }
+    if (correct) { gs.score++; gs.xpEarned += XP_PER_CORRECT; gs.wordCorrect++; }
+
+    setTimeout(() => {
+      gs.currentIndex++;
+      if (gs.currentIndex >= gs.words.length) _finishWordScramble();
+      else {
+        gs.shufflesLeft    = MAX_SHUFFLES;
+        gs.currentScramble = _scrambleWord(gs.words[gs.currentIndex].word);
+        gs.sourceLetters   = gs.currentScramble.split('').map((l, i) => ({ letter: l, id: i, placed: false }));
+        gs.placedLetters   = [];
+        _renderWordScrambleQuestion();
+      }
+    }, 1300);
+  }
+
+  function _wsClearArranged() {
+    const gs = _gameState;
+    if (!gs || gs.type !== 'wordScramble') return;
+
+    // Return all placed letters to source pool
+    gs.placedLetters.forEach(p => {
+      const src = gs.sourceLetters[p.srcIdx];
+      if (src) src.placed = false;
+      const srcBtn = document.getElementById('wsSrc' + p.srcIdx);
+      if (srcBtn) {
+        srcBtn.disabled = false;
+        srcBtn.style.opacity = '1';
+        srcBtn.style.cursor  = 'pointer';
+        srcBtn.style.background = 'linear-gradient(145deg,#f5deb3,#e8c97e)';
+        srcBtn.style.borderColor = '#a0845c';
+        srcBtn.style.color = '#1a0a00';
+        srcBtn.style.boxShadow = '0 2px 6px rgba(0,0,0,0.2),inset 0 1px 0 rgba(255,255,255,0.4)';
+      }
+    });
+
+    gs.placedLetters = [];
+
+    // Clear all slots visually
+    const wordLen = gs.words[gs.currentIndex].word.length;
+    for (let i = 0; i < wordLen; i++) {
+      const slotEl = document.getElementById('wsSlot' + i);
+      if (slotEl) {
+        slotEl.textContent   = '';
+        slotEl.style.border  = '2px solid rgba(124,58,237,0.35)';
+        slotEl.style.background = 'rgba(124,58,237,0.06)';
+        slotEl.style.cursor  = 'default';
+      }
+    }
   }
 
   async function _finishWordScramble() {
@@ -7248,6 +7486,10 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
     _wsPass,
     _wsLeave,
     _wsChooseBlankLetter,
+    _wsPlaceLetter,
+    _wsRemoveLetter,
+    _wsSubmitArranged,
+    _wsClearArranged,
     _teacherGameTab: function(tab) { if (typeof window._teacherGameTab === 'function') window._teacherGameTab(tab); },
   };
 
