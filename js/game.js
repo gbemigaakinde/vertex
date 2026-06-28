@@ -192,7 +192,7 @@
   const TF_STREAK_THRESHOLD      = 3;
 
   // Perfect Run constants
-  const SD_TIME_PER_QUESTION     = 12; // seconds
+  const SD_TIME_PER_QUESTION     = 20; // seconds
   const SD_XP_BASE               = 5;
   const SD_XP_INCREMENT          = 2;  // extra XP per question (compounds)
   const SD_MAX_QUESTIONS         = 50; // safety ceiling
