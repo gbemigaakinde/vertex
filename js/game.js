@@ -6960,6 +6960,8 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
     _startKnowledgeRunner,
     _krChangeLane,
     _krRoll,
+    _krQuit,
+    _krRestart,
     _showScrabbleSetup,
     _sendScrabbleChallenge,
     _showScrabblePending,
