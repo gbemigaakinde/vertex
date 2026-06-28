@@ -2863,7 +2863,7 @@ function _dismissScrabblePopup(gameId) {
             <div class="game-card__desc">Answer MCQ questions against the clock. Fast answers earn bonus XP.</div>
             <div class="game-card__meta">
               <span class="game-card__tag">MCQ</span>
-              <span class="game-card__tag">15s / question</span>
+              <span class="game-card__tag">20s / question</span>
               <span class="game-card__tag game-card__tag--xp">+${XP_PER_CORRECT * QUIZ_BLITZ_QUESTIONS} XP max</span>
             </div>
           </div>
@@ -2873,7 +2873,7 @@ function _dismissScrabblePopup(gameId) {
             <div class="game-card__desc">Rapid-fire T/F statements from your subjects. Build streaks for bonus XP.</div>
             <div class="game-card__meta">
               <span class="game-card__tag">T/F</span>
-              <span class="game-card__tag">10s / question</span>
+              <span class="game-card__tag">18s / question</span>
               <span class="game-card__tag game-card__tag--xp">+streak multiplier</span>
             </div>
           </div>
