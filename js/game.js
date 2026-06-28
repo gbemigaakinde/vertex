@@ -2377,7 +2377,7 @@ function _krStartCountdownTick(getEl) {
     document.head.appendChild(style);
   }
 
-  // ── Existing quiz challenge listener ──
+  // ── 1. Incoming quiz challenges (pending) ──
   _db()
     .collection('gameChallenges')
     .where('challengedUid', '==', uid)
@@ -2418,7 +2418,49 @@ function _krStartCountdownTick(getEl) {
         }, function(err) { console.warn('[game] challenge listener error:', err); });
     });
 
-  // ── NEW: Scrabble challenge listener ──
+  // ── 2. Challenges the CHALLENGED player already played, now completed by challenger ──
+  // The challenged player played, set status to 'awaiting_challenger'.
+  // When the challenger finally plays days later, status flips to 'completed'.
+  // We listen for that flip and notify the challenged player.
+  const _completedKey = (id) => 'completed_result_' + id;
+
+  _db()
+    .collection('gameChallenges')
+    .where('challengedUid', '==', uid)
+    .where('status', '==', 'completed')
+    .get()
+    .then(function(existingSnap) {
+      // Baseline: mark all already-completed games as already notified
+      existingSnap.forEach(function(doc) {
+        _notifiedChallenges.add(_completedKey(doc.id));
+      });
+
+      // Now listen for newly completed ones
+      _db()
+        .collection('gameChallenges')
+        .where('challengedUid', '==', uid)
+        .where('status', '==', 'completed')
+        .onSnapshot(function(snap) {
+          snap.docChanges().forEach(function(change) {
+            if (change.type !== 'added' && change.type !== 'modified') return;
+            const doc  = change.doc;
+            const data = doc.data();
+            const key  = _completedKey(doc.id);
+            if (_notifiedChallenges.has(key)) return;
+            _notifiedChallenges.add(key);
+            // Only show if the challenged player already submitted their score
+            // (i.e. they played before the challenger — the 'awaiting_challenger' → 'completed' path)
+            if (data.finalChallengedScore !== undefined && data.finalChallengerScore !== undefined) {
+              _showChallengeResultPopup(doc.id, data, uid);
+            }
+          });
+        }, function(err) { console.warn('[game] completed-challenge listener error:', err); });
+    })
+    .catch(function(err) {
+      console.warn('[game] completed-challenge baseline fetch error:', err);
+    });
+
+  // ── 3. Scrabble challenge listener ──
   _db()
     .collection('scrabbleGames')
     .where('player2Uid', '==', uid)
@@ -2445,6 +2487,178 @@ function _krStartCountdownTick(getEl) {
     .catch(function(err) {
       console.warn('[game] scrabble baseline fetch error:', err);
     });
+}
+
+function _showChallengeResultPopup(challengeId, data, myUid) {
+  if (window.AppState && window.AppState.exam && window.AppState.exam.step === 'exam') return;
+
+  const popupId = 'challengeResultPopup_' + challengeId;
+  if (document.getElementById(popupId)) return;
+
+  const total      = (data.questions || []).length || 10;
+  const myScore    = data.finalChallengedScore;
+  const oppScore   = data.finalChallengerScore;
+  const oppName    = data.challengerName || 'Your challenger';
+  const myPct      = Math.round((myScore / total) * 100);
+  const oppPct     = Math.round((oppScore / total) * 100);
+  const tied       = data.finalTied;
+  const win        = myScore > oppScore;
+
+  const resultIcon  = win ? '🏆' : tied ? '🤝' : '😔';
+  const resultText  = win ? 'You Won!' : tied ? "It's a Tie!" : 'You Lost!';
+  const borderColor = win ? 'var(--success)' : tied ? 'var(--warning)' : 'var(--danger)';
+  const bgColor     = win ? '#f0fdf4' : tied ? '#fffbeb' : '#fff1f2';
+
+  const popup = document.createElement('div');
+  popup.id    = popupId;
+  popup.style.cssText = [
+    'position:fixed', 'bottom:5rem', 'right:1.25rem',
+    'z-index:9500', 'max-width:320px', 'width:calc(100vw - 2.5rem)',
+    `background:${bgColor}`,
+    `border:2px solid ${borderColor}`,
+    'border-radius:14px', 'padding:1rem 1.125rem',
+    'box-shadow:0 8px 32px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.1)',
+    'animation:gameChallengePopIn .35s cubic-bezier(.34,1.45,.64,1) both',
+    'pointer-events:auto',
+  ].join(';');
+
+  popup.innerHTML = `
+    <div style="display:flex;align-items:flex-start;gap:.625rem;">
+      <div style="width:38px;height:38px;border-radius:50%;
+                  background:rgba(0,0,0,0.06);
+                  border:2px solid ${borderColor};display:flex;align-items:center;
+                  justify-content:center;flex-shrink:0;font-size:1.25rem;">
+        ${resultIcon}
+      </div>
+      <div style="flex:1;min-width:0;">
+        <p style="font-size:.8125rem;font-weight:800;color:#111827;margin:0 0 2px;">
+          Challenge Result In!
+        </p>
+        <p style="font-size:.75rem;color:#374151;margin:0 0 3px;line-height:1.4;">
+          <strong>${_esc(oppName)}</strong> just played — <strong>${resultText}</strong>
+        </p>
+        <p style="font-size:.6875rem;color:#6b7280;margin:0;">
+          You: ${myScore}/${total} (${myPct}%) · Them: ${oppScore}/${total} (${oppPct}%)
+        </p>
+      </div>
+      <button id="challengeResultDismiss_${challengeId}"
+              style="background:none;border:none;cursor:pointer;color:#9ca3af;font-size:1rem;
+                     line-height:1;padding:2px;flex-shrink:0;"
+              aria-label="Dismiss">&#x2715;</button>
+    </div>
+    <div style="margin-top:.875rem;">
+      <button id="challengeResultViewBtn_${challengeId}"
+              style="width:100%;padding:.5rem;border-radius:8px;font-size:.8125rem;font-weight:700;
+                     background:${borderColor};color:#fff;border:none;cursor:pointer;font-family:var(--font);">
+        View Full Result
+      </button>
+    </div>`;
+
+  document.body.appendChild(popup);
+  const autoTimer = setTimeout(() => _dismissChallengeResultPopup(challengeId), 30_000);
+
+  function _dismiss() { clearTimeout(autoTimer); _dismissChallengeResultPopup(challengeId); }
+
+  document.getElementById('challengeResultDismiss_' + challengeId).addEventListener('click', _dismiss);
+
+  document.getElementById('challengeResultViewBtn_' + challengeId).addEventListener('click', async () => {
+    _dismiss();
+    // Re-render the full result inline
+    await _loadProfile();
+    _showChallengeResultDetail(challengeId, data, myUid);
+  });
+}
+
+function _dismissChallengeResultPopup(challengeId) {
+  const popup = document.getElementById('challengeResultPopup_' + challengeId);
+  if (!popup) return;
+  popup.style.animation = 'gameChallengePopOut .25s ease-in both';
+  popup.addEventListener('animationend', () => popup.remove(), { once: true });
+}
+
+function _showChallengeResultDetail(challengeId, data, myUid) {
+  const total    = (data.questions || []).length || 10;
+  const myScore  = data.finalChallengedScore;
+  const oppScore = data.finalChallengerScore;
+  const oppName  = data.challengerName || 'Your challenger';
+  const myPct    = Math.round((myScore / total) * 100);
+  const oppPct   = Math.round((oppScore / total) * 100);
+  const tied     = data.finalTied;
+  const win      = myScore > oppScore;
+
+  const gradeColor = myPct >= 80 ? 'var(--success)' : myPct >= 60 ? 'var(--warning)' : 'var(--danger)';
+
+  const outcomeHtml = `
+    <div style="margin:.75rem 0;padding:.875rem 1rem;border-radius:10px;text-align:center;
+                background:${win ? 'var(--success-subtle)' : tied ? 'var(--warning-subtle)' : 'var(--danger-subtle)'};
+                border:2px solid ${win ? 'var(--success-border)' : tied ? 'var(--warning-border)' : 'var(--danger-border)'};">
+      <div style="margin-bottom:.25rem;">
+        ${_icon(win ? 'trophy' : tied ? 'handWaving' : 'xCircle', 32, {
+          color: win ? 'var(--success)' : tied ? 'var(--warning)' : 'var(--danger)',
+        })}
+      </div>
+      <p style="font-weight:700;font-size:1rem;margin:.25rem 0;color:var(--text-1);">
+        ${win ? 'You Won!' : tied ? "It's a Tie!" : 'You Lost!'}
+      </p>
+      <p style="font-size:.875rem;color:var(--text-2);">
+        You: ${myScore}/${total} (${myPct}%) vs ${_esc(oppName)}: ${oppScore}/${total} (${oppPct}%)
+      </p>
+    </div>`;
+
+  const xp    = (_profile && _profile.xp) || 0;
+  const level = _getLevelForXP(xp);
+  const xpPct = _xpProgressPct(xp);
+  const nextLvl = _getNextLevel(xp);
+  const maxed   = _isMaxLevel(xp);
+
+  window.UI.mount(`
+    <div class="max-w-xl mx-auto animate-fadeIn" style="padding-bottom:2rem;">
+      <div class="glass game-result-card">
+        <div style="text-align:center;margin-bottom:1.5rem;">
+          <div style="margin-bottom:.375rem;">${_icon('swords', 48, { color: 'var(--accent)' })}</div>
+          <h2 style="font-size:1.25rem;font-weight:700;color:var(--text-1);">Challenge Result</h2>
+          <p style="font-size:.875rem;color:var(--text-3);margin-top:.25rem;">vs ${_esc(oppName)}</p>
+        </div>
+
+        <div style="display:flex;align-items:center;justify-content:center;gap:1.5rem;
+                    background:var(--bg-subtle);border-radius:10px;padding:1.25rem;margin-bottom:1.25rem;">
+          <div style="text-align:center;">
+            <div style="font-size:2.5rem;font-weight:800;color:${gradeColor};line-height:1;">${myPct}%</div>
+            <div style="font-size:.75rem;color:var(--text-3);margin-top:.25rem;">Your Score</div>
+          </div>
+          <div style="width:1px;height:40px;background:var(--border);"></div>
+          <div style="text-align:center;">
+            <div style="font-size:1.5rem;font-weight:700;color:var(--text-1);">${myScore} / ${total}</div>
+            <div style="font-size:.75rem;color:var(--text-3);margin-top:.25rem;">Correct</div>
+          </div>
+        </div>
+
+        ${outcomeHtml}
+
+        <div class="glass-dark" style="padding:.875rem 1rem;border-radius:8px;margin-bottom:1rem;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
+            <span style="font-size:.875rem;font-weight:700;color:var(--text-2);display:flex;align-items:center;gap:.3rem;">
+              ${_icon(level.icon, 14, { color: level.color })} ${_esc(level.name)}
+            </span>
+            ${!maxed
+              ? `<span style="font-size:.75rem;color:var(--text-3);">${xp.toLocaleString()} / ${nextLvl.minXP.toLocaleString()} XP</span>`
+              : `<span style="font-size:.75rem;color:#f43f5e;font-weight:800;">✦ MAX LEVEL</span>`}
+          </div>
+          <div class="game-xp-track"><div class="game-xp-fill" style="width:${xpPct}%;"></div></div>
+        </div>
+
+        <div style="display:flex;gap:.625rem;flex-wrap:wrap;justify-content:center;margin-top:1.25rem;">
+          <button onclick="Game.openGameLobby()" class="btn bg-gray-500"
+                  style="display:inline-flex;align-items:center;gap:.3rem;">
+            ${_icon('house', 15)} Back to Games
+          </button>
+          <button onclick="Game._showChallengeSetup()" class="btn"
+                  style="display:inline-flex;align-items:center;gap:.3rem;">
+            ${_icon('swords', 15)} New Challenge
+          </button>
+        </div>
+      </div>
+    </div>`);
 }
 
   function _stopChallengeListener() {
@@ -5285,23 +5499,37 @@ function _buildWordPoolForStudent() {
   }
   
   function _watchChallengeResult(challengeId, opponentName, total) {
-    _showModal(`
-      <div style="text-align:center;margin-bottom:1.25rem;">
-        <div style="margin-bottom:.5rem;">${_icon('hourglass', 40, { color: 'var(--accent)' })}</div>
-        <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">Waiting for Result</h2>
-        <p style="font-size:.875rem;color:var(--text-3);margin-top:.375rem;line-height:1.6;">
-          Checking if <strong>${_esc(opponentName)}</strong> has played yet…
-        </p>
-        <div id="watchResultContent" style="margin-top:1rem;">
-          <div style="font-size:.875rem;color:var(--text-3);">Checking…</div>
-        </div>
-      </div>
-      <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full" style="margin-top:.75rem;">Close</button>
-    `);
+  // Use a live listener instead of a one-time .get() so this updates
+  // automatically if the challenger plays while this modal is open.
+  let _watchUnsub = null;
 
-    _db().collection('gameChallenges').doc(challengeId).get().then(snap => {
+  _showModal(`
+    <div style="text-align:center;margin-bottom:1.25rem;">
+      <div style="margin-bottom:.5rem;">${_icon('hourglass', 40, { color: 'var(--accent)' })}</div>
+      <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">Watching for Result</h2>
+      <p style="font-size:.875rem;color:var(--text-3);margin-top:.375rem;line-height:1.6;">
+        Waiting for <strong>${_esc(opponentName)}</strong> to play their turn.
+        This screen updates automatically — you can leave it open.
+      </p>
+      <div id="watchResultContent" style="margin-top:1rem;">
+        <div style="font-size:.875rem;color:var(--text-3);">Connecting…</div>
+      </div>
+    </div>
+    <button onclick="Game._closeWatchModal('${_esc(challengeId)}')" class="btn bg-gray-500 w-full" style="margin-top:.75rem;">Close</button>
+  `);
+
+  // Store the unsub on window so _closeWatchModal can reach it
+  window._watchChallengeUnsub = null;
+
+  _watchUnsub = _db().collection('gameChallenges').doc(challengeId)
+    .onSnapshot(snap => {
       const el = document.getElementById('watchResultContent');
-      if (!el) return;
+      if (!el) {
+        // Modal was closed, clean up
+        if (_watchUnsub) { _watchUnsub(); _watchUnsub = null; }
+        if (window._watchChallengeUnsub) { window._watchChallengeUnsub = null; }
+        return;
+      }
 
       if (!snap.exists) {
         el.innerHTML = `<p style="color:var(--danger);font-size:.875rem;">Challenge not found.</p>`;
@@ -5336,13 +5564,26 @@ function _buildWordPoolForStudent() {
             <p style="font-size:.875rem;color:var(--text-2);margin-top:.375rem;">
               You: ${myScore}/${total} (${myPct}%) vs ${_esc(opponentName)}: ${oppScore}/${total} (${oppPct}%)
             </p>
+            <button onclick="Game._closeWatchModal('${_esc(challengeId)}');Game._showChallengeResultDetail('${_esc(challengeId)}', null, '${_esc(myUid)}');"
+                    class="btn" style="margin-top:.75rem;font-size:.875rem;background:${win ? 'var(--success)' : 'var(--danger)'};color:#fff;">
+              View Full Result Page
+            </button>
           </div>`;
+
+        // Clean up live listener now that result is in
+        if (_watchUnsub) { _watchUnsub(); _watchUnsub = null; }
+        window._watchChallengeUnsub = null;
+
       } else if (data.status === 'awaiting_challenger' || data.status === 'pending') {
         el.innerHTML = `
           <div style="padding:.875rem;border-radius:10px;background:var(--bg-subtle);
                       border:1px solid var(--border);text-align:center;">
+            <div style="margin-bottom:.5rem;animation:cbt-pulse 1.5s ease-in-out infinite;">
+              ${_icon('hourglass', 24, { color: 'var(--accent)' })}
+            </div>
             <p style="font-size:.875rem;color:var(--text-2);margin:0;">
-              ${_esc(opponentName)} hasn't played yet. Check back later!
+              ${_esc(opponentName)} hasn't played yet.
+              This page will update automatically when they do.
             </p>
           </div>`;
       } else {
@@ -5354,12 +5595,23 @@ function _buildWordPoolForStudent() {
             </p>
           </div>`;
       }
-    }).catch(e => {
+    }, e => {
       const el = document.getElementById('watchResultContent');
       if (el) el.innerHTML = `<p style="color:var(--danger);font-size:.875rem;">Could not load result. Please try again.</p>`;
-      console.warn('[game] _watchChallengeResult error:', e);
+      console.warn('[game] _watchChallengeResult listener error:', e);
     });
+
+  window._watchChallengeUnsub = _watchUnsub;
+}
+
+function _closeWatchModal(challengeId) {
+  // Clean up the live listener before closing
+  if (window._watchChallengeUnsub) {
+    window._watchChallengeUnsub();
+    window._watchChallengeUnsub = null;
   }
+  _closeModal();
+}
 
   /* ══════════════════════════════════════════════════════════════
      GAME RESULT SCREEN
@@ -7705,15 +7957,12 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
     _reshuffleWord,
     _submitScrambleAnswer,
     _skipScramble,
-    // True or False
     _showTrueOrFalseSetup,
     _startTrueOrFalse,
     _answerTF,
-    // Perfect Run
     _showSuddenDeathSetup,
     _startSuddenDeath,
     _answerSD,
-    // Challenge
     _showChallengeSetup,
     _sendChallenge,
     _showPendingChallenges,
@@ -7723,7 +7972,10 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
     _playChallengerTurn,
     _answerChallenge,
     _watchChallengeResult,
-    // Shared
+    _closeWatchModal,
+    _showChallengeResultDetail,
+    _showChallengeResultPopup,
+    _dismissChallengeResultPopup,
     _abandonGame,
     _closeModal,
     _showLeaderboardTab,
