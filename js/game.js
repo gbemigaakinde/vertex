@@ -2510,6 +2510,16 @@ function _dismissScrabblePopup(gameId) {
               <span class="game-card__tag game-card__tag--xp">+${XP_PER_CORRECT * QUIZ_BLITZ_QUESTIONS} XP max</span>
             </div>
           </div>
+          <div class="game-card" onclick="Game._selectGame('trueOrFalse')">
+            <div class="game-card__icon">${_icon('checkSquare', 32, { color: '#10b981' })}</div>
+            <div class="game-card__title">True or False Blitz</div>
+            <div class="game-card__desc">Rapid-fire T/F statements from your subjects. Build streaks for bonus XP.</div>
+            <div class="game-card__meta">
+              <span class="game-card__tag">T/F</span>
+              <span class="game-card__tag">10s / question</span>
+              <span class="game-card__tag game-card__tag--xp">+streak multiplier</span>
+            </div>
+          </div>
           <div class="game-card" onclick="Game._selectGame('speedMath')">
             <div class="game-card__icon">${_icon('calculator', 32, { color: '#f59e0b' })}</div>
             <div class="game-card__title">Speed Math</div>
@@ -2528,16 +2538,6 @@ function _dismissScrabblePopup(gameId) {
               <span class="game-card__tag">Vocabulary</span>
               <span class="game-card__tag">20s / word</span>
               <span class="game-card__tag game-card__tag--xp">+${XP_PER_CORRECT} XP per word</span>
-            </div>
-          </div>
-          <div class="game-card" onclick="Game._selectGame('trueOrFalse')">
-            <div class="game-card__icon">${_icon('checkSquare', 32, { color: '#10b981' })}</div>
-            <div class="game-card__title">True or False Blitz</div>
-            <div class="game-card__desc">Rapid-fire T/F statements from your subjects. Build streaks for bonus XP.</div>
-            <div class="game-card__meta">
-              <span class="game-card__tag">T/F</span>
-              <span class="game-card__tag">10s / question</span>
-              <span class="game-card__tag game-card__tag--xp">+streak multiplier</span>
             </div>
           </div>
           <div class="game-card game-card--sudden-death" onclick="Game._selectGame('suddenDeath')">
@@ -2560,7 +2560,6 @@ function _dismissScrabblePopup(gameId) {
               <span class="game-card__tag game-card__tag--xp">+${XP_CHALLENGE_WIN} bonus XP</span>
             </div>
           </div>
-          ${knowledgeSurferCard}
           <div class="game-card game-card--scrabble" onclick="Game._selectGame('wordScrabble')">
             <div class="game-card__icon">🔤</div>
             <div class="game-card__title">Word Scrabble</div>
@@ -2574,6 +2573,7 @@ function _dismissScrabblePopup(gameId) {
               <span class="game-card__tag game-card__tag--xp">Up to +200 XP</span>
             </div>
           </div>
+          ${knowledgeSurferCard}
         </div>
 
         <h2 class="game-section-title" style="margin-top:1.5rem;">Your Badges</h2>
@@ -2602,6 +2602,17 @@ function _dismissScrabblePopup(gameId) {
         </div>
 
       </div>`);
+
+    // ── Scroll back to the top of the page ──
+    requestAnimationFrame(function () {
+      window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      const appEl = document.getElementById('app');
+      if (appEl && typeof appEl.scrollTo === 'function') {
+        appEl.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+      } else if (appEl) {
+        appEl.scrollTop = 0;
+      }
+    });
 
     _updateGameNavBadge(pendingChallenges.length + awaitingPlay.length + pendingScrabble.length + myTurnScrabble.length);
 
