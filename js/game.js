@@ -664,101 +664,141 @@ const WS_WORDLIST = new Set([
 ]);
 
 function _showBadgeDetails(badgeId) {
-  const badge = BADGES.find(b => b.id === badgeId);
-  if (!badge) return;
+    const badge = BADGES.find(b => b.id === badgeId);
+    if (!badge) return;
 
-  const rarityMap = {
-    'max_level': { label: '⭐ Legendary', color: '#f43f5e' },
-    'sudden_death_50': { label: '⭐ Legendary', color: '#f43f5e' },
-    'immortal': { label: '⭐ Legendary', color: '#f43f5e' },
-    'titan': { label: '⭐ Legendary', color: '#f43f5e' },
-    'absolute': { label: '⭐ Legendary', color: '#f43f5e' },
-    'rank_15': { label: '⭐⭐ Epic', color: '#8b5cf6' },
-    'rank_10': { label: '⭐⭐ Epic', color: '#8b5cf6' },
-    'xp_100000': { label: '⭐⭐ Epic', color: '#8b5cf6' },
-    'mythic_scholar': { label: '⭐⭐ Epic', color: '#8b5cf6' },
-    'hall_of_fame': { label: '⭐⭐ Epic', color: '#8b5cf6' },
-    'perfect_quiz': { label: '⭐⭐⭐ Rare', color: '#06b6d4' },
-    'perfect_scramble': { label: '⭐⭐⭐ Rare', color: '#06b6d4' },
-    'perfect_blitz': { label: '⭐⭐⭐ Rare', color: '#06b6d4' },
-    'perfect_tf': { label: '⭐⭐⭐ Rare', color: '#06b6d4' },
-    'math_perfect': { label: '⭐⭐⭐ Rare', color: '#06b6d4' },
-    'streak_20': { label: '⭐⭐⭐ Rare', color: '#06b6d4' },
-    'streak_10': { label: '⭐⭐⭐ Rare', color: '#06b6d4' },
-    'challenge_10': { label: '⭐⭐⭐ Rare', color: '#06b6d4' },
-    'sudden_death_30': { label: '⭐⭐⭐ Rare', color: '#06b6d4' },
-    'sudden_death_25': { label: '⭐⭐⭐ Rare', color: '#06b6d4' },
-  };
+    // Find the badge entry in the profile to get the earned date
+    const profileBadges  = (_profile && _profile.badges) || [];
+    const profileEntry   = profileBadges.find(b => _badgeId(b) === badgeId);
+    const earnedAtRaw    = profileEntry ? _badgeEarnedAt(profileEntry) : null;
+    let earnedAtStr      = 'Not recorded';
+    if (earnedAtRaw) {
+      try {
+        const d = new Date(earnedAtRaw);
+        earnedAtStr = d.toLocaleDateString('en-GB', {
+          day:   'numeric',
+          month: 'long',
+          year:  'numeric',
+        });
+      } catch (e) {
+        earnedAtStr = 'Not recorded';
+      }
+    }
 
-  const rarity = rarityMap[badgeId] || { label: 'Common', color: '#22c55e' };
+    const rarityMap = {
+      'max_level':       { label: '⭐ Legendary', color: '#f43f5e' },
+      'sudden_death_50': { label: '⭐ Legendary', color: '#f43f5e' },
+      'immortal':        { label: '⭐ Legendary', color: '#f43f5e' },
+      'titan':           { label: '⭐ Legendary', color: '#f43f5e' },
+      'absolute':        { label: '⭐ Legendary', color: '#f43f5e' },
+      'rank_15':         { label: '⭐⭐ Epic',    color: '#8b5cf6' },
+      'rank_10':         { label: '⭐⭐ Epic',    color: '#8b5cf6' },
+      'xp_100000':       { label: '⭐⭐ Epic',    color: '#8b5cf6' },
+      'mythic_scholar':  { label: '⭐⭐ Epic',    color: '#8b5cf6' },
+      'hall_of_fame':    { label: '⭐⭐ Epic',    color: '#8b5cf6' },
+      'perfect_quiz':    { label: '⭐⭐⭐ Rare',  color: '#06b6d4' },
+      'perfect_scramble':{ label: '⭐⭐⭐ Rare',  color: '#06b6d4' },
+      'perfect_blitz':   { label: '⭐⭐⭐ Rare',  color: '#06b6d4' },
+      'perfect_tf':      { label: '⭐⭐⭐ Rare',  color: '#06b6d4' },
+      'math_perfect':    { label: '⭐⭐⭐ Rare',  color: '#06b6d4' },
+      'streak_20':       { label: '⭐⭐⭐ Rare',  color: '#06b6d4' },
+      'streak_10':       { label: '⭐⭐⭐ Rare',  color: '#06b6d4' },
+      'challenge_10':    { label: '⭐⭐⭐ Rare',  color: '#06b6d4' },
+      'sudden_death_30': { label: '⭐⭐⭐ Rare',  color: '#06b6d4' },
+      'sudden_death_25': { label: '⭐⭐⭐ Rare',  color: '#06b6d4' },
+    };
 
-  _showModal(`
-    <div style="text-align:center;margin-bottom:1.5rem;">
-      <div style="margin-bottom:1rem;padding:1rem;background:${rarity.color}22;border-radius:16px;display:inline-block;">
-        ${_icon(badge.icon, 64, { color: rarity.color })}
+    const rarity = rarityMap[badgeId] || { label: 'Common', color: '#22c55e' };
+
+    _showModal(`
+      <div style="text-align:center;margin-bottom:1.5rem;">
+        <div style="margin-bottom:1rem;padding:1rem;background:${rarity.color}22;border-radius:16px;display:inline-block;">
+          ${_icon(badge.icon, 64, { color: rarity.color })}
+        </div>
+        <h2 style="font-size:1.375rem;font-weight:800;color:var(--text-1);margin-bottom:.5rem;">
+          ${_esc(badge.name)}
+        </h2>
+        <p style="font-size:.875rem;color:var(--text-3);line-height:1.6;margin:0;">
+          ${_esc(badge.desc)}
+        </p>
       </div>
-      <h2 style="font-size:1.375rem;font-weight:800;color:var(--text-1);margin-bottom:.5rem;">
-        ${_esc(badge.name)}
-      </h2>
-      <p style="font-size:.875rem;color:var(--text-3);line-height:1.6;margin:0;">
-        ${_esc(badge.desc)}
-      </p>
-    </div>
 
-    <div style="background:var(--bg-subtle);border:2px solid var(--border);border-radius:12px;
-                padding:1.125rem;margin-bottom:1rem;">
-      <p style="font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
-                color:var(--text-3);margin-bottom:.75rem;">How to Earn</p>
-      <p style="font-size:.9375rem;color:var(--text-2);line-height:1.7;margin:0;">
-        ${_esc(badge.desc)}
-      </p>
-    </div>
-
-    <div style="background:var(--success-subtle);border:2px solid var(--success-border);border-radius:12px;
-                padding:1.125rem;margin-bottom:1rem;text-align:center;">
-      <p style="font-size:.6875rem;font-weight:700;color:var(--success);text-transform:uppercase;
-                letter-spacing:.08em;margin-bottom:.625rem;">Badge Status</p>
-      <div style="display:flex;align-items:center;justify-content:center;gap:.625rem;">
-        <span style="font-size:1.5rem;color:var(--success);">✓</span>
-        <span style="font-size:.9375rem;font-weight:700;color:var(--text-1);">Earned & Unlocked</span>
+      <div style="background:var(--bg-subtle);border:2px solid var(--border);border-radius:12px;
+                  padding:1.125rem;margin-bottom:1rem;">
+        <p style="font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;
+                  color:var(--text-3);margin-bottom:.75rem;">How to Earn</p>
+        <p style="font-size:.9375rem;color:var(--text-2);line-height:1.7;margin:0;">
+          ${_esc(badge.desc)}
+        </p>
       </div>
-    </div>
 
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1rem;">
-      <div style="background:var(--bg-subtle);border:1px solid var(--border);border-radius:10px;
-                  padding:.875rem;text-align:center;">
-        <div style="font-size:.6875rem;font-weight:700;color:var(--text-3);text-transform:uppercase;
-                    letter-spacing:.06em;margin-bottom:.375rem;">Badge ID</div>
-        <div style="font-size:.8125rem;color:var(--text-1);font-family:var(--font-mono);word-break:break-all;">
-          ${_esc(badge.id)}
+      <div style="background:var(--success-subtle);border:2px solid var(--success-border);border-radius:12px;
+                  padding:1.125rem;margin-bottom:1rem;text-align:center;">
+        <p style="font-size:.6875rem;font-weight:700;color:var(--success);text-transform:uppercase;
+                  letter-spacing:.08em;margin-bottom:.625rem;">Badge Status</p>
+        <div style="display:flex;align-items:center;justify-content:center;gap:.625rem;">
+          <span style="font-size:1.5rem;color:var(--success);">✓</span>
+          <span style="font-size:.9375rem;font-weight:700;color:var(--text-1);">Earned & Unlocked</span>
         </div>
       </div>
-      <div style="background:var(--bg-subtle);border:1px solid var(--border);border-radius:10px;
-                  padding:.875rem;text-align:center;">
-        <div style="font-size:.6875rem;font-weight:700;color:var(--text-3);text-transform:uppercase;
-                    letter-spacing:.06em;margin-bottom:.375rem;">Rarity</div>
-        <div style="font-size:.9375rem;font-weight:800;color:${rarity.color};">
-          ${rarity.label}
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-bottom:1rem;">
+        <div style="background:var(--bg-subtle);border:1px solid var(--border);border-radius:10px;
+                    padding:.875rem;text-align:center;">
+          <div style="font-size:.6875rem;font-weight:700;color:var(--text-3);text-transform:uppercase;
+                      letter-spacing:.06em;margin-bottom:.375rem;">Date Earned</div>
+          <div style="font-size:.875rem;color:var(--text-1);font-weight:600;">
+            ${_esc(earnedAtStr)}
+          </div>
+        </div>
+        <div style="background:var(--bg-subtle);border:1px solid var(--border);border-radius:10px;
+                    padding:.875rem;text-align:center;">
+          <div style="font-size:.6875rem;font-weight:700;color:var(--text-3);text-transform:uppercase;
+                      letter-spacing:.06em;margin-bottom:.375rem;">Rarity</div>
+          <div style="font-size:.9375rem;font-weight:800;color:${rarity.color};">
+            ${rarity.label}
+          </div>
         </div>
       </div>
-    </div>
 
-    <div style="padding:1rem;background:linear-gradient(135deg,${rarity.color}15,${rarity.color}08);
-                border:1px solid ${rarity.color}40;border-radius:10px;margin-bottom:1.25rem;">
-      <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
-                color:${rarity.color};margin-bottom:.5rem;display:flex;align-items:center;gap:.375rem;">
-        ${_icon('star', 13, { color: rarity.color })} Achievement Unlocked!
-      </p>
-      <p style="font-size:.8125rem;color:var(--text-2);line-height:1.6;margin:0;">
-        You've proven your dedication by earning this badge. Keep playing to unlock more badges and climb the ranks towards the top!
-      </p>
-    </div>
+      <div style="padding:1rem;background:linear-gradient(135deg,${rarity.color}15,${rarity.color}08);
+                  border:1px solid ${rarity.color}40;border-radius:10px;margin-bottom:1.25rem;">
+        <p style="font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+                  color:${rarity.color};margin-bottom:.5rem;display:flex;align-items:center;gap:.375rem;">
+          ${_icon('star', 13, { color: rarity.color })} Achievement Unlocked!
+        </p>
+        <p style="font-size:.8125rem;color:var(--text-2);line-height:1.6;margin:0;">
+          You've proven your dedication by earning this badge. Keep playing to unlock more badges and climb the ranks towards the top!
+        </p>
+      </div>
 
-    <button onclick="Game._closeModal()" class="btn w-full" style="background:var(--accent);color:#fff;font-weight:700;">
-      Close
-    </button>
-  `);
-}
+      <button onclick="Game._closeModal()" class="btn w-full" style="background:var(--accent);color:#fff;font-weight:700;">
+        Close
+      </button>
+    `);
+  }
+
+// ── Badge format helpers ──────────────────────────────────
+  // Badges are stored as either plain strings (old) or {id, earnedAt} objects (new).
+  // These helpers normalise both formats everywhere.
+
+  function _badgeId(entry) {
+    return typeof entry === 'string' ? entry : entry.id;
+  }
+
+  function _badgeEarnedAt(entry) {
+    if (typeof entry === 'string') return null;
+    return entry.earnedAt || null;
+  }
+
+  function _badgeHas(badges, id) {
+    return (badges || []).some(b => _badgeId(b) === id);
+  }
+
+  function _badgeAdd(badges, id) {
+    // Returns a new entry in the new {id, earnedAt} format
+    return { id, earnedAt: new Date().toISOString() };
+  }
 
 /* ══════════════════════════════════════════════════════════════
    WORD SCRABBLE — HELPERS
@@ -2216,142 +2256,147 @@ function _krStartCountdownTick(getEl) {
   }
 
   async function _awardXP(xpAmount, gameType, extraData) {
-  const uid    = _uid();
-  const oldXP  = (_profile && _profile.xp) || 0;
-  const newXP  = Math.max(0, oldXP + (xpAmount || 0));
+    const uid    = _uid();
+    const oldXP  = (_profile && _profile.xp) || 0;
+    const newXP  = Math.max(0, oldXP + (xpAmount || 0));
 
-  const newBadges  = [...((_profile && _profile.badges) || [])];
-  const totalGames = ((_profile && _profile.totalGames) || 0) + 1;
-  const isWin      = extraData && extraData.win;
-  const totalWins  = ((_profile && _profile.totalWins) || 0) + (isWin ? 1 : 0);
-  const newStreak  = isWin ? ((_profile && _profile.streak) || 0) + 1 : 0;
+    const newBadges  = [...((_profile && _profile.badges) || [])];
+    const totalGames = ((_profile && _profile.totalGames) || 0) + 1;
+    const isWin      = extraData && extraData.win;
+    const totalWins  = ((_profile && _profile.totalWins) || 0) + (isWin ? 1 : 0);
+    const newStreak  = isWin ? ((_profile && _profile.streak) || 0) + 1 : 0;
 
-  const earnedBadges = [];
-  const _has = (id) => newBadges.includes(id);
-  const _earn = (id) => { if (!_has(id)) { newBadges.push(id); earnedBadges.push(id); } };
+    const earnedBadges = [];
+    const _has  = (id) => _badgeHas(newBadges, id);
+    const _earn = (id) => {
+      if (!_has(id)) {
+        newBadges.push(_badgeAdd(newBadges, id));
+        earnedBadges.push(id);
+      }
+    };
 
-  const hour = new Date().getHours();
-  const day  = new Date().getDay();
+    const hour = new Date().getHours();
+    const day  = new Date().getDay();
 
-  _earn('first_game');
-  if (totalGames >= 5)   _earn('games_5');
-  if (totalGames >= 10)  _earn('games_10');
-  if (totalGames >= 25)  _earn('games_25');
-  if (totalGames >= 50)  _earn('games_50');
-  if (totalGames >= 100) _earn('games_100');
-  if (totalGames >= 250) _earn('games_250');
+    _earn('first_game');
+    if (totalGames >= 5)   _earn('games_5');
+    if (totalGames >= 10)  _earn('games_10');
+    if (totalGames >= 25)  _earn('games_25');
+    if (totalGames >= 50)  _earn('games_50');
+    if (totalGames >= 100) _earn('games_100');
+    if (totalGames >= 250) _earn('games_250');
 
-  if (isWin && totalWins >= 5)  _earn('wins_5');
-  if (isWin && totalWins >= 25) _earn('wins_25');
-  if (isWin && totalWins >= 50) _earn('wins_50');
+    if (isWin && totalWins >= 5)  _earn('wins_5');
+    if (isWin && totalWins >= 25) _earn('wins_25');
+    if (isWin && totalWins >= 50) _earn('wins_50');
 
-  if (newStreak >= 5)  _earn('streak_5');
-  if (newStreak >= 10) _earn('streak_10');
-  if (newStreak >= 20) _earn('streak_20');
+    if (newStreak >= 5)  _earn('streak_5');
+    if (newStreak >= 10) _earn('streak_10');
+    if (newStreak >= 20) _earn('streak_20');
 
-  if (newXP >= 100)    _earn('xp_100');
-  if (newXP >= 500)    _earn('xp_500');
-  if (newXP >= 1000)   _earn('xp_1000');
-  if (newXP >= 2500)   _earn('xp_2500');
-  if (newXP >= 5000)   _earn('xp_5000');
-  if (newXP >= 10000)  _earn('xp_10000');
-  if (newXP >= 25000)  _earn('xp_25000');
-  if (newXP >= 50000)  _earn('xp_50000');
-  if (newXP >= 100000) _earn('xp_100000');
+    if (newXP >= 100)    _earn('xp_100');
+    if (newXP >= 500)    _earn('xp_500');
+    if (newXP >= 1000)   _earn('xp_1000');
+    if (newXP >= 2500)   _earn('xp_2500');
+    if (newXP >= 5000)   _earn('xp_5000');
+    if (newXP >= 10000)  _earn('xp_10000');
+    if (newXP >= 25000)  _earn('xp_25000');
+    if (newXP >= 50000)  _earn('xp_50000');
+    if (newXP >= 100000) _earn('xp_100000');
 
-  if (extraData && extraData.perfect)           _earn('perfect_quiz');
-  if (extraData && extraData.challengeWin)      _earn('challenge_win');
-  if (extraData && extraData.challengeWin && ((_profile && _profile.challengeWins) || 0) + 1 >= 5)  _earn('challenge_5');
-  if (extraData && extraData.challengeWin && ((_profile && _profile.challengeWins) || 0) + 1 >= 10) _earn('challenge_10');
-  if (extraData && extraData.sentChallenge)     _earn('first_challenge');
+    if (extraData && extraData.perfect)           _earn('perfect_quiz');
+    if (extraData && extraData.challengeWin)      _earn('challenge_win');
+    if (extraData && extraData.challengeWin && ((_profile && _profile.challengeWins) || 0) + 1 >= 5)  _earn('challenge_5');
+    if (extraData && extraData.challengeWin && ((_profile && _profile.challengeWins) || 0) + 1 >= 10) _earn('challenge_10');
+    if (extraData && extraData.sentChallenge)     _earn('first_challenge');
 
-  if (extraData && extraData.speedDemonCount >= 10) _earn('speed_demon');
-  if (extraData && extraData.speedDemonCount >= 30) _earn('speed_demon_pro');
+    if (extraData && extraData.speedDemonCount >= 10) _earn('speed_demon');
+    if (extraData && extraData.speedDemonCount >= 30) _earn('speed_demon_pro');
 
-  if (gameType === 'speedMath' && extraData && extraData.difficulty === 'hard')                                  _earn('math_master');
-  if (gameType === 'speedMath' && extraData && extraData.difficulty === 'hard' && extraData.perfect)            _earn('math_perfect');
-  if (gameType === 'wordScramble' && extraData && extraData.wordCorrect >= 10)                                   _earn('word_wizard');
-  if (gameType === 'wordScramble' && extraData && extraData.perfect)                                             _earn('perfect_scramble');
-  if (gameType === 'quizBlitz'   && extraData && extraData.perfect)                                              _earn('perfect_blitz');
-  if (gameType === 'trueOrFalse' && extraData && extraData.perfect)                                              _earn('perfect_tf');
+    if (gameType === 'speedMath' && extraData && extraData.difficulty === 'hard')                                  _earn('math_master');
+    if (gameType === 'speedMath' && extraData && extraData.difficulty === 'hard' && extraData.perfect)            _earn('math_perfect');
+    if (gameType === 'wordScramble' && extraData && extraData.wordCorrect >= 10)                                   _earn('word_wizard');
+    if (gameType === 'wordScramble' && extraData && extraData.perfect)                                             _earn('perfect_scramble');
+    if (gameType === 'quizBlitz'   && extraData && extraData.perfect)                                              _earn('perfect_blitz');
+    if (gameType === 'trueOrFalse' && extraData && extraData.perfect)                                              _earn('perfect_tf');
 
-  if (extraData && extraData.tfBestStreak >= 5)  _earn('tf_streak_5');
-  if (extraData && extraData.tfBestStreak >= 10) _earn('tf_streak_10');
-  if (extraData && extraData.tfBestStreak >= 20) _earn('tf_streak_20');
+    if (extraData && extraData.tfBestStreak >= 5)  _earn('tf_streak_5');
+    if (extraData && extraData.tfBestStreak >= 10) _earn('tf_streak_10');
+    if (extraData && extraData.tfBestStreak >= 20) _earn('tf_streak_20');
 
-  if (extraData && extraData.sdSurvived >= 5)  _earn('sudden_death_5');
-  if (extraData && extraData.sdSurvived >= 10) _earn('sudden_death_10');
-  if (extraData && extraData.sdSurvived >= 15) _earn('sudden_death_15');
-  if (extraData && extraData.sdSurvived >= 25) _earn('sudden_death_25');
-  if (extraData && extraData.sdSurvived >= 30) _earn('sudden_death_30');
-  if (extraData && extraData.sdSurvived >= 50) _earn('sudden_death_50');
+    if (extraData && extraData.sdSurvived >= 5)  _earn('sudden_death_5');
+    if (extraData && extraData.sdSurvived >= 10) _earn('sudden_death_10');
+    if (extraData && extraData.sdSurvived >= 15) _earn('sudden_death_15');
+    if (extraData && extraData.sdSurvived >= 25) _earn('sudden_death_25');
+    if (extraData && extraData.sdSurvived >= 30) _earn('sudden_death_30');
+    if (extraData && extraData.sdSurvived >= 50) _earn('sudden_death_50');
 
-  if (gameType === 'wordScramble') {
-    const cumWords = ((_profile && _profile.cumWordCorrect) || 0) + (extraData && extraData.wordCorrect || 0);
-    if (cumWords >= 50) _earn('word_master');
-    if (_profile) _profile.cumWordCorrect = cumWords;
-  }
-
-  if (hour < 7)  _earn('early_bird');
-  if (hour >= 22) _earn('night_owl');
-  if (day === 0 || day === 6) {
-    const weekendGames = ((_profile && _profile.weekendGames) || 0) + 1;
-    if (_profile) _profile.weekendGames = weekendGames;
-    if (weekendGames >= 5) _earn('weekend_warrior');
-  }
-
-  const levelData = _getLevelForXP(newXP);
-  if (levelData.rank >= 5)  _earn('rank_5');
-  if (levelData.rank >= 10) _earn('rank_10');
-  if (levelData.rank >= 15) _earn('rank_15');
-  if (_isMaxLevel(newXP))   _earn('max_level');
-
-  if (_profile) {
-    _profile.xp         = newXP;
-    _profile.totalGames = totalGames;
-    _profile.totalWins  = totalWins;
-    _profile.streak     = newStreak;
-    _profile.badges     = newBadges;
-    if (!_profile.stats) _profile.stats = {};
-    _profile.stats[gameType] = (_profile.stats[gameType] || 0) + 1;
-  }
-  await _saveProfileLocally(_profile);
-
-  if (_isOnline()) {
-    try {
-      const updateData = {
-        xp:         firebase.firestore.FieldValue.increment(xpAmount || 0),
-        totalGames: firebase.firestore.FieldValue.increment(1),
-        totalWins:  firebase.firestore.FieldValue.increment(isWin ? 1 : 0),
-        streak:     newStreak,
-        badges:     newBadges,
-        name:       _student().name   || '',
-        class:      _student().class  || '',
-        school:     _student().school || '',
-        [`stats.${gameType}`]: firebase.firestore.FieldValue.increment(1),
-      };
-      const batch = _db().batch();
-      batch.set(_db().collection('gameProfiles').doc(uid), updateData, { merge: true });
-      batch.set(_db().collection('gameLeaderboard').doc(uid), {
-        uid,
-        name:       _student().name   || '',
-        class:      _student().class  || '',
-        school:     _student().school || '',
-        xp:         newXP,
-        totalGames,
-        totalWins,
-        level:      levelData.name,
-        levelIcon:  levelData.icon,
-        updatedAt:  firebase.firestore.FieldValue.serverTimestamp(),
-      }, { merge: false });
-      await batch.commit();
-    } catch (e) {
-      console.warn('[game] _awardXP Firebase failed (local saved):', e);
+    if (gameType === 'wordScramble') {
+      const cumWords = ((_profile && _profile.cumWordCorrect) || 0) + (extraData && extraData.wordCorrect || 0);
+      if (cumWords >= 50) _earn('word_master');
+      if (_profile) _profile.cumWordCorrect = cumWords;
     }
-  }
 
-  return { xpAwarded: xpAmount || 0, earnedBadges, newXP, newLevel: levelData };
-}
+    if (hour < 7)  _earn('early_bird');
+    if (hour >= 22) _earn('night_owl');
+    if (day === 0 || day === 6) {
+      const weekendGames = ((_profile && _profile.weekendGames) || 0) + 1;
+      if (_profile) _profile.weekendGames = weekendGames;
+      if (weekendGames >= 5) _earn('weekend_warrior');
+    }
+
+    const levelData = _getLevelForXP(newXP);
+    if (levelData.rank >= 5)  _earn('rank_5');
+    if (levelData.rank >= 10) _earn('rank_10');
+    if (levelData.rank >= 15) _earn('rank_15');
+    if (_isMaxLevel(newXP))   _earn('max_level');
+
+    if (_profile) {
+      _profile.xp         = newXP;
+      _profile.totalGames = totalGames;
+      _profile.totalWins  = totalWins;
+      _profile.streak     = newStreak;
+      _profile.badges     = newBadges;
+      if (!_profile.stats) _profile.stats = {};
+      _profile.stats[gameType] = (_profile.stats[gameType] || 0) + 1;
+    }
+    await _saveProfileLocally(_profile);
+
+    if (_isOnline()) {
+      try {
+        const updateData = {
+          xp:         firebase.firestore.FieldValue.increment(xpAmount || 0),
+          totalGames: firebase.firestore.FieldValue.increment(1),
+          totalWins:  firebase.firestore.FieldValue.increment(isWin ? 1 : 0),
+          streak:     newStreak,
+          badges:     newBadges,
+          name:       _student().name   || '',
+          class:      _student().class  || '',
+          school:     _student().school || '',
+          [`stats.${gameType}`]: firebase.firestore.FieldValue.increment(1),
+        };
+        const batch = _db().batch();
+        batch.set(_db().collection('gameProfiles').doc(uid), updateData, { merge: true });
+        batch.set(_db().collection('gameLeaderboard').doc(uid), {
+          uid,
+          name:       _student().name   || '',
+          class:      _student().class  || '',
+          school:     _student().school || '',
+          xp:         newXP,
+          totalGames,
+          totalWins,
+          level:      levelData.name,
+          levelIcon:  levelData.icon,
+          updatedAt:  firebase.firestore.FieldValue.serverTimestamp(),
+        }, { merge: false });
+        await batch.commit();
+      } catch (e) {
+        console.warn('[game] _awardXP Firebase failed (local saved):', e);
+      }
+    }
+
+    return { xpAwarded: xpAmount || 0, earnedBadges, newXP, newLevel: levelData };
+  }
 
   /* ══════════════════════════════════════════════════════════════
      CHALLENGE NOTIFICATION LISTENER
@@ -2885,7 +2930,6 @@ function _dismissScrabblePopup(gameId) {
         if (!scrabblePendingSnap.empty)
           scrabblePendingSnap.docs.forEach(doc => pendingScrabble.push({ id: doc.id, ...doc.data() }));
 
-        // Merge active scrabble games (deduplicate)
         const seen = new Set();
         [...scrabbleActive1Snap.docs, ...scrabbleActive2Snap.docs].forEach(doc => {
           if (seen.has(doc.id)) return;
@@ -2922,8 +2966,7 @@ function _dismissScrabblePopup(gameId) {
     <span class="game-challenge-alert__arrow">${_icon('arrowRight', 16)}</span>
   </div>` : '';
 
-    // Active scrabble games notification
-    const myTurnScrabble  = activeScrabble.filter(g => g.turn === uid);
+    const myTurnScrabble    = activeScrabble.filter(g => g.turn === uid);
     const theirTurnScrabble = activeScrabble.filter(g => g.turn !== uid);
 
     const activeScrabbleNotif = activeScrabble.length > 0 ? `
@@ -2950,10 +2993,12 @@ function _dismissScrabblePopup(gameId) {
         <span class="game-challenge-alert__arrow">${_icon('arrowRight', 16)}</span>
       </div>` : '';
 
+    // Badges — use _badgeId() to handle both old string format and new {id,earnedAt} format
     const badgesHtml = (_profile.badges || []).length > 0
-      ? (_profile.badges || []).map(bid => {
-          const b = BADGES.find(x => x.id === bid);
-          return b ? `<button onclick="Game._showBadgeDetails('${_esc(bid)}')" 
+      ? (_profile.badges || []).map(entry => {
+          const bid = _badgeId(entry);
+          const b   = BADGES.find(x => x.id === bid);
+          return b ? `<button onclick="Game._showBadgeDetails('${_esc(bid)}')"
                                style="background:var(--accent-subtle);border:1px solid var(--accent-border);
                                        color:var(--accent-text);border-radius:99px;padding:2px 9px;
                                        font-size:.6875rem;font-weight:600;transition:all .15s;
@@ -3174,7 +3219,6 @@ function _dismissScrabblePopup(gameId) {
 
       </div>`);
 
-    // ── Scroll back to the top of the page ──
     requestAnimationFrame(function () {
       window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
       const appEl = document.getElementById('app');
