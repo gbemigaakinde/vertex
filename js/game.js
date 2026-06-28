@@ -2594,7 +2594,7 @@ function _dismissScrabblePopup(gameId) {
             <div class="game-card__desc">One wrong answer and it's over. Survive as long as possible for compounding XP.</div>
             <div class="game-card__meta">
               <span class="game-card__tag">High Risk</span>
-              <span class="game-card__tag">12s / question</span>
+              <span class="game-card__tag">20s / question</span>
               <span class="game-card__tag game-card__tag--xp">XP compounds</span>
             </div>
           </div>
