@@ -2786,6 +2786,42 @@ function _showAllLevelsModal(currentXP) {
 // Returns the session doc ID so _awardXP can close it.
 
 let _currentSessionId = null;
+let _sessionHeartbeatInt = null;
+let _sessionUnloadHandlerAttached = false;
+
+const SESSION_HEARTBEAT_MS = 20_000;   // update every 20s
+const SESSION_STALE_MS     = 90_000;   // teacher dashboard treats >90s silence as dead
+
+function _stopSessionHeartbeat() {
+  if (_sessionHeartbeatInt) { clearInterval(_sessionHeartbeatInt); _sessionHeartbeatInt = null; }
+}
+
+function _startSessionHeartbeat(sessionId) {
+  _stopSessionHeartbeat();
+  if (!sessionId || !_isOnline()) return;
+  _sessionHeartbeatInt = setInterval(() => {
+    if (!sessionId || !_isOnline()) return;
+    _db().collection('gameSessions').doc(sessionId).update({
+      lastHeartbeat: firebase.firestore.FieldValue.serverTimestamp(),
+    }).catch(() => {}); // non-fatal — connection hiccups shouldn't spam errors
+  }, SESSION_HEARTBEAT_MS);
+}
+
+function _attachSessionUnloadHandler() {
+  if (_sessionUnloadHandlerAttached) return;
+  _sessionUnloadHandlerAttached = true;
+  window.addEventListener('pagehide', () => {
+    if (!_currentSessionId) return;
+    try {
+      // Best-effort: mark abandoned so it stops showing as "live".
+      // Not guaranteed to complete, but works for normal tab closes.
+      _db().collection('gameSessions').doc(_currentSessionId).update({
+        status:  'abandoned',
+        endedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      }).catch(() => {});
+    } catch (e) { /* non-fatal */ }
+  });
+}
 
 async function _startGameSession(gameType, extraMeta) {
   const uid = _uid();
@@ -2797,8 +2833,9 @@ async function _startGameSession(gameType, extraMeta) {
       class:     _student().class  || '',
       school:    _student().school || '',
       gameType,
-      status:    'playing',
-      startedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      status:        'playing',
+      startedAt:     firebase.firestore.FieldValue.serverTimestamp(),
+      lastHeartbeat: firebase.firestore.FieldValue.serverTimestamp(),
       endedAt:   null,
       xpEarned:  0,
       score:     null,
@@ -2807,6 +2844,8 @@ async function _startGameSession(gameType, extraMeta) {
       meta:      extraMeta || {},
     });
     _currentSessionId = ref.id;
+    _startSessionHeartbeat(ref.id);
+    _attachSessionUnloadHandler();
     return ref.id;
   } catch (e) {
     console.warn('[game] _startGameSession error (non-fatal):', e);
@@ -2815,6 +2854,8 @@ async function _startGameSession(gameType, extraMeta) {
 }
 
 async function _endGameSession(sessionId, resultData) {
+  _stopSessionHeartbeat();
+  if (_currentSessionId === sessionId) _currentSessionId = null;
   if (!sessionId || !_isOnline()) return;
   try {
     await _db().collection('gameSessions').doc(sessionId).update({
@@ -2830,7 +2871,6 @@ async function _endGameSession(sessionId, resultData) {
   } catch (e) {
     console.warn('[game] _endGameSession error (non-fatal):', e);
   }
-  if (_currentSessionId === sessionId) _currentSessionId = null;
 }
 
   function _startQuizBlitz() {
@@ -6475,6 +6515,21 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
       return 'var(--danger)';
     }
 
+    // ── STALE SESSION DETECTION ──────────────────────────────
+    // A session is considered stale (no longer actually live) if its
+    // most recent heartbeat (or startedAt, for older docs with no
+    // heartbeat field) is older than this threshold. This protects
+    // against sessions that never got a 'finished' write because the
+    // student closed the tab, lost connection, or force-quit the app.
+    const SESSION_STALE_MS = 90_000; // 90 seconds
+
+    function _isSessionStale(d) {
+      const ref = d.lastHeartbeat || d.startedAt;
+      if (!ref) return true;
+      const refMs = ref.toDate ? ref.toDate().getTime() : new Date(ref).getTime();
+      return (Date.now() - refMs) > SESSION_STALE_MS;
+    }
+
     // ── INITIAL RENDER WITH LOADING STATE ────────────────────
     container.innerHTML = `
       <div style="margin-bottom:1rem;">
@@ -6514,67 +6569,83 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
       </div>
     `;
 
-    // ── LIVE LISTENER: currently playing ─────────────────────
-    let _liveUnsub = null;
-    let _historyUnsub = null;
+    // ── LIVE LISTENER STATE ───────────────────────────────────
+    let _liveUnsub         = null;
+    let _historyUnsub      = null;
+    let _liveStaleCheckInt = null;
+    let _latestLiveSnapDocs = [];
 
     function _stopTeacherListeners() {
       if (_liveUnsub)    { _liveUnsub();    _liveUnsub    = null; }
       if (_historyUnsub) { _historyUnsub(); _historyUnsub = null; }
+      if (_liveStaleCheckInt) { clearInterval(_liveStaleCheckInt); _liveStaleCheckInt = null; }
     }
 
     // Expose cleanup so showTab() can call it when switching away
     window._teacherGameStatsCleanup = _stopTeacherListeners;
 
+    function _renderLiveGamesList() {
+      const liveEl = document.getElementById('teacherLiveGames');
+      if (!liveEl) { _stopTeacherListeners(); return; }
+
+      const docs = (_latestLiveSnapDocs || []).filter(doc => !_isSessionStale(doc.data()));
+
+      if (docs.length === 0) {
+        liveEl.innerHTML = `<p style="font-size:var(--text-sm);color:var(--text-3);font-style:italic;margin:0;">
+          No students are playing right now.</p>`;
+        return;
+      }
+
+      const rows = docs.map(doc => {
+        const d = doc.data();
+        const startedAt = d.startedAt;
+        let elapsed = '—';
+        if (startedAt) {
+          const s = startedAt.toDate ? startedAt.toDate() : new Date(startedAt);
+          const ms = Date.now() - s.getTime();
+          const m  = Math.floor(ms / 60000);
+          const sec = Math.floor((ms % 60000) / 1000);
+          elapsed = m > 0 ? m + 'm ' + sec + 's' : sec + 's';
+        }
+        return `
+          <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem .75rem;
+                      background:var(--bg-base);border:1px solid var(--success-border);
+                      border-left:3px solid var(--success);border-radius:8px;margin-bottom:.375rem;">
+            <span style="font-size:1.125rem;flex-shrink:0;">${gameIcon(d.gameType)}</span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);
+                          white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                ${_esc2(d.name || '—')}
+              </div>
+              <div style="font-size:var(--text-xs);color:var(--text-3);">
+                ${_esc2(d.class || '')} · ${gameLabel(d.gameType)}
+              </div>
+            </div>
+            <div style="text-align:right;flex-shrink:0;">
+              <div style="font-size:var(--text-xs);font-weight:700;color:var(--success);">● LIVE</div>
+              <div style="font-size:var(--text-xs);color:var(--text-4);">${_esc2(elapsed)}</div>
+            </div>
+          </div>`;
+      }).join('');
+
+      liveEl.innerHTML = rows || `<p style="font-size:var(--text-sm);color:var(--text-3);font-style:italic;margin:0;">
+        No students are playing right now.</p>`;
+    }
+
+    // ── LIVE LISTENER: currently playing ─────────────────────
     _liveUnsub = _db().collection('gameSessions')
       .where('status', '==', 'playing')
       .onSnapshot(snap => {
-        const liveEl = document.getElementById('teacherLiveGames');
-        if (!liveEl) { _stopTeacherListeners(); return; }
-
-        if (snap.empty) {
-          liveEl.innerHTML = `<p style="font-size:var(--text-sm);color:var(--text-3);font-style:italic;margin:0;">
-            No students are playing right now.</p>`;
-          return;
-        }
-
-        const rows = snap.docs.map(doc => {
-          const d = doc.data();
-          const startedAt = d.startedAt;
-          let elapsed = '—';
-          if (startedAt) {
-            const s = startedAt.toDate ? startedAt.toDate() : new Date(startedAt);
-            const ms = Date.now() - s.getTime();
-            const m  = Math.floor(ms / 60000);
-            const sec = Math.floor((ms % 60000) / 1000);
-            elapsed = m > 0 ? m + 'm ' + sec + 's' : sec + 's';
-          }
-          return `
-            <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem .75rem;
-                        background:var(--bg-base);border:1px solid var(--success-border);
-                        border-left:3px solid var(--success);border-radius:8px;margin-bottom:.375rem;">
-              <span style="font-size:1.125rem;flex-shrink:0;">${gameIcon(d.gameType)}</span>
-              <div style="flex:1;min-width:0;">
-                <div style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);
-                            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                  ${_esc2(d.name || '—')}
-                </div>
-                <div style="font-size:var(--text-xs);color:var(--text-3);">
-                  ${_esc2(d.class || '')} · ${gameLabel(d.gameType)}
-                </div>
-              </div>
-              <div style="text-align:right;flex-shrink:0;">
-                <div style="font-size:var(--text-xs);font-weight:700;color:var(--success);">● LIVE</div>
-                <div style="font-size:var(--text-xs);color:var(--text-4);">${_esc2(elapsed)}</div>
-              </div>
-            </div>`;
-        }).join('');
-
-        liveEl.innerHTML = rows || `<p style="font-size:var(--text-sm);color:var(--text-3);font-style:italic;margin:0;">
-          No students are playing right now.</p>`;
+        _latestLiveSnapDocs = snap.docs;
+        _renderLiveGamesList();
       }, err => {
         console.warn('[teacher] live games listener error:', err);
       });
+
+    // Re-render every 15s even without new snapshot data, so sessions
+    // that go stale (no heartbeat, tab closed, connection lost) drop
+    // off the "Currently Playing" list without needing a new write.
+    _liveStaleCheckInt = setInterval(_renderLiveGamesList, 15_000);
 
     // ── TAB SWITCHING ─────────────────────────────────────────
     window._teacherGameTab = function(tab) {
@@ -6613,8 +6684,8 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
           }
 
           const rows = snap.docs.map(doc => {
-            const d      = doc.data();
-            const isLive = d.status === 'playing';
+            const d         = doc.data();
+            const stillLive = d.status === 'playing' && !_isSessionStale(d);
             const pct    = d.pct ?? null;
             const score  = d.score ?? null;
             const dur    = _duration(d.startedAt, d.endedAt);
@@ -6623,7 +6694,7 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
             return `
               <div style="display:flex;align-items:center;gap:.625rem;padding:.5625rem .875rem;
                           border-bottom:1px solid var(--border);
-                          ${isLive ? 'background:rgba(34,197,94,0.04);' : ''}">
+                          ${stillLive ? 'background:rgba(34,197,94,0.04);' : ''}">
                 <span style="font-size:1rem;flex-shrink:0;width:1.5rem;text-align:center;">${gameIcon(d.gameType)}</span>
                 <div style="flex:1;min-width:0;">
                   <div style="display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap;">
@@ -6637,15 +6708,17 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
                   </div>
                 </div>
                 <div style="text-align:right;flex-shrink:0;min-width:80px;">
-                  ${isLive
+                  ${stillLive
                     ? `<div style="font-size:var(--text-xs);font-weight:700;color:var(--success);">● Playing now</div>`
+                    : d.status === 'playing'
+                    ? `<div style="font-size:var(--text-xs);font-weight:700;color:var(--text-4);">⚠ Disconnected</div>`
                     : `<div style="font-size:var(--text-sm);font-weight:700;color:${_pctColor(pct)};">
                          ${pct !== null ? pct + '%' : score !== null ? score + ' pts' : '—'}
                        </div>`}
                   <div style="font-size:var(--text-xs);color:var(--text-4);">
-                    ${isLive ? '' : dur + ' · '}${when}
+                    ${stillLive ? '' : dur + ' · '}${when}
                   </div>
-                  ${!isLive && d.xpEarned ? `<div style="font-size:var(--text-xs);font-weight:600;color:var(--accent);">+${d.xpEarned} XP</div>` : ''}
+                  ${!stillLive && d.status !== 'playing' && d.xpEarned ? `<div style="font-size:var(--text-xs);font-weight:600;color:var(--accent);">+${d.xpEarned} XP</div>` : ''}
                 </div>
               </div>`;
           }).join('');
