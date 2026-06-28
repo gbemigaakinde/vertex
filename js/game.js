@@ -3382,46 +3382,10 @@ async function _endGameSession(sessionId, resultData) {
 ];
 
 function _buildWordPoolForStudent() {
-  const qBank    = window.questions || {};
-  const classKey = (_student().class || '').replace(/\s+/g, '').toLowerCase();
-  const classQs  = qBank[classKey] || {};
-  const extracted = [];
-
-  for (const subj of Object.keys(classQs)) {
-    const questions = classQs[subj] || [];
-    for (const q of questions) {
-      const allText = [q.q || '', ...(q.opts || []), q.exp || ''];
-      for (const text of allText) {
-        const words = text.replace(/[^a-zA-Z\s]/g, ' ').split(/\s+/);
-        for (const raw of words) {
-          const w = raw.toUpperCase().trim();
-          if (w.length >= 6 && w.length <= 14 && /^[A-Z]+$/.test(w)) {
-            extracted.push({ word: w, hint: 'From your ' + subj + ' syllabus' });
-          }
-        }
-      }
-    }
-  }
-
-  const seen = new Set();
-  const unique = [];
-  for (const item of extracted) {
-    if (!seen.has(item.word)) {
-      seen.add(item.word);
-      unique.push(item);
-    }
-  }
-
-  const combined = _shuffleArray([...unique, ..._wordBank]);
-  const deduped  = [];
-  const deduped_set = new Set();
-  for (const item of combined) {
-    if (!deduped_set.has(item.word)) {
-      deduped_set.add(item.word);
-      deduped.push(item);
-    }
-  }
-  return deduped;
+  // Returns only the curated word bank with proper hints.
+  // Question bank extraction has been removed to ensure
+  // all words have real, meaningful hints.
+  return _shuffleArray([..._wordBank]);
 }
 
   function _scrambleWord(word) {
@@ -3453,8 +3417,7 @@ function _buildWordPoolForStudent() {
 
   function _startWordScramble() {
   const count    = parseInt(document.getElementById('scrambleCount')?.value || '10', 10);
-  const fullPool = _buildWordPoolForStudent();
-  const words    = _shuffleArray(fullPool).slice(0, count);
+  const words    = _shuffleArray([..._wordBank]).slice(0, count);
   _closeModal();
   _gameState = {
     type:           'wordScramble',
