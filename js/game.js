@@ -4630,33 +4630,225 @@ function _buildWordPoolForStudent() {
       challengeWin = win;
       if (win) gs.xpEarned += XP_CHALLENGE_WIN;
     }
+
     try {
-      const updatePayload = { [`result_${_uid()}`]: { score: myScore, pct: myPct, completedAt: firebase.firestore.FieldValue.serverTimestamp() } };
-      if (isChallengerTurn) { updatePayload.challengerScore = myScore; updatePayload.status = 'completed'; }
-      else { updatePayload.challengedScore = myScore; updatePayload.status = (opponentScore !== null && opponentScore !== undefined) ? 'completed' : 'awaiting_challenger'; }
+      const updatePayload = {
+        [`result_${_uid()}`]: {
+          score: myScore,
+          pct: myPct,
+          completedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        },
+      };
+
+      if (isChallengerTurn) {
+        // Challenger just played — game is now complete
+        updatePayload.challengerScore = myScore;
+        updatePayload.status = 'completed';
+
+        // Determine winner and write final result fields so the challenged
+        // player can read them when they check back
+        const theirScore = opponentScore; // challenged player's score
+        const challengerWon  = myScore > theirScore;
+        const challengedWon  = theirScore > myScore;
+        const tied           = myScore === theirScore;
+
+        updatePayload.finalChallengerScore = myScore;
+        updatePayload.finalChallengedScore = theirScore;
+        updatePayload.finalWinnerUid = challengerWon
+          ? _uid()
+          : challengedWon
+            ? gs.challengedUid || null
+            : null;
+        updatePayload.finalTied = tied;
+
+      } else {
+        // Challenged player just played
+        updatePayload.challengedScore = myScore;
+        updatePayload.challengedUid   = _uid();
+
+        const challengerAlreadyPlayed =
+          opponentScore !== null && opponentScore !== undefined;
+
+        if (challengerAlreadyPlayed) {
+          // Challenger already played before us — resolve now
+          updatePayload.status = 'completed';
+          const challengerWon = opponentScore > myScore;
+          const challengedWon = myScore > opponentScore;
+          const tied          = myScore === opponentScore;
+
+          updatePayload.finalChallengerScore = opponentScore;
+          updatePayload.finalChallengedScore = myScore;
+          updatePayload.finalWinnerUid = challengedWon
+            ? _uid()
+            : challengerWon
+              ? null   // we don't store challenger UID here but null signals challenger won
+              : null;
+          updatePayload.finalTied = tied;
+        } else {
+          // Challenger hasn't played yet — wait for them
+          updatePayload.status = 'awaiting_challenger';
+        }
+      }
+
       await _db().collection('gameChallenges').doc(gs.challengeId).update(updatePayload);
-    } catch (e) { console.warn('[game] _finishChallenge update error:', e); }
-    await _endGameSession(gs._sessionId, { xpEarned: gs.xpEarned, score: myScore, pct: myPct, win, meta: { opponentName: gs.opponentName, opponentScore, challengeId: gs.challengeId } });
+    } catch (e) {
+      console.warn('[game] _finishChallenge update error:', e);
+    }
+
+    await _endGameSession(gs._sessionId, {
+      xpEarned: gs.xpEarned,
+      score: myScore,
+      pct: myPct,
+      win,
+      meta: {
+        opponentName: gs.opponentName,
+        opponentScore,
+        challengeId: gs.challengeId,
+      },
+    });
+
     const result = await _awardXP(gs.xpEarned, 'challenge', { win, challengeWin });
-    await _saveGameResult('challenge', { score: myScore, total, pct: myPct, xpEarned: gs.xpEarned, challengeId: gs.challengeId, opponentName: gs.opponentName });
+    await _saveGameResult('challenge', {
+      score: myScore,
+      total,
+      pct: myPct,
+      xpEarned: gs.xpEarned,
+      challengeId: gs.challengeId,
+      opponentName: gs.opponentName,
+    });
+
     let outcomeHtml = '';
     if (opponentScore !== null && opponentScore !== undefined) {
       const theirPct = Math.round((opponentScore / total) * 100);
       const tied     = myScore === opponentScore;
-      outcomeHtml = `<div style="margin:.75rem 0;padding:.875rem 1rem;border-radius:10px;text-align:center;background:${win ? 'var(--success-subtle)' : tied ? 'var(--warning-subtle)' : 'var(--danger-subtle)'};border:2px solid ${win ? 'var(--success-border)' : tied ? 'var(--warning-border)' : 'var(--danger-border)'};">
-        <div style="margin-bottom:.25rem;">${_icon(win ? 'trophy' : tied ? 'handWaving' : 'xCircle', 32, { color: win ? 'var(--success)' : tied ? 'var(--warning)' : 'var(--danger)' })}</div>
-        <p style="font-weight:700;font-size:1rem;margin:.25rem 0;color:var(--text-1);">${win ? 'You Won!' : tied ? "It's a Tie!" : 'You Lost!'}</p>
-        <p style="font-size:.875rem;color:var(--text-2);">You: ${myScore}/${total} (${myPct}%) vs ${_esc(gs.opponentName)}: ${opponentScore}/${total} (${theirPct}%)</p>
-        ${challengeWin ? `<p style="font-size:.875rem;font-weight:700;color:var(--success);">+${XP_CHALLENGE_WIN} bonus XP for winning!</p>` : ''}
-      </div>`;
+      outcomeHtml = `
+        <div style="margin:.75rem 0;padding:.875rem 1rem;border-radius:10px;text-align:center;
+                    background:${win ? 'var(--success-subtle)' : tied ? 'var(--warning-subtle)' : 'var(--danger-subtle)'};
+                    border:2px solid ${win ? 'var(--success-border)' : tied ? 'var(--warning-border)' : 'var(--danger-border)'};">
+          <div style="margin-bottom:.25rem;">
+            ${_icon(win ? 'trophy' : tied ? 'handWaving' : 'xCircle', 32, {
+              color: win ? 'var(--success)' : tied ? 'var(--warning)' : 'var(--danger)',
+            })}
+          </div>
+          <p style="font-weight:700;font-size:1rem;margin:.25rem 0;color:var(--text-1);">
+            ${win ? 'You Won!' : tied ? "It's a Tie!" : 'You Lost!'}
+          </p>
+          <p style="font-size:.875rem;color:var(--text-2);">
+            You: ${myScore}/${total} (${myPct}%) vs ${_esc(gs.opponentName)}: ${opponentScore}/${total} (${theirPct}%)
+          </p>
+          ${challengeWin
+            ? `<p style="font-size:.875rem;font-weight:700;color:var(--success);">+${XP_CHALLENGE_WIN} bonus XP for winning!</p>`
+            : ''}
+        </div>`;
     } else {
-      outcomeHtml = `<div style="margin:.75rem 0;padding:.875rem 1rem;border-radius:10px;text-align:center;background:var(--info-subtle);border:1px solid var(--info-border);">
-        <div style="margin-bottom:.25rem;">${_icon('hourglass', 32, { color: 'var(--accent)' })}</div>
-        <p style="font-weight:700;font-size:1rem;margin:.25rem 0;color:var(--text-1);">Waiting for ${_esc(gs.opponentName)}!</p>
-        <p style="font-size:.875rem;color:var(--text-2);">Your score: ${myScore}/${total} (${myPct}%). They'll be notified to play — check back later.</p>
-      </div>`;
+      // Opponent hasn't played yet — we are the challenged player waiting for challenger
+      outcomeHtml = `
+        <div style="margin:.75rem 0;padding:.875rem 1rem;border-radius:10px;text-align:center;
+                    background:var(--info-subtle);border:1px solid var(--info-border);">
+          <div style="margin-bottom:.25rem;">${_icon('hourglass', 32, { color: 'var(--accent)' })}</div>
+          <p style="font-weight:700;font-size:1rem;margin:.25rem 0;color:var(--text-1);">
+            Waiting for ${_esc(gs.opponentName)}!
+          </p>
+          <p style="font-size:.875rem;color:var(--text-2);">
+            Your score: ${myScore}/${total} (${myPct}%). They'll be notified to play — check back later to see the final result.
+          </p>
+          <button onclick="Game._watchChallengeResult('${_esc(gs.challengeId)}', '${_esc(gs.opponentName)}', ${total})"
+                  class="btn" style="margin-top:.75rem;font-size:.875rem;">
+            ${_icon('clock', 14)} Watch for Result
+          </button>
+        </div>`;
     }
-    _renderGameResult({ gameIcon: 'swords', gameName: 'Challenge', score: `${myScore} / ${total}`, pct: myPct, xpEarned: gs.xpEarned, perfect: false, win, result, extras: [], extraHtml: outcomeHtml, onPlayAgainKey: 'challenge' });
+
+    _renderGameResult({
+      gameIcon:      'swords',
+      gameName:      'Challenge',
+      score:         `${myScore} / ${total}`,
+      pct:           myPct,
+      xpEarned:      gs.xpEarned,
+      perfect:       false,
+      win,
+      result,
+      extras:        [],
+      extraHtml:     outcomeHtml,
+      onPlayAgainKey: 'challenge',
+    });
+  }
+  
+  function _watchChallengeResult(challengeId, opponentName, total) {
+    _showModal(`
+      <div style="text-align:center;margin-bottom:1.25rem;">
+        <div style="margin-bottom:.5rem;">${_icon('hourglass', 40, { color: 'var(--accent)' })}</div>
+        <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">Waiting for Result</h2>
+        <p style="font-size:.875rem;color:var(--text-3);margin-top:.375rem;line-height:1.6;">
+          Checking if <strong>${_esc(opponentName)}</strong> has played yet…
+        </p>
+        <div id="watchResultContent" style="margin-top:1rem;">
+          <div style="font-size:.875rem;color:var(--text-3);">Checking…</div>
+        </div>
+      </div>
+      <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full" style="margin-top:.75rem;">Close</button>
+    `);
+
+    _db().collection('gameChallenges').doc(challengeId).get().then(snap => {
+      const el = document.getElementById('watchResultContent');
+      if (!el) return;
+
+      if (!snap.exists) {
+        el.innerHTML = `<p style="color:var(--danger);font-size:.875rem;">Challenge not found.</p>`;
+        return;
+      }
+
+      const data = snap.data();
+
+      if (data.status === 'completed' && data.finalChallengerScore !== undefined && data.finalChallengedScore !== undefined) {
+        const myUid        = _uid();
+        const isChallenged = data.challengedUid === myUid;
+        const myScore      = isChallenged ? data.finalChallengedScore : data.finalChallengerScore;
+        const oppScore     = isChallenged ? data.finalChallengerScore : data.finalChallengedScore;
+        const myPct        = Math.round((myScore / total) * 100);
+        const oppPct       = Math.round((oppScore / total) * 100);
+        const tied         = data.finalTied;
+        const win          = myScore > oppScore;
+
+        el.innerHTML = `
+          <div style="padding:.875rem;border-radius:10px;
+                      background:${win ? 'var(--success-subtle)' : tied ? 'var(--warning-subtle)' : 'var(--danger-subtle)'};
+                      border:2px solid ${win ? 'var(--success-border)' : tied ? 'var(--warning-border)' : 'var(--danger-border)'};
+                      text-align:center;">
+            <div style="margin-bottom:.5rem;">
+              ${_icon(win ? 'trophy' : tied ? 'handWaving' : 'xCircle', 32, {
+                color: win ? 'var(--success)' : tied ? 'var(--warning)' : 'var(--danger)',
+              })}
+            </div>
+            <p style="font-size:1rem;font-weight:800;color:var(--text-1);margin:.25rem 0;">
+              ${win ? '🏆 You Won!' : tied ? "🤝 It's a Tie!" : '😔 You Lost!'}
+            </p>
+            <p style="font-size:.875rem;color:var(--text-2);margin-top:.375rem;">
+              You: ${myScore}/${total} (${myPct}%) vs ${_esc(opponentName)}: ${oppScore}/${total} (${oppPct}%)
+            </p>
+          </div>`;
+      } else if (data.status === 'awaiting_challenger' || data.status === 'pending') {
+        el.innerHTML = `
+          <div style="padding:.875rem;border-radius:10px;background:var(--bg-subtle);
+                      border:1px solid var(--border);text-align:center;">
+            <p style="font-size:.875rem;color:var(--text-2);margin:0;">
+              ${_esc(opponentName)} hasn't played yet. Check back later!
+            </p>
+          </div>`;
+      } else {
+        el.innerHTML = `
+          <div style="padding:.875rem;border-radius:10px;background:var(--bg-subtle);
+                      border:1px solid var(--border);text-align:center;">
+            <p style="font-size:.875rem;color:var(--text-3);margin:0;">
+              Status: ${_esc(data.status || 'unknown')}
+            </p>
+          </div>`;
+      }
+    }).catch(e => {
+      const el = document.getElementById('watchResultContent');
+      if (el) el.innerHTML = `<p style="color:var(--danger);font-size:.875rem;">Could not load result. Please try again.</p>`;
+      console.warn('[game] _watchChallengeResult error:', e);
+    });
   }
 
   /* ══════════════════════════════════════════════════════════════
@@ -7020,6 +7212,7 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
     _acceptChallenge,
     _playChallengerTurn,
     _answerChallenge,
+    _watchChallengeResult,
     // Shared
     _abandonGame,
     _closeModal,
@@ -7027,6 +7220,7 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
     _playAgain,
     _backToHome,
     _showAllLevelsModal,
+    _showBadgeDetails,
     _buildWordPoolForStudent,
     _startChallengeListener,
     _stopChallengeListener,
