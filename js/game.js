@@ -2993,7 +2993,6 @@ function _dismissScrabblePopup(gameId) {
         <span class="game-challenge-alert__arrow">${_icon('arrowRight', 16)}</span>
       </div>` : '';
 
-    // Badges — use _badgeId() to handle both old string format and new {id,earnedAt} format
     const badgesHtml = (_profile.badges || []).length > 0
       ? (_profile.badges || []).map(entry => {
           const bid = _badgeId(entry);
@@ -3055,46 +3054,53 @@ function _dismissScrabblePopup(gameId) {
         </div>
       </div>`;
 
+    // XP progress bar values
+    const xpCurrent = (_profile.xp || 0).toLocaleString();
+    const xpNext    = nextLevel ? nextLevel.minXP.toLocaleString() : null;
+
     window.UI.mount(`
       <div class="max-w-4xl mx-auto animate-fadeIn" style="padding-bottom:2rem;">
 
-        <div class="game-lobby-header glass">
-          <div class="game-lobby-header__left">
-            <div class="game-lobby-header__avatar">
-              ${_esc((_student().name || '?').charAt(0).toUpperCase())}
+        <!-- ═══ PROFILE HEADER CARD ═══ -->
+        <div class="glass game-profile-card">
+
+          <!-- Row 1: Avatar+Name on left, Level Badge on right — always one line -->
+          <div class="game-profile-top">
+            <div class="game-profile-left">
+              <div class="game-profile-avatar">
+                ${_esc((_student().name || '?').charAt(0).toUpperCase())}
+              </div>
+              <div class="game-profile-info">
+                <div class="game-profile-name">${_esc(_student().name || '')}</div>
+                <div class="game-profile-meta">${_esc(_student().class || '')}${_student().school ? ' · ' + _esc(_student().school) : ''}</div>
+              </div>
             </div>
-            <div>
-              <h1 class="game-lobby-header__name">${_esc(_student().name || '')}</h1>
-              <div class="game-lobby-header__meta">${_esc(_student().class || '')}${_student().school ? ' · ' + _esc(_student().school) : ''}</div>
-            </div>
-          </div>
-          <div class="game-lobby-header__right">
-            <div class="game-level-badge" style="--lvl-color:${level.color};">
-              <span class="game-level-badge__icon">${_icon(level.icon, 20, { color: level.color })}</span>
-              <div>
-                <div class="game-level-badge__name">${_esc(level.name)}</div>
-                <div class="game-level-badge__xp">${(_profile.xp || 0).toLocaleString()} XP</div>
+            <div class="game-profile-right">
+              <div class="game-level-pill" style="--lvl-color:${level.color};">
+                ${_icon(level.icon, 16, { color: level.color })}
+                <div class="game-level-pill__text">
+                  <span class="game-level-pill__name">${_esc(level.name)}</span>
+                  <span class="game-level-pill__rank">Rank ${currentRank}</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div class="glass-dark game-xp-bar-wrap">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
-            <span style="font-size:.8125rem;font-weight:700;color:var(--text-2);display:flex;align-items:center;gap:.3rem;">
-              ${_icon(level.icon, 14, { color: level.color })} ${_esc(level.name)}
-              <span style="font-size:.6875rem;background:var(--bg-muted);color:var(--text-3);
-                           border-radius:4px;padding:1px 5px;margin-left:2px;">Rank ${currentRank}</span>
-            </span>
-            ${!maxed
-              ? `<span style="font-size:.75rem;color:var(--text-3);">${(_profile.xp || 0).toLocaleString()} / ${nextLevel.minXP.toLocaleString()} XP &rarr; ${_esc(nextLevel.name)}</span>`
-              : `<span style="font-size:.75rem;font-weight:800;color:#f43f5e;">✦ Absolute — MAX LEVEL</span>`}
+          <!-- Row 2: XP bar + labels -->
+          <div class="game-profile-xp">
+            <div class="game-profile-xp-labels">
+              <span class="game-profile-xp-left">
+                ${_icon(level.icon, 11, { color: level.color })}
+                <span style="color:${level.color};font-weight:700;">${xpCurrent} XP</span>
+              </span>
+              ${!maxed
+                ? `<span class="game-profile-xp-right">→ ${_esc(nextLevel.name)} at ${xpNext} XP</span>`
+                : `<span class="game-profile-xp-right" style="color:#f43f5e;font-weight:800;">✦ MAX LEVEL</span>`}
+            </div>
+            <div class="game-xp-track" style="height:7px;margin-top:.3125rem;">
+              <div class="game-xp-fill" style="width:${xpPct}%;"></div>
+            </div>
           </div>
-          <div class="game-xp-track">
-            <div class="game-xp-fill" style="width:${xpPct}%;"></div>
-          </div>
-          ${maxed ? `<p style="font-size:.6875rem;color:var(--text-3);margin-top:.375rem;text-align:center;">
-            You have reached the highest rank. Your legacy is permanent.</p>` : ''}
         </div>
 
         ${levelStripHtml}
@@ -7401,31 +7407,152 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
       .timer-red    { color:var(--danger,#ef4444);animation:game-pulse-red .5s ease-in-out infinite alternate; }
       @keyframes game-pulse-red { from{opacity:1}to{opacity:.55} }
 
-      .game-lobby-header { display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;margin-bottom:.75rem;flex-wrap:wrap;gap:1rem;border-radius:var(--r-xl) !important; }
-      .game-lobby-header__left  { display:flex;align-items:center;gap:.875rem;min-width:0; }
-      .game-lobby-header__avatar { width:48px;height:48px;border-radius:50%;flex-shrink:0;background:var(--accent-subtle);border:2px solid var(--accent-border);display:flex;align-items:center;justify-content:center;font-size:1.375rem;font-weight:800;color:var(--accent-text); }
-      .game-lobby-header__name  { font-size:1.125rem;font-weight:700;color:var(--text-1);line-height:1.2; }
-      .game-lobby-header__meta  { font-size:.8125rem;color:var(--text-3);margin-top:2px; }
-      .game-lobby-header__right { flex-shrink:0; }
+      /* ═══ PROFILE HEADER CARD ═══ */
+      .game-profile-card {
+        padding:1rem 1.125rem;
+        margin-bottom:.625rem;
+        border-radius:var(--r-xl) !important;
+      }
 
-      .game-level-badge { display:flex;align-items:center;gap:.625rem;background:var(--bg-base);border:2px solid var(--lvl-color,var(--accent));border-radius:99px;padding:.375rem .875rem; }
-      .game-level-badge__icon { line-height:1; }
-      .game-level-badge__name { font-size:.875rem;font-weight:700;color:var(--lvl-color,var(--accent)); }
-      .game-level-badge__xp   { font-size:.6875rem;color:var(--text-3);font-family:var(--font-mono); }
+      /* Top row: avatar+name LEFT, level pill RIGHT — never wraps */
+      .game-profile-top {
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        gap:.625rem;
+        margin-bottom:.75rem;
+        min-width:0;
+      }
 
+      /* Left side: avatar + name block, takes available space, truncates */
+      .game-profile-left {
+        display:flex;
+        align-items:center;
+        gap:.625rem;
+        min-width:0;
+        flex:1;
+      }
+
+      .game-profile-avatar {
+        width:42px;
+        height:42px;
+        border-radius:50%;
+        flex-shrink:0;
+        background:var(--accent-subtle);
+        border:2px solid var(--accent-border);
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        font-size:1.25rem;
+        font-weight:800;
+        color:var(--accent-text);
+      }
+
+      .game-profile-info {
+        min-width:0;
+        flex:1;
+      }
+
+      .game-profile-name {
+        font-size:1rem;
+        font-weight:700;
+        color:var(--text-1);
+        line-height:1.2;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
+
+      .game-profile-meta {
+        font-size:.6875rem;
+        color:var(--text-3);
+        margin-top:2px;
+        white-space:nowrap;
+        overflow:hidden;
+        text-overflow:ellipsis;
+      }
+
+      /* Right side: level pill, never shrinks below its content */
+      .game-profile-right {
+        flex-shrink:0;
+      }
+
+      .game-level-pill {
+        display:flex;
+        align-items:center;
+        gap:.375rem;
+        background:color-mix(in srgb, var(--lvl-color, var(--accent)) 12%, transparent);
+        border:1.5px solid color-mix(in srgb, var(--lvl-color, var(--accent)) 40%, transparent);
+        border-radius:99px;
+        padding:.3125rem .75rem .3125rem .5rem;
+      }
+
+      .game-level-pill__text {
+        display:flex;
+        flex-direction:column;
+        line-height:1.2;
+      }
+
+      .game-level-pill__name {
+        font-size:.75rem;
+        font-weight:800;
+        color:var(--lvl-color, var(--accent));
+        white-space:nowrap;
+      }
+
+      .game-level-pill__rank {
+        font-size:.5625rem;
+        color:var(--text-3);
+        font-weight:600;
+      }
+
+      /* XP bar row */
+      .game-profile-xp {
+        /* sits below the top row */
+      }
+
+      .game-profile-xp-labels {
+        display:flex;
+        align-items:center;
+        justify-content:space-between;
+        font-size:.6875rem;
+        gap:.5rem;
+      }
+
+      .game-profile-xp-left {
+        display:flex;
+        align-items:center;
+        gap:.25rem;
+        color:var(--text-2);
+        font-weight:600;
+        white-space:nowrap;
+      }
+
+      .game-profile-xp-right {
+        color:var(--text-3);
+        font-size:.625rem;
+        text-align:right;
+        overflow:hidden;
+        text-overflow:ellipsis;
+        white-space:nowrap;
+      }
+
+      /* ═══ XP BAR (shared) ═══ */
       .game-xp-bar-wrap { padding:.875rem 1rem;border-radius:var(--r-lg) !important;margin-bottom:.75rem; }
       .game-xp-track    { width:100%;height:8px;background:var(--bg-muted);border-radius:99px;overflow:hidden;box-shadow:inset 0 1px 2px rgba(0,0,0,.08); }
       .game-xp-fill     { height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),#7c3aed);transition:width .8s cubic-bezier(0.4,0,0.2,1);box-shadow:0 0 8px rgba(79,110,247,.35); }
 
+      /* ═══ CHALLENGE ALERTS ═══ */
       .game-challenge-alert { display:flex;align-items:center;gap:.625rem;background:linear-gradient(135deg,#fef3c7,#fde68a);border:2px solid #f59e0b;border-radius:10px;padding:.75rem 1rem;margin:.625rem 0;cursor:pointer;font-size:.9rem;font-weight:700;color:#92400e;transition:transform .15s; }
       .game-challenge-alert--info { background:linear-gradient(135deg,#dbeafe,#bfdbfe);border-color:#3b82f6;color:#1e40af; }
       .game-challenge-alert:hover { transform:translateY(-2px); }
       .game-challenge-alert__icon { font-size:1.25rem;flex-shrink:0;display:flex;align-items:center; }
       .game-challenge-alert__arrow { margin-left:auto;display:flex;align-items:center; }
 
+      /* ═══ SECTION TITLE ═══ */
       .game-section-title { font-size:1rem;font-weight:700;color:var(--text-1);margin:.25rem 0 .75rem;letter-spacing:-.01em; }
 
-      /* Grid: 3-col on desktop (6 cards) → 2-col on tablet → 1-col on small mobile */
+      /* ═══ GAME CARDS GRID ═══ */
       .game-cards-grid { display:grid;grid-template-columns:repeat(3,1fr);gap:.75rem; }
       @media (max-width:720px) { .game-cards-grid { grid-template-columns:1fr 1fr; } }
       @media (max-width:420px) { .game-cards-grid { grid-template-columns:1fr; } }
@@ -7443,15 +7570,18 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
       .game-card__tag   { font-size:.625rem;font-weight:600;padding:2px 7px;border-radius:4px;background:var(--bg-subtle);color:var(--text-3);border:1px solid var(--border);text-transform:uppercase;letter-spacing:.03em; }
       .game-card__tag--xp { background:var(--accent-subtle);color:var(--accent-text);border-color:var(--accent-border); }
 
+      /* ═══ STATS ROW ═══ */
       .game-stats-row { display:grid;grid-template-columns:repeat(4,1fr);padding:.875rem;border-radius:var(--r-lg) !important;text-align:center; }
       @media (max-width:400px) { .game-stats-row { grid-template-columns:repeat(2,1fr);gap:.5rem; } }
       .game-stat-cell__value { font-size:1.5rem;font-weight:800;color:var(--text-1);font-family:var(--font-mono);line-height:1;margin-bottom:.25rem; }
       .game-stat-cell__label { font-size:.6875rem;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em; }
 
+      /* ═══ QUIZ HEADER ═══ */
       .game-quiz-header { padding:1rem 1.25rem !important;border-radius:var(--r-xl) !important; }
       .game-progress-track { width:100%;height:5px;background:var(--bg-muted);border-radius:99px;overflow:hidden; }
       .game-progress-fill  { height:100%;border-radius:99px;background:var(--accent);transition:width .4s ease; }
 
+      /* ═══ OPTION BUTTONS ═══ */
       .game-option-btn { display:flex;align-items:flex-start;gap:.875rem;width:100%;padding:.75rem 1rem;background:var(--bg-base);border:2px solid var(--border);border-radius:var(--r-lg);cursor:pointer;font-family:var(--font);font-size:var(--text-base);color:var(--text-1);text-align:left;transition:border-color .12s,background .12s,transform .1s;margin-bottom:.5rem; }
       .game-option-btn:last-child { margin-bottom:0; }
       .game-option-btn:hover:not(:disabled) { border-color:var(--accent-border);background:var(--accent-subtle);transform:translateX(3px); }
@@ -7464,7 +7594,7 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
 
       .game-card--scrabble:hover { border-color:rgba(124,58,237,.4) !important; }
 
-      /* ── True or False buttons ── */
+      /* ═══ TRUE/FALSE BUTTONS ═══ */
       .game-tf-btn {
         display:inline-flex;align-items:center;justify-content:center;gap:.625rem;
         padding:1rem;border-radius:var(--r-lg);font-size:1.125rem;font-weight:800;
@@ -7478,7 +7608,6 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
       .game-tf-btn--true:hover:not(:disabled)  { background:#059669; }
       .game-tf-btn--false:hover:not(:disabled) { background:#be123c; }
       .game-tf-btn:disabled { opacity:.6;cursor:default; }
-      /* Post-answer reveals */
       .game-tf-btn--revealed-correct { outline:3px solid var(--success);box-shadow:0 0 0 5px rgba(34,197,94,.18) !important; }
       .game-tf-btn--revealed-wrong   { opacity:.5; }
       .game-tf-btn--pressed-correct  { animation:game-tf-pop-correct .35s ease both; }
@@ -7486,12 +7615,14 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
       @keyframes game-tf-pop-correct { 0%{transform:scale(1)}40%{transform:scale(1.08)}100%{transform:scale(1)} }
       @keyframes game-tf-shake { 0%{transform:translateX(0)}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(4px)}100%{transform:translateX(0)} }
 
+      /* ═══ DIFFICULTY OPTIONS ═══ */
       .game-diff-option { display:flex;flex-direction:column;align-items:center;justify-content:center;padding:.75rem .5rem;border-radius:var(--r-lg);border:2px solid var(--border);background:var(--bg-base);cursor:pointer;transition:border-color .15s,background .15s;gap:.25rem;text-align:center; }
       .game-diff-option.selected { border-color:var(--accent);background:var(--accent-subtle); }
       .game-diff-option__icon { display:flex;align-items:center;justify-content:center; }
       .game-diff-option__name { font-size:.875rem;font-weight:700;color:var(--text-1); }
       .game-diff-option__desc { font-size:.625rem;color:var(--text-3);margin-top:1px; }
 
+      /* ═══ WORD SCRAMBLE ═══ */
       .game-scrambled-letters { display:flex;flex-wrap:wrap;justify-content:center;gap:.375rem;margin-bottom:.5rem;padding:.75rem; }
       .game-letter-tile { width:2.25rem;height:2.25rem;border-radius:6px;background:linear-gradient(145deg,var(--accent-subtle),var(--bg-subtle));border:2px solid var(--accent-border);display:inline-flex;align-items:center;justify-content:center;font-size:1rem;font-weight:800;color:var(--accent-text);font-family:var(--font-mono);box-shadow:0 2px 4px rgba(0,0,0,.06);transition:transform .15s; }
       @keyframes game-tile-bounce { 0%{transform:translateY(0)}30%{transform:translateY(-6px) scale(1.08)}60%{transform:translateY(2px)}100%{transform:translateY(0)} }
@@ -7505,15 +7636,13 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
       .game-shuffle-count { display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;background:var(--accent);color:#fff;border-radius:99px;font-size:.625rem;font-weight:800;padding:0 3px; }
       .game-shuffle-btn--disabled .game-shuffle-count { background:var(--text-4); }
 
+      /* ═══ RESULT SCREEN ═══ */
       .game-result-card { padding:1.5rem !important; }
       .game-perfect-banner { text-align:center;padding:.625rem 1rem;border-radius:8px;background:linear-gradient(135deg,#fef3c7,#fde68a);border:2px solid #f59e0b;font-weight:800;color:#92400e;font-size:.9375rem;margin-bottom:.75rem;display:flex;align-items:center;justify-content:center;gap:.375rem; }
       .game-badges-earned { background:var(--warning-subtle);border:1px solid var(--warning-border);border-radius:8px;padding:.875rem 1rem;margin-bottom:.75rem; }
       .game-badge-pop { background:var(--bg-base);border:1px solid var(--border);border-radius:6px;padding:.375rem .75rem;margin-bottom:.375rem;font-size:.875rem;color:var(--text-1);display:flex;align-items:center;gap:.5rem; }
       .game-badge-pop:last-child { margin-bottom:0; }
 
-      .game-badge-chip { display:inline-flex;align-items:center;gap:.3125rem;background:var(--accent-subtle);border:1px solid var(--accent-border);color:var(--accent-text);border-radius:99px;padding:2px 9px;font-size:.6875rem;font-weight:600;transition:transform .1s;cursor:default; }
-      .game-badge-chip:hover { transform:scale(1.05); }
-      
       .game-badge-chip { display:inline-flex;align-items:center;gap:.3125rem;background:var(--accent-subtle);border:1px solid var(--accent-border);color:var(--accent-text);border-radius:99px;padding:2px 9px;font-size:.6875rem;font-weight:600;transition:transform .1s,box-shadow .15s;cursor:pointer;font-family:var(--font); }
       .game-badge-chip:hover { transform:scale(1.08);box-shadow:0 4px 12px rgba(79,110,247,0.25); }
 
