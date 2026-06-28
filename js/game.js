@@ -246,7 +246,6 @@ const WS_PREMIUM = (function() {
 })();
 
 // Compact but solid word list for secondary school Scrabble
-// ~500 common valid words — enough for fair gameplay
 const WS_WORDLIST = new Set([
   // ── 2-letter words (full Official Scrabble Players Dictionary list) ──────
   'AA','AB','AD','AE','AG','AH','AI','AL','AM','AN','AR','AS','AT','AW','AX','AY',
