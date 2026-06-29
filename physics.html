@@ -1,0 +1,2535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Physics Mastery — Optics and Waves</title>
+<meta name="description" content="A comprehensive interactive Physics textbook covering Prisms, Refraction, Lenses, Optical Instruments, The Human Eye, Colours, Wave Motion, Sound, and Musical Instruments for senior secondary students." />
+<meta name="author" content="Vertex Tutorial" />
+<meta name="theme-color" content="#0d0d0f" media="(prefers-color-scheme: dark)" />
+<meta name="theme-color" content="#f7f7f8" media="(prefers-color-scheme: light)" />
+<meta name="color-scheme" content="light dark" />
+<link rel="apple-touch-icon" href="vertex.jpeg" />
+<link rel="icon" href="vertex.jpeg" type="image/png" />
+<script src="https://unpkg.com/@phosphor-icons/web@2.1.1/src/index.js"></script>
+<style>
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+:root {
+  --navy:   #1a2744;
+  --navy2:  #243560;
+  --amber:  #e8a020;
+  --amber2: #f0b840;
+  --slate:  #4a6fa5;
+  --sage:   #6b9e78;
+  --coral:  #c85a3a;
+  --paper:  #fafaf8;
+  --paper2: #f2efe8;
+  --ink:    #1e1e1e;
+  --ink2:   #3a3a3a;
+  --muted:  #6b6b6b;
+  --border: #d8d3c8;
+  --white:  #ffffff;
+  --radius: 10px;
+  --shadow: 0 4px 24px rgba(26,39,68,0.13);
+}
+html, body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: var(--navy);
+  font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+  color: var(--ink);
+  -webkit-text-size-adjust: 100%;
+}
+#shell {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  width: 100%;
+  max-width: 680px;
+  margin: 0 auto;
+  background: var(--paper);
+  position: relative;
+  overflow: hidden;
+}
+#topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: var(--navy);
+  color: var(--white);
+  flex-shrink: 0;
+  gap: 10px;
+  min-height: 54px;
+}
+#topbar-title {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+#toc-btn {
+  background: none;
+  border: none;
+  color: var(--white);
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  border-radius: 6px;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+#toc-btn:hover { background: rgba(255,255,255,0.12); }
+#progress-track {
+  height: 3px;
+  background: var(--navy2);
+  flex-shrink: 0;
+}
+#progress-fill {
+  height: 100%;
+  background: var(--amber);
+  width: 0%;
+  transition: width 0.3s ease;
+}
+#viewport {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+.page {
+  position: absolute;
+  inset: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 0 0 16px;
+  display: none;
+  background: var(--paper);
+}
+.page.active { display: block; }
+.page.slide-in-right {
+  animation: slideInRight 0.28s cubic-bezier(.25,.46,.45,.94) both;
+}
+.page.slide-in-left {
+  animation: slideInLeft 0.28s cubic-bezier(.25,.46,.45,.94) both;
+}
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0.4; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
+@keyframes slideInLeft {
+  from { transform: translateX(-100%); opacity: 0.4; }
+  to   { transform: translateX(0);     opacity: 1; }
+}
+#page-0 {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(160deg, var(--navy) 0%, var(--navy2) 100%);
+  color: var(--white);
+  padding: 40px 24px 32px;
+  text-align: center;
+  min-height: 100%;
+}
+#page-0.active { display: flex; }
+.cover-icon-wrap {
+  width: 90px;
+  height: 90px;
+  background: rgba(255,255,255,0.08);
+  border: 2px solid rgba(232,160,32,0.5);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 28px;
+}
+.cover-title {
+  font-family: Georgia, serif;
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.25;
+  margin-bottom: 10px;
+  color: var(--white);
+}
+.cover-subtitle {
+  font-size: 15px;
+  color: rgba(255,255,255,0.65);
+  margin-bottom: 36px;
+  line-height: 1.5;
+}
+.cover-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 40px;
+}
+.cover-chip {
+  background: rgba(255,255,255,0.1);
+  border: 1px solid rgba(255,255,255,0.2);
+  border-radius: 20px;
+  padding: 6px 14px;
+  font-size: 12px;
+  color: rgba(255,255,255,0.8);
+}
+.cover-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--amber);
+  color: var(--navy);
+  font-weight: 700;
+  font-size: 15px;
+  padding: 14px 32px;
+  border-radius: 30px;
+  border: none;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  letter-spacing: 0.3px;
+}
+.cover-btn:active { transform: scale(0.97); }
+.cover-btn:hover { background: var(--amber2); }
+#page-1 { padding: 0 0 24px; }
+.toc-header {
+  background: var(--navy);
+  color: var(--white);
+  padding: 24px 20px 20px;
+  margin-bottom: 4px;
+}
+.toc-header h1 {
+  font-family: Georgia, serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--white);
+  border: none;
+  padding: 0;
+  margin: 0 0 6px;
+}
+.toc-header p {
+  font-size: 13px;
+  color: rgba(255,255,255,0.6);
+  margin: 0;
+  text-align: left;
+}
+.toc-list { list-style: none; padding: 12px 16px 0; }
+.toc-item {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  background: var(--white);
+  border-radius: var(--radius);
+  padding: 16px 14px;
+  margin-bottom: 10px;
+  cursor: pointer;
+  border: 1.5px solid var(--border);
+  transition: border-color 0.2s, box-shadow 0.2s;
+  text-align: left;
+}
+.toc-item:active { background: var(--paper2); }
+.toc-item:hover {
+  border-color: var(--slate);
+  box-shadow: 0 2px 12px rgba(74,111,165,0.12);
+}
+.toc-num {
+  width: 36px;
+  height: 36px;
+  background: var(--navy);
+  color: var(--amber);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Georgia, serif;
+  font-size: 15px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.toc-text { flex: 1; }
+.toc-chapter-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--muted);
+  margin-bottom: 3px;
+}
+.toc-chapter-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.3;
+}
+.toc-arrow { color: var(--muted); flex-shrink: 0; }
+.chapter-banner {
+  background: linear-gradient(135deg, var(--navy) 0%, var(--navy2) 100%);
+  color: var(--white);
+  padding: 32px 20px 28px;
+  margin-bottom: 0;
+  position: relative;
+  overflow: hidden;
+}
+.chapter-banner::after {
+  content: '';
+  position: absolute;
+  bottom: -30px;
+  right: -30px;
+  width: 120px;
+  height: 120px;
+  background: rgba(232,160,32,0.12);
+  border-radius: 50%;
+}
+.chapter-eyebrow {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: var(--amber);
+  margin-bottom: 10px;
+  font-weight: 600;
+}
+.chapter-banner h1 {
+  font-family: Georgia, serif;
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--white);
+  line-height: 1.25;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+.page-body {
+  padding: 20px 18px 8px;
+}
+h1 {
+  font-family: Georgia, serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 14px;
+  line-height: 1.3;
+  border-bottom: 3px solid var(--amber);
+  padding-bottom: 10px;
+}
+h2 {
+  font-family: Georgia, serif;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--navy);
+  margin: 26px 0 10px;
+  line-height: 1.3;
+}
+h3 {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--slate);
+  margin: 20px 0 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+p {
+  font-size: 14.5px;
+  line-height: 1.7;
+  color: var(--ink2);
+  margin-bottom: 12px;
+  text-align: left;
+}
+ul, ol {
+  margin: 8px 0 12px 20px;
+}
+li {
+  font-size: 14px;
+  line-height: 1.65;
+  color: var(--ink2);
+  margin-bottom: 5px;
+}
+.objectives {
+  background: rgba(74,111,165,0.07);
+  border-left: 4px solid var(--slate);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 16px;
+  margin: 0 0 20px;
+}
+.objectives-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--slate);
+  margin-bottom: 10px;
+}
+.objectives ul { margin: 0 0 0 16px; }
+.objectives li { font-size: 13.5px; }
+.example {
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-left: 4px solid var(--coral);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 14px 14px 12px;
+  margin: 14px 0;
+}
+.example-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--coral);
+  margin-bottom: 10px;
+}
+.ex-line {
+  font-style: italic;
+  font-size: 14px;
+  color: var(--ink);
+  padding: 4px 0 4px 10px;
+  border-left: 2px solid var(--border);
+  margin: 5px 0;
+  line-height: 1.5;
+}
+.callout {
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 14px;
+  margin: 14px 0;
+  border-left-width: 4px;
+  border-left-style: solid;
+}
+.callout-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  margin-bottom: 8px;
+}
+.callout-tip  { background: rgba(107,158,120,0.08); border-color: var(--sage); }
+.callout-tip .callout-label  { color: var(--sage); }
+.callout-key  { background: rgba(74,111,165,0.07); border-color: var(--slate); }
+.callout-key .callout-label  { color: var(--slate); }
+.callout-warn { background: rgba(200,90,58,0.07);  border-color: var(--coral); }
+.callout-warn .callout-label { color: var(--coral); }
+.callout p, .callout ul, .callout li { font-size: 14px; margin-bottom: 6px; }
+.callout ul { margin-top: 4px; }
+.table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 14px 0;
+  border-radius: var(--radius);
+  border: 1.5px solid var(--border);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  min-width: 320px;
+}
+thead { background: var(--navy); }
+thead th {
+  padding: 11px 12px;
+  text-align: left;
+  color: var(--white);
+  font-weight: 700;
+  font-size: 12px;
+  letter-spacing: 0.3px;
+}
+tbody td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--border);
+  color: var(--ink2);
+  line-height: 1.5;
+  vertical-align: top;
+}
+tbody tr:last-child td { border-bottom: none; }
+tbody tr:nth-child(even) { background: var(--paper2); }
+.practice {
+  background: rgba(74,111,165,0.05);
+  border: 1.5px dashed var(--slate);
+  border-radius: var(--radius);
+  padding: 16px;
+  margin: 18px 0;
+}
+.practice-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--slate);
+  margin-bottom: 14px;
+}
+.exercise {
+  background: var(--white);
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  padding: 14px;
+  margin-bottom: 10px;
+}
+.exercise:last-child { margin-bottom: 0; }
+.exercise-num {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--slate);
+  letter-spacing: 0.5px;
+  margin-bottom: 7px;
+}
+.exercise p { font-size: 14px; margin-bottom: 10px; }
+.reveal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--sage);
+  color: var(--white);
+  border: none;
+  border-radius: 6px;
+  padding: 8px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.reveal-btn:hover { background: #5a8d67; }
+.reveal-btn:active { transform: scale(0.97); }
+.answer-box {
+  display: none;
+  margin-top: 12px;
+  padding: 12px;
+  background: rgba(107,158,120,0.1);
+  border-left: 3px solid var(--sage);
+  border-radius: 0 6px 6px 0;
+  font-size: 13.5px;
+  color: var(--ink2);
+  line-height: 1.6;
+}
+.answer-box.open { display: block; }
+.summary {
+  background: linear-gradient(135deg, rgba(26,39,68,0.05), rgba(74,111,165,0.06));
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 18px;
+  margin: 22px 0 10px;
+}
+.summary-title {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: Georgia, serif;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 12px;
+}
+.summary-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13.5px;
+  color: var(--ink2);
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+.summary-item ph-icon { flex-shrink: 0; margin-top: 2px; }
+.divider {
+  height: 1px;
+  background: var(--border);
+  margin: 20px 0;
+}
+.mistake {
+  background: rgba(200,90,58,0.06);
+  border-left: 4px solid var(--coral);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 14px;
+  margin: 14px 0;
+}
+.mistake-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--coral);
+  margin-bottom: 8px;
+}
+.mistake p { font-size: 14px; margin-bottom: 6px; }
+.mistake p:last-child { margin: 0; }
+#bottom-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  background: var(--white);
+  border-top: 1.5px solid var(--border);
+  flex-shrink: 0;
+  gap: 8px;
+}
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--navy);
+  color: var(--white);
+  border: none;
+  border-radius: 8px;
+  padding: 11px 18px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, transform 0.15s;
+  flex-shrink: 0;
+  min-width: 90px;
+  justify-content: center;
+}
+.nav-btn:active { transform: scale(0.96); }
+.nav-btn:hover  { background: var(--navy2); }
+.nav-btn:disabled {
+  background: var(--border);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+#page-counter {
+  font-family: Georgia, serif;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--navy);
+  text-align: center;
+  flex: 1;
+  white-space: nowrap;
+}
+#toc-overlay {
+  display: none;
+  position: absolute;
+  inset: 0;
+  z-index: 100;
+  background: rgba(10,16,32,0.55);
+  backdrop-filter: blur(3px);
+}
+#toc-overlay.open { display: block; }
+#toc-drawer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: min(320px, 88vw);
+  height: 100%;
+  background: var(--paper);
+  box-shadow: -4px 0 32px rgba(0,0,0,0.22);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(.25,.46,.45,.94);
+}
+#toc-overlay.open #toc-drawer {
+  transform: translateX(0);
+}
+.drawer-header {
+  background: var(--navy);
+  color: var(--white);
+  padding: 20px 16px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-shrink: 0;
+}
+.drawer-header h2 {
+  font-family: Georgia, serif;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--white);
+  margin: 0;
+}
+#close-toc {
+  background: rgba(255,255,255,0.12);
+  border: none;
+  border-radius: 6px;
+  color: var(--white);
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  transition: background 0.2s;
+}
+#close-toc:hover { background: rgba(255,255,255,0.22); }
+.drawer-list {
+  list-style: none;
+  overflow-y: auto;
+  flex: 1;
+  padding: 12px;
+}
+.drawer-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+  margin-bottom: 4px;
+}
+.drawer-item:hover { background: var(--paper2); }
+.drawer-item:active { background: var(--border); }
+.drawer-num {
+  width: 30px;
+  height: 30px;
+  background: var(--navy);
+  color: var(--amber);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Georgia, serif;
+  font-size: 13px;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+.drawer-name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.35;
+}
+.drawer-sub {
+  font-size: 11px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+.drawer-divider {
+  height: 1px;
+  background: var(--border);
+  margin: 4px 0 8px;
+}
+.worked {
+  background: var(--white);
+  border: 1.5px solid var(--border);
+  border-left: 4px solid var(--amber);
+  border-radius: 0 var(--radius) var(--radius) 0;
+  padding: 14px 14px 12px;
+  margin: 14px 0;
+}
+.worked-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  color: var(--amber);
+  margin-bottom: 10px;
+}
+.worked p { font-size: 14px; margin-bottom: 8px; }
+.worked p:last-child { margin: 0; }
+.step {
+  font-size: 13.5px;
+  color: var(--ink2);
+  padding: 5px 0 5px 12px;
+  border-left: 2px solid var(--amber);
+  margin: 6px 0;
+  line-height: 1.6;
+}
+</style>
+</head>
+<body>
+<div id="shell">
+
+  <div id="topbar">
+    <span id="topbar-title">Physics Mastery — Optics and Waves</span>
+    <button id="toc-btn" onclick="openToc()" aria-label="Table of Contents">
+      <ph-icon name="list" size="22"></ph-icon>
+    </button>
+  </div>
+
+  <div id="progress-track">
+    <div id="progress-fill"></div>
+  </div>
+
+  <div id="viewport">
+
+    <!-- PAGE 0 — COVER -->
+    <div class="page active" id="page-0">
+      <div class="cover-icon-wrap">
+        <ph-icon name="atom" size="48" color="#e8a020"></ph-icon>
+      </div>
+      <div class="cover-title">Physics Mastery</div>
+      <div class="cover-subtitle">Optics, Waves and Sound — a complete interactive textbook for senior secondary students</div>
+      <div class="cover-chips">
+        <span class="cover-chip">7 Chapters</span>
+        <span class="cover-chip">Worked Examples</span>
+        <span class="cover-chip">UTME / WAEC Questions</span>
+        <span class="cover-chip">Self-Check Answers</span>
+      </div>
+      <button class="cover-btn" onclick="goToPage(1, 1)">
+        <ph-icon name="arrow-right" size="18"></ph-icon>
+        Begin Reading
+      </button>
+    </div>
+
+    <!-- PAGE 1 — TABLE OF CONTENTS -->
+    <div class="page" id="page-1">
+      <div class="toc-header">
+        <h1>Contents</h1>
+        <p>Tap any chapter to jump straight to it.</p>
+      </div>
+      <ul class="toc-list">
+        <li class="toc-item" onclick="goToPage(2, 1)">
+          <div class="toc-num">1</div>
+          <div class="toc-text">
+            <div class="toc-chapter-label">Chapter 1</div>
+            <div class="toc-chapter-name">Prisms — Triangular and Rectangular</div>
+          </div>
+          <div class="toc-arrow"><ph-icon name="caret-right" size="18"></ph-icon></div>
+        </li>
+        <li class="toc-item" onclick="goToPage(4, 1)">
+          <div class="toc-num">2</div>
+          <div class="toc-text">
+            <div class="toc-chapter-label">Chapter 2</div>
+            <div class="toc-chapter-name">Angle of Deviation, Real Depth and Apparent Depth</div>
+          </div>
+          <div class="toc-arrow"><ph-icon name="caret-right" size="18"></ph-icon></div>
+        </li>
+        <li class="toc-item" onclick="goToPage(7, 1)">
+          <div class="toc-num">3</div>
+          <div class="toc-text">
+            <div class="toc-chapter-label">Chapter 3</div>
+            <div class="toc-chapter-name">Lenses, Lens Formula and Power of a Lens</div>
+          </div>
+          <div class="toc-arrow"><ph-icon name="caret-right" size="18"></ph-icon></div>
+        </li>
+        <li class="toc-item" onclick="goToPage(10, 1)">
+          <div class="toc-num">4</div>
+          <div class="toc-text">
+            <div class="toc-chapter-label">Chapter 4</div>
+            <div class="toc-chapter-name">Optical Instruments and The Human Eye</div>
+          </div>
+          <div class="toc-arrow"><ph-icon name="caret-right" size="18"></ph-icon></div>
+        </li>
+        <li class="toc-item" onclick="goToPage(13, 1)">
+          <div class="toc-num">5</div>
+          <div class="toc-text">
+            <div class="toc-chapter-label">Chapter 5</div>
+            <div class="toc-chapter-name">Colours — Dispersion and Colour Mixing</div>
+          </div>
+          <div class="toc-arrow"><ph-icon name="caret-right" size="18"></ph-icon></div>
+        </li>
+        <li class="toc-item" onclick="goToPage(15, 1)">
+          <div class="toc-num">6</div>
+          <div class="toc-text">
+            <div class="toc-chapter-label">Chapter 6</div>
+            <div class="toc-chapter-name">Wave Motion and Properties of Waves</div>
+          </div>
+          <div class="toc-arrow"><ph-icon name="caret-right" size="18"></ph-icon></div>
+        </li>
+        <li class="toc-item" onclick="goToPage(18, 1)">
+          <div class="toc-num">7</div>
+          <div class="toc-text">
+            <div class="toc-chapter-label">Chapter 7</div>
+            <div class="toc-chapter-name">Sound Waves and Musical Instruments</div>
+          </div>
+          <div class="toc-arrow"><ph-icon name="caret-right" size="18"></ph-icon></div>
+        </li>
+      </ul>
+    </div>
+
+    <!-- PAGE 2 — CHAPTER 1: TRIANGULAR PRISM -->
+    <div class="page" id="page-2">
+      <div class="chapter-banner">
+        <div class="chapter-eyebrow">Chapter 1</div>
+        <h1>Prisms — Triangular and Rectangular</h1>
+      </div>
+      <div class="page-body">
+        <div class="objectives">
+          <div class="objectives-label">
+            <ph-icon name="target" size="15"></ph-icon>
+            Learning Objectives
+          </div>
+          <ul>
+            <li>Understand what a prism is and its parts</li>
+            <li>Trace a ray of light through a triangular prism</li>
+            <li>Understand refraction at each surface</li>
+            <li>Know the conditions for minimum deviation</li>
+            <li>Understand total internal reflection in a rectangular prism</li>
+            <li>Know the practical uses of each prism type</li>
+          </ul>
+        </div>
+
+        <h2>What Is a Prism?</h2>
+        <p>A <strong>prism</strong> is a transparent solid object with flat, polished surfaces through which light can pass and be refracted (bent). The surfaces are called <strong>faces</strong>. Prisms are used in many optical instruments to bend, reflect, or disperse light.</p>
+
+        <h2>The Triangular Prism</h2>
+        <p>A triangular prism has a cross-section that is a triangle. It has three rectangular faces and two triangular ends. The important parts to know are:</p>
+        <ul>
+          <li><strong>Refracting faces</strong> — the two faces through which light enters and exits</li>
+          <li><strong>Refracting edge</strong> — the edge where the two refracting faces meet</li>
+          <li><strong>Apex angle (A)</strong> — the angle at the top between the two refracting faces. Also called the angle of the prism</li>
+          <li><strong>Base</strong> — the bottom face, opposite the apex</li>
+        </ul>
+
+        <h2>How Light Travels Through a Triangular Prism</h2>
+        <p>When a ray of light enters a triangular prism, it undergoes refraction <strong>twice</strong> — once when entering and once when leaving. At each surface, the ray bends because it moves from one medium (air) into another (glass) and back again.</p>
+
+        <div class="example">
+          <div class="example-label"><ph-icon name="info" size="13"></ph-icon> Step-by-Step Ray Tracing</div>
+          <p><strong>Step 1:</strong> The ray hits the first face and bends towards the normal (air to glass — it slows down).</p>
+          <p><strong>Step 2:</strong> The ray travels through the glass.</p>
+          <p><strong>Step 3:</strong> The ray hits the second face and bends away from the normal (glass to air — it speeds up).</p>
+          <p style="margin-bottom:0;"><strong>Result:</strong> The emergent ray is NOT parallel to the incident ray. It has been deviated (turned) towards the base of the prism.</p>
+        </div>
+
+        <div class="callout callout-key">
+          <div class="callout-label"><ph-icon name="key" size="14"></ph-icon> Key Rule</div>
+          <p style="margin-bottom:0;">Light passing through a triangular prism always bends towards the <strong>base</strong> of the prism, regardless of which face it enters.</p>
+        </div>
+
+        <h2>Important Angles in a Triangular Prism</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Symbol</th><th>Name</th><th>Description</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>A</td><td>Apex angle / Angle of prism</td><td>Angle between the two refracting faces</td></tr>
+              <tr><td>i</td><td>Angle of incidence</td><td>Angle between incident ray and normal at first face</td></tr>
+              <tr><td>r&#8321;</td><td>Angle of refraction (first face)</td><td>Angle inside the prism at first face</td></tr>
+              <tr><td>r&#8322;</td><td>Angle of incidence (second face)</td><td>Angle inside the prism at second face</td></tr>
+              <tr><td>e</td><td>Angle of emergence</td><td>Angle of exit ray at second face</td></tr>
+              <tr><td>D</td><td>Angle of deviation</td><td>Total angle the ray is turned from its original direction</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout callout-tip">
+          <div class="callout-label"><ph-icon name="lightbulb" size="14"></ph-icon> Important Relationship</div>
+          <p>Inside the prism: <strong>r&#8321; + r&#8322; = A</strong></p>
+          <p style="margin-bottom:0;">Total deviation: <strong>D = (i + e) - A</strong></p>
+        </div>
+
+        <h2>Minimum Deviation</h2>
+        <p>As you rotate the prism (change the angle of incidence), the angle of deviation first <strong>decreases</strong>, reaches a minimum value (D&#8336;), then <strong>increases</strong> again. The minimum deviation is a very important condition.</p>
+        <p>At minimum deviation:</p>
+        <ul>
+          <li>The ray travels symmetrically through the prism</li>
+          <li>The angle of incidence equals the angle of emergence: <strong>i = e</strong></li>
+          <li>The refracted ray inside is parallel to the base: <strong>r&#8321; = r&#8322; = r</strong></li>
+          <li>The refractive index can be calculated from the formula below</li>
+        </ul>
+
+        <div class="callout callout-key">
+          <div class="callout-label"><ph-icon name="function" size="14"></ph-icon> Refractive Index Formula (Minimum Deviation)</div>
+          <p style="font-size:15px; font-family: Georgia, serif; margin-bottom:0;">n = sin[(A + D&#8336;) / 2] / sin[A / 2]</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 3 — RECTANGULAR GLASS PRISM -->
+    <div class="page" id="page-3">
+      <div class="page-body">
+        <h1>The Rectangular Glass Prism</h1>
+        <p>A rectangular glass prism (also called a <strong>right-angled prism</strong>) is a prism with angles of 45°, 45°, and 90°. It is one of the most useful optical components because it uses <strong>total internal reflection</strong> to reflect light perfectly — better than any mirror.</p>
+
+        <h2>What Is Total Internal Reflection (TIR)?</h2>
+        <p>Total internal reflection occurs when light tries to pass from a <strong>denser medium</strong> (glass) to a <strong>less dense medium</strong> (air), but the angle of incidence is <strong>greater than or equal to the critical angle</strong>. Instead of passing through, all the light is reflected back into the glass — with no loss of intensity.</p>
+
+        <div class="callout callout-key">
+          <div class="callout-label"><ph-icon name="key" size="14"></ph-icon> Two Conditions for TIR</div>
+          <ul>
+            <li>Light must travel from denser to less dense medium (glass to air)</li>
+            <li>The angle of incidence must be greater than or equal to the critical angle (C)</li>
+          </ul>
+        </div>
+
+        <h2>The Critical Angle</h2>
+        <p>The critical angle C is the angle of incidence in the denser medium that gives an angle of refraction of exactly 90 degrees in the less dense medium. The relationship with refractive index n is:</p>
+        <div class="callout callout-key">
+          <div class="callout-label"><ph-icon name="function" size="14"></ph-icon> Critical Angle Formula</div>
+          <p style="margin-bottom:0;"><strong>sin C = 1/n</strong> &nbsp; or &nbsp; <strong>n = 1/sin C</strong></p>
+        </div>
+        <p>For glass with n = 1.5, sin C = 1/1.5 = 0.667, so C = 42°. Since the right-angled prism hits the hypotenuse face at 45°, which is greater than 42°, TIR always occurs.</p>
+
+        <h2>How a Rectangular Prism Uses TIR</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Use</th><th>How It Works</th><th>Application</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Turn a ray 90°</td><td>Light enters one short face, TIR at hypotenuse, exits other short face</td><td>Periscopes, binoculars</td></tr>
+              <tr><td>Turn a ray 180°</td><td>Two TIR reflections redirect ray back the way it came</td><td>Retroreflectors, cats-eye road studs</td></tr>
+              <tr><td>Invert an image</td><td>Porro prism arrangement flips image upside down and left-right</td><td>Binoculars, telescopes</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>Advantages of Prisms Over Mirrors</h2>
+        <ul>
+          <li>A mirror reflects only about 90–95% of light; a prism using TIR reflects <strong>100%</strong></li>
+          <li>Prisms do not tarnish, corrode, or lose their reflective quality over time</li>
+          <li>Prisms produce a sharper image</li>
+        </ul>
+
+        <div class="practice">
+          <div class="practice-title"><ph-icon name="pencil" size="14"></ph-icon> UTME / WAEC Practice — Prisms</div>
+          <div class="exercise">
+            <div class="exercise-num">Question 1 (UTME-Style)</div>
+            <p>The angle of a triangular prism is 60°. At minimum deviation, the angle of incidence is 45°. Calculate the refractive index of the prism material.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              <strong>Given:</strong> A = 60°, at minimum deviation i = e, so D&#8336; = 2i - A = 2(45) - 60 = 30°<br><br>
+              <strong>Formula:</strong> n = sin[(A + D&#8336;)/2] / sin[A/2]<br><br>
+              n = sin[(60 + 30)/2] / sin[60/2]<br>
+              n = sin 45° / sin 30°<br>
+              n = 0.7071 / 0.5<br>
+              <strong>n = 1.41</strong>
+            </div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 2 (WAEC-Style)</div>
+            <p>The critical angle for a glass-air interface is 42°. Calculate the refractive index of the glass. If a ray strikes a surface of this glass at an angle of incidence of 50° from inside, will total internal reflection occur? Give a reason.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              n = 1/sin C = 1/sin 42° = 1/0.6691 = <strong>1.49</strong><br><br>
+              50° &gt; 42° (critical angle), so <strong>yes, total internal reflection will occur</strong> because the angle of incidence exceeds the critical angle.
+            </div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 3 (Hard — WAEC)</div>
+            <p>A triangular prism has an apex angle of 50°. A ray passes through at minimum deviation. The refractive index of the prism is 1.60. Calculate: (a) the angle of refraction inside the prism, (b) the angle of minimum deviation, and (c) the angle of incidence.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              <strong>(a)</strong> At minimum deviation, r&#8321; = r&#8322; = A/2 = 50/2 = <strong>25°</strong><br><br>
+              <strong>(b)</strong> n = sin[(A + D&#8336;)/2] / sin[A/2]<br>
+              1.60 = sin[(50 + D&#8336;)/2] / sin 25°<br>
+              sin[(50 + D&#8336;)/2] = 1.60 × sin 25° = 1.60 × 0.4226 = 0.6762<br>
+              (50 + D&#8336;)/2 = sin&#8315;¹(0.6762) = 42.5°<br>
+              50 + D&#8336; = 85°<br>
+              <strong>D&#8336; = 35°</strong><br><br>
+              <strong>(c)</strong> D&#8336; = 2i - A &rarr; 35 = 2i - 50 &rarr; 2i = 85 &rarr; <strong>i = 42.5°</strong>
+            </div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 4 (Hard — UTME)</div>
+            <p>Light passes through a glass prism (n = 1.52) with apex angle 60°. Calculate the angle of minimum deviation and the speed of light in the glass. (Speed of light in air = 3.0 × 10&#8312; m/s)</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              <strong>Minimum deviation:</strong><br>
+              n = sin[(A + D&#8336;)/2] / sin[A/2]<br>
+              1.52 = sin[(60 + D&#8336;)/2] / sin 30°<br>
+              sin[(60 + D&#8336;)/2] = 1.52 × 0.5 = 0.76<br>
+              (60 + D&#8336;)/2 = 49.46°<br>
+              60 + D&#8336; = 98.92°<br>
+              <strong>D&#8336; = 38.9° ≈ 39°</strong><br><br>
+              <strong>Speed in glass:</strong><br>
+              n = c/v &rarr; v = c/n = (3.0 × 10&#8312;)/1.52<br>
+              <strong>v = 1.97 × 10&#8312; m/s</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="summary">
+          <div class="summary-title"><ph-icon name="check-circle" size="17" color="#1a2744"></ph-icon> Chapter 1 Summary</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> A triangular prism bends light towards its base through double refraction.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Apex angle A, deviation D, and incidence i are related: D = (i + e) - A.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> At minimum deviation: i = e, r&#8321; = r&#8322;, and n = sin[(A+D&#8336;)/2] / sin(A/2).</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> A rectangular prism uses total internal reflection at the hypotenuse.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> TIR requires: denser to less dense medium AND angle &ge; critical angle.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Critical angle: sin C = 1/n. For glass (n=1.5), C = 42°.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 4 — CHAPTER 2: ANGLE OF DEVIATION -->
+    <div class="page" id="page-4">
+      <div class="chapter-banner">
+        <div class="chapter-eyebrow">Chapter 2</div>
+        <h1>Angle of Deviation, Real Depth and Apparent Depth</h1>
+      </div>
+      <div class="page-body">
+        <div class="objectives">
+          <div class="objectives-label">
+            <ph-icon name="target" size="15"></ph-icon>
+            Learning Objectives
+          </div>
+          <ul>
+            <li>Define and calculate the angle of deviation in a prism</li>
+            <li>Understand how deviation changes with angle of incidence</li>
+            <li>Understand what apparent depth means and why it occurs</li>
+            <li>Solve problems involving real depth and apparent depth</li>
+            <li>Calculate the refractive index from depth measurements</li>
+          </ul>
+        </div>
+
+        <h2>Angle of Deviation — A Full Treatment</h2>
+        <p>The <strong>angle of deviation (D)</strong> is the angle between the original direction of the incident ray and the final direction of the emergent ray. It tells you how much the prism has turned the light from its original path.</p>
+
+        <h2>Formula for Angle of Deviation</h2>
+        <div class="callout callout-key">
+          <div class="callout-label"><ph-icon name="function" size="14"></ph-icon> Key Formula</div>
+          <p><strong>D = (i + e) - A</strong></p>
+          <p style="margin-bottom:0;">Where: i = angle of incidence, e = angle of emergence, A = apex angle of prism</p>
+        </div>
+
+        <p>This formula comes directly from geometry: the deviation at the first surface is (i - r&#8321;) and at the second surface is (e - r&#8322;). The total is:</p>
+        <p style="padding-left:16px; font-style:italic;">D = (i - r&#8321;) + (e - r&#8322;) = (i + e) - (r&#8321; + r&#8322;) = (i + e) - A</p>
+
+        <h2>How Deviation Varies with Angle of Incidence</h2>
+        <p>If you draw a graph of deviation (D) against angle of incidence (i), you get a <strong>U-shaped curve</strong>. This tells us:</p>
+        <ul>
+          <li>When i is very small, D is large</li>
+          <li>As i increases, D decreases until it reaches a minimum (D&#8336;)</li>
+          <li>As i increases further beyond the minimum, D increases again</li>
+          <li>The minimum point is called <strong>minimum deviation</strong></li>
+        </ul>
+
+        <div class="callout callout-tip">
+          <div class="callout-label"><ph-icon name="lightbulb" size="14"></ph-icon> Why Does Deviation Have a Minimum?</div>
+          <p style="margin-bottom:0;">As you change the angle of incidence, you shift the path of the ray inside the prism. At exactly one angle, the ray travels parallel to the base and the geometry is perfectly symmetrical — this gives the minimum deviation.</p>
+        </div>
+
+        <h2>Deviation by a Glass Slab (Rectangular Block)</h2>
+        <p>When light passes through a <strong>rectangular glass slab</strong> (with parallel faces), the emergent ray is parallel to the incident ray — the deviation in direction is zero. However, the ray is <strong>laterally displaced</strong> (shifted sideways). The formula for lateral displacement is:</p>
+        <div class="callout callout-key">
+          <div class="callout-label"><ph-icon name="function" size="14"></ph-icon> Lateral Displacement</div>
+          <p style="margin-bottom:0;"><strong>d = t × sin(i - r) / cos r</strong></p>
+          <p style="margin-bottom:0;">Where t = thickness of glass slab, i = angle of incidence, r = angle of refraction</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 5 — REAL DEPTH AND APPARENT DEPTH -->
+    <div class="page" id="page-5">
+      <div class="page-body">
+        <h1>Real Depth and Apparent Depth</h1>
+        <p>When you look at an object inside water or glass, it appears closer to the surface than it really is. This is because light from the object bends (refracts) as it passes from the denser medium (water/glass) to the less dense medium (air). The effect is called <strong>apparent depth</strong>.</p>
+
+        <h2>Why Does It Happen?</h2>
+        <p>A coin at the bottom of a pool is at the <strong>real depth</strong>. When light rays from the coin reach your eye after refracting at the water surface, they appear to come from a shallower point. That shallower point is the <strong>apparent depth</strong>. The object appears to be lifted up.</p>
+
+        <div class="callout callout-key">
+          <div class="callout-label"><ph-icon name="function" size="14"></ph-icon> Key Formulas</div>
+          <p><strong>n = Real Depth / Apparent Depth</strong></p>
+          <p><strong>Apparent Depth = Real Depth / n</strong></p>
+          <p style="margin-bottom:0;"><strong>Apparent Shift (how much it appears lifted) = Real Depth - Apparent Depth = Real Depth × (1 - 1/n)</strong></p>
+        </div>
+
+        <div class="example">
+          <div class="example-label"><ph-icon name="info" size="13"></ph-icon> Intuition Check</div>
+          <div class="ex-line">Water has n = 1.33. A pool 2 m deep appears only 2/1.33 = 1.5 m deep when viewed from directly above.</div>
+          <div class="ex-line">Glass (n = 1.5): an object 6 cm inside glass appears only 4 cm deep when viewed from air above.</div>
+        </div>
+
+        <h2>Viewing from the Denser Medium</h2>
+        <p>This works the other way too. If a fish looks up at an object <strong>above</strong> the water from inside the water, the object appears farther away than it really is. In this case:</p>
+        <div class="callout callout-key">
+          <div class="callout-label"><ph-icon name="function" size="14"></ph-icon> From Denser Medium Looking Out</div>
+          <p style="margin-bottom:0;"><strong>n = Apparent Depth / Real Depth</strong> (the apparent depth is now greater than real depth)</p>
+        </div>
+
+        <div class="practice">
+          <div class="practice-title"><ph-icon name="pencil" size="14"></ph-icon> UTME / WAEC Practice — Deviation and Depth</div>
+          <div class="exercise">
+            <div class="exercise-num">Question 1</div>
+            <p>A coin lies at the bottom of a pond. Its real depth is 2.4 m. An observer looking from directly above sees the coin at an apparent depth of 1.8 m. Calculate the refractive index of the pond water.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              n = Real Depth / Apparent Depth<br>
+              n = 2.4 / 1.8<br>
+              <strong>n = 1.33</strong>
+            </div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 2</div>
+            <p>A glass block has a refractive index of 1.5 and is 9 cm thick. How far below the top surface does a scratch on the bottom appear to be when viewed from directly above?</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              Apparent Depth = Real Depth / n<br>
+              Apparent Depth = 9 / 1.5<br>
+              <strong>Apparent Depth = 6 cm</strong>
+            </div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 3 (Hard)</div>
+            <p>A ray of light strikes a glass slab (n = 1.5, thickness = 4 cm) at an angle of incidence of 60°. Calculate: (a) the angle of refraction, and (b) the lateral displacement of the emergent ray.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              <strong>(a)</strong> Snell's Law: n&#8321;sin i = n&#8322;sin r<br>
+              1 × sin 60° = 1.5 × sin r<br>
+              sin r = sin 60°/1.5 = 0.8660/1.5 = 0.5774<br>
+              <strong>r = 35.26°</strong><br><br>
+              <strong>(b)</strong> d = t × sin(i - r)/cos r<br>
+              d = 4 × sin(60° - 35.26°)/cos 35.26°<br>
+              d = 4 × sin 24.74°/cos 35.26°<br>
+              d = 4 × 0.4189/0.8165<br>
+              <strong>d = 2.05 cm</strong>
+            </div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 4 (Hard — WAEC)</div>
+            <p>A transparent material has a real depth of 12 cm and an apparent depth of 8 cm when viewed from air. (a) Find the refractive index. (b) Find the critical angle. (c) A ray inside this material hits a surface at 45°. Will TIR occur?</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              <strong>(a)</strong> n = Real/Apparent = 12/8 = <strong>1.5</strong><br><br>
+              <strong>(b)</strong> sin C = 1/n = 1/1.5 = 0.667<br>
+              <strong>C = 41.8° ≈ 42°</strong><br><br>
+              <strong>(c)</strong> 45° &gt; 42°, so <strong>yes, TIR will occur</strong>.
+            </div>
+          </div>
+        </div>
+
+        <div class="summary">
+          <div class="summary-title"><ph-icon name="check-circle" size="17" color="#1a2744"></ph-icon> Chapter 2 Summary</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Angle of deviation D = (i + e) - A for a prism.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Deviation has a minimum value (D&#8336;) when i = e (symmetric ray path).</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> A rectangular slab produces zero deviation but lateral displacement.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Objects in water appear shallower: Apparent Depth = Real Depth / n.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Refractive index = Real Depth / Apparent Depth (for viewer in air).</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> The apparent shift = Real Depth × (1 - 1/n).</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 6 — CHAPTER 3: LENSES -->
+    <div class="page" id="page-6">
+      <div class="chapter-banner">
+        <div class="chapter-eyebrow">Chapter 3</div>
+        <h1>Lenses, Lens Formula and Power of a Lens</h1>
+      </div>
+      <div class="page-body">
+        <div class="objectives">
+          <div class="objectives-label">
+            <ph-icon name="target" size="15"></ph-icon>
+            Learning Objectives
+          </div>
+          <ul>
+            <li>Distinguish between converging and diverging lenses</li>
+            <li>Understand key terms: principal axis, focal point, focal length</li>
+            <li>Trace rays through each type of lens</li>
+            <li>Use the lens formula to solve problems</li>
+            <li>Calculate magnification</li>
+            <li>Define and calculate the power of a lens</li>
+          </ul>
+        </div>
+
+        <h2>Types of Lenses</h2>
+        <p>A <strong>lens</strong> is a transparent curved surface that refracts light to form an image. There are two main types:</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Feature</th><th>Converging (Convex) Lens</th><th>Diverging (Concave) Lens</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Shape</td><td>Thicker at the centre</td><td>Thinner at the centre</td></tr>
+              <tr><td>Effect on parallel rays</td><td>Brings them to a focus (converges)</td><td>Spreads them out (diverges)</td></tr>
+              <tr><td>Focal length (f)</td><td>Positive (+)</td><td>Negative (-)</td></tr>
+              <tr><td>Images formed</td><td>Real or virtual, depending on object position</td><td>Always virtual, upright, smaller</td></tr>
+              <tr><td>Power</td><td>Positive</td><td>Negative</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>Key Terms</h2>
+        <ul>
+          <li><strong>Principal axis</strong> — the straight horizontal line through the centre of the lens</li>
+          <li><strong>Optical centre (O)</strong> — the midpoint of the lens; rays through it pass straight without bending</li>
+          <li><strong>Principal focus (F)</strong> — for a converging lens, the point where parallel rays meet after refraction. For a diverging lens, where they appear to come from</li>
+          <li><strong>Focal length (f)</strong> — the distance from the optical centre to the principal focus</li>
+          <li><strong>Focal plane</strong> — a plane perpendicular to the axis passing through F</li>
+        </ul>
+
+        <h2>The Three Standard Rays (Ray Diagrams)</h2>
+        <p>To draw the image formed by a lens, trace any two of these three standard rays:</p>
+        <div class="example">
+          <div class="example-label"><ph-icon name="info" size="13"></ph-icon> Three Standard Rays — Converging Lens</div>
+          <p><strong>Ray 1:</strong> A ray parallel to the principal axis is refracted through the principal focus F on the other side.</p>
+          <p><strong>Ray 2:</strong> A ray through the optical centre passes straight through without any bending.</p>
+          <p style="margin-bottom:0;"><strong>Ray 3:</strong> A ray through the focal point F on the same side as the object is refracted parallel to the principal axis after passing through the lens.</p>
+        </div>
+
+        <h2>Images Formed by a Converging Lens</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Object Position</th><th>Image Position</th><th>Nature</th><th>Size</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Beyond 2F</td><td>Between F and 2F (other side)</td><td>Real, inverted</td><td>Diminished</td></tr>
+              <tr><td>At 2F</td><td>At 2F (other side)</td><td>Real, inverted</td><td>Same size</td></tr>
+              <tr><td>Between F and 2F</td><td>Beyond 2F (other side)</td><td>Real, inverted</td><td>Magnified</td></tr>
+              <tr><td>At F</td><td>Infinity</td><td>—</td><td>—</td></tr>
+              <tr><td>Between F and O</td><td>Same side as object</td><td>Virtual, upright</td><td>Magnified</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout callout-tip">
+          <div class="callout-label"><ph-icon name="lightbulb" size="14"></ph-icon> A Diverging Lens Always...</div>
+          <p style="margin-bottom:0;">...forms a virtual, upright, and diminished image, regardless of where the object is placed. The image is always between F and O on the same side as the object.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 7 — LENS FORMULA AND POWER -->
+    <div class="page" id="page-7">
+      <div class="page-body">
+        <h1>The Lens Formula</h1>
+        <p>The lens formula relates the object distance (u), image distance (v), and focal length (f):</p>
+        <div class="callout callout-key">
+          <div class="callout-label"><ph-icon name="function" size="14"></ph-icon> Lens Formula</div>
+          <p style="font-size:16px; font-family: Georgia, serif;"><strong>1/f = 1/v - 1/u</strong></p>
+          <p style="margin-bottom:0;">Or equivalently: <strong>1/f = 1/v + 1/u</strong> when the real-is-positive sign convention is used.</p>
+        </div>
+
+        <h2>Sign Convention (Real-is-Positive)</h2>
+        <ul>
+          <li>Distances measured in the direction of incident light are <strong>positive</strong></li>
+          <li>Distances against the direction of incident light are <strong>negative</strong></li>
+          <li>Real objects have <strong>negative u</strong> (object is on the incoming side)</li>
+          <li>Real images have <strong>positive v</strong></li>
+          <li>Virtual images have <strong>negative v</strong></li>
+          <li>Converging lens: <strong>f is positive</strong></li>
+          <li>Diverging lens: <strong>f is negative</strong></li>
+        </ul>
+
+        <div class="callout callout-warn">
+          <div class="callout-label"><ph-icon name="warning" size="14"></ph-icon> Common Source of Errors</div>
+          <p style="margin-bottom:0;">Different textbooks use different sign conventions. In WAEC/UTME, the most common form used is: 1/f = 1/v - 1/u (where u is negative for real objects). Always substitute with the correct sign and the answer will work out.</p>
+        </div>
+
+        <h2>Magnification</h2>
+        <div class="callout callout-key">
+          <div class="callout-label"><ph-icon name="function" size="14"></ph-icon> Magnification Formulas</div>
+          <p><strong>m = v / u</strong> &nbsp; (linear magnification)</p>
+          <p style="margin-bottom:0;"><strong>m = image height / object height</strong></p>
+        </div>
+        <p>If m &gt; 1, the image is larger than the object. If m &lt; 1, it is smaller. A negative m means the image is inverted (real image).</p>
+
+        <h1>Power of a Lens</h1>
+        <p>The <strong>power (P)</strong> of a lens measures how strongly it converges or diverges light. A shorter focal length means higher power — the lens bends light more sharply.</p>
+        <div class="callout callout-key">
+          <div class="callout-label"><ph-icon name="function" size="14"></ph-icon> Power Formula</div>
+          <p style="font-size:16px; font-family: Georgia, serif;"><strong>P = 1 / f</strong></p>
+          <p style="margin-bottom:0;">Unit: <strong>Dioptre (D)</strong>. f must be in <strong>metres</strong>.</p>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Lens Type</th><th>Sign of f</th><th>Sign of P</th><th>Example</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Converging (convex)</td><td>Positive (+)</td><td>Positive (+)</td><td>f = 0.25 m &rarr; P = +4 D</td></tr>
+              <tr><td>Diverging (concave)</td><td>Negative (-)</td><td>Negative (-)</td><td>f = -0.5 m &rarr; P = -2 D</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>Lenses in Combination</h2>
+        <p>When two or more thin lenses are placed in contact, the total power is simply the sum of the individual powers:</p>
+        <div class="callout callout-key">
+          <div class="callout-label"><ph-icon name="function" size="14"></ph-icon> Combined Power</div>
+          <p style="margin-bottom:0;"><strong>P&#7348;&#7349;&#7348;&#7344;&#7348; = P&#8321; + P&#8322; + P&#8323; + ...</strong></p>
+        </div>
+
+        <div class="practice">
+          <div class="practice-title"><ph-icon name="pencil" size="14"></ph-icon> UTME / WAEC Practice — Lenses</div>
+          <div class="exercise">
+            <div class="exercise-num">Question 1</div>
+            <p>An object is placed 30 cm from a converging lens of focal length 10 cm. Find the image distance and the magnification.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              Using 1/f = 1/v - 1/u with u = -30 cm, f = +10 cm:<br>
+              1/10 = 1/v - 1/(-30)<br>
+              1/10 = 1/v + 1/30<br>
+              1/v = 1/10 - 1/30 = 3/30 - 1/30 = 2/30<br>
+              <strong>v = 15 cm</strong> (real image on other side)<br><br>
+              m = v/u = 15/(-30) = <strong>-0.5</strong> (inverted, half the size)
+            </div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 2</div>
+            <p>A diverging lens has a focal length of 20 cm. An object is placed 60 cm from it. Find the image position and state its nature.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              f = -20 cm, u = -60 cm<br>
+              1/v = 1/f + 1/u = 1/(-20) + 1/(-60)<br>
+              1/v = -3/60 - 1/60 = -4/60<br>
+              <strong>v = -15 cm</strong><br><br>
+              Negative v means <strong>virtual, upright, diminished image</strong> on the same side as the object, 15 cm from the lens.
+            </div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 3 (Hard)</div>
+            <p>A converging lens forms a real image three times the size of the object. The image is 45 cm from the lens. Find: (a) the object distance, (b) the focal length, (c) the power of the lens.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              <strong>(a)</strong> m = v/u &rarr; -3 = 45/u (negative because real image is inverted)<br>
+              u = 45/(-3) = <strong>-15 cm</strong> (object is 15 cm from lens)<br><br>
+              <strong>(b)</strong> 1/f = 1/v - 1/u = 1/45 - 1/(-15) = 1/45 + 1/15 = 1/45 + 3/45 = 4/45<br>
+              <strong>f = 11.25 cm = 0.1125 m</strong><br><br>
+              <strong>(c)</strong> P = 1/f = 1/0.1125 = <strong>+8.89 D</strong>
+            </div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 4 (Hard — UTME)</div>
+            <p>A converging lens of power +5 D is placed in contact with a diverging lens of power -2 D. An object is placed 25 cm from the combination. Find the image distance.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              <strong>Combined power:</strong> P = +5 + (-2) = +3 D<br>
+              f = 1/P = 1/3 m = 33.3 cm<br><br>
+              <strong>Lens formula:</strong> u = -25 cm, f = +33.3 cm<br>
+              1/v = 1/f + 1/u = 1/33.3 + 1/(-25)<br>
+              1/v = 0.03003 - 0.04 = -0.00997<br>
+              <strong>v = -100.3 cm ≈ -100 cm</strong><br><br>
+              Image is virtual, 100 cm on the same side as the object.
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 8 — CHAPTER 4: OPTICAL INSTRUMENTS -->
+    <div class="page" id="page-8">
+      <div class="chapter-banner">
+        <div class="chapter-eyebrow">Chapter 4</div>
+        <h1>Optical Instruments and The Human Eye</h1>
+      </div>
+      <div class="page-body">
+        <div class="objectives">
+          <div class="objectives-label">
+            <ph-icon name="target" size="15"></ph-icon>
+            Learning Objectives
+          </div>
+          <ul>
+            <li>Understand the simple magnifier and its use</li>
+            <li>Describe the compound microscope and calculate magnification</li>
+            <li>Describe the telescope (astronomical and Galilean)</li>
+            <li>Understand the camera and how it works</li>
+            <li>Understand the projector</li>
+            <li>Describe the human eye and its parts</li>
+            <li>Understand defects of vision and their corrections</li>
+          </ul>
+        </div>
+
+        <h2>The Simple Magnifier (Magnifying Glass)</h2>
+        <p>A simple magnifier is a <strong>single converging lens</strong> used to produce a magnified virtual image of a small object. The object is placed between the lens and its focal point.</p>
+        <div class="callout callout-key">
+          <div class="callout-label"><ph-icon name="function" size="14"></ph-icon> Angular Magnification</div>
+          <p>For the image at the near point (25 cm from the eye):</p>
+          <p><strong>M = 1 + D/f</strong></p>
+          <p>For the image at infinity (relaxed eye):</p>
+          <p style="margin-bottom:0;"><strong>M = D/f</strong></p>
+          <p style="margin-bottom:0; font-size:13px; color:var(--muted);">D = least distance of distinct vision = 25 cm for a normal eye, f = focal length of lens</p>
+        </div>
+
+        <h2>The Compound Microscope</h2>
+        <p>A compound microscope uses <strong>two converging lenses</strong> to produce a very highly magnified image of a tiny object:</p>
+        <ul>
+          <li><strong>Objective lens</strong> — short focal length; object is placed just beyond 2F&#8320;; forms a real, inverted, magnified intermediate image</li>
+          <li><strong>Eyepiece lens</strong> — acts as a magnifying glass; magnifies the intermediate image further</li>
+        </ul>
+        <div class="callout callout-key">
+          <div class="callout-label"><ph-icon name="function" size="14"></ph-icon> Microscope Magnification</div>
+          <p><strong>M = m&#8320; × M&#8337;</strong></p>
+          <p style="margin-bottom:0;">Where m&#8320; = linear magnification by objective, M&#8337; = angular magnification by eyepiece</p>
+        </div>
+
+        <h2>The Astronomical Telescope</h2>
+        <p>An astronomical telescope uses two converging lenses to view distant objects:</p>
+        <ul>
+          <li><strong>Objective lens</strong> — large diameter, long focal length (f&#8320;); gathers light and forms a real image at its focus</li>
+          <li><strong>Eyepiece lens</strong> — short focal length (f&#8337;); magnifies the image formed by the objective</li>
+          <li>In normal adjustment, the lenses are separated by (f&#8320; + f&#8337;) and the final image is at infinity</li>
+        </ul>
+        <div class="callout callout-key">
+          <div class="callout-label"><ph-icon name="function" size="14"></ph-icon> Telescope Magnification (Normal Adjustment)</div>
+          <p style="margin-bottom:0;"><strong>M = f&#8320; / f&#8337;</strong></p>
+        </div>
+
+        <h2>The Galilean Telescope</h2>
+        <p>Uses a converging objective and a <strong>diverging eyepiece</strong>. It produces an <strong>upright</strong> final image and is shorter than the astronomical telescope. Used in opera glasses and some binoculars. Its magnification is the same formula: M = f&#8320; / |f&#8337;|.</p>
+
+        <h2>The Camera</h2>
+        <p>A camera uses a converging lens to form a real, inverted, diminished image on a sensor or film. The key features are:</p>
+        <ul>
+          <li><strong>Aperture (f-number)</strong> — controls the amount of light entering. A smaller f-number (wider aperture) lets in more light</li>
+          <li><strong>Shutter speed</strong> — controls how long light hits the sensor</li>
+          <li><strong>Focusing</strong> — the lens is moved to adjust v so a sharp image forms on the film/sensor</li>
+        </ul>
+
+        <div class="practice">
+          <div class="practice-title"><ph-icon name="pencil" size="14"></ph-icon> UTME / WAEC Practice — Optical Instruments</div>
+          <div class="exercise">
+            <div class="exercise-num">Question 1</div>
+            <p>A magnifying glass has a focal length of 5 cm. Calculate its magnifying power (a) when the image is at the near point (25 cm) and (b) when the image is at infinity.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              <strong>(a)</strong> M = 1 + D/f = 1 + 25/5 = 1 + 5 = <strong>6</strong><br><br>
+              <strong>(b)</strong> M = D/f = 25/5 = <strong>5</strong>
+            </div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 2</div>
+            <p>An astronomical telescope has an objective lens of focal length 80 cm and an eyepiece of focal length 4 cm. Find: (a) the magnification in normal adjustment, and (b) the length of the telescope.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              <strong>(a)</strong> M = f&#8320;/f&#8337; = 80/4 = <strong>20</strong><br><br>
+              <strong>(b)</strong> L = f&#8320; + f&#8337; = 80 + 4 = <strong>84 cm</strong>
+            </div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 3 (Hard)</div>
+            <p>A compound microscope has an objective of focal length 1.0 cm and an eyepiece of focal length 5 cm. The object is placed 1.2 cm from the objective. Calculate: (a) the image distance from the objective, (b) the linear magnification by the objective, (c) the angular magnification by the eyepiece (image at near point), and (d) the total magnification.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              <strong>(a)</strong> 1/v = 1/f&#8320; + 1/u = 1/1 + 1/(-1.2)<br>
+              1/v = 1 - 0.833 = 0.167<br>
+              v = <strong>6 cm</strong><br><br>
+              <strong>(b)</strong> m&#8320; = v/u = 6/1.2 = <strong>5</strong><br><br>
+              <strong>(c)</strong> M&#8337; = 1 + D/f&#8337; = 1 + 25/5 = <strong>6</strong><br><br>
+              <strong>(d)</strong> M = 5 × 6 = <strong>30</strong>
+            </div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 4 (Hard)</div>
+            <p>A telescope in normal adjustment gives a magnification of 30. The length of the telescope is 62 cm. Find the focal lengths of the objective and the eyepiece.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              M = f&#8320;/f&#8337; = 30 &rarr; f&#8320; = 30f&#8337;<br>
+              L = f&#8320; + f&#8337; = 62<br>
+              30f&#8337; + f&#8337; = 62<br>
+              31f&#8337; = 62<br>
+              <strong>f&#8337; = 2 cm</strong><br>
+              <strong>f&#8320; = 60 cm</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 9 — THE HUMAN EYE -->
+    <div class="page" id="page-9">
+      <div class="page-body">
+        <h1>The Human Eye</h1>
+        <p>The human eye is an incredible natural optical instrument. It forms a real, inverted image on the retina and the brain interprets this as upright. Understanding it in physics means knowing its parts, how it focuses, and how it can go wrong.</p>
+
+        <h2>Parts of the Eye and Their Functions</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Part</th><th>Function</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Cornea</strong></td><td>Transparent front surface; provides most of the eye's refracting power (about 70%)</td></tr>
+              <tr><td><strong>Aqueous humour</strong></td><td>Clear fluid between cornea and lens; maintains pressure and refracts light</td></tr>
+              <tr><td><strong>Iris</strong></td><td>Coloured ring of muscle; controls the size of the pupil</td></tr>
+              <tr><td><strong>Pupil</strong></td><td>Opening in the iris; controls amount of light entering</td></tr>
+              <tr><td><strong>Crystalline lens</strong></td><td>Flexible converging lens; fine-tunes focusing by changing shape (accommodation)</td></tr>
+              <tr><td><strong>Ciliary muscles</strong></td><td>Muscles that squeeze or relax to change the shape and power of the lens</td></tr>
+              <tr><td><strong>Vitreous humour</strong></td><td>Jelly-like substance that fills the eye and maintains its shape</td></tr>
+              <tr><td><strong>Retina</strong></td><td>Light-sensitive layer at the back; contains rods (for dim light) and cones (for colour)</td></tr>
+              <tr><td><strong>Fovea</strong></td><td>Central point of the retina with the highest concentration of cones; sharpest vision</td></tr>
+              <tr><td><strong>Blind spot</strong></td><td>Where the optic nerve connects; no rods or cones, so no vision here</td></tr>
+              <tr><td><strong>Optic nerve</strong></td><td>Carries electrical signals from retina to the brain</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>Accommodation</h2>
+        <p><strong>Accommodation</strong> is the ability of the eye to adjust its focal length to focus on objects at different distances by changing the shape of the lens.</p>
+        <ul>
+          <li><strong>Viewing near objects:</strong> ciliary muscles contract, lens becomes fatter (more curved), focal length decreases, power increases</li>
+          <li><strong>Viewing far objects:</strong> ciliary muscles relax, lens becomes flatter (less curved), focal length increases, power decreases</li>
+        </ul>
+
+        <h2>Near Point and Far Point</h2>
+        <ul>
+          <li><strong>Near point:</strong> the closest point at which the eye can see clearly. For a normal eye this is about 25 cm. Also called the least distance of distinct vision (D)</li>
+          <li><strong>Far point:</strong> the furthest point at which the eye can see clearly. For a normal eye this is infinity</li>
+        </ul>
+
+        <h2>Defects of Vision and Their Correction</h2>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Defect</th><th>Description</th><th>Cause</th><th>Correction</th></tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>Myopia (Short sight)</strong></td><td>Can see near, not far. Far point is less than infinity</td><td>Eyeball too long or lens too powerful; image forms in front of retina</td><td>Diverging (concave) lens</td></tr>
+              <tr><td><strong>Hypermetropia (Long sight)</strong></td><td>Can see far, not near. Near point is greater than 25 cm</td><td>Eyeball too short or lens too weak; image forms behind retina</td><td>Converging (convex) lens</td></tr>
+              <tr><td><strong>Astigmatism</strong></td><td>Blurred vision in one plane due to irregular cornea shape</td><td>Cornea not perfectly spherical</td><td>Cylindrical (toric) lens</td></tr>
+              <tr><td><strong>Presbyopia</strong></td><td>Loss of accommodation in old age; cannot focus at close range</td><td>Ciliary muscles and lens lose elasticity with age</td><td>Converging (reading) glasses or bifocals</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="practice">
+          <div class="practice-title"><ph-icon name="pencil" size="14"></ph-icon> UTME / WAEC Practice — The Human Eye</div>
+          <div class="exercise">
+            <div class="exercise-num">Question 1</div>
+            <p>A short-sighted person cannot see objects clearly beyond 50 cm. What type and power of lens is needed to correct their vision so they can see objects at infinity?</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              The person's far point is 50 cm = 0.5 m. A diverging lens is needed to make an object at infinity appear to come from 50 cm (the far point).<br><br>
+              Using 1/f = 1/v - 1/u: image must be at v = -0.5 m (virtual), object at u = -infinity (infinity)<br>
+              1/f = 1/(-0.5) - 1/(-infinity) = -2 - 0 = -2<br>
+              <strong>f = -0.5 m &rarr; Power = -2 D</strong><br>
+              A <strong>diverging lens of power -2 D</strong> is needed.
+            </div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 2</div>
+            <p>A long-sighted person has a near point of 100 cm. What power of lens will enable them to read a book held at 25 cm?</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              The lens must form a virtual image of the book (at 25 cm) at the near point (100 cm).<br>
+              u = -25 cm = -0.25 m, v = -100 cm = -1.0 m (virtual image on same side)<br>
+              1/f = 1/v - 1/u = 1/(-1.0) - 1/(-0.25) = -1 + 4 = +3<br>
+              <strong>P = +3 D</strong> (converging lens)
+            </div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 3 (Hard)</div>
+            <p>A myopic eye has its far point 40 cm away. The person reads a newspaper at 25 cm without glasses. With corrective glasses, they should be able to read at the normal near point (25 cm) and see to infinity. (a) Find the corrective lens power. (b) With this corrective lens, where is the near point now?</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              <strong>(a)</strong> Corrective lens moves far point from 40 cm to infinity:<br>
+              v = -40 cm = -0.4 m, u = -infinity<br>
+              1/f = 1/(-0.4) - 0 = -2.5<br>
+              <strong>P = -2.5 D</strong> (diverging lens)<br><br>
+              <strong>(b)</strong> With glasses, find new near point. The eye's near point without glasses is 25 cm. The glasses must form the image at 25 cm when object is at some distance x:<br>
+              v = -25 cm, f = -40 cm<br>
+              1/u = 1/v - 1/f = 1/(-25) - 1/(-40) = -4/100 + 2.5/100 = -1.5/100<br>
+              u = -66.7 cm<br>
+              <strong>New near point = 66.7 cm</strong> (further away than before — a trade-off of myopia correction)
+            </div>
+          </div>
+        </div>
+
+        <div class="summary">
+          <div class="summary-title"><ph-icon name="check-circle" size="17" color="#1a2744"></ph-icon> Chapter 4 Summary</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Microscope: two converging lenses; M = m&#8320; × M&#8337;.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Telescope: M = f&#8320;/f&#8337;; tube length = f&#8320; + f&#8337; in normal adjustment.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Magnifier: M = 1 + D/f (near point) or D/f (infinity).</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> The eye focuses via accommodation — the lens changes shape.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Myopia: image before retina; corrected by diverging lens.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Hypermetropia: image behind retina; corrected by converging lens.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 10 — CHAPTER 5: COLOURS -->
+    <div class="page" id="page-10">
+      <div class="chapter-banner">
+        <div class="chapter-eyebrow">Chapter 5</div>
+        <h1>Colours — Dispersion and Colour Mixing</h1>
+      </div>
+      <div class="page-body">
+        <div class="objectives">
+          <div class="objectives-label">
+            <ph-icon name="target" size="15"></ph-icon>
+            Learning Objectives
+          </div>
+          <ul>
+            <li>Understand what white light is composed of</li>
+            <li>Explain dispersion of light by a prism</li>
+            <li>Know the order of colours in a spectrum</li>
+            <li>Understand the difference between primary and secondary colours of light</li>
+            <li>Understand additive and subtractive colour mixing</li>
+            <li>Explain the colour of objects</li>
+          </ul>
+        </div>
+
+        <h2>What Is White Light?</h2>
+        <p>White light is <strong>not a single colour</strong>. It is a mixture of many different colours, each with its own wavelength. When white light passes through a prism, the colours separate because each wavelength is refracted by a slightly different amount. This separation is called <strong>dispersion</strong>.</p>
+
+        <h2>Dispersion by a Prism</h2>
+        <p>When white light passes through a triangular prism, it produces a <strong>spectrum</strong> — a band of colours arranged in order of wavelength. The reason different colours separate is that the refractive index of glass is <strong>different for each wavelength</strong>. Violet light is refracted the most; red light is refracted the least.</p>
+
+        <div class="callout callout-key">
+          <div class="callout-label"><ph-icon name="key" size="14"></ph-icon> Order of the Spectrum — ROYGBIV</div>
+          <p><strong>Red, Orange, Yellow, Green, Blue, Indigo, Violet</strong></p>
+          <p>Red has the longest wavelength and lowest frequency. Violet has the shortest wavelength and highest frequency.</p>
+          <p style="margin-bottom:0;">Violet is deviated most; Red is deviated least.</p>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Colour</th><th>Wavelength (nm)</th><th>Relative Refraction</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Red</td><td>~700</td><td>Least</td></tr>
+              <tr><td>Orange</td><td>~620</td><td></td></tr>
+              <tr><td>Yellow</td><td>~580</td><td></td></tr>
+              <tr><td>Green</td><td>~530</td><td></td></tr>
+              <tr><td>Blue</td><td>~470</td><td></td></tr>
+              <tr><td>Indigo</td><td>~445</td><td></td></tr>
+              <tr><td>Violet</td><td>~400</td><td>Most</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>Recombining the Spectrum</h2>
+        <p>If the separated colours are passed through a second prism (inverted), they recombine to give white light again. This proves that white light is a mixture of all these colours. Newton was the first to demonstrate this.</p>
+
+        <h2>Chromatic Aberration</h2>
+        <p>Because different colours are refracted by different amounts, a lens focuses different colours at slightly different points. This causes coloured fringes around images — called <strong>chromatic aberration</strong>. It is corrected by using an <strong>achromatic doublet</strong> (two lenses of different glass types cemented together).</p>
+      </div>
+    </div>
+
+    <!-- PAGE 11 — COLOUR MIXING -->
+    <div class="page" id="page-11">
+      <div class="page-body">
+        <h1>Colour Mixing</h1>
+        <p>There are two completely different types of colour mixing: <strong>additive</strong> (mixing coloured lights) and <strong>subtractive</strong> (mixing pigments or filters).</p>
+
+        <h2>Additive Colour Mixing (Coloured Lights)</h2>
+        <p>The three <strong>primary colours of light</strong> are: <strong>Red, Green, Blue (RGB)</strong>. When added together in equal proportions, they produce white light.</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Colours Mixed</th><th>Result</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Red + Green</td><td>Yellow</td></tr>
+              <tr><td>Red + Blue</td><td>Magenta</td></tr>
+              <tr><td>Green + Blue</td><td>Cyan</td></tr>
+              <tr><td>Red + Green + Blue</td><td>White</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>The colours formed by mixing two primaries (Yellow, Magenta, Cyan) are called <strong>secondary colours of light</strong>. This is how television screens and LED displays work — tiny red, green, and blue dots mix in different intensities to create all visible colours.</p>
+
+        <h2>Subtractive Colour Mixing (Pigments and Filters)</h2>
+        <p>Pigments and filters work by <strong>absorbing (subtracting)</strong> certain colours from white light and reflecting or transmitting the rest. The primary colours for pigment mixing are: <strong>Cyan, Magenta, Yellow (CMY)</strong>.</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Pigments Mixed</th><th>Colour Absorbed</th><th>Result</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Cyan + Yellow</td><td>Red and Blue absorbed</td><td>Green</td></tr>
+              <tr><td>Cyan + Magenta</td><td>Red and Green absorbed</td><td>Blue</td></tr>
+              <tr><td>Magenta + Yellow</td><td>Green and Blue absorbed</td><td>Red</td></tr>
+              <tr><td>Cyan + Magenta + Yellow</td><td>All colours absorbed</td><td>Black</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>The Colour of an Object</h2>
+        <p>An object appears a certain colour because of which wavelengths it reflects or absorbs:</p>
+        <ul>
+          <li>A <strong>red object</strong> in white light reflects red and absorbs all other colours</li>
+          <li>A <strong>white object</strong> reflects all colours equally</li>
+          <li>A <strong>black object</strong> absorbs all colours and reflects none</li>
+          <li>A <strong>red object</strong> viewed in blue light appears <strong>black</strong> — because it has no red to reflect</li>
+        </ul>
+
+        <h2>Filters</h2>
+        <p>A colour filter transmits only its own colour and absorbs the rest. For example, a green filter placed in front of white light transmits only green and blocks all other colours.</p>
+
+        <div class="practice">
+          <div class="practice-title"><ph-icon name="pencil" size="14"></ph-icon> UTME / WAEC Practice — Colours</div>
+          <div class="exercise">
+            <div class="exercise-num">Question 1</div>
+            <p>What colour is seen when red and green light are mixed together? What happens when red, green, and blue light are all mixed?</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">Red + Green = <strong>Yellow</strong>. Red + Green + Blue = <strong>White</strong>.</div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 2</div>
+            <p>A yellow dress is viewed under a blue light. What colour does it appear? Explain.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              Yellow = red + green (it reflects only red and green). Under blue light, there is no red or green light to reflect — only blue, which the yellow dress absorbs. Therefore the dress appears <strong>black</strong>.
+            </div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 3</div>
+            <p>In a spectrum produced by a prism, which colour is deviated most and which is deviated least? Why?</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              <strong>Violet</strong> is deviated most because it has the shortest wavelength and the highest refractive index in the glass — so it bends the most.<br><br>
+              <strong>Red</strong> is deviated least because it has the longest wavelength and the lowest refractive index in the glass — so it bends the least.
+            </div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 4 (Hard)</div>
+            <p>A blue filter and a yellow filter are placed one after another in the path of white light. What colour is transmitted? Explain step by step.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              <strong>Blue filter:</strong> White light passes through. Only blue light is transmitted. All other colours (red, orange, yellow, green, indigo, violet) are absorbed.<br><br>
+              <strong>Yellow filter:</strong> Yellow transmits red and green. But after the blue filter, only blue is available. Yellow absorbs blue.<br><br>
+              <strong>Result: No light is transmitted — the combination appears black.</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="summary">
+          <div class="summary-title"><ph-icon name="check-circle" size="17" color="#1a2744"></ph-icon> Chapter 5 Summary</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> White light is a mixture of all colours — ROYGBIV.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Dispersion occurs because each colour has a different refractive index.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Violet is deviated most; Red is deviated least.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Primary colours of light: Red, Green, Blue (additive).</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Primary pigment colours: Cyan, Magenta, Yellow (subtractive).</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Objects appear a colour because they reflect that colour.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 12 — CHAPTER 6: WAVE MOTION -->
+    <div class="page" id="page-12">
+      <div class="chapter-banner">
+        <div class="chapter-eyebrow">Chapter 6</div>
+        <h1>Wave Motion and Properties of Waves</h1>
+      </div>
+      <div class="page-body">
+        <div class="objectives">
+          <div class="objectives-label">
+            <ph-icon name="target" size="15"></ph-icon>
+            Learning Objectives
+          </div>
+          <ul>
+            <li>Define a wave and understand wave motion</li>
+            <li>Distinguish between transverse and longitudinal waves</li>
+            <li>Define and relate wavelength, frequency, period, amplitude, and wave speed</li>
+            <li>Understand and explain the properties of waves</li>
+            <li>Solve wave speed, frequency, and wavelength problems</li>
+          </ul>
+        </div>
+
+        <h2>What Is a Wave?</h2>
+        <p>A <strong>wave</strong> is a disturbance that transfers energy from one place to another <strong>without permanently transferring the medium itself</strong>. When a wave passes through a medium, the particles of the medium vibrate about their equilibrium position — they do not travel with the wave. Only the <strong>energy travels</strong>.</p>
+
+        <h2>Types of Waves</h2>
+        <h3>Transverse Waves</h3>
+        <p>The particles of the medium vibrate <strong>perpendicular</strong> (at 90°) to the direction of wave travel. Examples: light waves, water ripples, radio waves, all electromagnetic waves.</p>
+
+        <h3>Longitudinal Waves</h3>
+        <p>The particles of the medium vibrate <strong>parallel</strong> (in the same direction) to the direction of wave travel. This creates alternating regions of compression and rarefaction. Examples: sound waves, seismic P-waves.</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Feature</th><th>Transverse</th><th>Longitudinal</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Particle vibration</td><td>Perpendicular to wave travel</td><td>Parallel to wave travel</td></tr>
+              <tr><td>Can travel in vacuum?</td><td>Yes (EM waves)</td><td>No (needs a medium)</td></tr>
+              <tr><td>Can be polarised?</td><td>Yes</td><td>No</td></tr>
+              <tr><td>Examples</td><td>Light, radio waves, water waves</td><td>Sound, seismic P-waves</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>Key Wave Terms</h2>
+        <ul>
+          <li><strong>Amplitude (A)</strong> — the maximum displacement of a particle from its equilibrium position. It determines the energy/loudness of the wave.</li>
+          <li><strong>Wavelength (&lambda;)</strong> — the distance between two successive points in phase (e.g., crest to crest or compression to compression). Unit: metres (m).</li>
+          <li><strong>Period (T)</strong> — the time taken for one complete vibration (one full cycle). Unit: seconds (s).</li>
+          <li><strong>Frequency (f)</strong> — the number of complete vibrations per second. Unit: Hertz (Hz).</li>
+          <li><strong>Wave speed (v)</strong> — the speed at which the wave profile (the pattern of crests and troughs) moves through the medium.</li>
+        </ul>
+
+        <div class="callout callout-key">
+          <div class="callout-label"><ph-icon name="function" size="14"></ph-icon> Key Relationships</div>
+          <p><strong>f = 1/T</strong> &nbsp; (frequency and period are reciprocals)</p>
+          <p style="margin-bottom:0;"><strong>v = f&lambda;</strong> &nbsp; (wave speed = frequency × wavelength)</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 13 — PROPERTIES OF WAVES -->
+    <div class="page" id="page-13">
+      <div class="page-body">
+        <h1>Properties of Waves</h1>
+        <p>All waves — whether sound, light, or water — share the same set of properties: reflection, refraction, diffraction, interference, and superposition.</p>
+
+        <h2>1. Reflection</h2>
+        <p>When a wave hits a barrier, it bounces back. The angle of incidence equals the angle of reflection. Examples: echoes (sound), mirrors (light), radar.</p>
+
+        <h2>2. Refraction</h2>
+        <p>When a wave moves from one medium to another, its speed changes. If it hits the boundary at an angle, its direction also changes. The frequency never changes during refraction — only speed and wavelength change.</p>
+        <div class="callout callout-tip">
+          <div class="callout-label"><ph-icon name="lightbulb" size="14"></ph-icon> Snell's Law for Waves</div>
+          <p style="margin-bottom:0;"><strong>n = sin i / sin r = v&#8321; / v&#8322; = &lambda;&#8321; / &lambda;&#8322;</strong></p>
+        </div>
+
+        <h2>3. Diffraction</h2>
+        <p>When a wave passes through a gap or around an obstacle, it spreads out. Diffraction is most noticeable when the gap size is <strong>approximately equal to the wavelength</strong> of the wave. This is why we can hear sound around corners (long wavelength) but not see around corners (very short wavelength of light).</p>
+
+        <h2>4. Interference</h2>
+        <p>When two waves meet, they superpose (add up). This is called interference:</p>
+        <ul>
+          <li><strong>Constructive interference:</strong> two waves in phase add up to give a larger amplitude. Crests meet crests.</li>
+          <li><strong>Destructive interference:</strong> two waves out of phase cancel each other. Crests meet troughs. The result can be zero displacement.</li>
+        </ul>
+
+        <h2>5. Superposition</h2>
+        <p>The principle of superposition states that when two or more waves meet, the resultant displacement at any point is the <strong>algebraic sum</strong> of the individual displacements at that point.</p>
+
+        <h2>6. Polarisation</h2>
+        <p>Polarisation is the restriction of a transverse wave's vibrations to one plane only. Only transverse waves can be polarised — longitudinal waves cannot. Light from the sun vibrates in all planes; a polaroid filter allows only one plane through. This is used in sunglasses and LCD screens.</p>
+
+        <div class="practice">
+          <div class="practice-title"><ph-icon name="pencil" size="14"></ph-icon> UTME / WAEC Practice — Wave Motion</div>
+          <div class="exercise">
+            <div class="exercise-num">Question 1</div>
+            <p>A wave has a frequency of 250 Hz and a wavelength of 1.4 m. Calculate the speed of the wave.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              v = f&lambda; = 250 × 1.4 = <strong>350 m/s</strong>
+            </div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 2</div>
+            <p>The period of a water wave is 0.04 s and its speed is 8 m/s. Find: (a) the frequency, and (b) the wavelength.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              <strong>(a)</strong> f = 1/T = 1/0.04 = <strong>25 Hz</strong><br><br>
+              <strong>(b)</strong> &lambda; = v/f = 8/25 = <strong>0.32 m</strong>
+            </div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 3 (Hard)</div>
+            <p>A radio wave travels at 3.0 × 10&#8312; m/s and has a wavelength of 300 m. (a) Find the frequency. (b) A sound wave in air at 340 m/s has the same frequency. Find its wavelength. (c) Compare the two wavelengths and explain which will diffract more through a 2 m doorway.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              <strong>(a)</strong> f = v/&lambda; = (3.0 × 10&#8312;)/300 = <strong>1.0 × 10&#8310; Hz = 1 MHz</strong><br><br>
+              <strong>(b)</strong> &lambda; = v/f = 340/(1.0 × 10&#8310;) = <strong>3.4 × 10&#8315;&#8308; m = 0.34 mm</strong><br><br>
+              <strong>(c)</strong> Radio wavelength (300 m) >> doorway (2 m), so radio waves diffract enormously through a doorway. Sound wavelength (0.34 mm) << doorway (2 m), so sound diffracts very little through the same doorway. However, normal audible sound (e.g., 1 kHz &rarr; &lambda; = 0.34 m) is comparable to doorway size and diffracts well — hence we hear sound around corners.
+            </div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 4 (Hard — WAEC)</div>
+            <p>Two coherent waves of amplitude 3 cm and 3 cm meet at a point. Find the resultant amplitude when they are (a) in phase and (b) completely out of phase. (c) What is the ratio of the intensities of the two situations?</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              <strong>(a)</strong> Constructive: A&#7345;&#8336;&#7345; = 3 + 3 = <strong>6 cm</strong><br><br>
+              <strong>(b)</strong> Destructive: A&#7345;&#8336;&#7345; = 3 - 3 = <strong>0 cm</strong><br><br>
+              <strong>(c)</strong> Intensity &prop; Amplitude&#178;<br>
+              I&#7080;&#8338;&#8345;&#7345;&#7080;&#8343;&#8338;&#8339;&#8344;&#7080;&#7077;&#8337;/I&#7083;&#8336;&#7074;&#8345;&#8343;&#8338;&#8339;&#8344;&#7080;&#7077;&#8337; = (6)&#178; / (0)&#178;<br>
+              Constructive gives maximum intensity; destructive gives zero intensity. The ratio is <strong>infinite</strong> (or undefined — no light in destructive case).
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 14 — SUMMARY CH6 + CHAPTER 7 INTRO: SOUND -->
+    <div class="page" id="page-14">
+      <div class="page-body">
+        <div class="summary">
+          <div class="summary-title"><ph-icon name="check-circle" size="17" color="#1a2744"></ph-icon> Chapter 6 Summary</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Waves transfer energy without transferring matter.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Transverse: vibration perpendicular to travel; Longitudinal: vibration parallel.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> v = f&lambda;; f = 1/T.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> All waves reflect, refract, diffract, and interfere.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Only transverse waves can be polarised.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Diffraction is greatest when gap ≈ wavelength.</div>
+        </div>
+
+        <div class="chapter-banner" style="margin: 0 -18px; padding: 28px 20px;">
+          <div class="chapter-eyebrow">Chapter 7</div>
+          <h1 style="color:white; border:none; padding:0; margin:0;">Sound Waves and Musical Instruments</h1>
+        </div>
+
+        <div class="objectives" style="margin-top:20px;">
+          <div class="objectives-label">
+            <ph-icon name="target" size="15"></ph-icon>
+            Learning Objectives
+          </div>
+          <ul>
+            <li>Describe the nature of sound waves</li>
+            <li>Understand speed of sound in different media</li>
+            <li>Explain loudness, pitch, and quality (timbre)</li>
+            <li>Understand resonance and stationary waves</li>
+            <li>Apply stationary wave theory to strings</li>
+            <li>Apply stationary wave theory to open and closed pipes</li>
+            <li>Solve UTME/WAEC problems on strings and pipes</li>
+          </ul>
+        </div>
+
+        <h2>The Nature of Sound</h2>
+        <p>Sound is a <strong>longitudinal, mechanical wave</strong>. It is produced by vibrating objects and requires a material medium (solid, liquid, or gas) to travel through. It <strong>cannot travel through a vacuum</strong>.</p>
+
+        <h2>Speed of Sound</h2>
+        <p>Sound travels at different speeds in different media:</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Medium</th><th>Approximate Speed</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Air (at 0°C)</td><td>331 m/s</td></tr>
+              <tr><td>Air (at 20°C)</td><td>343 m/s</td></tr>
+              <tr><td>Water</td><td>~1500 m/s</td></tr>
+              <tr><td>Steel</td><td>~5000 m/s</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>Sound travels faster in denser, more elastic media. Solids &gt; Liquids &gt; Gases.</p>
+        <p>Speed of sound increases with temperature: for every 1°C rise, speed increases by about 0.6 m/s.</p>
+
+        <h2>Characteristics of Sound</h2>
+        <ul>
+          <li><strong>Loudness</strong> — determined by amplitude. Greater amplitude = greater energy = louder sound. Measured in decibels (dB).</li>
+          <li><strong>Pitch</strong> — determined by frequency. Higher frequency = higher pitch. Humans hear between about 20 Hz and 20,000 Hz.</li>
+          <li><strong>Quality (Timbre)</strong> — determined by the waveform (the mix of harmonics). A violin and a piano playing the same note differ in quality/timbre.</li>
+        </ul>
+
+        <div class="callout callout-tip">
+          <div class="callout-label"><ph-icon name="lightbulb" size="14"></ph-icon> Infrasound and Ultrasound</div>
+          <p><strong>Infrasound:</strong> frequency below 20 Hz. Used by elephants and whales to communicate over long distances.</p>
+          <p style="margin-bottom:0;"><strong>Ultrasound:</strong> frequency above 20,000 Hz (20 kHz). Used in medical scanning (sonography), sonar, and cleaning equipment.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 15 — STATIONARY WAVES AND STRINGS -->
+    <div class="page" id="page-15">
+      <div class="page-body">
+        <h1>Stationary (Standing) Waves</h1>
+        <p>When two identical waves travelling in <strong>opposite directions</strong> meet in the same medium, they superpose to form a <strong>stationary wave</strong> — a pattern of nodes and antinodes that does not move forward.</p>
+
+        <ul>
+          <li><strong>Node:</strong> a point of zero displacement. Destructive interference always occurs here.</li>
+          <li><strong>Antinode:</strong> a point of maximum displacement. Constructive interference always occurs here.</li>
+          <li>The distance between two adjacent nodes (or antinodes) is <strong>&lambda;/2</strong>.</li>
+        </ul>
+
+        <div class="callout callout-key">
+          <div class="callout-label"><ph-icon name="key" size="14"></ph-icon> Stationary vs Progressive Waves</div>
+          <p><strong>Progressive wave:</strong> energy and wave pattern both move forward.</p>
+          <p style="margin-bottom:0;"><strong>Stationary wave:</strong> pattern does not move; energy is stored between nodes; all particles between two nodes vibrate in phase but with different amplitudes.</p>
+        </div>
+
+        <h1>Vibrating Strings</h1>
+        <p>When a string is fixed at both ends and plucked, stationary waves form. The ends are always <strong>nodes</strong> (because the string is fixed). The simplest pattern is one loop (antinode in the middle) — this is the <strong>fundamental mode</strong> (first harmonic).</p>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Harmonic</th><th>Name</th><th>No. of Loops</th><th>Wavelength</th><th>Frequency</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>1st</td><td>Fundamental</td><td>1</td><td>&lambda; = 2L</td><td>f&#8321; = v/2L</td></tr>
+              <tr><td>2nd</td><td>2nd harmonic</td><td>2</td><td>&lambda; = L</td><td>f&#8322; = 2f&#8321;</td></tr>
+              <tr><td>3rd</td><td>3rd harmonic</td><td>3</td><td>&lambda; = 2L/3</td><td>f&#8323; = 3f&#8321;</td></tr>
+              <tr><td>nth</td><td>nth harmonic</td><td>n</td><td>&lambda; = 2L/n</td><td>f&#8345; = nf&#8321;</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout callout-key">
+          <div class="callout-label"><ph-icon name="function" size="14"></ph-icon> Fundamental Frequency of a String</div>
+          <p style="margin-bottom:0;"><strong>f&#8321; = (1/2L) × &radic;(T/&mu;)</strong></p>
+          <p style="margin-bottom:0; font-size:13px; color:var(--muted);">L = length of string, T = tension in the string (N), &mu; = mass per unit length (kg/m)</p>
+        </div>
+
+        <h2>Laws of Vibrating Strings</h2>
+        <p>The fundamental frequency of a vibrating string:</p>
+        <ul>
+          <li>Is <strong>inversely proportional to its length</strong>: f &prop; 1/L</li>
+          <li>Is <strong>directly proportional to the square root of tension</strong>: f &prop; &radic;T</li>
+          <li>Is <strong>inversely proportional to the square root of mass per unit length</strong>: f &prop; 1/&radic;&mu;</li>
+        </ul>
+
+        <div class="callout callout-tip">
+          <div class="callout-label"><ph-icon name="lightbulb" size="14"></ph-icon> How a Guitar Works</div>
+          <p>A guitarist increases pitch by: pressing a fret (shortening L), tightening a peg (increasing T), or using a thinner string (decreasing &mu;). All three raise frequency according to the formula above.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 16 — PIPES (OPEN AND CLOSED) -->
+    <div class="page" id="page-16">
+      <div class="page-body">
+        <h1>Sound in Pipes — Open and Closed</h1>
+        <p>Wind instruments (flutes, organs, trumpets) produce sound from vibrating air columns inside pipes. The boundary conditions at the ends of the pipe determine which harmonics are formed:</p>
+        <ul>
+          <li>An <strong>open end</strong> is always an <strong>antinode</strong> (air is free to vibrate)</li>
+          <li>A <strong>closed end</strong> is always a <strong>node</strong> (air cannot move)</li>
+        </ul>
+
+        <h2>Open Pipe (Open at Both Ends)</h2>
+        <p>Both ends are antinodes. All harmonics are present (both odd and even).</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Harmonic</th><th>Condition</th><th>Frequency</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>1st (Fundamental)</td><td>L = &lambda;/2</td><td>f&#8321; = v/2L</td></tr>
+              <tr><td>2nd</td><td>L = &lambda;</td><td>f&#8322; = v/L = 2f&#8321;</td></tr>
+              <tr><td>3rd</td><td>L = 3&lambda;/2</td><td>f&#8323; = 3v/2L = 3f&#8321;</td></tr>
+              <tr><td>nth</td><td>L = n&lambda;/2</td><td>f&#8345; = nv/2L = nf&#8321;</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>Closed Pipe (Closed at One End)</h2>
+        <p>One end is a node, the other is an antinode. <strong>Only odd harmonics</strong> are present.</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Harmonic</th><th>Condition</th><th>Frequency</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>1st (Fundamental)</td><td>L = &lambda;/4</td><td>f&#8321; = v/4L</td></tr>
+              <tr><td>3rd</td><td>L = 3&lambda;/4</td><td>f&#8323; = 3v/4L = 3f&#8321;</td></tr>
+              <tr><td>5th</td><td>L = 5&lambda;/4</td><td>f&#8325; = 5v/4L = 5f&#8321;</td></tr>
+              <tr><td>(2n-1)th</td><td>L = (2n-1)&lambda;/4</td><td>f = (2n-1)v/4L</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="callout callout-key">
+          <div class="callout-label"><ph-icon name="key" size="14"></ph-icon> Critical Comparison</div>
+          <p>Open pipe fundamental: <strong>f = v/2L</strong></p>
+          <p>Closed pipe fundamental: <strong>f = v/4L</strong></p>
+          <p style="margin-bottom:0;">A closed pipe of length L has the same fundamental frequency as an open pipe of length 2L. A closed pipe produces a deeper (lower) note than an open pipe of the same length. The closed pipe is missing all even harmonics, making its tone sound more hollow.</p>
+        </div>
+
+        <h2>End Correction</h2>
+        <p>In practice, an antinode at an open end forms slightly beyond the end of the pipe. This extra length is called the <strong>end correction (e)</strong>. A common approximation is <strong>e = 0.3d</strong>, where d is the internal diameter of the pipe. For an open pipe, the effective length is L + 2e; for a closed pipe, L + e.</p>
+      </div>
+    </div>
+
+    <!-- PAGE 17 — RESONANCE AND PRACTICE -->
+    <div class="page" id="page-17">
+      <div class="page-body">
+        <h1>Resonance</h1>
+        <p><strong>Resonance</strong> occurs when an object is made to vibrate at its own <strong>natural frequency</strong> by the periodic force of another vibrating object. At resonance, the amplitude of vibration becomes very large.</p>
+
+        <div class="example">
+          <div class="example-label"><ph-icon name="info" size="13"></ph-icon> Examples of Resonance</div>
+          <div class="ex-line">A tuning fork held near a resonance tube — when the tube length matches the wavelength, the air column resonates and a loud sound is heard.</div>
+          <div class="ex-line">A swing pushed at its natural frequency — the amplitude increases with each push.</div>
+          <div class="ex-line">The Tacoma Narrows Bridge (1940) — collapsed because wind resonated with the bridge's natural frequency.</div>
+        </div>
+
+        <h2>The Resonance Tube Experiment</h2>
+        <p>A closed pipe (resonance tube) is used to measure the speed of sound in air. A vibrating tuning fork is held over the open end. The water level is lowered until a loud resonance is heard.</p>
+        <ul>
+          <li>First resonance: L&#8321; = &lambda;/4 (approximately)</li>
+          <li>Second resonance: L&#8322; = 3&lambda;/4</li>
+          <li>So: L&#8322; - L&#8321; = &lambda;/2 &rarr; <strong>&lambda; = 2(L&#8322; - L&#8321;)</strong></li>
+          <li>Speed: <strong>v = f&lambda; = 2f(L&#8322; - L&#8321;)</strong></li>
+        </ul>
+
+        <div class="practice">
+          <div class="practice-title"><ph-icon name="pencil" size="14"></ph-icon> UTME / WAEC Practice — Strings and Pipes</div>
+          <div class="exercise">
+            <div class="exercise-num">Question 1</div>
+            <p>A string of length 80 cm is fixed at both ends. The speed of waves in the string is 240 m/s. Calculate the fundamental frequency and the frequency of the 3rd harmonic.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              L = 80 cm = 0.8 m, v = 240 m/s<br>
+              Fundamental: f&#8321; = v/2L = 240/(2 × 0.8) = 240/1.6 = <strong>150 Hz</strong><br><br>
+              3rd harmonic: f&#8323; = 3f&#8321; = 3 × 150 = <strong>450 Hz</strong>
+            </div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 2</div>
+            <p>An open pipe has a length of 85 cm. The speed of sound is 340 m/s. Find the fundamental frequency and the first three harmonics.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              f&#8321; = v/2L = 340/(2 × 0.85) = 340/1.7 = <strong>200 Hz</strong><br>
+              f&#8322; = 2 × 200 = <strong>400 Hz</strong><br>
+              f&#8323; = 3 × 200 = <strong>600 Hz</strong>
+            </div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 3 — Closed Pipe</div>
+            <p>A closed pipe is 42.5 cm long. Speed of sound = 340 m/s. Find: (a) the fundamental frequency, (b) the frequency of the first overtone (3rd harmonic), (c) explain why the 2nd harmonic is absent.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              <strong>(a)</strong> f&#8321; = v/4L = 340/(4 × 0.425) = 340/1.7 = <strong>200 Hz</strong><br><br>
+              <strong>(b)</strong> First overtone = 3rd harmonic: f&#8323; = 3 × 200 = <strong>600 Hz</strong><br><br>
+              <strong>(c)</strong> In a closed pipe, only odd harmonics are present. The 2nd harmonic (f = 2f&#8321; = 400 Hz) would require an antinode at the closed end, which is impossible — the closed end must always be a node.
+            </div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 4 (Hard — WAEC)</div>
+            <p>In a resonance tube experiment with a 512 Hz tuning fork, first resonance occurs at 16 cm and second resonance at 49 cm. Calculate: (a) the wavelength, (b) the speed of sound in air, (c) the end correction.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              <strong>(a)</strong> &lambda; = 2(L&#8322; - L&#8321;) = 2(49 - 16) = 2 × 33 = <strong>66 cm = 0.66 m</strong><br><br>
+              <strong>(b)</strong> v = f&lambda; = 512 × 0.66 = <strong>337.9 m/s ≈ 338 m/s</strong><br><br>
+              <strong>(c)</strong> At first resonance: L&#8321; + e = &lambda;/4<br>
+              16 + e = 66/4 = 16.5 cm<br>
+              <strong>e = 0.5 cm</strong>
+            </div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 5 (Hard — String)</div>
+            <p>A wire of mass 20 g and length 2 m is stretched with a tension of 80 N. Find: (a) the mass per unit length, (b) the fundamental frequency, (c) the frequency of the 4th harmonic.</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              <strong>(a)</strong> &mu; = m/L = 0.020/2 = <strong>0.01 kg/m</strong><br><br>
+              <strong>(b)</strong> f&#8321; = (1/2L)&radic;(T/&mu;) = (1/(2×2)) × &radic;(80/0.01)<br>
+              = 0.25 × &radic;8000 = 0.25 × 89.44 = <strong>22.4 Hz</strong><br><br>
+              <strong>(c)</strong> f&#8324; = 4 × 22.4 = <strong>89.4 Hz</strong>
+            </div>
+          </div>
+          <div class="exercise">
+            <div class="exercise-num">Question 6 (Hard — UTME)</div>
+            <p>A string has a fundamental frequency of 200 Hz. When the tension is increased by a factor of 4, what is the new fundamental frequency? When the length is halved (at original tension), what is the new frequency?</p>
+            <button class="reveal-btn" onclick="toggleAnswer(this)"><ph-icon name="eye" size="14"></ph-icon> Show Answer</button>
+            <div class="answer-box">
+              <strong>Tension increased 4×:</strong><br>
+              f &prop; &radic;T, so new f = 200 × &radic;4 = 200 × 2 = <strong>400 Hz</strong><br><br>
+              <strong>Length halved:</strong><br>
+              f &prop; 1/L, so new f = 200 × 2 = <strong>400 Hz</strong>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 18 — MUSICAL INSTRUMENTS AND SUMMARY -->
+    <div class="page" id="page-18">
+      <div class="page-body">
+        <h1>Musical Instruments — Strings and Pipes</h1>
+
+        <h2>Stringed Instruments</h2>
+        <p>Stringed instruments (guitar, violin, piano, harp) produce sound by vibrating strings. The string vibrates between two fixed points creating stationary waves. The sound box amplifies the sound by resonance.</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Instrument</th><th>How Strings Are Excited</th><th>How Pitch Is Changed</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Guitar / Ukulele</td><td>Plucked with finger or pick</td><td>Fretting (changes L), tuning peg (changes T)</td></tr>
+              <tr><td>Violin / Cello</td><td>Bowed with a rosined bow</td><td>Pressing fingers on fretboard (changes L)</td></tr>
+              <tr><td>Piano</td><td>Hammers strike the strings</td><td>Different string lengths and thicknesses for each key</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>Wind Instruments (Pipes)</h2>
+        <p>Wind instruments produce sound from vibrating air columns inside tubes. Pitch is controlled by changing the effective length of the air column.</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr><th>Instrument</th><th>Pipe Type</th><th>How Pitch Is Changed</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Flute</td><td>Open at both ends</td><td>Covering/uncovering holes changes effective length L</td></tr>
+              <tr><td>Clarinet</td><td>Effectively closed at mouthpiece end</td><td>Covering holes; produces mainly odd harmonics</td></tr>
+              <tr><td>Organ</td><td>Both open and closed pipes</td><td>Different pipes for different notes</td></tr>
+              <tr><td>Trumpet / Trombone</td><td>Open pipe (conical/cylindrical)</td><td>Valves or slide change the length of the tube</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h2>Resonance and the Soundboard</h2>
+        <p>The body of a guitar or violin is a resonance chamber. When a string vibrates, it excites the air inside the body. The body resonates at many frequencies, amplifying the sound and giving each instrument its unique timbre (quality of sound).</p>
+
+        <div class="callout callout-tip">
+          <div class="callout-label"><ph-icon name="lightbulb" size="14"></ph-icon> Harmonics and Musical Timbre</div>
+          <p>The fundamental frequency determines the pitch (note). The mix of harmonics (overtones) determines the timbre. A flute produces few overtones (pure tone); a violin produces many strong overtones (rich tone). This is why the same note sounds different on different instruments.</p>
+        </div>
+
+        <div class="mistake">
+          <div class="mistake-label"><ph-icon name="x-circle" size="14"></ph-icon> Common Mistakes in Exams</div>
+          <p><strong>Mistake 1:</strong> Saying that a closed pipe produces all harmonics — it only produces ODD harmonics (1st, 3rd, 5th...).</p>
+          <p><strong>Mistake 2:</strong> Forgetting to convert cm to m before substituting into formulas.</p>
+          <p><strong>Mistake 3:</strong> Confusing "overtone" with "harmonic". The 1st overtone = 2nd harmonic. The nth overtone = (n+1)th harmonic.</p>
+          <p style="margin-bottom:0;"><strong>Mistake 4:</strong> Using f = v/2L for a closed pipe instead of f = v/4L.</p>
+        </div>
+
+        <div class="summary">
+          <div class="summary-title"><ph-icon name="check-circle" size="17" color="#1a2744"></ph-icon> Chapter 7 Summary</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Sound is a longitudinal mechanical wave; cannot travel through vacuum.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Loudness &rarr; amplitude; Pitch &rarr; frequency; Timbre &rarr; waveform.</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> String fundamental: f = (1/2L)&radic;(T/&mu;).</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Open pipe: f&#8345; = nv/2L (all harmonics present).</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Closed pipe: f&#8345; = (2n-1)v/4L (only odd harmonics present).</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> Resonance tube: &lambda; = 2(L&#8322; - L&#8321;); v = 2f(L&#8322; - L&#8321;).</div>
+          <div class="summary-item"><ph-icon name="check" size="14" color="#6b9e78"></ph-icon> 1st overtone = 2nd harmonic; nd overtone = (n+1)th harmonic.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 19 — BACK COVER -->
+    <div class="page" id="page-19">
+      <div style="
+        background: linear-gradient(160deg, var(--navy) 0%, var(--navy2) 100%);
+        min-height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        padding: 48px 28px;
+        text-align: center;
+        color: var(--white);
+      ">
+        <div style="
+          width: 64px; height: 64px;
+          background: rgba(232,160,32,0.15);
+          border: 2px solid var(--amber);
+          border-radius: 16px;
+          display: flex; align-items: center; justify-content: center;
+          margin: 0 auto 28px;
+        ">
+          <ph-icon name="graduation-cap" size="34" color="#e8a020"></ph-icon>
+        </div>
+        <div style="font-family: Georgia, serif; font-size: 26px; font-weight: 700; margin-bottom: 12px;">Well Done!</div>
+        <p style="color: rgba(255,255,255,0.7); font-size: 15px; line-height: 1.7; max-width: 340px; text-align: center; margin-bottom: 32px;">
+          You have completed all seven chapters of<br><strong style="color:var(--white);">Physics Mastery — Optics and Waves</strong>.<br><br>
+          Master the formulas, understand the concepts, and practise every question. Physics rewards those who keep at it.
+        </p>
+        <div style="
+          background: rgba(255,255,255,0.07);
+          border: 1px solid rgba(255,255,255,0.15);
+          border-radius: var(--radius);
+          padding: 18px 22px;
+          max-width: 340px;
+          margin-bottom: 36px;
+          font-size: 13px;
+          color: rgba(255,255,255,0.6);
+          font-style: italic;
+          line-height: 1.6;
+        ">
+          "Physics is really nothing more than a search for ultimate simplicity, but so far all we have found is the extraordinary complexity of the simplest things."<br>
+          <span style="color: rgba(255,255,255,0.4); margin-top: 8px; display:block;">— Richard Feynman</span>
+        </div>
+        <button class="cover-btn" onclick="goToPage(1, -1)">
+          <ph-icon name="list" size="18"></ph-icon>
+          Back to Contents
+        </button>
+      </div>
+    </div>
+
+  </div><!-- end #viewport -->
+
+  <!-- BOTTOM NAV -->
+  <div id="bottom-nav">
+    <button class="nav-btn" id="prev-btn" onclick="navigate(-1)" disabled>
+      <ph-icon name="arrow-left" size="16"></ph-icon>
+      Prev
+    </button>
+    <div id="page-counter">1 / 20</div>
+    <button class="nav-btn" id="next-btn" onclick="navigate(1)">
+      Next
+      <ph-icon name="arrow-right" size="16"></ph-icon>
+    </button>
+  </div>
+
+</div><!-- end #shell -->
+
+<!-- TOC DRAWER OVERLAY -->
+<div id="toc-overlay" onclick="handleOverlayClick(event)">
+  <div id="toc-drawer">
+    <div class="drawer-header">
+      <h2>Chapters</h2>
+      <button id="close-toc" onclick="closeToc()">
+        <ph-icon name="x" size="20"></ph-icon>
+      </button>
+    </div>
+    <ul class="drawer-list">
+      <li class="drawer-item" onclick="drawerGo(0)">
+        <div class="drawer-num" style="background:rgba(26,39,68,0.12); color:var(--navy);">
+          <ph-icon name="house" size="15"></ph-icon>
+        </div>
+        <div>
+          <div class="drawer-name">Cover</div>
+        </div>
+      </li>
+      <li class="drawer-item" onclick="drawerGo(1)">
+        <div class="drawer-num" style="background:rgba(26,39,68,0.12); color:var(--navy);">
+          <ph-icon name="list" size="15"></ph-icon>
+        </div>
+        <div>
+          <div class="drawer-name">Table of Contents</div>
+        </div>
+      </li>
+      <div class="drawer-divider"></div>
+      <li class="drawer-item" onclick="drawerGo(2)">
+        <div class="drawer-num">1</div>
+        <div>
+          <div class="drawer-name">Prisms</div>
+          <div class="drawer-sub">Pages 3 – 4</div>
+        </div>
+      </li>
+      <li class="drawer-item" onclick="drawerGo(4)">
+        <div class="drawer-num">2</div>
+        <div>
+          <div class="drawer-name">Deviation, Real and Apparent Depth</div>
+          <div class="drawer-sub">Pages 5 – 6</div>
+        </div>
+      </li>
+      <li class="drawer-item" onclick="drawerGo(6)">
+        <div class="drawer-num">3</div>
+        <div>
+          <div class="drawer-name">Lenses, Lens Formula, Power</div>
+          <div class="drawer-sub">Pages 7 – 8</div>
+        </div>
+      </li>
+      <li class="drawer-item" onclick="drawerGo(8)">
+        <div class="drawer-num">4</div>
+        <div>
+          <div class="drawer-name">Optical Instruments and The Eye</div>
+          <div class="drawer-sub">Pages 9 – 10</div>
+        </div>
+      </li>
+      <li class="drawer-item" onclick="drawerGo(10)">
+        <div class="drawer-num">5</div>
+        <div>
+          <div class="drawer-name">Colours — Dispersion and Mixing</div>
+          <div class="drawer-sub">Pages 11 – 12</div>
+        </div>
+      </li>
+      <li class="drawer-item" onclick="drawerGo(12)">
+        <div class="drawer-num">6</div>
+        <div>
+          <div class="drawer-name">Wave Motion and Properties</div>
+          <div class="drawer-sub">Pages 13 – 15</div>
+        </div>
+      </li>
+      <li class="drawer-item" onclick="drawerGo(14)">
+        <div class="drawer-num">7</div>
+        <div>
+          <div class="drawer-name">Sound Waves and Musical Instruments</div>
+          <div class="drawer-sub">Pages 15 – 19</div>
+        </div>
+      </li>
+    </ul>
+  </div>
+</div>
+
+<script>
+const TOTAL = 20;
+let current = 0;
+
+function getPage(n) {
+  return document.getElementById('page-' + n);
+}
+
+function goToPage(n, dir) {
+  if (n < 0 || n >= TOTAL) return;
+  const prev = getPage(current);
+  const next = getPage(n);
+  if (!next) return;
+
+  prev.classList.remove('active');
+  next.classList.remove('slide-in-right', 'slide-in-left');
+
+  if (typeof dir === 'number' && dir !== 0) {
+    next.classList.add(dir > 0 ? 'slide-in-right' : 'slide-in-left');
+  }
+
+  next.classList.add('active');
+  next.scrollTop = 0;
+  current = n;
+  updateUI();
+}
+
+function navigate(dir) {
+  goToPage(current + dir, dir);
+}
+
+function updateUI() {
+  document.getElementById('prev-btn').disabled = current === 0;
+  document.getElementById('next-btn').disabled = current === TOTAL - 1;
+  document.getElementById('page-counter').textContent = (current + 1) + ' / ' + TOTAL;
+
+  const fill = ((current + 1) / TOTAL) * 100;
+  document.getElementById('progress-fill').style.width = fill + '%';
+
+  const titles = [
+    'Physics Mastery — Optics and Waves',
+    'Contents',
+    'Ch.1 — Triangular Prism',
+    'Ch.1 — Rectangular Prism',
+    'Ch.2 — Angle of Deviation',
+    'Ch.2 — Real and Apparent Depth',
+    'Ch.3 — Lenses',
+    'Ch.3 — Lens Formula and Power',
+    'Ch.4 — Optical Instruments',
+    'Ch.4 — The Human Eye',
+    'Ch.5 — Dispersion',
+    'Ch.5 — Colour Mixing',
+    'Ch.6 — Wave Motion',
+    'Ch.6 — Properties of Waves',
+    'Ch.6 Summary / Ch.7 Intro',
+    'Ch.7 — Stationary Waves and Strings',
+    'Ch.7 — Pipes: Open and Closed',
+    'Ch.7 — Resonance and Practice',
+    'Ch.7 — Musical Instruments',
+    'Completed'
+  ];
+  document.getElementById('topbar-title').textContent = titles[current] || 'Physics Mastery';
+}
+
+function toggleAnswer(btn) {
+  const box = btn.nextElementSibling;
+  const isOpen = box.classList.toggle('open');
+  const icon = btn.querySelector('ph-icon');
+  if (icon) icon.setAttribute('name', isOpen ? 'eye-slash' : 'eye');
+  btn.childNodes.forEach(n => {
+    if (n.nodeType === 3) n.textContent = isOpen ? ' Hide Answer' : ' Show Answer';
+  });
+}
+
+function openToc() {
+  document.getElementById('toc-overlay').classList.add('open');
+}
+function closeToc() {
+  document.getElementById('toc-overlay').classList.remove('open');
+}
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('toc-overlay')) closeToc();
+}
+function drawerGo(n) {
+  closeToc();
+  const dir = n > current ? 1 : (n < current ? -1 : 0);
+  goToPage(n, dir);
+}
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') navigate(1);
+  if (e.key === 'ArrowLeft')  navigate(-1);
+});
+
+(function() {
+  let startX = 0, startY = 0;
+  const vp = document.getElementById('viewport');
+  vp.addEventListener('touchstart', e => {
+    startX = e.touches[0].clientX;
+    startY = e.touches[0].clientY;
+  }, { passive: true });
+  vp.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - startX;
+    const dy = e.changedTouches[0].clientY - startY;
+    if (Math.abs(dx) > Math.abs(dy) * 1.5 && Math.abs(dx) > 50) {
+      navigate(dx < 0 ? 1 : -1);
+    }
+  }, { passive: true });
+})();
+
+updateUI();
+</script>
+</body>
+</html>
