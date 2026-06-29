@@ -146,11 +146,14 @@ self.addEventListener('fetch', event => {
 
   if (url.pathname === '/sw.js') return;
 
-  /* Never cache english.html */
-  if (url.pathname === '/english.html') {
-    event.respondWith(fetch(request));
-    return;
-  }
+/* Never cache english.html or physics.html */
+if (
+  url.pathname === '/english.html' ||
+  url.pathname === '/physics.html'
+) {
+  event.respondWith(fetch(request));
+  return;
+}
 
   if (BYPASS_ORIGINS.some(origin => url.hostname.includes(origin))) return;
 
@@ -266,10 +269,13 @@ async function _staleWhileRevalidate(request, cacheName) {
 async function _navigationHandler(request) {
   const url = new URL(request.url);
 
-  // Never cache or intercept english.html
-  if (url.pathname === '/english.html') {
-    return fetch(request);
-  }
+// Never cache or intercept english.html or physics.html
+if (
+  url.pathname === '/english.html' ||
+  url.pathname === '/physics.html'
+) {
+  return fetch(request);
+}
 
   try {
     const cachedShell = await caches.match('/index.html');
