@@ -962,9 +962,6 @@
     _saveDefaultTerm(term)
       .then(() => {
         _defaultTerm = term;
-        if (window.LocalDB) {
-          LocalDB.setMeta(_META_DEFAULT_TERM, term).catch(() => {});
-        }
         UI.toast(term ? `Default term set to "${term}".` : 'Default term cleared.', 'success');
         if (btn) btn.textContent = 'Save Default';
       })
