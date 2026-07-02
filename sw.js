@@ -23,7 +23,7 @@ firebase.initializeApp({
 
 const _fcmMessaging = firebase.messaging();
 
-const CACHE_VERSION = 'v1.1.50';
+const CACHE_VERSION = 'v1.2.0';
 const STATIC_CACHE  = `static-${CACHE_VERSION}`;
 const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
 
@@ -82,9 +82,6 @@ self.addEventListener('install', event => {
         '/js/app.js',
         '/js/notifications.js',
         '/js/installPrompt.js',
-        '/js/local-db.js',
-        '/js/offline-queue.js',
-        '/js/sync-manager.js',
         '/data/questions.js',
         '/news-ticker.css',
         '/news-ticker.js',
