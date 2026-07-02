@@ -249,42 +249,14 @@
   const _META_DEFAULT_TERM = 'studyroom_defaultTerm';
 
   function _loadDefaultTerm(callback) {
-    if (window.LocalDB) {
-      LocalDB.getMeta(_META_DEFAULT_TERM)
-        .then(cached => {
-          if (cached !== null && cached !== undefined) {
-            _defaultTerm = cached;
-            if (callback) callback(_defaultTerm);
-          }
-        })
-        .catch(() => {});
-    }
-
-    if (!navigator.onLine) {
-      if (window.LocalDB) {
-        LocalDB.getMeta(_META_DEFAULT_TERM)
-          .then(cached => {
-            if (cached === null || cached === undefined) {
-              if (callback) callback('');
-            }
-          })
-          .catch(() => { if (callback) callback(''); });
-      } else {
-        if (callback) callback('');
-      }
-      return;
-    }
-
     window.fbDb.collection('studyroom_settings').doc('defaults').get()
       .then(snap => {
         const term = (snap.exists && snap.data().defaultTerm) ? snap.data().defaultTerm : '';
         _defaultTerm = term;
-        if (window.LocalDB) {
-          LocalDB.setMeta(_META_DEFAULT_TERM, term).catch(() => {});
-        }
         if (callback) callback(term);
       })
-      .catch(() => {
+      .catch(err => {
+        console.warn('[studyroom] _loadDefaultTerm error:', err);
         if (callback) callback(_defaultTerm || '');
       });
   }
@@ -354,90 +326,17 @@
        3. If Firebase fails on slow network → fall back to cache
   ─────────────────────────────────────────────────────────── */
   function _loadStudentLessons(studentClass) {
-    if (navigator.onLine) {
-      window.fbDb.collection('lessons')
-        .where('class', '==', studentClass)
-        .get()
-        .then(snap => {
-          const lessons = [];
-          snap.forEach(doc => lessons.push({ id: doc.id, ...doc.data() }));
-
-          if (window.LocalDB && lessons.length > 0) {
-            LocalDB.saveLessons(lessons).catch(() => {});
-          }
-          if (window.SyncManager && lessons.length > 0) {
-            SyncManager.cacheLessons(lessons).catch(() => {});
-          }
-
-          _renderStudentLessons(lessons);
-        })
-        .catch(err => {
-          console.warn('[studyroom] Firebase fetch failed — trying local cache:', err);
-          _loadStudentLessonsFromCache(studentClass);
-        });
-    } else {
-      _loadStudentLessonsFromCache(studentClass);
-    }
-  }
-
-  // ── FIX: Normalise class string before querying the cache ──────
-  // Firestore stores the class field exactly as the student registered
-  // (e.g. "SSS1"). IndexedDB's by_class index is case-sensitive. If
-  // AppState.studentData.class comes back with different casing from
-  // the cached lesson documents, the index returns nothing and the
-  // student sees an error screen even though lessons ARE cached.
-  // We try the exact string first, then fall back to a full-scan
-  // match so any casing combination is handled gracefully.
-  function _loadStudentLessonsFromCache(studentClass) {
-    if (!window.LocalDB) {
-      _showLessonLoadError(
-        navigator.onLine
-          ? 'Failed to load lessons. Please refresh.'
-          : 'You are offline. Lessons will appear here after your first online visit to the Study Room.'
-      );
-      return;
-    }
-
-    LocalDB.getLessonsByClass(studentClass)
-      .then(lessons => {
-        // Primary: exact match worked
-        if (lessons && lessons.length > 0) {
-          _renderStudentLessons(lessons);
-          return;
-        }
-
-        // Fallback: scan all cached lessons and match case-insensitively.
-        // This covers the common case where a teacher saved "sss1" but the
-        // student's class is stored as "SSS1" (or vice versa).
-        return LocalDB.getAll(LocalDB.STORES.LESSONS).then(all => {
-          if (!all || all.length === 0) {
-            _showLessonLoadError(
-              navigator.onLine
-                ? 'Failed to load lessons. Please refresh.'
-                : 'You are offline. Lessons will appear here after your first online visit to the Study Room.'
-            );
-            return;
-          }
-
-          const normClass = (studentClass || '').trim().toLowerCase();
-          const matched = all.filter(l =>
-            (l.class || '').trim().toLowerCase() === normClass
-          );
-
-          if (matched.length > 0) {
-            _renderStudentLessons(matched);
-          } else {
-            _showLessonLoadError(
-              navigator.onLine
-                ? 'Failed to load lessons. Please refresh.'
-                : 'You are offline. Lessons will appear here after your first online visit to the Study Room.'
-            );
-          }
-        });
+    window.fbDb.collection('lessons')
+      .where('class', '==', studentClass)
+      .get()
+      .then(snap => {
+        const lessons = [];
+        snap.forEach(doc => lessons.push({ id: doc.id, ...doc.data() }));
+        _renderStudentLessons(lessons);
       })
       .catch(err => {
-        console.error('[studyroom] Cache read error:', err);
-        _showLessonLoadError('Failed to load lessons. Please refresh.');
+        console.error('[studyroom] _loadStudentLessons error:', err);
+        _showLessonLoadError('Failed to load lessons. Please check your internet connection and try again.');
       });
   }
 
@@ -549,30 +448,16 @@
       return;
     }
 
-    if (navigator.onLine) {
-      window.fbDb.collection('lessons').doc(lessonId).get()
-        .then(snap => {
-          if (!snap.exists) { UI.toast('Lesson not found.', 'error'); return; }
-          const fetched = { id: snap.id, ...snap.data() };
-          if (window.LocalDB) LocalDB.saveLessons([fetched]).catch(() => {});
-          _renderReader(fetched, []);
-        })
-        .catch(err => {
-          console.error('[studyroom] _openLesson error:', err);
-          UI.toast('Failed to load lesson.', 'error');
-        });
-    } else {
-      if (window.LocalDB) {
-        LocalDB.get(LocalDB.STORES.LESSONS, lessonId)
-          .then(rec => {
-            if (!rec) { UI.toast('Lesson not available offline.', 'error'); return; }
-            _renderReader(rec, []);
-          })
-          .catch(() => UI.toast('Lesson not available offline.', 'error'));
-      } else {
-        UI.toast('Lesson not available offline.', 'error');
-      }
-    }
+    window.fbDb.collection('lessons').doc(lessonId).get()
+      .then(snap => {
+        if (!snap.exists) { UI.toast('Lesson not found.', 'error'); return; }
+        const fetched = { id: snap.id, ...snap.data() };
+        _renderReader(fetched, []);
+      })
+      .catch(err => {
+        console.error('[studyroom] _openLesson error:', err);
+        UI.toast('Failed to load lesson. Please check your internet connection and try again.', 'error');
+      });
   }
 
   /* ══════════════════════════════════════════════════
