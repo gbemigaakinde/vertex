@@ -2998,6 +2998,32 @@ function _mondayFromIsoWeekKey(weekKey) {
         .catch(reject);
     });
   }
+  
+  function _wrapText(doc, text, maxWidth) {
+    const rawLines = doc.splitTextToSize(String(text == null ? '' : text), maxWidth);
+    const lines = [];
+    rawLines.forEach(line => {
+      if (doc.getTextWidth(line) <= maxWidth) {
+        lines.push(line);
+        return;
+      }
+      // This line has no space to break on (e.g. a long equation or formula)
+      // and is still wider than the page after normal word-wrap.
+      // Force a character-level break so it can never run off the page.
+      let chunk = '';
+      for (const ch of line) {
+        const test = chunk + ch;
+        if (doc.getTextWidth(test) > maxWidth && chunk) {
+          lines.push(chunk);
+          chunk = ch;
+        } else {
+          chunk = test;
+        }
+      }
+      if (chunk) lines.push(chunk);
+    });
+    return lines;
+  }
 
   async function exportTaskReportPDF(docId) {
     if (!docId) return;
@@ -3245,7 +3271,7 @@ function _mondayFromIsoWeekKey(weekKey) {
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...C.brand);
-    const titleLines = doc.splitTextToSize(taskDoc.title || 'Untitled Task', CONTENT_W - 30);
+    const titleLines = _wrapText(doc, taskDoc.title || 'Untitled Task', CONTENT_W - 30);
     doc.text(titleLines, MARGIN + 5, y + 9);
 
     const badgeX = PAGE_W - MARGIN - 30;
@@ -3284,7 +3310,9 @@ function _mondayFromIsoWeekKey(weekKey) {
       doc.setTextColor(...C.textTert);
       doc.text('Task Message', MARGIN + 2, y + 4);
       y += 6;
-      const msgLines = doc.splitTextToSize(taskDoc.message, CONTENT_W - 10);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      const msgLines = _wrapText(doc, taskDoc.message, CONTENT_W - 10);
       const msgH = msgLines.length * 4.5 + 5;
       checkPage(msgH + 4);
       fillRect(MARGIN, y, CONTENT_W, msgH, C.surfaceMuted, C.border);
@@ -3419,12 +3447,10 @@ function _mondayFromIsoWeekKey(weekKey) {
     y += 24;
 
     // ── MAIN ATTENDANCE TABLE ──────────────────────────────────────
-    // Show up to 10 most recent date columns
     const MAX_DATE_COLS = 10;
     const displayDates  = allDates.slice(-MAX_DATE_COLS);
     const hasMore       = allDates.length > MAX_DATE_COLS;
 
-    // Date column headers: short day + date e.g. "F 7/3"
     const dateHeaders = displayDates.map(d => {
       const p  = d.split('-');
       const dt = new Date(+p[0], +p[1]-1, +p[2]);
@@ -3434,20 +3460,17 @@ function _mondayFromIsoWeekKey(weekKey) {
       return dayInitial + '\n' + dayNum + '/' + month;
     });
 
-    // Progress column is drawn via willDrawCell — the cell text carries the numeric pct
-    // Status dot columns use plain ASCII: Y (done), N (missed), - (upcoming/today)
     const tableHead = [['#', 'Student', 'Class', 'Done', 'Miss', '%', 'Progress', ...dateHeaders]];
 
-    const PROGRESS_COL_IDX = 6; // 0-based index of the "Progress" column
+    const PROGRESS_COL_IDX = 6;
     const FIRST_DATE_COL   = 7;
 
     const tableBody = studentStats.map((s, idx) => {
-      // Status dots: Y / N / - only (ASCII — renders perfectly in Helvetica)
       const dateDots = displayDates.map(d => {
-        if (s.comp[d])          return 'Y';   // completed
-        if (d < todayStr)       return 'N';   // past, not done
-        if (d === todayStr)     return 'O';   // today, not done yet
-        return '-';                            // future
+        if (s.comp[d])          return 'Y';
+        if (d < todayStr)       return 'N';
+        if (d === todayStr)     return 'O';
+        return '-';
       });
       return [
         String(idx + 1),
@@ -3456,7 +3479,7 @@ function _mondayFromIsoWeekKey(weekKey) {
         String(s.done),
         String(s.missed),
         s.pct + '%',
-        String(s.pct),   // numeric string — willDrawCell draws the bar, hides this text
+        String(s.pct),
         ...dateDots
       ];
     });
@@ -3482,7 +3505,7 @@ function _mondayFromIsoWeekKey(weekKey) {
         3: { cellWidth: 9,  halign:'center', fontSize: 7 },
         4: { cellWidth: 9,  halign:'center', fontSize: 7 },
         5: { cellWidth: 10, halign:'center', fontStyle:'bold', fontSize: 7 },
-        6: { cellWidth: 24, halign:'left',   fontSize: 1 }, // text hidden; bar drawn in willDrawCell
+        6: { cellWidth: 24, halign:'left',   fontSize: 1 },
       },
       bodyStyles: {
         fontSize: 6,
@@ -3497,7 +3520,6 @@ function _mondayFromIsoWeekKey(weekKey) {
       didDrawCell: function(data) {
         if (data.section !== 'body') return;
 
-        // ── Progress bar (column 6) ──────────────────────────────
         if (data.column.index === PROGRESS_COL_IDX) {
           const pct    = parseInt(data.cell.raw, 10) || 0;
           const color  = pctColor(pct);
@@ -3506,23 +3528,19 @@ function _mondayFromIsoWeekKey(weekKey) {
           const barW   = data.cell.width - pad * 2;
           const barH   = 3;
           const barY   = data.cell.y + (data.cell.height - barH) / 2;
-          // Track
           doc.setFillColor(...C.border);
           doc.roundedRect(barX, barY, barW, barH, barH/2, barH/2, 'F');
-          // Fill
           if (pct > 0) {
             const fillW = Math.max(barW * pct / 100, barH);
             doc.setFillColor(...color);
             doc.roundedRect(barX, barY, fillW, barH, barH/2, barH/2, 'F');
           }
-          // Percentage label centered on bar
           doc.setFontSize(5);
           doc.setFont('helvetica', 'bold');
           doc.setTextColor(pct > 55 ? 255 : color[0], pct > 55 ? 255 : color[1], pct > 55 ? 255 : color[2]);
           doc.text(pct + '%', barX + barW / 2, barY + barH - 0.6, { align:'center' });
         }
 
-        // ── Date status dots (columns 7+) ────────────────────────
         if (data.column.index >= FIRST_DATE_COL) {
           const txt  = (data.cell.raw || '').toString().trim();
           const cx   = data.cell.x + data.cell.width / 2;
@@ -3546,24 +3564,20 @@ function _mondayFromIsoWeekKey(weekKey) {
             doc.setFontSize(5); doc.setFont('helvetica','normal'); doc.setTextColor(...C.warning);
             doc.text('O', cx, cy + 1.8, { align:'center' });
           } else {
-            // future: small grey dash
             doc.setDrawColor(...C.border);
             doc.setLineWidth(0.4);
             doc.line(cx - 1.5, cy, cx + 1.5, cy);
           }
         }
 
-        // ── Colour %  column (col 5) ────────────────────────────
         if (data.column.index === 5) {
           const pct = parseInt(data.cell.raw, 10) || 0;
-          // Re-draw the text in the correct colour (autoTable draws it black first)
           doc.setFillColor(...(data.row.index % 2 === 0 ? C.surface : C.surfaceMuted));
           doc.rect(data.cell.x + 0.1, data.cell.y + 0.1, data.cell.width - 0.2, data.cell.height - 0.2, 'F');
           doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(...pctColor(pct));
           doc.text(pct + '%', data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2, { align:'center' });
         }
 
-        // ── Colour Done / Miss columns (cols 3 & 4) ─────────────
         if (data.column.index === 3 || data.column.index === 4) {
           const val = parseInt(data.cell.raw, 10) || 0;
           if (val > 0) {
@@ -3644,14 +3658,12 @@ function _mondayFromIsoWeekKey(weekKey) {
         _drawPageHeader();
         _drawPageFooter();
 
-        // Student header card
         fillRect(MARGIN, y, CONTENT_W, 22, C.brandLight, C.brandBorder);
         doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.setTextColor(...C.brand);
         doc.text(s.name, MARGIN + 5, y + 9);
         doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...C.textSec);
         doc.text(s.cls || '-', MARGIN + 5, y + 15);
 
-        // Stat pills
         const pills = [
           { label:'Done',    value: s.done,      color: C.success      },
           { label:'Missed',  value: s.missed,    color: C.danger       },
@@ -3669,7 +3681,6 @@ function _mondayFromIsoWeekKey(weekKey) {
 
         y += 26;
 
-        // Attendance progress bar
         checkPage(10);
         doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(...C.textTert);
         doc.text('ATTENDANCE PROGRESS', MARGIN, y + 4);
@@ -3681,12 +3692,10 @@ function _mondayFromIsoWeekKey(weekKey) {
 
         sectionHeading('Session Log - ' + s.name);
 
-        // Session log table: status as plain text labels, no Unicode
         const sessionRows = allDates.map((dateStr, i) => {
           const done    = !!s.comp[dateStr];
           const isPast  = dateStr < todayStr;
           const isToday = dateStr === todayStr;
-          // Plain ASCII status text
           const status  = done    ? 'Done'
                         : isToday ? 'Today'
                         : isPast  ? 'Missed'
@@ -3737,7 +3746,6 @@ function _mondayFromIsoWeekKey(weekKey) {
                           : txt === 'Missed'   ? C.danger
                           : txt === 'Today'    ? C.warning
                           : C.textDis;
-              // Repaint cell background then re-draw coloured text
               doc.setFillColor(...(data.row.index % 2 === 0 ? C.surface : C.surfaceMuted));
               doc.rect(data.cell.x + 0.1, data.cell.y + 0.1, data.cell.width - 0.2, data.cell.height - 0.2, 'F');
               doc.setFontSize(7); doc.setFont('helvetica','bold'); doc.setTextColor(...color);
@@ -3750,7 +3758,6 @@ function _mondayFromIsoWeekKey(weekKey) {
       });
     }
 
-    // ── SAVE ──────────────────────────────────────────────────────
     const safeName  = (taskDoc.title || 'task').replace(/[^a-z0-9]/gi, '_').toLowerCase();
     const dateStamp = todayStr.replace(/-/g,'');
     doc.save('vtx_report_' + safeName + '_' + dateStamp + '.pdf');
@@ -3781,17 +3788,13 @@ async function exportResultPDF(resultId) {
       return;
     }
 
-    // ── Strip LaTeX/KaTeX math delimiters and convert to readable plain text ──
     function _stripLatex(str) {
       if (str == null) return '';
       return String(str)
-        // Display math: $$...$$ or \[...\]
         .replace(/\$\$([\s\S]*?)\$\$/g, (_, m) => m.trim())
         .replace(/\\\[([\s\S]*?)\\\]/g, (_, m) => m.trim())
-        // Inline math: $...$ or \(...\)
         .replace(/\$([\s\S]*?)\$/g, (_, m) => m.trim())
         .replace(/\\\(([\s\S]*?)\\\)/g, (_, m) => m.trim())
-        // Common LaTeX commands to readable text
         .replace(/\\frac\{([^}]*)\}\{([^}]*)\}/g, '($1)/($2)')
         .replace(/\\sqrt\{([^}]*)\}/g, 'sqrt($1)')
         .replace(/\\sqrt\s/g, 'sqrt ')
@@ -3826,7 +3829,6 @@ async function exportResultPDF(resultId) {
       return _stripLatex(String(str)).replace(/\s+/g, ' ').trim();
     }
 
-    // ── PascalCase file naming (no underscores or hyphens) ──
     function _toPascalCase(str) {
       return (str || '')
         .replace(/[^a-zA-Z0-9\s]/g, ' ')
@@ -3837,6 +3839,31 @@ async function exportResultPDF(resultId) {
     }
 
     const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    // Force-wraps text to fit maxWidth, even when the text has no spaces to
+    // break on (long equations, formulas, run-together numbers, etc.)
+    function _wrapText(text, maxWidth) {
+      const rawLines = doc.splitTextToSize(String(text == null ? '' : text), maxWidth);
+      const lines = [];
+      rawLines.forEach(line => {
+        if (doc.getTextWidth(line) <= maxWidth) {
+          lines.push(line);
+          return;
+        }
+        let chunk = '';
+        for (const ch of line) {
+          const test = chunk + ch;
+          if (doc.getTextWidth(test) > maxWidth && chunk) {
+            lines.push(chunk);
+            chunk = ch;
+          } else {
+            chunk = test;
+          }
+        }
+        if (chunk) lines.push(chunk);
+      });
+      return lines;
+    }
 
     const PAGE_W    = 210;
     const PAGE_H    = 297;
@@ -3914,14 +3941,12 @@ async function exportResultPDF(resultId) {
     _drawPageHeader();
     _drawPageFooter();
 
-    // Student name
     doc.setFontSize(17);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...C.text);
     doc.text(_pdfText(r.name) || 'Unnamed Student', MARGIN, y);
     y += 7;
 
-    // Meta line: class / school (left) — date (right)
     doc.setFontSize(9);
     doc.setFont('helvetica', 'normal');
     doc.setTextColor(...C.muted);
@@ -3937,7 +3962,6 @@ async function exportResultPDF(resultId) {
 
     divider();
 
-    // ── OVERALL SCORE + SUBJECT TABLE ─────────────────────────────
     const pct      = r.percentage || 0;
     const gradeClr = pctColor(pct);
     const subjects = r.subjects || [];
@@ -3980,12 +4004,11 @@ async function exportResultPDF(resultId) {
         const cc    = r.correctCounts?.[subj];
         const total = (r.questionSnapshots?.[subj] || []).length;
 
-        // Subject name — wrap if needed
         doc.setFontSize(8.5);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(...C.text);
         const subjLabel = _pdfText(subj);
-        const subjLines = doc.splitTextToSize(subjLabel, tblW - 40);
+        const subjLines = _wrapText(subjLabel, tblW - 40);
         doc.text(subjLines, tblX, ty);
 
         doc.setFont('helvetica', 'bold');
@@ -4001,13 +4024,12 @@ async function exportResultPDF(resultId) {
     y = blockStartY + Math.max(28, rightBlockH) + 6;
     divider();
 
-    // ── NO DETAILED DATA FALLBACK ─────────────────────────────────
     if (!r.questionSnapshots) {
       checkPage(20);
       doc.setFontSize(9);
       doc.setFont('helvetica', 'italic');
       doc.setTextColor(...C.muted);
-      const noteLines = doc.splitTextToSize(
+      const noteLines = _wrapText(
         'A detailed question-by-question breakdown is not available for this result. ' +
         'It was submitted before per-question tracking was introduced.',
         CONTENT_W
@@ -4019,6 +4041,116 @@ async function exportResultPDF(resultId) {
       UI.toast('PDF downloaded.', 'success');
       return;
     }
+
+    checkPage(12);
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(...C.muted);
+    doc.text('QUESTION BREAKDOWN', MARGIN, y);
+    y += 8;
+
+    subjects.forEach(subj => {
+      const qs = r.questionSnapshots[subj] || [];
+      if (qs.length === 0) return;
+
+      const correctCount = r.correctCounts?.[subj] ?? qs.filter(q => q.chosen === q.ans).length;
+      const subjPct      = r.scores?.[subj] ?? 0;
+
+      checkPage(14);
+      doc.setFontSize(11.5);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(...C.accent);
+      doc.text(_pdfText(subj), MARGIN, y);
+
+      doc.setFontSize(8.5);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(...pctColor(subjPct));
+      doc.text(correctCount + '/' + qs.length + ' correct   ·   ' + subjPct + '%', PAGE_W - MARGIN, y, { align: 'right' });
+      y += 3;
+      doc.setDrawColor(...C.accent);
+      doc.setLineWidth(0.5);
+      doc.line(MARGIN, y, PAGE_W - MARGIN, y);
+      y += 6;
+
+      qs.forEach((q, i) => {
+        const isSkipped = q.chosen === null || q.chosen === undefined;
+        const isCorrect = !isSkipped && q.chosen === q.ans;
+        const statusWord  = isCorrect ? 'Correct' : isSkipped ? 'Skipped' : 'Incorrect';
+        const statusColor = isCorrect ? C.success : isSkipped ? C.faint : C.danger;
+
+        const qText  = _pdfText(q.q || '');
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        const qLines = _wrapText((i + 1) + '. ' + qText, CONTENT_W);
+
+        const chosenRaw   = isSkipped ? 'Not answered' : _pdfText(q.opts?.[q.chosen] ?? '—');
+        doc.setFontSize(8.3);
+        doc.setFont('helvetica', 'bold');
+        const answerLines = _wrapText('Answer (' + statusWord + '): ' + chosenRaw, CONTENT_W - 4);
+
+        const showCorrect  = !isCorrect;
+        const correctRaw   = _pdfText(q.opts?.[q.ans] ?? '—');
+        doc.setFontSize(8.3);
+        doc.setFont('helvetica', 'normal');
+        const correctLines = showCorrect ? _wrapText('Correct answer: ' + correctRaw, CONTENT_W - 4) : [];
+
+        const expText  = q.exp ? _pdfText(q.exp) : '';
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'italic');
+        const expLines = expText ? _wrapText('Explanation: ' + expText, CONTENT_W - 4) : [];
+
+        const neededH =
+          qLines.length * 4.3 + 2 +
+          answerLines.length * 4 + 1.5 +
+          (correctLines.length ? correctLines.length * 4 + 1.5 : 0) +
+          (expLines.length ? expLines.length * 3.8 + 2 : 0) + 6;
+
+        checkPage(neededH);
+
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...C.text);
+        doc.text(qLines, MARGIN, y);
+        y += qLines.length * 4.3 + 2;
+
+        doc.setFontSize(8.3);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(...statusColor);
+        doc.text(answerLines, MARGIN + 2, y);
+        y += answerLines.length * 4 + 1.5;
+
+        if (showCorrect) {
+          doc.setFontSize(8.3);
+          doc.setFont('helvetica', 'normal');
+          doc.setTextColor(...C.success);
+          doc.text(correctLines, MARGIN + 2, y);
+          y += correctLines.length * 4 + 1.5;
+        }
+
+        if (expLines.length) {
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'italic');
+          doc.setTextColor(...C.muted);
+          doc.text(expLines, MARGIN + 2, y);
+          y += expLines.length * 3.8 + 2;
+        }
+
+        y += 2.5;
+        if (i < qs.length - 1) {
+          doc.setDrawColor(...C.divider);
+          doc.setLineWidth(0.15);
+          doc.line(MARGIN, y, PAGE_W - MARGIN, y);
+          y += 4;
+        }
+      });
+
+      y += 4;
+    });
+
+    const safeName = _toPascalCase(r.name || 'Student');
+    doc.save('VtxResult' + safeName + '.pdf');
+    UI.toast('PDF downloaded.', 'success');
+  }
 
     // ── QUESTION BREAKDOWN ───────────────────────────────────────
     checkPage(12);
