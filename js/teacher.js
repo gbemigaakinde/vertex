@@ -4059,16 +4059,27 @@ async function exportResultPDF(resultId) {
 
         // Clean all text through _pdfText which strips LaTeX
         const qText  = _pdfText(q.q || '');
+        // IMPORTANT: set the exact font size/style that will be used to DRAW this text
+        // before measuring the wrap width, otherwise splitTextToSize measures against
+        // the wrong font and the drawn text overflows the page margin.
+        doc.setFontSize(9);
+        doc.setFont('helvetica', 'normal');
         const qLines = doc.splitTextToSize((i + 1) + '. ' + qText, CONTENT_W);
 
         const chosenRaw   = isSkipped ? 'Not answered' : _pdfText(q.opts?.[q.chosen] ?? '—');
+        doc.setFontSize(8.3);
+        doc.setFont('helvetica', 'bold');
         const answerLines = doc.splitTextToSize('Answer (' + statusWord + '): ' + chosenRaw, CONTENT_W - 4);
 
         const showCorrect  = !isCorrect;
         const correctRaw   = _pdfText(q.opts?.[q.ans] ?? '—');
+        doc.setFontSize(8.3);
+        doc.setFont('helvetica', 'normal');
         const correctLines = showCorrect ? doc.splitTextToSize('Correct answer: ' + correctRaw, CONTENT_W - 4) : [];
 
         const expText  = q.exp ? _pdfText(q.exp) : '';
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'italic');
         const expLines = expText ? doc.splitTextToSize('Explanation: ' + expText, CONTENT_W - 4) : [];
 
         const neededH =
@@ -4092,6 +4103,7 @@ async function exportResultPDF(resultId) {
         y += answerLines.length * 4 + 1.5;
 
         if (showCorrect) {
+          doc.setFontSize(8.3);
           doc.setFont('helvetica', 'normal');
           doc.setTextColor(...C.success);
           doc.text(correctLines, MARGIN + 2, y);
