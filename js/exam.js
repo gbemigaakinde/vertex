@@ -147,31 +147,18 @@
 
   async function loadOrStart() {
     try {
-      let localExam = null;
-      if (window.LocalDB) {
-        try {
-          localExam = await LocalDB.getExamSession(S().userId);
-        } catch (e) {
-          console.warn('[exam] LocalDB exam session read failed:', e);
-        }
-      }
+      let examData = null;
 
-      let firebaseExam = null;
-      if (navigator.onLine) {
-        try {
-          const snap = await window.fbDb.collection('ongoingExams').doc(S().userId).get();
-          if (snap.exists) {
-            firebaseExam = snap.data();
-            if (window.LocalDB) {
-              LocalDB.saveExamSession(S().userId, firebaseExam).catch(() => {});
-            }
-          }
-        } catch (err) {
-          console.warn('[exam] Firebase ongoingExams read failed — using local copy if available:', err);
+      try {
+        const snap = await window.fbDb.collection('ongoingExams').doc(S().userId).get();
+        if (snap.exists) {
+          examData = snap.data();
         }
+      } catch (err) {
+        console.error('[exam] Firebase ongoingExams read failed:', err);
+        UI.toast('Could not load your exam. Please check your internet connection and try again.', 'error', 0);
+        return;
       }
-
-      const examData = firebaseExam || localExam;
 
       if (!examData) {
         await renderSubjectSelection();
@@ -844,21 +831,14 @@ style="position:relative;background:linear-gradient(135deg,#7c3aed,#4f6ef7);colo
     _startExamLock = true;
 
     try {
-      if (window.LocalDB) {
-        await LocalDB.saveExamSession(S().userId, examDoc);
-      }
-
-      if (navigator.onLine) {
-        window.fbDb.collection('ongoingExams').doc(S().userId).set(examDoc)
-          .catch((err) => console.warn('[exam] Firebase exam creation failed (local copy saved):', err));
-      }
+      await window.fbDb.collection('ongoingExams').doc(S().userId).set(examDoc);
 
       S().exam = examDoc;
       renderExam();
       _showInstructionsModal();
     } catch (err) {
       console.error('[exam] startExam error:', err);
-      UI.toast('Failed to start exam. Please try again.', 'error');
+      UI.toast('Failed to start exam. Please check your internet connection and try again.', 'error');
       _startExamLock = false;
     } finally {
       if (document.getElementById('startExamBtn')) UI.setLoading(btn, false);
@@ -971,18 +951,13 @@ style="position:relative;background:linear-gradient(135deg,#7c3aed,#4f6ef7);colo
       S().exam.sessionDate = _todayStr();
     }
 
-    if (window.LocalDB) {
-      LocalDB.updateExamStartTime(S().userId, startDate).catch((err) => {
-        console.warn('[exam] LocalDB startTime save failed (non-fatal):', err);
-      });
-    }
-
     try {
       await window.fbDb.collection('ongoingExams').doc(S().userId).set(
         { startTime: startDate, sessionDate: S().exam.sessionDate }, { merge: true }
       );
     } catch (err) {
-      console.warn('[exam] Could not persist startTime to Firebase, local copy saved.', err);
+      console.warn('[exam] Could not persist startTime to Firebase.', err);
+      UI.toast('Connection issue — please make sure you stay online during this exam.', 'warning', 6000);
     }
 
     _startTimer();
@@ -1110,15 +1085,8 @@ style="position:relative;background:linear-gradient(135deg,#7c3aed,#4f6ef7);colo
   function _saveAnswer(subj, idx, val) {
     S().exam.answers[`${subj}-${idx}`] = val;
 
-    if (window.LocalDB) {
-      LocalDB.updateExamAnswers(S().userId, S().exam.answers).catch((err) => {
-        console.warn('[exam] LocalDB answer save failed (non-fatal):', err);
-      });
-    }
-
     clearTimeout(_saveAnswer._debounce);
     _saveAnswer._debounce = setTimeout(() => {
-      if (!navigator.onLine) return;
       window.fbDb.collection('ongoingExams').doc(S().userId)
         .update({ answers: S().exam.answers })
         .catch((err) => console.warn('[exam] Firebase answer save error (non-fatal):', err));
@@ -1256,34 +1224,24 @@ style="position:relative;background:linear-gradient(135deg,#7c3aed,#4f6ef7);colo
                         Array.isArray(taskCfg.dates) &&
                         taskCfg.dates.includes(sessionDate);
 
-      let localResultId = null;
-      if (window.LocalDB) {
-        try {
-          const rec = {
-            localId: ('xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx').replace(/[xy]/g, (c) => {
-              const r = Math.random() * 16 | 0;
-              return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-            }),
-            uid:               S().userId,
-            resultData:        result,
-            questionSnapshots,
-            sessionDate,
-            taskDay:           isTaskDay,
-            synced:            false,
-            createdAt:         Date.now(),
-            error:             null,
-            attempts:          0,
-          };
-          await LocalDB.put(LocalDB.STORES.EXAM_RESULTS, rec);
-          localResultId = rec.localId;
-        } catch (e) {
-          console.warn('[exam] LocalDB result save failed (non-fatal):', e);
-        }
+      const batch = window.fbDb.batch();
+
+      batch.set(window.fbDb.collection('results').doc(), {
+        ...result,
+        questionSnapshots,
+        sessionDate,
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+
+      batch.delete(window.fbDb.collection('ongoingExams').doc(S().userId));
+
+      if (isTaskDay) {
+        batch.update(window.fbDb.collection('students').doc(S().userId), {
+          [`coachingCompleted.${sessionDate}`]: true,
+        });
       }
 
-      if (window.LocalDB) {
-        LocalDB.clearExamSession(S().userId).catch(() => {});
-      }
+      await batch.commit();
 
       if (isTaskDay) {
         if (!S().studentData) S().studentData = {};
@@ -1296,65 +1254,19 @@ style="position:relative;background:linear-gradient(135deg,#7c3aed,#4f6ef7);colo
       _startExamLock  = false;
       _beginExamLock  = false;
 
-      let firebaseSuccess = false;
-      if (navigator.onLine) {
-        try {
-          const batch = window.fbDb.batch();
-
-          batch.set(window.fbDb.collection('results').doc(), {
-            ...result,
-            questionSnapshots,
-            sessionDate,
-            timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-          });
-
-          batch.delete(window.fbDb.collection('ongoingExams').doc(S().userId));
-
-          if (isTaskDay) {
-            batch.update(window.fbDb.collection('students').doc(S().userId), {
-              [`coachingCompleted.${sessionDate}`]: true,
-            });
-          }
-
-          await batch.commit();
-          firebaseSuccess = true;
-
-          if (localResultId && window.LocalDB) {
-            LocalDB.markResultSynced(localResultId).catch(() => {});
-          }
-        } catch (fbErr) {
-          console.error('[exam] Firebase submission failed — result is saved locally for retry:', fbErr);
-        }
-      } else {
-        console.warn('[exam] Offline — result saved locally. SyncManager will upload when online.');
-        if (window.SyncManager) {
-          window.addEventListener('online', function _retryOnOnline() {
-            window.removeEventListener('online', _retryOnOnline);
-            SyncManager.syncAll();
-          });
-        }
-      }
-
       renderResults(exam, result);
 
-      if (!firebaseSuccess) {
-        UI.toast(
-          '✓ Result saved locally. It will sync to the server automatically when you reconnect.',
-          'info',
-          8000
-        );
-      }
-
     } catch (err) {
-      console.error('[exam] submitExam unexpected error:', err);
-      UI.toast('Submission error. Please try again.', 'error');
+      console.error('[exam] submitExam error:', err);
+      UI.toast('Submission failed. Please check your internet connection and try again.', 'error', 0);
       if (document.getElementById('submitBtn')) {
         UI.setLoading(document.getElementById('submitBtn'), false);
       }
       _submitLock = false;
-    } finally {
-      _submitLock = false;
+      return;
     }
+
+    _submitLock = false;
   }
 
   function _computeResult(exam) {
