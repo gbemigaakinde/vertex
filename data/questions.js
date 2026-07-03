@@ -243,246 +243,46 @@ window.questions = {
     }
 ],
     'Mathematics': [
-    {
-        q: "If $0.00003579$ is written in the form $3.579 \\times 10^n$, what is the value of $n + 1$?",
-        opts: ["-4", "-5", "6", "-6"],
-        ans: 0,
-        exp: "Standard form is $3.579 \\times 10^{-5}$. Therefore, $n = -5$. $n + 1 = -5 + 1 = -4$."
-    },
-    {
-        q: "Find the sum of $111_{two}, 111_{three},$ and $111_{four}$ in base ten.",
-        opts: ["40", "41", "42", "43"],
-        ans: 1,
-        exp: "$111_2 = 7$; $111_3 = 9+3+1 = 13$; $111_4 = 16+4+1 = 21$. Total: $7+13+21 = 41$."
-    },
-    {
-        q: "A number was rounded to 2 significant figures to get 400. What is the smallest possible whole number it could have been?",
-        opts: ["395", "350", "399", "401"],
-        ans: 1,
-        exp: "To 2 S.F., 350 rounds up to 400. 349 would round to 350 (2 S.F.) or 300 (1 S.F.)."
-    },
-    {
-        q: "Simplify: $5(2a - 3b) - 2(4a - 7b) - a$.",
-        opts: ["$a - b$", "$b - a$", "$a + b$", "$-a - b$"],
-        ans: 0,
-        exp: "$5(2a-3b) - 2(4a-7b) - a = 10a - 15b - 8a + 14b - a$. Collecting like terms: $(10-8-1)a + (-15+14)b = a - b$."
-    },
-    {
-        q: "If $x = -2$ and $y = -3$, evaluate $\\frac{x^2 - y^2}{x + y}$.",
-        opts: ["-5", "5", "1", "-1"],
-        ans: 3,
-        exp: "$((-2)^2 - (-3)^2) / (-2 + -3) = (4 - 9) / -5 = -5 / -5 = 1$."
-    },
-    {
-        q: "Which of the following numbers, when rounded to the nearest tenth, results in 10.0?",
-        opts: ["9.949", "10.05", "9.951", "10.11"],
-        ans: 2,
-        exp: "9.951: the hundredth is 5, so the tenth 9 rounds up to 10, carrying over to make 10.0."
-    },
-    {
-        q: "Solve for $k$ in base ten if $102_k = 27_{ten}$.",
-        opts: ["4", "5", "6", "3"],
-        ans: 1,
-        exp: "$k^2 + 0k + 2 = 27 \\implies k^2 = 25 \\implies k = 5$."
-    },
-    {
-        q: "Calculate the exact value of $(0.12 \\times 0.5) \\div 0.003$.",
-        opts: ["2", "20", "0.2", "200"],
-        ans: 1,
-        exp: "$0.06 \\div 0.003 = 60 \\div 3 = 20$."
-    },
-    {
-        q: "A man's debt is represented by $-8x$. If he pays off half and then incurs a new debt of $3x$, what is his new balance?",
-        opts: ["$-x$", "$-7x$", "$-4x$", "$-11x$"],
-        ans: 1,
-        exp: "Half of $-8x$ is $-4x$. Remaining debt: $-4x$. New debt: $-4x - 3x = -7x$."
-    },
-    {
-        q: "Convert $0.625$ to a fraction in its lowest terms.",
-        opts: ["$5/8$", "$3/4$", "$625/1000$", "5/4"],
-        ans: 0,
-        exp: "$625/1000 = 125/200 = 25/40 = 5/8$."
-    },
-    {
-        q: "Express 72 as a product of its prime factors in index form.",
-        opts: ["$2^2 \\times 3^3$", "$2^3 \\times 3^2$", "$8 \\times 9$", "$2 \\times 3^4$"],
-        ans: 1,
-        exp: "$72 = 8 \\times 9 = 2 \\times 2 \\times 2 \\times 3 \\times 3 = 2^3 \\times 3^2$."
-    },
-    {
-        q: "If $1011_{two} + x_{two} = 11000_{two}$, find $x$.",
-        opts: ["$1101_{two}$", "$1011_{two}$", "$1100_{two}$", "$1111_{two}$"],
-        ans: 0,
-        exp: "$11000_2 (24) - 1011_2 (11) = 13$. 13 in binary is $1101_{two}$."
-    },
-    {
-        q: "What is the H.C.F. of $18a^2b$ and $24ab^2$?",
-        opts: ["$72a^2b^2$", "$6ab$", "$6a^2b^2$", "$12ab$"],
-        ans: 1,
-        exp: "HCF of 18 and 24 is 6. The lowest power of $a$ is $a^1$. The lowest power of $b$ is $b^1$. So, $6ab$."
-    },
-    {
-        q: "Approximate $0.004997$ to 3 significant figures.",
-        opts: ["0.005", "0.00499", "0.00500", "0.004"],
-        ans: 2,
-        exp: "Sig figs start at 4. The 4th figure (7) rounds the 3rd figure (9) up, which carries over. Result: 0.00500."
-    },
-    {
-        q: "Find the reciprocal of $1\\frac{2}{3} + 2\\frac{1}{2}$.",
-        opts: ["$6/25$", "$25/6$", "$5/12$", "$12/5$"],
-        ans: 0,
-        exp: "$5/3 + 5/2 = (10+15)/6 = 25/6$. Reciprocal is $6/25$."
-    },
-    {
-        q: "In base 6, what is the next number after $55_6$?",
-        opts: ["60", "100", "56", "66"],
-        ans: 1,
-        exp: "Just like 99 is followed by 100 in base 10, the maximum digits $55$ in base 6 are followed by $100_6$."
-    },
-    {
-        q: "Simplify: $\\frac{x}{2} - \\frac{x - 2}{3}$.",
-        opts: ["$\\frac{x-4}{6}$", "$\\frac{x+4}{6}$", "$\\frac{x+2}{6}$", "$\\frac{5x-4}{6}$"],
-        ans: 1,
-        exp: "$(3x - 2(x - 2)) / 6 = (3x - 2x + 4) / 6 = (x + 4) / 6$."
-    },
-    {
-        q: "If a car travels $d$ km in $t$ hours, what is its speed in terms of $d$ and $t$ if $d=150$ and $t=2.5$?",
-        opts: ["60 km/h", "375 km/h", "0.016 km/h", "75 km/h"],
-        ans: 0,
-        exp: "$Speed = d / t = 150 / 2.5 = 60$."
-    },
-    {
-        q: "Subtract $11_{two}$ from $100_{two}$.",
-        opts: ["$1_{two}$", "$10_{two}$", "$11_{two}$", "$0_{two}$"],
-        ans: 0,
-        exp: "$4_{10} - 3_{10} = 1_{10}$. 1 in binary is $01$ or $1$."
-    },
-    {
-        q: "Round 0.0954 to 1 significant figure.",
-        opts: ["0.1", "0.09", "0.10", "0.01"],
-        ans: 0,
-        exp: "The first S.F. is 9. The next digit is 5, so 9 rounds up to 10, making it 0.1."
-    },
-    {
-        q: "What is the value of $2^5 \\div 2^2$?",
-        opts: ["6", "8", "32", "4"],
-        ans: 1,
-        exp: "$2^{5-2} = 2^3 = 8$."
-    },
-    {
-        q: "Convert $124_{five}$ to base three.",
-        opts: ["$1110_{three}$", "$1010_{three}$", "$1111_{three}$", "$1201_{three}$"],
-        ans: 0,
-        exp: "$124_5 = 25+10+4 = 39_{10}$. $39 \\div 3 = 13 R 0; 13 \\div 3 = 4 R 1; 4 \\div 3 = 1 R 1; 1 \\div 3 = 0 R 1$. Result: $1110_3$."
-    },
-    {
-        q: "A square has an area of $144x^2$. What is the length of one side?",
-        opts: ["$12x$", "$72x$", "$12x^2$", "$144x$"],
-        ans: 0,
-        exp: "$\\sqrt{144x^2} = 12x$."
-    },
-    {
-        q: "Solve for $x$: $3(x - 2) = 2(x + 4)$.",
-        opts: ["2", "14", "10", "6"],
-        ans: 1,
-        exp: "$3x - 6 = 2x + 8 \\implies 3x - 2x = 8 + 6 \\implies x = 14$."
-    },
-    {
-        q: "Evaluate $0.4^2 + 0.3^2$.",
-        opts: ["0.7", "0.49", "0.25", "0.5"],
-        ans: 2,
-        exp: "$0.16 + 0.09 = 0.25$."
-    },
-    {
-        q: "How many significant figures are in the result of $2.0 \\times 3.00$?",
-        opts: ["1", "2", "3", "5"],
-        ans: 1,
-        exp: "In multiplication, the result should have the same number of S.F. as the value with the least S.F. (2.0 has two)."
-    },
-    {
-        q: "Which base ten number is equivalent to $E_{sixteen}$ (where A=10, B=11...)?",
-        opts: ["13", "14", "15", "16"],
-        ans: 1,
-        exp: "A=10, B=11, C=12, D=13, E=14."
-    },
-    {
-        q: "Simplify: $a^2b \\times ab^2$.",
-        opts: ["$a^2b^2$", "$a^3b^3$", "$2a^3b^3$", "$a^3b^2$"],
-        ans: 1,
-        exp: "Add the powers: $a^{2+1}b^{1+2} = a^3b^3$."
-    },
-    {
-        q: "What is the smallest number that must be added to 45 to make it a perfect square?",
-        opts: ["4", "5", "9", "3"],
-        ans: 0,
-        exp: "The next perfect square after 45 is $49 (7^2)$. $49 - 45 = 4$."
-    },
-    {
-        q: "Calculate $101_{two} \\times 101_{two}$.",
-        opts: ["$11001_{two}$", "$10001_{two}$", "$11111_{two}$", "$10101_{two}$"],
-        ans: 0,
-        exp: "$5 \\times 5 = 25$. 25 in binary is $11001_{two}$."
-    },
-    {
-        q: "Find the value of $m$ if $2m - 5 = m + 10$.",
-        opts: ["5", "15", "7.5", "20"],
-        ans: 1,
-        exp: "$2m - m = 10 + 5 \\implies m = 15$."
-    },
-    {
-        q: "Approximate $1/3$ to 2 significant figures.",
-        opts: ["0.3", "0.33", "0.30", "0.34"],
-        ans: 1,
-        exp: "$0.3333...$ to 2 S.F. is 0.33."
-    },
-    {
-        q: "If $14_x = 9_{ten}$, what is $x$?",
-        opts: ["5", "6", "7", "Impossible"],
-        ans: 0,
-        exp: "$1x + 4 = 9 \\implies x = 5$."
-    },
-    {
-        q: "Simplify $2(x+y) - 3(x-y)$.",
-        opts: ["$-x + 5y$", "$-x - y$", "$5x + 5y$", "$x + 5y$"],
-        ans: 0,
-        exp: "$2x + 2y - 3x + 3y = -x + 5y$."
-    },
-    {
-        q: "What is the square of $0.01$?",
-        opts: ["0.1", "0.001", "0.0001", "0.02"],
-        ans: 2,
-        exp: "$0.01 \\times 0.01 = 0.0001$."
-    },
-    {
-        q: "Express 0.00000012 in standard form.",
-        opts: ["$1.2 \\times 10^{-7}$", "$1.2 \\times 10^{-8}$", "$12 \\times 10^{-8}$", "$1.2 \\times 10^7$"],
-        ans: 0,
-        exp: "Move decimal 7 places to the right: $1.2 \\times 10^{-7}$."
-    },
-    {
-        q: "Evaluate $10^3 - 10^2$.",
-        opts: ["10", "100", "900", "1000"],
-        ans: 2,
-        exp: "$1000 - 100 = 900$."
-    },
-    {
-        q: "If $y$ is a negative integer, which of these must be positive?",
-        opts: ["$y + 2$", "$y^2$", "$2y$", "$y/2$"],
-        ans: 1,
-        exp: "Any non-zero number squared is positive."
-    },
-    {
-        q: "Find the value of $3x^2$ when $x = 2$.",
-        opts: ["36", "12", "18", "6"],
-        ans: 1,
-        exp: "$3 \\times (2^2) = 3 \\times 4 = 12$."
-    },
-    {
-        q: "The product of a number $n$ and 5 is added to 10 to give 35. Find $n$.",
-        opts: ["5", "9", "4", "7"],
-        ans: 0,
-        exp: "$5n + 10 = 35 \\implies 5n = 25 \\implies n = 5$."
-    }
+    { q: "Solve for x: x + 7 = 15.", opts: ["6", "7", "8", "15"], ans: 2, diff: "Easy", exp: "Subtract 7 from both sides: x = 15 - 7 = 8." },
+    { q: "Solve for x: 3x = 21.", opts: ["6", "7", "8", "9"], ans: 1, diff: "Easy", exp: "Divide both sides by 3: x = 21 ÷ 3 = 7." },
+    { q: "Solve for x: 2x - 5 = 11.", opts: ["6", "7", "8", "9"], ans: 2, diff: "Medium", exp: "Add 5 to both sides: 2x = 16, then divide by 2: x = 8." },
+    { q: "Solve for x: x/4 = 9.", opts: ["13", "32", "36", "45"], ans: 2, diff: "Medium", exp: "Multiply both sides by 4: x = 9 × 4 = 36." },
+    { q: "Solve for x: 5x + 3 = 2x + 18.", opts: ["3", "4", "5", "6"], ans: 2, diff: "Hard", exp: "Collect like terms: 5x - 2x = 18 - 3, so 3x = 15, x = 5." },
+    { q: "Which plane shape has 4 equal sides and 4 right angles?", opts: ["Square", "Rectangle", "Trapezium", "Parallelogram"], ans: 0, diff: "Easy", exp: "A square is the only one of these shapes with all four sides equal AND all angles 90°." },
+    { q: "A trapezium has how many pairs of parallel sides?", opts: ["0", "1", "2", "4"], ans: 1, diff: "Easy", exp: "A trapezium has exactly one pair of parallel sides." },
+    { q: "Which shape has opposite sides equal and parallel, but its angles are not always 90°?", opts: ["Square", "Parallelogram", "Circle", "Trapezium"], ans: 1, diff: "Medium", exp: "A parallelogram has equal, parallel opposite sides, but its angles can be slanted." },
+    { q: "What is the main difference between a square and a rectangle?", opts: ["A square has curved sides", "A square has all four sides equal, while a rectangle has only opposite sides equal", "A rectangle has no right angles", "A square has 5 sides"], ans: 1, diff: "Medium", exp: "Both have 4 right angles, but only a square has all four sides equal in length." },
+    { q: "Find the perimeter of a rectangle with length 8cm and width 5cm.", opts: ["13cm", "21cm", "26cm", "40cm"], ans: 2, diff: "Easy", exp: "Perimeter = 2(length + width) = 2(8 + 5) = 26cm." },
+    { q: "Find the perimeter of a square with side 9cm.", opts: ["18cm", "27cm", "36cm", "81cm"], ans: 2, diff: "Easy", exp: "Perimeter of a square = 4 × side = 4 × 9 = 36cm." },
+    { q: "The perimeter of a regular pentagon is 45cm. Find the length of one side.", opts: ["5cm", "7cm", "9cm", "15cm"], ans: 2, diff: "Medium", exp: "A regular pentagon has 5 equal sides, so one side = 45 ÷ 5 = 9cm." },
+    { q: "Find the area of a rectangle with length 12cm and width 4cm.", opts: ["16cm²", "32cm²", "48cm²", "64cm²"], ans: 2, diff: "Easy", exp: "Area = length × width = 12 × 4 = 48cm²." },
+    { q: "Find the area of a triangle with base 10cm and height 6cm.", opts: ["16cm²", "30cm²", "40cm²", "60cm²"], ans: 1, diff: "Medium", exp: "Area of a triangle = ½ × base × height = ½ × 10 × 6 = 30cm²." },
+    { q: "Find the area of a parallelogram with base 8cm and height 5cm.", opts: ["13cm²", "26cm²", "40cm²", "45cm²"], ans: 2, diff: "Medium", exp: "Area of a parallelogram = base × height = 8 × 5 = 40cm²." },
+    { q: "Which 3-D shape has 6 rectangular faces, with opposite faces equal but not all faces identical squares?", opts: ["Cube", "Cuboid", "Cylinder", "Sphere"], ans: 1, diff: "Easy", exp: "A cuboid has 6 rectangular faces; a cube is a special cuboid where all faces are equal squares." },
+    { q: "How many faces does a cube have?", opts: ["4", "5", "6", "8"], ans: 2, diff: "Easy", exp: "A cube has 6 equal square faces." },
+    { q: "Which 3-D shape has two flat circular faces and one curved surface?", opts: ["Sphere", "Cone", "Cylinder", "Cube"], ans: 2, diff: "Medium", exp: "A cylinder has two circular flat ends joined by a curved surface." },
+    { q: "Find the volume of a cube with side 5cm.", opts: ["25cm³", "75cm³", "100cm³", "125cm³"], ans: 3, diff: "Medium", exp: "Volume of a cube = side × side × side = 5 × 5 × 5 = 125cm³." },
+    { q: "Find the volume of a cuboid with length 6cm, width 4cm, and height 3cm.", opts: ["13cm³", "52cm³", "72cm³", "132cm³"], ans: 2, diff: "Medium", exp: "Volume of a cuboid = length × width × height = 6 × 4 × 3 = 72cm³." },
+    { q: "A cuboid has a volume of 60cm³. Its length is 5cm and its width is 4cm. Find its height.", opts: ["2cm", "3cm", "4cm", "5cm"], ans: 1, diff: "Hard", exp: "Volume = l × w × h, so h = 60 ÷ (5 × 4) = 60 ÷ 20 = 3cm." },
+    { q: "Vertically opposite angles are always:", opts: ["Equal", "Supplementary", "Complementary", "Different"], ans: 0, diff: "Easy", exp: "When two straight lines cross, the angles opposite each other are always equal." },
+    { q: "When a transversal crosses two parallel lines, the angles that lie in matching positions (same side, same corner) are called:", opts: ["Alternate angles", "Corresponding angles", "Vertically opposite angles", "Adjacent angles"], ans: 1, diff: "Medium", exp: "Corresponding angles occupy the same relative position at each intersection and are equal." },
+    { q: "Alternate angles formed when a transversal cuts two parallel lines are:", opts: ["Equal", "Supplementary", "90° each", "360° together"], ans: 0, diff: "Easy", exp: "Alternate angles lie on opposite sides of the transversal, between the parallel lines, and are always equal." },
+    { q: "Two angles that share a common vertex and a common arm, lying next to each other, are called:", opts: ["Adjacent angles", "Alternate angles", "Vertically opposite angles", "Corresponding angles"], ans: 0, diff: "Easy", exp: "Adjacent angles sit side by side, sharing one arm and a vertex." },
+    { q: "The sum of angles on a straight line is:", opts: ["90°", "180°", "270°", "360°"], ans: 1, diff: "Easy", exp: "Angles on a straight line always add up to 180°." },
+    { q: "Two angles are complementary if they add up to:", opts: ["45°", "90°", "180°", "360°"], ans: 1, diff: "Easy", exp: "Complementary angles sum to 90°." },
+    { q: "Two angles are supplementary if they add up to:", opts: ["90°", "180°", "270°", "360°"], ans: 1, diff: "Easy", exp: "Supplementary angles sum to 180°." },
+    { q: "In a triangle, two of the angles are 50° and 70°. Find the third angle.", opts: ["50°", "60°", "70°", "80°"], ans: 1, diff: "Medium", exp: "Angles in a triangle sum to 180°: 180 - (50 + 70) = 60°." },
+    { q: "Which two instruments are mainly used to bisect a given line segment?", opts: ["Protractor and ruler", "Compass and ruler", "Set-square and pencil", "T-square and eraser"], ans: 1, diff: "Medium", exp: "A pair of compasses is used to draw intersecting arcs above and below the line, and a ruler joins the intersection points." },
+    { q: "To construct an angle of 60° using a pair of compasses, you begin by drawing:", opts: ["A circle of any radius", "An arc from a point that will form an equilateral triangle", "A straight line only", "A right angle first"], ans: 1, diff: "Hard", exp: "Since all angles in an equilateral triangle are 60°, arcs of equal radius are used to construct one." },
+    { q: "Facts and figures collected for a particular purpose are called:", opts: ["Data", "Formulas", "Equations", "Diagrams"], ans: 0, diff: "Easy", exp: "Data is the raw information gathered before it is organized or analysed." },
+    { q: "Which of these is NOT a method of presenting statistical data?", opts: ["Bar chart", "Pie chart", "Pictogram", "Simple equation"], ans: 3, diff: "Medium", exp: "Bar charts, pie charts, and pictograms display data visually; a simple equation is not a data presentation method." },
+    { q: "A chart that uses small pictures or symbols to represent data is called a:", opts: ["Pie chart", "Pictogram", "Histogram", "Bar chart"], ans: 1, diff: "Easy", exp: "A pictogram represents quantities using repeated small pictures or icons." },
+    { q: "A chart that uses rectangular bars with no gaps between them, mainly for continuous data, is called a:", opts: ["Bar chart", "Pie chart", "Histogram", "Pictogram"], ans: 2, diff: "Medium", exp: "Unlike a bar chart, a histogram has no gaps between bars because it represents continuous data." },
+    { q: "Find the mean of these numbers: 4, 6, 8, 10.", opts: ["6", "7", "8", "9"], ans: 1, diff: "Easy", exp: "Mean = sum ÷ count = (4+6+8+10) ÷ 4 = 28 ÷ 4 = 7." },
+    { q: "Find the median of these numbers: 3, 9, 5, 7, 1.", opts: ["3", "5", "7", "9"], ans: 1, diff: "Medium", exp: "Arrange in order: 1, 3, 5, 7, 9. The middle value is 5." },
+    { q: "Find the mode of these numbers: 2, 4, 4, 6, 8, 4.", opts: ["2", "4", "6", "8"], ans: 1, diff: "Easy", exp: "The mode is the number that appears most often. 4 appears three times." },
+    { q: "Find the mean of: 10, 15, 20, 25, 30.", opts: ["15", "18", "20", "25"], ans: 2, diff: "Medium", exp: "Mean = sum ÷ count = (10+15+20+25+30) ÷ 5 = 100 ÷ 5 = 20." },
+    { q: "The following scores were recorded: 5, 7, 7, 8, 9, 9, 9, 10. What is the mode?", opts: ["5", "7", "8", "9"], ans: 3, diff: "Hard", exp: "9 appears three times, more than any other score, making it the mode." }
 ],
     'Basic Science': [
     {
@@ -727,246 +527,46 @@ window.questions = {
     }
 ],
     'Basic Technology': [
-    {
-        q: "In technical drawing, if you are to draw a vertical line that is perfectly perpendicular to a horizontal line already drawn with a T-square, which combination is most accurate?",
-        opts: ["A ruler and a protractor", "A T-square and a set-square", "A T-square and a compass", "Two rulers held together"],
-        ans: 1,
-        exp: "The set-square is placed on the T-square blade to ensure a precise 90-degree vertical line."
-    },
-    {
-        q: "A skyscraper in a coastal city like Lagos requires a frame that can resist rust and heavy wind loads. Which material is most suitable for the primary structural skeleton?",
-        opts: ["Timber", "Mud and Wattle", "Reinforced Concrete and Steel", "Unreinforced Bricks"],
-        ans: 2,
-        exp: "High-rise buildings require the high tensile strength of steel and compressive strength of concrete."
-    },
-    {
-        q: "Which of the following wood-working tools is designed specifically to cut 'across' the grain of wood fibers?",
-        opts: ["Rip saw", "Cross-cut saw", "Tenon saw", "Coping saw"],
-        ans: 1,
-        exp: "Cross-cut saws have teeth angled to sever wood fibers perpendicular to their growth direction."
-    },
-    {
-        q: "Identify the pencil grade that is hardest and would produce the faintest line for initial construction work.",
-        opts: ["2B", "HB", "4H", "F"],
-        ans: 2,
-        exp: "In the pencil scale, the higher the number preceding 'H', the harder the lead and the lighter the line."
-    },
-    {
-        q: "What is the primary purpose of 'Freehand Sketching' in engineering and technology?",
-        opts: ["To produce a final artistic masterpiece", "To communicate an idea quickly without instruments", "To measure the exact dimensions of a building", "To replace technical drawing entirely"],
-        ans: 1,
-        exp: "Sketching is a tool for rapid visualization and communication of technical thoughts."
-    },
-    {
-        q: "When securing a drawing paper to the board, why is masking tape preferred over cellotape?",
-        opts: ["It is stronger", "It is cheaper", "It does not tear the paper surface when removed", "It is transparent"],
-        ans: 2,
-        exp: "Masking tape has low-tack adhesive designed to release easily from drawing paper."
-    },
-    {
-        q: "A 'Bungalow' is characterized by which of the following?",
-        opts: ["Having multiple floors", "Having only a ground floor", "Being built only with timber", "Being used only for industrial purposes"],
-        ans: 1,
-        exp: "A bungalow is a residential building with all its rooms on a single level (ground floor)."
-    },
-    {
-        q: "Which tool is used to test the squareness of a piece of wood and to check if a surface is at exactly 90 degrees?",
-        opts: ["Steel Rule", "Try-square", "Spirit Level", "Marking Gauge"],
-        ans: 1,
-        exp: "The Try-square is a marking and testing tool used to verify 90-degree angles."
-    },
-    {
-        q: "In board practice, 'Lettering' must be done with which specific focus?",
-        opts: ["Cursive and decorative style", "Uniform height and consistent spacing", "Using different colors for each word", "Writing as fast as possible"],
-        ans: 1,
-        exp: "Technical lettering requires legibility, which is achieved through uniformity and consistency."
-    },
-    {
-        q: "Which of these is a 'Driving Tool' in the wood workshop?",
-        opts: ["Chisel", "Mallet", "Pincer", "Jack Plane"],
-        ans: 1,
-        exp: "A mallet is used to drive chisels or strike wooden surfaces without damaging them."
-    },
-    {
-        q: "Which drawing instrument is used for measuring and transferring distances, but NOT for drawing arcs?",
-        opts: ["Compass", "Divider", "Protractor", "Scale Rule"],
-        ans: 1,
-        exp: "Dividers have two metal points and are used for transferring dimensions from a rule to a drawing."
-    },
-    {
-        q: "A building used for the purpose of making products, like a car factory, is classified as:",
-        opts: ["Residential", "Commercial", "Industrial", "Institutional"],
-        ans: 2,
-        exp: "Industrial buildings are designed for manufacturing and processing goods."
-    },
-    {
-        q: "In freehand sketching, to draw a straight line, your eyes should be focused on:",
-        opts: ["The tip of the pencil", "The point where the line is supposed to end", "The person sitting next to you", "The ruler"],
-        ans: 1,
-        exp: "Focusing on the destination point helps in maintaining a straight path during freehand motion."
-    },
-    {
-        q: "Which plane is used for the final smoothing of a wood surface to remove minor imperfections?",
-        opts: ["Jack Plane", "Smoothing Plane", "Fore Plane", "Trying Plane"],
-        ans: 1,
-        exp: "The smoothing plane is the smallest and finest plane used for the final finish."
-    },
-    {
-        q: "The 'Ebony' edge of a drawing board is specifically designed to:",
-        opts: ["Make the board look beautiful", "Provide a straight guide for the T-square head", "Prevent the board from cracking", "Store pencils"],
-        ans: 1,
-        exp: "The working edge (ebony) must be perfectly straight for the T-square to move accurately."
-    },
-    {
-        q: "Which material is a mixture of cement, sand, and water used to bind bricks together?",
-        opts: ["Concrete", "Mortar", "Clay", "Asbestos"],
-        ans: 1,
-        exp: "Mortar is the bonding agent used in masonry; concrete includes coarse aggregate (stones)."
-    },
-    {
-        q: "When sharpening a chisel, the 'beveled' edge should be at what approximate angle?",
-        opts: ["10 - 15 degrees", "25 - 30 degrees", "45 - 60 degrees", "90 degrees"],
-        ans: 1,
-        exp: "A 25-30 degree angle provides the best balance between sharpness and durability for wood chisels."
-    },
-    {
-        q: "A protractor is used to measure:",
-        opts: ["Lengths", "Areas", "Angles", "Weights"],
-        ans: 2,
-        exp: "Protractors are circular or semi-circular tools calibrated in degrees for measuring angles."
-    },
-    {
-        q: "Which of these is a temporary building?",
-        opts: ["A duplex", "A mud hut", "A construction site container/shack", "A church"],
-        ans: 2,
-        exp: "Temporary buildings are intended for short-term use and are easily dismantled."
-    },
-    {
-        q: "Identify the tool used for pulling out nails from wood.",
-        opts: ["Mallet", "Claw Hammer", "Ball-peen Hammer", "Screwdriver"],
-        ans: 1,
-        exp: "The 'claw' part of the hammer is specifically designed for prying and pulling nails."
-    },
-    {
-        q: "In technical drawing, a circle of $40mm$ diameter is to be drawn. What should be the radius set on the compass?",
-        opts: ["$40mm$", "$80mm$", "$20mm$", "$10mm$"],
-        ans: 2,
-        exp: "The radius is half of the diameter ($40/2 = 20mm$)."
-    },
-    {
-        q: "Which wood-working tool is used for carving out 'mortise' holes?",
-        opts: ["Firmer Chisel", "Mortise Chisel", "Cold Chisel", "Gouge"],
-        ans: 1,
-        exp: "Mortise chisels are thicker and stronger to withstand heavy prying when making deep holes."
-    },
-    {
-        q: "To draw a horizontal line, the T-square head must be held firmly against:",
-        opts: ["The bottom edge of the board", "The right edge of the board", "The left (working) edge of the board", "The middle of the board"],
-        ans: 2,
-        exp: "For right-handed users, the T-square head is held against the left edge."
-    },
-    {
-        q: "What is the primary function of a lintel in a building?",
-        opts: ["To provide a floor", "To support the weight above a door or window opening", "To decorate the roof", "To hold the plumbing pipes"],
-        ans: 1,
-        exp: "A lintel is a horizontal structural beam that spans the space between two vertical supports."
-    },
-    {
-        q: "In freehand sketching, circles are best sketched by:",
-        opts: ["Drawing a square first as a guide", "Using a coin", "Rotating the paper while keeping the hand steady", "Tracing a compass"],
-        ans: 0,
-        exp: "Drawing a 'crate' (square) and marking midpoints helps in sketching a proportional circle."
-    },
-    {
-        q: "The set of squares commonly used in technical drawing consist of which angles?",
-        opts: ["$30/60$ and $45$ degrees", "$20/40$ and $50$ degrees", "$90/10$ and $45$ degrees", "$35/55$ and $45$ degrees"],
-        ans: 0,
-        exp: "The standard pair includes a $45^\\circ$ set-square and a $30^\\circ/60^\\circ$ set-square."
-    },
-    {
-        q: "Which tool is used for marking lines parallel to the edge of a piece of wood?",
-        opts: ["Steel Rule", "Marking Gauge", "Try-square", "Chisel"],
-        ans: 1,
-        exp: "The marking gauge has a spur that scratches a line parallel to the face or edge of a board."
-    },
-    {
-        q: "Glass is used in buildings primarily for:",
-        opts: ["Support and strength", "Aesthetics and lighting", "Insulating against sound", "Preventing fire"],
-        ans: 1,
-        exp: "Glass allows natural light to enter and provides visual transparency."
-    },
-    {
-        q: "What is 'Board Practice' intended to achieve?",
-        opts: ["To clean the drawing board", "To develop accuracy and neatness in using instruments", "To practice writing essays", "To learn how to paint"],
-        ans: 1,
-        exp: "Board practice is the foundation of technical drawing, focusing on precision and line quality."
-    },
-    {
-        q: "Which of these is NOT a drawing material?",
-        opts: ["Eraser", "Tracing paper", "T-square", "Drawing sheet"],
-        ans: 2,
-        exp: "T-square is an 'instrument' (durable); papers and erasers are 'materials' (consumables)."
-    },
-    {
-        q: "What is the standard size for a drawing board used by most JSS students?",
-        opts: ["A4", "A3", "A2", "Imperial"],
-        ans: 1,
-        exp: "A3 is the standard size for introductory technical drawing in schools."
-    },
-    {
-        q: "A building used for worship, like a mosque or church, is called an _____ building.",
-        opts: ["Educational", "Institutional", "Residential", "Commercial"],
-        ans: 1,
-        exp: "Places of worship fall under the category of institutional or public buildings."
-    },
-    {
-        q: "Which wood-working tool has a 'sole', a 'mouth', and a 'blade'?",
-        opts: ["Saw", "Hammer", "Plane", "Chisel"],
-        ans: 2,
-        exp: "These are parts of a jack plane or smoothing plane."
-    },
-    {
-        q: "In sketching a 'Cube', how many faces are typically visible in a 3D view?",
-        opts: ["1", "2", "3", "6"],
-        ans: 2,
-        exp: "In a standard isometric or oblique sketch, 3 faces of a cube are shown."
-    },
-    {
-        q: "Which type of building is a 'Duplex'?",
-        opts: ["A single-story house", "A two-story house for one family", "A house with ten floors", "A movable tent"],
-        ans: 1,
-        exp: "A duplex is a residential building with two floors connected by an internal staircase."
-    },
-    {
-        q: "What is the name of the tool used to hold wood firmly on the workbench while sawing?",
-        opts: ["G-clamp", "Bench Vice", "Pliers", "Spanner"],
-        ans: 1,
-        exp: "The bench vice is attached to the workbench to hold the workpiece securely."
-    },
-    {
-        q: "Which grade of pencil is used for 'thick' object lines?",
-        opts: ["2H", "4H", "HB", "6H"],
-        ans: 2,
-        exp: "HB or B pencils are softer and used for visible outlines/object lines."
-    },
-    {
-        q: "When sketching vertical lines freehand, the movement should come from the:",
-        opts: ["Wrist", "Fingers only", "Shoulder and elbow", "Waist"],
-        ans: 2,
-        exp: "Using the arm (shoulder/elbow) instead of just the wrist helps in drawing longer, straighter lines."
-    },
-    {
-        q: "Plastics are increasingly used in building for which of the following?",
-        opts: ["Roofing beams", "Plumbing pipes and floor tiles", "Foundations", "Load-bearing walls"],
-        ans: 1,
-        exp: "Plastics are excellent for pipes (PVC) and finishes due to their durability and water resistance."
-    },
-    {
-        q: "If your T-square blade is loose, what will happen to your drawing?",
-        opts: ["The lines will be too dark", "The horizontal lines will not be parallel", "The paper will tear", "Nothing"],
-        ans: 1,
-        exp: "A shaky blade prevents the drawing of consistent, parallel horizontal lines."
-    }
+    { q: "Which tool is used to measure and mark lengths accurately in woodwork?", opts: ["Metric rule", "Mallet", "Chisel", "Bradawl"], ans: 0, diff: "Easy", exp: "The metric rule is the basic measuring tool used to take and mark lengths in woodwork." },
+    { q: "Which tool is used to measure the internal diameter of a hole in woodwork?", opts: ["Outside calipers", "Inside calipers", "Try-square", "Trammel"], ans: 1, diff: "Medium", exp: "Inside calipers are shaped to reach into and measure internal dimensions like holes." },
+    { q: "Which tool is used to measure the external (outside) diameter of a cylindrical piece of wood?", opts: ["Inside calipers", "Outside calipers", "Sliding bevel", "Marking gauge"], ans: 1, diff: "Medium", exp: "Outside calipers curve inward to grip and measure the outer diameter of round stock." },
+    { q: "Which tool is used to test and mark a 90° angle on a piece of wood?", opts: ["Try-square", "Sliding bevel", "Trammel", "Bradawl"], ans: 0, diff: "Easy", exp: "The try-square is specifically designed to check and mark right angles (90°)." },
+    { q: "Which marking tool can be adjusted to mark angles other than 90°?", opts: ["Try-square", "Sliding bevel", "Metric rule", "Pair of dividers"], ans: 1, diff: "Hard", exp: "Unlike the fixed try-square, the sliding bevel can be adjusted and locked at any angle." },
+    { q: "A pair of compasses used for drawing very large circles or arcs on wood is called a:", opts: ["Trammel", "Sliding bevel", "Odd-leg caliper", "Scriber"], ans: 0, diff: "Medium", exp: "A trammel has two separate points on a beam, allowing much larger arcs than an ordinary compass." },
+    { q: "Which tool is used to drive nails into wood?", opts: ["Hammer", "Bradawl", "Wood brace", "Screwdriver"], ans: 0, diff: "Easy", exp: "The hammer's weighted head is used to strike and drive nails into wood." },
+    { q: "Which tool is used to drive a chisel or strike wood without damaging the surface?", opts: ["Hammer", "Mallet", "Ratchet brace", "Punch"], ans: 1, diff: "Easy", exp: "A mallet has a softer wooden or rubber head, so it drives chisels without denting the wood." },
+    { q: "Which tool is used to drive or remove screws?", opts: ["Mallet", "Bradawl", "Screwdriver", "Wood brace"], ans: 2, diff: "Medium", exp: "The screwdriver's tip fits into a screw head to turn it in or out." },
+    { q: "Which boring tool is turned by hand in a circular motion, using a bit, to bore large holes in wood?", opts: ["Wood brace", "Bradawl", "Screwdriver", "Mallet"], ans: 0, diff: "Medium", exp: "The wood brace holds a boring bit and is cranked around by hand to drill larger holes." },
+    { q: "Which small pointed tool is used to make a starting hole for a screw in wood?", opts: ["Bradawl", "Wood brace", "Ratchet brace", "Try-square"], ans: 0, diff: "Easy", exp: "The bradawl is pushed and twisted into wood to start a pilot hole before driving a screw." },
+    { q: "Which device is used to hold wood firmly against a workbench while sawing?", opts: ["Bench hook", "Sash clamp", "Trammel", "Odd-leg caliper"], ans: 0, diff: "Easy", exp: "The bench hook grips against the bench edge and steadies wood during sawing." },
+    { q: "Which holding device is fixed to a workbench and used to grip wood securely while it is being worked on?", opts: ["G-cramp", "Bench vice", "Bradawl", "Scriber"], ans: 1, diff: "Medium", exp: "The bench vice is mounted on the workbench and tightened with a screw handle to hold wood firmly." },
+    { q: "Which holding tool is portable and used to clamp two pieces of wood together temporarily?", opts: ["G-cramp", "Bench vice", "Try-square", "Chisel"], ans: 0, diff: "Medium", exp: "The G-cramp (shaped like the letter G) can be moved around and tightened to hold pieces together." },
+    { q: "Which holding device is used to hold together the frame of a picture or door while glue dries?", opts: ["Sash clamp", "Bench hook", "G-cramp", "Odd-leg caliper"], ans: 0, diff: "Hard", exp: "The sash clamp is long, allowing it to squeeze large frame joints together evenly while the glue sets." },
+    { q: "Which saw is designed to cut along the grain of wood?", opts: ["Rip saw", "Cross-cut saw", "Tenon saw", "Bow saw"], ans: 0, diff: "Easy", exp: "The rip saw has teeth shaped to cut efficiently in the same direction as the wood grain." },
+    { q: "Which saw is used for fine, accurate cuts such as joint-making, and has a stiffened metal back?", opts: ["Rip saw", "Bow saw", "Tenon saw", "Dovetail saw"], ans: 2, diff: "Medium", exp: "The tenon saw's rigid back keeps the blade straight for precise joint cuts." },
+    { q: "Which woodwork tool is used to shave and smooth curved surfaces?", opts: ["Jack plane", "Spokeshave", "Smoothing plane", "Chisel"], ans: 1, diff: "Medium", exp: "The spokeshave has a short, curved sole that suits shaping curved edges." },
+    { q: "Which plane is used to remove rough, thick shavings from wood before finishing?", opts: ["Smoothing plane", "Jack plane", "Spokeshave", "Try-plane"], ans: 1, diff: "Hard", exp: "The jack plane is a general-purpose plane used first, to remove excess wood, before finer planes are used." },
+    { q: "Which tool provides a flat, true reference surface for marking out work in metalwork?", opts: ["Surface plate", "Scriber", "Odd-leg caliper", "Steel rule"], ans: 0, diff: "Easy", exp: "The surface plate is a flat, accurate table on which metal work is placed and marked out." },
+    { q: "Which metalwork tool is used, like a pencil, to scratch fine lines on a metal surface?", opts: ["Scriber", "Punch", "File", "Spanner"], ans: 0, diff: "Medium", exp: "The scriber has a sharp point that scratches thin, visible marking lines onto metal." },
+    { q: "Which tool is used to mark a line parallel to the edge of a metal workpiece?", opts: ["Odd-leg caliper", "Steel rule", "Protractor", "Surface plate"], ans: 0, diff: "Medium", exp: "The odd-leg caliper (jenny caliper) has one bent leg that rides along the edge while the other scratches a parallel line." },
+    { q: "Which tool is used to measure lengths accurately in metalwork?", opts: ["Steel rule", "Scriber", "File", "Punch"], ans: 0, diff: "Easy", exp: "The steel rule is the standard measuring tool in the metalwork shop." },
+    { q: "Which tool is used to measure angles in metalwork?", opts: ["Protractor", "Steel rule", "Scriber", "Spanner"], ans: 0, diff: "Easy", exp: "The protractor is graduated in degrees and used to measure or set out angles." },
+    { q: "Which metalwork tool is used to make a small indentation that guides a drill bit?", opts: ["Punch", "File", "Spanner", "Scriber"], ans: 0, diff: "Medium", exp: "A punch is struck with a hammer to dent the metal, stopping the drill bit from wandering." },
+    { q: "Which tool is used to tighten or loosen nuts and bolts?", opts: ["Spanner", "File", "Punch", "Screwdriver"], ans: 0, diff: "Easy", exp: "The spanner (wrench) is shaped to grip and turn nuts and bolts." },
+    { q: "Which metalwork tool is used to smoothen a surface and remove small amounts of metal by abrasion?", opts: ["Chisel", "File", "Punch", "Scriber"], ans: 1, diff: "Medium", exp: "A file has rows of hard teeth that rub away thin layers of metal to smooth or shape it." },
+    { q: "Which cutting tool is struck with a hammer to cut or shape metal?", opts: ["File", "Cold chisel", "Spanner", "Steel rule"], ans: 1, diff: "Medium", exp: "The cold chisel is hammered along its blunt end to shear or shape metal without heating it." },
+    { q: "A screwdriver used in metalwork belongs to which group of tools?", opts: ["Marking-out tools", "Driving tools", "Cutting tools", "Measuring tools"], ans: 1, diff: "Hard", exp: "The screwdriver drives (turns) fasteners rather than measuring, marking, or cutting, so it is a driving tool." },
+    { q: "Which of these is a cutting tool in metalwork, not a driving tool?", opts: ["Punch", "Spanner", "File", "Screwdriver"], ans: 2, diff: "Hard", exp: "The file removes material by abrasion, making it a cutting tool, while the others mainly drive or strike." },
+    { q: "The regular care given to tools and machines to keep them in good working condition is called:", opts: ["Maintenance", "Production", "Construction", "Installation"], ans: 0, diff: "Easy", exp: "Maintenance means the routine care and servicing that keeps tools working properly and safely." },
+    { q: "Maintenance carried out regularly, before a fault occurs, in order to prevent breakdown, is called:", opts: ["Corrective maintenance", "Preventive maintenance", "Predictive maintenance", "Emergency maintenance"], ans: 1, diff: "Medium", exp: "Preventive maintenance is scheduled care done in advance to stop faults from happening." },
+    { q: "Maintenance that involves monitoring a tool's condition to predict when it might fail, so it can be serviced in time, is called:", opts: ["Predictive maintenance", "Preventive maintenance", "Corrective maintenance", "Routine maintenance"], ans: 0, diff: "Medium", exp: "Predictive maintenance uses observation or monitoring to forecast failure before it happens." },
+    { q: "Repairing a tool or machine only after it has broken down is known as:", opts: ["Preventive maintenance", "Predictive maintenance", "Corrective maintenance", "Scheduled maintenance"], ans: 2, diff: "Medium", exp: "Corrective maintenance happens after a fault has occurred, to correct/fix it." },
+    { q: "Oiling a bench vice regularly so that it does not rust or seize up is an example of:", opts: ["Corrective maintenance", "Preventive maintenance", "Predictive maintenance", "No maintenance"], ans: 1, diff: "Hard", exp: "Because it is done regularly to stop a problem before it starts, this is preventive maintenance." },
+    { q: "Which of these is a recognised type of maintenance practice?", opts: ["Preventive", "Explosive", "Decorative", "Combustive"], ans: 0, diff: "Easy", exp: "Preventive maintenance is one of the standard types, alongside predictive and corrective maintenance." },
+    { q: "One importance of maintaining tools and machines is that it:", opts: ["Increases their lifespan", "Makes them more expensive", "Makes them heavier", "Reduces their accuracy"], ans: 0, diff: "Easy", exp: "Well-maintained tools last longer because wear, rust, and damage are reduced." },
+    { q: "Regular maintenance of workshop tools helps to:", opts: ["Ensure safety and prevent accidents", "Increase the price of tools", "Make tools rust faster", "Reduce the number of tools needed"], ans: 0, diff: "Medium", exp: "Faulty or worn-out tools are dangerous to use, so maintenance keeps the workshop safe." },
+    { q: "Why should cutting tools like chisels and saws be kept sharp through maintenance?", opts: ["To make cutting easier and safer", "To make them heavier", "To make them rust", "To increase their cost"], ans: 0, diff: "Medium", exp: "Sharp tools cut with less force and less risk of slipping, making work easier and safer." },
+    { q: "A poorly maintained machine in a workshop is most likely to:", opts: ["Cause accidents and produce poor quality work", "Work faster than normal", "Require no supervision", "Automatically fix itself"], ans: 0, diff: "Hard", exp: "Neglected machines develop faults that lead to accidents and reduce the quality of the work produced." }
 ],
     'Business Studies': [
     {
