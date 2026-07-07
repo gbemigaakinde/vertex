@@ -744,6 +744,57 @@ tbody tr:nth-child(even) { background: var(--paper2); }
   margin: 6px 0;
   line-height: 1.6;
 }
+
+.code-lock { margin-top: 12px; }
+.lock-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  color: var(--slate);
+  margin-bottom: 8px;
+}
+.lock-row { display: flex; gap: 8px; flex-wrap: wrap; }
+.code-input {
+  flex: 1;
+  min-width: 120px;
+  padding: 10px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-size: 14px;
+  letter-spacing: 3px;
+  background: var(--white);
+  color: var(--ink);
+}
+.code-input:focus { outline: none; border-color: var(--slate); }
+.unlock-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--navy);
+  color: var(--white);
+  border: none;
+  border-radius: 8px;
+  padding: 10px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+  flex-shrink: 0;
+}
+.unlock-btn:hover { background: var(--navy2); }
+.unlock-btn:active { transform: scale(0.97); }
+.lock-error {
+  display: none;
+  color: var(--coral);
+  font-size: 12.5px;
+  font-weight: 600;
+  margin-top: 8px;
+}
+.lock-error.show { display: block; }
 </style>
 </head>
 <body>
@@ -841,6 +892,22 @@ tbody tr:nth-child(even) { background: var(--paper2); }
           <div class="toc-text">
             <div class="toc-chapter-label">Chapter 7</div>
             <div class="toc-chapter-name">Sound Waves and Musical Instruments</div>
+          </div>
+          <div class="toc-arrow"><ph-icon name="caret-right" size="18"></ph-icon></div>
+        </li>
+        <li class="toc-item" onclick="goToPage(19, 1)">
+          <div class="toc-num">8</div>
+          <div class="toc-text">
+            <div class="toc-chapter-label">SS1 — Theory</div>
+            <div class="toc-chapter-name">Mathematics — Statistics (Grouped &amp; Ungrouped Data)</div>
+          </div>
+          <div class="toc-arrow"><ph-icon name="caret-right" size="18"></ph-icon></div>
+        </li>
+        <li class="toc-item" onclick="goToPage(20, 1)">
+          <div class="toc-num">9</div>
+          <div class="toc-text">
+            <div class="toc-chapter-label">SS2 — Theory</div>
+            <div class="toc-chapter-name">Chemistry — Organic Chemistry &amp; Homologous Series</div>
           </div>
           <div class="toc-arrow"><ph-icon name="caret-right" size="18"></ph-icon></div>
         </li>
@@ -2271,9 +2338,248 @@ tbody tr:nth-child(even) { background: var(--paper2); }
         </div>
       </div>
     </div>
+    
+    <!-- PAGE 19 — SS1 MATHEMATICS THEORY: STATISTICS -->
+    <div class="page" id="page-19">
+      <div class="chapter-banner">
+        <div class="chapter-eyebrow">SS1 — Mathematics</div>
+        <h1>Theoretical Questions: Statistics</h1>
+      </div>
+      <div class="page-body">
+        <div class="callout callout-warn">
+          <div class="callout-label"><ph-icon name="lock-simple" size="14"></ph-icon> Locked Answers</div>
+          <p style="margin-bottom:0;">Each answer below is hidden. Type the unlock code into the box and tap "Unlock" to reveal a full, detailed explanation.</p>
+        </div>
+
+        <div class="practice">
+          <div class="practice-title"><ph-icon name="pencil" size="14"></ph-icon> Hard Theory Questions — Measures of Central Tendency</div>
+
+          <div class="exercise">
+            <div class="exercise-num">Question 1</div>
+            <p>Using the concept of the assumed mean, explain step by step why the formula Mean = A + (Σfd/Σf) gives exactly the same result as the direct formula Mean = Σfx/Σf for grouped data. Support your explanation with an algebraic derivation.</p>
+            <div class="code-lock" data-code="12345">
+              <div class="lock-label"><ph-icon name="lock-simple" size="13"></ph-icon> Enter code to view answer</div>
+              <div class="lock-row">
+                <input type="text" class="code-input" placeholder="Code" inputmode="numeric" maxlength="10" onkeydown="if(event.key==='Enter'){event.preventDefault(); this.nextElementSibling.click();}">
+                <button class="unlock-btn" onclick="unlockAnswer(this)"><ph-icon name="lock-open" size="14"></ph-icon> Unlock</button>
+              </div>
+              <div class="lock-error">Incorrect code. Please try again.</div>
+              <div class="answer-box">
+                In grouped data we don't know every exact value, so we use the midpoint (x) of each class as a fair representative. The direct formula Mean = Σfx/Σf means: multiply each midpoint by its frequency, add these up, then divide by the total frequency.<br><br>
+                The assumed mean method is the same formula in disguise, used to make the arithmetic simpler.<br><br>
+                <strong>Step 1:</strong> Pick any midpoint in the table and call it the assumed mean, A (usually a middle class value — it does not have to be the real mean).<br>
+                <strong>Step 2:</strong> For every class, find the deviation d = x − A.<br>
+                <strong>Step 3:</strong> Multiply each d by its frequency f to get fd, then add them all to get Σfd.<br>
+                <strong>Step 4:</strong> Apply Mean = A + Σfd/Σf.<br><br>
+                <strong>Why this equals the direct formula (the proof):</strong><br>
+                Since d = x − A, we can write x = A + d.<br>
+                So Σfx = Σf(A + d) = Σ(fA + fd) = AΣf + Σfd (because A is a constant, so ΣfA = AΣf).<br>
+                Dividing both sides by Σf:<br>
+                Σfx/Σf = AΣf/Σf + Σfd/Σf = A + Σfd/Σf.<br><br>
+                Since Mean = Σfx/Σf by definition, this proves Mean = A + Σfd/Σf. The assumed-mean method is not a different formula — it's the same one rearranged so you work with small deviations instead of large midpoint numbers, which is faster and reduces arithmetic mistakes.
+              </div>
+            </div>
+          </div>
+
+          <div class="exercise">
+            <div class="exercise-num">Question 2</div>
+            <p>The median of grouped data is found using Median = L + [(N/2 − Cf)/f] × c. Explain the meaning of every symbol, and explain the key assumption made about how data is distributed within the median class.</p>
+            <div class="code-lock" data-code="12345">
+              <div class="lock-label"><ph-icon name="lock-simple" size="13"></ph-icon> Enter code to view answer</div>
+              <div class="lock-row">
+                <input type="text" class="code-input" placeholder="Code" inputmode="numeric" maxlength="10" onkeydown="if(event.key==='Enter'){event.preventDefault(); this.nextElementSibling.click();}">
+                <button class="unlock-btn" onclick="unlockAnswer(this)"><ph-icon name="lock-open" size="14"></ph-icon> Unlock</button>
+              </div>
+              <div class="lock-error">Incorrect code. Please try again.</div>
+              <div class="answer-box">
+                <strong>L</strong> = the lower class boundary of the median class (the class containing the middle value).<br>
+                <strong>N</strong> = total frequency (Σf), so N/2 is the position of the middle item.<br>
+                <strong>Cf</strong> = cumulative frequency of the class immediately before the median class.<br>
+                <strong>f</strong> = frequency of the median class itself.<br>
+                <strong>c</strong> = class width of the median class.<br><br>
+                <strong>Meaning:</strong> We first locate which class contains the middle item using cumulative frequency. Cf items are already accounted for before the median class begins, so (N/2 − Cf) tells us how many more items — counting from the start of the median class — we must pass before reaching the median.<br><br>
+                <strong>The key assumption:</strong> the formula assumes the f items inside the median class are spread evenly (uniformly) across the class width c. Since we only know how many items fall into the class, not their individual exact values, we assume they are evenly distributed along the interval. This lets (N/2 − Cf)/f represent the fraction of the way through the median class where the median lies, and multiplying that fraction by c tells us how far past L the median sits. Because this is only an assumption, the grouped-data median is always an estimate — it may differ slightly from the true median of the original ungrouped data.
+              </div>
+            </div>
+          </div>
+
+          <div class="exercise">
+            <div class="exercise-num">Question 3</div>
+            <p>Explain, with reasons, why the mode is regarded as the least reliable of the three measures of central tendency, and describe a real-life situation where the mode is nonetheless the most appropriate measure to use.</p>
+            <div class="code-lock" data-code="12345">
+              <div class="lock-label"><ph-icon name="lock-simple" size="13"></ph-icon> Enter code to view answer</div>
+              <div class="lock-row">
+                <input type="text" class="code-input" placeholder="Code" inputmode="numeric" maxlength="10" onkeydown="if(event.key==='Enter'){event.preventDefault(); this.nextElementSibling.click();}">
+                <button class="unlock-btn" onclick="unlockAnswer(this)"><ph-icon name="lock-open" size="14"></ph-icon> Unlock</button>
+              </div>
+              <div class="lock-error">Incorrect code. Please try again.</div>
+              <div class="answer-box">
+                <strong>Why the mode is least reliable:</strong><br>
+                1. It only looks at the most frequent value(s) and ignores every other piece of data, unlike the mean and median which account for the position or value of every item.<br>
+                2. A data set may have no mode, one mode, or several modes, making it unstable and sometimes impossible to define uniquely.<br>
+                3. For grouped data, the "modal class" can change simply because the class widths were chosen differently — the mode is very sensitive to how the data was grouped.<br>
+                4. Adding or removing just one data value can completely change the mode, while the mean and median usually shift only slightly.<br><br>
+                <strong>When the mode is still the best choice:</strong> a shoe manufacturer deciding which shoe size to produce in bulk should use the mode of customers' shoe sizes. The mean or median might give a meaningless value like "size 7.3", which doesn't even exist as a real shoe size. The mode directly answers "which size do people buy most often?" — exactly the business question being asked.
+              </div>
+            </div>
+          </div>
+
+          <div class="exercise">
+            <div class="exercise-num">Question 4</div>
+            <p>State and explain, with mathematical justification, the empirical relationship connecting the mean, median, and mode of a moderately skewed distribution.</p>
+            <div class="code-lock" data-code="12345">
+              <div class="lock-label"><ph-icon name="lock-simple" size="13"></ph-icon> Enter code to view answer</div>
+              <div class="lock-row">
+                <input type="text" class="code-input" placeholder="Code" inputmode="numeric" maxlength="10" onkeydown="if(event.key==='Enter'){event.preventDefault(); this.nextElementSibling.click();}">
+                <button class="unlock-btn" onclick="unlockAnswer(this)"><ph-icon name="lock-open" size="14"></ph-icon> Unlock</button>
+              </div>
+              <div class="lock-error">Incorrect code. Please try again.</div>
+              <div class="answer-box">
+                <strong>Relationship:</strong> Mode = 3(Median) − 2(Mean), which rearranges to Mean − Mode = 3(Mean − Median).<br><br>
+                <strong>Justification:</strong> In a perfectly symmetrical distribution, the mean, median, and mode are all equal and sit at the exact centre. In a moderately skewed distribution, the "tail" on one side drags the mean furthest, drags the median a little, and barely affects the mode (since the mode depends only on the peak — the most frequent value — and is least influenced by extreme values in the tail). Karl Pearson observed, from studying many real distributions, that the median lies almost exactly one-third of the way from the mode to the mean, i.e. closer to the mode than the mean. Rearranging this observation algebraically produces the formula above. It is called "empirical" (not a proven law) because it comes from observation of real data and works well as an approximation only for moderately — not extremely — skewed distributions.
+              </div>
+            </div>
+          </div>
+
+          <div class="exercise">
+            <div class="exercise-num">Question 5</div>
+            <p>Explain why class boundaries — rather than class limits — must be used to determine class width and to draw a histogram or ogive of grouped data such as the classes 1–5, 6–10, 11–15.</p>
+            <div class="code-lock" data-code="12345">
+              <div class="lock-label"><ph-icon name="lock-simple" size="13"></ph-icon> Enter code to view answer</div>
+              <div class="lock-row">
+                <input type="text" class="code-input" placeholder="Code" inputmode="numeric" maxlength="10" onkeydown="if(event.key==='Enter'){event.preventDefault(); this.nextElementSibling.click();}">
+                <button class="unlock-btn" onclick="unlockAnswer(this)"><ph-icon name="lock-open" size="14"></ph-icon> Unlock</button>
+              </div>
+              <div class="lock-error">Incorrect code. Please try again.</div>
+              <div class="answer-box">
+                <strong>Class limits</strong> are the values written in the table (e.g. for "1–5", the limits are 1 and 5). <strong>Class boundaries</strong> are the true dividing points between classes, found by adding/subtracting 0.5 (e.g. "1–5" becomes 0.5 to 5.5, and "6–10" becomes 5.5 to 10.5).<br><br>
+                <strong>Why boundaries must be used:</strong><br>
+                1. Class limits leave a gap between classes (5 to 6), as if 5.5 belongs to neither class — incorrect for continuous data.<br>
+                2. Class boundaries remove this gap, since one class's upper boundary equals the next class's lower boundary (5.5 = 5.5), so histogram bars sit flush together with no visual gaps, correctly showing the data is continuous.<br>
+                3. The true class width, needed in formulas like the median and assumed-mean formulas, must come from boundaries, not limits — especially when class widths are unequal, otherwise every calculation depending on it will be off.<br>
+                4. On an ogive, each cumulative frequency point must be plotted against the <strong>upper class boundary</strong>, since the ogive shows how many values are less than a true dividing point — not less than a written limit that isn't really a division point at all.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PAGE 20 — SS2 CHEMISTRY THEORY: ORGANIC CHEMISTRY -->
+    <div class="page" id="page-20">
+      <div class="chapter-banner">
+        <div class="chapter-eyebrow">SS2 — Chemistry</div>
+        <h1>Theoretical Questions: Organic Chemistry</h1>
+      </div>
+      <div class="page-body">
+        <div class="callout callout-warn">
+          <div class="callout-label"><ph-icon name="lock-simple" size="14"></ph-icon> Locked Answers</div>
+          <p style="margin-bottom:0;">Each answer below is hidden. Type the unlock code into the box and tap "Unlock" to reveal a full, detailed explanation.</p>
+        </div>
+
+        <div class="practice">
+          <div class="practice-title"><ph-icon name="pencil" size="14"></ph-icon> Hard Theory Questions — Homologous Series &amp; Naming of Hydrocarbons</div>
+
+          <div class="exercise">
+            <div class="exercise-num">Question 1</div>
+            <p>Explain, using structural (bonding) principles, why alkanes are called "saturated" hydrocarbons while alkenes and alkynes are called "unsaturated". Relate your answer directly to the type of bonding present.</p>
+            <div class="code-lock" data-code="12345">
+              <div class="lock-label"><ph-icon name="lock-simple" size="13"></ph-icon> Enter code to view answer</div>
+              <div class="lock-row">
+                <input type="text" class="code-input" placeholder="Code" inputmode="numeric" maxlength="10" onkeydown="if(event.key==='Enter'){event.preventDefault(); this.nextElementSibling.click();}">
+                <button class="unlock-btn" onclick="unlockAnswer(this)"><ph-icon name="lock-open" size="14"></ph-icon> Unlock</button>
+              </div>
+              <div class="lock-error">Incorrect code. Please try again.</div>
+              <div class="answer-box">
+                A hydrocarbon is "saturated" when every carbon atom is joined to its neighbours using only single covalent bonds (C–C). Since each carbon can form only four bonds in total, and all four are already used on single bonds to hydrogen or other carbons, the molecule is holding the maximum possible number of hydrogen atoms — saturated with hydrogen, like a sponge that has soaked up as much water as it can. Alkanes are the saturated hydrocarbons, following the general formula CnH2n+2.<br><br>
+                A hydrocarbon is "unsaturated" when it contains at least one carbon-to-carbon double bond (C=C, alkenes) or triple bond (C≡C, alkynes). Because two (or three) of a carbon's four bonds are used joining to the same neighbouring carbon, fewer bonds remain for hydrogen, so the molecule carries fewer hydrogens than the maximum possible — it is not "full" of hydrogen.<br><br>
+                This structural difference is exactly why unsaturated hydrocarbons undergo addition reactions (the double/triple bond breaks, letting new atoms attach, making the molecule saturated), while saturated alkanes cannot — there is no spare bonding capacity for anything to add on to. Alkanes can only react by substitution (swapping a hydrogen for another atom), never addition.
+              </div>
+            </div>
+          </div>
+
+          <div class="exercise">
+            <div class="exercise-num">Question 2</div>
+            <p>Members of a homologous series differ by a repeating –CH2– unit yet show a gradual, predictable rise in boiling point. Explain, in terms of intermolecular forces, why boiling point increases steadily as the number of carbon atoms increases.</p>
+            <div class="code-lock" data-code="12345">
+              <div class="lock-label"><ph-icon name="lock-simple" size="13"></ph-icon> Enter code to view answer</div>
+              <div class="lock-row">
+                <input type="text" class="code-input" placeholder="Code" inputmode="numeric" maxlength="10" onkeydown="if(event.key==='Enter'){event.preventDefault(); this.nextElementSibling.click();}">
+                <button class="unlock-btn" onclick="unlockAnswer(this)"><ph-icon name="lock-open" size="14"></ph-icon> Unlock</button>
+              </div>
+              <div class="lock-error">Incorrect code. Please try again.</div>
+              <div class="answer-box">
+                As chain length increases: (1) molecular size and surface area increase, giving neighbouring molecules more area of contact; (2) the total van der Waals forces (weak, temporary attractions caused by momentary uneven electron distribution creating tiny dipoles) between molecules grow stronger — not because each individual attraction is stronger, but because more atoms means more points of contact adding up to more total attraction.<br><br>
+                Boiling requires enough energy to completely separate molecules from each other. A longer molecule with stronger total van der Waals forces needs more heat energy to pull its molecules apart into a gas. This is why boiling point rises steadily and predictably up a homologous series — each extra –CH2– unit adds a small, fairly constant amount of extra surface contact, and therefore a small, fairly constant rise in boiling point. This gradual, predictable change in physical properties (while chemical behaviour stays similar, since it's governed by the same type of bonding/functional group) is one of the defining features of a homologous series.
+              </div>
+            </div>
+          </div>
+
+          <div class="exercise">
+            <div class="exercise-num">Question 3</div>
+            <p>Explain the IUPAC rules used to name a branched alkane, using 2,3-dimethylbutane as a worked illustrative example, and explain why systematic naming is preferred over trivial/common names.</p>
+            <div class="code-lock" data-code="12345">
+              <div class="lock-label"><ph-icon name="lock-simple" size="13"></ph-icon> Enter code to view answer</div>
+              <div class="lock-row">
+                <input type="text" class="code-input" placeholder="Code" inputmode="numeric" maxlength="10" onkeydown="if(event.key==='Enter'){event.preventDefault(); this.nextElementSibling.click();}">
+                <button class="unlock-btn" onclick="unlockAnswer(this)"><ph-icon name="lock-open" size="14"></ph-icon> Unlock</button>
+              </div>
+              <div class="lock-error">Incorrect code. Please try again.</div>
+              <div class="answer-box">
+                <strong>Rule 1:</strong> Find the longest continuous carbon chain — this is the "parent chain" and gives the base name (e.g. 4 carbons = "butane").<br>
+                <strong>Rule 2:</strong> Number the carbons from whichever end gives the lowest possible numbers to the branches.<br>
+                <strong>Rule 3:</strong> Name each branch (a 1-carbon branch = "methyl", 2-carbon = "ethyl").<br>
+                <strong>Rule 4:</strong> If a branch appears more than once, use "di-", "tri-", "tetra-" and give a locant number for each occurrence.<br>
+                <strong>Rule 5:</strong> List different substituents alphabetically in the final name, with locant numbers.<br><br>
+                <strong>Worked example — 2,3-dimethylbutane:</strong> "Butane" = a 4-carbon parent chain. "Dimethyl" = two methyl (–CH3) branches. "2,3-" = those branches are attached to carbon 2 and carbon 3 of the butane chain.<br><br>
+                <strong>Why IUPAC names are preferred:</strong> common names (like "isobutane") were given historically with no fixed rules, so each one had to be memorised individually — and this becomes impossible once you consider that millions of organic compounds exist. IUPAC names are built directly from the compound's actual structure using a small, fixed set of rules. Once you know the rules, you can name (or draw) any hydrocarbon correctly — even one you've never seen — and any chemist anywhere will understand exactly the same structure from that one name.
+              </div>
+            </div>
+          </div>
+
+          <div class="exercise">
+            <div class="exercise-num">Question 4</div>
+            <p>Distinguish between chain isomerism, position isomerism, and functional group isomerism, giving one hydrocarbon example of each.</p>
+            <div class="code-lock" data-code="12345">
+              <div class="lock-label"><ph-icon name="lock-simple" size="13"></ph-icon> Enter code to view answer</div>
+              <div class="lock-row">
+                <input type="text" class="code-input" placeholder="Code" inputmode="numeric" maxlength="10" onkeydown="if(event.key==='Enter'){event.preventDefault(); this.nextElementSibling.click();}">
+                <button class="unlock-btn" onclick="unlockAnswer(this)"><ph-icon name="lock-open" size="14"></ph-icon> Unlock</button>
+              </div>
+              <div class="lock-error">Incorrect code. Please try again.</div>
+              <div class="answer-box">
+                Structural isomers share the same molecular formula but have different arrangements of atoms.<br><br>
+                <strong>1. Chain isomerism</strong> — the carbon skeleton is arranged differently (straight vs branched). Example: butane (straight 4-carbon chain) and 2-methylpropane (a branched 3-carbon chain with a methyl group) are both C4H10.<br><br>
+                <strong>2. Position isomerism</strong> — the skeleton stays the same, but a double bond (or group) is attached at a different position. Example: but-1-ene (CH2=CH–CH2–CH3) and but-2-ene (CH3–CH=CH–CH3) are both C4H8, same straight chain, double bond in a different place.<br><br>
+                <strong>3. Functional group isomerism</strong> — the same molecular formula represents compounds from entirely different homologous series. Example: but-1-ene (an alkene, C4H8) and cyclobutane (a cycloalkane, C4H8) share the same formula, but one has a reactive C=C double bond while the other is a saturated ring.<br><br>
+                The unifying idea: same formula, different structure, and (usually) different properties.
+              </div>
+            </div>
+          </div>
+
+          <div class="exercise">
+            <div class="exercise-num">Question 5</div>
+            <p>Explain why alkenes are generally more chemically reactive than alkanes, relating your answer to bond energy and the mechanism of addition reactions.</p>
+            <div class="code-lock" data-code="12345">
+              <div class="lock-label"><ph-icon name="lock-simple" size="13"></ph-icon> Enter code to view answer</div>
+              <div class="lock-row">
+                <input type="text" class="code-input" placeholder="Code" inputmode="numeric" maxlength="10" onkeydown="if(event.key==='Enter'){event.preventDefault(); this.nextElementSibling.click();}">
+                <button class="unlock-btn" onclick="unlockAnswer(this)"><ph-icon name="lock-open" size="14"></ph-icon> Unlock</button>
+              </div>
+              <div class="lock-error">Incorrect code. Please try again.</div>
+              <div class="answer-box">
+                A C=C double bond is made of one strong sigma (σ) bond, like the single bonds in alkanes, plus one weaker pi (π) bond formed from sideways overlap of p-orbitals above and below the plane of the carbons. The π bond's electron density is exposed above and below the molecule, unlike a σ bond's electrons which are tightly and symmetrically shared directly between the two nuclei.<br><br>
+                Because the π bond is weaker (roughly 250 kJ/mol vs roughly 350 kJ/mol for a σ bond) and its electrons sit more loosely and openly, it is far easier to break, and it strongly attracts electron-seeking (electrophilic) reagents such as bromine (Br2) or hydrogen halides (HBr).<br><br>
+                This is why alkenes readily undergo addition reactions: the weak π bond breaks, freeing one bond on each carbon, which then bonds to the two incoming atoms — converting the double bond into a single bond and turning the alkene into a saturated product. Alkanes, having only strong σ bonds with no exposed electron-rich region and no spare bonding capacity, cannot do this; they only react under harsher conditions (like UV light with halogens) via slow substitution, one hydrogen at a time. This bonding difference is the fundamental reason unsaturated hydrocarbons are more reactive than saturated ones.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
 
     <!-- PAGE 19 — BACK COVER -->
-    <div class="page" id="page-19">
+    <div class="page" id="page-21">
       <div style="
         background: linear-gradient(160deg, var(--navy) 0%, var(--navy2) 100%);
         min-height: 100%;
@@ -2412,7 +2718,21 @@ tbody tr:nth-child(even) { background: var(--paper2); }
         <div class="drawer-num">7</div>
         <div>
           <div class="drawer-name">Sound Waves and Musical Instruments</div>
-          <div class="drawer-sub">Pages 15 – 19</div>
+          <div class="drawer-sub">Pages 15 – 18</div>
+        </div>
+      </li>
+      <li class="drawer-item" onclick="drawerGo(19)">
+        <div class="drawer-num">8</div>
+        <div>
+          <div class="drawer-name">SS1 Mathematics — Statistics (Theory)</div>
+          <div class="drawer-sub">Page 20</div>
+        </div>
+      </li>
+      <li class="drawer-item" onclick="drawerGo(20)">
+        <div class="drawer-num">9</div>
+        <div>
+          <div class="drawer-name">SS2 Chemistry — Organic Chemistry (Theory)</div>
+          <div class="drawer-sub">Page 21</div>
         </div>
       </li>
     </ul>
@@ -2420,7 +2740,7 @@ tbody tr:nth-child(even) { background: var(--paper2); }
 </div>
 
 <script>
-const TOTAL = 20;
+const TOTAL = 22;
 let current = 0;
 
 function getPage(n) {
@@ -2478,6 +2798,8 @@ function updateUI() {
     'Ch.7 — Pipes: Open and Closed',
     'Ch.7 — Resonance and Practice',
     'Ch.7 — Musical Instruments',
+    'SS1 — Statistics (Theory)',
+    'SS2 — Organic Chemistry (Theory)',
     'Completed'
   ];
   document.getElementById('topbar-title').textContent = titles[current] || 'Physics Mastery';
@@ -2491,6 +2813,23 @@ function toggleAnswer(btn) {
   btn.childNodes.forEach(n => {
     if (n.nodeType === 3) n.textContent = isOpen ? ' Hide Answer' : ' Show Answer';
   });
+}
+
+function unlockAnswer(btn) {
+  const lock = btn.closest('.code-lock');
+  const input = lock.querySelector('.code-input');
+  const error = lock.querySelector('.lock-error');
+  const answer = lock.querySelector('.answer-box');
+  const row = lock.querySelector('.lock-row');
+  if (input.value.trim() === lock.dataset.code) {
+    row.style.display = 'none';
+    error.classList.remove('show');
+    answer.classList.add('open');
+  } else {
+    error.classList.add('show');
+    input.value = '';
+    input.focus();
+  }
 }
 
 function openToc() {
