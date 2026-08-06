@@ -663,6 +663,815 @@ const WS_WORDLIST = new Set([
   'WITHOUT','WORRIES','WRITTEN',
 ]);
 
+/* ══════════════════════════════════════════════════════════════
+   CHESS — CONSTANTS & PURE RULES ENGINE
+   Board = 8x8 array. Row 0 = rank 8 (black back rank, top of screen),
+   Row 7 = rank 1 (white back rank, bottom). Col 0 = file 'a'.
+   Piece codes: 'wP','wN','wB','wR','wQ','wK','bP',... or null.
+══════════════════════════════════════════════════════════════ */
+
+const CHESS_PIECE_GLYPH = {
+  wK:'♔', wQ:'♕', wR:'♖', wB:'♗', wN:'♘', wP:'♙',
+  bK:'♚', bQ:'♛', bR:'♜', bB:'♝', bN:'♞', bP:'♟',
+};
+
+function _chessInitialBoard() {
+  return [
+    ['bR','bN','bB','bQ','bK','bB','bN','bR'],
+    ['bP','bP','bP','bP','bP','bP','bP','bP'],
+    [null,null,null,null,null,null,null,null],
+    [null,null,null,null,null,null,null,null],
+    [null,null,null,null,null,null,null,null],
+    [null,null,null,null,null,null,null,null],
+    ['wP','wP','wP','wP','wP','wP','wP','wP'],
+    ['wR','wN','wB','wQ','wK','wB','wN','wR'],
+  ];
+}
+
+function _chessCloneBoard(board) { return board.map(row => row.slice()); }
+function _chessInBounds(r, c) { return r >= 0 && r < 8 && c >= 0 && c < 8; }
+function _chessColorOf(piece) { return piece ? piece[0] : null; }
+function _chessTypeOf(piece)  { return piece ? piece[1] : null; }
+function _chessSquareName(r, c) { return 'abcdefgh'[c] + (8 - r); }
+
+/* Pseudo-legal moves for one piece — does NOT check if the move leaves
+   your own king in check. castling param is only used to offer castle
+   moves for a king; pass {} to suppress castle-move generation (used
+   internally when scanning for attacked squares, to avoid recursion). */
+function _chessPseudoMoves(board, r, c, castling, enPassant) {
+  const piece = board[r][c];
+  if (!piece) return [];
+  const color = _chessColorOf(piece);
+  const type  = _chessTypeOf(piece);
+  const moves = [];
+  const enemy = (rr, cc) => board[rr][cc] && _chessColorOf(board[rr][cc]) !== color;
+  const empty = (rr, cc) => !board[rr][cc];
+
+  const addSlide = (dirs) => {
+    dirs.forEach(([dr, dc]) => {
+      let rr = r + dr, cc = c + dc;
+      while (_chessInBounds(rr, cc)) {
+        if (empty(rr, cc)) { moves.push({ r: rr, c: cc }); }
+        else { if (enemy(rr, cc)) moves.push({ r: rr, c: cc }); break; }
+        rr += dr; cc += dc;
+      }
+    });
+  };
+
+  if (type === 'P') {
+    const dir   = color === 'w' ? -1 : 1;
+    const start = color === 'w' ? 6 : 1;
+    if (_chessInBounds(r + dir, c) && empty(r + dir, c)) {
+      moves.push({ r: r + dir, c });
+      if (r === start && empty(r + dir * 2, c)) moves.push({ r: r + dir * 2, c, doubleStep: true });
+    }
+    [[dir, -1], [dir, 1]].forEach(([dr, dc]) => {
+      const rr = r + dr, cc = c + dc;
+      if (!_chessInBounds(rr, cc)) return;
+      if (enemy(rr, cc)) moves.push({ r: rr, c: cc, capture: true });
+      else if (enPassant && enPassant.r === rr && enPassant.c === cc) {
+        moves.push({ r: rr, c: cc, capture: true, enPassant: true });
+      }
+    });
+  } else if (type === 'N') {
+    [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]].forEach(([dr,dc]) => {
+      const rr = r+dr, cc = c+dc;
+      if (_chessInBounds(rr,cc) && (empty(rr,cc) || enemy(rr,cc))) moves.push({ r: rr, c: cc });
+    });
+  } else if (type === 'B') {
+    addSlide([[-1,-1],[-1,1],[1,-1],[1,1]]);
+  } else if (type === 'R') {
+    addSlide([[-1,0],[1,0],[0,-1],[0,1]]);
+  } else if (type === 'Q') {
+    addSlide([[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]]);
+  } else if (type === 'K') {
+    [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]].forEach(([dr,dc]) => {
+      const rr = r+dr, cc = c+dc;
+      if (_chessInBounds(rr,cc) && (empty(rr,cc) || enemy(rr,cc))) moves.push({ r: rr, c: cc });
+    });
+    const rights  = castling || {};
+    const homeRow = color === 'w' ? 7 : 0;
+    if (r === homeRow && c === 4) {
+      const kKey = color + 'K', qKey = color + 'Q';
+      if (rights[kKey] && empty(homeRow,5) && empty(homeRow,6) && board[homeRow][7] === color+'R') {
+        moves.push({ r: homeRow, c: 6, castle: 'king' });
+      }
+      if (rights[qKey] && empty(homeRow,1) && empty(homeRow,2) && empty(homeRow,3) && board[homeRow][0] === color+'R') {
+        moves.push({ r: homeRow, c: 2, castle: 'queen' });
+      }
+    }
+  }
+  return moves;
+}
+
+function _chessFindKing(board, color) {
+  for (let r=0;r<8;r++) for (let c=0;c<8;c++) if (board[r][c] === color+'K') return {r,c};
+  return null;
+}
+
+/* Is square (r,c) attacked by any piece of byColor? */
+function _chessSquareAttacked(board, r, c, byColor) {
+  for (let rr=0; rr<8; rr++) {
+    for (let cc=0; cc<8; cc++) {
+      const p = board[rr][cc];
+      if (!p || _chessColorOf(p) !== byColor) continue;
+      const type = _chessTypeOf(p);
+      if (type === 'P') {
+        const dir = byColor === 'w' ? -1 : 1;
+        if (rr + dir === r && (cc - 1 === c || cc + 1 === c)) return true;
+        continue;
+      }
+      const pseudo = _chessPseudoMoves(board, rr, cc, {}, null);
+      if (pseudo.some(m => m.r === r && m.c === c)) return true;
+    }
+  }
+  return false;
+}
+
+function _chessIsInCheck(board, color) {
+  const king = _chessFindKing(board, color);
+  if (!king) return false;
+  return _chessSquareAttacked(board, king.r, king.c, color === 'w' ? 'b' : 'w');
+}
+
+/* Apply a move to a CLONE of the board. Returns { board, captured, newEnPassant }. */
+function _chessApplyMove(board, from, to, move, promoteTo) {
+  const b      = _chessCloneBoard(board);
+  const piece  = b[from.r][from.c];
+  const color  = _chessColorOf(piece);
+  const type   = _chessTypeOf(piece);
+  let captured = b[to.r][to.c];
+
+  if (move && move.enPassant) {
+    const capRow = color === 'w' ? to.r + 1 : to.r - 1;
+    captured = b[capRow][to.c];
+    b[capRow][to.c] = null;
+  }
+
+  b[to.r][to.c]     = piece;
+  b[from.r][from.c] = null;
+
+  if (move && move.castle === 'king')  { b[from.r][5] = b[from.r][7]; b[from.r][7] = null; }
+  if (move && move.castle === 'queen') { b[from.r][3] = b[from.r][0]; b[from.r][0] = null; }
+
+  if (type === 'P' && (to.r === 0 || to.r === 7)) {
+    b[to.r][to.c] = color + (promoteTo || 'Q');
+  }
+
+  const newEnPassant = (move && move.doubleStep) ? { r: (from.r + to.r) / 2, c: from.c } : null;
+  return { board: b, captured, newEnPassant };
+}
+
+/* Legal moves for one square = pseudo-legal moves that (a) don't leave your
+   own king in check and (b) for castling, don't pass through/land on check. */
+function _chessLegalMovesForSquare(board, r, c, castling, enPassant, turnColor) {
+  const piece = board[r][c];
+  if (!piece || _chessColorOf(piece) !== turnColor) return [];
+  const pseudo = _chessPseudoMoves(board, r, c, castling, enPassant);
+  return pseudo.filter(m => {
+    if (m.castle) {
+      const enemyColor = turnColor === 'w' ? 'b' : 'w';
+      if (_chessSquareAttacked(board, r, 4, enemyColor)) return false;
+      const pathCols = m.castle === 'king' ? [5,6] : [3,2];
+      for (const pc of pathCols) {
+        if (_chessSquareAttacked(board, r, pc, enemyColor)) return false;
+      }
+    }
+    const { board: after } = _chessApplyMove(board, { r, c }, { r: m.r, c: m.c }, m, 'Q');
+    return !_chessIsInCheck(after, turnColor);
+  });
+}
+
+function _chessAllLegalMoves(board, turnColor, castling, enPassant) {
+  const all = [];
+  for (let r=0;r<8;r++) {
+    for (let c=0;c<8;c++) {
+      const piece = board[r][c];
+      if (!piece || _chessColorOf(piece) !== turnColor) continue;
+      _chessLegalMovesForSquare(board, r, c, castling, enPassant, turnColor)
+        .forEach(m => all.push({ from: {r,c}, to: { r: m.r, c: m.c }, meta: m }));
+    }
+  }
+  return all;
+}
+
+/* Returns 'checkmate' | 'stalemate' | 'check' | 'normal' for the SIDE TO MOVE. */
+function _chessGameStatus(board, turnColor, castling, enPassant) {
+  const legal    = _chessAllLegalMoves(board, turnColor, castling, enPassant);
+  const inCheck  = _chessIsInCheck(board, turnColor);
+  if (legal.length === 0) return inCheck ? 'checkmate' : 'stalemate';
+  return inCheck ? 'check' : 'normal';
+}
+
+/* Recompute castling rights from board state (handles king/rook moves
+   AND rooks being captured, in one pass). */
+function _chessRecomputeCastlingRights(board, prevRights) {
+  const r = { ...prevRights };
+  if (board[7][4] !== 'wK') { r.wK = false; r.wQ = false; }
+  if (board[0][4] !== 'bK') { r.bK = false; r.bQ = false; }
+  if (board[7][0] !== 'wR') r.wQ = false;
+  if (board[7][7] !== 'wR') r.wK = false;
+  if (board[0][0] !== 'bR') r.bQ = false;
+  if (board[0][7] !== 'bR') r.bK = false;
+  return r;
+}
+
+function _chessSerialiseBoard(board) {
+  const flat = [];
+  for (let r=0;r<8;r++) for (let c=0;c<8;c++) flat.push(board[r][c] || null);
+  return flat;
+}
+
+function _chessDeserialiseBoard(flat) {
+  const board = Array.from({length:8}, () => Array(8).fill(null));
+  for (let r=0;r<8;r++) for (let c=0;c<8;c++) board[r][c] = flat[r*8+c] || null;
+  return board;
+}
+
+/* ══════════════════════════════════════════════════════════════
+   CHESS — GAME FLOW (Firestore-synced, mirrors Word Scrabble)
+══════════════════════════════════════════════════════════════ */
+
+let _chessListener    = null;
+let _chessCachedData  = null;
+let _chessUI          = { selected: null, legalTargets: [] };
+
+async function _showChessSetup() {
+  const myClass = _student().class || '';
+  if (!myClass) { window.UI.toast('Your class is not set. Contact your teacher.', 'error'); return; }
+  let classmates = [];
+  if (_isOnline()) {
+    try {
+      const snap = await _db().collection('students').where('class', '==', myClass).get();
+      snap.forEach(doc => { if (doc.id !== _uid()) classmates.push({ id: doc.id, name: doc.data().name || 'Unknown' }); });
+    } catch (e) {
+      window.UI.toast('Could not load classmates. Please check your connection.', 'error'); return;
+    }
+  } else {
+    window.UI.toast('Chess requires an internet connection to challenge a classmate.', 'warning'); return;
+  }
+  if (classmates.length === 0) { window.UI.toast("No classmates found — you're the only one in your class!", 'info'); return; }
+
+  const classmateOptions = classmates.sort((a,b)=>a.name.localeCompare(b.name))
+    .map(c => `<option value="${_esc(c.id)}">${_esc(c.name)}</option>`).join('');
+
+  _showModal(`
+    <div style="text-align:center;margin-bottom:1.25rem;">
+      <div style="margin-bottom:.5rem;font-size:2.5rem;">♟️</div>
+      <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">Chess</h2>
+      <p style="font-size:.875rem;color:var(--text-3);margin-top:.375rem;line-height:1.6;">
+        Full rules: castling, en passant, promotion, check &amp; checkmate detection.
+        Play at your own pace — your opponent sees each move as soon as you make it.
+      </p>
+    </div>
+    <div style="margin-bottom:.875rem;">
+      <label style="display:block;font-size:.75rem;font-weight:600;color:var(--text-2);margin-bottom:.375rem;">Challenge Who?</label>
+      <select id="chessTarget" style="width:100%;">${classmateOptions}</select>
+    </div>
+    <div style="margin-bottom:1.25rem;">
+      <label style="display:block;font-size:.75rem;font-weight:600;color:var(--text-2);margin-bottom:.375rem;">Play as</label>
+      <select id="chessColor" style="width:100%;">
+        <option value="w">White (moves first)</option>
+        <option value="b">Black</option>
+        <option value="random">Random</option>
+      </select>
+    </div>
+    <button onclick="Game._sendChessChallenge()" class="btn btn-lg w-full" style="background:#1e293b;color:#fff;">
+      ♟️ Send Chess Challenge
+    </button>
+    <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full" style="margin-top:.5rem;">Cancel</button>
+  `);
+}
+
+async function _sendChessChallenge() {
+  const targetSel = document.getElementById('chessTarget');
+  const targetUid = targetSel ? targetSel.value : null;
+  if (!targetUid) { window.UI.toast('Please select a classmate.', 'warning'); return; }
+  const targetName = targetSel.options[targetSel.selectedIndex]?.text || 'Unknown';
+  let colorChoice = document.getElementById('chessColor')?.value || 'w';
+  if (colorChoice === 'random') colorChoice = Math.random() < 0.5 ? 'w' : 'b';
+
+  const sendBtn = document.querySelector('#gameModal .btn:not(.bg-gray-500)');
+  if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Sending…'; }
+
+  const iAmWhite = colorChoice === 'w';
+  const board    = _chessInitialBoard();
+
+  try {
+    await _db().collection('chessGames').add({
+      whiteUid:      iAmWhite ? _uid() : targetUid,
+      whiteName:     iAmWhite ? (_student().name || '') : targetName,
+      blackUid:      iAmWhite ? targetUid : _uid(),
+      blackName:     iAmWhite ? targetName : (_student().name || ''),
+      challengerUid: _uid(),
+      class:         _student().class || '',
+      school:        _student().school || '',
+      status:        'pending',
+      turn:          'w',
+      board:         _chessSerialiseBoard(board),
+      castling:      { wK: true, wQ: true, bK: true, bQ: true },
+      enPassant:     null,
+      moveLog:       [],
+      result:        null,
+      resultReason:  null,
+      xpAwarded:     {},
+      createdAt:     firebase.firestore.FieldValue.serverTimestamp(),
+      lastMoveAt:    firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    _closeModal();
+    window.UI.toast(`Chess challenge sent to ${targetName}!`, 'success', 5000);
+  } catch (e) {
+    console.error('[chess] _sendChessChallenge error:', e);
+    window.UI.toast('Could not send challenge. Please try again.', 'error');
+    if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = '♟️ Send Chess Challenge'; }
+  }
+}
+
+async function _showChessPending() {
+  const uid = _uid();
+  let pendingGames = [];
+  let activeGames  = [];
+
+  try {
+    const [w1, b1] = await Promise.all([
+      _db().collection('chessGames').where('whiteUid', '==', uid).where('status', '==', 'pending').get(),
+      _db().collection('chessGames').where('blackUid', '==', uid).where('status', '==', 'pending').get(),
+    ]);
+    const seen = new Set();
+    [...w1.docs, ...b1.docs].forEach(doc => {
+      if (seen.has(doc.id)) return;
+      const d = doc.data();
+      if (d.challengerUid === uid) return;
+      seen.add(doc.id);
+      pendingGames.push({ id: doc.id, ...d });
+    });
+  } catch (e) {
+    console.error('[chess] pending fetch error:', e);
+    window.UI.toast('Could not load Chess invitations.', 'error');
+    return;
+  }
+
+  try {
+    const [w2, b2] = await Promise.all([
+      _db().collection('chessGames').where('whiteUid', '==', uid).where('status', '==', 'active').get(),
+      _db().collection('chessGames').where('blackUid', '==', uid).where('status', '==', 'active').get(),
+    ]);
+    const seen = new Set();
+    [...w2.docs, ...b2.docs].forEach(doc => {
+      if (seen.has(doc.id)) return;
+      seen.add(doc.id);
+      activeGames.push({ id: doc.id, ...doc.data() });
+    });
+  } catch (e) { console.warn('[chess] active fetch error:', e); }
+
+  if (pendingGames.length === 0 && activeGames.length === 0) {
+    window.UI.toast('No chess games right now.', 'info');
+    return;
+  }
+
+  const pendingHtml = pendingGames.map(g => {
+    const iAmWhite = g.whiteUid === uid;
+    const fromName = iAmWhite ? g.blackName : g.whiteName;
+    const myColor  = iAmWhite ? 'White' : 'Black';
+    return `
+    <div style="background:var(--bg-base);border:1px solid var(--border);border-radius:8px;
+                padding:.75rem 1rem;margin-bottom:.5rem;">
+      <p style="font-size:.9375rem;font-weight:700;color:var(--text-1);">
+        ♟️ ${_esc(fromName)} challenged you to Chess! <span style="color:var(--text-3);font-weight:500;">(you play ${myColor})</span>
+      </p>
+      <div style="display:flex;gap:.375rem;margin-top:.5rem;">
+        <button onclick="Game._acceptChess('${_esc(g.id)}')" class="btn" style="flex:1;font-size:.8125rem;">Accept &amp; Play</button>
+        <button onclick="Game._declineChess('${_esc(g.id)}')" class="btn bg-gray-500" style="flex:1;font-size:.8125rem;">Decline</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  const activeHtml = activeGames.map(g => {
+    const iAmWhite = g.whiteUid === uid;
+    const oppName  = iAmWhite ? g.blackName : g.whiteName;
+    const isMyTurn = g.turn === (iAmWhite ? 'w' : 'b');
+    return `
+    <div style="background:${isMyTurn ? 'var(--accent-subtle)' : 'var(--bg-subtle)'};
+                border:1.5px solid ${isMyTurn ? 'var(--accent-border)' : 'var(--border)'};
+                border-radius:8px;padding:.75rem 1rem;margin-bottom:.5rem;">
+      <p style="font-size:.9375rem;font-weight:700;color:${isMyTurn ? 'var(--accent-text)' : 'var(--text-2)'};">
+        ${isMyTurn ? '⚡ Your turn' : '⏳ Their turn'} vs ${_esc(oppName)}
+        <span style="font-weight:500;color:var(--text-3);">(you: ${iAmWhite?'White':'Black'})</span>
+      </p>
+      <button onclick="Game._openChessGame('${_esc(g.id)}')" class="btn w-full"
+              style="font-size:.8125rem;margin-top:.5rem;${isMyTurn ? 'background:var(--accent);color:#fff;' : ''}">
+        Open Board
+      </button>
+    </div>`;
+  }).join('');
+
+  _showModal(`
+    <div style="margin-bottom:1rem;">
+      <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">♟️ Chess Games</h2>
+    </div>
+    ${pendingHtml}
+    ${activeHtml}
+    <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full" style="margin-top:.5rem;">Close</button>
+    <button onclick="Game._closeModal();Game.openGameLobby();" class="btn bg-gray-500 w-full" style="margin-top:.375rem;">← Back to Games Lobby</button>
+  `);
+}
+
+async function _acceptChess(gameId) {
+  try {
+    await _db().collection('chessGames').doc(gameId).update({ status: 'active' });
+    _closeModal();
+    await _openChessGame(gameId);
+  } catch (e) {
+    console.error('[chess] _acceptChess error:', e);
+    window.UI.toast('Could not accept game.', 'error');
+  }
+}
+
+async function _declineChess(gameId) {
+  try {
+    await _db().collection('chessGames').doc(gameId).update({ status: 'declined' });
+    _closeModal();
+    window.UI.toast('Chess game declined.', 'info');
+  } catch (e) {
+    window.UI.toast('Could not decline game.', 'error');
+  }
+}
+
+async function _openChessGame(gameId) {
+  _closeModal();
+  if (_chessListener) { _chessListener(); _chessListener = null; }
+  _chessUI = { selected: null, legalTargets: [] };
+
+  window.UI.mount(`<div style="text-align:center;padding:3rem;color:var(--text-3);">Loading chess board…</div>`);
+
+  _chessListener = _db().collection('chessGames').doc(gameId).onSnapshot(snap => {
+    if (!snap.exists) { window.UI.toast('This game no longer exists.', 'error'); return; }
+    const data = { ...snap.data(), _gameId: gameId };
+    _chessCachedData = data;
+    _chessRenderGame(gameId, data);
+  }, err => {
+    console.error('[chess] listener error:', err);
+    window.UI.toast('Lost connection to the game. Please refresh.', 'error');
+  });
+}
+
+async function _chessRenderGame(gameId, data) {
+  const uid      = _uid();
+  const iAmWhite = data.whiteUid === uid;
+  const myColor  = iAmWhite ? 'w' : 'b';
+  const oppName  = iAmWhite ? data.blackName : data.whiteName;
+  const myName   = iAmWhite ? data.whiteName : data.blackName;
+  const board    = _chessDeserialiseBoard(data.board);
+  const castling = data.castling || { wK:true, wQ:true, bK:true, bQ:true };
+  const enPassant= data.enPassant || null;
+  const finished = data.status === 'finished';
+  const isMyTurn = !finished && data.turn === myColor;
+  const status   = finished ? null : _chessGameStatus(board, data.turn, castling, enPassant);
+  const inCheckColor  = (status === 'check' || status === 'checkmate') ? data.turn : null;
+  const kingInCheckPos = inCheckColor ? _chessFindKing(board, inCheckColor) : null;
+
+  // ── Award XP once, independently for each player, when the game ends ──
+  if (finished && (!data.xpAwarded || !data.xpAwarded[uid])) {
+    let win = false, draw = false;
+    if (data.result === 'draw') draw = true;
+    else if (data.result === 'white') win = iAmWhite;
+    else if (data.result === 'black') win = !iAmWhite;
+    const xpAmount = draw ? 15 : (win ? 40 : 10);
+    await _awardXP(xpAmount, 'chess', { win });
+    await _saveGameResult('chess', { result: data.result, reason: data.resultReason, xpEarned: xpAmount, opponentName: oppName });
+    try {
+      await _db().collection('chessGames').doc(gameId).update({ [`xpAwarded.${uid}`]: true });
+    } catch (e) { console.warn('[chess] xpAwarded write failed:', e); }
+  }
+
+  const squares = [];
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const piece    = board[r][c];
+      const isLight  = (r + c) % 2 === 0;
+      const selected = _chessUI.selected && _chessUI.selected.r === r && _chessUI.selected.c === c;
+      const isTarget = _chessUI.legalTargets.some(t => t.r === r && t.c === c);
+      const isKingInCheck = kingInCheckPos && kingInCheckPos.r === r && kingInCheckPos.c === c;
+      const clickable = isMyTurn && !finished;
+      let bg = isLight ? '#f0d9b5' : '#b58863';
+      if (selected) bg = '#7c9a4d';
+      else if (isKingInCheck) bg = '#e0524f';
+      squares.push(`
+        <div onclick="${clickable ? `Game._chessSquareClick(${r},${c})` : ''}"
+             style="position:relative;width:100%;padding-bottom:100%;background:${bg};
+                    cursor:${clickable ? 'pointer' : 'default'};box-sizing:border-box;">
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+                      font-size:clamp(18px,6vw,34px);user-select:none;
+                      color:${piece && piece[0]==='w' ? '#fff' : '#111'};
+                      text-shadow:${piece && piece[0]==='w' ? '0 0 2px #000,0 1px 1px #000' : 'none'};">
+            ${piece ? CHESS_PIECE_GLYPH[piece] : ''}
+          </div>
+          ${isTarget ? `<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;">
+            <div style="width:28%;height:28%;border-radius:50%;background:rgba(0,0,0,0.28);"></div>
+          </div>` : ''}
+        </div>`);
+    }
+  }
+
+  const turnBanner = finished
+    ? `<div style="text-align:center;padding:.625rem 1rem;border-radius:8px;margin-bottom:.75rem;
+                   background:var(--success-subtle);border:1px solid var(--success-border);">
+         <span style="font-size:.9375rem;font-weight:700;color:var(--success);">🏁 Game Over</span>
+       </div>`
+    : isMyTurn
+    ? `<div style="text-align:center;padding:.625rem 1rem;border-radius:8px;margin-bottom:.75rem;
+                   background:var(--accent-subtle);border:1px solid var(--accent-border);">
+         <span style="font-size:.875rem;font-weight:700;color:var(--accent-text);">
+           ⚡ Your turn${status === 'check' ? ' — you are in CHECK!' : ''}
+         </span>
+       </div>`
+    : `<div style="text-align:center;padding:.625rem 1rem;border-radius:8px;margin-bottom:.75rem;
+                   background:var(--bg-subtle);border:1px solid var(--border);">
+         <span style="font-size:.875rem;color:var(--text-3);">
+           ⏳ Waiting for ${_esc(oppName)}${status === 'check' ? ' (they are in check)' : ''}…
+         </span>
+       </div>`;
+
+  const log = (data.moveLog || []).slice(-8).reverse();
+  const logHtml = log.length > 0
+    ? `<div style="display:flex;flex-wrap:wrap;gap:.375rem;">${log.map(m => `
+         <span style="font-family:var(--font-mono);font-size:.75rem;background:var(--bg-subtle);
+                      border:1px solid var(--border);border-radius:4px;padding:2px 6px;">${_esc(m)}</span>`).join('')}</div>`
+    : '<div style="font-size:.75rem;color:var(--text-4);font-style:italic;">No moves yet.</div>';
+
+  let resultHtml = '';
+  if (finished) {
+    let title, color;
+    if (data.result === 'draw') { title = "It's a Draw!"; color = 'var(--warning)'; }
+    else {
+      const iWon = (data.result === 'white' && iAmWhite) || (data.result === 'black' && !iAmWhite);
+      title = iWon ? '🏆 You Win!' : 'You Lost.';
+      color = iWon ? 'var(--success)' : 'var(--danger)';
+    }
+    const reasonText = { checkmate: 'Checkmate', stalemate: 'Stalemate', resign: 'Resignation' }[data.resultReason] || '';
+    resultHtml = `
+      <div class="glass" style="padding:1.25rem;border-radius:10px;text-align:center;margin-bottom:.75rem;">
+        <p style="font-size:1.125rem;font-weight:800;color:${color};">${title}</p>
+        <p style="font-size:.875rem;color:var(--text-3);margin-top:.375rem;">${_esc(reasonText)}</p>
+        <button onclick="Game._chessLeave()" class="btn bg-gray-500" style="margin-top:.875rem;">Back to Games</button>
+      </div>`;
+  }
+
+  window.UI.mount(`
+    <div class="max-w-lg mx-auto animate-fadeIn" style="padding-bottom:2rem;">
+      <div class="glass" style="padding:.875rem 1.125rem;margin-bottom:.625rem;border-radius:12px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;">
+          <div style="text-align:center;flex:1;">
+            <div style="font-size:.75rem;font-weight:700;color:var(--text-3);">${_esc(myName)} (You · ${iAmWhite?'White':'Black'})</div>
+          </div>
+          <div style="text-align:center;flex:1;">
+            <div style="font-size:.75rem;font-weight:700;color:var(--text-3);">${_esc(oppName)} (${iAmWhite?'Black':'White'})</div>
+          </div>
+        </div>
+      </div>
+
+      ${turnBanner}
+
+      <div style="display:grid;grid-template-columns:repeat(8,1fr);border:3px solid #4a3423;
+                  border-radius:6px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.25);margin-bottom:.75rem;">
+        ${squares.join('')}
+      </div>
+
+      ${!finished ? `
+      <div style="text-align:center;margin-bottom:.75rem;">
+        <button onclick="Game._chessResign('${_esc(gameId)}')" class="btn bg-gray-500" style="font-size:.8125rem;">
+          🏳️ Resign
+        </button>
+      </div>` : ''}
+
+      ${resultHtml}
+
+      <div class="glass-dark" style="padding:.875rem;border-radius:10px;margin-bottom:.75rem;">
+        <p style="font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+                  color:var(--text-3);margin-bottom:.5rem;">Move Log</p>
+        ${logHtml}
+      </div>
+
+      ${!finished ? `<div style="text-align:center;">
+        <button onclick="Game._chessLeave()" class="btn bg-gray-500" style="font-size:.8125rem;">← Back to Games</button>
+      </div>` : ''}
+    </div>
+  `);
+}
+
+function _chessSquareClick(r, c) {
+  const ui = _chessUI;
+  if (!ui || !_chessCachedData) return;
+  const data = _chessCachedData;
+  const uid  = _uid();
+  const myColor = data.whiteUid === uid ? 'w' : 'b';
+  if (data.turn !== myColor || data.status === 'finished') return;
+
+  const board     = _chessDeserialiseBoard(data.board);
+  const castling  = data.castling || { wK:true, wQ:true, bK:true, bQ:true };
+  const enPassant = data.enPassant || null;
+
+  // Clicking a highlighted target square → make the move
+  if (ui.selected && ui.legalTargets.some(t => t.r === r && t.c === c)) {
+    const meta   = ui.legalTargets.find(t => t.r === r && t.c === c);
+    const fromSq = ui.selected;
+    const piece  = board[fromSq.r][fromSq.c];
+    ui.selected = null; ui.legalTargets = [];
+    if (_chessTypeOf(piece) === 'P' && (r === 0 || r === 7)) {
+      _chessShowPromotionModal(data._gameId, fromSq, { r, c }, meta);
+    } else {
+      _chessCommitMove(data._gameId, fromSq, { r, c }, meta, null);
+    }
+    return;
+  }
+
+  // Otherwise, try selecting a piece
+  const piece = board[r][c];
+  if (piece && _chessColorOf(piece) === myColor) {
+    const legal = _chessLegalMovesForSquare(board, r, c, castling, enPassant, myColor);
+    ui.selected = legal.length ? { r, c } : null;
+    ui.legalTargets = legal;
+  } else {
+    ui.selected = null; ui.legalTargets = [];
+  }
+  _chessRenderGame(data._gameId, data);
+}
+
+function _chessShowPromotionModal(gameId, from, to, meta) {
+  const myColor = _chessCachedData.whiteUid === _uid() ? 'w' : 'b';
+  const options = ['Q','R','B','N'];
+  _showModal(`
+    <div style="text-align:center;margin-bottom:1rem;">
+      <h2 style="font-size:1rem;font-weight:700;">Promote pawn to:</h2>
+    </div>
+    <div style="display:flex;gap:.75rem;justify-content:center;margin-bottom:1rem;">
+      ${options.map(o => `
+        <button onclick="Game._chessPromote('${_esc(gameId)}',${from.r},${from.c},${to.r},${to.c},'${o}')"
+                class="game-option-btn" style="width:4rem;height:4rem;justify-content:center;font-size:2rem;padding:0;">
+          ${CHESS_PIECE_GLYPH[myColor+o]}
+        </button>`).join('')}
+    </div>
+  `);
+}
+
+function _chessPromote(gameId, fr, fc, tr, tc, piece) {
+  _closeModal();
+  const board     = _chessDeserialiseBoard(_chessCachedData.board);
+  const castling  = _chessCachedData.castling || { wK:true, wQ:true, bK:true, bQ:true };
+  const enPassant = _chessCachedData.enPassant || null;
+  const myColor   = _chessCachedData.whiteUid === _uid() ? 'w' : 'b';
+  const legal = _chessLegalMovesForSquare(board, fr, fc, castling, enPassant, myColor);
+  const meta  = legal.find(m => m.r === tr && m.c === tc) || {};
+  _chessCommitMove(gameId, { r: fr, c: fc }, { r: tr, c: tc }, meta, piece);
+}
+
+async function _chessCommitMove(gameId, from, to, meta, promoteChoice) {
+  const data = _chessCachedData;
+  if (!data) return;
+  const board     = _chessDeserialiseBoard(data.board);
+  const castling  = data.castling || { wK:true, wQ:true, bK:true, bQ:true };
+  const enPassant = data.enPassant || null;
+  const movedPiece = board[from.r][from.c];
+  const color      = _chessColorOf(movedPiece);
+
+  const { board: newBoard, captured, newEnPassant } = _chessApplyMove(board, from, to, meta, promoteChoice || 'Q');
+  const newCastling = _chessRecomputeCastlingRights(newBoard, castling);
+  const newTurn     = color === 'w' ? 'b' : 'w';
+  const status      = _chessGameStatus(newBoard, newTurn, newCastling, newEnPassant);
+
+  const fromSq = _chessSquareName(from.r, from.c);
+  const toSq   = _chessSquareName(to.r, to.c);
+  const pieceLetter = _chessTypeOf(movedPiece) === 'P' ? '' : _chessTypeOf(movedPiece);
+  const isCapture    = !!captured || !!meta.enPassant;
+  const isPromo      = _chessTypeOf(movedPiece) === 'P' && (to.r === 0 || to.r === 7);
+  const promoChar    = isPromo ? ('=' + (promoteChoice || 'Q')) : '';
+  const suffix       = status === 'checkmate' ? '#' : status === 'check' ? '+' : '';
+  const notation     = `${pieceLetter}${fromSq}${isCapture ? 'x' : '-'}${toSq}${promoChar}${suffix}`;
+
+  const gameOver = status === 'checkmate' || status === 'stalemate';
+  const update = {
+    board:      _chessSerialiseBoard(newBoard),
+    turn:       gameOver ? null : newTurn,
+    castling:   newCastling,
+    enPassant:  newEnPassant,
+    moveLog:    [...(data.moveLog || []).slice(-59), notation],
+    lastMoveAt: firebase.firestore.FieldValue.serverTimestamp(),
+    status:     gameOver ? 'finished' : 'active',
+  };
+  if (gameOver) {
+    update.result       = status === 'checkmate' ? (color === 'w' ? 'white' : 'black') : 'draw';
+    update.resultReason = status === 'checkmate' ? 'checkmate' : 'stalemate';
+  }
+
+  try {
+    await _db().collection('chessGames').doc(gameId).update(update);
+  } catch (e) {
+    console.error('[chess] _chessCommitMove error:', e);
+    window.UI.toast('Could not submit move.', 'error');
+  }
+}
+
+async function _chessResign(gameId) {
+  const data = _chessCachedData;
+  if (!data) return;
+  if (window.UI && window.UI.confirmAction) {
+    const ok = await window.UI.confirmAction('Resign this game? This cannot be undone.');
+    if (!ok) return;
+  }
+  const uid = _uid();
+  const iAmWhite = data.whiteUid === uid;
+  try {
+    await _db().collection('chessGames').doc(gameId).update({
+      status:       'finished',
+      turn:         null,
+      result:       iAmWhite ? 'black' : 'white',
+      resultReason: 'resign',
+      moveLog:      [...(data.moveLog || []).slice(-59), `${_student().name || 'Player'} resigned`],
+      lastMoveAt:   firebase.firestore.FieldValue.serverTimestamp(),
+    });
+  } catch (e) {
+    console.error('[chess] _chessResign error:', e);
+    window.UI.toast('Could not resign.', 'error');
+  }
+}
+
+function _chessLeave() {
+  if (_chessListener) { _chessListener(); _chessListener = null; }
+  _chessCachedData = null;
+  _chessUI = { selected: null, legalTargets: [] };
+  _showChessPending();
+}
+
+function _showChessChallengePopup(gameId, data) {
+  if (window.AppState && window.AppState.exam && window.AppState.exam.step === 'exam') return;
+  const existing = document.getElementById('chessChallengePopup_' + gameId);
+  if (existing) return;
+
+  const uid = _uid();
+  const iAmWhite = data.whiteUid === uid;
+  const from     = _esc(iAmWhite ? data.blackName : data.whiteName);
+  const myColor  = iAmWhite ? 'White' : 'Black';
+
+  const popup = document.createElement('div');
+  popup.id    = 'chessChallengePopup_' + gameId;
+  popup.style.cssText = [
+    'position:fixed','bottom:5rem','right:1.25rem','z-index:9500','max-width:320px',
+    'width:calc(100vw - 2.5rem)','background:var(--bg-base)','border:2px solid #1e293b',
+    'border-radius:14px','padding:1rem 1.125rem',
+    'box-shadow:0 8px 32px rgba(0,0,0,.18),0 2px 8px rgba(0,0,0,.1)',
+    'animation:gameChallengePopIn .35s cubic-bezier(.34,1.45,.64,1) both','pointer-events:auto',
+  ].join(';');
+
+  popup.innerHTML = `
+    <div style="display:flex;align-items:flex-start;gap:.625rem;">
+      <div style="width:38px;height:38px;border-radius:50%;background:#e2e8f0;
+                  border:2px solid #94a3b8;display:flex;align-items:center;
+                  justify-content:center;flex-shrink:0;font-size:1.25rem;">♟️</div>
+      <div style="flex:1;min-width:0;">
+        <p style="font-size:.8125rem;font-weight:800;color:var(--text-1);margin:0 0 2px;">Chess Challenge!</p>
+        <p style="font-size:.75rem;color:var(--text-2);margin:0 0 3px;line-height:1.4;">
+          <strong>${from}</strong> challenged you to Chess! You'll play <strong>${myColor}</strong>.
+        </p>
+      </div>
+      <button id="chessPopupDismiss_${gameId}" style="background:none;border:none;cursor:pointer;
+              color:var(--text-4);font-size:1rem;line-height:1;padding:2px;flex-shrink:0;">&#x2715;</button>
+    </div>
+    <div style="display:flex;gap:.5rem;margin-top:.875rem;">
+      <button id="chessPopupAccept_${gameId}" style="flex:1;padding:.5rem;border-radius:8px;font-size:.8125rem;
+              font-weight:700;background:#1e293b;color:#fff;border:none;cursor:pointer;font-family:var(--font);">
+        Accept &amp; Play
+      </button>
+      <button id="chessPopupDecline_${gameId}" style="flex:1;padding:.5rem;border-radius:8px;font-size:.8125rem;
+              font-weight:600;background:var(--bg-subtle);color:var(--text-2);border:1px solid var(--border);
+              cursor:pointer;font-family:var(--font);">
+        Decline
+      </button>
+    </div>`;
+
+  document.body.appendChild(popup);
+  const autoTimer = setTimeout(() => _dismissChessPopup(gameId), 30_000);
+  function _dismiss() { clearTimeout(autoTimer); _dismissChessPopup(gameId); }
+
+  document.getElementById('chessPopupDismiss_' + gameId).addEventListener('click', _dismiss);
+  document.getElementById('chessPopupAccept_' + gameId).addEventListener('click', async () => {
+    _dismiss(); await _acceptChess(gameId);
+  });
+  document.getElementById('chessPopupDecline_' + gameId).addEventListener('click', async () => {
+    _dismiss();
+    try {
+      await _db().collection('chessGames').doc(gameId).update({ status: 'declined' });
+      window.UI && window.UI.toast('Chess challenge declined.', 'info', 3000);
+    } catch (e) { console.warn('[chess] decline error:', e); }
+  });
+}
+
+function _dismissChessPopup(gameId) {
+  const popup = document.getElementById('chessChallengePopup_' + gameId);
+  if (!popup) return;
+  popup.style.animation = 'gameChallengePopOut .25s ease-in both';
+  popup.addEventListener('animationend', () => popup.remove(), { once: true });
+}
+
 function _showBadgeDetails(badgeId) {
     const badge = BADGES.find(b => b.id === badgeId);
     if (!badge) return;
@@ -799,6 +1608,40 @@ function _showBadgeDetails(badgeId) {
     // Returns a new entry in the new {id, earnedAt} format
     return { id, earnedAt: new Date().toISOString() };
   }
+
+const GAME_CATALOG = [
+  { id: 'quizBlitz',       label: 'Quiz Blitz' },
+  { id: 'trueOrFalse',     label: 'True or False Blitz' },
+  { id: 'speedMath',       label: 'Speed Math' },
+  { id: 'wordScramble',    label: 'Word Scramble' },
+  { id: 'suddenDeath',     label: 'Perfect Run' },
+  { id: 'challenge',       label: 'Challenge a Classmate' },
+  { id: 'wordScrabble',    label: 'Word Scrabble' },
+  { id: 'knowledgeRunner', label: 'Knowledge Surfer' },
+  { id: 'chess',           label: 'Chess' },
+];
+
+let _allowedGamesSet = null; // null = unrestricted (default: everything allowed)
+
+async function _loadGameRestrictions() {
+  const uid = _uid();
+  if (!uid || !_isOnline()) { _allowedGamesSet = null; return; }
+  try {
+    const snap = await _db().collection('gameRestrictions').doc(uid).get();
+    if (!snap.exists) { _allowedGamesSet = null; return; }
+    const data = snap.data();
+    if (!data || !Array.isArray(data.allowedGames)) { _allowedGamesSet = null; return; }
+    _allowedGamesSet = new Set(data.allowedGames);
+  } catch (e) {
+    console.warn('[game] _loadGameRestrictions error:', e);
+    _allowedGamesSet = null;
+  }
+}
+
+function _isGameAllowed(gameId) {
+  if (_allowedGamesSet === null) return true;
+  return _allowedGamesSet.has(gameId);
+}
 
 /* ══════════════════════════════════════════════════════════════
    WORD SCRABBLE — HELPERS
@@ -2402,7 +3245,7 @@ function _krStartCountdownTick(getEl) {
      CHALLENGE NOTIFICATION LISTENER
   ══════════════════════════════════════════════════════════════ */
 
-  function _startChallengeListener() {
+function _startChallengeListener() {
   const uid = _uid();
   if (!uid || _challengeListener) return;
 
@@ -2437,13 +3280,15 @@ function _krStartCountdownTick(getEl) {
         .onSnapshot(function(snap) {
           snap.docChanges().forEach(function(change) {
             if (change.type !== 'added' && change.type !== 'modified') return;
-            const doc  = change.doc;
+            const doc = change.doc;
             const data = doc.data();
             if (_notifiedChallenges.has(doc.id)) return;
             _notifiedChallenges.add(doc.id);
             _showChallengePopup(doc.id, data);
           });
-        }, function(err) { console.warn('[game] challenge listener error:', err); });
+        }, function(err) {
+          console.warn('[game] challenge listener error:', err);
+        });
     })
     .catch(function(err) {
       console.warn('[game] challenge baseline fetch error:', err);
@@ -2454,19 +3299,18 @@ function _krStartCountdownTick(getEl) {
         .onSnapshot(function(snap) {
           snap.docChanges().forEach(function(change) {
             if (change.type !== 'added' && change.type !== 'modified') return;
-            const doc  = change.doc;
+            const doc = change.doc;
             const data = doc.data();
             if (_notifiedChallenges.has(doc.id)) return;
             _notifiedChallenges.add(doc.id);
             _showChallengePopup(doc.id, data);
           });
-        }, function(err) { console.warn('[game] challenge listener error:', err); });
+        }, function(err) {
+          console.warn('[game] challenge listener error:', err);
+        });
     });
 
   // ── 2. Challenges the CHALLENGED player already played, now completed by challenger ──
-  // The challenged player played, set status to 'awaiting_challenger'.
-  // When the challenger finally plays days later, status flips to 'completed'.
-  // We listen for that flip and notify the challenged player.
   const _completedKey = (id) => 'completed_result_' + id;
 
   _db()
@@ -2475,12 +3319,10 @@ function _krStartCountdownTick(getEl) {
     .where('status', '==', 'completed')
     .get()
     .then(function(existingSnap) {
-      // Baseline: mark all already-completed games as already notified
       existingSnap.forEach(function(doc) {
         _notifiedChallenges.add(_completedKey(doc.id));
       });
 
-      // Now listen for newly completed ones
       _db()
         .collection('gameChallenges')
         .where('challengedUid', '==', uid)
@@ -2488,18 +3330,23 @@ function _krStartCountdownTick(getEl) {
         .onSnapshot(function(snap) {
           snap.docChanges().forEach(function(change) {
             if (change.type !== 'added' && change.type !== 'modified') return;
-            const doc  = change.doc;
+            const doc = change.doc;
             const data = doc.data();
-            const key  = _completedKey(doc.id);
+            const key = _completedKey(doc.id);
+
             if (_notifiedChallenges.has(key)) return;
             _notifiedChallenges.add(key);
-            // Only show if the challenged player already submitted their score
-            // (i.e. they played before the challenger — the 'awaiting_challenger' → 'completed' path)
-            if (data.finalChallengedScore !== undefined && data.finalChallengerScore !== undefined) {
+
+            if (
+              data.finalChallengedScore !== undefined &&
+              data.finalChallengerScore !== undefined
+            ) {
               _showChallengeResultPopup(doc.id, data, uid);
             }
           });
-        }, function(err) { console.warn('[game] completed-challenge listener error:', err); });
+        }, function(err) {
+          console.warn('[game] completed-challenge listener error:', err);
+        });
     })
     .catch(function(err) {
       console.warn('[game] completed-challenge baseline fetch error:', err);
@@ -2512,7 +3359,10 @@ function _krStartCountdownTick(getEl) {
     .where('status', '==', 'pending')
     .get()
     .then(function(existingSnap) {
-      existingSnap.forEach(function(doc) { _notifiedChallenges.add('scrabble_' + doc.id); });
+      existingSnap.forEach(function(doc) {
+        _notifiedChallenges.add('scrabble_' + doc.id);
+      });
+
       _db()
         .collection('scrabbleGames')
         .where('player2Uid', '==', uid)
@@ -2520,17 +3370,99 @@ function _krStartCountdownTick(getEl) {
         .onSnapshot(function(snap) {
           snap.docChanges().forEach(function(change) {
             if (change.type !== 'added' && change.type !== 'modified') return;
-            const doc  = change.doc;
+            const doc = change.doc;
             const data = doc.data();
-            const key  = 'scrabble_' + doc.id;
+            const key = 'scrabble_' + doc.id;
+
             if (_notifiedChallenges.has(key)) return;
             _notifiedChallenges.add(key);
             _showScrabbleChallengePopup(doc.id, data);
           });
-        }, function(err) { console.warn('[game] scrabble listener error:', err); });
+        }, function(err) {
+          console.warn('[game] scrabble listener error:', err);
+        });
     })
     .catch(function(err) {
       console.warn('[game] scrabble baseline fetch error:', err);
+    });
+
+  // ── 4. Chess challenge listener ──
+  _db()
+    .collection('chessGames')
+    .where('whiteUid', '==', uid)
+    .where('status', '==', 'pending')
+    .get()
+    .then(function(existingSnap) {
+      existingSnap.forEach(function(doc) {
+        if (doc.data().challengerUid !== uid) {
+          _notifiedChallenges.add('chess_' + doc.id);
+        }
+      });
+
+      _db()
+        .collection('chessGames')
+        .where('whiteUid', '==', uid)
+        .where('status', '==', 'pending')
+        .onSnapshot(function(snap) {
+          snap.docChanges().forEach(function(change) {
+            if (change.type !== 'added' && change.type !== 'modified') return;
+
+            const doc = change.doc;
+            const data = doc.data();
+
+            if (data.challengerUid === uid) return;
+
+            const key = 'chess_' + doc.id;
+            if (_notifiedChallenges.has(key)) return;
+
+            _notifiedChallenges.add(key);
+            _showChessChallengePopup(doc.id, data);
+          });
+        }, function(err) {
+          console.warn('[game] chess (white) listener error:', err);
+        });
+    })
+    .catch(function(err) {
+      console.warn('[game] chess (white) baseline error:', err);
+    });
+
+  _db()
+    .collection('chessGames')
+    .where('blackUid', '==', uid)
+    .where('status', '==', 'pending')
+    .get()
+    .then(function(existingSnap) {
+      existingSnap.forEach(function(doc) {
+        if (doc.data().challengerUid !== uid) {
+          _notifiedChallenges.add('chess_' + doc.id);
+        }
+      });
+
+      _db()
+        .collection('chessGames')
+        .where('blackUid', '==', uid)
+        .where('status', '==', 'pending')
+        .onSnapshot(function(snap) {
+          snap.docChanges().forEach(function(change) {
+            if (change.type !== 'added' && change.type !== 'modified') return;
+
+            const doc = change.doc;
+            const data = doc.data();
+
+            if (data.challengerUid === uid) return;
+
+            const key = 'chess_' + doc.id;
+            if (_notifiedChallenges.has(key)) return;
+
+            _notifiedChallenges.add(key);
+            _showChessChallengePopup(doc.id, data);
+          });
+        }, function(err) {
+          console.warn('[game] chess (black) listener error:', err);
+        });
+    })
+    .catch(function(err) {
+      console.warn('[game] chess (black) baseline error:', err);
     });
 }
 
@@ -2891,6 +3823,7 @@ function _dismissScrabblePopup(gameId) {
     if (!uid) { window.UI.toast('Please sign in to play games.', 'error'); return; }
 
     await _loadProfile();
+    await _loadGameRestrictions();
     _startChallengeListener();
 
     const level     = _getLevelForXP(_profile.xp || 0);
@@ -2902,10 +3835,15 @@ function _dismissScrabblePopup(gameId) {
     let awaitingPlay      = [];
     let pendingScrabble   = [];
     let activeScrabble    = [];
+    let pendingChess      = [];
+    let activeChess       = [];
 
     if (_isOnline()) {
       try {
-        const [challengeSnap, sentSnap, scrabblePendingSnap, scrabbleActive1Snap, scrabbleActive2Snap] = await Promise.all([
+        const [
+          challengeSnap, sentSnap, scrabblePendingSnap, scrabbleActive1Snap, scrabbleActive2Snap,
+          chessPendingWSnap, chessPendingBSnap, chessActiveWSnap, chessActiveBSnap,
+        ] = await Promise.all([
           _db().collection('gameChallenges')
                .where('challengedUid', '==', uid)
                .where('status', '==', 'pending').get(),
@@ -2921,6 +3859,18 @@ function _dismissScrabblePopup(gameId) {
           _db().collection('scrabbleGames')
                .where('player2Uid', '==', uid)
                .where('status', '==', 'active').get(),
+          _db().collection('chessGames')
+               .where('whiteUid', '==', uid)
+               .where('status', '==', 'pending').get(),
+          _db().collection('chessGames')
+               .where('blackUid', '==', uid)
+               .where('status', '==', 'pending').get(),
+          _db().collection('chessGames')
+               .where('whiteUid', '==', uid)
+               .where('status', '==', 'active').get(),
+          _db().collection('chessGames')
+               .where('blackUid', '==', uid)
+               .where('status', '==', 'active').get(),
         ]);
 
         if (!challengeSnap.empty)
@@ -2930,11 +3880,27 @@ function _dismissScrabblePopup(gameId) {
         if (!scrabblePendingSnap.empty)
           scrabblePendingSnap.docs.forEach(doc => pendingScrabble.push({ id: doc.id, ...doc.data() }));
 
-        const seen = new Set();
+        const seenScrabble = new Set();
         [...scrabbleActive1Snap.docs, ...scrabbleActive2Snap.docs].forEach(doc => {
-          if (seen.has(doc.id)) return;
-          seen.add(doc.id);
+          if (seenScrabble.has(doc.id)) return;
+          seenScrabble.add(doc.id);
           activeScrabble.push({ id: doc.id, ...doc.data() });
+        });
+
+        const seenChessPending = new Set();
+        [...chessPendingWSnap.docs, ...chessPendingBSnap.docs].forEach(doc => {
+          if (seenChessPending.has(doc.id)) return;
+          const d = doc.data();
+          if (d.challengerUid === uid) return; // I sent it, not received
+          seenChessPending.add(doc.id);
+          pendingChess.push({ id: doc.id, ...d });
+        });
+
+        const seenChessActive = new Set();
+        [...chessActiveWSnap.docs, ...chessActiveBSnap.docs].forEach(doc => {
+          if (seenChessActive.has(doc.id)) return;
+          seenChessActive.add(doc.id);
+          activeChess.push({ id: doc.id, ...doc.data() });
         });
 
       } catch (e) { console.warn('[game] lobby fetch error:', e); }
@@ -2981,6 +3947,34 @@ function _dismissScrabblePopup(gameId) {
       ${myTurnScrabble.length > 0
         ? `⚡ ${myTurnScrabble.length} Scrabble game${myTurnScrabble.length > 1 ? 's' : ''} waiting for YOUR move!`
         : `${theirTurnScrabble.length} Scrabble game${theirTurnScrabble.length > 1 ? 's' : ''} — waiting for opponent.`
+      }
+    </span>
+    <span class="game-challenge-alert__arrow">${_icon('arrowRight', 16)}</span>
+  </div>` : '';
+
+    const chessNotif = pendingChess.length > 0 ? `
+  <div class="game-challenge-alert" onclick="Game._showChessPending()"
+       style="border-color:#1e293b;background:linear-gradient(135deg,#e2e8f0,#cbd5e1);">
+    <span class="game-challenge-alert__icon">♟️</span>
+    <span style="color:#1e293b;">${pendingChess.length} pending Chess challenge${pendingChess.length > 1 ? 's' : ''} — tap to view.</span>
+    <span class="game-challenge-alert__arrow">${_icon('arrowRight', 16)}</span>
+  </div>` : '';
+
+    const myTurnChess    = activeChess.filter(g => g.turn === (g.whiteUid === uid ? 'w' : 'b'));
+    const theirTurnChess = activeChess.filter(g => g.turn !== (g.whiteUid === uid ? 'w' : 'b'));
+
+    const activeChessNotif = activeChess.length > 0 ? `
+  <div class="game-challenge-alert" onclick="Game._showChessPending()"
+       style="border-color:${myTurnChess.length > 0 ? '#1e293b' : '#6b7280'};
+              background:${myTurnChess.length > 0
+                ? 'linear-gradient(135deg,#e2e8f0,#cbd5e1)'
+                : 'linear-gradient(135deg,#f3f4f6,#e5e7eb)'
+              };">
+    <span class="game-challenge-alert__icon">♟️</span>
+    <span style="color:${myTurnChess.length > 0 ? '#1e293b' : '#374151'};">
+      ${myTurnChess.length > 0
+        ? `⚡ ${myTurnChess.length} Chess game${myTurnChess.length > 1 ? 's' : ''} waiting for YOUR move!`
+        : `${theirTurnChess.length} Chess game${theirTurnChess.length > 1 ? 's' : ''} — waiting for opponent.`
       }
     </span>
     <span class="game-challenge-alert__arrow">${_icon('arrowRight', 16)}</span>
@@ -3054,6 +4048,105 @@ function _dismissScrabblePopup(gameId) {
         </div>
       </div>`;
 
+    // ── Build all game cards, then keep only the ones this student is allowed to see ──
+    const cardDefs = [
+      { id: 'quizBlitz', html: `
+          <div class="game-card" onclick="Game._selectGame('quizBlitz')">
+            <div class="game-card__icon">${_icon('lightning', 32, { color: 'var(--accent)' })}</div>
+            <div class="game-card__title">Quiz Blitz</div>
+            <div class="game-card__desc">Answer MCQ questions against the clock. Fast answers earn bonus XP.</div>
+            <div class="game-card__meta">
+              <span class="game-card__tag">MCQ</span>
+              <span class="game-card__tag">20s / question</span>
+              <span class="game-card__tag game-card__tag--xp">+${XP_PER_CORRECT * QUIZ_BLITZ_QUESTIONS} XP max</span>
+            </div>
+          </div>` },
+      { id: 'trueOrFalse', html: `
+          <div class="game-card" onclick="Game._selectGame('trueOrFalse')">
+            <div class="game-card__icon">${_icon('checkSquare', 32, { color: '#10b981' })}</div>
+            <div class="game-card__title">True or False Blitz</div>
+            <div class="game-card__desc">Rapid-fire T/F statements from your subjects. Build streaks for bonus XP.</div>
+            <div class="game-card__meta">
+              <span class="game-card__tag">T/F</span>
+              <span class="game-card__tag">18s / question</span>
+              <span class="game-card__tag game-card__tag--xp">+streak multiplier</span>
+            </div>
+          </div>` },
+      { id: 'speedMath', html: `
+          <div class="game-card" onclick="Game._selectGame('speedMath')">
+            <div class="game-card__icon">${_icon('calculator', 32, { color: '#f59e0b' })}</div>
+            <div class="game-card__title">Speed Math</div>
+            <div class="game-card__desc">Solve arithmetic problems as fast as you can. Choose Easy, Medium, or Hard.</div>
+            <div class="game-card__meta">
+              <span class="game-card__tag">Arithmetic</span>
+              <span class="game-card__tag">90s total</span>
+              <span class="game-card__tag game-card__tag--xp">+XP per correct</span>
+            </div>
+          </div>` },
+      { id: 'wordScramble', html: `
+          <div class="game-card" onclick="Game._selectGame('wordScramble')">
+            <div class="game-card__icon">${_icon('textT', 32, { color: '#7c3aed' })}</div>
+            <div class="game-card__title">Word Scramble</div>
+            <div class="game-card__desc">Unscramble subject vocabulary words before time runs out.</div>
+            <div class="game-card__meta">
+              <span class="game-card__tag">Vocabulary</span>
+              <span class="game-card__tag">20s / word</span>
+              <span class="game-card__tag game-card__tag--xp">+${XP_PER_CORRECT} XP per word</span>
+            </div>
+          </div>` },
+      { id: 'suddenDeath', html: `
+          <div class="game-card game-card--sudden-death" onclick="Game._selectGame('suddenDeath')">
+            <div class="game-card__icon">${_icon('skull', 32, { color: '#e11d48' })}</div>
+            <div class="game-card__title">Perfect Run</div>
+            <div class="game-card__desc">One wrong answer and it's over. Survive as long as possible for compounding XP.</div>
+            <div class="game-card__meta">
+              <span class="game-card__tag">High Risk</span>
+              <span class="game-card__tag">20s / question</span>
+              <span class="game-card__tag game-card__tag--xp">XP compounds</span>
+            </div>
+          </div>` },
+      { id: 'challenge', html: `
+          <div class="game-card game-card--challenge" onclick="Game._selectGame('challenge')">
+            <div class="game-card__icon">${_icon('swords', 32, { color: 'var(--danger)' })}</div>
+            <div class="game-card__title">Challenge a Classmate</div>
+            <div class="game-card__desc">Send a quiz challenge to someone in your class. Beat their score to win.</div>
+            <div class="game-card__meta">
+              <span class="game-card__tag">PvP</span>
+              <span class="game-card__tag">1v1</span>
+              <span class="game-card__tag game-card__tag--xp">+${XP_CHALLENGE_WIN} bonus XP</span>
+            </div>
+          </div>` },
+      { id: 'wordScrabble', html: `
+          <div class="game-card game-card--scrabble" onclick="Game._selectGame('wordScrabble')">
+            <div class="game-card__icon">🔤</div>
+            <div class="game-card__title">Word Scrabble</div>
+            <div class="game-card__desc">
+              Classic Scrabble vs a classmate. Place words on the 15×15 board,
+              hit premium squares, and outscore your opponent.
+            </div>
+            <div class="game-card__meta">
+              <span class="game-card__tag">1v1</span>
+              <span class="game-card__tag">Turn-based</span>
+              <span class="game-card__tag game-card__tag--xp">Up to +200 XP</span>
+            </div>
+          </div>` },
+      { id: 'knowledgeRunner', html: knowledgeSurferCard },
+      { id: 'chess', html: `
+          <div class="game-card game-card--chess" onclick="Game._selectGame('chess')">
+            <div class="game-card__icon">♟️</div>
+            <div class="game-card__title">Chess</div>
+            <div class="game-card__desc">
+              Full-rules chess vs a classmate — castling, en passant, promotion, check &amp; checkmate detection. Play at your own pace.
+            </div>
+            <div class="game-card__meta">
+              <span class="game-card__tag">1v1</span>
+              <span class="game-card__tag">Turn-based</span>
+              <span class="game-card__tag game-card__tag--xp">Up to +40 XP</span>
+            </div>
+          </div>` },
+    ];
+    const gameCardsHtml = cardDefs.filter(d => _isGameAllowed(d.id)).map(d => d.html).join('');
+
     // XP progress bar values
     const xpCurrent = (_profile.xp || 0).toLocaleString();
     const xpNext    = nextLevel ? nextLevel.minXP.toLocaleString() : null;
@@ -3109,6 +4202,8 @@ function _dismissScrabblePopup(gameId) {
         ${awaitingNotif}
         ${scrabbleNotif}
         ${activeScrabbleNotif}
+        ${chessNotif}
+        ${activeChessNotif}
 
         <div style="display:flex;gap:.625rem;flex-wrap:wrap;justify-content:center;margin:.75rem 0;">
           <button onclick="Game.openLeaderboard()" class="btn bg-gray-500" style="display:flex;align-items:center;gap:.375rem;">
@@ -3122,80 +4217,9 @@ function _dismissScrabblePopup(gameId) {
         <h2 class="game-section-title">Choose a Game</h2>
 
         <div class="game-cards-grid">
-          <div class="game-card" onclick="Game._selectGame('quizBlitz')">
-            <div class="game-card__icon">${_icon('lightning', 32, { color: 'var(--accent)' })}</div>
-            <div class="game-card__title">Quiz Blitz</div>
-            <div class="game-card__desc">Answer MCQ questions against the clock. Fast answers earn bonus XP.</div>
-            <div class="game-card__meta">
-              <span class="game-card__tag">MCQ</span>
-              <span class="game-card__tag">20s / question</span>
-              <span class="game-card__tag game-card__tag--xp">+${XP_PER_CORRECT * QUIZ_BLITZ_QUESTIONS} XP max</span>
-            </div>
-          </div>
-          <div class="game-card" onclick="Game._selectGame('trueOrFalse')">
-            <div class="game-card__icon">${_icon('checkSquare', 32, { color: '#10b981' })}</div>
-            <div class="game-card__title">True or False Blitz</div>
-            <div class="game-card__desc">Rapid-fire T/F statements from your subjects. Build streaks for bonus XP.</div>
-            <div class="game-card__meta">
-              <span class="game-card__tag">T/F</span>
-              <span class="game-card__tag">18s / question</span>
-              <span class="game-card__tag game-card__tag--xp">+streak multiplier</span>
-            </div>
-          </div>
-          <div class="game-card" onclick="Game._selectGame('speedMath')">
-            <div class="game-card__icon">${_icon('calculator', 32, { color: '#f59e0b' })}</div>
-            <div class="game-card__title">Speed Math</div>
-            <div class="game-card__desc">Solve arithmetic problems as fast as you can. Choose Easy, Medium, or Hard.</div>
-            <div class="game-card__meta">
-              <span class="game-card__tag">Arithmetic</span>
-              <span class="game-card__tag">90s total</span>
-              <span class="game-card__tag game-card__tag--xp">+XP per correct</span>
-            </div>
-          </div>
-          <div class="game-card" onclick="Game._selectGame('wordScramble')">
-            <div class="game-card__icon">${_icon('textT', 32, { color: '#7c3aed' })}</div>
-            <div class="game-card__title">Word Scramble</div>
-            <div class="game-card__desc">Unscramble subject vocabulary words before time runs out.</div>
-            <div class="game-card__meta">
-              <span class="game-card__tag">Vocabulary</span>
-              <span class="game-card__tag">20s / word</span>
-              <span class="game-card__tag game-card__tag--xp">+${XP_PER_CORRECT} XP per word</span>
-            </div>
-          </div>
-          <div class="game-card game-card--sudden-death" onclick="Game._selectGame('suddenDeath')">
-            <div class="game-card__icon">${_icon('skull', 32, { color: '#e11d48' })}</div>
-            <div class="game-card__title">Perfect Run</div>
-            <div class="game-card__desc">One wrong answer and it's over. Survive as long as possible for compounding XP.</div>
-            <div class="game-card__meta">
-              <span class="game-card__tag">High Risk</span>
-              <span class="game-card__tag">20s / question</span>
-              <span class="game-card__tag game-card__tag--xp">XP compounds</span>
-            </div>
-          </div>
-          <div class="game-card game-card--challenge" onclick="Game._selectGame('challenge')">
-            <div class="game-card__icon">${_icon('swords', 32, { color: 'var(--danger)' })}</div>
-            <div class="game-card__title">Challenge a Classmate</div>
-            <div class="game-card__desc">Send a quiz challenge to someone in your class. Beat their score to win.</div>
-            <div class="game-card__meta">
-              <span class="game-card__tag">PvP</span>
-              <span class="game-card__tag">1v1</span>
-              <span class="game-card__tag game-card__tag--xp">+${XP_CHALLENGE_WIN} bonus XP</span>
-            </div>
-          </div>
-          <div class="game-card game-card--scrabble" onclick="Game._selectGame('wordScrabble')">
-            <div class="game-card__icon">🔤</div>
-            <div class="game-card__title">Word Scrabble</div>
-            <div class="game-card__desc">
-              Classic Scrabble vs a classmate. Place words on the 15×15 board,
-              hit premium squares, and outscore your opponent.
-            </div>
-            <div class="game-card__meta">
-              <span class="game-card__tag">1v1</span>
-              <span class="game-card__tag">Turn-based</span>
-              <span class="game-card__tag game-card__tag--xp">Up to +200 XP</span>
-            </div>
-          </div>
-          ${knowledgeSurferCard}
+          ${gameCardsHtml || `<p style="grid-column:1/-1;text-align:center;color:var(--text-3);font-size:.875rem;padding:1.5rem;">
+             No games are currently available for your account. Ask your teacher if you think this is a mistake.
+           </p>`}
         </div>
 
         <h2 class="game-section-title" style="margin-top:1.5rem;">Your Badges</h2>
@@ -3235,7 +4259,7 @@ function _dismissScrabblePopup(gameId) {
       }
     });
 
-    _updateGameNavBadge(pendingChallenges.length + awaitingPlay.length + pendingScrabble.length + myTurnScrabble.length);
+    _updateGameNavBadge(pendingChallenges.length + awaitingPlay.length + pendingScrabble.length + myTurnScrabble.length + pendingChess.length + myTurnChess.length);
 
     if (_krLimited) {
       _krStartCountdownTick(() => document.getElementById(_krCardId));
@@ -3364,6 +4388,10 @@ function _showAllLevelsModal(currentXP) {
   ══════════════════════════════════════════════════════════════ */
 
   function _selectGame(type) {
+  if (!_isGameAllowed(type)) {
+    window.UI.toast('This game is not available for your account. Ask your teacher if you think this is a mistake.', 'warning');
+    return;
+  }
   if      (type === 'quizBlitz')       _showQuizBlitzSetup();
   else if (type === 'speedMath')       _showSpeedMathSetup();
   else if (type === 'wordScramble')    _showWordScrambleSetup();
@@ -3371,7 +4399,8 @@ function _showAllLevelsModal(currentXP) {
   else if (type === 'suddenDeath')     _showSuddenDeathSetup();
   else if (type === 'challenge')       _showChallengeSetup();
   else if (type === 'knowledgeRunner') _showKnowledgeRunnerSetup();
-  else if (type === 'wordScrabble')    _showScrabbleSetup();     // ← NEW
+  else if (type === 'wordScrabble')    _showScrabbleSetup();
+  else if (type === 'chess')           _showChessSetup();
 }
 
   /* ══════════════════════════════════════════════════════════════
@@ -5774,7 +6803,8 @@ function _closeWatchModal(challengeId) {
   else if (key === 'suddenDeath')     _showSuddenDeathSetup();
   else if (key === 'challenge')       _showChallengeSetup();
   else if (key === 'knowledgeRunner') _showKnowledgeRunnerSetup();
-  else if (key === 'wordScrabble')    _showScrabbleSetup();      // ← NEW
+  else if (key === 'wordScrabble')    _showScrabbleSetup();
+  else if (key === 'chess')           _showChessSetup();
   else openGameLobby();
 }
 
@@ -7534,6 +8564,7 @@ function _krLoop(timestamp) {
       .game-option-btn--wrong   .game-option-btn__letter { background:var(--danger) !important;color:#fff !important;border-color:var(--danger) !important; }
 
       .game-card--scrabble:hover { border-color:rgba(124,58,237,.4) !important; }
+      .game-card--chess:hover { border-color:rgba(30,41,59,.45) !important; }
 
       /* ═══ TRUE/FALSE BUTTONS ═══ */
       .game-tf-btn {
@@ -7593,6 +8624,127 @@ function _krLoop(timestamp) {
     `;
     document.head.appendChild(s);
   }
+
+async function renderTeacherGameRestrictions(containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  container.innerHTML = `
+    <div style="margin-bottom:1rem;">
+      <h2 style="font-size:var(--text-md);font-weight:600;color:var(--text-1);">Game Access Control</h2>
+      <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">
+        By default every student can play every game. Untick a game for a student to hide it from their lobby completely.
+      </p>
+    </div>
+    <div style="margin-bottom:1rem;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;">
+      <input id="gr-search" type="text" placeholder="Search student name…" style="flex:1;min-width:180px;" />
+      <select id="gr-classFilter" style="min-width:140px;"><option value="">All classes</option></select>
+    </div>
+    <div id="gr-list"><div style="text-align:center;padding:2rem;color:var(--text-3);">Loading students…</div></div>
+  `;
+
+  if (!window.fbDb) return;
+
+  let students = [];
+  let restrictions = {}; // uid -> Set(allowedGames) | null (unrestricted)
+
+  try {
+    const [studentsSnap, restrictSnap] = await Promise.all([
+      window.fbDb.collection('students').orderBy('name').get(),
+      window.fbDb.collection('gameRestrictions').get(),
+    ]);
+    studentsSnap.forEach(doc => students.push({ id: doc.id, ...doc.data() }));
+    restrictSnap.forEach(doc => {
+      const d = doc.data();
+      restrictions[doc.id] = Array.isArray(d.allowedGames) ? new Set(d.allowedGames) : null;
+    });
+  } catch (e) {
+    console.error('[teacher] renderTeacherGameRestrictions load error:', e);
+    document.getElementById('gr-list').innerHTML = `<p style="color:var(--danger);text-align:center;padding:2rem;">Could not load students.</p>`;
+    return;
+  }
+
+  const classSet = [...new Set(students.map(s => s.class).filter(Boolean))].sort();
+  const classFilterEl = document.getElementById('gr-classFilter');
+  if (classFilterEl) {
+    classFilterEl.innerHTML = `<option value="">All classes</option>` +
+      classSet.map(c => `<option value="${String(c).replace(/"/g,'&quot;')}">${c}</option>`).join('');
+  }
+
+  function esc(str) {
+    return String(str == null ? '' : str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function renderList(filterText, filterClass) {
+    const listEl = document.getElementById('gr-list');
+    if (!listEl) return;
+    const ft = (filterText || '').trim().toLowerCase();
+    const filtered = students.filter(s => {
+      if (filterClass && s.class !== filterClass) return false;
+      if (ft && !(s.name || '').toLowerCase().includes(ft)) return false;
+      return true;
+    });
+
+    if (filtered.length === 0) {
+      listEl.innerHTML = `<p style="text-align:center;padding:2rem;color:var(--text-3);">No students match.</p>`;
+      return;
+    }
+
+    listEl.innerHTML = filtered.map(s => {
+      const allowedSet   = restrictions[s.id];
+      const isRestricted = allowedSet instanceof Set;
+      const checkboxes = GAME_CATALOG.map(g => {
+        const checked = !isRestricted || allowedSet.has(g.id);
+        return `
+          <label style="display:flex;align-items:center;gap:.375rem;font-size:.75rem;color:var(--text-2);
+                        padding:.25rem .5rem;border-radius:6px;background:var(--bg-subtle);cursor:pointer;">
+            <input type="checkbox" data-uid="${esc(s.id)}" data-game="${g.id}" ${checked ? 'checked' : ''} />
+            ${esc(g.label)}
+          </label>`;
+      }).join('');
+
+      return `
+        <div style="border:1px solid var(--border);border-radius:10px;padding:.875rem 1rem;margin-bottom:.625rem;background:var(--bg-base);">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.625rem;flex-wrap:wrap;gap:.375rem;">
+            <div>
+              <span style="font-weight:700;font-size:.9375rem;color:var(--text-1);">${esc(s.name || '—')}</span>
+              <span style="font-size:.75rem;color:var(--text-3);margin-left:.5rem;">${esc(s.class || '')}</span>
+            </div>
+            <button class="btn" style="font-size:.75rem;" onclick="Game._saveGameRestrictions('${esc(s.id)}')">Save</button>
+          </div>
+          <div style="display:flex;flex-wrap:wrap;gap:.375rem;">${checkboxes}</div>
+        </div>`;
+    }).join('');
+  }
+
+  renderList('', '');
+
+  document.getElementById('gr-search')?.addEventListener('input', (e) => {
+    renderList(e.target.value, document.getElementById('gr-classFilter')?.value || '');
+  });
+  document.getElementById('gr-classFilter')?.addEventListener('change', (e) => {
+    renderList(document.getElementById('gr-search')?.value || '', e.target.value);
+  });
+
+  window._saveGameRestrictionsForUid = async function(uid) {
+    const boxes = document.querySelectorAll(`input[data-uid="${uid}"]`);
+    const allowed = [];
+    boxes.forEach(b => { if (b.checked) allowed.push(b.getAttribute('data-game')); });
+    try {
+      if (allowed.length === GAME_CATALOG.length) {
+        await window.fbDb.collection('gameRestrictions').doc(uid).delete().catch(() => {});
+        restrictions[uid] = null;
+      } else {
+        await window.fbDb.collection('gameRestrictions').doc(uid).set({ allowedGames: allowed }, { merge: false });
+        restrictions[uid] = new Set(allowed);
+      }
+      window.UI && window.UI.toast('Game access updated.', 'success', 2500);
+    } catch (e) {
+      console.error('[teacher] _saveGameRestrictionsForUid error:', e);
+      window.UI && window.UI.toast('Could not save changes.', 'error');
+    }
+  };
+}
 
   /* ══════════════════════════════════════════════════════════════
      TEACHER: GAME STATS PANEL
@@ -8118,6 +9270,8 @@ function _krLoop(timestamp) {
     _startChallengeListener,
     _stopChallengeListener,
     renderTeacherGameStats,
+    renderTeacherGameRestrictions,
+    _saveGameRestrictions: function(uid) { if (window._saveGameRestrictionsForUid) window._saveGameRestrictionsForUid(uid); },
     _showKnowledgeRunnerSetup,
     _startKnowledgeRunner,
     _krChangeLane,
@@ -8146,6 +9300,16 @@ function _krLoop(timestamp) {
     _wsRemoveLetter,
     _wsSubmitArranged,
     _wsClearArranged,
+    _showChessSetup,
+    _sendChessChallenge,
+    _showChessPending,
+    _acceptChess,
+    _declineChess,
+    _openChessGame,
+    _chessSquareClick,
+    _chessPromote,
+    _chessResign,
+    _chessLeave,
     _teacherGameTab: function(tab) { if (typeof window._teacherGameTab === 'function') window._teacherGameTab(tab); },
   };
 
