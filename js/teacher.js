@@ -424,7 +424,14 @@ function renderTeacherDashboard() {
         <div id="teacher-studyroom" class="teacher-tab hidden"></div>
         <div id="teacher-timetable" class="teacher-tab hidden"></div>
         <div id="teacher-games" class="teacher-tab hidden">
+          <div style="display:flex;gap:.375rem;margin-bottom:1rem;flex-wrap:wrap;">
+            <button onclick="Teacher._showGamesSubTab('stats')" id="gamesSubTabStats"
+                    class="btn" style="font-size:var(--text-xs);">Game Stats</button>
+            <button onclick="Teacher._showGamesSubTab('access')" id="gamesSubTabAccess"
+                    class="btn bg-gray-500" style="font-size:var(--text-xs);">Game Access</button>
+          </div>
           <div id="teacherGameStatsContainer"></div>
+          <div id="teacherGameRestrictionsContainer" class="hidden"></div>
         </div>
         <div id="teacher-groups" class="teacher-tab hidden"></div>
         <div id="teacher-dm" class="teacher-tab hidden"></div>
@@ -506,7 +513,7 @@ function showTab(tab) {
     if (typeof window._teacherGameStatsCleanup === 'function') {
       window._teacherGameStatsCleanup();
     }
-    Game.renderTeacherGameStats('teacherGameStatsContainer');
+    _showGamesSubTab('stats');
     return;
   }
   if (tab === 'timetable') { _loadTimetableManager();        return; }
@@ -514,6 +521,31 @@ function showTab(tab) {
   if (tab === 'results')   _loadResults();
   if (tab === 'schools')   _loadSchools();
   if (tab === 'tasks')     _loadTasksManager();
+}
+
+function _showGamesSubTab(sub) {
+  const statsBtn   = document.getElementById('gamesSubTabStats');
+  const accessBtn  = document.getElementById('gamesSubTabAccess');
+  const statsPane  = document.getElementById('teacherGameStatsContainer');
+  const accessPane = document.getElementById('teacherGameRestrictionsContainer');
+  if (!statsPane || !accessPane) return;
+
+  if (sub === 'access') {
+    if (statsBtn)  { statsBtn.className  = 'btn bg-gray-500'; }
+    if (accessBtn) { accessBtn.className = 'btn'; }
+    statsPane.classList.add('hidden');
+    accessPane.classList.remove('hidden');
+    if (typeof window._teacherGameStatsCleanup === 'function') {
+      window._teacherGameStatsCleanup();
+    }
+    Game.renderTeacherGameRestrictions('teacherGameRestrictionsContainer');
+  } else {
+    if (accessBtn) { accessBtn.className = 'btn bg-gray-500'; }
+    if (statsBtn)  { statsBtn.className  = 'btn'; }
+    accessPane.classList.add('hidden');
+    statsPane.classList.remove('hidden');
+    Game.renderTeacherGameStats('teacherGameStatsContainer');
+  }
 }
 
   function _loadStudents() {
@@ -4169,6 +4201,7 @@ async function exportResultPDF(resultId) {
     exportTaskReportPDF,
     exportResultPDF,
     _loadTimetableManager,
+    _showGamesSubTab,
     _onTTClassChange,
     _onTTWeekChange,
     _saveTimetableWeek,
