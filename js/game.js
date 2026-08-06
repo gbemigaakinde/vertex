@@ -3039,7 +3039,7 @@ function _dismissScrabblePopup(gameId) {
           ${_krLimited
             ? `On a break! Back in&nbsp;<strong id="${_krCardId}" style="color:#ef4444;font-family:var(--font-mono);">${_krCountdown}</strong>.
                Try Quiz Blitz or Word Scramble in the meantime.`
-            : 'Subway Surfers-style! Swipe across 3 lanes. Collect correct answer coins. Dodge wrong-answer trains &amp; barriers. Inspector chases you!'}
+            : 'Subway Surfers-style! Swipe across 3 lanes. Collect gold coins. Dodge trains &amp; barriers. Inspector chases you!'}
         </div>
         <div class="game-card__meta">
           <span class="game-card__tag">Action</span>
@@ -5817,38 +5817,9 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
   let _krKeys      = { left: false, right: false, up: false, down: false };
   let _krSwipe     = { startX: 0, startY: 0, active: false };
 
-  // ── Build Q&A pool for runner ──
-  function _buildKRPool(subjects) {
-    const qBank    = window.questions || {};
-    const classKey = (_student().class || '').replace(/\s+/g, '').toLowerCase();
-    const pool     = [];
-
-    for (const subj of subjects) {
-      const all = (qBank[classKey] || {})[subj] || [];
-      for (const q of _shuffleArray(all).slice(0, 30)) {
-        if (!q.opts || q.opts.length < 2 || q.ans == null) continue;
-        const wrongOpts = q.opts.filter((_, i) => i !== q.ans);
-        pool.push({
-          question:   q.q,
-          correct:    String(q.opts[q.ans]).substring(0, 28),
-          wrongs:     wrongOpts.map(w => String(w).substring(0, 28)),
-          subject:    subj,
-        });
-      }
-    }
-    return _shuffleArray(pool);
-  }
-
   function _showKnowledgeRunnerSetup() {
-  const subjects = _getSubjectsForStudent();
-  if (subjects.length === 0) {
-    window.UI.toast('No subjects found for your class.', 'error');
-    return;
-  }
-
   const limited     = _krIsLimitReached();
   const playsLeft   = Math.max(0, KR_MAX_PLAYS - _krGetRecentPlays().length);
-  const subjectOptions = subjects.map(s => `<option value="${_esc(s)}">${_esc(s)}</option>`).join('');
 
   if (limited) {
     // ── BLOCKED: show a locked modal with live countdown ──────
@@ -5901,7 +5872,7 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
       <div style="margin-bottom:.5rem;font-size:2.5rem;">🏄</div>
       <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">Knowledge Surfer</h2>
       <p style="font-size:.875rem;color:var(--text-3);margin-top:.375rem;">
-        Run through 3 lanes! Swipe into the correct answer lane. Dodge wrong answers. 3 lives per run.
+        Run through 3 lanes! Steer into the gold coin lane. Dodge trains & barriers. 3 lives per run.
       </p>
     </div>
     <div style="margin-bottom:1rem;padding:.75rem 1rem;background:var(--accent-subtle);border:1px solid var(--accent-border);border-radius:8px;text-align:left;font-size:.8125rem;color:var(--text-2);">
@@ -5911,15 +5882,16 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
         <span>⬆️ Swipe Up / Space</span><span>Jump</span>
         <span>⬇️ Swipe Down</span><span>Roll / Slide</span>
         <span>📱 Swipe left/right</span><span>Change lane</span>
+        <span>P key</span><span>Pause / Resume</span>
       </div>
       <div style="margin-top:.5rem;padding:.375rem .5rem;background:var(--bg-subtle);border-radius:6px;font-size:.75rem;color:var(--text-3);">
-        🟡 Gold coins = correct answer lane &mdash; steer into them!<br>
-        🚂 Trains / barriers = wrong answers &mdash; dodge or jump over them!
+        🟡 Gold coins = safe lane &mdash; steer into them!<br>
+        🚂 Trains / barriers = danger &mdash; dodge, jump over, or roll under them!
       </div>
     </div>
 
     <!-- Play limit indicator -->
-    <div style="margin-bottom:1rem;padding:.5rem .875rem;
+    <div style="margin-bottom:1.25rem;padding:.5rem .875rem;
                 background:${playsLeft === 1 ? 'rgba(245,158,11,0.10)' : 'var(--bg-subtle)'};
                 border:1px solid ${playsLeft === 1 ? 'rgba(245,158,11,0.35)' : 'var(--border)'};
                 border-radius:8px;display:flex;align-items:center;justify-content:space-between;
@@ -5934,13 +5906,6 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
       <span style="font-size:.75rem;color:var(--text-3);">${playsLeft} left (8hr window)</span>
     </div>
 
-    <div style="margin-bottom:1.25rem;">
-      <label style="display:block;font-size:.75rem;font-weight:600;color:var(--text-2);margin-bottom:.375rem;">Subject</label>
-      <select id="krSubject" style="width:100%;">
-        <option value="random">Random Mix (all subjects)</option>
-        ${subjectOptions}
-      </select>
-    </div>
     <button onclick="Game._startKnowledgeRunner()" class="btn btn-lg w-full"
             style="background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;font-weight:800;font-size:1rem;">
       🏄 Start Surfing!
@@ -5956,13 +5921,6 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
     _showKnowledgeRunnerSetup(); // shows the locked modal with countdown
     return;
   }
-
-  const subjectSel = document.getElementById('krSubject')?.value || 'random';
-  let subjects = subjectSel === 'random' ? _getSubjectsForStudent() : [subjectSel];
-  if (subjects.length === 0) { window.UI.toast('No subjects found.', 'error'); return; }
-
-  const pool = _buildKRPool(subjects);
-  if (pool.length < 3) { window.UI.toast('Not enough questions for this subject.', 'error'); return; }
 
   // Record this play session now (after all checks pass)
   _krRecordPlay();
@@ -6004,34 +5962,8 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
                  background:#0f172a;">
         </canvas>
 
-        <!-- Current question panel -->
-        <div id="krQuestionPanel" style="margin-top:.5rem;padding:.625rem 1rem;
-             background:linear-gradient(135deg,#1e293b,#0f172a);
-             border:1px solid #334155;border-radius:10px;">
-          <div style="font-size:.5rem;font-weight:800;text-transform:uppercase;letter-spacing:.1em;
-                      color:#94a3b8;margin-bottom:.25rem;">Current Question</div>
-          <div id="krQuestion" style="font-size:.875rem;font-weight:600;color:#f1f5f9;
-                                       line-height:1.5;min-height:2.25rem;"></div>
-        </div>
-
-        <!-- Lane labels: 3 columns matching the 3 canvas lanes -->
-        <div id="krLaneLabels" style="margin-top:.375rem;display:grid;grid-template-columns:1fr 1fr 1fr;gap:.375rem;text-align:center;">
-          <div id="krLabel0" style="font-size:.6875rem;font-weight:700;padding:.375rem .5rem;
-                                     border-radius:6px;background:#1e293b;border:1.5px solid #334155;
-                                     color:#94a3b8;min-height:2.5rem;display:flex;align-items:center;
-                                     justify-content:center;line-height:1.3;transition:all .2s;"></div>
-          <div id="krLabel1" style="font-size:.6875rem;font-weight:700;padding:.375rem .5rem;
-                                     border-radius:6px;background:#1e293b;border:1.5px solid #334155;
-                                     color:#94a3b8;min-height:2.5rem;display:flex;align-items:center;
-                                     justify-content:center;line-height:1.3;transition:all .2s;"></div>
-          <div id="krLabel2" style="font-size:.6875rem;font-weight:700;padding:.375rem .5rem;
-                                     border-radius:6px;background:#1e293b;border:1.5px solid #334155;
-                                     color:#94a3b8;min-height:2.5rem;display:flex;align-items:center;
-                                     justify-content:center;line-height:1.3;transition:all .2s;"></div>
-        </div>
-
         <!-- Controls hint -->
-        <div style="margin-top:.375rem;font-size:.6rem;color:#475569;text-align:center;line-height:1.8;">
+        <div style="margin-top:.5rem;font-size:.6rem;color:#475569;text-align:center;line-height:1.8;">
           ← → arrows / swipe left·right to change lane &nbsp;|&nbsp; ↑ / swipe up to jump &nbsp;|&nbsp; ↓ / swipe down to roll &nbsp;|&nbsp; P to pause
         </div>
 
@@ -6096,8 +6028,6 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
 
   /* ── Initial game state ── */
   _krState = {
-    pool,
-    poolIndex:       0,
     lives:           KR_LIVES,
     score:           0,
     xpEarned:        0,
@@ -6125,10 +6055,7 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
       targetX:       KR_LANE_X[1],
     },
     objects:         [],
-    spawnTimer:      80,
-    currentQ:        null,
-    correctLane:     -1,
-    laneOptions:     null,
+    spawnTimer:      60,
     /* Scrolling scenery */
     bgOffset:        0,
     particles:       [],
@@ -6141,11 +6068,11 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
     _keyUp:   _krKeyUp,
     _sessionId: null
   };
-  
-  _startGameSession('knowledgeRunner', { subject: subjectSel }).then(id => {
+
+  _startGameSession('knowledgeRunner', {}).then(id => {
     if (_krState) _krState._sessionId = id;
   });
-  _krNextQuestion();
+  _krSpawnWave();
   _krLastTime = performance.now();
   _krLoop(_krLastTime);
 }
@@ -6204,59 +6131,16 @@ function _krTogglePause() {
     const btn = document.getElementById('krPauseBtn');
     if (btn) btn.textContent = _krState.paused ? '▶ Resume' : '⏸ Pause';
   }
-  
-  function _krNextQuestion() {
-  const s = _krState;
-  if (s.poolIndex >= s.pool.length) {
-    s.pool      = _shuffleArray(s.pool);
-    s.poolIndex = 0;
-  }
-  s.currentQ    = s.pool[s.poolIndex++];
-  s.correctLane = Math.floor(Math.random() * KR_LANE_COUNT);
-
-  const qEl = document.getElementById('krQuestion');
-  if (qEl) {
-    const subj = s.currentQ.subject ? `[${s.currentQ.subject}] ` : '';
-    qEl.textContent = subj + s.currentQ.question.substring(0, 130);
-  }
-
-  const wrongs  = _shuffleArray(s.currentQ.wrongs);
-  const options = [];
-  let wrongIdx  = 0;
-  for (let lane = 0; lane < KR_LANE_COUNT; lane++) {
-    if (lane === s.correctLane) {
-      options.push({ text: s.currentQ.correct, isCorrect: true });
-    } else {
-      options.push({ text: (wrongs[wrongIdx] || 'Wrong'), isCorrect: false });
-      wrongIdx++;
-    }
-  }
-  s.laneOptions = options;
-
-  for (let lane = 0; lane < KR_LANE_COUNT; lane++) {
-    const el  = document.getElementById('krLabel' + lane);
-    if (!el) continue;
-    const opt = options[lane];
-    el.style.background  = opt.isCorrect ? 'rgba(251,191,36,0.15)' : 'rgba(239,68,68,0.10)';
-    el.style.borderColor = opt.isCorrect ? '#fbbf24'               : '#ef4444';
-    el.style.color       = opt.isCorrect ? '#fbbf24'               : '#f87171';
-    el.style.fontWeight  = '700';
-    el.textContent       = opt.text.substring(0, 36);
-  }
-
-  s.spawnTimer = 90;
-}
 
   function _krSpawnWave() {
   const s = _krState;
-  if (!s.currentQ || !s.laneOptions) return;
+  const correctLane = Math.floor(Math.random() * KR_LANE_COUNT);
 
   for (let lane = 0; lane < KR_LANE_COUNT; lane++) {
-    const opt  = s.laneOptions[lane];
-    const cx   = KR_LANE_X[lane]; // centre X of this vertical lane
+    const cx    = KR_LANE_X[lane]; // centre X of this vertical lane
     const baseY = -60 - lane * 20; // slight vertical stagger per lane
 
-    if (opt.isCorrect) {
+    if (lane === correctLane) {
       /* 5 coins stacked vertically (they'll fall as a column) */
       for (let c = 0; c < 5; c++) {
         s.objects.push({
@@ -6268,7 +6152,6 @@ function _krTogglePause() {
           h:         18,
           hit:       false,
           bobPhase:  Math.random() * Math.PI * 2,
-          isCorrect: true,
         });
       }
     } else {
@@ -6282,8 +6165,6 @@ function _krTogglePause() {
         w:         kind === 'train' ? 52 : 44,
         h:         kind === 'train' ? 60 : 22,
         hit:       false,
-        isCorrect: false,
-        label:     opt.text.substring(0, 22),
       });
     }
   }
@@ -6417,9 +6298,9 @@ function _krLoop(timestamp) {
               life: 28, maxLife: 28, color: '#fbbf24', size: 4,
             });
           }
-          /* All correct coins collected → advance to next question */
+          /* All coins in this wave collected → speed up the next wave */
           const coinsLeft = s.objects.filter(o => !o.hit && o.type === 'coin');
-          if (coinsLeft.length === 0) _krNextQuestion();
+          if (coinsLeft.length === 0) s.spawnTimer = Math.min(s.spawnTimer, 90);
 
         } else {
           /* ── Obstacle collision ──
@@ -6688,17 +6569,6 @@ function _krLoop(timestamp) {
         ctx.textBaseline = 'bottom';
         ctx.fillText('↑ JUMP', cx, oy - 4);
 
-        /* Answer label */
-        const lbl = obj.label.length > 14 ? obj.label.substring(0, 12) + '…' : obj.label;
-        ctx.fillStyle = 'rgba(15,23,42,0.8)';
-        const lw = Math.max(50, lbl.length * 5 + 10);
-        _krRoundRect(ctx, cx - lw / 2, oy - 28, lw, 15, 3); ctx.fill();
-        ctx.fillStyle    = '#f87171';
-        ctx.font         = 'bold 8px sans-serif';
-        ctx.textAlign    = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(lbl, cx, oy - 20);
-
         /* Border */
         ctx.strokeStyle = '#f87171';
         ctx.lineWidth   = 1.5;
@@ -6742,21 +6612,6 @@ function _krLoop(timestamp) {
         ctx.textAlign    = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('↓ ROLL', cx, oy + oh / 2);
-
-        /* Answer label above */
-        const lbl2 = obj.label.length > 14 ? obj.label.substring(0, 12) + '…' : obj.label;
-        ctx.fillStyle = 'rgba(15,23,42,0.8)';
-        const lw2 = Math.max(48, lbl2.length * 5 + 10);
-        _krRoundRect(ctx, cx - lw2 / 2, oy - 22, lw2, 15, 3); ctx.fill();
-        ctx.fillStyle    = '#fbbf24';
-        ctx.font         = 'bold 8px sans-serif';
-        ctx.textAlign    = 'center';
-        ctx.textBaseline = 'middle';
-        ctx.fillText(lbl2, cx, oy - 14);
-        ctx.strokeStyle = '#f59e0b';
-        ctx.lineWidth   = 1;
-        _krRoundRect(ctx, cx - lw2 / 2, oy - 22, lw2, 15, 3);
-        ctx.stroke();
       }
     }
   });
@@ -7336,27 +7191,49 @@ function _krLoop(timestamp) {
     container.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-3);">Loading&hellip;</div>';
     if (!_isOnline()) { container.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--text-3);">Leaderboard requires an internet connection.</div>'; return; }
     try {
-      let query = _db().collection('gameLeaderboard').orderBy('xp', 'desc').limit(50);
-      if (tab === 'class')  query = _db().collection('gameLeaderboard').where('class',  '==', _student().class  || '').orderBy('xp', 'desc').limit(50);
-      if (tab === 'school') query = _db().collection('gameLeaderboard').where('school', '==', _student().school || '').orderBy('xp', 'desc').limit(50);
-      const snap = await query.get();
+      // ── Live roster first. This is the source of truth for who still
+      //    exists and what class/school they're actually in right now —
+      //    the cached fields on gameLeaderboard docs go stale (class
+      //    changes, deleted accounts) because they're only refreshed
+      //    when a student happens to play a game.
+      let rosterQuery = _db().collection('students');
+      if (tab === 'class')  rosterQuery = rosterQuery.where('class',  '==', _student().class  || '');
+      if (tab === 'school') rosterQuery = rosterQuery.where('school', '==', _student().school || '');
+      const rosterSnap = await rosterQuery.get();
+      const validStudents = {};
+      rosterSnap.forEach(doc => {
+        const d = doc.data();
+        validStudents[doc.id] = { name: d.name || '', class: d.class || '', school: d.school || '' };
+      });
+
+      // ── Pull a generous pool of leaderboard entries by XP, then keep
+      //    only students who still exist in this scope, using their
+      //    LIVE name/class/school instead of the cached copy. ──
+      const lbSnap = await _db().collection('gameLeaderboard').orderBy('xp', 'desc').limit(300).get();
       const entries = [];
-      snap.forEach(doc => entries.push({ id: doc.id, ...doc.data() }));
-      if (entries.length === 0) { container.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text-3);">No players yet. Be the first!</div>`; return; }
+      lbSnap.forEach(doc => {
+        const live = validStudents[doc.id];
+        if (!live) return; // deleted account, or outside this class/school — drop it
+        entries.push({ id: doc.id, ...doc.data(), name: live.name, class: live.class, school: live.school });
+      });
+      entries.sort((a, b) => (b.xp || 0) - (a.xp || 0));
+      const topEntries = entries.slice(0, 50);
+
+      if (topEntries.length === 0) { container.innerHTML = `<div style="text-align:center;padding:2rem;color:var(--text-3);">No players yet. Be the first!</div>`; return; }
       const myUid = _uid();
       container.innerHTML = `
         <div class="glass-dark" style="border-radius:10px;overflow:hidden;">
           <div style="display:grid;grid-template-columns:2.5rem 1fr auto auto;gap:.5rem;padding:.5rem 1rem;border-bottom:1px solid var(--border);background:var(--bg-subtle);font-size:.75rem;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;">
             <span>#</span><span>Player</span><span>Level</span><span>XP</span>
           </div>
-          ${entries.map((e, i) => {
+          ${topEntries.map((e, i) => {
             const isMe  = e.id === myUid || e.uid === myUid;
             const medal = i === 0 ? '1st' : i === 1 ? '2nd' : i === 2 ? '3rd' : `${i + 1}`;
             const lv    = _getLevelForXP(e.xp || 0);
             return `
               <div style="display:grid;grid-template-columns:2.5rem 1fr auto auto;gap:.5rem;align-items:center;padding:.625rem 1rem;
                           ${isMe ? 'background:var(--accent-subtle);border-left:3px solid var(--accent);' : 'border-left:3px solid transparent;'}
-                          ${i < entries.length - 1 ? 'border-bottom:1px solid var(--border);' : ''}">
+                          ${i < topEntries.length - 1 ? 'border-bottom:1px solid var(--border);' : ''}">
                 <span style="font-size:${i < 3 ? '.875rem' : '.8125rem'};font-weight:800;text-align:center;color:${i === 0 ? '#f59e0b' : i === 1 ? '#9ca3af' : i === 2 ? '#b45309' : 'var(--text-3)'};">${medal}</span>
                 <div>
                   <div style="font-size:.9rem;font-weight:${isMe ? '800' : '600'};color:var(--text-1);display:flex;align-items:center;gap:.375rem;">
@@ -8017,13 +7894,30 @@ function _krLoop(timestamp) {
       }
 
       try {
-        const snap = await _db().collection('gameLeaderboard').orderBy('xp', 'desc').limit(50).get();
-        if (snap.empty) {
+        // ── Live roster first, so renamed/moved/deleted students
+        //    never show stale or orphaned data. ──
+        const rosterSnap = await _db().collection('students').get();
+        const validStudents = {};
+        rosterSnap.forEach(doc => {
+          const d = doc.data();
+          validStudents[doc.id] = { name: d.name || '', class: d.class || '', school: d.school || '' };
+        });
+
+        const lbSnap = await _db().collection('gameLeaderboard').orderBy('xp', 'desc').limit(300).get();
+        const entries = [];
+        lbSnap.forEach(doc => {
+          const live = validStudents[doc.id];
+          if (!live) return; // deleted account — drop it
+          entries.push({ id: doc.id, ...doc.data(), name: live.name, class: live.class, school: live.school });
+        });
+        entries.sort((a, b) => (b.xp || 0) - (a.xp || 0));
+        const topEntries = entries.slice(0, 50);
+
+        if (topEntries.length === 0) {
           content.innerHTML = `<p style="text-align:center;padding:2rem;color:var(--text-3);">No leaderboard data yet.</p>`;
           return;
         }
-        const rows = snap.docs.map((doc, i) => {
-          const e      = doc.data();
+        const rows = topEntries.map((e, i) => {
           const lv     = _getLevelForXP(e.xp || 0);
           const medal  = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
           return `
