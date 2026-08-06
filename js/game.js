@@ -5788,7 +5788,7 @@ function _closeWatchModal(challengeId) {
      Game ends when all lives are lost.
   ══════════════════════════════════════════════════════════════ */
 
-  const KR_XP_PER_CORRECT  = 12;
+const KR_XP_PER_CORRECT  = 12;
 const KR_XP_SPEED_BONUS  = 5;
 const KR_LIVES           = 3;
 const KR_CANVAS_W        = 360;   // portrait width
@@ -5799,8 +5799,10 @@ const KR_PLAYER_Y        = 460;             // player's fixed Y (near bottom)
 const KR_GRAVITY         = 0.65;
 const KR_JUMP_FORCE      = -14;            // upward impulse (negative Y = up)
 const KR_ROLL_DURATION   = 45;
-const KR_BASE_SPEED      = 3.5;            // pixels per frame (objects fall down)
-const KR_SPEED_INCREMENT = 0.0003;
+const KR_BASE_SPEED           = 3.5;   // pixels per frame (objects fall down) — starting speed
+const KR_SPEED_STEP_DISTANCE  = 500;   // metres per speed increase step
+const KR_SPEED_STEP_INCREMENT = 0.45;  // how much speed increases per step
+const KR_SPEED_MAX            = 9;     // hard cap so it never becomes unplayable
 const KR_PLAYER_W        = 30;             // player hitbox width
 const KR_PLAYER_H        = 50;             // player hitbox height (standing)
 const KR_PLAYER_H_ROLL   = 24;             // player hitbox height (rolling)
@@ -6030,10 +6032,11 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
 
         <!-- Controls hint -->
         <div style="margin-top:.375rem;font-size:.6rem;color:#475569;text-align:center;line-height:1.8;">
-          ← → arrows / swipe left·right to change lane &nbsp;|&nbsp; ↑ / swipe up to jump &nbsp;|&nbsp; ↓ / swipe down to roll
+          ← → arrows / swipe left·right to change lane &nbsp;|&nbsp; ↑ / swipe up to jump &nbsp;|&nbsp; ↓ / swipe down to roll &nbsp;|&nbsp; P to pause
         </div>
 
-        <div style="text-align:center;margin-top:.625rem;">
+        <div style="text-align:center;margin-top:.625rem;display:flex;gap:.5rem;justify-content:center;">
+          <button id="krPauseBtn" onclick="Game._krTogglePause()" class="btn bg-gray-500" style="font-size:.8125rem;">⏸ Pause</button>
           <button onclick="Game._krQuit()" class="btn bg-gray-500" style="font-size:.8125rem;">✕ Quit</button>
         </div>
       </div>
@@ -6049,6 +6052,7 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
     if (e.code === 'ArrowRight') { e.preventDefault(); if (!_krKeys.right) { _krKeys.right = true; _krChangeLane(1);  } }
     if (e.code === 'ArrowUp' || e.code === 'Space') { e.preventDefault(); _krJump(); }
     if (e.code === 'ArrowDown') { e.preventDefault(); _krRoll(); }
+    if (e.code === 'KeyP')      { e.preventDefault(); _krTogglePause(); }
   };
   const _krKeyUp = (e) => {
     if (e.code === 'ArrowLeft')  _krKeys.left  = false;
@@ -6066,11 +6070,12 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
   _krCanvas.addEventListener('touchend', (e) => {
     e.preventDefault();
     if (!_krSwipe.active) return;
+    _krSwipe.active = false;
+    if (_krState && _krState.paused && !_krState.gameOver) { _krTogglePause(); return; }
     const t   = e.changedTouches[0];
     const dx  = t.clientX - _krSwipe.startX;
     const dy  = t.clientY - _krSwipe.startY;
     const adx = Math.abs(dx), ady = Math.abs(dy);
-    _krSwipe.active = false;
     if (adx < 10 && ady < 10) { _krJump(); return; }
     if (adx > ady) {
       if (dx < 0) _krChangeLane(-1);
@@ -6081,10 +6086,11 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
     }
   }, { passive: false });
 
-  /* ── Mouse click = jump ── */
+  /* ── Mouse click = jump (or resume if paused, or restart if game over) ── */
   _krCanvas.addEventListener('click', (e) => {
     e.preventDefault();
     if (_krState && _krState.gameOver) { _krRestart(); return; }
+    if (_krState && _krState.paused)   { _krTogglePause(); return; }
     _krJump();
   });
 
@@ -6098,6 +6104,9 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
     distance:        0,
     speed:           KR_BASE_SPEED,
     gameOver:        false,
+    paused:          false,
+    speedLevel:      0,
+    speedFlashTimer: 0,
     combo:           0,
     /* Player — x = lane centre, y = near bottom, vy = vertical velocity */
     player: {
@@ -6144,6 +6153,7 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
   function _krJump() {
     if (!_krState) return;
     if (_krState.gameOver) { _krRestart(); return; }
+    if (_krState.paused) return;
     const p = _krState.player;
     if (!p.jumping && !p.rolling) {
       p.vy      = KR_JUMP_FORCE;
@@ -6162,6 +6172,7 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
   
   function _krRoll() {
     if (!_krState) return;
+    if (_krState.gameOver || _krState.paused) return;
     const p = _krState.player;
     if (!p.jumping && !p.rolling) {
       p.rolling   = true;
@@ -6170,7 +6181,7 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
   }
 
   function _krChangeLane(dir) {
-    if (!_krState || _krState.gameOver) return;
+    if (!_krState || _krState.gameOver || _krState.paused) return;
     const p       = _krState.player;
     const newLane = Math.max(0, Math.min(KR_LANE_COUNT - 1, p.lane + dir));
     if (newLane === p.lane) return;
@@ -6187,6 +6198,13 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
     }
   }
 
+function _krTogglePause() {
+    if (!_krState || _krState.gameOver) return;
+    _krState.paused = !_krState.paused;
+    const btn = document.getElementById('krPauseBtn');
+    if (btn) btn.textContent = _krState.paused ? '▶ Resume' : '⏸ Pause';
+  }
+  
   function _krNextQuestion() {
   const s = _krState;
   if (s.poolIndex >= s.pool.length) {
@@ -6273,7 +6291,7 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
   s.spawnTimer = 170 + Math.floor(Math.random() * 60);
 }
 
-  function _krLoop(timestamp) {
+function _krLoop(timestamp) {
   if (!_krState || _krState.gameOver) return;
   _krAnimFrame = requestAnimationFrame(_krLoop);
 
@@ -6282,165 +6300,177 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
   const s  = _krState;
   const p  = s.player;
 
-  /* ── Speed & distance ── */
-  s.speed    = KR_BASE_SPEED + s.distance * KR_SPEED_INCREMENT;
-  s.distance += s.speed * 0.022;
-
-  /* ── Background scroll (downward) ── */
-  s.bgOffset = (s.bgOffset + s.speed) % 80;
-
-  /* ── Smooth horizontal lane slide ── */
-  const targetX = KR_LANE_X[p.lane];
-  p.x += (targetX - p.x) * 0.18;
-
-  /* ── Vertical jump physics ──
-       Jump moves player UP (y decreases). Gravity pulls y back to KR_PLAYER_Y. */
-  if (p.jumping) {
-    p.vy += KR_GRAVITY;
-    p.y  += p.vy;
-    if (p.y >= KR_PLAYER_Y) {
-      p.y       = KR_PLAYER_Y;
-      p.vy      = 0;
-      p.jumping = false;
+  if (!s.paused) {
+    /* ── Speed & distance (stepped increase every KR_SPEED_STEP_DISTANCE) ── */
+    const newSpeedLevel = Math.floor(s.distance / KR_SPEED_STEP_DISTANCE);
+    if (newSpeedLevel > s.speedLevel) {
+      s.speedLevel      = newSpeedLevel;
+      s.speedFlashTimer = 90; // ~1.5s flash at 60fps
     }
-  } else {
-    p.y = KR_PLAYER_Y;
-  }
+    if (s.speedFlashTimer > 0) s.speedFlashTimer--;
 
-  /* ── Roll timer ── */
-  if (p.rolling) {
-    p.rollTimer--;
-    if (p.rollTimer <= 0) p.rolling = false;
-  }
+    s.speed = Math.min(
+      KR_SPEED_MAX,
+      KR_BASE_SPEED + s.speedLevel * KR_SPEED_STEP_INCREMENT
+    );
+    s.distance += s.speed * 0.022;
 
-  /* ── Invincibility / stumble countdown ── */
-  if (p.invincible > 0) p.invincible--;
-  if (p.stumble    > 0) p.stumble--;
+    /* ── Background scroll (downward) ── */
+    s.bgOffset = (s.bgOffset + s.speed) % 80;
 
-  /* ── Running frame animation ── */
-  p.frameTimer++;
-  if (p.frameTimer > 5) { p.frame = (p.frame + 1) % 6; p.frameTimer = 0; }
+    /* ── Smooth horizontal lane slide ── */
+    const targetX = KR_LANE_X[p.lane];
+    p.x += (targetX - p.x) * 0.18;
 
-  /* ── Inspector: rises from below (y decreases) when gap closes ──
-       Normal: gap grows slightly (player pulling away).
-       Stumble: gap shrinks fast (inspector catches up). */
-  if (p.stumble > 0) {
-    s.inspector.gap = Math.max(60, s.inspector.gap - 1.2);
-  } else {
-    s.inspector.gap = Math.min(260, s.inspector.gap + 0.12);
-  }
-  s.inspector.y = KR_PLAYER_Y + s.inspector.gap;
-
-  /* ── Move objects downward ── */
-  s.objects.forEach(o => { o.y += s.speed; });
-  /* Remove objects that have fallen off the bottom */
-  s.objects = s.objects.filter(o => !o.hit && o.y < KR_CANVAS_H + 100);
-
-  /* ── Spawn timer ── */
-  s.spawnTimer--;
-  if (s.spawnTimer <= 0) _krSpawnWave();
-
-  /* ── Collision detection ──
-       Player hitbox: centred on p.x, top = p.y - height, bottom = p.y */
-  if (p.invincible === 0) {
-    const ph = p.rolling ? KR_PLAYER_H_ROLL : KR_PLAYER_H;
-    const pLeft   = p.x - KR_PLAYER_W / 2;
-    const pRight  = p.x + KR_PLAYER_W / 2;
-    const pTop    = p.y - (p.jumping ? KR_PLAYER_H : ph);
-    const pBottom = p.y;
-
-    s.objects.forEach(obj => {
-      if (obj.hit) return;
-      if (obj.lane !== p.lane) return; // different column — safe
-
-      let oLeft, oRight, oTop, oBottom;
-
-      if (obj.type === 'coin') {
-        oLeft   = obj.x - obj.w / 2;
-        oRight  = obj.x + obj.w / 2;
-        oTop    = obj.y - obj.h / 2;
-        oBottom = obj.y + obj.h / 2;
-      } else {
-        /* Obstacles: centred on obj.x, height extends UPWARD from obj.y */
-        oLeft   = obj.x - obj.w / 2;
-        oRight  = obj.x + obj.w / 2;
-        oTop    = obj.y - obj.h;
-        oBottom = obj.y;
+    /* ── Vertical jump physics ──
+         Jump moves player UP (y decreases). Gravity pulls y back to KR_PLAYER_Y. */
+    if (p.jumping) {
+      p.vy += KR_GRAVITY;
+      p.y  += p.vy;
+      if (p.y >= KR_PLAYER_Y) {
+        p.y       = KR_PLAYER_Y;
+        p.vy      = 0;
+        p.jumping = false;
       }
+    } else {
+      p.y = KR_PLAYER_Y;
+    }
 
-      const hit = pLeft < oRight && pRight > oLeft && pTop < oBottom && pBottom > oTop;
-      if (!hit) return;
+    /* ── Roll timer ── */
+    if (p.rolling) {
+      p.rollTimer--;
+      if (p.rollTimer <= 0) p.rolling = false;
+    }
 
-      obj.hit = true;
+    /* ── Invincibility / stumble countdown ── */
+    if (p.invincible > 0) p.invincible--;
+    if (p.stumble    > 0) p.stumble--;
 
-      if (obj.type === 'coin') {
-        /* ── Correct coin collected ── */
-        s.score++;
-        s.combo++;
-        const xp = KR_XP_PER_CORRECT + (s.combo >= 3 ? KR_XP_SPEED_BONUS : 0);
-        s.xpEarned += xp;
-        /* Gold burst particles */
-        for (let i = 0; i < 14; i++) {
-          s.particles.push({
-            x: obj.x, y: obj.y,
-            vx: (Math.random() - 0.5) * 6,
-            vy: (Math.random() - 0.5) * 6,
-            life: 28, maxLife: 28, color: '#fbbf24', size: 4,
-          });
+    /* ── Running frame animation ── */
+    p.frameTimer++;
+    if (p.frameTimer > 5) { p.frame = (p.frame + 1) % 6; p.frameTimer = 0; }
+
+    /* ── Inspector: rises from below (y decreases) when gap closes ──
+         Normal: gap grows slightly (player pulling away).
+         Stumble: gap shrinks fast (inspector catches up). */
+    if (p.stumble > 0) {
+      s.inspector.gap = Math.max(60, s.inspector.gap - 1.2);
+    } else {
+      s.inspector.gap = Math.min(260, s.inspector.gap + 0.12);
+    }
+    s.inspector.y = KR_PLAYER_Y + s.inspector.gap;
+
+    /* ── Move objects downward ── */
+    s.objects.forEach(o => { o.y += s.speed; });
+    /* Remove objects that have fallen off the bottom */
+    s.objects = s.objects.filter(o => !o.hit && o.y < KR_CANVAS_H + 100);
+
+    /* ── Spawn timer ── */
+    s.spawnTimer--;
+    if (s.spawnTimer <= 0) _krSpawnWave();
+
+    /* ── Collision detection ──
+         Player hitbox: centred on p.x, top = p.y - height, bottom = p.y */
+    if (p.invincible === 0) {
+      const ph = p.rolling ? KR_PLAYER_H_ROLL : KR_PLAYER_H;
+      const pLeft   = p.x - KR_PLAYER_W / 2;
+      const pRight  = p.x + KR_PLAYER_W / 2;
+      const pTop    = p.y - (p.jumping ? KR_PLAYER_H : ph);
+      const pBottom = p.y;
+
+      s.objects.forEach(obj => {
+        if (obj.hit) return;
+        if (obj.lane !== p.lane) return; // different column — safe
+
+        let oLeft, oRight, oTop, oBottom;
+
+        if (obj.type === 'coin') {
+          oLeft   = obj.x - obj.w / 2;
+          oRight  = obj.x + obj.w / 2;
+          oTop    = obj.y - obj.h / 2;
+          oBottom = obj.y + obj.h / 2;
+        } else {
+          /* Obstacles: centred on obj.x, height extends UPWARD from obj.y */
+          oLeft   = obj.x - obj.w / 2;
+          oRight  = obj.x + obj.w / 2;
+          oTop    = obj.y - obj.h;
+          oBottom = obj.y;
         }
-        /* All correct coins collected → advance to next question */
-        const coinsLeft = s.objects.filter(o => !o.hit && o.type === 'coin');
-        if (coinsLeft.length === 0) _krNextQuestion();
 
-      } else {
-        /* ── Obstacle collision ──
-             Barrier (low): player can ROLL under it.
-             Train  (tall): player can JUMP over it. */
-        if (obj.kind === 'barrier' && p.rolling)                           { obj.hit = true; return; }
-        if (obj.kind === 'train'   && p.jumping && p.y < oTop + 10)       { obj.hit = true; return; }
+        const hit = pLeft < oRight && pRight > oLeft && pTop < oBottom && pBottom > oTop;
+        if (!hit) return;
 
-        /* HIT */
-        s.combo = 0;
-        s.lives--;
-        p.invincible = 110;
-        p.stumble    = 55;
-        s.inspector.gap = Math.max(60, s.inspector.gap - 45);
+        obj.hit = true;
 
-        for (let i = 0; i < 12; i++) {
-          s.particles.push({
-            x: p.x, y: p.y - 20,
-            vx: (Math.random() - 0.5) * 5,
-            vy: (Math.random() - 0.5) * 5,
-            life: 26, maxLife: 26, color: '#ef4444', size: 4,
-          });
+        if (obj.type === 'coin') {
+          /* ── Correct coin collected ── */
+          s.score++;
+          s.combo++;
+          const xp = KR_XP_PER_CORRECT + (s.combo >= 3 ? KR_XP_SPEED_BONUS : 0);
+          s.xpEarned += xp;
+          /* Gold burst particles */
+          for (let i = 0; i < 14; i++) {
+            s.particles.push({
+              x: obj.x, y: obj.y,
+              vx: (Math.random() - 0.5) * 6,
+              vy: (Math.random() - 0.5) * 6,
+              life: 28, maxLife: 28, color: '#fbbf24', size: 4,
+            });
+          }
+          /* All correct coins collected → advance to next question */
+          const coinsLeft = s.objects.filter(o => !o.hit && o.type === 'coin');
+          if (coinsLeft.length === 0) _krNextQuestion();
+
+        } else {
+          /* ── Obstacle collision ──
+               Barrier (low): player can ROLL under it.
+               Train  (tall): player can JUMP over it. */
+          if (obj.kind === 'barrier' && p.rolling)                           { obj.hit = true; return; }
+          if (obj.kind === 'train'   && p.jumping && p.y < oTop + 10)       { obj.hit = true; return; }
+
+          /* HIT */
+          s.combo = 0;
+          s.lives--;
+          p.invincible = 110;
+          p.stumble    = 55;
+          s.inspector.gap = Math.max(60, s.inspector.gap - 45);
+
+          for (let i = 0; i < 12; i++) {
+            s.particles.push({
+              x: p.x, y: p.y - 20,
+              vx: (Math.random() - 0.5) * 5,
+              vy: (Math.random() - 0.5) * 5,
+              life: 26, maxLife: 26, color: '#ef4444', size: 4,
+            });
+          }
+
+          if (s.lives <= 0) {
+            s.gameOver = true;
+            _krEndGame();
+          }
         }
+      });
+    }
 
-        if (s.lives <= 0) {
-          s.gameOver = true;
-          _krEndGame();
-        }
-      }
+    /* ── Particles ── */
+    s.particles.forEach(pt => {
+      pt.x  += pt.vx;
+      pt.y  += pt.vy;
+      pt.vy += 0.15;
+      pt.life--;
     });
+    s.particles = s.particles.filter(pt => pt.life > 0);
+
+    /* ── HUD update ── */
+    const livesEl = document.getElementById('krLives');
+    const scoreEl = document.getElementById('krScore');
+    const xpEl    = document.getElementById('krXP');
+    const distEl  = document.getElementById('krDistVal');
+    if (livesEl) livesEl.textContent = '❤️'.repeat(Math.max(0, s.lives)) + '🖤'.repeat(Math.max(0, KR_LIVES - s.lives));
+    if (scoreEl) scoreEl.textContent = s.score;
+    if (xpEl)    xpEl.textContent    = s.xpEarned;
+    if (distEl)  distEl.textContent  = Math.floor(s.distance);
   }
-
-  /* ── Particles ── */
-  s.particles.forEach(pt => {
-    pt.x  += pt.vx;
-    pt.y  += pt.vy;
-    pt.vy += 0.15;
-    pt.life--;
-  });
-  s.particles = s.particles.filter(pt => pt.life > 0);
-
-  /* ── HUD update ── */
-  const livesEl = document.getElementById('krLives');
-  const scoreEl = document.getElementById('krScore');
-  const xpEl    = document.getElementById('krXP');
-  const distEl  = document.getElementById('krDistVal');
-  if (livesEl) livesEl.textContent = '❤️'.repeat(Math.max(0, s.lives)) + '🖤'.repeat(Math.max(0, KR_LIVES - s.lives));
-  if (scoreEl) scoreEl.textContent = s.score;
-  if (xpEl)    xpEl.textContent    = s.xpEarned;
-  if (distEl)  distEl.textContent  = Math.floor(s.distance);
 
   _krDraw(timestamp);
 }
@@ -6788,6 +6818,40 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
     ctx.textBaseline = 'top';
     ctx.fillText('⚠ INSPECTOR CLOSE!', 8, 6);
     ctx.restore();
+  }
+
+  /* ── Speed-up flash ── */
+  if (s.speedFlashTimer > 0) {
+    const flashAlpha = Math.min(1, s.speedFlashTimer / 90) * (Math.sin(timestamp / 60) * 0.3 + 0.7);
+    ctx.save();
+    ctx.globalAlpha  = flashAlpha;
+    ctx.fillStyle    = '#38bdf8';
+    ctx.font         = 'bold 15px sans-serif';
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText('⚡ SPEED UP!', KR_CANVAS_W / 2, 26);
+    ctx.restore();
+    ctx.textAlign    = 'left';
+    ctx.textBaseline = 'alphabetic';
+  }
+
+  /* ── Paused overlay ── */
+  if (s.paused && !s.gameOver) {
+    ctx.fillStyle = 'rgba(0,0,0,0.75)';
+    ctx.fillRect(0, 0, KR_CANVAS_W, KR_CANVAS_H);
+
+    ctx.textAlign    = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillStyle    = '#38bdf8';
+    ctx.font         = 'bold 26px sans-serif';
+    ctx.fillText('⏸ PAUSED', KR_CANVAS_W / 2, KR_CANVAS_H / 2 - 18);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font      = '13px sans-serif';
+    ctx.fillText('Tap the screen or press P to resume', KR_CANVAS_W / 2, KR_CANVAS_H / 2 + 14);
+
+    ctx.textAlign    = 'left';
+    ctx.textBaseline = 'alphabetic';
   }
 
   /* ── Game over overlay ── */
@@ -8164,6 +8228,7 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
     _startKnowledgeRunner,
     _krChangeLane,
     _krRoll,
+    _krTogglePause,
     _krQuit,
     _krRestart,
     _showScrabbleSetup,
