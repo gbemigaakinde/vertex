@@ -1144,9 +1144,17 @@ async function _chessRenderGame(gameId, data) {
     } catch (e) { console.warn('[chess] xpAwarded write failed:', e); }
   }
 
+  // ── Flip the board for Black so each player always sees their own
+  //    pieces at the bottom of their screen. Underlying r,c coordinates
+  //    (used for moves, checks, etc.) are never changed — only the
+  //    visual display order is mirrored. ──
+  const flipped = myColor === 'b';
+
   const squares = [];
-  for (let r = 0; r < 8; r++) {
-    for (let c = 0; c < 8; c++) {
+  for (let dr = 0; dr < 8; dr++) {
+    for (let dc = 0; dc < 8; dc++) {
+      const r = flipped ? 7 - dr : dr;
+      const c = flipped ? 7 - dc : dc;
       const piece    = board[r][c];
       const isLight  = (r + c) % 2 === 0;
       const selected = _chessUI.selected && _chessUI.selected.r === r && _chessUI.selected.c === c;
