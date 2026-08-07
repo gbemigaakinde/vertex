@@ -876,6 +876,33 @@ function _chessRecomputeCastlingRights(board, prevRights) {
   return r;
 }
 
+/* Simple, fast string hash (djb2) — used to keep position keys short
+   instead of storing the full 64-square board as a Firestore map key. */
+function _chessHashString(str) {
+  let hash = 5381;
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) + hash + str.charCodeAt(i)) >>> 0;
+  }
+  return hash.toString(36);
+}
+
+/* A "position" for repetition purposes = board layout + whose turn it is +
+   castling rights + en-passant target square. Two positions only count as
+   the same if ALL of these match, per standard chess rules. */
+function _chessPositionKey(board, turnColor, castling, enPassant) {
+  let s = '';
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      s += board[r][c] || '--';
+    }
+  }
+  s += '_' + turnColor;
+  const rights = castling || {};
+  s += '_' + (rights.wK ? '1' : '0') + (rights.wQ ? '1' : '0') + (rights.bK ? '1' : '0') + (rights.bQ ? '1' : '0');
+  s += '_' + (enPassant ? (enPassant.r + ',' + enPassant.c) : 'none');
+  return _chessHashString(s);
+}
+
 function _chessSerialiseBoard(board) {
   const flat = [];
   for (let r=0;r<8;r++) for (let c=0;c<8;c++) flat.push(board[r][c] || null);
@@ -956,6 +983,8 @@ async function _sendChessChallenge() {
 
   const iAmWhite = colorChoice === 'w';
   const board    = _chessInitialBoard();
+  const initialCastling = { wK: true, wQ: true, bK: true, bQ: true };
+  const initialPosKey   = _chessPositionKey(board, 'w', initialCastling, null);
 
   try {
     await _db().collection('chessGames').add({
@@ -969,9 +998,11 @@ async function _sendChessChallenge() {
       status:        'pending',
       turn:          'w',
       board:         _chessSerialiseBoard(board),
-      castling:      { wK: true, wQ: true, bK: true, bQ: true },
+      castling:      initialCastling,
       enPassant:     null,
       moveLog:       [],
+      moves:         [],
+      positionCounts: { [initialPosKey]: 1 },
       result:        null,
       resultReason:  null,
       xpAwarded:     {},
@@ -1218,7 +1249,7 @@ async function _chessRenderGame(gameId, data) {
       title = iWon ? '🏆 You Win!' : 'You Lost.';
       color = iWon ? 'var(--success)' : 'var(--danger)';
     }
-    const reasonText = { checkmate: 'Checkmate', stalemate: 'Stalemate', resign: 'Resignation' }[data.resultReason] || '';
+    const reasonText = { checkmate: 'Checkmate', stalemate: 'Stalemate', resign: 'Resignation', repetition: 'Draw by Threefold Repetition' }[data.resultReason] || '';
     resultHtml = `
       <div class="glass" style="padding:1.25rem;border-radius:10px;text-align:center;margin-bottom:.75rem;">
         <p style="font-size:1.125rem;font-weight:800;color:${color};">${title}</p>
@@ -1358,10 +1389,6 @@ async function _chessCommitMove(gameId, from, to, meta, promoteChoice) {
   const suffix       = status === 'checkmate' ? '#' : status === 'check' ? '+' : '';
   const notation     = `${pieceLetter}${fromSq}${isCapture ? 'x' : '-'}${toSq}${promoChar}${suffix}`;
 
-  // ── Structured move record for full game replay. Unlike moveLog (which
-  //    only keeps the last 60 entries for the on-screen display), this
-  //    array is never truncated, so the entire game can be reconstructed
-  //    move-by-move for the "Review" screen. ──
   const moveRecord = {
     from:  { r: from.r, c: from.c },
     to:    { r: to.r,   c: to.c   },
@@ -1376,20 +1403,39 @@ async function _chessCommitMove(gameId, from, to, meta, promoteChoice) {
     notation,
   };
 
-  const gameOver = status === 'checkmate' || status === 'stalemate';
+  // ── Threefold repetition tracking ──
+  // A "position" = board layout + side to move + castling rights + en-passant
+  // target, hashed into a short key. Each time a position recurs, its count
+  // in positionCounts goes up; hitting 3 ends the game in a draw.
+  const posKey       = _chessPositionKey(newBoard, newTurn, newCastling, newEnPassant);
+  const prevCounts    = data.positionCounts || {};
+  const newPosCount   = (prevCounts[posKey] || 0) + 1;
+  const positionCounts = { ...prevCounts, [posKey]: newPosCount };
+
+  let gameOver      = status === 'checkmate' || status === 'stalemate';
+  let result        = status === 'checkmate' ? (color === 'w' ? 'white' : 'black') : status === 'stalemate' ? 'draw' : null;
+  let resultReason  = status === 'checkmate' ? 'checkmate' : status === 'stalemate' ? 'stalemate' : null;
+
+  if (!gameOver && newPosCount >= 3) {
+    gameOver     = true;
+    result       = 'draw';
+    resultReason = 'repetition';
+  }
+
   const update = {
-    board:      _chessSerialiseBoard(newBoard),
-    turn:       gameOver ? null : newTurn,
-    castling:   newCastling,
-    enPassant:  newEnPassant,
-    moveLog:    [...(data.moveLog || []).slice(-59), notation],
-    moves:      [...(data.moves   || []), moveRecord],
-    lastMoveAt: firebase.firestore.FieldValue.serverTimestamp(),
-    status:     gameOver ? 'finished' : 'active',
+    board:          _chessSerialiseBoard(newBoard),
+    turn:           gameOver ? null : newTurn,
+    castling:       newCastling,
+    enPassant:      newEnPassant,
+    moveLog:        [...(data.moveLog || []).slice(-59), notation],
+    moves:          [...(data.moves   || []), moveRecord],
+    positionCounts,
+    lastMoveAt:     firebase.firestore.FieldValue.serverTimestamp(),
+    status:         gameOver ? 'finished' : 'active',
   };
   if (gameOver) {
-    update.result       = status === 'checkmate' ? (color === 'w' ? 'white' : 'black') : 'draw';
-    update.resultReason = status === 'checkmate' ? 'checkmate' : 'stalemate';
+    update.result       = result;
+    update.resultReason = resultReason;
   }
 
   try {
@@ -1724,7 +1770,7 @@ function _chessRenderReview() {
       title = iWon ? 'You Won' : 'You Lost';
       color = iWon ? 'var(--success)' : 'var(--danger)';
     }
-    const reasonText = { checkmate: 'Checkmate', stalemate: 'Stalemate', resign: 'Resignation' }[rv.gameData.resultReason] || '';
+    const reasonText = { checkmate: 'Checkmate', stalemate: 'Stalemate', resign: 'Resignation', repetition: 'Draw by Threefold Repetition' }[rv.gameData.resultReason] || '';
     resultLine = `<span style="color:${color};font-weight:800;">${_esc(title)}</span>${reasonText ? ' &middot; ' + _esc(reasonText) : ''}`;
   }
 
