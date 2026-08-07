@@ -1008,6 +1008,7 @@ async function _showChessPending() {
   } catch (e) {
     console.error('[chess] pending fetch error:', e);
     window.UI.toast('Could not load Chess invitations.', 'error');
+    openGameLobby();
     return;
   }
 
@@ -1026,6 +1027,7 @@ async function _showChessPending() {
 
   if (pendingGames.length === 0 && activeGames.length === 0) {
     window.UI.toast('No chess games right now.', 'info');
+    openGameLobby();
     return;
   }
 
@@ -1356,6 +1358,24 @@ async function _chessCommitMove(gameId, from, to, meta, promoteChoice) {
   const suffix       = status === 'checkmate' ? '#' : status === 'check' ? '+' : '';
   const notation     = `${pieceLetter}${fromSq}${isCapture ? 'x' : '-'}${toSq}${promoChar}${suffix}`;
 
+  // ── Structured move record for full game replay. Unlike moveLog (which
+  //    only keeps the last 60 entries for the on-screen display), this
+  //    array is never truncated, so the entire game can be reconstructed
+  //    move-by-move for the "Review" screen. ──
+  const moveRecord = {
+    from:  { r: from.r, c: from.c },
+    to:    { r: to.r,   c: to.c   },
+    meta: {
+      capture:    !!(meta && meta.capture),
+      doubleStep: !!(meta && meta.doubleStep),
+      enPassant:  !!(meta && meta.enPassant),
+      castle:     (meta && meta.castle) || null,
+    },
+    promoteChoice: isPromo ? (promoteChoice || 'Q') : null,
+    color,
+    notation,
+  };
+
   const gameOver = status === 'checkmate' || status === 'stalemate';
   const update = {
     board:      _chessSerialiseBoard(newBoard),
@@ -1363,6 +1383,7 @@ async function _chessCommitMove(gameId, from, to, meta, promoteChoice) {
     castling:   newCastling,
     enPassant:  newEnPassant,
     moveLog:    [...(data.moveLog || []).slice(-59), notation],
+    moves:      [...(data.moves   || []), moveRecord],
     lastMoveAt: firebase.firestore.FieldValue.serverTimestamp(),
     status:     gameOver ? 'finished' : 'active',
   };
@@ -1408,6 +1429,360 @@ function _chessLeave() {
   _chessCachedData = null;
   _chessUI = { selected: null, legalTargets: [] };
   _showChessPending();
+}
+
+let _historyState = { type: null, chessGames: [] };
+let _chessReview  = null; // { gameData, frames, index, flipped }
+
+/* ── Game History (lobby entry point) ── */
+
+async function _showGameHistory(initialType) {
+  const uid = _uid();
+  if (!uid) { window.UI.toast('Please sign in to view history.', 'error'); return; }
+
+  const type = initialType || _historyState.type || 'chess';
+  _historyState.type = type;
+
+  const tabsHtml = GAME_CATALOG
+    .filter(g => _isGameAllowed(g.id))
+    .map(g => `
+      <button onclick="Game._showGameHistory('${g.id}')"
+              class="btn ${g.id === type ? '' : 'bg-gray-500'}"
+              style="font-size:.75rem;white-space:nowrap;">
+        ${_esc(g.label)}
+      </button>`).join('');
+
+  window.UI.mount(`
+    <div class="max-w-2xl mx-auto animate-fadeIn" style="padding-bottom:2rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+        <h2 style="font-size:1.25rem;font-weight:700;color:var(--text-1);display:flex;align-items:center;gap:.375rem;">
+          ${_icon('clock', 20)} Game History
+        </h2>
+        <button onclick="Game.openGameLobby()" class="btn bg-gray-500" style="display:inline-flex;align-items:center;gap:.3rem;">
+          ${_icon('arrowLeft', 14)} Back
+        </button>
+      </div>
+      <div style="display:flex;gap:.375rem;margin-bottom:1rem;flex-wrap:wrap;overflow-x:auto;">
+        ${tabsHtml}
+      </div>
+      <div id="gameHistoryContent">
+        <div style="text-align:center;padding:2rem;color:var(--text-3);">Loading&hellip;</div>
+      </div>
+    </div>`);
+
+  if (type === 'chess') await _loadChessHistory();
+  else await _loadGenericHistory(type);
+}
+
+async function _loadGenericHistory(type) {
+  const container = document.getElementById('gameHistoryContent');
+  if (!container) return;
+  if (!_isOnline()) {
+    container.innerHTML = `<p style="text-align:center;padding:2rem;color:var(--text-3);">History requires an internet connection.</p>`;
+    return;
+  }
+  try {
+    const snap = await _db().collection('gameResults')
+      .where('uid', '==', _uid())
+      .where('gameType', '==', type)
+      .orderBy('playedAt', 'desc')
+      .limit(30)
+      .get();
+
+    if (snap.empty) {
+      container.innerHTML = `<p style="text-align:center;padding:2rem;color:var(--text-3);">No games played yet.</p>`;
+      return;
+    }
+
+    const label = (GAME_CATALOG.find(g => g.id === type) || {}).label || type;
+
+    container.innerHTML = `
+      <div class="glass-dark" style="border-radius:10px;overflow:hidden;">
+        ${snap.docs.map(doc => {
+          const d = doc.data();
+          const when = d.playedAt && d.playedAt.toDate
+            ? d.playedAt.toDate().toLocaleDateString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' })
+            : '—';
+          const scoreText = d.pct != null ? `${d.pct}%`
+                           : (d.correct != null && d.total != null) ? `${d.correct}/${d.total}`
+                           : d.score != null ? String(d.score)
+                           : '—';
+          return `
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;
+                        padding:.75rem 1rem;border-bottom:1px solid var(--border);">
+              <div>
+                <div style="font-size:.875rem;font-weight:700;color:var(--text-1);">${_esc(label)}</div>
+                <div style="font-size:.75rem;color:var(--text-3);">${_esc(when)}</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-size:.9375rem;font-weight:700;color:var(--accent);">${_esc(scoreText)}</div>
+                <div style="font-size:.75rem;color:var(--text-3);">+${d.xpEarned || 0} XP</div>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>`;
+  } catch (e) {
+    console.error('[game] _loadGenericHistory error:', e);
+    container.innerHTML = `<p style="text-align:center;padding:2rem;color:var(--danger);">Could not load history.</p>`;
+  }
+}
+
+/* ── Chess-specific history + review ── */
+
+async function _loadChessHistory() {
+  const container = document.getElementById('gameHistoryContent');
+  if (!container) return;
+  if (!_isOnline()) {
+    container.innerHTML = `<p style="text-align:center;padding:2rem;color:var(--text-3);">History requires an internet connection.</p>`;
+    return;
+  }
+  const uid = _uid();
+  try {
+    const [whiteSnap, blackSnap] = await Promise.all([
+      _db().collection('chessGames').where('whiteUid', '==', uid).where('status', '==', 'finished').get(),
+      _db().collection('chessGames').where('blackUid', '==', uid).where('status', '==', 'finished').get(),
+    ]);
+    const seen  = new Set();
+    const games = [];
+    [...whiteSnap.docs, ...blackSnap.docs].forEach(doc => {
+      if (seen.has(doc.id)) return;
+      seen.add(doc.id);
+      games.push({ id: doc.id, ...doc.data() });
+    });
+    games.sort((a, b) => {
+      const at = a.lastMoveAt && a.lastMoveAt.toDate ? a.lastMoveAt.toDate().getTime() : 0;
+      const bt = b.lastMoveAt && b.lastMoveAt.toDate ? b.lastMoveAt.toDate().getTime() : 0;
+      return bt - at;
+    });
+
+    _historyState.chessGames = games;
+
+    if (games.length === 0) {
+      container.innerHTML = `<p style="text-align:center;padding:2rem;color:var(--text-3);">No completed chess games yet.</p>`;
+      return;
+    }
+
+    container.innerHTML = `
+      <div class="glass-dark" style="border-radius:10px;overflow:hidden;">
+        ${games.map(g => {
+          const iAmWhite = g.whiteUid === uid;
+          const oppName  = iAmWhite ? g.blackName : g.whiteName;
+          let outcome, color;
+          if (g.result === 'draw') { outcome = 'Draw'; color = 'var(--warning)'; }
+          else {
+            const iWon = (g.result === 'white' && iAmWhite) || (g.result === 'black' && !iAmWhite);
+            outcome = iWon ? 'Won' : 'Lost';
+            color   = iWon ? 'var(--success)' : 'var(--danger)';
+          }
+          const reasonText = { checkmate: 'Checkmate', stalemate: 'Stalemate', resign: 'Resignation' }[g.resultReason] || '';
+          const when = g.lastMoveAt && g.lastMoveAt.toDate
+            ? g.lastMoveAt.toDate().toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' })
+            : '—';
+          const moveCount = (g.moves || []).length;
+          return `
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;
+                        padding:.75rem 1rem;border-bottom:1px solid var(--border);">
+              <div>
+                <div style="font-size:.875rem;font-weight:700;color:var(--text-1);">
+                  ♟️ vs ${_esc(oppName)} <span style="font-weight:500;color:var(--text-3);">(you: ${iAmWhite?'White':'Black'})</span>
+                </div>
+                <div style="font-size:.75rem;color:var(--text-3);">
+                  ${_esc(when)} &middot; ${moveCount} move${moveCount !== 1 ? 's' : ''}${reasonText ? ' &middot; ' + _esc(reasonText) : ''}
+                </div>
+              </div>
+              <div style="display:flex;align-items:center;gap:.625rem;flex-shrink:0;">
+                <span style="font-size:.875rem;font-weight:800;color:${color};">${outcome}</span>
+                <button onclick="Game._chessOpenReview('${_esc(g.id)}')" class="btn" style="font-size:.75rem;">
+                  Review
+                </button>
+              </div>
+            </div>`;
+        }).join('')}
+      </div>`;
+  } catch (e) {
+    console.error('[chess] _loadChessHistory error:', e);
+    container.innerHTML = `<p style="text-align:center;padding:2rem;color:var(--danger);">Could not load chess history.</p>`;
+  }
+}
+
+function _chessBuildReplayFrames(gameData) {
+  const movesArr = gameData.moves || [];
+  let board = _chessInitialBoard();
+  const frames = [{ board: _chessCloneBoard(board), notation: null, color: null }];
+
+  movesArr.forEach(mv => {
+    const meta = mv.meta || {};
+    const applied = _chessApplyMove(board, mv.from, mv.to, meta, mv.promoteChoice || 'Q');
+    board = applied.board;
+    frames.push({ board: _chessCloneBoard(board), notation: mv.notation, color: mv.color });
+  });
+
+  return frames;
+}
+
+async function _chessOpenReview(gameId) {
+  let gameData = (_historyState.chessGames || []).find(g => g.id === gameId);
+  if (!gameData) {
+    try {
+      const snap = await _db().collection('chessGames').doc(gameId).get();
+      if (!snap.exists) { window.UI.toast('This game could not be found.', 'error'); return; }
+      gameData = { id: gameId, ...snap.data() };
+    } catch (e) {
+      console.error('[chess] _chessOpenReview fetch error:', e);
+      window.UI.toast('Could not load game.', 'error');
+      return;
+    }
+  }
+
+  if (!gameData.moves || gameData.moves.length === 0) {
+    window.UI.toast('No move-by-move data is available for this game.', 'info');
+    return;
+  }
+
+  const uid      = _uid();
+  const iAmWhite = gameData.whiteUid === uid;
+
+  _chessReview = {
+    gameData,
+    frames:  _chessBuildReplayFrames(gameData),
+    index:   0,
+    flipped: !iAmWhite,
+  };
+  _chessReview.index = _chessReview.frames.length - 1; // start at final position
+
+  _chessRenderReview();
+}
+
+function _chessRenderReview() {
+  const rv = _chessReview;
+  if (!rv) return;
+  const uid      = _uid();
+  const iAmWhite = rv.gameData.whiteUid === uid;
+  const oppName  = iAmWhite ? rv.gameData.blackName : rv.gameData.whiteName;
+  const myName   = iAmWhite ? rv.gameData.whiteName : rv.gameData.blackName;
+  const frame    = rv.frames[rv.index];
+  const flipped  = rv.flipped;
+
+  const squares = [];
+  for (let dr = 0; dr < 8; dr++) {
+    for (let dc = 0; dc < 8; dc++) {
+      const r = flipped ? 7 - dr : dr;
+      const c = flipped ? 7 - dc : dc;
+      const piece   = frame.board[r][c];
+      const isLight = (r + c) % 2 === 0;
+      squares.push(`
+        <div style="position:relative;width:100%;padding-bottom:100%;
+                    background:${isLight ? '#f0d9b5' : '#b58863'};box-sizing:border-box;">
+          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+                      font-size:clamp(18px,6vw,34px);user-select:none;
+                      color:${piece && piece[0]==='w' ? '#fff' : '#111'};
+                      text-shadow:${piece && piece[0]==='w' ? '0 0 2px #000,0 1px 1px #000' : 'none'};">
+            ${piece ? CHESS_PIECE_GLYPH[piece] : ''}
+          </div>
+        </div>`);
+    }
+  }
+
+  const moveRows = [];
+  for (let i = 1; i < rv.frames.length; i += 2) {
+    const whiteFrame = rv.frames[i];
+    const blackFrame = rv.frames[i + 1];
+    moveRows.push({
+      num: Math.ceil(i / 2),
+      whiteIdx: i,
+      whiteNotation: whiteFrame ? whiteFrame.notation : '',
+      blackIdx: blackFrame ? i + 1 : null,
+      blackNotation: blackFrame ? blackFrame.notation : '',
+    });
+  }
+
+  const moveListHtml = moveRows.map(row => `
+    <div style="display:grid;grid-template-columns:2rem 1fr 1fr;gap:.375rem;padding:.25rem .5rem;
+                border-radius:4px;${(row.whiteIdx === rv.index || row.blackIdx === rv.index) ? 'background:var(--accent-subtle);' : ''}">
+      <span style="font-size:.75rem;color:var(--text-4);">${row.num}.</span>
+      <span onclick="Game._chessReviewGoTo(${row.whiteIdx})"
+            style="cursor:pointer;font-family:var(--font-mono);font-size:.8125rem;
+                   font-weight:${row.whiteIdx === rv.index ? '800' : '500'};
+                   color:${row.whiteIdx === rv.index ? 'var(--accent-text)' : 'var(--text-1)'};">
+        ${_esc(row.whiteNotation || '')}
+      </span>
+      ${row.blackIdx ? `
+        <span onclick="Game._chessReviewGoTo(${row.blackIdx})"
+              style="cursor:pointer;font-family:var(--font-mono);font-size:.8125rem;
+                     font-weight:${row.blackIdx === rv.index ? '800' : '500'};
+                     color:${row.blackIdx === rv.index ? 'var(--accent-text)' : 'var(--text-1)'};">
+          ${_esc(row.blackNotation || '')}
+        </span>` : '<span></span>'}
+    </div>`).join('');
+
+  let resultLine = '';
+  if (rv.gameData.status === 'finished') {
+    let title, color;
+    if (rv.gameData.result === 'draw') { title = 'Draw'; color = 'var(--warning)'; }
+    else {
+      const iWon = (rv.gameData.result === 'white' && iAmWhite) || (rv.gameData.result === 'black' && !iAmWhite);
+      title = iWon ? 'You Won' : 'You Lost';
+      color = iWon ? 'var(--success)' : 'var(--danger)';
+    }
+    const reasonText = { checkmate: 'Checkmate', stalemate: 'Stalemate', resign: 'Resignation' }[rv.gameData.resultReason] || '';
+    resultLine = `<span style="color:${color};font-weight:800;">${_esc(title)}</span>${reasonText ? ' &middot; ' + _esc(reasonText) : ''}`;
+  }
+
+  window.UI.mount(`
+    <div class="max-w-lg mx-auto animate-fadeIn" style="padding-bottom:2rem;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.625rem;">
+        <h2 style="font-size:1.0625rem;font-weight:700;color:var(--text-1);">♟️ Game Review</h2>
+        <button onclick="Game._chessCloseReview()" class="btn bg-gray-500" style="display:inline-flex;align-items:center;gap:.3rem;">
+          ${_icon('arrowLeft', 14)} Back to History
+        </button>
+      </div>
+
+      <div class="glass" style="padding:.75rem 1rem;margin-bottom:.625rem;border-radius:10px;text-align:center;">
+        <span style="font-size:.875rem;font-weight:700;color:var(--text-1);">${_esc(myName)} (You)</span>
+        <span style="color:var(--text-3);"> vs </span>
+        <span style="font-size:.875rem;font-weight:700;color:var(--text-1);">${_esc(oppName)}</span>
+        <div style="font-size:.8125rem;margin-top:.25rem;">${resultLine}</div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:repeat(8,1fr);border:3px solid #4a3423;
+                  border-radius:6px;overflow:hidden;box-shadow:0 4px 16px rgba(0,0,0,.25);margin-bottom:.625rem;">
+        ${squares.join('')}
+      </div>
+
+      <div style="display:flex;gap:.375rem;justify-content:center;margin-bottom:.75rem;">
+        <button onclick="Game._chessReviewGoTo(0)" class="btn bg-gray-500" style="font-size:.75rem;">⏮ Start</button>
+        <button onclick="Game._chessReviewPrev()" class="btn bg-gray-500" style="font-size:.75rem;">◀ Prev</button>
+        <button onclick="Game._chessReviewNext()" class="btn bg-gray-500" style="font-size:.75rem;">Next ▶</button>
+        <button onclick="Game._chessReviewGoTo(${rv.frames.length - 1})" class="btn bg-gray-500" style="font-size:.75rem;">End ⏭</button>
+      </div>
+
+      <div class="glass-dark" style="padding:.75rem;border-radius:10px;max-height:260px;overflow-y:auto;">
+        <p style="font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.06em;
+                  color:var(--text-3);margin-bottom:.5rem;">Move List &mdash; tap any move to jump to it</p>
+        ${moveListHtml || '<p style="font-size:.75rem;color:var(--text-4);font-style:italic;">No moves recorded.</p>'}
+      </div>
+    </div>`);
+}
+
+function _chessReviewGoTo(index) {
+  if (!_chessReview) return;
+  _chessReview.index = Math.max(0, Math.min(_chessReview.frames.length - 1, index));
+  _chessRenderReview();
+}
+
+function _chessReviewPrev() {
+  if (!_chessReview) return;
+  _chessReviewGoTo(_chessReview.index - 1);
+}
+
+function _chessReviewNext() {
+  if (!_chessReview) return;
+  _chessReviewGoTo(_chessReview.index + 1);
+}
+
+function _chessCloseReview() {
+  _chessReview = null;
+  _showGameHistory('chess');
 }
 
 function _showChessChallengePopup(gameId, data) {
@@ -4217,8 +4592,11 @@ function _dismissScrabblePopup(gameId) {
           <button onclick="Game.openLeaderboard()" class="btn bg-gray-500" style="display:flex;align-items:center;gap:.375rem;">
             ${_icon('trophy', 15)} Leaderboard
           </button>
+          <button onclick="Game._showGameHistory()" class="btn bg-gray-500" style="display:flex;align-items:center;gap:.375rem;">
+            ${_icon('clock', 15)} Game History
+          </button>
           <button onclick="Game._backToHome()" class="btn bg-gray-500" style="display:flex;align-items:center;gap:.375rem;">
-            ${_icon('arrowLeft', 15)} Back
+            ${_icon('arrowLeft', 15)} Back To Profile
           </button>
         </div>
 
@@ -9318,6 +9696,12 @@ async function renderTeacherGameRestrictions(containerId) {
     _chessPromote,
     _chessResign,
     _chessLeave,
+    _showGameHistory,
+    _chessOpenReview,
+    _chessReviewGoTo,
+    _chessReviewPrev,
+    _chessReviewNext,
+    _chessCloseReview,
     _teacherGameTab: function(tab) { if (typeof window._teacherGameTab === 'function') window._teacherGameTab(tab); },
   };
 
