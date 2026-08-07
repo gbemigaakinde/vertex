@@ -9196,6 +9196,7 @@ async function renderTeacherGameRestrictions(containerId) {
       challenge:      'Challenge',
       knowledgeRunner:'Knowledge Surfer',
       wordScrabble:   'Word Scrabble',
+      chess:          'Chess',
     };
 
     const GAME_ICONS = {
@@ -9207,6 +9208,7 @@ async function renderTeacherGameRestrictions(containerId) {
       challenge:      '⚔️',
       knowledgeRunner:'🏄',
       wordScrabble:   '🔤',
+      chess:          '♟️',
     };
 
     function gameLabel(type) { return GAME_LABELS[type] || type || '—'; }
@@ -9221,6 +9223,12 @@ async function renderTeacherGameRestrictions(containerId) {
       if (!firestoreTs) return '—';
       const d = firestoreTs.toDate ? firestoreTs.toDate() : new Date(firestoreTs);
       return d.toLocaleString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+    }
+
+    function _tsMs(firestoreTs) {
+      if (!firestoreTs) return 0;
+      const d = firestoreTs.toDate ? firestoreTs.toDate() : new Date(firestoreTs);
+      return d.getTime();
     }
 
     function _duration(start, end) {
@@ -9242,12 +9250,137 @@ async function renderTeacherGameRestrictions(containerId) {
       return 'var(--danger)';
     }
 
+    function _chessReasonLabel(reason) {
+      return { checkmate:'Checkmate', stalemate:'Stalemate', resign:'Resignation', repetition:'Repetition' }[reason] || reason || '';
+    }
+
+    // ── ROW RENDERERS FOR THE MERGED ACTIVITY LIST ────────────
+    function _sessionRowHtml(doc) {
+      const d = doc.data();
+      const stillLive = d.status === 'playing' && !_isSessionStale(d);
+      const pct    = d.pct ?? null;
+      const score  = d.score ?? null;
+      const dur    = _duration(d.startedAt, d.endedAt);
+      const when   = _fmtTime(d.startedAt);
+      const opponentLine = (d.meta && d.meta.opponentName)
+        ? `<div style="font-size:var(--text-xs);color:var(--accent);margin-top:1px;">vs ${_esc2(d.meta.opponentName)}</div>`
+        : '';
+
+      return `
+        <div style="display:flex;align-items:center;gap:.625rem;padding:.5625rem .875rem;
+                    border-bottom:1px solid var(--border);
+                    ${stillLive ? 'background:rgba(34,197,94,0.04);' : ''}">
+          <span style="font-size:1rem;flex-shrink:0;width:1.5rem;text-align:center;">${gameIcon(d.gameType)}</span>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap;">
+              <span style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);">${_esc2(d.name || '—')}</span>
+              <span style="font-size:var(--text-xs);color:var(--text-3);">${_esc2(d.class || '')}</span>
+            </div>
+            <div style="font-size:var(--text-xs);color:var(--text-3);margin-top:1px;">
+              ${gameLabel(d.gameType)}
+              ${d.meta && d.meta.difficulty ? ' · ' + _esc2(d.meta.difficulty) : ''}
+              ${d.meta && d.meta.subject && d.meta.subject !== 'random' ? ' · ' + _esc2(d.meta.subject) : ''}
+            </div>
+            ${opponentLine}
+          </div>
+          <div style="text-align:right;flex-shrink:0;min-width:80px;">
+            ${stillLive
+              ? `<div style="font-size:var(--text-xs);font-weight:700;color:var(--success);">● Playing now</div>`
+              : d.status === 'playing'
+              ? `<div style="font-size:var(--text-xs);font-weight:700;color:var(--text-4);">⚠ Disconnected</div>`
+              : `<div style="font-size:var(--text-sm);font-weight:700;color:${_pctColor(pct)};">
+                   ${pct !== null ? pct + '%' : score !== null ? score + ' pts' : '—'}
+                 </div>`}
+            <div style="font-size:var(--text-xs);color:var(--text-4);">
+              ${stillLive ? '' : dur + ' · '}${when}
+            </div>
+            ${!stillLive && d.status !== 'playing' && d.xpEarned ? `<div style="font-size:var(--text-xs);font-weight:600;color:var(--accent);">+${d.xpEarned} XP</div>` : ''}
+          </div>
+        </div>`;
+    }
+
+    function _chessRowHtml(doc) {
+      const d = doc.data();
+      const when = _fmtTime(d.lastMoveAt || d.createdAt);
+      let statusHtml;
+
+      if (d.status === 'finished') {
+        let resultText;
+        if (d.result === 'draw') {
+          resultText = 'Draw' + (d.resultReason ? ' (' + _chessReasonLabel(d.resultReason) + ')' : '');
+        } else {
+          const winnerName = d.result === 'white' ? d.whiteName : d.blackName;
+          resultText = (winnerName || '—') + ' won' + (d.resultReason ? ' (' + _chessReasonLabel(d.resultReason) + ')' : '');
+        }
+        statusHtml = `<div style="font-size:var(--text-xs);font-weight:700;color:var(--text-2);">${_esc2(resultText)}</div>`;
+      } else if (d.status === 'pending') {
+        statusHtml = `<div style="font-size:var(--text-xs);font-weight:700;color:var(--warning);">Awaiting response</div>`;
+      } else if (d.status === 'declined') {
+        statusHtml = `<div style="font-size:var(--text-xs);font-weight:700;color:var(--text-4);">Declined</div>`;
+      } else {
+        const turnName = d.turn === 'w' ? d.whiteName : d.blackName;
+        statusHtml = `<div style="font-size:var(--text-xs);font-weight:700;color:var(--success);">● ${_esc2(turnName || '—')}'s turn</div>`;
+      }
+
+      const moveCount = (d.moves || []).length;
+
+      return `
+        <div style="display:flex;align-items:center;gap:.625rem;padding:.5625rem .875rem;border-bottom:1px solid var(--border);">
+          <span style="font-size:1rem;flex-shrink:0;width:1.5rem;text-align:center;">♟️</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);">
+              ${_esc2(d.whiteName || '—')} <span style="color:var(--text-3);font-weight:500;">vs</span> ${_esc2(d.blackName || '—')}
+            </div>
+            <div style="font-size:var(--text-xs);color:var(--text-3);margin-top:1px;">
+              Chess · ${_esc2(d.class || '')} · ${moveCount} move${moveCount !== 1 ? 's' : ''}
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;min-width:100px;">
+            ${statusHtml}
+            <div style="font-size:var(--text-xs);color:var(--text-4);">${when}</div>
+          </div>
+        </div>`;
+    }
+
+    function _scrabbleRowHtml(doc) {
+      const d = doc.data();
+      const when = _fmtTime(d.lastMoveAt || d.createdAt);
+      let statusHtml;
+
+      if (d.status === 'finished') {
+        const s1 = d.score1 || 0, s2 = d.score2 || 0;
+        const resultText = s1 === s2
+          ? 'Tie'
+          : (s1 > s2 ? d.player1Name : d.player2Name) + ' won';
+        statusHtml = `<div style="font-size:var(--text-xs);font-weight:700;color:var(--text-2);">${_esc2(resultText)} (${s1}-${s2})</div>`;
+      } else if (d.status === 'pending') {
+        statusHtml = `<div style="font-size:var(--text-xs);font-weight:700;color:var(--warning);">Awaiting response</div>`;
+      } else if (d.status === 'declined') {
+        statusHtml = `<div style="font-size:var(--text-xs);font-weight:700;color:var(--text-4);">Declined</div>`;
+      } else {
+        const turnName = d.turn === d.player1Uid ? d.player1Name : d.player2Name;
+        statusHtml = `<div style="font-size:var(--text-xs);font-weight:700;color:var(--success);">● ${_esc2(turnName || '—')}'s turn</div>`;
+      }
+
+      return `
+        <div style="display:flex;align-items:center;gap:.625rem;padding:.5625rem .875rem;border-bottom:1px solid var(--border);">
+          <span style="font-size:1rem;flex-shrink:0;width:1.5rem;text-align:center;">🔤</span>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);">
+              ${_esc2(d.player1Name || '—')} <span style="color:var(--text-3);font-weight:500;">vs</span> ${_esc2(d.player2Name || '—')}
+            </div>
+            <div style="font-size:var(--text-xs);color:var(--text-3);margin-top:1px;">
+              Word Scrabble · ${_esc2(d.class || '')}
+            </div>
+          </div>
+          <div style="text-align:right;flex-shrink:0;min-width:100px;">
+            ${statusHtml}
+            <div style="font-size:var(--text-xs);color:var(--text-4);">${when}</div>
+          </div>
+        </div>`;
+    }
+
     // ── STALE SESSION DETECTION ──────────────────────────────
-    // A session is considered stale (no longer actually live) if its
-    // most recent heartbeat (or startedAt, for older docs with no
-    // heartbeat field) is older than this threshold. This protects
-    // against sessions that never got a 'finished' write because the
-    // student closed the tab, lost connection, or force-quit the app.
     const SESSION_STALE_MS = 90_000; // 90 seconds
 
     function _isSessionStale(d) {
@@ -9300,6 +9433,14 @@ async function renderTeacherGameRestrictions(containerId) {
     let _liveUnsub         = null;
     let _historyUnsub      = null;
     let _liveStaleCheckInt = null;
+
+    let _histSessionDocs  = [];
+    let _histChessDocs    = [];
+    let _histScrabbleDocs = [];
+    let _histUnsubSession  = null;
+    let _histUnsubChess    = null;
+    let _histUnsubScrabble = null;
+
     let _latestLiveSnapDocs = [];
 
     function _stopTeacherListeners() {
@@ -9391,79 +9532,78 @@ async function renderTeacherGameRestrictions(containerId) {
       if (tab === 'stats')       _loadStatsTab();
     };
 
-    // ── HISTORY TAB (live, last 100 sessions) ─────────────────
+    // ── HISTORY TAB (live, merges gameSessions + chessGames + scrabbleGames) ──
     function _loadHistoryTab() {
       const content = document.getElementById('gTabContent');
       if (!content) return;
       content.innerHTML = `<div style="text-align:center;padding:1.5rem;color:var(--text-3);">Loading activity…</div>`;
 
-      _historyUnsub = _db().collection('gameSessions')
+      _histSessionDocs  = [];
+      _histChessDocs    = [];
+      _histScrabbleDocs = [];
+
+      function renderMerged() {
+        const content2 = document.getElementById('gTabContent');
+        if (!content2) return;
+
+        const rows = [];
+        _histSessionDocs.forEach(doc => {
+          rows.push({ t: _tsMs(doc.data().startedAt), html: _sessionRowHtml(doc) });
+        });
+        _histChessDocs.forEach(doc => {
+          const d = doc.data();
+          rows.push({ t: _tsMs(d.lastMoveAt || d.createdAt), html: _chessRowHtml(doc) });
+        });
+        _histScrabbleDocs.forEach(doc => {
+          const d = doc.data();
+          rows.push({ t: _tsMs(d.lastMoveAt || d.createdAt), html: _scrabbleRowHtml(doc) });
+        });
+
+        if (rows.length === 0) {
+          content2.innerHTML = `<p style="text-align:center;padding:2rem;color:var(--text-3);font-size:var(--text-sm);">
+            No game activity recorded yet. Students need to play games first.</p>`;
+          return;
+        }
+
+        rows.sort((a, b) => b.t - a.t);
+        const top = rows.slice(0, 150);
+
+        content2.innerHTML = `
+          <div class="glass-dark" style="border-radius:var(--r-lg);overflow:hidden;padding:0;">
+            <div style="padding:.625rem 1rem;border-bottom:1px solid var(--border);
+                        background:var(--bg-subtle);display:flex;justify-content:space-between;align-items:center;">
+              <span style="font-size:var(--text-xs);font-weight:700;color:var(--text-2);">
+                Recent Game Activity (last ${top.length})
+              </span>
+              <span style="font-size:var(--text-xs);color:var(--text-4);">Updates live ●</span>
+            </div>
+            ${top.map(r => r.html).join('')}
+          </div>`;
+      }
+
+      _historyUnsub = function() {
+        if (_histUnsubSession)  _histUnsubSession();
+        if (_histUnsubChess)    _histUnsubChess();
+        if (_histUnsubScrabble) _histUnsubScrabble();
+      };
+
+      _histUnsubSession = _db().collection('gameSessions')
         .orderBy('startedAt', 'desc')
         .limit(100)
-        .onSnapshot(snap => {
-          const content2 = document.getElementById('gTabContent');
-          if (!content2) { if (_historyUnsub) { _historyUnsub(); _historyUnsub = null; } return; }
+        .onSnapshot(snap => { _histSessionDocs = snap.docs; renderMerged(); },
+          err => console.warn('[teacher] history session listener error:', err));
 
-          if (snap.empty) {
-            content2.innerHTML = `<p style="text-align:center;padding:2rem;color:var(--text-3);font-size:var(--text-sm);">
-              No game sessions recorded yet. Students need to play games first.</p>`;
-            return;
-          }
+      _histUnsubChess = _db().collection('chessGames')
+        .orderBy('lastMoveAt', 'desc')
+        .limit(50)
+        .onSnapshot(snap => { _histChessDocs = snap.docs; renderMerged(); },
+          err => console.warn('[teacher] history chess listener error:', err));
 
-          const rows = snap.docs.map(doc => {
-            const d         = doc.data();
-            const stillLive = d.status === 'playing' && !_isSessionStale(d);
-            const pct    = d.pct ?? null;
-            const score  = d.score ?? null;
-            const dur    = _duration(d.startedAt, d.endedAt);
-            const when   = _fmtTime(d.startedAt);
-
-            return `
-              <div style="display:flex;align-items:center;gap:.625rem;padding:.5625rem .875rem;
-                          border-bottom:1px solid var(--border);
-                          ${stillLive ? 'background:rgba(34,197,94,0.04);' : ''}">
-                <span style="font-size:1rem;flex-shrink:0;width:1.5rem;text-align:center;">${gameIcon(d.gameType)}</span>
-                <div style="flex:1;min-width:0;">
-                  <div style="display:flex;align-items:baseline;gap:.5rem;flex-wrap:wrap;">
-                    <span style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);">${_esc2(d.name || '—')}</span>
-                    <span style="font-size:var(--text-xs);color:var(--text-3);">${_esc2(d.class || '')}</span>
-                  </div>
-                  <div style="font-size:var(--text-xs);color:var(--text-3);margin-top:1px;">
-                    ${gameLabel(d.gameType)}
-                    ${d.meta && d.meta.difficulty ? ' · ' + _esc2(d.meta.difficulty) : ''}
-                    ${d.meta && d.meta.subject && d.meta.subject !== 'random' ? ' · ' + _esc2(d.meta.subject) : ''}
-                  </div>
-                </div>
-                <div style="text-align:right;flex-shrink:0;min-width:80px;">
-                  ${stillLive
-                    ? `<div style="font-size:var(--text-xs);font-weight:700;color:var(--success);">● Playing now</div>`
-                    : d.status === 'playing'
-                    ? `<div style="font-size:var(--text-xs);font-weight:700;color:var(--text-4);">⚠ Disconnected</div>`
-                    : `<div style="font-size:var(--text-sm);font-weight:700;color:${_pctColor(pct)};">
-                         ${pct !== null ? pct + '%' : score !== null ? score + ' pts' : '—'}
-                       </div>`}
-                  <div style="font-size:var(--text-xs);color:var(--text-4);">
-                    ${stillLive ? '' : dur + ' · '}${when}
-                  </div>
-                  ${!stillLive && d.status !== 'playing' && d.xpEarned ? `<div style="font-size:var(--text-xs);font-weight:600;color:var(--accent);">+${d.xpEarned} XP</div>` : ''}
-                </div>
-              </div>`;
-          }).join('');
-
-          content2.innerHTML = `
-            <div class="glass-dark" style="border-radius:var(--r-lg);overflow:hidden;padding:0;">
-              <div style="padding:.625rem 1rem;border-bottom:1px solid var(--border);
-                          background:var(--bg-subtle);display:flex;justify-content:space-between;align-items:center;">
-                <span style="font-size:var(--text-xs);font-weight:700;color:var(--text-2);">
-                  Recent Game Sessions (last 100)
-                </span>
-                <span style="font-size:var(--text-xs);color:var(--text-4);">Updates live ●</span>
-              </div>
-              ${rows}
-            </div>`;
-        }, err => {
-          console.warn('[teacher] history tab error:', err);
-        });
+      _histUnsubScrabble = _db().collection('scrabbleGames')
+        .orderBy('lastMoveAt', 'desc')
+        .limit(50)
+        .onSnapshot(snap => { _histScrabbleDocs = snap.docs; renderMerged(); },
+          err => console.warn('[teacher] history scrabble listener error:', err));
     }
 
     // ── LEADERBOARD TAB ──────────────────────────────────────
@@ -9611,6 +9751,9 @@ async function renderTeacherGameRestrictions(containerId) {
         content.innerHTML = `
           <div style="margin-bottom:1.25rem;">
             <h3 style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);margin-bottom:.75rem;">Plays by Game Type</h3>
+            <p style="font-size:var(--text-xs);color:var(--text-3);margin-bottom:.75rem;">
+              Chess and Word Scrabble are turn-based and are not counted here — see Recent Activity for those.
+            </p>
             <div style="overflow-x:auto;">
               <table style="width:100%;border-collapse:collapse;">
                 <thead>
