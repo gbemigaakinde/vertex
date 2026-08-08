@@ -1,17 +1,6 @@
 /* ============================================================
    js/studyroom.js — Study Room: lesson browser + reader
    ============================================================
-   Architecture:
-     StudyRoom.openForStudent()  — called from exam.js
-     StudyRoom.openTeacherTab()  — called from teacher.js tab
-
-   Firestore collections:
-     'lessons'             — lesson documents
-     'studyroom_settings'  — doc 'defaults' with field defaultTerm
-
-   Lesson document fields:
-     title, class, term, subject, topic, content,
-     order, createdAt, updatedAt
 
    Content format: Markdown (safe subset, sanitised on render)
    ============================================================ */
@@ -19,7 +8,6 @@
 (function () {
   'use strict';
 
-  /* ── Defaults ── */
   const DEFAULT_PREFS = {
     fontSize:    16,
     fontFamily:  'serif',
@@ -34,7 +22,6 @@
 
   const CLASS_OPTIONS = ['JSS1','JSS2','JSS3','SSS1','SSS2','SSS3','TUTORIAL'];
 
-  /* ── Module state ── */
   let _prefs               = _loadPrefs();
   let _currentLesson       = null;
   let _siblingLessons      = [];
@@ -44,10 +31,7 @@
   let _defaultTerm         = '';
   let _studentLessonsCache = [];
   let _teacherLessonsAll   = [];
-
-  /* ══════════════════════════════════════════════════
-     PREFERENCES
-     ══════════════════════════════════════════════════ */
+  let _katexLoadPromise    = null;
 
   function _loadPrefs() {
     try {
@@ -91,10 +75,6 @@
     });
   }
 
-  /* ══════════════════════════════════════════════════
-     MARKDOWN RENDERER  (safe subset, no external lib)
-     ══════════════════════════════════════════════════ */
-
   function _renderMarkdown(md) {
     if (!md) return '';
     let html = String(md);
@@ -118,6 +98,15 @@
     _stashBlock('aside');
     _stashBlock('svg');
 
+    html = html.replace(/\$\$[\s\S]+?\$\$/g, match => {
+      stash.push(match);
+      return STASH_TAG + (stash.length - 1) + '_';
+    });
+    html = html.replace(/\$[^\$\n]+?\$/g, match => {
+      stash.push(match);
+      return STASH_TAG + (stash.length - 1) + '_';
+    });
+
     html = html
       .replace(/<script[\s\S]*?<\/script>/gi, '')
       .replace(/\bon\w+\s*=/gi, 'data-removed=')
@@ -127,7 +116,6 @@
       if (/^<script/i.test(block)) stash[i] = '';
     });
 
-    /* GFM tables */
     html = html.replace(/^\|(.+)\|\s*\n\|[-| :]+\|\s*\n((?:\|.+\|\s*\n?)*)/gm, (_, header, rows) => {
       const ths = header.split('|').filter(Boolean)
         .map(c => `<th>${_inlineMarkdown(c.trim())}</th>`).join('');
@@ -139,16 +127,13 @@
       return `<table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
     });
 
-    /* Fenced code blocks */
     html = html.replace(/```(\w*)\n?([\s\S]*?)```/gm, (_, lang, code) => {
       const esc = code.replace(/</g,'&lt;').replace(/>/g,'&gt;');
       return `<pre><code class="lang-${lang}">${esc}</code></pre>`;
     });
 
-    /* Block quotes */
     html = html.replace(/^> (.+)/gm, '<blockquote>$1</blockquote>');
 
-    /* Headings */
     html = html
       .replace(/^###### (.+)$/gm, '<h6>$1</h6>')
       .replace(/^##### (.+)$/gm,  '<h5>$1</h5>')
@@ -157,26 +142,22 @@
       .replace(/^## (.+)$/gm,     '<h2>$1</h2>')
       .replace(/^# (.+)$/gm,      '<h1>$1</h1>');
 
-    /* Horizontal rules */
     html = html
       .replace(/^---+$/gm,    '<hr>')
       .replace(/^\*\*\*+$/gm, '<hr>');
 
-    /* Unordered lists */
     html = html.replace(/((?:^[-*+] .+\n?)+)/gm, block => {
       const items = block.trim().split('\n')
         .map(line => `<li>${_inlineMarkdown(line.replace(/^[-*+] /, ''))}</li>`).join('');
       return `<ul>${items}</ul>`;
     });
 
-    /* Ordered lists */
     html = html.replace(/((?:^\d+\. .+\n?)+)/gm, block => {
       const items = block.trim().split('\n')
         .map(line => `<li>${_inlineMarkdown(line.replace(/^\d+\. /, ''))}</li>`).join('');
       return `<ol>${items}</ol>`;
     });
 
-    /* Wrap remaining lines in <p> */
     const blockStarters = ['<h','<ul','<ol','<li','<pre','<blockquote','<table','<hr','<p', STASH_TAG];
     const result = [];
     let buffer   = [];
@@ -196,7 +177,6 @@
     });
     if (buffer.length) result.push('<p>' + _inlineMarkdown(buffer.join(' ')) + '</p>');
 
-    /* Restore stashed blocks */
     let output = result.join('\n');
     for (let i = stash.length - 1; i >= 0; i--) {
       output = output.split(STASH_TAG + i + '_').join(stash[i]);
@@ -221,10 +201,6 @@
       .replace(/!\[(.+?)\]\((.+?)\)/g,'<img src="$2" alt="$1">');
   }
 
-  /* ══════════════════════════════════════════════════
-     HTML ESCAPE
-     ══════════════════════════════════════════════════ */
-
   function _esc(str) {
     if (str == null) return '';
     return String(str)
@@ -232,19 +208,11 @@
       .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
-  /* ══════════════════════════════════════════════════
-     HELPERS
-     ══════════════════════════════════════════════════ */
-
   function _normSubject(s) { return (s || '').trim().toLowerCase(); }
 
   function _groupKey(lesson) {
     return _normSubject(lesson.subject) + '||' + (lesson.term || '');
   }
-
-  /* ══════════════════════════════════════════════════
-     DEFAULT TERM — offline-aware read / write
-     ══════════════════════════════════════════════════ */
 
   const _META_DEFAULT_TERM = 'studyroom_defaultTerm';
 
@@ -265,10 +233,6 @@
     return window.fbDb.collection('studyroom_settings').doc('defaults')
       .set({ defaultTerm: term }, { merge: true });
   }
-
-  /* ══════════════════════════════════════════════════
-     STUDENT — OPEN STUDY ROOM BROWSER
-     ══════════════════════════════════════════════════ */
 
   function openForStudent() {
     const studentData = AppState.studentData;
@@ -319,12 +283,6 @@
     if (window.Exam && Exam.renderSubjectSelection) Exam.renderSubjectSelection();
   }
 
-  /* ── Offline-aware lesson loader ───────────────────────────────
-     Priority:
-       1. If online  → fetch from Firebase, cache result, render
-       2. If offline → load from IndexedDB, render from cache
-       3. If Firebase fails on slow network → fall back to cache
-  ─────────────────────────────────────────────────────────── */
   function _loadStudentLessons(studentClass) {
     window.fbDb.collection('lessons')
       .where('class', '==', studentClass)
@@ -434,10 +392,6 @@
     }).join('');
   }
 
-  /* ══════════════════════════════════════════════════
-     OPEN A LESSON
-     ══════════════════════════════════════════════════ */
-
   function _openLesson(lessonId) {
     const lesson = _studentLessonsCache.find(l => l.id === lessonId);
     if (lesson) {
@@ -460,10 +414,6 @@
       });
   }
 
-  /* ══════════════════════════════════════════════════
-     RENDER READER
-     ══════════════════════════════════════════════════ */
-
   function _renderReader(lesson, siblings) {
     _currentLesson  = lesson;
     _siblingLessons = siblings;
@@ -478,17 +428,71 @@
     _applyPrefsToReader(document.getElementById('app'));
     _syncPrefsUI();
     _bindScrollProgress();
+    _renderMathContent(document.getElementById('app'));
+    _bindQuizButtons(document.getElementById('app'));
+  }
 
-    if (window._katexAutoRenderReady && window.renderMathInElement) {
+  function _ensureKatex() {
+    if (window.renderMathInElement) return Promise.resolve();
+    if (_katexLoadPromise) return _katexLoadPromise;
+
+    _katexLoadPromise = new Promise(resolve => {
+      let waited = 0;
+      const poll = setInterval(() => {
+        if (window.renderMathInElement) {
+          clearInterval(poll);
+          resolve();
+          return;
+        }
+        waited += 150;
+        if (waited >= 4000) {
+          clearInterval(poll);
+          _loadKatexFromCdn().then(resolve).catch(() => resolve());
+        }
+      }, 150);
+    });
+
+    return _katexLoadPromise;
+  }
+
+  function _loadKatexFromCdn() {
+    const cssHref = 'https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css';
+    if (!document.querySelector('link[href="' + cssHref + '"]')) {
+      const link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = cssHref;
+      document.head.appendChild(link);
+    }
+
+    return _loadScript('https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js')
+      .then(() => _loadScript('https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js'));
+  }
+
+  function _loadScript(src) {
+    return new Promise((resolve, reject) => {
+      if (document.querySelector('script[src="' + src + '"]')) { resolve(); return; }
+      const script = document.createElement('script');
+      script.src = src;
+      script.onload = resolve;
+      script.onerror = reject;
+      document.head.appendChild(script);
+    });
+  }
+
+  function _renderMathContent(containerEl) {
+    if (!containerEl) return;
+    _ensureKatex().then(() => {
+      if (!window.renderMathInElement) return;
       try {
-        renderMathInElement(document.getElementById('app'), {
-          delimiters: [{left:'$$',right:'$$',display:true},{left:'$',right:'$',display:false}],
+        window.renderMathInElement(containerEl, {
+          delimiters: [
+            { left: '$$', right: '$$', display: true },
+            { left: '$', right: '$', display: false },
+          ],
           throwOnError: false,
         });
       } catch (e) {}
-    }
-
-    _bindQuizButtons(document.getElementById('app'));
+    });
   }
 
   function _bindQuizButtons(containerEl) {
@@ -515,10 +519,6 @@
       });
     });
   }
-
-  /* ──────────────────────────────────────────────────
-     Shell builder
-     ────────────────────────────────────────────────── */
 
   function _buildReaderShell(lesson, siblings, renderedHtml) {
     const hasSidebar = siblings.length > 1;
@@ -560,10 +560,6 @@
       </div>`;
   }
 
-  /* ──────────────────────────────────────────────────
-     Scroll reader
-     ────────────────────────────────────────────────── */
-
   function _buildScrollReader(lesson, renderedHtml) {
     const breadcrumb = [lesson.class, lesson.term, lesson.subject]
       .filter(Boolean)
@@ -594,8 +590,6 @@
       </div>`;
   }
 
-  /* ── Prev / Next lesson navigation buttons ── */
-
   function _prevLessonBtn(lesson) {
     const idx = _siblingLessons.findIndex(l => l.id === lesson.id);
     if (idx <= 0) return '<span></span>';
@@ -613,10 +607,6 @@
                     title="${_esc(next.title)}"
                     onclick="StudyRoom._openLesson('${_esc(next.id)}')"><span class="sr-lesson-nav-btn__label">${_esc(next.title)}</span>&nbsp;→</button>`;
   }
-
-  /* ══════════════════════════════════════════════════
-     PREFERENCES PANEL
-     ══════════════════════════════════════════════════ */
 
   function _buildPrefsPanel() {
     return `
@@ -751,10 +741,6 @@
     return "'Lora','Source Serif 4',Georgia,serif";
   }
 
-  /* ══════════════════════════════════════════════════
-     SCROLL PROGRESS
-     ══════════════════════════════════════════════════ */
-
   function _bindScrollProgress() {
     const reader = document.getElementById('srScrollReader');
     const fill   = document.getElementById('srProgressFill');
@@ -765,10 +751,6 @@
         : (reader.scrollTop / scrollable * 100).toFixed(1) + '%';
     }, { passive: true });
   }
-
-  /* ══════════════════════════════════════════════════
-     NAVIGATION
-     ══════════════════════════════════════════════════ */
 
   function _backToBrowser() {
     const app = document.getElementById('app');
@@ -789,10 +771,6 @@
       openForStudent();
     }
   }
-
-  /* ══════════════════════════════════════════════════
-     TEACHER PANEL
-     ══════════════════════════════════════════════════ */
 
   function openTeacherTab() {
     const container = document.getElementById('teacher-studyroom');
@@ -1207,10 +1185,6 @@
     _previewMode = true;
     _renderReader(fakeLesson, [fakeLesson]);
   }
-
-  /* ══════════════════════════════════════════════════
-     PUBLIC API
-     ══════════════════════════════════════════════════ */
 
   window.StudyRoom = {
     openForStudent,
