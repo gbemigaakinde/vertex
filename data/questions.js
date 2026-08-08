@@ -4112,7 +4112,7 @@ sss1: {
         q: "A stone is thrown vertically upwards with an initial velocity of $20 \\text{ m/s}$. How long does it take to return to the thrower's hand? ($g = 10 \\text{ m/s}^2$)",
         opts: ["2 s", "4 s", "6 s", "8 s"],
         ans: 1,
-        exp: "exp: "exp: "Time to reach maximum height: v = u - gt, so 0 = 20 - 10t, giving t = 2 s. Time to return to the hand is twice this (symmetry of vertical motion): T = 2 × 2 = 4 s. Alternatively, using s = ut - ½gt² with s = 0: 0 = 20t - 5t². Factoring: t(20 - 5t) = 0, so t = 0 or t = 4 s. t = 0 represents the instant the stone is thrown, so the time taken to return to the thrower's hand is 4 s. Therefore, the correct answer is 4 s."
+        exp: "Time to reach maximum height: v = u - gt, so 0 = 20 - 10t, giving t = 2 s. Time to return to the hand is twice this (symmetry of vertical motion): T = 2 × 2 = 4 s. Alternatively, using s = ut - ½gt² with s = 0: 0 = 20t - 5t². Factoring: t(20 - 5t) = 0, so t = 0 or t = 4 s. t = 0 represents the instant the stone is thrown, so the time taken to return to the thrower's hand is 4 s. Therefore, the correct answer is 4 s."
       }
       ],
       
