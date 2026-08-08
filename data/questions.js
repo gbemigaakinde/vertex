@@ -1236,1662 +1236,238 @@ jss2: {
         exp: "$5n + 10 = 35 \\implies 5n = 25 \\implies n = 5$."
     }
 ],
-    'English Language': [
-
-  // ── 10 with ans:0 (A is correct) ──
-
-  { q: "Which sentence correctly uses the conjunction 'although' to express contrast?",
-    opts: [
-      "Although it was raining heavily, the students refused to leave the field.",
-      "The students refused to leave although was raining the field heavily.",
-      "It was raining heavily the students although refused to leave the field.",
-      "Although the students refused, it was raining heavily to leave the field."
-    ],
-    ans: 0,
-    exp: "'Although' introduces a subordinate clause of contrast. The correct structure is: Although + [contrasting clause], [main clause]." },
-
-  { q: "Identify the sentence in which the word 'had' is used correctly as a past perfect auxiliary verb.",
-    opts: [
-      "By the time the teacher arrived, the students had already submitted their assignments.",
-      "The students had submit their assignments when the teacher arrived.",
-      "The teacher had arrive before the students were submitting their work.",
-      "By the time the assignments had, the students submitted them to the teacher."
-    ],
-    ans: 0,
-    exp: "The past perfect (had + past participle) is used to show that one past action (submitting) was completed before another past action (teacher arriving)." },
-
-  { q: "Which of the following sentences contains a causative verb used correctly?",
-    opts: [
-      "The manager had the report typed by his secretary before the meeting began.",
-      "The manager caused the report to typed by his secretary before the meeting.",
-      "The manager made the report was typed by his secretary before the meeting.",
-      "The manager let the report had been typed by his secretary before meeting."
-    ],
-    ans: 0,
-    exp: "Causative verbs (have, make, let, get) show that the subject causes someone else to perform an action. 'Had + object + past participle' is the correct structure." },
-
-  { q: "Which sentence uses an adverb of time correctly to modify the verb?",
-    opts: [
-      "She will submit her project tomorrow without fail.",
-      "She will submit tomorrow her project without fail.",
-      "Tomorrow she project will submit without fail.",
-      "She will submit her project without fail tomorrow is coming."
-    ],
-    ans: 0,
-    exp: "Adverbs of time typically appear at the beginning or end of a sentence. 'Tomorrow' is correctly placed at the end of the sentence to indicate when the action will occur." },
-
-  { q: "In the word 'unhappy', the morpheme 'un-' is an example of a:",
-    opts: [
-      "Prefix — a word-forming element added to the beginning of a root word to change its meaning",
-      "Suffix — a word-forming element added to the end of a root word to change its grammatical class",
-      "Infix — a morpheme inserted within the middle of a root word",
-      "Free morpheme — a morpheme that can stand alone as an independent word"
-    ],
-    ans: 0,
-    exp: "'Un-' is a prefix (added before the root 'happy') that reverses or negates the meaning of the root word, changing 'happy' to its opposite." },
-
-  { q: "Which of the following question tags correctly completes the sentence: 'She has never been to London, ___?'",
-    opts: [
-      "has she?",
-      "hasn't she?",
-      "did she?",
-      "didn't she?"
-    ],
-    ans: 0,
-    exp: "When the main clause is negative ('has never'), the question tag must be positive. The auxiliary in the main clause is 'has', so the tag is 'has she?' " },
-
-  { q: "Which of the following sentences illustrates the use of 'despite' as a conjunction of contrast?",
-    opts: [
-      "Despite the heavy traffic, she arrived at the office on time.",
-      "Despite of the heavy traffic, she arrived at the office on time.",
-      "She arrived on time despite she was caught in heavy traffic.",
-      "She arrived on time despite of that there was heavy traffic."
-    ],
-    ans: 0,
-    exp: "'Despite' is a preposition followed directly by a noun phrase (not a clause). 'Despite the heavy traffic' is correct. 'Despite of' and 'despite + clause' are grammatically wrong." },
-
-  { q: "The primary word stress in the word 'photography' falls on which syllable?",
-    opts: [
-      "The second syllable: pho-TO-gra-phy",
-      "The first syllable: PHO-to-gra-phy",
-      "The third syllable: pho-to-GRA-phy",
-      "The fourth syllable: pho-to-gra-PHY"
-    ],
-    ans: 0,
-    exp: "In 'photography', the primary stress falls on the second syllable: pho-TO-gra-phy. This is a standard rule for words ending in '-graphy'." },
-
-  { q: "Which of the following word pairs correctly illustrates a synonym relationship?",
-    opts: [
-      "Brave — Courageous, because both words mean having or showing courage in the face of danger",
-      "Brave — Cowardly, because both words describe extreme emotional reactions to fear",
-      "Brave — Reckless, because both words involve taking action in dangerous situations",
-      "Brave — Cautious, because both words describe how people respond to challenging situations"
-    ],
-    ans: 0,
-    exp: "Synonyms are words with the same or very similar meanings. 'Brave' and 'courageous' are true synonyms — both mean showing courage. 'Cowardly' is an antonym, while 'reckless' and 'cautious' have different meanings." },
-
-  { q: "In the sentence 'The rich also cry', which literary device is demonstrated by using 'the rich' to refer to wealthy people in general?",
-    opts: [
-      "Synecdoche — using a descriptive class ('the rich') to refer to all individuals in that group",
-      "Personification — giving human characteristics to a non-human concept",
-      "Hyperbole — an exaggerated statement used for emphasis or dramatic effect",
-      "Oxymoron — combining two contradictory ideas in the same phrase for effect"
-    ],
-    ans: 0,
-    exp: "Using 'the rich' (a descriptive adjective used as a noun) to refer to all wealthy people is an example of synecdoche — a part or category is used to represent the whole group." },
-
-  // ── 10 with ans:1 (B is correct) ──
-
-  { q: "Which of the following sentences uses the word 'whereas' correctly to show contrast?",
-    opts: [
-      "Whereas Emeka is very good at mathematics whereas his brother prefers literature.",
-      "Emeka excels in mathematics, whereas his brother prefers literature.",
-      "Emeka whereas his brother prefers literature, excels in mathematics.",
-      "Whereas of Emeka's strength in mathematics, his brother prefers literature."
-    ],
-    ans: 1,
-    exp: "'Whereas' is a coordinating subordinator that joins two contrasting clauses. The correct structure places it between or before the two contrasting main clauses without repetition." },
-
-  { q: "Read the following: 'Pride goes before a fall.' Which genre of composition writing does this statement best serve as the moral for?",
-    opts: [
-      "A formal report about the dangers of overconfidence in professional environments",
-      "A narrative essay or prose story in which a proud character suffers failure as a result of arrogance",
-      "An argumentative essay defending the importance of self-confidence in achieving success",
-      "A descriptive essay depicting the physical appearance of a proud individual"
-    ],
-    ans: 1,
-    exp: "The moral 'Pride goes before a fall' is the lesson drawn from a narrative story in which a character's arrogance leads to their downfall — this is the hallmark of a narrative/moral essay." },
-
-  { q: "The consonant contrast between /tʃ/ and /dʒ/ is correctly illustrated in which of the following word pairs?",
-    opts: [
-      "chair — chair, which demonstrates the same consonant sound repeated in identical words",
-      "cheer — jeer, where /tʃ/ appears in 'cheer' and /dʒ/ appears in 'jeer'",
-      "sheep — jeep, which contrasts the /ʃ/ sound with the /dʒ/ sound, not /tʃ/ with /dʒ/",
-      "church — much, which only demonstrates the /tʃ/ sound without a contrasting /dʒ/ partner"
-    ],
-    ans: 1,
-    exp: "/tʃ/ (as in 'cheese') and /dʒ/ (as in 'jeez') are the two affricates of English. 'Cheer' (/tʃɪə/) vs 'jeer' (/dʒɪə/) is a minimal pair that perfectly contrasts these two sounds." },
-
-  { q: "Which of the following sentences uses 'has' as an auxiliary verb (not a main verb)?",
-    opts: [
-      "She has a brilliant idea for the school project.",
-      "She has finished writing the report before the deadline.",
-      "He has three younger sisters who attend the same school.",
-      "The school has an excellent library with thousands of books."
-    ],
-    ans: 1,
-    exp: "In 'She has finished writing', 'has' is an auxiliary verb forming the present perfect tense with the main verb 'finished'. In all other options, 'has' is a main verb meaning 'possesses'." },
-
-  { q: "A student is writing an essay titled 'A Day I Would Not Like to Remember'. Which type of composition is this most likely to be?",
-    opts: [
-      "An argumentative essay, because it defends a position about an unpleasant past experience",
-      "A personal narrative essay, because it recounts a real past event from the writer's own experience",
-      "A descriptive essay, because its only purpose is to describe the physical setting of the day",
-      "A formal report, because it presents factual findings from an unpleasant investigation"
-    ],
-    ans: 1,
-    exp: "This title calls for a personal narrative — the writer tells a story from their own life, recounting what happened on a memorable (unpleasant) day in chronological sequence." },
-
-  { q: "Which of the following correctly explains falling intonation in English speech?",
-    opts: [
-      "The pitch of the voice rises at the end of the utterance, signalling that the speaker has not finished",
-      "The pitch of the voice drops at the end of the utterance, signalling a completed statement, command, or wh- question",
-      "The pitch of the voice remains constant throughout the sentence, signalling a neutral statement",
-      "The pitch of the voice alternates between high and low syllables throughout the entire sentence"
-    ],
-    ans: 1,
-    exp: "Falling intonation (↘) occurs at the end of declarative statements, commands, and wh- questions — it signals that the speaker has finished and the utterance is complete." },
-
-  { q: "Which of the following is the correct antonym of the word 'generous'?",
-    opts: [
-      "Charitable — a word that means willing to give help or money to those in need",
-      "Miserly — a word that describes someone extremely unwilling to spend or share",
-      "Opulent — a word that describes something ostentatiously wealthy or luxurious",
-      "Lavish — a word that describes spending or giving in a very large and extravagant way"
-    ],
-    ans: 1,
-    exp: "An antonym has the opposite meaning. 'Generous' means freely giving; 'miserly' means extremely reluctant to give or spend — they are direct antonyms." },
-
-  { q: "In the sentence 'The government is responsible for the welfare of its citizens', which of the following correctly describes the role of the word 'responsible'?",
-    opts: [
-      "It is an adverb modifying the verb 'is' in the sentence",
-      "It is a predicate adjective (subject complement) describing the subject 'government' after a linking verb",
-      "It is the main verb of the sentence acting as a transitive verb with 'welfare' as its object",
-      "It is a noun phrase functioning as the subject of the subordinate clause"
-    ],
-    ans: 1,
-    exp: "'Responsible' follows the linking verb 'is' and describes the subject ('the government'). This is a predicate adjective (subject complement), not an adverb or a verb." },
-
-  { q: "Which of the following sentences correctly uses an adverb of place?",
-    opts: [
-      "She studied very diligently for the examination throughout the entire week.",
-      "The teacher asked the students to sit here during the examination.",
-      "He completed the assignment quickly before the deadline set by the teacher.",
-      "They performed exceptionally well during the school's annual prize-giving day."
-    ],
-    ans: 1,
-    exp: "'Here' is an adverb of place that tells us where the students should sit. The other options use adverbs of manner ('diligently', 'quickly') or degree ('exceptionally')." },
-
-  { q: "Which of the following words contains a suffix that changes a verb into a noun denoting a person who performs an action?",
-    opts: [
-      "Quickly — where '-ly' changes the adjective 'quick' into an adverb of manner",
-      "Teacher — where '-er' is added to the verb 'teach' to create a noun meaning one who teaches",
-      "Happiness — where '-ness' changes the adjective 'happy' into an abstract noun",
-      "Beautiful — where '-ful' changes the noun 'beauty' into a descriptive adjective"
-    ],
-    ans: 1,
-    exp: "The suffix '-er'/'-or' added to a verb forms an agent noun (a person who does something). 'Teach' + '-er' = 'teacher' (one who teaches)." },
-
-  // ── 10 with ans:2 (C is correct) ──
-
-  { q: "Which of the following sentences correctly uses the conjunction 'despite of'?",
-    opts: [
-      "Despite of the rain, the match was played to a finish at the stadium.",
-      "He passed the exam despite of not studying consistently throughout the term.",
-      "There is no grammatically correct use of 'despite of' — the correct form is simply 'despite' followed by a noun phrase",
-      "Despite of her talent, the judges awarded the first prize to another contestant."
-    ],
-    ans: 2,
-    exp: "'Despite of' is always grammatically incorrect in standard English. The correct form is 'despite' (without 'of') followed by a noun phrase, or 'in spite of' followed by a noun phrase." },
-
-  { q: "Which of the following best describes rising intonation in English and when it is typically used?",
-    opts: [
-      "Rising intonation is used in commands to add urgency and authority to the speaker's voice",
-      "Rising intonation occurs when a speaker's voice drops at the end of a completed statement",
-      "Rising intonation occurs when the pitch rises at the end of a yes/no question or to signal that the speaker has not finished",
-      "Rising intonation is a feature only of written English and cannot be detected in spoken language"
-    ],
-    ans: 2,
-    exp: "Rising intonation (↗) is used in yes/no questions ('Are you ready?') and in lists to signal continuation, indicating the speaker has more to say or inviting a yes/no response." },
-
-  { q: "In the composition topic 'A Memorable Journey I Once Made', the word 'memorable' most accurately means:",
-    opts: [
-      "Something that is impossible to recall clearly because it happened long ago",
-      "Something that was frightening and traumatic, leaving the traveller distressed",
-      "Something worth remembering because it was significant, exciting, or unusual",
-      "Something that was ordinary and routine, making it typical of most journeys"
-    ],
-    ans: 2,
-    exp: "'Memorable' means worthy of being remembered, typically because the experience was significant, exciting, or somehow remarkable — not necessarily frightening or traumatic." },
-
-  { q: "Which of the following question tags correctly completes the sentence: 'They can solve the problem, ___?'",
-    opts: [
-      "can they?",
-      "could they?",
-      "can't they?",
-      "couldn't they?"
-    ],
-    ans: 2,
-    exp: "The main clause is positive ('They can solve'), so the question tag must be negative using the same auxiliary: 'can't they?' is correct." },
-
-  { q: "Which of the following contrasting vowel sound pairs is correctly identified?",
-    opts: [
-      "/p/ and /b/ — these are consonant sounds, not vowel sounds",
-      "/tʃ/ and /dʒ/ — these are affricate consonants, not vowel sounds",
-      "/ɔ:/ and /u:/ — these are two distinct long vowel sounds that form a minimal contrast pair",
-      "/s/ and /z/ — these are fricative consonants, not vowel sounds"
-    ],
-    ans: 2,
-    exp: "/ɔ:/ (as in 'caught') and /u:/ (as in 'boot') are both long vowels. Contrasting them helps learners distinguish sounds that non-native speakers often confuse." },
-
-  { q: "An argumentative essay is best described as a piece of writing that:",
-    opts: [
-      "Tells a story from the writer's personal experience in chronological order",
-      "Describes a scene, person, or place using rich sensory and figurative language",
-      "Presents a clear position on a debatable issue and supports it with logical reasons and evidence",
-      "Explains a process step by step in a neutral and objective tone without taking sides"
-    ],
-    ans: 2,
-    exp: "An argumentative essay states a debatable claim (thesis) and defends it with evidence and reasoning, often acknowledging and refuting counterarguments." },
-
-  { q: "Which of the following correctly explains the use of the suffix '-tion' in English word formation?",
-    opts: [
-      "The suffix '-tion' is added to adjectives to form comparative forms, e.g., 'fast' → 'fastion'",
-      "The suffix '-tion' is a prefix placed before verbs to reverse their meaning, e.g., 'act' → 'tion-act'",
-      "The suffix '-tion' is added to verbs to form abstract nouns, e.g., 'educate' → 'education'",
-      "The suffix '-tion' is added to nouns to form verbs, e.g., 'nation' → 'nationate'"
-    ],
-    ans: 2,
-    exp: "The suffix '-tion' (and its variants '-ation', '-ition') converts verbs into abstract nouns: educate → education, communicate → communication, satisfy → satisfaction." },
-
-  { q: "In the consonant contrast /s/ and /z/, which of the following word pairs provides a correct minimal pair?",
-    opts: [
-      "sheep — jeep, which contrasts /ʃ/ with /dʒ/, not /s/ with /z/",
-      "sun — fun, which contrasts /s/ with /f/, not /s/ with /z/",
-      "seal — zeal, where /s/ appears in 'seal' and /z/ appears in 'zeal'",
-      "sit — ship, which contrasts /s/ with /ʃ/, not /s/ with /z/"
-    ],
-    ans: 2,
-    exp: "'Seal' (/siːl/) and 'zeal' (/ziːl/) are a minimal pair that differ only in the initial consonant: /s/ (voiceless) vs /z/ (voiced). All other options contrast different phonemes." },
-
-  { q: "Which of the following best defines a dialogue as a composition type?",
-    opts: [
-      "A one-sided account narrated entirely from the point of view of a single character",
-      "A detailed description of a conversation setting without including any direct speech",
-      "A written or spoken exchange of words between two or more participants, each taking turns",
-      "A formal essay that argues for or against a position using the voices of imaginary characters"
-    ],
-    ans: 2,
-    exp: "A dialogue is a conversation between two or more people (or characters), written with each speaker's words clearly identified, often using direct speech and speech markers." },
-
-  { q: "In reading comprehension, which of the following skills is a student using when they understand an idea that is suggested but not directly stated in the text?",
-    opts: [
-      "Skimming — reading quickly to get the general gist of the passage",
-      "Scanning — searching rapidly through the text for a specific piece of information",
-      "Making inferences — using clues in the text plus prior knowledge to interpret unstated meanings",
-      "Summarising — condensing the main ideas of the passage into a shorter version"
-    ],
-    ans: 2,
-    exp: "Inference involves reading 'between the lines' — using textual clues and background knowledge to understand what the writer implies but does not explicitly state." },
-
-  // ── 10 with ans:3 (D is correct) ──
-
-  { q: "Which of the following sentences contains a correctly formed negative question tag for a positive statement with 'have'?",
-    opts: [
-      "You have completed the assignment, do you?",
-      "You have completed the assignment, are you not?",
-      "You have completed the assignment, haven't you not?",
-      "You have completed the assignment, haven't you?"
-    ],
-    ans: 3,
-    exp: "For a positive statement using 'have' as an auxiliary, the negative question tag is 'haven't + subject'. 'Haven't you?' is the only grammatically correct tag here." },
-
-  { q: "The consonant sounds /p/ and /b/ are described as a minimal pair because they:",
-    opts: [
-      "Both appear at the end of words only and can never appear at the beginning of a syllable",
-      "Are both vowel sounds produced with the mouth fully open and the tongue flat",
-      "Are produced in completely different parts of the mouth with no articulatory similarity",
-      "Are both bilabial plosives that differ only in voicing — /p/ is voiceless and /b/ is voiced"
-    ],
-    ans: 3,
-    exp: "/p/ and /b/ are both produced by bringing the two lips together (bilabial plosives). The only difference is that /b/ is voiced (vocal cords vibrate) and /p/ is voiceless." },
-
-  { q: "In an essay titled 'Responsibilities of the Government', which of the following would be the most appropriate opening sentence for the body of the essay?",
-    opts: [
-      "In my own opinion, I personally feel that the government is always doing its best for citizens.",
-      "A government is a very important thing and without it no country can exist anywhere.",
-      "Once upon a time there was a government that was very responsible to its people.",
-      "A responsible government is obligated to provide its citizens with security, education, healthcare, and infrastructure."
-    ],
-    ans: 3,
-    exp: "The best opening for the body of an expository essay on government responsibilities directly states the main point clearly and formally, setting up the points to be discussed." },
-
-  { q: "Which of the following correctly explains the concept of word stress and gives an example of how it changes meaning?",
-    opts: [
-      "Word stress refers to the number of syllables in a word; more syllables always result in greater stress",
-      "Word stress is determined entirely by spelling; words with double letters always carry primary stress on those letters",
-      "Word stress refers to the speed at which a word is pronounced; faster pronunciation always creates more stress",
-      "Word stress is the emphasis placed on a syllable; e.g., 'REcord' (noun) vs 're-CORD' (verb) differ in meaning based on stress"
-    ],
-    ans: 3,
-    exp: "In English, shifting the primary stress changes both the grammatical class and meaning of some words. 'REcord' (stress on 1st syllable) is a noun; 'reCORD' (stress on 2nd syllable) is a verb." },
-
-  { q: "Which of the following best describes the essay writing approach needed for the topic 'Pride Goes Before a Fall'?",
-    opts: [
-      "Write a formal report documenting historical examples of proud leaders who failed",
-      "Write a discursive essay presenting arguments for and against the concept of pride",
-      "Write a descriptive essay focusing on the physical appearance of a proud person",
-      "Write a narrative or moral story that illustrates, through characters and plot, how pride leads to failure"
-    ],
-    ans: 3,
-    exp: "This is a proverbial topic best handled as a narrative with a moral lesson — tell a story in which a character's pride causes their downfall, demonstrating the truth of the proverb." },
-
-  { q: "Which of the following is the correct meaning of the prefix 're-' in the word 'rewrite'?",
-    opts: [
-      "The prefix 're-' means 'before', so 'rewrite' means to write something before seeing the original",
-      "The prefix 're-' means 'not', so 'rewrite' means to refuse to write or to avoid writing",
-      "The prefix 're-' means 'badly', so 'rewrite' means to write something in an incorrect or poor manner",
-      "The prefix 're-' means 'again', so 'rewrite' means to write something again or in a new version"
-    ],
-    ans: 3,
-    exp: "The prefix 're-' means 'again' or 'back'. 'Rewrite' means to write again; similarly, 'redo' means to do again and 'return' means to come back." },
-
-  { q: "Which of the following correctly distinguishes between a vowel sound and a consonant sound in English phonetics?",
-    opts: [
-      "Vowel sounds are always louder than consonant sounds because the mouth opens wider",
-      "Consonant sounds are always longer in duration than vowel sounds in all English words",
-      "Vowel sounds are only the five letters A, E, I, O, U; all other letters automatically produce consonant sounds",
-      "Vowel sounds are produced with an unobstructed airflow through the vocal tract, while consonant sounds involve some form of obstruction or constriction"
-    ],
-    ans: 3,
-    exp: "Phonetically, vowels are produced with free, unimpeded airflow through the mouth. Consonants involve the articulators (lips, teeth, tongue) creating partial or complete obstruction of the airstream." },
-
-  { q: "In a formal letter of application reviewed during essay writing, which of the following belongs in the conclusion paragraph?",
-    opts: [
-      "The applicant's full postal address and the date of writing the letter",
-      "The name and full address of the organisation to which the letter is directed",
-      "The specific qualifications and work experience that make the applicant suitable",
-      "A polite expression of hope for a positive response and availability for an interview"
-    ],
-    ans: 3,
-    exp: "The concluding paragraph of a formal application letter typically thanks the reader, expresses willingness to attend an interview, and politely requests a positive consideration." },
-
-  { q: "Which of the following sentences correctly uses the causative structure 'get + object + past participle'?",
-    opts: [
-      "She got her hair cut by the salon stylist, but she got them cut it wrong.",
-      "She got the salon stylist to cutting her hair before the occasion.",
-      "She got her hair to be cut at the salon by the stylist attending.",
-      "She got her hair cut at the salon before the celebration began."
-    ],
-    ans: 3,
-    exp: "The correct causative structure is: subject + get + object + past participle. 'She got her hair cut' means she arranged for someone to cut it — the structure is correct and complete in option D." },
-
-  { q: "Which of the following correctly identifies the /ð/ sound and provides a word in which it appears?",
-    opts: [
-      "/ð/ is a voiceless velar plosive that appears at the beginning of the word 'king'",
-      "/ð/ is a voiceless bilabial fricative that appears at the beginning of the word 'fine'",
-      "/ð/ is a voiceless dental fricative that appears at the beginning of the word 'think'",
-      "/ð/ is a voiced dental fricative that appears at the beginning of words like 'the', 'this', and 'that'"
-    ],
-    ans: 3,
-    exp: "/ð/ is the voiced dental fricative — the tongue touches the upper teeth and air passes through with voicing. It appears in grammatical words like 'the', 'this', 'that', 'they', 'there'." }
-
-],
-'Mathematics': [
-
-  // ── 10 with ans:0 (A is correct) ──
-
-  { q: "Using a ruler and compass only, the first step in constructing a 60° angle at point P on a line is to:",
-    opts: ["Draw an arc centred at P that cuts the line, then use the same radius to mark off a second arc", "Draw a perpendicular bisector of the line segment and bisect the resulting right angle", "Mark a point Q anywhere on the line and draw a circle centred at Q through P", "Extend the line beyond P and draw an arc centred at the far end of the extension"],
-    ans: 0,
-    exp: "To construct 60°, draw an arc centred at P cutting the line at A; then, with the same radius centred at A, draw another arc cutting the first at B. The angle APB = 60°." },
-
-  { q: "The sum of all interior angles of a polygon with n sides is given by the formula:",
-    opts: ["(n − 2) × 180°", "(n + 2) × 180°", "(n − 2) × 90°", "n × 180°"],
-    ans: 0,
-    exp: "The sum of interior angles of any n-sided polygon is (n − 2) × 180°. For a triangle (n=3) this gives 180°, for a quadrilateral (n=4) it gives 360°, and so on." },
-
-  { q: "A boy standing on level ground observes the top of a building at an angle of elevation of 35°. If he is 50 m from the base of the building, the height of the building is approximately:",
-    opts: ["50 × tan 35° metres", "50 × sin 35° metres", "50 ÷ cos 35° metres", "50 × cos 35° metres"],
-    ans: 0,
-    exp: "Using trigonometry with the adjacent side (50 m) and the opposite side (height): tan 35° = height/50, so height = 50 × tan 35°." },
-
-  { q: "A ship leaves port and sails on a bearing of 070° for 40 km, then turns and sails on a bearing of 160° for 30 km. Which expression gives the straight-line distance from the port to the final position?",
-    opts: ["√(40² + 30²) km, because the two legs are perpendicular to each other", "40 + 30 km, because distances along bearings are always added directly", "40 × 30 km, because the two bearings form a right angle at the turning point", "√(40² − 30²) km, because the bearings form a complementary pair"],
-    ans: 0,
-    exp: "A bearing of 070° followed by 160° produces legs that are perpendicular (160° − 070° = 90°), so by Pythagoras the distance = √(40² + 30²) = 50 km." },
-
-  { q: "A bag contains 4 red balls, 3 blue balls, and 5 green balls. If one ball is picked at random, the probability that it is NOT green is:",
-    opts: ["7/12", "5/12", "3/12", "4/12"],
-    ans: 0,
-    exp: "Total balls = 4 + 3 + 5 = 12. Non-green balls = 4 + 3 = 7. P(not green) = 7/12." },
-
-  { q: "The mean of the data set 8, 12, 15, 9, 11, 7, and 10 is:",
-    opts: ["72/7, which simplifies to approximately 10.3", "75/7, which simplifies to approximately 10.7", "70/7, which equals exactly 10.0", "68/7, which simplifies to approximately 9.7"],
-    ans: 0,
-    exp: "Sum = 8+12+15+9+11+7+10 = 72. Mean = 72 ÷ 7 ≈ 10.3." },
-
-  { q: "Which of the following describes a regular polygon?",
-    opts: ["A polygon in which all sides are equal in length and all interior angles are equal in size", "A polygon that has at least one interior angle greater than 180°", "A polygon with an even number of sides where opposite sides are parallel", "A polygon in which all diagonals are equal but the sides may differ in length"],
-    ans: 0,
-    exp: "A regular polygon has all sides equal (equilateral) and all interior angles equal (equiangular), such as an equilateral triangle or a square." },
-
-  { q: "Two events A and B are said to be mutually exclusive if:",
-    opts: ["They cannot both occur at the same time, so P(A and B) = 0", "They must both occur together, so P(A and B) = 1", "The occurrence of A makes B twice as likely to occur", "P(A) + P(B) always equals 1 regardless of the sample space"],
-    ans: 0,
-    exp: "Mutually exclusive events cannot occur simultaneously, meaning P(A ∩ B) = 0, and therefore P(A or B) = P(A) + P(B)." },
-
-  { q: "Using a compass and ruler, a 90° angle can be constructed by:",
-    opts: ["First constructing a 60° angle and then bisecting the remaining 120° to obtain two 60° sectors, then bisecting one to produce 30°, and adding 60° + 30°", "Drawing any triangle and measuring the largest angle with a protractor", "Drawing a straight line and marking off equal segments until the angle looks right", "Constructing a 45° angle and doubling it using the same arc radius"],
-    ans: 0,
-    exp: "A 90° angle is constructed by building a 60° angle, then bisecting the remaining 120° reflex to get a 30° addition: 60° + 30° = 90°. Alternatively, a perpendicular bisector creates 90° directly." },
-
-  { q: "On a bar chart showing students' scores, the frequency of scores between 60 and 69 is represented by a bar of height 8. If 40 students were surveyed in total, the relative frequency of this class is:",
-    opts: ["8/40 = 0.2, or 20%", "8/40 = 0.8, or 80%", "40/8 = 5, or 500%", "8 × 40 = 320, or 320%"],
-    ans: 0,
-    exp: "Relative frequency = frequency ÷ total = 8 ÷ 40 = 0.2, expressed as 20%." },
-
-  // ── 10 with ans:1 (B is correct) ──
-
-  { q: "The exterior angle of a regular hexagon is:",
-    opts: ["30°, because a hexagon has 12 exterior angles that sum to 360°", "60°, because the sum of exterior angles of any polygon is 360° and a hexagon has 6 sides", "120°, because each interior angle of a regular hexagon is 120°", "72°, because the exterior angle equals 360° divided by 5"],
-    ans: 1,
-    exp: "The exterior angle of a regular polygon = 360° ÷ n. For a hexagon, n = 6, so exterior angle = 360° ÷ 6 = 60°." },
-
-  { q: "A ladder leans against a vertical wall. The foot of the ladder is 3 m from the wall and the ladder makes an angle of depression of 25° with the top of the wall. The length of the ladder is closest to:",
-    opts: ["3 × tan 25°", "3 ÷ cos 25°", "3 × cos 25°", "3 ÷ tan 25°"],
-    ans: 1,
-    exp: "The horizontal distance (3 m) is adjacent to the angle at the top of the wall (25°). cos 25° = 3/ladder, so ladder = 3 ÷ cos 25°." },
-
-  { q: "The median of the ordered data set 3, 7, 9, 12, 15, 18, 22 is:",
-    opts: ["9, because it is the third value in the ordered list", "12, because it is the middle (4th) value in a set of 7 items", "15, because it is the fifth value in the ordered list", "9.5, because it is the average of the 3rd and 4th values"],
-    ans: 1,
-    exp: "With 7 values, the median is the (7+1)/2 = 4th value. Counting 3, 7, 9, 12 — the 4th value is 12." },
-
-  { q: "A bearing of S45°E is equivalent to which three-figure bearing?",
-    opts: ["045°", "135°", "225°", "315°"],
-    ans: 1,
-    exp: "S45°E means 45° east of south. Starting from north (000°), south is 180°, then 45° towards east gives 180° − 45° = 135°." },
-
-  { q: "A fair coin is tossed twice. What is the probability of getting exactly one head?",
-    opts: ["1/4, because the only favourable outcome is HH", "1/2, because the favourable outcomes are HT and TH out of four equally likely outcomes", "3/4, because three outcomes contain at least one head", "1, because at least one head always appears in two tosses"],
-    ans: 1,
-    exp: "Sample space: HH, HT, TH, TT — four outcomes. Exactly one head: HT and TH = 2 outcomes. P = 2/4 = 1/2." },
-
-  { q: "To bisect an angle using only a compass and ruler, after drawing an arc centred at the vertex that cuts both arms, the next step is to:",
-    opts: ["Draw a straight line from the vertex to the midpoint of the line joining the two arc intersections", "Draw equal arcs centred at each intersection point of the first arc and the arms, then join the vertex to where these arcs cross", "Measure the angle with a protractor and mark exactly half the angle on the diagram", "Draw a perpendicular from one arm of the angle to the other arm"],
-    ans: 1,
-    exp: "After the first arc cuts both arms at two points, draw equal-radius arcs from each of these points. Where these two arcs intersect gives a point on the angle bisector — join this to the vertex." },
-
-  { q: "Which of the following data representations is most appropriate for showing how the scores of 100 students are distributed across class intervals?",
-    opts: ["A pie chart divided into sectors proportional to each student's individual score", "A frequency distribution table or histogram grouping scores into equal class intervals", "A line graph plotting each student's rank against their actual score", "A pictogram using one symbol to represent each of the 100 students"],
-    ans: 1,
-    exp: "A frequency distribution table or histogram is most appropriate for grouped data, showing how many observations fall within each class interval." },
-
-  { q: "The sum of the interior angles of a nonagon (9 sides) is:",
-    opts: ["1080°", "1260°", "1440°", "900°"],
-    ans: 1,
-    exp: "Sum of interior angles = (n − 2) × 180° = (9 − 2) × 180° = 7 × 180° = 1260°." },
-
-  { q: "From the top of a cliff 80 m high, the angle of depression of a boat at sea is 30°. The horizontal distance from the base of the cliff to the boat is:",
-    opts: ["80 × sin 30° metres", "80 ÷ tan 30° metres", "80 × tan 30° metres", "80 ÷ sin 30° metres"],
-    ans: 1,
-    exp: "The angle of depression from the top = 30°. tan 30° = opposite/adjacent = 80/d, so d = 80 ÷ tan 30° = 80√3 ≈ 138.6 m." },
-
-  { q: "A die is rolled once. What is the probability of getting a prime number?",
-    opts: ["2/6, because only 2 and 3 are prime numbers on a standard die", "3/6 = 1/2, because 2, 3, and 5 are prime numbers on a standard die", "4/6, because 1, 2, 3, and 5 qualify as prime on a standard die", "1/6, because only the number 2 is a prime on a standard die"],
-    ans: 1,
-    exp: "Prime numbers on a standard die (1–6) are 2, 3, and 5 — three outcomes. P(prime) = 3/6 = 1/2." },
-
-  // ── 10 with ans:2 (C is correct) ──
-
-  { q: "The interior angle of a regular pentagon is:",
-    opts: ["72°, because the exterior angle of a pentagon is 72° and interior = exterior", "90°, because a pentagon's angles can be divided into right angles", "108°, because (5 − 2) × 180° ÷ 5 = 540° ÷ 5 = 108°", "120°, because the interior angle formula gives 600° ÷ 5 = 120°"],
-    ans: 2,
-    exp: "Interior angle of a regular pentagon = (n − 2) × 180° ÷ n = (5 − 2) × 180° ÷ 5 = 540° ÷ 5 = 108°." },
-
-  { q: "A point P has a bearing of 240° from point Q. What is the bearing of Q from P?",
-    opts: ["060°, because 240° − 180° = 60°", "120°, because bearings that are directly opposite always differ by 120°", "060°, because the reverse bearing is found by subtracting 180° from 240°", "300°, because you add 60° to the original bearing to find the reverse"],
-    ans: 2,
-    exp: "The reverse (back) bearing is found by adding or subtracting 180°. Since 240° > 180°, subtract: 240° − 180° = 060°. The bearing of Q from P is 060°." },
-
-  { q: "A data set has values 5, 8, 8, 10, 12, 12, 12, 15. The mode of this data set is:",
-    opts: ["8, because it appears twice which is more than 5, 10, and 15", "10, because it is the middle value of the data set", "12, because it appears three times, more than any other value", "15, because it is the largest value in the data set"],
-    ans: 2,
-    exp: "The mode is the value that occurs most frequently. 12 appears three times, which is more than any other value in the data set." },
-
-  { q: "Two cards are drawn at random from a standard deck of 52 cards without replacement. What is the probability that both cards are aces?",
-    opts: ["4/52 × 4/52 = 16/2704", "4/52 × 3/51 is correct only when cards are drawn with replacement", "4/52 × 3/51 = 12/2652 = 1/221, because after the first ace is drawn, 3 aces remain in 51 cards", "2/52 × 1/51, because only two of the four aces count for this calculation"],
-    ans: 2,
-    exp: "Without replacement: P(first ace) = 4/52; P(second ace | first ace drawn) = 3/51. P(both aces) = (4/52) × (3/51) = 12/2652 = 1/221." },
-
-  { q: "A student constructs a 45° angle. Which of the following correctly describes the construction steps?",
-    opts: ["Construct a 60° angle and subtract 15° using a protractor to leave exactly 45°", "Construct a 30° angle and add a 15° angle using a compass arc method", "Construct a 90° angle first using perpendicular bisection, then bisect it to obtain two 45° angles", "Construct an equilateral triangle and then bisect its 60° angles to produce 45°"],
-    ans: 2,
-    exp: "The standard method for constructing 45° is to first construct a 90° angle (using perpendicular bisection), then bisect it to produce two equal 45° angles." },
-
-  { q: "The range of the data set 14, 22, 8, 35, 19, 11, 27 is:",
-    opts: ["22, because 35 minus 13 equals 22", "19, because 35 minus 16 equals 19", "27, because the largest value minus the smallest value is 35 − 8 = 27", "14, because the mode subtracted from the maximum gives 14"],
-    ans: 2,
-    exp: "Range = maximum value − minimum value = 35 − 8 = 27." },
-
-  { q: "Which of the following correctly states the addition rule of probability for two mutually exclusive events A and B?",
-    opts: ["P(A or B) = P(A) × P(B), because the events occur independently", "P(A or B) = P(A) + P(B) − P(A) × P(B), to account for overlapping outcomes", "P(A or B) = P(A) + P(B), because mutually exclusive events have no outcomes in common", "P(A or B) = 1 − P(A) × P(B), because at least one event must occur"],
-    ans: 2,
-    exp: "For mutually exclusive events, P(A ∩ B) = 0, so the addition rule simplifies to P(A ∪ B) = P(A) + P(B)." },
-
-  { q: "The bearing of town Y from town X is 310°. What type of direction does this bearing correspond to approximately?",
-    opts: ["South-East, because 310° lies between 270° and 360° on the eastern side", "North-East, because any bearing less than 360° can be classified as north-easterly", "North-West, because 310° lies between 270° (West) and 360°/000° (North)", "South-West, because 310° is greater than 270° and south-west lies beyond due west"],
-    ans: 2,
-    exp: "310° lies between 270° (West) and 360° (North), so it points in the North-West direction." },
-
-  { q: "On a histogram, the class interval 20–30 has a frequency of 15 and the class interval 30–40 has a frequency of 25. The total number of data values in both classes combined is:",
-    opts: ["25, because only the higher frequency is counted in histogram analysis", "37.5, because the frequencies are averaged across the two class intervals", "40, because 15 + 25 = 40 data values fall within the two class intervals", "10, because 25 − 15 = 10 gives the difference between the classes"],
-    ans: 2,
-    exp: "The total number of data values in the two classes is simply 15 + 25 = 40." },
-
-  { q: "In a class of 30 students, the probability that a randomly chosen student studies French is 2/5. How many students study French?",
-    opts: ["10 students, because 30 ÷ 5 = 6 and 6 × 1 = 10 under an incorrect formula", "14 students, because 2/5 of 30 is calculated incorrectly as 14", "12 students, because (2/5) × 30 = 60/5 = 12", "15 students, because half of 30 students is the expected result"],
-    ans: 2,
-    exp: "Number of French students = (2/5) × 30 = 60/5 = 12 students." },
-
-  // ── 10 with ans:3 (D is correct) ──
-
-  { q: "Which of the following is true about the exterior angles of any convex polygon, regardless of the number of sides?",
-    opts: ["They always sum to 180°, the same as the interior angles of a triangle", "They always sum to (n − 2) × 180°, where n is the number of sides", "They always sum to 720°, which is twice the sum of a quadrilateral's interior angles", "They always sum to 360°, no matter how many sides the polygon has"],
-    ans: 3,
-    exp: "The sum of exterior angles of any convex polygon is always 360°, regardless of the number of sides." },
-
-  { q: "A surveyor stands at point A and observes a tower at point B on a bearing of 035°. He then walks to point C, due east of A, and observes the same tower at a bearing of 330°. If AC = 100 m, which method should he use to find the distance AB?",
-    opts: ["Use the Pythagorean theorem directly, because the triangle ABC is always right-angled at B", "Use the cosine rule, because angle B is always obtuse in this type of survey problem", "Use the formula AB = AC × sin(angle ACB), because the sine rule requires only two sides", "Use the sine rule, applying the known side AC and the angles of the triangle to find AB"],
-    ans: 3,
-    exp: "With one known side (AC = 100 m) and known angles in the triangle, the sine rule is used: AB/sin(ACB) = AC/sin(ABC), allowing AB to be calculated." },
-
-  { q: "A data set of 50 values is organised in a frequency table. The cumulative frequency at the class boundary 50 is 38. The number of values greater than 50 is:",
-    opts: ["38, because cumulative frequency always equals the total count for the last boundary", "50, because the data set contains exactly 50 values in total", "88, because cumulative frequency and remaining frequency are always added together", "12, because 50 − 38 = 12 values lie above the class boundary of 50"],
-    ans: 3,
-    exp: "Cumulative frequency up to 50 is 38, meaning 38 values are ≤ 50. Values above 50 = total − cumulative = 50 − 38 = 12." },
-
-  { q: "Which of the following is the correct formula for the number of diagonals in a polygon with n sides?",
-    opts: ["n(n − 1) ÷ 2, which counts all line segments between vertices including sides", "n(n + 1) ÷ 2, which overestimates by including extended lines beyond vertices", "(n + 2)(n − 1) ÷ 2, which adjusts for irregular polygons with re-entrant angles", "n(n − 3) ÷ 2, because each vertex connects to (n − 3) non-adjacent vertices"],
-    ans: 3,
-    exp: "Each vertex connects to (n − 3) other non-adjacent vertices (excluding itself and the two adjacent vertices). Total diagonals = n(n − 3) ÷ 2." },
-
-  { q: "A man walks 5 km due North and then 12 km due East. His bearing from the starting point is approximately:",
-    opts: ["22.6°, because tan θ = 5/12 and the angle is measured from the east", "30°, because the 5-12-13 triangle always produces a 30° bearing", "45°, because due north then due east always produces a 45° bearing", "67.4°, because tan θ = 12/5 and the bearing is measured clockwise from north"],
-    ans: 3,
-    exp: "Bearing is measured clockwise from North. tan θ = opposite/adjacent = 12/5, so θ = arctan(2.4) ≈ 67.4°. The bearing from start is approximately 067.4°." },
-
-  { q: "When constructing a perpendicular to a line from a point NOT on the line using only compass and ruler, the method involves:",
-    opts: ["Drawing a semicircle of any radius centred at the point and marking where it crosses itself on the line", "Extending the line to double its length and then constructing a bisector at the new endpoint", "Measuring the distance from the point to the line with a ruler and marking the midpoint", "Drawing arcs from the external point that intersect the line at two places, then bisecting the segment between those intersections"],
-    ans: 3,
-    exp: "To drop a perpendicular from an external point: draw arcs from the point cutting the line at two places, then construct the perpendicular bisector of those two intersection points — which passes through the external point." },
-
-  { q: "A pie chart represents the results of a survey of 360 students' favourite subjects. Mathematics has a sector angle of 90°. How many students chose Mathematics?",
-    opts: ["9 students, because 90 ÷ 360 × 10 = 9", "36 students, because 90 out of 360 degrees represents 10% of 360 students", "180 students, because a 90° sector is one-quarter and one-quarter of 360 is 90", "90 students, because (90/360) × 360 = 90"],
-    ans: 3,
-    exp: "Number of students = (sector angle/360°) × total = (90/360) × 360 = 90 students." },
-
-  { q: "A bag contains 6 red and 4 blue beads. Two beads are drawn without replacement. What is the probability that both beads are red?",
-    opts: ["6/10 × 6/10 = 36/100, using replacement probability incorrectly", "6/10 × 5/9 is wrong because the second draw should use 4 remaining red beads", "3/10, because 6/10 simplified and halved gives 3/10 for two draws", "6/10 × 5/9 = 30/90 = 1/3, because after one red bead is drawn, 5 red beads remain in 9"],
-    ans: 3,
-    exp: "P(first red) = 6/10; P(second red | first red) = 5/9 (5 reds left in 9 beads). P(both red) = (6/10) × (5/9) = 30/90 = 1/3." },
-
-  { q: "The angle of elevation of the top of a tree from a point 20 m away on the ground is 50°. Which of the following correctly gives the height of the tree?",
-    opts: ["Height = 20 × cos 50°, using the adjacent and hypotenuse relationship", "Height = 20 ÷ sin 50°, using the hypotenuse and opposite relationship", "Height = 20 × sin 50°, using the hypotenuse and opposite instead of the tangent", "Height = 20 × tan 50°, using the opposite and adjacent relationship with the ground distance"],
-    ans: 3,
-    exp: "With the horizontal distance (adjacent = 20 m) and the angle of elevation (50°), tan 50° = height/20, so height = 20 × tan 50°." },
-
-  { q: "Which of the following correctly describes how to construct a 120° angle using only a compass and ruler?",
-    opts: ["Construct a 60° angle, then use a protractor to add another 60° to reach 120°", "Construct a 90° angle and add a 30° angle using compass arcs to total 120°", "Construct a 45° angle and triple it using successive compass constructions to reach 135° then subtract", "Construct a 60° angle, then on the other side of one arm construct another 60° angle to produce a total of 120°"],
-    ans: 3,
-    exp: "120° = 60° + 60°. Construct a 60° angle at point P, then from the same base construct a second 60° angle adjacent to it on the same side, giving a total of 120° between the outer arms." }
-
-],
-'Basic Science': [
-
-  // ── 10 with ans:0 (A is correct) ──
-
-  { q: "Which of the following correctly describes sexual reproduction in flowering plants?",
-    opts: [
-      "The fusion of a male gamete (pollen nucleus) with a female gamete (egg cell) to form a zygote",
-      "The production of new plants from vegetative parts such as stems, roots, or leaves",
-      "The splitting of a parent plant into two equal halves each capable of growing independently",
-      "The release of spores that germinate without fertilisation to produce new plants"
-    ],
-    ans: 0,
-    exp: "Sexual reproduction in plants involves fertilisation — the male gamete from pollen fuses with the egg cell in the ovule to form a zygote, which develops into a seed." },
-
-  { q: "A bar magnet is cut in half through its middle. The result is:",
-    opts: [
-      "Two complete magnets each with a north pole and a south pole of weaker strength",
-      "One piece with only a north pole and another piece with only a south pole",
-      "Two demagnetised pieces because cutting breaks the magnetic domains permanently",
-      "One stronger full magnet and one inert piece with no magnetic properties"
-    ],
-    ans: 0,
-    exp: "Cutting a magnet always produces two complete magnets, each with its own north and south pole, because magnetic poles cannot be isolated — every magnet has both poles." },
-
-  { q: "The loudness of a sound wave is determined by its:",
-    opts: [
-      "Amplitude — the greater the amplitude of vibration, the louder the sound produced",
-      "Frequency — the higher the frequency of vibration, the louder the sound heard",
-      "Wavelength — the longer the wavelength, the greater the loudness of the sound",
-      "Speed — the faster the sound travels through a medium, the louder it appears"
-    ],
-    ans: 0,
-    exp: "Loudness (intensity) of sound depends on the amplitude of the sound wave. Greater amplitude means more energy and therefore a louder sound." },
-
-  { q: "The transfer of heat through a solid material without the material itself moving is called:",
-    opts: [
-      "Conduction, where heat energy is passed from atom to atom through the solid",
-      "Convection, where heated fluid rises and cooler fluid sinks in a circulating current",
-      "Radiation, where heat travels as electromagnetic waves without needing a medium",
-      "Evaporation, where molecules leave the liquid surface and carry heat energy away"
-    ],
-    ans: 0,
-    exp: "Conduction is heat transfer through a solid (or stationary fluid) via direct molecule-to-molecule energy transfer without bulk movement of the material." },
-
-  { q: "According to the kinetic theory of matter, which state of matter has particles that are closely packed in a fixed regular arrangement with only vibrational motion?",
-    opts: [
-      "Solid, where particles vibrate in fixed positions within a rigid lattice structure",
-      "Liquid, where particles are close together but can flow and slide past each other",
-      "Gas, where particles move rapidly and randomly with large spaces between them",
-      "Plasma, where particles are ionised and exist in a high-energy state"
-    ],
-    ans: 0,
-    exp: "In solids, particles are tightly packed in a fixed regular lattice and can only vibrate about their fixed positions — they cannot move from place to place." },
-
-  { q: "Which of the following is a product of the fractional distillation of crude oil used primarily as fuel for jet aircraft?",
-    opts: [
-      "Kerosene (aviation fuel), which is collected at temperatures between approximately 150°C and 250°C",
-      "Petrol (gasoline), which is collected at the lowest temperatures between 40°C and 75°C",
-      "Diesel oil, which is collected at temperatures between approximately 250°C and 350°C",
-      "Bitumen (asphalt), which is the thick residue remaining at the bottom after distillation"
-    ],
-    ans: 0,
-    exp: "Kerosene (paraffin/aviation fuel) is the fraction of crude oil that condenses at approximately 150–250°C during fractional distillation and is used as jet fuel." },
-
-  { q: "In plants, the process by which pollen is carried from the anther of one flower to the stigma of another flower of the same species is called:",
-    opts: [
-      "Cross-pollination, which transfers pollen between different individual plants of the same species",
-      "Self-pollination, which transfers pollen from an anther to the stigma of the same flower",
-      "Fertilisation, which is the fusion of the male and female gametes within the ovule",
-      "Germination, which is the process of a seed sprouting into a new seedling"
-    ],
-    ans: 0,
-    exp: "Cross-pollination is the transfer of pollen from the anther of one plant to the stigma of a different individual of the same species, typically by wind, insects, water, or animals." },
-
-  { q: "Which property of a magnet is demonstrated when iron filings are sprinkled around a bar magnet and they arrange themselves in curved lines from pole to pole?",
-    opts: [
-      "The magnetic field pattern, showing the direction and relative strength of the magnetic field",
-      "The process of magnetic induction, showing how the magnet creates new magnets",
-      "The Curie point, showing the temperature at which the magnet loses its magnetism",
-      "Magnetic saturation, showing that the magnet has reached its maximum possible strength"
-    ],
-    ans: 0,
-    exp: "Iron filings align themselves along the magnetic field lines, revealing the shape and direction of the magnetic field — strongest at the poles where lines are closest together." },
-
-  { q: "The pitch of a sound is determined by its:",
-    opts: [
-      "Frequency — higher frequency vibrations produce a higher-pitched sound",
-      "Amplitude — greater amplitude vibrations produce a higher-pitched sound",
-      "Speed — faster-moving sound waves produce a higher-pitched sound",
-      "Wavelength in isolation — longer wavelengths always produce higher-pitched sounds"
-    ],
-    ans: 0,
-    exp: "Pitch is the perceived quality of highness or lowness of a sound, and it is directly determined by the frequency of vibration — higher frequency = higher pitch." },
-
-  { q: "Which of the following correctly describes the menstrual cycle in human females?",
-    opts: [
-      "A monthly hormonal cycle approximately 28 days long that prepares the uterus for potential pregnancy",
-      "A weekly hormonal cycle that controls the release of eggs from the ovaries every seven days",
-      "A yearly biological cycle triggered by seasonal changes in temperature and daylight",
-      "A continuous hormonal process that begins at birth and ends at puberty"
-    ],
-    ans: 0,
-    exp: "The menstrual cycle is approximately 28 days long and involves the monthly preparation of the uterine lining for implantation; if fertilisation does not occur, the lining is shed." },
-
-  // ── 10 with ans:1 (B is correct) ──
-
-  { q: "Which of the following best explains why metals are better conductors of heat than non-metals?",
-    opts: [
-      "Metal atoms are heavier than non-metal atoms, so they carry more thermal energy per collision",
-      "Metals have free electrons that can move rapidly through the structure and transfer thermal energy efficiently",
-      "Metal atoms are arranged in a hexagonal pattern that allows heat to flow in straight lines",
-      "Metals have lower melting points than non-metals, making them better at absorbing heat"
-    ],
-    ans: 1,
-    exp: "Metals are good conductors because their delocalised (free) electrons can move quickly through the metal lattice, transferring kinetic energy (heat) much faster than lattice vibrations alone." },
-
-  { q: "A student holds two magnets with their north poles facing each other. What will happen when the magnets are released?",
-    opts: [
-      "The magnets will attract each other because north poles always attract when close together",
-      "The magnets will repel each other because like poles always repel",
-      "Nothing will happen because magnets only react when they touch each other directly",
-      "The magnets will rotate until their north and south poles face each other, then attract"
-    ],
-    ans: 1,
-    exp: "The fundamental law of magnetism: like poles (N-N or S-S) repel each other; unlike poles (N-S) attract each other." },
-
-  { q: "During the fractional distillation of crude oil, fractions with shorter carbon chains:",
-    opts: [
-      "Condense at higher temperatures and are collected near the bottom of the fractionating column",
-      "Have lower boiling points and are collected as vapour near the top of the fractionating column",
-      "Are denser and more viscous than fractions with longer carbon chains",
-      "Are always solid at room temperature because of their compact molecular structure"
-    ],
-    ans: 1,
-    exp: "Shorter carbon-chain hydrocarbons have weaker intermolecular forces and therefore lower boiling points — they remain as vapour longer and are collected from the top of the column." },
-
-  { q: "Which of the following is an example of asexual reproduction in plants that involves the production of new plants from underground modified stems?",
-    opts: [
-      "Pollination, where pollen from the anther is transferred to the stigma of another flower",
-      "Bulb formation, where structures such as onions produce new bulblets around the parent",
-      "Seed dispersal, where seeds are carried away from the parent plant by wind or animals",
-      "Fertilisation, where the male gamete fuses with the egg cell inside the ovary"
-    ],
-    ans: 1,
-    exp: "Bulbs (e.g., onions, tulips) are modified underground storage stems that produce smaller daughter bulbs (offsets) around the parent — a form of vegetative (asexual) reproduction." },
-
-  { q: "Which of the following best describes the process of evaporation and how it causes cooling?",
-    opts: [
-      "Evaporation occurs when a liquid freezes and releases latent heat to the surroundings",
-      "Evaporation occurs when the most energetic surface molecules escape as vapour, reducing the average kinetic energy (temperature) of the remaining liquid",
-      "Evaporation requires an external heat source and always occurs at the boiling point of a liquid",
-      "Evaporation occurs when a gas condenses into liquid form, absorbing heat from the container"
-    ],
-    ans: 1,
-    exp: "During evaporation, the fastest-moving molecules escape the liquid surface, leaving behind molecules of lower average kinetic energy — this lowers the temperature of the liquid, causing cooling." },
-
-  { q: "The kinetic theory of matter explains that when a substance is heated, its particles:",
-    opts: [
-      "Become heavier and move closer together, increasing the substance's density",
-      "Gain kinetic energy and move faster, increasing the average separation between particles",
-      "Lose potential energy and bond more tightly to neighbouring particles",
-      "Decrease in number through a process of thermal decomposition"
-    ],
-    ans: 1,
-    exp: "Heating gives particles more kinetic energy, causing them to vibrate or move faster. This increases the average distance between particles and causes thermal expansion." },
-
-  { q: "Which of the following describes sexually transmitted infections (STIs) and their relevance to reproductive health?",
-    opts: [
-      "STIs are infections passed only through contaminated water and food, not through sexual contact",
-      "STIs are infections spread primarily through sexual contact that can impair reproductive organs and fertility if untreated",
-      "STIs are genetic disorders inherited from parents that affect the reproductive system",
-      "STIs only affect adults over the age of 40 and have no impact on young people's fertility"
-    ],
-    ans: 1,
-    exp: "Sexually transmitted infections (STIs) are spread mainly through sexual contact. Many, if untreated, cause damage to the reproductive organs, leading to infertility and other serious health problems." },
-
-  { q: "Which of the following best describes the process of echo and how it is used in industry?",
-    opts: [
-      "An echo is produced when a sound wave bends around an obstacle and arrives before the original wave",
-      "An echo is a reflected sound wave; in industry, ultrasound echoes are used in sonar and medical imaging to detect objects and measure distances",
-      "An echo is caused when two identical sound waves travel in opposite directions and cancel each other",
-      "An echo is the amplification of sound that occurs when a wave passes from a dense medium to a less dense medium"
-    ],
-    ans: 1,
-    exp: "An echo is reflected sound. In sonar (ships detecting depth/objects) and medical ultrasound (imaging organs), timing of reflected sound pulses reveals distances and structures." },
-
-  { q: "The process by which a seed absorbs water and begins to sprout into a new plant is called:",
-    opts: [
-      "Pollination, which is the transfer of pollen from one flower to another",
-      "Germination, which begins when conditions of adequate water, warmth, and oxygen are met",
-      "Photosynthesis, which is the manufacture of food by green plants using sunlight",
-      "Fertilisation, which is the fusion of the male and female gametes in the ovule"
-    ],
-    ans: 1,
-    exp: "Germination is the process by which a dormant seed absorbs water (imbibition), activates metabolic processes, and sprouts a radicle (root) and plumule (shoot)." },
-
-  { q: "In the context of crude oil and petrochemicals, cracking refers to:",
-    opts: [
-      "The physical process of allowing crude oil fractions to solidify and crack at low temperatures",
-      "The industrial process of breaking down large hydrocarbon molecules into smaller, more useful ones using heat and a catalyst",
-      "The geological process by which organic matter is compressed over millions of years to form crude oil",
-      "The chemical process of combining small hydrocarbon molecules together to form larger polymer chains"
-    ],
-    ans: 1,
-    exp: "Cracking is an industrial process that uses heat (thermal cracking) or a catalyst (catalytic cracking) to break large, less useful hydrocarbon molecules into smaller, more valuable ones such as petrol and alkenes." },
-
-  // ── 10 with ans:2 (C is correct) ──
-
-  { q: "A substance that is attracted to a magnet is described as:",
-    opts: [
-      "Diamagnetic — it is weakly repelled by both poles of a magnet",
-      "Non-magnetic — it has no interaction with any magnetic field",
-      "Ferromagnetic — it is strongly attracted to a magnet and can itself be magnetised",
-      "Paramagnetic — it shows only very slight attraction to a strong magnetic field"
-    ],
-    ans: 2,
-    exp: "Ferromagnetic materials (e.g., iron, cobalt, nickel) are strongly attracted to magnets and can be permanently or temporarily magnetised. This is the everyday meaning of 'magnetic material'." },
-
-  { q: "Which of the following is the correct sequence of events in the reproduction of a flowering plant?",
-    opts: [
-      "Fertilisation → pollination → seed dispersal → germination → growth",
-      "Germination → pollination → fertilisation → seed dispersal → growth",
-      "Pollination → fertilisation → seed and fruit formation → seed dispersal → germination",
-      "Seed dispersal → pollination → germination → fertilisation → fruit formation"
-    ],
-    ans: 2,
-    exp: "The correct sequence: pollination (pollen reaches stigma) → fertilisation (pollen nucleus fuses with egg) → seed/fruit development → dispersal → germination." },
-
-  { q: "Which of the following correctly explains why sound cannot travel through a vacuum?",
-    opts: [
-      "Sound travels too slowly to exist in a vacuum because there is no gravity to accelerate it",
-      "Sound waves are electromagnetic and are absorbed by the electromagnetic fields in a vacuum",
-      "Sound requires a material medium (particles) to vibrate and transfer energy, and a vacuum has no particles",
-      "Sound is converted into light energy when it enters a vacuum and can no longer be detected as sound"
-    ],
-    ans: 2,
-    exp: "Sound is a mechanical longitudinal wave that requires a medium (solid, liquid, or gas) to propagate. In a vacuum there are no particles to vibrate, so sound cannot travel." },
-
-  { q: "Global warming is closely linked to crude oil combustion because:",
-    opts: [
-      "Burning crude oil fractions produces ozone gas that fills the atmosphere and traps cold air",
-      "Crude oil releases radioactive particles when burned that ionise the atmosphere",
-      "Combustion of fossil fuels releases carbon dioxide, a greenhouse gas that traps heat in the atmosphere",
-      "Burning crude oil produces nitrogen gas that reacts with oxygen to block sunlight"
-    ],
-    ans: 2,
-    exp: "Burning fossil fuels releases CO₂ (a greenhouse gas) into the atmosphere. CO₂ absorbs outgoing infrared radiation from Earth's surface, causing the greenhouse effect and global warming." },
-
-  { q: "Which of the following thermal energy transfer processes does NOT require any material medium?",
-    opts: [
-      "Conduction, which transfers heat through particle-to-particle collisions in solids",
-      "Convection, which transfers heat through the bulk movement of heated fluid",
-      "Radiation, which transfers heat as infrared electromagnetic waves through empty space",
-      "Evaporative cooling, which transfers heat through the escape of energetic molecules"
-    ],
-    ans: 2,
-    exp: "Radiation transfers heat as electromagnetic (infrared) waves and is the only heat transfer method that can travel through a vacuum — it does not require a material medium." },
-
-  { q: "A student notices that a magnet loses its magnetism when it is repeatedly dropped on a hard floor. The best explanation for this is that:",
-    opts: [
-      "The impact increases the temperature of the magnet above its Curie point permanently",
-      "The chemical composition of the magnet changes when it collides with the floor",
-      "The repeated shocks cause the magnetic domains within the magnet to become randomly oriented, destroying the net magnetic alignment",
-      "The magnet transfers its north pole to the floor upon impact, leaving only the south pole"
-    ],
-    ans: 2,
-    exp: "A magnet's strength depends on the alignment of its magnetic domains. Repeated physical shocks cause domains to randomise in direction, cancelling the net magnetism." },
-
-  { q: "Which of the following describes the role of the placenta during human foetal development?",
-    opts: [
-      "It produces sperm cells that fertilise the egg in the fallopian tube",
-      "It is the organ where fertilisation of the egg by the sperm takes place",
-      "It facilitates the exchange of oxygen, nutrients, and waste products between the mother and the developing foetus",
-      "It produces the amniotic fluid that cushions and protects the developing foetus"
-    ],
-    ans: 2,
-    exp: "The placenta is the organ that allows oxygen and nutrients to pass from the mother's blood to the foetus, and waste products such as CO₂ to pass from the foetus to the mother, without direct blood mixing." },
-
-  { q: "The speed of sound in air at room temperature is approximately:",
-    opts: [
-      "3 × 10⁸ m/s, which is the speed of light in a vacuum",
-      "1500 m/s, which is the speed of sound in water at room temperature",
-      "340 m/s, which is the approximate speed of sound in air at 20°C",
-      "1 m/s, which represents the speed of sound in a near-vacuum environment"
-    ],
-    ans: 2,
-    exp: "Sound travels through air at approximately 340 m/s (343 m/s) at 20°C. It travels faster in water (~1500 m/s) and even faster in solids." },
-
-  { q: "Diffusion in gases is best explained by the kinetic theory of matter because:",
-    opts: [
-      "Gas particles are stationary but transfer energy by vibrating in their fixed positions",
-      "Gas particles travel only in straight lines and never collide with each other",
-      "Gas particles move rapidly in random directions and mix naturally without needing external energy",
-      "Gas particles only move when external pressure forces them from high to low concentration"
-    ],
-    ans: 2,
-    exp: "According to kinetic theory, gas particles are in constant rapid random motion. This random motion naturally causes them to spread out and mix — a process called diffusion." },
-
-  { q: "Which of the following petrochemical products is derived from crude oil and used to make plastic bags, bottles, and packaging materials?",
-    opts: [
-      "Bitumen, which is used primarily for road surfacing and waterproofing",
-      "Lubricating oil, which is used to reduce friction in engines and machinery",
-      "Polythene (polyethylene), a polymer manufactured from ethene derived from crude oil fractions",
-      "Diesel, which is used as fuel for heavy vehicles, generators, and marine engines"
-    ],
-    ans: 2,
-    exp: "Polythene (polyethylene) is a plastic made by polymerising ethene, which is produced by cracking crude oil fractions. It is widely used for packaging, bags, and bottles." },
-
-  // ── 10 with ans:3 (D is correct) ──
-
-  { q: "Which of the following correctly explains the difference between a permanent magnet and a temporary (induced) magnet?",
-    opts: [
-      "A permanent magnet can be demagnetised by heating; a temporary magnet cannot be demagnetised at all",
-      "A permanent magnet attracts only iron; a temporary magnet attracts all metals including aluminium",
-      "A temporary magnet has stronger magnetic poles than a permanent magnet of the same size",
-      "A permanent magnet retains its magnetism without an external field; a temporary magnet loses its magnetism when removed from the magnetising field"
-    ],
-    ans: 3,
-    exp: "A permanent magnet (e.g., steel) keeps its magnetism after the magnetising field is removed. A temporary magnet (e.g., soft iron) only remains magnetic while within a magnetic field." },
-
-  { q: "Which of the following processes in plant reproduction involves the development of a fruit from the ovary wall after fertilisation?",
-    opts: [
-      "Germination, where the seed absorbs water and sprouts into a seedling",
-      "Pollination, where pollen grains are transferred from anther to stigma",
-      "Transpiration, where water vapour is lost through the stomata of leaves",
-      "Fruit formation, where the ovary wall develops into the fruit around the seed after fertilisation"
-    ],
-    ans: 3,
-    exp: "After fertilisation, the ovule develops into a seed and the ovary wall develops into the fruit. The fruit protects the seed and often aids its dispersal." },
-
-  { q: "Which of the following describes the condition necessary for resonance to occur in a sound system?",
-    opts: [
-      "The sound source must be louder than 80 decibels for resonance to begin",
-      "The sound must travel through water, as resonance cannot occur in air",
-      "The medium must be a perfect vacuum so the sound wave is not absorbed",
-      "The natural frequency of an object must match the frequency of an applied sound wave"
-    ],
-    ans: 3,
-    exp: "Resonance occurs when the frequency of an external sound wave matches the natural (resonant) frequency of an object, causing it to vibrate with large amplitude." },
-
-  { q: "A student heats a bimetallic strip made of brass and iron bonded together. The strip bends towards the iron side. This demonstrates that:",
-    opts: [
-      "Iron has a higher thermal conductivity than brass and absorbs heat faster",
-      "Brass is denser than iron and contracts more when heated",
-      "Iron and brass have the same rate of expansion, causing equal bending on both sides",
-      "Brass has a greater coefficient of linear expansion than iron and expands more, bending the strip towards the iron side"
-    ],
-    ans: 3,
-    exp: "Brass expands more than iron for the same temperature rise (higher coefficient of thermal expansion). Since they are bonded, the brass side becomes longer, forcing the strip to curve towards the iron side." },
-
-  { q: "Which of the following correctly distinguishes between renewable and non-renewable sources of energy in relation to crude oil?",
-    opts: [
-      "Crude oil is renewable because new oil forms continuously from decomposed marine organisms",
-      "Crude oil is renewable because refineries can produce it artificially from atmospheric gases",
-      "Crude oil is neither renewable nor non-renewable because its energy comes from nuclear reactions",
-      "Crude oil is non-renewable because it takes millions of years to form and is being consumed faster than it can be replaced"
-    ],
-    ans: 3,
-    exp: "Crude oil is a non-renewable fossil fuel — it took millions of years to form from ancient organic matter and is being extracted and consumed at a rate far exceeding its rate of formation." },
-
-  { q: "Which of the following correctly explains the role of the hormone testosterone in male reproductive health?",
-    opts: [
-      "Testosterone is produced by the pituitary gland and stimulates the development of eggs in males",
-      "Testosterone controls the menstrual cycle and is released in monthly surges in males",
-      "Testosterone is produced in the adrenal gland only and has no effect on the reproductive organs",
-      "Testosterone is produced in the testes and is responsible for the development of male secondary sexual characteristics and sperm production"
-    ],
-    ans: 3,
-    exp: "Testosterone is the primary male sex hormone produced by the testes. It drives the development of male secondary sexual characteristics (voice deepening, muscle growth, facial hair) and is essential for sperm production." },
-
-  { q: "Which of the following best explains why cooking pots are made of metal but their handles are made of plastic or wood?",
-    opts: [
-      "Metal is cheaper than plastic, so using metal for the entire pot would be too expensive",
-      "Plastic handles are heavier than metal, balancing the weight of the pot when full",
-      "Metal reflects heat better than plastic, so the handle needs a reflective coating",
-      "Metal is a good conductor of heat (needed for cooking) while plastic and wood are poor conductors (insulators), making handles safe to touch"
-    ],
-    ans: 3,
-    exp: "Metal conducts heat well — ideal for the pot body to transfer heat to the food. Plastic and wood are poor conductors (insulators) — ideal for handles to prevent burns when touching." },
-
-  { q: "The process of fractional distillation used to separate crude oil fractions works because different fractions:",
-    opts: [
-      "Have different colours that allow them to be separated by passing light through the mixture",
-      "Have different electrical charges that allow them to be separated in an electromagnetic field",
-      "Have different densities only, with denser fractions sinking to the bottom of the column",
-      "Have different boiling points, so each fraction condenses and is collected at a different level in the column"
-    ],
-    ans: 3,
-    exp: "Fractional distillation separates crude oil by exploiting the different boiling points of the fractions. Each fraction vaporises, rises to a tray at its condensation temperature, and is collected." },
-
-  { q: "Which of the following is a consequence of the depletion of the ozone layer, which is linked to the use of petrochemical products?",
-    opts: [
-      "Increased rainfall worldwide because the thinner atmosphere holds more water vapour",
-      "Decreased wind speeds globally because ozone normally drives atmospheric circulation",
-      "Lower surface temperatures on Earth because less solar radiation reaches the ground",
-      "Increased ultraviolet (UV) radiation reaching Earth's surface, raising the risk of skin cancer and eye damage"
-    ],
-    ans: 3,
-    exp: "The ozone layer absorbs most of the Sun's harmful UV radiation. Its depletion (partly caused by CFCs from aerosols and refrigerants — petrochemical products) allows more UV to reach the surface, increasing health risks." },
-
-  { q: "Absolute zero, which is the temperature at which particle motion theoretically ceases completely according to the kinetic theory, is equal to:",
-    opts: [
-      "0°C, the temperature at which pure water freezes under standard atmospheric pressure",
-      "−100°C, the lowest temperature achievable in a standard laboratory freezer",
-      "−200°C, the temperature at which most gases condense into liquid form",
-      "−273°C (0 K), the theoretical minimum temperature where all particle kinetic energy reaches zero"
-    ],
-    ans: 3,
-    exp: "Absolute zero is −273.15°C (0 Kelvin). At this temperature, the kinetic theory predicts that all particle motion ceases, though in practice quantum effects prevent this completely." }
-
-],
-'Basic Technology': [
-
-  // ── 10 with ans:0 (A is correct) ──
-
-  { q: "Which of the following best describes the process of enlargement in plane figures?",
-    opts: [
-      "Producing a larger similar figure where all dimensions are multiplied by a scale factor greater than 1",
-      "Rotating a figure about a fixed point without changing its size or orientation",
-      "Reflecting a figure across a line of symmetry to produce a mirror image",
-      "Translating a figure from one position to another on a plane"
-    ],
-    ans: 0,
-    exp: "Enlargement produces a geometrically similar figure where every dimension is multiplied by a scale factor greater than 1, keeping all angles the same." },
-
-  { q: "The area of a trapezium with parallel sides of 8 cm and 12 cm and a perpendicular height of 5 cm is:",
-    opts: [
-      "½ × (8 + 12) × 5 = 50 cm²",
-      "½ × (8 × 12) × 5 = 240 cm²",
-      "(8 + 12) × 5 = 100 cm²",
-      "8 × 12 × 5 = 480 cm²"
-    ],
-    ans: 0,
-    exp: "Area of a trapezium = ½ × (sum of parallel sides) × height = ½ × (8 + 12) × 5 = ½ × 20 × 5 = 50 cm²." },
-
-  { q: "Which of the following woodwork machines is specifically designed to cut irregular curved shapes from flat timber?",
-    opts: [
-      "A band saw, which has a continuous looped blade running between two wheels",
-      "A circular saw, which uses a rotating disc blade to make straight rip cuts",
-      "A surface planer, which removes thin layers to produce a flat even surface",
-      "A mortising machine, which cuts square or rectangular slots into timber"
-    ],
-    ans: 0,
-    exp: "A band saw's continuous looped blade allows it to follow curved cutting lines and cut irregular shapes from flat boards." },
-
-  { q: "In building construction, the component that transfers the load of the entire structure from the walls and columns to the ground is called the:",
-    opts: [
-      "Foundation, which distributes the building's load safely into the earth below",
-      "Lintel, which spans across door and window openings to carry the wall load above",
-      "Sill, which forms the lowest horizontal member across the base of a window frame",
-      "Purlin, which runs horizontally across the roof rafters to support the roof covering"
-    ],
-    ans: 0,
-    exp: "The foundation is the structural element at the base of a building that transfers all loads from the superstructure into the supporting ground." },
-
-  { q: "A simple machine is said to have a mechanical advantage of 4. This means:",
-    opts: [
-      "The load overcome is 4 times greater than the effort applied to the machine",
-      "The effort applied is 4 times greater than the load that is overcome",
-      "The machine moves 4 times faster than an equivalent machine without gears",
-      "Energy input into the machine is 4 times greater than the energy output"
-    ],
-    ans: 0,
-    exp: "Mechanical Advantage = Load ÷ Effort. An MA of 4 means the load is 4 times the effort — the machine multiplies the force applied." },
-
-  { q: "Hydraulic systems are able to multiply force because they operate on the principle that:",
-    opts: [
-      "Pressure applied to a confined liquid is transmitted equally in all directions throughout the liquid",
-      "A liquid always flows from a region of low pressure to a region of high pressure",
-      "The volume of liquid decreases when pressure is applied, allowing force to increase",
-      "Liquid molecules are loosely packed and therefore absorb applied forces gradually"
-    ],
-    ans: 0,
-    exp: "Pascal's Principle states that pressure applied to an enclosed fluid is transmitted undiminished in all directions — this is the basis of hydraulic force multiplication." },
-
-  { q: "In a belt drive system connecting two pulleys, if the driver pulley has a diameter of 20 cm and rotates at 300 rpm, and the driven pulley has a diameter of 10 cm, the speed of the driven pulley is:",
-    opts: [
-      "600 rpm, because the smaller pulley rotates faster in inverse proportion to its diameter",
-      "150 rpm, because the smaller pulley rotates slower in proportion to its diameter",
-      "300 rpm, because both pulleys always rotate at the same speed regardless of size",
-      "60 rpm, because the speed ratio equals the product of both diameters divided by 100"
-    ],
-    ans: 0,
-    exp: "Speed ratio: N₂/N₁ = D₁/D₂. N₂ = (D₁/D₂) × N₁ = (20/10) × 300 = 600 rpm. The smaller pulley rotates faster." },
-
-  { q: "Which of the following correctly describes kinetic friction?",
-    opts: [
-      "The friction force acting between two surfaces that are already in relative motion against each other",
-      "The maximum friction force that prevents an object from beginning to move from rest",
-      "The friction that acts on an object moving through a fluid such as air or water",
-      "The friction produced when a round object rolls along a surface without slipping"
-    ],
-    ans: 0,
-    exp: "Kinetic (or sliding) friction is the resistive force between two surfaces already in motion relative to each other, and it is always less than static friction." },
-
-  { q: "The component in a pneumatic system that converts compressed air energy into mechanical linear motion is called a:",
-    opts: [
-      "Pneumatic cylinder (actuator), which uses air pressure to push a piston rod in and out",
-      "Compressor, which draws in atmospheric air and increases its pressure",
-      "Air receiver (reservoir), which stores compressed air for use by the system",
-      "Control valve, which directs the flow of compressed air to different parts of the circuit"
-    ],
-    ans: 0,
-    exp: "A pneumatic cylinder (actuator) is the output device in a pneumatic system that converts compressed air energy into linear mechanical motion via a piston." },
-
-  { q: "When two meshing spur gears of 20 teeth and 40 teeth are used in a gear train, the gear ratio is:",
-    opts: [
-      "2:1, meaning the larger gear rotates at half the speed of the smaller driver gear",
-      "1:2, meaning the larger gear rotates twice as fast as the smaller driver gear",
-      "1:1, meaning both gears rotate at exactly the same speed regardless of tooth count",
-      "4:1, meaning the larger gear rotates at one-quarter the speed of the smaller gear"
-    ],
-    ans: 0,
-    exp: "Gear ratio = teeth on driven ÷ teeth on driver = 40 ÷ 20 = 2:1. The larger gear (40T) rotates at half the speed of the smaller gear (20T)." },
-
-  // ── 10 with ans:1 (B is correct) ──
-
-  { q: "A plane figure is reduced using a scale factor of 0.5. If the original rectangle measured 10 cm by 8 cm, what are the dimensions of the reduced figure?",
-    opts: [
-      "20 cm by 16 cm, because the scale factor doubles each dimension",
-      "5 cm by 4 cm, because each dimension is multiplied by 0.5",
-      "10 cm by 4 cm, because only the length is multiplied by the scale factor",
-      "5 cm by 8 cm, because only the width is multiplied by the scale factor"
-    ],
-    ans: 1,
-    exp: "Scale factor of 0.5 means each dimension is multiplied by 0.5: 10 × 0.5 = 5 cm and 8 × 0.5 = 4 cm." },
-
-  { q: "Which of the following is the main function of a surface planer in a woodwork machine shop?",
-    opts: [
-      "To drill holes of precise diameter vertically into the surface of a timber workpiece",
-      "To produce a flat, smooth, and level surface on the face side of a timber board",
-      "To cut long timber boards into shorter pieces of a desired specific length",
-      "To cut a series of equally spaced teeth along the edge of a timber rack"
-    ],
-    ans: 1,
-    exp: "A surface planer (or surfacer) removes thin shavings from the face of a timber board to produce a perfectly flat and smooth reference surface." },
-
-  { q: "In building construction, a damp-proof course (DPC) is installed primarily to:",
-    opts: [
-      "Strengthen the foundation by acting as a reinforcing layer between the footing and the wall",
-      "Prevent moisture from rising through the walls from the ground into the structure above",
-      "Insulate the building against heat loss through the ground floor and lower walls",
-      "Provide a level surface on which the first course of bricks can be accurately laid"
-    ],
-    ans: 1,
-    exp: "A damp-proof course is a horizontal barrier (usually bitumen felt or slate) built into walls at low level to stop rising damp from penetrating into the building." },
-
-  { q: "The coefficient of friction between two surfaces is defined as:",
-    opts: [
-      "The product of the normal reaction force and the frictional force between the surfaces",
-      "The ratio of the frictional force to the normal reaction force between the surfaces",
-      "The difference between the applied force and the maximum static friction force",
-      "The sum of all forces acting on an object resting on a rough horizontal surface"
-    ],
-    ans: 1,
-    exp: "Coefficient of friction (μ) = Friction Force (F) ÷ Normal Reaction (N). It is a dimensionless ratio that characterises the roughness between two surfaces." },
-
-  { q: "In a chain drive system, which component prevents the chain from slipping off the sprocket teeth during operation?",
-    opts: [
-      "A rubber belt tensioner, which keeps constant outward pressure on the chain links",
-      "The interlocking of the chain's rollers or link pins with the sprocket teeth",
-      "A smooth flat idler pulley that runs against the outside of the chain",
-      "A fluid coupling that absorbs shock loads and prevents mechanical slippage"
-    ],
-    ans: 1,
-    exp: "Unlike a belt drive, a chain drive uses positive engagement — the chain's rollers mesh directly with the sprocket teeth, which prevents any slipping." },
-
-  { q: "Which of the following best describes the term 'velocity ratio' of a machine?",
-    opts: [
-      "The ratio of the output force (load) produced by the machine to the input force (effort) applied",
-      "The ratio of the distance moved by the effort to the distance moved by the load in the same time",
-      "The ratio of the useful work output to the total work input expressed as a percentage",
-      "The ratio of the speed of the driver gear to the speed of the driven gear in a gear train"
-    ],
-    ans: 1,
-    exp: "Velocity Ratio (VR) = Distance moved by effort ÷ Distance moved by load. It is a theoretical ratio that does not account for friction losses." },
-
-  { q: "Which part of the roof structure runs from the ridge at the top down to the wall plate at the bottom on each side, providing the main sloping structural member?",
-    opts: [
-      "The purlin, which is a horizontal beam spanning between trusses to support the rafters",
-      "The rafter, which is the inclined timber running from the ridge board down to the wall plate",
-      "The ridge board, which is the horizontal member at the apex of the roof",
-      "The ceiling joist, which spans horizontally between wall plates below the rafters"
-    ],
-    ans: 1,
-    exp: "The rafter is the inclined structural timber that runs from the ridge at the top of the roof down to the wall plate, forming the slope of the roof on each side." },
-
-  { q: "In a hydraulic press, the small piston has an area of 2 cm² and the large piston has an area of 20 cm². If a force of 50 N is applied to the small piston, the force produced at the large piston is:",
-    opts: [
-      "5 N, because the force is reduced in proportion to the area difference",
-      "500 N, because pressure = force/area is constant, and force scales with area",
-      "250 N, because the force is divided equally between the two pistons",
-      "1000 N, because the area ratio squared gives the force multiplication factor"
-    ],
-    ans: 1,
-    exp: "Pressure is constant: P = F₁/A₁ = F₂/A₂. F₂ = F₁ × (A₂/A₁) = 50 × (20/2) = 50 × 10 = 500 N." },
-
-  { q: "Which of the following best describes the function of a mortising machine in a woodwork shop?",
-    opts: [
-      "To sand and smooth the curved and flat surfaces of a turned wooden workpiece",
-      "To chop or drill out square or rectangular recesses (mortises) in timber for jointing",
-      "To rip-cut long planks along their length into narrower strips of uniform width",
-      "To shape the edge of a timber board into a specific profile such as a rebate or chamfer"
-    ],
-    ans: 1,
-    exp: "A mortising machine is used specifically to cut mortises — square or rectangular slots cut into timber to receive a tenon as part of a mortise-and-tenon joint." },
-
-  { q: "Static friction differs from kinetic friction in that static friction:",
-    opts: [
-      "Always has a fixed constant value regardless of how much force is applied to the object",
-      "Can vary from zero up to a maximum value before the object begins to move",
-      "Only acts on objects that are already in motion along a surface",
-      "Decreases as the normal reaction force between the two surfaces increases"
-    ],
-    ans: 1,
-    exp: "Static friction is variable — it increases to match the applied force until it reaches its maximum value (limiting friction), after which the object starts to move." },
-
-  // ── 10 with ans:2 (C is correct) ──
-
-  { q: "A gear wheel with 15 teeth drives a second gear with 45 teeth. If the driver gear makes 90 revolutions per minute, the driven gear makes:",
-    opts: [
-      "270 rpm, because the driven gear is smaller and spins faster",
-      "90 rpm, because gears always rotate at the same speed in a simple gear train",
-      "30 rpm, because the driven gear has 3 times more teeth and rotates 3 times slower",
-      "45 rpm, because the speed is halved when the tooth ratio exceeds 2:1"
-    ],
-    ans: 2,
-    exp: "Speed ratio: N₂ = N₁ × (T₁/T₂) = 90 × (15/45) = 90 × 1/3 = 30 rpm. More teeth = slower rotation." },
-
-  { q: "The efficiency of a machine is defined as:",
-    opts: [
-      "The ratio of the mechanical advantage to the velocity ratio, expressed as a whole number",
-      "The ratio of the effort applied to the load overcome, multiplied by one hundred",
-      "The ratio of useful work output to total work input, expressed as a percentage",
-      "The ratio of the load distance to the effort distance, expressed as a fraction"
-    ],
-    ans: 2,
-    exp: "Efficiency = (Useful Work Output ÷ Total Work Input) × 100%. It can also be expressed as (MA/VR) × 100%." },
-
-  { q: "Which of the following correctly describes the function of a fly wheel in a machine?",
-    opts: [
-      "To increase the speed of rotation by storing energy during the power stroke",
-      "To reverse the direction of rotation of a shaft when required by the operator",
-      "To store rotational kinetic energy and smooth out fluctuations in speed during operation",
-      "To convert the rotary motion of the engine into the linear motion needed by the machine"
-    ],
-    ans: 2,
-    exp: "A flywheel stores rotational kinetic energy during high-power strokes and releases it during low-power strokes, smoothing out speed variations in the machine." },
-
-  { q: "In building construction, what is the primary purpose of a lintel?",
-    opts: [
-      "To provide a waterproof barrier along the base of external walls above ground level",
-      "To anchor the roof structure securely to the top of the load-bearing walls",
-      "To span across openings such as doors and windows and support the wall load above them",
-      "To tie opposite walls together horizontally and prevent them from spreading outward"
-    ],
-    ans: 2,
-    exp: "A lintel is a horizontal structural beam placed over door and window openings to carry the weight of the wall (and any loads above) across the gap." },
-
-  { q: "Which of the following describes a V-belt drive and its main advantage over a flat belt?",
-    opts: [
-      "A V-belt is completely flat and relies entirely on friction between its smooth face and the pulley",
-      "A V-belt is made from pure metal links and grips the pulley by direct tooth engagement",
-      "A V-belt has a trapezoidal cross-section that wedges into a matching groove, giving greater grip with less slippage",
-      "A V-belt is a hollow tube filled with pressurised fluid that grips the pulley by hydraulic force"
-    ],
-    ans: 2,
-    exp: "A V-belt's wedge-shaped cross-section fits into the V-groove of the pulley. The wedging action increases contact pressure and significantly reduces slippage." },
-
-  { q: "Pneumatics and hydraulics are both fluid power systems. The key difference between them is that:",
-    opts: [
-      "Pneumatics uses oil as its working fluid while hydraulics uses water as its working fluid",
-      "Hydraulics can only produce rotary motion while pneumatics can only produce linear motion",
-      "Pneumatics uses compressed air (a compressible gas) while hydraulics uses a liquid (incompressible fluid)",
-      "Hydraulics operates at low pressure while pneumatics operates exclusively at very high pressure"
-    ],
-    ans: 2,
-    exp: "Pneumatics uses compressed air, which is compressible — this makes it ideal for lighter, faster operations. Hydraulics uses oil (incompressible), allowing much higher forces." },
-
-  { q: "Which part of a woodwork lathe holds and rotates the workpiece while the cutting tool is applied by the operator?",
-    opts: [
-      "The tool rest, which supports the cutting chisel during the turning operation",
-      "The tailstock, which supports the free end of long workpieces during turning",
-      "The headstock with its chuck or faceplate, which grips and drives the workpiece",
-      "The bed, which is the horizontal base along which the tailstock and tool rest slide"
-    ],
-    ans: 2,
-    exp: "The headstock contains the main spindle driven by the motor, and the chuck or faceplate attached to it grips and rotates the workpiece during turning." },
-
-  { q: "A scale drawing of a building plot uses a scale of 1:500. If a wall on the drawing measures 4 cm, the actual length of the wall is:",
-    opts: [
-      "4 m, because each centimetre equals 1 metre at this scale",
-      "200 cm, because the drawing length is multiplied by half the scale factor",
-      "2000 cm (20 m), because 4 cm × 500 = 2000 cm",
-      "400 cm (4 m), because 4 cm × 100 = 400 cm and 100 is used instead of 500"
-    ],
-    ans: 2,
-    exp: "Actual length = drawing length × scale factor = 4 cm × 500 = 2000 cm = 20 m." },
-
-  { q: "In a building construction project, the wall plate is the component that:",
-    opts: [
-      "Forms the decorative facing on the external surface of the building's outer walls",
-      "Acts as a damp-proof barrier inserted horizontally within the thickness of a cavity wall",
-      "Is a horizontal timber fixed to the top of a wall on which the roof rafters bear and are anchored",
-      "Provides the vertical formwork into which wet concrete is poured for a reinforced concrete wall"
-    ],
-    ans: 2,
-    exp: "The wall plate is a horizontal timber bedded on top of the masonry wall. It distributes the roof load evenly and provides an anchoring point for the feet of the rafters." },
-
-  { q: "Which of the following correctly explains why lubrication reduces friction between moving machine parts?",
-    opts: [
-      "Lubricants increase the normal reaction between surfaces, which reduces the friction coefficient",
-      "Lubricants bond to metal surfaces and create a harder surface that resists wear",
-      "Lubricants form a thin film between surfaces, separating them and replacing solid-to-solid contact with fluid shear",
-      "Lubricants absorb heat produced by friction and convert it directly into useful mechanical work"
-    ],
-    ans: 2,
-    exp: "A lubricant separates the two solid surfaces with a thin fluid film, so instead of high-friction solid contact, the surfaces glide on low-shear fluid — greatly reducing friction and wear." },
-
-  // ── 10 with ans:3 (D is correct) ──
-
-  { q: "Which of the following woodwork machines would be most appropriate for reducing a wide board to a precise uniform thickness throughout its length?",
-    opts: [
-      "A band saw, which cuts curves and irregular shapes in timber",
-      "A mortising machine, which creates rectangular recesses for joints in timber",
-      "A wood lathe, which rotates timber for turning cylindrical and bowl shapes",
-      "A thickness planer (thicknesser), which planes the underside of a board to produce uniform thickness"
-    ],
-    ans: 3,
-    exp: "A thickness planer (thicknesser) feeds the board through at a set height and planes the underside to produce a board of precise, uniform thickness throughout." },
-
-  { q: "In a simple gear train, the idler gear placed between the driver and the driven gear has what effect on the final output speed?",
-    opts: [
-      "It doubles the output speed because it adds an extra stage of speed increase",
-      "It halves the output speed because every additional gear reduces rotational speed",
-      "It increases the output torque while simultaneously reducing the output speed",
-      "It reverses the direction of rotation of the driven gear without affecting its speed"
-    ],
-    ans: 3,
-    exp: "An idler gear changes the direction of rotation of the output gear but does not change the gear ratio or speed between the driver and the final driven gear." },
-
-  { q: "A hydraulic system develops a leak in one of its pipes while in operation. The most serious consequence of this leak is:",
-    opts: [
-      "The system pressure doubles because the fluid volume decreases inside the closed circuit",
-      "The system automatically switches from hydraulic to pneumatic operation to continue working",
-      "The oil temperature rises sharply because the pump now works against zero resistance",
-      "Loss of pressure means the system can no longer transmit force effectively, causing it to fail"
-    ],
-    ans: 3,
-    exp: "Hydraulic systems depend on a sealed incompressible fluid circuit. A leak causes loss of pressure, and without adequate pressure the force transmission breaks down entirely." },
-
-  { q: "Which of the following building materials is classified as a natural material used in traditional construction?",
-    opts: [
-      "Reinforced concrete, made by combining cement, aggregate, water, and steel reinforcement",
-      "Galvanised steel sheet, which is iron coated with zinc to prevent rusting in construction",
-      "Glass blocks, which are manufactured by fusing silica sand at high temperatures in a furnace",
-      "Timber, which is a naturally grown organic material cut and shaped for structural use"
-    ],
-    ans: 3,
-    exp: "Timber is a naturally occurring material (harvested from trees) that has been used in construction for thousands of years, unlike concrete, steel, or glass which are manufactured." },
-
-  { q: "The turning moment (torque) produced by a force is calculated as:",
-    opts: [
-      "The sum of the force and the perpendicular distance from the pivot to the line of action",
-      "The ratio of the applied force to the perpendicular distance from the pivot",
-      "The product of the mass of the object and its acceleration in the direction of motion",
-      "The product of the force and the perpendicular distance from the pivot to the line of action"
-    ],
-    ans: 3,
-    exp: "Torque (T) = Force (F) × Perpendicular distance (d) from the pivot to the line of action of the force. It is measured in Newton-metres (N·m)." },
-
-  { q: "In building construction, the term 'cavity wall' refers to a wall that:",
-    opts: [
-      "Is built from a single leaf of brick with no internal void or air space",
-      "Contains steel reinforcement bars cast into the concrete during construction",
-      "Is built with a timber frame infilled with lightweight masonry blocks on both faces",
-      "Consists of two parallel skins of masonry separated by an air gap, tied together with wall ties"
-    ],
-    ans: 3,
-    exp: "A cavity wall has two separate masonry leaves with an air (or insulated) gap between them, connected by metal wall ties. The cavity reduces heat loss and prevents damp penetration." },
-
-  { q: "Which type of belt drive is used when the driver and driven shafts need to rotate in opposite directions?",
-    opts: [
-      "An open belt drive, where the belt runs straight between two pulleys on parallel shafts",
-      "A quarter-turn belt drive, where the shafts are at 90° to each other",
-      "A compound belt drive, where intermediate pulleys increase the overall speed ratio",
-      "A crossed belt drive, where the belt is twisted into a figure-of-eight between the pulleys"
-    ],
-    ans: 3,
-    exp: "A crossed belt drive crosses the belt between the pulleys in a figure-of-eight, causing the driven pulley to rotate in the opposite direction to the driver." },
-
-  { q: "A compound gear train differs from a simple gear train in that a compound gear train:",
-    opts: [
-      "Uses only one gear on each shaft and can only achieve small speed changes",
-      "Uses gears with helical teeth instead of straight teeth to reduce noise",
-      "Always includes an idler gear to reverse the direction of the output shaft",
-      "Has two or more gears on at least one intermediate shaft, allowing large speed or torque changes"
-    ],
-    ans: 3,
-    exp: "In a compound gear train, at least one shaft carries two gears fixed together. This arrangement allows large speed reductions or increases that would be impractical with a single gear pair." },
-
-  { q: "In a pneumatic system, the component whose primary role is to remove moisture and contaminants from the compressed air before it reaches the control valves is the:",
-    opts: [
-      "Actuator, which converts air pressure energy into the required mechanical output",
-      "Compressor, which draws in atmospheric air and increases its pressure for the system",
-      "Pressure regulator, which reduces and maintains the air pressure at the desired working level",
-      "Air filter and dryer unit, which separates water droplets and particles from the compressed air"
-    ],
-    ans: 3,
-    exp: "The air filter/dryer (often combined with a regulator and lubricator in an FRL unit) removes moisture and particulates from compressed air to protect valves and actuators." },
-
-  { q: "The main structural purpose of a ring beam (collar beam) in a roof truss is to:",
-    opts: [
-      "Carry the weight of the roof tiles directly from the ridge down to the wall plate",
-      "Provide a horizontal surface on which the ceiling boards of the room below are fixed",
-      "Act as a ridge board running along the apex of the roof between successive trusses",
-      "Tie opposite rafters together horizontally to prevent them from spreading and pushing the walls outward"
-    ],
-    ans: 3,
-    exp: "A collar beam (or tie beam) connects opposite rafters horizontally, resisting the outward thrust that the roof load generates — preventing the walls from being pushed apart." }
-
-],
-'Business Studies': [
-
-  // ── 10 with ans:0 (A is correct) ──
-
-  { q: "Which of the following proofreading marks instructs a typist to delete a word or character without replacing it?",
-    opts: ["A dele sign (ƍ) crossed through the text", "A caret (^) inserted below the line", "Three underlines beneath the text", "A circle drawn around the word"],
-    ans: 0,
-    exp: "The dele sign (ƍ) is the standard printer's correction mark used to indicate that a character or word should be deleted entirely." },
-
-  { q: "In keyboarding technique development, the correct resting position for fingers on a standard QWERTY keyboard is called:",
-    opts: ["The home row position, with fingers resting on ASDF and JKL;", "The middle row position, with fingers resting on QWER and UIOP", "The shift position, with one finger on the shift key at all times", "The number row position, with fingers on 1234 and 7890"],
-    ans: 0,
-    exp: "The home row (ASDF for the left hand and JKL; for the right hand) is the standard resting position in touch-typing technique." },
-
-  { q: "Which of the following best describes a memorandum in a business context?",
-    opts: ["An internal written communication used within an organisation to pass information between staff", "A formal letter sent to clients outside the organisation requesting payment", "A legal document filed with the government to register a business name", "A printed advertisement distributed to members of the public"],
-    ans: 0,
-    exp: "A memorandum (memo) is an internal document used for communication within an organisation, not for external correspondence." },
-
-  { q: "When measuring keyboarding speed, the standard unit used is:",
-    opts: ["Words per minute (WPM), where one word is counted as five keystrokes", "Characters per second (CPS), where spaces are excluded from the count", "Lines per hour (LPH), calculated from the number of completed lines", "Pages per day (PPD), based on the total pages typed in eight hours"],
-    ans: 0,
-    exp: "Keyboarding speed is measured in Words Per Minute (WPM), with each 'word' defined as five keystrokes including spaces." },
-
-  { q: "Which proofreader's mark is used to indicate that a new paragraph should begin at a specific point in the text?",
-    opts: ["The paragraph sign (¶) placed at the point where the break should start", "The stet mark written below the line to preserve the original text", "Three horizontal lines drawn under the first letter of the sentence", "A circle with a cross placed in the left margin of the page"],
-    ans: 0,
-    exp: "The pilcrow or paragraph sign (¶) is the standard proofreading mark used to signal that a new paragraph should begin at that point." },
-
-  { q: "In a standard business email, which section contains the subject of the message and must be completed to indicate the email's purpose?",
-    opts: ["The subject line, located between the address fields and the message body", "The CC field, used to send copies to additional recipients simultaneously", "The BCC field, which hides secondary recipients from each other", "The signature block, which appears at the bottom of the email body"],
-    ans: 0,
-    exp: "The subject line is a required field in a business email that briefly states the purpose or topic of the message." },
-
-  { q: "Which of the following best describes the petty cash book in office accounting?",
-    opts: ["A record used to track small, everyday cash payments made within the office", "A document that records only large transactions above a specified threshold", "A ledger used exclusively for recording staff salary payments each month", "A book that lists all purchases made using the company's credit card"],
-    ans: 0,
-    exp: "The petty cash book records minor day-to-day cash expenditures such as postage, stationery, and small office supplies." },
-
-  { q: "The office procedure of filing involves:",
-    opts: ["Systematically arranging and storing documents so they can be retrieved easily and quickly", "Typing correspondence from handwritten drafts given by the manager", "Answering telephone calls and recording messages for office staff", "Sorting incoming mail and distributing it to the appropriate departments"],
-    ans: 0,
-    exp: "Filing is the systematic organisation and storage of documents for easy retrieval, and is a core office procedure." },
-
-  { q: "Which of the following is a correct feature of a well-formatted memorandum heading?",
-    opts: ["It includes TO, FROM, DATE, and SUBJECT fields at the top of the document", "It begins with a salutation such as 'Dear Sir' or 'Dear Madam'", "It contains a complimentary close such as 'Yours faithfully' or 'Yours sincerely'", "It includes the recipient's full postal address and postcode"],
-    ans: 0,
-    exp: "A memorandum heading contains four standard fields: TO (recipient), FROM (sender), DATE, and SUBJECT, with no salutation or postal address." },
-
-  { q: "Which of the following pieces of office equipment is primarily used to make multiple copies of a document quickly?",
-    opts: ["A photocopier, which scans and reproduces documents on paper", "A paper shredder, which cuts documents into small strips for disposal", "A laminator, which seals documents between layers of clear plastic film", "A binding machine, which fastens pages together using a comb or wire spine"],
-    ans: 0,
-    exp: "A photocopier is used to scan an original document and reproduce multiple copies quickly, making it essential office equipment." },
-
-  // ── 10 with ans:1 (B is correct) ──
-
-  { q: "A typist receives a manuscript with the letters 'trs' written in the margin beside a word. What does this proofreader's instruction mean?",
-    opts: ["Delete the word and leave no space in its place", "Transpose the letters or words to correct their order", "Insert a space between the letters indicated", "Replace the word with the one written above it"],
-    ans: 1,
-    exp: "'Trs' or 'tr' is the standard printer's correction mark meaning 'transpose' — to reverse the order of letters, words, or lines." },
-
-  { q: "Which of the following keyboarding techniques is most effective for achieving high speed without sacrificing accuracy?",
-    opts: ["Looking at the keyboard frequently to locate less familiar keys", "Touch-typing using muscle memory, keeping eyes on the source document", "Using only the index fingers of both hands for all keystrokes", "Typing as fast as possible and correcting all errors at the end"],
-    ans: 1,
-    exp: "Touch-typing, which relies on muscle memory rather than sight, allows a typist to achieve high speed and accuracy simultaneously." },
-
-  { q: "A cash book that contains only one column on each side is known as a:",
-    opts: ["Three-column cash book, which records cash, bank, and discount columns", "Single-column cash book, which records only cash transactions", "Petty cash book, which records minor expenditures using an imprest system", "Analytical cash book, which breaks down all expenses into categories"],
-    ans: 1,
-    exp: "A single-column cash book records only cash transactions (receipts and payments) and has one amount column on the debit and one on the credit side." },
-
-  { q: "In paragraphing a typed document, what is the primary purpose of indenting the first line of each paragraph?",
-    opts: ["To reduce the number of characters that fit on the first line of each paragraph", "To visually signal the start of a new thought or idea, improving readability", "To automatically trigger spell-check in most word processing software", "To align the paragraph with the right margin of the document"],
-    ans: 1,
-    exp: "Indenting the first line of a paragraph is a visual convention that clearly marks the beginning of a new idea, improving the document's readability." },
-
-  { q: "Which of the following is a key difference between an email and a memorandum?",
-    opts: ["A memorandum can be sent to recipients outside the organisation, while an email cannot", "An email is transmitted electronically and can carry attachments, while a memo is a paper-based internal document", "A memorandum requires a postage stamp, while an email requires a fax machine", "An email must always be printed and signed before it is considered official"],
-    ans: 1,
-    exp: "The key difference is that an email is electronic and can carry file attachments and be sent globally, while a memo is traditionally a paper-based internal communication." },
-
-  { q: "In a double-entry cash book, the bank column on the debit side records:",
-    opts: ["All payments made from the bank account during the period", "All receipts deposited into the bank account during the period", "The opening balance of the petty cash fund at the start of the month", "All discount amounts allowed to credit customers during the period"],
-    ans: 1,
-    exp: "In a double-entry cash book, the debit (left) side records money coming in, so the bank column on the debit side records all deposits into the bank account." },
-
-  { q: "Which of the following best explains the term 'imprest system' as it applies to petty cash?",
-    opts: ["A method of recording all cash transactions in a single column without analysis", "A system where petty cash is restored to a fixed amount at the start of each period", "A system that requires the cashier to seek approval before spending any petty cash", "A method of converting petty cash receipts directly into journal entries"],
-    ans: 1,
-    exp: "Under the imprest system, petty cash is topped up to a fixed (imprest) amount at the start of each period, so the fund always starts with the same balance." },
-
-  { q: "Which office equipment would be most appropriate for a manager who needs to give a presentation to staff using projected slides?",
-    opts: ["A document scanner, which converts paper documents into digital files", "A digital projector, which displays images from a computer onto a large screen", "A multifunction printer, which prints, scans, copies, and faxes documents", "An electric typewriter, which produces typed text on paper using a keyboard"],
-    ans: 1,
-    exp: "A digital projector is used to display presentation slides from a computer onto a screen, making it ideal for staff presentations and meetings." },
-
-  { q: "Which of the following describes the correct format for writing the date in a formal business memorandum?",
-    opts: ["Using abbreviations only, such as '25/05/26' with no month name written out", "Writing the date in full, such as '25 May 2026', to avoid ambiguity", "Placing the date at the bottom of the memorandum after the subject line", "Omitting the date entirely because memos are only for internal use"],
-    ans: 1,
-    exp: "In a formal business memo, the date should be written in full (e.g., 25 May 2026) to avoid any ambiguity, especially between different date formats." },
-
-  { q: "In developing keyboarding accuracy, which of the following drills is most commonly recommended?",
-    opts: ["Practising only the number row and special characters daily", "Practising specific letter combinations and common words repeatedly at a controlled pace", "Typing complete essays without pausing to correct any errors", "Memorising the keyboard layout visually before touching the keys at all"],
-    ans: 1,
-    exp: "Accuracy drills focus on repeating specific letter combinations and high-frequency words at a controlled speed until the fingers develop reliable muscle memory." },
-
-  // ── 10 with ans:2 (C is correct) ──
-
-  { q: "A proofreader writes the word 'stet' in the margin beside a correction already marked on a manuscript. This instruction tells the typist to:",
-    opts: ["Delete the passage marked and replace it with the marginal note", "Move the underlined text to the position indicated by the arrow", "Ignore the correction and retain the original text as it was written", "Insert the missing punctuation mark shown in the margin"],
-    ans: 2,
-    exp: "'Stet' is a Latin term meaning 'let it stand.' It cancels a previous correction and instructs the typist to retain the original text." },
-
-  { q: "Which of the following statements about office filing systems is most accurate?",
-    opts: ["Alphabetical filing is the least used system because it requires expensive equipment", "Numerical filing does not require an index because numbers are self-explanatory", "Alphabetical filing arranges documents by the names of persons or organisations in A–Z order", "Geographical filing can only be used by organisations that operate in one city"],
-    ans: 2,
-    exp: "Alphabetical filing organises documents by name in A–Z order and is one of the most widely used filing systems due to its simplicity." },
-
-  { q: "When composing a business email, the BCC (Blind Carbon Copy) field is used to:",
-    opts: ["Send the email only to the primary recipient without any copies to others", "Allow all recipients to see each other's email addresses in the recipient list", "Send a copy of the email to additional recipients whose addresses remain hidden from others", "Forward the email automatically to a backup server for data storage"],
-    ans: 2,
-    exp: "BCC sends a copy to additional recipients while hiding their email addresses from all other recipients, protecting their privacy." },
-
-  { q: "In a three-column cash book, the three columns on each side represent:",
-    opts: ["Date, particulars, and folio reference only, with no amount columns", "Cash, cheque, and discount, but only on the credit side of the book", "Discount, cash, and bank — recorded on both the debit and credit sides", "Bank, petty cash, and wages — representing the three most common payments"],
-    ans: 2,
-    exp: "A three-column cash book has three amount columns — discount, cash, and bank — on both the debit (receipts) and credit (payments) sides." },
-
-  { q: "Which of the following correctly describes a 'block paragraph' style in typewritten documents?",
-    opts: ["Each paragraph is indented five spaces from the left margin and ends with a blank line", "Each paragraph uses a hanging indent where all lines except the first are indented", "All lines in each paragraph begin at the left margin with a blank line separating paragraphs", "Paragraphs alternate between left-aligned and right-aligned text throughout the document"],
-    ans: 2,
-    exp: "In block paragraph style, every line starts at the left margin with no indentation, and paragraphs are separated by a blank line." },
-
-  { q: "Which of the following is the most accurate description of a contra entry in a cash book?",
-    opts: ["An entry recorded only in the bank column when cash is received from debtors", "An entry made when a supplier's invoice is paid using a company cheque", "An entry recorded in both the cash and bank columns on opposite sides to reflect an internal transfer", "An entry that cancels a previously recorded error in the discount column"],
-    ans: 2,
-    exp: "A contra entry occurs when money is transferred between the cash account and the bank account (e.g., cash deposited into the bank), so it appears on both sides of the cash book marked with a 'C'." },
-
-  { q: "Which of the following describes the role of a receptionist in office procedures?",
-    opts: ["Managing the company's bank account and preparing monthly bank reconciliation statements", "Supervising all other office staff and assigning tasks to junior employees daily", "Welcoming visitors, answering calls, and directing enquiries to the appropriate staff members", "Typing all the organisation's outgoing correspondence and filing incoming documents"],
-    ans: 2,
-    exp: "A receptionist's primary role involves receiving visitors, answering telephone calls, and directing enquiries, forming the first point of contact for the organisation." },
-
-  { q: "Which of the following correctly identifies a photocopier's key advantage over a duplicating machine?",
-    opts: ["A photocopier uses a stencil to produce copies, making it cheaper per page than digital methods", "A photocopier requires a master copy to be typed before any reproduction can take place", "A photocopier can reproduce an original document directly without any intermediate stencil or master copy", "A photocopier produces only black-and-white copies and cannot handle colour documents at all"],
-    ans: 2,
-    exp: "The main advantage of a photocopier is that it can reproduce an original directly — no stencil, spirit master, or other intermediate step is needed." },
-
-  { q: "In keyboarding, the technique of using the correct finger for each key regardless of speed is referred to as:",
-    opts: ["Rapid random typing, where fingers are assigned keys based on comfort rather than position", "Two-finger typing, which is used by professionals to increase speed in data entry roles", "Correct finger assignment, where each key is always struck by its designated finger", "Floating technique, where both hands move freely across the keyboard as needed"],
-    ans: 2,
-    exp: "Correct finger assignment means each key is always struck by the same designated finger as taught in standard touch-typing methodology, building consistent muscle memory." },
-
-  { q: "The abbreviation 'CC' at the bottom of a business memorandum or letter means:",
-    opts: ["Confirmed Copy — the document has been verified by a senior manager", "Corrected Copy — the document has been revised after the initial draft was reviewed", "Carbon Copy — a copy of the document has been sent to the person(s) named", "Courtesy Call — a phone call will follow the written communication"],
-    ans: 2,
-    exp: "CC stands for Carbon Copy (or Courtesy Copy), indicating that a copy of the memo or letter has been sent to the named individual(s)." },
-
-  // ── 10 with ans:3 (D is correct) ──
-
-  { q: "A proofreading mark that looks like a caret (^) inserted between two words instructs the typist to:",
-    opts: ["Remove the word immediately following the caret from the final text", "Swap the positions of the two words on either side of the caret sign", "Begin a new paragraph at the point where the caret has been inserted", "Insert the character or word written in the margin at that position"],
-    ans: 3,
-    exp: "A caret (^) is used to show where something should be inserted. The text to be inserted is written in the margin adjacent to the caret mark." },
-
-  { q: "Which of the following statements about the debit side of a cash book is correct?",
-    opts: ["The debit side records all payments made by the business during the period", "The debit side records all credit purchases made from suppliers on account", "The debit side records all expenses paid to staff as wages and salaries", "The debit side records all money received by the business, including cash and bank receipts"],
-    ans: 3,
-    exp: "In a cash book, the debit (left) side is the receipts side — it records all money coming into the business, whether in cash or via the bank." },
-
-  { q: "Which of the following is NOT a standard field found in a memorandum heading?",
-    opts: ["TO — indicating the recipient of the memo", "FROM — indicating the sender of the memo", "SUBJECT — indicating the main topic of the memo", "YOURS FAITHFULLY — a complimentary close at the top of the memo"],
-    ans: 3,
-    exp: "'Yours faithfully' is a complimentary close used at the end of formal letters, not in memoranda. Memo headings only include TO, FROM, DATE, and SUBJECT." },
-
-  { q: "In an office, the procedure of 'mail handling' includes which of the following steps performed in the correct sequence?",
-    opts: ["Compose, print, sign, stamp, deliver — for outgoing mail only", "Receive, open, shred, and discard — for all incoming mail without exception", "Sort by colour, seal, weigh, and post — for both incoming and outgoing mail", "Receive, sort, open, record, and distribute — for incoming mail to the right staff"],
-    ans: 3,
-    exp: "The correct incoming mail procedure is: receive, sort, open, date-stamp/record, and distribute to the appropriate departments or individuals." },
-
-  { q: "Which of the following items would be correctly recorded in the petty cash book rather than the main cash book?",
-    opts: ["A salary payment of ₦150,000 transferred to an employee's bank account", "A supplier invoice of ₦500,000 paid by company cheque through the bank", "A loan repayment of ₦200,000 made to a financial institution via transfer", "A ₦1,500 payment for office cleaning materials bought with petty cash"],
-    ans: 3,
-    exp: "Small, routine payments like buying cleaning materials are recorded in the petty cash book. Large transactions go through the main cash book." },
-
-  { q: "Which of the following best describes the purpose of the 'folio' column in a cash book?",
-    opts: ["It records the names of all customers who made payments during the period", "It shows the date on which each transaction was entered into the cash book", "It calculates the running balance after each transaction is recorded", "It contains a reference number linking the cash book entry to the relevant ledger account"],
-    ans: 3,
-    exp: "The folio column contains a cross-reference number that links each cash book entry to the corresponding account in the ledger, aiding audit and verification." },
-
-  { q: "A business sends an email with an attachment of its price list to a customer. Which of the following email etiquette rules is most important to observe?",
-    opts: ["Write the entire email message in capital letters to make it easy to read", "Use only informal language and emoticons to make the customer feel comfortable", "Always use 'Reply All' when responding to ensure all staff receive the message", "Inform the recipient in the email body that an attachment is included and describe what it contains"],
-    ans: 3,
-    exp: "Good email etiquette requires you to mention in the body that an attachment is included and to briefly describe its contents, preventing confusion." },
-
-  { q: "Which of the following is the correct definition of 'speed development' in keyboarding training?",
-    opts: ["Learning to repair and maintain keyboard hardware to reduce downtime in the office", "Practising shorthand writing techniques to record speech faster than normal typing", "Memorising keyboard shortcuts for common software functions to save time", "Gradually increasing typing rate through timed drills while maintaining an acceptable level of accuracy"],
-    ans: 3,
-    exp: "Speed development in keyboarding involves progressively increasing typing speed through timed practice exercises while keeping error rates within an acceptable range." },
-
-  { q: "Which of the following correctly describes the term 'hanging indent' in document formatting?",
-    opts: ["A style where the entire paragraph is indented five spaces from both margins", "A style where the first line of the paragraph is further indented than the rest of the lines", "A style where all lines of a paragraph are aligned to the right margin of the page", "A style where the first line begins at the left margin and all subsequent lines are indented"],
-    ans: 3,
-    exp: "A hanging indent means the first line of a paragraph starts at the left margin while all remaining lines are indented, commonly used in reference lists and bibliographies." },
-
-  { q: "Which of the following office machines is specifically designed to destroy confidential documents to prevent unauthorised access to sensitive information?",
-    opts: ["A binding machine, which fastens multiple pages together using a plastic comb", "A laminator, which protects documents by sealing them in transparent plastic film", "A photocopier, which makes duplicate copies of documents for distribution", "A paper shredder, which cuts documents into small strips or particles for secure disposal"],
-    ans: 3,
-    exp: "A paper shredder is used to destroy confidential documents securely, preventing unauthorised persons from reading sensitive information." }
-
-]
-},
+    /* ── SUBJECT 1: ENGLISH STUDIES (40) ── */
+    "English Studies": [
+      { q: "Which of the following words contains the diphthong /ɪə/ as in 'ear'?", opts: ["Clear", "Chair", "Cow", "Boy"], ans: 0, exp: "The word 'clear' contains the diphthong /ɪə/, which is a glide from the vowel /ɪ/ to /ə/. 'Chair' has /eə/, 'cow' has /aʊ/, and 'boy' has /ɔɪ/." },
+      { q: "Which word contains a consonant cluster at the beginning?", opts: ["School", "Apple", "Orange", "Elephant"], ans: 0, exp: "'School' begins with the consonant cluster /sk/. A consonant cluster is a group of two or more consonant sounds that appear together without intervening vowels." },
+      { q: "Change this sentence to the passive voice: 'The students wrote the examination yesterday.'", opts: ["The examination was written by the students yesterday.", "The examination is written by the students yesterday.", "The examination had been written by the students yesterday.", "The students were writing the examination yesterday."], ans: 0, exp: "The correct passive voice uses 'was written' (past tense of 'be' + past participle). The object becomes the subject and the original subject becomes the agent." },
+      { q: "In phonetics, the sound represented by the letter 'h' in 'house' is classified as:", opts: ["A glottal fricative", "A velar plosive", "An alveolar nasal", "A labio-dental approximant"], ans: 0, exp: "The /h/ sound is a voiceless glottal fricative produced at the glottis by allowing air to pass through with slight friction." },
+      { q: "Read this sentence: 'The author's tone suggests scepticism about the new policy.' What does this tell us?", opts: ["The writer doubts the policy's effectiveness.", "The writer supports the policy.", "The writer is neutral.", "The writer has no opinion."], ans: 0, exp: "'Scepticism' means doubt. The writer's intention is to express doubt about whether the policy will work effectively." },
+      { q: "When reading a passage about a hospital, from the context of 'patients sorted by urgency', what does 'triage' mean?", opts: ["The process of prioritising patients by urgency.", "A surgical procedure.", "Medical equipment.", "A hospital ward."], ans: 0, exp: "From context clues, 'triage' means prioritising patients based on severity. This is a vocabulary-in-context skill." },
+      { q: "In essay writing, what is the purpose of the 'pre-writing' stage?", opts: ["To brainstorm ideas and plan before writing.", "To publish immediately.", "To correct grammar.", "To write the conclusion first."], ans: 0, exp: "Pre-writing involves brainstorming, researching, and outlining before the actual writing begins." },
+      { q: "In literature, the time and place in which a story occurs is known as the:", opts: ["Setting", "Theme", "Plot", "Conflict"], ans: 0, exp: "The setting refers to the time and place of a story. Theme is the central idea, plot is the sequence of events, and conflict is the struggle." },
+      { q: "Which of the following is a key feature that distinguishes drama from prose fiction?", opts: ["Drama is written to be performed; prose is meant to be read.", "Drama uses only narration.", "Drama cannot have characters.", "Prose always rhymes."], ans: 0, exp: "Drama is performative — it includes dialogue and stage directions. Prose fiction is meant to be read silently." },
+      { q: "Which figure of speech involves repetition of the same initial consonant sound?", opts: ["Alliteration", "Personification", "Onomatopoeia", "Metaphor"], ans: 0, exp: "Alliteration is the repetition of the same initial consonant sound in nearby words, e.g., 'Peter Piper picked...'" },
+
+      { q: "In the words 'go', 'blow', 'mow' and 'know', which diphthong is common?", opts: ["/aɪ/", "/əʊ/", "/eɪ/", "/ɔɪ/"], ans: 1, exp: "All four words contain /əʊ/, a glide from /ə/ to /ʊ/. This is the sound in 'go' and 'know'." },
+      { q: "Which sentence is in the present continuous tense?", opts: ["She walks to school.", "She is walking to school now.", "She walked to school.", "She has walked to school."], ans: 1, exp: "'Is walking' uses present tense of 'be' + present participle, which is the present continuous tense describing a current action." },
+      { q: "Which conjunction correctly joins: 'I wanted to play football _____ it was raining.'", opts: ["and", "but", "because", "or"], ans: 1, exp: "'But' shows contrast between wanting to play and the rain preventing it." },
+      { q: "Which is the most polite request?", opts: ["Give me your pen!", "Could you please lend me your pen?", "I want your pen.", "You will give me your pen."], ans: 1, exp: "'Could you please' uses a tentative modal and 'please', making it the most polite. 'Lend' also implies the pen will be returned." },
+      { q: "Convert to indirect speech: He said, 'I am tired.'", opts: ["He said that he is tired.", "He said that he was tired.", "He says that he was tired.", "He said that I am tired."], ans: 1, exp: "In indirect speech with past reporting verb, 'am' shifts to 'was' and 'I' changes to 'he'." },
+      { q: "In critical reading, what distinguishes a fact from an opinion?", opts: ["A fact is more important.", "A fact can be verified objectively; an opinion expresses personal belief.", "A fact is written by experts.", "An opinion is always false."], ans: 1, exp: "Facts are objectively verifiable. Opinions are personal beliefs or judgements that cannot be proven true or false." },
+      { q: "The SPQ3R technique stands for Survey, Question, Read, Recite, Review and:", opts: ["Reflect", "Recall", "Relate", "Reorganise"], ans: 1, exp: "SPQ3R = Survey, Question, Read, Recite, Review, Recall. Recall is the final step of remembering main points." },
+      { q: "Which opening is most appropriate for a formal letter of invitation?", opts: ["Hey there!", "Dear Sir/Madam, I write to cordially invite you...", "What's up?", "Yo!"], ans: 1, exp: "Formal letters require respectful tone. 'Dear Sir/Madam' with clear purpose is appropriate; others are too informal." },
+      { q: "Which feature is essential in a narrative essay but not in a formal letter?", opts: ["Introduction", "Chronological sequence of events", "Correct grammar", "Salutation"], ans: 1, exp: "Narrative essays tell stories requiring chronological plot. Formal letters don't need chronological storytelling." },
+      { q: "Which literary device is used in 'the wind whispered through the trees'?", opts: ["Alliteration", "Personification", "Onomatopoeia", "Hyperbole"], ans: 1, exp: "Giving human quality ('whispered') to wind is personification. Alliteration requires repeated initial sounds." },
+
+      { q: "Which pair demonstrates minimal contrast between /t/ and /d/?", opts: ["Pat–Bat", "Fan–Van", "Ten–Den", "Ship–Sip"], ans: 2, exp: "'Ten' and 'Den' differ only in /t/ vs /d/. 'Pat–Bat' is /p/ vs /b/; 'Fan–Van' is /f/ vs /v/; 'Ship–Sip' is /ʃ/ vs /s/." },
+      { q: "Identify the past perfect tense: 'When I arrived, the meeting had already started.'", opts: ["arrived", "meeting", "had already started", "When"], ans: 2, exp: "'Had started' is past perfect (had + past participle), showing one past action completed before another." },
+      { q: "Which sentence uses a conjunction for cause and effect?", opts: ["I studied hard, but I passed.", "I studied hard, or I passed.", "I studied hard, so I passed.", "I studied hard, yet I passed."], ans: 2, exp: "'So' shows cause and effect. 'But' and 'yet' show contrast; 'or' shows alternatives." },
+      { q: "In 'The dog chased the cat across the garden,' what is the object of the transitive verb?", opts: ["dog", "cat", "chased", "garden"], ans: 2, exp: "'Cat' receives the action of 'chased'. 'Dog' is the subject, 'garden' is part of a prepositional phrase." },
+      { q: "Which sentence is in the active voice?", opts: ["The letter was written by Mary.", "The cake was eaten.", "The teacher praised the students.", "The window was broken."], ans: 2, exp: "Active voice: subject performs action. 'Teacher' (subject) 'praised' (verb) 'students' (object). Others are passive." },
+      { q: "Identify the error: 'Neither the boys nor their teacher are going.'", opts: ["'Neither' should be 'Either'", "'their' should be 'his'", "'are' should be 'is'", "'going' should be 'gone'"], ans: 2, exp: "With 'neither...nor', the verb agrees with the nearer subject. 'Teacher' is singular, so use 'is' not 'are'." },
+      { q: "A passage states: 'While some believe social media connects us, the reality is it creates superficial relationships.' What is this?", opts: ["A pure fact", "A neutral observation", "An opinion contrasting another view", "A direct quotation"], ans: 2, exp: "The phrase 'the reality is' signals the writer's personal judgement, making it an opinion presented as a contrast." },
+      { q: "In a journalism passage, a reporter is 'doggedly pursuing truth despite threats.' What trait is emphasised?", opts: ["Laziness", "Dishonesty", "Determination and courage", "Indifference"], ans: 2, exp: "'Doggedly pursuing' = persistence; 'despite threats' = courage. Together they show determination and courage." },
+      { q: "When a writer says 'the stadium roared with excitement,' which figure of speech is used?", opts: ["Alliteration", "Onomatopoeia", "Personification", "Simile"], ans: 2, exp: "The stadium is given human ability to 'roar' — this is personification, not just onomatopoeia." },
+      { q: "A student concludes from a passage that 'the writer believes traditional education beats online learning.' What skill is this?", opts: ["Memorisation", "Word recognition", "Drawing conclusions", "Speed reading"], ans: 2, exp: "Drawing conclusions means making a reasoned judgement from evidence and clues, beyond simple recall." },
+
+      { q: "The underlined 'th' in 'think' is which consonant?", opts: ["A voiced dental fricative", "A voiceless alveolar plosive", "A voiced alveolar plosive", "A voiceless dental fricative"], ans: 3, exp: "The 'th' in 'think' is /θ/, a voiceless dental fricative. The voiced counterpart /ð/ appears in 'this'." },
+      { q: "Which sentence contains an intransitive verb?", opts: ["She sang a song.", "They bought oranges.", "The teacher gave homework.", "He arrived early."], ans: 3, exp: "'Arrived' takes no direct object. 'Sang', 'bought', and 'gave' are transitive with objects: song, oranges, homework." },
+      { q: "Which is NOT a pure vowel?", opts: ["/iː/ in 'see'", "/uː/ in 'food'", "/ɑː/ in 'car'", "/aɪ/ in 'my'"], ans: 3, exp: "/aɪ/ is a diphthong (gliding sound). Pure vowels are steady sounds like /iː/, /uː/, /ɑː/." },
+      { q: "The words 'fan' and 'van' contrast which sounds?", opts: ["/p/ and /b/", "/t/ and /d/", "/s/ and /z/", "/f/ and /v/"], ans: 3, exp: "'Fan' starts with voiceless /f/; 'van' with voiced /v/. Both are labio-dental fricatives differing only in voicing." },
+      { q: "In critical reading, a fact differs from an opinion because:", opts: ["A fact is more important.", "A fact is written by experts.", "An opinion is always false.", "A fact can be verified objectively; an opinion is a personal belief."], ans: 3, exp: "Facts are objectively verifiable with evidence. Opinions express personal beliefs or judgements." },
+      { q: "When writing an informal letter to a friend, which closing is appropriate?", opts: ["Yours faithfully,", "Yours sincerely,", "Yours obediently,", "Your friend,"], ans: 3, exp: "'Your friend' suits informal letters. 'Yours faithfully' is for unknown recipients; 'sincerely' for formal known recipients." },
+      { q: "In a descriptive essay, which technique best helps visualisation?", opts: ["Only short sentences", "Avoiding adjectives", "Second person writing", "Specific sensory details"], ans: 3, exp: "Sensory details (sight, sound, smell, touch, taste) create vivid mental images — the hallmark of descriptive writing." },
+      { q: "What best describes the body of an essay?", opts: ["A brief summary", "The first paragraph", "The final paragraph", "The main part where ideas are developed with evidence"], ans: 3, exp: "The body develops ideas, presents arguments and evidence. The introduction presents the topic; the conclusion summarises." },
+      { q: "In a novel, the sequence of events is called the:", opts: ["Setting", "Characterisation", "Theme", "Plot"], ans: 3, exp: "Plot is the sequence of events. Setting is time/place, characterisation develops characters, theme is the central idea." },
+      { q: "Which figure of speech involves repetition of the same initial consonant sound in nearby words?", opts: ["Personification", "Onomatopoeia", "Metaphor", "Alliteration"], ans: 3, exp: "Alliteration is the repetition of the same initial consonant sound in nearby words, e.g., 'Peter Piper picked...'" }
+    ],
+    /* ── SUBJECT 2: MATHEMATICS (40) ── */
+    "Mathematics": [
+      { q: "Express 5,600,000 in standard form.", opts: ["5.6 × 10⁶", "56 × 10⁵", "0.56 × 10⁷", "5.6 × 10⁵"], ans: 0, exp: "Standard form: 5,600,000 = 5.6 × 1,000,000 = 5.6 × 10⁶. Must have 1 ≤ coefficient < 10." },
+      { q: "What is the HCF of 24 and 36?", opts: ["12", "6", "24", "72"], ans: 0, exp: "24 = 2³×3, 36 = 2²×3². HCF = 2²×3 = 12." },
+      { q: "Evaluate: (−5) + (−3)", opts: ["−8", "−2", "8", "2"], ans: 0, exp: "Adding negatives: −5 + (−3) = −(5+3) = −8." },
+      { q: "Simplify: 3x + 5y − 2x + y", opts: ["x + 6y", "5x + 6y", "x + 4y", "5x + 4y"], ans: 0, exp: "Like terms: (3x−2x) + (5y+y) = x + 6y." },
+      { q: "What is √144?", opts: ["12", "14", "24", "72"], ans: 0, exp: "12² = 144, so √144 = 12." },
+      { q: "Convert 3/8 to decimal.", opts: ["0.375", "0.38", "0.125", "0.875"], ans: 0, exp: "3÷8 = 0.375. Verify: 0.375×8 = 3." },
+      { q: "Round 4.567 to 2 d.p.", opts: ["4.57", "4.56", "4.60", "4.55"], ans: 0, exp: "Third decimal is 7 ≥ 5, round up: 4.567 → 4.57." },
+      { q: "Find LCM of 8 and 12.", opts: ["24", "4", "48", "96"], ans: 0, exp: "8=2³, 12=2²×3. LCM=2³×3=24." },
+      { q: "Evaluate: (−4)×(−6)", opts: ["24", "−24", "−10", "10"], ans: 0, exp: "Negative × negative = positive: (−4)×(−6)=24." },
+      { q: "Expand: 2(3x−4)", opts: ["6x−8", "6x+8", "5x−4", "5x−6"], ans: 0, exp: "Distribute: 2×3x=6x, 2×(−4)=−8. Result: 6x−8." },
+
+      { q: "Express 0.000045 in standard form.", opts: ["4.5×10⁴", "4.5×10⁻⁵", "45×10⁻⁶", "0.45×10⁻⁴"], ans: 1, exp: "0.000045=4.5×10⁻⁵. Decimal moves 5 places right." },
+      { q: "Find HCF of 18, 30, 42.", opts: ["6", "3", "2", "9"], ans: 1, exp: "18=2×3², 30=2×3×5, 42=2×3×7. HCF=2×3=6." },
+      { q: "Evaluate: 7−(−3)", opts: ["4", "10", "−10", "−4"], ans: 1, exp: "7−(−3)=7+3=10. Subtracting negative = adding positive." },
+      { q: "Simplify: 5a−(2a+3b)", opts: ["7a+3b", "3a−3b", "3a+3b", "7a−3b"], ans: 1, exp: "Distribute minus: 5a−2a−3b=3a−3b." },
+      { q: "What is 25% of 240?", opts: ["48", "60", "80", "120"], ans: 1, exp: "25%=1/4. 240÷4=60." },
+      { q: "Round 3.859 to 1 d.p.", opts: ["3.8", "3.9", "3.85", "4.0"], ans: 1, exp: "Second decimal is 5≥5, round up: 3.859→3.9." },
+      { q: "Convert 0.6 to fraction (lowest terms).", opts: ["6/10", "3/5", "2/3", "1/2"], ans: 1, exp: "0.6=6/10=3/5 (HCF of 6 and 10 is 2)." },
+      { q: "Evaluate: (−12)÷4", opts: ["−3", "3", "−8", "8"], ans: 1, exp: "Negative÷positive=negative: −12÷4=−3. Verify: −3×4=−12." },
+      { q: "Factorise: 6x+9", opts: ["3(2x+3)", "3(2x+9)", "9(2x+1)", "6(x+3)"], ans: 1, exp: "HCF of 6 and 9 is 3. 6x+9=3(2x+3). Verify: 3×2x+3×3=6x+9. ✓" },
+      { q: "Ratio of boys:girls is 3:5. If 24 boys, how many girls?", opts: ["30", "40", "36", "15"], ans: 1, exp: "3 parts=24, so 1 part=8. Girls=5×8=40. Verify: 24:40=3:5. ✓" },
+
+      { q: "Express 750 in standard form.", opts: ["75×10¹", "0.75×10³", "7.5×10²", "7.5×10³"], ans: 2, exp: "750=7.5×100=7.5×10². 7.5×10³=7500." },
+      { q: "Find LCM of 6 and 9.", opts: ["3", "54", "18", "36"], ans: 2, exp: "6=2×3, 9=3². LCM=2×3²=18." },
+      { q: "Evaluate: (−8)+5", opts: ["−13", "13", "−3", "3"], ans: 2, exp: "Different signs: 8−5=3, keep sign of larger: −3." },
+      { q: "Simplify: 4(2x−3)−2(x+1)", opts: ["6x−10", "6x+14", "6x−14", "10x−14"], ans: 2, exp: "Expand: 8x−12−2x−2=6x−14." },
+      { q: "Value of 3²+4²?", opts: ["14", "49", "25", "7"], ans: 2, exp: "3²=9, 4²=16. 9+16=25. Not (3+4)²=49." },
+      { q: "Shopkeeper buys for ₦800, sells for ₦1000. Profit %?", opts: ["20%", "30%", "25%", "15%"], ans: 2, exp: "Profit=₦200. %=(200/800)×100=25%." },
+      { q: "Approximate 6.759 to 2 s.f.", opts: ["6.7", "6.75", "6.8", "6.9"], ans: 2, exp: "Third sig fig is 5≥5, round up: 6.759→6.8." },
+      { q: "Evaluate: 15−(−5)+(−3)", opts: ["7", "13", "17", "23"], ans: 2, exp: "15+5=20, then 20−3=17." },
+      { q: "Simplify: (2x/3)+(x/3)", opts: ["x/3", "2x/6", "x", "3x/3"], ans: 2, exp: "Common denominator: (2x+x)/3=3x/3=x." },
+      { q: "If 2/5 of a number is 40, find the number.", opts: ["16", "80", "100", "120"], ans: 2, exp: "N×(2/5)=40, so N=40×5/2=100. Verify: 2/5×100=40. ✓" },
+
+      { q: "Express 0.0034 in standard form.", opts: ["3.4×10²", "3.4×10⁻²", "34×10⁻³", "3.4×10⁻³"], ans: 3, exp: "0.0034=3.4×0.001=3.4×10⁻³. Decimal moves 3 places right." },
+      { q: "HCF of 15 and 25?", opts: ["75", "15", "25", "5"], ans: 3, exp: "Factors of 15: 1,3,5,15. Factors of 25: 1,5,25. HCF=5." },
+      { q: "Evaluate: (−3)×7", opts: ["21", "−10", "−4", "−21"], ans: 3, exp: "Negative×positive=negative: (−3)×7=−21. Verify: −21÷7=−3. ✓" },
+      { q: "Simplify: 7m−3n−2m+5n", opts: ["9m+2n", "5m−2n", "9m−8n", "5m+2n"], ans: 3, exp: "Like terms: (7m−2m)+(−3n+5n)=5m+2n." },
+      { q: "Convert 3/5 to percentage.", opts: ["30%", "35%", "50%", "60%"], ans: 3, exp: "3/5=(3×20)/(5×20)=60/100=60%. Or 3÷5=0.6=60%." },
+      { q: "Round 8.635 to 2 d.p.", opts: ["8.63", "8.6", "8.65", "8.64"], ans: 3, exp: "Third decimal is 5≥5, round up: 8.635→8.64." },
+      { q: "Evaluate: 20÷(−4)", opts: ["5", "−16", "16", "−5"], ans: 3, exp: "Positive÷negative=negative: 20÷(−4)=−5. Verify: −5×(−4)=20. ✓" },
+      { q: "Factorise: x²−9", opts: ["(x−3)²", "(x+3)²", "(x−9)(x+1)", "(x+3)(x−3)"], ans: 3, exp: "Difference of squares: x²−9=(x+3)(x−3). Verify: x²−3x+3x−9=x²−9. ✓" },
+      { q: "Score 17/25 as percentage.", opts: ["60%", "65%", "70%", "68%"], ans: 3, exp: "17/25=(17×4)/(25×4)=68/100=68%. Or 17÷25=0.68." },
+      { q: "Simplify: (5a/6)−(a/6)", opts: ["4a/12", "5a/0", "a", "2a/3"], ans: 3, exp: "Common denominator: (5a−a)/6=4a/6=2a/3 (dividing by HCF 2)." }
+    ],
+    /* ── SUBJECT 3: BASIC SCIENCE (40) ── */
+    "Basic Science": [
+      { q: "Which of the following is an example of a terrestrial habitat?", opts: ["Pond", "Forest", "Ocean", "Lake"], ans: 0, exp: "A forest is a terrestrial (land) habitat. Ponds, oceans, and lakes are aquatic (water) habitats. Terrestrial habitats include all land-based environments where organisms live." },
+      { q: "The natural home of an organism is called its:", opts: ["Habitat", "Ecosystem", "Community", "Niche"], ans: 0, exp: "A habitat is the natural environment where an organism lives. An ecosystem includes living and non-living components, a community is all populations in an area, and a niche is the role of an organism." },
+      { q: "Which adaptation helps a fish survive in water?", opts: ["Gills for respiration", "Wings for flight", "Thick fur for warmth", "Hooves for running"], ans: 0, exp: "Fish have gills to extract dissolved oxygen from water. Wings, thick fur, and hooves are adaptations for aerial, cold terrestrial, and grassland habitats respectively." },
+      { q: "Which characteristic is unique to human beings among all living things?", opts: ["Ability to reason and solve problems", "Ability to move", "Ability to reproduce", "Ability to grow"], ans: 0, exp: "While many organisms move, reproduce, and grow, the advanced ability to reason, solve complex problems, and use logic is uniquely developed in humans." },
+      { q: "Which instrument is most appropriate for measuring the height of a plant?", opts: ["Metre rule", "Thermometer", "Beam balance", "Stop clock"], ans: 0, exp: "A metre rule measures length/height. A thermometer measures temperature, a beam balance measures mass, and a stop clock measures time." },
+      { q: "Which stage of human development follows infancy?", opts: ["Adolescence", "Childhood", "Adulthood", "Old age"], ans: 0, exp: "The typical sequence is: infancy → childhood → adolescence → adulthood → old age. Childhood directly follows infancy in human developmental stages." },
+      { q: "Which factor does NOT directly affect growth and development?", opts: ["Colour of eyes", "Nutrition", "Heredity", "Environment"], ans: 0, exp: "Eye colour is determined by genetics but does not influence how a person grows or develops. Nutrition, heredity, and environment are major factors affecting growth and development." },
+      { q: "What is body image?", opts: ["How a person perceives their own physical appearance", "A photograph of the body", "The size of one's clothes", "A medical scan"], ans: 0, exp: "Body image refers to a person's mental perception and attitude toward their own physical appearance, including size, shape, and features." },
+      { q: "Which change during puberty is temporary?", opts: ["Mood swings", "Increase in height", "Deepening of voice in boys", "Growth of breasts in girls"], ans: 0, exp: "Mood swings are temporary emotional changes during puberty. Height increase, voice deepening, and breast growth are permanent physical changes." },
+      { q: "Which organism is adapted to an arboreal habitat?", opts: ["Squirrel", "Fish", "Earthworm", "Whale"], ans: 0, exp: "Squirrels live in trees (arboreal habitat) and have sharp claws and bushy tails for balance. Fish and whales are aquatic; earthworms are terrestrial." },
+
+      { q: "Which habitat is characterised by salty water?", opts: ["Freshwater lake", "Marine habitat", "Grassland", "Rainforest"], ans: 1, exp: "Marine habitats such as oceans and seas contain salty water. Freshwater lakes have low salt content, while grasslands and rainforests are terrestrial." },
+      { q: "An organism living in a desert has thick skin to reduce water loss. This is an example of:", opts: ["Hibernation", "Structural adaptation", "Migration", "Reproduction"], ans: 1, exp: "Thick skin is a structural adaptation — a physical feature that helps the organism survive in dry conditions by reducing water loss." },
+      { q: "Which of the following shows the relationship between organisms in the same habitat?", opts: ["They never interact", "They share common characteristics and may depend on each other", "They always compete for food", "They cannot live together"], ans: 1, exp: "Organisms in the same habitat share environmental conditions and may exhibit interdependence — relying on each other directly or indirectly for survival." },
+      { q: "Which human ability involves drawing conclusions from observations?", opts: ["Measurement", "Inference", "Observation", "Recording"], ans: 1, exp: "Inference is the ability to draw logical conclusions from observations and evidence. Measurement gives numerical data, observation is noticing facts, and recording is writing them down." },
+      { q: "Which measurement best indicates growth in humans over time?", opts: ["Blood pressure", "Change in height and weight", "Heart rate", "Body temperature"], ans: 1, exp: "Growth is an increase in size. Changes in height and weight over time are the most direct indicators of physical growth." },
+      { q: "Which stage is marked by the onset of puberty?", opts: ["Infancy", "Adolescence", "Adulthood", "Childhood"], ans: 1, exp: "Adolescence is the stage when puberty begins, bringing physical and emotional changes that lead to sexual maturity." },
+      { q: "Which factor affecting growth can be improved by eating a balanced diet?", opts: ["Heredity", "Nutrition", "Environment", "Gender"], ans: 1, exp: "A balanced diet directly improves nutrition, which is essential for proper growth and development. Heredity and gender are fixed; environment is broader." },
+      { q: "Why is it important to respect individual differences in body image?", opts: ["Because everyone should look the same", "Because every person is unique and valuable", "Because differences are mistakes", "Because media says so"], ans: 1, exp: "Every person has unique genetic and environmental influences on their appearance. Respecting individual differences promotes healthy self-esteem and social harmony." },
+      { q: "Which statement about puberty is correct?", opts: ["It only happens to girls", "It involves physical and emotional changes in both boys and girls", "It has no effect on behaviour", "It happens only in adulthood"], ans: 1, exp: "Puberty involves physical changes (growth spurt, sexual development) and emotional changes (mood swings, self-consciousness) in both boys and girls." },
+      { q: "Which adaptation helps a camel survive in the desert?", opts: ["Webbed feet", "Ability to store water in its hump", "Gills", "Thick blubber"], ans: 1, exp: "Camels store fat (not water directly) in their humps, which metabolises to provide water and energy. This adaptation helps them survive long periods without drinking in arid environments." },
+
+      { q: "Which of the following is an aquatic habitat?", opts: ["Savanna", "Pond", "Desert", "Mountain"], ans: 2, exp: "A pond is an aquatic (water) habitat. Savanna, desert, and mountain are terrestrial habitats." },
+      { q: "The long neck of a giraffe is an adaptation for:", opts: ["Running fast", "Reaching high leaves for food", "Swimming", "Digging"], ans: 2, exp: "A giraffe's long neck is a structural adaptation that allows it to reach leaves high up in trees that other herbivores cannot access." },
+      { q: "Which of these is a characteristic shared by organisms in the same habitat?", opts: ["They have identical DNA", "They are the same colour", "They are adapted to similar environmental conditions", "They eat exactly the same food"], ans: 2, exp: "Organisms in the same habitat share adaptations to similar environmental conditions (temperature, water, light), though they may differ in species, colour, and diet." },
+      { q: "Which ability allows humans to design experiments and invent tools?", opts: ["Running", "Inquisitiveness and problem solving", "Sleeping", "Photosynthesis"], ans: 2, exp: "Human inquisitiveness (curiosity) and problem-solving ability enable scientific investigation, invention, and technological development." },
+      { q: "Development differs from growth because development involves:", opts: ["Only increase in size", "Only increase in weight", "Changes in function and maturity", "Only change in height"], ans: 2, exp: "Growth is quantitative (increase in size/weight). Development is qualitative — it involves functional maturity, skill acquisition, and behavioural changes." },
+      { q: "Which developmental stage is characterised by complete dependence on parents?", opts: ["Adolescence", "Adulthood", "Infancy", "Childhood"], ans: 2, exp: "Infancy is the earliest stage where the baby is completely dependent on parents for feeding, protection, and care." },
+      { q: "Which factor affecting development is influenced by the availability of clean water and good sanitation?", opts: ["Heredity", "Environment", "Nutrition", "Exercise"], ans: 2, exp: "Clean water and sanitation are environmental factors that affect health and development by reducing disease and promoting hygiene." },
+      { q: "Which physical feature is determined mainly by heredity?", opts: ["Choice of hairstyle", "Height, skin colour, and eye colour", "Choice of clothing", "Friend group"], ans: 2, exp: "Height, skin colour, and eye colour are genetically inherited traits. Hairstyles, clothing, and friends are personal or social choices." },
+      { q: "A common misconception about beauty spread by some media is that:", opts: ["Everyone is equally beautiful", "Only one body type or appearance is ideal", "All body types are healthy", "Beauty is not important"], ans: 2, exp: "Some media portray a narrow, unrealistic standard of beauty, suggesting only one body type is ideal. This can harm body image and self-esteem." },
+      { q: "Which of the following is a permanent change during human development?", opts: ["Mood swings", "Menstruation starting", "Temporary acne", "Feeling shy"], ans: 2, exp: "The onset of menstruation is a permanent biological milestone indicating reproductive maturity. Mood swings, acne, and shyness may be temporary." },
+
+      { q: "Which habitat includes tree trunks and treetops?", opts: ["Aquatic", "Terrestrial", "Arboreal", "Marine"], ans: 3, exp: "Arboreal habitats are found in trees — including tree trunks, branches, and canopies. Squirrels, monkeys, and many birds live in arboreal habitats." },
+      { q: "A frog has moist skin and webbed feet. These adaptations suit it for:", opts: ["Desert life", "Arboreal life", "Terrestrial hunting", "Aquatic and moist environments"], ans: 3, exp: "Moist skin allows cutaneous respiration (breathing through skin), and webbed feet aid swimming. These adaptations suit aquatic and moist terrestrial environments." },
+      { q: "Organisms in the same habitat often compete for:", opts: ["Nothing", "Only mates", "Only shelter", "Resources such as food, water, and space"], ans: 3, exp: "Competition occurs when organisms vie for limited resources like food, water, light, and living space within the same habitat." },
+      { q: "Which human trait involves carefully watching phenomena to gather information?", opts: ["Reasoning", "Measurement", "Observation", "Inference"], ans: 3, exp: "Observation is the act of carefully watching and noting phenomena using the senses. It is the foundation of scientific investigation." },
+      { q: "Which tool is used to measure body mass?", opts: ["Metre rule", "Measuring tape", "Weighing scale", "Thermometer"], ans: 3, exp: "A weighing scale (or beam balance) measures mass. A metre rule and tape measure length; a thermometer measures temperature." },
+      { q: "Which stage of human development is characterised by full physical maturity and responsibility?", opts: ["Infancy", "Adolescence", "Childhood", "Adulthood"], ans: 3, exp: "Adulthood is the stage of full physical maturity, reproductive capability, and typically the greatest social and economic responsibility." },
+      { q: "Which combination of factors affects growth and development?", opts: ["Only heredity", "Only nutrition", "Only exercise", "Heredity, nutrition, environment, and health"], ans: 3, exp: "Growth and development are influenced by multiple interacting factors: genetic heredity, nutrition, environment, health, and exercise." },
+      { q: "A healthy attitude towards body image includes:", opts: ["Comparing yourself only to celebrities", "Feeling ashamed of your appearance", "Accepting yourself and recognising individual uniqueness", "Trying to look exactly like everyone else"], ans: 3, exp: "Healthy body image involves self-acceptance, recognising that everyone is unique, and valuing oneself beyond physical appearance." },
+      { q: "Which effect of puberty on behaviour is commonly observed?", opts: ["No change in emotions", "Increased desire for independence and self-identity", "Complete loss of memory", "Permanent sadness"], ans: 3, exp: "Adolescents often seek greater independence and develop a stronger sense of self-identity as part of normal pubertal development." },
+      { q: "Which adaptation helps a cactus survive in a dry habitat?", opts: ["Large leaves", "Shallow roots", "Spines instead of leaves to reduce water loss", "Need for constant watering"], ans: 3, exp: "Cacti have spines (modified leaves) that reduce surface area and water loss through transpiration, helping them survive in arid conditions." }
+    ],
+    /* ── SUBJECT 4: BASIC TECHNOLOGY (40) ── */
+    "Basic Technology": [
+      { q: "What is the primary aim of first aid?", opts: ["To replace a doctor", "To save life and prevent the condition from worsening", "To perform surgery", "To give injections only"], ans: 0, exp: "The primary aims of first aid are to preserve life, prevent the injury or illness from worsening, and promote recovery. It is immediate care given before professional help arrives." },
+      { q: "Which item is commonly found in a first-aid box?", opts: ["Antiseptic lotion", "Hammer", "Saw", "Drill"], ans: 0, exp: "Antiseptic lotion is used to clean wounds and prevent infection. Hammers, saws, and drills are workshop tools, not first-aid materials." },
+      { q: "In rescue operations, what should be the first priority?", opts: ["Saving property", "Ensuring personal safety and assessing the scene", "Taking photographs", "Calling the media"], ans: 0, exp: "Rescuers must first ensure their own safety and assess the situation to avoid becoming additional victims. Only then can they effectively help others." },
+      { q: "Which material is commonly used for making furniture and building construction?", opts: ["Wood", "Rubber", "Plastic", "Ceramics"], ans: 0, exp: "Wood is widely used for furniture, doors, windows, and building construction due to its strength, workability, and availability." },
+      { q: "Which metal contains iron as its main component?", opts: ["Ferrous metal", "Non-ferrous metal", "Plastic", "Ceramic"], ans: 0, exp: "Ferrous metals contain iron as the main element. Examples include steel and cast iron. Non-ferrous metals like aluminium and copper do not contain iron." },
+      { q: "Which type of line is used to indicate hidden edges in technical drawing?", opts: ["Hidden line", "Continuous thick line", "Centre line", "Dimension line"], ans: 0, exp: "Hidden lines (dashed or dotted) represent edges and features that are not visible from the current viewing angle in a technical drawing." },
+      { q: "Which angle measures exactly 90 degrees?", opts: ["Right angle", "Acute angle", "Obtuse angle", "Straight angle"], ans: 0, exp: "A right angle measures exactly 90°. An acute angle is less than 90°, an obtuse angle is between 90° and 180°, and a straight angle is 180°." },
+      { q: "A triangle with all three sides equal is called:", opts: ["Equilateral triangle", "Isosceles triangle", "Scalene triangle", "Right-angled triangle"], ans: 0, exp: "An equilateral triangle has three equal sides and three equal angles of 60° each." },
+      { q: "Which part of a circle is a straight line passing from one side to the other through the centre?", opts: ["Diameter", "Radius", "Chord", "Arc"], ans: 0, exp: "The diameter is a straight line passing through the centre and touching two points on the circumference. It is twice the length of the radius." },
+      { q: "Which material is made from clay and hardened by heat?", opts: ["Ceramics", "Glass", "Rubber", "Plastic"], ans: 0, exp: "Ceramics are made from clay and other minerals, shaped and then hardened by firing at high temperatures in a kiln." },
+
+      { q: "Which of the following is a step in rescue operations?", opts: ["Running away from the scene", "Assessing the situation, calling for help, and providing aid", "Ignoring the victim", "Blocking the road"], ans: 1, exp: "Proper rescue procedure involves assessing the scene, ensuring safety, calling emergency services, and providing appropriate aid to victims." },
+      { q: "Which metal is an alloy of copper and zinc?", opts: ["Steel", "Brass", "Aluminium", "Bronze"], ans: 1, exp: "Brass is an alloy of copper and zinc. Bronze is copper and tin. Steel is iron and carbon." },
+      { q: "Which property makes rubber suitable for making tyres?", opts: ["Brittleness", "Elasticity and resistance to wear", "Transparency", "Fragility"], ans: 1, exp: "Rubber's elasticity allows it to absorb shocks and return to shape, while its wear resistance makes it durable for road contact." },
+      { q: "In geometric construction, which instrument is used to draw circles and arcs?", opts: ["Ruler", "Compass", "Protractor", "Set square"], ans: 1, exp: "A compass is the instrument used to draw circles and arcs by fixing one point (centre) and rotating the pencil leg around it." },
+      { q: "Which angle measures between 90° and 180°?", opts: ["Acute angle", "Obtuse angle", "Reflex angle", "Right angle"], ans: 1, exp: "An obtuse angle measures greater than 90° but less than 180°. Acute is < 90°, right is = 90°, reflex is > 180°." },
+      { q: "Which triangle has two equal sides and two equal angles?", opts: ["Scalene triangle", "Isosceles triangle", "Equilateral triangle", "Right-angled triangle"], ans: 1, exp: "An isosceles triangle has exactly two equal sides and two equal base angles opposite those sides." },
+      { q: "Which line touches a circle at exactly one point?", opts: ["Chord", "Secant", "Tangent", "Diameter"], ans: 1, exp: "A tangent is a straight line that touches the circumference of a circle at exactly one point and is perpendicular to the radius at that point." },
+      { q: "Which material is produced by heating sand with other minerals until it melts and cools?", opts: ["Ceramics", "Glass", "Rubber", "Plastic"], ans: 1, exp: "Glass is made by heating silica sand (usually with soda ash and limestone) to a high temperature until it melts, then cooling it to form a solid." },
+      { q: "Which first-aid material is used to cover and protect a wound from dirt and germs?", opts: ["Cotton wool only", "Sterile dressing or plaster", "Soap", "Sawdust"], ans: 1, exp: "A sterile dressing or plaster covers wounds to prevent infection, control bleeding, and promote healing." },
+      { q: "Which of the following is a non-ferrous metal?", opts: ["Cast iron", "Aluminium", "Steel", "Wrought iron"], ans: 1, exp: "Aluminium is a non-ferrous metal — it does not contain iron. Cast iron, steel, and wrought iron are all ferrous metals." },
+
+      { q: "Which of the following is a property of plastics?", opts: ["Conducts electricity easily", "Can be moulded into various shapes", "Always heavy and rigid", "Dissolves in water"], ans: 2, exp: "Plastics are thermoplastic or thermosetting materials that can be moulded into various shapes when heated. Most plastics are poor conductors, lightweight, and water-resistant." },
+      { q: "Which type of line is used to show the centre of a circle or symmetrical object?", opts: ["Hidden line", "Outline", "Centre line", "Construction line"], ans: 2, exp: "Centre lines (long-dash short-dash patterns) indicate the axes of symmetry, centres of circles, and paths of motion in technical drawings." },
+      { q: "Which angle measures exactly 180°?", opts: ["Right angle", "Obtuse angle", "Straight angle", "Reflex angle"], ans: 2, exp: "A straight angle measures exactly 180°, forming a straight line. A right angle is 90°, obtuse is between 90° and 180°, and reflex is greater than 180°." },
+      { q: "A triangle with all sides of different lengths is called:", opts: ["Equilateral", "Isosceles", "Scalene", "Right-angled"], ans: 2, exp: "A scalene triangle has three sides of different lengths and three angles of different measures." },
+      { q: "Which part of a circle is the distance from the centre to any point on the circumference?", opts: ["Diameter", "Circumference", "Radius", "Chord"], ans: 2, exp: "The radius is the distance from the centre of a circle to any point on its circumference. The diameter is twice the radius." },
+      { q: "Which geometric construction is used to divide a line into two equal parts?", opts: ["Trisection", "Bisection", "Multiplication", "Subtraction"], ans: 2, exp: "Bisection means dividing into two equal parts. A line is bisected by constructing perpendicular bisectors using a compass and ruler." },
+      { q: "Which material is commonly used for electrical insulation?", opts: ["Copper wire", "Iron rod", "Rubber", "Aluminium sheet"], ans: 2, exp: "Rubber is an excellent electrical insulator because it does not allow electric current to pass through it easily. Metals like copper and aluminium are conductors." },
+      { q: "Which angle is constructed by first drawing a 60° angle and then bisecting it?", opts: ["90°", "45°", "30°", "120°"], ans: 2, exp: "Bisecting a 60° angle produces a 30° angle. 60° ÷ 2 = 30°. This is a standard geometric construction procedure." },
+      { q: "Which of the following best describes an acute-angled triangle?", opts: ["Has one angle equal to 90°", "Has one angle greater than 90°", "Has all angles less than 90°", "Has one angle equal to 180°"], ans: 2, exp: "An acute-angled triangle has all three angles less than 90°. A right-angled triangle has one 90° angle; an obtuse-angled triangle has one angle > 90°." },
+      { q: "In rescue operations, a 'casualty' refers to:", opts: ["The rescue vehicle", "The building that collapsed", "A person who is injured or in danger", "The equipment used"], ans: 2, exp: "A casualty is a person who has been injured, killed, or is in danger due to an accident or disaster." },
+
+      { q: "Which of the following is a use of wood in technology?", opts: ["Making electrical wires", "Making furniture and paper", "Making glass windows", "Making rubber bands"], ans: 3, exp: "Wood is used for furniture, construction, and paper production. Electrical wires use copper/aluminium, glass windows use silica, and rubber bands use latex." },
+      { q: "Which metal is known for its light weight and resistance to corrosion, and is used in aircraft parts?", opts: ["Lead", "Iron", "Steel", "Aluminium"], ans: 3, exp: "Aluminium is lightweight, corrosion-resistant, and strong for its weight, making it ideal for aircraft, vehicle parts, and packaging." },
+      { q: "Which construction tool is used to measure angles?", opts: ["Ruler", "Compass", "Divider", "Protractor"], ans: 3, exp: "A protractor is a semi-circular or circular instrument marked in degrees, used to measure and draw angles accurately." },
+      { q: "Which type of angle is greater than 180° but less than 360°?", opts: ["Obtuse angle", "Right angle", "Straight angle", "Reflex angle"], ans: 3, exp: "A reflex angle measures greater than 180° but less than 360°. Obtuse is 90°–180°, right is 90°, straight is 180°." },
+      { q: "Which triangle has one angle exactly equal to 90°?", opts: ["Acute-angled", "Obtuse-angled", "Equilateral", "Right-angled"], ans: 3, exp: "A right-angled triangle has one 90° angle. The side opposite the right angle is called the hypotenuse and is the longest side." },
+      { q: "Which part of a circle is a curved portion of the circumference between two points?", opts: ["Radius", "Diameter", "Chord", "Arc"], ans: 3, exp: "An arc is any curved portion of the circumference of a circle between two points. A chord is the straight line joining those two points." },
+      { q: "Which material is synthetic and derived from petroleum products?", opts: ["Wood", "Cotton", "Wool", "Plastic"], ans: 3, exp: "Most plastics are synthetic polymers derived from petroleum (crude oil) through chemical processes. Wood, cotton, and wool are natural materials." },
+      { q: "Which of the following is a correct step in constructing a 60° angle?", opts: ["Draw a circle and measure", "Use a protractor directly", "Draw an arc from one end of a line, then intersect it with another arc from the intersection point", "Guess the angle visually"], ans: 3, exp: "Standard geometric construction of 60°: draw a line, mark a point, draw an arc from that point crossing the line, then draw another arc from the intersection to create a 60° angle without a protractor." },
+      { q: "Which first-aid step should be taken for a minor cut?", opts: ["Ignore it", "Apply dirty cloth", "Pour alcohol directly into the wound without cleaning", "Clean the wound and apply a sterile dressing"], ans: 3, exp: "For a minor cut, clean the wound with clean water or antiseptic, then cover with a sterile dressing to prevent infection and aid healing." },
+      { q: "Which property of glass makes it suitable for windows?", opts: ["Opacity", "Electrical conductivity", "Thermal conductivity", "Transparency"], ans: 3, exp: "Glass is transparent, allowing light to pass through while protecting from wind and rain. This makes it ideal for windows and doors." }
+    ],
+    /* ── SUBJECT 5: BUSINESS STUDIES (40) ── */
+    "Business Studies": [
+      { q: "Which of the following is the main duty of a receptionist?", opts: ["To manage the company's finances", "To receive visitors and direct phone calls", "To manufacture products", "To deliver goods to customers"], ans: 0, exp: "A receptionist is employed to receive visitors, answer telephone calls, and direct people to the appropriate offices or staff members." },
+      { q: "Which quality is essential for a good receptionist?", opts: ["Good communication skills", "Ability to ignore visitors", "Laziness", "Rudeness"], ans: 0, exp: "Good communication skills are essential because the receptionist interacts with visitors, answers phones, and represents the organisation's first impression." },
+      { q: "Which document is used to record details of visitors to an organisation?", opts: ["Visitor's book", "Cash book", "Ledger", "Payroll"], ans: 0, exp: "A visitor's book records the names, addresses, purposes of visit, and times of arrival/departure of all visitors." },
+      { q: "What is the meaning of 'correspondence' in an office?", opts: ["Communication in the form of letters, emails, and memos", "Counting money", "Manufacturing goods", "Cleaning the office"], ans: 0, exp: "Correspondence refers to all written communication — letters, emails, memos, and faxes — that enters and leaves an organisation." },
+      { q: "Which document is sent by a seller to a buyer showing details of goods sold and the amount due?", opts: ["Invoice", "Receipt", "Cheque", "Pay slip"], ans: 0, exp: "An invoice is a commercial document issued by a seller to a buyer, itemising goods or services provided and the total amount payable." },
+      { q: "Which type of trade involves buying and selling within the same country?", opts: ["Home trade", "Foreign trade", "Export trade", "Entrepôt trade"], ans: 0, exp: "Home trade (or internal trade) involves the exchange of goods and services within the boundaries of a country." },
+      { q: "Which aid to trade provides a safe place for storing goods before they are sold?", opts: ["Banking", "Warehousing", "Insurance", "Advertising"], ans: 0, exp: "Warehousing provides storage facilities that protect goods from damage, theft, and weather, ensuring steady supply to the market." },
+      { q: "Which market deals with the buying and selling of long-term securities such as shares and bonds?", opts: ["Money market", "Capital market", "Commodity market", "Labour market"], ans: 0, exp: "The capital market deals with long-term funds and securities like stocks and bonds. The money market deals with short-term funds." },
+      { q: "Which channel member buys goods in bulk from the producer and sells in smaller quantities to retailers?", opts: ["Wholesaler", "Retailer", "Consumer", "Agent"], ans: 0, exp: "The wholesaler buys in large quantities from the manufacturer and breaks bulk, selling smaller quantities to retailers." },
+      { q: "Which banking service allows customers to deposit money and withdraw it when needed?", opts: ["Savings account", "Loan", "Overdraft", "Mortgage"], ans: 0, exp: "A savings account is a basic banking service where customers deposit money safely and earn interest while being able to withdraw when needed." },
+
+      { q: "Which of the following describes appropriate office dress for a receptionist?", opts: ["Casual beach wear", "Smart, neat, and professional attire", "Sportswear", "Sleepwear"], ans: 1, exp: "A receptionist should wear smart, neat, and professional attire because they are the first point of contact and represent the organisation's image." },
+      { q: "Which of the following is a type of correspondence record?", opts: ["Invoice book only", "Inward mail register and outward mail register", "Cash register only", "Visitor's book only"], ans: 1, exp: "Correspondence records include inward mail registers (for mail received) and outward mail registers (for mail sent), helping track all communications." },
+      { q: "Which document serves as proof that payment has been received?", opts: ["Invoice", "Receipt", "Quotation", "Order form"], ans: 1, exp: "A receipt is issued by the seller to the buyer as proof that money has been received for goods or services." },
+      { q: "Which form of trade involves selling goods to another country?", opts: ["Import", "Export", "Wholesale", "Retail"], ans: 1, exp: "Export trade involves selling domestically produced goods to foreign countries. Import is buying from abroad; wholesale and retail are domestic distribution levels." },
+      { q: "Which aid to trade protects against financial loss due to fire, theft, or accidents?", opts: ["Banking", "Insurance", "Transportation", "Communication"], ans: 1, exp: "Insurance provides financial protection against risks such as fire, theft, accidents, and natural disasters, giving businesses confidence to operate." },
+      { q: "Which market deals with short-term loans and financial instruments of less than one year?", opts: ["Capital market", "Money market", "Stock market", "Foreign exchange market"], ans: 1, exp: "The money market deals with short-term borrowing and lending, typically for periods up to one year, using instruments like treasury bills and commercial paper." },
+      { q: "Which career opportunity exists in the capital market?", opts: ["Farmer", "Stockbroker", "Miner", "Fisherman"], ans: 1, exp: "A stockbroker buys and sells securities on behalf of clients in the capital market. Farmers, miners, and fishermen work in primary industries, not financial markets." },
+      { q: "Which channel member sells goods directly to the final consumer?", opts: ["Wholesaler", "Retailer", "Producer", "Agent"], ans: 1, exp: "The retailer is the channel member who sells goods in small units directly to the final consumer for personal use." },
+      { q: "Which of the following is a safe chemical handling practice?", opts: ["Tasting chemicals to identify them", "Using protective gloves and goggles", "Pouring chemicals down the drain carelessly", "Storing chemicals in food containers"], ans: 1, exp: "Protective gloves and goggles prevent skin contact and eye injury. Tasting, careless disposal, and food-container storage are dangerous practices." },
+      { q: "Which service does a commercial bank provide?", opts: ["Manufacturing cars", "Granting loans and accepting deposits", "Growing crops", "Building houses"], ans: 1, exp: "Commercial banks provide financial services including accepting deposits, granting loans, overdrafts, and facilitating money transfers." },
+
+      { q: "Which of the following is a duty of a receptionist when answering the telephone?", opts: ["Shouting at the caller", "Answering politely and taking accurate messages", "Ignoring the call", "Hanging up immediately"], ans: 2, exp: "A receptionist should answer calls promptly, identify the organisation, speak politely, listen carefully, and take accurate messages if needed." },
+      { q: "Which record shows all letters and parcels received by an organisation?", opts: ["Cash book", "Inward mail register", "Sales day book", "Payroll"], ans: 2, exp: "The inward mail register records all incoming correspondence — letters, parcels, and emails — with dates, senders, and subjects for tracking." },
+      { q: "Which document is sent by a buyer to a seller requesting goods at stated prices?", opts: ["Invoice", "Receipt", "Order form", "Delivery note"], ans: 2, exp: "An order form (or purchase order) is sent by the buyer to the seller specifying the goods, quantities, and agreed prices." },
+      { q: "Which type of trade involves buying goods from one country and selling them to another without using them locally?", opts: ["Import", "Export", "Entrepôt trade", "Retail trade"], ans: 2, exp: "Entrepôt trade involves importing goods into a country and re-exporting them to another country without significant processing or local use." },
+      { q: "Which aid to trade helps move goods from producers to consumers?", opts: ["Banking", "Insurance", "Transportation", "Advertising"], ans: 2, exp: "Transportation moves goods from where they are produced to where they are needed, bridging the gap between producers and consumers." },
+      { q: "Which feature is common to all types of markets?", opts: ["Only sellers are present", "Buyers and sellers come together to exchange goods and services", "No prices are involved", "Only government officials trade"], ans: 2, exp: "A market is any arrangement where buyers and sellers meet to exchange goods, services, or resources at agreed prices." },
+      { q: "Which term means the total amount of money received from sales within a period?", opts: ["Profit", "Loss", "Turnover", "Mark-up"], ans: 2, exp: "Turnover (or sales revenue) is the total amount of money received from selling goods or services during a specific period before any costs are deducted." },
+      { q: "Which agent in the channel of distribution breaks bulk and provides credit to retailers?", opts: ["Producer", "Wholesaler", "Consumer", "Manufacturer"], ans: 2, exp: "The wholesaler buys in bulk from the producer, breaks it into smaller quantities, and often gives credit facilities to retailers." },
+      { q: "Which of the following is an ethical issue in banking?", opts: ["Giving loans to all customers", "Charging fair interest rates", "Misusing customer information or fraud", "Opening savings accounts"], ans: 2, exp: "Misusing customer information, fraud, and unauthorised transactions are serious ethical issues. Fair interest and opening accounts are normal banking practices." },
+      { q: "Which document accompanies goods being delivered to show what is contained in the package?", opts: ["Invoice", "Receipt", "Delivery note", "Cheque"], ans: 2, exp: "A delivery note accompanies goods and lists the items in the consignment so the receiver can check that everything ordered has been delivered." },
+
+      { q: "Which of the following best describes a reception office?", opts: ["A place where products are manufactured", "A room for storing files only", "A place for staff meetings only", "The area where visitors are received and assisted"], ans: 3, exp: "The reception office is the first point of contact in an organisation where visitors are welcomed, assisted, and directed to appropriate staff." },
+      { q: "Which of the following is NOT a way mail enters an organisation?", opts: ["By post", "By hand delivery", "By courier", "By manufacturing"], ans: 3, exp: "Mail enters through post, hand delivery, courier, email, and fax. Manufacturing is the production of goods, not a mail delivery method." },
+      { q: "Which office document is used to request items or services from a supplier?", opts: ["Receipt", "Invoice", "Quotation", "Request form"], ans: 3, exp: "A request form (or requisition form) is an internal document used to request items or services from a supplier or another department." },
+      { q: "Which type of trade involves buying goods from foreign countries?", opts: ["Export", "Home trade", "Import", "Wholesale"], ans: 3, exp: "Import trade involves bringing goods and services into a country from abroad. Export is selling abroad; home trade is domestic; wholesale is bulk selling." },
+      { q: "Which aid to trade involves creating awareness about products to increase sales?", opts: ["Banking", "Transportation", "Warehousing", "Advertising"], ans: 3, exp: "Advertising informs and persuades potential customers about products and services, thereby increasing demand and sales." },
+      { q: "Which market deals with raw materials and agricultural products like cocoa and oil?", opts: ["Capital market", "Money market", "Commodity market", "Labour market"], ans: 3, exp: "The commodity market is where raw materials and primary products such as agricultural goods, minerals, and oil are bought and sold." },
+      { q: "If a trader buys goods for ₦500 and sells them for ₦600, what is the profit?", opts: ["₦100", "₦500", "₦600", "₦100"], ans: 3, exp: "Profit = Selling Price − Cost Price = ₦600 − ₦500 = ₦100. The trader gains ₦100 from the transaction." },
+      { q: "Which member of the distribution channel is the final user of the product?", opts: ["Producer", "Wholesaler", "Retailer", "Consumer"], ans: 3, exp: "The consumer is the end user who purchases and uses the product for personal or household purposes, not for resale." },
+      { q: "Which banking service allows customers to withdraw more than their account balance temporarily?", opts: ["Savings account", "Fixed deposit", "Current account with overdraft facility", "Joint account"], ans: 3, exp: "An overdraft facility allows a current account holder to withdraw more than their balance up to an agreed limit, useful for short-term cash flow needs." },
+      { q: "Why is it important to handle office chemicals safely?", opts: ["To make the office smell nice", "To save money only", "To impress visitors", "To prevent injury, illness, and environmental damage"], ans: 3, exp: "Safe chemical handling prevents burns, poisoning, fires, and environmental pollution. It protects workers, visitors, and the surrounding community." }
+    ]
+  },
+      
 jss3: {
   'General Test': [
     // ── ENGLISH LANGUAGE (20 questions) ──
