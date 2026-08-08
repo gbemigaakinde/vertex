@@ -1,816 +1,219 @@
 window.questions = {
-    jss1: {
-    'English Language': [
-    {
-        q: "Choose the word that contains the long vowel sound /u:/ as in 'Food'.",
-        opts: ["Book", "Look", "Moon", "Foot"],
-        ans: 2,
-        exp: "'Moon' has the long /u:/ sound, while the others use the short /ʊ/ sound."
-    },
-    {
-        q: "In the sentence 'The boy ran quickly to the tap,' what type of adverb is 'quickly'?",
-        opts: ["Adverb of Place", "Adverb of Manner", "Adverb of Frequency", "Adverb of Time"],
-        ans: 1,
-        exp: "Adverbs of manner tell us 'how' an action is done. He ran 'quickly'."
-    },
-    {
-        q: "Which of the following is the correct way to write the date in a formal letter?",
-        opts: ["25th Feb. 2026", "25/02/2026", "25th February, 2026.", "Feb 25th '26"],
-        ans: 2,
-        exp: "In formal writing, the month should be written in full with proper punctuation."
-    },
-    {
-        q: "Folktales are often called 'didactic' stories. What does this mean?",
-        opts: ["They are very long", "They are meant to teach a moral lesson", "They are about modern technology", "They are written by famous kings"],
-        ans: 1,
-        exp: "Didactic means intended to teach, particularly having moral instruction as an ulterior motive."
-    },
-    {
-        q: "Complete the sentence with the correct form: 'The earth ____ round the sun.'",
-        opts: ["revolve", "revolves", "revolving", "revolved"],
-        ans: 1,
-        exp: "We use the simple present tense (with an 's' for singular subjects) for universal truths."
-    },
-    {
-        q: "Identify the simple present tense in this list:",
-        opts: ["I am eating", "I ate", "I eat", "I will eat"],
-        ans: 2,
-        exp: "'I eat' is the simple present tense form."
-    },
-    {
-        q: "What is the 'setting' of a story in a prose text?",
-        opts: ["The list of characters", "The time and place the story happens", "The end of the story", "The name of the author"],
-        ans: 1,
-        exp: "Setting refers to where and when the events of a story take place."
-    },
-    {
-        q: "Which word has a different vowel sound from the others?",
-        opts: ["Pull", "Full", "Pool", "Bull"],
-        ans: 2,
-        exp: "'Pool' has the long /u:/ sound, while pull, full, and bull have the short /ʊ/ sound."
-    },
-    {
-        q: "What is the past tense of the verb 'Go'?",
-        opts: ["Goed", "Gone", "Went", "Going"],
-        ans: 2,
-        exp: "'Go' is an irregular verb; its past tense form is 'went'."
-    },
-    {
-        q: "When writing a 'Guided Composition', you must:",
-        opts: ["Ignore the hints given", "Use the points provided to build your story", "Write only one sentence", "Write a letter instead"],
-        ans: 1,
-        exp: "Guided compositions provide points or an outline to help you structure your writing."
-    },
-    {
-        q: "Choose the correct past tense sentence:",
-        opts: ["He seed the teacher yesterday.", "He saw the teacher yesterday.", "He sees the teacher yesterday.", "He is seeing the teacher yesterday."],
-        ans: 1,
-        exp: "The past tense of 'see' is 'saw'."
-    },
-    {
-        q: "Which word contains the vowel sound /3:/ as in 'Girl'?",
-        opts: ["Get", "Shirt", "Gate", "Gat"],
-        ans: 1,
-        exp: "The 'ir' in shirt produces the /3:/ sound."
-    },
-    {
-        q: "What is the present continuous form of 'Play' for the subject 'We'?",
-        opts: ["We playing", "We are playing", "We is playing", "We played"],
-        ans: 1,
-        exp: "Present continuous uses 'am/is/are' + verb-ing. 'We' takes 'are'."
-    },
-    {
-        q: "Which of these is the best opening for a Narrative Essay?",
-        opts: ["I am writing to tell you...", "Once upon a time, in a small village...", "The reasons why smoking is bad are...", "Dear Sir, I want to apply..."],
-        ans: 1,
-        exp: "Narrative essays tell stories and often begin by setting the scene or time."
-    },
-    {
-        q: "Complete the sentence: 'While I ____ my homework, the light went out.'",
-        opts: ["am doing", "was doing", "did", "were doing"],
-        ans: 1,
-        exp: "We use the past continuous (was/were + ing) for an action that was ongoing in the past."
-    },
-    {
-        q: "In an argumentative essay, what is the 'opposition'?",
-        opts: ["The person who agrees with you", "The side that argues against your point", "The title of the essay", "The person who marks the script"],
-        ans: 1,
-        exp: "The opposition represents the counter-argument or the 'other side' of the debate."
-    },
-    {
-        q: "Identify the word with the /3:/ sound:",
-        opts: ["Port", "Work", "Park", "Back"],
-        ans: 1,
-        exp: "In 'work', the 'or' is pronounced as the /3:/ sound."
-    },
-    {
-        q: "Contrast the sounds: Which word has the short /ɪ/ sound as in 'Bit'?",
-        opts: ["Beat", "Seat", "Sit", "Meat"],
-        ans: 2,
-        exp: "'Sit' has the short /ɪ/ sound, while the others have the long /i:/ sound."
-    },
-    {
-        q: "What is an 'Expository' essay meant to do?",
-        opts: ["Tell a funny story", "Explain or give information about a topic", "Argue a point", "Describe a person"],
-        ans: 1,
-        exp: "Expository writing is informative and explains a subject like HIV/AIDS."
-    },
-    {
-        q: "Which vowel sound is in the word 'Cat'?",
-        opts: ["/e/", "/æ/", "/a:/", "/ɪ/"],
-        ans: 1,
-        exp: "The word 'cat' uses the /æ/ sound."
-    },
-    {
-        q: "What makes a 'Myth' different from a normal story?",
-        opts: ["It is always true", "It explains how nature started using gods or spirits", "It has no characters", "It is written in a newspaper"],
-        ans: 1,
-        exp: "Myths are ancient stories used to explain natural events or origins, often involving supernatural beings."
-    },
-    {
-        q: "Which sentence is in the Future Tense?",
-        opts: ["She goes home.", "She went home.", "She will go home.", "She is going home."],
-        ans: 2,
-        exp: "The word 'will' is a primary marker for the future tense."
-    },
-    {
-        q: "In a drama text, what are 'Stage Directions'?",
-        opts: ["The lines the actors speak", "Instructions on how actors should move or look", "The names of the audience", "The price of the tickets"],
-        ans: 1,
-        exp: "Stage directions tell the actors and director what to do on stage."
-    },
-    {
-        q: "Contrast /e/ and /æ/: Which word contains the /e/ sound as in 'Egg'?",
-        opts: ["Pan", "Pen", "Pun", "Pin"],
-        ans: 1,
-        exp: "'Pen' uses the /e/ sound, while 'pan' uses /æ/."
-    },
-    {
-        q: "Which of these words contains a diphthong (two vowel sounds joined)?",
-        opts: ["Sit", "Boy", "Hot", "Cat"],
-        ans: 1,
-        exp: "'Boy' contains the diphthong /ɔɪ/."
-    },
-    {
-        q: "Identify the diphthong in the word 'Gate'.",
-        opts: ["/aɪ/", "/eɪ/", "/ɔɪ/", "/əʊ/"],
-        ans: 1,
-        exp: "The word 'gate' uses the /eɪ/ diphthong."
-    },
-    {
-        q: "When writing about 'A Festival in my Village' that happened last year, which tense is best?",
-        opts: ["Simple Present", "Simple Past", "Future Tense", "Present Continuous"],
-        ans: 1,
-        exp: "Since the festival happened in the past, the simple past tense is correct."
-    },
-    {
-        q: "Which word does NOT belong to the /ʊ/ (short) group?",
-        opts: ["Foot", "Could", "Shoot", "Wood"],
-        ans: 2,
-        exp: "'Shoot' has the long /u:/ sound, unlike the others."
-    },
-    {
-        q: "Find the adverb of frequency in: 'I always brush my teeth.'",
-        opts: ["I", "Always", "Brush", "Teeth"],
-        ans: 1,
-        exp: "'Always' tells us how often the action happens."
-    },
-    {
-        q: "What is the correct salutation for a formal letter to a Principal whose name you don't use?",
-        opts: ["Dear Friend,", "Hi Principal,", "Dear Sir/Ma'am,", "Hello Sir,"],
-        ans: 2,
-        exp: "Formal letters use 'Dear Sir' or 'Dear Ma'am' when addressing officials."
-    },
-    {
-        q: "The person who writes a play is called a ____.",
-        opts: ["Poet", "Novelist", "Playwright", "Editor"],
-        ans: 2,
-        exp: "A playwright is someone who writes dramatic literature or plays."
-    },
-    {
-        q: "In the sentence 'They were playing football,' what is the tense?",
-        opts: ["Simple Past", "Past Continuous", "Present Continuous", "Future Tense"],
-        ans: 1,
-        exp: "'Were playing' is the past continuous tense."
-    },
-    {
-        q: "Which of these words rhymes with 'Bird'?",
-        opts: ["Bed", "Hard", "Heard", "Board"],
-        ans: 2,
-        exp: "'Heard' and 'Bird' both share the /3:/ vowel sound."
-    },
-    {
-        q: "Which is a feature of a formal letter?",
-        opts: ["Slang language", "Contracted forms like 'I'm'", "A clear subject line", "Only one address"],
-        ans: 2,
-        exp: "A subject line (Heading) tells the reader what the formal letter is about immediately."
-    },
-    {
-        q: "Which of these is a diphthong?",
-        opts: ["/i:/", "/u:/", "/aɪ/", "/æ/"],
-        ans: 2,
-        exp: "/aɪ/ is a diphthong (as in 'my'), while the others are monophthongs."
-    },
-    {
-        q: "What is the past tense of 'Drink'?",
-        opts: ["Drinked", "Drunk", "Drank", "Drinking"],
-        ans: 2,
-        exp: "The simple past of 'drink' is 'drank'."
-    },
-    {
-        q: "Choose the word with the /æ/ sound:",
-        opts: ["Father", "Apple", "Ball", "Talk"],
-        ans: 1,
-        exp: "'Apple' uses the short /æ/ sound."
-    },
-    {
-        q: "In an Argumentative Essay, which word is used to introduce a contrasting point?",
-        opts: ["However", "And", "Because", "So"],
-        ans: 0,
-        exp: "'However' is used to show a different or opposing idea."
-    },
-    {
-        q: "What part of a formal letter comes after the body?",
-        opts: ["The Address", "The Salutation", "The Subscription (Closing)", "The Date"],
-        ans: 2,
-        exp: "After the body, you close the letter with 'Yours faithfully' and your signature."
-    },
-    {
-        q: "Which vowel is 'long'?",
-        opts: ["/ɪ/", "/e/", "/i:/", "/æ/"],
-        ans: 2,
-        exp: "The colon symbol (:) in /i:/ indicates a long vowel sound."
-    }
-],
-    'Mathematics': [
-    { q: "Solve for x: x + 7 = 15.", opts: ["6", "7", "8", "15"], ans: 2, diff: "Easy", exp: "Subtract 7 from both sides: x = 15 - 7 = 8." },
-    { q: "Solve for x: 3x = 21.", opts: ["6", "7", "8", "9"], ans: 1, diff: "Easy", exp: "Divide both sides by 3: x = 21 ÷ 3 = 7." },
-    { q: "Solve for x: 2x - 5 = 11.", opts: ["6", "7", "8", "9"], ans: 2, diff: "Medium", exp: "Add 5 to both sides: 2x = 16, then divide by 2: x = 8." },
-    { q: "Solve for x: x/4 = 9.", opts: ["13", "32", "36", "45"], ans: 2, diff: "Medium", exp: "Multiply both sides by 4: x = 9 × 4 = 36." },
-    { q: "Solve for x: 5x + 3 = 2x + 18.", opts: ["3", "4", "5", "6"], ans: 2, diff: "Hard", exp: "Collect like terms: 5x - 2x = 18 - 3, so 3x = 15, x = 5." },
-    { q: "Which plane shape has 4 equal sides and 4 right angles?", opts: ["Square", "Rectangle", "Trapezium", "Parallelogram"], ans: 0, diff: "Easy", exp: "A square is the only one of these shapes with all four sides equal AND all angles 90°." },
-    { q: "A trapezium has how many pairs of parallel sides?", opts: ["0", "1", "2", "4"], ans: 1, diff: "Easy", exp: "A trapezium has exactly one pair of parallel sides." },
-    { q: "Which shape has opposite sides equal and parallel, but its angles are not always 90°?", opts: ["Square", "Parallelogram", "Circle", "Trapezium"], ans: 1, diff: "Medium", exp: "A parallelogram has equal, parallel opposite sides, but its angles can be slanted." },
-    { q: "What is the main difference between a square and a rectangle?", opts: ["A square has curved sides", "A square has all four sides equal, while a rectangle has only opposite sides equal", "A rectangle has no right angles", "A square has 5 sides"], ans: 1, diff: "Medium", exp: "Both have 4 right angles, but only a square has all four sides equal in length." },
-    { q: "Find the perimeter of a rectangle with length 8cm and width 5cm.", opts: ["13cm", "21cm", "26cm", "40cm"], ans: 2, diff: "Easy", exp: "Perimeter = 2(length + width) = 2(8 + 5) = 26cm." },
-    { q: "Find the perimeter of a square with side 9cm.", opts: ["18cm", "27cm", "36cm", "81cm"], ans: 2, diff: "Easy", exp: "Perimeter of a square = 4 × side = 4 × 9 = 36cm." },
-    { q: "The perimeter of a regular pentagon is 45cm. Find the length of one side.", opts: ["5cm", "7cm", "9cm", "15cm"], ans: 2, diff: "Medium", exp: "A regular pentagon has 5 equal sides, so one side = 45 ÷ 5 = 9cm." },
-    { q: "Find the area of a rectangle with length 12cm and width 4cm.", opts: ["16cm²", "32cm²", "48cm²", "64cm²"], ans: 2, diff: "Easy", exp: "Area = length × width = 12 × 4 = 48cm²." },
-    { q: "Find the area of a triangle with base 10cm and height 6cm.", opts: ["16cm²", "30cm²", "40cm²", "60cm²"], ans: 1, diff: "Medium", exp: "Area of a triangle = ½ × base × height = ½ × 10 × 6 = 30cm²." },
-    { q: "Find the area of a parallelogram with base 8cm and height 5cm.", opts: ["13cm²", "26cm²", "40cm²", "45cm²"], ans: 2, diff: "Medium", exp: "Area of a parallelogram = base × height = 8 × 5 = 40cm²." },
-    { q: "Which 3-D shape has 6 rectangular faces, with opposite faces equal but not all faces identical squares?", opts: ["Cube", "Cuboid", "Cylinder", "Sphere"], ans: 1, diff: "Easy", exp: "A cuboid has 6 rectangular faces; a cube is a special cuboid where all faces are equal squares." },
-    { q: "How many faces does a cube have?", opts: ["4", "5", "6", "8"], ans: 2, diff: "Easy", exp: "A cube has 6 equal square faces." },
-    { q: "Which 3-D shape has two flat circular faces and one curved surface?", opts: ["Sphere", "Cone", "Cylinder", "Cube"], ans: 2, diff: "Medium", exp: "A cylinder has two circular flat ends joined by a curved surface." },
-    { q: "Find the volume of a cube with side 5cm.", opts: ["25cm³", "75cm³", "100cm³", "125cm³"], ans: 3, diff: "Medium", exp: "Volume of a cube = side × side × side = 5 × 5 × 5 = 125cm³." },
-    { q: "Find the volume of a cuboid with length 6cm, width 4cm, and height 3cm.", opts: ["13cm³", "52cm³", "72cm³", "132cm³"], ans: 2, diff: "Medium", exp: "Volume of a cuboid = length × width × height = 6 × 4 × 3 = 72cm³." },
-    { q: "A cuboid has a volume of 60cm³. Its length is 5cm and its width is 4cm. Find its height.", opts: ["2cm", "3cm", "4cm", "5cm"], ans: 1, diff: "Hard", exp: "Volume = l × w × h, so h = 60 ÷ (5 × 4) = 60 ÷ 20 = 3cm." },
-    { q: "Vertically opposite angles are always:", opts: ["Equal", "Supplementary", "Complementary", "Different"], ans: 0, diff: "Easy", exp: "When two straight lines cross, the angles opposite each other are always equal." },
-    { q: "When a transversal crosses two parallel lines, the angles that lie in matching positions (same side, same corner) are called:", opts: ["Alternate angles", "Corresponding angles", "Vertically opposite angles", "Adjacent angles"], ans: 1, diff: "Medium", exp: "Corresponding angles occupy the same relative position at each intersection and are equal." },
-    { q: "Alternate angles formed when a transversal cuts two parallel lines are:", opts: ["Equal", "Supplementary", "90° each", "360° together"], ans: 0, diff: "Easy", exp: "Alternate angles lie on opposite sides of the transversal, between the parallel lines, and are always equal." },
-    { q: "Two angles that share a common vertex and a common arm, lying next to each other, are called:", opts: ["Adjacent angles", "Alternate angles", "Vertically opposite angles", "Corresponding angles"], ans: 0, diff: "Easy", exp: "Adjacent angles sit side by side, sharing one arm and a vertex." },
-    { q: "The sum of angles on a straight line is:", opts: ["90°", "180°", "270°", "360°"], ans: 1, diff: "Easy", exp: "Angles on a straight line always add up to 180°." },
-    { q: "Two angles are complementary if they add up to:", opts: ["45°", "90°", "180°", "360°"], ans: 1, diff: "Easy", exp: "Complementary angles sum to 90°." },
-    { q: "Two angles are supplementary if they add up to:", opts: ["90°", "180°", "270°", "360°"], ans: 1, diff: "Easy", exp: "Supplementary angles sum to 180°." },
-    { q: "In a triangle, two of the angles are 50° and 70°. Find the third angle.", opts: ["50°", "60°", "70°", "80°"], ans: 1, diff: "Medium", exp: "Angles in a triangle sum to 180°: 180 - (50 + 70) = 60°." },
-    { q: "Which two instruments are mainly used to bisect a given line segment?", opts: ["Protractor and ruler", "Compass and ruler", "Set-square and pencil", "T-square and eraser"], ans: 1, diff: "Medium", exp: "A pair of compasses is used to draw intersecting arcs above and below the line, and a ruler joins the intersection points." },
-    { q: "To construct an angle of 60° using a pair of compasses, you begin by drawing:", opts: ["A circle of any radius", "An arc from a point that will form an equilateral triangle", "A straight line only", "A right angle first"], ans: 1, diff: "Hard", exp: "Since all angles in an equilateral triangle are 60°, arcs of equal radius are used to construct one." },
-    { q: "Facts and figures collected for a particular purpose are called:", opts: ["Data", "Formulas", "Equations", "Diagrams"], ans: 0, diff: "Easy", exp: "Data is the raw information gathered before it is organized or analysed." },
-    { q: "Which of these is NOT a method of presenting statistical data?", opts: ["Bar chart", "Pie chart", "Pictogram", "Simple equation"], ans: 3, diff: "Medium", exp: "Bar charts, pie charts, and pictograms display data visually; a simple equation is not a data presentation method." },
-    { q: "A chart that uses small pictures or symbols to represent data is called a:", opts: ["Pie chart", "Pictogram", "Histogram", "Bar chart"], ans: 1, diff: "Easy", exp: "A pictogram represents quantities using repeated small pictures or icons." },
-    { q: "A chart that uses rectangular bars with no gaps between them, mainly for continuous data, is called a:", opts: ["Bar chart", "Pie chart", "Histogram", "Pictogram"], ans: 2, diff: "Medium", exp: "Unlike a bar chart, a histogram has no gaps between bars because it represents continuous data." },
-    { q: "Find the mean of these numbers: 4, 6, 8, 10.", opts: ["6", "7", "8", "9"], ans: 1, diff: "Easy", exp: "Mean = sum ÷ count = (4+6+8+10) ÷ 4 = 28 ÷ 4 = 7." },
-    { q: "Find the median of these numbers: 3, 9, 5, 7, 1.", opts: ["3", "5", "7", "9"], ans: 1, diff: "Medium", exp: "Arrange in order: 1, 3, 5, 7, 9. The middle value is 5." },
-    { q: "Find the mode of these numbers: 2, 4, 4, 6, 8, 4.", opts: ["2", "4", "6", "8"], ans: 1, diff: "Easy", exp: "The mode is the number that appears most often. 4 appears three times." },
-    { q: "Find the mean of: 10, 15, 20, 25, 30.", opts: ["15", "18", "20", "25"], ans: 2, diff: "Medium", exp: "Mean = sum ÷ count = (10+15+20+25+30) ÷ 5 = 100 ÷ 5 = 20." },
-    { q: "The following scores were recorded: 5, 7, 7, 8, 9, 9, 9, 10. What is the mode?", opts: ["5", "7", "8", "9"], ans: 3, diff: "Hard", exp: "9 appears three times, more than any other score, making it the mode." }
-],
-    'Basic Science': [
-    {
-        q: "An unknown substance 'X' cannot be broken down into simpler substances by chemical means, while 'Y' is formed by the chemical combination of two or more 'X' units in fixed proportions. Identify the nature of X and Y.",
-        opts: ["X is a Mixture, Y is a Compound", "X is an Element, Y is a Mixture", "X is an Element, Y is a Compound", "X is an Atom, Y is an Element"],
-        ans: 2,
-        exp: "Elements are pure substances that cannot be simplified chemically. Compounds are formed when two or more elements combine chemically in a fixed ratio."
-    },
-    {
-        q: "During a loud outdoor concert, a resident nearby complains of 'Noise Pollution.' Which of the following best explains why this is considered a form of pollution?",
-        opts: ["It changes the chemical composition of the air", "It is an undesirable sound that interferes with health and comfort", "It only occurs during the daytime", "It is caused by the vibration of air molecules"],
-        ans: 1,
-        exp: "Noise pollution is defined by its negative impact on the physiological or psychological health of living organisms due to excessive volume."
-    },
-    {
-        q: "Identify the chemical symbol for the element 'Potassium'.",
-        opts: ["P", "Po", "K", "Pt"],
-        ans: 2,
-        exp: "The symbol for Potassium is 'K', derived from its Latin name 'Kalium'."
-    },
-    {
-        q: "A person with HIV might not show symptoms for many years. This period is best described as:",
-        opts: ["Immunity", "The Asymptomatic/Incubation period", "Prevention stage", "Full-blown AIDS"],
-        ans: 1,
-        exp: "During the asymptomatic period, the virus is active but doesn't cause visible symptoms, though it can still be transmitted."
-    },
-    {
-        q: "In an experiment to show that 'Air has weight,' which of the following apparatus setups is most appropriate?",
-        opts: ["A candle burning in a jar of water", "Two balloons balanced on a scale, with one being deflated", "Sucking juice through a straw", "Blowing air into a bowl of water"],
-        ans: 1,
-        exp: "A deflated balloon weighs less than an inflated one, proving that the air inside has mass and weight."
-    },
-    {
-        q: "Which of these is NOT a mode of transmission for HIV?",
-        opts: ["Sharing sharp objects", "Unprotected sexual intercourse", "Breastfeeding by an infected mother", "Sharing a meal with an infected person"],
-        ans: 3,
-        exp: "HIV is not transmitted through casual contact like hugging, shaking hands, or sharing food/utensils."
-    },
-    {
-        q: "Energy stored in a stretched rubber band is an example of:",
-        opts: ["Kinetic Energy", "Elastic Potential Energy", "Chemical Energy", "Thermal Energy"],
-        ans: 1,
-        exp: "Potential energy is stored energy. Specifically, a stretched object contains elastic potential energy."
-    },
-    {
-        q: "Excessive use of chemical fertilizers on a farm can lead to 'Eutrophication' in a nearby pond. This is primarily a form of:",
-        opts: ["Air Pollution", "Noise Pollution", "Water Pollution", "Land Pollution"],
-        ans: 2,
-        exp: "Fertilizer runoff into water bodies causes algae overgrowth, which depletes oxygen and kills aquatic life."
-    },
-    {
-        q: "Which of the following elements is a 'Noble Gas'?",
-        opts: ["Oxygen", "Neon", "Nitrogen", "Chlorine"],
-        ans: 1,
-        exp: "Neon is a noble gas (Group 18), known for being chemically unreactive."
-    },
-    {
-        q: "The chemical formula for Water is $H_2O$. This tells us that in one molecule of water, there are:",
-        opts: ["2 atoms of Oxygen and 1 atom of Hydrogen", "2 atoms of Hydrogen and 1 atom of Oxygen", "2 molecules of Hydrogen and 2 molecules of Oxygen", "None of the above"],
-        ans: 1,
-        exp: "The subscript 2 refers to Hydrogen (H), and no subscript on O implies 1 atom."
-    },
-    {
-        q: "Which of these STI symptoms is most commonly associated with Syphilis in its early stage?",
-        opts: ["Painless sores (chancres)", "Severe itching", "Coughing and sneezing", "High fever and chills"],
-        ans: 0,
-        exp: "Primary syphilis is characterized by the appearance of a single, painless sore."
-    },
-    {
-        q: "A fan blowing in a room demonstrates which energy conversion?",
-        opts: ["Chemical to Electrical", "Electrical to Mechanical (Kinetic)", "Heat to Light", "Sound to Electrical"],
-        ans: 1,
-        exp: "The fan uses electricity to move the blades (mechanical motion)."
-    },
-    {
-        q: "What component of air is essential for 'Combustion' (burning)?",
-        opts: ["Carbon dioxide", "Nitrogen", "Oxygen", "Argon"],
-        ans: 2,
-        exp: "Oxygen is the gas that supports burning."
-    },
-    {
-        q: "Which of the following is a 'Point Source' of water pollution?",
-        opts: ["Rain washing oil off a city street", "A specific factory pipe discharging waste into a river", "Fertilizer runoff from many different farms", "Dust settling from the atmosphere"],
-        ans: 1,
-        exp: "A point source comes from a single, identifiable location like a pipe or a drain."
-    },
-    {
-        q: "The symbol 'Ag' represents which element?",
-        opts: ["Gold", "Silver", "Argon", "Aluminum"],
-        ans: 1,
-        exp: "Ag comes from the Latin 'Argentum', meaning silver."
-    },
-    {
-        q: "AIDS stands for:",
-        opts: ["Acquired Internal Deficiency Syndrome", "Acquired Immune Deficiency Syndrome", "Anti-Immune Disease System", "All Immune Disease Symptoms"],
-        ans: 1,
-        exp: "It is a condition caused by the damage HIV does to the immune system."
-    },
-    {
-        q: "Which gas is the most abundant in the Earth's atmosphere?",
-        opts: ["Oxygen", "Carbon dioxide", "Nitrogen", "Hydrogen"],
-        ans: 2,
-        exp: "Nitrogen makes up approximately 78% of the air."
-    },
-    {
-        q: "In the Law of Conservation of Energy, energy can be:",
-        opts: ["Created from nothing", "Destroyed if not used", "Transformed from one form to another", "Stopped completely"],
-        ans: 2,
-        exp: "The law states energy cannot be created or destroyed, only changed in form."
-    },
-    {
-        q: "Chlorofluorocarbons (CFCs) from aerosol sprays are major contributors to:",
-        opts: ["Water pollution", "Land pollution", "Air pollution (Ozone depletion)", "Noise pollution"],
-        ans: 2,
-        exp: "CFCs are gases that damage the ozone layer in the atmosphere."
-    },
-    {
-        q: "Which element is represented by the symbol 'Fe'?",
-        opts: ["Fluorine", "Iron", "Fermium", "Lead"],
-        ans: 1,
-        exp: "Fe comes from the Latin word 'Ferrum'."
-    },
-    {
-        q: "A compound differs from a mixture because:",
-        opts: ["A mixture is always liquid", "A compound is physically combined", "A compound is chemically combined in a fixed ratio", "A mixture cannot be separated"],
-        ans: 2,
-        exp: "Mixtures are physically combined and can be separated by physical means; compounds are chemical unions."
-    },
-    {
-        q: "Which of the following is a viral STI?",
-        opts: ["Gonorrhea", "Syphilis", "Genital Herpes", "Chlamydia"],
-        ans: 2,
-        exp: "Herpes is caused by the Herpes Simplex Virus (HSV). The others are bacterial."
-    },
-    {
-        q: "When a fruit falls from a tree, its _____ energy is converted into _____ energy.",
-        opts: ["Kinetic, Potential", "Potential, Kinetic", "Chemical, Heat", "Sound, Potential"],
-        ans: 1,
-        exp: "The stored potential energy due to height is converted into the energy of motion (kinetic) as it falls."
-    },
-    {
-        q: "Biodegradable waste is best defined as waste that:",
-        opts: ["Can be recycled forever", "Does not rot", "Can be broken down by microorganisms", "Is poisonous to the touch"],
-        ans: 2,
-        exp: "Biodegradable materials (like food scraps) rot and return to the soil naturally."
-    },
-    {
-        q: "Which gas is produced by animals during respiration and used by plants for photosynthesis?",
-        opts: ["Oxygen", "Carbon dioxide", "Nitrogen", "Helium"],
-        ans: 1,
-        exp: "Carbon dioxide ($CO_2$) is the waste product of animal breathing and a raw material for plant food production."
-    },
-    {
-        q: "The use of hearing protection is a way to prevent:",
-        opts: ["Vision loss", "Noise pollution health effects", "Water pollution", "HIV"],
-        ans: 1,
-        exp: "Earplugs or muffs protect the ears from high-decibel sounds that cause permanent damage."
-    },
-    {
-        q: "Which of these is the most effective way to prevent the sexual transmission of HIV?",
-        opts: ["Washing after sex", "Using antibiotics", "Abstinence or correct use of condoms", "Taking vitamins"],
-        ans: 2,
-        exp: "Abstinence is 100% effective; condoms significantly reduce the risk of fluid exchange."
-    },
-    {
-        q: "What is the symbol for the element 'Sodium'?",
-        opts: ["S", "So", "Na", "Sd"],
-        ans: 2,
-        exp: "Sodium's symbol is 'Na', from the Latin 'Natrium'."
-    },
-    {
-        q: "Common salt (Sodium Chloride) is a:",
-        opts: ["Element", "Mixture", "Compound", "Atom"],
-        ans: 2,
-        exp: "It is a chemical combination of Sodium and Chlorine."
-    },
-    {
-        q: "Smog is a combination of smoke and fog. It is a major indicator of:",
-        opts: ["Land pollution", "Air pollution", "Noise pollution", "Thermal pollution"],
-        ans: 1,
-        exp: "Smog reduces visibility and causes respiratory issues, signaling high levels of air pollutants."
-    },
-    {
-        q: "Mechanical energy is the sum of:",
-        opts: ["Potential and Kinetic energy", "Heat and Light energy", "Chemical and Nuclear energy", "Sound and Electrical energy"],
-        ans: 0,
-        exp: "Mechanical energy refers to the energy an object has due to its motion and position."
-    },
-    {
-        q: "Which STI is often called 'The Clap' and causes painful urination and discharge?",
-        opts: ["Syphilis", "Gonorrhea", "HIV", "Hepatitis"],
-        ans: 1,
-        exp: "Gonorrhea is a bacterial infection that typically affects the mucous membranes."
-    },
-    {
-        q: "The process of 'Refining' air to remove pollutants is called:",
-        opts: ["Combustion", "Pollution", "Air purification", "Respiration"],
-        ans: 2,
-        exp: "Purification involves filtering or treating air to make it safe to breathe."
-    },
-    {
-        q: "Land pollution can lead to the 'leaching' of chemicals. What does leaching mean?",
-        opts: ["Chemicals evaporating into the sky", "Chemicals dissolving and moving down into the groundwater", "Chemicals turning into solid rocks", "Chemicals being eaten by animals"],
-        ans: 1,
-        exp: "Leaching is the process by which soil contaminants are washed into lower soil layers or water tables by rain."
-    },
-    {
-        q: "Identify the element with the symbol 'Cu'.",
-        opts: ["Carbon", "Calcium", "Copper", "Curium"],
-        ans: 2,
-        exp: "Cu comes from 'Cuprum'."
-    },
-    {
-        q: "Which of the following is NOT a property of air?",
-        opts: ["Air occupies space", "Air has weight", "Air is a pure compound", "Air exerts pressure"],
-        ans: 2,
-        exp: "Air is a mixture of different gases, not a compound."
-    },
-    {
-        q: "How can HIV be prevented from mother to child during birth?",
-        opts: ["Giving the mother a healthy diet", "Using Anti-Retroviral (ARV) drugs", "The child shouldn't be born", "Giving the mother plenty of water"],
-        ans: 1,
-        exp: "ARV drugs can significantly lower the viral load, preventing transmission to the baby."
-    },
-    {
-        q: "Incineration is a method of waste disposal that involves:",
-        opts: ["Burying waste", "Burning waste at high temperatures", "Dumping waste in the ocean", "Sorting waste for recycling"],
-        ans: 1,
-        exp: "Incineration reduces the volume of waste by burning it, though it can contribute to air pollution if not controlled."
-    },
-    {
-        q: "Which of these is a form of 'Chemical Energy'?",
-        opts: ["Energy in a battery", "Energy in a falling stone", "Energy in a whistle", "Energy in a hot stove"],
-        ans: 0,
-        exp: "Batteries, food, and fuels store energy in chemical bonds."
-    },
-    {
-        q: "What is the symbol for the element 'Magnesium'?",
-        opts: ["Ma", "Mg", "Mn", "Ms"],
-        ans: 1,
-        exp: "The symbol for Magnesium is Mg."
-    }
-],
-    'Basic Technology': [
-    { q: "Which tool is used to measure and mark lengths accurately in woodwork?", opts: ["Metric rule", "Mallet", "Chisel", "Bradawl"], ans: 0, diff: "Easy", exp: "The metric rule is the basic measuring tool used to take and mark lengths in woodwork." },
-    { q: "Which tool is used to measure the internal diameter of a hole in woodwork?", opts: ["Outside calipers", "Inside calipers", "Try-square", "Trammel"], ans: 1, diff: "Medium", exp: "Inside calipers are shaped to reach into and measure internal dimensions like holes." },
-    { q: "Which tool is used to measure the external (outside) diameter of a cylindrical piece of wood?", opts: ["Inside calipers", "Outside calipers", "Sliding bevel", "Marking gauge"], ans: 1, diff: "Medium", exp: "Outside calipers curve inward to grip and measure the outer diameter of round stock." },
-    { q: "Which tool is used to test and mark a 90° angle on a piece of wood?", opts: ["Try-square", "Sliding bevel", "Trammel", "Bradawl"], ans: 0, diff: "Easy", exp: "The try-square is specifically designed to check and mark right angles (90°)." },
-    { q: "Which marking tool can be adjusted to mark angles other than 90°?", opts: ["Try-square", "Sliding bevel", "Metric rule", "Pair of dividers"], ans: 1, diff: "Hard", exp: "Unlike the fixed try-square, the sliding bevel can be adjusted and locked at any angle." },
-    { q: "A pair of compasses used for drawing very large circles or arcs on wood is called a:", opts: ["Trammel", "Sliding bevel", "Odd-leg caliper", "Scriber"], ans: 0, diff: "Medium", exp: "A trammel has two separate points on a beam, allowing much larger arcs than an ordinary compass." },
-    { q: "Which tool is used to drive nails into wood?", opts: ["Hammer", "Bradawl", "Wood brace", "Screwdriver"], ans: 0, diff: "Easy", exp: "The hammer's weighted head is used to strike and drive nails into wood." },
-    { q: "Which tool is used to drive a chisel or strike wood without damaging the surface?", opts: ["Hammer", "Mallet", "Ratchet brace", "Punch"], ans: 1, diff: "Easy", exp: "A mallet has a softer wooden or rubber head, so it drives chisels without denting the wood." },
-    { q: "Which tool is used to drive or remove screws?", opts: ["Mallet", "Bradawl", "Screwdriver", "Wood brace"], ans: 2, diff: "Medium", exp: "The screwdriver's tip fits into a screw head to turn it in or out." },
-    { q: "Which boring tool is turned by hand in a circular motion, using a bit, to bore large holes in wood?", opts: ["Wood brace", "Bradawl", "Screwdriver", "Mallet"], ans: 0, diff: "Medium", exp: "The wood brace holds a boring bit and is cranked around by hand to drill larger holes." },
-    { q: "Which small pointed tool is used to make a starting hole for a screw in wood?", opts: ["Bradawl", "Wood brace", "Ratchet brace", "Try-square"], ans: 0, diff: "Easy", exp: "The bradawl is pushed and twisted into wood to start a pilot hole before driving a screw." },
-    { q: "Which device is used to hold wood firmly against a workbench while sawing?", opts: ["Bench hook", "Sash clamp", "Trammel", "Odd-leg caliper"], ans: 0, diff: "Easy", exp: "The bench hook grips against the bench edge and steadies wood during sawing." },
-    { q: "Which holding device is fixed to a workbench and used to grip wood securely while it is being worked on?", opts: ["G-cramp", "Bench vice", "Bradawl", "Scriber"], ans: 1, diff: "Medium", exp: "The bench vice is mounted on the workbench and tightened with a screw handle to hold wood firmly." },
-    { q: "Which holding tool is portable and used to clamp two pieces of wood together temporarily?", opts: ["G-cramp", "Bench vice", "Try-square", "Chisel"], ans: 0, diff: "Medium", exp: "The G-cramp (shaped like the letter G) can be moved around and tightened to hold pieces together." },
-    { q: "Which holding device is used to hold together the frame of a picture or door while glue dries?", opts: ["Sash clamp", "Bench hook", "G-cramp", "Odd-leg caliper"], ans: 0, diff: "Hard", exp: "The sash clamp is long, allowing it to squeeze large frame joints together evenly while the glue sets." },
-    { q: "Which saw is designed to cut along the grain of wood?", opts: ["Rip saw", "Cross-cut saw", "Tenon saw", "Bow saw"], ans: 0, diff: "Easy", exp: "The rip saw has teeth shaped to cut efficiently in the same direction as the wood grain." },
-    { q: "Which saw is used for fine, accurate cuts such as joint-making, and has a stiffened metal back?", opts: ["Rip saw", "Bow saw", "Tenon saw", "Dovetail saw"], ans: 2, diff: "Medium", exp: "The tenon saw's rigid back keeps the blade straight for precise joint cuts." },
-    { q: "Which woodwork tool is used to shave and smooth curved surfaces?", opts: ["Jack plane", "Spokeshave", "Smoothing plane", "Chisel"], ans: 1, diff: "Medium", exp: "The spokeshave has a short, curved sole that suits shaping curved edges." },
-    { q: "Which plane is used to remove rough, thick shavings from wood before finishing?", opts: ["Smoothing plane", "Jack plane", "Spokeshave", "Try-plane"], ans: 1, diff: "Hard", exp: "The jack plane is a general-purpose plane used first, to remove excess wood, before finer planes are used." },
-    { q: "Which tool provides a flat, true reference surface for marking out work in metalwork?", opts: ["Surface plate", "Scriber", "Odd-leg caliper", "Steel rule"], ans: 0, diff: "Easy", exp: "The surface plate is a flat, accurate table on which metal work is placed and marked out." },
-    { q: "Which metalwork tool is used, like a pencil, to scratch fine lines on a metal surface?", opts: ["Scriber", "Punch", "File", "Spanner"], ans: 0, diff: "Medium", exp: "The scriber has a sharp point that scratches thin, visible marking lines onto metal." },
-    { q: "Which tool is used to mark a line parallel to the edge of a metal workpiece?", opts: ["Odd-leg caliper", "Steel rule", "Protractor", "Surface plate"], ans: 0, diff: "Medium", exp: "The odd-leg caliper (jenny caliper) has one bent leg that rides along the edge while the other scratches a parallel line." },
-    { q: "Which tool is used to measure lengths accurately in metalwork?", opts: ["Steel rule", "Scriber", "File", "Punch"], ans: 0, diff: "Easy", exp: "The steel rule is the standard measuring tool in the metalwork shop." },
-    { q: "Which tool is used to measure angles in metalwork?", opts: ["Protractor", "Steel rule", "Scriber", "Spanner"], ans: 0, diff: "Easy", exp: "The protractor is graduated in degrees and used to measure or set out angles." },
-    { q: "Which metalwork tool is used to make a small indentation that guides a drill bit?", opts: ["Punch", "File", "Spanner", "Scriber"], ans: 0, diff: "Medium", exp: "A punch is struck with a hammer to dent the metal, stopping the drill bit from wandering." },
-    { q: "Which tool is used to tighten or loosen nuts and bolts?", opts: ["Spanner", "File", "Punch", "Screwdriver"], ans: 0, diff: "Easy", exp: "The spanner (wrench) is shaped to grip and turn nuts and bolts." },
-    { q: "Which metalwork tool is used to smoothen a surface and remove small amounts of metal by abrasion?", opts: ["Chisel", "File", "Punch", "Scriber"], ans: 1, diff: "Medium", exp: "A file has rows of hard teeth that rub away thin layers of metal to smooth or shape it." },
-    { q: "Which cutting tool is struck with a hammer to cut or shape metal?", opts: ["File", "Cold chisel", "Spanner", "Steel rule"], ans: 1, diff: "Medium", exp: "The cold chisel is hammered along its blunt end to shear or shape metal without heating it." },
-    { q: "A screwdriver used in metalwork belongs to which group of tools?", opts: ["Marking-out tools", "Driving tools", "Cutting tools", "Measuring tools"], ans: 1, diff: "Hard", exp: "The screwdriver drives (turns) fasteners rather than measuring, marking, or cutting, so it is a driving tool." },
-    { q: "Which of these is a cutting tool in metalwork, not a driving tool?", opts: ["Punch", "Spanner", "File", "Screwdriver"], ans: 2, diff: "Hard", exp: "The file removes material by abrasion, making it a cutting tool, while the others mainly drive or strike." },
-    { q: "The regular care given to tools and machines to keep them in good working condition is called:", opts: ["Maintenance", "Production", "Construction", "Installation"], ans: 0, diff: "Easy", exp: "Maintenance means the routine care and servicing that keeps tools working properly and safely." },
-    { q: "Maintenance carried out regularly, before a fault occurs, in order to prevent breakdown, is called:", opts: ["Corrective maintenance", "Preventive maintenance", "Predictive maintenance", "Emergency maintenance"], ans: 1, diff: "Medium", exp: "Preventive maintenance is scheduled care done in advance to stop faults from happening." },
-    { q: "Maintenance that involves monitoring a tool's condition to predict when it might fail, so it can be serviced in time, is called:", opts: ["Predictive maintenance", "Preventive maintenance", "Corrective maintenance", "Routine maintenance"], ans: 0, diff: "Medium", exp: "Predictive maintenance uses observation or monitoring to forecast failure before it happens." },
-    { q: "Repairing a tool or machine only after it has broken down is known as:", opts: ["Preventive maintenance", "Predictive maintenance", "Corrective maintenance", "Scheduled maintenance"], ans: 2, diff: "Medium", exp: "Corrective maintenance happens after a fault has occurred, to correct/fix it." },
-    { q: "Oiling a bench vice regularly so that it does not rust or seize up is an example of:", opts: ["Corrective maintenance", "Preventive maintenance", "Predictive maintenance", "No maintenance"], ans: 1, diff: "Hard", exp: "Because it is done regularly to stop a problem before it starts, this is preventive maintenance." },
-    { q: "Which of these is a recognised type of maintenance practice?", opts: ["Preventive", "Explosive", "Decorative", "Combustive"], ans: 0, diff: "Easy", exp: "Preventive maintenance is one of the standard types, alongside predictive and corrective maintenance." },
-    { q: "One importance of maintaining tools and machines is that it:", opts: ["Increases their lifespan", "Makes them more expensive", "Makes them heavier", "Reduces their accuracy"], ans: 0, diff: "Easy", exp: "Well-maintained tools last longer because wear, rust, and damage are reduced." },
-    { q: "Regular maintenance of workshop tools helps to:", opts: ["Ensure safety and prevent accidents", "Increase the price of tools", "Make tools rust faster", "Reduce the number of tools needed"], ans: 0, diff: "Medium", exp: "Faulty or worn-out tools are dangerous to use, so maintenance keeps the workshop safe." },
-    { q: "Why should cutting tools like chisels and saws be kept sharp through maintenance?", opts: ["To make cutting easier and safer", "To make them heavier", "To make them rust", "To increase their cost"], ans: 0, diff: "Medium", exp: "Sharp tools cut with less force and less risk of slipping, making work easier and safer." },
-    { q: "A poorly maintained machine in a workshop is most likely to:", opts: ["Cause accidents and produce poor quality work", "Work faster than normal", "Require no supervision", "Automatically fix itself"], ans: 0, diff: "Hard", exp: "Neglected machines develop faults that lead to accidents and reduce the quality of the work produced." }
-],
-    'Business Studies': [
-    {
-        q: "A cocoa farmer in Ghana sells his produce to a local buying agent. Which classification of occupation does the farmer belong to?",
-        opts: ["Secondary Occupation", "Constructive Occupation", "Extractive Occupation", "Tertiary Occupation"],
-        ans: 2,
-        exp: "Extraction involves obtaining raw materials from nature. Farming, mining, and fishing are primary/extractive occupations."
-    },
-    {
-        q: "If a Sole Trader dies, the business usually ceases to exist legally. This concept is known as a lack of:",
-        opts: ["Limited Liability", "Perpetual Succession", "Privacy", "Flexibility"],
-        ans: 1,
-        exp: "Sole proprietorships and partnerships lack perpetual succession because the business is not a separate legal entity from the owner."
-    },
-    {
-        q: "An entrepreneur decides to open a factory in a rural area to reduce unemployment, despite higher transport costs. This decision addresses which importance of entrepreneurship?",
-        opts: ["Profit Maximization", "Regional Development", "Personal Wealth", "Market Monopoly"],
-        ans: 1,
-        exp: "By locating in rural areas, entrepreneurs help spread infrastructure and jobs, reducing the gap between urban and rural development."
-    },
-    {
-        q: "A purchasing manager accepts a 'kickback' (bribe) to award a contract to an inferior supplier. This is a direct violation of:",
-        opts: ["Honesty in Business", "Consumer Rights", "Mass Production", "Entrepreneurial Skills"],
-        ans: 0,
-        exp: "Honesty involves being fair, upright, and transparent. Bribery is a form of corruption that undermines business integrity."
-    },
-    {
-        q: "Which factor of production is considered 'passive' and its reward is 'Rent'?",
-        opts: ["Labor", "Capital", "Land", "Entrepreneur"],
-        ans: 2,
-        exp: "Land is a natural resource and is passive because it requires labor and capital to produce anything."
-    },
-    {
-        q: "A consumer buys a carton of milk and discovers it expired two days ago. According to the rights of a consumer, what should be the first step?",
-        opts: ["Throw it away and buy another", "Seek redress/complain to the seller", "Sue the manufacturer in a high court", "Call the police"],
-        ans: 1,
-        exp: "The right to seek redress allows consumers to complain and receive compensation or a replacement for faulty goods."
-    },
-    {
-        q: "Which form of business organization is owned by at least two people but not more than twenty, where they share profits and losses?",
-        opts: ["Sole Proprietorship", "Private Limited Company", "Partnership", "Public Corporation"],
-        ans: 2,
-        exp: "A partnership is a business owned by 2 to 20 people (with some exceptions for professional firms)."
-    },
-    {
-        q: "An entrepreneur is often called a 'Risk-bearer.' This is because they:",
-        opts: ["Never make mistakes", "Invest their resources without a guarantee of profit", "Borrow money from everyone", "Employ their family members"],
-        ans: 1,
-        exp: "The essence of entrepreneurship is taking calculated risks in the face of uncertainty."
-    },
-    {
-        q: "Which of the following is an example of an 'Industrial' occupation?",
-        opts: ["Banking", "Teaching", "Road Construction", "Insurance"],
-        ans: 2,
-        exp: "Industrial occupations are secondary; they involve processing raw materials or construction."
-    },
-    {
-        q: "Ethics in Sourcing requires a business to avoid:",
-        opts: ["Buying from cheap suppliers", "Using child labor in the supply chain", "Comparing prices", "Paying in cash"],
-        ans: 1,
-        exp: "Ethical sourcing means ensuring that products are obtained in a responsible and sustainable way, including fair treatment of workers."
-    },
-    {
-        q: "What is the primary motive of a Public Corporation (e.g., Water Board)?",
-        opts: ["To make a profit for shareholders", "To provide essential services to the public", "To compete with small businesses", "To pay taxes"],
-        ans: 1,
-        exp: "Public corporations are government-owned and focus on social service rather than profit maximization."
-    },
-    {
-        q: "A baker uses flour, sugar, and heat to produce bread. Which factor of production is represented by the 'Oven'?",
-        opts: ["Land", "Labor", "Capital", "Entrepreneur"],
-        ans: 2,
-        exp: "Capital refers to man-made assets used in the production of other goods."
-    },
-    {
-        q: "When a businessman tells the truth about the quality of his goods even if they have a minor defect, he is practicing:",
-        opts: ["Foolishness", "Honesty", "Advertising", "Market Segmentation"],
-        ans: 1,
-        exp: "Honesty involves transparency about the value and condition of products sold."
-    },
-    {
-        q: "The reward for Labor is:",
-        opts: ["Profit", "Interest", "Wages/Salaries", "Dividends"],
-        ans: 2,
-        exp: "Labor refers to human effort, which is compensated through wages or monthly salaries."
-    },
-    {
-        q: "A 'Market' in Business Studies is best defined as:",
-        opts: ["A physical building with stalls", "Any medium where buyers and sellers exchange goods and services", "A place where only food is sold", "A crowded street"],
-        ans: 1,
-        exp: "A market can be physical or virtual (online) as long as exchange takes place."
-    },
-    {
-        q: "Which of these is a characteristic of a 'Limited Liability' company?",
-        opts: ["The owners are the business", "The owners' personal assets are safe if the business fails", "It is owned by one person", "It cannot be sued"],
-        ans: 1,
-        exp: "Limited liability means the shareholders' losses are limited to the amount they invested."
-    },
-    {
-        q: "An entrepreneur identifies a gap in the market for solar-powered fans. This process of identifying and starting a business is:",
-        opts: ["Management", "Entrepreneurship", "Clerical Work", "Employment"],
-        ans: 1,
-        exp: "Entrepreneurship is the act of identifying opportunities and organizing resources to start a venture."
-    },
-    {
-        q: "Which of these is NOT a Tertiary occupation?",
-        opts: ["Warehousing", "Transportation", "Mining", "Advertising"],
-        ans: 2,
-        exp: "Mining is extractive (Primary), while the others are services (Tertiary)."
-    },
-    {
-        q: "If a company sources raw materials from a forest but fails to replant trees, it is failing in:",
-        opts: ["Profits", "Ethical Sourcing", "Honesty", "Bookkeeping"],
-        ans: 1,
-        exp: "Ethical sourcing includes environmental sustainability."
-    },
-    {
-        q: "The interaction between a Consumer, the Market, and the Society is often regulated by:",
-        opts: ["The Consumer Protection Agency", "The Police", "The Army", "Individual Sellers"],
-        ans: 0,
-        exp: "Agencies like CPC/FCCPC protect consumers from exploitation in the market."
-    },
-    {
-        q: "Who coordinates the other three factors of production?",
-        opts: ["The Manager", "The Landlord", "The Entrepreneur", "The Banker"],
-        ans: 2,
-        exp: "The entrepreneur organizes Land, Labor, and Capital to create a functioning business."
-    },
-    {
-        q: "A trade that takes place within the boundaries of a country is:",
-        opts: ["International Trade", "Home Trade", "Foreign Trade", "Entrepôt Trade"],
-        ans: 1,
-        exp: "Home trade consists of wholesale and retail trade within a single nation."
-    },
-    {
-        q: "Short-changing a customer by giving them less balance than required is an act of:",
-        opts: ["Business Strategy", "Dishonesty", "Profit Making", "Accounting"],
-        ans: 1,
-        exp: "Dishonesty includes cheating or misleading customers for financial gain."
-    },
-    {
-        q: "Which factor of production is 'geographically immobile' but 'occupationally mobile'?",
-        opts: ["Labor", "Land", "Capital", "Entrepreneur"],
-        ans: 1,
-        exp: "Land cannot be moved from one place to another, but its use can change (from a farm to a factory)."
-    },
-    {
-        q: "An entrepreneur contributes to the economy by paying taxes. This is an example of:",
-        opts: ["Importance of entrepreneurship to the government", "A burden to the business", "Personal wealth", "Legal sourcing"],
-        ans: 0,
-        exp: "Taxes paid by entrepreneurs provide revenue for the government to build infrastructure."
-    },
-    {
-        q: "A person who works in a car assembly plant is in which type of occupation?",
-        opts: ["Extractive", "Commercial", "Manufacturing", "Professional"],
-        ans: 2,
-        exp: "Manufacturing involves converting raw materials or parts into finished products."
-    },
-    {
-        q: "Which of the following documents is required to start a Limited Liability Company?",
-        opts: ["A Note Book", "Articles of Association", "A Map", "A Letter to the King"],
-        ans: 1,
-        exp: "Articles of Association and Memorandum of Association are key legal documents for incorporating a company."
-    },
-    {
-        q: "Consumers have the right to 'Information.' This means they should:",
-        opts: ["Know the ingredients and side effects of a product", "Know the house of the manufacturer", "Get the product for free", "Choose only one brand"],
-        ans: 0,
-        exp: "Information allows consumers to make informed choices and use products safely."
-    },
-    {
-        q: "Which factor of production is human effort, both mental and physical?",
-        opts: ["Capital", "Entrepreneur", "Labor", "Technology"],
-        ans: 2,
-        exp: "Labor encompasses all human contributions to production."
-    },
-    {
-        q: "Honesty in business helps to build:",
-        opts: ["Debts", "Customer Loyalty/Trust", "High Prices", "Enemies"],
-        ans: 1,
-        exp: "Trust is the foundation of long-term business relationships."
-    },
-    {
-        q: "The reward for Capital is:",
-        opts: ["Wages", "Rent", "Interest", "Profit"],
-        ans: 2,
-        exp: "When money or equipment is invested, the return/cost of using it is interest."
-    },
-    {
-        q: "Which of these is a disadvantage of a Sole Proprietorship?",
-        opts: ["Quick decision making", "Small capital", "Unlimited liability", "Complete control"],
-        ans: 2,
-        exp: "Unlimited liability means the owner can lose personal property to pay business debts."
-    },
-    {
-        q: "Occupations that provide direct services to people, like a Barber or a Doctor, are:",
-        opts: ["Extractive", "Indirect Services", "Direct Services", "Constructive"],
-        ans: 2,
-        exp: "Direct services are personal services rendered to individuals."
-    },
-    {
-        q: "The 'Environment' in the context of sourcing refers to:",
-        opts: ["The office building", "Ensuring production doesn't destroy nature", "The market square", "The bank"],
-        ans: 1,
-        exp: "Ethical sourcing requires respecting the environment and preventing pollution."
-    },
-    {
-        q: "A teacher provides what type of service?",
-        opts: ["Direct Service", "Indirect Service", "Extractive Service", "Manufacturing Service"],
-        ans: 1,
-        exp: "Teachers provide indirect services because they are paid by the government or an institution, not directly by every student in the classroom."
-    },
-    {
-        q: "Entrepreneurship helps in the 'Utilization of Local Resources.' This means:",
-        opts: ["Using only imported goods", "Making use of raw materials found within the country", "Selling the country's land", "Using manual labor only"],
-        ans: 1,
-        exp: "It reduces dependence on imports and boosts the local economy."
-    },
-    {
-        q: "Which of the following is a 'Social Responsibility' of a business to the society?",
-        opts: ["Paying high salaries to the owner", "Polluting the nearby river", "Supporting community projects/clinics", "Cheating on taxes"],
-        ans: 2,
-        exp: "Social responsibility involves a business giving back to the community it operates in."
-    },
-    {
-        q: "If a business sources its goods through 'Smuggling,' it is violating:",
-        opts: ["Honesty and Ethics in Sourcing", "Consumer Rights", "Capital Accumulation", "Entrepreneurial Skill"],
-        ans: 0,
-        exp: "Smuggling is illegal and unethical; sourcing must follow the laws of the land."
-    },
-    {
-        q: "A Public Limited Company (PLC) can raise capital by:",
-        opts: ["Borrowing from only one person", "Selling shares to the public", "Keeping the business secret", "Selling the owner's car"],
-        ans: 1,
-        exp: "PLCs are allowed to list on the stock exchange and invite the public to buy shares."
-    },
-    {
-        q: "The total reward for the Factor of Production called 'Entrepreneur' is:",
-        opts: ["Interest", "Rent", "Profit or Loss", "Salary"],
-        ans: 2,
-        exp: "The entrepreneur takes the risk; if successful, they get profit; if not, they bear the loss."
-    }
-]
-},
+  "jss1": {
+    /* ── ENGLISH STUDIES (40 questions) ── */
+    "English Studies": [
+      { q: "Which of the following words contains the SAME vowel sound as 'bird'?", opts: ["bed","bad","bard","heard"], ans: 3, exp: "Both 'bird' and 'heard' contain the /ɜː/ vowel sound (the mid-central rounded vowel). 'Bed' has the short /e/ sound, 'bad' has /æ/, and 'bard' has the long /ɑː/ sound." },
+      { q: "In the sentence 'He bought a REcord at the store,' which syllable carries the primary stress?", opts: ["RE-cord","re-CORD","re-cord","The stress is equal on all syllables"], ans: 0, exp: "In the noun form 'record,' the primary stress falls on the first syllable: RE-cord. Nouns often stress the first syllable, while the verb form 'to record' stresses the second syllable: re-CORD." },
+      { q: "Which pair of words is an example of a minimal pair in English?", opts: ["ship and sheep","cat and dog","run and walk","happy and joyful"], ans: 0, exp: "A minimal pair consists of two words that differ by only one phoneme. 'Ship' (/ʃɪp/) and 'sheep' (/ʃiːp/) differ only in the vowel sound /ɪ/ vs /iː/. The other pairs differ in multiple sounds or are synonyms." },
+      { q: "The underlined sound in 'sing' is classified as a __________.", opts: ["fricative","plosive","nasal","affricate"], ans: 2, exp: "The /ŋ/ sound in 'sing' is a velar nasal. Nasals are produced by allowing air to escape through the nose while blocking the oral cavity. Fricatives force air through a narrow channel, plosives involve complete blockage and release, and affricates begin as plosives and release as fricatives." },
+      { q: "Which sentence is spoken with a RISING intonation pattern?", opts: ["What is your name?","Where did you go yesterday?","Close the door immediately.","Are you coming tomorrow?"], ans: 3, exp: "Rising intonation is typically used in yes/no questions. 'Are you coming tomorrow?' is a yes/no question and therefore uses rising intonation. WH-questions and commands typically use falling intonation." },
+      { q: "The words 'pat' and 'bat' differ only in their __________.", opts: ["vowel sounds","stress patterns","initial consonant sounds","final consonant sounds"], ans: 2, exp: "'Pat' begins with the voiceless plosive /p/, while 'bat' begins with the voiced plosive /b/. They differ only in the initial consonant sound (voicing). The vowel /æ/ and final consonant /t/ are identical." },
+      { q: "Identify the grammatical error in this sentence: 'Each of the boys have completed their assignment.'", opts: ["Both 'have' and 'their' are incorrect","Only 'have' is incorrect","Only 'their' is incorrect","There is no error"], ans: 0, exp: "'Each' is a singular subject requiring the singular verb 'has' (not 'have') and a singular possessive 'his' (not the plural 'their'). Both words are grammatically incorrect in this sentence." },
+      { q: "Which sentence correctly uses the past perfect tense?", opts: ["She had went to school before the rain started.","She has gone to school before the rain started.","She had gone to school before the rain started.","She went to school before the rain had started."], ans: 2, exp: "The past perfect tense is formed with 'had' + past participle. 'Gone' is the correct past participle of 'go'. The sentence correctly uses the past perfect to show that one past action was completed before another past action began." },
+      { q: "In the sentence 'The teacher gave the students a difficult assignment,' what is the direct object?", opts: ["teacher","gave","students","assignment"], ans: 3, exp: "The direct object is the thing being acted upon — what was given. In this sentence, 'assignment' is the direct object. 'Students' is the indirect object (to whom it was given), 'teacher' is the subject, and 'gave' is the verb." },
+      { q: "Which of the following is a complex sentence?", opts: ["The sun rose and the birds began to sing.","I like tea; she prefers coffee.","Although it was raining, we went to school.","The boy ran quickly."], ans: 2, exp: "A complex sentence contains one independent clause and at least one dependent clause. 'Although it was raining' is a dependent clause, and 'we went to school' is an independent clause. Option A is compound, C is compound with a semicolon, and D is simple." },
+      { q: "Choose the correct form of the verb: 'Neither the headmaster nor the teachers __________ present at the meeting.'", opts: ["was","is","were","are being"], ans: 2, exp: "With 'neither...nor,' the verb agrees with the noun closest to it. Since 'teachers' is plural and closest to the verb, the plural verb 'were' is correct." },
+      { q: "In the sentence 'She sang beautifully during the concert yesterday,' which word is an adverb modifying the verb?", opts: ["sang","concert","yesterday","beautifully"], ans: 3, exp: "'Beautifully' is an adverb modifying the verb 'sang' by describing how the singing was done. 'Sang' is a verb, 'concert' is a noun, and 'yesterday' is also an adverb (of time) but does not modify the verb of action in the same way." },
+      { q: "In the sentence 'The students who passed the exam celebrated their success,' the underlined word 'who' is a __________.", opts: ["personal pronoun","possessive pronoun","relative pronoun","demonstrative pronoun"], ans: 2, exp: "'Who' is a relative pronoun. It introduces the relative clause 'who passed the exam' and relates it to the noun 'students.' Relative pronouns connect dependent clauses to main clauses." },
+      { q: "Which sentence correctly uses a colon?", opts: ["I have a big test tomorrow: because I can't go out tonight.","I have: a big test tomorrow I can't go out tonight.","I need to buy the following items: books, pens, and paper.","I have a big test tomorrow: and I can't go out tonight."], ans: 2, exp: "A colon is used to introduce a list, an explanation, or a quotation. Option C correctly uses a colon to introduce a list. A colon should not be used before a dependent clause (A), in the middle of a fragment (B), or before a coordinating conjunction (D)." },
+      { q: "Select the sentence that is in the passive voice.", opts: ["The chef cooked a delicious meal.","The chef is cooking a delicious meal.","A delicious meal was cooked by the chef.","The chef will cook a delicious meal."], ans: 2, exp: "The passive voice is formed with a form of 'be' + past participle, where the object becomes the subject. 'A delicious meal was cooked by the chef' is passive. The other options are all active voice." },
+      { q: "Which of the following sentences contains a dangling modifier?", opts: ["Walking down the street, I saw a beautiful tree.","While walking down the street, the tree caught my attention.","Walking down the street, the tree was beautiful.","Both B and C"], ans: 3, exp: "A dangling modifier does not logically modify any word in the sentence. In both B and C, 'walking down the street' appears to modify 'the tree,' which is illogical because trees cannot walk. In A, the phrase correctly modifies 'I.'" },
+      { q: "Choose the word most nearly opposite in meaning to 'benevolent.'", opts: ["kind","generous","charitable","malevolent"], ans: 3, exp: "'Benevolent' means well-meaning and kindly. Its antonym is 'malevolent,' which means having a wish to do evil. 'Kind,' 'generous,' and 'charitable' are synonyms." },
+      { q: "In the sentence 'The student's excuse was plausible,' what does 'plausible' mean?", opts: ["obviously false","completely ridiculous","seemingly reasonable or believable","intentionally confusing"], ans: 2, exp: "'Plausible' means seeming reasonable or probable; believable. If an excuse is plausible, it appears to make sense and could be true." },
+      { q: "Which word best completes this analogy? 'Book is to read as food is to __________.'", opts: ["cook","eat","grow","buy"], ans: 1, exp: "The relationship is purpose/function: a book is designed to be read, just as food is designed to be eaten. While food can be cooked, grown, or bought, its primary purpose is to be eaten." },
+      { q: "Select the synonym for 'meticulous.'", opts: ["careless","thorough","hasty","lazy"], ans: 1, exp: "'Meticulous' means showing great attention to detail; very careful and precise. 'Thorough' is the closest synonym. 'Careless,' 'hasty,' and 'lazy' are antonyms." },
+      { q: "The phrase 'break the ice' is an example of a(n) __________.", opts: ["simile","metaphor","idiom","personification"], ans: 2, exp: "'Break the ice' is an idiom — a phrase whose meaning cannot be deduced literally. It means to initiate conversation in a socially awkward situation." },
+      { q: "Which word is spelled correctly?", opts: ["accomodate","accommodate","acommodate","acomodate"], ans: 1, exp: "The correct spelling is 'accommodate' with two c's and two m's. A useful mnemonic: both 'cc' and 'mm' are double, like the word has room to accommodate extra letters." },
+      { q: "In the sentence 'The ambiguous instructions confused everyone,' what does 'ambiguous' mean?", opts: ["perfectly clear","open to more than one interpretation","extremely detailed","written in another language"], ans: 1, exp: "'Ambiguous' means unclear or open to more than one interpretation. If instructions are ambiguous, they can be understood in multiple ways, which causes confusion." },
+      { q: "Choose the word that best fits the blank: 'The __________ student always completed her homework before dinner.'", opts: ["diligent","negligent","lethargic","apathetic"], ans: 0, exp: "'Diligent' means having or showing care and conscientiousness in one's work. A diligent student would complete homework promptly. The other options describe a lack of care or interest." },
+      { q: "Read the passage and answer:<br><br><em>When Ade was ten years old, his father gave him a small plot of land behind their house. At first, Ade was excited. He planted maize, tomatoes, and peppers. But after two weeks, the weeds began to grow. The hot sun made the soil dry. Ade wanted to give up. His younger sister, Nkechi, watched him one afternoon as he sat under a mango tree instead of working. 'The plants are thirsty,' she said simply. Ade looked at the garden. The tomato leaves were wilting. He felt ashamed. That evening, he made a watering schedule. By the end of the term, Ade's garden produced more vegetables than any other plot in the compound. He learned that responsibility requires consistent effort, not just initial enthusiasm.</em><br><br>What is the main idea of the passage?", opts: ["Gardening is the best way for children to earn money.","Ade's sister was better at gardening than he was.","Ade learned that responsibility requires sustained effort and perseverance.","The weather in Ade's village is too hot for farming."], ans: 2, exp: "The main idea is the central message. The final sentence explicitly states that Ade learned 'that responsibility requires consistent effort, not just initial enthusiasm.' The passage is not primarily about money, his sister's skill, or the weather." },
+      { q: "Read the passage and answer:<br><br><em>[Same passage about Ade]</em><br><br>Why did Ade initially want to give up on his garden?", opts: ["His father demanded too much work from him.","The plants grew too quickly and overwhelmed him.","Nkechi refused to help him with the gardening.","Weeds grew and the hot sun dried the soil, making the work difficult."], ans: 3, exp: "The passage states: 'But after two weeks, the weeds began to grow. The hot sun made the soil dry. Ade wanted to give up.' These specific challenges caused his discouragement." },
+      { q: "Read the passage and answer:<br><br><em>[Same passage about Ade]</em><br><br>What does the word 'wilting' suggest about the tomato plants?", opts: ["They were growing rapidly.","They were producing fruit.","They were being attacked by insects.","They were dying from lack of water."], ans: 3, exp: "'Wilting' means becoming limp or drooping through heat or loss of water. In context, Nkechi says 'The plants are thirsty,' and Ade sees the wilting leaves. This strongly suggests the plants were suffering from lack of water." },
+      { q: "Read the passage and answer:<br><br><em>[Same passage about Ade]</em><br><br>Which best describes Nkechi's role in the story?", opts: ["She served as a catalyst that prompted Ade to reflect and take action.","She took over the garden and did all the work.","She made Ade feel guilty and ashamed deliberately.","She taught Ade how to remove weeds and water the plants."], ans: 0, exp: "Nkechi's simple statement caused Ade to look at the garden and feel ashamed, which motivated him to change. She did not take over, deliberately shame him, or teach him techniques." },
+      { q: "Read the passage and answer:<br><br><em>The students of Unity Junior Secondary School noticed that the drainage channel behind their school was always blocked with plastic waste after every rainfall. The stagnant water became a breeding ground for mosquitoes, and several students had fallen ill with malaria. The Environmental Club organised a cleanup day, placed wire mesh filters, and painted murals on the school wall. Within a month, the mosquito population dropped significantly. The local government even sent a truck to collect the waste regularly.</em><br><br>What was the primary cause of the malaria cases among students?", opts: ["The students did not use mosquito nets.","The school was located too close to a swamp.","Blocked drainage created stagnant water that bred mosquitoes.","The local government refused to provide healthcare."], ans: 2, exp: "The passage explicitly states: 'The stagnant water became a breeding ground for mosquitoes, and several students had fallen ill with malaria.' The stagnant water was caused by blocked drainage." },
+      { q: "Read the passage and answer:<br><br><em>[Same passage about Unity JSS]</em><br><br>Which strategy did the Environmental Club use LAST?", opts: ["Writing a letter to the local government chairman","Organising a cleanup day","Placing wire mesh filters at entry points","Painting murals on the school wall"], ans: 3, exp: "The passage uses sequence markers: 'First, they wrote... Then, they organised... They cleared... Finally, they painted murals...' The word 'finally' indicates painting murals was the last strategy." },
+      { q: "Read the passage and answer:<br><br><em>[Same passage about Unity JSS]</em><br><br>What can the reader infer about the local government's response?", opts: ["The local government was persuaded by the students' actions to provide regular waste collection.","The local government ignored the students completely.","The local government punished the school for the blocked drainage.","The local government closed the school for health reasons."], ans: 0, exp: "The passage states: 'The local government even sent a truck to collect the waste regularly.' The word 'even' suggests this was a positive response, implying the students' actions persuaded the government to act." },
+      { q: "Read the passage and answer:<br><br><em>[Same passage about Unity JSS]</em><br><br>What is the author's purpose in writing this passage?", opts: ["To inform and inspire readers about the power of student-led community action","To entertain readers with a funny school story","To persuade students to join the Environmental Club","To criticise the local government for neglecting schools"], ans: 0, exp: "The concluding sentence reveals the author's purpose: to show what students can achieve through collective action. The tone is informative and inspirational, not entertaining, persuasive about a specific club, or critical." },
+      { q: "A student is writing a letter to the principal requesting permission to organise a debate competition. Which opening is MOST appropriate?", opts: ["Hey Principal, what's up? We wanna do a debate.","Dear Principal, I am writing to formally request permission to organise an inter-class debate competition...","To whom it may concern: Debate competition. Please approve.","Principal, you must let us have a debate competition immediately."], ans: 1, exp: "A formal letter to a principal requires respectful, polite, and professional language. Option B uses the appropriate salutation, formal tone, and clear purpose. Option A is too casual, C is too brief, and D is rude." },
+      { q: "In paragraph writing, the topic sentence is best described as the sentence that __________.", opts: ["comes at the very end of the paragraph","states the main idea the paragraph will develop","provides a transition to the next paragraph only","contains the most difficult vocabulary in the paragraph"], ans: 1, exp: "The topic sentence states the main idea or central point of a paragraph. The rest of the sentences provide supporting details that develop this main idea." },
+      { q: "Which of the following is an essential element of a formal essay?", opts: ["An introduction, body paragraphs, and a conclusion","Slang and colloquial expressions","A handwritten signature at the end","A minimum of ten pages"], ans: 0, exp: "A formal essay must have a clear structure: an introduction that presents the topic, body paragraphs that develop arguments, and a conclusion that summarises. Slang is inappropriate, a signature is not required, and length does not define an essay." },
+      { q: "A student wrote: 'The exam was very difficult. I studied hard. I passed the exam.' How can these sentences be best combined?", opts: ["The exam was very difficult, but I studied hard, so I passed.","The exam was very difficult and I studied hard but I passed.","The exam was very difficult or I studied hard and I passed.","The exam was very difficult, for I studied hard, yet I passed."], ans: 0, exp: "'But' correctly shows the contrast between the difficulty and the student's hard work. 'So' correctly shows the result — passing. Option B uses 'but' illogically, C uses 'or' incorrectly, and D uses 'for' and 'yet' incorrectly." },
+      { q: "When writing a narrative essay, which technique is MOST effective for engaging the reader?", opts: ["Beginning with a vivid scene or an intriguing question","Listing facts in chronological order without description","Using only complex scientific vocabulary","Avoiding any mention of characters' feelings"], ans: 0, exp: "Narrative essays should engage readers emotionally. Beginning with a vivid scene or intriguing question (a 'hook') draws readers in. Simply listing facts, using overly complex vocabulary, or omitting emotional content makes the narrative dry." },
+      { q: "In a story, the 'protagonist' refers to __________.", opts: ["the author of the story","the main character who drives the action forward","the setting where the story takes place","the moral lesson at the end of the story"], ans: 1, exp: "The protagonist is the main character of a story — the central figure around whom the plot revolves. The author is the writer, the setting is the place/time, and the moral lesson is the theme." },
+      { q: "Which literary device is used in the sentence 'The wind whispered secrets through the trees'?", opts: ["simile","metaphor","personification","hyperbole"], ans: 2, exp: "Personification gives human qualities to non-human things. Here, the wind is given the human ability to 'whisper' and share 'secrets.' A simile uses 'like' or 'as,' a metaphor makes a direct comparison, and hyperbole is extreme exaggeration." },
+      { q: "The 'climax' of a story is the point where __________.", opts: ["the characters are first introduced","the conflict reaches its peak and the outcome is decided","the setting is described in detail","the author explains the moral lesson"], ans: 1, exp: "The climax is the turning point of highest tension where the main conflict reaches its peak. Character introduction happens in the exposition, setting description can occur anywhere, and the moral is part of the resolution or theme." }
+    ],
+    /* ── MATHEMATICS (40 questions) ── */
+    "Mathematics": [
+      { q: "What is the place value of the digit 7 in the number 3,472,856,109?", opts: ["hundred millions","ten millions","millions","hundred thousands"], ans: 1, exp: "In 3,472,856,109, counting from right to left: 9 (ones), 0 (tens), 1 (hundreds), 6 (thousands), 5 (ten thousands), 8 (hundred thousands), 2 (millions), 7 (ten millions), 4 (hundred millions), 3 (billions). The digit 7 is in the ten millions place." },
+      { q: "Write the number 'five billion, three hundred and twenty-seven million, four thousand and eighteen' in figures.", opts: ["5,327,040,018","5,327,004,018","5,327,400,018","5,327,004,180"], ans: 1, exp: "Five billion = 5,000,000,000; three hundred and twenty-seven million = 327,000,000; four thousand = 4,000; eighteen = 18. Adding: 5,000,000,000 + 327,000,000 + 4,000 + 18 = 5,327,004,018." },
+      { q: "Which of the following numbers is the largest?", opts: ["4,582,103,976","4,582,103,796","4,528,103,976","4,582,130,976"], ans: 3, exp: "Comparing digit by digit from left: all start with 4,5,8,2. The fifth digit differs: 1 in A/B/D vs 2 in C (eliminating C). The sixth digit: 3 in A/B vs 3 in D. The seventh digit: 0 in A vs 3 in D. Since 3 > 0, D is largest." },
+      { q: "The population of a city is 2,456,789. Round this to the nearest million.", opts: ["3,000,000","2,500,000","2,400,000","2,000,000"], ans: 3, exp: "To round to the nearest million, examine the hundred thousands digit (4). Since 4 < 5, round down. Therefore 2,456,789 rounds to 2,000,000." },
+      { q: "How many millions are there in 5 billion?", opts: ["500","5,000","50,000","5,000,000"], ans: 1, exp: "1 billion = 1,000 million. Therefore, 5 billion = 5 × 1,000 = 5,000 million." },
+      { q: "A company exported 2,450,000 bags of rice in 2023 and 3,780,000 bags in 2024. What is the total?", opts: ["5,130,000","6,130,000","6,230,000","5,230,000"], ans: 2, exp: "2,450,000 + 3,780,000 = 6,230,000. Adding: 2,450,000 + 3,780,000 = 5,000,000 + 1,230,000 = 6,230,000." },
+      { q: "The difference between two numbers is 4,560,000. If the larger is 12,340,000, what is the smaller?", opts: ["8,780,000","16,900,000","7,780,000","6,780,000"], ans: 2, exp: "Smaller = Larger − Difference = 12,340,000 − 4,560,000 = 7,780,000." },
+      { q: "A factory produces 125,000 bottles daily. How many in 30 days?", opts: ["375,000","3,750,000","37,500,000","3,750,000"], ans: 1, exp: "125,000 × 30 = 3,750,000. Calculation: 125 × 30 = 3,750, then add three zeros: 3,750,000." },
+      { q: "If ₦8,400,000 is shared equally among 12 schools, how much per school?", opts: ["600,000","800,000","700,000","70,000"], ans: 2, exp: "8,400,000 ÷ 12 = 700,000. Calculation: 84 ÷ 12 = 7, so 8,400,000 ÷ 12 = 700,000." },
+      { q: "What is the LCM of 12 and 18?", opts: ["36","6","72","24"], ans: 0, exp: "Multiples of 12: 12, 24, 36, 48... Multiples of 18: 18, 36, 54... The lowest common multiple is 36. Using prime factorisation: 12 = 2² × 3, 18 = 2 × 3². LCM = 2² × 3² = 36." },
+      { q: "Find the HCF of 24 and 36.", opts: ["24","6","72","12"], ans: 3, exp: "Factors of 24: 1, 2, 3, 4, 6, 8, 12, 24. Factors of 36: 1, 2, 3, 4, 6, 9, 12, 18, 36. The highest common factor is 12. Using prime factorisation: 24 = 2³ × 3, 36 = 2² × 3². HCF = 2² × 3 = 12." },
+      { q: "Three bells toll at intervals of 8, 12, and 16 minutes. If they toll together at 9:00 a.m., when next together?", opts: ["9:24 a.m.","9:36 a.m.","9:48 a.m.","10:00 a.m."], ans: 2, exp: "Find LCM of 8, 12, 16. Prime factorisation: 8 = 2³, 12 = 2² × 3, 16 = 2⁴. LCM = 2⁴ × 3 = 48 minutes. Next together: 9:00 + 48 min = 9:48 a.m." },
+      { q: "A trader has 48 oranges, 60 mangoes, and 72 apples. What is the maximum number of identical baskets she can make?", opts: ["6","24","12","8"], ans: 2, exp: "This requires HCF of 48, 60, and 72. Factors: 48 (1,2,3,4,6,8,12,16,24,48), 60 (1,2,3,4,5,6,10,12,15,20,30,60), 72 (1,2,3,4,6,8,9,12,18,24,36,72). HCF = 12. Each basket: 4 oranges, 5 mangoes, 6 apples." },
+      { q: "The product of two numbers is 180. If their HCF is 6, what is their LCM?", opts: ["30","36","24","18"], ans: 0, exp: "For any two numbers: Product = HCF × LCM. Therefore, LCM = 180 ÷ 6 = 30." },
+      { q: "Which of the following is an improper fraction?", opts: ["7/7","3/5","2/9","1/4"], ans: 0, exp: "An improper fraction has numerator ≥ denominator. 7/7 has numerator equal to denominator, making it improper (equal to 1). 3/5, 2/9, and 1/4 are proper fractions." },
+      { q: "Convert 23/5 to a mixed number.", opts: ["4 3/5","3 4/5","5 3/5","4 2/5"], ans: 0, exp: "23 ÷ 5 = 4 remainder 3. So 23/5 = 4 3/5. Check: 4 × 5 + 3 = 23." },
+      { q: "What is the numerator in 17/25?", opts: ["25","42","17","8"], ans: 2, exp: "In a fraction a/b, the top number is the numerator and the bottom is the denominator. In 17/25, 17 is the numerator." },
+      { q: "Convert 5 2/3 to an improper fraction.", opts: ["15/3","10/3","17/3","11/3"], ans: 2, exp: "(Whole × Denominator) + Numerator, all over denominator: (5 × 3 + 2)/3 = 17/3." },
+      { q: "Which fraction is equivalent to 3/4?", opts: ["6/7","9/12","4/3","2/5"], ans: 1, exp: "9/12 simplifies to 3/4 when both are divided by 3. The other fractions are not equivalent." },
+      { q: "Find the missing numerator: 5/8 = ?/32.", opts: ["15","25","20","10"], ans: 2, exp: "Since 8 × 4 = 32, multiply numerator by 4: 5 × 4 = 20. So 5/8 = 20/32." },
+      { q: "Simplify 48/72 to lowest terms.", opts: ["3/4","4/6","12/18","2/3"], ans: 3, exp: "HCF of 48 and 72 is 24. 48÷24 = 2, 72÷24 = 3. So 48/72 = 2/3." },
+      { q: "Arrange in ascending order: 3/4, 1/2, 5/8, 2/3.", opts: ["1/2, 5/8, 2/3, 3/4","3/4, 2/3, 5/8, 1/2","1/2, 2/3, 3/4, 5/8","5/8, 1/2, 2/3, 3/4"], ans: 0, exp: "Common denominator 24: 3/4=18/24, 1/2=12/24, 5/8=15/24, 2/3=16/24. Order: 12<15<16<18 → 1/2 < 5/8 < 2/3 < 3/4." },
+      { q: "Which fraction is smallest: 4/5, 7/10, 3/4, 13/20?", opts: ["4/5","7/10","3/4","13/20"], ans: 3, exp: "Common denominator 20: 4/5=16/20, 7/10=14/20, 3/4=15/20, 13/20=13/20. 13/20 is smallest." },
+      { q: "If 2/3 > 5/x, what is the smallest whole number x?", opts: ["6","7","9","8"], ans: 3, exp: "2/3 > 5/x → 2x > 15 → x > 7.5. Smallest whole number > 7.5 is 8. Verify: 2/3≈0.667 and 5/8=0.625. ✓" },
+      { q: "Express 3/8 as a percentage.", opts: ["37.5%","30%","40%","32.5%"], ans: 0, exp: "(3/8) × 100 = 300/8 = 37.5%." },
+      { q: "Convert 0.65 to a fraction in lowest terms.", opts: ["65/100","7/10","3/5","13/20"], ans: 3, exp: "0.65 = 65/100. Divide by 5: 13/20. 65/100 is correct but not lowest terms. 7/10=0.7 and 3/5=0.6." },
+      { q: "A student scored 18 out of 25. What percentage?", opts: ["68%","70%","75%","72%"], ans: 3, exp: "(18/25) × 100 = 1800/25 = 72%." },
+      { q: "Express 45% as a decimal.", opts: ["0.45","4.5","0.045","45.0"], ans: 0, exp: "45% = 45/100 = 0.45." },
+      { q: "Calculate 3/4 + 2/5 as an improper fraction.", opts: ["5/9","1 3/20","23/20","22/20"], ans: 2, exp: "LCM of 4 and 5 is 20. 3/4=15/20, 2/5=8/20. 15/20+8/20=23/20." },
+      { q: "Simplify: 7/8 − 1/4.", opts: ["6/4","3/4","1/2","5/8"], ans: 3, exp: "LCM of 8 and 4 is 8. 1/4=2/8. 7/8−2/8=5/8." },
+      { q: "A baker used 3/5 of a bag in the morning and 1/3 in the afternoon. What fraction was used altogether?", opts: ["4/8","1 4/15","14/15","4/15"], ans: 2, exp: "LCM of 5 and 3 is 15. 3/5=9/15, 1/3=5/15. Total=9/15+5/15=14/15." },
+      { q: "Calculate 2/3 × 9/10 in lowest terms.", opts: ["18/30","11/13","3/5","12/30"], ans: 2, exp: "2/3 × 9/10 = 18/30. Simplify by dividing by 6: 3/5." },
+      { q: "Divide 5/6 by 2/3.", opts: ["1 1/4","10/18","5/9","1 1/9"], ans: 0, exp: "5/6 ÷ 2/3 = 5/6 × 3/2 = 15/12 = 5/4 = 1 1/4." },
+      { q: "A garden is 8 1/2 m long and 2/3 m wide. What is its area?", opts: ["5 2/3 m²","5 1/3 m²","17/3 m²","6 1/3 m²"], ans: 0, exp: "Area = 17/2 × 2/3 = 34/6 = 17/3 = 5 2/3 m²." },
+      { q: "Which is a prime number?", opts: ["27","49","31","51"], ans: 2, exp: "A prime has exactly two factors: 1 and itself. 31 is prime. 27=3×9, 49=7×7, 51=3×17." },
+      { q: "Express 60 as a product of prime factors.", opts: ["2 × 3 × 5","2³ × 3 × 5","2² × 3 × 5","2² × 3² × 5"], ans: 2, exp: "60 = 2 × 30 = 2 × 2 × 15 = 2 × 2 × 3 × 5 = 2² × 3 × 5." },
+      { q: "How many factors does 36 have?", opts: ["8","10","9","6"], ans: 2, exp: "Factors of 36: 1, 2, 3, 4, 6, 9, 12, 18, 36 = 9 factors. Using prime factorisation: 36=2²×3², so (2+1)(2+1)=9." },
+      { q: "A bag of rice costs ₦48,750. Approximately how much for 7 bags?", opts: ["₦300,000","₦400,000","₦350,000","₦280,000"], ans: 2, exp: "Round 48,750 to 50,000: 50,000×7=350,000. Exact: 48,750×7=341,250. ₦350,000 is the best estimate." },
+      { q: "A classroom is 8.7 m long and 6.2 m wide. Estimate the area.", opts: ["48 m²","60 m²","54 m²","45 m²"], ans: 2, exp: "Round 8.7→9 and 6.2→6. Estimated area = 9×6 = 54 m². Exact: 8.7×6.2=53.94 m²." },
+      { q: "Why is estimation useful in everyday life?", opts: ["It gives exact answers every time.","It helps check whether a calculated answer is reasonable.","It replaces calculators completely.","It is only used in examinations."], ans: 1, exp: "Estimation lets us quickly approximate answers and verify calculations. It does not give exact answers, does not replace calculators, and is useful beyond exams (shopping, budgeting, etc.)." }
+    ],
+    /* ── BASIC SCIENCE (40 questions) ── */
+    "Basic Science": [
+      { q: "Which of the following is NOT an example of matter?", opts: ["Water","Air","Light","Stone"], ans: 2, exp: "Matter is anything that has mass and occupies space. Water, air, and stone are all matter. Light is a form of energy, not matter — it has no mass and does not occupy space in the same way." },
+      { q: "Which state of matter has a definite volume but no definite shape?", opts: ["Solid","Liquid","Gas","Plasma"], ans: 1, exp: "A liquid has a definite volume (it takes up a fixed amount of space) but no definite shape — it takes the shape of its container. A solid has both definite shape and volume. A gas has neither definite shape nor volume." },
+      { q: "When water freezes into ice, which property of matter is being demonstrated?", opts: ["Change of state","Magnetism","Combustion","Conduction"], ans: 0, exp: "Freezing is a change of state from liquid to solid. This demonstrates that matter can exist in different states depending on temperature. Magnetism, combustion, and conduction are unrelated to this process." },
+      { q: "Which property can be used to classify matter as either metal or non-metal?", opts: ["Colour only","Ability to conduct heat and electricity","Smell","Taste"], ans: 1, exp: "Metals generally conduct heat and electricity well, while non-metals are poor conductors (insulators). Colour, smell, and taste are not reliable classification properties for metals vs non-metals." },
+      { q: "Gases can be compressed into smaller volumes because __________.", opts: ["their particles are tightly packed","their particles are far apart and move freely","they have definite shape","they are very heavy"], ans: 1, exp: "Gas particles are far apart with weak forces between them, allowing them to be pushed closer together (compressed). Solids have tightly packed particles, and gases have no definite shape." },
+      { q: "Which characteristic is found ONLY in living things?", opts: ["Ability to move","Ability to reproduce","Ability to grow in size","Ability to respond to stimuli"], ans: 1, exp: "While some non-living things can move (e.g., cars), grow in size (e.g., crystals), or respond to stimuli (e.g., magnets), only living things can reproduce — produce offspring of their own kind. Reproduction is a definitive characteristic of life." },
+      { q: "A stone and a cat are placed side by side. Which observation proves the cat is a living thing?", opts: ["The cat is heavier than the stone.","The cat breathes and excretes waste.","The cat has a definite shape.","The cat is warm to touch."], ans: 1, exp: "Breathing (respiration) and excretion are life processes found only in living things. Weight, shape, and temperature are not definitive proof of life — non-living things can also be heavy, shaped, or warm." },
+      { q: "Which of the following is an importance of plants to humans?", opts: ["They provide oxygen for breathing.","They make the environment noisy.","They increase carbon dioxide in the air.","They block all sunlight from reaching the ground."], ans: 0, exp: "Plants release oxygen during photosynthesis, which humans and animals need for breathing. Plants do not make noise, they absorb (not increase) CO₂, and while they may shade the ground, they do not block all sunlight." },
+      { q: "Animals are important to the ecosystem because they __________.", opts: ["produce oxygen for plants","help in pollination and seed dispersal","remove all bacteria from soil","create new water sources"], ans: 1, exp: "Animals help in pollination (bees, birds) and seed dispersal (through movement and droppings), which helps plants reproduce. Plants produce oxygen, not animals. Animals do not remove all bacteria or create water sources." },
+      { q: "Which characteristic do BOTH plants and animals share?", opts: ["Ability to make their own food","Ability to move from place to place","Ability to respond to changes in the environment","Ability to produce oxygen"], ans: 2, exp: "Both plants and animals can respond to changes in their environment (sensitivity/irritability). Only plants make their own food (photosynthesis) and produce oxygen. Most animals can move freely, while most plants cannot." },
+      { q: "A student observed that a potted plant grew towards the window. This shows that plants __________.", opts: ["need soil to survive","respond to light","produce seeds","breathe through leaves"], ans: 1, exp: "Growing toward light is called phototropism — a response to light. This demonstrates sensitivity, a characteristic of living things. The observation does not prove the plant needs soil, produces seeds, or breathes through leaves." },
+      { q: "Non-living things are important because they __________.", opts: ["can reproduce and replace themselves","provide materials for building and tools","can breathe and grow","can protect themselves from danger"], ans: 1, exp: "Non-living things like metals, stones, and water provide materials for building houses, making tools, and other human uses. Non-living things cannot reproduce, breathe, grow, or protect themselves." },
+      { q: "Which is a difference between plants and animals?", opts: ["Only animals can grow.","Only plants can make their own food.","Only animals need water.","Only plants can reproduce."], ans: 1, exp: "Plants can make their own food through photosynthesis using sunlight, water, and carbon dioxide. Animals cannot make their own food and must eat plants or other animals. Both can grow, need water, and reproduce." },
+      { q: "Iron is classified as a metal because it __________.", opts: ["is soft and breaks easily","conducts heat and electricity","floats on water","is transparent"], ans: 1, exp: "Metals conduct heat and electricity, are usually hard, shiny, and malleable. Iron conducts heat and electricity well. It does not float on water or break easily, and it is not transparent." },
+      { q: "Which is a common use of non-metals in the home?", opts: ["Making electric wires","Making cooking pots","Making plastic containers","Making door hinges"], ans: 2, exp: "Plastic is a non-metal used to make containers, buckets, and other household items. Electric wires (copper/aluminium), cooking pots (aluminium/stainless steel), and door hinges (iron/steel) are made from metals." },
+      { q: "Why is aluminium used for making aeroplane parts?", opts: ["It is very heavy.","It is light and does not rust easily.","It is a poor conductor of heat.","It is brittle and breaks easily."], ans: 1, exp: "Aluminium is lightweight (low density) and resistant to corrosion (rust), making it ideal for aeroplanes where weight and durability matter. It is not heavy, brittle, or a poor conductor." },
+      { q: "Puberty is best defined as the period when __________.", opts: ["a child learns to read and write","a person's body changes from child to adult","a person finishes secondary school","a child starts primary school"], ans: 1, exp: "Puberty is the stage of development when the body changes from a child to an adult, enabling reproduction. It involves physical, emotional, and social changes, not educational milestones." },
+      { q: "Which is a physical change that occurs in boys during puberty?", opts: ["Voice becomes deeper.","Interest in academic subjects increases.","Ability to read improves.","Height decreases."], ans: 0, exp: "During puberty, boys experience a deepening of the voice due to growth of the larynx (Adam's apple). This is a physical change. Interest in academics and reading ability are not puberty changes, and height does not decrease." },
+      { q: "Which emotional change is common during adolescence?", opts: ["Complete emotional stability","Mood swings and increased self-consciousness","Loss of all emotions","Permanent happiness"], ans: 1, exp: "Adolescents often experience mood swings (rapid changes in emotions) and increased self-consciousness due to hormonal changes and brain development. Complete stability, loss of emotions, and permanent happiness are not typical." },
+      { q: "Why is menstrual hygiene important?", opts: ["It prevents infections and promotes health.","It makes periods shorter.","It stops periods completely.","It is required by school rules."], ans: 0, exp: "Good menstrual hygiene (using clean pads, washing regularly) prevents reproductive tract infections and promotes overall health. It does not shorten or stop periods, though it is important regardless of school rules." },
+      { q: "Which practice is part of good personal hygiene?", opts: ["Sharing towels with friends","Bathing regularly and brushing teeth","Wearing the same clothes for a week","Eating only once a day"], ans: 1, exp: "Bathing regularly and brushing teeth remove dirt and bacteria, preventing disease. Sharing towels spreads germs, wearing the same clothes is unhygienic, and eating once a day relates to nutrition, not hygiene." },
+      { q: "A teenager feels embarrassed about acne on his face. What is the healthiest response?", opts: ["Avoid going to school entirely.","Squeeze all the pimples aggressively.","Understand it is a normal pubertal change and maintain face hygiene.","Apply any chemical found at home to burn them off."], ans: 2, exp: "Acne is a normal pubertal change caused by hormones. The healthiest response is to understand this and maintain good hygiene (washing face regularly). Avoiding school, squeezing pimples, or using random chemicals can cause harm or infection." },
+      { q: "Which statement about puberty is TRUE?", opts: ["Only girls experience puberty.","Puberty happens at exactly the same age for everyone.","Physical changes during puberty are normal and temporary.","Puberty is a disease that needs medication."], ans: 2, exp: "Physical changes during puberty (growth spurts, body hair, skin changes) are normal developmental processes and many are temporary while the body adjusts. Both boys and girls experience puberty, timing varies individually, and it is not a disease." },
+      { q: "Coping with adolescence in a healthy way includes __________.", opts: ["isolating oneself from all friends and family","talking to trusted adults about concerns","ignoring all emotional changes","refusing to attend school"], ans: 1, exp: "Talking to trusted adults (parents, teachers, counsellors) helps adolescents process emotional changes and get guidance. Isolation, ignoring emotions, and refusing school are unhealthy coping mechanisms." },
+      { q: "Sanitation in a community is important because it __________.", opts: ["increases the number of flies","prevents the spread of diseases","makes the environment smell pleasant only","has no effect on health"], ans: 1, exp: "Good sanitation (proper waste disposal, clean surroundings, functional toilets) prevents the spread of diseases by reducing contact with waste and disease vectors like flies and mosquitoes." },
+      { q: "Which is an example of environmental sanitation?", opts: ["Washing hands before eating","Disposing of household waste properly","Brushing teeth twice daily","Bathing every morning"], ans: 1, exp: "Environmental sanitation involves keeping the surroundings clean, including proper waste disposal. Washing hands, brushing teeth, and bathing are personal hygiene practices, not environmental sanitation." },
+      { q: "Proper waste disposal helps to __________.", opts: ["increase flooding during rainfall","reduce breeding places for mosquitoes and rats","make roads more slippery","attract more wild animals to the community"], ans: 1, exp: "Proper waste disposal removes stagnant water and food sources, reducing breeding places for mosquitoes (which cause malaria) and rats (which spread diseases). It prevents flooding, not increases it." },
+      { q: "A balanced diet is one that __________.", opts: ["contains large amounts of protein only","contains the right proportions of all food classes","excludes carbohydrates completely","consists only of fruits and vegetables"], ans: 1, exp: "A balanced diet contains appropriate amounts of carbohydrates, proteins, fats, vitamins, minerals, water, and fibre. Excluding any class or eating only one type of food leads to nutritional deficiencies." },
+      { q: "Which food class provides the body with energy for daily activities?", opts: ["Proteins","Vitamins","Carbohydrates","Minerals"], ans: 2, exp: "Carbohydrates are the body's primary source of energy. They are broken down into glucose, which fuels cells. Proteins build and repair tissues, while vitamins and minerals regulate body processes but do not provide energy." },
+      { q: "A child's diet consists mainly of yam and garri with no meat, fish, or beans. Which nutrient is MOST likely lacking?", opts: ["Carbohydrate","Protein","Fat","Water"], ans: 1, exp: "Yam and garri are rich in carbohydrates but low in protein. Meat, fish, and beans are major protein sources. Without them, the child may lack protein needed for growth and tissue repair." },
+      { q: "Which food item is a good source of vitamins?", opts: ["Rice","Orange","Beans","Palm oil"], ans: 1, exp: "Oranges and other fruits are excellent sources of vitamins (especially Vitamin C). Rice provides carbohydrates, beans provide protein, and palm oil provides fats." },
+      { q: "Drug misuse occurs when a person __________.", opts: ["takes prescribed medication according to a doctor's instructions","uses a drug for a purpose other than what it is intended for","buys medicine from a pharmacy with a prescription","takes vitamin supplements daily"], ans: 1, exp: "Drug misuse means using a drug in a way other than its intended medical purpose, such as taking too much, too little, or for the wrong condition. Following prescriptions and buying from pharmacies are correct uses." },
+      { q: "Which substance is commonly abused by teenagers and can lead to addiction?", opts: ["Clean drinking water","Fresh fruits","Tobacco and alcohol","Vegetables"], ans: 2, exp: "Tobacco and alcohol are psychoactive substances commonly abused. They can lead to addiction and serious health problems. Water, fruits, and vegetables are not drugs of abuse." },
+      { q: "A side effect of drug abuse is __________.", opts: ["improved academic performance","better physical health","damage to the liver and brain","increased self-control"], ans: 2, exp: "Drug abuse damages organs such as the liver (from alcohol) and brain (from many drugs), and can cause mental health problems. It does not improve academics, health, or self-control." },
+      { q: "Which is a function of the male reproductive system?", opts: ["Production of egg cells","Production of sperm cells","Nourishment of the embryo","Protection of the uterus"], ans: 1, exp: "The male reproductive system produces sperm cells (male gametes) in the testes. Production of eggs, embryo nourishment, and uterus protection are functions of the female reproductive system." },
+      { q: "The scrotum is an external male reproductive organ that __________.", opts: ["produces sperm cells","stores urine","protects and keeps the testes at the right temperature","transports sperm to the penis"], ans: 2, exp: "The scrotum is a sac that holds and protects the testes. It helps regulate temperature — sperm production requires a temperature slightly lower than body temperature. Sperm is produced in the testes, not the scrotum itself." },
+      { q: "Good hygiene of the male reproductive organs includes __________.", opts: ["wearing tight underwear continuously without washing","regular bathing and wearing clean, loose-fitting underwear","using harsh chemicals to clean the area","avoiding all physical exercise"], ans: 1, exp: "Regular bathing and wearing clean, loose-fitting underwear prevent infections and keep the area healthy. Tight underwear, harsh chemicals, and avoiding exercise are harmful practices." }
+    ],
+    /* ── BASIC TECHNOLOGY (40 questions) ── */
+    "Basic Technology": [
+      { q: "Technology can be best defined as __________.", opts: ["the study of ancient history","the application of scientific knowledge to solve practical problems","the art of painting and drawing","the practice of traditional medicine only"], ans: 1, exp: "Technology is the application of scientific knowledge for practical purposes, especially in industry. It involves designing, making, and using tools, machines, and systems to solve problems." },
+      { q: "Which profession is directly related to technology?", opts: ["Folk storyteller","Software developer","Traditional dancer","Poet"], ans: 1, exp: "A software developer designs and creates computer programs and applications — a technology-related profession. Storytelling, dancing, and poetry are arts and humanities, not technology professions." },
+      { q: "Technology contributes to society by __________.", opts: ["making all manual work illegal","improving healthcare, communication, and transportation","eliminating the need for education","preventing all social interactions"], ans: 1, exp: "Technology improves healthcare (medical equipment), communication (phones, internet), and transportation (vehicles, trains). It does not make manual work illegal, eliminate education, or prevent social interaction." },
+      { q: "An example of how technology affects everyday life is __________.", opts: ["using a smartphone to communicate","refusing to use any electrical appliances","walking barefoot everywhere","cooking with firewood only"], ans: 0, exp: "Using a smartphone is a direct example of technology in daily life. Refusing appliances, walking barefoot, or using only firewood represent avoidance of technology rather than its effect." },
+      { q: "A pedestrian should cross the road __________.", opts: ["at any point where there are no cars","only at designated zebra crossings or pedestrian bridges","while looking at a phone screen","by running between moving vehicles"], ans: 1, exp: "Pedestrians should cross at designated points (zebra crossings, pedestrian bridges) where drivers expect them. Crossing randomly, while distracted, or between moving vehicles is dangerous." },
+      { q: "Which safety equipment should a motorcyclist ALWAYS wear?", opts: ["Sunglasses and sandals","A helmet and closed shoes","A cap and slippers","Loose clothing and no gloves"], ans: 1, exp: "A helmet protects the head during accidents and is legally required in many places. Closed shoes protect the feet. Sunglasses, sandals, caps, and loose clothing do not provide adequate protection." },
+      { q: "A motorist can practise responsible road use by __________.", opts: ["driving at excessive speed","obeying traffic signs and signals","using a phone while driving","ignoring pedestrian crossings"], ans: 1, exp: "Responsible road use includes obeying traffic signs and signals, respecting speed limits, and paying attention. Excessive speed, phone use while driving, and ignoring crossings are dangerous and illegal." },
+      { q: "Which behaviour is a common road hazard?", opts: ["Looking both ways before crossing","Jaywalking (crossing recklessly)","Wearing reflective clothing at night","Using pedestrian bridges"], ans: 1, exp: "Jaywalking — crossing the road recklessly without using designated crossings — is a common cause of pedestrian accidents. The other options are safe practices." },
+      { q: "A major cause of workshop accidents is __________.", opts: ["following all safety rules carefully","lack of concentration and unsafe practices","wearing appropriate safety gear","keeping the workshop clean and organised"], ans: 1, exp: "Most workshop accidents are caused by human factors: lack of concentration, carelessness, ignoring safety rules, and unsafe practices. Following rules, wearing gear, and cleanliness prevent accidents." },
+      { q: "Which is a type of workshop accident?", opts: ["Winning a design competition","Cut from a sharp tool","Passing an examination","Receiving a salary"], ans: 1, exp: "Cuts from sharp tools (saws, chisels, knives) are common workshop accidents. Winning competitions, passing exams, and receiving salaries are not accidents." },
+      { q: "Workshop accidents can be prevented by __________.", opts: ["removing all tools from the workshop","using tools correctly and wearing safety equipment","working with wet hands on electrical equipment","running in the workshop to save time"], ans: 1, exp: "Prevention includes using tools correctly, wearing safety equipment (goggles, gloves), keeping the workshop organised, and following safety rules. Removing all tools prevents work, while wet hands and running cause accidents." },
+      { q: "An unsafe practice in the workshop is __________.", opts: ["wearing safety goggles when grinding","using a machine without proper training","keeping fire extinguishers accessible","tidying up after work"], ans: 1, exp: "Using a machine without training is extremely dangerous and a leading cause of serious injuries. Wearing goggles, keeping extinguishers accessible, and tidying up are all safe practices." },
+      { q: "Which workshop safety rule helps prevent fire outbreaks?", opts: ["Storing flammable liquids away from heat sources","Leaving electrical wires exposed","Smoking while using solvents","Blocking fire exits with materials"], ans: 0, exp: "Flammable liquids (petrol, solvents) should be stored away from heat, sparks, and flames to prevent fire. Exposed wires, smoking near solvents, and blocking exits all increase fire risk." },
+      { q: "A fire extinguisher is important in the workshop because it __________.", opts: ["decorates the wall","can put out small fires before they spread","is required only for inspection purposes","increases room temperature"], ans: 1, exp: "Fire extinguishers are safety devices designed to put out small fires in their early stages, preventing them from spreading and causing major damage or injury." },
+      { q: "Which class of fire involves flammable liquids such as petrol and kerosene?", opts: ["Class A","Class B","Class C","Class D"], ans: 1, exp: "Class B fires involve flammable liquids and gases like petrol, diesel, and kerosene. Class A involves ordinary combustibles (wood, paper), Class C involves electrical equipment, and Class D involves combustible metals." },
+      { q: "The colour red on a road sign usually indicates __________.", opts: ["go faster","stop or prohibition","hospital ahead","sharp bend only"], ans: 1, exp: "Red is a universal colour for danger, stop, or prohibition on road signs. It commands drivers to stop or indicates actions that are not allowed." },
+      { q: "A triangular road sign with a red border is classified as a __________ sign.", opts: ["mandatory","warning","information","prohibitory"], ans: 1, exp: "Triangular signs with red borders are warning signs that alert road users to potential hazards ahead, such as bends, junctions, or school crossings." },
+      { q: "Which property makes wood suitable for making furniture?", opts: ["It conducts electricity well.","It is easy to cut, shape, and join.","It melts at low temperatures.","It is transparent."], ans: 1, exp: "Wood is relatively soft, easy to cut with tools, and can be joined using nails, screws, or adhesives, making it ideal for furniture. It does not conduct electricity well, melt easily, or become transparent." },
+      { q: "Hardwood is obtained from __________ trees.", opts: ["conifers and evergreens","dicotyledonous and broad-leaved trees","fast-growing soft-stem plants","underwater aquatic plants"], ans: 1, exp: "Hardwoods come from dicotyledonous, broad-leaved trees such as mahogany, oak, and teak. Softwoods come from conifers (gymnosperms) like pine and fir." },
+      { q: "Which of the following is a hardwood?", opts: ["Pine","Spruce","Mahogany","Fir"], ans: 2, exp: "Mahogany is a hardwood obtained from broad-leaved trees. Pine, spruce, and fir are softwoods from coniferous trees." },
+      { q: "Wood is classified as a __________ material because it comes from trees.", opts: ["synthetic","ceramic","natural","metallic"], ans: 2, exp: "Wood is a natural material obtained directly from nature (trees). Synthetic materials are man-made, ceramics are made from clay, and metals are extracted from ores." },
+      { q: "The ability of a material to resist scratching or indentation is called __________.", opts: ["ductility","hardness","flexibility","conductivity"], ans: 1, exp: "Hardness is the property of a material that enables it to resist permanent deformation such as scratching or indentation. Ductility is the ability to be drawn into wires, flexibility is the ability to bend, and conductivity is heat/electric transfer." },
+      { q: "Which metal is commonly used for making electrical wires because it is a good conductor?", opts: ["Iron","Copper","Lead","Zinc"], ans: 1, exp: "Copper is an excellent conductor of electricity and is widely used for electrical wiring. Iron is used for construction, lead for batteries, and zinc for galvanising." },
+      { q: "Ferrous metals are metals that contain __________.", opts: ["aluminium","carbon and iron","copper and zinc","silicon only"], ans: 1, exp: "Ferrous metals contain iron as their main constituent, usually combined with carbon. Examples include steel and cast iron. Non-ferrous metals like aluminium and copper do not contain iron." },
+      { q: "Which of the following is a non-ferrous metal?", opts: ["Steel","Cast iron","Aluminium","Wrought iron"], ans: 2, exp: "Aluminium is a non-ferrous metal because it does not contain iron. Steel, cast iron, and wrought iron all contain iron and are therefore ferrous metals." },
+      { q: "The property of metals that allows them to be hammered into thin sheets without breaking is called __________.", opts: ["ductility","malleability","brittleness","elasticity"], ans: 1, exp: "Malleability is the ability of a metal to be hammered or rolled into thin sheets. Ductility is being drawn into wires, brittleness is breaking under stress, and elasticity is returning to original shape." },
+      { q: "Ceramics are made from __________ which is shaped and then heated to high temperatures.", opts: ["wood pulp","clay","rubber latex","petroleum"], ans: 1, exp: "Ceramics are made from clay that is shaped and then fired (heated) in a kiln at high temperatures to harden it. Wood pulp makes paper, rubber latex makes rubber, and petroleum makes plastics." },
+      { q: "Which property makes ceramics suitable for making roof tiles and floor tiles?", opts: ["High flexibility","Ability to conduct electricity","High durability and resistance to weather","Transparency to light"], ans: 2, exp: "Ceramics are durable, hard, and resistant to weather conditions such as rain and heat, making them ideal for roof and floor tiles. They are not flexible, do not conduct electricity, and are not transparent." },
+      { q: "Glass is produced by heating a mixture of __________, soda ash, and limestone.", opts: ["clay","silica sand","wood ash","iron ore"], ans: 1, exp: "Glass is made by heating silica sand (silicon dioxide) with soda ash (sodium carbonate) and limestone (calcium carbonate) at very high temperatures until it melts and can be shaped." },
+      { q: "Which property of glass makes it useful for making windows and drinking cups?", opts: ["It is opaque and blocks all light.","It is transparent and chemically inert.","It is a good conductor of heat.","It is soft and flexible."], ans: 1, exp: "Glass is transparent, allowing light to pass through, and chemically inert (does not react with food or drinks), making it ideal for windows and cups. It is not opaque, a good conductor, or soft/flexible." },
+      { q: "Rubber is obtained from the __________ of the rubber tree.", opts: ["bark","latex","roots","seeds"], ans: 1, exp: "Natural rubber is obtained from latex, a milky white fluid that flows from the bark of the rubber tree (Hevea brasiliensis) when it is tapped." },
+      { q: "Which of the following is a property of natural rubber?", opts: ["It is very hard and brittle.","It is elastic and waterproof.","It is a good conductor of electricity.","It is transparent and rigid."], ans: 1, exp: "Natural rubber is elastic (can stretch and return to shape) and waterproof (repels water). It is not hard/brittle, a conductor, or transparent/rigid." },
+      { q: "Plastics are classified as __________ materials because they are made by chemical processes rather than found directly in nature.", opts: ["natural","synthetic","metallic","ceramic"], ans: 1, exp: "Plastics are synthetic (man-made) materials produced from petroleum products through chemical processes. They are not natural, metallic, or ceramic." },
+      { q: "Which type of plastic can be softened by heating and reshaped multiple times?", opts: ["Thermosetting plastic","Thermoplastic","Ceramic plastic","Ferrous plastic"], ans: 1, exp: "Thermoplastics soften when heated and harden when cooled, allowing them to be reshaped repeatedly. Thermosetting plastics harden permanently after heating and cannot be reshaped." },
+      { q: "Polythene is an example of a __________ plastic commonly used for making shopping bags and containers.", opts: ["thermosetting","thermoplastic","natural rubber","ceramic"], ans: 1, exp: "Polythene (polyethylene) is a thermoplastic that can be melted and reshaped. It is widely used for plastic bags, bottles, and containers because it is flexible and durable." },
+      { q: "Why is it important to wear safety goggles when using grinding machines?", opts: ["To improve visibility in bright light","To protect the eyes from flying particles and sparks","To look professional in the workshop","To prevent the machine from overheating"], ans: 1, exp: "Grinding machines produce flying particles and sparks that can cause serious eye injuries. Safety goggles create a protective barrier. They do not primarily improve visibility, affect machine temperature, or serve cosmetic purposes." },
+      { q: "Which material is MOST suitable for making the handle of a cooking pot?", opts: ["Copper","Aluminium","Plastic or wood","Steel"], ans: 2, exp: "Plastic and wood are poor conductors of heat (insulators), so they prevent the handle from becoming too hot to hold. Metals like copper, aluminium, and steel conduct heat and would burn the user." },
+      { q: "A student should report all workshop accidents immediately to the __________.", opts: ["classmate","workshop supervisor or teacher","school gateman","school bursar"], ans: 1, exp: "Workshop accidents must be reported immediately to the supervisor or teacher so that first aid can be given and proper records kept. Classmates, gatemen, and bursars are not responsible for workshop safety." },
+      { q: "The process of applying a protective zinc coating to iron or steel to prevent rusting is called __________.", opts: ["painting","galvanising","polishing","varnishing"], ans: 1, exp: "Galvanising is the process of coating iron or steel with zinc to protect it from rust and corrosion. Painting, polishing, and varnishing provide other forms of protection but galvanising specifically uses zinc." },
+      { q: "Which of the following is NOT a safety colour used in the workshop?", opts: ["Red","Green","Yellow","Purple"], ans: 3, exp: "Standard safety colours are red (fire, danger), green (safety, first aid), and yellow (caution, warning). Purple is not a standard safety colour used in workshops or industries." },
+      { q: "The ability of a material to return to its original shape after being stretched or bent is called __________.", opts: ["plasticity","elasticity","brittleness","porosity"], ans: 1, exp: "Elasticity is the property that allows a material to return to its original shape after deformation. Plasticity means permanent deformation, brittleness means breaking without deformation, and porosity refers to having holes." }
+    ],
+    /* ── BUSINESS STUDIES (40 questions) ── */
+    "Business Studies": [
+      { q: "Business Studies can best be defined as the study of how people __________.", opts: ["play games and sports","make, buy, and sell goods and services","travel to different countries","practice traditional medicine"], ans: 1, exp: "Business Studies is an integrated subject that deals with how people produce, distribute, and consume goods and services to satisfy human wants. It combines elements of commerce, accounting, office practice, and economics." },
+      { q: "Which of the following is NOT a branch of Business Studies?", opts: ["Commerce","Bookkeeping","Agricultural Science","Office Practice"], ans: 2, exp: "Agricultural Science is a separate subject dealing with farming and crop production. The main branches of Business Studies include Commerce, Bookkeeping/Accounting, Office Practice, and Economics." },
+      { q: "The main objective of studying Business Studies in JSS1 is to __________.", opts: ["prepare students to become medical doctors","equip students with basic knowledge of business activities","teach students how to build houses","train students only to become bankers"], ans: 1, exp: "Business Studies aims to provide students with foundational knowledge about business activities, office procedures, and commerce, preparing them for further studies and everyday life, not specifically for medicine, building, or banking alone." },
+      { q: "Which element of Business Studies deals with the recording of financial transactions?", opts: ["Commerce","Office Practice","Bookkeeping","Economics"], ans: 2, exp: "Bookkeeping (or Accounting) is the branch that involves recording, classifying, and summarising financial transactions in books of accounts. Commerce deals with trade, Office Practice with office procedures, and Economics with resource allocation." },
+      { q: "A person who buys goods for personal use is called a __________.", opts: ["retailer","wholesaler","consumer","manufacturer"], ans: 2, exp: "A consumer is the final person who buys and uses goods or services to satisfy personal wants. A retailer sells to consumers, a wholesaler sells to retailers, and a manufacturer produces goods." },
+      { q: "An office can be defined as a room or building where __________.", opts: ["people sleep and rest","business activities and clerical work are carried out","students play games","food is cooked and served"], ans: 1, exp: "An office is a place where business activities, clerical work, and administrative tasks are performed. It is the centre of information processing and decision-making in an organisation." },
+      { q: "A large office where many staff work in one big room without partitions is called a(n) __________ office.", opts: ["closed","open","private","executive"], ans: 1, exp: "An open office is a large workspace where many employees work together in one room without dividing walls or partitions. It encourages communication but may reduce privacy." },
+      { q: "Which is an advantage of a closed office?", opts: ["It is cheaper to construct and maintain.","It provides privacy and reduces noise for concentrated work.","It encourages better communication among staff.","It allows the manager to supervise many workers at once."], ans: 1, exp: "A closed office provides individual rooms or partitions, giving workers privacy and a quieter environment for focused work. Open offices are cheaper, encourage communication, and allow easy supervision." },
+      { q: "One disadvantage of an open office is that __________.", opts: ["staff can easily communicate with each other","it is less expensive to build","it lacks privacy and can be noisy","supervision of workers is difficult"], ans: 2, exp: "Open offices lack privacy because everyone works in the same space, and noise from conversations and equipment can disturb concentration. Easy communication, lower cost, and easy supervision are advantages, not disadvantages." },
+      { q: "A closed office is most suitable for a __________.", opts: ["factory production line","bank teller hall","company manager who handles confidential matters","school assembly hall"], ans: 2, exp: "A closed office is ideal for positions requiring confidentiality and concentration, such as a manager handling sensitive information. Factory lines, teller halls, and assembly halls are better suited to open spaces." },
+      { q: "Which piece of office equipment is used to duplicate documents quickly?", opts: ["Stapler","Photocopier","Filing cabinet","Trash bin"], ans: 1, exp: "A photocopier (or Xerox machine) is used to make exact copies of documents quickly. A stapler joins papers, a filing cabinet stores them, and a trash bin disposes of waste." },
+      { q: "The computer is an important office equipment because it __________.", opts: ["replaces all human workers completely","can store, process, and retrieve large amounts of information quickly","does not require electricity to function","is only used for playing games"], ans: 1, exp: "Computers are essential in modern offices because they can store vast data, perform calculations, process information, and retrieve files rapidly. They assist rather than replace humans, require electricity, and serve many purposes beyond games." },
+      { q: "A filing cabinet is used in the office for __________.", opts: ["making coffee for visitors","storing and organising documents safely","sending emails to customers","printing money"], ans: 1, exp: "Filing cabinets are storage furniture with drawers designed to organise and protect documents, files, and records from loss, dust, and damage. They are not used for beverages, emails, or currency production." },
+      { q: "Office staff are people who __________.", opts: ["clean the school compound only","perform clerical and administrative duties in an organisation","drive the company's vehicles","cook food for the workers"], ans: 1, exp: "Office staff perform clerical and administrative duties such as receiving, recording, arranging, and distributing information. They include secretaries, clerks, typists, and receptionists." },
+      { q: "A receptionist is an office staff member whose main duty is to __________.", opts: ["prepare financial statements","receive visitors and answer telephone calls","repair broken computers","manufacture company products"], ans: 1, exp: "A receptionist works at the front desk, welcoming visitors, answering phone calls, and directing people to the appropriate offices. Preparing financial statements is an accountant's job, repairing computers is for technicians, and manufacturing is for factory workers." },
+      { q: "Which of the following is a duty of a clerical staff?", opts: ["Designing the company's building","Recording information and keeping files","Flying the company's aeroplane","Performing surgery on staff"], ans: 1, exp: "Clerical staff handle routine office tasks such as recording information, filing documents, typing letters, and arranging schedules. Building design, flying planes, and surgery are specialised professions, not clerical duties." },
+      { q: "A secretary in an organisation is responsible for __________.", opts: ["treating sick employees","handling correspondence and scheduling meetings","operating heavy machinery","teaching students in a classroom"], ans: 1, exp: "A secretary manages correspondence (letters and emails), schedules appointments, takes minutes during meetings, and assists managers with administrative tasks. Medical treatment, machinery operation, and teaching are different professions." },
+      { q: "The office staff member who types letters and documents using a computer is called a __________.", opts: ["receptionist","typist or computer operator","accountant","security guard"], ans: 1, exp: "A typist or computer operator specialises in typing and formatting documents using keyboards and computers. A receptionist receives visitors, an accountant handles money records, and a security guard protects premises." },
+      { q: "Attitude to work refers to a person's __________ towards their job.", opts: ["feelings, values, and disposition","salary and allowances","age and height","religion and tribe"], ans: 0, exp: "Attitude to work encompasses a worker's feelings, beliefs, values, and disposition that influence how they behave and perform their duties. It is not about salary, physical attributes, or personal background." },
+      { q: "A worker who arrives at the office early, dresses neatly, and completes tasks on time displays a __________ attitude to work.", opts: ["negative","wrong","positive","careless"], ans: 2, exp: "Punctuality, neatness, and diligence are characteristics of a positive attitude to work. Such behaviour increases productivity and creates a good working environment." },
+      { q: "Which behaviour shows a wrong attitude to work?", opts: ["Completing assignments before deadlines","Regular absenteeism without permission","Dressing appropriately for work","Being polite to colleagues"], ans: 1, exp: "Regular absenteeism without permission is a wrong attitude because it disrupts workflow and shows irresponsibility. Meeting deadlines, dressing well, and politeness are positive attitudes." },
+      { q: "A positive attitude to work helps to __________ in an organisation.", opts: ["increase conflict among staff","reduce productivity and profit","increase productivity and create a pleasant work environment","encourage lateness and laziness"], ans: 2, exp: "A positive attitude boosts morale, increases productivity, improves teamwork, and creates a pleasant environment. Negative attitudes cause conflict, reduce output, and encourage laziness." },
+      { q: "Departments are created in an organisation to __________.", opts: ["make the building look bigger","divide work into specialised units for better coordination","increase the number of workers unnecessarily","confuse visitors who come to the office"], ans: 1, exp: "Departments group related activities together (e.g., sales, finance, production) so that work is organised efficiently, responsibilities are clear, and coordination is improved under department heads." },
+      { q: "The department responsible for hiring new employees and managing staff welfare is the __________ department.", opts: ["Production","Marketing","Personnel or Human Resources","Transport"], ans: 2, exp: "The Personnel or Human Resources (HR) department handles recruitment, training, staff welfare, and employee relations. Production makes goods, Marketing sells them, and Transport handles logistics." },
+      { q: "Which department keeps the financial records and prepares the organisation's budget?", opts: ["Sales department","Accounts or Finance department","Security department","Cleaning department"], ans: 1, exp: "The Accounts or Finance department records all monetary transactions, prepares budgets, pays salaries, and manages the organisation's money. Sales deals with customers, Security protects assets, and Cleaning maintains hygiene." },
+      { q: "The department that promotes and sells the company's products to customers is called the __________ department.", opts: ["Production","Marketing or Sales","Purchasing","Personnel"], ans: 1, exp: "The Marketing or Sales department is responsible for advertising, promoting, and selling the company's goods and services to generate revenue. Production makes the goods, Purchasing buys materials, and Personnel manages staff." },
+      { q: "Commerce can be defined as all activities relating to the __________ of goods and services.", opts: ["destruction","distribution and exchange","storage in the ground","production only"], ans: 1, exp: "Commerce includes all activities that facilitate the distribution and exchange of goods and services from producers to consumers. It covers trade and aids to trade such as transport, banking, insurance, and warehousing." },
+      { q: "Which of the following is an importance of commerce?", opts: ["It prevents people from buying what they need.","It creates a link between producers and consumers.","It stops the production of goods.","It makes goods more expensive without reason."], ans: 1, exp: "Commerce bridges the gap between producers (who make goods) and consumers (who use them) by facilitating trade, transport, and distribution. It does not prevent buying, stop production, or inflate prices arbitrarily." },
+      { q: "Transportation is considered an aid to commerce because it __________.", opts: ["stops goods from moving","moves goods from places of production to places of consumption","increases the weight of products","makes goods unavailable to buyers"], ans: 1, exp: "Transportation is an aid to commerce because it physically moves goods and people from where they are produced or located to where they are needed, making products available to consumers." },
+      { q: "Insurance is an aid to commerce that helps traders by __________.", opts: ["preventing all business risks","providing compensation against unexpected losses","increasing the price of goods","eliminating the need for banks"], ans: 1, exp: "Insurance protects businesses by providing financial compensation when unexpected losses occur, such as fire, theft, or accidents. It does not prevent risks, increase prices, or replace banks." },
+      { q: "Banking services aid commerce by __________.", opts: ["hiding money from traders","providing safekeeping of money, loans, and payment facilities","destroying old currency notes","preventing people from saving"], ans: 1, exp: "Banks aid commerce by keeping money safe, providing loans for business expansion, and offering payment mechanisms such as cheques and transfers. They do not hide money, destroy currency, or discourage saving." },
+      { q: "Warehousing is important in commerce because it __________.", opts: ["destroys surplus goods","provides storage for goods until they are needed by buyers","prevents production of goods","increases the cost of goods unnecessarily"], ans: 1, exp: "Warehouses store goods safely until demand arises, preventing spoilage and ensuring steady supply. They do not destroy goods, prevent production, or inflate costs without purpose." },
+      { q: "Production is the process of converting raw materials into __________.", opts: ["waste products","finished goods and services","natural resources","useless items"], ans: 1, exp: "Production transforms raw materials and inputs into finished goods (tangible products like clothes and cars) and services (intangible products like haircuts and teaching) to satisfy human wants." },
+      { q: "A farmer who grows yam from seedlings is engaged in __________ production.", opts: ["secondary","tertiary","primary","quaternary"], ans: 2, exp: "Primary production involves extracting or growing natural resources directly from the earth, such as farming, fishing, and mining. Secondary production involves manufacturing, and tertiary involves services." },
+      { q: "A carpenter who turns wood into chairs is involved in __________ production.", opts: ["primary","secondary","tertiary","direct"], ans: 1, exp: "Secondary production involves processing raw materials into finished or semi-finished goods. The carpenter transforms raw wood into chairs, which is manufacturing — a secondary activity." },
+      { q: "Which of the following is a factor of production?", opts: ["Money in a piggy bank","Land","A student's textbook","A family photograph"], ans: 1, exp: "The four factors of production are land, labour, capital, and entrepreneurship. Land includes natural resources used in production. Money in a piggy bank is not productive capital until invested, and textbooks/photographs are not factors of production." },
+      { q: "The reward for labour as a factor of production is __________.", opts: ["rent","wages or salary","profit","interest"], ans: 1, exp: "Labour (human effort) is rewarded with wages or salaries. Rent is the reward for land, interest for capital, and profit for entrepreneurship." },
+      { q: "A person who organises the other factors of production and bears the risk of the business is called a(n) __________.", opts: ["worker","entrepreneur","clerk","consumer"], ans: 1, exp: "An entrepreneur organises land, labour, and capital, makes business decisions, and bears the financial risks. Workers provide labour, clerks handle records, and consumers buy products." },
+      { q: "Which document is used to request a supplier to deliver specific goods to an organisation?", opts: ["Receipt","Invoice","Local Purchase Order","Cheque"], ans: 2, exp: "A Local Purchase Order (LPO) is a document sent by a buyer to a seller requesting the supply of specified goods. A receipt acknowledges payment, an invoice requests payment, and a cheque is a payment instrument." },
+      { q: "A cheque may be dishonoured by the bank if __________.", opts: ["the account holder has sufficient funds","the signature on the cheque does not match the specimen signature","the cheque is properly dated","the amount is written correctly in words and figures"], ans: 1, exp: "A bank dishonours a cheque when there is a discrepancy such as a mismatched signature, insufficient funds, post-dating, or differences between words and figures. Properly completed cheques with sufficient funds are honoured." }
+    ]
+  },
 jss2: {
    'General Test': [
     // ── ENGLISH LANGUAGE ──
