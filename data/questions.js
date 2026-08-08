@@ -3747,7 +3747,7 @@ window.questions = {
 ]
   },
         "sss2": {
-    "General Test": [
+    "UTME/WAEC": [
       {
         q: "An organic compound X has the molecular formula $C_4H_8O_2$. It reacts with sodium metal to liberate hydrogen gas and gives a sweet-smelling product when heated with ethanol in the presence of concentrated $H_2SO_4$. Which functional group is definitely present in X?",
         opts: ["Aldehyde", "Carboxylic acid", "Ester", "Ketone"],
@@ -5625,7 +5625,7 @@ window.questions = {
 ]
   },
   "sss3": {
-"General Test": [
+"UTME/WAEC": [
     // Q1
     {
       q:    'A compound contains 40.0% carbon, 6.7% hydrogen and 53.3% oxygen by mass. What is its empirical formula? [Relative atomic masses: C = 12, H = 1, O = 16]',
