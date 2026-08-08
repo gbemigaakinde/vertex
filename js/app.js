@@ -130,6 +130,11 @@
         GroupChat.initStudentGroupListener(uid);
       }
 
+      // Start writing this student's presence for other group members to see.
+      if (window.GroupChat && typeof GroupChat.initPresence === 'function') {
+        GroupChat.initPresence(uid);
+      }
+
       if (window.VtxLoader) window.VtxLoader.progress(90, 'Almost ready…');
       await Exam.loadOrStart();
       if (window.VtxLoader) window.VtxLoader.done();
@@ -183,6 +188,9 @@
     AppState.cancelAllListeners();
     if (window.Game && typeof Game._stopChallengeListener === 'function') {
       Game._stopChallengeListener();
+    }
+    if (window.GroupChat && typeof GroupChat.cancelListeners === 'function') {
+      GroupChat.cancelListeners();
     }
 
     AppState.reset();
