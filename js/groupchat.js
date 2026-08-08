@@ -1,28 +1,7 @@
 /* ============================================================
    js/groupchat.js — Group Chat System
    ============================================================
-   Architecture:
-   - groupChats/{groupId}              — group metadata doc
-   - groupChats/{groupId}/messages/{}  — messages subcollection
-
-   Group doc fields:
-     name, createdBy, createdAt, members (array of {uid,name,cls}),
-     memberUids (array for security rules queries),
-     settings: { bannedWords[], description, icon },
-     mutedUids (array of uid strings),
-     lastMessage, lastAt, lastMessageSenderName,
-     unread: { [uid]: count }
-
-   Teacher is a silent observer: TEACHER_UID is NEVER stored in
-   members/memberUids. Security rules grant teacher read on all
-   groupChats. Students only see their own groups (memberUids
-   array-contains check). Teacher panel shows all groups.
-
-   Message doc fields:
-     text, senderId, senderName, senderClass,
-     timestamp, replyTo ({id,text,senderName}|null),
-     deletedForAll (bool), status ('sent')
-   ============================================================ */
+ */
 
 (function () {
   'use strict';
@@ -1362,7 +1341,6 @@
     } catch (e) { console.warn('[gc] _clearGroupUnread error:', e); }
   }
 
-  /* ── Cancel active chat listeners ──────────────────── */
   /* ── Cancel active chat listeners ──────────────────── */
   function _cancelActiveChat() {
     if (_typingActive && _typingGroupId && AppState.userId) {
