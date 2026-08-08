@@ -4324,7 +4324,1305 @@ sss1: {
 { q: "Enzymes are biological catalysts that:", opts: ["Lower the activation energy", "Are used up in reactions", "Raise the temperature", "Are made of cellulose"], ans: 0, exp: "Enzymes speed up reactions by lowering the activation energy needed, without being used up or altering the products of the reaction." },
 { q: "Which of the following is NOT an excretory product in humans?", opts: ["Carbon dioxide", "Faeces", "Urea", "Excess water"], ans: 1, exp: "Faeces consist of undigested food and are removed by egestion, not excretion. Carbon dioxide, urea, and excess water are true metabolic excretory products." },
 { q: "Which part of the brain controls balance and coordination?", opts: ["Cerebrum", "Medulla oblongata", "Cerebellum", "Hypothalamus"], ans: 2, exp: "The cerebellum coordinates muscular activity and maintains posture and balance, while the cerebrum handles higher functions like reasoning." }
- ]
+ ],
+"Economics": = [
+  {
+    q: "A consumer's demand curve for a normal good shifts to the right. Which combination of changes is MOST likely responsible?",
+    opts: [
+      "A fall in the price of the good and a rise in consumer income",
+      "A rise in the price of a complement and a fall in consumer taste",
+      "A rise in the price of a substitute and a fall in the price of a complement",
+      "A fall in consumer income and a rise in the price of a substitute"
+    ],
+    ans: 2,
+    exp: "A rightward demand shift requires non-price factors. A rise in the price of a substitute makes this good more attractive, while a fall in a complement's price increases joint demand. Option A includes the good's own price fall, which causes movement along the curve, not a shift. Option B includes a fall in taste, shifting demand left. Option D includes a fall in income for a normal good, shifting demand left."
+  },
+  {
+    q: "If the price elasticity of demand for a product is 0.4 and the firm raises price from ₦500 to ₦600, by what percentage does quantity demanded change?",
+    opts: [
+      "It decreases by 8%",
+      "It increases by 8%",
+      "It decreases by 20%",
+      "It increases by 20%"
+    ],
+    ans: 0,
+    exp: "Price change = (600−500)/500 × 100 = 20%. Ed = %ΔQ / %ΔP, so %ΔQ = 0.4 × 20% = 8%. Since price rose, quantity demanded falls by 8%. Option B is wrong on direction. Option C uses the price change percentage instead of the quantity response. Option D is wrong on both direction and relationship."
+  },
+  {
+    q: "A government imposes a minimum price (price floor) above the equilibrium price in an agricultural market. Which outcome is MOST certain?",
+    opts: [
+      "Consumers will benefit from lower prices",
+      "A shortage will emerge as demand exceeds supply",
+      "Producer revenue will definitely increase",
+      "Surplus production will occur unless the government purchases the excess"
+    ],
+    ans: 3,
+    exp: "A price floor above equilibrium creates excess supply (surplus) because quantity supplied exceeds quantity demanded at that price. Option A is wrong because price floors raise prices, not lower them. Option B describes the effect of a price ceiling. Option C is uncertain because if demand is elastic, the fall in quantity sold could reduce total revenue despite the higher price."
+  },
+  {
+    q: "The cross elasticity of demand between goods X and Y is −0.6. If the price of Y rises by 10%, what happens to the demand for X?",
+    opts: [
+      "Demand for X rises by 6%, indicating X and Y are substitutes",
+      "Demand for X falls by 6%, indicating X and Y are complements",
+      "Demand for X rises by 16.7%, indicating X and Y are complements",
+      "Demand for X falls by 10%, indicating X and Y are unrelated"
+    ],
+    ans: 1,
+    exp: "%ΔQx = Exy × %ΔPy = −0.6 × 10% = −6%. The negative sign means demand for X falls. A negative cross elasticity indicates the goods are complements. Option A incorrectly suggests substitutes, which require a positive cross elasticity. Option C miscalculates and misidentifies the relationship. Option D is wrong because unrelated goods have a cross elasticity near zero."
+  },
+  {
+    q: "Which situation BEST illustrates the law of diminishing marginal utility?",
+    opts: [
+      "A consumer gains less additional satisfaction from each successive unit of ice cream consumed",
+      "A farmer receives less total revenue as crop prices fall",
+      "A producer hires more workers and total output increases at a decreasing rate",
+      "A student's test scores improve with each additional hour of study"
+    ],
+    ans: 0,
+    exp: "The law of diminishing marginal utility states that the additional satisfaction gained from each extra unit of a good declines as consumption increases. Option B relates to revenue, not utility. Option C describes diminishing returns to production, a related but distinct concept. Option D suggests increasing returns, the opposite pattern."
+  },
+  {
+    q: "A firm's total cost is ₦50,000 when output is 100 units and ₦72,000 when output is 200 units. What is the marginal cost per unit over this range?",
+    opts: ["₦220", "₦360", "₦180", "₦500"],
+    ans: 0,
+    exp: "Marginal cost = ΔTC / ΔQ = (72,000 − 50,000) / (200 − 100) = 22,000 / 100 = ₦220 per unit. Option B miscalculates using the wrong base. Option C understates the change in total cost. Option D confuses total cost per unit with marginal cost."
+  },
+  {
+    q: "On a production possibility curve, a movement from a point inside the curve to a point on the curve indicates:",
+    opts: [
+      "Economic growth has occurred",
+      "Unemployment has increased",
+      "The country has discovered new resources",
+      "Resources are being used more efficiently"
+    ],
+    ans: 3,
+    exp: "Points inside the PPC represent inefficient or underutilised resources. Moving to a point on the curve means resources, including labour, are now being fully and efficiently employed. Option A and C would actually shift the whole curve outward, not move a point onto it. Option B is the opposite of what is happening, since fuller resource use implies falling unemployment."
+  },
+  {
+    q: "If income elasticity of demand for a good is −0.8, the good is classified as:",
+    opts: [
+      "A normal good because demand increases as income rises",
+      "A luxury good because demand increases more than proportionately to income",
+      "An inferior good because demand decreases as income rises",
+      "A necessity because demand changes less than proportionately to income"
+    ],
+    ans: 2,
+    exp: "Negative income elasticity means demand falls as income rises, which is the defining feature of an inferior good. Option A describes positive income elasticity, a normal good. Option B describes an income elasticity greater than 1, a luxury good. Option D describes a positive income elasticity between 0 and 1, a necessity."
+  },
+  {
+    q: "In a perfectly competitive market, a firm maximizes profit where:",
+    opts: [
+      "Total revenue equals total cost",
+      "Marginal revenue equals marginal cost",
+      "Price equals average total cost",
+      "Average revenue equals average variable cost"
+    ],
+    ans: 1,
+    exp: "The universal profit-maximizing rule for any firm is MR = MC. In perfect competition, price also equals marginal revenue. Option A describes the break-even point, not the profit-maximum. Option C describes the point of zero economic profit. Option D describes the shutdown point in the short run."
+  },
+  {
+    q: "The supply curve of a firm in a perfectly competitive market in the short run is:",
+    opts: [
+      "The marginal cost curve above the minimum average variable cost",
+      "The entire marginal cost curve",
+      "The average total cost curve above the minimum marginal cost",
+      "The average variable cost curve below the marginal cost curve"
+    ],
+    ans: 0,
+    exp: "The firm's short-run supply curve is the segment of the MC curve lying above minimum AVC. Below AVC, the firm shuts down rather than produce at a price that fails to cover variable costs. Option B is wrong because supply does not exist below AVC. Options C and D describe curves that are not the firm's supply curve at all."
+  },
+  {
+    q: "A decrease in the cost of raw materials used to produce good Z will:",
+    opts: [
+      "Shift the demand curve for Z to the right",
+      "Cause a movement up the supply curve of Z",
+      "Shift both demand and supply curves to the right",
+      "Shift the supply curve of Z to the right"
+    ],
+    ans: 3,
+    exp: "Lower input costs increase the quantity a firm is willing to supply at each price, shifting the entire supply curve to the right. Option A wrongly attributes a supply-side change to demand. Option B misdescribes a shift as a movement along the curve, which only happens with a change in the good's own price. Option C is wrong because input costs do not directly affect demand."
+  },
+  {
+    q: "If the coefficient of price elasticity of supply is 0.3, this means that:",
+    opts: [
+      "A 1% increase in price leads to a 3% increase in quantity supplied",
+      "A 1% increase in price leads to a 0.3% increase in quantity supplied",
+      "Supply is perfectly elastic",
+      "A 10% increase in price leads to a 30% decrease in quantity supplied"
+    ],
+    ans: 1,
+    exp: "Es = %ΔQs / %ΔP. If Es = 0.3, a 1% price rise causes only a 0.3% rise in quantity supplied, meaning supply is inelastic. Option A inverts the ratio. Option C is wrong because perfectly elastic supply has an elasticity of infinity, not 0.3. Option D has both the wrong magnitude and the wrong direction."
+  },
+  {
+    q: "Using the arc (midpoint) method, calculate the price elasticity of demand when price falls from ₦40 to ₦30 and quantity rises from 150 to 250 units.",
+    opts: ["1.75", "2.5", "0.57", "1.25"],
+    ans: 0,
+    exp: "Arc elasticity = [(250−150)/200] ÷ [(30−40)/35] = 0.5 ÷ (−0.2857) = −1.75, so the absolute value is 1.75. Option B results from wrongly using only the initial values as the base. Option C is the reciprocal of the correct answer. Option D is a distractor value with no valid derivation."
+  },
+  {
+    q: "Which of the following is NOT a determinant of the price elasticity of demand?",
+    opts: [
+      "The proportion of income spent on the good",
+      "The number of available substitutes",
+      "Whether the good is a necessity or a luxury",
+      "The cost of producing the good"
+    ],
+    ans: 3,
+    exp: "Production cost is a determinant of supply elasticity, not demand elasticity. Options A, B, and C are all recognised determinants of how responsive quantity demanded is to a price change."
+  },
+  {
+    q: "A production possibility curve that is bowed outward (concave to the origin) reflects:",
+    opts: [
+      "Constant opportunity costs",
+      "Increasing opportunity costs",
+      "Decreasing opportunity costs",
+      "Zero opportunity costs"
+    ],
+    ans: 1,
+    exp: "A bowed-outward PPC reflects increasing opportunity costs, because resources are not perfectly adaptable between uses and become progressively less suited as production shifts further toward one good. Option A would instead produce a straight-line PPC. Options C and D do not correspond to any standard PPC shape."
+  },
+  {
+    q: "When average product is at its maximum, marginal product is:",
+    opts: ["Equal to average product", "Zero", "At its maximum", "Negative"],
+    ans: 0,
+    exp: "The marginal product curve intersects the average product curve exactly at AP's maximum point. When MP exceeds AP, AP is rising; when MP is below AP, AP is falling. Option B describes the point where total product, not average product, is maximised. Option C is unrelated to this specific relationship. Option D describes a stage of negative returns."
+  },
+  {
+    q: "A firm sells 500 units at ₦20 each. To sell 600 units, it must reduce price to ₦18. What is the marginal revenue per unit of the additional 100 units?",
+    opts: ["₦18", "₦20", "₦2", "₦8"],
+    ans: 3,
+    exp: "TR at 500 units = ₦10,000. TR at 600 units = ₦10,800. MR = (10,800 − 10,000) / 100 = ₦8 per unit. Option A is simply the new price. Option B is the original price. Option C is only the price difference, not the marginal revenue."
+  },
+  {
+    q: "Which of the following best explains why the demand curve for a Giffen good slopes upward?",
+    opts: [
+      "The income effect reinforces the substitution effect",
+      "There are no available substitutes for the good",
+      "The income effect outweighs the substitution effect and operates in the opposite direction",
+      "The good is consumed only by very wealthy individuals"
+    ],
+    ans: 2,
+    exp: "For a Giffen good, a fall in real income from a price rise causes consumers to buy more of the good (a strong negative income effect), which outweighs the normal substitution effect. Option A describes the situation for ordinary normal goods. Option B is an insufficient explanation on its own. Option D is irrelevant, since Giffen goods are typically consumed by lower-income groups."
+  },
+  {
+    q: "If the standard deviation of a data set is 4 and the mean is 20, what is the coefficient of variation?",
+    opts: ["0.2", "5", "0.05", "20%"],
+    ans: 3,
+    exp: "CV = (SD / Mean) × 100 = (4/20) × 100 = 20%. Option A forgets to multiply by 100. Option B mistakenly divides mean by SD instead of SD by mean. Option C has a decimal placement error."
+  },
+  {
+    q: "The mean of five numbers is 12. Four of the numbers are 10, 14, 8, and 16. What is the fifth number?",
+    opts: ["12", "10", "14", "16"],
+    ans: 0,
+    exp: "Sum of all five numbers = 12 × 5 = 60. Sum of the known four = 10+14+8+16 = 48. Fifth number = 60 − 48 = 12."
+  },
+  {
+    q: "A government subsidy to producers of electric vehicles will most likely:",
+    opts: [
+      "Shift the demand curve to the left",
+      "Shift the supply curve to the right",
+      "Create a shortage of electric vehicles",
+      "Raise the equilibrium price of electric vehicles"
+    ],
+    ans: 1,
+    exp: "Subsidies reduce the effective cost of production, encouraging firms to supply more at every price, which shifts the supply curve rightward. Option A is unrelated to the direct effect of a subsidy. Option C describes the effect of a binding price ceiling. Option D is the opposite of what typically happens, as increased supply tends to lower the equilibrium price."
+  },
+  {
+    q: "In the short run, a firm should continue producing even at a loss if:",
+    opts: [
+      "Price exceeds average total cost",
+      "Price equals marginal cost",
+      "Total revenue exceeds total fixed cost",
+      "Price exceeds average variable cost"
+    ],
+    ans: 3,
+    exp: "The shutdown rule states a firm should keep producing, even while making a loss, as long as price covers average variable cost, since this lets it cover some of its fixed costs. Option A actually describes a profitable firm. Option B describes the profit-maximizing output level generally, not the shutdown condition specifically. Option C is an insufficient condition on its own."
+  },
+  {
+    q: "Which measure of central tendency is MOST affected by extreme values?",
+    opts: ["Median", "Mode", "Mean", "Standard deviation"],
+    ans: 2,
+    exp: "The mean incorporates every value in a data set, so a single very large or very small value pulls it noticeably. The median and mode are far more resistant to such outliers. Option D measures dispersion, not central tendency, so it does not answer the question as asked."
+  },
+  {
+    q: "The law of supply states that, ceteris paribus:",
+    opts: [
+      "As price increases, quantity supplied increases",
+      "As price increases, quantity demanded decreases",
+      "As income increases, demand increases",
+      "As population grows, supply increases"
+    ],
+    ans: 0,
+    exp: "The law of supply describes the direct relationship between a good's own price and the quantity producers are willing to supply. Option B is actually the law of demand. Option C describes the effect of income on demand for a normal good. Option D confuses a demand-side shifter with the supply law itself."
+  },
+  {
+    q: "A price ceiling set below the equilibrium price will necessarily cause:",
+    opts: [
+      "A surplus of the commodity",
+      "A shortage of the commodity",
+      "An increase in producer surplus",
+      "No effect on the market"
+    ],
+    ans: 1,
+    exp: "A binding price ceiling below equilibrium causes quantity demanded to exceed quantity supplied, creating a persistent shortage. Option A describes the effect of a price floor. Option C is wrong because producer surplus actually falls under a price ceiling. Option D is wrong precisely because the ceiling is binding, meaning it does affect the market outcome."
+  },
+  {
+    q: "If two goods have a positive cross elasticity of demand, an increase in the price of one will:",
+    opts: [
+      "Decrease the demand for the other",
+      "Have no effect on the demand for the other",
+      "Decrease the supply of the other",
+      "Increase the demand for the other"
+    ],
+    ans: 3,
+    exp: "A positive cross elasticity of demand identifies the goods as substitutes, so a price rise in one increases demand for the other. Option A describes the behaviour of complements, which have a negative cross elasticity. Option C wrongly conflates demand with supply, which cross elasticity does not measure."
+  },
+  {
+    q: "The difference between a change in demand and a change in quantity demanded is that:",
+    opts: [
+      "Change in demand is caused by price changes; change in quantity demanded is caused by non-price factors",
+      "Change in demand affects only consumers; change in quantity demanded affects only producers",
+      "Change in demand is a shift of the curve; change in quantity demanded is a movement along the curve",
+      "There is no difference; both terms mean the same thing"
+    ],
+    ans: 2,
+    exp: "A change in demand is a shift of the entire demand curve caused by non-price factors, while a change in quantity demanded is a movement along a fixed demand curve caused by the good's own price change. Option A reverses the actual causes. Option B is a meaningless distinction not used in economic theory. Option D is simply false."
+  },
+  {
+    q: "A firm's average fixed cost at 100 units of output is ₦50. What is the total fixed cost?",
+    opts: ["₦5,000", "₦0.50", "₦150", "₦50"],
+    ans: 0,
+    exp: "TFC = AFC × Q = 50 × 100 = ₦5,000. Fixed costs remain constant regardless of output level. Option B mistakenly divides instead of multiplying. Option C wrongly adds the two figures. Option D confuses AFC with TFC directly."
+  },
+  {
+    q: "Which of the following is a characteristic of a perfectly competitive market?",
+    opts: [
+      "Firms produce differentiated products",
+      "There are significant barriers to entry",
+      "Firms are price takers",
+      "Each firm has a large market share"
+    ],
+    ans: 2,
+    exp: "Perfect competition features many small sellers of an identical product, free entry and exit, and firms that must accept the market price, making them price takers. Option A describes monopolistic competition. Option B describes monopoly or oligopoly conditions. Option D is wrong because each firm in perfect competition is too small to influence the market alone."
+  },
+  {
+    q: "If the price of a commodity increases from ₦80 to ₦100 and quantity demanded falls from 400 to 300 units, the price elasticity of demand using initial values is:",
+    opts: ["0.5", "1.25", "2.0", "1.0"],
+    ans: 3,
+    exp: "%ΔQ = (300−400)/400 × 100 = −25%. %ΔP = (100−80)/80 × 100 = 25%. Ed = |−25/25| = 1.0. Options A and C use incorrect base values or invert the ratio. Option B is a distractor unrelated to the correct calculation."
+  },
+  {
+    q: "The wage rate in a competitive labour market is determined by:",
+    opts: [
+      "The government alone",
+      "The intersection of labour demand and labour supply",
+      "The trade unions alone",
+      "The minimum wage law exclusively"
+    ],
+    ans: 1,
+    exp: "As with any competitive market, the equilibrium wage is set where the demand for labour meets the supply of labour. Option A describes a command economy setup, not a competitive market. Option C ignores the role of employer demand. Option D describes only a legal floor, not the underlying market-determined wage."
+  },
+  {
+    q: "A production function shows the relationship between:",
+    opts: [
+      "The quantity of inputs and the quantity of output",
+      "Cost and revenue",
+      "Input prices and output prices",
+      "Fixed costs and variable costs"
+    ],
+    ans: 0,
+    exp: "A production function expresses the maximum output obtainable from given quantities of inputs such as labour and capital. Option B describes profit, not production. Option C describes relative pricing, unrelated to physical production relationships. Option D describes elements of cost structure, not the production function itself."
+  },
+  {
+    q: "Which of the following will shift the supply curve of maize to the LEFT?",
+    opts: [
+      "A decrease in the price of fertilizer",
+      "An increase in the price of beans (a substitute in production)",
+      "An improvement in maize-growing technology",
+      "A government subsidy on maize production"
+    ],
+    ans: 1,
+    exp: "A higher price for beans, a substitute in production, makes farmers switch land and resources toward beans, reducing the supply of maize and shifting its supply curve left. Options A, C, and D all reduce production costs or raise incentives to grow maize, shifting its supply curve to the right instead."
+  },
+  {
+    q: "The median of the following data set {8, 3, 7, 5, 12, 10, 15} is:",
+    opts: ["7", "5", "8", "10"],
+    ans: 2,
+    exp: "Ordered: 3, 5, 7, 8, 10, 12, 15. The median, being the 4th value of 7, is 8. Option A is the value just before the median position. Option B is the 2nd value in the ordered set. Option D is actually the mean (70/7 = 10), not the median."
+  },
+  {
+    q: "In a market with price elasticity of demand equal to zero, a 15% increase in price will:",
+    opts: [
+      "Leave quantity demanded unchanged",
+      "Reduce quantity demanded by 15%",
+      "Increase total revenue by 15%",
+      "Cause consumers to buy substitute goods"
+    ],
+    ans: 0,
+    exp: "Zero elasticity means demand is perfectly inelastic, so quantity demanded does not change at all regardless of price. Option B describes unitary elastic demand. Option C might coincidentally happen to revenue but is not the direct effect on quantity that the question asks about. Option D is impossible under perfectly inelastic demand."
+  },
+  {
+    q: "The long-run average cost curve is U-shaped because of:",
+    opts: [
+      "The law of diminishing marginal utility",
+      "Economies and diseconomies of scale",
+      "The interaction of supply and demand",
+      "Government regulation of prices"
+    ],
+    ans: 1,
+    exp: "The U-shape reflects economies of scale lowering costs initially, followed by diseconomies of scale raising costs as the firm grows too large to manage efficiently. Option A belongs to consumer theory, not cost theory. Option C determines market price, not the shape of the cost curve. Option D is an external factor unrelated to the underlying cost structure."
+  },
+  {
+    q: "If a 5% increase in income leads to a 15% decrease in the quantity demanded of a good, the income elasticity is:",
+    opts: [
+      "3.0 and the good is a luxury",
+      "0.33 and the good is a necessity",
+      "-0.33 and the good is normal",
+      "-3.0 and the good is inferior"
+    ],
+    ans: 3,
+    exp: "Income elasticity = %ΔQ / %ΔIncome = −15% / 5% = −3.0. A negative value indicates the good is inferior. Option A has the wrong sign entirely. Options B and C both invert the ratio incorrectly."
+  },
+  {
+    q: "A rational consumer will allocate expenditure so that:",
+    opts: [
+      "The marginal utility per naira spent is equal across all goods",
+      "The total utility from each good is equal",
+      "The price of each good is equal",
+      "The marginal utility of each good is equal"
+    ],
+    ans: 0,
+    exp: "The equimarginal principle states that utility is maximised when MU per naira spent (MU/P) is equalised across all goods purchased. Option B is practically impossible to achieve and not the actual rule. Option C is irrelevant to utility maximisation. Option D ignores the role of prices entirely."
+  },
+  {
+    q: "Which of the following is a fixed cost for a manufacturing firm?",
+    opts: [
+      "Wages of production workers",
+      "Raw material costs",
+      "Monthly rent on the factory building",
+      "Electricity charges for production machinery"
+    ],
+    ans: 2,
+    exp: "Fixed costs do not vary with the level of output, and rent on a factory remains the same whether output is high or low. Options A, B, and D all rise and fall directly with the volume of production, making them variable costs."
+  },
+  {
+    q: "If supply is perfectly elastic, the supply curve is:",
+    opts: ["Vertical", "Upward sloping", "Downward sloping", "Horizontal"],
+    ans: 3,
+    exp: "Perfectly elastic supply is represented by a horizontal line at a given price, meaning any quantity can be supplied at that price. Option A describes perfectly inelastic supply instead. Option C is not a standard supply curve shape."
+  }
+],
+"Literature in English": = [
+  // ===== NON-STORYBOOK / THEORY QUESTIONS (60%) =====
+  {
+    q: "Literature can be broadly classified into three major genres. These are:",
+    opts: [
+      "Prose, Poetry, and Drama",
+      "Fiction, Non-fiction, and Biography",
+      "Tragedy, Comedy, and Satire",
+      "Novel, Essay, and Journal"
+    ],
+    ans: 0,
+    exp: "The three broad genres of literature are Prose, Poetry, and Drama. Option B lists categories that fall under prose specifically. Option C lists sub-types of drama, not major genres. Option D lists forms of prose writing only."
+  },
+  {
+    q: "A figure of speech that compares two unlike things directly, without using 'like' or 'as', is called:",
+    opts: ["Simile", "Metaphor", "Personification", "Hyperbole"],
+    ans: 1,
+    exp: "A metaphor makes a direct comparison by stating one thing IS another, e.g. 'Life is a journey.' A simile, by contrast, uses 'like' or 'as' to make the comparison explicit. Personification gives human qualities to non-human things. Hyperbole is deliberate exaggeration."
+  },
+  {
+    q: "In drama, a monologue is BEST defined as:",
+    opts: [
+      "A conversation between two characters on stage",
+      "A long speech delivered by one character, either alone or to others, expressing thoughts aloud",
+      "Instructions written for the actors on how to move",
+      "A song performed between acts of a play"
+    ],
+    ans: 1,
+    exp: "A monologue is an extended speech by a single character, used to reveal inner thoughts, motivations, or advance the plot. Option A describes dialogue. Option C describes stage directions. Option D describes an interlude, not a monologue."
+  },
+  {
+    q: "Which of the following BEST defines 'irony' as a literary device?",
+    opts: [
+      "A repetition of the same consonant sound at the beginning of words",
+      "A contrast between what is expected or said and what actually happens or is meant",
+      "A brief pause in the middle of a line of poetry",
+      "The use of exaggerated language for comic effect"
+    ],
+    ans: 1,
+    exp: "Irony involves a discrepancy between expectation and reality, or between what is stated and what is meant. Option A describes alliteration. Option C describes a caesura. Option D describes hyperbole."
+  },
+  {
+    q: "A play in which the protagonist experiences a downfall, often due to a fatal character flaw, and the events end in death or great suffering, is classified as a:",
+    opts: ["Comedy", "Tragedy", "Farce", "Melodrama"],
+    ans: 1,
+    exp: "Tragedy centres on a protagonist's serious downfall, frequently resulting from a tragic flaw (hamartia), ending in death or profound suffering. Comedy ends happily and often humorously. Farce relies on exaggerated, improbable situations for laughs. Melodrama uses sensational plots with exaggerated emotion, but is not defined by a tragic flaw."
+  },
+  {
+    q: "The term 'setting' in literary analysis refers to:",
+    opts: [
+      "The moral lesson conveyed by the story",
+      "The time and place in which the events of a story occur",
+      "The sequence of events from beginning to end",
+      "The attitude of the writer toward the subject"
+    ],
+    ans: 1,
+    exp: "Setting establishes the time period and location in which a narrative unfolds, shaping mood and context. Option A describes theme. Option C describes plot. Option D describes tone."
+  },
+  {
+    q: "'Onomatopoeia' refers to:",
+    opts: [
+      "Words that imitate the natural sound of the thing they describe, such as 'buzz' or 'crash'",
+      "The repetition of vowel sounds within nearby words",
+      "A statement that contradicts itself but reveals a deeper truth",
+      "A reference to a well-known person, place, or event outside the text"
+    ],
+    ans: 0,
+    exp: "Onomatopoeia is a word formed to imitate a sound, like 'hiss' or 'bang'. Option B describes assonance. Option C describes a paradox. Option D describes an allusion."
+  },
+  {
+    q: "Which of these is a characteristic feature of poetry that distinguishes it from prose?",
+    opts: [
+      "It must always tell a complete story with a beginning, middle, and end",
+      "It is always written by more than one author",
+      "It typically uses condensed, rhythmic, and figurative language arranged in lines and stanzas",
+      "It never contains any form of imagery"
+    ],
+    ans: 2,
+    exp: "Poetry is marked by compressed and often figurative language organised into lines and stanzas, frequently employing rhythm and sound devices. Option A is untrue, as many poems are not narrative. Option B is irrelevant to genre definition. Option D is false, since imagery is central to most poetry."
+  },
+  {
+    q: "The 'theme' of a literary work refers to:",
+    opts: [
+      "The physical location where the story takes place",
+      "The central idea or underlying message the writer explores",
+      "The list of characters appearing in the work",
+      "The specific words chosen by the author"
+    ],
+    ans: 1,
+    exp: "Theme is the central idea, message, or insight about life that a literary work conveys, such as love, betrayal, or justice. Option A describes setting. Option C describes the cast or dramatis personae. Option D describes diction."
+  },
+  {
+    q: "A 'soliloquy' in drama is distinguished from a monologue mainly because a soliloquy:",
+    opts: [
+      "Is always sung rather than spoken",
+      "Is delivered by a character alone on stage, revealing private thoughts to the audience",
+      "Must always be delivered by the villain of the play",
+      "Involves two or more characters speaking simultaneously"
+    ],
+    ans: 1,
+    exp: "A soliloquy is spoken by a character alone on stage (or believing themselves unheard), directly revealing inner thoughts to the audience. A monologue, in contrast, may be addressed to other characters who are present. Option A, C, and D are not accurate distinguishing features."
+  },
+  {
+    q: "'Foreshadowing' as a literary technique means:",
+    opts: [
+      "Describing a character's physical appearance in great detail",
+      "Giving hints or clues earlier in a text about events that will happen later",
+      "Summarising the entire plot at the very end of the story",
+      "Using dialect to represent a character's regional origin"
+    ],
+    ans: 1,
+    exp: "Foreshadowing plants early hints or warning signs about later plot developments, building tension or anticipation. Option A describes characterisation. Option C describes a resolution or epilogue. Option D describes the use of dialect."
+  },
+  {
+    q: "In poetry, a 'stanza' is:",
+    opts: [
+      "A single word used to create emphasis",
+      "A grouped set of lines forming a unit, similar to a paragraph in prose",
+      "The title given to a poem by its author",
+      "A pause at the end of every line, regardless of punctuation"
+    ],
+    ans: 1,
+    exp: "A stanza is a group of lines organised together, functioning like a paragraph within a poem. Option A describes a completely different concept. Option C describes the title, unrelated to structure. Option D wrongly describes an end-stopped line as a universal rule, which is not accurate for enjambed lines."
+  },
+  {
+    q: "The 'plot' of a literary work refers to:",
+    opts: [
+      "The writer's personal opinion about the subject matter",
+      "The sequence and structure of events, including conflict and resolution",
+      "The physical setting described in the opening chapter",
+      "The moral values the author hopes readers will adopt"
+    ],
+    ans: 1,
+    exp: "Plot is the structured sequence of events in a narrative, typically including exposition, rising action, climax, falling action, and resolution. Option A describes tone or authorial stance. Option C describes only part of the setting. Option D describes theme or didactic purpose."
+  },
+  {
+    q: "Which term describes a struggle between opposing forces that drives the action of a story, whether internal or external?",
+    opts: ["Climax", "Conflict", "Denouement", "Exposition"],
+    ans: 1,
+    exp: "Conflict is the central struggle, internal or external, that propels the narrative forward. Climax is the peak point of tension resulting from the conflict. Denouement is the resolution after the climax. Exposition is the introductory background information given at the start."
+  },
+  {
+    q: "A 'protagonist' in a literary work is:",
+    opts: [
+      "The author of the story",
+      "The central character around whom the main action revolves",
+      "A minor character who appears only once",
+      "The narrator's real-life counterpart"
+    ],
+    ans: 1,
+    exp: "The protagonist is the main character whose actions and conflicts drive the central narrative. Option A confuses the author with a character. Option C describes a minor character, the opposite of a protagonist. Option D is not a recognised literary term."
+  },
+  {
+    q: "The term 'antagonist' refers to:",
+    opts: [
+      "The character or force that opposes the protagonist",
+      "A narrator who tells the story in first person",
+      "The setting in which conflict occurs",
+      "A character who appears only in flashbacks"
+    ],
+    ans: 0,
+    exp: "The antagonist is the character, group, or force that creates conflict by opposing the protagonist. Option B describes a narrative technique unrelated to character role. Option C confuses antagonist with setting. Option D is an unrelated narrative device."
+  },
+  {
+    q: "'Alliteration' is a literary device involving:",
+    opts: [
+      "The repetition of the same consonant sound at the beginning of neighbouring words",
+      "The use of words that sound like the noise they describe",
+      "A direct address to an absent person or abstract idea",
+      "The deliberate use of understatement for ironic effect"
+    ],
+    ans: 0,
+    exp: "Alliteration repeats initial consonant sounds across nearby words, e.g. 'wild and windy'. Option B describes onomatopoeia. Option C describes apostrophe. Option D describes litotes or understatement."
+  },
+  {
+    q: "In prose fiction, 'point of view' refers to:",
+    opts: [
+      "The moral lesson taught by the story",
+      "The perspective or vantage point from which the story is narrated",
+      "The historical period in which the author lived",
+      "The number of chapters contained in the novel"
+    ],
+    ans: 1,
+    exp: "Point of view identifies who tells the story and from what perspective — first person, third person limited, or omniscient, for example. Option A describes theme. Option C is biographical, not narrative technique. Option D is a structural detail unrelated to narration."
+  },
+  {
+    q: "Which of the following is an example of 'personification'?",
+    opts: [
+      "The wind whispered softly through the trees",
+      "She ran as fast as a cheetah",
+      "The classroom was a zoo",
+      "Time flies when you are having fun"
+    ],
+    ans: 0,
+    exp: "'The wind whispered' gives a human action (whispering) to a non-human thing (wind), which is personification. 'As fast as a cheetah' is a simile. 'The classroom was a zoo' is a metaphor. 'Time flies' is an idiomatic metaphor rather than personification, since it does not attribute a distinctly human trait."
+  },
+  {
+    q: "A 'flashback' in narrative technique is used to:",
+    opts: [
+      "Predict future events that have not yet happened",
+      "Interrupt the present narrative to show events from an earlier time",
+      "Summarise a character's entire life at the story's end",
+      "Introduce a completely unrelated subplot"
+    ],
+    ans: 1,
+    exp: "A flashback interrupts the chronological flow of a narrative to present earlier events, often to provide background or context. Option A describes foreshadowing instead. Option C describes an epilogue. Option D is unrelated to the definition of a flashback."
+  },
+  {
+    q: "The 'climax' of a story is:",
+    opts: [
+      "The opening scene that introduces the characters",
+      "The point of highest tension or the turning point in the action",
+      "A summary at the end explaining the story's meaning",
+      "The setting where most of the action takes place"
+    ],
+    ans: 1,
+    exp: "The climax is the peak moment of tension or conflict, often marking a decisive turning point in the plot. Option A describes exposition. Option C describes a moral or denouement. Option D confuses climax with setting."
+  },
+  {
+    q: "Drama that blends serious and comic elements, often reflecting the complexity of real life, is known as:",
+    opts: ["Tragicomedy", "Farce", "Epic", "Elegy"],
+    ans: 0,
+    exp: "Tragicomedy combines tragic and comic elements within a single work. Farce relies purely on exaggerated, improbable comic situations. Epic is a long narrative poem celebrating heroic deeds. Elegy is a mournful poem, typically lamenting a death."
+  },
+  {
+    q: "An 'elegy' is a type of poem that is:",
+    opts: [
+      "A humorous poem meant to entertain children",
+      "A formal, mournful poem, typically written to lament someone's death",
+      "A short poem of exactly fourteen lines with a fixed rhyme scheme",
+      "A poem meant to be sung with musical accompaniment at festivals"
+    ],
+    ans: 1,
+    exp: "An elegy is a poem of mourning, usually reflecting on death or loss with a serious, reflective tone. Option A describes light or nursery verse. Option C describes a sonnet. Option D describes an ode or song rather than an elegy specifically."
+  },
+  {
+    q: "A 'sonnet' is a poem characterised by:",
+    opts: [
+      "Fourteen lines, typically written in a fixed rhyme scheme and metre",
+      "An unlimited number of lines with no fixed structure",
+      "Exactly four lines with no rhyme required",
+      "A narrative that must always be told in the third person"
+    ],
+    ans: 0,
+    exp: "A sonnet is a fixed poetic form of fourteen lines, traditionally written in iambic pentameter with a defined rhyme scheme (e.g. Shakespearean or Petrarchan). Option B describes free verse. Option C describes a quatrain. Option D is an inaccurate and irrelevant restriction."
+  },
+  {
+    q: "The literary term for the emotional atmosphere a piece of writing creates in the reader is:",
+    opts: ["Mood", "Diction", "Symbolism", "Dialogue"],
+    ans: 0,
+    exp: "Mood is the emotional atmosphere evoked in the reader through setting, word choice, and imagery. Diction refers to word choice itself. Symbolism refers to the use of objects to represent ideas. Dialogue refers to spoken exchanges between characters."
+  },
+  {
+    q: "'Symbolism' in literature involves:",
+    opts: [
+      "Using an object, person, or event to represent a deeper meaning beyond its literal sense",
+      "Repeating the same word for emphasis within a single sentence",
+      "Writing dialogue exactly as characters would speak in real life",
+      "Describing physical settings in extensive detail"
+    ],
+    ans: 0,
+    exp: "Symbolism uses a concrete object, person, or action to stand for an abstract idea or deeper meaning, such as a dove representing peace. Option B describes repetition. Option C describes verisimilitude in dialogue. Option D describes descriptive setting, not symbolism."
+  },
+  {
+    q: "A narrator who knows the thoughts and feelings of all characters in a story is called:",
+    opts: [
+      "A first-person narrator",
+      "An unreliable narrator",
+      "An omniscient narrator",
+      "A limited narrator"
+    ],
+    ans: 2,
+    exp: "An omniscient narrator has complete, all-knowing insight into every character's thoughts and feelings. A first-person narrator tells the story using 'I' and only knows their own perspective. An unreliable narrator's account cannot be fully trusted. A limited narrator has access to only one character's thoughts, usually the protagonist's."
+  },
+  {
+    q: "The BEST definition of 'satire' as a literary technique is:",
+    opts: [
+      "The use of humour, irony, or ridicule to criticize human vices, follies, or society",
+      "A formal speech delivered to honour a deceased person",
+      "A detailed physical description of a character's appearance",
+      "A poem written specifically for religious worship"
+    ],
+    ans: 0,
+    exp: "Satire uses humour, irony, exaggeration, or ridicule to expose and criticize human weaknesses, societal flaws, or political issues. Option B describes a eulogy. Option C describes characterisation. Option D describes a hymn."
+  },
+  {
+    q: "In literary analysis, 'characterisation' refers to:",
+    opts: [
+      "The process by which a writer reveals and develops a character's personality and traits",
+      "The total number of characters appearing in a text",
+      "The physical setting where characters interact",
+      "The moral lesson taught through the plot"
+    ],
+    ans: 0,
+    exp: "Characterisation is the method by which an author constructs and reveals a character, through action, dialogue, description, or the reactions of others. Option B is merely a headcount. Option C describes setting. Option D describes theme."
+  },
+  {
+    q: "A 'metaphor' extended throughout an entire poem or passage is known as:",
+    opts: ["A simile", "An extended (or sustained) metaphor", "An oxymoron", "A pun"],
+    ans: 1,
+    exp: "An extended metaphor develops and sustains a single comparison across multiple lines or an entire work, rather than in one brief instance. A simile uses 'like' or 'as'. An oxymoron combines contradictory terms. A pun plays on multiple meanings of a word for wit or humour."
+  },
+  // ===== STORYBOOK QUESTIONS (40%) — continues literatureQuestions array =====
+  {
+    q: "In Shakespeare's Antony and Cleopatra, Antony's tragic flaw is BEST described as:",
+    opts: [
+      "His excessive loyalty to Octavius Caesar",
+      "His inability to speak convincingly in public",
+      "His divided loyalty between Rome and Egypt, leading to self-destruction",
+      "His refusal to engage in military campaigns"
+    ],
+    ans: 2,
+    exp: "Antony's fatal flaw is his inability to fully commit to either his Roman duty or his Egyptian passion, which causes his political and personal downfall. Option A is wrong because he is often in conflict with Caesar. Option B is wrong, as he is shown as a skilled orator. Option D is the opposite, since he is repeatedly defined as a warrior."
+  },
+  {
+    q: "In To Kill a Mockingbird, Atticus Finch's decision to defend Tom Robinson primarily demonstrates:",
+    opts: [
+      "His commitment to moral principle despite social condemnation",
+      "His desire for political advancement in Maycomb",
+      "His obligation to the Finch family tradition",
+      "His fear of being disbarred from legal practice"
+    ],
+    ans: 0,
+    exp: "Atticus defends Tom because he believes in justice and equality, even though he knows he will face racism and social ostracism for it. Option B is wrong, as he seeks no political gain. Option C is wrong, since no family tradition compels him. Option D is wrong, as he risks his reputation rather than protects his career."
+  },
+  {
+    q: "In Antony and Cleopatra, Cleopatra's faked death causes:",
+    opts: [
+      "Antony to celebrate his new freedom",
+      "Antony to attempt suicide in grief, leading to his mortal wound",
+      "Octavius Caesar to withdraw his forces from Egypt",
+      "Enobarbus to return to Antony's service"
+    ],
+    ans: 1,
+    exp: "Cleopatra sends word that she has died, and Antony, believing the report, falls on his sword in despair. Option A is the opposite of his reaction. Option C does not happen in the play. Option D is wrong, since Enobarbus has already died of grief after deserting Antony."
+  },
+  {
+    q: "The title To Kill a Mockingbird is MOST significantly symbolic because:",
+    opts: [
+      "Mockingbirds are the most common birds in Alabama",
+      "Scout enjoys hunting birds with her father",
+      "The mockingbird represents the legal system of the South",
+      "The mockingbird represents innocent beings destroyed by evil and prejudice"
+    ],
+    ans: 3,
+    exp: "Atticus and Miss Maudie explain that mockingbirds only bring pleasure and should never be harmed; Tom Robinson and Boo Radley function as 'mockingbirds' — innocents destroyed by prejudice. Options A and B are overly literal misreadings. Option C misidentifies what the symbol actually stands for."
+  },
+  {
+    q: "In Gabriel Okara's 'Once Upon a Time', the speaker's lament that people now 'laugh with their teeth' while their eyes remain cold primarily conveys:",
+    opts: [
+      "The joy of modern social gatherings",
+      "The loss of genuine human warmth and the rise of superficiality",
+      "The physical effects of aging on facial expressions",
+      "The superiority of traditional dental health"
+    ],
+    ans: 1,
+    exp: "The poem contrasts past authenticity with present hypocrisy; laughing 'with their teeth' while the eyes stay cold symbolises insincere, calculated social interaction. Option A misreads the poem's critical tone. Option C is an overly literal reading. Option D is an absurd misinterpretation."
+  },
+  {
+    q: "In Antony and Cleopatra, Enobarbus's death is caused by:",
+    opts: [
+      "Assassination ordered by Octavius Caesar",
+      "A snake bite in the Egyptian desert",
+      "Grief and remorse after deserting Antony for Caesar",
+      "Drowning during the naval battle at Actium"
+    ],
+    ans: 2,
+    exp: "Enobarbus deserts Antony for Caesar but is overcome with guilt when Antony generously sends his treasure after him, and he dies of a broken heart. Option A does not happen. Option B describes Cleopatra's death by asp. Option D does not occur in the play."
+  },
+  {
+    q: "In To Kill a Mockingbird, Scout's narration from a child's perspective serves primarily to:",
+    opts: [
+      "Highlight the absurdity and cruelty of adult racial prejudices",
+      "Suggest that children are naturally racist",
+      "Prove that adults in Maycomb are morally superior to children",
+      "Demonstrate that Scout understands legal procedures completely"
+    ],
+    ans: 0,
+    exp: "Scout's innocent perspective exposes the irrationality and injustice of adult racism, since her confusion at adult behaviour underscores its absurdity. Option B is the opposite, as children are portrayed as innocent. Option C is also the opposite, since many adults are shown to be deeply flawed. Option D is wrong, as she does not fully understand the legal proceedings."
+  },
+  {
+    q: "The predominant tone of Niyi Osundare's 'The Leader and the Led' is:",
+    opts: [
+      "Celebratory and triumphant",
+      "Nostalgic and melancholic",
+      "Indifferent and detached",
+      "Critical and satirical"
+    ],
+    ans: 3,
+    exp: "The poem satirises the search for leadership, where each candidate has a fatal flaw, critiquing both leaders and followers. Option A is wrong, as there is no celebration in the poem. Option B describes a different mood entirely. Option C is wrong, as the poem is deeply and pointedly engaged with its subject."
+  },
+  {
+    q: "In To Kill a Mockingbird, the character of Boo Radley functions MOST importantly as:",
+    opts: [
+      "A warning about the dangers of alcohol abuse",
+      "A symbol of the corrupt legal system",
+      "A symbol of innocence misunderstood and persecuted by society",
+      "An example of successful parenting in Maycomb"
+    ],
+    ans: 2,
+    exp: "Boo is a 'mockingbird' figure — an innocent recluse victimised by neighbourhood gossip and fear, who ultimately saves the children and reveals his goodness. Option A misattributes an issue belonging to his father. Option B is unrelated to his role in the story. Option D is wrong, as he is not depicted as a parent."
+  },
+  {
+    q: "In Antony and Cleopatra, Octavius Caesar's primary political motivation throughout the play is:",
+    opts: [
+      "To destroy Rome and rebuild it in Egypt's image",
+      "To become a close personal friend to Mark Antony",
+      "To abdicate his power and live as a private citizen",
+      "To consolidate his power and unify the Roman Empire under his control"
+    ],
+    ans: 3,
+    exp: "Caesar is the pragmatic politician seeking to eliminate rivals and centralise power, using Antony's failings to justify war against him. Option A is the opposite of his aims. Option B is wrong, since he is Antony's political rival. Option C is wrong, as he actively pursues power rather than retreating from it."
+  },
+  {
+    q: "The trial of Tom Robinson in To Kill a Mockingbird ultimately reveals that:",
+    opts: [
+      "The American legal system is completely fair and impartial",
+      "Racial prejudice can override clear evidence and reason",
+      "Atticus Finch is an incompetent lawyer",
+      "Mayella Ewell was genuinely attacked by Tom"
+    ],
+    ans: 1,
+    exp: "Despite overwhelming evidence of Tom's innocence, the all-white jury convicts him, showing racism triumphing over justice and reason. Option A is the opposite of the novel's point. Option C is wrong, as Atticus is shown to be highly skilled. Option D is wrong, as Mayella's account is shown to be false."
+  },
+  {
+    q: "In Niyi Osundare's 'Not My Business', the speaker's repeated refrain 'What business of mine is it...?' serves to:",
+    opts: [
+      "Demonstrate his active involvement in politics",
+      "Show his strong support for the government",
+      "Highlight his apathy and moral evasion until he becomes the victim",
+      "Prove that he is a successful businessman"
+    ],
+    ans: 2,
+    exp: "The refrain shows the speaker ignoring the persecution of others until 'they came for him' too, critiquing political apathy and its consequences. Option A is the opposite of what the refrain shows. Option B is wrong, as he is not endorsing the government. Option D is a literal misreading of the word 'business'."
+  },
+  {
+    q: "In Antony and Cleopatra, the naval battle at Actium is significant because:",
+    opts: [
+      "It results in Antony's complete victory over Octavius Caesar",
+      "Cleopatra's retreat causes Antony to follow her, leading to military defeat",
+      "It marks the first alliance between Rome and Egypt",
+      "Enobarbus successfully leads Antony's fleet to victory"
+    ],
+    ans: 1,
+    exp: "At Actium, Cleopatra's ships retreat and Antony follows her, abandoning his own fleet and ensuring Caesar's decisive victory. Option A is the opposite of the actual outcome. Option C is not accurate to the events of the battle. Option D is wrong, as Enobarbus in fact deserts Antony rather than leading him to victory."
+  },
+  {
+    q: "In To Kill a Mockingbird, Scout's gradual maturation throughout the novel is MOST clearly shown when she:",
+    opts: [
+      "Refuses to attend school after the first day",
+      "Recognizes Boo Radley as a human being rather than a neighbourhood monster",
+      "Successfully defends Tom Robinson in court",
+      "Decides to become a lawyer like her father"
+    ],
+    ans: 1,
+    exp: "Scout's growth is shown through her developing empathy, most powerfully in finally seeing Boo Radley as a real person rather than the frightening figure of neighbourhood rumour. Option A is an event from early in the novel, unrelated to her growth. Option C does not happen, since Scout does not participate as a defender in the trial. Option D is never stated in the novel."
+  },
+  {
+    q: "Shakespeare presents the character of Cleopatra as:",
+    opts: [
+      "Entirely evil and manipulative without redeeming qualities",
+      "A passive victim of Antony's aggression",
+      "A Roman-style politician with no interest in romance",
+      "Complex — capable of political cunning, passionate love, and tragic dignity"
+    ],
+    ans: 3,
+    exp: "Cleopatra is one of Shakespeare's most complex heroines — volatile, intelligent, passionate, and politically astute, and she ultimately chooses death with dignity. Option A is too reductive a reading of her character. Option B is wrong, as she is consistently shown to be active rather than passive. Option C is wrong, since her romantic passion is central to the play."
+  },
+  {
+    q: "The setting of To Kill a Mockingbird in 1930s Maycomb, Alabama, is crucial because:",
+    opts: [
+      "It was the only town in America with racial problems",
+      "The Great Depression had eliminated all racial tensions",
+      "The North was more racist than the South at that time",
+      "The historical context of Jim Crow laws and Depression-era poverty intensifies the racial and class tensions"
+    ],
+    ans: 3,
+    exp: "The Depression and Jim Crow South create a setting where poverty and racism intersect, making Tom's unjust conviction feel almost inevitable within that context. Option A is wrong, as racial tension existed nationwide, not solely in this town. Option B is the opposite of what happened. Option C is historically inaccurate as a claim about the two regions at that time."
+  }
+],
+"Government": = [
+  {
+    q: "In a first-past-the-post electoral system, a candidate is elected when they:",
+    opts: [
+      "Receive more than 50% of the total votes cast",
+      "Receive the highest number of votes in a second-round runoff",
+      "Receive the highest number of votes, even if less than 50%",
+      "Are selected by the electoral commission without voting"
+    ],
+    ans: 2,
+    exp: "First-past-the-post requires only a plurality — the single highest number of votes — not an absolute majority. Option A describes an absolute majority system. Option B describes a two-round or runoff system. Option D is undemocratic and does not describe any legitimate electoral method."
+  },
+  {
+    q: "The primary function of an electoral commission such as INEC is to:",
+    opts: [
+      "Organize and supervise elections to ensure they are free and fair",
+      "Appoint the president and governors directly",
+      "Create new political parties according to government preference",
+      "Determine the policies of the ruling party"
+    ],
+    ans: 0,
+    exp: "Electoral commissions organise, conduct, and supervise elections, register voters and parties, and announce results impartially. Option B is wrong, since citizens elect these officers through voting. Option C is wrong, as political parties form independently. Option D is wrong, as electoral commissions must remain politically neutral."
+  },
+  {
+    q: "A referendum is BEST described as:",
+    opts: [
+      "An election to choose members of parliament",
+      "A direct vote by the electorate on a specific political question or constitutional issue",
+      "A meeting of political party leaders to select candidates",
+      "A judicial review of an election result"
+    ],
+    ans: 1,
+    exp: "A referendum allows citizens to vote directly on a policy or constitutional question, such as a boundary change or constitutional amendment. Option A describes a general election instead. Option C describes a party caucus or primary. Option D describes a legal challenge process, unrelated to a referendum."
+  },
+  {
+    q: "Which of the following is a major characteristic of the civil service?",
+    opts: [
+      "Political partisanship in policy execution",
+      "Temporary employment that changes with each government",
+      "Direct election of civil servants by the public",
+      "Permanence and continuity regardless of which party is in power"
+    ],
+    ans: 3,
+    exp: "The civil service is designed to be permanent, neutral, and continuous, serving whichever government is in power. Option A directly violates the principle of neutrality. Option B is wrong, since civil servants are meant to be permanent staff. Option C is wrong, as civil servants are appointed on merit, not elected."
+  },
+  {
+    q: "Public opinion is BEST measured through:",
+    opts: [
+      "Decisions made by the military high command",
+      "The personal views of the president alone",
+      "A combination of opinion polls, media analysis, public demonstrations, and election results",
+      "The number of government propaganda broadcasts"
+    ],
+    ans: 2,
+    exp: "Public opinion reflects the collective views of citizens, best captured through multiple channels including polls, media commentary, protests, and voting patterns. Option A measures only military sentiment. Option B describes autocratic, not democratic, opinion-forming. Option D measures government output rather than genuine public sentiment."
+  },
+  {
+    q: "The principle of 'anonymity' in the civil service means that:",
+    opts: [
+      "Civil servants take no public credit or blame for policy advice; ministers bear political responsibility",
+      "Civil servants must work without knowing their colleagues",
+      "Civil servants are not allowed to write their names on official documents",
+      "The public is never informed about civil service salaries"
+    ],
+    ans: 0,
+    exp: "Anonymity means civil servants work behind the scenes advising government, while elected ministers publicly bear responsibility for the resulting policies. Option B is a literal misreading of the term. Option C is an overly narrow and inaccurate interpretation. Option D is irrelevant to the principle."
+  },
+  {
+    q: "A public corporation is differentiated from the civil service primarily because it:",
+    opts: [
+      "Is completely independent of government control",
+      "Is established by an Act of Parliament to provide specific services, often with commercial objectives",
+      "Employs only temporary workers",
+      "Has no legal personality separate from the government"
+    ],
+    ans: 1,
+    exp: "Public corporations such as NNPC or NPA are statutory bodies created to provide specific services, often with a degree of commercial autonomy from central government departments. Option A is wrong, as they remain government-owned. Option C is inaccurate, as many staff hold permanent positions. Option D is wrong, since public corporations possess their own distinct legal personality."
+  },
+  {
+    q: "Local government is created primarily to:",
+    opts: [
+      "Replace federal and state governments entirely",
+      "Serve as a training ground for national politicians only",
+      "Collect taxes exclusively for the central government",
+      "Bring government closer to the people and administer local affairs"
+    ],
+    ans: 3,
+    exp: "Local government provides grassroots administration for community needs such as roads, markets, and sanitation, bringing governance closer to citizens. Option A is wrong, as it complements rather than replaces higher tiers. Option B describes only a secondary, incidental function. Option C is wrong, since local government retains some of its own generated revenue."
+  },
+  {
+    q: "The Hausa-Fulani pre-colonial political system was characterized by:",
+    opts: [
+      "A completely decentralized village democracy with no central authority",
+      "Rule by secret societies and age grades",
+      "A centralized emirate system with the Emir as political and religious head",
+      "A rotating monarchy where different families took turns ruling"
+    ],
+    ans: 2,
+    exp: "The Sokoto Caliphate operated a hierarchical system in which emirs, appointed by the Sultan, combined political authority with Islamic religious leadership. Option A describes features closer to the Igbo system. Option B also describes Igbo governance features. Option D does not describe traditional Hausa-Fulani practice."
+  },
+  {
+    q: "In the Igbo pre-colonial political system, decision-making was primarily based on:",
+    opts: [
+      "Consensus among village elders, title holders, and age grades",
+      "Divine right of a single hereditary king",
+      "Direct orders from the Sultan of Sokoto",
+      "Military decrees issued by a standing army commander"
+    ],
+    ans: 0,
+    exp: "The Igbo operated an acephalous (headless) political system, where village assemblies, elders, title holders, and age grades made decisions collectively by consensus. Option B describes a monarchical system, not the Igbo model. Option C describes an entirely different, Hausa-Fulani, political structure. Option D does not accurately describe Igbo governance."
+  },
+  {
+    q: "The Yoruba pre-colonial political system featured:",
+    opts: [
+      "Absolute power concentrated solely in the hands of the Oba without checks",
+      "A complex system of checks and balances involving the Oba, Oyomesi, and chiefs",
+      "Complete anarchy with no political organization",
+      "Direct rule from Britain before colonization"
+    ],
+    ans: 1,
+    exp: "The Oyo Empire's Alaafin (king) was checked by the Oyomesi (a council of kingmakers) and other chiefs, who could even command the Oba's removal in extreme cases. Option A is wrong, since the Oba's power was checked, not absolute. Option C is inaccurate, as clear political structures existed. Option D is a contradiction, since pre-colonial by definition means before British rule began."
+  },
+  {
+    q: "Indirect Rule in Nigeria, introduced by Lord Lugard, was MOST successful in the North because:",
+    opts: [
+      "The North had no existing political structure",
+      "The British brought entirely new systems unknown to the people",
+      "The Southern populations requested indirect rule",
+      "The North already had a centralized emirate system that the British could adapt and use"
+    ],
+    ans: 3,
+    exp: "Indirect Rule relied on existing native authorities, and the North's already-centralised emirate system made this system straightforward to adapt. Option A is the opposite of the actual situation. Option B is inaccurate, as the British used existing rather than new systems. Option C is wrong, since the South largely resisted the system rather than requesting it."
+  },
+  {
+    q: "The French policy of 'assimilation' in colonial West Africa aimed to:",
+    opts: [
+      "Preserve African cultures and languages completely",
+      "Establish a federal system with African states as equal partners",
+      "Make Africans adopt French culture, language, and citizenship standards",
+      "Encourage African traditional religions over Christianity"
+    ],
+    ans: 2,
+    exp: "Assimilation sought to turn Africans into culturally French citizens by imposing French language, culture, and legal standards. Option A describes the later policy of association instead. Option B does not describe French colonial structure. Option D is the opposite of the actual French religious policy."
+  },
+  {
+    q: "A secret ballot is important in modern elections because it:",
+    opts: [
+      "Allows electoral officials to know how each citizen voted",
+      "Protects voters from intimidation and ensures they can vote according to their conscience",
+      "Speeds up the vote-counting process significantly",
+      "Eliminates the need for voter registration"
+    ],
+    ans: 1,
+    exp: "The secret ballot prevents coercion, vote-buying, and intimidation by keeping each individual's vote confidential. Option A is the opposite of its purpose. Option C is an incidental effect rather than its main purpose. Option D is unrelated to ballot secrecy."
+  },
+  {
+    q: "The 'ombudsman' or Public Complaints Commission in Nigeria functions to:",
+    opts: [
+      "Prosecute criminals in federal courts",
+      "Draft legislation for the National Assembly",
+      "Command the armed forces during elections",
+      "Investigate complaints of maladministration and injustice against public officials"
+    ],
+    ans: 3,
+    exp: "The ombudsman investigates citizens' complaints against government agencies and officials, recommending appropriate remedies. Option A describes the role of police and prosecutors. Option B describes the role of legislators. Option C is entirely unrelated to the ombudsman's function."
+  },
+  {
+    q: "One major problem facing the civil service in Nigeria is:",
+    opts: [
+      "Excessive political neutrality",
+      "Too rapid promotion of junior staff",
+      "Red tape, bureaucratic delay, and corruption",
+      "Complete absence of qualified personnel"
+    ],
+    ans: 2,
+    exp: "The Nigerian civil service is often criticised for bureaucratic inefficiency, excessive paperwork, and corruption. Option A is wrong, as neutrality is a goal rather than a problem. Option B is the opposite of common criticism, since promotion is often perceived as slow. Option D is an exaggerated claim not generally supported."
+  },
+  {
+    q: "A public corporation differs from a private company primarily in that:",
+    opts: [
+      "It is government-owned and established to provide essential public services rather than maximize profit",
+      "It pays no taxes whatsoever to the government",
+      "It is managed entirely by elected politicians without any professional staff",
+      "It cannot be dissolved under any circumstances"
+    ],
+    ans: 0,
+    exp: "Public corporations are government-owned bodies primarily created to provide essential services rather than to maximise profit. Option B is inaccurate, as they may still be liable for certain taxes or levies. Option C is wrong, as they employ professional management staff. Option D is false, as public corporations can indeed be dissolved by government."
+  },
+  {
+    q: "Local government sources of revenue in Nigeria include:",
+    opts: [
+      "Foreign direct investment and international loans exclusively",
+      "Rates, rents, fines, grants from state/federal government, and local licenses",
+      "Only personal income tax collected nationwide",
+      "Revenue solely from oil exports"
+    ],
+    ans: 1,
+    exp: "Local governments generate revenue through rates, rents, fines, and licensing fees, in addition to receiving statutory allocations from higher tiers of government. Option A does not accurately describe typical local revenue sources. Option C describes a revenue stream managed at state and federal levels. Option D describes federal government revenue, not local government revenue."
+  },
+  {
+    q: "The pre-colonial Yoruba political system was notable for its:",
+    opts: [
+      "Complete rejection of any religious influence on governance",
+      "Absence of any military organization",
+      "Direct democracy where every adult voted on all issues",
+      "Integration of religious, political, and military institutions under the Oba"
+    ],
+    ans: 3,
+    exp: "The Oba served as both political and spiritual leader, with military chiefs and religious priests integrated closely into the overall system of governance. Option A is wrong, as religion was central to Yoruba kingship. Option B is inaccurate, since organised military forces existed. Option C does not describe the actual system, which was not a direct democracy."
+  },
+  {
+    q: "The British system of Indirect Rule in Southern Nigeria failed largely because:",
+    opts: [
+      "The Southern populations were too educated for native authorities",
+      "The British did not try to implement it in the South",
+      "The South lacked centralized political structures like the Northern emirates, making the warrant chief system artificial and resented",
+      "The Southern climate was unsuitable for British administrators"
+    ],
+    ans: 2,
+    exp: "The South's largely acephalous societies, especially the Igbo, had no kings or emirs comparable to the North, so the British-imposed 'warrant chiefs' lacked legitimacy and were widely resented. Option A is not the actual reason given historically. Option B is wrong, as the British did attempt to apply the system there. Option D is an unsupported and irrelevant claim."
+  },
+  {
+    q: "An electoral system where seats are allocated to political parties in proportion to the votes they receive is called:",
+    opts: [
+      "Proportional representation",
+      "First-past-the-post",
+      "Absolute majority system",
+      "Single non-transferable vote"
+    ],
+    ans: 0,
+    exp: "Proportional representation allocates legislative seats in proportion to each party's share of the total vote. Option B awards a seat to whichever candidate wins the most votes in each district, regardless of overall proportion. Option C requires a candidate to win more than half the votes. Option D describes a different, distinct voting method."
+  },
+  {
+    q: "The mass media plays a crucial role in a democracy by:",
+    opts: [
+      "Determining who wins elections through direct appointment",
+      "Informing the public, shaping opinion, and holding government accountable",
+      "Replacing the judiciary in interpreting the constitution",
+      "Banning all opposition parties from public discourse"
+    ],
+    ans: 1,
+    exp: "The mass media informs citizens, provides platforms for public debate, and helps hold government accountable through investigation and scrutiny. Option A is wrong, as media do not appoint election winners. Option C is wrong, as constitutional interpretation belongs to the judiciary. Option D describes authoritarian, not democratic, media practice."
+  },
+  {
+    q: "Commercialization of public enterprises means:",
+    opts: [
+      "Selling all government assets to foreign investors immediately",
+      "Converting public corporations into government ministries",
+      "Eliminating all charges for public services",
+      "Running public enterprises along commercial lines to improve efficiency and reduce government subsidy"
+    ],
+    ans: 3,
+    exp: "Commercialization means operating state-owned enterprises on a more businesslike, profit-conscious basis without necessarily transferring full ownership, as full transfer would be privatization. Option A actually describes privatization. Option B is the opposite of commercialization. Option C is inaccurate, since charges for services generally remain or increase."
+  },
+  {
+    q: "The principle of 'political neutrality' in the civil service requires that:",
+    opts: [
+      "Civil servants must campaign for the ruling party",
+      "Civil servants should only work for military governments",
+      "Civil servants should not engage in partisan politics while in service",
+      "Civil servants must vote in all elections for the opposition"
+    ],
+    ans: 2,
+    exp: "Political neutrality requires civil servants to serve any elected government impartially and refrain from partisan political activity while employed. Option A directly violates this neutrality. Option B is an inaccurate and unrelated restriction. Option D is likewise a partisan requirement that contradicts the principle."
+  },
+  {
+    q: "In the Hausa-Fulani emirate system, the Emir was:",
+    opts: [
+      "Appointed by the Sultan/Caliph and accountable to him, administering according to Islamic law",
+      "Elected by universal adult suffrage every four years",
+      "A hereditary position that could never be removed",
+      "Solely a religious leader with no political power"
+    ],
+    ans: 0,
+    exp: "Emirs were appointed by, and owed allegiance to, the Sultan of Sokoto, governing their territories according to Islamic law (Sharia). Option B describes a modern democratic practice, not the emirate system. Option C is wrong, as an emir could in fact be removed by higher authority. Option D is wrong, as emirs held substantial political as well as religious power."
+  },
+  {
+    q: "A 'by-election' is conducted to:",
+    opts: [
+      "Elect the president mid-term",
+      "Fill a vacant legislative seat that occurs between general elections",
+      "Remove a corrupt judge from office",
+      "Appoint a new local government chairman"
+    ],
+    ans: 1,
+    exp: "By-elections are held to fill a legislative vacancy created by death, resignation, or disqualification of a sitting member between scheduled general elections. Option A does not describe how presidential vacancies are typically handled. Option C describes a judicial removal process, unrelated to elections. Option D would generally follow a separate administrative procedure."
+  },
+  {
+    q: "The French colonial policy of 'association' differed from 'assimilation' in that association:",
+    opts: [
+      "Required all Africans to become French citizens immediately",
+      "Abolished all traditional African institutions",
+      "Denied France any economic benefits from the colonies",
+      "Preserved African cultures and institutions while maintaining French political and economic control"
+    ],
+    ans: 3,
+    exp: "Association allowed Africans to retain their own culture and institutions while remaining firmly under French political and economic oversight, unlike assimilation, which sought to erase local culture entirely. Options A and B both describe features of assimilation instead. Option C is inaccurate, as France continued to economically benefit from its colonies under association."
+  },
+  {
+    q: "One major reason for creating local government in Nigeria is to:",
+    opts: [
+      "Eliminate the need for state governments",
+      "Provide employment exclusively for retired federal civil servants",
+      "Ensure grassroots participation in governance and bring development to rural areas",
+      "Centralize all political power in the federal capital"
+    ],
+    ans: 2,
+    exp: "Local government decentralises governance, encouraging grassroots participation and directing development efforts to rural and community-level needs. Option A misstates its purpose, as it complements rather than replaces state government. Option B is not an accurate description of its function. Option D is the direct opposite of the decentralising aim of local government."
+  },
+  {
+    q: "The 'age-grade' system in Igbo pre-colonial society functioned as:",
+    opts: [
+      "An organization of people of similar ages that performed communal duties, enforced decisions, and maintained order",
+      "A religious cult worshipping ancestral spirits exclusively",
+      "A commercial bank lending money to farmers",
+      "A military unit that only defended against external British invasion"
+    ],
+    ans: 0,
+    exp: "Age grades organised people of roughly the same age to carry out communal labour, enforce community decisions, and help maintain social order. Option B too narrowly limits its role to religious functions alone. Option C is an anachronistic and inaccurate description. Option D restricts its function unrealistically to a single military purpose."
+  },
+  {
+    q: "Privatization of public enterprises refers to:",
+    opts: [
+      "Increasing government ownership to 100%",
+      "Transferring ownership and control of government enterprises to private individuals or companies",
+      "Making all services free for citizens",
+      "Merging all public corporations into one giant ministry"
+    ],
+    ans: 1,
+    exp: "Privatization involves selling government-owned enterprises to private investors, transferring both ownership and control. Option A describes nationalisation, the opposite process. Option C is unrelated to ownership transfer. Option D describes administrative consolidation, not privatization."
+  },
+  {
+    q: "The 'rule of law' in a democratic system means that:",
+    opts: [
+      "Only judges are subject to the law",
+      "The government can change laws arbitrarily without following procedures",
+      "Citizens must obey the government but the government is above the law",
+      "All persons and institutions are subject to and accountable under publicly disclosed laws"
+    ],
+    ans: 3,
+    exp: "The rule of law means that no individual or institution, including government itself, is above the law, and that laws are clear, publicly known, and consistently enforced. Option A wrongly narrows this principle to judges alone. Option B describes arbitrary rule, which the rule of law opposes. Option C describes autocracy, the opposite of the rule of law."
+  },
+  {
+    q: "A major difference between the British and French colonial administrations in West Africa was that:",
+    opts: [
+      "The British directly governed all colonies without any native involvement",
+      "The French allowed colonies to become independent immediately",
+      "The British used Indirect Rule through traditional authorities while the French used direct, centralized control with assimilation/association",
+      "The French never collected taxes from their colonies"
+    ],
+    ans: 2,
+    exp: "British administration typically preserved and worked through native authorities under Indirect Rule, while French administration was more centralised and direct, governed from Paris and applying assimilation or association policies. Option A is wrong, as the British in fact relied on native involvement. Option B is historically inaccurate, as independence came much later. Option D is factually incorrect."
+  },
+  {
+    q: "An election is described as 'free and fair' when:",
+    opts: [
+      "Voters can choose without coercion, results reflect the people's will, and the process follows established rules",
+      "The ruling party wins by any means necessary",
+      "Only educated citizens are permitted to vote",
+      "International observers are completely excluded"
+    ],
+    ans: 0,
+    exp: "Free and fair elections require freedom from intimidation, accurate reflection of the electorate's will, and adherence to transparent, established procedures. Option B describes a rigged process. Option C describes an unjustly discriminatory restriction on suffrage. Option D is the opposite of good practice, since observers help verify fairness."
+  },
+  {
+    q: "The civil service commission is responsible for:",
+    opts: [
+      "Writing laws for the National Assembly",
+      "Recruiting, promoting, and disciplining civil servants to ensure merit-based administration",
+      "Commanding the police force during elections",
+      "Determining the foreign policy of the country"
+    ],
+    ans: 1,
+    exp: "The civil service commission manages personnel matters within the civil service, including recruitment, promotion, and discipline, based on merit. Option A describes a legislative function. Option C is unrelated to the commission's role. Option D is an executive foreign policy function, not a personnel matter."
+  },
+  {
+    q: "In pre-colonial Igbo society, secret societies such as masquerade cults:",
+    opts: [
+      "Were groups of foreign traders from Europe",
+      "Served only as entertainment during harvest festivals",
+      "Had no political or judicial functions whatsoever",
+      "Enforced laws, settled disputes, and maintained social order with religious authority"
+    ],
+    ans: 3,
+    exp: "Secret and masquerade societies held real judicial, legislative, and enforcement powers within many Igbo communities, backed by religious authority. Option A is factually wrong. Option B too narrowly limits their role to entertainment alone. Option C is the direct opposite of their actual political and judicial significance."
+  },
+  {
+    q: "A 'plebiscite' differs from a general election in that a plebiscite:",
+    opts: [
+      "Chooses the head of state directly",
+      "Is always conducted by secret ballot while elections are open",
+      "Is a direct vote by the people on a specific political question such as independence or boundary adjustment",
+      "Can only be called by the military government"
+    ],
+    ans: 2,
+    exp: "A plebiscite, much like a referendum, decides a specific political question, such as whether a territory should join a federation or adjust its boundaries. Option A describes an election, not a plebiscite. Option B is inaccurate, as both processes may use secret ballots. Option D is an unfounded restriction not generally true."
+  },
+  {
+    q: "The 'warrant chiefs' introduced by the British in Igbo land were:",
+    opts: [
+      "Often resented because they lacked traditional legitimacy and were seen as British puppets",
+      "Elected by the Igbo people through democratic village assemblies",
+      "Hereditary rulers from ancient Igbo royal families",
+      "Religious leaders who opposed all forms of colonial contact"
+    ],
+    ans: 0,
+    exp: "Warrant chiefs were appointed by the British, often from individuals of low traditional status willing to collaborate, and were widely resented for lacking legitimacy, a resentment that contributed to unrest such as the 1929 Women's War. Option B is wrong, as they were appointed rather than elected. Option C is inaccurate, since the Igbo system had no comparable hereditary chieftaincy tradition. Option D mischaracterises their role entirely."
+  },
+  {
+    q: "Public corporations in Nigeria are often criticized for:",
+    opts: [
+      "Being too profitable and returning too much revenue to the government",
+      "Having no employees whatsoever",
+      "Providing services that are too efficient",
+      "Inefficiency, political interference, corruption, and operating at a loss"
+    ],
+    ans: 3,
+    exp: "Nigerian public corporations are frequently criticised for bureaucratic inefficiency, political interference in appointments, corruption, and consistent financial losses. Option A is the opposite of common criticism. Option B is factually absurd. Option C is also the opposite of the typical complaint made against them."
+  },
+  {
+    q: "The primary purpose of an election in a democratic system is to:",
+    opts: [
+      "Allow the military to select civilian leaders",
+      "Provide a peaceful mechanism for choosing representatives and transferring political power",
+      "Ensure that only wealthy citizens hold office",
+      "Eliminate all opposition parties permanently"
+    ],
+    ans: 1,
+    exp: "Elections provide the essential democratic mechanism for selecting representatives and enabling peaceful transitions of political power. Option A describes a non-democratic, military-controlled process. Option C describes an oligarchic system rather than a democratic one. Option D describes authoritarian suppression, the opposite of democratic elections."
+  }
+]
   },
   sss3: {
     'English Language': [ ]
