@@ -5625,7 +5625,1758 @@ sss1: {
 ]
   },
   sss3: {
-    'English Language': [ ]
+"General Test": = [
+    // Q1
+    {
+      q:    'A compound contains 40.0% carbon, 6.7% hydrogen and 53.3% oxygen by mass. What is its empirical formula? [Relative atomic masses: C = 12, H = 1, O = 16]',
+      opts: ['CH₂O', 'C₂H₄O₂', 'CHO', 'C₂H₂O'],
+      ans:  0,
+      exp:  'Divide each percentage by the relative atomic mass to find the mole ratio: C = 40.0 ÷ 12 = 3.33; H = 6.7 ÷ 1 = 6.7; O = 53.3 ÷ 16 = 3.33. Divide each by the smallest value (3.33): C = 1, H = 2, O = 1. The empirical formula is therefore CH₂O.'
+    },
+
+    // Q2
+    {
+      q:    'In a photoelectric experiment, light of frequency 6.0 × 10¹⁴ Hz is incident on a metal surface with work function 2.0 eV. What is the maximum kinetic energy of the emitted electrons? [h = 6.6 × 10⁻³⁴ J·s; 1 eV = 1.6 × 10⁻¹⁹ J]',
+      opts: ['0.48 eV', '0.72 eV', '1.24 eV', '2.48 eV'],
+      ans:  0,
+      exp:  'Energy of photon: E = hf = (6.6 × 10⁻³⁴)(6.0 × 10¹⁴) = 3.96 × 10⁻¹⁹ J. Convert to eV: 3.96 × 10⁻¹⁹ ÷ 1.6 × 10⁻¹⁹ = 2.475 eV. Maximum KE = photon energy − work function = 2.475 − 2.0 = 0.475 eV ≈ 0.48 eV.'
+    },
+
+    // Q3
+    {
+      q:    'During meiosis I, what is the critical event that leads to genetic variation among gametes?',
+      opts: [
+        'Crossing over between non-sister chromatids of homologous chromosomes',
+        'Random alignment of chromatids at the metaphase plate',
+        'Separation of sister chromatids at anaphase',
+        'Replication of DNA during interphase'
+      ],
+      ans:  0,
+      exp:  'Crossing over (recombination) occurs during prophase I of meiosis. Homologous chromosomes pair up and exchange segments between non-sister chromatids, creating new allele combinations. This is the primary recombination event that generates genetic diversity. Sister chromatid separation occurs in meiosis II, not meiosis I. Independent assortment also contributes to variation, but crossing over is the specific recombination event asked for.'
+    },
+
+    // Q4
+    {
+      q:    'A 12 V battery with internal resistance 0.5 Ω is connected to a parallel combination of a 5 Ω resistor and a 20 Ω resistor. What is the terminal potential difference across the battery?',
+      opts: ['10.0 V', '10.7 V', '11.0 V', '11.4 V'],
+      ans:  1,
+      exp:  'Parallel resistance: $R_p = \\frac{5 \\times 20}{5 + 20} = \\frac{100}{25} = 4\\ \\Omega$. Total resistance: $R_{total} = 4 + 0.5 = 4.5\\ \\Omega$. Circuit current: $I = \\frac{12}{4.5} \\approx 2.667\\ \\text{A}$. Terminal p.d. = $E - Ir = 12 - (2.667)(0.5) = 12 - 1.333 \\approx 10.7\\ \\text{V}$.'
+    },
+
+    // Q5
+    {
+      q:    'Which of the following statements correctly describes a buffer solution?',
+      opts: [
+        'A solution that maintains a constant pH when small amounts of acid or base are added',
+        'A solution containing a strong acid and its conjugate base in equal concentrations',
+        'A solution with a pH that is always exactly 7 at 25°C',
+        'A solution formed by mixing any weak acid with any strong base'
+      ],
+      ans:  0,
+      exp:  'A buffer solution resists pH change when small amounts of acid or base are added. It consists of a weak acid and its conjugate base (or weak base and its conjugate acid). Option B is wrong — strong acids cannot form buffers because they ionise completely. Option C is wrong — buffers can have any pH depending on the pKa and ratio of components. Option D is wrong — simply mixing a weak acid with a strong base does not guarantee a buffer unless the ratio is appropriate.'
+    },
+
+    // Q6
+    {
+      q:    'A projectile is launched at 40 m/s at an angle of 30° to the horizontal. What is the maximum height reached? [g = 10 m/s²]',
+      opts: ['20 m', '40 m', '60 m', '80 m'],
+      ans:  0,
+      exp:  'Maximum height: $H = \\frac{u^2 \\sin^2\\theta}{2g} = \\frac{40^2 \\times \\sin^2 30°}{2 \\times 10} = \\frac{1600 \\times 0.25}{20} = \\frac{400}{20} = 20\\ \\text{m}$.'
+    },
+
+    // Q7
+    {
+      q:    'In the Haber process for ammonia synthesis, N₂(g) + 3H₂(g) ⇌ 2NH₃(g), ΔH = −92 kJ/mol. Which condition favours the maximum yield of ammonia?',
+      opts: [
+        'High temperature and high pressure',
+        'Low temperature and high pressure',
+        'High temperature and low pressure',
+        'Low temperature and low pressure'
+      ],
+      ans:  1,
+      exp:  'The forward reaction is exothermic (ΔH negative), so by Le Chatelier\'s principle, lowering the temperature shifts the equilibrium to the right, increasing ammonia yield. The reaction also involves a decrease in moles of gas (4 mol reactants → 2 mol products), so increasing pressure also favours the forward reaction. Therefore, low temperature and high pressure maximise yield. (In practice, a moderate temperature is used to maintain an acceptable reaction rate.)'
+    },
+
+    // Q8
+    {
+      q:    'A population of butterflies exhibits two colour morphs: dark and light. In a polluted industrial area, the dark morph increases from 10% to 80% over 50 generations. What evolutionary mechanism best explains this change?',
+      opts: ['Genetic drift', 'Gene flow', 'Natural selection', 'Random mutation'],
+      ans:  2,
+      exp:  'This is industrial melanism — a classic example of natural selection. In polluted areas, tree bark is darkened by soot, so dark morphs are better camouflaged against predators. Their survival advantage causes their frequency to increase consistently over generations. Genetic drift would cause random changes in allele frequency, not a consistent directional shift. Gene flow requires migration from another population. Random mutation alone does not explain the directional change correlated with pollution.'
+    },
+
+    // Q9
+    {
+      q:    'An alternating voltage is represented by V = 200 sin(100πt) volts. What is the frequency of the supply?',
+      opts: ['25 Hz', '50 Hz', '100 Hz', '200 Hz'],
+      ans:  1,
+      exp:  'Comparing V = V₀ sin(ωt) with the given equation, ω = 100π rad/s. Since ω = 2πf, the frequency is $f = \\frac{\\omega}{2\\pi} = \\frac{100\\pi}{2\\pi} = 50\\ \\text{Hz}$.'
+    },
+
+    // Q10
+    {
+      q:    'Which compound will decolourise bromine water AND give a positive test with Tollens\' reagent?',
+      opts: ['Butanal', 'But-2-ene', 'But-2-enal', 'Butanoic acid'],
+      ans:  2,
+      exp:  'But-2-enal contains both a C=C double bond and an aldehyde (–CHO) group. The C=C bond reacts with bromine water by electrophilic addition, decolourising it. The aldehyde group is oxidised by Tollens\' reagent (ammoniacal silver nitrate), producing a silver mirror (positive test). Butanal has no C=C bond. But-2-ene has no aldehyde group. Butanoic acid (a carboxylic acid) neither decolourises bromine water nor reduces Tollens\' reagent.'
+    },
+
+    // Q11
+    {
+      q:    'A transformer has 200 turns in the primary coil and 1000 turns in the secondary coil. If the primary voltage is 50 V and the primary current is 4 A, what is the secondary current assuming 100% efficiency?',
+      opts: ['0.4 A', '0.8 A', '1.6 A', '2.0 A'],
+      ans:  1,
+      exp:  'For an ideal transformer, turns ratio gives secondary voltage: $V_s = V_p \\times \\frac{N_s}{N_p} = 50 \\times \\frac{1000}{200} = 250\\ \\text{V}$. Power conservation: $V_p I_p = V_s I_s$, so $I_s = \\frac{V_p I_p}{V_s} = \\frac{50 \\times 4}{250} = \\frac{200}{250} = 0.8\\ \\text{A}$. Alternatively, $I_s = I_p \\times \\frac{N_p}{N_s} = 4 \\times \\frac{200}{1000} = 0.8\\ \\text{A}$.'
+    },
+
+    // Q12
+    {
+      q:    'In an ecosystem, the total energy fixed by producers in a year is 5 × 10⁶ kJ. Herbivores assimilate 10% of this energy and carnivores assimilate 20% of the herbivore energy. How much energy is available to carnivores?',
+      opts: ['1.0 × 10⁴ kJ', '5.0 × 10⁴ kJ', '1.0 × 10⁵ kJ', '2.5 × 10⁵ kJ'],
+      ans:  2,
+      exp:  'Energy available to herbivores = 10% of 5 × 10⁶ = 5 × 10⁵ kJ. Energy available to carnivores = 20% of 5 × 10⁵ = 0.20 × 5 × 10⁵ = 1.0 × 10⁵ kJ. This reflects the 10% rule of ecological energy transfer — roughly 10% of energy at each trophic level passes to the next.'
+    },
+
+    // Q13
+    {
+      q:    'The half-life of a radioactive isotope is 8 days. Starting with 64 g, how much remains after 32 days?',
+      opts: ['1 g', '2 g', '4 g', '8 g'],
+      ans:  2,
+      exp:  'Number of half-lives elapsed = 32 ÷ 8 = 4. Remaining mass = $64 \\times \\left(\\frac{1}{2}\\right)^4 = 64 \\times \\frac{1}{16} = 4\\ \\text{g}$. Each half-life halves the amount: 64 → 32 → 16 → 8 → 4 g.'
+    },
+
+    // Q14
+    {
+      q:    'What is the correct IUPAC name for the compound CH₃CH(CH₃)CH₂CH₂OH?',
+      opts: ['2-methylbutan-1-ol', '3-methylbutan-1-ol', '2-methylpentan-1-ol', '3-methylbutan-2-ol'],
+      ans:  1,
+      exp:  'The longest carbon chain containing the –OH group has 4 carbons (butane). Number from the end nearest the –OH group: C1 bears the –OH (butan-1-ol). The methyl substituent is on C3. The correct IUPAC name is 3-methylbutan-1-ol. (If numbered from the other end, the methyl would be on C2, but numbering must give the –OH the lowest possible locant.)'
+    },
+
+    // Q15
+    {
+      q:    'A body of mass 5 kg moving at 10 m/s collides with a stationary body of mass 5 kg. If the collision is perfectly inelastic, what is the kinetic energy lost?',
+      opts: ['62.5 J', '125 J', '187.5 J', '250 J'],
+      ans:  1,
+      exp:  'Initial KE = $\\frac{1}{2}mv^2 = \\frac{1}{2}(5)(10^2) = 250\\ \\text{J}$. For a perfectly inelastic collision, momentum is conserved: $5 \\times 10 = (5+5)v\'$, so $v\' = 5\\ \\text{m/s}$. Final KE = $\\frac{1}{2}(10)(5^2) = 125\\ \\text{J}$. KE lost = 250 − 125 = 125 J.'
+    },
+
+    // Q16
+    {
+      q:    'During aerobic respiration, how many molecules of ATP are net produced from one molecule of glucose in glycolysis alone?',
+      opts: ['2', '4', '6', '36'],
+      ans:  0,
+      exp:  'Glycolysis produces 4 ATP molecules gross but consumes 2 ATP in the preparatory (investment) phase, giving a net yield of 2 ATP per glucose molecule. The 4 ATP (gross) − 2 ATP (used) = 2 ATP (net). The total yield from complete aerobic respiration is approximately 36–38 ATP, but glycolysis alone yields only 2 net ATP.'
+    },
+
+    // Q17
+    {
+      q:    'A gas occupies 200 cm³ at 27°C and 750 mmHg. What volume will it occupy at 127°C and 600 mmHg?',
+      opts: ['250 cm³', '333 cm³', '400 cm³', '500 cm³'],
+      ans:  1,
+      exp:  'Using the combined gas law: $\\frac{P_1 V_1}{T_1} = \\frac{P_2 V_2}{T_2}$. Convert temperatures: T₁ = 27 + 273 = 300 K; T₂ = 127 + 273 = 400 K. $V_2 = \\frac{P_1 V_1 T_2}{T_1 P_2} = \\frac{750 \\times 200 \\times 400}{300 \\times 600} = \\frac{60{,}000{,}000}{180{,}000} \\approx 333\\ \\text{cm}^3$.'
+    },
+
+    // Q18
+    {
+      q:    'A heterozygous tall plant (Tt) is crossed with a homozygous short plant (tt). What is the probability that an offspring will be tall?',
+      opts: ['0%', '25%', '50%', '75%'],
+      ans:  2,
+      exp:  'This is a test cross (Tt × tt). The offspring genotypes are: 50% Tt (tall, because T is dominant) and 50% tt (short). Therefore the probability of a tall offspring is 50%. This cross is useful in genetics because it reveals the genotype of the tall parent — if any short offspring appear, the tall parent must be heterozygous.'
+    },
+
+    // Q19
+    {
+      q:    'A concave mirror of focal length 15 cm forms a real image three times the size of the object. What is the object distance from the mirror?',
+      opts: ['10 cm', '15 cm', '20 cm', '30 cm'],
+      ans:  2,
+      exp:  'For a real, magnified image in a concave mirror, magnification m = −3 = −v/u, so v = 3u. Using the mirror formula: $\\frac{1}{f} = \\frac{1}{u} + \\frac{1}{v}$. Substituting v = 3u: $\\frac{1}{15} = \\frac{1}{u} + \\frac{1}{3u} = \\frac{4}{3u}$. Therefore 3u = 60, so u = 20 cm.'
+    },
+
+    // Q20
+    {
+      q:    'Which of the following species is the strongest oxidising agent? [E°: Fe³⁺/Fe²⁺ = +0.77 V; Cl₂/Cl⁻ = +1.36 V; I₂/I⁻ = +0.54 V; Cu²⁺/Cu = +0.34 V]',
+      opts: ['Fe³⁺', 'Cl₂', 'I₂', 'Cu²⁺'],
+      ans:  1,
+      exp:  'The species with the highest (most positive) standard reduction potential is the strongest oxidising agent, because it has the greatest tendency to gain electrons. Cl₂/Cl⁻ has E° = +1.36 V, which is higher than Fe³⁺/Fe²⁺ (+0.77 V), I₂/I⁻ (+0.54 V), and Cu²⁺/Cu (+0.34 V). Therefore Cl₂ is the strongest oxidising agent in this list.'
+    },
+
+    // Q21
+    {
+      q:    'A stone is thrown horizontally from the top of a 45 m high cliff with a speed of 10 m/s. How far from the base of the cliff does it strike the ground? [g = 10 m/s²]',
+      opts: ['20 m', '25 m', '30 m', '45 m'],
+      ans:  2,
+      exp:  'The stone has no initial vertical velocity. Time to fall: $h = \\frac{1}{2}gt^2 \\Rightarrow 45 = 5t^2 \\Rightarrow t^2 = 9 \\Rightarrow t = 3\\ \\text{s}$. Horizontal distance = horizontal speed × time = 10 × 3 = 30 m.'
+    },
+
+    // Q22
+    {
+      q:    'In the electrolysis of dilute H₂SO₄ using platinum electrodes, what is the ratio of the volume of hydrogen produced at the cathode to the volume of oxygen produced at the anode?',
+      opts: ['1:1', '2:1', '1:2', '4:1'],
+      ans:  1,
+      exp:  'At the cathode: 2H⁺ + 2e⁻ → H₂. At the anode: 4OH⁻ → 2H₂O + O₂ + 4e⁻. For every 4 electrons transferred, 2 mol H₂ are produced and 1 mol O₂ is produced. Since equal volumes of gas contain equal numbers of moles at the same temperature and pressure, the volume ratio H₂:O₂ = 2:1.'
+    },
+
+    // Q23
+    {
+      q:    'Which enzyme is responsible for the transcription of DNA into mRNA in eukaryotes?',
+      opts: ['DNA polymerase', 'RNA polymerase', 'Reverse transcriptase', 'Ribozyme'],
+      ans:  1,
+      exp:  'RNA polymerase catalyses the synthesis of RNA from a DNA template during transcription. DNA polymerase replicates DNA (DNA → DNA). Reverse transcriptase synthesises DNA from an RNA template (found in retroviruses such as HIV). Ribozymes are RNA molecules with catalytic activity but are not the primary transcription enzyme in eukaryotes.'
+    },
+
+    // Q24
+    {
+      q:    'A 2.0 µF capacitor is charged to 100 V and then connected across an uncharged 3.0 µF capacitor. What is the final potential difference across the combination?',
+      opts: ['20 V', '40 V', '50 V', '60 V'],
+      ans:  1,
+      exp:  'Initial charge on 2.0 µF capacitor: Q = CV = 2.0 × 100 = 200 µC. When connected to the uncharged 3.0 µF capacitor, charge redistributes and total capacitance becomes 2.0 + 3.0 = 5.0 µF. Since charge is conserved, the final potential difference is $V = \\frac{Q}{C_{total}} = \\frac{200}{5.0} = 40\\ \\text{V}$.'
+    },
+
+    // Q25
+    {
+      q:    'Which of the following statements about the Bohr model of the hydrogen atom is correct?',
+      opts: [
+        'Electrons orbit the nucleus in elliptical paths of any energy',
+        'Electrons can exist between discrete energy levels during transitions',
+        'Angular momentum of the electron is quantised in units of h/2π',
+        'The model successfully predicts the spectra of multi-electron atoms'
+      ],
+      ans:  2,
+      exp:  'Bohr postulated that electrons move in circular orbits (not elliptical) with quantised angular momentum: $L = n\\hbar = \\frac{nh}{2\\pi}$, where n is a positive integer. Option A is wrong — Bohr\'s model uses circular orbits with discrete energies. Option B is wrong — electrons jump instantaneously; they do not exist between levels. Option D is wrong — the Bohr model fails for multi-electron atoms because it does not account for electron-electron interactions.'
+    },
+
+    // Q26
+    {
+      q:    'In the food chain: Grass → Grasshopper → Frog → Snake → Hawk, which organism occupies the tertiary consumer trophic level?',
+      opts: ['Frog', 'Snake', 'Hawk', 'Grasshopper'],
+      ans:  1,
+      exp:  'Trophic levels: Grass = producer (1st); Grasshopper = primary consumer (2nd); Frog = secondary consumer (3rd); Snake = tertiary consumer (4th); Hawk = quaternary consumer (5th). The snake is the tertiary consumer, occupying the 4th trophic level.'
+    },
+
+    // Q27
+    {
+      q:    'What mass of sodium hydroxide is required to neutralise 25.0 cm³ of 0.10 mol/dm³ H₂SO₄? [M(NaOH) = 40 g/mol]',
+      opts: ['0.10 g', '0.20 g', '0.40 g', '0.80 g'],
+      ans:  1,
+      exp:  'Moles of H₂SO₄ = 0.10 mol/dm³ × 0.025 dm³ = 0.0025 mol. Reaction: 2NaOH + H₂SO₄ → Na₂SO₄ + 2H₂O. Mole ratio NaOH:H₂SO₄ = 2:1, so moles NaOH = 2 × 0.0025 = 0.005 mol. Mass NaOH = 0.005 × 40 = 0.20 g.'
+    },
+
+    // Q28
+    {
+      q:    'A wire of length 2.0 m and cross-sectional area 2.0 × 10⁻⁶ m² has a resistance of 4.0 × 10⁻² Ω. What is the resistivity of the material?',
+      opts: ['2.0 × 10⁻⁸ Ω·m', '4.0 × 10⁻⁸ Ω·m', '8.0 × 10⁻⁸ Ω·m', '1.6 × 10⁻⁷ Ω·m'],
+      ans:  1,
+      exp:  'From $R = \\frac{\\rho L}{A}$, resistivity is $\\rho = \\frac{RA}{L} = \\frac{4.0 \\times 10^{-2} \\times 2.0 \\times 10^{-6}}{2.0} = \\frac{8.0 \\times 10^{-8}}{2.0} = 4.0 \\times 10^{-8}\\ \\Omega \\cdot \\text{m}$.'
+    },
+
+    // Q29
+    {
+      q:    'Which of the following is a characteristic of facilitated diffusion across a cell membrane?',
+      opts: [
+        'Transport against a concentration gradient',
+        'Direct requirement for ATP hydrolysis',
+        'Involvement of membrane proteins and movement down a concentration gradient',
+        'Occurs only in animal cells'
+      ],
+      ans:  2,
+      exp:  'Facilitated diffusion is a form of passive transport. Substances move down their concentration gradient (from high to low concentration) using membrane proteins (carrier proteins or channel proteins) to cross the hydrophobic lipid bilayer. It does not require ATP — unlike active transport. It occurs in both animal and plant cells. Option A describes active transport; Option B describes active transport; Option D is incorrect.'
+    },
+
+    // Q30
+    {
+      q:    'A radioactive source has an activity of 800 Bq. If the activity falls to 100 Bq in 24 hours, what is the half-life?',
+      opts: ['6 hours', '8 hours', '12 hours', '24 hours'],
+      ans:  1,
+      exp:  'Count the number of halvings from 800 to 100: 800 → 400 → 200 → 100. This is 3 half-lives. Therefore 3 × t½ = 24 hours, so t½ = 8 hours.'
+    },
+
+    // Q31
+    {
+      q:    'Which reagent would distinguish between ethanoic acid and ethanol?',
+      opts: ['Bromine water', 'Sodium hydrogen carbonate', 'Fehling\'s solution', 'Benedict\'s solution'],
+      ans:  1,
+      exp:  'Ethanoic acid (a carboxylic acid) reacts with sodium hydrogen carbonate (NaHCO₃) to produce effervescence — carbon dioxide gas is released: CH₃COOH + NaHCO₃ → CH₃COONa + H₂O + CO₂. Ethanol (an alcohol) does not react with NaHCO₃. Bromine water is not a reliable distinguishing test between these two. Fehling\'s and Benedict\'s solutions test for reducing sugars and aldehydes, not for carboxylic acids or alcohols.'
+    },
+
+    // Q32
+    {
+      q:    'A simple pendulum has a period of 2.0 s on Earth where g = 10 m/s². What would be its period on a planet where g = 2.5 m/s²?',
+      opts: ['1.0 s', '2.0 s', '4.0 s', '8.0 s'],
+      ans:  2,
+      exp:  'The period of a simple pendulum: $T = 2\\pi\\sqrt{\\frac{L}{g}}$. Since T ∝ 1/√g, we get $\\frac{T_2}{T_1} = \\sqrt{\\frac{g_1}{g_2}} = \\sqrt{\\frac{10}{2.5}} = \\sqrt{4} = 2$. Therefore T₂ = 2 × 2.0 = 4.0 s.'
+    },
+
+    // Q33
+    {
+      q:    'In the nitrogen cycle, which organism is primarily responsible for converting atmospheric nitrogen into ammonia?',
+      opts: ['Denitrifying bacteria', 'Nitrifying bacteria', 'Nitrogen-fixing bacteria', 'Decomposers'],
+      ans:  2,
+      exp:  'Nitrogen-fixing bacteria (such as Rhizobium in legume root nodules and free-living Azotobacter) convert atmospheric N₂ into ammonia (NH₃) — a process called biological nitrogen fixation. Nitrifying bacteria (e.g. Nitrosomonas, Nitrobacter) convert ammonia to nitrites and then nitrates. Denitrifying bacteria return nitrogen gas to the atmosphere. Decomposers break down organic matter to release ammonia from proteins.'
+    },
+
+    // Q34
+    {
+      q:    'What is the pH of a 0.001 mol/dm³ solution of NaOH at 25°C?',
+      opts: ['3', '8', '11', '14'],
+      ans:  2,
+      exp:  'NaOH is a strong base and fully dissociates: [OH⁻] = 0.001 mol/dm³ = 10⁻³ mol/dm³. pOH = −log(10⁻³) = 3. At 25°C, pH + pOH = 14, so pH = 14 − 3 = 11.'
+    },
+
+    // Q35
+    {
+      q:    'An object is placed 30 cm from a converging lens of focal length 20 cm. What is the magnification of the image?',
+      opts: ['−2', '−1', '1', '2'],
+      ans:  0,
+      exp:  'Using the lens formula $\\frac{1}{f} = \\frac{1}{v} - \\frac{1}{u}$ (with real-is-positive convention, u = +30 cm): $\\frac{1}{20} = \\frac{1}{v} - \\frac{1}{30}$ is incorrect under the standard sign convention. Using $\\frac{1}{f} = \\frac{1}{v} + \\frac{1}{u}$ with u = +30: $\\frac{1}{20} = \\frac{1}{v} + \\frac{1}{30} \\Rightarrow \\frac{1}{v} = \\frac{1}{20} - \\frac{1}{30} = \\frac{1}{60}$, so v = 60 cm. Magnification $m = -\\frac{v}{u} = -\\frac{60}{30} = -2$. The negative sign indicates an inverted, real image.'
+    },
+
+    // Q36
+    {
+      q:    'Which of the following is NOT a function of the mammalian kidney?',
+      opts: ['Regulation of blood pH', 'Production of urea', 'Regulation of water balance', 'Removal of metabolic wastes'],
+      ans:  1,
+      exp:  'Urea is produced in the liver by the ornithine cycle (urea cycle) during deamination of excess amino acids. The kidney excrete urea but does not produce it. The kidney does: regulate blood pH (by excreting H⁺ and reabsorbing HCO₃⁻); regulate water balance (through ADH-controlled water reabsorption); and remove metabolic wastes such as urea, creatinine, and uric acid.'
+    },
+
+    // Q37
+    {
+      q:    'How many structural isomers exist for the molecular formula C₄H₁₀?',
+      opts: ['2', '3', '4', '5'],
+      ans:  0,
+      exp:  'C₄H₁₀ is an alkane (CₙH₂ₙ₊₂; 4 × 2 + 2 = 10). There are exactly two structural isomers: (1) n-butane — a straight chain: CH₃CH₂CH₂CH₃; (2) 2-methylpropane (isobutane) — a branched chain: (CH₃)₂CHCH₃. No other distinct carbon skeletons are possible for C₄H₁₀.'
+    },
+
+    // Q38
+    {
+      q:    'A force of 20 N acts on a body of mass 4 kg for 5 s. If the body was initially at rest, what is its final momentum?',
+      opts: ['20 kg·m/s', '50 kg·m/s', '100 kg·m/s', '400 kg·m/s'],
+      ans:  2,
+      exp:  'By the impulse-momentum theorem, impulse = change in momentum. Impulse = F × t = 20 × 5 = 100 N·s = 100 kg·m/s. Since the body started from rest (initial momentum = 0), the final momentum = 100 kg·m/s.'
+    },
+
+    // Q39
+    {
+      q:    'In an experiment to investigate photosynthesis, a destarched leaf is exposed to light with a portion covered by black paper. After testing with iodine solution, the uncovered portion turns blue-black while the covered portion remains brown. What conclusion can be drawn?',
+      opts: [
+        'Light is necessary for the production of starch',
+        'Chlorophyll is necessary for photosynthesis',
+        'Carbon dioxide is necessary for photosynthesis',
+        'Oxygen is a product of photosynthesis'
+      ],
+      ans:  0,
+      exp:  'Iodine solution turns blue-black in the presence of starch and remains brown in its absence. The only variable in this experiment is light — the covered portion received no light and has no starch, while the uncovered portion received light and produced starch. The conclusion is that light is necessary for the production of starch in photosynthesis. Chlorophyll, CO₂ and oxygen production are not tested by this particular experimental design.'
+    },
+
+    // Q40
+    {
+      q:    'Two resistors of 6 Ω and 3 Ω are connected in parallel, and this combination is connected in series with a 4 Ω resistor across a 24 V battery. What is the power dissipated in the 4 Ω resistor?',
+      opts: ['16 W', '32 W', '64 W', '96 W'],
+      ans:  2,
+      exp:  'Parallel resistance: $R_p = \\frac{6 \\times 3}{6 + 3} = \\frac{18}{9} = 2\\ \\Omega$. Total circuit resistance = 2 + 4 = 6 Ω. Circuit current = $I = \\frac{24}{6} = 4\\ \\text{A}$. This 4 A flows through the series 4 Ω resistor. Power dissipated = $I^2 R = 4^2 \\times 4 = 16 \\times 4 = 64\\ \\text{W}$.'
+    }
+  ],
+"English Language": = [
+
+    // Q1
+    {
+      q:    'Choose the option that best completes the sentence: The committee ______ divided on the issue of funding.',
+      opts: ['are', 'was', 'were', 'have been'],
+      ans:  1,
+      exp:  '"Committee" is a collective noun. When a collective noun refers to the group acting as a single unit — which is the standard formal interpretation — it takes a singular verb. "Was divided" correctly treats the committee as one body. While "were" is sometimes acceptable when individual members act independently, the singular "was" is the preferred formal choice in this context.'
+    },
+
+    // Q2
+    {
+      q:    'Select the word that is nearest in meaning to MELLIFLUOUS.',
+      opts: ['Discordant', 'Harmonious', 'Bitter', 'Harsh'],
+      ans:  1,
+      exp:  '"Mellifluous" (from Latin mel = honey, fluere = to flow) means sweet-sounding, smooth, and pleasant to the ear — typically describing a voice or music. "Harmonious" is the closest synonym. "Discordant", "harsh", and "bitter" are all antonyms.'
+    },
+
+    // Q3
+    {
+      q:    'In the sentence "The man who stole the car has been arrested," the underlined expression "who stole the car" is a/an:',
+      opts: ['Noun phrase', 'Adjectival clause', 'Adverbial clause', 'Noun clause'],
+      ans:  1,
+      exp:  '"Who stole the car" is a relative (adjectival) clause. It is introduced by the relative pronoun "who" and modifies the noun "man" — it tells us which man was arrested. A noun clause functions as a subject, object, or complement. An adverbial clause modifies a verb and answers when, where, why, or how. This clause modifies a noun, making it adjectival.'
+    },
+
+    // Q4
+    {
+      q:    'Choose the option with the correct stress pattern for the word "ECONOMY".',
+      opts: ['e-CON-o-my', 'e-con-O-my', 'E-con-o-my', 'e-con-o-MY'],
+      ans:  0,
+      exp:  '"Economy" (/ɪˈkɒnəmi/) is stressed on the second syllable: e-CON-o-my. The primary stress falls on the syllable "-CON-". This is the standard pronunciation in both British and American English.'
+    },
+
+    // Q5
+    {
+      q:    'Identify the error in the sentence: "Each of the students have submitted their assignments."',
+      opts: ['Each of', 'have submitted', 'their assignments', 'No error'],
+      ans:  1,
+      exp:  '"Each" is a singular indefinite pronoun and always takes a singular verb. The correct form is "Each of the students HAS submitted…". The error is "have submitted" — it should be "has submitted". (Note: "their" is increasingly accepted as a gender-neutral singular pronoun in modern English, so that part is defensible, though "his or her" is used in strictly formal contexts.)'
+    },
+
+    // Q6
+    {
+      q:    'Choose the most appropriate option to fill the gap: The manager insisted ______ immediate payment before releasing the goods.',
+      opts: ['on', 'in', 'at', 'for'],
+      ans:  0,
+      exp:  'The verb "insist" collocates with the preposition "on" when followed by a noun or gerund phrase: "insist on something / on doing something." The correct phrase is "insisted on immediate payment." The constructions "insist in," "insist at," and "insist for" are not standard English collocations.'
+    },
+
+    // Q7
+    {
+      q:    'Select the antonym of OSTENTATIOUS.',
+      opts: ['Showy', 'Pretentious', 'Modest', 'Flamboyant'],
+      ans:  2,
+      exp:  '"Ostentatious" means characterised by vulgar or pretentious display; designed to impress or attract attention. Its antonym is "modest" — unassuming, restrained, not seeking to attract notice. "Showy", "pretentious", and "flamboyant" are all synonyms of ostentatious.'
+    },
+
+    // Q8
+    {
+      q:    'In reported speech, the direct statement "I will call you tomorrow," she said, becomes:',
+      opts: [
+        'She said that she will call me the next day.',
+        'She said that she would call me the next day.',
+        'She said that she will call you tomorrow.',
+        'She said that she would call you the following day.'
+      ],
+      ans:  1,
+      exp:  'In reported speech with a past reporting verb ("said"), three changes occur: (1) "will" → "would" (backshift of tense); (2) "you" → "me" (pronoun shift, assuming the reporter is the addressee); (3) "tomorrow" → "the next day" (adverb of time shift). Option B correctly applies all three: "She said that she would call me the next day."'
+    },
+
+    // Q9
+    {
+      q:    'Choose the option that best conveys the meaning of the idiom "to burn the midnight oil".',
+      opts: [
+        'To waste resources unnecessarily',
+        'To study or work late into the night',
+        'To set fire to something valuable',
+        'To begin a new project'
+      ],
+      ans:  1,
+      exp:  'The idiom "burn the midnight oil" means to work or study very late into the night. The expression derives from the era before electricity, when people used oil lamps to work after dark, burning oil well past midnight.'
+    },
+
+    // Q10
+    {
+      q:    'Which of the following sentences contains a nominalised structure?',
+      opts: [
+        'The destruction of the building was swift.',
+        'The building was destroyed swiftly.',
+        'They destroyed the building swiftly.',
+        'Swiftly, the building was destroyed.'
+      ],
+      ans:  0,
+      exp:  'Nominalisation is the process of converting a verb or adjective into a noun. In option A, "destruction" is the nominalised form of the verb "destroy" — it functions as the subject of the sentence. Options B, C, and D all use the verb form "destroyed." Nominalisation is characteristic of formal and academic writing style.'
+    },
+
+    // Q11
+    {
+      q:    'Choose the word that best completes the sentence: The ______ of the evidence made the jury\'s decision inevitable.',
+      opts: ['insufficiency', 'ambiguity', 'cogency', 'irrelevance'],
+      ans:  2,
+      exp:  '"Cogency" means the quality of being clear, logical, and convincing. If the evidence was cogent — powerfully persuasive — the jury\'s decision would be inevitable. "Insufficiency" (not enough evidence), "ambiguity" (unclear evidence), and "irrelevance" (unrelated evidence) would all make an inevitable decision less likely, not more.'
+    },
+
+    // Q12
+    {
+      q:    'Identify the grammatical function of the underlined phrase: "To win the scholarship is his primary ambition."',
+      opts: ['Subject', 'Object', 'Complement', 'Adverbial'],
+      ans:  0,
+      exp:  'The infinitive phrase "To win the scholarship" functions as the subject of the sentence — it is the thing that "is his primary ambition." The verb "is" links this subject to the subject complement "his primary ambition." An infinitive phrase can function as a noun (subject, object, or complement) in a sentence.'
+    },
+
+    // Q13
+    {
+      q:    'Select the grammatically correct sentence for a third conditional.',
+      opts: [
+        'If I had known, I would not have gone.',
+        'If I knew, I would not have gone.',
+        'If I had known, I would not go.',
+        'If I know, I would not have gone.'
+      ],
+      ans:  0,
+      exp:  'The third conditional expresses a hypothetical situation in the past and its imagined consequence. The structure is: If + past perfect, would have + past participle. Option A follows this pattern exactly: "If I had known" (past perfect) + "I would not have gone" (would have + past participle). Options B, C, and D mix tenses incorrectly.'
+    },
+
+    // Q14
+    {
+      q:    'Choose the most appropriate meaning of "PERFUNCTORY" as used in: "He gave a perfunctory nod and walked away."',
+      opts: ['Enthusiastic', 'Deeply thoughtful', 'Carried out with minimal effort or interest', 'Highly detailed'],
+      ans:  2,
+      exp:  '"Perfunctory" means carried out with a minimum of effort or care; hasty and superficial. A "perfunctory nod" is a brief, disinterested acknowledgement — the person is not engaging meaningfully. In the sentence, the act of nodding and walking away immediately confirms this sense of minimal, routine gesture without genuine interest.'
+    },
+
+    // Q15
+    {
+      q:    'Which of the following is an example of a compound-complex sentence?',
+      opts: [
+        'The students studied hard, and they passed the examination.',
+        'Although it rained, the match continued, but the spectators left.',
+        'Because he was ill, he stayed at home.',
+        'The sun set, and darkness fell.'
+      ],
+      ans:  1,
+      exp:  'A compound-complex sentence contains at least two independent clauses and at least one dependent (subordinate) clause. Option B has: (1) dependent clause — "Although it rained"; (2) independent clause — "the match continued"; (3) independent clause — "but the spectators left." Option A is compound (two independent clauses joined by "and"). Option C is complex (one independent + one dependent). Option D is compound.'
+    },
+
+    // Q16
+    {
+      q:    'Choose the option that best replaces the underlined phrase without changing the meaning: "The teacher\'s explanation was crystal clear."',
+      opts: [
+        'Ambiguous and confusing',
+        'Transparent and easy to understand',
+        'Long and tedious',
+        'Brief and incomplete'
+      ],
+      ans:  1,
+      exp:  'The idiom "crystal clear" means completely clear and easy to understand, leaving no room for doubt or misinterpretation. "Transparent and easy to understand" captures this meaning most accurately. The other options — ambiguous and confusing, long and tedious, brief and incomplete — all convey meanings contrary to "crystal clear."'
+    },
+
+    // Q17
+    {
+      q:    'In the sentence "The boy who won the prize is my cousin," the relative pronoun "who" refers to:',
+      opts: ['The prize', 'The boy', 'The cousin', 'The speaker'],
+      ans:  1,
+      exp:  'The relative pronoun "who" refers back to its antecedent — the noun it replaces and about which it gives additional information. Here, "who" introduces the relative clause "who won the prize" and refers back to "the boy." It functions as the subject of the relative clause (who won the prize = the boy won the prize).'
+    },
+
+    // Q18
+    {
+      q:    'Select the sentence that correctly uses the subjunctive mood.',
+      opts: [
+        'If I was rich, I would buy a mansion.',
+        'I wish I were taller.',
+        'If she was here, she would help us.',
+        'He acts as if he was the owner.'
+      ],
+      ans:  1,
+      exp:  'The subjunctive mood is used to express hypothetical, contrary-to-fact, or wished-for situations. In formal English, the past subjunctive uses "were" for all persons, including first and third person singular. "I wish I were taller" correctly uses the subjunctive "were" to express a wish about a contrary-to-fact condition. Options A, C, and D use "was" where formal grammar requires "were."'
+    },
+
+    // Q19
+    {
+      q:    'Choose the most appropriate word to fill the gap: The ______ nature of the contract made it difficult to interpret.',
+      opts: ['explicit', 'ambiguous', 'transparent', 'lucid'],
+      ans:  1,
+      exp:  '"Ambiguous" means open to more than one interpretation; unclear or having a double meaning. If a contract is ambiguous, it is difficult to interpret because its language can be understood in different ways. "Explicit", "transparent", and "lucid" all mean clear and unambiguous — the opposite of what the sentence requires.'
+    },
+
+    // Q20
+    {
+      q:    'Identify the figure of speech in the sentence: "The wind whispered through the trees."',
+      opts: ['Simile', 'Metaphor', 'Personification', 'Hyperbole'],
+      ans:  2,
+      exp:  'Personification is the attribution of human qualities, actions, or characteristics to non-human things. "Whispered" is a human action attributed to the wind. A simile makes a comparison using "like" or "as." A metaphor makes an implied comparison without "like" or "as." Hyperbole is deliberate exaggeration for emphasis. None of these other devices apply here.'
+    },
+    // Q21
+    {
+      q:    'Passage: "The proliferation of digital media has fundamentally altered the cognitive architecture of the modern student. Where once sustained attention was cultivated through prolonged engagement with printed texts, the contemporary learner navigates an ecosystem of perpetual distraction. Research indicates that the constant toggling between tabs and applications erodes deep-processing capabilities, rendering the assimilation of complex arguments increasingly arduous. Yet proponents of educational technology argue that multimodal learning environments accommodate diverse cognitive styles, suggesting that the decline in traditional literacy may be offset by gains in visual-spatial reasoning and collaborative problem-solving." The author\'s primary purpose in this passage is to:',
+      opts: [
+        'Argue that digital media should be banned in schools',
+        'Celebrate the decline of traditional literacy',
+        'Present a balanced analysis of digital media\'s cognitive effects',
+        'Prove that printed texts are superior to digital formats'
+      ],
+      ans:  2,
+      exp:  'The passage presents both sides: it notes that digital media "erodes deep-processing capabilities" (a negative effect) but also acknowledges "gains in visual-spatial reasoning and collaborative problem-solving" (a positive effect). The author neither bans digital media nor celebrates literacy decline — the purpose is balanced analysis. Options A, B, and D are too extreme and one-sided to represent the author\'s intent.'
+    },
+
+    // Q22
+    {
+      q:     'Passage: "The proliferation of digital media has fundamentally altered the cognitive architecture of the modern student. Where once sustained attention was cultivated through prolonged engagement with printed texts, the contemporary learner navigates an ecosystem of perpetual distraction. Research indicates that the constant toggling between tabs and applications erodes deep-processing capabilities, rendering the assimilation of complex arguments increasingly arduous. Yet proponents of educational technology argue that multimodal learning environments accommodate diverse cognitive styles, suggesting that the decline in traditional literacy may be offset by gains in visual-spatial reasoning and collaborative problem-solving." The word "erodes" as used in the passage most nearly means:',
+      opts: ['Diminishes gradually', 'Builds up systematically', 'Alters fundamentally', 'Preserves intact'],
+      ans:  0,
+      exp:  '"Erodes" literally means to wear away gradually (as water erodes rock). In the passage, it describes how constant digital distraction gradually diminishes deep-processing capabilities — eating away at them over time. "Diminishes gradually" captures this meaning exactly. "Builds up" and "preserves intact" are opposite in meaning; "alters fundamentally" is broader and does not capture the gradual wearing-away sense.'
+    },
+
+    // Q23
+    {
+      q:     'Passage: "The proliferation of digital media has fundamentally altered the cognitive architecture of the modern student. Where once sustained attention was cultivated through prolonged engagement with printed texts, the contemporary learner navigates an ecosystem of perpetual distraction. Research indicates that the constant toggling between tabs and applications erodes deep-processing capabilities, rendering the assimilation of complex arguments increasingly arduous. Yet proponents of educational technology argue that multimodal learning environments accommodate diverse cognitive styles, suggesting that the decline in traditional literacy may be offset by gains in visual-spatial reasoning and collaborative problem-solving." Which of the following can best be inferred from the passage?',
+      opts: [
+        'Printed texts are entirely obsolete in modern education',
+        'All students prefer multimodal learning environments',
+        'Visual-spatial reasoning may be strengthened by digital engagement',
+        'Multimodal environments may partially compensate for some cognitive losses'
+      ],
+      ans:  3,
+      exp:  'The passage states that "the decline in traditional literacy may be offset by gains in visual-spatial reasoning and collaborative problem-solving." "Offset" means to compensate for or counterbalance. This directly supports option D — that multimodal environments may partially compensate for some cognitive losses. Option C is partially correct (visual-spatial gains are mentioned) but Option D is the more complete inference supported by the passage. Options A and B are not supported — the passage says nothing about printed texts being obsolete or all students preferring multimodal environments.'
+    },
+
+    // Q24
+    {
+      q:    '"Neither the teacher nor the students ______ prepared for the excursion." Choose the correct verb.',
+      opts: ['was', 'were', 'is', 'has'],
+      ans:  1,
+      exp:  'With "neither…nor" constructions, the verb agrees with the noun or pronoun closest to it (the nearer subject rule). The nearer subject here is "the students" (plural), so the verb must be plural: "were". If the order were reversed — "Neither the students nor the teacher" — the answer would be "was".'
+    },
+
+    // Q25
+    {
+      q:    '"By next December, she ______ her doctoral thesis." Choose the correct tense.',
+      opts: ['will have completed', 'will complete', 'would have completed', 'completes'],
+      ans:  0,
+      exp:  '"By next December" indicates a specific future point by which an action will be finished. The future perfect tense ("will have completed") is required to express an action that will be completed before a specified future time. "Will complete" (simple future) does not emphasise the completion. "Would have completed" is used in conditional sentences. "Completes" is present simple and does not apply to a future event.'
+    },
+
+    // Q26
+    {
+      q:    '"I didn\'t take the book," Tom said. Choose the correct reported speech.',
+      opts: [
+        'Tom said that he didn\'t take the book.',
+        'Tom said that he hadn\'t taken the book.',
+        'Tom said that he hasn\'t taken the book.',
+        'Tom said that he doesn\'t take the book.'
+      ],
+      ans:  1,
+      exp:  'In reported speech, when the reporting verb is in the past tense ("said"), the tense of the reported clause shifts back one tense (backshift). Past simple ("didn\'t take") shifts to past perfect ("hadn\'t taken"). Option B correctly applies this backshift. Option A fails to backshift. Options C and D use wrong tenses.'
+    },
+
+    // Q27
+    {
+      q:    '"If he ______ the lottery, he would buy a house." Choose the correct verb form.',
+      opts: ['wins', 'won', 'had won', 'were to win'],
+      ans:  3,
+      exp:  '"Were to win" is a formal second conditional construction that expresses a highly improbable or hypothetical future situation. The second conditional structure is: If + past simple (or "were to" + infinitive), would + base verb. While "won" (Option B) is the standard second conditional answer, "were to win" (Option D) is also grammatically correct and is more formal — it is the intended answer here because it expresses a lower probability of winning the lottery. Both B and D are acceptable second conditionals, but D is the expected answer as a formal variant.'
+    },
+
+    // Q28
+    {
+      q:    '"They are making arrangements for the conference." Change to passive voice.',
+      opts: [
+        'Arrangements are being made for the conference.',
+        'Arrangements are made for the conference.',
+        'Arrangements were being made for the conference.',
+        'Arrangements have been made for the conference.'
+      ],
+      ans:  0,
+      exp:  'The active sentence uses present continuous tense ("are making"). The passive equivalent of present continuous is formed with: am/is/are + being + past participle. "Arrangements are being made for the conference" correctly transforms the sentence. Option B uses present simple passive. Option C uses past continuous passive. Option D uses present perfect passive. Only A matches the original tense.'
+    },
+
+    // Q29
+    {
+      q:    'In the sentence "Whatever decision the committee reaches will be binding," the underlined clause "Whatever decision the committee reaches" functions as:',
+      opts: ['A noun clause as subject', 'An adjectival clause', 'An adverbial clause of condition', 'A relative clause'],
+      ans:  1,
+      exp:  '"Whatever decision the committee reaches" is an adjectival (relative) clause introduced by the relative determiner "whatever." It modifies the implied head noun "decision" and functions to specify which decision. While it may appear to be a noun clause at first glance, "whatever decision" acts as a modified noun phrase — the whole clause is best analysed as a free relative clause functioning nominally as the subject. In many grammar frameworks this is classified as a noun clause (nominal clause) used as subject. Both A and D have merit; however, standard WAEC/JAMB analysis identifies this as a noun clause (A).'
+    },
+
+    // Q30
+    {
+      q:    '"The prize was shared between Ade and ______." Choose the correct pronoun.',
+      opts: ['I', 'me', 'myself', 'mine'],
+      ans:  1,
+      exp:  '"Between" is a preposition, and prepositions require an object pronoun — not a subject pronoun. The object pronoun is "me", not "I." The correct phrase is "between Ade and me." "Myself" is a reflexive or emphatic pronoun and is incorrect here. "Mine" is a possessive pronoun and does not fit grammatically.'
+    },
+
+    // Q31
+    {
+      q:    'In the sentence "He spoke in a low voice so as not to wake the baby," the phrase "so as not to wake the baby" functions as:',
+      opts: ['An adverbial of manner', 'An adverbial of purpose', 'A complement of the verb', 'An adverbial of place'],
+      ans:  1,
+      exp:  '"So as not to wake the baby" expresses purpose — it explains the reason or intention behind the action of speaking in a low voice. It answers the question "Why did he speak in a low voice?" Adverbials of purpose typically use infinitive constructions with "so as to", "in order to", or "to." Manner answers "how" (he spoke quietly — that is the low voice phrase); purpose answers "why."'
+    },
+
+    // Q32
+    {
+      q:    'Which word is nearest in meaning to INIMICAL?',
+      opts: ['Hostile', 'Friendly', 'Neutral', 'Indifferent'],
+      ans:  0,
+      exp:  '"Inimical" means tending to obstruct or harm; hostile; harmful. "Hostile" is the closest synonym — both words describe something or someone that is opposed, unfriendly, or harmful. "Friendly", "neutral", and "indifferent" all imply different degrees of non-hostility.'
+    },
+
+    // Q33
+    {
+      q:    'What is the opposite of PHLEGMATIC?',
+      opts: ['Calm', 'Apathetic', 'Excitable', 'Stoic'],
+      ans:  2,
+      exp:  '"Phlegmatic" means having an unemotional and stolidly calm disposition; slow to respond emotionally. Its antonym is "excitable" — easily aroused or stimulated emotionally, quick to react. "Calm", "apathetic", and "stoic" are all close in meaning to phlegmatic, not its opposite.'
+    },
+
+    // Q34
+    {
+      q:    'The proposal was rejected "out of hand." This means it was:',
+      opts: ['Rejected immediately and completely', 'Under control', 'Carefully managed', 'Deferred indefinitely'],
+      ans:  0,
+      exp:  'The idiom "out of hand" means without consideration, instantly, and completely — as in dismissing something before even examining it. When a proposal is rejected "out of hand", it is refused immediately without deliberation or the possibility of revision.'
+    },
+
+    // Q35
+    {
+      q:    'In medical discourse, a persistent abnormally high body temperature is described as:',
+      opts: ['Hypertension', 'Hyperthermia', 'Hypothermia', 'Hyperglycaemia'],
+      ans:  1,
+      exp:  '"Hyperthermia" (hyper- = above/excess; -thermia = heat) refers to an abnormally elevated body temperature, typically above 37.5–38.3°C (99.5–100.9°F). "Hypertension" is high blood pressure. "Hypothermia" (hypo- = below) is dangerously low body temperature. "Hyperglycaemia" is elevated blood sugar. The medical register term for a persistently high body temperature is hyperthermia.'
+    },
+
+    // Q36
+    {
+      q:    'Which option shows the correct stress pattern for the word "PHOTOGRAPH"?',
+      opts: ['pho-TO-graph', 'PHO-to-graph', 'pho-to-GRAPH', 'PHO-to-GRAPH'],
+      ans:  1,
+      exp:  '"Photograph" as a noun is stressed on the first syllable: PHO-to-graph (/ˈfəʊtəɡrɑːf/). When used as a verb, it is also typically stressed on the first syllable in British English. The primary stress falls on "PHO-". Option B correctly represents this.'
+    },
+
+    // Q37
+    {
+      q:    'Which of the following words contains the same vowel sound as "BIRD"?',
+      opts: ['Seed', 'Bed', 'Word', 'Food'],
+      ans:  2,
+      exp:  '"Bird" contains the vowel sound /ɜː/ (the NURSE vowel). "Word" also contains the /ɜː/ sound (wɜːd). "Seed" has /iː/ (the FLEECE vowel). "Bed" has /e/ (the DRESS vowel). "Food" has /uː/ (the GOOSE vowel). Therefore "word" shares the same vowel sound as "bird."'
+    },
+
+    // Q38
+    {
+      q:    '"The plan was rejected due to its ______." Choose the correct word.',
+      opts: ['feasible', 'feasibility', 'feasibly', 'infeasibility'],
+      ans:  3,
+      exp:  'The sentence requires a noun (because it follows the possessive "its" and functions as the object of the preposition "due to"). "Infeasibility" is the noun meaning the state of being not feasible — not practical or workable. "Feasible" and "feasibly" are an adjective and adverb respectively. "Feasibility" is a noun but means the state of being feasible (workable), which would mean the plan was rejected because it was workable — the opposite of the intended meaning.'
+    },
+
+    // Q39
+    {
+      q:    'Identify the error in the sentence: "The committee have submitted their reports."',
+      opts: ['The committee', 'have submitted', 'their reports', 'No error'],
+      ans:  1,
+      exp:  'When "committee" is treated as a single collective unit (the standard formal interpretation), it takes a singular verb. The correct sentence is "The committee has submitted its reports." The error is "have submitted" — it should be "has submitted." (Note: in informal British English, collective nouns sometimes take plural verbs, but for examination purposes the singular form is correct.)'
+    },
+
+    // Q40
+    {
+      q:    '"______ you mind closing the window?" Choose the most appropriate modal verb.',
+      opts: ['Will', 'Would', 'Could', 'Should'],
+      ans:  1,
+      exp:  '"Would you mind…?" is the standard polite request formula in English. It is more courteous and formal than "Will you mind?" because "would" expresses a hypothetical and softens the request. "Could" is also polite but is used differently ("Could you close the window?" not "Could you mind closing?"). "Should" expresses obligation. "Would you mind closing the window?" is the correct polite form.'
+    }
+  ],
+"General Mathematics": = [
+    // Q1
+    {
+      q:    'Simplify: $\\dfrac{1}{\\sqrt{3}-1} - \\dfrac{1}{\\sqrt{3}+1}$',
+      opts: ['0', '1', '2', '$\\sqrt{3}$'],
+      ans:  1,
+      exp:  '$\\dfrac{1}{\\sqrt{3}-1} - \\dfrac{1}{\\sqrt{3}+1} = \\dfrac{(\\sqrt{3}+1)-(\\sqrt{3}-1)}{(\\sqrt{3}-1)(\\sqrt{3}+1)} = \\dfrac{2}{3-1} = \\dfrac{2}{2} = 1$.'
+    },
+
+    // Q2
+    {
+      q:    'If $\\sqrt{8}(\\sqrt{2}+\\sqrt{3}) = a + b\\sqrt{6}$, find $a + b$.',
+      opts: ['2', '4', '6', '8'],
+      ans:  2,
+      exp:  '$\\sqrt{8}(\\sqrt{2}+\\sqrt{3}) = \\sqrt{8}\\cdot\\sqrt{2} + \\sqrt{8}\\cdot\\sqrt{3} = \\sqrt{16} + \\sqrt{24} = 4 + 2\\sqrt{6}$. So $a = 4$ and $b = 2$. Therefore $a + b = 6$.'
+    },
+
+    // Q3
+    {
+      q:    'If $A = \\begin{pmatrix}2&1\\\\1&3\\end{pmatrix}$, find $\\det(A^2)$.',
+      opts: ['5', '10', '16', '25'],
+      ans:  3,
+      exp:  '$\\det(A) = (2)(3) - (1)(1) = 6 - 1 = 5$. Using the property $\\det(A^2) = [\\det(A)]^2 = 5^2 = 25$.'
+    },
+
+    // Q4
+    {
+      q:    'Find the inverse of $\\begin{pmatrix}3&2\\\\1&2\\end{pmatrix}$.',
+      opts: [
+        '$\\begin{pmatrix}\\frac{1}{2}&-\\frac{1}{2}\\\\-\\frac{1}{4}&\\frac{3}{4}\\end{pmatrix}$',
+        '$\\begin{pmatrix}2&-2\\\\-1&3\\end{pmatrix}$',
+        '$\\begin{pmatrix}\\frac{1}{2}&\\frac{1}{2}\\\\\\frac{1}{4}&\\frac{3}{4}\\end{pmatrix}$',
+        '$\\begin{pmatrix}3&-2\\\\-1&2\\end{pmatrix}$'
+      ],
+      ans:  0,
+      exp:  '$\\det = (3)(2) - (2)(1) = 4$. The inverse is $\\frac{1}{4}\\begin{pmatrix}2&-2\\\\-1&3\\end{pmatrix} = \\begin{pmatrix}\\frac{1}{2}&-\\frac{1}{2}\\\\-\\frac{1}{4}&\\frac{3}{4}\\end{pmatrix}$.'
+    },
+
+    // Q5
+    {
+      q:    'Solve the system: $x + y = 8$ and $x^2 + y^2 = 34$. Find $xy$.',
+      opts: ['8', '15', '17', '34'],
+      ans:  1,
+      exp:  '$(x+y)^2 = x^2 + 2xy + y^2$. So $64 = 34 + 2xy \\Rightarrow 2xy = 30 \\Rightarrow xy = 15$.'
+    },
+
+    // Q6
+    {
+      q:    'The line $y = x + 2$ meets the curve $y = x^2 - 3x + 4$ at two points. Find the sum of the x-coordinates of those points.',
+      opts: ['−4', '2', '4', '6'],
+      ans:  2,
+      exp:  'Set equal: $x + 2 = x^2 - 3x + 4 \\Rightarrow x^2 - 4x + 2 = 0$. By Vieta\'s formulae, the sum of the roots $= \\frac{4}{1} = 4$.'
+    },
+
+    // Q7
+    {
+      q:    'A spherical ball has surface area 616 cm². Find its volume. [$\\pi = \\frac{22}{7}$]',
+      opts: ['718.67 cm³', '1078 cm³', '616 cm³', '1437.33 cm³'],
+      ans:  3,
+      exp:  '$4\\pi r^2 = 616 \\Rightarrow r^2 = \\frac{616 \\times 7}{4 \\times 22} = \\frac{4312}{88} = 49 \\Rightarrow r = 7$ cm. $V = \\frac{4}{3}\\pi r^3 = \\frac{4}{3} \\times \\frac{22}{7} \\times 343 = \\frac{4 \\times 22 \\times 343}{21} = \\frac{30184}{21} \\approx 1437.33$ cm³.'
+    },
+
+    // Q8
+    {
+      q:    'A hemispherical bowl has internal radius 7 cm. Find its total surface area (curved surface + flat base). [$\\pi = \\frac{22}{7}$]',
+      opts: ['462 cm²', '308 cm²', '616 cm²', '154 cm²'],
+      ans:  0,
+      exp:  'Total surface area = curved surface area + area of circular base $= 2\\pi r^2 + \\pi r^2 = 3\\pi r^2 = 3 \\times \\frac{22}{7} \\times 49 = 3 \\times 22 \\times 7 = 462$ cm².'
+    },
+
+    // Q9
+    {
+      q:    'Two towns lie on the same meridian, one at 25°N and the other at 55°N. Calculate the distance between them. [Radius of Earth R = 6400 km, $\\pi = \\frac{22}{7}$]',
+      opts: ['1676 km', '3352 km', '5028 km', '6704 km'],
+      ans:  1,
+      exp:  'Angular difference = 55° − 25° = 30°. Distance along a meridian $= \\frac{30}{360} \\times 2\\pi R = \\frac{1}{12} \\times 2 \\times \\frac{22}{7} \\times 6400 = \\frac{1}{12} \\times \\frac{281600}{7} \\approx \\frac{281600}{84} \\approx 3352$ km.'
+    },
+
+    // Q10
+    {
+      q:    'Find the radius of the circle of latitude at 60°N. [Radius of Earth R = 6400 km]',
+      opts: ['6400 km', '1600 km', '3200 km', '4800 km'],
+      ans:  2,
+      exp:  'The radius of the circle of latitude at angle θ is $r = R\\cos\\theta = 6400 \\times \\cos 60° = 6400 \\times 0.5 = 3200$ km.'
+    },
+
+    // Q11
+    {
+      q:    'An operation * is defined on the real numbers by $a * b = a + b + 2ab$. Find the identity element.',
+      opts: ['$-\\frac{1}{2}$', '$\\frac{1}{2}$', '1', '0'],
+      ans:  3,
+      exp:  'Let e be the identity: $a * e = a \\Rightarrow a + e + 2ae = a \\Rightarrow e(1 + 2a) = 0$. This must hold for all values of a, so $e = 0$. Check: $a * 0 = a + 0 + 0 = a$. ✓'
+    },
+
+    // Q12
+    {
+      q:    'If $a \\oplus b = \\dfrac{a^2 + b^2}{2}$, evaluate $3 \\oplus 4$.',
+      opts: ['12.5', '25', '7', '6.5'],
+      ans:  0,
+      exp:  '$3 \\oplus 4 = \\dfrac{3^2 + 4^2}{2} = \\dfrac{9 + 16}{2} = \\dfrac{25}{2} = 12.5$.'
+    },
+
+    // Q13
+    {
+      q:    'Which of the following is logically equivalent to $\\neg(p \\rightarrow q)$?',
+      opts: ['$p \\wedge q$', '$p \\wedge \\neg q$', '$\\neg p \\wedge q$', '$\\neg p \\wedge \\neg q$'],
+      ans:  1,
+      exp:  '$p \\rightarrow q \\equiv \\neg p \\vee q$. Therefore $\\neg(p \\rightarrow q) \\equiv \\neg(\\neg p \\vee q) \\equiv p \\wedge \\neg q$ (by De Morgan\'s law).'
+    },
+
+    // Q14
+    {
+      q:    'If p is true, q is false, and r is true, evaluate $(p \\vee q) \\wedge \\neg r$.',
+      opts: ['True', 'Both true and false', 'False', 'Neither'],
+      ans:  2,
+      exp:  '$p \\vee q = \\text{T} \\vee \\text{F} = \\text{True}$. $\\neg r = \\neg(\\text{T}) = \\text{False}$. $\\text{True} \\wedge \\text{False} = \\text{False}$.'
+    },
+
+    // Q15
+    {
+      q:    'Simplify: $\\log_2 48 - \\log_2 3 + \\log_2 2$',
+      opts: ['3', '4', '16', '5'],
+      ans:  3,
+      exp:  '$\\log_2 48 - \\log_2 3 + \\log_2 2 = \\log_2\\left(\\dfrac{48}{3}\\right) + \\log_2 2 = \\log_2 16 + 1 = 4 + 1 = 5$.'
+    },
+
+    // Q16
+    {
+      q:    'Given that $\\log_{10} 2 = 0.3010$ and $\\log_{10} 3 = 0.4771$, evaluate $\\log_{10} 72$.',
+      opts: ['1.8572', '1.5562', '1.9542', '0.8572'],
+      ans:  0,
+      exp:  '$72 = 8 \\times 9 = 2^3 \\times 3^2$. $\\log_{10} 72 = 3\\log_{10} 2 + 2\\log_{10} 3 = 3(0.3010) + 2(0.4771) = 0.9030 + 0.9542 = 1.8572$.'
+    },
+
+    // Q17
+    {
+      q:    'Express $\\dfrac{7x+2}{x^2+x-2}$ in partial fractions.',
+      opts: [
+        '$\\dfrac{4}{x-1} + \\dfrac{3}{x+2}$',
+        '$\\dfrac{4}{x+2} + \\dfrac{3}{x-1}$',
+        '$\\dfrac{1}{x+2} + \\dfrac{6}{x-1}$',
+        '$\\dfrac{7}{x+2} + \\dfrac{2}{x-1}$'
+      ],
+      ans:  1,
+      exp:  '$x^2+x-2 = (x+2)(x-1)$. Let $\\dfrac{7x+2}{(x+2)(x-1)} = \\dfrac{A}{x+2} + \\dfrac{B}{x-1}$. Then $7x+2 = A(x-1) + B(x+2)$. Setting $x=1$: $9 = 3B \\Rightarrow B=3$. Setting $x=-2$: $-12 = -3A \\Rightarrow A=4$. Result: $\\dfrac{4}{x+2} + \\dfrac{3}{x-1}$.'
+    },
+
+    // Q18
+    {
+      q:    'Evaluate $\\int (2x-3)^2\\, dx$.',
+      opts: [
+        '$\\dfrac{4}{3}x^3 - 6x^2 + 9x$',
+        '$4x^3 - 12x^2 + 9x + C$',
+        '$\\dfrac{4}{3}x^3 - 6x^2 + 9x + C$',
+        '$2x^3 - 6x^2 + 9x + C$'
+      ],
+      ans:  2,
+      exp:  'Expand: $(2x-3)^2 = 4x^2 - 12x + 9$. Integrate term by term: $\\int(4x^2-12x+9)\\,dx = \\dfrac{4}{3}x^3 - 6x^2 + 9x + C$.'
+    },
+
+    // Q19
+    {
+      q:    'Evaluate $\\displaystyle\\int_0^2 (3x^2 + 4x + 1)\\, dx$.',
+      opts: ['10', '14', '16', '18'],
+      ans:  3,
+      exp:  '$\\left[x^3 + 2x^2 + x\\right]_0^2 = (8 + 8 + 2) - 0 = 18$.'
+    },
+
+    // Q20
+    {
+      q:    'Find the equation of the line passing through (2, −1) and (4, 3).',
+      opts: ['$y = 2x - 5$', '$y = 2x + 3$', '$y = -2x + 5$', '$y = x - 3$'],
+      ans:  0,
+      exp:  'Gradient $m = \\dfrac{3-(-1)}{4-2} = \\dfrac{4}{2} = 2$. Using point (2, −1): $y - (-1) = 2(x-2) \\Rightarrow y + 1 = 2x - 4 \\Rightarrow y = 2x - 5$.'
+    },
+
+    // Q21
+    {
+      q:    'If $A = \\begin{pmatrix}1&2\\\\3&4\\end{pmatrix}$ and $B = \\begin{pmatrix}2&0\\\\1&3\\end{pmatrix}$, find the element in the second row, first column of $AB$.',
+      opts: ['4', '10', '6', '12'],
+      ans:  1,
+      exp:  'Row 2 of A × Col 1 of B: $(3)(2) + (4)(1) = 6 + 4 = 10$.'
+    },
+
+    // Q22
+    {
+      q:    'Solve for x: $\\det\\begin{pmatrix}x&1\\\\2&x-1\\end{pmatrix} = 0$.',
+      opts: ['1 and −2', '−1 and −2', '2 and −1', '2 and 1'],
+      ans:  2,
+      exp:  '$x(x-1) - 2(1) = 0 \\Rightarrow x^2 - x - 2 = 0 \\Rightarrow (x-2)(x+1) = 0 \\Rightarrow x = 2$ or $x = -1$.'
+    },
+
+    // Q23
+    {
+      q:    'A cone has base radius 6 cm and height 8 cm. Find its curved surface area. [$\\pi = \\frac{22}{7}$]',
+      opts: ['301.71 cm²', '150.86 cm²', '240 cm²', '188.57 cm²'],
+      ans:  3,
+      exp:  'Slant height $l = \\sqrt{6^2 + 8^2} = \\sqrt{100} = 10$ cm. Curved surface area $= \\pi r l = \\dfrac{22}{7} \\times 6 \\times 10 = \\dfrac{1320}{7} \\approx 188.57$ cm².'
+    },
+
+    // Q24
+    {
+      q:    'A sphere of radius 3 cm is melted and recast into a cone of base radius 3 cm. Find the height of the cone.',
+      opts: ['12 cm', '9 cm', '6 cm', '4 cm'],
+      ans:  0,
+      exp:  'Volume of sphere $= \\dfrac{4}{3}\\pi r^3 = \\dfrac{4}{3}\\pi(27) = 36\\pi$ cm³. Volume of cone $= \\dfrac{1}{3}\\pi r^2 h = \\dfrac{1}{3}\\pi(9)h = 3\\pi h$. Setting equal: $3\\pi h = 36\\pi \\Rightarrow h = 12$ cm.'
+    },
+
+    // Q25
+    {
+      q:    'Two points P and Q lie on the equator at longitudes 30°W and 60°E. Calculate the distance PQ along the equator. [R = 6400 km, $\\pi = \\frac{22}{7}$]',
+      opts: ['5027 km', '10053 km', '15080 km', '20107 km'],
+      ans:  1,
+      exp:  'Angular difference = 30° + 60° = 90°. Distance $= \\dfrac{90}{360} \\times 2\\pi R = \\dfrac{1}{4} \\times 2 \\times \\dfrac{22}{7} \\times 6400 = \\dfrac{22 \\times 6400}{14} = \\dfrac{140800}{14} \\approx 10057$ km $\\approx 10053$ km (using π = 22/7 precisely).'
+    },
+
+    // Q26
+    {
+      q:    'An operation * is defined by $a * b = ab - 2a - 2b + 6$. Find the identity element.',
+      opts: ['2', '4', '3', '6'],
+      ans:  2,
+      exp:  'Let e be the identity: $a * e = ae - 2a - 2e + 6 = a$. Rearranging: $ae - 2e = 3a - 6 \\Rightarrow e(a-2) = 3(a-2) \\Rightarrow e = 3$ (for $a \\neq 2$). Verify: $a * 3 = 3a - 2a - 6 + 6 = a$. ✓'
+    },
+
+    // Q27
+    {
+      q:    'Which of the following is a tautology?',
+      opts: ['$p \\wedge \\neg p$', '$(p \\wedge q) \\rightarrow p$', '$p \\rightarrow (p \\wedge q)$', '$p \\vee \\neg p$'],
+      ans:  3,
+      exp:  'A tautology is a statement that is true in every possible case. $p \\vee \\neg p$ (the Law of Excluded Middle) is always true regardless of whether p is true or false. $p \\wedge \\neg p$ is a contradiction (always false). $(p \\wedge q) \\rightarrow p$ is also a tautology, but $p \\vee \\neg p$ is the most straightforward classical example given in the options.'
+    },
+
+    // Q28
+    {
+      q:    'Simplify: $\\log_3 81 \\times \\log_9 27$.',
+      opts: ['6', '4', '3', '12'],
+      ans:  0,
+      exp:  '$\\log_3 81 = \\log_3 3^4 = 4$. $\\log_9 27 = \\dfrac{\\log_3 27}{\\log_3 9} = \\dfrac{3}{2}$. Product $= 4 \\times \\dfrac{3}{2} = 6$.'
+    },
+
+    // Q29
+    {
+      q:    'If $\\log_{10}(x^2 - 4x + 5) = 0$, find x.',
+      opts: ['1', '2', '3', '4'],
+      ans:  1,
+      exp:  '$\\log_{10}(x^2 - 4x + 5) = 0 \\Rightarrow x^2 - 4x + 5 = 10^0 = 1 \\Rightarrow x^2 - 4x + 4 = 0 \\Rightarrow (x-2)^2 = 0 \\Rightarrow x = 2$.'
+    },
+
+    // Q30
+    {
+      q:    'Express $\\dfrac{2x+5}{x^2+4x+4}$ in partial fractions.',
+      opts: [
+        '$\\dfrac{2}{x+2} - \\dfrac{1}{(x+2)^2}$',
+        '$\\dfrac{1}{x+2} + \\dfrac{2}{(x+2)^2}$',
+        '$\\dfrac{2}{x+2} + \\dfrac{1}{(x+2)^2}$',
+        '$\\dfrac{3}{(x+2)^2}$'
+      ],
+      ans:  2,
+      exp:  '$x^2+4x+4 = (x+2)^2$. Let $\\dfrac{2x+5}{(x+2)^2} = \\dfrac{A}{x+2} + \\dfrac{B}{(x+2)^2}$. Then $2x+5 = A(x+2) + B$. Setting $x=-2$: $1 = B$. Expanding: $2x+5 = Ax + 2A + B \\Rightarrow A=2$ (from coefficient of x). Result: $\\dfrac{2}{x+2} + \\dfrac{1}{(x+2)^2}$.'
+    },
+
+    // Q31
+    {
+      q:    'Evaluate $\\displaystyle\\int\\!\\left(x^3 + \\frac{1}{x^2}\\right)dx$.',
+      opts: [
+        '$\\dfrac{x^4}{4} + \\dfrac{1}{x} + C$',
+        '$\\dfrac{x^4}{4} - \\dfrac{1}{x^2} + C$',
+        '$\\dfrac{x^4}{4} + \\ln x + C$',
+        '$\\dfrac{x^4}{4} - \\dfrac{1}{x} + C$'
+      ],
+      ans:  3,
+      exp:  '$\\int x^3\\, dx = \\dfrac{x^4}{4}$ and $\\int x^{-2}\\, dx = \\dfrac{x^{-1}}{-1} = -\\dfrac{1}{x}$. Combined: $\\dfrac{x^4}{4} - \\dfrac{1}{x} + C$.'
+    },
+
+    // Q32
+    {
+      q:    'Find the area bounded by the curve $y = x^2 + 1$, the x-axis, and the lines $x = 0$ and $x = 3$.',
+      opts: ['12', '9', '10', '15'],
+      ans:  0,
+      exp:  '$\\displaystyle\\int_0^3 (x^2+1)\\,dx = \\left[\\dfrac{x^3}{3} + x\\right]_0^3 = \\left(\\dfrac{27}{3} + 3\\right) - 0 = 9 + 3 = 12$ square units.'
+    },
+
+    // Q33
+    {
+      q:    'Find the gradient of the line perpendicular to $3x + 2y = 7$.',
+      opts: ['$-\\dfrac{2}{3}$', '$\\dfrac{2}{3}$', '$-\\dfrac{3}{2}$', '$\\dfrac{3}{2}$'],
+      ans:  1,
+      exp:  'Rearranging: $2y = -3x + 7 \\Rightarrow y = -\\dfrac{3}{2}x + \\dfrac{7}{2}$. Gradient of given line $= -\\dfrac{3}{2}$. Gradient of perpendicular line $= -\\dfrac{1}{-\\frac{3}{2}} = \\dfrac{2}{3}$.'
+    },
+
+    // Q34
+    {
+      q:    'Find the distance between the points A(1, −2) and B(5, 2).',
+      opts: ['4', '8', '$4\\sqrt{2}$', '$2\\sqrt{2}$'],
+      ans:  2,
+      exp:  '$|AB| = \\sqrt{(5-1)^2 + (2-(-2))^2} = \\sqrt{16+16} = \\sqrt{32} = 4\\sqrt{2}$.'
+    },
+
+    // Q35
+    {
+      q:    'Solve the simultaneous equations $y = 2x+1$ and $x^2 + y^2 = 10$. Find the sum $x + y$ for the positive integer solution.',
+      opts: ['3', '5', '2', '4'],
+      ans:  3,
+      exp:  'Substitute: $x^2 + (2x+1)^2 = 10 \\Rightarrow x^2 + 4x^2 + 4x + 1 = 10 \\Rightarrow 5x^2 + 4x - 9 = 0 \\Rightarrow (5x+9)(x-1) = 0$. So $x = 1$ (positive integer) or $x = -\\frac{9}{5}$. When $x=1$: $y = 3$. Therefore $x + y = 1 + 3 = 4$.'
+    },
+
+    // Q36
+    {
+      q:    'A hemisphere and a cone have equal base radii r. If their volumes are equal, find the ratio of the height of the cone to the radius.',
+      opts: ['2:1', '1:2', '3:1', '1:1'],
+      ans:  0,
+      exp:  'Volume of hemisphere $= \\dfrac{2}{3}\\pi r^3$. Volume of cone $= \\dfrac{1}{3}\\pi r^2 h$. Setting equal: $\\dfrac{2}{3}\\pi r^3 = \\dfrac{1}{3}\\pi r^2 h \\Rightarrow 2r = h$. Therefore $h:r = 2:1$.'
+    },
+
+    // Q37
+    {
+      q:    'Find the length of the parallel of latitude at 45°N. [R = 6400 km, $\\pi = \\frac{22}{7}$]',
+      opts: ['32000 km', '28445 km', '40200 km', '22600 km'],
+      ans:  1,
+      exp:  'Circumference at latitude θ $= 2\\pi R\\cos\\theta = 2 \\times \\dfrac{22}{7} \\times 6400 \\times \\cos 45° = \\dfrac{44}{7} \\times 6400 \\times \\dfrac{\\sqrt{2}}{2} \\approx \\dfrac{44 \\times 6400}{7} \\times 0.7071 \\approx 40229 \\times 0.7071 \\approx 28446$ km $\\approx 28445$ km.'
+    },
+
+    // Q38
+    {
+      q:    'If $a * b = \\dfrac{a+b}{3}$, solve for x in $x * 4 = 2$.',
+      opts: ['1', '3', '2', '6'],
+      ans:  2,
+      exp:  '$\\dfrac{x+4}{3} = 2 \\Rightarrow x + 4 = 6 \\Rightarrow x = 2$.'
+    },
+
+    // Q39
+    {
+      q:    'Which of the following statements is logically equivalent to $p \\rightarrow q$?',
+      opts: ['$p \\wedge q$', '$p \\vee q$', '$p \\wedge \\neg q$', '$\\neg p \\vee q$'],
+      ans:  3,
+      exp:  '$p \\rightarrow q$ is equivalent to its contrapositive form $\\neg p \\vee q$. This is a fundamental logical equivalence: "If p then q" means "either p is false or q is true (or both)." This is known as the material conditional equivalence.'
+    },
+
+    // Q40
+    {
+      q:    'Evaluate $\\displaystyle\\int_1^3 (2x+1)\\,dx$.',
+      opts: ['10', '8', '12', '6'],
+      ans:  0,
+      exp:  '$\\left[x^2 + x\\right]_1^3 = (9+3) - (1+1) = 12 - 2 = 10$.'
+    }
+  ],
+"Chemistry": = [
+
+    // Q1
+    {
+      q:    'In the extraction of sodium by the Downs process, the electrolyte used is:',
+      opts: ['Molten NaCl', 'Aqueous NaCl', 'Molten NaOH', 'Aqueous Na₂CO₃'],
+      ans:  0,
+      exp:  'The Downs process uses molten (fused) sodium chloride as the electrolyte. NaCl melts at about 801°C. The high melting point is reduced in practice by adding CaCl₂. Aqueous NaCl cannot be used because the electrolysis of aqueous solution produces hydrogen at the cathode instead of sodium metal.'
+    },
+
+    // Q2
+    {
+      q:    'Which of the following metals is extracted by electrolysis of its molten oxide?',
+      opts: ['Iron', 'Aluminium', 'Copper', 'Zinc'],
+      ans:  1,
+      exp:  'Aluminium is extracted from aluminium oxide (Al₂O₃, purified bauxite) by the Hall–Héroult process, which involves electrolysis of molten Al₂O₃ dissolved in molten cryolite (Na₃AlF₆). Iron is extracted by the blast furnace (reduction by carbon monoxide). Copper and zinc are extracted by pyrometallurgy followed by electrolytic refining.'
+    },
+
+    // Q3
+    {
+      q:    'In the blast furnace, the primary reducing agent for iron(III) oxide is:',
+      opts: ['Limestone', 'Silica', 'Carbon monoxide', 'Calcium oxide'],
+      ans:  2,
+      exp:  'Carbon monoxide (CO) is the primary reducing agent in the blast furnace. It is formed when coke (C) reacts with the limited oxygen supply: 2C + O₂ → 2CO. CO then reduces iron ore: Fe₂O₃ + 3CO → 2Fe + 3CO₂. Limestone (CaCO₃) is added as a flux, and calcium oxide (CaO) formed from it removes silica impurities as calcium silicate slag.'
+    },
+
+    // Q4
+    {
+      q:    'The main impurity removed during the extraction of iron in the blast furnace is:',
+      opts: ['Sulphur', 'Phosphorus', 'Carbon', 'Silicon(IV) oxide'],
+      ans:  3,
+      exp:  'Silicon(IV) oxide (SiO₂) is the main impurity (gangue) in iron ore. Limestone (CaCO₃) is added to the blast furnace; it decomposes to CaO, which reacts with SiO₂: CaO + SiO₂ → CaSiO₃ (calcium silicate/slag). The molten slag floats on the molten iron and is tapped off separately.'
+    },
+
+    // Q5
+    {
+      q:    'Which metal will displace iron from iron(II) sulphate solution?',
+      opts: ['Zinc', 'Copper', 'Silver', 'Gold'],
+      ans:  0,
+      exp:  'A metal displaces another from its salt solution only if it is more reactive (higher in the electrochemical series). Zinc is above iron in the reactivity series, so zinc displaces iron: Zn + FeSO₄ → ZnSO₄ + Fe. Copper, silver, and gold are all below iron in the reactivity series and cannot displace it.'
+    },
+
+    // Q6
+    {
+      q:    'In a redox titration, 25.0 cm³ of 0.02 mol/dm³ KMnO₄ reacted completely with 20.0 cm³ of Fe²⁺ solution. [MnO₄⁻ + 5Fe²⁺ + 8H⁺ → Mn²⁺ + 5Fe³⁺ + 4H₂O]. What is the concentration of the Fe²⁺ solution?',
+      opts: ['0.025 mol/dm³', '0.125 mol/dm³', '0.250 mol/dm³', '0.500 mol/dm³'],
+      ans:  1,
+      exp:  'Moles of KMnO₄ = 0.02 × 0.025 = 5 × 10⁻⁴ mol. From the equation, 1 mol MnO₄⁻ reacts with 5 mol Fe²⁺, so moles Fe²⁺ = 5 × 5 × 10⁻⁴ = 2.5 × 10⁻³ mol. Concentration of Fe²⁺ = 2.5 × 10⁻³ ÷ 0.020 = 0.125 mol/dm³.'
+    },
+
+    // Q7
+    {
+      q:    'Which indicator is most suitable for the titration of ethanoic acid (weak acid) against sodium hydroxide (strong base)?',
+      opts: ['Methyl orange', 'Methyl red', 'Phenolphthalein', 'Litmus'],
+      ans:  2,
+      exp:  'The equivalence point of a weak acid–strong base titration lies above pH 7 (typically around pH 8–9) because the salt formed (sodium ethanoate) undergoes hydrolysis to give a basic solution. Phenolphthalein changes colour in the range pH 8.3–10.0, making it the correct indicator. Methyl orange (pH 3.2–4.4) and methyl red (pH 4.4–6.2) both change at too low a pH for this titration.'
+    },
+
+    // Q8
+    {
+      q:    'A salt gives a lilac (pale purple) flame colour. The cation present is most likely:',
+      opts: ['Na⁺', 'Ca²⁺', 'Cu²⁺', 'K⁺'],
+      ans:  3,
+      exp:  'Potassium (K⁺) imparts a characteristic lilac or pale violet colour to a flame. Sodium (Na⁺) gives an intense yellow flame; calcium (Ca²⁺) gives a brick-red flame; copper (Cu²⁺) gives a blue-green flame. The lilac colour from potassium can be masked by sodium, so it is sometimes viewed through a blue cobalt glass.'
+    },
+
+    // Q9
+    {
+      q:    'Which reagent produces a white precipitate with chloride ions that is soluble in ammonia solution?',
+      opts: ['Acidified silver nitrate', 'Barium chloride', 'Lead(II) ethanoate', 'Acidified potassium manganate(VII)'],
+      ans:  0,
+      exp:  'Silver nitrate (AgNO₃) solution, acidified with dilute nitric acid, reacts with Cl⁻ ions to produce a white precipitate of silver chloride (AgCl). AgCl is soluble in concentrated ammonia solution (forming the diamminesilver(I) complex [Ag(NH₃)₂]⁺), which distinguishes it from AgBr (cream, slightly soluble) and AgI (yellow, insoluble in ammonia).'
+    },
+
+    // Q10
+    {
+      q:    'In qualitative analysis, hydrogen sulphide (H₂S) gas is used to precipitate the sulphides of:',
+      opts: ['Group I cations', 'Group II cations', 'Group III cations', 'Group IV cations'],
+      ans:  1,
+      exp:  'In the classical qualitative analysis scheme, Group II cations (including Pb²⁺, Cu²⁺, Bi³⁺, Cd²⁺, As³⁺, Sb³⁺, Sn²⁺) are precipitated as insoluble sulphides by passing H₂S gas through an acidic solution. Group I cations are precipitated by dilute HCl. Group III cations are precipitated by NH₄OH. Group IV cations are precipitated by H₂S in an alkaline medium.'
+    },
+
+    // Q11
+    {
+      q:    'Which of the following is a tertiary alkanol (tertiary alcohol)?',
+      opts: ['CH₃CH₂CH₂OH', 'CH₃CH(OH)CH₃', '(CH₃)₃COH', 'CH₃OH'],
+      ans:  2,
+      exp:  'A tertiary alcohol has the –OH group attached to a carbon atom that is bonded to three other carbon atoms. In (CH₃)₃COH (2-methylpropan-2-ol), the central carbon carrying the –OH is bonded to three methyl groups. CH₃CH₂CH₂OH (propan-1-ol) is primary; CH₃CH(OH)CH₃ (propan-2-ol) is secondary; CH₃OH (methanol) is primary.'
+    },
+
+    // Q12
+    {
+      q:    'When ethanol is heated with excess concentrated H₂SO₄ at 170°C, the product is:',
+      opts: ['Ethanoic acid', 'Ethoxyethane', 'Ethanal', 'Ethene'],
+      ans:  3,
+      exp:  'At 170°C, concentrated H₂SO₄ causes dehydration (elimination) of ethanol to produce ethene: C₂H₅OH → CH₂=CH₂ + H₂O. At a lower temperature (140°C) and with limited H₂SO₄, dehydration forms ethoxyethane (diethyl ether): 2C₂H₅OH → C₂H₅OC₂H₅ + H₂O. Ethanoic acid and ethanal require different reaction conditions (oxidation).'
+    },
+
+    // Q13
+    {
+      q:    'The process of converting oils into fats by addition of hydrogen across C=C double bonds is known as:',
+      opts: ['Hardening', 'Saponification', 'Esterification', 'Fermentation'],
+      ans:  0,
+      exp:  'Hardening (also called hydrogenation) converts liquid unsaturated oils into solid or semi-solid saturated fats by adding hydrogen (H₂) across the C=C double bonds, typically using a nickel catalyst. This process is used industrially to produce margarine. Saponification is the hydrolysis of fats with alkali to make soap. Esterification forms esters from acids and alcohols.'
+    },
+
+    // Q14
+    {
+      q:    'The product of the reaction between a fat (triglyceride) and sodium hydroxide is:',
+      opts: ['An ester and water', 'Soap and glycerol', 'An alkene and water', 'An alkanol and an acid'],
+      ans:  1,
+      exp:  'Saponification is the alkaline hydrolysis of a fat (triester of glycerol and long-chain fatty acids) with NaOH: fat + 3NaOH → 3RCOONa (soap) + glycerol (propan-1,2,3-triol). The sodium salts of the fatty acids are soap. Glycerol is the alcohol backbone of the original fat.'
+    },
+
+    // Q15
+    {
+      q:    'Which polymer is produced by condensation polymerisation?',
+      opts: ['Polyethene', 'Polypropene', 'Nylon', 'Polystyrene'],
+      ans:  2,
+      exp:  'Nylon (a polyamide) is formed by condensation polymerisation — monomers join by losing small molecules (water in this case). Nylon-6,6 is made from hexanedioic acid (adipic acid) and hexane-1,6-diamine, with loss of water at each linkage. Polyethene, polypropene, and polystyrene are all addition polymers — made by opening C=C double bonds, with no loss of small molecules.'
+    },
+
+    // Q16
+    {
+      q:    'A detergent is preferred to soap for laundry in hard water because detergents:',
+      opts: ['Are cheaper to manufacture', 'Produce more lather', 'Are biodegradable', 'Do not form insoluble salts with Ca²⁺ and Mg²⁺ ions'],
+      ans:  3,
+      exp:  'Hard water contains Ca²⁺ and Mg²⁺ ions. Soaps (sodium salts of fatty acids) react with these ions to form insoluble calcium and magnesium salts ("scum"), reducing cleaning effectiveness. Synthetic detergents (sulfonates) form soluble salts with Ca²⁺ and Mg²⁺, so they remain effective in hard water without forming scum. Biodegradability favours soaps, not detergents.'
+    },
+
+    // Q17
+    {
+      q:    'For the equilibrium 2SO₂(g) + O₂(g) ⇌ 2SO₃(g), ΔH = −196 kJ/mol. Which change increases the yield of SO₃?',
+      opts: ['Decreasing the temperature', 'Decreasing the pressure', 'Adding a catalyst', 'Increasing the volume'],
+      ans:  0,
+      exp:  'The forward reaction is exothermic (ΔH = −196 kJ/mol). By Le Chatelier\'s principle, decreasing temperature shifts the equilibrium towards the exothermic (forward) direction, increasing SO₃ yield. The reaction also produces fewer moles of gas (3 mol → 2 mol), so increasing pressure (decreasing volume) also favours the forward reaction. A catalyst increases the rate of both forward and reverse reactions equally — it does not change the equilibrium position or yield.'
+    },
+
+    // Q18
+    {
+      q:    'The rate of a chemical reaction is independent of:',
+      opts: ['Temperature', 'The ΔH of the reaction', 'Concentration of reactants', 'Presence of a catalyst'],
+      ans:  1,
+      exp:  'The enthalpy change (ΔH) of a reaction describes the thermodynamics — how much energy is released or absorbed. It does not directly determine how fast a reaction proceeds. Reaction rate is influenced by temperature (affects kinetic energy of particles), concentration (affects collision frequency), and catalysts (lower activation energy). ΔH is a thermodynamic quantity, not a kinetic one.'
+    },
+
+    // Q19
+    {
+      q:    'In the Haber process for ammonia synthesis, iron is used as:',
+      opts: ['A reactant', 'An oxidising agent', 'A catalyst', 'A reducing agent'],
+      ans:  2,
+      exp:  'Iron (with promoters such as K₂O and Al₂O₃) is used as a heterogeneous catalyst in the Haber process. It lowers the activation energy for the reaction N₂ + 3H₂ ⇌ 2NH₃, allowing a reasonable rate at moderate temperatures (400–500°C). The iron is not consumed in the reaction — it catalyses it. The iron surface provides active sites where N₂ molecules are adsorbed and dissociated.'
+    },
+
+    // Q20
+    {
+      q:    'Which of the following is an example of an electrolytic cell?',
+      opts: ['Daniell cell', 'Zinc-carbon dry cell', 'Lead-acid accumulator', 'Electrolysis of dilute H₂SO₄'],
+      ans:  3,
+      exp:  'An electrolytic cell uses an external electrical source to drive a non-spontaneous chemical reaction (electrolysis). The electrolysis of dilute H₂SO₄ requires an external power supply to decompose water into H₂ and O₂. The Daniell cell, zinc-carbon cell, and lead-acid accumulator are all galvanic (voltaic) cells that generate electricity from spontaneous chemical reactions.'
+    },
+
+    // Q21
+    {
+      q:    'During the electrolysis of molten NaCl using platinum electrodes, the product at the anode is:',
+      opts: ['Chlorine', 'Sodium', 'Hydrogen', 'Oxygen'],
+      ans:  0,
+      exp:  'At the anode (positive electrode) of molten NaCl electrolysis, Cl⁻ ions are oxidised: 2Cl⁻ → Cl₂ + 2e⁻. Chlorine gas is produced. At the cathode (negative electrode), Na⁺ ions are reduced: Na⁺ + e⁻ → Na (liquid sodium metal is deposited). This is the basis of the Downs process.'
+    },
+
+    // Q22
+    {
+      q:    'In the electrochemical series, metals placed higher (more negative E°) are:',
+      opts: ['Less easily oxidised', 'More easily oxidised', 'Better oxidising agents', 'Weaker reducing agents'],
+      ans:  1,
+      exp:  'Metals with more negative standard electrode potentials (higher in the electrochemical/activity series) lose electrons more readily — they are more easily oxidised and are stronger reducing agents. For example, K (E° = −2.93 V) is oxidised much more easily than Cu (E° = +0.34 V). The most reactive metals at the top of the series are the strongest reducing agents.'
+    },
+
+    // Q23
+    {
+      q:    'What mass of copper is deposited when a current of 2 A is passed through copper(II) sulphate solution for 30 minutes? [Cu = 63.5 g/mol, F = 96500 C/mol]',
+      opts: ['0.59 g', '2.38 g', '1.19 g', '0.89 g'],
+      ans:  2,
+      exp:  'Charge Q = I × t = 2 × (30 × 60) = 3600 C. Cu²⁺ + 2e⁻ → Cu (2 moles of electrons per mole of Cu). Moles of electrons = 3600 ÷ 96500 = 0.03731 mol. Moles of Cu = 0.03731 ÷ 2 = 0.01865 mol. Mass of Cu = 0.01865 × 63.5 ≈ 1.19 g.'
+    },
+
+    // Q24
+    {
+      q:    'The oxidation number of sulphur in Na₂S₂O₃ (sodium thiosulphate) is:',
+      opts: ['+4', '+6', '−2', '+2'],
+      ans:  3,
+      exp:  'In Na₂S₂O₃: Na = +1 each, O = −2 each. Let x = oxidation number of S. 2(+1) + 2x + 3(−2) = 0 → 2 + 2x − 6 = 0 → 2x = 4 → x = +2. Each sulphur has an average oxidation state of +2. (Note: the two S atoms in thiosulphate are not equivalent — one is +4 and one is 0, giving an average of +2.)'
+    },
+
+    // Q25
+    {
+      q:    'Which of the following is the strongest reducing agent?',
+      opts: ['Mg', 'Cu', 'Ag', 'Au'],
+      ans:  0,
+      exp:  'A reducing agent is a substance that loses electrons readily (is oxidised). In the electrochemical series, magnesium (E° = −2.37 V) is much higher than copper (+0.34 V), silver (+0.80 V), and gold (+1.50 V). The more negative the standard electrode potential, the more easily the metal is oxidised — making it a stronger reducing agent. Mg is the strongest reducing agent in this list.'
+    },
+
+    // Q26
+    {
+      q:    'What is the pH of a 0.001 mol/dm³ solution of H₂SO₄? [log 2 = 0.3010]',
+      opts: ['3.00', '2.70', '2.00', '6.00'],
+      ans:  1,
+      exp:  'H₂SO₄ is a strong diprotic acid; it fully dissociates: H₂SO₄ → 2H⁺ + SO₄²⁻. [H⁺] = 2 × 0.001 = 0.002 = 2 × 10⁻³ mol/dm³. pH = −log(2 × 10⁻³) = −log 2 − log 10⁻³ = −0.3010 + 3 = 2.699 ≈ 2.70.'
+    },
+
+    // Q27
+    {
+      q:    'A buffer solution resists changes in pH upon addition of small amounts of acid or base because it contains:',
+      opts: ['A strong acid and a strong base', 'Only a weak acid', 'A weak acid and its conjugate base', 'A neutral salt'],
+      ans:  2,
+      exp:  'A buffer solution consists of a weak acid (HA) and its conjugate base (A⁻, supplied by a salt of the weak acid). When a small amount of strong acid (H⁺) is added, it reacts with A⁻: H⁺ + A⁻ → HA. When a small amount of strong base (OH⁻) is added, it reacts with HA: OH⁻ + HA → A⁻ + H₂O. In both cases, the pH changes only slightly because the buffer components absorb the added H⁺ or OH⁻.'
+    },
+
+    // Q28
+    {
+      q:    'In the titration of a weak acid against a strong base, the equivalence point occurs at a pH that is:',
+      opts: ['Exactly 7', 'Less than 7', 'Equal to pKa', 'Greater than 7'],
+      ans:  3,
+      exp:  'At the equivalence point of a weak acid–strong base titration, the only solute is the salt of the weak acid (e.g. sodium ethanoate). This salt hydrolyses in water: CH₃COO⁻ + H₂O ⇌ CH₃COOH + OH⁻, producing hydroxide ions and making the solution basic (pH > 7). The exact pH depends on the Ka of the weak acid, but it is always above 7.'
+    },
+
+    // Q29
+    {
+      q:    'Which of the following compounds will decolourise acidified KMnO₄ solution?',
+      opts: ['But-2-ene', 'Butane', 'Butanoic acid', 'Butanone'],
+      ans:  0,
+      exp:  'Acidified potassium manganate(VII) (KMnO₄) is a strong oxidising agent that decolourises from purple to colourless when it oxidises organic compounds containing C=C double bonds (alkenes), C≡C triple bonds (alkynes), aldehydes, or primary/secondary alcohols. But-2-ene has a C=C double bond and is readily oxidised. Butane (alkane, no double bond), butanoic acid (carboxylic acid, stable to cold KMnO₄), and butanone (a ketone, resistant to oxidation) do not decolourise acidified KMnO₄.'
+    },
+
+    // Q30
+    {
+      q:    'The IUPAC name of CH₃CH(CH₃)CH₂CH₂OH is:',
+      opts: ['2-methylbutan-2-ol', '3-methylbutan-1-ol', '2-methylpentan-1-ol', '3-methylbutan-2-ol'],
+      ans:  1,
+      exp:  'The longest chain containing the –OH group has 4 carbons (butane). Number from the end nearest the –OH: C1 has the –OH (butan-1-ol). The methyl branch is on C3. Name: 3-methylbutan-1-ol. (If numbered from the other end, the methyl would be C2, but the –OH must have the lowest locant.)'
+    },
+
+    // Q31
+    {
+      q:    'How many structural isomers exist for the molecular formula C₅H₁₂?',
+      opts: ['2', '4', '3', '5'],
+      ans:  2,
+      exp:  'C₅H₁₂ is an alkane (pentane). There are exactly three structural isomers: (1) n-pentane: CH₃CH₂CH₂CH₂CH₃; (2) 2-methylbutane (isopentane): CH₃CH(CH₃)CH₂CH₃; (3) 2,2-dimethylpropane (neopentane): C(CH₃)₄. No other distinct carbon skeletons are possible.'
+    },
+
+    // Q32
+    {
+      q:    'Which reagent would distinguish between propanal and propanone?',
+      opts: ['Bromine water', 'Sodium metal', 'Concentrated H₂SO₄', 'Fehling\'s solution'],
+      ans:  3,
+      exp:  'Propanal is an aldehyde; propanone is a ketone. Aldehydes are reducing agents and give a positive result with Fehling\'s solution (copper(II) ions reduced to brick-red copper(I) oxide precipitate). Ketones do not react with Fehling\'s solution. Tollens\' reagent (silver mirror test) also distinguishes them, but Fehling\'s solution is the option given. Bromine water does not reliably distinguish the two, and sodium metal reacts with neither.'
+    },
+
+    // Q33
+    {
+      q:    'The Contact Process is used industrially for the manufacture of:',
+      opts: ['Sulphuric acid', 'Ammonia', 'Nitric acid', 'Sodium hydroxide'],
+      ans:  0,
+      exp:  'The Contact Process manufactures sulphuric acid (H₂SO₄). Key steps: (1) S is burned to form SO₂; (2) SO₂ is oxidised to SO₃ over a V₂O₅ catalyst at 450°C; (3) SO₃ is absorbed in 98% H₂SO₄ to form oleum, which is diluted with water to give H₂SO₄. Ammonia is made by the Haber process. Nitric acid by the Ostwald process. NaOH by the Chlor-alkali process.'
+    },
+
+    // Q34
+    {
+      q:    'In the fractional distillation of crude oil, the fraction with the highest boiling point is:',
+      opts: ['Petrol', 'Bitumen', 'Kerosene', 'Diesel'],
+      ans:  1,
+      exp:  'Fractions with larger molecules have higher boiling points because they have stronger London dispersion (van der Waals) forces. Bitumen (the residue) has the largest molecules and the highest boiling point — it does not distil over and remains at the bottom of the fractionating column. Petrol has the lowest boiling point. Kerosene and diesel have intermediate boiling points.'
+    },
+
+    // Q35
+    {
+      q:    'Which gas is produced when calcium carbide (CaC₂) reacts with water?',
+      opts: ['Carbon dioxide', 'Methane', 'Ethyne', 'Ethene'],
+      ans:  2,
+      exp:  'Calcium carbide reacts with water to produce ethyne (acetylene) and calcium hydroxide: CaC₂ + 2H₂O → Ca(OH)₂ + C₂H₂. Ethyne (HC≡CH) is a gas with a triple bond between the two carbon atoms. This reaction is used as a portable source of ethyne for welding torches.'
+    },
+
+    // Q36
+    {
+      q:    'What volume of CO₂ is produced at STP when 10 g of CaCO₃ is heated? [M(CaCO₃) = 100 g/mol; molar volume at STP = 22.4 dm³/mol]',
+      opts: ['22.4 dm³', '11.2 dm³', '4.48 dm³', '2.24 dm³'],
+      ans:  3,
+      exp:  'CaCO₃ → CaO + CO₂. Moles of CaCO₃ = 10 ÷ 100 = 0.1 mol. From the equation, 1 mol CaCO₃ gives 1 mol CO₂. Moles of CO₂ = 0.1 mol. Volume at STP = 0.1 × 22.4 = 2.24 dm³.'
+    },
+
+    // Q37
+    {
+      q:    'Which of the following is NOT a property of transition metals?',
+      opts: ['They form only one oxidation state', 'They form coloured compounds', 'They act as catalysts', 'They form complex ions'],
+      ans:  0,
+      exp:  'Transition metals are characterised by having multiple oxidation states (e.g. iron exists as Fe²⁺ and Fe³⁺; manganese has oxidation states +2, +3, +4, +6, +7). Forming only one oxidation state is NOT a property of transition metals — that is a property of main-group metals like Na (+1 only). Transition metals do form coloured compounds, catalysts, and complex ions.'
+    },
+
+    // Q38
+    {
+      q:    'The functional group present in alkanoic acids (carboxylic acids) is:',
+      opts: ['–OH', '–COOH', '–CHO', '–CO–'],
+      ans:  1,
+      exp:  'The –COOH group (carboxyl group) is the defining functional group of carboxylic acids (alkanoic acids). It consists of a carbonyl group (C=O) and a hydroxyl group (–OH) attached to the same carbon. The –OH alone characterises alcohols. The –CHO (aldehyde) group characterises aldehydes. The –CO– (carbonyl between two carbons) characterises ketones.'
+    },
+
+    // Q39
+    {
+      q:    'Which of the following is an example of an endothermic reaction?',
+      opts: ['Combustion of methane', 'Neutralisation of acid by base', 'Thermal decomposition of calcium carbonate', 'Rusting of iron'],
+      ans:  2,
+      exp:  'An endothermic reaction absorbs heat energy from the surroundings (ΔH is positive). Thermal decomposition of calcium carbonate: CaCO₃ → CaO + CO₂ requires heating and absorbs energy. Combustion, neutralisation, and rusting are all exothermic reactions that release energy to the surroundings.'
+    },
+
+    // Q40
+    {
+      q:    'A compound contains 40% carbon, 6.67% hydrogen, and 53.33% oxygen by mass. What is its empirical formula? [C = 12, H = 1, O = 16]',
+      opts: ['C₂H₄O₂', 'C₂H₂O', 'CHO', 'CH₂O'],
+      ans:  3,
+      exp:  'Mole ratio: C = 40 ÷ 12 = 3.33; H = 6.67 ÷ 1 = 6.67; O = 53.33 ÷ 16 = 3.33. Divide by smallest (3.33): C = 1, H = 2, O = 1. Empirical formula = CH₂O.'
+    }
+  ],
+"Physics": = [
+
+    // Q1
+    {
+      q:    'A wave has frequency 50 Hz and wavelength 0.4 m. What is its speed?',
+      opts: ['20 m/s', '12.5 m/s', '125 m/s', '200 m/s'],
+      ans:  0,
+      exp:  'Wave speed $v = f\\lambda = 50 \\times 0.4 = 20$ m/s.'
+    },
+
+    // Q2
+    {
+      q:    'Which of the following is a longitudinal wave?',
+      opts: ['Light wave', 'Sound wave', 'Radio wave', 'X-ray'],
+      ans:  1,
+      exp:  'In a longitudinal wave, particles of the medium vibrate parallel to the direction of wave propagation (compressions and rarefactions). Sound waves are longitudinal. Light, radio waves, and X-rays are all transverse electromagnetic waves in which the electric and magnetic fields oscillate perpendicular to the direction of propagation.'
+    },
+
+    // Q3
+    {
+      q:    'The distance between two successive crests of a wave is 0.5 m. If the wave speed is 25 m/s, what is the frequency?',
+      opts: ['12.5 Hz', '25 Hz', '50 Hz', '100 Hz'],
+      ans:  2,
+      exp:  'The distance between two successive crests is the wavelength: λ = 0.5 m. $f = \\dfrac{v}{\\lambda} = \\dfrac{25}{0.5} = 50$ Hz.'
+    },
+
+    // Q4
+    {
+      q:    'In a transverse wave, the particles of the medium vibrate:',
+      opts: [
+        'In the direction of wave propagation',
+        'Randomly',
+        'At 45° to the direction of propagation',
+        'Perpendicular to the direction of wave propagation'
+      ],
+      ans:  3,
+      exp:  'In a transverse wave, particle vibration is at right angles (perpendicular) to the direction of wave travel. Examples include water surface waves and all electromagnetic waves. This is in contrast to longitudinal waves, where particle vibration is parallel to wave propagation.'
+    },
+
+    // Q5
+    {
+      q:    'A wave travels 300 m in 2.5 s. If its frequency is 40 Hz, what is its wavelength?',
+      opts: ['3 m', '6 m', '1.5 m', '12 m'],
+      ans:  0,
+      exp:  'Wave speed $v = \\dfrac{300}{2.5} = 120$ m/s. Wavelength $\\lambda = \\dfrac{v}{f} = \\dfrac{120}{40} = 3$ m.'
+    },
+
+    // Q6
+    {
+      q:    'An echo is heard 4 seconds after a sound is produced. If the speed of sound is 340 m/s, how far is the reflecting surface?',
+      opts: ['1360 m', '680 m', '340 m', '170 m'],
+      ans:  1,
+      exp:  'The sound travels to the reflecting surface and back — so the distance to the surface is half the total distance. Total distance = speed × time = 340 × 4 = 1360 m. Distance to surface = 1360 ÷ 2 = 680 m.'
+    },
+
+    // Q7
+    {
+      q:    'A ray of light passes from air (n = 1) into glass (n = 1.5). If the angle of incidence is 30°, what is the angle of refraction?',
+      opts: ['48.6°', '30°', '19.5°', '10°'],
+      ans:  2,
+      exp:  'Using Snell\'s law: $n_1 \\sin\\theta_1 = n_2 \\sin\\theta_2$. $1 \\times \\sin 30° = 1.5 \\times \\sin\\theta_2$. $\\sin\\theta_2 = \\dfrac{0.5}{1.5} = 0.333$. $\\theta_2 = \\sin^{-1}(0.333) \\approx 19.5°$. The ray bends towards the normal as it enters the denser medium.'
+    },
+
+    // Q8
+    {
+      q:    'Total internal reflection occurs when light travels from:',
+      opts: [
+        'Air to glass',
+        'Glass to air at any angle',
+        'A rarer to a denser medium',
+        'A denser to a rarer medium at an angle greater than the critical angle'
+      ],
+      ans:  3,
+      exp:  'Total internal reflection (TIR) occurs when light travels from a denser medium to a rarer medium (e.g. glass to air) and the angle of incidence exceeds the critical angle. At the critical angle, the refracted ray travels along the interface (θ_r = 90°). Beyond the critical angle, all light is reflected back into the denser medium. TIR is the principle behind optical fibres.'
+    },
+
+    // Q9
+    {
+      q:    'An object is placed 15 cm from a converging lens of focal length 10 cm. What is the image distance?',
+      opts: ['30 cm', '6 cm', '25 cm', '15 cm'],
+      ans:  0,
+      exp:  'Using the lens formula (real-is-positive): $\\dfrac{1}{f} = \\dfrac{1}{v} - \\dfrac{1}{u}$. With u = −15 cm (object on left, real convention) or using $\\dfrac{1}{v} = \\dfrac{1}{f} - \\dfrac{1}{u}$ where both u and f are positive distances: $\\dfrac{1}{v} = \\dfrac{1}{10} - \\dfrac{1}{15} = \\dfrac{3-2}{30} = \\dfrac{1}{30}$. Therefore v = 30 cm. A real, inverted, magnified image is formed on the far side of the lens.'
+    },
+
+    // Q10
+    {
+      q:    'The power of a lens is −2.5 D. What type of lens is it and what is its focal length?',
+      opts: ['Convex, 40 cm', 'Concave, 40 cm', 'Concave, 25 cm', 'Convex, 25 cm'],
+      ans:  1,
+      exp:  'Power P = 1/f (in metres). A negative power indicates a diverging (concave) lens. $f = \\dfrac{1}{P} = \\dfrac{1}{-2.5} = -0.4$ m = −40 cm. The magnitude of the focal length is 40 cm and the lens is concave (diverging). This type of lens is used to correct short-sightedness (myopia).'
+    },
+
+    // Q11
+    {
+      q:    'Three resistors of 2 Ω, 3 Ω, and 6 Ω are connected in parallel. What is their equivalent resistance?',
+      opts: ['11 Ω', '3.6 Ω', '1 Ω', '0.5 Ω'],
+      ans:  2,
+      exp:  '$\\dfrac{1}{R} = \\dfrac{1}{2} + \\dfrac{1}{3} + \\dfrac{1}{6} = \\dfrac{3}{6} + \\dfrac{2}{6} + \\dfrac{1}{6} = \\dfrac{6}{6} = 1$. Therefore R = 1 Ω.'
+    },
+
+    // Q12
+    {
+      q:    'A 12 V battery with internal resistance 0.5 Ω is connected to a 5.5 Ω resistor. What is the terminal potential difference?',
+      opts: ['12 V', '10 V', '13 V', '11 V'],
+      ans:  3,
+      exp:  'Total resistance = 5.5 + 0.5 = 6 Ω. Current $I = \\dfrac{12}{6} = 2$ A. Terminal p.d. = EMF − voltage drop across internal resistance = $12 - (2)(0.5) = 12 - 1 = 11$ V.'
+    },
+
+    // Q13
+    {
+      q:    'An electric heater rated 2000 W operates at 250 V. What is its resistance?',
+      opts: ['31.25 Ω', '8 Ω', '125 Ω', '500 Ω'],
+      ans:  0,
+      exp:  'Using $P = \\dfrac{V^2}{R}$: $R = \\dfrac{V^2}{P} = \\dfrac{250^2}{2000} = \\dfrac{62500}{2000} = 31.25\\ \\Omega$.'
+    },
+
+    // Q14
+    {
+      q:    'A potentiometer wire of length 100 cm has a total p.d. of 2 V across it. The balance point for a cell is found at 60 cm. What is the emf of the cell?',
+      opts: ['3.33 V', '1.2 V', '0.6 V', '2.4 V'],
+      ans:  1,
+      exp:  'A potentiometer measures emf by balance — no current flows through the cell being measured. The potential per unit length = 2 ÷ 100 = 0.02 V/cm. At the balance point of 60 cm: emf of cell = 0.02 × 60 = 1.2 V.'
+    },
+
+    // Q15
+    {
+      q:    'Kirchhoff\'s current law (KCL) states that:',
+      opts: [
+        'The algebraic sum of potential differences around a closed loop is zero',
+        'The total resistance in a circuit is constant',
+        'The algebraic sum of currents at a junction is zero',
+        'Current is directly proportional to voltage'
+      ],
+      ans:  2,
+      exp:  'Kirchhoff\'s Current Law (KCL), also called the Junction Rule, states that the algebraic sum of all currents at a node (junction) in a circuit is zero — current flowing into a junction equals current flowing out. This is a consequence of conservation of electric charge. Kirchhoff\'s Voltage Law (KVL), the Loop Rule, states that the algebraic sum of potential differences around a closed loop is zero.'
+    },
+
+    // Q16
+    {
+      q:    'A straight wire carrying current experiences a force when placed in a magnetic field. This principle is used in:',
+      opts: ['A transformer', 'An induction coil', 'A generator', 'A moving-coil galvanometer'],
+      ans:  3,
+      exp:  'A moving-coil galvanometer works on the principle of the motor effect: a current-carrying coil in a magnetic field experiences a force (torque) that deflects a pointer. The deflection is proportional to the current. A transformer and induction coil use electromagnetic induction. A generator converts mechanical energy to electrical energy using electromagnetic induction.'
+    },
+
+    // Q17
+    {
+      q:    'According to Faraday\'s law of electromagnetic induction, the induced emf is:',
+      opts: [
+        'Directly proportional to the rate of change of magnetic flux',
+        'Inversely proportional to the rate of change of magnetic flux',
+        'Independent of the number of turns in the coil',
+        'Always constant regardless of motion'
+      ],
+      ans:  0,
+      exp:  'Faraday\'s law states: $\\mathcal{E} = -N\\dfrac{d\\Phi}{dt}$, where N is the number of turns and $\\dfrac{d\\Phi}{dt}$ is the rate of change of magnetic flux. The magnitude of the induced emf is directly proportional to the rate of change of magnetic flux linkage. The negative sign (Lenz\'s law) indicates that the induced emf opposes the change causing it.'
+    },
+
+    // Q18
+    {
+      q:    'Lenz\'s law is a consequence of the law of conservation of:',
+      opts: ['Charge', 'Energy', 'Mass', 'Momentum'],
+      ans:  1,
+      exp:  'Lenz\'s law states that an induced current flows in a direction such that its magnetic effect opposes the change in flux that caused it. If the induced current aided the change, it would create more and more flux, generating increasing current from nothing — violating conservation of energy. Lenz\'s law ensures energy is conserved by requiring work to be done against the opposing force.'
+    },
+
+    // Q19
+    {
+      q:    'A transformer has 400 turns in the primary coil and 800 turns in the secondary coil. If the primary voltage is 120 V, what is the secondary voltage?',
+      opts: ['60 V', '120 V', '240 V', '480 V'],
+      ans:  2,
+      exp:  '$\\dfrac{V_p}{V_s} = \\dfrac{N_p}{N_s}$. $\\dfrac{120}{V_s} = \\dfrac{400}{800} = \\dfrac{1}{2}$. Therefore $V_s = 120 \\times 2 = 240$ V. This is a step-up transformer (secondary has more turns, so voltage is increased).'
+    },
+
+    // Q20
+    {
+      q:    'The rms (root mean square) value of an alternating current is related to the peak value by:',
+      opts: ['Peak value divided by π', 'Average value over half a cycle', 'Peak value multiplied by 2', 'Peak value divided by √2'],
+      ans:  3,
+      exp:  'For a sinusoidal alternating current: $I_{rms} = \\dfrac{I_0}{\\sqrt{2}}$ and $V_{rms} = \\dfrac{V_0}{\\sqrt{2}}$, where $I_0$ and $V_0$ are peak (maximum) values. The rms value is the equivalent DC value that would deliver the same power. $\\dfrac{1}{\\sqrt{2}} \\approx 0.707$, so the rms value is about 70.7% of the peak value.'
+    },
+
+    // Q21
+    {
+      q:    'In the photoelectric effect, the maximum kinetic energy of emitted electrons depends on:',
+      opts: [
+        'The frequency of incident light',
+        'The intensity of incident light',
+        'The work function of the metal only',
+        'The area of the metal surface'
+      ],
+      ans:  0,
+      exp:  'Maximum KE = hf − φ, where h is Planck\'s constant, f is the frequency of incident light, and φ is the work function of the metal. The maximum KE increases with increasing frequency of light but is independent of intensity. Intensity affects the number of electrons emitted per second (the photocurrent), not their maximum kinetic energy. The work function is the minimum energy needed to eject an electron from the surface.'
+    },
+
+    // Q22
+    {
+      q:    'The energy of a photon with frequency 5.0 × 10¹⁴ Hz is: [h = 6.6 × 10⁻³⁴ J·s]',
+      opts: ['1.32 × 10⁻¹⁹ J', '3.3 × 10⁻¹⁹ J', '6.6 × 10⁻¹⁹ J', '13.2 × 10⁻¹⁹ J'],
+      ans:  1,
+      exp:  '$E = hf = 6.6 \\times 10^{-34} \\times 5.0 \\times 10^{14} = 33 \\times 10^{-20} = 3.3 \\times 10^{-19}$ J.'
+    },
+
+    // Q23
+    {
+      q:    'In the Bohr model of the hydrogen atom, the angular momentum of an electron in the nth orbit is:',
+      opts: ['$nh$', '$\\dfrac{h}{2\\pi}$', '$\\dfrac{nh}{2\\pi}$', '$2\\pi n h$'],
+      ans:  2,
+      exp:  'Bohr\'s postulate: the angular momentum of an electron is quantised in units of $\\hbar = \\dfrac{h}{2\\pi}$. Specifically, $L = n\\hbar = \\dfrac{nh}{2\\pi}$, where n = 1, 2, 3, … is the principal quantum number. This quantisation condition leads to discrete electron orbits and the discrete energy levels of the hydrogen atom.'
+    },
+
+    // Q24
+    {
+      q:    'The de Broglie wavelength of a particle is given by:',
+      opts: ['$\\lambda = \\dfrac{h}{m}$', '$\\lambda = \\dfrac{mv}{h}$', '$\\lambda = \\dfrac{h}{v}$', '$\\lambda = \\dfrac{h}{mv}$'],
+      ans:  3,
+      exp:  'de Broglie\'s hypothesis: matter exhibits wave-like properties with wavelength $\\lambda = \\dfrac{h}{p} = \\dfrac{h}{mv}$, where h is Planck\'s constant, m is the mass, and v is the velocity of the particle. This was confirmed by electron diffraction experiments (Davisson and Germer). The larger the momentum, the shorter the wavelength.'
+    },
+
+    // Q25
+    {
+      q:    'A radioactive isotope has a half-life of 10 days. Starting with 80 g, how much remains after 40 days?',
+      opts: ['5 g', '10 g', '20 g', '40 g'],
+      ans:  0,
+      exp:  'Number of half-lives = 40 ÷ 10 = 4. Remaining mass = $80 \\times \\left(\\dfrac{1}{2}\\right)^4 = 80 \\times \\dfrac{1}{16} = 5$ g. Step by step: 80 → 40 → 20 → 10 → 5 g.'
+    },
+
+    // Q26
+    {
+      q:    'Which of the following particles has the greatest penetrating power?',
+      opts: ['Alpha particle', 'Gamma ray', 'Beta particle', 'Proton'],
+      ans:  1,
+      exp:  'Penetrating power: gamma rays > beta particles > alpha particles. Gamma rays (electromagnetic radiation) are the most penetrating — they require several centimetres of lead or metres of concrete to be significantly attenuated. Beta particles (electrons) can be stopped by a few mm of aluminium. Alpha particles (helium nuclei, charge +2, large mass) are stopped by a few centimetres of air or a sheet of paper. Protons (free protons) have intermediate penetrating power between alpha and beta.'
+    },
+
+    // Q27
+    {
+      q:    'Nuclear fission is the process by which:',
+      opts: [
+        'Light nuclei combine to form heavier nuclei',
+        'Electrons are emitted from the nucleus',
+        'A heavy nucleus splits into lighter nuclei',
+        'Protons are converted into neutrons'
+      ],
+      ans:  2,
+      exp:  'Nuclear fission is the splitting of a heavy nucleus (such as U-235 or Pu-239) into two smaller (daughter) nuclei plus neutrons and energy, when struck by a neutron. It is the basis of nuclear reactors and atomic bombs. Nuclear fusion (option A) is the combining of light nuclei to form heavier ones — the process that powers the sun. Option B describes beta-minus decay. Option D describes beta-plus decay.'
+    },
+
+    // Q28
+    {
+      q:    'In a nuclear reaction, the mass defect is converted into:',
+      opts: ['Heat energy only', 'Kinetic energy only', 'Potential energy', 'Binding energy'],
+      ans:  3,
+      exp:  'The mass defect (Δm) is the difference between the mass of the separate nucleons and the mass of the assembled nucleus. This mass is converted into the nuclear binding energy that holds the nucleus together, according to Einstein\'s mass-energy equivalence: $E = \\Delta m c^2$. The binding energy represents the energy needed to completely separate all nucleons. When a nucleus forms, this energy is released.'
+    },
+
+    // Q29
+    {
+      q:    'Two coherent sources produce waves that interfere. At a point where constructive interference occurs, the path difference is:',
+      opts: ['$n\\lambda$ (where n = 0, 1, 2, …)', '$(n + \\frac{1}{2})\\lambda$', '$\\dfrac{\\lambda}{4}$', '$\\dfrac{3\\lambda}{2}$'],
+      ans:  0,
+      exp:  'Constructive interference occurs when two waves arrive in phase — their crests and troughs coincide. This happens when the path difference is a whole number of wavelengths: path difference = nλ, where n = 0, 1, 2, … Destructive interference occurs when path difference = (n + ½)λ, causing waves to be completely out of phase.'
+    },
+
+    // Q30
+    {
+      q:    'A diffraction grating has 500 lines per mm. What is the spacing between adjacent lines?',
+      opts: ['5 × 10⁻⁶ m', '2 × 10⁻⁶ m', '1 × 10⁻⁶ m', '0.5 × 10⁻⁶ m'],
+      ans:  1,
+      exp:  '500 lines per mm means 500 000 lines per metre. Spacing $d = \\dfrac{1}{500{,}000} = 2 \\times 10^{-6}$ m = 2 µm. Alternatively: $d = \\dfrac{1\\ \\text{mm}}{500} = \\dfrac{10^{-3}}{500} = 2 \\times 10^{-6}$ m.'
+    },
+
+    // Q31
+    {
+      q:    'A compound microscope uses:',
+      opts: [
+        'Two convex lenses with the objective having a longer focal length than the eyepiece',
+        'Two concave lenses',
+        'Two convex lenses with the objective having a shorter focal length than the eyepiece',
+        'One convex and one concave lens'
+      ],
+      ans:  2,
+      exp:  'A compound microscope uses two converging (convex) lenses. The objective lens has a very short focal length and produces a magnified real image of the specimen. The eyepiece (ocular lens) then further magnifies this intermediate image. The objective has a shorter focal length than the eyepiece, allowing high magnification at the first stage. The final image seen by the eye is virtual, inverted, and highly magnified.'
+    },
+
+    // Q32
+    {
+      q:    'A p-type semiconductor is produced by doping pure silicon with:',
+      opts: ['Phosphorus', 'Arsenic', 'Antimony', 'Boron'],
+      ans:  3,
+      exp:  'P-type semiconductors are created by doping silicon (4 valence electrons) with a trivalent (Group III) element such as boron (3 valence electrons). Boron has one fewer valence electron than silicon, creating "holes" (absence of electrons) that act as positive charge carriers. Phosphorus, arsenic, and antimony are pentavalent (Group V) dopants that create n-type semiconductors (extra electrons as charge carriers).'
+    },
+
+    // Q33
+    {
+      q:    'The energy gap between the valence band and conduction band is smallest in:',
+      opts: ['Conductors', 'Insulators', 'Semiconductors', 'Superconductors'],
+      ans:  0,
+      exp:  'In conductors (metals), the valence band and conduction band overlap — there is no energy gap (band gap = 0). Electrons can move freely into the conduction band at room temperature. In semiconductors (e.g. silicon), the band gap is small (about 1.1 eV for Si) — electrons can cross it with thermal energy or light. In insulators, the band gap is very large (>5 eV), making conduction almost impossible at normal temperatures.'
+    },
+
+    // Q34
+    {
+      q:    'An object is placed 20 cm from a concave mirror of focal length 15 cm. What is the magnification of the image?',
+      opts: ['−3', '−4', '3', '4'],
+      ans:  0,
+      exp:  'Using the mirror formula: $\\dfrac{1}{f} = \\dfrac{1}{u} + \\dfrac{1}{v}$. $\\dfrac{1}{15} = \\dfrac{1}{20} + \\dfrac{1}{v} \\Rightarrow \\dfrac{1}{v} = \\dfrac{1}{15} - \\dfrac{1}{20} = \\dfrac{4-3}{60} = \\dfrac{1}{60}$. So v = 60 cm. Magnification $m = -\\dfrac{v}{u} = -\\dfrac{60}{20} = -3$. The negative sign indicates the image is real and inverted. Magnification 3 means the image is 3 times larger than the object.'
+    },
+
+    // Q35
+    {
+      q:    'A convex mirror of focal length 20 cm forms an image of an object placed 30 cm in front of it. What is the image distance?',
+      opts: ['−60 cm', '12 cm', '−12 cm', '60 cm'],
+      ans:  2,
+      exp:  'For a convex mirror, f = +20 cm (using the convention where focal length of convex mirror is positive for the virtual focus) but with the standard sign convention, f = −20 cm. Using $\\dfrac{1}{f} = \\dfrac{1}{u} + \\dfrac{1}{v}$ with f = −20 and u = −30 (real object): $\\dfrac{1}{-20} = \\dfrac{1}{-30} + \\dfrac{1}{v} \\Rightarrow \\dfrac{1}{v} = -\\dfrac{1}{20} + \\dfrac{1}{30} = \\dfrac{-3+2}{60} = -\\dfrac{1}{60}$. Wait — using the standard real-is-positive mirror convention with a convex mirror f = +20: $\\dfrac{1}{v} = \\dfrac{1}{f} - \\dfrac{1}{u} = \\dfrac{1}{20} - \\dfrac{1}{30} = \\dfrac{3-2}{60} = \\dfrac{1}{60}$... The image is virtual and behind the mirror. Using the Cartesian sign convention with object on the same side as incident light (u positive, convex mirror f negative): $v = -12$ cm. The image is 12 cm behind the mirror (virtual, erect, diminished).'
+    },
+
+    // Q36
+    {
+      q:    'A wire of length 2.0 m and resistance 5 Ω is stretched uniformly to a length of 4.0 m. What is its new resistance?',
+      opts: ['2.5 Ω', '5 Ω', '10 Ω', '20 Ω'],
+      ans:  3,
+      exp:  'Since the wire\'s volume is constant: $LA = L\'A\'$, so $A\' = \\dfrac{LA}{L\'} = \\dfrac{A}{2}$. Resistance $R = \\dfrac{\\rho L}{A}$, so $\\dfrac{R\'}{R} = \\dfrac{L\'/A\'}{L/A} = \\dfrac{L\'}{L} \\times \\dfrac{A}{A\'} = \\dfrac{L\'}{L} \\times \\dfrac{L\'}{L} = \\left(\\dfrac{L\'}{L}\\right)^2 = \\left(\\dfrac{4}{2}\\right)^2 = 4$. New resistance $= 4 \\times 5 = 20\\ \\Omega$.'
+    },
+
+    // Q37
+    {
+      q:    'The force on a charge q moving with velocity v perpendicular to a uniform magnetic field B is:',
+      opts: ['$F = Bqv$', '$F = \\dfrac{Bq}{v}$', '$F = \\dfrac{Bv}{q}$', '$F = \\dfrac{qv}{B}$'],
+      ans:  0,
+      exp:  'The magnetic (Lorentz) force on a moving charge is $F = qvB\\sin\\theta$. When the velocity is perpendicular to the magnetic field (θ = 90°), sin 90° = 1, so F = Bqv. This force is directed perpendicular to both v and B (by the right-hand rule or Fleming\'s left-hand rule). It causes charged particles to move in circular paths in a uniform magnetic field.'
+    },
+
+    // Q38
+    {
+      q:    'An AC generator produces an output voltage V = 200 sin(100πt). What is the rms voltage?',
+      opts: ['200 V', '141 V', '100 V', '282 V'],
+      ans:  1,
+      exp:  'The peak voltage V₀ = 200 V. The rms voltage $V_{rms} = \\dfrac{V_0}{\\sqrt{2}} = \\dfrac{200}{\\sqrt{2}} = \\dfrac{200}{1.414} \\approx 141.4$ V ≈ 141 V. The rms value is the equivalent DC voltage that would deliver the same power.'
+    },
+
+    // Q39
+    {
+      q:    'The binding energy per nucleon is greatest for nuclei with mass number approximately:',
+      opts: ['4', '20', '56', '238'],
+      ans:  2,
+      exp:  'The binding energy per nucleon peaks at around mass number A ≈ 56 (iron-56, Fe-56). This means iron-56 is the most stable nucleus. Nuclei lighter than iron release energy through fusion; nuclei heavier than iron release energy through fission. This is why nuclear fusion releases energy only for light nuclei, and fission releases energy only for heavy nuclei.'
+    },
+
+    // Q40
+    {
+      q:    'A capacitor of capacitance 2 µF is charged to 100 V. What is the energy stored?',
+      opts: ['2 J', '0.2 J', '0.02 J', '0.01 J'],
+      ans:  3,
+      exp:  '$E = \\dfrac{1}{2}CV^2 = \\dfrac{1}{2} \\times 2 \\times 10^{-6} \\times (100)^2 = \\dfrac{1}{2} \\times 2 \\times 10^{-6} \\times 10^4 = 10^{-2} = 0.01$ J.'
+    }
+  ]
 },
 tutorial: {
         'English Language': [
