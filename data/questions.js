@@ -214,8 +214,8 @@ window.questions = {
       { q: "A cheque may be dishonoured by the bank if __________.", opts: ["the account holder has sufficient funds","the signature on the cheque does not match the specimen signature","the cheque is properly dated","the amount is written correctly in words and figures"], ans: 1, exp: "A bank dishonours a cheque when there is a discrepancy such as a mismatched signature, insufficient funds, post-dating, or differences between words and figures. Properly completed cheques with sufficient funds are honoured." }
     ]
   },
-jss2: {
-   'General Test': [
+"jss2": {
+   "General Test": [
     // ── ENGLISH LANGUAGE ──
     {
         q: "Choose the word that contains the long vowel sound /u:/ as in 'Food'.",
@@ -871,8 +871,8 @@ jss2: {
     ]
   },
       
-jss3: {
-  'General Test': [
+"jss3": {
+  "General Test": [
     // ── ENGLISH LANGUAGE (20 questions) ──
     {
         q: "Which sentence correctly uses the Past Perfect Tense?",
@@ -1372,7 +1372,7 @@ jss3: {
     { q: "Dimensioning in orthographic drawing is important because it:", opts: ["Makes the drawing colourful", "Shows the actual size of each part of the object", "Hides details of the object", "Replaces the need for scale"], ans: 1, exp: "Dimensioning provides the measurements of each part of the object, allowing the builder or manufacturer to fabricate the object accurately to the required size." },
     { q: "A drafter or technical artist is an example of a career in:", opts: ["Agricultural technology", "Technical drawing and design", "Food processing", "Textile weaving"], ans: 1, exp: "A drafter or technical artist uses technical drawing skills to prepare plans and diagrams for engineering, architecture, and manufacturing, which is a key technology career." }
 ],
-'Business Studies': [
+"Business Studies": [
     { q: "Advertising can be defined as:", opts: ["The process of hiding products from customers", "The process of creating awareness about a product to the public", "The process of destroying goods", "A type of transportation"], ans: 1, exp: "Advertising is the process of creating awareness among members of the public about a particular product or service and persuading them to buy it." },
     { q: "Which type of advertising aims at spreading information about available goods and services?", opts: ["Persuasive advertising", "Informative advertising", "Competitive advertising", "Generic advertising"], ans: 1, exp: "Informative advertising is aimed at spreading information that lets consumers know which goods and services are available." },
     { q: "Which type of advertising tries to persuade customers to buy a particular brand of product?", opts: ["Informative advertising", "Persuasive advertising", "Mass advertising", "Public relations"], ans: 1, exp: "Persuasive advertising tries to persuade customers to buy a particular brand of product as being different from other brands." },
@@ -1413,8 +1413,8 @@ jss3: {
     { q: "Stock-taking in a store is important because it helps to:", opts: ["Verify actual quantity of goods against records", "Increase prices automatically", "Destroy old stock", "Prevent customers from entering"], ans: 0, exp: "Stock-taking helps verify the actual quantity of goods in stock against records, detect discrepancies, prevent theft, and plan purchases." }
 ]
 },
-sss1: {
-    'General Test': [
+"sss1": {
+    "General Test": [
 
   // ── ACIDS ──────────────────────────────────────────────────
 
@@ -1690,7 +1690,7 @@ sss1: {
   }
 
 ],
-    'English Language': [
+    "English Language": [
 
   // ── 10 with ans:0 (A is correct) ──
 
@@ -2101,7 +2101,7 @@ sss1: {
     exp: "'That the examination results would be released on Friday' is a noun clause functioning as the direct object of the verb 'announced'. The subject is 'the principal'." }
 
 ],
-'Mathematics': [
+"General Mathematics": [
 
   // ── 10 with ans:0 (A is correct) ──
 
@@ -2512,7 +2512,7 @@ sss1: {
     exp: "In the median interpolation formula, F is the cumulative frequency of all class intervals that come before the median class — it tells us how many values lie below the median class." }
 
 ],
-'Chemistry': [
+"Chemistry": [
 
   // ── 10 with ans:0 (A is correct) ──
 
@@ -2923,7 +2923,7 @@ sss1: {
     exp: "Physical change: no new substance, usually reversible (melting, dissolving). Chemical change: new substance(s) formed, usually irreversible (combustion, oxidation). Burning carbon produces CO₂ — a new substance — confirming it is a chemical change." }
 
 ],
-'Physics': [
+"Physics": [
 
   // ── 10 with ans:0 (A is correct) ──
 
@@ -3334,7 +3334,7 @@ sss1: {
     exp: "Elastic deformation: the material returns to its original dimensions when the force is removed (within elastic limit). Plastic deformation: permanent change in shape beyond the elastic limit." }
 
 ],
-'Biology': [
+"Biology": [
 
   // ── 10 with ans:0 (A is correct) ──
 
@@ -3746,7 +3746,7 @@ sss1: {
 
 ]
   },
-        sss2: {
+        "sss2": {
     "General Test": [
       {
         q: "An organic compound X has the molecular formula $C_4H_8O_2$. It reacts with sodium metal to liberate hydrogen gas and gives a sweet-smelling product when heated with ethanol in the presence of concentrated $H_2SO_4$. Which functional group is definitely present in X?",
@@ -4325,7 +4325,7 @@ sss1: {
 { q: "Which of the following is NOT an excretory product in humans?", opts: ["Carbon dioxide", "Faeces", "Urea", "Excess water"], ans: 1, exp: "Faeces consist of undigested food and are removed by egestion, not excretion. Carbon dioxide, urea, and excess water are true metabolic excretory products." },
 { q: "Which part of the brain controls balance and coordination?", opts: ["Cerebrum", "Medulla oblongata", "Cerebellum", "Hypothalamus"], ans: 2, exp: "The cerebellum coordinates muscular activity and maintains posture and balance, while the cerebrum handles higher functions like reasoning." }
  ],
-"Economics": = [
+"Economics": [
   {
     q: "A consumer's demand curve for a normal good shifts to the right. Which combination of changes is MOST likely responsible?",
     opts: [
@@ -4712,7 +4712,7 @@ sss1: {
     exp: "Perfectly elastic supply is represented by a horizontal line at a given price, meaning any quantity can be supplied at that price. Option A describes perfectly inelastic supply instead. Option C is not a standard supply curve shape."
   }
 ],
-"Literature in English": = [
+"Literature in English": [
   // ===== NON-STORYBOOK / THEORY QUESTIONS (60%) =====
   {
     q: "Literature can be broadly classified into three major genres. These are:",
@@ -5192,7 +5192,7 @@ sss1: {
     exp: "The Depression and Jim Crow South create a setting where poverty and racism intersect, making Tom's unjust conviction feel almost inevitable within that context. Option A is wrong, as racial tension existed nationwide, not solely in this town. Option B is the opposite of what happened. Option C is historically inaccurate as a claim about the two regions at that time."
   }
 ],
-"Government": = [
+"Government": [
   {
     q: "In a first-past-the-post electoral system, a candidate is elected when they:",
     opts: [
@@ -5624,8 +5624,8 @@ sss1: {
   }
 ]
   },
-  sss3: {
-"General Test": = [
+  "sss3": {
+"General Test": [
     // Q1
     {
       q:    'A compound contains 40.0% carbon, 6.7% hydrogen and 53.3% oxygen by mass. What is its empirical formula? [Relative atomic masses: C = 12, H = 1, O = 16]',
@@ -5976,7 +5976,7 @@ sss1: {
       exp:  'Parallel resistance: $R_p = \\frac{6 \\times 3}{6 + 3} = \\frac{18}{9} = 2\\ \\Omega$. Total circuit resistance = 2 + 4 = 6 Ω. Circuit current = $I = \\frac{24}{6} = 4\\ \\text{A}$. This 4 A flows through the series 4 Ω resistor. Power dissipated = $I^2 R = 4^2 \\times 4 = 16 \\times 4 = 64\\ \\text{W}$.'
     }
   ],
-"English Language": = [
+"English Language": [
 
     // Q1
     {
@@ -6352,7 +6352,7 @@ sss1: {
       exp:  '"Would you mind…?" is the standard polite request formula in English. It is more courteous and formal than "Will you mind?" because "would" expresses a hypothetical and softens the request. "Could" is also polite but is used differently ("Could you close the window?" not "Could you mind closing?"). "Should" expresses obligation. "Would you mind closing the window?" is the correct polite form.'
     }
   ],
-"General Mathematics": = [
+"General Mathematics": [
     // Q1
     {
       q:    'Simplify: $\\dfrac{1}{\\sqrt{3}-1} - \\dfrac{1}{\\sqrt{3}+1}$',
@@ -6698,7 +6698,7 @@ sss1: {
       exp:  '$\\left[x^2 + x\\right]_1^3 = (9+3) - (1+1) = 12 - 2 = 10$.'
     }
   ],
-"Chemistry": = [
+"Chemistry": [
 
     // Q1
     {
@@ -7020,7 +7020,7 @@ sss1: {
       exp:  'Mole ratio: C = 40 ÷ 12 = 3.33; H = 6.67 ÷ 1 = 6.67; O = 53.33 ÷ 16 = 3.33. Divide by smallest (3.33): C = 1, H = 2, O = 1. Empirical formula = CH₂O.'
     }
   ],
-"Physics": = [
+"Physics": [
 
     // Q1
     {
@@ -7378,7 +7378,7 @@ sss1: {
     }
   ]
 },
-tutorial: {
+"tutorial": {
         'English Language': [
             {
                 q: "Choose the option that best completes the sentence: Hardly had the manager arrived _____ the workers began to protest.",
