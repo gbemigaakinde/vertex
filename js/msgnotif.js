@@ -234,13 +234,14 @@
   }
 
   /* ── Show a notification ── */
-  function _showNotification({ senderName, preview, count, threadUid, isTeacherSender, latestTs }) {
+  function _showNotification({ senderName, preview, count, threadUid, isTeacherSender, latestTs, kind, groupId, groupName }) {
     const container = _ensureContainer();
     count = count || 1;
+    kind  = kind || 'dm';
 
     // If already MAX_VISIBLE shown, queue it
     if (_visible.length >= MAX_VISIBLE) {
-      _queue.push({ senderName, preview, count, threadUid, isTeacherSender, latestTs });
+      _queue.push({ senderName, preview, count, threadUid, isTeacherSender, latestTs, kind, groupId, groupName });
       return;
     }
 
@@ -250,6 +251,9 @@
     const countBadge   = count > 1
       ? `<span class="msg-notif-badge">${count} new</span>`
       : '';
+    const appLabel = kind === 'group'
+      ? `New in ${_esc(groupName || 'Group')}`
+      : 'New Message';
 
     const toast = document.createElement('div');
     toast.className = `msg-notif-toast ${toastClass}`;
@@ -259,7 +263,7 @@
     toast.innerHTML = `
       <div class="msg-notif-av">${_esc(avatarLetter)}</div>
       <div class="msg-notif-bd">
-        <span class="msg-notif-app-label">New Message</span>
+        <span class="msg-notif-app-label">${appLabel}</span>
         <div class="msg-notif-header">
           <span class="msg-notif-name">${_esc(senderName)}${countBadge}</span>
           <span class="msg-notif-time">${_esc(timeStr)}</span>
@@ -273,7 +277,7 @@
     toast.addEventListener('click', (e) => {
       if (e.target.closest('.msg-notif-dismiss')) return;
       _dismiss(toast);
-      _navigateToThread(threadUid, senderName);
+      _navigateToThread(threadUid, senderName, kind, groupId);
     });
 
     toast.querySelector('.msg-notif-dismiss').addEventListener('click', (e) => {
@@ -346,16 +350,42 @@
     }
   }
 
-  /* ── Flush batch buffer for a thread ── */
+  /* ── Flush batch buffer for a thread or group ── */
   function _flushBatch(threadUid) {
     const msgs = _batchBuffer[threadUid] || [];
     delete _batchBuffer[threadUid];
     delete _batchTimers[threadUid];
     if (!msgs.length) return;
 
+    const latest = msgs[msgs.length - 1];
+    const kind   = latest.__kind || 'dm';
+
+    if (kind === 'group') {
+      if (_isGroupSuppressed(threadUid)) return;
+
+      const isTeacherSender = latest.senderId === _teacherUid();
+      const senderName = latest.senderName || (isTeacherSender ? 'Master Timothy' : 'Student');
+      const groupName  = latest.__groupName || 'Group';
+      const preview = msgs.length === 1
+        ? (latest.text || '')
+        : `${msgs.length} new messages`;
+
+      _showNotification({
+        senderName,
+        preview,
+        count: msgs.length,
+        threadUid,
+        isTeacherSender,
+        latestTs: latest.timestamp,
+        kind: 'group',
+        groupId: threadUid,
+        groupName,
+      });
+      return;
+    }
+
     if (_isSuppressed(threadUid)) return;
 
-    const latest = msgs[msgs.length - 1];
     const senderName = latest.senderName || (latest.role === 'teacher' ? 'Master Timothy' : 'Student');
     const preview = msgs.length === 1
       ? (latest.text || '')
@@ -368,6 +398,7 @@
       threadUid,
       isTeacherSender: latest.role === 'teacher',
       latestTs: latest.timestamp,
+      kind: 'dm',
     });
   }
 
@@ -479,6 +510,176 @@
     _listeners[key] = unsub;
   }
 
+function _teacherUid() {
+    return window.AppConfig && AppConfig.TEACHER_UID;
+  }
+
+  /* ── Suppression check for group chat notifications ── */
+  function _isGroupSuppressed(groupId) {
+    if (_role === 'teacher') {
+      return !!(window.GroupChat &&
+        typeof GroupChat._isGroupChatOpen === 'function' &&
+        GroupChat._isGroupChatOpen(groupId, 'teacher'));
+    }
+
+    const exam = window.AppState && window.AppState.exam;
+    if (exam && exam.step === 'exam') return true;
+
+    if (document.getElementById('studyRoomModal') ||
+        document.getElementById('studyroomModal') ||
+        document.querySelector('[id*="studyroom"][id*="modal"]') ||
+        document.querySelector('[id*="StudyRoom"][id*="modal"]')) {
+      return true;
+    }
+
+    if (window.GroupChat &&
+        typeof GroupChat._isGroupChatOpen === 'function' &&
+        GroupChat._isGroupChatOpen(groupId, 'student')) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /* ── Attach listeners for all groups a student belongs to ── */
+  function _watchStudentGroups(uid) {
+    const key = 'msgNotif_student_groups';
+    if (_listeners[key]) return;
+
+    const groupBaselines = {}; // { groupId: Set<messageId> }
+
+    const unsub = window.fbDb
+      .collection('groupChats')
+      .where('memberUids', 'array-contains', uid)
+      .onSnapshot(snap => {
+        snap.docChanges().forEach(change => {
+          const groupId   = change.doc.id;
+          const groupData = change.doc.data() || {};
+
+          if (change.type === 'added' || change.type === 'modified') {
+            const subKey = 'msgNotif_group_' + groupId;
+            if (_listeners[subKey]) return; // already watching this group
+
+            let baselineReady = false;
+
+            const subUnsub = window.fbDb
+              .collection('groupChats').doc(groupId)
+              .collection('messages')
+              .orderBy('timestamp', 'desc')
+              .limit(50)
+              .onSnapshot(msgSnap => {
+                if (!baselineReady) {
+                  groupBaselines[groupId] = new Set();
+                  msgSnap.forEach(doc => groupBaselines[groupId].add(doc.id));
+                  baselineReady = true;
+                  return;
+                }
+
+                msgSnap.docChanges().forEach(msgChange => {
+                  if (msgChange.type !== 'added') return;
+                  const doc = msgChange.doc;
+                  if (groupBaselines[groupId] && groupBaselines[groupId].has(doc.id)) return;
+                  if (groupBaselines[groupId]) groupBaselines[groupId].add(doc.id);
+
+                  const data = doc.data();
+                  if (data.type === 'event') return;   // skip system events (added/muted/removed etc.)
+                  if (data.deletedForAll) return;
+                  if (data.senderId === uid) return;    // skip my own messages
+
+                  _bufferMessage(groupId, {
+                    id: doc.id,
+                    ...data,
+                    __kind: 'group',
+                    __groupName: groupData.name || 'Group',
+                  });
+                });
+              }, err => console.warn('[MsgNotif] Student group msg watch error:', err));
+
+            _listeners[subKey] = subUnsub;
+          }
+
+          if (change.type === 'removed') {
+            const subKey = 'msgNotif_group_' + groupId;
+            if (_listeners[subKey]) {
+              _listeners[subKey]();
+              delete _listeners[subKey];
+            }
+          }
+        });
+      }, err => console.warn('[MsgNotif] Student group list watch error:', err));
+
+    _listeners[key] = unsub;
+  }
+
+  /* ── Attach listeners for ALL groups (teacher is a silent observer of every group) ── */
+  function _watchAllGroupsForTeacher() {
+    const key = 'msgNotif_teacher_groups';
+    if (_listeners[key]) return;
+
+    const groupBaselines = {};
+
+    const unsub = window.fbDb
+      .collection('groupChats')
+      .onSnapshot(snap => {
+        snap.docChanges().forEach(change => {
+          const groupId   = change.doc.id;
+          const groupData = change.doc.data() || {};
+
+          if (change.type === 'added' || change.type === 'modified') {
+            const subKey = 'msgNotif_teacher_group_' + groupId;
+            if (_listeners[subKey]) return;
+
+            let baselineReady = false;
+
+            const subUnsub = window.fbDb
+              .collection('groupChats').doc(groupId)
+              .collection('messages')
+              .orderBy('timestamp', 'desc')
+              .limit(50)
+              .onSnapshot(msgSnap => {
+                if (!baselineReady) {
+                  groupBaselines[groupId] = new Set();
+                  msgSnap.forEach(doc => groupBaselines[groupId].add(doc.id));
+                  baselineReady = true;
+                  return;
+                }
+
+                msgSnap.docChanges().forEach(msgChange => {
+                  if (msgChange.type !== 'added') return;
+                  const doc = msgChange.doc;
+                  if (groupBaselines[groupId] && groupBaselines[groupId].has(doc.id)) return;
+                  if (groupBaselines[groupId]) groupBaselines[groupId].add(doc.id);
+
+                  const data = doc.data();
+                  if (data.type === 'event') return;
+                  if (data.deletedForAll) return;
+                  if (data.senderId === _teacherUid()) return; // skip my own messages
+
+                  _bufferMessage(groupId, {
+                    id: doc.id,
+                    ...data,
+                    __kind: 'group',
+                    __groupName: groupData.name || 'Group',
+                  });
+                });
+              }, err => console.warn('[MsgNotif] Teacher group msg watch error:', err));
+
+            _listeners[subKey] = subUnsub;
+          }
+
+          if (change.type === 'removed') {
+            const subKey = 'msgNotif_teacher_group_' + groupId;
+            if (_listeners[subKey]) {
+              _listeners[subKey]();
+              delete _listeners[subKey];
+            }
+          }
+        });
+      }, err => console.warn('[MsgNotif] Teacher group list watch error:', err));
+
+    _listeners[key] = unsub;
+  }
+  
   /* ── Public: init for student ── */
   function initForStudent(uid) {
     if (!uid || !window.fbDb) return;
@@ -487,6 +688,7 @@
     _myUid      = uid;
     _initialized = true;
     _watchStudentThread(uid);
+    _watchStudentGroups(uid);
   }
 
   /* ── Public: init for teacher ── */
@@ -497,6 +699,7 @@
     _myUid       = window.AppConfig && AppConfig.TEACHER_UID;
     _initialized = true;
     _watchAllThreadsForTeacher();
+    _watchAllGroupsForTeacher();
   }
 
   /* ── Public: cancel all listeners (call on logout) ── */
