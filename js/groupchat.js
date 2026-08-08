@@ -36,6 +36,19 @@
   let _activeGroupData    = null;
   let _replyTo            = null;
   let _stylesInjected     = false;
+  
+  /* ── Presence (group members) ──────────────────────────────── */
+  const PRESENCE_HEARTBEAT_MS        = 20000;
+  const PRESENCE_ONLINE_THRESHOLD_MS = 55000;
+
+  let _presenceHeartbeatHandle     = null;
+  let _presenceVisibilityHandler   = null;
+  let _presenceBeforeunloadHandler = null;
+  let _presenceOfflineDone         = false;
+  let _myPresenceUid               = null;
+
+  let _memberPresenceUnsubs  = {}; // { uid: unsubFn } — for the currently open group's members
+  let _memberPresenceCache   = {}; // { uid: {lastSeen, isOnline} } — latest snapshot per member
 
   /* ── Typing indicator state ────────────────────────────── */
   let _typingDebounce     = null;
@@ -519,6 +532,9 @@
   /* ══════════════════════════════════════════════════════
      OPEN STUDENT CHAT VIEW
   ══════════════════════════════════════════════════════ */
+  /* ══════════════════════════════════════════════════════
+     OPEN STUDENT CHAT VIEW
+  ══════════════════════════════════════════════════════ */
   async function _openStudentChat(groupId) {
     _cancelActiveChat();
     _activeGroupId = groupId;
@@ -561,6 +577,7 @@
             <p style="font-size:.6875rem;color:var(--text-3);margin:0;">
               ${g.members ? g.members.length : 0} member${(g.members||[]).length!==1?'s':''}
               ${g.settings && g.settings.description ? ' · ' + _esc(g.settings.description) : ''}
+              <span id="gcOnlineCount" style="color:#22c45e;font-weight:600;margin-left:.25rem;"></span>
             </p>
           </div>
           <button onclick="GroupChat._showGroupInfo('${_escAttr(groupId)}')"
@@ -624,6 +641,9 @@
     _subscribeGroupMessages(groupId, uid, false);
     _subscribeGroupTyping(groupId, uid);
     _subscribeGroupUpdatesForStudent(groupId, uid);
+
+    _memberPresenceCache = {};
+    _subscribeMemberPresence(g.members || []);
 
     _cancel('gcStudentGroups');
   }
@@ -1343,12 +1363,174 @@
   }
 
   /* ── Cancel active chat listeners ──────────────────── */
+  /* ── Cancel active chat listeners ──────────────────── */
   function _cancelActiveChat() {
     if (_typingActive && _typingGroupId && AppState.userId) {
       _stopTyping(_typingGroupId, AppState.userId).catch(() => {});
     }
     Object.keys(_listeners).filter(k => k.startsWith('gcMessages_') || k.startsWith('gcTyping_') || k.startsWith('gcGroupDoc_'))
       .forEach(k => _cancel(k));
+    _unsubscribeMemberPresence();
+    _memberPresenceCache = {};
+  }
+  
+  function _presenceRef(uid) { return Db().collection('presence').doc(uid); }
+
+  async function _writePresenceOnline(uid) {
+    const ts = firebase.firestore.FieldValue.serverTimestamp();
+    await _presenceRef(uid).set({ lastSeen: ts, isOnline: true }, { merge: true });
+  }
+
+  async function _writePresenceOffline(uid) {
+    const ts = new Date(Date.now() - (PRESENCE_ONLINE_THRESHOLD_MS + 2000));
+    await _presenceRef(uid).set({ lastSeen: ts, isOnline: false }, { merge: true });
+  }
+
+  function _startPresenceHeartbeat(uid) {
+    _stopPresenceHeartbeat();
+    _presenceHeartbeatHandle = setInterval(async () => {
+      if (!firebase.auth().currentUser || _presenceOfflineDone) { _stopPresenceHeartbeat(); return; }
+      if (document.visibilityState === 'hidden') return;
+      try { await _writePresenceOnline(uid); } catch (e) { console.warn('[gc] presence heartbeat failed:', e); }
+    }, PRESENCE_HEARTBEAT_MS);
+  }
+
+  function _stopPresenceHeartbeat() {
+    if (_presenceHeartbeatHandle) { clearInterval(_presenceHeartbeatHandle); _presenceHeartbeatHandle = null; }
+  }
+
+  /* ── Public: start writing my own presence (call once on login) ── */
+  async function initPresence(uid) {
+    if (!uid || !Db()) return;
+    _myPresenceUid        = uid;
+    _presenceOfflineDone  = false;
+
+    try {
+      await _writePresenceOnline(uid);
+    } catch (e) {
+      console.warn('[gc] Could not set presence online:', e);
+      return;
+    }
+    _startPresenceHeartbeat(uid);
+
+    _presenceVisibilityHandler = () => {
+      if (document.visibilityState === 'hidden') {
+        _stopPresenceHeartbeat();
+      } else if (firebase.auth().currentUser && !_presenceOfflineDone) {
+        _writePresenceOnline(uid).catch(() => {});
+        _startPresenceHeartbeat(uid);
+      }
+    };
+    document.addEventListener('visibilitychange', _presenceVisibilityHandler);
+
+    _presenceBeforeunloadHandler = () => {
+      if (_presenceOfflineDone) return;
+      _presenceOfflineDone = true;
+      _stopPresenceHeartbeat();
+      const ts = new Date(Date.now() - (PRESENCE_ONLINE_THRESHOLD_MS + 2000));
+      try { _presenceRef(uid).set({ lastSeen: ts, isOnline: false }, { merge: true }); } catch (_) {}
+    };
+    window.addEventListener('beforeunload', _presenceBeforeunloadHandler);
+  }
+
+  /* ── Public: stop writing my own presence (call on logout) ── */
+  async function stopPresence() {
+    _stopPresenceHeartbeat();
+    if (_presenceVisibilityHandler) {
+      document.removeEventListener('visibilitychange', _presenceVisibilityHandler);
+      _presenceVisibilityHandler = null;
+    }
+    if (_presenceBeforeunloadHandler) {
+      window.removeEventListener('beforeunload', _presenceBeforeunloadHandler);
+      _presenceBeforeunloadHandler = null;
+    }
+    if (_myPresenceUid && !_presenceOfflineDone) {
+      _presenceOfflineDone = true;
+      try { await _writePresenceOffline(_myPresenceUid); } catch (e) { console.warn('[gc] presence offline write failed:', e); }
+    }
+    _myPresenceUid = null;
+  }
+
+  function _isPresenceOnline(data) {
+    if (!data || !data.isOnline) return false;
+    const ts = data.lastSeen;
+    if (!ts) return false;
+    const date = ts.toDate ? ts.toDate() : new Date(ts);
+    return (Date.now() - date.getTime()) <= PRESENCE_ONLINE_THRESHOLD_MS;
+  }
+
+  function _formatMemberLastSeen(ts) {
+    if (!ts) return 'Offline';
+    const date = ts.toDate ? ts.toDate() : new Date(ts);
+    const now  = new Date();
+    const diffMins = Math.floor((now - date) / 60000);
+    if (diffMins < 1)  return 'Last seen just now';
+    if (diffMins < 60) return `Last seen ${diffMins} min${diffMins > 1 ? 's' : ''} ago`;
+    const isToday = date.toDateString() === now.toDateString();
+    if (isToday) return 'Last seen today at ' + date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
+    if (date.toDateString() === yesterday.toDateString()) {
+      return 'Last seen yesterday at ' + date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    }
+    return 'Last seen ' + date.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) +
+      ' at ' + date.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function _recalcOnlineHeaderCount() {
+    const online = Object.values(_memberPresenceCache).filter(_isPresenceOnline).length;
+    const label  = online > 0 ? `${online} online` : '';
+
+    const studentEl = document.getElementById('gcOnlineCount');
+    if (studentEl) studentEl.textContent = label;
+
+    const teacherEl = document.getElementById('gcTeacherOnlineCount');
+    if (teacherEl) teacherEl.textContent = label;
+  }
+
+  function _updateMemberPresenceDOM(uid, data) {
+    _memberPresenceCache[uid] = data;
+    const online = _isPresenceOnline(data);
+
+    const row = document.querySelector(`.gc-member-row[data-uid="${uid}"] .gc-member-presence`);
+    if (row) {
+      if (online) {
+        row.textContent   = '● Online';
+        row.style.color   = '#22c45e';
+        row.style.fontWeight = '600';
+      } else {
+        row.textContent   = _formatMemberLastSeen(data.lastSeen);
+        row.style.color   = 'var(--text-4)';
+        row.style.fontWeight = '400';
+      }
+    }
+
+    _recalcOnlineHeaderCount();
+  }
+
+  function _subscribeMemberPresence(members) {
+    _unsubscribeMemberPresence();
+    (members || []).forEach(m => {
+      if (!m || !m.uid) return;
+      const unsub = Db().collection('presence').doc(m.uid).onSnapshot(snap => {
+        const data = (snap.exists && snap.data()) || {};
+        _updateMemberPresenceDOM(m.uid, data);
+      }, err => console.warn('[gc] presence watch error:', err));
+      _memberPresenceUnsubs[m.uid] = unsub;
+    });
+  }
+
+  function _unsubscribeMemberPresence() {
+    Object.values(_memberPresenceUnsubs).forEach(fn => { try { fn(); } catch (_) {} });
+    _memberPresenceUnsubs = {};
+  }
+
+  /* ── Public: is this exact group's chat currently open on screen? ── */
+  function _isGroupChatOpen(groupId, viewerRole) {
+    if (_activeGroupId !== groupId) return false;
+    if (viewerRole === 'teacher') {
+      return !!document.getElementById('gcTeacherMessages');
+    }
+    return !!document.getElementById('gcChatMessages');
   }
 
   /* ══════════════════════════════════════════════════════
@@ -1463,10 +1645,11 @@
                       letter-spacing:.04em;margin-bottom:.5rem;">Members</p>
             <div style="display:flex;flex-direction:column;gap:.375rem;">
               ${members.map(m => `
-                <div class="gc-member-row">
+                <div class="gc-member-row" data-uid="${_escAttr(m.uid)}">
                   <div class="gc-member-av">${_esc((m.name||'?').charAt(0).toUpperCase())}</div>
                   <div style="flex:1;min-width:0;">
                     <div class="gc-member-name">${_esc(m.name||'Unknown')}</div>
+                    <div class="gc-member-presence" style="font-size:.6875rem;color:var(--text-4);margin-top:1px;">…</div>
                   </div>
                   <span class="gc-member-cls">${_esc(m.cls||'')}</span>
                 </div>`).join('')}
@@ -1480,6 +1663,9 @@
       </div>`;
     overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
     document.body.appendChild(overlay);
+
+    // Fill in presence text for members whose status we've already received
+    Object.keys(_memberPresenceCache).forEach(uid => _updateMemberPresenceDOM(uid, _memberPresenceCache[uid]));
   }
 
   /* ══════════════════════════════════════════════════════
@@ -1615,6 +1801,7 @@
                     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0;">${_esc(g.name)}</p>
           <p style="font-size:.6875rem;color:var(--text-3);margin:0;" id="gcTeacherMemberCount">
             ${(g.members||[]).length} member${(g.members||[]).length!==1?'s':''}
+            <span id="gcTeacherOnlineCount" style="color:#22c45e;font-weight:600;margin-left:.25rem;"></span>
           </p>
         </div>
         <button onclick="GroupChat._openGroupSettingsModal('${_escAttr(groupId)}')"
@@ -1697,6 +1884,9 @@
     _subscribeGroupMessages(groupId, TEACHER_UID(), true);
     _subscribeGroupTyping(groupId, TEACHER_UID());
     _attachSwipeListeners('gcTeacherMessages', true);
+
+    _memberPresenceCache = {};
+    _subscribeMemberPresence(g.members || []);
   }
 
   function _backToTeacherList() {
@@ -2479,6 +2669,9 @@ async function _deleteGroup(groupId) {
     _activeGroupId   = null;
     _activeGroupData = null;
     _replyTo         = null;
+    _unsubscribeMemberPresence();
+    _memberPresenceCache = {};
+    stopPresence();
   }
 
   /* ── Public API ────────────────────────────────────── */
@@ -2487,6 +2680,9 @@ async function _deleteGroup(groupId) {
     openForTeacher,
     cancelListeners,
     initStudentGroupListener,
+    initPresence,
+    stopPresence,
+    _isGroupChatOpen,
     _openStudentChat,
     _backToStudentList,
     _backFromStudent,
