@@ -232,41 +232,41 @@
     const n      = _escHtml(name);
 
     const wittyMorning = [
-      `Rise and grind, ${n}! The exam won't pass itself.`,
-      `Good morning, ${n}! Neurons charged and ready?`,
-      `Morning, ${n}! Today's forecast: 100% chance of correct answers.`,
-      `Ah, ${n}! The early bird catches the A-grade.`,
-      `Up and at 'em, ${n}! Shakespeare didn't write itself either.`,
-      `Good morning, ${n}! Your future self is cheering you on.`,
-      `Morning, ${n}! Let's make those neurons dance.`,
+      `Good morning, ${n}. Welcome to your dashboard.`,
+      `Good morning, ${n}. It is good to see you.`,
+      `Good morning, ${n}. Ready for a great day?`,
+      `Good morning, ${n}. Welcome back.`,
+      `Good morning, ${n}. Have a productive day.`,
+      `Good morning, ${n}. Ready for another day of learning?`,
+      `Good morning, ${n}. Have a great day and do your best.`,
     ];
 
     const wittyAfternoon = [
-      `Still going strong, ${n}? The afternoon slump is a myth!`,
-      `Good afternoon, ${n}! Half the day is yours — own it.`,
-      `Hey ${n}, afternoon fuel: focus + determination = results.`,
-      `Welcome back, ${n}! Post-lunch brain is a myth — prove it.`,
-      `Afternoon, ${n}! Every question answered is a step closer.`,
-      `Great to see you, ${n}! The grind doesn't take a lunch break.`,
+      `Good afternoon, ${n}. Welcome to your dashboard.`,
+      `Good afternoon, ${n}. It is good to see you.`,
+      `Good afternoon, ${n}. How is your day going?`,
+      `Good afternoon, ${n}. Welcome back.`,
+      `Good afternoon, ${n}. Have a productive afternoon.`,
+      `Good afternoon, ${n}. Keep up the good work.`,
     ];
 
     const wittyEvening = [
-      `Evening, ${n}! The great minds studied by lamplight too.`,
-      `Night owl mode activated, ${n}! 🦉`,
-      `Good evening, ${n}! The quiet hours belong to the dedicated.`,
-      `Welcome, ${n}! Even Newton had evening breakthroughs.`,
-      `Evening grind, ${n}! This is where legends are made.`,
-      `Hey ${n}, the library never judges. Neither do we.`,
-      `Burning the midnight oil early, ${n}? Respect.`,
+      `Good evening, ${n}. Welcome to your dashboard.`,
+      `Good evening, ${n}. It is good to see you.`,
+      `Good evening, ${n}. How was your day?`,
+      `Good evening, ${n}. Welcome back.`,
+      `Good evening, ${n}. Have a productive study session.`,
+      `Good evening, ${n}. Have a pleasant evening.`,
+      `Good evening, ${n}. Keep up the good work.`,
     ];
 
     const wittyLateNight = [
-      `Still here, ${n}? Dedication level: extraordinary.`,
-      `Late night session, ${n}! Einstein approved of this hustle.`,
-      `Burning the midnight oil, ${n}? The results will show it.`,
-      `Night mode: ON. Sleep can wait, ${n}!`,
-      `${n}, the night is young and so is your potential.`,
-      `Midnight warrior, ${n}! Every minute counts.`,
+      `Good evening, ${n}. Welcome to your dashboard.`,
+      `Welcome back, ${n}. How are you doing?`,
+      `Good evening, ${n}. It is good to see you.`,
+      `Welcome back, ${n}. Take your time and do your best.`,
+      `Good evening, ${n}. How was your day?`,
+      `Welcome, ${n}. Have a good study session.`,
     ];
 
     function _pick(arr) {
