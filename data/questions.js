@@ -7797,7 +7797,8 @@ window.questions = {
     ans: 1,
     exp: "The liver performs critical homeostatic functions: (1) Glycogen storage — when blood glucose rises after a meal, insulin signals the liver to convert excess glucose to glycogen (glycogenesis), storing it until blood glucose falls, when it reconverts it to glucose (glycogenolysis). This keeps blood glucose within a narrow, safe range. (2) Deamination — amino acids cannot be stored, so excess ones have their amino group removed in the liver (deamination) to produce ammonia, which is immediately converted to the less toxic urea, excreted by the kidneys. These two functions alone demonstrate the liver's central role in homeostasis."
   }
-],  
+]
+},  
 "tutorial": {
         'English Language': [
             {
