@@ -7376,7 +7376,428 @@ window.questions = {
       ans:  3,
       exp:  '$E = \\dfrac{1}{2}CV^2 = \\dfrac{1}{2} \\times 2 \\times 10^{-6} \\times (100)^2 = \\dfrac{1}{2} \\times 2 \\times 10^{-6} \\times 10^4 = 10^{-2} = 0.01$ J.'
     }
-  ]
+  ],
+"Biology": [
+  // ───── HOMEOSTASIS: KIDNEY & LIVER ─────
+
+  {
+    q: "A patient's urine test shows a very high concentration of glucose and proteins. Which conclusion is MOST accurate?",
+    opts: [
+      "The liver is overproducing bile salts, causing glucose to spill into urine",
+      "The glomerular filtration membrane is damaged, reducing selective reabsorption",
+      "The loop of Henle is too long, allowing excess filtration of large molecules",
+      "The collecting duct has become impermeable to water, concentrating the filtrate"
+    ],
+    ans: 1,
+    exp: "The glomerular filtration membrane normally prevents large molecules like proteins from entering the filtrate. When it is damaged (as in nephritis), proteins leak through. Glucose normally appears in urine only when blood glucose exceeds the renal threshold, but combined with protein loss, the most accurate conclusion is damage to the filtration barrier — not a liver or loop problem."
+  },
+  {
+    q: "The counter-current multiplier system in the loop of Henle is responsible for which specific function?",
+    opts: [
+      "Actively transporting glucose back into the blood from the filtrate",
+      "Creating a high osmotic concentration in the medulla to draw water out of the collecting duct",
+      "Filtering urea and creatinine from the blood under high pressure",
+      "Secreting hydrogen ions into the filtrate to regulate blood pressure"
+    ],
+    ans: 1,
+    exp: "The loop of Henle works as a counter-current multiplier. The descending limb is permeable to water but not salt; the ascending limb actively pumps out sodium chloride. This builds up a very high salt concentration in the surrounding medulla. When the filtrate later passes through the collecting duct, this high concentration draws water out by osmosis, concentrating the urine."
+  },
+  {
+    q: "In a patient suffering from cirrhosis of the liver, which pair of consequences would MOST likely occur together?",
+    opts: [
+      "Increased bile production and higher blood glucose levels",
+      "Accumulation of ammonia in the blood and reduced clotting ability",
+      "Faster breakdown of old red blood cells and increased glycogen storage",
+      "Overproduction of plasma proteins and reduced urea synthesis"
+    ],
+    ans: 1,
+    exp: "The liver converts toxic ammonia (from amino acid breakdown) into urea. It also produces clotting factors like fibrinogen and prothrombin. When the liver is severely damaged by cirrhosis, both processes fail: ammonia accumulates in the blood (causing brain damage in severe cases), and the blood loses its ability to clot properly, leading to easy bruising and bleeding."
+  },
+  {
+    q: "Antidiuretic hormone (ADH) is released when blood osmotic pressure rises. Exactly where does ADH act to correct this, and what does it do there?",
+    opts: [
+      "It acts on the loop of Henle, increasing the active pumping of sodium chloride",
+      "It acts on the glomerulus, increasing the filtration rate to remove excess solutes",
+      "It acts on the collecting duct and distal convoluted tubule, making them more permeable to water",
+      "It acts on the proximal convoluted tubule, stimulating glucose reabsorption"
+    ],
+    ans: 2,
+    exp: "When the blood becomes too concentrated (high osmotic pressure), the hypothalamus detects this and signals the posterior pituitary to release ADH. ADH travels to the kidney and makes the walls of the collecting duct and distal convoluted tubule more permeable to water by inserting water channels (aquaporins). More water is then reabsorbed into the blood, making the urine more concentrated and restoring normal blood osmotic pressure."
+  },
+
+  // ───── HOMEOSTASIS: HORMONES & ENDOCRINE GLANDS ─────
+
+  {
+    q: "A student notices that a classmate has a swollen neck, feels constantly cold, gains weight easily, and moves very slowly. Which hormonal disorder BEST explains ALL four symptoms together?",
+    opts: [
+      "Hyperthyroidism, because excess thyroxine slows metabolism",
+      "Hypothyroidism, because insufficient thyroxine reduces the metabolic rate",
+      "Addison's disease, because low cortisol reduces body temperature",
+      "Acromegaly, because excess growth hormone causes tissue swelling"
+    ],
+    ans: 1,
+    exp: "Thyroxine from the thyroid gland controls the basal metabolic rate — how fast the body uses energy. When too little thyroxine is produced (hypothyroidism), the metabolic rate drops: the body generates less heat (feels cold), stores more fat (weight gain), and all body processes slow down (sluggish movement). The swollen neck is a goitre caused by the thyroid enlarging in an attempt to produce more hormone."
+  },
+  {
+    q: "Insulin and glucagon are both produced by the pancreas. What is the precise relationship between them in blood glucose regulation?",
+    opts: [
+      "They work together, both stimulating the liver to release glucose when blood sugar falls",
+      "They are antagonistic hormones: insulin lowers blood glucose while glucagon raises it",
+      "Insulin converts glucose to glycogen, while glucagon converts glycogen to glucose only in muscles",
+      "They are synergistic: both are released together after a meal to prevent blood sugar rising too high"
+    ],
+    ans: 1,
+    exp: "Insulin and glucagon are antagonistic hormones — they have opposite effects. When blood glucose rises (e.g. after eating), the beta cells of the islets of Langerhans release insulin, which causes cells to absorb glucose and the liver to store it as glycogen. When blood glucose falls (e.g. during fasting), the alpha cells release glucagon, which signals the liver to break down glycogen and release glucose back into the blood. This pair keeps blood sugar in a narrow, healthy range."
+  },
+  {
+    q: "The adrenal medulla releases adrenaline during stress. Which combination of effects does adrenaline produce, and why are they useful in an emergency?",
+    opts: [
+      "Slows heart rate and increases digestion, to conserve energy for the brain",
+      "Increases heart rate, dilates airways, and redirects blood to muscles — preparing the body for fight or flight",
+      "Constricts blood vessels to all organs equally, raising blood pressure throughout the body",
+      "Stimulates the pancreas to release insulin, providing glucose to the stressed tissues"
+    ],
+    ans: 1,
+    exp: "In an emergency, the body needs to react fast. Adrenaline (epinephrine) from the adrenal medulla causes the heart to beat faster (more oxygen to tissues), dilates the bronchioles (more air into lungs), dilates blood vessels in the muscles while constricting those in the gut and skin (blood goes where it is needed most), and raises blood glucose. This 'fight-or-flight' response is designed to maximise immediate physical performance."
+  },
+
+  // ───── PERIPHERAL NERVOUS SYSTEM ─────
+
+  {
+    q: "A doctor taps just below a patient's kneecap (patellar tendon reflex test). The leg kicks without the patient consciously deciding to move it. Which pathway correctly describes what happened?",
+    opts: [
+      "Stimulus → sensory neuron → brain → motor neuron → effector",
+      "Stimulus → receptor → sensory neuron → spinal cord (relay neuron) → motor neuron → effector",
+      "Stimulus → motor neuron → spinal cord → sensory neuron → effector",
+      "Stimulus → receptor → brain → relay neuron → spinal cord → effector"
+    ],
+    ans: 1,
+    exp: "The patellar reflex is a simple reflex arc that bypasses the brain. The tap stretches the tendon (stimulus); stretch receptors in the tendon send impulses along the sensory (afferent) neuron to the spinal cord; a relay neuron in the spinal cord connects to a motor (efferent) neuron; the motor neuron carries the impulse to the quadriceps muscle (effector), which contracts and kicks the leg. The brain receives the information afterwards — that is why the patient is aware it happened but could not prevent it."
+  },
+  {
+    q: "A conditioned reflex (as described by Pavlov) differs from a simple reflex in which critical way?",
+    opts: [
+      "A conditioned reflex is faster because it uses a shorter nerve pathway through the spinal cord",
+      "A conditioned reflex is a learned response to a previously neutral stimulus, requiring previous experience",
+      "A simple reflex is learned and requires memory, while a conditioned reflex is inborn",
+      "A conditioned reflex produces a stronger response than a simple reflex because more neurons are involved"
+    ],
+    ans: 1,
+    exp: "A simple reflex (e.g. blinking, knee-jerk) is inborn — it does not require learning. A conditioned reflex is learned through repeated association of a neutral stimulus with a natural stimulus. In Pavlov's famous experiment, dogs naturally salivate at food. When a bell was rung every time food was given, the dogs eventually salivated at the sound of the bell alone — a neutral stimulus had been conditioned to produce the response. This requires the brain and previous experience, unlike a simple reflex."
+  },
+  {
+    q: "Which statement BEST explains why the refractory period is essential to normal nerve function?",
+    opts: [
+      "It allows the neuron to amplify the nerve impulse before passing it to the next neuron",
+      "It prevents the nerve impulse from travelling backwards and ensures impulses travel in one direction only",
+      "It increases the speed of nerve transmission by temporarily opening all ion channels at once",
+      "It allows sodium ions to flood back into the axon to reset the resting potential immediately"
+    ],
+    ans: 1,
+    exp: "During the refractory period, sodium channels in the axon membrane are temporarily inactivated immediately after an action potential. This means that region of the axon cannot fire again for a brief period. The impulse therefore cannot travel backwards (the area behind it is refractory), which ensures the signal only travels in one direction — from the cell body towards the synaptic terminals. Without the refractory period, nerve impulses could travel in both directions and become chaotic."
+  },
+  {
+    q: "At a synapse, acetylcholine is released into the synaptic cleft. What happens to it after it has excited the postsynaptic membrane, and why is this step important?",
+    opts: [
+      "It is recycled back into the presynaptic vesicles to be used again in the next impulse",
+      "It is broken down by acetylcholinesterase so the postsynaptic membrane does not keep firing continuously",
+      "It diffuses away from the synapse into the bloodstream, where it is stored in the liver",
+      "It binds permanently to the receptor, keeping the postsynaptic neuron in a constant state of excitation"
+    ],
+    ans: 1,
+    exp: "Once acetylcholine binds to receptors on the postsynaptic membrane and triggers a new impulse, it must be removed quickly. The enzyme acetylcholinesterase breaks it down into choline and acetic acid. This breakdown is critical because it stops the receptor from being continuously stimulated. Without it, the synapse would fire non-stop. The choline is then taken back into the presynaptic neuron to be used in making new acetylcholine."
+  },
+
+  // ───── SENSE ORGANS: NOSE, TONGUE, SKIN ─────
+
+  {
+    q: "The olfactory epithelium contains millions of chemoreceptors for smell. Why can humans only detect a limited range of odours at any one time when exposed to a strong smell continuously?",
+    opts: [
+      "The olfactory nerve becomes myelinated and stops conducting after prolonged stimulation",
+      "Sensory adaptation occurs: receptors stop sending impulses to the brain when a stimulus is constant and unchanging",
+      "The mucus layer dries out, preventing odorant molecules from reaching the receptors",
+      "The brain actively blocks incoming olfactory signals to prevent sensory overload"
+    ],
+    ans: 1,
+    exp: "Sensory adaptation is the process by which a receptor gradually reduces its rate of firing even when the stimulus remains constant. After a while in a smelly room, you stop noticing the smell. The olfactory receptors are still being stimulated, but they are sending fewer and fewer impulses to the brain. This is why we can detect changes in smell (a new odour) far better than a continuous background smell."
+  },
+  {
+    q: "The tongue has different regions associated with different tastes. A student claims the tongue can only detect four basic tastes: sweet, sour, salty, and bitter. Which statement about this is most accurate?",
+    opts: [
+      "The claim is completely correct; those are the only four tastes the human tongue can detect",
+      "The claim is outdated; a fifth taste called umami (savoury), triggered by glutamate, is now well established",
+      "The claim is wrong; the tongue detects all five senses including touch, pain, and temperature equally",
+      "The claim is mostly correct, but 'spicy' is the fifth basic taste detected by taste buds"
+    ],
+    ans: 1,
+    exp: "The traditional four basic tastes (sweet, sour, salty, bitter) are now known to be incomplete. Umami — a savoury, meaty taste triggered by the amino acid glutamate — is widely accepted as a fifth basic taste, identified by Japanese scientist Kikunae Ikeda. Spiciness is not a taste but a pain sensation triggered by capsaicin on free nerve endings. The tongue's taste buds contain receptor cells that send signals to the brain when chemicals from food dissolve in saliva and bind to them."
+  },
+  {
+    q: "The skin contains several types of sensory receptors. A person accidentally touches a hot stove and immediately withdraws their hand. However, they also notice the pain slightly AFTER the withdrawal. Which explanation is correct?",
+    opts: [
+      "Pain receptors are slower than temperature receptors because pain signals travel along thinner, slower nerve fibres",
+      "Temperature receptors are located deeper in the skin than pain receptors, so pain signals take longer to reach the brain",
+      "The brain processes temperature information first and delays pain signals to allow the reflex to complete",
+      "Pain receptors require higher stimulus intensity than temperature receptors to generate an action potential"
+    ],
+    ans: 0,
+    exp: "There are two types of pain fibres: A-delta fibres (fast, sharp, immediate pain) and C fibres (slow, dull, burning pain). For a hot surface, thermoreceptors and fast A-delta fibres signal quickly enough to trigger a withdrawal reflex through the spinal cord. The slower C fibres then deliver the deeper burning pain sensation that arrives at the brain slightly later. This is why the hand pulls away before the full pain is felt."
+  },
+
+  // ───── THE EYE ─────
+
+  {
+    q: "When you move from a brightly lit room into a dark room, your vision is poor at first but improves after a few minutes. What is the biological explanation for this dark adaptation?",
+    opts: [
+      "The pupil takes several minutes to reach its maximum dilation, so little light enters initially",
+      "Rhodopsin (visual purple) in the rod cells was bleached by bright light and takes time to regenerate in the dark",
+      "The cone cells gradually replace rod cells on the retina when light intensity decreases",
+      "The ciliary muscles take time to relax, allowing the lens to become convex enough to focus dim light"
+    ],
+    ans: 1,
+    exp: "Rod cells contain a pigment called rhodopsin (visual purple). In bright light, rhodopsin is broken down faster than it is made, so rod cells become non-functional. When you enter a dark room, the rhodopsin is gradually resynthesised. Only when enough rhodopsin has been rebuilt do the rod cells become sensitive enough to detect the low light levels. This process — dark adaptation — takes about 20-30 minutes for full recovery."
+  },
+  {
+    q: "A young child can focus on both near and distant objects easily. An elderly person struggles to focus on nearby objects but sees distant objects clearly. What structural change in the lens explains the elderly person's problem?",
+    opts: [
+      "The lens grows larger with age, blocking more light and reducing the ability to see close objects",
+      "The lens becomes less elastic with age, so the ciliary muscles cannot make it convex enough for near vision",
+      "The ciliary muscles weaken with age, so the suspensory ligaments remain loose, keeping the lens permanently thin",
+      "The cornea flattens with age, so light is refracted less, making near vision impossible"
+    ],
+    ans: 1,
+    exp: "Near vision (accommodation) requires the lens to become more convex (fatter). This happens when the ciliary muscles contract, the suspensory ligaments go slack, and the elastic lens bulges. With age, the lens protein becomes stiffer and less elastic. Even when the ciliary muscles contract perfectly, the lens cannot bulge sufficiently. The result is presbyopia (age-related long-sightedness): distant objects are clear because the lens is naturally thin enough, but nearby objects cannot be focused. This is why reading glasses are needed."
+  },
+  {
+    q: "A person is diagnosed with glaucoma. Their doctor explains that fluid pressure inside the eye is dangerously high. Which structure is responsible for the fluid involved, and what is the consequence of this pressure if left untreated?",
+    opts: [
+      "The vitreous humour is overproduced by the lens; it compresses the retina, causing blurred vision only",
+      "The aqueous humour produced by the ciliary body cannot drain properly; the pressure damages the optic nerve, causing blindness",
+      "Tears from the lacrimal gland accumulate inside the eye; the pressure distorts the cornea",
+      "The choroid layer produces excess blood, compressing the rod and cone cells and reducing sensitivity"
+    ],
+    ans: 1,
+    exp: "The aqueous humour is a watery fluid produced continuously by the ciliary body. It fills the space in front of the lens and normally drains away at the same rate through a canal at the junction of the cornea and iris. In glaucoma, this drainage is blocked, so pressure builds up inside the eye. The increased pressure is transmitted to the vitreous humour and pushes on the retina and optic nerve. Over time this damages the optic nerve fibres, leading to gradual loss of peripheral vision and eventually blindness."
+  },
+  {
+    q: "A student covers one eye and looks at a white card with a small black cross on the left and a black dot on the right. As the card is moved slowly towards the face, the dot disappears at a certain distance, then reappears. What does this demonstrate?",
+    opts: [
+      "Cone cells in the centre of the retina are less sensitive and do not detect the dot at close range",
+      "The blind spot: the point where the optic nerve leaves the retina has no photoreceptors and cannot detect the image",
+      "The lens loses focus at that specific distance, causing the image to blur and disappear temporarily",
+      "The pupil constricts at close range, cutting off the light needed to see the dot clearly"
+    ],
+    ans: 1,
+    exp: "Every eye has a blind spot where the optic nerve exits the retina to go to the brain. This area has no rod or cone cells, so it cannot detect light. When the dot on the card falls exactly on this blind spot as the card is moved, no image is formed, and the dot appears to vanish. We do not normally notice the blind spot because the brain fills in the missing information using surrounding visual data, and we have two eyes covering each other's blind spots."
+  },
+
+  // ───── THE EAR ─────
+
+  {
+    q: "How does the ear amplify sound between the eardrum and the oval window, and why is this amplification necessary?",
+    opts: [
+      "The three ossicles increase the frequency of sound vibrations, making them easier for the cochlea to detect",
+      "The ossicles act as a lever system and concentrate the force from the large eardrum onto the much smaller oval window, increasing pressure",
+      "The Eustachian tube adds resonance to the sound, amplifying it before it enters the cochlea",
+      "The semicircular canals convert low-frequency sound into high-frequency electrical signals for the auditory nerve"
+    ],
+    ans: 1,
+    exp: "Sound waves cause the eardrum (tympanic membrane) to vibrate. These vibrations pass through three small bones — the malleus, incus, and stapes (ossicles). The ossicles act as a lever system, which already provides some mechanical advantage. More importantly, the stapes connects to the oval window, which is about 17-20 times smaller in area than the eardrum. Concentrating the same force onto a much smaller area greatly increases pressure. This amplification is necessary because sound waves in air are much weaker than the fluid vibrations needed to stimulate the cochlea."
+  },
+  {
+    q: "A person experiences vertigo (a spinning sensation) and loss of balance after an ear infection. Which part of the ear has most likely been affected?",
+    opts: [
+      "The cochlea, because damage to hair cells disrupts the conversion of sound into nerve impulses",
+      "The semicircular canals and utricle/saccule, because they detect rotational and linear movement of the head",
+      "The Eustachian tube, because blocked pressure causes dizziness by compressing the eardrum",
+      "The pinna, because it can no longer collect sound waves properly, confusing the brain"
+    ],
+    ans: 1,
+    exp: "Balance and detection of head movement are handled by the vestibular system — the three semicircular canals (detecting rotational movement in three planes) and the utricle and saccule (detecting linear acceleration and the position of the head relative to gravity). These structures contain hair cells embedded in fluid (endolymph); movement causes the fluid to shift and bend the hair cells, sending impulses to the brain. When infection or inflammation disturbs these structures, the brain receives incorrect information about head position, causing vertigo and loss of balance."
+  },
+  {
+    q: "The Eustachian tube connects the middle ear to the pharynx. A passenger on a descending aircraft feels pain and muffled hearing in the ear. What is happening physiologically, and how does swallowing help?",
+    opts: [
+      "Swallowing pushes more wax into the ear canal, cushioning the eardrum against the pressure change",
+      "The outside air pressure increases faster than the middle ear pressure; swallowing opens the Eustachian tube to equalise pressure on both sides of the eardrum",
+      "Swallowing stimulates the cochlea through jaw movement, temporarily restoring hearing",
+      "The Eustachian tube fills with fluid during descent; swallowing drains the fluid into the throat"
+    ],
+    ans: 1,
+    exp: "As an aircraft descends, atmospheric pressure outside increases rapidly. The middle ear, which is normally kept at the same pressure as the outside by the Eustachian tube, cannot equalise fast enough if the tube is closed. This creates a pressure difference across the eardrum — the outside pushes it inward, causing pain and reducing its ability to vibrate freely (muffled hearing). Swallowing, yawning, or chewing causes the muscles around the Eustachian tube to contract and briefly open it, allowing air into the middle ear to equalise the pressure."
+  },
+
+  // ───── GENETICS ─────
+
+  {
+    q: "In guinea pigs, rough coat (R) is dominant over smooth coat (r), and black coat (B) is dominant over white coat (b). Two guinea pigs heterozygous for both traits are crossed. What proportion of the offspring are expected to show rough black coat?",
+    opts: [
+      "1/16",
+      "3/16",
+      "9/16",
+      "12/16"
+    ],
+    ans: 2,
+    exp: "This is Mendel's second law (independent assortment). When you cross two dihybrid parents (RrBb × RrBb), the expected phenotypic ratio in the offspring is 9:3:3:1. So: 9 rough black, 3 rough white, 3 smooth black, 1 smooth white — out of 16 total. Rough black (R_B_) accounts for 9 out of 16 offspring, which is 9/16. The 9/16 result comes from multiplying the individual probabilities: 3/4 chance of rough × 3/4 chance of black = 9/16."
+  },
+  {
+    q: "A woman who is a carrier for haemophilia (X^H X^h) has children with a normal man (X^H Y). What are the chances that their son will have haemophilia?",
+    opts: [
+      "0% — sons cannot inherit haemophilia from a carrier mother",
+      "25% — one in four of all children will be affected",
+      "50% — half of all sons will have haemophilia",
+      "100% — all sons will have haemophilia"
+    ],
+    ans: 2,
+    exp: "Haemophilia is X-linked recessive. The mother is X^H X^h (carrier) and the father is X^H Y (normal). Sons get their X chromosome from the mother only and their Y from the father. The mother can give either X^H or X^h with equal probability. A son who receives X^h has only that one X chromosome (Y carries no haemophilia gene), so he will express the disease. Therefore 50% of sons will be affected. Overall this is 25% of all children, but the question asks specifically about sons, so the answer is 50%."
+  },
+  {
+    q: "A cross between two tall pea plants produces 787 tall offspring and 263 short offspring. What genotypes do the parent plants MOST likely have?",
+    opts: [
+      "Both parents are homozygous dominant (TT × TT)",
+      "One parent is TT and the other is Tt",
+      "Both parents are heterozygous (Tt × Tt)",
+      "One parent is Tt and the other is tt"
+    ],
+    ans: 2,
+    exp: "The ratio of tall to short is approximately 787:263, which simplifies to roughly 3:1. A 3:1 phenotypic ratio in the offspring is the classic result of crossing two heterozygous individuals (Tt × Tt). The Punnett square gives TT, Tt, Tt, tt — three tall (T_) for every one short (tt). If one parent were TT, no short offspring would appear. If one parent were tt, the ratio would be 1:1. Only Tt × Tt gives 3:1."
+  },
+  {
+    q: "Mendel's Law of Independent Assortment applies when genes are on different chromosomes. However, two genes located close together on the SAME chromosome tend to be inherited together. What is this phenomenon called, and what can disrupt it?",
+    opts: [
+      "Codominance; it is disrupted by multiple allelism when a third allele is introduced",
+      "Linkage; it can be disrupted by crossing over (recombination) during meiosis I, which can separate linked genes",
+      "Incomplete dominance; it is disrupted when the recessive allele partially expresses itself",
+      "Pleiotropy; it is disrupted when one gene affects multiple traits simultaneously"
+    ],
+    ans: 1,
+    exp: "When two genes are on the same chromosome, they are said to be linked and tend to be inherited as a unit — violating Mendel's independent assortment. However, during meiosis, homologous chromosomes pair up and can exchange segments in a process called crossing over (recombination). This physically swaps sections of DNA between chromosomes, separating genes that were previously linked. The farther apart two genes are on a chromosome, the more likely crossing over is to occur between them."
+  },
+  {
+    q: "In ABO blood grouping, a man with blood group AB has children with a woman who has blood group O. Which blood groups are possible in their children?",
+    opts: [
+      "AB and O only",
+      "A and B only",
+      "A, B, AB, and O",
+      "O only, because the O gene from the mother masks all others"
+    ],
+    ans: 1,
+    exp: "Blood group AB means the man's genotype is I^A I^B (codominant). Blood group O means the woman's genotype is ii (homozygous recessive). The man can donate either I^A or I^B; the woman can only donate i. So the possible offspring genotypes are I^A i (blood group A) and I^B i (blood group B). In a 1:1 ratio. Blood group AB (I^A I^B) is impossible because neither parent contributes both I^A and I^B together. Blood group O (ii) is impossible because the father has no i allele."
+  },
+  {
+    q: "A DNA molecule contains 30% adenine (A) bases. Using your knowledge of Chargaff's rules, what are the percentages of the other three bases?",
+    opts: [
+      "Thymine 30%, Guanine 20%, Cytosine 20%",
+      "Thymine 20%, Guanine 30%, Cytosine 20%",
+      "Thymine 30%, Guanine 20%, Cytosine 30%",
+      "Thymine 30%, Guanine 30%, Cytosine 10%"
+    ],
+    ans: 0,
+    exp: "Chargaff's rules state that in a DNA double helix, adenine always pairs with thymine (A=T) and guanine always pairs with cytosine (G=C). If A = 30%, then T = 30% (because they pair). A + T = 60%, leaving 40% for G and C together. Since G = C, each is 40% ÷ 2 = 20%. So: A=30%, T=30%, G=20%, C=20%. The total adds up to 100%."
+  },
+  {
+    q: "In Mendel's experiment, when he crossed pure-breeding tall plants with pure-breeding short plants, ALL first generation (F1) offspring were tall. When F1 plants were crossed with each other, the F2 generation had both tall and short plants. What conclusion did Mendel draw that we now call the Law of Segregation?",
+    opts: [
+      "Each organism inherits one factor from each parent, but the two factors separate during gamete formation so each gamete carries only one factor",
+      "Dominant traits always completely suppress recessive traits in every generation, so recessive traits are permanently lost",
+      "Traits are blended together in the offspring and can only reappear if two identical parents are crossed again",
+      "Factors for different traits are always inherited together because they sit on the same chromosome"
+    ],
+    ans: 0,
+    exp: "The disappearance of the short trait in F1 and its reappearance in F2 proved that traits are not blended — they are controlled by separate, discrete factors (what we now call genes). Mendel concluded that each individual carries two factors for each trait (one from each parent), but these factors must separate (segregate) during gamete formation so that each gamete carries only one factor. Fertilisation then brings two factors together again in the offspring. This is the Law of Segregation."
+  },
+  {
+    q: "A genetic counsellor tells a couple that their child has Down syndrome (Trisomy 21). The child has 47 chromosomes instead of 46. During which process did the error MOST likely occur, and what is the specific term for it?",
+    opts: [
+      "During fertilisation; the term is polyploidy, where the entire chromosome set is duplicated",
+      "During meiosis; the term is non-disjunction, where chromosome pair 21 failed to separate properly",
+      "During mitosis in the embryo; the term is translocation, where chromosome 21 broke and attached to another chromosome",
+      "During DNA replication; the term is mutation, where an extra copy of the gene for chromosome 21 was made"
+    ],
+    ans: 1,
+    exp: "Down syndrome is caused by trisomy 21 — the person has three copies of chromosome 21 instead of two. This happens when homologous chromosomes (or sister chromatids) fail to separate during meiosis — a process called non-disjunction. If non-disjunction occurs in meiosis I, both chromosomes 21 go to the same cell. If it occurs in meiosis II, both sister chromatids of chromosome 21 end up in the same gamete. When this gamete fuses with a normal gamete during fertilisation, the resulting zygote has 47 chromosomes."
+  },
+  {
+    q: "Two genes control coat colour in Labrador dogs. Gene E (when present as at least one dominant allele) allows colour to be expressed. Gene B controls whether the colour is black (B_) or chocolate/brown (bb). A dog with genotype eebb would be which colour?",
+    opts: [
+      "Black, because B is dominant over b",
+      "Chocolate (brown), because bb is expressed when E is absent",
+      "Yellow, because the ee genotype prevents any pigment from being deposited in the fur regardless of the B gene",
+      "White, because the double recessive combination removes all pigment completely"
+    ],
+    ans: 2,
+    exp: "This is an example of epistasis — where one gene masks the expression of another. Gene E controls whether pigment is deposited in the fur at all. When a dog is ee (homozygous recessive), no pigment is deposited, and the dog appears yellow — regardless of whether it carries B or b. So eeBB, eeBb, and eebb are all yellow. Only when at least one E allele is present (E_) does the B gene matter: E_B_ = black, E_bb = chocolate. The ee genotype is epistatic to the B gene."
+  },
+
+  // ───── MIXED / INTEGRATIVE QUESTIONS ─────
+
+  {
+    q: "A student removes a frog's cerebellum in a biology experiment. Which specific ability would the frog MOST likely lose?",
+    opts: [
+      "The ability to breathe, because the cerebellum controls the respiratory centre",
+      "The ability to coordinate smooth, balanced movement, because the cerebellum coordinates muscle activity",
+      "The ability to see, because the cerebellum processes visual information from the eyes",
+      "The ability to feel pain, because the cerebellum contains the sensory cortex for pain perception"
+    ],
+    ans: 1,
+    exp: "The cerebellum is responsible for coordinating voluntary muscle movements, maintaining balance, and ensuring movements are smooth and accurate. It receives information from muscles, joints, and balance organs, and fine-tunes signals from the motor cortex. Without the cerebellum, the frog could still attempt movement (the motor signals come from the cerebral cortex) but the movements would be jerky, uncoordinated, and the frog would struggle to maintain balance. Breathing, vision, and pain are controlled by other brain regions."
+  },
+  {
+    q: "A student examines a cross-section of human skin under a microscope. They see Meissner's corpuscles near the surface and Pacinian corpuscles deep in the dermis. What does the LOCATION of Pacinian corpuscles, deep in the skin, tell us about the type of stimulus they are designed to detect?",
+    opts: [
+      "They detect light touch and fine texture because being deep gives them wider surface area coverage",
+      "They detect deep pressure and vibration, because these forces are transmitted deeper into the tissue and require receptors with high thresholds",
+      "They detect temperature changes because the dermis is closer to blood vessels that carry warm blood",
+      "They detect pain because the dermis contains more free nerve endings than the epidermis"
+    ],
+    ans: 1,
+    exp: "Meissner's corpuscles are found in the upper dermis (especially in fingertips) and are sensitive to light touch and fine texture. Pacinian corpuscles are found deep in the dermis and subcutaneous tissue. Their deep location and layered structure make them suited to detecting strong, deep pressure and high-frequency vibrations — stimuli that penetrate deep into the tissues. Light touch would not transmit enough force to reach and deform a deeply located Pacinian corpuscle."
+  },
+  {
+    q: "The hormone thyroxine requires iodine for its production. In regions where dietary iodine is scarce, people often develop an enlarged thyroid gland (goitre). Which feedback mechanism explains why the gland enlarges?",
+    opts: [
+      "Positive feedback: low thyroxine triggers the thyroid to produce more iodine, enlarging the gland in the process",
+      "Negative feedback: low thyroxine causes the pituitary to release more TSH, which continuously stimulates the thyroid, causing it to grow",
+      "Negative feedback: the hypothalamus detects high thyroxine and enlarges the thyroid to increase production",
+      "Positive feedback: high TSH levels directly produce more iodine from the diet, which swells the thyroid"
+    ],
+    ans: 1,
+    exp: "This works through negative feedback. When blood thyroxine levels are low (due to iodine deficiency), the hypothalamus and anterior pituitary respond by releasing more TSH (thyroid-stimulating hormone) in an attempt to stimulate more thyroxine production. However, because there is no iodine to make thyroxine, the low thyroxine levels persist. The pituitary keeps releasing high levels of TSH, and this continuous stimulation causes the thyroid gland cells to multiply and grow — producing the visible swelling called a goitre."
+  },
+  {
+    q: "In an exam, a student writes: 'Genotype refers to how an organism looks, while phenotype refers to its genetic makeup.' Identify the error and state the correct definitions.",
+    opts: [
+      "The student is correct; genotype describes appearance and phenotype describes genetic composition",
+      "The definitions are reversed: genotype is the genetic makeup (the actual alleles an organism carries), and phenotype is the observable physical expression of those genes",
+      "The student is partially correct; genotype refers to appearance for dominant traits only, while phenotype describes recessive genes",
+      "Both terms mean the same thing and can be used interchangeably in genetics"
+    ],
+    ans: 1,
+    exp: "The student has swapped the two terms. Genotype refers to the actual alleles an organism carries — its genetic composition (e.g. Tt, BB, XhY). This cannot be seen directly. Phenotype refers to the observable, physical expression of the genotype — how the organism actually looks or functions (e.g. tall, black coat, colour-blind). The same phenotype (e.g. tall) can result from different genotypes (TT or Tt), which is why genotype and phenotype are not the same thing."
+  },
+  {
+    q: "During a dissection, a student identifies the organ of Corti inside the cochlea. What is the specific role of the hair cells within this organ?",
+    opts: [
+      "They produce endolymph fluid that transmits sound vibrations through the cochlea",
+      "They convert mechanical vibrations of the basilar membrane into electrical nerve impulses sent to the auditory nerve",
+      "They amplify sound waves entering the cochlea by vibrating at a frequency higher than the incoming sound",
+      "They control the direction of sound waves inside the cochlea by adjusting the tension of the basilar membrane"
+    ],
+    ans: 1,
+    exp: "Sound waves cause the oval window to vibrate, setting up pressure waves in the fluid of the cochlea. These waves travel along and cause the basilar membrane to vibrate. The hair cells of the organ of Corti sit on the basilar membrane and have stereocilia (tiny projections) that press against the overlying tectorial membrane. When the basilar membrane moves, the stereocilia bend. This bending opens ion channels in the hair cells, generating electrical signals (action potentials) that travel along the auditory nerve to the brain, where they are interpreted as sound."
+  },
+  {
+    q: "A student states that the liver is both a gland and a homeostatic organ. Identify TWO specific homeostatic functions of the liver that justify this description.",
+    opts: [
+      "The liver produces insulin to control blood glucose and secretes bile to digest lipids in the small intestine",
+      "The liver converts excess glucose to glycogen for storage and deaminates excess amino acids to produce urea for excretion",
+      "The liver filters blood through nephrons and reabsorbs water to maintain blood volume",
+      "The liver stores iron from the diet and secretes thyroxine to regulate the metabolic rate"
+    ],
+    ans: 1,
+    exp: "The liver performs critical homeostatic functions: (1) Glycogen storage — when blood glucose rises after a meal, insulin signals the liver to convert excess glucose to glycogen (glycogenesis), storing it until blood glucose falls, when it reconverts it to glucose (glycogenolysis). This keeps blood glucose within a narrow, safe range. (2) Deamination — amino acids cannot be stored, so excess ones have their amino group removed in the liver (deamination) to produce ammonia, which is immediately converted to the less toxic urea, excreted by the kidneys. These two functions alone demonstrate the liver's central role in homeostasis."
+  }
+]    
 },
 "tutorial": {
         'English Language': [
