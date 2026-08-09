@@ -16,7 +16,9 @@
     bg:          'white',
   };
 
-  const PREFS_KEY = 'vtx_study_prefs';
+  const PREFS_KEY          = 'vtx_study_prefs';
+  const _META_DEFAULT_TERM = 'studyroom_defaultTerm';
+  const POS_KEY_PREFIX     = 'vtx_sr_pos_';
 
   const TERMS = ['First Term', 'Second Term', 'Third Term'];
 
@@ -42,6 +44,16 @@
 
   function _savePrefs() {
     try { localStorage.setItem(PREFS_KEY, JSON.stringify(_prefs)); } catch (e) {}
+  }
+
+  function _saveLessonPos(lessonId, pos) {
+    if (!lessonId || lessonId === '__preview__') return;
+    try { localStorage.setItem(POS_KEY_PREFIX + lessonId, String(Math.round(pos))); } catch (e) {}
+  }
+
+  function _loadLessonPos(lessonId) {
+    if (!lessonId || lessonId === '__preview__') return 0;
+    try { return parseInt(localStorage.getItem(POS_KEY_PREFIX + lessonId) || '0', 10) || 0; } catch (e) { return 0; }
   }
 
   function _applyPrefsToReader(containerEl) {
@@ -83,7 +95,6 @@
       .replace(/\r/g, '\n');
 
     const stash = [];
-    const STASH_RE = /STASH_(\d+)_END/g;
 
     function _stash(str) {
       stash.push(str);
@@ -427,9 +438,19 @@
 
     _applyPrefsToReader(document.getElementById('app'));
     _syncPrefsUI();
-    _bindScrollProgress();
+    _bindScrollProgress(lesson.id);
     _renderMathContent(document.getElementById('app'));
     _bindQuizButtons(document.getElementById('app'));
+    _restoreScrollPos(lesson.id);
+  }
+
+  function _restoreScrollPos(lessonId) {
+    const pos = _loadLessonPos(lessonId);
+    if (!pos) return;
+    requestAnimationFrame(() => {
+      const reader = document.getElementById('srScrollReader');
+      if (reader) reader.scrollTop = pos;
+    });
   }
 
   function _ensureKatex() {
@@ -741,14 +762,22 @@
     return "'Lora','Source Serif 4',Georgia,serif";
   }
 
-  function _bindScrollProgress() {
+  function _bindScrollProgress(lessonId) {
     const reader = document.getElementById('srScrollReader');
     const fill   = document.getElementById('srProgressFill');
     if (!reader || !fill) return;
+
+    let _saveTimer = null;
+
     reader.addEventListener('scroll', () => {
       const scrollable = reader.scrollHeight - reader.clientHeight;
       fill.style.width = scrollable <= 0 ? '100%'
         : (reader.scrollTop / scrollable * 100).toFixed(1) + '%';
+
+      clearTimeout(_saveTimer);
+      _saveTimer = setTimeout(() => {
+        _saveLessonPos(lessonId, reader.scrollTop);
+      }, 400);
     }, { passive: true });
   }
 
