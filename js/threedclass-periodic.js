@@ -5,6 +5,39 @@
 (function () {
   'use strict';
 
+  /* ══════════════════════════════════════════════════
+     THREE.JS LOADER
+  ══════════════════════════════════════════════════ */
+
+  const THREE_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+  const ORBIT_CDN = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js';
+
+  let _threeReady = false;
+  let _threeQueue = [];
+
+  function _loadThree(cb) {
+    if (_threeReady) { cb(); return; }
+    _threeQueue.push(cb);
+    if (_threeQueue.length > 1) return;
+    const s1 = document.createElement('script');
+    s1.src = THREE_CDN;
+    s1.onload = () => {
+      const s2 = document.createElement('script');
+      s2.src = ORBIT_CDN;
+      s2.onload = () => {
+        _threeReady = true;
+        _threeQueue.forEach(fn => fn());
+        _threeQueue = [];
+      };
+      document.head.appendChild(s2);
+    };
+    document.head.appendChild(s1);
+  }
+
+  /* ══════════════════════════════════════════════════
+     ELEMENT DATA
+  ══════════════════════════════════════════════════ */
+
   const ELEMENTS = [
     { n:1,  sym:'H',  name:'Hydrogen',      mass:1.008,    cat:'nonmetal',       period:1, group:1,  config:'1s¹',                  melt:-259.14, boil:-252.87, density:0.00009,  discovered:1766, state:'gas',    electronegativity:2.20, shells:[1],           desc:'Hydrogen is the lightest and most abundant element in the universe, making up about 75% of all normal matter by mass. It is the primary fuel of stars, including our Sun, through nuclear fusion. On Earth, it exists mostly as water (H₂O) and organic compounds. It is colourless, odourless, and highly flammable as a gas. Scientists are exploring hydrogen as a clean fuel source for cars and power plants, since burning it produces only water. It is also essential for making ammonia, which is used in fertilisers that feed billions of people.' },
     { n:2,  sym:'He', name:'Helium',         mass:4.003,    cat:'noble-gas',      period:1, group:18, config:'1s²',                  melt:null,    boil:-268.93, density:0.000179, discovered:1868, state:'gas',    electronegativity:null, shells:[2],           desc:'Helium is the second most abundant element in the universe but is surprisingly rare on Earth. It was first discovered in the Sun\'s spectrum before it was found on Earth — its name comes from Helios, the Greek god of the Sun. Because it is lighter than air and non-flammable, it is used to fill balloons and airships safely. Liquid helium, which is extremely cold at −269 °C, is used to cool the superconducting magnets in MRI scanners. Helium is a noble gas and completely unreactive — it forms no chemical compounds under normal conditions.' },
@@ -60,55 +93,55 @@
     { n:52, sym:'Te', name:'Tellurium',      mass:127.6,    cat:'metalloid',      period:5, group:16, config:'[Kr] 4d¹⁰ 5s² 5p⁴',   melt:449.51,  boil:988,     density:6.232,    discovered:1782, state:'solid',  electronegativity:2.10, shells:[2,8,18,18,6], desc:'Tellurium is a rare, brittle, silver-white metalloid that is one of the least abundant stable elements in Earth\'s crust (rarer than platinum). It is a semiconductor and its conductivity increases significantly when exposed to light. Tellurium is primarily used in cadmium telluride (CdTe) thin-film solar panels, which are the second most common type of photovoltaic technology after silicon — CdTe panels are cheaper to manufacture than silicon. It is also used in thermoelectric devices (bismuth telluride), in the production of free-machining steels, and as an additive to copper and lead alloys. Tellurium was discovered in 1782 in gold ores from Transylvania; its name comes from the Latin "tellus" (Earth). Most tellurium is produced as a by-product of copper refining.' },
     { n:53, sym:'I',  name:'Iodine',         mass:126.904,  cat:'halogen',        period:5, group:17, config:'[Kr] 4d¹⁰ 5s² 5p⁵',   melt:113.7,   boil:184.4,   density:4.933,    discovered:1811, state:'solid',  electronegativity:2.66, shells:[2,8,18,18,7], desc:'Iodine is a lustrous, dark purple-grey solid that readily sublimes into a violet vapour. It is an essential trace element for human health — the thyroid gland requires iodine to produce hormones (thyroxine and triiodothyronine) that regulate metabolism, growth, and development. Iodine deficiency is the leading preventable cause of intellectual disability worldwide, affecting 2 billion people; this is why many countries add iodine to table salt (iodised salt). Iodine solution turns starch blue-black — a classic test used in biology and chemistry. It is used as an antiseptic (tincture of iodine) to disinfect wounds and skin. Radioactive iodine-131 is used to treat thyroid cancer and hyperthyroidism. Iodine is also used in X-ray contrast agents and in making polarising films for LCD screens.' },
     { n:54, sym:'Xe', name:'Xenon',          mass:131.293,  cat:'noble-gas',      period:5, group:18, config:'[Kr] 4d¹⁰ 5s² 5p⁶',   melt:-111.7,  boil:-108.1,  density:0.00589,  discovered:1898, state:'gas',    electronegativity:2.60, shells:[2,8,18,18,8], desc:'Xenon is a dense, colourless noble gas that was once thought to be completely inert — until 1962, when Neil Bartlett synthesised the first noble gas compound, xenon hexafluoroplatinate, shocking the chemistry world. Since then, many xenon compounds have been made. Xenon produces an intense white light when excited electrically, making it invaluable in high-intensity discharge lamps (HID headlights in cars, cinema projectors, and photographic flash lamps). Xenon ion thrusters provide propulsion for spacecraft, including the Dawn mission and many commercial satellites, because they are extremely fuel-efficient. Xenon is also used as a general anaesthetic in some countries, as it is non-toxic, non-flammable, and produces minimal environmental impact. Xenon-133 is used in pulmonary function imaging.' },
-    { n:55, sym:'Cs', name:'Caesium',        mass:132.905,  cat:'alkali-metal',   period:6, group:1,  config:'[Xe] 6s¹',             melt:28.44,   boil:671,     density:1.93,     discovered:1860, state:'solid',  electronegativity:0.79, shells:[2,8,18,18,8,1], desc:'Caesium (or cesium in American English) is a soft, golden-tinted metal — one of only three metals with a naturally yellowish colour (the others being gold and copper). It melts just above room temperature (28.44 °C) and reacts explosively with water. Caesium\'s most important application is in atomic clocks — the caesium-133 atom is so precise that the SI second is defined by its vibration frequency (9,192,631,770 oscillations per second). GPS satellites, internet timing, and global financial transactions all depend on caesium atomic clocks. Caesium formate is used as a dense drilling fluid in oil and gas wells. The photoelectric effect is particularly strong in caesium, making it useful in photoelectric cells and night-vision equipment. Radioactive caesium-137, a nuclear fission product, is a dangerous environmental contaminant (as seen after Chernobyl and Fukushima).' },
-    { n:56, sym:'Ba', name:'Barium',         mass:137.327,  cat:'alkaline-earth', period:6, group:2,  config:'[Xe] 6s²',             melt:727,     boil:1870,    density:3.51,     discovered:1808, state:'solid',  electronegativity:0.89, shells:[2,8,18,18,8,2], desc:'Barium is a soft, silvery-white alkaline earth metal that reacts readily with oxygen and water. Its name comes from the Greek "barys" (heavy), as its ore barite (barium sulfate) is notably dense. Barium sulfate is opaque to X-rays and completely insoluble and non-toxic, making it ideal as a "barium meal" or "barium enema" — patients drink a barium sulfate suspension that coats the digestive tract, allowing doctors to image the stomach, oesophagus, and intestines with X-rays or CT scans. Barium is also used in drilling fluids for oil and gas exploration, in producing certain types of glass and ceramics, and in vacuum tubes to absorb residual gases. Barium compounds give fireworks their brilliant green colour. Unlike barium sulfate, most other barium compounds are highly toxic.' },
-    { n:57, sym:'La', name:'Lanthanum',      mass:138.905,  cat:'lanthanide',     period:6, group:3,  config:'[Xe] 5d¹ 6s²',         melt:920,     boil:3464,    density:6.145,    discovered:1839, state:'solid',  electronegativity:1.10, shells:[2,8,18,18,9,2], desc:'Lanthanum is a soft, malleable, silvery-white rare earth metal and the first element of the lanthanide series. It is named from the Greek "lanthanein" (to lie hidden) because it hid in cerium oxide for many years before being separated. Lanthanum oxide is used to make speciality optical glasses with high refractive index, such as the lenses in high-quality cameras, binoculars, and telescopes (including the Hubble Space Telescope\'s instruments). Lanthanum is a key component in nickel-metal hydride (NiMH) batteries used in hybrid cars. La₂O₃ is used as a catalyst in fluid catalytic cracking (FCC) in oil refineries to produce petrol from crude oil. Lanthanum chloride is used in water treatment. Certain lanthanum compounds act as phosphate binders in treating kidney disease.' },
-    { n:58, sym:'Ce', name:'Cerium',         mass:140.116,  cat:'lanthanide',     period:6, group:null,config:'[Xe] 4f¹ 5d¹ 6s²',    melt:798,     boil:3443,    density:6.77,     discovered:1803, state:'solid',  electronegativity:1.12, shells:[2,8,18,19,9,2], desc:'Cerium is the most abundant of the rare earth elements (more abundant than copper in Earth\'s crust) and is named after the dwarf planet Ceres. It is a soft, ductile, iron-grey metal that tarnishes readily in air. One of cerium\'s most familiar applications is in the flints of cigarette lighters — the alloy mischmetal (about 50% cerium) generates sparks when struck. Cerium oxide (ceria) is the most effective polishing compound for glass and is used to grind and polish glass in every type of screen, mirror, and lens. It is also used in catalytic converters where it serves as an oxygen buffer, and in self-cleaning ovens (the coating oxidises food residue at high temperature). Cerium oxide nanoparticles are being studied as antioxidants for treating various diseases. It is also used in colouring glass yellow.' },
-    { n:59, sym:'Pr', name:'Praseodymium',   mass:140.908,  cat:'lanthanide',     period:6, group:null,config:'[Xe] 4f³ 6s²',        melt:931,     boil:3520,    density:6.773,    discovered:1885, state:'solid',  electronegativity:1.13, shells:[2,8,18,21,8,2], desc:'Praseodymium is a soft, silvery, malleable rare earth metal whose name comes from the Greek words for "leek green twin" — its salts are distinctly green and it was separated from neodymium (its "twin") in 1885. Praseodymium is used in strong permanent magnets: combined with neodymium to make NdPr magnets (a cost-effective variant of neodymium magnets used in motors and generators). Praseodymium oxide produces an intense yellow-green colour in glass and enamel — it is used in goggles for glassblowers and welders to filter out the bright yellow sodium flare. Praseodymium alloyed with magnesium creates a high-strength alloy used in aircraft engines. Praseodymium doped fibre amplifiers are used in certain mid-infrared laser applications and in fibre optic communications.' },
-    { n:60, sym:'Nd', name:'Neodymium',      mass:144.242,  cat:'lanthanide',     period:6, group:null,config:'[Xe] 4f⁴ 6s²',        melt:1021,    boil:3074,    density:7.007,    discovered:1885, state:'solid',  electronegativity:1.14, shells:[2,8,18,22,8,2], desc:'Neodymium is a soft, silvery rare earth metal that is the star of modern magnet technology. Neodymium-iron-boron (NdFeB) magnets are the strongest permanent magnets ever made — they can be over a thousand times stronger than ordinary ferrite magnets for their volume. These tiny but powerful magnets are found in computer hard drives, headphones, speakers, MRI machines, electric motors in electric vehicles, and wind turbine generators. The transition to renewable energy and electric transport has made neodymium a strategically critical material — about 90% is produced in China. Neodymium compounds produce striking purple, blue, and red colours in glass and lasers. Nd:YAG lasers are used in laser cutting, medical procedures, and military rangefinders.' },
-    { n:61, sym:'Pm', name:'Promethium',     mass:145,      cat:'lanthanide',     period:6, group:null,config:'[Xe] 4f⁵ 6s²',        melt:1042,    boil:3000,    density:7.26,     discovered:1945, state:'solid',  electronegativity:1.13, shells:[2,8,18,23,8,2], desc:'Promethium is the only lanthanide (and one of only two elements below uranium) that has no stable isotopes — all are radioactive. Vanishingly small amounts exist naturally as a product of spontaneous fission of uranium, but it is essentially absent from Earth\'s crust. It is named after Prometheus, the titan who stole fire from the gods, reflecting the difficult and "fiery" challenge of its isolation. Promethium was first produced artificially during the Manhattan Project in 1945 by bombarding neodymium and praseodymium with neutrons. The most stable isotope, Pm-145, has a half-life of 17.7 years. It is used in nuclear-powered betavoltaic batteries (atomic batteries for spacecraft and missile guidance systems) and in luminescent paint (it replaced radium). It is also used in portable X-ray sources and as a thickness gauge for industrial materials.' },
-    { n:62, sym:'Sm', name:'Samarium',       mass:150.36,   cat:'lanthanide',     period:6, group:null,config:'[Xe] 4f⁶ 6s²',        melt:1072,    boil:1794,    density:7.52,     discovered:1879, state:'solid',  electronegativity:1.17, shells:[2,8,18,24,8,2], desc:'Samarium is a hard, silvery rare earth metal that was the first element discovered using spectroscopy (by its distinctive spectral lines). It was named after the mineral samarskite, itself named after a Russian mining official, Colonel Samarski — making samarium one of the few elements named indirectly after a real person. Samarium-cobalt (SmCo) magnets were the first rare earth magnets to be developed commercially and remain important where heat resistance is required (they retain their magnetism better than neodymium magnets at high temperatures). Samarium-153 (a radioactive isotope) is used in targeted radiotherapy for bone cancer pain relief, binding to bone metastases and delivering localised radiation. Samarium compounds are also used as neutron absorbers in nuclear reactors and in infrared-absorbing glass.' },
-    { n:63, sym:'Eu', name:'Europium',       mass:151.964,  cat:'lanthanide',     period:6, group:null,config:'[Xe] 4f⁷ 6s²',        melt:826,     boil:1529,    density:5.243,    discovered:1901, state:'solid',  electronegativity:null, shells:[2,8,18,25,8,2], desc:'Europium is the most reactive rare earth metal — it oxidises rapidly in air and reacts with water. It is the softest lanthanide and was not isolated until 1901, although it had been observed spectroscopically earlier. Europium is exceptionally important in producing luminescent displays: europium(III) compounds produce brilliant red phosphorescence, while europium(II) compounds produce blue. These phosphors are used in fluorescent lamps, LED backlights, plasma displays, and colour television screens — essentially every colour screen uses europium phosphors. Euro banknotes contain europium-based fluorescent compounds that glow under UV light as an anti-counterfeiting measure. Europium is also used in some types of cancer imaging using fluorescent bioassays.' },
-    { n:64, sym:'Gd', name:'Gadolinium',     mass:157.25,   cat:'lanthanide',     period:6, group:null,config:'[Xe] 4f⁷ 5d¹ 6s²',   melt:1313,    boil:3273,    density:7.9,      discovered:1880, state:'solid',  electronegativity:1.20, shells:[2,8,18,25,9,2], desc:'Gadolinium is a silvery-white, malleable, ductile rare earth metal with unusual magnetic properties — it is ferromagnetic at room temperature (one of very few non-iron metals to be magnetic), and near its Curie temperature (20 °C), it shows an unusually large magnetocaloric effect (heating when magnetised, cooling when demagnetised), making it a candidate for magnetic refrigeration technology. Its most important medical use is as an MRI contrast agent: gadolinium chelate compounds are injected intravenously and accumulate in abnormal tissues, making them appear brighter on MRI scans — about a third of all MRI scans worldwide use gadolinium contrast. Gadolinium is also used in nuclear reactor control rods and as a component in speciality alloys and phosphors for television sets and computer monitors.' },
-    { n:65, sym:'Tb', name:'Terbium',        mass:158.925,  cat:'lanthanide',     period:6, group:null,config:'[Xe] 4f⁹ 6s²',        melt:1356,    boil:3230,    density:8.229,    discovered:1843, state:'solid',  electronegativity:null, shells:[2,8,18,27,8,2], desc:'Terbium is a soft, malleable, silvery-white rare earth metal named after Ytterby, Sweden (the same village that gives its name to yttrium, ytterbium, and erbium). Terbium produces a vivid green phosphorescence and is used in green phosphors for fluorescent lamps and LED lighting, producing the highly efficient warm-white light of modern compact fluorescent bulbs and LED tubes. Terbium is also essential in magneto-optical data storage and in Terfenol-D (terbium-dysprosium-iron), a magnetostrictive material that changes shape in a magnetic field — useful in sonar transducers, precision actuators, and vibration sensors. Terbium is also used as a dopant in solid-state devices and as a structural component in high-performance permanent magnets (where it improves performance at elevated temperatures).' },
-    { n:66, sym:'Dy', name:'Dysprosium',     mass:162.5,    cat:'lanthanide',     period:6, group:null,config:'[Xe] 4f¹⁰ 6s²',       melt:1412,    boil:2567,    density:8.55,     discovered:1886, state:'solid',  electronegativity:1.22, shells:[2,8,18,28,8,2], desc:'Dysprosium is a soft, lustrous, silvery metal with the highest magnetic moment (strength per atom) of any naturally occurring element. Its name comes from the Greek "dysprositos," meaning "hard to get" — it was notoriously difficult to separate from the other lanthanides. Dysprosium is critical for high-performance neodymium magnets used in electric vehicle motors and wind turbines. Adding dysprosium to NdFeB magnets allows them to maintain their strength at higher temperatures — essential for the demanding environments inside electric motors. Without dysprosium, EV motors would lose their magnetism when they heat up under load. The global shift to electric vehicles has made dysprosium a strategically vital material. It is also used in nuclear reactor control rods (dysprosium oxide) and in certain speciality lasers.' },
-    { n:67, sym:'Ho', name:'Holmium',        mass:164.93,   cat:'lanthanide',     period:6, group:null,config:'[Xe] 4f¹¹ 6s²',       melt:1474,    boil:2700,    density:8.795,    discovered:1879, state:'solid',  electronegativity:1.23, shells:[2,8,18,29,8,2], desc:'Holmium is a soft, malleable, silvery-white rare earth metal named after Stockholm (from the Latin "Holmia"). It has the highest magnetic dipole moment of any element, making it valuable for creating the strongest magnetic fields. Holmium pole pieces (small holmium metal inserts) are used in high-field electromagnets to concentrate and enhance the magnetic field. Ho:YAG (holmium-doped yttrium aluminium garnet) lasers emit light at 2.1 μm in the infrared, which is strongly absorbed by water in tissue. This makes them ideal for minimally invasive surgery — used in urology (breaking up kidney stones), orthopaedics (joint surgery), and ophthalmology. Holmium is also used in nuclear reactor control rods and as a neutron absorber in nuclear technology.' },
-    { n:68, sym:'Er', name:'Erbium',         mass:167.259,  cat:'lanthanide',     period:6, group:null,config:'[Xe] 4f¹² 6s²',       melt:1497,    boil:2868,    density:9.066,    discovered:1843, state:'solid',  electronegativity:1.24, shells:[2,8,18,30,8,2], desc:'Erbium is a soft, malleable, lustrous silvery-white rare earth metal, also named after Ytterby. Erbium\'s most critical technological application is in fibre optic communications — erbium-doped fibre amplifiers (EDFAs) are the key technology that makes long-distance fibre optic internet possible. Erbium ions can absorb photons at 980 nm and re-emit them at 1550 nm (the standard wavelength used in fibre optic communications) — this allows optical signals to be amplified directly in the glass fibre without converting to electrical signals and back, allowing signals to travel thousands of kilometres via submarine cables. The internet as we know it would not function at global scale without erbium. Erbium oxide has a distinctive pink colour and is used to colour glasses and ceramics. Er:YAG lasers are used in dentistry and skin resurfacing.' },
-    { n:69, sym:'Tm', name:'Thulium',        mass:168.934,  cat:'lanthanide',     period:6, group:null,config:'[Xe] 4f¹³ 6s²',       melt:1545,    boil:1950,    density:9.321,    discovered:1879, state:'solid',  electronegativity:1.25, shells:[2,8,18,31,8,2], desc:'Thulium is the least abundant and second rarest of the naturally occurring lanthanides (after promethium, which is radioactive). It is named after Thule, an ancient name for the far north of Scandinavia or northern lands. Thulium is a soft, silvery-grey metal. Thulium-170, produced by irradiating thulium in a nuclear reactor, emits X-rays and was developed as a portable X-ray source for use in areas where electricity is unavailable, such as remote medical clinics. Thulium-doped yttrium aluminium garnet (Tm:YAG) and thulium-doped fibre lasers emit at around 2 μm and are used in laser ranging, remote sensing, and minimally invasive medical procedures. Thulium also produces a blue-green luminescence used in high-performance phosphors.' },
-    { n:70, sym:'Yb', name:'Ytterbium',      mass:173.045,  cat:'lanthanide',     period:6, group:null,config:'[Xe] 4f¹⁴ 6s²',       melt:819,     boil:1196,    density:6.965,    discovered:1878, state:'solid',  electronegativity:null, shells:[2,8,18,32,8,2], desc:'Ytterbium is a soft, bright, silvery rare earth metal that was discovered in 1878 and named (like yttrium, terbium, and erbium) after the village of Ytterby. It was the last of the four "Ytterby elements" to be discovered. Ytterbium is used in certain types of optical fibre amplifiers for high-power laser applications. Ytterbium-doped fibre lasers are increasingly replacing CO₂ and Nd:YAG lasers in industrial cutting and welding because they are highly energy-efficient and produce a wavelength (1064 nm) that is well absorbed by metals. Ytterbium atomic clocks are the most precise clocks ever built — operating at optical frequencies, they are accurate to within one second in 14 billion years and are used in cutting-edge tests of fundamental physics. Ytterbium is also used in some stainless steel alloys.' },
-    { n:71, sym:'Lu', name:'Lutetium',       mass:174.967,  cat:'lanthanide',     period:6, group:null,config:'[Xe] 4f¹⁴ 5d¹ 6s²',  melt:1663,    boil:3402,    density:9.84,     discovered:1907, state:'solid',  electronegativity:1.27, shells:[2,8,18,32,9,2], desc:'Lutetium is the heaviest, hardest, and densest of all the lanthanides. It is named after Lutetia, the Latin name for Paris, where it was discovered in 1907. Lutetium is rare and expensive — it is used sparingly but in high-value applications. Lutetium oxyorthosilicate (LSO and LYSO) crystals are used as scintillator detectors in PET (positron emission tomography) scanners used in cancer diagnosis — they are superior to older scintillator materials in terms of light output and speed. Lutetium-177 (a radioactive isotope) is used in targeted radionuclide therapy (Lu-DOTATATE) to treat certain neuroendocrine tumours, representing a breakthrough in cancer treatment approved in multiple countries. Lutetium aluminium garnet (LuAG) is used in high-energy physics detectors.' },
-    { n:72, sym:'Hf', name:'Hafnium',        mass:178.49,   cat:'transition',     period:6, group:4,  config:'[Xe] 4f¹⁴ 5d² 6s²',  melt:2233,    boil:4603,    density:13.31,    discovered:1923, state:'solid',  electronegativity:1.30, shells:[2,8,18,32,10,2], desc:'Hafnium is a lustrous, silvery-grey transition metal that is almost always found in nature alongside zirconium (in zircon minerals) because their atomic radii are virtually identical — an effect of the lanthanide contraction. This makes hafnium one of the most difficult elements to separate from a companion element. Unlike zirconium, hafnium absorbs neutrons very effectively, making it invaluable as a control rod material in nuclear reactors (while zirconium is used for the fuel cladding). Hafnium oxide (HfO₂) has a very high dielectric constant, which is why it replaced silicon dioxide as the gate dielectric in Intel\'s transistors from 2007 onwards — a breakthrough that allowed continued miniaturisation of computer chips when traditional silicon oxide became too thin. Hafnium is also used in plasma cutting torch electrodes.' },
-    { n:73, sym:'Ta', name:'Tantalum',       mass:180.948,  cat:'transition',     period:6, group:5,  config:'[Xe] 4f¹⁴ 5d³ 6s²',  melt:3017,    boil:5458,    density:16.69,    discovered:1802, state:'solid',  electronegativity:1.50, shells:[2,8,18,32,11,2], desc:'Tantalum is a rare, hard, blue-grey, lustrous transition metal with an extraordinarily high melting point (3017 °C — fifth highest of all elements) and exceptional resistance to corrosion by almost all acids. It is named after the mythological Tantalus, because of the tantalising difficulty of dissolving it in acid. Tantalum\'s most critical use is in small, high-performance capacitors (tantalum electrolytic capacitors) found in mobile phones, laptops, tablets, and hearing aids — they are smaller and more reliable than equivalent aluminium capacitors. Virtually every smartphone contains tantalum capacitors. It is also used in surgical implants (especially hip and skull plates) because it is biocompatible and does not react with body fluids. Most tantalum comes from conflict-affected regions of Africa (particularly DRC), raising significant ethical supply chain concerns.' },
-    { n:74, sym:'W',  name:'Tungsten',       mass:183.84,   cat:'transition',     period:6, group:6,  config:'[Xe] 4f¹⁴ 5d⁴ 6s²',  melt:3422,    boil:5555,    density:19.25,    discovered:1783, state:'solid',  electronegativity:2.36, shells:[2,8,18,32,12,2], desc:'Tungsten has the highest melting point of all elements (3422 °C) and the highest tensile strength of any metal at temperatures above 1650 °C. Its symbol W comes from its German name "Wolfram." It is almost twice as dense as lead. The extreme heat resistance of tungsten made it the ideal material for incandescent light bulb filaments for over a century. Today its most important uses are in cemented carbide cutting tools (tungsten carbide — the material in drill bits, milling cutters, and saw tips), high-speed steel alloys for machine tools, and heavy metal alloys for military projectiles (replacing lead). Tungsten electrodes are used in TIG (tungsten inert gas) welding. Tungsten diselenide and disulfide are being researched as next-generation lubricants and 2D semiconductor materials.' },
-    { n:75, sym:'Re', name:'Rhenium',        mass:186.207,  cat:'transition',     period:6, group:7,  config:'[Xe] 4f¹⁴ 5d⁵ 6s²',  melt:3186,    boil:5596,    density:21.02,    discovered:1925, state:'solid',  electronegativity:1.90, shells:[2,8,18,32,13,2], desc:'Rhenium has the second highest melting point of all elements (3186 °C, after tungsten) and the third highest density. It was the last stable element to be discovered in nature (1925) and was one of the elements predicted by Mendeleev. It is extremely rare — only about 50 tonnes are produced annually worldwide. Rhenium\'s most important use is in superalloys for single-crystal turbine blades in jet engines and gas turbines: adding 3-6% rhenium dramatically increases the creep resistance and high-temperature strength of nickel superalloys, allowing engines to run hotter and more efficiently. Almost all aviation-grade jet engine turbine blades contain rhenium. It is also used in catalysts for oil refining (platinum-rhenium catalysts in platforming) and in high-temperature electrical contacts and filaments for mass spectrometers.' },
-    { n:76, sym:'Os', name:'Osmium',         mass:190.23,   cat:'transition',     period:6, group:8,  config:'[Xe] 4f¹⁴ 5d⁶ 6s²',  melt:3033,    boil:5012,    density:22.59,    discovered:1803, state:'solid',  electronegativity:2.20, shells:[2,8,18,32,14,2], desc:'Osmium is the densest naturally occurring element — twice as dense as lead and 10% denser than gold. Its name comes from the Greek "osme" (smell), because osmium tetroxide (OsO₄) has a pungent, acrid odour and is highly toxic. Osmium is a hard, brittle, blue-grey platinum-group metal. Osmium alloys (particularly osmium-iridium) are extremely hard and are used in the tips of fountain pen nibs, instrument pivots, and electrical contacts that require extreme wear resistance. Osmium tetroxide, despite being toxic, is used in biological electron microscopy as a fixative and stain that highlights lipid-rich structures (cell membranes) and in organic chemistry for stereospecific oxidation reactions. Osmium is about 1,000 times rarer than gold.' },
-    { n:77, sym:'Ir', name:'Iridium',        mass:192.217,  cat:'transition',     period:6, group:9,  config:'[Xe] 4f¹⁴ 5d⁷ 6s²',  melt:2446,    boil:4428,    density:22.56,    discovered:1803, state:'solid',  electronegativity:2.20, shells:[2,8,18,32,15,2], desc:'Iridium is the most corrosion-resistant metal known — it is resistant to air, water, halogens, and most acids even at very high temperatures. It is the second densest element after osmium. Named after Iris, the Greek goddess of rainbows, because of its brightly coloured salts. Iridium is crucial evidence in the K-Pg (Cretaceous-Palaeogene) boundary theory for dinosaur extinction: a thin layer of iridium-rich clay found worldwide at the geological boundary suggests a massive asteroid impact (asteroids are enriched in iridium), which would have caused the mass extinction 66 million years ago. Iridium is used in spark plugs for high-performance engines, crucibles for growing speciality crystals, and was used for the kilogram standard until 2019. Iridium-192 is used in cancer brachytherapy (internal radiotherapy).' },
-    { n:78, sym:'Pt', name:'Platinum',       mass:195.084,  cat:'transition',     period:6, group:10, config:'[Xe] 4f¹⁴ 5d⁹ 6s¹',  melt:1768.3,  boil:3825,    density:21.45,    discovered:1735, state:'solid',  electronegativity:2.28, shells:[2,8,18,32,17,1], desc:'Platinum is a dense, malleable, ductile, precious, silvery-white metal that does not oxidise at any temperature. Its name comes from the Spanish "platina" (little silver). Platinum has been prized for jewellery for centuries, but its most important modern use is in catalytic converters — platinum oxidises carbon monoxide and unburnt hydrocarbons from engine exhaust into CO₂ and water. Platinum is also a crucial catalyst in the industrial production of nitric acid (Ostwald process), used to make fertilisers and explosives. Cisplatin, a platinum compound, is one of the most widely used anti-cancer drugs, effective against testicular, ovarian, lung, and bladder cancers. Platinum electrodes are used in fuel cells for hydrogen-powered vehicles. Until 2019, the international kilogram standard (IPK) was a platinum-iridium cylinder held in France.' },
-    { n:79, sym:'Au', name:'Gold',           mass:196.967,  cat:'transition',     period:6, group:11, config:'[Xe] 4f¹⁴ 5d¹⁰ 6s¹', melt:1064.18, boil:2856,    density:19.3,     discovered:null, state:'solid',  electronegativity:2.54, shells:[2,8,18,32,18,1], desc:'Gold is one of the few elements found in pure metallic form in nature, which, combined with its beauty and resistance to tarnishing, has made it the basis of wealth and adornment throughout human history. It is extremely malleable — one gram can be beaten into a sheet about one square metre in area (gold leaf). Gold\'s colour (unusual for metals — most are grey or silver) arises from relativistic effects on its electron orbitals. Despite its image as purely decorative, gold has critical technical uses: it is the best corrosion-resistant electrical conductor, so it is used in all critical electronic connections (computer processors, connectors, aerospace electronics). Gold nanoparticles are being developed for cancer diagnosis and treatment. All gold ever mined in history would fill only about 3.5 Olympic swimming pools.' },
-    { n:80, sym:'Hg', name:'Mercury',        mass:200.592,  cat:'transition',     period:6, group:12, config:'[Xe] 4f¹⁴ 5d¹⁰ 6s²', melt:-38.83,  boil:356.73,  density:13.534,   discovered:null, state:'liquid', electronegativity:2.00, shells:[2,8,18,32,18,2], desc:'Mercury is the only metal that is liquid at room temperature — and the only element other than bromine that is liquid at standard conditions. It is also one of only two elements whose liquid form is denser than its solid form. Named after the fleet-footed Roman god, mercury has been known since ancient times (cinnabar — red mercury sulfide — was used as a pigment in cave paintings). Mercury was used for centuries in thermometers, barometers, electrical switches, and fluorescent lamps. However, mercury is a potent neurotoxin — the phrase "mad as a hatter" arose because hatters used mercury compounds to process felt and suffered neurological damage. Methylmercury, which accumulates in fish, causes Minamata disease. Due to toxicity, mercury is being phased out of most consumer products. It is still used in dentistry (amalgam fillings), gold mining, and chlor-alkali electrolysis.' },
-    { n:81, sym:'Tl', name:'Thallium',       mass:204.38,   cat:'post-transition',period:6, group:13, config:'[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p¹', melt:304,  boil:1473,    density:11.85,    discovered:1861, state:'solid',  electronegativity:1.62, shells:[2,8,18,32,18,3], desc:'Thallium is a soft, grey post-transition metal that is highly toxic — it was used as a rat and ant poison and was a favourite poison in murder plots due to its colourless, tasteless nature (similar to potassium in biochemistry, it disrupts potassium channels). Its name comes from the Greek "thallos" (green shoot) because of its bright green spectral line. Thallium has niche but important applications: thallium sulfide is used in infrared-sensitive photoconductive cells; thallium bromide-iodide crystals are used as infrared lenses; and thallium-201 (a radioactive isotope) is used in cardiac stress tests to image blood flow in the heart muscle. Thallium compounds are also used in some speciality low-melting glasses. Due to its toxicity, many former applications have been discontinued.' },
-    { n:82, sym:'Pb', name:'Lead',           mass:207.2,    cat:'post-transition',period:6, group:14, config:'[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p²', melt:327.46, boil:1749, density:11.34,    discovered:null, state:'solid',  electronegativity:2.33, shells:[2,8,18,32,18,4], desc:'Lead is a dense, soft, highly malleable post-transition metal that has been used by humans for over 6,000 years, most notably by the Romans who used lead for water pipes, cooking vessels, and even as a wine sweetener (lead acetate — a dangerous practice that may have contributed to widespread lead poisoning in the Roman aristocracy). Lead is the heaviest stable element. Despite its toxicity (it is a potent neurotoxin that accumulates in bones and damages brain development, particularly in children), lead still has important uses: it is the dominant material in lead-acid car batteries, and it provides radiation shielding in X-ray rooms and nuclear facilities. Leaded petrol was phased out globally by 2021. Lead is used in organ pipe alloys and in soldering. Lead-210 is used in radiometric dating of sediments.' },
-    { n:83, sym:'Bi', name:'Bismuth',        mass:208.98,   cat:'post-transition',period:6, group:15, config:'[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p³', melt:271.3, boil:1564, density:9.787,    discovered:null, state:'solid',  electronegativity:2.02, shells:[2,8,18,32,18,5], desc:'Bismuth is a lustrous, brittle, pink-tinted post-transition metal with a beautiful rainbow oxide tarnish (showing blue, pink, and yellow iridescence). It is the most naturally diamagnetic element (it strongly repels magnetic fields) and has the lowest thermal conductivity of all metals except mercury. Bismuth is famously used in Pepto-Bismol (bismuth subsalicylate) to treat indigestion, diarrhoea, and nausea — it is one of the few heavy metals with low toxicity at medical doses. It is also used in low-melting-point alloys (such as Wood\'s metal, which melts around 70 °C) used in automatic fire sprinklers and fusible plugs. Bismuth is an environmentally friendly replacement for lead in shotgun pellets, fishing sinkers, and some solder alloys. Remarkably, bismuth-209 was once thought to be stable but was found in 2003 to be radioactive with a half-life of 1.9 × 10¹⁹ years.' },
-    { n:84, sym:'Po', name:'Polonium',       mass:209,      cat:'post-transition',period:6, group:16, config:'[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁴', melt:254,   boil:962,     density:9.196,    discovered:1898, state:'solid',  electronegativity:2.00, shells:[2,8,18,32,18,6], desc:'Polonium was discovered in 1898 by Marie and Pierre Curie and named after Marie\'s homeland, Poland. It was the first element discovered by the Curies and the first element discovered based on its radioactivity rather than its chemical properties. All isotopes of polonium are radioactive; polonium-210 is one of the most intensely radioactive substances known — it emits alpha particles at a rate that makes a gram of it spontaneously heat to hundreds of degrees. This heat is harnessed in some space missions (Lunokhod rovers). Its primary non-research use is in anti-static devices (in film handling, photographic printing, and textile manufacturing). Polonium-210 gained international notoriety in 2006 when it was used to poison and kill Alexander Litvinenko, a former Russian intelligence officer, in London.' },
-    { n:85, sym:'At', name:'Astatine',       mass:210,      cat:'halogen',        period:6, group:17, config:'[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁵', melt:302,   boil:337,     density:7,        discovered:1940, state:'solid',  electronegativity:2.20, shells:[2,8,18,32,18,7], desc:'Astatine is the rarest naturally occurring element — at any given moment, only about 25 grams exist in the entire Earth\'s crust (produced by natural radioactive decay of uranium and thorium). It is also the heaviest halogen. Its name comes from the Greek "astatos" (unstable). All isotopes are radioactive; the most stable, astatine-210, has a half-life of only 8.1 hours, making it extremely difficult to study. As a halogen, astatine is expected to behave somewhat like iodine but with more metallic character. The most promising application is in targeted alpha therapy for cancer — because astatine-211 (half-life 7.2 hours) emits alpha particles that have a very short range in tissue, it can be attached to tumour-targeting molecules to deliver precise, localised radiation to cancer cells while sparing surrounding healthy tissue.' },
-    { n:86, sym:'Rn', name:'Radon',          mass:222,      cat:'noble-gas',      period:6, group:18, config:'[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁶', melt:-71,   boil:-61.7,   density:0.00973,  discovered:1900, state:'gas',    electronegativity:null, shells:[2,8,18,32,18,8], desc:'Radon is a colourless, odourless, radioactive noble gas produced by the radioactive decay of radium in the Earth\'s crust (ultimately from uranium decay). Despite being a noble gas, radon is the second leading cause of lung cancer in many countries (after cigarette smoking), because it seeps through soil and rock and can accumulate in poorly ventilated buildings. Radon-222 has a half-life of 3.8 days and decays into radioactive solid "daughters" (polonium, lead, bismuth) that can lodge in lung tissue. Health authorities recommend testing homes for radon levels. Historically, radon was used in cancer radiotherapy (replacing radium needles), but has largely been replaced by safer alternatives. Radon gas emanating from the ground has been studied as a potential precursor to earthquakes.' },
-    { n:87, sym:'Fr', name:'Francium',       mass:223,      cat:'alkali-metal',   period:7, group:1,  config:'[Rn] 7s¹',             melt:27,      boil:677,     density:1.87,     discovered:1939, state:'solid',  electronegativity:0.70, shells:[2,8,18,32,18,8,1], desc:'Francium is the second rarest naturally occurring element (after astatine) and the most unstable of the naturally occurring elements. It was the last element to be discovered in nature (1939) and was found by Marguerite Perey, the first woman to be elected to the French Academy of Sciences. Named after France, it is so rare that scientists estimate at most a few hundred grams exist in the entire Earth\'s crust at any one time (produced by actinium decay). The most stable isotope, francium-223, has a half-life of just 22 minutes. Francium is the most electropositive and most alkaline element. It is highly radioactive and so rare that it has no commercial uses. It is studied in tiny quantities (a few thousand atoms at a time) to test fundamental atomic theory and quantum mechanics.' },
-    { n:88, sym:'Ra', name:'Radium',         mass:226,      cat:'alkaline-earth', period:7, group:2,  config:'[Rn] 7s²',             melt:700,     boil:1737,    density:5.5,      discovered:1898, state:'solid',  electronegativity:0.90, shells:[2,8,18,32,18,8,2], desc:'Radium was discovered in 1898 by Marie and Pierre Curie, who extracted it (along with polonium) from tonnes of uranium ore in a gruelling multi-year process. Radium was the element that made Marie Curie famous — she won Nobel Prizes in both Physics (1903) and Chemistry (1911). Radium is intensely radioactive; it glows faintly blue-green in the dark as it ionises the air. Radium was used in luminous paint for clock dials and instrument panels from the 1910s to 1960s (the "Radium Girls" who painted these dials suffered devastating radiation-induced bone cancer). It was also used in cancer therapy before safer alternatives were developed. Today, radium-223 (Xofigo) is an approved treatment for bone metastases in prostate cancer. All radium isotopes are radioactive; radium-226 has a half-life of 1,600 years.' },
-    { n:89, sym:'Ac', name:'Actinium',       mass:227,      cat:'actinide',       period:7, group:3,  config:'[Rn] 6d¹ 7s²',         melt:1050,    boil:3200,    density:10.07,    discovered:1899, state:'solid',  electronegativity:1.10, shells:[2,8,18,32,18,9,2], desc:'Actinium is a soft, silvery-white radioactive metal that glows pale blue in the dark due to the ionisation of surrounding air by its radiation. It was discovered in 1899 — the second radioactive element to be discovered after uranium — and gives its name to the actinide series of elements. Actinium is extremely rare in nature; it exists only in trace amounts in uranium and thorium ores as a product of radioactive decay. Actinium-225 (Ac-225) has become one of the most important isotopes in nuclear medicine: it is the parent isotope used to produce bismuth-213 for targeted alpha therapy, a promising approach to cancer treatment. Ac-225 itself is being investigated directly as a targeted alpha therapy agent for prostate cancer and other malignancies. Actinium-228 is used in neutron sources.' },
+    { n:55, sym:'Cs', name:'Caesium',        mass:132.905,  cat:'alkali-metal',   period:6, group:1,  config:'[Xe] 6s¹',             melt:28.44,   boil:671,     density:1.93,     discovered:1860, state:'solid',  electronegativity:0.79, shells:[2,8,18,18,8,1],   desc:'Caesium (or cesium in American English) is a soft, golden-tinted metal — one of only three metals with a naturally yellowish colour (the others being gold and copper). It melts just above room temperature (28.44 °C) and reacts explosively with water. Caesium\'s most important application is in atomic clocks — the caesium-133 atom is so precise that the SI second is defined by its vibration frequency (9,192,631,770 oscillations per second). GPS satellites, internet timing, and global financial transactions all depend on caesium atomic clocks. Caesium formate is used as a dense drilling fluid in oil and gas wells. The photoelectric effect is particularly strong in caesium, making it useful in photoelectric cells and night-vision equipment. Radioactive caesium-137, a nuclear fission product, is a dangerous environmental contaminant (as seen after Chernobyl and Fukushima).' },
+    { n:56, sym:'Ba', name:'Barium',         mass:137.327,  cat:'alkaline-earth', period:6, group:2,  config:'[Xe] 6s²',             melt:727,     boil:1870,    density:3.51,     discovered:1808, state:'solid',  electronegativity:0.89, shells:[2,8,18,18,8,2],   desc:'Barium is a soft, silvery-white alkaline earth metal that reacts readily with oxygen and water. Its name comes from the Greek "barys" (heavy), as its ore barite (barium sulfate) is notably dense. Barium sulfate is opaque to X-rays and completely insoluble and non-toxic, making it ideal as a "barium meal" or "barium enema" — patients drink a barium sulfate suspension that coats the digestive tract, allowing doctors to image the stomach, oesophagus, and intestines with X-rays or CT scans. Barium is also used in drilling fluids for oil and gas exploration, in producing certain types of glass and ceramics, and in vacuum tubes to absorb residual gases. Barium compounds give fireworks their brilliant green colour. Unlike barium sulfate, most other barium compounds are highly toxic.' },
+    { n:57, sym:'La', name:'Lanthanum',      mass:138.905,  cat:'lanthanide',     period:6, group:3,  config:'[Xe] 5d¹ 6s²',         melt:920,     boil:3464,    density:6.145,    discovered:1839, state:'solid',  electronegativity:1.10, shells:[2,8,18,18,9,2],   desc:'Lanthanum is a soft, malleable, silvery-white rare earth metal and the first element of the lanthanide series. It is named from the Greek "lanthanein" (to lie hidden) because it hid in cerium oxide for many years before being separated. Lanthanum oxide is used to make speciality optical glasses with high refractive index, such as the lenses in high-quality cameras, binoculars, and telescopes (including the Hubble Space Telescope\'s instruments). Lanthanum is a key component in nickel-metal hydride (NiMH) batteries used in hybrid cars. La₂O₃ is used as a catalyst in fluid catalytic cracking (FCC) in oil refineries to produce petrol from crude oil. Lanthanum chloride is used in water treatment. Certain lanthanum compounds act as phosphate binders in treating kidney disease.' },
+    { n:58, sym:'Ce', name:'Cerium',         mass:140.116,  cat:'lanthanide',     period:6, group:null,config:'[Xe] 4f¹ 5d¹ 6s²',    melt:798,     boil:3443,    density:6.77,     discovered:1803, state:'solid',  electronegativity:1.12, shells:[2,8,18,19,9,2],   desc:'Cerium is the most abundant of the rare earth elements (more abundant than copper in Earth\'s crust) and is named after the dwarf planet Ceres. It is a soft, ductile, iron-grey metal that tarnishes readily in air. One of cerium\'s most familiar applications is in the flints of cigarette lighters — the alloy mischmetal (about 50% cerium) generates sparks when struck. Cerium oxide (ceria) is the most effective polishing compound for glass and is used to grind and polish glass in every type of screen, mirror, and lens. It is also used in catalytic converters where it serves as an oxygen buffer, and in self-cleaning ovens (the coating oxidises food residue at high temperature). Cerium oxide nanoparticles are being studied as antioxidants for treating various diseases. It is also used in colouring glass yellow.' },
+    { n:59, sym:'Pr', name:'Praseodymium',   mass:140.908,  cat:'lanthanide',     period:6, group:null,config:'[Xe] 4f³ 6s²',        melt:931,     boil:3520,    density:6.773,    discovered:1885, state:'solid',  electronegativity:1.13, shells:[2,8,18,21,8,2],   desc:'Praseodymium is a soft, silvery, malleable rare earth metal whose name comes from the Greek words for "leek green twin" — its salts are distinctly green and it was separated from neodymium (its "twin") in 1885. Praseodymium is used in strong permanent magnets: combined with neodymium to make NdPr magnets (a cost-effective variant of neodymium magnets used in motors and generators). Praseodymium oxide produces an intense yellow-green colour in glass and enamel — it is used in goggles for glassblowers and welders to filter out the bright yellow sodium flare. Praseodymium alloyed with magnesium creates a high-strength alloy used in aircraft engines. Praseodymium doped fibre amplifiers are used in certain mid-infrared laser applications and in fibre optic communications.' },
+    { n:60, sym:'Nd', name:'Neodymium',      mass:144.242,  cat:'lanthanide',     period:6, group:null,config:'[Xe] 4f⁴ 6s²',        melt:1021,    boil:3074,    density:7.007,    discovered:1885, state:'solid',  electronegativity:1.14, shells:[2,8,18,22,8,2],   desc:'Neodymium is a soft, silvery rare earth metal that is the star of modern magnet technology. Neodymium-iron-boron (NdFeB) magnets are the strongest permanent magnets ever made — they can be over a thousand times stronger than ordinary ferrite magnets for their volume. These tiny but powerful magnets are found in computer hard drives, headphones, speakers, MRI machines, electric motors in electric vehicles, and wind turbine generators. The transition to renewable energy and electric transport has made neodymium a strategically critical material — about 90% is produced in China. Neodymium compounds produce striking purple, blue, and red colours in glass and lasers. Nd:YAG lasers are used in laser cutting, medical procedures, and military rangefinders.' },
+    { n:61, sym:'Pm', name:'Promethium',     mass:145,      cat:'lanthanide',     period:6, group:null,config:'[Xe] 4f⁵ 6s²',        melt:1042,    boil:3000,    density:7.26,     discovered:1945, state:'solid',  electronegativity:1.13, shells:[2,8,18,23,8,2],   desc:'Promethium is the only lanthanide (and one of only two elements below uranium) that has no stable isotopes — all are radioactive. Vanishingly small amounts exist naturally as a product of spontaneous fission of uranium, but it is essentially absent from Earth\'s crust. It is named after Prometheus, the titan who stole fire from the gods, reflecting the difficult and "fiery" challenge of its isolation. Promethium was first produced artificially during the Manhattan Project in 1945 by bombarding neodymium and praseodymium with neutrons. The most stable isotope, Pm-145, has a half-life of 17.7 years. It is used in nuclear-powered betavoltaic batteries (atomic batteries for spacecraft and missile guidance systems) and in luminescent paint (it replaced radium). It is also used in portable X-ray sources and as a thickness gauge for industrial materials.' },
+    { n:62, sym:'Sm', name:'Samarium',       mass:150.36,   cat:'lanthanide',     period:6, group:null,config:'[Xe] 4f⁶ 6s²',        melt:1072,    boil:1794,    density:7.52,     discovered:1879, state:'solid',  electronegativity:1.17, shells:[2,8,18,24,8,2],   desc:'Samarium is a hard, silvery rare earth metal that was the first element discovered using spectroscopy (by its distinctive spectral lines). It was named after the mineral samarskite, itself named after a Russian mining official, Colonel Samarski — making samarium one of the few elements named indirectly after a real person. Samarium-cobalt (SmCo) magnets were the first rare earth magnets to be developed commercially and remain important where heat resistance is required (they retain their magnetism better than neodymium magnets at high temperatures). Samarium-153 (a radioactive isotope) is used in targeted radiotherapy for bone cancer pain relief, binding to bone metastases and delivering localised radiation. Samarium compounds are also used as neutron absorbers in nuclear reactors and in infrared-absorbing glass.' },
+    { n:63, sym:'Eu', name:'Europium',       mass:151.964,  cat:'lanthanide',     period:6, group:null,config:'[Xe] 4f⁷ 6s²',        melt:826,     boil:1529,    density:5.243,    discovered:1901, state:'solid',  electronegativity:null, shells:[2,8,18,25,8,2],   desc:'Europium is the most reactive rare earth metal — it oxidises rapidly in air and reacts with water. It is the softest lanthanide and was not isolated until 1901, although it had been observed spectroscopically earlier. Europium is exceptionally important in producing luminescent displays: europium(III) compounds produce brilliant red phosphorescence, while europium(II) compounds produce blue. These phosphors are used in fluorescent lamps, LED backlights, plasma displays, and colour television screens — essentially every colour screen uses europium phosphors. Euro banknotes contain europium-based fluorescent compounds that glow under UV light as an anti-counterfeiting measure. Europium is also used in some types of cancer imaging using fluorescent bioassays.' },
+    { n:64, sym:'Gd', name:'Gadolinium',     mass:157.25,   cat:'lanthanide',     period:6, group:null,config:'[Xe] 4f⁷ 5d¹ 6s²',   melt:1313,    boil:3273,    density:7.9,      discovered:1880, state:'solid',  electronegativity:1.20, shells:[2,8,18,25,9,2],   desc:'Gadolinium is a silvery-white, malleable, ductile rare earth metal with unusual magnetic properties — it is ferromagnetic at room temperature (one of very few non-iron metals to be magnetic), and near its Curie temperature (20 °C), it shows an unusually large magnetocaloric effect (heating when magnetised, cooling when demagnetised), making it a candidate for magnetic refrigeration technology. Its most important medical use is as an MRI contrast agent: gadolinium chelate compounds are injected intravenously and accumulate in abnormal tissues, making them appear brighter on MRI scans — about a third of all MRI scans worldwide use gadolinium contrast. Gadolinium is also used in nuclear reactor control rods and as a component in speciality alloys and phosphors for television sets and computer monitors.' },
+    { n:65, sym:'Tb', name:'Terbium',        mass:158.925,  cat:'lanthanide',     period:6, group:null,config:'[Xe] 4f⁹ 6s²',        melt:1356,    boil:3230,    density:8.229,    discovered:1843, state:'solid',  electronegativity:null, shells:[2,8,18,27,8,2],   desc:'Terbium is a soft, malleable, silvery-white rare earth metal named after Ytterby, Sweden (the same village that gives its name to yttrium, ytterbium, and erbium). Terbium produces a vivid green phosphorescence and is used in green phosphors for fluorescent lamps and LED lighting, producing the highly efficient warm-white light of modern compact fluorescent bulbs and LED tubes. Terbium is also essential in magneto-optical data storage and in Terfenol-D (terbium-dysprosium-iron), a magnetostrictive material that changes shape in a magnetic field — useful in sonar transducers, precision actuators, and vibration sensors. Terbium is also used as a dopant in solid-state devices and as a structural component in high-performance permanent magnets (where it improves performance at elevated temperatures).' },
+    { n:66, sym:'Dy', name:'Dysprosium',     mass:162.5,    cat:'lanthanide',     period:6, group:null,config:'[Xe] 4f¹⁰ 6s²',       melt:1412,    boil:2567,    density:8.55,     discovered:1886, state:'solid',  electronegativity:1.22, shells:[2,8,18,28,8,2],   desc:'Dysprosium is a soft, lustrous, silvery metal with the highest magnetic moment (strength per atom) of any naturally occurring element. Its name comes from the Greek "dysprositos," meaning "hard to get" — it was notoriously difficult to separate from the other lanthanides. Dysprosium is critical for high-performance neodymium magnets used in electric vehicle motors and wind turbines. Adding dysprosium to NdFeB magnets allows them to maintain their strength at higher temperatures — essential for the demanding environments inside electric motors. Without dysprosium, EV motors would lose their magnetism when they heat up under load. The global shift to electric vehicles has made dysprosium a strategically vital material. It is also used in nuclear reactor control rods (dysprosium oxide) and in certain speciality lasers.' },
+    { n:67, sym:'Ho', name:'Holmium',        mass:164.93,   cat:'lanthanide',     period:6, group:null,config:'[Xe] 4f¹¹ 6s²',       melt:1474,    boil:2700,    density:8.795,    discovered:1879, state:'solid',  electronegativity:1.23, shells:[2,8,18,29,8,2],   desc:'Holmium is a soft, malleable, silvery-white rare earth metal named after Stockholm (from the Latin "Holmia"). It has the highest magnetic dipole moment of any element, making it valuable for creating the strongest magnetic fields. Holmium pole pieces (small holmium metal inserts) are used in high-field electromagnets to concentrate and enhance the magnetic field. Ho:YAG (holmium-doped yttrium aluminium garnet) lasers emit light at 2.1 μm in the infrared, which is strongly absorbed by water in tissue. This makes them ideal for minimally invasive surgery — used in urology (breaking up kidney stones), orthopaedics (joint surgery), and ophthalmology. Holmium is also used in nuclear reactor control rods and as a neutron absorber in nuclear technology.' },
+    { n:68, sym:'Er', name:'Erbium',         mass:167.259,  cat:'lanthanide',     period:6, group:null,config:'[Xe] 4f¹² 6s²',       melt:1497,    boil:2868,    density:9.066,    discovered:1843, state:'solid',  electronegativity:1.24, shells:[2,8,18,30,8,2],   desc:'Erbium is a soft, malleable, lustrous silvery-white rare earth metal, also named after Ytterby. Erbium\'s most critical technological application is in fibre optic communications — erbium-doped fibre amplifiers (EDFAs) are the key technology that makes long-distance fibre optic internet possible. Erbium ions can absorb photons at 980 nm and re-emit them at 1550 nm (the standard wavelength used in fibre optic communications) — this allows optical signals to be amplified directly in the glass fibre without converting to electrical signals and back, allowing signals to travel thousands of kilometres via submarine cables. The internet as we know it would not function at global scale without erbium. Erbium oxide has a distinctive pink colour and is used to colour glasses and ceramics. Er:YAG lasers are used in dentistry and skin resurfacing.' },
+    { n:69, sym:'Tm', name:'Thulium',        mass:168.934,  cat:'lanthanide',     period:6, group:null,config:'[Xe] 4f¹³ 6s²',       melt:1545,    boil:1950,    density:9.321,    discovered:1879, state:'solid',  electronegativity:1.25, shells:[2,8,18,31,8,2],   desc:'Thulium is the least abundant and second rarest of the naturally occurring lanthanides (after promethium, which is radioactive). It is named after Thule, an ancient name for the far north of Scandinavia or northern lands. Thulium is a soft, silvery-grey metal. Thulium-170, produced by irradiating thulium in a nuclear reactor, emits X-rays and was developed as a portable X-ray source for use in areas where electricity is unavailable, such as remote medical clinics. Thulium-doped yttrium aluminium garnet (Tm:YAG) and thulium-doped fibre lasers emit at around 2 μm and are used in laser ranging, remote sensing, and minimally invasive medical procedures. Thulium also produces a blue-green luminescence used in high-performance phosphors.' },
+    { n:70, sym:'Yb', name:'Ytterbium',      mass:173.045,  cat:'lanthanide',     period:6, group:null,config:'[Xe] 4f¹⁴ 6s²',       melt:819,     boil:1196,    density:6.965,    discovered:1878, state:'solid',  electronegativity:null, shells:[2,8,18,32,8,2],   desc:'Ytterbium is a soft, bright, silvery rare earth metal that was discovered in 1878 and named (like yttrium, terbium, and erbium) after the village of Ytterby. It was the last of the four "Ytterby elements" to be discovered. Ytterbium is used in certain types of optical fibre amplifiers for high-power laser applications. Ytterbium-doped fibre lasers are increasingly replacing CO₂ and Nd:YAG lasers in industrial cutting and welding because they are highly energy-efficient and produce a wavelength (1064 nm) that is well absorbed by metals. Ytterbium atomic clocks are the most precise clocks ever built — operating at optical frequencies, they are accurate to within one second in 14 billion years and are used in cutting-edge tests of fundamental physics. Ytterbium is also used in some stainless steel alloys.' },
+    { n:71, sym:'Lu', name:'Lutetium',       mass:174.967,  cat:'lanthanide',     period:6, group:null,config:'[Xe] 4f¹⁴ 5d¹ 6s²',  melt:1663,    boil:3402,    density:9.84,     discovered:1907, state:'solid',  electronegativity:1.27, shells:[2,8,18,32,9,2],   desc:'Lutetium is the heaviest, hardest, and densest of all the lanthanides. It is named after Lutetia, the Latin name for Paris, where it was discovered in 1907. Lutetium is rare and expensive — it is used sparingly but in high-value applications. Lutetium oxyorthosilicate (LSO and LYSO) crystals are used as scintillator detectors in PET (positron emission tomography) scanners used in cancer diagnosis — they are superior to older scintillator materials in terms of light output and speed. Lutetium-177 (a radioactive isotope) is used in targeted radionuclide therapy (Lu-DOTATATE) to treat certain neuroendocrine tumours, representing a breakthrough in cancer treatment approved in multiple countries. Lutetium aluminium garnet (LuAG) is used in high-energy physics detectors.' },
+    { n:72, sym:'Hf', name:'Hafnium',        mass:178.49,   cat:'transition',     period:6, group:4,  config:'[Xe] 4f¹⁴ 5d² 6s²',  melt:2233,    boil:4603,    density:13.31,    discovered:1923, state:'solid',  electronegativity:1.30, shells:[2,8,18,32,10,2],  desc:'Hafnium is a lustrous, silvery-grey transition metal that is almost always found in nature alongside zirconium (in zircon minerals) because their atomic radii are virtually identical — an effect of the lanthanide contraction. This makes hafnium one of the most difficult elements to separate from a companion element. Unlike zirconium, hafnium absorbs neutrons very effectively, making it invaluable as a control rod material in nuclear reactors (while zirconium is used for the fuel cladding). Hafnium oxide (HfO₂) has a very high dielectric constant, which is why it replaced silicon dioxide as the gate dielectric in Intel\'s transistors from 2007 onwards — a breakthrough that allowed continued miniaturisation of computer chips when traditional silicon oxide became too thin. Hafnium is also used in plasma cutting torch electrodes.' },
+    { n:73, sym:'Ta', name:'Tantalum',       mass:180.948,  cat:'transition',     period:6, group:5,  config:'[Xe] 4f¹⁴ 5d³ 6s²',  melt:3017,    boil:5458,    density:16.69,    discovered:1802, state:'solid',  electronegativity:1.50, shells:[2,8,18,32,11,2],  desc:'Tantalum is a rare, hard, blue-grey, lustrous transition metal with an extraordinarily high melting point (3017 °C — fifth highest of all elements) and exceptional resistance to corrosion by almost all acids. It is named after the mythological Tantalus, because of the tantalising difficulty of dissolving it in acid. Tantalum\'s most critical use is in small, high-performance capacitors (tantalum electrolytic capacitors) found in mobile phones, laptops, tablets, and hearing aids — they are smaller and more reliable than equivalent aluminium capacitors. Virtually every smartphone contains tantalum capacitors. It is also used in surgical implants (especially hip and skull plates) because it is biocompatible and does not react with body fluids. Most tantalum comes from conflict-affected regions of Africa (particularly DRC), raising significant ethical supply chain concerns.' },
+    { n:74, sym:'W',  name:'Tungsten',       mass:183.84,   cat:'transition',     period:6, group:6,  config:'[Xe] 4f¹⁴ 5d⁴ 6s²',  melt:3422,    boil:5555,    density:19.25,    discovered:1783, state:'solid',  electronegativity:2.36, shells:[2,8,18,32,12,2],  desc:'Tungsten has the highest melting point of all elements (3422 °C) and the highest tensile strength of any metal at temperatures above 1650 °C. Its symbol W comes from its German name "Wolfram." It is almost twice as dense as lead. The extreme heat resistance of tungsten made it the ideal material for incandescent light bulb filaments for over a century. Today its most important uses are in cemented carbide cutting tools (tungsten carbide — the material in drill bits, milling cutters, and saw tips), high-speed steel alloys for machine tools, and heavy metal alloys for military projectiles (replacing lead). Tungsten electrodes are used in TIG (tungsten inert gas) welding. Tungsten diselenide and disulfide are being researched as next-generation lubricants and 2D semiconductor materials.' },
+    { n:75, sym:'Re', name:'Rhenium',        mass:186.207,  cat:'transition',     period:6, group:7,  config:'[Xe] 4f¹⁴ 5d⁵ 6s²',  melt:3186,    boil:5596,    density:21.02,    discovered:1925, state:'solid',  electronegativity:1.90, shells:[2,8,18,32,13,2],  desc:'Rhenium has the second highest melting point of all elements (3186 °C, after tungsten) and the third highest density. It was the last stable element to be discovered in nature (1925) and was one of the elements predicted by Mendeleev. It is extremely rare — only about 50 tonnes are produced annually worldwide. Rhenium\'s most important use is in superalloys for single-crystal turbine blades in jet engines and gas turbines: adding 3-6% rhenium dramatically increases the creep resistance and high-temperature strength of nickel superalloys, allowing engines to run hotter and more efficiently. Almost all aviation-grade jet engine turbine blades contain rhenium. It is also used in catalysts for oil refining (platinum-rhenium catalysts in platforming) and in high-temperature electrical contacts and filaments for mass spectrometers.' },
+    { n:76, sym:'Os', name:'Osmium',         mass:190.23,   cat:'transition',     period:6, group:8,  config:'[Xe] 4f¹⁴ 5d⁶ 6s²',  melt:3033,    boil:5012,    density:22.59,    discovered:1803, state:'solid',  electronegativity:2.20, shells:[2,8,18,32,14,2],  desc:'Osmium is the densest naturally occurring element — twice as dense as lead and 10% denser than gold. Its name comes from the Greek "osme" (smell), because osmium tetroxide (OsO₄) has a pungent, acrid odour and is highly toxic. Osmium is a hard, brittle, blue-grey platinum-group metal. Osmium alloys (particularly osmium-iridium) are extremely hard and are used in the tips of fountain pen nibs, instrument pivots, and electrical contacts that require extreme wear resistance. Osmium tetroxide, despite being toxic, is used in biological electron microscopy as a fixative and stain that highlights lipid-rich structures (cell membranes) and in organic chemistry for stereospecific oxidation reactions. Osmium is about 1,000 times rarer than gold.' },
+    { n:77, sym:'Ir', name:'Iridium',        mass:192.217,  cat:'transition',     period:6, group:9,  config:'[Xe] 4f¹⁴ 5d⁷ 6s²',  melt:2446,    boil:4428,    density:22.56,    discovered:1803, state:'solid',  electronegativity:2.20, shells:[2,8,18,32,15,2],  desc:'Iridium is the most corrosion-resistant metal known — it is resistant to air, water, halogens, and most acids even at very high temperatures. It is the second densest element after osmium. Named after Iris, the Greek goddess of rainbows, because of its brightly coloured salts. Iridium is crucial evidence in the K-Pg (Cretaceous-Palaeogene) boundary theory for dinosaur extinction: a thin layer of iridium-rich clay found worldwide at the geological boundary suggests a massive asteroid impact (asteroids are enriched in iridium), which would have caused the mass extinction 66 million years ago. Iridium is used in spark plugs for high-performance engines, crucibles for growing speciality crystals, and was used for the kilogram standard until 2019. Iridium-192 is used in cancer brachytherapy (internal radiotherapy).' },
+    { n:78, sym:'Pt', name:'Platinum',       mass:195.084,  cat:'transition',     period:6, group:10, config:'[Xe] 4f¹⁴ 5d⁹ 6s¹',  melt:1768.3,  boil:3825,    density:21.45,    discovered:1735, state:'solid',  electronegativity:2.28, shells:[2,8,18,32,17,1],  desc:'Platinum is a dense, malleable, ductile, precious, silvery-white metal that does not oxidise at any temperature. Its name comes from the Spanish "platina" (little silver). Platinum has been prized for jewellery for centuries, but its most important modern use is in catalytic converters — platinum oxidises carbon monoxide and unburnt hydrocarbons from engine exhaust into CO₂ and water. Platinum is also a crucial catalyst in the industrial production of nitric acid (Ostwald process), used to make fertilisers and explosives. Cisplatin, a platinum compound, is one of the most widely used anti-cancer drugs, effective against testicular, ovarian, lung, and bladder cancers. Platinum electrodes are used in fuel cells for hydrogen-powered vehicles. Until 2019, the international kilogram standard (IPK) was a platinum-iridium cylinder held in France.' },
+    { n:79, sym:'Au', name:'Gold',           mass:196.967,  cat:'transition',     period:6, group:11, config:'[Xe] 4f¹⁴ 5d¹⁰ 6s¹', melt:1064.18, boil:2856,    density:19.3,     discovered:null, state:'solid',  electronegativity:2.54, shells:[2,8,18,32,18,1],  desc:'Gold is one of the few elements found in pure metallic form in nature, which, combined with its beauty and resistance to tarnishing, has made it the basis of wealth and adornment throughout human history. It is extremely malleable — one gram can be beaten into a sheet about one square metre in area (gold leaf). Gold\'s colour (unusual for metals — most are grey or silver) arises from relativistic effects on its electron orbitals. Despite its image as purely decorative, gold has critical technical uses: it is the best corrosion-resistant electrical conductor, so it is used in all critical electronic connections (computer processors, connectors, aerospace electronics). Gold nanoparticles are being developed for cancer diagnosis and treatment. All gold ever mined in history would fill only about 3.5 Olympic swimming pools.' },
+    { n:80, sym:'Hg', name:'Mercury',        mass:200.592,  cat:'transition',     period:6, group:12, config:'[Xe] 4f¹⁴ 5d¹⁰ 6s²', melt:-38.83,  boil:356.73,  density:13.534,   discovered:null, state:'liquid', electronegativity:2.00, shells:[2,8,18,32,18,2],  desc:'Mercury is the only metal that is liquid at room temperature — and the only element other than bromine that is liquid at standard conditions. It is also one of only two elements whose liquid form is denser than its solid form. Named after the fleet-footed Roman god, mercury has been known since ancient times (cinnabar — red mercury sulfide — was used as a pigment in cave paintings). Mercury was used for centuries in thermometers, barometers, electrical switches, and fluorescent lamps. However, mercury is a potent neurotoxin — the phrase "mad as a hatter" arose because hatters used mercury compounds to process felt and suffered neurological damage. Methylmercury, which accumulates in fish, causes Minamata disease. Due to toxicity, mercury is being phased out of most consumer products. It is still used in dentistry (amalgam fillings), gold mining, and chlor-alkali electrolysis.' },
+    { n:81, sym:'Tl', name:'Thallium',       mass:204.38,   cat:'post-transition',period:6, group:13, config:'[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p¹',  melt:304,  boil:1473,    density:11.85,    discovered:1861, state:'solid',  electronegativity:1.62, shells:[2,8,18,32,18,3],  desc:'Thallium is a soft, grey post-transition metal that is highly toxic — it was used as a rat and ant poison and was a favourite poison in murder plots due to its colourless, tasteless nature (similar to potassium in biochemistry, it disrupts potassium channels). Its name comes from the Greek "thallos" (green shoot) because of its bright green spectral line. Thallium has niche but important applications: thallium sulfide is used in infrared-sensitive photoconductive cells; thallium bromide-iodide crystals are used as infrared lenses; and thallium-201 (a radioactive isotope) is used in cardiac stress tests to image blood flow in the heart muscle. Thallium compounds are also used in some speciality low-melting glasses. Due to its toxicity, many former applications have been discontinued.' },
+    { n:82, sym:'Pb', name:'Lead',           mass:207.2,    cat:'post-transition',period:6, group:14, config:'[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p²',  melt:327.46, boil:1749, density:11.34,    discovered:null, state:'solid',  electronegativity:2.33, shells:[2,8,18,32,18,4],  desc:'Lead is a dense, soft, highly malleable post-transition metal that has been used by humans for over 6,000 years, most notably by the Romans who used lead for water pipes, cooking vessels, and even as a wine sweetener (lead acetate — a dangerous practice that may have contributed to widespread lead poisoning in the Roman aristocracy). Lead is the heaviest stable element. Despite its toxicity (it is a potent neurotoxin that accumulates in bones and damages brain development, particularly in children), lead still has important uses: it is the dominant material in lead-acid car batteries, and it provides radiation shielding in X-ray rooms and nuclear facilities. Leaded petrol was phased out globally by 2021. Lead is used in organ pipe alloys and in soldering. Lead-210 is used in radiometric dating of sediments.' },
+    { n:83, sym:'Bi', name:'Bismuth',        mass:208.98,   cat:'post-transition',period:6, group:15, config:'[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p³',  melt:271.3, boil:1564, density:9.787,    discovered:null, state:'solid',  electronegativity:2.02, shells:[2,8,18,32,18,5],  desc:'Bismuth is a lustrous, brittle, pink-tinted post-transition metal with a beautiful rainbow oxide tarnish (showing blue, pink, and yellow iridescence). It is the most naturally diamagnetic element (it strongly repels magnetic fields) and has the lowest thermal conductivity of all metals except mercury. Bismuth is famously used in Pepto-Bismol (bismuth subsalicylate) to treat indigestion, diarrhoea, and nausea — it is one of the few heavy metals with low toxicity at medical doses. It is also used in low-melting-point alloys (such as Wood\'s metal, which melts around 70 °C) used in automatic fire sprinklers and fusible plugs. Bismuth is an environmentally friendly replacement for lead in shotgun pellets, fishing sinkers, and some solder alloys. Remarkably, bismuth-209 was once thought to be stable but was found in 2003 to be radioactive with a half-life of 1.9 × 10¹⁹ years.' },
+    { n:84, sym:'Po', name:'Polonium',       mass:209,      cat:'post-transition',period:6, group:16, config:'[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁴',  melt:254,   boil:962,     density:9.196,    discovered:1898, state:'solid',  electronegativity:2.00, shells:[2,8,18,32,18,6],  desc:'Polonium was discovered in 1898 by Marie and Pierre Curie and named after Marie\'s homeland, Poland. It was the first element discovered by the Curies and the first element discovered based on its radioactivity rather than its chemical properties. All isotopes of polonium are radioactive; polonium-210 is one of the most intensely radioactive substances known — it emits alpha particles at a rate that makes a gram of it spontaneously heat to hundreds of degrees. This heat is harnessed in some space missions (Lunokhod rovers). Its primary non-research use is in anti-static devices (in film handling, photographic printing, and textile manufacturing). Polonium-210 gained international notoriety in 2006 when it was used to poison and kill Alexander Litvinenko, a former Russian intelligence officer, in London.' },
+    { n:85, sym:'At', name:'Astatine',       mass:210,      cat:'halogen',        period:6, group:17, config:'[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁵',  melt:302,   boil:337,     density:7,        discovered:1940, state:'solid',  electronegativity:2.20, shells:[2,8,18,32,18,7],  desc:'Astatine is the rarest naturally occurring element — at any given moment, only about 25 grams exist in the entire Earth\'s crust (produced by natural radioactive decay of uranium and thorium). It is also the heaviest halogen. Its name comes from the Greek "astatos" (unstable). All isotopes are radioactive; the most stable, astatine-210, has a half-life of only 8.1 hours, making it extremely difficult to study. As a halogen, astatine is expected to behave somewhat like iodine but with more metallic character. The most promising application is in targeted alpha therapy for cancer — because astatine-211 (half-life 7.2 hours) emits alpha particles that have a very short range in tissue, it can be attached to tumour-targeting molecules to deliver precise, localised radiation to cancer cells while sparing surrounding healthy tissue.' },
+    { n:86, sym:'Rn', name:'Radon',          mass:222,      cat:'noble-gas',      period:6, group:18, config:'[Xe] 4f¹⁴ 5d¹⁰ 6s² 6p⁶',  melt:-71,   boil:-61.7,   density:0.00973,  discovered:1900, state:'gas',    electronegativity:null, shells:[2,8,18,32,18,8],  desc:'Radon is a colourless, odourless, radioactive noble gas produced by the radioactive decay of radium in the Earth\'s crust (ultimately from uranium decay). Despite being a noble gas, radon is the second leading cause of lung cancer in many countries (after cigarette smoking), because it seeps through soil and rock and can accumulate in poorly ventilated buildings. Radon-222 has a half-life of 3.8 days and decays into radioactive solid "daughters" (polonium, lead, bismuth) that can lodge in lung tissue. Health authorities recommend testing homes for radon levels. Historically, radon was used in cancer radiotherapy (replacing radium needles), but has largely been replaced by safer alternatives. Radon gas emanating from the ground has been studied as a potential precursor to earthquakes.' },
+    { n:87, sym:'Fr', name:'Francium',       mass:223,      cat:'alkali-metal',   period:7, group:1,  config:'[Rn] 7s¹',             melt:27,      boil:677,     density:1.87,     discovered:1939, state:'solid',  electronegativity:0.70, shells:[2,8,18,32,18,8,1],  desc:'Francium is the second rarest naturally occurring element (after astatine) and the most unstable of the naturally occurring elements. It was the last element to be discovered in nature (1939) and was found by Marguerite Perey, the first woman to be elected to the French Academy of Sciences. Named after France, it is so rare that scientists estimate at most a few hundred grams exist in the entire Earth\'s crust at any one time (produced by actinium decay). The most stable isotope, francium-223, has a half-life of just 22 minutes. Francium is the most electropositive and most alkaline element. It is highly radioactive and so rare that it has no commercial uses. It is studied in tiny quantities (a few thousand atoms at a time) to test fundamental atomic theory and quantum mechanics.' },
+    { n:88, sym:'Ra', name:'Radium',         mass:226,      cat:'alkaline-earth', period:7, group:2,  config:'[Rn] 7s²',             melt:700,     boil:1737,    density:5.5,      discovered:1898, state:'solid',  electronegativity:0.90, shells:[2,8,18,32,18,8,2],  desc:'Radium was discovered in 1898 by Marie and Pierre Curie, who extracted it (along with polonium) from tonnes of uranium ore in a gruelling multi-year process. Radium was the element that made Marie Curie famous — she won Nobel Prizes in both Physics (1903) and Chemistry (1911). Radium is intensely radioactive; it glows faintly blue-green in the dark as it ionises the air. Radium was used in luminous paint for clock dials and instrument panels from the 1910s to 1960s (the "Radium Girls" who painted these dials suffered devastating radiation-induced bone cancer). It was also used in cancer therapy before safer alternatives were developed. Today, radium-223 (Xofigo) is an approved treatment for bone metastases in prostate cancer. All radium isotopes are radioactive; radium-226 has a half-life of 1,600 years.' },
+    { n:89, sym:'Ac', name:'Actinium',       mass:227,      cat:'actinide',       period:7, group:3,  config:'[Rn] 6d¹ 7s²',         melt:1050,    boil:3200,    density:10.07,    discovered:1899, state:'solid',  electronegativity:1.10, shells:[2,8,18,32,18,9,2],  desc:'Actinium is a soft, silvery-white radioactive metal that glows pale blue in the dark due to the ionisation of surrounding air by its radiation. It was discovered in 1899 — the second radioactive element to be discovered after uranium — and gives its name to the actinide series of elements. Actinium is extremely rare in nature; it exists only in trace amounts in uranium and thorium ores as a product of radioactive decay. Actinium-225 (Ac-225) has become one of the most important isotopes in nuclear medicine: it is the parent isotope used to produce bismuth-213 for targeted alpha therapy, a promising approach to cancer treatment. Ac-225 itself is being investigated directly as a targeted alpha therapy agent for prostate cancer and other malignancies. Actinium-228 is used in neutron sources.' },
     { n:90, sym:'Th', name:'Thorium',        mass:232.038,  cat:'actinide',       period:7, group:null,config:'[Rn] 6d² 7s²',        melt:1750,    boil:4788,    density:11.72,    discovered:1829, state:'solid',  electronegativity:1.30, shells:[2,8,18,32,18,10,2], desc:'Thorium is a soft, paramagnetic, bright silvery-white actinide metal that tarnishes to a grey colour in air. It is named after Thor, the Norse god of thunder. Thorium is about three to four times more abundant in Earth\'s crust than uranium, and like uranium it is radioactive, but its dominant isotope (Th-232) has a half-life of 14 billion years — slightly longer than the age of the universe — meaning it decays very slowly and is mildly radioactive. Thorium is being seriously investigated as an alternative nuclear fuel: a thorium reactor (particularly a liquid fluoride thorium reactor, or LFTR) could produce energy from thorium with far less long-lived radioactive waste than uranium reactors, and it cannot be easily weaponised. Historically, thorium was used in gas lamp mantles (thoriated mantles glow brilliantly when heated) and in magnesium-thorium alloys for aerospace.' },
-    { n:91, sym:'Pa', name:'Protactinium',   mass:231.036,  cat:'actinide',       period:7, group:null,config:'[Rn] 5f² 6d¹ 7s²',   melt:1572,    boil:4000,    density:15.37,    discovered:1913, state:'solid',  electronegativity:1.50, shells:[2,8,18,32,20,9,2], desc:'Protactinium is a dense, highly toxic, radioactive actinide metal. Its name means "before actinium" because protactinium-231 decays to actinium-227. It was the first isotope to be discovered, in 1913, but the element\'s name was not established until 1949. Protactinium is exceptionally rare — its most stable isotope (Pa-231) has a half-life of 32,760 years and exists only in tiny quantities in uranium ores (about 3 parts per million of uranium ore is Pa-231). Due to its rarity, toxicity, and radioactivity, protactinium has few practical applications. It is used in research — specifically, the ratio of Pa-231 to thorium-230 in ocean sediments and corals is used for oceanographic dating (Pa/Th dating) to study past ocean circulation patterns and climate change over tens of thousands of years.' },
-    { n:92, sym:'U',  name:'Uranium',        mass:238.029,  cat:'actinide',       period:7, group:null,config:'[Rn] 5f³ 6d¹ 7s²',   melt:1135,    boil:4131,    density:19.1,     discovered:1789, state:'solid',  electronegativity:1.38, shells:[2,8,18,32,21,9,2], desc:'Uranium is a dense, silvery-white radioactive metal and the heaviest naturally occurring element. Named after the planet Uranus (discovered around the same time), it was isolated in 1841. Uranium consists primarily of two isotopes: U-238 (99.3%, half-life 4.5 billion years) and U-235 (0.7%, half-life 700 million years). The rarer U-235 is fissile — when struck by a slow neutron, it splits and releases a large amount of energy plus more neutrons (chain reaction). This is the basis of nuclear power (which provides about 10% of global electricity) and atomic weapons. "Enrichment" increases the proportion of U-235. Depleted uranium (mostly U-238) is extremely dense (1.7 times denser than lead) and is used in armour-piercing ammunition and radiation shielding. Before its radioactivity was discovered, uranium compounds were used as a yellow-orange glass colourant (uranium glass).' },
-    { n:93, sym:'Np', name:'Neptunium',      mass:237,      cat:'actinide',       period:7, group:null,config:'[Rn] 5f⁴ 6d¹ 7s²',   melt:639,     boil:4000,    density:20.45,    discovered:1940, state:'solid',  electronegativity:1.36, shells:[2,8,18,32,22,9,2], desc:'Neptunium was the first transuranic element (beyond uranium) to be synthesised, created in 1940 at Berkeley by Edwin McMillan and Philip Abelson by bombarding uranium-238 with neutrons. It is named after the planet Neptune, following the pattern of uranium (Uranus) and anticipating plutonium (Pluto). Neptunium-237, the most stable isotope (half-life 2.14 million years), is produced as a by-product in nuclear reactors from U-235 via neutron capture and beta decay. Although it accumulates in significant quantities in spent nuclear fuel (a few kilograms per tonne), it has limited applications. It is used as a trigger in nuclear weapons (as a neutron reflector) and is being studied for potential use in radioisotope thermoelectric generators for deep-space missions. Neptunium is a proliferation concern because it can be converted into weapons-usable fissile material.' },
-    { n:94, sym:'Pu', name:'Plutonium',      mass:244,      cat:'actinide',       period:7, group:null,config:'[Rn] 5f⁶ 7s²',        melt:640,     boil:3228,    density:19.816,   discovered:1940, state:'solid',  electronegativity:1.28, shells:[2,8,18,32,24,8,2], desc:'Plutonium is the most consequential transuranic element — it was produced in 1940 and was used in the first nuclear bomb tested (Trinity, July 1945) and in the atomic bomb dropped on Nagasaki. Named after Pluto (then considered a planet), it is fissile in its Pu-239 isotope, which is produced in nuclear reactors when U-238 captures a neutron. Plutonium is notoriously difficult to handle: it exists in six different crystal structures (allotropes) at different temperatures, and its intense radioactivity means it generates significant heat (it is warm to the touch). This heat is harnessed in radioisotope thermoelectric generators (RTGs) — the "nuclear batteries" that power deep-space probes including Voyager 1, New Horizons, and the Mars Science Laboratory. Plutonium is acutely toxic both due to its radioactivity and chemical toxicity.' },
-    { n:95, sym:'Am', name:'Americium',      mass:243,      cat:'actinide',       period:7, group:null,config:'[Rn] 5f⁷ 7s²',        melt:1176,    boil:2607,    density:13.67,    discovered:1944, state:'solid',  electronegativity:1.30, shells:[2,8,18,32,25,8,2], desc:'Americium is a synthetic radioactive actinide metal, named after the Americas. It was first synthesised in 1944 at the University of Chicago as part of the Manhattan Project. Americium has the remarkable distinction of being the only synthetic element found in nearly every home in the world — its isotope Am-241 is used in ionisation-type smoke detectors. A tiny amount (about one microcurie) is placed between two electrically charged plates; the alpha radiation ionises the air and creates a small current. When smoke particles enter the chamber, they absorb the alpha particles, the current drops, and the alarm triggers. Americium is also used in some industrial gauges for measuring thickness and density of materials. Like plutonium, it generates heat through radioactive decay and has been considered for RTGs.' },
-    { n:96, sym:'Cm', name:'Curium',         mass:247,      cat:'actinide',       period:7, group:null,config:'[Rn] 5f⁷ 6d¹ 7s²',   melt:1345,    boil:3110,    density:13.51,    discovered:1944, state:'solid',  electronegativity:1.30, shells:[2,8,18,32,25,9,2], desc:'Curium is a hard, dense, silvery radioactive actinide that was synthesised in 1944 by Glenn Seaborg, Ralph James, and Albert Ghiorso by bombarding plutonium-239 with helium ions. It was named in honour of Marie and Pierre Curie in recognition of their pioneering work on radioactivity. Curium glows red in the dark due to the intense heat from its radioactive decay — a sample of curium-244 generates about 2.8 watts of heat per gram. This property is exploited in radioisotope thermoelectric generators for deep-space power. The Alpha Particle X-ray Spectrometer (APXS) on Mars rovers including Spirit, Opportunity, and Curiosity contained curium-244 as an alpha particle source for analysing the chemical composition of Martian rocks and soil. Curium is also used as a source for producing other transuranic elements.' },
-    { n:97, sym:'Bk', name:'Berkelium',      mass:247,      cat:'actinide',       period:7, group:null,config:'[Rn] 5f⁹ 7s²',        melt:986,     boil:null,    density:14.78,    discovered:1949, state:'solid',  electronegativity:1.30, shells:[2,8,18,32,27,8,2], desc:'Berkelium is a radioactive synthetic actinide metal named after Berkeley, California, where it was first synthesised in 1949 by Stanley Thompson, Glenn Seaborg, and Albert Ghiorso at the Lawrence Berkeley National Laboratory by bombarding americium-241 with helium ions. Its most stable isotope, berkelium-247, has a half-life of 1,380 years. Berkelium has no practical applications outside of scientific research, but it plays an important role as a "target" element — very tiny quantities of berkelium-249 are produced in nuclear reactors and then used as a target for heavy ion bombardment to create even heavier elements. In 2010, the element tennessine (element 117) was first synthesised by bombarding a berkelium-249 target with calcium-48 ions at Dubna, Russia.' },
-    { n:98, sym:'Cf', name:'Californium',    mass:251,      cat:'actinide',       period:7, group:null,config:'[Rn] 5f¹⁰ 7s²',       melt:900,     boil:null,    density:15.1,     discovered:1950, state:'solid',  electronegativity:1.30, shells:[2,8,18,32,28,8,2], desc:'Californium is a radioactive actinide metal synthesised in 1950 at Berkeley and named after the state of California and the University of California. It is one of the few transuranic elements that has practical applications. Californium-252 is one of the most potent neutron-emitting radioisotopes known — one microgram emits 170 million neutrons per minute through spontaneous fission. This makes it invaluable as a portable neutron source: it is used to start up nuclear reactors; in neutron activation analysis for detecting trace elements; in cancer treatment (californium-252 brachytherapy); in airport security (neutron probes to detect explosives and drugs); and in oil well logging to detect oil and gas pockets. One gram of Cf-252 is worth approximately $27 million — one of the most expensive substances on Earth.' },
-    { n:99, sym:'Es', name:'Einsteinium',    mass:252,      cat:'actinide',       period:7, group:null,config:'[Rn] 5f¹¹ 7s²',       melt:860,     boil:null,    density:8.84,     discovered:1952, state:'solid',  electronegativity:1.30, shells:[2,8,18,32,29,8,2], desc:'Einsteinium is a synthetic radioactive actinide metal named after Albert Einstein. It was first identified in December 1952 in the radioactive fallout from the "Ivy Mike" thermonuclear device (the first hydrogen bomb) detonated in the Pacific Ocean — the extreme neutron flux of the explosion drove uranium-238 nuclei through multiple neutron captures and beta decays, creating new heavy elements including einsteinium and fermium. Its discovery was kept classified for several years. Einsteinium is only produced in tiny quantities (micrograms) in specialised high-flux nuclear reactors. It has no practical applications and is only studied in research contexts. In 2021, scientists for the first time studied the chemistry of einsteinium in solution, measuring its bond lengths using synchrotron X-ray techniques.' },
-    { n:100,sym:'Fm', name:'Fermium',        mass:257,      cat:'actinide',       period:7, group:null,config:'[Rn] 5f¹² 7s²',       melt:1527,    boil:null,    density:null,     discovered:1952, state:'solid',  electronegativity:1.30, shells:[2,8,18,32,30,8,2], desc:'Fermium is a synthetic radioactive actinide metal named after the nuclear physicist Enrico Fermi, who developed the first artificial nuclear reactor. Like einsteinium, it was first discovered in the radioactive debris of the first hydrogen bomb test in 1952 and remained classified for several years. Fermium-257 is the most stable isotope, with a half-life of 100.5 days. Fermium represents an important limit in nuclear chemistry: it is the heaviest element that can be produced (in weighable quantities) by bombarding lighter elements with neutrons in a nuclear reactor. Beyond fermium, elements must be made by heavy-ion bombardment in accelerators, which only creates atoms a few at a time. Due to its very limited availability and intense radioactivity, fermium has no practical applications and is studied purely in research.' },
-    { n:101,sym:'Md', name:'Mendelevium',    mass:258,      cat:'actinide',       period:7, group:null,config:'[Rn] 5f¹³ 7s²',       melt:827,     boil:null,    density:null,     discovered:1955, state:'solid',  electronegativity:1.30, shells:[2,8,18,32,31,8,2], desc:'Mendelevium is a synthetic radioactive actinide metal named after Dmitri Mendeleev, the Russian chemist who devised the periodic table. It was first synthesised in 1955 by Glenn Seaborg, Bernard Harvey, Gregory Choppin, Stanley Thompson, and Albert Ghiorso by bombarding einsteinium-253 with alpha particles in the cyclotron at Berkeley. At the time, only about 17 atoms were produced in the first experiment. Mendelevium-258 is the most stable isotope, with a half-life of 51.5 days. Mendelevium was the first element to be produced one atom at a time. It has no practical applications outside nuclear research. Its chemistry, studied in microscopic quantities, shows it behaves as expected for a trivalent actinide, consistent with the patterns established by the lighter actinides.' },
-    { n:102,sym:'No', name:'Nobelium',       mass:259,      cat:'actinide',       period:7, group:null,config:'[Rn] 5f¹⁴ 7s²',       melt:827,     boil:null,    density:null,     discovered:1966, state:'solid',  electronegativity:1.30, shells:[2,8,18,32,32,8,2], desc:'Nobelium is a synthetic radioactive actinide metal named after Alfred Nobel, the Swedish chemist who invented dynamite and established the Nobel Prizes. Its discovery was disputed between Soviet and American research teams for years. The first unambiguous synthesis was achieved at Dubna, Russia, in 1966. Nobelium-259 is the most stable isotope, with a half-life of 58 minutes. Nobelium is unique among the actinides in that it prefers the +2 oxidation state in solution (rather than the +3 state typical of other actinides), because the +2 state corresponds to a particularly stable filled 5f¹⁴ electron configuration. This makes it behave somewhat like a heavy alkaline earth metal. Nobelium has no practical applications and is only produced in atoms-at-a-time quantities for fundamental nuclear research.' },
-    { n:103,sym:'Lr', name:'Lawrencium',     mass:262,      cat:'actinide',       period:7, group:null,config:'[Rn] 5f¹⁴ 7s² 7p¹',  melt:1627,    boil:null,    density:null,     discovered:1961, state:'solid',  electronegativity:1.30, shells:[2,8,18,32,32,8,3], desc:'Lawrencium is the last actinide element and was first synthesised in 1961 at Berkeley by Albert Ghiorso, Torbjørn Sikkeland, Almon Larsh, and Robert Latimer by bombarding californium with boron ions. It is named after Ernest Orlando Lawrence, the inventor of the cyclotron particle accelerator and founder of the Lawrence Berkeley National Laboratory — the institution responsible for discovering or confirming many transuranic elements. Lawrencium-266 is the most stable isotope, with a half-life of about 11 hours. As the last actinide, lawrencium completes the 5f electron shell. Its chemistry has been studied in tiny quantities: experiments suggest it behaves more like a heavy rare earth element (trivalent) rather than a heavy actinide, which is consistent with having a complete 5f shell. It has no practical applications.' },
+    { n:91, sym:'Pa', name:'Protactinium',   mass:231.036,  cat:'actinide',       period:7, group:null,config:'[Rn] 5f² 6d¹ 7s²',   melt:1572,    boil:4000,    density:15.37,    discovered:1913, state:'solid',  electronegativity:1.50, shells:[2,8,18,32,20,9,2],  desc:'Protactinium is a dense, highly toxic, radioactive actinide metal. Its name means "before actinium" because protactinium-231 decays to actinium-227. It was the first isotope to be discovered, in 1913, but the element\'s name was not established until 1949. Protactinium is exceptionally rare — its most stable isotope (Pa-231) has a half-life of 32,760 years and exists only in tiny quantities in uranium ores (about 3 parts per million of uranium ore is Pa-231). Due to its rarity, toxicity, and radioactivity, protactinium has few practical applications. It is used in research — specifically, the ratio of Pa-231 to thorium-230 in ocean sediments and corals is used for oceanographic dating (Pa/Th dating) to study past ocean circulation patterns and climate change over tens of thousands of years.' },
+    { n:92, sym:'U',  name:'Uranium',        mass:238.029,  cat:'actinide',       period:7, group:null,config:'[Rn] 5f³ 6d¹ 7s²',   melt:1135,    boil:4131,    density:19.1,     discovered:1789, state:'solid',  electronegativity:1.38, shells:[2,8,18,32,21,9,2],  desc:'Uranium is a dense, silvery-white radioactive metal and the heaviest naturally occurring element. Named after the planet Uranus (discovered around the same time), it was isolated in 1841. Uranium consists primarily of two isotopes: U-238 (99.3%, half-life 4.5 billion years) and U-235 (0.7%, half-life 700 million years). The rarer U-235 is fissile — when struck by a slow neutron, it splits and releases a large amount of energy plus more neutrons (chain reaction). This is the basis of nuclear power (which provides about 10% of global electricity) and atomic weapons. "Enrichment" increases the proportion of U-235. Depleted uranium (mostly U-238) is extremely dense (1.7 times denser than lead) and is used in armour-piercing ammunition and radiation shielding. Before its radioactivity was discovered, uranium compounds were used as a yellow-orange glass colourant (uranium glass).' },
+    { n:93, sym:'Np', name:'Neptunium',      mass:237,      cat:'actinide',       period:7, group:null,config:'[Rn] 5f⁴ 6d¹ 7s²',   melt:639,     boil:4000,    density:20.45,    discovered:1940, state:'solid',  electronegativity:1.36, shells:[2,8,18,32,22,9,2],  desc:'Neptunium was the first transuranic element (beyond uranium) to be synthesised, created in 1940 at Berkeley by Edwin McMillan and Philip Abelson by bombarding uranium-238 with neutrons. It is named after the planet Neptune, following the pattern of uranium (Uranus) and anticipating plutonium (Pluto). Neptunium-237, the most stable isotope (half-life 2.14 million years), is produced as a by-product in nuclear reactors from U-235 via neutron capture and beta decay. Although it accumulates in significant quantities in spent nuclear fuel (a few kilograms per tonne), it has limited applications. It is used as a trigger in nuclear weapons (as a neutron reflector) and is being studied for potential use in radioisotope thermoelectric generators for deep-space missions. Neptunium is a proliferation concern because it can be converted into weapons-usable fissile material.' },
+    { n:94, sym:'Pu', name:'Plutonium',      mass:244,      cat:'actinide',       period:7, group:null,config:'[Rn] 5f⁶ 7s²',        melt:640,     boil:3228,    density:19.816,   discovered:1940, state:'solid',  electronegativity:1.28, shells:[2,8,18,32,24,8,2],  desc:'Plutonium is the most consequential transuranic element — it was produced in 1940 and was used in the first nuclear bomb tested (Trinity, July 1945) and in the atomic bomb dropped on Nagasaki. Named after Pluto (then considered a planet), it is fissile in its Pu-239 isotope, which is produced in nuclear reactors when U-238 captures a neutron. Plutonium is notoriously difficult to handle: it exists in six different crystal structures (allotropes) at different temperatures, and its intense radioactivity means it generates significant heat (it is warm to the touch). This heat is harnessed in radioisotope thermoelectric generators (RTGs) — the "nuclear batteries" that power deep-space probes including Voyager 1, New Horizons, and the Mars Science Laboratory. Plutonium is acutely toxic both due to its radioactivity and chemical toxicity.' },
+    { n:95, sym:'Am', name:'Americium',      mass:243,      cat:'actinide',       period:7, group:null,config:'[Rn] 5f⁷ 7s²',        melt:1176,    boil:2607,    density:13.67,    discovered:1944, state:'solid',  electronegativity:1.30, shells:[2,8,18,32,25,8,2],  desc:'Americium is a synthetic radioactive actinide metal, named after the Americas. It was first synthesised in 1944 at the University of Chicago as part of the Manhattan Project. Americium has the remarkable distinction of being the only synthetic element found in nearly every home in the world — its isotope Am-241 is used in ionisation-type smoke detectors. A tiny amount (about one microcurie) is placed between two electrically charged plates; the alpha radiation ionises the air and creates a small current. When smoke particles enter the chamber, they absorb the alpha particles, the current drops, and the alarm triggers. Americium is also used in some industrial gauges for measuring thickness and density of materials. Like plutonium, it generates heat through radioactive decay and has been considered for RTGs.' },
+    { n:96, sym:'Cm', name:'Curium',         mass:247,      cat:'actinide',       period:7, group:null,config:'[Rn] 5f⁷ 6d¹ 7s²',   melt:1345,    boil:3110,    density:13.51,    discovered:1944, state:'solid',  electronegativity:1.30, shells:[2,8,18,32,25,9,2],  desc:'Curium is a hard, dense, silvery radioactive actinide that was synthesised in 1944 by Glenn Seaborg, Ralph James, and Albert Ghiorso by bombarding plutonium-239 with helium ions. It was named in honour of Marie and Pierre Curie in recognition of their pioneering work on radioactivity. Curium glows red in the dark due to the intense heat from its radioactive decay — a sample of curium-244 generates about 2.8 watts of heat per gram. This property is exploited in radioisotope thermoelectric generators for deep-space power. The Alpha Particle X-ray Spectrometer (APXS) on Mars rovers including Spirit, Opportunity, and Curiosity contained curium-244 as an alpha particle source for analysing the chemical composition of Martian rocks and soil. Curium is also used as a source for producing other transuranic elements.' },
+    { n:97, sym:'Bk', name:'Berkelium',      mass:247,      cat:'actinide',       period:7, group:null,config:'[Rn] 5f⁹ 7s²',        melt:986,     boil:null,    density:14.78,    discovered:1949, state:'solid',  electronegativity:1.30, shells:[2,8,18,32,27,8,2],  desc:'Berkelium is a radioactive synthetic actinide metal named after Berkeley, California, where it was first synthesised in 1949 by Stanley Thompson, Glenn Seaborg, and Albert Ghiorso at the Lawrence Berkeley National Laboratory by bombarding americium-241 with helium ions. Its most stable isotope, berkelium-247, has a half-life of 1,380 years. Berkelium has no practical applications outside of scientific research, but it plays an important role as a "target" element — very tiny quantities of berkelium-249 are produced in nuclear reactors and then used as a target for heavy ion bombardment to create even heavier elements. In 2010, the element tennessine (element 117) was first synthesised by bombarding a berkelium-249 target with calcium-48 ions at Dubna, Russia.' },
+    { n:98, sym:'Cf', name:'Californium',    mass:251,      cat:'actinide',       period:7, group:null,config:'[Rn] 5f¹⁰ 7s²',       melt:900,     boil:null,    density:15.1,     discovered:1950, state:'solid',  electronegativity:1.30, shells:[2,8,18,32,28,8,2],  desc:'Californium is a radioactive actinide metal synthesised in 1950 at Berkeley and named after the state of California and the University of California. It is one of the few transuranic elements that has practical applications. Californium-252 is one of the most potent neutron-emitting radioisotopes known — one microgram emits 170 million neutrons per minute through spontaneous fission. This makes it invaluable as a portable neutron source: it is used to start up nuclear reactors; in neutron activation analysis for detecting trace elements; in cancer treatment (californium-252 brachytherapy); in airport security (neutron probes to detect explosives and drugs); and in oil well logging to detect oil and gas pockets. One gram of Cf-252 is worth approximately $27 million — one of the most expensive substances on Earth.' },
+    { n:99, sym:'Es', name:'Einsteinium',    mass:252,      cat:'actinide',       period:7, group:null,config:'[Rn] 5f¹¹ 7s²',       melt:860,     boil:null,    density:8.84,     discovered:1952, state:'solid',  electronegativity:1.30, shells:[2,8,18,32,29,8,2],  desc:'Einsteinium is a synthetic radioactive actinide metal named after Albert Einstein. It was first identified in December 1952 in the radioactive fallout from the "Ivy Mike" thermonuclear device (the first hydrogen bomb) detonated in the Pacific Ocean — the extreme neutron flux of the explosion drove uranium-238 nuclei through multiple neutron captures and beta decays, creating new heavy elements including einsteinium and fermium. Its discovery was kept classified for several years. Einsteinium is only produced in tiny quantities (micrograms) in specialised high-flux nuclear reactors. It has no practical applications and is only studied in research contexts. In 2021, scientists for the first time studied the chemistry of einsteinium in solution, measuring its bond lengths using synchrotron X-ray techniques.' },
+    { n:100,sym:'Fm', name:'Fermium',        mass:257,      cat:'actinide',       period:7, group:null,config:'[Rn] 5f¹² 7s²',       melt:1527,    boil:null,    density:null,     discovered:1952, state:'solid',  electronegativity:1.30, shells:[2,8,18,32,30,8,2],  desc:'Fermium is a synthetic radioactive actinide metal named after the nuclear physicist Enrico Fermi, who developed the first artificial nuclear reactor. Like einsteinium, it was first discovered in the radioactive debris of the first hydrogen bomb test in 1952 and remained classified for several years. Fermium-257 is the most stable isotope, with a half-life of 100.5 days. Fermium represents an important limit in nuclear chemistry: it is the heaviest element that can be produced (in weighable quantities) by bombarding lighter elements with neutrons in a nuclear reactor. Beyond fermium, elements must be made by heavy-ion bombardment in accelerators, which only creates atoms a few at a time. Due to its very limited availability and intense radioactivity, fermium has no practical applications and is studied purely in research.' },
+    { n:101,sym:'Md', name:'Mendelevium',    mass:258,      cat:'actinide',       period:7, group:null,config:'[Rn] 5f¹³ 7s²',       melt:827,     boil:null,    density:null,     discovered:1955, state:'solid',  electronegativity:1.30, shells:[2,8,18,32,31,8,2],  desc:'Mendelevium is a synthetic radioactive actinide metal named after Dmitri Mendeleev, the Russian chemist who devised the periodic table. It was first synthesised in 1955 by Glenn Seaborg, Bernard Harvey, Gregory Choppin, Stanley Thompson, and Albert Ghiorso by bombarding einsteinium-253 with alpha particles in the cyclotron at Berkeley. At the time, only about 17 atoms were produced in the first experiment. Mendelevium-258 is the most stable isotope, with a half-life of 51.5 days. Mendelevium was the first element to be produced one atom at a time. It has no practical applications outside nuclear research. Its chemistry, studied in microscopic quantities, shows it behaves as expected for a trivalent actinide, consistent with the patterns established by the lighter actinides.' },
+    { n:102,sym:'No', name:'Nobelium',       mass:259,      cat:'actinide',       period:7, group:null,config:'[Rn] 5f¹⁴ 7s²',       melt:827,     boil:null,    density:null,     discovered:1966, state:'solid',  electronegativity:1.30, shells:[2,8,18,32,32,8,2],  desc:'Nobelium is a synthetic radioactive actinide metal named after Alfred Nobel, the Swedish chemist who invented dynamite and established the Nobel Prizes. Its discovery was disputed between Soviet and American research teams for years. The first unambiguous synthesis was achieved at Dubna, Russia, in 1966. Nobelium-259 is the most stable isotope, with a half-life of 58 minutes. Nobelium is unique among the actinides in that it prefers the +2 oxidation state in solution (rather than the +3 state typical of other actinides), because the +2 state corresponds to a particularly stable filled 5f¹⁴ electron configuration. This makes it behave somewhat like a heavy alkaline earth metal. Nobelium has no practical applications and is only produced in atoms-at-a-time quantities for fundamental nuclear research.' },
+    { n:103,sym:'Lr', name:'Lawrencium',     mass:262,      cat:'actinide',       period:7, group:null,config:'[Rn] 5f¹⁴ 7s² 7p¹',  melt:1627,    boil:null,    density:null,     discovered:1961, state:'solid',  electronegativity:1.30, shells:[2,8,18,32,32,8,3],  desc:'Lawrencium is the last actinide element and was first synthesised in 1961 at Berkeley by Albert Ghiorso, Torbjørn Sikkeland, Almon Larsh, and Robert Latimer by bombarding californium with boron ions. It is named after Ernest Orlando Lawrence, the inventor of the cyclotron particle accelerator and founder of the Lawrence Berkeley National Laboratory — the institution responsible for discovering or confirming many transuranic elements. Lawrencium-266 is the most stable isotope, with a half-life of about 11 hours. As the last actinide, lawrencium completes the 5f electron shell. Its chemistry has been studied in tiny quantities: experiments suggest it behaves more like a heavy rare earth element (trivalent) rather than a heavy actinide, which is consistent with having a complete 5f shell. It has no practical applications.' },
     { n:104,sym:'Rf', name:'Rutherfordium',  mass:267,      cat:'transition',     period:7, group:4,  config:'[Rn] 5f¹⁴ 6d² 7s²',  melt:2100,    boil:5500,    density:23.2,     discovered:1964, state:'solid',  electronegativity:null, shells:[2,8,18,32,32,10,2], desc:'Rutherfordium is the first transactinide element — the first element beyond the actinides — and was synthesised in 1964 at Dubna, Russia (and confirmed later at Berkeley). It is named after Ernest Rutherford, the New Zealand-born physicist who discovered the atomic nucleus and pioneered nuclear physics. The most stable isotope, Rf-267, has a half-life of about 1.3 hours. Rutherfordium is produced by bombarding californium-249 (or curium-248) with carbon (or oxygen) ions in particle accelerators. Only a few hundred atoms have ever been made. Its chemistry, studied one atom at a time using rapid radiochemical techniques, confirms it behaves like a heavier hafnium (Group 4 element), as expected from periodic table trends. It has no practical applications and is studied purely for understanding nuclear structure and the limits of the periodic table.' },
     { n:105,sym:'Db', name:'Dubnium',        mass:268,      cat:'transition',     period:7, group:5,  config:'[Rn] 5f¹⁴ 6d³ 7s²',  melt:null,    boil:null,    density:29.3,     discovered:1968, state:'solid',  electronegativity:null, shells:[2,8,18,32,32,11,2], desc:'Dubnium is a highly radioactive synthetic transactinide element. Its discovery was disputed between Dubna (Russia) and Berkeley (USA) throughout the 1960s and 70s — the IUPAC eventually approved the name dubnium (after Dubna, the Russian research city) in 1997. The most stable isotope, Db-268, has a half-life of about 29 hours. Dubnium is produced by bombarding californium-249 with nitrogen ions in heavy-ion accelerators. Only nanogram quantities have ever been detected. Its chemistry, studied atom by atom, appears to be consistent with Group 5 behaviour (similar to tantalum and niobium), though some anomalies have been observed. Relativistic effects on electrons in very heavy elements can cause unexpected chemical behaviour, and studying elements like dubnium helps test theoretical models of relativistic quantum chemistry.' },
     { n:106,sym:'Sg', name:'Seaborgium',     mass:271,      cat:'transition',     period:7, group:6,  config:'[Rn] 5f¹⁴ 6d⁴ 7s²',  melt:null,    boil:null,    density:35.0,     discovered:1974, state:'solid',  electronegativity:null, shells:[2,8,18,32,32,12,2], desc:'Seaborgium was first synthesised in 1974 at Berkeley by a team led by Albert Ghiorso. It is named after Glenn Theodore Seaborg, the American chemist who discovered or co-discovered ten transuranium elements — seaborgium is one of only two elements named after a living person at the time of naming (Seaborg was alive when the name was approved in 1994; he died in 1999). The most stable isotope, Sg-271, has a half-life of about 2.4 minutes. Its chemistry has been studied using gas-phase and aqueous techniques; it behaves like a heavier tungsten (Group 6), forming oxohalide compounds similar to WO₂Cl₂. Seaborgium has no practical applications. Understanding its chemistry contributes to testing relativistic effects on chemical behaviour at the extreme end of the periodic table.' },
@@ -123,20 +156,24 @@
     { n:115,sym:'Mc', name:'Moscovium',      mass:290,      cat:'post-transition',period:7, group:15, config:'[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p³', melt:null, boil:null,    density:13.5,     discovered:2003, state:'solid',  electronegativity:null, shells:[2,8,18,32,32,18,5], desc:'Moscovium was first synthesised in 2003 in a collaboration between JINR Dubna (Russia) and Lawrence Livermore National Laboratory (USA) by bombarding americium-243 with calcium-48 ions. It was officially named in 2016 after the Moscow Oblast, the Russian federal subject where Dubna is located. The most stable isotope, Mc-290, has a half-life of about 650 milliseconds. Moscovium is a Group 15 element and is expected to be a heavier homologue of bismuth. Only about 100 atoms have ever been observed. Its decay chain passes through nihonium (element 113), which provided important evidence for the discovery of nihonium. Theoretical predictions suggest moscovium will have properties very different from bismuth due to extreme relativistic effects, possibly displaying some noble-gas-like inertness. It has no practical applications.' },
     { n:116,sym:'Lv', name:'Livermorium',    mass:293,      cat:'post-transition',period:7, group:16, config:'[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁴', melt:null, boil:null,    density:12.9,     discovered:2000, state:'solid',  electronegativity:null, shells:[2,8,18,32,32,18,6], desc:'Livermorium was first synthesised in 2000 at JINR Dubna in collaboration with Lawrence Livermore National Laboratory, by bombarding curium-248 with calcium-48 ions. It is named after Lawrence Livermore National Laboratory in Livermore, California. The most stable isotope, Lv-293, has a half-life of about 61 milliseconds. Livermorium is a Group 16 element and is expected to be a heavier homologue of polonium (itself a post-transition metal/metalloid). Only a few atoms have ever been produced. Theoretical predictions suggest significant relativistic effects will make its chemistry very different from the lighter chalcogens (oxygen, sulfur, selenium, tellurium, polonium). Its decay products (flerovium and copernicium isotopes) have been studied to understand the nuclear structure near the predicted "island of stability." It has no practical applications.' },
     { n:117,sym:'Ts', name:'Tennessine',     mass:294,      cat:'halogen',        period:7, group:17, config:'[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁵', melt:null, boil:null,    density:7.17,     discovered:2010, state:'solid',  electronegativity:null, shells:[2,8,18,32,32,18,7], desc:'Tennessine was first synthesised in 2010 at JINR Dubna by a collaboration between Russia and three US institutions in Tennessee: Oak Ridge National Laboratory, Vanderbilt University, and the University of Tennessee. It is named after the state of Tennessee in recognition of these contributions. The most stable isotope, Ts-294, has a half-life of about 51 milliseconds. Tennessine is the second heaviest element ever observed (after oganesson) and the second heaviest halogen. As a Group 17 element, it is below astatine in the halogen group, but relativistic effects are expected to make it much less reactive than other halogens — it may actually behave more like a noble gas than a typical halogen. Berkleium-249 (produced in significant quantities at Oak Ridge) was used as the target, which is why Oak Ridge\'s contribution to the discovery was essential.' },
-    { n:118,sym:'Og', name:'Oganesson',      mass:294,      cat:'noble-gas',      period:7, group:18, config:'[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁶', melt:null, boil:null,    density:4.95,     discovered:2006, state:'solid',  electronegativity:null, shells:[2,8,18,32,32,18,8], desc:'Oganesson is the heaviest known element and the last element in the periodic table as currently known. It was first synthesised in 2002 (confirmed in 2006) at JINR Dubna by bombarding californium-249 with calcium-48 ions — a feat that required over 1,000 hours of bombardment to produce just 4 atoms. It is named after Yuri Oganessian, the Russian-Armenian nuclear physicist who pioneered cold and hot fusion techniques for creating superheavy elements — one of only two elements named after a living person (the other is seaborgium). As a Group 18 element, it is nominally a noble gas, but theoretical calculations suggest that extreme relativistic effects on its electrons will make it a solid at room temperature and possibly even reactive, unlike lighter noble gases. If this is confirmed, oganesson would be a remarkable exception to periodic trends. Its most stable isotope, Og-294, has a half-life of about 0.7 milliseconds.' },
+    { n:118,sym:'Og', name:'Oganesson',      mass:294,      cat:'noble-gas',      period:7, group:18, config:'[Rn] 5f¹⁴ 6d¹⁰ 7s² 7p⁶', melt:null, boil:null,    density:4.95,     discovered:2006, state:'solid',  electronegativity:null, shells:[2,8,18,32,32,18,8], desc:'Oganesson is the heaviest known element and the last element in the periodic table as currently known. It was first synthesised in 2002 (confirmed in 2006) at JINR Dubna by bombarding californium-249 with calcium-48 ions — a feat that required over 1,000 hours of bombardment to produce just 4 atoms. It is named after Yuri Oganessian, the Russian-Armenian nuclear physicist who pioneered cold and hot fusion techniques for creating superheavy elements — one of only two elements named after a living person (the other is seaborgium). As a Group 18 element, it is nominally a noble gas, but theoretical calculations suggest that extreme relativistic effects on its electrons will make it a solid at room temperature and possibly even reactive, unlike lighter noble gases. If confirmed, oganesson would be a remarkable exception to periodic trends. Its most stable isotope, Og-294, has a half-life of about 0.7 milliseconds.' },
   ];
 
+  /* ══════════════════════════════════════════════════
+     CATEGORY COLOURS  (hex integers for Three.js)
+  ══════════════════════════════════════════════════ */
+
   const CAT_COLORS = {
-    'alkali-metal':   { bg:'#fef3c7', text:'#92400e', dark_bg:'#451a03', dark_text:'#fcd34d', label:'Alkali Metal' },
-    'alkaline-earth': { bg:'#fef9c3', text:'#713f12', dark_bg:'#422006', dark_text:'#fde68a', label:'Alkaline Earth' },
-    'transition':     { bg:'#dbeafe', text:'#1e3a8a', dark_bg:'#1e3a8a', dark_text:'#93c5fd', label:'Transition Metal' },
-    'post-transition':{ bg:'#e0e7ff', text:'#3730a3', dark_bg:'#312e81', dark_text:'#a5b4fc', label:'Post-transition' },
-    'metalloid':      { bg:'#d1fae5', text:'#065f46', dark_bg:'#064e3b', dark_text:'#6ee7b7', label:'Metalloid' },
-    'nonmetal':       { bg:'#dcfce7', text:'#14532d', dark_bg:'#14532d', dark_text:'#86efac', label:'Nonmetal' },
-    'halogen':        { bg:'#f0fdf4', text:'#166534', dark_bg:'#052e16', dark_text:'#4ade80', label:'Halogen' },
-    'noble-gas':      { bg:'#fae8ff', text:'#6b21a8', dark_bg:'#3b0764', dark_text:'#e879f9', label:'Noble Gas' },
-    'lanthanide':     { bg:'#ffedd5', text:'#9a3412', dark_bg:'#431407', dark_text:'#fdba74', label:'Lanthanide' },
-    'actinide':       { bg:'#ffe4e6', text:'#9f1239', dark_bg:'#4c0519', dark_text:'#fda4af', label:'Actinide' },
+    'alkali-metal':   { bg:'#fef3c7', text:'#92400e', dark_bg:'#451a03', dark_text:'#fcd34d', hex:0xfde68a, label:'Alkali Metal' },
+    'alkaline-earth': { bg:'#fef9c3', text:'#713f12', dark_bg:'#422006', dark_text:'#fde68a', hex:0xfef08a, label:'Alkaline Earth' },
+    'transition':     { bg:'#dbeafe', text:'#1e3a8a', dark_bg:'#1e3a8a', dark_text:'#93c5fd', hex:0x93c5fd, label:'Transition Metal' },
+    'post-transition':{ bg:'#e0e7ff', text:'#3730a3', dark_bg:'#312e81', dark_text:'#a5b4fc', hex:0xa5b4fc, label:'Post-transition' },
+    'metalloid':      { bg:'#d1fae5', text:'#065f46', dark_bg:'#064e3b', dark_text:'#6ee7b7', hex:0x6ee7b7, label:'Metalloid' },
+    'nonmetal':       { bg:'#dcfce7', text:'#14532d', dark_bg:'#14532d', dark_text:'#86efac', hex:0x86efac, label:'Nonmetal' },
+    'halogen':        { bg:'#f0fdf4', text:'#166534', dark_bg:'#052e16', dark_text:'#4ade80', hex:0x4ade80, label:'Halogen' },
+    'noble-gas':      { bg:'#fae8ff', text:'#6b21a8', dark_bg:'#3b0764', dark_text:'#e879f9', hex:0xe879f9, label:'Noble Gas' },
+    'lanthanide':     { bg:'#ffedd5', text:'#9a3412', dark_bg:'#431407', dark_text:'#fdba74', hex:0xfdba74, label:'Lanthanide' },
+    'actinide':       { bg:'#ffe4e6', text:'#9f1239', dark_bg:'#4c0519', dark_text:'#fda4af', hex:0xfda4af, label:'Actinide' },
   };
 
   const STATE_COLORS = {
@@ -148,6 +185,10 @@
   const CAT_COUNTS = {};
   ELEMENTS.forEach(el => { CAT_COUNTS[el.cat] = (CAT_COUNTS[el.cat] || 0) + 1; });
 
+  /* ══════════════════════════════════════════════════
+     GRID POSITION HELPER  (same logic as original)
+  ══════════════════════════════════════════════════ */
+
   function _getPosition(el) {
     if (el.cat === 'lanthanide') return { row:9,  col:3 + (el.n - 57) };
     if (el.cat === 'actinide' && el.n >= 90) return { row:10, col:3 + (el.n - 90) };
@@ -158,61 +199,60 @@
     return { row:el.period, col:grp };
   }
 
-  let _onBack       = null;
-  let _selectedEl   = null;
-  let _filterCat    = null;
-  let _searchQuery  = '';
-  let _rotX  = -8;
-  let _rotY  = 0;
-  let _panX  = 0;
-  let _panY  = 0;
-  let _scale = 1;
-  let _isDragging    = false;
-  let _lastX         = 0;
-  let _lastY         = 0;
-  let _lastTouchDist = 0;
-  let _touchMidX     = 0;
-  let _touchMidY     = 0;
-  let _velocity      = { x:0, y:0 };
-  let _panVelocity   = { x:0, y:0 };
-  let _rafId         = null;
-  let _interactMode  = 'rotate';
+  /* ══════════════════════════════════════════════════
+     MODULE STATE
+  ══════════════════════════════════════════════════ */
 
-  const MIN_SCALE = 0.32;
-  const MAX_SCALE = 2.8;
+  let _onBack      = null;
+  let _selectedEl  = null;
+  let _filterCat   = null;
+  let _searchQuery = '';
+
+  // Three.js handles
+  let _renderer    = null;
+  let _scene       = null;
+  let _camera      = null;
+  let _controls    = null;
+  let _rafId       = null;
+  let _tileMeshes  = {};   // n → mesh
+  let _raycaster   = null;
+  let _pointer     = new (function(){ this.x=0; this.y=0; })();
+  let _canvas      = null;
+  let _resizeObs   = null;
+  let _labelCanvas = null; // offscreen canvas for tile textures
+  let _textureCache = {};
+
+  /* ══════════════════════════════════════════════════
+     OPEN
+  ══════════════════════════════════════════════════ */
 
   function open(onBackCallback) {
-    _onBack       = onBackCallback || null;
-    _selectedEl   = null;
-    _filterCat    = null;
-    _searchQuery  = '';
-    _rotX         = -8;
-    _rotY         = 0;
-    _panX         = 0;
-    _panY         = 0;
-    _scale        = 1;
-    _velocity     = { x:0, y:0 };
-    _panVelocity  = { x:0, y:0 };
-    _interactMode = 'rotate';
+    _onBack      = onBackCallback || null;
+    _selectedEl  = null;
+    _filterCat   = null;
+    _searchQuery = '';
     _render();
-    _bindEvents();
-    _startInertia();
+    _loadThree(_boot3D);
   }
+
+  /* ══════════════════════════════════════════════════
+     HTML SHELL
+  ══════════════════════════════════════════════════ */
 
   function _render() {
     UI.mount(`
       <div id="pt-shell" style="
         display:flex;flex-direction:column;height:100dvh;
         background:var(--bg-page);overflow:hidden;
-        font-family:var(--font);user-select:none;-webkit-user-select:none;
-      ">
+        font-family:var(--font);user-select:none;-webkit-user-select:none;">
+
         ${_buildTopBar()}
 
+        <!-- Category filter strip -->
         <div id="pt-filters" style="
           flex-shrink:0;display:flex;align-items:center;gap:.35rem;
           padding:.3rem .75rem;border-bottom:1px solid var(--border);
-          overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
-        ">
+          overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
           <button onclick="ThreeDPeriodic._setFilter(null)" id="pt-filter-all"
                   style="flex-shrink:0;font-size:.575rem;font-weight:800;letter-spacing:.05em;
                          text-transform:uppercase;padding:3px 9px;border-radius:99px;
@@ -232,584 +272,418 @@
             </button>`).join('')}
         </div>
 
-        <div style="
-          flex-shrink:0;display:flex;align-items:center;gap:.5rem;
-          padding:.275rem .75rem;background:var(--bg-base);
-          border-bottom:1px solid var(--border);min-height:1.875rem;
-        ">
-          <button id="pt-mode-rotate" onclick="ThreeDPeriodic._setMode('rotate')"
-                  style="font-size:.575rem;font-weight:700;padding:2px 9px;border-radius:99px;
-                         border:1px solid var(--accent);background:var(--accent);color:#fff;
-                         cursor:pointer;font-family:var(--font);flex-shrink:0;">↻ Rotate</button>
-          <button id="pt-mode-pan" onclick="ThreeDPeriodic._setMode('pan')"
-                  style="font-size:.575rem;font-weight:700;padding:2px 9px;border-radius:99px;
-                         border:1px solid var(--border);background:var(--bg-subtle);color:var(--text-3);
-                         cursor:pointer;font-family:var(--font);flex-shrink:0;">✥ Pan / Scroll</button>
-          <span id="pt-status-label"
-                style="font-size:.575rem;color:var(--text-4);flex:1;overflow:hidden;
-                       text-overflow:ellipsis;white-space:nowrap;text-align:right;
-                       letter-spacing:.03em;"></span>
-        </div>
+        <!-- 3D canvas stage -->
+        <div id="pt-stage" style="flex:1 1 0;position:relative;overflow:hidden;">
+          <canvas id="pt-canvas" style="display:block;width:100%;height:100%;"></canvas>
 
-        <div id="pt-stage" style="
-          flex:1 1 0;overflow:hidden;position:relative;
-          cursor:grab;touch-action:none;
-          display:flex;align-items:center;justify-content:center;
-        ">
-          <div id="pt-hint" style="
-            position:absolute;bottom:.625rem;left:50%;transform:translateX(-50%);
-            font-size:.575rem;font-weight:500;letter-spacing:.05em;color:var(--text-4);
-            text-transform:uppercase;pointer-events:none;white-space:nowrap;z-index:5;
-            animation:pt-hint-fade 3.5s ease 1.5s forwards;
-          ">Tap an element · Use Pan mode to scroll left/right</div>
-
-          <div id="pt-perspective" style="
-            perspective:1800px;perspective-origin:50% 50%;
-            width:100%;height:100%;display:flex;
-            align-items:center;justify-content:center;
-          ">
-            <div id="pt-table-3d" style="
-              transform-style:preserve-3d;
-              transform:translateX(${_panX}px) translateY(${_panY}px) rotateX(${_rotX}deg) rotateY(${_rotY}deg) scale(${_scale});
-              transition:none;position:relative;
-            ">
-              ${_buildTable()}
-            </div>
-          </div>
-
+          <!-- Zoom / reset controls -->
           <div style="position:absolute;right:.5rem;top:50%;transform:translateY(-50%);
                       display:flex;flex-direction:column;gap:.3rem;z-index:10;">
-            <button onclick="ThreeDPeriodic._zoom(0.15)"
+            <button onclick="ThreeDPeriodic._zoom(1.18)"
                     style="width:28px;height:28px;border-radius:var(--r-md);
-                           background:var(--glass-bg);border:1px solid var(--border);
-                           font-size:1.05rem;cursor:pointer;display:flex;align-items:center;
-                           justify-content:center;color:var(--text-2);
-                           backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);">+</button>
-            <button onclick="ThreeDPeriodic._zoom(-0.15)"
+                           background:var(--bg-base);border:1px solid var(--border);
+                           font-size:1.05rem;cursor:pointer;color:var(--text-2);">+</button>
+            <button onclick="ThreeDPeriodic._zoom(0.84)"
                     style="width:28px;height:28px;border-radius:var(--r-md);
-                           background:var(--glass-bg);border:1px solid var(--border);
-                           font-size:1.05rem;cursor:pointer;display:flex;align-items:center;
-                           justify-content:center;color:var(--text-2);
-                           backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);">−</button>
+                           background:var(--bg-base);border:1px solid var(--border);
+                           font-size:1.05rem;cursor:pointer;color:var(--text-2);">−</button>
             <button onclick="ThreeDPeriodic._resetView()"
                     style="width:28px;height:28px;border-radius:var(--r-md);
-                           background:var(--glass-bg);border:1px solid var(--border);
-                           font-size:.6rem;cursor:pointer;display:flex;align-items:center;
-                           justify-content:center;color:var(--text-3);font-weight:700;
-                           backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);">⟳</button>
+                           background:var(--bg-base);border:1px solid var(--border);
+                           font-size:.6rem;cursor:pointer;color:var(--text-3);font-weight:700;">⟳</button>
           </div>
 
-          <button onclick="ThreeDPeriodic._panStep(-130, 0)"
-                  style="position:absolute;left:.3rem;top:50%;transform:translateY(-50%);
-                         width:26px;height:48px;border-radius:var(--r-md);z-index:10;
-                         background:var(--glass-bg);border:1px solid var(--border);
-                         color:var(--text-2);cursor:pointer;font-size:1.1rem;
-                         display:flex;align-items:center;justify-content:center;
-                         backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);">‹</button>
-          <button onclick="ThreeDPeriodic._panStep(130, 0)"
-                  style="position:absolute;right:2.25rem;top:50%;transform:translateY(-50%);
-                         width:26px;height:48px;border-radius:var(--r-md);z-index:10;
-                         background:var(--glass-bg);border:1px solid var(--border);
-                         color:var(--text-2);cursor:pointer;font-size:1.1rem;
-                         display:flex;align-items:center;justify-content:center;
-                         backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);">›</button>
+          <!-- Drag hint -->
+          <div id="pt-hint" style="position:absolute;bottom:.6rem;left:50%;
+               transform:translateX(-50%);font-size:.575rem;font-weight:600;
+               letter-spacing:.05em;color:var(--text-4);text-transform:uppercase;
+               pointer-events:none;white-space:nowrap;background:var(--bg-base);
+               border:1px solid var(--border);border-radius:99px;padding:3px 10px;
+               opacity:0.85;animation:pt-hint-fade 4s ease 1.5s forwards;">
+            Drag to orbit · Scroll to zoom · Tap an element
+          </div>
+
+          <!-- Loading overlay -->
+          <div id="pt-loading" style="position:absolute;inset:0;display:flex;
+               align-items:center;justify-content:center;background:var(--bg-page);z-index:20;">
+            <div style="text-align:center;">
+              <div style="font-size:2rem;margin-bottom:.5rem;">⚗️</div>
+              <div style="font-size:var(--text-sm);color:var(--text-3);font-weight:600;">
+                Building 3D periodic table…
+              </div>
+            </div>
+          </div>
         </div>
 
+        <!-- Element detail panel -->
         <div id="pt-detail" style="
           flex-shrink:0;max-height:0;overflow:hidden;
           transition:max-height .32s cubic-bezier(0.16,1,0.3,1);
           background:var(--bg-base);border-top:1px solid var(--border);
-          position:relative;z-index:20;
-        ">
+          position:relative;z-index:20;">
           <div id="pt-detail-inner" style="
-            padding:.625rem .875rem .875rem;
-            overflow-y:auto;
-            -webkit-overflow-scrolling:touch;
-            max-height:55dvh;
-            box-sizing:border-box;
-          "></div>
+            padding:.625rem .875rem .875rem;overflow-y:auto;
+            -webkit-overflow-scrolling:touch;max-height:55dvh;box-sizing:border-box;">
+          </div>
         </div>
       </div>
 
       <style>
-        @keyframes pt-hint-fade {
-          0%,70% { opacity:1; }
-          100%    { opacity:0; pointer-events:none; }
-        }
+        @keyframes pt-hint-fade { 0%,70%{opacity:1}100%{opacity:0;pointer-events:none} }
         #pt-filters::-webkit-scrollbar { display:none; }
-        .pt-cell { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
       </style>`);
   }
 
   function _buildTopBar() {
     return `
-      <div style="
-        display:flex;align-items:center;gap:.5rem;
-        padding:.4rem .75rem;border-bottom:1px solid var(--border);
-        background:var(--bg-base);flex-shrink:0;min-height:2.625rem;
-      ">
+      <div style="display:flex;align-items:center;gap:.5rem;padding:.4rem .75rem;
+                  border-bottom:1px solid var(--border);background:var(--bg-base);
+                  flex-shrink:0;min-height:2.625rem;">
         <button onclick="ThreeDPeriodic._back()"
-                style="display:inline-flex;align-items:center;gap:.3rem;
-                       font-size:var(--text-sm);font-weight:500;color:var(--text-2);
-                       background:var(--bg-subtle);border:1px solid var(--border);
-                       border-radius:var(--r-md);padding:.275rem .6rem;
-                       cursor:pointer;white-space:nowrap;font-family:var(--font);flex-shrink:0;">← Back</button>
+                style="display:inline-flex;align-items:center;font-size:var(--text-sm);
+                       font-weight:500;color:var(--text-2);background:var(--bg-subtle);
+                       border:1px solid var(--border);border-radius:var(--r-md);
+                       padding:.275rem .6rem;cursor:pointer;font-family:var(--font);flex-shrink:0;">← Back</button>
         <div style="flex:1;min-width:0;">
           <div style="font-size:var(--text-base);font-weight:700;color:var(--text-1);
-                      letter-spacing:-0.015em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                      letter-spacing:-.015em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
             Periodic Table
           </div>
         </div>
-        <div style="
-          display:flex;align-items:center;gap:.3rem;
-          flex-shrink:0;
-          border:1px solid var(--border);
-          border-radius:var(--r-md);
-          background:var(--bg-subtle);
-          padding:.275rem .5rem;
-          width:120px;
-          box-sizing:border-box;
-        ">
-          <svg style="flex-shrink:0;color:var(--text-4);"
-               width="12" height="12" viewBox="0 0 24 24" fill="none"
-               stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <div style="display:flex;align-items:center;gap:.3rem;flex-shrink:0;
+                    border:1px solid var(--border);border-radius:var(--r-md);
+                    background:var(--bg-subtle);padding:.275rem .5rem;width:120px;box-sizing:border-box;">
+          <svg style="flex-shrink:0;color:var(--text-4);" width="12" height="12"
+               viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
           </svg>
           <input id="pt-search" type="text" placeholder="Search…"
                  oninput="ThreeDPeriodic._onSearch(this.value)"
-                 style="
-                   border:none;outline:none;background:transparent;
-                   font-size:var(--text-xs);color:var(--text-1);
-                   font-family:var(--font);width:100%;padding:0;margin:0;
-                 " />
+                 style="border:none;outline:none;background:transparent;
+                        font-size:var(--text-xs);color:var(--text-1);
+                        font-family:var(--font);width:100%;padding:0;margin:0;" />
         </div>
       </div>`;
   }
 
-  function _buildTable() {
-    const CELL_W = 40, CELL_H = 42, GAP = 2;
-    const grid = {};
+  /* ══════════════════════════════════════════════════
+     THREE.JS BOOTSTRAP
+  ══════════════════════════════════════════════════ */
+
+  function _boot3D() {
+    const THREE = window.THREE;
+    _canvas = document.getElementById('pt-canvas');
+    if (!_canvas) return;
+
+    const wrap = document.getElementById('pt-stage');
+    const W = wrap.clientWidth  || 800;
+    const H = wrap.clientHeight || 500;
+
+    /* ── Renderer ── */
+    _renderer = new THREE.WebGLRenderer({ canvas: _canvas, antialias: true, alpha: true });
+    _renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    _renderer.setSize(W, H);
+    _renderer.setClearColor(0x000000, 0);
+    _renderer.shadowMap.enabled = true;
+
+    /* ── Scene ── */
+    _scene = new THREE.Scene();
+
+    /* ── Camera ── */
+    _camera = new THREE.PerspectiveCamera(38, W / H, 0.1, 2000);
+    _camera.position.set(0, -18, 95);
+
+    /* ── Lights ── */
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    _scene.add(new THREE.AmbientLight(0xffffff, isDark ? 0.55 : 0.75));
+    const sun = new THREE.DirectionalLight(0xffffff, isDark ? 0.7 : 0.9);
+    sun.position.set(30, 60, 80);
+    sun.castShadow = true;
+    _scene.add(sun);
+    const fill = new THREE.PointLight(0xaabbff, 0.3, 500);
+    fill.position.set(-50, -30, 60);
+    _scene.add(fill);
+
+    /* ── OrbitControls ── */
+    _controls = new THREE.OrbitControls(_camera, _renderer.domElement);
+    _controls.enableDamping   = true;
+    _controls.dampingFactor   = 0.07;
+    _controls.enablePan       = true;
+    _controls.panSpeed        = 1.2;
+    _controls.minDistance     = 20;
+    _controls.maxDistance     = 300;
+    _controls.maxPolarAngle   = Math.PI * 0.72;
+    _controls.autoRotate      = false;
+    _controls.target.set(0, -8, 0);
+
+    /* ── Raycaster ── */
+    _raycaster = new THREE.Raycaster();
+
+    /* ── Build tiles ── */
+    _buildAllTiles();
+
+    /* ── Events ── */
+    _canvas.addEventListener('pointerup', _onPointerUp);
+    _canvas.addEventListener('touchend',  _onPointerUp, { passive: true });
+
+    /* ── Resize observer ── */
+    _resizeObs = new ResizeObserver(() => {
+      if (!wrap.clientWidth) return;
+      const nW = wrap.clientWidth;
+      const nH = wrap.clientHeight;
+      _renderer.setSize(nW, nH);
+      _camera.aspect = nW / nH;
+      _camera.updateProjectionMatrix();
+    });
+    _resizeObs.observe(wrap);
+
+    /* ── Hide loading overlay ── */
+    const loading = document.getElementById('pt-loading');
+    if (loading) loading.style.display = 'none';
+
+    /* ── Animate ── */
+    _animate();
+  }
+
+  /* ══════════════════════════════════════════════════
+     TILE TEXTURE GENERATOR
+     Each element face is drawn on an offscreen canvas
+     then uploaded as a THREE.CanvasTexture.
+  ══════════════════════════════════════════════════ */
+
+  function _makeTileTexture(el, highlighted, dimmed) {
+    const THREE = window.THREE;
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const catC   = CAT_COLORS[el.cat] || CAT_COLORS['transition'];
+
+    const SIZE = 128;
+    const cv   = document.createElement('canvas');
+    cv.width = cv.height = SIZE;
+    const ctx = cv.getContext('2d');
+
+    // Background
+    const bgCol = highlighted
+      ? (isDark ? '#fff' : '#fff')
+      : dimmed
+        ? '#888'
+        : (isDark ? catC.dark_bg : catC.bg);
+    ctx.fillStyle = bgCol;
+    ctx.fillRect(0, 0, SIZE, SIZE);
+
+    // Border
+    ctx.strokeStyle = highlighted
+      ? '#6366f1'
+      : dimmed ? '#555' : (isDark ? catC.dark_text : catC.text);
+    ctx.lineWidth = highlighted ? 5 : 2;
+    ctx.strokeRect(2, 2, SIZE - 4, SIZE - 4);
+
+    // Atomic number  (top-left)
+    const textCol = highlighted
+      ? '#6366f1'
+      : dimmed ? '#999'
+      : (isDark ? catC.dark_text : catC.text);
+    ctx.fillStyle = textCol;
+    ctx.font      = 'bold 18px sans-serif';
+    ctx.fillText(String(el.n), 6, 22);
+
+    // Symbol  (centre, large)
+    ctx.font      = 'bold 52px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = highlighted
+      ? '#3730a3'
+      : dimmed ? '#aaa'
+      : (isDark ? catC.dark_text : catC.text);
+    ctx.fillText(el.sym, SIZE / 2, SIZE / 2 + 18);
+
+    // Name  (bottom, small)
+    ctx.font      = 'bold 13px sans-serif';
+    ctx.fillStyle = textCol;
+    const shortName = el.name.length > 9 ? el.name.slice(0, 8) + '.' : el.name;
+    ctx.fillText(shortName, SIZE / 2, SIZE - 10);
+
+    const tex = new THREE.CanvasTexture(cv);
+    return tex;
+  }
+
+  /* ══════════════════════════════════════════════════
+     BUILD ALL TILES
+  ══════════════════════════════════════════════════ */
+
+  function _buildAllTiles() {
+    const THREE = window.THREE;
+
+    const TILE_W  = 3.6;
+    const TILE_H  = 3.8;
+    const TILE_D  = 0.28;
+    const GAP     = 0.22;
+    const STEP_X  = TILE_W + GAP;
+    const STEP_Y  = TILE_H + GAP;
+    const COLS    = 18;
+    const ROWS    = 10;
+
+    // Centre the table
+    const originX = -((COLS - 1) * STEP_X) / 2;
+    const originY =  ((ROWS - 1) * STEP_Y) / 2;
+
     ELEMENTS.forEach(el => {
       const pos = _getPosition(el);
-      if (pos) grid[`${pos.row},${pos.col}`] = el;
+      if (!pos) return;
+
+      const x = originX + (pos.col - 1) * STEP_X;
+      // Rows 9 & 10 (lanthanides/actinides) drop a little lower
+      const rowY = pos.row <= 8
+        ? -(pos.row - 1) * STEP_Y
+        : -(pos.row - 1) * STEP_Y - STEP_Y * 0.55;
+      const y = originY + rowY;
+
+      // Small sinusoidal Z wobble for a floating-panel feel
+      const z = Math.sin(el.n * 0.18) * 0.4;
+
+      const geo = new THREE.BoxGeometry(TILE_W, TILE_H, TILE_D);
+
+      // Face 0 (front, +Z) gets the textured label material
+      // All other faces get a plain coloured material
+      const catC   = CAT_COLORS[el.cat] || CAT_COLORS['transition'];
+      const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+      const faceTex = _makeTileTexture(el, false, false);
+      const sideCol = new THREE.Color(isDark ? catC.dark_bg : catC.bg).multiplyScalar(0.72);
+
+      const mats = [
+        new THREE.MeshPhysicalMaterial({ color: sideCol, roughness:0.7, metalness:0.05 }), // +X
+        new THREE.MeshPhysicalMaterial({ color: sideCol, roughness:0.7, metalness:0.05 }), // -X
+        new THREE.MeshPhysicalMaterial({ color: sideCol, roughness:0.7, metalness:0.05 }), // +Y
+        new THREE.MeshPhysicalMaterial({ color: sideCol, roughness:0.7, metalness:0.05 }), // -Y
+        new THREE.MeshPhysicalMaterial({ map: faceTex,   roughness:0.5, metalness:0.0  }), // +Z (front)
+        new THREE.MeshPhysicalMaterial({ color: sideCol, roughness:0.7, metalness:0.05 }), // -Z (back)
+      ];
+
+      const mesh = new THREE.Mesh(geo, mats);
+      mesh.position.set(x, y, z);
+      mesh.castShadow    = true;
+      mesh.receiveShadow = true;
+      mesh.userData.el   = el;
+      mesh.userData.baseZ = z;
+
+      _scene.add(mesh);
+      _tileMeshes[el.n] = mesh;
     });
-    const tableW = 18 * (CELL_W + GAP);
-    const tableH = 11 * (CELL_H + GAP);
-    let html = `<div style="position:relative;width:${tableW}px;height:${tableH}px;">`;
-
-    for (let r = 1; r <= 7; r++) {
-      html += `<div style="position:absolute;left:-18px;top:${(r-1)*(CELL_H+GAP)+CELL_H/2}px;
-        transform:translateY(-50%);font-size:9px;font-weight:700;color:var(--text-4);
-        width:14px;text-align:right;line-height:1;">${r}</div>`;
-    }
-    for (let g = 1; g <= 18; g++) {
-      html += `<div style="position:absolute;left:${(g-1)*(CELL_W+GAP)}px;top:-16px;
-        width:${CELL_W}px;height:14px;display:flex;align-items:center;justify-content:center;
-        font-size:8px;font-weight:700;color:var(--text-4);line-height:1;">${g}</div>`;
-    }
-
-    const phStyle = `position:absolute;display:flex;align-items:center;justify-content:center;
-      font-size:7px;color:var(--text-4);font-weight:700;border:1px dashed var(--border);
-      border-radius:3px;box-sizing:border-box;`;
-    html += `<div style="${phStyle}left:${2*(CELL_W+GAP)}px;top:${5*(CELL_H+GAP)}px;width:${CELL_W}px;height:${CELL_H}px;">*</div>`;
-    html += `<div style="${phStyle}left:${2*(CELL_W+GAP)}px;top:${6*(CELL_H+GAP)}px;width:${CELL_W}px;height:${CELL_H}px;">**</div>`;
-
-    for (let r = 1; r <= 10; r++) {
-      for (let c = 1; c <= 18; c++) {
-        const el = grid[`${r},${c}`];
-        if (!el) continue;
-        const yOffset = r >= 9 ? (CELL_H + GAP) * 0.65 : 0;
-        const px = (c - 1) * (CELL_W + GAP);
-        const py = (r - 1) * (CELL_H + GAP) + yOffset;
-        html += _buildCell(el, px, py, CELL_W, CELL_H);
-      }
-    }
-
-    html += `<div style="position:absolute;left:-2px;top:${8*(CELL_H+GAP)+(CELL_H+GAP)*0.65}px;
-      font-size:6.5px;font-weight:700;color:var(--text-4);
-      width:${2*(CELL_W+GAP)-GAP}px;text-align:right;line-height:1.3;">Lanthanides</div>`;
-    html += `<div style="position:absolute;left:-2px;top:${9*(CELL_H+GAP)+(CELL_H+GAP)*0.65}px;
-      font-size:6.5px;font-weight:700;color:var(--text-4);
-      width:${2*(CELL_W+GAP)-GAP}px;text-align:right;line-height:1.3;">Actinides</div>`;
-
-    html += '</div>';
-    return html;
   }
 
-  function _buildCell(el, px, py, w, h) {
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    const colors = CAT_COLORS[el.cat] || CAT_COLORS['transition'];
-    const bg     = isDark ? colors.dark_bg   : colors.bg;
-    const fg     = isDark ? colors.dark_text : colors.text;
-    const zDepth = Math.sin(el.n * 0.15) * 3;
-    const stateColor = el.state ? STATE_COLORS[el.state]?.color : null;
+  /* ══════════════════════════════════════════════════
+     ANIMATION LOOP
+  ══════════════════════════════════════════════════ */
 
-    return `
-      <div class="pt-cell" id="pt-cell-${el.n}"
-           data-n="${el.n}" data-cat="${el.cat}"
-           onclick="ThreeDPeriodic._selectElement(${el.n})"
-           style="position:absolute;left:${px}px;top:${py}px;
-                  width:${w}px;height:${h}px;
-                  background:${bg};color:${fg};border-radius:4px;
-                  border:1px solid rgba(0,0,0,${isDark?'0.3':'0.08'});
-                  display:flex;flex-direction:column;align-items:center;
-                  justify-content:center;cursor:pointer;
-                  box-shadow:${isDark?'0 1px 3px rgba(0,0,0,.4)':'0 1px 2px rgba(0,0,0,.08)'};
-                  transform:translateZ(${zDepth}px);
-                  box-sizing:border-box;overflow:hidden;opacity:1;">
-        <div style="display:flex;align-items:center;justify-content:space-between;
-                    width:100%;padding:0 3px;box-sizing:border-box;margin-top:2px;">
-          <div style="font-size:7px;font-weight:700;opacity:.7;line-height:1;">${el.n}</div>
-          ${stateColor ? `<div style="width:4px;height:4px;border-radius:50%;background:${stateColor};opacity:.8;flex-shrink:0;"></div>` : ''}
-        </div>
-        <div style="font-size:13px;font-weight:800;line-height:1.1;letter-spacing:-.02em;">${el.sym}</div>
-        <div style="font-size:5.5px;font-weight:600;opacity:.8;line-height:1;
-                    text-align:center;padding:0 2px;overflow:hidden;
-                    text-overflow:ellipsis;white-space:nowrap;max-width:100%;">
-          ${el.name.length > 9 ? el.name.slice(0,8)+'.' : el.name}
-        </div>
-      </div>`;
+  function _animate() {
+    _rafId = requestAnimationFrame(_animate);
+    _controls.update();
+    _renderer.render(_scene, _camera);
   }
 
-  function _bindEvents() {
-    const stage = document.getElementById('pt-stage');
-    if (!stage) return;
-    stage.addEventListener('mousedown',  _onMouseDown,  { passive:false });
-    window.addEventListener('mousemove', _onMouseMove,  { passive:true  });
-    window.addEventListener('mouseup',   _onMouseUp,    { passive:true  });
-    stage.addEventListener('touchstart', _onTouchStart, { passive:false });
-    stage.addEventListener('touchmove',  _onTouchMove,  { passive:false });
-    stage.addEventListener('touchend',   _onTouchEnd,   { passive:true  });
-    stage.addEventListener('wheel',      _onWheel,      { passive:false });
-    window.addEventListener('keydown',   _onKeyDown);
-  }
+  /* ══════════════════════════════════════════════════
+     RAYCASTING / SELECTION
+  ══════════════════════════════════════════════════ */
 
-  function _unbindEvents() {
-    window.removeEventListener('mousemove', _onMouseMove);
-    window.removeEventListener('mouseup',   _onMouseUp);
-    window.removeEventListener('keydown',   _onKeyDown);
-    if (_rafId) { cancelAnimationFrame(_rafId); _rafId = null; }
-  }
+  let _pointerDownPos = { x: 0, y: 0 };
 
-  function _onMouseDown(e) {
-    if (e.target.closest('.pt-cell') || e.target.closest('button') || e.target.closest('input')) return;
-    _isDragging = true;
-    _lastX = e.clientX; _lastY = e.clientY;
-    _velocity = { x:0, y:0 }; _panVelocity = { x:0, y:0 };
-    const stage = document.getElementById('pt-stage');
-    if (stage) stage.style.cursor = 'grabbing';
-    e.preventDefault();
-  }
+  function _onPointerUp(e) {
+    const cx = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+    const cy = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+    const rect = _canvas.getBoundingClientRect();
+    _pointer.x =  ((cx - rect.left) / rect.width)  * 2 - 1;
+    _pointer.y = -((cy - rect.top)  / rect.height) * 2 + 1;
 
-  function _onMouseMove(e) {
-    if (!_isDragging) return;
-    const dx = e.clientX - _lastX;
-    const dy = e.clientY - _lastY;
-    const forcePan = e.shiftKey || e.buttons === 4;
-    if (_interactMode === 'pan' || forcePan) {
-      _panX += dx; _panY += dy;
-      _panVelocity = { x: dx * 0.5, y: dy * 0.5 };
+    _raycaster.setFromCamera(_pointer, _camera);
+    const meshes = Object.values(_tileMeshes);
+    const hits   = _raycaster.intersectObjects(meshes, false);
+    if (hits.length > 0) {
+      const hit = hits[0].object;
+      if (hit.userData.el) _selectElement(hit.userData.el.n);
     } else {
-      _rotY += dx * 0.35;
-      _rotX  = Math.max(-40, Math.min(40, _rotX + dy * 0.25));
-      _velocity = { x: dx * 0.4, y: dy * 0.4 };
-    }
-    _lastX = e.clientX; _lastY = e.clientY;
-    _applyTransform();
-  }
-
-  function _onMouseUp() {
-    if (!_isDragging) return;
-    _isDragging = false;
-    const stage = document.getElementById('pt-stage');
-    if (stage) stage.style.cursor = _interactMode === 'pan' ? 'move' : 'grab';
-    _startInertia();
-  }
-
-  function _onTouchStart(e) {
-    if (e.touches.length === 1) {
-      const t = e.touches[0];
-      if (t.target.closest('.pt-cell') || t.target.closest('button') || t.target.closest('input')) return;
-      _isDragging = true;
-      _lastX = t.clientX; _lastY = t.clientY;
-      _velocity = { x:0, y:0 }; _panVelocity = { x:0, y:0 };
-      e.preventDefault();
-    } else if (e.touches.length === 2) {
-      _isDragging = false;
-      const t0 = e.touches[0], t1 = e.touches[1];
-      _lastTouchDist = Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY);
-      _touchMidX = (t0.clientX + t1.clientX) / 2;
-      _touchMidY = (t0.clientY + t1.clientY) / 2;
-      e.preventDefault();
+      _deselectElement();
     }
   }
 
-  function _onTouchMove(e) {
-    if (e.touches.length === 1 && _isDragging) {
-      const t = e.touches[0];
-      const dx = t.clientX - _lastX, dy = t.clientY - _lastY;
-      if (_interactMode === 'pan') {
-        _panX += dx; _panY += dy;
-        _panVelocity = { x: dx * 0.5, y: dy * 0.5 };
-      } else {
-        _rotY += dx * 0.35;
-        _rotX  = Math.max(-40, Math.min(40, _rotX + dy * 0.25));
-        _velocity = { x: dx * 0.4, y: dy * 0.4 };
-      }
-      _lastX = t.clientX; _lastY = t.clientY;
-      _applyTransform();
-      e.preventDefault();
-    } else if (e.touches.length === 2) {
-      const t0 = e.touches[0], t1 = e.touches[1];
-      const dist  = Math.hypot(t0.clientX - t1.clientX, t0.clientY - t1.clientY);
-      const midX  = (t0.clientX + t1.clientX) / 2;
-      const midY  = (t0.clientY + t1.clientY) / 2;
-      _scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, _scale + (dist - _lastTouchDist) * 0.004));
-      _panX += midX - _touchMidX;
-      _panY += midY - _touchMidY;
-      _lastTouchDist = dist; _touchMidX = midX; _touchMidY = midY;
-      _applyTransform();
-      e.preventDefault();
-    }
-  }
-
-  function _onTouchEnd() { _isDragging = false; _startInertia(); }
-
-  function _onWheel(e) {
-    e.preventDefault();
-    _scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, _scale + (e.deltaY > 0 ? -0.09 : 0.09)));
-    _applyTransform();
-  }
-
-  function _onKeyDown(e) {
-    if (e.target.tagName === 'INPUT') return;
-    if (!document.getElementById('pt-shell')) return;
-    const pan = _interactMode === 'pan';
-    if (e.key === 'ArrowLeft')  { pan ? (_panX -= 80) : (_rotY -= 8);  _applyTransform(); }
-    if (e.key === 'ArrowRight') { pan ? (_panX += 80) : (_rotY += 8);  _applyTransform(); }
-    if (e.key === 'ArrowUp')    { pan ? (_panY -= 50) : (_rotX = Math.max(-40, _rotX - 5)); _applyTransform(); }
-    if (e.key === 'ArrowDown')  { pan ? (_panY += 50) : (_rotX = Math.min(40,  _rotX + 5)); _applyTransform(); }
-    if (e.key === '+' || e.key === '=') _zoom(0.12);
-    if (e.key === '-') _zoom(-0.12);
-    if (e.key === 'r' || e.key === 'R') _resetView();
-    if (e.key === 'p' || e.key === 'P') _setMode(_interactMode === 'pan' ? 'rotate' : 'pan');
-    if (e.key === 'Escape') { if (_selectedEl) _deselectElement(); else _back(); }
-  }
-
-  function _applyTransform(animated) {
-    const el = document.getElementById('pt-table-3d');
-    if (!el) return;
-    el.style.transition = animated ? 'transform .38s cubic-bezier(0.16,1,0.3,1)' : 'none';
-    el.style.transform  = `translateX(${_panX}px) translateY(${_panY}px) rotateX(${_rotX}deg) rotateY(${_rotY}deg) scale(${_scale})`;
-  }
-
-  function _startInertia() {
-    if (_rafId) cancelAnimationFrame(_rafId);
-    const decay = 0.89;
-    function tick() {
-      let dirty = false;
-      if (Math.abs(_velocity.x) > 0.05 || Math.abs(_velocity.y) > 0.05) {
-        _rotY += _velocity.x * 0.35;
-        _rotX  = Math.max(-40, Math.min(40, _rotX + _velocity.y * 0.25));
-        _velocity.x *= decay; _velocity.y *= decay;
-        dirty = true;
-      }
-      if (Math.abs(_panVelocity.x) > 0.05 || Math.abs(_panVelocity.y) > 0.05) {
-        _panX += _panVelocity.x; _panY += _panVelocity.y;
-        _panVelocity.x *= decay; _panVelocity.y *= decay;
-        dirty = true;
-      }
-      if (dirty) { _applyTransform(); _rafId = requestAnimationFrame(tick); }
-    }
-    _rafId = requestAnimationFrame(tick);
-  }
-
-  function _setMode(mode) {
-    _interactMode = mode;
-    const rBtn  = document.getElementById('pt-mode-rotate');
-    const pBtn  = document.getElementById('pt-mode-pan');
-    const stage = document.getElementById('pt-stage');
-    const lbl   = document.getElementById('pt-status-label');
-
-    function _styleBtn(btn, active) {
-      if (!btn) return;
-      btn.style.background  = active ? 'var(--accent)' : 'var(--bg-subtle)';
-      btn.style.color       = active ? '#fff'          : 'var(--text-3)';
-      btn.style.borderColor = active ? 'var(--accent)' : 'var(--border)';
-    }
-    _styleBtn(rBtn, mode === 'rotate');
-    _styleBtn(pBtn, mode === 'pan');
-    if (stage) stage.style.cursor = mode === 'pan' ? 'move' : 'grab';
-    if (lbl)   lbl.textContent    = mode === 'pan'
-      ? 'Drag left/right to scroll the table'
-      : 'Drag to rotate · Shift+drag to pan';
-  }
+  /* ══════════════════════════════════════════════════
+     SELECT / DESELECT
+  ══════════════════════════════════════════════════ */
 
   function _selectElement(n) {
     const el = ELEMENTS.find(e => e.n === n);
     if (!el) return;
     _selectedEl = el;
-    _updateCellVisuals();
+    _updateTileVisuals();
     _showDetailPanel(el);
   }
 
   function _deselectElement() {
     _selectedEl = null;
-    _updateCellVisuals();
+    _updateTileVisuals();
     const panel = document.getElementById('pt-detail');
     if (panel) panel.style.maxHeight = '0';
   }
 
-  function _updateCellVisuals() {
-    document.querySelectorAll('.pt-cell').forEach(cell => {
-      const n   = parseInt(cell.dataset.n, 10);
-      const cat = cell.dataset.cat;
-      const el  = ELEMENTS.find(e => e.n === n);
-      if (!el) return;
+  function _updateTileVisuals() {
+    const THREE  = window.THREE;
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+    Object.values(_tileMeshes).forEach(mesh => {
+      const el    = mesh.userData.el;
+      const catC  = CAT_COLORS[el.cat] || CAT_COLORS['transition'];
 
       let passes = true;
-      if (_filterCat) passes = (cat === _filterCat);
+      if (_filterCat)    passes = (el.cat === _filterCat);
       if (_searchQuery && passes) {
         passes = (
           el.sym.toLowerCase().includes(_searchQuery)  ||
           el.name.toLowerCase().includes(_searchQuery) ||
           String(el.n).includes(_searchQuery)          ||
-          (CAT_COLORS[cat]?.label || '').toLowerCase().includes(_searchQuery)
+          (CAT_COLORS[el.cat]?.label || '').toLowerCase().includes(_searchQuery)
         );
       }
 
-      if (_selectedEl) {
-        if (n === _selectedEl.n) {
-          cell.style.opacity       = '1';
-          cell.style.filter        = 'brightness(1.15)';
-          cell.style.outline       = '2px solid var(--accent)';
-          cell.style.outlineOffset = '1px';
-          cell.style.zIndex        = '5';
-        } else {
-          cell.style.opacity       = passes ? '0.16' : '0.06';
-          cell.style.filter        = 'grayscale(0.7)';
-          cell.style.outline       = 'none';
-          cell.style.outlineOffset = '0';
-          cell.style.zIndex        = '';
+      const selected    = _selectedEl && el.n === _selectedEl.n;
+      const highlighted = selected;
+      const dimmed      = !passes || (_selectedEl && !selected);
+
+      // Rebuild face texture
+      const newTex = _makeTileTexture(el, highlighted, dimmed && !selected);
+      if (Array.isArray(mesh.material)) {
+        mesh.material[4].map = newTex;
+        mesh.material[4].needsUpdate = true;
+      }
+
+      // Side colour
+      const sideBase = new THREE.Color(isDark ? catC.dark_bg : catC.bg);
+      const sideMult = dimmed && !selected ? 0.25 : highlighted ? 1.1 : 0.72;
+      const sideCol  = sideBase.clone().multiplyScalar(sideMult);
+
+      for (let f = 0; f < 6; f++) {
+        if (f === 4) continue;
+        if (Array.isArray(mesh.material)) {
+          mesh.material[f].color.set(sideCol);
         }
-      } else {
-        if (passes) {
-          cell.style.opacity       = '1';
-          cell.style.filter        = 'none';
-          cell.style.outline       = 'none';
-          cell.style.outlineOffset = '0';
-          cell.style.zIndex        = '';
-        } else {
-          cell.style.opacity       = '0.1';
-          cell.style.filter        = 'grayscale(1)';
-          cell.style.outline       = 'none';
-          cell.style.outlineOffset = '0';
-          cell.style.zIndex        = '';
-        }
+      }
+
+      // Lift selected tile
+      mesh.position.z = mesh.userData.baseZ + (selected ? 2.2 : 0);
+
+      // Emissive on selected
+      if (Array.isArray(mesh.material)) {
+        mesh.material.forEach(m => {
+          if (m.emissive) {
+            m.emissive.setHex(selected ? 0x2233aa : 0x000000);
+            m.emissiveIntensity = selected ? 0.18 : 0;
+          }
+        });
       }
     });
   }
 
-  function _showDetailPanel(el) {
-    const panel = document.getElementById('pt-detail');
-    const inner = document.getElementById('pt-detail-inner');
-    if (!panel || !inner) return;
-
-    const colors = CAT_COLORS[el.cat] || CAT_COLORS['transition'];
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    const bg     = isDark ? colors.dark_bg   : colors.bg;
-    const fg     = isDark ? colors.dark_text : colors.text;
-    const fmtT   = v => v === null ? '—' : v + ' °C';
-    const fmtY   = v => v === null ? 'Ancient / Unknown' : v;
-    const stateInfo = el.state ? STATE_COLORS[el.state] : null;
-
-    const shellDots = (el.shells || []).map((count, i) => {
-      const shellNames = ['K','L','M','N','O','P','Q'];
-      return `<div style="display:flex;align-items:center;gap:3px;">
-        <span style="font-size:.5rem;color:var(--text-4);font-weight:700;width:8px;">${shellNames[i]||''}</span>
-        <div style="display:flex;gap:2px;flex-wrap:wrap;max-width:80px;">
-          ${Array.from({length:Math.min(count,18)}).map(() =>
-            `<div style="width:5px;height:5px;border-radius:50%;background:${fg};opacity:0.7;flex-shrink:0;"></div>`
-          ).join('')}
-        </div>
-        <span style="font-size:.5rem;color:var(--text-3);margin-left:2px;">${count}</span>
-      </div>`;
-    }).join('');
-
-    inner.innerHTML = `
-      <div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:.5rem;">
-        <div style="width:54px;height:54px;border-radius:8px;flex-shrink:0;
-                    background:${bg};border:2px solid ${fg};
-                    display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;">
-          <div style="font-size:7.5px;font-weight:700;color:${fg};opacity:.8;line-height:1;">${el.n}</div>
-          <div style="font-size:20px;font-weight:800;color:${fg};line-height:1.1;">${el.sym}</div>
-          ${stateInfo ? `<div style="position:absolute;top:3px;right:3px;width:5px;height:5px;border-radius:50%;background:${stateInfo.color};" title="${stateInfo.label} at room temperature"></div>` : ''}
-        </div>
-        <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:center;gap:.375rem;flex-wrap:wrap;margin-bottom:2px;">
-            <h2 style="font-size:var(--text-md);font-weight:800;color:var(--text-1);margin:0;
-                       letter-spacing:-.02em;">${el.name}</h2>
-            <span style="font-size:.55rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
-                         padding:2px 7px;border-radius:99px;background:${bg};color:${fg};flex-shrink:0;">
-              ${colors.label}
-            </span>
-            ${stateInfo ? `<span style="font-size:.55rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
-                         padding:2px 7px;border-radius:99px;
-                         background:${stateInfo.color}22;color:${stateInfo.color};flex-shrink:0;border:1px solid ${stateInfo.color}44;">
-              ${stateInfo.label}
-            </span>` : ''}
-          </div>
-          <div style="font-size:var(--text-xs);color:var(--text-3);line-height:1.6;">
-            Mass <strong style="color:var(--text-1);">${el.mass}</strong> u
-            · Period <strong style="color:var(--text-1);">${el.period}</strong>
-            ${el.group ? `· Group <strong style="color:var(--text-1);">${el.group}</strong>` : ''}
-            · Discovered <strong style="color:var(--text-1);">${fmtY(el.discovered)}</strong>
-          </div>
-          <div style="font-size:var(--text-xs);color:var(--text-3);">
-            ${el.electronegativity !== null ? `Electronegativity <strong style="color:var(--text-1);">${el.electronegativity}</strong> (Pauling)` : '<em style="color:var(--text-4);">No electronegativity (noble gas)</em>'}
-          </div>
-          <div style="font-size:.6rem;color:var(--text-4);margin-top:1px;font-family:var(--font-mono);">${el.config}</div>
-        </div>
-        <button onclick="ThreeDPeriodic._deselectElement()"
-                style="flex-shrink:0;background:none;border:none;cursor:pointer;
-                       font-size:1.2rem;line-height:1;padding:2px;color:var(--text-4);">×</button>
-      </div>
-
-      ${el.shells && el.shells.length ? `
-      <div style="display:flex;align-items:flex-start;gap:.5rem;margin-bottom:.5rem;
-                  background:var(--bg-subtle);border:1px solid var(--border);
-                  border-radius:var(--r-sm);padding:.35rem .5rem;">
-        <div style="font-size:.5rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
-                    color:var(--text-4);white-space:nowrap;margin-top:1px;flex-shrink:0;">Electron<br>Shells</div>
-        <div style="display:flex;flex-direction:column;gap:3px;flex:1;">${shellDots}</div>
-        <div style="font-size:.5rem;color:var(--text-4);white-space:nowrap;margin-top:1px;">
-          Total: <strong style="color:var(--text-1);">${el.n}</strong> e⁻
-        </div>
-      </div>` : ''}
-
-      <p style="font-size:var(--text-sm);color:var(--text-2);line-height:1.6;
-                margin-bottom:.5rem;border-left:2px solid ${fg};padding-left:.5rem;">
-        ${el.desc}
-      </p>
-
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.275rem;">
-        ${_propBadge('Melting Pt', fmtT(el.melt))}
-        ${_propBadge('Boiling Pt', fmtT(el.boil))}
-        ${_propBadge('Density', el.density !== null ? el.density + ' g/cm³' : '—')}
-      </div>`;
-
-    panel.style.maxHeight = '55dvh';
-  }
-
-  function _propBadge(label, value) {
-    return `
-      <div style="background:var(--bg-subtle);border:1px solid var(--border);
-                  border-radius:var(--r-sm);padding:.225rem .4rem;">
-        <div style="font-size:.5rem;font-weight:700;text-transform:uppercase;
-                    letter-spacing:.04em;color:var(--text-4);margin-bottom:1px;">${label}</div>
-        <div style="font-size:var(--text-xs);font-weight:600;color:var(--text-1);">${value}</div>
-      </div>`;
-  }
+  /* ══════════════════════════════════════════════════
+     FILTER + SEARCH
+  ══════════════════════════════════════════════════ */
 
   function _setFilter(cat) {
     _filterCat   = cat;
@@ -819,9 +693,8 @@
     if (searchEl) searchEl.value = '';
     const panel = document.getElementById('pt-detail');
     if (panel) panel.style.maxHeight = '0';
-    _updateCellVisuals();
+    _updateTileVisuals();
     _updateFilterButtons(cat);
-    _updateStatusLabel();
   }
 
   function _onSearch(query) {
@@ -830,9 +703,8 @@
     _selectedEl  = null;
     const panel  = document.getElementById('pt-detail');
     if (panel) panel.style.maxHeight = '0';
-    _updateCellVisuals();
+    _updateTileVisuals();
     _updateFilterButtons(null);
-    _updateStatusLabel();
 
     if (_searchQuery.length >= 1) {
       const exact = ELEMENTS.find(el =>
@@ -865,44 +737,171 @@
     });
   }
 
-  function _updateStatusLabel() {
-    const lbl = document.getElementById('pt-status-label');
-    if (!lbl) return;
-    if (_filterCat) {
-      lbl.textContent = `${CAT_COLORS[_filterCat].label} — ${CAT_COUNTS[_filterCat]} elements`;
-    } else if (_searchQuery) {
-      const count = ELEMENTS.filter(el =>
-        el.sym.toLowerCase().includes(_searchQuery)  ||
-        el.name.toLowerCase().includes(_searchQuery) ||
-        String(el.n).includes(_searchQuery)
-      ).length;
-      lbl.textContent = `"${_searchQuery}" — ${count} result${count !== 1 ? 's' : ''}`;
-    } else {
-      lbl.textContent = 'Drag to rotate · Use Pan to scroll';
-    }
-  }
+  /* ══════════════════════════════════════════════════
+     CAMERA CONTROLS
+  ══════════════════════════════════════════════════ */
 
-  function _zoom(delta) {
-    _scale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, _scale + delta));
-    _applyTransform(true);
-  }
-
-  function _panStep(dx, dy) {
-    _panX += dx; _panY += dy;
-    _applyTransform(true);
+  function _zoom(factor) {
+    const dist = _camera.position.distanceTo(_controls.target);
+    const newD = Math.max(20, Math.min(300, dist / factor));
+    const dir  = _camera.position.clone().sub(_controls.target).normalize();
+    _camera.position.copy(_controls.target).addScaledVector(dir, newD);
   }
 
   function _resetView() {
-    _rotX = -8; _rotY = 0; _panX = 0; _panY = 0; _scale = 1;
-    _velocity = { x:0, y:0 }; _panVelocity = { x:0, y:0 };
-    _applyTransform(true);
+    _camera.position.set(0, -18, 95);
+    _controls.target.set(0, -8, 0);
+    _controls.update();
+  }
+
+  /* ══════════════════════════════════════════════════
+     DETAIL PANEL  (identical logic/HTML to original)
+  ══════════════════════════════════════════════════ */
+
+  function _showDetailPanel(el) {
+    const panel = document.getElementById('pt-detail');
+    const inner = document.getElementById('pt-detail-inner');
+    if (!panel || !inner) return;
+
+    const colors    = CAT_COLORS[el.cat] || CAT_COLORS['transition'];
+    const isDark    = document.documentElement.getAttribute('data-theme') === 'dark';
+    const bg        = isDark ? colors.dark_bg   : colors.bg;
+    const fg        = isDark ? colors.dark_text : colors.text;
+    const fmtT      = v => v === null ? '—' : v + ' °C';
+    const fmtY      = v => v === null ? 'Ancient / Unknown' : v;
+    const stateInfo = el.state ? STATE_COLORS[el.state] : null;
+
+    const shellDots = (el.shells || []).map((count, i) => {
+      const shellNames = ['K','L','M','N','O','P','Q'];
+      return `<div style="display:flex;align-items:center;gap:3px;">
+        <span style="font-size:.5rem;color:var(--text-4);font-weight:700;width:8px;">${shellNames[i]||''}</span>
+        <div style="display:flex;gap:2px;flex-wrap:wrap;max-width:80px;">
+          ${Array.from({length:Math.min(count,18)}).map(() =>
+            `<div style="width:5px;height:5px;border-radius:50%;background:${fg};opacity:0.7;flex-shrink:0;"></div>`
+          ).join('')}
+        </div>
+        <span style="font-size:.5rem;color:var(--text-3);margin-left:2px;">${count}</span>
+      </div>`;
+    }).join('');
+
+    inner.innerHTML = `
+      <div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:.5rem;">
+        <div style="width:54px;height:54px;border-radius:8px;flex-shrink:0;
+                    background:${bg};border:2px solid ${fg};
+                    display:flex;flex-direction:column;align-items:center;
+                    justify-content:center;position:relative;">
+          <div style="font-size:7.5px;font-weight:700;color:${fg};opacity:.8;line-height:1;">${el.n}</div>
+          <div style="font-size:20px;font-weight:800;color:${fg};line-height:1.1;">${el.sym}</div>
+          ${stateInfo ? `<div style="position:absolute;top:3px;right:3px;width:5px;height:5px;
+                                     border-radius:50%;background:${stateInfo.color};"></div>` : ''}
+        </div>
+        <div style="flex:1;min-width:0;">
+          <div style="display:flex;align-items:center;gap:.375rem;flex-wrap:wrap;margin-bottom:2px;">
+            <h2 style="font-size:var(--text-md);font-weight:800;color:var(--text-1);margin:0;
+                       letter-spacing:-.02em;">${el.name}</h2>
+            <span style="font-size:.55rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
+                         padding:2px 7px;border-radius:99px;background:${bg};color:${fg};flex-shrink:0;">
+              ${colors.label}
+            </span>
+            ${stateInfo ? `<span style="font-size:.55rem;font-weight:700;letter-spacing:.04em;
+                             text-transform:uppercase;padding:2px 7px;border-radius:99px;
+                             background:${stateInfo.color}22;color:${stateInfo.color};
+                             flex-shrink:0;border:1px solid ${stateInfo.color}44;">
+                ${stateInfo.label}</span>` : ''}
+          </div>
+          <div style="font-size:var(--text-xs);color:var(--text-3);line-height:1.6;">
+            Mass <strong style="color:var(--text-1);">${el.mass}</strong> u
+            · Period <strong style="color:var(--text-1);">${el.period}</strong>
+            ${el.group ? `· Group <strong style="color:var(--text-1);">${el.group}</strong>` : ''}
+            · Discovered <strong style="color:var(--text-1);">${fmtY(el.discovered)}</strong>
+          </div>
+          <div style="font-size:var(--text-xs);color:var(--text-3);">
+            ${el.electronegativity !== null
+              ? `Electronegativity <strong style="color:var(--text-1);">${el.electronegativity}</strong> (Pauling)`
+              : '<em style="color:var(--text-4);">No electronegativity (noble gas)</em>'}
+          </div>
+          <div style="font-size:.6rem;color:var(--text-4);margin-top:1px;font-family:var(--font-mono);">
+            ${el.config}
+          </div>
+        </div>
+        <button onclick="ThreeDPeriodic._deselectElement()"
+                style="flex-shrink:0;background:none;border:none;cursor:pointer;
+                       font-size:1.2rem;line-height:1;padding:2px;color:var(--text-4);">×</button>
+      </div>
+
+      ${el.shells && el.shells.length ? `
+      <div style="display:flex;align-items:flex-start;gap:.5rem;margin-bottom:.5rem;
+                  background:var(--bg-subtle);border:1px solid var(--border);
+                  border-radius:var(--r-sm);padding:.35rem .5rem;">
+        <div style="font-size:.5rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
+                    color:var(--text-4);white-space:nowrap;margin-top:1px;flex-shrink:0;">
+          Electron<br>Shells
+        </div>
+        <div style="display:flex;flex-direction:column;gap:3px;flex:1;">${shellDots}</div>
+        <div style="font-size:.5rem;color:var(--text-4);white-space:nowrap;margin-top:1px;">
+          Total: <strong style="color:var(--text-1);">${el.n}</strong> e⁻
+        </div>
+      </div>` : ''}
+
+      <p style="font-size:var(--text-sm);color:var(--text-2);line-height:1.6;
+                margin-bottom:.5rem;border-left:2px solid ${fg};padding-left:.5rem;">
+        ${el.desc}
+      </p>
+
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:.275rem;">
+        ${_propBadge('Melting Pt', fmtT(el.melt))}
+        ${_propBadge('Boiling Pt', fmtT(el.boil))}
+        ${_propBadge('Density',    el.density !== null ? el.density + ' g/cm³' : '—')}
+      </div>`;
+
+    panel.style.maxHeight = '55dvh';
+  }
+
+  function _propBadge(label, value) {
+    return `
+      <div style="background:var(--bg-subtle);border:1px solid var(--border);
+                  border-radius:var(--r-sm);padding:.225rem .4rem;">
+        <div style="font-size:.5rem;font-weight:700;text-transform:uppercase;
+                    letter-spacing:.04em;color:var(--text-4);margin-bottom:1px;">${label}</div>
+        <div style="font-size:var(--text-xs);font-weight:600;color:var(--text-1);">${value}</div>
+      </div>`;
+  }
+
+  /* ══════════════════════════════════════════════════
+     CLEANUP
+  ══════════════════════════════════════════════════ */
+
+  function _destroy() {
+    if (_rafId) { cancelAnimationFrame(_rafId); _rafId = null; }
+    if (_resizeObs) { _resizeObs.disconnect(); _resizeObs = null; }
+    if (_canvas) {
+      _canvas.removeEventListener('pointerup', _onPointerUp);
+      _canvas.removeEventListener('touchend',  _onPointerUp);
+    }
+    if (_controls) { _controls.dispose(); _controls = null; }
+    if (_scene) {
+      _scene.traverse(obj => {
+        if (obj.geometry) obj.geometry.dispose();
+        if (obj.material) {
+          const mats = Array.isArray(obj.material) ? obj.material : [obj.material];
+          mats.forEach(m => { if (m.map) m.map.dispose(); m.dispose(); });
+        }
+      });
+      _scene = null;
+    }
+    if (_renderer) { _renderer.dispose(); _renderer = null; }
+    _tileMeshes = {};
   }
 
   function _back() {
-    _unbindEvents();
+    _destroy();
     _selectedEl = null;
     if (typeof _onBack === 'function') _onBack();
   }
+
+  /* ══════════════════════════════════════════════════
+     PUBLIC API
+  ══════════════════════════════════════════════════ */
 
   window.ThreeDPeriodic = {
     open,
@@ -912,9 +911,7 @@
     _setFilter,
     _onSearch,
     _zoom,
-    _panStep,
     _resetView,
-    _setMode,
   };
 
 }());
