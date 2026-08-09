@@ -78,20 +78,25 @@
   function _renderMarkdown(md) {
     if (!md) return '';
 
-    // Normalise all line endings to \n immediately, before anything else
     let html = String(md)
       .replace(/\r\n/g, '\n')
       .replace(/\r/g, '\n');
 
     const stash = [];
-    const STASH_TAG = 'HTMLSTASH';
+    const STASH_RE = /STASH_(\d+)_END/g;
+
+    function _stash(str) {
+      stash.push(str);
+      return 'STASH_' + (stash.length - 1) + '_END';
+    }
+
+    function _restoreStash(s) {
+      return s.replace(/STASH_(\d+)_END/g, (_, i) => stash[+i] || '');
+    }
 
     function _stashBlock(tagName) {
       const re = new RegExp('<' + tagName + '[^>]*>[\\s\\S]*?<\\/' + tagName + '>', 'gi');
-      html = html.replace(re, match => {
-        stash.push(match);
-        return STASH_TAG + (stash.length - 1) + '_';
-      });
+      html = html.replace(re, match => _stash(match));
     }
 
     _stashBlock('script');
@@ -102,14 +107,8 @@
     _stashBlock('aside');
     _stashBlock('svg');
 
-    html = html.replace(/\$\$[\s\S]+?\$\$/g, match => {
-      stash.push(match);
-      return STASH_TAG + (stash.length - 1) + '_';
-    });
-    html = html.replace(/\$[^\$\n]+?\$/g, match => {
-      stash.push(match);
-      return STASH_TAG + (stash.length - 1) + '_';
-    });
+    html = html.replace(/\$\$[\s\S]+?\$\$/g, match => _stash(match));
+    html = html.replace(/\$[^\$\n]+?\$/g,    match => _stash(match));
 
     html = html
       .replace(/<script[\s\S]*?<\/script>/gi, '')
@@ -140,7 +139,6 @@
       return `<pre><code class="lang-${lang}">${esc}</code></pre>`;
     });
 
-    // Headings with _inlineMarkdown on content
     html = html
       .replace(/^###### (.+)$/gm, (_, t) => `<h6>${_inlineMarkdown(t.trim())}</h6>`)
       .replace(/^##### (.+)$/gm,  (_, t) => `<h5>${_inlineMarkdown(t.trim())}</h5>`)
@@ -170,7 +168,7 @@
       return `<ol>${items}</ol>`;
     });
 
-    const blockStarters = ['<h','<ul','<ol','<li','<pre','<blockquote','<table','<hr','<p', STASH_TAG];
+    const blockStarters = ['<h','<ul','<ol','<li','<pre','<blockquote','<table','<hr','<p','STASH_'];
     const result = [];
     let buffer   = [];
 
@@ -189,17 +187,9 @@
     });
     if (buffer.length) result.push('<p>' + _inlineMarkdown(buffer.join(' ')) + '</p>');
 
-    let output = result.join('\n');
-    for (let i = stash.length - 1; i >= 0; i--) {
-      output = output.split(STASH_TAG + i + '_').join(stash[i]);
-    }
-    for (let i = 0; i < stash.length; i++) {
-      output = output.split(STASH_TAG + i + '_').join(stash[i]);
-    }
-
-    return output;
+    return _restoreStash(result.join('\n'));
   }
-   
+
   function _inlineMarkdown(text) {
     if (!text) return '';
     return text
@@ -225,8 +215,6 @@
   function _groupKey(lesson) {
     return _normSubject(lesson.subject) + '||' + (lesson.term || '');
   }
-
-  const _META_DEFAULT_TERM = 'studyroom_defaultTerm';
 
   function _loadDefaultTerm(callback) {
     window.fbDb.collection('studyroom_settings').doc('defaults').get()
