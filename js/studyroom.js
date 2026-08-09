@@ -88,131 +88,142 @@
   }
 
   function _renderMarkdown(md) {
-    if (!md) return '';
+  if (!md) return '';
 
-    let html = String(md)
-      .replace(/\r\n/g, '\n')
-      .replace(/\r/g, '\n');
+  let html = String(md)
+    .replace(/\r\n/g, '\n')
+    .replace(/\r/g, '\n');
 
-    const stash = [];
+  const stash = [];
 
-    function _stash(str) {
-      stash.push(str);
-      return 'STASH_' + (stash.length - 1) + '_END';
-    }
-
-    function _restoreStash(s) {
-      return s.replace(/STASH_(\d+)_END/g, (_, i) => stash[+i] || '');
-    }
-
-    function _stashBlock(tagName) {
-      const re = new RegExp('<' + tagName + '[^>]*>[\\s\\S]*?<\\/' + tagName + '>', 'gi');
-      html = html.replace(re, match => _stash(match));
-    }
-
-    _stashBlock('script');
-    _stashBlock('style');
-    _stashBlock('figure');
-    _stashBlock('section');
-    _stashBlock('details');
-    _stashBlock('aside');
-    _stashBlock('svg');
-
-    html = html.replace(/\$\$[\s\S]+?\$\$/g, match => _stash(match));
-    html = html.replace(/\$[^\$\n]+?\$/g,    match => _stash(match));
-
-    html = html
-      .replace(/<script[\s\S]*?<\/script>/gi, '')
-      .replace(/\bon\w+\s*=/gi, 'data-removed=')
-      .replace(/javascript:/gi, '');
-
-    stash.forEach((block, i) => {
-      if (/^<script/i.test(block)) stash[i] = '';
-    });
-
-    html = html.replace(/^[ \t]*> ?(.+)/gm, (_, content) =>
-      `<blockquote>${_inlineMarkdown(content.replace(/\r$/, '').trim())}</blockquote>`
-    );
-
-    html = html.replace(/^\|(.+)\|\s*\n\|[-| :]+\|\s*\n((?:\|.+\|\s*\n?)*)/gm, (_, header, rows) => {
-      const ths = header.split('|').filter(Boolean)
-        .map(c => `<th>${_inlineMarkdown(c.trim())}</th>`).join('');
-      const trs = rows.trim().split('\n').map(row => {
-        const tds = row.split('|').filter(Boolean)
-          .map(c => `<td>${_inlineMarkdown(c.trim())}</td>`).join('');
-        return `<tr>${tds}</tr>`;
-      }).join('');
-      return `<table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
-    });
-
-    html = html.replace(/```(\w*)\n?([\s\S]*?)```/gm, (_, lang, code) => {
-      const esc = code.replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      return `<pre><code class="lang-${lang}">${esc}</code></pre>`;
-    });
-
-    html = html
-      .replace(/^###### (.+)$/gm, (_, t) => `<h6>${_inlineMarkdown(t.trim())}</h6>`)
-      .replace(/^##### (.+)$/gm,  (_, t) => `<h5>${_inlineMarkdown(t.trim())}</h5>`)
-      .replace(/^#### (.+)$/gm,   (_, t) => `<h4>${_inlineMarkdown(t.trim())}</h4>`)
-      .replace(/^### (.+)$/gm,    (_, t) => `<h3>${_inlineMarkdown(t.trim())}</h3>`)
-      .replace(/^## (.+)$/gm,     (_, t) => `<h2>${_inlineMarkdown(t.trim())}</h2>`)
-      .replace(/^# (.+)$/gm,      (_, t) => `<h1>${_inlineMarkdown(t.trim())}</h1>`);
-
-    html = html
-      .replace(/^---+$/gm,    '<hr>')
-      .replace(/^\*\*\*+$/gm, '<hr>');
-
-    html = html.replace(/((?:^[ \t]*[-*+] .+\n?)+)/gm, block => {
-      const items = block.trim().split('\n').map(line => {
-        const indented = /^[ \t]+[-*+] /.test(line);
-        const text = line.replace(/^[ \t]*[-*+] /, '');
-        return indented
-          ? `<li class="sr-sub-item">${_inlineMarkdown(text)}</li>`
-          : `<li>${_inlineMarkdown(text)}</li>`;
-      }).join('');
-      return `<ul>${items}</ul>`;
-    });
-
-    html = html.replace(/((?:^\d+\. .+\n?)+)/gm, block => {
-      const items = block.trim().split('\n')
-        .map(line => `<li>${_inlineMarkdown(line.replace(/^\d+\. /, ''))}</li>`).join('');
-      return `<ol>${items}</ol>`;
-    });
-
-    const blockStarters = ['<h','<ul','<ol','<li','<pre','<blockquote','<table','<hr','<p','STASH_'];
-    const result = [];
-    let buffer   = [];
-
-    html.split('\n').forEach(line => {
-      const t = line.trim();
-      if (!t) {
-        if (buffer.length) { result.push('<p>' + _inlineMarkdown(buffer.join(' ')) + '</p>'); buffer = []; }
-        return;
-      }
-      if (blockStarters.some(tag => t.startsWith(tag))) {
-        if (buffer.length) { result.push('<p>' + _inlineMarkdown(buffer.join(' ')) + '</p>'); buffer = []; }
-        result.push(t);
-      } else {
-        buffer.push(t);
-      }
-    });
-    if (buffer.length) result.push('<p>' + _inlineMarkdown(buffer.join(' ')) + '</p>');
-
-    return _restoreStash(result.join('\n'));
+  function _stash(str) {
+    stash.push(str);
+    return '\x00STASH' + (stash.length - 1) + 'END\x00';
   }
+
+  function _restoreStash(s) {
+    return s.replace(/\x00STASH(\d+)END\x00/g, (_, i) => stash[+i] || '');
+  }
+
+  function _stashBlock(tagName) {
+    const re = new RegExp('<' + tagName + '[^>]*>[\\s\\S]*?<\\/' + tagName + '>', 'gi');
+    html = html.replace(re, match => _stash(match));
+  }
+
+  _stashBlock('script');
+  _stashBlock('style');
+  _stashBlock('figure');
+  _stashBlock('section');
+  _stashBlock('details');
+  _stashBlock('aside');
+  _stashBlock('svg');
+
+  // Stash display math first, then inline math
+  html = html.replace(/\$\$[\s\S]+?\$\$/g, match => _stash(match));
+  html = html.replace(/\$[^\$\n]+?\$/g,    match => _stash(match));
+
+  html = html
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/\bon\w+\s*=/gi, 'data-removed=')
+    .replace(/javascript:/gi, '');
+
+  stash.forEach((block, i) => {
+    if (/^<script/i.test(block)) stash[i] = '';
+  });
+
+  html = html.replace(/^[ \t]*> ?(.+)/gm, (_, content) =>
+    `<blockquote>${_inlineMarkdown(_restoreStash(content.replace(/\r$/, '').trim()))}</blockquote>`
+  );
+
+  html = html.replace(/^\|(.+)\|\s*\n\|[-| :]+\|\s*\n((?:\|.+\|\s*\n?)*)/gm, (_, header, rows) => {
+    const ths = header.split('|').filter(Boolean)
+      .map(c => `<th>${_inlineMarkdown(_restoreStash(c.trim()))}</th>`).join('');
+    const trs = rows.trim().split('\n').map(row => {
+      const tds = row.split('|').filter(Boolean)
+        .map(c => `<td>${_inlineMarkdown(_restoreStash(c.trim()))}</td>`).join('');
+      return `<tr>${tds}</tr>`;
+    }).join('');
+    return `<table><thead><tr>${ths}</tr></thead><tbody>${trs}</tbody></table>`;
+  });
+
+  html = html.replace(/```(\w*)\n?([\s\S]*?)```/gm, (_, lang, code) => {
+    const esc = code.replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    return `<pre><code class="lang-${lang}">${esc}</code></pre>`;
+  });
+
+  html = html
+    .replace(/^###### (.+)$/gm, (_, t) => `<h6>${_inlineMarkdown(_restoreStash(t.trim()))}</h6>`)
+    .replace(/^##### (.+)$/gm,  (_, t) => `<h5>${_inlineMarkdown(_restoreStash(t.trim()))}</h5>`)
+    .replace(/^#### (.+)$/gm,   (_, t) => `<h4>${_inlineMarkdown(_restoreStash(t.trim()))}</h4>`)
+    .replace(/^### (.+)$/gm,    (_, t) => `<h3>${_inlineMarkdown(_restoreStash(t.trim()))}</h3>`)
+    .replace(/^## (.+)$/gm,     (_, t) => `<h2>${_inlineMarkdown(_restoreStash(t.trim()))}</h2>`)
+    .replace(/^# (.+)$/gm,      (_, t) => `<h1>${_inlineMarkdown(_restoreStash(t.trim()))}</h1>`);
+
+  html = html
+    .replace(/^---+$/gm,    '<hr>')
+    .replace(/^\*\*\*+$/gm, '<hr>');
+
+  html = html.replace(/((?:^[ \t]*[-*+] .+\n?)+)/gm, block => {
+    const items = block.trim().split('\n').map(line => {
+      const indented = /^[ \t]+[-*+] /.test(line);
+      const text = _restoreStash(line.replace(/^[ \t]*[-*+] /, ''));
+      return indented
+        ? `<li class="sr-sub-item">${_inlineMarkdown(text)}</li>`
+        : `<li>${_inlineMarkdown(text)}</li>`;
+    }).join('');
+    return `<ul>${items}</ul>`;
+  });
+
+  html = html.replace(/((?:^\d+\. .+\n?)+)/gm, block => {
+    const items = block.trim().split('\n')
+      .map(line => {
+        const text = _restoreStash(line.replace(/^\d+\. /, ''));
+        return `<li>${_inlineMarkdown(text)}</li>`;
+      }).join('');
+    return `<ol>${items}</ol>`;
+  });
+
+  const blockStarters = ['<h','<ul','<ol','<li','<pre','<blockquote','<table','<hr','<p','\x00STASH'];
+  const result = [];
+  let buffer   = [];
+
+  html.split('\n').forEach(line => {
+    const t = line.trim();
+    if (!t) {
+      if (buffer.length) {
+        result.push('<p>' + _inlineMarkdown(_restoreStash(buffer.join(' '))) + '</p>');
+        buffer = [];
+      }
+      return;
+    }
+    if (blockStarters.some(tag => t.startsWith(tag))) {
+      if (buffer.length) {
+        result.push('<p>' + _inlineMarkdown(_restoreStash(buffer.join(' '))) + '</p>');
+        buffer = [];
+      }
+      result.push(t);
+    } else {
+      buffer.push(t);
+    }
+  });
+  if (buffer.length) result.push('<p>' + _inlineMarkdown(_restoreStash(buffer.join(' '))) + '</p>');
+
+  return _restoreStash(result.join('\n'));
+}
 
   function _inlineMarkdown(text) {
-    if (!text) return '';
-    return text
-      .replace(/\*\*\*(.+?)\*\*\*/g,  '<strong><em>$1</em></strong>')
-      .replace(/\*\*(.+?)\*\*/g,      '<strong>$1</strong>')
-      .replace(/__(.+?)__/g,          '<strong>$1</strong>')
-      .replace(/\*(.+?)\*/g,          '<em>$1</em>')
-      .replace(/_(.+?)_/g,            '<em>$1</em>')
-      .replace(/`(.+?)`/g,            '<code>$1</code>')
-      .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
-      .replace(/!\[(.+?)\]\((.+?)\)/g,'<img src="$2" alt="$1">');
-  }
+  if (!text) return '';
+  return text
+    .replace(/\*\*\*(.+?)\*\*\*/g,  '<strong><em>$1</em></strong>')
+    .replace(/\*\*(.+?)\*\*/g,      '<strong>$1</strong>')
+    .replace(/__(.+?)__/g,          '<strong>$1</strong>')
+    .replace(/\*(.+?)\*/g,          '<em>$1</em>')
+    .replace(/(^|[\s(]|[^\w])_([^_\s][^_]*[^_\s]|[^_\s])_([\s),.]|$|[^\w])/g,
+      (_, before, content, after) => `${before}<em>${content}</em>${after}`)
+    .replace(/`(.+?)`/g,            '<code>$1</code>')
+    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>')
+    .replace(/!\[(.+?)\]\((.+?)\)/g,'<img src="$2" alt="$1">');
+}
 
   function _esc(str) {
     if (str == null) return '';
