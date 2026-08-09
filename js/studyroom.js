@@ -77,7 +77,9 @@
 
   function _renderMarkdown(md) {
     if (!md) return '';
-    let html = String(md);
+
+    // Normalise line endings and strip carriage returns
+    let html = String(md).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
 
     const stash = [];
     const STASH_TAG = 'HTMLSTASH';
@@ -132,17 +134,14 @@
       return `<pre><code class="lang-${lang}">${esc}</code></pre>`;
     });
 
-    // Run _inlineMarkdown on blockquote content
-    html = html.replace(/^> (.+)/gm, (_, content) => `<blockquote>${_inlineMarkdown(content)}</blockquote>`);
-
-    // Run _inlineMarkdown on heading content
+    // Headings — run _inlineMarkdown on content
     html = html
-      .replace(/^###### (.+)$/gm, (_, t) => `<h6>${_inlineMarkdown(t)}</h6>`)
-      .replace(/^##### (.+)$/gm,  (_, t) => `<h5>${_inlineMarkdown(t)}</h5>`)
-      .replace(/^#### (.+)$/gm,   (_, t) => `<h4>${_inlineMarkdown(t)}</h4>`)
-      .replace(/^### (.+)$/gm,    (_, t) => `<h3>${_inlineMarkdown(t)}</h3>`)
-      .replace(/^## (.+)$/gm,     (_, t) => `<h2>${_inlineMarkdown(t)}</h2>`)
-      .replace(/^# (.+)$/gm,      (_, t) => `<h1>${_inlineMarkdown(t)}</h1>`);
+      .replace(/^###### (.+)$/gm, (_, t) => `<h6>${_inlineMarkdown(t.trim())}</h6>`)
+      .replace(/^##### (.+)$/gm,  (_, t) => `<h5>${_inlineMarkdown(t.trim())}</h5>`)
+      .replace(/^#### (.+)$/gm,   (_, t) => `<h4>${_inlineMarkdown(t.trim())}</h4>`)
+      .replace(/^### (.+)$/gm,    (_, t) => `<h3>${_inlineMarkdown(t.trim())}</h3>`)
+      .replace(/^## (.+)$/gm,     (_, t) => `<h2>${_inlineMarkdown(t.trim())}</h2>`)
+      .replace(/^# (.+)$/gm,      (_, t) => `<h1>${_inlineMarkdown(t.trim())}</h1>`);
 
     html = html
       .replace(/^---+$/gm,    '<hr>')
@@ -170,20 +169,22 @@
     let buffer   = [];
 
     html.split('\n').forEach(line => {
+      // Trim trailing whitespace but preserve the line
       const t = line.trim();
+
       if (!t) {
         if (buffer.length) { result.push('<p>' + _inlineMarkdown(buffer.join(' ')) + '</p>'); buffer = []; }
         return;
       }
 
-      if (/^&gt; /.test(t)) {
+      if (/^>[ \u00a0]/.test(t)) {
         if (buffer.length) { result.push('<p>' + _inlineMarkdown(buffer.join(' ')) + '</p>'); buffer = []; }
-        result.push(`<blockquote>${_inlineMarkdown(t.replace(/^&gt; /, ''))}</blockquote>`);
+        result.push(`<blockquote>${_inlineMarkdown(t.replace(/^>[ \u00a0]/, ''))}</blockquote>`);
         return;
       }
-      if (/^> /.test(t)) {
+      if (/^&gt;[ \u00a0]/.test(t)) {
         if (buffer.length) { result.push('<p>' + _inlineMarkdown(buffer.join(' ')) + '</p>'); buffer = []; }
-        result.push(`<blockquote>${_inlineMarkdown(t.replace(/^> /, ''))}</blockquote>`);
+        result.push(`<blockquote>${_inlineMarkdown(t.replace(/^&gt;[ \u00a0]/, ''))}</blockquote>`);
         return;
       }
 
