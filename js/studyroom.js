@@ -78,8 +78,10 @@
   function _renderMarkdown(md) {
     if (!md) return '';
 
-    // Normalise line endings and strip carriage returns
-    let html = String(md).replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    // Normalise all line endings to \n immediately, before anything else
+    let html = String(md)
+      .replace(/\r\n/g, '\n')
+      .replace(/\r/g, '\n');
 
     const stash = [];
     const STASH_TAG = 'HTMLSTASH';
@@ -118,6 +120,10 @@
       if (/^<script/i.test(block)) stash[i] = '';
     });
 
+    html = html.replace(/^[ \t]*> ?(.+)/gm, (_, content) =>
+      `<blockquote>${_inlineMarkdown(content.replace(/\r$/, '').trim())}</blockquote>`
+    );
+
     html = html.replace(/^\|(.+)\|\s*\n\|[-| :]+\|\s*\n((?:\|.+\|\s*\n?)*)/gm, (_, header, rows) => {
       const ths = header.split('|').filter(Boolean)
         .map(c => `<th>${_inlineMarkdown(c.trim())}</th>`).join('');
@@ -134,7 +140,7 @@
       return `<pre><code class="lang-${lang}">${esc}</code></pre>`;
     });
 
-    // Headings — run _inlineMarkdown on content
+    // Headings with _inlineMarkdown on content
     html = html
       .replace(/^###### (.+)$/gm, (_, t) => `<h6>${_inlineMarkdown(t.trim())}</h6>`)
       .replace(/^##### (.+)$/gm,  (_, t) => `<h5>${_inlineMarkdown(t.trim())}</h5>`)
@@ -169,25 +175,11 @@
     let buffer   = [];
 
     html.split('\n').forEach(line => {
-      // Trim trailing whitespace but preserve the line
       const t = line.trim();
-
       if (!t) {
         if (buffer.length) { result.push('<p>' + _inlineMarkdown(buffer.join(' ')) + '</p>'); buffer = []; }
         return;
       }
-
-      if (/^>[ \u00a0]/.test(t)) {
-        if (buffer.length) { result.push('<p>' + _inlineMarkdown(buffer.join(' ')) + '</p>'); buffer = []; }
-        result.push(`<blockquote>${_inlineMarkdown(t.replace(/^>[ \u00a0]/, ''))}</blockquote>`);
-        return;
-      }
-      if (/^&gt;[ \u00a0]/.test(t)) {
-        if (buffer.length) { result.push('<p>' + _inlineMarkdown(buffer.join(' ')) + '</p>'); buffer = []; }
-        result.push(`<blockquote>${_inlineMarkdown(t.replace(/^&gt;[ \u00a0]/, ''))}</blockquote>`);
-        return;
-      }
-
       if (blockStarters.some(tag => t.startsWith(tag))) {
         if (buffer.length) { result.push('<p>' + _inlineMarkdown(buffer.join(' ')) + '</p>'); buffer = []; }
         result.push(t);
