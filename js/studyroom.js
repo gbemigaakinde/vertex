@@ -132,8 +132,10 @@
       return `<pre><code class="lang-${lang}">${esc}</code></pre>`;
     });
 
+    // Run _inlineMarkdown on blockquote content
     html = html.replace(/^> (.+)/gm, (_, content) => `<blockquote>${_inlineMarkdown(content)}</blockquote>`);
 
+    // Run _inlineMarkdown on heading content
     html = html
       .replace(/^###### (.+)$/gm, (_, t) => `<h6>${_inlineMarkdown(t)}</h6>`)
       .replace(/^##### (.+)$/gm,  (_, t) => `<h5>${_inlineMarkdown(t)}</h5>`)
@@ -146,9 +148,14 @@
       .replace(/^---+$/gm,    '<hr>')
       .replace(/^\*\*\*+$/gm, '<hr>');
 
-    html = html.replace(/((?:^[-*+] .+\n?)+)/gm, block => {
-      const items = block.trim().split('\n')
-        .map(line => `<li>${_inlineMarkdown(line.replace(/^[-*+] /, ''))}</li>`).join('');
+    html = html.replace(/((?:^[ \t]*[-*+] .+\n?)+)/gm, block => {
+      const items = block.trim().split('\n').map(line => {
+        const indented = /^[ \t]+[-*+] /.test(line);
+        const text = line.replace(/^[ \t]*[-*+] /, '');
+        return indented
+          ? `<li class="sr-sub-item">${_inlineMarkdown(text)}</li>`
+          : `<li>${_inlineMarkdown(text)}</li>`;
+      }).join('');
       return `<ul>${items}</ul>`;
     });
 
