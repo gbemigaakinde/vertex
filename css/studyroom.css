@@ -1,11 +1,10 @@
-@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&family=Inconsolata:wght@400;500&display=swap');
-
 /* ============================================================
    VERTEX CBT — studyroom.css
    Study Room component — uses tokens from main.css
    ============================================================ */
 
-/* ── Shell ── */
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Source+Serif+4:ital,opsz,wght@0,8..60,300;0,8..60,400;0,8..60,500;0,8..60,600;1,8..60,400&family=Inconsolata:wght@400;500&display=swap');
+
 .sr-shell {
   height: 100dvh;
   display: flex;
@@ -78,7 +77,6 @@
   flex-wrap: nowrap;
 }
 
-/* ── Layout ── */
 .sr-layout {
   display: grid;
   grid-template-columns: 220px 1fr;
@@ -154,7 +152,6 @@
   color: var(--accent-text);
 }
 
-/* ── Scroll reader ── */
 .sr-scroll-reader {
   min-height: 0;
   overflow-y: auto;
@@ -171,6 +168,7 @@
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 .sr-lesson-header {
@@ -244,8 +242,12 @@
   min-width: 0;
 }
 
-/* ── Lesson content typography ── */
-.sr-content { color: var(--text-1); min-width: 0; overflow-x: visible; }
+.sr-content {
+  color: var(--text-1);
+  min-width: 0;
+  overflow-x: hidden;
+  max-width: 100%;
+}
 
 .sr-content h1, .sr-content h2, .sr-content h3,
 .sr-content h4, .sr-content h5, .sr-content h6 {
@@ -313,14 +315,15 @@
   word-break: normal;
 }
 
-/* ── Tables — fully theme-aware, no hardcoded colors ── */
 .sr-content table {
   width: 100%;
   border-collapse: collapse;
   margin-bottom: 1.25em;
   font-size: 0.9em;
-  overflow-x: auto;
   display: block;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
   color: var(--text-1);
 }
 
@@ -361,7 +364,14 @@
 .sr-content strong { font-weight: 600; color: var(--text-1); }
 .sr-content em     { font-style: italic; }
 
-/* ── Background themes ── */
+/* KaTeX display math overflow fix */
+.sr-content .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+  padding: 0.25em 0;
+}
+
 .sr-bg--white { background: var(--bg-page) !important; }
 .sr-bg--sepia { background: #f4ead5 !important; }
 .sr-bg--warm  { background: #fdf5ec !important; }
@@ -384,7 +394,6 @@
   color: #5a3200;
 }
 
-/* Tables on sepia/warm */
 .sr-bg--sepia .sr-content table,
 .sr-bg--warm  .sr-content table { color: #3b2f1e; }
 
@@ -408,7 +417,6 @@
 .sr-bg--sepia .sr-lesson-header__title,
 .sr-bg--warm  .sr-lesson-header__title { color: #1e160a; }
 
-/* ── Dark / Night reader backgrounds ── */
 .sr-bg--dark  { background: #111113 !important; color-scheme: dark; }
 .sr-bg--night { background: #0d0d0f !important; color-scheme: dark; }
 
@@ -452,7 +460,6 @@
   color: #b4b4c0;
 }
 
-/* Tables on dark/night backgrounds */
 .sr-bg--dark  .sr-content table,
 .sr-bg--night .sr-content table { color: #d0d0d8; }
 
@@ -482,7 +489,6 @@
 .sr-bg--dark  .sr-content hr,
 .sr-bg--night .sr-content hr { border-color: rgba(255,255,255,.1); }
 
-/* ── Progress bar ── */
 .sr-progress-bar {
   height: 2px;
   background: var(--border);
@@ -498,7 +504,6 @@
   transition: width 0.2s var(--ease);
 }
 
-/* ── Reading preferences panel ── */
 .sr-prefs-panel {
   position: fixed;
   top: 0; right: 0; bottom: 0;
@@ -581,7 +586,6 @@
 .sr-bg-btn--dark     { background: #111113; }
 .sr-bg-btn--night    { background: #0d0d0f; }
 
-/* ── Student browser ── */
 .sr-shell > .sr-browser {
   flex: 1 1 0;
   min-height: 0;
@@ -729,7 +733,6 @@
 .sr-empty { text-align: center; padding: var(--sp-10) var(--sp-4); color: var(--text-4); }
 .sr-empty__text { font-size: var(--text-base); font-weight: 400; }
 
-/* ── Teacher panel ── */
 .sr-teacher-panel {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -862,7 +865,6 @@
   align-items: center;
 }
 
-/* ── Responsive ── */
 @media (max-width: 900px) {
   .sr-teacher-panel { grid-template-columns: 1fr; }
 }
@@ -889,7 +891,6 @@
   .sr-topbar__back { max-width: 120px; }
 }
 
-/* ── Animations ── */
 @keyframes sr-page-in {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
