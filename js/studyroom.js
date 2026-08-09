@@ -132,15 +132,15 @@
       return `<pre><code class="lang-${lang}">${esc}</code></pre>`;
     });
 
-    html = html.replace(/^> (.+)/gm, '<blockquote>$1</blockquote>');
+    html = html.replace(/^> (.+)/gm, (_, content) => `<blockquote>${_inlineMarkdown(content)}</blockquote>`);
 
     html = html
-      .replace(/^###### (.+)$/gm, '<h6>$1</h6>')
-      .replace(/^##### (.+)$/gm,  '<h5>$1</h5>')
-      .replace(/^#### (.+)$/gm,   '<h4>$1</h4>')
-      .replace(/^### (.+)$/gm,    '<h3>$1</h3>')
-      .replace(/^## (.+)$/gm,     '<h2>$1</h2>')
-      .replace(/^# (.+)$/gm,      '<h1>$1</h1>');
+      .replace(/^###### (.+)$/gm, (_, t) => `<h6>${_inlineMarkdown(t)}</h6>`)
+      .replace(/^##### (.+)$/gm,  (_, t) => `<h5>${_inlineMarkdown(t)}</h5>`)
+      .replace(/^#### (.+)$/gm,   (_, t) => `<h4>${_inlineMarkdown(t)}</h4>`)
+      .replace(/^### (.+)$/gm,    (_, t) => `<h3>${_inlineMarkdown(t)}</h3>`)
+      .replace(/^## (.+)$/gm,     (_, t) => `<h2>${_inlineMarkdown(t)}</h2>`)
+      .replace(/^# (.+)$/gm,      (_, t) => `<h1>${_inlineMarkdown(t)}</h1>`);
 
     html = html
       .replace(/^---+$/gm,    '<hr>')
