@@ -175,6 +175,18 @@
         if (buffer.length) { result.push('<p>' + _inlineMarkdown(buffer.join(' ')) + '</p>'); buffer = []; }
         return;
       }
+
+      if (/^&gt; /.test(t)) {
+        if (buffer.length) { result.push('<p>' + _inlineMarkdown(buffer.join(' ')) + '</p>'); buffer = []; }
+        result.push(`<blockquote>${_inlineMarkdown(t.replace(/^&gt; /, ''))}</blockquote>`);
+        return;
+      }
+      if (/^> /.test(t)) {
+        if (buffer.length) { result.push('<p>' + _inlineMarkdown(buffer.join(' ')) + '</p>'); buffer = []; }
+        result.push(`<blockquote>${_inlineMarkdown(t.replace(/^> /, ''))}</blockquote>`);
+        return;
+      }
+
       if (blockStarters.some(tag => t.startsWith(tag))) {
         if (buffer.length) { result.push('<p>' + _inlineMarkdown(buffer.join(' ')) + '</p>'); buffer = []; }
         result.push(t);
@@ -194,7 +206,7 @@
 
     return output;
   }
-
+   
   function _inlineMarkdown(text) {
     if (!text) return '';
     return text
