@@ -534,19 +534,28 @@
           ${weeklyTimetableHtml}
 
           <div class="mb-6" style="display:flex;gap:.625rem;flex-wrap:wrap;justify-content:center;">
-            <button id="chatOpenBtn" onclick="Chat.openPublicChat()" class="btn bg-green-600 hover:bg-green-700" style="position:relative;">
-              Public Discussion Chat
-            </button>
-            <button onclick="StudyRoom.openForStudent()" class="btn bg-blue-600 hover:bg-blue-700" style="position:relative;">
-              📖 Study Room
-            </button>
-            <button onclick="ThreeDClass.openForStudent()" class="btn bg-indigo-600 hover:bg-indigo-700" style="position:relative;">
-              🧪 3D Class
-            </button>
-            <button onclick="window.open('english.html', '_blank')" class="btn bg-purple-600 hover:bg-purple-700" style="position:relative;">
-              📘 English Mastery
-            </button>
-            <button id="gameOpenBtn" onclick="(function(){
+            <div style="position:relative;display:inline-flex;">
+              <button id="chatOpenBtn" onclick="Chat.openPublicChat()" class="btn bg-green-600 hover:bg-green-700">
+                Public Discussion Chat
+              </button>
+            </div>
+            <div style="position:relative;display:inline-flex;">
+              <button onclick="StudyRoom.openForStudent()" class="btn bg-blue-600 hover:bg-blue-700">
+                📖 Study Room
+              </button>
+            </div>
+            <div style="position:relative;display:inline-flex;">
+              <button onclick="ThreeDClass.openForStudent()" class="btn bg-indigo-600 hover:bg-indigo-700">
+                🧪 3D Class
+              </button>
+            </div>
+            <div style="position:relative;display:inline-flex;">
+              <button onclick="window.open('english.html', '_blank')" class="btn bg-purple-600 hover:bg-purple-700">
+                📘 English Mastery
+              </button>
+            </div>
+            <div style="position:relative;display:inline-flex;">
+              <button id="gameOpenBtn" onclick="(function(){
   if (!window.Game || typeof Game.openGameLobby !== 'function') {
     alert('Games are not loaded yet. Please wait a moment and try again.');
     return;
@@ -561,17 +570,21 @@
       }
     });
   })()" class="btn"
-  style="position:relative;background:linear-gradient(135deg,#7c3aed,#4f6ef7);color:#fff;">
-              🎮 Games
-            </button>
-            <button id="gcOpenBtn" onclick="GroupChat.openForStudent()" class="btn"
-              style="position:relative;background:var(--success);color:#fff;">
-              💬 Group Chats
-            </button>
-            <button id="dmOpenBtn" onclick="DM.openStudentInbox()" class="btn bg-indigo-600 hover:bg-indigo-700"
-              style="position:relative;">
-              ✉️ Message Teacher
-            </button>
+  style="background:linear-gradient(135deg,#7c3aed,#4f6ef7);color:#fff;">
+                🎮 Games
+              </button>
+            </div>
+            <div style="position:relative;display:inline-flex;">
+              <button id="gcOpenBtn" onclick="GroupChat.openForStudent()" class="btn"
+                style="background:var(--success);color:#fff;">
+                💬 Group Chats
+              </button>
+            </div>
+            <div style="position:relative;display:inline-flex;">
+              <button id="dmOpenBtn" onclick="DM.openStudentInbox()" class="btn bg-indigo-600 hover:bg-indigo-700">
+                ✉️ Message Teacher
+              </button>
+            </div>
           </div>
 
           ${offDayBannerHtml}
@@ -631,9 +644,15 @@
       // Badge updates
       if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updateChatBadge) {
         requestAnimationFrame(function () { Chat._updateChatBadge(AppState.chatUnread); });
+      } else {
+        const existingChatBadge = document.querySelector('#chatOpenBtn ~ .chat-notif-badge, .chat-notif-badge');
+        if (existingChatBadge) existingChatBadge.classList.remove('is-visible');
       }
       if (AppState.dmStudentUnread && AppState.dmStudentUnread > 0 && window.DM && DM._updateStudentBadge) {
         requestAnimationFrame(function () { DM._updateStudentBadge(AppState.dmStudentUnread); });
+      } else {
+        const existingDmBadge = document.querySelector('#dmOpenBtn ~ .dm-notif-badge, .dm-notif-badge');
+        if (existingDmBadge) existingDmBadge.classList.remove('is-visible');
       }
 
       // Wire pill selection
@@ -899,7 +918,7 @@ if (!restrictedSubjs && !todayTaskDone) {
     const timerClass = _currentTimerClass();
 
     // Timer ring constants
-    const RING_R  = 28;
+    const RING_R  = 34;
     const RING_C  = 2 * Math.PI * RING_R; // circumference
     const progress = _timerProgress();
     const offset   = RING_C * (1 - progress);
@@ -928,19 +947,19 @@ if (!restrictedSubjs && !todayTaskDone) {
             </div>
             <!-- Timer with ring -->
             <div class="vtx-timer-wrap" style="flex-shrink:0;">
-              <svg class="vtx-timer-ring" width="72" height="72" viewBox="0 0 72 72" aria-hidden="true">
-                <circle class="vtx-timer-ring-track" cx="36" cy="36" r="${RING_R}"/>
+              <svg class="vtx-timer-ring" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                <circle class="vtx-timer-ring-track" cx="40" cy="40" r="${RING_R}"/>
                 <circle class="vtx-timer-ring-prog ${ringColor}"
-                        cx="36" cy="36" r="${RING_R}"
+                        cx="40" cy="40" r="${RING_R}"
                         stroke-dasharray="${RING_C}"
                         stroke-dashoffset="${offset.toFixed(2)}"
                         id="timerRingProg"/>
               </svg>
-              <div style="text-align:center;position:relative;z-index:1;">
+              <div class="vtx-timer-inner">
                 <div id="timerDisplay" class="${timerClass}" aria-live="polite" aria-label="Time remaining">
                   ${timerStr}
                 </div>
-                <p style="font-size:0.625rem;color:var(--text-disabled);margin-top:1px;letter-spacing:.04em;">TIME</p>
+                <p style="font-size:0.5625rem;color:var(--text-disabled);margin-top:1px;letter-spacing:.06em;font-weight:600;text-transform:uppercase;">TIME</p>
               </div>
             </div>
           </div>
@@ -1178,7 +1197,7 @@ if (!restrictedSubjs && !todayTaskDone) {
     // Update ring
     const ring = document.getElementById('timerRingProg');
     if (ring) {
-      const RING_R  = 28;
+      const RING_R  = 34;
       const RING_C  = 2 * Math.PI * RING_R;
       const progress = Math.max(0, remaining / duration);
       ring.setAttribute('stroke-dashoffset', (RING_C * (1 - progress)).toFixed(2));
