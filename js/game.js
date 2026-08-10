@@ -979,6 +979,36 @@ async function _sendChessChallenge() {
   if (colorChoice === 'random') colorChoice = Math.random() < 0.5 ? 'w' : 'b';
 
   const sendBtn = document.querySelector('#gameModal .btn:not(.bg-gray-500)');
+  if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Checking…'; }
+
+  // ── Limit: max 2 ongoing/pending Chess games between these two players ──
+  try {
+    const uid = _uid();
+    const [asWhite, asBlack] = await Promise.all([
+      _db().collection('chessGames')
+        .where('whiteUid', '==', uid)
+        .where('blackUid', '==', targetUid)
+        .where('status', 'in', ['pending', 'active'])
+        .get(),
+      _db().collection('chessGames')
+        .where('whiteUid', '==', targetUid)
+        .where('blackUid', '==', uid)
+        .where('status', 'in', ['pending', 'active'])
+        .get(),
+    ]);
+    const total = asWhite.size + asBlack.size;
+    if (total >= 2) {
+      window.UI.toast(`You already have ${total} ongoing Chess game${total > 1 ? 's' : ''} with ${targetName}. Finish them before starting another.`, 'warning', 5000);
+      if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = '♟️ Send Chess Challenge'; }
+      return;
+    }
+  } catch (e) {
+    console.error('[chess] _sendChessChallenge limit check error:', e);
+    window.UI.toast('Could not verify existing games. Please try again.', 'error');
+    if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = '♟️ Send Chess Challenge'; }
+    return;
+  }
+
   if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Sending…'; }
 
   const iAmWhite = colorChoice === 'w';
@@ -2383,6 +2413,36 @@ async function _sendScrabbleChallenge() {
   const targetName = targetSel.options[targetSel.selectedIndex]?.text || 'Unknown';
 
   const sendBtn = document.querySelector('#gameModal .btn:not(.bg-gray-500)');
+  if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Checking…'; }
+
+  // ── Limit: max 2 ongoing/pending Scrabble games between these two players ──
+  try {
+    const uid = _uid();
+    const [as1, as2] = await Promise.all([
+      _db().collection('scrabbleGames')
+        .where('player1Uid', '==', uid)
+        .where('player2Uid', '==', targetUid)
+        .where('status', 'in', ['pending', 'active'])
+        .get(),
+      _db().collection('scrabbleGames')
+        .where('player1Uid', '==', targetUid)
+        .where('player2Uid', '==', uid)
+        .where('status', 'in', ['pending', 'active'])
+        .get(),
+    ]);
+    const total = as1.size + as2.size;
+    if (total >= 2) {
+      window.UI.toast(`You already have ${total} ongoing Scrabble game${total > 1 ? 's' : ''} with ${targetName}. Finish them before starting another.`, 'warning', 5000);
+      if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = '🔤 Send Scrabble Challenge'; }
+      return;
+    }
+  } catch (e) {
+    console.error('[scrabble] _sendScrabbleChallenge limit check error:', e);
+    window.UI.toast('Could not verify existing games. Please try again.', 'error');
+    if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = '🔤 Send Scrabble Challenge'; }
+    return;
+  }
+
   if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Sending…'; }
 
   const bag   = _wsBuildBag();
@@ -2402,7 +2462,6 @@ async function _sendScrabbleChallenge() {
       class:        _student().class  || '',
       school:       _student().school || '',
       status:       'pending',
-      // First turn goes to player2 (challenged student) so they play immediately after accepting
       turn:         targetUid,
       board:        _wsSerialiseBoard(board),
       bag:          _serialiseBag(bag),
@@ -6582,6 +6641,36 @@ function _buildWordPoolForStudent() {
     const targetName     = selectedOption ? selectedOption.text : 'Unknown';
 
     const sendBtn = document.querySelector('#gameModal .btn:not(.bg-gray-500)');
+    if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Checking…'; }
+
+    // ── Limit: max 2 ongoing/pending quiz challenges between these two players ──
+    try {
+      const uid = _uid();
+      const [asChallenger, asChallenged] = await Promise.all([
+        _db().collection('gameChallenges')
+          .where('challengerUid', '==', uid)
+          .where('challengedUid', '==', targetUid)
+          .where('status', 'in', ['pending', 'awaiting_challenger'])
+          .get(),
+        _db().collection('gameChallenges')
+          .where('challengerUid', '==', targetUid)
+          .where('challengedUid', '==', uid)
+          .where('status', 'in', ['pending', 'awaiting_challenger'])
+          .get(),
+      ]);
+      const total = asChallenger.size + asChallenged.size;
+      if (total >= 2) {
+        window.UI.toast(`You already have ${total} ongoing quiz challenge${total > 1 ? 's' : ''} with ${targetName}. Finish them before sending another.`, 'warning', 5000);
+        if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = `${_icon('swords', 16)} Send Challenge`; }
+        return;
+      }
+    } catch (e) {
+      console.error('[game] _sendChallenge limit check error:', e);
+      window.UI.toast('Could not verify existing challenges. Please try again.', 'error');
+      if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = `${_icon('swords', 16)} Send Challenge`; }
+      return;
+    }
+
     if (sendBtn) { sendBtn.disabled = true; sendBtn.textContent = 'Sending…'; }
 
     let questions = [];
