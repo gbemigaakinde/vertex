@@ -2628,7 +2628,22 @@ function _renderExistingTasksList(docs) {
   let _ttSelectedWeek  = '';   // ISO week key e.g. "2025-W23"
   let _ttUnsubAll      = null;
 
-  // ─── Replace _loadTimetableManager ───────────────────────────────────────────
+  let _ttWeekMondayMap = {};
+
+function _getMondayForWeek(weekKey) {
+  if (_ttWeekMondayMap[weekKey]) return _ttWeekMondayMap[weekKey];
+  const year = +weekKey.split('-W')[0];
+  for (let i = -5; i <= 60; i++) {
+    const d = new Date(year, 0, 4 + i * 7);
+    if (_isoWeekKey(d) === weekKey) {
+      const m = _weekMonday(d);
+      _ttWeekMondayMap[weekKey] = m;
+      return m;
+    }
+  }
+  return _weekMonday(new Date());
+}
+
 function _loadTimetableManager() {
   const container = document.getElementById('teacher-timetable');
   if (!container) return;
@@ -2636,13 +2651,10 @@ function _loadTimetableManager() {
   const classes  = _getAllClasses();
   const thisWeek = _isoWeekKey();
 
-  // Always reset to current week on entry — prevents stale week from a previous visit
   _ttSelectedWeek = thisWeek;
   if (!_ttSelectedClass && classes.length > 0) _ttSelectedClass = classes[0];
 
-  // Build week options: 0 past weeks shown (past already happened) + this week + 8 future weeks
-  // We still let the teacher navigate to past weeks via the dropdown so they can correct data,
-  // but we default to current and don't show past in the saved list.
+  _ttWeekMondayMap = {};
   const weekOptions = [];
   for (let i = -8; i <= 8; i++) {
     const d = new Date();
@@ -2652,6 +2664,7 @@ function _loadTimetableManager() {
     const label  = _weekRangeLabel(monday);
     if (!weekOptions.find(w => w.key === key)) {
       weekOptions.push({ key, label, isPast: key < thisWeek });
+      _ttWeekMondayMap[key] = new Date(monday);
     }
   }
   weekOptions.sort((a, b) => a.key.localeCompare(b.key));
@@ -2667,7 +2680,6 @@ function _loadTimetableManager() {
     </div>
 
     <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1.25rem;align-items:flex-end;">
-
       <div style="flex:1;min-width:160px;">
         <label style="display:block;font-size:var(--text-xs);font-weight:600;color:var(--text-3);
                       margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.04em;">Class</label>
@@ -2677,7 +2689,6 @@ function _loadTimetableManager() {
             : classes.map(c => `<option value="${_esc(c)}" ${c === _ttSelectedClass ? 'selected' : ''}>${_esc(c)}</option>`).join('')}
         </select>
       </div>
-
       <div style="flex:1;min-width:200px;">
         <label style="display:block;font-size:var(--text-xs);font-weight:600;color:var(--text-3);
                       margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.04em;">Week</label>
@@ -2688,10 +2699,8 @@ function _loadTimetableManager() {
             </option>`).join('')}
         </select>
       </div>
-
     </div>
 
-    <!-- Timetable type tabs -->
     <div style="display:flex;gap:.375rem;margin-bottom:1.25rem;background:var(--bg-muted);
                 border:1px solid var(--border);border-radius:var(--r-md);padding:3px;width:fit-content;">
       <button id="ttTypeTopics" onclick="Teacher._setTTType('topics')"
@@ -2719,86 +2728,11 @@ function _loadTimetableManager() {
       <div id="ttAllList" style="display:flex;flex-direction:column;gap:.5rem;"></div>
     </div>`;
 
-  _ttType = 'topics'; // default to topics tab
+  _ttType = 'topics';
   _ttRenderEditor();
   _ttListenAll();
 }
 
-  function _onTTClassChange() {
-    const sel = document.getElementById('ttClassSelect');
-    if (sel) _ttSelectedClass = sel.value;
-    _ttRenderEditor();
-    _ttListenAll();
-  }
-
-  function _onTTWeekChange() {
-    const sel = document.getElementById('ttWeekSelect');
-    if (sel) _ttSelectedWeek = sel.value;
-    _ttRenderEditor();
-  }
-
-  // Live-listen to all docs for the selected class, update the "All Saved" list
-  function _ttListenAll() {
-    if (typeof _ttUnsubAll === 'function') { _ttUnsubAll(); _ttUnsubAll = null; }
-    if (!_ttSelectedClass) return;
-
-    const docId = _classKeyFromStr(_ttSelectedClass);
-    _ttUnsubAll = Db().collection('weeklyTimetable').doc(docId)
-      .onSnapshot(snap => {
-        _ttRenderAllList(snap.exists ? snap.data() : {});
-      }, err => {
-        console.warn('[timetable] listen error:', err);
-      });
-  }
-
-function _mondayFromIsoWeekKey(weekKey) {
-  const [yearStr, weekPart] = weekKey.split('-W');
-  const year    = +yearStr;
-  const weekNum = +weekPart;
-
-  // Find Jan 4 of the given year (always in ISO week 1 of that year)
-  const jan4    = new Date(year, 0, 4);
-  // Find Thursday of the week containing Jan 4
-  const jan4Dow = jan4.getDay(); // 0=Sun ... 6=Sat
-  // Days from Jan4 to its Thursday: Thu=4, so offset = 4 - dow (mod 7, Sun treated as 7)
-  const jan4DowISO = jan4Dow === 0 ? 7 : jan4Dow; // Mon=1 ... Sun=7
-  const daysToThursday = 4 - jan4DowISO;
-  const week1Thursday = new Date(jan4);
-  week1Thursday.setDate(jan4.getDate() + daysToThursday);
-  week1Thursday.setHours(0, 0, 0, 0);
-
-  // Thursday of the target week
-  const targetThursday = new Date(week1Thursday);
-  targetThursday.setDate(week1Thursday.getDate() + (weekNum - 1) * 7);
-
-  // Monday is always Thursday minus 3 days
-  const targetMonday = new Date(targetThursday);
-  targetMonday.setDate(targetThursday.getDate() - 3);
-  return targetMonday;
-}
-
-  // ─── New module-level state (add alongside existing _ttSelectedClass etc.) ───
-let _ttType = 'topics'; // 'topics' | 'guide'
-
-// ─── _setTTType ───────────────────────────────────────────────────────────────
-function _setTTType(type) {
-  _ttType = type;
-  const topicsBtn = document.getElementById('ttTypeTopics');
-  const guideBtn  = document.getElementById('ttTypeGuide');
-  if (topicsBtn) {
-    topicsBtn.style.background = type === 'topics' ? 'var(--bg-base)' : 'transparent';
-    topicsBtn.style.color      = type === 'topics' ? 'var(--text-1)' : 'var(--text-3)';
-    topicsBtn.style.boxShadow  = type === 'topics' ? 'var(--shadow-xs)' : 'none';
-  }
-  if (guideBtn) {
-    guideBtn.style.background = type === 'guide' ? 'var(--bg-base)' : 'transparent';
-    guideBtn.style.color      = type === 'guide' ? 'var(--text-1)' : 'var(--text-3)';
-    guideBtn.style.boxShadow  = type === 'guide' ? 'var(--shadow-xs)' : 'none';
-  }
-  _ttRenderEditor();
-}
-
-// ─── _ttRenderEditor (fully updated — renders topics OR guide editor) ─────────
 async function _ttRenderEditor() {
   const wrap = document.getElementById('ttEditorWrap');
   if (!wrap) return;
@@ -2808,14 +2742,13 @@ async function _ttRenderEditor() {
     return;
   }
 
-  const thisWeek = _isoWeekKey();
-  const isThisWk = _ttSelectedWeek === thisWeek;
-  const docId    = _classKeyFromStr(_ttSelectedClass);
-  const targetMonday = _mondayFromIsoWeekKey(_ttSelectedWeek);
+  const thisWeek     = _isoWeekKey();
+  const isThisWk     = _ttSelectedWeek === thisWeek;
+  const docId        = _classKeyFromStr(_ttSelectedClass);
+  const targetMonday = _getMondayForWeek(_ttSelectedWeek);
   const weekLabel    = _weekRangeLabel(targetMonday);
 
   if (_ttType === 'topics') {
-    // ── Weekly Topics editor (existing style) ────────────────────────────────
     const subjects = _getSubjectsForClass(_ttSelectedClass);
     if (subjects.length === 0) {
       wrap.innerHTML = `<p style="font-size:var(--text-sm);color:var(--text-3);">
@@ -2875,7 +2808,6 @@ async function _ttRenderEditor() {
       </div>`;
 
   } else {
-    // ── Daily Study Guide editor (new) ───────────────────────────────────────
     let existingGuide = {};
     try {
       const snap = await Db().collection('weeklyTimetable').doc(docId).get();
@@ -2885,7 +2817,6 @@ async function _ttRenderEditor() {
       }
     } catch (e) { console.warn('[timetable] guide load error:', e); }
 
-    // Build the 7 days of the selected week
     const dayNames = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
     const dayDates = dayNames.map((day, i) => {
       const d = new Date(targetMonday);
@@ -2897,8 +2828,7 @@ async function _ttRenderEditor() {
       };
     });
 
-    // Expiry: default to end of Sunday (last day of the week)
-    const sundayDate = dayDates[6].dateStr;
+    const sundayDate     = dayDates[6].dateStr;
     const existingExpiry = existingGuide.expiresOn || sundayDate;
     const existingTitle  = existingGuide.title || '';
     const existingDays   = existingGuide.days || {};
@@ -2945,9 +2875,9 @@ async function _ttRenderEditor() {
             const existing = existingDays[dateStr] || '';
             const isPast   = dateStr < _todayForTT();
             const isToday  = dateStr === _todayForTT();
-            const headerBg = isToday ? 'var(--warning-subtle)' : isPast ? 'var(--bg-muted)' : 'var(--accent-subtle)';
+            const headerBg     = isToday ? 'var(--warning-subtle)' : isPast ? 'var(--bg-muted)' : 'var(--accent-subtle)';
             const headerBorder = isToday ? 'var(--warning-border)' : isPast ? 'var(--border)' : 'var(--accent-border)';
-            const headerColor  = isToday ? 'var(--warning-text)' : isPast ? 'var(--text-3)' : 'var(--accent-text)';
+            const headerColor  = isToday ? 'var(--warning-text)'  : isPast ? 'var(--text-3)'  : 'var(--accent-text)';
             return `
               <div style="border:1px solid ${headerBorder};border-radius:var(--r-md);overflow:hidden;">
                 <div style="padding:.375rem .75rem;background:${headerBg};display:flex;align-items:center;gap:.5rem;">
@@ -2978,13 +2908,6 @@ async function _ttRenderEditor() {
   }
 }
 
-// ─── Helper: local date string (reuse exam.js pattern) ───────────────────────
-function _todayForTT() {
-  const d = new Date();
-  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
-}
-
-// ─── _saveStudyGuide (new) ────────────────────────────────────────────────────
 async function _saveStudyGuide() {
   if (!_ttSelectedClass || !_ttSelectedWeek) {
     UI.toast('Please select a class and week.', 'warning'); return;
@@ -2997,10 +2920,10 @@ async function _saveStudyGuide() {
 
   if (!expiry) { UI.toast('Please set an expiry date.', 'warning'); return; }
 
-  const docId    = _classKeyFromStr(_ttSelectedClass);
-  const targetMonday = _mondayFromIsoWeekKey(_ttSelectedWeek);
-  const dayNames = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-  const days = {};
+  const docId        = _classKeyFromStr(_ttSelectedClass);
+  const targetMonday = _getMondayForWeek(_ttSelectedWeek);
+  const dayNames     = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+  const days         = {};
 
   dayNames.forEach((day, i) => {
     const d = new Date(targetMonday);
@@ -3027,7 +2950,6 @@ async function _saveStudyGuide() {
       },
       updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
     }, { merge: true });
-
     UI.toast('Study guide saved for ' + _ttSelectedClass + ' — ' + _ttSelectedWeek + '.', 'success');
   } catch (err) {
     console.error('[timetable] guide save error:', err);
@@ -3037,14 +2959,6 @@ async function _saveStudyGuide() {
   }
 }
 
-// ─── _clearGuideInputs (new) ──────────────────────────────────────────────────
-function _clearGuideInputs() {
-  const titleEl = document.getElementById('ttGuideTitle');
-  if (titleEl) titleEl.value = '';
-  document.querySelectorAll('#ttGuideInputs textarea').forEach(ta => { ta.value = ''; });
-}
-
-// ─── _ttRenderAllList (updated — hides past weeks, shows both types) ──────────
 function _ttRenderAllList(docData) {
   const container = document.getElementById('ttAllList');
   if (!container) return;
@@ -3053,7 +2967,6 @@ function _ttRenderAllList(docData) {
   const weeks    = (docData && docData.weeks)  ? docData.weeks  : {};
   const guides   = (docData && docData.guides) ? docData.guides : {};
 
-  // Collect all week keys from both stores, filter to current + future only
   const allKeys = new Set([
     ...Object.keys(weeks).filter(k => k >= thisWeek),
     ...Object.keys(guides).filter(k => k >= thisWeek),
@@ -3067,10 +2980,10 @@ function _ttRenderAllList(docData) {
   }
 
   container.innerHTML = weekKeys.map(wk => {
-    const topicsData  = weeks[wk]  || null;
-    const guideData   = guides[wk] || null;
-    const isThisWeek  = wk === thisWeek;
-    const targetMonday = _mondayFromIsoWeekKey(wk);
+    const topicsData   = weeks[wk]  || null;
+    const guideData    = guides[wk] || null;
+    const isThisWeek   = wk === thisWeek;
+    const targetMonday = _getMondayForWeek(wk);
     const rangeLabel   = _weekRangeLabel(targetMonday);
 
     const sections = [];
@@ -3136,7 +3049,6 @@ function _ttRenderAllList(docData) {
   }).filter(Boolean).join('');
 }
 
-// ─── _editTimetableWeek (updated — also switches type tab to topics) ──────────
 function _editTimetableWeek(weekKey) {
   _ttSelectedWeek = weekKey;
   _ttType = 'topics';
@@ -3156,7 +3068,6 @@ function _editTimetableWeek(weekKey) {
   _ttRenderEditor();
 }
 
-// ─── _editGuideWeek (new) ────────────────────────────────────────────────────
 function _editGuideWeek(weekKey) {
   _ttSelectedWeek = weekKey;
   _ttType = 'guide';
@@ -3174,6 +3085,67 @@ function _editGuideWeek(weekKey) {
     }
   }
   _ttRenderEditor();
+}
+
+  function _onTTClassChange() {
+    const sel = document.getElementById('ttClassSelect');
+    if (sel) _ttSelectedClass = sel.value;
+    _ttRenderEditor();
+    _ttListenAll();
+  }
+
+  function _onTTWeekChange() {
+    const sel = document.getElementById('ttWeekSelect');
+    if (sel) _ttSelectedWeek = sel.value;
+    _ttRenderEditor();
+  }
+
+  // Live-listen to all docs for the selected class, update the "All Saved" list
+  function _ttListenAll() {
+    if (typeof _ttUnsubAll === 'function') { _ttUnsubAll(); _ttUnsubAll = null; }
+    if (!_ttSelectedClass) return;
+
+    const docId = _classKeyFromStr(_ttSelectedClass);
+    _ttUnsubAll = Db().collection('weeklyTimetable').doc(docId)
+      .onSnapshot(snap => {
+        _ttRenderAllList(snap.exists ? snap.data() : {});
+      }, err => {
+        console.warn('[timetable] listen error:', err);
+      });
+  }
+
+  // ─── New module-level state (add alongside existing _ttSelectedClass etc.) ───
+let _ttType = 'topics'; // 'topics' | 'guide'
+
+// ─── _setTTType ───────────────────────────────────────────────────────────────
+function _setTTType(type) {
+  _ttType = type;
+  const topicsBtn = document.getElementById('ttTypeTopics');
+  const guideBtn  = document.getElementById('ttTypeGuide');
+  if (topicsBtn) {
+    topicsBtn.style.background = type === 'topics' ? 'var(--bg-base)' : 'transparent';
+    topicsBtn.style.color      = type === 'topics' ? 'var(--text-1)' : 'var(--text-3)';
+    topicsBtn.style.boxShadow  = type === 'topics' ? 'var(--shadow-xs)' : 'none';
+  }
+  if (guideBtn) {
+    guideBtn.style.background = type === 'guide' ? 'var(--bg-base)' : 'transparent';
+    guideBtn.style.color      = type === 'guide' ? 'var(--text-1)' : 'var(--text-3)';
+    guideBtn.style.boxShadow  = type === 'guide' ? 'var(--shadow-xs)' : 'none';
+  }
+  _ttRenderEditor();
+}
+
+// ─── Helper: local date string (reuse exam.js pattern) ───────────────────────
+function _todayForTT() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+// ─── _clearGuideInputs (new) ──────────────────────────────────────────────────
+function _clearGuideInputs() {
+  const titleEl = document.getElementById('ttGuideTitle');
+  if (titleEl) titleEl.value = '';
+  document.querySelectorAll('#ttGuideInputs textarea').forEach(ta => { ta.value = ''; });
 }
 
 // ─── _deleteGuideWeek (new) ───────────────────────────────────────────────────
@@ -4464,6 +4436,7 @@ async function exportResultPDF(resultId) {
     _clearGuideInputs,
     _editGuideWeek,
     _deleteGuideWeek,
+    _getMondayForWeek,
     _showGamesSubTab,
     _onTTClassChange,
     _onTTWeekChange,
