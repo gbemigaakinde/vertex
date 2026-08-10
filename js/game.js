@@ -4055,90 +4055,104 @@ function _dismissChallengeResultPopup(challengeId) {
   popup.addEventListener('animationend', () => popup.remove(), { once: true });
 }
 
-function _showChallengeResultDetail(challengeId, data, myUid) {
-  const total    = (data.questions || []).length || 10;
-  const myScore  = data.finalChallengedScore;
-  const oppScore = data.finalChallengerScore;
-  const oppName  = data.challengerName || 'Your challenger';
-  const myPct    = Math.round((myScore / total) * 100);
-  const oppPct   = Math.round((oppScore / total) * 100);
-  const tied     = data.finalTied;
-  const win      = myScore > oppScore;
+async function _showChallengeResultDetail(challengeId, data, myUid) {
+    if (!data) {
+      try {
+        const snap = await _db().collection('gameChallenges').doc(challengeId).get();
+        if (!snap.exists) { window.UI.toast('Challenge not found.', 'error'); return; }
+        data = snap.data();
+      } catch (e) {
+        console.error('[game] _showChallengeResultDetail fetch error:', e);
+        window.UI.toast('Could not load challenge result.', 'error');
+        return;
+      }
+      // Load profile here so XP/level data is fresh when data comes from Firestore
+      await _loadProfile();
+    }
 
-  const gradeColor = myPct >= 80 ? 'var(--success)' : myPct >= 60 ? 'var(--warning)' : 'var(--danger)';
+    const total    = (data.questions || []).length || 10;
+    const myScore  = data.finalChallengedScore;
+    const oppScore = data.finalChallengerScore;
+    const oppName  = data.challengerName || 'Your challenger';
+    const myPct    = Math.round((myScore / total) * 100);
+    const oppPct   = Math.round((oppScore / total) * 100);
+    const tied     = data.finalTied;
+    const win      = myScore > oppScore;
 
-  const outcomeHtml = `
-    <div style="margin:.75rem 0;padding:.875rem 1rem;border-radius:10px;text-align:center;
-                background:${win ? 'var(--success-subtle)' : tied ? 'var(--warning-subtle)' : 'var(--danger-subtle)'};
-                border:2px solid ${win ? 'var(--success-border)' : tied ? 'var(--warning-border)' : 'var(--danger-border)'};">
-      <div style="margin-bottom:.25rem;">
-        ${_icon(win ? 'trophy' : tied ? 'handWaving' : 'xCircle', 32, {
-          color: win ? 'var(--success)' : tied ? 'var(--warning)' : 'var(--danger)',
-        })}
-      </div>
-      <p style="font-weight:700;font-size:1rem;margin:.25rem 0;color:var(--text-1);">
-        ${win ? 'You Won!' : tied ? "It's a Tie!" : 'You Lost!'}
-      </p>
-      <p style="font-size:.875rem;color:var(--text-2);">
-        You: ${myScore}/${total} (${myPct}%) vs ${_esc(oppName)}: ${oppScore}/${total} (${oppPct}%)
-      </p>
-    </div>`;
+    const gradeColor = myPct >= 80 ? 'var(--success)' : myPct >= 60 ? 'var(--warning)' : 'var(--danger)';
 
-  const xp    = (_profile && _profile.xp) || 0;
-  const level = _getLevelForXP(xp);
-  const xpPct = _xpProgressPct(xp);
-  const nextLvl = _getNextLevel(xp);
-  const maxed   = _isMaxLevel(xp);
-
-  window.UI.mount(`
-    <div class="max-w-xl mx-auto animate-fadeIn" style="padding-bottom:2rem;">
-      <div class="glass game-result-card">
-        <div style="text-align:center;margin-bottom:1.5rem;">
-          <div style="margin-bottom:.375rem;">${_icon('swords', 48, { color: 'var(--accent)' })}</div>
-          <h2 style="font-size:1.25rem;font-weight:700;color:var(--text-1);">Challenge Result</h2>
-          <p style="font-size:.875rem;color:var(--text-3);margin-top:.25rem;">vs ${_esc(oppName)}</p>
+    const outcomeHtml = `
+      <div style="margin:.75rem 0;padding:.875rem 1rem;border-radius:10px;text-align:center;
+                  background:${win ? 'var(--success-subtle)' : tied ? 'var(--warning-subtle)' : 'var(--danger-subtle)'};
+                  border:2px solid ${win ? 'var(--success-border)' : tied ? 'var(--warning-border)' : 'var(--danger-border)'};">
+        <div style="margin-bottom:.25rem;">
+          ${_icon(win ? 'trophy' : tied ? 'handWaving' : 'xCircle', 32, {
+            color: win ? 'var(--success)' : tied ? 'var(--warning)' : 'var(--danger)',
+          })}
         </div>
+        <p style="font-weight:700;font-size:1rem;margin:.25rem 0;color:var(--text-1);">
+          ${win ? 'You Won!' : tied ? "It's a Tie!" : 'You Lost!'}
+        </p>
+        <p style="font-size:.875rem;color:var(--text-2);">
+          You: ${myScore}/${total} (${myPct}%) vs ${_esc(oppName)}: ${oppScore}/${total} (${oppPct}%)
+        </p>
+      </div>`;
 
-        <div style="display:flex;align-items:center;justify-content:center;gap:1.5rem;
-                    background:var(--bg-subtle);border-radius:10px;padding:1.25rem;margin-bottom:1.25rem;">
-          <div style="text-align:center;">
-            <div style="font-size:2.5rem;font-weight:800;color:${gradeColor};line-height:1;">${myPct}%</div>
-            <div style="font-size:.75rem;color:var(--text-3);margin-top:.25rem;">Your Score</div>
+    const xp    = (_profile && _profile.xp) || 0;
+    const level = _getLevelForXP(xp);
+    const xpPct = _xpProgressPct(xp);
+    const nextLvl = _getNextLevel(xp);
+    const maxed   = _isMaxLevel(xp);
+
+    window.UI.mount(`
+      <div class="max-w-xl mx-auto animate-fadeIn" style="padding-bottom:2rem;">
+        <div class="glass game-result-card">
+          <div style="text-align:center;margin-bottom:1.5rem;">
+            <div style="margin-bottom:.375rem;">${_icon('swords', 48, { color: 'var(--accent)' })}</div>
+            <h2 style="font-size:1.25rem;font-weight:700;color:var(--text-1);">Challenge Result</h2>
+            <p style="font-size:.875rem;color:var(--text-3);margin-top:.25rem;">vs ${_esc(oppName)}</p>
           </div>
-          <div style="width:1px;height:40px;background:var(--border);"></div>
-          <div style="text-align:center;">
-            <div style="font-size:1.5rem;font-weight:700;color:var(--text-1);">${myScore} / ${total}</div>
-            <div style="font-size:.75rem;color:var(--text-3);margin-top:.25rem;">Correct</div>
+
+          <div style="display:flex;align-items:center;justify-content:center;gap:1.5rem;
+                      background:var(--bg-subtle);border-radius:10px;padding:1.25rem;margin-bottom:1.25rem;">
+            <div style="text-align:center;">
+              <div style="font-size:2.5rem;font-weight:800;color:${gradeColor};line-height:1;">${myPct}%</div>
+              <div style="font-size:.75rem;color:var(--text-3);margin-top:.25rem;">Your Score</div>
+            </div>
+            <div style="width:1px;height:40px;background:var(--border);"></div>
+            <div style="text-align:center;">
+              <div style="font-size:1.5rem;font-weight:700;color:var(--text-1);">${myScore} / ${total}</div>
+              <div style="font-size:.75rem;color:var(--text-3);margin-top:.25rem;">Correct</div>
+            </div>
+          </div>
+
+          ${outcomeHtml}
+
+          <div class="glass-dark" style="padding:.875rem 1rem;border-radius:8px;margin-bottom:1rem;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
+              <span style="font-size:.875rem;font-weight:700;color:var(--text-2);display:flex;align-items:center;gap:.3rem;">
+                ${_icon(level.icon, 14, { color: level.color })} ${_esc(level.name)}
+              </span>
+              ${!maxed
+                ? `<span style="font-size:.75rem;color:var(--text-3);">${xp.toLocaleString()} / ${nextLvl.minXP.toLocaleString()} XP</span>`
+                : `<span style="font-size:.75rem;color:#f43f5e;font-weight:800;">✦ MAX LEVEL</span>`}
+            </div>
+            <div class="game-xp-track"><div class="game-xp-fill" style="width:${xpPct}%;"></div></div>
+          </div>
+
+          <div style="display:flex;gap:.625rem;flex-wrap:wrap;justify-content:center;margin-top:1.25rem;">
+            <button onclick="Game.openGameLobby()" class="btn bg-gray-500"
+                    style="display:inline-flex;align-items:center;gap:.3rem;">
+              ${_icon('house', 15)} Back to Games
+            </button>
+            <button onclick="Game._showChallengeSetup()" class="btn"
+                    style="display:inline-flex;align-items:center;gap:.3rem;">
+              ${_icon('swords', 15)} New Challenge
+            </button>
           </div>
         </div>
-
-        ${outcomeHtml}
-
-        <div class="glass-dark" style="padding:.875rem 1rem;border-radius:8px;margin-bottom:1rem;">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem;">
-            <span style="font-size:.875rem;font-weight:700;color:var(--text-2);display:flex;align-items:center;gap:.3rem;">
-              ${_icon(level.icon, 14, { color: level.color })} ${_esc(level.name)}
-            </span>
-            ${!maxed
-              ? `<span style="font-size:.75rem;color:var(--text-3);">${xp.toLocaleString()} / ${nextLvl.minXP.toLocaleString()} XP</span>`
-              : `<span style="font-size:.75rem;color:#f43f5e;font-weight:800;">✦ MAX LEVEL</span>`}
-          </div>
-          <div class="game-xp-track"><div class="game-xp-fill" style="width:${xpPct}%;"></div></div>
-        </div>
-
-        <div style="display:flex;gap:.625rem;flex-wrap:wrap;justify-content:center;margin-top:1.25rem;">
-          <button onclick="Game.openGameLobby()" class="btn bg-gray-500"
-                  style="display:inline-flex;align-items:center;gap:.3rem;">
-            ${_icon('house', 15)} Back to Games
-          </button>
-          <button onclick="Game._showChallengeSetup()" class="btn"
-                  style="display:inline-flex;align-items:center;gap:.3rem;">
-            ${_icon('swords', 15)} New Challenge
-          </button>
-        </div>
-      </div>
-    </div>`);
-}
+      </div>`);
+  }
 
   function _stopChallengeListener() {
     if (_challengeListener) { _challengeListener(); _challengeListener = null; }
@@ -6912,7 +6926,21 @@ function _buildWordPoolForStudent() {
       challengeData = { id: snap.id, ...snap.data() };
     } catch (e) { window.UI.toast('Could not load challenge.', 'error'); return; }
     if (challengeData.challengerScore !== null && challengeData.challengerScore !== undefined) { window.UI.toast("You've already played this challenge.", 'info'); return; }
-    _gameState = { type: 'challenge', challengeId, isChallengerTurn: true, questions: challengeData.questions || [], currentIndex: 0, answers: [], score: 0, xpEarned: 0, opponentName: challengeData.challengedName, opponentScore: challengeData.challengedScore, startedAt: Date.now(), _sessionId: null };
+    _gameState = {
+      type:                'challenge',
+      challengeId,
+      isChallengerTurn:    true,
+      questions:           challengeData.questions || [],
+      currentIndex:        0,
+      answers:             [],
+      score:               0,
+      xpEarned:            0,
+      opponentName:        challengeData.challengedName,
+      opponentScore:       challengeData.challengedScore,
+      challengedUid:       challengeData.challengedUid || null,
+      startedAt:           Date.now(),
+      _sessionId:          null,
+    };
     _startGameSession('challenge', { opponentName: challengeData.challengerName || challengeData.challengedName }).then(id => {
       if (_gameState && _gameState.type === 'challenge') _gameState._sessionId = id;
     });
@@ -7668,9 +7696,9 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
     speedLevel:      0,
     speedFlashTimer: 0,
     combo:           0,
-    /* Player — x = lane centre, y = near bottom, vy = vertical velocity */
+    bestCombo:       0,
     player: {
-      lane:          1,           // 0=left, 1=centre, 2=right
+      lane:          1,
       x:             KR_LANE_X[1],
       y:             KR_PLAYER_Y,
       vy:            0,
@@ -7681,18 +7709,15 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
       stumble:       0,
       frame:         0,
       frameTimer:    0,
-      /* smooth horizontal lane slide */
       targetX:       KR_LANE_X[1],
     },
     objects:         [],
     spawnTimer:      60,
-    /* Scrolling scenery */
     bgOffset:        0,
     particles:       [],
-    /* Inspector rises from below */
     inspector: {
-      y:    KR_INSPECTOR_START,  // starts far below the canvas
-      gap:  220,                 // vertical distance below player
+      y:    KR_INSPECTOR_START,
+      gap:  220,
     },
     _keyDown: _krKeyDown,
     _keyUp:   _krKeyUp,
@@ -7764,20 +7789,20 @@ function _krTogglePause() {
 
   function _krSpawnWave() {
   const s = _krState;
+  if (!s) return;
   const correctLane = Math.floor(Math.random() * KR_LANE_COUNT);
 
   for (let lane = 0; lane < KR_LANE_COUNT; lane++) {
-    const cx    = KR_LANE_X[lane]; // centre X of this vertical lane
-    const baseY = -60 - lane * 20; // slight vertical stagger per lane
+    const cx    = KR_LANE_X[lane];
+    const baseY = -60 - lane * 20;
 
     if (lane === correctLane) {
-      /* 5 coins stacked vertically (they'll fall as a column) */
       for (let c = 0; c < 5; c++) {
         s.objects.push({
           type:      'coin',
           lane,
           x:         cx,
-          y:         baseY - c * KR_COIN_SPACING,  // stacked above each other
+          y:         baseY - c * KR_COIN_SPACING,
           w:         18,
           h:         18,
           hit:       false,
@@ -7922,6 +7947,7 @@ function _krLoop(timestamp) {
         if (obj.type === 'coin') {
           s.score++;
           s.combo++;
+          if (s.combo > s.bestCombo) s.bestCombo = s.combo;
           const xp = KR_XP_PER_CORRECT + (s.combo >= 3 ? KR_XP_SPEED_BONUS : 0);
           s.xpEarned += xp;
           if (window.VtxSound) try { VtxSound.gameCoinCollect(); } catch(e) {}
@@ -8751,7 +8777,7 @@ function _krLoop(timestamp) {
         </div>
         <p style="font-size:.875rem;font-weight:700;color:#f1f5f9;margin:.25rem 0;">${distanceTitle}</p>
         <p style="font-size:.8125rem;color:var(--text-3);margin-top:.375rem;">
-          🏄 ${s.score} correct coins collected &nbsp;|&nbsp; 🔥 Best combo: ${s.combo > 0 ? s.combo : 1}x
+          🏄 ${s.score} correct coins collected &nbsp;|&nbsp; 🔥 Best combo: ${s.bestCombo > 0 ? s.bestCombo : 1}x
         </p>
       </div>`;
 
