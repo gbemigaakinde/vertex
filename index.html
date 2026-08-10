@@ -358,6 +358,143 @@
       window.VtxTheme = { toggle: toggle, apply: _apply };
     }());
   </script>
+  
+  <!-- Howler.js for sound effects -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+
+  <!-- VtxSound: minimal sound engine -->
+  <script>
+    (function () {
+      'use strict';
+
+      // All sounds are generated via Web Audio API — no external files needed.
+      // Howler is loaded for mobile unlock support only.
+
+      var _ctx = null;
+      var _unlocked = false;
+      var _enabled = true;
+
+      function _getCtx() {
+        if (!_ctx) {
+          try {
+            _ctx = new (window.AudioContext || window.webkitAudioContext)();
+          } catch (e) {
+            console.warn('[VtxSound] Web Audio not supported.');
+            return null;
+          }
+        }
+        return _ctx;
+      }
+
+      // Unlock audio context on first user gesture (required for mobile)
+      function _unlock() {
+        if (_unlocked) return;
+        var ctx = _getCtx();
+        if (!ctx) return;
+        if (ctx.state === 'suspended') {
+          ctx.resume().catch(function () {});
+        }
+        _unlocked = true;
+      }
+      document.addEventListener('click',     _unlock, { once: true, passive: true });
+      document.addEventListener('touchstart', _unlock, { once: true, passive: true });
+      document.addEventListener('keydown',   _unlock, { once: true, passive: true });
+
+      // Core tone player
+      // notes: array of { freq, start, dur, vol }
+      // type: 'sine' | 'triangle' | 'square'
+      function _playTones(notes, type) {
+        if (!_enabled) return;
+        var ctx = _getCtx();
+        if (!ctx) return;
+        if (ctx.state === 'suspended') ctx.resume().catch(function () {});
+
+        notes.forEach(function (n) {
+          try {
+            var osc  = ctx.createOscillator();
+            var gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            osc.type      = type || 'sine';
+            osc.frequency.setValueAtTime(n.freq, ctx.currentTime + n.start);
+
+            var vol = n.vol !== undefined ? n.vol : 0.18;
+            gain.gain.setValueAtTime(0, ctx.currentTime + n.start);
+            gain.gain.linearRampToValueAtTime(vol, ctx.currentTime + n.start + 0.01);
+            gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + n.start + n.dur);
+
+            osc.start(ctx.currentTime + n.start);
+            osc.stop(ctx.currentTime + n.start + n.dur + 0.05);
+          } catch (e) {}
+        });
+      }
+
+      // ── Individual sounds ───────────────────────────────────
+
+      // Welcome: warm ascending chime (login)
+      function welcome() {
+        _playTones([
+          { freq: 523, start: 0.00, dur: 0.35, vol: 0.14 },
+          { freq: 659, start: 0.18, dur: 0.35, vol: 0.14 },
+          { freq: 784, start: 0.36, dur: 0.55, vol: 0.16 },
+        ], 'sine');
+      }
+
+      // Success: bright short ding
+      function success() {
+        _playTones([
+          { freq: 784, start: 0.00, dur: 0.18, vol: 0.14 },
+          { freq: 1046, start: 0.12, dur: 0.28, vol: 0.13 },
+        ], 'sine');
+      }
+
+      // Error: low double buzz
+      function error() {
+        _playTones([
+          { freq: 180, start: 0.00, dur: 0.14, vol: 0.16 },
+          { freq: 160, start: 0.18, dur: 0.14, vol: 0.16 },
+        ], 'square');
+      }
+
+      // Warning: mid single blip
+      function warning() {
+        _playTones([
+          { freq: 440, start: 0.00, dur: 0.20, vol: 0.13 },
+        ], 'triangle');
+      }
+
+      // Info: soft tick
+      function info() {
+        _playTones([
+          { freq: 620, start: 0.00, dur: 0.10, vol: 0.09 },
+        ], 'sine');
+      }
+
+      // Exam submitted: short fanfare
+      function examSubmit() {
+        _playTones([
+          { freq: 523, start: 0.00, dur: 0.18, vol: 0.15 },
+          { freq: 659, start: 0.15, dur: 0.18, vol: 0.15 },
+          { freq: 784, start: 0.30, dur: 0.18, vol: 0.15 },
+          { freq: 1046, start: 0.45, dur: 0.50, vol: 0.16 },
+        ], 'sine');
+      }
+
+      // ── Public API ──────────────────────────────────────────
+      window.VtxSound = {
+        welcome:     welcome,
+        success:     success,
+        error:       error,
+        warning:     warning,
+        info:        info,
+        examSubmit:  examSubmit,
+        enable:      function () { _enabled = true; },
+        disable:     function () { _enabled = false; },
+      };
+
+    }());
+  </script>
 
   <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
