@@ -637,28 +637,31 @@
       }
 
       // Wire pill selection
-      if (!restrictedSubjs && !todayTaskDone) {
-        document.querySelectorAll('.subject-checkbox').forEach(cb => {
-          cb.addEventListener('change', function () {
-            const pill = cb.closest('.vtx-subject-pill');
-            if (pill) pill.classList.toggle('is-selected', cb.checked);
-            _updateStartBtn();
-          });
-        });
+if (!restrictedSubjs && !todayTaskDone) {
+  document.querySelectorAll('.vtx-subject-pill').forEach(pill => {
+    pill.addEventListener('click', function (e) {
+      // Let native checkbox clicks pass through untouched
+      if (e.target.type === 'checkbox') return;
 
-        // Also make entire pill label toggle the checkbox on click
-        document.querySelectorAll('.vtx-subject-pill').forEach(pill => {
-          pill.addEventListener('click', function (e) {
-            if (e.target.tagName === 'INPUT') return; // native checkbox handles it
-            const cb = pill.querySelector('input[type="checkbox"]');
-            if (cb && !cb.disabled) {
-              cb.checked = !cb.checked;
-              pill.classList.toggle('is-selected', cb.checked);
-              _updateStartBtn();
-            }
-          });
-        });
-      }
+      const cb = pill.querySelector('input[type="checkbox"]');
+      if (!cb || cb.disabled) return;
+
+      // Toggle manually and dispatch change so _updateStartBtn fires
+      cb.checked = !cb.checked;
+      pill.classList.toggle('is-selected', cb.checked);
+      _updateStartBtn();
+    });
+
+    // Handle the case where the native checkbox is clicked directly
+    const cb = pill.querySelector('input[type="checkbox"]');
+    if (cb) {
+      cb.addEventListener('change', function () {
+        pill.classList.toggle('is-selected', cb.checked);
+        _updateStartBtn();
+      });
+    }
+  });
+}
 
       // Show 3D background on dashboard
       _showBgCanvas(true);
