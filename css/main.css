@@ -430,6 +430,18 @@ body {
 .glass.mt-10             { margin-top: var(--sp-5) !important; }
 .glass-dark.mt-10        { margin-top: var(--sp-5) !important; }
 
+/* glass ::before must never intercept clicks on nested interactive elements */
+.glass::before,
+.glass-dark::before {
+  pointer-events: none !important;
+}
+
+/* subject pills must always be clickable above glass layering */
+.vtx-subject-pill {
+  position: relative;
+  z-index: 2;
+}
+
 /* ── Auth layout ── */
 .cbt-layout--auth {
   width: 100%;
