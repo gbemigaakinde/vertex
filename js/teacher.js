@@ -2905,7 +2905,7 @@ async function _ttRenderEditor() {
                     margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border);">
           <div>
             <h3 style="font-size:var(--text-base);font-weight:700;color:var(--text-1);">
-              Daily Study Guide — ${_esc(_ttSelectedClass)} — ${_esc(weekLabel)}
+              ${_esc(_ttSelectedClass)} — ${_esc(weekLabel)}
             </h3>
             <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">
               Shown to students until the expiry date. Each day's entry replaces the weekly topic view when active.
