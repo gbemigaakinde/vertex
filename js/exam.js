@@ -1278,6 +1278,10 @@ if (!restrictedSubjs && !todayTaskDone) {
       _beginExamLock  = false;
 
       _showBgCanvas(true); // bring background back on results screen
+      // Play submission fanfare
+      if (window.VtxSound) {
+        try { VtxSound.examSubmit(); } catch (e) {}
+      }
       renderResults(exam, result);
 
     } catch (err) {
