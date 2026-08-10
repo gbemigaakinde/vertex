@@ -18,6 +18,16 @@
     type     = type     || 'info';
     duration = duration !== undefined ? duration : 4000;
 
+    // Play sound for each toast type
+    if (window.VtxSound) {
+      try {
+        if      (type === 'success') VtxSound.success();
+        else if (type === 'error')   VtxSound.error();
+        else if (type === 'warning') VtxSound.warning();
+        else                         VtxSound.info();
+      } catch (e) {}
+    }
+
     var container = document.getElementById('toastContainer');
     if (!container) return;
 
