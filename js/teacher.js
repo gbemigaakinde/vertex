@@ -2576,7 +2576,6 @@ function _renderExistingTasksList(docs) {
   // Returns "YYYY-Www" ISO week key for a given Date (or today)
   function _isoWeekKey(date) {
   const d = date ? new Date(date) : new Date();
-  // Thursday in current week decides the year
   const thursday = new Date(d);
   thursday.setDate(d.getDate() + 3 - ((d.getDay() + 6) % 7));
   const yearStart = new Date(thursday.getFullYear(), 0, 4);
@@ -2757,22 +2756,20 @@ function _mondayFromIsoWeekKey(weekKey) {
   const year    = +yearStr;
   const weekNum = +weekPart;
 
-  // Find the Thursday of the target ISO week.
-  // ISO week 1 contains Jan 4. Find Jan 4's Thursday, then offset by weekNum.
+  // Jan 4 is always in ISO week 1
   const jan4    = new Date(year, 0, 4);
-  const jan4Dow = jan4.getDay() === 0 ? 7 : jan4.getDay(); // Mon=1 ... Sun=7
-  // Thursday of the week containing Jan 4
-  const week1Thursday = new Date(jan4);
-  week1Thursday.setDate(jan4.getDate() + (4 - jan4Dow));
-  week1Thursday.setHours(0, 0, 0, 0);
+  const jan4Dow = jan4.getDay(); // 0=Sun,1=Mon,...,6=Sat
 
-  // Thursday of target week
-  const targetThursday = new Date(week1Thursday);
-  targetThursday.setDate(week1Thursday.getDate() + (weekNum - 1) * 7);
+  // Find Monday of ISO week 1
+  // ISO week starts on Monday (dow 1). If Jan 4 is Sunday (0), Monday is Jan 4 - 6 days.
+  const daysToMonday = (jan4Dow === 0) ? -6 : 1 - jan4Dow;
+  const week1Monday  = new Date(jan4);
+  week1Monday.setDate(jan4.getDate() + daysToMonday);
+  week1Monday.setHours(0, 0, 0, 0);
 
-  // Monday is 3 days before Thursday
-  const targetMonday = new Date(targetThursday);
-  targetMonday.setDate(targetThursday.getDate() - 3);
+  // Target Monday is (weekNum - 1) weeks after week 1 Monday
+  const targetMonday = new Date(week1Monday);
+  targetMonday.setDate(week1Monday.getDate() + (weekNum - 1) * 7);
   return targetMonday;
 }
 
