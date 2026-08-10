@@ -1,5 +1,5 @@
 /* ============================================================
-   js/tasks.js  — v4.3 (offline caching removed)
+   js/tasks.js  — v4.3
    ============================================================
  */
 
@@ -7,6 +7,22 @@
   'use strict';
 
   const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+  /* ─────────────────────────────────────────────────────── */
+  /* Phosphor icon helper                                    */
+  /* ─────────────────────────────────────────────────────── */
+  function _icon(name, size) {
+    size = size || 16;
+    const icons = {
+      ArrowsClockwise: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor"><path d="M240,56v48a8,8,0,0,1-8,8H184a8,8,0,0,1,0-16h28.69L196.12,79.51a96.07,96.07,0,0,0-131.77,9A8,8,0,0,1,52.6,77.14,112.08,112.08,0,0,1,206.53,66.46L224,83.93V56a8,8,0,1,1,16,0ZM195.4,178.86a96,96,0,0,1-131.53-8.37L47.31,152H76a8,8,0,0,0,0-16H28a8,8,0,0,0-8,8v48a8,8,0,0,0,16,0V163.93l17.47,17.61A112.11,112.11,0,0,0,206.89,178.5,8,8,0,1,0,195.4,178.86Z"/></svg>`,
+      Check: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor"><path d="M229.66,77.66l-128,128a8,8,0,0,1-11.32,0l-56-56a8,8,0,0,1,11.32-11.32L96,188.69,218.34,66.34a8,8,0,0,1,11.32,11.32Z"/></svg>`,
+      X: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor"><path d="M205.66,194.34a8,8,0,0,1-11.32,11.32L128,139.31,61.66,205.66a8,8,0,0,1-11.32-11.32L116.69,128,50.34,61.66A8,8,0,0,1,61.66,50.34L128,116.69l66.34-66.35a8,8,0,0,1,11.32,11.32L139.31,128Z"/></svg>`,
+      Circle: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor"><path d="M128,24A104,104,0,1,0,232,128,104.11,104.11,0,0,0,128,24Zm0,192a88,88,0,1,1,88-88A88.1,88.1,0,0,1,128,216Z"/></svg>`,
+      Minus: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor"><path d="M224,128a8,8,0,0,1-8,8H40a8,8,0,0,1,0-16H216A8,8,0,0,1,224,128Z"/></svg>`,
+      Confetti: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor"><path d="M228.24,75.06l-116,204a12,12,0,0,1-20.78-12l116-204a12,12,0,1,1,20.78,12ZM36,96a12,12,0,1,0,12-12A12,12,0,0,0,36,96Zm44,52a12,12,0,1,0,12-12A12,12,0,0,0,80,148Zm-24,56a12,12,0,1,0,12-12A12,12,0,0,0,56,204Zm136-96a12,12,0,1,0,12-12A12,12,0,0,0,192,108Zm-20,60a12,12,0,1,0,12-12A12,12,0,0,0,172,168Z"/></svg>`,
+    };
+    return icons[name] || '';
+  }
 
   function _localDateStr(date) {
     const d = date || new Date();
@@ -315,26 +331,21 @@
           if (snap.exists) {
             const incoming = snap.data();
 
-            // ── FIX: Deep-merge coachingCompleted so that optimistic local
-            // updates made during exam submission are never overwritten by a
-            // stale snapshot that arrives before Firestore finishes the write.
-            // We union the two maps: any date already marked true locally is
-            // preserved even if the incoming snapshot doesn't carry it yet.
             const existingCompleted =
               (AppState.studentData && AppState.studentData.coachingCompleted) || {};
             const incomingCompleted = incoming.coachingCompleted || {};
 
             const mergedCompleted = Object.assign(
               {},
-              incomingCompleted,   // start with what Firestore says
-              existingCompleted    // overlay any locally-known completions on top
+              incomingCompleted,
+              existingCompleted
             );
 
             AppState.studentData = Object.assign(
               {},
               AppState.studentData,
               incoming,
-              { coachingCompleted: mergedCompleted }  // use the merged map
+              { coachingCompleted: mergedCompleted }
             );
 
             if (document.getElementById('tasksContainer')) {
@@ -415,34 +426,34 @@
           subjects.map(_esc).join(', ') + '</p>'
         : '';
 
-      let bgColor, borderColor, iconColor, icon, labelText, labelColor;
+      let bgColor, borderColor, iconColor, iconName, labelText, labelColor;
 
       if (isDone) {
         bgColor = 'var(--success-bg)'; borderColor = 'var(--success-border)';
-        iconColor = 'var(--success)'; icon = '✓'; labelText = 'Done';
+        iconColor = 'var(--success)'; iconName = 'Check'; labelText = 'Done';
         labelColor = 'var(--success-text)';
       } else if (isMissed) {
         bgColor = 'var(--danger-bg)'; borderColor = 'var(--danger)';
-        iconColor = 'var(--danger)'; icon = '✗'; labelText = 'Missed';
+        iconColor = 'var(--danger)'; iconName = 'X'; labelText = 'Missed';
         labelColor = 'var(--danger)';
       } else if (isToday) {
         bgColor = 'var(--warning-bg)'; borderColor = 'var(--warning)';
-        iconColor = 'var(--warning)'; icon = '○'; labelText = 'Today';
+        iconColor = 'var(--warning)'; iconName = 'Circle'; labelText = 'Today';
         labelColor = 'var(--warning-text)';
       } else if (isFuture) {
         bgColor = 'var(--surface)'; borderColor = 'var(--border)';
-        iconColor = 'var(--border-medium)'; icon = '–'; labelText = 'Upcoming';
+        iconColor = 'var(--border-medium)'; iconName = 'Minus'; labelText = 'Upcoming';
         labelColor = 'var(--text-disabled)';
       } else {
         bgColor = 'var(--surface)'; borderColor = 'var(--border)';
-        iconColor = 'var(--border-medium)'; icon = '–'; labelText = '–';
+        iconColor = 'var(--border-medium)'; iconName = 'Minus'; labelText = '–';
         labelColor = 'var(--text-disabled)';
       }
 
       return `<div style="background:${bgColor};border:1.5px solid ${borderColor};` +
         `border-radius:8px;padding:.625rem .875rem;text-align:center;">` +
         `<p style="font-size:.8125rem;font-weight:500;color:var(--text-secondary);">${_esc(formatted)}</p>` +
-        `<p style="font-size:1.25rem;margin-top:4px;color:${iconColor};font-weight:700;">${icon}</p>` +
+        `<p style="margin-top:4px;display:flex;justify-content:center;color:${iconColor};">${_icon(iconName, 20)}</p>` +
         `<p style="font-size:.6875rem;color:${labelColor};margin-top:2px;font-weight:600;">${labelText}</p>` +
         subjNote +
         `</div>`;
@@ -454,9 +465,9 @@
         `display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;">` +
         `<span style="font-size:.75rem;color:var(--text-tertiary);">All-time history</span>` +
         `<div style="display:flex;gap:.75rem;align-items:center;">` +
-        `<span style="font-size:.75rem;font-weight:700;color:var(--success);">✓ ${totalDone} done</span>` +
+        `<span style="font-size:.75rem;font-weight:700;color:var(--success);display:inline-flex;align-items:center;gap:3px;">${_icon('Check', 13)} ${totalDone} done</span>` +
         (totalMissed > 0
-          ? `<span style="font-size:.75rem;font-weight:700;color:var(--danger);">✗ ${totalMissed} missed</span>`
+          ? `<span style="font-size:.75rem;font-weight:700;color:var(--danger);display:inline-flex;align-items:center;gap:3px;">${_icon('X', 13)} ${totalMissed} missed</span>`
           : '') +
         `<span style="font-size:.75rem;color:var(--text-disabled);">${totalPast} total</span>` +
         `</div></div>`
@@ -472,7 +483,8 @@
     const statusBadge = allSessionsThisWeekDone && !allFutureThisWeek
       ? `<div style="margin-top:.75rem;padding:.875rem 1rem;border-radius:8px;` +
         `background:var(--success-bg);border:1px solid var(--success-border);text-align:center;">` +
-        `<p style="font-size:.9375rem;font-weight:700;color:var(--success-text);">This week: all done! 🎉</p>` +
+        `<p style="font-size:.9375rem;font-weight:700;color:var(--success-text);display:inline-flex;align-items:center;gap:.375rem;">` +
+        `${_icon('Confetti', 18)} This week: all done!</p>` +
         `</div>`
       : weekMissedCount > 0
         ? `<div style="margin-top:.75rem;padding:.75rem 1rem;border-radius:8px;` +
@@ -485,7 +497,8 @@
     const recurringBadge = isRecurring
       ? `<span style="font-size:.6875rem;font-weight:700;padding:2px 9px;border-radius:99px;` +
         `background:var(--brand-bg);color:var(--brand-text);` +
-        `border:1px solid var(--brand-border);margin-left:.5rem;">🔄 Recurring</span>`
+        `border:1px solid var(--brand-border);margin-left:.5rem;` +
+        `display:inline-flex;align-items:center;gap:4px;">${_icon('ArrowsClockwise', 11)} Recurring</span>`
       : '';
 
     const messageSafe = _esc(currentTask.message || 'Complete the tests on these dates!')
