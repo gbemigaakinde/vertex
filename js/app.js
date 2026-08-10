@@ -47,6 +47,10 @@
       if (window.VtxLoader) window.VtxLoader.progress(90, 'Opening dashboard…');
 
       Teacher.renderTeacherDashboard();
+      // Play welcome sound for teacher on login
+      if (window.VtxSound) {
+        try { VtxSound.welcome(); } catch (e) {}
+      }
 
       AppState.chatUnread = 0;
       var teacherNotifUnsub = window.fbDb
@@ -136,6 +140,10 @@
       }
 
       if (window.VtxLoader) window.VtxLoader.progress(90, 'Almost ready…');
+      // Play welcome sound for students on login
+      if (window.VtxSound) {
+        try { VtxSound.welcome(); } catch (e) {}
+      }
       await Exam.loadOrStart();
       if (window.VtxLoader) window.VtxLoader.done();
 
