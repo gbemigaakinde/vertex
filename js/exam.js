@@ -13,6 +13,32 @@
   let _renderSubjectSelectionInProgress = false;
 
   /* ─────────────────────────────────────────────────────── */
+  /* Phosphor icon helper                                    */
+  /* ─────────────────────────────────────────────────────── */
+  function _icon(name, size) {
+    size = size || 18;
+    const icons = {
+      ClipboardText: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor"><path d="M184,48H136V40a8,8,0,0,0-16,0v8H72A16,16,0,0,0,56,64V216a16,16,0,0,0,16,16H184a16,16,0,0,0,16-16V64A16,16,0,0,0,184,48Zm-48-8a0,0,0,0,1,0,0v0a0,0,0,0,1,0,0v0Zm-8,16h48v16H72V56ZM184,216H72V96H184V216Zm-32-88H104a8,8,0,0,0,0,16h48a8,8,0,0,0,0-16Zm0,32H104a8,8,0,0,0,0,16h48a8,8,0,0,0,0-16Z"/></svg>`,
+      Books: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor"><path d="M231.65,194.55,198.27,65.4a16,16,0,0,0-19.44-11.33l-31.8,8.52A16,16,0,0,0,136,56H120a16,16,0,0,0-11,4.56L97.17,62.59A16,16,0,0,0,80,56H40A16,16,0,0,0,24,72V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16A16.07,16.07,0,0,0,231.65,194.55ZM120,72h16V200H120ZM40,200V72H80V200Zm96,0V72h4.55L176,194.43V200Z"/></svg>`,
+      CalendarBlank: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor"><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM208,208H48V96H208ZM48,80V48H72v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80Z"/></svg>`,
+      CheckCircle: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor"><path d="M173.66,98.34a8,8,0,0,1,0,11.32l-56,56a8,8,0,0,1-11.32,0l-24-24a8,8,0,0,1,11.32-11.32L112,148.69l50.34-50.35A8,8,0,0,1,173.66,98.34ZM232,128A104,104,0,1,1,128,24,104.11,104.11,0,0,1,232,128Zm-16,0a88,88,0,1,0-88,88A88.1,88.1,0,0,0,216,128Z"/></svg>`,
+      Lock: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor"><path d="M208,80H168V56a40,40,0,0,0-80,0V80H48A16,16,0,0,0,32,96V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V96A16,16,0,0,0,208,80ZM104,56a24,24,0,0,1,48,0V80H104ZM208,208H48V96H208Z"/></svg>`,
+      Trophy: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor"><path d="M232,64H208V48a8,8,0,0,0-8-8H56a8,8,0,0,0-8,8V64H24A16,16,0,0,0,8,80V96a40,40,0,0,0,37.65,39.87A64.15,64.15,0,0,0,96,183.42V208H80a8,8,0,0,0,0,16h96a8,8,0,0,0,0-16H160V183.42a64.15,64.15,0,0,0,50.35-47.55A40,40,0,0,0,248,96V80A16,16,0,0,0,232,64ZM40,96V80H48v55.33A24,24,0,0,1,40,96Zm176,0a24,24,0,0,1-8,17.33V80h8Z"/></svg>`,
+      Medal: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor"><path d="M160,162.1V112a8,8,0,0,0-8-8H104a8,8,0,0,0-8,8v50.1a72,72,0,1,0,64,0ZM128,224a56,56,0,1,1,56-56A56.06,56.06,0,0,1,128,224Zm24-168H104a8,8,0,0,1,0-16h48a8,8,0,0,1,0,16Z"/></svg>`,
+      ThumbsUp: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor"><path d="M234,80.12A24,24,0,0,0,216,72H160V56a40,40,0,0,0-40-40,8,8,0,0,0-7.16,4.42L75.06,96H32a16,16,0,0,0-16,16v88a16,16,0,0,0,16,16H204a24,24,0,0,0,23.82-21l12-96A24,24,0,0,0,234,80.12ZM32,112H72v88H32Zm183.64,9.61-12,96A8,8,0,0,1,196,224H88V105.89l36.71-73.43A24,24,0,0,1,144,56V80a8,8,0,0,0,8,8h64a8,8,0,0,1,7.94,8.61Z"/></svg>`,
+      Fist: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor"><path d="M230.93,119.76C230.45,100.29,215.28,84,196,84H192V72a28,28,0,0,0-28-28H152a28,28,0,0,0-27.66,24H112A28,28,0,0,0,84,96v4H80a28,28,0,0,0-28,28v8H48a16,16,0,0,0-16,16v16a88,88,0,0,0,176,0V136A16.07,16.07,0,0,0,230.93,119.76ZM192,100a12,12,0,0,1,0,24H192V100ZM152,60h12a12,12,0,0,1,12,12V124H152a12,12,0,0,1,0-24h12V96H152a12,12,0,0,1,0-24Zm-52,36a12,12,0,0,1,12-12h12v8H112a12,12,0,0,0,0,24h28v16H112A12,12,0,0,1,100,132Zm-32,36a12,12,0,0,1,12-12H100v4a28,28,0,0,0,8,19.6V168a12,12,0,0,1-12,12H80A12,12,0,0,1,68,168Zm116,0a72,72,0,0,1-144,0V168h4a28,28,0,0,0,28-28V136h76a28,28,0,0,0,27.94-26H180a12,12,0,0,0,12,12h4Z"/></svg>`,
+      BookOpen: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor"><path d="M224,48H160a40,40,0,0,0-32,16A40,40,0,0,0,96,48H32A16,16,0,0,0,16,64V192a16,16,0,0,0,16,16H96a24,24,0,0,1,24,24,8,8,0,0,0,16,0,24,24,0,0,1,24-24h64a16,16,0,0,0,16-16V64A16,16,0,0,0,224,48ZM96,192H32V64H96a24,24,0,0,1,24,24V200A40,40,0,0,0,96,192Zm128,0H160a40,40,0,0,0-24,8V88a24,24,0,0,1,24-24h64Z"/></svg>`,
+      Flask: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor"><path d="M221.69,199.77,160,96.92V48h8a8,8,0,0,0,0-16H88a8,8,0,0,0,0,16h8V96.92L34.31,199.77A16,16,0,0,0,48,224H208a16,16,0,0,0,13.72-24.23ZM108.62,103.08A8.07,8.07,0,0,0,112,96.92V48h32V96.92a8.07,8.07,0,0,0,1.38,4.16L168.5,128H87.5ZM48,208l24-36.33L96,208Zm67.1,0L72,144.43,87.5,144h81l15.5.43L141.1,208Z"/></svg>`,
+      BookBookmark: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor"><path d="M192,32H64A16,16,0,0,0,48,48V240a8,8,0,0,0,12.65,6.51L80,233.81l19.35,12.7A8,8,0,0,0,104,248a8,8,0,0,0,4.65-1.49L128,233.81l19.35,12.7A8,8,0,0,0,152,248a8,8,0,0,0,4.65-1.49L176,233.81l19.35,12.7A8,8,0,0,0,208,240V48A16,16,0,0,0,192,32Zm0,192-11.35-7.49a8,8,0,0,0-8.9,0L152,229.81l-19.75-13a8,8,0,0,0-8.5,0L104,229.81,84.25,216.51a8,8,0,0,0-8.9,0L64,224V48H192ZM80,120a8,8,0,0,1,8-8h80a8,8,0,0,1,0,16H88A8,8,0,0,1,80,120Zm0,32a8,8,0,0,1,8-8h80a8,8,0,0,1,0,16H88A8,8,0,0,1,80,152Z"/></svg>`,
+      GameController: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor"><path d="M205.55,64H50.45A34.56,34.56,0,0,0,16,96.89c-1.67,47.32,4.66,96.93,36.53,119.82a34.17,34.17,0,0,0,20.2,6.58c11.38,0,22.95-5.44,34.37-16.19,6-5.65,8-7.1,20.9-7.1s14.91,1.45,20.9,7.1c11.42,10.75,23,16.19,34.37,16.19a34.17,34.17,0,0,0,20.2-6.58C240,193.86,241.66,144.22,240,96.89A34.56,34.56,0,0,0,205.55,64ZM96,152H80v16a8,8,0,0,1-16,0V152H48a8,8,0,0,1,0-16H64V120a8,8,0,0,1,16,0v16H96a8,8,0,0,1,0,16Zm64,4a12,12,0,1,1,12-12A12,12,0,0,1,160,156Zm32-32a12,12,0,1,1,12-12A12,12,0,0,1,192,124Z"/></svg>`,
+      ChatCircleDots: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor"><path d="M128,24A104,104,0,0,0,36.18,176.88L24.83,210.93a16,16,0,0,0,20.24,20.24l34.05-11.35A104,104,0,1,0,128,24Zm0,192a88.11,88.11,0,0,1-45.06-12.38,8,8,0,0,0-6.54-.67L40,216l13.05-36.4a8,8,0,0,0-.67-6.54A88,88,0,1,1,128,216Zm12-88a12,12,0,1,1-12-12A12,12,0,0,1,140,128Zm-44,0a12,12,0,1,1-12-12A12,12,0,0,1,96,128Zm88,0a12,12,0,1,1-12-12A12,12,0,0,1,184,128Z"/></svg>`,
+      EnvelopeSimple: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor"><path d="M224,48H32a8,8,0,0,0-8,8V192a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A8,8,0,0,0,224,48ZM203.43,64,128,133.15,52.57,64ZM216,192H40V74.19l82.59,75.71a8,8,0,0,0,10.82,0L216,74.19V192Z"/></svg>`,
+      ChatText: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor"><path d="M216,48H40A16,16,0,0,0,24,64V224a15.85,15.85,0,0,0,9.24,14.5A16.13,16.13,0,0,0,40,240a15.89,15.89,0,0,0,10.25-3.78.69.69,0,0,0,.13-.11L82.5,208H216a16,16,0,0,0,16-16V64A16,16,0,0,0,216,48ZM216,192H80a8,8,0,0,0-5.34,2L40,224V64H216ZM88,112a8,8,0,0,1,8-8h64a8,8,0,0,1,0,16H96A8,8,0,0,1,88,112Zm0,32a8,8,0,0,1,8-8h64a8,8,0,0,1,0,16H96A8,8,0,0,1,88,144Z"/></svg>`,
+    };
+    return icons[name] || '';
+  }
+
+  /* ─────────────────────────────────────────────────────── */
   /* LaTeX preprocessing                                     */
   /* ─────────────────────────────────────────────────────── */
   function preprocessLatex(str) {
@@ -294,31 +320,80 @@
     return thursday.getFullYear() + '-W' + String(wn).padStart(2, '0');
   }
 
-  // ─── exam.js: _fetchWeeklyTimetableHtml (fully updated) ──────────────────────
-async function _fetchWeeklyTimetableHtml(classKey) {
-  try {
-    if (!navigator.onLine || !window.fbDb || !classKey) return '';
-    const snap = await window.fbDb.collection('weeklyTimetable').doc(classKey).get();
-    if (!snap || !snap.exists) return '';
-    const ttData   = snap.data() || {};
-    const allWeeks = ttData.weeks  || {};
-    const allGuides = ttData.guides || {};
-    const weekKey  = _isoWeekKey();
-    const todayStr = _todayStr();
+  async function _fetchWeeklyTimetableHtml(classKey) {
+    try {
+      if (!navigator.onLine || !window.fbDb || !classKey) return '';
+      const snap = await window.fbDb.collection('weeklyTimetable').doc(classKey).get();
+      if (!snap || !snap.exists) return '';
+      const ttData   = snap.data() || {};
+      const allWeeks = ttData.weeks  || {};
+      const allGuides = ttData.guides || {};
+      const weekKey  = _isoWeekKey();
+      const todayStr = _todayStr();
 
-    // ── Check for an active study guide first (takes priority over topics) ──
-    const guide = allGuides[weekKey];
-    const guideActive = guide &&
-      guide.expiresOn &&
-      guide.expiresOn >= todayStr &&
-      guide.days &&
-      Object.keys(guide.days).length > 0;
+      const guide = allGuides[weekKey];
+      const guideActive = guide &&
+        guide.expiresOn &&
+        guide.expiresOn >= todayStr &&
+        guide.days &&
+        Object.keys(guide.days).length > 0;
 
-    if (guideActive) {
-      // Show the daily study guide
-      const d = new Date();
-      const dow = d.getDay();
-      const diff = dow === 0 ? -6 : 1 - dow;
+      if (guideActive) {
+        const d = new Date();
+        const dow = d.getDay();
+        const diff = dow === 0 ? -6 : 1 - dow;
+        const monday = new Date(d); monday.setDate(d.getDate() + diff);
+        const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+        const rangeLabel =
+          monday.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) +
+          ' – ' +
+          sunday.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+        const dayNames = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+        const dayRows = dayNames.map((day, i) => {
+          const dayDate = new Date(monday);
+          dayDate.setDate(monday.getDate() + i);
+          const dateStr = dayDate.getFullYear() + '-' +
+            String(dayDate.getMonth()+1).padStart(2,'0') + '-' +
+            String(dayDate.getDate()).padStart(2,'0');
+          const content = (guide.days || {})[dateStr];
+          if (!content) return null;
+          if (dateStr < todayStr) return null;
+          const isToday = dateStr === todayStr;
+          const dayLabel = dayDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
+          return '<div style="padding:.5rem 0;border-bottom:1px solid var(--border);">' +
+            '<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.25rem;">' +
+            '<span style="font-size:.8125rem;font-weight:700;color:' +
+            (isToday ? 'var(--warning-text)' : 'var(--accent-text)') +
+            ';">' + _escHtml(dayLabel) + '</span>' +
+            (isToday ? '<span style="font-size:.6875rem;font-weight:700;padding:1px 6px;border-radius:99px;background:var(--warning-subtle);color:var(--warning-text);border:1px solid var(--warning-border);">TODAY</span>' : '') +
+            '</div>' +
+            '<span style="font-size:.8125rem;color:var(--text-1);line-height:1.6;white-space:pre-wrap;">' +
+            _escHtml(content) + '</span></div>';
+        }).filter(Boolean).join('');
+
+        if (!dayRows) return '';
+
+        return '<div style="margin-bottom:1.25rem;border:1px solid var(--warning-border);' +
+          'border-left:3px solid var(--warning);border-radius:8px;' +
+          'background:var(--warning-subtle);padding:.875rem 1rem;text-align:left;">' +
+          '<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.625rem;">' +
+          '<span style="flex-shrink:0;color:var(--warning-text);">' + _icon('ClipboardText', 18) + '</span>' +
+          '<div><p style="font-size:.875rem;font-weight:700;color:var(--warning-text);">' +
+          _escHtml(guide.title || 'Daily Study Guide') + '</p>' +
+          '<p style="font-size:.75rem;color:var(--text-3);margin-top:1px;">' + _escHtml(rangeLabel) + '</p>' +
+          '</div></div><div style="padding-top:.125rem;">' + dayRows + '</div></div>';
+      }
+
+      const topics  = allWeeks[weekKey] || {};
+      const entries = Object.entries(topics).filter(function (pair) {
+        return pair[1] && String(pair[1]).trim();
+      });
+      if (entries.length === 0) return '';
+
+      const d      = new Date();
+      const dow    = d.getDay();
+      const diff   = dow === 0 ? -6 : 1 - dow;
       const monday = new Date(d); monday.setDate(d.getDate() + diff);
       const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
       const rangeLabel =
@@ -326,83 +401,28 @@ async function _fetchWeeklyTimetableHtml(classKey) {
         ' – ' +
         sunday.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
-      const dayNames = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-      // Build ordered day entries, only showing today + future days that have content
-      const dayRows = dayNames.map((day, i) => {
-        const dayDate = new Date(monday);
-        dayDate.setDate(monday.getDate() + i);
-        const dateStr = dayDate.getFullYear() + '-' +
-          String(dayDate.getMonth()+1).padStart(2,'0') + '-' +
-          String(dayDate.getDate()).padStart(2,'0');
-        const content = (guide.days || {})[dateStr];
-        // Skip past days with no content; skip days with no content entirely
-        if (!content) return null;
-        if (dateStr < todayStr) return null; // don't show past days to students
-        const isToday = dateStr === todayStr;
-        const dayLabel = dayDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
-        return '<div style="padding:.5rem 0;border-bottom:1px solid var(--border);">' +
-          '<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.25rem;">' +
-          '<span style="font-size:.8125rem;font-weight:700;color:' +
-          (isToday ? 'var(--warning-text)' : 'var(--accent-text)') +
-          ';">' + _escHtml(dayLabel) + '</span>' +
-          (isToday ? '<span style="font-size:.6875rem;font-weight:700;padding:1px 6px;border-radius:99px;background:var(--warning-subtle);color:var(--warning-text);border:1px solid var(--warning-border);">TODAY</span>' : '') +
-          '</div>' +
-          '<span style="font-size:.8125rem;color:var(--text-1);line-height:1.6;white-space:pre-wrap;">' +
-          _escHtml(content) + '</span></div>';
-      }).filter(Boolean).join('');
+      const rows = entries.map(function (pair) {
+        return '<div style="display:flex;align-items:flex-start;gap:.625rem;' +
+          'padding:.4375rem 0;border-bottom:1px solid var(--border);">' +
+          '<span style="font-size:.8125rem;font-weight:700;color:var(--accent-text);' +
+          'min-width:100px;flex-shrink:0;">' + _escHtml(pair[0]) + '</span>' +
+          '<span style="font-size:.8125rem;color:var(--text-1);line-height:1.5;">' +
+          _escHtml(pair[1]) + '</span></div>';
+      }).join('');
 
-      if (!dayRows) return ''; // all days are past or empty
-
-      return '<div style="margin-bottom:1.25rem;border:1px solid var(--warning-border);' +
-        'border-left:3px solid var(--warning);border-radius:8px;' +
-        'background:var(--warning-subtle);padding:.875rem 1rem;text-align:left;">' +
+      return '<div style="margin-bottom:1.25rem;border:1px solid var(--accent-border);' +
+        'border-left:3px solid var(--accent);border-radius:8px;' +
+        'background:var(--accent-subtle);padding:.875rem 1rem;text-align:left;">' +
         '<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.625rem;">' +
-        '<span style="font-size:1rem;flex-shrink:0;">📋</span>' +
-        '<div><p style="font-size:.875rem;font-weight:700;color:var(--warning-text);">' +
-        _escHtml(guide.title || 'Daily Study Guide') + '</p>' +
+        '<span style="flex-shrink:0;color:var(--accent-text);">' + _icon('Books', 18) + '</span>' +
+        '<div><p style="font-size:.875rem;font-weight:700;color:var(--accent-text);">This Week\'s Study Topics</p>' +
         '<p style="font-size:.75rem;color:var(--text-3);margin-top:1px;">' + _escHtml(rangeLabel) + '</p>' +
-        '</div></div><div style="padding-top:.125rem;">' + dayRows + '</div></div>';
+        '</div></div><div style="padding-top:.125rem;">' + rows + '</div></div>';
+    } catch (err) {
+      console.warn('[exam] Weekly timetable fetch failed (non-fatal):', err);
+      return '';
     }
-
-    // ── Fall back to weekly topics ──────────────────────────────────────────
-    const topics  = allWeeks[weekKey] || {};
-    const entries = Object.entries(topics).filter(function (pair) {
-      return pair[1] && String(pair[1]).trim();
-    });
-    if (entries.length === 0) return '';
-
-    const d      = new Date();
-    const dow    = d.getDay();
-    const diff   = dow === 0 ? -6 : 1 - dow;
-    const monday = new Date(d); monday.setDate(d.getDate() + diff);
-    const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
-    const rangeLabel =
-      monday.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) +
-      ' – ' +
-      sunday.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
-
-    const rows = entries.map(function (pair) {
-      return '<div style="display:flex;align-items:flex-start;gap:.625rem;' +
-        'padding:.4375rem 0;border-bottom:1px solid var(--border);">' +
-        '<span style="font-size:.8125rem;font-weight:700;color:var(--accent-text);' +
-        'min-width:100px;flex-shrink:0;">' + _escHtml(pair[0]) + '</span>' +
-        '<span style="font-size:.8125rem;color:var(--text-1);line-height:1.5;">' +
-        _escHtml(pair[1]) + '</span></div>';
-    }).join('');
-
-    return '<div style="margin-bottom:1.25rem;border:1px solid var(--accent-border);' +
-      'border-left:3px solid var(--accent);border-radius:8px;' +
-      'background:var(--accent-subtle);padding:.875rem 1rem;text-align:left;">' +
-      '<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.625rem;">' +
-      '<span style="font-size:1rem;flex-shrink:0;">📚</span>' +
-      '<div><p style="font-size:.875rem;font-weight:700;color:var(--accent-text);">This Week\'s Study Topics</p>' +
-      '<p style="font-size:.75rem;color:var(--text-3);margin-top:1px;">' + _escHtml(rangeLabel) + '</p>' +
-      '</div></div><div style="padding-top:.125rem;">' + rows + '</div></div>';
-  } catch (err) {
-    console.warn('[exam] Weekly timetable fetch failed (non-fatal):', err);
-    return '';
   }
-}
 
   /* ─────────────────────────────────────────────────────── */
   /* renderSubjectSelection — pill chip version              */
@@ -471,7 +491,7 @@ async function _fetchWeeklyTimetableHtml(classKey) {
                        background:var(--warning-bg);border:1px solid var(--warning-border);
                        border-left:3px solid var(--warning);border-radius:8px;
                        padding:.75rem 1rem;text-align:left;">
-             <span style="font-size:1.125rem;flex-shrink:0;margin-top:1px;">📋</span>
+             <span style="flex-shrink:0;margin-top:1px;color:var(--warning-text);">${_icon('ClipboardText', 20)}</span>
              <div>
                <p style="font-size:.875rem;font-weight:700;color:var(--warning-text);margin-bottom:.25rem;">
                  Subject restriction active for today
@@ -494,7 +514,7 @@ async function _fetchWeeklyTimetableHtml(classKey) {
                        background:var(--brand-bg);border:1px solid var(--brand-border);
                        border-left:3px solid var(--brand);border-radius:8px;
                        padding:.75rem 1rem;text-align:left;">
-             <span style="font-size:1.125rem;flex-shrink:0;margin-top:1px;">📅</span>
+             <span style="flex-shrink:0;margin-top:1px;color:var(--brand-text);">${_icon('CalendarBlank', 20)}</span>
              <div>
                <p style="font-size:.875rem;font-weight:700;color:var(--brand-text);margin-bottom:.25rem;">No task session today</p>
                <p style="font-size:.8125rem;color:var(--text-secondary);line-height:1.6;">
@@ -505,7 +525,7 @@ async function _fetchWeeklyTimetableHtml(classKey) {
            </div>`
         : '';
 
-      // ── Subject pill HTML ──────────────────────────────────
+      // Subject pill HTML
       let subjectsHtml;
 
       if (todayTaskDone) {
@@ -516,7 +536,7 @@ async function _fetchWeeklyTimetableHtml(classKey) {
         subjectsHtml = `
           <div style="margin-bottom:1.25rem;padding:1.25rem 1.5rem;border-radius:12px;
                       background:var(--success-bg);border:2px solid var(--success-border);text-align:center;">
-            <div style="font-size:2rem;margin-bottom:.5rem;">✅</div>
+            <div style="display:flex;justify-content:center;margin-bottom:.5rem;color:var(--success);">${_icon('CheckCircle', 36)}</div>
             <p style="font-size:1rem;font-weight:700;color:var(--success-text);margin-bottom:.375rem;">
               Today's session complete!
             </p>
@@ -529,7 +549,7 @@ async function _fetchWeeklyTimetableHtml(classKey) {
                          padding:.75rem 2rem;border-radius:8px;font-size:.9375rem;font-weight:700;
                          background:var(--surface-muted);color:var(--text-disabled);
                          border:1.5px solid var(--border);cursor:not-allowed;width:100%;max-width:20rem;">
-            🔒 Exam Locked for Today
+            <span style="display:inline-flex;align-items:center;">${_icon('Lock', 16)}</span> Exam Locked for Today
           </button>`;
 
       } else if (available.length === 0) {
@@ -605,17 +625,17 @@ async function _fetchWeeklyTimetableHtml(classKey) {
             </div>
             <div style="position:relative;display:inline-flex;">
               <button onclick="StudyRoom.openForStudent()" class="btn bg-blue-600 hover:bg-blue-700">
-                📖 Study Room
+                <span style="display:inline-flex;align-items:center;gap:.375rem;">${_icon('BookOpen', 16)} Study Room</span>
               </button>
             </div>
             <div style="position:relative;display:inline-flex;">
               <button onclick="ThreeDClass.openForStudent()" class="btn bg-indigo-600 hover:bg-indigo-700">
-                🧪 3D Class
+                <span style="display:inline-flex;align-items:center;gap:.375rem;">${_icon('Flask', 16)} 3D Class</span>
               </button>
             </div>
             <div style="position:relative;display:inline-flex;">
               <button onclick="window.open('english.html', '_blank')" class="btn bg-purple-600 hover:bg-purple-700">
-                📘 English Mastery
+                <span style="display:inline-flex;align-items:center;gap:.375rem;">${_icon('BookBookmark', 16)} English Mastery</span>
               </button>
             </div>
             <div style="position:relative;display:inline-flex;">
@@ -635,18 +655,18 @@ async function _fetchWeeklyTimetableHtml(classKey) {
     });
   })()" class="btn"
   style="background:linear-gradient(135deg,#7c3aed,#4f6ef7);color:#fff;">
-                🎮 Games
+                <span style="display:inline-flex;align-items:center;gap:.375rem;">${_icon('GameController', 16)} Games</span>
               </button>
             </div>
             <div style="position:relative;display:inline-flex;">
               <button id="gcOpenBtn" onclick="GroupChat.openForStudent()" class="btn"
                 style="background:var(--success);color:#fff;">
-                💬 Group Chats
+                <span style="display:inline-flex;align-items:center;gap:.375rem;">${_icon('ChatCircleDots', 16)} Group Chats</span>
               </button>
             </div>
             <div style="position:relative;display:inline-flex;">
               <button id="dmOpenBtn" onclick="DM.openStudentInbox()" class="btn bg-indigo-600 hover:bg-indigo-700">
-                ✉️ Message Teacher
+                <span style="display:inline-flex;align-items:center;gap:.375rem;">${_icon('EnvelopeSimple', 16)} Message Teacher</span>
               </button>
             </div>
           </div>
@@ -720,19 +740,19 @@ async function _fetchWeeklyTimetableHtml(classKey) {
       }
 
       // Wire pill selection
-if (!restrictedSubjs && !todayTaskDone) {
-  document.querySelectorAll('.vtx-subject-pill').forEach(pill => {
-    pill.addEventListener('click', function (e) {
-      e.preventDefault(); // suppress native label → checkbox activation
-      const cb = pill.querySelector('input[type="checkbox"]');
-      if (!cb || cb.disabled) return;
-      cb.checked = !cb.checked;
-      pill.classList.toggle('is-selected', cb.checked);
-      _updateStartBtn();
-    });
-  });
-}
-      // Show 3D background on dashboard
+      if (!restrictedSubjs && !todayTaskDone) {
+        document.querySelectorAll('.vtx-subject-pill').forEach(pill => {
+          pill.addEventListener('click', function (e) {
+            e.preventDefault();
+            const cb = pill.querySelector('input[type="checkbox"]');
+            if (!cb || cb.disabled) return;
+            cb.checked = !cb.checked;
+            pill.classList.toggle('is-selected', cb.checked);
+            _updateStartBtn();
+          });
+        });
+      }
+
       _showBgCanvas(true);
 
     } catch (err) {
@@ -878,7 +898,7 @@ if (!restrictedSubjs && !todayTaskDone) {
           <li>• You can open Public Chat at any time.</li>
           <li>• Once submitted, answers cannot be changed.</li>
           <li class="font-semibold pt-1" style="color:var(--danger);">
-            ⏱ The timer starts when you click below. Switching devices will not reset it.
+            The timer starts when you click below. Switching devices will not reset it.
           </li>
         </ul>
         <button id="beginExamBtn" onclick="Exam.beginExam()" class="btn bg-green-600 hover:bg-green-700 w-full"
@@ -906,9 +926,9 @@ if (!restrictedSubjs && !todayTaskDone) {
       setTimeout(function () { _visibilityCooldown = false; }, 1000);
       _visibilityHideCount++;
       if (_visibilityHideCount === 1) {
-        UI.toast('⚠️ Warning: You switched away from the exam. Please stay on this tab.', 'warning', 5000);
+        UI.toast('Warning: You switched away from the exam. Please stay on this tab.', 'warning', 5000);
       } else if (_visibilityHideCount === 2) {
-        UI.toast('⚠️ Final warning: One more switch will automatically submit your exam.', 'warning', 7000);
+        UI.toast('Final warning: One more switch will automatically submit your exam.', 'warning', 7000);
       } else if (_visibilityHideCount >= 3) {
         _teardownVisibilityGuard();
         UI.toast('Exam auto-submitted: tab hidden too many times.', 'error', 0);
@@ -959,12 +979,12 @@ if (!restrictedSubjs && !todayTaskDone) {
 
     _startTimer();
     _setupVisibilityGuard();
-    _showBgCanvas(false); // hide particles during exam for focus
+    _showBgCanvas(false);
     renderExam();
   }
 
   /* ─────────────────────────────────────────────────────── */
-  /* renderExam — reduced card nesting + question transition */
+  /* renderExam                                              */
   /* ─────────────────────────────────────────────────────── */
   function renderExam() {
     _questionRenderedAt = Date.now();
@@ -981,9 +1001,8 @@ if (!restrictedSubjs && !todayTaskDone) {
     const timerStr   = _currentTimerStr();
     const timerClass = _currentTimerClass();
 
-    // Timer ring constants
     const RING_R  = 34;
-    const RING_C  = 2 * Math.PI * RING_R; // circumference
+    const RING_C  = 2 * Math.PI * RING_R;
     const progress = _timerProgress();
     const offset   = RING_C * (1 - progress);
     const ringColor = timerClass === 'timer-red' ? 'is-red' : timerClass === 'timer-yellow' ? 'is-yellow' : '';
@@ -991,7 +1010,6 @@ if (!restrictedSubjs && !todayTaskDone) {
     UI.mount(`
       <div class="max-w-4xl mx-auto" style="padding:0.75rem 0;">
 
-        <!-- Student bar — flat strip, no card -->
         <div class="vtx-student-bar">
           <span>${_escHtml(S().studentData.name)}</span>
           <span style="color:var(--border-strong);">|</span>
@@ -1000,7 +1018,6 @@ if (!restrictedSubjs && !todayTaskDone) {
           <span>${_escHtml(S().studentData.school)}</span>
         </div>
 
-        <!-- Exam header — single glass container -->
         <div class="glass exam-header-sticky" style="padding:0.875rem 1.25rem;margin-bottom:0.75rem;">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;">
             <div>
@@ -1009,7 +1026,6 @@ if (!restrictedSubjs && !todayTaskDone) {
                 Subject ${subjIdx + 1} of ${exam.subjects.length} &bull; Q${exam.currentIndex + 1} / ${qList.length}
               </p>
             </div>
-            <!-- Timer with ring -->
             <div class="vtx-timer-wrap" style="flex-shrink:0;">
               <svg class="vtx-timer-ring" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
                 <circle class="vtx-timer-ring-track" cx="40" cy="40" r="${RING_R}"/>
@@ -1029,7 +1045,6 @@ if (!restrictedSubjs && !todayTaskDone) {
           </div>
         </div>
 
-        <!-- Subject strip — flat pill tabs, no card -->
         <div class="vtx-subj-strip">
           ${exam.subjects.map(s => `
             <button onclick="Exam.switchSubject('${_escAttr(s)}')"
@@ -1038,7 +1053,6 @@ if (!restrictedSubjs && !todayTaskDone) {
             </button>`).join('')}
         </div>
 
-        <!-- Question — single container -->
         <div class="vtx-question-section" id="questionSection">
           <div class="vtx-question-wrap">
             <p style="font-size:1.0625rem;font-weight:500;line-height:1.7;margin-bottom:1.25rem;color:var(--text-1);">
@@ -1063,7 +1077,6 @@ if (!restrictedSubjs && !todayTaskDone) {
           </div>
         </div>
 
-        <!-- Navigation buttons — no card -->
         <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;padding:0.75rem 0;border-top:1px solid var(--border);">
           <button id="prevBtn" onclick="Exam.prevQuestion()"
                   ${exam.currentIndex === 0 ? 'disabled' : ''}
@@ -1072,7 +1085,6 @@ if (!restrictedSubjs && !todayTaskDone) {
           <button onclick="Exam.nextQuestion()" class="btn">Next →</button>
         </div>
 
-        <!-- Question navigator — no card wrapper -->
         <div class="vtx-nav-section">
           <div class="vtx-nav-label">${_escHtml(subj)} — Navigator</div>
           <div id="navGrid" style="display:flex;flex-wrap:wrap;gap:0.375rem;justify-content:center;">
@@ -1087,7 +1099,6 @@ if (!restrictedSubjs && !todayTaskDone) {
           </div>
         </div>
 
-        <!-- Submit -->
         <div style="text-align:center;padding:1rem 0 0.5rem;">
           <button onclick="Exam.submitExam()" id="submitBtn" class="btn bg-red-600">
             Submit Exam
@@ -1096,7 +1107,6 @@ if (!restrictedSubjs && !todayTaskDone) {
 
       </div>`);
 
-    // Wire options: click anywhere on the label selects it
     document.querySelectorAll('.option-label').forEach((lbl, idx) => {
       lbl.addEventListener('click', function () {
         const radio = lbl.querySelector('input[type="radio"]');
@@ -1153,7 +1163,6 @@ if (!restrictedSubjs && !todayTaskDone) {
   /* ─────────────────────────────────────────────────────── */
   function _navigateWithTransition(fn) {
     const section = document.getElementById('questionSection');
-    // Check reduced motion preference
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (!section || reducedMotion) { fn(); return; }
 
@@ -1181,7 +1190,7 @@ if (!restrictedSubjs && !todayTaskDone) {
   function nextQuestion() {
     const elapsed = Date.now() - _questionRenderedAt;
     if (elapsed < 3000) {
-      UI.toast('⚠️ You\'re moving too fast! Take a moment to read the question carefully.', 'warning', 3500);
+      UI.toast('You\'re moving too fast! Take a moment to read the question carefully.', 'warning', 3500);
       return;
     }
     const exam  = S().exam;
@@ -1258,7 +1267,6 @@ if (!restrictedSubjs && !todayTaskDone) {
                    : 'timer-green';
     el.className = newClass;
 
-    // Update ring
     const ring = document.getElementById('timerRingProg');
     if (ring) {
       const RING_R  = 34;
@@ -1341,8 +1349,7 @@ if (!restrictedSubjs && !todayTaskDone) {
       _startExamLock  = false;
       _beginExamLock  = false;
 
-      _showBgCanvas(true); // bring background back on results screen
-      // Play submission fanfare
+      _showBgCanvas(true);
       if (window.VtxSound) {
         try { VtxSound.examSubmit(); } catch (e) {}
       }
@@ -1387,7 +1394,7 @@ if (!restrictedSubjs && !todayTaskDone) {
   }
 
   /* ─────────────────────────────────────────────────────── */
-  /* Results — count-up animation                            */
+  /* Results                                                 */
   /* ─────────────────────────────────────────────────────── */
   function renderResults(exam, result) {
     const gradeColor = result.grade === 'A' ? 'var(--success)'
@@ -1396,11 +1403,11 @@ if (!restrictedSubjs && !todayTaskDone) {
                      : result.grade === 'D' ? 'var(--warning)'
                      : 'var(--danger)';
 
-    const gradeEmoji = result.grade === 'A' ? '🏆'
-                     : result.grade === 'B' ? '🥈'
-                     : result.grade === 'C' ? '👍'
-                     : result.grade === 'D' ? '📚'
-                     : '💪';
+    const gradeIconName = result.grade === 'A' ? 'Trophy'
+                        : result.grade === 'B' ? 'Medal'
+                        : result.grade === 'C' ? 'ThumbsUp'
+                        : result.grade === 'D' ? 'Books'
+                        : 'Fist';
 
     UI.mount(`
       <div class="max-w-4xl mx-auto glass animate-fadeIn" style="padding:1.5rem;margin-top:1.5rem;margin-bottom:1.5rem;">
@@ -1408,7 +1415,8 @@ if (!restrictedSubjs && !todayTaskDone) {
         <div class="text-center mb-6">
           <div class="inline-flex items-center gap-2 mb-3"
                style="background:var(--success-bg);border:1px solid var(--success-border);border-radius:99px;padding:.375rem 1rem;">
-            <span style="color:var(--success);font-size:0.875rem;font-weight:600;">✓ Submitted</span>
+            <span style="color:var(--success);display:inline-flex;align-items:center;">${_icon('CheckCircle', 15)}</span>
+            <span style="color:var(--success);font-size:0.875rem;font-weight:600;">Submitted</span>
           </div>
           <h1 style="font-size:1.625rem;font-weight:700;">Exam Complete</h1>
           <p style="font-size:0.875rem;color:var(--text-3);margin-top:4px;">
@@ -1416,7 +1424,6 @@ if (!restrictedSubjs && !todayTaskDone) {
           </p>
         </div>
 
-        <!-- Score display — count-up animation -->
         <div style="text-align:center;padding:2rem 1rem;border-radius:var(--r-xl);
                     background:var(--bg-subtle);margin-bottom:1.5rem;">
           <div style="display:flex;align-items:baseline;justify-content:center;gap:0.25rem;">
@@ -1425,7 +1432,7 @@ if (!restrictedSubjs && !todayTaskDone) {
           </div>
           <div style="margin-top:0.5rem;display:flex;align-items:center;justify-content:center;gap:0.5rem;">
             <span style="font-size:1.25rem;font-weight:700;color:${gradeColor};">Grade ${result.grade}</span>
-            <span style="font-size:1.5rem;" id="vtxGradeEmoji">${gradeEmoji}</span>
+            <span style="color:${gradeColor};display:inline-flex;align-items:center;" id="vtxGradeIcon">${_icon(gradeIconName, 24)}</span>
           </div>
           <div style="display:flex;flex-wrap:wrap;gap:0.75rem;justify-content:center;margin-top:1.25rem;">
             ${result.subjects.map(s => `
@@ -1491,17 +1498,14 @@ if (!restrictedSubjs && !todayTaskDone) {
         <div style="display:flex;flex-wrap:wrap;gap:0.75rem;justify-content:center;">
           <button onclick="Exam._shareWhatsApp()" class="btn bg-green-600">Share on WhatsApp</button>
           <button onclick="Exam._copyResult()"    class="btn bg-blue-600">Copy Result</button>
-          <button onclick="Exam.renderSubjectSelection()" class="btn">New Exam</button>
+          <button onclick="Exam.renderSubjectSelection()" class="btn">Back to Dashboard</button>
         </div>
 
       </div>`);
 
     _currentResultForShare = { exam, result };
-
-    // Count-up animation
     _countUp('vtxScoreCount', result.percentage, 1200);
 
-    // Details summary arrow rotation
     document.querySelectorAll('details').forEach(function (det) {
       det.addEventListener('toggle', function () {
         const arrow = det.querySelector('summary span:last-child');
@@ -1512,7 +1516,6 @@ if (!restrictedSubjs && !todayTaskDone) {
     _renderKatex();
   }
 
-  /* Count-up number animation */
   function _countUp(id, target, duration) {
     const el = document.getElementById(id);
     if (!el) return;
@@ -1525,7 +1528,6 @@ if (!restrictedSubjs && !todayTaskDone) {
     function step(now) {
       const elapsed  = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      // Ease-out cubic
       const eased    = 1 - Math.pow(1 - progress, 3);
       const current  = Math.round(start + (target - start) * eased);
       el.textContent = current;
