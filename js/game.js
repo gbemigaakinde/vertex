@@ -1362,6 +1362,7 @@ function _chessSquareClick(r, c) {
     const legal = _chessLegalMovesForSquare(board, r, c, castling, enPassant, myColor);
     ui.selected = legal.length ? { r, c } : null;
     ui.legalTargets = legal;
+    if (legal.length > 0 && window.VtxSound) try { VtxSound.gameTilePlace(); } catch(e) {}
   } else {
     ui.selected = null; ui.legalTargets = [];
   }
@@ -1470,6 +1471,21 @@ async function _chessCommitMove(gameId, from, to, meta, promoteChoice) {
 
   try {
     await _db().collection('chessGames').doc(gameId).update(update);
+
+    // Sound: capture, check, or plain move
+    if (window.VtxSound) {
+      try {
+        if (gameOver && status === 'checkmate') {
+          VtxSound.gameWin();
+        } else if (status === 'check') {
+          VtxSound.gameChessCheck();
+        } else if (isCapture || (meta && meta.enPassant)) {
+          VtxSound.gameChessCapture();
+        } else {
+          VtxSound.gameChessMove();
+        }
+      } catch(e) {}
+    }
   } catch (e) {
     console.error('[chess] _chessCommitMove error:', e);
     window.UI.toast('Could not submit move.', 'error');
@@ -2879,12 +2895,12 @@ function _wsRenderGame(gameId, data) {
 // ── Tile interaction ─────────────────────────────────────────
 
 function _wsRackClick(idx) {
-  if (!_wsState) return;
-  if (_wsState.placed.some(p => p.rackIdx === idx)) return; // already placed
-  _wsState.selected = _wsState.selected === idx ? null : idx;
-  // Re-render rack only (cheap)
-  _wsRefreshRack();
-}
+    if (!_wsState) return;
+    if (_wsState.placed.some(p => p.rackIdx === idx)) return;
+    _wsState.selected = _wsState.selected === idx ? null : idx;
+    if (window.VtxSound) try { VtxSound.gameTilePlace(); } catch(e) {}
+    _wsRefreshRack();
+  }
 
 function _wsCellClick(row, col) {
   if (!_wsState) return;
@@ -3068,116 +3084,114 @@ function _wsIsFirstMove(board) {
 // ── Game actions ─────────────────────────────────────────────
 
 async function _wsConfirmPlay(gameId) {
-  if (!_wsState || _wsState.placed.length === 0) {
-    window.UI.toast('Place at least one tile on the board first.', 'warning');
-    return;
-  }
-
-  if (!_wsCachedData) return;
-  const data  = _wsCachedData;
-  const board = _wsDeserialiseBoard(data.board);
-
-  const result = _wsValidateMove(board, _wsState.placed, _wsIsFirstMove(board));
-  if (!result.valid) {
-    window.UI.toast(result.error, 'error', 4000);
-    return;
-  }
-
-  const btn = document.getElementById('wsPlayBtn');
-  if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
-
-  // Commit placed tiles to board
-  _wsState.placed.forEach(({ row, col, letter, points, blank }) => {
-    board[row][col] = { letter, points, blank: !!blank };
-  });
-
-  const uid     = _uid();
-  const isP1    = data.player1Uid === uid;
-  const myScore = (isP1 ? data.score1 : data.score2) + result.totalScore;
-
-  // Refill rack from bag
-  const bag      = (data.bag || []).map(t => ({ letter: t.l, points: t.p, id: `${t.l}_${Math.random()}` }));
-  const usedIdxs = new Set(_wsState.placed.map(p => p.rackIdx));
-  const myRackRaw = isP1 ? data.rack1 : data.rack2;
-  let newRack     = myRackRaw
-    .filter((_, i) => !usedIdxs.has(i))
-    .map(t => ({ letter: t.l, points: t.p }));
-  const drawn     = _wsDraw(bag, WS_RACK_SIZE - newRack.length);
-  newRack         = [...newRack, ...drawn];
-
-  // Check game-end: player emptied rack AND bag is also empty
-  const opponentRack = isP1 ? data.rack2 : data.rack1;
-  const gameOver     = newRack.length === 0 && bag.length === 0;
-
-  let finalScore1 = isP1 ? myScore : data.score1;
-  let finalScore2 = isP1 ? data.score2 : myScore;
-
-  if (gameOver) {
-    // Deduct opponent's unplayed tile values from their score, add to ours
-    const oppUnplayed = opponentRack.reduce((s, t) => s + (t.p || 0), 0);
-    if (isP1) { finalScore1 += oppUnplayed; }
-    else       { finalScore2 += oppUnplayed; }
-  }
-
-  const wordStr = result.words.map(w => w.word).join('/');
-  const newLog  = [...(data.moveLog || []).slice(-29), {
-    name:  _student().name || '',
-    type:  'play',
-    word:  wordStr,
-    score: result.totalScore,
-  }];
-
-  // Pass turn to the OTHER player
-  const nextTurn = isP1 ? data.player2Uid : data.player1Uid;
-
-  try {
-    const update = {
-      board:      _wsSerialiseBoard(board),
-      bag:        bag.map(t => ({ l: t.letter, p: t.points })),
-      passCount:  0,
-      moveLog:    newLog,
-      lastMoveAt: firebase.firestore.FieldValue.serverTimestamp(),
-      status:     gameOver ? 'finished' : 'active',
-    };
-
-    // Only set turn if game is not over
-    if (!gameOver) {
-      update.turn = nextTurn;
-    } else {
-      update.turn = null;
+    if (!_wsState || _wsState.placed.length === 0) {
+      window.UI.toast('Place at least one tile on the board first.', 'warning');
+      return;
     }
 
-    if (isP1) {
-      update.rack1  = newRack.map(t => ({ l: t.letter, p: t.points }));
-      update.score1 = gameOver ? finalScore1 : myScore;
-      if (gameOver) update.score2 = finalScore2;
-    } else {
-      update.rack2  = newRack.map(t => ({ l: t.letter, p: t.points }));
-      update.score2 = gameOver ? finalScore2 : myScore;
-      if (gameOver) update.score1 = finalScore1;
+    if (!_wsCachedData) return;
+    const data  = _wsCachedData;
+    const board = _wsDeserialiseBoard(data.board);
+
+    const result = _wsValidateMove(board, _wsState.placed, _wsIsFirstMove(board));
+    if (!result.valid) {
+      if (window.VtxSound) try { VtxSound.gameWordInvalid(); } catch(e) {}
+      window.UI.toast(result.error, 'error', 4000);
+      return;
     }
 
-    await _db().collection('scrabbleGames').doc(gameId).update(update);
-    _wsState.placed   = [];
-    _wsState.selected = null;
+    if (window.VtxSound) try { VtxSound.gameWordValid(); } catch(e) {}
+
+    const btn = document.getElementById('wsPlayBtn');
+    if (btn) { btn.disabled = true; btn.textContent = 'Submitting…'; }
+
+    _wsState.placed.forEach(({ row, col, letter, points, blank }) => {
+      board[row][col] = { letter, points, blank: !!blank };
+    });
+
+    const uid     = _uid();
+    const isP1    = data.player1Uid === uid;
+    const myScore = (isP1 ? data.score1 : data.score2) + result.totalScore;
+
+    const bag      = (data.bag || []).map(t => ({ letter: t.l, points: t.p, id: `${t.l}_${Math.random()}` }));
+    const usedIdxs = new Set(_wsState.placed.map(p => p.rackIdx));
+    const myRackRaw = isP1 ? data.rack1 : data.rack2;
+    let newRack     = myRackRaw
+      .filter((_, i) => !usedIdxs.has(i))
+      .map(t => ({ letter: t.l, points: t.p }));
+    const drawn     = _wsDraw(bag, WS_RACK_SIZE - newRack.length);
+    newRack         = [...newRack, ...drawn];
+
+    const opponentRack = isP1 ? data.rack2 : data.rack1;
+    const gameOver     = newRack.length === 0 && bag.length === 0;
+
+    let finalScore1 = isP1 ? myScore : data.score1;
+    let finalScore2 = isP1 ? data.score2 : myScore;
 
     if (gameOver) {
-      const winner = finalScore1 > finalScore2
-        ? data.player1Name
-        : finalScore2 > finalScore1
-          ? data.player2Name
-          : null;
-      window.UI.toast(winner ? `Game over! ${winner} wins! 🏆` : "Game over! It's a tie!", 'success', 6000);
-      const win    = (isP1 && finalScore1 > finalScore2) || (!isP1 && finalScore2 > finalScore1);
-      const xpGain = Math.min(200, Math.max(20, myScore));
-      await _awardXP(xpGain, 'wordScrabble', { win });
+      const oppUnplayed = opponentRack.reduce((s, t) => s + (t.p || 0), 0);
+      if (isP1) { finalScore1 += oppUnplayed; }
+      else       { finalScore2 += oppUnplayed; }
     }
-  } catch (e) {
-    console.error('[scrabble] _wsConfirmPlay error:', e);
-    window.UI.toast('Could not submit move. Please try again.', 'error');
-    if (btn) { btn.disabled = false; btn.textContent = '✓ Play Word'; }
+
+    const wordStr = result.words.map(w => w.word).join('/');
+    const newLog  = [...(data.moveLog || []).slice(-29), {
+      name:  _student().name || '',
+      type:  'play',
+      word:  wordStr,
+      score: result.totalScore,
+    }];
+
+    const nextTurn = isP1 ? data.player2Uid : data.player1Uid;
+
+    try {
+      const update = {
+        board:      _wsSerialiseBoard(board),
+        bag:        bag.map(t => ({ l: t.letter, p: t.points })),
+        passCount:  0,
+        moveLog:    newLog,
+        lastMoveAt: firebase.firestore.FieldValue.serverTimestamp(),
+        status:     gameOver ? 'finished' : 'active',
+      };
+
+      if (!gameOver) {
+        update.turn = nextTurn;
+      } else {
+        update.turn = null;
+      }
+
+      if (isP1) {
+        update.rack1  = newRack.map(t => ({ l: t.letter, p: t.points }));
+        update.score1 = gameOver ? finalScore1 : myScore;
+        if (gameOver) update.score2 = finalScore2;
+      } else {
+        update.rack2  = newRack.map(t => ({ l: t.letter, p: t.points }));
+        update.score2 = gameOver ? finalScore2 : myScore;
+        if (gameOver) update.score1 = finalScore1;
+      }
+
+      await _db().collection('scrabbleGames').doc(gameId).update(update);
+      _wsState.placed   = [];
+      _wsState.selected = null;
+
+      if (gameOver) {
+        const winner = finalScore1 > finalScore2
+          ? data.player1Name
+          : finalScore2 > finalScore1
+            ? data.player2Name
+            : null;
+        window.UI.toast(winner ? `Game over! ${winner} wins! 🏆` : "Game over! It's a tie!", 'success', 6000);
+        const win    = (isP1 && finalScore1 > finalScore2) || (!isP1 && finalScore2 > finalScore1);
+        const xpGain = Math.min(200, Math.max(20, myScore));
+        await _awardXP(xpGain, 'wordScrabble', { win });
+        if (window.VtxSound) try { win ? VtxSound.gameWin() : VtxSound.gameLose(); } catch(e) {}
+      }
+    } catch (e) {
+      console.error('[scrabble] _wsConfirmPlay error:', e);
+      window.UI.toast('Could not submit move. Please try again.', 'error');
+      if (btn) { btn.disabled = false; btn.textContent = '✓ Play Word'; }
+    }
   }
-}
 
 function _wsRecall() {
   if (!_wsState) return;
@@ -5124,7 +5138,16 @@ async function _endGameSession(sessionId, resultData) {
     let xpThis = 0;
     if (correct) {
       xpThis += XP_PER_CORRECT;
-      if (elapsed < 5) { xpThis += XP_SPEED_BONUS; gs.speedBonuses++; _speedDemonCount++; }
+      if (elapsed < 5) {
+        xpThis += XP_SPEED_BONUS;
+        gs.speedBonuses++;
+        _speedDemonCount++;
+        if (window.VtxSound) try { VtxSound.gameSpeedBonus(); } catch(e) {}
+      } else {
+        if (window.VtxSound) try { VtxSound.gameCorrect(); } catch(e) {}
+      }
+    } else {
+      if (window.VtxSound) try { VtxSound.gameWrong(); } catch(e) {}
     }
     gs.xpEarned += xpThis;
     gs.answers.push(chosenIdx);
@@ -5147,6 +5170,15 @@ async function _endGameSession(sessionId, resultData) {
     const win     = pct >= 60;
     let xpFinal   = gs.xpEarned;
     if (perfect) xpFinal += XP_PER_PERFECT;
+
+    if (window.VtxSound) {
+      try {
+        if (perfect)   VtxSound.gamePerfect();
+        else if (win)  VtxSound.gameWin();
+        else           VtxSound.gameLose();
+      } catch(e) {}
+    }
+
     const result = await _awardXP(xpFinal, 'quizBlitz', { win, perfect, speedDemonCount: _speedDemonCount });
     await _saveGameResult('quizBlitz', { correct, total, pct, xpEarned: xpFinal, perfect });
     await _endGameSession(gs._sessionId, { xpEarned: xpFinal, score: correct, pct, win, meta: { total, perfect } });
@@ -5273,7 +5305,13 @@ async function _endGameSession(sessionId, resultData) {
     const correct = val === gs.currentProblem.ans;
     const prevAns = gs.currentProblem.ans;
     gs.attempted++;
-    if (correct) { gs.score++; gs.xpEarned += XP_PER_CORRECT; }
+    if (correct) {
+      gs.score++;
+      gs.xpEarned += XP_PER_CORRECT;
+      if (window.VtxSound) try { VtxSound.gameCorrect(); } catch(e) {}
+    } else {
+      if (window.VtxSound) try { VtxSound.gameWrong(); } catch(e) {}
+    }
     const fb = document.getElementById('mathFeedback');
     if (fb) { fb.style.color = correct ? 'var(--success)' : 'var(--danger)'; fb.textContent = correct ? `Correct! +${XP_PER_CORRECT} XP` : `Wrong. Answer was ${prevAns}`; }
     gs.currentProblem = _mathProblems[gs.difficulty]();
@@ -5295,6 +5333,15 @@ async function _endGameSession(sessionId, resultData) {
     const pct    = gs.attempted > 0 ? Math.round((gs.score / gs.attempted) * 100) : 0;
     const perfect = gs.score === gs.attempted && gs.attempted >= 5;
     const win    = pct >= 60 && gs.score >= 5;
+
+    if (window.VtxSound) {
+      try {
+        if (perfect)  VtxSound.gamePerfect();
+        else if (win) VtxSound.gameWin();
+        else          VtxSound.gameLose();
+      } catch(e) {}
+    }
+
     const result = await _awardXP(gs.xpEarned, 'speedMath', { win, perfect, difficulty: gs.difficulty });
     await _saveGameResult('speedMath', { score: gs.score, attempted: gs.attempted, pct, xpEarned: gs.xpEarned, difficulty: gs.difficulty });
     await _endGameSession(gs._sessionId, { xpEarned: gs.xpEarned, score: gs.score, pct, win, meta: { attempted: gs.attempted, difficulty: gs.difficulty, perfect } });
@@ -5701,15 +5748,15 @@ function _buildWordPoolForStudent() {
     if (!gs || gs.type !== 'wordScramble' || gs.shufflesLeft <= 0) return;
     const entry  = gs.words[gs.currentIndex];
 
-    // First, return all placed letters back to pool
     gs.placedLetters = [];
 
-    // Reshuffle the source pool
     let newScram = gs.currentScramble, attempts = 0;
     while (newScram === gs.currentScramble && attempts < 30) { newScram = _scrambleWord(entry.word); attempts++; }
     gs.currentScramble = newScram;
     gs.sourceLetters = newScram.split('').map((l, i) => ({ letter: l, id: i, placed: false }));
     gs.shufflesLeft--;
+
+    if (window.VtxSound) try { VtxSound.gameReshuffle(); } catch(e) {}
 
     _renderWordScrambleQuestion();
   }
@@ -5758,12 +5805,13 @@ function _buildWordPoolForStudent() {
 
     const wordLen     = gs.words[gs.currentIndex].word.length;
     const nextSlotIdx = gs.placedLetters.length;
-    if (nextSlotIdx >= wordLen) return; // all slots filled
+    if (nextSlotIdx >= wordLen) return;
+
+    if (window.VtxSound) try { VtxSound.gameTilePlace(); } catch(e) {}
 
     src.placed = true;
     gs.placedLetters.push({ letter: src.letter, srcIdx });
 
-    // Update source pool: grey out the placed tile
     const srcBtn = document.getElementById('wsSrc' + srcIdx);
     if (srcBtn) {
       srcBtn.disabled = true;
@@ -5775,19 +5823,16 @@ function _buildWordPoolForStudent() {
       srcBtn.style.boxShadow = 'none';
     }
 
-    // Update the answer slot
     const slotEl = document.getElementById('wsSlot' + nextSlotIdx);
     if (slotEl) {
       slotEl.textContent  = src.letter;
       slotEl.style.border = '2px solid #7c3aed';
       slotEl.style.background = 'rgba(124,58,237,0.18)';
       slotEl.style.cursor = 'pointer';
-      // Bounce animation
       slotEl.style.transform = 'scale(1.18)';
       setTimeout(() => { if (slotEl) slotEl.style.transform = 'scale(1)'; }, 150);
     }
 
-    // If all slots filled, auto-check after brief delay
     if (gs.placedLetters.length === wordLen) {
       setTimeout(() => _wsSubmitArranged(), 320);
     }
@@ -5839,7 +5884,6 @@ function _buildWordPoolForStudent() {
     const wordLen = gs.words[gs.currentIndex].word.length;
     if (gs.placedLetters.length < wordLen) {
       window.UI.toast('Place all letters before submitting.', 'warning', 1800);
-      // Restart timer
       _timerEl = document.getElementById('scrambleTimer');
       _startTimer(WORD_SCRAMBLE_TIME,
         (s) => { if (_timerEl) { _timerEl.textContent = s; _timerEl.className = 'game-timer ' + (s <= 5 ? 'timer-red' : s <= 10 ? 'timer-yellow' : 'timer-green'); } },
@@ -5852,7 +5896,15 @@ function _buildWordPoolForStudent() {
     const correct = formed === gs.words[gs.currentIndex].word;
     const fb      = document.getElementById('scrambleFeedback');
     if (fb) { fb.style.color = correct ? 'var(--success)' : 'var(--danger)'; fb.textContent = correct ? `Correct! +${XP_PER_CORRECT} XP` : `Wrong! The word was ${gs.words[gs.currentIndex].word}`; }
-    if (correct) { gs.score++; gs.xpEarned += XP_PER_CORRECT; gs.wordCorrect++; }
+
+    if (correct) {
+      gs.score++;
+      gs.xpEarned += XP_PER_CORRECT;
+      gs.wordCorrect++;
+      if (window.VtxSound) try { VtxSound.gameCorrect(); } catch(e) {}
+    } else {
+      if (window.VtxSound) try { VtxSound.gameWrong(); } catch(e) {}
+    }
 
     setTimeout(() => {
       gs.currentIndex++;
@@ -5911,6 +5963,15 @@ function _buildWordPoolForStudent() {
     const pct     = Math.round((correct / total) * 100);
     const perfect = correct === total;
     const win     = pct >= 60;
+
+    if (window.VtxSound) {
+      try {
+        if (perfect)  VtxSound.gamePerfect();
+        else if (win) VtxSound.gameWin();
+        else          VtxSound.gameLose();
+      } catch(e) {}
+    }
+
     const result  = await _awardXP(gs.xpEarned, 'wordScramble', { win, perfect, wordCorrect: gs.wordCorrect });
     await _saveGameResult('wordScramble', { correct, total, pct, xpEarned: gs.xpEarned });
     await _endGameSession(gs._sessionId, { xpEarned: gs.xpEarned, score: correct, pct, win, meta: { total, perfect } });
@@ -6157,7 +6218,6 @@ function _buildWordPoolForStudent() {
     const correct = chosenTrue !== null && (chosenTrue === item.isTrue);
     const timedOut = chosenTrue === null;
 
-    // Visual feedback on buttons
     const trueBtn  = document.getElementById('tfTrueBtn');
     const falseBtn = document.getElementById('tfFalseBtn');
     if (trueBtn)  { trueBtn.disabled  = true; }
@@ -6171,28 +6231,31 @@ function _buildWordPoolForStudent() {
       if (trueBtn)  trueBtn.classList.add('game-tf-btn--revealed-wrong');
     }
 
-    // Highlight which button the student pressed
     if (!timedOut) {
       const pressedBtn = chosenTrue ? trueBtn : falseBtn;
       if (pressedBtn && correct)  pressedBtn.classList.add('game-tf-btn--pressed-correct');
       if (pressedBtn && !correct) pressedBtn.classList.add('game-tf-btn--pressed-wrong');
     }
 
-    // XP & streak logic
     let xpThis = 0;
     if (correct) {
       xpThis += TF_XP_PER_CORRECT;
       gs.streak++;
       if (gs.streak > gs.bestStreak) gs.bestStreak = gs.streak;
-      if (gs.streak >= TF_STREAK_THRESHOLD) xpThis += TF_XP_STREAK_BONUS;
+      if (gs.streak >= TF_STREAK_THRESHOLD) {
+        xpThis += TF_XP_STREAK_BONUS;
+        if (window.VtxSound) try { VtxSound.gameStreak(); } catch(e) {}
+      } else {
+        if (window.VtxSound) try { VtxSound.gameCorrect(); } catch(e) {}
+      }
       gs.score++;
     } else {
       gs.streak = 0;
+      if (window.VtxSound) try { VtxSound.gameWrong(); } catch(e) {}
     }
     gs.xpEarned += xpThis;
     gs._answered = false;
 
-    // Inline feedback
     const feedbackEl = document.getElementById('tfFeedback');
     if (feedbackEl) {
       if (timedOut) {
@@ -6242,6 +6305,14 @@ function _buildWordPoolForStudent() {
     const win     = pct >= 60;
     let xpFinal   = gs.xpEarned;
     if (perfect) xpFinal += XP_PER_PERFECT;
+
+    if (window.VtxSound) {
+      try {
+        if (perfect)  VtxSound.gamePerfect();
+        else if (win) VtxSound.gameWin();
+        else          VtxSound.gameLose();
+      } catch(e) {}
+    }
 
     const result = await _awardXP(xpFinal, 'trueOrFalse', { win, perfect, tfBestStreak: gs.bestStreak });
     await _saveGameResult('trueOrFalse', { correct, total, pct, xpEarned: xpFinal, bestStreak: gs.bestStreak });
@@ -6453,7 +6524,6 @@ function _buildWordPoolForStudent() {
     const correct = chosenIdx !== null && chosenIdx === q.ans;
     const timedOut = chosenIdx === null;
 
-    // Reveal correct/wrong states
     document.querySelectorAll('.game-option-btn').forEach((btn, i) => {
       btn.disabled = true;
       if (i === q.ans)          btn.classList.add('game-option-btn--correct');
@@ -6469,6 +6539,9 @@ function _buildWordPoolForStudent() {
       gs.currentXPValue = gs.currentXPValue + SD_XP_INCREMENT;
       gs._answering     = false;
 
+      // Escalating pitch — question number = gs.survived (just incremented)
+      if (window.VtxSound) try { VtxSound.gamePerfectRunCorrect(gs.survived); } catch(e) {}
+
       if (feedbackEl) {
         feedbackEl.innerHTML = `
           <div style="background:var(--success-subtle);border:1px solid var(--success-border);border-radius:8px;
@@ -6477,7 +6550,6 @@ function _buildWordPoolForStudent() {
           </div>`;
       }
 
-      // Check if pool is exhausted — treat as victory
       if (gs.currentIndex + 1 >= gs.pool.length) {
         setTimeout(() => _finishSuddenDeath(false), 1400);
         return;
@@ -6489,9 +6561,10 @@ function _buildWordPoolForStudent() {
       }, 1400);
 
     } else {
-      // DEAD
       gs.dead      = true;
       gs._answering = false;
+
+      if (window.VtxSound) try { VtxSound.gamePerfectRunDeath(); } catch(e) {}
 
       if (feedbackEl) {
         const deathMsg = timedOut ? 'Time ran out!' : 'Wrong answer!';
@@ -6930,7 +7003,13 @@ function _buildWordPoolForStudent() {
       if (i === q.ans)          btn.classList.add('game-option-btn--correct');
       else if (i === chosenIdx) btn.classList.add('game-option-btn--wrong');
     });
-    if (correct) { gs.score++; gs.xpEarned += XP_PER_CORRECT; }
+    if (correct) {
+      gs.score++;
+      gs.xpEarned += XP_PER_CORRECT;
+      if (window.VtxSound) try { VtxSound.gameCorrect(); } catch(e) {}
+    } else {
+      if (window.VtxSound) try { VtxSound.gameWrong(); } catch(e) {}
+    }
     gs.answers.push(chosenIdx);
     setTimeout(() => {
       gs.currentIndex++;
@@ -7737,7 +7816,8 @@ function _krLoop(timestamp) {
     const newSpeedLevel = Math.floor(s.distance / KR_SPEED_STEP_DISTANCE);
     if (newSpeedLevel > s.speedLevel) {
       s.speedLevel      = newSpeedLevel;
-      s.speedFlashTimer = 90; // ~1.5s flash at 60fps
+      s.speedFlashTimer = 90;
+      if (window.VtxSound) try { VtxSound.gameSpeedUp(); } catch(e) {}
     }
     if (s.speedFlashTimer > 0) s.speedFlashTimer--;
 
@@ -7812,7 +7892,7 @@ function _krLoop(timestamp) {
 
       s.objects.forEach(obj => {
         if (obj.hit) return;
-        if (obj.lane !== p.lane) return; // different column — safe
+        if (obj.lane !== p.lane) return;
 
         let oLeft, oRight, oTop, oBottom;
 
@@ -7822,12 +7902,17 @@ function _krLoop(timestamp) {
           oTop    = obj.y - obj.h / 2;
           oBottom = obj.y + obj.h / 2;
         } else {
-          /* Obstacles: centred on obj.x, height extends UPWARD from obj.y */
           oLeft   = obj.x - obj.w / 2;
           oRight  = obj.x + obj.w / 2;
           oTop    = obj.y - obj.h;
           oBottom = obj.y;
         }
+
+        const ph = p.rolling ? KR_PLAYER_H_ROLL : KR_PLAYER_H;
+        const pLeft   = p.x - KR_PLAYER_W / 2;
+        const pRight  = p.x + KR_PLAYER_W / 2;
+        const pTop    = p.y - (p.jumping ? KR_PLAYER_H : ph);
+        const pBottom = p.y;
 
         const hit = pLeft < oRight && pRight > oLeft && pTop < oBottom && pBottom > oTop;
         if (!hit) return;
@@ -7835,12 +7920,11 @@ function _krLoop(timestamp) {
         obj.hit = true;
 
         if (obj.type === 'coin') {
-          /* ── Correct coin collected ── */
           s.score++;
           s.combo++;
           const xp = KR_XP_PER_CORRECT + (s.combo >= 3 ? KR_XP_SPEED_BONUS : 0);
           s.xpEarned += xp;
-          /* Gold burst particles */
+          if (window.VtxSound) try { VtxSound.gameCoinCollect(); } catch(e) {}
           for (let i = 0; i < 14; i++) {
             s.particles.push({
               x: obj.x, y: obj.y,
@@ -7849,23 +7933,20 @@ function _krLoop(timestamp) {
               life: 28, maxLife: 28, color: '#fbbf24', size: 4,
             });
           }
-          /* All coins in this wave collected → speed up the next wave */
           const coinsLeft = s.objects.filter(o => !o.hit && o.type === 'coin');
           if (coinsLeft.length === 0) s.spawnTimer = Math.min(s.spawnTimer, 90);
 
         } else {
-          /* ── Obstacle collision ──
-               Barrier (low): player can ROLL under it.
-               Train  (tall): player can JUMP over it. */
-          if (obj.kind === 'barrier' && p.rolling)                           { obj.hit = true; return; }
-          if (obj.kind === 'train'   && p.jumping && p.y < oTop + 10)       { obj.hit = true; return; }
+          if (obj.kind === 'barrier' && p.rolling)                          { obj.hit = true; return; }
+          if (obj.kind === 'train'   && p.jumping && p.y < oTop + 10)      { obj.hit = true; return; }
 
-          /* HIT */
           s.combo = 0;
           s.lives--;
           p.invincible = 110;
           p.stumble    = 55;
           s.inspector.gap = Math.max(60, s.inspector.gap - 45);
+
+          if (window.VtxSound) try { VtxSound.gameObstacleHit(); } catch(e) {}
 
           for (let i = 0; i < 12; i++) {
             s.particles.push({
