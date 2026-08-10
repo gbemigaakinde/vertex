@@ -1,10 +1,5 @@
 /* ============================================================
    sw.js — Service Worker for Vertex Tutorial CBT PWA
-   Strategy:
-     - Static shell   : Cache-first (precached at install)
-     - CDN assets     : Stale-while-revalidate (separate cache)
-     - Firebase/Auth  : Bypass entirely — never intercepted
-     - Navigation     : Cache-first with offline fallback
    ============================================================ */
 
 'use strict';
