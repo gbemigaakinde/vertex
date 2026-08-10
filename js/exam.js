@@ -294,22 +294,31 @@
     return thursday.getFullYear() + '-W' + String(wn).padStart(2, '0');
   }
 
-  async function _fetchWeeklyTimetableHtml(classKey) {
-    try {
-      if (!navigator.onLine || !window.fbDb || !classKey) return '';
-      const snap = await window.fbDb.collection('weeklyTimetable').doc(classKey).get();
-      if (!snap || !snap.exists) return '';
-      const ttData   = snap.data() || {};
-      const allWeeks = ttData.weeks || {};
-      const topics   = allWeeks[_isoWeekKey()] || {};
-      const entries  = Object.entries(topics).filter(function (pair) {
-        return pair[1] && String(pair[1]).trim();
-      });
-      if (entries.length === 0) return '';
+  // ─── exam.js: _fetchWeeklyTimetableHtml (fully updated) ──────────────────────
+async function _fetchWeeklyTimetableHtml(classKey) {
+  try {
+    if (!navigator.onLine || !window.fbDb || !classKey) return '';
+    const snap = await window.fbDb.collection('weeklyTimetable').doc(classKey).get();
+    if (!snap || !snap.exists) return '';
+    const ttData   = snap.data() || {};
+    const allWeeks = ttData.weeks  || {};
+    const allGuides = ttData.guides || {};
+    const weekKey  = _isoWeekKey();
+    const todayStr = _todayStr();
 
-      const d      = new Date();
-      const dow    = d.getDay();
-      const diff   = dow === 0 ? -6 : 1 - dow;
+    // ── Check for an active study guide first (takes priority over topics) ──
+    const guide = allGuides[weekKey];
+    const guideActive = guide &&
+      guide.expiresOn &&
+      guide.expiresOn >= todayStr &&
+      guide.days &&
+      Object.keys(guide.days).length > 0;
+
+    if (guideActive) {
+      // Show the daily study guide
+      const d = new Date();
+      const dow = d.getDay();
+      const diff = dow === 0 ? -6 : 1 - dow;
       const monday = new Date(d); monday.setDate(d.getDate() + diff);
       const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
       const rangeLabel =
@@ -317,28 +326,83 @@
         ' – ' +
         sunday.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
-      const rows = entries.map(function (pair) {
-        return '<div style="display:flex;align-items:flex-start;gap:.625rem;' +
-          'padding:.4375rem 0;border-bottom:1px solid var(--border);">' +
-          '<span style="font-size:.8125rem;font-weight:700;color:var(--accent-text);' +
-          'min-width:100px;flex-shrink:0;">' + _escHtml(pair[0]) + '</span>' +
-          '<span style="font-size:.8125rem;color:var(--text-1);line-height:1.5;">' +
-          _escHtml(pair[1]) + '</span></div>';
-      }).join('');
+      const dayNames = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
+      // Build ordered day entries, only showing today + future days that have content
+      const dayRows = dayNames.map((day, i) => {
+        const dayDate = new Date(monday);
+        dayDate.setDate(monday.getDate() + i);
+        const dateStr = dayDate.getFullYear() + '-' +
+          String(dayDate.getMonth()+1).padStart(2,'0') + '-' +
+          String(dayDate.getDate()).padStart(2,'0');
+        const content = (guide.days || {})[dateStr];
+        // Skip past days with no content; skip days with no content entirely
+        if (!content) return null;
+        if (dateStr < todayStr) return null; // don't show past days to students
+        const isToday = dateStr === todayStr;
+        const dayLabel = dayDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
+        return '<div style="padding:.5rem 0;border-bottom:1px solid var(--border);">' +
+          '<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.25rem;">' +
+          '<span style="font-size:.8125rem;font-weight:700;color:' +
+          (isToday ? 'var(--warning-text)' : 'var(--accent-text)') +
+          ';">' + _escHtml(dayLabel) + '</span>' +
+          (isToday ? '<span style="font-size:.6875rem;font-weight:700;padding:1px 6px;border-radius:99px;background:var(--warning-subtle);color:var(--warning-text);border:1px solid var(--warning-border);">TODAY</span>' : '') +
+          '</div>' +
+          '<span style="font-size:.8125rem;color:var(--text-1);line-height:1.6;white-space:pre-wrap;">' +
+          _escHtml(content) + '</span></div>';
+      }).filter(Boolean).join('');
 
-      return '<div style="margin-bottom:1.25rem;border:1px solid var(--accent-border);' +
-        'border-left:3px solid var(--accent);border-radius:8px;' +
-        'background:var(--accent-subtle);padding:.875rem 1rem;text-align:left;">' +
+      if (!dayRows) return ''; // all days are past or empty
+
+      return '<div style="margin-bottom:1.25rem;border:1px solid var(--warning-border);' +
+        'border-left:3px solid var(--warning);border-radius:8px;' +
+        'background:var(--warning-subtle);padding:.875rem 1rem;text-align:left;">' +
         '<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.625rem;">' +
-        '<span style="font-size:1rem;flex-shrink:0;">📚</span>' +
-        '<div><p style="font-size:.875rem;font-weight:700;color:var(--accent-text);">This Week\'s Study Topics</p>' +
+        '<span style="font-size:1rem;flex-shrink:0;">📋</span>' +
+        '<div><p style="font-size:.875rem;font-weight:700;color:var(--warning-text);">' +
+        _escHtml(guide.title || 'Daily Study Guide') + '</p>' +
         '<p style="font-size:.75rem;color:var(--text-3);margin-top:1px;">' + _escHtml(rangeLabel) + '</p>' +
-        '</div></div><div style="padding-top:.125rem;">' + rows + '</div></div>';
-    } catch (err) {
-      console.warn('[exam] Weekly timetable fetch failed (non-fatal):', err);
-      return '';
+        '</div></div><div style="padding-top:.125rem;">' + dayRows + '</div></div>';
     }
+
+    // ── Fall back to weekly topics ──────────────────────────────────────────
+    const topics  = allWeeks[weekKey] || {};
+    const entries = Object.entries(topics).filter(function (pair) {
+      return pair[1] && String(pair[1]).trim();
+    });
+    if (entries.length === 0) return '';
+
+    const d      = new Date();
+    const dow    = d.getDay();
+    const diff   = dow === 0 ? -6 : 1 - dow;
+    const monday = new Date(d); monday.setDate(d.getDate() + diff);
+    const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+    const rangeLabel =
+      monday.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) +
+      ' – ' +
+      sunday.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+
+    const rows = entries.map(function (pair) {
+      return '<div style="display:flex;align-items:flex-start;gap:.625rem;' +
+        'padding:.4375rem 0;border-bottom:1px solid var(--border);">' +
+        '<span style="font-size:.8125rem;font-weight:700;color:var(--accent-text);' +
+        'min-width:100px;flex-shrink:0;">' + _escHtml(pair[0]) + '</span>' +
+        '<span style="font-size:.8125rem;color:var(--text-1);line-height:1.5;">' +
+        _escHtml(pair[1]) + '</span></div>';
+    }).join('');
+
+    return '<div style="margin-bottom:1.25rem;border:1px solid var(--accent-border);' +
+      'border-left:3px solid var(--accent);border-radius:8px;' +
+      'background:var(--accent-subtle);padding:.875rem 1rem;text-align:left;">' +
+      '<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.625rem;">' +
+      '<span style="font-size:1rem;flex-shrink:0;">📚</span>' +
+      '<div><p style="font-size:.875rem;font-weight:700;color:var(--accent-text);">This Week\'s Study Topics</p>' +
+      '<p style="font-size:.75rem;color:var(--text-3);margin-top:1px;">' + _escHtml(rangeLabel) + '</p>' +
+      '</div></div><div style="padding-top:.125rem;">' + rows + '</div></div>';
+  } catch (err) {
+    console.warn('[exam] Weekly timetable fetch failed (non-fatal):', err);
+    return '';
   }
+}
 
   /* ─────────────────────────────────────────────────────── */
   /* renderSubjectSelection — pill chip version              */
