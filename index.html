@@ -32,13 +32,7 @@
   <script>
     if (window.tailwind) {
       tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              sans: ['Geist', 'DM Sans', 'system-ui', '-apple-system', 'sans-serif'],
-            },
-          },
-        },
+        theme: { extend: { fontFamily: { sans: ['Geist','DM Sans','system-ui','-apple-system','sans-serif'] } } },
         corePlugins: { preflight: false },
       };
     }
@@ -51,372 +45,160 @@
 
   <style>
     /* ══════════════════════════════════════════════════════
-       VERTEX CBT — LOADING SCREEN
-       Fonts: Instrument Serif + DM Sans
-       Accent: #4f6ef7 (indigo, matches --accent in main.css)
+       VERTEX CBT — LOADING SCREEN  v3
+       Book animation + polished progress
     ══════════════════════════════════════════════════════ */
     @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap');
 
-    /* ── Loader shell ── */
     #vtx-loader {
-      position: fixed;
-      inset: 0;
-      z-index: 99999;
+      position: fixed; inset: 0; z-index: 99999;
       background: #fafaf8;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
       font-family: 'DM Sans', system-ui, sans-serif;
-      transition: opacity 0.55s cubic-bezier(0.4, 0, 0.2, 1),
-                  visibility 0.55s cubic-bezier(0.4, 0, 0.2, 1);
+      transition: opacity 0.55s cubic-bezier(0.4,0,0.2,1), visibility 0.55s cubic-bezier(0.4,0,0.2,1);
     }
-
     #vtx-loader::before {
-      content: '';
-      position: absolute;
-      inset: 0;
-      background: radial-gradient(ellipse 80% 60% at 50% 50%,
-        transparent 40%, rgba(14,14,15,0.03) 100%);
+      content: ''; position: absolute; inset: 0;
+      background: radial-gradient(ellipse 80% 60% at 50% 50%, transparent 40%, rgba(14,14,15,0.03) 100%);
       pointer-events: none;
     }
-
-    #vtx-loader.is-done {
-      opacity: 0;
-      visibility: hidden;
-      pointer-events: none;
-    }
-
+    #vtx-loader.is-done { opacity: 0; visibility: hidden; pointer-events: none; }
     [data-theme="dark"] #vtx-loader { background: #111113; }
     [data-theme="dark"] #vtx-loader::before {
-      background: radial-gradient(ellipse 80% 60% at 50% 50%,
-        rgba(79,110,247,0.05) 0%, transparent 60%);
+      background: radial-gradient(ellipse 80% 60% at 50% 50%, rgba(79,110,247,0.05) 0%, transparent 60%);
     }
 
-    /* ══════════════════════════════════════════════════════
-       BOOK — completely rewritten for reliable centering
-    ══════════════════════════════════════════════════════ */
-
+    /* Book */
     .vtx-book-scene {
-      position: relative;
-      width: 320px;
-      height: 160px;
-      margin-bottom: 2.75rem;
-      perspective: 900px;
-      perspective-origin: 50% 50%;
-      display: flex;
-      align-items: flex-end;
-      justify-content: center;
+      position: relative; width: 320px; height: 160px; margin-bottom: 2.75rem;
+      perspective: 900px; perspective-origin: 50% 50%;
+      display: flex; align-items: flex-end; justify-content: center;
     }
-
     .vtx-book {
-      position: relative;
-      width: 140px;
-      height: 120px;
+      position: relative; width: 140px; height: 120px;
       transform-style: preserve-3d;
       animation: vtx-book-shift 2.6s cubic-bezier(0.45,0,0.15,1) 0.4s both;
       flex-shrink: 0;
     }
+    @keyframes vtx-book-shift { 0%{transform:translateX(0)} 100%{transform:translateX(52px)} }
 
-    @keyframes vtx-book-shift {
-      0%   { transform: translateX(0); }
-      100% { transform: translateX(52px); }
-    }
-
-    /* ── Back cover ── */
     .vtx-book-back {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(140deg, #1c1c20 0%, #0e0e0f 100%);
+      position: absolute; inset: 0;
+      background: linear-gradient(140deg,#1c1c20 0%,#0e0e0f 100%);
       border-radius: 3px 10px 10px 3px;
-      box-shadow:
-        0 8px 28px rgba(14,14,15,0.18),
-        0 2px 6px rgba(14,14,15,0.12);
+      box-shadow: 0 8px 28px rgba(14,14,15,.18), 0 2px 6px rgba(14,14,15,.12);
     }
-    [data-theme="dark"] .vtx-book-back {
-      background: linear-gradient(140deg, #2a2a30 0%, #18181b 100%);
-    }
+    [data-theme="dark"] .vtx-book-back { background: linear-gradient(140deg,#2a2a30 0%,#18181b 100%); }
 
-    /* ── Spine strip ── */
     .vtx-book-spine {
-      position: absolute;
-      left: -12px;
-      top: 0;
-      width: 12px;
-      height: 100%;
-      background: linear-gradient(180deg, #2a2a30 0%, #0e0e0f 100%);
-      border-radius: 3px 0 0 3px;
-      box-shadow: -3px 4px 12px rgba(14,14,15,0.2);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
+      position: absolute; left: -12px; top: 0; width: 12px; height: 100%;
+      background: linear-gradient(180deg,#2a2a30 0%,#0e0e0f 100%);
+      border-radius: 3px 0 0 3px; box-shadow: -3px 4px 12px rgba(14,14,15,.2);
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
     }
-    [data-theme="dark"] .vtx-book-spine {
-      background: linear-gradient(180deg, #3a3a42 0%, #18181b 100%);
-    }
+    [data-theme="dark"] .vtx-book-spine { background: linear-gradient(180deg,#3a3a42 0%,#18181b 100%); }
+    .vtx-spine-line { width: 2px; border-radius: 1px; background: rgba(79,110,247,0.4); }
 
-    .vtx-spine-line {
-      width: 2px;
-      border-radius: 1px;
-      background: rgba(79,110,247,0.4);
-    }
-
-    /* ── Front cover — rotates open around spine (left edge) ── */
     .vtx-book-front {
-      position: absolute;
-      inset: 0;
-      background: linear-gradient(140deg, #1c1c20 0%, #0e0e0f 100%);
+      position: absolute; inset: 0;
+      background: linear-gradient(140deg,#1c1c20 0%,#0e0e0f 100%);
       border-radius: 3px 10px 10px 3px;
-      transform-origin: left center;
-      transform-style: preserve-3d;
-      animation: vtx-cover-open 2.6s cubic-bezier(0.45,0,0.15,1) 0.4s both;
-      z-index: 10;
+      transform-origin: left center; transform-style: preserve-3d;
+      animation: vtx-cover-open 2.6s cubic-bezier(0.45,0,0.15,1) 0.4s both; z-index: 10;
     }
-    [data-theme="dark"] .vtx-book-front {
-      background: linear-gradient(140deg, #2a2a30 0%, #18181b 100%);
-    }
+    [data-theme="dark"] .vtx-book-front { background: linear-gradient(140deg,#2a2a30 0%,#18181b 100%); }
+    .vtx-book-front::before { content:'';position:absolute;inset:7px;border:1px solid rgba(79,110,247,.22);border-radius:2px 8px 8px 2px; }
+    .vtx-cover-title { position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:5px;backface-visibility:hidden; }
+    .vtx-cover-wordmark { font-family:'Instrument Serif',Georgia,serif;font-size:.75rem;font-style:italic;color:rgba(250,250,248,.75);letter-spacing:.04em;text-align:center;line-height:1.3;padding:0 14px; }
+    .vtx-cover-rule { width:36px;height:1px;background:rgba(79,110,247,.45); }
+    .vtx-cover-sub { font-size:.4375rem;letter-spacing:.24em;text-transform:uppercase;color:rgba(79,110,247,.55); }
 
-    .vtx-book-front::before {
-      content: '';
-      position: absolute;
-      inset: 7px;
-      border: 1px solid rgba(79,110,247,0.22);
-      border-radius: 2px 8px 8px 2px;
-    }
-
-    .vtx-cover-title {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 5px;
-      backface-visibility: hidden;
-    }
-    .vtx-cover-wordmark {
-      font-family: 'Instrument Serif', Georgia, serif;
-      font-size: 0.75rem;
-      font-style: italic;
-      color: rgba(250,250,248,0.75);
-      letter-spacing: 0.04em;
-      text-align: center;
-      line-height: 1.3;
-      padding: 0 14px;
-    }
-    .vtx-cover-rule {
-      width: 36px;
-      height: 1px;
-      background: rgba(79,110,247,0.45);
-    }
-    .vtx-cover-sub {
-      font-size: 0.4375rem;
-      letter-spacing: 0.24em;
-      text-transform: uppercase;
-      color: rgba(79,110,247,0.55);
-    }
-
-    /* ── Pages ── */
     .vtx-page {
-      position: absolute;
-      inset: 0;
-      border-radius: 3px 10px 10px 3px;
-      transform-origin: left center;
-      transform-style: preserve-3d;
+      position:absolute;inset:0;border-radius:3px 10px 10px 3px;
+      transform-origin:left center;transform-style:preserve-3d;
     }
-
     .vtx-page::after {
-      content: '';
-      position: absolute;
-      top: 14px; left: 14px; right: 10px; bottom: 14px;
-      background: repeating-linear-gradient(
-        to bottom,
-        transparent, transparent 9px,
-        rgba(14,14,15,0.07) 9px, rgba(14,14,15,0.07) 10px
-      );
-      border-radius: 0 4px 4px 0;
+      content:'';position:absolute;top:14px;left:14px;right:10px;bottom:14px;
+      background:repeating-linear-gradient(to bottom,transparent,transparent 9px,rgba(14,14,15,.07) 9px,rgba(14,14,15,.07) 10px);
+      border-radius:0 4px 4px 0;
     }
-    [data-theme="dark"] .vtx-page::after {
-      background: repeating-linear-gradient(
-        to bottom,
-        transparent, transparent 9px,
-        rgba(250,250,248,0.07) 9px, rgba(250,250,248,0.07) 10px
-      );
-    }
+    [data-theme="dark"] .vtx-page::after { background:repeating-linear-gradient(to bottom,transparent,transparent 9px,rgba(250,250,248,.07) 9px,rgba(250,250,248,.07) 10px); }
 
-    .vtx-page-1 { background: linear-gradient(90deg,#f0ede6,#ece8e0); animation: vtx-page-fan-1 2.6s cubic-bezier(0.45,0,0.15,1) 0.45s both; z-index:9; }
-    .vtx-page-2 { background: linear-gradient(90deg,#f2efe8,#eeeae2); animation: vtx-page-fan-2 2.6s cubic-bezier(0.45,0,0.15,1) 0.50s both; z-index:8; }
-    .vtx-page-3 { background: linear-gradient(90deg,#f3f0e9,#efebe3); animation: vtx-page-fan-3 2.6s cubic-bezier(0.45,0,0.15,1) 0.55s both; z-index:7; }
-    .vtx-page-4 { background: linear-gradient(90deg,#f4f1ea,#f0ece4); animation: vtx-page-fan-4 2.6s cubic-bezier(0.45,0,0.15,1) 0.60s both; z-index:6; }
-    .vtx-page-5 { background: linear-gradient(90deg,#f5f2eb,#f1ede5); animation: vtx-page-fan-5 2.6s cubic-bezier(0.45,0,0.15,1) 0.65s both; z-index:5; }
-    .vtx-page-6 { background: linear-gradient(90deg,#f6f3ec,#f2eee6); animation: vtx-page-fan-6 2.6s cubic-bezier(0.45,0,0.15,1) 0.70s both; z-index:4; }
+    .vtx-page-1{background:linear-gradient(90deg,#f0ede6,#ece8e0);animation:vtx-page-fan-1 2.6s cubic-bezier(0.45,0,0.15,1) 0.45s both;z-index:9}
+    .vtx-page-2{background:linear-gradient(90deg,#f2efe8,#eeeae2);animation:vtx-page-fan-2 2.6s cubic-bezier(0.45,0,0.15,1) 0.50s both;z-index:8}
+    .vtx-page-3{background:linear-gradient(90deg,#f3f0e9,#efebe3);animation:vtx-page-fan-3 2.6s cubic-bezier(0.45,0,0.15,1) 0.55s both;z-index:7}
+    .vtx-page-4{background:linear-gradient(90deg,#f4f1ea,#f0ece4);animation:vtx-page-fan-4 2.6s cubic-bezier(0.45,0,0.15,1) 0.60s both;z-index:6}
+    .vtx-page-5{background:linear-gradient(90deg,#f5f2eb,#f1ede5);animation:vtx-page-fan-5 2.6s cubic-bezier(0.45,0,0.15,1) 0.65s both;z-index:5}
+    .vtx-page-6{background:linear-gradient(90deg,#f6f3ec,#f2eee6);animation:vtx-page-fan-6 2.6s cubic-bezier(0.45,0,0.15,1) 0.70s both;z-index:4}
 
-    [data-theme="dark"] .vtx-page-1 { background: linear-gradient(90deg,#2a2a30,#222228); }
-    [data-theme="dark"] .vtx-page-2 { background: linear-gradient(90deg,#2c2c32,#242429); }
-    [data-theme="dark"] .vtx-page-3 { background: linear-gradient(90deg,#2e2e34,#26262b); }
-    [data-theme="dark"] .vtx-page-4 { background: linear-gradient(90deg,#303036,#28282d); }
-    [data-theme="dark"] .vtx-page-5 { background: linear-gradient(90deg,#323238,#2a2a2f); }
-    [data-theme="dark"] .vtx-page-6 { background: linear-gradient(90deg,#34343a,#2c2c31); }
+    [data-theme="dark"] .vtx-page-1{background:linear-gradient(90deg,#2a2a30,#222228)}
+    [data-theme="dark"] .vtx-page-2{background:linear-gradient(90deg,#2c2c32,#242429)}
+    [data-theme="dark"] .vtx-page-3{background:linear-gradient(90deg,#2e2e34,#26262b)}
+    [data-theme="dark"] .vtx-page-4{background:linear-gradient(90deg,#303036,#28282d)}
+    [data-theme="dark"] .vtx-page-5{background:linear-gradient(90deg,#323238,#2a2a2f)}
+    [data-theme="dark"] .vtx-page-6{background:linear-gradient(90deg,#34343a,#2c2c31)}
 
-    @keyframes vtx-cover-open {
-      0%   { transform: rotateY(0deg); }
-      100% { transform: rotateY(-160deg); }
-    }
-
-    @keyframes vtx-page-fan-1 { 0%{transform:rotateY(0deg)} 100%{transform:rotateY(-138deg)} }
-    @keyframes vtx-page-fan-2 { 0%{transform:rotateY(0deg)} 100%{transform:rotateY(-116deg)} }
-    @keyframes vtx-page-fan-3 { 0%{transform:rotateY(0deg)} 100%{transform:rotateY(-94deg)}  }
-    @keyframes vtx-page-fan-4 { 0%{transform:rotateY(0deg)} 100%{transform:rotateY(-72deg)}  }
-    @keyframes vtx-page-fan-5 { 0%{transform:rotateY(0deg)} 100%{transform:rotateY(-50deg)}  }
-    @keyframes vtx-page-fan-6 { 0%{transform:rotateY(0deg)} 100%{transform:rotateY(-30deg)}  }
+    @keyframes vtx-cover-open{0%{transform:rotateY(0deg)}100%{transform:rotateY(-160deg)}}
+    @keyframes vtx-page-fan-1{0%{transform:rotateY(0deg)}100%{transform:rotateY(-138deg)}}
+    @keyframes vtx-page-fan-2{0%{transform:rotateY(0deg)}100%{transform:rotateY(-116deg)}}
+    @keyframes vtx-page-fan-3{0%{transform:rotateY(0deg)}100%{transform:rotateY(-94deg)}}
+    @keyframes vtx-page-fan-4{0%{transform:rotateY(0deg)}100%{transform:rotateY(-72deg)}}
+    @keyframes vtx-page-fan-5{0%{transform:rotateY(0deg)}100%{transform:rotateY(-50deg)}}
+    @keyframes vtx-page-fan-6{0%{transform:rotateY(0deg)}100%{transform:rotateY(-30deg)}}
 
     .vtx-book-shadow {
-      position: absolute;
-      bottom: -12px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 200px;
-      height: 20px;
-      background: radial-gradient(ellipse, rgba(14,14,15,0.16) 0%, transparent 70%);
-      animation: vtx-shadow-spread 2.6s cubic-bezier(0.45,0,0.15,1) 0.4s both;
-      pointer-events: none;
+      position:absolute;bottom:-12px;left:50%;transform:translateX(-50%);
+      width:200px;height:20px;
+      background:radial-gradient(ellipse,rgba(14,14,15,.16) 0%,transparent 70%);
+      animation:vtx-shadow-spread 2.6s cubic-bezier(0.45,0,0.15,1) 0.4s both;pointer-events:none;
     }
-    [data-theme="dark"] .vtx-book-shadow {
-      background: radial-gradient(ellipse, rgba(0,0,0,0.5) 0%, transparent 70%);
-    }
-    @keyframes vtx-shadow-spread {
-      0%   { width: 150px; opacity: 0.3; }
-      100% { width: 260px; opacity: 1; }
-    }
+    [data-theme="dark"] .vtx-book-shadow{background:radial-gradient(ellipse,rgba(0,0,0,.5) 0%,transparent 70%)}
+    @keyframes vtx-shadow-spread{0%{width:150px;opacity:.3}100%{width:260px;opacity:1}}
 
-    /* ── Wordmark ── */
-    .vtx-loader-text {
-      text-align: center;
-      margin-bottom: 2rem;
-      animation: vtx-fade-up 0.5s ease 0.3s both;
-    }
-    .vtx-loader-title {
-      font-family: 'Instrument Serif', Georgia, serif;
-      font-size: 1.25rem;
-      font-style: italic;
-      font-weight: 400;
-      color: #0e0e0f;
-      letter-spacing: -0.01em;
-      margin-bottom: 0.2rem;
-    }
-    [data-theme="dark"] .vtx-loader-title { color: rgba(250,250,248,0.9); }
-    .vtx-loader-subtitle {
-      font-size: 0.5625rem;
-      letter-spacing: 0.22em;
-      text-transform: uppercase;
-      color: #a4a4aa;
-    }
+    .vtx-loader-text{text-align:center;margin-bottom:2rem;animation:vtx-fade-up 0.5s ease 0.3s both}
+    .vtx-loader-title{font-family:'Instrument Serif',Georgia,serif;font-size:1.25rem;font-style:italic;font-weight:400;color:#0e0e0f;letter-spacing:-.01em;margin-bottom:.2rem}
+    [data-theme="dark"] .vtx-loader-title{color:rgba(250,250,248,.9)}
+    .vtx-loader-subtitle{font-size:.5625rem;letter-spacing:.22em;text-transform:uppercase;color:#a4a4aa}
 
-    /* ── Progress ── */
-    .vtx-progress-wrap {
-      width: 200px;
-      animation: vtx-fade-up 0.5s ease 0.5s both;
-    }
-    .vtx-loader-track {
-      width: 100%;
-      height: 2px;
-      background: #e4e2dc;
-      border-radius: 99px;
-      overflow: hidden;
-      margin-bottom: 0.75rem;
-      opacity: 0;
-      transition: opacity 0.4s ease;
-    }
-    [data-theme="dark"] .vtx-loader-track { background: #2a2a30; }
-    .vtx-loader-bar {
-      height: 100%;
-      width: 0%;
-      border-radius: 99px;
-      background: #4f6ef7;
-      transition: width 0.45s ease;
-      box-shadow: 0 0 8px rgba(79,110,247,0.4);
-    }
-    .vtx-loader-status {
-      font-size: 0.625rem;
-      letter-spacing: 0.08em;
-      color: #a4a4aa;
-      text-align: center;
-      min-height: 1em;
-      transition: opacity 0.3s ease;
-    }
+    .vtx-progress-wrap{width:200px;animation:vtx-fade-up 0.5s ease 0.5s both}
+    .vtx-loader-track{width:100%;height:2px;background:#e4e2dc;border-radius:99px;overflow:hidden;margin-bottom:.75rem;opacity:0;transition:opacity .4s ease}
+    [data-theme="dark"] .vtx-loader-track{background:#2a2a30}
+    .vtx-loader-bar{height:100%;width:0%;border-radius:99px;background:#4f6ef7;transition:width .45s ease;box-shadow:0 0 8px rgba(79,110,247,.4)}
+    .vtx-loader-status{font-size:.625rem;letter-spacing:.08em;color:#a4a4aa;text-align:center;min-height:1em;transition:opacity .3s ease}
 
-    /* ── Idle dots ── */
-    .vtx-dots {
-      display: flex; gap: 5px;
-      align-items: center; justify-content: center;
-      margin-bottom: 0.625rem;
-    }
-    .vtx-dot {
-      width: 3px; height: 3px; border-radius: 50%;
-      background: rgba(79,110,247,0.5);
-      animation: vtx-dot-pulse 1.5s ease-in-out infinite;
-    }
-    .vtx-dot:nth-child(2) { animation-delay: 0.22s; }
-    .vtx-dot:nth-child(3) { animation-delay: 0.44s; }
+    .vtx-dots{display:flex;gap:5px;align-items:center;justify-content:center;margin-bottom:.625rem}
+    .vtx-dot{width:3px;height:3px;border-radius:50%;background:rgba(79,110,247,.5);animation:vtx-dot-pulse 1.5s ease-in-out infinite}
+    .vtx-dot:nth-child(2){animation-delay:.22s}
+    .vtx-dot:nth-child(3){animation-delay:.44s}
+    @keyframes vtx-dot-pulse{0%,80%,100%{transform:scale(1);opacity:.35}40%{transform:scale(1.8);opacity:1}}
+    @keyframes vtx-fade-up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 
-    @keyframes vtx-dot-pulse {
-      0%,80%,100% { transform:scale(1);   opacity:0.35; }
-      40%          { transform:scale(1.8); opacity:1;    }
+    /* Theme toggle */
+    #themeToggle {
+      position: fixed; bottom: 66px; left: 16px; z-index: 10001;
+      width: 32px; height: 32px; border-radius: 8px;
+      background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      color: var(--text-4);
+      transition: background 0.14s, color 0.14s, border-color 0.14s, bottom 0.25s cubic-bezier(0.16,1,0.3,1);
+      box-shadow: var(--shadow-sm);
+      backdrop-filter: blur(12px) saturate(1.4);
+      -webkit-backdrop-filter: blur(12px) saturate(1.4);
     }
-    @keyframes vtx-fade-up {
-      from { opacity:0; transform:translateY(10px); }
-      to   { opacity:1; transform:translateY(0);    }
-    }
-
-    /* ── Theme toggle ── */
-  #themeToggle {
-  position: fixed;
-  bottom: 66px; /* Default: sits above the ticker (50px ticker + 16px gap) */
-  left: 16px;
-  z-index: 10001;
-  width: 32px; height: 32px;
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.15);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  color: var(--text-4);
-  transition: background 0.14s, color 0.14s, border-color 0.14s, bottom 0.25s cubic-bezier(0.16, 1, 0.3, 1);
-  box-shadow: var(--shadow-sm);
-  backdrop-filter: blur(12px) saturate(1.4);
-  -webkit-backdrop-filter: blur(12px) saturate(1.4);
-}
-#themeToggle:hover {
-  background: rgba(255, 255, 255, 0.28);
-  color: var(--text-1);
-  border-color: rgba(255, 255, 255, 0.45);
-}
-[data-theme="dark"] #themeToggle {
-  background: rgba(20, 20, 24, 0.35);
-  border-color: rgba(255, 255, 255, 0.1);
-  color: var(--text-4);
-}
-[data-theme="dark"] #themeToggle:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgba(255, 255, 255, 0.2);
-  color: var(--text-1);
-}
-/* When ticker is hidden, drop toggle down to natural bottom position */
-#themeToggle.ticker-gone {
-  bottom: 16px;
-}
-.theme-icon-dark  { display: block; }
-.theme-icon-light { display: none; }
-[data-theme="dark"] .theme-icon-dark  { display: none; }
-[data-theme="dark"] .theme-icon-light { display: block; }
+    #themeToggle:hover { background: rgba(255,255,255,0.28); color: var(--text-1); border-color: rgba(255,255,255,0.45); }
+    [data-theme="dark"] #themeToggle { background: rgba(20,20,24,0.35); border-color: rgba(255,255,255,0.1); color: var(--text-4); }
+    [data-theme="dark"] #themeToggle:hover { background: rgba(255,255,255,0.1); border-color: rgba(255,255,255,0.2); color: var(--text-1); }
+    #themeToggle.ticker-gone { bottom: 16px; }
+    .theme-icon-dark  { display: block; }
+    .theme-icon-light { display: none; }
+    [data-theme="dark"] .theme-icon-dark  { display: none; }
+    [data-theme="dark"] .theme-icon-light { display: block; }
   </style>
 </head>
 
 <body>
 
-  <!-- Dark mode bootstrap — synchronous, must run before paint -->
+  <!-- Dark mode bootstrap -->
   <script>
     (function() {
       var stored = localStorage.getItem('vtx-theme');
@@ -425,10 +207,16 @@
   </script>
 
   <!-- ════════════════════════════════════════════════
+       THREE.JS BACKGROUND CANVAS
+       Positioned behind everything, pointer-events:none
+       Only visible on dashboard/auth — hidden during exam
+  ════════════════════════════════════════════════ -->
+  <canvas id="vtx-bg-canvas" aria-hidden="true"></canvas>
+
+  <!-- ════════════════════════════════════════════════
        LOADING SCREEN
   ════════════════════════════════════════════════ -->
   <div id="vtx-loader" role="status" aria-label="Loading Vertex Tutorial">
-
     <div class="vtx-book-scene">
       <div class="vtx-book-shadow"></div>
       <div class="vtx-book">
@@ -438,7 +226,6 @@
           <div class="vtx-spine-line" style="height:20px;"></div>
           <div class="vtx-spine-line" style="height:36px;"></div>
         </div>
-        <!-- Pages rendered back-to-front -->
         <div class="vtx-page vtx-page-6"></div>
         <div class="vtx-page vtx-page-5"></div>
         <div class="vtx-page vtx-page-4"></div>
@@ -455,12 +242,10 @@
         </div>
       </div>
     </div>
-
     <div class="vtx-loader-text">
       <div class="vtx-loader-title">Vertex Tutorial</div>
       <div class="vtx-loader-subtitle">Computer-Based Testing</div>
     </div>
-
     <div class="vtx-progress-wrap">
       <div class="vtx-dots" id="vtxDots">
         <div class="vtx-dot"></div>
@@ -472,10 +257,9 @@
       </div>
       <div class="vtx-loader-status" id="vtxStatus">Preparing your session&hellip;</div>
     </div>
-
   </div>
 
-  <!-- Theme toggle — raised above ticker -->
+  <!-- Theme toggle -->
   <button id="themeToggle" aria-label="Toggle dark mode" onclick="VtxTheme.toggle()">
     <svg class="theme-icon-light" width="16" height="16" viewBox="0 0 24 24" fill="none"
          stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -503,9 +287,7 @@
               background:var(--bg-base);padding:1rem 1.5rem;border-radius:var(--r-xl);
               box-shadow:var(--shadow-xl);z-index:9999;max-width:90%;text-align:center;
               border:1px solid var(--border);">
-    <p style="margin:0 0 10px;font-weight:600;color:var(--text-1);font-size:0.875rem;">
-      Install Vertex Tutorial App
-    </p>
+    <p style="margin:0 0 10px;font-weight:600;color:var(--text-1);font-size:0.875rem;">Install Vertex Tutorial App</p>
     <div style="display:flex;gap:8px;justify-content:center;">
       <button id="install-button"
               style="background:var(--accent);color:white;border:none;padding:6px 16px;
@@ -606,8 +388,186 @@
   <script src="js/landing.js"></script>
   <script src="js/app.js"></script>
   <script src="js/installPrompt.js"></script>
-  <!-- News ticker — loaded LAST so body exists when JS injects the ticker HTML -->
   <script src="news-ticker.js"></script>
+
+  <!-- ════════════════════════════════════════════════
+       THREE.JS PARTICLE BACKGROUND
+       Loaded async after app scripts — non-blocking.
+       Uses CDN. Falls back gracefully if it fails.
+       Only activates on dashboard/auth, not exam.
+  ════════════════════════════════════════════════ -->
+  <script>
+    (function () {
+      'use strict';
+
+      var _scene, _camera, _renderer, _particles, _animId;
+      var _initialized = false;
+      var _running = false;
+
+      function _isDarkMode() {
+        return document.documentElement.getAttribute('data-theme') === 'dark';
+      }
+
+      function _getColor() {
+        return _isDarkMode() ? 0x6b87f8 : 0x4f6ef7;
+      }
+
+      function _init() {
+        if (_initialized) return;
+        if (typeof THREE === 'undefined') return;
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+        var canvas = document.getElementById('vtx-bg-canvas');
+        if (!canvas) return;
+
+        try {
+          _renderer = new THREE.WebGLRenderer({ canvas: canvas, alpha: true, antialias: false });
+          _renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+          _renderer.setClearColor(0x000000, 0);
+
+          _scene  = new THREE.Scene();
+          _camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 0.1, 1000);
+          _camera.position.z = 80;
+
+          // Particle geometry
+          var COUNT  = 120;
+          var geo    = new THREE.BufferGeometry();
+          var pos    = new Float32Array(COUNT * 3);
+          var vel    = new Float32Array(COUNT * 3); // for animation
+          var sizes  = new Float32Array(COUNT);
+
+          for (var i = 0; i < COUNT; i++) {
+            pos[i * 3]     = (Math.random() - 0.5) * 200;
+            pos[i * 3 + 1] = (Math.random() - 0.5) * 120;
+            pos[i * 3 + 2] = (Math.random() - 0.5) * 60;
+            vel[i * 3]     = (Math.random() - 0.5) * 0.012;
+            vel[i * 3 + 1] = (Math.random() - 0.5) * 0.008;
+            vel[i * 3 + 2] = 0;
+            sizes[i]       = Math.random() * 1.8 + 0.4;
+          }
+
+          geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+          geo.setAttribute('size',     new THREE.BufferAttribute(sizes, 1));
+
+          // Store velocities for animation (not as BufferAttribute, just a ref)
+          geo._vtxVel = vel;
+
+          var mat = new THREE.PointsMaterial({
+            color:       _getColor(),
+            size:        1.2,
+            sizeAttenuation: true,
+            transparent: true,
+            opacity:     0.45,
+            depthWrite:  false,
+          });
+
+          _particles = new THREE.Points(geo, mat);
+          _scene.add(_particles);
+
+          _renderer.setSize(window.innerWidth, window.innerHeight);
+          _initialized = true;
+
+          window.addEventListener('resize', _onResize, { passive: true });
+
+          // Watch for theme changes to update particle color
+          var _themeObserver = new MutationObserver(function () {
+            if (_particles) _particles.material.color.set(_getColor());
+          });
+          _themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+        } catch (e) {
+          console.warn('[VtxBg] Three.js init failed (non-fatal):', e);
+          _initialized = false;
+        }
+      }
+
+      function _onResize() {
+        if (!_camera || !_renderer) return;
+        _camera.aspect = window.innerWidth / window.innerHeight;
+        _camera.updateProjectionMatrix();
+        _renderer.setSize(window.innerWidth, window.innerHeight);
+      }
+
+      function _animate() {
+        if (!_running || !_renderer) return;
+        _animId = requestAnimationFrame(_animate);
+
+        var posAttr = _particles.geometry.getAttribute('position');
+        var vel     = _particles.geometry._vtxVel;
+        var count   = posAttr.count;
+
+        for (var i = 0; i < count; i++) {
+          var x = posAttr.getX(i) + vel[i * 3];
+          var y = posAttr.getY(i) + vel[i * 3 + 1];
+
+          // Wrap edges
+          if (x > 100)  x = -100;
+          if (x < -100) x =  100;
+          if (y > 60)   y = -60;
+          if (y < -60)  y =  60;
+
+          posAttr.setXY(i, x, y);
+        }
+
+        posAttr.needsUpdate = true;
+
+        // Gentle rotation
+        _particles.rotation.z += 0.0002;
+
+        _renderer.render(_scene, _camera);
+      }
+
+      function _start() {
+        if (!_initialized) _init();
+        if (!_initialized || _running) return;
+        _running = true;
+        _animate();
+      }
+
+      function _stop() {
+        _running = false;
+        if (_animId) { cancelAnimationFrame(_animId); _animId = null; }
+      }
+
+      // Expose to Exam.js for show/hide control
+      window.VtxBg = { start: _start, stop: _stop };
+
+      // Load Three.js from CDN, then initialise
+      var script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js';
+      script.async = true;
+      script.onload  = function () { _init(); };
+      script.onerror = function () { console.warn('[VtxBg] Failed to load Three.js — background disabled.'); };
+      document.body.appendChild(script);
+
+    }());
+  </script>
+
+  <!-- Patch: wire VtxBg into Exam._showBgCanvas -->
+  <script>
+    (function () {
+      'use strict';
+      // Override Exam._showBgCanvas once Exam is ready
+      var _origShowBg;
+      function _patch() {
+        if (!window.Exam) { return setTimeout(_patch, 100); }
+        // Exam._showBgCanvas is defined internally in exam.js as a closure.
+        // We hook into the canvas directly via VtxBg.
+        // Watch the canvas visibility class and toggle the Three.js loop.
+        var canvas = document.getElementById('vtx-bg-canvas');
+        if (!canvas) return;
+        var obs = new MutationObserver(function () {
+          if (canvas.classList.contains('is-visible')) {
+            if (window.VtxBg) window.VtxBg.start();
+          } else {
+            if (window.VtxBg) window.VtxBg.stop();
+          }
+        });
+        obs.observe(canvas, { attributes: true, attributeFilter: ['class'] });
+      }
+      document.addEventListener('DOMContentLoaded', _patch);
+    }());
+  </script>
 
   <!-- Presentation enhancements -->
   <script>
@@ -695,12 +655,9 @@
         } else if (e.key === 'ArrowLeft' || e.key === 'p' || e.key === 'P') {
           e.preventDefault(); window.Exam && window.Exam.prevQuestion();
         } else if (e.key >= '1' && e.key <= '5') {
-          var idx = parseInt(e.key, 10) - 1;
-          var radios = document.querySelectorAll('input[name="option"]');
-          if (radios[idx]) {
-            radios[idx].checked = true;
-            radios[idx].dispatchEvent(new Event('change', { bubbles: true }));
-          }
+          var idx    = parseInt(e.key, 10) - 1;
+          var labels = document.querySelectorAll('.option-label');
+          if (labels[idx]) labels[idx].click();
         }
       });
 
@@ -717,7 +674,6 @@
       'use strict';
       if (!('serviceWorker' in navigator)) return;
       var _swUpdateReady = false;
-
       function _registerSW() {
         navigator.serviceWorker
           .register('/sw.js', { scope: '/' })
@@ -728,19 +684,15 @@
               var nw = reg.installing;
               if (!nw) return;
               nw.addEventListener('statechange', function () {
-                if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-                  _onUpdateReady(nw);
-                }
+                if (nw.state === 'installed' && navigator.serviceWorker.controller) _onUpdateReady(nw);
               });
             });
           })
           .catch(function (err) { console.error('[SW] Registration failed:', err); });
-
         navigator.serviceWorker.addEventListener('controllerchange', function () {
           if (_swUpdateReady) window.location.reload();
         });
       }
-
       function _onUpdateReady(worker) {
         _swUpdateReady = true;
         function _show() {
@@ -752,12 +704,8 @@
         }
         _show();
       }
-
-      if (document.readyState === 'loading') {
-        window.addEventListener('load', _registerSW);
-      } else {
-        setTimeout(_registerSW, 0);
-      }
+      if (document.readyState === 'loading') { window.addEventListener('load', _registerSW); }
+      else { setTimeout(_registerSW, 0); }
     }());
   </script>
 
