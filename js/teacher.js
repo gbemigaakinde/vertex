@@ -2756,20 +2756,24 @@ function _mondayFromIsoWeekKey(weekKey) {
   const year    = +yearStr;
   const weekNum = +weekPart;
 
-  // Jan 4 is always in ISO week 1
+  // Find Jan 4 of the given year (always in ISO week 1 of that year)
   const jan4    = new Date(year, 0, 4);
-  const jan4Dow = jan4.getDay(); // 0=Sun,1=Mon,...,6=Sat
+  // Find Thursday of the week containing Jan 4
+  const jan4Dow = jan4.getDay(); // 0=Sun ... 6=Sat
+  // Days from Jan4 to its Thursday: Thu=4, so offset = 4 - dow (mod 7, Sun treated as 7)
+  const jan4DowISO = jan4Dow === 0 ? 7 : jan4Dow; // Mon=1 ... Sun=7
+  const daysToThursday = 4 - jan4DowISO;
+  const week1Thursday = new Date(jan4);
+  week1Thursday.setDate(jan4.getDate() + daysToThursday);
+  week1Thursday.setHours(0, 0, 0, 0);
 
-  // Find Monday of ISO week 1
-  // ISO week starts on Monday (dow 1). If Jan 4 is Sunday (0), Monday is Jan 4 - 6 days.
-  const daysToMonday = (jan4Dow === 0) ? -6 : 1 - jan4Dow;
-  const week1Monday  = new Date(jan4);
-  week1Monday.setDate(jan4.getDate() + daysToMonday);
-  week1Monday.setHours(0, 0, 0, 0);
+  // Thursday of the target week
+  const targetThursday = new Date(week1Thursday);
+  targetThursday.setDate(week1Thursday.getDate() + (weekNum - 1) * 7);
 
-  // Target Monday is (weekNum - 1) weeks after week 1 Monday
-  const targetMonday = new Date(week1Monday);
-  targetMonday.setDate(week1Monday.getDate() + (weekNum - 1) * 7);
+  // Monday is always Thursday minus 3 days
+  const targetMonday = new Date(targetThursday);
+  targetMonday.setDate(targetThursday.getDate() - 3);
   return targetMonday;
 }
 
