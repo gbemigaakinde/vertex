@@ -969,17 +969,21 @@ label.glass:has(.subject-checkbox:checked) {
 /* ── Timer ring ── */
 .vtx-timer-wrap {
   position: relative;
-  display: inline-flex;
+  width: 80px;
+  height: 80px;
+  display: flex;
   align-items: center;
   justify-content: center;
-  flex-direction: column;
+  flex-shrink: 0;
 }
 
 .vtx-timer-ring {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%) rotate(-90deg);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
   pointer-events: none;
 }
 
@@ -995,6 +999,20 @@ label.glass:has(.subject-checkbox:checked) {
   stroke-width: 3;
   stroke-linecap: round;
   transition: stroke-dashoffset 1s linear, stroke var(--t-slow) var(--ease);
+}
+
+.vtx-timer-ring-prog.is-yellow { stroke: var(--warning); }
+.vtx-timer-ring-prog.is-red    { stroke: var(--danger); }
+
+/* Timer text sits centred inside the ring */
+.vtx-timer-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 
 .vtx-timer-ring-prog.is-yellow { stroke: var(--warning); }
@@ -1569,7 +1587,42 @@ details.glass-dark[open] > summary::after,
 .max-w-7xl { max-width: 1080px !important; }
 
 /* ── Notification badges ── */
-.chat-notif-badge, .dm-notif-badge { background: var(--danger) !important; border: 2px solid var(--bg-base) !important; }
+.chat-notif-badge,
+.dm-notif-badge,
+.vtx-notif-badge {
+  position: absolute !important;
+  top: -7px !important;
+  right: -7px !important;
+  min-width: 20px !important;
+  height: 20px !important;
+  padding: 0 5px !important;
+  border-radius: 10px !important;
+  background: #e53e3e !important;
+  color: #fff !important;
+  font-size: 0.6875rem !important;
+  font-weight: 700 !important;
+  font-family: var(--font-mono) !important;
+  line-height: 20px !important;
+  text-align: center !important;
+  white-space: nowrap !important;
+  border: 2px solid var(--bg-page) !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.25) !important;
+  pointer-events: none !important;
+  z-index: 10 !important;
+  display: none;
+  animation: vtx-badge-pop 0.25s cubic-bezier(0.34,1.56,0.64,1) both !important;
+}
+
+.chat-notif-badge.is-visible,
+.dm-notif-badge.is-visible,
+.vtx-notif-badge.is-visible {
+  display: block !important;
+}
+
+@keyframes vtx-badge-pop {
+  from { transform: scale(0); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
+}
 
 /* ── Auth screen ── */
 .cbt-auth-footer {
