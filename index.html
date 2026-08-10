@@ -481,16 +481,201 @@
         ], 'sine');
       }
 
+      // Game: correct answer ding
+      function gameCorrect() {
+        _playTones([
+          { freq: 880, start: 0.00, dur: 0.10, vol: 0.13 },
+          { freq: 1108, start: 0.08, dur: 0.18, vol: 0.12 },
+        ], 'sine');
+      }
+
+      // Game: wrong answer buzz
+      function gameWrong() {
+        _playTones([
+          { freq: 200, start: 0.00, dur: 0.22, vol: 0.16 },
+        ], 'square');
+      }
+
+      // Game: speed bonus — bright extra chime
+      function gameSpeedBonus() {
+        _playTones([
+          { freq: 1046, start: 0.00, dur: 0.10, vol: 0.12 },
+          { freq: 1318, start: 0.08, dur: 0.15, vol: 0.12 },
+          { freq: 1568, start: 0.16, dur: 0.20, vol: 0.13 },
+        ], 'sine');
+      }
+
+      // Game: perfect score fanfare
+      function gamePerfect() {
+        _playTones([
+          { freq: 523,  start: 0.00, dur: 0.15, vol: 0.14 },
+          { freq: 659,  start: 0.12, dur: 0.15, vol: 0.14 },
+          { freq: 784,  start: 0.24, dur: 0.15, vol: 0.14 },
+          { freq: 1046, start: 0.36, dur: 0.15, vol: 0.15 },
+          { freq: 1318, start: 0.48, dur: 0.45, vol: 0.16 },
+        ], 'sine');
+      }
+
+      // Game: win fanfare
+      function gameWin() {
+        _playTones([
+          { freq: 784,  start: 0.00, dur: 0.18, vol: 0.14 },
+          { freq: 880,  start: 0.16, dur: 0.18, vol: 0.14 },
+          { freq: 1046, start: 0.32, dur: 0.40, vol: 0.16 },
+        ], 'sine');
+      }
+
+      // Game: lose sound
+      function gameLose() {
+        _playTones([
+          { freq: 350, start: 0.00, dur: 0.22, vol: 0.15 },
+          { freq: 280, start: 0.20, dur: 0.28, vol: 0.15 },
+          { freq: 220, start: 0.42, dur: 0.35, vol: 0.14 },
+        ], 'triangle');
+      }
+
+      // Game: streak bonus sparkle
+      function gameStreak() {
+        _playTones([
+          { freq: 784,  start: 0.00, dur: 0.08, vol: 0.11 },
+          { freq: 988,  start: 0.06, dur: 0.08, vol: 0.12 },
+          { freq: 1175, start: 0.12, dur: 0.08, vol: 0.12 },
+          { freq: 1568, start: 0.18, dur: 0.20, vol: 0.13 },
+        ], 'sine');
+      }
+
+      // Game: escalating correct (Perfect Run — pitch rises each time)
+      // Pass the question number (1-based) so pitch escalates
+      function gamePerfectRunCorrect(questionNum) {
+        var semitones = Math.min(questionNum - 1, 24); // cap at 2 octaves
+        var freq = 440 * Math.pow(2, semitones / 12);
+        _playTones([
+          { freq: freq,       start: 0.00, dur: 0.10, vol: 0.12 },
+          { freq: freq * 1.5, start: 0.08, dur: 0.16, vol: 0.11 },
+        ], 'sine');
+      }
+
+      // Game: Perfect Run death thud
+      function gamePerfectRunDeath() {
+        _playTones([
+          { freq: 300, start: 0.00, dur: 0.08, vol: 0.18 },
+          { freq: 120, start: 0.06, dur: 0.40, vol: 0.18 },
+        ], 'square');
+      }
+
+      // Game: tile/letter place click (short, satisfying)
+      function gameTilePlace() {
+        _playTones([
+          { freq: 700, start: 0.00, dur: 0.06, vol: 0.10 },
+        ], 'triangle');
+      }
+
+      // Game: word validated (Scrabble)
+      function gameWordValid() {
+        _playTones([
+          { freq: 659, start: 0.00, dur: 0.12, vol: 0.12 },
+          { freq: 880, start: 0.10, dur: 0.22, vol: 0.13 },
+        ], 'sine');
+      }
+
+      // Game: word invalid buzz (Scrabble)
+      function gameWordInvalid() {
+        _playTones([
+          { freq: 220, start: 0.00, dur: 0.18, vol: 0.15 },
+          { freq: 185, start: 0.16, dur: 0.18, vol: 0.14 },
+        ], 'square');
+      }
+
+      // Game: coin collect ping (Knowledge Surfer)
+      function gameCoinCollect() {
+        _playTones([
+          { freq: 1200, start: 0.00, dur: 0.07, vol: 0.12 },
+          { freq: 1600, start: 0.05, dur: 0.10, vol: 0.11 },
+        ], 'sine');
+      }
+
+      // Game: obstacle hit thud (Knowledge Surfer)
+      function gameObstacleHit() {
+        _playTones([
+          { freq: 160, start: 0.00, dur: 0.12, vol: 0.18 },
+          { freq: 100, start: 0.10, dur: 0.20, vol: 0.16 },
+        ], 'square');
+      }
+
+      // Game: speed up whoosh (Knowledge Surfer)
+      function gameSpeedUp() {
+        _playTones([
+          { freq: 400,  start: 0.00, dur: 0.06, vol: 0.10 },
+          { freq: 600,  start: 0.04, dur: 0.06, vol: 0.11 },
+          { freq: 900,  start: 0.08, dur: 0.06, vol: 0.11 },
+          { freq: 1200, start: 0.12, dur: 0.12, vol: 0.10 },
+        ], 'triangle');
+      }
+
+      // Game: chess piece move click
+      function gameChessMove() {
+        _playTones([
+          { freq: 500, start: 0.00, dur: 0.07, vol: 0.13 },
+          { freq: 350, start: 0.05, dur: 0.08, vol: 0.11 },
+        ], 'triangle');
+      }
+
+      // Game: chess capture — heavier thud
+      function gameChessCapture() {
+        _playTones([
+          { freq: 280, start: 0.00, dur: 0.10, vol: 0.16 },
+          { freq: 200, start: 0.08, dur: 0.18, vol: 0.15 },
+        ], 'square');
+      }
+
+      // Game: chess check alert
+      function gameChessCheck() {
+        _playTones([
+          { freq: 880, start: 0.00, dur: 0.10, vol: 0.15 },
+          { freq: 660, start: 0.12, dur: 0.10, vol: 0.14 },
+          { freq: 880, start: 0.24, dur: 0.18, vol: 0.15 },
+        ], 'triangle');
+      }
+
+      // Game: reshuffle whoosh (Word Scramble)
+      function gameReshuffle() {
+        _playTones([
+          { freq: 600, start: 0.00, dur: 0.08, vol: 0.10 },
+          { freq: 450, start: 0.06, dur: 0.08, vol: 0.10 },
+          { freq: 600, start: 0.12, dur: 0.08, vol: 0.10 },
+          { freq: 750, start: 0.18, dur: 0.14, vol: 0.11 },
+        ], 'triangle');
+      }
+
       // ── Public API ──────────────────────────────────────────
       window.VtxSound = {
-        welcome:     welcome,
-        success:     success,
-        error:       error,
-        warning:     warning,
-        info:        info,
-        examSubmit:  examSubmit,
-        enable:      function () { _enabled = true; },
-        disable:     function () { _enabled = false; },
+        welcome,
+        success,
+        error,
+        warning,
+        info,
+        examSubmit,
+        gameCorrect,
+        gameWrong,
+        gameSpeedBonus,
+        gamePerfect,
+        gameWin,
+        gameLose,
+        gameStreak,
+        gamePerfectRunCorrect,
+        gamePerfectRunDeath,
+        gameTilePlace,
+        gameWordValid,
+        gameWordInvalid,
+        gameCoinCollect,
+        gameObstacleHit,
+        gameSpeedUp,
+        gameChessMove,
+        gameChessCapture,
+        gameChessCheck,
+        gameReshuffle,
+        enable:  function () { _enabled = true; },
+        disable: function () { _enabled = false; },
       };
 
     }());
