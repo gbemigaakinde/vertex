@@ -15,12 +15,14 @@
   let _recordInterval = null;
   let _recordStart = 0;
   let _isRecording = false;
+  let _pendingSendCallback = null; // Stores callback so auto-send works on timeout
 
   const VoiceNotes = {
     isSupported: !!(navigator.mediaDevices && window.MediaRecorder),
 
     /* ══════════════════════════════════════════════════════
        UI INJECTION — adds mic button next to chat inputs
+       Works like WhatsApp: hold to record, release to send
     ══════════════════════════════════════════════════════ */
     injectRecorderButton(inputId, onSendCallback) {
       const input = document.getElementById(inputId);
@@ -34,35 +36,60 @@
       btn.title = 'Hold to record voice note';
       btn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="22"/></svg>`;
 
-      let holdTimer = null;
-      let isHolding = false;
+      // Prevent the mobile "copy/paste" menu from appearing on long-press
+      btn.addEventListener('contextmenu', (e) => e.preventDefault());
 
-      const startRec = async (e) => {
-        if (e.cancelable) e.preventDefault();
+      let holdTimer = null;
+      let didStart = false;
+
+      const startRec = async () => {
         if (_isRecording) return;
-        isHolding = true;
+        didStart = false;
+        // 80ms delay prevents accidental taps; WhatsApp feels instant but still needs a beat
         holdTimer = setTimeout(async () => {
-          if (!isHolding) return;
+          didStart = true;
+          _pendingSendCallback = onSendCallback; // Remember so we can auto-send later
           await this._startRecording();
           if (_isRecording) this._showPanel();
-        }, 350);
+        }, 80);
       };
 
-      const stopRec = (e) => {
-        if (e.cancelable) e.preventDefault();
-        isHolding = false;
-        if (holdTimer) { clearTimeout(holdTimer); holdTimer = null; }
-        if (_isRecording) {
+      const stopRec = () => {
+        clearTimeout(holdTimer);
+        if (didStart && _isRecording) {
           this._hidePanel();
-          this._stopRecording(onSendCallback);
+          this._stopRecording();
         }
+        didStart = false;
       };
 
-      btn.addEventListener('mousedown', startRec);
-      btn.addEventListener('mouseup', stopRec);
-      btn.addEventListener('mouseleave', stopRec);
-      btn.addEventListener('touchstart', startRec, { passive: false });
-      btn.addEventListener('touchend', stopRec, { passive: false });
+      const abortRec = () => {
+        clearTimeout(holdTimer);
+        if (_isRecording) {
+          this._abortRecording();
+          this._hidePanel();
+        }
+        didStart = false;
+      };
+
+      // Pointer Events + setPointerCapture guarantees pointerup fires
+      // even if the finger slides off the button while speaking
+      btn.addEventListener('pointerdown', (e) => {
+        if (e.button !== 0 && e.pointerType === 'mouse') return;
+        e.preventDefault();
+        try { btn.setPointerCapture(e.pointerId); } catch (_) {}
+        startRec();
+      });
+
+      btn.addEventListener('pointerup', (e) => {
+        e.preventDefault();
+        stopRec();
+      });
+
+      btn.addEventListener('pointercancel', (e) => {
+        e.preventDefault();
+        abortRec();
+      });
 
       wrap.insertBefore(btn, input);
     },
@@ -99,17 +126,18 @@
           const sec = (Date.now() - _recordStart) / 1000;
           if (sec >= MAX_DURATION_SEC) {
             this._hidePanel();
-            this._stopRecording();
+            this._stopRecording(); // Auto-send when max duration is reached
           }
         }, 400);
       } catch (err) {
         console.error('[VoiceNotes]', err);
         UI.toast('Microphone blocked. Please allow permission in your browser.', 'error');
         _isRecording = false;
+        _pendingSendCallback = null;
       }
     },
 
-    _stopRecording(onSend) {
+    _stopRecording() {
       if (!_isRecording || !_recorder) return;
       _isRecording = false;
       if (_recordInterval) { clearInterval(_recordInterval); _recordInterval = null; }
@@ -117,7 +145,7 @@
       const finalize = () => {
         const blob = new Blob(_chunks, { type: _recorder.mimeType || 'audio/webm' });
         this._cleanup();
-        if (blob.size < 800) return; // too short
+        if (blob.size < 800) return; // Too short — discard accidental blips
 
         const reader = new FileReader();
         reader.onloadend = () => {
@@ -127,7 +155,10 @@
             return;
           }
           const dur = Math.min(MAX_DURATION_SEC, Math.round(((Date.now() - _recordStart) / 1000) * 10) / 10);
-          if (onSend) onSend({ data: base64, duration: dur, mimeType: blob.type || 'audio/webm' });
+          if (_pendingSendCallback) {
+            _pendingSendCallback({ data: base64, duration: dur, mimeType: blob.type || 'audio/webm' });
+          }
+          _pendingSendCallback = null;
         };
         reader.readAsDataURL(blob);
       };
@@ -139,6 +170,7 @@
     _abortRecording() {
       if (!_isRecording) return;
       _isRecording = false;
+      _pendingSendCallback = null;
       if (_recordInterval) { clearInterval(_recordInterval); _recordInterval = null; }
       if (_recorder && _recorder.state !== 'inactive') _recorder.stop();
       this._cleanup();
