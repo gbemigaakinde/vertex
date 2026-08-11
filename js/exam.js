@@ -658,16 +658,16 @@
                 <span style="display:inline-flex;align-items:center;gap:.375rem;">${_icon('GameController', 16)} Games</span>
               </button>
             </div>
-            <div style="position:relative;display:inline-flex;">
+            <div style="position:relative;display:inline-flex;overflow:visible;">
               <button id="gcOpenBtn" onclick="GroupChat.openForStudent()" class="btn"
                 style="background:var(--success);color:#fff;">
                 <span style="display:inline-flex;align-items:center;gap:.375rem;">${_icon('ChatCircleDots', 16)} Group Chats</span>
               </button>
             </div>
-            <div style="position:relative;display:inline-flex;">
-              <button id="dmOpenBtn" onclick="DM.openStudentInbox()" class="btn bg-indigo-600 hover:bg-indigo-700">
-                <span style="display:inline-flex;align-items:center;gap:.375rem;">${_icon('EnvelopeSimple', 16)} Message Teacher</span>
-              </button>
+            <div style="position:relative;display:inline-flex;overflow:visible;">
+             <button id="dmOpenBtn" onclick="DM.openStudentInbox()" class="btn bg-indigo-600 hover:bg-indigo-700">
+             <span style="display:inline-flex;align-items:center;gap:.375rem;">${_icon('EnvelopeSimple', 16)} Message Teacher</span>
+             </button>
             </div>
           </div>
 
