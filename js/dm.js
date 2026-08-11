@@ -2977,6 +2977,98 @@ function _buildTeacherBubble(msg, showLabel) {
       .replace(/"/g, '&quot;').replace(/'/g, '&#x27;');
   }
 
+   /* ══════════════════════════════════════════════════════════════
+   VOICE NOTE CLEANUP — strips base64 audio data from messages
+   older than 3 days to save Firestore storage.
+   Call this once on teacher login. Students don't have access
+   to all threads so this runs teacher-side only.
+══════════════════════════════════════════════════════════════ */
+async function purgeOldVoiceNotes() {
+  const db         = Db();
+  const cutoff     = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000); // 3 days ago
+  const cutoffTs   = firebase.firestore.Timestamp.fromDate(cutoff);
+
+  let dmPurged = 0;
+  let gcPurged = 0;
+
+  try {
+    /* ── 1. Direct Message threads ── */
+    const dmThreads = await db.collection('directMessages').get();
+
+    for (const threadDoc of dmThreads.docs) {
+      try {
+        const oldVoiceMessages = await db
+          .collection('directMessages')
+          .doc(threadDoc.id)
+          .collection('messages')
+          .where('timestamp', '<', cutoffTs)
+          .get();
+
+        const toStrip = oldVoiceMessages.docs.filter(doc => {
+          const d = doc.data();
+          return d.voiceNote && d.voiceNote.data && String(d.voiceNote.data).length > 0;
+        });
+
+        // Firestore batch max is 500 writes; chunk to be safe
+        for (let i = 0; i < toStrip.length; i += 400) {
+          const batch = db.batch();
+          toStrip.slice(i, i + 400).forEach(doc => {
+            batch.update(doc.ref, {
+              'voiceNote.data':     null,
+              'voiceNote.expired':  true,
+            });
+          });
+          await batch.commit();
+          dmPurged += toStrip.slice(i, i + 400).length;
+        }
+      } catch (threadErr) {
+        console.warn('[purgeOldVoiceNotes] DM thread error for', threadDoc.id, threadErr);
+      }
+    }
+
+    /* ── 2. Group Chat threads ── */
+    const gcGroups = await db.collection('groupChats').get();
+
+    for (const groupDoc of gcGroups.docs) {
+      try {
+        const oldVoiceMessages = await db
+          .collection('groupChats')
+          .doc(groupDoc.id)
+          .collection('messages')
+          .where('timestamp', '<', cutoffTs)
+          .get();
+
+        const toStrip = oldVoiceMessages.docs.filter(doc => {
+          const d = doc.data();
+          return d.voiceNote && d.voiceNote.data && String(d.voiceNote.data).length > 0;
+        });
+
+        for (let i = 0; i < toStrip.length; i += 400) {
+          const batch = db.batch();
+          toStrip.slice(i, i + 400).forEach(doc => {
+            batch.update(doc.ref, {
+              'voiceNote.data':     null,
+              'voiceNote.expired':  true,
+            });
+          });
+          await batch.commit();
+          gcPurged += toStrip.slice(i, i + 400).length;
+        }
+      } catch (groupErr) {
+        console.warn('[purgeOldVoiceNotes] Group chat error for', groupDoc.id, groupErr);
+      }
+    }
+
+    const total = dmPurged + gcPurged;
+    if (total > 0) {
+      console.log(`[purgeOldVoiceNotes] Purged ${total} expired voice note(s) — ${dmPurged} DM, ${gcPurged} group.`);
+    }
+
+  } catch (err) {
+    console.warn('[purgeOldVoiceNotes] Cleanup failed:', err);
+  }
+}
+   
   /* ── Public API ────────────────────────────────────────────── */
   window.DM = {
     openStudentInbox,
@@ -3001,6 +3093,7 @@ function _buildTeacherBubble(msg, showLabel) {
     _scrollToMsg,
     _clearStudentReply,
     _clearTeacherReply,
+    purgeOldVoiceNotes,
   };
 
 }());
