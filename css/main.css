@@ -1392,6 +1392,7 @@ label.glass:has(.subject-checkbox:checked) {
   padding: 0.375rem 0.75rem !important;
   height: auto !important;
   box-shadow: none !important;
+  overflow: visible !important;
   transition: color var(--t-fast), background var(--t-fast), border-color var(--t-fast) !important;
 }
 
