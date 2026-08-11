@@ -1543,7 +1543,7 @@
   const isMe    = msg.senderId === myUid;
   const msgId   = msg.id || '';
   const wrapId  = `dmWrap-${_escAttr(msgId)}`;
-  const canEdit = isMe && !!msgId;
+  const canEdit = isMe && !!msgId && !msg.voiceNote;
 
   const time = msg.timestamp
     ? new Date(msg.timestamp.toDate ? msg.timestamp.toDate() : msg.timestamp)
@@ -1602,7 +1602,7 @@
                  style="background:var(--accent,#4f6ef7);color:#fff;
                         border-radius:14px 14px 3px 14px;padding:.5rem .75rem .375rem;">
               ${replyCard}
-              <p class="dm-bubble-text">${_esc(msg.text)}</p>
+              ${msg.voiceNote ? VoiceNotes.renderPlayer(msg.voiceNote) : `<p class="dm-bubble-text">${_esc(msg.text)}</p>`}
               <div class="dm-bubble-footer dm-bubble-footer--end">
                 ${editedLabel}${editBtn}
                 <span class="dm-bubble-time">${time}</span>
@@ -1626,7 +1626,7 @@
                         border:1px solid var(--border,#e5e7eb);
                         border-radius:14px 14px 14px 3px;padding:.5rem .75rem .375rem;">
               ${replyCard}
-              <p class="dm-bubble-text">${_esc(msg.text)}</p>
+              ${msg.voiceNote ? VoiceNotes.renderPlayer(msg.voiceNote) : `<p class="dm-bubble-text">${_esc(msg.text)}</p>`}
               <div class="dm-bubble-footer dm-bubble-footer--start">
                 ${editedLabel}
                 <span class="dm-bubble-time dm-bubble-time--dim">${time}</span>
@@ -1643,7 +1643,7 @@ function _buildTeacherBubble(msg, showLabel) {
   const msgId      = msg.id || '';
   const wrapId     = `dmWrap-${_escAttr(msgId)}`;
   const studentUid = _activeStudentUid || '';
-  const canEdit    = isTeacher && !!msgId;
+  const canEdit    = isTeacher && !!msgId && !msg.voiceNote;
   const canHistory = !!msgId;
 
   const time = msg.timestamp
@@ -1703,7 +1703,7 @@ function _buildTeacherBubble(msg, showLabel) {
                  style="background:var(--accent,#4f6ef7);color:#fff;
                         border-radius:14px 14px 3px 14px;padding:.5rem .75rem .375rem;">
               ${replyCard}
-              <p class="dm-bubble-text">${_esc(msg.text)}</p>
+              ${msg.voiceNote ? VoiceNotes.renderPlayer(msg.voiceNote) : `<p class="dm-bubble-text">${_esc(msg.text)}</p>`}
               <div class="dm-bubble-footer dm-bubble-footer--end">
                 ${editedLabel}${editBtn}
                 <span class="dm-bubble-time">${time}</span>
@@ -1727,7 +1727,7 @@ function _buildTeacherBubble(msg, showLabel) {
                         border:1px solid var(--border,#e5e7eb);
                         border-radius:14px 14px 14px 3px;padding:.5rem .75rem .375rem;">
               ${replyCard}
-              <p class="dm-bubble-text">${_esc(msg.text)}</p>
+              ${msg.voiceNote ? VoiceNotes.renderPlayer(msg.voiceNote) : `<p class="dm-bubble-text">${_esc(msg.text)}</p>`}
               <div class="dm-bubble-footer dm-bubble-footer--start">
                 ${editedLabel}
                 <span class="dm-bubble-time dm-bubble-time--dim">${time}</span>
@@ -1855,6 +1855,7 @@ function _buildTeacherBubble(msg, showLabel) {
     await _markRead(uid, 'student');
 
     _watchPresence(uid, 'teacher', 'dmTeacherPresence', 'dmTeacherPresenceWatch');
+    if (window.VoiceNotes) VoiceNotes.injectRecorderButton('dmInput', sendStudentVoiceNote);
     _watchTypingIndicator(uid, 'teacherTyping', 'dmStudentTypingBar');
     _attachSwipeListeners('dmMessages', 'student');
     _subscribeStudentMessages(uid);
@@ -1992,6 +1993,42 @@ function _buildTeacherBubble(msg, showLabel) {
     } finally {
       UI.setLoading(btn, false);
       if (input) input.focus();
+    }
+  }
+  
+  async function sendStudentVoiceNote(voiceNote) {
+    if (!voiceNote || !voiceNote.data) return;
+    const uid         = AppState.userId;
+    const studentData = AppState.studentData || {};
+    const name        = studentData.name  || 'Student';
+    const cls         = studentData.class || '';
+    const btn         = document.getElementById('dmSendBtn');
+    if (btn) UI.setLoading(btn, true);
+
+    try {
+      const batch  = Db().batch();
+      const msgRef = _threadRef(uid).collection('messages').doc();
+      batch.set(msgRef, {
+        voiceNote: voiceNote,
+        senderId: uid, senderName: name, role: 'student',
+        status: 'sent',
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      batch.set(_threadRef(uid), {
+        studentName: name, studentClass: cls,
+        lastMessage: '🎤 Voice note',
+        lastAt: firebase.firestore.FieldValue.serverTimestamp(),
+        teacherUnread: firebase.firestore.FieldValue.increment(1),
+        studentUnread: 0,
+        lastMessageRole: 'student',
+        lastMessageStatus: 'sent',
+      }, { merge: true });
+      await batch.commit();
+    } catch (err) {
+      console.error('[dm] sendStudentVoiceNote error:', err);
+      UI.toast('Could not send voice note.', 'error');
+    } finally {
+      if (btn) UI.setLoading(btn, false);
     }
   }
 
@@ -2350,6 +2387,7 @@ function _buildTeacherBubble(msg, showLabel) {
     _watchTypingIndicator(studentUid, 'studentTyping', 'dmTeacherTypingBar');
     _attachSwipeListeners('dmTeacherMessages', 'teacher');
     _subscribeTeacherMessages(studentUid);
+      if (window.VoiceNotes) VoiceNotes.injectRecorderButton('dmTeacherInput', (note) => _sendTeacherVoiceNote(studentUid, studentName, studentClass, note));
   }
 
   function _backToThreadList() {
@@ -2500,6 +2538,38 @@ function _buildTeacherBubble(msg, showLabel) {
     } finally {
       UI.setLoading(btn, false);
       if (input) input.focus();
+    }
+  }
+  
+  async function _sendTeacherVoiceNote(studentUid, studentName, studentClass, voiceNote) {
+    if (!voiceNote || !voiceNote.data) return;
+    const btn = document.getElementById('dmTeacherSendBtn');
+    if (btn) UI.setLoading(btn, true);
+
+    try {
+      const batch  = Db().batch();
+      const msgRef = _threadRef(studentUid).collection('messages').doc();
+      batch.set(msgRef, {
+        voiceNote: voiceNote,
+        senderId: AppConfig.TEACHER_UID, senderName: 'Master Timothy', role: 'teacher',
+        status: 'sent',
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      batch.set(_threadRef(studentUid), {
+        studentName: studentName || '', studentClass: studentClass || '',
+        lastMessage: '🎤 Voice note',
+        lastAt: firebase.firestore.FieldValue.serverTimestamp(),
+        studentUnread: firebase.firestore.FieldValue.increment(1),
+        teacherUnread: 0,
+        lastMessageRole: 'teacher',
+        lastMessageStatus: 'sent',
+      }, { merge: true });
+      await batch.commit();
+    } catch (err) {
+      console.error('[dm] _sendTeacherVoiceNote error:', err);
+      UI.toast('Could not send voice note.', 'error');
+    } finally {
+      if (btn) UI.setLoading(btn, false);
     }
   }
 
