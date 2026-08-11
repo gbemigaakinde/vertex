@@ -200,6 +200,7 @@
     if (window.GroupChat && typeof GroupChat.cancelListeners === 'function') {
       GroupChat.cancelListeners();
     }
+    if (window.SpeechEngine) SpeechEngine.cancel();
 
     AppState.reset();
 
@@ -246,6 +247,7 @@
     if (window.GroupChat && typeof GroupChat.cancelListeners === 'function') {
       GroupChat.cancelListeners();
     }
+    if (window.SpeechEngine) SpeechEngine.cancel();
 
     if (window.VtxLoader) window.VtxLoader.done();
 
