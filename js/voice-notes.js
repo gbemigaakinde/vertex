@@ -210,7 +210,7 @@
           background: var(--accent);
           color: #fff;
           transition: all 120ms;
-        ">Send ✔</button>
+        ">Send</button>
       </div>`;
     document.body.appendChild(panel);
 
