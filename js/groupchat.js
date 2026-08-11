@@ -2662,6 +2662,7 @@ async function _deleteGroup(groupId) {
   function _updateGroupBadge(uid) {
     const btn = document.getElementById('gcOpenBtn');
     if (!btn) return;
+    const wrapper = btn.parentElement;
 
     Db().collection('groupChats')
       .where('memberUids', 'array-contains', uid)
@@ -2669,20 +2670,36 @@ async function _deleteGroup(groupId) {
       .then(snap => {
         let total = 0;
         snap.forEach(doc => { total += (doc.data().unread && doc.data().unread[uid]) || 0; });
-        const existing = btn.querySelector('.gc-nav-badge');
+        const existing = wrapper.querySelector('.gc-nav-badge');
         if (existing) existing.remove();
         if (total > 0) {
           const badge = document.createElement('span');
           badge.className = 'gc-nav-badge';
           badge.textContent = total > 9 ? '9+' : String(total);
           badge.style.cssText = [
-            'position:absolute','top:-6px','right:-6px','min-width:18px','height:18px',
-            'background:var(--danger)','color:#fff','font-size:.625rem','font-weight:700',
-            'border-radius:99px','display:flex','align-items:center','justify-content:center',
-            'padding:0 4px','pointer-events:none','border:2px solid var(--bg-base)','line-height:1',
+            'position:absolute',
+            'top:-6px',
+            'right:-6px',
+            'min-width:20px',
+            'height:20px',
+            'background:var(--danger,#e03131)',
+            'color:#fff',
+            'font-size:.625rem',
+            'font-weight:700',
+            'border-radius:99px',
+            'display:flex',
+            'align-items:center',
+            'justify-content:center',
+            'padding:0 5px',
+            'pointer-events:none',
+            'border:2px solid var(--bg-page,#f7f7f8)',
+            'line-height:1',
+            'z-index:10',
+            'box-shadow:0 1px 4px rgba(0,0,0,0.25)',
           ].join(';');
-          btn.style.position = 'relative';
-          btn.appendChild(badge);
+          wrapper.style.position = 'relative';
+          wrapper.style.overflow = 'visible';
+          wrapper.appendChild(badge);
         }
       }).catch(() => {});
   }
@@ -2698,20 +2715,37 @@ async function _deleteGroup(groupId) {
         snap.forEach(doc => { total += (doc.data().unread && doc.data().unread[uid]) || 0; });
         const btn = document.getElementById('gcOpenBtn');
         if (!btn) return;
-        const existing = btn.querySelector('.gc-nav-badge');
+        const wrapper = btn.parentElement;
+        const existing = wrapper.querySelector('.gc-nav-badge');
         if (existing) existing.remove();
         if (total > 0) {
           const badge = document.createElement('span');
           badge.className = 'gc-nav-badge';
           badge.textContent = total > 9 ? '9+' : String(total);
           badge.style.cssText = [
-            'position:absolute','top:-6px','right:-6px','min-width:18px','height:18px',
-            'background:var(--danger)','color:#fff','font-size:.625rem','font-weight:700',
-            'border-radius:99px','display:flex','align-items:center','justify-content:center',
-            'padding:0 4px','pointer-events:none','border:2px solid var(--bg-base)','line-height:1',
+            'position:absolute',
+            'top:-6px',
+            'right:-6px',
+            'min-width:20px',
+            'height:20px',
+            'background:var(--danger,#e03131)',
+            'color:#fff',
+            'font-size:.625rem',
+            'font-weight:700',
+            'border-radius:99px',
+            'display:flex',
+            'align-items:center',
+            'justify-content:center',
+            'padding:0 5px',
+            'pointer-events:none',
+            'border:2px solid var(--bg-page,#f7f7f8)',
+            'line-height:1',
+            'z-index:10',
+            'box-shadow:0 1px 4px rgba(0,0,0,0.25)',
           ].join(';');
-          btn.style.position = 'relative';
-          btn.appendChild(badge);
+          wrapper.style.position = 'relative';
+          wrapper.style.overflow = 'visible';
+          wrapper.appendChild(badge);
         }
       }, err => console.warn('[gc] Student unread listener error:', err));
     _reg('gcStudentUnread', unsub);
