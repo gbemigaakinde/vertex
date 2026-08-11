@@ -7,7 +7,7 @@
        ThreeDCell.open()      (Biology)
        ThreeDPhysics.open()   (Physics)
      → [back button] → renderHub()
-   ============================================================ */
+      ============================================================ */
 
 (function () {
   'use strict';
@@ -20,7 +20,7 @@
       title:       'Chemistry',
       subtitle:    'Interactive Periodic Table',
       description: 'Explore all 118 elements in 3D. Tap any element for detailed properties, electron configuration, discovery history, and group information.',
-      icon:        '⚗️',
+      icon:        '<i class="ph ph-flask"></i>',
       color:       'var(--accent)',
       colorBg:     'var(--accent-subtle)',
       colorBorder: 'var(--accent-border)',
@@ -38,7 +38,7 @@
       title:       'Biology',
       subtitle:    'Cell Structure & Systems',
       description: 'Interactive 3D animal and plant cells. Tap any organelle to learn its function, structure, and exam tips. Compare cells, explore pathways, and test yourself.',
-      icon:        '🧬',
+      icon:        '<i class="ph ph-dna"></i>',
       color:       'var(--success)',
       colorBg:     'var(--success-subtle)',
       colorBorder: 'var(--success-border)',
@@ -56,7 +56,7 @@
       title:       'Physics',
       subtitle:    'Forces, Waves & Energy',
       description: 'Animated 3D visualisations of Newton\'s Laws, waves, electricity circuits, and energy transfer. Live canvas animations make every concept "alive". Includes a timed quiz.',
-      icon:        '⚛️',
+      icon:        '<i class="ph ph-atom"></i>',
       color:       'var(--warning)',
       colorBg:     'var(--warning-subtle)',
       colorBorder: 'var(--warning-border)',
@@ -74,7 +74,7 @@
       title:       'Commerce',
       subtitle:    'Economics & Finance',
       description: 'Coming soon — interactive economic models, supply & demand curves, and financial charts.',
-      icon:        '📊',
+      icon:        '<i class="ph ph-chart-bar"></i>',
       color:       'var(--info)',
       colorBg:     'var(--info-subtle)',
       colorBorder: 'var(--info-border)',
