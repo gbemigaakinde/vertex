@@ -5,48 +5,63 @@
 (function () {
   'use strict';
 
-  const THREEJS_CDN  = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
-  const ORBIT_CDN    = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js';
+  const THREEJS_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+  const ORBIT_CDN   = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js';
 
   let _threeLoaded = false;
   let _threeQueue  = [];
+  let _localTHREE  = null; // Use a local reference, not window.THREE
 
   function _loadThreeJS(cb) {
-    if (_threeLoaded && window.THREE && window.THREE.OrbitControls) { cb(); return; }
+    // If we already have our own loaded copy, use it
+    if (_threeLoaded && _localTHREE) { cb(); return; }
     _threeQueue.push(cb);
     if (_threeQueue.length > 1) return;
-    if (window.THREE && !window.THREE.OrbitControls) {
-      // Three loaded but no OrbitControls
+
+    function _flush() {
+      _threeLoaded = true;
+      const fns = _threeQueue.slice();
+      _threeQueue = [];
+      fns.forEach(fn => fn());
+    }
+
+    function _loadOrbit() {
       const s2 = document.createElement('script');
       s2.src = ORBIT_CDN;
       s2.onload = () => {
-        _threeLoaded = true;
-        _threeQueue.forEach(fn => fn());
-        _threeQueue = [];
+        // OrbitControls attaches to whatever THREE is current — capture it
+        _localTHREE = window._vtxPhysTHREE || window.THREE;
+        _flush();
+      };
+      s2.onerror = () => {
+        // OrbitControls failed — still proceed, scenes don't use OrbitControls
+        _localTHREE = window._vtxPhysTHREE || window.THREE;
+        _flush();
       };
       document.head.appendChild(s2);
-      return;
     }
-    if (!window.THREE) {
-      const s1 = document.createElement('script');
-      s1.src = THREEJS_CDN;
-      s1.onload = () => {
-        const s2 = document.createElement('script');
-        s2.src = ORBIT_CDN;
-        s2.onload = () => {
-          _threeLoaded = true;
-          _threeQueue.forEach(fn => fn());
-          _threeQueue = [];
-        };
-        document.head.appendChild(s2);
-      };
-      document.head.appendChild(s1);
-    }
+
+    // Always load our own r128 copy to avoid version conflicts with
+    // the page-level Three.js (r160) used by the background canvas.
+    const s1 = document.createElement('script');
+    s1.src = THREEJS_CDN;
+    s1.onload = () => {
+      // Snapshot this version before anything else overwrites window.THREE
+      window._vtxPhysTHREE = window.THREE;
+      _localTHREE = window.THREE;
+      _loadOrbit();
+    };
+    s1.onerror = () => {
+      // Fallback to whatever is on window
+      _localTHREE = window.THREE;
+      _flush();
+    };
+    document.head.appendChild(s1);
   }
 
   const TOPICS = {
     forces: {
-      id: 'forces', label: 'Forces & Motion', icon: '🚀',
+      id: 'forces', label: 'Forces & Motion', icon: 'atom',
       color: '#f97316', dark: '#fb923c',
       subtopics: [
         {
@@ -92,7 +107,7 @@
       ],
     },
     waves: {
-      id: 'waves', label: 'Waves', icon: '〰️',
+      id: 'waves', label: 'Waves', icon: 'wave-sine',
       color: '#06b6d4', dark: '#22d3ee',
       subtopics: [
         {
@@ -130,7 +145,7 @@
       ],
     },
     electricity: {
-      id: 'electricity', label: 'Electricity', icon: '⚡',
+      id: 'electricity', label: 'Electricity', icon: 'lightning',
       color: '#f59e0b', dark: '#fbbf24',
       subtopics: [
         {
@@ -160,7 +175,7 @@
       ],
     },
     energy: {
-      id: 'energy', label: 'Energy', icon: '🔋',
+      id: 'energy', label: 'Energy', icon: 'battery-charging',
       color: '#22c55e', dark: '#4ade80',
       subtopics: [
         {
@@ -231,7 +246,7 @@
     _quizDone     = false;
     _shuffledQuiz = _shuffle([...QUIZ_QUESTIONS]);
     _destroyThree();
-    _loadThreeJS(() => _render());
+    _render(); // Render UI immediately, then load Three.js
   }
 
   function _render() {
@@ -262,7 +277,11 @@
         @keyframes phys-slide-in{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:translateX(0)}}
         .phys-scene-label{position:absolute;padding:2px 7px;border-radius:5px;font-size:.6rem;font-weight:700;pointer-events:none;white-space:nowrap;z-index:5;}
       </style>`);
-    requestAnimationFrame(() => _launchScene());
+
+    // Load Three.js and launch scene after UI is painted
+    _loadThreeJS(() => {
+      requestAnimationFrame(() => _launchScene());
+    });
   }
 
   function _buildTopBar() {
@@ -270,22 +289,28 @@
       <div style="display:flex;align-items:center;gap:.5rem;padding:.45rem .875rem;border-bottom:1px solid var(--border);background:var(--bg-base);flex-shrink:0;min-height:2.75rem;">
         <button onclick="ThreeDPhysics._back()" style="display:inline-flex;align-items:center;font-size:var(--text-sm);font-weight:500;color:var(--text-2);background:var(--bg-subtle);border:1px solid var(--border);border-radius:var(--r-md);padding:.275rem .6rem;cursor:pointer;font-family:var(--font);flex-shrink:0;">← Back</button>
         <div style="flex:1;min-width:0;">
-          <div style="font-size:var(--text-base);font-weight:700;color:var(--text-1);letter-spacing:-.015em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">⚛️ Physics — Forces, Waves & Energy</div>
+          <div style="display:flex;align-items:center;gap:.4rem;font-size:var(--text-base);font-weight:700;color:var(--text-1);letter-spacing:-.015em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+            <i class="ph ph-atom" style="font-size:1.1rem;color:var(--warning);"></i>
+            Physics — Forces, Waves &amp; Energy
+          </div>
         </div>
       </div>`;
   }
 
   function _buildTabBar() {
     const tabs = [
-      { id:'forces', icon:'🚀', label:'Forces' },
-      { id:'waves', icon:'〰️', label:'Waves' },
-      { id:'electricity', icon:'⚡', label:'Electric' },
-      { id:'energy', icon:'🔋', label:'Energy' },
-      { id:'quiz', icon:'🧮', label:'Quiz' },
+      { id:'forces',      icon:'ph-atom',             label:'Forces'  },
+      { id:'waves',       icon:'ph-wave-sine',         label:'Waves'   },
+      { id:'electricity', icon:'ph-lightning',         label:'Electric'},
+      { id:'energy',      icon:'ph-battery-charging',  label:'Energy'  },
+      { id:'quiz',        icon:'ph-exam',              label:'Quiz'    },
     ];
     return `
       <div style="flex-shrink:0;display:flex;align-items:center;gap:.375rem;padding:.35rem .875rem;border-bottom:1px solid var(--border);overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;background:var(--bg-base);">
-        ${tabs.map(t => `<button class="phys-tab${_activeTab===t.id?' active':''}" onclick="ThreeDPhysics._setTab('${t.id}')">${t.icon} ${t.label}</button>`).join('')}
+        ${tabs.map(t => `
+          <button class="phys-tab${_activeTab===t.id?' active':''}" onclick="ThreeDPhysics._setTab('${t.id}')">
+            <i class="ph ${t.icon}" style="font-size:.75rem;"></i> ${t.label}
+          </button>`).join('')}
       </div>`;
   }
 
@@ -320,7 +345,7 @@
               </div>
             </div>
 
-            <!-- 3D Canvas container — FIXED sizing -->
+            <!-- 3D Canvas container -->
             <div id="phys-3d-container" class="phys-3d-canvas-wrap" style="margin-bottom:.75rem;border-radius:var(--r-xl);background:#0a0a1a;border:1px solid ${sub.color}44;">
               <canvas id="phys-3d-canvas" width="1" height="1"></canvas>
               <div id="phys-scene-labels" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:4;"></div>
@@ -330,14 +355,18 @@
               <p style="font-size:var(--text-sm);color:var(--text-2);line-height:1.7;margin:0;">${sub.description}</p>
             </div>
             <div style="margin-bottom:.625rem;padding:.5rem .75rem;border-radius:var(--r-lg);background:${sub.color}0d;border:1px solid ${sub.color}30;">
-              <div style="font-size:.5rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:${sub.color};margin-bottom:.2rem;">💡 Real-World Analogy</div>
+              <div style="display:flex;align-items:center;gap:.3rem;font-size:.5rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:${sub.color};margin-bottom:.2rem;">
+                <i class="ph ph-lightbulb" style="font-size:.75rem;"></i> Real-World Analogy
+              </div>
               <p style="font-size:var(--text-xs);color:var(--text-2);line-height:1.55;margin:0;font-style:italic;">${sub.analogy}</p>
             </div>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:.3rem;margin-bottom:.625rem;">
-              ${sub.facts.map(f=>`<div style="background:var(--bg-subtle);border:1px solid var(--border);border-radius:var(--r-sm);padding:.3rem .5rem;font-size:.575rem;color:var(--text-2);line-height:1.45;">● ${f}</div>`).join('')}
+              ${sub.facts.map(f=>`<div style="background:var(--bg-subtle);border:1px solid var(--border);border-radius:var(--r-sm);padding:.3rem .5rem;font-size:.575rem;color:var(--text-2);line-height:1.45;display:flex;align-items:flex-start;gap:.25rem;"><i class="ph ph-dot-outline" style="flex-shrink:0;margin-top:1px;"></i>${f}</div>`).join('')}
             </div>
             <div style="padding:.625rem .875rem;border-radius:var(--r-lg);background:var(--warning-subtle);border:1px solid var(--warning-border);">
-              <div style="font-size:.5rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--warning);margin-bottom:.25rem;">📝 Exam Tip</div>
+              <div style="display:flex;align-items:center;gap:.3rem;font-size:.5rem;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--warning);margin-bottom:.25rem;">
+                <i class="ph ph-pencil-simple" style="font-size:.75rem;"></i> Exam Tip
+              </div>
               <p style="font-size:var(--text-xs);color:var(--text-2);line-height:1.6;margin:0;">${sub.examTip}</p>
             </div>
             <div style="display:flex;gap:.5rem;justify-content:space-between;margin-top:.75rem;padding-bottom:.75rem;">
@@ -372,17 +401,26 @@
   function _launchScene() {
     _destroyThree();
     if (_activeTab === 'quiz') return;
-    if (!window.THREE) { setTimeout(_launchScene, 200); return; }
+
+    const THREE = _localTHREE || window._vtxPhysTHREE || window.THREE;
+    if (!THREE) {
+      // Three.js not ready yet — retry
+      setTimeout(_launchScene, 200);
+      return;
+    }
 
     const canvas    = document.getElementById('phys-3d-canvas');
     const container = document.getElementById('phys-3d-container');
     if (!canvas || !container) return;
 
-    const THREE = window.THREE;
-
-    // Force explicit pixel dimensions
-    const W = container.offsetWidth  || 360;
+    // Wait for container to have real dimensions
+    const W = container.offsetWidth || 360;
     const H = 220;
+
+    if (W < 10) {
+      setTimeout(_launchScene, 100);
+      return;
+    }
 
     canvas.width  = W * (window.devicePixelRatio || 1);
     canvas.height = H * (window.devicePixelRatio || 1);
@@ -393,7 +431,7 @@
 
     let renderer;
     try {
-      renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
     } catch(e) {
       console.warn('WebGL failed:', e);
       return;
@@ -425,7 +463,7 @@
     const group = TOPICS[_activeTab];
     const sub   = group ? group.subtopics[_activeSubIdx] : null;
 
-    // Create _three object BEFORE calling build function
+    // Create _three BEFORE building the scene so scene builders can reference it
     _three = { renderer, scene, camera, raf: null, updateFn: null, W, H };
 
     const buildFns = {
@@ -446,28 +484,33 @@
       energy_transfer:       _scene_energy_transfer,
     };
 
-    const state = { t: 0, THREE, scene, camera, renderer, W, H, isDark,
-                    color: sub ? sub.color : '#ffffff', objects: {}, labels: [] };
+    const state = {
+      t: 0, THREE, scene, camera, renderer, W, H, isDark,
+      color: sub ? sub.color : '#ffffff',
+      objects: {},
+      labels: [],
+      _updateFn: null,
+    };
 
     const buildFn = sub ? buildFns[sub.id] : null;
     if (buildFn) {
       try { buildFn(state); } catch(e) { console.warn('Scene build error:', e); }
     }
 
-    // Store updateFn
     _three.updateFn = state._updateFn || null;
 
     function animate() {
+      // Guard: stop if _three was destroyed or canvas removed
       if (!_three || !document.getElementById('phys-3d-canvas')) {
         _destroyThree();
         return;
       }
+      _three.raf = requestAnimationFrame(animate);
       state.t += 0.016;
       if (_three.updateFn) {
-        try { _three.updateFn(state); } catch(e){}
+        try { _three.updateFn(state); } catch(e) {}
       }
       _three.renderer.render(scene, camera);
-      _three.raf = requestAnimationFrame(animate);
     }
 
     _three.raf = requestAnimationFrame(animate);
@@ -488,26 +531,26 @@
   }
 
   function _makeArrow(THREE, from, to, color, headSize) {
-    const dir  = new THREE.Vector3().subVectors(to, from).normalize();
-    const len  = from.distanceTo(to);
-    return new THREE.ArrowHelper(dir, from, len, color, headSize||0.35, headSize?headSize*0.6:0.2);
+    const dir = new THREE.Vector3().subVectors(to, from).normalize();
+    const len = from.distanceTo(to);
+    return new THREE.ArrowHelper(dir, from, len, color, headSize || 0.35, headSize ? headSize * 0.6 : 0.2);
   }
 
   function _makeBox(THREE, w, h, d, color, metalness, roughness) {
     const geo = new THREE.BoxGeometry(w, h, d);
-    const mat = new THREE.MeshStandardMaterial({ color, metalness: metalness||0.3, roughness: roughness||0.6 });
+    const mat = new THREE.MeshStandardMaterial({ color, metalness: metalness || 0.3, roughness: roughness || 0.6 });
     return new THREE.Mesh(geo, mat);
   }
 
   function _makeSphere(THREE, r, color, metalness) {
     const geo = new THREE.SphereGeometry(r, 24, 24);
-    const mat = new THREE.MeshStandardMaterial({ color, metalness: metalness||0.4, roughness: 0.5 });
+    const mat = new THREE.MeshStandardMaterial({ color, metalness: metalness || 0.4, roughness: 0.5 });
     return new THREE.Mesh(geo, mat);
   }
 
   function _makeGround(THREE, scene, color) {
-    const geo = new THREE.PlaneGeometry(22, 22);
-    const mat = new THREE.MeshStandardMaterial({ color: color||0x1e293b, roughness: 0.9 });
+    const geo  = new THREE.PlaneGeometry(22, 22);
+    const mat  = new THREE.MeshStandardMaterial({ color: color || 0x1e293b, roughness: 0.9 });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.rotation.x = -Math.PI / 2;
     mesh.position.y = -1.5;
@@ -523,7 +566,7 @@
   }
 
   /* ══════════════════════════════════════════════════
-     SCENE BUILDERS — each sets state._updateFn
+     SCENE BUILDERS
   ══════════════════════════════════════════════════ */
 
   function _scene_newton1(s) {
@@ -532,15 +575,15 @@
     _makeGround(THREE, scene);
     _makeGridHelper(THREE, scene);
 
-    // Static box — at rest, forces balanced
+    // Static box — at rest
     const boxL = _makeBox(THREE, 1.3, 1.3, 1.3, 0x3b82f6);
     boxL.position.set(-3.5, -0.85, 0);
     boxL.castShadow = true;
     scene.add(boxL);
 
     // Normal and weight arrows on static box
-    scene.add(_makeArrow(THREE, new THREE.Vector3(-3.5,-0.2,0), new THREE.Vector3(-3.5,1.3,0), 0xff4444, 0.28));
-    scene.add(_makeArrow(THREE, new THREE.Vector3(-3.5,-1.5,0), new THREE.Vector3(-3.5,-2.8,0), 0xff4444, 0.28));
+    scene.add(_makeArrow(THREE, new THREE.Vector3(-3.5, -0.2, 0), new THREE.Vector3(-3.5, 1.3, 0), 0xff4444, 0.28));
+    scene.add(_makeArrow(THREE, new THREE.Vector3(-3.5, -1.5, 0), new THREE.Vector3(-3.5, -2.8, 0), 0xff4444, 0.28));
 
     // Moving box — constant velocity
     const boxR = _makeBox(THREE, 1.3, 1.3, 1.3, 0x22c55e);
@@ -559,17 +602,18 @@
     const velArr = _makeArrow(THREE, new THREE.Vector3(0, -0.85, 0), new THREE.Vector3(2.2, -0.85, 0), 0xf97316, 0.32);
     scene.add(velArr);
 
-    s.objects.boxR = boxR;
+    s.objects.boxR   = boxR;
     s.objects.velArr = velArr;
 
-    _addLabel(s, 'F_net = 0 → At Rest', 2, 8, '#60a5fa');
-    _addLabel(s, 'F_net = 0 → Constant Velocity', 42, 8, '#4ade80');
-    _addLabel(s, 'N↑   W↓', 18, 35, '#ff4444', 'rgba(0,0,0,0)');
+    _addLabel(s, 'F_net = 0  At Rest', 2, 8, '#60a5fa');
+    _addLabel(s, 'F_net = 0  Constant Velocity', 42, 8, '#4ade80');
 
     s._updateFn = (st) => {
       const x = -1 + (st.t * 1.3) % 6.5;
       st.objects.boxR.position.x = x;
-      st.objects.velArr.position.x = x;
+      // Reposition arrow origin
+      const dir = new THREE.Vector3(1, 0, 0);
+      st.objects.velArr.position.set(x, -0.85, 0);
     };
   }
 
@@ -587,14 +631,13 @@
     box2.castShadow = true;
     scene.add(box2);
 
-    const arr1 = _makeArrow(THREE, new THREE.Vector3(0,0,2.5), new THREE.Vector3(1.8,0,2.5), 0x60a5fa, 0.28);
+    const arr1 = _makeArrow(THREE, new THREE.Vector3(0, 0, 2.5), new THREE.Vector3(1.8, 0, 2.5), 0x60a5fa, 0.28);
     scene.add(arr1);
-    const arr2 = _makeArrow(THREE, new THREE.Vector3(0,0,-2.5), new THREE.Vector3(3.0,0,-2.5), 0xfbbf24, 0.32);
+    const arr2 = _makeArrow(THREE, new THREE.Vector3(0, 0, -2.5), new THREE.Vector3(3.0, 0, -2.5), 0xfbbf24, 0.32);
     scene.add(arr2);
 
-    // Force labels
-    _addLabel(s, 'F=10N → slower (a=5 m/s²)', 2, 8, '#60a5fa');
-    _addLabel(s, 'F=20N → faster (a=10 m/s²)', 2, 82, '#fbbf24');
+    _addLabel(s, 'F=10N - slower (a=5 m/s2)', 2, 8, '#60a5fa');
+    _addLabel(s, 'F=20N - faster (a=10 m/s2)', 2, 82, '#fbbf24');
 
     s.objects.box1 = box1;
     s.objects.box2 = box2;
@@ -617,21 +660,23 @@
     scene.background = new THREE.Color(0x020210);
     scene.fog = new THREE.Fog(0x020210, 20, 50);
 
-    // Rocket body
+    // Rocket body — use CylinderGeometry (safe on r128)
     const bodyGeo = new THREE.CylinderGeometry(0.38, 0.48, 2.2, 20);
     const bodyMat = new THREE.MeshStandardMaterial({ color: 0x6366f1, metalness: 0.8, roughness: 0.2 });
-    const rocket = new THREE.Mesh(bodyGeo, bodyMat);
+    const rocket  = new THREE.Mesh(bodyGeo, bodyMat);
     rocket.castShadow = true;
     scene.add(rocket);
 
-    const noseGeo = new THREE.ConeGeometry(0.38, 1.0, 20);
-    const nose = new THREE.Mesh(noseGeo, new THREE.MeshStandardMaterial({ color: 0x818cf8, metalness: 0.7 }));
+    const nose = new THREE.Mesh(
+      new THREE.ConeGeometry(0.38, 1.0, 20),
+      new THREE.MeshStandardMaterial({ color: 0x818cf8, metalness: 0.7, roughness: 0.3 })
+    );
     nose.position.y = 1.6;
     rocket.add(nose);
 
     // Fins
     for (let i = 0; i < 4; i++) {
-      const fin = new THREE.Mesh(
+      const fin   = new THREE.Mesh(
         new THREE.BoxGeometry(0.08, 0.7, 0.55),
         new THREE.MeshStandardMaterial({ color: 0x4f46e5 })
       );
@@ -642,15 +687,16 @@
     }
 
     // Exhaust particles
-    const exhaustGeo = new THREE.BufferGeometry();
-    const exhaustPos = new Float32Array(80 * 3);
+    const exhaustPositions = new Float32Array(80 * 3);
     for (let i = 0; i < 80; i++) {
-      exhaustPos[i * 3]     = (Math.random() - 0.5) * 0.35;
-      exhaustPos[i * 3 + 1] = -i * 0.065;
-      exhaustPos[i * 3 + 2] = (Math.random() - 0.5) * 0.35;
+      exhaustPositions[i * 3]     = (Math.random() - 0.5) * 0.35;
+      exhaustPositions[i * 3 + 1] = -i * 0.065;
+      exhaustPositions[i * 3 + 2] = (Math.random() - 0.5) * 0.35;
     }
-    exhaustGeo.setAttribute('position', new THREE.BufferAttribute(exhaustPos, 3));
-    const exhaust = new THREE.Points(exhaustGeo,
+    const exhaustGeo = new THREE.BufferGeometry();
+    exhaustGeo.setAttribute('position', new THREE.BufferAttribute(exhaustPositions, 3));
+    const exhaust = new THREE.Points(
+      exhaustGeo,
       new THREE.PointsMaterial({ color: 0xfbbf24, size: 0.12, transparent: true, opacity: 0.9 })
     );
     exhaust.position.y = -1.1;
@@ -659,18 +705,18 @@
     // Action / Reaction arrows
     const reactionArr = _makeArrow(THREE, new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 5, 0), 0x4ade80, 0.4);
     scene.add(reactionArr);
-    const actionArr   = _makeArrow(THREE, new THREE.Vector3(0, -1.1, 0), new THREE.Vector3(0, -4.5, 0), 0xf87171, 0.4);
+    const actionArr = _makeArrow(THREE, new THREE.Vector3(0, -1.1, 0), new THREE.Vector3(0, -4.5, 0), 0xf87171, 0.4);
     scene.add(actionArr);
 
     // Stars
-    const starGeo = new THREE.BufferGeometry();
-    const starPos = new Float32Array(300 * 3);
+    const starPositions = new Float32Array(300 * 3);
     for (let i = 0; i < 300; i++) {
-      starPos[i*3]   = (Math.random()-0.5) * 30;
-      starPos[i*3+1] = (Math.random()-0.5) * 18;
-      starPos[i*3+2] = (Math.random()-0.5) * 10 - 5;
+      starPositions[i * 3]     = (Math.random() - 0.5) * 30;
+      starPositions[i * 3 + 1] = (Math.random() - 0.5) * 18;
+      starPositions[i * 3 + 2] = (Math.random() - 0.5) * 10 - 5;
     }
-    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    const starGeo = new THREE.BufferGeometry();
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
     scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.06 })));
 
     scene.add(new THREE.AmbientLight(0x334466, 1.0));
@@ -678,18 +724,18 @@
     rocketLight.position.set(0, 2, 2);
     scene.add(rocketLight);
 
-    s.objects.rocket = rocket;
-    s.objects.exhaust = exhaust;
+    s.objects.rocket      = rocket;
+    s.objects.exhaust     = exhaust;
     s.objects.reactionArr = reactionArr;
     s.objects.actionArr   = actionArr;
     s.objects.rocketLight = rocketLight;
 
-    _addLabel(s, '↑ REACTION — rocket thrust up', 52, 12, '#4ade80');
-    _addLabel(s, '↓ ACTION — gas expelled down', 52, 72, '#f87171');
+    _addLabel(s, 'REACTION - rocket thrust up', 52, 12, '#4ade80');
+    _addLabel(s, 'ACTION - gas expelled down', 52, 72, '#f87171');
 
     s._updateFn = (st) => {
       const bob = Math.sin(st.t * 1.2) * 0.4;
-      st.objects.rocket.position.y = bob;
+      st.objects.rocket.position.y      = bob;
       st.objects.reactionArr.position.y = bob + 1;
       st.objects.actionArr.position.y   = bob - 1.1;
       st.objects.rocketLight.position.y = bob + 2;
@@ -699,7 +745,7 @@
         let y = pos.getY(i) - 0.04;
         if (y < -5) y = 0;
         pos.setY(i, y);
-        pos.setX(i, pos.getX(i) + (Math.random()-0.5)*0.015);
+        pos.setX(i, pos.getX(i) + (Math.random() - 0.5) * 0.015);
       }
       pos.needsUpdate = true;
     };
@@ -711,12 +757,12 @@
     _makeGround(THREE, scene, 0x374151);
     _makeGridHelper(THREE, scene);
 
-    // Rough surface texture effect
-    const surfGeo = new THREE.PlaneGeometry(16, 5, 8, 4);
-    const surfMat = new THREE.MeshStandardMaterial({ color: 0x4b5563, roughness: 0.98 });
-    const surf = new THREE.Mesh(surfGeo, surfMat);
-    surf.rotation.x = -Math.PI / 2;
-    surf.position.y = -1.485;
+    const surf = new THREE.Mesh(
+      new THREE.PlaneGeometry(16, 5, 8, 4),
+      new THREE.MeshStandardMaterial({ color: 0x4b5563, roughness: 0.98 })
+    );
+    surf.rotation.x  = -Math.PI / 2;
+    surf.position.y  = -1.485;
     scene.add(surf);
 
     const box = _makeBox(THREE, 1.5, 1.5, 1.5, 0xf59e0b, 0.3, 0.5);
@@ -724,27 +770,27 @@
     box.castShadow = true;
     scene.add(box);
 
-    // Force arrows
-    const pushArr   = _makeArrow(THREE, new THREE.Vector3(0.75,-0.75,0), new THREE.Vector3(3.0,-0.75,0), 0x4ade80, 0.32);
-    const fricArr   = _makeArrow(THREE, new THREE.Vector3(-0.75,-0.75,0), new THREE.Vector3(-3.0,-0.75,0), 0xf87171, 0.32);
-    const normalArr = _makeArrow(THREE, new THREE.Vector3(0,-0.0,0), new THREE.Vector3(0,2.5,0), 0x60a5fa, 0.28);
-    const weightArr = _makeArrow(THREE, new THREE.Vector3(0,-0.75,0), new THREE.Vector3(0,-2.8,0), 0xa78bfa, 0.28);
+    const pushArr   = _makeArrow(THREE, new THREE.Vector3(0.75, -0.75, 0), new THREE.Vector3(3.0, -0.75, 0), 0x4ade80, 0.32);
+    const fricArr   = _makeArrow(THREE, new THREE.Vector3(-0.75, -0.75, 0), new THREE.Vector3(-3.0, -0.75, 0), 0xf87171, 0.32);
+    const normalArr = _makeArrow(THREE, new THREE.Vector3(0, 0.0, 0), new THREE.Vector3(0, 2.5, 0), 0x60a5fa, 0.28);
+    const weightArr = _makeArrow(THREE, new THREE.Vector3(0, -0.75, 0), new THREE.Vector3(0, -2.8, 0), 0xa78bfa, 0.28);
     scene.add(pushArr, fricArr, normalArr, weightArr);
 
     s.objects = { box, pushArr, fricArr, normalArr, weightArr };
-    _addLabel(s, '→ F_applied', 56, 36, '#4ade80');
-    _addLabel(s, '← f = μN', 2, 36, '#f87171');
-    _addLabel(s, 'N↑', 46, 12, '#60a5fa', 'rgba(0,0,0,0)');
-    _addLabel(s, 'W↓', 46, 72, '#a78bfa', 'rgba(0,0,0,0)');
+
+    _addLabel(s, 'F_applied', 58, 36, '#4ade80');
+    _addLabel(s, 'f = uN', 2, 36, '#f87171');
+    _addLabel(s, 'N', 47, 12, '#60a5fa', 'rgba(0,0,0,0)');
+    _addLabel(s, 'W', 47, 72, '#a78bfa', 'rgba(0,0,0,0)');
 
     s._updateFn = (st) => {
       const x = -5.5 + (st.t * 1.0) % 10;
-      st.objects.box.position.x = x;
+      st.objects.box.position.x      = x;
       st.objects.pushArr.position.x  = x;
       st.objects.fricArr.position.x  = x;
       st.objects.normalArr.position.x = x;
       st.objects.weightArr.position.x = x;
-      st.objects.box.rotation.y = st.t * 0.25;
+      st.objects.box.rotation.y      = st.t * 0.25;
     };
   }
 
@@ -762,28 +808,31 @@
     b2.castShadow = true;
     scene.add(b2);
 
-    const arr1 = _makeArrow(THREE, new THREE.Vector3(0,0,0), new THREE.Vector3(1.8,0,0), 0x60a5fa, 0.28);
-    const arr2 = _makeArrow(THREE, new THREE.Vector3(0,0,0), new THREE.Vector3(2.2,0,0), 0xfca5a5, 0.28);
+    const arr1 = _makeArrow(THREE, new THREE.Vector3(0, 0, 0), new THREE.Vector3(1.8, 0, 0), 0x60a5fa, 0.28);
+    const arr2 = _makeArrow(THREE, new THREE.Vector3(0, 0, 0), new THREE.Vector3(2.2, 0, 0), 0xfca5a5, 0.28);
     scene.add(arr1, arr2);
 
     const flash = _makeSphere(THREE, 1.0, 0xfbbf24);
-    (flash.material).transparent = true;
-    flash.material.opacity = 0;
+    flash.material.transparent = true;
+    flash.material.opacity     = 0;
     scene.add(flash);
 
     s.objects = { b1, b2, arr1, arr2, flash };
-    _addLabel(s, 'p₁ = m×v (heavier ball)', 5, 8, '#60a5fa');
-    _addLabel(s, 'Collision! Momentum conserved', 28, 78, '#fbbf24');
+
+    _addLabel(s, 'p1 = m x v (heavier)', 5, 8, '#60a5fa');
+    _addLabel(s, 'Collision! Momentum conserved', 28, 82, '#fbbf24');
 
     s._updateFn = (st) => {
-      const period = 3.8, phase = (st.t % period) / period;
+      const period = 3.8;
+      const phase  = (st.t % period) / period;
+
       if (phase < 0.42) {
         const p = phase / 0.42;
         st.objects.b1.position.set(-5.5 + p * 4.8, -0.75, 0);
         st.objects.b2.position.set(3.8, -0.75, 0);
         st.objects.arr1.position.set(-5.5 + p * 4.8 + 0.75, -0.75, 0);
         st.objects.flash.material.opacity = 0;
-        st.objects.arr2.position.set(10, -10, 0);
+        st.objects.arr2.position.set(20, -10, 0);
       } else if (phase < 0.52) {
         const pp = (phase - 0.42) / 0.10;
         st.objects.b1.position.set(-0.78, -0.75, 0);
@@ -806,12 +855,13 @@
     camera.position.set(0, 4.5, 13);
     scene.background = new THREE.Color(0x080820);
 
-    const nPts = 100;
+    const nPts    = 100;
     const wavePos = new Float32Array(nPts * 3);
     const waveGeo = new THREE.BufferGeometry();
     waveGeo.setAttribute('position', new THREE.BufferAttribute(wavePos, 3));
-    const waveLine = new THREE.Line(waveGeo,
-      new THREE.LineBasicMaterial({ color: _hex(s.color) || 0x06b6d4, linewidth: 3 })
+    const waveLine = new THREE.Line(
+      waveGeo,
+      new THREE.LineBasicMaterial({ color: _hex(s.color) || 0x06b6d4 })
     );
     scene.add(waveLine);
 
@@ -820,45 +870,49 @@
     const pGeo   = new THREE.BufferGeometry();
     const pPos   = new Float32Array(pCount * 3);
     pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-    scene.add(new THREE.Points(pGeo,
+    scene.add(new THREE.Points(
+      pGeo,
       new THREE.PointsMaterial({ color: _hex(s.color) || 0x06b6d4, size: 0.3 })
     ));
 
-    // Axis
+    // Axis line
     const axisGeo = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(-6.5, 0, 0), new THREE.Vector3(6.5, 0, 0)
+      new THREE.Vector3(-6.5, 0, 0),
+      new THREE.Vector3(6.5, 0, 0),
     ]);
-    scene.add(new THREE.Line(axisGeo,
-      new THREE.LineDashedMaterial({ color: 0x475569, dashSize: 0.3, gapSize: 0.2 })
-    ));
+    const axisMat = new THREE.LineDashedMaterial({ color: 0x475569, dashSize: 0.3, gapSize: 0.2 });
+    const axisLine = new THREE.Line(axisGeo, axisMat);
+    axisLine.computeLineDistances();
+    scene.add(axisLine);
 
     // Direction arrow
-    scene.add(_makeArrow(THREE, new THREE.Vector3(-6.5,-2.2,0), new THREE.Vector3(6.5,-2.2,0), 0x4ade80, 0.4));
+    scene.add(_makeArrow(THREE, new THREE.Vector3(-6.5, -2.2, 0), new THREE.Vector3(6.5, -2.2, 0), 0x4ade80, 0.4));
 
     // Amplitude marker
     scene.add(_makeArrow(THREE, new THREE.Vector3(7.0, 0, 0), new THREE.Vector3(7.0, 1.8, 0), 0xfbbf24, 0.28));
 
     s.objects = { waveGeo, pGeo };
-    _addLabel(s, '→ Wave direction (energy travels)', 15, 76, '#4ade80');
-    _addLabel(s, '↕ Particles oscillate perpendicular', 15, 8, s.color);
+
+    _addLabel(s, 'Wave direction (energy travels)', 15, 78, '#4ade80');
+    _addLabel(s, 'Particles oscillate perpendicular', 15, 8, s.color);
     _addLabel(s, 'A', 88, 28, '#fbbf24', 'rgba(0,0,0,0)');
 
     s._updateFn = (st) => {
       const posArr = st.objects.waveGeo.attributes.position.array;
       for (let i = 0; i < nPts; i++) {
-        const x = -6.5 + (i / (nPts - 1)) * 13;
-        posArr[i*3]   = x;
-        posArr[i*3+1] = 1.8 * Math.sin(x * 1.1 - st.t * 3.2);
-        posArr[i*3+2] = 0;
+        const x        = -6.5 + (i / (nPts - 1)) * 13;
+        posArr[i * 3]     = x;
+        posArr[i * 3 + 1] = 1.8 * Math.sin(x * 1.1 - st.t * 3.2);
+        posArr[i * 3 + 2] = 0;
       }
       st.objects.waveGeo.attributes.position.needsUpdate = true;
 
       const pArr = st.objects.pGeo.attributes.position.array;
       for (let i = 0; i < pCount; i++) {
-        const x = -6.5 + (i / pCount) * 13;
-        pArr[i*3]   = x;
-        pArr[i*3+1] = 1.8 * Math.sin(x * 1.1 - st.t * 3.2);
-        pArr[i*3+2] = 0;
+        const x    = -6.5 + (i / pCount) * 13;
+        pArr[i * 3]     = x;
+        pArr[i * 3 + 1] = 1.8 * Math.sin(x * 1.1 - st.t * 3.2);
+        pArr[i * 3 + 2] = 0;
       }
       st.objects.pGeo.attributes.position.needsUpdate = true;
     };
@@ -869,12 +923,13 @@
     camera.position.set(0, 3, 13);
     scene.background = new THREE.Color(0x080820);
 
-    const nP = 32;
+    const nP      = 32;
     const spheres = [];
     for (let i = 0; i < nP; i++) {
-      const geo = new THREE.SphereGeometry(0.2, 16, 16);
-      const mat = new THREE.MeshStandardMaterial({ color: 0x8b5cf6, metalness: 0.3, roughness: 0.5 });
-      const mesh = new THREE.Mesh(geo, mat);
+      const mesh = new THREE.Mesh(
+        new THREE.SphereGeometry(0.2, 16, 16),
+        new THREE.MeshStandardMaterial({ color: 0x8b5cf6, metalness: 0.3, roughness: 0.5 })
+      );
       const x0 = -6 + (i / nP) * 12;
       mesh.position.set(x0, 0, 0);
       mesh.castShadow = true;
@@ -883,15 +938,15 @@
     }
     s.objects.spheres = spheres;
 
-    scene.add(_makeArrow(THREE, new THREE.Vector3(-6,-2.5,0), new THREE.Vector3(6,-2.5,0), 0x4ade80, 0.4));
+    scene.add(_makeArrow(THREE, new THREE.Vector3(-6, -2.5, 0), new THREE.Vector3(6, -2.5, 0), 0x4ade80, 0.4));
 
-    _addLabel(s, '→ Wave + particle motion: SAME direction', 5, 8, '#4ade80');
-    _addLabel(s, '● Compression (dense)', 5, 80, '#ef4444');
-    _addLabel(s, '○ Rarefaction (sparse)', 55, 80, '#60a5fa');
+    _addLabel(s, 'Wave + particle motion: SAME direction', 5, 8, '#4ade80');
+    _addLabel(s, 'Compression (dense)', 5, 82, '#ef4444');
+    _addLabel(s, 'Rarefaction (sparse)', 55, 82, '#60a5fa');
 
     s._updateFn = (st) => {
       st.objects.spheres.forEach(({ mesh, x0 }) => {
-        const d = 0.72 * Math.sin((x0 * 1.15) - st.t * 3.0);
+        const d       = 0.72 * Math.sin((x0 * 1.15) - st.t * 3.0);
         mesh.position.x = x0 + d;
         const density = 1 - Math.abs(d) / 0.8;
         mesh.material.color.setHex(density > 0.5 ? 0xef4444 : 0x60a5fa);
@@ -908,37 +963,39 @@
     scene.background = new THREE.Color(0x02020f);
 
     const bands = [
-      { label:'Radio',     color: 0x6366f1, freq: 0.28 },
-      { label:'Microwave', color: 0x8b5cf6, freq: 0.55 },
-      { label:'Infrared',  color: 0xf97316, freq: 0.95 },
-      { label:'Visible',   color: 0x22c55e, freq: 1.5  },
-      { label:'UV',        color: 0xa855f7, freq: 2.2  },
-      { label:'X-ray',     color: 0x3b82f6, freq: 3.5  },
-      { label:'Gamma',     color: 0xef4444, freq: 6.0  },
+      { label: 'Radio',     color: 0x6366f1, freq: 0.28 },
+      { label: 'Microwave', color: 0x8b5cf6, freq: 0.55 },
+      { label: 'Infrared',  color: 0xf97316, freq: 0.95 },
+      { label: 'Visible',   color: 0x22c55e, freq: 1.5  },
+      { label: 'UV',        color: 0xa855f7, freq: 2.2  },
+      { label: 'X-ray',     color: 0x3b82f6, freq: 3.5  },
+      { label: 'Gamma',     color: 0xef4444, freq: 6.0  },
     ];
 
     const waveDatas = [];
     bands.forEach((b, i) => {
-      const z = -3.8 + i * 1.15;
+      const z   = -3.8 + i * 1.15;
       const pts = [];
-      for (let j = 0; j < 60; j++) pts.push(new THREE.Vector3(-5.5 + j * (11/60), 0, z));
-      const geo = new THREE.BufferGeometry().setFromPoints(pts);
+      for (let j = 0; j < 60; j++) {
+        pts.push(new THREE.Vector3(-5.5 + j * (11 / 60), 0, z));
+      }
+      const geo  = new THREE.BufferGeometry().setFromPoints(pts);
       const line = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: b.color }));
       scene.add(line);
       waveDatas.push({ geo, freq: b.freq, z });
 
-      const hexStr = '#' + b.color.toString(16).padStart(6,'0');
+      const hexStr = '#' + b.color.toString(16).padStart(6, '0');
       _addLabel(s, b.label, 2 + i * 13.5, 8, hexStr, 'rgba(0,0,0,0.65)');
     });
     s.objects.waveDatas = waveDatas;
 
-    _addLabel(s, 'All EM waves: c = 3×10⁸ m/s in vacuum', 10, 88, '#ffffff', 'rgba(0,0,0,0.55)');
+    _addLabel(s, 'All EM waves: c = 3x10^8 m/s in vacuum', 10, 88, '#ffffff', 'rgba(0,0,0,0.55)');
 
     s._updateFn = (st) => {
       st.objects.waveDatas.forEach(({ geo, freq }) => {
         const arr = geo.attributes.position.array;
         for (let j = 0; j < 60; j++) {
-          arr[j*3+1] = 0.42 * Math.sin(arr[j*3] * freq * 0.9 - st.t * 3.5);
+          arr[j * 3 + 1] = 0.42 * Math.sin(arr[j * 3] * freq * 0.9 - st.t * 3.5);
         }
         geo.attributes.position.needsUpdate = true;
       });
@@ -959,39 +1016,41 @@
     scene.add(iface);
     scene.add(new THREE.GridHelper(16, 16, 0x0ea5e9, 0x0ea5e944));
 
-    // Normal line
-    const normGeo = new THREE.BufferGeometry().setFromPoints([
-      new THREE.Vector3(0,-3.5,0), new THREE.Vector3(0,3.5,0)
+    // Normal line (dashed)
+    const normGeo  = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0, -3.5, 0),
+      new THREE.Vector3(0, 3.5, 0),
     ]);
-    const normLine = new THREE.Line(normGeo, new THREE.LineDashedMaterial({ color:0x94a3b8, dashSize:0.25, gapSize:0.15 }));
+    const normMat  = new THREE.LineDashedMaterial({ color: 0x94a3b8, dashSize: 0.25, gapSize: 0.15 });
+    const normLine = new THREE.Line(normGeo, normMat);
     normLine.computeLineDistances();
     scene.add(normLine);
 
     const ang = 35 * Math.PI / 180;
-    scene.add(_makeArrow(THREE, new THREE.Vector3(-3*Math.sin(ang), 3*Math.cos(ang), 0), new THREE.Vector3(0,0,0), 0xf97316, 0.32));
-    scene.add(_makeArrow(THREE, new THREE.Vector3(0,0,0), new THREE.Vector3(3*Math.sin(ang), 3*Math.cos(ang),0), 0x4ade80, 0.32));
+    scene.add(_makeArrow(THREE, new THREE.Vector3(-3 * Math.sin(ang), 3 * Math.cos(ang), 0), new THREE.Vector3(0, 0, 0), 0xf97316, 0.32));
+    scene.add(_makeArrow(THREE, new THREE.Vector3(0, 0, 0), new THREE.Vector3(3 * Math.sin(ang), 3 * Math.cos(ang), 0), 0x4ade80, 0.32));
 
     const refAng = 22 * Math.PI / 180;
-    scene.add(_makeArrow(THREE, new THREE.Vector3(0,0,0), new THREE.Vector3(3*Math.sin(refAng),-3*Math.cos(refAng),0), 0xa855f7, 0.32));
+    scene.add(_makeArrow(THREE, new THREE.Vector3(0, 0, 0), new THREE.Vector3(3 * Math.sin(refAng), -3 * Math.cos(refAng), 0), 0xa855f7, 0.32));
 
-    // Moving photon
     const photon = _makeSphere(THREE, 0.16, 0xfbbf24);
     scene.add(photon);
     s.objects.photon = photon;
 
-    _addLabel(s, '→ Incident (35°)', 2, 8, '#f97316');
-    _addLabel(s, '↗ Reflected (35°)', 60, 8, '#4ade80');
-    _addLabel(s, '↘ Refracted (22°)', 60, 60, '#a855f7');
-    _addLabel(s, 'Medium 1 (n₁)', 2, 30, '#94a3b8', 'rgba(0,0,0,0)');
-    _addLabel(s, 'Medium 2 (n₂ > n₁)', 2, 60, '#0ea5e9', 'rgba(0,0,0,0)');
+    _addLabel(s, 'Incident (35 deg)', 2, 8, '#f97316');
+    _addLabel(s, 'Reflected (35 deg)', 60, 8, '#4ade80');
+    _addLabel(s, 'Refracted (22 deg)', 60, 60, '#a855f7');
+    _addLabel(s, 'Medium 1 (n1)', 2, 30, '#94a3b8', 'rgba(0,0,0,0)');
+    _addLabel(s, 'Medium 2 (n2 > n1)', 2, 60, '#0ea5e9', 'rgba(0,0,0,0)');
 
     s._updateFn = (st) => {
-      const period = 2.8, phase = (st.t % period) / period;
-      const from = new THREE.Vector3(-3*Math.sin(ang), 3*Math.cos(ang), 0);
-      const mid  = new THREE.Vector3(0, 0, 0);
-      const to   = new THREE.Vector3(3*Math.sin(refAng), -3*Math.cos(refAng), 0);
+      const period = 2.8;
+      const phase  = (st.t % period) / period;
+      const from   = new THREE.Vector3(-3 * Math.sin(ang), 3 * Math.cos(ang), 0);
+      const mid    = new THREE.Vector3(0, 0, 0);
+      const to     = new THREE.Vector3(3 * Math.sin(refAng), -3 * Math.cos(refAng), 0);
       if (phase < 0.5) st.objects.photon.position.lerpVectors(from, mid, phase * 2);
-      else             st.objects.photon.position.lerpVectors(mid, to, (phase-0.5)*2);
+      else             st.objects.photon.position.lerpVectors(mid, to, (phase - 0.5) * 2);
     };
   }
 
@@ -1001,60 +1060,70 @@
     scene.background = new THREE.Color(0x080818);
 
     const wireMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8, roughness: 0.2 });
-    const mkTube = (p1, p2) => {
+    const mkTube  = (p1, p2) => {
       const curve = new THREE.LineCurve3(p1, p2);
-      return new THREE.Mesh(new THREE.TubeGeometry(curve, 4, 0.09, 8, false), wireMat);
+      return new THREE.Mesh(
+        new THREE.TubeGeometry(curve, 4, 0.09, 8, false),
+        wireMat
+      );
     };
-    const W = 5.2, H2 = 2.6;
-    scene.add(mkTube(new THREE.Vector3(-W,H2,0),  new THREE.Vector3(W,H2,0)));
-    scene.add(mkTube(new THREE.Vector3(W,H2,0),   new THREE.Vector3(W,-H2,0)));
-    scene.add(mkTube(new THREE.Vector3(W,-H2,0),  new THREE.Vector3(-W,-H2,0)));
-    scene.add(mkTube(new THREE.Vector3(-W,-H2,0), new THREE.Vector3(-W,H2,0)));
+
+    const CW = 5.2, CH = 2.6;
+    scene.add(mkTube(new THREE.Vector3(-CW,  CH, 0), new THREE.Vector3(CW,  CH, 0)));
+    scene.add(mkTube(new THREE.Vector3( CW,  CH, 0), new THREE.Vector3(CW, -CH, 0)));
+    scene.add(mkTube(new THREE.Vector3( CW, -CH, 0), new THREE.Vector3(-CW, -CH, 0)));
+    scene.add(mkTube(new THREE.Vector3(-CW, -CH, 0), new THREE.Vector3(-CW,  CH, 0)));
 
     // Battery
     const bat = new THREE.Mesh(
       new THREE.CylinderGeometry(0.48, 0.48, 1.5, 20),
-      new THREE.MeshStandardMaterial({ color:0x22c55e, metalness:0.6 })
+      new THREE.MeshStandardMaterial({ color: 0x22c55e, metalness: 0.6 })
     );
-    bat.position.set(-W, 0, 0);
-    bat.rotation.z = Math.PI/2;
+    bat.position.set(-CW, 0, 0);
+    bat.rotation.z = Math.PI / 2;
     scene.add(bat);
 
     // Resistor
     const res = new THREE.Mesh(
       new THREE.BoxGeometry(2.4, 0.55, 0.55),
-      new THREE.MeshStandardMaterial({ color:0xf97316, roughness:0.6 })
+      new THREE.MeshStandardMaterial({ color: 0xf97316, roughness: 0.6 })
     );
-    res.position.set(0, H2, 0);
+    res.position.set(0, CH, 0);
     scene.add(res);
 
     // Flowing electrons
-    const nE = 14;
+    const nE       = 14;
     const electrons = [];
+    const perim     = (CW * 2 * 2 + CH * 2 * 2); // pre-compute perimeter
+
     for (let i = 0; i < nE; i++) {
       const eg = new THREE.Mesh(
         new THREE.SphereGeometry(0.14, 8, 8),
-        new THREE.MeshStandardMaterial({ color:0xfbbf24, emissive:0xfbbf24, emissiveIntensity:0.7 })
+        new THREE.MeshStandardMaterial({ color: 0xfbbf24, emissive: 0xfbbf24, emissiveIntensity: 0.7 })
       );
       scene.add(eg);
       electrons.push({ mesh: eg, offset: i / nE });
     }
     s.objects.electrons = electrons;
+    s.objects._perim    = perim;
+    s.objects._CW       = CW;
+    s.objects._CH       = CH;
 
     _addLabel(s, '12V', 2, 36, '#4ade80');
-    _addLabel(s, 'R = 4Ω', 42, 6, '#fb923c');
-    _addLabel(s, '● Electrons (I = 3A)', 25, 88, '#fbbf24');
-    _addLabel(s, 'V=IR: 12=3×4', 58, 55, '#ffffff', 'rgba(0,0,0,0.5)');
+    _addLabel(s, 'R = 4 Ohm', 42, 6, '#fb923c');
+    _addLabel(s, 'Electrons (I = 3A)', 25, 88, '#fbbf24');
+    _addLabel(s, 'V=IR: 12=3x4', 58, 55, '#ffffff', 'rgba(0,0,0,0.5)');
 
     s._updateFn = (st) => {
-      const perim = (W*2*2 + H2*2*2);
+      const { _perim: P, _CW: W2, _CH: H2 } = st.objects;
+      const seg1 = W2 * 2, seg2 = seg1 + H2 * 2, seg3 = seg2 + W2 * 2;
+
       st.objects.electrons.forEach(({ mesh, offset }) => {
-        const pos = (st.t * 1.9 + offset * perim) % perim;
-        const seg1 = W*2, seg2 = seg1+H2*2, seg3 = seg2+W*2;
-        if (pos < seg1)      mesh.position.set(-W + pos, H2, 0);
-        else if (pos < seg2) mesh.position.set(W, H2-(pos-seg1), 0);
-        else if (pos < seg3) mesh.position.set(W-(pos-seg2), -H2, 0);
-        else                 mesh.position.set(-W, -H2+(pos-seg3), 0);
+        const pos = (st.t * 1.9 + offset * P) % P;
+        if (pos < seg1)       mesh.position.set(-W2 + pos, H2, 0);
+        else if (pos < seg2)  mesh.position.set(W2, H2 - (pos - seg1), 0);
+        else if (pos < seg3)  mesh.position.set(W2 - (pos - seg2), -H2, 0);
+        else                  mesh.position.set(-W2, -H2 + (pos - seg3), 0);
       });
     };
   }
@@ -1064,72 +1133,106 @@
     camera.position.set(0, 6.5, 18);
     scene.background = new THREE.Color(0x080818);
 
-    const wireMat = new THREE.MeshStandardMaterial({ color:0x64748b, metalness:0.5 });
+    const wireMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.5 });
     const mkTube  = (p1, p2, mat) => {
       const curve = new THREE.LineCurve3(p1, p2);
-      return new THREE.Mesh(new THREE.TubeGeometry(curve, 4, 0.09, 8, false), mat || wireMat);
+      return new THREE.Mesh(
+        new THREE.TubeGeometry(curve, 4, 0.09, 8, false),
+        mat || wireMat
+      );
     };
 
-    // SERIES (left)
+    // SERIES (left side)
     const sx = -4.5;
-    scene.add(mkTube(new THREE.Vector3(sx-2,2,0), new THREE.Vector3(sx+2,2,0)));
-    scene.add(mkTube(new THREE.Vector3(sx+2,2,0), new THREE.Vector3(sx+2,-2,0)));
-    scene.add(mkTube(new THREE.Vector3(sx+2,-2,0),new THREE.Vector3(sx-2,-2,0)));
-    scene.add(mkTube(new THREE.Vector3(sx-2,-2,0),new THREE.Vector3(sx-2,2,0)));
-    const r1s = new THREE.Mesh(new THREE.BoxGeometry(0.9,0.38,0.38), new THREE.MeshStandardMaterial({color:0xf97316}));
-    r1s.position.set(sx-0.4, 2, 0); scene.add(r1s);
-    const r2s = new THREE.Mesh(new THREE.BoxGeometry(0.9,0.38,0.38), new THREE.MeshStandardMaterial({color:0xef4444}));
-    r2s.position.set(sx+0.9, 2, 0); scene.add(r2s);
-    const batS = new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.32,0.95,16),new THREE.MeshStandardMaterial({color:0x22c55e,metalness:0.5}));
-    batS.position.set(sx-2,0,0); batS.rotation.z=Math.PI/2; scene.add(batS);
+    scene.add(mkTube(new THREE.Vector3(sx - 2, 2, 0),  new THREE.Vector3(sx + 2, 2, 0)));
+    scene.add(mkTube(new THREE.Vector3(sx + 2, 2, 0),  new THREE.Vector3(sx + 2, -2, 0)));
+    scene.add(mkTube(new THREE.Vector3(sx + 2, -2, 0), new THREE.Vector3(sx - 2, -2, 0)));
+    scene.add(mkTube(new THREE.Vector3(sx - 2, -2, 0), new THREE.Vector3(sx - 2, 2, 0)));
 
-    // PARALLEL (right)
+    const r1s = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.38, 0.38), new THREE.MeshStandardMaterial({ color: 0xf97316 }));
+    r1s.position.set(sx - 0.4, 2, 0);
+    scene.add(r1s);
+
+    const r2s = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.38, 0.38), new THREE.MeshStandardMaterial({ color: 0xef4444 }));
+    r2s.position.set(sx + 0.9, 2, 0);
+    scene.add(r2s);
+
+    const batS = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.32, 0.32, 0.95, 16),
+      new THREE.MeshStandardMaterial({ color: 0x22c55e, metalness: 0.5 })
+    );
+    batS.position.set(sx - 2, 0, 0);
+    batS.rotation.z = Math.PI / 2;
+    scene.add(batS);
+
+    // PARALLEL (right side)
     const px = 4.5;
-    scene.add(mkTube(new THREE.Vector3(px-2,3,0), new THREE.Vector3(px+2,3,0)));
-    scene.add(mkTube(new THREE.Vector3(px+2,3,0), new THREE.Vector3(px+2,-3,0)));
-    scene.add(mkTube(new THREE.Vector3(px+2,-3,0),new THREE.Vector3(px-2,-3,0)));
-    scene.add(mkTube(new THREE.Vector3(px-2,-3,0),new THREE.Vector3(px-2,3,0)));
-    scene.add(mkTube(new THREE.Vector3(px-2,1,0), new THREE.Vector3(px+2,1,0)));
-    scene.add(mkTube(new THREE.Vector3(px-2,-1,0),new THREE.Vector3(px+2,-1,0)));
-    const r1p = new THREE.Mesh(new THREE.BoxGeometry(0.9,0.38,0.38),new THREE.MeshStandardMaterial({color:0xf97316}));
-    r1p.position.set(px,2,0); scene.add(r1p);
-    const r2p = new THREE.Mesh(new THREE.BoxGeometry(0.9,0.38,0.38),new THREE.MeshStandardMaterial({color:0xef4444}));
-    r2p.position.set(px,0,0); scene.add(r2p);
-    const batP = new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.32,0.95,16),new THREE.MeshStandardMaterial({color:0x22c55e,metalness:0.5}));
-    batP.position.set(px-2,0,0); batP.rotation.z=Math.PI/2; scene.add(batP);
+    scene.add(mkTube(new THREE.Vector3(px - 2, 3, 0),  new THREE.Vector3(px + 2, 3, 0)));
+    scene.add(mkTube(new THREE.Vector3(px + 2, 3, 0),  new THREE.Vector3(px + 2, -3, 0)));
+    scene.add(mkTube(new THREE.Vector3(px + 2, -3, 0), new THREE.Vector3(px - 2, -3, 0)));
+    scene.add(mkTube(new THREE.Vector3(px - 2, -3, 0), new THREE.Vector3(px - 2, 3, 0)));
+    // Junction wires
+    scene.add(mkTube(new THREE.Vector3(px - 2, 1, 0),  new THREE.Vector3(px + 2, 1, 0)));
+    scene.add(mkTube(new THREE.Vector3(px - 2, -1, 0), new THREE.Vector3(px + 2, -1, 0)));
+
+    const r1p = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.38, 0.38), new THREE.MeshStandardMaterial({ color: 0xf97316 }));
+    r1p.position.set(px, 2, 0);
+    scene.add(r1p);
+
+    const r2p = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.38, 0.38), new THREE.MeshStandardMaterial({ color: 0xef4444 }));
+    r2p.position.set(px, 0, 0);
+    scene.add(r2p);
+
+    const batP = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.32, 0.32, 0.95, 16),
+      new THREE.MeshStandardMaterial({ color: 0x22c55e, metalness: 0.5 })
+    );
+    batP.position.set(px - 2, 0, 0);
+    batP.rotation.z = Math.PI / 2;
+    scene.add(batP);
 
     const sE = [], pE = [];
-    for (let i=0;i<8;i++){
-      const e=new THREE.Mesh(new THREE.SphereGeometry(0.12,8,8),new THREE.MeshStandardMaterial({color:0x3b82f6,emissive:0x3b82f6,emissiveIntensity:0.6}));
-      scene.add(e); sE.push({mesh:e,offset:i/8});
+    for (let i = 0; i < 8; i++) {
+      const e = new THREE.Mesh(
+        new THREE.SphereGeometry(0.12, 8, 8),
+        new THREE.MeshStandardMaterial({ color: 0x3b82f6, emissive: 0x3b82f6, emissiveIntensity: 0.6 })
+      );
+      scene.add(e);
+      sE.push({ mesh: e, offset: i / 8 });
     }
-    for (let i=0;i<8;i++){
-      const e=new THREE.Mesh(new THREE.SphereGeometry(0.12,8,8),new THREE.MeshStandardMaterial({color:0xef4444,emissive:0xef4444,emissiveIntensity:0.5}));
-      scene.add(e); pE.push({mesh:e,offset:i/8,branch:i%2});
+    for (let i = 0; i < 8; i++) {
+      const e = new THREE.Mesh(
+        new THREE.SphereGeometry(0.12, 8, 8),
+        new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 0.5 })
+      );
+      scene.add(e);
+      pE.push({ mesh: e, offset: i / 8, branch: i % 2 });
     }
-    s.objects = { sE, pE };
+    s.objects = { sE, pE, sx, px };
 
-    _addLabel(s, 'SERIES — one path', 2, 6, '#60a5fa');
-    _addLabel(s, 'PARALLEL — split paths', 54, 6, '#f87171');
-    _addLabel(s, 'R_T = R₁+R₂', 5, 88, '#f97316');
-    _addLabel(s, '1/R_T = 1/R₁+1/R₂', 56, 88, '#4ade80');
+    _addLabel(s, 'SERIES - one path', 2, 6, '#60a5fa');
+    _addLabel(s, 'PARALLEL - split paths', 54, 6, '#f87171');
+    _addLabel(s, 'R_T = R1 + R2', 5, 88, '#f97316');
+    _addLabel(s, '1/R_T = 1/R1 + 1/R2', 54, 88, '#4ade80');
 
     s._updateFn = (st) => {
+      const { sx: SX, px: PX } = st.objects;
       const sPerim = 16;
-      st.objects.sE.forEach(({mesh,offset})=>{
-        const pos=(st.t*1.5+offset*sPerim)%sPerim;
-        if(pos<4)      mesh.position.set(sx-2+pos,2,0);
-        else if(pos<8) mesh.position.set(sx+2,2-(pos-4),0);
-        else if(pos<12)mesh.position.set(sx+2-(pos-8),-2,0);
-        else           mesh.position.set(sx-2,-2+(pos-12),0);
+      st.objects.sE.forEach(({ mesh, offset }) => {
+        const pos = (st.t * 1.5 + offset * sPerim) % sPerim;
+        if (pos < 4)       mesh.position.set(SX - 2 + pos, 2, 0);
+        else if (pos < 8)  mesh.position.set(SX + 2, 2 - (pos - 4), 0);
+        else if (pos < 12) mesh.position.set(SX + 2 - (pos - 8), -2, 0);
+        else               mesh.position.set(SX - 2, -2 + (pos - 12), 0);
       });
-      const pPerim=10;
-      st.objects.pE.forEach(({mesh,offset,branch})=>{
-        const pos=(st.t*1.1+offset*pPerim)%pPerim;
-        const y=branch===0?2:0;
-        if(pos<4)      mesh.position.set(px-2+pos,y,0);
-        else if(pos<7) mesh.position.set(px+2,y-(pos-4)*0.67,0);
-        else           mesh.position.set(px+2-(pos-7)*1.33,-2+branch,0);
+
+      const pPerim = 10;
+      st.objects.pE.forEach(({ mesh, offset, branch }) => {
+        const pos = (st.t * 1.1 + offset * pPerim) % pPerim;
+        const y   = branch === 0 ? 2 : 0;
+        if (pos < 4)      mesh.position.set(PX - 2 + pos, y, 0);
+        else if (pos < 7) mesh.position.set(PX + 2, y - (pos - 4) * 0.67, 0);
+        else              mesh.position.set(PX + 2 - (pos - 7) * 1.33, -2 + branch, 0);
       });
     };
   }
@@ -1142,33 +1245,39 @@
     const pos = _makeSphere(THREE, 0.75, 0xef4444, 0.7);
     pos.position.set(-3.8, 0, 0);
     scene.add(pos);
+
     const neg = _makeSphere(THREE, 0.75, 0x3b82f6, 0.7);
     neg.position.set(3.8, 0, 0);
     scene.add(neg);
 
-    scene.add(new THREE.PointLight(0xef4444, 1.5, 8, 2));
-    const pl = new THREE.PointLight(0x3b82f6, 1.5, 8, 2);
-    pl.position.set(3.8, 0, 0);
-    scene.add(pl);
+    const posLight = new THREE.PointLight(0xef4444, 1.5, 8, 2);
+    posLight.position.set(-3.8, 0, 0);
+    scene.add(posLight);
 
+    const negLight = new THREE.PointLight(0x3b82f6, 1.5, 8, 2);
+    negLight.position.set(3.8, 0, 0);
+    scene.add(negLight);
+
+    // Field lines (curved Bezier arcs from + to -)
     const fieldLines = [];
-    const nLines = 10;
+    const nLines     = 10;
     for (let i = 0; i < nLines; i++) {
       const angle = (i / nLines) * Math.PI * 2;
-      const pts = [];
+      const pts   = [];
       for (let t = 0; t <= 1; t += 0.025) {
         const fx = -3.8 + 0.82 * Math.cos(angle);
-        const fy = 0.82 * Math.sin(angle);
-        const tx = 3.8 + 0.82 * Math.cos(angle + Math.PI);
-        const ty = 0.82 * Math.sin(angle + Math.PI);
+        const fy =        0.82 * Math.sin(angle);
+        const tx =  3.8 + 0.82 * Math.cos(angle + Math.PI);
+        const ty =        0.82 * Math.sin(angle + Math.PI);
         const cx = 0, cy = Math.sin(angle) * 2.8;
-        const bx = (1-t)*(1-t)*fx + 2*(1-t)*t*cx + t*t*tx;
-        const by = (1-t)*(1-t)*fy + 2*(1-t)*t*cy + t*t*ty;
+        const bx = (1 - t) * (1 - t) * fx + 2 * (1 - t) * t * cx + t * t * tx;
+        const by = (1 - t) * (1 - t) * fy + 2 * (1 - t) * t * cy + t * t * ty;
         pts.push(new THREE.Vector3(bx, by, 0));
       }
       const geo  = new THREE.BufferGeometry().setFromPoints(pts);
-      const line = new THREE.Line(geo, new THREE.LineBasicMaterial({ color:0xfbbf24, transparent:true, opacity:0.4 }));
+      const line = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0.4 }));
       scene.add(line);
+
       const dot = _makeSphere(THREE, 0.11, 0xfbbf24);
       scene.add(dot);
       fieldLines.push({ pts, dot, offset: i / nLines });
@@ -1176,15 +1285,15 @@
     s.objects = { pos, neg, fieldLines };
 
     _addLabel(s, '+', 18, 38, '#f87171', 'rgba(0,0,0,0)');
-    _addLabel(s, '−', 76, 38, '#60a5fa', 'rgba(0,0,0,0)');
-    _addLabel(s, 'Field lines: + → −   F = kQ₁Q₂/r²', 15, 88, '#fbbf24', 'rgba(0,0,0,0.55)');
+    _addLabel(s, '-', 76, 38, '#60a5fa', 'rgba(0,0,0,0)');
+    _addLabel(s, 'Field lines: + to -   F = kQ1Q2/r^2', 15, 88, '#fbbf24', 'rgba(0,0,0,0.55)');
 
     s._updateFn = (st) => {
       const pulse = 1 + Math.sin(st.t * 3) * 0.05;
       st.objects.pos.scale.setScalar(pulse);
       st.objects.neg.scale.setScalar(pulse);
       st.objects.fieldLines.forEach(({ pts, dot, offset }) => {
-        const idx = Math.floor(((st.t * 0.38 + offset) % 1) * (pts.length-1));
+        const idx = Math.floor(((st.t * 0.38 + offset) % 1) * (pts.length - 1));
         dot.position.copy(pts[idx]);
       });
     };
@@ -1195,7 +1304,8 @@
     camera.position.set(0, 4.5, 15);
     scene.background = new THREE.Color(0x060818);
 
-    const nPts = 80;
+    // Build roller-coaster track
+    const nPts    = 80;
     const trackPts = [];
     for (let i = 0; i < nPts; i++) {
       const t = i / (nPts - 1);
@@ -1206,24 +1316,25 @@
     const trackCurve = new THREE.CatmullRomCurve3(trackPts);
     scene.add(new THREE.Mesh(
       new THREE.TubeGeometry(trackCurve, 100, 0.09, 8, false),
-      new THREE.MeshStandardMaterial({ color:0x64748b, metalness:0.8 })
+      new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.8 })
     ));
 
     const cart = _makeBox(THREE, 0.95, 0.55, 0.65, 0x6366f1, 0.6, 0.3);
     cart.castShadow = true;
     scene.add(cart);
 
-    // KE / PE bars
+    // KE bar (orange)
     const keBar = new THREE.Mesh(
       new THREE.BoxGeometry(0.55, 1, 0.35),
-      new THREE.MeshStandardMaterial({ color:0xf97316, emissive:0xf97316, emissiveIntensity:0.3 })
+      new THREE.MeshStandardMaterial({ color: 0xf97316, emissive: 0xf97316, emissiveIntensity: 0.3 })
     );
     keBar.position.set(5.2, -0.5, 0);
     scene.add(keBar);
 
+    // PE bar (green)
     const peBar = new THREE.Mesh(
       new THREE.BoxGeometry(0.55, 1, 0.35),
-      new THREE.MeshStandardMaterial({ color:0x22c55e, emissive:0x22c55e, emissiveIntensity:0.3 })
+      new THREE.MeshStandardMaterial({ color: 0x22c55e, emissive: 0x22c55e, emissiveIntensity: 0.3 })
     );
     peBar.position.set(5.9, -0.5, 0);
     scene.add(peBar);
@@ -1232,8 +1343,9 @@
     scene.add(glow);
 
     s.objects = { cart, keBar, peBar, glow, trackCurve };
-    _addLabel(s, '🟠 KE  🟢 GPE  (sum = constant)', 58, 8, '#ffffff', 'rgba(0,0,0,0.5)');
-    _addLabel(s, 'KE = ½mv²   GPE = mgh', 5, 88, '#ffffff', 'rgba(0,0,0,0.45)');
+
+    _addLabel(s, 'KE (orange)  GPE (green)  sum = constant', 30, 8, '#ffffff', 'rgba(0,0,0,0.5)');
+    _addLabel(s, 'KE = 1/2 mv^2   GPE = mgh', 5, 88, '#ffffff', 'rgba(0,0,0,0.45)');
 
     s._updateFn = (st) => {
       const frac = (Math.sin(st.t * 0.75) + 1) / 2;
@@ -1243,11 +1355,12 @@
       st.objects.cart.rotation.z = Math.atan2(tang.y, tang.x);
 
       const normY = (pt.y + 1.5) / 4.8;
-      const ke = Math.max(0.05, 1 - normY);
-      const pe = Math.max(0.05, normY);
-      st.objects.keBar.scale.y = ke * 3;
+      const ke    = Math.max(0.05, 1 - normY);
+      const pe    = Math.max(0.05, normY);
+
+      st.objects.keBar.scale.y    = ke * 3;
       st.objects.keBar.position.y = -1.5 + ke * 3 * 0.5;
-      st.objects.peBar.scale.y = pe * 3;
+      st.objects.peBar.scale.y    = pe * 3;
       st.objects.peBar.position.y = -1.5 + pe * 3 * 0.5;
       st.objects.keBar.material.emissiveIntensity = ke * 0.7;
       st.objects.peBar.material.emissiveIntensity = pe * 0.7;
@@ -1266,22 +1379,23 @@
     box.castShadow = true;
     scene.add(box);
 
-    const pushArr = _makeArrow(THREE, new THREE.Vector3(0.65,-0.9,0), new THREE.Vector3(2.5,-0.9,0), 0x4ade80, 0.32);
+    const pushArr = _makeArrow(THREE, new THREE.Vector3(0.65, -0.9, 0), new THREE.Vector3(2.5, -0.9, 0), 0x4ade80, 0.32);
     scene.add(pushArr);
 
-    // Trail
+    // Trail line
     const trailGeo = new THREE.BufferGeometry();
     const trailPos = new Float32Array(60 * 3);
     trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos, 3));
-    const trail = new THREE.Line(trailGeo, new THREE.LineBasicMaterial({ color:0x3b82f6, transparent:true, opacity:0.5 }));
+    const trail = new THREE.Line(trailGeo, new THREE.LineBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.5 }));
     scene.add(trail);
 
     const glow = new THREE.PointLight(0xf97316, 0.9, 6);
     scene.add(glow);
 
     s.objects = { box, pushArr, trail, trailGeo, glow, history: [] };
-    _addLabel(s, '→ F = 50N', 58, 36, '#4ade80');
-    _addLabel(s, 'W = F×s   P = W/t', 10, 88, '#ffffff', 'rgba(0,0,0,0.45)');
+
+    _addLabel(s, 'F = 50N', 58, 36, '#4ade80');
+    _addLabel(s, 'W = F x s   P = W/t', 10, 88, '#ffffff', 'rgba(0,0,0,0.45)');
 
     s._updateFn = (st) => {
       const x = -6 + (st.t * 1.25) % 10;
@@ -1292,8 +1406,13 @@
 
       st.objects.history.push(new THREE.Vector3(x, -0.85, 0));
       if (st.objects.history.length > 60) st.objects.history.shift();
+
       const arr = st.objects.trailGeo.attributes.position.array;
-      st.objects.history.forEach((p, i) => { arr[i*3]=p.x; arr[i*3+1]=p.y; arr[i*3+2]=p.z; });
+      st.objects.history.forEach((p, i) => {
+        arr[i * 3]     = p.x;
+        arr[i * 3 + 1] = p.y;
+        arr[i * 3 + 2] = p.z;
+      });
       st.objects.trailGeo.attributes.position.needsUpdate = true;
       st.objects.trailGeo.setDrawRange(0, st.objects.history.length);
     };
@@ -1304,26 +1423,30 @@
     camera.position.set(0, 4.5, 15);
     scene.background = new THREE.Color(0x060818);
 
+    // Input bar
     const inBar = new THREE.Mesh(
       new THREE.BoxGeometry(0.85, 3.2, 0.55),
-      new THREE.MeshStandardMaterial({ color:0xfbbf24, emissive:0xfbbf24, emissiveIntensity:0.35 })
+      new THREE.MeshStandardMaterial({ color: 0xfbbf24, emissive: 0xfbbf24, emissiveIntensity: 0.35 })
     );
     inBar.position.set(-5.5, 0, 0);
     scene.add(inBar);
 
+    // Device box
     const device = _makeBox(THREE, 2.0, 2.7, 1.1, 0x334155, 0.3, 0.7);
     scene.add(device);
 
+    // Useful output bar
     const usBar = new THREE.Mesh(
       new THREE.BoxGeometry(0.85, 2.2, 0.55),
-      new THREE.MeshStandardMaterial({ color:0x22c55e, emissive:0x22c55e, emissiveIntensity:0.35 })
+      new THREE.MeshStandardMaterial({ color: 0x22c55e, emissive: 0x22c55e, emissiveIntensity: 0.35 })
     );
     usBar.position.set(5.0, 0.5, 0);
     scene.add(usBar);
 
+    // Wasted energy bar
     const waBar = new THREE.Mesh(
       new THREE.BoxGeometry(0.65, 1.0, 0.55),
-      new THREE.MeshStandardMaterial({ color:0xef4444, emissive:0xef4444, emissiveIntensity:0.4 })
+      new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 0.4 })
     );
     waBar.position.set(5.0, -1.7, 0);
     scene.add(waBar);
@@ -1333,9 +1456,9 @@
       const geo = new THREE.BufferGeometry().setFromPoints([p1, p2]);
       scene.add(new THREE.Line(geo, new THREE.LineBasicMaterial({ color: col })));
     };
-    mkLine(new THREE.Vector3(-5.1,0,0), new THREE.Vector3(-1,0,0), 0xfbbf24);
-    mkLine(new THREE.Vector3(1,0.5,0),  new THREE.Vector3(4.6,0.5,0), 0x22c55e);
-    mkLine(new THREE.Vector3(1,-1.7,0), new THREE.Vector3(4.7,-1.7,0), 0xef4444);
+    mkLine(new THREE.Vector3(-5.1, 0, 0),   new THREE.Vector3(-1, 0, 0),   0xfbbf24);
+    mkLine(new THREE.Vector3(1, 0.5, 0),     new THREE.Vector3(4.6, 0.5, 0), 0x22c55e);
+    mkLine(new THREE.Vector3(1, -1.7, 0),    new THREE.Vector3(4.7, -1.7, 0), 0xef4444);
 
     const devGlow = new THREE.PointLight(0xfbbf24, 1.2, 7);
     scene.add(devGlow);
@@ -1347,9 +1470,9 @@
       const e = new THREE.Mesh(
         new THREE.SphereGeometry(0.11, 8, 8),
         new THREE.MeshStandardMaterial({
-          color: isUseful ? 0x22c55e : 0xef4444,
-          emissive: isUseful ? 0x22c55e : 0xef4444,
-          emissiveIntensity: 0.6
+          color:             isUseful ? 0x22c55e : 0xef4444,
+          emissive:          isUseful ? 0x22c55e : 0xef4444,
+          emissiveIntensity: 0.6,
         })
       );
       scene.add(e);
@@ -1357,14 +1480,15 @@
     }
 
     s.objects = { inBar, usBar, waBar, devGlow, particles };
+
     _addLabel(s, '100J Input', 2, 24, '#fbbf24');
     _addLabel(s, '70J Useful', 66, 18, '#4ade80');
     _addLabel(s, '30J Wasted (heat)', 66, 62, '#f87171');
     _addLabel(s, 'Efficiency = 70%  |  Energy conserved', 8, 88, '#ffffff', 'rgba(0,0,0,0.5)');
 
     s._updateFn = (st) => {
-      st.objects.inBar.scale.x = 1 + Math.sin(st.t * 2) * 0.03;
-      st.objects.devGlow.intensity = 0.9 + Math.sin(st.t * 4) * 0.35;
+      st.objects.inBar.scale.x      = 1 + Math.sin(st.t * 2) * 0.03;
+      st.objects.devGlow.intensity  = 0.9 + Math.sin(st.t * 4) * 0.35;
 
       st.objects.particles.forEach(({ mesh, offset, type }) => {
         const pos = (st.t * 1.1 + offset * 10) % 10;
@@ -1398,7 +1522,9 @@
             <span style="font-size:.6rem;font-weight:700;color:var(--text-3);white-space:nowrap;flex-shrink:0;">Q${_quizIdx+1}/${_shuffledQuiz.length} · Score: ${_quizScore}</span>
           </div>
           <div style="background:var(--bg-base);border:2px solid var(--accent-border);border-radius:var(--r-xl);padding:1rem 1.25rem;margin-bottom:.875rem;">
-            <div style="font-size:.6rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);margin-bottom:.5rem;">⚛️ Physics Q${_quizIdx+1}</div>
+            <div style="display:flex;align-items:center;gap:.3rem;font-size:.6rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);margin-bottom:.5rem;">
+              <i class="ph ph-atom" style="font-size:.85rem;"></i> Physics Q${_quizIdx+1}
+            </div>
             <p style="font-size:var(--text-md);font-weight:600;color:var(--text-1);line-height:1.5;margin:0;">${q.q}</p>
           </div>
           <div>
@@ -1408,14 +1534,14 @@
                 if (opt === q.a) cls = 'correct';
                 else if (opt === _quizSelected && opt !== q.a) cls = 'wrong';
               }
-              return `<button class="phys-quiz-opt ${cls}" ${_quizAnswered?'disabled':''} onclick="ThreeDPhysics._answerQuiz(${JSON.stringify(opt)})">${opt}</button>`;
+              return `<button class="phys-quiz-opt ${cls}" ${_quizAnswered ? 'disabled' : ''} onclick="ThreeDPhysics._answerQuiz(${JSON.stringify(opt)})">${opt}</button>`;
             }).join('')}
           </div>
           ${_quizAnswered ? `
             <div style="margin-top:.75rem;padding:.75rem 1rem;border-radius:var(--r-xl);background:${_quizSelected===q.a?'var(--success-subtle)':'var(--danger-subtle)'};border:1px solid ${_quizSelected===q.a?'var(--success-border)':'var(--danger-border)'};">
-              <div style="font-size:.6rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:${_quizSelected===q.a?'var(--success)':'var(--danger)'};margin-bottom:.35rem;">${_quizSelected===q.a?'✓ Correct!':'✗ Not quite — Correct: '+q.a}</div>
+              <div style="font-size:.6rem;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:${_quizSelected===q.a?'var(--success)':'var(--danger)'};margin-bottom:.35rem;">${_quizSelected===q.a?'Correct!':'Not quite — Correct: '+q.a}</div>
               <p style="font-size:var(--text-xs);color:var(--text-2);line-height:1.6;margin:0 0 .5rem;">${q.explain}</p>
-              <button class="phys-step-btn primary" onclick="ThreeDPhysics._nextQuestion()" style="font-size:.6rem;padding:.3rem .875rem;">${_quizIdx<_shuffledQuiz.length-1?'Next Question →':'See Results'}</button>
+              <button class="phys-step-btn primary" onclick="ThreeDPhysics._nextQuestion()" style="font-size:.6rem;padding:.3rem .875rem;">${_quizIdx<_shuffledQuiz.length-1?'Next Question':'See Results'}</button>
             </div>` : ''}
         </div>
       </div>`;
@@ -1424,12 +1550,13 @@
   function _buildQuizResults() {
     const total = _shuffledQuiz.length;
     const pct   = Math.round(_quizScore / total * 100);
-    const grade = pct >= 80 ? 'Excellent! 🏆' : pct >= 60 ? 'Good job! 👍' : pct >= 40 ? 'Keep revising 📚' : 'More practice needed 🔬';
+    const grade = pct >= 80 ? 'Excellent!' : pct >= 60 ? 'Good job!' : pct >= 40 ? 'Keep revising' : 'More practice needed';
     const clr   = pct >= 80 ? 'var(--success)' : pct >= 60 ? 'var(--accent)' : pct >= 40 ? 'var(--warning)' : 'var(--danger)';
+    const icon  = pct >= 80 ? 'ph-trophy' : pct >= 60 ? 'ph-thumbs-up' : pct >= 40 ? 'ph-books' : 'ph-flask';
     return `
       <div style="height:100%;overflow-y:auto;padding:1.5rem .875rem;">
         <div style="max-width:480px;margin:0 auto;text-align:center;">
-          <div style="font-size:3.5rem;line-height:1;margin-bottom:.5rem;">⚛️</div>
+          <i class="ph ${icon}" style="font-size:3.5rem;color:${clr};display:block;margin-bottom:.5rem;"></i>
           <h2 style="font-size:var(--text-xl);font-weight:800;color:${clr};margin-bottom:.25rem;">${pct}% — ${grade}</h2>
           <p style="font-size:var(--text-sm);color:var(--text-3);margin-bottom:1.5rem;">You scored <strong>${_quizScore}</strong> out of <strong>${total}</strong>.</p>
           <div style="background:var(--bg-base);border:1px solid var(--border);border-radius:var(--r-xl);padding:1rem;margin-bottom:1rem;text-align:left;">
@@ -1439,12 +1566,20 @@
             </div>
           </div>
           <div style="display:flex;gap:.625rem;justify-content:center;flex-wrap:wrap;">
-            <button class="phys-step-btn primary" onclick="ThreeDPhysics._restartQuiz()" style="padding:.5rem 1.25rem;">↺ Retake Quiz</button>
-            <button class="phys-step-btn" onclick="ThreeDPhysics._setTab('forces')" style="padding:.5rem 1.25rem;">📖 Study Topics</button>
+            <button class="phys-step-btn primary" onclick="ThreeDPhysics._restartQuiz()" style="padding:.5rem 1.25rem;">
+              <i class="ph ph-arrow-counter-clockwise"></i> Retake Quiz
+            </button>
+            <button class="phys-step-btn" onclick="ThreeDPhysics._setTab('forces')" style="padding:.5rem 1.25rem;">
+              <i class="ph ph-books"></i> Study Topics
+            </button>
           </div>
         </div>
       </div>`;
   }
+
+  /* ══════════════════════════════════════════════════
+     NAVIGATION HANDLERS
+  ══════════════════════════════════════════════════ */
 
   function _setTab(tab) {
     _destroyThree();
@@ -1452,7 +1587,9 @@
     _activeSubIdx = 0;
     _reRenderContent();
     _updateTabBar();
-    if (tab !== 'quiz') requestAnimationFrame(_launchScene);
+    if (tab !== 'quiz') {
+      requestAnimationFrame(_launchScene);
+    }
   }
 
   function _setSub(idx) {
@@ -1522,6 +1659,10 @@
     }
     return arr;
   }
+
+  /* ══════════════════════════════════════════════════
+     PUBLIC API
+  ══════════════════════════════════════════════════ */
 
   window.ThreeDPhysics = {
     open,
