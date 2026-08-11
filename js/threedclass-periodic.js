@@ -377,40 +377,30 @@
     const W = wrap.clientWidth  || 800;
     const H = wrap.clientHeight || 500;
 
-    /* ── Renderer ── */
     _renderer = new THREE.WebGLRenderer({ canvas: _canvas, antialias: true, alpha: true });
     _renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     _renderer.setSize(W, H);
-    _renderer.setClearColor(0x000000, 0); // transparent — lets page background show
-    _renderer.shadowMap.enabled = true;
-    _renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    // NO toneMapping — it was washing out the vivid colours
+    _renderer.setClearColor(0x000000, 0);
+    _renderer.shadowMap.enabled = false; // off — no shadows needed, reduces wash
 
-    /* ── Scene ── */
     _scene = new THREE.Scene();
-    // NO background colour — transparent so page theme shows through
-    // NO fog — it was desaturating and darkening all tiles
+    // No background, no fog, no stars, no nebula
 
-    /* ── Camera ── */
     _camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 2000);
     _camera.position.set(0, -8, 110);
 
-    /* ── Lights ── */
-    const ambient = new THREE.AmbientLight(0xffffff, 1.2);
+    // Softer lighting — enough to show depth without bleaching colour
+    const ambient = new THREE.AmbientLight(0xffffff, 0.55);
     _scene.add(ambient);
 
-    const key = new THREE.DirectionalLight(0xffffff, 1.0);
+    const key = new THREE.DirectionalLight(0xffffff, 0.55);
     key.position.set(20, 60, 80);
-    key.castShadow = true;
-    key.shadow.mapSize.width = 2048;
-    key.shadow.mapSize.height = 2048;
     _scene.add(key);
 
-    const fill = new THREE.DirectionalLight(0xffffff, 0.5);
+    const fill = new THREE.DirectionalLight(0xffffff, 0.2);
     fill.position.set(-60, -30, 40);
     _scene.add(fill);
 
-    /* ── OrbitControls ── */
     _controls = new THREE.OrbitControls(_camera, _renderer.domElement);
     _controls.enableDamping   = true;
     _controls.dampingFactor   = 0.06;
@@ -422,19 +412,14 @@
     _controls.autoRotate      = false;
     _controls.target.set(0, -5, 0);
 
-    /* ── Raycaster ── */
     _raycaster = new THREE.Raycaster();
-
-    /* ── Build tiles ── */
     _buildAllTiles();
 
-    /* ── Events — BOTH pointerdown AND pointerup must be attached ── */
     _canvas.addEventListener('pointerdown', _onPointerDown);
     _canvas.addEventListener('pointerup',   _onPointerUp);
     _canvas.addEventListener('touchstart',  _onPointerDown, { passive: true });
     _canvas.addEventListener('touchend',    _onPointerUp,   { passive: true });
 
-    /* ── Resize observer ── */
     _resizeObs = new ResizeObserver(() => {
       if (!wrap.clientWidth) return;
       const nW = wrap.clientWidth;
@@ -445,7 +430,6 @@
     });
     _resizeObs.observe(wrap);
 
-    /* ── Hide loading overlay ── */
     const loading = document.getElementById('pt-loading');
     if (loading) {
       loading.style.transition = 'opacity 0.5s ease';
@@ -453,55 +437,7 @@
       setTimeout(() => { if (loading) loading.style.display = 'none'; }, 500);
     }
 
-    /* ── Animate ── */
     _animate();
-  }
-
-  function _addStars(THREE) {
-    const geo  = new THREE.BufferGeometry();
-    const count = 1200;
-    const pos  = new Float32Array(count * 3);
-    const sizes = new Float32Array(count);
-    for (let i = 0; i < count; i++) {
-      pos[i * 3]     = (Math.random() - 0.5) * 600;
-      pos[i * 3 + 1] = (Math.random() - 0.5) * 400;
-      pos[i * 3 + 2] = (Math.random() - 0.5) * 200 - 50;
-      sizes[i] = Math.random() * 2 + 0.5;
-    }
-    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-    geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1));
-    const mat = new THREE.PointsMaterial({
-      color: 0xffffff,
-      size: 0.5,
-      transparent: true,
-      opacity: 0.7,
-      sizeAttenuation: true,
-    });
-    _scene.add(new THREE.Points(geo, mat));
-  }
-
-  function _addNebula(THREE) {
-    // Coloured cloud particles behind the table
-    const colors = [0x6633ff, 0xff3366, 0x33aaff, 0xff6600];
-    colors.forEach((col, ci) => {
-      const geo = new THREE.BufferGeometry();
-      const count = 200;
-      const pos = new Float32Array(count * 3);
-      for (let i = 0; i < count; i++) {
-        pos[i * 3]     = (Math.random() - 0.5) * 220 + (ci % 2 === 0 ? -40 : 40);
-        pos[i * 3 + 1] = (Math.random() - 0.5) * 120;
-        pos[i * 3 + 2] = (Math.random() - 0.5) * 30 - 20;
-      }
-      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-      const mat = new THREE.PointsMaterial({
-        color: col,
-        size: 1.2,
-        transparent: true,
-        opacity: 0.15,
-        sizeAttenuation: true,
-      });
-      _scene.add(new THREE.Points(geo, mat));
-    });
   }
 
   /* ══════════════════════════════════════════════════
@@ -517,34 +453,25 @@
     cv.width = cv.height = SIZE;
     const ctx = cv.getContext('2d');
 
-    // Step 1: Fill solid base colour
+    // Solid base colour only — no gradient overlay on top
     if (highlighted) {
       ctx.fillStyle = '#ffffff';
     } else if (dimmed) {
-      ctx.fillStyle = '#cccccc';
+      ctx.fillStyle = '#dddddd';
     } else {
-      ctx.fillStyle = catC.bg; // vivid solid colour — no overwrite after this
+      ctx.fillStyle = catC.bg; // pure vivid category colour, nothing on top
     }
     ctx.fillRect(0, 0, SIZE, SIZE);
-
-    // Step 2: Subtle gradient OVER the base (additive, not replacing)
-    if (!highlighted && !dimmed) {
-      const grad = ctx.createLinearGradient(0, 0, SIZE, SIZE);
-      grad.addColorStop(0, 'rgba(255,255,255,0.18)');
-      grad.addColorStop(1, 'rgba(0,0,0,0.22)');
-      ctx.fillStyle = grad;
-      ctx.fillRect(0, 0, SIZE, SIZE);
-    }
 
     // Border
     if (highlighted) {
       ctx.strokeStyle = '#6366f1';
       ctx.lineWidth = 10;
     } else if (dimmed) {
-      ctx.strokeStyle = 'rgba(0,0,0,0.12)';
+      ctx.strokeStyle = 'rgba(0,0,0,0.1)';
       ctx.lineWidth = 3;
     } else {
-      ctx.strokeStyle = 'rgba(255,255,255,0.45)';
+      ctx.strokeStyle = 'rgba(0,0,0,0.15)';
       ctx.lineWidth = 4;
     }
     ctx.strokeRect(4, 4, SIZE - 8, SIZE - 8);
@@ -554,38 +481,37 @@
     ctx.textAlign = 'left';
     ctx.fillStyle = highlighted
       ? '#4338ca'
-      : dimmed ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.95)';
+      : dimmed ? 'rgba(0,0,0,0.3)' : catC.text;
+    ctx.globalAlpha = highlighted ? 1 : dimmed ? 0.5 : 0.85;
     ctx.fillText(String(el.n), 10, 38);
+    ctx.globalAlpha = 1;
 
     // Symbol (centre, large)
     ctx.font = 'bold 100px sans-serif';
     ctx.textAlign = 'center';
     ctx.fillStyle = highlighted
       ? '#312e81'
-      : dimmed ? 'rgba(0,0,0,0.3)' : '#ffffff';
-    if (!dimmed) {
-      ctx.shadowColor = 'rgba(0,0,0,0.5)';
-      ctx.shadowBlur = 6;
-      ctx.shadowOffsetX = 1;
-      ctx.shadowOffsetY = 2;
-    }
+      : dimmed ? 'rgba(0,0,0,0.25)' : catC.text;
     ctx.fillText(el.sym, SIZE / 2, SIZE / 2 + 36);
-    ctx.shadowBlur = 0; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0;
 
     // Name (bottom)
     ctx.font = 'bold 24px sans-serif';
     ctx.fillStyle = highlighted
       ? '#4338ca'
-      : dimmed ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.9)';
+      : dimmed ? 'rgba(0,0,0,0.2)' : catC.text;
+    ctx.globalAlpha = highlighted ? 1 : dimmed ? 0.5 : 0.8;
     const shortName = el.name.length > 10 ? el.name.slice(0, 9) + '.' : el.name;
     ctx.fillText(shortName, SIZE / 2, SIZE - 14);
+    ctx.globalAlpha = 1;
 
     // Mass (top-right tiny)
     if (!dimmed) {
       ctx.font = '18px sans-serif';
-      ctx.fillStyle = 'rgba(255,255,255,0.65)';
+      ctx.fillStyle = catC.text;
+      ctx.globalAlpha = 0.6;
       ctx.textAlign = 'right';
       ctx.fillText(el.mass, SIZE - 8, 28);
+      ctx.globalAlpha = 1;
     }
 
     return new THREE.CanvasTexture(cv);
@@ -600,7 +526,7 @@
 
     const TILE_W  = 3.8;
     const TILE_H  = 4.0;
-    const TILE_D  = 0.55; // Thicker for 3D feel
+    const TILE_D  = 0.55;
     const GAP     = 0.20;
     const STEP_X  = TILE_W + GAP;
     const STEP_Y  = TILE_H + GAP;
@@ -622,35 +548,33 @@
         : -(pos.row - 1) * STEP_Y - STEP_Y * 0.6;
       const y = originY + rowY;
 
-      // Unique Z offset per element for floating depth effect
       const baseZ = Math.sin(el.n * 0.42) * 0.8 + Math.cos(el.n * 0.27) * 0.5;
 
       const geo = new THREE.BoxGeometry(TILE_W, TILE_H, TILE_D);
 
       const faceTex = _makeTileTexture(el, false, false);
 
-      // Front face: textured
-      // Side faces: solid vivid colour with slight metallic sheen
-      const sideColor = new THREE.Color(catC.bg).multiplyScalar(0.5);
+      // Side faces use StandardMaterial — lit by scene lights
+      const sideColor = new THREE.Color(catC.bg).multiplyScalar(0.7);
+      const sideMat   = () => new THREE.MeshStandardMaterial({ color: sideColor, roughness: 0.4, metalness: 0.3 });
 
       const mats = [
-        new THREE.MeshStandardMaterial({ color: sideColor, roughness: 0.3, metalness: 0.7 }), // +X
-        new THREE.MeshStandardMaterial({ color: sideColor, roughness: 0.3, metalness: 0.7 }), // -X
-        new THREE.MeshStandardMaterial({ color: sideColor, roughness: 0.3, metalness: 0.7 }), // +Y
-        new THREE.MeshStandardMaterial({ color: new THREE.Color(catC.bg).multiplyScalar(0.3), roughness: 0.5, metalness: 0.5 }), // -Y
-        new THREE.MeshStandardMaterial({ map: faceTex, roughness: 0.2, metalness: 0.0, emissive: new THREE.Color(catC.emissive), emissiveIntensity: 0.08 }), // +Z front
-        new THREE.MeshStandardMaterial({ color: new THREE.Color(catC.bg).multiplyScalar(0.2), roughness: 0.6, metalness: 0.4 }), // -Z back
+        sideMat(), // +X
+        sideMat(), // -X
+        sideMat(), // +Y
+        new THREE.MeshStandardMaterial({ color: new THREE.Color(catC.bg).multiplyScalar(0.4), roughness: 0.5, metalness: 0.3 }), // -Y
+        // Front face: MeshBasicMaterial — renders texture EXACTLY as painted, no lighting
+        new THREE.MeshBasicMaterial({ map: faceTex }),
+        new THREE.MeshStandardMaterial({ color: new THREE.Color(catC.bg).multiplyScalar(0.3), roughness: 0.6, metalness: 0.2 }), // -Z back
       ];
 
       const mesh = new THREE.Mesh(geo, mats);
       mesh.position.set(x, y, baseZ);
-      mesh.castShadow    = true;
-      mesh.receiveShadow = true;
-      mesh.userData.el   = el;
-      mesh.userData.baseZ = baseZ;
-      mesh.userData.baseX = x;
-      mesh.userData.baseY = y;
-      mesh.userData.floatOffset = Math.random() * Math.PI * 2; // random phase for float
+      mesh.userData.el          = el;
+      mesh.userData.baseZ       = baseZ;
+      mesh.userData.baseX       = x;
+      mesh.userData.baseY       = y;
+      mesh.userData.floatOffset = Math.random() * Math.PI * 2;
 
       _scene.add(mesh);
       _tileMeshes[el.n] = mesh;
@@ -666,22 +590,11 @@
     _time += 0.016;
     _controls.update();
 
-    // Subtle float animation on all tiles
+    // Subtle float on non-selected tiles only
     Object.values(_tileMeshes).forEach(mesh => {
-      const el    = mesh.userData.el;
-      const catC  = CAT_COLORS[el.cat] || CAT_COLORS['transition'];
-      const phase = mesh.userData.floatOffset;
-      const isSelected = _selectedEl && el.n === _selectedEl.n;
-
-      // Float Z
+      const isSelected = _selectedEl && mesh.userData.el.n === _selectedEl.n;
       if (!isSelected) {
-        mesh.position.z = mesh.userData.baseZ + Math.sin(_time * 0.7 + phase) * 0.15;
-      }
-
-      // Pulse emissive on front face
-      if (Array.isArray(mesh.material) && mesh.material[4]) {
-        const pulse = Math.sin(_time * 1.5 + phase) * 0.04 + 0.08;
-        mesh.material[4].emissiveIntensity = isSelected ? 0.4 : pulse;
+        mesh.position.z = mesh.userData.baseZ + Math.sin(_time * 0.7 + mesh.userData.floatOffset) * 0.15;
       }
     });
 
@@ -746,14 +659,14 @@
   }
 
   function _updateTileVisuals() {
-    const THREE  = window.THREE;
+    const THREE = window.THREE;
 
     Object.values(_tileMeshes).forEach(mesh => {
-      const el    = mesh.userData.el;
-      const catC  = CAT_COLORS[el.cat] || CAT_COLORS['transition'];
+      const el   = mesh.userData.el;
+      const catC = CAT_COLORS[el.cat] || CAT_COLORS['transition'];
 
       let passes = true;
-      if (_filterCat)    passes = (el.cat === _filterCat);
+      if (_filterCat) passes = (el.cat === _filterCat);
       if (_searchQuery && passes) {
         passes = (
           el.sym.toLowerCase().includes(_searchQuery)  ||
@@ -767,7 +680,7 @@
       const highlighted = selected;
       const dimmed      = !passes || (_selectedEl && !selected);
 
-      // Rebuild face texture
+      // Rebuild front face texture (index 4 — MeshBasicMaterial)
       const newTex = _makeTileTexture(el, highlighted, dimmed && !selected);
       if (Array.isArray(mesh.material)) {
         if (mesh.material[4].map) mesh.material[4].map.dispose();
@@ -775,20 +688,19 @@
         mesh.material[4].needsUpdate = true;
       }
 
-      // Side colours
+      // Update side face colours (indices 0,1,2,3,5 — MeshStandardMaterial)
       const sideBase = new THREE.Color(catC.bg);
-      const sideMult = dimmed && !selected ? 0.08 : highlighted ? 1.0 : 0.5;
+      const sideMult = (dimmed && !selected) ? 0.15 : highlighted ? 0.85 : 0.7;
       const sideCol  = sideBase.clone().multiplyScalar(sideMult);
 
       for (let f = 0; f < 6; f++) {
-        if (f === 4) continue;
-        if (Array.isArray(mesh.material)) {
+        if (f === 4) continue; // skip front face
+        if (Array.isArray(mesh.material) && mesh.material[f].color) {
           mesh.material[f].color.set(sideCol);
-          mesh.material[f].emissiveIntensity = 0;
         }
       }
 
-      // Pop selected tile forward dramatically
+      // Pop selected tile forward, dim others
       if (selected) {
         mesh.position.z = mesh.userData.baseZ + 4.0;
         mesh.position.y = mesh.userData.baseY + 0.5;
@@ -802,24 +714,9 @@
         mesh.position.y = mesh.userData.baseY;
         mesh.scale.set(1, 1, 1);
       }
-
-      // Emissive glow
-      if (Array.isArray(mesh.material)) {
-        mesh.material.forEach((m, fi) => {
-          if (!m.emissive) return;
-          if (fi === 4) {
-            m.emissive.setHex(selected ? 0x4444ff : catC.emissive);
-            m.emissiveIntensity = selected ? 0.5 : (dimmed && !selected) ? 0 : 0.08;
-          } else {
-            m.emissive = m.emissive || new THREE.Color(0);
-            m.emissive.setHex(selected ? 0x2233aa : 0x000000);
-            m.emissiveIntensity = selected ? 0.3 : 0;
-          }
-        });
-      }
     });
   }
-
+    
   /* ══════════════════════════════════════════════════
      FILTER + SEARCH
   ══════════════════════════════════════════════════ */
