@@ -1609,7 +1609,7 @@
       const members = g.members || [];
       members.forEach(m => { if (m.uid !== uid) unreadInc['unread.' + m.uid] = firebase.firestore.FieldValue.increment(1); });
       batch.update(Db().collection('groupChats').doc(groupId), {
-        lastMessage: '🎤 Voice note',
+        lastMessage: '[VN]',
         lastAt: firebase.firestore.FieldValue.serverTimestamp(),
         lastMessageSenderName: senderName,
         ...unreadInc,
@@ -2004,7 +2004,7 @@
       const unreadInc = {};
       members.forEach(m => { unreadInc['unread.' + m.uid] = firebase.firestore.FieldValue.increment(1); });
       batch.update(Db().collection('groupChats').doc(groupId), {
-        lastMessage: '🎤 Voice note',
+        lastMessage: '[VN]',
         lastAt: firebase.firestore.FieldValue.serverTimestamp(),
         lastMessageSenderName: 'Master Timothy',
         ...unreadInc,
