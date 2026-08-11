@@ -616,6 +616,7 @@
       </div>`;
 
     _setupStudentInput(groupId, isMuted);
+      if (window.VoiceNotes && !isMuted) VoiceNotes.injectRecorderButton('gcInput', _sendStudentVoiceNote);
     _clearGroupUnread(groupId, uid);
     _subscribeGroupMessages(groupId, uid, false);
     _subscribeGroupTyping(groupId, uid);
@@ -1087,7 +1088,7 @@
     // Who can edit this message:
     // - the original sender (student: up to 2 edits; teacher: unlimited)
     // - teacher viewer can always edit any message
-    const canEdit    = !!msgId && (isMe || isTeacherViewer);
+    const canEdit    = !!msgId && (isMe || isTeacherViewer) && !msg.voiceNote;
     const canHistory = !!msgId && (isMe || isTeacherViewer);
 
     let replyCard = '';
@@ -1142,7 +1143,7 @@
                    style="background:var(--accent);color:#fff;
                           border-radius:14px 14px 3px 14px;padding:.5rem .75rem .375rem;">
                 ${replyCard}
-                <p class="gc-bubble-text">${_esc(msg.text)}</p>
+                ${msg.voiceNote ? VoiceNotes.renderPlayer(msg.voiceNote) : `<p class="gc-bubble-text">${_esc(msg.text)}</p>`}
                 <div class="gc-bubble-footer gc-bubble-footer--end">
                   ${editedLabel}
                   ${editBtn}
@@ -1171,7 +1172,7 @@
                           border:1px solid var(--border);
                           border-radius:14px 14px 14px 3px;padding:.5rem .75rem .375rem;">
                 ${replyCard}
-                <p class="gc-bubble-text">${_esc(msg.text)}</p>
+                ${msg.voiceNote ? VoiceNotes.renderPlayer(msg.voiceNote) : `<p class="gc-bubble-text">${_esc(msg.text)}</p>`}
                 <div class="gc-bubble-footer gc-bubble-footer--start">
                   ${editedLabel}
                   <span class="gc-bubble-time" style="opacity:.55;">${time}</span>
@@ -1579,6 +1580,49 @@
       input?.focus();
     }
   }
+  
+  async function _sendStudentVoiceNote(voiceNote) {
+    if (!voiceNote || !voiceNote.data) return;
+    const g = _activeGroupData;
+    if (!g) return;
+    const uid = AppState.userId;
+    const isMuted = Array.isArray(g.mutedUids) && g.mutedUids.includes(uid);
+    if (isMuted) { UI.toast('You are muted in this group.', 'warning'); return; }
+
+    const groupId    = _activeGroupId;
+    const senderName = AppState.studentData?.name || 'Student';
+    const btn        = document.getElementById('gcSendBtn');
+    if (btn) btn.disabled = true;
+
+    try {
+      const batch  = Db().batch();
+      const msgRef = Db().collection('groupChats').doc(groupId).collection('messages').doc();
+      const msgData = {
+        voiceNote: voiceNote,
+        senderId: uid, senderName, senderClass: AppState.studentData?.class || '',
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        deletedForAll: false,
+      };
+      batch.set(msgRef, msgData);
+
+      const unreadInc = {};
+      const members = g.members || [];
+      members.forEach(m => { if (m.uid !== uid) unreadInc['unread.' + m.uid] = firebase.firestore.FieldValue.increment(1); });
+      batch.update(Db().collection('groupChats').doc(groupId), {
+        lastMessage: '🎤 Voice note',
+        lastAt: firebase.firestore.FieldValue.serverTimestamp(),
+        lastMessageSenderName: senderName,
+        ...unreadInc,
+      });
+      await batch.commit();
+    } catch (err) {
+      console.error('[gc] _sendStudentVoiceNote error:', err);
+      UI.toast('Failed to send voice note.', 'error');
+    } finally {
+      if (btn) btn.disabled = false;
+      document.getElementById('gcInput')?.focus();
+    }
+  }
 
   /* ══════════════════════════════════════════════════════
      GROUP INFO MODAL (student view)
@@ -1862,6 +1906,7 @@
     _subscribeGroupMessages(groupId, TEACHER_UID(), true);
     _subscribeGroupTyping(groupId, TEACHER_UID());
     _attachSwipeListeners('gcTeacherMessages', true);
+      if (window.VoiceNotes) VoiceNotes.injectRecorderButton('gcTeacherInput', _sendTeacherVoiceNote);
 
     _memberPresenceCache = {};
     _subscribeMemberPresence(g.members || []);
@@ -1936,6 +1981,41 @@
     } finally {
       if (btn) btn.disabled = false;
       input?.focus();
+    }
+  }
+  
+   async function _sendTeacherVoiceNote(voiceNote) {
+    if (!voiceNote || !voiceNote.data || !_activeGroupId) return;
+    const groupId = _activeGroupId;
+    const g       = _activeGroupData;
+    const btn     = document.getElementById('gcTeacherSendBtn');
+    if (btn) btn.disabled = true;
+
+    try {
+      const batch  = Db().batch();
+      const msgRef = Db().collection('groupChats').doc(groupId).collection('messages').doc();
+      batch.set(msgRef, {
+        voiceNote: voiceNote,
+        senderId: TEACHER_UID(), senderName: 'Master Timothy', senderClass: '',
+        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        deletedForAll: false,
+      });
+      const members = g ? (g.members || []) : [];
+      const unreadInc = {};
+      members.forEach(m => { unreadInc['unread.' + m.uid] = firebase.firestore.FieldValue.increment(1); });
+      batch.update(Db().collection('groupChats').doc(groupId), {
+        lastMessage: '🎤 Voice note',
+        lastAt: firebase.firestore.FieldValue.serverTimestamp(),
+        lastMessageSenderName: 'Master Timothy',
+        ...unreadInc,
+      });
+      await batch.commit();
+    } catch (err) {
+      console.error('[gc] _sendTeacherVoiceNote error:', err);
+      UI.toast('Failed to send voice note.', 'error');
+    } finally {
+      if (btn) btn.disabled = false;
+      document.getElementById('gcTeacherInput')?.focus();
     }
   }
 
