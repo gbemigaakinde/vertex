@@ -64,8 +64,8 @@ function renderTeacherDashboard() {
         </button>
       </div>
 
-      <div style="display:flex;align-items:center;gap:0.25rem;padding:0.5rem 1.25rem;
-                  border-bottom:1px solid var(--border);flex-wrap:wrap;overflow-x:auto;">
+      <div style="display:flex;align-items:center;gap:0.25rem;padding:0.75rem 1.25rem 0.5rem;
+                  border-bottom:1px solid var(--border);flex-wrap:wrap;overflow:visible;">
         <button onclick="Teacher.showTab('students')" id="tab-students"
                 class="tab-btn btn">Students</button>
         <button onclick="Teacher.showTab('results')"  id="tab-results"
