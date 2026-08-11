@@ -4126,12 +4126,111 @@ window.questions = {
       { q: "The ______ nature of the evidence convinced even the most skeptical juror.", opts: ["overwhelm", "overwhelming", "overwhelmed", "overwhelmingly"], ans: 1, exp: "The blank requires an adjective to modify the noun 'nature.' 'Overwhelming' is the present participle used as an adjective, meaning very great in amount or intensity." },
       { q: "In the context of the sentence 'The politician's speech was full of platitudes,' the word PLATITUDE means:", opts: ["original ideas", "trite remarks", "complex arguments", "emotional appeals"], ans: 1, exp: "A platitude is a remark or statement, especially one with moral content, that has been used too often to be interesting or thoughtful. It is a trite, clichéd, or banal statement presented as if it were fresh or profound." },
       { q: "The ______ of the meeting lasted for three hours before any decisions were made.", opts: ["council", "counsel", "consul", "councel"], ans: 0, exp: "'Council' (a group of people assembled for consultation) is the correct homophone here. 'Counsel' means advice or a legal representative. 'Consul' is a government representative in a foreign country. 'Councel' is a misspelling." },
-      { q: "According to the passage, what was the primary cause of the decline in fish stocks?", opts: ["Overfishing by local fishermen", "The use of traditional fishing techniques", "The arrival of industrial trawlers", "Changes in marine biology"], ans: 2, exp: "The passage explicitly states that 'the arrival of industrial trawlers in the early 2000s marked a turning point' and that 'These massive vessels... depleted fish stocks at an unprecedented rate.'" },
-      { q: "The phrase 'unable to compete' in the passage suggests that the local fishermen:", opts: ["lacked fishing equipment", "were outmatched by industrial methods", "refused to fish industrially", "had superior traditional knowledge"], ans: 1, exp: "The context indicates that industrial trawlers with sophisticated sonar technology could catch fish much more efficiently than local fishermen using traditional methods. 'Unable to compete' means they could not match the industrial fishing capacity." },
-      { q: "What does the passage suggest about the relationship between traditional knowledge and scientific expertise?", opts: ["They are fundamentally incompatible", "Traditional knowledge is superior to science", "Science has replaced traditional knowledge", "They can complement each other effectively"], ans: 3, exp: "The passage states that 'their traditional knowledge, combined with scientific expertise, created a model that neighbouring villages sought to replicate.' This demonstrates complementarity and synergy between the two forms of knowledge." },
-      { q: "The author's attitude toward the community's actions can best be described as:", opts: ["critical and dismissive", "neutral and objective", "appreciative and admiring", "skeptical and doubtful"], ans: 2, exp: "The author describes the community's response positively, using words like 'transform,' 'recover,' and 'model.' The concluding sentence frames their experience as a successful demonstration of sustainable development, indicating an appreciative and admiring tone." },
-      { q: "What can be inferred about neighbouring villages from the passage?", opts: ["They had already depleted their own fish stocks", "They rejected the Igbokoda model", "They recognized the value of the Igbokoda approach", "They had superior scientific expertise"], ans: 2, exp: "The passage states that neighbouring villages 'sought to replicate' the Igbokoda model. This implies they recognized its value and wanted to apply similar strategies in their own communities." },
-      { q: "Which of the following best captures the main idea of the passage?", opts: ["Industrial fishing is always destructive", "Traditional fishing methods are obsolete", "Sustainable practices can restore depleted resources", "Marine biologists are essential for fishing communities"], ans: 2, exp: "While the passage discusses industrial fishing damage, its main focus is on how the community's sustainable practices—protected areas, seasonal restrictions, and aquaculture—led to recovery. The central message is that environmental stewardship and economic survival can coexist through sustainable practices." },
+  {
+    q: `When Ngozi discovered that her grandmother's pottery designs were being copied by mass-produced plastic imports from overseas, she felt a sharp sense of loss. The intricate patterns that had defined her village's identity for generations were now reduced to cheap imitations sold in Lagos markets. Determined to preserve this heritage, Ngozi began documenting every pattern she could find, interviewing elder craftswomen and photographing their work before the knowledge faded entirely.
+
+Her efforts attracted the attention of a university researcher who helped digitise the archive and connect the village with fair-trade organisations. Within two years, the pottery was not only surviving but thriving. Young women who had once dismissed the craft as old-fashioned now apprenticed themselves to master potters, and the distinctive designs appeared in galleries as far away as London. Ngozi often reflected that protecting tradition did not mean locking it in the past, but rather ensuring it had a place in the future.
+
+According to the passage, what is the main idea?`,
+    opts: [
+      "Mass production always destroys traditional crafts",
+      "Documentation and adaptation can preserve cultural heritage",
+      "University researchers are essential for village development",
+      "Overseas markets have no respect for Nigerian art"
+    ],
+    ans: 1,
+    exp: "The passage traces Ngozi's response to a threat—documenting patterns, collaborating with a researcher, and connecting with fair-trade markets—which leads to the craft's revival. The central message is that deliberate effort and modern adaptation can sustain cultural traditions."
+  },
+  {
+    q: `When Ngozi discovered that her grandmother's pottery designs were being copied by mass-produced plastic imports from overseas, she felt a sharp sense of loss. The intricate patterns that had defined her village's identity for generations were now reduced to cheap imitations sold in Lagos markets. Determined to preserve this heritage, Ngozi began documenting every pattern she could find, interviewing elder craftswomen and photographing their work before the knowledge faded entirely.
+
+Her efforts attracted the attention of a university researcher who helped digitise the archive and connect the village with fair-trade organisations. Within two years, the pottery was not only surviving but thriving. Young women who had once dismissed the craft as old-fashioned now apprenticed themselves to master potters, and the distinctive designs appeared in galleries as far away as London. Ngozi often reflected that protecting tradition did not mean locking it in the past, but rather ensuring it had a place in the future.
+
+The word "intricate" as used in the passage means:`,
+    opts: [
+      "Simple and plain",
+      "Delicate and complex",
+      "Colourful and bright",
+      "Large and heavy"
+    ],
+    ans: 1,
+    exp: "The passage describes patterns that defined a village's identity and were later copied in cheap imitations. 'Intricate' suggests detailed, elaborate designs that require skill to produce—meaning delicate and complex."
+  },
+  {
+    q: `When Ngozi discovered that her grandmother's pottery designs were being copied by mass-produced plastic imports from overseas, she felt a sharp sense of loss. The intricate patterns that had defined her village's identity for generations were now reduced to cheap imitations sold in Lagos markets. Determined to preserve this heritage, Ngozi began documenting every pattern she could find, interviewing elder craftswomen and photographing their work before the knowledge faded entirely.
+
+Her efforts attracted the attention of a university researcher who helped digitise the archive and connect the village with fair-trade organisations. Within two years, the pottery was not only surviving but thriving. Young women who had once dismissed the craft as old-fashioned now apprenticed themselves to master potters, and the distinctive designs appeared in galleries as far away as London. Ngozi often reflected that protecting tradition did not mean locking it in the past, but rather ensuring it had a place in the future.
+
+What can be inferred about the young women before Ngozi's project began?`,
+    opts: [
+      "They refused to consider the craft seriously",
+      "They had already mastered the traditional techniques",
+      "They were forbidden from learning pottery",
+      "They preferred to work in Lagos markets"
+    ],
+    ans: 0,
+    exp: "The passage states that young women 'once dismissed the craft as old-fashioned.' To dismiss something is to refuse to take it seriously or regard it as unworthy of attention, which matches the inference that they refused to consider it seriously."
+  },
+  {
+    q: `When Ngozi discovered that her grandmother's pottery designs were being copied by mass-produced plastic imports from overseas, she felt a sharp sense of loss. The intricate patterns that had defined her village's identity for generations were now reduced to cheap imitations sold in Lagos markets. Determined to preserve this heritage, Ngozi began documenting every pattern she could find, interviewing elder craftswomen and photographing their work before the knowledge faded entirely.
+
+Her efforts attracted the attention of a university researcher who helped digitise the archive and connect the village with fair-trade organisations. Within two years, the pottery was not only surviving but thriving. Young women who had once dismissed the craft as old-fashioned now apprenticed themselves to master potters, and the distinctive designs appeared in galleries as far away as London. Ngozi often reflected that protecting tradition did not mean locking it in the past, but rather ensuring it had a place in the future.
+
+The author mentions the plastic imports primarily to:`,
+    opts: [
+      "Illustrate the threat that motivated Ngozi's actions",
+      "Praise the efficiency of modern manufacturing",
+      "Criticise Lagos consumers for poor taste",
+      "Compare Nigerian and foreign design quality"
+    ],
+    ans: 0,
+    exp: "The plastic imports are introduced at the very beginning as the catalyst for Ngozi's sense of loss and her subsequent determination. The author uses them to establish the problem that Ngozi set out to solve, not to praise manufacturing or criticise consumers."
+  },
+  {
+    q: `When Ngozi discovered that her grandmother's pottery designs were being copied by mass-produced plastic imports from overseas, she felt a sharp sense of loss. The intricate patterns that had defined her village's identity for generations were now reduced to cheap imitations sold in Lagos markets. Determined to preserve this heritage, Ngozi began documenting every pattern she could find, interviewing elder craftswomen and photographing their work before the knowledge faded entirely.
+
+Her efforts attracted the attention of a university researcher who helped digitise the archive and connect the village with fair-trade organisations. Within two years, the pottery was not only surviving but thriving. Young women who had once dismissed the craft as old-fashioned now apprenticed themselves to master potters, and the distinctive designs appeared in galleries as far away as London. Ngozi often reflected that protecting tradition did not mean locking it in the past, but rather ensuring it had a place in the future.
+
+The phrase "a place in the future" suggests that Ngozi believed:`,
+    opts: [
+      "Traditional crafts must be practised exactly as before",
+      "Cultural heritage is destined to disappear",
+      "Traditional practices can remain relevant in modern times",
+      "The village should build a museum immediately"
+    ],
+    ans: 2,
+    exp: "Ngozi contrasts 'locking it in the past' with 'ensuring it had a place in the future.' This implies she believed tradition could continue to exist and matter in contemporary life, not that it must remain unchanged or be confined to a museum."
+  },
+  {
+    q: `When Ngozi discovered that her grandmother's pottery designs were being copied by mass-produced plastic imports from overseas, she felt a sharp sense of loss. The intricate patterns that had defined her village's identity for generations were now reduced to cheap imitations sold in Lagos markets. Determined to preserve this heritage, Ngozi began documenting every pattern she could find, interviewing elder craftswomen and photographing their work before the knowledge faded entirely.
+
+Her efforts attracted the attention of a university researcher who helped digitise the archive and connect the village with fair-trade organisations. Within two years, the pottery was not only surviving but thriving. Young women who had once dismissed the craft as old-fashioned now apprenticed themselves to master potters, and the distinctive designs appeared in galleries as far away as London. Ngozi often reflected that protecting tradition did not mean locking it in the past, but rather ensuring it had a place in the future.
+
+Which of the following best describes the researcher's contribution?`,
+    opts: [
+      "He replaced traditional methods with modern technology",
+      "He provided expertise that expanded the project's reach",
+      "He funded the village pottery business personally",
+      "He convinced the young women to join the craft"
+    ],
+    ans: 1,
+    exp: "The passage states that the researcher 'helped digitise the archive and connect the village with fair-trade organisations.' This indicates he offered technical skills and professional networks that amplified Ngozi's work, rather than replacing methods, providing personal funds, or recruiting apprentices."
+  },
+  {
+    q: `When Ngozi discovered that her grandmother's pottery designs were being copied by mass-produced plastic imports from overseas, she felt a sharp sense of loss. The intricate patterns that had defined her village's identity for generations were now reduced to cheap imitations sold in Lagos markets. Determined to preserve this heritage, Ngozi began documenting every pattern she could find, interviewing elder craftswomen and photographing their work before the knowledge faded entirely.
+
+Her efforts attracted the attention of a university researcher who helped digitise the archive and connect the village with fair-trade organisations. Within two years, the pottery was not only surviving but thriving. Young women who had once dismissed the craft as old-fashioned now apprenticed themselves to master potters, and the distinctive designs appeared in galleries as far away as London. Ngozi often reflected that protecting tradition did not mean locking it in the past, but rather ensuring it had a place in the future.
+
+The author's attitude toward Ngozi's efforts can best be described as:`,
+    opts: [
+      "Critical and dismissive",
+      "Neutral and objective",
+      "Appreciative and admiring",
+      "Sceptical and doubtful"
+    ],
+    ans: 2,
+    exp: "The author uses positive language such as 'thriving,' 'distinctive,' and frames Ngozi's reflection as wisdom. The narrative arc—from loss to successful preservation—celebrates her initiative and determination, indicating an appreciative and admiring tone."
+  },
       { q: "Which word has the primary stress on the second syllable?", opts: ["PHOtograph", "phoTOgrapher", "photoGRAphic", "photoGRAph"], ans: 1, exp: "'Photographer' (/fəˈtɒɡrəfə/) has its primary stress on the second syllable (TO). 'Photograph' and 'photograph' (noun/verb distinction) have stress on the first syllable, while 'photographic' has stress on the third syllable." },
       { q: "Which of the following words contains the vowel sound /ɑː/ as in 'car'?", opts: ["cut", "caught", "cart", "cot"], ans: 2, exp: "'Cart' is pronounced /kɑːt/ with the long open back unrounded vowel /ɑː/. 'Cut' has /ʌ/, 'caught' has /ɔː/, and 'cot' has /ɒ/." },
       { q: "Which of the following words ends with a voiced consonant sound?", opts: ["laughed", "moved", "walked", "stopped"], ans: 1, exp: "'Moved' ends with the voiced alveolar plosive /d/. 'Laughed,' 'walked,' and 'stopped' end with the voiceless velar plosive /t/ (despite the spelling '-ed'). The pronunciation of '-ed' depends on the final sound of the base word: /t/ after voiceless sounds, /d/ after voiced sounds, and /ɪd/ after /t/ or /d/." },
