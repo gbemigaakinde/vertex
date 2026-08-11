@@ -233,7 +233,7 @@
     UI.mount(`
       <div id="pt-shell" style="
         display:flex;flex-direction:column;height:100dvh;
-        background:#060612;overflow:hidden;
+        overflow:hidden;
         font-family:var(--font);user-select:none;-webkit-user-select:none;">
 
         ${_buildTopBar()}
@@ -241,9 +241,8 @@
         <!-- Category filter strip -->
         <div id="pt-filters" style="
           flex-shrink:0;display:flex;align-items:center;gap:.35rem;
-          padding:.3rem .75rem;border-bottom:1px solid rgba(255,255,255,0.08);
-          overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;
-          background:rgba(0,0,0,0.4);">
+          padding:.3rem .75rem;border-bottom:1px solid rgba(128,128,128,0.15);
+          overflow-x:auto;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
           <button onclick="ThreeDPeriodic._setFilter(null)" id="pt-filter-all"
                   style="flex-shrink:0;font-size:.575rem;font-weight:800;letter-spacing:.05em;
                          text-transform:uppercase;padding:3px 9px;border-radius:99px;
@@ -256,7 +255,7 @@
                     data-cat="${cat}"
                     style="flex-shrink:0;font-size:.575rem;font-weight:700;letter-spacing:.04em;
                            text-transform:uppercase;padding:3px 9px;border-radius:99px;
-                           border:1px solid rgba(255,255,255,0.15);background:${c.bg}22;
+                           border:1px solid rgba(128,128,128,0.2);background:${c.bg}22;
                            color:${c.bg};cursor:pointer;white-space:nowrap;
                            font-family:var(--font);transition:all .1s ease;">
               ${c.label} · ${CAT_COUNTS[cat] || 0}
@@ -272,37 +271,38 @@
                       display:flex;flex-direction:column;gap:.3rem;z-index:10;">
             <button onclick="ThreeDPeriodic._zoom(1.18)"
                     style="width:32px;height:32px;border-radius:8px;
-                           background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
-                           font-size:1.2rem;cursor:pointer;color:#fff;backdrop-filter:blur(8px);">+</button>
+                           background:rgba(128,128,128,0.15);border:1px solid rgba(128,128,128,0.25);
+                           font-size:1.2rem;cursor:pointer;color:inherit;backdrop-filter:blur(8px);">+</button>
             <button onclick="ThreeDPeriodic._zoom(0.84)"
                     style="width:32px;height:32px;border-radius:8px;
-                           background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
-                           font-size:1.2rem;cursor:pointer;color:#fff;backdrop-filter:blur(8px);">−</button>
+                           background:rgba(128,128,128,0.15);border:1px solid rgba(128,128,128,0.25);
+                           font-size:1.2rem;cursor:pointer;color:inherit;backdrop-filter:blur(8px);">−</button>
             <button onclick="ThreeDPeriodic._resetView()"
                     style="width:32px;height:32px;border-radius:8px;
-                           background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);
-                           font-size:.65rem;cursor:pointer;color:#fff;font-weight:700;backdrop-filter:blur(8px);">⟳</button>
+                           background:rgba(128,128,128,0.15);border:1px solid rgba(128,128,128,0.25);
+                           font-size:.65rem;cursor:pointer;color:inherit;font-weight:700;backdrop-filter:blur(8px);">⟳</button>
           </div>
 
           <!-- Drag hint -->
           <div id="pt-hint" style="position:absolute;bottom:.6rem;left:50%;
                transform:translateX(-50%);font-size:.575rem;font-weight:600;
-               letter-spacing:.05em;color:rgba(255,255,255,0.7);text-transform:uppercase;
-               pointer-events:none;white-space:nowrap;background:rgba(0,0,0,0.5);
-               border:1px solid rgba(255,255,255,0.15);border-radius:99px;padding:4px 12px;
+               letter-spacing:.05em;color:rgba(128,128,128,0.8);text-transform:uppercase;
+               pointer-events:none;white-space:nowrap;
+               border:1px solid rgba(128,128,128,0.2);border-radius:99px;padding:4px 12px;
                backdrop-filter:blur(8px);animation:pt-hint-fade 4s ease 1.5s forwards;">
             Drag to orbit · Scroll to zoom · Tap an element
           </div>
 
-          <!-- Loading overlay -->
+          <!-- Loading overlay — no hardcoded background, inherits page -->
           <div id="pt-loading" style="position:absolute;inset:0;display:flex;
-               align-items:center;justify-content:center;background:#060612;z-index:20;">
+               align-items:center;justify-content:center;z-index:20;
+               background:var(--bg, #fff);">
             <div style="text-align:center;">
               <div style="font-size:2.5rem;margin-bottom:.75rem;animation:pt-spin 2s linear infinite;display:inline-block;">⚗️</div>
-              <div style="font-size:.875rem;color:rgba(255,255,255,0.6);font-weight:600;letter-spacing:.05em;">
+              <div style="font-size:.875rem;color:rgba(128,128,128,0.8);font-weight:600;letter-spacing:.05em;">
                 Building 3D Periodic Table…
               </div>
-              <div style="margin-top:.5rem;width:120px;height:2px;background:rgba(255,255,255,0.1);border-radius:99px;overflow:hidden;margin-left:auto;margin-right:auto;">
+              <div style="margin-top:.5rem;width:120px;height:2px;background:rgba(128,128,128,0.15);border-radius:99px;overflow:hidden;margin-left:auto;margin-right:auto;">
                 <div style="width:40%;height:100%;background:#6366f1;border-radius:99px;animation:pt-load 1.2s ease-in-out infinite;"></div>
               </div>
             </div>
@@ -313,7 +313,7 @@
         <div id="pt-detail" style="
           flex-shrink:0;max-height:0;overflow:hidden;
           transition:max-height .32s cubic-bezier(0.16,1,0.3,1);
-          background:#0d0d1a;border-top:1px solid rgba(255,255,255,0.1);
+          border-top:1px solid rgba(128,128,128,0.15);
           position:relative;z-index:20;">
           <div id="pt-detail-inner" style="
             padding:.625rem .875rem .875rem;overflow-y:auto;
@@ -378,57 +378,37 @@
     const H = wrap.clientHeight || 500;
 
     /* ── Renderer ── */
-    _renderer = new THREE.WebGLRenderer({ canvas: _canvas, antialias: true, alpha: false });
+    _renderer = new THREE.WebGLRenderer({ canvas: _canvas, antialias: true, alpha: true });
     _renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     _renderer.setSize(W, H);
-    _renderer.setClearColor(0x060612, 1);
+    _renderer.setClearColor(0x000000, 0); // transparent — lets page background show
     _renderer.shadowMap.enabled = true;
     _renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-    _renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    _renderer.toneMappingExposure = 1.2;
+    // NO toneMapping — it was washing out the vivid colours
 
     /* ── Scene ── */
     _scene = new THREE.Scene();
-    _scene.background = new THREE.Color(0x060612);
-    _scene.fog = new THREE.FogExp2(0x060612, 0.008);
+    // NO background colour — transparent so page theme shows through
+    // NO fog — it was desaturating and darkening all tiles
 
-    /* ── Camera — dramatic low angle ── */
+    /* ── Camera ── */
     _camera = new THREE.PerspectiveCamera(45, W / H, 0.1, 2000);
     _camera.position.set(0, -8, 110);
 
-    /* ── Lights — cinematic setup ── */
-    // Ambient — dark, mostly from scene fog
-    const ambient = new THREE.AmbientLight(0x111133, 0.8);
+    /* ── Lights ── */
+    const ambient = new THREE.AmbientLight(0xffffff, 1.2);
     _scene.add(ambient);
 
-    // Key light — top front, cool white
-    const key = new THREE.DirectionalLight(0xaabbff, 1.4);
+    const key = new THREE.DirectionalLight(0xffffff, 1.0);
     key.position.set(20, 60, 80);
     key.castShadow = true;
     key.shadow.mapSize.width = 2048;
     key.shadow.mapSize.height = 2048;
     _scene.add(key);
 
-    // Fill light — warm, from below left
-    const fill = new THREE.PointLight(0xff6633, 0.6, 300);
-    fill.position.set(-80, -40, 50);
+    const fill = new THREE.DirectionalLight(0xffffff, 0.5);
+    fill.position.set(-60, -30, 40);
     _scene.add(fill);
-
-    // Rim light — right side, blue
-    const rim = new THREE.PointLight(0x4466ff, 0.8, 400);
-    rim.position.set(80, 30, -20);
-    _scene.add(rim);
-
-    // Top glow
-    const top = new THREE.PointLight(0x9933ff, 0.4, 500);
-    top.position.set(0, 80, 0);
-    _scene.add(top);
-
-    /* ── Stars background ── */
-    _addStars(THREE);
-
-    /* ── Nebula particles ── */
-    _addNebula(THREE);
 
     /* ── OrbitControls ── */
     _controls = new THREE.OrbitControls(_camera, _renderer.domElement);
@@ -448,9 +428,11 @@
     /* ── Build tiles ── */
     _buildAllTiles();
 
-    /* ── Events ── */
-    _canvas.addEventListener('pointerup', _onPointerUp);
-    _canvas.addEventListener('touchend',  _onPointerUp, { passive: true });
+    /* ── Events — BOTH pointerdown AND pointerup must be attached ── */
+    _canvas.addEventListener('pointerdown', _onPointerDown);
+    _canvas.addEventListener('pointerup',   _onPointerUp);
+    _canvas.addEventListener('touchstart',  _onPointerDown, { passive: true });
+    _canvas.addEventListener('touchend',    _onPointerUp,   { passive: true });
 
     /* ── Resize observer ── */
     _resizeObs = new ResizeObserver(() => {
@@ -530,39 +512,27 @@
     const THREE = window.THREE;
     const catC  = CAT_COLORS[el.cat] || CAT_COLORS['transition'];
 
-    const SIZE = 256; // Higher resolution for clarity
+    const SIZE = 256;
     const cv   = document.createElement('canvas');
     cv.width = cv.height = SIZE;
     const ctx = cv.getContext('2d');
 
-    // Background — solid vivid colour
+    // Step 1: Fill solid base colour
     if (highlighted) {
-      // Selected: bright white
-      const grad = ctx.createLinearGradient(0, 0, SIZE, SIZE);
-      grad.addColorStop(0, '#ffffff');
-      grad.addColorStop(1, '#e8e8ff');
-      ctx.fillStyle = grad;
+      ctx.fillStyle = '#ffffff';
     } else if (dimmed) {
-      ctx.fillStyle = '#0a0a1a';
+      ctx.fillStyle = '#cccccc';
     } else {
-      // Normal: vivid category colour with gradient
-      const hex = catC.bg;
-      ctx.fillStyle = hex;
-      // Subtle gradient overlay
-      const grad = ctx.createLinearGradient(0, 0, SIZE, SIZE);
-      grad.addColorStop(0, 'rgba(255,255,255,0.25)');
-      grad.addColorStop(1, 'rgba(0,0,0,0.35)');
-      ctx.fillRect(0, 0, SIZE, SIZE);
-      ctx.fillStyle = grad;
+      ctx.fillStyle = catC.bg; // vivid solid colour — no overwrite after this
     }
     ctx.fillRect(0, 0, SIZE, SIZE);
 
+    // Step 2: Subtle gradient OVER the base (additive, not replacing)
     if (!highlighted && !dimmed) {
-      // Inner glow effect
-      const glow = ctx.createRadialGradient(SIZE/2, SIZE/2, 0, SIZE/2, SIZE/2, SIZE/2);
-      glow.addColorStop(0, 'rgba(255,255,255,0.18)');
-      glow.addColorStop(1, 'rgba(0,0,0,0)');
-      ctx.fillStyle = glow;
+      const grad = ctx.createLinearGradient(0, 0, SIZE, SIZE);
+      grad.addColorStop(0, 'rgba(255,255,255,0.18)');
+      grad.addColorStop(1, 'rgba(0,0,0,0.22)');
+      ctx.fillStyle = grad;
       ctx.fillRect(0, 0, SIZE, SIZE);
     }
 
@@ -571,27 +541,20 @@
       ctx.strokeStyle = '#6366f1';
       ctx.lineWidth = 10;
     } else if (dimmed) {
-      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.strokeStyle = 'rgba(0,0,0,0.12)';
       ctx.lineWidth = 3;
     } else {
-      ctx.strokeStyle = 'rgba(255,255,255,0.4)';
+      ctx.strokeStyle = 'rgba(255,255,255,0.45)';
       ctx.lineWidth = 4;
     }
     ctx.strokeRect(4, 4, SIZE - 8, SIZE - 8);
 
-    // Text colours
-    const textCol = highlighted
-      ? '#3730a3'
-      : dimmed
-        ? 'rgba(255,255,255,0.2)'
-        : catC.text;
-
     // Atomic number (top-left)
-    ctx.fillStyle = highlighted
-      ? '#4338ca'
-      : dimmed ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.9)';
     ctx.font = 'bold 32px sans-serif';
     ctx.textAlign = 'left';
+    ctx.fillStyle = highlighted
+      ? '#4338ca'
+      : dimmed ? 'rgba(0,0,0,0.35)' : 'rgba(255,255,255,0.95)';
     ctx.fillText(String(el.n), 10, 38);
 
     // Symbol (centre, large)
@@ -599,37 +562,33 @@
     ctx.textAlign = 'center';
     ctx.fillStyle = highlighted
       ? '#312e81'
-      : dimmed ? 'rgba(255,255,255,0.15)' : '#ffffff';
-    // Shadow for depth
+      : dimmed ? 'rgba(0,0,0,0.3)' : '#ffffff';
     if (!dimmed) {
-      ctx.shadowColor = 'rgba(0,0,0,0.6)';
-      ctx.shadowBlur = 8;
-      ctx.shadowOffsetX = 2;
+      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      ctx.shadowBlur = 6;
+      ctx.shadowOffsetX = 1;
       ctx.shadowOffsetY = 2;
     }
     ctx.fillText(el.sym, SIZE / 2, SIZE / 2 + 36);
-    ctx.shadowBlur = 0;
-    ctx.shadowOffsetX = 0;
-    ctx.shadowOffsetY = 0;
+    ctx.shadowBlur = 0; ctx.shadowOffsetX = 0; ctx.shadowOffsetY = 0;
 
     // Name (bottom)
     ctx.font = 'bold 24px sans-serif';
     ctx.fillStyle = highlighted
       ? '#4338ca'
-      : dimmed ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.85)';
+      : dimmed ? 'rgba(0,0,0,0.25)' : 'rgba(255,255,255,0.9)';
     const shortName = el.name.length > 10 ? el.name.slice(0, 9) + '.' : el.name;
     ctx.fillText(shortName, SIZE / 2, SIZE - 14);
 
-    // Mass (bottom-right tiny)
+    // Mass (top-right tiny)
     if (!dimmed) {
       ctx.font = '18px sans-serif';
-      ctx.fillStyle = 'rgba(255,255,255,0.6)';
+      ctx.fillStyle = 'rgba(255,255,255,0.65)';
       ctx.textAlign = 'right';
       ctx.fillText(el.mass, SIZE - 8, 28);
     }
 
-    const tex = new THREE.CanvasTexture(cv);
-    return tex;
+    return new THREE.CanvasTexture(cv);
   }
 
   /* ══════════════════════════════════════════════════
@@ -952,13 +911,13 @@
     const shellDots = (el.shells || []).map((count, i) => {
       const shellNames = ['K','L','M','N','O','P','Q'];
       return `<div style="display:flex;align-items:center;gap:3px;">
-        <span style="font-size:.5rem;color:rgba(255,255,255,0.4);font-weight:700;width:8px;">${shellNames[i]||''}</span>
+        <span style="font-size:.5rem;color:rgba(128,128,128,0.6);font-weight:700;width:8px;">${shellNames[i]||''}</span>
         <div style="display:flex;gap:2px;flex-wrap:wrap;max-width:80px;">
           ${Array.from({length:Math.min(count,18)}).map(() =>
             `<div style="width:5px;height:5px;border-radius:50%;background:${bg};opacity:0.9;flex-shrink:0;box-shadow:0 0 3px ${bg};"></div>`
           ).join('')}
         </div>
-        <span style="font-size:.5rem;color:rgba(255,255,255,0.5);margin-left:2px;">${count}</span>
+        <span style="font-size:.5rem;color:rgba(128,128,128,0.6);margin-left:2px;">${count}</span>
       </div>`;
     }).join('');
 
@@ -968,16 +927,16 @@
                     background:${bg};border:2px solid ${bg};
                     display:flex;flex-direction:column;align-items:center;
                     justify-content:center;position:relative;
-                    box-shadow:0 0 20px ${bg}88,0 4px 12px rgba(0,0,0,0.5);">
+                    box-shadow:0 0 20px ${bg}66,0 4px 12px rgba(0,0,0,0.2);">
           <div style="font-size:7.5px;font-weight:700;color:${fg};opacity:.9;line-height:1;">${el.n}</div>
-          <div style="font-size:20px;font-weight:800;color:${fg};line-height:1.1;text-shadow:0 1px 4px rgba(0,0,0,0.5);">${el.sym}</div>
+          <div style="font-size:20px;font-weight:800;color:${fg};line-height:1.1;">${el.sym}</div>
           ${stateInfo ? `<div style="position:absolute;top:3px;right:3px;width:6px;height:6px;
                                      border-radius:50%;background:${stateInfo.color};
                                      box-shadow:0 0 6px ${stateInfo.color};"></div>` : ''}
         </div>
         <div style="flex:1;min-width:0;">
           <div style="display:flex;align-items:center;gap:.375rem;flex-wrap:wrap;margin-bottom:2px;">
-            <h2 style="font-size:var(--text-md);font-weight:800;color:#fff;margin:0;
+            <h2 style="font-size:var(--text-md);font-weight:800;margin:0;
                        letter-spacing:-.02em;">${el.name}</h2>
             <span style="font-size:.55rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;
                          padding:2px 7px;border-radius:99px;background:${bg}33;color:${bg};
@@ -990,44 +949,43 @@
                              flex-shrink:0;border:1px solid ${stateInfo.color}44;">
                 ${stateInfo.label}</span>` : ''}
           </div>
-          <div style="font-size:var(--text-xs);color:rgba(255,255,255,0.5);line-height:1.6;">
-            Mass <strong style="color:rgba(255,255,255,0.9);">${el.mass}</strong> u
-            · Period <strong style="color:rgba(255,255,255,0.9);">${el.period}</strong>
-            ${el.group ? `· Group <strong style="color:rgba(255,255,255,0.9);">${el.group}</strong>` : ''}
-            · Discovered <strong style="color:rgba(255,255,255,0.9);">${fmtY(el.discovered)}</strong>
+          <div style="font-size:var(--text-xs);color:rgba(128,128,128,0.8);line-height:1.6;">
+            Mass <strong>${el.mass}</strong> u
+            · Period <strong>${el.period}</strong>
+            ${el.group ? `· Group <strong>${el.group}</strong>` : ''}
+            · Discovered <strong>${fmtY(el.discovered)}</strong>
           </div>
-          <div style="font-size:var(--text-xs);color:rgba(255,255,255,0.4);">
+          <div style="font-size:var(--text-xs);color:rgba(128,128,128,0.6);">
             ${el.electronegativity !== null
-              ? `EN <strong style="color:rgba(255,255,255,0.8);">${el.electronegativity}</strong> (Pauling)`
-              : '<em style="color:rgba(255,255,255,0.25);">Noble gas — no EN</em>'}
+              ? `EN <strong>${el.electronegativity}</strong> (Pauling)`
+              : '<em style="opacity:.5;">Noble gas — no EN</em>'}
           </div>
           <div style="font-size:.6rem;color:${bg};margin-top:1px;font-family:var(--font-mono);">
             ${el.config}
           </div>
         </div>
         <button onclick="ThreeDPeriodic._deselectElement()"
-                style="flex-shrink:0;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.15);
-                       cursor:pointer;font-size:1rem;line-height:1;padding:4px 8px;color:rgba(255,255,255,0.5);
+                style="flex-shrink:0;background:rgba(128,128,128,0.1);border:1px solid rgba(128,128,128,0.2);
+                       cursor:pointer;font-size:1rem;line-height:1;padding:4px 8px;color:inherit;
                        border-radius:6px;">×</button>
       </div>
 
       ${el.shells && el.shells.length ? `
       <div style="display:flex;align-items:flex-start;gap:.5rem;margin-bottom:.5rem;
-                  background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
+                  background:rgba(128,128,128,0.06);border:1px solid rgba(128,128,128,0.12);
                   border-radius:8px;padding:.35rem .5rem;">
         <div style="font-size:.5rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;
-                    color:rgba(255,255,255,0.3);white-space:nowrap;margin-top:1px;flex-shrink:0;">
+                    color:rgba(128,128,128,0.5);white-space:nowrap;margin-top:1px;flex-shrink:0;">
           Electron<br>Shells
         </div>
         <div style="display:flex;flex-direction:column;gap:3px;flex:1;">${shellDots}</div>
-        <div style="font-size:.5rem;color:rgba(255,255,255,0.3);white-space:nowrap;margin-top:1px;">
-          Total: <strong style="color:rgba(255,255,255,0.8);">${el.n}</strong> e⁻
+        <div style="font-size:.5rem;color:rgba(128,128,128,0.5);white-space:nowrap;margin-top:1px;">
+          Total: <strong>${el.n}</strong> e⁻
         </div>
       </div>` : ''}
 
-      <p style="font-size:var(--text-sm);color:rgba(255,255,255,0.7);line-height:1.65;
-                margin-bottom:.5rem;border-left:3px solid ${bg};padding-left:.5rem;
-                box-shadow:-3px 0 12px ${bg}44;">
+      <p style="font-size:var(--text-sm);color:inherit;opacity:.8;line-height:1.65;
+                margin-bottom:.5rem;border-left:3px solid ${bg};padding-left:.5rem;">
         ${el.desc}
       </p>
 
@@ -1039,14 +997,14 @@
 
     panel.style.maxHeight = '55dvh';
   }
-
+   
   function _propBadge(label, value, accent) {
     return `
-      <div style="background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);
-                  border-radius:6px;padding:.225rem .4rem;border-top:2px solid ${accent}66;">
+      <div style="background:rgba(128,128,128,0.06);border:1px solid rgba(128,128,128,0.12);
+                  border-radius:6px;padding:.225rem .4rem;border-top:2px solid ${accent}88;">
         <div style="font-size:.5rem;font-weight:700;text-transform:uppercase;
                     letter-spacing:.04em;color:${accent};margin-bottom:1px;">${label}</div>
-        <div style="font-size:var(--text-xs);font-weight:600;color:rgba(255,255,255,0.8);">${value}</div>
+        <div style="font-size:var(--text-xs);font-weight:600;opacity:.85;">${value}</div>
       </div>`;
   }
 
