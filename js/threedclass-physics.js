@@ -5,7 +5,44 @@
 (function () {
   'use strict';
 
-  const THREEJS_CDN = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+  const THREEJS_CDN  = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
+  const ORBIT_CDN    = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js';
+
+  let _threeLoaded = false;
+  let _threeQueue  = [];
+
+  function _loadThreeJS(cb) {
+    if (_threeLoaded && window.THREE && window.THREE.OrbitControls) { cb(); return; }
+    _threeQueue.push(cb);
+    if (_threeQueue.length > 1) return;
+    if (window.THREE && !window.THREE.OrbitControls) {
+      // Three loaded but no OrbitControls
+      const s2 = document.createElement('script');
+      s2.src = ORBIT_CDN;
+      s2.onload = () => {
+        _threeLoaded = true;
+        _threeQueue.forEach(fn => fn());
+        _threeQueue = [];
+      };
+      document.head.appendChild(s2);
+      return;
+    }
+    if (!window.THREE) {
+      const s1 = document.createElement('script');
+      s1.src = THREEJS_CDN;
+      s1.onload = () => {
+        const s2 = document.createElement('script');
+        s2.src = ORBIT_CDN;
+        s2.onload = () => {
+          _threeLoaded = true;
+          _threeQueue.forEach(fn => fn());
+          _threeQueue = [];
+        };
+        document.head.appendChild(s2);
+      };
+      document.head.appendChild(s1);
+    }
+  }
 
   const TOPICS = {
     forces: {
@@ -197,14 +234,6 @@
     _loadThreeJS(() => _render());
   }
 
-  function _loadThreeJS(cb) {
-    if (window.THREE) { cb(); return; }
-    const s = document.createElement('script');
-    s.src = THREEJS_CDN;
-    s.onload = cb;
-    document.head.appendChild(s);
-  }
-
   function _render() {
     UI.mount(`
       <div id="phys-shell" style="display:flex;flex-direction:column;height:100dvh;background:var(--bg-page);overflow:hidden;font-family:var(--font);">
@@ -228,9 +257,10 @@
         [data-theme="dark"] .phys-quiz-opt.wrong{background:#4c0519;border-color:#ef4444;color:#fda4af;}
         .phys-step-btn{padding:.375rem .875rem;border-radius:var(--r-md);font-size:var(--text-sm);font-weight:600;border:1px solid var(--border);background:var(--bg-subtle);color:var(--text-2);cursor:pointer;font-family:var(--font);transition:all .12s;}
         .phys-step-btn.primary{background:var(--accent);color:#fff;border-color:var(--accent);}
-        #phys-3d-canvas{display:block;width:100%!important;height:220px!important;}
+        .phys-3d-canvas-wrap{width:100%!important;height:220px!important;display:block!important;position:relative!important;overflow:hidden!important;}
+        #phys-3d-canvas{display:block!important;width:100%!important;height:220px!important;position:absolute!important;top:0!important;left:0!important;}
         @keyframes phys-slide-in{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:translateX(0)}}
-        .phys-scene-label{position:absolute;padding:2px 7px;border-radius:5px;font-size:.6rem;font-weight:700;pointer-events:none;white-space:nowrap;}
+        .phys-scene-label{position:absolute;padding:2px 7px;border-radius:5px;font-size:.6rem;font-weight:700;pointer-events:none;white-space:nowrap;z-index:5;}
       </style>`);
     requestAnimationFrame(() => _launchScene());
   }
@@ -289,10 +319,13 @@
                 <div style="background:${sub.color};color:#fff;border-radius:var(--r-md);padding:.25rem .625rem;font-family:monospace;font-size:.75rem;font-weight:700;white-space:nowrap;flex-shrink:0;box-shadow:0 2px 8px ${sub.color}55;">${sub.equation}</div>
               </div>
             </div>
-            <div id="phys-3d-container" style="margin-bottom:.75rem;border-radius:var(--r-xl);background:#0a0a1a;border:1px solid ${sub.color}44;overflow:hidden;position:relative;height:220px;">
-              <canvas id="phys-3d-canvas"></canvas>
-              <div id="phys-scene-labels" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;"></div>
+
+            <!-- 3D Canvas container — FIXED sizing -->
+            <div id="phys-3d-container" class="phys-3d-canvas-wrap" style="margin-bottom:.75rem;border-radius:var(--r-xl);background:#0a0a1a;border:1px solid ${sub.color}44;">
+              <canvas id="phys-3d-canvas" width="1" height="1"></canvas>
+              <div id="phys-scene-labels" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:4;"></div>
             </div>
+
             <div style="margin-bottom:.625rem;border-left:3px solid ${sub.color};padding:.5rem .75rem;background:var(--bg-base);border-radius:0 var(--r-md) var(--r-md) 0;">
               <p style="font-size:var(--text-sm);color:var(--text-2);line-height:1.7;margin:0;">${sub.description}</p>
             </div>
@@ -319,10 +352,10 @@
 
   function _destroyThree() {
     if (!_three) return;
-    cancelAnimationFrame(_three.raf);
+    if (_three.raf) cancelAnimationFrame(_three.raf);
     if (_three.renderer) {
       _three.renderer.dispose();
-      _three.renderer.forceContextLoss();
+      try { _three.renderer.forceContextLoss(); } catch(e){}
     }
     if (_three.scene) {
       _three.scene.traverse(obj => {
@@ -339,36 +372,61 @@
   function _launchScene() {
     _destroyThree();
     if (_activeTab === 'quiz') return;
-    const canvas = document.getElementById('phys-3d-canvas');
+    if (!window.THREE) { setTimeout(_launchScene, 200); return; }
+
+    const canvas    = document.getElementById('phys-3d-canvas');
     const container = document.getElementById('phys-3d-container');
-    if (!canvas || !container || !window.THREE) return;
+    if (!canvas || !container) return;
 
     const THREE = window.THREE;
-    const W = container.offsetWidth, H = 220;
+
+    // Force explicit pixel dimensions
+    const W = container.offsetWidth  || 360;
+    const H = 220;
+
+    canvas.width  = W * (window.devicePixelRatio || 1);
+    canvas.height = H * (window.devicePixelRatio || 1);
+    canvas.style.width  = W + 'px';
+    canvas.style.height = H + 'px';
+
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
 
-    const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    renderer.setSize(W, H);
+    let renderer;
+    try {
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+    } catch(e) {
+      console.warn('WebGL failed:', e);
+      return;
+    }
+
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    renderer.setSize(W, H, false);
     renderer.shadowMap.enabled = true;
+    renderer.setClearColor(0x080818, 1);
 
     const scene = new THREE.Scene();
     scene.background = new THREE.Color(isDark ? 0x080818 : 0x0d0d2b);
-    scene.fog = new THREE.Fog(scene.background, 18, 40);
+    scene.fog = new THREE.Fog(isDark ? 0x080818 : 0x0d0d2b, 18, 45);
 
     const camera = new THREE.PerspectiveCamera(55, W / H, 0.1, 100);
     camera.position.set(0, 3, 10);
     camera.lookAt(0, 0, 0);
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.35));
-    const dir = new THREE.DirectionalLight(0xffffff, 0.9);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.45));
+    const dir = new THREE.DirectionalLight(0xffffff, 1.2);
     dir.position.set(5, 10, 7);
     dir.castShadow = true;
     scene.add(dir);
 
+    const fill = new THREE.PointLight(0x4466ff, 0.6, 30);
+    fill.position.set(-5, 5, 5);
+    scene.add(fill);
+
     const group = TOPICS[_activeTab];
     const sub   = group ? group.subtopics[_activeSubIdx] : null;
-    const state = { t: 0, THREE, scene, camera, renderer, W, H, isDark, color: sub ? sub.color : '#ffffff', objects: {}, labels: [] };
+
+    // Create _three object BEFORE calling build function
+    _three = { renderer, scene, camera, raf: null, updateFn: null, W, H };
 
     const buildFns = {
       newton1:               _scene_newton1,
@@ -388,23 +446,35 @@
       energy_transfer:       _scene_energy_transfer,
     };
 
-    const buildFn = sub ? buildFns[sub.id] : null;
-    if (buildFn) buildFn(state);
+    const state = { t: 0, THREE, scene, camera, renderer, W, H, isDark,
+                    color: sub ? sub.color : '#ffffff', objects: {}, labels: [] };
 
-    function animate() {
-      if (!document.getElementById('phys-3d-canvas')) { _destroyThree(); return; }
-      state.t += 0.016;
-      if (_three && _three.updateFn) _three.updateFn(state);
-      if (_three) _three.renderer.render(scene, camera);
-      if (_three) _three.raf = requestAnimationFrame(animate);
+    const buildFn = sub ? buildFns[sub.id] : null;
+    if (buildFn) {
+      try { buildFn(state); } catch(e) { console.warn('Scene build error:', e); }
     }
 
-    _three = { renderer, scene, camera, raf: null, updateFn: null };
+    // Store updateFn
+    _three.updateFn = state._updateFn || null;
+
+    function animate() {
+      if (!_three || !document.getElementById('phys-3d-canvas')) {
+        _destroyThree();
+        return;
+      }
+      state.t += 0.016;
+      if (_three.updateFn) {
+        try { _three.updateFn(state); } catch(e){}
+      }
+      _three.renderer.render(scene, camera);
+      _three.raf = requestAnimationFrame(animate);
+    }
+
     _three.raf = requestAnimationFrame(animate);
   }
 
   function _hex(color) {
-    return parseInt(color.replace('#', ''), 16);
+    return parseInt(String(color).replace('#', ''), 16);
   }
 
   function _addLabel(state, text, x, y, color, bg) {
@@ -418,10 +488,9 @@
   }
 
   function _makeArrow(THREE, from, to, color, headSize) {
-    const dir   = new THREE.Vector3().subVectors(to, from).normalize();
-    const len   = from.distanceTo(to);
-    const arrow = new THREE.ArrowHelper(dir, from, len, color, headSize||0.35, headSize?headSize*0.6:0.2);
-    return arrow;
+    const dir  = new THREE.Vector3().subVectors(to, from).normalize();
+    const len  = from.distanceTo(to);
+    return new THREE.ArrowHelper(dir, from, len, color, headSize||0.35, headSize?headSize*0.6:0.2);
   }
 
   function _makeBox(THREE, w, h, d, color, metalness, roughness) {
@@ -431,13 +500,13 @@
   }
 
   function _makeSphere(THREE, r, color, metalness) {
-    const geo = new THREE.SphereGeometry(r, 32, 32);
+    const geo = new THREE.SphereGeometry(r, 24, 24);
     const mat = new THREE.MeshStandardMaterial({ color, metalness: metalness||0.4, roughness: 0.5 });
     return new THREE.Mesh(geo, mat);
   }
 
   function _makeGround(THREE, scene, color) {
-    const geo = new THREE.PlaneGeometry(20, 20);
+    const geo = new THREE.PlaneGeometry(22, 22);
     const mat = new THREE.MeshStandardMaterial({ color: color||0x1e293b, roughness: 0.9 });
     const mesh = new THREE.Mesh(geo, mat);
     mesh.rotation.x = -Math.PI / 2;
@@ -448,278 +517,285 @@
   }
 
   function _makeGridHelper(THREE, scene) {
-    const grid = new THREE.GridHelper(20, 20, 0x334155, 0x1e293b);
+    const grid = new THREE.GridHelper(22, 22, 0x334155, 0x1e293b);
     grid.position.y = -1.49;
     scene.add(grid);
   }
 
+  /* ══════════════════════════════════════════════════
+     SCENE BUILDERS — each sets state._updateFn
+  ══════════════════════════════════════════════════ */
+
   function _scene_newton1(s) {
-    const { THREE, scene, camera } = s;
-    camera.position.set(0, 4, 12);
-    _makeGround(THREE, scene);
-    _makeGridHelper(THREE, scene);
-
-    const boxL = _makeBox(THREE, 1.2, 1.2, 1.2, 0x3b82f6);
-    boxL.position.set(-3.5, -0.9, 0);
-    boxL.castShadow = true;
-    scene.add(boxL);
-
-    const boxR = _makeBox(THREE, 1.2, 1.2, 1.2, 0x22c55e);
-    boxR.position.set(-1, -0.9, 0);
-    boxR.castShadow = true;
-    scene.add(boxR);
-
-    scene.add(_makeArrow(THREE, new THREE.Vector3(-3.5, -0.3, 0), new THREE.Vector3(-3.5, 1.4, 0), 0xef4444, 0.3));
-    scene.add(_makeArrow(THREE, new THREE.Vector3(-3.5, -1.5, 0), new THREE.Vector3(-3.5, -3.0, 0), 0xef4444, 0.3));
-
-    const velArrow = _makeArrow(THREE, new THREE.Vector3(-0.4, -0.9, 0), new THREE.Vector3(1.8, -0.9, 0), 0xf97316, 0.35);
-    scene.add(velArrow);
-
-    const trailGeo = new THREE.BufferGeometry();
-    const trailMat = new THREE.LineBasicMaterial({ color: 0xf97316, transparent: true, opacity: 0.5 });
-    const trailPts = [];
-    for (let i = 0; i < 30; i++) trailPts.push(new THREE.Vector3(-1 - i * 0.12, -0.9, 0));
-    trailGeo.setFromPoints(trailPts);
-    scene.add(new THREE.Line(trailGeo, trailMat));
-
-    s.objects.boxR = boxR;
-    s.objects.velArrow = velArrow;
-
-    _addLabel(s, 'F_net = 0  (At Rest)', 2, 8, '#3b82f6');
-    _addLabel(s, 'Constant v  (No net force)', 52, 8, '#22c55e');
-    _addLabel(s, 'N ↑', 26, 28, '#ef4444', 'rgba(0,0,0,0)');
-    _addLabel(s, 'W ↓', 26, 68, '#ef4444', 'rgba(0,0,0,0)');
-
-    _three.updateFn = (st) => {
-      const x = -1 + (st.t * 1.2) % 5.5;
-      st.objects.boxR.position.x = x;
-    };
-  }
-
-  function _scene_newton2(s) {
     const { THREE, scene, camera } = s;
     camera.position.set(0, 4, 13);
     _makeGround(THREE, scene);
     _makeGridHelper(THREE, scene);
 
-    const box1 = _makeBox(THREE, 1.3, 1.3, 1.3, 0x3b82f6);
+    // Static box — at rest, forces balanced
+    const boxL = _makeBox(THREE, 1.3, 1.3, 1.3, 0x3b82f6);
+    boxL.position.set(-3.5, -0.85, 0);
+    boxL.castShadow = true;
+    scene.add(boxL);
+
+    // Normal and weight arrows on static box
+    scene.add(_makeArrow(THREE, new THREE.Vector3(-3.5,-0.2,0), new THREE.Vector3(-3.5,1.3,0), 0xff4444, 0.28));
+    scene.add(_makeArrow(THREE, new THREE.Vector3(-3.5,-1.5,0), new THREE.Vector3(-3.5,-2.8,0), 0xff4444, 0.28));
+
+    // Moving box — constant velocity
+    const boxR = _makeBox(THREE, 1.3, 1.3, 1.3, 0x22c55e);
+    boxR.position.set(-1, -0.85, 0);
+    boxR.castShadow = true;
+    scene.add(boxR);
+
+    // Trail dots
+    for (let i = 0; i < 8; i++) {
+      const dot = _makeSphere(THREE, 0.06, 0xf97316);
+      dot.position.set(-1.5 - i * 0.55, -1.45, 0);
+      scene.add(dot);
+    }
+
+    // Velocity arrow
+    const velArr = _makeArrow(THREE, new THREE.Vector3(0, -0.85, 0), new THREE.Vector3(2.2, -0.85, 0), 0xf97316, 0.32);
+    scene.add(velArr);
+
+    s.objects.boxR = boxR;
+    s.objects.velArr = velArr;
+
+    _addLabel(s, 'F_net = 0 → At Rest', 2, 8, '#60a5fa');
+    _addLabel(s, 'F_net = 0 → Constant Velocity', 42, 8, '#4ade80');
+    _addLabel(s, 'N↑   W↓', 18, 35, '#ff4444', 'rgba(0,0,0,0)');
+
+    s._updateFn = (st) => {
+      const x = -1 + (st.t * 1.3) % 6.5;
+      st.objects.boxR.position.x = x;
+      st.objects.velArr.position.x = x;
+    };
+  }
+
+  function _scene_newton2(s) {
+    const { THREE, scene, camera } = s;
+    camera.position.set(0, 4.5, 14);
+    _makeGround(THREE, scene);
+    _makeGridHelper(THREE, scene);
+
+    const box1 = _makeBox(THREE, 1.4, 1.4, 1.4, 0x3b82f6, 0.4, 0.5);
     box1.castShadow = true;
     scene.add(box1);
 
-    const box2 = _makeBox(THREE, 1.3, 1.3, 1.3, 0xf59e0b);
+    const box2 = _makeBox(THREE, 1.4, 1.4, 1.4, 0xf59e0b, 0.4, 0.5);
     box2.castShadow = true;
     scene.add(box2);
 
-    const arr1 = _makeArrow(THREE, new THREE.Vector3(0, 0, 2), new THREE.Vector3(1.5, 0, 2), 0xf97316, 0.3);
+    const arr1 = _makeArrow(THREE, new THREE.Vector3(0,0,2.5), new THREE.Vector3(1.8,0,2.5), 0x60a5fa, 0.28);
     scene.add(arr1);
-    const arr2 = _makeArrow(THREE, new THREE.Vector3(0, 0, -2), new THREE.Vector3(2.8, 0, -2), 0xef4444, 0.35);
+    const arr2 = _makeArrow(THREE, new THREE.Vector3(0,0,-2.5), new THREE.Vector3(3.0,0,-2.5), 0xfbbf24, 0.32);
     scene.add(arr2);
+
+    // Force labels
+    _addLabel(s, 'F=10N → slower (a=5 m/s²)', 2, 8, '#60a5fa');
+    _addLabel(s, 'F=20N → faster (a=10 m/s²)', 2, 82, '#fbbf24');
 
     s.objects.box1 = box1;
     s.objects.box2 = box2;
     s.objects.arr1 = arr1;
     s.objects.arr2 = arr2;
 
-    _addLabel(s, 'F = 10N → a = 5 m/s²', 2, 8, '#f97316');
-    _addLabel(s, 'F = 20N → a = 10 m/s²', 2, 80, '#ef4444');
-
-    _three.updateFn = (st) => {
-      const x1 = -5 + (st.t * 1.2) % 8;
-      const x2 = -5 + (st.t * 2.4) % 8;
-      st.objects.box1.position.set(x1, -0.85, 2);
-      st.objects.box2.position.set(x2, -0.85, -2);
-      st.objects.arr1.position.set(x1, -0.85, 2);
-      st.objects.arr2.position.set(x2, -0.85, -2);
+    s._updateFn = (st) => {
+      const x1 = -5.5 + (st.t * 1.1) % 9;
+      const x2 = -5.5 + (st.t * 2.2) % 9;
+      st.objects.box1.position.set(x1, -0.8, 2.5);
+      st.objects.box2.position.set(x2, -0.8, -2.5);
+      st.objects.arr1.position.set(x1 + 0.7, -0.8, 2.5);
+      st.objects.arr2.position.set(x2 + 0.7, -0.8, -2.5);
     };
   }
 
   function _scene_newton3(s) {
     const { THREE, scene, camera } = s;
-    camera.position.set(0, 2, 10);
+    camera.position.set(0, 2.5, 11);
     scene.background = new THREE.Color(0x020210);
+    scene.fog = new THREE.Fog(0x020210, 20, 50);
 
-    const bodyGeo = new THREE.CylinderGeometry(0.35, 0.45, 2, 16);
-    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x6366f1, metalness: 0.7, roughness: 0.3 });
+    // Rocket body
+    const bodyGeo = new THREE.CylinderGeometry(0.38, 0.48, 2.2, 20);
+    const bodyMat = new THREE.MeshStandardMaterial({ color: 0x6366f1, metalness: 0.8, roughness: 0.2 });
     const rocket = new THREE.Mesh(bodyGeo, bodyMat);
     rocket.castShadow = true;
     scene.add(rocket);
 
-    const noseGeo = new THREE.ConeGeometry(0.35, 0.9, 16);
-    const noseMat = new THREE.MeshStandardMaterial({ color: 0x818cf8, metalness: 0.6, roughness: 0.3 });
-    const nose = new THREE.Mesh(noseGeo, noseMat);
-    nose.position.y = 1.45;
+    const noseGeo = new THREE.ConeGeometry(0.38, 1.0, 20);
+    const nose = new THREE.Mesh(noseGeo, new THREE.MeshStandardMaterial({ color: 0x818cf8, metalness: 0.7 }));
+    nose.position.y = 1.6;
     rocket.add(nose);
 
-    const finGeo = new THREE.BoxGeometry(0.1, 0.7, 0.5);
-    const finMat = new THREE.MeshStandardMaterial({ color: 0x4f46e5 });
+    // Fins
     for (let i = 0; i < 4; i++) {
-      const fin = new THREE.Mesh(finGeo, finMat);
-      fin.position.y = -0.85;
-      fin.rotation.y = (i / 4) * Math.PI * 2;
-      fin.position.x = Math.sin(fin.rotation.y) * 0.42;
-      fin.position.z = Math.cos(fin.rotation.y) * 0.42;
+      const fin = new THREE.Mesh(
+        new THREE.BoxGeometry(0.08, 0.7, 0.55),
+        new THREE.MeshStandardMaterial({ color: 0x4f46e5 })
+      );
+      const angle = (i / 4) * Math.PI * 2;
+      fin.position.set(Math.sin(angle) * 0.44, -0.9, Math.cos(angle) * 0.44);
+      fin.rotation.y = angle;
       rocket.add(fin);
     }
 
-    const exhaustPts = [];
-    for (let i = 0; i < 60; i++) exhaustPts.push(new THREE.Vector3((Math.random()-0.5)*0.3, -i*0.06, (Math.random()-0.5)*0.3));
-    const exhaustGeo = new THREE.BufferGeometry().setFromPoints(exhaustPts);
-    const exhaustMat = new THREE.PointsMaterial({ color: 0xfbbf24, size: 0.1, transparent: true, opacity: 0.8 });
-    const exhaust = new THREE.Points(exhaustGeo, exhaustMat);
-    exhaust.position.y = -1;
+    // Exhaust particles
+    const exhaustGeo = new THREE.BufferGeometry();
+    const exhaustPos = new Float32Array(80 * 3);
+    for (let i = 0; i < 80; i++) {
+      exhaustPos[i * 3]     = (Math.random() - 0.5) * 0.35;
+      exhaustPos[i * 3 + 1] = -i * 0.065;
+      exhaustPos[i * 3 + 2] = (Math.random() - 0.5) * 0.35;
+    }
+    exhaustGeo.setAttribute('position', new THREE.BufferAttribute(exhaustPos, 3));
+    const exhaust = new THREE.Points(exhaustGeo,
+      new THREE.PointsMaterial({ color: 0xfbbf24, size: 0.12, transparent: true, opacity: 0.9 })
+    );
+    exhaust.position.y = -1.1;
     rocket.add(exhaust);
 
-    const actionArr = _makeArrow(THREE, new THREE.Vector3(0, -1, 0), new THREE.Vector3(0, -4, 0), 0xef4444, 0.4);
-    scene.add(actionArr);
-    const reactionArr = _makeArrow(THREE, new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 4.5, 0), 0x22c55e, 0.4);
+    // Action / Reaction arrows
+    const reactionArr = _makeArrow(THREE, new THREE.Vector3(0, 1, 0), new THREE.Vector3(0, 5, 0), 0x4ade80, 0.4);
     scene.add(reactionArr);
+    const actionArr   = _makeArrow(THREE, new THREE.Vector3(0, -1.1, 0), new THREE.Vector3(0, -4.5, 0), 0xf87171, 0.4);
+    scene.add(actionArr);
 
-    const stars = [];
-    for (let i = 0; i < 120; i++) {
-      const sg = new THREE.SphereGeometry(0.04, 4, 4);
-      const sm = new THREE.MeshBasicMaterial({ color: 0xffffff });
-      const star = new THREE.Mesh(sg, sm);
-      star.position.set((Math.random()-0.5)*22, (Math.random()-0.5)*12, (Math.random()-0.5)*8 - 4);
-      scene.add(star);
-      stars.push(star);
+    // Stars
+    const starGeo = new THREE.BufferGeometry();
+    const starPos = new Float32Array(300 * 3);
+    for (let i = 0; i < 300; i++) {
+      starPos[i*3]   = (Math.random()-0.5) * 30;
+      starPos[i*3+1] = (Math.random()-0.5) * 18;
+      starPos[i*3+2] = (Math.random()-0.5) * 10 - 5;
     }
+    starGeo.setAttribute('position', new THREE.BufferAttribute(starPos, 3));
+    scene.add(new THREE.Points(starGeo, new THREE.PointsMaterial({ color: 0xffffff, size: 0.06 })));
+
+    scene.add(new THREE.AmbientLight(0x334466, 1.0));
+    const rocketLight = new THREE.PointLight(0x8888ff, 1.5, 15);
+    rocketLight.position.set(0, 2, 2);
+    scene.add(rocketLight);
 
     s.objects.rocket = rocket;
     s.objects.exhaust = exhaust;
-    s.objects.actionArr = actionArr;
     s.objects.reactionArr = reactionArr;
+    s.objects.actionArr   = actionArr;
+    s.objects.rocketLight = rocketLight;
 
-    _addLabel(s, '← REACTION (gas expelled down)', 52, 72, '#ef4444');
-    _addLabel(s, '← ACTION (rocket thrust up)', 52, 18, '#22c55e');
+    _addLabel(s, '↑ REACTION — rocket thrust up', 52, 12, '#4ade80');
+    _addLabel(s, '↓ ACTION — gas expelled down', 52, 72, '#f87171');
 
-    _three.updateFn = (st) => {
-      const bob = Math.sin(st.t * 1.5) * 0.3;
+    s._updateFn = (st) => {
+      const bob = Math.sin(st.t * 1.2) * 0.4;
       st.objects.rocket.position.y = bob;
-      st.objects.actionArr.position.y = bob - 1;
       st.objects.reactionArr.position.y = bob + 1;
-      const positions = st.objects.exhaust.geometry.attributes.position;
-      if (positions) {
-        for (let i = 0; i < positions.count; i++) {
-          let y = positions.getY(i) - 0.05;
-          if (y < -3.5) y = 0;
-          positions.setY(i, y);
-          positions.setX(i, positions.getX(i) + (Math.random()-0.5)*0.02);
-        }
-        positions.needsUpdate = true;
+      st.objects.actionArr.position.y   = bob - 1.1;
+      st.objects.rocketLight.position.y = bob + 2;
+
+      const pos = st.objects.exhaust.geometry.attributes.position;
+      for (let i = 0; i < pos.count; i++) {
+        let y = pos.getY(i) - 0.04;
+        if (y < -5) y = 0;
+        pos.setY(i, y);
+        pos.setX(i, pos.getX(i) + (Math.random()-0.5)*0.015);
       }
+      pos.needsUpdate = true;
     };
   }
 
   function _scene_friction(s) {
     const { THREE, scene, camera } = s;
-    camera.position.set(0, 5, 13);
+    camera.position.set(0, 5, 14);
     _makeGround(THREE, scene, 0x374151);
     _makeGridHelper(THREE, scene);
 
-    const surfGeo = new THREE.PlaneGeometry(14, 4);
-    const surfMat = new THREE.MeshStandardMaterial({ color: 0x4b5563, roughness: 0.95, metalness: 0.0 });
+    // Rough surface texture effect
+    const surfGeo = new THREE.PlaneGeometry(16, 5, 8, 4);
+    const surfMat = new THREE.MeshStandardMaterial({ color: 0x4b5563, roughness: 0.98 });
     const surf = new THREE.Mesh(surfGeo, surfMat);
     surf.rotation.x = -Math.PI / 2;
-    surf.position.y = -1.48;
-    surf.receiveShadow = true;
+    surf.position.y = -1.485;
     scene.add(surf);
 
-    const box = _makeBox(THREE, 1.4, 1.4, 1.4, 0xf59e0b);
-    box.position.y = -0.8;
+    const box = _makeBox(THREE, 1.5, 1.5, 1.5, 0xf59e0b, 0.3, 0.5);
+    box.position.y = -0.75;
     box.castShadow = true;
     scene.add(box);
 
-    const appliedArr = _makeArrow(THREE, new THREE.Vector3(0.7, -0.8, 0), new THREE.Vector3(2.6, -0.8, 0), 0x22c55e, 0.35);
-    scene.add(appliedArr);
-    const frictionArr = _makeArrow(THREE, new THREE.Vector3(-0.7, -0.8, 0), new THREE.Vector3(-2.6, -0.8, 0), 0xef4444, 0.35);
-    scene.add(frictionArr);
-    const normalArr = _makeArrow(THREE, new THREE.Vector3(0, 0, 0), new THREE.Vector3(0, 2.2, 0), 0x6366f1, 0.3);
-    scene.add(normalArr);
-    const weightArr = _makeArrow(THREE, new THREE.Vector3(0, -0.8, 0), new THREE.Vector3(0, -2.5, 0), 0x6366f1, 0.3);
-    scene.add(weightArr);
+    // Force arrows
+    const pushArr   = _makeArrow(THREE, new THREE.Vector3(0.75,-0.75,0), new THREE.Vector3(3.0,-0.75,0), 0x4ade80, 0.32);
+    const fricArr   = _makeArrow(THREE, new THREE.Vector3(-0.75,-0.75,0), new THREE.Vector3(-3.0,-0.75,0), 0xf87171, 0.32);
+    const normalArr = _makeArrow(THREE, new THREE.Vector3(0,-0.0,0), new THREE.Vector3(0,2.5,0), 0x60a5fa, 0.28);
+    const weightArr = _makeArrow(THREE, new THREE.Vector3(0,-0.75,0), new THREE.Vector3(0,-2.8,0), 0xa78bfa, 0.28);
+    scene.add(pushArr, fricArr, normalArr, weightArr);
 
-    const hatchPts = [];
-    for (let x = -7; x <= 7; x += 0.6) {
-      hatchPts.push(new THREE.Vector3(x, -1.47, -2));
-      hatchPts.push(new THREE.Vector3(x + 0.4, -1.47, 2));
-    }
-    const hatchGeo = new THREE.BufferGeometry().setFromPoints(hatchPts);
-    scene.add(new THREE.LineSegments(hatchGeo, new THREE.LineBasicMaterial({ color: 0x6b7280 })));
+    s.objects = { box, pushArr, fricArr, normalArr, weightArr };
+    _addLabel(s, '→ F_applied', 56, 36, '#4ade80');
+    _addLabel(s, '← f = μN', 2, 36, '#f87171');
+    _addLabel(s, 'N↑', 46, 12, '#60a5fa', 'rgba(0,0,0,0)');
+    _addLabel(s, 'W↓', 46, 72, '#a78bfa', 'rgba(0,0,0,0)');
 
-    s.objects.box = box;
-    s.objects.appliedArr = appliedArr;
-    s.objects.frictionArr = frictionArr;
-    s.objects.normalArr = normalArr;
-    s.objects.weightArr = weightArr;
-
-    _addLabel(s, '→ F_applied (push)', 55, 38, '#22c55e');
-    _addLabel(s, '← f = μN (friction)', 2, 38, '#ef4444');
-    _addLabel(s, 'N ↑', 47, 14, '#6366f1', 'rgba(0,0,0,0)');
-    _addLabel(s, 'W ↓', 47, 72, '#6366f1', 'rgba(0,0,0,0)');
-
-    _three.updateFn = (st) => {
-      const x = -5 + (st.t * 1.1) % 9;
+    s._updateFn = (st) => {
+      const x = -5.5 + (st.t * 1.0) % 10;
       st.objects.box.position.x = x;
-      st.objects.appliedArr.position.x = x;
-      st.objects.frictionArr.position.x = x;
+      st.objects.pushArr.position.x  = x;
+      st.objects.fricArr.position.x  = x;
       st.objects.normalArr.position.x = x;
       st.objects.weightArr.position.x = x;
-      st.objects.box.rotation.y = st.t * 0.3;
+      st.objects.box.rotation.y = st.t * 0.25;
     };
   }
 
   function _scene_momentum(s) {
     const { THREE, scene, camera } = s;
-    camera.position.set(0, 3, 12);
+    camera.position.set(0, 3.5, 13);
     _makeGround(THREE, scene);
     _makeGridHelper(THREE, scene);
 
-    const b1 = _makeSphere(THREE, 0.7, 0x3b82f6, 0.5);
+    const b1 = _makeSphere(THREE, 0.75, 0x3b82f6, 0.5);
     b1.castShadow = true;
     scene.add(b1);
-    const b2 = _makeSphere(THREE, 0.45, 0xef4444, 0.5);
+
+    const b2 = _makeSphere(THREE, 0.48, 0xef4444, 0.5);
     b2.castShadow = true;
     scene.add(b2);
 
-    const arr1 = _makeArrow(THREE, new THREE.Vector3(0, 0, 0), new THREE.Vector3(1.5, 0, 0), 0x60a5fa, 0.3);
-    scene.add(arr1);
-    const arr2 = _makeArrow(THREE, new THREE.Vector3(0, 0, 0), new THREE.Vector3(1.8, 0, 0), 0xfca5a5, 0.3);
-    scene.add(arr2);
+    const arr1 = _makeArrow(THREE, new THREE.Vector3(0,0,0), new THREE.Vector3(1.8,0,0), 0x60a5fa, 0.28);
+    const arr2 = _makeArrow(THREE, new THREE.Vector3(0,0,0), new THREE.Vector3(2.2,0,0), 0xfca5a5, 0.28);
+    scene.add(arr1, arr2);
 
-    const flashGeo = new THREE.SphereGeometry(0.8, 16, 16);
-    const flashMat = new THREE.MeshBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0 });
-    const flash = new THREE.Mesh(flashGeo, flashMat);
+    const flash = _makeSphere(THREE, 1.0, 0xfbbf24);
+    (flash.material).transparent = true;
+    flash.material.opacity = 0;
     scene.add(flash);
 
-    s.objects.b1 = b1;
-    s.objects.b2 = b2;
-    s.objects.arr1 = arr1;
-    s.objects.arr2 = arr2;
-    s.objects.flash = flash;
+    s.objects = { b1, b2, arr1, arr2, flash };
+    _addLabel(s, 'p₁ = m×v (heavier ball)', 5, 8, '#60a5fa');
+    _addLabel(s, 'Collision! Momentum conserved', 28, 78, '#fbbf24');
 
-    _addLabel(s, 'p₁ = 4×v₁', 8, 8, '#60a5fa');
-    _addLabel(s, 'p₂ (after collision)', 52, 8, '#fca5a5');
-    _addLabel(s, 'Total momentum conserved', 20, 84, '#fbbf24');
-
-    _three.updateFn = (st) => {
-      const period = 3.5, phase = (st.t % period) / period;
-      if (phase < 0.45) {
-        const p = phase / 0.45;
-        st.objects.b1.position.set(-5 + p * 4.2, -0.8, 0);
-        st.objects.b2.position.set(3.5, -0.8, 0);
-        st.objects.arr1.position.set(-5 + p * 4.2 + 0.7, -0.8, 0);
+    s._updateFn = (st) => {
+      const period = 3.8, phase = (st.t % period) / period;
+      if (phase < 0.42) {
+        const p = phase / 0.42;
+        st.objects.b1.position.set(-5.5 + p * 4.8, -0.75, 0);
+        st.objects.b2.position.set(3.8, -0.75, 0);
+        st.objects.arr1.position.set(-5.5 + p * 4.8 + 0.75, -0.75, 0);
         st.objects.flash.material.opacity = 0;
-      } else if (phase < 0.55) {
-        st.objects.b1.position.set(-0.8, -0.8, 0);
-        st.objects.b2.position.set(0.55, -0.8, 0);
-        st.objects.flash.position.set(0, -0.8, 0);
-        st.objects.flash.material.opacity = 1 - (phase - 0.45) / 0.1;
-        st.objects.arr1.position.set(5, -5, 0);
+        st.objects.arr2.position.set(10, -10, 0);
+      } else if (phase < 0.52) {
+        const pp = (phase - 0.42) / 0.10;
+        st.objects.b1.position.set(-0.78, -0.75, 0);
+        st.objects.b2.position.set(0.55, -0.75, 0);
+        st.objects.flash.position.set(-0.1, -0.75, 0);
+        st.objects.flash.material.opacity = Math.max(0, 1 - pp * 10);
+        st.objects.arr1.position.set(20, 0, 0);
       } else {
-        const pp = (phase - 0.55) / 0.45;
-        st.objects.b1.position.set(-0.8 + pp * 0.6, -0.8, 0);
-        st.objects.b2.position.set(0.55 + pp * 4.5, -0.8, 0);
-        st.objects.arr2.position.set(0.55 + pp * 4.5 + 0.45, -0.8, 0);
+        const pp = (phase - 0.52) / 0.48;
+        st.objects.b1.position.set(-0.78 + pp * 0.8, -0.75, 0);
+        st.objects.b2.position.set(0.55 + pp * 5.0, -0.75, 0);
+        st.objects.arr2.position.set(0.55 + pp * 5.0 + 0.48, -0.75, 0);
         st.objects.flash.material.opacity = 0;
       }
     };
@@ -727,57 +803,62 @@
 
   function _scene_transverse(s) {
     const { THREE, scene, camera } = s;
-    camera.position.set(0, 4, 12);
+    camera.position.set(0, 4.5, 13);
     scene.background = new THREE.Color(0x080820);
 
-    const nPoints = 80;
-    const positions = new Float32Array(nPoints * 3);
+    const nPts = 100;
+    const wavePos = new Float32Array(nPts * 3);
     const waveGeo = new THREE.BufferGeometry();
-    waveGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    const waveMat = new THREE.LineBasicMaterial({ color: _hex(s.color), linewidth: 2 });
-    const waveLine = new THREE.Line(waveGeo, waveMat);
+    waveGeo.setAttribute('position', new THREE.BufferAttribute(wavePos, 3));
+    const waveLine = new THREE.Line(waveGeo,
+      new THREE.LineBasicMaterial({ color: _hex(s.color) || 0x06b6d4, linewidth: 3 })
+    );
     scene.add(waveLine);
 
-    const particleCount = 20;
-    const pGeo = new THREE.BufferGeometry();
-    const pPos = new Float32Array(particleCount * 3);
+    // Particles on wave
+    const pCount = 18;
+    const pGeo   = new THREE.BufferGeometry();
+    const pPos   = new Float32Array(pCount * 3);
     pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
-    const pMat = new THREE.PointsMaterial({ color: _hex(s.color), size: 0.25 });
-    const particles = new THREE.Points(pGeo, pMat);
-    scene.add(particles);
+    scene.add(new THREE.Points(pGeo,
+      new THREE.PointsMaterial({ color: _hex(s.color) || 0x06b6d4, size: 0.3 })
+    ));
 
-    const axisGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-6, 0, 0), new THREE.Vector3(6, 0, 0)]);
-    scene.add(new THREE.Line(axisGeo, new THREE.LineDashedMaterial({ color: 0x475569, dashSize: 0.3, gapSize: 0.2 })));
+    // Axis
+    const axisGeo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(-6.5, 0, 0), new THREE.Vector3(6.5, 0, 0)
+    ]);
+    scene.add(new THREE.Line(axisGeo,
+      new THREE.LineDashedMaterial({ color: 0x475569, dashSize: 0.3, gapSize: 0.2 })
+    ));
 
-    const dirArr = _makeArrow(THREE, new THREE.Vector3(-6, 0, 0), new THREE.Vector3(6, 0, 0), 0x22c55e, 0.4);
-    scene.add(dirArr);
+    // Direction arrow
+    scene.add(_makeArrow(THREE, new THREE.Vector3(-6.5,-2.2,0), new THREE.Vector3(6.5,-2.2,0), 0x4ade80, 0.4));
 
-    s.objects.waveGeo = waveGeo;
-    s.objects.pGeo = pGeo;
+    // Amplitude marker
+    scene.add(_makeArrow(THREE, new THREE.Vector3(7.0, 0, 0), new THREE.Vector3(7.0, 1.8, 0), 0xfbbf24, 0.28));
 
-    _addLabel(s, '→ Wave travels (direction of energy)', 15, 6, '#22c55e');
-    _addLabel(s, '↕ Particle oscillates perpendicular', 15, 82, _hex(s.color) > 0 ? s.color : '#06b6d4');
-    _addLabel(s, 'λ', 48, 14, '#f97316');
-    _addLabel(s, 'A (amplitude)', 78, 30, '#f97316');
+    s.objects = { waveGeo, pGeo };
+    _addLabel(s, '→ Wave direction (energy travels)', 15, 76, '#4ade80');
+    _addLabel(s, '↕ Particles oscillate perpendicular', 15, 8, s.color);
+    _addLabel(s, 'A', 88, 28, '#fbbf24', 'rgba(0,0,0,0)');
 
-    _three.updateFn = (st) => {
+    s._updateFn = (st) => {
       const posArr = st.objects.waveGeo.attributes.position.array;
-      for (let i = 0; i < nPoints; i++) {
-        const x = -6 + (i / (nPoints - 1)) * 12;
-        const y = 1.8 * Math.sin(x * 1.2 - st.t * 3.5);
-        posArr[i * 3]     = x;
-        posArr[i * 3 + 1] = y;
-        posArr[i * 3 + 2] = 0;
+      for (let i = 0; i < nPts; i++) {
+        const x = -6.5 + (i / (nPts - 1)) * 13;
+        posArr[i*3]   = x;
+        posArr[i*3+1] = 1.8 * Math.sin(x * 1.1 - st.t * 3.2);
+        posArr[i*3+2] = 0;
       }
       st.objects.waveGeo.attributes.position.needsUpdate = true;
 
-      const pPosArr = st.objects.pGeo.attributes.position.array;
-      for (let i = 0; i < particleCount; i++) {
-        const x = -6 + (i / particleCount) * 12;
-        const y = 1.8 * Math.sin(x * 1.2 - st.t * 3.5);
-        pPosArr[i * 3]     = x;
-        pPosArr[i * 3 + 1] = y;
-        pPosArr[i * 3 + 2] = 0;
+      const pArr = st.objects.pGeo.attributes.position.array;
+      for (let i = 0; i < pCount; i++) {
+        const x = -6.5 + (i / pCount) * 13;
+        pArr[i*3]   = x;
+        pArr[i*3+1] = 1.8 * Math.sin(x * 1.1 - st.t * 3.2);
+        pArr[i*3+2] = 0;
       }
       st.objects.pGeo.attributes.position.needsUpdate = true;
     };
@@ -785,35 +866,36 @@
 
   function _scene_longitudinal(s) {
     const { THREE, scene, camera } = s;
-    camera.position.set(0, 3, 12);
+    camera.position.set(0, 3, 13);
     scene.background = new THREE.Color(0x080820);
 
-    const nParticles = 32;
+    const nP = 32;
     const spheres = [];
-    for (let i = 0; i < nParticles; i++) {
-      const geo = new THREE.SphereGeometry(0.18, 12, 12);
+    for (let i = 0; i < nP; i++) {
+      const geo = new THREE.SphereGeometry(0.2, 16, 16);
       const mat = new THREE.MeshStandardMaterial({ color: 0x8b5cf6, metalness: 0.3, roughness: 0.5 });
       const mesh = new THREE.Mesh(geo, mat);
-      mesh.position.set(-6 + (i / nParticles) * 12, 0, 0);
+      const x0 = -6 + (i / nP) * 12;
+      mesh.position.set(x0, 0, 0);
+      mesh.castShadow = true;
       scene.add(mesh);
-      spheres.push({ mesh, x0: -6 + (i / nParticles) * 12 });
+      spheres.push({ mesh, x0 });
     }
     s.objects.spheres = spheres;
 
-    const waveArr = _makeArrow(THREE, new THREE.Vector3(-6, -2.5, 0), new THREE.Vector3(6, -2.5, 0), 0x22c55e, 0.4);
-    scene.add(waveArr);
+    scene.add(_makeArrow(THREE, new THREE.Vector3(-6,-2.5,0), new THREE.Vector3(6,-2.5,0), 0x4ade80, 0.4));
 
-    _addLabel(s, '→ Wave + particles travel same direction', 5, 8, '#22c55e');
-    _addLabel(s, '■ Compression (crowded)', 5, 80, '#ef4444');
-    _addLabel(s, '○ Rarefaction (spread out)', 55, 80, '#60a5fa');
+    _addLabel(s, '→ Wave + particle motion: SAME direction', 5, 8, '#4ade80');
+    _addLabel(s, '● Compression (dense)', 5, 80, '#ef4444');
+    _addLabel(s, '○ Rarefaction (sparse)', 55, 80, '#60a5fa');
 
-    _three.updateFn = (st) => {
+    s._updateFn = (st) => {
       st.objects.spheres.forEach(({ mesh, x0 }) => {
-        const displacement = 0.7 * Math.sin((x0 * 1.1) - st.t * 3.0);
-        mesh.position.x = x0 + displacement;
-        const density = 1 - Math.abs(displacement) / 0.8;
+        const d = 0.72 * Math.sin((x0 * 1.15) - st.t * 3.0);
+        mesh.position.x = x0 + d;
+        const density = 1 - Math.abs(d) / 0.8;
         mesh.material.color.setHex(density > 0.5 ? 0xef4444 : 0x60a5fa);
-        const sc = 0.8 + density * 0.4;
+        const sc = 0.75 + density * 0.5;
         mesh.scale.setScalar(sc);
       });
     };
@@ -821,53 +903,42 @@
 
   function _scene_em_spectrum(s) {
     const { THREE, scene, camera } = s;
-    camera.position.set(0, 5, 14);
+    camera.position.set(0, 6, 12);
+    camera.lookAt(0, 0, -1);
     scene.background = new THREE.Color(0x02020f);
 
     const bands = [
-      { label:'Radio',     color: 0x6366f1, freq: 0.3 },
-      { label:'Microwave', color: 0x8b5cf6, freq: 0.6 },
-      { label:'Infrared',  color: 0xf97316, freq: 1.0 },
-      { label:'Visible',   color: 0x22c55e, freq: 1.5 },
-      { label:'UV',        color: 0xa855f7, freq: 2.2 },
-      { label:'X-ray',     color: 0x3b82f6, freq: 3.5 },
-      { label:'Gamma',     color: 0xef4444, freq: 6.0 },
+      { label:'Radio',     color: 0x6366f1, freq: 0.28 },
+      { label:'Microwave', color: 0x8b5cf6, freq: 0.55 },
+      { label:'Infrared',  color: 0xf97316, freq: 0.95 },
+      { label:'Visible',   color: 0x22c55e, freq: 1.5  },
+      { label:'UV',        color: 0xa855f7, freq: 2.2  },
+      { label:'X-ray',     color: 0x3b82f6, freq: 3.5  },
+      { label:'Gamma',     color: 0xef4444, freq: 6.0  },
     ];
 
-    const waves = [];
+    const waveDatas = [];
     bands.forEach((b, i) => {
-      const z = -4 + i * 1.2;
+      const z = -3.8 + i * 1.15;
       const pts = [];
-      for (let j = 0; j < 60; j++) {
-        pts.push(new THREE.Vector3(-5 + j * (10 / 60), 0, z));
-      }
+      for (let j = 0; j < 60; j++) pts.push(new THREE.Vector3(-5.5 + j * (11/60), 0, z));
       const geo = new THREE.BufferGeometry().setFromPoints(pts);
-      const mat = new THREE.LineBasicMaterial({ color: b.color });
-      const line = new THREE.Line(geo, mat);
+      const line = new THREE.Line(geo, new THREE.LineBasicMaterial({ color: b.color }));
       scene.add(line);
-      waves.push({ line, geo, color: b.color, freq: b.freq, z });
+      waveDatas.push({ geo, freq: b.freq, z });
 
-      const planeGeo = new THREE.PlaneGeometry(10, 0.8);
-      const planeMat = new THREE.MeshBasicMaterial({ color: b.color, transparent: true, opacity: 0.08, side: THREE.DoubleSide });
-      const plane = new THREE.Mesh(planeGeo, planeMat);
-      plane.position.set(0, 0, z);
-      scene.add(plane);
-
-      _addLabel(s, b.label, 2 + i * 13.5, 8, '#' + b.color.toString(16).padStart(6, '0'), 'rgba(0,0,0,0.7)');
+      const hexStr = '#' + b.color.toString(16).padStart(6,'0');
+      _addLabel(s, b.label, 2 + i * 13.5, 8, hexStr, 'rgba(0,0,0,0.65)');
     });
+    s.objects.waveDatas = waveDatas;
 
-    camera.position.set(0, 6, 10);
-    camera.lookAt(0, 0, -1);
+    _addLabel(s, 'All EM waves: c = 3×10⁸ m/s in vacuum', 10, 88, '#ffffff', 'rgba(0,0,0,0.55)');
 
-    s.objects.waves = waves;
-
-    _addLabel(s, 'All EM waves: c = 3×10⁸ m/s in vacuum', 10, 88, '#ffffff', 'rgba(0,0,0,0.6)');
-
-    _three.updateFn = (st) => {
-      st.objects.waves.forEach(({ geo, freq, z }) => {
-        const posArr = geo.attributes.position.array;
+    s._updateFn = (st) => {
+      st.objects.waveDatas.forEach(({ geo, freq }) => {
+        const arr = geo.attributes.position.array;
         for (let j = 0; j < 60; j++) {
-          posArr[j * 3 + 1] = 0.4 * Math.sin(posArr[j * 3] * freq * 0.9 - st.t * 3.5);
+          arr[j*3+1] = 0.42 * Math.sin(arr[j*3] * freq * 0.9 - st.t * 3.5);
         }
         geo.attributes.position.needsUpdate = true;
       });
@@ -876,308 +947,244 @@
 
   function _scene_reflection(s) {
     const { THREE, scene, camera } = s;
-    camera.position.set(0, 5, 13);
+    camera.position.set(0, 5, 14);
     scene.background = new THREE.Color(0x080818);
 
-    const ifaceGeo = new THREE.PlaneGeometry(14, 6);
-    const ifaceMat = new THREE.MeshStandardMaterial({ color: 0x0ea5e9, transparent: true, opacity: 0.18, side: THREE.DoubleSide });
-    const iface = new THREE.Mesh(ifaceGeo, ifaceMat);
+    // Interface plane
+    const iface = new THREE.Mesh(
+      new THREE.PlaneGeometry(16, 7),
+      new THREE.MeshStandardMaterial({ color: 0x0ea5e9, transparent: true, opacity: 0.15, side: THREE.DoubleSide })
+    );
     iface.rotation.x = -Math.PI / 2;
-    iface.position.y = 0;
     scene.add(iface);
+    scene.add(new THREE.GridHelper(16, 16, 0x0ea5e9, 0x0ea5e944));
 
-    scene.add(new THREE.GridHelper(14, 14, 0x0ea5e9, 0x0ea5e966));
+    // Normal line
+    const normGeo = new THREE.BufferGeometry().setFromPoints([
+      new THREE.Vector3(0,-3.5,0), new THREE.Vector3(0,3.5,0)
+    ]);
+    const normLine = new THREE.Line(normGeo, new THREE.LineDashedMaterial({ color:0x94a3b8, dashSize:0.25, gapSize:0.15 }));
+    normLine.computeLineDistances();
+    scene.add(normLine);
 
-    const normalGeo = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0, -3.5, 0), new THREE.Vector3(0, 3.5, 0)]);
-    const normalLine = new THREE.Line(normalGeo, new THREE.LineDashedMaterial({ color: 0x94a3b8, dashSize: 0.25, gapSize: 0.15 }));
-    normalLine.computeLineDistances();
-    scene.add(normalLine);
+    const ang = 35 * Math.PI / 180;
+    scene.add(_makeArrow(THREE, new THREE.Vector3(-3*Math.sin(ang), 3*Math.cos(ang), 0), new THREE.Vector3(0,0,0), 0xf97316, 0.32));
+    scene.add(_makeArrow(THREE, new THREE.Vector3(0,0,0), new THREE.Vector3(3*Math.sin(ang), 3*Math.cos(ang),0), 0x4ade80, 0.32));
 
-    const inAngle = 35 * Math.PI / 180;
-    const incidentArr = _makeArrow(THREE, new THREE.Vector3(-3 * Math.sin(inAngle), 3 * Math.cos(inAngle), 0), new THREE.Vector3(0, 0, 0), 0xf97316, 0.35);
-    scene.add(incidentArr);
+    const refAng = 22 * Math.PI / 180;
+    scene.add(_makeArrow(THREE, new THREE.Vector3(0,0,0), new THREE.Vector3(3*Math.sin(refAng),-3*Math.cos(refAng),0), 0xa855f7, 0.32));
 
-    const reflectedArr = _makeArrow(THREE, new THREE.Vector3(0, 0, 0), new THREE.Vector3(3 * Math.sin(inAngle), 3 * Math.cos(inAngle), 0), 0x22c55e, 0.35);
-    scene.add(reflectedArr);
-
-    const refAngle = 22 * Math.PI / 180;
-    const refractedArr = _makeArrow(THREE, new THREE.Vector3(0, 0, 0), new THREE.Vector3(3 * Math.sin(refAngle), -3 * Math.cos(refAngle), 0), 0xa855f7, 0.35);
-    scene.add(refractedArr);
-
-    const denseGeo = new THREE.PlaneGeometry(14, 6);
-    const denseMat = new THREE.MeshStandardMaterial({ color: 0x0ea5e9, transparent: true, opacity: 0.10, side: THREE.DoubleSide });
-    const dense = new THREE.Mesh(denseGeo, denseMat);
-    dense.rotation.x = -Math.PI / 2;
-    dense.position.y = -1.5;
-    scene.add(dense);
-
-    const photon = _makeSphere(THREE, 0.15, 0xfbbf24);
+    // Moving photon
+    const photon = _makeSphere(THREE, 0.16, 0xfbbf24);
     scene.add(photon);
     s.objects.photon = photon;
 
-    _addLabel(s, '→ Incident ray (θ₁=35°)', 2, 8, '#f97316');
-    _addLabel(s, '↗ Reflected ray (θᵣ=35°)', 60, 8, '#22c55e');
-    _addLabel(s, '↘ Refracted ray (θ₂=22°)', 60, 62, '#a855f7');
-    _addLabel(s, 'Medium 1 (faster, n₁)', 2, 32, '#94a3b8', 'rgba(0,0,0,0)');
-    _addLabel(s, 'Medium 2 (slower, n₂)', 2, 62, '#0ea5e9', 'rgba(0,0,0,0)');
+    _addLabel(s, '→ Incident (35°)', 2, 8, '#f97316');
+    _addLabel(s, '↗ Reflected (35°)', 60, 8, '#4ade80');
+    _addLabel(s, '↘ Refracted (22°)', 60, 60, '#a855f7');
+    _addLabel(s, 'Medium 1 (n₁)', 2, 30, '#94a3b8', 'rgba(0,0,0,0)');
+    _addLabel(s, 'Medium 2 (n₂ > n₁)', 2, 60, '#0ea5e9', 'rgba(0,0,0,0)');
 
-    _three.updateFn = (st) => {
-      const period = 2.5;
-      const phase = (st.t % period) / period;
-      const from = new THREE.Vector3(-3 * Math.sin(inAngle), 3 * Math.cos(inAngle), 0);
+    s._updateFn = (st) => {
+      const period = 2.8, phase = (st.t % period) / period;
+      const from = new THREE.Vector3(-3*Math.sin(ang), 3*Math.cos(ang), 0);
       const mid  = new THREE.Vector3(0, 0, 0);
-      const to   = new THREE.Vector3(3 * Math.sin(refAngle), -3 * Math.cos(refAngle), 0);
-      if (phase < 0.5) {
-        st.objects.photon.position.lerpVectors(from, mid, phase * 2);
-      } else {
-        st.objects.photon.position.lerpVectors(mid, to, (phase - 0.5) * 2);
-      }
+      const to   = new THREE.Vector3(3*Math.sin(refAng), -3*Math.cos(refAng), 0);
+      if (phase < 0.5) st.objects.photon.position.lerpVectors(from, mid, phase * 2);
+      else             st.objects.photon.position.lerpVectors(mid, to, (phase-0.5)*2);
     };
   }
 
   function _scene_ohms_law(s) {
     const { THREE, scene, camera } = s;
-    camera.position.set(0, 4, 12);
+    camera.position.set(0, 4, 13);
     scene.background = new THREE.Color(0x080818);
 
-    const wireMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.7, roughness: 0.3 });
-    const wireRadius = 0.1;
+    const wireMat = new THREE.MeshStandardMaterial({ color: 0x94a3b8, metalness: 0.8, roughness: 0.2 });
+    const mkTube = (p1, p2) => {
+      const curve = new THREE.LineCurve3(p1, p2);
+      return new THREE.Mesh(new THREE.TubeGeometry(curve, 4, 0.09, 8, false), wireMat);
+    };
+    const W = 5.2, H2 = 2.6;
+    scene.add(mkTube(new THREE.Vector3(-W,H2,0),  new THREE.Vector3(W,H2,0)));
+    scene.add(mkTube(new THREE.Vector3(W,H2,0),   new THREE.Vector3(W,-H2,0)));
+    scene.add(mkTube(new THREE.Vector3(W,-H2,0),  new THREE.Vector3(-W,-H2,0)));
+    scene.add(mkTube(new THREE.Vector3(-W,-H2,0), new THREE.Vector3(-W,H2,0)));
 
-    function makeTube(pts) {
-      const curve = new THREE.CatmullRomCurve3(pts);
-      const geo = new THREE.TubeGeometry(curve, 20, wireRadius, 8, false);
-      return new THREE.Mesh(geo, wireMat);
-    }
+    // Battery
+    const bat = new THREE.Mesh(
+      new THREE.CylinderGeometry(0.48, 0.48, 1.5, 20),
+      new THREE.MeshStandardMaterial({ color:0x22c55e, metalness:0.6 })
+    );
+    bat.position.set(-W, 0, 0);
+    bat.rotation.z = Math.PI/2;
+    scene.add(bat);
 
-    const w = 5, h = 2.5;
-    scene.add(makeTube([new THREE.Vector3(-w, h, 0), new THREE.Vector3(w, h, 0)]));
-    scene.add(makeTube([new THREE.Vector3(w, h, 0), new THREE.Vector3(w, -h, 0)]));
-    scene.add(makeTube([new THREE.Vector3(w, -h, 0), new THREE.Vector3(-w, -h, 0)]));
-    scene.add(makeTube([new THREE.Vector3(-w, -h, 0), new THREE.Vector3(-w, h, 0)]));
+    // Resistor
+    const res = new THREE.Mesh(
+      new THREE.BoxGeometry(2.4, 0.55, 0.55),
+      new THREE.MeshStandardMaterial({ color:0xf97316, roughness:0.6 })
+    );
+    res.position.set(0, H2, 0);
+    scene.add(res);
 
-    const batGeo = new THREE.CylinderGeometry(0.45, 0.45, 1.4, 16);
-    const batMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, metalness: 0.5, roughness: 0.4 });
-    const battery = new THREE.Mesh(batGeo, batMat);
-    battery.position.set(-w, 0, 0);
-    battery.rotation.z = Math.PI / 2;
-    scene.add(battery);
-
-    const resGeo = new THREE.BoxGeometry(2.2, 0.5, 0.5);
-    const resMat = new THREE.MeshStandardMaterial({ color: 0xf97316, metalness: 0.2, roughness: 0.7 });
-    const resistor = new THREE.Mesh(resGeo, resMat);
-    resistor.position.set(0, h, 0);
-    scene.add(resistor);
-
-    const nElectrons = 12;
+    // Flowing electrons
+    const nE = 14;
     const electrons = [];
-    for (let i = 0; i < nElectrons; i++) {
-      const eg = new THREE.SphereGeometry(0.14, 8, 8);
-      const em = new THREE.MeshStandardMaterial({ color: 0xfbbf24, emissive: 0xfbbf24, emissiveIntensity: 0.5 });
-      const e = new THREE.Mesh(eg, em);
-      scene.add(e);
-      electrons.push({ mesh: e, offset: i / nElectrons });
+    for (let i = 0; i < nE; i++) {
+      const eg = new THREE.Mesh(
+        new THREE.SphereGeometry(0.14, 8, 8),
+        new THREE.MeshStandardMaterial({ color:0xfbbf24, emissive:0xfbbf24, emissiveIntensity:0.7 })
+      );
+      scene.add(eg);
+      electrons.push({ mesh: eg, offset: i / nE });
     }
     s.objects.electrons = electrons;
 
-    _addLabel(s, '12V Battery', 2, 36, '#22c55e');
-    _addLabel(s, 'R = 4Ω', 44, 6, '#f97316');
-    _addLabel(s, 'I = 3A (electrons flowing)', 25, 90, '#fbbf24');
-    _addLabel(s, 'V = IR → 12 = 3 × 4', 55, 55, '#ffffff');
+    _addLabel(s, '12V', 2, 36, '#4ade80');
+    _addLabel(s, 'R = 4Ω', 42, 6, '#fb923c');
+    _addLabel(s, '● Electrons (I = 3A)', 25, 88, '#fbbf24');
+    _addLabel(s, 'V=IR: 12=3×4', 58, 55, '#ffffff', 'rgba(0,0,0,0.5)');
 
-    _three.updateFn = (st) => {
-      const w2 = 5, h2 = 2.5;
-      const perim = (w2 * 2 * 2 + h2 * 2 * 2);
+    s._updateFn = (st) => {
+      const perim = (W*2*2 + H2*2*2);
       st.objects.electrons.forEach(({ mesh, offset }) => {
-        const pos = ((st.t * 1.8 + offset * perim)) % perim;
-        const seg1 = w2 * 2, seg2 = seg1 + h2 * 2, seg3 = seg2 + w2 * 2;
-        if (pos < seg1)       mesh.position.set(-w2 + pos, h2, 0);
-        else if (pos < seg2)  mesh.position.set(w2, h2 - (pos - seg1), 0);
-        else if (pos < seg3)  mesh.position.set(w2 - (pos - seg2), -h2, 0);
-        else                  mesh.position.set(-w2, -h2 + (pos - seg3), 0);
+        const pos = (st.t * 1.9 + offset * perim) % perim;
+        const seg1 = W*2, seg2 = seg1+H2*2, seg3 = seg2+W*2;
+        if (pos < seg1)      mesh.position.set(-W + pos, H2, 0);
+        else if (pos < seg2) mesh.position.set(W, H2-(pos-seg1), 0);
+        else if (pos < seg3) mesh.position.set(W-(pos-seg2), -H2, 0);
+        else                 mesh.position.set(-W, -H2+(pos-seg3), 0);
       });
     };
   }
 
   function _scene_series_parallel(s) {
     const { THREE, scene, camera } = s;
-    camera.position.set(0, 6, 16);
+    camera.position.set(0, 6.5, 18);
     scene.background = new THREE.Color(0x080818);
 
-    const wireMat = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.5 });
-    const rMat1   = new THREE.MeshStandardMaterial({ color: 0xf97316 });
-    const rMat2   = new THREE.MeshStandardMaterial({ color: 0xef4444 });
-
-    function tube(p1, p2, mat) {
-      const pts = [p1, p2];
+    const wireMat = new THREE.MeshStandardMaterial({ color:0x64748b, metalness:0.5 });
+    const mkTube  = (p1, p2, mat) => {
       const curve = new THREE.LineCurve3(p1, p2);
-      const geo = new THREE.TubeGeometry(curve, 4, 0.09, 8, false);
-      return new THREE.Mesh(geo, mat || wireMat);
+      return new THREE.Mesh(new THREE.TubeGeometry(curve, 4, 0.09, 8, false), mat || wireMat);
+    };
+
+    // SERIES (left)
+    const sx = -4.5;
+    scene.add(mkTube(new THREE.Vector3(sx-2,2,0), new THREE.Vector3(sx+2,2,0)));
+    scene.add(mkTube(new THREE.Vector3(sx+2,2,0), new THREE.Vector3(sx+2,-2,0)));
+    scene.add(mkTube(new THREE.Vector3(sx+2,-2,0),new THREE.Vector3(sx-2,-2,0)));
+    scene.add(mkTube(new THREE.Vector3(sx-2,-2,0),new THREE.Vector3(sx-2,2,0)));
+    const r1s = new THREE.Mesh(new THREE.BoxGeometry(0.9,0.38,0.38), new THREE.MeshStandardMaterial({color:0xf97316}));
+    r1s.position.set(sx-0.4, 2, 0); scene.add(r1s);
+    const r2s = new THREE.Mesh(new THREE.BoxGeometry(0.9,0.38,0.38), new THREE.MeshStandardMaterial({color:0xef4444}));
+    r2s.position.set(sx+0.9, 2, 0); scene.add(r2s);
+    const batS = new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.32,0.95,16),new THREE.MeshStandardMaterial({color:0x22c55e,metalness:0.5}));
+    batS.position.set(sx-2,0,0); batS.rotation.z=Math.PI/2; scene.add(batS);
+
+    // PARALLEL (right)
+    const px = 4.5;
+    scene.add(mkTube(new THREE.Vector3(px-2,3,0), new THREE.Vector3(px+2,3,0)));
+    scene.add(mkTube(new THREE.Vector3(px+2,3,0), new THREE.Vector3(px+2,-3,0)));
+    scene.add(mkTube(new THREE.Vector3(px+2,-3,0),new THREE.Vector3(px-2,-3,0)));
+    scene.add(mkTube(new THREE.Vector3(px-2,-3,0),new THREE.Vector3(px-2,3,0)));
+    scene.add(mkTube(new THREE.Vector3(px-2,1,0), new THREE.Vector3(px+2,1,0)));
+    scene.add(mkTube(new THREE.Vector3(px-2,-1,0),new THREE.Vector3(px+2,-1,0)));
+    const r1p = new THREE.Mesh(new THREE.BoxGeometry(0.9,0.38,0.38),new THREE.MeshStandardMaterial({color:0xf97316}));
+    r1p.position.set(px,2,0); scene.add(r1p);
+    const r2p = new THREE.Mesh(new THREE.BoxGeometry(0.9,0.38,0.38),new THREE.MeshStandardMaterial({color:0xef4444}));
+    r2p.position.set(px,0,0); scene.add(r2p);
+    const batP = new THREE.Mesh(new THREE.CylinderGeometry(0.32,0.32,0.95,16),new THREE.MeshStandardMaterial({color:0x22c55e,metalness:0.5}));
+    batP.position.set(px-2,0,0); batP.rotation.z=Math.PI/2; scene.add(batP);
+
+    const sE = [], pE = [];
+    for (let i=0;i<8;i++){
+      const e=new THREE.Mesh(new THREE.SphereGeometry(0.12,8,8),new THREE.MeshStandardMaterial({color:0x3b82f6,emissive:0x3b82f6,emissiveIntensity:0.6}));
+      scene.add(e); sE.push({mesh:e,offset:i/8});
     }
-
-    const sx = -4;
-    scene.add(tube(new THREE.Vector3(sx-2, 2, 0), new THREE.Vector3(sx+2, 2, 0)));
-    scene.add(tube(new THREE.Vector3(sx+2, 2, 0), new THREE.Vector3(sx+2, -2, 0)));
-    scene.add(tube(new THREE.Vector3(sx+2, -2, 0), new THREE.Vector3(sx-2, -2, 0)));
-    scene.add(tube(new THREE.Vector3(sx-2, -2, 0), new THREE.Vector3(sx-2, 2, 0)));
-
-    const r1s = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.35, 0.35), rMat1);
-    r1s.position.set(sx - 0.5, 2, 0);
-    scene.add(r1s);
-    const r2s = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.35, 0.35), rMat2);
-    r2s.position.set(sx + 0.7, 2, 0);
-    scene.add(r2s);
-
-    const batS = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.9, 12), new THREE.MeshStandardMaterial({ color: 0x22c55e, metalness: 0.5 }));
-    batS.position.set(sx - 2, 0, 0);
-    batS.rotation.z = Math.PI / 2;
-    scene.add(batS);
-
-    const px = 4;
-    scene.add(tube(new THREE.Vector3(px-2, 3, 0), new THREE.Vector3(px+2, 3, 0)));
-    scene.add(tube(new THREE.Vector3(px+2, 3, 0), new THREE.Vector3(px+2, -3, 0)));
-    scene.add(tube(new THREE.Vector3(px+2, -3, 0), new THREE.Vector3(px-2, -3, 0)));
-    scene.add(tube(new THREE.Vector3(px-2, -3, 0), new THREE.Vector3(px-2, 3, 0)));
-    scene.add(tube(new THREE.Vector3(px-2, 1, 0), new THREE.Vector3(px+2, 1, 0)));
-    scene.add(tube(new THREE.Vector3(px-2, -1, 0), new THREE.Vector3(px+2, -1, 0)));
-
-    const r1p = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.35, 0.35), rMat1);
-    r1p.position.set(px, 2, 0);
-    scene.add(r1p);
-    const r2p = new THREE.Mesh(new THREE.BoxGeometry(0.9, 0.35, 0.35), rMat2);
-    r2p.position.set(px, 0, 0);
-    scene.add(r2p);
-
-    const batP = new THREE.Mesh(new THREE.CylinderGeometry(0.3, 0.3, 0.9, 12), new THREE.MeshStandardMaterial({ color: 0x22c55e, metalness: 0.5 }));
-    batP.position.set(px - 2, 0, 0);
-    batP.rotation.z = Math.PI / 2;
-    scene.add(batP);
-
-    const nE = 6;
-    const seriesElectrons = [], parallelElectrons = [];
-    for (let i = 0; i < nE; i++) {
-      const eg = new THREE.SphereGeometry(0.12, 8, 8);
-      const em = new THREE.MeshStandardMaterial({ color: 0x3b82f6, emissive: 0x3b82f6, emissiveIntensity: 0.5 });
-      const e = new THREE.Mesh(eg, em);
-      scene.add(e);
-      seriesElectrons.push({ mesh: e, offset: i / nE });
+    for (let i=0;i<8;i++){
+      const e=new THREE.Mesh(new THREE.SphereGeometry(0.12,8,8),new THREE.MeshStandardMaterial({color:0xef4444,emissive:0xef4444,emissiveIntensity:0.5}));
+      scene.add(e); pE.push({mesh:e,offset:i/8,branch:i%2});
     }
-    for (let i = 0; i < nE; i++) {
-      const eg = new THREE.SphereGeometry(0.12, 8, 8);
-      const em = new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 0.4 });
-      const e = new THREE.Mesh(eg, em);
-      scene.add(e);
-      parallelElectrons.push({ mesh: e, offset: i / nE, branch: i % 2 });
-    }
+    s.objects = { sE, pE };
 
-    s.objects.seriesElectrons = seriesElectrons;
-    s.objects.parallelElectrons = parallelElectrons;
+    _addLabel(s, 'SERIES — one path', 2, 6, '#60a5fa');
+    _addLabel(s, 'PARALLEL — split paths', 54, 6, '#f87171');
+    _addLabel(s, 'R_T = R₁+R₂', 5, 88, '#f97316');
+    _addLabel(s, '1/R_T = 1/R₁+1/R₂', 56, 88, '#4ade80');
 
-    _addLabel(s, 'SERIES — one path, same current', 2, 6, '#3b82f6');
-    _addLabel(s, 'PARALLEL — split paths, same voltage', 52, 6, '#ef4444');
-    _addLabel(s, 'R_total = R₁+R₂', 8, 88, '#f97316');
-    _addLabel(s, '1/R_T = 1/R₁+1/R₂', 58, 88, '#22c55e');
-
-    _three.updateFn = (st) => {
+    s._updateFn = (st) => {
       const sPerim = 16;
-      st.objects.seriesElectrons.forEach(({ mesh, offset }) => {
-        const pos = (st.t * 1.4 + offset * sPerim) % sPerim;
-        if (pos < 4)       mesh.position.set(sx - 2 + pos, 2, 0);
-        else if (pos < 8)  mesh.position.set(sx + 2, 2 - (pos - 4), 0);
-        else if (pos < 12) mesh.position.set(sx + 2 - (pos - 8), -2, 0);
-        else               mesh.position.set(sx - 2, -2 + (pos - 12), 0);
+      st.objects.sE.forEach(({mesh,offset})=>{
+        const pos=(st.t*1.5+offset*sPerim)%sPerim;
+        if(pos<4)      mesh.position.set(sx-2+pos,2,0);
+        else if(pos<8) mesh.position.set(sx+2,2-(pos-4),0);
+        else if(pos<12)mesh.position.set(sx+2-(pos-8),-2,0);
+        else           mesh.position.set(sx-2,-2+(pos-12),0);
       });
-
-      const pPerim = 12;
-      st.objects.parallelElectrons.forEach(({ mesh, offset, branch }) => {
-        const pos = (st.t * 1.1 + offset * pPerim) % pPerim;
-        const y   = branch === 0 ? 2 : 0;
-        if (pos < 4)      mesh.position.set(px - 2 + pos, y, 0);
-        else if (pos < 8) mesh.position.set(px + 2, y - (pos - 4) * 0.5, 0);
-        else              mesh.position.set(px + 2 - (pos - 8) * 1, -2 + branch, 0);
+      const pPerim=10;
+      st.objects.pE.forEach(({mesh,offset,branch})=>{
+        const pos=(st.t*1.1+offset*pPerim)%pPerim;
+        const y=branch===0?2:0;
+        if(pos<4)      mesh.position.set(px-2+pos,y,0);
+        else if(pos<7) mesh.position.set(px+2,y-(pos-4)*0.67,0);
+        else           mesh.position.set(px+2-(pos-7)*1.33,-2+branch,0);
       });
     };
   }
 
   function _scene_electric_field(s) {
     const { THREE, scene, camera } = s;
-    camera.position.set(0, 2, 12);
+    camera.position.set(0, 2.5, 13);
     scene.background = new THREE.Color(0x02020f);
 
-    const posCharge = _makeSphere(THREE, 0.7, 0xef4444, 0.6);
-    posCharge.position.set(-3.5, 0, 0);
-    scene.add(posCharge);
+    const pos = _makeSphere(THREE, 0.75, 0xef4444, 0.7);
+    pos.position.set(-3.8, 0, 0);
+    scene.add(pos);
+    const neg = _makeSphere(THREE, 0.75, 0x3b82f6, 0.7);
+    neg.position.set(3.8, 0, 0);
+    scene.add(neg);
 
-    const negCharge = _makeSphere(THREE, 0.7, 0x3b82f6, 0.6);
-    negCharge.position.set(3.5, 0, 0);
-    scene.add(negCharge);
+    scene.add(new THREE.PointLight(0xef4444, 1.5, 8, 2));
+    const pl = new THREE.PointLight(0x3b82f6, 1.5, 8, 2);
+    pl.position.set(3.8, 0, 0);
+    scene.add(pl);
 
-    const posLight = new THREE.PointLight(0xef4444, 1.2, 6);
-    posLight.position.set(-3.5, 0, 0);
-    scene.add(posLight);
-
-    const negLight = new THREE.PointLight(0x3b82f6, 1.2, 6);
-    negLight.position.set(3.5, 0, 0);
-    scene.add(negLight);
-
-    const nLines = 12;
     const fieldLines = [];
+    const nLines = 10;
     for (let i = 0; i < nLines; i++) {
       const angle = (i / nLines) * Math.PI * 2;
       const pts = [];
-      for (let t = 0; t <= 1; t += 0.02) {
-        const fromX = -3.5 + 0.75 * Math.cos(angle);
-        const fromY = 0.75 * Math.sin(angle);
-        const toX   = 3.5 + 0.75 * Math.cos(angle + Math.PI);
-        const toY   = 0.75 * Math.sin(angle + Math.PI);
-        const cx    = 0;
-        const cy    = Math.sin(angle) * 2.5;
-        const bx    = (1-t)*(1-t)*fromX + 2*(1-t)*t*cx + t*t*toX;
-        const by    = (1-t)*(1-t)*fromY + 2*(1-t)*t*cy + t*t*toY;
+      for (let t = 0; t <= 1; t += 0.025) {
+        const fx = -3.8 + 0.82 * Math.cos(angle);
+        const fy = 0.82 * Math.sin(angle);
+        const tx = 3.8 + 0.82 * Math.cos(angle + Math.PI);
+        const ty = 0.82 * Math.sin(angle + Math.PI);
+        const cx = 0, cy = Math.sin(angle) * 2.8;
+        const bx = (1-t)*(1-t)*fx + 2*(1-t)*t*cx + t*t*tx;
+        const by = (1-t)*(1-t)*fy + 2*(1-t)*t*cy + t*t*ty;
         pts.push(new THREE.Vector3(bx, by, 0));
       }
-      const geo = new THREE.BufferGeometry().setFromPoints(pts);
-      const mat = new THREE.LineBasicMaterial({ color: 0xfbbf24, transparent: true, opacity: 0.45 });
-      const line = new THREE.Line(geo, mat);
+      const geo  = new THREE.BufferGeometry().setFromPoints(pts);
+      const line = new THREE.Line(geo, new THREE.LineBasicMaterial({ color:0xfbbf24, transparent:true, opacity:0.4 }));
       scene.add(line);
-
-      const dot = _makeSphere(THREE, 0.1, 0xfbbf24);
+      const dot = _makeSphere(THREE, 0.11, 0xfbbf24);
       scene.add(dot);
       fieldLines.push({ pts, dot, offset: i / nLines });
     }
+    s.objects = { pos, neg, fieldLines };
 
-    const posRing = new THREE.Mesh(
-      new THREE.TorusGeometry(0.85, 0.04, 8, 32),
-      new THREE.MeshBasicMaterial({ color: 0xef4444 })
-    );
-    posRing.position.set(-3.5, 0, 0);
-    scene.add(posRing);
+    _addLabel(s, '+', 18, 38, '#f87171', 'rgba(0,0,0,0)');
+    _addLabel(s, '−', 76, 38, '#60a5fa', 'rgba(0,0,0,0)');
+    _addLabel(s, 'Field lines: + → −   F = kQ₁Q₂/r²', 15, 88, '#fbbf24', 'rgba(0,0,0,0.55)');
 
-    const negRing = new THREE.Mesh(
-      new THREE.TorusGeometry(0.85, 0.04, 8, 32),
-      new THREE.MeshBasicMaterial({ color: 0x3b82f6 })
-    );
-    negRing.position.set(3.5, 0, 0);
-    scene.add(negRing);
-
-    s.objects.fieldLines = fieldLines;
-    s.objects.posCharge = posCharge;
-    s.objects.negCharge = negCharge;
-    s.objects.posRing   = posRing;
-    s.objects.negRing   = negRing;
-
-    _addLabel(s, '+ (Q₁)', 18, 38, '#ef4444', 'rgba(0,0,0,0)');
-    _addLabel(s, '− (Q₂)', 74, 38, '#60a5fa', 'rgba(0,0,0,0)');
-    _addLabel(s, 'Field lines: + → −   F = kQ₁Q₂/r²', 15, 88, '#fbbf24', 'rgba(0,0,0,0.6)');
-
-    _three.updateFn = (st) => {
-      const pulse = 1 + Math.sin(st.t * 3) * 0.04;
-      st.objects.posCharge.scale.setScalar(pulse);
-      st.objects.negCharge.scale.setScalar(pulse);
-      st.objects.posRing.scale.setScalar(1 + Math.sin(st.t * 2) * 0.06);
-      st.objects.negRing.scale.setScalar(1 + Math.cos(st.t * 2) * 0.06);
-
+    s._updateFn = (st) => {
+      const pulse = 1 + Math.sin(st.t * 3) * 0.05;
+      st.objects.pos.scale.setScalar(pulse);
+      st.objects.neg.scale.setScalar(pulse);
       st.objects.fieldLines.forEach(({ pts, dot, offset }) => {
-        const idx = Math.floor(((st.t * 0.4 + offset) % 1) * (pts.length - 1));
+        const idx = Math.floor(((st.t * 0.38 + offset) % 1) * (pts.length-1));
         dot.position.copy(pts[idx]);
       });
     };
@@ -1185,150 +1192,108 @@
 
   function _scene_ke_pe(s) {
     const { THREE, scene, camera } = s;
-    camera.position.set(0, 4, 14);
+    camera.position.set(0, 4.5, 15);
     scene.background = new THREE.Color(0x060818);
 
     const nPts = 80;
     const trackPts = [];
     for (let i = 0; i < nPts; i++) {
       const t = i / (nPts - 1);
-      const x = -6 + t * 12;
-      const y = -1.5 + Math.pow(Math.cos(t * Math.PI), 2) * 4.5;
+      const x = -6.5 + t * 13;
+      const y = -1.5 + Math.pow(Math.cos(t * Math.PI), 2) * 4.8;
       trackPts.push(new THREE.Vector3(x, y, 0));
     }
     const trackCurve = new THREE.CatmullRomCurve3(trackPts);
-    const trackGeo   = new THREE.TubeGeometry(trackCurve, 100, 0.08, 8, false);
-    const trackMat   = new THREE.MeshStandardMaterial({ color: 0x64748b, metalness: 0.8, roughness: 0.3 });
-    scene.add(new THREE.Mesh(trackGeo, trackMat));
+    scene.add(new THREE.Mesh(
+      new THREE.TubeGeometry(trackCurve, 100, 0.09, 8, false),
+      new THREE.MeshStandardMaterial({ color:0x64748b, metalness:0.8 })
+    ));
 
-    const cart = _makeBox(THREE, 0.9, 0.5, 0.6, 0x6366f1, 0.6, 0.3);
+    const cart = _makeBox(THREE, 0.95, 0.55, 0.65, 0x6366f1, 0.6, 0.3);
     cart.castShadow = true;
     scene.add(cart);
 
-    const wheelMat = new THREE.MeshStandardMaterial({ color: 0x4f46e5, metalness: 0.5 });
-    const wheels = [];
-    [[-0.3, -0.1], [0.3, -0.1]].forEach(([wz, wy]) => {
-      const wg = new THREE.CylinderGeometry(0.12, 0.12, 0.08, 12);
-      const wm = new THREE.Mesh(wg, wheelMat);
-      wm.rotation.x = Math.PI / 2;
-      wm.position.set(0, wy, wz);
-      cart.add(wm);
-      wheels.push(wm);
-    });
-
-    const keBarGeo = new THREE.BoxGeometry(0.5, 1, 0.3);
-    const keBarMat = new THREE.MeshStandardMaterial({ color: 0xf97316, emissive: 0xf97316, emissiveIntensity: 0.2 });
-    const keBar = new THREE.Mesh(keBarGeo, keBarMat);
-    keBar.position.set(5, -0.5, 0);
+    // KE / PE bars
+    const keBar = new THREE.Mesh(
+      new THREE.BoxGeometry(0.55, 1, 0.35),
+      new THREE.MeshStandardMaterial({ color:0xf97316, emissive:0xf97316, emissiveIntensity:0.3 })
+    );
+    keBar.position.set(5.2, -0.5, 0);
     scene.add(keBar);
 
-    const peBarGeo = new THREE.BoxGeometry(0.5, 1, 0.3);
-    const peBarMat = new THREE.MeshStandardMaterial({ color: 0x22c55e, emissive: 0x22c55e, emissiveIntensity: 0.2 });
-    const peBar = new THREE.Mesh(peBarGeo, peBarMat);
-    peBar.position.set(5.7, -0.5, 0);
+    const peBar = new THREE.Mesh(
+      new THREE.BoxGeometry(0.55, 1, 0.35),
+      new THREE.MeshStandardMaterial({ color:0x22c55e, emissive:0x22c55e, emissiveIntensity:0.3 })
+    );
+    peBar.position.set(5.9, -0.5, 0);
     scene.add(peBar);
 
-    const trackLight = new THREE.PointLight(0x6366f1, 0.8, 8);
-    scene.add(trackLight);
+    const glow = new THREE.PointLight(0x6366f1, 1.0, 10);
+    scene.add(glow);
 
-    s.objects.cart = cart;
-    s.objects.keBar = keBar;
-    s.objects.peBar = peBar;
-    s.objects.trackCurve = trackCurve;
-    s.objects.trackLight = trackLight;
-    s.objects.wheels = wheels;
+    s.objects = { cart, keBar, peBar, glow, trackCurve };
+    _addLabel(s, '🟠 KE  🟢 GPE  (sum = constant)', 58, 8, '#ffffff', 'rgba(0,0,0,0.5)');
+    _addLabel(s, 'KE = ½mv²   GPE = mgh', 5, 88, '#ffffff', 'rgba(0,0,0,0.45)');
 
-    _addLabel(s, '🟠 KE   🟢 GPE', 72, 8, '#ffffff', 'rgba(0,0,0,0.5)');
-    _addLabel(s, 'KE = ½mv²   GPE = mgh   Total = constant', 5, 88, '#ffffff', 'rgba(0,0,0,0.5)');
-
-    _three.updateFn = (st) => {
-      const frac = (Math.sin(st.t * 0.8) + 1) / 2;
+    s._updateFn = (st) => {
+      const frac = (Math.sin(st.t * 0.75) + 1) / 2;
       const pt   = st.objects.trackCurve.getPoint(frac);
+      const tang = st.objects.trackCurve.getTangent(frac);
       st.objects.cart.position.copy(pt);
+      st.objects.cart.rotation.z = Math.atan2(tang.y, tang.x);
 
-      const tangent = st.objects.trackCurve.getTangent(frac);
-      st.objects.cart.rotation.z = Math.atan2(tangent.y, tangent.x);
-
-      st.objects.wheels.forEach(w => { w.rotation.z += 0.1; });
-
-      const normY = (pt.y + 1.5) / 4.5;
-      const ke    = 1 - normY;
-      const pe    = normY;
-      st.objects.keBar.scale.y = Math.max(0.05, ke * 3);
-      st.objects.keBar.position.y = -1.5 + st.objects.keBar.scale.y * 0.5;
-      st.objects.peBar.scale.y = Math.max(0.05, pe * 3);
-      st.objects.peBar.position.y = -1.5 + st.objects.peBar.scale.y * 0.5;
-
-      st.objects.keBar.material.emissiveIntensity = ke * 0.6;
-      st.objects.peBar.material.emissiveIntensity = pe * 0.6;
-
-      st.objects.trackLight.position.copy(pt);
-      st.objects.trackLight.color.setHSL(0.1 + ke * 0.25, 1, 0.5);
+      const normY = (pt.y + 1.5) / 4.8;
+      const ke = Math.max(0.05, 1 - normY);
+      const pe = Math.max(0.05, normY);
+      st.objects.keBar.scale.y = ke * 3;
+      st.objects.keBar.position.y = -1.5 + ke * 3 * 0.5;
+      st.objects.peBar.scale.y = pe * 3;
+      st.objects.peBar.position.y = -1.5 + pe * 3 * 0.5;
+      st.objects.keBar.material.emissiveIntensity = ke * 0.7;
+      st.objects.peBar.material.emissiveIntensity = pe * 0.7;
+      st.objects.glow.position.copy(pt);
     };
   }
 
   function _scene_work_power(s) {
     const { THREE, scene, camera } = s;
-    camera.position.set(0, 4, 14);
+    camera.position.set(0, 4.5, 15);
     scene.background = new THREE.Color(0x060818);
     _makeGround(THREE, scene, 0x1e293b);
     _makeGridHelper(THREE, scene);
 
-    const box = _makeBox(THREE, 1.2, 1.2, 1.2, 0xf59e0b, 0.3, 0.6);
+    const box = _makeBox(THREE, 1.3, 1.3, 1.3, 0xf59e0b, 0.3, 0.5);
     box.castShadow = true;
     scene.add(box);
 
-    const personBody = new THREE.Mesh(
-      new THREE.CapsuleGeometry ? new THREE.CapsuleGeometry(0.2, 0.8, 4, 8) : new THREE.CylinderGeometry(0.2, 0.2, 1, 8),
-      new THREE.MeshStandardMaterial({ color: 0x94a3b8 })
-    );
-    personBody.position.y = 0.1;
-    scene.add(personBody);
-
-    const head = _makeSphere(THREE, 0.22, 0x94a3b8);
-    scene.add(head);
-
-    const pushArr = _makeArrow(THREE, new THREE.Vector3(0.6, -0.4, 0), new THREE.Vector3(2.2, -0.4, 0), 0x22c55e, 0.35);
+    const pushArr = _makeArrow(THREE, new THREE.Vector3(0.65,-0.9,0), new THREE.Vector3(2.5,-0.9,0), 0x4ade80, 0.32);
     scene.add(pushArr);
 
+    // Trail
     const trailGeo = new THREE.BufferGeometry();
-    const trailPts = new Float32Array(60 * 3);
-    trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPts, 3));
-    const trailLine = new THREE.Line(trailGeo, new THREE.LineBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.5 }));
-    scene.add(trailLine);
+    const trailPos = new Float32Array(60 * 3);
+    trailGeo.setAttribute('position', new THREE.BufferAttribute(trailPos, 3));
+    const trail = new THREE.Line(trailGeo, new THREE.LineBasicMaterial({ color:0x3b82f6, transparent:true, opacity:0.5 }));
+    scene.add(trail);
 
-    const dispLight = new THREE.PointLight(0x22c55e, 0.8, 5);
-    scene.add(dispLight);
+    const glow = new THREE.PointLight(0xf97316, 0.9, 6);
+    scene.add(glow);
 
-    s.objects.box = box;
-    s.objects.person = personBody;
-    s.objects.head = head;
-    s.objects.pushArr = pushArr;
-    s.objects.trailGeo = trailGeo;
-    s.objects.dispLight = dispLight;
-    s.objects.history = [];
+    s.objects = { box, pushArr, trail, trailGeo, glow, history: [] };
+    _addLabel(s, '→ F = 50N', 58, 36, '#4ade80');
+    _addLabel(s, 'W = F×s   P = W/t', 10, 88, '#ffffff', 'rgba(0,0,0,0.45)');
 
-    _addLabel(s, '→ F = 50N', 55, 40, '#22c55e');
-    _addLabel(s, 'W = F × s (Joules)  |  P = W/t (Watts)', 8, 88, '#ffffff', 'rgba(0,0,0,0.5)');
-
-    _three.updateFn = (st) => {
-      const x = -5 + (st.t * 1.3) % 9;
-      st.objects.box.position.set(x, -0.9, 0);
+    s._updateFn = (st) => {
+      const x = -6 + (st.t * 1.25) % 10;
+      st.objects.box.position.set(x, -0.85, 0);
       st.objects.box.rotation.y = st.t * 0.2;
+      st.objects.pushArr.position.set(x, -0.85, 0);
+      st.objects.glow.position.set(x, -0.85, 0);
 
-      st.objects.person.position.set(x - 1.1, -0.4, 0);
-      st.objects.head.position.set(x - 1.1, 0.75, 0);
-
-      const legSwing = Math.sin(st.t * 8) * 0.25;
-      st.objects.person.rotation.z = legSwing * 0.1;
-
-      st.objects.pushArr.position.set(x, -0.9, 0);
-      st.objects.dispLight.position.set(x, 0, 0);
-
-      st.objects.history.push(new THREE.Vector3(x, -0.9, 0));
+      st.objects.history.push(new THREE.Vector3(x, -0.85, 0));
       if (st.objects.history.length > 60) st.objects.history.shift();
-      const pts = st.objects.trailGeo.attributes.position.array;
-      st.objects.history.forEach((p, i) => { pts[i*3]=p.x; pts[i*3+1]=p.y; pts[i*3+2]=p.z; });
+      const arr = st.objects.trailGeo.attributes.position.array;
+      st.objects.history.forEach((p, i) => { arr[i*3]=p.x; arr[i*3+1]=p.y; arr[i*3+2]=p.z; });
       st.objects.trailGeo.attributes.position.needsUpdate = true;
       st.objects.trailGeo.setDrawRange(0, st.objects.history.length);
     };
@@ -1336,108 +1301,87 @@
 
   function _scene_energy_transfer(s) {
     const { THREE, scene, camera } = s;
-    camera.position.set(0, 4, 14);
+    camera.position.set(0, 4.5, 15);
     scene.background = new THREE.Color(0x060818);
 
-    const inputBar = new THREE.Mesh(
-      new THREE.BoxGeometry(0.8, 3, 0.5),
-      new THREE.MeshStandardMaterial({ color: 0xfbbf24, emissive: 0xfbbf24, emissiveIntensity: 0.3 })
+    const inBar = new THREE.Mesh(
+      new THREE.BoxGeometry(0.85, 3.2, 0.55),
+      new THREE.MeshStandardMaterial({ color:0xfbbf24, emissive:0xfbbf24, emissiveIntensity:0.35 })
     );
-    inputBar.position.set(-5, 0, 0);
-    scene.add(inputBar);
+    inBar.position.set(-5.5, 0, 0);
+    scene.add(inBar);
 
-    const device = _makeBox(THREE, 1.8, 2.5, 1.0, 0x334155, 0.3, 0.7);
-    device.position.set(0, 0, 0);
+    const device = _makeBox(THREE, 2.0, 2.7, 1.1, 0x334155, 0.3, 0.7);
     scene.add(device);
 
-    const deviceGlow = new THREE.PointLight(0xfbbf24, 1.0, 5);
-    deviceGlow.position.set(0, 0, 0.5);
-    scene.add(deviceGlow);
-
-    const usefulBar = new THREE.Mesh(
-      new THREE.BoxGeometry(0.8, 2.1, 0.5),
-      new THREE.MeshStandardMaterial({ color: 0x22c55e, emissive: 0x22c55e, emissiveIntensity: 0.3 })
+    const usBar = new THREE.Mesh(
+      new THREE.BoxGeometry(0.85, 2.2, 0.55),
+      new THREE.MeshStandardMaterial({ color:0x22c55e, emissive:0x22c55e, emissiveIntensity:0.35 })
     );
-    usefulBar.position.set(4.5, 0.45, 0);
-    scene.add(usefulBar);
+    usBar.position.set(5.0, 0.5, 0);
+    scene.add(usBar);
 
-    const wastedBar = new THREE.Mesh(
-      new THREE.BoxGeometry(0.6, 0.9, 0.5),
-      new THREE.MeshStandardMaterial({ color: 0xef4444, emissive: 0xef4444, emissiveIntensity: 0.35 })
+    const waBar = new THREE.Mesh(
+      new THREE.BoxGeometry(0.65, 1.0, 0.55),
+      new THREE.MeshStandardMaterial({ color:0xef4444, emissive:0xef4444, emissiveIntensity:0.4 })
     );
-    wastedBar.position.set(4.5, -1.5, 0);
-    scene.add(wastedBar);
+    waBar.position.set(5.0, -1.7, 0);
+    scene.add(waBar);
 
-    const connGeo1 = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(-4.6, 0, 0), new THREE.Vector3(-0.9, 0, 0)]);
-    scene.add(new THREE.Line(connGeo1, new THREE.LineBasicMaterial({ color: 0xfbbf24 })));
+    // Connector lines
+    const mkLine = (p1, p2, col) => {
+      const geo = new THREE.BufferGeometry().setFromPoints([p1, p2]);
+      scene.add(new THREE.Line(geo, new THREE.LineBasicMaterial({ color: col })));
+    };
+    mkLine(new THREE.Vector3(-5.1,0,0), new THREE.Vector3(-1,0,0), 0xfbbf24);
+    mkLine(new THREE.Vector3(1,0.5,0),  new THREE.Vector3(4.6,0.5,0), 0x22c55e);
+    mkLine(new THREE.Vector3(1,-1.7,0), new THREE.Vector3(4.7,-1.7,0), 0xef4444);
 
-    const connGeo2 = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0.9, 0.45, 0), new THREE.Vector3(4.1, 0.45, 0)]);
-    scene.add(new THREE.Line(connGeo2, new THREE.LineBasicMaterial({ color: 0x22c55e })));
+    const devGlow = new THREE.PointLight(0xfbbf24, 1.2, 7);
+    scene.add(devGlow);
 
-    const connGeo3 = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(0.9, -1.5, 0), new THREE.Vector3(4.2, -1.5, 0)]);
-    scene.add(new THREE.Line(connGeo3, new THREE.LineBasicMaterial({ color: 0xef4444 })));
-
-    const nParticles = 16;
-    const particles  = [];
-    for (let i = 0; i < nParticles; i++) {
-      const pg = new THREE.SphereGeometry(0.1, 6, 6);
-      const pm = new THREE.MeshStandardMaterial({
-        color: i < 11 ? 0x22c55e : 0xef4444,
-        emissive: i < 11 ? 0x22c55e : 0xef4444,
-        emissiveIntensity: 0.5,
-      });
-      const p = new THREE.Mesh(pg, pm);
-      scene.add(p);
-      particles.push({ mesh: p, offset: i / nParticles, type: i < 11 ? 'useful' : 'wasted' });
+    // Energy particles
+    const particles = [];
+    for (let i = 0; i < 18; i++) {
+      const isUseful = i < 12;
+      const e = new THREE.Mesh(
+        new THREE.SphereGeometry(0.11, 8, 8),
+        new THREE.MeshStandardMaterial({
+          color: isUseful ? 0x22c55e : 0xef4444,
+          emissive: isUseful ? 0x22c55e : 0xef4444,
+          emissiveIntensity: 0.6
+        })
+      );
+      scene.add(e);
+      particles.push({ mesh: e, offset: i / 18, type: isUseful ? 'useful' : 'wasted' });
     }
 
-    const heatParticles = [];
-    for (let i = 0; i < 8; i++) {
-      const hg = new THREE.SphereGeometry(0.08, 6, 6);
-      const hm = new THREE.MeshStandardMaterial({ color: 0xff6b35, emissive: 0xff6b35, emissiveIntensity: 0.7, transparent: true, opacity: 0.7 });
-      const h  = new THREE.Mesh(hg, hm);
-      scene.add(h);
-      heatParticles.push({ mesh: h, offset: Math.random(), startX: 4.5 + (Math.random()-0.5)*0.6, age: Math.random() });
-    }
-
-    s.objects.inputBar    = inputBar;
-    s.objects.usefulBar   = usefulBar;
-    s.objects.wastedBar   = wastedBar;
-    s.objects.deviceGlow  = deviceGlow;
-    s.objects.particles   = particles;
-    s.objects.heatParticles = heatParticles;
-
+    s.objects = { inBar, usBar, waBar, devGlow, particles };
     _addLabel(s, '100J Input', 2, 24, '#fbbf24');
-    _addLabel(s, '70J Useful (KE)', 60, 18, '#22c55e');
-    _addLabel(s, '30J Wasted (Heat)', 60, 64, '#ef4444');
-    _addLabel(s, 'Efficiency = 70%  |  Energy is conserved', 10, 88, '#ffffff', 'rgba(0,0,0,0.5)');
+    _addLabel(s, '70J Useful', 66, 18, '#4ade80');
+    _addLabel(s, '30J Wasted (heat)', 66, 62, '#f87171');
+    _addLabel(s, 'Efficiency = 70%  |  Energy conserved', 8, 88, '#ffffff', 'rgba(0,0,0,0.5)');
 
-    _three.updateFn = (st) => {
-      const pulse = 1 + Math.sin(st.t * 2) * 0.03;
-      st.objects.inputBar.scale.x = pulse;
-      st.objects.deviceGlow.intensity = 0.8 + Math.sin(st.t * 4) * 0.3;
+    s._updateFn = (st) => {
+      st.objects.inBar.scale.x = 1 + Math.sin(st.t * 2) * 0.03;
+      st.objects.devGlow.intensity = 0.9 + Math.sin(st.t * 4) * 0.35;
 
       st.objects.particles.forEach(({ mesh, offset, type }) => {
-        const pos = (st.t * 1.2 + offset * 9) % 9;
-        if (pos < 3.7) {
-          mesh.position.set(-4.6 + pos * 1.05, 0, (Math.random()-0.5)*0.05);
+        const pos = (st.t * 1.1 + offset * 10) % 10;
+        if (pos < 4.5) {
+          mesh.position.set(-5.1 + pos * 0.91, 0, 0);
         } else if (type === 'useful') {
-          mesh.position.set(0.9 + (pos - 3.7) * 0.9, 0.45, 0);
+          mesh.position.set(1 + (pos - 4.5) * 0.73, 0.5, 0);
         } else {
-          mesh.position.set(0.9 + (pos - 3.7) * 0.7, -1.5, 0);
+          mesh.position.set(1 + (pos - 4.5) * 0.65, -1.7, 0);
         }
-      });
-
-      st.objects.heatParticles.forEach((hp) => {
-        hp.age += 0.008;
-        if (hp.age > 1) { hp.age = 0; hp.startX = 4.5 + (Math.random()-0.5)*0.6; }
-        hp.mesh.position.set(hp.startX + Math.sin(hp.age * 12) * 0.15, -1.5 + hp.age * 2.5, 0);
-        hp.mesh.material.opacity = 0.7 * (1 - hp.age);
-        const sc = 0.8 + hp.age * 0.5;
-        hp.mesh.scale.setScalar(sc);
       });
     };
   }
+
+  /* ══════════════════════════════════════════════════
+     QUIZ
+  ══════════════════════════════════════════════════ */
 
   function _buildQuizView() {
     if (_quizDone) return _buildQuizResults();
@@ -1464,7 +1408,7 @@
                 if (opt === q.a) cls = 'correct';
                 else if (opt === _quizSelected && opt !== q.a) cls = 'wrong';
               }
-              return `<button class="phys-quiz-opt ${cls}" ${_quizAnswered?'disabled':''} onclick="ThreeDPhysics._answerQuiz('${opt.replace(/'/g,"\\'")}')"> ${opt}</button>`;
+              return `<button class="phys-quiz-opt ${cls}" ${_quizAnswered?'disabled':''} onclick="ThreeDPhysics._answerQuiz(${JSON.stringify(opt)})">${opt}</button>`;
             }).join('')}
           </div>
           ${_quizAnswered ? `
@@ -1508,7 +1452,7 @@
     _activeSubIdx = 0;
     _reRenderContent();
     _updateTabBar();
-    requestAnimationFrame(_launchScene);
+    if (tab !== 'quiz') requestAnimationFrame(_launchScene);
   }
 
   function _setSub(idx) {
