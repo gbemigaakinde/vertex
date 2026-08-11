@@ -122,13 +122,18 @@
         _recordStart = Date.now();
 
         _recordInterval = setInterval(() => {
-          this._updateTimer();
-          const sec = (Date.now() - _recordStart) / 1000;
-          if (sec >= MAX_DURATION_SEC) {
-            this._hidePanel();
-            this._stopRecording(); // Auto-send when max duration is reached
-          }
-        }, 400);
+        this._updateTimer();
+        const sec = (Date.now() - _recordStart) / 1000;
+        if (sec >= MAX_DURATION_SEC) {
+          clearInterval(_recordInterval);
+          _recordInterval = null;
+          this._hidePanel();
+          // Capture callback before _stopRecording clears state
+          const cb = _pendingSendCallback;
+          _pendingSendCallback = cb; // keep it alive through _stopRecording
+          this._stopRecording();
+        }
+      }, 400);
       } catch (err) {
         console.error('[VoiceNotes]', err);
         UI.toast('Microphone blocked. Please allow permission in your browser.', 'error');
@@ -183,25 +188,45 @@
 
     /* ── Recording Panel ── */
     _showPanel() {
-      let panel = document.getElementById('vnRecordingPanel');
-      if (!panel) {
-        panel = document.createElement('div');
-        panel.id = 'vnRecordingPanel';
-        panel.className = 'vn-recording-panel';
-        panel.innerHTML = `
-          <div class="vn-waveform"><span></span><span></span><span></span><span></span><span></span></div>
-          <div class="vn-recording-timer">0:00</div>
-          <div class="vn-recording-label">Recording voice note</div>
-          <button class="vn-recording-cancel" id="vnCancelRec">Cancel</button>`;
-        document.body.appendChild(panel);
-        document.getElementById('vnCancelRec').addEventListener('click', () => {
-          this._abortRecording();
-          this._hidePanel();
-        });
-      }
-      panel.classList.add('is-visible');
-      this._updateTimer();
-    },
+  let panel = document.getElementById('vnRecordingPanel');
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = 'vnRecordingPanel';
+    panel.className = 'vn-recording-panel';
+    panel.innerHTML = `
+      <div class="vn-waveform"><span></span><span></span><span></span><span></span><span></span></div>
+      <div class="vn-recording-timer">0:00</div>
+      <div class="vn-recording-label">Recording voice note</div>
+      <div style="display:flex;gap:12px;align-items:center;margin-top:4px;">
+        <button class="vn-recording-cancel" id="vnCancelRec">Cancel</button>
+        <button class="vn-recording-send" id="vnSendRec" style="
+          font-size: var(--text-xs);
+          font-family: var(--font);
+          font-weight: 600;
+          padding: 6px 16px;
+          border-radius: var(--r-sm);
+          border: none;
+          cursor: pointer;
+          background: var(--accent);
+          color: #fff;
+          transition: all 120ms;
+        ">Send ✔</button>
+      </div>`;
+    document.body.appendChild(panel);
+
+    document.getElementById('vnCancelRec').addEventListener('click', () => {
+      this._abortRecording();
+      this._hidePanel();
+    });
+
+    document.getElementById('vnSendRec').addEventListener('click', () => {
+      this._hidePanel();
+      this._stopRecording();
+    });
+  }
+  panel.classList.add('is-visible');
+  this._updateTimer();
+},
 
     _hidePanel() {
       const panel = document.getElementById('vnRecordingPanel');
