@@ -186,10 +186,7 @@
   transition: transform 120ms;
 }
 .vn-play-btn:hover { transform: scale(1.1); }
-.vn-progress-wrap {
-  flex: 1;
-  min-width: 0;
-}
+
 /* ── Waveform bar player ── */
 .vn-progress-wrap {
   flex: 1;
