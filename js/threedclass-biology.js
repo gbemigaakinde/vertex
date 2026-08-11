@@ -406,9 +406,9 @@
         .bio-legend-btn.active .bio-org-dot { transform:scale(1.4); }
       </style>`);
 
-    if (_mode === 'animal' || _mode === 'plant' || _mode === 'compare') {
-      _loadThree(() => _bootScenes());
-    }
+    if (_mode === 'compare') {
+  _loadThree(() => _bootScenes());
+}
   }
 
   function _buildTopBar() {
@@ -465,43 +465,29 @@
   }
 
   function _buildCellViewHTML(type) {
-    const organellesInCell = Object.values(ORGANELLES).filter(o => o.present.includes(type));
-    _updateOrgCount(type);
-    return `
-      <div style="display:flex;height:100%;overflow:hidden;">
-        <div id="bio-canvas-wrap-${type}" style="flex:1 1 0;position:relative;overflow:hidden;min-width:0;background:#080a10;">
-          <canvas id="bio-canvas-${type}" style="width:100%;height:100%;display:block;"></canvas>
-          <div id="bio-hint-${type}" style="position:absolute;bottom:.75rem;left:50%;
-               transform:translateX(-50%);font-size:.55rem;font-weight:700;
-               letter-spacing:.07em;color:rgba(255,255,255,.45);text-transform:uppercase;
-               pointer-events:none;white-space:nowrap;background:rgba(0,0,0,.35);
-               border:1px solid rgba(255,255,255,.1);border-radius:99px;padding:4px 12px;
-               backdrop-filter:blur(8px);">
-            Drag to rotate &middot; Scroll to zoom &middot; Tap to inspect
-          </div>
-          <div id="bio-selected-label-${type}" style="position:absolute;top:.75rem;left:.75rem;
-               font-size:.625rem;font-weight:700;color:#fff;
-               background:rgba(0,0,0,.5);border:1px solid rgba(255,255,255,.2);
-               border-radius:var(--r-md);padding:4px 10px;display:none;pointer-events:none;
-               backdrop-filter:blur(8px);">
-          </div>
-        </div>
-        <div style="width:136px;flex-shrink:0;overflow-y:auto;overflow-x:hidden;
-                    border-left:1px solid var(--border);background:var(--bg-base);
-                    padding:.5rem .35rem;scrollbar-width:thin;">
-          <div style="font-size:.525rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
-                      color:var(--text-4);margin-bottom:.4rem;padding:0 .2rem;">Organelles</div>
-          ${organellesInCell.map(org => `
-            <button class="bio-legend-btn${_selectedOrg === org.id ? ' active' : ''}"
-                    onclick="ThreeDCell._selectOrg('${org.id}','${type}')">
-              <span class="bio-org-dot" style="background:${org.color};box-shadow:0 0 0 2px ${org.color}44;"></span>
-              <span style="font-size:.565rem;font-weight:600;color:var(--text-2);line-height:1.3;">
-                ${org.label}
-              </span>
-            </button>`).join('')}
-        </div>
-      </div>`;
-  }
+  const organellesInCell = Object.values(ORGANELLES).filter(o => o.present.includes(type));
+  _updateOrgCount(type);
+  return `
+    <div style="display:flex;height:100%;overflow:hidden;">
+      <div id="bio-canvas-wrap-${type}" style="flex:1 1 0;position:relative;overflow:hidden;min-width:0;background:var(--bg-page);display:flex;align-items:center;justify-content:center;padding:.5rem;">
+        ${type === 'animal' ? _buildAnimalCellSVG() : _buildPlantCellSVG()}
+      </div>
+      <div style="width:136px;flex-shrink:0;overflow-y:auto;overflow-x:hidden;
+                  border-left:1px solid var(--border);background:var(--bg-base);
+                  padding:.5rem .35rem;scrollbar-width:thin;">
+        <div style="font-size:.525rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+                    color:var(--text-4);margin-bottom:.4rem;padding:0 .2rem;">Organelles</div>
+        ${organellesInCell.map(org => `
+          <button class="bio-legend-btn${_selectedOrg === org.id ? ' active' : ''}"
+                  onclick="ThreeDCell._selectOrg('${org.id}','${type}')">
+            <span class="bio-org-dot" style="background:${org.color};box-shadow:0 0 0 2px ${org.color}44;"></span>
+            <span style="font-size:.565rem;font-weight:600;color:var(--text-2);line-height:1.3;">
+              ${org.label}
+            </span>
+          </button>`).join('')}
+      </div>
+    </div>`;
+}
 
   function _updateOrgCount(type) {
     const cnt = document.getElementById('bio-org-count');
@@ -593,19 +579,13 @@
   }
 
   function _bootScenes() {
-    if (_mode === 'animal') {
-      const canvas = document.getElementById('bio-canvas-animal');
-      if (canvas) _scenes['animal'] = _createScene(canvas, 'animal');
-    } else if (_mode === 'plant') {
-      const canvas = document.getElementById('bio-canvas-plant');
-      if (canvas) _scenes['plant'] = _createScene(canvas, 'plant');
-    } else if (_mode === 'compare') {
-      const cL = document.getElementById('bio-canvas-left');
-      const cR = document.getElementById('bio-canvas-right');
-      if (cL) _scenes['left'] = _createScene(cL, 'animal');
-      if (cR) _scenes['right'] = _createScene(cR, 'plant');
-    }
+  if (_mode === 'compare') {
+    const cL = document.getElementById('bio-canvas-left');
+    const cR = document.getElementById('bio-canvas-right');
+    if (cL) _scenes['left'] = _createScene(cL, 'animal');
+    if (cR) _scenes['right'] = _createScene(cR, 'plant');
   }
+}
 
   function _createScene(canvas, cellType) {
     const THREE = window.THREE;
@@ -1473,6 +1453,384 @@
       makePlasmodesmata();
     }
   }
+  
+  function _buildAnimalCellSVG() {
+  return `
+  <svg viewBox="0 0 520 420" xmlns="http://www.w3.org/2000/svg"
+       style="width:100%;max-width:520px;max-height:100%;overflow:visible;cursor:default;">
+    <defs>
+      <radialGradient id="cytoBg" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#f0f4ff"/>
+        <stop offset="100%" stop-color="#dde6ff"/>
+      </radialGradient>
+      <radialGradient id="nucGrad" cx="40%" cy="35%" r="60%">
+        <stop offset="0%" stop-color="#b8adff"/>
+        <stop offset="100%" stop-color="#6c5ce7"/>
+      </radialGradient>
+      <radialGradient id="mitoGrad" cx="30%" cy="30%" r="70%">
+        <stop offset="0%" stop-color="#ff8a80"/>
+        <stop offset="100%" stop-color="#e84040"/>
+      </radialGradient>
+      <radialGradient id="lysoGrad" cx="35%" cy="35%" r="60%">
+        <stop offset="0%" stop-color="#f497ce"/>
+        <stop offset="100%" stop-color="#e0449e"/>
+      </radialGradient>
+    </defs>
+
+    <!-- Cell membrane (irregular oval) -->
+    <ellipse cx="260" cy="210" rx="245" ry="198" fill="url(#cytoBg)" stroke="${ORGANELLES.cell_membrane.color}" stroke-width="4"
+      style="cursor:pointer;" onclick="ThreeDCell._selectOrg('cell_membrane','animal')" />
+    <ellipse cx="260" cy="210" rx="245" ry="198" fill="none" stroke="${ORGANELLES.cell_membrane.color}55" stroke-width="2" stroke-dasharray="6,4"/>
+
+    <!-- Cytoplasm label zone (clickable background) -->
+    <ellipse cx="260" cy="210" rx="238" ry="191" fill="transparent"
+      style="cursor:pointer;" onclick="ThreeDCell._selectOrg('cytoplasm','animal')"/>
+
+    <!-- Nucleus -->
+    <ellipse cx="230" cy="185" rx="72" ry="62" fill="url(#nucGrad)" stroke="${ORGANELLES.nucleus.color}" stroke-width="2.5" opacity="0.95"
+      style="cursor:pointer;" onclick="ThreeDCell._selectOrg('nucleus','animal')"/>
+    <!-- Nuclear envelope double line -->
+    <ellipse cx="230" cy="185" rx="72" ry="62" fill="none" stroke="#fff" stroke-width="1" opacity="0.3"/>
+    <!-- Nuclear pores (dots on envelope) -->
+    <circle cx="175" cy="173" r="3.5" fill="#c8b8ff" stroke="#fff" stroke-width="1"/>
+    <circle cx="195" cy="128" r="3.5" fill="#c8b8ff" stroke="#fff" stroke-width="1"/>
+    <circle cx="230" cy="123" r="3.5" fill="#c8b8ff" stroke="#fff" stroke-width="1"/>
+    <circle cx="268" cy="133" r="3.5" fill="#c8b8ff" stroke="#fff" stroke-width="1"/>
+    <circle cx="292" cy="160" r="3.5" fill="#c8b8ff" stroke="#fff" stroke-width="1"/>
+    <circle cx="290" cy="210" r="3.5" fill="#c8b8ff" stroke="#fff" stroke-width="1"/>
+    <circle cx="268" cy="241" r="3.5" fill="#c8b8ff" stroke="#fff" stroke-width="1"/>
+    <circle cx="220" cy="248" r="3.5" fill="#c8b8ff" stroke="#fff" stroke-width="1"/>
+    <circle cx="180" cy="232" r="3.5" fill="#c8b8ff" stroke="#fff" stroke-width="1"/>
+    <!-- Nucleolus -->
+    <ellipse cx="224" cy="178" rx="22" ry="18" fill="${ORGANELLES.nucleolus.color}" stroke="#fff" stroke-width="1.5" opacity="0.95"
+      style="cursor:pointer;" onclick="ThreeDCell._selectOrg('nucleolus','animal')"/>
+
+    <!-- Rough ER (wavy stacked lines near nucleus) -->
+    <g style="cursor:pointer;" onclick="ThreeDCell._selectOrg('rough_er','animal')">
+      <path d="M 312 148 Q 340 138 360 152 Q 380 166 365 180 Q 348 194 325 188 Q 308 182 312 168 Q 316 154 330 150" fill="${ORGANELLES.rough_er.color}55" stroke="${ORGANELLES.rough_er.color}" stroke-width="2.5" fill-rule="evenodd"/>
+      <path d="M 316 158 Q 336 150 352 160 Q 362 168 354 178 Q 342 186 326 180" fill="none" stroke="${ORGANELLES.rough_er.color}" stroke-width="1.5" opacity="0.6"/>
+      <!-- Ribosome dots on Rough ER -->
+      <circle cx="320" cy="149" r="3" fill="${ORGANELLES.ribosome.color}"/>
+      <circle cx="335" cy="143" r="3" fill="${ORGANELLES.ribosome.color}"/>
+      <circle cx="352" cy="147" r="3" fill="${ORGANELLES.ribosome.color}"/>
+      <circle cx="365" cy="157" r="3" fill="${ORGANELLES.ribosome.color}"/>
+      <circle cx="368" cy="170" r="3" fill="${ORGANELLES.ribosome.color}"/>
+      <circle cx="362" cy="183" r="3" fill="${ORGANELLES.ribosome.color}"/>
+      <circle cx="350" cy="191" r="3" fill="${ORGANELLES.ribosome.color}"/>
+      <circle cx="333" cy="191" r="3" fill="${ORGANELLES.ribosome.color}"/>
+      <circle cx="316" cy="185" r="3" fill="${ORGANELLES.ribosome.color}"/>
+    </g>
+
+    <!-- Smooth ER (tubular curves) -->
+    <g style="cursor:pointer;" onclick="ThreeDCell._selectOrg('smooth_er','animal')">
+      <path d="M 125 270 Q 145 250 165 265 Q 180 278 168 295 Q 155 310 138 300 Q 120 288 125 270 Z" fill="${ORGANELLES.smooth_er.color}55" stroke="${ORGANELLES.smooth_er.color}" stroke-width="2.5"/>
+      <path d="M 132 272 Q 148 258 162 270 Q 172 280 164 293" fill="none" stroke="${ORGANELLES.smooth_er.color}" stroke-width="1.5" opacity="0.7"/>
+      <path d="M 145 260 Q 158 265 163 278" fill="none" stroke="${ORGANELLES.smooth_er.color}" stroke-width="1.5" opacity="0.5"/>
+    </g>
+
+    <!-- Golgi apparatus (stacked arcs) -->
+    <g style="cursor:pointer;" onclick="ThreeDCell._selectOrg('golgi','animal')">
+      <path d="M 355 258 Q 395 240 405 262 Q 408 278 370 290 Q 348 295 345 278 Q 343 264 355 258 Z" fill="${ORGANELLES.golgi.color}55" stroke="${ORGANELLES.golgi.color}" stroke-width="2.5"/>
+      <path d="M 358 263 Q 392 248 400 266 Q 403 278 368 286" fill="none" stroke="${ORGANELLES.golgi.color}" stroke-width="2" opacity="0.8"/>
+      <path d="M 360 270 Q 390 257 397 272" fill="none" stroke="${ORGANELLES.golgi.color}" stroke-width="2" opacity="0.7"/>
+      <path d="M 362 277 Q 388 266 394 278" fill="none" stroke="${ORGANELLES.golgi.color}" stroke-width="2" opacity="0.6"/>
+      <!-- Vesicles from Golgi -->
+      <circle cx="413" cy="262" r="6" fill="${ORGANELLES.golgi.color}99" stroke="${ORGANELLES.golgi.color}" stroke-width="1.5"/>
+      <circle cx="416" cy="276" r="5" fill="${ORGANELLES.golgi.color}99" stroke="${ORGANELLES.golgi.color}" stroke-width="1.5"/>
+    </g>
+
+    <!-- Mitochondria (3 of them) -->
+    <g style="cursor:pointer;" onclick="ThreeDCell._selectOrg('mitochondria','animal')">
+      <!-- Mito 1 -->
+      <ellipse cx="142" cy="155" rx="34" ry="17" fill="url(#mitoGrad)" stroke="${ORGANELLES.mitochondria.color}" stroke-width="2" transform="rotate(-20 142 155)"/>
+      <path d="M 118 148 Q 128 140 138 148 Q 148 156 158 148" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.5" transform="rotate(-20 142 155)"/>
+      <path d="M 120 154 Q 130 146 140 154 Q 150 162 160 154" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.4" transform="rotate(-20 142 155)"/>
+      <!-- Mito 2 -->
+      <ellipse cx="380" cy="330" rx="36" ry="15" fill="url(#mitoGrad)" stroke="${ORGANELLES.mitochondria.color}" stroke-width="2" transform="rotate(15 380 330)"/>
+      <path d="M 356 326 Q 367 318 378 326 Q 389 334 400 326" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.5" transform="rotate(15 380 330)"/>
+      <!-- Mito 3 -->
+      <ellipse cx="95" cy="310" rx="30" ry="14" fill="url(#mitoGrad)" stroke="${ORGANELLES.mitochondria.color}" stroke-width="2" transform="rotate(30 95 310)"/>
+      <path d="M 73 307 Q 82 299 92 307 Q 102 315 112 307" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.5" transform="rotate(30 95 310)"/>
+    </g>
+
+    <!-- Lysosomes -->
+    <g style="cursor:pointer;" onclick="ThreeDCell._selectOrg('lysosome','animal')">
+      <circle cx="310" cy="310" r="16" fill="url(#lysoGrad)" stroke="${ORGANELLES.lysosome.color}" stroke-width="2"/>
+      <text x="310" y="314" text-anchor="middle" font-size="10" fill="#fff" font-family="sans-serif" font-weight="bold">L</text>
+      <circle cx="440" cy="210" r="13" fill="url(#lysoGrad)" stroke="${ORGANELLES.lysosome.color}" stroke-width="2"/>
+      <text x="440" y="214" text-anchor="middle" font-size="9" fill="#fff" font-family="sans-serif" font-weight="bold">L</text>
+      <circle cx="340" cy="360" r="12" fill="url(#lysoGrad)" stroke="${ORGANELLES.lysosome.color}" stroke-width="2"/>
+      <text x="340" y="364" text-anchor="middle" font-size="9" fill="#fff" font-family="sans-serif" font-weight="bold">L</text>
+    </g>
+
+    <!-- Centrioles -->
+    <g style="cursor:pointer;" onclick="ThreeDCell._selectOrg('centriole','animal')">
+      <rect x="248" y="265" width="24" height="10" rx="3" fill="${ORGANELLES.centriole.color}" stroke="#fff" stroke-width="1.5"/>
+      <line x1="252" y1="265" x2="252" y2="275" stroke="#fff" stroke-width="1" opacity="0.6"/>
+      <line x1="256" y1="265" x2="256" y2="275" stroke="#fff" stroke-width="1" opacity="0.6"/>
+      <line x1="260" y1="265" x2="260" y2="275" stroke="#fff" stroke-width="1" opacity="0.6"/>
+      <line x1="264" y1="265" x2="264" y2="275" stroke="#fff" stroke-width="1" opacity="0.6"/>
+      <rect x="258" y="276" width="10" height="24" rx="3" fill="${ORGANELLES.centriole.color}" stroke="#fff" stroke-width="1.5" transform="rotate(90 263 288)"/>
+      <line x1="258" y1="280" x2="268" y2="280" stroke="#fff" stroke-width="1" opacity="0.6"/>
+      <line x1="258" y1="284" x2="268" y2="284" stroke="#fff" stroke-width="1" opacity="0.6"/>
+      <line x1="258" y1="288" x2="268" y2="288" stroke="#fff" stroke-width="1" opacity="0.6"/>
+      <line x1="258" y1="292" x2="268" y2="292" stroke="#fff" stroke-width="1" opacity="0.6"/>
+    </g>
+
+    <!-- Vacuole (small) -->
+    <ellipse cx="168" cy="338" rx="22" ry="18" fill="${ORGANELLES.vacuole.color}55" stroke="${ORGANELLES.vacuole.color}" stroke-width="2"
+      style="cursor:pointer;" onclick="ThreeDCell._selectOrg('vacuole','animal')"/>
+
+    <!-- Peroxisomes -->
+    <g style="cursor:pointer;" onclick="ThreeDCell._selectOrg('peroxisome','animal')">
+      <circle cx="430" cy="295" r="12" fill="${ORGANELLES.peroxisome.color}88" stroke="${ORGANELLES.peroxisome.color}" stroke-width="2"/>
+      <circle cx="450" cy="160" r="10" fill="${ORGANELLES.peroxisome.color}88" stroke="${ORGANELLES.peroxisome.color}" stroke-width="2"/>
+    </g>
+
+    <!-- Free Ribosomes (scattered dots) -->
+    <g style="cursor:pointer;" onclick="ThreeDCell._selectOrg('ribosome','animal')">
+      <circle cx="190" cy="290" r="3.5" fill="${ORGANELLES.ribosome.color}"/>
+      <circle cx="200" cy="305" r="3.5" fill="${ORGANELLES.ribosome.color}"/>
+      <circle cx="220" cy="295" r="3.5" fill="${ORGANELLES.ribosome.color}"/>
+      <circle cx="415" cy="240" r="3.5" fill="${ORGANELLES.ribosome.color}"/>
+      <circle cx="425" cy="253" r="3.5" fill="${ORGANELLES.ribosome.color}"/>
+      <circle cx="100" cy="230" r="3.5" fill="${ORGANELLES.ribosome.color}"/>
+      <circle cx="112" cy="245" r="3.5" fill="${ORGANELLES.ribosome.color}"/>
+    </g>
+
+    <!-- Cytoskeleton lines -->
+    <g onclick="ThreeDCell._selectOrg('cytoskeleton','animal')" style="cursor:pointer;">
+      <line x1="155" y1="170" x2="80" y2="280" stroke="${ORGANELLES.cytoskeleton.color}" stroke-width="1.2" opacity="0.35" stroke-dasharray="4,3"/>
+      <line x1="300" y1="250" x2="430" y2="360" stroke="${ORGANELLES.cytoskeleton.color}" stroke-width="1.2" opacity="0.35" stroke-dasharray="4,3"/>
+      <line x1="200" y1="380" x2="390" y2="140" stroke="${ORGANELLES.cytoskeleton.color}" stroke-width="1" opacity="0.25" stroke-dasharray="3,4"/>
+    </g>
+
+    <!-- LABELS -->
+    <g font-family="sans-serif" font-size="9.5" fill="var(--text-1,#1a1a2e)" font-weight="600" pointer-events="none">
+      <text x="258" y="117">Cell Membrane</text>
+      <line x1="260" y1="122" x2="260" y2="130" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+
+      <text x="170" y="98">Nucleus</text>
+      <line x1="185" y1="102" x2="195" y2="130" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+
+      <text x="200" y="168" font-size="8.5" fill="#fff">Nucleolus</text>
+
+      <text x="72" y="134">Mitochondria</text>
+      <line x1="110" y1="138" x2="128" y2="150" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+
+      <text x="310" y="128">Rough ER</text>
+      <line x1="335" y1="132" x2="335" y2="148" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+
+      <text x="90" y="258">Smooth ER</text>
+      <line x1="130" y1="262" x2="140" y2="275" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+
+      <text x="355" y="228">Golgi</text>
+
+      <text x="288" y="332">Lysosome</text>
+
+      <text x="248" y="249">Centrioles</text>
+      <line x1="268" y1="253" x2="265" y2="265" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+
+      <text x="430" y="320">Peroxisome</text>
+      <line x1="438" y1="323" x2="432" y2="307" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+
+      <text x="140" y="368">Vacuole</text>
+      <line x1="162" y1="370" x2="162" y2="357" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+    </g>
+  </svg>`;
+}
+
+function _buildPlantCellSVG() {
+  return `
+  <svg viewBox="0 0 520 440" xmlns="http://www.w3.org/2000/svg"
+       style="width:100%;max-width:520px;max-height:100%;overflow:visible;cursor:default;">
+    <defs>
+      <radialGradient id="plantCytoBg" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#e8f5e9"/>
+        <stop offset="100%" stop-color="#c8e6c9"/>
+      </radialGradient>
+      <radialGradient id="vacGrad" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#b3e5fc"/>
+        <stop offset="100%" stop-color="#4fc3f7"/>
+      </radialGradient>
+      <radialGradient id="chloroGrad" cx="30%" cy="30%" r="70%">
+        <stop offset="0%" stop-color="#69f0ae"/>
+        <stop offset="100%" stop-color="#2ab85f"/>
+      </radialGradient>
+      <radialGradient id="pNucGrad" cx="40%" cy="35%" r="60%">
+        <stop offset="0%" stop-color="#b8adff"/>
+        <stop offset="100%" stop-color="#6c5ce7"/>
+      </radialGradient>
+    </defs>
+
+    <!-- Cell wall (outer rectangle, thick) -->
+    <rect x="14" y="14" width="492" height="412" rx="18" ry="18"
+      fill="${ORGANELLES.cell_wall.color}22" stroke="${ORGANELLES.cell_wall.color}" stroke-width="10"
+      style="cursor:pointer;" onclick="ThreeDCell._selectOrg('cell_wall','plant')"/>
+    <!-- Cell membrane (inner line) -->
+    <rect x="25" y="25" width="470" height="390" rx="13" ry="13"
+      fill="url(#plantCytoBg)" stroke="${ORGANELLES.cell_membrane.color}" stroke-width="3"
+      style="cursor:pointer;" onclick="ThreeDCell._selectOrg('cell_membrane','plant')"/>
+
+    <!-- Central vacuole (large, fills centre) -->
+    <rect x="130" y="110" width="265" height="250" rx="20" ry="20"
+      fill="url(#vacGrad)" stroke="${ORGANELLES.central_vacuole.color}" stroke-width="2.5" opacity="0.85"
+      style="cursor:pointer;" onclick="ThreeDCell._selectOrg('central_vacuole','plant')"/>
+
+    <!-- Cytoplasm (clickable but behind organelles) -->
+    <rect x="28" y="28" width="464" height="384" rx="11" ry="11"
+      fill="transparent"
+      style="cursor:pointer;" onclick="ThreeDCell._selectOrg('cytoplasm','plant')"/>
+
+    <!-- Chloroplasts (6, arranged around the edges) -->
+    <g style="cursor:pointer;" onclick="ThreeDCell._selectOrg('chloroplast','plant')">
+      <!-- Top left -->
+      <ellipse cx="82" cy="90" rx="36" ry="18" fill="url(#chloroGrad)" stroke="${ORGANELLES.chloroplast.color}" stroke-width="2" transform="rotate(-10 82 90)"/>
+      <line x1="58" y1="90" x2="106" y2="90" stroke="#1a5c2a" stroke-width="1.5" opacity="0.5" transform="rotate(-10 82 90)"/>
+      <line x1="58" y1="86" x2="106" y2="86" stroke="#1a5c2a" stroke-width="1" opacity="0.4" transform="rotate(-10 82 90)"/>
+      <!-- Top right -->
+      <ellipse cx="420" cy="78" rx="36" ry="17" fill="url(#chloroGrad)" stroke="${ORGANELLES.chloroplast.color}" stroke-width="2" transform="rotate(8 420 78)"/>
+      <line x1="396" y1="78" x2="444" y2="78" stroke="#1a5c2a" stroke-width="1.5" opacity="0.5" transform="rotate(8 420 78)"/>
+      <!-- Bottom left -->
+      <ellipse cx="72" cy="360" rx="34" ry="16" fill="url(#chloroGrad)" stroke="${ORGANELLES.chloroplast.color}" stroke-width="2" transform="rotate(15 72 360)"/>
+      <line x1="50" y1="360" x2="94" y2="360" stroke="#1a5c2a" stroke-width="1.5" opacity="0.5" transform="rotate(15 72 360)"/>
+      <!-- Bottom right -->
+      <ellipse cx="438" cy="360" rx="36" ry="17" fill="url(#chloroGrad)" stroke="${ORGANELLES.chloroplast.color}" stroke-width="2" transform="rotate(-12 438 360)"/>
+      <line x1="414" y1="360" x2="462" y2="360" stroke="#1a5c2a" stroke-width="1.5" opacity="0.5" transform="rotate(-12 438 360)"/>
+      <!-- Left mid -->
+      <ellipse cx="60" cy="220" rx="33" ry="15" fill="url(#chloroGrad)" stroke="${ORGANELLES.chloroplast.color}" stroke-width="2"/>
+      <line x1="38" y1="220" x2="82" y2="220" stroke="#1a5c2a" stroke-width="1.5" opacity="0.5"/>
+      <!-- Right mid -->
+      <ellipse cx="455" cy="210" rx="35" ry="16" fill="url(#chloroGrad)" stroke="${ORGANELLES.chloroplast.color}" stroke-width="2"/>
+      <line x1="432" y1="210" x2="478" y2="210" stroke="#1a5c2a" stroke-width="1.5" opacity="0.5"/>
+    </g>
+
+    <!-- Nucleus (top-right corner, peripheral) -->
+    <g style="cursor:pointer;" onclick="ThreeDCell._selectOrg('nucleus','plant')">
+      <ellipse cx="400" cy="165" rx="58" ry="50" fill="url(#pNucGrad)" stroke="${ORGANELLES.nucleus.color}" stroke-width="2.5" opacity="0.95"/>
+      <ellipse cx="400" cy="165" rx="58" ry="50" fill="none" stroke="#fff" stroke-width="1" opacity="0.3"/>
+      <!-- nuclear pores -->
+      <circle cx="345" cy="160" r="3" fill="#c8b8ff" stroke="#fff" stroke-width="1"/>
+      <circle cx="358" cy="128" r="3" fill="#c8b8ff" stroke="#fff" stroke-width="1"/>
+      <circle cx="395" cy="116" r="3" fill="#c8b8ff" stroke="#fff" stroke-width="1"/>
+      <circle cx="432" cy="125" r="3" fill="#c8b8ff" stroke="#fff" stroke-width="1"/>
+      <circle cx="452" cy="152" r="3" fill="#c8b8ff" stroke="#fff" stroke-width="1"/>
+      <circle cx="452" cy="178" r="3" fill="#c8b8ff" stroke="#fff" stroke-width="1"/>
+      <circle cx="435" cy="204" r="3" fill="#c8b8ff" stroke="#fff" stroke-width="1"/>
+      <circle cx="395" cy="214" r="3" fill="#c8b8ff" stroke="#fff" stroke-width="1"/>
+      <circle cx="360" cy="202" r="3" fill="#c8b8ff" stroke="#fff" stroke-width="1"/>
+    </g>
+    <!-- Nucleolus -->
+    <ellipse cx="395" cy="160" rx="18" ry="15" fill="${ORGANELLES.nucleolus.color}" stroke="#fff" stroke-width="1.5" opacity="0.95"
+      style="cursor:pointer;" onclick="ThreeDCell._selectOrg('nucleolus','plant')"/>
+
+    <!-- Mitochondria -->
+    <g style="cursor:pointer;" onclick="ThreeDCell._selectOrg('mitochondria','plant')">
+      <ellipse cx="105" cy="155" rx="28" ry="13" fill="#ff8a80" stroke="${ORGANELLES.mitochondria.color}" stroke-width="2" transform="rotate(-15 105 155)"/>
+      <path d="M 84 152 Q 94 144 104 152 Q 114 160 124 152" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.5" transform="rotate(-15 105 155)"/>
+      <ellipse cx="450" cy="295" rx="26" ry="12" fill="#ff8a80" stroke="${ORGANELLES.mitochondria.color}" stroke-width="2" transform="rotate(20 450 295)"/>
+      <path d="M 430 293 Q 440 285 450 293 Q 460 301 470 293" fill="none" stroke="#fff" stroke-width="1.5" opacity="0.5" transform="rotate(20 450 295)"/>
+    </g>
+
+    <!-- Rough ER -->
+    <g style="cursor:pointer;" onclick="ThreeDCell._selectOrg('rough_er','plant')">
+      <path d="M 110 320 Q 118 308 130 316 Q 142 324 130 336 Q 118 344 108 334 Q 100 324 110 320 Z" fill="${ORGANELLES.rough_er.color}55" stroke="${ORGANELLES.rough_er.color}" stroke-width="2.5"/>
+      <path d="M 113 323 Q 120 313 130 319 Q 138 325 132 334" fill="none" stroke="${ORGANELLES.rough_er.color}" stroke-width="1.5" opacity="0.6"/>
+      <circle cx="110" cy="320" r="2.5" fill="${ORGANELLES.ribosome.color}"/>
+      <circle cx="118" cy="310" r="2.5" fill="${ORGANELLES.ribosome.color}"/>
+      <circle cx="130" cy="308" r="2.5" fill="${ORGANELLES.ribosome.color}"/>
+      <circle cx="140" cy="315" r="2.5" fill="${ORGANELLES.ribosome.color}"/>
+      <circle cx="143" cy="326" r="2.5" fill="${ORGANELLES.ribosome.color}"/>
+      <circle cx="138" cy="337" r="2.5" fill="${ORGANELLES.ribosome.color}"/>
+      <circle cx="126" cy="344" r="2.5" fill="${ORGANELLES.ribosome.color}"/>
+    </g>
+
+    <!-- Golgi apparatus -->
+    <g style="cursor:pointer;" onclick="ThreeDCell._selectOrg('golgi','plant')">
+      <path d="M 85 250 Q 122 234 128 254 Q 131 268 96 278 Q 76 282 73 266 Q 71 252 85 250 Z" fill="${ORGANELLES.golgi.color}55" stroke="${ORGANELLES.golgi.color}" stroke-width="2.5"/>
+      <path d="M 88 255 Q 120 242 124 258 Q 127 268 94 274" fill="none" stroke="${ORGANELLES.golgi.color}" stroke-width="2" opacity="0.8"/>
+      <path d="M 89 261 Q 118 250 122 264" fill="none" stroke="${ORGANELLES.golgi.color}" stroke-width="2" opacity="0.7"/>
+      <path d="M 90 267 Q 116 258 119 270" fill="none" stroke="${ORGANELLES.golgi.color}" stroke-width="2" opacity="0.6"/>
+      <circle cx="132" cy="254" r="5" fill="${ORGANELLES.golgi.color}99" stroke="${ORGANELLES.golgi.color}" stroke-width="1.5"/>
+      <circle cx="133" cy="265" r="4.5" fill="${ORGANELLES.golgi.color}99" stroke="${ORGANELLES.golgi.color}" stroke-width="1.5"/>
+    </g>
+
+    <!-- Smooth ER -->
+    <g style="cursor:pointer;" onclick="ThreeDCell._selectOrg('smooth_er','plant')">
+      <path d="M 440 320 Q 458 305 468 320 Q 476 333 462 344 Q 448 352 438 340 Q 428 328 440 320 Z" fill="${ORGANELLES.smooth_er.color}55" stroke="${ORGANELLES.smooth_er.color}" stroke-width="2.5"/>
+      <path d="M 443 323 Q 458 310 466 323 Q 472 333 460 341" fill="none" stroke="${ORGANELLES.smooth_er.color}" stroke-width="1.5" opacity="0.6"/>
+    </g>
+
+    <!-- Peroxisome -->
+    <g style="cursor:pointer;" onclick="ThreeDCell._selectOrg('peroxisome','plant')">
+      <circle cx="455" cy="90" r="13" fill="${ORGANELLES.peroxisome.color}88" stroke="${ORGANELLES.peroxisome.color}" stroke-width="2"/>
+      <circle cx="88" cy="408" r="11" fill="${ORGANELLES.peroxisome.color}88" stroke="${ORGANELLES.peroxisome.color}" stroke-width="2"/>
+    </g>
+
+    <!-- Vacuole (small) -->
+    <ellipse cx="450" cy="395" rx="28" ry="18" fill="${ORGANELLES.vacuole.color}55" stroke="${ORGANELLES.vacuole.color}" stroke-width="2"
+      style="cursor:pointer;" onclick="ThreeDCell._selectOrg('vacuole','plant')"/>
+
+    <!-- Plasmodesmata (small channels through cell wall) -->
+    <g style="cursor:pointer;" onclick="ThreeDCell._selectOrg('plasmodesmata','plant')">
+      <rect x="6" y="190" width="18" height="5" rx="2" fill="${ORGANELLES.plasmodesmata.color}" stroke="#fff" stroke-width="1"/>
+      <rect x="6" y="230" width="18" height="5" rx="2" fill="${ORGANELLES.plasmodesmata.color}" stroke="#fff" stroke-width="1"/>
+      <rect x="6" y="270" width="18" height="5" rx="2" fill="${ORGANELLES.plasmodesmata.color}" stroke="#fff" stroke-width="1"/>
+      <rect x="496" y="200" width="18" height="5" rx="2" fill="${ORGANELLES.plasmodesmata.color}" stroke="#fff" stroke-width="1"/>
+      <rect x="496" y="240" width="18" height="5" rx="2" fill="${ORGANELLES.plasmodesmata.color}" stroke="#fff" stroke-width="1"/>
+      <rect x="180" y="6" width="5" height="18" rx="2" fill="${ORGANELLES.plasmodesmata.color}" stroke="#fff" stroke-width="1"/>
+      <rect x="300" y="6" width="5" height="18" rx="2" fill="${ORGANELLES.plasmodesmata.color}" stroke="#fff" stroke-width="1"/>
+    </g>
+
+    <!-- Cytoskeleton lines -->
+    <g onclick="ThreeDCell._selectOrg('cytoskeleton','plant')" style="cursor:pointer;">
+      <line x1="130" y1="95" x2="50" y2="310" stroke="${ORGANELLES.cytoskeleton.color}" stroke-width="1.2" opacity="0.3" stroke-dasharray="4,3"/>
+      <line x1="390" y1="220" x2="460" y2="380" stroke="${ORGANELLES.cytoskeleton.color}" stroke-width="1.2" opacity="0.3" stroke-dasharray="4,3"/>
+      <line x1="160" y1="400" x2="460" y2="140" stroke="${ORGANELLES.cytoskeleton.color}" stroke-width="1" opacity="0.2" stroke-dasharray="3,4"/>
+    </g>
+
+    <!-- Ribosomes (free, scattered) -->
+    <g style="cursor:pointer;" onclick="ThreeDCell._selectOrg('ribosome','plant')">
+      <circle cx="165" cy="95" r="3" fill="${ORGANELLES.ribosome.color}"/>
+      <circle cx="178" cy="108" r="3" fill="${ORGANELLES.ribosome.color}"/>
+      <circle cx="460" cy="138" r="3" fill="${ORGANELLES.ribosome.color}"/>
+      <circle cx="472" cy="152" r="3" fill="${ORGANELLES.ribosome.color}"/>
+      <circle cx="155" cy="390" r="3" fill="${ORGANELLES.ribosome.color}"/>
+      <circle cx="170" cy="400" r="3" fill="${ORGANELLES.ribosome.color}"/>
+    </g>
+
+    <!-- LABELS -->
+    <g font-family="sans-serif" font-size="9" fill="var(--text-1,#1a2e1a)" font-weight="700" pointer-events="none">
+      <text x="170" y="30">Cell Wall</text>
+      <text x="190" y="44" font-size="8" font-weight="600" fill="var(--text-2,#444)">Cell Membrane</text>
+
+      <text x="200" y="240" text-anchor="middle" font-size="13" fill="${ORGANELLES.central_vacuole.color}">Central</text>
+      <text x="200" y="256" text-anchor="middle" font-size="13" fill="${ORGANELLES.central_vacuole.color}">Vacuole</text>
+      <text x="270" y="248" text-anchor="middle" font-size="11" fill="${ORGANELLES.central_vacuole.color}" font-style="italic">Tonoplast</text>
+
+      <text x="30" y="62">Chloroplasts</text>
+      <line x1="60" y1="65" x2="65" y2="76" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+
+      <text x="345" y="110">Nucleus</text>
+      <text x="378" y="158" font-size="8" fill="#fff">Nucleolus</text>
+
+      <text x="52" y="140">Mitochondrion</text>
+      <line x1="90" y1="143" x2="95" y2="150" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+
+      <text x="102" y="302">Rough ER</text>
+      <text x="46" y="234">Golgi</text>
+      <text x="428" y="300">Smooth ER</text>
+      <line x1="448" y1="303" x2="448" y2="316" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+
+      <text x="435" y="70">Peroxisome</text>
+      <line x1="455" y1="73" x2="455" y2="78" stroke="currentColor" stroke-width="1" opacity="0.5"/>
+
+      <text x="2" y="185">Plasm.</text>
+
+      <text x="418" y="384">Vacuole</text>
+    </g>
+  </svg>`;
+}
 
   function _selectOrg(orgId, cellType) {
     _selectedOrg = orgId;
@@ -1790,15 +2148,15 @@
 
     _updateOrgCount(mode);
 
-    if (mode === 'animal' || mode === 'plant' || mode === 'compare') {
-      _loadThree(() => _bootScenes());
-    }
+    if (mode === 'compare') {
+  _loadThree(() => _bootScenes());
+}
   }
 
   function _destroyAllScenes() {
-    Object.values(_scenes).forEach(sc => { if (sc && sc.dispose) sc.dispose(); });
-    _scenes = {};
-  }
+  Object.values(_scenes).forEach(sc => { if (sc && sc.dispose) sc.dispose(); });
+  _scenes = {};
+}
 
   function _setSystem(idx) {
     _systemIdx = idx;
