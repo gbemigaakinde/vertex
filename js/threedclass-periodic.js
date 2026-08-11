@@ -298,7 +298,7 @@
                align-items:center;justify-content:center;z-index:20;
                background:var(--bg, #fff);">
             <div style="text-align:center;">
-              <div style="font-size:2.5rem;margin-bottom:.75rem;animation:pt-spin 2s linear infinite;display:inline-block;">⚗️</div>
+              <div style="font-size:2.5rem;margin-bottom:.75rem;animation:pt-spin 2s linear infinite;display:inline-block;"><i class="ph ph-flask"></i></div>
               <div style="font-size:.875rem;color:rgba(128,128,128,0.8);font-weight:600;letter-spacing:.05em;">
                 Building 3D Periodic Table…
               </div>
@@ -344,7 +344,7 @@
         <div style="flex:1;min-width:0;">
           <div style="font-size:var(--text-base);font-weight:700;color:#fff;
                       letter-spacing:-.015em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-            ⚗️ Periodic Table
+            <i class="ph ph-flask" style="font-size:1.1em;vertical-align:-0.1em;margin-right:3px;"></i> Periodic Table
           </div>
         </div>
         <div style="display:flex;align-items:center;gap:.3rem;flex-shrink:0;
