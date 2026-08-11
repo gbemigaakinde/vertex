@@ -2813,7 +2813,8 @@ function _buildTeacherBubble(msg, showLabel) {
   function _updateStudentBadge(count) {
     const btn = document.getElementById('dmOpenBtn');
     if (!btn) return;
-    const existing = btn.querySelector('.dm-notif-badge');
+    const wrapper = btn.closest('div[style*="position:relative"]') || btn.parentElement;
+    const existing = wrapper.querySelector('.dm-notif-badge');
     if (existing) existing.remove();
     if (count > 0) {
       const badge = document.createElement('span');
@@ -2840,8 +2841,9 @@ function _buildTeacherBubble(msg, showLabel) {
         'z-index:10',
         'box-shadow:0 1px 4px rgba(0,0,0,0.25)',
       ].join(';');
-      btn.style.position = 'relative';
-      btn.appendChild(badge);
+      wrapper.style.position = 'relative';
+      wrapper.style.overflow = 'visible';
+      wrapper.appendChild(badge);
     }
   }
 
