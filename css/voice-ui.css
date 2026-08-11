@@ -1,0 +1,257 @@
+/* ============================================================
+   VERTEX CBT — Voice Notes + Speech UI  v1
+   ============================================================ */
+
+/* ── Recorder Button (next to chat input) ── */
+.vn-recorder-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid var(--border);
+  background: var(--bg-subtle);
+  color: var(--text-3);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 140ms cubic-bezier(0.16, 1, 0.3, 1);
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+  position: relative;
+}
+.vn-recorder-btn:hover {
+  background: var(--accent-subtle);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+.vn-recorder-btn:active {
+  transform: scale(0.92);
+}
+
+/* ── Recording Panel ── */
+.vn-recording-panel {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(140%);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  border: 1px solid var(--glass-border-outer);
+  border-radius: var(--r-xl);
+  padding: 1.25rem 2rem;
+  box-shadow: var(--glass-shadow-xl);
+  z-index: 99999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 280px;
+  transition: transform 300ms cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+.vn-recording-panel.is-visible {
+  transform: translateX(-50%) translateY(0);
+  pointer-events: auto;
+}
+.vn-recording-panel::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: 1px solid var(--glass-border);
+  pointer-events: none;
+}
+.vn-waveform {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 32px;
+}
+.vn-waveform span {
+  display: block;
+  width: 4px;
+  background: var(--danger);
+  border-radius: 2px;
+  animation: vn-wave 0.55s ease-in-out infinite alternate;
+}
+.vn-waveform span:nth-child(1) { height: 8px;  animation-delay: 0.00s; }
+.vn-waveform span:nth-child(2) { height: 16px; animation-delay: 0.10s; }
+.vn-waveform span:nth-child(3) { height: 24px; animation-delay: 0.20s; }
+.vn-waveform span:nth-child(4) { height: 16px; animation-delay: 0.30s; }
+.vn-waveform span:nth-child(5) { height: 8px;  animation-delay: 0.40s; }
+@keyframes vn-wave {
+  from { transform: scaleY(0.35); opacity: 0.4; }
+  to   { transform: scaleY(1);    opacity: 1;   }
+}
+.vn-recording-timer {
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--text-1);
+  line-height: 1;
+}
+.vn-recording-label {
+  font-size: var(--text-xs);
+  color: var(--text-3);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-weight: 600;
+}
+.vn-recording-cancel {
+  font-size: var(--text-xs);
+  color: var(--text-4);
+  background: none;
+  border: none;
+  cursor: pointer;
+  margin-top: 4px;
+  font-family: var(--font);
+  padding: 4px 8px;
+  border-radius: var(--r-sm);
+  transition: all 120ms;
+}
+.vn-recording-cancel:hover {
+  color: var(--danger);
+  background: var(--danger-subtle);
+}
+
+/* ── Inline Audio Player (inside chat bubbles) ── */
+.vn-audio-player {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: var(--r-lg);
+  padding: 0.375rem 0.625rem;
+  min-width: 190px;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+/* Outgoing bubbles (blue background) */
+.dm-msg-out .vn-audio-player,
+.gc-msg-out .vn-audio-player {
+  background: rgba(255,255,255,0.14);
+}
+.dm-msg-out .vn-play-btn,
+.gc-msg-out .vn-play-btn {
+  background: rgba(255,255,255,0.9);
+  color: var(--accent);
+}
+.dm-msg-out .vn-progress-bar,
+.gc-msg-out .vn-progress-bar {
+  background: rgba(255,255,255,0.22);
+}
+.dm-msg-out .vn-progress-fill,
+.gc-msg-out .vn-progress-fill {
+  background: rgba(255,255,255,0.9);
+}
+.dm-msg-out .vn-duration,
+.gc-msg-out .vn-duration {
+  color: rgba(255,255,255,0.85);
+}
+/* Incoming bubbles (light/dark surface) */
+.dm-msg-in .vn-audio-player,
+.gc-msg-in .vn-audio-player {
+  background: var(--accent-subtle);
+}
+.dm-msg-in .vn-play-btn,
+.gc-msg-in .vn-play-btn {
+  background: var(--accent);
+  color: #fff;
+}
+.dm-msg-in .vn-progress-bar,
+.gc-msg-in .vn-progress-bar {
+  background: var(--accent-border);
+}
+.dm-msg-in .vn-progress-fill,
+.gc-msg-in .vn-progress-fill {
+  background: var(--accent);
+}
+.dm-msg-in .vn-duration,
+.gc-msg-in .vn-duration {
+  color: var(--text-3);
+}
+
+.vn-play-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: transform 120ms;
+}
+.vn-play-btn:hover { transform: scale(1.1); }
+.vn-progress-wrap {
+  flex: 1;
+  min-width: 0;
+}
+.vn-progress-bar {
+  height: 4px;
+  border-radius: 2px;
+  overflow: hidden;
+}
+.vn-progress-fill {
+  height: 100%;
+  border-radius: 2px;
+  transition: width 0.2s linear;
+  width: 0%;
+}
+.vn-duration {
+  font-size: var(--text-xs);
+  font-family: var(--font-mono);
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+/* ── Exam Speech Buttons ── */
+#seExamControls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+}
+.se-tts-btn, .se-stt-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--glass-border-outer);
+  background: var(--glass-bg-subtle);
+  color: var(--text-2);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 120ms;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  padding: 0;
+}
+.se-tts-btn:hover, .se-stt-btn:hover {
+  background: var(--accent-subtle);
+  border-color: var(--accent-border);
+  color: var(--accent);
+}
+.se-stt-btn.is-listening {
+  background: var(--danger-subtle);
+  border-color: var(--danger-border);
+  color: var(--danger);
+  animation: se-pulse 1.2s infinite;
+}
+@keyframes se-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(224, 59, 59, 0.35); }
+  50%      { box-shadow: 0 0 0 10px rgba(224, 59, 59, 0); }
+}
+
+/* Mobile */
+@media (max-width: 640px) {
+  .vn-recording-panel {
+    width: calc(100% - 2rem);
+    min-width: unset;
+    padding: 1rem 1.25rem;
+  }
+}
