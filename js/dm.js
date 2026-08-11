@@ -2016,7 +2016,7 @@ function _buildTeacherBubble(msg, showLabel) {
       });
       batch.set(_threadRef(uid), {
         studentName: name, studentClass: cls,
-        lastMessage: '🎤 Voice note',
+        lastMessage: '[VN]',
         lastAt: firebase.firestore.FieldValue.serverTimestamp(),
         teacherUnread: firebase.firestore.FieldValue.increment(1),
         studentUnread: 0,
@@ -2107,6 +2107,16 @@ function _buildTeacherBubble(msg, showLabel) {
     const previewText = item.lastMessage || 'No messages yet';
     const unread     = item.teacherUnread || 0;
 
+    if (previewText === '[VN]') {
+      return `
+        <div class="dm-thread-r2">
+          <span class="dm-thread-preview" style="display:inline-flex;align-items:center;gap:4px;min-width:0;overflow:hidden;">
+            <i class="ph ph-microphone" style="font-size:13px;color:var(--accent);flex-shrink:0;"></i>
+            <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Voice note</span>
+          </span>
+          ${unread > 0 ? `<span class="dm-thread-badge">${unread > 9 ? '9+' : unread}</span>` : ''}
+        </div>`;
+    }
     if (isTyping) {
       return `
         <div class="dm-thread-r2">
@@ -2557,7 +2567,7 @@ function _buildTeacherBubble(msg, showLabel) {
       });
       batch.set(_threadRef(studentUid), {
         studentName: studentName || '', studentClass: studentClass || '',
-        lastMessage: '🎤 Voice note',
+        lastMessage: '[VN]',
         lastAt: firebase.firestore.FieldValue.serverTimestamp(),
         studentUnread: firebase.firestore.FieldValue.increment(1),
         teacherUnread: 0,
