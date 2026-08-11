@@ -2881,6 +2881,7 @@ function _buildTeacherBubble(msg, showLabel) {
   async function initTeacherDMListener() {
   AppState.cancelListener('dmTeacherUnread');
   await _setTeacherOnlineGlobal();
+  purgeOldVoiceNotes().catch(() => {});
 
   // One-time sweep on login: upgrade all student→sent messages to delivered
   // across every thread, since teacher is now active in the app.
