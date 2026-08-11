@@ -244,49 +244,93 @@
     /* ══════════════════════════════════════════════════════
        PLAYBACK RENDERER (returns HTML string for bubbles)
     ══════════════════════════════════════════════════════ */
-    renderPlayer(voiceNote) {
-      const id = 'vnPlayer-' + Math.random().toString(36).slice(2, 9);
-      const dur = this._fmtTime(voiceNote.duration || 0);
-      return `<div class="vn-audio-player" id="${_escAttr(id)}" data-src="${_escAttr(voiceNote.data)}" data-mime="${_escAttr(voiceNote.mimeType || 'audio/webm')}">
-        <button class="vn-play-btn" onclick="VoiceNotes.togglePlay('${_escAttr(id)}')" title="Play">
-          <svg class="vn-icon-play" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-          <svg class="vn-icon-pause" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
-        </button>
-        <div class="vn-progress-wrap"><div class="vn-progress-bar"><div class="vn-progress-fill" style="width:0%"></div></div></div>
-        <span class="vn-duration">${dur}</span>
-      </div>`;
-    },
+renderPlayer(voiceNote) {
+  const id = 'vnPlayer-' + Math.random().toString(36).slice(2, 9);
+  const dur = this._fmtTime(voiceNote.duration || 0);
 
-    togglePlay(playerId) {
-      const player = document.getElementById(playerId);
-      if (!player) return;
-      let audio = player.querySelector('audio');
-      if (!audio) {
-        audio = document.createElement('audio');
-        audio.src = player.dataset.src;
-        audio.style.display = 'none';
-        player.appendChild(audio);
-        audio.addEventListener('timeupdate', () => {
-          const pct = audio.duration ? (audio.currentTime / audio.duration) * 100 : 0;
-          const fill = player.querySelector('.vn-progress-fill');
-          if (fill) fill.style.width = pct + '%';
-        });
-        audio.addEventListener('ended', () => {
-          this._setPlay(player, false);
-          const fill = player.querySelector('.vn-progress-fill');
-          if (fill) fill.style.width = '0%';
-        });
+  // Generate consistent pseudo-random waveform bars from the audio data
+  // Uses a simple hash of the data string so the same note always looks the same
+  const BAR_COUNT = 30;
+  const bars = this._generateWaveBars(voiceNote.data || '', BAR_COUNT);
+  const barsHtml = bars.map((h, i) =>
+    `<span class="vn-wave-bar" data-idx="${i}" style="height:${h}px;"></span>`
+  ).join('');
+
+  return `<div class="vn-audio-player" id="${_escAttr(id)}"
+    data-src="${_escAttr(voiceNote.data)}"
+    data-mime="${_escAttr(voiceNote.mimeType || 'audio/webm')}"
+    data-duration="${voiceNote.duration || 0}"
+    data-bars="${_escAttr(JSON.stringify(bars))}">
+    <button class="vn-play-btn" onclick="VoiceNotes.togglePlay('${_escAttr(id)}')" title="Play">
+      <svg class="vn-icon-play" width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+      <svg class="vn-icon-pause" width="14" height="14" viewBox="0 0 24 24" fill="currentColor" style="display:none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>
+    </button>
+    <div class="vn-progress-wrap">
+      <div class="vn-waveform-bars">${barsHtml}</div>
+    </div>
+    <span class="vn-duration">${dur}</span>
+  </div>`;
+},
+
+togglePlay(playerId) {
+  const player = document.getElementById(playerId);
+  if (!player) return;
+  let audio = player.querySelector('audio');
+  if (!audio) {
+    audio = document.createElement('audio');
+    audio.src = player.dataset.src;
+    audio.style.display = 'none';
+    player.appendChild(audio);
+
+    audio.addEventListener('timeupdate', () => {
+      if (!audio.duration) return;
+      const pct     = audio.currentTime / audio.duration;
+      const bars    = player.querySelectorAll('.vn-wave-bar');
+      const elapsed = Math.floor(pct * bars.length);
+      bars.forEach((bar, i) => {
+        bar.classList.toggle('vn-wave-bar--played', i < elapsed);
+      });
+      // Update duration display to show remaining time
+      const remaining = audio.duration - audio.currentTime;
+      const dur = player.querySelector('.vn-duration');
+      if (dur) dur.textContent = VoiceNotes._fmtTime(remaining);
+    });
+
+    audio.addEventListener('ended', () => {
+      this._setPlay(player, false);
+      // Reset all bars to unplayed
+      player.querySelectorAll('.vn-wave-bar').forEach(bar => {
+        bar.classList.remove('vn-wave-bar--played');
+      });
+      // Restore original duration
+      const dur = player.querySelector('.vn-duration');
+      if (dur) dur.textContent = VoiceNotes._fmtTime(parseFloat(player.dataset.duration) || 0);
+    });
+  }
+
+  if (audio.paused) {
+    // Pause all other players first
+    document.querySelectorAll('.vn-audio-player audio').forEach(a => {
+      if (a !== audio && !a.paused) {
+        a.pause();
+        a.currentTime = 0;
       }
-      if (audio.paused) {
-        document.querySelectorAll('.vn-audio-player audio').forEach(a => { if (a !== audio && !a.paused) { a.pause(); a.currentTime = 0; } });
-        document.querySelectorAll('.vn-audio-player').forEach(p => { if (p !== player) this._setPlay(p, false); });
-        audio.play().catch(() => {});
-        this._setPlay(player, true);
-      } else {
-        audio.pause();
-        this._setPlay(player, false);
+    });
+    document.querySelectorAll('.vn-audio-player').forEach(p => {
+      if (p !== player) {
+        this._setPlay(p, false);
+        p.querySelectorAll('.vn-wave-bar').forEach(bar => bar.classList.remove('vn-wave-bar--played'));
+        const dur = p.querySelector('.vn-duration');
+        if (dur) dur.textContent = VoiceNotes._fmtTime(parseFloat(p.dataset.duration) || 0);
       }
-    },
+    });
+    audio.play().catch(() => {});
+    this._setPlay(player, true);
+  } else {
+    audio.pause();
+    this._setPlay(player, false);
+  }
+},
 
     _setPlay(player, playing) {
       const p = player.querySelector('.vn-icon-play');
@@ -295,6 +339,32 @@
       if (a) a.style.display = playing ? 'block' : 'none';
       player.classList.toggle('is-playing', playing);
     },
+
+_generateWaveBars(dataStr, count) {
+  // Build a simple numeric seed from the data string
+  // so the same voice note always renders the same bars
+  let seed = 0;
+  const sample = dataStr ? dataStr.slice(20, 200) : 'default';
+  for (let i = 0; i < sample.length; i++) {
+    seed = (seed * 31 + sample.charCodeAt(i)) & 0xffffffff;
+  }
+
+  const MIN_H = 3;
+  const MAX_H = 20;
+  const bars  = [];
+
+  for (let i = 0; i < count; i++) {
+    // LCG pseudo-random from seed
+    seed = (seed * 1664525 + 1013904223) & 0xffffffff;
+    const t = (seed >>> 0) / 0xffffffff; // 0..1
+
+    // Shape the distribution: push values toward extremes for
+    // a more natural-looking waveform (fewer mid-height bars)
+    const shaped = Math.pow(Math.sin(t * Math.PI), 0.6);
+    bars.push(Math.round(MIN_H + shaped * (MAX_H - MIN_H)));
+  }
+  return bars;
+},
 
     _fmtTime(s) {
       const m = Math.floor(s / 60);
