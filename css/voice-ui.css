@@ -276,6 +276,15 @@
   color: var(--danger);
   animation: se-pulse 1.2s infinite;
 }
+
+/* TTS button — active state while reading aloud */
+.se-tts-btn.is-speaking {
+  background: var(--warning-subtle);
+  border-color: var(--warning-border);
+  color: var(--warning);
+  animation: se-pulse 1.2s infinite;
+}
+
 @keyframes se-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(224, 59, 59, 0.35); }
   50%      { box-shadow: 0 0 0 10px rgba(224, 59, 59, 0); }
