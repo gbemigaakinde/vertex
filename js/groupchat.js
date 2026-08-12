@@ -766,7 +766,7 @@
     }
   }
 
-  function _toggleActionMenu(wrapperId, groupId, messageId, currentText, canEdit, canHistory, isDarkBubble, alignRight, isTeacherViewer) {
+  function _toggleActionMenu(wrapperId, groupId, messageId, currentText, canEdit, canHistory, canDelete, isDarkBubble, alignRight, isTeacherViewer) {
     const menuId = `gcMenu-${messageId}`;
     if (_openGcMenuId === menuId) { _closeOpenGcMenu(); return; }
     _closeOpenGcMenu();
@@ -814,6 +814,17 @@
       menu.appendChild(histItem);
     }
 
+    if (canDelete) {
+      const delItem = document.createElement('button');
+      delItem.className = 'gc-action-menu-item danger';
+      delItem.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg> Delete message`;
+      delItem.onclick = () => {
+        _closeOpenGcMenu();
+        _confirmDeleteMessage(groupId, messageId, wrapperId);
+      };
+      menu.appendChild(delItem);
+    }
+
     if (!menu.children.length) { menu.remove(); _openGcMenuId = null; return; }
 
     requestAnimationFrame(() => {
@@ -840,6 +851,36 @@
         }
       });
     }, 0);
+  }
+  
+  function _confirmDeleteMessage(groupId, messageId, wrapperId) {
+    _showCustomConfirmation(
+      'Delete Message',
+      'Delete this message for everyone? This cannot be undone.',
+      () => _deleteMessage(groupId, messageId, wrapperId)
+    );
+  }
+
+  async function _deleteMessage(groupId, messageId, wrapperId) {
+    try {
+      const msgRef = Db()
+        .collection('groupChats').doc(groupId)
+        .collection('messages').doc(messageId);
+
+      await msgRef.update({ deletedForAll: true, voiceNote: firebase.firestore.FieldValue.delete() });
+
+
+      // Optimistically update the DOM so the user sees it vanish immediately
+      const wrap = document.getElementById(wrapperId);
+      if (wrap) {
+        wrap.outerHTML = `<div class="gc-event-row">
+          <em style="color:var(--text-4);">This message was deleted.</em>
+        </div>`;
+      }
+    } catch (err) {
+      console.error('[gc] _deleteMessage error:', err);
+      UI.toast('Failed to delete message.', 'error');
+    }
   }
   
   function _activateInlineEdit(groupId, messageId, currentText, isDarkBubble, wrapperId, isTeacherViewer) {
@@ -1103,11 +1144,9 @@
     const wrapId = `gcWrap-${_escAttr(msgId)}`;
     const time   = _timeStr(msg.timestamp);
 
-    // Who can edit this message:
-    // - the original sender (student: up to 2 edits; teacher: unlimited)
-    // - teacher viewer can always edit any message
     const canEdit    = !!msgId && (isMe || isTeacherViewer) && !msg.voiceNote;
-    const canHistory = !!msgId && (isMe || isTeacherViewer);
+    const canHistory = !!msgId && (isMe || isTeacherViewer) && !msg.voiceNote;
+    const canDelete  = !!msgId && (isMe || isTeacherViewer);
 
     let replyCard = '';
     if (msg.replyTo && msg.replyTo.id) {
@@ -1134,11 +1173,10 @@
 
     const safeGid    = _escAttr(groupId || _activeGroupId || '');
     const safeMsgId  = _escAttr(msgId);
-    const safeVUid   = _escAttr(viewerUid || '');
 
-    const editBtn = (canEdit || canHistory)
+    const editBtn = (canEdit || canHistory || canDelete)
       ? `<button title="Options"
-                 onclick="event.stopPropagation();GroupChat._toggleActionMenu('${wrapId}','${safeGid}','${safeMsgId}',document.getElementById('${wrapId}').querySelector('.gc-bubble-text').textContent,${canEdit},${canHistory},${isMe},${isMe},${!!isTeacherViewer})"
+                 onclick="event.stopPropagation();GroupChat._toggleActionMenu('${wrapId}','${safeGid}','${safeMsgId}',document.getElementById('${wrapId}').querySelector('.gc-bubble-text')?.textContent||'',${canEdit},${canHistory},${canDelete},${isMe},${isMe},${!!isTeacherViewer})"
                  style="color:${isMe ? 'rgba(255,255,255,.7)' : 'var(--text-4)'}"
                  class="gc-edit-trigger-btn">
            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -2834,7 +2872,8 @@ async function _deleteGroup(groupId) {
     _backToTeacherList,
     _toggleActionMenu,
     _showEditHistory,
-    _scrollToMsg,
+    _confirmDeleteMessage,
+    _deleteMessage,
   };
 
 }());
