@@ -1450,7 +1450,7 @@
   }
 }
 
-  function _toggleActionMenu(wrapperId, studentUid, messageId, currentText, canEdit, canHistory, isDarkBubble, alignRight, isTeacher) {
+  function _toggleActionMenu(wrapperId, studentUid, messageId, currentText, canEdit, canHistory, canDelete, isDarkBubble, alignRight, isTeacher) {
   const menuId = `dmMenu-${messageId}`;
   if (_openMenuId === menuId) { _closeOpenMenu(); return; }
   _closeOpenMenu();
@@ -1460,8 +1460,6 @@
   const bubbleInner = wrapper.querySelector('.dm-bubble-inner');
   if (!bubbleInner) return;
 
-  // Always re-read text from the DOM — the inline onclick passes textContent
-  // which can sometimes be stale or undefined if the element was mutated.
   const textEl      = bubbleInner.querySelector('.dm-bubble-text');
   const resolvedText = (currentText && String(currentText).trim())
     ? String(currentText).trim()
@@ -1493,25 +1491,33 @@
     menu.appendChild(histItem);
   }
 
+  if (canDelete) {
+    const delItem     = document.createElement('button');
+    delItem.className = 'dm-action-menu-item';
+    delItem.style.color = 'var(--danger,#e03b3b)';
+    delItem.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg> Delete message`;
+    delItem.onclick   = () => {
+      _closeOpenMenu();
+      _confirmDeleteDMMessage(studentUid, messageId, wrapperId);
+    };
+    menu.appendChild(delItem);
+  }
+
   if (!menu.children.length) return;
 
-  // Attach to body with fixed positioning so it escapes any overflow:hidden ancestor
   menu.style.position = 'fixed';
   menu.style.zIndex   = '9999';
-  menu.style.top      = '-9999px'; // hide off-screen until measured
+  menu.style.top      = '-9999px';
   menu.style.left     = '-9999px';
   document.body.appendChild(menu);
   _openMenuId = menuId;
 
-  // Mark bubble so the pencil icon stays visible while menu is open
   bubbleInner.classList.add('menu-open');
 
-  // Measure and position after paint
   requestAnimationFrame(() => {
     const rect     = bubbleInner.getBoundingClientRect();
     const menuRect = menu.getBoundingClientRect();
 
-    // Prefer opening above the bubble; fall back to below if not enough room
     const spaceAbove = rect.top;
     if (spaceAbove >= menuRect.height + 8) {
       menu.style.top = `${rect.top - menuRect.height - 6}px`;
@@ -1519,7 +1525,6 @@
       menu.style.top = `${rect.bottom + 6}px`;
     }
 
-    // Align to the right or left edge of the bubble, clamped inside the viewport
     if (alignRight) {
       menu.style.left = `${Math.max(4, rect.right - menuRect.width)}px`;
     } else {
@@ -1527,7 +1532,6 @@
     }
   });
 
-  // Close when clicking anywhere outside the menu
   setTimeout(() => {
     document.addEventListener('click', function _handler(e) {
       if (!menu.contains(e.target)) {
@@ -1538,12 +1542,79 @@
   }, 0);
 }
 
+function _confirmDeleteDMMessage(studentUid, messageId, wrapperId) {
+    // Reuse the existing UI.confirm pattern if available, otherwise a simple confirm
+    const msg = 'Delete this message for everyone? This cannot be undone.';
+    if (window.UI && UI.confirm) {
+      UI.confirm('Delete Message', msg, () => _deleteDMMessage(studentUid, messageId, wrapperId));
+    } else if (window.confirm(msg)) {
+      _deleteDMMessage(studentUid, messageId, wrapperId);
+    }
+  }
+
+  async function _deleteDMMessage(studentUid, messageId, wrapperId) {
+    try {
+      const msgRef = _threadRef(studentUid).collection('messages').doc(messageId);
+
+      // Check if this was the last message so we can update the thread preview
+      const threadSnap = await _threadRef(studentUid).get();
+      const threadData = (threadSnap.exists && threadSnap.data()) || {};
+      const isLastMsg  = threadData.lastMessageRole !== undefined; // will update regardless
+
+      const batch = _threadRef(studentUid).firestore
+        ? Db().batch()
+        : null;
+
+      if (batch) {
+        batch.update(msgRef, {
+          deletedForAll: true,
+          voiceNote: firebase.firestore.FieldValue.delete(),
+          text: '',
+        });
+        // If it was the last message update the preview
+        const lastMsgSnap = await _threadRef(studentUid)
+          .collection('messages').orderBy('timestamp', 'desc').limit(1).get();
+        if (!lastMsgSnap.empty && lastMsgSnap.docs[0].id === messageId) {
+          batch.set(_threadRef(studentUid), { lastMessage: 'Message deleted' }, { merge: true });
+        }
+        await batch.commit();
+      } else {
+        await msgRef.update({
+          deletedForAll: true,
+          voiceNote: firebase.firestore.FieldValue.delete(),
+          text: '',
+        });
+      }
+
+      // Optimistically update the DOM
+      const wrap = document.getElementById(wrapperId);
+      if (wrap) {
+        // Replace with a subtle deleted notice in the same position
+        const isOut = wrap.classList.contains('dm-msg-out');
+        wrap.outerHTML = `
+          <div style="display:flex;justify-content:${isOut ? 'flex-end' : 'flex-start'};
+                      padding:0 0 .5rem;width:100%;box-sizing:border-box;">
+            <span style="font-size:.75rem;color:var(--text-4,#9ca3af);
+                         font-style:italic;padding:.25rem .5rem;
+                         border:1px solid var(--border,#e5e7eb);border-radius:8px;
+                         background:var(--bg-subtle,#f9fafb);">
+              Message deleted
+            </span>
+          </div>`;
+      }
+    } catch (err) {
+      console.error('[dm] _deleteDMMessage error:', err);
+      UI.toast('Failed to delete message.', 'error');
+    }
+  }
+
   /* ── Bubble builders ───────────────────────────────────────── */
   function _buildStudentBubble(msg, myUid, showLabel) {
   const isMe    = msg.senderId === myUid;
   const msgId   = msg.id || '';
   const wrapId  = `dmWrap-${_escAttr(msgId)}`;
-  const canEdit = isMe && !!msgId && !msg.voiceNote;
+  const canEdit   = isMe && !!msgId && !msg.voiceNote;
+  const canDelete = isMe && !!msgId;
 
   const time = msg.timestamp
     ? new Date(msg.timestamp.toDate ? msg.timestamp.toDate() : msg.timestamp)
@@ -1571,9 +1642,9 @@
       </div>`;
   }
 
-  const editBtn = canEdit
-    ? `<button title="Edit"
-               onclick="event.stopPropagation();DM._toggleActionMenu('${wrapId}','${safeUid}','${safeMsgId}',document.getElementById('${wrapId}').querySelector('.dm-bubble-text').textContent,true,false,${isMe},${isMe},false)"
+  const editBtn = (canEdit || canDelete)
+    ? `<button title="Options"
+               onclick="event.stopPropagation();DM._toggleActionMenu('${wrapId}','${safeUid}','${safeMsgId}',document.getElementById('${wrapId}').querySelector('.dm-bubble-text')?.textContent||'',${canEdit},false,${canDelete},${isMe},${isMe},false)"
                style="background:none;border:none;cursor:pointer;padding:0 0 0 4px;
                       display:inline-flex;align-items:center;opacity:0;transition:opacity .15s;
                       color:${isMe ? 'rgba(255,255,255,.7)' : 'var(--text-4,#9ca3af)'};
@@ -1644,7 +1715,8 @@ function _buildTeacherBubble(msg, showLabel) {
   const wrapId     = `dmWrap-${_escAttr(msgId)}`;
   const studentUid = _activeStudentUid || '';
   const canEdit    = isTeacher && !!msgId && !msg.voiceNote;
-  const canHistory = !!msgId;
+  const canHistory = !!msgId && !msg.voiceNote;
+  const canDelete  = !!msgId;
 
   const time = msg.timestamp
     ? new Date(msg.timestamp.toDate ? msg.timestamp.toDate() : msg.timestamp)
@@ -1672,9 +1744,9 @@ function _buildTeacherBubble(msg, showLabel) {
       </div>`;
   }
 
-  const editBtn = (canEdit || canHistory)
+  const editBtn = (canEdit || canHistory || canDelete)
     ? `<button title="Options"
-               onclick="event.stopPropagation();DM._toggleActionMenu('${wrapId}','${safeStudentUid}','${safeMsgId}',document.getElementById('${wrapId}').querySelector('.dm-bubble-text').textContent,${canEdit},${canHistory},${isTeacher},${isTeacher},true)"
+               onclick="event.stopPropagation();DM._toggleActionMenu('${wrapId}','${safeStudentUid}','${safeMsgId}',document.getElementById('${wrapId}').querySelector('.dm-bubble-text')?.textContent||'',${canEdit},${canHistory},${canDelete},${isTeacher},${isTeacher},true)"
                style="background:none;border:none;cursor:pointer;padding:0 0 0 4px;
                       display:inline-flex;align-items:center;opacity:0;transition:opacity .15s;
                       color:${isTeacher ? 'rgba(255,255,255,.7)' : 'var(--text-4,#9ca3af)'};
@@ -3112,6 +3184,8 @@ async function purgeOldVoiceNotes() {
     _clearStudentReply,
     _clearTeacherReply,
     purgeOldVoiceNotes,
+    _confirmDeleteDMMessage,
+    _deleteDMMessage,
   };
 
 }());
