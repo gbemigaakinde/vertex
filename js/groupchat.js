@@ -77,28 +77,32 @@
     return date.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
   }
 
-  function _listTimeStr(ts) {
-  if (!ts) return '';
-  const d   = ts.toDate ? ts.toDate() : new Date(ts);
-  const now  = new Date();
-  const today     = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
-  const msgDay    = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  function _timeStr(ts) {
+    if (!ts) return '';
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+  }
 
-  if (msgDay.getTime() === today.getTime()) {
-    return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+  function _listTimeStr(ts) {
+    if (!ts) return '';
+    const d   = ts.toDate ? ts.toDate() : new Date(ts);
+    const now  = new Date();
+    const today     = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+    const msgDay    = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+    if (msgDay.getTime() === today.getTime()) {
+      return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    }
+    if (msgDay.getTime() === yesterday.getTime()) {
+      return 'Yesterday';
+    }
+    const diffDays = Math.floor((today - msgDay) / 86400000);
+    if (diffDays < 7) {
+      return d.toLocaleDateString('en-GB', { weekday: 'short' });
+    }
+    return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' });
   }
-  if (msgDay.getTime() === yesterday.getTime()) {
-    return 'Yesterday';
-  }
-  // Within the last 7 days — show weekday name
-  const diffDays = Math.floor((today - msgDay) / 86400000);
-  if (diffDays < 7) {
-    return d.toLocaleDateString('en-GB', { weekday: 'short' }); // e.g. "Mon"
-  }
-  // Older — show DD/MM
-  return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }); // e.g. "11/08"
-}
 
   /* ── Word filter ───────────────────────────────────────── */
   function _isBannedWord(text, bannedWords) {
