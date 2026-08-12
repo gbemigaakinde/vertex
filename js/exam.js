@@ -1541,12 +1541,13 @@
 
     const ring = document.getElementById('timerRingProg');
     if (ring) {
-      const RING_R  = 34;
-      const RING_C  = 2 * Math.PI * RING_R;
+      const RING_R   = 34;
+      const RING_C   = 2 * Math.PI * RING_R;
       const progress = Math.max(0, remaining / duration);
       ring.setAttribute('stroke-dashoffset', (RING_C * (1 - progress)).toFixed(2));
-      ring.className = 'vtx-timer-ring-prog' +
+      const ringClass = 'vtx-timer-ring-prog' +
         (remaining < redThreshold ? ' is-red' : remaining < yellowThreshold ? ' is-yellow' : '');
+      ring.setAttribute('class', ringClass);
     }
   }
 
