@@ -983,7 +983,7 @@
     renderExam();
   }
 
-  /* ─────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────── */
   /* renderExam                                              */
   /* ─────────────────────────────────────────────────────── */
   function renderExam() {
@@ -1389,6 +1389,11 @@
       );
     });
   });
+
+  // Wire TTS and STT buttons — must come AFTER the DOM is mounted.
+  if (window.SpeechEngine && typeof SpeechEngine.wireExamButtons === 'function') {
+    SpeechEngine.wireExamButtons(exam);
+  }
 
   _renderKatex();
 }
