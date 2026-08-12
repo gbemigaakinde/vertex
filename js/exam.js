@@ -994,30 +994,34 @@
 
   if (window.MsgNotif) MsgNotif.dismissAll();
 
-  const subj = exam.currentSubject;
-  const qList = exam.questions[subj];
-  const q = qList[exam.currentIndex];
+  const subj    = exam.currentSubject;
+  const qList   = exam.questions[subj];
+  const q       = qList[exam.currentIndex];
   const subjIdx = exam.subjects.indexOf(subj);
 
-  const timerStr = _currentTimerStr();
+  const timerStr   = _currentTimerStr();
   const timerClass = _currentTimerClass();
 
-  const RING_R = 34;
+  const RING_R = 30;
   const RING_C = 2 * Math.PI * RING_R;
   const progress = _timerProgress();
-  const offset = RING_C * (1 - progress);
+  const offset   = RING_C * (1 - progress);
 
   const ringColor =
-    timerClass === 'timer-red'
-      ? 'is-red'
-      : timerClass === 'timer-yellow'
-        ? 'is-yellow'
-        : '';
+    timerClass === 'timer-red'    ? 'is-red'
+  : timerClass === 'timer-yellow' ? 'is-yellow'
+  : '';
+
+  /* Colour tokens for the timer text */
+  const timerTextColor =
+    timerClass === 'timer-red'    ? 'var(--danger)'
+  : timerClass === 'timer-yellow' ? 'var(--warning)'
+  : 'var(--success)';
 
   UI.mount(`
-    <div class="max-w-4xl mx-auto" style="padding:0.75rem 0;">
+    <div class="max-w-4xl mx-auto" style="padding:0.5rem 0 1rem;">
 
-      <!-- STUDENT INFORMATION -->
+      <!-- STUDENT BAR -->
       <div class="vtx-student-bar">
         <span>${_escHtml(S().studentData.name)}</span>
         <span style="color:var(--border-strong);">|</span>
@@ -1026,245 +1030,110 @@
         <span>${_escHtml(S().studentData.school)}</span>
       </div>
 
-      <!-- STICKY EXAM HEADER -->
-      <div
-        class="glass exam-header-sticky"
-        style="
-          padding:0.875rem 1.25rem;
-          margin-bottom:0.75rem;
-        "
-      >
+      <!-- EXAM HEADER — sticky glass card -->
+      <div class="glass exam-header-sticky vtx-exam-header" style="margin-bottom:0.75rem;">
 
-        <div
-          style="
-            display:flex;
-            justify-content:space-between;
-            align-items:center;
-            gap:1rem;
-          "
-        >
+        <!-- Row 1: subject + controls + timer -->
+        <div class="vtx-exam-header-row">
 
-          <!-- SUBJECT INFORMATION -->
-          <div>
-            <h2
-              style="
-                font-size:1.1875rem;
-                font-weight:700;
-                line-height:1.3;
-              "
-            >
-              ${_escHtml(subj)}
-            </h2>
-
-            <p
-              style="
-                font-size:0.8125rem;
-                color:var(--text-3);
-                margin-top:2px;
-              "
-            >
+          <!-- Subject info -->
+          <div class="vtx-exam-header-subj">
+            <h2 class="vtx-exam-subj-name">${_escHtml(subj)}</h2>
+            <p class="vtx-exam-subj-meta">
               Subject ${subjIdx + 1} of ${exam.subjects.length}
               &bull;
               Q${exam.currentIndex + 1} / ${qList.length}
             </p>
           </div>
 
-          <!-- CONTROLS + TIMER -->
-          <div
-            style="
-              display:flex;
-              align-items:center;
-              gap:0.5rem;
-              flex-shrink:0;
-            "
-          >
+          <!-- Right side: speech pill + timer -->
+          <div class="vtx-exam-header-right">
 
-            <div
-              id="seExamControls"
-              style="
-                display:flex;
-                align-items:center;
-                gap:6px;
-              "
-            >
+            <!-- Speech controls pill -->
+            <div class="vtx-speech-pill" id="seExamControls">
               <button
                 id="seTtsBtn"
-                class="se-tts-btn"
+                class="se-tts-btn vtx-speech-btn"
                 title="Read question aloud (R)"
                 aria-label="Read question aloud"
               >
-                <i
-                  class="ph ph-speaker-high"
-                  style="font-size:15px;"
-                ></i>
+                <i class="ph ph-speaker-high" style="font-size:16px;"></i>
               </button>
-
+              <span class="vtx-speech-divider"></span>
               <button
                 id="seSttBtn"
-                class="se-stt-btn"
+                class="se-stt-btn vtx-speech-btn"
                 title="Voice command (M)"
                 aria-label="Start voice command"
               >
-                <i
-                  class="ph ph-microphone"
-                  style="font-size:15px;"
-                ></i>
+                <i class="ph ph-microphone" style="font-size:16px;"></i>
               </button>
             </div>
 
-            <!-- TIMER -->
-            <div class="vtx-timer-wrap">
+            <!-- Timer ring -->
+            <div class="vtx-timer-wrap vtx-exam-timer" id="vtxTimerWrap">
               <svg
                 class="vtx-timer-ring"
-                viewBox="0 0 80 80"
+                viewBox="0 0 72 72"
                 xmlns="http://www.w3.org/2000/svg"
                 aria-hidden="true"
               >
-                <circle
-                  class="vtx-timer-ring-track"
-                  cx="40"
-                  cy="40"
-                  r="${RING_R}"
-                />
-
+                <circle class="vtx-timer-ring-track" cx="36" cy="36" r="${RING_R}" />
                 <circle
                   class="vtx-timer-ring-prog ${ringColor}"
-                  cx="40"
-                  cy="40"
-                  r="${RING_R}"
-                  stroke-dasharray="${RING_C}"
+                  cx="36" cy="36" r="${RING_R}"
+                  stroke-dasharray="${RING_C.toFixed(2)}"
                   stroke-dashoffset="${offset.toFixed(2)}"
                   id="timerRingProg"
                 />
               </svg>
-
               <div class="vtx-timer-inner">
                 <div
                   id="timerDisplay"
-                  class="${timerClass}"
+                  class="vtx-exam-timer-text ${timerClass}"
                   aria-live="polite"
                   aria-label="Time remaining"
-                >
-                  ${timerStr}
-                </div>
-
-                <p
-                  style="
-                    font-size:0.5625rem;
-                    color:var(--text-disabled);
-                    margin-top:1px;
-                    letter-spacing:.06em;
-                    font-weight:600;
-                    text-transform:uppercase;
-                  "
-                >
-                  TIME
-                </p>
+                  style="color:${timerTextColor};"
+                >${timerStr}</div>
+                <p class="vtx-exam-timer-label">TIME</p>
               </div>
             </div>
 
           </div>
         </div>
-
       </div>
-      <!-- END STICKY EXAM HEADER -->
+      <!-- END EXAM HEADER -->
 
 
       <!-- SUBJECT TABS -->
-      <div
-        class="vtx-subj-strip"
-        style="margin-bottom:0.75rem;"
-      >
+      <div class="vtx-subj-strip" style="margin-bottom:0.75rem;">
         ${exam.subjects.map(s => `
           <button
             onclick="Exam.switchSubject('${_escAttr(s)}')"
             class="vtx-subj-tab${s === subj ? ' is-active' : ''}"
-          >
-            ${_escHtml(s)}
-          </button>
+          >${_escHtml(s)}</button>
         `).join('')}
       </div>
 
 
       <!-- QUESTION -->
-      <div
-        class="vtx-question-section"
-        id="questionSection"
-      >
+      <div class="vtx-question-section" id="questionSection">
         <div class="vtx-question-wrap">
 
-          <p
-            style="
-              font-size:1.0625rem;
-              font-weight:500;
-              line-height:1.7;
-              margin-bottom:1.25rem;
-              color:var(--text-1);
-            "
-          >
-            <span
-              style="
-                font-family:var(--font-mono);
-                font-size:.8125rem;
-                font-weight:700;
-                color:var(--accent);
-                margin-right:.5rem;
-              "
-            >
-              ${exam.currentIndex + 1}.
-            </span>${_safeQ(q.q)}
+          <p class="vtx-question-text">
+            <span class="vtx-question-num">${exam.currentIndex + 1}.</span>
+            ${_safeQ(q.q)}
           </p>
 
-          <div
-            style="
-              display:flex;
-              flex-direction:column;
-              gap:0.625rem;
-            "
-            id="optionsContainer"
-          >
+          <div class="vtx-options-list" id="optionsContainer">
             ${q.opts.map((opt, idx) => {
-              const selected =
-                exam.answers[`${subj}-${exam.currentIndex}`] === idx;
-
-              const letterLabel =
-                String.fromCharCode(65 + idx);
-
+              const selected    = exam.answers[`${subj}-${exam.currentIndex}`] === idx;
+              const letterLabel = String.fromCharCode(65 + idx);
               return `
-                <label
-                  class="option-label${selected ? ' is-selected' : ''}"
-                  style="${
-                    selected
-                      ? 'border-color:var(--brand);background:var(--brand-bg);transform:translateX(4px);'
-                      : ''
-                  }"
-                >
-                  <span
-                    style="
-                      font-family:var(--font-mono);
-                      font-size:.75rem;
-                      font-weight:700;
-                      color:${selected ? 'var(--accent)' : 'var(--text-4)'};
-                      min-width:1.25rem;
-                      flex-shrink:0;
-                      margin-top:.15rem;
-                    "
-                  >
-                    ${letterLabel}.
-                  </span>
-
-                  <input
-                    type="radio"
-                    name="option"
-                    value="${idx}"
-                    ${selected ? 'checked' : ''}
-                    style="display:none;"
-                    aria-label="Option ${letterLabel}"
-                  />
-
-                  <span class="flex-1">
-                    ${_safeQ(opt)}
-                  </span>
+                <label class="option-label${selected ? ' is-selected' : ''}" ${selected ? 'style="border-color:var(--brand);background:var(--brand-bg);transform:translateX(4px);"' : ''}>
+                  <span class="vtx-option-letter" style="color:${selected ? 'var(--accent)' : 'var(--text-4)'};">${letterLabel}.</span>
+                  <input type="radio" name="option" value="${idx}" ${selected ? 'checked' : ''} style="display:none;" aria-label="Option ${letterLabel}" />
+                  <span class="flex-1">${_safeQ(opt)}</span>
                 </label>
               `;
             }).join('')}
@@ -1274,93 +1143,36 @@
       </div>
 
 
-      <!-- QUESTION CONTROLS -->
-      <div
-        style="
-          display:grid;
-          grid-template-columns:1fr 1fr 1fr;
-          gap:0.75rem;
-          padding:0.75rem 0;
-          border-top:1px solid var(--border);
-        "
-      >
-        <button
-          id="prevBtn"
-          onclick="Exam.prevQuestion()"
-          ${exam.currentIndex === 0 ? 'disabled' : ''}
-          class="btn bg-gray-500"
-        >
-          ← Prev
-        </button>
-
-        <button
-          onclick="Chat.openPublicChat()"
-          class="btn bg-green-600"
-        >
-          Chat
-        </button>
-
-        <button
-          onclick="Exam.nextQuestion()"
-          class="btn"
-        >
-          Next →
-        </button>
+      <!-- NAV CONTROLS -->
+      <div class="vtx-nav-controls">
+        <button id="prevBtn" onclick="Exam.prevQuestion()" ${exam.currentIndex === 0 ? 'disabled' : ''} class="btn bg-gray-500">← Prev</button>
+        <button onclick="Chat.openPublicChat()" class="btn bg-green-600">Chat</button>
+        <button onclick="Exam.nextQuestion()" class="btn">Next →</button>
       </div>
 
 
       <!-- QUESTION NAVIGATOR -->
       <div class="vtx-nav-section">
-
-        <div class="vtx-nav-label">
-          ${_escHtml(subj)} — Navigator
-        </div>
-
-        <div
-          id="navGrid"
-          style="
-            display:flex;
-            flex-wrap:wrap;
-            gap:0.375rem;
-            justify-content:center;
-          "
-        >
+        <div class="vtx-nav-label">${_escHtml(subj)} — Navigator</div>
+        <div id="navGrid" style="display:flex;flex-wrap:wrap;gap:0.375rem;justify-content:center;">
           ${qList.map((_, i) => {
-            const answered =
-              exam.answers[`${subj}-${i}`] !== undefined;
-
-            const current =
-              i === exam.currentIndex;
-
+            const answered = exam.answers[`${subj}-${i}`] !== undefined;
+            const current  = i === exam.currentIndex;
             return `
               <button
                 onclick="Exam.goTo(${i})"
                 class="nav-btn ${current ? 'current' : ''} ${answered ? 'answered' : ''}"
                 aria-label="Q${i + 1}${answered ? ', answered' : ''}"
-              >
-                ${i + 1}
-              </button>
+              >${i + 1}</button>
             `;
           }).join('')}
         </div>
-
       </div>
 
 
       <!-- SUBMIT -->
-      <div
-        style="
-          text-align:center;
-          padding:1rem 0 0.5rem;
-        "
-      >
-        <button
-          onclick="Exam.submitExam()"
-          id="submitBtn"
-          class="btn bg-red-600"
-        >
-          Submit Exam
-        </button>
+      <div style="text-align:center;padding:1rem 0 0.5rem;">
+        <button onclick="Exam.submitExam()" id="submitBtn" class="btn bg-red-600">Submit Exam</button>
       </div>
 
     </div>
@@ -1370,27 +1182,13 @@
     lbl.addEventListener('click', function () {
       const radio = lbl.querySelector('input[type="radio"]');
       if (!radio) return;
-
       radio.checked = true;
-
-      _saveAnswer(
-        subj,
-        exam.currentIndex,
-        idx
-      );
-
-      _updateOptionsDisplay(
-        subj,
-        exam.currentIndex
-      );
-
-      _updateNavButton(
-        exam.currentIndex
-      );
+      _saveAnswer(subj, exam.currentIndex, idx);
+      _updateOptionsDisplay(subj, exam.currentIndex);
+      _updateNavButton(exam.currentIndex);
     });
   });
 
-  // Wire TTS and STT buttons — must come AFTER the DOM is mounted.
   if (window.SpeechEngine && typeof SpeechEngine.wireExamButtons === 'function') {
     SpeechEngine.wireExamButtons(exam);
   }
