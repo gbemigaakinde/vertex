@@ -1002,7 +1002,7 @@
   const timerStr   = _currentTimerStr();
   const timerClass = _currentTimerClass();
 
-  const RING_R = 30;
+  const RING_R = 14;
   const RING_C = 2 * Math.PI * RING_R;
   const progress = _timerProgress();
   const offset   = RING_C * (1 - progress);
@@ -1012,7 +1012,6 @@
   : timerClass === 'timer-yellow' ? 'is-yellow'
   : '';
 
-  /* Colour tokens for the timer text */
   const timerTextColor =
     timerClass === 'timer-red'    ? 'var(--danger)'
   : timerClass === 'timer-yellow' ? 'var(--warning)'
@@ -1030,77 +1029,81 @@
         <span>${_escHtml(S().studentData.school)}</span>
       </div>
 
-      <!-- EXAM HEADER — sticky glass card -->
-      <div class="glass exam-header-sticky vtx-exam-header" style="margin-bottom:0.75rem;">
+      <!-- EXAM HEADER -->
+      <div class="glass exam-header-sticky vtx-exam-hdr" style="margin-bottom:0.75rem;">
 
-        <!-- Row 1: subject + controls + timer -->
-        <div class="vtx-exam-header-row">
+        <!-- Top row: subject name left, timer right -->
+        <div class="vtx-exam-hdr-top">
 
-          <!-- Subject info -->
-          <div class="vtx-exam-header-subj">
-            <h2 class="vtx-exam-subj-name">${_escHtml(subj)}</h2>
-            <p class="vtx-exam-subj-meta">
+          <div class="vtx-exam-hdr-subj">
+            <h2 class="vtx-exam-hdr-name">${_escHtml(subj)}</h2>
+            <p class="vtx-exam-hdr-meta">
               Subject ${subjIdx + 1} of ${exam.subjects.length}
               &bull;
               Q${exam.currentIndex + 1} / ${qList.length}
             </p>
           </div>
 
-          <!-- Right side: speech pill + timer -->
-          <div class="vtx-exam-header-right">
+          <!-- Timer: arc ring + digits side by side -->
+          <div class="vtx-exam-hdr-timer" id="vtxTimerWrap">
 
-            <!-- Speech controls pill -->
-            <div class="vtx-speech-pill" id="seExamControls">
-              <button
-                id="seTtsBtn"
-                class="se-tts-btn vtx-speech-btn"
-                title="Read question aloud (R)"
-                aria-label="Read question aloud"
-              >
-                <i class="ph ph-speaker-high" style="font-size:16px;"></i>
-              </button>
-              <span class="vtx-speech-divider"></span>
-              <button
-                id="seSttBtn"
-                class="se-stt-btn vtx-speech-btn"
-                title="Voice command (M)"
-                aria-label="Start voice command"
-              >
-                <i class="ph ph-microphone" style="font-size:16px;"></i>
-              </button>
-            </div>
+            <!-- Small arc ring — purely decorative progress indicator -->
+            <svg
+              class="vtx-arc-ring"
+              viewBox="0 0 36 36"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <circle class="vtx-arc-track" cx="18" cy="18" r="${RING_R}" />
+              <circle
+                class="vtx-arc-prog ${ringColor}"
+                cx="18" cy="18" r="${RING_R}"
+                stroke-dasharray="${RING_C.toFixed(2)}"
+                stroke-dashoffset="${offset.toFixed(2)}"
+                id="timerRingProg"
+              />
+            </svg>
 
-            <!-- Timer ring -->
-            <div class="vtx-timer-wrap vtx-exam-timer" id="vtxTimerWrap">
-              <svg
-                class="vtx-timer-ring"
-                viewBox="0 0 72 72"
-                xmlns="http://www.w3.org/2000/svg"
-                aria-hidden="true"
-              >
-                <circle class="vtx-timer-ring-track" cx="36" cy="36" r="${RING_R}" />
-                <circle
-                  class="vtx-timer-ring-prog ${ringColor}"
-                  cx="36" cy="36" r="${RING_R}"
-                  stroke-dasharray="${RING_C.toFixed(2)}"
-                  stroke-dashoffset="${offset.toFixed(2)}"
-                  id="timerRingProg"
-                />
-              </svg>
-              <div class="vtx-timer-inner">
-                <div
-                  id="timerDisplay"
-                  class="vtx-exam-timer-text ${timerClass}"
-                  aria-live="polite"
-                  aria-label="Time remaining"
-                  style="color:${timerTextColor};"
-                >${timerStr}</div>
-                <p class="vtx-exam-timer-label">TIME</p>
-              </div>
+            <!-- Digit display — sits beside the ring, never inside it -->
+            <div class="vtx-arc-digits">
+              <span
+                id="timerDisplay"
+                class="vtx-arc-time ${timerClass}"
+                style="color:${timerTextColor};"
+                aria-live="polite"
+                aria-label="Time remaining"
+              >${timerStr}</span>
+              <span class="vtx-arc-label">TIME LEFT</span>
             </div>
 
           </div>
         </div>
+
+        <!-- Bottom row: speech buttons -->
+        <div class="vtx-exam-hdr-bottom">
+          <div class="vtx-speech-pill" id="seExamControls">
+            <button
+              id="seTtsBtn"
+              class="se-tts-btn vtx-speech-btn"
+              title="Read question aloud (R)"
+              aria-label="Read question aloud"
+            >
+              <i class="ph ph-speaker-high" style="font-size:15px;"></i>
+              <span class="vtx-speech-label">Read</span>
+            </button>
+            <span class="vtx-speech-div"></span>
+            <button
+              id="seSttBtn"
+              class="se-stt-btn vtx-speech-btn"
+              title="Voice command (M)"
+              aria-label="Start voice command"
+            >
+              <i class="ph ph-microphone" style="font-size:15px;"></i>
+              <span class="vtx-speech-label">Listen</span>
+            </button>
+          </div>
+        </div>
+
       </div>
       <!-- END EXAM HEADER -->
 
@@ -1120,18 +1123,18 @@
       <div class="vtx-question-section" id="questionSection">
         <div class="vtx-question-wrap">
 
-          <p class="vtx-question-text">
-            <span class="vtx-question-num">${exam.currentIndex + 1}.</span>
+          <p style="font-size:1rem;font-weight:500;line-height:1.75;margin-bottom:1.125rem;color:var(--text-1);">
+            <span style="font-family:var(--font-mono);font-size:.8125rem;font-weight:700;color:var(--accent);margin-right:.5rem;">${exam.currentIndex + 1}.</span>
             ${_safeQ(q.q)}
           </p>
 
-          <div class="vtx-options-list" id="optionsContainer">
+          <div style="display:flex;flex-direction:column;gap:0.625rem;" id="optionsContainer">
             ${q.opts.map((opt, idx) => {
               const selected    = exam.answers[`${subj}-${exam.currentIndex}`] === idx;
               const letterLabel = String.fromCharCode(65 + idx);
               return `
                 <label class="option-label${selected ? ' is-selected' : ''}" ${selected ? 'style="border-color:var(--brand);background:var(--brand-bg);transform:translateX(4px);"' : ''}>
-                  <span class="vtx-option-letter" style="color:${selected ? 'var(--accent)' : 'var(--text-4)'};">${letterLabel}.</span>
+                  <span style="font-family:var(--font-mono);font-size:.75rem;font-weight:700;color:${selected ? 'var(--accent)' : 'var(--text-4)'};min-width:1.25rem;flex-shrink:0;margin-top:.15rem;">${letterLabel}.</span>
                   <input type="radio" name="option" value="${idx}" ${selected ? 'checked' : ''} style="display:none;" aria-label="Option ${letterLabel}" />
                   <span class="flex-1">${_safeQ(opt)}</span>
                 </label>
@@ -1144,7 +1147,7 @@
 
 
       <!-- NAV CONTROLS -->
-      <div class="vtx-nav-controls">
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;padding:0.75rem 0;border-top:1px solid var(--border);">
         <button id="prevBtn" onclick="Exam.prevQuestion()" ${exam.currentIndex === 0 ? 'disabled' : ''} class="btn bg-gray-500">← Prev</button>
         <button onclick="Chat.openPublicChat()" class="btn bg-green-600">Chat</button>
         <button onclick="Exam.nextQuestion()" class="btn">Next →</button>
@@ -1195,7 +1198,7 @@
 
   _renderKatex();
 }
-
+   
   /* ─────────────────────────────────────────────────────── */
   /* Answer helpers                                          */
   /* ─────────────────────────────────────────────────────── */
