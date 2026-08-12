@@ -285,6 +285,231 @@
   animation: se-pulse 1.2s infinite;
 }
 
+/* ============================================================
+   EXAM HEADER — redesigned layout  v2
+   ============================================================ */
+
+/* The outer header box uses the existing .glass + .exam-header-sticky.
+   These rules control the internal layout only. */
+
+.vtx-exam-header {
+  padding: 0.875rem 1.125rem !important;
+}
+
+/* Single flex row: subject info on the left, controls on the right */
+.vtx-exam-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+/* Subject name + meta */
+.vtx-exam-header-subj {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.vtx-exam-subj-name {
+  font-size: 1.0625rem;
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--text-1);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+.vtx-exam-subj-meta {
+  font-size: 0.75rem;
+  color: var(--text-3);
+  margin-top: 2px;
+  white-space: nowrap;
+}
+
+/* Right side: speech pill + timer sit side by side */
+.vtx-exam-header-right {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  flex-shrink: 0;
+}
+
+/* ── Speech controls pill ── */
+.vtx-speech-pill {
+  display: flex;
+  align-items: center;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--r-full);
+  padding: 3px;
+  gap: 0;
+}
+
+.vtx-speech-btn {
+  width: 32px !important;
+  height: 32px !important;
+  border-radius: var(--r-full) !important;
+  border: none !important;
+  background: transparent !important;
+  color: var(--text-3) !important;
+  cursor: pointer;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  transition: background 120ms, color 120ms !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  flex-shrink: 0;
+  padding: 0 !important;
+}
+
+.vtx-speech-btn:hover {
+  background: var(--accent-subtle) !important;
+  color: var(--accent) !important;
+  border-color: transparent !important;
+}
+
+/* Active states — keep danger/warning from voice-notes.css but override size */
+.se-stt-btn.is-listening {
+  background: var(--danger-subtle) !important;
+  color: var(--danger) !important;
+}
+
+.se-tts-btn.is-speaking {
+  background: var(--warning-subtle) !important;
+  color: var(--warning) !important;
+}
+
+/* Thin vertical divider between the two buttons */
+.vtx-speech-divider {
+  display: block;
+  width: 1px;
+  height: 18px;
+  background: var(--border);
+  flex-shrink: 0;
+  border-radius: 1px;
+}
+
+/* ── Timer — self-contained, never overflows ── */
+.vtx-exam-timer {
+  width: 72px !important;
+  height: 72px !important;
+  flex-shrink: 0;
+}
+
+/* Override the base vtx-timer-wrap dimensions */
+.vtx-exam-timer.vtx-timer-wrap {
+  width: 72px;
+  height: 72px;
+}
+
+/* The SVG fills the wrapper exactly */
+.vtx-exam-timer .vtx-timer-ring {
+  width: 72px;
+  height: 72px;
+}
+
+/* Timer digits — scaled to fit the 72px ring */
+.vtx-exam-timer-text {
+  font-family: var(--font-mono) !important;
+  font-size: 0.6875rem !important;  /* 11px — fits comfortably inside 72px ring */
+  font-weight: 700 !important;
+  letter-spacing: 0.03em !important;
+  line-height: 1 !important;
+  display: block !important;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.vtx-exam-timer-label {
+  font-size: 0.5rem !important;
+  color: var(--text-4) !important;
+  margin-top: 2px !important;
+  letter-spacing: 0.08em !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  text-align: center;
+}
+
+/* ── Question text + options ── */
+.vtx-question-text {
+  font-size: 1rem;
+  font-weight: 500;
+  line-height: 1.75;
+  margin-bottom: 1.125rem;
+  color: var(--text-1);
+}
+
+.vtx-question-num {
+  font-family: var(--font-mono);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-right: 0.5rem;
+}
+
+.vtx-options-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+
+.vtx-option-letter {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  font-weight: 700;
+  min-width: 1.25rem;
+  flex-shrink: 0;
+  margin-top: 0.15rem;
+}
+
+/* ── Nav controls row ── */
+.vtx-nav-controls {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 0.75rem;
+  padding: 0.75rem 0;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Mobile overrides ── */
+@media (max-width: 480px) {
+  .vtx-exam-header {
+    padding: 0.75rem 0.875rem !important;
+  }
+
+  .vtx-exam-subj-name {
+    font-size: 0.9375rem;
+  }
+
+  /* On very small screens, stack: subject full width on top,
+     speech pill + timer side by side below */
+  .vtx-exam-header-row {
+    flex-wrap: wrap;
+  }
+
+  .vtx-exam-header-subj {
+    flex: 1 1 100%;
+  }
+
+  .vtx-exam-header-right {
+    flex: 0 0 auto;
+    margin-left: auto;
+  }
+
+  .vtx-exam-timer {
+    width: 64px !important;
+    height: 64px !important;
+  }
+
+  .vtx-exam-timer .vtx-timer-ring {
+    width: 64px;
+    height: 64px;
+  }
+}
+
 @keyframes se-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(224, 59, 59, 0.35); }
   50%      { box-shadow: 0 0 0 10px rgba(224, 59, 59, 0); }
