@@ -1020,30 +1020,39 @@
 
         <div class="glass exam-header-sticky" style="padding:0.875rem 1.25rem;margin-bottom:0.75rem;">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;">
-            <div>
-              <h2 style="font-size:1.1875rem;font-weight:700;line-height:1.3;">${_escHtml(subj)}</h2>
-              <p style="font-size:0.8125rem;color:var(--text-3);margin-top:2px;">
-                Subject ${subjIdx + 1} of ${exam.subjects.length} &bull; Q${exam.currentIndex + 1} / ${qList.length}
-              </p>
-            </div>
-            <div class="vtx-timer-wrap" style="flex-shrink:0;">
-              <svg class="vtx-timer-ring" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-                <circle class="vtx-timer-ring-track" cx="40" cy="40" r="${RING_R}"/>
-                <circle class="vtx-timer-ring-prog ${ringColor}"
-                        cx="40" cy="40" r="${RING_R}"
-                        stroke-dasharray="${RING_C}"
-                        stroke-dashoffset="${offset.toFixed(2)}"
-                        id="timerRingProg"/>
-              </svg>
-              <div class="vtx-timer-inner">
-                <div id="timerDisplay" class="${timerClass}" aria-live="polite" aria-label="Time remaining">
-                  ${timerStr}
-                </div>
-                <p style="font-size:0.5625rem;color:var(--text-disabled);margin-top:1px;letter-spacing:.06em;font-weight:600;text-transform:uppercase;">TIME</p>
-              </div>
-            </div>
-          </div>
+  <div>
+    <h2 style="font-size:1.1875rem;font-weight:700;line-height:1.3;">${_escHtml(subj)}</h2>
+    <p style="font-size:0.8125rem;color:var(--text-3);margin-top:2px;">
+      Subject ${subjIdx + 1} of ${exam.subjects.length} &bull; Q${exam.currentIndex + 1} / ${qList.length}
+    </p>
+  </div>
+  <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0;">
+    <div id="seExamControls" style="display:flex;align-items:center;gap:6px;">
+      <button id="seTtsBtn" class="se-tts-btn" title="Read question aloud (R)" aria-label="Read question aloud">
+        <i class="ph ph-speaker-high" style="font-size:15px;"></i>
+      </button>
+      <button id="seSttBtn" class="se-stt-btn" title="Voice command (M)" aria-label="Start voice command">
+        <i class="ph ph-microphone" style="font-size:15px;"></i>
+      </button>
+    </div>
+    <div class="vtx-timer-wrap">
+      <svg class="vtx-timer-ring" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <circle class="vtx-timer-ring-track" cx="40" cy="40" r="${RING_R}"/>
+        <circle class="vtx-timer-ring-prog ${ringColor}"
+                cx="40" cy="40" r="${RING_R}"
+                stroke-dasharray="${RING_C}"
+                stroke-dashoffset="${offset.toFixed(2)}"
+                id="timerRingProg"/>
+      </svg>
+      <div class="vtx-timer-inner">
+        <div id="timerDisplay" class="${timerClass}" aria-live="polite" aria-label="Time remaining">
+          ${timerStr}
         </div>
+        <p style="font-size:0.5625rem;color:var(--text-disabled);margin-top:1px;letter-spacing:.06em;font-weight:600;text-transform:uppercase;">TIME</p>
+      </div>
+    </div>
+  </div>
+</div>
 
         <div class="vtx-subj-strip">
           ${exam.subjects.map(s => `
