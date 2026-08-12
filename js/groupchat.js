@@ -1820,15 +1820,17 @@
                data-gid="${_escAttr(gid)}"
                onclick="GroupChat._openTeacherChat('${_escAttr(gid)}')">
             <div class="gc-group-av">${_esc((g.name||'?').charAt(0).toUpperCase())}</div>
-            <div style="flex:1;min-width:0;">
+            <div style="flex:1;min-width:0;overflow:hidden;">
               <div style="display:flex;align-items:center;justify-content:space-between;gap:.375rem;margin-bottom:1px;">
                 <span class="gc-group-name">${_esc(g.name||'Unnamed')}</span>
                 <span class="gc-group-date">${_esc(ts)}</span>
               </div>
-              <span class="gc-group-preview">
-                ${g.lastMessageSenderName ? `<strong>${_esc(g.lastMessageSenderName)}:</strong> ` : ''}
-                ${g.lastMessage === '[VN]' ? '<i class="ph ph-microphone" style="font-size:13px;color:var(--accent);vertical-align:middle;margin-right:3px;"></i> Voice note' : _esc(g.lastMessage || 'No messages')}
-              </span>
+              <div style="min-width:0;overflow:hidden;">
+                <span class="gc-group-preview">
+                  ${g.lastMessageSenderName ? `<strong>${_esc(g.lastMessageSenderName)}:</strong> ` : ''}
+                  ${g.lastMessage === '[VN]' ? '<i class="ph ph-microphone" style="font-size:13px;color:var(--accent);vertical-align:middle;margin-right:3px;"></i> Voice note' : _esc(g.lastMessage || 'No messages')}
+                </span>
+              </div>
               <div style="font-size:.625rem;color:var(--text-4);margin-top:2px;">
                 ${members.length} member${members.length!==1?'s':''}
               </div>
