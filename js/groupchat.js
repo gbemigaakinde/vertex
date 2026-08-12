@@ -77,11 +77,28 @@
     return date.toLocaleDateString('en-GB', { weekday:'short', day:'numeric', month:'short', year:'numeric' });
   }
 
-  function _timeStr(ts) {
-    if (!ts) return '';
-    const d = ts.toDate ? ts.toDate() : new Date(ts);
-    return d.toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' });
+  function _listTimeStr(ts) {
+  if (!ts) return '';
+  const d   = ts.toDate ? ts.toDate() : new Date(ts);
+  const now  = new Date();
+  const today     = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+  const msgDay    = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+
+  if (msgDay.getTime() === today.getTime()) {
+    return d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
   }
+  if (msgDay.getTime() === yesterday.getTime()) {
+    return 'Yesterday';
+  }
+  // Within the last 7 days — show weekday name
+  const diffDays = Math.floor((today - msgDay) / 86400000);
+  if (diffDays < 7) {
+    return d.toLocaleDateString('en-GB', { weekday: 'short' }); // e.g. "Mon"
+  }
+  // Older — show DD/MM
+  return d.toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit' }); // e.g. "11/08"
+}
 
   /* ── Word filter ───────────────────────────────────────── */
   function _isBannedWord(text, bannedWords) {
@@ -450,10 +467,7 @@
           const g    = doc.data();
           const gid  = doc.id;
           const unrd = (g.unread && g.unread[uid]) || 0;
-          const ts   = g.lastAt
-            ? new Date(g.lastAt.toDate ? g.lastAt.toDate() : g.lastAt)
-                .toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })
-            : '';
+          const ts   = _listTimeStr(g.lastAt);
           const letter = (g.name || '?').charAt(0).toUpperCase();
           html += `
             <div class="gc-group-item" onclick="GroupChat._openStudentChat('${_escAttr(gid)}')">
@@ -1561,8 +1575,11 @@
       const preview   = text.length > 80 ? text.substring(0, 80) + '…' : text;
       const unreadInc = {};
       const members   = g.members || [];
+      const teacherUid = TEACHER_UID();
       members.forEach(m => {
-        if (m.uid !== uid) unreadInc[`unread.${m.uid}`] = firebase.firestore.FieldValue.increment(1);
+        if (m.uid !== uid && m.uid !== teacherUid) {
+          unreadInc[`unread.${m.uid}`] = firebase.firestore.FieldValue.increment(1);
+        }
       });
       batch.update(Db().collection('groupChats').doc(groupId), {
         lastMessage: preview,
@@ -1607,7 +1624,12 @@
 
       const unreadInc = {};
       const members = g.members || [];
-      members.forEach(m => { if (m.uid !== uid) unreadInc['unread.' + m.uid] = firebase.firestore.FieldValue.increment(1); });
+      const teacherUid = TEACHER_UID();
+      members.forEach(m => {
+        if (m.uid !== uid && m.uid !== teacherUid) {
+          unreadInc['unread.' + m.uid] = firebase.firestore.FieldValue.increment(1);
+        }
+      });
       batch.update(Db().collection('groupChats').doc(groupId), {
         lastMessage: '[VN]',
         lastAt: firebase.firestore.FieldValue.serverTimestamp(),
@@ -1750,10 +1772,7 @@
         const gid    = doc.id;
         const isAct  = _activeGroupId === gid;
         const members = g.members || [];
-        const ts = g.lastAt
-          ? new Date(g.lastAt.toDate ? g.lastAt.toDate() : g.lastAt)
-              .toLocaleTimeString('en-GB', { hour:'2-digit', minute:'2-digit' })
-          : '';
+        const ts = _listTimeStr(g.lastAt);
         html += `
           <div class="gc-group-item${isAct ? ' is-active' : ''}"
                data-gid="${_escAttr(gid)}"
