@@ -987,148 +987,411 @@
   /* renderExam                                              */
   /* ─────────────────────────────────────────────────────── */
   function renderExam() {
-    _questionRenderedAt = Date.now();
-    const exam = S().exam;
-    if (!exam) return;
+  _questionRenderedAt = Date.now();
 
-    if (window.MsgNotif) MsgNotif.dismissAll();
+  const exam = S().exam;
+  if (!exam) return;
 
-    const subj    = exam.currentSubject;
-    const qList   = exam.questions[subj];
-    const q       = qList[exam.currentIndex];
-    const subjIdx = exam.subjects.indexOf(subj);
+  if (window.MsgNotif) MsgNotif.dismissAll();
 
-    const timerStr   = _currentTimerStr();
-    const timerClass = _currentTimerClass();
+  const subj = exam.currentSubject;
+  const qList = exam.questions[subj];
+  const q = qList[exam.currentIndex];
+  const subjIdx = exam.subjects.indexOf(subj);
 
-    const RING_R  = 34;
-    const RING_C  = 2 * Math.PI * RING_R;
-    const progress = _timerProgress();
-    const offset   = RING_C * (1 - progress);
-    const ringColor = timerClass === 'timer-red' ? 'is-red' : timerClass === 'timer-yellow' ? 'is-yellow' : '';
+  const timerStr = _currentTimerStr();
+  const timerClass = _currentTimerClass();
 
-    UI.mount(`
-      <div class="max-w-4xl mx-auto" style="padding:0.75rem 0;">
+  const RING_R = 34;
+  const RING_C = 2 * Math.PI * RING_R;
+  const progress = _timerProgress();
+  const offset = RING_C * (1 - progress);
 
-        <div class="vtx-student-bar">
-          <span>${_escHtml(S().studentData.name)}</span>
-          <span style="color:var(--border-strong);">|</span>
-          <span>${_escHtml(S().studentData.class)}</span>
-          <span style="color:var(--border-strong);">|</span>
-          <span>${_escHtml(S().studentData.school)}</span>
-        </div>
+  const ringColor =
+    timerClass === 'timer-red'
+      ? 'is-red'
+      : timerClass === 'timer-yellow'
+        ? 'is-yellow'
+        : '';
 
-        <div class="glass exam-header-sticky" style="padding:0.875rem 1.25rem;margin-bottom:0.75rem;">
-          <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;">
-  <div>
-    <h2 style="font-size:1.1875rem;font-weight:700;line-height:1.3;">${_escHtml(subj)}</h2>
-    <p style="font-size:0.8125rem;color:var(--text-3);margin-top:2px;">
-      Subject ${subjIdx + 1} of ${exam.subjects.length} &bull; Q${exam.currentIndex + 1} / ${qList.length}
-    </p>
-  </div>
-  <div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0;">
-    <div id="seExamControls" style="display:flex;align-items:center;gap:6px;">
-      <button id="seTtsBtn" class="se-tts-btn" title="Read question aloud (R)" aria-label="Read question aloud">
-        <i class="ph ph-speaker-high" style="font-size:15px;"></i>
-      </button>
-      <button id="seSttBtn" class="se-stt-btn" title="Voice command (M)" aria-label="Start voice command">
-        <i class="ph ph-microphone" style="font-size:15px;"></i>
-      </button>
-    </div>
-    <div class="vtx-timer-wrap">
-      <svg class="vtx-timer-ring" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <circle class="vtx-timer-ring-track" cx="40" cy="40" r="${RING_R}"/>
-        <circle class="vtx-timer-ring-prog ${ringColor}"
-                cx="40" cy="40" r="${RING_R}"
-                stroke-dasharray="${RING_C}"
-                stroke-dashoffset="${offset.toFixed(2)}"
-                id="timerRingProg"/>
-      </svg>
-      <div class="vtx-timer-inner">
-        <div id="timerDisplay" class="${timerClass}" aria-live="polite" aria-label="Time remaining">
-          ${timerStr}
-        </div>
-        <p style="font-size:0.5625rem;color:var(--text-disabled);margin-top:1px;letter-spacing:.06em;font-weight:600;text-transform:uppercase;">TIME</p>
+  UI.mount(`
+    <div class="max-w-4xl mx-auto" style="padding:0.75rem 0;">
+
+      <!-- STUDENT INFORMATION -->
+      <div class="vtx-student-bar">
+        <span>${_escHtml(S().studentData.name)}</span>
+        <span style="color:var(--border-strong);">|</span>
+        <span>${_escHtml(S().studentData.class)}</span>
+        <span style="color:var(--border-strong);">|</span>
+        <span>${_escHtml(S().studentData.school)}</span>
       </div>
-    </div>
-  </div>
-</div>
 
-        <div class="vtx-subj-strip">
-          ${exam.subjects.map(s => `
-            <button onclick="Exam.switchSubject('${_escAttr(s)}')"
-                    class="vtx-subj-tab${s === subj ? ' is-active' : ''}">
-              ${_escHtml(s)}
-            </button>`).join('')}
-        </div>
+      <!-- STICKY EXAM HEADER -->
+      <div
+        class="glass exam-header-sticky"
+        style="
+          padding:0.875rem 1.25rem;
+          margin-bottom:0.75rem;
+        "
+      >
 
-        <div class="vtx-question-section" id="questionSection">
-          <div class="vtx-question-wrap">
-            <p style="font-size:1.0625rem;font-weight:500;line-height:1.7;margin-bottom:1.25rem;color:var(--text-1);">
-              <span style="font-family:var(--font-mono);font-size:.8125rem;font-weight:700;
-                           color:var(--accent);margin-right:.5rem;">${exam.currentIndex + 1}.</span>${_safeQ(q.q)}</p>
-            <div style="display:flex;flex-direction:column;gap:0.625rem;" id="optionsContainer">
-              ${q.opts.map((opt, idx) => {
-                const selected = exam.answers[`${subj}-${exam.currentIndex}`] === idx;
-                const letterLabel = String.fromCharCode(65 + idx);
-                return `
-                  <label class="option-label${selected ? ' is-selected' : ''}"
-                         style="${selected ? 'border-color:var(--brand);background:var(--brand-bg);transform:translateX(4px);' : ''}">
-                    <span style="font-family:var(--font-mono);font-size:.75rem;font-weight:700;
-                                 color:${selected ? 'var(--accent)' : 'var(--text-4)'};
-                                 min-width:1.25rem;flex-shrink:0;margin-top:.15rem;">${letterLabel}.</span>
-                    <input type="radio" name="option" value="${idx}" ${selected ? 'checked' : ''}
-                           style="display:none;" aria-label="Option ${letterLabel}" />
-                    <span class="flex-1">${_safeQ(opt)}</span>
-                  </label>`;
-              }).join('')}
+        <div
+          style="
+            display:flex;
+            justify-content:space-between;
+            align-items:center;
+            gap:1rem;
+          "
+        >
+
+          <!-- SUBJECT INFORMATION -->
+          <div>
+            <h2
+              style="
+                font-size:1.1875rem;
+                font-weight:700;
+                line-height:1.3;
+              "
+            >
+              ${_escHtml(subj)}
+            </h2>
+
+            <p
+              style="
+                font-size:0.8125rem;
+                color:var(--text-3);
+                margin-top:2px;
+              "
+            >
+              Subject ${subjIdx + 1} of ${exam.subjects.length}
+              &bull;
+              Q${exam.currentIndex + 1} / ${qList.length}
+            </p>
+          </div>
+
+          <!-- CONTROLS + TIMER -->
+          <div
+            style="
+              display:flex;
+              align-items:center;
+              gap:0.5rem;
+              flex-shrink:0;
+            "
+          >
+
+            <div
+              id="seExamControls"
+              style="
+                display:flex;
+                align-items:center;
+                gap:6px;
+              "
+            >
+              <button
+                id="seTtsBtn"
+                class="se-tts-btn"
+                title="Read question aloud (R)"
+                aria-label="Read question aloud"
+              >
+                <i
+                  class="ph ph-speaker-high"
+                  style="font-size:15px;"
+                ></i>
+              </button>
+
+              <button
+                id="seSttBtn"
+                class="se-stt-btn"
+                title="Voice command (M)"
+                aria-label="Start voice command"
+              >
+                <i
+                  class="ph ph-microphone"
+                  style="font-size:15px;"
+                ></i>
+              </button>
             </div>
+
+            <!-- TIMER -->
+            <div class="vtx-timer-wrap">
+              <svg
+                class="vtx-timer-ring"
+                viewBox="0 0 80 80"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <circle
+                  class="vtx-timer-ring-track"
+                  cx="40"
+                  cy="40"
+                  r="${RING_R}"
+                />
+
+                <circle
+                  class="vtx-timer-ring-prog ${ringColor}"
+                  cx="40"
+                  cy="40"
+                  r="${RING_R}"
+                  stroke-dasharray="${RING_C}"
+                  stroke-dashoffset="${offset.toFixed(2)}"
+                  id="timerRingProg"
+                />
+              </svg>
+
+              <div class="vtx-timer-inner">
+                <div
+                  id="timerDisplay"
+                  class="${timerClass}"
+                  aria-live="polite"
+                  aria-label="Time remaining"
+                >
+                  ${timerStr}
+                </div>
+
+                <p
+                  style="
+                    font-size:0.5625rem;
+                    color:var(--text-disabled);
+                    margin-top:1px;
+                    letter-spacing:.06em;
+                    font-weight:600;
+                    text-transform:uppercase;
+                  "
+                >
+                  TIME
+                </p>
+              </div>
+            </div>
+
           </div>
         </div>
 
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:0.75rem;padding:0.75rem 0;border-top:1px solid var(--border);">
-          <button id="prevBtn" onclick="Exam.prevQuestion()"
-                  ${exam.currentIndex === 0 ? 'disabled' : ''}
-                  class="btn bg-gray-500">← Prev</button>
-          <button onclick="Chat.openPublicChat()" class="btn bg-green-600">Chat</button>
-          <button onclick="Exam.nextQuestion()" class="btn">Next →</button>
-        </div>
+      </div>
+      <!-- END STICKY EXAM HEADER -->
 
-        <div class="vtx-nav-section">
-          <div class="vtx-nav-label">${_escHtml(subj)} — Navigator</div>
-          <div id="navGrid" style="display:flex;flex-wrap:wrap;gap:0.375rem;justify-content:center;">
-            ${qList.map((_, i) => {
-              const answered = exam.answers[`${subj}-${i}`] !== undefined;
-              const current  = i === exam.currentIndex;
+
+      <!-- SUBJECT TABS -->
+      <div
+        class="vtx-subj-strip"
+        style="margin-bottom:0.75rem;"
+      >
+        ${exam.subjects.map(s => `
+          <button
+            onclick="Exam.switchSubject('${_escAttr(s)}')"
+            class="vtx-subj-tab${s === subj ? ' is-active' : ''}"
+          >
+            ${_escHtml(s)}
+          </button>
+        `).join('')}
+      </div>
+
+
+      <!-- QUESTION -->
+      <div
+        class="vtx-question-section"
+        id="questionSection"
+      >
+        <div class="vtx-question-wrap">
+
+          <p
+            style="
+              font-size:1.0625rem;
+              font-weight:500;
+              line-height:1.7;
+              margin-bottom:1.25rem;
+              color:var(--text-1);
+            "
+          >
+            <span
+              style="
+                font-family:var(--font-mono);
+                font-size:.8125rem;
+                font-weight:700;
+                color:var(--accent);
+                margin-right:.5rem;
+              "
+            >
+              ${exam.currentIndex + 1}.
+            </span>${_safeQ(q.q)}
+          </p>
+
+          <div
+            style="
+              display:flex;
+              flex-direction:column;
+              gap:0.625rem;
+            "
+            id="optionsContainer"
+          >
+            ${q.opts.map((opt, idx) => {
+              const selected =
+                exam.answers[`${subj}-${exam.currentIndex}`] === idx;
+
+              const letterLabel =
+                String.fromCharCode(65 + idx);
+
               return `
-                <button onclick="Exam.goTo(${i})"
-                        class="nav-btn ${current ? 'current' : ''} ${answered ? 'answered' : ''}"
-                        aria-label="Q${i + 1}${answered ? ', answered' : ''}">${i + 1}</button>`;
+                <label
+                  class="option-label${selected ? ' is-selected' : ''}"
+                  style="${
+                    selected
+                      ? 'border-color:var(--brand);background:var(--brand-bg);transform:translateX(4px);'
+                      : ''
+                  }"
+                >
+                  <span
+                    style="
+                      font-family:var(--font-mono);
+                      font-size:.75rem;
+                      font-weight:700;
+                      color:${selected ? 'var(--accent)' : 'var(--text-4)'};
+                      min-width:1.25rem;
+                      flex-shrink:0;
+                      margin-top:.15rem;
+                    "
+                  >
+                    ${letterLabel}.
+                  </span>
+
+                  <input
+                    type="radio"
+                    name="option"
+                    value="${idx}"
+                    ${selected ? 'checked' : ''}
+                    style="display:none;"
+                    aria-label="Option ${letterLabel}"
+                  />
+
+                  <span class="flex-1">
+                    ${_safeQ(opt)}
+                  </span>
+                </label>
+              `;
             }).join('')}
           </div>
+
+        </div>
+      </div>
+
+
+      <!-- QUESTION CONTROLS -->
+      <div
+        style="
+          display:grid;
+          grid-template-columns:1fr 1fr 1fr;
+          gap:0.75rem;
+          padding:0.75rem 0;
+          border-top:1px solid var(--border);
+        "
+      >
+        <button
+          id="prevBtn"
+          onclick="Exam.prevQuestion()"
+          ${exam.currentIndex === 0 ? 'disabled' : ''}
+          class="btn bg-gray-500"
+        >
+          ← Prev
+        </button>
+
+        <button
+          onclick="Chat.openPublicChat()"
+          class="btn bg-green-600"
+        >
+          Chat
+        </button>
+
+        <button
+          onclick="Exam.nextQuestion()"
+          class="btn"
+        >
+          Next →
+        </button>
+      </div>
+
+
+      <!-- QUESTION NAVIGATOR -->
+      <div class="vtx-nav-section">
+
+        <div class="vtx-nav-label">
+          ${_escHtml(subj)} — Navigator
         </div>
 
-        <div style="text-align:center;padding:1rem 0 0.5rem;">
-          <button onclick="Exam.submitExam()" id="submitBtn" class="btn bg-red-600">
-            Submit Exam
-          </button>
+        <div
+          id="navGrid"
+          style="
+            display:flex;
+            flex-wrap:wrap;
+            gap:0.375rem;
+            justify-content:center;
+          "
+        >
+          ${qList.map((_, i) => {
+            const answered =
+              exam.answers[`${subj}-${i}`] !== undefined;
+
+            const current =
+              i === exam.currentIndex;
+
+            return `
+              <button
+                onclick="Exam.goTo(${i})"
+                class="nav-btn ${current ? 'current' : ''} ${answered ? 'answered' : ''}"
+                aria-label="Q${i + 1}${answered ? ', answered' : ''}"
+              >
+                ${i + 1}
+              </button>
+            `;
+          }).join('')}
         </div>
 
-      </div>`);
+      </div>
 
-    document.querySelectorAll('.option-label').forEach((lbl, idx) => {
-      lbl.addEventListener('click', function () {
-        const radio = lbl.querySelector('input[type="radio"]');
-        if (!radio) return;
-        radio.checked = true;
-        _saveAnswer(subj, exam.currentIndex, idx);
-        _updateOptionsDisplay(subj, exam.currentIndex);
-        _updateNavButton(exam.currentIndex);
-      });
+
+      <!-- SUBMIT -->
+      <div
+        style="
+          text-align:center;
+          padding:1rem 0 0.5rem;
+        "
+      >
+        <button
+          onclick="Exam.submitExam()"
+          id="submitBtn"
+          class="btn bg-red-600"
+        >
+          Submit Exam
+        </button>
+      </div>
+
+    </div>
+  `);
+
+  document.querySelectorAll('.option-label').forEach((lbl, idx) => {
+    lbl.addEventListener('click', function () {
+      const radio = lbl.querySelector('input[type="radio"]');
+      if (!radio) return;
+
+      radio.checked = true;
+
+      _saveAnswer(
+        subj,
+        exam.currentIndex,
+        idx
+      );
+
+      _updateOptionsDisplay(
+        subj,
+        exam.currentIndex
+      );
+
+      _updateNavButton(
+        exam.currentIndex
+      );
     });
+  });
 
-    _renderKatex();
-  }
+  _renderKatex();
+}
 
   /* ─────────────────────────────────────────────────────── */
   /* Answer helpers                                          */
