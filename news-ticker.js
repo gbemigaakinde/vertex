@@ -31,8 +31,7 @@ function _buildTickerHTML() {
       <div class="news-ticker-container" id="newsTicker" role="marquee" aria-live="off">
         <div class="ticker-wrapper">
           <div class="ticker-label">
-            <span class="ticker-label-icon">📢</span>
-            <span>Notice</span>
+            <span>Info</span>
           </div>
           <div class="ticker-content">
             <div class="ticker-text" id="tickerScroll"></div>
