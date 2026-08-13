@@ -302,6 +302,7 @@
   }
 
   function _closeStudentRoom() {
+    _stopReaderSpeech();
     if (window.Exam && Exam.renderSubjectSelection) Exam.renderSubjectSelection();
   }
 
@@ -415,6 +416,9 @@
   }
 
   function _openLesson(lessonId) {
+    // Stop any active speech before switching lessons
+    _stopReaderSpeech();
+
     const lesson = _studentLessonsCache.find(l => l.id === lessonId);
     if (lesson) {
       const siblings = _studentLessonsCache
@@ -453,6 +457,9 @@
     _renderMathContent(document.getElementById('app'));
     _bindQuizButtons(document.getElementById('app'));
     _restoreScrollPos(lesson.id);
+
+    // Wire speech controls after DOM is ready
+    _wireReaderSpeech(lesson);
   }
 
   function _restoreScrollPos(lessonId) {
@@ -462,6 +469,238 @@
       const reader = document.getElementById('srScrollReader');
       if (reader) reader.scrollTop = pos;
     });
+  }
+
+  /* ─────────────────────────────────────────────────────── */
+  /* Speech integration — Study Room reader                  */
+  /* ─────────────────────────────────────────────────────── */
+
+  /*
+    Extract plain text from the lesson for TTS.
+    Strips HTML tags, collapses whitespace, keeps sentence
+    structure intact so the chunker in speech.js works well.
+  */
+  function _lessonPlainText(lesson) {
+    // Start with title + topic as a natural opener
+    let text = (lesson.title || '');
+    if (lesson.topic) text += '. ' + lesson.topic;
+    text += '. ';
+
+    // Render the markdown to HTML, then strip tags
+    const rendered = _renderMarkdown(lesson.content || '');
+    const stripped = rendered
+      .replace(/<br\s*\/?>/gi, ' ')
+      .replace(/<\/?(h[1-6]|p|li|td|th|blockquote|pre|div)[^>]*>/gi, ' ')
+      .replace(/<[^>]*>/g, '')
+      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&nbsp;/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    return text + stripped;
+  }
+
+  /*
+    STT command handler for the study room.
+    Keeps the same voice-command feel as the exam but with
+    lesson-navigation commands instead of answer-selection ones.
+  */
+  function _handleReaderVoiceCommand(transcript) {
+    const t = (transcript || '').toLowerCase().trim();
+    console.log('[StudyRoom] voice command:', t);
+
+    // Read aloud
+    if (/\b(read|listen|read (the )?lesson|speak|read (it )?out)\b/.test(t)) {
+      const ttsBtn = document.getElementById('srTtsBtn');
+      if (ttsBtn) ttsBtn.click();
+      return;
+    }
+
+    // Stop reading
+    if (/\b(stop( reading| speaking)?|quiet|silence|shut up)\b/.test(t)) {
+      if (window.SpeechEngine) SpeechEngine.cancel();
+      UI.toast('Stopped reading.', 'info', 1500);
+      return;
+    }
+
+    // Next lesson
+    if (/\b(next( lesson| page)?|forward|move on|continue)\b/.test(t)) {
+      const idx = _siblingLessons.findIndex(l => l.id === (_currentLesson && _currentLesson.id));
+      if (idx >= 0 && idx < _siblingLessons.length - 1) {
+        UI.toast('Going to next lesson…', 'info', 1500);
+        _openLesson(_siblingLessons[idx + 1].id);
+      } else {
+        UI.toast('No next lesson in this subject.', 'info', 2000);
+      }
+      return;
+    }
+
+    // Previous lesson
+    if (/\b(previous( lesson| page)?|prev|back|go back)\b/.test(t)) {
+      const idx = _siblingLessons.findIndex(l => l.id === (_currentLesson && _currentLesson.id));
+      if (idx > 0) {
+        UI.toast('Going to previous lesson…', 'info', 1500);
+        _openLesson(_siblingLessons[idx - 1].id);
+      } else {
+        UI.toast('No previous lesson in this subject.', 'info', 2000);
+      }
+      return;
+    }
+
+    // Scroll down
+    if (/\b(scroll down|down|page down)\b/.test(t)) {
+      const reader = document.getElementById('srScrollReader');
+      if (reader) reader.scrollBy({ top: reader.clientHeight * 0.7, behavior: 'smooth' });
+      return;
+    }
+
+    // Scroll up
+    if (/\b(scroll up|up|page up)\b/.test(t)) {
+      const reader = document.getElementById('srScrollReader');
+      if (reader) reader.scrollBy({ top: -reader.clientHeight * 0.7, behavior: 'smooth' });
+      return;
+    }
+
+    // Go to top
+    if (/\b(top|beginning|start)\b/.test(t)) {
+      const reader = document.getElementById('srScrollReader');
+      if (reader) reader.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
+    UI.toast(
+      'Not understood: "' + transcript + '". Try: read, stop, next lesson, previous lesson, scroll down, scroll up.',
+      'info', 4000
+    );
+  }
+
+  /*
+    Wire the TTS and STT buttons in the reader topbar.
+    Called from _renderReader() after the DOM is mounted.
+  */
+  function _wireReaderSpeech(lesson) {
+    if (!window.SpeechEngine) return;
+
+    // ── TTS button ──
+    const ttsBtn = document.getElementById('srTtsBtn');
+    if (ttsBtn) {
+      ttsBtn.addEventListener('click', function () {
+        if (SpeechEngine._isTtsActive && SpeechEngine._isTtsActive()) {
+          SpeechEngine.cancel();
+          return;
+        }
+        // Check internal state via cancel side-effect approach:
+        // We expose a lightweight check via the button's own class.
+        if (ttsBtn.classList.contains('sr-se-speaking')) {
+          SpeechEngine.cancel();
+          return;
+        }
+        const text = _lessonPlainText(lesson);
+        SpeechEngine.speak(text);
+        UI.toast('Reading lesson aloud. Say "stop" to stop.', 'info', 2500);
+      });
+
+      // Mirror the exam's is-speaking class onto our button via a MutationObserver
+      // watching the exam's hidden seTtsBtn state-carrier, OR we track it ourselves.
+      // Simpler: poll the exam TTS btn class, but there's no exam TTS btn in the study room.
+      // Instead we proxy: wrap speak/cancel to toggle our button class.
+      _hookTtsBtnState(ttsBtn);
+    }
+
+    // ── STT button ──
+    const sttBtn = document.getElementById('srSttBtn');
+    if (sttBtn) {
+      sttBtn.addEventListener('click', function () {
+        // Check if mic is currently on by button state
+        if (sttBtn.classList.contains('is-listening')) {
+          SpeechEngine.stopSTT();
+          UI.toast('Microphone off.', 'info', 1500);
+          _setSrSttBtn(false);
+          return;
+        }
+
+        if (!SpeechEngine.sttSupported) {
+          UI.toast('Voice commands are not supported in your browser. Please use Chrome or Edge.', 'warning', 5000);
+          return;
+        }
+
+        UI.toast('Mic is ON. Say: read, stop, next lesson, previous lesson, scroll down, scroll up.', 'info', 4000);
+        _setSrSttBtn(true);
+
+        SpeechEngine.startSTT(
+          function (bestTranscript) {
+            _handleReaderVoiceCommand(bestTranscript);
+          },
+          null,
+          function (msg) {
+            _setSrSttBtn(false);
+            UI.toast(msg, 'warning', 5000);
+          }
+        );
+      });
+    }
+  }
+
+  /*
+    Because SpeechEngine's _setTtsBtn() targets #seTtsBtn which doesn't
+    exist in the study room, we hook into the speak/cancel cycle by
+    watching the SpeechEngine's publicly observable state indirectly.
+
+    Strategy: override nothing in speech.js. Instead, use a small
+    requestAnimationFrame loop that checks whether SpeechSynthesis is
+    speaking and toggles our button class accordingly.
+  */
+  function _hookTtsBtnState(ttsBtn) {
+    var _rafId = null;
+
+    function _tick() {
+      if (!document.getElementById('srTtsBtn')) {
+        // Button is gone — reader was closed, stop the loop
+        cancelAnimationFrame(_rafId);
+        return;
+      }
+      const speaking = window.speechSynthesis && window.speechSynthesis.speaking;
+      ttsBtn.classList.toggle('sr-se-speaking', !!speaking);
+      ttsBtn.title = speaking ? 'Stop reading (click to stop)' : 'Read lesson aloud';
+
+      // Also sync the pill data attribute so the blinking dot CSS fires
+      const pill = document.getElementById('srSpeechPill');
+      if (pill) pill.setAttribute('data-tts-on', speaking ? 'true' : 'false');
+
+      _rafId = requestAnimationFrame(_tick);
+    }
+
+    _rafId = requestAnimationFrame(_tick);
+  }
+
+  /*
+    Set the STT button visual state in the study room.
+    Mirrors _setSttBtn in speech.js but targets our #srSttBtn.
+  */
+  function _setSrSttBtn(listening) {
+    const btn  = document.getElementById('srSttBtn');
+    const pill = document.getElementById('srSpeechPill');
+    if (btn) {
+      if (listening) {
+        btn.classList.add('is-listening');
+        btn.title = 'Mic is ON — tap to stop';
+      } else {
+        btn.classList.remove('is-listening');
+        btn.title = 'Voice commands (tap to start)';
+      }
+    }
+    if (pill) pill.setAttribute('data-mic-on', listening ? 'true' : 'false');
+  }
+
+  /*
+    Stop all speech when leaving the reader (navigation or back button).
+  */
+  function _stopReaderSpeech() {
+    if (window.SpeechEngine) {
+      SpeechEngine.cancel();
+      SpeechEngine.stopSTT();
+    }
+    _setSrSttBtn(false);
   }
 
   function _ensureKatex() {
@@ -564,6 +803,30 @@
 
     const sidebarHeading = [lesson.subject, lesson.term].filter(Boolean).join(' — ');
 
+    // Only show speech pill if SpeechEngine is available
+    const speechPillHtml = window.SpeechEngine ? `
+      <div class="vtx-speech-pill sr-speech-pill" id="srSpeechPill">
+        <button
+          id="srTtsBtn"
+          class="se-tts-btn vtx-speech-btn"
+          title="Read lesson aloud"
+          aria-label="Read lesson aloud"
+        >
+          <i class="ph ph-speaker-high" style="font-size:15px;"></i>
+          <span class="vtx-speech-label">Read</span>
+        </button>
+        <span class="vtx-speech-div"></span>
+        <button
+          id="srSttBtn"
+          class="se-stt-btn vtx-speech-btn"
+          title="Voice commands (tap to start)"
+          aria-label="Start voice command"
+        >
+          <i class="ph ph-microphone" style="font-size:15px;"></i>
+          <span class="vtx-speech-label">Listen</span>
+        </button>
+      </div>` : '';
+
     return `
       <div class="sr-shell">
         <div class="sr-progress-bar">
@@ -574,6 +837,7 @@
           <button class="sr-topbar__back" onclick="StudyRoom._backToBrowser()" title="Back to Lessons">← Lessons</button>
           <span class="sr-topbar__title" title="${_esc(lesson.title)}">${_esc(lesson.title)}</span>
           <div class="sr-topbar__actions">
+            ${speechPillHtml}
             <button class="sr-topbar__back" onclick="StudyRoom._togglePrefs()" id="srPrefsBtn">Aa</button>
           </div>
         </div>
@@ -793,6 +1057,8 @@
   }
 
   function _backToBrowser() {
+    _stopReaderSpeech();
+
     const app = document.getElementById('app');
     if (app) { app.classList.remove('exam-active'); app.style.padding = ''; }
     _currentLesson  = null;
