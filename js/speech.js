@@ -347,15 +347,19 @@
   }
 
   function _setSttBtn(listening) {
-    var btn = document.getElementById('seSttBtn');
-    if (!btn) return;
-    if (listening) {
-      btn.classList.add('is-listening');
-      btn.title = 'Mic is ON — tap to stop (M)';
-    } else {
-      btn.classList.remove('is-listening');
-      btn.title = 'Voice command (M)';
+    var btn  = document.getElementById('seSttBtn');
+    var pill = document.querySelector('.vtx-speech-pill');
+    if (btn) {
+      if (listening) {
+        btn.classList.add('is-listening');
+        btn.title = 'Mic is ON — tap to stop (M)';
+      } else {
+        btn.classList.remove('is-listening');
+        btn.title = 'Voice command (M)';
+      }
     }
+    /* drives the blinking dot CSS via data attribute */
+    if (pill) pill.setAttribute('data-mic-on', listening ? 'true' : 'false');
   }
 
   /* ─────────────────────────────────────────────────────── */
