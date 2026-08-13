@@ -370,6 +370,11 @@ body {
   box-sizing: border-box;
 }
 
+/* Auth layout: constrain to card width on desktop */
+#app > div.cbt-layout--auth {
+  max-width: 420px;
+}
+
 #app.exam-active {
   display: block;
   padding: var(--sp-3);
