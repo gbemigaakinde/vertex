@@ -494,6 +494,54 @@
   color: var(--warning) !important;
 }
 
+/* ============================================================
+   Study Room speech pill — addendum
+   ============================================================ */
+
+/*
+  The study room TTS button uses .sr-se-speaking (toggled by
+  _hookTtsBtnState) instead of .is-speaking, so we add an
+  equivalent active state here.
+*/
+.se-tts-btn.sr-se-speaking.vtx-speech-btn {
+  background: var(--warning-subtle) !important;
+  color: var(--warning) !important;
+}
+
+/*
+  TTS active: blinking dot on the Read button via the pill's
+  data-tts-on attribute (mirrors the mic dot pattern).
+*/
+.vtx-speech-pill[data-tts-on="true"] .se-tts-btn .vtx-speech-label::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--warning);
+  margin-right: 4px;
+  vertical-align: middle;
+  animation: se-dot-blink 1s ease-in-out infinite;
+}
+
+/*
+  Ensure the speech pill doesn't overflow the study room topbar
+  on narrow screens where the title compresses it.
+*/
+.sr-topbar__actions .vtx-speech-pill {
+  flex-shrink: 0;
+}
+
+@media (max-width: 520px) {
+  /* On very small screens, hide the text labels and show icons only */
+  .sr-speech-pill .vtx-speech-label {
+    display: none;
+  }
+  .sr-speech-pill .vtx-speech-btn {
+    padding: 5px 7px !important;
+  }
+}
+
 /* Mobile */
 @media (max-width: 480px) {
   .vtx-exam-hdr {
