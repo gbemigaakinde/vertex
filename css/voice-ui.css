@@ -1,5 +1,5 @@
 /* ============================================================
-   VERTEX CBT — Voice Notes + Speech UI  v1
+   VERTEX CBT — Voice Notes + Speech UI  v2
    ============================================================ */
 
 /* ── Recorder Button (next to chat input) ── */
@@ -128,7 +128,6 @@
   max-width: 100%;
   box-sizing: border-box;
 }
-/* Outgoing bubbles (blue background) */
 .dm-msg-out .vn-audio-player,
 .gc-msg-out .vn-audio-player {
   background: rgba(255,255,255,0.14);
@@ -150,7 +149,6 @@
 .gc-msg-out .vn-duration {
   color: rgba(255,255,255,0.85);
 }
-/* Incoming bubbles (light/dark surface) */
 .dm-msg-in .vn-audio-player,
 .gc-msg-in .vn-audio-player {
   background: var(--accent-subtle);
@@ -207,15 +205,11 @@
   border-radius: 2px;
   min-width: 2px;
   transition: background 0.1s;
-
-  /* Default (unplayed) colour — overridden per bubble context below */
   background: rgba(120, 120, 120, 0.35);
 }
 .vn-wave-bar--played {
   background: rgba(120, 120, 120, 0.85);
 }
-
-/* Outgoing bubble (blue) */
 .dm-msg-out .vn-wave-bar,
 .gc-msg-out .vn-wave-bar {
   background: rgba(255, 255, 255, 0.35);
@@ -224,8 +218,6 @@
 .gc-msg-out .vn-wave-bar--played {
   background: rgba(255, 255, 255, 0.95);
 }
-
-/* Incoming bubble (light surface) */
 .dm-msg-in .vn-wave-bar,
 .gc-msg-in .vn-wave-bar {
   background: var(--accent-border);
@@ -272,9 +264,9 @@
 }
 .se-stt-btn.is-listening {
   background: var(--danger-subtle);
-  border-color: var(--danger-border);
+  border-color: var(--danger);
   color: var(--danger);
-  animation: se-pulse 1.2s infinite;
+  animation: se-pulse 1.4s ease-in-out infinite;
 }
 
 /* TTS button — active state while reading aloud */
@@ -282,7 +274,34 @@
   background: var(--warning-subtle);
   border-color: var(--warning-border);
   color: var(--warning);
-  animation: se-pulse 1.2s infinite;
+  animation: se-pulse-warm 1.4s ease-in-out infinite;
+}
+
+/* ── Mic always-on indicator dot ──
+   A small red dot appears on the mic button when the mic
+   is continuously active, so students can see it at a glance.
+*/
+.se-stt-btn::after {
+  content: '';
+  position: absolute;
+  top: -3px;
+  right: -3px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--danger);
+  border: 2px solid var(--bg-base);
+  opacity: 0;
+  transform: scale(0);
+  transition: opacity 180ms, transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+.se-stt-btn {
+  position: relative;  /* needed for the ::after dot */
+}
+.se-stt-btn.is-listening::after {
+  opacity: 1;
+  transform: scale(1);
 }
 
 /* ============================================================
@@ -293,7 +312,6 @@
   padding: 0.875rem 1.125rem !important;
 }
 
-/* Top row: subject left, timer right — all on one line */
 .vtx-exam-hdr-top {
   display: flex;
   align-items: center;
@@ -324,7 +342,6 @@
   white-space: nowrap;
 }
 
-/* Timer block: small arc ring + digit column side by side */
 .vtx-exam-hdr-timer {
   display: flex;
   align-items: center;
@@ -332,7 +349,6 @@
   flex-shrink: 0;
 }
 
-/* Arc ring — small, purely a progress indicator */
 .vtx-arc-ring {
   width: 36px;
   height: 36px;
@@ -357,7 +373,6 @@
 .vtx-arc-prog.is-yellow { stroke: var(--warning); }
 .vtx-arc-prog.is-red    { stroke: var(--danger); }
 
-/* Digit column beside the ring */
 .vtx-arc-digits {
   display: flex;
   flex-direction: column;
@@ -384,7 +399,6 @@
   display: block;
 }
 
-/* Bottom row: speech pill — sits below the top row, left-aligned */
 .vtx-exam-hdr-bottom {
   margin-top: 0.75rem;
   padding-top: 0.625rem;
@@ -422,6 +436,8 @@
   width: auto !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+  /* needed for the ::after dot on the mic button */
+  position: relative;
 }
 
 .vtx-speech-btn:hover {
@@ -445,7 +461,29 @@
   margin: 0 2px;
 }
 
-/* Active states */
+/* ── Mic active: label changes to "Listening" ──
+   We use a CSS trick via the parent pill's data attribute,
+   set by JS when the mic is on.
+   Fallback: JS also sets the button title.
+*/
+.vtx-speech-pill[data-mic-on="true"] .se-stt-btn .vtx-speech-label::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--danger);
+  margin-right: 4px;
+  vertical-align: middle;
+  animation: se-dot-blink 1s ease-in-out infinite;
+}
+
+@keyframes se-dot-blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.2; }
+}
+
+/* Active states inside the pill */
 .se-stt-btn.is-listening.vtx-speech-btn {
   background: var(--danger-subtle) !important;
   color: var(--danger) !important;
@@ -461,19 +499,22 @@
   .vtx-exam-hdr {
     padding: 0.75rem 0.875rem !important;
   }
-
   .vtx-exam-hdr-name {
     font-size: 0.9375rem;
   }
-
   .vtx-arc-time {
     font-size: 1rem;
   }
 }
 
 @keyframes se-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(224, 59, 59, 0.35); }
-  50%      { box-shadow: 0 0 0 10px rgba(224, 59, 59, 0); }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(224, 59, 59, 0.4); }
+  50%       { box-shadow: 0 0 0 8px rgba(224, 59, 59, 0); }
+}
+
+@keyframes se-pulse-warm {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.35); }
+  50%       { box-shadow: 0 0 0 8px rgba(217, 119, 6, 0); }
 }
 
 /* Mobile */
