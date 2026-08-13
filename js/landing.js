@@ -128,7 +128,6 @@
       text-transform:uppercase; color:var(--lp-accent);
       margin-bottom:1.75rem;
     }
-    .lp-eyebrow-line { width:24px; height:1px; background:var(--lp-accent); }
     .lp-h1 {
       font-family:var(--lp-serif);
       font-size: clamp(2.75rem, 8vw, 6.25rem);
@@ -208,9 +207,6 @@
       font-size:.625rem; font-weight:600; letter-spacing:.22em;
       text-transform:uppercase; color:var(--lp-ink-4);
       display:flex; align-items:center; gap:.625rem; margin-bottom:1.25rem;
-    }
-    .lp-section-tag::before {
-      content:''; width:14px; height:1px; background:var(--lp-ink-4); flex-shrink:0;
     }
     .lp-h2 {
       font-family:var(--lp-serif);
@@ -426,7 +422,6 @@
           '<div class="lp-hero-deco" aria-hidden="true">CBT</div>' +
           '<div class="lp-hero-inner">' +
             '<div class="lp-eyebrow lp-rv">' +
-              '<span class="lp-eyebrow-line"></span>' +
               'Vertex Tutorial Centre' +
             '</div>' +
             '<h1 class="lp-h1 lp-rv d1">Prepare.<br><i>Practice.</i><br>Excel.</h1>' +
@@ -469,6 +464,10 @@
                 'Master Timothy assigns required practice sessions on specific dates with specific subjects. The app tracks your attendance automatically. You always know what is due and when.', 'lp-rv') +
               _feat('vi', 'Progress that follows you',
                 'Your results, your coaching history, your session count &mdash; all tracked. Share your grade to WhatsApp or copy it to clipboard with a single tap immediately after any exam.', 'lp-rv d1') +
+              _feat('vii', 'Voice reading and voice commands',
+                'Tap the Read button during any exam or Study Room lesson and the app reads the question or lesson content aloud to you. Prefer not to touch the screen at all? Tap the microphone button and speak. During an exam you can say things like &ldquo;read&rdquo;, &ldquo;next&rdquo;, &ldquo;previous&rdquo;, &ldquo;option A&rdquo;, or &ldquo;submit exam&rdquo; and the app responds. In the Study Room you can say &ldquo;read&rdquo;, &ldquo;stop&rdquo;, &ldquo;next lesson&rdquo;, &ldquo;previous lesson&rdquo;, &ldquo;scroll down&rdquo;, and more. Works best in Chrome or Edge.', 'lp-rv') +
+              _feat('viii', 'Private group chats',
+                'Master Timothy can create a private group for you and a chosen set of classmates &mdash; your own small study space, separate from the public chat. Send text messages, record and send voice notes, reply to specific messages, and have focused conversations with the people who matter to your studies. Groups are managed entirely by the teacher, so the space stays safe and purposeful.', 'lp-rv d1') +
             '</div>' +
           '</div>' +
         '</section>' +
