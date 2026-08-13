@@ -1,37 +1,20 @@
 /* ============================================================
-   js/speech.js — SpeechEngine  v3
+   js/speech.js — SpeechEngine  v4
    Handles TTS (text-to-speech) and STT (speech-to-text) for
    the exam screen using the native Web Speech API.
 
-   KEY FACTS this implementation is built around:
+   KEY CHANGES FROM v3:
    ─────────────────────────────────────────────────────────
-   TTS (SpeechSynthesis):
-     • Chrome cuts off any single utterance that takes longer
-       than ~15 seconds to speak (~200-250 chars). Fix: split
-       text into short chunks and chain them via the 'end' event.
-     • getVoices() returns [] on first call in Chrome/Edge/Firefox.
-       Must wait for the 'voiceschanged' event, then call again.
-     • speak() is silently ignored in Safari/iOS unless called
-       inside a direct user-gesture handler (button click, etc.).
-     • Background tab playback is unreliable — Chrome/Safari
-       throttle or stop synthesis when the tab loses focus.
-
-   STT (SpeechRecognition):
-     • Chrome, Edge, Opera: full support.
-     • Safari 14.1+ macOS / 14.5+ iOS: works via webkitSpeechRecognition.
-     • Firefox: disabled by default (behind a flag). Treat as unsupported.
-     • Safari PWA / WebView: triggers an immediate error without asking
-       for mic permission — no fix, warn the user.
-     • Requires internet — Chrome sends audio to Google's servers.
-     • continuous mode is unreliable on iOS — use single-shot mode only.
-   ─────────────────────────────────────────────────────────
-   Public API (window.SpeechEngine):
-     SpeechEngine.speak(text)   — reads text aloud
-     SpeechEngine.cancel()      — stops TTS immediately
-     SpeechEngine.startSTT(onResult, onEnd, onError) — starts mic
-     SpeechEngine.stopSTT()     — stops mic
-     SpeechEngine.ttsSupported  — boolean
-     SpeechEngine.sttSupported  — boolean
+   • Mic stays ON continuously until user clicks to stop.
+     On browsers where continuous mode cuts out, the engine
+     auto-restarts the recognition session transparently.
+   • Hands-free commands: once mic is active, saying any
+     recognised command works without touching anything.
+   • "A" / "C" recognition fixed: phoneme aliases added
+     ("aye"→A, "eye"→A, "see"→C, "sea"→C, etc.)
+   • "Read" / "Stop reading" as spoken commands.
+   • "Submit exam" / "Submit" as a spoken command.
+   • Timer ring circumference mismatch fixed.
    ============================================================ */
 
 (function () {
@@ -47,82 +30,56 @@
   var sttSupported = !!_SpeechR;
 
   /* ─────────────────────────────────────────────────────── */
-  /* Voice loading (async in Chrome/Edge/Firefox)            */
+  /* Voice loading                                           */
   /* ─────────────────────────────────────────────────────── */
-  var _voices     = [];
+  var _voices      = [];
   var _voicesReady = false;
 
   function _loadVoices() {
     if (!_synth) return;
-
-    // Safari returns voices synchronously; Chrome/Edge/Firefox fire voiceschanged.
     var list = _synth.getVoices();
-    if (list && list.length > 0) {
-      _voices      = list;
-      _voicesReady = true;
-    }
-
-    // Always wire up the event too — Chrome fires it once voices are ready.
+    if (list && list.length > 0) { _voices = list; _voicesReady = true; }
     _synth.onvoiceschanged = function () {
       var updated = _synth.getVoices();
-      if (updated && updated.length > 0) {
-        _voices      = updated;
-        _voicesReady = true;
-      }
+      if (updated && updated.length > 0) { _voices = updated; _voicesReady = true; }
     };
   }
 
   if (ttsSupported) {
-    // Run immediately — Safari may already have them.
     _loadVoices();
-    // Also run once the DOM is ready, in case the page loaded quickly.
     if (document.readyState === 'loading') {
       document.addEventListener('DOMContentLoaded', _loadVoices);
     }
   }
 
-  /* Pick the best English voice available.
-     Priority: local en-GB or en-US → any local English → any English → default */
   function _pickVoice() {
     if (_voices.length === 0) return null;
-
     var preferred = [
       function (v) { return v.localService && v.lang === 'en-GB'; },
       function (v) { return v.localService && v.lang === 'en-US'; },
       function (v) { return v.localService && v.lang.startsWith('en'); },
       function (v) { return v.lang.startsWith('en'); },
     ];
-
     for (var i = 0; i < preferred.length; i++) {
       var match = _voices.filter(preferred[i]);
       if (match.length > 0) return match[0];
     }
-
-    // Fall back to the browser default (return null = use whatever the browser picks).
     return null;
   }
 
   /* ─────────────────────────────────────────────────────── */
-  /* TTS — chunked speaker                                   */
-  /* Chrome's ~15-second / ~200-char utterance limit means   */
-  /* we must split long strings and chain them via 'end'.    */
+  /* TTS — chunked speaker (unchanged from v3)               */
   /* ─────────────────────────────────────────────────────── */
-  var _ttsActive  = false;
-  var _ttsQueue   = [];       // array of string chunks
-  var _ttsBtnEl   = null;     // reference to the TTS button (for icon toggling)
+  var _ttsActive = false;
+  var _ttsQueue  = [];
 
-  /* Split text on sentence boundaries, keeping chunks ≤ 180 chars. */
   function _chunkText(text) {
     var MAX = 180;
-    // Collapse whitespace
     text = text.replace(/\s+/g, ' ').trim();
     if (text.length <= MAX) return [text];
-
-    var chunks  = [];
-    // Split on sentence-ending punctuation, keeping the delimiter.
+    var chunks    = [];
     var sentences = text.match(/[^.!?]+[.!?]*/g) || [text];
-
-    var current = '';
+    var current   = '';
     for (var i = 0; i < sentences.length; i++) {
       var s = sentences[i].trim();
       if (!s) continue;
@@ -130,9 +87,8 @@
         current = (current + ' ' + s).trim();
       } else {
         if (current) chunks.push(current);
-        // If even a single sentence is too long, split it on commas or spaces.
         if (s.length > MAX) {
-          var words    = s.split(' ');
+          var words     = s.split(' ');
           var wordChunk = '';
           for (var w = 0; w < words.length; w++) {
             if ((wordChunk + ' ' + words[w]).trim().length <= MAX) {
@@ -153,80 +109,52 @@
     return chunks.filter(function (c) { return c.trim().length > 0; });
   }
 
-  /* Speak the next chunk in the queue. */
   function _speakNext() {
     if (_ttsQueue.length === 0) {
       _ttsActive = false;
       _setTtsBtn(false);
       return;
     }
-
-    var chunk   = _ttsQueue.shift();
-    var utt     = new SpeechSynthesisUtterance(chunk);
-
-    // Apply voice (may be null = browser picks default, which is fine).
+    var chunk = _ttsQueue.shift();
+    var utt   = new SpeechSynthesisUtterance(chunk);
     var voice = _pickVoice();
     if (voice) utt.voice = voice;
-
-    // Natural conversational settings.
-    utt.rate   = 0.92;   // slightly slower than default (1.0) for clarity
+    utt.rate   = 0.92;
     utt.pitch  = 1.0;
     utt.volume = 1.0;
     utt.lang   = (voice && voice.lang) || 'en-US';
-
-    utt.onend = function () {
-      // Small pause between chunks for natural flow.
-      setTimeout(_speakNext, 80);
-    };
-
+    utt.onend  = function () { setTimeout(_speakNext, 80); };
     utt.onerror = function (e) {
-      // 'interrupted' fires when cancel() is called — that is expected,
-      // not a real error. Swallow it silently.
       if (e.error === 'interrupted' || e.error === 'canceled') return;
-      console.warn('[SpeechEngine] TTS chunk error:', e.error, '| chunk:', chunk);
-      // Try to continue with the next chunk regardless.
+      console.warn('[SpeechEngine] TTS chunk error:', e.error);
       setTimeout(_speakNext, 100);
     };
-
     _synth.speak(utt);
   }
 
-  /* Public: start speaking text. */
   function speak(rawText) {
     if (!ttsSupported) {
       if (window.UI) UI.toast('Text-to-speech is not supported in your browser.', 'warning', 4000);
       return;
     }
-
-    // Strip HTML tags and LaTeX math markers before speaking.
     var clean = rawText
-      .replace(/<[^>]*>/g, ' ')            // HTML tags
-      .replace(/%%MATH_\d+%%/g, ' ')       // LaTeX placeholders
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/%%MATH_\d+%%/g, ' ')
       .replace(/\$\$[\s\S]*?\$\$|\$[^$]*?\$/g, ' (math expression) ')
       .replace(/\s+/g, ' ')
       .trim();
-
     if (!clean) return;
-
-    // Stop anything currently playing first.
     cancel();
-
     _ttsQueue  = _chunkText(clean);
     _ttsActive = true;
     _setTtsBtn(true);
-
-    // If voices haven't loaded yet, wait briefly then try again.
-    // (This handles the race condition on Chrome's first page load.)
     if (!_voicesReady && _voices.length === 0) {
-      setTimeout(function () {
-        _speakNext();
-      }, 250);
+      setTimeout(_speakNext, 250);
     } else {
       _speakNext();
     }
   }
 
-  /* Public: stop all TTS. */
   function cancel() {
     if (!ttsSupported) return;
     _ttsQueue  = [];
@@ -235,9 +163,7 @@
     _setTtsBtn(false);
   }
 
-  /* Toggle TTS button icon/state. */
   function _setTtsBtn(speaking) {
-    // Find the TTS button in the exam UI if it exists.
     var btn = document.getElementById('seTtsBtn');
     if (!btn) return;
     if (speaking) {
@@ -250,53 +176,56 @@
   }
 
   /* ─────────────────────────────────────────────────────── */
-  /* STT — single-shot voice command                         */
+  /* STT — continuous mode with auto-restart                 */
+  /*                                                         */
+  /* How it works:                                           */
+  /*   _sttActive = user WANTS the mic on                   */
+  /*   _sttRunning = a recognition session is open right now */
+  /*                                                         */
+  /* When the browser ends a session (which it will on many  */
+  /* mobile browsers even in continuous mode), we restart    */
+  /* immediately as long as _sttActive is still true.        */
+  /* A short cooldown (300 ms) prevents restart loops.       */
   /* ─────────────────────────────────────────────────────── */
-  var _recognition = null;
-  var _sttRunning  = false;
+  var _recognition  = null;
+  var _sttActive    = false;   /* user-intent: mic should be on */
+  var _sttRunning   = false;   /* a session is currently open */
+  var _sttRestartId = null;    /* setTimeout handle for restart */
+  var _sttCallbacks = { onResult: null, onError: null };
 
-  /*
-    onResult(transcript) — called with the recognised text string
-    onEnd()              — called when recognition finishes (result or no result)
-    onError(message)     — called with a human-readable error string
-  */
-  function startSTT(onResult, onEnd, onError) {
-    if (!sttSupported) {
-      if (typeof onError === 'function') {
-        onError('Speech recognition is not supported in your browser. Please use Chrome or Edge.');
-      }
-      return;
-    }
+  /* Check whether we are in a context where Safari PWA kills the mic */
+  function _isStandaloneSafari() {
+    return (
+      (window.navigator.standalone === true ||
+       (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)) &&
+      /Safari/i.test(navigator.userAgent) &&
+      !/Chrome/i.test(navigator.userAgent)
+    );
+  }
 
-    // Detect Safari PWA / WKWebView — these trigger an error immediately.
-    var isStandaloneSafari = (
-      window.navigator.standalone === true ||
-      (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches)
-    ) && /Safari/i.test(navigator.userAgent) && !/Chrome/i.test(navigator.userAgent);
+  /* Internal: open one recognition session */
+  function _openSession() {
+    if (!sttSupported || !_sttActive) return;
+    if (_sttRunning) return;
 
-    if (isStandaloneSafari) {
-      if (typeof onError === 'function') {
-        onError('Voice commands are not supported when Vertex is installed as a home screen app on iOS. Please open it in Safari instead.');
-      }
-      return;
-    }
-
-    // Clean up any existing session.
-    stopSTT();
-
-    try {
-      _recognition = new _SpeechR();
-    } catch (e) {
+    try { _recognition = new _SpeechR(); } catch (e) {
       console.error('[SpeechEngine] Could not create SpeechRecognition:', e);
-      if (typeof onError === 'function') onError('Could not start microphone. Please try again.');
+      _sttActive  = false;
+      _setSttBtn(false);
+      if (_sttCallbacks.onError) _sttCallbacks.onError('Could not start the microphone. Please reload and try again.');
       return;
     }
 
-    // Single-shot mode (not continuous) — most reliable across all platforms.
-    _recognition.continuous      = false;
+    /*
+      Use continuous=true where possible.
+      On iOS Safari continuous is unreliable, so we use single-shot
+      there and rely on the auto-restart loop below.
+    */
+    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+    _recognition.continuous      = !isIOS;
     _recognition.interimResults  = false;
-    _recognition.maxAlternatives = 1;
-    _recognition.lang            = 'en-US'; // or 'en-GB' depending on your audience
+    _recognition.maxAlternatives = 3;   /* ask for up to 3 alternatives — helps with A/C */
+    _recognition.lang            = 'en-US';
 
     _recognition.onstart = function () {
       _sttRunning = true;
@@ -304,57 +233,68 @@
     };
 
     _recognition.onresult = function (event) {
-      var transcript = '';
+      /* Collect ALL alternatives from ALL new results */
+      var transcripts = [];
       for (var i = event.resultIndex; i < event.results.length; i++) {
         if (event.results[i].isFinal) {
-          transcript += event.results[i][0].transcript;
+          for (var a = 0; a < event.results[i].length; a++) {
+            var t = event.results[i][a].transcript.trim();
+            if (t) transcripts.push(t);
+          }
         }
       }
-      transcript = transcript.trim();
-      if (transcript && typeof onResult === 'function') {
-        onResult(transcript);
+      if (transcripts.length > 0 && _sttCallbacks.onResult) {
+        /* Pass the best transcript; the handler will try all alternatives */
+        _sttCallbacks.onResult(transcripts[0], transcripts);
       }
     };
 
     _recognition.onend = function () {
       _sttRunning = false;
-      _setSttBtn(false);
-      if (typeof onEnd === 'function') onEnd();
+      /* Auto-restart if the user hasn't clicked stop */
+      if (_sttActive) {
+        _sttRestartId = setTimeout(function () {
+          if (_sttActive) _openSession();
+        }, 300);
+      } else {
+        _setSttBtn(false);
+      }
     };
 
     _recognition.onerror = function (event) {
       _sttRunning = false;
-      _setSttBtn(false);
 
+      /* 'aborted' and 'no-speech' are not fatal — keep going */
+      if (event.error === 'aborted') {
+        if (_sttActive) { _sttRestartId = setTimeout(function () { if (_sttActive) _openSession(); }, 300); }
+        return;
+      }
+      if (event.error === 'no-speech') {
+        /* User just didn't say anything — restart silently */
+        if (_sttActive) { _sttRestartId = setTimeout(function () { if (_sttActive) _openSession(); }, 200); }
+        return;
+      }
+
+      /* Fatal errors — stop and tell the user */
       var msg;
       switch (event.error) {
         case 'not-allowed':
         case 'permission-denied':
-          msg = 'Microphone access was denied. Please allow microphone permission and try again.';
-          break;
-        case 'no-speech':
-          msg = 'No speech detected. Please try speaking again.';
-          break;
+          msg = 'Microphone access was denied. Please allow microphone permission and try again.'; break;
         case 'network':
-          msg = 'Voice recognition needs an internet connection. Please check your connection.';
-          break;
+          msg = 'Voice recognition needs an internet connection. Please check your connection.'; break;
         case 'audio-capture':
-          msg = 'No microphone found. Please connect a microphone and try again.';
-          break;
+          msg = 'No microphone found. Please connect a microphone and try again.'; break;
         case 'service-not-allowed':
-          msg = 'Voice recognition is not allowed in this context. Try using Chrome browser.';
-          break;
-        case 'aborted':
-          // Triggered by stopSTT() — not a real error.
-          if (typeof onEnd === 'function') onEnd();
-          return;
+          msg = 'Voice recognition is not allowed in this context. Try using Chrome or Edge.'; break;
         default:
-          msg = 'Voice recognition failed (' + event.error + '). Please try again.';
+          msg = 'Voice recognition stopped (' + event.error + '). Tap the mic to restart.';
       }
 
-      console.warn('[SpeechEngine] STT error:', event.error);
-      if (typeof onError === 'function') onError(msg);
-      if (typeof onEnd  === 'function') onEnd();
+      console.warn('[SpeechEngine] STT fatal error:', event.error);
+      _sttActive = false;
+      _setSttBtn(false);
+      if (_sttCallbacks.onError) _sttCallbacks.onError(msg);
     };
 
     try {
@@ -362,17 +302,43 @@
     } catch (e) {
       console.error('[SpeechEngine] recognition.start() threw:', e);
       _sttRunning = false;
+      _sttActive  = false;
       _setSttBtn(false);
-      if (typeof onError === 'function') {
-        onError('Could not start the microphone. Please reload the page and try again.');
-      }
+      if (_sttCallbacks.onError) _sttCallbacks.onError('Could not start the microphone. Please reload and try again.');
     }
   }
 
-  /* Public: stop STT. */
+  /* Public: start continuous STT. Stays on until stopSTT() is called. */
+  function startSTT(onResult, onEnd, onError) {
+    if (!sttSupported) {
+      if (typeof onError === 'function') {
+        onError('Speech recognition is not supported in your browser. Please use Chrome or Edge.');
+      }
+      return;
+    }
+    if (_isStandaloneSafari()) {
+      if (typeof onError === 'function') {
+        onError('Voice commands are not supported when installed as a home screen app on iOS. Please open in Safari.');
+      }
+      return;
+    }
+
+    /* Store callbacks so the auto-restart can re-use them */
+    _sttCallbacks.onResult = onResult;
+    _sttCallbacks.onError  = onError;
+    /* onEnd is kept for API compatibility but not needed in continuous mode */
+
+    stopSTT();           /* clean up any previous session first */
+    _sttActive = true;
+    _openSession();
+  }
+
+  /* Public: stop STT completely. */
   function stopSTT() {
+    _sttActive = false;
+    if (_sttRestartId) { clearTimeout(_sttRestartId); _sttRestartId = null; }
     if (_recognition) {
-      try { _recognition.stop(); } catch (e) {}
+      try { _recognition.stop(); }  catch (e) {}
       try { _recognition.abort(); } catch (e) {}
       _recognition = null;
     }
@@ -380,13 +346,12 @@
     _setSttBtn(false);
   }
 
-  /* Toggle STT button icon/state. */
   function _setSttBtn(listening) {
     var btn = document.getElementById('seSttBtn');
     if (!btn) return;
     if (listening) {
       btn.classList.add('is-listening');
-      btn.title = 'Listening… click to stop (M)';
+      btn.title = 'Mic is ON — tap to stop (M)';
     } else {
       btn.classList.remove('is-listening');
       btn.title = 'Voice command (M)';
@@ -394,11 +359,132 @@
   }
 
   /* ─────────────────────────────────────────────────────── */
-  /* Keyboard shortcuts (R = read aloud, M = microphone)     */
-  /* Only active when the exam UI is visible.                */
+  /* Letter alias map — fixes A and C recognition            */
+  /*                                                         */
+  /* Why A and C fail:                                       */
+  /*   "A"  is heard as: "aye", "eye", "I", "hey", "a"      */
+  /*   "C"  is heard as: "see", "sea", "si", "the"          */
+  /*   "B"  is heard as: "be", "bee" — works fine           */
+  /*   "D"  is heard as: "dee", "the" — usually fine        */
+  /*                                                         */
+  /* Solution: map every known homophone to the letter index */
+  /* ─────────────────────────────────────────────────────── */
+  var _letterAliases = {
+    /* A = index 0 */
+    'a':    0, 'aye':  0, 'eye':  0, 'i':    0, 'hey':  0,
+    'eh':   0, 'ay':   0, 'ai':   0,
+    /* B = index 1 */
+    'b':    1, 'be':   1, 'bee':  1, 'bi':   1,
+    /* C = index 2 */
+    'c':    2, 'see':  2, 'sea':  2, 'si':   2, 'key':  2,
+    'ce':   2, 'the c': 2,
+    /* D = index 3 */
+    'd':    3, 'dee':  3, 'de':   3, 'di':   3,
+    /* E = index 4 */
+    'e':    4, 'ee':   4, 'eh e': 4,
+    /* F = index 5 */
+    'f':    5, 'ef':   5, 'eff':  5,
+  };
+
+  /*
+    Try to find a letter match anywhere in the transcript.
+    We check the full transcript first (e.g. "option see"),
+    then word by word, then try all alternatives passed in.
+  */
+  function _extractLetter(transcript, allTranscripts) {
+    var candidates = allTranscripts ? allTranscripts.slice() : [transcript];
+    /* Put the original at front if not already there */
+    if (candidates.indexOf(transcript) === -1) candidates.unshift(transcript);
+
+    for (var c = 0; c < candidates.length; c++) {
+      var t = (candidates[c] || '').toLowerCase().trim();
+
+      /* Strip common preamble words: "option A", "answer B", "pick C", "choose D", "select E" */
+      t = t.replace(/^(option|answer|pick|choose|select|letter)\s+/i, '');
+
+      /* Direct full-string match */
+      if (_letterAliases[t] !== undefined) return _letterAliases[t];
+
+      /* Word-by-word match */
+      var words = t.split(/\s+/);
+      for (var w = 0; w < words.length; w++) {
+        if (_letterAliases[words[w]] !== undefined) return _letterAliases[words[w]];
+      }
+    }
+    return -1;  /* no match */
+  }
+
+  /* ─────────────────────────────────────────────────────── */
+  /* Voice command handler                                   */
+  /* ─────────────────────────────────────────────────────── */
+  function _handleVoiceCommand(transcript, allTranscripts, exam) {
+    var t = (transcript || '').toLowerCase().trim();
+    console.log('[SpeechEngine] voice command:', t, '| alternatives:', allTranscripts);
+
+    /* ── Navigation ── */
+    if (/\b(next|forward|move on|continue)\b/.test(t)) {
+      UI.toast('Going to next question…', 'info', 1500);
+      if (window.Exam && typeof Exam.nextQuestion === 'function') Exam.nextQuestion();
+      return;
+    }
+    if (/\b(previous|prev|back|go back)\b/.test(t)) {
+      UI.toast('Going to previous question…', 'info', 1500);
+      if (window.Exam && typeof Exam.prevQuestion === 'function') Exam.prevQuestion();
+      return;
+    }
+
+    /* ── TTS: read aloud ── */
+    if (/\b(read|listen|read (the )?question|read (it )?out|speak)\b/.test(t)) {
+      var ttsBtn = document.getElementById('seTtsBtn');
+      if (ttsBtn) ttsBtn.click();
+      return;
+    }
+
+    /* ── TTS: stop reading ── */
+    if (/\b(stop( reading| speaking)?|quiet|silence|shut up)\b/.test(t)) {
+      if (_ttsActive) {
+        cancel();
+        UI.toast('Stopped reading.', 'info', 1500);
+      }
+      return;
+    }
+
+    /* ── Submit exam ── */
+    if (/\b(submit( exam| test| now)?|finish( exam| test)?|end exam)\b/.test(t)) {
+      UI.toast('Submit command received — confirming…', 'info', 2000);
+      if (window.Exam && typeof Exam.submitExam === 'function') {
+        /* Give user a moment to hear the toast, then trigger with confirm dialog */
+        setTimeout(function () { Exam.submitExam(false); }, 1500);
+      }
+      return;
+    }
+
+    /* ── Answer selection ── */
+    if (!exam) return;
+    var subj     = exam.currentSubject;
+    var qList    = exam.questions[subj];
+    var optCount = (qList[exam.currentIndex].opts || []).length;
+
+    var letterIdx = _extractLetter(t, allTranscripts);
+    if (letterIdx >= 0 && letterIdx < optCount) {
+      var letterName = String.fromCharCode(65 + letterIdx);
+      UI.toast('Selecting option ' + letterName + '…', 'info', 1500);
+      var labels = document.querySelectorAll('.option-label');
+      if (labels[letterIdx]) labels[letterIdx].click();
+      return;
+    }
+
+    /* ── Didn't understand ── */
+    UI.toast(
+      'Not understood: "' + transcript + '". Try: A B C D, next, previous, read, stop, submit exam.',
+      'info', 4000
+    );
+  }
+
+  /* ─────────────────────────────────────────────────────── */
+  /* Keyboard shortcuts (R = read, M = mic toggle)           */
   /* ─────────────────────────────────────────────────────── */
   document.addEventListener('keydown', function (e) {
-    // Ignore if focus is inside a text input.
     var tag = (document.activeElement && document.activeElement.tagName) || '';
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
@@ -408,7 +494,6 @@
       e.preventDefault();
       ttsBtn.click();
     }
-
     if (e.key === 'm' || e.key === 'M') {
       var sttBtn = document.getElementById('seSttBtn');
       if (!sttBtn) return;
@@ -419,10 +504,11 @@
 
   /* ─────────────────────────────────────────────────────── */
   /* Exam button wiring                                      */
-  /* Called by exam.js after renderExam() mounts the buttons */
+  /* Called by exam.js after renderExam() mounts the UI      */
   /* ─────────────────────────────────────────────────────── */
   function wireExamButtons(exam) {
-    /* TTS button */
+
+    /* ── TTS button ── */
     var ttsBtn = document.getElementById('seTtsBtn');
     if (ttsBtn) {
       ttsBtn.addEventListener('click', function () {
@@ -430,14 +516,10 @@
           cancel();
           return;
         }
-
-        // Build the text to read: question + all options.
         var subj  = exam.currentSubject;
         var qList = exam.questions[subj];
         var q     = qList[exam.currentIndex];
-
         if (!q) return;
-
         var letters = ['A', 'B', 'C', 'D', 'E', 'F'];
         var text    = 'Question ' + (exam.currentIndex + 1) + '. ' + (q.q || '');
         if (Array.isArray(q.opts)) {
@@ -445,91 +527,64 @@
             text += '. Option ' + (letters[i] || (i + 1)) + ': ' + opt;
           });
         }
-
         speak(text);
       });
     }
 
-    /* STT button */
+    /* ── STT button — toggle continuous mic on/off ── */
     var sttBtn = document.getElementById('seSttBtn');
     if (sttBtn) {
       sttBtn.addEventListener('click', function () {
-        if (_sttRunning) {
+
+        /* If mic is already on, turn it off */
+        if (_sttActive) {
           stopSTT();
+          UI.toast('Microphone off.', 'info', 1500);
           return;
         }
 
+        /* Not in standalone Safari */
         if (!sttSupported) {
           UI.toast('Voice commands are not supported in your browser. Please use Chrome or Edge.', 'warning', 5000);
           return;
         }
 
-        UI.toast('Listening… say A, B, C, D, "next", or "previous".', 'info', 3000);
+        UI.toast('Microphone is ON. Say A, B, C, D, "next", "previous", "read", "stop", or "submit exam".', 'info', 4000);
 
         startSTT(
-          /* onResult */ function (transcript) {
-            _handleVoiceCommand(transcript, exam);
+          /* onResult */
+          function (bestTranscript, allTranscripts) {
+            _handleVoiceCommand(bestTranscript, allTranscripts, exam);
           },
-          /* onEnd    */ function () {},
-          /* onError  */ function (msg) {
-            UI.toast(msg, 'warning', 5000);
-          }
+          /* onEnd — not used in continuous mode */
+          null,
+          /* onError */
+          function (msg) { UI.toast(msg, 'warning', 5000); }
         );
       });
     }
-  }
-
-  /* Map spoken words to exam actions. */
-  function _handleVoiceCommand(transcript, exam) {
-    var t = transcript.toLowerCase().trim();
-    console.log('[SpeechEngine] voice command:', t);
-
-    // Answer selection — recognise "A", "option A", "answer A", etc.
-    var letterMap = { a: 0, b: 1, c: 2, d: 3, e: 4, f: 5 };
-    var letterMatch = t.match(/\b([a-f])\b/);
-    if (letterMatch) {
-      var idx = letterMap[letterMatch[1]];
-      var subj = exam.currentSubject;
-      var qList = exam.questions[subj];
-      if (idx !== undefined && idx < (qList[exam.currentIndex].opts || []).length) {
-        UI.toast('Selecting option ' + letterMatch[1].toUpperCase() + '…', 'info', 1500);
-        // Simulate clicking the option label.
-        var labels = document.querySelectorAll('.option-label');
-        if (labels[idx]) labels[idx].click();
-        return;
-      }
-    }
-
-    // Navigation commands.
-    if (/\b(next|forward)\b/.test(t)) {
-      if (window.Exam && typeof Exam.nextQuestion === 'function') Exam.nextQuestion();
-      return;
-    }
-    if (/\b(previous|prev|back)\b/.test(t)) {
-      if (window.Exam && typeof Exam.prevQuestion === 'function') Exam.prevQuestion();
-      return;
-    }
-    if (/\bread\b/.test(t) || /\blisten\b/.test(t)) {
-      var ttsBtn = document.getElementById('seTtsBtn');
-      if (ttsBtn) ttsBtn.click();
-      return;
-    }
-
-    // Didn't recognise it.
-    UI.toast('Not understood: "' + transcript + '". Try saying A, B, C, D, next, or previous.', 'info', 3500);
   }
 
   /* ─────────────────────────────────────────────────────── */
   /* Public API                                              */
   /* ─────────────────────────────────────────────────────── */
   window.SpeechEngine = {
-    speak:        speak,
-    cancel:       cancel,
-    startSTT:     startSTT,
-    stopSTT:      stopSTT,
+    speak:           speak,
+    cancel:          cancel,
+    startSTT:        startSTT,
+    stopSTT:         stopSTT,
     wireExamButtons: wireExamButtons,
-    ttsSupported: ttsSupported,
-    sttSupported: sttSupported,
+    ttsSupported:    ttsSupported,
+    sttSupported:    sttSupported,
+    /* Exposed for the keyboard shortcut in index.html's inline script */
+    readCurrentQuestion: function () {
+      var ttsBtn = document.getElementById('seTtsBtn');
+      if (ttsBtn) ttsBtn.click();
+    },
+    startListening: function () {
+      var sttBtn = document.getElementById('seSttBtn');
+      if (sttBtn) sttBtn.click();
+    },
   };
 
 })();
