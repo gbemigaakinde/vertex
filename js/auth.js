@@ -47,14 +47,14 @@
                              transition:background var(--t-fast),color var(--t-fast),box-shadow var(--t-fast);
                              background:var(--bg-base);color:var(--text-1);
                              box-shadow:var(--shadow-xs);">
-                Email
+                Login With Email
               </button>
               <button id="loginTabAdmno" onclick="Auth._setLoginMode('admno')"
                       style="flex:1;padding:.4375rem .75rem;font-size:var(--text-sm);font-weight:500;
                              cursor:pointer;border:none;border-radius:5px;font-family:inherit;
                              transition:background var(--t-fast),color var(--t-fast),box-shadow var(--t-fast);
                              background:transparent;color:var(--text-3);box-shadow:none;">
-                Admission No
+                Login With Reg. No.
               </button>
             </div>
 
