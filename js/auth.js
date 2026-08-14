@@ -371,7 +371,13 @@
           return;
         }
 
-        await window.fbAuth.signInWithEmailAndPassword(email, pass);
+        try {
+          await window.fbAuth.signInWithEmailAndPassword(email, pass);
+        } catch (signInErr) {
+          const msg = _resolveLoginError(signInErr, 'admno');
+          UI.toast(msg, 'error');
+          UI.setLoading(btn, false);
+        }
 
       } else {
         const email = (document.getElementById('loginEmail')?.value || '').trim();
@@ -380,18 +386,68 @@
           UI.setLoading(btn, false);
           return;
         }
-        await window.fbAuth.signInWithEmailAndPassword(email, pass);
+
+        try {
+          await window.fbAuth.signInWithEmailAndPassword(email, pass);
+        } catch (signInErr) {
+          // For invalid-credential or wrong-password, check if the email exists
+          // so we can give a precise message.
+          if (
+            signInErr.code === 'auth/wrong-password' ||
+            signInErr.code === 'auth/invalid-credential' ||
+            signInErr.code === 'auth/user-not-found' ||
+            signInErr.code === 'auth/invalid-email'
+          ) {
+            let preciseMsg;
+            try {
+              const methods = await window.fbAuth.fetchSignInMethodsForEmail(email);
+              if (methods && methods.length > 0) {
+                // Email exists — the password is wrong
+                preciseMsg = 'Incorrect password. Please try again or use "Forgot password?"';
+              } else {
+                // Email not registered
+                preciseMsg = 'No account found with this email address. Please check or create an account.';
+              }
+            } catch (_) {
+              // fetchSignInMethodsForEmail itself failed (e.g. invalid email format)
+              preciseMsg = _resolveLoginError(signInErr, 'email');
+            }
+            UI.toast(preciseMsg, 'error');
+          } else {
+            UI.toast(_resolveLoginError(signInErr, 'email'), 'error');
+          }
+          UI.setLoading(btn, false);
+        }
       }
 
     } catch (err) {
-      const msg = err.code === 'auth/user-not-found'     ? 'No account found with this email.'
-                : err.code === 'auth/wrong-password'     ? 'Incorrect password.'
-                : err.code === 'auth/too-many-requests'  ? 'Too many failed attempts. Try again later.'
-                : err.code === 'auth/invalid-email'      ? 'Invalid email address.'
-                : err.code === 'auth/invalid-credential' ? 'Incorrect credentials. Please check and try again.'
-                : 'Login failed. Please try again.';
-      UI.toast(msg, 'error');
+      UI.toast(_resolveLoginError(err, _loginMode), 'error');
       UI.setLoading(btn, false);
+    }
+  }
+
+  // Translates a Firebase auth error into a user-facing message.
+  function _resolveLoginError(err, mode) {
+    switch (err.code) {
+      case 'auth/user-not-found':
+        return mode === 'admno'
+          ? 'No account linked to this admission number.'
+          : 'No account found with this email address.';
+      case 'auth/wrong-password':
+        return 'Incorrect password. Please try again or use "Forgot password?"';
+      case 'auth/too-many-requests':
+        return 'Too many failed attempts. Please wait a few minutes and try again.';
+      case 'auth/invalid-email':
+        return 'The email address you entered is not valid.';
+      case 'auth/user-disabled':
+        return 'This account has been disabled. Please contact Master Timothy.';
+      case 'auth/invalid-credential':
+        // Fallback for newer SDK — precise check done at call site for email mode
+        return 'Incorrect credentials. Please check your details and try again.';
+      case 'auth/network-request-failed':
+        return 'Network error. Please check your connection and try again.';
+      default:
+        return 'Login failed. Please try again.';
     }
   }
 
@@ -425,9 +481,19 @@
         createdAt:   firebase.firestore.FieldValue.serverTimestamp(),
       });
 
+      // Registration is complete. Reset the flag and store the email for the
+      // login screen before signing out. We manually render the login screen
+      // here instead of relying on the onAuthStateChanged callback, because
+      // the auth listener's _authResolved guard would swallow the signOut
+      // event after the earlier createUser trigger already resolved it.
       window._registrationInProgress = false;
       _pendingLoginEmail = email;
+
       await window.fbAuth.signOut();
+
+      // Directly render the login screen so the user sees the success state
+      // regardless of whether the auth listener fires again.
+      renderLogin();
 
     } catch (err) {
       window._registrationInProgress = false;
