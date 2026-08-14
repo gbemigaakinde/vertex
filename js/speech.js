@@ -1,5 +1,5 @@
 /* ============================================================
-   js/speech.js — SpeechEngine  v5
+   js/speech.js — SpeechEngine  v6
    Handles TTS (text-to-speech) and STT (speech-to-text) for
    the exam screen using the native Web Speech API.
    ============================================================ */
@@ -15,6 +15,28 @@
 
   var _voices      = [];
   var _voicesReady = false;
+
+  /* ── Persisted voice preference ── */
+  var _PREF_KEY = 'vtx_tts_voice_pref';
+  var _voicePref = (function () {
+    try {
+      var raw = localStorage.getItem(_PREF_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch (e) { return null; }
+  })();
+  /* _voicePref shape: { lang: 'en-GB', voiceName: 'Google UK English Female' }
+     or null for default behaviour. */
+
+  function _savePref(pref) {
+    _voicePref = pref;
+    try {
+      if (pref) {
+        localStorage.setItem(_PREF_KEY, JSON.stringify(pref));
+      } else {
+        localStorage.removeItem(_PREF_KEY);
+      }
+    } catch (e) {}
+  }
 
   function _loadVoices() {
     if (!_synth) return;
@@ -33,7 +55,8 @@
     }
   }
 
-  function _pickVoice() {
+  /* ── Default English voice picker (unchanged original logic) ── */
+  function _pickDefaultVoice() {
     if (_voices.length === 0) return null;
     var preferred = [
       function (v) { return v.localService && v.lang === 'en-GB'; },
@@ -46,6 +69,335 @@
       if (match.length > 0) return match[0];
     }
     return null;
+  }
+
+  /* ── Voice picker: respects saved preference, falls back gracefully ── */
+  function _pickVoice() {
+    if (_voices.length === 0) return null;
+
+    if (_voicePref) {
+      /* Try exact name match first */
+      if (_voicePref.voiceName) {
+        var exact = _voices.filter(function (v) {
+          return v.name === _voicePref.voiceName;
+        });
+        if (exact.length > 0) return exact[0];
+      }
+      /* Saved voice gone — try any voice in the saved language */
+      if (_voicePref.lang) {
+        var langMatch = _voices.filter(function (v) {
+          return v.lang === _voicePref.lang || v.lang.startsWith(_voicePref.lang.split('-')[0]);
+        });
+        if (langMatch.length > 0) return langMatch[0];
+      }
+      /* Nothing found — clear the stale pref and fall through */
+      _savePref(null);
+    }
+
+    return _pickDefaultVoice();
+  }
+
+  /* ════════════════════════════════════════════════════════
+     VOICE SELECTION UI
+     ════════════════════════════════════════════════════════ */
+
+  /* Attempt to infer gender from voice name — conservative, never guesses */
+  function _inferGender(voice) {
+    var n = (voice.name || '').toLowerCase();
+    var femaleTokens = [
+      'female', 'woman', 'girl',
+      'samantha', 'victoria', 'karen', 'moira', 'tessa', 'fiona',
+      'allison', 'ava', 'susan', 'zoe', 'kate', 'alice', 'emma',
+      'emily', 'sarah', 'lisa', 'linda', 'julia', 'anna', 'eva',
+      'amelie', 'joana', 'monica', 'paulina', 'lucia', 'silvia',
+      'sara', 'camila', 'lekha', 'veena', 'kanya', 'damayanti',
+      'mei-jia', 'sin-ji', 'ting-ting', 'yi-jia', 'yuna',
+      'kyoko', 'o-ren', 'maged', 'laila', 'ioana', 'milena',
+      'mariska', 'zosia', 'filiz', 'yelda', 'katya', 'irina',
+      'melina', 'nora', 'sara', 'ellen', 'xander', /* skip xander — male; listed to watch */
+    ];
+    /* Remove false positives */
+    var maleTokens = [
+      'male', 'man', 'boy',
+      'daniel', 'alex', 'fred', 'ralph', 'albert', 'bruce',
+      'junior', 'lee', 'xander', 'jorge', 'carlos', 'diego',
+      'enrique', 'juan', 'luca', 'nicolas', 'felix', 'henrik',
+      'thomas', 'yannick', 'damien', 'romain', 'pierre',
+      'aaron', 'arthur', 'oliver', 'james', 'mark', 'paul',
+      'gordon', 'krishna', 'ravi',
+    ];
+
+    var isFemale = femaleTokens.some(function (t) { return n.indexOf(t) !== -1; });
+    var isMale   = maleTokens.some(function (t)   { return n.indexOf(t) !== -1; });
+
+    /* Specific known patterns in browser voice names */
+    if (/\bfemale\b/.test(n))  return 'female';
+    if (/\bmale\b/.test(n))    return 'male';
+    if (/google\s+\S+\s+english\s+female/i.test(voice.name)) return 'female';
+    if (/google\s+\S+\s+english\s+male/i.test(voice.name))   return 'male';
+    if (/microsoft\s+\S+\s+online.*female/i.test(voice.name)) return 'female';
+    if (/microsoft\s+\S+\s+online.*male/i.test(voice.name))   return 'male';
+
+    if (isFemale && !isMale) return 'female';
+    if (isMale   && !isFemale) return 'male';
+    return 'unknown';
+  }
+
+  function _genderLabel(gender) {
+    if (gender === 'female') return ' ♀';
+    if (gender === 'male')   return ' ♂';
+    return '';
+  }
+
+  /* Group voices by language, de-duplicate by name */
+  function _groupVoicesByLang() {
+    var map = {};
+    var seen = {};
+    _voices.forEach(function (v) {
+      if (seen[v.name]) return;
+      seen[v.name] = true;
+      var lang = v.lang || 'Unknown';
+      if (!map[lang]) map[lang] = [];
+      map[lang].push(v);
+    });
+    return map;
+  }
+
+  /* Build a human-readable language label */
+  function _langLabel(langCode) {
+    try {
+      /* Use Intl.DisplayNames if available (modern browsers) */
+      if (window.Intl && Intl.DisplayNames) {
+        var dn = new Intl.DisplayNames(['en'], { type: 'language' });
+        var label = dn.of(langCode);
+        if (label && label !== langCode) return label + ' (' + langCode + ')';
+      }
+    } catch (e) {}
+    return langCode;
+  }
+
+  function _openVoiceSelector() {
+    /* Remove any existing panel */
+    var existing = document.getElementById('vtxVoicePanel');
+    if (existing) { existing.remove(); return; }
+
+    /* Ensure voices are loaded */
+    if (!ttsSupported) {
+      if (window.UI) UI.toast('Text-to-speech is not supported in your browser.', 'warning', 4000);
+      return;
+    }
+
+    /* If voices haven't loaded yet, wait briefly and retry */
+    if (!_voicesReady || _voices.length === 0) {
+      var list = _synth.getVoices();
+      if (list && list.length > 0) { _voices = list; _voicesReady = true; }
+    }
+
+    if (_voices.length === 0) {
+      if (window.UI) UI.toast('Voices are still loading — please try again in a moment.', 'info', 3000);
+      return;
+    }
+
+    var grouped   = _groupVoicesByLang();
+    var langCodes = Object.keys(grouped).sort(function (a, b) {
+      /* Put English variants first */
+      var aEn = a.startsWith('en') ? 0 : 1;
+      var bEn = b.startsWith('en') ? 0 : 1;
+      if (aEn !== bEn) return aEn - bEn;
+      return a.localeCompare(b);
+    });
+
+    /* Current selection */
+    var activeLang  = (_voicePref && _voicePref.lang)      || 'en-GB';
+    /* Make sure activeLang exists in our list */
+    if (!grouped[activeLang]) {
+      /* Try the base language */
+      var base = activeLang.split('-')[0];
+      var found = langCodes.filter(function (l) { return l.startsWith(base); });
+      activeLang = found.length > 0 ? found[0] : langCodes[0];
+    }
+
+    var panel = document.createElement('div');
+    panel.id = 'vtxVoicePanel';
+    panel.setAttribute('role', 'dialog');
+    panel.setAttribute('aria-label', 'Voice selection');
+    panel.style.cssText = [
+      'position:fixed',
+      'bottom:72px',
+      'left:50%',
+      'transform:translateX(-50%)',
+      'background:var(--bg-base,#fff)',
+      'border:1px solid var(--border,#e0e0e0)',
+      'border-radius:14px',
+      'box-shadow:0 8px 32px rgba(0,0,0,0.18)',
+      'z-index:100000',
+      'width:min(420px,calc(100vw - 2rem))',
+      'max-height:70vh',
+      'display:flex',
+      'flex-direction:column',
+      'overflow:hidden',
+      'font-family:var(--font,sans-serif)',
+      'animation:vtxVPFadeIn 150ms ease',
+    ].join(';');
+
+    /* Inject keyframe once */
+    if (!document.getElementById('vtxVPStyle')) {
+      var st = document.createElement('style');
+      st.id = 'vtxVPStyle';
+      st.textContent = '@keyframes vtxVPFadeIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}';
+      document.head.appendChild(st);
+    }
+
+    /* Header */
+    var hdr = document.createElement('div');
+    hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-bottom:1px solid var(--border,#e0e0e0);flex-shrink:0;';
+    hdr.innerHTML =
+      '<span style="font-size:.875rem;font-weight:700;color:var(--text-1,#111);">🔊 Voice Settings</span>' +
+      '<button id="vtxVPClose" aria-label="Close" style="background:none;border:none;cursor:pointer;font-size:1.125rem;color:var(--text-3,#888);line-height:1;padding:2px 6px;border-radius:6px;">✕</button>';
+    panel.appendChild(hdr);
+
+    /* Body — scrollable */
+    var body = document.createElement('div');
+    body.style.cssText = 'flex:1;overflow-y:auto;padding:.75rem 1rem;display:flex;flex-direction:column;gap:.875rem;';
+
+    /* ── Default option ── */
+    var defaultRow = document.createElement('div');
+    var isDefault  = !_voicePref;
+    defaultRow.style.cssText = 'display:flex;align-items:center;gap:.625rem;padding:.5rem .75rem;border-radius:8px;cursor:pointer;border:1.5px solid ' + (isDefault ? 'var(--accent,#4f6ef7)' : 'var(--border,#e0e0e0)') + ';background:' + (isDefault ? 'var(--accent-subtle,#eef2ff)' : 'transparent') + ';transition:all 120ms;';
+    defaultRow.innerHTML =
+      '<span style="font-size:1rem;">🌐</span>' +
+      '<div style="flex:1;min-width:0;">' +
+        '<div style="font-size:.875rem;font-weight:600;color:var(--text-1,#111);">Default (English)</div>' +
+        '<div style="font-size:.75rem;color:var(--text-3,#888);">Uses the best available English voice</div>' +
+      '</div>' +
+      (isDefault ? '<span style="font-size:.8125rem;font-weight:700;color:var(--accent,#4f6ef7);">✓</span>' : '');
+    defaultRow.addEventListener('click', function () {
+      _savePref(null);
+      panel.remove();
+      if (window.UI) UI.toast('Voice reset to default English.', 'success', 2000);
+    });
+    body.appendChild(defaultRow);
+
+    /* ── Language selector ── */
+    var langSection = document.createElement('div');
+    var langLabel   = document.createElement('div');
+    langLabel.style.cssText = 'font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-4,#aaa);margin-bottom:.375rem;';
+    langLabel.textContent = 'Language';
+    langSection.appendChild(langLabel);
+
+    var langSel = document.createElement('select');
+    langSel.style.cssText = 'width:100%;padding:.5rem .625rem;border-radius:8px;border:1px solid var(--border,#e0e0e0);background:var(--bg-subtle,#f7f7f7);color:var(--text-1,#111);font-size:.875rem;font-family:inherit;cursor:pointer;appearance:auto;';
+    langCodes.forEach(function (lc) {
+      var opt = document.createElement('option');
+      opt.value       = lc;
+      opt.textContent = _langLabel(lc);
+      if (lc === activeLang) opt.selected = true;
+      langSel.appendChild(opt);
+    });
+    langSection.appendChild(langSel);
+    body.appendChild(langSection);
+
+    /* ── Voice list for selected language ── */
+    var voiceSection = document.createElement('div');
+    var voiceLabel   = document.createElement('div');
+    voiceLabel.style.cssText = langLabel.style.cssText;
+    voiceLabel.textContent = 'Voice';
+    voiceSection.appendChild(voiceLabel);
+
+    var voiceListEl = document.createElement('div');
+    voiceListEl.id = 'vtxVoiceList';
+    voiceListEl.style.cssText = 'display:flex;flex-direction:column;gap:.375rem;';
+    voiceSection.appendChild(voiceListEl);
+    body.appendChild(voiceSection);
+
+    panel.appendChild(body);
+    document.body.appendChild(panel);
+
+    /* Close handlers */
+    document.getElementById('vtxVPClose').addEventListener('click', function () { panel.remove(); });
+    panel.addEventListener('click', function (e) { if (e.target === panel) panel.remove(); });
+
+    /* Dismiss on Escape */
+    function _onKey(e) {
+      if (e.key === 'Escape') { panel.remove(); document.removeEventListener('keydown', _onKey); }
+    }
+    document.addEventListener('keydown', _onKey);
+    panel.addEventListener('remove', function () { document.removeEventListener('keydown', _onKey); });
+
+    /* Render voices for a given language */
+    function _renderVoices(langCode) {
+      voiceListEl.innerHTML = '';
+      var vList = grouped[langCode] || [];
+
+      if (vList.length === 0) {
+        var noV = document.createElement('p');
+        noV.style.cssText = 'font-size:.8125rem;color:var(--text-3,#888);margin:0;';
+        noV.textContent = 'No voices available for this language.';
+        voiceListEl.appendChild(noV);
+        return;
+      }
+
+      vList.forEach(function (v) {
+        var gender     = _inferGender(v);
+        var gLabel     = _genderLabel(gender);
+        var isSelected = _voicePref && _voicePref.voiceName === v.name;
+        var local      = v.localService ? ' · Local' : ' · Online';
+
+        var row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:.625rem;padding:.5rem .75rem;border-radius:8px;cursor:pointer;border:1.5px solid ' + (isSelected ? 'var(--accent,#4f6ef7)' : 'var(--border,#e0e0e0)') + ';background:' + (isSelected ? 'var(--accent-subtle,#eef2ff)' : 'transparent') + ';transition:all 120ms;';
+
+        var genderIcon = gender === 'female' ? '♀' : gender === 'male' ? '♂' : '◈';
+        var genderColor = gender === 'female' ? '#e879a0' : gender === 'male' ? '#4f8ef7' : 'var(--text-4,#aaa)';
+
+        row.innerHTML =
+          '<span style="font-size:1rem;color:' + genderColor + ';flex-shrink:0;width:1.25rem;text-align:center;">' + genderIcon + '</span>' +
+          '<div style="flex:1;min-width:0;">' +
+            '<div style="font-size:.875rem;font-weight:600;color:var(--text-1,#111);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
+              _escHtmlLocal(v.name) + (gLabel ? '<span style="color:' + genderColor + ';font-size:.8125rem;">' + gLabel + '</span>' : '') +
+            '</div>' +
+            '<div style="font-size:.6875rem;color:var(--text-4,#aaa);">' +
+              _escHtmlLocal(v.lang) + local +
+            '</div>' +
+          '</div>' +
+          (isSelected ? '<span style="font-size:.8125rem;font-weight:700;color:var(--accent,#4f6ef7);flex-shrink:0;">✓</span>' : '');
+
+        row.addEventListener('click', function () {
+          _savePref({ lang: v.lang, voiceName: v.name });
+          panel.remove();
+          if (window.UI) UI.toast('Voice set to: ' + v.name, 'success', 2500);
+          /* Preview the chosen voice immediately */
+          _previewVoice(v);
+        });
+
+        voiceListEl.appendChild(row);
+      });
+    }
+
+    /* Initial render */
+    _renderVoices(activeLang);
+
+    /* Update on language change */
+    langSel.addEventListener('change', function () {
+      _renderVoices(langSel.value);
+    });
+  }
+
+  /* Quick preview utterance for the selected voice */
+  function _previewVoice(voice) {
+    if (!_synth) return;
+    cancel();
+    var utt   = new SpeechSynthesisUtterance('Hello! This is how I sound.');
+    utt.voice = voice;
+    utt.rate  = 0.92;
+    utt.lang  = voice.lang || 'en-US';
+    _synth.speak(utt);
+  }
+
+  /* Minimal local HTML escaper (used only inside the voice panel) */
+  function _escHtmlLocal(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
 
   /* ── TTS ── */
@@ -402,7 +754,6 @@
      WIKIPEDIA SEARCH — smart keyword extraction
      ════════════════════════════════════════════════════════ */
 
-  /* Common stopwords to strip before building a search query */
   var _stopWords = new RegExp(
     '\\b(the|a|an|is|are|was|were|be|been|being|have|has|had|do|does|did|' +
     'will|would|could|should|may|might|shall|can|of|in|on|at|to|for|with|by|' +
@@ -420,7 +771,6 @@
     'gi'
   );
 
-  /* Subject-specific concept boosters: helps pick more specific Wikipedia topics */
   var _subjectBoosts = {
     'chemistry':          ['reaction', 'element', 'compound', 'bond', 'acid', 'base', 'salt', 'ion', 'molecule', 'atom', 'oxidation', 'reduction', 'electrolysis', 'organic', 'periodic'],
     'biology':            ['cell', 'organism', 'photosynthesis', 'respiration', 'genetics', 'enzyme', 'hormone', 'tissue', 'organ', 'evolution', 'dna', 'protein', 'osmosis', 'diffusion'],
@@ -436,30 +786,15 @@
     'further mathematics':['calculus', 'differential', 'complex number', 'matrix', 'vector', 'series', 'proof', 'binomial', 'statistics'],
   };
 
-  /**
-   * Extract a smart Wikipedia search query from a question.
-   * Strategy:
-   *  1. Strip HTML and LaTeX
-   *  2. Remove stopwords
-   *  3. Find any option answer text that looks like a concept (the correct answer)
-   *  4. Score remaining words by length and subject relevance
-   *  5. Build a 3-6 word query focused on the core concept
-   */
   function _buildSmartSearchQuery(q, subj) {
     var questionText = _cleanText(q.q || '');
     var correctOpt   = _cleanText((q.opts || [])[q.ans] || '');
     var expText      = _cleanText(q.exp || '');
 
-    /* Weight: correct answer text is the most specific concept — lead with it */
     var combined = correctOpt + ' ' + questionText + ' ' + expText;
-
-    /* Strip stopwords */
     var stripped = combined.replace(_stopWords, ' ').replace(/\s+/g, ' ').trim();
-
-    /* Tokenise and score words */
     var tokens = stripped.split(/\s+/).filter(function (w) { return w.length >= 4; });
 
-    /* Deduplicate preserving order */
     var seen   = {};
     var unique = [];
     for (var i = 0; i < tokens.length; i++) {
@@ -467,30 +802,24 @@
       if (!seen[lw]) { seen[lw] = true; unique.push(tokens[i]); }
     }
 
-    /* Boost tokens that appear in the subject's concept list */
     var subjKey = (subj || '').toLowerCase().trim();
     var boosts  = _subjectBoosts[subjKey] || [];
     unique.sort(function (a, b) {
       var aBoost = boosts.indexOf(a.toLowerCase()) !== -1 ? 1 : 0;
       var bBoost = boosts.indexOf(b.toLowerCase()) !== -1 ? 1 : 0;
       if (bBoost !== aBoost) return bBoost - aBoost;
-      return b.length - a.length; // longer words tend to be more specific
+      return b.length - a.length;
     });
 
-    /* Take top 5 keywords */
     var keywords = unique.slice(0, 5);
-
-    /* If the correct answer itself is a short phrase (2-4 words), prepend it whole */
     var correctWords = correctOpt.split(/\s+/).filter(function (w) { return w.length >= 3; });
     if (correctWords.length >= 2 && correctWords.length <= 5) {
-      /* Use the correct answer as the primary query nucleus */
       return correctOpt + ' ' + keywords.slice(0, 3).join(' ');
     }
 
     return keywords.join(' ');
   }
 
-  /* Strip HTML tags and LaTeX for clean spoken/displayed text */
   function _cleanText(str) {
     if (!str) return '';
     return String(str)
@@ -500,7 +829,6 @@
       .replace(/\s+/g, ' ').trim();
   }
 
-  /* Fetch a Wikipedia summary for a topic — free, no key */
   function _fetchWikipediaSummary(topic, callback) {
     var encoded = encodeURIComponent(topic.replace(/\s+/g, '_'));
     var url     = 'https://en.wikipedia.org/api/rest_v1/page/summary/' + encoded;
@@ -516,7 +844,6 @@
       .catch(function () { callback('error', null, null); });
   }
 
-  /* Search Wikipedia for best article matching a topic */
   function _searchWikipedia(query, callback) {
     var url = 'https://en.wikipedia.org/w/rest.php/v1/search/page?q=' +
               encodeURIComponent(query) + '&limit=5';
@@ -544,7 +871,6 @@
     _resultsResult = result;
   }
 
-  /* Show the deep-explanation modal */
   function _showExplanationModal(questionNumber, subjectName) {
     var exam   = _resultsExam;
     var result = _resultsResult;
@@ -575,7 +901,6 @@
     var existing = document.getElementById('seExplainModal');
     if (existing) existing.remove();
 
-    /* Reset deeper-await state for this new modal */
     _awaitingDeeperAnswer = false;
     _deeperContext = { q: q, subj: subj, idx: idx };
 
@@ -639,7 +964,6 @@
     document.body.appendChild(modal);
     requestAnimationFrame(function () { modal.classList.add('is-visible'); });
 
-    /* Close handlers */
     function _closeModal() {
       cancel();
       _awaitingDeeperAnswer = false;
@@ -654,7 +978,6 @@
       if (e.target === modal) _closeModal();
     });
 
-    /* Read explanation button */
     var readBtn = document.getElementById('seExplainReadBtn');
     readBtn.addEventListener('click', function () {
       if (_ttsActive) { cancel(); return; }
@@ -670,14 +993,12 @@
       speak(text);
     });
 
-    /* Deeper explanation button */
     var deeperBtn = document.getElementById('seExplainDeeperBtn');
     deeperBtn.addEventListener('click', function () {
       _awaitingDeeperAnswer = false;
       _loadDeeperExplanation(q, subj, idx);
     });
 
-    /* Auto-read the built-in explanation, then set awaiting flag */
     setTimeout(function () {
       var text = 'Question ' + questionNumber + ' in ' + subj + '. ';
       text += questionTxt + '. ';
@@ -685,7 +1006,6 @@
       if (expTxt) text += 'Explanation: ' + expTxt + '. ';
       text += 'Would you like a deeper explanation from Wikipedia? Say yes or no.';
       speak(text, function () {
-        /* After reading completes, mark that we're waiting for yes/no */
         _awaitingDeeperAnswer = true;
       });
     }, 400);
@@ -706,13 +1026,11 @@
       '</div>';
     if (deeperWrap) deeperWrap.style.display = 'none';
 
-    /* Build a smart, concept-focused search query */
     var searchQuery = _buildSmartSearchQuery(q, subj);
     console.log('[SpeechEngine] Wikipedia search query:', searchQuery);
 
     _searchWikipedia(searchQuery, function (err, title, pages) {
       if (err || !title) {
-        /* Fallback: try just the correct answer text */
         var fallback = _cleanText((q.opts || [])[q.ans] || '');
         if (fallback.length < 4) {
           _showDeeperFallback(deepResult, q, subj);
@@ -739,7 +1057,6 @@
       }
 
       var plain = extract.replace(/\s+/g, ' ').trim();
-      /* Keep full extract for TTS (up to 800 chars), display same */
       if (plain.length > 800) plain = plain.slice(0, 800) + '…';
 
       deepResult.setAttribute('data-plain', plain);
@@ -780,7 +1097,6 @@
     speak('Here is an extended explanation. ' + plain);
   }
 
-  /* Locally expand an explanation using question context */
   function _expandExplanation(q, subj) {
     var question = _cleanText(q.q || '');
     var exp      = _cleanText(q.exp || '');
@@ -807,14 +1123,11 @@
      EXAM VOICE COMMANDS
      ════════════════════════════════════════════════════════ */
 
-  /* Voice-driven submit confirm — bypasses UI.confirmAction entirely */
   function _voiceConfirmSubmit() {
     _awaitingSubmitConfirm = true;
     speak(
       'Are you sure you want to submit your exam? This cannot be undone. Say "confirm" to submit, or "cancel" to go back.',
-      function () {
-        /* TTS done — mic continues listening, state flag handles routing */
-      }
+      function () {}
     );
     UI.toast('Say "confirm" to submit or "cancel" to go back.', 'info', 8000);
   }
@@ -822,14 +1135,13 @@
   function _handleVoiceCommand(transcript, allTranscripts, exam) {
     var t = (transcript || '').toLowerCase().trim();
 
-    /* ── Submit confirmation flow ── */
     if (_awaitingSubmitConfirm) {
       if (/\b(confirm|yes|submit|go ahead|proceed|do it|okay|ok|sure)\b/.test(t)) {
         _awaitingSubmitConfirm = false;
         UI.toast('Submitting your exam…', 'info', 2000);
         speak('Submitting your exam now.', function () {
           if (window.Exam && typeof Exam.submitExam === 'function') {
-            Exam.submitExam(true); /* skipConfirm = true */
+            Exam.submitExam(true);
           }
         });
         return;
@@ -840,12 +1152,10 @@
         speak('Okay, submission cancelled. You can continue the exam.');
         return;
       }
-      /* Any other speech while awaiting — re-prompt */
       speak('Please say "confirm" to submit or "cancel" to go back.');
       return;
     }
 
-    /* ── Navigation ── */
     if (/\b(next|forward|move on|continue)\b/.test(t)) {
       UI.toast('Going to next question…', 'info', 1500);
       if (window.Exam && typeof Exam.nextQuestion === 'function') Exam.nextQuestion();
@@ -857,7 +1167,6 @@
       return;
     }
 
-    /* ── Jump to question number ── */
     var goMatch = t.match(/\b(?:go to|jump to|question|number|q)\s+(\w+)/i);
     if (goMatch) {
       var num = _extractQuestionNumber(t);
@@ -874,9 +1183,7 @@
       }
     }
 
-    /* ── Switch subject ── */
     if (exam && exam.subjects) {
-      /* "next subject" */
       if (/\bnext subject\b/.test(t)) {
         var curIdx = exam.subjects.indexOf(exam.currentSubject);
         if (curIdx < exam.subjects.length - 1) {
@@ -890,7 +1197,6 @@
         return;
       }
 
-      /* "switch to / go to / open <subject>" — check for named subject */
       if (/\b(switch to|go to|open|subject)\b/.test(t)) {
         var targetSubj = _extractSubject(t, exam.subjects);
         if (targetSubj) {
@@ -900,7 +1206,6 @@
         }
       }
 
-      /* Plain subject name spoken without a prefix verb — try direct match */
       var directSubj = _extractSubject(t, exam.subjects);
       if (directSubj && t.split(/\s+/).length <= 4) {
         UI.toast('Switching to ' + directSubj + '…', 'info', 1500);
@@ -909,7 +1214,6 @@
       }
     }
 
-    /* ── TTS read/stop ── */
     if (/\b(read|listen|read (the )?question|read (it )?out|speak)\b/.test(t)) {
       var ttsBtn = document.getElementById('seTtsBtn');
       if (ttsBtn) ttsBtn.click();
@@ -920,13 +1224,11 @@
       return;
     }
 
-    /* ── Submit — initiate voice confirmation flow ── */
     if (/\b(submit( exam| test| now)?|finish( exam| test)?|end exam)\b/.test(t)) {
       _voiceConfirmSubmit();
       return;
     }
 
-    /* ── Option selection ── */
     if (!exam) return;
     var subj2    = exam.currentSubject;
     var qList2   = exam.questions[subj2];
@@ -954,7 +1256,6 @@
     var t = (transcript || '').toLowerCase().trim();
     var exam   = _resultsExam;
 
-    /* ── Deeper explanation yes/no (awaiting after auto-read) ── */
     if (_awaitingDeeperAnswer && _deeperContext) {
       if (/\b(yes|yeah|sure|ok|okay|more|deeper|explain more|further|go ahead|please|want|need)\b/.test(t)) {
         _awaitingDeeperAnswer = false;
@@ -967,10 +1268,8 @@
         speak('Alright. You can close this panel or ask me to explain another question.');
         return;
       }
-      /* Fall through to other commands even if awaiting — user may want to navigate */
     }
 
-    /* ── Close explanation modal ── */
     if (/\b(close|dismiss|exit|hide)\b/.test(t)) {
       var modal = document.getElementById('seExplainModal');
       if (modal) {
@@ -983,7 +1282,6 @@
       }
     }
 
-    /* ── Back to dashboard ── */
     if (/\b(dashboard|back|home|start over|new exam|go back)\b/.test(t)) {
       cancel();
       _awaitingDeeperAnswer = false;
@@ -994,7 +1292,6 @@
       return;
     }
 
-    /* ── Share on WhatsApp ── */
     if (/\b(whatsapp|share|send|send to whatsapp)\b/.test(t)) {
       if (window.Exam && typeof Exam._shareWhatsApp === 'function') {
         UI.toast('Opening WhatsApp…', 'info', 1500);
@@ -1003,7 +1300,6 @@
       return;
     }
 
-    /* ── Copy result ── */
     if (/\b(copy|copy result|clipboard)\b/.test(t)) {
       if (window.Exam && typeof Exam._copyResult === 'function') {
         Exam._copyResult();
@@ -1011,13 +1307,11 @@
       return;
     }
 
-    /* ── Stop reading ── */
     if (/\b(stop( reading| speaking)?|quiet|silence|shut up)\b/.test(t)) {
       if (_ttsActive) { cancel(); UI.toast('Stopped.', 'info', 1200); }
       return;
     }
 
-    /* ── Read overall result ── */
     if (/\b(read( result)?|read( my)? score|what( is|'?s) my (score|result|grade))\b/.test(t)) {
       var result = _resultsResult;
       if (!result) return;
@@ -1029,13 +1323,11 @@
       return;
     }
 
-    /* ── Deeper explanation trigger from outside modal ── */
     if (_deeperContext && /\b(yes|yeah|sure|ok|okay|more|deeper|explain more|further|go ahead|please)\b/.test(t)) {
       var deepBtn = document.getElementById('seExplainDeeperBtn');
       if (deepBtn) { deepBtn.click(); return; }
     }
 
-    /* ── Explain a specific question ── */
     var explainMatch =
       t.match(/\bexplain\s+(?:question\s+|q\s*|number\s*)?(\w+)(?:\s+in\s+(.+))?/i) ||
       t.match(/\b(?:question|number|q)\s*(\w+)(?:\s+(?:in|from|for)\s+(.+))?/i);
@@ -1084,7 +1376,13 @@
   function wireExamButtons(exam) {
     var ttsBtn = document.getElementById('seTtsBtn');
     if (ttsBtn) {
-      ttsBtn.addEventListener('click', function () {
+      /* Clone to remove any previous listener */
+      var newTtsBtn = ttsBtn.cloneNode(true);
+      ttsBtn.parentNode.replaceChild(newTtsBtn, ttsBtn);
+
+      newTtsBtn.addEventListener('click', function (e) {
+        /* Long-press / right-click → open voice selector.
+           Plain tap: read or stop. */
         if (_ttsActive) { cancel(); return; }
         var subj  = exam.currentSubject;
         var qList = exam.questions[subj];
@@ -1099,7 +1397,31 @@
         }
         speak(text);
       });
+
+      /* Right-click on the Read button → open voice selector */
+      newTtsBtn.addEventListener('contextmenu', function (e) {
+        e.preventDefault();
+        _openVoiceSelector();
+      });
+
+      /* Long-press for touch devices → open voice selector */
+      var _lpTimer = null;
+      newTtsBtn.addEventListener('touchstart', function (e) {
+        _lpTimer = setTimeout(function () {
+          _lpTimer = null;
+          _openVoiceSelector();
+        }, 600);
+      }, { passive: true });
+      newTtsBtn.addEventListener('touchend', function () {
+        if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; }
+      });
+      newTtsBtn.addEventListener('touchmove', function () {
+        if (_lpTimer) { clearTimeout(_lpTimer); _lpTimer = null; }
+      });
     }
+
+    /* ── Settings cog button for voice selector ── */
+    _injectVoiceSettingsBtn();
 
     var sttBtn = document.getElementById('seSttBtn');
     if (sttBtn) {
@@ -1119,6 +1441,31 @@
         );
       });
     }
+  }
+
+  /* Inject a small voice-settings button into the speech pill */
+  function _injectVoiceSettingsBtn() {
+    var pill = document.querySelector('#seExamControls');
+    if (!pill) return;
+    if (document.getElementById('seVoiceSettingsBtn')) return;
+
+    var div = document.createElement('span');
+    div.className = 'vtx-speech-div';
+    div.style.cssText = 'display:block;width:1px;height:18px;background:var(--border,#e0e0e0);border-radius:1px;flex-shrink:0;margin:0 2px;';
+
+    var btn = document.createElement('button');
+    btn.id        = 'seVoiceSettingsBtn';
+    btn.className = 'se-tts-btn vtx-speech-btn';
+    btn.title     = 'Change TTS voice';
+    btn.setAttribute('aria-label', 'Voice settings');
+    btn.innerHTML = '<i class="ph ph-sliders" style="font-size:15px;"></i><span class="vtx-speech-label">Voice</span>';
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      _openVoiceSelector();
+    });
+
+    pill.appendChild(div);
+    pill.appendChild(btn);
   }
 
   /* ── Results page mic button wiring ── */
@@ -1160,6 +1507,7 @@
     wireResultsButtons:  wireResultsButtons,
     setResultsContext:   setResultsContext,
     showExplanationModal: _showExplanationModal,
+    openVoiceSelector:   _openVoiceSelector,
     ttsSupported:        ttsSupported,
     sttSupported:        sttSupported,
     readCurrentQuestion: function () {
