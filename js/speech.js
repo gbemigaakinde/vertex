@@ -2,36 +2,17 @@
    js/speech.js — SpeechEngine  v4
    Handles TTS (text-to-speech) and STT (speech-to-text) for
    the exam screen using the native Web Speech API.
-
-   KEY CHANGES FROM v3:
-   ─────────────────────────────────────────────────────────
-   • Mic stays ON continuously until user clicks to stop.
-     On browsers where continuous mode cuts out, the engine
-     auto-restarts the recognition session transparently.
-   • Hands-free commands: once mic is active, saying any
-     recognised command works without touching anything.
-   • "A" / "C" recognition fixed: phoneme aliases added
-     ("aye"→A, "eye"→A, "see"→C, "sea"→C, etc.)
-   • "Read" / "Stop reading" as spoken commands.
-   • "Submit exam" / "Submit" as a spoken command.
-   • Timer ring circumference mismatch fixed.
    ============================================================ */
 
 (function () {
   'use strict';
 
-  /* ─────────────────────────────────────────────────────── */
-  /* Feature detection                                       */
-  /* ─────────────────────────────────────────────────────── */
   var _synth   = window.speechSynthesis || null;
   var _SpeechR = window.SpeechRecognition || window.webkitSpeechRecognition || null;
 
   var ttsSupported = !!_synth;
   var sttSupported = !!_SpeechR;
 
-  /* ─────────────────────────────────────────────────────── */
-  /* Voice loading                                           */
-  /* ─────────────────────────────────────────────────────── */
   var _voices      = [];
   var _voicesReady = false;
 
@@ -67,9 +48,7 @@
     return null;
   }
 
-  /* ─────────────────────────────────────────────────────── */
-  /* TTS — chunked speaker (unchanged from v3)               */
-  /* ─────────────────────────────────────────────────────── */
+  /* ── TTS ── */
   var _ttsActive = false;
   var _ttsQueue  = [];
 
@@ -113,6 +92,7 @@
     if (_ttsQueue.length === 0) {
       _ttsActive = false;
       _setTtsBtn(false);
+      _hookTtsBtnState(false);
       return;
     }
     var chunk = _ttsQueue.shift();
@@ -132,9 +112,10 @@
     _synth.speak(utt);
   }
 
-  function speak(rawText) {
+  function speak(rawText, onDone) {
     if (!ttsSupported) {
       if (window.UI) UI.toast('Text-to-speech is not supported in your browser.', 'warning', 4000);
+      if (typeof onDone === 'function') onDone();
       return;
     }
     var clean = rawText
@@ -143,11 +124,23 @@
       .replace(/\$\$[\s\S]*?\$\$|\$[^$]*?\$/g, ' (math expression) ')
       .replace(/\s+/g, ' ')
       .trim();
-    if (!clean) return;
+    if (!clean) { if (typeof onDone === 'function') onDone(); return; }
     cancel();
     _ttsQueue  = _chunkText(clean);
     _ttsActive = true;
     _setTtsBtn(true);
+    _hookTtsBtnState(true);
+
+    if (typeof onDone === 'function') {
+      var origQueue = _ttsQueue.slice();
+      var interval  = setInterval(function () {
+        if (!_ttsActive && _ttsQueue.length === 0) {
+          clearInterval(interval);
+          onDone();
+        }
+      }, 300);
+    }
+
     if (!_voicesReady && _voices.length === 0) {
       setTimeout(_speakNext, 250);
     } else {
@@ -161,6 +154,7 @@
     _ttsActive = false;
     _synth.cancel();
     _setTtsBtn(false);
+    _hookTtsBtnState(false);
   }
 
   function _setTtsBtn(speaking) {
@@ -175,25 +169,23 @@
     }
   }
 
-  /* ─────────────────────────────────────────────────────── */
-  /* STT — continuous mode with auto-restart                 */
-  /*                                                         */
-  /* How it works:                                           */
-  /*   _sttActive = user WANTS the mic on                   */
-  /*   _sttRunning = a recognition session is open right now */
-  /*                                                         */
-  /* When the browser ends a session (which it will on many  */
-  /* mobile browsers even in continuous mode), we restart    */
-  /* immediately as long as _sttActive is still true.        */
-  /* A short cooldown (300 ms) prevents restart loops.       */
-  /* ─────────────────────────────────────────────────────── */
+  function _hookTtsBtnState(speaking) {
+    var pill = document.querySelector('.vtx-speech-pill');
+    if (pill) pill.setAttribute('data-tts-on', speaking ? 'true' : 'false');
+    var srBtn = document.querySelector('.se-tts-btn');
+    if (srBtn) {
+      if (speaking) srBtn.classList.add('sr-se-speaking');
+      else srBtn.classList.remove('sr-se-speaking');
+    }
+  }
+
+  /* ── STT ── */
   var _recognition  = null;
-  var _sttActive    = false;   /* user-intent: mic should be on */
-  var _sttRunning   = false;   /* a session is currently open */
-  var _sttRestartId = null;    /* setTimeout handle for restart */
+  var _sttActive    = false;
+  var _sttRunning   = false;
+  var _sttRestartId = null;
   var _sttCallbacks = { onResult: null, onError: null };
 
-  /* Check whether we are in a context where Safari PWA kills the mic */
   function _isStandaloneSafari() {
     return (
       (window.navigator.standalone === true ||
@@ -203,28 +195,22 @@
     );
   }
 
-  /* Internal: open one recognition session */
   function _openSession() {
     if (!sttSupported || !_sttActive) return;
     if (_sttRunning) return;
 
     try { _recognition = new _SpeechR(); } catch (e) {
       console.error('[SpeechEngine] Could not create SpeechRecognition:', e);
-      _sttActive  = false;
+      _sttActive = false;
       _setSttBtn(false);
       if (_sttCallbacks.onError) _sttCallbacks.onError('Could not start the microphone. Please reload and try again.');
       return;
     }
 
-    /*
-      Use continuous=true where possible.
-      On iOS Safari continuous is unreliable, so we use single-shot
-      there and rely on the auto-restart loop below.
-    */
     var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
     _recognition.continuous      = !isIOS;
     _recognition.interimResults  = false;
-    _recognition.maxAlternatives = 3;   /* ask for up to 3 alternatives — helps with A/C */
+    _recognition.maxAlternatives = 3;
     _recognition.lang            = 'en-US';
 
     _recognition.onstart = function () {
@@ -233,7 +219,6 @@
     };
 
     _recognition.onresult = function (event) {
-      /* Collect ALL alternatives from ALL new results */
       var transcripts = [];
       for (var i = event.resultIndex; i < event.results.length; i++) {
         if (event.results[i].isFinal) {
@@ -244,14 +229,12 @@
         }
       }
       if (transcripts.length > 0 && _sttCallbacks.onResult) {
-        /* Pass the best transcript; the handler will try all alternatives */
         _sttCallbacks.onResult(transcripts[0], transcripts);
       }
     };
 
     _recognition.onend = function () {
       _sttRunning = false;
-      /* Auto-restart if the user hasn't clicked stop */
       if (_sttActive) {
         _sttRestartId = setTimeout(function () {
           if (_sttActive) _openSession();
@@ -263,19 +246,14 @@
 
     _recognition.onerror = function (event) {
       _sttRunning = false;
-
-      /* 'aborted' and 'no-speech' are not fatal — keep going */
       if (event.error === 'aborted') {
         if (_sttActive) { _sttRestartId = setTimeout(function () { if (_sttActive) _openSession(); }, 300); }
         return;
       }
       if (event.error === 'no-speech') {
-        /* User just didn't say anything — restart silently */
         if (_sttActive) { _sttRestartId = setTimeout(function () { if (_sttActive) _openSession(); }, 200); }
         return;
       }
-
-      /* Fatal errors — stop and tell the user */
       var msg;
       switch (event.error) {
         case 'not-allowed':
@@ -290,7 +268,6 @@
         default:
           msg = 'Voice recognition stopped (' + event.error + '). Tap the mic to restart.';
       }
-
       console.warn('[SpeechEngine] STT fatal error:', event.error);
       _sttActive = false;
       _setSttBtn(false);
@@ -308,7 +285,6 @@
     }
   }
 
-  /* Public: start continuous STT. Stays on until stopSTT() is called. */
   function startSTT(onResult, onEnd, onError) {
     if (!sttSupported) {
       if (typeof onError === 'function') {
@@ -322,18 +298,13 @@
       }
       return;
     }
-
-    /* Store callbacks so the auto-restart can re-use them */
     _sttCallbacks.onResult = onResult;
     _sttCallbacks.onError  = onError;
-    /* onEnd is kept for API compatibility but not needed in continuous mode */
-
-    stopSTT();           /* clean up any previous session first */
+    stopSTT();
     _sttActive = true;
     _openSession();
   }
 
-  /* Public: stop STT completely. */
   function stopSTT() {
     _sttActive = false;
     if (_sttRestartId) { clearTimeout(_sttRestartId); _sttRestartId = null; }
@@ -358,74 +329,393 @@
         btn.title = 'Voice command (M)';
       }
     }
-    /* drives the blinking dot CSS via data attribute */
     if (pill) pill.setAttribute('data-mic-on', listening ? 'true' : 'false');
   }
 
-  /* ─────────────────────────────────────────────────────── */
-  /* Letter alias map — fixes A and C recognition            */
-  /*                                                         */
-  /* Why A and C fail:                                       */
-  /*   "A"  is heard as: "aye", "eye", "I", "hey", "a"      */
-  /*   "C"  is heard as: "see", "sea", "si", "the"          */
-  /*   "B"  is heard as: "be", "bee" — works fine           */
-  /*   "D"  is heard as: "dee", "the" — usually fine        */
-  /*                                                         */
-  /* Solution: map every known homophone to the letter index */
-  /* ─────────────────────────────────────────────────────── */
+  /* ── Letter aliases ── */
   var _letterAliases = {
-    /* A = index 0 */
-    'a':    0, 'aye':  0, 'eye':  0, 'i':    0, 'hey':  0,
-    'eh':   0, 'ay':   0, 'ai':   0,
-    /* B = index 1 */
-    'b':    1, 'be':   1, 'bee':  1, 'bi':   1,
-    /* C = index 2 */
-    'c':    2, 'see':  2, 'sea':  2, 'si':   2, 'key':  2,
-    'ce':   2, 'the c': 2,
-    /* D = index 3 */
-    'd':    3, 'dee':  3, 'de':   3, 'di':   3,
-    /* E = index 4 */
-    'e':    4, 'ee':   4, 'eh e': 4,
-    /* F = index 5 */
-    'f':    5, 'ef':   5, 'eff':  5,
+    'a': 0, 'aye': 0, 'eye': 0, 'i': 0, 'hey': 0, 'eh': 0, 'ay': 0, 'ai': 0,
+    'b': 1, 'be':  1, 'bee': 1, 'bi': 1,
+    'c': 2, 'see': 2, 'sea': 2, 'si': 2, 'key': 2, 'ce': 2,
+    'd': 3, 'dee': 3, 'de':  3, 'di': 3,
+    'e': 4, 'ee':  4,
+    'f': 5, 'ef':  5, 'eff': 5,
   };
 
-  /*
-    Try to find a letter match anywhere in the transcript.
-    We check the full transcript first (e.g. "option see"),
-    then word by word, then try all alternatives passed in.
-  */
   function _extractLetter(transcript, allTranscripts) {
     var candidates = allTranscripts ? allTranscripts.slice() : [transcript];
-    /* Put the original at front if not already there */
     if (candidates.indexOf(transcript) === -1) candidates.unshift(transcript);
-
     for (var c = 0; c < candidates.length; c++) {
       var t = (candidates[c] || '').toLowerCase().trim();
-
-      /* Strip common preamble words: "option A", "answer B", "pick C", "choose D", "select E" */
       t = t.replace(/^(option|answer|pick|choose|select|letter)\s+/i, '');
-
-      /* Direct full-string match */
       if (_letterAliases[t] !== undefined) return _letterAliases[t];
-
-      /* Word-by-word match */
       var words = t.split(/\s+/);
       for (var w = 0; w < words.length; w++) {
         if (_letterAliases[words[w]] !== undefined) return _letterAliases[words[w]];
       }
     }
-    return -1;  /* no match */
+    return -1;
   }
 
-  /* ─────────────────────────────────────────────────────── */
-  /* Voice command handler                                   */
-  /* ─────────────────────────────────────────────────────── */
+  /* ── Parse question number from transcript ── */
+  function _extractQuestionNumber(t) {
+    var wordNums = {
+      'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
+      'six': 6, 'seven': 7, 'eight': 8, 'nine': 9, 'ten': 10,
+      'eleven': 11, 'twelve': 12, 'thirteen': 13, 'fourteen': 14, 'fifteen': 15,
+      'sixteen': 16, 'seventeen': 17, 'eighteen': 18, 'nineteen': 19, 'twenty': 20,
+    };
+    var digitMatch = t.match(/\b(\d+)\b/);
+    if (digitMatch) return parseInt(digitMatch[1], 10);
+    var words = t.split(/\s+/);
+    for (var w = 0; w < words.length; w++) {
+      if (wordNums[words[w]] !== undefined) return wordNums[words[w]];
+    }
+    return -1;
+  }
+
+  /* ── Parse subject name from transcript ── */
+  function _extractSubject(t, subjects) {
+    if (!Array.isArray(subjects)) return null;
+    var tl = t.toLowerCase();
+    var best = null, bestLen = 0;
+    for (var i = 0; i < subjects.length; i++) {
+      var sl = subjects[i].toLowerCase();
+      if (tl.indexOf(sl) !== -1 && sl.length > bestLen) {
+        best = subjects[i];
+        bestLen = sl.length;
+      }
+    }
+    return best;
+  }
+
+  /* ════════════════════════════════════════════════════════
+     RESULTS PAGE — explanation modal
+     ════════════════════════════════════════════════════════ */
+
+  var _resultsExam   = null;
+  var _resultsResult = null;
+
+  /* Store reference so voice commands on results page can access exam data */
+  function setResultsContext(exam, result) {
+    _resultsExam   = exam;
+    _resultsResult = result;
+  }
+
+  /* Strip HTML tags and LaTeX for clean spoken/displayed text */
+  function _cleanText(str) {
+    if (!str) return '';
+    return String(str)
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/\$\$[\s\S]*?\$\$|\$[^$]*?\$/g, '')
+      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
+      .replace(/\s+/g, ' ').trim();
+  }
+
+  /* Fetch a Wikipedia summary for a topic — free, no key */
+  function _fetchWikipediaSummary(topic, callback) {
+    var encoded = encodeURIComponent(topic.replace(/\s+/g, '_'));
+    var url     = 'https://en.wikipedia.org/api/rest_v1/page/summary/' + encoded;
+    fetch(url, { headers: { 'Accept': 'application/json' } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (data && data.extract && data.extract.length > 40) {
+          callback(null, data.extract, data.content_urls && data.content_urls.desktop && data.content_urls.desktop.page);
+        } else {
+          callback('not_found', null, null);
+        }
+      })
+      .catch(function (err) { callback('error', null, null); });
+  }
+
+  /* Search Wikipedia for best article matching a topic */
+  function _searchWikipedia(query, callback) {
+    var url = 'https://en.wikipedia.org/w/rest.php/v1/search/page?q=' +
+              encodeURIComponent(query) + '&limit=3';
+    fetch(url, { headers: { 'Accept': 'application/json' } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (data) {
+        if (data && data.pages && data.pages.length > 0) {
+          callback(null, data.pages[0].title, data.pages);
+        } else {
+          callback('not_found', null, null);
+        }
+      })
+      .catch(function (err) { callback('error', null, null); });
+  }
+
+  /* Build a plain-English topic string from a question */
+  function _buildSearchTopic(q, subj) {
+    var text = _cleanText(q.q || '');
+    var words = text.split(/\s+/).filter(function (w) { return w.length > 3; });
+    var keywords = words.slice(0, 6).join(' ');
+    return (subj || '') + ' ' + keywords;
+  }
+
+  /* Show the deep-explanation modal */
+  function _showExplanationModal(questionNumber, subjectName) {
+    var exam   = _resultsExam;
+    var result = _resultsResult;
+    if (!exam || !result) return;
+
+    var subj = subjectName || exam.subjects[0];
+    if (!exam.questions[subj]) {
+      var found = exam.subjects.find(function (s) {
+        return s.toLowerCase().indexOf((subjectName || '').toLowerCase()) !== -1;
+      });
+      subj = found || exam.subjects[0];
+    }
+
+    var qList = exam.questions[subj];
+    if (!qList) { UI.toast('Subject not found.', 'warning'); return; }
+
+    var idx = (questionNumber >= 1 && questionNumber <= qList.length) ? questionNumber - 1 : 0;
+    var q   = qList[idx];
+    if (!q) { UI.toast('Question not found.', 'warning'); return; }
+
+    var userAns   = exam.answers[subj + '-' + idx];
+    var isCorrect = userAns === q.ans;
+    var chosenTxt = userAns !== undefined ? _cleanText(q.opts[userAns]) : 'Not answered';
+    var correctTxt = _cleanText(q.opts[q.ans]);
+    var questionTxt = _cleanText(q.q);
+    var expTxt      = _cleanText(q.exp || '');
+
+    var existing = document.getElementById('seExplainModal');
+    if (existing) existing.remove();
+
+    var modal = document.createElement('div');
+    modal.id        = 'seExplainModal';
+    modal.className = 'se-explain-modal-overlay';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Question Explanation');
+
+    modal.innerHTML =
+      '<div class="se-explain-modal-box">' +
+        '<div class="se-explain-modal-hdr">' +
+          '<div class="se-explain-modal-title">' +
+            '<span class="se-explain-q-badge">' + subj + ' — Q' + questionNumber + '</span>' +
+            '<span class="se-explain-status ' + (isCorrect ? 'is-correct' : 'is-wrong') + '">' +
+              (isCorrect ? '✓ Correct' : '✗ Incorrect') +
+            '</span>' +
+          '</div>' +
+          '<button class="se-explain-close-btn" id="seExplainClose" aria-label="Close">✕</button>' +
+        '</div>' +
+
+        '<div class="se-explain-body" id="seExplainBody">' +
+          '<p class="se-explain-question">' + questionTxt + '</p>' +
+
+          '<div class="se-explain-answers">' +
+            '<div class="se-explain-ans-row ' + (isCorrect ? 'is-correct' : 'is-wrong') + '">' +
+              '<span class="se-explain-ans-lbl">Your answer:</span>' +
+              '<span>' + chosenTxt + '</span>' +
+            '</div>' +
+            '<div class="se-explain-ans-row is-correct">' +
+              '<span class="se-explain-ans-lbl">Correct answer:</span>' +
+              '<span>' + correctTxt + '</span>' +
+            '</div>' +
+          '</div>' +
+
+          '<div class="se-explain-section">' +
+            '<div class="se-explain-section-title">Explanation</div>' +
+            '<div class="se-explain-exp-text" id="seExplainExpText">' + (expTxt || 'No explanation provided.') + '</div>' +
+          '</div>' +
+
+          '<div class="se-explain-deeper-wrap" id="seExplainDeeperWrap">' +
+            '<button class="se-explain-deeper-btn" id="seExplainDeeperBtn">' +
+              '<span class="se-explain-deeper-icon">🔍</span>' +
+              'Get deeper explanation' +
+            '</button>' +
+            '<p class="se-explain-deeper-hint">Uses Wikipedia — free, no account needed</p>' +
+          '</div>' +
+
+          '<div class="se-explain-deep-result" id="seExplainDeepResult" style="display:none;"></div>' +
+        '</div>' +
+
+        '<div class="se-explain-modal-ftr">' +
+          '<button class="se-explain-read-btn" id="seExplainReadBtn">' +
+            '<i class="ph ph-speaker-high"></i> Read explanation' +
+          '</button>' +
+          '<button class="se-explain-close-btn2" id="seExplainClose2">Close</button>' +
+        '</div>' +
+      '</div>';
+
+    document.body.appendChild(modal);
+    requestAnimationFrame(function () { modal.classList.add('is-visible'); });
+
+    /* Close handlers */
+    function _closeModal() {
+      cancel();
+      modal.classList.remove('is-visible');
+      setTimeout(function () { if (modal.parentNode) modal.remove(); }, 280);
+    }
+
+    document.getElementById('seExplainClose').addEventListener('click', _closeModal);
+    document.getElementById('seExplainClose2').addEventListener('click', _closeModal);
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal) _closeModal();
+    });
+
+    /* Read explanation button */
+    var readBtn = document.getElementById('seExplainReadBtn');
+    readBtn.addEventListener('click', function () {
+      if (_ttsActive) { cancel(); return; }
+      var text = 'Question ' + questionNumber + '. ' + questionTxt + '. ';
+      text += 'Your answer was: ' + chosenTxt + '. ';
+      text += 'The correct answer is: ' + correctTxt + '. ';
+      if (expTxt) text += 'Explanation: ' + expTxt;
+      var deepEl = document.getElementById('seExplainDeepResult');
+      if (deepEl && deepEl.style.display !== 'none') {
+        text += '. Additional information: ' + deepEl.getAttribute('data-plain') || '';
+      }
+      speak(text);
+    });
+
+    /* Deeper explanation button */
+    var deeperBtn = document.getElementById('seExplainDeeperBtn');
+    deeperBtn.addEventListener('click', function () {
+      _loadDeeperExplanation(q, subj, idx);
+    });
+
+    /* Auto-read the built-in explanation */
+    setTimeout(function () {
+      var text = 'Question ' + questionNumber + ' in ' + subj + '. ';
+      text += questionTxt + '. ';
+      text += 'The correct answer is: ' + correctTxt + '. ';
+      if (expTxt) text += 'Explanation: ' + expTxt + '. ';
+      text += 'Would you like a deeper explanation? Say "yes" or click the button below.';
+      speak(text, function () {
+        if (!_sttActive) return;
+        _awaitYesNoForDeeper(q, subj, idx);
+      });
+    }, 400);
+  }
+
+  function _awaitYesNoForDeeper(q, subj, idx) {
+    var _yesNo = null;
+    var prevResult = _sttCallbacks.onResult;
+    _yesNo = function (transcript) {
+      var t = transcript.toLowerCase().trim();
+      if (/\b(yes|yeah|sure|ok|okay|more|deeper|explain more|further|go ahead|please)\b/.test(t)) {
+        _sttCallbacks.onResult = prevResult;
+        _loadDeeperExplanation(q, subj, idx);
+      } else if (/\b(no|nope|skip|close|done|stop|enough)\b/.test(t)) {
+        _sttCallbacks.onResult = prevResult;
+        speak('Alright. You can close this panel or ask me to explain another question.');
+      }
+    };
+    _sttCallbacks.onResult = function (best, all) {
+      _yesNo(best);
+      if (prevResult) prevResult(best, all);
+    };
+  }
+
+  function _loadDeeperExplanation(q, subj, idx) {
+    var deepResult = document.getElementById('seExplainDeepResult');
+    var deeperWrap = document.getElementById('seExplainDeeperWrap');
+    if (!deepResult) return;
+
+    deepResult.style.display = 'block';
+    deepResult.innerHTML     =
+      '<div class="se-explain-loading">' +
+        '<span class="se-explain-spinner"></span>' +
+        'Searching Wikipedia…' +
+      '</div>';
+    if (deeperWrap) deeperWrap.style.display = 'none';
+
+    var searchTopic = _buildSearchTopic(q, subj);
+
+    _searchWikipedia(searchTopic, function (err, title, pages) {
+      if (err || !title) {
+        var fallbackTopic = _cleanText(q.q || '').split(/\s+/).slice(0, 4).join(' ');
+        _searchWikipedia(fallbackTopic, function (err2, title2) {
+          if (err2 || !title2) {
+            _showDeeperFallback(deepResult, q, subj);
+          } else {
+            _fetchAndShowDeep(title2, deepResult, q, subj);
+          }
+        });
+      } else {
+        _fetchAndShowDeep(title, deepResult, q, subj);
+      }
+    });
+  }
+
+  function _fetchAndShowDeep(title, deepResult, q, subj) {
+    _fetchWikipediaSummary(title, function (err, extract, pageUrl) {
+      if (err || !extract) {
+        _showDeeperFallback(deepResult, q, subj);
+        return;
+      }
+
+      var plain = extract.replace(/\s+/g, ' ').trim();
+      if (plain.length > 600) plain = plain.slice(0, 600) + '…';
+
+      deepResult.setAttribute('data-plain', plain);
+      deepResult.innerHTML =
+        '<div class="se-explain-deep-content">' +
+          '<div class="se-explain-deep-src">' +
+            '<span class="se-explain-wiki-badge">Wikipedia</span>' +
+            '<strong>' + _escHtml(title) + '</strong>' +
+          '</div>' +
+          '<p class="se-explain-deep-text">' + _escHtml(plain) + '</p>' +
+          (pageUrl
+            ? '<a class="se-explain-wiki-link" href="' + pageUrl + '" target="_blank" rel="noopener">' +
+              'Read full article ↗</a>'
+            : '') +
+        '</div>';
+
+      speak('Here is additional information. ' + plain);
+    });
+  }
+
+  function _showDeeperFallback(deepResult, q, subj) {
+    var opts  = Array.isArray(q.opts) ? q.opts : [];
+    var extra = 'The correct answer is: ' + _cleanText(opts[q.ans] || '') + '. ';
+    if (q.exp) extra += _cleanText(q.exp);
+    var expanded = _expandExplanation(q, subj);
+    var plain    = expanded || extra;
+
+    deepResult.setAttribute('data-plain', plain);
+    deepResult.innerHTML =
+      '<div class="se-explain-deep-content se-explain-deep-local">' +
+        '<div class="se-explain-deep-src">' +
+          '<span class="se-explain-wiki-badge se-explain-wiki-badge--local">Vertex AI</span>' +
+          '<strong>Extended explanation</strong>' +
+        '</div>' +
+        '<p class="se-explain-deep-text">' + _escHtml(plain) + '</p>' +
+      '</div>';
+
+    speak('Here is an extended explanation. ' + plain);
+  }
+
+  /* Locally expand an explanation using question context */
+  function _expandExplanation(q, subj) {
+    var question = _cleanText(q.q || '');
+    var exp      = _cleanText(q.exp || '');
+    var correct  = _cleanText((q.opts || [])[q.ans] || '');
+    var parts    = [];
+
+    if (exp)     parts.push(exp);
+    if (correct) parts.push('The correct answer, ' + correct + ', is the best response to this question.');
+    parts.push('In ' + (subj || 'this subject') + ', it is important to understand the key concept being tested here.');
+    if (question.length > 10) {
+      parts.push('The question asks: ' + question);
+    }
+
+    return parts.join(' ');
+  }
+
+  function _escHtml(str) {
+    if (str == null) return '';
+    return String(str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  /* ── Exam voice commands ── */
   function _handleVoiceCommand(transcript, allTranscripts, exam) {
     var t = (transcript || '').toLowerCase().trim();
-    console.log('[SpeechEngine] voice command:', t, '| alternatives:', allTranscripts);
 
-    /* ── Navigation ── */
     if (/\b(next|forward|move on|continue)\b/.test(t)) {
       UI.toast('Going to next question…', 'info', 1500);
       if (window.Exam && typeof Exam.nextQuestion === 'function') Exam.nextQuestion();
@@ -437,38 +727,68 @@
       return;
     }
 
-    /* ── TTS: read aloud ── */
+    /* Jump to question number */
+    var goMatch = t.match(/\b(?:go to|jump to|question|number|q)\s+(\w+)/i);
+    if (goMatch) {
+      var num = _extractQuestionNumber(goMatch[1] + ' ' + (goMatch[2] || ''));
+      if (num === -1) num = _extractQuestionNumber(t);
+      if (num >= 1 && exam && exam.questions[exam.currentSubject]) {
+        var qLen = exam.questions[exam.currentSubject].length;
+        if (num <= qLen) {
+          UI.toast('Jumping to question ' + num + '…', 'info', 1500);
+          if (window.Exam && typeof Exam.goTo === 'function') Exam.goTo(num - 1);
+          return;
+        } else {
+          UI.toast('Question ' + num + ' does not exist. This subject has ' + qLen + ' questions.', 'warning', 3000);
+          return;
+        }
+      }
+    }
+
+    /* Jump to subject */
+    if (/\b(switch to|go to|open|next subject|subject)\b/.test(t) && exam) {
+      var targetSubj = _extractSubject(t, exam.subjects);
+      if (targetSubj) {
+        UI.toast('Switching to ' + targetSubj + '…', 'info', 1500);
+        if (window.Exam && typeof Exam.switchSubject === 'function') Exam.switchSubject(targetSubj);
+        return;
+      }
+      if (/\bnext subject\b/.test(t)) {
+        var curIdx = exam.subjects.indexOf(exam.currentSubject);
+        if (curIdx < exam.subjects.length - 1) {
+          var ns = exam.subjects[curIdx + 1];
+          UI.toast('Switching to ' + ns + '…', 'info', 1500);
+          if (window.Exam && typeof Exam.switchSubject === 'function') Exam.switchSubject(ns);
+          return;
+        } else {
+          UI.toast('You are already on the last subject.', 'info', 2500);
+          return;
+        }
+      }
+    }
+
     if (/\b(read|listen|read (the )?question|read (it )?out|speak)\b/.test(t)) {
       var ttsBtn = document.getElementById('seTtsBtn');
       if (ttsBtn) ttsBtn.click();
       return;
     }
-
-    /* ── TTS: stop reading ── */
     if (/\b(stop( reading| speaking)?|quiet|silence|shut up)\b/.test(t)) {
-      if (_ttsActive) {
-        cancel();
-        UI.toast('Stopped reading.', 'info', 1500);
-      }
+      if (_ttsActive) { cancel(); UI.toast('Stopped reading.', 'info', 1500); }
       return;
     }
 
-    /* ── Submit exam ── */
-    if (/\b(submit( exam| test| now)?|finish( exam| test)?|end exam)\b/.test(t)) {
+    if (/\b(submit( exam| test| now)?|finish( exam| test)?|end exam|confirm( exam| submission)?)\b/.test(t)) {
       UI.toast('Submit command received — confirming…', 'info', 2000);
       if (window.Exam && typeof Exam.submitExam === 'function') {
-        /* Give user a moment to hear the toast, then trigger with confirm dialog */
         setTimeout(function () { Exam.submitExam(false); }, 1500);
       }
       return;
     }
 
-    /* ── Answer selection ── */
     if (!exam) return;
-    var subj     = exam.currentSubject;
-    var qList    = exam.questions[subj];
-    var optCount = (qList[exam.currentIndex].opts || []).length;
-
+    var subj2    = exam.currentSubject;
+    var qList2   = exam.questions[subj2];
+    var optCount = (qList2[exam.currentIndex].opts || []).length;
     var letterIdx = _extractLetter(t, allTranscripts);
     if (letterIdx >= 0 && letterIdx < optCount) {
       var letterName = String.fromCharCode(65 + letterIdx);
@@ -478,20 +798,110 @@
       return;
     }
 
-    /* ── Didn't understand ── */
     UI.toast(
-      'Not understood: "' + transcript + '". Try: A B C D, next, previous, read, stop, submit exam.',
+      'Not understood: "' + transcript + '". Try: A B C D, next, previous, question 3, next subject, read, stop, submit.',
       'info', 4000
     );
   }
 
-  /* ─────────────────────────────────────────────────────── */
-  /* Keyboard shortcuts (R = read, M = mic toggle)           */
-  /* ─────────────────────────────────────────────────────── */
+  /* ── Results page voice commands ── */
+  function _handleResultsCommand(transcript, allTranscripts) {
+    var t = (transcript || '').toLowerCase().trim();
+    var exam   = _resultsExam;
+    var result = _resultsResult;
+
+    /* Close explanation modal */
+    if (/\b(close|dismiss|exit|hide|go back)\b/.test(t)) {
+      var modal = document.getElementById('seExplainModal');
+      if (modal) {
+        cancel();
+        modal.classList.remove('is-visible');
+        setTimeout(function () { if (modal.parentNode) modal.remove(); }, 280);
+        return;
+      }
+    }
+
+    /* Back to dashboard */
+    if (/\b(dashboard|back|home|start over|new exam)\b/.test(t)) {
+      cancel();
+      if (window.Exam && typeof Exam.renderSubjectSelection === 'function') {
+        UI.toast('Going back to dashboard…', 'info', 1500);
+        setTimeout(function () { Exam.renderSubjectSelection(); }, 600);
+      }
+      return;
+    }
+
+    /* Share on WhatsApp */
+    if (/\b(whatsapp|share|send|send to whatsapp)\b/.test(t)) {
+      if (window.Exam && typeof Exam._shareWhatsApp === 'function') {
+        UI.toast('Opening WhatsApp…', 'info', 1500);
+        Exam._shareWhatsApp();
+      }
+      return;
+    }
+
+    /* Copy result */
+    if (/\b(copy|copy result|clipboard)\b/.test(t)) {
+      if (window.Exam && typeof Exam._copyResult === 'function') {
+        Exam._copyResult();
+      }
+      return;
+    }
+
+    /* Stop reading */
+    if (/\b(stop( reading| speaking)?|quiet|silence|shut up)\b/.test(t)) {
+      if (_ttsActive) { cancel(); UI.toast('Stopped.', 'info', 1200); }
+      return;
+    }
+
+    /* Read overall result */
+    if (/\b(read( result)?|read( my)? score|what( is|'s) my (score|result|grade))\b/.test(t)) {
+      if (!result) return;
+      var summary = 'Your overall score is ' + result.percentage + ' percent, Grade ' + result.grade + '. ';
+      result.subjects.forEach(function (s) {
+        summary += s + ': ' + result.scores[s] + ' percent. ';
+      });
+      speak(summary);
+      return;
+    }
+
+    /* Explain a specific question: "explain question 5 in Mathematics" */
+    var explainMatch =
+      t.match(/\bexplain\s+(?:question\s+|q\s*|number\s*)?(\w+)(?:\s+in\s+(.+))?/i) ||
+      t.match(/\b(?:question|number|q)\s*(\w+)(?:\s+(?:in|from|for)\s+(.+))?/i);
+
+    if (explainMatch) {
+      var rawNum  = explainMatch[1];
+      var rawSubj = (explainMatch[2] || '').trim();
+      var qNum    = _extractQuestionNumber(rawNum);
+      if (qNum === -1) qNum = 1;
+
+      var targetSubj2 = null;
+      if (rawSubj && exam) {
+        targetSubj2 = _extractSubject(rawSubj, exam.subjects);
+      }
+      if (!targetSubj2 && exam) targetSubj2 = exam.subjects[0];
+
+      _showExplanationModal(qNum, targetSubj2);
+      return;
+    }
+
+    /* Deeper explanation (yes/no inside modal context) */
+    if (/\b(yes|yeah|sure|ok|okay|more|deeper|explain more|further|go ahead|please)\b/.test(t)) {
+      var deepBtn = document.getElementById('seExplainDeeperBtn');
+      if (deepBtn) { deepBtn.click(); return; }
+    }
+
+    UI.toast(
+      'Not understood: "' + transcript + '". Try: "explain question 3 in Maths", "back to dashboard", "share on WhatsApp", "read result".',
+      'info', 5000
+    );
+  }
+
+  /* ── Keyboard shortcuts ── */
   document.addEventListener('keydown', function (e) {
     var tag = (document.activeElement && document.activeElement.tagName) || '';
     if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
-
     if (e.key === 'r' || e.key === 'R') {
       var ttsBtn = document.getElementById('seTtsBtn');
       if (!ttsBtn) return;
@@ -506,20 +916,12 @@
     }
   });
 
-  /* ─────────────────────────────────────────────────────── */
-  /* Exam button wiring                                      */
-  /* Called by exam.js after renderExam() mounts the UI      */
-  /* ─────────────────────────────────────────────────────── */
+  /* ── Exam button wiring ── */
   function wireExamButtons(exam) {
-
-    /* ── TTS button ── */
     var ttsBtn = document.getElementById('seTtsBtn');
     if (ttsBtn) {
       ttsBtn.addEventListener('click', function () {
-        if (_ttsActive) {
-          cancel();
-          return;
-        }
+        if (_ttsActive) { cancel(); return; }
         var subj  = exam.currentSubject;
         var qList = exam.questions[subj];
         var q     = qList[exam.currentIndex];
@@ -535,52 +937,67 @@
       });
     }
 
-    /* ── STT button — toggle continuous mic on/off ── */
     var sttBtn = document.getElementById('seSttBtn');
     if (sttBtn) {
       sttBtn.addEventListener('click', function () {
-
-        /* If mic is already on, turn it off */
-        if (_sttActive) {
-          stopSTT();
-          UI.toast('Microphone off.', 'info', 1500);
-          return;
-        }
-
-        /* Not in standalone Safari */
+        if (_sttActive) { stopSTT(); UI.toast('Microphone off.', 'info', 1500); return; }
         if (!sttSupported) {
           UI.toast('Voice commands are not supported in your browser. Please use Chrome or Edge.', 'warning', 5000);
           return;
         }
-
-        UI.toast('Microphone is ON. Say A, B, C, D, "next", "previous", "read", "stop", or "submit exam".', 'info', 4000);
-
+        UI.toast('Microphone is ON. Say A, B, C, D, "next", "previous", "question 3", "next subject", "read", "stop", or "submit exam".', 'info', 4000);
         startSTT(
-          /* onResult */
           function (bestTranscript, allTranscripts) {
             _handleVoiceCommand(bestTranscript, allTranscripts, exam);
           },
-          /* onEnd — not used in continuous mode */
           null,
-          /* onError */
           function (msg) { UI.toast(msg, 'warning', 5000); }
         );
       });
     }
   }
 
-  /* ─────────────────────────────────────────────────────── */
-  /* Public API                                              */
-  /* ─────────────────────────────────────────────────────── */
+  /* ── Results page mic button wiring ── */
+  function wireResultsButtons(exam, result) {
+    setResultsContext(exam, result);
+
+    var sttBtn = document.getElementById('seResultsSttBtn');
+    if (!sttBtn) return;
+
+    sttBtn.addEventListener('click', function () {
+      if (_sttActive) {
+        stopSTT();
+        UI.toast('Microphone off.', 'info', 1500);
+        return;
+      }
+      if (!sttSupported) {
+        UI.toast('Voice commands are not supported in your browser.', 'warning', 4000);
+        return;
+      }
+      UI.toast(
+        'Listening… Try: "explain question 3 in Maths", "back to dashboard", "share on WhatsApp", "read result".',
+        'info', 5000
+      );
+      startSTT(
+        function (best, all) { _handleResultsCommand(best, all); },
+        null,
+        function (msg) { UI.toast(msg, 'warning', 5000); }
+      );
+    });
+  }
+
+  /* ── Public API ── */
   window.SpeechEngine = {
-    speak:           speak,
-    cancel:          cancel,
-    startSTT:        startSTT,
-    stopSTT:         stopSTT,
-    wireExamButtons: wireExamButtons,
-    ttsSupported:    ttsSupported,
-    sttSupported:    sttSupported,
-    /* Exposed for the keyboard shortcut in index.html's inline script */
+    speak:              speak,
+    cancel:             cancel,
+    startSTT:           startSTT,
+    stopSTT:            stopSTT,
+    wireExamButtons:    wireExamButtons,
+    wireResultsButtons: wireResultsButtons,
+    setResultsContext:  setResultsContext,
+    showExplanationModal: _showExplanationModal,
+    ttsSupported:       ttsSupported,
+    sttSupported:       sttSupported,
     readCurrentQuestion: function () {
       var ttsBtn = document.getElementById('seTtsBtn');
       if (ttsBtn) ttsBtn.click();
