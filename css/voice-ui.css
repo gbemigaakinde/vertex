@@ -1,8 +1,7 @@
 /* ============================================================
-   VERTEX CBT — Voice Notes + Speech UI  v2
+   VERTEX CBT — Voice Notes + Speech UI  v3
    ============================================================ */
 
-/* ── Recorder Button (next to chat input) ── */
 .vn-recorder-btn {
   width: 34px;
   height: 34px;
@@ -25,11 +24,8 @@
   border-color: var(--accent-border);
   color: var(--accent);
 }
-.vn-recorder-btn:active {
-  transform: scale(0.92);
-}
+.vn-recorder-btn:active { transform: scale(0.92); }
 
-/* ── Recording Panel ── */
 .vn-recording-panel {
   position: fixed;
   bottom: 24px;
@@ -117,7 +113,6 @@
   background: var(--danger-subtle);
 }
 
-/* ── Inline Audio Player (inside chat bubbles) ── */
 .vn-audio-player {
   display: inline-flex;
   align-items: center;
@@ -129,47 +124,25 @@
   box-sizing: border-box;
 }
 .dm-msg-out .vn-audio-player,
-.gc-msg-out .vn-audio-player {
-  background: rgba(255,255,255,0.14);
-}
+.gc-msg-out .vn-audio-player { background: rgba(255,255,255,0.14); }
 .dm-msg-out .vn-play-btn,
-.gc-msg-out .vn-play-btn {
-  background: rgba(255,255,255,0.9);
-  color: var(--accent);
-}
+.gc-msg-out .vn-play-btn { background: rgba(255,255,255,0.9); color: var(--accent); }
 .dm-msg-out .vn-progress-bar,
-.gc-msg-out .vn-progress-bar {
-  background: rgba(255,255,255,0.22);
-}
+.gc-msg-out .vn-progress-bar { background: rgba(255,255,255,0.22); }
 .dm-msg-out .vn-progress-fill,
-.gc-msg-out .vn-progress-fill {
-  background: rgba(255,255,255,0.9);
-}
+.gc-msg-out .vn-progress-fill { background: rgba(255,255,255,0.9); }
 .dm-msg-out .vn-duration,
-.gc-msg-out .vn-duration {
-  color: rgba(255,255,255,0.85);
-}
+.gc-msg-out .vn-duration { color: rgba(255,255,255,0.85); }
 .dm-msg-in .vn-audio-player,
-.gc-msg-in .vn-audio-player {
-  background: var(--accent-subtle);
-}
+.gc-msg-in .vn-audio-player { background: var(--accent-subtle); }
 .dm-msg-in .vn-play-btn,
-.gc-msg-in .vn-play-btn {
-  background: var(--accent);
-  color: #fff;
-}
+.gc-msg-in .vn-play-btn { background: var(--accent); color: #fff; }
 .dm-msg-in .vn-progress-bar,
-.gc-msg-in .vn-progress-bar {
-  background: var(--accent-border);
-}
+.gc-msg-in .vn-progress-bar { background: var(--accent-border); }
 .dm-msg-in .vn-progress-fill,
-.gc-msg-in .vn-progress-fill {
-  background: var(--accent);
-}
+.gc-msg-in .vn-progress-fill { background: var(--accent); }
 .dm-msg-in .vn-duration,
-.gc-msg-in .vn-duration {
-  color: var(--text-3);
-}
+.gc-msg-in .vn-duration { color: var(--text-3); }
 
 .vn-play-btn {
   width: 28px;
@@ -185,7 +158,6 @@
 }
 .vn-play-btn:hover { transform: scale(1.1); }
 
-/* ── Waveform bar player ── */
 .vn-progress-wrap {
   flex: 1;
   min-width: 0;
@@ -207,25 +179,15 @@
   transition: background 0.1s;
   background: rgba(120, 120, 120, 0.35);
 }
-.vn-wave-bar--played {
-  background: rgba(120, 120, 120, 0.85);
-}
+.vn-wave-bar--played { background: rgba(120, 120, 120, 0.85); }
 .dm-msg-out .vn-wave-bar,
-.gc-msg-out .vn-wave-bar {
-  background: rgba(255, 255, 255, 0.35);
-}
+.gc-msg-out .vn-wave-bar { background: rgba(255, 255, 255, 0.35); }
 .dm-msg-out .vn-wave-bar--played,
-.gc-msg-out .vn-wave-bar--played {
-  background: rgba(255, 255, 255, 0.95);
-}
+.gc-msg-out .vn-wave-bar--played { background: rgba(255, 255, 255, 0.95); }
 .dm-msg-in .vn-wave-bar,
-.gc-msg-in .vn-wave-bar {
-  background: var(--accent-border);
-}
+.gc-msg-in .vn-wave-bar { background: var(--accent-border); }
 .dm-msg-in .vn-wave-bar--played,
-.gc-msg-in .vn-wave-bar--played {
-  background: var(--accent);
-}
+.gc-msg-in .vn-wave-bar--played { background: var(--accent); }
 
 .vn-duration {
   font-size: var(--text-xs);
@@ -234,7 +196,6 @@
   line-height: 1;
 }
 
-/* ── Exam Speech Buttons ── */
 #seExamControls {
   display: flex;
   align-items: center;
@@ -268,8 +229,6 @@
   color: var(--danger);
   animation: se-pulse 1.4s ease-in-out infinite;
 }
-
-/* TTS button — active state while reading aloud */
 .se-tts-btn.is-speaking {
   background: var(--warning-subtle);
   border-color: var(--warning-border);
@@ -277,10 +236,6 @@
   animation: se-pulse-warm 1.4s ease-in-out infinite;
 }
 
-/* ── Mic always-on indicator dot ──
-   A small red dot appears on the mic button when the mic
-   is continuously active, so students can see it at a glance.
-*/
 .se-stt-btn::after {
   content: '';
   position: absolute;
@@ -296,34 +251,20 @@
   transition: opacity 180ms, transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
   pointer-events: none;
 }
-.se-stt-btn {
-  position: relative;  /* needed for the ::after dot */
-}
-.se-stt-btn.is-listening::after {
-  opacity: 1;
-  transform: scale(1);
-}
+.se-stt-btn { position: relative; }
+.se-stt-btn.is-listening::after { opacity: 1; transform: scale(1); }
 
 /* ============================================================
-   EXAM HEADER v3 — arc ring beside digits, never inside
+   EXAM HEADER
    ============================================================ */
-
-.vtx-exam-hdr {
-  padding: 0.875rem 1.125rem !important;
-}
-
+.vtx-exam-hdr { padding: 0.875rem 1.125rem !important; }
 .vtx-exam-hdr-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
 }
-
-.vtx-exam-hdr-subj {
-  flex: 1 1 0;
-  min-width: 0;
-}
-
+.vtx-exam-hdr-subj { flex: 1 1 0; min-width: 0; }
 .vtx-exam-hdr-name {
   font-size: 1.0625rem;
   font-weight: 700;
@@ -334,34 +275,10 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-
-.vtx-exam-hdr-meta {
-  font-size: 0.75rem;
-  color: var(--text-3);
-  margin: 2px 0 0;
-  white-space: nowrap;
-}
-
-.vtx-exam-hdr-timer {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-shrink: 0;
-}
-
-.vtx-arc-ring {
-  width: 36px;
-  height: 36px;
-  transform: rotate(-90deg);
-  flex-shrink: 0;
-}
-
-.vtx-arc-track {
-  fill: none;
-  stroke: var(--border);
-  stroke-width: 3;
-}
-
+.vtx-exam-hdr-meta { font-size: 0.75rem; color: var(--text-3); margin: 2px 0 0; white-space: nowrap; }
+.vtx-exam-hdr-timer { display: flex; align-items: center; gap: 0.5rem; flex-shrink: 0; }
+.vtx-arc-ring { width: 36px; height: 36px; transform: rotate(-90deg); flex-shrink: 0; }
+.vtx-arc-track { fill: none; stroke: var(--border); stroke-width: 3; }
 .vtx-arc-prog {
   fill: none;
   stroke: var(--success);
@@ -369,17 +286,9 @@
   stroke-linecap: round;
   transition: stroke-dashoffset 1s linear, stroke var(--t-slow) var(--ease);
 }
-
 .vtx-arc-prog.is-yellow { stroke: var(--warning); }
 .vtx-arc-prog.is-red    { stroke: var(--danger); }
-
-.vtx-arc-digits {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  line-height: 1;
-}
-
+.vtx-arc-digits { display: flex; flex-direction: column; align-items: flex-start; line-height: 1; }
 .vtx-arc-time {
   font-family: var(--font-mono);
   font-size: 1.125rem;
@@ -388,7 +297,6 @@
   line-height: 1;
   display: block;
 }
-
 .vtx-arc-label {
   font-size: 0.5625rem;
   font-weight: 700;
@@ -398,7 +306,6 @@
   margin-top: 3px;
   display: block;
 }
-
 .vtx-exam-hdr-bottom {
   margin-top: 0.75rem;
   padding-top: 0.625rem;
@@ -417,7 +324,6 @@
   padding: 4px 6px;
   gap: 2px;
 }
-
 .vtx-speech-btn {
   display: inline-flex !important;
   align-items: center !important;
@@ -436,21 +342,13 @@
   width: auto !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
-  /* needed for the ::after dot on the mic button */
   position: relative;
 }
-
 .vtx-speech-btn:hover {
   background: var(--accent-subtle) !important;
   color: var(--accent) !important;
 }
-
-.vtx-speech-label {
-  font-size: 0.6875rem;
-  font-weight: 600;
-}
-
-/* Thin divider between Read and Listen buttons */
+.vtx-speech-label { font-size: 0.6875rem; font-weight: 600; }
 .vtx-speech-div {
   display: block;
   width: 1px;
@@ -461,11 +359,6 @@
   margin: 0 2px;
 }
 
-/* ── Mic active: label changes to "Listening" ──
-   We use a CSS trick via the parent pill's data attribute,
-   set by JS when the mic is on.
-   Fallback: JS also sets the button title.
-*/
 .vtx-speech-pill[data-mic-on="true"] .se-stt-btn .vtx-speech-label::before {
   content: '';
   display: inline-block;
@@ -477,41 +370,25 @@
   vertical-align: middle;
   animation: se-dot-blink 1s ease-in-out infinite;
 }
-
 @keyframes se-dot-blink {
   0%, 100% { opacity: 1; }
   50%       { opacity: 0.2; }
 }
 
-/* Active states inside the pill */
 .se-stt-btn.is-listening.vtx-speech-btn {
   background: var(--danger-subtle) !important;
   color: var(--danger) !important;
 }
-
 .se-tts-btn.is-speaking.vtx-speech-btn {
   background: var(--warning-subtle) !important;
   color: var(--warning) !important;
 }
 
-/* ============================================================
-   Study Room speech pill — addendum
-   ============================================================ */
-
-/*
-  The study room TTS button uses .sr-se-speaking (toggled by
-  _hookTtsBtnState) instead of .is-speaking, so we add an
-  equivalent active state here.
-*/
+/* Study Room */
 .se-tts-btn.sr-se-speaking.vtx-speech-btn {
   background: var(--warning-subtle) !important;
   color: var(--warning) !important;
 }
-
-/*
-  TTS active: blinking dot on the Read button via the pill's
-  data-tts-on attribute (mirrors the mic dot pattern).
-*/
 .vtx-speech-pill[data-tts-on="true"] .se-tts-btn .vtx-speech-label::before {
   content: '';
   display: inline-block;
@@ -523,49 +400,27 @@
   vertical-align: middle;
   animation: se-dot-blink 1s ease-in-out infinite;
 }
-
-/*
-  Ensure the speech pill doesn't overflow the study room topbar
-  on narrow screens where the title compresses it.
-*/
-.sr-topbar__actions .vtx-speech-pill {
-  flex-shrink: 0;
-}
+.sr-topbar__actions .vtx-speech-pill { flex-shrink: 0; }
 
 @media (max-width: 520px) {
-  /* On very small screens, hide the text labels and show icons only */
-  .sr-speech-pill .vtx-speech-label {
-    display: none;
-  }
-  .sr-speech-pill .vtx-speech-btn {
-    padding: 5px 7px !important;
-  }
+  .sr-speech-pill .vtx-speech-label { display: none; }
+  .sr-speech-pill .vtx-speech-btn { padding: 5px 7px !important; }
 }
-
-/* Mobile */
 @media (max-width: 480px) {
-  .vtx-exam-hdr {
-    padding: 0.75rem 0.875rem !important;
-  }
-  .vtx-exam-hdr-name {
-    font-size: 0.9375rem;
-  }
-  .vtx-arc-time {
-    font-size: 1rem;
-  }
+  .vtx-exam-hdr { padding: 0.75rem 0.875rem !important; }
+  .vtx-exam-hdr-name { font-size: 0.9375rem; }
+  .vtx-arc-time { font-size: 1rem; }
 }
 
 @keyframes se-pulse {
   0%, 100% { box-shadow: 0 0 0 0 rgba(224, 59, 59, 0.4); }
   50%       { box-shadow: 0 0 0 8px rgba(224, 59, 59, 0); }
 }
-
 @keyframes se-pulse-warm {
   0%, 100% { box-shadow: 0 0 0 0 rgba(217, 119, 6, 0.35); }
   50%       { box-shadow: 0 0 0 8px rgba(217, 119, 6, 0); }
 }
 
-/* Mobile */
 @media (max-width: 640px) {
   .vn-recording-panel {
     width: calc(100% - 2rem);
@@ -573,3 +428,345 @@
     padding: 1rem 1.25rem;
   }
 }
+
+/* ============================================================
+   RESULTS PAGE — Voice bar
+   ============================================================ */
+.se-results-voice-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.625rem 0.875rem;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  margin-bottom: 1.25rem;
+}
+.se-results-voice-hint {
+  font-size: 0.75rem;
+  color: var(--text-4);
+  line-height: 1.4;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Explain trigger button on each question card */
+.se-explain-trigger-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--r-full);
+  border: 1px solid var(--accent-border);
+  background: var(--accent-subtle);
+  color: var(--accent);
+  font-size: 0.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 120ms;
+  font-family: var(--font);
+}
+.se-explain-trigger-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* ============================================================
+   EXPLANATION MODAL
+   ============================================================ */
+.se-explain-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 99998;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 280ms ease;
+}
+.se-explain-modal-overlay.is-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+.se-explain-modal-box {
+  background: var(--bg-base);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl) var(--r-xl) 0 0;
+  width: 100%;
+  max-width: 680px;
+  max-height: 88vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  transform: translateY(100%);
+  transition: transform 280ms cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.18);
+}
+.se-explain-modal-overlay.is-visible .se-explain-modal-box {
+  transform: translateY(0);
+}
+
+@media (min-width: 600px) {
+  .se-explain-modal-overlay {
+    align-items: center;
+    padding: 1rem;
+  }
+  .se-explain-modal-box {
+    border-radius: var(--r-xl);
+    max-height: 82vh;
+    transform: translateY(20px) scale(0.97);
+  }
+  .se-explain-modal-overlay.is-visible .se-explain-modal-box {
+    transform: translateY(0) scale(1);
+  }
+}
+
+.se-explain-modal-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.25rem 0.75rem;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.se-explain-modal-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.se-explain-q-badge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+  background: var(--accent-subtle);
+  color: var(--accent);
+  border: 1px solid var(--accent-border);
+}
+.se-explain-status {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: var(--r-full);
+}
+.se-explain-status.is-correct {
+  background: var(--success-subtle);
+  color: var(--success);
+  border: 1px solid var(--success-border);
+}
+.se-explain-status.is-wrong {
+  background: var(--danger-subtle);
+  color: var(--danger);
+  border: 1px solid var(--danger-border);
+}
+.se-explain-close-btn {
+  background: none;
+  border: none;
+  color: var(--text-3);
+  font-size: 1.125rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--r-sm);
+  line-height: 1;
+  transition: all 120ms;
+  font-family: var(--font);
+}
+.se-explain-close-btn:hover { background: var(--bg-subtle); color: var(--text-1); }
+
+.se-explain-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.125rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.875rem;
+}
+.se-explain-question {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-1);
+  line-height: 1.6;
+  margin: 0;
+}
+.se-explain-answers {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+}
+.se-explain-ans-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--r-sm);
+}
+.se-explain-ans-row.is-correct { background: var(--success-subtle); color: var(--success); }
+.se-explain-ans-row.is-wrong   { background: var(--danger-subtle);  color: var(--danger);  }
+.se-explain-ans-lbl { font-weight: 700; flex-shrink: 0; }
+
+.se-explain-section {}
+.se-explain-section-title {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-4);
+  margin-bottom: 0.375rem;
+}
+.se-explain-exp-text {
+  font-size: 0.875rem;
+  color: var(--text-2);
+  line-height: 1.7;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 0.75rem 0.875rem;
+}
+
+.se-explain-deeper-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.25rem;
+}
+.se-explain-deeper-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.5rem 1rem;
+  border-radius: var(--r-full);
+  border: 1px solid var(--accent-border);
+  background: var(--accent-subtle);
+  color: var(--accent);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 140ms;
+  font-family: var(--font);
+}
+.se-explain-deeper-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
+.se-explain-deeper-icon { font-size: 1rem; }
+.se-explain-deeper-hint { font-size: 0.6875rem; color: var(--text-4); margin: 0; }
+
+/* Deep result panel */
+.se-explain-deep-result {
+  border-radius: var(--r-lg);
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+.se-explain-deep-content {
+  padding: 0.875rem 1rem;
+  background: var(--bg-subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+}
+.se-explain-deep-content.se-explain-deep-local {
+  background: linear-gradient(135deg, var(--accent-subtle), var(--bg-subtle));
+  border-left: 3px solid var(--accent);
+}
+.se-explain-deep-src {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+.se-explain-wiki-badge {
+  font-size: 0.625rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: var(--r-full);
+  background: #3366cc;
+  color: #fff;
+}
+.se-explain-wiki-badge--local {
+  background: var(--accent);
+}
+.se-explain-deep-text {
+  font-size: 0.875rem;
+  color: var(--text-1);
+  line-height: 1.75;
+  margin: 0;
+}
+.se-explain-wiki-link {
+  font-size: 0.75rem;
+  color: var(--accent);
+  text-decoration: none;
+  font-weight: 600;
+  align-self: flex-start;
+}
+.se-explain-wiki-link:hover { text-decoration: underline; }
+
+/* Loading spinner */
+.se-explain-loading {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  padding: 1rem;
+  font-size: 0.875rem;
+  color: var(--text-3);
+}
+.se-explain-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: se-spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+@keyframes se-spin {
+  to { transform: rotate(360deg); }
+}
+
+.se-explain-modal-ftr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.75rem 1.25rem;
+  border-top: 1px solid var(--border);
+  gap: 0.75rem;
+  flex-shrink: 0;
+}
+.se-explain-read-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0.5rem 1rem;
+  border-radius: var(--r-full);
+  border: 1px solid var(--border);
+  background: var(--bg-subtle);
+  color: var(--text-2);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 120ms;
+  font-family: var(--font);
+}
+.se-explain-read-btn:hover { background: var(--accent-subtle); color: var(--accent); border-color: var(--accent-border); }
+.se-explain-close-btn2 {
+  padding: 0.5rem 1.25rem;
+  border-radius: var(--r-full);
+  border: 1px solid var(--border);
+  background: var(--bg-subtle);
+  color: var(--text-3);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 120ms;
+  font-family: var(--font);
+}
+.se-explain-close-btn2:hover { background: var(--danger-subtle); color: var(--danger); border-color: var(--danger-border); }
