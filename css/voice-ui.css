@@ -1,8 +1,8 @@
 /* ============================================================
-   VERTEX CBT — Voice Notes + Speech UI  v4
+   VERTEX CBT — Voice Notes + Speech UI  v5
    ============================================================ */
 
-/* Voice note */
+/* Voice note recorder button */
 .vn-recorder-btn {
   width: 34px;
   height: 34px;
@@ -197,6 +197,9 @@
   line-height: 1;
 }
 
+/* ============================================================
+   EXAM CONTROLS
+   ============================================================ */
 #seExamControls {
   display: flex;
   align-items: center;
@@ -555,6 +558,9 @@
   border: 1px solid var(--accent-border);
 }
 .se-explain-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 0.75rem;
   font-weight: 700;
   padding: 2px 8px;
@@ -619,7 +625,6 @@
 .se-explain-ans-row.is-wrong   { background: var(--danger-subtle);  color: var(--danger);  }
 .se-explain-ans-lbl { font-weight: 700; flex-shrink: 0; }
 
-.se-explain-section {}
 .se-explain-section-title {
   font-size: 0.6875rem;
   font-weight: 700;
@@ -638,6 +643,68 @@
   padding: 0.75rem 0.875rem;
 }
 
+/* ── Student question input ── */
+.se-explain-ask-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.375rem;
+  padding: 0.75rem 0.875rem;
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+}
+.se-explain-ask-label {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--text-1);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+.se-explain-ask-label i { color: var(--accent); font-size: 1rem; }
+.se-explain-ask-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.se-explain-ask-input {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border-radius: var(--r-md);
+  border: 1px solid var(--border);
+  background: var(--bg-base);
+  color: var(--text-1);
+  font-size: 0.875rem;
+  font-family: var(--font);
+  outline: none;
+  transition: border-color 120ms;
+}
+.se-explain-ask-input:focus {
+  border-color: var(--accent-border);
+  box-shadow: 0 0 0 2px var(--accent-subtle);
+}
+.se-explain-ask-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--accent-border);
+  background: var(--accent-subtle);
+  color: var(--accent);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 120ms;
+  font-size: 1rem;
+}
+.se-explain-ask-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+/* ── Deeper explanation button (second option) ── */
 .se-explain-deeper-wrap {
   display: flex;
   flex-direction: column;
@@ -650,25 +717,32 @@
   gap: 6px;
   padding: 0.5rem 1rem;
   border-radius: var(--r-full);
-  border: 1px solid var(--accent-border);
-  background: var(--accent-subtle);
-  color: var(--accent);
+  border: 1px solid var(--border);
+  background: var(--bg-subtle);
+  color: var(--text-2);
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 140ms;
   font-family: var(--font);
 }
-.se-explain-deeper-btn:hover { background: var(--accent); color: #fff; border-color: var(--accent); }
-.se-explain-deeper-icon { font-size: 1rem; }
-.se-explain-deeper-hint { font-size: 0.6875rem; color: var(--text-4); margin: 0; }
+.se-explain-deeper-btn:hover {
+  background: var(--accent-subtle);
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
+.se-explain-deeper-hint {
+  font-size: 0.6875rem;
+  color: var(--text-4);
+  margin: 0;
+}
 
-/* Deep result panel — SCROLLABLE */
+/* ── Deep result panel — FULLY scrollable via modal body ── */
 .se-explain-deep-result {
   border-radius: var(--r-lg);
-  overflow: hidden;
+  /* overflow visible so the modal body scroll handles all content — no internal cap */
+  overflow: visible;
   border: 1px solid var(--border);
-  /* No max-height cap here — body scroll handles overflow */
 }
 .se-explain-deep-content {
   padding: 0.875rem 1rem;
@@ -676,6 +750,7 @@
   display: flex;
   flex-direction: column;
   gap: 0.625rem;
+  border-radius: var(--r-lg);
 }
 .se-explain-deep-content.se-explain-deep-local {
   background: linear-gradient(135deg, var(--accent-subtle), var(--bg-subtle));
@@ -696,12 +771,15 @@
   border-radius: var(--r-full);
   background: #3366cc;
   color: #fff;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 .se-explain-wiki-badge--local {
   background: var(--accent);
 }
 
-/* Wikipedia text — fully visible, no truncation */
+/* Wikipedia text — fully visible, no height cap, no internal scroll */
 .se-explain-deep-text {
   font-size: 0.875rem;
   color: var(--text-1);
@@ -709,6 +787,7 @@
   margin: 0;
   white-space: pre-line;
   word-break: break-word;
+  /* No max-height or overflow — modal body scroll handles it */
 }
 
 .se-explain-wiki-link {
@@ -717,6 +796,9 @@
   text-decoration: none;
   font-weight: 600;
   align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
 }
 .se-explain-wiki-link:hover { text-decoration: underline; }
 
@@ -766,7 +848,11 @@
   transition: all 120ms;
   font-family: var(--font);
 }
-.se-explain-read-btn:hover { background: var(--accent-subtle); color: var(--accent); border-color: var(--accent-border); }
+.se-explain-read-btn:hover {
+  background: var(--accent-subtle);
+  color: var(--accent);
+  border-color: var(--accent-border);
+}
 .se-explain-close-btn2 {
   padding: 0.5rem 1.25rem;
   border-radius: var(--r-full);
@@ -779,4 +865,8 @@
   transition: all 120ms;
   font-family: var(--font);
 }
-.se-explain-close-btn2:hover { background: var(--danger-subtle); color: var(--danger); border-color: var(--danger-border); }
+.se-explain-close-btn2:hover {
+  background: var(--danger-subtle);
+  color: var(--danger);
+  border-color: var(--danger-border);
+}
