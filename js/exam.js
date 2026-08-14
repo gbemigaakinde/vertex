@@ -323,103 +323,183 @@
   async function _fetchWeeklyTimetableHtml(classKey) {
     try {
       if (!navigator.onLine || !window.fbDb || !classKey) return '';
+
       const snap = await window.fbDb.collection('weeklyTimetable').doc(classKey).get();
       if (!snap || !snap.exists) return '';
-      const ttData   = snap.data() || {};
-      const allWeeks = ttData.weeks  || {};
-      const allGuides = ttData.guides || {};
-      const weekKey  = _isoWeekKey();
-      const todayStr = _todayStr();
 
-      const guide = allGuides[weekKey];
-      const guideActive = guide &&
-        guide.expiresOn &&
-        guide.expiresOn >= todayStr &&
-        guide.days &&
-        Object.keys(guide.days).length > 0;
+      const ttData  = snap.data() || {};
+      const weekKey = _isoWeekKey();
+      const tt      = (ttData.timetables || {})[weekKey];
+      if (!tt || !Array.isArray(tt.periods) || tt.periods.length === 0) return '';
 
-      if (guideActive) {
-        const d = new Date();
-        const dow = d.getDay();
-        const diff = dow === 0 ? -6 : 1 - dow;
-        const monday = new Date(d); monday.setDate(d.getDate() + diff);
-        const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
-        const rangeLabel =
-          monday.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) +
-          ' – ' +
-          sunday.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+      const periods = tt.periods;
+      const note    = tt.note || '';
 
-        const dayNames = ['Monday','Tuesday','Wednesday','Thursday','Friday','Saturday','Sunday'];
-        const dayRows = dayNames.map((day, i) => {
-          const dayDate = new Date(monday);
-          dayDate.setDate(monday.getDate() + i);
-          const dateStr = dayDate.getFullYear() + '-' +
-            String(dayDate.getMonth()+1).padStart(2,'0') + '-' +
-            String(dayDate.getDate()).padStart(2,'0');
-          const content = (guide.days || {})[dateStr];
-          if (!content) return null;
-          if (dateStr < todayStr) return null;
-          const isToday = dateStr === todayStr;
-          const dayLabel = dayDate.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'short' });
-          return '<div style="padding:.5rem 0;border-bottom:1px solid var(--border);">' +
-            '<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.25rem;">' +
-            '<span style="font-size:.8125rem;font-weight:700;color:' +
-            (isToday ? 'var(--warning-text)' : 'var(--accent-text)') +
-            ';">' + _escHtml(dayLabel) + '</span>' +
-            (isToday ? '<span style="font-size:.6875rem;font-weight:700;padding:1px 6px;border-radius:99px;background:var(--warning-subtle);color:var(--warning-text);border:1px solid var(--warning-border);">TODAY</span>' : '') +
-            '</div>' +
-            '<span style="font-size:.8125rem;color:var(--text-1);line-height:1.6;white-space:pre-wrap;">' +
-            _escHtml(content) + '</span></div>';
-        }).filter(Boolean).join('');
+      const DAY_KEYS  = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+      const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
-        if (!dayRows) return '';
+      const now   = new Date();
+      const dow   = now.getDay();
+      const diff  = dow === 0 ? -6 : 1 - dow;
+      const monday = new Date(now);
+      monday.setDate(now.getDate() + diff);
+      monday.setHours(0, 0, 0, 0);
 
-        return '<div style="margin-bottom:1.25rem;border:1px solid var(--warning-border);' +
-          'border-left:3px solid var(--warning);border-radius:8px;' +
-          'background:var(--warning-subtle);padding:.875rem 1rem;text-align:left;">' +
-          '<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.625rem;">' +
-          '<span style="flex-shrink:0;color:var(--warning-text);">' + _icon('ClipboardText', 18) + '</span>' +
-          '<div><p style="font-size:.875rem;font-weight:700;color:var(--warning-text);">' +
-          _escHtml(guide.title || 'Daily Study Guide') + '</p>' +
-          '<p style="font-size:.75rem;color:var(--text-3);margin-top:1px;">' + _escHtml(rangeLabel) + '</p>' +
-          '</div></div><div style="padding-top:.125rem;">' + dayRows + '</div></div>';
+      const dayDates = DAY_KEYS.map((_, i) => {
+        const dt = new Date(monday);
+        dt.setDate(monday.getDate() + i);
+        return {
+          dayNum:  dt.getDate(),
+          monthSh: dt.toLocaleDateString('en-GB', { month: 'short' }),
+          dateStr: dt.getFullYear() + '-' +
+                   String(dt.getMonth() + 1).padStart(2, '0') + '-' +
+                   String(dt.getDate()).padStart(2, '0'),
+        };
+      });
+
+      const todayStr    = _todayStr();
+      const todayColIdx = dayDates.findIndex(dd => dd.dateStr === todayStr); // -1 on weekend
+
+      const nowMin = now.getHours() * 60 + now.getMinutes();
+
+      function parseMins(t) {
+        if (!t) return null;
+        const m = t.match(/(\d{1,2}):(\d{2})\s*[–\-—]\s*(\d{1,2}):(\d{2})/);
+        if (!m) return null;
+        return { start: +m[1] * 60 + +m[2], end: +m[3] * 60 + +m[4] };
       }
 
-      const topics  = allWeeks[weekKey] || {};
-      const entries = Object.entries(topics).filter(function (pair) {
-        return pair[1] && String(pair[1]).trim();
-      });
-      if (entries.length === 0) return '';
-
-      const d      = new Date();
-      const dow    = d.getDay();
-      const diff   = dow === 0 ? -6 : 1 - dow;
-      const monday = new Date(d); monday.setDate(d.getDate() + diff);
-      const sunday = new Date(monday); sunday.setDate(monday.getDate() + 6);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
       const rangeLabel =
         monday.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) +
         ' – ' +
         sunday.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
-      const rows = entries.map(function (pair) {
-        return '<div style="display:flex;align-items:flex-start;gap:.625rem;' +
-          'padding:.4375rem 0;border-bottom:1px solid var(--border);">' +
-          '<span style="font-size:.8125rem;font-weight:700;color:var(--accent-text);' +
-          'min-width:100px;flex-shrink:0;">' + _escHtml(pair[0]) + '</span>' +
-          '<span style="font-size:.8125rem;color:var(--text-1);line-height:1.5;">' +
-          _escHtml(pair[1]) + '</span></div>';
+      const CB = 'padding:.4375rem .5625rem;border:1px solid var(--border);' +
+                 'font-size:.8rem;vertical-align:middle;line-height:1.45;';
+      const TH = 'padding:.4375rem .5rem;border:1px solid rgba(255,255,255,.18);' +
+                 'font-size:.75rem;font-weight:700;text-align:center;white-space:nowrap;';
+
+      const tableRows = periods.map(function (p) {
+        const range     = parseMins(p.time || '');
+        const isCurrent = todayColIdx >= 0 && range !== null &&
+                          nowMin >= range.start && nowMin < range.end;
+
+        const vals      = DAY_KEYS.map(function (dk) { return (p[dk] || '').trim(); });
+        const firstUp   = vals[0].toUpperCase();
+        const allSame   = firstUp !== '' && vals.every(function (v) { return v.toUpperCase() === firstUp; });
+        const isSpecial = allSame && (firstUp === 'BREAK' || firstUp === 'LUNCH');
+
+        const rowBg = isCurrent ? 'var(--warning-subtle)' : isSpecial ? 'var(--bg-subtle)' : 'var(--bg-base)';
+        const lBorder = isCurrent ? 'border-left:3px solid var(--warning);' : '';
+
+        const timeCell =
+          '<td style="' + CB + lBorder + 'background:' + rowBg + ';' +
+            'font-family:var(--font-mono);font-size:.75rem;font-weight:600;' +
+            'color:' + (isCurrent ? 'var(--warning)' : 'var(--text-3)') + ';' +
+            'white-space:nowrap;min-width:86px;">' +
+            (isCurrent
+              ? '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;' +
+                'background:var(--warning);margin-right:5px;vertical-align:middle;' +
+                'animation:cbt-pulse 1s ease-in-out infinite;"></span>'
+              : '') +
+            _escHtml(p.time || '—') +
+          '</td>';
+
+        if (isSpecial) {
+          const lbl = firstUp === 'LUNCH' ? '🍽\u2002Lunch Break' : '☕\u2002Break';
+          return '<tr>' + timeCell +
+            '<td colspan="5" style="' + CB + 'background:' + rowBg + ';' +
+              'text-align:center;font-weight:700;font-size:.8125rem;' +
+              'color:var(--text-3);letter-spacing:.04em;">' + lbl + '</td></tr>';
+        }
+
+        var dayCells = DAY_KEYS.map(function (dk, ci) {
+          var isToday = ci === todayColIdx;
+          var val     = (p[dk] || '').trim();
+          var empty   = val === '';
+          var bg      = isToday
+            ? (isCurrent ? 'rgba(217,119,6,.09)' : 'rgba(79,110,247,.055)')
+            : rowBg;
+          return '<td style="' + CB + 'background:' + bg + ';text-align:center;' +
+            'color:' + (empty ? 'var(--text-4)' : isToday ? 'var(--text-1)' : 'var(--text-2)') + ';' +
+            'font-weight:' + (isToday && !empty ? '600' : '400') + ';' +
+            'font-size:' + (empty ? '.7rem' : '.8rem') + ';">' +
+            (empty ? '<span style="opacity:.28;">—</span>' : _escHtml(val)) +
+            '</td>';
+        }).join('');
+
+        return '<tr>' + timeCell + dayCells + '</tr>';
       }).join('');
 
-      return '<div style="margin-bottom:1.25rem;border:1px solid var(--accent-border);' +
-        'border-left:3px solid var(--accent);border-radius:8px;' +
-        'background:var(--accent-subtle);padding:.875rem 1rem;text-align:left;">' +
-        '<div style="display:flex;align-items:center;gap:.5rem;margin-bottom:.625rem;">' +
-        '<span style="flex-shrink:0;color:var(--accent-text);">' + _icon('Books', 18) + '</span>' +
-        '<div><p style="font-size:.875rem;font-weight:700;color:var(--accent-text);">This Week\'s Study Topics</p>' +
-        '<p style="font-size:.75rem;color:var(--text-3);margin-top:1px;">' + _escHtml(rangeLabel) + '</p>' +
-        '</div></div><div style="padding-top:.125rem;">' + rows + '</div></div>';
+      const headerCells = DAY_SHORT.map(function (ds, i) {
+        var dd      = dayDates[i];
+        var isToday = i === todayColIdx;
+        return '<th style="' + TH +
+          'background:' + (isToday ? 'rgba(255,255,255,.22)' : 'transparent') + ';' +
+          (isToday ? 'box-shadow:inset 0 -2px 0 rgba(255,255,255,.5);' : '') +
+          'min-width:88px;">' +
+          '<span style="display:block;font-size:.8125rem;">' + _escHtml(ds) + '</span>' +
+          '<span style="display:block;font-size:.625rem;font-weight:500;margin-top:1px;' +
+            'opacity:' + (isToday ? '1' : '.72') + ';">' +
+            dd.dayNum + ' ' + dd.monthSh + (isToday ? ' ◀' : '') +
+          '</span></th>';
+      }).join('');
+
+      const noteHtml = note
+        ? '<div style="padding:.5rem 1rem;border-top:1px solid var(--border);' +
+            'font-size:.75rem;color:var(--text-3);background:var(--bg-subtle);' +
+            'line-height:1.6;font-style:italic;">📌 ' + _escHtml(note) + '</div>'
+        : '';
+
+      return (
+        '<div style="margin-bottom:1.25rem;border:1px solid var(--border);border-radius:10px;' +
+          'overflow:hidden;box-shadow:var(--shadow-sm);">' +
+
+          '<div style="padding:.75rem 1rem;background:var(--accent);' +
+            'display:flex;align-items:center;gap:.625rem;flex-wrap:wrap;">' +
+            '<span style="flex-shrink:0;display:inline-flex;align-items:center;color:rgba(255,255,255,.85);">' +
+              '<svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 256 256" fill="currentColor">' +
+                '<path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,' +
+                '48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32Z' +
+                'M208,208H48V96H208ZM48,80V48H72v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80Z"/>' +
+              '</svg>' +
+            '</span>' +
+            '<div>' +
+              '<p style="font-size:.875rem;font-weight:700;color:#fff;line-height:1.2;">Class Timetable</p>' +
+              '<p style="font-size:.6875rem;color:rgba(255,255,255,.75);margin-top:1px;">' + _escHtml(rangeLabel) + '</p>' +
+            '</div>' +
+            (todayColIdx >= 0
+              ? '<span style="margin-left:auto;flex-shrink:0;font-size:.6875rem;font-weight:700;' +
+                  'padding:2px 9px;border-radius:99px;background:rgba(255,255,255,.18);' +
+                  'color:#fff;border:1px solid rgba(255,255,255,.3);white-space:nowrap;">' +
+                  'Today: ' + DAY_SHORT[todayColIdx] + ', ' +
+                  dayDates[todayColIdx].dayNum + ' ' + dayDates[todayColIdx].monthSh +
+                '</span>'
+              : '') +
+          '</div>' +
+
+          '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">' +
+            '<table style="width:100%;border-collapse:collapse;min-width:440px;background:var(--bg-base);">' +
+              '<thead>' +
+                '<tr style="background:var(--accent-hover);">' +
+                  '<th style="' + TH + 'background:transparent;text-align:left;' +
+                    'min-width:86px;color:rgba(255,255,255,.8);">Time</th>' +
+                  headerCells +
+                '</tr>' +
+              '</thead>' +
+              '<tbody>' + tableRows + '</tbody>' +
+            '</table>' +
+          '</div>' +
+
+          noteHtml +
+
+        '</div>'
+      );
+
     } catch (err) {
-      console.warn('[exam] Weekly timetable fetch failed (non-fatal):', err);
+      console.warn('[exam] Timetable fetch failed (non-fatal):', err);
       return '';
     }
   }
