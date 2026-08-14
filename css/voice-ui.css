@@ -1,7 +1,8 @@
 /* ============================================================
-   VERTEX CBT — Voice Notes + Speech UI  v3
+   VERTEX CBT — Voice Notes + Speech UI  v4
    ============================================================ */
 
+/* Voice note */
 .vn-recorder-btn {
   width: 34px;
   height: 34px;
@@ -583,9 +584,12 @@
 }
 .se-explain-close-btn:hover { background: var(--bg-subtle); color: var(--text-1); }
 
+/* Body — scrollable */
 .se-explain-body {
   flex: 1;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   padding: 1.125rem 1.25rem;
   display: flex;
   flex-direction: column;
@@ -659,11 +663,12 @@
 .se-explain-deeper-icon { font-size: 1rem; }
 .se-explain-deeper-hint { font-size: 0.6875rem; color: var(--text-4); margin: 0; }
 
-/* Deep result panel */
+/* Deep result panel — SCROLLABLE */
 .se-explain-deep-result {
   border-radius: var(--r-lg);
   overflow: hidden;
   border: 1px solid var(--border);
+  /* No max-height cap here — body scroll handles overflow */
 }
 .se-explain-deep-content {
   padding: 0.875rem 1rem;
@@ -695,12 +700,17 @@
 .se-explain-wiki-badge--local {
   background: var(--accent);
 }
+
+/* Wikipedia text — fully visible, no truncation */
 .se-explain-deep-text {
   font-size: 0.875rem;
   color: var(--text-1);
   line-height: 1.75;
   margin: 0;
+  white-space: pre-line;
+  word-break: break-word;
 }
+
 .se-explain-wiki-link {
   font-size: 0.75rem;
   color: var(--accent);
