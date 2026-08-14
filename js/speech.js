@@ -1,5 +1,5 @@
 /* ============================================================
-   js/speech.js — SpeechEngine  v4
+   js/speech.js — SpeechEngine  v5
    Handles TTS (text-to-speech) and STT (speech-to-text) for
    the exam screen using the native Web Speech API.
    ============================================================ */
@@ -132,8 +132,7 @@
     _hookTtsBtnState(true);
 
     if (typeof onDone === 'function') {
-      var origQueue = _ttsQueue.slice();
-      var interval  = setInterval(function () {
+      var interval = setInterval(function () {
         if (!_ttsActive && _ttsQueue.length === 0) {
           clearInterval(interval);
           onDone();
@@ -185,6 +184,13 @@
   var _sttRunning   = false;
   var _sttRestartId = null;
   var _sttCallbacks = { onResult: null, onError: null };
+
+  /* ── Submit confirmation state ── */
+  var _awaitingSubmitConfirm = false;
+
+  /* ── Deeper explanation await state ── */
+  var _awaitingDeeperAnswer  = false;
+  var _deeperContext         = null; // { q, subj, idx }
 
   function _isStandaloneSafari() {
     return (
@@ -307,6 +313,9 @@
 
   function stopSTT() {
     _sttActive = false;
+    _awaitingSubmitConfirm = false;
+    _awaitingDeeperAnswer  = false;
+    _deeperContext         = null;
     if (_sttRestartId) { clearTimeout(_sttRestartId); _sttRestartId = null; }
     if (_recognition) {
       try { _recognition.stop(); }  catch (e) {}
@@ -390,16 +399,95 @@
   }
 
   /* ════════════════════════════════════════════════════════
-     RESULTS PAGE — explanation modal
+     WIKIPEDIA SEARCH — smart keyword extraction
      ════════════════════════════════════════════════════════ */
 
-  var _resultsExam   = null;
-  var _resultsResult = null;
+  /* Common stopwords to strip before building a search query */
+  var _stopWords = new RegExp(
+    '\\b(the|a|an|is|are|was|were|be|been|being|have|has|had|do|does|did|' +
+    'will|would|could|should|may|might|shall|can|of|in|on|at|to|for|with|by|' +
+    'from|as|into|through|during|before|after|above|below|between|each|' +
+    'which|what|who|whom|whose|when|where|why|how|all|both|any|some|' +
+    'this|that|these|those|it|its|they|their|them|he|she|his|her|we|our|' +
+    'you|your|i|me|my|not|no|nor|so|yet|but|or|and|if|then|than|because|' +
+    'following|correctly|describes|happens|during|preparation|process|' +
+    'defined|definition|explain|example|type|types|kind|kinds|form|forms|' +
+    'used|uses|use|called|known|result|results|produced|produces|cause|causes|' +
+    'effect|effects|given|find|found|determine|calculate|solve|identify|' +
+    'choose|select|best|correct|wrong|true|false|statement|statements|' +
+    'option|options|answer|question|following|below|above|one|two|three|' +
+    'four|five|six|seven|eight|nine|ten)\\b',
+    'gi'
+  );
 
-  /* Store reference so voice commands on results page can access exam data */
-  function setResultsContext(exam, result) {
-    _resultsExam   = exam;
-    _resultsResult = result;
+  /* Subject-specific concept boosters: helps pick more specific Wikipedia topics */
+  var _subjectBoosts = {
+    'chemistry':          ['reaction', 'element', 'compound', 'bond', 'acid', 'base', 'salt', 'ion', 'molecule', 'atom', 'oxidation', 'reduction', 'electrolysis', 'organic', 'periodic'],
+    'biology':            ['cell', 'organism', 'photosynthesis', 'respiration', 'genetics', 'enzyme', 'hormone', 'tissue', 'organ', 'evolution', 'dna', 'protein', 'osmosis', 'diffusion'],
+    'physics':            ['force', 'energy', 'velocity', 'acceleration', 'momentum', 'wave', 'light', 'electric', 'magnetic', 'pressure', 'heat', 'thermodynamics', 'gravity', 'current'],
+    'mathematics':        ['theorem', 'equation', 'function', 'derivative', 'integral', 'matrix', 'vector', 'probability', 'statistics', 'geometry', 'algebra', 'calculus', 'trigonometry'],
+    'maths':              ['theorem', 'equation', 'function', 'derivative', 'integral', 'matrix', 'vector', 'probability', 'statistics', 'geometry', 'algebra', 'calculus', 'trigonometry'],
+    'english':            ['grammar', 'syntax', 'clause', 'phrase', 'tense', 'figure of speech', 'rhetoric', 'literary', 'prose', 'poem', 'verb', 'noun', 'adjective', 'adverb'],
+    'geography':          ['climate', 'landform', 'erosion', 'population', 'migration', 'ecosystem', 'biome', 'weathering', 'river', 'plate tectonics', 'soil', 'atmosphere'],
+    'economics':          ['supply', 'demand', 'inflation', 'gdp', 'market', 'trade', 'fiscal', 'monetary', 'elasticity', 'opportunity cost', 'production', 'utility'],
+    'government':         ['democracy', 'constitution', 'legislature', 'executive', 'judiciary', 'federalism', 'sovereignty', 'election', 'parliament', 'rights'],
+    'history':            ['war', 'revolution', 'empire', 'colonialism', 'independence', 'treaty', 'civilization', 'dynasty', 'reform', 'nationalism'],
+    'literature':         ['novel', 'poetry', 'drama', 'theme', 'character', 'plot', 'symbolism', 'metaphor', 'alliteration', 'irony'],
+    'further mathematics':['calculus', 'differential', 'complex number', 'matrix', 'vector', 'series', 'proof', 'binomial', 'statistics'],
+  };
+
+  /**
+   * Extract a smart Wikipedia search query from a question.
+   * Strategy:
+   *  1. Strip HTML and LaTeX
+   *  2. Remove stopwords
+   *  3. Find any option answer text that looks like a concept (the correct answer)
+   *  4. Score remaining words by length and subject relevance
+   *  5. Build a 3-6 word query focused on the core concept
+   */
+  function _buildSmartSearchQuery(q, subj) {
+    var questionText = _cleanText(q.q || '');
+    var correctOpt   = _cleanText((q.opts || [])[q.ans] || '');
+    var expText      = _cleanText(q.exp || '');
+
+    /* Weight: correct answer text is the most specific concept — lead with it */
+    var combined = correctOpt + ' ' + questionText + ' ' + expText;
+
+    /* Strip stopwords */
+    var stripped = combined.replace(_stopWords, ' ').replace(/\s+/g, ' ').trim();
+
+    /* Tokenise and score words */
+    var tokens = stripped.split(/\s+/).filter(function (w) { return w.length >= 4; });
+
+    /* Deduplicate preserving order */
+    var seen   = {};
+    var unique = [];
+    for (var i = 0; i < tokens.length; i++) {
+      var lw = tokens[i].toLowerCase();
+      if (!seen[lw]) { seen[lw] = true; unique.push(tokens[i]); }
+    }
+
+    /* Boost tokens that appear in the subject's concept list */
+    var subjKey = (subj || '').toLowerCase().trim();
+    var boosts  = _subjectBoosts[subjKey] || [];
+    unique.sort(function (a, b) {
+      var aBoost = boosts.indexOf(a.toLowerCase()) !== -1 ? 1 : 0;
+      var bBoost = boosts.indexOf(b.toLowerCase()) !== -1 ? 1 : 0;
+      if (bBoost !== aBoost) return bBoost - aBoost;
+      return b.length - a.length; // longer words tend to be more specific
+    });
+
+    /* Take top 5 keywords */
+    var keywords = unique.slice(0, 5);
+
+    /* If the correct answer itself is a short phrase (2-4 words), prepend it whole */
+    var correctWords = correctOpt.split(/\s+/).filter(function (w) { return w.length >= 3; });
+    if (correctWords.length >= 2 && correctWords.length <= 5) {
+      /* Use the correct answer as the primary query nucleus */
+      return correctOpt + ' ' + keywords.slice(0, 3).join(' ');
+    }
+
+    return keywords.join(' ');
   }
 
   /* Strip HTML tags and LaTeX for clean spoken/displayed text */
@@ -425,13 +513,13 @@
           callback('not_found', null, null);
         }
       })
-      .catch(function (err) { callback('error', null, null); });
+      .catch(function () { callback('error', null, null); });
   }
 
   /* Search Wikipedia for best article matching a topic */
   function _searchWikipedia(query, callback) {
     var url = 'https://en.wikipedia.org/w/rest.php/v1/search/page?q=' +
-              encodeURIComponent(query) + '&limit=3';
+              encodeURIComponent(query) + '&limit=5';
     fetch(url, { headers: { 'Accept': 'application/json' } })
       .then(function (r) { return r.ok ? r.json() : null; })
       .then(function (data) {
@@ -441,15 +529,19 @@
           callback('not_found', null, null);
         }
       })
-      .catch(function (err) { callback('error', null, null); });
+      .catch(function () { callback('error', null, null); });
   }
 
-  /* Build a plain-English topic string from a question */
-  function _buildSearchTopic(q, subj) {
-    var text = _cleanText(q.q || '');
-    var words = text.split(/\s+/).filter(function (w) { return w.length > 3; });
-    var keywords = words.slice(0, 6).join(' ');
-    return (subj || '') + ' ' + keywords;
+  /* ════════════════════════════════════════════════════════
+     RESULTS PAGE — explanation modal
+     ════════════════════════════════════════════════════════ */
+
+  var _resultsExam   = null;
+  var _resultsResult = null;
+
+  function setResultsContext(exam, result) {
+    _resultsExam   = exam;
+    _resultsResult = result;
   }
 
   /* Show the deep-explanation modal */
@@ -473,15 +565,19 @@
     var q   = qList[idx];
     if (!q) { UI.toast('Question not found.', 'warning'); return; }
 
-    var userAns   = exam.answers[subj + '-' + idx];
-    var isCorrect = userAns === q.ans;
-    var chosenTxt = userAns !== undefined ? _cleanText(q.opts[userAns]) : 'Not answered';
+    var userAns    = exam.answers[subj + '-' + idx];
+    var isCorrect  = userAns === q.ans;
+    var chosenTxt  = userAns !== undefined ? _cleanText(q.opts[userAns]) : 'Not answered';
     var correctTxt = _cleanText(q.opts[q.ans]);
     var questionTxt = _cleanText(q.q);
     var expTxt      = _cleanText(q.exp || '');
 
     var existing = document.getElementById('seExplainModal');
     if (existing) existing.remove();
+
+    /* Reset deeper-await state for this new modal */
+    _awaitingDeeperAnswer = false;
+    _deeperContext = { q: q, subj: subj, idx: idx };
 
     var modal = document.createElement('div');
     modal.id        = 'seExplainModal';
@@ -546,6 +642,8 @@
     /* Close handlers */
     function _closeModal() {
       cancel();
+      _awaitingDeeperAnswer = false;
+      _deeperContext = null;
       modal.classList.remove('is-visible');
       setTimeout(function () { if (modal.parentNode) modal.remove(); }, 280);
     }
@@ -566,7 +664,8 @@
       if (expTxt) text += 'Explanation: ' + expTxt;
       var deepEl = document.getElementById('seExplainDeepResult');
       if (deepEl && deepEl.style.display !== 'none') {
-        text += '. Additional information: ' + deepEl.getAttribute('data-plain') || '';
+        var plain = deepEl.getAttribute('data-plain') || '';
+        if (plain) text += '. Additional information: ' + plain;
       }
       speak(text);
     });
@@ -574,40 +673,22 @@
     /* Deeper explanation button */
     var deeperBtn = document.getElementById('seExplainDeeperBtn');
     deeperBtn.addEventListener('click', function () {
+      _awaitingDeeperAnswer = false;
       _loadDeeperExplanation(q, subj, idx);
     });
 
-    /* Auto-read the built-in explanation */
+    /* Auto-read the built-in explanation, then set awaiting flag */
     setTimeout(function () {
       var text = 'Question ' + questionNumber + ' in ' + subj + '. ';
       text += questionTxt + '. ';
       text += 'The correct answer is: ' + correctTxt + '. ';
       if (expTxt) text += 'Explanation: ' + expTxt + '. ';
-      text += 'Would you like a deeper explanation? Say "yes" or click the button below.';
+      text += 'Would you like a deeper explanation from Wikipedia? Say yes or no.';
       speak(text, function () {
-        if (!_sttActive) return;
-        _awaitYesNoForDeeper(q, subj, idx);
+        /* After reading completes, mark that we're waiting for yes/no */
+        _awaitingDeeperAnswer = true;
       });
     }, 400);
-  }
-
-  function _awaitYesNoForDeeper(q, subj, idx) {
-    var _yesNo = null;
-    var prevResult = _sttCallbacks.onResult;
-    _yesNo = function (transcript) {
-      var t = transcript.toLowerCase().trim();
-      if (/\b(yes|yeah|sure|ok|okay|more|deeper|explain more|further|go ahead|please)\b/.test(t)) {
-        _sttCallbacks.onResult = prevResult;
-        _loadDeeperExplanation(q, subj, idx);
-      } else if (/\b(no|nope|skip|close|done|stop|enough)\b/.test(t)) {
-        _sttCallbacks.onResult = prevResult;
-        speak('Alright. You can close this panel or ask me to explain another question.');
-      }
-    };
-    _sttCallbacks.onResult = function (best, all) {
-      _yesNo(best);
-      if (prevResult) prevResult(best, all);
-    };
   }
 
   function _loadDeeperExplanation(q, subj, idx) {
@@ -615,20 +696,29 @@
     var deeperWrap = document.getElementById('seExplainDeeperWrap');
     if (!deepResult) return;
 
+    _awaitingDeeperAnswer = false;
+
     deepResult.style.display = 'block';
-    deepResult.innerHTML     =
+    deepResult.innerHTML =
       '<div class="se-explain-loading">' +
         '<span class="se-explain-spinner"></span>' +
         'Searching Wikipedia…' +
       '</div>';
     if (deeperWrap) deeperWrap.style.display = 'none';
 
-    var searchTopic = _buildSearchTopic(q, subj);
+    /* Build a smart, concept-focused search query */
+    var searchQuery = _buildSmartSearchQuery(q, subj);
+    console.log('[SpeechEngine] Wikipedia search query:', searchQuery);
 
-    _searchWikipedia(searchTopic, function (err, title, pages) {
+    _searchWikipedia(searchQuery, function (err, title, pages) {
       if (err || !title) {
-        var fallbackTopic = _cleanText(q.q || '').split(/\s+/).slice(0, 4).join(' ');
-        _searchWikipedia(fallbackTopic, function (err2, title2) {
+        /* Fallback: try just the correct answer text */
+        var fallback = _cleanText((q.opts || [])[q.ans] || '');
+        if (fallback.length < 4) {
+          _showDeeperFallback(deepResult, q, subj);
+          return;
+        }
+        _searchWikipedia(fallback, function (err2, title2) {
           if (err2 || !title2) {
             _showDeeperFallback(deepResult, q, subj);
           } else {
@@ -649,7 +739,8 @@
       }
 
       var plain = extract.replace(/\s+/g, ' ').trim();
-      if (plain.length > 600) plain = plain.slice(0, 600) + '…';
+      /* Keep full extract for TTS (up to 800 chars), display same */
+      if (plain.length > 800) plain = plain.slice(0, 800) + '…';
 
       deepResult.setAttribute('data-plain', plain);
       deepResult.innerHTML =
@@ -665,7 +756,7 @@
             : '') +
         '</div>';
 
-      speak('Here is additional information. ' + plain);
+      speak('Here is additional information from Wikipedia. ' + plain);
     });
   }
 
@@ -712,10 +803,49 @@
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-  /* ── Exam voice commands ── */
+  /* ════════════════════════════════════════════════════════
+     EXAM VOICE COMMANDS
+     ════════════════════════════════════════════════════════ */
+
+  /* Voice-driven submit confirm — bypasses UI.confirmAction entirely */
+  function _voiceConfirmSubmit() {
+    _awaitingSubmitConfirm = true;
+    speak(
+      'Are you sure you want to submit your exam? This cannot be undone. Say "confirm" to submit, or "cancel" to go back.',
+      function () {
+        /* TTS done — mic continues listening, state flag handles routing */
+      }
+    );
+    UI.toast('Say "confirm" to submit or "cancel" to go back.', 'info', 8000);
+  }
+
   function _handleVoiceCommand(transcript, allTranscripts, exam) {
     var t = (transcript || '').toLowerCase().trim();
 
+    /* ── Submit confirmation flow ── */
+    if (_awaitingSubmitConfirm) {
+      if (/\b(confirm|yes|submit|go ahead|proceed|do it|okay|ok|sure)\b/.test(t)) {
+        _awaitingSubmitConfirm = false;
+        UI.toast('Submitting your exam…', 'info', 2000);
+        speak('Submitting your exam now.', function () {
+          if (window.Exam && typeof Exam.submitExam === 'function') {
+            Exam.submitExam(true); /* skipConfirm = true */
+          }
+        });
+        return;
+      }
+      if (/\b(cancel|no|stop|back|don't|do not|abort)\b/.test(t)) {
+        _awaitingSubmitConfirm = false;
+        UI.toast('Submission cancelled.', 'info', 2000);
+        speak('Okay, submission cancelled. You can continue the exam.');
+        return;
+      }
+      /* Any other speech while awaiting — re-prompt */
+      speak('Please say "confirm" to submit or "cancel" to go back.');
+      return;
+    }
+
+    /* ── Navigation ── */
     if (/\b(next|forward|move on|continue)\b/.test(t)) {
       UI.toast('Going to next question…', 'info', 1500);
       if (window.Exam && typeof Exam.nextQuestion === 'function') Exam.nextQuestion();
@@ -727,11 +857,10 @@
       return;
     }
 
-    /* Jump to question number */
+    /* ── Jump to question number ── */
     var goMatch = t.match(/\b(?:go to|jump to|question|number|q)\s+(\w+)/i);
     if (goMatch) {
-      var num = _extractQuestionNumber(goMatch[1] + ' ' + (goMatch[2] || ''));
-      if (num === -1) num = _extractQuestionNumber(t);
+      var num = _extractQuestionNumber(t);
       if (num >= 1 && exam && exam.questions[exam.currentSubject]) {
         var qLen = exam.questions[exam.currentSubject].length;
         if (num <= qLen) {
@@ -745,28 +874,42 @@
       }
     }
 
-    /* Jump to subject */
-    if (/\b(switch to|go to|open|next subject|subject)\b/.test(t) && exam) {
-      var targetSubj = _extractSubject(t, exam.subjects);
-      if (targetSubj) {
-        UI.toast('Switching to ' + targetSubj + '…', 'info', 1500);
-        if (window.Exam && typeof Exam.switchSubject === 'function') Exam.switchSubject(targetSubj);
-        return;
-      }
+    /* ── Switch subject ── */
+    if (exam && exam.subjects) {
+      /* "next subject" */
       if (/\bnext subject\b/.test(t)) {
         var curIdx = exam.subjects.indexOf(exam.currentSubject);
         if (curIdx < exam.subjects.length - 1) {
           var ns = exam.subjects[curIdx + 1];
           UI.toast('Switching to ' + ns + '…', 'info', 1500);
           if (window.Exam && typeof Exam.switchSubject === 'function') Exam.switchSubject(ns);
-          return;
         } else {
           UI.toast('You are already on the last subject.', 'info', 2500);
+          speak('You are already on the last subject.');
+        }
+        return;
+      }
+
+      /* "switch to / go to / open <subject>" — check for named subject */
+      if (/\b(switch to|go to|open|subject)\b/.test(t)) {
+        var targetSubj = _extractSubject(t, exam.subjects);
+        if (targetSubj) {
+          UI.toast('Switching to ' + targetSubj + '…', 'info', 1500);
+          if (window.Exam && typeof Exam.switchSubject === 'function') Exam.switchSubject(targetSubj);
           return;
         }
       }
+
+      /* Plain subject name spoken without a prefix verb — try direct match */
+      var directSubj = _extractSubject(t, exam.subjects);
+      if (directSubj && t.split(/\s+/).length <= 4) {
+        UI.toast('Switching to ' + directSubj + '…', 'info', 1500);
+        if (window.Exam && typeof Exam.switchSubject === 'function') Exam.switchSubject(directSubj);
+        return;
+      }
     }
 
+    /* ── TTS read/stop ── */
     if (/\b(read|listen|read (the )?question|read (it )?out|speak)\b/.test(t)) {
       var ttsBtn = document.getElementById('seTtsBtn');
       if (ttsBtn) ttsBtn.click();
@@ -777,14 +920,13 @@
       return;
     }
 
-    if (/\b(submit( exam| test| now)?|finish( exam| test)?|end exam|confirm( exam| submission)?)\b/.test(t)) {
-      UI.toast('Submit command received — confirming…', 'info', 2000);
-      if (window.Exam && typeof Exam.submitExam === 'function') {
-        setTimeout(function () { Exam.submitExam(false); }, 1500);
-      }
+    /* ── Submit — initiate voice confirmation flow ── */
+    if (/\b(submit( exam| test| now)?|finish( exam| test)?|end exam)\b/.test(t)) {
+      _voiceConfirmSubmit();
       return;
     }
 
+    /* ── Option selection ── */
     if (!exam) return;
     var subj2    = exam.currentSubject;
     var qList2   = exam.questions[subj2];
@@ -804,26 +946,47 @@
     );
   }
 
-  /* ── Results page voice commands ── */
+  /* ════════════════════════════════════════════════════════
+     RESULTS PAGE VOICE COMMANDS
+     ════════════════════════════════════════════════════════ */
+
   function _handleResultsCommand(transcript, allTranscripts) {
     var t = (transcript || '').toLowerCase().trim();
     var exam   = _resultsExam;
-    var result = _resultsResult;
 
-    /* Close explanation modal */
-    if (/\b(close|dismiss|exit|hide|go back)\b/.test(t)) {
+    /* ── Deeper explanation yes/no (awaiting after auto-read) ── */
+    if (_awaitingDeeperAnswer && _deeperContext) {
+      if (/\b(yes|yeah|sure|ok|okay|more|deeper|explain more|further|go ahead|please|want|need)\b/.test(t)) {
+        _awaitingDeeperAnswer = false;
+        var dc = _deeperContext;
+        _loadDeeperExplanation(dc.q, dc.subj, dc.idx);
+        return;
+      }
+      if (/\b(no|nope|skip|close|done|stop|enough|not now|that's fine|that is fine)\b/.test(t)) {
+        _awaitingDeeperAnswer = false;
+        speak('Alright. You can close this panel or ask me to explain another question.');
+        return;
+      }
+      /* Fall through to other commands even if awaiting — user may want to navigate */
+    }
+
+    /* ── Close explanation modal ── */
+    if (/\b(close|dismiss|exit|hide)\b/.test(t)) {
       var modal = document.getElementById('seExplainModal');
       if (modal) {
         cancel();
+        _awaitingDeeperAnswer = false;
+        _deeperContext = null;
         modal.classList.remove('is-visible');
         setTimeout(function () { if (modal.parentNode) modal.remove(); }, 280);
         return;
       }
     }
 
-    /* Back to dashboard */
-    if (/\b(dashboard|back|home|start over|new exam)\b/.test(t)) {
+    /* ── Back to dashboard ── */
+    if (/\b(dashboard|back|home|start over|new exam|go back)\b/.test(t)) {
       cancel();
+      _awaitingDeeperAnswer = false;
       if (window.Exam && typeof Exam.renderSubjectSelection === 'function') {
         UI.toast('Going back to dashboard…', 'info', 1500);
         setTimeout(function () { Exam.renderSubjectSelection(); }, 600);
@@ -831,7 +994,7 @@
       return;
     }
 
-    /* Share on WhatsApp */
+    /* ── Share on WhatsApp ── */
     if (/\b(whatsapp|share|send|send to whatsapp)\b/.test(t)) {
       if (window.Exam && typeof Exam._shareWhatsApp === 'function') {
         UI.toast('Opening WhatsApp…', 'info', 1500);
@@ -840,7 +1003,7 @@
       return;
     }
 
-    /* Copy result */
+    /* ── Copy result ── */
     if (/\b(copy|copy result|clipboard)\b/.test(t)) {
       if (window.Exam && typeof Exam._copyResult === 'function') {
         Exam._copyResult();
@@ -848,14 +1011,15 @@
       return;
     }
 
-    /* Stop reading */
+    /* ── Stop reading ── */
     if (/\b(stop( reading| speaking)?|quiet|silence|shut up)\b/.test(t)) {
       if (_ttsActive) { cancel(); UI.toast('Stopped.', 'info', 1200); }
       return;
     }
 
-    /* Read overall result */
-    if (/\b(read( result)?|read( my)? score|what( is|'s) my (score|result|grade))\b/.test(t)) {
+    /* ── Read overall result ── */
+    if (/\b(read( result)?|read( my)? score|what( is|'?s) my (score|result|grade))\b/.test(t)) {
+      var result = _resultsResult;
       if (!result) return;
       var summary = 'Your overall score is ' + result.percentage + ' percent, Grade ' + result.grade + '. ';
       result.subjects.forEach(function (s) {
@@ -865,7 +1029,13 @@
       return;
     }
 
-    /* Explain a specific question: "explain question 5 in Mathematics" */
+    /* ── Deeper explanation trigger from outside modal ── */
+    if (_deeperContext && /\b(yes|yeah|sure|ok|okay|more|deeper|explain more|further|go ahead|please)\b/.test(t)) {
+      var deepBtn = document.getElementById('seExplainDeeperBtn');
+      if (deepBtn) { deepBtn.click(); return; }
+    }
+
+    /* ── Explain a specific question ── */
     var explainMatch =
       t.match(/\bexplain\s+(?:question\s+|q\s*|number\s*)?(\w+)(?:\s+in\s+(.+))?/i) ||
       t.match(/\b(?:question|number|q)\s*(\w+)(?:\s+(?:in|from|for)\s+(.+))?/i);
@@ -884,12 +1054,6 @@
 
       _showExplanationModal(qNum, targetSubj2);
       return;
-    }
-
-    /* Deeper explanation (yes/no inside modal context) */
-    if (/\b(yes|yeah|sure|ok|okay|more|deeper|explain more|further|go ahead|please)\b/.test(t)) {
-      var deepBtn = document.getElementById('seExplainDeeperBtn');
-      if (deepBtn) { deepBtn.click(); return; }
     }
 
     UI.toast(
@@ -988,16 +1152,16 @@
 
   /* ── Public API ── */
   window.SpeechEngine = {
-    speak:              speak,
-    cancel:             cancel,
-    startSTT:           startSTT,
-    stopSTT:            stopSTT,
-    wireExamButtons:    wireExamButtons,
-    wireResultsButtons: wireResultsButtons,
-    setResultsContext:  setResultsContext,
+    speak:               speak,
+    cancel:              cancel,
+    startSTT:            startSTT,
+    stopSTT:             stopSTT,
+    wireExamButtons:     wireExamButtons,
+    wireResultsButtons:  wireResultsButtons,
+    setResultsContext:   setResultsContext,
     showExplanationModal: _showExplanationModal,
-    ttsSupported:       ttsSupported,
-    sttSupported:       sttSupported,
+    ttsSupported:        ttsSupported,
+    sttSupported:        sttSupported,
     readCurrentQuestion: function () {
       var ttsBtn = document.getElementById('seTtsBtn');
       if (ttsBtn) ttsBtn.click();
