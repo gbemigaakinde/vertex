@@ -1,5 +1,5 @@
 /* ============================================================
-   js/speech.js — SpeechEngine  v6
+   js/speech.js — SpeechEngine  v7
    Handles TTS (text-to-speech) and STT (speech-to-text) for
    the exam screen using the native Web Speech API.
    ============================================================ */
@@ -24,8 +24,6 @@
       return raw ? JSON.parse(raw) : null;
     } catch (e) { return null; }
   })();
-  /* _voicePref shape: { lang: 'en-GB', voiceName: 'Google UK English Female' }
-     or null for default behaviour. */
 
   function _savePref(pref) {
     _voicePref = pref;
@@ -55,7 +53,7 @@
     }
   }
 
-  /* ── Default English voice picker (unchanged original logic) ── */
+  /* ── Default English voice picker ── */
   function _pickDefaultVoice() {
     if (_voices.length === 0) return null;
     var preferred = [
@@ -71,26 +69,23 @@
     return null;
   }
 
-  /* ── Voice picker: respects saved preference, falls back gracefully ── */
+  /* ── Voice picker: respects saved preference ── */
   function _pickVoice() {
     if (_voices.length === 0) return null;
 
     if (_voicePref) {
-      /* Try exact name match first */
       if (_voicePref.voiceName) {
         var exact = _voices.filter(function (v) {
           return v.name === _voicePref.voiceName;
         });
         if (exact.length > 0) return exact[0];
       }
-      /* Saved voice gone — try any voice in the saved language */
       if (_voicePref.lang) {
         var langMatch = _voices.filter(function (v) {
           return v.lang === _voicePref.lang || v.lang.startsWith(_voicePref.lang.split('-')[0]);
         });
         if (langMatch.length > 0) return langMatch[0];
       }
-      /* Nothing found — clear the stale pref and fall through */
       _savePref(null);
     }
 
@@ -101,7 +96,6 @@
      VOICE SELECTION UI
      ════════════════════════════════════════════════════════ */
 
-  /* Attempt to infer gender from voice name — conservative, never guesses */
   function _inferGender(voice) {
     var n = (voice.name || '').toLowerCase();
     var femaleTokens = [
@@ -114,9 +108,8 @@
       'mei-jia', 'sin-ji', 'ting-ting', 'yi-jia', 'yuna',
       'kyoko', 'o-ren', 'maged', 'laila', 'ioana', 'milena',
       'mariska', 'zosia', 'filiz', 'yelda', 'katya', 'irina',
-      'melina', 'nora', 'sara', 'ellen', 'xander', /* skip xander — male; listed to watch */
+      'melina', 'nora', 'sara', 'ellen',
     ];
-    /* Remove false positives */
     var maleTokens = [
       'male', 'man', 'boy',
       'daniel', 'alex', 'fred', 'ralph', 'albert', 'bruce',
@@ -130,7 +123,6 @@
     var isFemale = femaleTokens.some(function (t) { return n.indexOf(t) !== -1; });
     var isMale   = maleTokens.some(function (t)   { return n.indexOf(t) !== -1; });
 
-    /* Specific known patterns in browser voice names */
     if (/\bfemale\b/.test(n))  return 'female';
     if (/\bmale\b/.test(n))    return 'male';
     if (/google\s+\S+\s+english\s+female/i.test(voice.name)) return 'female';
@@ -144,12 +136,11 @@
   }
 
   function _genderLabel(gender) {
-    if (gender === 'female') return ' ♀';
-    if (gender === 'male')   return ' ♂';
+    if (gender === 'female') return ' (F)';
+    if (gender === 'male')   return ' (M)';
     return '';
   }
 
-  /* Group voices by language, de-duplicate by name */
   function _groupVoicesByLang() {
     var map = {};
     var seen = {};
@@ -163,10 +154,8 @@
     return map;
   }
 
-  /* Build a human-readable language label */
   function _langLabel(langCode) {
     try {
-      /* Use Intl.DisplayNames if available (modern browsers) */
       if (window.Intl && Intl.DisplayNames) {
         var dn = new Intl.DisplayNames(['en'], { type: 'language' });
         var label = dn.of(langCode);
@@ -177,17 +166,14 @@
   }
 
   function _openVoiceSelector() {
-    /* Remove any existing panel */
     var existing = document.getElementById('vtxVoicePanel');
     if (existing) { existing.remove(); return; }
 
-    /* Ensure voices are loaded */
     if (!ttsSupported) {
       if (window.UI) UI.toast('Text-to-speech is not supported in your browser.', 'warning', 4000);
       return;
     }
 
-    /* If voices haven't loaded yet, wait briefly and retry */
     if (!_voicesReady || _voices.length === 0) {
       var list = _synth.getVoices();
       if (list && list.length > 0) { _voices = list; _voicesReady = true; }
@@ -200,18 +186,14 @@
 
     var grouped   = _groupVoicesByLang();
     var langCodes = Object.keys(grouped).sort(function (a, b) {
-      /* Put English variants first */
       var aEn = a.startsWith('en') ? 0 : 1;
       var bEn = b.startsWith('en') ? 0 : 1;
       if (aEn !== bEn) return aEn - bEn;
       return a.localeCompare(b);
     });
 
-    /* Current selection */
-    var activeLang  = (_voicePref && _voicePref.lang)      || 'en-GB';
-    /* Make sure activeLang exists in our list */
+    var activeLang  = (_voicePref && _voicePref.lang) || 'en-GB';
     if (!grouped[activeLang]) {
-      /* Try the base language */
       var base = activeLang.split('-')[0];
       var found = langCodes.filter(function (l) { return l.startsWith(base); });
       activeLang = found.length > 0 ? found[0] : langCodes[0];
@@ -240,7 +222,6 @@
       'animation:vtxVPFadeIn 150ms ease',
     ].join(';');
 
-    /* Inject keyframe once */
     if (!document.getElementById('vtxVPStyle')) {
       var st = document.createElement('style');
       st.id = 'vtxVPStyle';
@@ -248,29 +229,29 @@
       document.head.appendChild(st);
     }
 
-    /* Header */
     var hdr = document.createElement('div');
     hdr.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;border-bottom:1px solid var(--border,#e0e0e0);flex-shrink:0;';
     hdr.innerHTML =
-      '<span style="font-size:.875rem;font-weight:700;color:var(--text-1,#111);">🔊 Voice Settings</span>' +
-      '<button id="vtxVPClose" aria-label="Close" style="background:none;border:none;cursor:pointer;font-size:1.125rem;color:var(--text-3,#888);line-height:1;padding:2px 6px;border-radius:6px;">✕</button>';
+      '<span style="display:flex;align-items:center;gap:.5rem;font-size:.875rem;font-weight:700;color:var(--text-1,#111);">' +
+        '<i class="ph ph-speaker-high" style="font-size:1rem;"></i> Voice Settings' +
+      '</span>' +
+      '<button id="vtxVPClose" aria-label="Close" style="background:none;border:none;cursor:pointer;font-size:1.125rem;color:var(--text-3,#888);line-height:1;padding:2px 6px;border-radius:6px;">&#x2715;</button>';
     panel.appendChild(hdr);
 
-    /* Body — scrollable */
     var body = document.createElement('div');
     body.style.cssText = 'flex:1;overflow-y:auto;padding:.75rem 1rem;display:flex;flex-direction:column;gap:.875rem;';
 
-    /* ── Default option ── */
+    /* Default option */
     var defaultRow = document.createElement('div');
     var isDefault  = !_voicePref;
     defaultRow.style.cssText = 'display:flex;align-items:center;gap:.625rem;padding:.5rem .75rem;border-radius:8px;cursor:pointer;border:1.5px solid ' + (isDefault ? 'var(--accent,#4f6ef7)' : 'var(--border,#e0e0e0)') + ';background:' + (isDefault ? 'var(--accent-subtle,#eef2ff)' : 'transparent') + ';transition:all 120ms;';
     defaultRow.innerHTML =
-      '<span style="font-size:1rem;">🌐</span>' +
+      '<i class="ph ph-globe" style="font-size:1rem;flex-shrink:0;color:var(--text-3,#888);"></i>' +
       '<div style="flex:1;min-width:0;">' +
         '<div style="font-size:.875rem;font-weight:600;color:var(--text-1,#111);">Default (English)</div>' +
         '<div style="font-size:.75rem;color:var(--text-3,#888);">Uses the best available English voice</div>' +
       '</div>' +
-      (isDefault ? '<span style="font-size:.8125rem;font-weight:700;color:var(--accent,#4f6ef7);">✓</span>' : '');
+      (isDefault ? '<span style="font-size:.8125rem;font-weight:700;color:var(--accent,#4f6ef7);">&#10003;</span>' : '');
     defaultRow.addEventListener('click', function () {
       _savePref(null);
       panel.remove();
@@ -278,7 +259,7 @@
     });
     body.appendChild(defaultRow);
 
-    /* ── Language selector ── */
+    /* Language selector */
     var langSection = document.createElement('div');
     var langLabel   = document.createElement('div');
     langLabel.style.cssText = 'font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-4,#aaa);margin-bottom:.375rem;';
@@ -297,12 +278,12 @@
     langSection.appendChild(langSel);
     body.appendChild(langSection);
 
-    /* ── Voice list for selected language ── */
+    /* Voice list */
     var voiceSection = document.createElement('div');
-    var voiceLabel   = document.createElement('div');
-    voiceLabel.style.cssText = langLabel.style.cssText;
-    voiceLabel.textContent = 'Voice';
-    voiceSection.appendChild(voiceLabel);
+    var voiceLbl     = document.createElement('div');
+    voiceLbl.style.cssText = langLabel.style.cssText;
+    voiceLbl.textContent = 'Voice';
+    voiceSection.appendChild(voiceLbl);
 
     var voiceListEl = document.createElement('div');
     voiceListEl.id = 'vtxVoiceList';
@@ -313,18 +294,14 @@
     panel.appendChild(body);
     document.body.appendChild(panel);
 
-    /* Close handlers */
     document.getElementById('vtxVPClose').addEventListener('click', function () { panel.remove(); });
     panel.addEventListener('click', function (e) { if (e.target === panel) panel.remove(); });
 
-    /* Dismiss on Escape */
     function _onKey(e) {
       if (e.key === 'Escape') { panel.remove(); document.removeEventListener('keydown', _onKey); }
     }
     document.addEventListener('keydown', _onKey);
-    panel.addEventListener('remove', function () { document.removeEventListener('keydown', _onKey); });
 
-    /* Render voices for a given language */
     function _renderVoices(langCode) {
       voiceListEl.innerHTML = '';
       var vList = grouped[langCode] || [];
@@ -346,11 +323,11 @@
         var row = document.createElement('div');
         row.style.cssText = 'display:flex;align-items:center;gap:.625rem;padding:.5rem .75rem;border-radius:8px;cursor:pointer;border:1.5px solid ' + (isSelected ? 'var(--accent,#4f6ef7)' : 'var(--border,#e0e0e0)') + ';background:' + (isSelected ? 'var(--accent-subtle,#eef2ff)' : 'transparent') + ';transition:all 120ms;';
 
-        var genderIcon = gender === 'female' ? '♀' : gender === 'male' ? '♂' : '◈';
-        var genderColor = gender === 'female' ? '#e879a0' : gender === 'male' ? '#4f8ef7' : 'var(--text-4,#aaa)';
+        var genderIconClass = gender === 'female' ? 'ph-gender-female' : gender === 'male' ? 'ph-gender-male' : 'ph-user';
+        var genderColor     = gender === 'female' ? '#e879a0' : gender === 'male' ? '#4f8ef7' : 'var(--text-4,#aaa)';
 
         row.innerHTML =
-          '<span style="font-size:1rem;color:' + genderColor + ';flex-shrink:0;width:1.25rem;text-align:center;">' + genderIcon + '</span>' +
+          '<i class="ph ' + genderIconClass + '" style="font-size:1rem;color:' + genderColor + ';flex-shrink:0;width:1.25rem;text-align:center;"></i>' +
           '<div style="flex:1;min-width:0;">' +
             '<div style="font-size:.875rem;font-weight:600;color:var(--text-1,#111);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' +
               _escHtmlLocal(v.name) + (gLabel ? '<span style="color:' + genderColor + ';font-size:.8125rem;">' + gLabel + '</span>' : '') +
@@ -359,13 +336,12 @@
               _escHtmlLocal(v.lang) + local +
             '</div>' +
           '</div>' +
-          (isSelected ? '<span style="font-size:.8125rem;font-weight:700;color:var(--accent,#4f6ef7);flex-shrink:0;">✓</span>' : '');
+          (isSelected ? '<span style="font-size:.8125rem;font-weight:700;color:var(--accent,#4f6ef7);flex-shrink:0;">&#10003;</span>' : '');
 
         row.addEventListener('click', function () {
           _savePref({ lang: v.lang, voiceName: v.name });
           panel.remove();
           if (window.UI) UI.toast('Voice set to: ' + v.name, 'success', 2500);
-          /* Preview the chosen voice immediately */
           _previewVoice(v);
         });
 
@@ -373,16 +349,13 @@
       });
     }
 
-    /* Initial render */
     _renderVoices(activeLang);
 
-    /* Update on language change */
     langSel.addEventListener('change', function () {
       _renderVoices(langSel.value);
     });
   }
 
-  /* Quick preview utterance for the selected voice */
   function _previewVoice(voice) {
     if (!_synth) return;
     cancel();
@@ -393,7 +366,6 @@
     _synth.speak(utt);
   }
 
-  /* Minimal local HTML escaper (used only inside the voice panel) */
   function _escHtmlLocal(str) {
     if (str == null) return '';
     return String(str)
@@ -540,9 +512,10 @@
   /* ── Submit confirmation state ── */
   var _awaitingSubmitConfirm = false;
 
-  /* ── Deeper explanation await state ── */
-  var _awaitingDeeperAnswer  = false;
-  var _deeperContext         = null; // { q, subj, idx }
+  /* ── Deeper / student-question state ── */
+  var _awaitingStudentQuestion = false;   // NEW: waiting for student's own question or a keyword
+  var _awaitingDeeperAnswer    = false;   // kept for results-page back-compat
+  var _deeperContext           = null;    // { q, subj, idx }
 
   function _isStandaloneSafari() {
     return (
@@ -664,10 +637,11 @@
   }
 
   function stopSTT() {
-    _sttActive = false;
-    _awaitingSubmitConfirm = false;
-    _awaitingDeeperAnswer  = false;
-    _deeperContext         = null;
+    _sttActive           = false;
+    _awaitingSubmitConfirm  = false;
+    _awaitingStudentQuestion = false;
+    _awaitingDeeperAnswer   = false;
+    _deeperContext          = null;
     if (_sttRestartId) { clearTimeout(_sttRestartId); _sttRestartId = null; }
     if (_recognition) {
       try { _recognition.stop(); }  catch (e) {}
@@ -718,7 +692,6 @@
     return -1;
   }
 
-  /* ── Parse question number from transcript ── */
   function _extractQuestionNumber(t) {
     var wordNums = {
       'one': 1, 'two': 2, 'three': 3, 'four': 4, 'five': 5,
@@ -735,7 +708,6 @@
     return -1;
   }
 
-  /* ── Parse subject name from transcript ── */
   function _extractSubject(t, subjects) {
     if (!Array.isArray(subjects)) return null;
     var tl = t.toLowerCase();
@@ -751,7 +723,7 @@
   }
 
   /* ════════════════════════════════════════════════════════
-     WIKIPEDIA SEARCH — smart keyword extraction
+     WIKIPEDIA SEARCH
      ════════════════════════════════════════════════════════ */
 
   var _stopWords = new RegExp(
@@ -901,7 +873,9 @@
     var existing = document.getElementById('seExplainModal');
     if (existing) existing.remove();
 
-    _awaitingDeeperAnswer = false;
+    /* Reset all explain-interaction states */
+    _awaitingStudentQuestion = false;
+    _awaitingDeeperAnswer    = false;
     _deeperContext = { q: q, subj: subj, idx: idx };
 
     var modal = document.createElement('div');
@@ -917,10 +891,12 @@
           '<div class="se-explain-modal-title">' +
             '<span class="se-explain-q-badge">' + subj + ' — Q' + questionNumber + '</span>' +
             '<span class="se-explain-status ' + (isCorrect ? 'is-correct' : 'is-wrong') + '">' +
-              (isCorrect ? '✓ Correct' : '✗ Incorrect') +
+              (isCorrect
+                ? '<i class="ph ph-check-circle"></i> Correct'
+                : '<i class="ph ph-x-circle"></i> Incorrect') +
             '</span>' +
           '</div>' +
-          '<button class="se-explain-close-btn" id="seExplainClose" aria-label="Close">✕</button>' +
+          '<button class="se-explain-close-btn" id="seExplainClose" aria-label="Close">&#x2715;</button>' +
         '</div>' +
 
         '<div class="se-explain-body" id="seExplainBody">' +
@@ -942,12 +918,28 @@
             '<div class="se-explain-exp-text" id="seExplainExpText">' + (expTxt || 'No explanation provided.') + '</div>' +
           '</div>' +
 
+          /* Student question input row */
+          '<div class="se-explain-ask-wrap" id="seExplainAskWrap">' +
+            '<div class="se-explain-ask-label">' +
+              '<i class="ph ph-chat-circle-text"></i> Do you have a question about this topic?' +
+            '</div>' +
+            '<div class="se-explain-ask-row">' +
+              '<input type="text" id="seExplainAskInput" class="se-explain-ask-input"' +
+                ' placeholder="Type your question here…" autocomplete="off" />' +
+              '<button class="se-explain-ask-btn" id="seExplainAskBtn" aria-label="Search">' +
+                '<i class="ph ph-magnifying-glass"></i>' +
+              '</button>' +
+            '</div>' +
+            '<p class="se-explain-deeper-hint">Or say your question aloud if the microphone is on</p>' +
+          '</div>' +
+
+          /* Deeper explanation button — second option */
           '<div class="se-explain-deeper-wrap" id="seExplainDeeperWrap">' +
             '<button class="se-explain-deeper-btn" id="seExplainDeeperBtn">' +
-              '<span class="se-explain-deeper-icon">🔍</span>' +
-              'Get deeper explanation' +
+              '<i class="ph ph-book-open-text"></i>' +
+              'Get a fuller explanation from Wikipedia' +
             '</button>' +
-            '<p class="se-explain-deeper-hint">Uses Wikipedia — free, no account needed</p>' +
+            '<p class="se-explain-deeper-hint">Searches Wikipedia automatically based on this question</p>' +
           '</div>' +
 
           '<div class="se-explain-deep-result" id="seExplainDeepResult" style="display:none;"></div>' +
@@ -966,7 +958,8 @@
 
     function _closeModal() {
       cancel();
-      _awaitingDeeperAnswer = false;
+      _awaitingStudentQuestion = false;
+      _awaitingDeeperAnswer    = false;
       _deeperContext = null;
       modal.classList.remove('is-visible');
       setTimeout(function () { if (modal.parentNode) modal.remove(); }, 280);
@@ -978,6 +971,7 @@
       if (e.target === modal) _closeModal();
     });
 
+    /* Read button */
     var readBtn = document.getElementById('seExplainReadBtn');
     readBtn.addEventListener('click', function () {
       if (_ttsActive) { cancel(); return; }
@@ -993,30 +987,58 @@
       speak(text);
     });
 
-    var deeperBtn = document.getElementById('seExplainDeeperBtn');
-    deeperBtn.addEventListener('click', function () {
-      _awaitingDeeperAnswer = false;
-      _loadDeeperExplanation(q, subj, idx);
+    /* Student ask button (typed) */
+    var askBtn   = document.getElementById('seExplainAskBtn');
+    var askInput = document.getElementById('seExplainAskInput');
+    function _handleStudentQuery(queryText) {
+      var q2 = (queryText || '').trim();
+      if (!q2) return;
+      _awaitingStudentQuestion = false;
+      _loadDeeperExplanation(null, subj, idx, q2);
+    }
+    askBtn.addEventListener('click', function () {
+      _handleStudentQuery(askInput.value);
+    });
+    askInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); _handleStudentQuery(askInput.value); }
     });
 
+    /* Deeper button (auto-query) */
+    var deeperBtn = document.getElementById('seExplainDeeperBtn');
+    deeperBtn.addEventListener('click', function () {
+      _awaitingStudentQuestion = false;
+      _loadDeeperExplanation(q, subj, idx, null);
+    });
+
+    /* Speak the summary then prompt the student */
     setTimeout(function () {
       var text = 'Question ' + questionNumber + ' in ' + subj + '. ';
       text += questionTxt + '. ';
       text += 'The correct answer is: ' + correctTxt + '. ';
       if (expTxt) text += 'Explanation: ' + expTxt + '. ';
-      text += 'Would you like a deeper explanation from Wikipedia? Say yes or no.';
+      text += 'Do you have a question about this topic? Say it now and I will search for it. ' +
+              'Or say "deeper" if you want me to find a fuller explanation from Wikipedia. ' +
+              'Say "no" to skip.';
       speak(text, function () {
-        _awaitingDeeperAnswer = true;
+        _awaitingStudentQuestion = true;
       });
     }, 400);
   }
 
-  function _loadDeeperExplanation(q, subj, idx) {
+  /*
+   * _loadDeeperExplanation
+   * If studentQuery is a non-empty string, search Wikipedia using the student's
+   * own question. Otherwise fall back to the auto-built query from the question data.
+   * q may be null when called from a student query.
+   */
+  function _loadDeeperExplanation(q, subj, idx, studentQuery) {
     var deepResult = document.getElementById('seExplainDeepResult');
     var deeperWrap = document.getElementById('seExplainDeeperWrap');
+    var askWrap    = document.getElementById('seExplainAskWrap');
     if (!deepResult) return;
 
-    _awaitingDeeperAnswer = false;
+    _awaitingStudentQuestion = false;
+    _awaitingDeeperAnswer    = false;
 
     deepResult.style.display = 'block';
     deepResult.innerHTML =
@@ -1025,39 +1047,73 @@
         'Searching Wikipedia…' +
       '</div>';
     if (deeperWrap) deeperWrap.style.display = 'none';
+    if (askWrap)    askWrap.style.display    = 'none';
 
-    var searchQuery = _buildSmartSearchQuery(q, subj);
-    console.log('[SpeechEngine] Wikipedia search query:', searchQuery);
+    /* Choose the search query */
+    var searchQuery;
+    if (studentQuery && studentQuery.trim().length > 2) {
+      searchQuery = studentQuery.trim();
+      console.log('[SpeechEngine] Student question search query:', searchQuery);
+    } else {
+      /* q must be valid here — fall back gracefully if not */
+      if (!q) {
+        _showDeeperFallback(deepResult, { q: '', opts: [], ans: 0, exp: '' }, subj);
+        return;
+      }
+      searchQuery = _buildSmartSearchQuery(q, subj);
+      console.log('[SpeechEngine] Auto Wikipedia search query:', searchQuery);
+    }
 
     _searchWikipedia(searchQuery, function (err, title, pages) {
       if (err || !title) {
-        var fallback = _cleanText((q.opts || [])[q.ans] || '');
-        if (fallback.length < 4) {
-          _showDeeperFallback(deepResult, q, subj);
-          return;
-        }
-        _searchWikipedia(fallback, function (err2, title2) {
-          if (err2 || !title2) {
-            _showDeeperFallback(deepResult, q, subj);
+        /* If student query failed, try a shorter version; else show fallback */
+        if (studentQuery) {
+          /* Try just the first 3 words of the student's question */
+          var shorter = studentQuery.split(/\s+/).slice(0, 3).join(' ');
+          if (shorter !== studentQuery && shorter.length > 3) {
+            _searchWikipedia(shorter, function (err2, title2) {
+              if (err2 || !title2) {
+                _showStudentQueryFallback(deepResult, studentQuery);
+              } else {
+                _fetchAndShowDeep(title2, deepResult, q, subj, studentQuery);
+              }
+            });
           } else {
-            _fetchAndShowDeep(title2, deepResult, q, subj);
+            _showStudentQueryFallback(deepResult, studentQuery);
           }
-        });
+        } else {
+          var fallback = q ? _cleanText((q.opts || [])[q.ans] || '') : '';
+          if (fallback.length < 4) {
+            _showDeeperFallback(deepResult, q || {}, subj);
+            return;
+          }
+          _searchWikipedia(fallback, function (err2, title2) {
+            if (err2 || !title2) {
+              _showDeeperFallback(deepResult, q || {}, subj);
+            } else {
+              _fetchAndShowDeep(title2, deepResult, q, subj, null);
+            }
+          });
+        }
       } else {
-        _fetchAndShowDeep(title, deepResult, q, subj);
+        _fetchAndShowDeep(title, deepResult, q, subj, studentQuery);
       }
     });
   }
 
-  function _fetchAndShowDeep(title, deepResult, q, subj) {
+  function _fetchAndShowDeep(title, deepResult, q, subj, studentQuery) {
     _fetchWikipediaSummary(title, function (err, extract, pageUrl) {
       if (err || !extract) {
-        _showDeeperFallback(deepResult, q, subj);
+        if (studentQuery) {
+          _showStudentQueryFallback(deepResult, studentQuery);
+        } else {
+          _showDeeperFallback(deepResult, q || {}, subj);
+        }
         return;
       }
 
+      /* Show the full extract — no character cap */
       var plain = extract.replace(/\s+/g, ' ').trim();
-      if (plain.length > 800) plain = plain.slice(0, 800) + '…';
 
       deepResult.setAttribute('data-plain', plain);
       deepResult.innerHTML =
@@ -1069,12 +1125,42 @@
           '<p class="se-explain-deep-text">' + _escHtml(plain) + '</p>' +
           (pageUrl
             ? '<a class="se-explain-wiki-link" href="' + pageUrl + '" target="_blank" rel="noopener">' +
-              'Read full article ↗</a>'
+              'Read full article <i class="ph ph-arrow-square-out" style="font-size:.8em;vertical-align:middle;"></i></a>'
             : '') +
         '</div>';
 
-      speak('Here is additional information from Wikipedia. ' + plain);
+      speak('Here is information from Wikipedia about ' + title + '. ' + plain);
     });
+  }
+
+  /* Fallback when the student's typed/spoken question yields no Wikipedia result */
+  function _showStudentQueryFallback(deepResult, query) {
+    var msg = 'Sorry, I could not find a Wikipedia article matching your question: "' + query + '". ' +
+              'Try rephrasing it or use the fuller explanation button below.';
+    deepResult.setAttribute('data-plain', '');
+    deepResult.innerHTML =
+      '<div class="se-explain-deep-content se-explain-deep-local">' +
+        '<div class="se-explain-deep-src">' +
+          '<span class="se-explain-wiki-badge se-explain-wiki-badge--local">' +
+            '<i class="ph ph-warning" style="font-size:.75rem;vertical-align:middle;"></i> Not found' +
+          '</span>' +
+          '<strong>No result</strong>' +
+        '</div>' +
+        '<p class="se-explain-deep-text">' + _escHtml(msg) + '</p>' +
+        /* Re-show the deeper button so the student can still try the auto search */
+        '<button class="se-explain-deeper-btn" id="seExplainDeeperBtnRetry" style="margin-top:.5rem;">' +
+          '<i class="ph ph-book-open-text"></i> Try automatic explanation' +
+        '</button>' +
+      '</div>';
+
+    var retryBtn = document.getElementById('seExplainDeeperBtnRetry');
+    if (retryBtn && _deeperContext) {
+      retryBtn.addEventListener('click', function () {
+        _loadDeeperExplanation(_deeperContext.q, _deeperContext.subj, _deeperContext.idx, null);
+      });
+    }
+
+    speak(msg);
   }
 
   function _showDeeperFallback(deepResult, q, subj) {
@@ -1088,7 +1174,7 @@
     deepResult.innerHTML =
       '<div class="se-explain-deep-content se-explain-deep-local">' +
         '<div class="se-explain-deep-src">' +
-          '<span class="se-explain-wiki-badge se-explain-wiki-badge--local">Vertex AI</span>' +
+          '<span class="se-explain-wiki-badge se-explain-wiki-badge--local">Extended</span>' +
           '<strong>Extended explanation</strong>' +
         '</div>' +
         '<p class="se-explain-deep-text">' + _escHtml(plain) + '</p>' +
@@ -1256,11 +1342,36 @@
     var t = (transcript || '').toLowerCase().trim();
     var exam   = _resultsExam;
 
+    /* ── Student question / deeper-explanation state ── */
+    if (_awaitingStudentQuestion && _deeperContext) {
+      /* "no / skip" → dismiss */
+      if (/\b(no|nope|skip|close|done|stop|enough|not now|that's fine|that is fine|nothing)\b/.test(t)) {
+        _awaitingStudentQuestion = false;
+        speak('Alright. You can type a question in the box or tap the fuller explanation button below.');
+        return;
+      }
+      /* "deeper / yes / more" → run auto-query */
+      if (/\b(deeper|yes|yeah|sure|ok|okay|more|explain more|further|go ahead|please|want|need|fuller)\b/.test(t)) {
+        _awaitingStudentQuestion = false;
+        var dc = _deeperContext;
+        _loadDeeperExplanation(dc.q, dc.subj, dc.idx, null);
+        return;
+      }
+      /* Anything else is treated as the student's own question */
+      _awaitingStudentQuestion = false;
+      var studentQ = transcript.trim();
+      UI.toast('Searching Wikipedia for: "' + studentQ + '"', 'info', 2500);
+      var dc2 = _deeperContext;
+      _loadDeeperExplanation(dc2.q, dc2.subj, dc2.idx, studentQ);
+      return;
+    }
+
+    /* Back-compat: old _awaitingDeeperAnswer (kept for safety) */
     if (_awaitingDeeperAnswer && _deeperContext) {
       if (/\b(yes|yeah|sure|ok|okay|more|deeper|explain more|further|go ahead|please|want|need)\b/.test(t)) {
         _awaitingDeeperAnswer = false;
-        var dc = _deeperContext;
-        _loadDeeperExplanation(dc.q, dc.subj, dc.idx);
+        var dc3 = _deeperContext;
+        _loadDeeperExplanation(dc3.q, dc3.subj, dc3.idx, null);
         return;
       }
       if (/\b(no|nope|skip|close|done|stop|enough|not now|that's fine|that is fine)\b/.test(t)) {
@@ -1274,7 +1385,8 @@
       var modal = document.getElementById('seExplainModal');
       if (modal) {
         cancel();
-        _awaitingDeeperAnswer = false;
+        _awaitingStudentQuestion = false;
+        _awaitingDeeperAnswer    = false;
         _deeperContext = null;
         modal.classList.remove('is-visible');
         setTimeout(function () { if (modal.parentNode) modal.remove(); }, 280);
@@ -1284,7 +1396,8 @@
 
     if (/\b(dashboard|back|home|start over|new exam|go back)\b/.test(t)) {
       cancel();
-      _awaitingDeeperAnswer = false;
+      _awaitingStudentQuestion = false;
+      _awaitingDeeperAnswer    = false;
       if (window.Exam && typeof Exam.renderSubjectSelection === 'function') {
         UI.toast('Going back to dashboard…', 'info', 1500);
         setTimeout(function () { Exam.renderSubjectSelection(); }, 600);
@@ -1321,11 +1434,6 @@
       });
       speak(summary);
       return;
-    }
-
-    if (_deeperContext && /\b(yes|yeah|sure|ok|okay|more|deeper|explain more|further|go ahead|please)\b/.test(t)) {
-      var deepBtn = document.getElementById('seExplainDeeperBtn');
-      if (deepBtn) { deepBtn.click(); return; }
     }
 
     var explainMatch =
@@ -1376,13 +1484,10 @@
   function wireExamButtons(exam) {
     var ttsBtn = document.getElementById('seTtsBtn');
     if (ttsBtn) {
-      /* Clone to remove any previous listener */
       var newTtsBtn = ttsBtn.cloneNode(true);
       ttsBtn.parentNode.replaceChild(newTtsBtn, ttsBtn);
 
-      newTtsBtn.addEventListener('click', function (e) {
-        /* Long-press / right-click → open voice selector.
-           Plain tap: read or stop. */
+      newTtsBtn.addEventListener('click', function () {
         if (_ttsActive) { cancel(); return; }
         var subj  = exam.currentSubject;
         var qList = exam.questions[subj];
@@ -1398,15 +1503,13 @@
         speak(text);
       });
 
-      /* Right-click on the Read button → open voice selector */
       newTtsBtn.addEventListener('contextmenu', function (e) {
         e.preventDefault();
         _openVoiceSelector();
       });
 
-      /* Long-press for touch devices → open voice selector */
       var _lpTimer = null;
-      newTtsBtn.addEventListener('touchstart', function (e) {
+      newTtsBtn.addEventListener('touchstart', function () {
         _lpTimer = setTimeout(function () {
           _lpTimer = null;
           _openVoiceSelector();
@@ -1420,7 +1523,6 @@
       });
     }
 
-    /* ── Settings cog button for voice selector ── */
     _injectVoiceSettingsBtn();
 
     var sttBtn = document.getElementById('seSttBtn');
@@ -1443,7 +1545,6 @@
     }
   }
 
-  /* Inject a small voice-settings button into the speech pill */
   function _injectVoiceSettingsBtn() {
     var pill = document.querySelector('#seExamControls');
     if (!pill) return;
