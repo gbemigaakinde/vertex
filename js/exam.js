@@ -1476,124 +1476,149 @@
   /* Results                                                 */
   /* ─────────────────────────────────────────────────────── */
   function renderResults(exam, result) {
-    const gradeColor = result.grade === 'A' ? 'var(--success)'
-                     : result.grade === 'B' ? 'var(--info)'
-                     : result.grade === 'C' ? 'var(--warning)'
-                     : result.grade === 'D' ? 'var(--warning)'
-                     : 'var(--danger)';
+  const gradeColor = result.grade === 'A' ? 'var(--success)'
+                   : result.grade === 'B' ? 'var(--info)'
+                   : result.grade === 'C' ? 'var(--warning)'
+                   : result.grade === 'D' ? 'var(--warning)'
+                   : 'var(--danger)';
 
-    const gradeIconName = result.grade === 'A' ? 'Trophy'
-                        : result.grade === 'B' ? 'Medal'
-                        : result.grade === 'C' ? 'ThumbsUp'
-                        : result.grade === 'D' ? 'Books'
-                        : 'Fist';
+  const gradeIconName = result.grade === 'A' ? 'Trophy'
+                      : result.grade === 'B' ? 'Medal'
+                      : result.grade === 'C' ? 'ThumbsUp'
+                      : result.grade === 'D' ? 'Books'
+                      : 'Fist';
 
-    UI.mount(`
-      <div class="max-w-4xl mx-auto glass animate-fadeIn" style="padding:1.5rem;margin-top:1.5rem;margin-bottom:1.5rem;">
+  UI.mount(`
+    <div class="max-w-4xl mx-auto glass animate-fadeIn" style="padding:1.5rem;margin-top:1.5rem;margin-bottom:1.5rem;">
 
-        <div class="text-center mb-6">
-          <div class="inline-flex items-center gap-2 mb-3"
-               style="background:var(--success-bg);border:1px solid var(--success-border);border-radius:99px;padding:.375rem 1rem;">
-            <span style="color:var(--success);display:inline-flex;align-items:center;">${_icon('CheckCircle', 15)}</span>
-            <span style="color:var(--success);font-size:0.875rem;font-weight:600;">Submitted</span>
-          </div>
-          <h1 style="font-size:1.625rem;font-weight:700;">Exam Complete</h1>
-          <p style="font-size:0.875rem;color:var(--text-3);margin-top:4px;">
-            ${_escHtml(result.name)} &bull; ${_escHtml(result.class)} &bull; ${_escHtml(result.school)}
-          </p>
+      <div class="text-center mb-6">
+        <div class="inline-flex items-center gap-2 mb-3"
+             style="background:var(--success-bg);border:1px solid var(--success-border);border-radius:99px;padding:.375rem 1rem;">
+          <span style="color:var(--success);display:inline-flex;align-items:center;">${_icon('CheckCircle', 15)}</span>
+          <span style="color:var(--success);font-size:0.875rem;font-weight:600;">Submitted</span>
         </div>
-
-        <div style="text-align:center;padding:2rem 1rem;border-radius:var(--r-xl);
-                    background:var(--bg-subtle);margin-bottom:1.5rem;">
-          <div style="display:flex;align-items:baseline;justify-content:center;gap:0.25rem;">
-            <span id="vtxScoreCount" class="vtx-score-display" style="color:${gradeColor};">0</span>
-            <span style="font-size:1.5rem;font-weight:700;color:${gradeColor};">%</span>
-          </div>
-          <div style="margin-top:0.5rem;display:flex;align-items:center;justify-content:center;gap:0.5rem;">
-            <span style="font-size:1.25rem;font-weight:700;color:${gradeColor};">Grade ${result.grade}</span>
-            <span style="color:${gradeColor};display:inline-flex;align-items:center;" id="vtxGradeIcon">${_icon(gradeIconName, 24)}</span>
-          </div>
-          <div style="display:flex;flex-wrap:wrap;gap:0.75rem;justify-content:center;margin-top:1.25rem;">
-            ${result.subjects.map(s => `
-              <div class="cbt-score-card">
-                <div style="font-size:0.75rem;color:var(--text-3);font-weight:500;">${_escHtml(s)}</div>
-                <div style="font-size:1.125rem;font-weight:700;color:var(--text-1);">${result.scores[s]}%</div>
-                <div style="font-size:0.6875rem;color:var(--text-4);">${result.correctCounts[s]}/${exam.questions[s].length}</div>
-              </div>`).join('')}
-          </div>
-        </div>
-
-        <p style="font-size:0.875rem;color:var(--text-3);text-align:center;margin-bottom:1.25rem;">
-          Click a subject below to review your answers and explanations.
+        <h1 style="font-size:1.625rem;font-weight:700;">Exam Complete</h1>
+        <p style="font-size:0.875rem;color:var(--text-3);margin-top:4px;">
+          ${_escHtml(result.name)} &bull; ${_escHtml(result.class)} &bull; ${_escHtml(result.school)}
         </p>
+      </div>
 
-        <div style="display:flex;flex-direction:column;gap:0.625rem;margin-bottom:1.5rem;">
-          ${exam.subjects.map(subj => {
-            const qs = exam.questions[subj];
-            return `
-              <details style="border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;">
-                <summary style="padding:.875rem 1.125rem;font-size:.9375rem;font-weight:700;cursor:pointer;
-                                list-style:none;display:flex;align-items:center;justify-content:space-between;
-                                background:var(--bg-subtle);user-select:none;">
-                  <span>${_escHtml(subj)} — ${result.correctCounts[subj]}/${qs.length} Correct (${result.scores[subj]}%)</span>
-                  <span style="font-size:1.125rem;color:var(--text-4);transition:transform .15s;">›</span>
-                </summary>
-                <div style="padding:1rem;display:flex;flex-direction:column;gap:0.75rem;background:var(--bg-base);">
-                  ${qs.map((q, i) => {
-                    const userAns = exam.answers[`${subj}-${i}`];
-                    const correct = userAns === q.ans;
-                    const borderStyle = correct
-                      ? 'border-left:3px solid var(--success);background:var(--success-subtle);'
-                      : userAns === undefined
-                      ? 'border-left:3px solid var(--border-strong);background:var(--bg-subtle);'
-                      : 'border-left:3px solid var(--danger);background:var(--danger-subtle);';
-                    return `
-                      <div style="border-radius:var(--r-lg);padding:1rem;border:1px solid var(--border);${borderStyle}">
-                        <p style="font-weight:600;margin-bottom:.75rem;font-size:.9375rem;">${i + 1}. ${_safeQ(q.q)}</p>
-                        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;font-size:.8125rem;margin-bottom:.75rem;">
-                          <div>
-                            <span style="font-weight:600;color:var(--text-3);">Your answer:</span>
-                            <span style="margin-left:.375rem;font-weight:500;
-                                         color:${correct ? 'var(--success)' : userAns === undefined ? 'var(--text-4)' : 'var(--danger)'};">
-                              ${userAns !== undefined ? _safeQ(q.opts[userAns]) : 'Not answered'}
-                            </span>
-                          </div>
-                          <div>
-                            <span style="font-weight:600;color:var(--text-3);">Correct:</span>
-                            <span style="margin-left:.375rem;font-weight:500;color:var(--success);">${_safeQ(q.opts[q.ans])}</span>
-                          </div>
-                        </div>
-                        <div style="background:var(--bg-subtle);border:1px solid var(--border);border-radius:var(--r-sm);
-                                    padding:.625rem .875rem;font-size:.8125rem;color:var(--text-2);line-height:1.6;">
-                          <span style="font-weight:600;">Explanation:</span> ${_safeQ(q.exp)}
-                        </div>
-                      </div>`;
-                  }).join('')}
-                </div>
-              </details>`;
-          }).join('')}
+      <div style="text-align:center;padding:2rem 1rem;border-radius:var(--r-xl);
+                  background:var(--bg-subtle);margin-bottom:1.5rem;">
+        <div style="display:flex;align-items:baseline;justify-content:center;gap:0.25rem;">
+          <span id="vtxScoreCount" class="vtx-score-display" style="color:${gradeColor};">0</span>
+          <span style="font-size:1.5rem;font-weight:700;color:${gradeColor};">%</span>
         </div>
-
-        <div style="display:flex;flex-wrap:wrap;gap:0.75rem;justify-content:center;">
-          <button onclick="Exam._shareWhatsApp()" class="btn bg-green-600">Share on WhatsApp</button>
-          <button onclick="Exam._copyResult()"    class="btn bg-blue-600">Copy Result</button>
-          <button onclick="Exam.renderSubjectSelection()" class="btn">Back to Dashboard</button>
+        <div style="margin-top:0.5rem;display:flex;align-items:center;justify-content:center;gap:0.5rem;">
+          <span style="font-size:1.25rem;font-weight:700;color:${gradeColor};">Grade ${result.grade}</span>
+          <span style="color:${gradeColor};display:inline-flex;align-items:center;" id="vtxGradeIcon">${_icon(gradeIconName, 24)}</span>
         </div>
+        <div style="display:flex;flex-wrap:wrap;gap:0.75rem;justify-content:center;margin-top:1.25rem;">
+          ${result.subjects.map(s => `
+            <div class="cbt-score-card">
+              <div style="font-size:0.75rem;color:var(--text-3);font-weight:500;">${_escHtml(s)}</div>
+              <div style="font-size:1.125rem;font-weight:700;color:var(--text-1);">${result.scores[s]}%</div>
+              <div style="font-size:0.6875rem;color:var(--text-4);">${result.correctCounts[s]}/${exam.questions[s].length}</div>
+            </div>`).join('')}
+        </div>
+      </div>
 
-      </div>`);
+      <!-- Voice control bar for results page -->
+      <div class="se-results-voice-bar" id="seResultsVoiceBar">
+        <div class="vtx-speech-pill" id="seResultsSpeechPill">
+          <button class="se-stt-btn vtx-speech-btn" id="seResultsSttBtn"
+                  title="Voice commands for results page" aria-label="Voice commands">
+            <i class="ph ph-microphone" style="font-size:15px;"></i>
+            <span class="vtx-speech-label">Voice Commands</span>
+          </button>
+        </div>
+        <span class="se-results-voice-hint">Say "explain question 3 in Maths", "back to dashboard", "share on WhatsApp"…</span>
+      </div>
 
-    _currentResultForShare = { exam, result };
-    _countUp('vtxScoreCount', result.percentage, 1200);
+      <p style="font-size:0.875rem;color:var(--text-3);text-align:center;margin-bottom:1.25rem;">
+        Click a subject below to review your answers and explanations.
+      </p>
 
-    document.querySelectorAll('details').forEach(function (det) {
-      det.addEventListener('toggle', function () {
-        const arrow = det.querySelector('summary span:last-child');
-        if (arrow) arrow.style.transform = det.open ? 'rotate(90deg)' : '';
-      });
+      <div style="display:flex;flex-direction:column;gap:0.625rem;margin-bottom:1.5rem;">
+        ${exam.subjects.map(subj => {
+          const qs = exam.questions[subj];
+          return `
+            <details style="border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;">
+              <summary style="padding:.875rem 1.125rem;font-size:.9375rem;font-weight:700;cursor:pointer;
+                              list-style:none;display:flex;align-items:center;justify-content:space-between;
+                              background:var(--bg-subtle);user-select:none;">
+                <span>${_escHtml(subj)} — ${result.correctCounts[subj]}/${qs.length} Correct (${result.scores[subj]}%)</span>
+                <span style="font-size:1.125rem;color:var(--text-4);transition:transform .15s;">›</span>
+              </summary>
+              <div style="padding:1rem;display:flex;flex-direction:column;gap:0.75rem;background:var(--bg-base);">
+                ${qs.map((q, i) => {
+                  const userAns = exam.answers[`${subj}-${i}`];
+                  const correct = userAns === q.ans;
+                  const borderStyle = correct
+                    ? 'border-left:3px solid var(--success);background:var(--success-subtle);'
+                    : userAns === undefined
+                    ? 'border-left:3px solid var(--border-strong);background:var(--bg-subtle);'
+                    : 'border-left:3px solid var(--danger);background:var(--danger-subtle);';
+                  return `
+                    <div style="border-radius:var(--r-lg);padding:1rem;border:1px solid var(--border);${borderStyle}">
+                      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;margin-bottom:.75rem;">
+                        <p style="font-weight:600;font-size:.9375rem;margin:0;">${i + 1}. ${_safeQ(q.q)}</p>
+                        <button
+                          onclick="SpeechEngine.showExplanationModal(${i + 1}, '${_escAttr(subj)}')"
+                          class="se-explain-trigger-btn"
+                          title="Get AI explanation for this question"
+                          aria-label="Explain question ${i + 1}">
+                          <i class="ph ph-chats"></i> Explain
+                        </button>
+                      </div>
+                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;font-size:.8125rem;margin-bottom:.75rem;">
+                        <div>
+                          <span style="font-weight:600;color:var(--text-3);">Your answer:</span>
+                          <span style="margin-left:.375rem;font-weight:500;
+                                       color:${correct ? 'var(--success)' : userAns === undefined ? 'var(--text-4)' : 'var(--danger)'};">
+                            ${userAns !== undefined ? _safeQ(q.opts[userAns]) : 'Not answered'}
+                          </span>
+                        </div>
+                        <div>
+                          <span style="font-weight:600;color:var(--text-3);">Correct:</span>
+                          <span style="margin-left:.375rem;font-weight:500;color:var(--success);">${_safeQ(q.opts[q.ans])}</span>
+                        </div>
+                      </div>
+                      <div style="background:var(--bg-subtle);border:1px solid var(--border);border-radius:var(--r-sm);
+                                  padding:.625rem .875rem;font-size:.8125rem;color:var(--text-2);line-height:1.6;">
+                        <span style="font-weight:600;">Explanation:</span> ${_safeQ(q.exp)}
+                      </div>
+                    </div>`;
+                }).join('')}
+              </div>
+            </details>`;
+        }).join('')}
+      </div>
+
+      <div style="display:flex;flex-wrap:wrap;gap:0.75rem;justify-content:center;">
+        <button onclick="Exam._shareWhatsApp()" class="btn bg-green-600">Share on WhatsApp</button>
+        <button onclick="Exam._copyResult()"    class="btn bg-blue-600">Copy Result</button>
+        <button onclick="Exam.renderSubjectSelection()" class="btn">Back to Dashboard</button>
+      </div>
+
+    </div>`);
+
+  _currentResultForShare = { exam, result };
+  _countUp('vtxScoreCount', result.percentage, 1200);
+
+  document.querySelectorAll('details').forEach(function (det) {
+    det.addEventListener('toggle', function () {
+      const arrow = det.querySelector('summary span:last-child');
+      if (arrow) arrow.style.transform = det.open ? 'rotate(90deg)' : '';
     });
+  });
 
-    _renderKatex();
+  if (window.SpeechEngine && typeof SpeechEngine.wireResultsButtons === 'function') {
+    SpeechEngine.wireResultsButtons(exam, result);
   }
+
+  _renderKatex();
+}
 
   function _countUp(id, target, duration) {
     const el = document.getElementById(id);
