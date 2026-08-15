@@ -329,7 +329,15 @@
 
       const ttData  = snap.data() || {};
       const weekKey = _isoWeekKey();
-      const tt      = (ttData.timetables || {})[weekKey];
+
+      /* Priority: week-specific → permanent → nothing */
+      const allTimetables = ttData.timetables || {};
+      let tt = allTimetables[weekKey];
+      let isUsingPermanent = false;
+      if (!tt || !Array.isArray(tt.periods) || tt.periods.length === 0) {
+        tt = allTimetables['permanent'];
+        isUsingPermanent = true;
+      }
       if (!tt || !Array.isArray(tt.periods) || tt.periods.length === 0) return '';
 
       const periods = tt.periods;
@@ -369,6 +377,29 @@
         return { start: +m[1] * 60 + +m[2], end: +m[3] * 60 + +m[4] };
       }
 
+      /* Find the current active period index (used for row highlight and "now" badge) */
+      function _getCurrentPeriodIndex() {
+        if (todayColIdx < 0) return -1;
+        for (let i = 0; i < periods.length; i++) {
+          const range = parseMins(periods[i].time || '');
+          if (range && nowMin >= range.start && nowMin < range.end) return i;
+        }
+        return -1;
+      }
+
+      /* Find the next upcoming period index for today */
+      function _getNextPeriodIndex() {
+        if (todayColIdx < 0) return -1;
+        for (let i = 0; i < periods.length; i++) {
+          const range = parseMins(periods[i].time || '');
+          if (range && nowMin < range.start) return i;
+        }
+        return -1;
+      }
+
+      const currentPeriodIdx = _getCurrentPeriodIndex();
+      const nextPeriodIdx    = _getNextPeriodIndex();
+
       const sunday = new Date(monday);
       sunday.setDate(monday.getDate() + 6);
       const rangeLabel =
@@ -381,30 +412,58 @@
       const TH = 'padding:.4375rem .5rem;border:1px solid rgba(255,255,255,.18);' +
                  'font-size:.75rem;font-weight:700;text-align:center;white-space:nowrap;';
 
-      const tableRows = periods.map(function (p) {
-        const range     = parseMins(p.time || '');
-        const isCurrent = todayColIdx >= 0 && range !== null &&
-                          nowMin >= range.start && nowMin < range.end;
+      const tableRows = periods.map(function (p, rowIdx) {
+        const range          = parseMins(p.time || '');
+        const isCurrentPeriod = rowIdx === currentPeriodIdx;
+        const isNextPeriod    = rowIdx === nextPeriodIdx;
 
         const vals      = DAY_KEYS.map(function (dk) { return (p[dk] || '').trim(); });
         const firstUp   = vals[0].toUpperCase();
         const allSame   = firstUp !== '' && vals.every(function (v) { return v.toUpperCase() === firstUp; });
         const isSpecial = allSame && (firstUp === 'BREAK' || firstUp === 'LUNCH');
 
-        const rowBg = isCurrent ? 'var(--warning-subtle)' : isSpecial ? 'var(--bg-subtle)' : 'var(--bg-base)';
-        const lBorder = isCurrent ? 'border-left:3px solid var(--warning);' : '';
+        const rowBg     = isCurrentPeriod ? 'var(--warning-subtle)'
+                        : isNextPeriod    ? 'rgba(79,110,247,.04)'
+                        : isSpecial       ? 'var(--bg-subtle)'
+                        : 'var(--bg-base)';
+        const lBorder   = isCurrentPeriod ? 'border-left:3px solid var(--warning);'
+                        : isNextPeriod    ? 'border-left:2px solid var(--accent-border);'
+                        : '';
+
+        /* Minutes remaining until end of current period */
+        let nowBadge = '';
+        if (isCurrentPeriod && range) {
+          const minsLeft = range.end - nowMin;
+          nowBadge = `<span style="display:inline-flex;align-items:center;gap:3px;
+                         margin-left:5px;font-size:.55rem;font-weight:700;letter-spacing:.04em;
+                         padding:1px 5px;border-radius:99px;
+                         background:var(--warning);color:#fff;vertical-align:middle;
+                         animation:cbt-pulse 1.5s ease-in-out infinite;">
+                        NOW · ${minsLeft}min left
+                      </span>`;
+        }
+        if (isNextPeriod && range) {
+          const minsUntil = range.start - nowMin;
+          nowBadge = `<span style="display:inline-flex;align-items:center;gap:3px;
+                         margin-left:5px;font-size:.55rem;font-weight:600;letter-spacing:.04em;
+                         padding:1px 5px;border-radius:99px;
+                         background:var(--accent-subtle);color:var(--accent-text);vertical-align:middle;">
+                        NEXT · in ${minsUntil}min
+                      </span>`;
+        }
 
         const timeCell =
           '<td style="' + CB + lBorder + 'background:' + rowBg + ';' +
             'font-family:var(--font-mono);font-size:.75rem;font-weight:600;' +
-            'color:' + (isCurrent ? 'var(--warning)' : 'var(--text-3)') + ';' +
+            'color:' + (isCurrentPeriod ? 'var(--warning)' : isNextPeriod ? 'var(--accent)' : 'var(--text-3)') + ';' +
             'white-space:nowrap;min-width:86px;">' +
-            (isCurrent
-              ? '<span style="display:inline-block;width:6px;height:6px;border-radius:50%;' +
+            (isCurrentPeriod
+              ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;' +
                 'background:var(--warning);margin-right:5px;vertical-align:middle;' +
                 'animation:cbt-pulse 1s ease-in-out infinite;"></span>'
               : '') +
             _escHtml(p.time || '—') +
+            nowBadge +
           '</td>';
 
         if (isSpecial) {
@@ -416,15 +475,20 @@
         }
 
         var dayCells = DAY_KEYS.map(function (dk, ci) {
-          var isToday = ci === todayColIdx;
-          var val     = (p[dk] || '').trim();
-          var empty   = val === '';
-          var bg      = isToday
-            ? (isCurrent ? 'rgba(217,119,6,.09)' : 'rgba(79,110,247,.055)')
+          var isToday  = ci === todayColIdx;
+          var val      = (p[dk] || '').trim();
+          var empty    = val === '';
+          var bg = isCurrentPeriod && isToday
+            ? 'rgba(217,119,6,.14)'
+            : isNextPeriod && isToday
+            ? 'rgba(79,110,247,.08)'
+            : isToday
+            ? 'rgba(79,110,247,.055)'
             : rowBg;
+
           return '<td style="' + CB + 'background:' + bg + ';text-align:center;' +
-            'color:' + (empty ? 'var(--text-4)' : isToday ? 'var(--text-1)' : 'var(--text-2)') + ';' +
-            'font-weight:' + (isToday && !empty ? '600' : '400') + ';' +
+            'color:' + (empty ? 'var(--text-4)' : (isCurrentPeriod && isToday) ? 'var(--warning-text)' : isToday ? 'var(--text-1)' : 'var(--text-2)') + ';' +
+            'font-weight:' + ((isCurrentPeriod && isToday && !empty) ? '700' : isToday && !empty ? '600' : '400') + ';' +
             'font-size:' + (empty ? '.7rem' : '.8rem') + ';">' +
             (empty ? '<span style="opacity:.28;">—</span>' : _escHtml(val)) +
             '</td>';
@@ -453,9 +517,45 @@
             'line-height:1.6;font-style:italic;">📌 ' + _escHtml(note) + '</div>'
         : '';
 
+      /* Legend for current/next period */
+      const legendHtml = (todayColIdx >= 0 && (currentPeriodIdx >= 0 || nextPeriodIdx >= 0))
+        ? '<div style="display:flex;flex-wrap:wrap;gap:.5rem;padding:.5rem 1rem;' +
+            'border-top:1px solid var(--border);background:var(--bg-subtle);">' +
+            (currentPeriodIdx >= 0
+              ? '<span style="display:inline-flex;align-items:center;gap:.3rem;' +
+                'font-size:.6875rem;color:var(--warning-text);">' +
+                '<span style="width:8px;height:8px;border-radius:50%;background:var(--warning);' +
+                'display:inline-block;animation:cbt-pulse 1s ease-in-out infinite;"></span>' +
+                'Current period</span>' : '') +
+            (nextPeriodIdx >= 0
+              ? '<span style="display:inline-flex;align-items:center;gap:.3rem;' +
+                'font-size:.6875rem;color:var(--accent-text);">' +
+                '<span style="width:8px;height:8px;border-radius:50%;background:var(--accent);' +
+                'display:inline-block;opacity:.5;"></span>' +
+                'Next period</span>' : '') +
+          '</div>'
+        : '';
+
+      /* Permanent badge in header */
+      const permanentBadge = isUsingPermanent
+        ? '<span style="flex-shrink:0;font-size:.6875rem;font-weight:700;' +
+            'padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.18);' +
+            'color:#fff;border:1px solid rgba(255,255,255,.3);white-space:nowrap;">♾ Permanent</span>'
+        : (todayColIdx >= 0
+            ? '<span style="margin-left:auto;flex-shrink:0;font-size:.6875rem;font-weight:700;' +
+                'padding:2px 9px;border-radius:99px;background:rgba(255,255,255,.18);' +
+                'color:#fff;border:1px solid rgba(255,255,255,.3);white-space:nowrap;">' +
+                'Today: ' + DAY_SHORT[todayColIdx] + ', ' +
+                dayDates[todayColIdx].dayNum + ' ' + dayDates[todayColIdx].monthSh +
+              '</span>'
+            : '');
+
+      /* Unique ID for this timetable widget (for PDF targeting) */
+      const tableId = 'vtxTTTable_' + classKey;
+
       return (
         '<div style="margin-bottom:1.25rem;border:1px solid var(--border);border-radius:10px;' +
-          'overflow:hidden;box-shadow:var(--shadow-sm);">' +
+          'overflow:hidden;box-shadow:var(--shadow-sm);" id="vtxTimetableWidget">' +
 
           '<div style="padding:.75rem 1rem;background:var(--accent);' +
             'display:flex;align-items:center;gap:.625rem;flex-wrap:wrap;">' +
@@ -466,22 +566,30 @@
                 'M208,208H48V96H208ZM48,80V48H72v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80Z"/>' +
               '</svg>' +
             '</span>' +
-            '<div>' +
+            '<div style="flex:1;min-width:0;">' +
               '<p style="font-size:.875rem;font-weight:700;color:#fff;line-height:1.2;">Class Timetable</p>' +
-              '<p style="font-size:.6875rem;color:rgba(255,255,255,.75);margin-top:1px;">' + _escHtml(rangeLabel) + '</p>' +
+              '<p style="font-size:.6875rem;color:rgba(255,255,255,.75);margin-top:1px;">' +
+                (isUsingPermanent ? 'Permanent schedule · ' : '') + _escHtml(rangeLabel) +
+              '</p>' +
             '</div>' +
-            (todayColIdx >= 0
-              ? '<span style="margin-left:auto;flex-shrink:0;font-size:.6875rem;font-weight:700;' +
-                  'padding:2px 9px;border-radius:99px;background:rgba(255,255,255,.18);' +
-                  'color:#fff;border:1px solid rgba(255,255,255,.3);white-space:nowrap;">' +
-                  'Today: ' + DAY_SHORT[todayColIdx] + ', ' +
-                  dayDates[todayColIdx].dayNum + ' ' + dayDates[todayColIdx].monthSh +
-                '</span>'
-              : '') +
+            permanentBadge +
+            /* Download button — Phosphor download-simple icon */
+            '<button onclick="Exam._downloadTimetablePDF()" ' +
+              'title="Download timetable as PDF" ' +
+              'aria-label="Download timetable as PDF" ' +
+              'style="flex-shrink:0;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.32);' +
+                'border-radius:7px;width:32px;height:32px;cursor:pointer;display:inline-flex;' +
+                'align-items:center;justify-content:center;color:#fff;' +
+                'transition:background .14s,transform .14s;padding:0;" ' +
+              'onmouseenter="this.style.background=\'rgba(255,255,255,.30)\';this.style.transform=\'scale(1.07)\'" ' +
+              'onmouseleave="this.style.background=\'rgba(255,255,255,.18)\';this.style.transform=\'\'">' +
+              '<i class="ph ph-download-simple" style="font-size:16px;pointer-events:none;"></i>' +
+            '</button>' +
           '</div>' +
 
           '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">' +
-            '<table style="width:100%;border-collapse:collapse;min-width:440px;background:var(--bg-base);">' +
+            '<table style="width:100%;border-collapse:collapse;min-width:440px;background:var(--bg-base);" ' +
+              'id="' + _escHtml(tableId) + '">' +
               '<thead>' +
                 '<tr style="background:var(--accent-hover);">' +
                   '<th style="' + TH + 'background:transparent;text-align:left;' +
@@ -493,6 +601,7 @@
             '</table>' +
           '</div>' +
 
+          legendHtml +
           noteHtml +
 
         '</div>'
@@ -1776,6 +1885,378 @@
   }
   function _escAttr(str) { return _escHtml(str).replace(/'/g,'&#39;'); }
 
+/* ─────────────────────────────────────────────────────── */
+  /* Timetable PDF download (student)                        */
+  /* ─────────────────────────────────────────────────────── */
+  function _loadJsPDFForTimetable() {
+    return new Promise((resolve, reject) => {
+      if (window.jspdf && window.jspdf.jsPDF) { resolve(window.jspdf.jsPDF); return; }
+      function loadScript(src) {
+        return new Promise((res, rej) => {
+          const s = document.createElement('script');
+          s.src = src; s.onload = res; s.onerror = rej;
+          document.head.appendChild(s);
+        });
+      }
+      loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js')
+        .then(() => loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js'))
+        .then(() => resolve(window.jspdf.jsPDF))
+        .catch(reject);
+    });
+  }
+
+  async function _downloadTimetablePDF() {
+    if (!S().studentData) { UI.toast('Student data not loaded.', 'error'); return; }
+
+    UI.toast('Generating timetable PDF…', 'info', 3000);
+
+    let jsPDF;
+    try {
+      jsPDF = await _loadJsPDFForTimetable();
+    } catch (e) {
+      UI.toast('Could not load PDF library. Check your internet connection.', 'error');
+      return;
+    }
+
+    /* Fetch timetable data fresh */
+    const classKey = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
+    let periods = [], note = '', isUsingPermanent = false, rangeLabel = '';
+
+    try {
+      const snap = await window.fbDb.collection('weeklyTimetable').doc(classKey).get();
+      if (snap && snap.exists) {
+        const allTimetables = (snap.data() || {}).timetables || {};
+        const weekKey = _isoWeekKey();
+        let tt = allTimetables[weekKey];
+        if (!tt || !Array.isArray(tt.periods) || tt.periods.length === 0) {
+          tt = allTimetables['permanent'];
+          isUsingPermanent = true;
+        }
+        if (tt && Array.isArray(tt.periods)) {
+          periods = tt.periods;
+          note    = tt.note || '';
+        }
+      }
+    } catch (e) {
+      UI.toast('Failed to fetch timetable data.', 'error');
+      return;
+    }
+
+    if (periods.length === 0) {
+      UI.toast('No timetable data to export.', 'warning');
+      return;
+    }
+
+    /* Compute week range label */
+    const now    = new Date();
+    const dow    = now.getDay();
+    const diff   = dow === 0 ? -6 : 1 - dow;
+    const monday = new Date(now);
+    monday.setDate(now.getDate() + diff);
+    monday.setHours(0, 0, 0, 0);
+    const sunday = new Date(monday);
+    sunday.setDate(monday.getDate() + 6);
+    const opts = { day: 'numeric', month: 'short', year: 'numeric' };
+    rangeLabel = monday.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) +
+                 ' – ' + sunday.toLocaleDateString('en-GB', opts);
+
+    /* Day date headers */
+    const DAY_KEYS  = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
+    const DAY_FULL  = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'];
+    const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+
+    const todayStr = _todayStr();
+    const dayDates = DAY_KEYS.map((_, i) => {
+      const dt = new Date(monday);
+      dt.setDate(monday.getDate() + i);
+      return {
+        dayNum:  dt.getDate(),
+        monthSh: dt.toLocaleDateString('en-GB', { month: 'short' }),
+        dateStr: dt.getFullYear() + '-' + String(dt.getMonth() + 1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0'),
+      };
+    });
+    const todayColIdx = dayDates.findIndex(dd => dd.dateStr === todayStr);
+    const nowMin = now.getHours() * 60 + now.getMinutes();
+
+    function parseMins(t) {
+      if (!t) return null;
+      const m = t.match(/(\d{1,2}):(\d{2})\s*[–\-—]\s*(\d{1,2}):(\d{2})/);
+      if (!m) return null;
+      return { start: +m[1] * 60 + +m[2], end: +m[3] * 60 + +m[4] };
+    }
+
+    /* jsPDF setup */
+    const doc      = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+    const PAGE_W   = 297;
+    const PAGE_H   = 210;
+    const MARGIN   = 14;
+    const CONTENT_W = PAGE_W - MARGIN * 2;
+
+    const C = {
+      accent:      [79, 110, 247],
+      accentLight: [237, 242, 255],
+      accentBorder:[186, 200, 255],
+      warning:     [217, 119, 6],
+      warningBg:   [255, 251, 235],
+      warningBorder:[253, 230, 138],
+      success:     [26, 158, 82],
+      successBg:   [236, 253, 245],
+      danger:      [224, 59, 59],
+      text:        [13, 13, 15],
+      textSec:     [58, 58, 64],
+      textTert:    [107, 107, 114],
+      textDis:     [154, 154, 163],
+      border:      [226, 226, 230],
+      surface:     [255, 255, 255],
+      surfaceMuted:[240, 240, 242],
+      surfaceSubtle:[247,247,248],
+      breakBg:     [243, 244, 246],
+    };
+
+    let y = 0;
+
+    /* ── Header ── */
+    /* Accent bar across top */
+    doc.setFillColor(...C.accent);
+    doc.rect(0, 0, PAGE_W, 18, 'F');
+
+    /* School / student info */
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 255, 255);
+    doc.text('Class Timetable', MARGIN, 11);
+
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    const studentMeta = `${S().studentData.name}  ·  ${S().studentData.class}  ·  ${S().studentData.school}`;
+    doc.text(studentMeta, MARGIN, 16);
+
+    /* Right side: week range + permanent badge */
+    doc.setFontSize(7.5);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(255, 255, 255);
+    const rightLabel = isUsingPermanent ? '♾ Permanent Schedule' : rangeLabel;
+    doc.text(rightLabel, PAGE_W - MARGIN, 9, { align: 'right' });
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(6.5);
+    doc.text('Generated ' + now.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }),
+      PAGE_W - MARGIN, 14.5, { align: 'right' });
+
+    y = 24;
+
+    /* ── Timetable table ── */
+    /* Build head row */
+    const head = [['Time / Period', ...DAY_FULL.map((d, i) => {
+      const dd = dayDates[i];
+      return d + '\n' + dd.dayNum + ' ' + dd.monthSh;
+    })]];
+
+    /* Build body rows */
+    const body = periods.map(p => {
+      const vals    = DAY_KEYS.map(dk => (p[dk] || '').trim());
+      const firstUp = vals[0].toUpperCase();
+      const allSame = firstUp !== '' && vals.every(v => v.toUpperCase() === firstUp);
+      const isSpec  = allSame && (firstUp === 'BREAK' || firstUp === 'LUNCH');
+      const time    = p.time || '';
+      if (isSpec) {
+        return [time, firstUp === 'LUNCH' ? 'LUNCH BREAK' : 'BREAK', '', '', '', ''];
+      }
+      return [time, ...vals.map(v => v || '')];
+    });
+
+    const COL_W_TIME = 28;
+    const COL_W_DAY  = (CONTENT_W - COL_W_TIME) / 5;
+
+    doc.autoTable({
+      startY: y,
+      head:   head,
+      body:   body,
+      margin: { left: MARGIN, right: MARGIN },
+      tableWidth: CONTENT_W,
+      headStyles: {
+        fillColor:   C.accent,
+        textColor:   [255, 255, 255],
+        fontStyle:   'bold',
+        fontSize:    8,
+        halign:      'center',
+        valign:      'middle',
+        cellPadding: { top: 3, bottom: 3, left: 3, right: 3 },
+      },
+      columnStyles: {
+        0: { cellWidth: COL_W_TIME, halign: 'left',   fontStyle: 'bold', fontSize: 7,
+             font: 'courier', fillColor: C.surfaceMuted },
+        1: { cellWidth: COL_W_DAY, halign: 'center' },
+        2: { cellWidth: COL_W_DAY, halign: 'center' },
+        3: { cellWidth: COL_W_DAY, halign: 'center' },
+        4: { cellWidth: COL_W_DAY, halign: 'center' },
+        5: { cellWidth: COL_W_DAY, halign: 'center' },
+      },
+      bodyStyles: {
+        fontSize:    8,
+        textColor:   C.text,
+        cellPadding: { top: 4, bottom: 4, left: 3, right: 3 },
+        valign:      'middle',
+        halign:      'center',
+        minCellHeight: 9,
+      },
+      alternateRowStyles: { fillColor: C.surfaceSubtle },
+      tableLineColor: C.border,
+      tableLineWidth: 0.25,
+      theme: 'grid',
+      willDrawCell: function (data) {
+        if (data.section !== 'body') return;
+
+        const rowIdx  = data.row.index;
+        const colIdx  = data.column.index;
+        const p       = periods[rowIdx];
+        if (!p) return;
+
+        const vals    = DAY_KEYS.map(dk => (p[dk] || '').trim());
+        const firstUp = vals[0].toUpperCase();
+        const allSame = firstUp !== '' && vals.every(v => v.toUpperCase() === firstUp);
+        const isSpec  = allSame && (firstUp === 'BREAK' || firstUp === 'LUNCH');
+
+        /* Special rows: subtle grey wash */
+        if (isSpec) {
+          doc.setFillColor(...C.breakBg);
+          doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+          return;
+        }
+
+        const range          = parseMins(p.time || '');
+        const isCurrentPeriod = range && todayColIdx >= 0 && nowMin >= range.start && nowMin < range.end;
+        const isNextPeriod    = range && todayColIdx >= 0 && nowMin < range.start &&
+                                periods.slice(0, rowIdx).every(pp => {
+                                  const r2 = parseMins(pp.time || '');
+                                  return !r2 || nowMin >= r2.end;
+                                });
+
+        /* Today column highlight */
+        if (colIdx - 1 === todayColIdx) {
+          if (isCurrentPeriod) {
+            doc.setFillColor(...C.warningBg);
+          } else {
+            doc.setFillColor(237, 242, 255); // accent-subtle
+          }
+          doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+        }
+
+        /* Current period row: warm left rule */
+        if (isCurrentPeriod && colIdx === 0) {
+          doc.setFillColor(...C.warningBg);
+          doc.rect(data.cell.x, data.cell.y, data.cell.width, data.cell.height, 'F');
+          doc.setFillColor(...C.warning);
+          doc.rect(data.cell.x, data.cell.y, 2, data.cell.height, 'F');
+        }
+      },
+      didDrawCell: function (data) {
+        if (data.section !== 'body') return;
+
+        const rowIdx  = data.row.index;
+        const colIdx  = data.column.index;
+        const p       = periods[rowIdx];
+        if (!p) return;
+
+        const vals    = DAY_KEYS.map(dk => (p[dk] || '').trim());
+        const firstUp = vals[0].toUpperCase();
+        const allSame = firstUp !== '' && vals.every(v => v.toUpperCase() === firstUp);
+        const isSpec  = allSame && (firstUp === 'BREAK' || firstUp === 'LUNCH');
+
+        if (isSpec && colIdx === 0) {
+          /* Draw centred BREAK/LUNCH label spanning all columns (just label in time col) */
+          return;
+        }
+
+        if (isSpec && colIdx === 1) {
+          /* Draw the label centred across all 5 day cells — approximate by drawing in col 3 (middle) */
+          const allColsX = data.cell.x;
+          const allColsW = COL_W_DAY * 5;
+          const label    = firstUp === 'LUNCH' ? 'LUNCH BREAK' : 'BREAK';
+          doc.setFontSize(8);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(...C.textTert);
+          doc.text(label, allColsX + allColsW / 2, data.cell.y + data.cell.height / 2 + 2.5, { align: 'center' });
+        }
+
+        const range           = parseMins(p.time || '');
+        const isCurrentPeriod = range && todayColIdx >= 0 && nowMin >= range.start && nowMin < range.end;
+
+        /* "NOW" pill next to time in current period */
+        if (isCurrentPeriod && colIdx === 0) {
+          const minsLeft = range.end - nowMin;
+          doc.setFontSize(5.5);
+          doc.setFont('helvetica', 'bold');
+          doc.setTextColor(...C.warning);
+          doc.text('NOW', data.cell.x + 2, data.cell.y + data.cell.height - 2.5);
+          doc.setFontSize(4.5);
+          doc.setTextColor(...C.textTert);
+          doc.text(minsLeft + 'min', data.cell.x + 2 + 8, data.cell.y + data.cell.height - 2.5);
+        }
+
+        /* Today header: accent text */
+        if (colIdx - 1 === todayColIdx) {
+          const txt = (data.cell.raw || '').toString().trim();
+          if (txt && !isSpec) {
+            doc.setFillColor(isCurrentPeriod ? C.warningBg[0] : 237, isCurrentPeriod ? C.warningBg[1] : 242, isCurrentPeriod ? C.warningBg[2] : 255);
+            doc.rect(data.cell.x + 0.1, data.cell.y + 0.1, data.cell.width - 0.2, data.cell.height - 0.2, 'F');
+            doc.setFontSize(8);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(...(isCurrentPeriod ? C.warning : C.accent));
+            doc.text(txt, data.cell.x + data.cell.width / 2, data.cell.y + data.cell.height / 2 + 2.5, { align: 'center' });
+          }
+        }
+      },
+    });
+
+    y = doc.lastAutoTable.finalY + 5;
+
+    /* ── Note ── */
+    if (note) {
+      doc.setFontSize(7);
+      doc.setFont('helvetica', 'italic');
+      doc.setTextColor(...C.textTert);
+      const noteLines = doc.splitTextToSize('📌  ' + note, CONTENT_W);
+      doc.text(noteLines, MARGIN, y);
+      y += noteLines.length * 4 + 3;
+    }
+
+    /* ── Legend ── */
+    const legendItems = [];
+    if (todayColIdx >= 0) legendItems.push({ color: C.accentLight, label: 'Today\'s column' });
+    legendItems.push({ color: C.warningBg, label: 'Current period' });
+    legendItems.push({ color: C.breakBg,  label: 'Break / Lunch' });
+
+    doc.setFontSize(6.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...C.textTert);
+    let lx = MARGIN;
+    legendItems.forEach(item => {
+      doc.setFillColor(...item.color);
+      doc.setDrawColor(...C.border);
+      doc.roundedRect(lx, y, 7, 4.5, 1, 1, 'FD');
+      doc.setTextColor(...C.textTert);
+      doc.text(item.label, lx + 9, y + 3.5);
+      lx += 9 + doc.getTextWidth(item.label) + 8;
+    });
+    y += 9;
+
+    /* ── Footer ── */
+    doc.setDrawColor(...C.border);
+    doc.setLineWidth(0.25);
+    doc.line(MARGIN, PAGE_H - 10, PAGE_W - MARGIN, PAGE_H - 10);
+    doc.setFontSize(6.5);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(...C.textDis || C.textTert);
+    doc.text('Vertex Tutorial CBT', MARGIN, PAGE_H - 5.5);
+    doc.text('Printed ' + now.toLocaleDateString('en-GB', { dateStyle: 'full' }), PAGE_W - MARGIN, PAGE_H - 5.5, { align: 'right' });
+
+    /* ── Save ── */
+    const safeName  = (S().studentData.class || 'class').replace(/[^a-z0-9]/gi, '').toLowerCase();
+    const dateStamp = todayStr.replace(/-/g, '');
+    doc.save('timetable_' + safeName + '_' + dateStamp + '.pdf');
+    UI.toast('Timetable PDF downloaded.', 'success');
+  }
+  
   /* ─────────────────────────────────────────────────────── */
   /* Public API                                              */
   /* ─────────────────────────────────────────────────────── */
@@ -1799,6 +2280,7 @@
     _isTodayTaskDayCompleted,
     _isTodayATaskDay,
     _nextUnlockedDateLabel,
+    _downloadTimetablePDF,
   };
 
 })();
