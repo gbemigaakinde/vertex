@@ -2792,7 +2792,7 @@ function _loadTimetableManager() {
                         margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.04em;">Week</label>
           <select id="ttWeekSelect" onchange="Teacher._onTTWeekChange()" style="width:100%;">
             <option value="permanent" ${_ttSelectedWeek === 'permanent' ? 'selected' : ''}>
-              ♾ Permanent Timetable (active until changed)
+             Permanent Timetable (active until changed)
             </option>
             <optgroup label="─ Week-specific ─">
               ${weekOptions.map(w => `
@@ -2911,10 +2911,10 @@ async function _ttRenderEditor() {
 
       ${isPermanent ? `
         <div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:1rem;padding:.625rem .875rem;
-                    background:var(--warning-subtle);border:1px solid var(--warning-border);
-                    border-radius:var(--r-md);font-size:var(--text-xs);color:var(--warning-text);line-height:1.6;">
-          <span style="flex-shrink:0;font-size:1rem;margin-top:1px;">♾</span>
-          <div>
+            background:var(--warning-subtle);border:1px solid var(--warning-border);
+            border-radius:var(--r-md);font-size:var(--text-xs);color:var(--warning-text);line-height:1.6;">
+            <i class="ph ph-infinity" style="flex-shrink:0;font-size:1rem;margin-top:1px;"></i>
+        <div>
             <strong>Permanent timetable:</strong> Students will see this every week, regardless of the date,
             unless a week-specific timetable exists for that week (week-specific always takes priority).
             Update it here any time and save — changes take effect immediately.
@@ -2968,7 +2968,7 @@ async function _ttRenderEditor() {
                   padding-top:.875rem;border-top:1px solid var(--border);">
         <button id="ttSaveBtn" onclick="Teacher._saveTimetable()"
                 class="btn bg-green-600" style="font-size:var(--text-sm);">
-          ${isPermanent ? '♾ Save Permanent Timetable' : 'Save Timetable'}
+          ${isPermanent ? 'Save Permanent Timetable' : 'Save Timetable'}
         </button>
         <button onclick="Teacher._clearTimetableInputs()" class="btn bg-gray-500"
                 style="font-size:var(--text-sm);">
@@ -2978,7 +2978,7 @@ async function _ttRenderEditor() {
           ? `<button onclick="Teacher._deleteTimetable('${_esc(_ttSelectedWeek)}')"
                      class="btn" style="background:var(--danger-subtle);color:var(--danger);
                                         border:1px solid var(--danger-border);font-size:var(--text-sm);">
-               ${isPermanent ? '♾ Delete Permanent' : 'Delete This Week'}
+               ${isPermanent ? 'Delete Permanent' : 'Delete This Week'}
              </button>`
           : ''}
       </div>
@@ -3043,7 +3043,7 @@ function _ttRenderAllList(docData) {
     const labelColor    = isPermanent ? 'var(--warning-text)'   : isThisWeek ? 'var(--accent-text)'   : 'var(--text-1)';
     const badgeHtml     = isPermanent
       ? `<span style="font-size:var(--text-xs);font-weight:700;padding:1px 7px;border-radius:99px;
-                      background:var(--warning);color:#fff;">♾ Permanent</span>`
+                      background:var(--warning);color:#fff;">Permanent</span>`
       : isThisWeek
       ? `<span style="font-size:var(--text-xs);font-weight:700;padding:1px 7px;border-radius:99px;
                       background:var(--accent);color:#fff;">★ Current</span>`
