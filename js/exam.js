@@ -311,26 +311,37 @@
 /* ─────────────────────────────────────────────────────── */
 /* Timetable self-tick                                     */
 /* ─────────────────────────────────────────────────────── */
-
-// Grace window in ms after a period ends during which a tick is still allowed
-const _TICK_GRACE_MS = 24 * 60 * 60 * 1000; // 24 hours
-
 async function _timetableTickPeriod(periodIndex, currentlyTicked) {
   if (!S().userId) return;
 
-  const todayStr  = _todayStr();
-  const tickRef   = window.fbDb
+  const todayStr = _todayStr();
+  const tickRef  = window.fbDb
     .collection('students').doc(S().userId)
     .collection('timetableTicks').doc(todayStr);
 
-  // Optimistic UI — flip the icon immediately
   const btn = document.getElementById('vtxTick_' + periodIndex);
   if (!btn) return;
 
   const newTicked = !currentlyTicked;
 
-  // Update button appearance immediately (optimistic)
-  _applyTickAppearance(btn, newTicked, false);
+  // Optimistic UI update
+  btn.disabled = true;
+  const icon = btn.querySelector('i');
+  if (icon) {
+    icon.className = newTicked ? 'ph-fill ph-check-circle' : 'ph ph-circle';
+    icon.style.fontSize = '13px';
+  }
+  btn.style.background   = newTicked ? 'var(--success)' : 'rgba(0,0,0,.18)';
+  btn.style.borderColor  = newTicked ? 'var(--success)' : 'rgba(255,255,255,.4)';
+
+  if (newTicked && icon) {
+    icon.style.animation = 'none';
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        icon.style.animation = 'vtxTickPop .25s cubic-bezier(.34,1.56,.64,1) both';
+      });
+    });
+  }
 
   try {
     if (newTicked) {
@@ -345,10 +356,22 @@ async function _timetableTickPeriod(periodIndex, currentlyTicked) {
         [String(periodIndex)]: firebase.firestore.FieldValue.delete(),
       }, { merge: true });
     }
+    // Re-enable only if not locked
+    btn.dataset.ticked = String(newTicked);
+    btn.disabled = false;
+    btn.onclick = function(e) {
+      e.stopPropagation();
+      Exam._timetableTickPeriod(periodIndex, newTicked);
+    };
   } catch (err) {
     console.error('[timetable tick] write error:', err);
     // Roll back optimistic update
-    _applyTickAppearance(btn, currentlyTicked, false);
+    if (icon) {
+      icon.className = currentlyTicked ? 'ph-fill ph-check-circle' : 'ph ph-circle';
+    }
+    btn.style.background  = currentlyTicked ? 'var(--success)' : 'rgba(0,0,0,.18)';
+    btn.style.borderColor = currentlyTicked ? 'var(--success)' : 'rgba(255,255,255,.4)';
+    btn.disabled = false;
     UI.toast('Could not save. Please check your connection.', 'error', 4000);
   }
 }
@@ -441,7 +464,6 @@ function _tickBtnBase() {
     const ttData  = snap.data() || {};
     const weekKey = _isoWeekKey();
 
-    /* Priority: week-specific → permanent → nothing */
     const allTimetables = ttData.timetables || {};
     let tt = allTimetables[weekKey];
     let isUsingPermanent = false;
@@ -479,8 +501,10 @@ function _tickBtnBase() {
     const todayStr    = _todayStr();
     const todayColIdx = dayDates.findIndex(dd => dd.dateStr === todayStr);
 
+    // nowMin: total minutes since midnight, used for period matching
     const nowMin = now.getHours() * 60 + now.getMinutes();
 
+    // Parses "7:30 – 8:00" or "7:30 - 8:00" etc. into { start, end } in minutes since midnight
     function parseMins(t) {
       if (!t) return null;
       const m = t.match(/(\d{1,2}):(\d{2})\s*[–\-—]\s*(\d{1,2}):(\d{2})/);
@@ -488,19 +512,20 @@ function _tickBtnBase() {
       return { start: +m[1] * 60 + +m[2], end: +m[3] * 60 + +m[4] };
     }
 
-    // Returns 'active' | 'grace' | 'locked' | 'future' | 'no-period'
-    // 'active' = period is currently running
-    // 'grace'  = period has ended but within 30-min grace window
-    // 'locked' = grace window closed, no interaction allowed
-    // 'future' = period hasn't started yet
-    // 'no-period' = no parseable time range
+    // Grace window in minutes (24 hrs after period ends, ticking is allowed)
+    const GRACE_MINS = 24 * 60;
+
+    // Returns the tick state for a period relative to now (only meaningful for today's column)
+    // 'active'  = period is currently running (can tick)
+    // 'grace'   = period ended within last 24 hrs (can still tick)
+    // 'locked'  = grace window has closed, no interaction
+    // 'future'  = period hasn't started yet
+    // 'no-period' = time range could not be parsed
     function _periodTickState(range) {
       if (!range) return 'no-period';
-      const endMin = range.end;
-      const graceEndMin = endMin + (_TICK_GRACE_MS / 60000);
-      if (nowMin >= range.start && nowMin < endMin) return 'active';
-      if (nowMin >= endMin && nowMin < graceEndMin) return 'grace';
-      if (nowMin >= graceEndMin) return 'locked';
+      if (nowMin >= range.start && nowMin < range.end) return 'active';
+      if (nowMin >= range.end && nowMin < range.end + GRACE_MINS) return 'grace';
+      if (nowMin >= range.end + GRACE_MINS) return 'locked';
       return 'future';
     }
 
@@ -551,36 +576,50 @@ function _tickBtnBase() {
     const TH = 'padding:.4375rem .5rem;border:1px solid rgba(255,255,255,.18);' +
                'font-size:.75rem;font-weight:700;text-align:center;white-space:nowrap;';
 
-    // Build the tick button HTML for a given period index
-    // Only shown when: today is visible, period has a subject in today's column,
-    // period is not BREAK/LUNCH, and tick state is not 'future' or 'no-period'
-    function _buildTickCell(periodIdx, range, isSpecial, todayVal) {
-      // No tick for weekends shown to student? We still show it — teacher may schedule Saturday class
-      if (todayColIdx < 0) return ''; // no today column visible
-      if (isSpecial) return '';       // no tick for BREAK / LUNCH
-      if (!todayVal || todayVal.trim() === '') return ''; // no subject for today
+    // Builds a small tick button to overlay inside the subject cell for today's column.
+    // Returns empty string if ticking is not applicable for this period.
+    function _buildTickOverlay(periodIdx, range, isSpecial, todayVal) {
+      if (todayColIdx < 0) return '';   // today not in view
+      if (isSpecial) return '';         // no tick for BREAK / LUNCH
+      if (!todayVal || todayVal.trim() === '') return ''; // no subject scheduled today
 
       const tickState = _periodTickState(range);
+      // Only show tick button during active, grace, or locked (past) states — not future
       if (tickState === 'future' || tickState === 'no-period') return '';
 
       const locked  = tickState === 'locked';
       const tickObj = tickData[String(periodIdx)];
       const ticked  = !!(tickObj && tickObj.ticked);
 
-      // Build the button — appearance is applied client-side after render via _applyTickAppearance
-      // We encode state in data attributes so the post-render wiring can use them
+      const bgColor     = ticked ? 'var(--success)' : 'rgba(0,0,0,.18)';
+      const borderColor = ticked ? 'var(--success)' : 'rgba(255,255,255,.4)';
+      const iconClass   = ticked ? 'ph-fill ph-check-circle' : 'ph ph-circle';
+      const cursor      = locked ? 'default' : 'pointer';
+      const title       = locked && ticked  ? 'Marked as done (locked)'
+                        : locked && !ticked ? 'Time window closed'
+                        : ticked            ? 'Tap to untick'
+                        : 'Tap to mark as done';
+
       return `<button
         id="vtxTick_${periodIdx}"
         data-period-idx="${periodIdx}"
         data-ticked="${ticked}"
         data-locked="${locked}"
-        onclick="Exam._timetableTickPeriod(${periodIdx}, ${ticked})"
-        style="${_tickBtnBase()}background:${ticked ? 'var(--success)' : 'var(--bg-base)'};border-color:${ticked ? 'var(--success)' : 'var(--border)'};color:${ticked ? '#fff' : 'var(--text-4)'};cursor:${locked ? 'default' : 'pointer'};"
+        onclick="event.stopPropagation();Exam._timetableTickPeriod(${periodIdx}, ${ticked})"
+        style="position:absolute;top:4px;right:4px;
+               width:22px;height:22px;border-radius:50%;
+               border:1.5px solid ${borderColor};
+               background:${bgColor};
+               color:#fff;cursor:${cursor};
+               display:inline-flex;align-items:center;justify-content:center;
+               padding:0;line-height:1;flex-shrink:0;
+               transition:background .18s,border-color .18s,transform .15s;
+               z-index:2;"
         ${locked ? 'disabled' : ''}
-        title="${locked && ticked ? 'Marked as done (locked)' : locked && !ticked ? 'Time window closed' : ticked ? 'Tap to untick' : 'Tap to mark as done'}"
+        title="${title}"
         aria-label="${ticked ? 'Done' : 'Mark as done'}"
       >
-        <i class="${ticked ? 'ph-fill ph-check-circle' : 'ph ph-circle'}" style="font-size:18px;pointer-events:none;"></i>
+        <i class="${iconClass}" style="font-size:13px;pointer-events:none;"></i>
       </button>`;
     }
 
@@ -639,30 +678,20 @@ function _tickBtnBase() {
           nowBadge +
         '</td>';
 
-      // Tick button column — only rendered when today is shown
-      const tickCellHtml = _buildTickCell(rowIdx, range, isSpecial, todayVal);
-      const tickColHtml = tickCellHtml
-        ? '<td style="' + CB + 'background:' + rowBg + ';text-align:center;vertical-align:middle;width:40px;border:1px solid var(--border);">' +
-            tickCellHtml +
-          '</td>'
-        : (todayColIdx >= 0
-            ? '<td style="' + CB + 'background:' + rowBg + ';width:40px;border:1px solid var(--border);"></td>'
-            : '');
-
       if (isSpecial) {
         const lbl = firstUp === 'LUNCH' ? '🍽\u2002Lunch Break' : '☕\u2002Break';
-        const colspan = todayColIdx >= 0 ? '8' : '7'; // +1 for tick column when today visible
         return '<tr>' + timeCell +
-          '<td colspan="' + colspan + '" style="' + CB + 'background:' + rowBg + ';' +
+          '<td colspan="7" style="' + CB + 'background:' + rowBg + ';' +
             'text-align:center;font-weight:700;font-size:.8125rem;' +
             'color:var(--text-3);letter-spacing:.04em;">' + lbl + '</td></tr>';
       }
 
       var dayCells = DAY_KEYS.map(function (dk, ci) {
-        var isToday  = ci === todayColIdx;
-        var val      = (p[dk] || '').trim();
-        var empty    = val === '';
+        var isToday   = ci === todayColIdx;
+        var val       = (p[dk] || '').trim();
+        var empty     = val === '';
         var isWeekend = ci >= 5;
+
         var bg = isCurrentPeriod && isToday
           ? 'rgba(217,119,6,.14)'
           : isNextPeriod && isToday
@@ -673,15 +702,23 @@ function _tickBtnBase() {
           ? 'rgba(124,58,237,.035)'
           : rowBg;
 
+        // Build tick overlay only for today's column
+        var tickOverlay = isToday
+          ? _buildTickOverlay(rowIdx, range, isSpecial, todayVal)
+          : '';
+
+        // Cell needs position:relative so the overlay button positions correctly
         return '<td style="' + CB + 'background:' + bg + ';text-align:center;' +
+          'position:relative;' +
           'color:' + (empty ? 'var(--text-4)' : (isCurrentPeriod && isToday) ? 'var(--warning-text)' : isToday ? 'var(--text-1)' : 'var(--text-2)') + ';' +
           'font-weight:' + ((isCurrentPeriod && isToday && !empty) ? '700' : isToday && !empty ? '600' : '400') + ';' +
           'font-size:' + (empty ? '.7rem' : '.8rem') + ';">' +
           (empty ? '<span style="opacity:.28;">—</span>' : _escHtml(val)) +
+          tickOverlay +
           '</td>';
       }).join('');
 
-      return '<tr>' + timeCell + dayCells + tickColHtml + '</tr>';
+      return '<tr>' + timeCell + dayCells + '</tr>';
     }).join('');
 
     const headerCells = DAY_SHORT.map(function (ds, i) {
@@ -698,13 +735,6 @@ function _tickBtnBase() {
           dd.dayNum + ' ' + dd.monthSh + (isToday ? ' ◀' : '') +
         '</span></th>';
     }).join('');
-
-    // Extra header cell for the tick column — only when today is visible
-    const tickHeaderHtml = todayColIdx >= 0
-      ? '<th style="' + TH + 'background:rgba(255,255,255,.1);min-width:40px;width:40px;" title="Mark activity as done">' +
-          '<i class="ph ph-check-square" style="font-size:14px;vertical-align:middle;" aria-label="Done column"></i>' +
-        '</th>'
-      : '';
 
     const noteHtml = note
       ? '<div style="padding:.5rem 1rem;border-top:1px solid var(--border);' +
@@ -727,11 +757,10 @@ function _tickBtnBase() {
               '<span style="width:8px;height:8px;border-radius:50%;background:var(--accent);' +
               'display:inline-block;opacity:.5;"></span>' +
               'Next period</span>' : '') +
-          // Tick legend entry
           '<span style="display:inline-flex;align-items:center;gap:.3rem;' +
             'font-size:.6875rem;color:var(--success);">' +
             '<i class="ph-fill ph-check-circle" style="font-size:12px;"></i>' +
-            'Tap ✓ to mark done (30 min after period ends)</span>' +
+            'Tap ✓ on today\'s subject to mark done (within 24 hrs after period ends)</span>' +
         '</div>'
       : '';
 
@@ -747,8 +776,6 @@ function _tickBtnBase() {
               dayDates[todayColIdx].dayNum + ' ' + dayDates[todayColIdx].monthSh +
             '</span>'
           : '');
-
-    const tableId = 'vtxTTTable_' + classKey;
 
     return (
       '<div style="margin-bottom:1.25rem;border:1px solid var(--border);border-radius:10px;' +
@@ -784,14 +811,12 @@ function _tickBtnBase() {
         '</div>' +
 
         '<div style="overflow-x:auto;-webkit-overflow-scrolling:touch;">' +
-          '<table style="width:100%;border-collapse:collapse;min-width:600px;background:var(--bg-base);" ' +
-            'id="' + _escHtml(tableId) + '">' +
+          '<table style="width:100%;border-collapse:collapse;min-width:600px;background:var(--bg-base);">' +
             '<thead>' +
               '<tr style="background:var(--accent-hover);">' +
                 '<th style="' + TH + 'background:transparent;text-align:left;' +
                   'min-width:86px;color:rgba(255,255,255,.8);">Time</th>' +
                 headerCells +
-                tickHeaderHtml +
               '</tr>' +
             '</thead>' +
             '<tbody>' + tableRows + '</tbody>' +
