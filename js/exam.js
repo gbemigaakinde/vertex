@@ -460,11 +460,6 @@
           'font-family:var(--font-mono);font-size:.75rem;font-weight:600;' +
           'color:' + (isCurrentPeriod ? 'var(--warning)' : isNextPeriod ? 'var(--accent)' : 'var(--text-3)') + ';' +
           'white-space:nowrap;min-width:86px;">' +
-          (isCurrentPeriod
-            ? '<span style="display:inline-block;width:7px;height:7px;border-radius:50%;' +
-              'background:var(--warning);margin-right:5px;vertical-align:middle;' +
-              'animation:cbt-pulse 1s ease-in-out infinite;"></span>'
-            : '') +
           _escHtml(p.time || '—') +
           nowBadge +
         '</td>';
