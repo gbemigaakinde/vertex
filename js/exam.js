@@ -308,6 +308,117 @@
     return goWitty ? _pick(wittyLateNight) : `Late night hustle, ${n}! Respect the dedication.`;
   }
 
+/* ─────────────────────────────────────────────────────── */
+/* Timetable self-tick                                     */
+/* ─────────────────────────────────────────────────────── */
+
+// Grace window in ms after a period ends during which a tick is still allowed
+const _TICK_GRACE_MS = 30 * 60 * 1000; // 30 minutes
+
+async function _timetableTickPeriod(periodIndex, currentlyTicked) {
+  if (!S().userId) return;
+
+  const todayStr  = _todayStr();
+  const tickRef   = window.fbDb
+    .collection('students').doc(S().userId)
+    .collection('timetableTicks').doc(todayStr);
+
+  // Optimistic UI — flip the icon immediately
+  const btn = document.getElementById('vtxTick_' + periodIndex);
+  if (!btn) return;
+
+  const newTicked = !currentlyTicked;
+
+  // Update button appearance immediately (optimistic)
+  _applyTickAppearance(btn, newTicked, false);
+
+  try {
+    if (newTicked) {
+      await tickRef.set({
+        [String(periodIndex)]: {
+          ticked:   true,
+          tickedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        }
+      }, { merge: true });
+    } else {
+      await tickRef.set({
+        [String(periodIndex)]: firebase.firestore.FieldValue.delete(),
+      }, { merge: true });
+    }
+  } catch (err) {
+    console.error('[timetable tick] write error:', err);
+    // Roll back optimistic update
+    _applyTickAppearance(btn, currentlyTicked, false);
+    UI.toast('Could not save. Please check your connection.', 'error', 4000);
+  }
+}
+
+function _applyTickAppearance(btn, ticked, locked) {
+  const icon = btn.querySelector('i');
+
+  if (locked && ticked) {
+    // Locked + ticked: solid green check, no interaction
+    btn.style.cssText = _tickBtnBase() +
+      'background:var(--success);border-color:var(--success);color:#fff;cursor:default;opacity:1;';
+    if (icon) { icon.className = 'ph-fill ph-check-circle'; icon.style.fontSize = '18px'; }
+    btn.disabled = true;
+    btn.title = 'Marked as done (locked)';
+  } else if (locked && !ticked) {
+    // Locked + not ticked: greyed out, no interaction
+    btn.style.cssText = _tickBtnBase() +
+      'background:var(--bg-subtle);border-color:var(--border);color:var(--text-4);cursor:default;opacity:.55;';
+    if (icon) { icon.className = 'ph ph-circle'; icon.style.fontSize = '18px'; }
+    btn.disabled = true;
+    btn.title = 'Time window closed';
+  } else if (!locked && ticked) {
+    // Active + ticked: green, can untick
+    btn.style.cssText = _tickBtnBase() +
+      'background:var(--success);border-color:var(--success);color:#fff;cursor:pointer;';
+    if (icon) {
+      icon.className = 'ph-fill ph-check-circle';
+      icon.style.fontSize = '18px';
+      // Animate the tick in
+      icon.style.animation = 'none';
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          icon.style.animation = 'vtxTickPop .25s cubic-bezier(.34,1.56,.64,1) both';
+        });
+      });
+    }
+    btn.disabled = false;
+    btn.title = 'Tap to untick';
+  } else {
+    // Active + not ticked: outline circle, can tick
+    btn.style.cssText = _tickBtnBase() +
+      'background:var(--bg-base);border-color:var(--border);color:var(--text-4);cursor:pointer;';
+    if (icon) { icon.className = 'ph ph-circle'; icon.style.fontSize = '18px'; }
+    btn.disabled = false;
+    btn.title = 'Tap to mark as done';
+  }
+}
+
+function _tickBtnBase() {
+  return 'display:inline-flex;align-items:center;justify-content:center;' +
+         'width:32px;height:32px;border-radius:50%;border:2px solid;' +
+         'flex-shrink:0;transition:background .18s,border-color .18s,color .18s,transform .15s;' +
+         'padding:0;line-height:1;';
+}
+
+// Inject the keyframe once into the document
+(function _injectTickKeyframe() {
+  if (document.getElementById('_vtxTickKeyframe')) return;
+  const s = document.createElement('style');
+  s.id = '_vtxTickKeyframe';
+  s.textContent = `
+    @keyframes vtxTickPop {
+      0%   { transform: scale(0.55); opacity: 0; }
+      60%  { transform: scale(1.18); opacity: 1; }
+      100% { transform: scale(1);    opacity: 1; }
+    }
+  `;
+  document.head.appendChild(s);
+})();
+
   /* ─────────────────────────────────────────────────────── */
   /* Weekly timetable                                        */
   /* ─────────────────────────────────────────────────────── */
@@ -346,10 +457,9 @@
     const DAY_KEYS  = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
     const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
-    const now   = new Date();
-    const dow   = now.getDay();
-    // Monday = index 0 in our array, Sunday = index 6
-    const diff  = dow === 0 ? -6 : 1 - dow;
+    const now    = new Date();
+    const dow    = now.getDay();
+    const diff   = dow === 0 ? -6 : 1 - dow;
     const monday = new Date(now);
     monday.setDate(now.getDate() + diff);
     monday.setHours(0, 0, 0, 0);
@@ -367,7 +477,7 @@
     });
 
     const todayStr    = _todayStr();
-    const todayColIdx = dayDates.findIndex(dd => dd.dateStr === todayStr); // -1 if not in Mon–Sun range
+    const todayColIdx = dayDates.findIndex(dd => dd.dateStr === todayStr);
 
     const nowMin = now.getHours() * 60 + now.getMinutes();
 
@@ -376,6 +486,22 @@
       const m = t.match(/(\d{1,2}):(\d{2})\s*[–\-—]\s*(\d{1,2}):(\d{2})/);
       if (!m) return null;
       return { start: +m[1] * 60 + +m[2], end: +m[3] * 60 + +m[4] };
+    }
+
+    // Returns 'active' | 'grace' | 'locked' | 'future' | 'no-period'
+    // 'active' = period is currently running
+    // 'grace'  = period has ended but within 30-min grace window
+    // 'locked' = grace window closed, no interaction allowed
+    // 'future' = period hasn't started yet
+    // 'no-period' = no parseable time range
+    function _periodTickState(range) {
+      if (!range) return 'no-period';
+      const endMin = range.end;
+      const graceEndMin = endMin + (_TICK_GRACE_MS / 60000);
+      if (nowMin >= range.start && nowMin < endMin) return 'active';
+      if (nowMin >= endMin && nowMin < graceEndMin) return 'grace';
+      if (nowMin >= graceEndMin) return 'locked';
+      return 'future';
     }
 
     function _getCurrentPeriodIndex() {
@@ -399,6 +525,20 @@
     const currentPeriodIdx = _getCurrentPeriodIndex();
     const nextPeriodIdx    = _getNextPeriodIndex();
 
+    // Fetch today's tick data for this student
+    let tickData = {};
+    if (S().userId && todayColIdx >= 0) {
+      try {
+        const tickSnap = await window.fbDb
+          .collection('students').doc(S().userId)
+          .collection('timetableTicks').doc(todayStr)
+          .get();
+        if (tickSnap.exists) tickData = tickSnap.data() || {};
+      } catch (e) {
+        console.warn('[timetable] tick fetch failed (non-fatal):', e);
+      }
+    }
+
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
     const rangeLabel =
@@ -411,6 +551,39 @@
     const TH = 'padding:.4375rem .5rem;border:1px solid rgba(255,255,255,.18);' +
                'font-size:.75rem;font-weight:700;text-align:center;white-space:nowrap;';
 
+    // Build the tick button HTML for a given period index
+    // Only shown when: today is visible, period has a subject in today's column,
+    // period is not BREAK/LUNCH, and tick state is not 'future' or 'no-period'
+    function _buildTickCell(periodIdx, range, isSpecial, todayVal) {
+      // No tick for weekends shown to student? We still show it — teacher may schedule Saturday class
+      if (todayColIdx < 0) return ''; // no today column visible
+      if (isSpecial) return '';       // no tick for BREAK / LUNCH
+      if (!todayVal || todayVal.trim() === '') return ''; // no subject for today
+
+      const tickState = _periodTickState(range);
+      if (tickState === 'future' || tickState === 'no-period') return '';
+
+      const locked  = tickState === 'locked';
+      const tickObj = tickData[String(periodIdx)];
+      const ticked  = !!(tickObj && tickObj.ticked);
+
+      // Build the button — appearance is applied client-side after render via _applyTickAppearance
+      // We encode state in data attributes so the post-render wiring can use them
+      return `<button
+        id="vtxTick_${periodIdx}"
+        data-period-idx="${periodIdx}"
+        data-ticked="${ticked}"
+        data-locked="${locked}"
+        onclick="Exam._timetableTickPeriod(${periodIdx}, ${ticked})"
+        style="${_tickBtnBase()}background:${ticked ? 'var(--success)' : 'var(--bg-base)'};border-color:${ticked ? 'var(--success)' : 'var(--border)'};color:${ticked ? '#fff' : 'var(--text-4)'};cursor:${locked ? 'default' : 'pointer'};"
+        ${locked ? 'disabled' : ''}
+        title="${locked && ticked ? 'Marked as done (locked)' : locked && !ticked ? 'Time window closed' : ticked ? 'Tap to untick' : 'Tap to mark as done'}"
+        aria-label="${ticked ? 'Done' : 'Mark as done'}"
+      >
+        <i class="${ticked ? 'ph-fill ph-check-circle' : 'ph ph-circle'}" style="font-size:18px;pointer-events:none;"></i>
+      </button>`;
+    }
+
     const tableRows = periods.map(function (p, rowIdx) {
       const range           = parseMins(p.time || '');
       const isCurrentPeriod = rowIdx === currentPeriodIdx;
@@ -420,6 +593,8 @@
       const firstUp   = vals[0].toUpperCase();
       const allSame   = firstUp !== '' && vals.every(function (v) { return v.toUpperCase() === firstUp; });
       const isSpecial = allSame && (firstUp === 'BREAK' || firstUp === 'LUNCH');
+
+      const todayVal  = todayColIdx >= 0 ? vals[todayColIdx] : '';
 
       const rowBg   = isCurrentPeriod ? 'var(--warning-subtle)'
                     : isNextPeriod    ? 'rgba(79,110,247,.04)'
@@ -464,10 +639,21 @@
           nowBadge +
         '</td>';
 
+      // Tick button column — only rendered when today is shown
+      const tickCellHtml = _buildTickCell(rowIdx, range, isSpecial, todayVal);
+      const tickColHtml = tickCellHtml
+        ? '<td style="' + CB + 'background:' + rowBg + ';text-align:center;vertical-align:middle;width:40px;border:1px solid var(--border);">' +
+            tickCellHtml +
+          '</td>'
+        : (todayColIdx >= 0
+            ? '<td style="' + CB + 'background:' + rowBg + ';width:40px;border:1px solid var(--border);"></td>'
+            : '');
+
       if (isSpecial) {
         const lbl = firstUp === 'LUNCH' ? '🍽\u2002Lunch Break' : '☕\u2002Break';
+        const colspan = todayColIdx >= 0 ? '8' : '7'; // +1 for tick column when today visible
         return '<tr>' + timeCell +
-          '<td colspan="7" style="' + CB + 'background:' + rowBg + ';' +
+          '<td colspan="' + colspan + '" style="' + CB + 'background:' + rowBg + ';' +
             'text-align:center;font-weight:700;font-size:.8125rem;' +
             'color:var(--text-3);letter-spacing:.04em;">' + lbl + '</td></tr>';
       }
@@ -476,12 +662,15 @@
         var isToday  = ci === todayColIdx;
         var val      = (p[dk] || '').trim();
         var empty    = val === '';
+        var isWeekend = ci >= 5;
         var bg = isCurrentPeriod && isToday
           ? 'rgba(217,119,6,.14)'
           : isNextPeriod && isToday
           ? 'rgba(79,110,247,.08)'
           : isToday
           ? 'rgba(79,110,247,.055)'
+          : isWeekend
+          ? 'rgba(124,58,237,.035)'
           : rowBg;
 
         return '<td style="' + CB + 'background:' + bg + ';text-align:center;' +
@@ -492,13 +681,12 @@
           '</td>';
       }).join('');
 
-      return '<tr>' + timeCell + dayCells + '</tr>';
+      return '<tr>' + timeCell + dayCells + tickColHtml + '</tr>';
     }).join('');
 
     const headerCells = DAY_SHORT.map(function (ds, i) {
-      var dd      = dayDates[i];
-      var isToday = i === todayColIdx;
-      // Weekend columns get a subtle tint
+      var dd        = dayDates[i];
+      var isToday   = i === todayColIdx;
       var isWeekend = i >= 5;
       return '<th style="' + TH +
         'background:' + (isToday ? 'rgba(255,255,255,.22)' : isWeekend ? 'rgba(0,0,0,.08)' : 'transparent') + ';' +
@@ -510,6 +698,13 @@
           dd.dayNum + ' ' + dd.monthSh + (isToday ? ' ◀' : '') +
         '</span></th>';
     }).join('');
+
+    // Extra header cell for the tick column — only when today is visible
+    const tickHeaderHtml = todayColIdx >= 0
+      ? '<th style="' + TH + 'background:rgba(255,255,255,.1);min-width:40px;width:40px;" title="Mark activity as done">' +
+          '<i class="ph ph-check-square" style="font-size:14px;vertical-align:middle;" aria-label="Done column"></i>' +
+        '</th>'
+      : '';
 
     const noteHtml = note
       ? '<div style="padding:.5rem 1rem;border-top:1px solid var(--border);' +
@@ -532,13 +727,18 @@
               '<span style="width:8px;height:8px;border-radius:50%;background:var(--accent);' +
               'display:inline-block;opacity:.5;"></span>' +
               'Next period</span>' : '') +
+          // Tick legend entry
+          '<span style="display:inline-flex;align-items:center;gap:.3rem;' +
+            'font-size:.6875rem;color:var(--success);">' +
+            '<i class="ph-fill ph-check-circle" style="font-size:12px;"></i>' +
+            'Tap ✓ to mark done (30 min after period ends)</span>' +
         '</div>'
       : '';
 
     const permanentBadge = isUsingPermanent
       ? '<span style="flex-shrink:0;font-size:.6875rem;font-weight:700;' +
           'padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.18);' +
-          'color:#fff;border:1px solid rgba(255,255,255,.3);white-space:nowrap;">Permanent</span>'
+          'color:#fff;border:1px solid rgba(255,255,255,.3);white-space:nowrap;">♾ Permanent</span>'
       : (todayColIdx >= 0
           ? '<span style="margin-left:auto;flex-shrink:0;font-size:.6875rem;font-weight:700;' +
               'padding:2px 9px;border-radius:99px;background:rgba(255,255,255,.18);' +
@@ -591,6 +791,7 @@
                 '<th style="' + TH + 'background:transparent;text-align:left;' +
                   'min-width:86px;color:rgba(255,255,255,.8);">Time</th>' +
                 headerCells +
+                tickHeaderHtml +
               '</tr>' +
             '</thead>' +
             '<tbody>' + tableRows + '</tbody>' +
@@ -613,344 +814,377 @@
   /* renderSubjectSelection — pill chip version              */
   /* ─────────────────────────────────────────────────────── */
   async function renderSubjectSelection() {
-    if (_renderSubjectSelectionInProgress) {
-      console.warn('[exam] renderSubjectSelection already in progress — skipping duplicate call.');
-      return;
-    }
-    if (!S().studentData || !S().userId) {
-      console.warn('[exam] renderSubjectSelection called with no studentData/userId — aborting.');
-      return;
-    }
-
-    _renderSubjectSelectionInProgress = true;
-
-    try {
-      const classKey = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
-      const _qBank   = window.questions || {};
-
-      if (!S().studentData || !S().userId) {
-        console.warn('[exam] State lost before timetable fetch — aborting render.');
-        return;
-      }
-
-      const weeklyTimetableHtmlPromise = _fetchWeeklyTimetableHtml(classKey);
-
-      if (!_qBank[classKey]) {
-        console.error('[exam] No questions for classKey:', classKey);
-        UI.toast(`No subjects found for class "${S().studentData.class}". Contact Master Timothy.`, 'error', 0);
-        return;
-      }
-
-      const todayTaskDone   = _isTodayTaskDayCompleted();
-      const allAvailable    = Object.keys(_qBank[classKey]);
-      const restrictedSubjs = _getRestrictedSubjectsForToday();
-      const available       = restrictedSubjs
-        ? allAvailable.filter(s => restrictedSubjs.includes(s))
-        : allAvailable;
-      const isTaskDay   = _isTaskRestricted();
-      const minSubjects = (restrictedSubjs && isTaskDay) ? 1 : 2;
-      const messages    = S().studentMessages || [];
-
-      // Ticker
-      let tickerHtml = '';
-      if (messages.length > 0) {
-        const tickerItems = messages
-          .map(m => '<span class="vtx-ticker-item">' + _escHtml(m.message) + '</span>')
-          .join('<span class="vtx-ticker-sep">✦ ✦ ✦</span>');
-        tickerHtml =
-          '<div class="vtx-ticker-wrap">' +
-            '<div class="vtx-ticker-label">INFO</div>' +
-            '<div class="vtx-ticker-viewport">' +
-              '<div class="vtx-ticker-track" id="vtxTickerTrack">' +
-                '<span class="vtx-ticker-half" id="vtxTickerHalf">' +
-                  tickerItems +
-                  '<span class="vtx-ticker-sep">✦✦✦</span>' +
-                '</span>' +
-              '</div>' +
-            '</div>' +
-          '</div>';
-      }
-
-      const restrictionBannerHtml = restrictedSubjs
-        ? `<div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:1rem;
-                       background:var(--warning-bg);border:1px solid var(--warning-border);
-                       border-left:3px solid var(--warning);border-radius:8px;
-                       padding:.75rem 1rem;text-align:left;">
-             <span style="flex-shrink:0;margin-top:1px;color:var(--warning-text);">${_icon('ClipboardText', 20)}</span>
-             <div>
-               <p style="font-size:.875rem;font-weight:700;color:var(--warning-text);margin-bottom:.25rem;">
-                 Subject restriction active for today
-               </p>
-               <p style="font-size:.8125rem;color:var(--text-secondary);line-height:1.6;">
-                 Your coaching task requires you to attempt only:
-                 <strong>${available.map(s => _escHtml(s)).join(', ') || 'no subjects'}</strong>.
-               </p>
-             </div>
-           </div>`
-        : '';
-
-      const taskCfgForBanner = S().currentTaskConfig;
-      const offDayNextLabel  = _nextUnlockedDateLabel();
-      const offDayBannerHtml = (
-        taskCfgForBanner && taskCfgForBanner.active &&
-        !_isTodayATaskDay() && offDayNextLabel
-      )
-        ? `<div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:1rem;
-                       background:var(--brand-bg);border:1px solid var(--brand-border);
-                       border-left:3px solid var(--brand);border-radius:8px;
-                       padding:.75rem 1rem;text-align:left;">
-             <span style="flex-shrink:0;margin-top:1px;color:var(--brand-text);">${_icon('CalendarBlank', 20)}</span>
-             <div>
-               <p style="font-size:.875rem;font-weight:700;color:var(--brand-text);margin-bottom:.25rem;">No task session today</p>
-               <p style="font-size:.8125rem;color:var(--text-secondary);line-height:1.6;">
-                 You can take a free practice exam now. Your next required session is on
-                 <strong>${offDayNextLabel}</strong>.
-               </p>
-             </div>
-           </div>`
-        : '';
-
-      // Subject pill HTML
-      let subjectsHtml;
-
-      if (todayTaskDone) {
-        const nextLabel = _nextUnlockedDateLabel();
-        const nextLine  = nextLabel
-          ? `Your next session opens on <strong>${nextLabel}</strong>.`
-          : 'There are no upcoming sessions scheduled right now.';
-        subjectsHtml = `
-          <div style="margin-bottom:1.25rem;padding:1.25rem 1.5rem;border-radius:12px;
-                      background:var(--success-bg);border:2px solid var(--success-border);text-align:center;">
-            <div style="display:flex;justify-content:center;margin-bottom:.5rem;color:var(--success);">${_icon('CheckCircle', 36)}</div>
-            <p style="font-size:1rem;font-weight:700;color:var(--success-text);margin-bottom:.375rem;">
-              Today's session complete!
-            </p>
-            <p style="font-size:.875rem;color:var(--text-secondary);line-height:1.6;">
-              You've already submitted your exam for today's task. ${nextLine}
-            </p>
-          </div>
-          <button disabled
-                  style="display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
-                         padding:.75rem 2rem;border-radius:8px;font-size:.9375rem;font-weight:700;
-                         background:var(--surface-muted);color:var(--text-disabled);
-                         border:1.5px solid var(--border);cursor:not-allowed;width:100%;max-width:20rem;">
-            <span style="display:inline-flex;align-items:center;">${_icon('Lock', 16)}</span> Exam Locked for Today
-          </button>`;
-
-      } else if (available.length === 0) {
-        subjectsHtml = `
-          <p style="color:var(--danger);font-size:var(--text-sm);">
-            ${restrictedSubjs
-              ? 'The subjects assigned for today are not available for your class. Please contact Master Timothy.'
-              : 'No subjects available for your class.'}
-          </p>`;
-
-      } else if (restrictedSubjs) {
-        const enoughSubjects = available.length >= minSubjects;
-        subjectsHtml = `
-          <div class="vtx-subject-grid">
-            ${available.map(subj => `
-              <label class="vtx-subject-pill is-required is-selected">
-                <input type="checkbox" value="${_escAttr(subj)}" class="subject-checkbox" checked disabled />
-                <span class="vtx-subject-pill-check"></span>
-                <span>${_escHtml(subj)}</span>
-              </label>`).join('')}
-          </div>
-          ${enoughSubjects
-            ? `<button id="startExamBtn" onclick="Exam.startExam()" class="btn btn-lg w-full max-w-xs">
-                 Start Exam
-               </button>`
-            : `<p style="color:var(--danger);font-size:var(--text-sm);">
-                 The assigned subject is not available for your class.
-                 Please contact Master Timothy.
-               </p>`}`;
-
-      } else {
-        subjectsHtml = `
-          <div class="vtx-subject-grid" id="subjectPillGrid">
-            ${allAvailable.map(subj => `
-              <label class="vtx-subject-pill" id="pill-${_escAttr(subj)}">
-                <input type="checkbox" value="${_escAttr(subj)}" class="subject-checkbox" />
-                <span class="vtx-subject-pill-check"></span>
-                <span>${_escHtml(subj)}</span>
-              </label>`).join('')}
-          </div>
-          <button id="startExamBtn" onclick="Exam.startExam()" disabled class="btn btn-lg w-full max-w-xs">
-            Start Exam
-          </button>`;
-      }
-
-      const weeklyTimetableHtml = await weeklyTimetableHtmlPromise;
-
-      if (!S().studentData || !S().userId) {
-        console.warn('[exam] State lost before DOM mount — aborting render.');
-        return;
-      }
-
-      UI.mount(`
-        <div class="max-w-4xl mx-auto glass p-6 mt-6 rounded-2xl text-center animate-fadeIn">
-          <div class="mb-5">
-            <h1 class="text-2xl font-bold mb-1">${_getGreeting(S().studentData.name)}</h1>
-            <p class="text-sm text-gray-500">
-              ${_escHtml(S().studentData.class)} &bull; ${_escHtml(S().studentData.school)}
-            </p>
-          </div>
-
-          ${tickerHtml}
-
-          <div id="tasksContainer" class="mb-6"></div>
-
-          ${weeklyTimetableHtml}
-
-          <div class="mb-6" style="display:flex;gap:.625rem;flex-wrap:wrap;justify-content:center;">
-            <div style="position:relative;display:inline-flex;">
-              <button id="chatOpenBtn" onclick="Chat.openPublicChat()" class="btn bg-green-600 hover:bg-green-700">
-                Public Discussion Chat
-              </button>
-            </div>
-            <div style="position:relative;display:inline-flex;">
-              <button onclick="StudyRoom.openForStudent()" class="btn bg-blue-600 hover:bg-blue-700">
-                <span style="display:inline-flex;align-items:center;gap:.375rem;">${_icon('BookOpen', 16)} Study Room</span>
-              </button>
-            </div>
-            <div style="position:relative;display:inline-flex;">
-              <button onclick="ThreeDClass.openForStudent()" class="btn bg-indigo-600 hover:bg-indigo-700">
-                <span style="display:inline-flex;align-items:center;gap:.375rem;">${_icon('Flask', 16)} 3D Class</span>
-              </button>
-            </div>
-            <div style="position:relative;display:inline-flex;">
-              <button onclick="window.open('english.html', '_blank')" class="btn bg-purple-600 hover:bg-purple-700">
-                <span style="display:inline-flex;align-items:center;gap:.375rem;">${_icon('BookBookmark', 16)} English Mastery</span>
-              </button>
-            </div>
-            <div style="position:relative;display:inline-flex;">
-              <button id="gameOpenBtn" onclick="(function(){
-  if (!window.Game || typeof Game.openGameLobby !== 'function') {
-    alert('Games are not loaded yet. Please wait a moment and try again.');
+  if (_renderSubjectSelectionInProgress) {
+    console.warn('[exam] renderSubjectSelection already in progress — skipping duplicate call.');
     return;
   }
-  Promise.resolve().then(function(){ return Game.openGameLobby(); })
-    .catch(function(err){
-      console.error('[game] openGameLobby error:', err);
-      if (window.UI && window.UI.toast) {
-        UI.toast('Could not open Games. Please try again.', 'error', 4000);
-      } else {
-        alert('Could not open Games. Please refresh the page.');
-      }
-    });
-  })()" class="btn"
-  style="background:linear-gradient(135deg,#7c3aed,#4f6ef7);color:#fff;">
-                <span style="display:inline-flex;align-items:center;gap:.375rem;">${_icon('GameController', 16)} Games</span>
-              </button>
-            </div>
-            <div style="position:relative;display:inline-flex;">
-              <button id="gcOpenBtn" onclick="GroupChat.openForStudent()" class="btn"
-                style="background:var(--success);color:#fff;">
-                <span style="display:inline-flex;align-items:center;gap:.375rem;">${_icon('ChatCircleDots', 16)} Group Chats</span>
-              </button>
-            </div>
-            <div style="position:relative;display:inline-flex;">
-              <button id="dmOpenBtn" onclick="DM.openStudentInbox()" class="btn bg-indigo-600 hover:bg-indigo-700">
-                <span style="display:inline-flex;align-items:center;gap:.375rem;">${_icon('EnvelopeSimple', 16)} Message Teacher</span>
-              </button>
-            </div>
-          </div>
-
-          ${offDayBannerHtml}
-          ${todayTaskDone ? '' : restrictionBannerHtml}
-
-          <div class="text-left mb-3">
-            ${todayTaskDone ? '' : `<p style="font-size:var(--text-sm);font-weight:600;color:var(--text-3);">
-              ${restrictedSubjs ? 'Your required subjects for today:' : 'Select subjects to begin (minimum 2)'}
-            </p>`}
-          </div>
-
-          ${subjectsHtml}
-
-          <div class="mt-6 pt-5" style="border-top:1px solid var(--border);">
-            <button onclick="App.logout()"
-                    style="font-size:var(--text-xs);color:var(--text-4);background:none;border:none;
-                           cursor:pointer;text-decoration:underline;">Sign out</button>
-          </div>
-        </div>`);
-
-      Tasks.renderTasksHTML();
-
-      // Ticker scroll
-      (function () {
-        const track = document.getElementById('vtxTickerTrack');
-        const half  = document.getElementById('vtxTickerHalf');
-        if (!track || !half) return;
-        let pos = 0, rafId = null, halfW = 0;
-        const speed = 0.45;
-        function step() {
-          pos += speed;
-          if (pos >= halfW) pos -= halfW;
-          track.style.transform = 'translate3d(-' + pos + 'px, 0, 0)';
-          rafId = requestAnimationFrame(step);
-        }
-        function start() {
-          const clone = half.cloneNode(true);
-          clone.removeAttribute('id');
-          clone.setAttribute('aria-hidden', 'true');
-          track.appendChild(clone);
-          requestAnimationFrame(function () {
-            requestAnimationFrame(function () {
-              halfW = Math.round(half.getBoundingClientRect().width || half.scrollWidth);
-              if (halfW === 0) return;
-              rafId = requestAnimationFrame(step);
-            });
-          });
-        }
-        start();
-        const observer = new MutationObserver(function () {
-          if (!document.getElementById('vtxTickerTrack')) { cancelAnimationFrame(rafId); observer.disconnect(); }
-        });
-        const appEl = document.getElementById('app');
-        if (appEl) observer.observe(appEl, { childList: true, subtree: false });
-      })();
-
-      // Badge updates
-      if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updateChatBadge) {
-        requestAnimationFrame(function () { Chat._updateChatBadge(AppState.chatUnread); });
-      } else {
-        const existingChatBadge = document.querySelector('#chatOpenBtn ~ .chat-notif-badge, .chat-notif-badge');
-        if (existingChatBadge) existingChatBadge.classList.remove('is-visible');
-      }
-      if (AppState.dmStudentUnread && AppState.dmStudentUnread > 0 && window.DM && DM._updateStudentBadge) {
-        requestAnimationFrame(function () { DM._updateStudentBadge(AppState.dmStudentUnread); });
-      } else {
-        const existingDmBadge = document.querySelector('#dmOpenBtn ~ .dm-notif-badge, .dm-notif-badge');
-        if (existingDmBadge) existingDmBadge.classList.remove('is-visible');
-      }
-
-      // Wire pill selection
-      if (!restrictedSubjs && !todayTaskDone) {
-        document.querySelectorAll('.vtx-subject-pill').forEach(pill => {
-          pill.addEventListener('click', function (e) {
-            e.preventDefault();
-            const cb = pill.querySelector('input[type="checkbox"]');
-            if (!cb || cb.disabled) return;
-            cb.checked = !cb.checked;
-            pill.classList.toggle('is-selected', cb.checked);
-            _updateStartBtn();
-          });
-        });
-      }
-
-      _showBgCanvas(true);
-
-    } catch (err) {
-      console.error('[exam] renderSubjectSelection error:', err);
-      if (!S().studentData || !S().userId) {
-        console.warn('[exam] Caught error but state is gone — likely a logout race.');
-        return;
-      }
-      UI.toast('Failed to load subject selection. Please refresh the page.', 'error', 0);
-    } finally {
-      _renderSubjectSelectionInProgress = false;
-    }
+  if (!S().studentData || !S().userId) {
+    console.warn('[exam] renderSubjectSelection called with no studentData/userId — aborting.');
+    return;
   }
+
+  _renderSubjectSelectionInProgress = true;
+
+  // Clear any previous timetable auto-refresh
+  if (S()._ttRefreshInterval) {
+    clearInterval(S()._ttRefreshInterval);
+    S()._ttRefreshInterval = null;
+  }
+
+  try {
+    const classKey = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
+    const _qBank   = window.questions || {};
+
+    if (!S().studentData || !S().userId) {
+      console.warn('[exam] State lost before timetable fetch — aborting render.');
+      return;
+    }
+
+    const weeklyTimetableHtmlPromise = _fetchWeeklyTimetableHtml(classKey);
+
+    if (!_qBank[classKey]) {
+      console.error('[exam] No questions for classKey:', classKey);
+      UI.toast(`No subjects found for class "${S().studentData.class}". Contact Master Timothy.`, 'error', 0);
+      return;
+    }
+
+    const todayTaskDone   = _isTodayTaskDayCompleted();
+    const allAvailable    = Object.keys(_qBank[classKey]);
+    const restrictedSubjs = _getRestrictedSubjectsForToday();
+    const available       = restrictedSubjs
+      ? allAvailable.filter(s => restrictedSubjs.includes(s))
+      : allAvailable;
+    const isTaskDay   = _isTaskRestricted();
+    const minSubjects = (restrictedSubjs && isTaskDay) ? 1 : 2;
+    const messages    = S().studentMessages || [];
+
+    // Ticker
+    let tickerHtml = '';
+    if (messages.length > 0) {
+      const tickerItems = messages
+        .map(m => '<span class="vtx-ticker-item">' + _escHtml(m.message) + '</span>')
+        .join('<span class="vtx-ticker-sep">✦ ✦ ✦</span>');
+      tickerHtml =
+        '<div class="vtx-ticker-wrap">' +
+          '<div class="vtx-ticker-label">INFO</div>' +
+          '<div class="vtx-ticker-viewport">' +
+            '<div class="vtx-ticker-track" id="vtxTickerTrack">' +
+              '<span class="vtx-ticker-half" id="vtxTickerHalf">' +
+                tickerItems +
+                '<span class="vtx-ticker-sep">✦✦✦</span>' +
+              '</span>' +
+            '</div>' +
+          '</div>' +
+        '</div>';
+    }
+
+    const restrictionBannerHtml = restrictedSubjs
+      ? `<div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:1rem;
+                     background:var(--warning-bg);border:1px solid var(--warning-border);
+                     border-left:3px solid var(--warning);border-radius:8px;
+                     padding:.75rem 1rem;text-align:left;">
+           <span style="flex-shrink:0;margin-top:1px;color:var(--warning-text);">${_icon('ClipboardText', 20)}</span>
+           <div>
+             <p style="font-size:.875rem;font-weight:700;color:var(--warning-text);margin-bottom:.25rem;">
+               Subject restriction active for today
+             </p>
+             <p style="font-size:.8125rem;color:var(--text-secondary);line-height:1.6;">
+               Your coaching task requires you to attempt only:
+               <strong>${available.map(s => _escHtml(s)).join(', ') || 'no subjects'}</strong>.
+             </p>
+           </div>
+         </div>`
+      : '';
+
+    const taskCfgForBanner = S().currentTaskConfig;
+    const offDayNextLabel  = _nextUnlockedDateLabel();
+    const offDayBannerHtml = (
+      taskCfgForBanner && taskCfgForBanner.active &&
+      !_isTodayATaskDay() && offDayNextLabel
+    )
+      ? `<div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:1rem;
+                     background:var(--brand-bg);border:1px solid var(--brand-border);
+                     border-left:3px solid var(--brand);border-radius:8px;
+                     padding:.75rem 1rem;text-align:left;">
+           <span style="flex-shrink:0;margin-top:1px;color:var(--brand-text);">${_icon('CalendarBlank', 20)}</span>
+           <div>
+             <p style="font-size:.875rem;font-weight:700;color:var(--brand-text);margin-bottom:.25rem;">No task session today</p>
+             <p style="font-size:.8125rem;color:var(--text-secondary);line-height:1.6;">
+               You can take a free practice exam now. Your next required session is on
+               <strong>${offDayNextLabel}</strong>.
+             </p>
+           </div>
+         </div>`
+      : '';
+
+    // Subject pill HTML
+    let subjectsHtml;
+
+    if (todayTaskDone) {
+      const nextLabel = _nextUnlockedDateLabel();
+      const nextLine  = nextLabel
+        ? `Your next session opens on <strong>${nextLabel}</strong>.`
+        : 'There are no upcoming sessions scheduled right now.';
+      subjectsHtml = `
+        <div style="margin-bottom:1.25rem;padding:1.25rem 1.5rem;border-radius:12px;
+                    background:var(--success-bg);border:2px solid var(--success-border);text-align:center;">
+          <div style="display:flex;justify-content:center;margin-bottom:.5rem;color:var(--success);">${_icon('CheckCircle', 36)}</div>
+          <p style="font-size:1rem;font-weight:700;color:var(--success-text);margin-bottom:.375rem;">
+            Today's session complete!
+          </p>
+          <p style="font-size:.875rem;color:var(--text-secondary);line-height:1.6;">
+            You've already submitted your exam for today's task. ${nextLine}
+          </p>
+        </div>
+        <button disabled
+                style="display:inline-flex;align-items:center;justify-content:center;gap:.5rem;
+                       padding:.75rem 2rem;border-radius:8px;font-size:.9375rem;font-weight:700;
+                       background:var(--surface-muted);color:var(--text-disabled);
+                       border:1.5px solid var(--border);cursor:not-allowed;width:100%;max-width:20rem;">
+          <span style="display:inline-flex;align-items:center;">${_icon('Lock', 16)}</span> Exam Locked for Today
+        </button>`;
+
+    } else if (available.length === 0) {
+      subjectsHtml = `
+        <p style="color:var(--danger);font-size:var(--text-sm);">
+          ${restrictedSubjs
+            ? 'The subjects assigned for today are not available for your class. Please contact Master Timothy.'
+            : 'No subjects available for your class.'}
+        </p>`;
+
+    } else if (restrictedSubjs) {
+      const enoughSubjects = available.length >= minSubjects;
+      subjectsHtml = `
+        <div class="vtx-subject-grid">
+          ${available.map(subj => `
+            <label class="vtx-subject-pill is-required is-selected">
+              <input type="checkbox" value="${_escAttr(subj)}" class="subject-checkbox" checked disabled />
+              <span class="vtx-subject-pill-check"></span>
+              <span>${_escHtml(subj)}</span>
+            </label>`).join('')}
+        </div>
+        ${enoughSubjects
+          ? `<button id="startExamBtn" onclick="Exam.startExam()" class="btn btn-lg w-full max-w-xs">
+               Start Exam
+             </button>`
+          : `<p style="color:var(--danger);font-size:var(--text-sm);">
+               The assigned subject is not available for your class.
+               Please contact Master Timothy.
+             </p>`}`;
+
+    } else {
+      subjectsHtml = `
+        <div class="vtx-subject-grid" id="subjectPillGrid">
+          ${allAvailable.map(subj => `
+            <label class="vtx-subject-pill" id="pill-${_escAttr(subj)}">
+              <input type="checkbox" value="${_escAttr(subj)}" class="subject-checkbox" />
+              <span class="vtx-subject-pill-check"></span>
+              <span>${_escHtml(subj)}</span>
+            </label>`).join('')}
+        </div>
+        <button id="startExamBtn" onclick="Exam.startExam()" disabled class="btn btn-lg w-full max-w-xs">
+          Start Exam
+        </button>`;
+    }
+
+    const weeklyTimetableHtml = await weeklyTimetableHtmlPromise;
+
+    if (!S().studentData || !S().userId) {
+      console.warn('[exam] State lost before DOM mount — aborting render.');
+      return;
+    }
+
+    UI.mount(`
+      <div class="max-w-4xl mx-auto glass p-6 mt-6 rounded-2xl text-center animate-fadeIn">
+        <div class="mb-5">
+          <h1 class="text-2xl font-bold mb-1">${_getGreeting(S().studentData.name)}</h1>
+          <p class="text-sm text-gray-500">
+            ${_escHtml(S().studentData.class)} &bull; ${_escHtml(S().studentData.school)}
+          </p>
+        </div>
+
+        ${tickerHtml}
+
+        <div id="tasksContainer" class="mb-6"></div>
+
+        ${weeklyTimetableHtml}
+
+        <div class="mb-6" style="display:flex;gap:.625rem;flex-wrap:wrap;justify-content:center;">
+          <div style="position:relative;display:inline-flex;">
+            <button id="chatOpenBtn" onclick="Chat.openPublicChat()" class="btn bg-green-600 hover:bg-green-700">
+              Public Discussion Chat
+            </button>
+          </div>
+          <div style="position:relative;display:inline-flex;">
+            <button onclick="StudyRoom.openForStudent()" class="btn bg-blue-600 hover:bg-blue-700">
+              <span style="display:inline-flex;align-items:center;gap:.375rem;">${_icon('BookOpen', 16)} Study Room</span>
+            </button>
+          </div>
+          <div style="position:relative;display:inline-flex;">
+            <button onclick="ThreeDClass.openForStudent()" class="btn bg-indigo-600 hover:bg-indigo-700">
+              <span style="display:inline-flex;align-items:center;gap:.375rem;">${_icon('Flask', 16)} 3D Class</span>
+            </button>
+          </div>
+          <div style="position:relative;display:inline-flex;">
+            <button onclick="window.open('english.html', '_blank')" class="btn bg-purple-600 hover:bg-purple-700">
+              <span style="display:inline-flex;align-items:center;gap:.375rem;">${_icon('BookBookmark', 16)} English Mastery</span>
+            </button>
+          </div>
+          <div style="position:relative;display:inline-flex;">
+            <button id="gameOpenBtn" onclick="(function(){
+if (!window.Game || typeof Game.openGameLobby !== 'function') {
+  alert('Games are not loaded yet. Please wait a moment and try again.');
+  return;
+}
+Promise.resolve().then(function(){ return Game.openGameLobby(); })
+  .catch(function(err){
+    console.error('[game] openGameLobby error:', err);
+    if (window.UI && window.UI.toast) {
+      UI.toast('Could not open Games. Please try again.', 'error', 4000);
+    } else {
+      alert('Could not open Games. Please refresh the page.');
+    }
+  });
+})()" class="btn"
+style="background:linear-gradient(135deg,#7c3aed,#4f6ef7);color:#fff;">
+              <span style="display:inline-flex;align-items:center;gap:.375rem;">${_icon('GameController', 16)} Games</span>
+            </button>
+          </div>
+          <div style="position:relative;display:inline-flex;">
+            <button id="gcOpenBtn" onclick="GroupChat.openForStudent()" class="btn"
+              style="background:var(--success);color:#fff;">
+              <span style="display:inline-flex;align-items:center;gap:.375rem;">${_icon('ChatCircleDots', 16)} Group Chats</span>
+            </button>
+          </div>
+          <div style="position:relative;display:inline-flex;">
+            <button id="dmOpenBtn" onclick="DM.openStudentInbox()" class="btn bg-indigo-600 hover:bg-indigo-700">
+              <span style="display:inline-flex;align-items:center;gap:.375rem;">${_icon('EnvelopeSimple', 16)} Message Teacher</span>
+            </button>
+          </div>
+        </div>
+
+        ${offDayBannerHtml}
+        ${todayTaskDone ? '' : restrictionBannerHtml}
+
+        <div class="text-left mb-3">
+          ${todayTaskDone ? '' : `<p style="font-size:var(--text-sm);font-weight:600;color:var(--text-3);">
+            ${restrictedSubjs ? 'Your required subjects for today:' : 'Select subjects to begin (minimum 2)'}
+          </p>`}
+        </div>
+
+        ${subjectsHtml}
+
+        <div class="mt-6 pt-5" style="border-top:1px solid var(--border);">
+          <button onclick="App.logout()"
+                  style="font-size:var(--text-xs);color:var(--text-4);background:none;border:none;
+                         cursor:pointer;text-decoration:underline;">Sign out</button>
+        </div>
+      </div>`);
+
+    Tasks.renderTasksHTML();
+
+    // Ticker scroll
+    (function () {
+      const track = document.getElementById('vtxTickerTrack');
+      const half  = document.getElementById('vtxTickerHalf');
+      if (!track || !half) return;
+      let pos = 0, rafId = null, halfW = 0;
+      const speed = 0.45;
+      function step() {
+        pos += speed;
+        if (pos >= halfW) pos -= halfW;
+        track.style.transform = 'translate3d(-' + pos + 'px, 0, 0)';
+        rafId = requestAnimationFrame(step);
+      }
+      function start() {
+        const clone = half.cloneNode(true);
+        clone.removeAttribute('id');
+        clone.setAttribute('aria-hidden', 'true');
+        track.appendChild(clone);
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () {
+            halfW = Math.round(half.getBoundingClientRect().width || half.scrollWidth);
+            if (halfW === 0) return;
+            rafId = requestAnimationFrame(step);
+          });
+        });
+      }
+      start();
+      const observer = new MutationObserver(function () {
+        if (!document.getElementById('vtxTickerTrack')) { cancelAnimationFrame(rafId); observer.disconnect(); }
+      });
+      const appEl = document.getElementById('app');
+      if (appEl) observer.observe(appEl, { childList: true, subtree: false });
+    })();
+
+    // Badge updates
+    if (AppState.chatUnread && AppState.chatUnread > 0 && window.Chat && Chat._updateChatBadge) {
+      requestAnimationFrame(function () { Chat._updateChatBadge(AppState.chatUnread); });
+    } else {
+      const existingChatBadge = document.querySelector('#chatOpenBtn ~ .chat-notif-badge, .chat-notif-badge');
+      if (existingChatBadge) existingChatBadge.classList.remove('is-visible');
+    }
+    if (AppState.dmStudentUnread && AppState.dmStudentUnread > 0 && window.DM && DM._updateStudentBadge) {
+      requestAnimationFrame(function () { DM._updateStudentBadge(AppState.dmStudentUnread); });
+    } else {
+      const existingDmBadge = document.querySelector('#dmOpenBtn ~ .dm-notif-badge, .dm-notif-badge');
+      if (existingDmBadge) existingDmBadge.classList.remove('is-visible');
+    }
+
+    // Wire pill selection
+    if (!restrictedSubjs && !todayTaskDone) {
+      document.querySelectorAll('.vtx-subject-pill').forEach(pill => {
+        pill.addEventListener('click', function (e) {
+          e.preventDefault();
+          const cb = pill.querySelector('input[type="checkbox"]');
+          if (!cb || cb.disabled) return;
+          cb.checked = !cb.checked;
+          pill.classList.toggle('is-selected', cb.checked);
+          _updateStartBtn();
+        });
+      });
+    }
+
+    _showBgCanvas(true);
+
+    // ── Timetable auto-refresh (re-renders every 60s to update NOW/NEXT badges and tick lock states)
+    // Only start if the timetable widget is present and today is a visible column
+    if (document.getElementById('vtxTimetableWidget') && S().userId) {
+      S()._ttRefreshInterval = setInterval(async function () {
+        // Stop if the student has navigated into an exam or logged out
+        if (!document.getElementById('vtxTimetableWidget') || !S().userId) {
+          clearInterval(S()._ttRefreshInterval);
+          S()._ttRefreshInterval = null;
+          return;
+        }
+        const widget = document.getElementById('vtxTimetableWidget');
+        if (!widget) return;
+        try {
+          const freshHtml = await _fetchWeeklyTimetableHtml(classKey);
+          if (freshHtml && document.getElementById('vtxTimetableWidget')) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = freshHtml;
+            const newWidget = tmp.firstElementChild;
+            if (newWidget) widget.replaceWith(newWidget);
+          }
+        } catch (e) {
+          // Non-fatal — next tick will retry
+          console.warn('[timetable refresh] error (non-fatal):', e);
+        }
+      }, 60000); // every 60 seconds
+    }
+
+  } catch (err) {
+    console.error('[exam] renderSubjectSelection error:', err);
+    if (!S().studentData || !S().userId) {
+      console.warn('[exam] Caught error but state is gone — likely a logout race.');
+      return;
+    }
+    UI.toast('Failed to load subject selection. Please refresh the page.', 'error', 0);
+  } finally {
+    _renderSubjectSelectionInProgress = false;
+  }
+}
 
   function _updateStartBtn() {
     const selected = document.querySelectorAll('.subject-checkbox:checked').length;
@@ -1172,6 +1406,12 @@
   /* renderExam                                              */
   /* ─────────────────────────────────────────────────────── */
   function renderExam() {
+  // Kill timetable auto-refresh — student is now in the exam
+  if (S()._ttRefreshInterval) {
+    clearInterval(S()._ttRefreshInterval);
+    S()._ttRefreshInterval = null;
+  }
+
   _questionRenderedAt = Date.now();
 
   const exam = S().exam;
@@ -2246,26 +2486,27 @@
   /* Public API                                              */
   /* ─────────────────────────────────────────────────────── */
   window.Exam = {
-    loadOrStart,
-    renderSubjectSelection,
-    startExam,
-    beginExam,
-    renderExam,
-    prevQuestion,
-    nextQuestion,
-    goTo,
-    switchSubject,
-    submitExam,
-    renderResults,
-    _shareWhatsApp,
-    _copyResult,
-    _escHtml,
-    _escAttr,
-    preprocessLatex,
-    _isTodayTaskDayCompleted,
-    _isTodayATaskDay,
-    _nextUnlockedDateLabel,
-    _downloadTimetablePDF,
-  };
+  loadOrStart,
+  renderSubjectSelection,
+  startExam,
+  beginExam,
+  renderExam,
+  prevQuestion,
+  nextQuestion,
+  goTo,
+  switchSubject,
+  submitExam,
+  renderResults,
+  _shareWhatsApp,
+  _copyResult,
+  _escHtml,
+  _escAttr,
+  preprocessLatex,
+  _isTodayTaskDayCompleted,
+  _isTodayATaskDay,
+  _nextUnlockedDateLabel,
+  _downloadTimetablePDF,
+  _timetableTickPeriod,
+};
 
 })();
