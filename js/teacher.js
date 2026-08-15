@@ -2989,7 +2989,7 @@ async function _ttRenderEditor() {
             <tr style="background:var(--accent);">
               <th style="padding:.4375rem .625rem;border:1px solid rgba(255,255,255,.18);
                          font-size:var(--text-xs);font-weight:700;color:#fff;
-                         text-align:left;min-width:98px;white-space:nowrap;">
+                         text-align:center;min-width:98px;white-space:nowrap;">
                 Time / Period
               </th>
               ${headerCells}
