@@ -2773,6 +2773,7 @@ function _loadTimetableManager() {
         <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">
           Build a period-by-period timetable for each class.
           Students see it as a proper school timetable grid on their dashboard.
+          Set a timetable as <strong>Permanent</strong> so it never expires — it stays active until you replace or delete it.
         </p>
       </div>
 
@@ -2790,10 +2791,15 @@ function _loadTimetableManager() {
           <label style="display:block;font-size:var(--text-xs);font-weight:600;color:var(--text-3);
                         margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.04em;">Week</label>
           <select id="ttWeekSelect" onchange="Teacher._onTTWeekChange()" style="width:100%;">
-            ${weekOptions.map(w => `
-              <option value="${_esc(w.key)}" ${w.key === _ttSelectedWeek ? 'selected' : ''}>
-                ${w.key === thisWeek ? '★ This week: ' : w.isPast ? '(past) ' : ''}${_esc(w.label)} (${_esc(w.key)})
-              </option>`).join('')}
+            <option value="permanent" ${_ttSelectedWeek === 'permanent' ? 'selected' : ''}>
+              ♾ Permanent Timetable (active until changed)
+            </option>
+            <optgroup label="─ Week-specific ─">
+              ${weekOptions.map(w => `
+                <option value="${_esc(w.key)}" ${w.key === _ttSelectedWeek ? 'selected' : ''}>
+                  ${w.key === thisWeek ? '★ This week: ' : w.isPast ? '(past) ' : ''}${_esc(w.label)} (${_esc(w.key)})
+                </option>`).join('')}
+            </optgroup>
           </select>
         </div>
       </div>
@@ -2822,11 +2828,12 @@ async function _ttRenderEditor() {
       return;
     }
 
-    const thisWeek   = _isoWeekKey();
-    const isThisWk   = _ttSelectedWeek === thisWeek;
-    const docId      = _classKeyFromStr(_ttSelectedClass);
-    const targetMon  = _getMondayForWeek(_ttSelectedWeek);
-    const weekLabel  = _weekRangeLabel(targetMon);
+    const isPermanent = _ttSelectedWeek === 'permanent';
+    const thisWeek    = _isoWeekKey();
+    const isThisWk    = _ttSelectedWeek === thisWeek;
+    const docId       = _classKeyFromStr(_ttSelectedClass);
+    const targetMon   = isPermanent ? _weekMonday(new Date()) : _getMondayForWeek(_ttSelectedWeek);
+    const weekLabel   = isPermanent ? 'Permanent Timetable' : _weekRangeLabel(targetMon);
 
     /* Load existing data */
     let periods  = _ttDefaultPeriods();
@@ -2835,7 +2842,8 @@ async function _ttRenderEditor() {
     try {
       const snap = await Db().collection('weeklyTimetable').doc(docId).get();
       if (snap.exists) {
-        const saved = ((snap.data() || {}).timetables || {})[_ttSelectedWeek];
+        const allTimetables = (snap.data() || {}).timetables || {};
+        const saved = allTimetables[_ttSelectedWeek];
         if (saved && Array.isArray(saved.periods) && saved.periods.length > 0) {
           periods  = saved.periods;
           note     = saved.note || '';
@@ -2847,7 +2855,7 @@ async function _ttRenderEditor() {
     const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
     const DAY_KEYS  = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
 
-    /* Date labels under column headers */
+    /* Date labels under column headers — for permanent, show current week dates */
     const dayDates = DAY_KEYS.map((_, i) => {
       const dt = new Date(targetMon);
       dt.setDate(targetMon.getDate() + i);
@@ -2861,9 +2869,28 @@ async function _ttRenderEditor() {
                   font-size:var(--text-xs);font-weight:700;color:#fff;text-align:center;
                   min-width:100px;">
         ${_esc(ds)}<br>
-        <span style="font-weight:400;font-size:.625rem;opacity:.8;">${_esc(dayDates[i])}</span>
+        <span style="font-weight:400;font-size:.625rem;opacity:.8;">${isPermanent ? '—' : _esc(dayDates[i])}</span>
       </th>`
     ).join('');
+
+    /* Permanent badge / week badge */
+    const badgeHtml = isPermanent
+      ? `<span style="font-size:var(--text-xs);font-weight:700;padding:2px 9px;
+                      border-radius:99px;background:var(--warning);color:#fff;">
+           ♾ Permanent
+         </span>`
+      : isThisWk
+      ? `<span style="font-size:var(--text-xs);font-weight:700;padding:2px 9px;
+                      border-radius:99px;background:var(--accent);color:#fff;">
+           Current Week
+         </span>`
+      : '';
+
+    const subLabel = isPermanent
+      ? 'This timetable is active every week until you change or delete it.'
+      : isThisWk
+      ? '★ Students see this timetable right now. Edit cells directly. Add or remove rows as needed.'
+      : `${_esc(_ttSelectedWeek)} — not yet current. Edit cells directly. Add or remove rows as needed.`;
 
     wrap.innerHTML = `
       <div class="glass-dark" style="padding:1.25rem;border-radius:var(--r-lg);overflow:hidden;">
@@ -2876,19 +2903,23 @@ async function _ttRenderEditor() {
               ${_esc(_ttSelectedClass)} — ${_esc(weekLabel)}
             </h3>
             <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">
-              ${isThisWk
-                ? '★ Students see this timetable right now.'
-                : _esc(_ttSelectedWeek) + ' — not yet current.'}
-              Edit cells directly. Add or remove rows as needed.
+              ${subLabel}
             </p>
           </div>
-          ${isThisWk
-            ? `<span style="font-size:var(--text-xs);font-weight:700;padding:2px 9px;
-                            border-radius:99px;background:var(--accent);color:#fff;">
-                 Current Week
-               </span>`
-            : ''}
+          ${badgeHtml}
         </div>
+
+        ${isPermanent ? `
+          <div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:1rem;padding:.625rem .875rem;
+                      background:var(--warning-subtle);border:1px solid var(--warning-border);
+                      border-radius:var(--r-md);font-size:var(--text-xs);color:var(--warning-text);line-height:1.6;">
+            <span style="flex-shrink:0;font-size:1rem;margin-top:1px;">♾</span>
+            <div>
+              <strong>Permanent timetable:</strong> Students will see this every week, regardless of the date,
+              unless a week-specific timetable exists for that week (week-specific always takes priority).
+              Update it here any time and save — changes take effect immediately.
+            </div>
+          </div>` : ''}
 
         <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:1rem;
                     border:1px solid var(--border);border-radius:var(--r-md);">
@@ -2936,8 +2967,8 @@ async function _ttRenderEditor() {
         <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;
                     padding-top:.875rem;border-top:1px solid var(--border);">
           <button id="ttSaveBtn" onclick="Teacher._saveTimetable()"
-                  class="btn bg-green-600" style="font-size:var(--text-sm);">
-            Save Timetable
+                  class="btn ${isPermanent ? 'bg-green-600' : 'bg-green-600'}" style="font-size:var(--text-sm);">
+            ${isPermanent ? '♾ Save Permanent Timetable' : 'Save Timetable'}
           </button>
           <button onclick="Teacher._clearTimetableInputs()" class="btn bg-gray-500"
                   style="font-size:var(--text-sm);">
@@ -2947,7 +2978,7 @@ async function _ttRenderEditor() {
             ? `<button onclick="Teacher._deleteTimetable('${_esc(_ttSelectedWeek)}')"
                        class="btn" style="background:var(--danger-subtle);color:var(--danger);
                                           border:1px solid var(--danger-border);font-size:var(--text-sm);">
-                 Delete This Week
+                 ${isPermanent ? '♾ Delete Permanent' : 'Delete This Week'}
                </button>`
             : ''}
         </div>
@@ -2962,9 +2993,14 @@ function _ttRenderAllList(docData) {
     const DAY_KEYS   = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
     const thisWeek   = _isoWeekKey();
     const timetables = (docData && docData.timetables) ? docData.timetables : {};
-    const weekKeys   = Object.keys(timetables).sort().reverse();
+    const allKeys    = Object.keys(timetables);
 
-    if (weekKeys.length === 0) {
+    /* Separate permanent from weekly */
+    const hasPermanent  = allKeys.includes('permanent');
+    const weekKeys      = allKeys.filter(k => k !== 'permanent').sort().reverse();
+    const orderedKeys   = hasPermanent ? ['permanent', ...weekKeys] : weekKeys;
+
+    if (orderedKeys.length === 0) {
       container.innerHTML =
         `<p style="font-size:var(--text-sm);color:var(--text-3);font-style:italic;">
            No timetables saved for ${_esc(_ttSelectedClass || 'this class')}.
@@ -2972,18 +3008,19 @@ function _ttRenderAllList(docData) {
       return;
     }
 
-    container.innerHTML = weekKeys.map(wk => {
+    container.innerHTML = orderedKeys.map(wk => {
       const tt          = timetables[wk] || {};
+      const isPermanent = wk === 'permanent';
       const isThisWeek  = wk === thisWeek;
       const periods     = Array.isArray(tt.periods) ? tt.periods : [];
-      const mon         = _getMondayForWeek(wk);
-      const rangeLabel  = _weekRangeLabel(mon);
+      const mon         = isPermanent ? _weekMonday(new Date()) : _getMondayForWeek(wk);
+      const rangeLabel  = isPermanent ? 'Permanent Timetable' : _weekRangeLabel(mon);
 
       const lessonCount = periods.filter(p =>
         !DAY_KEYS.every(dk => ['BREAK','LUNCH',''].includes((p[dk]||'').trim().toUpperCase()))
       ).length;
 
-      /* Mini preview: first 3 rows (skip pure-special rows) */
+      /* Mini preview: first 4 rows */
       const previewRows = periods.slice(0, 4).map(p => {
         const vals       = DAY_KEYS.map(dk => (p[dk]||'').trim());
         const firstUp    = vals[0].toUpperCase();
@@ -3000,20 +3037,28 @@ function _ttRenderAllList(docData) {
         </div>`;
       }).join('');
 
+      /* Badge styling */
+      const headerBg      = isPermanent ? 'var(--warning-subtle)' : isThisWeek ? 'var(--accent-subtle)' : 'var(--bg-subtle)';
+      const borderColor   = isPermanent ? 'var(--warning-border)' : isThisWeek ? 'var(--accent-border)' : 'var(--border)';
+      const labelColor    = isPermanent ? 'var(--warning-text)'   : isThisWeek ? 'var(--accent-text)'   : 'var(--text-1)';
+      const badgeHtml     = isPermanent
+        ? `<span style="font-size:var(--text-xs);font-weight:700;padding:1px 7px;border-radius:99px;
+                        background:var(--warning);color:#fff;">♾ Permanent</span>`
+        : isThisWeek
+        ? `<span style="font-size:var(--text-xs);font-weight:700;padding:1px 7px;border-radius:99px;
+                        background:var(--accent);color:#fff;">★ Current</span>`
+        : `<span style="font-size:var(--text-xs);color:var(--text-4);">${_esc(wk)}</span>`;
+
       return `
-        <div style="border:1px solid ${isThisWeek ? 'var(--accent-border)' : 'var(--border)'};
+        <div style="border:1px solid ${borderColor};
                     border-radius:8px;overflow:hidden;background:var(--bg-base);">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:.5rem .875rem;
-                      background:${isThisWeek ? 'var(--accent-subtle)' : 'var(--bg-subtle)'};">
+                      background:${headerBg};">
             <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
-              <span style="font-size:var(--text-sm);font-weight:700;
-                           color:${isThisWeek ? 'var(--accent-text)' : 'var(--text-1)'};">
+              <span style="font-size:var(--text-sm);font-weight:700;color:${labelColor};">
                 ${_esc(rangeLabel)}
               </span>
-              ${isThisWeek
-                ? `<span style="font-size:var(--text-xs);font-weight:700;padding:1px 7px;border-radius:99px;
-                               background:var(--accent);color:#fff;">★ Current</span>`
-                : `<span style="font-size:var(--text-xs);color:var(--text-4);">${_esc(wk)}</span>`}
+              ${badgeHtml}
               <span style="font-size:var(--text-xs);color:var(--text-3);">
                 ${lessonCount} lesson period${lessonCount !== 1 ? 's' : ''}
                 · ${periods.length} rows
@@ -3059,11 +3104,18 @@ function _editTimetableWeek(weekKey) {
       for (let i = 0; i < sel.options.length; i++) {
         if (sel.options[i].value === weekKey) { sel.selectedIndex = i; found = true; break; }
       }
-      if (!found) {
+      if (!found && weekKey !== 'permanent') {
+        /* Add a past/future week that isn't in the dropdown yet */
         const opt   = document.createElement('option');
         opt.value   = weekKey;
         opt.text    = weekKey;
-        sel.appendChild(opt);
+        /* Insert after the permanent option and optgroup */
+        const optgroup = sel.querySelector('optgroup');
+        if (optgroup) {
+          optgroup.insertBefore(opt, optgroup.firstChild);
+        } else {
+          sel.appendChild(opt);
+        }
         sel.value = weekKey;
       }
     }
@@ -3114,6 +3166,7 @@ function _editTimetableWeek(weekKey) {
       UI.toast('Add at least one period before saving.', 'warning'); return;
     }
 
+    const isPermanent = _ttSelectedWeek === 'permanent';
     const note  = (document.getElementById('ttNoteInput')?.value || '').trim();
     const docId = _classKeyFromStr(_ttSelectedClass);
     const btn   = document.getElementById('ttSaveBtn');
@@ -3127,13 +3180,18 @@ function _editTimetableWeek(weekKey) {
           [_ttSelectedWeek]: {
             periods,
             note,
+            isPermanent: isPermanent || false,
             savedAt: firebase.firestore.FieldValue.serverTimestamp(),
           },
         },
         updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
       }, { merge: true });
-      UI.toast('Timetable saved for ' + _ttSelectedClass + ' — ' + _ttSelectedWeek + '.', 'success');
-      _ttRenderEditor(); // refresh to show the Delete button
+
+      const successMsg = isPermanent
+        ? `Permanent timetable saved for ${_ttSelectedClass}. Students will see this every week.`
+        : `Timetable saved for ${_ttSelectedClass} — ${_ttSelectedWeek}.`;
+      UI.toast(successMsg, 'success');
+      _ttRenderEditor(); // refresh to show Delete button
     } catch (err) {
       console.error('[timetable] save error:', err);
       UI.toast('Failed to save timetable.', 'error');
@@ -3144,16 +3202,18 @@ function _editTimetableWeek(weekKey) {
 
   async function _deleteTimetable(weekKey) {
     if (!_ttSelectedClass || !weekKey) return;
-    const ok = await UI.confirmAction(
-      'Delete timetable for ' + _ttSelectedClass + ' — ' + weekKey + '? This cannot be undone.'
-    );
+    const isPermanent = weekKey === 'permanent';
+    const confirmMsg  = isPermanent
+      ? `Delete the permanent timetable for ${_ttSelectedClass}? Students will no longer see any timetable unless a week-specific one exists.`
+      : `Delete timetable for ${_ttSelectedClass} — ${weekKey}? This cannot be undone.`;
+    const ok = await UI.confirmAction(confirmMsg);
     if (!ok) return;
     const docId = _classKeyFromStr(_ttSelectedClass);
     try {
       await Db().collection('weeklyTimetable').doc(docId).update({
-        ['timetables.' + weekKey]: firebase.firestore.FieldValue.delete(),
+        [`timetables.${weekKey}`]: firebase.firestore.FieldValue.delete(),
       });
-      UI.toast('Timetable deleted.', 'success');
+      UI.toast(isPermanent ? 'Permanent timetable deleted.' : 'Timetable deleted.', 'success');
       _ttRenderEditor();
     } catch (err) {
       console.error('[timetable] delete error:', err);
