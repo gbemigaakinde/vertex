@@ -572,7 +572,7 @@
           '<div style="flex:1;min-width:0;">' +
             '<p style="font-size:.875rem;font-weight:700;color:#fff;line-height:1.2;">Class Timetable</p>' +
             '<p style="font-size:.6875rem;color:rgba(255,255,255,.75);margin-top:1px;">' +
-              (isUsingPermanent ? 'Permanent schedule · ' : '') + _escHtml(rangeLabel) +
+              (isUsingPermanent ? 'Permanent schedule<br>' : '') + _escHtml(rangeLabel) +
             '</p>' +
           '</div>' +
           permanentBadge +
