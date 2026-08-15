@@ -53,6 +53,42 @@
                     'font-size:.75rem;border:1px solid var(--border);border-radius:4px;' +
                     'background:var(--bg-base);color:var(--text-1);font-family:var(--font);';
 
+  // Parse existing time string "HH:MM – HH:MM" into [startVal, endVal] for the two pickers
+  function _parseTimeRange(t) {
+    if (!t) return ['', ''];
+    const normalized = (t || '').replace(/\s*[\u2013\u2014\u2212\-]\s*/g, '-');
+    const m = normalized.match(/^(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})$/);
+    if (!m) return ['', ''];
+    const startH = String(+m[1]).padStart(2, '0');
+    const startM = String(+m[2]).padStart(2, '0');
+    const endH   = String(+m[3]).padStart(2, '0');
+    const endM   = String(+m[4]).padStart(2, '0');
+    return [`${startH}:${startM}`, `${endH}:${endM}`];
+  }
+
+  const [startVal, endVal] = _parseTimeRange(p.time || '');
+
+  // The two time pickers write back into a hidden data-field="time" input
+  // using a consistent "HH:MM – HH:MM" format (en-dash, spaces)
+  const timePickerHtml =
+    '<td style="padding:.25rem .3rem;border:1px solid var(--border);' + rowBg + 'white-space:nowrap;">' +
+      // Hidden canonical value read by _ttReadPeriodsFromDOM
+      '<input data-field="time" type="hidden" value="' + _esc(p.time || '') + '" class="tt-time-hidden" />' +
+      '<div style="display:flex;align-items:center;gap:3px;">' +
+        '<input type="time" class="tt-time-start" value="' + _esc(startVal) + '" ' +
+          'style="width:82px;box-sizing:border-box;padding:.3125rem .375rem;' +
+          'font-size:.7rem;border:1px solid var(--border);border-radius:4px;' +
+          'background:var(--bg-base);color:var(--text-1);font-family:var(--font-mono);" ' +
+          'onchange="Teacher._ttSyncTimeHidden(this)" />' +
+        '<span style="font-size:.75rem;color:var(--text-3);flex-shrink:0;">–</span>' +
+        '<input type="time" class="tt-time-end" value="' + _esc(endVal) + '" ' +
+          'style="width:82px;box-sizing:border-box;padding:.3125rem .375rem;' +
+          'font-size:.7rem;border:1px solid var(--border);border-radius:4px;' +
+          'background:var(--bg-base);color:var(--text-1);font-family:var(--font-mono);" ' +
+          'onchange="Teacher._ttSyncTimeHidden(this)" />' +
+      '</div>' +
+    '</td>';
+
   var dayCells = DAY_KEYS.map(function (dk) {
     var val        = p[dk] || '';
     var isSpecCell = ['BREAK', 'LUNCH'].includes(val.trim().toUpperCase());
@@ -66,11 +102,7 @@
   }).join('');
 
   return '<tr data-period-row style="' + rowBg + '">' +
-    '<td style="padding:.25rem .3rem;border:1px solid var(--border);' + rowBg + '">' +
-      '<input data-field="time" value="' + _esc(p.time || '') + '" ' +
-        'placeholder="8:00 – 8:45" ' +
-        'style="' + inputBase + 'min-width:90px;font-family:var(--font-mono);font-size:.6875rem;" />' +
-    '</td>' +
+    timePickerHtml +
     dayCells +
     '<td style="padding:.25rem;border:1px solid var(--border);text-align:center;' +
         'vertical-align:middle;' + rowBg + '">' +
@@ -81,6 +113,22 @@
         'onmouseleave="this.style.color=\'var(--text-4)\'">×</button>' +
     '</td>' +
   '</tr>';
+}
+
+function _ttSyncTimeHidden(changedInput) {
+  const row    = changedInput.closest('tr[data-period-row]');
+  if (!row) return;
+  const start  = row.querySelector('.tt-time-start');
+  const end    = row.querySelector('.tt-time-end');
+  const hidden = row.querySelector('.tt-time-hidden');
+  if (!start || !end || !hidden) return;
+  const sv = start.value; // "HH:MM" or ""
+  const ev = end.value;
+  if (sv && ev) {
+    hidden.value = sv + ' \u2013 ' + ev; // "HH:MM – HH:MM" (en-dash)
+  } else {
+    hidden.value = sv || ev || '';
+  }
 }
 
   /* ── Timetable: append a period row to the editor tbody ── */
@@ -99,8 +147,21 @@
   const periods  = [];
   rows.forEach(function (tr) {
     const obj = {};
+    // Read canonical time from hidden input
+    const hidden = tr.querySelector('input.tt-time-hidden[data-field="time"]');
+    obj.time = hidden ? hidden.value.trim() : '';
+    // If hidden is empty but pickers have values, sync now
+    if (!obj.time) {
+      const sv = (tr.querySelector('.tt-time-start') || {}).value || '';
+      const ev = (tr.querySelector('.tt-time-end')   || {}).value || '';
+      if (sv && ev) obj.time = sv + ' \u2013 ' + ev;
+      else obj.time = sv || ev || '';
+    }
+    // Read day inputs
     tr.querySelectorAll('input[data-field]').forEach(function (inp) {
-      obj[inp.dataset.field] = inp.value.trim();
+      if (inp.dataset.field !== 'time') {
+        obj[inp.dataset.field] = inp.value.trim();
+      }
     });
     const hasContent = obj.time || DAY_KEYS.some(function (d) { return !!obj[d]; });
     if (hasContent) periods.push(obj);
@@ -4434,6 +4495,7 @@ async function exportResultPDF(resultId) {
     _clearTimetableInputs,
     _getMondayForWeek,
     _showGamesSubTab,
+    _ttSyncTimeHidden,
     get _msgStudentCache() { return _msgStudentCache; },
   };
 
