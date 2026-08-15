@@ -25,63 +25,63 @@
 
 /* ── Timetable: default period structure ── */
   function _ttDefaultPeriods() {
-    return [
-      { time: '7:30 – 8:00',   monday: '', tuesday: '', wednesday: '', thursday: '', friday: '' },
-      { time: '8:00 – 8:45',   monday: '', tuesday: '', wednesday: '', thursday: '', friday: '' },
-      { time: '8:45 – 9:30',   monday: '', tuesday: '', wednesday: '', thursday: '', friday: '' },
-      { time: '9:30 – 9:45',   monday: 'BREAK', tuesday: 'BREAK', wednesday: 'BREAK', thursday: 'BREAK', friday: 'BREAK' },
-      { time: '9:45 – 10:30',  monday: '', tuesday: '', wednesday: '', thursday: '', friday: '' },
-      { time: '10:30 – 11:15', monday: '', tuesday: '', wednesday: '', thursday: '', friday: '' },
-      { time: '11:15 – 12:00', monday: '', tuesday: '', wednesday: '', thursday: '', friday: '' },
-      { time: '12:00 – 12:45', monday: 'LUNCH', tuesday: 'LUNCH', wednesday: 'LUNCH', thursday: 'LUNCH', friday: 'LUNCH' },
-      { time: '12:45 – 1:30',  monday: '', tuesday: '', wednesday: '', thursday: '', friday: '' },
-      { time: '1:30 – 2:15',   monday: '', tuesday: '', wednesday: '', thursday: '', friday: '' },
-      { time: '2:15 – 3:00',   monday: '', tuesday: '', wednesday: '', thursday: '', friday: '' },
-    ];
-  }
+  return [
+    { time: '7:30 – 8:00',   monday: '', tuesday: '', wednesday: '', thursday: '', friday: '', saturday: '', sunday: '' },
+    { time: '8:00 – 8:45',   monday: '', tuesday: '', wednesday: '', thursday: '', friday: '', saturday: '', sunday: '' },
+    { time: '8:45 – 9:30',   monday: '', tuesday: '', wednesday: '', thursday: '', friday: '', saturday: '', sunday: '' },
+    { time: '9:30 – 9:45',   monday: 'BREAK', tuesday: 'BREAK', wednesday: 'BREAK', thursday: 'BREAK', friday: 'BREAK', saturday: 'BREAK', sunday: 'BREAK' },
+    { time: '9:45 – 10:30',  monday: '', tuesday: '', wednesday: '', thursday: '', friday: '', saturday: '', sunday: '' },
+    { time: '10:30 – 11:15', monday: '', tuesday: '', wednesday: '', thursday: '', friday: '', saturday: '', sunday: '' },
+    { time: '11:15 – 12:00', monday: '', tuesday: '', wednesday: '', thursday: '', friday: '', saturday: '', sunday: '' },
+    { time: '12:00 – 12:45', monday: 'LUNCH', tuesday: 'LUNCH', wednesday: 'LUNCH', thursday: 'LUNCH', friday: 'LUNCH', saturday: 'LUNCH', sunday: 'LUNCH' },
+    { time: '12:45 – 1:30',  monday: '', tuesday: '', wednesday: '', thursday: '', friday: '', saturday: '', sunday: '' },
+    { time: '1:30 – 2:15',   monday: '', tuesday: '', wednesday: '', thursday: '', friday: '', saturday: '', sunday: '' },
+    { time: '2:15 – 3:00',   monday: '', tuesday: '', wednesday: '', thursday: '', friday: '', saturday: '', sunday: '' },
+  ];
+}
 
   /* ── Timetable: build a single <tr> HTML string for the editor table ── */
   function _ttBuildPeriodRowHtml(p) {
-    const DAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
-    const vals     = DAY_KEYS.map(function (dk) { return (p[dk] || '').trim().toUpperCase(); });
-    const isBreak  = vals.every(function (v) { return v === 'BREAK'; });
-    const isLunch  = vals.every(function (v) { return v === 'LUNCH'; });
-    const isSpecial = isBreak || isLunch;
-    const rowBg    = isSpecial ? 'background:var(--bg-subtle);' : '';
+  const DAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  const vals     = DAY_KEYS.map(function (dk) { return (p[dk] || '').trim().toUpperCase(); });
+  const isBreak  = vals.every(function (v) { return v === 'BREAK'; });
+  const isLunch  = vals.every(function (v) { return v === 'LUNCH'; });
+  const isSpecial = isBreak || isLunch;
+  const rowBg    = isSpecial ? 'background:var(--bg-subtle);' : '';
 
-    const inputBase = 'width:100%;box-sizing:border-box;padding:.3125rem .4375rem;' +
-                      'font-size:.75rem;border:1px solid var(--border);border-radius:4px;' +
-                      'background:var(--bg-base);color:var(--text-1);font-family:var(--font);';
+  const inputBase = 'width:100%;box-sizing:border-box;padding:.3125rem .4375rem;' +
+                    'font-size:.75rem;border:1px solid var(--border);border-radius:4px;' +
+                    'background:var(--bg-base);color:var(--text-1);font-family:var(--font);';
 
-    var dayCells = DAY_KEYS.map(function (dk) {
-      var val        = p[dk] || '';
-      var isSpecCell = ['BREAK', 'LUNCH'].includes(val.trim().toUpperCase());
-      return '<td style="padding:.25rem .3rem;border:1px solid var(--border);' + rowBg + '">' +
-        '<input data-field="' + dk + '" value="' + _esc(val) + '" ' +
-          'style="' + inputBase +
-            (isSpecCell ? 'text-align:center;font-weight:700;' +
-              'color:var(--text-3);letter-spacing:.05em;' : '') +
-          '" />' +
-        '</td>';
-    }).join('');
+  var dayCells = DAY_KEYS.map(function (dk) {
+    var val        = p[dk] || '';
+    var isSpecCell = ['BREAK', 'LUNCH'].includes(val.trim().toUpperCase());
+    return '<td style="padding:.25rem .3rem;border:1px solid var(--border);' + rowBg + '">' +
+      '<input data-field="' + dk + '" value="' + _esc(val) + '" ' +
+        'style="' + inputBase +
+          (isSpecCell ? 'text-align:center;font-weight:700;' +
+            'color:var(--text-3);letter-spacing:.05em;' : '') +
+        '" />' +
+      '</td>';
+  }).join('');
 
-    return '<tr data-period-row style="' + rowBg + '">' +
-      '<td style="padding:.25rem .3rem;border:1px solid var(--border);' + rowBg + '">' +
-        '<input data-field="time" value="' + _esc(p.time || '') + '" ' +
-          'placeholder="8:00 – 8:45" ' +
-          'style="' + inputBase + 'min-width:90px;font-family:var(--font-mono);font-size:.6875rem;" />' +
-      '</td>' +
-      dayCells +
-      '<td style="padding:.25rem;border:1px solid var(--border);text-align:center;' +
-          'vertical-align:middle;' + rowBg + '">' +
-        '<button onclick="this.closest(\'tr\').remove()" title="Remove period" ' +
-          'style="background:none;border:none;cursor:pointer;font-size:1rem;' +
-            'color:var(--text-4);line-height:1;padding:2px 4px;" ' +
-          'onmouseenter="this.style.color=\'var(--danger)\'" ' +
-          'onmouseleave="this.style.color=\'var(--text-4)\'">×</button>' +
-      '</td>' +
-    '</tr>';
-  }
+  return '<tr data-period-row style="' + rowBg + '">' +
+    '<td style="padding:.25rem .3rem;border:1px solid var(--border);' + rowBg + '">' +
+      '<input data-field="time" value="' + _esc(p.time || '') + '" ' +
+        'placeholder="8:00 – 8:45" ' +
+        'style="' + inputBase + 'min-width:90px;font-family:var(--font-mono);font-size:.6875rem;" />' +
+    '</td>' +
+    dayCells +
+    '<td style="padding:.25rem;border:1px solid var(--border);text-align:center;' +
+        'vertical-align:middle;' + rowBg + '">' +
+      '<button onclick="this.closest(\'tr\').remove()" title="Remove period" ' +
+        'style="background:none;border:none;cursor:pointer;font-size:1rem;' +
+          'color:var(--text-4);line-height:1;padding:2px 4px;" ' +
+        'onmouseenter="this.style.color=\'var(--danger)\'" ' +
+        'onmouseleave="this.style.color=\'var(--text-4)\'">×</button>' +
+    '</td>' +
+  '</tr>';
+}
 
   /* ── Timetable: append a period row to the editor tbody ── */
   function _ttAppendPeriodRowToDOM(p) {
@@ -94,30 +94,30 @@
 
   /* ── Timetable: read all period rows from the editor table ── */
   function _ttReadPeriodsFromDOM() {
-    const DAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
-    const rows     = document.querySelectorAll('#ttPeriodBody tr[data-period-row]');
-    const periods  = [];
-    rows.forEach(function (tr) {
-      const obj = {};
-      tr.querySelectorAll('input[data-field]').forEach(function (inp) {
-        obj[inp.dataset.field] = inp.value.trim();
-      });
-      const hasContent = obj.time || DAY_KEYS.some(function (d) { return !!obj[d]; });
-      if (hasContent) periods.push(obj);
+  const DAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  const rows     = document.querySelectorAll('#ttPeriodBody tr[data-period-row]');
+  const periods  = [];
+  rows.forEach(function (tr) {
+    const obj = {};
+    tr.querySelectorAll('input[data-field]').forEach(function (inp) {
+      obj[inp.dataset.field] = inp.value.trim();
     });
-    return periods;
-  }
+    const hasContent = obj.time || DAY_KEYS.some(function (d) { return !!obj[d]; });
+    if (hasContent) periods.push(obj);
+  });
+  return periods;
+}
 
   /* ── Timetable: row-add helpers ── */
   function _ttAddEmptyPeriodRow() {
-    _ttAppendPeriodRowToDOM({ time: '', monday: '', tuesday: '', wednesday: '', thursday: '', friday: '' });
-  }
-  function _ttAddBreakRow() {
-    _ttAppendPeriodRowToDOM({ time: '', monday: 'BREAK', tuesday: 'BREAK', wednesday: 'BREAK', thursday: 'BREAK', friday: 'BREAK' });
-  }
-  function _ttAddLunchRow() {
-    _ttAppendPeriodRowToDOM({ time: '', monday: 'LUNCH', tuesday: 'LUNCH', wednesday: 'LUNCH', thursday: 'LUNCH', friday: 'LUNCH' });
-  }
+  _ttAppendPeriodRowToDOM({ time: '', monday: '', tuesday: '', wednesday: '', thursday: '', friday: '', saturday: '', sunday: '' });
+}
+function _ttAddBreakRow() {
+  _ttAppendPeriodRowToDOM({ time: '', monday: 'BREAK', tuesday: 'BREAK', wednesday: 'BREAK', thursday: 'BREAK', friday: 'BREAK', saturday: 'BREAK', sunday: 'BREAK' });
+}
+function _ttAddLunchRow() {
+  _ttAppendPeriodRowToDOM({ time: '', monday: 'LUNCH', tuesday: 'LUNCH', wednesday: 'LUNCH', thursday: 'LUNCH', friday: 'LUNCH', saturday: 'LUNCH', sunday: 'LUNCH' });
+}
   
 function renderTeacherDashboard() {
   AppState.isTeacher = true;
@@ -2820,281 +2820,281 @@ function _loadTimetableManager() {
   }
 
 async function _ttRenderEditor() {
-    const wrap = document.getElementById('ttEditorWrap');
-    if (!wrap) return;
+  const wrap = document.getElementById('ttEditorWrap');
+  if (!wrap) return;
 
-    if (!_ttSelectedClass) {
-      wrap.innerHTML = `<p style="font-size:var(--text-sm);color:var(--text-3);">Select a class above.</p>`;
-      return;
-    }
-
-    const isPermanent = _ttSelectedWeek === 'permanent';
-    const thisWeek    = _isoWeekKey();
-    const isThisWk    = _ttSelectedWeek === thisWeek;
-    const docId       = _classKeyFromStr(_ttSelectedClass);
-    const targetMon   = isPermanent ? _weekMonday(new Date()) : _getMondayForWeek(_ttSelectedWeek);
-    const weekLabel   = isPermanent ? 'Permanent Timetable' : _weekRangeLabel(targetMon);
-
-    /* Load existing data */
-    let periods  = _ttDefaultPeriods();
-    let note     = '';
-    let hasSaved = false;
-    try {
-      const snap = await Db().collection('weeklyTimetable').doc(docId).get();
-      if (snap.exists) {
-        const allTimetables = (snap.data() || {}).timetables || {};
-        const saved = allTimetables[_ttSelectedWeek];
-        if (saved && Array.isArray(saved.periods) && saved.periods.length > 0) {
-          periods  = saved.periods;
-          note     = saved.note || '';
-          hasSaved = true;
-        }
-      }
-    } catch (e) { console.warn('[timetable] load error:', e); }
-
-    const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
-    const DAY_KEYS  = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
-
-    /* Date labels under column headers — for permanent, show current week dates */
-    const dayDates = DAY_KEYS.map((_, i) => {
-      const dt = new Date(targetMon);
-      dt.setDate(targetMon.getDate() + i);
-      return dt.getDate() + ' ' + dt.toLocaleDateString('en-GB', { month: 'short' });
-    });
-
-    const bodyHtml = periods.map(p => _ttBuildPeriodRowHtml(p)).join('');
-
-    const headerCells = DAY_SHORT.map((ds, i) =>
-      `<th style="padding:.4375rem .5rem;border:1px solid rgba(255,255,255,.18);
-                  font-size:var(--text-xs);font-weight:700;color:#fff;text-align:center;
-                  min-width:100px;">
-        ${_esc(ds)}<br>
-        <span style="font-weight:400;font-size:.625rem;opacity:.8;">${isPermanent ? '—' : _esc(dayDates[i])}</span>
-      </th>`
-    ).join('');
-
-    /* Permanent badge / week badge */
-    const badgeHtml = isPermanent
-      ? `<span style="font-size:var(--text-xs);font-weight:700;padding:2px 9px;
-                      border-radius:99px;background:var(--warning);color:#fff;">
-           ♾ Permanent
-         </span>`
-      : isThisWk
-      ? `<span style="font-size:var(--text-xs);font-weight:700;padding:2px 9px;
-                      border-radius:99px;background:var(--accent);color:#fff;">
-           Current Week
-         </span>`
-      : '';
-
-    const subLabel = isPermanent
-      ? 'This timetable is active every week until you change or delete it.'
-      : isThisWk
-      ? '★ Students see this timetable right now. Edit cells directly. Add or remove rows as needed.'
-      : `${_esc(_ttSelectedWeek)} — not yet current. Edit cells directly. Add or remove rows as needed.`;
-
-    wrap.innerHTML = `
-      <div class="glass-dark" style="padding:1.25rem;border-radius:var(--r-lg);overflow:hidden;">
-
-        <div style="display:flex;align-items:center;justify-content:space-between;
-                    margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border);
-                    flex-wrap:wrap;gap:.5rem;">
-          <div>
-            <h3 style="font-size:var(--text-base);font-weight:700;color:var(--text-1);">
-              ${_esc(_ttSelectedClass)} — ${_esc(weekLabel)}
-            </h3>
-            <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">
-              ${subLabel}
-            </p>
-          </div>
-          ${badgeHtml}
-        </div>
-
-        ${isPermanent ? `
-          <div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:1rem;padding:.625rem .875rem;
-                      background:var(--warning-subtle);border:1px solid var(--warning-border);
-                      border-radius:var(--r-md);font-size:var(--text-xs);color:var(--warning-text);line-height:1.6;">
-            <span style="flex-shrink:0;font-size:1rem;margin-top:1px;">♾</span>
-            <div>
-              <strong>Permanent timetable:</strong> Students will see this every week, regardless of the date,
-              unless a week-specific timetable exists for that week (week-specific always takes priority).
-              Update it here any time and save — changes take effect immediately.
-            </div>
-          </div>` : ''}
-
-        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:1rem;
-                    border:1px solid var(--border);border-radius:var(--r-md);">
-          <table style="border-collapse:collapse;width:100%;min-width:600px;">
-            <thead>
-              <tr style="background:var(--accent);">
-                <th style="padding:.4375rem .625rem;border:1px solid rgba(255,255,255,.18);
-                           font-size:var(--text-xs);font-weight:700;color:#fff;
-                           text-align:left;min-width:98px;white-space:nowrap;">
-                  Time / Period
-                </th>
-                ${headerCells}
-                <th style="padding:.4375rem .375rem;border:1px solid rgba(255,255,255,.18);
-                           font-size:var(--text-xs);color:#fff;width:28px;"></th>
-              </tr>
-            </thead>
-            <tbody id="ttPeriodBody">
-              ${bodyHtml}
-            </tbody>
-          </table>
-        </div>
-
-        <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem;">
-          <button onclick="Teacher._ttAddEmptyPeriodRow()" class="btn bg-gray-500"
-                  style="font-size:var(--text-sm);">+ Add Period</button>
-          <button onclick="Teacher._ttAddBreakRow()" class="btn bg-gray-500"
-                  style="font-size:var(--text-sm);">+ Add Break</button>
-          <button onclick="Teacher._ttAddLunchRow()" class="btn bg-gray-500"
-                  style="font-size:var(--text-sm);">+ Add Lunch</button>
-        </div>
-
-        <div style="margin-bottom:1rem;">
-          <label style="display:block;font-size:var(--text-xs);font-weight:600;color:var(--text-3);
-                        margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.04em;">
-            Optional Note
-            <span style="font-weight:400;text-transform:none;color:var(--text-4);">
-              — displayed below the timetable on the student dashboard
-            </span>
-          </label>
-          <input type="text" id="ttNoteInput" value="${_esc(note)}"
-                 placeholder="e.g. Assembly at 7:45 on Mondays. Bring PE kit on Wednesdays."
-                 style="width:100%;box-sizing:border-box;" />
-        </div>
-
-        <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;
-                    padding-top:.875rem;border-top:1px solid var(--border);">
-          <button id="ttSaveBtn" onclick="Teacher._saveTimetable()"
-                  class="btn ${isPermanent ? 'bg-green-600' : 'bg-green-600'}" style="font-size:var(--text-sm);">
-            ${isPermanent ? '♾ Save Permanent Timetable' : 'Save Timetable'}
-          </button>
-          <button onclick="Teacher._clearTimetableInputs()" class="btn bg-gray-500"
-                  style="font-size:var(--text-sm);">
-            Reset to Defaults
-          </button>
-          ${hasSaved
-            ? `<button onclick="Teacher._deleteTimetable('${_esc(_ttSelectedWeek)}')"
-                       class="btn" style="background:var(--danger-subtle);color:var(--danger);
-                                          border:1px solid var(--danger-border);font-size:var(--text-sm);">
-                 ${isPermanent ? '♾ Delete Permanent' : 'Delete This Week'}
-               </button>`
-            : ''}
-        </div>
-
-      </div>`;
+  if (!_ttSelectedClass) {
+    wrap.innerHTML = `<p style="font-size:var(--text-sm);color:var(--text-3);">Select a class above.</p>`;
+    return;
   }
+
+  const isPermanent = _ttSelectedWeek === 'permanent';
+  const thisWeek    = _isoWeekKey();
+  const isThisWk    = _ttSelectedWeek === thisWeek;
+  const docId       = _classKeyFromStr(_ttSelectedClass);
+  const targetMon   = isPermanent ? _weekMonday(new Date()) : _getMondayForWeek(_ttSelectedWeek);
+  const weekLabel   = isPermanent ? 'Permanent Timetable' : _weekRangeLabel(targetMon);
+
+  /* Load existing data */
+  let periods  = _ttDefaultPeriods();
+  let note     = '';
+  let hasSaved = false;
+  try {
+    const snap = await Db().collection('weeklyTimetable').doc(docId).get();
+    if (snap.exists) {
+      const allTimetables = (snap.data() || {}).timetables || {};
+      const saved = allTimetables[_ttSelectedWeek];
+      if (saved && Array.isArray(saved.periods) && saved.periods.length > 0) {
+        periods  = saved.periods;
+        note     = saved.note || '';
+        hasSaved = true;
+      }
+    }
+  } catch (e) { console.warn('[timetable] load error:', e); }
+
+  const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const DAY_KEYS  = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+  /* Date labels under column headers */
+  const dayDates = DAY_KEYS.map((_, i) => {
+    const dt = new Date(targetMon);
+    dt.setDate(targetMon.getDate() + i);
+    return dt.getDate() + ' ' + dt.toLocaleDateString('en-GB', { month: 'short' });
+  });
+
+  const bodyHtml = periods.map(p => _ttBuildPeriodRowHtml(p)).join('');
+
+  const headerCells = DAY_SHORT.map((ds, i) =>
+    `<th style="padding:.4375rem .5rem;border:1px solid rgba(255,255,255,.18);
+                font-size:var(--text-xs);font-weight:700;color:#fff;text-align:center;
+                min-width:100px;">
+      ${_esc(ds)}<br>
+      <span style="font-weight:400;font-size:.625rem;opacity:.8;">${isPermanent ? '—' : _esc(dayDates[i])}</span>
+    </th>`
+  ).join('');
+
+  /* Permanent badge / week badge */
+  const badgeHtml = isPermanent
+    ? `<span style="font-size:var(--text-xs);font-weight:700;padding:2px 9px;
+                    border-radius:99px;background:var(--warning);color:#fff;">
+         Permanent
+       </span>`
+    : isThisWk
+    ? `<span style="font-size:var(--text-xs);font-weight:700;padding:2px 9px;
+                    border-radius:99px;background:var(--accent);color:#fff;">
+         Current Week
+       </span>`
+    : '';
+
+  const subLabel = isPermanent
+    ? 'This timetable is active every week until you change or delete it.'
+    : isThisWk
+    ? '★ Students see this timetable right now. Edit cells directly. Add or remove rows as needed.'
+    : `${_esc(_ttSelectedWeek)} — not yet current. Edit cells directly. Add or remove rows as needed.`;
+
+  wrap.innerHTML = `
+    <div class="glass-dark" style="padding:1.25rem;border-radius:var(--r-lg);overflow:hidden;">
+
+      <div style="display:flex;align-items:center;justify-content:space-between;
+                  margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border);
+                  flex-wrap:wrap;gap:.5rem;">
+        <div>
+          <h3 style="font-size:var(--text-base);font-weight:700;color:var(--text-1);">
+            ${_esc(_ttSelectedClass)} — ${_esc(weekLabel)}
+          </h3>
+          <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">
+            ${subLabel}
+          </p>
+        </div>
+        ${badgeHtml}
+      </div>
+
+      ${isPermanent ? `
+        <div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:1rem;padding:.625rem .875rem;
+                    background:var(--warning-subtle);border:1px solid var(--warning-border);
+                    border-radius:var(--r-md);font-size:var(--text-xs);color:var(--warning-text);line-height:1.6;">
+          <span style="flex-shrink:0;font-size:1rem;margin-top:1px;">♾</span>
+          <div>
+            <strong>Permanent timetable:</strong> Students will see this every week, regardless of the date,
+            unless a week-specific timetable exists for that week (week-specific always takes priority).
+            Update it here any time and save — changes take effect immediately.
+          </div>
+        </div>` : ''}
+
+      <div style="overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:1rem;
+                  border:1px solid var(--border);border-radius:var(--r-md);">
+        <table style="border-collapse:collapse;width:100%;min-width:780px;">
+          <thead>
+            <tr style="background:var(--accent);">
+              <th style="padding:.4375rem .625rem;border:1px solid rgba(255,255,255,.18);
+                         font-size:var(--text-xs);font-weight:700;color:#fff;
+                         text-align:left;min-width:98px;white-space:nowrap;">
+                Time / Period
+              </th>
+              ${headerCells}
+              <th style="padding:.4375rem .375rem;border:1px solid rgba(255,255,255,.18);
+                         font-size:var(--text-xs);color:#fff;width:28px;"></th>
+            </tr>
+          </thead>
+          <tbody id="ttPeriodBody">
+            ${bodyHtml}
+          </tbody>
+        </table>
+      </div>
+
+      <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;margin-bottom:1rem;">
+        <button onclick="Teacher._ttAddEmptyPeriodRow()" class="btn bg-gray-500"
+                style="font-size:var(--text-sm);">+ Add Period</button>
+        <button onclick="Teacher._ttAddBreakRow()" class="btn bg-gray-500"
+                style="font-size:var(--text-sm);">+ Add Break</button>
+        <button onclick="Teacher._ttAddLunchRow()" class="btn bg-gray-500"
+                style="font-size:var(--text-sm);">+ Add Lunch</button>
+      </div>
+
+      <div style="margin-bottom:1rem;">
+        <label style="display:block;font-size:var(--text-xs);font-weight:600;color:var(--text-3);
+                      margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.04em;">
+          Optional Note
+          <span style="font-weight:400;text-transform:none;color:var(--text-4);">
+            — displayed below the timetable on the student dashboard
+          </span>
+        </label>
+        <input type="text" id="ttNoteInput" value="${_esc(note)}"
+               placeholder="e.g. Assembly at 7:45 on Mondays. Bring PE kit on Wednesdays."
+               style="width:100%;box-sizing:border-box;" />
+      </div>
+
+      <div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;
+                  padding-top:.875rem;border-top:1px solid var(--border);">
+        <button id="ttSaveBtn" onclick="Teacher._saveTimetable()"
+                class="btn bg-green-600" style="font-size:var(--text-sm);">
+          ${isPermanent ? '♾ Save Permanent Timetable' : 'Save Timetable'}
+        </button>
+        <button onclick="Teacher._clearTimetableInputs()" class="btn bg-gray-500"
+                style="font-size:var(--text-sm);">
+          Reset to Defaults
+        </button>
+        ${hasSaved
+          ? `<button onclick="Teacher._deleteTimetable('${_esc(_ttSelectedWeek)}')"
+                     class="btn" style="background:var(--danger-subtle);color:var(--danger);
+                                        border:1px solid var(--danger-border);font-size:var(--text-sm);">
+               ${isPermanent ? '♾ Delete Permanent' : 'Delete This Week'}
+             </button>`
+          : ''}
+      </div>
+
+    </div>`;
+}
 
 function _ttRenderAllList(docData) {
-    const container = document.getElementById('ttAllList');
-    if (!container) return;
+  const container = document.getElementById('ttAllList');
+  if (!container) return;
 
-    const DAY_KEYS   = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday'];
-    const thisWeek   = _isoWeekKey();
-    const timetables = (docData && docData.timetables) ? docData.timetables : {};
-    const allKeys    = Object.keys(timetables);
+  const DAY_KEYS   = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+  const thisWeek   = _isoWeekKey();
+  const timetables = (docData && docData.timetables) ? docData.timetables : {};
+  const allKeys    = Object.keys(timetables);
 
-    /* Separate permanent from weekly */
-    const hasPermanent  = allKeys.includes('permanent');
-    const weekKeys      = allKeys.filter(k => k !== 'permanent').sort().reverse();
-    const orderedKeys   = hasPermanent ? ['permanent', ...weekKeys] : weekKeys;
+  /* Separate permanent from weekly */
+  const hasPermanent  = allKeys.includes('permanent');
+  const weekKeys      = allKeys.filter(k => k !== 'permanent').sort().reverse();
+  const orderedKeys   = hasPermanent ? ['permanent', ...weekKeys] : weekKeys;
 
-    if (orderedKeys.length === 0) {
-      container.innerHTML =
-        `<p style="font-size:var(--text-sm);color:var(--text-3);font-style:italic;">
-           No timetables saved for ${_esc(_ttSelectedClass || 'this class')}.
-         </p>`;
-      return;
-    }
+  if (orderedKeys.length === 0) {
+    container.innerHTML =
+      `<p style="font-size:var(--text-sm);color:var(--text-3);font-style:italic;">
+         No timetables saved for ${_esc(_ttSelectedClass || 'this class')}.
+       </p>`;
+    return;
+  }
 
-    container.innerHTML = orderedKeys.map(wk => {
-      const tt          = timetables[wk] || {};
-      const isPermanent = wk === 'permanent';
-      const isThisWeek  = wk === thisWeek;
-      const periods     = Array.isArray(tt.periods) ? tt.periods : [];
-      const mon         = isPermanent ? _weekMonday(new Date()) : _getMondayForWeek(wk);
-      const rangeLabel  = isPermanent ? 'Permanent Timetable' : _weekRangeLabel(mon);
+  container.innerHTML = orderedKeys.map(wk => {
+    const tt          = timetables[wk] || {};
+    const isPermanent = wk === 'permanent';
+    const isThisWeek  = wk === thisWeek;
+    const periods     = Array.isArray(tt.periods) ? tt.periods : [];
+    const mon         = isPermanent ? _weekMonday(new Date()) : _getMondayForWeek(wk);
+    const rangeLabel  = isPermanent ? 'Permanent Timetable' : _weekRangeLabel(mon);
 
-      const lessonCount = periods.filter(p =>
-        !DAY_KEYS.every(dk => ['BREAK','LUNCH',''].includes((p[dk]||'').trim().toUpperCase()))
-      ).length;
+    const lessonCount = periods.filter(p =>
+      !DAY_KEYS.every(dk => ['BREAK','LUNCH',''].includes((p[dk]||'').trim().toUpperCase()))
+    ).length;
 
-      /* Mini preview: first 4 rows */
-      const previewRows = periods.slice(0, 4).map(p => {
-        const vals       = DAY_KEYS.map(dk => (p[dk]||'').trim());
-        const firstUp    = vals[0].toUpperCase();
-        const allSame    = firstUp !== '' && vals.every(v => v.toUpperCase() === firstUp);
-        const isSpecial  = allSame && (firstUp === 'BREAK' || firstUp === 'LUNCH');
-        const timeLabel  = _esc(p.time || '—');
-        const subjLabel  = isSpecial
-          ? `<em style="color:var(--text-4);">${_esc(vals[0])}</em>`
-          : `<span style="color:var(--text-1);font-weight:500;">${_esc(vals[0])}</span>` +
-            (vals[1] ? ` <span style="color:var(--text-3);">/ ${_esc(vals[1])}</span>` : '');
-        return `<div style="font-size:var(--text-xs);padding:1px 0;display:flex;gap:.375rem;">
-          <span style="color:var(--text-3);font-family:var(--font-mono);min-width:72px;flex-shrink:0;">${timeLabel}</span>
-          ${subjLabel}
-        </div>`;
-      }).join('');
+    /* Mini preview: first 4 rows */
+    const previewRows = periods.slice(0, 4).map(p => {
+      const vals       = DAY_KEYS.map(dk => (p[dk]||'').trim());
+      const firstUp    = vals[0].toUpperCase();
+      const allSame    = firstUp !== '' && vals.every(v => v.toUpperCase() === firstUp);
+      const isSpecial  = allSame && (firstUp === 'BREAK' || firstUp === 'LUNCH');
+      const timeLabel  = _esc(p.time || '—');
+      const subjLabel  = isSpecial
+        ? `<em style="color:var(--text-4);">${_esc(vals[0])}</em>`
+        : `<span style="color:var(--text-1);font-weight:500;">${_esc(vals[0])}</span>` +
+          (vals[1] ? ` <span style="color:var(--text-3);">/ ${_esc(vals[1])}</span>` : '');
+      return `<div style="font-size:var(--text-xs);padding:1px 0;display:flex;gap:.375rem;">
+        <span style="color:var(--text-3);font-family:var(--font-mono);min-width:72px;flex-shrink:0;">${timeLabel}</span>
+        ${subjLabel}
+      </div>`;
+    }).join('');
 
-      /* Badge styling */
-      const headerBg      = isPermanent ? 'var(--warning-subtle)' : isThisWeek ? 'var(--accent-subtle)' : 'var(--bg-subtle)';
-      const borderColor   = isPermanent ? 'var(--warning-border)' : isThisWeek ? 'var(--accent-border)' : 'var(--border)';
-      const labelColor    = isPermanent ? 'var(--warning-text)'   : isThisWeek ? 'var(--accent-text)'   : 'var(--text-1)';
-      const badgeHtml     = isPermanent
-        ? `<span style="font-size:var(--text-xs);font-weight:700;padding:1px 7px;border-radius:99px;
-                        background:var(--warning);color:#fff;">♾ Permanent</span>`
-        : isThisWeek
-        ? `<span style="font-size:var(--text-xs);font-weight:700;padding:1px 7px;border-radius:99px;
-                        background:var(--accent);color:#fff;">★ Current</span>`
-        : `<span style="font-size:var(--text-xs);color:var(--text-4);">${_esc(wk)}</span>`;
+    /* Badge styling */
+    const headerBg      = isPermanent ? 'var(--warning-subtle)' : isThisWeek ? 'var(--accent-subtle)' : 'var(--bg-subtle)';
+    const borderColor   = isPermanent ? 'var(--warning-border)' : isThisWeek ? 'var(--accent-border)' : 'var(--border)';
+    const labelColor    = isPermanent ? 'var(--warning-text)'   : isThisWeek ? 'var(--accent-text)'   : 'var(--text-1)';
+    const badgeHtml     = isPermanent
+      ? `<span style="font-size:var(--text-xs);font-weight:700;padding:1px 7px;border-radius:99px;
+                      background:var(--warning);color:#fff;">♾ Permanent</span>`
+      : isThisWeek
+      ? `<span style="font-size:var(--text-xs);font-weight:700;padding:1px 7px;border-radius:99px;
+                      background:var(--accent);color:#fff;">★ Current</span>`
+      : `<span style="font-size:var(--text-xs);color:var(--text-4);">${_esc(wk)}</span>`;
 
-      return `
-        <div style="border:1px solid ${borderColor};
-                    border-radius:8px;overflow:hidden;background:var(--bg-base);">
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:.5rem .875rem;
-                      background:${headerBg};">
-            <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
-              <span style="font-size:var(--text-sm);font-weight:700;color:${labelColor};">
-                ${_esc(rangeLabel)}
-              </span>
-              ${badgeHtml}
-              <span style="font-size:var(--text-xs);color:var(--text-3);">
-                ${lessonCount} lesson period${lessonCount !== 1 ? 's' : ''}
-                · ${periods.length} rows
-              </span>
-            </div>
-            <div style="display:flex;gap:.375rem;align-items:center;flex-shrink:0;">
-              <button onclick="Teacher._editTimetableWeek('${_esc(wk)}')"
-                      style="font-size:var(--text-xs);font-weight:600;color:var(--accent);
-                             background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">
-                Edit
-              </button>
-              <span style="color:var(--border-strong);">·</span>
-              <button onclick="Teacher._deleteTimetable('${_esc(wk)}')"
-                      style="font-size:var(--text-xs);font-weight:600;color:var(--danger);
-                             background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">
-                Delete
-              </button>
-            </div>
+    return `
+      <div style="border:1px solid ${borderColor};
+                  border-radius:8px;overflow:hidden;background:var(--bg-base);">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:.5rem .875rem;
+                    background:${headerBg};">
+          <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;">
+            <span style="font-size:var(--text-sm);font-weight:700;color:${labelColor};">
+              ${_esc(rangeLabel)}
+            </span>
+            ${badgeHtml}
+            <span style="font-size:var(--text-xs);color:var(--text-3);">
+              ${lessonCount} lesson period${lessonCount !== 1 ? 's' : ''}
+              · ${periods.length} rows
+            </span>
           </div>
-          ${tt.note
-            ? `<div style="padding:.3125rem .875rem;font-size:var(--text-xs);color:var(--text-3);
-                           font-style:italic;border-bottom:1px solid var(--border);">
-                 📌 ${_esc(tt.note)}
+          <div style="display:flex;gap:.375rem;align-items:center;flex-shrink:0;">
+            <button onclick="Teacher._editTimetableWeek('${_esc(wk)}')"
+                    style="font-size:var(--text-xs);font-weight:600;color:var(--accent);
+                           background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">
+              Edit
+            </button>
+            <span style="color:var(--border-strong);">·</span>
+            <button onclick="Teacher._deleteTimetable('${_esc(wk)}')"
+                    style="font-size:var(--text-xs);font-weight:600;color:var(--danger);
+                           background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">
+              Delete
+            </button>
+          </div>
+        </div>
+        ${tt.note
+          ? `<div style="padding:.3125rem .875rem;font-size:var(--text-xs);color:var(--text-3);
+                         font-style:italic;border-bottom:1px solid var(--border);">
+               📌 ${_esc(tt.note)}
+             </div>`
+          : ''}
+        <div style="padding:.5rem .875rem;">
+          ${previewRows}
+          ${periods.length > 4
+            ? `<div style="font-size:var(--text-xs);color:var(--text-4);margin-top:2px;">
+                 + ${periods.length - 4} more rows…
                </div>`
             : ''}
-          <div style="padding:.5rem .875rem;">
-            ${previewRows}
-            ${periods.length > 4
-              ? `<div style="font-size:var(--text-xs);color:var(--text-4);margin-top:2px;">
-                   + ${periods.length - 4} more rows…
-                 </div>`
-              : ''}
-          </div>
-        </div>`;
-    }).join('');
-  }
+        </div>
+      </div>`;
+  }).join('');
+}
 
 function _editTimetableWeek(weekKey) {
     _ttSelectedWeek = weekKey;
