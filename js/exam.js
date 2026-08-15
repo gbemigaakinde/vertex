@@ -538,7 +538,7 @@
     const permanentBadge = isUsingPermanent
       ? '<span style="flex-shrink:0;font-size:.6875rem;font-weight:700;' +
           'padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.18);' +
-          'color:#fff;border:1px solid rgba(255,255,255,.3);white-space:nowrap;">♾ Permanent</span>'
+          'color:#fff;border:1px solid rgba(255,255,255,.3);white-space:nowrap;">Permanent</span>'
       : (todayColIdx >= 0
           ? '<span style="margin-left:auto;flex-shrink:0;font-size:.6875rem;font-weight:700;' +
               'padding:2px 9px;border-radius:99px;background:rgba(255,255,255,.18);' +
@@ -2026,7 +2026,7 @@
   doc.setFontSize(7.5);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(255, 255, 255);
-  const rightLabel = isUsingPermanent ? '♾ Permanent Schedule' : rangeLabel;
+  const rightLabel = isUsingPermanent ? 'Permanent Schedule' : rangeLabel;
   doc.text(rightLabel, PAGE_W - MARGIN, 9, { align: 'right' });
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(6.5);
