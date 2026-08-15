@@ -313,7 +313,7 @@
 /* ─────────────────────────────────────────────────────── */
 
 // Grace window in ms after a period ends during which a tick is still allowed
-const _TICK_GRACE_MS = 30 * 60 * 1000; // 30 minutes
+const _TICK_GRACE_MS = 24 * 60 * 60 * 1000; // 24 hours
 
 async function _timetableTickPeriod(periodIndex, currentlyTicked) {
   if (!S().userId) return;
