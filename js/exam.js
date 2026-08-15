@@ -376,57 +376,6 @@ async function _timetableTickPeriod(periodIndex, currentlyTicked) {
   }
 }
 
-function _applyTickAppearance(btn, ticked, locked) {
-  const icon = btn.querySelector('i');
-
-  if (locked && ticked) {
-    // Locked + ticked: solid green check, no interaction
-    btn.style.cssText = _tickBtnBase() +
-      'background:var(--success);border-color:var(--success);color:#fff;cursor:default;opacity:1;';
-    if (icon) { icon.className = 'ph-fill ph-check-circle'; icon.style.fontSize = '18px'; }
-    btn.disabled = true;
-    btn.title = 'Marked as done (locked)';
-  } else if (locked && !ticked) {
-    // Locked + not ticked: greyed out, no interaction
-    btn.style.cssText = _tickBtnBase() +
-      'background:var(--bg-subtle);border-color:var(--border);color:var(--text-4);cursor:default;opacity:.55;';
-    if (icon) { icon.className = 'ph ph-circle'; icon.style.fontSize = '18px'; }
-    btn.disabled = true;
-    btn.title = 'Time window closed';
-  } else if (!locked && ticked) {
-    // Active + ticked: green, can untick
-    btn.style.cssText = _tickBtnBase() +
-      'background:var(--success);border-color:var(--success);color:#fff;cursor:pointer;';
-    if (icon) {
-      icon.className = 'ph-fill ph-check-circle';
-      icon.style.fontSize = '18px';
-      // Animate the tick in
-      icon.style.animation = 'none';
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          icon.style.animation = 'vtxTickPop .25s cubic-bezier(.34,1.56,.64,1) both';
-        });
-      });
-    }
-    btn.disabled = false;
-    btn.title = 'Tap to untick';
-  } else {
-    // Active + not ticked: outline circle, can tick
-    btn.style.cssText = _tickBtnBase() +
-      'background:var(--bg-base);border-color:var(--border);color:var(--text-4);cursor:pointer;';
-    if (icon) { icon.className = 'ph ph-circle'; icon.style.fontSize = '18px'; }
-    btn.disabled = false;
-    btn.title = 'Tap to mark as done';
-  }
-}
-
-function _tickBtnBase() {
-  return 'display:inline-flex;align-items:center;justify-content:center;' +
-         'width:32px;height:32px;border-radius:50%;border:2px solid;' +
-         'flex-shrink:0;transition:background .18s,border-color .18s,color .18s,transform .15s;' +
-         'padding:0;line-height:1;';
-}
-
 // Inject the keyframe once into the document
 (function _injectTickKeyframe() {
   if (document.getElementById('_vtxTickKeyframe')) return;
