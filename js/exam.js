@@ -736,9 +736,9 @@ function _tickBtnBase() {
       : '';
 
     const permanentBadge = isUsingPermanent
-      ? '<span style="flex-shrink:0;font-size:.6875rem;font-weight:700;' +
-          'padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.18);' +
-          'color:#fff;border:1px solid rgba(255,255,255,.3);white-space:nowrap;">♾ Permanent</span>'
+      ? '<span style="flex-shrink:0;font-size:.6rem;font-weight:700;' +
+          'padding:1px 5px;border-radius:99px;background:rgba(255,255,255,.18);' +
+          'color:#fff;border:1px solid rgba(255,255,255,.3);white-space:nowrap;">Permanent</span>'
       : (todayColIdx >= 0
           ? '<span style="margin-left:auto;flex-shrink:0;font-size:.6875rem;font-weight:700;' +
               'padding:2px 9px;border-radius:99px;background:rgba(255,255,255,.18);' +
