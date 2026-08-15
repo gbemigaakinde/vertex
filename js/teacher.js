@@ -3142,7 +3142,7 @@ function _ttRenderAllList(docData) {
         ${tt.note
           ? `<div style="padding:.3125rem .875rem;font-size:var(--text-xs);color:var(--text-3);
                          font-style:italic;border-bottom:1px solid var(--border);">
-               📌 ${_esc(tt.note)}
+                ${_esc(tt.note)}
              </div>`
           : ''}
         <div style="padding:.5rem .875rem;">
