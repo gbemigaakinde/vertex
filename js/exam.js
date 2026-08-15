@@ -517,7 +517,7 @@
     const noteHtml = note
       ? '<div style="padding:.5rem 1rem;border-top:1px solid var(--border);' +
           'font-size:.75rem;color:var(--text-3);background:var(--bg-subtle);' +
-          'line-height:1.6;font-style:italic;">📌 ' + _escHtml(note) + '</div>'
+          'line-height:1.6;font-style:italic;"> ' + _escHtml(note) + '</div>'
       : '';
 
     const legendHtml = (todayColIdx >= 0 && (currentPeriodIdx >= 0 || nextPeriodIdx >= 0))
@@ -2239,7 +2239,7 @@ style="background:linear-gradient(135deg,#7c3aed,#4f6ef7);color:#fff;">
     doc.setFontSize(7);
     doc.setFont('helvetica', 'italic');
     doc.setTextColor(...C.textTert);
-    const noteLines = doc.splitTextToSize('📌  ' + note, CONTENT_W);
+    const noteLines = doc.splitTextToSize(note, CONTENT_W);
     doc.text(noteLines, MARGIN, y);
     y += noteLines.length * 4 + 3;
   }
