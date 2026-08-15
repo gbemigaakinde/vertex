@@ -308,112 +308,6 @@
     return goWitty ? _pick(wittyLateNight) : `Late night hustle, ${n}! Respect the dedication.`;
   }
 
-/* ─────────────────────────────────────────────────────── */
-/* Timetable self-tick                                     */
-/* ─────────────────────────────────────────────────────── */
-async function _timetableTickPeriod(periodIndex, currentlyTicked) {
-  if (!S().userId) return;
-
-  const todayStr = _todayStr();
-  const tickRef  = window.fbDb
-    .collection('students').doc(S().userId)
-    .collection('timetableTicks').doc(todayStr);
-
-  const btn = document.getElementById('vtxTick_' + periodIndex);
-  if (!btn) return;
-
-  const newTicked = !currentlyTicked;
-
-  btn.disabled = true;
-  const icon = btn.querySelector('i');
-
-  if (newTicked) {
-    btn.style.border     = '2px solid var(--success)';
-    btn.style.background = 'transparent';
-    btn.style.color      = 'var(--success)';
-    if (icon) {
-      icon.className      = 'ph-fill ph-check';
-      icon.style.fontSize = '12px';
-      icon.style.opacity  = '1';
-      icon.style.animation = 'none';
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          icon.style.animation = 'vtxTickPop .25s cubic-bezier(.34,1.56,.64,1) both';
-        });
-      });
-    }
-  } else {
-    btn.style.border     = '1.5px solid rgba(255,255,255,.35)';
-    btn.style.background = 'rgba(0,0,0,.12)';
-    btn.style.color      = 'rgba(255,255,255,.6)';
-    if (icon) {
-      icon.className      = 'ph ph-circle';
-      icon.style.fontSize = '11px';
-      icon.style.opacity  = '0.5';
-    }
-  }
-
-  try {
-    if (newTicked) {
-      await tickRef.set({
-        [String(periodIndex)]: {
-          ticked:   true,
-          tickedAt: firebase.firestore.FieldValue.serverTimestamp(),
-        }
-      }, { merge: true });
-    } else {
-      await tickRef.set({
-        [String(periodIndex)]: firebase.firestore.FieldValue.delete(),
-      }, { merge: true });
-    }
-    btn.dataset.ticked = String(newTicked);
-    btn.disabled = false;
-    btn.onclick = function(e) {
-      e.stopPropagation();
-      Exam._timetableTickPeriod(periodIndex, newTicked);
-    };
-  } catch (err) {
-    console.error('[timetable tick] write error:', err);
-    // Roll back optimistic update
-    if (currentlyTicked) {
-      btn.style.border     = '2px solid var(--success)';
-      btn.style.background = 'transparent';
-      btn.style.color      = 'var(--success)';
-      if (icon) {
-        icon.className      = 'ph-fill ph-check';
-        icon.style.fontSize = '12px';
-        icon.style.opacity  = '1';
-      }
-    } else {
-      btn.style.border     = '1.5px solid rgba(255,255,255,.35)';
-      btn.style.background = 'rgba(0,0,0,.12)';
-      btn.style.color      = 'rgba(255,255,255,.6)';
-      if (icon) {
-        icon.className      = 'ph ph-circle';
-        icon.style.fontSize = '11px';
-        icon.style.opacity  = '0.5';
-      }
-    }
-    btn.disabled = false;
-    UI.toast('Could not save. Please check your connection.', 'error', 4000);
-  }
-}
-
-// Inject the keyframe once into the document
-(function _injectTickKeyframe() {
-  if (document.getElementById('_vtxTickKeyframe')) return;
-  const s = document.createElement('style');
-  s.id = '_vtxTickKeyframe';
-  s.textContent = `
-    @keyframes vtxTickPop {
-      0%   { transform: scale(0.55); opacity: 0; }
-      60%  { transform: scale(1.18); opacity: 1; }
-      100% { transform: scale(1);    opacity: 1; }
-    }
-  `;
-  document.head.appendChild(s);
-})();
-
   /* ─────────────────────────────────────────────────────── */
   /* Weekly timetable                                        */
   /* ─────────────────────────────────────────────────────── */
@@ -474,26 +368,19 @@ async function _timetableTickPeriod(periodIndex, currentlyTicked) {
     const todayStr    = _todayStr();
     const todayColIdx = dayDates.findIndex(dd => dd.dateStr === todayStr);
 
-    // nowMin: total minutes since midnight, used for period matching
     const nowMin = now.getHours() * 60 + now.getMinutes();
 
-    // Parses "7:30 – 8:00" or "7:30 - 8:00" etc. into { start, end } in minutes since midnight
+    // Robust parser — handles en-dash, em-dash, hyphen, with or without spaces
     function parseMins(t) {
       if (!t) return null;
-      const m = t.match(/(\d{1,2}):(\d{2})\s*[–\-—]\s*(\d{1,2}):(\d{2})/);
+      // Normalize: replace any dash variant (–, —, -, −) surrounded by optional spaces
+      const normalized = t.replace(/\s*[\u2013\u2014\u2212\-]\s*/g, '-');
+      const m = normalized.match(/^(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})$/);
       if (!m) return null;
-      return { start: +m[1] * 60 + +m[2], end: +m[3] * 60 + +m[4] };
-    }
-
-    // Grace window in minutes (24 hrs after period ends, ticking is allowed)
-    const GRACE_MINS = 24 * 60;
-
-    function _periodTickState(range) {
-      if (!range) return 'no-period';
-      if (nowMin >= range.start && nowMin < range.end) return 'active';
-      if (nowMin >= range.end && nowMin < range.end + GRACE_MINS) return 'grace';
-      if (nowMin >= range.end + GRACE_MINS) return 'locked';
-      return 'future';
+      const start = +m[1] * 60 + +m[2];
+      const end   = +m[3] * 60 + +m[4];
+      if (end <= start) return null; // guard against malformed
+      return { start, end };
     }
 
     function _getCurrentPeriodIndex() {
@@ -517,20 +404,6 @@ async function _timetableTickPeriod(periodIndex, currentlyTicked) {
     const currentPeriodIdx = _getCurrentPeriodIndex();
     const nextPeriodIdx    = _getNextPeriodIndex();
 
-    // Fetch today's tick data for this student
-    let tickData = {};
-    if (S().userId && todayColIdx >= 0) {
-      try {
-        const tickSnap = await window.fbDb
-          .collection('students').doc(S().userId)
-          .collection('timetableTicks').doc(todayStr)
-          .get();
-        if (tickSnap.exists) tickData = tickSnap.data() || {};
-      } catch (e) {
-        console.warn('[timetable] tick fetch failed (non-fatal):', e);
-      }
-    }
-
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
     const rangeLabel =
@@ -543,70 +416,6 @@ async function _timetableTickPeriod(periodIndex, currentlyTicked) {
     const TH = 'padding:.4375rem .5rem;border:1px solid rgba(255,255,255,.18);' +
                'font-size:.75rem;font-weight:700;text-align:center;white-space:nowrap;';
 
-    function _buildTickOverlay(periodIdx, range, isSpecial, todayVal) {
-      if (todayColIdx < 0) return '';
-      if (isSpecial) return '';
-      if (!todayVal || todayVal.trim() === '') return '';
-
-      const tickState = _periodTickState(range);
-      if (tickState === 'future' || tickState === 'no-period') return '';
-
-      const locked  = tickState === 'locked';
-      const tickObj = tickData[String(periodIdx)];
-      const ticked  = !!(tickObj && tickObj.ticked);
-
-      const title = locked && ticked  ? 'Marked as done (locked)'
-                  : locked && !ticked ? 'Time window closed'
-                  : ticked            ? 'Tap to untick'
-                  : 'Tap to mark as done';
-
-      if (ticked) {
-        return `<button
-          id="vtxTick_${periodIdx}"
-          data-period-idx="${periodIdx}"
-          data-ticked="true"
-          data-locked="${locked}"
-          onclick="event.stopPropagation();Exam._timetableTickPeriod(${periodIdx}, true)"
-          style="position:absolute;top:4px;right:4px;
-                 width:22px;height:22px;border-radius:50%;
-                 border:2px solid var(--success);
-                 background:transparent;
-                 color:var(--success);cursor:${locked ? 'default' : 'pointer'};
-                 display:inline-flex;align-items:center;justify-content:center;
-                 padding:0;line-height:1;flex-shrink:0;
-                 transition:border-color .18s,color .18s,transform .15s;
-                 z-index:2;"
-          ${locked ? 'disabled' : ''}
-          title="${title}"
-          aria-label="Done"
-        >
-          <i class="ph-fill ph-check" style="font-size:12px;pointer-events:none;"></i>
-        </button>`;
-      } else {
-        return `<button
-          id="vtxTick_${periodIdx}"
-          data-period-idx="${periodIdx}"
-          data-ticked="false"
-          data-locked="${locked}"
-          onclick="event.stopPropagation();Exam._timetableTickPeriod(${periodIdx}, false)"
-          style="position:absolute;top:4px;right:4px;
-                 width:22px;height:22px;border-radius:50%;
-                 border:1.5px solid rgba(255,255,255,.35);
-                 background:rgba(0,0,0,.12);
-                 color:rgba(255,255,255,.6);cursor:${locked ? 'default' : 'pointer'};
-                 display:inline-flex;align-items:center;justify-content:center;
-                 padding:0;line-height:1;flex-shrink:0;
-                 transition:border-color .18s,color .18s,transform .15s;
-                 z-index:2;"
-          ${locked ? 'disabled' : ''}
-          title="${title}"
-          aria-label="Mark as done"
-        >
-          <i class="ph ph-circle" style="font-size:11px;pointer-events:none;opacity:.5;"></i>
-        </button>`;
-      }
-    }
-
     const tableRows = periods.map(function (p, rowIdx) {
       const range           = parseMins(p.time || '');
       const isCurrentPeriod = currentPeriodIdx >= 0 && rowIdx === currentPeriodIdx;
@@ -616,8 +425,6 @@ async function _timetableTickPeriod(periodIndex, currentlyTicked) {
       const firstUp   = vals[0].toUpperCase();
       const allSame   = firstUp !== '' && vals.every(function (v) { return v.toUpperCase() === firstUp; });
       const isSpecial = allSame && (firstUp === 'BREAK' || firstUp === 'LUNCH');
-
-      const todayVal  = todayColIdx >= 0 ? vals[todayColIdx] : '';
 
       const rowBg   = isCurrentPeriod ? 'var(--warning-subtle)'
                     : isNextPeriod    ? 'rgba(79,110,247,.04)'
@@ -686,17 +493,11 @@ async function _timetableTickPeriod(periodIndex, currentlyTicked) {
           ? 'rgba(124,58,237,.035)'
           : rowBg;
 
-        var tickOverlay = isToday
-          ? _buildTickOverlay(rowIdx, range, isSpecial, todayVal)
-          : '';
-
         return '<td style="' + CB + 'background:' + bg + ';text-align:center;' +
-          'position:relative;' +
           'color:' + (empty ? 'var(--text-4)' : (isCurrentPeriod && isToday) ? 'var(--warning-text)' : isToday ? 'var(--text-1)' : 'var(--text-2)') + ';' +
           'font-weight:' + ((isCurrentPeriod && isToday && !empty) ? '700' : isToday && !empty ? '600' : '400') + ';' +
           'font-size:' + (empty ? '.7rem' : '.8rem') + ';">' +
           (empty ? '<span style="opacity:.28;">—</span>' : _escHtml(val)) +
-          tickOverlay +
           '</td>';
       }).join('');
 
@@ -739,10 +540,6 @@ async function _timetableTickPeriod(periodIndex, currentlyTicked) {
               '<span style="width:8px;height:8px;border-radius:50%;background:var(--accent);' +
               'display:inline-block;opacity:.5;"></span>' +
               'Next period</span>' : '') +
-          '<span style="display:inline-flex;align-items:center;gap:.3rem;' +
-            'font-size:.6875rem;color:var(--success);">' +
-            '<i class="ph-fill ph-check" style="font-size:12px;"></i>' +
-            'Tap ✓ on today\'s subject to mark done (within 24 hrs after period ends)</span>' +
         '</div>'
       : '';
 
@@ -2513,7 +2310,6 @@ style="background:linear-gradient(135deg,#7c3aed,#4f6ef7);color:#fff;">
   _isTodayATaskDay,
   _nextUnlockedDateLabel,
   _downloadTimetablePDF,
-  _timetableTickPeriod,
 };
 
 })();
