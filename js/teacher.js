@@ -2752,14 +2752,14 @@ function _loadTimetableManager() {
 
     _ttWeekMondayMap = {};
     const weekOptions = [];
-    for (let i = -4; i <= 8; i++) {
+    for (let i = 0; i <= 12; i++) {
       const d = new Date();
       d.setDate(d.getDate() + i * 7);
       const key    = _isoWeekKey(d);
       const monday = _weekMonday(d);
       const label  = _weekRangeLabel(monday);
       if (!weekOptions.find(w => w.key === key)) {
-        weekOptions.push({ key, label, isPast: key < thisWeek });
+        weekOptions.push({ key, label });
         _ttWeekMondayMap[key] = new Date(monday);
       }
     }
@@ -2792,12 +2792,12 @@ function _loadTimetableManager() {
                         margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.04em;">Week</label>
           <select id="ttWeekSelect" onchange="Teacher._onTTWeekChange()" style="width:100%;">
             <option value="permanent" ${_ttSelectedWeek === 'permanent' ? 'selected' : ''}>
-             Permanent Timetable (active until changed)
+              Permanent Timetable (active until changed)
             </option>
             <optgroup label="─ Week-specific ─">
               ${weekOptions.map(w => `
                 <option value="${_esc(w.key)}" ${w.key === _ttSelectedWeek ? 'selected' : ''}>
-                  ${w.key === thisWeek ? '★ This week: ' : w.isPast ? '(past) ' : ''}${_esc(w.label)} (${_esc(w.key)})
+                  ${w.key === thisWeek ? '★ This week: ' : ''}${_esc(w.label)} (${_esc(w.key)})
                 </option>`).join('')}
             </optgroup>
           </select>
