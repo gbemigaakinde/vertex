@@ -593,7 +593,7 @@
           '<table style="width:100%;border-collapse:collapse;min-width:600px;background:var(--bg-base);">' +
             '<thead>' +
               '<tr style="background:var(--accent-hover);">' +
-                '<th style="' + TH + 'background:transparent;text-align:left;' +
+                '<th style="' + TH + 'background:transparent;text-align:center;' +
                   'min-width:86px;color:rgba(255,255,255,.8);">Time</th>' +
                 headerCells +
               '</tr>' +
