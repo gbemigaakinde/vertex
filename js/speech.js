@@ -800,8 +800,8 @@ function cancel() {
   var _GROQ_API_KEY      = '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';
   var _GROQ_MODEL_PRIMARY  = 'llama-3.3-70b-versatile';
   var _GROQ_MODEL_FALLBACK = 'llama-3.1-8b-instant';
-  var _GROQ_ENDPOINT     = 'https://api.groq.com/openai/v1/chat/completions';
-
+  var _GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
+   
   var _OR_API_KEY        = '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';
   var _OR_MODEL_PRIMARY  = 'openrouter/auto';
   var _OR_MODEL_FALLBACK = 'meta-llama/llama-3.3-70b-instruct:free';
