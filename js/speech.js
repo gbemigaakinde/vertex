@@ -797,7 +797,7 @@ function cancel() {
     GROQ and OPENROUTER AI — Student question answering
   ════════════════════════════════════════════════════════ */
 
-  var _GROQ_API_KEY      = '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';
+  var _GROQ_API_KEY      = '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';
   var _GROQ_MODEL_PRIMARY  = 'llama-3.3-70b-versatile';
   var _GROQ_MODEL_FALLBACK = 'llama-3.1-8b-instant';
   var _GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
