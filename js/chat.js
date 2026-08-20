@@ -834,7 +834,9 @@ function _updateChatBadge(count) {
       'border:2px solid var(--bg-base)',
       'line-height:1',
     ].join(';');
+
     btn.style.position = 'relative';
+    btn.style.overflow = 'visible';
     btn.appendChild(badge);
   }
 }
