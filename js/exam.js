@@ -1590,51 +1590,52 @@ style="background:linear-gradient(135deg,#7c3aed,#4f6ef7);color:#fff;">
   }
 
   function _updateTimerDisplay() {
-    const el = document.getElementById('timerDisplay');
-    if (!el) return;
+  var el = document.getElementById('timerDisplay');
+  if (!el) return;
 
-    const duration = _examDurationMs();
+  var duration = _examDurationMs();
 
-    if (!S().examStartMs) {
-      el.textContent = _initialTimerStr(duration);
-      el.className   = 'timer-green';
-      return;
-    }
-
-    const remaining = duration - (Date.now() - S().examStartMs);
-
-    if (remaining <= 0) {
-      S().clearTimer();
-      el.textContent = '00:00:00';
-      el.className   = 'timer-red';
-      UI.toast('Time is up! Your exam is being submitted.', 'warning', 0);
-      submitExam(true);
-      return;
-    }
-
-    const h   = String(Math.floor(remaining / 3_600_000)).padStart(2, '0');
-    const m   = String(Math.floor((remaining % 3_600_000) / 60_000)).padStart(2, '0');
-    const sec = String(Math.floor((remaining % 60_000) / 1_000)).padStart(2, '0');
-    el.textContent = `${h}:${m}:${sec}`;
-
-    const redThreshold    = duration * 0.08;
-    const yellowThreshold = duration * 0.25;
-    const newClass = remaining < redThreshold ? 'timer-red'
-                   : remaining < yellowThreshold ? 'timer-yellow'
-                   : 'timer-green';
-    el.className = newClass;
-
-    const ring = document.getElementById('timerRingProg');
-    if (ring) {
-      const RING_R   = 34;
-      const RING_C   = 2 * Math.PI * RING_R;
-      const progress = Math.max(0, remaining / duration);
-      ring.setAttribute('stroke-dashoffset', (RING_C * (1 - progress)).toFixed(2));
-      const ringClass = 'vtx-timer-ring-prog' +
-        (remaining < redThreshold ? ' is-red' : remaining < yellowThreshold ? ' is-yellow' : '');
-      ring.setAttribute('class', ringClass);
-    }
+  if (!S().examStartMs) {
+    el.textContent = _initialTimerStr(duration);
+    el.className   = 'timer-green';
+    return;
   }
+
+  var remaining = duration - (Date.now() - S().examStartMs);
+
+  if (remaining <= 0) {
+    S().clearTimer();
+    el.textContent = '00:00:00';
+    el.className   = 'timer-red';
+    UI.toast('Time is up! Your exam is being submitted.', 'warning', 0);
+    submitExam(true);
+    return;
+  }
+
+  var h   = String(Math.floor(remaining / 3600000)).padStart(2, '0');
+  var m   = String(Math.floor((remaining % 3600000) / 60000)).padStart(2, '0');
+  var sec = String(Math.floor((remaining % 60000) / 1000)).padStart(2, '0');
+  el.textContent = h + ':' + m + ':' + sec;
+
+  var redThreshold    = duration * 0.08;
+  var yellowThreshold = duration * 0.25;
+  var newClass = remaining < redThreshold ? 'timer-red'
+               : remaining < yellowThreshold ? 'timer-yellow'
+               : 'timer-green';
+  el.className = newClass;
+
+  var ring = document.getElementById('timerRingProg');
+  if (ring) {
+    // RING_R must match the r attribute on the SVG circle in renderExam(): 14
+    var RING_R   = 14;
+    var RING_C   = 2 * Math.PI * RING_R;  // ≈ 87.96
+    var progress = Math.max(0, remaining / duration);
+    ring.setAttribute('stroke-dashoffset', (RING_C * (1 - progress)).toFixed(2));
+    var ringClass = 'vtx-arc-prog' +
+      (remaining < redThreshold ? ' is-red' : remaining < yellowThreshold ? ' is-yellow' : '');
+    ring.setAttribute('class', ringClass);
+  }
+}
 
   /* ─────────────────────────────────────────────────────── */
   /* Submit                                                  */
