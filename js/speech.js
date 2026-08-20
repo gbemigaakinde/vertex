@@ -1695,7 +1695,19 @@ if (retryBtn && _deeperContext) {
     var sttBtn = document.getElementById('seResultsSttBtn');
     if (!sttBtn) return;
 
-    sttBtn.addEventListener('click', function () {
+    // Remove any old listener by replacing the node
+    var newBtn = sttBtn.cloneNode(true);
+    sttBtn.parentNode.replaceChild(newBtn, sttBtn);
+
+    function _startResultsSTT() {
+      startSTT(
+        function (best, all) { _handleResultsCommand(best, all); },
+        null,
+        function (msg) { UI.toast(msg, 'warning', 5000); }
+      );
+    }
+
+    newBtn.addEventListener('click', function () {
       if (_sttActive) {
         stopSTT();
         UI.toast('Microphone off.', 'info', 1500);
@@ -1709,12 +1721,18 @@ if (retryBtn && _deeperContext) {
         'Listening… Try: "explain question 3 in Maths", "back to dashboard", "share on WhatsApp", "read result".',
         'info', 5000
       );
-      startSTT(
-        function (best, all) { _handleResultsCommand(best, all); },
-        null,
-        function (msg) { UI.toast(msg, 'warning', 5000); }
-      );
+      _startResultsSTT();
     });
+
+    // Auto-start the results STT session immediately —
+    // submitExam already called stopSTT() so the slate is clean.
+    if (sttSupported) {
+      setTimeout(function () {
+        // Guard: only auto-start if we're still on the results page and nothing else started STT
+        if (!document.getElementById('seResultsSttBtn') || _sttActive) return;
+        _startResultsSTT();
+      }, 400);
+    }
   }
 
   /* ── Public API ── */
