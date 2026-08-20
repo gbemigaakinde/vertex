@@ -412,73 +412,97 @@
     return chunks.filter(function (c) { return c.trim().length > 0; });
   }
 
-  function _speakNext() {
-    if (_ttsQueue.length === 0) {
-      _ttsActive = false;
-      _setTtsBtn(false);
-      _hookTtsBtnState(false);
-      return;
-    }
-    var chunk = _ttsQueue.shift();
-    var utt   = new SpeechSynthesisUtterance(chunk);
-    var voice = _pickVoice();
-    if (voice) utt.voice = voice;
-    utt.rate   = 0.92;
-    utt.pitch  = 1.0;
-    utt.volume = 1.0;
-    utt.lang   = (voice && voice.lang) || 'en-US';
-    utt.onend  = function () { setTimeout(_speakNext, 80); };
-    utt.onerror = function (e) {
-      if (e.error === 'interrupted' || e.error === 'canceled') return;
-      console.warn('[SpeechEngine] TTS chunk error:', e.error);
-      setTimeout(_speakNext, 100);
-    };
-    _synth.speak(utt);
-  }
+  var _chromePauseWatchdog = null;
 
-  function speak(rawText, onDone) {
-    if (!ttsSupported) {
-      if (window.UI) UI.toast('Text-to-speech is not supported in your browser.', 'warning', 4000);
-      if (typeof onDone === 'function') onDone();
-      return;
-    }
-    var clean = rawText
-      .replace(/<[^>]*>/g, ' ')
-      .replace(/%%MATH_\d+%%/g, ' ')
-      .replace(/\$\$[\s\S]*?\$\$|\$[^$]*?\$/g, ' (math expression) ')
-      .replace(/\s+/g, ' ')
-      .trim();
-    if (!clean) { if (typeof onDone === 'function') onDone(); return; }
-    cancel();
-    _ttsQueue  = _chunkText(clean);
-    _ttsActive = true;
-    _setTtsBtn(true);
-    _hookTtsBtnState(true);
-
-    if (typeof onDone === 'function') {
-      var interval = setInterval(function () {
-        if (!_ttsActive && _ttsQueue.length === 0) {
-          clearInterval(interval);
-          onDone();
-        }
-      }, 300);
-    }
-
-    if (!_voicesReady && _voices.length === 0) {
-      setTimeout(_speakNext, 250);
-    } else {
-      _speakNext();
-    }
-  }
-
-  function cancel() {
-    if (!ttsSupported) return;
-    _ttsQueue  = [];
+function _speakNext() {
+  if (_ttsQueue.length === 0) {
     _ttsActive = false;
-    _synth.cancel();
     _setTtsBtn(false);
     _hookTtsBtnState(false);
+    // Fire onDone now that the queue is genuinely exhausted
+    if (_onDoneCallback) {
+      var cb = _onDoneCallback;
+      _onDoneCallback = null;
+      setTimeout(cb, 50); // small delay so cancel() state settles first
+    }
+    return;
   }
+
+  if (_chromePauseWatchdog) { clearInterval(_chromePauseWatchdog); _chromePauseWatchdog = null; }
+
+  var chunk = _ttsQueue.shift();
+  var utt   = new SpeechSynthesisUtterance(chunk);
+  var voice = _pickVoice();
+  if (voice) utt.voice = voice;
+  utt.rate   = 0.92;
+  utt.pitch  = 1.0;
+  utt.volume = 1.0;
+  utt.lang   = (voice && voice.lang) || 'en-US';
+
+  utt.onend = function () {
+    if (_chromePauseWatchdog) { clearInterval(_chromePauseWatchdog); _chromePauseWatchdog = null; }
+    setTimeout(_speakNext, 80);
+  };
+
+  utt.onerror = function (e) {
+    if (_chromePauseWatchdog) { clearInterval(_chromePauseWatchdog); _chromePauseWatchdog = null; }
+    if (e.error === 'interrupted' || e.error === 'canceled') return;
+    console.warn('[SpeechEngine] TTS chunk error:', e.error);
+    setTimeout(_speakNext, 100);
+  };
+
+  _synth.speak(utt);
+
+  // Chrome bug: speechSynthesis silently stalls and never fires onend.
+  // Kick it every 10 seconds with pause/resume to unstick it.
+  _chromePauseWatchdog = setInterval(function () {
+    if (_synth.speaking && !_synth.paused) {
+      _synth.pause();
+      _synth.resume();
+    }
+  }, 10000);
+}
+
+  var _onDoneCallback = null;
+
+function speak(rawText, onDone) {
+  if (!ttsSupported) {
+    if (window.UI) UI.toast('Text-to-speech is not supported in your browser.', 'warning', 4000);
+    if (typeof onDone === 'function') onDone();
+    return;
+  }
+  var clean = rawText
+    .replace(/<[^>]*>/g, ' ')
+    .replace(/%%MATH_\d+%%/g, ' ')
+    .replace(/\$\$[\s\S]*?\$\$|\$[^$]*?\$/g, ' (math expression) ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  if (!clean) { if (typeof onDone === 'function') onDone(); return; }
+
+  cancel();
+  _onDoneCallback = typeof onDone === 'function' ? onDone : null;
+  _ttsQueue  = _chunkText(clean);
+  _ttsActive = true;
+  _setTtsBtn(true);
+  _hookTtsBtnState(true);
+
+  if (!_voicesReady && _voices.length === 0) {
+    setTimeout(_speakNext, 250);
+  } else {
+    _speakNext();
+  }
+}
+
+function cancel() {
+  if (!ttsSupported) return;
+  if (_chromePauseWatchdog) { clearInterval(_chromePauseWatchdog); _chromePauseWatchdog = null; }
+  _ttsQueue      = [];
+  _ttsActive     = false;
+  _onDoneCallback = null;  // discard — user cancelled
+  _synth.cancel();
+  _setTtsBtn(false);
+  _hookTtsBtnState(false);
+}
 
   function _setTtsBtn(speaking) {
     var btn = document.getElementById('seTtsBtn');
@@ -1044,11 +1068,16 @@
           '</div>';
 
         var retryBtn = document.getElementById('seExplainRetryBtn');
-        if (retryBtn && _deeperContext) {
-          retryBtn.addEventListener('click', function () {
-            _loadDeeperExplanation(_deeperContext.q, _deeperContext.subj, _deeperContext.idx, studentQuery);
-          });
-        }
+if (retryBtn && _deeperContext) {
+  (function (capturedQuery) {
+    retryBtn.addEventListener('click', function () {
+      // If there was a student query, re-run as student query (pass null for q).
+      // If it was an auto-explain, pass the original question object.
+      var qArg = capturedQuery ? null : _deeperContext.q;
+      _loadDeeperExplanation(qArg, _deeperContext.subj, _deeperContext.idx, capturedQuery || null);
+    });
+  })(studentQuery);
+}
 
         speak(errMsg);
         return;
