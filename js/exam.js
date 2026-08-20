@@ -1654,6 +1654,11 @@ style="background:linear-gradient(135deg,#7c3aed,#4f6ef7);color:#fff;">
     S().clearTimer();
     _teardownVisibilityGuard();
 
+    // Stop any active STT session from the exam screen before we render results
+    if (window.SpeechEngine && typeof SpeechEngine.stopSTT === 'function') {
+      SpeechEngine.stopSTT();
+    }
+
     const btn = document.getElementById('submitBtn');
     UI.setLoading(btn, true);
 
