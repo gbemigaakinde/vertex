@@ -637,20 +637,23 @@
   }
 
   function stopSTT() {
-    _sttActive           = false;
-    _awaitingSubmitConfirm  = false;
-    _awaitingStudentQuestion = false;
-    _awaitingDeeperAnswer   = false;
-    _deeperContext          = null;
-    if (_sttRestartId) { clearTimeout(_sttRestartId); _sttRestartId = null; }
-    if (_recognition) {
-      try { _recognition.stop(); }  catch (e) {}
-      try { _recognition.abort(); } catch (e) {}
-      _recognition = null;
-    }
-    _sttRunning = false;
-    _setSttBtn(false);
+  _sttActive               = false;
+  _awaitingSubmitConfirm   = false;
+  _awaitingStudentQuestion = false;
+  _awaitingDeeperAnswer    = false;
+  // _deeperContext is intentionally NOT cleared here.
+  // It is cleared in _showExplanationModal's close handler
+  // and in wireExamButtons / wireResultsButtons where a real
+  // context switch happens.
+  if (_sttRestartId) { clearTimeout(_sttRestartId); _sttRestartId = null; }
+  if (_recognition) {
+    try { _recognition.stop(); }  catch (e) {}
+    try { _recognition.abort(); } catch (e) {}
+    _recognition = null;
   }
+  _sttRunning = false;
+  _setSttBtn(false);
+}
 
   function _setSttBtn(listening) {
     var btn  = document.getElementById('seSttBtn');
@@ -844,186 +847,214 @@
   }
 
   function _showExplanationModal(questionNumber, subjectName) {
-    var exam   = _resultsExam;
-    var result = _resultsResult;
-    if (!exam || !result) return;
+  var exam   = _resultsExam;
+  var result = _resultsResult;
+  if (!exam || !result) return;
 
-    var subj = subjectName || exam.subjects[0];
-    if (!exam.questions[subj]) {
-      var found = exam.subjects.find(function (s) {
-        return s.toLowerCase().indexOf((subjectName || '').toLowerCase()) !== -1;
-      });
-      subj = found || exam.subjects[0];
+  var subj = subjectName || exam.subjects[0];
+  if (!exam.questions[subj]) {
+    var found = exam.subjects.find(function (s) {
+      return s.toLowerCase().indexOf((subjectName || '').toLowerCase()) !== -1;
+    });
+    subj = found || exam.subjects[0];
+  }
+
+  var qList = exam.questions[subj];
+  if (!qList) { UI.toast('Subject not found.', 'warning'); return; }
+
+  var idx = (questionNumber >= 1 && questionNumber <= qList.length) ? questionNumber - 1 : 0;
+  var q   = qList[idx];
+  if (!q) { UI.toast('Question not found.', 'warning'); return; }
+
+  var userAns    = exam.answers[subj + '-' + idx];
+  var isCorrect  = userAns === q.ans;
+  var chosenTxt  = userAns !== undefined ? _cleanText(q.opts[userAns]) : 'Not answered';
+  var correctTxt = _cleanText(q.opts[q.ans]);
+  var questionTxt = _cleanText(q.q);
+  var expTxt      = _cleanText(q.exp || '');
+
+  var existing = document.getElementById('seExplainModal');
+  if (existing) existing.remove();
+
+  /* Reset explain-interaction states, but preserve _deeperContext
+     only after we set it fresh below. */
+  _awaitingStudentQuestion = false;
+  _awaitingDeeperAnswer    = false;
+  _deeperContext = { q: q, subj: subj, idx: idx };
+
+  var modal = document.createElement('div');
+  modal.id        = 'seExplainModal';
+  modal.className = 'se-explain-modal-overlay';
+  modal.setAttribute('role', 'dialog');
+  modal.setAttribute('aria-modal', 'true');
+  modal.setAttribute('aria-label', 'Question Explanation');
+
+  modal.innerHTML =
+    '<div class="se-explain-modal-box">' +
+      '<div class="se-explain-modal-hdr">' +
+        '<div class="se-explain-modal-title">' +
+          '<span class="se-explain-q-badge">' + subj + ' — Q' + questionNumber + '</span>' +
+          '<span class="se-explain-status ' + (isCorrect ? 'is-correct' : 'is-wrong') + '">' +
+            (isCorrect
+              ? '<i class="ph ph-check-circle"></i> Correct'
+              : '<i class="ph ph-x-circle"></i> Incorrect') +
+          '</span>' +
+        '</div>' +
+        '<button class="se-explain-close-btn" id="seExplainClose" aria-label="Close">&#x2715;</button>' +
+      '</div>' +
+
+      '<div class="se-explain-body" id="seExplainBody">' +
+        '<p class="se-explain-question">' + questionTxt + '</p>' +
+
+        '<div class="se-explain-answers">' +
+          '<div class="se-explain-ans-row ' + (isCorrect ? 'is-correct' : 'is-wrong') + '">' +
+            '<span class="se-explain-ans-lbl">Your answer:</span>' +
+            '<span>' + chosenTxt + '</span>' +
+          '</div>' +
+          '<div class="se-explain-ans-row is-correct">' +
+            '<span class="se-explain-ans-lbl">Correct answer:</span>' +
+            '<span>' + correctTxt + '</span>' +
+          '</div>' +
+        '</div>' +
+
+        '<div class="se-explain-section">' +
+          '<div class="se-explain-section-title">Explanation</div>' +
+          '<div class="se-explain-exp-text" id="seExplainExpText">' + (expTxt || 'No explanation provided.') + '</div>' +
+        '</div>' +
+
+        '<div class="se-explain-ask-wrap" id="seExplainAskWrap">' +
+          '<div class="se-explain-ask-label">' +
+            '<i class="ph ph-chat-circle-text"></i> Do you have a question about this topic?' +
+          '</div>' +
+          '<div class="se-explain-ask-row">' +
+            '<input type="text" id="seExplainAskInput" class="se-explain-ask-input"' +
+              ' placeholder="Type your question here…" autocomplete="off" />' +
+            '<button class="se-explain-ask-btn" id="seExplainAskBtn" aria-label="Search">' +
+              '<i class="ph ph-magnifying-glass"></i>' +
+            '</button>' +
+          '</div>' +
+          '<p class="se-explain-deeper-hint">Or say your question aloud if the microphone is on</p>' +
+        '</div>' +
+
+        '<div class="se-explain-deeper-wrap" id="seExplainDeeperWrap">' +
+          '<button class="se-explain-deeper-btn" id="seExplainDeeperBtn">' +
+            '<i class="ph ph-book-open-text"></i>' +
+            'Get a fuller explanation from Wikipedia' +
+          '</button>' +
+          '<p class="se-explain-deeper-hint">Searches Wikipedia automatically based on this question</p>' +
+        '</div>' +
+
+        '<div class="se-explain-deep-result" id="seExplainDeepResult" style="display:none;"></div>' +
+      '</div>' +
+
+      '<div class="se-explain-modal-ftr">' +
+        '<button class="se-explain-read-btn" id="seExplainReadBtn">' +
+          '<i class="ph ph-speaker-high"></i> Read explanation' +
+        '</button>' +
+        '<button class="se-explain-close-btn2" id="seExplainClose2">Close</button>' +
+      '</div>' +
+    '</div>';
+
+  document.body.appendChild(modal);
+  requestAnimationFrame(function () { modal.classList.add('is-visible'); });
+
+  function _closeModal() {
+    cancel();
+    // Stop any modal-local STT session
+    if (_modalSttActive) {
+      stopSTT();
+      _modalSttActive = false;
     }
-
-    var qList = exam.questions[subj];
-    if (!qList) { UI.toast('Subject not found.', 'warning'); return; }
-
-    var idx = (questionNumber >= 1 && questionNumber <= qList.length) ? questionNumber - 1 : 0;
-    var q   = qList[idx];
-    if (!q) { UI.toast('Question not found.', 'warning'); return; }
-
-    var userAns    = exam.answers[subj + '-' + idx];
-    var isCorrect  = userAns === q.ans;
-    var chosenTxt  = userAns !== undefined ? _cleanText(q.opts[userAns]) : 'Not answered';
-    var correctTxt = _cleanText(q.opts[q.ans]);
-    var questionTxt = _cleanText(q.q);
-    var expTxt      = _cleanText(q.exp || '');
-
-    var existing = document.getElementById('seExplainModal');
-    if (existing) existing.remove();
-
-    /* Reset all explain-interaction states */
     _awaitingStudentQuestion = false;
     _awaitingDeeperAnswer    = false;
-    _deeperContext = { q: q, subj: subj, idx: idx };
-
-    var modal = document.createElement('div');
-    modal.id        = 'seExplainModal';
-    modal.className = 'se-explain-modal-overlay';
-    modal.setAttribute('role', 'dialog');
-    modal.setAttribute('aria-modal', 'true');
-    modal.setAttribute('aria-label', 'Question Explanation');
-
-    modal.innerHTML =
-      '<div class="se-explain-modal-box">' +
-        '<div class="se-explain-modal-hdr">' +
-          '<div class="se-explain-modal-title">' +
-            '<span class="se-explain-q-badge">' + subj + ' — Q' + questionNumber + '</span>' +
-            '<span class="se-explain-status ' + (isCorrect ? 'is-correct' : 'is-wrong') + '">' +
-              (isCorrect
-                ? '<i class="ph ph-check-circle"></i> Correct'
-                : '<i class="ph ph-x-circle"></i> Incorrect') +
-            '</span>' +
-          '</div>' +
-          '<button class="se-explain-close-btn" id="seExplainClose" aria-label="Close">&#x2715;</button>' +
-        '</div>' +
-
-        '<div class="se-explain-body" id="seExplainBody">' +
-          '<p class="se-explain-question">' + questionTxt + '</p>' +
-
-          '<div class="se-explain-answers">' +
-            '<div class="se-explain-ans-row ' + (isCorrect ? 'is-correct' : 'is-wrong') + '">' +
-              '<span class="se-explain-ans-lbl">Your answer:</span>' +
-              '<span>' + chosenTxt + '</span>' +
-            '</div>' +
-            '<div class="se-explain-ans-row is-correct">' +
-              '<span class="se-explain-ans-lbl">Correct answer:</span>' +
-              '<span>' + correctTxt + '</span>' +
-            '</div>' +
-          '</div>' +
-
-          '<div class="se-explain-section">' +
-            '<div class="se-explain-section-title">Explanation</div>' +
-            '<div class="se-explain-exp-text" id="seExplainExpText">' + (expTxt || 'No explanation provided.') + '</div>' +
-          '</div>' +
-
-          /* Student question input row */
-          '<div class="se-explain-ask-wrap" id="seExplainAskWrap">' +
-            '<div class="se-explain-ask-label">' +
-              '<i class="ph ph-chat-circle-text"></i> Do you have a question about this topic?' +
-            '</div>' +
-            '<div class="se-explain-ask-row">' +
-              '<input type="text" id="seExplainAskInput" class="se-explain-ask-input"' +
-                ' placeholder="Type your question here…" autocomplete="off" />' +
-              '<button class="se-explain-ask-btn" id="seExplainAskBtn" aria-label="Search">' +
-                '<i class="ph ph-magnifying-glass"></i>' +
-              '</button>' +
-            '</div>' +
-            '<p class="se-explain-deeper-hint">Or say your question aloud if the microphone is on</p>' +
-          '</div>' +
-
-          /* Deeper explanation button — second option */
-          '<div class="se-explain-deeper-wrap" id="seExplainDeeperWrap">' +
-            '<button class="se-explain-deeper-btn" id="seExplainDeeperBtn">' +
-              '<i class="ph ph-book-open-text"></i>' +
-              'Get a fuller explanation from Wikipedia' +
-            '</button>' +
-            '<p class="se-explain-deeper-hint">Searches Wikipedia automatically based on this question</p>' +
-          '</div>' +
-
-          '<div class="se-explain-deep-result" id="seExplainDeepResult" style="display:none;"></div>' +
-        '</div>' +
-
-        '<div class="se-explain-modal-ftr">' +
-          '<button class="se-explain-read-btn" id="seExplainReadBtn">' +
-            '<i class="ph ph-speaker-high"></i> Read explanation' +
-          '</button>' +
-          '<button class="se-explain-close-btn2" id="seExplainClose2">Close</button>' +
-        '</div>' +
-      '</div>';
-
-    document.body.appendChild(modal);
-    requestAnimationFrame(function () { modal.classList.add('is-visible'); });
-
-    function _closeModal() {
-      cancel();
-      _awaitingStudentQuestion = false;
-      _awaitingDeeperAnswer    = false;
-      _deeperContext = null;
-      modal.classList.remove('is-visible');
-      setTimeout(function () { if (modal.parentNode) modal.remove(); }, 280);
-    }
-
-    document.getElementById('seExplainClose').addEventListener('click', _closeModal);
-    document.getElementById('seExplainClose2').addEventListener('click', _closeModal);
-    modal.addEventListener('click', function (e) {
-      if (e.target === modal) _closeModal();
-    });
-
-    /* Read button */
-    var readBtn = document.getElementById('seExplainReadBtn');
-    readBtn.addEventListener('click', function () {
-      if (_ttsActive) { cancel(); return; }
-      var text = 'Question ' + questionNumber + '. ' + questionTxt + '. ';
-      text += 'Your answer was: ' + chosenTxt + '. ';
-      text += 'The correct answer is: ' + correctTxt + '. ';
-      if (expTxt) text += 'Explanation: ' + expTxt;
-      var deepEl = document.getElementById('seExplainDeepResult');
-      if (deepEl && deepEl.style.display !== 'none') {
-        var plain = deepEl.getAttribute('data-plain') || '';
-        if (plain) text += '. Additional information: ' + plain;
-      }
-      speak(text);
-    });
-
-    /* Student ask button (typed) */
-    var askBtn   = document.getElementById('seExplainAskBtn');
-    var askInput = document.getElementById('seExplainAskInput');
-    function _handleStudentQuery(queryText) {
-      var q2 = (queryText || '').trim();
-      if (!q2) return;
-      _awaitingStudentQuestion = false;
-      _loadDeeperExplanation(null, subj, idx, q2);
-    }
-    askBtn.addEventListener('click', function () {
-      _handleStudentQuery(askInput.value);
-    });
-    askInput.addEventListener('keydown', function (e) {
-      if (e.key === 'Enter') { e.preventDefault(); _handleStudentQuery(askInput.value); }
-    });
-
-    /* Deeper button (auto-query) */
-    var deeperBtn = document.getElementById('seExplainDeeperBtn');
-    deeperBtn.addEventListener('click', function () {
-      _awaitingStudentQuestion = false;
-      _loadDeeperExplanation(q, subj, idx, null);
-    });
-
-    /* Speak the summary then prompt the student */
-    setTimeout(function () {
-      var text = 'Question ' + questionNumber + ' in ' + subj + '. ';
-      text += questionTxt + '. ';
-      text += 'The correct answer is: ' + correctTxt + '. ';
-      if (expTxt) text += 'Explanation: ' + expTxt + '. ';
-      text += 'Do you have a question about this topic? Say it now and I will search for it. ' +
-              'Or say "deeper" if you want me to find a fuller explanation from Wikipedia. ' +
-              'Say "no" to skip.';
-      speak(text, function () {
-        _awaitingStudentQuestion = true;
-      });
-    }, 400);
+    _deeperContext = null;
+    modal.classList.remove('is-visible');
+    setTimeout(function () { if (modal.parentNode) modal.remove(); }, 280);
   }
+
+  document.getElementById('seExplainClose').addEventListener('click', _closeModal);
+  document.getElementById('seExplainClose2').addEventListener('click', _closeModal);
+  modal.addEventListener('click', function (e) {
+    if (e.target === modal) _closeModal();
+  });
+
+  var readBtn = document.getElementById('seExplainReadBtn');
+  readBtn.addEventListener('click', function () {
+    if (_ttsActive) { cancel(); return; }
+    var text = 'Question ' + questionNumber + '. ' + questionTxt + '. ';
+    text += 'Your answer was: ' + chosenTxt + '. ';
+    text += 'The correct answer is: ' + correctTxt + '. ';
+    if (expTxt) text += 'Explanation: ' + expTxt;
+    var deepEl = document.getElementById('seExplainDeepResult');
+    if (deepEl && deepEl.style.display !== 'none') {
+      var plain = deepEl.getAttribute('data-plain') || '';
+      if (plain) text += '. Additional information: ' + plain;
+    }
+    speak(text);
+  });
+
+  var askBtn   = document.getElementById('seExplainAskBtn');
+  var askInput = document.getElementById('seExplainAskInput');
+  function _handleStudentQuery(queryText) {
+    var q2 = (queryText || '').trim();
+    if (!q2) return;
+    _awaitingStudentQuestion = false;
+    _loadDeeperExplanation(null, subj, idx, q2);
+  }
+  askBtn.addEventListener('click', function () {
+    _handleStudentQuery(askInput.value);
+  });
+  askInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') { e.preventDefault(); _handleStudentQuery(askInput.value); }
+  });
+
+  var deeperBtn = document.getElementById('seExplainDeeperBtn');
+  deeperBtn.addEventListener('click', function () {
+    _awaitingStudentQuestion = false;
+    _loadDeeperExplanation(q, subj, idx, null);
+  });
+
+  // Track whether we started STT from inside this modal, so we can
+  // stop it cleanly without killing a pre-existing results-page session.
+  var _modalSttActive = false;
+
+  setTimeout(function () {
+    if (!document.getElementById('seExplainModal')) return;
+
+    var text = 'Question ' + questionNumber + ' in ' + subj + '. ';
+    text += questionTxt + '. ';
+    text += 'The correct answer is: ' + correctTxt + '. ';
+    if (expTxt) text += 'Explanation: ' + expTxt + '. ';
+    text += 'Do you have a question about this topic? Say it now and I will search for it. ' +
+            'Or say "deeper" if you want me to find a fuller explanation from Wikipedia. ' +
+            'Say "no" to skip.';
+
+    speak(text, function () {
+      // Guard: modal may have been closed while TTS was playing
+      if (!document.getElementById('seExplainModal')) return;
+
+      _awaitingStudentQuestion = true;
+
+      // Auto-start STT so the student can actually speak the question
+      // they were just prompted to say. Only start if not already listening.
+      if (sttSupported && !_sttActive) {
+        _modalSttActive = true;
+        startSTT(
+          function (bestTranscript, allTranscripts) {
+            // Route through the results handler which already checks
+            // _awaitingStudentQuestion correctly.
+            _handleResultsCommand(bestTranscript, allTranscripts);
+          },
+          null,
+          function (msg) {
+            _modalSttActive = false;
+            UI.toast(msg, 'warning', 4000);
+          }
+        );
+      }
+    });
+  }, 400);
+}
 
   /*
    * _loadDeeperExplanation
@@ -1102,86 +1133,93 @@
   }
 
   function _fetchAndShowDeep(title, deepResult, q, subj, studentQuery) {
-    _fetchWikipediaSummary(title, function (err, extract, pageUrl) {
-      if (err || !extract) {
-        if (studentQuery) {
-          _showStudentQueryFallback(deepResult, studentQuery);
-        } else {
-          _showDeeperFallback(deepResult, q || {}, subj);
-        }
-        return;
+  _fetchWikipediaSummary(title, function (err, extract, pageUrl) {
+    if (err || !extract) {
+      if (studentQuery) {
+        _showStudentQueryFallback(deepResult, studentQuery);
+      } else {
+        _showDeeperFallback(deepResult, q || {}, subj);
       }
-
-      /* Show the full extract — no character cap */
-      var plain = extract.replace(/\s+/g, ' ').trim();
-
-      deepResult.setAttribute('data-plain', plain);
-      deepResult.innerHTML =
-        '<div class="se-explain-deep-content">' +
-          '<div class="se-explain-deep-src">' +
-            '<span class="se-explain-wiki-badge">Wikipedia</span>' +
-            '<strong>' + _escHtml(title) + '</strong>' +
-          '</div>' +
-          '<p class="se-explain-deep-text">' + _escHtml(plain) + '</p>' +
-          (pageUrl
-            ? '<a class="se-explain-wiki-link" href="' + pageUrl + '" target="_blank" rel="noopener">' +
-              'Read full article <i class="ph ph-arrow-square-out" style="font-size:.8em;vertical-align:middle;"></i></a>'
-            : '') +
-        '</div>';
-
-      speak('Here is information from Wikipedia about ' + title + '. ' + plain);
-    });
-  }
-
-  /* Fallback when the student's typed/spoken question yields no Wikipedia result */
-  function _showStudentQueryFallback(deepResult, query) {
-    var msg = 'Sorry, I could not find a Wikipedia article matching your question: "' + query + '". ' +
-              'Try rephrasing it or use the fuller explanation button below.';
-    deepResult.setAttribute('data-plain', '');
-    deepResult.innerHTML =
-      '<div class="se-explain-deep-content se-explain-deep-local">' +
-        '<div class="se-explain-deep-src">' +
-          '<span class="se-explain-wiki-badge se-explain-wiki-badge--local">' +
-            '<i class="ph ph-warning" style="font-size:.75rem;vertical-align:middle;"></i> Not found' +
-          '</span>' +
-          '<strong>No result</strong>' +
-        '</div>' +
-        '<p class="se-explain-deep-text">' + _escHtml(msg) + '</p>' +
-        /* Re-show the deeper button so the student can still try the auto search */
-        '<button class="se-explain-deeper-btn" id="seExplainDeeperBtnRetry" style="margin-top:.5rem;">' +
-          '<i class="ph ph-book-open-text"></i> Try automatic explanation' +
-        '</button>' +
-      '</div>';
-
-    var retryBtn = document.getElementById('seExplainDeeperBtnRetry');
-    if (retryBtn && _deeperContext) {
-      retryBtn.addEventListener('click', function () {
-        _loadDeeperExplanation(_deeperContext.q, _deeperContext.subj, _deeperContext.idx, null);
-      });
+      return;
     }
 
-    speak(msg);
-  }
-
-  function _showDeeperFallback(deepResult, q, subj) {
-    var opts  = Array.isArray(q.opts) ? q.opts : [];
-    var extra = 'The correct answer is: ' + _cleanText(opts[q.ans] || '') + '. ';
-    if (q.exp) extra += _cleanText(q.exp);
-    var expanded = _expandExplanation(q, subj);
-    var plain    = expanded || extra;
+    var plain = extract.replace(/\s+/g, ' ').trim();
 
     deepResult.setAttribute('data-plain', plain);
     deepResult.innerHTML =
-      '<div class="se-explain-deep-content se-explain-deep-local">' +
+      '<div class="se-explain-deep-content">' +
         '<div class="se-explain-deep-src">' +
-          '<span class="se-explain-wiki-badge se-explain-wiki-badge--local">Extended</span>' +
-          '<strong>Extended explanation</strong>' +
+          '<span class="se-explain-wiki-badge">Wikipedia</span>' +
+          '<strong>' + _escHtml(title) + '</strong>' +
         '</div>' +
         '<p class="se-explain-deep-text">' + _escHtml(plain) + '</p>' +
+        (pageUrl
+          ? '<a class="se-explain-wiki-link" href="' + pageUrl + '" target="_blank" rel="noopener">' +
+            'Read full article <i class="ph ph-arrow-square-out" style="font-size:.8em;vertical-align:middle;"></i></a>'
+          : '') +
       '</div>';
 
+    // Guard: only speak if the modal is still open
+    if (document.getElementById('seExplainModal')) {
+      speak('Here is information from Wikipedia about ' + title + '. ' + plain);
+    }
+  });
+}
+
+  /* Fallback when the student's typed/spoken question yields no Wikipedia result */
+  function _showStudentQueryFallback(deepResult, query) {
+  var msg = 'Sorry, I could not find a Wikipedia article matching your question: "' + query + '". ' +
+            'Try rephrasing it or use the fuller explanation button below.';
+  deepResult.setAttribute('data-plain', '');
+  deepResult.innerHTML =
+    '<div class="se-explain-deep-content se-explain-deep-local">' +
+      '<div class="se-explain-deep-src">' +
+        '<span class="se-explain-wiki-badge se-explain-wiki-badge--local">' +
+          '<i class="ph ph-warning" style="font-size:.75rem;vertical-align:middle;"></i> Not found' +
+        '</span>' +
+        '<strong>No result</strong>' +
+      '</div>' +
+      '<p class="se-explain-deep-text">' + _escHtml(msg) + '</p>' +
+      '<button class="se-explain-deeper-btn" id="seExplainDeeperBtnRetry" style="margin-top:.5rem;">' +
+        '<i class="ph ph-book-open-text"></i> Try automatic explanation' +
+      '</button>' +
+    '</div>';
+
+  var retryBtn = document.getElementById('seExplainDeeperBtnRetry');
+  if (retryBtn && _deeperContext) {
+    retryBtn.addEventListener('click', function () {
+      _loadDeeperExplanation(_deeperContext.q, _deeperContext.subj, _deeperContext.idx, null);
+    });
+  }
+
+  // Guard: only speak if the modal is still open
+  if (document.getElementById('seExplainModal')) {
+    speak(msg);
+  }
+}
+
+  function _showDeeperFallback(deepResult, q, subj) {
+  var opts  = Array.isArray(q.opts) ? q.opts : [];
+  var extra = 'The correct answer is: ' + _cleanText(opts[q.ans] || '') + '. ';
+  if (q.exp) extra += _cleanText(q.exp);
+  var expanded = _expandExplanation(q, subj);
+  var plain    = expanded || extra;
+
+  deepResult.setAttribute('data-plain', plain);
+  deepResult.innerHTML =
+    '<div class="se-explain-deep-content se-explain-deep-local">' +
+      '<div class="se-explain-deep-src">' +
+        '<span class="se-explain-wiki-badge se-explain-wiki-badge--local">Extended</span>' +
+        '<strong>Extended explanation</strong>' +
+      '</div>' +
+      '<p class="se-explain-deep-text">' + _escHtml(plain) + '</p>' +
+    '</div>';
+
+  // Guard: only speak if the modal is still open
+  if (document.getElementById('seExplainModal')) {
     speak('Here is an extended explanation. ' + plain);
   }
+}
 
   function _expandExplanation(q, subj) {
     var question = _cleanText(q.q || '');
