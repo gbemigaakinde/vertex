@@ -802,11 +802,13 @@
               <span>${_escHtml(subj)}</span>
             </label>`).join('')}
         </div>
-        ${enoughSubjects
-          ? `<button id="startExamBtn" onclick="Exam.startExam()" class="btn btn-lg w-full" style="max-width:260px;">
-               Start Exam
-             </button>`
-          : `<p style="color:var(--danger);font-size:.8125rem;">Subject not available. Contact Master Timothy.</p>`}`;
+        <div style="text-align:center;">
+          ${enoughSubjects
+            ? `<button id="startExamBtn" onclick="Exam.startExam()" class="btn btn-lg" style="min-width:200px;max-width:260px;width:100%;">
+                 Start Exam
+               </button>`
+            : `<p style="color:var(--danger);font-size:.8125rem;">Subject not available. Contact Master Timothy.</p>`}
+        </div>`;
 
     } else {
       subjectsHtml = `
@@ -818,9 +820,11 @@
               <span>${_escHtml(subj)}</span>
             </label>`).join('')}
         </div>
-        <button id="startExamBtn" onclick="Exam.startExam()" disabled class="btn btn-lg w-full" style="max-width:260px;">
-          Start Exam
-        </button>`;
+        <div style="text-align:center;">
+          <button id="startExamBtn" onclick="Exam.startExam()" disabled class="btn btn-lg" style="min-width:200px;max-width:260px;width:100%;">
+            Start Exam
+          </button>
+        </div>`;
     }
 
     const weeklyTimetableHtml = await weeklyTimetableHtmlPromise;
@@ -830,7 +834,9 @@
       return;
     }
 
-    // ── Tool tiles definition ──
+    // ── Tool tiles ──
+    // Badge is only on Message Teacher (dm-notif-badge) and Class Chat (chat-notif-badge).
+    // Each button uses overflow:visible so the absolute badge is never clipped.
     const tools = [
       {
         id: 'chatOpenBtn',
@@ -912,7 +918,8 @@
                background:var(--bg-base);border:1.5px solid var(--border);
                cursor:pointer;transition:border-color var(--t-base) var(--ease),
                transform var(--t-base) var(--ease),box-shadow var(--t-base) var(--ease);
-               font-family:var(--font);-webkit-tap-highlight-color:transparent;"
+               font-family:var(--font);-webkit-tap-highlight-color:transparent;
+               overflow:visible;"
         onmouseenter="this.style.borderColor='${t.color}';this.style.transform='translateY(-2px)';this.style.boxShadow='0 4px 14px rgba(0,0,0,.08)';"
         onmouseleave="this.style.borderColor='var(--border)';this.style.transform='';this.style.boxShadow='';"
       >
@@ -925,7 +932,7 @@
         <span style="font-size:.6875rem;font-weight:600;color:var(--text-2);letter-spacing:.01em;line-height:1.3;text-align:center;">
           ${_escHtml(t.label)}
         </span>
-        ${t.badge ? `<span class="${t.badgeClass}" style="top:-6px;right:-6px;"></span>` : ''}
+        ${t.badge ? `<span class="${t.badgeClass}" style="position:absolute;top:-6px;right:-6px;"></span>` : ''}
       </button>
     `).join('');
 
@@ -964,7 +971,7 @@
 
         <!-- EXAM SECTION -->
         <div style="margin-bottom:2rem;padding:1.25rem;border-radius:var(--r-xl);
-                    border:1.5px solid var(--border);background:var(--bg-base);">
+                    border:1.5px solid var(--border);background:var(--bg-base);text-align:center;">
           <p style="font-size:.6875rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
                     color:var(--text-4);margin-bottom:.875rem;">
             ${restrictedSubjs ? 'Required subjects for today' : 'Start a practice exam'}
@@ -974,7 +981,7 @@
             : `<div>
                 ${subjectsHtml}
                 ${!restrictedSubjs && !todayTaskDone
-                  ? `<p style="font-size:.6875rem;color:var(--text-4);margin-top:.625rem;">Select at least 2 subjects to begin</p>`
+                  ? `<p style="font-size:.6875rem;color:var(--text-4);margin-top:.75rem;">Select at least 2 subjects to begin</p>`
                   : ''}
                </div>`}
         </div>
@@ -993,27 +1000,43 @@
 
       </div>
 
-      <!-- AI ASSISTANT FLOATING PILL -->
-      <div id="vtxAiFloating" style="position:fixed;bottom:1.25rem;right:1.25rem;z-index:500;">
+      <!-- AI ASSISTANT FLOATING DOT -->
+      <style>
+        @keyframes vtx-ai-breathe {
+          0%, 100% { box-shadow: 0 2px 12px rgba(79,110,247,.22), 0 0 0 0 rgba(79,110,247,.18); }
+          60%       { box-shadow: 0 2px 18px rgba(79,110,247,.32), 0 0 0 7px rgba(79,110,247,0); }
+        }
+        @keyframes vtx-ai-appear {
+          from { opacity:0; transform:scale(0.7) translateY(8px); }
+          to   { opacity:1; transform:scale(1) translateY(0); }
+        }
+        #vtxAiTrigger {
+          animation: vtx-ai-appear 0.35s cubic-bezier(0.34,1.56,0.64,1) both,
+                     vtx-ai-breathe 3s ease-in-out 0.5s infinite;
+        }
+        #vtxAiTrigger:hover {
+          animation: none;
+          transform: scale(1.08) !important;
+          box-shadow: 0 4px 20px rgba(79,110,247,.40) !important;
+        }
+      </style>
+      <div id="vtxAiFloating" style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:500;">
         <button
           id="vtxAiTrigger"
           onclick="Exam._openAiDrawer()"
-          style="display:inline-flex;align-items:center;gap:.5rem;
-                 padding:.625rem 1.125rem .625rem .875rem;
-                 border-radius:var(--r-full);
+          title="Ask AI Tutor"
+          aria-label="Open AI Tutor"
+          style="width:46px;height:46px;border-radius:50%;
                  background:var(--accent);color:#fff;
-                 border:none;cursor:pointer;font-family:var(--font);
-                 font-size:.8125rem;font-weight:600;letter-spacing:.01em;
-                 box-shadow:0 4px 20px rgba(79,110,247,.35),0 1px 4px rgba(0,0,0,.12);
-                 transition:transform var(--t-base) var(--ease),box-shadow var(--t-base) var(--ease);
+                 border:none;cursor:pointer;
+                 display:flex;align-items:center;justify-content:center;
+                 box-shadow:0 2px 12px rgba(79,110,247,.28);
+                 transition:transform 0.18s var(--ease),box-shadow 0.18s var(--ease);
                  -webkit-tap-highlight-color:transparent;"
-          onmouseenter="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 28px rgba(79,110,247,.45),0 2px 6px rgba(0,0,0,.14)';"
-          onmouseleave="this.style.transform='';this.style.boxShadow='0 4px 20px rgba(79,110,247,.35),0 1px 4px rgba(0,0,0,.12)';"
         >
-          <svg width="16" height="16" viewBox="0 0 256 256" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <svg width="19" height="19" viewBox="0 0 256 256" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
             <path d="M216,40H40A16,16,0,0,0,24,56V200a8,8,0,0,0,13,6.22L72,179.09l.19.28A16,16,0,0,0,85.35,187H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,131H85.35l-13-16L40,193.27V56H216ZM80,120a8,8,0,0,1,8-8h80a8,8,0,0,1,0,16H88A8,8,0,0,1,80,120Zm0,32a8,8,0,0,1,8-8h48a8,8,0,0,1,0,16H88A8,8,0,0,1,80,152Z"/>
           </svg>
-          Ask AI
         </button>
       </div>
 
