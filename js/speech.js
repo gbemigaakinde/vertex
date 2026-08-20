@@ -527,94 +527,122 @@
   }
 
   function _openSession() {
-    if (!sttSupported || !_sttActive) return;
-    if (_sttRunning) return;
+  if (!sttSupported || !_sttActive) return;
+  if (_sttRunning) return;
 
-    try { _recognition = new _SpeechR(); } catch (e) {
-      console.error('[SpeechEngine] Could not create SpeechRecognition:', e);
-      _sttActive = false;
-      _setSttBtn(false);
-      if (_sttCallbacks.onError) _sttCallbacks.onError('Could not start the microphone. Please reload and try again.');
-      return;
-    }
+  try { _recognition = new _SpeechR(); } catch (e) {
+    console.error('[SpeechEngine] Could not create SpeechRecognition:', e);
+    _sttActive = false;
+    _setSttBtn(false);
+    if (_sttCallbacks.onError) _sttCallbacks.onError('Could not start the microphone. Please reload and try again.');
+    return;
+  }
 
-    var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-    _recognition.continuous      = !isIOS;
-    _recognition.interimResults  = false;
-    _recognition.maxAlternatives = 3;
-    _recognition.lang            = 'en-US';
+  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
-    _recognition.onstart = function () {
-      _sttRunning = true;
-      _setSttBtn(true);
-    };
+  _recognition.continuous      = !isIOS;
+  _recognition.interimResults  = true;   // changed: true so partial results show activity
+  _recognition.maxAlternatives = 5;      // changed: more alternatives = better accent matching
+  // en-NG is better for Nigerian English accent on Chrome/Edge than en-US
+  _recognition.lang = 'en-NG';
 
-    _recognition.onresult = function (event) {
-      var transcripts = [];
-      for (var i = event.resultIndex; i < event.results.length; i++) {
-        if (event.results[i].isFinal) {
-          for (var a = 0; a < event.results[i].length; a++) {
-            var t = event.results[i][a].transcript.trim();
-            if (t) transcripts.push(t);
+  var _interimShown = false;
+
+  _recognition.onstart = function () {
+    _sttRunning   = true;
+    _interimShown = false;
+    _setSttBtn(true);
+  };
+
+  _recognition.onresult = function (event) {
+    // Show a visual cue on first interim result so student knows they were heard
+    for (var i = event.resultIndex; i < event.results.length; i++) {
+      if (!event.results[i].isFinal) {
+        if (!_interimShown) {
+          _interimShown = true;
+          // Briefly pulse the mic button to confirm audio is being received
+          var btn = document.getElementById('seSttBtn') || document.getElementById('srSttBtn') || document.getElementById('seResultsSttBtn');
+          if (btn) {
+            btn.style.boxShadow = '0 0 0 6px rgba(224,59,59,0.35)';
+            setTimeout(function () {
+              if (btn) btn.style.boxShadow = '';
+            }, 600);
           }
         }
+        continue;
+      }
+
+      // Final result
+      var transcripts = [];
+      for (var a = 0; a < event.results[i].length; a++) {
+        var t = event.results[i][a].transcript.trim();
+        if (t) transcripts.push(t);
       }
       if (transcripts.length > 0 && _sttCallbacks.onResult) {
+        _interimShown = false;
         _sttCallbacks.onResult(transcripts[0], transcripts);
       }
-    };
-
-    _recognition.onend = function () {
-      _sttRunning = false;
-      if (_sttActive) {
-        _sttRestartId = setTimeout(function () {
-          if (_sttActive) _openSession();
-        }, 300);
-      } else {
-        _setSttBtn(false);
-      }
-    };
-
-    _recognition.onerror = function (event) {
-      _sttRunning = false;
-      if (event.error === 'aborted') {
-        if (_sttActive) { _sttRestartId = setTimeout(function () { if (_sttActive) _openSession(); }, 300); }
-        return;
-      }
-      if (event.error === 'no-speech') {
-        if (_sttActive) { _sttRestartId = setTimeout(function () { if (_sttActive) _openSession(); }, 200); }
-        return;
-      }
-      var msg;
-      switch (event.error) {
-        case 'not-allowed':
-        case 'permission-denied':
-          msg = 'Microphone access was denied. Please allow microphone permission and try again.'; break;
-        case 'network':
-          msg = 'Voice recognition needs an internet connection. Please check your connection.'; break;
-        case 'audio-capture':
-          msg = 'No microphone found. Please connect a microphone and try again.'; break;
-        case 'service-not-allowed':
-          msg = 'Voice recognition is not allowed in this context. Try using Chrome or Edge.'; break;
-        default:
-          msg = 'Voice recognition stopped (' + event.error + '). Tap the mic to restart.';
-      }
-      console.warn('[SpeechEngine] STT fatal error:', event.error);
-      _sttActive = false;
-      _setSttBtn(false);
-      if (_sttCallbacks.onError) _sttCallbacks.onError(msg);
-    };
-
-    try {
-      _recognition.start();
-    } catch (e) {
-      console.error('[SpeechEngine] recognition.start() threw:', e);
-      _sttRunning = false;
-      _sttActive  = false;
-      _setSttBtn(false);
-      if (_sttCallbacks.onError) _sttCallbacks.onError('Could not start the microphone. Please reload and try again.');
     }
+  };
+
+  _recognition.onend = function () {
+    _sttRunning = false;
+    if (_sttActive) {
+      _sttRestartId = setTimeout(function () {
+        if (_sttActive) _openSession();
+      }, 300);
+    } else {
+      _setSttBtn(false);
+    }
+  };
+
+  _recognition.onerror = function (event) {
+    _sttRunning = false;
+    if (event.error === 'aborted') {
+      if (_sttActive) { _sttRestartId = setTimeout(function () { if (_sttActive) _openSession(); }, 300); }
+      return;
+    }
+    if (event.error === 'no-speech') {
+      if (_sttActive) { _sttRestartId = setTimeout(function () { if (_sttActive) _openSession(); }, 200); }
+      return;
+    }
+    // language-not-supported — fall back to en-GB then en-US
+    if (event.error === 'language-not-supported') {
+      console.warn('[SpeechEngine] en-NG not supported — falling back to en-GB');
+      _recognition.lang = 'en-GB';
+      if (_sttActive) { _sttRestartId = setTimeout(function () { if (_sttActive) _openSession(); }, 100); }
+      return;
+    }
+    var msg;
+    switch (event.error) {
+      case 'not-allowed':
+      case 'permission-denied':
+        msg = 'Microphone access was denied. Please allow microphone permission and try again.'; break;
+      case 'network':
+        msg = 'Voice recognition needs an internet connection. Please check your connection.'; break;
+      case 'audio-capture':
+        msg = 'No microphone found. Please connect a microphone and try again.'; break;
+      case 'service-not-allowed':
+        msg = 'Voice recognition is not allowed in this context. Try using Chrome or Edge.'; break;
+      default:
+        msg = 'Voice recognition stopped (' + event.error + '). Tap the mic to restart.';
+    }
+    console.warn('[SpeechEngine] STT fatal error:', event.error);
+    _sttActive = false;
+    _setSttBtn(false);
+    if (_sttCallbacks.onError) _sttCallbacks.onError(msg);
+  };
+
+  try {
+    _recognition.start();
+  } catch (e) {
+    console.error('[SpeechEngine] recognition.start() threw:', e);
+    _sttRunning = false;
+    _sttActive  = false;
+    _setSttBtn(false);
+    if (_sttCallbacks.onError) _sttCallbacks.onError('Could not start the microphone. Please reload and try again.');
   }
+}
 
   function startSTT(onResult, onEnd, onError) {
     if (!sttSupported) {
@@ -636,24 +664,22 @@
     _openSession();
   }
 
-  function stopSTT() {
-  _sttActive               = false;
-  _awaitingSubmitConfirm   = false;
-  _awaitingStudentQuestion = false;
-  _awaitingDeeperAnswer    = false;
-  // _deeperContext is intentionally NOT cleared here.
-  // It is cleared in _showExplanationModal's close handler
-  // and in wireExamButtons / wireResultsButtons where a real
-  // context switch happens.
-  if (_sttRestartId) { clearTimeout(_sttRestartId); _sttRestartId = null; }
-  if (_recognition) {
-    try { _recognition.stop(); }  catch (e) {}
-    try { _recognition.abort(); } catch (e) {}
-    _recognition = null;
+    function stopSTT() {
+    _sttActive               = false;
+    _awaitingSubmitConfirm   = false;
+    _awaitingStudentQuestion = false;
+    _awaitingDeeperAnswer    = false;
+    // _deeperContext is NOT cleared here. It is cleared only in _showExplanationModal's
+    // close handler and by setting a fresh context when a new modal opens.
+    if (_sttRestartId) { clearTimeout(_sttRestartId); _sttRestartId = null; }
+    if (_recognition) {
+      try { _recognition.stop(); }  catch (e) {}
+      try { _recognition.abort(); } catch (e) {}
+      _recognition = null;
+    }
+    _sttRunning = false;
+    _setSttBtn(false);
   }
-  _sttRunning = false;
-  _setSttBtn(false);
-}
 
   function _setSttBtn(listening) {
     var btn  = document.getElementById('seSttBtn');
@@ -725,74 +751,13 @@
     return best;
   }
 
-  /* ════════════════════════════════════════════════════════
-     WIKIPEDIA SEARCH
-     ════════════════════════════════════════════════════════ */
+  /* ── Results context ── */
+  var _resultsExam   = null;
+  var _resultsResult = null;
 
-  var _stopWords = new RegExp(
-    '\\b(the|a|an|is|are|was|were|be|been|being|have|has|had|do|does|did|' +
-    'will|would|could|should|may|might|shall|can|of|in|on|at|to|for|with|by|' +
-    'from|as|into|through|during|before|after|above|below|between|each|' +
-    'which|what|who|whom|whose|when|where|why|how|all|both|any|some|' +
-    'this|that|these|those|it|its|they|their|them|he|she|his|her|we|our|' +
-    'you|your|i|me|my|not|no|nor|so|yet|but|or|and|if|then|than|because|' +
-    'following|correctly|describes|happens|during|preparation|process|' +
-    'defined|definition|explain|example|type|types|kind|kinds|form|forms|' +
-    'used|uses|use|called|known|result|results|produced|produces|cause|causes|' +
-    'effect|effects|given|find|found|determine|calculate|solve|identify|' +
-    'choose|select|best|correct|wrong|true|false|statement|statements|' +
-    'option|options|answer|question|following|below|above|one|two|three|' +
-    'four|five|six|seven|eight|nine|ten)\\b',
-    'gi'
-  );
-
-  var _subjectBoosts = {
-    'chemistry':          ['reaction', 'element', 'compound', 'bond', 'acid', 'base', 'salt', 'ion', 'molecule', 'atom', 'oxidation', 'reduction', 'electrolysis', 'organic', 'periodic'],
-    'biology':            ['cell', 'organism', 'photosynthesis', 'respiration', 'genetics', 'enzyme', 'hormone', 'tissue', 'organ', 'evolution', 'dna', 'protein', 'osmosis', 'diffusion'],
-    'physics':            ['force', 'energy', 'velocity', 'acceleration', 'momentum', 'wave', 'light', 'electric', 'magnetic', 'pressure', 'heat', 'thermodynamics', 'gravity', 'current'],
-    'mathematics':        ['theorem', 'equation', 'function', 'derivative', 'integral', 'matrix', 'vector', 'probability', 'statistics', 'geometry', 'algebra', 'calculus', 'trigonometry'],
-    'maths':              ['theorem', 'equation', 'function', 'derivative', 'integral', 'matrix', 'vector', 'probability', 'statistics', 'geometry', 'algebra', 'calculus', 'trigonometry'],
-    'english':            ['grammar', 'syntax', 'clause', 'phrase', 'tense', 'figure of speech', 'rhetoric', 'literary', 'prose', 'poem', 'verb', 'noun', 'adjective', 'adverb'],
-    'geography':          ['climate', 'landform', 'erosion', 'population', 'migration', 'ecosystem', 'biome', 'weathering', 'river', 'plate tectonics', 'soil', 'atmosphere'],
-    'economics':          ['supply', 'demand', 'inflation', 'gdp', 'market', 'trade', 'fiscal', 'monetary', 'elasticity', 'opportunity cost', 'production', 'utility'],
-    'government':         ['democracy', 'constitution', 'legislature', 'executive', 'judiciary', 'federalism', 'sovereignty', 'election', 'parliament', 'rights'],
-    'history':            ['war', 'revolution', 'empire', 'colonialism', 'independence', 'treaty', 'civilization', 'dynasty', 'reform', 'nationalism'],
-    'literature':         ['novel', 'poetry', 'drama', 'theme', 'character', 'plot', 'symbolism', 'metaphor', 'alliteration', 'irony'],
-    'further mathematics':['calculus', 'differential', 'complex number', 'matrix', 'vector', 'series', 'proof', 'binomial', 'statistics'],
-  };
-
-  function _buildSmartSearchQuery(q, subj) {
-    var questionText = _cleanText(q.q || '');
-    var correctOpt   = _cleanText((q.opts || [])[q.ans] || '');
-    var expText      = _cleanText(q.exp || '');
-
-    var combined = correctOpt + ' ' + questionText + ' ' + expText;
-    var stripped = combined.replace(_stopWords, ' ').replace(/\s+/g, ' ').trim();
-    var tokens = stripped.split(/\s+/).filter(function (w) { return w.length >= 4; });
-
-    var seen   = {};
-    var unique = [];
-    for (var i = 0; i < tokens.length; i++) {
-      var lw = tokens[i].toLowerCase();
-      if (!seen[lw]) { seen[lw] = true; unique.push(tokens[i]); }
-    }
-
-    var subjKey = (subj || '').toLowerCase().trim();
-    var boosts  = _subjectBoosts[subjKey] || [];
-    unique.sort(function (a, b) {
-      var aBoost = boosts.indexOf(a.toLowerCase()) !== -1 ? 1 : 0;
-      var bBoost = boosts.indexOf(b.toLowerCase()) !== -1 ? 1 : 0;
-      if (bBoost !== aBoost) return bBoost - aBoost;
-      return b.length - a.length;
-    });
-
-    var keywords = unique.slice(0, 5);
-    var correctWords = correctOpt.split(/\s+/).filter(function (w) { return w.length >= 3; });
-    if (correctWords.length >= 2 && correctWords.length <= 5) {
-      return correctOpt + ' ' + keywords.slice(0, 3).join(' ');
-    }
-
-    return keywords.join(' ');
+  function setResultsContext(exam, result) {
+    _resultsExam   = exam;
+    _resultsResult = result;
   }
 
   function _cleanText(str) {
@@ -803,265 +768,143 @@
       .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"')
       .replace(/\s+/g, ' ').trim();
   }
+          
+    /* ════════════════════════════════════════════════════════
+     OPENROUTER AI — Student question answering
+  ════════════════════════════════════════════════════════ */
 
-  function _fetchWikipediaSummary(topic, callback) {
-    var encoded = encodeURIComponent(topic.replace(/\s+/g, '_'));
-    var url     = 'https://en.wikipedia.org/api/rest_v1/page/summary/' + encoded;
-    fetch(url, { headers: { 'Accept': 'application/json' } })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (data) {
-        if (data && data.extract && data.extract.length > 40) {
-          callback(null, data.extract, data.content_urls && data.content_urls.desktop && data.content_urls.desktop.page);
-        } else {
-          callback('not_found', null, null);
+  var _OR_API_KEY    = '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';
+  var _OR_MODEL_PRIMARY  = 'openrouter/auto';    // auto-routes to best available free model
+  var _OR_MODEL_FALLBACK = 'meta-llama/llama-3.3-70b-instruct:free';
+  var _OR_SITE_URL   = window.location.origin || 'https://vertex-tutorial.vercel.app';
+  var _OR_SITE_NAME  = 'Vertex Tutorial CBT';
+
+  /*
+   * _askOpenRouter
+   * Sends a prompt to OpenRouter and returns the answer text via callback.
+   * callback(err, answerText)
+   * Tries primary model first; if it fails, retries with named fallback.
+   */
+  function _askOpenRouter(systemPrompt, userPrompt, callback, _isRetry) {
+    var model = _isRetry ? _OR_MODEL_FALLBACK : _OR_MODEL_PRIMARY;
+
+    fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization':  'Bearer ' + _OR_API_KEY,
+        'HTTP-Referer':   _OR_SITE_URL,
+        'X-Title':        _OR_SITE_NAME,
+        'Content-Type':   'application/json',
+      },
+      body: JSON.stringify({
+        model: model,
+        max_tokens: 600,
+        temperature: 0.4,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user',   content: userPrompt   },
+        ],
+      }),
+    })
+    .then(function (res) {
+      if (!res.ok) {
+        // Rate limit or server error — try fallback if not already retrying
+        if (!_isRetry) {
+          console.warn('[SpeechEngine] OpenRouter primary failed (' + res.status + ') — retrying with fallback model');
+          return _askOpenRouter(systemPrompt, userPrompt, callback, true);
         }
-      })
-      .catch(function () { callback('error', null, null); });
+        return res.json().then(function (body) {
+          callback('API error ' + res.status + ': ' + (body && body.error && body.error.message || 'Unknown error'), null);
+        }).catch(function () {
+          callback('API error ' + res.status, null);
+        });
+      }
+      return res.json();
+    })
+    .then(function (data) {
+      if (!data) return; // already handled
+      var text = data.choices &&
+                 data.choices[0] &&
+                 data.choices[0].message &&
+                 data.choices[0].message.content;
+      if (!text || !text.trim()) {
+        if (!_isRetry) {
+          return _askOpenRouter(systemPrompt, userPrompt, callback, true);
+        }
+        return callback('Empty response from AI.', null);
+      }
+      callback(null, text.trim());
+    })
+    .catch(function (err) {
+      console.error('[SpeechEngine] OpenRouter fetch error:', err);
+      if (!_isRetry) {
+        return _askOpenRouter(systemPrompt, userPrompt, callback, true);
+      }
+      callback('Could not reach the AI server. Please check your internet connection.', null);
+    });
   }
 
-  function _searchWikipedia(query, callback) {
-    var url = 'https://en.wikipedia.org/w/rest.php/v1/search/page?q=' +
-              encodeURIComponent(query) + '&limit=5';
-    fetch(url, { headers: { 'Accept': 'application/json' } })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (data) {
-        if (data && data.pages && data.pages.length > 0) {
-          callback(null, data.pages[0].title, data.pages);
-        } else {
-          callback('not_found', null, null);
-        }
-      })
-      .catch(function () { callback('error', null, null); });
+  /*
+   * _buildAISystemPrompt
+   * Creates a subject-aware system prompt so the AI stays on topic
+   * and gives age-appropriate primary/junior-secondary school answers.
+   */
+  function _buildAISystemPrompt(subj) {
+    return (
+      'You are a helpful, friendly tutor at Vertex Tutorial Centre in Lagos, Nigeria. ' +
+      'You explain concepts clearly and concisely for primary and junior secondary school students. ' +
+      'The subject is: ' + (subj || 'General Science') + '. ' +
+      'Keep your answer under 180 words. ' +
+      'Do not use bullet points or markdown — write in clear, plain sentences. ' +
+      'Always stay strictly on the topic of the question asked. ' +
+      'If a student asks something unrelated to education, politely redirect them. ' +
+      'Do not mention OpenRouter, GPT, AI, or any model names in your response.'
+    );
+  }
+
+  /*
+   * _buildQuestionExplainPrompt
+   * Used when student clicks "Get fuller explanation" (auto mode, no student query).
+   * Builds a prompt from the exam question data.
+   */
+  function _buildQuestionExplainPrompt(q, subj) {
+    var questionText = _cleanText(q.q || '');
+    var correctOpt   = _cleanText((q.opts || [])[q.ans] || '');
+    var expText      = _cleanText(q.exp || '');
+
+    var prompt = 'A student in ' + (subj || 'a subject') + ' got this exam question wrong and wants a fuller explanation.\n\n';
+    prompt += 'Question: ' + questionText + '\n';
+    prompt += 'Correct answer: ' + correctOpt + '\n';
+    if (expText) prompt += 'Brief explanation already given: ' + expText + '\n\n';
+    prompt += 'Please explain this topic in a clear, student-friendly way. ';
+    prompt += 'Focus on WHY ' + correctOpt + ' is correct, and help the student understand the underlying concept.';
+    return prompt;
+  }
+
+  /*
+   * _buildStudentQueryPrompt
+   * Used when the student typed or spoke their own question.
+   * Anchors the AI to the exam question context for relevance.
+   */
+  function _buildStudentQueryPrompt(studentQuery, q, subj, idx) {
+    var prompt = '';
+    // Always anchor to the exam question context if available
+    if (q && q.q) {
+      var questionText = _cleanText(q.q || '');
+      var correctOpt   = _cleanText((q.opts || [])[q.ans] || '');
+      prompt += 'Context: This student just reviewed exam question ' + (idx + 1) + ' in ' + (subj || 'a subject') + ':\n';
+      prompt += '"' + questionText + '" (correct answer: ' + correctOpt + ')\n\n';
+    }
+    prompt += 'The student now asks: "' + studentQuery.trim() + '"\n\n';
+    prompt += 'Please answer the student\'s question directly and clearly. ';
+    prompt += 'Keep it simple and educational, suitable for a Nigerian secondary school student.';
+    return prompt;
   }
 
   /* ════════════════════════════════════════════════════════
-     RESULTS PAGE — explanation modal
-     ════════════════════════════════════════════════════════ */
+     _loadDeeperExplanation  (fully rewritten — uses OpenRouter AI)
+  ════════════════════════════════════════════════════════ */
 
-  var _resultsExam   = null;
-  var _resultsResult = null;
-
-  function setResultsContext(exam, result) {
-    _resultsExam   = exam;
-    _resultsResult = result;
-  }
-
-  function _showExplanationModal(questionNumber, subjectName) {
-  var exam   = _resultsExam;
-  var result = _resultsResult;
-  if (!exam || !result) return;
-
-  var subj = subjectName || exam.subjects[0];
-  if (!exam.questions[subj]) {
-    var found = exam.subjects.find(function (s) {
-      return s.toLowerCase().indexOf((subjectName || '').toLowerCase()) !== -1;
-    });
-    subj = found || exam.subjects[0];
-  }
-
-  var qList = exam.questions[subj];
-  if (!qList) { UI.toast('Subject not found.', 'warning'); return; }
-
-  var idx = (questionNumber >= 1 && questionNumber <= qList.length) ? questionNumber - 1 : 0;
-  var q   = qList[idx];
-  if (!q) { UI.toast('Question not found.', 'warning'); return; }
-
-  var userAns    = exam.answers[subj + '-' + idx];
-  var isCorrect  = userAns === q.ans;
-  var chosenTxt  = userAns !== undefined ? _cleanText(q.opts[userAns]) : 'Not answered';
-  var correctTxt = _cleanText(q.opts[q.ans]);
-  var questionTxt = _cleanText(q.q);
-  var expTxt      = _cleanText(q.exp || '');
-
-  var existing = document.getElementById('seExplainModal');
-  if (existing) existing.remove();
-
-  /* Reset explain-interaction states, but preserve _deeperContext
-     only after we set it fresh below. */
-  _awaitingStudentQuestion = false;
-  _awaitingDeeperAnswer    = false;
-  _deeperContext = { q: q, subj: subj, idx: idx };
-
-  var modal = document.createElement('div');
-  modal.id        = 'seExplainModal';
-  modal.className = 'se-explain-modal-overlay';
-  modal.setAttribute('role', 'dialog');
-  modal.setAttribute('aria-modal', 'true');
-  modal.setAttribute('aria-label', 'Question Explanation');
-
-  modal.innerHTML =
-    '<div class="se-explain-modal-box">' +
-      '<div class="se-explain-modal-hdr">' +
-        '<div class="se-explain-modal-title">' +
-          '<span class="se-explain-q-badge">' + subj + ' — Q' + questionNumber + '</span>' +
-          '<span class="se-explain-status ' + (isCorrect ? 'is-correct' : 'is-wrong') + '">' +
-            (isCorrect
-              ? '<i class="ph ph-check-circle"></i> Correct'
-              : '<i class="ph ph-x-circle"></i> Incorrect') +
-          '</span>' +
-        '</div>' +
-        '<button class="se-explain-close-btn" id="seExplainClose" aria-label="Close">&#x2715;</button>' +
-      '</div>' +
-
-      '<div class="se-explain-body" id="seExplainBody">' +
-        '<p class="se-explain-question">' + questionTxt + '</p>' +
-
-        '<div class="se-explain-answers">' +
-          '<div class="se-explain-ans-row ' + (isCorrect ? 'is-correct' : 'is-wrong') + '">' +
-            '<span class="se-explain-ans-lbl">Your answer:</span>' +
-            '<span>' + chosenTxt + '</span>' +
-          '</div>' +
-          '<div class="se-explain-ans-row is-correct">' +
-            '<span class="se-explain-ans-lbl">Correct answer:</span>' +
-            '<span>' + correctTxt + '</span>' +
-          '</div>' +
-        '</div>' +
-
-        '<div class="se-explain-section">' +
-          '<div class="se-explain-section-title">Explanation</div>' +
-          '<div class="se-explain-exp-text" id="seExplainExpText">' + (expTxt || 'No explanation provided.') + '</div>' +
-        '</div>' +
-
-        '<div class="se-explain-ask-wrap" id="seExplainAskWrap">' +
-          '<div class="se-explain-ask-label">' +
-            '<i class="ph ph-chat-circle-text"></i> Do you have a question about this topic?' +
-          '</div>' +
-          '<div class="se-explain-ask-row">' +
-            '<input type="text" id="seExplainAskInput" class="se-explain-ask-input"' +
-              ' placeholder="Type your question here…" autocomplete="off" />' +
-            '<button class="se-explain-ask-btn" id="seExplainAskBtn" aria-label="Search">' +
-              '<i class="ph ph-magnifying-glass"></i>' +
-            '</button>' +
-          '</div>' +
-          '<p class="se-explain-deeper-hint">Or say your question aloud if the microphone is on</p>' +
-        '</div>' +
-
-        '<div class="se-explain-deeper-wrap" id="seExplainDeeperWrap">' +
-          '<button class="se-explain-deeper-btn" id="seExplainDeeperBtn">' +
-            '<i class="ph ph-book-open-text"></i>' +
-            'Get a fuller explanation from Wikipedia' +
-          '</button>' +
-          '<p class="se-explain-deeper-hint">Searches Wikipedia automatically based on this question</p>' +
-        '</div>' +
-
-        '<div class="se-explain-deep-result" id="seExplainDeepResult" style="display:none;"></div>' +
-      '</div>' +
-
-      '<div class="se-explain-modal-ftr">' +
-        '<button class="se-explain-read-btn" id="seExplainReadBtn">' +
-          '<i class="ph ph-speaker-high"></i> Read explanation' +
-        '</button>' +
-        '<button class="se-explain-close-btn2" id="seExplainClose2">Close</button>' +
-      '</div>' +
-    '</div>';
-
-  document.body.appendChild(modal);
-  requestAnimationFrame(function () { modal.classList.add('is-visible'); });
-
-  function _closeModal() {
-    cancel();
-    // Stop any modal-local STT session
-    if (_modalSttActive) {
-      stopSTT();
-      _modalSttActive = false;
-    }
-    _awaitingStudentQuestion = false;
-    _awaitingDeeperAnswer    = false;
-    _deeperContext = null;
-    modal.classList.remove('is-visible');
-    setTimeout(function () { if (modal.parentNode) modal.remove(); }, 280);
-  }
-
-  document.getElementById('seExplainClose').addEventListener('click', _closeModal);
-  document.getElementById('seExplainClose2').addEventListener('click', _closeModal);
-  modal.addEventListener('click', function (e) {
-    if (e.target === modal) _closeModal();
-  });
-
-  var readBtn = document.getElementById('seExplainReadBtn');
-  readBtn.addEventListener('click', function () {
-    if (_ttsActive) { cancel(); return; }
-    var text = 'Question ' + questionNumber + '. ' + questionTxt + '. ';
-    text += 'Your answer was: ' + chosenTxt + '. ';
-    text += 'The correct answer is: ' + correctTxt + '. ';
-    if (expTxt) text += 'Explanation: ' + expTxt;
-    var deepEl = document.getElementById('seExplainDeepResult');
-    if (deepEl && deepEl.style.display !== 'none') {
-      var plain = deepEl.getAttribute('data-plain') || '';
-      if (plain) text += '. Additional information: ' + plain;
-    }
-    speak(text);
-  });
-
-  var askBtn   = document.getElementById('seExplainAskBtn');
-  var askInput = document.getElementById('seExplainAskInput');
-  function _handleStudentQuery(queryText) {
-    var q2 = (queryText || '').trim();
-    if (!q2) return;
-    _awaitingStudentQuestion = false;
-    _loadDeeperExplanation(null, subj, idx, q2);
-  }
-  askBtn.addEventListener('click', function () {
-    _handleStudentQuery(askInput.value);
-  });
-  askInput.addEventListener('keydown', function (e) {
-    if (e.key === 'Enter') { e.preventDefault(); _handleStudentQuery(askInput.value); }
-  });
-
-  var deeperBtn = document.getElementById('seExplainDeeperBtn');
-  deeperBtn.addEventListener('click', function () {
-    _awaitingStudentQuestion = false;
-    _loadDeeperExplanation(q, subj, idx, null);
-  });
-
-  // Track whether we started STT from inside this modal, so we can
-  // stop it cleanly without killing a pre-existing results-page session.
-  var _modalSttActive = false;
-
-  setTimeout(function () {
-    if (!document.getElementById('seExplainModal')) return;
-
-    var text = 'Question ' + questionNumber + ' in ' + subj + '. ';
-    text += questionTxt + '. ';
-    text += 'The correct answer is: ' + correctTxt + '. ';
-    if (expTxt) text += 'Explanation: ' + expTxt + '. ';
-    text += 'Do you have a question about this topic? Say it now and I will search for it. ' +
-            'Or say "deeper" if you want me to find a fuller explanation from Wikipedia. ' +
-            'Say "no" to skip.';
-
-    speak(text, function () {
-      // Guard: modal may have been closed while TTS was playing
-      if (!document.getElementById('seExplainModal')) return;
-
-      _awaitingStudentQuestion = true;
-
-      // Auto-start STT so the student can actually speak the question
-      // they were just prompted to say. Only start if not already listening.
-      if (sttSupported && !_sttActive) {
-        _modalSttActive = true;
-        startSTT(
-          function (bestTranscript, allTranscripts) {
-            // Route through the results handler which already checks
-            // _awaitingStudentQuestion correctly.
-            _handleResultsCommand(bestTranscript, allTranscripts);
-          },
-          null,
-          function (msg) {
-            _modalSttActive = false;
-            UI.toast(msg, 'warning', 4000);
-          }
-        );
-      }
-    });
-  }, 400);
-}
-
-  /*
-   * _loadDeeperExplanation
-   * If studentQuery is a non-empty string, search Wikipedia using the student's
-   * own question. Otherwise fall back to the auto-built query from the question data.
-   * q may be null when called from a student query.
-   */
   function _loadDeeperExplanation(q, subj, idx, studentQuery) {
     var deepResult = document.getElementById('seExplainDeepResult');
     var deeperWrap = document.getElementById('seExplainDeeperWrap');
@@ -1075,166 +918,286 @@
     deepResult.innerHTML =
       '<div class="se-explain-loading">' +
         '<span class="se-explain-spinner"></span>' +
-        'Searching Wikipedia…' +
+        (studentQuery ? 'Looking up your question…' : 'Generating explanation…') +
       '</div>';
     if (deeperWrap) deeperWrap.style.display = 'none';
     if (askWrap)    askWrap.style.display    = 'none';
 
-    /* Choose the search query */
-    var searchQuery;
-    if (studentQuery && studentQuery.trim().length > 2) {
-      searchQuery = studentQuery.trim();
-      console.log('[SpeechEngine] Student question search query:', searchQuery);
-    } else {
-      /* q must be valid here — fall back gracefully if not */
-      if (!q) {
-        _showDeeperFallback(deepResult, { q: '', opts: [], ans: 0, exp: '' }, subj);
-        return;
-      }
-      searchQuery = _buildSmartSearchQuery(q, subj);
-      console.log('[SpeechEngine] Auto Wikipedia search query:', searchQuery);
-    }
+    var isStudentQuery = !!(studentQuery && studentQuery.trim().length > 2);
 
-    _searchWikipedia(searchQuery, function (err, title, pages) {
-      if (err || !title) {
-        /* If student query failed, try a shorter version; else show fallback */
-        if (studentQuery) {
-          /* Try just the first 3 words of the student's question */
-          var shorter = studentQuery.split(/\s+/).slice(0, 3).join(' ');
-          if (shorter !== studentQuery && shorter.length > 3) {
-            _searchWikipedia(shorter, function (err2, title2) {
-              if (err2 || !title2) {
-                _showStudentQueryFallback(deepResult, studentQuery);
-              } else {
-                _fetchAndShowDeep(title2, deepResult, q, subj, studentQuery);
-              }
-            });
-          } else {
-            _showStudentQueryFallback(deepResult, studentQuery);
-          }
-        } else {
-          var fallback = q ? _cleanText((q.opts || [])[q.ans] || '') : '';
-          if (fallback.length < 4) {
-            _showDeeperFallback(deepResult, q || {}, subj);
-            return;
-          }
-          _searchWikipedia(fallback, function (err2, title2) {
-            if (err2 || !title2) {
-              _showDeeperFallback(deepResult, q || {}, subj);
-            } else {
-              _fetchAndShowDeep(title2, deepResult, q, subj, null);
-            }
+    var systemPrompt = _buildAISystemPrompt(subj);
+    var userPrompt   = isStudentQuery
+      ? _buildStudentQueryPrompt(studentQuery, q, subj, idx || 0)
+      : _buildQuestionExplainPrompt(q || { q: '', opts: [], ans: 0, exp: '' }, subj);
+
+    console.log('[SpeechEngine] OpenRouter query:', isStudentQuery ? 'student: ' + studentQuery : 'auto explain');
+
+    _askOpenRouter(systemPrompt, userPrompt, function (err, answerText) {
+      // Guard: do nothing if modal was closed during the fetch
+      if (!document.getElementById('seExplainModal')) return;
+
+      if (err || !answerText) {
+        var errMsg = 'Sorry, I could not get an explanation right now. ' +
+                     (err || 'Please check your internet connection and try again.');
+        deepResult.setAttribute('data-plain', '');
+        deepResult.innerHTML =
+          '<div class="se-explain-deep-content se-explain-deep-local">' +
+            '<div class="se-explain-deep-src">' +
+              '<span class="se-explain-wiki-badge se-explain-wiki-badge--local">' +
+                '<i class="ph ph-warning" style="font-size:.75rem;vertical-align:middle;"></i> Error' +
+              '</span>' +
+              '<strong>Could not load explanation</strong>' +
+            '</div>' +
+            '<p class="se-explain-deep-text">' + _escHtml(errMsg) + '</p>' +
+            '<button class="se-explain-deeper-btn" id="seExplainRetryBtn" style="margin-top:.5rem;">' +
+              '<i class="ph ph-arrow-clockwise"></i> Try again' +
+            '</button>' +
+          '</div>';
+
+        var retryBtn = document.getElementById('seExplainRetryBtn');
+        if (retryBtn && _deeperContext) {
+          retryBtn.addEventListener('click', function () {
+            _loadDeeperExplanation(_deeperContext.q, _deeperContext.subj, _deeperContext.idx, studentQuery);
           });
         }
-      } else {
-        _fetchAndShowDeep(title, deepResult, q, subj, studentQuery);
+
+        speak(errMsg);
+        return;
+      }
+
+      deepResult.setAttribute('data-plain', answerText);
+      deepResult.innerHTML =
+        '<div class="se-explain-deep-content">' +
+          '<div class="se-explain-deep-src">' +
+            '<span class="se-explain-wiki-badge" style="background:var(--accent);">' +
+              '<i class="ph ph-brain" style="font-size:.7rem;vertical-align:middle;"></i> AI Tutor' +
+            '</span>' +
+            '<strong>' + _escHtml(isStudentQuery ? 'Answer to your question' : 'Fuller explanation') + '</strong>' +
+          '</div>' +
+          '<p class="se-explain-deep-text">' + _escHtml(answerText) + '</p>' +
+          // Re-show ask wrap so student can ask a follow-up
+          '<button class="se-explain-deeper-btn" id="seExplainFollowUpBtn" style="margin-top:.75rem;">' +
+            '<i class="ph ph-chat-circle-text"></i> Ask a follow-up question' +
+          '</button>' +
+        '</div>';
+
+      var followUpBtn = document.getElementById('seExplainFollowUpBtn');
+      if (followUpBtn && askWrap) {
+        followUpBtn.addEventListener('click', function () {
+          followUpBtn.style.display = 'none';
+          if (askWrap) {
+            askWrap.style.display = '';
+            var inp = document.getElementById('seExplainAskInput');
+            if (inp) { inp.value = ''; inp.focus(); }
+          }
+        });
+      }
+
+      if (document.getElementById('seExplainModal')) {
+        speak(answerText);
       }
     });
   }
+  
+    function _showExplanationModal(questionNumber, subjectName) {
+    var exam   = _resultsExam;
+    var result = _resultsResult;
+    if (!exam || !result) return;
 
-  function _fetchAndShowDeep(title, deepResult, q, subj, studentQuery) {
-  _fetchWikipediaSummary(title, function (err, extract, pageUrl) {
-    if (err || !extract) {
-      if (studentQuery) {
-        _showStudentQueryFallback(deepResult, studentQuery);
-      } else {
-        _showDeeperFallback(deepResult, q || {}, subj);
-      }
-      return;
+    var subj = subjectName || exam.subjects[0];
+    if (!exam.questions[subj]) {
+      var found = exam.subjects.find(function (s) {
+        return s.toLowerCase().indexOf((subjectName || '').toLowerCase()) !== -1;
+      });
+      subj = found || exam.subjects[0];
     }
 
-    var plain = extract.replace(/\s+/g, ' ').trim();
+    var qList = exam.questions[subj];
+    if (!qList) { UI.toast('Subject not found.', 'warning'); return; }
 
-    deepResult.setAttribute('data-plain', plain);
-    deepResult.innerHTML =
-      '<div class="se-explain-deep-content">' +
-        '<div class="se-explain-deep-src">' +
-          '<span class="se-explain-wiki-badge">Wikipedia</span>' +
-          '<strong>' + _escHtml(title) + '</strong>' +
+    var idx = (questionNumber >= 1 && questionNumber <= qList.length) ? questionNumber - 1 : 0;
+    var q   = qList[idx];
+    if (!q) { UI.toast('Question not found.', 'warning'); return; }
+
+    var userAns     = exam.answers[subj + '-' + idx];
+    var isCorrect   = userAns === q.ans;
+    var chosenTxt   = userAns !== undefined ? _cleanText(q.opts[userAns]) : 'Not answered';
+    var correctTxt  = _cleanText(q.opts[q.ans]);
+    var questionTxt = _cleanText(q.q);
+    var expTxt      = _cleanText(q.exp || '');
+
+    var existing = document.getElementById('seExplainModal');
+    if (existing) existing.remove();
+
+    _awaitingStudentQuestion = false;
+    _awaitingDeeperAnswer    = false;
+    _deeperContext = { q: q, subj: subj, idx: idx };
+
+    var modal = document.createElement('div');
+    modal.id        = 'seExplainModal';
+    modal.className = 'se-explain-modal-overlay';
+    modal.setAttribute('role', 'dialog');
+    modal.setAttribute('aria-modal', 'true');
+    modal.setAttribute('aria-label', 'Question Explanation');
+
+    modal.innerHTML =
+      '<div class="se-explain-modal-box">' +
+        '<div class="se-explain-modal-hdr">' +
+          '<div class="se-explain-modal-title">' +
+            '<span class="se-explain-q-badge">' + subj + ' — Q' + questionNumber + '</span>' +
+            '<span class="se-explain-status ' + (isCorrect ? 'is-correct' : 'is-wrong') + '">' +
+              (isCorrect
+                ? '<i class="ph ph-check-circle"></i> Correct'
+                : '<i class="ph ph-x-circle"></i> Incorrect') +
+            '</span>' +
+          '</div>' +
+          '<button class="se-explain-close-btn" id="seExplainClose" aria-label="Close">&#x2715;</button>' +
         '</div>' +
-        '<p class="se-explain-deep-text">' + _escHtml(plain) + '</p>' +
-        (pageUrl
-          ? '<a class="se-explain-wiki-link" href="' + pageUrl + '" target="_blank" rel="noopener">' +
-            'Read full article <i class="ph ph-arrow-square-out" style="font-size:.8em;vertical-align:middle;"></i></a>'
-          : '') +
+
+        '<div class="se-explain-body" id="seExplainBody">' +
+          '<p class="se-explain-question">' + questionTxt + '</p>' +
+
+          '<div class="se-explain-answers">' +
+            '<div class="se-explain-ans-row ' + (isCorrect ? 'is-correct' : 'is-wrong') + '">' +
+              '<span class="se-explain-ans-lbl">Your answer:</span>' +
+              '<span>' + chosenTxt + '</span>' +
+            '</div>' +
+            '<div class="se-explain-ans-row is-correct">' +
+              '<span class="se-explain-ans-lbl">Correct answer:</span>' +
+              '<span>' + correctTxt + '</span>' +
+            '</div>' +
+          '</div>' +
+
+          '<div class="se-explain-section">' +
+            '<div class="se-explain-section-title">Explanation</div>' +
+            '<div class="se-explain-exp-text" id="seExplainExpText">' + (expTxt || 'No explanation provided.') + '</div>' +
+          '</div>' +
+
+          '<div class="se-explain-ask-wrap" id="seExplainAskWrap">' +
+            '<div class="se-explain-ask-label">' +
+              '<i class="ph ph-chat-circle-text"></i> Have a question about this topic?' +
+            '</div>' +
+            '<div class="se-explain-ask-row">' +
+              '<input type="text" id="seExplainAskInput" class="se-explain-ask-input"' +
+                ' placeholder="Type your question here…" autocomplete="off" />' +
+              '<button class="se-explain-ask-btn" id="seExplainAskBtn" aria-label="Ask">' +
+                '<i class="ph ph-paper-plane-right"></i>' +
+              '</button>' +
+            '</div>' +
+            '<p class="se-explain-deeper-hint">Or speak your question aloud if the microphone is on</p>' +
+          '</div>' +
+
+          '<div class="se-explain-deeper-wrap" id="seExplainDeeperWrap">' +
+            '<button class="se-explain-deeper-btn" id="seExplainDeeperBtn">' +
+              '<i class="ph ph-brain"></i>' +
+              'Get a fuller AI explanation' +
+            '</button>' +
+            '<p class="se-explain-deeper-hint">Our AI tutor will explain this topic in more detail</p>' +
+          '</div>' +
+
+          '<div class="se-explain-deep-result" id="seExplainDeepResult" style="display:none;"></div>' +
+        '</div>' +
+
+        '<div class="se-explain-modal-ftr">' +
+          '<button class="se-explain-read-btn" id="seExplainReadBtn">' +
+            '<i class="ph ph-speaker-high"></i> Read explanation' +
+          '</button>' +
+          '<button class="se-explain-close-btn2" id="seExplainClose2">Close</button>' +
+        '</div>' +
       '</div>';
 
-    // Guard: only speak if the modal is still open
-    if (document.getElementById('seExplainModal')) {
-      speak('Here is information from Wikipedia about ' + title + '. ' + plain);
+    document.body.appendChild(modal);
+    requestAnimationFrame(function () { modal.classList.add('is-visible'); });
+
+    // Track whether WE started STT from inside this modal,
+    // so we only stop our own session on close (not one started by the results page).
+    var _modalSttActive = false;
+
+    function _closeModal() {
+      cancel();
+      if (_modalSttActive) {
+        stopSTT();
+        _modalSttActive = false;
+      }
+      _awaitingStudentQuestion = false;
+      _awaitingDeeperAnswer    = false;
+      _deeperContext = null;
+      modal.classList.remove('is-visible');
+      setTimeout(function () { if (modal.parentNode) modal.remove(); }, 280);
     }
-  });
-}
 
-  /* Fallback when the student's typed/spoken question yields no Wikipedia result */
-  function _showStudentQueryFallback(deepResult, query) {
-  var msg = 'Sorry, I could not find a Wikipedia article matching your question: "' + query + '". ' +
-            'Try rephrasing it or use the fuller explanation button below.';
-  deepResult.setAttribute('data-plain', '');
-  deepResult.innerHTML =
-    '<div class="se-explain-deep-content se-explain-deep-local">' +
-      '<div class="se-explain-deep-src">' +
-        '<span class="se-explain-wiki-badge se-explain-wiki-badge--local">' +
-          '<i class="ph ph-warning" style="font-size:.75rem;vertical-align:middle;"></i> Not found' +
-        '</span>' +
-        '<strong>No result</strong>' +
-      '</div>' +
-      '<p class="se-explain-deep-text">' + _escHtml(msg) + '</p>' +
-      '<button class="se-explain-deeper-btn" id="seExplainDeeperBtnRetry" style="margin-top:.5rem;">' +
-        '<i class="ph ph-book-open-text"></i> Try automatic explanation' +
-      '</button>' +
-    '</div>';
+    document.getElementById('seExplainClose').addEventListener('click', _closeModal);
+    document.getElementById('seExplainClose2').addEventListener('click', _closeModal);
+    modal.addEventListener('click', function (e) { if (e.target === modal) _closeModal(); });
 
-  var retryBtn = document.getElementById('seExplainDeeperBtnRetry');
-  if (retryBtn && _deeperContext) {
-    retryBtn.addEventListener('click', function () {
-      _loadDeeperExplanation(_deeperContext.q, _deeperContext.subj, _deeperContext.idx, null);
+    // Read button
+    var readBtn = document.getElementById('seExplainReadBtn');
+    readBtn.addEventListener('click', function () {
+      if (_ttsActive) { cancel(); return; }
+      var text = 'Question ' + questionNumber + '. ' + questionTxt + '. ';
+      text += 'Your answer was: ' + chosenTxt + '. ';
+      text += 'The correct answer is: ' + correctTxt + '. ';
+      if (expTxt) text += 'Explanation: ' + expTxt;
+      var deepEl = document.getElementById('seExplainDeepResult');
+      if (deepEl && deepEl.style.display !== 'none') {
+        var plain = deepEl.getAttribute('data-plain') || '';
+        if (plain) text += '. Additional information: ' + plain;
+      }
+      speak(text);
     });
-  }
 
-  // Guard: only speak if the modal is still open
-  if (document.getElementById('seExplainModal')) {
-    speak(msg);
-  }
-}
-
-  function _showDeeperFallback(deepResult, q, subj) {
-  var opts  = Array.isArray(q.opts) ? q.opts : [];
-  var extra = 'The correct answer is: ' + _cleanText(opts[q.ans] || '') + '. ';
-  if (q.exp) extra += _cleanText(q.exp);
-  var expanded = _expandExplanation(q, subj);
-  var plain    = expanded || extra;
-
-  deepResult.setAttribute('data-plain', plain);
-  deepResult.innerHTML =
-    '<div class="se-explain-deep-content se-explain-deep-local">' +
-      '<div class="se-explain-deep-src">' +
-        '<span class="se-explain-wiki-badge se-explain-wiki-badge--local">Extended</span>' +
-        '<strong>Extended explanation</strong>' +
-      '</div>' +
-      '<p class="se-explain-deep-text">' + _escHtml(plain) + '</p>' +
-    '</div>';
-
-  // Guard: only speak if the modal is still open
-  if (document.getElementById('seExplainModal')) {
-    speak('Here is an extended explanation. ' + plain);
-  }
-}
-
-  function _expandExplanation(q, subj) {
-    var question = _cleanText(q.q || '');
-    var exp      = _cleanText(q.exp || '');
-    var correct  = _cleanText((q.opts || [])[q.ans] || '');
-    var parts    = [];
-
-    if (exp)     parts.push(exp);
-    if (correct) parts.push('The correct answer, ' + correct + ', is the best response to this question.');
-    parts.push('In ' + (subj || 'this subject') + ', it is important to understand the key concept being tested here.');
-    if (question.length > 10) {
-      parts.push('The question asks: ' + question);
+    // Typed student question
+    var askBtn   = document.getElementById('seExplainAskBtn');
+    var askInput = document.getElementById('seExplainAskInput');
+    function _handleStudentQuery(queryText) {
+      var q2 = (queryText || '').trim();
+      if (!q2) return;
+      _awaitingStudentQuestion = false;
+      _loadDeeperExplanation(null, subj, idx, q2);
     }
+    askBtn.addEventListener('click', function () { _handleStudentQuery(askInput.value); });
+    askInput.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); _handleStudentQuery(askInput.value); }
+    });
 
-    return parts.join(' ');
+    // Deeper / auto AI explanation button
+    var deeperBtn = document.getElementById('seExplainDeeperBtn');
+    deeperBtn.addEventListener('click', function () {
+      _awaitingStudentQuestion = false;
+      _loadDeeperExplanation(q, subj, idx, null);
+    });
+
+    // TTS intro + auto-start mic afterwards
+    setTimeout(function () {
+      if (!document.getElementById('seExplainModal')) return;
+
+      var text = 'Question ' + questionNumber + ' in ' + subj + '. ';
+      text += questionTxt + '. ';
+      text += 'The correct answer is: ' + correctTxt + '. ';
+      if (expTxt) text += 'Explanation: ' + expTxt + '. ';
+      text += 'Do you have a question about this topic? Say it now and I will look it up. ' +
+              'Or say "explain more" for a fuller explanation. Say "no" to skip.';
+
+      speak(text, function () {
+        if (!document.getElementById('seExplainModal')) return;
+        _awaitingStudentQuestion = true;
+
+        // Auto-start the mic only if nothing is already listening
+        if (sttSupported && !_sttActive) {
+          _modalSttActive = true;
+          startSTT(
+            function (bestTranscript, allTranscripts) {
+              _handleResultsCommand(bestTranscript, allTranscripts);
+            },
+            null,
+            function (msg) {
+              _modalSttActive = false;
+              UI.toast(msg, 'warning', 4000);
+            }
+          );
+        }
+      });
+    }, 400);
   }
 
   function _escHtml(str) {
@@ -1376,35 +1339,35 @@
      RESULTS PAGE VOICE COMMANDS
      ════════════════════════════════════════════════════════ */
 
-  function _handleResultsCommand(transcript, allTranscripts) {
+    function _handleResultsCommand(transcript, allTranscripts) {
     var t = (transcript || '').toLowerCase().trim();
-    var exam   = _resultsExam;
+    var exam = _resultsExam;
 
-    /* ── Student question / deeper-explanation state ── */
+    // ── Student question / AI explain state ──
     if (_awaitingStudentQuestion && _deeperContext) {
-      /* "no / skip" → dismiss */
-      if (/\b(no|nope|skip|close|done|stop|enough|not now|that's fine|that is fine|nothing)\b/.test(t)) {
+      // "no / skip" → dismiss
+      if (/\b(no|nope|skip|close|done|stop|enough|not now|that'?s fine|that is fine|nothing)\b/.test(t)) {
         _awaitingStudentQuestion = false;
-        speak('Alright. You can type a question in the box or tap the fuller explanation button below.');
+        speak('Alright. You can type a question in the box or tap the fuller explanation button.');
         return;
       }
-      /* "deeper / yes / more" → run auto-query */
-      if (/\b(deeper|yes|yeah|sure|ok|okay|more|explain more|further|go ahead|please|want|need|fuller)\b/.test(t)) {
+      // "explain more / deeper / yes / more" → run auto AI query
+      if (/\b(explain more|deeper|yes|yeah|sure|ok|okay|more|further|go ahead|please|want|need|fuller|ai|tutor)\b/.test(t)) {
         _awaitingStudentQuestion = false;
         var dc = _deeperContext;
         _loadDeeperExplanation(dc.q, dc.subj, dc.idx, null);
         return;
       }
-      /* Anything else is treated as the student's own question */
+      // Anything else is treated as the student's own question
       _awaitingStudentQuestion = false;
       var studentQ = transcript.trim();
-      UI.toast('Searching Wikipedia for: "' + studentQ + '"', 'info', 2500);
+      UI.toast('Searching for: "' + studentQ + '"', 'info', 2500);
       var dc2 = _deeperContext;
       _loadDeeperExplanation(dc2.q, dc2.subj, dc2.idx, studentQ);
       return;
     }
 
-    /* Back-compat: old _awaitingDeeperAnswer (kept for safety) */
+    // Back-compat: old _awaitingDeeperAnswer
     if (_awaitingDeeperAnswer && _deeperContext) {
       if (/\b(yes|yeah|sure|ok|okay|more|deeper|explain more|further|go ahead|please|want|need)\b/.test(t)) {
         _awaitingDeeperAnswer = false;
@@ -1412,7 +1375,7 @@
         _loadDeeperExplanation(dc3.q, dc3.subj, dc3.idx, null);
         return;
       }
-      if (/\b(no|nope|skip|close|done|stop|enough|not now|that's fine|that is fine)\b/.test(t)) {
+      if (/\b(no|nope|skip|close|done|stop|enough|not now|that'?s fine|that is fine)\b/.test(t)) {
         _awaitingDeeperAnswer = false;
         speak('Alright. You can close this panel or ask me to explain another question.');
         return;
