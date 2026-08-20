@@ -1070,7 +1070,7 @@ function cancel() {
               '</span>' +
               '<strong>Could not load explanation</strong>' +
             '</div>' +
-            '<p class="se-explain-deep-text">' + _escHtml(errMsg) + '</p>' +
+            '<p class="se-explain-deep-text">' + _renderAiText(answerText) + '</p>' +
             '<button class="se-explain-deeper-btn" id="seExplainRetryBtn" style="margin-top:.5rem;">' +
               '<i class="ph ph-arrow-clockwise"></i> Try again' +
             '</button>' +
@@ -1331,6 +1331,17 @@ function cancel() {
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
+     function _renderAiText(str) {
+    if (str == null) return '';
+    var safe = String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+    safe = safe.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
+    return safe;
+  }
+   
   /* ════════════════════════════════════════════════════════
      EXAM VOICE COMMANDS
      ════════════════════════════════════════════════════════ */
