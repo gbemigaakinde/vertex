@@ -1019,7 +1019,7 @@
       ? _buildStudentQueryPrompt(studentQuery, q, subj, idx || 0)
       : _buildQuestionExplainPrompt(q || { q: '', opts: [], ans: 0, exp: '' }, subj);
 
-    console.log('[SpeechEngine] OpenRouter query:', isStudentQuery ? 'student: ' + studentQuery : 'auto explain');
+    console.log('[SpeechEngine] AI query:', isStudentQuery ? 'student: ' + studentQuery : 'auto explain');
 
         _askAI(systemPrompt, userPrompt, function (err, answerText) {
       // Guard: do nothing if modal was closed during the fetch
