@@ -2311,16 +2311,23 @@
   }
   function _escAttr(str) { return _escHtml(str).replace(/'/g,'&#39;'); }
 
-     function _renderAiText(str) {
+   function _renderAiText(str) {
     if (str == null) return '';
-    // 1. Escape raw HTML so the AI cannot inject tags/scripts
+    // 1. Escape HTML
     var safe = String(str)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
-    // 2. Convert markdown bold **text** → <strong>text</strong>
+    // 2. Bold: **text** → <strong>text</strong>
     safe = safe.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
+    // 3. Convert double newlines → paragraph breaks, single newlines → <br>
+    var paras = safe.split(/\n\n+/);
+    safe = paras.map(function (p) {
+      return '<p style="margin:0 0 .6em 0;">' + p.replace(/\n/g, '<br>') + '</p>';
+    }).join('');
+    // 4. Strip trailing empty paragraph
+    safe = safe.replace(/<p[^>]*><\/p>$/g, '');
     return safe;
   }
    
@@ -2688,19 +2695,17 @@
      /* ─────────────────────────────────────────────────────── */
   /* AI Drawer — open / close / send                         */
   /* ─────────────────────────────────────────────────────── */
-  function _aiTypewriter(el, text, scrollContainer) {
+    function _aiTypewriter(el, text, scrollContainer) {
     if (!el) return;
-    // Render bold markdown first, then typewrite the HTML nodes
-    var safe = _renderAiText(text);
-    // We typewrite character by character on the raw text,
-    // then do a final swap to the rendered HTML so bold works.
-    // Strategy: typewrite plain text, then on finish swap to full HTML.
-    var i = 0;
-    var chars = Array.from(text); // unicode-safe
-    var speed = 18; // ms per character — comfortable reading pace
 
-    // Start cursor blink
-    el.innerHTML = '<span class="vtx-tw-cursor"></span>';
+    var rendered = _renderAiText(text);
+    var chars    = Array.from(text);
+    var total    = chars.length;
+    var i        = 0;
+    var plain    = '';
+    // Faster for long responses, comfortable for short ones
+    var speed    = total > 300 ? 10 : 18;
+
     if (!document.getElementById('vtxTwStyle')) {
       var s = document.createElement('style');
       s.id = 'vtxTwStyle';
@@ -2712,24 +2717,27 @@
       document.head.appendChild(s);
     }
 
-    var plain = '';
     function tick() {
-      if (i >= chars.length) {
-        // Done — swap to fully rendered HTML (handles **bold** etc.)
-        el.innerHTML = safe;
+      if (i >= total) {
+        // Final swap — full rendered HTML with paragraphs and bold
+        el.innerHTML = rendered;
         if (scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
         return;
       }
+
       plain += chars[i];
       i++;
-      // Render plain text + cursor
-      el.textContent = plain;
-      var cursor = document.createElement('span');
-      cursor.className = 'vtx-tw-cursor';
-      el.appendChild(cursor);
+
+      // Render the partial plain text with paragraph structure as we go,
+      // so the student sees proper line breaks forming during typewrite
+      var partialRendered = _renderAiText(plain);
+      el.innerHTML = partialRendered +
+        '<span class="vtx-tw-cursor"></span>';
+
       if (scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
       setTimeout(tick, speed);
     }
+
     tick();
   }
 
@@ -2946,7 +2954,7 @@
     if (window._vtxAiHistory.length > 12) window._vtxAiHistory = window._vtxAiHistory.slice(-12);
 
     var studentData = S().studentData || {};
-    var systemPrompt =
+        var systemPrompt =
       'You are Master Timothy AI, a knowledgeable, patient, and supportive tutor at Vertex Tutorial Centre in Lagos, Nigeria. ' +
       'You are currently teaching ' + (studentData.name || 'a student') + ', ' +
       'who is in ' + (studentData.class || 'secondary school') + '. ' +
@@ -2955,9 +2963,15 @@
       'Do not simply give answers when an explanation would help the student learn. Explain the reasoning clearly. ' +
       'Be warm, patient, encouraging, accurate, and direct. ' +
       'Use simple, natural language. Break difficult concepts into manageable steps. ' +
-      'For maths, physics, chemistry, and calculation-based questions, show the working clearly. ' +
-      'Keep normal responses under 200 words unless the student asks for more detail. ' +
-      'Use plain sentences and short paragraphs. No Markdown, bullet points, numbered lists, or headings unless asked. ' +
+      'For maths, physics, chemistry, and calculation-based questions, show the working clearly, step by step, each step on its own line. ' +
+      'Keep normal conversational responses under 200 words unless the student asks for more detail. ' +
+      'FORMATTING RULES — follow these exactly: ' +
+      'Always separate paragraphs with a blank line (two newline characters). ' +
+      'Never run different paragraphs, sentences, or sections together into one block of text. ' +
+      'For letters, essays, or any structured writing, each section (date, address, salutation, body paragraphs, closing) must be on its own line or paragraph, separated by blank lines. ' +
+      'For step-by-step working, put each step on its own line. ' +
+      'Do not use Markdown symbols like **, ##, or - for bullet points unless the student explicitly asks for a list. ' +
+      'Write in plain text only, using blank lines to separate paragraphs and sections. ' +
       'Answer the student\'s actual question directly. ' +
       'If the question is ambiguous, ask a brief clarifying question. ' +
       'If you are uncertain about a fact, say so rather than inventing information. ' +
@@ -2966,7 +2980,7 @@
       'Do not mention OpenRouter, GPT, ChatGPT, or any language models. ' +
       'If asked who you are, say: "I am Master Timothy AI, your tutor at Vertex Tutorial Centre." ' +
       'Do not claim to be a human teacher.';
-
+       
     var messagesPayload = [
       { role: 'system', content: systemPrompt },
     ].concat(window._vtxAiHistory);
