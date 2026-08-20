@@ -1765,5 +1765,61 @@ if (retryBtn && _deeperContext) {
       if (sttBtn) sttBtn.click();
     },
   };
+  // Shared AI bridge for exam.js drawer — accepts a pre-built messages array.
+  window._vtxAskAI = function (messagesPayload, callback) {
+    function _tryGroq(isRetry) {
+      var model = isRetry ? 'llama-3.1-8b-instant' : 'llama-3.3-70b-versatile';
+      fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + _GROQ_API_KEY,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ model: model, max_tokens: 500, temperature: 0.45, messages: messagesPayload }),
+      })
+      .then(function (res) {
+        if (!res.ok) {
+          if ((res.status === 429 || res.status === 503) && !isRetry) { _tryGroq(true); return null; }
+          throw new Error('groq_' + res.status);
+        }
+        return res.json();
+      })
+      .then(function (data) {
+        if (!data) return;
+        var text = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+        if (!text || !text.trim()) {
+          if (!isRetry) { _tryGroq(true); return; }
+          throw new Error('groq_empty');
+        }
+        callback(null, text.trim());
+      })
+      .catch(function (err) {
+        console.warn('[vtxAskAI] Groq failed (' + err + ') — falling back to OpenRouter.');
+        fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + _OR_API_KEY,
+            'HTTP-Referer': _OR_SITE_URL,
+            'X-Title': _OR_SITE_NAME,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ model: _OR_MODEL_PRIMARY, max_tokens: 500, temperature: 0.45, messages: messagesPayload }),
+        })
+        .then(function (res) {
+          if (!res.ok) throw new Error('or_' + res.status);
+          return res.json();
+        })
+        .then(function (data) {
+          var text = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+          if (!text || !text.trim()) throw new Error('or_empty');
+          callback(null, text.trim());
+        })
+        .catch(function () {
+          callback('Could not reach the AI server.', null);
+        });
+      });
+    }
+    _tryGroq(false);
+  };
 
 })();
