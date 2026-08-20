@@ -1000,7 +1000,7 @@
 
       </div>
 
-      <!-- AI ASSISTANT FLOATING DOT -->
+       <!-- AI ASSISTANT FLOATING DOT -->
       <style>
         @keyframes vtx-ai-breathe {
           0%, 100% { box-shadow: 0 2px 12px rgba(79,110,247,.22), 0 0 0 0 rgba(79,110,247,.18); }
@@ -1010,23 +1010,67 @@
           from { opacity:0; transform:scale(0.7) translateY(8px); }
           to   { opacity:1; transform:scale(1) translateY(0); }
         }
+        @keyframes vtx-ai-pill-in {
+          from { opacity:0; max-width:0; padding-left:0; padding-right:0; }
+          to   { opacity:1; max-width:160px; padding-left:.625rem; padding-right:.875rem; }
+        }
+        @keyframes vtx-ai-pill-out {
+          from { opacity:1; max-width:160px; padding-left:.625rem; padding-right:.875rem; }
+          to   { opacity:0; max-width:0; padding-left:0; padding-right:0; }
+        }
+        #vtxAiFloating {
+          animation: vtx-ai-appear 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
+        }
         #vtxAiTrigger {
-          animation: vtx-ai-appear 0.35s cubic-bezier(0.34,1.56,0.64,1) both,
-                     vtx-ai-breathe 3s ease-in-out 0.5s infinite;
+          animation: vtx-ai-breathe 3s ease-in-out 0.5s infinite;
         }
         #vtxAiTrigger:hover {
-          animation: none;
+          animation: none !important;
           transform: scale(1.08) !important;
           box-shadow: 0 4px 20px rgba(79,110,247,.40) !important;
         }
+        #vtxAiFloating:hover #vtxAiPill {
+          opacity: 1 !important;
+        }
+        #vtxAiPill {
+          display: inline-flex;
+          align-items: center;
+          white-space: nowrap;
+          overflow: hidden;
+          border-radius: var(--r-full);
+          background: var(--accent);
+          color: #fff;
+          font-family: var(--font);
+          font-size: .75rem;
+          font-weight: 700;
+          letter-spacing: .01em;
+          height: 32px;
+          max-width: 0;
+          padding-left: 0;
+          padding-right: 0;
+          opacity: 0;
+          pointer-events: none;
+          flex-shrink: 0;
+          box-shadow: 0 2px 10px rgba(79,110,247,.22);
+          transition: opacity 200ms ease;
+        }
+        #vtxAiPill.is-open {
+          animation: vtx-ai-pill-in 420ms cubic-bezier(0.16,1,0.3,1) both;
+          pointer-events: auto;
+        }
+        #vtxAiPill.is-closing {
+          animation: vtx-ai-pill-out 300ms cubic-bezier(0.4,0,1,1) both;
+          pointer-events: none;
+        }
       </style>
-      <div id="vtxAiFloating" style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:500;width:auto;max-width:none;">
+      <div id="vtxAiFloating" style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:500;
+                                      display:flex;align-items:center;gap:.5rem;flex-direction:row-reverse;">
         <button
           id="vtxAiTrigger"
           onclick="Exam._openAiDrawer()"
           title="Ask AI Tutor"
           aria-label="Open AI Tutor"
-          style="width:46px;height:46px;border-radius:50%;
+          style="flex-shrink:0;width:46px;height:46px;border-radius:50%;
                  background:var(--accent);color:#fff;
                  border:none;cursor:pointer;
                  display:flex;align-items:center;justify-content:center;
@@ -1038,6 +1082,11 @@
             <path d="M216,40H40A16,16,0,0,0,24,56V200a8,8,0,0,0,13,6.22L72,179.09l.19.28A16,16,0,0,0,85.35,187H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,131H85.35l-13-16L40,193.27V56H216ZM80,120a8,8,0,0,1,8-8h80a8,8,0,0,1,0,16H88A8,8,0,0,1,80,120Zm0,32a8,8,0,0,1,8-8h48a8,8,0,0,1,0,16H88A8,8,0,0,1,80,152Z"/>
           </svg>
         </button>
+        <div id="vtxAiPill" onclick="Exam._openAiDrawer()" role="button" tabindex="0"
+             aria-label="Open AI Tutor"
+             onkeydown="if(event.key==='Enter'||event.key===' ')Exam._openAiDrawer();">
+          Ask AI Tutor
+        </div>
       </div>
 
       <!-- AI DRAWER (hidden by default) -->
@@ -1208,6 +1257,25 @@
 
     // ── AI drawer conversation history ──
     window._vtxAiHistory = [];
+     // Show the "Ask AI Tutor" pill hint once per student (until they click it)
+    (function () {
+      try {
+        if (localStorage.getItem('vtx_ai_pill_seen')) return;
+      } catch (e) {}
+      // Small delay so the page settles first
+      window._vtxAiPillTimer = setTimeout(function () {
+        var pill = document.getElementById('vtxAiPill');
+        if (!pill) return;
+        pill.classList.add('is-open');
+        // Auto-retract after 5 seconds
+        window._vtxAiPillTimer = setTimeout(function () {
+          if (!pill) return;
+          pill.classList.remove('is-open');
+          pill.classList.add('is-closing');
+          window._vtxAiPillTimer = null;
+        }, 5000);
+      }, 1800);
+    })();
 
     _showBgCanvas(true);
 
@@ -2566,14 +2634,26 @@
   /* AI Drawer — open / close / send                         */
   /* ─────────────────────────────────────────────────────── */
 
-  function _openAiDrawer() {
-    const drawer  = document.getElementById('vtxAiDrawer');
-    const sheet   = document.getElementById('vtxAiSheet');
-    const trigger = document.getElementById('vtxAiTrigger');
+    function _openAiDrawer() {
+    // Collapse the label pill immediately
+    var pill = document.getElementById('vtxAiPill');
+    if (pill) {
+      pill.classList.remove('is-open');
+      pill.classList.add('is-closing');
+    }
+    if (window._vtxAiPillTimer) {
+      clearTimeout(window._vtxAiPillTimer);
+      window._vtxAiPillTimer = null;
+    }
+    // Remember that this student has seen the hint
+    try { localStorage.setItem('vtx_ai_pill_seen', '1'); } catch (e) {}
+
+    var drawer  = document.getElementById('vtxAiDrawer');
+    var sheet   = document.getElementById('vtxAiSheet');
+    var trigger = document.getElementById('vtxAiTrigger');
     if (!drawer || !sheet) return;
 
     drawer.style.display = 'block';
-    // Allow display:block to paint before transitioning
     requestAnimationFrame(function () {
       requestAnimationFrame(function () {
         sheet.style.transform = 'translateY(0)';
@@ -2581,24 +2661,26 @@
     });
 
     if (trigger) trigger.style.display = 'none';
+    if (pill) pill.style.display = 'none';
 
-    // Focus the input
     setTimeout(function () {
-      const inp = document.getElementById('vtxAiInput');
+      var inp = document.getElementById('vtxAiInput');
       if (inp) inp.focus();
     }, 320);
   }
 
-  function _closeAiDrawer() {
-    const drawer  = document.getElementById('vtxAiDrawer');
-    const sheet   = document.getElementById('vtxAiSheet');
-    const trigger = document.getElementById('vtxAiTrigger');
+    function _closeAiDrawer() {
+    var drawer  = document.getElementById('vtxAiDrawer');
+    var sheet   = document.getElementById('vtxAiSheet');
+    var trigger = document.getElementById('vtxAiTrigger');
+    var pill    = document.getElementById('vtxAiPill');
     if (!sheet) return;
 
     sheet.style.transform = 'translateY(100%)';
     setTimeout(function () {
       if (drawer) drawer.style.display = 'none';
-      if (trigger) trigger.style.display = '';
+      if (trigger) { trigger.style.display = ''; }
+      if (pill) { pill.style.display = ''; }
     }, 310);
   }
 
