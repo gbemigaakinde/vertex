@@ -2188,6 +2188,19 @@
   }
   function _escAttr(str) { return _escHtml(str).replace(/'/g,'&#39;'); }
 
+     function _renderAiText(str) {
+    if (str == null) return '';
+    // 1. Escape raw HTML so the AI cannot inject tags/scripts
+    var safe = String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+    // 2. Convert markdown bold **text** → <strong>text</strong>
+    safe = safe.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
+    return safe;
+  }
+   
 /* ─────────────────────────────────────────────────────── */
   /* Timetable PDF download (student)                        */
   /* ─────────────────────────────────────────────────────── */
@@ -2675,7 +2688,7 @@
     if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = ''; }
   }
 
-  function _appendAiReply(replyText) {
+    function _appendAiReply(replyText) {
     _removeTyping();
     window._vtxAiHistory.push({ role: 'assistant', content: replyText });
     const aiBubble = document.createElement('div');
@@ -2685,7 +2698,7 @@
                   border-radius:var(--r-xl) var(--r-xl) var(--r-xl) var(--r-sm);
                   background:var(--bg-subtle);border:1px solid var(--border);
                   font-size:.875rem;line-height:1.6;color:var(--text-1);word-break:break-word;">
-        ${_escHtml(replyText)}
+        ${_renderAiText(replyText)}
       </div>`;
     const msgs = document.getElementById('vtxAiMessages');
     if (msgs) { msgs.appendChild(aiBubble); msgs.scrollTop = msgs.scrollHeight; }
