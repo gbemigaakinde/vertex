@@ -2841,12 +2841,10 @@
     }
   }
    
-   function _openAiDrawer() {
-    // Dismiss the pill synchronously on first call so it never interferes
+     function _openAiDrawer() {
+    // Dismiss the pill synchronously so it never interferes
     var pill = document.getElementById('vtxAiPill');
-    if (pill) {
-      pill.style.cssText = 'display:none;';        // kill it instantly, no animation race
-    }
+    if (pill) pill.style.cssText = 'display:none;';
     if (window._vtxAiPillTimer) {
       clearTimeout(window._vtxAiPillTimer);
       window._vtxAiPillTimer = null;
@@ -2858,19 +2856,19 @@
     var trigger = document.getElementById('vtxAiTrigger');
     if (!drawer || !sheet) return;
 
+    // Show drawer first, then kick the transform on the next event loop tick
     drawer.style.display = 'block';
-    requestAnimationFrame(function () {
-      requestAnimationFrame(function () {
-        sheet.style.transform = 'translateY(0)';
-      });
-    });
+    setTimeout(function () {
+      sheet.style.transform = 'translateY(0)';
+    }, 0);
 
     if (trigger) trigger.style.display = 'none';
 
+    // Focus only after the sheet slide-in transition is fully done (300ms + buffer)
     setTimeout(function () {
       var inp = document.getElementById('vtxAiInput');
       if (inp) inp.focus();
-    }, 320);
+    }, 360);
   }
 
       function _closeAiDrawer() {
