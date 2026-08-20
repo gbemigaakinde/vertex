@@ -1020,7 +1020,7 @@
           box-shadow: 0 4px 20px rgba(79,110,247,.40) !important;
         }
       </style>
-      <div id="vtxAiFloating" style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:500;">
+      <div id="vtxAiFloating" style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:500;width:auto;max-width:none;">
         <button
           id="vtxAiTrigger"
           onclick="Exam._openAiDrawer()"
