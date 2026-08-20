@@ -1076,17 +1076,15 @@ function cancel() {
             '</button>' +
           '</div>';
 
-        var retryBtn = document.getElementById('seExplainRetryBtn');
-if (retryBtn && _deeperContext) {
-  (function (capturedQuery) {
-    retryBtn.addEventListener('click', function () {
-      // If there was a student query, re-run as student query (pass null for q).
-      // If it was an auto-explain, pass the original question object.
-      var qArg = capturedQuery ? null : _deeperContext.q;
-      _loadDeeperExplanation(qArg, _deeperContext.subj, _deeperContext.idx, capturedQuery || null);
-    });
-  })(studentQuery);
-}
+         var retryBtn = document.getElementById('seExplainRetryBtn');
+        if (retryBtn && _deeperContext) {
+          (function (capturedQuery) {
+            retryBtn.addEventListener('click', function () {
+              // Always preserve the original question context on retry
+              _loadDeeperExplanation(_deeperContext.q, _deeperContext.subj, _deeperContext.idx, capturedQuery || null);
+            });
+          })(studentQuery);
+        }
 
         speak(errMsg);
         return;
@@ -1276,11 +1274,11 @@ if (retryBtn && _deeperContext) {
     // Typed student question
     var askBtn   = document.getElementById('seExplainAskBtn');
     var askInput = document.getElementById('seExplainAskInput');
-    function _handleStudentQuery(queryText) {
+        function _handleStudentQuery(queryText) {
       var q2 = (queryText || '').trim();
       if (!q2) return;
       _awaitingStudentQuestion = false;
-      _loadDeeperExplanation(null, subj, idx, q2);
+      _loadDeeperExplanation(_deeperContext.q, subj, idx, q2);
     }
     askBtn.addEventListener('click', function () { _handleStudentQuery(askInput.value); });
     askInput.addEventListener('keydown', function (e) {
@@ -1768,34 +1766,47 @@ if (retryBtn && _deeperContext) {
   };
   // Shared AI bridge for exam.js drawer — accepts a pre-built messages array.
   window._vtxAskAI = function (messagesPayload, callback) {
-    function _tryGroq(isRetry) {
-      var model = isRetry ? 'llama-3.1-8b-instant' : 'llama-3.3-70b-versatile';
-      fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + _GROQ_API_KEY,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ model: model, max_tokens: 500, temperature: 0.45, messages: messagesPayload }),
-      })
-      .then(function (res) {
-        if (!res.ok) {
-          if ((res.status === 429 || res.status === 503) && !isRetry) { _tryGroq(true); return null; }
-          throw new Error('groq_' + res.status);
+  function _tryGroq(isRetry) {
+    var model = isRetry ? _GROQ_MODEL_FALLBACK : _GROQ_MODEL_PRIMARY;
+    fetch('https://api.groq.com/openai/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + _GROQ_API_KEY,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: model,
+        max_tokens: 600,
+        temperature: 0.4,
+        messages: messagesPayload,
+      }),
+    })
+    .then(function (res) {
+      if (!res.ok) {
+        if ((res.status === 429 || res.status === 503 || res.status === 404) && !isRetry) {
+          _tryGroq(true);
+          return null;
         }
-        return res.json();
-      })
-      .then(function (data) {
-        if (!data) return;
-        var text = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-        if (!text || !text.trim()) {
-          if (!isRetry) { _tryGroq(true); return; }
-          throw new Error('groq_empty');
-        }
-        callback(null, text.trim());
-      })
-      .catch(function (err) {
-        console.warn('[vtxAskAI] Groq failed (' + err + ') — falling back to OpenRouter.');
+        throw new Error('groq_' + res.status);
+      }
+      return res.json();
+    })
+    .then(function (data) {
+      if (!data) return;
+      var text = data.choices &&
+                 data.choices[0] &&
+                 data.choices[0].message &&
+                 data.choices[0].message.content;
+      if (!text || !text.trim()) {
+        if (!isRetry) { _tryGroq(true); return; }
+        throw new Error('groq_empty');
+      }
+      callback(null, text.trim());
+    })
+    .catch(function (err) {
+      console.warn('[vtxAskAI] Groq failed (' + err + ') — falling back to OpenRouter.');
+      function _tryOR(isORRetry) {
+        var orModel = isORRetry ? _OR_MODEL_FALLBACK : _OR_MODEL_PRIMARY;
         fetch('https://openrouter.ai/api/v1/chat/completions', {
           method: 'POST',
           headers: {
@@ -1804,23 +1815,41 @@ if (retryBtn && _deeperContext) {
             'X-Title': _OR_SITE_NAME,
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ model: _OR_MODEL_PRIMARY, max_tokens: 500, temperature: 0.45, messages: messagesPayload }),
+          body: JSON.stringify({
+            model: orModel,
+            max_tokens: 600,
+            temperature: 0.4,
+            messages: messagesPayload,
+          }),
         })
         .then(function (res) {
-          if (!res.ok) throw new Error('or_' + res.status);
+          if (!res.ok) {
+            if (!isORRetry) { _tryOR(true); return null; }
+            throw new Error('or_' + res.status);
+          }
           return res.json();
         })
         .then(function (data) {
-          var text = data && data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-          if (!text || !text.trim()) throw new Error('or_empty');
+          if (!data) return;
+          var text = data &&
+                     data.choices &&
+                     data.choices[0] &&
+                     data.choices[0].message &&
+                     data.choices[0].message.content;
+          if (!text || !text.trim()) {
+            if (!isORRetry) { _tryOR(true); return; }
+            throw new Error('or_empty');
+          }
           callback(null, text.trim());
         })
         .catch(function () {
           callback('Could not reach the AI server.', null);
         });
-      });
-    }
-    _tryGroq(false);
-  };
+      }
+      _tryOR(false);
+    });
+  }
+  _tryGroq(false);
+};
 
 })();
