@@ -798,8 +798,8 @@ function cancel() {
   ════════════════════════════════════════════════════════ */
 
   var _GROQ_API_KEY      = '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';
-  var _GROQ_MODEL_PRIMARY  = 'llama-3.3-70b-versatile';
-  var _GROQ_MODEL_FALLBACK = 'llama-3.1-8b-instant';
+  var _GROQ_MODEL_PRIMARY  = 'openai/gpt-oss-120b';   // was llama-3.3-70b-versatile (decommissioned Aug 16 2026)
+  var _GROQ_MODEL_FALLBACK = 'openai/gpt-oss-20b';    // was llama-3.1-8b-instant    (decommissioned Aug 16 2026)
   var _GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
    
   var _OR_API_KEY        = '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';
@@ -814,63 +814,64 @@ function cancel() {
    * callback(err, answerText)
    * Tries llama-3.3-70b-versatile first; if rate-limited, retries with llama-3.1-8b-instant.
    */
-  function _askGroq(systemPrompt, userPrompt, callback, _isRetry) {
-  var model = _isRetry ? _GROQ_MODEL_FALLBACK : _GROQ_MODEL_PRIMARY;
+    function _askGroq(systemPrompt, userPrompt, callback, _isRetry) {
+    var model = _isRetry ? _GROQ_MODEL_FALLBACK : _GROQ_MODEL_PRIMARY;
 
-  fetch(_GROQ_ENDPOINT, {
-    method: 'POST',
-    headers: {
-      'Authorization': 'Bearer ' + _GROQ_API_KEY,
-      'Content-Type':  'application/json',
-    },
-    body: JSON.stringify({
-      model:       model,
-      max_tokens:  600,
-      temperature: 0.4,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user',   content: userPrompt   },
-      ],
-    }),
-  })
-  .then(function (res) {
-    if (!res.ok) {
-      if ((res.status === 429 || res.status === 503) && !_isRetry) {
-        console.warn('[SpeechEngine] Groq ' + _GROQ_MODEL_PRIMARY + ' rate-limited (' + res.status + ') — retrying with ' + _GROQ_MODEL_FALLBACK);
-        _askGroq(systemPrompt, userPrompt, callback, true);
-        return null; // prevent chained .then from running
+    fetch(_GROQ_ENDPOINT, {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + _GROQ_API_KEY,
+        'Content-Type':  'application/json',
+      },
+      body: JSON.stringify({
+        model:       model,
+        max_tokens:  600,
+        temperature: 0.4,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user',   content: userPrompt   },
+        ],
+      }),
+    })
+    .then(function (res) {
+      if (!res.ok) {
+        // Retry on rate-limit, service-unavailable, OR model-not-found (404)
+        if ((res.status === 429 || res.status === 503 || res.status === 404) && !_isRetry) {
+          console.warn('[SpeechEngine] Groq ' + _GROQ_MODEL_PRIMARY + ' failed (' + res.status + ') — retrying with ' + _GROQ_MODEL_FALLBACK);
+          _askGroq(systemPrompt, userPrompt, callback, true);
+          return null;
+        }
+        return res.json().then(function (body) {
+          callback('groq_error_' + res.status + ': ' + ((body && body.error && body.error.message) || 'Unknown error'), null);
+          return null;
+        }).catch(function () {
+          callback('groq_error_' + res.status, null);
+          return null;
+        });
       }
-      return res.json().then(function (body) {
-        callback('groq_error_' + res.status + ': ' + ((body && body.error && body.error.message) || 'Unknown error'), null);
-        return null;
-      }).catch(function () {
-        callback('groq_error_' + res.status, null);
-        return null;
-      });
-    }
-    return res.json();
-  })
-  .then(function (data) {
-    if (!data) return;
-    var text = data.choices &&
-               data.choices[0] &&
-               data.choices[0].message &&
-               data.choices[0].message.content;
-    if (!text || !text.trim()) {
-      if (!_isRetry) {
-        _askGroq(systemPrompt, userPrompt, callback, true);
+      return res.json();
+    })
+    .then(function (data) {
+      if (!data) return;
+      var text = data.choices &&
+                 data.choices[0] &&
+                 data.choices[0].message &&
+                 data.choices[0].message.content;
+      if (!text || !text.trim()) {
+        if (!_isRetry) {
+          _askGroq(systemPrompt, userPrompt, callback, true);
+          return;
+        }
+        callback('groq_empty', null);
         return;
       }
-      callback('groq_empty', null);
-      return;
-    }
-    callback(null, text.trim());
-  })
-  .catch(function (err) {
-    console.error('[SpeechEngine] Groq fetch error:', err);
-    callback('groq_network_error', null);
-  });
-}
+      callback(null, text.trim());
+    })
+    .catch(function (err) {
+      console.error('[SpeechEngine] Groq fetch error:', err);
+      callback('groq_network_error', null);
+    });
+  }
 
   /*
    * _askOpenRouter
