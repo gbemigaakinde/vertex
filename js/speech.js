@@ -1070,7 +1070,7 @@ function cancel() {
               '</span>' +
               '<strong>Could not load explanation</strong>' +
             '</div>' +
-            '<p class="se-explain-deep-text">' + _renderAiText(answerText) + '</p>' +
+            '<p class="se-explain-deep-text">' + _escHtml(errMsg) + '</p>' +
             '<button class="se-explain-deeper-btn" id="seExplainRetryBtn" style="margin-top:.5rem;">' +
               '<i class="ph ph-arrow-clockwise"></i> Try again' +
             '</button>' +
@@ -1099,7 +1099,7 @@ function cancel() {
             '</span>' +
             '<strong>' + _escHtml(isStudentQuery ? 'Answer to your question' : 'Fuller explanation') + '</strong>' +
           '</div>' +
-          '<p class="se-explain-deep-text">' + _escHtml(answerText) + '</p>' +
+          '<p class="se-explain-deep-text">' + _renderAiText(answerText) + '</p>' +
           // Re-show ask wrap so student can ask a follow-up
           '<button class="se-explain-deeper-btn" id="seExplainFollowUpBtn" style="margin-top:.75rem;">' +
             '<i class="ph ph-chat-circle-text"></i> Ask a follow-up question' +
