@@ -1010,20 +1010,19 @@ async function editStudent(uid) {
             Leave blank to remove.
           </p>
         </div>
-        
+
         <div>
           <label style="display:block;font-size:var(--text-xs);font-weight:600;
                         color:var(--text-2);margin-bottom:.3125rem;">
             Timetable Group
             <span style="font-weight:400;color:var(--text-3);">— optional</span>
           </label>
-          <input id="editStudentTimetableGroup" type="text"
-                 value="${_esc(studentData.timetableGroup || '')}"
-                 placeholder="e.g. Holiday Group A"
-                 style="width:100%;box-sizing:border-box;" />
+          <select id="editStudentTimetableGroup" style="width:100%;box-sizing:border-box;">
+            <option value="">None (use class timetable)</option>
+            <option value="__loading__" disabled>Loading groups…</option>
+          </select>
           <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:.25rem;line-height:1.5;">
-            If set, this student sees the timetable saved for this group name instead of their class timetable.
-            Leave blank to use the class timetable.
+            If set, this student sees the timetable for that group instead of the class timetable.
           </p>
         </div>
 
@@ -1057,6 +1056,7 @@ async function editStudent(uid) {
   overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
   overlay.addEventListener('keydown', e => { if (e.key === 'Escape') overlay.remove(); });
 
+  // Load schools
   try {
     const schoolsSnap = await Db().collection('schools').orderBy('name').get();
     const schoolSel   = document.getElementById('editStudentSchool');
@@ -1081,6 +1081,46 @@ async function editStudent(uid) {
     const schoolSel = document.getElementById('editStudentSchool');
     if (schoolSel) {
       schoolSel.innerHTML = `<option value="${_esc(studentData.school || '')}" selected>${_esc(studentData.school || '—')}</option>`;
+    }
+  }
+
+  // Load available timetable groups from weeklyTimetable_custom
+  try {
+    const groupSnap = await Db().collection('weeklyTimetable_custom').get();
+    const groupSel  = document.getElementById('editStudentTimetableGroup');
+    if (groupSel) {
+      // Extract unique group names from docs whose id starts with "group_"
+      const groupNames = [];
+      groupSnap.forEach(doc => {
+        if (doc.id.startsWith('group_')) {
+          const label = doc.data().targetLabel || doc.id.replace('group_', '').replace(/_/g, ' ');
+          if (label && !groupNames.includes(label)) groupNames.push(label);
+        }
+      });
+      groupNames.sort();
+
+      const currentGroup = studentData.timetableGroup || '';
+
+      let html = '<option value="">None (use class timetable)</option>';
+      groupNames.forEach(g => {
+        html += `<option value="${_esc(g)}" ${currentGroup === g ? 'selected' : ''}>${_esc(g)}</option>`;
+      });
+
+      // If student has a group that isn't in the list (e.g. group doc deleted), still show it
+      if (currentGroup && !groupNames.includes(currentGroup)) {
+        html += `<option value="${_esc(currentGroup)}" selected>${_esc(currentGroup)} (current)</option>`;
+      }
+
+      groupSel.innerHTML = html;
+    }
+  } catch (err) {
+    console.warn('[teacher] editStudent group load error:', err);
+    const groupSel = document.getElementById('editStudentTimetableGroup');
+    if (groupSel) {
+      const currentGroup = studentData.timetableGroup || '';
+      groupSel.innerHTML = `
+        <option value="">None (use class timetable)</option>
+        ${currentGroup ? `<option value="${_esc(currentGroup)}" selected>${_esc(currentGroup)}</option>` : ''}`;
     }
   }
 }
@@ -2160,14 +2200,21 @@ async function _saveStudentEdit(uid, previousAdmno) {
       const s = doc.data();
       _msgStudentCache.push({
         id:                doc.id,
-        name:              s.name  || '',
-        cls:               s.class || '',
+        name:              s.name           || '',
+        cls:               s.class          || '',
+        timetableGroup:    s.timetableGroup || '',
         coachingCompleted: s.coachingCompleted || {},
       });
     });
     _populateMsgSingleSelect();
     _populateMsgCheckboxList();
     _populateTaskStudentSelect();
+
+    // If group member list is visible, refresh it to reflect latest state
+    if (_ttSelectedScope === 'group' && (_ttSelectedGroupName || '').trim()) {
+      _ttRenderGroupMembers();
+    }
+
     const existingTasksList = document.getElementById('existingTasksList');
     if (existingTasksList) {
       Db().collection('coachingTasks').get().then(snap => {
@@ -2823,34 +2870,41 @@ function _renderExistingTasksList(docs) {
   }
 
   function _setTTScope(scope) {
-    _ttSelectedScope = scope;
+  _ttSelectedScope = scope;
 
-    const btnClass   = document.getElementById('ttScopeClass');
-    const btnStudent = document.getElementById('ttScopeStudent');
-    const btnGroup   = document.getElementById('ttScopeGroup');
-    [btnClass, btnStudent, btnGroup].forEach(b => {
-      if (!b) return;
-      b.style.background = 'transparent';
-      b.style.color      = 'var(--text-3)';
-      b.style.boxShadow  = 'none';
-    });
-    const active = scope === 'student' ? btnStudent : scope === 'group' ? btnGroup : btnClass;
-    if (active) {
-      active.style.background = 'var(--bg-base)';
-      active.style.color      = 'var(--text-1)';
-      active.style.boxShadow  = 'var(--shadow-xs)';
-    }
-
-    const classWrap   = document.getElementById('ttClassWrap');
-    const studentWrap = document.getElementById('ttStudentWrap');
-    const groupWrap   = document.getElementById('ttGroupWrap');
-    if (classWrap)   classWrap.style.display   = scope === 'class'   ? '' : 'none';
-    if (studentWrap) studentWrap.style.display  = scope === 'student' ? '' : 'none';
-    if (groupWrap)   groupWrap.style.display    = scope === 'group'   ? '' : 'none';
-
-    _ttRenderEditor();
-    _ttListenAll();
+  const btnClass   = document.getElementById('ttScopeClass');
+  const btnStudent = document.getElementById('ttScopeStudent');
+  const btnGroup   = document.getElementById('ttScopeGroup');
+  [btnClass, btnStudent, btnGroup].forEach(b => {
+    if (!b) return;
+    b.style.background = 'transparent';
+    b.style.color      = 'var(--text-3)';
+    b.style.boxShadow  = 'none';
+  });
+  const active = scope === 'student' ? btnStudent : scope === 'group' ? btnGroup : btnClass;
+  if (active) {
+    active.style.background = 'var(--bg-base)';
+    active.style.color      = 'var(--text-1)';
+    active.style.boxShadow  = 'var(--shadow-xs)';
   }
+
+  const classWrap   = document.getElementById('ttClassWrap');
+  const studentWrap = document.getElementById('ttStudentWrap');
+  const groupWrap   = document.getElementById('ttGroupWrap');
+  if (classWrap)   classWrap.style.display   = scope === 'class'   ? '' : 'none';
+  if (studentWrap) studentWrap.style.display  = scope === 'student' ? '' : 'none';
+  if (groupWrap)   groupWrap.style.display    = scope === 'group'   ? '' : 'none';
+
+  _ttRenderEditor();
+  _ttListenAll();
+
+  if (scope === 'group') {
+    _ttRenderGroupMembers();
+  } else {
+    const memberWrap = document.getElementById('ttGroupMembersWrap');
+    if (memberWrap) memberWrap.innerHTML = '';
+  }
+}
 
   function _onTTStudentChange() {
     const sel = document.getElementById('ttStudentSelect');
@@ -2860,15 +2914,193 @@ function _renderExistingTasksList(docs) {
   }
 
   function _onTTGroupNameChange() {
-    const inp = document.getElementById('ttGroupNameInput');
-    if (inp) _ttSelectedGroupName = inp.value;
-    // Debounce: only refresh editor after user stops typing
-    clearTimeout(_onTTGroupNameChange._t);
-    _onTTGroupNameChange._t = setTimeout(function () {
-      _ttRenderEditor();
-      _ttListenAll();
-    }, 600);
+  const inp = document.getElementById('ttGroupNameInput');
+  if (inp) _ttSelectedGroupName = inp.value;
+  clearTimeout(_onTTGroupNameChange._t);
+  _onTTGroupNameChange._t = setTimeout(function () {
+    _ttRenderEditor();
+    _ttListenAll();
+    _ttRenderGroupMembers();
+  }, 600);
+}
+
+async function _ttRenderGroupMembers() {
+  let wrap = document.getElementById('ttGroupMembersWrap');
+  if (!wrap) return;
+
+  const groupName = (_ttSelectedGroupName || '').trim();
+  if (!groupName) {
+    wrap.innerHTML = '';
+    return;
   }
+
+  // Build a set of student UIDs currently in this group
+  const inGroup = new Set(
+    _msgStudentCache
+      .filter(s => (s.timetableGroup || '').trim().toLowerCase() === groupName.toLowerCase())
+      .map(s => s.id)
+  );
+
+  const safeName = groupName.toLowerCase().replace(/[^a-z0-9]/g, '_');
+
+  wrap.innerHTML = `
+    <div style="margin-top:1rem;border:1px solid var(--accent-border);border-radius:10px;
+                overflow:hidden;background:var(--bg-base);">
+      <div style="padding:.625rem 1rem;background:var(--accent-subtle);
+                  display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem;">
+        <div>
+          <p style="font-size:var(--text-sm);font-weight:700;color:var(--accent-text);">
+            Group Members — <em>${_esc(groupName)}</em>
+          </p>
+          <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:1px;">
+            Tick students to add them to this group. Untick to remove.
+          </p>
+        </div>
+        <div style="display:flex;gap:.375rem;align-items:center;">
+          <button onclick="Teacher._ttSelectAllGroupMembers()"
+                  style="font-size:var(--text-xs);font-weight:600;color:var(--accent);
+                         background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">
+            All
+          </button>
+          <span style="color:var(--border-strong);">·</span>
+          <button onclick="Teacher._ttClearGroupMembers()"
+                  style="font-size:var(--text-xs);font-weight:600;color:var(--text-3);
+                         background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">
+            None
+          </button>
+        </div>
+      </div>
+
+      ${_msgStudentCache.length === 0
+        ? `<p style="padding:.75rem 1rem;font-size:var(--text-sm);color:var(--text-3);font-style:italic;">
+             No students registered yet.</p>`
+        : `<div style="max-height:220px;overflow-y:auto;">
+             ${_msgStudentCache
+               .slice()
+               .sort((a, b) => a.name.localeCompare(b.name))
+               .map(s => `
+                 <label style="display:flex;align-items:center;gap:.625rem;
+                               padding:.4375rem 1rem;cursor:pointer;
+                               border-bottom:1px solid var(--border);"
+                        onmouseenter="this.style.background='var(--accent-subtle)'"
+                        onmouseleave="this.style.background=''">
+                   <input type="checkbox" class="tt-group-member-cb"
+                          value="${_esc(s.id)}"
+                          data-current-group="${_esc(s.timetableGroup || '')}"
+                          ${inGroup.has(s.id) ? 'checked' : ''}
+                          style="width:.9375rem;height:.9375rem;accent-color:var(--accent);
+                                 flex-shrink:0;cursor:pointer;" />
+                   <span style="font-size:var(--text-sm);color:var(--text-1);flex:1;
+                                white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                     ${_esc(s.name)}
+                     <span style="color:var(--text-3);font-size:var(--text-xs);"> — ${_esc(s.cls)}</span>
+                   </span>
+                   ${(s.timetableGroup && s.timetableGroup.trim().toLowerCase() !== groupName.toLowerCase())
+                     ? `<span style="font-size:var(--text-xs);color:var(--warning-text);
+                                    background:var(--warning-subtle);border:1px solid var(--warning-border);
+                                    border-radius:4px;padding:1px 6px;white-space:nowrap;flex-shrink:0;">
+                          In: ${_esc(s.timetableGroup)}
+                        </span>`
+                     : ''}
+                 </label>`).join('')}
+           </div>`}
+
+      <div style="padding:.625rem 1rem;border-top:1px solid var(--border);
+                  display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap;">
+        <span id="ttGroupMemberCount" style="font-size:var(--text-xs);color:var(--text-3);">
+          ${inGroup.size} member${inGroup.size !== 1 ? 's' : ''}
+        </span>
+        <button id="ttSaveGroupBtn" onclick="Teacher._ttSaveGroupMembers()"
+                class="btn bg-green-600" style="font-size:var(--text-sm);">
+          Save Group Members
+        </button>
+      </div>
+    </div>`;
+
+  // Wire checkbox count update
+  wrap.querySelectorAll('.tt-group-member-cb').forEach(cb => {
+    cb.addEventListener('change', function () {
+      const count = wrap.querySelectorAll('.tt-group-member-cb:checked').length;
+      const countEl = document.getElementById('ttGroupMemberCount');
+      if (countEl) countEl.textContent = count + ' member' + (count !== 1 ? 's' : '');
+    });
+  });
+}
+
+function _ttSelectAllGroupMembers() {
+  document.querySelectorAll('.tt-group-member-cb').forEach(cb => { cb.checked = true; });
+  const count = document.querySelectorAll('.tt-group-member-cb').length;
+  const el = document.getElementById('ttGroupMemberCount');
+  if (el) el.textContent = count + ' member' + (count !== 1 ? 's' : '');
+}
+
+function _ttClearGroupMembers() {
+  document.querySelectorAll('.tt-group-member-cb').forEach(cb => { cb.checked = false; });
+  const el = document.getElementById('ttGroupMemberCount');
+  if (el) el.textContent = '0 members';
+}
+
+async function _ttSaveGroupMembers() {
+  const groupName = (_ttSelectedGroupName || '').trim();
+  if (!groupName) { UI.toast('Enter a group name first.', 'warning'); return; }
+
+  const btn = document.getElementById('ttSaveGroupBtn');
+  UI.setLoading(btn, true);
+
+  try {
+    // Collect checked and unchecked states
+    const checkboxes = document.querySelectorAll('.tt-group-member-cb');
+    if (checkboxes.length === 0) {
+      UI.toast('No students available.', 'warning');
+      UI.setLoading(btn, false);
+      return;
+    }
+
+    const batch = Db().batch();
+    let changeCount = 0;
+
+    checkboxes.forEach(cb => {
+      const uid          = cb.value;
+      const isChecked    = cb.checked;
+      const currentGroup = (cb.dataset.currentGroup || '').trim();
+      const alreadyInThis = currentGroup.toLowerCase() === groupName.toLowerCase();
+
+      if (isChecked && !alreadyInThis) {
+        // Add to this group
+        batch.update(Db().collection('students').doc(uid), { timetableGroup: groupName });
+        changeCount++;
+      } else if (!isChecked && alreadyInThis) {
+        // Remove from this group (only if they were in THIS group, not another)
+        batch.update(Db().collection('students').doc(uid), { timetableGroup: null });
+        changeCount++;
+      }
+      // If checked and already in this group, or unchecked and in a different group: no change
+    });
+
+    if (changeCount === 0) {
+      UI.toast('No changes to save.', 'info');
+      UI.setLoading(btn, false);
+      return;
+    }
+
+    await batch.commit();
+
+    const checked = document.querySelectorAll('.tt-group-member-cb:checked').length;
+    UI.toast(
+      `Group "${groupName}" saved — ${checked} member${checked !== 1 ? 's' : ''}.`,
+      'success'
+    );
+
+    // Re-render the member list to reflect saved state
+    _ttRenderGroupMembers();
+
+  } catch (err) {
+    console.error('[timetable] _ttSaveGroupMembers error:', err);
+    UI.toast('Failed to save group members.', 'error');
+  } finally {
+    UI.setLoading(btn, false);
+  }
+}
 
 function _getMondayForWeek(weekKey) {
   if (_ttWeekMondayMap[weekKey]) return _ttWeekMondayMap[weekKey];
@@ -2912,7 +3144,6 @@ function _loadTimetableManager() {
   }
   weekOptions.sort((a, b) => a.key.localeCompare(b.key));
 
-  // Build student options from cache
   const studentOptions = _msgStudentCache
     .slice()
     .sort((a, b) => a.name.localeCompare(b.name))
@@ -2978,14 +3209,11 @@ function _loadTimetableManager() {
       <div id="ttGroupWrap" style="flex:1;min-width:200px;display:none;">
         <label style="display:block;font-size:var(--text-xs);font-weight:600;color:var(--text-3);
                       margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.04em;">Group Name</label>
-        <div style="display:flex;gap:.375rem;">
-          <input type="text" id="ttGroupNameInput" placeholder="e.g. Holiday Group A"
-                 oninput="Teacher._onTTGroupNameChange()"
-                 style="flex:1;" />
-        </div>
+        <input type="text" id="ttGroupNameInput" placeholder="e.g. Holiday Group A"
+               oninput="Teacher._onTTGroupNameChange()"
+               style="width:100%;box-sizing:border-box;" />
         <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:.25rem;line-height:1.5;">
-          Type any group name. Students assigned to this group will see this timetable.
-          To assign students to a group, edit each student's timetable target below.
+          Type a group name, then add members below. Students in the group will see this timetable.
         </p>
       </div>
       <div style="flex:1;min-width:200px;">
@@ -3005,7 +3233,10 @@ function _loadTimetableManager() {
       </div>
     </div>
 
-    <div id="ttEditorWrap">
+    <!-- Group member manager renders here when scope = group -->
+    <div id="ttGroupMembersWrap"></div>
+
+    <div id="ttEditorWrap" style="margin-top:.75rem;">
       <div style="text-align:center;padding:2rem;color:var(--text-3);font-size:var(--text-sm);">Loading…</div>
     </div>
 
@@ -4715,6 +4946,10 @@ async function exportResultPDF(resultId) {
     _setTTScope,
     _onTTStudentChange,
     _onTTGroupNameChange,
+    _ttRenderGroupMembers,
+    _ttSelectAllGroupMembers,
+    _ttClearGroupMembers,
+    _ttSaveGroupMembers,
     get _msgStudentCache() { return _msgStudentCache; },
   };
 
