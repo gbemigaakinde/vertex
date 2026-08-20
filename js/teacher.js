@@ -1010,6 +1010,22 @@ async function editStudent(uid) {
             Leave blank to remove.
           </p>
         </div>
+        
+        <div>
+          <label style="display:block;font-size:var(--text-xs);font-weight:600;
+                        color:var(--text-2);margin-bottom:.3125rem;">
+            Timetable Group
+            <span style="font-weight:400;color:var(--text-3);">— optional</span>
+          </label>
+          <input id="editStudentTimetableGroup" type="text"
+                 value="${_esc(studentData.timetableGroup || '')}"
+                 placeholder="e.g. Holiday Group A"
+                 style="width:100%;box-sizing:border-box;" />
+          <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:.25rem;line-height:1.5;">
+            If set, this student sees the timetable saved for this group name instead of their class timetable.
+            Leave blank to use the class timetable.
+          </p>
+        </div>
 
         <div style="padding:.625rem .875rem;background:var(--bg-subtle);
                     border:1px solid var(--border);border-radius:8px;
@@ -1124,12 +1140,15 @@ async function _saveStudentEdit(uid, previousAdmno) {
 
     const batch = Db().batch();
 
+    const timetableGroupInput = document.getElementById('editStudentTimetableGroup');
+    const timetableGroup = timetableGroupInput ? timetableGroupInput.value.trim() : undefined;
     // Update student profile
     batch.update(Db().collection('students').doc(uid), {
       name,
-      class:       cls,
+      class:        cls,
       school,
-      admissionNo: admno || null,
+      admissionNo:  admno || null,
+      ...(timetableGroup !== undefined ? { timetableGroup: timetableGroup || null } : {}),
     });
 
     // Update denormalized name in DM thread doc
@@ -2781,11 +2800,75 @@ function _renderExistingTasksList(docs) {
   }
 
   // State for the timetable manager
-  let _ttSelectedClass = '';
-  let _ttSelectedWeek  = '';   // ISO week key e.g. "2025-W23"
-  let _ttUnsubAll      = null;
+  let _ttSelectedClass      = '';
+  let _ttSelectedWeek       = '';
+  let _ttSelectedScope      = 'class';   // 'class' | 'student' | 'group'
+  let _ttSelectedStudentUid = '';
+  let _ttSelectedGroupName  = '';
+  let _ttUnsubAll           = null;
 
   let _ttWeekMondayMap = {};
+
+  // Returns the Firestore collection and doc ID for the current timetable target
+  function _ttCurrentTarget() {
+    if (_ttSelectedScope === 'student') {
+      return { col: 'weeklyTimetable_custom', docId: 'student_' + _ttSelectedStudentUid };
+    }
+    if (_ttSelectedScope === 'group') {
+      const safeName = (_ttSelectedGroupName || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+      return { col: 'weeklyTimetable_custom', docId: 'group_' + safeName };
+    }
+    // class (default)
+    return { col: 'weeklyTimetable', docId: _classKeyFromStr(_ttSelectedClass) };
+  }
+
+  function _setTTScope(scope) {
+    _ttSelectedScope = scope;
+
+    const btnClass   = document.getElementById('ttScopeClass');
+    const btnStudent = document.getElementById('ttScopeStudent');
+    const btnGroup   = document.getElementById('ttScopeGroup');
+    [btnClass, btnStudent, btnGroup].forEach(b => {
+      if (!b) return;
+      b.style.background = 'transparent';
+      b.style.color      = 'var(--text-3)';
+      b.style.boxShadow  = 'none';
+    });
+    const active = scope === 'student' ? btnStudent : scope === 'group' ? btnGroup : btnClass;
+    if (active) {
+      active.style.background = 'var(--bg-base)';
+      active.style.color      = 'var(--text-1)';
+      active.style.boxShadow  = 'var(--shadow-xs)';
+    }
+
+    const classWrap   = document.getElementById('ttClassWrap');
+    const studentWrap = document.getElementById('ttStudentWrap');
+    const groupWrap   = document.getElementById('ttGroupWrap');
+    if (classWrap)   classWrap.style.display   = scope === 'class'   ? '' : 'none';
+    if (studentWrap) studentWrap.style.display  = scope === 'student' ? '' : 'none';
+    if (groupWrap)   groupWrap.style.display    = scope === 'group'   ? '' : 'none';
+
+    _ttRenderEditor();
+    _ttListenAll();
+  }
+
+  function _onTTStudentChange() {
+    const sel = document.getElementById('ttStudentSelect');
+    if (sel) _ttSelectedStudentUid = sel.value;
+    _ttRenderEditor();
+    _ttListenAll();
+  }
+
+  function _onTTGroupNameChange() {
+    const inp = document.getElementById('ttGroupNameInput');
+    if (inp) _ttSelectedGroupName = inp.value;
+    // Debounce: only refresh editor after user stops typing
+    clearTimeout(_onTTGroupNameChange._t);
+    _onTTGroupNameChange._t = setTimeout(function () {
+      _ttRenderEditor();
+      _ttListenAll();
+    }, 600);
+  }
 
 function _getMondayForWeek(weekKey) {
   if (_ttWeekMondayMap[weekKey]) return _ttWeekMondayMap[weekKey];
@@ -2802,106 +2885,194 @@ function _getMondayForWeek(weekKey) {
 }
 
 function _loadTimetableManager() {
-    const container = document.getElementById('teacher-timetable');
-    if (!container) return;
+  const container = document.getElementById('teacher-timetable');
+  if (!container) return;
 
-    const classes  = _getAllClasses();
-    const thisWeek = _isoWeekKey();
+  const classes  = _getAllClasses();
+  const thisWeek = _isoWeekKey();
 
-    _ttSelectedWeek = thisWeek;
-    if (!_ttSelectedClass && classes.length > 0) _ttSelectedClass = classes[0];
+  _ttSelectedWeek  = thisWeek;
+  _ttSelectedScope = 'class';
+  if (!_ttSelectedClass && classes.length > 0) _ttSelectedClass = classes[0];
+  _ttSelectedStudentUid   = '';
+  _ttSelectedGroupName    = '';
 
-    _ttWeekMondayMap = {};
-    const weekOptions = [];
-    for (let i = 0; i <= 12; i++) {
-      const d = new Date();
-      d.setDate(d.getDate() + i * 7);
-      const key    = _isoWeekKey(d);
-      const monday = _weekMonday(d);
-      const label  = _weekRangeLabel(monday);
-      if (!weekOptions.find(w => w.key === key)) {
-        weekOptions.push({ key, label });
-        _ttWeekMondayMap[key] = new Date(monday);
-      }
+  _ttWeekMondayMap = {};
+  const weekOptions = [];
+  for (let i = 0; i <= 12; i++) {
+    const d = new Date();
+    d.setDate(d.getDate() + i * 7);
+    const key    = _isoWeekKey(d);
+    const monday = _weekMonday(d);
+    const label  = _weekRangeLabel(monday);
+    if (!weekOptions.find(w => w.key === key)) {
+      weekOptions.push({ key, label });
+      _ttWeekMondayMap[key] = new Date(monday);
     }
-    weekOptions.sort((a, b) => a.key.localeCompare(b.key));
+  }
+  weekOptions.sort((a, b) => a.key.localeCompare(b.key));
 
-    container.innerHTML = `
-      <div style="margin-bottom:1rem;">
-        <h2 style="font-size:var(--text-md);font-weight:600;color:var(--text-1);letter-spacing:-0.015em;">
-          Class Timetable
-        </h2>
-        <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">
-          Build a period-by-period timetable for each class.
-          Students see it as a proper school timetable grid on their dashboard.
-          Set a timetable as <strong>Permanent</strong> so it never expires — it stays active until you replace or delete it.
+  // Build student options from cache
+  const studentOptions = _msgStudentCache
+    .slice()
+    .sort((a, b) => a.name.localeCompare(b.name))
+    .map(s => `<option value="${_esc(s.id)}">${_esc(s.name)} (${_esc(s.cls)})</option>`)
+    .join('');
+
+  container.innerHTML = `
+    <div style="margin-bottom:1rem;">
+      <h2 style="font-size:var(--text-md);font-weight:600;color:var(--text-1);letter-spacing:-0.015em;">
+        Class Timetable
+      </h2>
+      <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">
+        Build a period-by-period timetable for each class, individual student, or a custom group.
+        Students see it as a proper school timetable grid on their dashboard.
+        Set a timetable as <strong>Permanent</strong> so it never expires.
+        <strong>Student and group timetables override the class timetable for those students.</strong>
+      </p>
+    </div>
+
+    <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1rem;align-items:flex-end;">
+      <div style="flex:1;min-width:160px;">
+        <label style="display:block;font-size:var(--text-xs);font-weight:600;color:var(--text-3);
+                      margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.04em;">Assign To</label>
+        <div style="display:flex;background:var(--bg-muted);border:1px solid var(--border);
+                    border-radius:var(--r-md);padding:3px;gap:3px;">
+          <button id="ttScopeClass" onclick="Teacher._setTTScope('class')"
+                  style="flex:1;padding:.35rem .25rem;font-size:var(--text-xs);font-weight:500;
+                         cursor:pointer;border:none;border-radius:5px;font-family:inherit;
+                         background:var(--bg-base);color:var(--text-1);box-shadow:var(--shadow-xs);
+                         transition:background var(--t-fast),color var(--t-fast);">Class</button>
+          <button id="ttScopeStudent" onclick="Teacher._setTTScope('student')"
+                  style="flex:1;padding:.35rem .25rem;font-size:var(--text-xs);font-weight:500;
+                         cursor:pointer;border:none;border-radius:5px;font-family:inherit;
+                         background:transparent;color:var(--text-3);
+                         transition:background var(--t-fast),color var(--t-fast);">Student</button>
+          <button id="ttScopeGroup" onclick="Teacher._setTTScope('group')"
+                  style="flex:1;padding:.35rem .25rem;font-size:var(--text-xs);font-weight:500;
+                         cursor:pointer;border:none;border-radius:5px;font-family:inherit;
+                         background:transparent;color:var(--text-3);
+                         transition:background var(--t-fast),color var(--t-fast);">Group</button>
+        </div>
+      </div>
+    </div>
+
+    <div id="ttTargetRow" style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1.25rem;align-items:flex-end;">
+      <div id="ttClassWrap" style="flex:1;min-width:160px;">
+        <label style="display:block;font-size:var(--text-xs);font-weight:600;color:var(--text-3);
+                      margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.04em;">Class</label>
+        <select id="ttClassSelect" onchange="Teacher._onTTClassChange()" style="width:100%;">
+          ${classes.length === 0
+            ? '<option value="">No classes found — register students first</option>'
+            : classes.map(c => `<option value="${_esc(c)}" ${c === _ttSelectedClass ? 'selected' : ''}>${_esc(c)}</option>`).join('')}
+        </select>
+      </div>
+      <div id="ttStudentWrap" style="flex:1;min-width:160px;display:none;">
+        <label style="display:block;font-size:var(--text-xs);font-weight:600;color:var(--text-3);
+                      margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.04em;">Student</label>
+        <select id="ttStudentSelect" onchange="Teacher._onTTStudentChange()" style="width:100%;">
+          <option value="">Select a student...</option>
+          ${studentOptions}
+        </select>
+      </div>
+      <div id="ttGroupWrap" style="flex:1;min-width:200px;display:none;">
+        <label style="display:block;font-size:var(--text-xs);font-weight:600;color:var(--text-3);
+                      margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.04em;">Group Name</label>
+        <div style="display:flex;gap:.375rem;">
+          <input type="text" id="ttGroupNameInput" placeholder="e.g. Holiday Group A"
+                 oninput="Teacher._onTTGroupNameChange()"
+                 style="flex:1;" />
+        </div>
+        <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:.25rem;line-height:1.5;">
+          Type any group name. Students assigned to this group will see this timetable.
+          To assign students to a group, edit each student's timetable target below.
         </p>
       </div>
-
-      <div style="display:flex;gap:.75rem;flex-wrap:wrap;margin-bottom:1.25rem;align-items:flex-end;">
-        <div style="flex:1;min-width:160px;">
-          <label style="display:block;font-size:var(--text-xs);font-weight:600;color:var(--text-3);
-                        margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.04em;">Class</label>
-          <select id="ttClassSelect" onchange="Teacher._onTTClassChange()" style="width:100%;">
-            ${classes.length === 0
-              ? '<option value="">No classes found — register students first</option>'
-              : classes.map(c => `<option value="${_esc(c)}" ${c === _ttSelectedClass ? 'selected' : ''}>${_esc(c)}</option>`).join('')}
-          </select>
-        </div>
-        <div style="flex:1;min-width:200px;">
-          <label style="display:block;font-size:var(--text-xs);font-weight:600;color:var(--text-3);
-                        margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.04em;">Week</label>
-          <select id="ttWeekSelect" onchange="Teacher._onTTWeekChange()" style="width:100%;">
-            <option value="permanent" ${_ttSelectedWeek === 'permanent' ? 'selected' : ''}>
-              Permanent Timetable (active until changed)
-            </option>
-            <optgroup label="─ Week-specific ─">
-              ${weekOptions.map(w => `
-                <option value="${_esc(w.key)}" ${w.key === _ttSelectedWeek ? 'selected' : ''}>
-                  ${w.key === thisWeek ? '★ This week: ' : ''}${_esc(w.label)} (${_esc(w.key)})
-                </option>`).join('')}
-            </optgroup>
-          </select>
-        </div>
+      <div style="flex:1;min-width:200px;">
+        <label style="display:block;font-size:var(--text-xs);font-weight:600;color:var(--text-3);
+                      margin-bottom:.375rem;text-transform:uppercase;letter-spacing:.04em;">Week</label>
+        <select id="ttWeekSelect" onchange="Teacher._onTTWeekChange()" style="width:100%;">
+          <option value="permanent" ${_ttSelectedWeek === 'permanent' ? 'selected' : ''}>
+            Permanent Timetable (active until changed)
+          </option>
+          <optgroup label="─ Week-specific ─">
+            ${weekOptions.map(w => `
+              <option value="${_esc(w.key)}" ${w.key === _ttSelectedWeek ? 'selected' : ''}>
+                ${w.key === thisWeek ? '★ This week: ' : ''}${_esc(w.label)} (${_esc(w.key)})
+              </option>`).join('')}
+          </optgroup>
+        </select>
       </div>
+    </div>
 
-      <div id="ttEditorWrap">
-        <div style="text-align:center;padding:2rem;color:var(--text-3);font-size:var(--text-sm);">Loading…</div>
-      </div>
+    <div id="ttEditorWrap">
+      <div style="text-align:center;padding:2rem;color:var(--text-3);font-size:var(--text-sm);">Loading…</div>
+    </div>
 
-      <div style="margin-top:2rem;padding-top:1.25rem;border-top:1px solid var(--border);">
-        <h3 style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);margin-bottom:.75rem;">
-          Saved Timetables
-        </h3>
-        <div id="ttAllList" style="display:flex;flex-direction:column;gap:.5rem;"></div>
-      </div>`;
+    <div style="margin-top:2rem;padding-top:1.25rem;border-top:1px solid var(--border);">
+      <h3 style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);margin-bottom:.75rem;">
+        Saved Timetables
+      </h3>
+      <div id="ttAllList" style="display:flex;flex-direction:column;gap:.5rem;"></div>
+    </div>`;
 
-    _ttRenderEditor();
-    _ttListenAll();
-  }
+  _ttRenderEditor();
+  _ttListenAll();
+}
 
 async function _ttRenderEditor() {
   const wrap = document.getElementById('ttEditorWrap');
   if (!wrap) return;
 
-  if (!_ttSelectedClass) {
+  const scope = _ttSelectedScope;
+
+  // Guard: make sure a valid target is selected
+  if (scope === 'class' && !_ttSelectedClass) {
     wrap.innerHTML = `<p style="font-size:var(--text-sm);color:var(--text-3);">Select a class above.</p>`;
+    return;
+  }
+  if (scope === 'student' && !_ttSelectedStudentUid) {
+    wrap.innerHTML = `<p style="font-size:var(--text-sm);color:var(--text-3);">Select a student above.</p>`;
+    return;
+  }
+  if (scope === 'group' && !(_ttSelectedGroupName || '').trim()) {
+    wrap.innerHTML = `<p style="font-size:var(--text-sm);color:var(--text-3);">Enter a group name above.</p>`;
     return;
   }
 
   const isPermanent = _ttSelectedWeek === 'permanent';
   const thisWeek    = _isoWeekKey();
   const isThisWk    = _ttSelectedWeek === thisWeek;
-  const docId       = _classKeyFromStr(_ttSelectedClass);
-  const targetMon   = isPermanent ? _weekMonday(new Date()) : _getMondayForWeek(_ttSelectedWeek);
-  const weekLabel   = isPermanent ? 'Permanent Timetable' : _weekRangeLabel(targetMon);
 
-  /* Load existing data */
+  const { col, docId } = _ttCurrentTarget();
+
+  // Human-readable label for what we are editing
+  let targetLabel = '';
+  if (scope === 'class') {
+    targetLabel = _ttSelectedClass;
+  } else if (scope === 'student') {
+    const found = _msgStudentCache.find(s => s.id === _ttSelectedStudentUid);
+    targetLabel = found ? found.name + ' (' + found.cls + ')' : _ttSelectedStudentUid;
+  } else {
+    targetLabel = (_ttSelectedGroupName || '').trim() + ' (group)';
+  }
+
+  const targetMon = isPermanent ? _weekMonday(new Date()) : _getMondayForWeek(_ttSelectedWeek);
+  const weekLabel = isPermanent ? 'Permanent Timetable' : _weekRangeLabel(targetMon);
+
+  // Scope badge colour
+  const scopeBadgeStyle = scope === 'student'
+    ? 'background:var(--success);color:#fff;'
+    : scope === 'group'
+    ? 'background:var(--purple,#7c3aed);color:#fff;'
+    : 'background:var(--accent);color:#fff;';
+
+  // Load existing data
   let periods  = _ttDefaultPeriods();
   let note     = '';
   let hasSaved = false;
   try {
-    const snap = await Db().collection('weeklyTimetable').doc(docId).get();
+    const snap = await Db().collection(col).doc(docId).get();
     if (snap.exists) {
       const allTimetables = (snap.data() || {}).timetables || {};
       const saved = allTimetables[_ttSelectedWeek];
@@ -2916,7 +3087,6 @@ async function _ttRenderEditor() {
   const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const DAY_KEYS  = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
-  /* Date labels under column headers */
   const dayDates = DAY_KEYS.map((_, i) => {
     const dt = new Date(targetMon);
     dt.setDate(targetMon.getDate() + i);
@@ -2934,24 +3104,34 @@ async function _ttRenderEditor() {
     </th>`
   ).join('');
 
-  /* Permanent badge / week badge */
   const badgeHtml = isPermanent
     ? `<span style="font-size:var(--text-xs);font-weight:700;padding:2px 9px;
-                    border-radius:99px;background:var(--warning);color:#fff;">
-         Permanent
-       </span>`
+                    border-radius:99px;background:var(--warning);color:#fff;">Permanent</span>`
     : isThisWk
     ? `<span style="font-size:var(--text-xs);font-weight:700;padding:2px 9px;
-                    border-radius:99px;background:var(--accent);color:#fff;">
-         Current Week
-       </span>`
+                    border-radius:99px;background:var(--accent);color:#fff;">Current Week</span>`
     : '';
 
   const subLabel = isPermanent
-    ? 'This timetable is active every week until you change or delete it.'
+    ? 'This timetable is active every ' + (scope === 'class' ? 'week for this class' : 'week for this target') + ' until you change or delete it.'
     : isThisWk
-    ? '★ Students see this timetable right now. Edit cells directly. Add or remove rows as needed.'
-    : `${_esc(_ttSelectedWeek)} — not yet current. Edit cells directly. Add or remove rows as needed.`;
+    ? '★ Students see this timetable right now.'
+    : `${_esc(_ttSelectedWeek)} — not yet current.`;
+
+  const overrideNote = (scope === 'student' || scope === 'group')
+    ? `<div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:1rem;padding:.625rem .875rem;
+          background:var(--success-subtle);border:1px solid var(--success-border);
+          border-radius:var(--r-md);font-size:var(--text-xs);color:var(--success-text);line-height:1.6;">
+        <i class="ph ph-star" style="flex-shrink:0;font-size:1rem;margin-top:1px;"></i>
+        <div>
+          <strong>Override timetable:</strong>
+          This timetable will be shown to
+          <strong>${_esc(targetLabel)}</strong>
+          instead of the class timetable.
+          The class timetable remains unchanged.
+        </div>
+      </div>`
+    : '';
 
   wrap.innerHTML = `
     <div class="glass-dark" style="padding:1.25rem;border-radius:var(--r-lg);overflow:hidden;">
@@ -2960,25 +3140,30 @@ async function _ttRenderEditor() {
                   margin-bottom:1rem;padding-bottom:.75rem;border-bottom:1px solid var(--border);
                   flex-wrap:wrap;gap:.5rem;">
         <div>
-          <h3 style="font-size:var(--text-base);font-weight:700;color:var(--text-1);">
-            ${_esc(_ttSelectedClass)} — ${_esc(weekLabel)}
-          </h3>
-          <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">
-            ${subLabel}
-          </p>
+          <div style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap;margin-bottom:2px;">
+            <h3 style="font-size:var(--text-base);font-weight:700;color:var(--text-1);">
+              ${_esc(targetLabel)} — ${_esc(weekLabel)}
+            </h3>
+            <span style="font-size:var(--text-xs);font-weight:700;padding:2px 8px;
+                         border-radius:99px;${scopeBadgeStyle}">
+              ${_esc(scope.charAt(0).toUpperCase() + scope.slice(1))}
+            </span>
+          </div>
+          <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">${subLabel}</p>
         </div>
         ${badgeHtml}
       </div>
+
+      ${overrideNote}
 
       ${isPermanent ? `
         <div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:1rem;padding:.625rem .875rem;
             background:var(--warning-subtle);border:1px solid var(--warning-border);
             border-radius:var(--r-md);font-size:var(--text-xs);color:var(--warning-text);line-height:1.6;">
             <i class="ph ph-infinity" style="flex-shrink:0;font-size:1rem;margin-top:1px;"></i>
-        <div>
+          <div>
             <strong>Permanent timetable:</strong> Students will see this every week, regardless of the date,
             unless a week-specific timetable exists for that week (week-specific always takes priority).
-            Update it here any time and save — changes take effect immediately.
           </div>
         </div>` : ''}
 
@@ -3064,7 +3249,7 @@ function _ttRenderAllList(docData) {
   if (orderedKeys.length === 0) {
     container.innerHTML =
       `<p style="font-size:var(--text-sm);color:var(--text-3);font-style:italic;">
-         No timetables saved for ${_esc(_ttSelectedClass || 'this class')}.
+         No timetables saved for ${_esc(_ttSelectedClass || _ttSelectedGroupName || 'this target')}.
        </p>`;
     return;
   }
@@ -3158,32 +3343,27 @@ function _ttRenderAllList(docData) {
 }
 
 function _editTimetableWeek(weekKey) {
-    _ttSelectedWeek = weekKey;
-    const sel = document.getElementById('ttWeekSelect');
-    if (sel) {
-      let found = false;
-      for (let i = 0; i < sel.options.length; i++) {
-        if (sel.options[i].value === weekKey) { sel.selectedIndex = i; found = true; break; }
-      }
-      if (!found && weekKey !== 'permanent') {
-        /* Add a past/future week that isn't in the dropdown yet */
-        const opt   = document.createElement('option');
-        opt.value   = weekKey;
-        opt.text    = weekKey;
-        /* Insert after the permanent option and optgroup */
-        const optgroup = sel.querySelector('optgroup');
-        if (optgroup) {
-          optgroup.insertBefore(opt, optgroup.firstChild);
-        } else {
-          sel.appendChild(opt);
-        }
-        sel.value = weekKey;
-      }
+  _ttSelectedWeek = weekKey;
+  const sel = document.getElementById('ttWeekSelect');
+  if (sel) {
+    let found = false;
+    for (let i = 0; i < sel.options.length; i++) {
+      if (sel.options[i].value === weekKey) { sel.selectedIndex = i; found = true; break; }
     }
-    _ttRenderEditor();
-    const wrap = document.getElementById('ttEditorWrap');
-    if (wrap) wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    if (!found && weekKey !== 'permanent') {
+      const opt   = document.createElement('option');
+      opt.value   = weekKey;
+      opt.text    = weekKey;
+      const optgroup = sel.querySelector('optgroup');
+      if (optgroup) optgroup.insertBefore(opt, optgroup.firstChild);
+      else sel.appendChild(opt);
+      sel.value = weekKey;
+    }
   }
+  _ttRenderEditor();
+  const wrap = document.getElementById('ttEditorWrap');
+  if (wrap) wrap.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
   function _onTTClassChange() {
     const sel = document.getElementById('ttClassSelect');
@@ -3199,14 +3379,21 @@ function _editTimetableWeek(weekKey) {
   }
 
   function _ttListenAll() {
-    if (typeof _ttUnsubAll === 'function') { _ttUnsubAll(); _ttUnsubAll = null; }
-    if (!_ttSelectedClass) return;
-    const docId = _classKeyFromStr(_ttSelectedClass);
-    _ttUnsubAll = Db().collection('weeklyTimetable').doc(docId).onSnapshot(
-      function (snap) { _ttRenderAllList(snap.exists ? snap.data() : {}); },
-      function (err)  { console.warn('[timetable] listen error:', err); }
-    );
-  }
+  if (typeof _ttUnsubAll === 'function') { _ttUnsubAll(); _ttUnsubAll = null; }
+
+  const scope = _ttSelectedScope;
+  if (scope === 'class' && !_ttSelectedClass) return;
+  if (scope === 'student' && !_ttSelectedStudentUid) return;
+  if (scope === 'group' && !(_ttSelectedGroupName || '').trim()) return;
+
+  const { col, docId } = _ttCurrentTarget();
+  if (!docId) return;
+
+  _ttUnsubAll = Db().collection(col).doc(docId).onSnapshot(
+    function (snap) { _ttRenderAllList(snap.exists ? snap.data() : {}); },
+    function (err)  { console.warn('[timetable] listen error:', err); }
+  );
+}
 
   function _clearTimetableInputs() {
     const tbody = document.getElementById('ttPeriodBody');
@@ -3218,69 +3405,98 @@ function _editTimetableWeek(weekKey) {
   }
 
   async function _saveTimetable() {
-    if (!_ttSelectedClass || !_ttSelectedWeek) {
-      UI.toast('Please select a class and week.', 'warning'); return;
-    }
+  const scope = _ttSelectedScope;
+  if (!_ttSelectedWeek) { UI.toast('Please select a week.', 'warning'); return; }
+  if (scope === 'class' && !_ttSelectedClass)          { UI.toast('Please select a class.', 'warning');   return; }
+  if (scope === 'student' && !_ttSelectedStudentUid)   { UI.toast('Please select a student.', 'warning'); return; }
+  if (scope === 'group' && !(_ttSelectedGroupName||'').trim()) { UI.toast('Please enter a group name.', 'warning'); return; }
 
-    const periods = _ttReadPeriodsFromDOM();
-    if (periods.length === 0) {
-      UI.toast('Add at least one period before saving.', 'warning'); return;
-    }
-
-    const isPermanent = _ttSelectedWeek === 'permanent';
-    const note  = (document.getElementById('ttNoteInput')?.value || '').trim();
-    const docId = _classKeyFromStr(_ttSelectedClass);
-    const btn   = document.getElementById('ttSaveBtn');
-
-    UI.setLoading(btn, true);
-    try {
-      await Db().collection('weeklyTimetable').doc(docId).set({
-        className: _ttSelectedClass,
-        classKey:  docId,
-        timetables: {
-          [_ttSelectedWeek]: {
-            periods,
-            note,
-            isPermanent: isPermanent || false,
-            savedAt: firebase.firestore.FieldValue.serverTimestamp(),
-          },
-        },
-        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      }, { merge: true });
-
-      const successMsg = isPermanent
-        ? `Permanent timetable saved for ${_ttSelectedClass}. Students will see this every week.`
-        : `Timetable saved for ${_ttSelectedClass} — ${_ttSelectedWeek}.`;
-      UI.toast(successMsg, 'success');
-      _ttRenderEditor(); // refresh to show Delete button
-    } catch (err) {
-      console.error('[timetable] save error:', err);
-      UI.toast('Failed to save timetable.', 'error');
-    } finally {
-      UI.setLoading(btn, false);
-    }
+  const periods = _ttReadPeriodsFromDOM();
+  if (periods.length === 0) {
+    UI.toast('Add at least one period before saving.', 'warning'); return;
   }
+
+  const isPermanent = _ttSelectedWeek === 'permanent';
+  const note        = (document.getElementById('ttNoteInput')?.value || '').trim();
+  const { col, docId } = _ttCurrentTarget();
+  const btn         = document.getElementById('ttSaveBtn');
+
+  // Build a human-readable label to store so the list can display it
+  let targetLabel = '';
+  if (scope === 'class') {
+    targetLabel = _ttSelectedClass;
+  } else if (scope === 'student') {
+    const found = _msgStudentCache.find(s => s.id === _ttSelectedStudentUid);
+    targetLabel = found ? found.name + ' (' + found.cls + ')' : _ttSelectedStudentUid;
+  } else {
+    targetLabel = (_ttSelectedGroupName || '').trim();
+  }
+
+  UI.setLoading(btn, true);
+  try {
+    await Db().collection(col).doc(docId).set({
+      targetScope: scope,
+      targetLabel,
+      targetId: docId,
+      ...(scope === 'class'   ? { className: _ttSelectedClass } : {}),
+      ...(scope === 'student' ? { studentUid: _ttSelectedStudentUid } : {}),
+      ...(scope === 'group'   ? { groupName: (_ttSelectedGroupName || '').trim() } : {}),
+      timetables: {
+        [_ttSelectedWeek]: {
+          periods,
+          note,
+          isPermanent: isPermanent || false,
+          savedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        },
+      },
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+
+    const successMsg = isPermanent
+      ? `Permanent timetable saved for ${targetLabel}.`
+      : `Timetable saved for ${targetLabel} — ${_ttSelectedWeek}.`;
+    UI.toast(successMsg, 'success');
+    _ttRenderEditor();
+  } catch (err) {
+    console.error('[timetable] save error:', err);
+    UI.toast('Failed to save timetable.', 'error');
+  } finally {
+    UI.setLoading(btn, false);
+  }
+}
 
   async function _deleteTimetable(weekKey) {
-    if (!_ttSelectedClass || !weekKey) return;
-    const isPermanent = weekKey === 'permanent';
-    const confirmMsg  = isPermanent
-      ? `Delete the permanent timetable for ${_ttSelectedClass}? Students will no longer see any timetable unless a week-specific one exists.`
-      : `Delete timetable for ${_ttSelectedClass} — ${weekKey}? This cannot be undone.`;
-    const ok = await UI.confirmAction(confirmMsg);
-    if (!ok) return;
-    const docId = _classKeyFromStr(_ttSelectedClass);
-    try {
-      await Db().collection('weeklyTimetable').doc(docId).update({
-        [`timetables.${weekKey}`]: firebase.firestore.FieldValue.delete(),
-      });
-      UI.toast(isPermanent ? 'Permanent timetable deleted.' : 'Timetable deleted.', 'success');
-      _ttRenderEditor();
-    } catch (err) {
-      console.error('[timetable] delete error:', err);
-      UI.toast('Failed to delete timetable.', 'error');
-    }
+  const scope = _ttSelectedScope;
+  if (!weekKey) return;
+
+  const { col, docId } = _ttCurrentTarget();
+  const isPermanent = weekKey === 'permanent';
+
+  let targetLabel = _ttSelectedClass;
+  if (scope === 'student') {
+    const found = _msgStudentCache.find(s => s.id === _ttSelectedStudentUid);
+    targetLabel = found ? found.name : _ttSelectedStudentUid;
+  } else if (scope === 'group') {
+    targetLabel = (_ttSelectedGroupName || '').trim();
   }
+
+  const confirmMsg = isPermanent
+    ? `Delete the permanent timetable for ${targetLabel}?`
+    : `Delete timetable for ${targetLabel} — ${weekKey}? This cannot be undone.`;
+  const ok = await UI.confirmAction(confirmMsg);
+  if (!ok) return;
+
+  try {
+    await Db().collection(col).doc(docId).update({
+      [`timetables.${weekKey}`]: firebase.firestore.FieldValue.delete(),
+    });
+    UI.toast(isPermanent ? 'Permanent timetable deleted.' : 'Timetable deleted.', 'success');
+    _ttRenderEditor();
+  } catch (err) {
+    console.error('[timetable] delete error:', err);
+    UI.toast('Failed to delete timetable.', 'error');
+  }
+}
 
   // ═══════════════════════════════════════════════════════════
   //  END WEEKLY TIMETABLE MANAGER
@@ -4496,6 +4712,9 @@ async function exportResultPDF(resultId) {
     _getMondayForWeek,
     _showGamesSubTab,
     _ttSyncTimeHidden,
+    _setTTScope,
+    _onTTStudentChange,
+    _onTTGroupNameChange,
     get _msgStudentCache() { return _msgStudentCache; },
   };
 
