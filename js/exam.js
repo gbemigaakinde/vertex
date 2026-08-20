@@ -2691,7 +2691,7 @@
     if (msgs) { msgs.appendChild(aiBubble); msgs.scrollTop = msgs.scrollHeight; }
   }
 
-  function _showError(msg) {
+    function _showError(msg) {
     _removeTyping();
     const errBubble = document.createElement('div');
     errBubble.style.cssText = 'display:flex;justify-content:flex-start;';
