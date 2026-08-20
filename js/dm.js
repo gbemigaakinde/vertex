@@ -2883,61 +2883,80 @@ function _buildTeacherBubble(msg, showLabel) {
 
   /* ── Badge helpers ─────────────────────────────────────────── */
   function _updateStudentBadge(count) {
-    const btn = document.getElementById('dmOpenBtn');
-    if (!btn) return;
-    const wrapper = btn.closest('div[style*="position:relative"]') || btn.parentElement;
-    const existing = wrapper.querySelector('.dm-notif-badge');
-    if (existing) existing.remove();
-    if (count > 0) {
-      const badge = document.createElement('span');
-      badge.className = 'dm-notif-badge';
-      badge.textContent = count > 9 ? '9+' : String(count);
-      badge.style.cssText = [
-        'position:absolute',
-        'top:-6px',
-        'right:-6px',
-        'min-width:20px',
-        'height:20px',
-        'background:var(--danger,#e03131)',
-        'color:#fff',
-        'font-size:.625rem',
-        'font-weight:700',
-        'border-radius:99px',
-        'display:flex',
-        'align-items:center',
-        'justify-content:center',
-        'padding:0 5px',
-        'pointer-events:none',
-        'border:2px solid var(--bg-page,#f7f7f8)',
-        'line-height:1',
-        'z-index:10',
-        'box-shadow:0 1px 4px rgba(0,0,0,0.25)',
-      ].join(';');
-      wrapper.style.position = 'relative';
-      wrapper.style.overflow = 'visible';
-      wrapper.appendChild(badge);
-    }
+  const btn = document.getElementById('dmOpenBtn');
+  if (!btn) return;
+
+  const existing = btn.querySelector('.dm-notif-badge');
+  if (existing) existing.remove();
+
+  if (count > 0) {
+    const badge = document.createElement('span');
+    badge.className = 'dm-notif-badge';
+    badge.textContent = count > 9 ? '9+' : String(count);
+    badge.style.cssText = [
+      'position:absolute',
+      'top:-6px',
+      'right:-6px',
+      'min-width:20px',
+      'height:20px',
+      'background:var(--danger,#e03131)',
+      'color:#fff',
+      'font-size:.625rem',
+      'font-weight:700',
+      'border-radius:99px',
+      'display:flex',
+      'align-items:center',
+      'justify-content:center',
+      'padding:0 5px',
+      'pointer-events:none',
+      'border:2px solid var(--bg-page,#f7f7f8)',
+      'line-height:1',
+      'z-index:10',
+      'box-shadow:0 1px 4px rgba(0,0,0,0.25)',
+    ].join(';');
+
+    btn.style.position = 'relative';
+    btn.style.overflow = 'visible';
+    btn.appendChild(badge);
   }
+}
 
   function _updateTeacherBadge(count) {
-    const btn = document.getElementById('tab-dm');
-    if (!btn) return;
-    const existing = btn.querySelector('.dm-notif-badge');
-    if (existing) existing.remove();
-    if (count > 0) {
-      const badge = document.createElement('span');
-      badge.className   = 'dm-notif-badge';
-      badge.textContent = count > 9 ? '9+' : String(count);
-      badge.style.cssText = [
-        'position:absolute','top:-6px','right:-6px','min-width:18px','height:18px',
-        'background:var(--danger,#e03131)','color:#fff','font-size:.625rem','font-weight:700',
-        'border-radius:99px','display:flex','align-items:center','justify-content:center',
-        'padding:0 4px','pointer-events:none','border:2px solid var(--surface,#fff)','line-height:1',
-      ].join(';');
-      btn.style.position = 'relative';
-      btn.appendChild(badge);
-    }
+  const btn = document.getElementById('tab-dm');
+  if (!btn) return;
+
+  const existing = btn.querySelector('.dm-notif-badge');
+  if (existing) existing.remove();
+
+  if (count > 0) {
+    const badge = document.createElement('span');
+    badge.className = 'dm-notif-badge';
+    badge.textContent = count > 9 ? '9+' : String(count);
+    badge.style.cssText = [
+      'position:absolute',
+      'top:-6px',
+      'right:-6px',
+      'min-width:18px',
+      'height:18px',
+      'background:var(--danger,#e03131)',
+      'color:#fff',
+      'font-size:.625rem',
+      'font-weight:700',
+      'border-radius:99px',
+      'display:flex',
+      'align-items:center',
+      'justify-content:center',
+      'padding:0 4px',
+      'pointer-events:none',
+      'border:2px solid var(--surface,#fff)',
+      'line-height:1',
+    ].join(';');
+
+    btn.style.position = 'relative';
+    btn.style.overflow = 'visible';
+    btn.appendChild(badge);
   }
+}
 
   /* ══════════════════════════════════════════════════════════════
      INIT LISTENERS (called from app.js on login)
