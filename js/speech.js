@@ -770,35 +770,38 @@
   }
           
     /* ════════════════════════════════════════════════════════
-     OPENROUTER AI — Student question answering
+    GROQ and OPENROUTER AI — Student question answering
   ════════════════════════════════════════════════════════ */
 
-  var _OR_API_KEY    = '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';
-  var _OR_MODEL_PRIMARY  = 'openrouter/auto';    // auto-routes to best available free model
+  var _GROQ_API_KEY      = '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';
+  var _GROQ_MODEL_PRIMARY  = 'llama-3.3-70b-versatile';
+  var _GROQ_MODEL_FALLBACK = 'llama-3.1-8b-instant';
+  var _GROQ_ENDPOINT     = 'https://api.groq.com/openai/v1/chat/completions';
+
+  var _OR_API_KEY        = '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';
+  var _OR_MODEL_PRIMARY  = 'openrouter/auto';
   var _OR_MODEL_FALLBACK = 'meta-llama/llama-3.3-70b-instruct:free';
-  var _OR_SITE_URL   = window.location.origin || 'https://vertex-tutorial.vercel.app';
-  var _OR_SITE_NAME  = 'Vertex Tutorial CBT';
-
-  /*
-   * _askOpenRouter
-   * Sends a prompt to OpenRouter and returns the answer text via callback.
+  var _OR_SITE_URL       = window.location.origin || 'https://vertex-tutorial.vercel.app';
+  var _OR_SITE_NAME      = 'Vertex Tutorial CBT';
+ 
+   /*
+   * _askGroq
+   * Sends a prompt directly to Groq's OpenAI-compatible API.
    * callback(err, answerText)
-   * Tries primary model first; if it fails, retries with named fallback.
+   * Tries llama-3.3-70b-versatile first; if rate-limited, retries with llama-3.1-8b-instant.
    */
-  function _askOpenRouter(systemPrompt, userPrompt, callback, _isRetry) {
-    var model = _isRetry ? _OR_MODEL_FALLBACK : _OR_MODEL_PRIMARY;
+  function _askGroq(systemPrompt, userPrompt, callback, _isRetry) {
+    var model = _isRetry ? _GROQ_MODEL_FALLBACK : _GROQ_MODEL_PRIMARY;
 
-    fetch('https://openrouter.ai/api/v1/chat/completions', {
+    fetch(_GROQ_ENDPOINT, {
       method: 'POST',
       headers: {
-        'Authorization':  'Bearer ' + _OR_API_KEY,
-        'HTTP-Referer':   _OR_SITE_URL,
-        'X-Title':        _OR_SITE_NAME,
-        'Content-Type':   'application/json',
+        'Authorization': 'Bearer ' + _GROQ_API_KEY,
+        'Content-Type':  'application/json',
       },
       body: JSON.stringify({
-        model: model,
-        max_tokens: 600,
+        model:       model,
+        max_tokens:  600,
         temperature: 0.4,
         messages: [
           { role: 'system', content: systemPrompt },
@@ -808,13 +811,73 @@
     })
     .then(function (res) {
       if (!res.ok) {
-        // Rate limit or server error — try fallback if not already retrying
+        // 429 = rate limit, 503 = overloaded — retry with smaller model before giving up
+        if ((res.status === 429 || res.status === 503) && !_isRetry) {
+          console.warn('[SpeechEngine] Groq ' + _GROQ_MODEL_PRIMARY + ' rate-limited (' + res.status + ') — retrying with ' + _GROQ_MODEL_FALLBACK);
+          return _askGroq(systemPrompt, userPrompt, callback, true);
+        }
+        return res.json().then(function (body) {
+          callback('groq_error_' + res.status + ': ' + ((body && body.error && body.error.message) || 'Unknown error'), null);
+        }).catch(function () {
+          callback('groq_error_' + res.status, null);
+        });
+      }
+      return res.json();
+    })
+    .then(function (data) {
+      if (!data) return;
+      var text = data.choices &&
+                 data.choices[0] &&
+                 data.choices[0].message &&
+                 data.choices[0].message.content;
+      if (!text || !text.trim()) {
+        if (!_isRetry) {
+          return _askGroq(systemPrompt, userPrompt, callback, true);
+        }
+        return callback('groq_empty', null);
+      }
+      callback(null, text.trim());
+    })
+    .catch(function (err) {
+      console.error('[SpeechEngine] Groq fetch error:', err);
+      callback('groq_network_error', null);
+    });
+  }
+
+  /*
+   * _askOpenRouter
+   * Fallback engine — only called when Groq fails entirely.
+   * callback(err, answerText)
+   */
+  function _askOpenRouter(systemPrompt, userPrompt, callback, _isRetry) {
+    var model = _isRetry ? _OR_MODEL_FALLBACK : _OR_MODEL_PRIMARY;
+
+    fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + _OR_API_KEY,
+        'HTTP-Referer':  _OR_SITE_URL,
+        'X-Title':       _OR_SITE_NAME,
+        'Content-Type':  'application/json',
+      },
+      body: JSON.stringify({
+        model:       model,
+        max_tokens:  600,
+        temperature: 0.4,
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user',   content: userPrompt   },
+        ],
+      }),
+    })
+    .then(function (res) {
+      if (!res.ok) {
         if (!_isRetry) {
           console.warn('[SpeechEngine] OpenRouter primary failed (' + res.status + ') — retrying with fallback model');
           return _askOpenRouter(systemPrompt, userPrompt, callback, true);
         }
         return res.json().then(function (body) {
-          callback('API error ' + res.status + ': ' + (body && body.error && body.error.message || 'Unknown error'), null);
+          callback('API error ' + res.status + ': ' + ((body && body.error && body.error.message) || 'Unknown error'), null);
         }).catch(function () {
           callback('API error ' + res.status, null);
         });
@@ -822,7 +885,7 @@
       return res.json();
     })
     .then(function (data) {
-      if (!data) return; // already handled
+      if (!data) return;
       var text = data.choices &&
                  data.choices[0] &&
                  data.choices[0].message &&
@@ -841,6 +904,28 @@
         return _askOpenRouter(systemPrompt, userPrompt, callback, true);
       }
       callback('Could not reach the AI server. Please check your internet connection.', null);
+    });
+  }
+
+  /*
+   * _askAI  ← THE MAIN DISPATCHER
+   * Called by all explanation/query functions instead of calling
+   * _askOpenRouter directly. Tries Groq first; if Groq fails
+   * entirely, falls back to OpenRouter automatically.
+   * callback(err, answerText)
+   */
+  function _askAI(systemPrompt, userPrompt, callback) {
+    console.log('[SpeechEngine] Trying Groq first…');
+    _askGroq(systemPrompt, userPrompt, function (err, text) {
+      if (!err && text) {
+        // Groq succeeded
+        console.log('[SpeechEngine] Groq answered successfully.');
+        callback(null, text);
+        return;
+      }
+      // Groq failed — fall back to OpenRouter
+      console.warn('[SpeechEngine] Groq failed (' + err + ') — falling back to OpenRouter.');
+      _askOpenRouter(systemPrompt, userPrompt, callback, false);
     });
   }
 
@@ -936,7 +1021,7 @@
 
     console.log('[SpeechEngine] OpenRouter query:', isStudentQuery ? 'student: ' + studentQuery : 'auto explain');
 
-    _askOpenRouter(systemPrompt, userPrompt, function (err, answerText) {
+        _askAI(systemPrompt, userPrompt, function (err, answerText) {
       // Guard: do nothing if modal was closed during the fetch
       if (!document.getElementById('seExplainModal')) return;
 
