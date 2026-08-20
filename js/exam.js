@@ -2634,18 +2634,16 @@
   /* AI Drawer — open / close / send                         */
   /* ─────────────────────────────────────────────────────── */
 
-    function _openAiDrawer() {
-    // Collapse the label pill immediately
+      function _openAiDrawer() {
+    // Dismiss the pill synchronously on first call so it never interferes
     var pill = document.getElementById('vtxAiPill');
     if (pill) {
-      pill.classList.remove('is-open');
-      pill.classList.add('is-closing');
+      pill.style.cssText = 'display:none;';        // kill it instantly, no animation race
     }
     if (window._vtxAiPillTimer) {
       clearTimeout(window._vtxAiPillTimer);
       window._vtxAiPillTimer = null;
     }
-    // Remember that this student has seen the hint
     try { localStorage.setItem('vtx_ai_pill_seen', '1'); } catch (e) {}
 
     var drawer  = document.getElementById('vtxAiDrawer');
@@ -2661,7 +2659,6 @@
     });
 
     if (trigger) trigger.style.display = 'none';
-    if (pill) pill.style.display = 'none';
 
     setTimeout(function () {
       var inp = document.getElementById('vtxAiInput');
@@ -2669,18 +2666,16 @@
     }, 320);
   }
 
-    function _closeAiDrawer() {
+      function _closeAiDrawer() {
     var drawer  = document.getElementById('vtxAiDrawer');
     var sheet   = document.getElementById('vtxAiSheet');
     var trigger = document.getElementById('vtxAiTrigger');
-    var pill    = document.getElementById('vtxAiPill');
     if (!sheet) return;
 
     sheet.style.transform = 'translateY(100%)';
     setTimeout(function () {
       if (drawer) drawer.style.display = 'none';
-      if (trigger) { trigger.style.display = ''; }
-      if (pill) { pill.style.display = ''; }
+      if (trigger) trigger.style.display = '';
     }, 310);
   }
 
