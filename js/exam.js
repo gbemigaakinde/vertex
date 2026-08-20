@@ -324,12 +324,62 @@
   try {
     if (!navigator.onLine || !window.fbDb || !classKey) return '';
 
-    const snap = await window.fbDb.collection('weeklyTimetable').doc(classKey).get();
-    if (!snap || !snap.exists) return '';
+    // Priority order: student override → group override → class timetable
+    let ttData        = null;
+    let overrideLabel = '';
 
-    const ttData  = snap.data() || {};
+    // 1. Check student-specific timetable
+    if (S().userId) {
+      try {
+        const studentSnap = await window.fbDb
+          .collection('weeklyTimetable_custom')
+          .doc('student_' + S().userId)
+          .get();
+        if (studentSnap && studentSnap.exists) {
+          const d = studentSnap.data() || {};
+          const weekKey = _isoWeekKey();
+          const allTT   = d.timetables || {};
+          // Must have at least one timetable entry to count as a real override
+          if (allTT[weekKey] || allTT['permanent']) {
+            ttData        = d;
+            overrideLabel = 'Personal';
+          }
+        }
+      } catch (e) { /* non-fatal */ }
+    }
+
+    // 2. Check group timetable (student's timetableGroup field)
+    if (!ttData && S().studentData && S().studentData.timetableGroup) {
+      const groupKey = (S().studentData.timetableGroup || '')
+        .trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+      if (groupKey) {
+        try {
+          const groupSnap = await window.fbDb
+            .collection('weeklyTimetable_custom')
+            .doc('group_' + groupKey)
+            .get();
+          if (groupSnap && groupSnap.exists) {
+            const d = groupSnap.data() || {};
+            const weekKey = _isoWeekKey();
+            const allTT   = d.timetables || {};
+            if (allTT[weekKey] || allTT['permanent']) {
+              ttData        = d;
+              overrideLabel = d.targetLabel || S().studentData.timetableGroup;
+            }
+          }
+        } catch (e) { /* non-fatal */ }
+      }
+    }
+
+    // 3. Fall back to class timetable
+    if (!ttData) {
+      const snap = await window.fbDb.collection('weeklyTimetable').doc(classKey).get();
+      if (!snap || !snap.exists) return '';
+      ttData = snap.data() || {};
+      overrideLabel = '';
+    }
+
     const weekKey = _isoWeekKey();
-
     const allTimetables = ttData.timetables || {};
     let tt = allTimetables[weekKey];
     let isUsingPermanent = false;
@@ -370,16 +420,14 @@
 
     const nowMin = now.getHours() * 60 + now.getMinutes();
 
-    // Robust parser — handles en-dash, em-dash, hyphen, with or without spaces
     function parseMins(t) {
       if (!t) return null;
-      // Normalize: replace any dash variant (–, —, -, −) surrounded by optional spaces
       const normalized = t.replace(/\s*[\u2013\u2014\u2212\-]\s*/g, '-');
       const m = normalized.match(/^(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})$/);
       if (!m) return null;
       const start = +m[1] * 60 + +m[2];
       const end   = +m[3] * 60 + +m[4];
-      if (end <= start) return null; // guard against malformed
+      if (end <= start) return null;
       return { start, end };
     }
 
@@ -408,7 +456,7 @@
     sunday.setDate(monday.getDate() + 6);
     const rangeLabel =
       monday.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' }) +
-      ' – ' +
+      ' \u2013 ' +
       sunday.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
     const CB = 'padding:.4375rem .5625rem;border:1px solid var(--border);' +
@@ -442,7 +490,7 @@
                        padding:1px 5px;border-radius:99px;
                        background:var(--warning);color:#fff;vertical-align:middle;
                        animation:cbt-pulse 1.5s ease-in-out infinite;">
-                      NOW · ${minsLeft}min left
+                      NOW \u00b7 ${minsLeft}min left
                     </span>`;
       }
       if (isNextPeriod && range) {
@@ -451,7 +499,7 @@
                        margin-left:5px;font-size:.55rem;font-weight:600;letter-spacing:.04em;
                        padding:1px 5px;border-radius:99px;
                        background:var(--accent-subtle);color:var(--accent-text);vertical-align:middle;">
-                      NEXT · in ${minsUntil}min
+                      NEXT \u00b7 in ${minsUntil}min
                     </span>`;
       }
 
@@ -460,12 +508,12 @@
           'font-family:var(--font-mono);font-size:.75rem;font-weight:600;' +
           'color:' + (isCurrentPeriod ? 'var(--warning)' : isNextPeriod ? 'var(--accent)' : 'var(--text-3)') + ';' +
           'white-space:nowrap;min-width:86px;">' +
-          _escHtml(p.time || '—') +
+          _escHtml(p.time || '\u2014') +
           nowBadge +
         '</td>';
 
       if (isSpecial) {
-        const lbl = firstUp === 'LUNCH' ? '🍽\u2002Lunch Break' : '☕\u2002Break';
+        const lbl = firstUp === 'LUNCH' ? '\ud83c\udf7d\u2002Lunch Break' : '\u2615\u2002Break';
         return '<tr>' + timeCell +
           '<td colspan="7" style="' + CB + 'background:' + rowBg + ';' +
             'text-align:center;font-weight:700;font-size:.8125rem;' +
@@ -492,7 +540,7 @@
           'color:' + (empty ? 'var(--text-4)' : (isCurrentPeriod && isToday) ? 'var(--warning-text)' : isToday ? 'var(--text-1)' : 'var(--text-2)') + ';' +
           'font-weight:' + ((isCurrentPeriod && isToday && !empty) ? '700' : isToday && !empty ? '600' : '400') + ';' +
           'font-size:' + (empty ? '.7rem' : '.8rem') + ';">' +
-          (empty ? '<span style="opacity:.28;">—</span>' : _escHtml(val)) +
+          (empty ? '<span style="opacity:.28;">\u2014</span>' : _escHtml(val)) +
           '</td>';
       }).join('');
 
@@ -510,7 +558,7 @@
         '<span style="display:block;font-size:.8125rem;">' + _escHtml(ds) + '</span>' +
         '<span style="display:block;font-size:.625rem;font-weight:500;margin-top:1px;' +
           'opacity:' + (isToday ? '1' : '.72') + ';">' +
-          dd.dayNum + ' ' + dd.monthSh + (isToday ? ' ◀' : '') +
+          dd.dayNum + ' ' + dd.monthSh + (isToday ? ' \u25c4' : '') +
         '</span></th>';
     }).join('');
 
@@ -538,18 +586,24 @@
         '</div>'
       : '';
 
-    const permanentBadge = isUsingPermanent
-      ? '<span style="flex-shrink:0;font-size:.6rem;font-weight:700;' +
-          'padding:1px 5px;border-radius:99px;background:rgba(255,255,255,.18);' +
-          'color:#fff;border:1px solid rgba(255,255,255,.3);white-space:nowrap;">Permanent</span>'
-      : (todayColIdx >= 0
-          ? '<span style="margin-left:auto;flex-shrink:0;font-size:.6875rem;font-weight:700;' +
-              'padding:2px 9px;border-radius:99px;background:rgba(255,255,255,.18);' +
-              'color:#fff;border:1px solid rgba(255,255,255,.3);white-space:nowrap;">' +
-              'Today: ' + DAY_SHORT[todayColIdx] + ', ' +
-              dayDates[todayColIdx].dayNum + ' ' + dayDates[todayColIdx].monthSh +
-            '</span>'
-          : '');
+    // Badge: override label takes priority over permanent/week badge
+    let headerBadgeHtml = '';
+    if (overrideLabel) {
+      headerBadgeHtml = `<span style="flex-shrink:0;font-size:.6rem;font-weight:700;
+          padding:1px 5px;border-radius:99px;background:rgba(255,255,255,.18);
+          color:#fff;border:1px solid rgba(255,255,255,.3);white-space:nowrap;">
+          \u2605 ${_escHtml(overrideLabel)}</span>`;
+    } else if (isUsingPermanent) {
+      headerBadgeHtml = `<span style="flex-shrink:0;font-size:.6rem;font-weight:700;
+          padding:1px 5px;border-radius:99px;background:rgba(255,255,255,.18);
+          color:#fff;border:1px solid rgba(255,255,255,.3);white-space:nowrap;">Permanent</span>`;
+    } else if (todayColIdx >= 0) {
+      headerBadgeHtml = `<span style="margin-left:auto;flex-shrink:0;font-size:.6875rem;font-weight:700;
+          padding:2px 9px;border-radius:99px;background:rgba(255,255,255,.18);
+          color:#fff;border:1px solid rgba(255,255,255,.3);white-space:nowrap;">
+          Today: ${DAY_SHORT[todayColIdx]}, ${dayDates[todayColIdx].dayNum} ${dayDates[todayColIdx].monthSh}
+        </span>`;
+    }
 
     return (
       '<div style="margin-bottom:1.25rem;border:1px solid var(--border);border-radius:10px;' +
@@ -567,10 +621,11 @@
           '<div style="flex:1;min-width:0;">' +
             '<p style="font-size:.875rem;font-weight:700;color:#fff;line-height:1.2;">Class Timetable</p>' +
             '<p style="font-size:.6875rem;color:rgba(255,255,255,.75);margin-top:1px;line-height:1.6;">' +
-              (isUsingPermanent ? 'Permanent schedule<br>' : '') + _escHtml(rangeLabel) +
+              (isUsingPermanent && !overrideLabel ? 'Permanent schedule<br>' : '') +
+              _escHtml(rangeLabel) +
             '</p>' +
           '</div>' +
-          permanentBadge +
+          headerBadgeHtml +
           '<button onclick="Exam._downloadTimetablePDF()" ' +
             'title="Download timetable as PDF" ' +
             'aria-label="Download timetable as PDF" ' +
