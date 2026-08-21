@@ -3131,17 +3131,52 @@ function _openAiDrawer() {
 }
 
  function _closeAiDrawer() {
-    var drawer  = document.getElementById('vtxAiDrawer');
-    var sheet   = document.getElementById('vtxAiSheet');
-    var trigger = document.getElementById('vtxAiTrigger');
-    if (!sheet) return;
+  var drawer  = document.getElementById('vtxAiDrawer');
+  var sheet   = document.getElementById('vtxAiSheet');
+  var trigger = document.getElementById('vtxAiTrigger');
+  if (!drawer || !sheet) return;
 
-    sheet.style.transform = 'translateY(100%)';
-    setTimeout(function () {
-      if (drawer) drawer.style.display = 'none';
-      if (trigger) trigger.style.display = '';
-    }, 310);
+  // Cancel any placeholder cycle so it doesn't keep ticking while hidden
+  if (window._vtxPlaceholderCancel) {
+    window._vtxPlaceholderCancel();
+    window._vtxPlaceholderCancel = null;
+    var inp = document.getElementById('vtxAiInput');
+    if (inp) inp.setAttribute('placeholder', 'Ask a question…');
   }
+
+  // Force the browser to acknowledge the current transform before we change it.
+  // Without this, if the sheet hasn't fully settled from opening, the transition
+  // may not fire at all and the drawer appears stuck.
+  void sheet.offsetHeight;
+
+  // Guard: if we're already closing (transform already applied), do nothing.
+  // This prevents double-calls from the backdrop click and the X button both firing.
+  if (sheet.dataset.closing === 'true') return;
+  sheet.dataset.closing = 'true';
+
+  // Use transitionend as the primary signal; timeout is just a safety net.
+  var _done = false;
+  function _finish() {
+    if (_done) return;
+    _done = true;
+    sheet.dataset.closing = '';
+    if (drawer) drawer.style.display = 'none';
+    if (trigger) trigger.style.display = '';
+  }
+
+  sheet.addEventListener('transitionend', function _onEnd(e) {
+    // Only react to the transform transition, not any other property
+    if (e.propertyName !== 'transform') return;
+    sheet.removeEventListener('transitionend', _onEnd);
+    _finish();
+  });
+
+  // Fallback: if transitionend never fires (e.g. prefers-reduced-motion,
+  // or the element was off-screen), clean up after the transition duration + buffer.
+  setTimeout(_finish, 380);
+
+  sheet.style.transform = 'translateY(100%)';
+}
 
 function _sendAiMessage() {
   var inp = document.getElementById('vtxAiInput');
