@@ -1,5 +1,5 @@
 /* ============================================================
-   js/speech.js — SpeechEngine  v7
+   js/speech.js — SpeechEngine  v7 and AI System v1
    Handles TTS (text-to-speech) and STT (speech-to-text) for
    the exam screen using the native Web Speech API.
    ============================================================ */
@@ -814,7 +814,7 @@ function cancel() {
    * callback(err, answerText)
    * Tries llama-3.3-70b-versatile first; if rate-limited, retries with llama-3.1-8b-instant.
    */
-    function _askGroq(systemPrompt, userPrompt, callback, _isRetry) {
+  function _askGroq(systemPrompt, userPrompt, callback, _isRetry) {
     var model = _isRetry ? _GROQ_MODEL_FALLBACK : _GROQ_MODEL_PRIMARY;
 
     fetch(_GROQ_ENDPOINT, {
@@ -825,7 +825,7 @@ function cancel() {
       },
       body: JSON.stringify({
         model:       model,
-        max_tokens:  600,
+        max_tokens:  1024,
         temperature: 0.4,
         messages: [
           { role: 'system', content: systemPrompt },
@@ -835,7 +835,6 @@ function cancel() {
     })
     .then(function (res) {
       if (!res.ok) {
-        // Retry on rate-limit, service-unavailable, OR model-not-found (404)
         if ((res.status === 429 || res.status === 503 || res.status === 404) && !_isRetry) {
           console.warn('[SpeechEngine] Groq ' + _GROQ_MODEL_PRIMARY + ' failed (' + res.status + ') — retrying with ' + _GROQ_MODEL_FALLBACK);
           _askGroq(systemPrompt, userPrompt, callback, true);
@@ -853,6 +852,7 @@ function cancel() {
     })
     .then(function (data) {
       if (!data) return;
+      var finishReason = data.choices && data.choices[0] && data.choices[0].finish_reason;
       var text = data.choices &&
                  data.choices[0] &&
                  data.choices[0].message &&
@@ -863,6 +863,38 @@ function cancel() {
           return;
         }
         callback('groq_empty', null);
+        return;
+      }
+      // If truncated, append a continuation prompt and fetch the rest
+      if (finishReason === 'length') {
+        var continuationMessages = [
+          { role: 'system', content: systemPrompt },
+          { role: 'user',   content: userPrompt   },
+          { role: 'assistant', content: text.trim() },
+          { role: 'user', content: 'Please continue from where you stopped. Do not repeat anything already written. Continue directly.' },
+        ];
+        fetch(_GROQ_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + _GROQ_API_KEY,
+            'Content-Type':  'application/json',
+          },
+          body: JSON.stringify({
+            model:       model,
+            max_tokens:  1024,
+            temperature: 0.4,
+            messages:    continuationMessages,
+          }),
+        })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          var extra = d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+          callback(null, (text.trim() + '\n\n' + (extra ? extra.trim() : '')).trim());
+        })
+        .catch(function () {
+          // Continuation failed — return what we have
+          callback(null, text.trim());
+        });
         return;
       }
       callback(null, text.trim());
@@ -878,7 +910,7 @@ function cancel() {
    * Fallback engine — only called when Groq fails entirely.
    * callback(err, answerText)
    */
-  function _askOpenRouter(systemPrompt, userPrompt, callback, _isRetry) {
+ function _askOpenRouter(systemPrompt, userPrompt, callback, _isRetry) {
   var model = _isRetry ? _OR_MODEL_FALLBACK : _OR_MODEL_PRIMARY;
 
   fetch('https://openrouter.ai/api/v1/chat/completions', {
@@ -891,7 +923,7 @@ function cancel() {
     },
     body: JSON.stringify({
       model:       model,
-      max_tokens:  600,
+      max_tokens:  1024,
       temperature: 0.4,
       messages: [
         { role: 'system', content: systemPrompt },
@@ -904,7 +936,7 @@ function cancel() {
       if (!_isRetry) {
         console.warn('[SpeechEngine] OpenRouter primary failed (' + res.status + ') — retrying with fallback model');
         _askOpenRouter(systemPrompt, userPrompt, callback, true);
-        return null; // prevent chained .then from running
+        return null;
       }
       return res.json().then(function (body) {
         callback('API error ' + res.status + ': ' + ((body && body.error && body.error.message) || 'Unknown error'), null);
@@ -918,6 +950,7 @@ function cancel() {
   })
   .then(function (data) {
     if (!data) return;
+    var finishReason = data.choices && data.choices[0] && data.choices[0].finish_reason;
     var text = data.choices &&
                data.choices[0] &&
                data.choices[0].message &&
@@ -928,6 +961,38 @@ function cancel() {
         return;
       }
       callback('Empty response from AI.', null);
+      return;
+    }
+    if (finishReason === 'length') {
+      var continuationMessages = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user',   content: userPrompt   },
+        { role: 'assistant', content: text.trim() },
+        { role: 'user', content: 'Please continue from where you stopped. Do not repeat anything already written. Continue directly.' },
+      ];
+      fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'Bearer ' + _OR_API_KEY,
+          'HTTP-Referer':  _OR_SITE_URL,
+          'X-Title':       _OR_SITE_NAME,
+          'Content-Type':  'application/json',
+        },
+        body: JSON.stringify({
+          model:       model,
+          max_tokens:  1024,
+          temperature: 0.4,
+          messages:    continuationMessages,
+        }),
+      })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        var extra = d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+        callback(null, (text.trim() + '\n\n' + (extra ? extra.trim() : '')).trim());
+      })
+      .catch(function () {
+        callback(null, text.trim());
+      });
       return;
     }
     callback(null, text.trim());
@@ -967,19 +1032,27 @@ function cancel() {
    * Creates a subject-aware system prompt so the AI stays on topic
    * and gives age-appropriate primary/junior-secondary school answers.
    */
-  function _buildAISystemPrompt(subj) {
+ function _buildAISystemPrompt(subj) {
   return (
     'You are Master Timothy AI, a helpful, friendly and knowledgeable tutor at Vertex Tutorial Centre in Lagos, Nigeria. ' +
     'Explain concepts clearly, accurately and concisely for junior and senior secondary school students. ' +
     'The current subject is: ' + (subj || 'General Science') + '. ' +
-    'Keep your answer under 180 words unless the student specifically asks for a longer explanation. ' +
-    'Use clear, natural and simple language appropriate for the student. ' +
-    'Do not use markdown, headings or bullet points. Write in clear, well-structured sentences and short paragraphs. ' +
+    'RESPONSE LENGTH: Give a COMPLETE answer. Never stop mid-step or mid-sentence. ' +
+    'For calculation problems, always show ALL steps from start to finish, including the final numerical answer. ' +
+    'Do not end your response until the solution is fully complete. ' +
+    'Keep answers under 250 words for concept questions; use as many words as needed to fully complete calculation problems. ' +
+    'FORMATTING RULES — follow exactly: ' +
+    'Write in clear sentences and short paragraphs separated by blank lines. ' +
+    'For maths and physics: use LaTeX notation inside $...$ for inline math (e.g. $f = \\frac{1}{2\\pi\\sqrt{LC}}$) and $$...$$ for display equations. ' +
+    'Use \\cdot for multiplication dot (never write \\cdotp). ' +
+    'Never write raw LaTeX commands like \\( or \\sqrt outside of $...$ or $$...$$ delimiters. ' +
+    'Do not use markdown headings (##) or bullet points. ' +
+    'For step-by-step solutions, write "Step 1:", "Step 2:", etc. on separate lines. ' +
     'Always stay focused on the student\'s question. ' +
-    'If the student asks something unrelated to education or learning, politely redirect the conversation to an educational topic. ' +
+    'If the student asks something unrelated to education or learning, politely redirect. ' +
     'If you are unsure about an answer, say so clearly instead of guessing. ' +
     'Do not invent facts. ' +
-    'Do not mention OpenRouter, GPT, AI, language models, system prompts, or any model names in your response. ' +
+    'Do not mention OpenRouter, GPT, AI, language models, system prompts, or any model names. ' +
     'If the student asks your name, introduce yourself as Master Timothy AI.'
   );
 }
@@ -1334,40 +1407,46 @@ function cancel() {
 function _renderAiText(str) {
   if (str == null) return '';
 
-  // 1. Escape HTML first
-  var safe = String(str)
+  var raw = String(str);
+
+  // ── Step 0: Protect all LaTeX blocks from further processing ──
+  // We stash them and restore after all markdown transforms are done.
+  var mathBlocks = [];
+  function _stashMath(match) {
+    mathBlocks.push(match);
+    return '\x00MATH' + (mathBlocks.length - 1) + '\x00';
+  }
+
+  // Display math first ($$...$$), then inline ($...$), then \[...\] and \(...\)
+  raw = raw.replace(/\$\$[\s\S]*?\$\$/g, _stashMath);
+  raw = raw.replace(/\$[^$\n]+?\$/g,     _stashMath);
+  raw = raw.replace(/\\\[[\s\S]*?\\\]/g, _stashMath);
+  raw = raw.replace(/\\\([\s\S]*?\\\)/g, _stashMath);
+
+  // ── Step 1: Escape HTML (safe to do after stashing — placeholders are ASCII) ──
+  var safe = raw
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 
-  // 2. Bold: **text** → <strong>text</strong>
+  // ── Step 2: Bold ──
   safe = safe.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
 
-  // 3. Italic: *text* → <em>text</em>
-  //    Only single-asterisk italic (not underscore, which we handle as subscript below)
+  // ── Step 3: Italic (single asterisk) ──
   safe = safe.replace(/\*([^*\n]+?)\*/g, '<em>$1</em>');
 
-  // 4. Subscript: A_B where B is 1–4 non-space characters (e.g. X_L, X_C, a_1, v_0, CO_2)
-  //    This fires BEFORE italic-underscore so X_L never becomes X<em>L</em>.
-  //    Subscript only triggers when the subscript token is short (no spaces, max 4 chars).
-  //    Longer _phrase_ patterns (spaces inside, or >4 chars) are treated as italic below.
-  safe = safe.replace(/([A-Za-z0-9)])\\_([A-Za-z0-9]{1,4})(?=[^A-Za-z0-9]|$)/g,
-    '$1<sub>$2</sub>');
-  // Also handle the unescaped underscore form (plain text from AI)
-  safe = safe.replace(/([A-Za-z0-9)])_([A-Za-z0-9]{1,4})(?=[^A-Za-z0-9_]|$)/g,
-    '$1<sub>$2</sub>');
+  // ── Step 4: Subscript A_B (short, no spaces, max 4 chars) ──
+  safe = safe.replace(/([A-Za-z0-9)])\\_([A-Za-z0-9]{1,4})(?=[^A-Za-z0-9]|$)/g, '$1<sub>$2</sub>');
+  safe = safe.replace(/([A-Za-z0-9)])_([A-Za-z0-9]{1,4})(?=[^A-Za-z0-9_]|$)/g,  '$1<sub>$2</sub>');
 
-  // 5. Italic underscore: _phrase_ where phrase has spaces or is longer (genuine italic intent)
-  //    At this point any short A_B subscripts are already converted, so remaining _..._
-  //    patterns are more likely italic.
+  // ── Step 5: Italic underscore (longer phrases) ──
   safe = safe.replace(/_([^_\n]{5,})_/g, '<em>$1</em>');
 
-  // 6. Superscript: A^B where B is 1–4 non-space characters (e.g. x^2, m^3, 10^6)
-  safe = safe.replace(/([A-Za-z0-9])\^([A-Za-z0-9]{1,4})(?=[^A-Za-z0-9]|$)/g,
-    '$1<sup>$2</sup>');
+  // ── Step 6: Superscript A^B ──
+  safe = safe.replace(/([A-Za-z0-9])\^([A-Za-z0-9]{1,4})(?=[^A-Za-z0-9]|$)/g, '$1<sup>$2</sup>');
 
-  // 7. Headings: ###, ##, # at the start of a line → styled paragraph
+  // ── Step 7: Headings ──
   safe = safe.replace(/^######\s+(.+)$/gm, '<p style="margin:0 0 .4em 0;font-size:.8rem;font-weight:700;color:var(--text-2);">$1</p>');
   safe = safe.replace(/^#####\s+(.+)$/gm,  '<p style="margin:0 0 .4em 0;font-size:.8125rem;font-weight:700;color:var(--text-2);">$1</p>');
   safe = safe.replace(/^####\s+(.+)$/gm,   '<p style="margin:0 0 .45em 0;font-size:.875rem;font-weight:700;color:var(--text-1);">$1</p>');
@@ -1375,34 +1454,38 @@ function _renderAiText(str) {
   safe = safe.replace(/^##\s+(.+)$/gm,     '<p style="margin:0 0 .5em 0;font-size:1rem;font-weight:700;color:var(--text-1);">$1</p>');
   safe = safe.replace(/^#\s+(.+)$/gm,      '<p style="margin:0 0 .5em 0;font-size:1.0625rem;font-weight:700;color:var(--text-1);">$1</p>');
 
-  // 8. Horizontal rules: --- or *** or ___ on their own line → <hr>
+  // ── Step 8: Horizontal rules ──
   safe = safe.replace(/^[\s]*[-*_]{3,}[\s]*$/gm, '<hr style="border:none;border-top:1px solid var(--border);margin:.6em 0;">');
 
-  // 9. Unordered list items: lines starting with - or * or •
+  // ── Step 9: Unordered list items ──
   safe = safe.replace(/^[\s]*[-*•]\s+(.+)$/gm, '<li style="margin:.2em 0;">$1</li>');
 
-  // 10. Ordered list items: lines starting with 1. 2. etc.
+  // ── Step 10: Ordered list items ──
   safe = safe.replace(/^[\s]*(\d+)\.\s+(.+)$/gm, '<li style="margin:.2em 0;"><span style="font-weight:600;margin-right:.3em;">$1.</span>$2</li>');
 
-  // 11. Wrap consecutive <li> runs in a list container
+  // ── Step 11: Wrap consecutive <li> in <ul> ──
   safe = safe.replace(/(<li[^>]*>[\s\S]*?<\/li>)(\s*<li[^>]*>[\s\S]*?<\/li>)*/g, function (match) {
     return '<ul style="margin:.4em 0 .6em 1.1em;padding:0;list-style:none;">' + match + '</ul>';
   });
 
-  // 12. Convert double newlines → paragraph breaks, single newlines → <br>
-  //     Skip lines that are already block-level HTML
+  // ── Step 12: Double newlines → paragraphs, single → <br> ──
   var lines = safe.split(/\n\n+/);
   safe = lines.map(function (block) {
-    if (/^<(p|ul|ol|li|hr|div|h[1-6])[^>]*>/.test(block.trim())) {
-      return block;
-    }
+    if (/^<(p|ul|ol|li|hr|div|h[1-6])[^>]*>/.test(block.trim())) return block;
     var inner = block.replace(/\n/g, '<br>');
     if (!inner.trim()) return '';
     return '<p style="margin:0 0 .6em 0;">' + inner + '</p>';
   }).join('');
 
-  // 13. Strip trailing empty paragraph
+  // ── Step 13: Strip trailing empty paragraph ──
   safe = safe.replace(/<p[^>]*>\s*<\/p>$/g, '');
+
+  // ── Step 14: Restore all stashed LaTeX blocks (unescaped, raw) ──
+  // The placeholder \x00MATHn\x00 survived HTML escaping intact because
+  // \x00 is not a special HTML character.
+  safe = safe.replace(/\x00MATH(\d+)\x00/g, function (_, i) {
+    return mathBlocks[parseInt(i, 10)];
+  });
 
   return safe;
 }
