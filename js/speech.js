@@ -1935,7 +1935,7 @@ function _renderAiText(str) {
       },
       body: JSON.stringify({
         model: model,
-        max_tokens: 600,
+        max_tokens: 1024,
         temperature: 0.4,
         messages: messagesPayload,
       }),
@@ -1952,6 +1952,7 @@ function _renderAiText(str) {
     })
     .then(function (data) {
       if (!data) return;
+      var finishReason = data.choices && data.choices[0] && data.choices[0].finish_reason;
       var text = data.choices &&
                  data.choices[0] &&
                  data.choices[0].message &&
@@ -1959,6 +1960,32 @@ function _renderAiText(str) {
       if (!text || !text.trim()) {
         if (!isRetry) { _tryGroq(true); return; }
         throw new Error('groq_empty');
+      }
+      if (finishReason === 'length') {
+        var continuationPayload = messagesPayload.concat([
+          { role: 'assistant', content: text.trim() },
+          { role: 'user', content: 'Please continue from where you stopped. Do not repeat anything already written. Continue directly.' },
+        ]);
+        fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + _GROQ_API_KEY,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            model: model,
+            max_tokens: 1024,
+            temperature: 0.4,
+            messages: continuationPayload,
+          }),
+        })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          var extra = d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+          callback(null, (text.trim() + '\n\n' + (extra ? extra.trim() : '')).trim());
+        })
+        .catch(function () { callback(null, text.trim()); });
+        return;
       }
       callback(null, text.trim());
     })
@@ -1976,7 +2003,7 @@ function _renderAiText(str) {
           },
           body: JSON.stringify({
             model: orModel,
-            max_tokens: 600,
+            max_tokens: 1024,
             temperature: 0.4,
             messages: messagesPayload,
           }),
@@ -1990,14 +2017,42 @@ function _renderAiText(str) {
         })
         .then(function (data) {
           if (!data) return;
-          var text = data &&
-                     data.choices &&
+          var finishReason = data.choices && data.choices[0] && data.choices[0].finish_reason;
+          var text = data.choices &&
                      data.choices[0] &&
                      data.choices[0].message &&
                      data.choices[0].message.content;
           if (!text || !text.trim()) {
             if (!isORRetry) { _tryOR(true); return; }
             throw new Error('or_empty');
+          }
+          if (finishReason === 'length') {
+            var continuationPayload = messagesPayload.concat([
+              { role: 'assistant', content: text.trim() },
+              { role: 'user', content: 'Please continue from where you stopped. Do not repeat anything already written. Continue directly.' },
+            ]);
+            fetch('https://openrouter.ai/api/v1/chat/completions', {
+              method: 'POST',
+              headers: {
+                'Authorization': 'Bearer ' + _OR_API_KEY,
+                'HTTP-Referer': _OR_SITE_URL,
+                'X-Title': _OR_SITE_NAME,
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                model: orModel,
+                max_tokens: 1024,
+                temperature: 0.4,
+                messages: continuationPayload,
+              }),
+            })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (d) {
+              var extra = d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+              callback(null, (text.trim() + '\n\n' + (extra ? extra.trim() : '')).trim());
+            })
+            .catch(function () { callback(null, text.trim()); });
+            return;
           }
           callback(null, text.trim());
         })
