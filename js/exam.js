@@ -2903,16 +2903,50 @@ let _lastAiDateLabel = '';
   };
 }
    
-   function _aiTypewriter(el, text, scrollContainer) {
+function _aiTypewriter(el, text, scrollContainer) {
     if (!el) return;
 
     var rendered = _renderAiText(text);
-    var chars    = Array.from(text);
-    var total    = chars.length;
-    var i        = 0;
-    var plain    = '';
-    // Faster for long responses, comfortable for short ones
-    var speed    = total > 300 ? 10 : 18;
+
+    // If the response contains math, skip typewriter and render immediately
+    var hasMath = /\$\$[\s\S]*?\$\$|\$[^$]+?\$|\\\([\s\S]*?\\\)|\\\[[\s\S]*?\\\]/.test(text);
+
+    if (hasMath) {
+      el.style.opacity = '0';
+      el.innerHTML = rendered;
+      if (scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
+
+      // Render KaTeX first, then fade in
+      if (window._katexAutoRenderReady && window.renderMathInElement) {
+        try {
+          renderMathInElement(el, {
+            delimiters: [
+              { left: '$$', right: '$$', display: true  },
+              { left: '$',  right: '$',  display: false },
+              { left: '\\(', right: '\\)', display: false },
+              { left: '\\[', right: '\\]', display: true  },
+            ],
+            throwOnError: false,
+            errorColor: '#cc0000',
+          });
+        } catch (err) { console.warn('[KaTeX] AI drawer render error:', err); }
+      }
+
+      // Smooth fade in after render
+      requestAnimationFrame(function () {
+        el.style.transition = 'opacity 280ms ease';
+        el.style.opacity = '1';
+        if (scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
+      });
+      return;
+    }
+
+    // No math — use normal typewriter animation
+    var chars  = Array.from(text);
+    var total  = chars.length;
+    var i      = 0;
+    var plain  = '';
+    var speed  = total > 300 ? 10 : 18;
 
     if (!document.getElementById('vtxTwStyle')) {
       var s = document.createElement('style');
@@ -2927,7 +2961,6 @@ let _lastAiDateLabel = '';
 
     function tick() {
       if (i >= total) {
-        // Final swap — full rendered HTML with paragraphs and bold
         el.innerHTML = rendered;
         if (scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
         return;
@@ -2936,11 +2969,8 @@ let _lastAiDateLabel = '';
       plain += chars[i];
       i++;
 
-      // Render the partial plain text with paragraph structure as we go,
-      // so the student sees proper line breaks forming during typewrite
       var partialRendered = _renderAiText(plain);
-      el.innerHTML = partialRendered +
-        '<span class="vtx-tw-cursor"></span>';
+      el.innerHTML = partialRendered + '<span class="vtx-tw-cursor"></span>';
 
       if (scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
       setTimeout(tick, speed);
@@ -3457,7 +3487,7 @@ function _sendAiMessage() {
     if (t) t.remove();
   }
 
-  function _appendAiReply(replyText) {
+   function _appendAiReply(replyText) {
     _removeTyping();
     window._vtxAiHistory.push({ role: 'assistant', content: replyText });
 
@@ -3489,7 +3519,25 @@ function _sendAiMessage() {
     var targetEl = wrapper.querySelector('#' + replyId);
     _aiTypewriter(targetEl, replyText, msgs);
 
-    var approxDuration = Math.min(replyText.length * 18, 8000) + 200;
+    // Run KaTeX after typewriter finishes (approximate duration)
+    var approxDuration = Math.min(replyText.length * 18, 8000) + 400;
+    setTimeout(function () {
+      if (window._katexAutoRenderReady && window.renderMathInElement && targetEl) {
+        try {
+          renderMathInElement(targetEl, {
+            delimiters: [
+              { left: '$$', right: '$$', display: true  },
+              { left: '$',  right: '$',  display: false },
+              { left: '\\(', right: '\\)', display: false },
+              { left: '\\[', right: '\\]', display: true  },
+            ],
+            throwOnError: false,
+            errorColor: '#cc0000',
+          });
+        } catch (err) { console.warn('[KaTeX] AI drawer render error:', err); }
+      }
+    }, approxDuration);
+
     setTimeout(function () {
       try {
         var sKey   = 'vtx_ai_history_' + (AppState.userId || 'anon');
