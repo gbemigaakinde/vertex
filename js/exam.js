@@ -2918,6 +2918,8 @@
     }
   }
    
+var _aiDrawerInitialised = false;
+
 function _openAiDrawer() {
   var pill = document.getElementById('vtxAiPill');
   if (pill) pill.style.cssText = 'display:none;';
@@ -2932,72 +2934,90 @@ function _openAiDrawer() {
   var trigger = document.getElementById('vtxAiTrigger');
   if (!drawer || !sheet) return;
 
-  // ── Restore conversation from localStorage ──
-  var storageKey = 'vtx_ai_history_' + (AppState.userId || 'anon');
-  var recentActivity = false;  // whether there was a message in the last 5 minutes
+  // ── Restore conversation from localStorage — only on the very first open ──
+  // The drawer is hidden/shown with display:none, not destroyed, so DOM bubbles
+  // already exist from previous open cycles. Replaying again would duplicate them.
+  var recentActivity = false;
 
-  try {
-    var raw = localStorage.getItem(storageKey);
-    if (raw) {
-      var saved = JSON.parse(raw);
-      var now   = Date.now();
-      var THREE_DAYS   = 3 * 24 * 60 * 60 * 1000;
-      var FIVE_MINUTES = 5 * 60 * 1000;
+  if (!_aiDrawerInitialised) {
+    _aiDrawerInitialised = true;
 
-      if (saved && saved.ts && (now - saved.ts) < THREE_DAYS && Array.isArray(saved.history)) {
-        window._vtxAiHistory = saved.history;
+    var storageKey = 'vtx_ai_history_' + (AppState.userId || 'anon');
+    try {
+      var raw = localStorage.getItem(storageKey);
+      if (raw) {
+        var saved = JSON.parse(raw);
+        var now          = Date.now();
+        var THREE_DAYS   = 3 * 24 * 60 * 60 * 1000;
+        var FIVE_MINUTES = 5 * 60 * 1000;
 
-        // Check last activity timestamp — written on every send/reply
-        if (saved.lastActivityTs && (now - saved.lastActivityTs) < FIVE_MINUTES) {
+        if (saved && saved.ts && (now - saved.ts) < THREE_DAYS && Array.isArray(saved.history)) {
+          window._vtxAiHistory = saved.history;
+
+          if (saved.lastActivityTs && (now - saved.lastActivityTs) < FIVE_MINUTES) {
+            recentActivity = true;
+          }
+
+          var messages = document.getElementById('vtxAiMessages');
+          if (messages && saved.ui && Array.isArray(saved.ui) && saved.ui.length > 0) {
+            var emptyState = document.getElementById('vtxAiEmptyState');
+            if (emptyState) emptyState.style.display = 'none';
+
+            saved.ui.forEach(function (msg) {
+              var bubble = document.createElement('div');
+              if (msg.role === 'user') {
+                bubble.style.cssText = 'display:flex;justify-content:flex-end;';
+                bubble.innerHTML =
+                  '<div style="max-width:78%;padding:.625rem .875rem;' +
+                    'border-radius:var(--r-xl) var(--r-xl) var(--r-sm) var(--r-xl);' +
+                    'background:var(--accent);color:#fff;' +
+                    'font-size:.9rem;line-height:1.55;word-break:break-word;">' +
+                    _escHtml(msg.text) +
+                  '</div>';
+              } else {
+                bubble.style.cssText = 'display:flex;justify-content:flex-start;align-items:flex-end;gap:.5rem;';
+                bubble.innerHTML =
+                  '<span style="display:inline-flex;align-items:center;justify-content:center;' +
+                    'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;align-self:flex-end;">' +
+                    '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>' +
+                  '</span>' +
+                  '<div style="max-width:82%;padding:.625rem .875rem;' +
+                    'border-radius:var(--r-sm) var(--r-xl) var(--r-xl) var(--r-xl);' +
+                    'background:var(--bg-subtle);border:1px solid var(--border);' +
+                    'font-size:.9rem;line-height:1.65;color:var(--text-1);word-break:break-word;">' +
+                    msg.html +
+                  '</div>';
+              }
+              messages.appendChild(bubble);
+            });
+
+            setTimeout(function () {
+              if (messages) messages.scrollTop = messages.scrollHeight;
+            }, 60);
+          }
+        } else {
+          // Expired — purge
+          localStorage.removeItem(storageKey);
+          window._vtxAiHistory = [];
+        }
+      }
+    } catch (e) {
+      window._vtxAiHistory = [];
+    }
+  } else {
+    // Drawer was already initialised this session — just check recentActivity
+    // from the in-memory history length as a proxy (no need to re-read storage).
+    var storageKey2 = 'vtx_ai_history_' + (AppState.userId || 'anon');
+    try {
+      var raw2 = localStorage.getItem(storageKey2);
+      if (raw2) {
+        var saved2 = JSON.parse(raw2);
+        var FIVE_MINUTES2 = 5 * 60 * 1000;
+        if (saved2 && saved2.lastActivityTs && (Date.now() - saved2.lastActivityTs) < FIVE_MINUTES2) {
           recentActivity = true;
         }
-
-        // Replay messages into the UI
-        var messages = document.getElementById('vtxAiMessages');
-        if (messages && saved.ui && Array.isArray(saved.ui) && saved.ui.length > 0) {
-          var emptyState = document.getElementById('vtxAiEmptyState');
-          if (emptyState) emptyState.style.display = 'none';
-
-          saved.ui.forEach(function (msg) {
-            var bubble = document.createElement('div');
-            if (msg.role === 'user') {
-              bubble.style.cssText = 'display:flex;justify-content:flex-end;';
-              bubble.innerHTML =
-                '<div style="max-width:78%;padding:.625rem .875rem;' +
-                  'border-radius:var(--r-xl) var(--r-xl) var(--r-sm) var(--r-xl);' +
-                  'background:var(--accent);color:#fff;' +
-                  'font-size:.9rem;line-height:1.55;word-break:break-word;">' +
-                  _escHtml(msg.text) +
-                '</div>';
-            } else {
-              bubble.style.cssText = 'display:flex;justify-content:flex-start;align-items:flex-end;gap:.5rem;';
-              bubble.innerHTML =
-                '<span style="display:inline-flex;align-items:center;justify-content:center;' +
-                  'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;align-self:flex-end;">' +
-                  '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>' +
-                '</span>' +
-                '<div style="max-width:82%;padding:.625rem .875rem;' +
-                  'border-radius:var(--r-sm) var(--r-xl) var(--r-xl) var(--r-xl);' +
-                  'background:var(--bg-subtle);border:1px solid var(--border);' +
-                  'font-size:.9rem;line-height:1.65;color:var(--text-1);word-break:break-word;">' +
-                  msg.html +
-                '</div>';
-            }
-            messages.appendChild(bubble);
-          });
-
-          setTimeout(function () {
-            if (messages) messages.scrollTop = messages.scrollHeight;
-          }, 60);
-        }
-      } else {
-        // Expired — purge
-        localStorage.removeItem(storageKey);
-        window._vtxAiHistory = [];
       }
-    }
-  } catch (e) {
-    window._vtxAiHistory = [];
+    } catch (e) {}
   }
 
   drawer.style.display = 'block';
@@ -3009,9 +3029,6 @@ function _openAiDrawer() {
 
   if (trigger) trigger.style.display = 'none';
 
-  // Only animate the placeholder when there is no recent conversation activity.
-  // If the student was chatting in the last 5 minutes, the input stays quiet
-  // so it doesn't distract from their active session.
   setTimeout(function () {
     if (window._vtxPlaceholderCancel) {
       window._vtxPlaceholderCancel();
@@ -3020,7 +3037,6 @@ function _openAiDrawer() {
     if (!recentActivity) {
       window._vtxPlaceholderCancel = _startPlaceholderCycle('vtxAiInput');
     } else {
-      // Restore the static default so the field isn't blank
       var inp = document.getElementById('vtxAiInput');
       if (inp) inp.setAttribute('placeholder', 'Ask a question…');
     }
