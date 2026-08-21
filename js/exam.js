@@ -1000,7 +1000,7 @@
 
       </div>
 
-       <!-- AI ASSISTANT FLOATING DOT -->
+             <!-- AI ASSISTANT FLOATING DOT -->
       <style>
         @keyframes vtx-ai-breathe {
           0%, 100% { box-shadow: 0 2px 12px rgba(79,110,247,.22), 0 0 0 0 rgba(79,110,247,.18); }
@@ -1018,6 +1018,8 @@
           from { opacity:1; max-width:160px; padding-left:.625rem; padding-right:.875rem; }
           to   { opacity:0; max-width:0; padding-left:0; padding-right:0; }
         }
+        @keyframes vtx-ai-label-fade-in  { from { opacity:0; transform:scale(0.7); } to { opacity:1; transform:scale(1); } }
+        @keyframes vtx-ai-label-fade-out { from { opacity:1; transform:scale(1); } to { opacity:0; transform:scale(0.7); } }
         #vtxAiFloating {
           animation: vtx-ai-appear 0.35s cubic-bezier(0.34,1.56,0.64,1) both;
         }
@@ -1062,6 +1064,33 @@
           animation: vtx-ai-pill-out 300ms cubic-bezier(0.4,0,1,1) both;
           pointer-events: none;
         }
+        /* Icon / label swap */
+        #vtxAiIconWrap,
+        #vtxAiLabelWrap {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          pointer-events: none;
+          border-radius: 50%;
+        }
+        #vtxAiLabelWrap {
+          font-family: var(--font);
+          font-size: .8125rem;
+          font-weight: 800;
+          letter-spacing: .04em;
+          color: #fff;
+          opacity: 0;
+        }
+        #vtxAiIconWrap.is-hiding,
+        #vtxAiLabelWrap.is-hiding {
+          animation: vtx-ai-label-fade-out 350ms var(--ease) both;
+        }
+        #vtxAiIconWrap.is-showing,
+        #vtxAiLabelWrap.is-showing {
+          animation: vtx-ai-label-fade-in 350ms var(--ease) both;
+        }
       </style>
       <div id="vtxAiFloating" style="position:fixed;bottom:1.5rem;right:1.5rem;z-index:500;
                                       display:flex;align-items:center;gap:.5rem;flex-direction:row-reverse;">
@@ -1073,14 +1102,20 @@
           style="flex-shrink:0;width:46px;height:46px;border-radius:50%;
                  background:var(--accent);color:#fff;
                  border:none;cursor:pointer;
+                 position:relative;
                  display:flex;align-items:center;justify-content:center;
                  box-shadow:0 2px 12px rgba(79,110,247,.28);
                  transition:transform 0.18s var(--ease),box-shadow 0.18s var(--ease);
                  -webkit-tap-highlight-color:transparent;"
         >
-          <svg width="19" height="19" viewBox="0 0 256 256" fill="currentColor" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-            <path d="M216,40H40A16,16,0,0,0,24,56V200a8,8,0,0,0,13,6.22L72,179.09l.19.28A16,16,0,0,0,85.35,187H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,131H85.35l-13-16L40,193.27V56H216ZM80,120a8,8,0,0,1,8-8h80a8,8,0,0,1,0,16H88A8,8,0,0,1,80,120Zm0,32a8,8,0,0,1,8-8h48a8,8,0,0,1,0,16H88A8,8,0,0,1,80,152Z"/>
-          </svg>
+          <!-- Icon layer -->
+          <span id="vtxAiIconWrap" aria-hidden="true">
+            <svg width="19" height="19" viewBox="0 0 256 256" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+              <path d="M216,40H40A16,16,0,0,0,24,56V200a8,8,0,0,0,13,6.22L72,179.09l.19.28A16,16,0,0,0,85.35,187H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,131H85.35l-13-16L40,193.27V56H216ZM80,120a8,8,0,0,1,8-8h80a8,8,0,0,1,0,16H88A8,8,0,0,1,80,120Zm0,32a8,8,0,0,1,8-8h48a8,8,0,0,1,0,16H88A8,8,0,0,1,80,152Z"/>
+            </svg>
+          </span>
+          <!-- "AI" text label layer -->
+          <span id="vtxAiLabelWrap" aria-hidden="true">AI</span>
         </button>
         <div id="vtxAiPill" onclick="Exam._openAiDrawer()" role="button" tabindex="0"
              aria-label="Open AI Tutor"
@@ -1311,6 +1346,53 @@
         sendBtn.disabled = !hasText;
         sendBtn.style.opacity = hasText ? '1' : '.4';
       });
+    })();
+  // ── AI trigger icon ↔ "AI" label swap ──
+    (function () {
+      var iconWrap  = document.getElementById('vtxAiIconWrap');
+      var labelWrap = document.getElementById('vtxAiLabelWrap');
+      if (!iconWrap || !labelWrap) return;
+
+      // How long each face shows before swapping (ms)
+      var SHOW_MS  = 8000;
+      var FADE_MS  = 350;
+      var showingIcon = true;
+
+      function _swap() {
+        var hiding  = showingIcon ? iconWrap  : labelWrap;
+        var showing = showingIcon ? labelWrap : iconWrap;
+
+        // Fade out the current face
+        hiding.classList.remove('is-showing');
+        hiding.classList.add('is-hiding');
+
+        setTimeout(function () {
+          hiding.style.opacity = '0';
+          hiding.classList.remove('is-hiding');
+
+          // Fade in the incoming face
+          showing.style.opacity = '1';
+          showing.classList.remove('is-hiding');
+          showing.classList.add('is-showing');
+
+          setTimeout(function () {
+            showing.classList.remove('is-showing');
+            showingIcon = !showingIcon;
+
+            // Schedule next swap — stop if button is gone (page navigated away)
+            if (document.getElementById('vtxAiTrigger')) {
+              window._vtxAiSwapTimer = setTimeout(_swap, SHOW_MS);
+            }
+          }, FADE_MS);
+        }, FADE_MS);
+      }
+
+      // Initial state: icon visible, label hidden
+      iconWrap.style.opacity  = '1';
+      labelWrap.style.opacity = '0';
+
+      // First swap after a short delay so the button settles in
+      window._vtxAiSwapTimer = setTimeout(_swap, SHOW_MS);
     })();
      // Show the "Ask AI Tutor" pill hint once per student (until they click it)
     (function () {
