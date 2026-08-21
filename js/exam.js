@@ -2393,7 +2393,7 @@
   }
   function _escAttr(str) { return _escHtml(str).replace(/'/g,'&#39;'); }
 
-   function _renderAiText(str) {
+function _renderAiText(str) {
   if (str == null) return '';
 
   // 1. Escape HTML first
@@ -2406,11 +2406,30 @@
   // 2. Bold: **text** → <strong>text</strong>
   safe = safe.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
 
-  // 3. Italic: *text* or _text_ → <em>text</em>
+  // 3. Italic: *text* → <em>text</em>
+  //    Only single-asterisk italic (not underscore, which we handle as subscript below)
   safe = safe.replace(/\*([^*\n]+?)\*/g, '<em>$1</em>');
-  safe = safe.replace(/_([^_\n]+?)_/g, '<em>$1</em>');
 
-  // 4. Headings: ###, ##, # at the start of a line → styled paragraph
+  // 4. Subscript: A_B where B is 1–4 non-space characters (e.g. X_L, X_C, a_1, v_0, CO_2)
+  //    This fires BEFORE italic-underscore so X_L never becomes X<em>L</em>.
+  //    Subscript only triggers when the subscript token is short (no spaces, max 4 chars).
+  //    Longer _phrase_ patterns (spaces inside, or >4 chars) are treated as italic below.
+  safe = safe.replace(/([A-Za-z0-9)])\\_([A-Za-z0-9]{1,4})(?=[^A-Za-z0-9]|$)/g,
+    '$1<sub>$2</sub>');
+  // Also handle the unescaped underscore form (plain text from AI)
+  safe = safe.replace(/([A-Za-z0-9)])_([A-Za-z0-9]{1,4})(?=[^A-Za-z0-9_]|$)/g,
+    '$1<sub>$2</sub>');
+
+  // 5. Italic underscore: _phrase_ where phrase has spaces or is longer (genuine italic intent)
+  //    At this point any short A_B subscripts are already converted, so remaining _..._
+  //    patterns are more likely italic.
+  safe = safe.replace(/_([^_\n]{5,})_/g, '<em>$1</em>');
+
+  // 6. Superscript: A^B where B is 1–4 non-space characters (e.g. x^2, m^3, 10^6)
+  safe = safe.replace(/([A-Za-z0-9])\^([A-Za-z0-9]{1,4})(?=[^A-Za-z0-9]|$)/g,
+    '$1<sup>$2</sup>');
+
+  // 7. Headings: ###, ##, # at the start of a line → styled paragraph
   safe = safe.replace(/^######\s+(.+)$/gm, '<p style="margin:0 0 .4em 0;font-size:.8rem;font-weight:700;color:var(--text-2);">$1</p>');
   safe = safe.replace(/^#####\s+(.+)$/gm,  '<p style="margin:0 0 .4em 0;font-size:.8125rem;font-weight:700;color:var(--text-2);">$1</p>');
   safe = safe.replace(/^####\s+(.+)$/gm,   '<p style="margin:0 0 .45em 0;font-size:.875rem;font-weight:700;color:var(--text-1);">$1</p>');
@@ -2418,27 +2437,24 @@
   safe = safe.replace(/^##\s+(.+)$/gm,     '<p style="margin:0 0 .5em 0;font-size:1rem;font-weight:700;color:var(--text-1);">$1</p>');
   safe = safe.replace(/^#\s+(.+)$/gm,      '<p style="margin:0 0 .5em 0;font-size:1.0625rem;font-weight:700;color:var(--text-1);">$1</p>');
 
-  // 5. Horizontal rules: --- or *** or ___ on their own line → <hr>
+  // 8. Horizontal rules: --- or *** or ___ on their own line → <hr>
   safe = safe.replace(/^[\s]*[-*_]{3,}[\s]*$/gm, '<hr style="border:none;border-top:1px solid var(--border);margin:.6em 0;">');
 
-  // 6. Unordered list items: lines starting with - or * or •
+  // 9. Unordered list items: lines starting with - or * or •
   safe = safe.replace(/^[\s]*[-*•]\s+(.+)$/gm, '<li style="margin:.2em 0;">$1</li>');
 
-  // 7. Ordered list items: lines starting with 1. 2. etc.
+  // 10. Ordered list items: lines starting with 1. 2. etc.
   safe = safe.replace(/^[\s]*(\d+)\.\s+(.+)$/gm, '<li style="margin:.2em 0;"><span style="font-weight:600;margin-right:.3em;">$1.</span>$2</li>');
 
-  // 8. Wrap consecutive <li> runs in a <ul> or <ol> container.
-  // Since we can't distinguish ul from ol easily at this stage, wrap all in a
-  // generic list container — the numbering is already in the text for ol items.
+  // 11. Wrap consecutive <li> runs in a list container
   safe = safe.replace(/(<li[^>]*>[\s\S]*?<\/li>)(\s*<li[^>]*>[\s\S]*?<\/li>)*/g, function (match) {
     return '<ul style="margin:.4em 0 .6em 1.1em;padding:0;list-style:none;">' + match + '</ul>';
   });
 
-  // 9. Convert double newlines → paragraph breaks, single newlines → <br>
-  //    But skip lines that are already block-level HTML (headings/hr/ul we just made)
+  // 12. Convert double newlines → paragraph breaks, single newlines → <br>
+  //     Skip lines that are already block-level HTML
   var lines = safe.split(/\n\n+/);
   safe = lines.map(function (block) {
-    // If the block is already an HTML block element, don't wrap it in <p>
     if (/^<(p|ul|ol|li|hr|div|h[1-6])[^>]*>/.test(block.trim())) {
       return block;
     }
@@ -2447,7 +2463,7 @@
     return '<p style="margin:0 0 .6em 0;">' + inner + '</p>';
   }).join('');
 
-  // 10. Strip trailing empty paragraph
+  // 13. Strip trailing empty paragraph
   safe = safe.replace(/<p[^>]*>\s*<\/p>$/g, '');
 
   return safe;
