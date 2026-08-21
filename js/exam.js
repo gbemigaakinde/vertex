@@ -2918,8 +2918,6 @@
     }
   }
    
-var _aiDrawerInitialised = false;
-
 function _openAiDrawer() {
   var pill = document.getElementById('vtxAiPill');
   if (pill) pill.style.cssText = 'display:none;';
@@ -2934,19 +2932,22 @@ function _openAiDrawer() {
   var trigger = document.getElementById('vtxAiTrigger');
   if (!drawer || !sheet) return;
 
-  // ── Restore conversation from localStorage — only on the very first open ──
-  // The drawer is hidden/shown with display:none, not destroyed, so DOM bubbles
-  // already exist from previous open cycles. Replaying again would duplicate them.
+  // ── Decide whether to replay saved messages ─
+  var messages       = document.getElementById('vtxAiMessages');
+  var existingBubbles = messages
+    ? messages.querySelectorAll('div[style*="flex-end"], div[style*="flex-start"]').length
+    : 0;
+  var needsReplay    = existingBubbles === 0;
   var recentActivity = false;
 
-  if (!_aiDrawerInitialised) {
-    _aiDrawerInitialised = true;
+  var storageKey = 'vtx_ai_history_' + (AppState.userId || 'anon');
 
-    var storageKey = 'vtx_ai_history_' + (AppState.userId || 'anon');
+  if (needsReplay) {
+    // DOM is fresh — restore history and rebuild bubbles from localStorage.
     try {
       var raw = localStorage.getItem(storageKey);
       if (raw) {
-        var saved = JSON.parse(raw);
+        var saved        = JSON.parse(raw);
         var now          = Date.now();
         var THREE_DAYS   = 3 * 24 * 60 * 60 * 1000;
         var FIVE_MINUTES = 5 * 60 * 1000;
@@ -2958,7 +2959,6 @@ function _openAiDrawer() {
             recentActivity = true;
           }
 
-          var messages = document.getElementById('vtxAiMessages');
           if (messages && saved.ui && Array.isArray(saved.ui) && saved.ui.length > 0) {
             var emptyState = document.getElementById('vtxAiEmptyState');
             if (emptyState) emptyState.style.display = 'none';
@@ -3004,16 +3004,16 @@ function _openAiDrawer() {
     } catch (e) {
       window._vtxAiHistory = [];
     }
+
   } else {
-    // Drawer was already initialised this session — just check recentActivity
-    // from the in-memory history length as a proxy (no need to re-read storage).
-    var storageKey2 = 'vtx_ai_history_' + (AppState.userId || 'anon');
+    // DOM bubbles are already present — drawer was just toggled closed/open.
+    // Only check recentActivity so the placeholder decision is still correct.
     try {
-      var raw2 = localStorage.getItem(storageKey2);
+      var raw2 = localStorage.getItem(storageKey);
       if (raw2) {
-        var saved2 = JSON.parse(raw2);
-        var FIVE_MINUTES2 = 5 * 60 * 1000;
-        if (saved2 && saved2.lastActivityTs && (Date.now() - saved2.lastActivityTs) < FIVE_MINUTES2) {
+        var saved2       = JSON.parse(raw2);
+        var FIVE_MINS2   = 5 * 60 * 1000;
+        if (saved2 && saved2.lastActivityTs && (Date.now() - saved2.lastActivityTs) < FIVE_MINS2) {
           recentActivity = true;
         }
       }
