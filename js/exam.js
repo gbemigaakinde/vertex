@@ -2052,7 +2052,7 @@
   /* ─────────────────────────────────────────────────────── */
   /* Submit                                                  */
   /* ─────────────────────────────────────────────────────── */
-  let _submitLock = false;
+   let _submitLock = false;
 
   async function submitExam(skipConfirm) {
     if (_submitLock) return;
@@ -2817,7 +2817,8 @@
      /* ─────────────────────────────────────────────────────── */
   /* AI Drawer — open / close / send                         */
   /* ─────────────────────────────────────────────────────── */
-
+let _lastAiDateLabel = '';
+   
    function _startPlaceholderCycle(inputId) {
   var inp = document.getElementById(inputId);
   if (!inp) return;
@@ -3118,6 +3119,9 @@ function _openAiDrawer() {
   var storageKey = 'vtx_ai_history_' + (AppState.userId || 'anon');
 
   if (needsReplay) {
+    // Reset the date label tracker before replaying
+    _lastAiDateLabel = '';
+
     try {
       var raw = localStorage.getItem(storageKey);
       if (raw) {
@@ -3137,17 +3141,22 @@ function _openAiDrawer() {
             var emptyState = document.getElementById('vtxAiEmptyState');
             if (emptyState) emptyState.style.display = 'none';
 
-            var lastDateLabel = '';
-
             saved.ui.forEach(function (msg) {
-              // Date separator
-              var msgTs    = msg.ts || saved.ts || now;
+              var msgTs     = msg.ts || saved.ts || now;
               var dateLabel = _aiDateLabel(msgTs);
-              if (dateLabel !== lastDateLabel) {
-                lastDateLabel = dateLabel;
+              if (dateLabel !== _lastAiDateLabel) {
+                _lastAiDateLabel = dateLabel;
                 var sep = document.createElement('div');
-                sep.innerHTML = _aiDateSeparator(dateLabel);
-                messages.appendChild(sep.firstElementChild);
+                sep.className = 'vtx-ai-date-sep';
+                sep.setAttribute('data-label', dateLabel);
+                sep.style.cssText = 'display:flex;align-items:center;gap:.625rem;margin:.25rem 0 .125rem;flex-shrink:0;';
+                sep.innerHTML =
+                  '<div style="flex:1;height:1px;background:var(--border);"></div>' +
+                  '<span style="font-size:.6875rem;font-weight:600;color:var(--text-4);white-space:nowrap;letter-spacing:.03em;">' +
+                    _escHtml(dateLabel) +
+                  '</span>' +
+                  '<div style="flex:1;height:1px;background:var(--border);"></div>';
+                messages.appendChild(sep);
               }
 
               var timeStr = _aiTimeLabel(msgTs);
@@ -3201,6 +3210,8 @@ function _openAiDrawer() {
     }
 
   } else {
+    // Drawer already has bubbles rendered — don't reset _lastAiDateLabel,
+    // it already reflects what's on screen from the current session.
     try {
       var raw2 = localStorage.getItem(storageKey);
       if (raw2) {
@@ -3314,30 +3325,24 @@ function _sendAiMessage() {
   var messages = document.getElementById('vtxAiMessages');
   if (!messages) return;
 
-  var nowTs    = Date.now();
-  var timeStr  = _aiTimeLabel(nowTs);
+  var nowTs     = Date.now();
+  var timeStr   = _aiTimeLabel(nowTs);
   var dateLabel = _aiDateLabel(nowTs);
 
-  // Date separator — insert if this is the first message or the date changed
-  var lastSep = messages.querySelector('.vtx-ai-date-sep:last-of-type');
-  var lastSepLabel = lastSep ? lastSep.getAttribute('data-label') : '';
-  if (dateLabel !== lastSepLabel) {
+  // Only insert a date separator when the date has actually changed
+  if (dateLabel !== _lastAiDateLabel) {
+    _lastAiDateLabel = dateLabel;
     var sepEl = document.createElement('div');
     sepEl.className = 'vtx-ai-date-sep';
     sepEl.setAttribute('data-label', dateLabel);
-    sepEl.innerHTML = _aiDateSeparator(dateLabel);
-    // sepEl itself is the wrapper; append the inner child
-    var sepInner = document.createElement('div');
-    sepInner.className = 'vtx-ai-date-sep';
-    sepInner.setAttribute('data-label', dateLabel);
-    sepInner.style.cssText = 'display:flex;align-items:center;gap:.625rem;margin:.25rem 0 .125rem;flex-shrink:0;';
-    sepInner.innerHTML =
+    sepEl.style.cssText = 'display:flex;align-items:center;gap:.625rem;margin:.25rem 0 .125rem;flex-shrink:0;';
+    sepEl.innerHTML =
       '<div style="flex:1;height:1px;background:var(--border);"></div>' +
       '<span style="font-size:.6875rem;font-weight:600;color:var(--text-4);white-space:nowrap;letter-spacing:.03em;">' +
         _escHtml(dateLabel) +
       '</span>' +
       '<div style="flex:1;height:1px;background:var(--border);"></div>';
-    messages.appendChild(sepInner);
+    messages.appendChild(sepEl);
     messages.scrollTop = messages.scrollHeight;
   }
 
@@ -3443,7 +3448,7 @@ function _sendAiMessage() {
     var msgs = document.getElementById('vtxAiMessages');
     if (!msgs) return;
 
-    var replyTs  = Date.now();
+    var replyTs   = Date.now();
     var replyTime = _aiTimeLabel(replyTs);
     var rendered  = _renderAiText(replyText);
 
@@ -3471,8 +3476,8 @@ function _sendAiMessage() {
     var approxDuration = Math.min(replyText.length * 18, 8000) + 200;
     setTimeout(function () {
       try {
-        var sKey  = 'vtx_ai_history_' + (AppState.userId || 'anon');
-        var raw2  = localStorage.getItem(sKey);
+        var sKey   = 'vtx_ai_history_' + (AppState.userId || 'anon');
+        var raw2   = localStorage.getItem(sKey);
         var saved2 = raw2 ? JSON.parse(raw2) : { ts: Date.now(), history: [], ui: [], lastActivityTs: Date.now() };
         saved2.history        = window._vtxAiHistory;
         saved2.ui             = saved2.ui || [];
