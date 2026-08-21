@@ -3039,6 +3039,60 @@
       if (window.UI) UI.toast('Could not start microphone.', 'warning', 3000);
     }
   }
+
+   function _aiDateLabel(ts) {
+  if (!ts) return '';
+  var d     = new Date(ts);
+  var today = new Date();
+  var yesterday = new Date();
+  yesterday.setDate(today.getDate() - 1);
+
+  function _sameDay(a, b) {
+    return a.getFullYear() === b.getFullYear() &&
+           a.getMonth()    === b.getMonth()    &&
+           a.getDate()     === b.getDate();
+  }
+
+  if (_sameDay(d, today))     return 'Today';
+  if (_sameDay(d, yesterday)) return 'Yesterday';
+
+  var days   = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+  // More than 6 days ago — show full date label
+  var diff = Math.floor((today - d) / 86400000);
+  var day  = d.getDate();
+  var suffix = day === 1 || day === 21 || day === 31 ? 'st'
+             : day === 2 || day === 22             ? 'nd'
+             : day === 3 || day === 23             ? 'rd'
+             : 'th';
+
+  if (diff < 7) {
+    // Within the last week — show day name
+    return days[d.getDay()] + ', ' + day + suffix + ' ' + months[d.getMonth()];
+  }
+  return day + suffix + ' ' + months[d.getMonth()] + ' ' + d.getFullYear();
+}
+
+function _aiTimeLabel(ts) {
+  if (!ts) return '';
+  var d = new Date(ts);
+  var h = d.getHours();
+  var m = String(d.getMinutes()).padStart(2, '0');
+  var period = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return h + ':' + m + ' ' + period;
+}
+
+function _aiDateSeparator(label) {
+  return '<div style="display:flex;align-items:center;gap:.625rem;' +
+           'margin:.25rem 0 .125rem;flex-shrink:0;">' +
+    '<div style="flex:1;height:1px;background:var(--border);"></div>' +
+    '<span style="font-size:.6875rem;font-weight:600;color:var(--text-4);' +
+      'white-space:nowrap;letter-spacing:.03em;">' + _escHtml(label) + '</span>' +
+    '<div style="flex:1;height:1px;background:var(--border);"></div>' +
+  '</div>';
+}
    
 function _openAiDrawer() {
   var pill = document.getElementById('vtxAiPill');
@@ -3054,8 +3108,7 @@ function _openAiDrawer() {
   var trigger = document.getElementById('vtxAiTrigger');
   if (!drawer || !sheet) return;
 
-  // ── Decide whether to replay saved messages ─
-  var messages       = document.getElementById('vtxAiMessages');
+  var messages        = document.getElementById('vtxAiMessages');
   var existingBubbles = messages
     ? messages.querySelectorAll('div[style*="flex-end"], div[style*="flex-start"]').length
     : 0;
@@ -3065,7 +3118,6 @@ function _openAiDrawer() {
   var storageKey = 'vtx_ai_history_' + (AppState.userId || 'anon');
 
   if (needsReplay) {
-    // DOM is fresh — restore history and rebuild bubbles from localStorage.
     try {
       var raw = localStorage.getItem(storageKey);
       if (raw) {
@@ -3085,30 +3137,52 @@ function _openAiDrawer() {
             var emptyState = document.getElementById('vtxAiEmptyState');
             if (emptyState) emptyState.style.display = 'none';
 
+            var lastDateLabel = '';
+
             saved.ui.forEach(function (msg) {
-              var bubble = document.createElement('div');
+              // Date separator
+              var msgTs    = msg.ts || saved.ts || now;
+              var dateLabel = _aiDateLabel(msgTs);
+              if (dateLabel !== lastDateLabel) {
+                lastDateLabel = dateLabel;
+                var sep = document.createElement('div');
+                sep.innerHTML = _aiDateSeparator(dateLabel);
+                messages.appendChild(sep.firstElementChild);
+              }
+
+              var timeStr = _aiTimeLabel(msgTs);
+              var bubble  = document.createElement('div');
+
               if (msg.role === 'user') {
-                bubble.style.cssText = 'display:flex;justify-content:flex-end;';
+                bubble.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:2px;';
                 bubble.innerHTML =
                   '<div style="max-width:78%;padding:.625rem .875rem;' +
                     'border-radius:var(--r-xl) var(--r-xl) var(--r-sm) var(--r-xl);' +
                     'background:var(--accent);color:#fff;' +
                     'font-size:.9rem;line-height:1.55;word-break:break-word;">' +
                     _escHtml(msg.text) +
-                  '</div>';
+                  '</div>' +
+                  (timeStr
+                    ? '<span style="font-size:.625rem;color:var(--text-4);padding-right:2px;">' + timeStr + '</span>'
+                    : '');
               } else {
-                bubble.style.cssText = 'display:flex;justify-content:flex-start;align-items:flex-end;gap:.5rem;';
+                bubble.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:2px;';
                 bubble.innerHTML =
-                  '<span style="display:inline-flex;align-items:center;justify-content:center;' +
-                    'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;align-self:flex-end;">' +
-                    '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>' +
-                  '</span>' +
-                  '<div style="max-width:82%;padding:.625rem .875rem;' +
-                    'border-radius:var(--r-sm) var(--r-xl) var(--r-xl) var(--r-xl);' +
-                    'background:var(--bg-subtle);border:1px solid var(--border);' +
-                    'font-size:.9rem;line-height:1.65;color:var(--text-1);word-break:break-word;">' +
-                    msg.html +
-                  '</div>';
+                  '<div style="display:flex;align-items:flex-end;gap:.5rem;">' +
+                    '<span style="display:inline-flex;align-items:center;justify-content:center;' +
+                      'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;">' +
+                      '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>' +
+                    '</span>' +
+                    '<div style="max-width:82%;padding:.625rem .875rem;' +
+                      'border-radius:var(--r-sm) var(--r-xl) var(--r-xl) var(--r-xl);' +
+                      'background:var(--bg-subtle);border:1px solid var(--border);' +
+                      'font-size:.9rem;line-height:1.65;color:var(--text-1);word-break:break-word;">' +
+                      msg.html +
+                    '</div>' +
+                  '</div>' +
+                  (timeStr
+                    ? '<span style="font-size:.625rem;color:var(--text-4);padding-left:34px;">' + timeStr + '</span>'
+                    : '');
               }
               messages.appendChild(bubble);
             });
@@ -3118,7 +3192,6 @@ function _openAiDrawer() {
             }, 60);
           }
         } else {
-          // Expired — purge
           localStorage.removeItem(storageKey);
           window._vtxAiHistory = [];
         }
@@ -3128,8 +3201,6 @@ function _openAiDrawer() {
     }
 
   } else {
-    // DOM bubbles are already present — drawer was just toggled closed/open.
-    // Only check recentActivity so the placeholder decision is still correct.
     try {
       var raw2 = localStorage.getItem(storageKey);
       if (raw2) {
@@ -3227,8 +3298,6 @@ function _sendAiMessage() {
   inp.value = '';
   inp.style.height = 'auto';
 
-  // Stop placeholder animation the moment the student sends their first message —
-  // it stays off for the rest of this drawer session.
   if (window._vtxPlaceholderCancel) {
     window._vtxPlaceholderCancel();
     window._vtxPlaceholderCancel = null;
@@ -3245,16 +3314,44 @@ function _sendAiMessage() {
   var messages = document.getElementById('vtxAiMessages');
   if (!messages) return;
 
+  var nowTs    = Date.now();
+  var timeStr  = _aiTimeLabel(nowTs);
+  var dateLabel = _aiDateLabel(nowTs);
+
+  // Date separator — insert if this is the first message or the date changed
+  var lastSep = messages.querySelector('.vtx-ai-date-sep:last-of-type');
+  var lastSepLabel = lastSep ? lastSep.getAttribute('data-label') : '';
+  if (dateLabel !== lastSepLabel) {
+    var sepEl = document.createElement('div');
+    sepEl.className = 'vtx-ai-date-sep';
+    sepEl.setAttribute('data-label', dateLabel);
+    sepEl.innerHTML = _aiDateSeparator(dateLabel);
+    // sepEl itself is the wrapper; append the inner child
+    var sepInner = document.createElement('div');
+    sepInner.className = 'vtx-ai-date-sep';
+    sepInner.setAttribute('data-label', dateLabel);
+    sepInner.style.cssText = 'display:flex;align-items:center;gap:.625rem;margin:.25rem 0 .125rem;flex-shrink:0;';
+    sepInner.innerHTML =
+      '<div style="flex:1;height:1px;background:var(--border);"></div>' +
+      '<span style="font-size:.6875rem;font-weight:600;color:var(--text-4);white-space:nowrap;letter-spacing:.03em;">' +
+        _escHtml(dateLabel) +
+      '</span>' +
+      '<div style="flex:1;height:1px;background:var(--border);"></div>';
+    messages.appendChild(sepInner);
+    messages.scrollTop = messages.scrollHeight;
+  }
+
   // Student bubble
   var studentBubble = document.createElement('div');
-  studentBubble.style.cssText = 'display:flex;justify-content:flex-end;animation:cbt-fade-in 160ms var(--ease) both;';
+  studentBubble.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:2px;animation:cbt-fade-in 160ms var(--ease) both;';
   studentBubble.innerHTML =
     '<div style="max-width:78%;padding:.625rem .875rem;' +
       'border-radius:var(--r-xl) var(--r-xl) var(--r-sm) var(--r-xl);' +
       'background:var(--accent);color:#fff;' +
       'font-size:.9rem;line-height:1.55;word-break:break-word;">' +
       _escHtml(text) +
-    '</div>';
+    '</div>' +
+    '<span style="font-size:.625rem;color:var(--text-4);padding-right:2px;">' + timeStr + '</span>';
   messages.appendChild(studentBubble);
   messages.scrollTop = messages.scrollHeight;
 
@@ -3285,7 +3382,6 @@ function _sendAiMessage() {
   window._vtxAiHistory.push({ role: 'user', content: text });
   if (window._vtxAiHistory.length > 12) window._vtxAiHistory = window._vtxAiHistory.slice(-12);
 
-  // ── Persist to localStorage — stamp lastActivityTs on every user send ──
   var storageKey = 'vtx_ai_history_' + (AppState.userId || 'anon');
   try {
     var existing = null;
@@ -3294,7 +3390,7 @@ function _sendAiMessage() {
       if (raw) existing = JSON.parse(raw);
     } catch (e) {}
     var uiLog = (existing && Array.isArray(existing.ui)) ? existing.ui : [];
-    uiLog.push({ role: 'user', text: text });
+    uiLog.push({ role: 'user', text: text, ts: nowTs });
     localStorage.setItem(storageKey, JSON.stringify({
       ts:             Date.now(),
       lastActivityTs: Date.now(),
@@ -3347,37 +3443,42 @@ function _sendAiMessage() {
     var msgs = document.getElementById('vtxAiMessages');
     if (!msgs) return;
 
+    var replyTs  = Date.now();
+    var replyTime = _aiTimeLabel(replyTs);
+    var rendered  = _renderAiText(replyText);
+
     var wrapper = document.createElement('div');
-    wrapper.style.cssText = 'display:flex;justify-content:flex-start;align-items:flex-end;gap:.5rem;animation:cbt-fade-in 160ms var(--ease) both;';
-    var replyId = 'vtxAiReplyTarget_' + Date.now();
+    wrapper.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:2px;animation:cbt-fade-in 160ms var(--ease) both;';
+    var replyId = 'vtxAiReplyTarget_' + replyTs;
     wrapper.innerHTML =
-      '<span style="display:inline-flex;align-items:center;justify-content:center;' +
-        'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;align-self:flex-end;">' +
-        '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>' +
-      '</span>' +
-      '<div id="' + replyId + '" style="max-width:82%;padding:.625rem .875rem;' +
-        'border-radius:var(--r-sm) var(--r-xl) var(--r-xl) var(--r-xl);' +
-        'background:var(--bg-subtle);border:1px solid var(--border);' +
-        'font-size:.9rem;line-height:1.65;color:var(--text-1);word-break:break-word;"></div>';
+      '<div style="display:flex;align-items:flex-end;gap:.5rem;">' +
+        '<span style="display:inline-flex;align-items:center;justify-content:center;' +
+          'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;">' +
+          '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>' +
+        '</span>' +
+        '<div id="' + replyId + '" style="max-width:82%;padding:.625rem .875rem;' +
+          'border-radius:var(--r-sm) var(--r-xl) var(--r-xl) var(--r-xl);' +
+          'background:var(--bg-subtle);border:1px solid var(--border);' +
+          'font-size:.9rem;line-height:1.65;color:var(--text-1);word-break:break-word;"></div>' +
+      '</div>' +
+      '<span style="font-size:.625rem;color:var(--text-4);padding-left:34px;">' + replyTime + '</span>';
     msgs.appendChild(wrapper);
     msgs.scrollTop = msgs.scrollHeight;
 
-    var targetEl = wrapper.lastElementChild;
-    var rendered = _renderAiText(replyText);
+    var targetEl = wrapper.querySelector('#' + replyId);
     _aiTypewriter(targetEl, replyText, msgs);
 
-    // Save AI reply to localStorage and refresh lastActivityTs
     var approxDuration = Math.min(replyText.length * 18, 8000) + 200;
     setTimeout(function () {
       try {
-        var sKey = 'vtx_ai_history_' + (AppState.userId || 'anon');
-        var raw2 = localStorage.getItem(sKey);
+        var sKey  = 'vtx_ai_history_' + (AppState.userId || 'anon');
+        var raw2  = localStorage.getItem(sKey);
         var saved2 = raw2 ? JSON.parse(raw2) : { ts: Date.now(), history: [], ui: [], lastActivityTs: Date.now() };
         saved2.history        = window._vtxAiHistory;
         saved2.ui             = saved2.ui || [];
-        saved2.ui.push({ role: 'assistant', html: rendered });
+        saved2.ui.push({ role: 'assistant', html: rendered, ts: replyTs });
         saved2.ts             = Date.now();
-        saved2.lastActivityTs = Date.now();  // refreshed on reply too
+        saved2.lastActivityTs = Date.now();
         localStorage.setItem(sKey, JSON.stringify(saved2));
       } catch (e) {}
     }, approxDuration);
