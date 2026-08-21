@@ -2394,24 +2394,64 @@
   function _escAttr(str) { return _escHtml(str).replace(/'/g,'&#39;'); }
 
    function _renderAiText(str) {
-    if (str == null) return '';
-    // 1. Escape HTML
-    var safe = String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;');
-    // 2. Bold: **text** → <strong>text</strong>
-    safe = safe.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
-    // 3. Convert double newlines → paragraph breaks, single newlines → <br>
-    var paras = safe.split(/\n\n+/);
-    safe = paras.map(function (p) {
-      return '<p style="margin:0 0 .6em 0;">' + p.replace(/\n/g, '<br>') + '</p>';
-    }).join('');
-    // 4. Strip trailing empty paragraph
-    safe = safe.replace(/<p[^>]*><\/p>$/g, '');
-    return safe;
-  }
+  if (str == null) return '';
+
+  // 1. Escape HTML first
+  var safe = String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+
+  // 2. Bold: **text** → <strong>text</strong>
+  safe = safe.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
+
+  // 3. Italic: *text* or _text_ → <em>text</em>
+  safe = safe.replace(/\*([^*\n]+?)\*/g, '<em>$1</em>');
+  safe = safe.replace(/_([^_\n]+?)_/g, '<em>$1</em>');
+
+  // 4. Headings: ###, ##, # at the start of a line → styled paragraph
+  safe = safe.replace(/^######\s+(.+)$/gm, '<p style="margin:0 0 .4em 0;font-size:.8rem;font-weight:700;color:var(--text-2);">$1</p>');
+  safe = safe.replace(/^#####\s+(.+)$/gm,  '<p style="margin:0 0 .4em 0;font-size:.8125rem;font-weight:700;color:var(--text-2);">$1</p>');
+  safe = safe.replace(/^####\s+(.+)$/gm,   '<p style="margin:0 0 .45em 0;font-size:.875rem;font-weight:700;color:var(--text-1);">$1</p>');
+  safe = safe.replace(/^###\s+(.+)$/gm,    '<p style="margin:0 0 .5em 0;font-size:.9375rem;font-weight:700;color:var(--text-1);">$1</p>');
+  safe = safe.replace(/^##\s+(.+)$/gm,     '<p style="margin:0 0 .5em 0;font-size:1rem;font-weight:700;color:var(--text-1);">$1</p>');
+  safe = safe.replace(/^#\s+(.+)$/gm,      '<p style="margin:0 0 .5em 0;font-size:1.0625rem;font-weight:700;color:var(--text-1);">$1</p>');
+
+  // 5. Horizontal rules: --- or *** or ___ on their own line → <hr>
+  safe = safe.replace(/^[\s]*[-*_]{3,}[\s]*$/gm, '<hr style="border:none;border-top:1px solid var(--border);margin:.6em 0;">');
+
+  // 6. Unordered list items: lines starting with - or * or •
+  safe = safe.replace(/^[\s]*[-*•]\s+(.+)$/gm, '<li style="margin:.2em 0;">$1</li>');
+
+  // 7. Ordered list items: lines starting with 1. 2. etc.
+  safe = safe.replace(/^[\s]*(\d+)\.\s+(.+)$/gm, '<li style="margin:.2em 0;"><span style="font-weight:600;margin-right:.3em;">$1.</span>$2</li>');
+
+  // 8. Wrap consecutive <li> runs in a <ul> or <ol> container.
+  // Since we can't distinguish ul from ol easily at this stage, wrap all in a
+  // generic list container — the numbering is already in the text for ol items.
+  safe = safe.replace(/(<li[^>]*>[\s\S]*?<\/li>)(\s*<li[^>]*>[\s\S]*?<\/li>)*/g, function (match) {
+    return '<ul style="margin:.4em 0 .6em 1.1em;padding:0;list-style:none;">' + match + '</ul>';
+  });
+
+  // 9. Convert double newlines → paragraph breaks, single newlines → <br>
+  //    But skip lines that are already block-level HTML (headings/hr/ul we just made)
+  var lines = safe.split(/\n\n+/);
+  safe = lines.map(function (block) {
+    // If the block is already an HTML block element, don't wrap it in <p>
+    if (/^<(p|ul|ol|li|hr|div|h[1-6])[^>]*>/.test(block.trim())) {
+      return block;
+    }
+    var inner = block.replace(/\n/g, '<br>');
+    if (!inner.trim()) return '';
+    return '<p style="margin:0 0 .6em 0;">' + inner + '</p>';
+  }).join('');
+
+  // 10. Strip trailing empty paragraph
+  safe = safe.replace(/<p[^>]*>\s*<\/p>$/g, '');
+
+  return safe;
+}
    
 /* ─────────────────────────────────────────────────────── */
   /* Timetable PDF download (student)                        */
