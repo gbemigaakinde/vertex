@@ -1331,14 +1331,23 @@ function cancel() {
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
   }
 
-     function _renderAiText(str) {
+  function _renderAiText(str) {
     if (str == null) return '';
+    // 1. Escape HTML
     var safe = String(str)
       .replace(/&/g, '&amp;')
       .replace(/</g, '&lt;')
       .replace(/>/g, '&gt;')
       .replace(/"/g, '&quot;');
+    // 2. Bold: **text** → <strong>text</strong>
     safe = safe.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
+    // 3. Convert double newlines → paragraph breaks, single newlines → <br>
+    var paras = safe.split(/\n\n+/);
+    safe = paras.map(function (p) {
+      return '<p style="margin:0 0 .6em 0;">' + p.replace(/\n/g, '<br>') + '</p>';
+    }).join('');
+    // 4. Strip trailing empty paragraph
+    safe = safe.replace(/<p[^>]*><\/p>$/g, '');
     return safe;
   }
    
