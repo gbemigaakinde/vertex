@@ -498,7 +498,7 @@ function cancel() {
   if (_chromePauseWatchdog) { clearInterval(_chromePauseWatchdog); _chromePauseWatchdog = null; }
   _ttsQueue      = [];
   _ttsActive     = false;
-  _onDoneCallback = null;  // discard — user cancelled
+  _onDoneCallback = null; 
   _synth.cancel();
   _setTtsBtn(false);
   _hookTtsBtnState(false);
@@ -565,8 +565,8 @@ function cancel() {
   var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
   _recognition.continuous      = !isIOS;
-  _recognition.interimResults  = true;   // changed: true so partial results show activity
-  _recognition.maxAlternatives = 5;      // changed: more alternatives = better accent matching
+  _recognition.interimResults  = true;   
+  _recognition.maxAlternatives = 5;     
   // en-NG is better for Nigerian English accent on Chrome/Edge than en-US
   _recognition.lang = 'en-NG';
 
@@ -796,9 +796,8 @@ function cancel() {
     /* ════════════════════════════════════════════════════════
     GROQ and OPENROUTER AI — Student question answering
   ════════════════════════════════════════════════════════ */
-
-  // API keys are now stored in the Cloudflare Worker.
-  var _WORKER_URL        = 'https://vertex-worker.gbemigaakinde.workers.dev/ai';
+  // All AI calls route through the Cloudflare Worker.
+  var _WORKER_URL = 'https://vertex-worker.gbemigaakinde.workers.dev/ai';
 
   var _GROQ_MODEL_PRIMARY  = 'openai/gpt-oss-120b';
   var _GROQ_MODEL_FALLBACK = 'openai/gpt-oss-20b';
@@ -806,38 +805,24 @@ function cancel() {
   var _OR_MODEL_PRIMARY  = 'openrouter/auto';
   var _OR_MODEL_FALLBACK = 'meta-llama/llama-3.3-70b-instruct:free';
 
-  var _GEMINI_MODEL = 'gemini-3.7-flash';
+  var _GEMINI_MODEL = 'gemini-2.0-flash';
 
    /*
    * _askGroq
-   * Sends a prompt directly to Groq's OpenAI-compatible API.
-   * callback(err, answerText)
-   * Tries llama-3.3-70b-versatile first; if rate-limited, retries with llama-3.1-8b-instant.
    */
- function _askGroq(systemPrompt, userPrompt, callback, _isRetry) {
+  function _askGroq(intentPayload, callback, _isRetry) {
     var model = _isRetry ? _GROQ_MODEL_FALLBACK : _GROQ_MODEL_PRIMARY;
 
     fetch(_WORKER_URL, {
-      method: 'POST',
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        provider: 'groq',
-        payload: {
-          model:       model,
-          max_tokens:  1024,
-          temperature: 0.4,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user',   content: userPrompt   },
-          ],
-        },
-      }),
+      body:    JSON.stringify(Object.assign({}, intentPayload, { provider: 'groq', model: model })),
     })
     .then(function (res) {
       if (!res.ok) {
         if ((res.status === 429 || res.status === 503 || res.status === 404) && !_isRetry) {
-          console.warn('[SpeechEngine] Groq ' + _GROQ_MODEL_PRIMARY + ' failed (' + res.status + ') — retrying with ' + _GROQ_MODEL_FALLBACK);
-          _askGroq(systemPrompt, userPrompt, callback, true);
+          console.warn('[SpeechEngine] Groq primary failed (' + res.status + ') — retrying with fallback.');
+          _askGroq(intentPayload, callback, true);
           return null;
         }
         return res.json().then(function (body) {
@@ -858,41 +843,32 @@ function cancel() {
                  data.choices[0].message &&
                  data.choices[0].message.content;
       if (!text || !text.trim()) {
-        if (!_isRetry) {
-          _askGroq(systemPrompt, userPrompt, callback, true);
-          return;
-        }
+        if (!_isRetry) { _askGroq(intentPayload, callback, true); return; }
         callback('groq_empty', null);
         return;
       }
       if (finishReason === 'length') {
-        var continuationMessages = [
-          { role: 'system', content: systemPrompt },
-          { role: 'user',   content: userPrompt   },
-          { role: 'assistant', content: text.trim() },
-          { role: 'user', content: 'Please continue from where you stopped. Do not repeat anything already written. Continue directly.' },
-        ];
+        // Ask the Worker to continue — pass the partial reply back as history
+        var continuationPayload = Object.assign({}, intentPayload, {
+          provider: 'groq',
+          model:    model,
+          intent:   'tutor_chat',
+          history:  (intentPayload.history || []).concat([
+            { role: 'assistant', content: text.trim() },
+            { role: 'user',      content: 'Please continue from where you stopped. Do not repeat anything already written. Continue directly.' },
+          ]),
+        });
         fetch(_WORKER_URL, {
-          method: 'POST',
+          method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            provider: 'groq',
-            payload: {
-              model:       model,
-              max_tokens:  1024,
-              temperature: 0.4,
-              messages:    continuationMessages,
-            },
-          }),
+          body:    JSON.stringify(continuationPayload),
         })
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (d) {
           var extra = d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
           callback(null, (text.trim() + '\n\n' + (extra ? extra.trim() : '')).trim());
         })
-        .catch(function () {
-          callback(null, text.trim());
-        });
+        .catch(function () { callback(null, text.trim()); });
         return;
       }
       callback(null, text.trim());
@@ -905,33 +881,20 @@ function cancel() {
 
   /*
    * _askOpenRouter
-   * Fallback engine — only called when Groq fails entirely.
-   * callback(err, answerText)
    */
-  function _askOpenRouter(systemPrompt, userPrompt, callback, _isRetry) {
+   function _askOpenRouter(intentPayload, callback, _isRetry) {
     var model = _isRetry ? _OR_MODEL_FALLBACK : _OR_MODEL_PRIMARY;
 
     fetch(_WORKER_URL, {
-      method: 'POST',
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        provider: 'openrouter',
-        payload: {
-          model:       model,
-          max_tokens:  1024,
-          temperature: 0.4,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user',   content: userPrompt   },
-          ],
-        },
-      }),
+      body:    JSON.stringify(Object.assign({}, intentPayload, { provider: 'openrouter', model: model })),
     })
     .then(function (res) {
       if (!res.ok) {
         if (!_isRetry) {
-          console.warn('[SpeechEngine] OpenRouter primary failed (' + res.status + ') — retrying with fallback model');
-          _askOpenRouter(systemPrompt, userPrompt, callback, true);
+          console.warn('[SpeechEngine] OpenRouter primary failed (' + res.status + ') — retrying with fallback.');
+          _askOpenRouter(intentPayload, callback, true);
           return null;
         }
         return res.json().then(function (body) {
@@ -952,68 +915,47 @@ function cancel() {
                  data.choices[0].message &&
                  data.choices[0].message.content;
       if (!text || !text.trim()) {
-        if (!_isRetry) {
-          _askOpenRouter(systemPrompt, userPrompt, callback, true);
-          return;
-        }
+        if (!_isRetry) { _askOpenRouter(intentPayload, callback, true); return; }
         callback('Empty response from AI.', null);
         return;
       }
       if (finishReason === 'length') {
-        var continuationMessages = [
-          { role: 'system', content: systemPrompt },
-          { role: 'user',   content: userPrompt   },
-          { role: 'assistant', content: text.trim() },
-          { role: 'user', content: 'Please continue from where you stopped. Do not repeat anything already written. Continue directly.' },
-        ];
+        var continuationPayload = Object.assign({}, intentPayload, {
+          provider: 'openrouter',
+          model:    model,
+          intent:   'tutor_chat',
+          history:  (intentPayload.history || []).concat([
+            { role: 'assistant', content: text.trim() },
+            { role: 'user',      content: 'Please continue from where you stopped. Do not repeat anything already written. Continue directly.' },
+          ]),
+        });
         fetch(_WORKER_URL, {
-          method: 'POST',
+          method:  'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            provider: 'openrouter',
-            payload: {
-              model:       model,
-              max_tokens:  1024,
-              temperature: 0.4,
-              messages:    continuationMessages,
-            },
-          }),
+          body:    JSON.stringify(continuationPayload),
         })
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (d) {
           var extra = d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
           callback(null, (text.trim() + '\n\n' + (extra ? extra.trim() : '')).trim());
         })
-        .catch(function () {
-          callback(null, text.trim());
-        });
+        .catch(function () { callback(null, text.trim()); });
         return;
       }
       callback(null, text.trim());
     })
     .catch(function (err) {
       console.error('[SpeechEngine] OpenRouter fetch error:', err);
-      if (!_isRetry) {
-        _askOpenRouter(systemPrompt, userPrompt, callback, true);
-        return;
-      }
+      if (!_isRetry) { _askOpenRouter(intentPayload, callback, true); return; }
       callback('Could not reach the AI server. Please check your internet connection.', null);
     });
   }
 
-  function _askGemini(systemPrompt, userPrompt, callback) {
+   function _askGemini(intentPayload, callback) {
     fetch(_WORKER_URL, {
-      method: 'POST',
+      method:  'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        provider: 'gemini',
-        payload: {
-          model: _GEMINI_MODEL,
-          system_instruction: { parts: [{ text: systemPrompt }] },
-          contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-          generationConfig: { maxOutputTokens: 1024, temperature: 0.4 },
-        },
-      }),
+      body:    JSON.stringify(Object.assign({}, intentPayload, { provider: 'gemini', model: _GEMINI_MODEL })),
     })
     .then(function (res) {
       if (!res.ok) {
@@ -1049,218 +991,150 @@ function cancel() {
 
   /*
    * _askAI  ← THE MAIN DISPATCHER
-   * Called by all explanation/query functions instead of calling
-   * _askOpenRouter directly. Tries Groq first; if Groq fails
-   * entirely, falls back to OpenRouter automatically.
-   * callback(err, answerText)
    */
-  function _askAI(systemPrompt, userPrompt, callback) {
+   function _askAI(intentPayload, callback) {
     console.log('[SpeechEngine] Trying Groq first…');
-    _askGroq(systemPrompt, userPrompt, function (err, text) {
+    _askGroq(intentPayload, function (err, text) {
       if (!err && text) {
         console.log('[SpeechEngine] Groq answered successfully.');
         callback(null, text);
         return;
       }
       console.warn('[SpeechEngine] Groq failed (' + err + ') — trying Gemini.');
-      _askGemini(systemPrompt, userPrompt, function (err2, text2) {
+      _askGemini(intentPayload, function (err2, text2) {
         if (!err2 && text2) {
           console.log('[SpeechEngine] Gemini answered successfully.');
           callback(null, text2);
           return;
         }
         console.warn('[SpeechEngine] Gemini failed (' + err2 + ') — falling back to OpenRouter.');
-        _askOpenRouter(systemPrompt, userPrompt, callback, false);
+        _askOpenRouter(intentPayload, callback, false);
       });
     });
-  }
-
-  /*
-   * _buildAISystemPrompt
-   * Creates a subject-aware system prompt so the AI stays on topic
-   * and gives age-appropriate primary/junior-secondary school answers.
-   */
- function _buildAISystemPrompt(subj) {
-  return (
-    'You are Master Timothy AI, a helpful, friendly and knowledgeable tutor at Vertex Tutorial Centre in Lagos, Nigeria. ' +
-    'Explain concepts clearly, accurately and concisely for junior and senior secondary school students. ' +
-    'The current subject is: ' + (subj || 'General Science') + '. ' +
-    'RESPONSE LENGTH: Give a COMPLETE answer. Never stop mid-step or mid-sentence. ' +
-    'For calculation problems, always show ALL steps from start to finish, including the final numerical answer. ' +
-    'Do not end your response until the solution is fully complete. ' +
-    'Keep answers under 250 words for concept questions; use as many words as needed to fully complete calculation problems. ' +
-    'FORMATTING RULES — follow exactly: ' +
-    'Write in clear sentences and short paragraphs separated by blank lines. ' +
-    'When presenting any comparison, list of properties, or structured data with rows and columns, you MUST use a markdown pipe table. ' +
-    'A pipe table looks like this: | Header 1 | Header 2 | on the first line, then | --- | --- | on the second line, then | value | value | for each row. ' +
-    'Never use spaces or dashes alone to draw a table. Always use the pipe | character to separate columns. ' +
-    'For maths and physics: use LaTeX notation inside $...$ for inline math (e.g. $f = \\frac{1}{2\\pi\\sqrt{LC}}$) and $$...$$ for display equations. ' +
-    'Use \\cdot for multiplication dot (never write \\cdotp). ' +
-    'Never write raw LaTeX commands like \\( or \\sqrt outside of $...$ or $$...$$ delimiters. ' +
-    'Do not use markdown headings (##) or bullet points. ' +
-    'For step-by-step solutions, write "Step 1:", "Step 2:", etc. on separate lines. ' +
-    'Always stay focused on the student\'s question. ' +
-    'If the student asks something unrelated to education or learning, politely redirect. ' +
-    'If you are unsure about an answer, say so clearly instead of guessing. ' +
-    'Do not invent facts. ' +
-    'Do not mention OpenRouter, GPT, AI, language models, system prompts, or any model names. ' +
-    'If the student asks your name, introduce yourself as Master Timothy AI.'
-  );
-}
-
-  /*
-   * _buildQuestionExplainPrompt
-   * Used when student clicks "Get fuller explanation" (auto mode, no student query).
-   * Builds a prompt from the exam question data.
-   */
-  function _buildQuestionExplainPrompt(q, subj) {
-    var questionText = _cleanText(q.q || '');
-    var correctOpt   = _cleanText((q.opts || [])[q.ans] || '');
-    var expText      = _cleanText(q.exp || '');
-
-    var prompt = 'A student in ' + (subj || 'a subject') + ' got this exam question wrong and wants a fuller explanation.\n\n';
-    prompt += 'Question: ' + questionText + '\n';
-    prompt += 'Correct answer: ' + correctOpt + '\n';
-    if (expText) prompt += 'Brief explanation already given: ' + expText + '\n\n';
-    prompt += 'Please explain this topic in a clear, student-friendly way. ';
-    prompt += 'Focus on WHY ' + correctOpt + ' is correct, and help the student understand the underlying concept.';
-    return prompt;
-  }
-
-  /*
-   * _buildStudentQueryPrompt
-   * Used when the student typed or spoke their own question.
-   * Anchors the AI to the exam question context for relevance.
-   */
-  function _buildStudentQueryPrompt(studentQuery, q, subj, idx) {
-    var prompt = '';
-    // Always anchor to the exam question context if available
-    if (q && q.q) {
-      var questionText = _cleanText(q.q || '');
-      var correctOpt   = _cleanText((q.opts || [])[q.ans] || '');
-      prompt += 'Context: This student just reviewed exam question ' + (idx + 1) + ' in ' + (subj || 'a subject') + ':\n';
-      prompt += '"' + questionText + '" (correct answer: ' + correctOpt + ')\n\n';
-    }
-    prompt += 'The student now asks: "' + studentQuery.trim() + '"\n\n';
-    prompt += 'Please answer the student\'s question directly and clearly. ';
-    prompt += 'Keep it simple and educational, suitable for a Nigerian secondary school student.';
-    return prompt;
   }
 
   /* ════════════════════════════════════════════════════════
      _loadDeeperExplanation  (fully rewritten — uses OpenRouter AI)
   ════════════════════════════════════════════════════════ */
- function _loadDeeperExplanation(q, subj, idx, studentQuery) {
-  var deepResult = document.getElementById('seExplainDeepResult');
-  var deeperWrap = document.getElementById('seExplainDeeperWrap');
-  var askWrap    = document.getElementById('seExplainAskWrap');
-  if (!deepResult) return;
+  function _loadDeeperExplanation(q, subj, idx, studentQuery) {
+    var deepResult = document.getElementById('seExplainDeepResult');
+    var deeperWrap = document.getElementById('seExplainDeeperWrap');
+    var askWrap    = document.getElementById('seExplainAskWrap');
+    if (!deepResult) return;
 
-  _awaitingStudentQuestion = false;
-  _awaitingDeeperAnswer    = false;
+    _awaitingStudentQuestion = false;
+    _awaitingDeeperAnswer    = false;
 
-  deepResult.style.display = 'block';
-  deepResult.innerHTML =
-    '<div class="se-explain-loading">' +
-      '<span class="se-explain-spinner"></span>' +
-      (studentQuery ? 'Looking up your question…' : 'Generating explanation…') +
-    '</div>';
-  if (deeperWrap) deeperWrap.style.display = 'none';
-  if (askWrap)    askWrap.style.display    = 'none';
+    deepResult.style.display = 'block';
+    deepResult.innerHTML =
+      '<div class="se-explain-loading">' +
+        '<span class="se-explain-spinner"></span>' +
+        (studentQuery ? 'Looking up your question…' : 'Generating explanation…') +
+      '</div>';
+    if (deeperWrap) deeperWrap.style.display = 'none';
+    if (askWrap)    askWrap.style.display    = 'none';
 
-  var isStudentQuery = !!(studentQuery && studentQuery.trim().length > 2);
+    var isStudentQuery = !!(studentQuery && studentQuery.trim().length > 2);
 
-  var systemPrompt = _buildAISystemPrompt(subj);
-  var userPrompt   = isStudentQuery
-    ? _buildStudentQueryPrompt(studentQuery, q, subj, idx || 0)
-    : _buildQuestionExplainPrompt(q || { q: '', opts: [], ans: 0, exp: '' }, subj);
+    // Build a plain intent payload
+    var studentData = (window.AppState && window.AppState.studentData) || {};
+    var intentPayload = {
+      intent:       isStudentQuery ? 'student_query' : 'explain_question',
+      subject:      subj || '',
+      studentName:  studentData.name  || '',
+      studentClass: studentData.class || '',
+      questionText:     (q && q.q)   ? _cleanText(q.q)                    : '',
+      correctAnswer:    (q && q.opts) ? _cleanText(q.opts[q.ans] || '')    : '',
+      briefExplanation: (q && q.exp)  ? _cleanText(q.exp)                  : '',
+      questionIndex:    typeof idx === 'number' ? idx : 0,
+      studentQuery:     isStudentQuery ? studentQuery.trim() : '',
+    };
 
-  console.log('[SpeechEngine] AI query:', isStudentQuery ? 'student: ' + studentQuery : 'auto explain');
+    console.log('[SpeechEngine] AI intent:', intentPayload.intent);
 
-  _askAI(systemPrompt, userPrompt, function (err, answerText) {
-    if (!document.getElementById('seExplainModal')) return;
+    _askAI(intentPayload, function (err, answerText) {
+      if (!document.getElementById('seExplainModal')) return;
 
-    if (err || !answerText) {
-      var errMsg = 'Sorry, I could not get an explanation right now. ' +
-                   (err || 'Please check your internet connection and try again.');
-      deepResult.setAttribute('data-plain', '');
+      if (err || !answerText) {
+        var errMsg = 'Sorry, I could not get an explanation right now. ' +
+                     (err || 'Please check your internet connection and try again.');
+        deepResult.setAttribute('data-plain', '');
+        deepResult.innerHTML =
+          '<div class="se-explain-deep-content se-explain-deep-local">' +
+            '<div class="se-explain-deep-src">' +
+              '<span class="se-explain-wiki-badge se-explain-wiki-badge--local">' +
+                '<i class="ph ph-warning" style="font-size:.75rem;vertical-align:middle;"></i> Error' +
+              '</span>' +
+              '<strong>Could not load explanation</strong>' +
+            '</div>' +
+            '<p class="se-explain-deep-text">' + _escHtml(errMsg) + '</p>' +
+            '<button class="se-explain-deeper-btn" id="seExplainRetryBtn" style="margin-top:.5rem;">' +
+              '<i class="ph ph-arrow-clockwise"></i> Try again' +
+            '</button>' +
+          '</div>';
+
+        var retryBtn = document.getElementById('seExplainRetryBtn');
+        if (retryBtn && _deeperContext) {
+          (function (capturedQuery) {
+            retryBtn.addEventListener('click', function () {
+              _loadDeeperExplanation(_deeperContext.q, _deeperContext.subj, _deeperContext.idx, capturedQuery || null);
+            });
+          })(studentQuery);
+        }
+
+        speak(errMsg);
+        return;
+      }
+
+      deepResult.setAttribute('data-plain', answerText);
       deepResult.innerHTML =
-        '<div class="se-explain-deep-content se-explain-deep-local">' +
+        '<div class="se-explain-deep-content">' +
           '<div class="se-explain-deep-src">' +
-            '<span class="se-explain-wiki-badge se-explain-wiki-badge--local">' +
-              '<i class="ph ph-warning" style="font-size:.75rem;vertical-align:middle;"></i> Error' +
+            '<span class="se-explain-wiki-badge" style="background:var(--accent);">' +
+              '<i class="ph ph-brain" style="font-size:.7rem;vertical-align:middle;"></i> AI Tutor' +
             '</span>' +
-            '<strong>Could not load explanation</strong>' +
+            '<strong>' + _escHtml(isStudentQuery ? 'Answer to your question' : 'Fuller explanation') + '</strong>' +
           '</div>' +
-          '<p class="se-explain-deep-text">' + _escHtml(errMsg) + '</p>' +
-          '<button class="se-explain-deeper-btn" id="seExplainRetryBtn" style="margin-top:.5rem;">' +
-            '<i class="ph ph-arrow-clockwise"></i> Try again' +
+          '<div class="se-explain-deep-text">' + _renderAiText(answerText) + '</div>' +
+          '<button class="se-explain-deeper-btn" id="seExplainFollowUpBtn" style="margin-top:.75rem;">' +
+            '<i class="ph ph-chat-circle-text"></i> Ask a follow-up question' +
           '</button>' +
         '</div>';
 
-      var retryBtn = document.getElementById('seExplainRetryBtn');
-      if (retryBtn && _deeperContext) {
-        (function (capturedQuery) {
-          retryBtn.addEventListener('click', function () {
-            _loadDeeperExplanation(_deeperContext.q, _deeperContext.subj, _deeperContext.idx, capturedQuery || null);
-          });
-        })(studentQuery);
-      }
-
-      speak(errMsg);
-      return;
-    }
-
-    deepResult.setAttribute('data-plain', answerText);
-    deepResult.innerHTML =
-      '<div class="se-explain-deep-content">' +
-        '<div class="se-explain-deep-src">' +
-          '<span class="se-explain-wiki-badge" style="background:var(--accent);">' +
-            '<i class="ph ph-brain" style="font-size:.7rem;vertical-align:middle;"></i> AI Tutor' +
-          '</span>' +
-          '<strong>' + _escHtml(isStudentQuery ? 'Answer to your question' : 'Fuller explanation') + '</strong>' +
-        '</div>' +
-        '<div class="se-explain-deep-text">' + _renderAiText(answerText) + '</div>' +
-        '<button class="se-explain-deeper-btn" id="seExplainFollowUpBtn" style="margin-top:.75rem;">' +
-          '<i class="ph ph-chat-circle-text"></i> Ask a follow-up question' +
-        '</button>' +
-      '</div>';
-
-    // ── Render KaTeX on the explanation content ──
-    requestAnimationFrame(function () {
-      if (window._katexAutoRenderReady && window.renderMathInElement) {
-        try {
-          renderMathInElement(deepResult, {
-            delimiters: [
-              { left: '$$', right: '$$', display: true  },
-              { left: '$',  right: '$',  display: false },
-              { left: '\\(', right: '\\)', display: false },
-              { left: '\\[', right: '\\]', display: true  },
-            ],
-            throwOnError: false,
-            errorColor: '#cc0000',
-          });
-        } catch (err) { console.warn('[KaTeX] Explanation modal render error:', err); }
-      }
-    });
-
-    var followUpBtn = document.getElementById('seExplainFollowUpBtn');
-    if (followUpBtn && askWrap) {
-      followUpBtn.addEventListener('click', function () {
-        followUpBtn.style.display = 'none';
-        if (askWrap) {
-          askWrap.style.display = '';
-          var inp = document.getElementById('seExplainAskInput');
-          if (inp) { inp.value = ''; inp.focus(); }
+      requestAnimationFrame(function () {
+        if (window._katexAutoRenderReady && window.renderMathInElement) {
+          try {
+            renderMathInElement(deepResult, {
+              delimiters: [
+                { left: '$$', right: '$$', display: true  },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false },
+                { left: '\\[', right: '\\]', display: true  },
+              ],
+              throwOnError: false,
+              errorColor: '#cc0000',
+            });
+          } catch (err) { console.warn('[KaTeX] Explanation modal render error:', err); }
         }
       });
-    }
 
-    if (document.getElementById('seExplainModal')) {
-      speak(answerText);
-    }
-  });
-}
+      var followUpBtn = document.getElementById('seExplainFollowUpBtn');
+      if (followUpBtn && askWrap) {
+        followUpBtn.addEventListener('click', function () {
+          followUpBtn.style.display = 'none';
+          if (askWrap) {
+            askWrap.style.display = '';
+            var inp = document.getElementById('seExplainAskInput');
+            if (inp) { inp.value = ''; inp.focus(); }
+          }
+        });
+      }
+
+      if (document.getElementById('seExplainModal')) {
+        speak(answerText);
+      }
+    });
+  }
   
     function _showExplanationModal(questionNumber, subjectName) {
     var exam   = _resultsExam;
@@ -2024,24 +1898,32 @@ function _renderAiText(str) {
       if (sttBtn) sttBtn.click();
     },
   };
-  // Shared AI bridge for exam.js drawer — accepts a pre-built messages array.
+  // Shared AI bridge for exam.js drawer.
   window._vtxAskAI = function (messagesPayload, callback) {
 
-    /* ── Groq helper ── */
+    // exam.js passes a full messages array including a system message.
+    // Strip the system message here — the Worker will rebuild it.
+    var history = (messagesPayload || []).filter(function (m) {
+      return m.role !== 'system';
+    });
+
+    // Pull student context from AppState so the Worker can personalise the prompt.
+    var studentData = (window.AppState && window.AppState.studentData) || {};
+
+    var basePayload = {
+      intent:       'tutor_chat',
+      subject:      studentData.class || '',   // class is used as subject context in the drawer
+      studentName:  studentData.name  || '',
+      studentClass: studentData.class || '',
+      history:      history,
+    };
+
     function _tryGroq(isRetry) {
       var model = isRetry ? _GROQ_MODEL_FALLBACK : _GROQ_MODEL_PRIMARY;
       fetch(_WORKER_URL, {
-        method: 'POST',
+        method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          provider: 'groq',
-          payload: {
-            model:       model,
-            max_tokens:  1024,
-            temperature: 0.4,
-            messages:    messagesPayload,
-          },
-        }),
+        body:    JSON.stringify(Object.assign({}, basePayload, { provider: 'groq', model: model })),
       })
       .then(function (res) {
         if (!res.ok) {
@@ -2065,22 +1947,18 @@ function _renderAiText(str) {
           throw new Error('groq_empty');
         }
         if (finishReason === 'length') {
-          var continuationPayload = messagesPayload.concat([
-            { role: 'assistant', content: text.trim() },
-            { role: 'user', content: 'Please continue from where you stopped. Do not repeat anything already written. Continue directly.' },
-          ]);
+          var continuationPayload = Object.assign({}, basePayload, {
+            provider: 'groq',
+            model:    model,
+            history:  history.concat([
+              { role: 'assistant', content: text.trim() },
+              { role: 'user',      content: 'Please continue from where you stopped. Do not repeat anything already written. Continue directly.' },
+            ]),
+          });
           fetch(_WORKER_URL, {
-            method: 'POST',
+            method:  'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              provider: 'groq',
-              payload: {
-                model:       model,
-                max_tokens:  1024,
-                temperature: 0.4,
-                messages:    continuationPayload,
-              },
-            }),
+            body:    JSON.stringify(continuationPayload),
           })
           .then(function (r) { return r.ok ? r.json() : null; })
           .then(function (d) {
@@ -2098,35 +1976,11 @@ function _renderAiText(str) {
       });
     }
 
-    /* ── Gemini helper ── */
     function _tryGemini(isRetry) {
-      // Convert OpenAI messages array to Gemini native format
-      var systemText = '';
-      var contents = [];
-      messagesPayload.forEach(function (msg) {
-        if (msg.role === 'system') {
-          systemText += msg.content + '\n';
-        } else {
-          contents.push({
-            role:  msg.role === 'assistant' ? 'model' : 'user',
-            parts: [{ text: msg.content }],
-          });
-        }
-      });
-
-      var geminiBody = {
-        model:            _GEMINI_MODEL,
-        contents:         contents,
-        generationConfig: { maxOutputTokens: 1024, temperature: 0.4 },
-      };
-      if (systemText.trim()) {
-        geminiBody.system_instruction = { parts: [{ text: systemText.trim() }] };
-      }
-
       fetch(_WORKER_URL, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ provider: 'gemini', payload: geminiBody }),
+        body:    JSON.stringify(Object.assign({}, basePayload, { provider: 'gemini', model: _GEMINI_MODEL })),
       })
       .then(function (res) {
         if (!res.ok) {
@@ -2159,21 +2013,12 @@ function _renderAiText(str) {
       });
     }
 
-    /* ── OpenRouter helper ── */
     function _tryOR(isORRetry) {
       var orModel = isORRetry ? _OR_MODEL_FALLBACK : _OR_MODEL_PRIMARY;
       fetch(_WORKER_URL, {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          provider: 'openrouter',
-          payload: {
-            model:       orModel,
-            max_tokens:  1024,
-            temperature: 0.4,
-            messages:    messagesPayload,
-          },
-        }),
+        body:    JSON.stringify(Object.assign({}, basePayload, { provider: 'openrouter', model: orModel })),
       })
       .then(function (res) {
         if (!res.ok) {
@@ -2194,22 +2039,18 @@ function _renderAiText(str) {
           throw new Error('or_empty');
         }
         if (finishReason === 'length') {
-          var continuationPayload = messagesPayload.concat([
-            { role: 'assistant', content: text.trim() },
-            { role: 'user', content: 'Please continue from where you stopped. Do not repeat anything already written. Continue directly.' },
-          ]);
+          var continuationPayload = Object.assign({}, basePayload, {
+            provider: 'openrouter',
+            model:    orModel,
+            history:  history.concat([
+              { role: 'assistant', content: text.trim() },
+              { role: 'user',      content: 'Please continue from where you stopped. Do not repeat anything already written. Continue directly.' },
+            ]),
+          });
           fetch(_WORKER_URL, {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              provider: 'openrouter',
-              payload: {
-                model:       orModel,
-                max_tokens:  1024,
-                temperature: 0.4,
-                messages:    continuationPayload,
-              },
-            }),
+            body:    JSON.stringify(continuationPayload),
           })
           .then(function (r) { return r.ok ? r.json() : null; })
           .then(function (d) {
