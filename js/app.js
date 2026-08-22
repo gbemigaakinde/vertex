@@ -34,7 +34,7 @@
     });
   }
 
-  async function _onLogin(firebaseUser) {
+    async function _onLogin(firebaseUser) {
     var uid = firebaseUser.uid;
     AppState.cancelAllListeners();
     AppState.userId = uid;
@@ -47,7 +47,6 @@
       if (window.VtxLoader) window.VtxLoader.progress(90, 'Opening dashboard…');
 
       Teacher.renderTeacherDashboard();
-      // Play welcome sound for teacher on login
       if (window.VtxSound) {
         try { VtxSound.welcome(); } catch (e) {}
       }
@@ -94,6 +93,16 @@
       AppState.studentData = snap.data();
       AppState.chatUnread  = 0;
 
+      // ── ACTIVITY LOG: login ──
+      if (window.ActivityLog) {
+        var _sd = AppState.studentData;
+        ActivityLog.track(
+          'login',
+          (_sd.name || 'A student') + ' logged in',
+          { deviceInfo: navigator.userAgent.slice(0, 120) }
+        );
+      }
+
       if (window.VtxLoader) window.VtxLoader.progress(70, 'Loading your tasks…');
 
       var notifUnsub = window.fbDb
@@ -123,24 +132,19 @@
         MsgNotif.initForStudent(uid);
       }
 
-      // Start challenge listener at login so popup notifications fire
-      // immediately whenever a challenge arrives — even outside the game.
       if (window.Game && typeof Game._startChallengeListener === 'function') {
         Game._startChallengeListener();
       }
 
-      // Start group chat unread listener so the badge updates in real time.
       if (window.GroupChat && typeof GroupChat.initStudentGroupListener === 'function') {
         GroupChat.initStudentGroupListener(uid);
       }
 
-      // Start writing this student's presence for other group members to see.
       if (window.GroupChat && typeof GroupChat.initPresence === 'function') {
         GroupChat.initPresence(uid);
       }
 
       if (window.VtxLoader) window.VtxLoader.progress(90, 'Almost ready…');
-      // Play welcome sound for students on login
       if (window.VtxSound) {
         try { VtxSound.welcome(); } catch (e) {}
       }
@@ -176,11 +180,20 @@
   }
 
   // ── Public logout ────────────────────────────────────────────
-  async function logout() {
+    async function logout() {
     if (_loggingOut) return;
     _loggingOut = true;
 
     window._registrationInProgress = false;
+
+    // ── ACTIVITY LOG: logout — must be BEFORE AppState.reset() ──
+    if (window.ActivityLog && AppState.userId && AppState.studentData) {
+      var _logUid    = AppState.userId;
+      var _logName   = (AppState.studentData || {}).name   || 'Unknown';
+      var _logClass  = (AppState.studentData || {}).class  || '';
+      var _logSchool = (AppState.studentData || {}).school || '';
+      ActivityLog.trackLogout(_logUid, _logName, _logClass, _logSchool);
+    }
 
     if (window.MsgNotif) {
       MsgNotif.cancel();
