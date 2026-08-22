@@ -1359,6 +1359,8 @@ function _renderAiText(str) {
   raw = raw.replace(/\\\[[\s\S]*?\\\]/g, _stashMath);
   raw = raw.replace(/\\\([\s\S]*?\\\)/g, _stashMath);
 
+  raw = raw.replace(/!\[[^\]]*\]\([^)]*\)/g, '');
+
   var safe = raw
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
