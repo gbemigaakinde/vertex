@@ -3517,6 +3517,9 @@ function _sendAiMessage() {
     'Never run different paragraphs, sentences, or sections together into one block of text. ' +
     'For letters, essays, or any structured writing, each section (date, address, salutation, body paragraphs, closing) must be on its own line or paragraph, separated by blank lines. ' +
     'For step-by-step working, put each step on its own line. ' +
+    'When presenting any comparison, list of properties, or structured data with rows and columns, you MUST use a markdown pipe table. ' +
+    'A pipe table looks like this: | Header 1 | Header 2 | on the first line, then | --- | --- | on the second line, then | value | value | for each row. ' +
+    'Never use spaces or dashes alone to draw a table. Always use the pipe | character to separate columns. ' +
     'Do not use Markdown symbols like **, ##, or - for bullet points unless the student explicitly asks for a list. ' +
     'Write in plain text only, using blank lines to separate paragraphs and sections. ' +
     'Answer the student\'s actual question directly. ' +
