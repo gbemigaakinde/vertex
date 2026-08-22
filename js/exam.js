@@ -186,6 +186,12 @@
         return;
       }
 
+      // ── ACTIVITY LOG: dashboard viewed ──
+      if (window.ActivityLog && S().studentData) {
+        var _sn = (S().studentData.name || 'A student');
+        ActivityLog.track('dashboard_view', _sn + ' opened the dashboard');
+      }
+
       if (!examData) { await renderSubjectSelection(); return; }
 
       S().exam = examData;
@@ -199,6 +205,13 @@
           renderExam();
           await submitExam(true);
           return;
+        }
+        // ── ACTIVITY LOG: resumed exam ──
+        if (window.ActivityLog && S().studentData) {
+          ActivityLog.track(
+            'exam_resume',
+            (S().studentData.name || 'A student') + ' resumed an ongoing exam'
+          );
         }
         renderExam();
         _startTimer();
@@ -840,7 +853,7 @@
     const tools = [
       {
         id: 'chatOpenBtn',
-        onclick: 'Chat.openPublicChat()',
+        onclick: "if(window.ActivityLog&&AppState.studentData){ActivityLog.track('chat_open',(AppState.studentData.name||'A student')+' opened Public Chat');}Chat.openPublicChat()",
         icon: _icon('ChatText', 22),
         label: 'Public Chat',
         color: 'var(--success)',
@@ -849,7 +862,7 @@
       },
       {
         id: 'gcOpenBtn',
-        onclick: 'GroupChat.openForStudent()',
+        onclick: "if(window.ActivityLog&&AppState.studentData){ActivityLog.track('groupchat_open',(AppState.studentData.name||'A student')+' opened Group Chats');}GroupChat.openForStudent()",
         icon: _icon('ChatCircleDots', 22),
         label: 'Group Chats',
         color: 'var(--success)',
@@ -857,7 +870,7 @@
       },
       {
         id: 'dmOpenBtn',
-        onclick: 'DM.openStudentInbox()',
+        onclick: "if(window.ActivityLog&&AppState.studentData){ActivityLog.track('dm_open',(AppState.studentData.name||'A student')+' opened Messages (DM)');}DM.openStudentInbox()",
         icon: _icon('EnvelopeSimple', 22),
         label: 'Message Teacher',
         color: 'var(--accent)',
@@ -866,7 +879,7 @@
       },
       {
         id: 'studyroomBtn',
-        onclick: 'StudyRoom.openForStudent()',
+        onclick: "if(window.ActivityLog&&AppState.studentData){ActivityLog.track('studyroom_open',(AppState.studentData.name||'A student')+' opened Study Room');}StudyRoom.openForStudent()",
         icon: _icon('BookOpen', 22),
         label: 'Study Room',
         color: 'var(--info)',
@@ -874,7 +887,7 @@
       },
       {
         id: 'threedBtn',
-        onclick: 'ThreeDClass.openForStudent()',
+        onclick: "if(window.ActivityLog&&AppState.studentData){ActivityLog.track('threedclass_open',(AppState.studentData.name||'A student')+' opened 3D Class');}ThreeDClass.openForStudent()",
         icon: _icon('Flask', 22),
         label: '3D Class',
         color: 'var(--accent)',
@@ -882,7 +895,7 @@
       },
       {
         id: 'englishBtn',
-        onclick: "window.open('english.html', '_blank')",
+        onclick: "if(window.ActivityLog&&AppState.studentData){ActivityLog.track('general_studies_open',(AppState.studentData.name||'A student')+' opened General Studies');}window.open('english.html', '_blank')",
         icon: _icon('BookBookmark', 22),
         label: 'General Studies',
         color: '#7c3aed',
@@ -891,6 +904,7 @@
       {
         id: 'gameOpenBtn',
         onclick: `(function(){
+          if(window.ActivityLog&&AppState.studentData){ActivityLog.track('game_lobby_open',(AppState.studentData.name||'A student')+' opened the Games lobby');}
           if (!window.Game || typeof Game.openGameLobby !== 'function') {
             alert('Games not loaded yet. Please wait a moment.');
             return;
@@ -1478,7 +1492,7 @@
   /* ─────────────────────────────────────────────────────── */
   /* Start exam                                              */
   /* ─────────────────────────────────────────────────────── */
-  let _startExamLock = false;
+    let _startExamLock = false;
 
   async function startExam() {
     if (_startExamLock) return;
@@ -1546,6 +1560,16 @@
     try {
       await window.fbDb.collection('ongoingExams').doc(S().userId).set(examDoc);
       S().exam = examDoc;
+
+      // ── ACTIVITY LOG: exam started ──
+      if (window.ActivityLog && S().studentData) {
+        ActivityLog.track(
+          'exam_start',
+          (S().studentData.name || 'A student') + ' started an exam — subjects: ' + finalChosen.join(', '),
+          { subjects: finalChosen }
+        );
+      }
+
       renderExam();
       _showInstructionsModal();
     } catch (err) {
@@ -1610,6 +1634,16 @@
       _visibilityCooldown = true;
       setTimeout(function () { _visibilityCooldown = false; }, 1000);
       _visibilityHideCount++;
+
+      // ── ACTIVITY LOG: tab switch during exam ──
+      if (window.ActivityLog && S().studentData) {
+        ActivityLog.track(
+          'exam_tab_switch',
+          (S().studentData.name || 'A student') + ' switched away from the exam tab (warning ' + _visibilityHideCount + '/3)',
+          { warningNumber: _visibilityHideCount }
+        );
+      }
+
       if (_visibilityHideCount === 1) {
         UI.toast('Warning: You switched away from the exam. Please stay on this tab.', 'warning', 5000);
       } else if (_visibilityHideCount === 2) {
@@ -1635,7 +1669,7 @@
   /* ─────────────────────────────────────────────────────── */
   /* beginExam                                               */
   /* ─────────────────────────────────────────────────────── */
-  let _beginExamLock = false;
+    let _beginExamLock = false;
 
   async function beginExam() {
     if (_beginExamLock) return;
@@ -1660,6 +1694,15 @@
     } catch (err) {
       console.warn('[exam] Could not persist startTime to Firebase.', err);
       UI.toast('Connection issue — please make sure you stay online during this exam.', 'warning', 6000);
+    }
+
+    // ── ACTIVITY LOG: timer started ──
+    if (window.ActivityLog && S().studentData && S().exam) {
+      ActivityLog.track(
+        'exam_timer_start',
+        (S().studentData.name || 'A student') + ' started the exam timer — ' +
+          (S().exam.subjects || []).join(', ')
+      );
     }
 
     _startTimer();
@@ -1987,6 +2030,13 @@
 
   function switchSubject(subj) {
     _navigateWithTransition(function () {
+      // ── ACTIVITY LOG: subject switched ──
+      if (window.ActivityLog && S().studentData) {
+        ActivityLog.track(
+          'exam_switch_subject',
+          (S().studentData.name || 'A student') + ' switched to ' + subj + ' during exam'
+        );
+      }
       S().exam.currentSubject = subj;
       S().exam.currentIndex   = 0;
       renderExam();
@@ -2052,7 +2102,7 @@
   /* ─────────────────────────────────────────────────────── */
   /* Submit                                                  */
   /* ─────────────────────────────────────────────────────── */
-   let _submitLock = false;
+     let _submitLock = false;
 
   async function submitExam(skipConfirm) {
     if (_submitLock) return;
@@ -2066,7 +2116,6 @@
     S().clearTimer();
     _teardownVisibilityGuard();
 
-    // Stop any active STT session from the exam screen before we render results
     if (window.SpeechEngine && typeof SpeechEngine.stopSTT === 'function') {
       SpeechEngine.stopSTT();
     }
@@ -2113,6 +2162,22 @@
         });
       }
       await batch.commit();
+
+      // ── ACTIVITY LOG: exam submitted ──
+      if (window.ActivityLog && S().studentData) {
+        ActivityLog.track(
+          'exam_submit',
+          (S().studentData.name || 'A student') + ' submitted an exam — ' +
+            result.percentage + '% (Grade ' + result.grade + ') — subjects: ' +
+            (exam.subjects || []).join(', '),
+          {
+            percentage: result.percentage,
+            grade:      result.grade,
+            subjects:   exam.subjects,
+            autoSubmit: !!skipConfirm,
+          }
+        );
+      }
 
       if (isTaskDay) {
         if (!S().studentData) S().studentData = {};
@@ -3200,6 +3265,14 @@ function _openAiDrawer() {
   }
   try { localStorage.setItem('vtx_ai_pill_seen', '1'); } catch (e) {}
 
+      // ── ACTIVITY LOG: AI Tutor opened ──
+      if (window.ActivityLog && S().studentData) {
+        ActivityLog.track(
+          'ai_tutor_open',
+          (S().studentData.name || 'A student') + ' opened the AI Tutor'
+        );
+      }
+      
   var drawer  = document.getElementById('vtxAiDrawer');
   var sheet   = document.getElementById('vtxAiSheet');
   var trigger = document.getElementById('vtxAiTrigger');
