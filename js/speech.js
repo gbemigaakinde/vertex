@@ -1361,29 +1361,23 @@ function _renderAiText(str) {
 
   raw = raw.replace(/!\[[^\]]*\]\([^)]*\)/g, '');
 
+  // Collapse blank lines between table rows before escaping
+  raw = raw.replace(/(^\|[^\n]*\|)[ \t]*\n[ \t]*\n(?=[ \t]*\|)/gm, '$1\n');
+
   var safe = raw
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 
-  // Bold
   safe = safe.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
-
-  // Italic single asterisk
   safe = safe.replace(/(?<!\*)\*(?!\*)([^*\n]+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
 
-  // Subscript
   safe = safe.replace(/([A-Za-z0-9])\\_([A-Za-z0-9+\-]{1,4})(?=[^A-Za-z0-9]|$)/g, '$1<sub>$2</sub>');
   safe = safe.replace(/([A-Za-z0-9])_([A-Za-z0-9+\-]{1,4})(?=[^A-Za-z0-9_]|$)/g,  '$1<sub>$2</sub>');
-
-  // Italic underscore
   safe = safe.replace(/_([^_\n]{5,})_/g, '<em>$1</em>');
-
-  // Superscript
   safe = safe.replace(/([A-Za-z0-9])\^([A-Za-z0-9+\-]{1,4})(?=[^A-Za-z0-9]|$)/g, '$1<sup>$2</sup>');
 
-  // Headings
   safe = safe.replace(/^######\s+(.+)$/gm, '<p style="margin:0 0 .4em 0;font-size:.8rem;font-weight:700;color:var(--text-2);">$1</p>');
   safe = safe.replace(/^#####\s+(.+)$/gm,  '<p style="margin:0 0 .4em 0;font-size:.8125rem;font-weight:700;color:var(--text-2);">$1</p>');
   safe = safe.replace(/^####\s+(.+)$/gm,   '<p style="margin:0 0 .45em 0;font-size:.875rem;font-weight:700;color:var(--text-1);">$1</p>');
@@ -1391,23 +1385,30 @@ function _renderAiText(str) {
   safe = safe.replace(/^##\s+(.+)$/gm,     '<p style="margin:0 0 .5em 0;font-size:1rem;font-weight:700;color:var(--text-1);">$1</p>');
   safe = safe.replace(/^#\s+(.+)$/gm,      '<p style="margin:0 0 .5em 0;font-size:1.0625rem;font-weight:700;color:var(--text-1);">$1</p>');
 
-  // Horizontal rules
   safe = safe.replace(/^[\s]*[-*_]{3,}[\s]*$/gm, '<hr style="border:none;border-top:1px solid var(--border);margin:.6em 0;">');
 
-  // ── Tables ──
-  safe = safe.replace(/((?:^\|.+\|\s*\n?)+)/gm, function (block) {
-    var lines = block.trim().split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
+  // Tables — accepts both with-separator and without-separator formats
+  safe = safe.replace(/((?:^\|[^\n]+\|\s*\n?)+)/gm, function (block) {
+    var lines = block.trim().split('\n')
+      .map(function (l) { return l.trim(); })
+      .filter(Boolean);
     if (lines.length < 2) return block;
-
-    var isSep = /^\|[\s\-:|]+\|$/.test(lines[1]);
-    if (!isSep) return block;
 
     function _parseCells(line) {
       return line.replace(/^\||\|$/g, '').split('|').map(function (c) { return c.trim(); });
     }
 
-    var headerCells = _parseCells(lines[0]);
-    var bodyLines   = lines.slice(2);
+    var headerCells, bodyLines;
+    var isSep = /^[\|\s\-:]+$/.test(lines[1]);
+    if (isSep) {
+      headerCells = _parseCells(lines[0]);
+      bodyLines   = lines.slice(2);
+    } else {
+      headerCells = _parseCells(lines[0]);
+      bodyLines   = lines.slice(1);
+    }
+
+    if (bodyLines.length === 0) return block;
 
     var thead = '<thead><tr>' +
       headerCells.map(function (c) {
@@ -1436,18 +1437,13 @@ function _renderAiText(str) {
            thead + tbody + '</table></div>';
   });
 
-  // Unordered list items
   safe = safe.replace(/^[\s]*[-*•]\s+(.+)$/gm, '<li style="margin:.2em 0;">$1</li>');
-
-  // Ordered list items
   safe = safe.replace(/^[\s]*(\d+)\.\s+(.+)$/gm, '<li style="margin:.2em 0;"><span style="font-weight:600;margin-right:.3em;">$1.</span>$2</li>');
 
-  // Wrap consecutive <li> in <ul>
   safe = safe.replace(/(<li[^>]*>[\s\S]*?<\/li>)(\s*<li[^>]*>[\s\S]*?<\/li>)*/g, function (match) {
     return '<ul style="margin:.4em 0 .6em 1.1em;padding:0;list-style:none;">' + match + '</ul>';
   });
 
-  // Double newlines → paragraphs, single → <br>
   var lines = safe.split(/\n\n+/);
   safe = lines.map(function (block) {
     if (/^<(p|ul|ol|li|hr|div|h[1-6]|table)[^>]*>/.test(block.trim())) return block;
@@ -1456,10 +1452,8 @@ function _renderAiText(str) {
     return '<p style="margin:0 0 .6em 0;">' + inner + '</p>';
   }).join('');
 
-  // Strip trailing empty paragraph
   safe = safe.replace(/<p[^>]*>\s*<\/p>$/g, '');
 
-  // Restore LaTeX
   safe = safe.replace(/\x00MATH(\d+)\x00/g, function (_, i) {
     return mathBlocks[parseInt(i, 10)];
   });
