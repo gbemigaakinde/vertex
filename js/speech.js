@@ -1876,19 +1876,53 @@ function _renderAiText(str) {
     }
   }
 
+     /* ════════════════════════════════════════════════════════
+     VISUAL GENERATION
+  ════════════════════════════════════════════════════════ */
+  function requestVisual(topic, subject, callback) {
+    var studentData = (window.AppState && window.AppState.studentData) || {};
+    var studentId   = (window.AppState && window.AppState.userId)      || 'anon';
+
+    fetch('https://vertex-worker.gbemigaakinde.workers.dev/visual', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        topic:        topic,
+        subject:      subject       || '',
+        studentId:    studentId,
+        studentName:  studentData.name  || '',
+        studentClass: studentData.class || '',
+        context:      '',
+      }),
+    })
+    .then(function (res) {
+      return res.json().then(function (data) {
+        return { status: res.status, data: data };
+      });
+    })
+    .then(function (result) {
+      callback(null, result.data);
+    })
+    .catch(function (err) {
+      console.error('[SpeechEngine] Visual request error:', err);
+      callback('Could not reach the visual service. Please check your internet connection.', null);
+    });
+  }
+
   /* ── Public API ── */
-  window.SpeechEngine = {
-    speak:               speak,
-    cancel:              cancel,
-    startSTT:            startSTT,
-    stopSTT:             stopSTT,
-    wireExamButtons:     wireExamButtons,
-    wireResultsButtons:  wireResultsButtons,
-    setResultsContext:   setResultsContext,
+   window.SpeechEngine = {
+    speak:                speak,
+    cancel:               cancel,
+    startSTT:             startSTT,
+    stopSTT:              stopSTT,
+    wireExamButtons:      wireExamButtons,
+    wireResultsButtons:   wireResultsButtons,
+    setResultsContext:    setResultsContext,
     showExplanationModal: _showExplanationModal,
-    openVoiceSelector:   _openVoiceSelector,
-    ttsSupported:        ttsSupported,
-    sttSupported:        sttSupported,
+    openVoiceSelector:    _openVoiceSelector,
+    ttsSupported:         ttsSupported,
+    sttSupported:         sttSupported,
+    requestVisual:        requestVisual,
     readCurrentQuestion: function () {
       var ttsBtn = document.getElementById('seTtsBtn');
       if (ttsBtn) ttsBtn.click();
