@@ -2398,21 +2398,19 @@ function _renderAiText(str) {
 
   var raw = String(str);
 
-  // ── Step 0: Protect all LaTeX blocks from further processing ──
-  // We stash them and restore after all markdown transforms are done.
+  // ── Step 0: Protect all LaTeX blocks ──
   var mathBlocks = [];
   function _stashMath(match) {
     mathBlocks.push(match);
     return '\x00MATH' + (mathBlocks.length - 1) + '\x00';
   }
 
-  // Display math first ($$...$$), then inline ($...$), then \[...\] and \(...\)
   raw = raw.replace(/\$\$[\s\S]*?\$\$/g, _stashMath);
   raw = raw.replace(/\$[^$\n]+?\$/g,     _stashMath);
   raw = raw.replace(/\\\[[\s\S]*?\\\]/g, _stashMath);
   raw = raw.replace(/\\\([\s\S]*?\\\)/g, _stashMath);
 
-  // ── Step 1: Escape HTML (safe to do after stashing — placeholders are ASCII) ──
+  // ── Step 1: HTML escape ──
   var safe = raw
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -2422,17 +2420,17 @@ function _renderAiText(str) {
   // ── Step 2: Bold ──
   safe = safe.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
 
-  // ── Step 3: Italic (single asterisk) ──
+  // ── Step 3: Italic single asterisk ──
   safe = safe.replace(/\*([^*\n]+?)\*/g, '<em>$1</em>');
 
-  // ── Step 4: Subscript A_B (short, no spaces, max 4 chars) ──
+  // ── Step 4: Subscript ──
   safe = safe.replace(/([A-Za-z0-9)])\\_([A-Za-z0-9]{1,4})(?=[^A-Za-z0-9]|$)/g, '$1<sub>$2</sub>');
   safe = safe.replace(/([A-Za-z0-9)])_([A-Za-z0-9]{1,4})(?=[^A-Za-z0-9_]|$)/g,  '$1<sub>$2</sub>');
 
-  // ── Step 5: Italic underscore (longer phrases) ──
+  // ── Step 5: Italic underscore ──
   safe = safe.replace(/_([^_\n]{5,})_/g, '<em>$1</em>');
 
-  // ── Step 6: Superscript A^B ──
+  // ── Step 6: Superscript ──
   safe = safe.replace(/([A-Za-z0-9])\^([A-Za-z0-9]{1,4})(?=[^A-Za-z0-9]|$)/g, '$1<sup>$2</sup>');
 
   // ── Step 7: Headings ──
@@ -2446,32 +2444,74 @@ function _renderAiText(str) {
   // ── Step 8: Horizontal rules ──
   safe = safe.replace(/^[\s]*[-*_]{3,}[\s]*$/gm, '<hr style="border:none;border-top:1px solid var(--border);margin:.6em 0;">');
 
-  // ── Step 9: Unordered list items ──
+  // ── Step 9: Tables ──
+  // Match blocks of lines where every line starts and ends with |
+  safe = safe.replace(/((?:^\|.+\|\s*\n?)+)/gm, function (block) {
+    var lines = block.trim().split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
+    if (lines.length < 2) return block;
+
+    // Check second line is a separator row (---|---|---)
+    var isSep = /^\|[\s\-:|]+\|$/.test(lines[1]);
+    if (!isSep) return block;
+
+    function _parseCells(line) {
+      return line.replace(/^\||\|$/g, '').split('|').map(function (c) { return c.trim(); });
+    }
+
+    var headerCells = _parseCells(lines[0]);
+    var bodyLines   = lines.slice(2);
+
+    var thead = '<thead><tr>' +
+      headerCells.map(function (c) {
+        return '<th style="padding:.4rem .625rem;border:1px solid var(--border);' +
+               'background:var(--bg-subtle);font-size:.8125rem;font-weight:700;' +
+               'color:var(--text-1);text-align:left;white-space:nowrap;">' + c + '</th>';
+      }).join('') +
+      '</tr></thead>';
+
+    var tbody = '<tbody>' +
+      bodyLines.map(function (line, ri) {
+        var cells = _parseCells(line);
+        var rowBg = ri % 2 === 1
+          ? 'background:var(--bg-subtle);'
+          : 'background:var(--bg-base);';
+        return '<tr>' + cells.map(function (c) {
+          return '<td style="padding:.375rem .625rem;border:1px solid var(--border);' +
+                 'font-size:.8rem;color:var(--text-2);' + rowBg + '">' + c + '</td>';
+        }).join('') + '</tr>';
+      }).join('') +
+      '</tbody>';
+
+    return '<div style="overflow-x:auto;margin:.5em 0 .75em;">' +
+           '<table style="border-collapse:collapse;width:100%;min-width:280px;' +
+           'font-family:var(--font);border:1px solid var(--border);border-radius:6px;overflow:hidden;">' +
+           thead + tbody + '</table></div>';
+  });
+
+  // ── Step 10: Unordered list items ──
   safe = safe.replace(/^[\s]*[-*•]\s+(.+)$/gm, '<li style="margin:.2em 0;">$1</li>');
 
-  // ── Step 10: Ordered list items ──
+  // ── Step 11: Ordered list items ──
   safe = safe.replace(/^[\s]*(\d+)\.\s+(.+)$/gm, '<li style="margin:.2em 0;"><span style="font-weight:600;margin-right:.3em;">$1.</span>$2</li>');
 
-  // ── Step 11: Wrap consecutive <li> in <ul> ──
+  // ── Step 12: Wrap consecutive <li> in <ul> ──
   safe = safe.replace(/(<li[^>]*>[\s\S]*?<\/li>)(\s*<li[^>]*>[\s\S]*?<\/li>)*/g, function (match) {
     return '<ul style="margin:.4em 0 .6em 1.1em;padding:0;list-style:none;">' + match + '</ul>';
   });
 
-  // ── Step 12: Double newlines → paragraphs, single → <br> ──
+  // ── Step 13: Double newlines → paragraphs, single → <br> ──
   var lines = safe.split(/\n\n+/);
   safe = lines.map(function (block) {
-    if (/^<(p|ul|ol|li|hr|div|h[1-6])[^>]*>/.test(block.trim())) return block;
+    if (/^<(p|ul|ol|li|hr|div|h[1-6]|table)[^>]*>/.test(block.trim())) return block;
     var inner = block.replace(/\n/g, '<br>');
     if (!inner.trim()) return '';
     return '<p style="margin:0 0 .6em 0;">' + inner + '</p>';
   }).join('');
 
-  // ── Step 13: Strip trailing empty paragraph ──
+  // ── Step 14: Strip trailing empty paragraph ──
   safe = safe.replace(/<p[^>]*>\s*<\/p>$/g, '');
 
-  // ── Step 14: Restore all stashed LaTeX blocks (unescaped, raw) ──
-  // The placeholder \x00MATHn\x00 survived HTML escaping intact because
-  // \x00 is not a special HTML character.
+  // ── Step 15: Restore LaTeX ──
   safe = safe.replace(/\x00MATH(\d+)\x00/g, function (_, i) {
     return mathBlocks[parseInt(i, 10)];
   });
