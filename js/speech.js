@@ -797,20 +797,16 @@ function cancel() {
     GROQ and OPENROUTER AI — Student question answering
   ════════════════════════════════════════════════════════ */
 
-  var _GROQ_API_KEY      = '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';
-  var _GROQ_MODEL_PRIMARY  = 'openai/gpt-oss-120b';   // was llama-3.3-70b-versatile (decommissioned Aug 16 2026)
-  var _GROQ_MODEL_FALLBACK = 'openai/gpt-oss-20b';    // was llama-3.1-8b-instant    (decommissioned Aug 16 2026)
-  var _GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
-   
-  var _OR_API_KEY        = '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';
+  // API keys are now stored in the Cloudflare Worker.
+  var _WORKER_URL        = 'https://vertex-worker.gbemigaakinde.workers.dev/ai';
+
+  var _GROQ_MODEL_PRIMARY  = 'openai/gpt-oss-120b';
+  var _GROQ_MODEL_FALLBACK = 'openai/gpt-oss-20b';
+
   var _OR_MODEL_PRIMARY  = 'openrouter/auto';
   var _OR_MODEL_FALLBACK = 'meta-llama/llama-3.3-70b-instruct:free';
-  var _OR_SITE_URL       = window.location.origin || 'https://vertex-tutorial.vercel.app';
-  var _OR_SITE_NAME      = 'Vertex Tutorial CBT';
- 
-/* ── Gemini config ── */
-var _GEMINI_API_KEY    = 'AQ.Ab8RN6I12gW_JOPTsdl3CaCFyu-UgoyFjuu8JQCn7LoBmv2mQg';
-var _GEMINI_MODEL      = 'gemini-3.7-flash';    // free-tier, fast
+
+  var _GEMINI_MODEL = 'gemini-3.7-flash';
 
    /*
    * _askGroq
@@ -818,23 +814,23 @@ var _GEMINI_MODEL      = 'gemini-3.7-flash';    // free-tier, fast
    * callback(err, answerText)
    * Tries llama-3.3-70b-versatile first; if rate-limited, retries with llama-3.1-8b-instant.
    */
-  function _askGroq(systemPrompt, userPrompt, callback, _isRetry) {
+ function _askGroq(systemPrompt, userPrompt, callback, _isRetry) {
     var model = _isRetry ? _GROQ_MODEL_FALLBACK : _GROQ_MODEL_PRIMARY;
 
-    fetch(_GROQ_ENDPOINT, {
+    fetch(_WORKER_URL, {
       method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + _GROQ_API_KEY,
-        'Content-Type':  'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        model:       model,
-        max_tokens:  1024,
-        temperature: 0.4,
-        messages: [
-          { role: 'system', content: systemPrompt },
-          { role: 'user',   content: userPrompt   },
-        ],
+        provider: 'groq',
+        payload: {
+          model:       model,
+          max_tokens:  1024,
+          temperature: 0.4,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user',   content: userPrompt   },
+          ],
+        },
       }),
     })
     .then(function (res) {
@@ -869,7 +865,6 @@ var _GEMINI_MODEL      = 'gemini-3.7-flash';    // free-tier, fast
         callback('groq_empty', null);
         return;
       }
-      // If truncated, append a continuation prompt and fetch the rest
       if (finishReason === 'length') {
         var continuationMessages = [
           { role: 'system', content: systemPrompt },
@@ -877,17 +872,17 @@ var _GEMINI_MODEL      = 'gemini-3.7-flash';    // free-tier, fast
           { role: 'assistant', content: text.trim() },
           { role: 'user', content: 'Please continue from where you stopped. Do not repeat anything already written. Continue directly.' },
         ];
-        fetch(_GROQ_ENDPOINT, {
+        fetch(_WORKER_URL, {
           method: 'POST',
-          headers: {
-            'Authorization': 'Bearer ' + _GROQ_API_KEY,
-            'Content-Type':  'application/json',
-          },
+          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            model:       model,
-            max_tokens:  1024,
-            temperature: 0.4,
-            messages:    continuationMessages,
+            provider: 'groq',
+            payload: {
+              model:       model,
+              max_tokens:  1024,
+              temperature: 0.4,
+              messages:    continuationMessages,
+            },
           }),
         })
         .then(function (r) { return r.ok ? r.json() : null; })
@@ -896,7 +891,6 @@ var _GEMINI_MODEL      = 'gemini-3.7-flash';    // free-tier, fast
           callback(null, (text.trim() + '\n\n' + (extra ? extra.trim() : '')).trim());
         })
         .catch(function () {
-          // Continuation failed — return what we have
           callback(null, text.trim());
         });
         return;
@@ -914,147 +908,144 @@ var _GEMINI_MODEL      = 'gemini-3.7-flash';    // free-tier, fast
    * Fallback engine — only called when Groq fails entirely.
    * callback(err, answerText)
    */
- function _askOpenRouter(systemPrompt, userPrompt, callback, _isRetry) {
-  var model = _isRetry ? _OR_MODEL_FALLBACK : _OR_MODEL_PRIMARY;
+  function _askOpenRouter(systemPrompt, userPrompt, callback, _isRetry) {
+    var model = _isRetry ? _OR_MODEL_FALLBACK : _OR_MODEL_PRIMARY;
 
-  fetch('https://openrouter.ai/api/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Authorization': 'Bearer ' + _OR_API_KEY,
-      'HTTP-Referer':  _OR_SITE_URL,
-      'X-Title':       _OR_SITE_NAME,
-      'Content-Type':  'application/json',
-    },
-    body: JSON.stringify({
-      model:       model,
-      max_tokens:  1024,
-      temperature: 0.4,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user',   content: userPrompt   },
-      ],
-    }),
-  })
-  .then(function (res) {
-    if (!res.ok) {
-      if (!_isRetry) {
-        console.warn('[SpeechEngine] OpenRouter primary failed (' + res.status + ') — retrying with fallback model');
-        _askOpenRouter(systemPrompt, userPrompt, callback, true);
-        return null;
+    fetch(_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        provider: 'openrouter',
+        payload: {
+          model:       model,
+          max_tokens:  1024,
+          temperature: 0.4,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            { role: 'user',   content: userPrompt   },
+          ],
+        },
+      }),
+    })
+    .then(function (res) {
+      if (!res.ok) {
+        if (!_isRetry) {
+          console.warn('[SpeechEngine] OpenRouter primary failed (' + res.status + ') — retrying with fallback model');
+          _askOpenRouter(systemPrompt, userPrompt, callback, true);
+          return null;
+        }
+        return res.json().then(function (body) {
+          callback('API error ' + res.status + ': ' + ((body && body.error && body.error.message) || 'Unknown error'), null);
+          return null;
+        }).catch(function () {
+          callback('API error ' + res.status, null);
+          return null;
+        });
       }
-      return res.json().then(function (body) {
-        callback('API error ' + res.status + ': ' + ((body && body.error && body.error.message) || 'Unknown error'), null);
-        return null;
-      }).catch(function () {
-        callback('API error ' + res.status, null);
-        return null;
-      });
-    }
-    return res.json();
-  })
-  .then(function (data) {
-    if (!data) return;
-    var finishReason = data.choices && data.choices[0] && data.choices[0].finish_reason;
-    var text = data.choices &&
-               data.choices[0] &&
-               data.choices[0].message &&
-               data.choices[0].message.content;
-    if (!text || !text.trim()) {
+      return res.json();
+    })
+    .then(function (data) {
+      if (!data) return;
+      var finishReason = data.choices && data.choices[0] && data.choices[0].finish_reason;
+      var text = data.choices &&
+                 data.choices[0] &&
+                 data.choices[0].message &&
+                 data.choices[0].message.content;
+      if (!text || !text.trim()) {
+        if (!_isRetry) {
+          _askOpenRouter(systemPrompt, userPrompt, callback, true);
+          return;
+        }
+        callback('Empty response from AI.', null);
+        return;
+      }
+      if (finishReason === 'length') {
+        var continuationMessages = [
+          { role: 'system', content: systemPrompt },
+          { role: 'user',   content: userPrompt   },
+          { role: 'assistant', content: text.trim() },
+          { role: 'user', content: 'Please continue from where you stopped. Do not repeat anything already written. Continue directly.' },
+        ];
+        fetch(_WORKER_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            provider: 'openrouter',
+            payload: {
+              model:       model,
+              max_tokens:  1024,
+              temperature: 0.4,
+              messages:    continuationMessages,
+            },
+          }),
+        })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          var extra = d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+          callback(null, (text.trim() + '\n\n' + (extra ? extra.trim() : '')).trim());
+        })
+        .catch(function () {
+          callback(null, text.trim());
+        });
+        return;
+      }
+      callback(null, text.trim());
+    })
+    .catch(function (err) {
+      console.error('[SpeechEngine] OpenRouter fetch error:', err);
       if (!_isRetry) {
         _askOpenRouter(systemPrompt, userPrompt, callback, true);
         return;
       }
-      callback('Empty response from AI.', null);
-      return;
-    }
-    if (finishReason === 'length') {
-      var continuationMessages = [
-        { role: 'system', content: systemPrompt },
-        { role: 'user',   content: userPrompt   },
-        { role: 'assistant', content: text.trim() },
-        { role: 'user', content: 'Please continue from where you stopped. Do not repeat anything already written. Continue directly.' },
-      ];
-      fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + _OR_API_KEY,
-          'HTTP-Referer':  _OR_SITE_URL,
-          'X-Title':       _OR_SITE_NAME,
-          'Content-Type':  'application/json',
+      callback('Could not reach the AI server. Please check your internet connection.', null);
+    });
+  }
+
+  function _askGemini(systemPrompt, userPrompt, callback) {
+    fetch(_WORKER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        provider: 'gemini',
+        payload: {
+          model: _GEMINI_MODEL,
+          system_instruction: { parts: [{ text: systemPrompt }] },
+          contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+          generationConfig: { maxOutputTokens: 1024, temperature: 0.4 },
         },
-        body: JSON.stringify({
-          model:       model,
-          max_tokens:  1024,
-          temperature: 0.4,
-          messages:    continuationMessages,
-        }),
-      })
-      .then(function (r) { return r.ok ? r.json() : null; })
-      .then(function (d) {
-        var extra = d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
-        callback(null, (text.trim() + '\n\n' + (extra ? extra.trim() : '')).trim());
-      })
-      .catch(function () {
-        callback(null, text.trim());
-      });
-      return;
-    }
-    callback(null, text.trim());
-  })
-  .catch(function (err) {
-    console.error('[SpeechEngine] OpenRouter fetch error:', err);
-    if (!_isRetry) {
-      _askOpenRouter(systemPrompt, userPrompt, callback, true);
-      return;
-    }
-    callback('Could not reach the AI server. Please check your internet connection.', null);
-  });
-}
-
-function _askGemini(systemPrompt, userPrompt, callback) {
-  var url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
-            _GEMINI_MODEL + ':generateContent?key=' + _GEMINI_API_KEY;
-
-  fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      system_instruction: { parts: [{ text: systemPrompt }] },
-      contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
-      generationConfig: { maxOutputTokens: 1024, temperature: 0.4 },
-    }),
-  })
-  .then(function (res) {
-    if (!res.ok) {
-      return res.json().then(function (body) {
-        callback('gemini_error_' + res.status + ': ' + ((body && body.error && body.error.message) || 'Unknown error'), null);
-        return null;
-      }).catch(function () {
-        callback('gemini_error_' + res.status, null);
-        return null;
-      });
-    }
-    return res.json();
-  })
-  .then(function (data) {
-    if (!data) return;
-    var text = data.candidates &&
-               data.candidates[0] &&
-               data.candidates[0].content &&
-               data.candidates[0].content.parts &&
-               data.candidates[0].content.parts[0] &&
-               data.candidates[0].content.parts[0].text;
-    if (!text || !text.trim()) {
-      callback('gemini_empty', null);
-      return;
-    }
-    callback(null, text.trim());
-  })
-  .catch(function (err) {
-    console.error('[SpeechEngine] Gemini fetch error:', err);
-    callback('gemini_network_error', null);
-  });
-}
+      }),
+    })
+    .then(function (res) {
+      if (!res.ok) {
+        return res.json().then(function (body) {
+          callback('gemini_error_' + res.status + ': ' + ((body && body.error && body.error.message) || 'Unknown error'), null);
+          return null;
+        }).catch(function () {
+          callback('gemini_error_' + res.status, null);
+          return null;
+        });
+      }
+      return res.json();
+    })
+    .then(function (data) {
+      if (!data) return;
+      var text = data.candidates &&
+                 data.candidates[0] &&
+                 data.candidates[0].content &&
+                 data.candidates[0].content.parts &&
+                 data.candidates[0].content.parts[0] &&
+                 data.candidates[0].content.parts[0].text;
+      if (!text || !text.trim()) {
+        callback('gemini_empty', null);
+        return;
+      }
+      callback(null, text.trim());
+    })
+    .catch(function (err) {
+      console.error('[SpeechEngine] Gemini fetch error:', err);
+      callback('gemini_network_error', null);
+    });
+  }
 
   /*
    * _askAI  ← THE MAIN DISPATCHER
@@ -1064,25 +1055,25 @@ function _askGemini(systemPrompt, userPrompt, callback) {
    * callback(err, answerText)
    */
   function _askAI(systemPrompt, userPrompt, callback) {
-  console.log('[SpeechEngine] Trying Groq first…');
-  _askGroq(systemPrompt, userPrompt, function (err, text) {
-    if (!err && text) {
-      console.log('[SpeechEngine] Groq answered successfully.');
-      callback(null, text);
-      return;
-    }
-    console.warn('[SpeechEngine] Groq failed (' + err + ') — trying Gemini.');
-    _askGemini(systemPrompt, userPrompt, function (err2, text2) {
-      if (!err2 && text2) {
-        console.log('[SpeechEngine] Gemini answered successfully.');
-        callback(null, text2);
+    console.log('[SpeechEngine] Trying Groq first…');
+    _askGroq(systemPrompt, userPrompt, function (err, text) {
+      if (!err && text) {
+        console.log('[SpeechEngine] Groq answered successfully.');
+        callback(null, text);
         return;
       }
-      console.warn('[SpeechEngine] Gemini failed (' + err2 + ') — falling back to OpenRouter.');
-      _askOpenRouter(systemPrompt, userPrompt, callback, false);
+      console.warn('[SpeechEngine] Groq failed (' + err + ') — trying Gemini.');
+      _askGemini(systemPrompt, userPrompt, function (err2, text2) {
+        if (!err2 && text2) {
+          console.log('[SpeechEngine] Gemini answered successfully.');
+          callback(null, text2);
+          return;
+        }
+        console.warn('[SpeechEngine] Gemini failed (' + err2 + ') — falling back to OpenRouter.');
+        _askOpenRouter(systemPrompt, userPrompt, callback, false);
+      });
     });
-  });
-}
+  }
 
   /*
    * _buildAISystemPrompt
@@ -2034,214 +2025,208 @@ function _renderAiText(str) {
     },
   };
   // Shared AI bridge for exam.js drawer — accepts a pre-built messages array.
-window._vtxAskAI = function (messagesPayload, callback) {
+  window._vtxAskAI = function (messagesPayload, callback) {
 
-  /* ── OpenRouter helper ── */
-  function _tryOR(isORRetry) {
-    var orModel = isORRetry ? _OR_MODEL_FALLBACK : _OR_MODEL_PRIMARY;
-    fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + _OR_API_KEY,
-        'HTTP-Referer':  _OR_SITE_URL,
-        'X-Title':       _OR_SITE_NAME,
-        'Content-Type':  'application/json',
-      },
-      body: JSON.stringify({
-        model:       orModel,
-        max_tokens:  1024,
-        temperature: 0.4,
-        messages:    messagesPayload,
-      }),
-    })
-    .then(function (res) {
-      if (!res.ok) {
-        if (!isORRetry) { _tryOR(true); return null; }
-        throw new Error('or_' + res.status);
-      }
-      return res.json();
-    })
-    .then(function (data) {
-      if (!data) return;
-      var finishReason = data.choices && data.choices[0] && data.choices[0].finish_reason;
-      var text = data.choices &&
-                 data.choices[0] &&
-                 data.choices[0].message &&
-                 data.choices[0].message.content;
-      if (!text || !text.trim()) {
-        if (!isORRetry) { _tryOR(true); return; }
-        throw new Error('or_empty');
-      }
-      if (finishReason === 'length') {
-        var continuationPayload = messagesPayload.concat([
-          { role: 'assistant', content: text.trim() },
-          { role: 'user', content: 'Please continue from where you stopped. Do not repeat anything already written. Continue directly.' },
-        ]);
-        fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': 'Bearer ' + _OR_API_KEY,
-            'HTTP-Referer':  _OR_SITE_URL,
-            'X-Title':       _OR_SITE_NAME,
-            'Content-Type':  'application/json',
+    /* ── Groq helper ── */
+    function _tryGroq(isRetry) {
+      var model = isRetry ? _GROQ_MODEL_FALLBACK : _GROQ_MODEL_PRIMARY;
+      fetch(_WORKER_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: 'groq',
+          payload: {
+            model:       model,
+            max_tokens:  1024,
+            temperature: 0.4,
+            messages:    messagesPayload,
           },
-          body: JSON.stringify({
+        }),
+      })
+      .then(function (res) {
+        if (!res.ok) {
+          if ((res.status === 429 || res.status === 503 || res.status === 404) && !isRetry) {
+            _tryGroq(true);
+            return null;
+          }
+          throw new Error('groq_' + res.status);
+        }
+        return res.json();
+      })
+      .then(function (data) {
+        if (!data) return;
+        var finishReason = data.choices && data.choices[0] && data.choices[0].finish_reason;
+        var text = data.choices &&
+                   data.choices[0] &&
+                   data.choices[0].message &&
+                   data.choices[0].message.content;
+        if (!text || !text.trim()) {
+          if (!isRetry) { _tryGroq(true); return; }
+          throw new Error('groq_empty');
+        }
+        if (finishReason === 'length') {
+          var continuationPayload = messagesPayload.concat([
+            { role: 'assistant', content: text.trim() },
+            { role: 'user', content: 'Please continue from where you stopped. Do not repeat anything already written. Continue directly.' },
+          ]);
+          fetch(_WORKER_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              provider: 'groq',
+              payload: {
+                model:       model,
+                max_tokens:  1024,
+                temperature: 0.4,
+                messages:    continuationPayload,
+              },
+            }),
+          })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (d) {
+            var extra = d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+            callback(null, (text.trim() + '\n\n' + (extra ? extra.trim() : '')).trim());
+          })
+          .catch(function () { callback(null, text.trim()); });
+          return;
+        }
+        callback(null, text.trim());
+      })
+      .catch(function (err) {
+        console.warn('[vtxAskAI] Groq failed (' + err + ') — trying Gemini.');
+        _tryGemini(false);
+      });
+    }
+
+    /* ── Gemini helper ── */
+    function _tryGemini(isRetry) {
+      // Convert OpenAI messages array to Gemini native format
+      var systemText = '';
+      var contents = [];
+      messagesPayload.forEach(function (msg) {
+        if (msg.role === 'system') {
+          systemText += msg.content + '\n';
+        } else {
+          contents.push({
+            role:  msg.role === 'assistant' ? 'model' : 'user',
+            parts: [{ text: msg.content }],
+          });
+        }
+      });
+
+      var geminiBody = {
+        model:            _GEMINI_MODEL,
+        contents:         contents,
+        generationConfig: { maxOutputTokens: 1024, temperature: 0.4 },
+      };
+      if (systemText.trim()) {
+        geminiBody.system_instruction = { parts: [{ text: systemText.trim() }] };
+      }
+
+      fetch(_WORKER_URL, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ provider: 'gemini', payload: geminiBody }),
+      })
+      .then(function (res) {
+        if (!res.ok) {
+          if ((res.status === 429 || res.status === 503) && !isRetry) {
+            console.warn('[vtxAskAI] Gemini rate-limited — retrying once.');
+            _tryGemini(true);
+            return null;
+          }
+          throw new Error('gemini_' + res.status);
+        }
+        return res.json();
+      })
+      .then(function (data) {
+        if (!data) return;
+        var text = data.candidates &&
+                   data.candidates[0] &&
+                   data.candidates[0].content &&
+                   data.candidates[0].content.parts &&
+                   data.candidates[0].content.parts[0] &&
+                   data.candidates[0].content.parts[0].text;
+        if (!text || !text.trim()) {
+          if (!isRetry) { _tryGemini(true); return; }
+          throw new Error('gemini_empty');
+        }
+        callback(null, text.trim());
+      })
+      .catch(function (err) {
+        console.warn('[vtxAskAI] Gemini failed (' + err + ') — falling back to OpenRouter.');
+        _tryOR(false);
+      });
+    }
+
+    /* ── OpenRouter helper ── */
+    function _tryOR(isORRetry) {
+      var orModel = isORRetry ? _OR_MODEL_FALLBACK : _OR_MODEL_PRIMARY;
+      fetch(_WORKER_URL, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          provider: 'openrouter',
+          payload: {
             model:       orModel,
             max_tokens:  1024,
             temperature: 0.4,
-            messages:    continuationPayload,
-          }),
-        })
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (d) {
-          var extra = d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
-          callback(null, (text.trim() + '\n\n' + (extra ? extra.trim() : '')).trim());
-        })
-        .catch(function () { callback(null, text.trim()); });
-        return;
-      }
-      callback(null, text.trim());
-    })
-    .catch(function () {
-      callback('Could not reach the AI server.', null);
-    });
-  }
-
-  /* ── Gemini helper ── */
-  function _tryGemini(isRetry) {
-  var url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
-            _GEMINI_MODEL + ':generateContent?key=' + _GEMINI_API_KEY;
-
-  // Convert OpenAI messages array to Gemini native format
-  var systemText = '';
-  var contents = [];
-  messagesPayload.forEach(function (msg) {
-    if (msg.role === 'system') {
-      systemText += msg.content + '\n';
-    } else {
-      contents.push({
-        role: msg.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: msg.content }],
+            messages:    messagesPayload,
+          },
+        }),
+      })
+      .then(function (res) {
+        if (!res.ok) {
+          if (!isORRetry) { _tryOR(true); return null; }
+          throw new Error('or_' + res.status);
+        }
+        return res.json();
+      })
+      .then(function (data) {
+        if (!data) return;
+        var finishReason = data.choices && data.choices[0] && data.choices[0].finish_reason;
+        var text = data.choices &&
+                   data.choices[0] &&
+                   data.choices[0].message &&
+                   data.choices[0].message.content;
+        if (!text || !text.trim()) {
+          if (!isORRetry) { _tryOR(true); return; }
+          throw new Error('or_empty');
+        }
+        if (finishReason === 'length') {
+          var continuationPayload = messagesPayload.concat([
+            { role: 'assistant', content: text.trim() },
+            { role: 'user', content: 'Please continue from where you stopped. Do not repeat anything already written. Continue directly.' },
+          ]);
+          fetch(_WORKER_URL, {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              provider: 'openrouter',
+              payload: {
+                model:       orModel,
+                max_tokens:  1024,
+                temperature: 0.4,
+                messages:    continuationPayload,
+              },
+            }),
+          })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (d) {
+            var extra = d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+            callback(null, (text.trim() + '\n\n' + (extra ? extra.trim() : '')).trim());
+          })
+          .catch(function () { callback(null, text.trim()); });
+          return;
+        }
+        callback(null, text.trim());
+      })
+      .catch(function () {
+        callback('Could not reach the AI server.', null);
       });
     }
-  });
 
-  var body = {
-    contents: contents,
-    generationConfig: { maxOutputTokens: 1024, temperature: 0.4 },
+    _tryGroq(false);
   };
-  if (systemText.trim()) {
-    body.system_instruction = { parts: [{ text: systemText.trim() }] };
-  }
-
-  fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
-  .then(function (res) {
-    if (!res.ok) {
-      if ((res.status === 429 || res.status === 503) && !isRetry) {
-        console.warn('[vtxAskAI] Gemini rate-limited — retrying once.');
-        _tryGemini(true);
-        return null;
-      }
-      throw new Error('gemini_' + res.status);
-    }
-    return res.json();
-  })
-  .then(function (data) {
-    if (!data) return;
-    var text = data.candidates &&
-               data.candidates[0] &&
-               data.candidates[0].content &&
-               data.candidates[0].content.parts &&
-               data.candidates[0].content.parts[0] &&
-               data.candidates[0].content.parts[0].text;
-    if (!text || !text.trim()) {
-      if (!isRetry) { _tryGemini(true); return; }
-      throw new Error('gemini_empty');
-    }
-    callback(null, text.trim());
-  })
-  .catch(function (err) {
-    console.warn('[vtxAskAI] Gemini failed (' + err + ') — falling back to OpenRouter.');
-    _tryOR(false);
-  });
-}
-
-  /* ── Groq helper ── */
-  function _tryGroq(isRetry) {
-    var model = isRetry ? _GROQ_MODEL_FALLBACK : _GROQ_MODEL_PRIMARY;
-    fetch('https://api.groq.com/openai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': 'Bearer ' + _GROQ_API_KEY,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: model,
-        max_tokens: 1024,
-        temperature: 0.4,
-        messages: messagesPayload,
-      }),
-    })
-    .then(function (res) {
-      if (!res.ok) {
-        if ((res.status === 429 || res.status === 503 || res.status === 404) && !isRetry) {
-          _tryGroq(true);
-          return null;
-        }
-        throw new Error('groq_' + res.status);
-      }
-      return res.json();
-    })
-    .then(function (data) {
-      if (!data) return;
-      var finishReason = data.choices && data.choices[0] && data.choices[0].finish_reason;
-      var text = data.choices &&
-                 data.choices[0] &&
-                 data.choices[0].message &&
-                 data.choices[0].message.content;
-      if (!text || !text.trim()) {
-        if (!isRetry) { _tryGroq(true); return; }
-        throw new Error('groq_empty');
-      }
-      if (finishReason === 'length') {
-        var continuationPayload = messagesPayload.concat([
-          { role: 'assistant', content: text.trim() },
-          { role: 'user', content: 'Please continue from where you stopped. Do not repeat anything already written. Continue directly.' },
-        ]);
-        fetch('https://api.groq.com/openai/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': 'Bearer ' + _GROQ_API_KEY,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: model,
-            max_tokens: 1024,
-            temperature: 0.4,
-            messages: continuationPayload,
-          }),
-        })
-        .then(function (r) { return r.ok ? r.json() : null; })
-        .then(function (d) {
-          var extra = d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
-          callback(null, (text.trim() + '\n\n' + (extra ? extra.trim() : '')).trim());
-        })
-        .catch(function () { callback(null, text.trim()); });
-        return;
-      }
-      callback(null, text.trim());
-    })
-    .catch(function (err) {
-      console.warn('[vtxAskAI] Groq failed (' + err + ') — trying Gemini.');
-      _tryGemini(false);
-    });
-  }
-
-  _tryGroq(false);
-};
 
 })();
