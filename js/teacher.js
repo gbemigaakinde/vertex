@@ -499,6 +499,13 @@ function renderTeacherDashboard() {
       label: 'Timetable',
       icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
     },
+    {
+      tab: 'activity',
+      label: 'Activity',
+      icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>`,
+      badge: true,
+      badgeClass: 'activity-notif-badge',
+    },
     { divider: true },
     {
       tab: 'groups',
@@ -784,6 +791,7 @@ function renderTeacherDashboard() {
           <div id="teacherGameStatsContainer"></div>
           <div id="teacherGameRestrictionsContainer" class="hidden"></div>
         </div>
+        <div id="teacher-activity" class="teacher-tab hidden"></div>
         <div id="teacher-groups" class="teacher-tab hidden"></div>
         <div id="teacher-dm" class="teacher-tab hidden"></div>
 
@@ -797,14 +805,14 @@ function renderTeacherDashboard() {
 }
 
 function showTab(tab) {
-  const ALL_TABS = ['students','results','schools','tasks','studyroom','games','timetable','groups','chat','dm'];
+  const ALL_TABS = ['students','results','schools','tasks','studyroom','games','timetable','activity','groups','chat','dm'];
 
   ALL_TABS.forEach(t => {
     const el  = document.getElementById(`teacher-${t}`);
     const btn = document.getElementById(`tab-${t}`);
 
     if (el) {
-      if ((t === 'dm' || t === 'groups') && t !== tab) el.innerHTML = '';
+      if ((t === 'dm' || t === 'groups' || t === 'activity') && t !== tab) el.innerHTML = '';
       el.classList.toggle('hidden', t !== tab);
     }
 
@@ -839,6 +847,7 @@ function showTab(tab) {
     return;
   }
   if (tab === 'timetable') { _loadTimetableManager();     return; }
+  if (tab === 'activity')  { _loadActivityLog();          return; }
   if (tab === 'students')  _loadStudents();
   if (tab === 'results')   _loadResults();
   if (tab === 'schools')   _loadSchools();
@@ -5082,6 +5091,471 @@ async function exportResultPDF(resultId) {
     UI.toast('PDF downloaded.', 'success');
   }
   
+   /* ─────────────────────────────────────────────────────── */
+  /* Activity Log                                            */
+  /* ─────────────────────────────────────────────────────── */
+  let _activityUnsub = null;
+  let _activityNewCount = 0;
+
+  const ACTION_META = {
+    login:               { icon: 'ph-sign-in',         label: 'Logged in',           color: 'var(--success)' },
+    logout:              { icon: 'ph-sign-out',        label: 'Logged out',          color: 'var(--danger)'  },
+    dashboard_view:      { icon: 'ph-house',           label: 'Opened dashboard',    color: 'var(--accent)'  },
+    exam_start:          { icon: 'ph-note-pencil',     label: 'Started exam',        color: 'var(--accent)'  },
+    exam_timer_start:    { icon: 'ph-timer',           label: 'Timer started',       color: 'var(--accent)'  },
+    exam_resume:         { icon: 'ph-arrow-counter-clockwise', label: 'Resumed exam', color: 'var(--warning)' },
+    exam_submit:         { icon: 'ph-check-circle',    label: 'Submitted exam',      color: 'var(--success)' },
+    exam_switch_subject: { icon: 'ph-books',           label: 'Switched subject',    color: 'var(--info)'    },
+    exam_tab_switch:     { icon: 'ph-warning',         label: 'Switched tabs',       color: 'var(--danger)'  },
+    chat_open:           { icon: 'ph-chat-circle',     label: 'Opened Chat',         color: 'var(--success)' },
+    groupchat_open:      { icon: 'ph-users',           label: 'Opened Group Chat',   color: 'var(--success)' },
+    dm_open:             { icon: 'ph-envelope',        label: 'Opened Messages',     color: 'var(--accent)'  },
+    studyroom_open:      { icon: 'ph-book-open',       label: 'Opened Study Room',   color: 'var(--info)'    },
+    threedclass_open:    { icon: 'ph-cube',            label: 'Opened 3D Class',     color: 'var(--accent)'  },
+    general_studies_open:{ icon: 'ph-book-bookmark',   label: 'Opened Gen. Studies', color: '#7c3aed'         },
+    game_lobby_open:     { icon: 'ph-game-controller', label: 'Opened Games',        color: 'var(--accent)'  },
+    ai_tutor_open:       { icon: 'ph-robot',           label: 'Opened AI Tutor',     color: 'var(--accent)'  },
+  };
+
+  function _activityTimeAgo(ts) {
+    if (!ts) return '';
+
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    const diff = Math.floor((Date.now() - d.getTime()) / 1000);
+
+    if (diff < 5) return 'just now';
+    if (diff < 60) return diff + 's ago';
+    if (diff < 3600) return Math.floor(diff / 60) + 'm ago';
+    if (diff < 86400) return Math.floor(diff / 3600) + 'h ago';
+
+    return d.toLocaleDateString('en-GB', {
+      day: 'numeric',
+      month: 'short'
+    });
+  }
+
+  function _renderActivityFeed(docs) {
+    const container = document.getElementById('activityFeedList');
+
+    if (!container) return;
+
+    if (docs.length === 0) {
+      container.innerHTML =
+        '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+          'gap:.625rem;text-align:center;padding:3rem 1rem;color:var(--text-3);' +
+          'font-size:var(--text-sm);">' +
+          '<i class="ph ph-tray" style="font-size:1.75rem;color:var(--text-4);"></i>' +
+          '<span>No activity yet. Actions taken by students will appear here in real time.</span>' +
+        '</div>';
+
+      return;
+    }
+
+    container.innerHTML = docs.map(function (doc) {
+      const d = doc.data();
+
+      const meta = ACTION_META[d.action] || {
+        icon: 'ph-circle',
+        label: d.action || 'Unknown activity',
+        color: 'var(--text-3)'
+      };
+
+      const timeAgo = _activityTimeAgo(d.timestamp);
+
+      const ts = d.timestamp
+        ? (d.timestamp.toDate ? d.timestamp.toDate() : new Date(d.timestamp))
+            .toLocaleString('en-GB', {
+              dateStyle: 'short',
+              timeStyle: 'medium'
+            })
+        : '';
+
+      // Extra detail chip for exam results
+      let extraChip = '';
+
+      if (d.action === 'exam_submit' && d.percentage != null) {
+        const gradeColor =
+          d.percentage >= 70
+            ? 'var(--success)'
+            : d.percentage >= 50
+              ? 'var(--warning)'
+              : 'var(--danger)';
+
+        extraChip =
+          '<span style="display:inline-flex;align-items:center;gap:.25rem;' +
+            'font-size:.625rem;font-weight:700;padding:1px 7px;border-radius:99px;' +
+            'background:' + gradeColor + ';color:#fff;margin-left:.375rem;">' +
+            d.percentage + '% · Grade ' + (d.grade || '?') +
+          '</span>';
+      }
+
+      if (d.action === 'exam_tab_switch' && d.warningNumber) {
+        extraChip =
+          '<span style="font-size:.625rem;font-weight:700;padding:1px 7px;border-radius:99px;' +
+            'background:var(--danger-subtle);color:var(--danger);' +
+            'border:1px solid var(--danger-border);margin-left:.375rem;">' +
+            'Warning ' + d.warningNumber + '/3' +
+          '</span>';
+      }
+
+      return (
+        '<div style="display:flex;align-items:flex-start;gap:.75rem;padding:.75rem 1rem;' +
+          'border-bottom:1px solid var(--border);transition:background .1s;" ' +
+          'onmouseenter="this.style.background=\'var(--bg-subtle)\'" ' +
+          'onmouseleave="this.style.background=\'\'">' +
+
+          // Action icon
+          '<div style="flex-shrink:0;width:34px;height:34px;border-radius:var(--r-full);' +
+            'background:var(--bg-subtle);border:1px solid var(--border);' +
+            'display:flex;align-items:center;justify-content:center;' +
+            'color:' + meta.color + ';" ' +
+            'title="' + _esc(meta.label) + '">' +
+            '<i class="ph ' + meta.icon + '" style="font-size:1.125rem;line-height:1;"></i>' +
+          '</div>' +
+
+          // Content
+          '<div style="flex:1;min-width:0;">' +
+
+            '<div style="display:flex;align-items:center;gap:.375rem;flex-wrap:wrap;">' +
+
+              '<span style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);">' +
+                _esc(d.name || 'Unknown') +
+              '</span>' +
+
+              '<span style="font-size:.6875rem;font-weight:500;color:var(--text-4);">·</span>' +
+
+              '<span style="font-size:.6875rem;color:var(--text-3);">' +
+                _esc(d.class || '') +
+              '</span>' +
+
+              extraChip +
+
+            '</div>' +
+
+            '<p style="font-size:var(--text-sm);color:var(--text-2);margin-top:2px;' +
+              'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
+              _esc(d.detail || meta.label) +
+            '</p>' +
+
+          '</div>' +
+
+          // Time
+          '<div style="flex-shrink:0;text-align:right;">' +
+
+            '<span style="font-size:.625rem;color:var(--text-4);white-space:nowrap;" ' +
+              'title="' + _esc(ts) + '">' +
+              _esc(timeAgo) +
+            '</span>' +
+
+          '</div>' +
+
+        '</div>'
+      );
+    }).join('');
+  }
+
+  function _loadActivityLog() {
+    const container = document.getElementById('teacher-activity');
+
+    if (!container) return;
+
+    // Cancel any previous listener
+    if (_activityUnsub) {
+      _activityUnsub();
+      _activityUnsub = null;
+    }
+
+    _activityNewCount = 0;
+    _updateActivityBadge(0);
+
+    container.innerHTML =
+      '<div style="margin-bottom:1rem;">' +
+
+        '<div style="display:flex;align-items:center;justify-content:space-between;' +
+          'flex-wrap:wrap;gap:.75rem;">' +
+
+          '<div>' +
+
+            '<h2 style="font-size:var(--text-md);font-weight:600;color:var(--text-1);' +
+              'letter-spacing:-0.015em;">' +
+              'Student Activity Log' +
+            '</h2>' +
+
+            '<p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">' +
+              'Real-time feed of everything students do, with live updates.' +
+            '</p>' +
+
+          '</div>' +
+
+          '<div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">' +
+
+            // Filter buttons
+            '<select id="activityFilterAction" onchange="Teacher._filterActivity()" ' +
+
+              'style="font-size:var(--text-xs);padding:.3125rem .625rem;' +
+                'border-radius:var(--r-md);border:1px solid var(--border);' +
+                'background:var(--bg-base);color:var(--text-1);' +
+                'font-family:var(--font);cursor:pointer;">' +
+
+              '<option value="">All actions</option>' +
+              '<option value="login">Logins</option>' +
+              '<option value="logout">Logouts</option>' +
+              '<option value="exam_start,exam_timer_start,exam_submit,exam_resume">Exam activity</option>' +
+              '<option value="exam_tab_switch">Tab switches</option>' +
+              '<option value="chat_open,groupchat_open,dm_open">Chat & Messages</option>' +
+              '<option value="game_lobby_open">Games</option>' +
+              '<option value="ai_tutor_open">AI Tutor</option>' +
+
+            '</select>' +
+
+            '<input id="activityFilterName" type="text" placeholder="Filter by name…" ' +
+              'oninput="Teacher._filterActivity()" ' +
+
+              'style="font-size:var(--text-xs);padding:.3125rem .625rem;' +
+                'border-radius:var(--r-md);border:1px solid var(--border);' +
+                'background:var(--bg-base);color:var(--text-1);' +
+                'font-family:var(--font);width:130px;" />' +
+
+            '<div id="activityLiveIndicator" ' +
+
+              'style="display:inline-flex;align-items:center;gap:.3rem;font-size:.6875rem;' +
+                'font-weight:600;color:var(--success);white-space:nowrap;">' +
+
+              '<span style="width:7px;height:7px;border-radius:50%;background:var(--success);' +
+                'display:inline-block;animation:cbt-pulse 1.5s ease-in-out infinite;"></span>' +
+
+              'LIVE' +
+
+            '</div>' +
+
+          '</div>' +
+
+        '</div>' +
+
+      '</div>' +
+
+      // Stats bar
+      '<div id="activityStatsBar" style="display:flex;gap:.625rem;flex-wrap:wrap;' +
+        'margin-bottom:1rem;"></div>' +
+
+      // Feed
+      '<div style="border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;' +
+        'background:var(--bg-base);">' +
+
+        '<div id="activityFeedList">' +
+
+          '<div style="text-align:center;padding:3rem;color:var(--text-3);' +
+            'font-size:var(--text-sm);">' +
+            'Loading…' +
+          '</div>' +
+
+        '</div>' +
+
+      '</div>';
+
+    // Store all docs for client-side filtering
+    let _allDocs = [];
+
+    function _buildStats(docs) {
+      const bar = document.getElementById('activityStatsBar');
+
+      if (!bar) return;
+
+      // Count unique active students in the last 30 minutes
+      const now = Date.now();
+      const recentUids = new Set();
+
+      const loginCount = docs.filter(function (d) {
+        return d.data().action === 'login';
+      }).length;
+
+      const examCount = docs.filter(function (d) {
+        return d.data().action === 'exam_submit';
+      }).length;
+
+      const tabWarnings = docs.filter(function (d) {
+        return d.data().action === 'exam_tab_switch';
+      }).length;
+
+      docs.forEach(function (d) {
+        const ts = d.data().timestamp;
+
+        if (!ts) return;
+
+        const t = ts.toDate
+          ? ts.toDate().getTime()
+          : new Date(ts).getTime();
+
+        if (now - t < 30 * 60 * 1000) {
+          recentUids.add(d.data().uid);
+        }
+      });
+
+      const stats = [
+        {
+          label: 'Active (30 min)',
+          value: recentUids.size,
+          color: 'var(--success)'
+        },
+        {
+          label: 'Logins today',
+          value: loginCount,
+          color: 'var(--accent)'
+        },
+        {
+          label: 'Exams submitted',
+          value: examCount,
+          color: 'var(--info)'
+        },
+        {
+          label: 'Tab warnings',
+          value: tabWarnings,
+          color: tabWarnings > 0
+            ? 'var(--danger)'
+            : 'var(--text-3)'
+        }
+      ];
+
+      bar.innerHTML = stats.map(function (s) {
+        return (
+          '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;' +
+            'min-width:80px;padding:.5rem .875rem;border-radius:var(--r-lg);' +
+            'border:1px solid var(--border);background:var(--bg-base);">' +
+
+            '<span style="font-size:1.25rem;font-weight:800;color:' +
+              s.color +
+              ';line-height:1;">' +
+              s.value +
+            '</span>' +
+
+            '<span style="font-size:.5625rem;font-weight:600;color:var(--text-4);' +
+              'text-transform:uppercase;letter-spacing:.06em;margin-top:2px;' +
+              'white-space:nowrap;">' +
+              _esc(s.label) +
+            '</span>' +
+
+          '</div>'
+        );
+      }).join('');
+    }
+
+    // 24-hour window
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+    _activityUnsub = window.fbDb
+      .collection('activityLog')
+      .where('timestamp', '>=', since)
+      .orderBy('timestamp', 'desc')
+      .limit(200)
+      .onSnapshot(
+        function (snap) {
+          _allDocs = snap.docs;
+
+          _buildStats(_allDocs);
+
+          Teacher._filterActivity();
+
+          // Pulse the badge when new documents arrive after initial load
+          if (snap.docChanges) {
+            const newAdded = snap.docChanges().filter(function (c) {
+              return c.type === 'added';
+            });
+
+            if (newAdded.length > 0 && _allDocs.length > newAdded.length) {
+              _activityNewCount += newAdded.length;
+              _updateActivityBadge(_activityNewCount);
+            }
+          }
+        },
+
+        function (err) {
+          console.error('[teacher] activityLog listener error:', err);
+
+          const feedEl = document.getElementById('activityFeedList');
+
+          if (feedEl) {
+            feedEl.innerHTML =
+              '<div style="display:flex;flex-direction:column;align-items:center;' +
+                'justify-content:center;gap:.5rem;text-align:center;padding:2rem;' +
+                'color:var(--danger);font-size:var(--text-sm);">' +
+
+                '<i class="ph ph-warning-circle" style="font-size:1.5rem;"></i>' +
+
+                '<span>Could not load activity log. Check Firestore rules.</span>' +
+
+              '</div>';
+          }
+        }
+      );
+
+    _reg('activityLog', _activityUnsub);
+
+    // Store documents reference for filter function
+    window._activityAllDocs = function () {
+      return _allDocs;
+    };
+  }
+
+  function _filterActivity() {
+    const allDocs = window._activityAllDocs
+      ? window._activityAllDocs()
+      : [];
+
+    const nameQ = (
+      (document.getElementById('activityFilterName') || {}).value || ''
+    ).toLowerCase().trim();
+
+    const actionQ = (
+      (document.getElementById('activityFilterAction') || {}).value || ''
+    ).trim();
+
+    const actionList = actionQ
+      ? actionQ.split(',')
+      : [];
+
+    const filtered = allDocs.filter(function (doc) {
+      const d = doc.data();
+
+      if (
+        nameQ &&
+        !(d.name || '').toLowerCase().includes(nameQ)
+      ) {
+        return false;
+      }
+
+      if (
+        actionList.length > 0 &&
+        !actionList.includes(d.action)
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+
+    _renderActivityFeed(filtered);
+
+    _activityNewCount = 0;
+    _updateActivityBadge(0);
+  }
+
+  function _updateActivityBadge(count) {
+    const badge = document.getElementById('badge-activity');
+
+    if (!badge) return;
+
+    if (count > 0) {
+      badge.textContent = count > 99
+        ? '99+'
+        : String(count);
+
+      badge.classList.add('is-visible');
+    } else {
+      badge.textContent = '';
+      badge.classList.remove('is-visible');
+    }
+  }
+  
   window.Teacher = {
   renderTeacherDashboard,
   showTab,
@@ -5139,6 +5613,9 @@ async function exportResultPDF(resultId) {
   _ttSaveGroupMembers,
   _moveNavIndicator,
   _injectTeacherNavStyles,
+  _loadActivityLog,
+  _filterActivity,
+  _updateActivityBadge,
   get _msgStudentCache() { return _msgStudentCache; },
 };
 
