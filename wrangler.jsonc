@@ -1,0 +1,9 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "vertex-worker",
+  "main": "worker.js",
+  "compatibility_date": "2026-08-22",
+  "observability": {
+    "enabled": true
+  }
+}
