@@ -179,40 +179,383 @@ function _ttAddBreakRow() {
 function _ttAddLunchRow() {
   _ttAppendPeriodRowToDOM({ time: '', monday: 'LUNCH', tuesday: 'LUNCH', wednesday: 'LUNCH', thursday: 'LUNCH', friday: 'LUNCH', saturday: 'LUNCH', sunday: 'LUNCH' });
 }
-  
+
+function _injectTeacherNavStyles() {
+  const existing = document.getElementById('_teacherNavStyle');
+  if (existing) existing.remove();
+  const s = document.createElement('style');
+  s.id = '_teacherNavStyle';
+  s.textContent = `
+    /* ── Teacher Nav Shell ── */
+    .vtx-td-shell {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+
+    /* ── Top bar ── */
+    .vtx-td-topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      gap: 1rem;
+      flex-shrink: 0;
+    }
+
+    .vtx-td-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      flex-shrink: 0;
+    }
+
+    .vtx-td-brand-icon {
+      width: 28px;
+      height: 28px;
+      background: var(--accent);
+      border-radius: 7px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      box-shadow: var(--shadow-accent);
+    }
+
+    .vtx-td-brand-text {
+      display: flex;
+      flex-direction: column;
+      line-height: 1.2;
+    }
+
+    .vtx-td-brand-name {
+      font-size: var(--text-sm);
+      font-weight: 700;
+      color: var(--text-1);
+      letter-spacing: -0.015em;
+      white-space: nowrap;
+    }
+
+    .vtx-td-brand-role {
+      font-size: 0.625rem;
+      font-weight: 500;
+      color: var(--text-4);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    .vtx-td-signout {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.3125rem 0.75rem;
+      font-size: var(--text-xs);
+      font-weight: 500;
+      color: var(--text-3);
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: var(--r-md);
+      cursor: pointer;
+      transition: color var(--t-fast), background var(--t-fast), border-color var(--t-fast);
+      font-family: var(--font);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .vtx-td-signout:hover {
+      color: var(--danger);
+      border-color: var(--danger-border);
+      background: var(--danger-subtle);
+    }
+
+    /* ── Nav strip ── */
+    .vtx-td-navwrap {
+      position: relative;
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+
+    .vtx-td-nav {
+      display: flex;
+      align-items: center;
+      gap: 2px;
+      padding: 0.5rem 1rem;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      position: relative;
+      z-index: 1;
+    }
+    .vtx-td-nav::-webkit-scrollbar { display: none; }
+
+    /* sliding active pill */
+    .vtx-td-nav-indicator {
+      position: absolute;
+      bottom: 0.5rem;
+      left: 0;
+      height: calc(100% - 1rem);
+      background: var(--accent-subtle);
+      border: 1px solid var(--accent-border);
+      border-radius: var(--r-md);
+      transition: left 0.22s cubic-bezier(0.16,1,0.3,1),
+                  width 0.22s cubic-bezier(0.16,1,0.3,1),
+                  background 0.18s ease,
+                  border-color 0.18s ease;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* nav item */
+    .vtx-td-navitem {
+      position: relative;
+      z-index: 1;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.3125rem;
+      padding: 0.375rem 0.75rem;
+      border-radius: var(--r-md);
+      font-size: var(--text-xs);
+      font-weight: 500;
+      color: var(--text-3);
+      background: transparent;
+      border: none;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: color 0.14s ease, background 0.14s ease;
+      font-family: var(--font);
+      flex-shrink: 0;
+      letter-spacing: 0.01em;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .vtx-td-navitem svg {
+      flex-shrink: 0;
+      opacity: 0.6;
+      transition: opacity 0.14s ease;
+    }
+
+    .vtx-td-navitem:hover {
+      color: var(--text-1);
+      background: var(--bg-subtle);
+    }
+    .vtx-td-navitem:hover svg { opacity: 0.9; }
+
+    .vtx-td-navitem.is-active {
+      color: var(--accent-text);
+      font-weight: 600;
+    }
+    .vtx-td-navitem.is-active svg { opacity: 1; }
+
+    /* special accents */
+    .vtx-td-navitem[data-tab="chat"].is-active {
+      color: var(--success-text);
+    }
+    .vtx-td-navitem[data-tab="dm"].is-active {
+      color: var(--accent-text);
+    }
+
+    /* indicator colour shifts for special tabs */
+    .vtx-td-nav-indicator.for-chat {
+      background: var(--success-subtle);
+      border-color: var(--success-border);
+    }
+    .vtx-td-nav-indicator.for-dm {
+      background: var(--accent-subtle);
+      border-color: var(--accent-border);
+    }
+
+    /* divider between groups */
+    .vtx-td-navdivider {
+      width: 1px;
+      height: 16px;
+      background: var(--border);
+      flex-shrink: 0;
+      margin: 0 4px;
+    }
+
+    /* notification badge on nav items */
+    .vtx-td-navitem .vtx-td-badge {
+      min-width: 16px;
+      height: 16px;
+      padding: 0 4px;
+      border-radius: 8px;
+      background: var(--danger);
+      color: #fff;
+      font-size: 0.5625rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      line-height: 16px;
+      text-align: center;
+      display: none;
+    }
+    .vtx-td-navitem .vtx-td-badge.is-visible {
+      display: inline-block;
+      animation: vtx-badge-pop 0.22s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+
+    /* ── Content area ── */
+    .vtx-td-body {
+      padding: 1.25rem 1.5rem;
+      overflow: visible;
+      min-width: 0;
+      box-sizing: border-box;
+      max-width: 100%;
+    }
+
+    /* ── Mobile: shrink labels, scroll nav ── */
+    @media (max-width: 600px) {
+      .vtx-td-topbar { padding: 0.625rem 1rem; }
+      .vtx-td-brand-name { font-size: var(--text-xs); }
+      .vtx-td-brand-role { display: none; }
+      .vtx-td-nav { padding: 0.375rem 0.75rem; gap: 1px; }
+      .vtx-td-navitem { padding: 0.375rem 0.5rem; font-size: 0.625rem; gap: 0.25rem; }
+      .vtx-td-body { padding: 1rem; }
+    }
+
+    /* ── Tasks grid responsive ── */
+    @media (max-width: 768px) { .tasks-grid { grid-template-columns: 1fr !important; } }
+
+    /* ── Result cards ── */
+    .teacher-result-card {
+      cursor: pointer;
+      transition: transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+    }
+    .teacher-result-card:hover {
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-md);
+      border-color: var(--accent-border) !important;
+    }
+
+    /* ── Review modal ── */
+    #teacherReviewModal {
+      position: fixed; inset: 0; background: var(--bg-overlay); z-index: 1200;
+      display: flex; align-items: flex-start; justify-content: center;
+      padding: 1.25rem; overflow-y: auto;
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      animation: cbt-overlay-in .16s ease-out both;
+    }
+    #teacherReviewModal .review-panel {
+      background: var(--bg-base); border: 1px solid var(--border);
+      border-radius: var(--r-xl); padding: 1.5rem; width: 100%; max-width: 760px; margin: auto;
+      box-shadow: var(--shadow-xl);
+      animation: cbt-modal-in .24s cubic-bezier(.34,1.45,.64,1) both;
+    }
+    .review-q-card { border-radius: var(--r-md); padding: 1rem; border-width: 1px; border-style: solid; }
+    .review-q-card--correct  { border-color: var(--success-border); background: var(--success-subtle); }
+    .review-q-card--wrong    { border-color: var(--danger-border);  background: var(--danger-subtle);  }
+    .review-q-card--skipped  { border-color: var(--border);         background: var(--bg-subtle);      }
+    .progress-week-row summary { cursor: pointer; list-style: none; user-select: none; }
+    .progress-week-row summary::-webkit-details-marker { display: none; }
+
+    /* ── Edit student modal ── */
+    #teacherEditStudentModal {
+      position: fixed; inset: 0; background: var(--bg-overlay); z-index: 1300;
+      display: flex; align-items: center; justify-content: center;
+      padding: 1.25rem; overflow-y: auto;
+      backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+      animation: cbt-overlay-in .16s ease-out both;
+    }
+  `;
+  document.head.appendChild(s);
+}
+   
 function renderTeacherDashboard() {
   AppState.isTeacher = true;
 
-  document.getElementById('app').innerHTML = `
-    <div class="max-w-7xl mx-auto glass mt-6" style="margin-bottom:1.5rem;">
+  const NAV_ITEMS = [
+    {
+      tab: 'students',
+      label: 'Students',
+      icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>`,
+    },
+    {
+      tab: 'results',
+      label: 'Results',
+      icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>`,
+    },
+    {
+      tab: 'schools',
+      label: 'Schools',
+      icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>`,
+    },
+    {
+      tab: 'tasks',
+      label: 'Tasks',
+      icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><polyline points="9 16 11 18 15 14"/></svg>`,
+    },
+    {
+      tab: 'studyroom',
+      label: 'Study Room',
+      icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>`,
+    },
+    {
+      tab: 'games',
+      label: 'Games',
+      icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M6 12h4m-2-2v4"/><circle cx="16" cy="10" r="1" fill="currentColor"/><circle cx="18" cy="12" r="1" fill="currentColor"/></svg>`,
+    },
+    {
+      tab: 'timetable',
+      label: 'Timetable',
+      icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`,
+    },
+    { divider: true },
+    {
+      tab: 'groups',
+      label: 'Groups',
+      icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M21 21v-2a4 4 0 0 0-3-3.87"/></svg>`,
+    },
+    {
+      tab: 'chat',
+      label: 'Chat',
+      icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
+      badge: true,
+    },
+    {
+      tab: 'dm',
+      label: 'Messages',
+      icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`,
+      badge: true,
+    },
+  ];
 
-      <div style="display:flex;align-items:center;justify-content:space-between;
-                  padding:0.875rem 1.25rem;border-bottom:1px solid var(--border);">
-        <div style="display:flex;align-items:center;gap:0.75rem;">
-          <div style="width:30px;height:30px;background:var(--accent);border-radius:7px;
-                      display:flex;align-items:center;justify-content:center;flex-shrink:0;
-                      box-shadow:var(--shadow-accent);">
-            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white"
+  const navItemsHtml = NAV_ITEMS.map(item => {
+    if (item.divider) return `<div class="vtx-td-navdivider"></div>`;
+    return `
+      <button
+        class="vtx-td-navitem"
+        id="tab-${_esc(item.tab)}"
+        data-tab="${_esc(item.tab)}"
+        onclick="Teacher.showTab('${_esc(item.tab)}')"
+      >
+        ${item.icon}
+        ${_esc(item.label)}
+        ${item.badge ? `<span class="vtx-td-badge" id="badge-${_esc(item.tab)}"></span>` : ''}
+      </button>`;
+  }).join('');
+
+  document.getElementById('app').innerHTML = `
+    <div class="max-w-7xl mx-auto glass mt-6 vtx-td-shell" style="margin-bottom:1.5rem;">
+
+      <!-- Top bar -->
+      <div class="vtx-td-topbar">
+        <div class="vtx-td-brand">
+          <div class="vtx-td-brand-icon">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white"
                  stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/>
               <line x1="12" y1="22" x2="12" y2="15.5"/>
               <polyline points="22 8.5 12 15.5 2 8.5"/>
             </svg>
           </div>
-          <div>
-            <div style="font-size:var(--text-base);font-weight:600;color:var(--text-1);
-                        letter-spacing:-0.015em;line-height:1.2;">
-              Teacher Dashboard
-            </div>
-            <div style="font-size:var(--text-xs);color:var(--text-4);margin-top:1px;">
-              Administrator
-            </div>
+          <div class="vtx-td-brand-text">
+            <span class="vtx-td-brand-name">Teacher Dashboard</span>
+            <span class="vtx-td-brand-role">Administrator</span>
           </div>
         </div>
-        <button onclick="Teacher.logout()" class="btn bg-gray-500"
-                style="font-size:var(--text-sm);">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
+        <button class="vtx-td-signout" onclick="Teacher.logout()">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
             <polyline points="16 17 21 12 16 7"/>
             <line x1="21" y1="12" x2="9" y2="12"/>
@@ -221,67 +564,24 @@ function renderTeacherDashboard() {
         </button>
       </div>
 
-      <div style="display:flex;align-items:center;gap:0.25rem;padding:0.75rem 1.25rem 0.5rem;
-                  border-bottom:1px solid var(--border);flex-wrap:wrap;overflow:visible;">
-        <button onclick="Teacher.showTab('students')" id="tab-students"
-                class="tab-btn btn">Students</button>
-        <button onclick="Teacher.showTab('results')"  id="tab-results"
-                class="tab-btn btn">Results</button>
-        <button onclick="Teacher.showTab('schools')"  id="tab-schools"
-                class="tab-btn btn">Schools</button>
-        <button onclick="Teacher.showTab('tasks')"    id="tab-tasks"
-                class="tab-btn btn">Tasks &amp; Messages</button>
-        <button onclick="Teacher.showTab('studyroom')" id="tab-studyroom"
-                class="tab-btn btn">Study Room</button>
-        <button onclick="Teacher.showTab('games')" id="tab-games"
-                class="tab-btn btn">Games</button>
-        <button onclick="Teacher.showTab('timetable')" id="tab-timetable"
-                class="tab-btn btn">Timetable</button>
-        <div style="width:1px;height:20px;background:var(--border);margin:0 0.25rem;flex-shrink:0;"></div>
-        <button onclick="Teacher.showTab('groups')" id="tab-groups"
-                class="tab-btn btn"
-                style="position:relative;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
-            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-            <circle cx="9" cy="7" r="4"/>
-            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
-          </svg>
-          Groups
-        </button>
-        <button onclick="Teacher.showTab('chat')" id="tab-chat"
-                class="tab-btn btn bg-green-600"
-                style="position:relative;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
-            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-          </svg>
-          Chat
-        </button>
-        <button onclick="Teacher.showTab('dm')" id="tab-dm"
-                class="tab-btn btn bg-indigo-600"
-                style="position:relative;">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-               stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">
-            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-            <polyline points="22,6 12,13 2,6"/>
-          </svg>
-          Messages
-        </button>
+      <!-- Nav strip -->
+      <div class="vtx-td-navwrap">
+        <div class="vtx-td-nav" id="vtxTeacherNav">
+          <div class="vtx-td-nav-indicator" id="vtxNavIndicator"></div>
+          ${navItemsHtml}
+        </div>
       </div>
 
-      <div style="padding:1.25rem 1.5rem;overflow:visible;min-width:0;box-sizing:border-box;max-width:100%;">
+      <!-- Content -->
+      <div class="vtx-td-body">
 
         <div id="teacher-students" class="teacher-tab">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
             <div>
-              <h2 style="font-size:var(--text-md);font-weight:600;color:var(--text-1);
-                          letter-spacing:-0.015em;">Registered Students</h2>
+              <h2 style="font-size:var(--text-md);font-weight:600;color:var(--text-1);letter-spacing:-0.015em;">Registered Students</h2>
               <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">Grouped by school</p>
             </div>
-            <button onclick="Teacher._loadStudents()" class="btn bg-gray-500"
-                    style="font-size:var(--text-sm);">
+            <button onclick="Teacher._loadStudents()" class="btn bg-gray-500" style="font-size:var(--text-sm);">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <polyline points="1 4 1 10 7 10"/>
@@ -295,162 +595,95 @@ function renderTeacherDashboard() {
 
         <div id="teacher-results" class="teacher-tab hidden">
           <div style="margin-bottom:1rem;">
-            <h2 style="font-size:var(--text-md);font-weight:600;color:var(--text-1);
-                        letter-spacing:-0.015em;">All Exam Results</h2>
-            <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">
-              Most recent first — click any card to review the full attempt
-            </p>
+            <h2 style="font-size:var(--text-md);font-weight:600;color:var(--text-1);letter-spacing:-0.015em;">All Exam Results</h2>
+            <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">Most recent first — click any card to review the full attempt</p>
           </div>
           <div id="resultsList" class="grid gap-3 md:grid-cols-2 lg:grid-cols-3"></div>
         </div>
 
         <div id="teacher-schools" class="teacher-tab hidden">
           <div style="margin-bottom:1rem;">
-            <h2 style="font-size:var(--text-md);font-weight:600;color:var(--text-1);
-                        letter-spacing:-0.015em;">Manage Schools</h2>
-            <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">
-              Add, rename, or remove schools from the registration list
-            </p>
+            <h2 style="font-size:var(--text-md);font-weight:600;color:var(--text-1);letter-spacing:-0.015em;">Manage Schools</h2>
+            <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">Add, rename, or remove schools from the registration list</p>
           </div>
           <div style="display:flex;gap:0.5rem;margin-bottom:1.25rem;max-width:520px;">
             <input id="newSchoolName" type="text" placeholder="New school name" style="flex:1;" />
-            <button onclick="Teacher.addSchool()" class="btn"
-                    style="white-space:nowrap;font-size:var(--text-sm);">Add School</button>
+            <button onclick="Teacher.addSchool()" class="btn" style="white-space:nowrap;font-size:var(--text-sm);">Add School</button>
           </div>
           <div id="schoolsList" class="space-y-2"></div>
         </div>
 
         <div id="teacher-tasks" class="teacher-tab hidden">
           <div style="margin-bottom:1.25rem;">
-            <h2 style="font-size:var(--text-md);font-weight:600;color:var(--text-1);
-                        letter-spacing:-0.015em;">Coaching Tasks &amp; Messages</h2>
-            <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">
-              Configure scheduled tasks and send private messages to students
-            </p>
+            <h2 style="font-size:var(--text-md);font-weight:600;color:var(--text-1);letter-spacing:-0.015em;">Coaching Tasks &amp; Messages</h2>
+            <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">Configure scheduled tasks and send private messages to students</p>
           </div>
 
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem;" class="tasks-grid">
 
             <div class="glass-dark" style="padding:1.25rem;border-radius:var(--r-lg);">
-              <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem;
-                          padding-bottom:0.75rem;border-bottom:1px solid var(--border);">
+              <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border);">
                 <div style="width:6px;height:6px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div>
-                <h3 style="font-size:var(--text-base);font-weight:600;color:var(--text-1);">
-                  Coaching Tasks
-                </h3>
+                <h3 style="font-size:var(--text-base);font-weight:600;color:var(--text-1);">Coaching Tasks</h3>
               </div>
 
               <div style="margin-bottom:0.875rem;">
-                <label style="display:block;font-size:var(--text-xs);font-weight:500;
-                              color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">
-                  Recurrence
-                </label>
-                <div style="display:flex;background:var(--bg-muted);border:1px solid var(--border);
-                            border-radius:var(--r-md);padding:3px;gap:3px;">
+                <label style="display:block;font-size:var(--text-xs);font-weight:500;color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">Recurrence</label>
+                <div style="display:flex;background:var(--bg-muted);border:1px solid var(--border);border-radius:var(--r-md);padding:3px;gap:3px;">
                   <button id="taskScopeAll" onclick="Teacher._setTaskScope('once')"
-                          style="flex:1;padding:0.375rem 0.25rem;font-size:var(--text-xs);font-weight:500;
-                                 cursor:pointer;border:none;border-radius:5px;transition:background var(--t-fast),color var(--t-fast),box-shadow var(--t-fast);
-                                 background:var(--bg-base);color:var(--text-1);box-shadow:var(--shadow-xs);font-family:inherit;">
-                    One-time
-                  </button>
+                          style="flex:1;padding:0.375rem 0.25rem;font-size:var(--text-xs);font-weight:500;cursor:pointer;border:none;border-radius:5px;transition:background var(--t-fast),color var(--t-fast),box-shadow var(--t-fast);background:var(--bg-base);color:var(--text-1);box-shadow:var(--shadow-xs);font-family:inherit;">One-time</button>
                   <button id="taskScopeWeekly" onclick="Teacher._setTaskScope('weekly')"
-                          style="flex:1;padding:0.375rem 0.25rem;font-size:var(--text-xs);font-weight:500;
-                                 cursor:pointer;border:none;border-radius:5px;transition:background var(--t-fast),color var(--t-fast);
-                                 background:transparent;color:var(--text-3);box-shadow:none;font-family:inherit;">
-                    Weekly
-                  </button>
+                          style="flex:1;padding:0.375rem 0.25rem;font-size:var(--text-xs);font-weight:500;cursor:pointer;border:none;border-radius:5px;transition:background var(--t-fast),color var(--t-fast);background:transparent;color:var(--text-3);box-shadow:none;font-family:inherit;">Weekly</button>
                   <button id="taskScopeRange" onclick="Teacher._setTaskScope('range')"
-                          style="flex:1;padding:0.375rem 0.25rem;font-size:var(--text-xs);font-weight:500;
-                                 cursor:pointer;border:none;border-radius:5px;transition:background var(--t-fast),color var(--t-fast);
-                                 background:transparent;color:var(--text-3);box-shadow:none;font-family:inherit;">
-                    Date Range
-                  </button>
+                          style="flex:1;padding:0.375rem 0.25rem;font-size:var(--text-xs);font-weight:500;cursor:pointer;border:none;border-radius:5px;transition:background var(--t-fast),color var(--t-fast);background:transparent;color:var(--text-3);box-shadow:none;font-family:inherit;">Date Range</button>
                 </div>
               </div>
 
-              <div id="taskRecurrenceHint" style="display:none;margin-bottom:0.75rem;padding:0.5rem 0.75rem;
-                   background:var(--accent-subtle);border:1px solid var(--accent-border);
-                   border-radius:var(--r-md);font-size:var(--text-xs);color:var(--accent-text);line-height:1.6;"></div>
+              <div id="taskRecurrenceHint" style="display:none;margin-bottom:0.75rem;padding:0.5rem 0.75rem;background:var(--accent-subtle);border:1px solid var(--accent-border);border-radius:var(--r-md);font-size:var(--text-xs);color:var(--accent-text);line-height:1.6;"></div>
 
               <div id="taskAssignToWrap" style="margin-bottom:0.875rem;">
-                <label style="display:block;font-size:var(--text-xs);font-weight:500;
-                              color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">
-                  Assign to
-                </label>
-                <div style="display:flex;background:var(--bg-muted);border:1px solid var(--border);
-                            border-radius:var(--r-md);padding:3px;gap:3px;">
+                <label style="display:block;font-size:var(--text-xs);font-weight:500;color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">Assign to</label>
+                <div style="display:flex;background:var(--bg-muted);border:1px solid var(--border);border-radius:var(--r-md);padding:3px;gap:3px;">
                   <button id="taskAssignAll" onclick="Teacher._setAssignScope('all')"
-                          style="flex:1;padding:0.375rem 0.25rem;font-size:var(--text-xs);font-weight:500;
-                                 cursor:pointer;border:none;border-radius:5px;transition:background var(--t-fast),color var(--t-fast),box-shadow var(--t-fast);
-                                 background:var(--bg-base);color:var(--text-1);box-shadow:var(--shadow-xs);font-family:inherit;">
-                    All
-                  </button>
+                          style="flex:1;padding:0.375rem 0.25rem;font-size:var(--text-xs);font-weight:500;cursor:pointer;border:none;border-radius:5px;transition:background var(--t-fast),color var(--t-fast),box-shadow var(--t-fast);background:var(--bg-base);color:var(--text-1);box-shadow:var(--shadow-xs);font-family:inherit;">All</button>
                   <button id="taskAssignClass" onclick="Teacher._setAssignScope('class')"
-                          style="flex:1;padding:0.375rem 0.25rem;font-size:var(--text-xs);font-weight:500;
-                                 cursor:pointer;border:none;border-radius:5px;transition:background var(--t-fast),color var(--t-fast);
-                                 background:transparent;color:var(--text-3);box-shadow:none;font-family:inherit;">
-                    By Class
-                  </button>
+                          style="flex:1;padding:0.375rem 0.25rem;font-size:var(--text-xs);font-weight:500;cursor:pointer;border:none;border-radius:5px;transition:background var(--t-fast),color var(--t-fast);background:transparent;color:var(--text-3);box-shadow:none;font-family:inherit;">By Class</button>
                   <button id="taskAssignStudent" onclick="Teacher._setAssignScope('student')"
-                          style="flex:1;padding:0.375rem 0.25rem;font-size:var(--text-xs);font-weight:500;
-                                 cursor:pointer;border:none;border-radius:5px;transition:background var(--t-fast),color var(--t-fast);
-                                 background:transparent;color:var(--text-3);box-shadow:none;font-family:inherit;">
-                    By Student
-                  </button>
+                          style="flex:1;padding:0.375rem 0.25rem;font-size:var(--text-xs);font-weight:500;cursor:pointer;border:none;border-radius:5px;transition:background var(--t-fast),color var(--t-fast);background:transparent;color:var(--text-3);box-shadow:none;font-family:inherit;">By Student</button>
                 </div>
               </div>
 
               <div id="taskTargetClassWrap" style="display:none;margin-bottom:0.75rem;">
-                <label style="display:block;font-size:var(--text-xs);font-weight:500;
-                              color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">
-                  Class
-                </label>
+                <label style="display:block;font-size:var(--text-xs);font-weight:500;color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">Class</label>
                 <select id="taskTargetClass" onchange="Teacher._onTaskTargetChange()"></select>
               </div>
 
               <div id="taskTargetStudentWrap" style="display:none;margin-bottom:0.75rem;">
-                <label style="display:block;font-size:var(--text-xs);font-weight:500;
-                              color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">
-                  Student
-                </label>
+                <label style="display:block;font-size:var(--text-xs);font-weight:500;color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">Student</label>
                 <select id="taskTargetStudent" onchange="Teacher._onTaskTargetChange()"></select>
               </div>
 
-              <label style="display:flex;align-items:center;gap:0.625rem;margin-bottom:0.875rem;
-                            cursor:pointer;padding:0.625rem 0.75rem;border-radius:var(--r-md);
-                            border:1px solid var(--border);background:var(--bg-base);">
-                <input type="checkbox" id="tasksActive"
-                       style="width:1rem;height:1rem;accent-color:var(--accent);flex-shrink:0;cursor:pointer;" />
+              <label style="display:flex;align-items:center;gap:0.625rem;margin-bottom:0.875rem;cursor:pointer;padding:0.625rem 0.75rem;border-radius:var(--r-md);border:1px solid var(--border);background:var(--bg-base);">
+                <input type="checkbox" id="tasksActive" style="width:1rem;height:1rem;accent-color:var(--accent);flex-shrink:0;cursor:pointer;" />
                 <div>
                   <span style="font-size:var(--text-sm);font-weight:500;color:var(--text-1);">Active</span>
-                  <span style="display:block;font-size:var(--text-xs);color:var(--text-3);margin-top:1px;">
-                    Students only see this task when Active is on
-                  </span>
+                  <span style="display:block;font-size:var(--text-xs);color:var(--text-3);margin-top:1px;">Students only see this task when Active is on</span>
                 </div>
               </label>
 
               <div style="margin-bottom:0.75rem;">
-                <label style="display:block;font-size:var(--text-xs);font-weight:500;
-                              color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">
-                  Task Title
-                </label>
+                <label style="display:block;font-size:var(--text-xs);font-weight:500;color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">Task Title</label>
                 <input type="text" id="tasksTitle" placeholder="e.g. Term 2 Coaching Programme" />
               </div>
 
               <div style="margin-bottom:0.875rem;">
-                <label style="display:block;font-size:var(--text-xs);font-weight:500;
-                              color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">
-                  Message for Students
-                </label>
-                <textarea id="tasksMessage" placeholder="Instructions or motivation..."
-                          style="height:4rem;resize:vertical;"></textarea>
+                <label style="display:block;font-size:var(--text-xs);font-weight:500;color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">Message for Students</label>
+                <textarea id="tasksMessage" placeholder="Instructions or motivation..." style="height:4rem;resize:vertical;"></textarea>
               </div>
 
               <div style="margin-bottom:0.875rem;">
-                <label style="display:block;font-size:var(--text-xs);font-weight:500;
-                              color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">
-                  Exam Duration
-                  <span style="font-weight:400;text-transform:none;color:var(--text-4);">— for this task</span>
+                <label style="display:block;font-size:var(--text-xs);font-weight:500;color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">
+                  Exam Duration <span style="font-weight:400;text-transform:none;color:var(--text-4);">— for this task</span>
                 </label>
                 <select id="taskDurationMs">
                   <option value="">Use default (2 hours)</option>
@@ -467,94 +700,59 @@ function renderTeacherDashboard() {
               <div id="taskDateConfigArea"></div>
 
               <div id="taskRecurringSubjectsWrap" style="display:none;margin-bottom:0.875rem;">
-                <label style="display:block;font-size:var(--text-xs);font-weight:500;
-                              color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">
-                  Subject Restrictions
-                  <span style="font-weight:400;text-transform:none;color:var(--text-4);">— per day of week</span>
+                <label style="display:block;font-size:var(--text-xs);font-weight:500;color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">
+                  Subject Restrictions <span style="font-weight:400;text-transform:none;color:var(--text-4);">— per day of week</span>
                 </label>
                 <div id="taskRecurringSubjectsList"></div>
               </div>
 
               <div style="display:flex;gap:0.5rem;padding-top:0.875rem;border-top:1px solid var(--border);">
-                <button id="saveTasksBtn" onclick="Teacher.saveTasksConfig()"
-                        class="btn bg-green-600 hover:bg-green-700"
-                        style="flex:1;justify-content:center;font-size:var(--text-sm);">
+                <button id="saveTasksBtn" onclick="Teacher.saveTasksConfig()" class="btn bg-green-600 hover:bg-green-700" style="flex:1;justify-content:center;font-size:var(--text-sm);">
                   Save &amp; Apply
                 </button>
               </div>
             </div>
 
             <div class="glass-dark" style="padding:1.25rem;border-radius:var(--r-lg);">
-              <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem;
-                          padding-bottom:0.75rem;border-bottom:1px solid var(--border);">
+              <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:1rem;padding-bottom:0.75rem;border-bottom:1px solid var(--border);">
                 <div style="width:6px;height:6px;border-radius:50%;background:var(--danger);flex-shrink:0;"></div>
-                <h3 style="font-size:var(--text-base);font-weight:600;color:var(--text-1);">
-                  Private Message
-                </h3>
+                <h3 style="font-size:var(--text-base);font-weight:600;color:var(--text-1);">Private Message</h3>
               </div>
 
               <div style="margin-bottom:0.75rem;">
                 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:0.375rem;">
-                  <label style="font-size:var(--text-xs);font-weight:500;color:var(--text-3);
-                                text-transform:uppercase;letter-spacing:.04em;">Recipients</label>
-                  <div style="display:flex;background:var(--bg-muted);border:1px solid var(--border);
-                              border-radius:var(--r-sm);padding:2px;gap:2px;">
+                  <label style="font-size:var(--text-xs);font-weight:500;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;">Recipients</label>
+                  <div style="display:flex;background:var(--bg-muted);border:1px solid var(--border);border-radius:var(--r-sm);padding:2px;gap:2px;">
                     <button id="msgModeSingle" onclick="Teacher._setMsgMode('single')"
-                            style="padding:2px 9px;font-size:var(--text-xs);font-weight:500;cursor:pointer;
-                                   border:none;border-radius:4px;font-family:inherit;transition:background var(--t-fast),color var(--t-fast),box-shadow var(--t-fast);
-                                   background:var(--bg-base);color:var(--text-1);box-shadow:var(--shadow-xs);">
-                      Single
-                    </button>
+                            style="padding:2px 9px;font-size:var(--text-xs);font-weight:500;cursor:pointer;border:none;border-radius:4px;font-family:inherit;transition:background var(--t-fast),color var(--t-fast),box-shadow var(--t-fast);background:var(--bg-base);color:var(--text-1);box-shadow:var(--shadow-xs);">Single</button>
                     <button id="msgModeMulti" onclick="Teacher._setMsgMode('multi')"
-                            style="padding:2px 9px;font-size:var(--text-xs);font-weight:500;cursor:pointer;
-                                   border:none;border-radius:4px;font-family:inherit;transition:background var(--t-fast),color var(--t-fast);
-                                   background:transparent;color:var(--text-3);">
-                      Multiple
-                    </button>
+                            style="padding:2px 9px;font-size:var(--text-xs);font-weight:500;cursor:pointer;border:none;border-radius:4px;font-family:inherit;transition:background var(--t-fast),color var(--t-fast);background:transparent;color:var(--text-3);">Multiple</button>
                   </div>
                 </div>
                 <div id="msgSingleWrap">
                   <select id="msgStudent"><option value="">Select a student...</option></select>
                 </div>
                 <div id="msgMultiWrap" style="display:none;">
-                  <input id="msgStudentSearch" type="text" placeholder="Search students..."
-                         oninput="Teacher._filterMsgStudents()" style="margin-bottom:0.375rem;" />
-                  <div id="msgStudentList"
-                       style="max-height:160px;overflow-y:auto;border:1px solid var(--border);
-                              border-radius:var(--r-md);background:var(--bg-base);"></div>
+                  <input id="msgStudentSearch" type="text" placeholder="Search students..." oninput="Teacher._filterMsgStudents()" style="margin-bottom:0.375rem;" />
+                  <div id="msgStudentList" style="max-height:160px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-md);background:var(--bg-base);"></div>
                   <div style="display:flex;align-items:center;justify-content:space-between;margin-top:0.375rem;">
                     <span id="msgSelectedCount" style="font-size:var(--text-xs);color:var(--text-3);">0 selected</span>
                     <div style="display:flex;gap:0.375rem;align-items:center;">
-                      <button onclick="Teacher._selectAllMsgStudents()"
-                              style="font-size:var(--text-xs);font-weight:500;color:var(--accent);
-                                     background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">
-                        Select all
-                      </button>
+                      <button onclick="Teacher._selectAllMsgStudents()" style="font-size:var(--text-xs);font-weight:500;color:var(--accent);background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">Select all</button>
                       <span style="color:var(--border-strong);">·</span>
-                      <button onclick="Teacher._clearMsgStudents()"
-                              style="font-size:var(--text-xs);font-weight:500;color:var(--text-3);
-                                     background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">
-                        Clear
-                      </button>
+                      <button onclick="Teacher._clearMsgStudents()" style="font-size:var(--text-xs);font-weight:500;color:var(--text-3);background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;">Clear</button>
                     </div>
                   </div>
                 </div>
               </div>
 
               <div style="margin-bottom:0.75rem;">
-                <label style="display:block;font-size:var(--text-xs);font-weight:500;
-                              color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">
-                  Message
-                </label>
-                <textarea id="msgText" placeholder="Write your private message..."
-                          style="height:6rem;resize:vertical;"></textarea>
+                <label style="display:block;font-size:var(--text-xs);font-weight:500;color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">Message</label>
+                <textarea id="msgText" placeholder="Write your private message..." style="height:6rem;resize:vertical;"></textarea>
               </div>
 
               <div style="margin-bottom:0.875rem;">
-                <label style="display:block;font-size:var(--text-xs);font-weight:500;
-                              color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">
-                  Expires after
-                </label>
+                <label style="display:block;font-size:var(--text-xs);font-weight:500;color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">Expires after</label>
                 <select id="msgDuration">
                   <option value="3600000">1 hour</option>
                   <option value="86400000">1 day</option>
@@ -567,9 +765,7 @@ function renderTeacherDashboard() {
               </div>
 
               <div style="padding-top:0.875rem;border-top:1px solid var(--border);">
-                <button id="sendMsgBtn" onclick="Teacher.sendPrivateMessage()"
-                        class="btn bg-red-600 hover:bg-red-700"
-                        style="width:100%;justify-content:center;font-size:var(--text-sm);">
+                <button id="sendMsgBtn" onclick="Teacher.sendPrivateMessage()" class="btn bg-red-600 hover:bg-red-700" style="width:100%;justify-content:center;font-size:var(--text-sm);">
                   Send Private Message
                 </button>
               </div>
@@ -582,10 +778,8 @@ function renderTeacherDashboard() {
         <div id="teacher-timetable" class="teacher-tab hidden"></div>
         <div id="teacher-games" class="teacher-tab hidden">
           <div style="display:flex;gap:.375rem;margin-bottom:1rem;flex-wrap:wrap;">
-            <button onclick="Teacher._showGamesSubTab('stats')" id="gamesSubTabStats"
-                    class="btn" style="font-size:var(--text-xs);">Game Stats</button>
-            <button onclick="Teacher._showGamesSubTab('access')" id="gamesSubTabAccess"
-                    class="btn bg-gray-500" style="font-size:var(--text-xs);">Game Access</button>
+            <button onclick="Teacher._showGamesSubTab('stats')" id="gamesSubTabStats" class="btn" style="font-size:var(--text-xs);">Game Stats</button>
+            <button onclick="Teacher._showGamesSubTab('access')" id="gamesSubTabAccess" class="btn bg-gray-500" style="font-size:var(--text-xs);">Game Access</button>
           </div>
           <div id="teacherGameStatsContainer"></div>
           <div id="teacherGameRestrictionsContainer" class="hidden"></div>
@@ -596,76 +790,47 @@ function renderTeacherDashboard() {
       </div>
     </div>`;
 
-  const existing = document.getElementById('_teacherGridStyle');
-  if (existing) existing.remove();
-
-  const style = document.createElement('style');
-  style.id = '_teacherGridStyle';
-  style.textContent = `
-    @media (max-width:768px) { .tasks-grid { grid-template-columns:1fr !important; } }
-    .teacher-result-card {
-      cursor:pointer;
-      transition:transform .15s ease,box-shadow .15s ease,border-color .15s ease;
-    }
-    .teacher-result-card:hover {
-      transform:translateY(-2px);
-      box-shadow:var(--shadow-md);
-      border-color:var(--accent-border) !important;
-    }
-    #teacherReviewModal {
-      position:fixed;inset:0;background:var(--bg-overlay);z-index:1200;
-      display:flex;align-items:flex-start;justify-content:center;
-      padding:1.25rem;overflow-y:auto;
-      backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
-      animation:cbt-overlay-in .16s ease-out both;
-    }
-    #teacherReviewModal .review-panel {
-      background:var(--bg-base);border:1px solid var(--border);
-      border-radius:var(--r-xl);padding:1.5rem;width:100%;max-width:760px;margin:auto;
-      box-shadow:var(--shadow-xl);
-      animation:cbt-modal-in .24s cubic-bezier(.34,1.45,.64,1) both;
-    }
-    .review-q-card { border-radius:var(--r-md);padding:1rem;border-width:1px;border-style:solid; }
-    .review-q-card--correct  { border-color:var(--success-border);background:var(--success-subtle); }
-    .review-q-card--wrong    { border-color:var(--danger-border);background:var(--danger-subtle); }
-    .review-q-card--skipped  { border-color:var(--border);background:var(--bg-subtle); }
-    .progress-week-row summary { cursor:pointer;list-style:none;user-select:none; }
-    .progress-week-row summary::-webkit-details-marker { display:none; }
-    #teacherEditStudentModal {
-      position:fixed;inset:0;background:var(--bg-overlay);z-index:1300;
-      display:flex;align-items:center;justify-content:center;
-      padding:1.25rem;overflow-y:auto;
-      backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);
-      animation:cbt-overlay-in .16s ease-out both;
-    }
-  `;
-  document.head.appendChild(style);
+  _injectTeacherNavStyles();
 
   _startGlobalStudentCache();
   showTab('students');
 }
 
 function showTab(tab) {
-  ['students','results','schools','tasks','studyroom','games','timetable','groups','chat','dm'].forEach(t => {
+  const ALL_TABS = ['students','results','schools','tasks','studyroom','games','timetable','groups','chat','dm'];
+
+  ALL_TABS.forEach(t => {
     const el  = document.getElementById(`teacher-${t}`);
     const btn = document.getElementById(`tab-${t}`);
+
     if (el) {
-      if ((t === 'dm' || t === 'groups') && t !== tab) {
-        el.innerHTML = '';
-      }
+      if ((t === 'dm' || t === 'groups') && t !== tab) el.innerHTML = '';
       el.classList.toggle('hidden', t !== tab);
     }
-    if (btn) btn.classList.toggle('active', t === tab);
+
+    if (btn) {
+      btn.classList.toggle('is-active', t === tab);
+    }
   });
 
+  // Slide the indicator to the active button
+  _moveNavIndicator(tab);
+
+  // Scroll active button into view on narrow screens
+  const activeBtn = document.getElementById(`tab-${tab}`);
+  if (activeBtn) {
+    activeBtn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }
+
+  // Clean up game stats listener when leaving games tab
   if (tab !== 'games' && typeof window._teacherGameStatsCleanup === 'function') {
     window._teacherGameStatsCleanup();
   }
 
-  if (tab === 'dm')        { DM.openTeacherInbox();          return; }
-  if (tab === 'chat')      { Chat.openPublicChat();           return; }
-  if (tab === 'studyroom') { StudyRoom.openForTeacher();      return; }
-  if (tab === 'groups')    { GroupChat.openForTeacher();      return; }
+  if (tab === 'dm')        { DM.openTeacherInbox();       return; }
+  if (tab === 'chat')      { Chat.openPublicChat();        return; }
+  if (tab === 'studyroom') { StudyRoom.openForTeacher();   return; }
+  if (tab === 'groups')    { GroupChat.openForTeacher();   return; }
   if (tab === 'games') {
     if (typeof window._teacherGameStatsCleanup === 'function') {
       window._teacherGameStatsCleanup();
@@ -673,11 +838,33 @@ function showTab(tab) {
     _showGamesSubTab('stats');
     return;
   }
-  if (tab === 'timetable') { _loadTimetableManager();        return; }
+  if (tab === 'timetable') { _loadTimetableManager();     return; }
   if (tab === 'students')  _loadStudents();
   if (tab === 'results')   _loadResults();
   if (tab === 'schools')   _loadSchools();
   if (tab === 'tasks')     _loadTasksManager();
+}
+
+function _moveNavIndicator(tab) {
+  const nav  = document.getElementById('vtxTeacherNav');
+  const ind  = document.getElementById('vtxNavIndicator');
+  const btn  = document.getElementById(`tab-${tab}`);
+  if (!nav || !ind || !btn) return;
+
+  const navRect = nav.getBoundingClientRect();
+  const btnRect = btn.getBoundingClientRect();
+
+  // Position relative to nav strip, accounting for scroll
+  const left = btnRect.left - navRect.left + nav.scrollLeft;
+  const width = btnRect.width;
+
+  ind.style.left  = left + 'px';
+  ind.style.width = width + 'px';
+
+  // Colour for special tabs
+  ind.className = 'vtx-td-nav-indicator';
+  if (tab === 'chat') ind.classList.add('for-chat');
+  if (tab === 'dm')   ind.classList.add('for-dm');
 }
 
 function _showGamesSubTab(sub) {
@@ -4896,61 +5083,63 @@ async function exportResultPDF(resultId) {
   }
   
   window.Teacher = {
-    renderTeacherDashboard,
-    showTab,
-    logout,
-    _loadStudents,
-    removeStudent,
-    editStudent,
-    _saveStudentEdit,
-    toggleAdmin,
-    deleteResult,
-    addSchool,
-    renameSchool,
-    deleteSchool,
-    addTaskDate,
-    deleteTask,
-    deleteAllTasks,
-    saveTasksConfig,
-    sendPrivateMessage,
-    _setMsgMode,
-    _filterMsgStudents,
-    _updateMsgSelectedCount,
-    _selectAllMsgStudents,
-    _clearMsgStudents,
-    _setTaskScope,
-    _setAssignScope,
-    _onTaskTargetChange,
-    _selectAllDateSubjects,
-    _clearDateSubjects,
-    _selectAllDaySubjects,
-    _clearDaySubjects,
-    _updateDaySubjCount,
-    exportTaskReportPDF,
-    exportResultPDF,
-    _loadTimetableManager,
-    _onTTClassChange,
-    _onTTWeekChange,
-    _ttListenAll,
-    _ttRenderEditor,
-    _ttAddEmptyPeriodRow,
-    _ttAddBreakRow,
-    _ttAddLunchRow,
-    _saveTimetable,
-    _deleteTimetable,
-    _editTimetableWeek,
-    _clearTimetableInputs,
-    _getMondayForWeek,
-    _showGamesSubTab,
-    _ttSyncTimeHidden,
-    _setTTScope,
-    _onTTStudentChange,
-    _onTTGroupNameChange,
-    _ttRenderGroupMembers,
-    _ttSelectAllGroupMembers,
-    _ttClearGroupMembers,
-    _ttSaveGroupMembers,
-    get _msgStudentCache() { return _msgStudentCache; },
-  };
+  renderTeacherDashboard,
+  showTab,
+  logout,
+  _loadStudents,
+  removeStudent,
+  editStudent,
+  _saveStudentEdit,
+  toggleAdmin,
+  deleteResult,
+  addSchool,
+  renameSchool,
+  deleteSchool,
+  addTaskDate,
+  deleteTask,
+  deleteAllTasks,
+  saveTasksConfig,
+  sendPrivateMessage,
+  _setMsgMode,
+  _filterMsgStudents,
+  _updateMsgSelectedCount,
+  _selectAllMsgStudents,
+  _clearMsgStudents,
+  _setTaskScope,
+  _setAssignScope,
+  _onTaskTargetChange,
+  _selectAllDateSubjects,
+  _clearDateSubjects,
+  _selectAllDaySubjects,
+  _clearDaySubjects,
+  _updateDaySubjCount,
+  exportTaskReportPDF,
+  exportResultPDF,
+  _loadTimetableManager,
+  _onTTClassChange,
+  _onTTWeekChange,
+  _ttListenAll,
+  _ttRenderEditor,
+  _ttAddEmptyPeriodRow,
+  _ttAddBreakRow,
+  _ttAddLunchRow,
+  _saveTimetable,
+  _deleteTimetable,
+  _editTimetableWeek,
+  _clearTimetableInputs,
+  _getMondayForWeek,
+  _showGamesSubTab,
+  _ttSyncTimeHidden,
+  _setTTScope,
+  _onTTStudentChange,
+  _onTTGroupNameChange,
+  _ttRenderGroupMembers,
+  _ttSelectAllGroupMembers,
+  _ttClearGroupMembers,
+  _ttSaveGroupMembers,
+  _moveNavIndicator,
+  _injectTeacherNavStyles,
+  get _msgStudentCache() { return _msgStudentCache; },
+};
 
 })();
