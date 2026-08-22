@@ -808,6 +808,10 @@ function cancel() {
   var _OR_SITE_URL       = window.location.origin || 'https://vertex-tutorial.vercel.app';
   var _OR_SITE_NAME      = 'Vertex Tutorial CBT';
  
+/* ── Gemini config ── */
+var _GEMINI_API_KEY    = 'AQ.Ab8RN6I12gW_JOPTsdl3CaCFyu-UgoyFjuu8JQCn7LoBmv2mQg';
+var _GEMINI_MODEL      = 'gemini-3.7-flash';    // free-tier, fast
+
    /*
    * _askGroq
    * Sends a prompt directly to Groq's OpenAI-compatible API.
@@ -1007,6 +1011,51 @@ function cancel() {
   });
 }
 
+function _askGemini(systemPrompt, userPrompt, callback) {
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
+            _GEMINI_MODEL + ':generateContent?key=' + _GEMINI_API_KEY;
+
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      system_instruction: { parts: [{ text: systemPrompt }] },
+      contents: [{ role: 'user', parts: [{ text: userPrompt }] }],
+      generationConfig: { maxOutputTokens: 1024, temperature: 0.4 },
+    }),
+  })
+  .then(function (res) {
+    if (!res.ok) {
+      return res.json().then(function (body) {
+        callback('gemini_error_' + res.status + ': ' + ((body && body.error && body.error.message) || 'Unknown error'), null);
+        return null;
+      }).catch(function () {
+        callback('gemini_error_' + res.status, null);
+        return null;
+      });
+    }
+    return res.json();
+  })
+  .then(function (data) {
+    if (!data) return;
+    var text = data.candidates &&
+               data.candidates[0] &&
+               data.candidates[0].content &&
+               data.candidates[0].content.parts &&
+               data.candidates[0].content.parts[0] &&
+               data.candidates[0].content.parts[0].text;
+    if (!text || !text.trim()) {
+      callback('gemini_empty', null);
+      return;
+    }
+    callback(null, text.trim());
+  })
+  .catch(function (err) {
+    console.error('[SpeechEngine] Gemini fetch error:', err);
+    callback('gemini_network_error', null);
+  });
+}
+
   /*
    * _askAI  ← THE MAIN DISPATCHER
    * Called by all explanation/query functions instead of calling
@@ -1022,8 +1071,16 @@ function cancel() {
       callback(null, text);
       return;
     }
-    console.warn('[SpeechEngine] Groq failed (' + err + ') — falling back to OpenRouter.');
-    _askOpenRouter(systemPrompt, userPrompt, callback, false);
+    console.warn('[SpeechEngine] Groq failed (' + err + ') — trying Gemini.');
+    _askGemini(systemPrompt, userPrompt, function (err2, text2) {
+      if (!err2 && text2) {
+        console.log('[SpeechEngine] Gemini answered successfully.');
+        callback(null, text2);
+        return;
+      }
+      console.warn('[SpeechEngine] Gemini failed (' + err2 + ') — falling back to OpenRouter.');
+      _askOpenRouter(systemPrompt, userPrompt, callback, false);
+    });
   });
 }
 
@@ -1924,7 +1981,143 @@ function _renderAiText(str) {
     },
   };
   // Shared AI bridge for exam.js drawer — accepts a pre-built messages array.
-  window._vtxAskAI = function (messagesPayload, callback) {
+window._vtxAskAI = function (messagesPayload, callback) {
+
+  /* ── OpenRouter helper ── */
+  function _tryOR(isORRetry) {
+    var orModel = isORRetry ? _OR_MODEL_FALLBACK : _OR_MODEL_PRIMARY;
+    fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': 'Bearer ' + _OR_API_KEY,
+        'HTTP-Referer':  _OR_SITE_URL,
+        'X-Title':       _OR_SITE_NAME,
+        'Content-Type':  'application/json',
+      },
+      body: JSON.stringify({
+        model:       orModel,
+        max_tokens:  1024,
+        temperature: 0.4,
+        messages:    messagesPayload,
+      }),
+    })
+    .then(function (res) {
+      if (!res.ok) {
+        if (!isORRetry) { _tryOR(true); return null; }
+        throw new Error('or_' + res.status);
+      }
+      return res.json();
+    })
+    .then(function (data) {
+      if (!data) return;
+      var finishReason = data.choices && data.choices[0] && data.choices[0].finish_reason;
+      var text = data.choices &&
+                 data.choices[0] &&
+                 data.choices[0].message &&
+                 data.choices[0].message.content;
+      if (!text || !text.trim()) {
+        if (!isORRetry) { _tryOR(true); return; }
+        throw new Error('or_empty');
+      }
+      if (finishReason === 'length') {
+        var continuationPayload = messagesPayload.concat([
+          { role: 'assistant', content: text.trim() },
+          { role: 'user', content: 'Please continue from where you stopped. Do not repeat anything already written. Continue directly.' },
+        ]);
+        fetch('https://openrouter.ai/api/v1/chat/completions', {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + _OR_API_KEY,
+            'HTTP-Referer':  _OR_SITE_URL,
+            'X-Title':       _OR_SITE_NAME,
+            'Content-Type':  'application/json',
+          },
+          body: JSON.stringify({
+            model:       orModel,
+            max_tokens:  1024,
+            temperature: 0.4,
+            messages:    continuationPayload,
+          }),
+        })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (d) {
+          var extra = d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
+          callback(null, (text.trim() + '\n\n' + (extra ? extra.trim() : '')).trim());
+        })
+        .catch(function () { callback(null, text.trim()); });
+        return;
+      }
+      callback(null, text.trim());
+    })
+    .catch(function () {
+      callback('Could not reach the AI server.', null);
+    });
+  }
+
+  /* ── Gemini helper ── */
+  function _tryGemini(isRetry) {
+  var url = 'https://generativelanguage.googleapis.com/v1beta/models/' +
+            _GEMINI_MODEL + ':generateContent?key=' + _GEMINI_API_KEY;
+
+  // Convert OpenAI messages array to Gemini native format
+  var systemText = '';
+  var contents = [];
+  messagesPayload.forEach(function (msg) {
+    if (msg.role === 'system') {
+      systemText += msg.content + '\n';
+    } else {
+      contents.push({
+        role: msg.role === 'assistant' ? 'model' : 'user',
+        parts: [{ text: msg.content }],
+      });
+    }
+  });
+
+  var body = {
+    contents: contents,
+    generationConfig: { maxOutputTokens: 1024, temperature: 0.4 },
+  };
+  if (systemText.trim()) {
+    body.system_instruction = { parts: [{ text: systemText.trim() }] };
+  }
+
+  fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  })
+  .then(function (res) {
+    if (!res.ok) {
+      if ((res.status === 429 || res.status === 503) && !isRetry) {
+        console.warn('[vtxAskAI] Gemini rate-limited — retrying once.');
+        _tryGemini(true);
+        return null;
+      }
+      throw new Error('gemini_' + res.status);
+    }
+    return res.json();
+  })
+  .then(function (data) {
+    if (!data) return;
+    var text = data.candidates &&
+               data.candidates[0] &&
+               data.candidates[0].content &&
+               data.candidates[0].content.parts &&
+               data.candidates[0].content.parts[0] &&
+               data.candidates[0].content.parts[0].text;
+    if (!text || !text.trim()) {
+      if (!isRetry) { _tryGemini(true); return; }
+      throw new Error('gemini_empty');
+    }
+    callback(null, text.trim());
+  })
+  .catch(function (err) {
+    console.warn('[vtxAskAI] Gemini failed (' + err + ') — falling back to OpenRouter.');
+    _tryOR(false);
+  });
+}
+
+  /* ── Groq helper ── */
   function _tryGroq(isRetry) {
     var model = isRetry ? _GROQ_MODEL_FALLBACK : _GROQ_MODEL_PRIMARY;
     fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -1990,79 +2183,11 @@ function _renderAiText(str) {
       callback(null, text.trim());
     })
     .catch(function (err) {
-      console.warn('[vtxAskAI] Groq failed (' + err + ') — falling back to OpenRouter.');
-      function _tryOR(isORRetry) {
-        var orModel = isORRetry ? _OR_MODEL_FALLBACK : _OR_MODEL_PRIMARY;
-        fetch('https://openrouter.ai/api/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': 'Bearer ' + _OR_API_KEY,
-            'HTTP-Referer': _OR_SITE_URL,
-            'X-Title': _OR_SITE_NAME,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            model: orModel,
-            max_tokens: 1024,
-            temperature: 0.4,
-            messages: messagesPayload,
-          }),
-        })
-        .then(function (res) {
-          if (!res.ok) {
-            if (!isORRetry) { _tryOR(true); return null; }
-            throw new Error('or_' + res.status);
-          }
-          return res.json();
-        })
-        .then(function (data) {
-          if (!data) return;
-          var finishReason = data.choices && data.choices[0] && data.choices[0].finish_reason;
-          var text = data.choices &&
-                     data.choices[0] &&
-                     data.choices[0].message &&
-                     data.choices[0].message.content;
-          if (!text || !text.trim()) {
-            if (!isORRetry) { _tryOR(true); return; }
-            throw new Error('or_empty');
-          }
-          if (finishReason === 'length') {
-            var continuationPayload = messagesPayload.concat([
-              { role: 'assistant', content: text.trim() },
-              { role: 'user', content: 'Please continue from where you stopped. Do not repeat anything already written. Continue directly.' },
-            ]);
-            fetch('https://openrouter.ai/api/v1/chat/completions', {
-              method: 'POST',
-              headers: {
-                'Authorization': 'Bearer ' + _OR_API_KEY,
-                'HTTP-Referer': _OR_SITE_URL,
-                'X-Title': _OR_SITE_NAME,
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                model: orModel,
-                max_tokens: 1024,
-                temperature: 0.4,
-                messages: continuationPayload,
-              }),
-            })
-            .then(function (r) { return r.ok ? r.json() : null; })
-            .then(function (d) {
-              var extra = d && d.choices && d.choices[0] && d.choices[0].message && d.choices[0].message.content;
-              callback(null, (text.trim() + '\n\n' + (extra ? extra.trim() : '')).trim());
-            })
-            .catch(function () { callback(null, text.trim()); });
-            return;
-          }
-          callback(null, text.trim());
-        })
-        .catch(function () {
-          callback('Could not reach the AI server.', null);
-        });
-      }
-      _tryOR(false);
+      console.warn('[vtxAskAI] Groq failed (' + err + ') — trying Gemini.');
+      _tryGemini(false);
     });
   }
+
   _tryGroq(false);
 };
 
