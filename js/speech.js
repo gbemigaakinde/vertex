@@ -1156,103 +1156,117 @@ function _askGemini(systemPrompt, userPrompt, callback) {
   /* ════════════════════════════════════════════════════════
      _loadDeeperExplanation  (fully rewritten — uses OpenRouter AI)
   ════════════════════════════════════════════════════════ */
+ function _loadDeeperExplanation(q, subj, idx, studentQuery) {
+  var deepResult = document.getElementById('seExplainDeepResult');
+  var deeperWrap = document.getElementById('seExplainDeeperWrap');
+  var askWrap    = document.getElementById('seExplainAskWrap');
+  if (!deepResult) return;
 
-  function _loadDeeperExplanation(q, subj, idx, studentQuery) {
-    var deepResult = document.getElementById('seExplainDeepResult');
-    var deeperWrap = document.getElementById('seExplainDeeperWrap');
-    var askWrap    = document.getElementById('seExplainAskWrap');
-    if (!deepResult) return;
+  _awaitingStudentQuestion = false;
+  _awaitingDeeperAnswer    = false;
 
-    _awaitingStudentQuestion = false;
-    _awaitingDeeperAnswer    = false;
+  deepResult.style.display = 'block';
+  deepResult.innerHTML =
+    '<div class="se-explain-loading">' +
+      '<span class="se-explain-spinner"></span>' +
+      (studentQuery ? 'Looking up your question…' : 'Generating explanation…') +
+    '</div>';
+  if (deeperWrap) deeperWrap.style.display = 'none';
+  if (askWrap)    askWrap.style.display    = 'none';
 
-    deepResult.style.display = 'block';
-    deepResult.innerHTML =
-      '<div class="se-explain-loading">' +
-        '<span class="se-explain-spinner"></span>' +
-        (studentQuery ? 'Looking up your question…' : 'Generating explanation…') +
-      '</div>';
-    if (deeperWrap) deeperWrap.style.display = 'none';
-    if (askWrap)    askWrap.style.display    = 'none';
+  var isStudentQuery = !!(studentQuery && studentQuery.trim().length > 2);
 
-    var isStudentQuery = !!(studentQuery && studentQuery.trim().length > 2);
+  var systemPrompt = _buildAISystemPrompt(subj);
+  var userPrompt   = isStudentQuery
+    ? _buildStudentQueryPrompt(studentQuery, q, subj, idx || 0)
+    : _buildQuestionExplainPrompt(q || { q: '', opts: [], ans: 0, exp: '' }, subj);
 
-    var systemPrompt = _buildAISystemPrompt(subj);
-    var userPrompt   = isStudentQuery
-      ? _buildStudentQueryPrompt(studentQuery, q, subj, idx || 0)
-      : _buildQuestionExplainPrompt(q || { q: '', opts: [], ans: 0, exp: '' }, subj);
+  console.log('[SpeechEngine] AI query:', isStudentQuery ? 'student: ' + studentQuery : 'auto explain');
 
-    console.log('[SpeechEngine] AI query:', isStudentQuery ? 'student: ' + studentQuery : 'auto explain');
+  _askAI(systemPrompt, userPrompt, function (err, answerText) {
+    if (!document.getElementById('seExplainModal')) return;
 
-        _askAI(systemPrompt, userPrompt, function (err, answerText) {
-      // Guard: do nothing if modal was closed during the fetch
-      if (!document.getElementById('seExplainModal')) return;
-
-      if (err || !answerText) {
-        var errMsg = 'Sorry, I could not get an explanation right now. ' +
-                     (err || 'Please check your internet connection and try again.');
-        deepResult.setAttribute('data-plain', '');
-        deepResult.innerHTML =
-          '<div class="se-explain-deep-content se-explain-deep-local">' +
-            '<div class="se-explain-deep-src">' +
-              '<span class="se-explain-wiki-badge se-explain-wiki-badge--local">' +
-                '<i class="ph ph-warning" style="font-size:.75rem;vertical-align:middle;"></i> Error' +
-              '</span>' +
-              '<strong>Could not load explanation</strong>' +
-            '</div>' +
-            '<p class="se-explain-deep-text">' + _escHtml(errMsg) + '</p>' +
-            '<button class="se-explain-deeper-btn" id="seExplainRetryBtn" style="margin-top:.5rem;">' +
-              '<i class="ph ph-arrow-clockwise"></i> Try again' +
-            '</button>' +
-          '</div>';
-
-         var retryBtn = document.getElementById('seExplainRetryBtn');
-        if (retryBtn && _deeperContext) {
-          (function (capturedQuery) {
-            retryBtn.addEventListener('click', function () {
-              // Always preserve the original question context on retry
-              _loadDeeperExplanation(_deeperContext.q, _deeperContext.subj, _deeperContext.idx, capturedQuery || null);
-            });
-          })(studentQuery);
-        }
-
-        speak(errMsg);
-        return;
-      }
-
-      deepResult.setAttribute('data-plain', answerText);
+    if (err || !answerText) {
+      var errMsg = 'Sorry, I could not get an explanation right now. ' +
+                   (err || 'Please check your internet connection and try again.');
+      deepResult.setAttribute('data-plain', '');
       deepResult.innerHTML =
-        '<div class="se-explain-deep-content">' +
+        '<div class="se-explain-deep-content se-explain-deep-local">' +
           '<div class="se-explain-deep-src">' +
-            '<span class="se-explain-wiki-badge" style="background:var(--accent);">' +
-              '<i class="ph ph-brain" style="font-size:.7rem;vertical-align:middle;"></i> AI Tutor' +
+            '<span class="se-explain-wiki-badge se-explain-wiki-badge--local">' +
+              '<i class="ph ph-warning" style="font-size:.75rem;vertical-align:middle;"></i> Error' +
             '</span>' +
-            '<strong>' + _escHtml(isStudentQuery ? 'Answer to your question' : 'Fuller explanation') + '</strong>' +
+            '<strong>Could not load explanation</strong>' +
           '</div>' +
-          '<p class="se-explain-deep-text">' + _renderAiText(answerText) + '</p>' +
-          // Re-show ask wrap so student can ask a follow-up
-          '<button class="se-explain-deeper-btn" id="seExplainFollowUpBtn" style="margin-top:.75rem;">' +
-            '<i class="ph ph-chat-circle-text"></i> Ask a follow-up question' +
+          '<p class="se-explain-deep-text">' + _escHtml(errMsg) + '</p>' +
+          '<button class="se-explain-deeper-btn" id="seExplainRetryBtn" style="margin-top:.5rem;">' +
+            '<i class="ph ph-arrow-clockwise"></i> Try again' +
           '</button>' +
         '</div>';
 
-      var followUpBtn = document.getElementById('seExplainFollowUpBtn');
-      if (followUpBtn && askWrap) {
-        followUpBtn.addEventListener('click', function () {
-          followUpBtn.style.display = 'none';
-          if (askWrap) {
-            askWrap.style.display = '';
-            var inp = document.getElementById('seExplainAskInput');
-            if (inp) { inp.value = ''; inp.focus(); }
-          }
-        });
+      var retryBtn = document.getElementById('seExplainRetryBtn');
+      if (retryBtn && _deeperContext) {
+        (function (capturedQuery) {
+          retryBtn.addEventListener('click', function () {
+            _loadDeeperExplanation(_deeperContext.q, _deeperContext.subj, _deeperContext.idx, capturedQuery || null);
+          });
+        })(studentQuery);
       }
 
-      if (document.getElementById('seExplainModal')) {
-        speak(answerText);
+      speak(errMsg);
+      return;
+    }
+
+    deepResult.setAttribute('data-plain', answerText);
+    deepResult.innerHTML =
+      '<div class="se-explain-deep-content">' +
+        '<div class="se-explain-deep-src">' +
+          '<span class="se-explain-wiki-badge" style="background:var(--accent);">' +
+            '<i class="ph ph-brain" style="font-size:.7rem;vertical-align:middle;"></i> AI Tutor' +
+          '</span>' +
+          '<strong>' + _escHtml(isStudentQuery ? 'Answer to your question' : 'Fuller explanation') + '</strong>' +
+        '</div>' +
+        '<div class="se-explain-deep-text">' + _renderAiText(answerText) + '</div>' +
+        '<button class="se-explain-deeper-btn" id="seExplainFollowUpBtn" style="margin-top:.75rem;">' +
+          '<i class="ph ph-chat-circle-text"></i> Ask a follow-up question' +
+        '</button>' +
+      '</div>';
+
+    // ── Render KaTeX on the explanation content ──
+    requestAnimationFrame(function () {
+      if (window._katexAutoRenderReady && window.renderMathInElement) {
+        try {
+          renderMathInElement(deepResult, {
+            delimiters: [
+              { left: '$$', right: '$$', display: true  },
+              { left: '$',  right: '$',  display: false },
+              { left: '\\(', right: '\\)', display: false },
+              { left: '\\[', right: '\\]', display: true  },
+            ],
+            throwOnError: false,
+            errorColor: '#cc0000',
+          });
+        } catch (err) { console.warn('[KaTeX] Explanation modal render error:', err); }
       }
     });
-  }
+
+    var followUpBtn = document.getElementById('seExplainFollowUpBtn');
+    if (followUpBtn && askWrap) {
+      followUpBtn.addEventListener('click', function () {
+        followUpBtn.style.display = 'none';
+        if (askWrap) {
+          askWrap.style.display = '';
+          var inp = document.getElementById('seExplainAskInput');
+          if (inp) { inp.value = ''; inp.focus(); }
+        }
+      });
+    }
+
+    if (document.getElementById('seExplainModal')) {
+      speak(answerText);
+    }
+  });
+}
   
     function _showExplanationModal(questionNumber, subjectName) {
     var exam   = _resultsExam;
@@ -1466,44 +1480,42 @@ function _renderAiText(str) {
 
   var raw = String(str);
 
-  // ── Step 0: Protect all LaTeX blocks from further processing ──
-  // We stash them and restore after all markdown transforms are done.
   var mathBlocks = [];
   function _stashMath(match) {
     mathBlocks.push(match);
     return '\x00MATH' + (mathBlocks.length - 1) + '\x00';
   }
 
-  // Display math first ($$...$$), then inline ($...$), then \[...\] and \(...\)
+  // Stash all LaTeX — display first, then inline, then \[...\] and \(...\)
   raw = raw.replace(/\$\$[\s\S]*?\$\$/g, _stashMath);
   raw = raw.replace(/\$[^$\n]+?\$/g,     _stashMath);
   raw = raw.replace(/\\\[[\s\S]*?\\\]/g, _stashMath);
   raw = raw.replace(/\\\([\s\S]*?\\\)/g, _stashMath);
 
-  // ── Step 1: Escape HTML (safe to do after stashing — placeholders are ASCII) ──
+  // HTML escape (placeholders survive because \x00 is not a special HTML char)
   var safe = raw
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 
-  // ── Step 2: Bold ──
+  // Bold
   safe = safe.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
 
-  // ── Step 3: Italic (single asterisk) ──
-  safe = safe.replace(/\*([^*\n]+?)\*/g, '<em>$1</em>');
+  // Italic single asterisk (not touching **)
+  safe = safe.replace(/(?<!\*)\*(?!\*)([^*\n]+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
 
-  // ── Step 4: Subscript A_B (short, no spaces, max 4 chars) ──
-  safe = safe.replace(/([A-Za-z0-9)])\\_([A-Za-z0-9]{1,4})(?=[^A-Za-z0-9]|$)/g, '$1<sub>$2</sub>');
-  safe = safe.replace(/([A-Za-z0-9)])_([A-Za-z0-9]{1,4})(?=[^A-Za-z0-9_]|$)/g,  '$1<sub>$2</sub>');
+  // Subscript: word_chars (up to 4, alphanumeric or +/-)
+  safe = safe.replace(/([A-Za-z0-9])\\_([A-Za-z0-9+\-]{1,4})(?=[^A-Za-z0-9]|$)/g, '$1<sub>$2</sub>');
+  safe = safe.replace(/([A-Za-z0-9])_([A-Za-z0-9+\-]{1,4})(?=[^A-Za-z0-9_]|$)/g,  '$1<sub>$2</sub>');
 
-  // ── Step 5: Italic underscore (longer phrases) ──
+  // Italic underscore longer phrases
   safe = safe.replace(/_([^_\n]{5,})_/g, '<em>$1</em>');
 
-  // ── Step 6: Superscript A^B ──
-  safe = safe.replace(/([A-Za-z0-9])\^([A-Za-z0-9]{1,4})(?=[^A-Za-z0-9]|$)/g, '$1<sup>$2</sup>');
+  // Superscript: word^chars (alphanumeric or +/-)
+  safe = safe.replace(/([A-Za-z0-9])\^([A-Za-z0-9+\-]{1,4})(?=[^A-Za-z0-9]|$)/g, '$1<sup>$2</sup>');
 
-  // ── Step 7: Headings ──
+  // Headings — must be at line start with no digits before the # to avoid eating numbered lists
   safe = safe.replace(/^######\s+(.+)$/gm, '<p style="margin:0 0 .4em 0;font-size:.8rem;font-weight:700;color:var(--text-2);">$1</p>');
   safe = safe.replace(/^#####\s+(.+)$/gm,  '<p style="margin:0 0 .4em 0;font-size:.8125rem;font-weight:700;color:var(--text-2);">$1</p>');
   safe = safe.replace(/^####\s+(.+)$/gm,   '<p style="margin:0 0 .45em 0;font-size:.875rem;font-weight:700;color:var(--text-1);">$1</p>');
@@ -1511,21 +1523,21 @@ function _renderAiText(str) {
   safe = safe.replace(/^##\s+(.+)$/gm,     '<p style="margin:0 0 .5em 0;font-size:1rem;font-weight:700;color:var(--text-1);">$1</p>');
   safe = safe.replace(/^#\s+(.+)$/gm,      '<p style="margin:0 0 .5em 0;font-size:1.0625rem;font-weight:700;color:var(--text-1);">$1</p>');
 
-  // ── Step 8: Horizontal rules ──
+  // Horizontal rules
   safe = safe.replace(/^[\s]*[-*_]{3,}[\s]*$/gm, '<hr style="border:none;border-top:1px solid var(--border);margin:.6em 0;">');
 
-  // ── Step 9: Unordered list items ──
+  // Unordered list items
   safe = safe.replace(/^[\s]*[-*•]\s+(.+)$/gm, '<li style="margin:.2em 0;">$1</li>');
 
-  // ── Step 10: Ordered list items ──
+  // Ordered list items
   safe = safe.replace(/^[\s]*(\d+)\.\s+(.+)$/gm, '<li style="margin:.2em 0;"><span style="font-weight:600;margin-right:.3em;">$1.</span>$2</li>');
 
-  // ── Step 11: Wrap consecutive <li> in <ul> ──
+  // Wrap consecutive <li> in <ul>
   safe = safe.replace(/(<li[^>]*>[\s\S]*?<\/li>)(\s*<li[^>]*>[\s\S]*?<\/li>)*/g, function (match) {
     return '<ul style="margin:.4em 0 .6em 1.1em;padding:0;list-style:none;">' + match + '</ul>';
   });
 
-  // ── Step 12: Double newlines → paragraphs, single → <br> ──
+  // Double newlines → paragraphs, single → <br>
   var lines = safe.split(/\n\n+/);
   safe = lines.map(function (block) {
     if (/^<(p|ul|ol|li|hr|div|h[1-6])[^>]*>/.test(block.trim())) return block;
@@ -1534,12 +1546,10 @@ function _renderAiText(str) {
     return '<p style="margin:0 0 .6em 0;">' + inner + '</p>';
   }).join('');
 
-  // ── Step 13: Strip trailing empty paragraph ──
+  // Strip trailing empty paragraph
   safe = safe.replace(/<p[^>]*>\s*<\/p>$/g, '');
 
-  // ── Step 14: Restore all stashed LaTeX blocks (unescaped, raw) ──
-  // The placeholder \x00MATHn\x00 survived HTML escaping intact because
-  // \x00 is not a special HTML character.
+  // Restore all stashed LaTeX blocks unescaped
   safe = safe.replace(/\x00MATH(\d+)\x00/g, function (_, i) {
     return mathBlocks[parseInt(i, 10)];
   });
