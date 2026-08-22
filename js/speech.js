@@ -1486,13 +1486,11 @@ function _renderAiText(str) {
     return '\x00MATH' + (mathBlocks.length - 1) + '\x00';
   }
 
-  // Stash all LaTeX — display first, then inline, then \[...\] and \(...\)
   raw = raw.replace(/\$\$[\s\S]*?\$\$/g, _stashMath);
   raw = raw.replace(/\$[^$\n]+?\$/g,     _stashMath);
   raw = raw.replace(/\\\[[\s\S]*?\\\]/g, _stashMath);
   raw = raw.replace(/\\\([\s\S]*?\\\)/g, _stashMath);
 
-  // HTML escape (placeholders survive because \x00 is not a special HTML char)
   var safe = raw
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -1502,20 +1500,20 @@ function _renderAiText(str) {
   // Bold
   safe = safe.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
 
-  // Italic single asterisk (not touching **)
+  // Italic single asterisk
   safe = safe.replace(/(?<!\*)\*(?!\*)([^*\n]+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
 
-  // Subscript: word_chars (up to 4, alphanumeric or +/-)
+  // Subscript
   safe = safe.replace(/([A-Za-z0-9])\\_([A-Za-z0-9+\-]{1,4})(?=[^A-Za-z0-9]|$)/g, '$1<sub>$2</sub>');
   safe = safe.replace(/([A-Za-z0-9])_([A-Za-z0-9+\-]{1,4})(?=[^A-Za-z0-9_]|$)/g,  '$1<sub>$2</sub>');
 
-  // Italic underscore longer phrases
+  // Italic underscore
   safe = safe.replace(/_([^_\n]{5,})_/g, '<em>$1</em>');
 
-  // Superscript: word^chars (alphanumeric or +/-)
+  // Superscript
   safe = safe.replace(/([A-Za-z0-9])\^([A-Za-z0-9+\-]{1,4})(?=[^A-Za-z0-9]|$)/g, '$1<sup>$2</sup>');
 
-  // Headings — must be at line start with no digits before the # to avoid eating numbered lists
+  // Headings
   safe = safe.replace(/^######\s+(.+)$/gm, '<p style="margin:0 0 .4em 0;font-size:.8rem;font-weight:700;color:var(--text-2);">$1</p>');
   safe = safe.replace(/^#####\s+(.+)$/gm,  '<p style="margin:0 0 .4em 0;font-size:.8125rem;font-weight:700;color:var(--text-2);">$1</p>');
   safe = safe.replace(/^####\s+(.+)$/gm,   '<p style="margin:0 0 .45em 0;font-size:.875rem;font-weight:700;color:var(--text-1);">$1</p>');
@@ -1525,6 +1523,48 @@ function _renderAiText(str) {
 
   // Horizontal rules
   safe = safe.replace(/^[\s]*[-*_]{3,}[\s]*$/gm, '<hr style="border:none;border-top:1px solid var(--border);margin:.6em 0;">');
+
+  // ── Tables ──
+  safe = safe.replace(/((?:^\|.+\|\s*\n?)+)/gm, function (block) {
+    var lines = block.trim().split('\n').map(function (l) { return l.trim(); }).filter(Boolean);
+    if (lines.length < 2) return block;
+
+    var isSep = /^\|[\s\-:|]+\|$/.test(lines[1]);
+    if (!isSep) return block;
+
+    function _parseCells(line) {
+      return line.replace(/^\||\|$/g, '').split('|').map(function (c) { return c.trim(); });
+    }
+
+    var headerCells = _parseCells(lines[0]);
+    var bodyLines   = lines.slice(2);
+
+    var thead = '<thead><tr>' +
+      headerCells.map(function (c) {
+        return '<th style="padding:.4rem .625rem;border:1px solid var(--border);' +
+               'background:var(--bg-subtle);font-size:.8125rem;font-weight:700;' +
+               'color:var(--text-1);text-align:left;white-space:nowrap;">' + c + '</th>';
+      }).join('') +
+      '</tr></thead>';
+
+    var tbody = '<tbody>' +
+      bodyLines.map(function (line, ri) {
+        var cells = _parseCells(line);
+        var rowBg = ri % 2 === 1
+          ? 'background:var(--bg-subtle);'
+          : 'background:var(--bg-base);';
+        return '<tr>' + cells.map(function (c) {
+          return '<td style="padding:.375rem .625rem;border:1px solid var(--border);' +
+                 'font-size:.8rem;color:var(--text-2);' + rowBg + '">' + c + '</td>';
+        }).join('') + '</tr>';
+      }).join('') +
+      '</tbody>';
+
+    return '<div style="overflow-x:auto;margin:.5em 0 .75em;">' +
+           '<table style="border-collapse:collapse;width:100%;min-width:280px;' +
+           'font-family:var(--font);border:1px solid var(--border);border-radius:6px;overflow:hidden;">' +
+           thead + tbody + '</table></div>';
+  });
 
   // Unordered list items
   safe = safe.replace(/^[\s]*[-*•]\s+(.+)$/gm, '<li style="margin:.2em 0;">$1</li>');
@@ -1540,7 +1580,7 @@ function _renderAiText(str) {
   // Double newlines → paragraphs, single → <br>
   var lines = safe.split(/\n\n+/);
   safe = lines.map(function (block) {
-    if (/^<(p|ul|ol|li|hr|div|h[1-6])[^>]*>/.test(block.trim())) return block;
+    if (/^<(p|ul|ol|li|hr|div|h[1-6]|table)[^>]*>/.test(block.trim())) return block;
     var inner = block.replace(/\n/g, '<br>');
     if (!inner.trim()) return '';
     return '<p style="margin:0 0 .6em 0;">' + inner + '</p>';
@@ -1549,7 +1589,7 @@ function _renderAiText(str) {
   // Strip trailing empty paragraph
   safe = safe.replace(/<p[^>]*>\s*<\/p>$/g, '');
 
-  // Restore all stashed LaTeX blocks unescaped
+  // Restore LaTeX
   safe = safe.replace(/\x00MATH(\d+)\x00/g, function (_, i) {
     return mathBlocks[parseInt(i, 10)];
   });
