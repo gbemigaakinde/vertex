@@ -3270,7 +3270,8 @@ function _openAiDrawer() {
                   (timeStr
                     ? '<span style="font-size:.625rem;color:var(--text-4);padding-right:2px;">' + timeStr + '</span>'
                     : '');
-              } else {
+               } else {
+                var restoredHtml = (msg.raw) ? _renderAiText(msg.raw) : (msg.html || '');
                 bubble.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:2px;';
                 bubble.innerHTML =
                   '<div style="display:flex;align-items:flex-end;gap:.5rem;">' +
@@ -3282,7 +3283,7 @@ function _openAiDrawer() {
                       'border-radius:var(--r-sm) var(--r-xl) var(--r-xl) var(--r-xl);' +
                       'background:var(--bg-subtle);border:1px solid var(--border);' +
                       'font-size:.9rem;line-height:1.65;color:var(--text-1);word-break:break-word;">' +
-                      msg.html +
+                      restoredHtml +
                     '</div>' +
                   '</div>' +
                   (timeStr
@@ -3292,9 +3293,24 @@ function _openAiDrawer() {
               messages.appendChild(bubble);
             });
 
-            setTimeout(function () {
+             setTimeout(function () {
               if (messages) messages.scrollTop = messages.scrollHeight;
-            }, 60);
+              // Re-run KaTeX on all restored bubbles
+              if (window._katexAutoRenderReady && window.renderMathInElement) {
+                try {
+                  renderMathInElement(messages, {
+                    delimiters: [
+                      { left: '$$', right: '$$', display: true  },
+                      { left: '$',  right: '$',  display: false },
+                      { left: '\\(', right: '\\)', display: false },
+                      { left: '\\[', right: '\\]', display: true  },
+                    ],
+                    throwOnError: false,
+                    errorColor: '#cc0000',
+                  });
+                } catch (e) { console.warn('[KaTeX] Restore render error:', e); }
+              }
+            }, 120);
           }
         } else {
           localStorage.removeItem(storageKey);
@@ -3598,7 +3614,7 @@ function _sendAiMessage() {
         var saved2 = raw2 ? JSON.parse(raw2) : { ts: Date.now(), history: [], ui: [], lastActivityTs: Date.now() };
         saved2.history        = window._vtxAiHistory;
         saved2.ui             = saved2.ui || [];
-        saved2.ui.push({ role: 'assistant', html: rendered, ts: replyTs });
+        saved2.ui.push({ role: 'assistant', html: rendered, raw: replyText, ts: replyTs });
         saved2.ts             = Date.now();
         saved2.lastActivityTs = Date.now();
         localStorage.setItem(sKey, JSON.stringify(saved2));
