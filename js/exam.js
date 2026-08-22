@@ -3494,6 +3494,9 @@ function _sendAiMessage() {
   var text = (inp.value || '').trim();
   if (!text) return;
 
+  // Detect if this message is a visual request before clearing input
+  var _isVisualRequest = /\b(draw|diagram|show me|picture|image|illustrat|circuit|sketch|chart|graph|visual|what does .* look like)\b/i.test(text);
+
   inp.value = '';
   inp.style.height = 'auto';
 
@@ -3640,6 +3643,46 @@ function _sendAiMessage() {
 
   function _appendAiReply(replyText) {
     _removeTyping();
+
+    // ── Post-process: fix ASCII art and missing visual markers ──────────────
+    var ASCII_PATTERN = /(\|[\s\-=+\\\/|]{4,}|[-+]{4,}[\|+]|^\s*[\/\\|]{2,})/m;
+    var hasAsciiArt   = ASCII_PATTERN.test(replyText);
+
+    // Check if reply already has a visual marker
+    var existingMarker = replyText.match(/\[VISUAL:\s*([^\]]+)\]/i);
+
+    // If no marker and (student asked for a visual OR reply contains ASCII art), inject one
+    if (!existingMarker && (_isVisualRequest || hasAsciiArt)) {
+      // Try to extract a meaningful topic from the student's original message
+      var visualTopic = text
+        .replace(/\b(draw|show me|give me|display|generate|create|make|produce|illustrate|sketch)\b/gi, '')
+        .replace(/\b(a |an |the |me |please |some )\b/gi, '')
+        .replace(/\b(image|picture|diagram|photo|visual|illustration|drawing)\b/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim();
+
+      if (!visualTopic || visualTopic.length < 3) visualTopic = text.trim();
+
+      // Strip ASCII art lines from the reply text before displaying
+      if (hasAsciiArt) {
+        replyText = replyText
+          .split('\n')
+          .filter(function (line) {
+            // Remove lines that are predominantly ASCII drawing characters
+            var stripped = line.replace(/[A-Za-z0-9\s]/g, '');
+            var asciiChars = (line.match(/[|\-+\/\\=_<>()[\]{}~^]/g) || []).length;
+            return !(asciiChars > 4 && asciiChars / Math.max(line.length, 1) > 0.35);
+          })
+          .join('\n')
+          .replace(/\n{3,}/g, '\n\n')
+          .trim();
+      }
+
+      // Append the marker
+      replyText = replyText + '\n[VISUAL: ' + visualTopic + ']';
+    }
+    // ── End post-processing ──────────────────────────────────────────────────
+
     window._vtxAiHistory.push({ role: 'assistant', content: replyText });
 
     var msgs = document.getElementById('vtxAiMessages');
@@ -3702,7 +3745,6 @@ function _sendAiMessage() {
       var currentSubject = (window.AppState && window.AppState.exam && window.AppState.exam.currentSubject)
         || studentData2.class || '';
 
-      // Show a loading placeholder
       var visualWrapper = document.createElement('div');
       visualWrapper.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding-left:34px;animation:cbt-fade-in 200ms var(--ease) both;';
       var visualId = 'vtxVisual_' + replyTs;
@@ -3724,7 +3766,6 @@ function _sendAiMessage() {
       msgs.appendChild(visualWrapper);
       msgs.scrollTop = msgs.scrollHeight;
 
-      // Inject loading bar animation style once
       if (!document.getElementById('vtxVisualStyle')) {
         var st = document.createElement('style');
         st.id = 'vtxVisualStyle';
