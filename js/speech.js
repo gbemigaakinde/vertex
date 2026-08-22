@@ -1100,6 +1100,9 @@ function _askGemini(systemPrompt, userPrompt, callback) {
     'Keep answers under 250 words for concept questions; use as many words as needed to fully complete calculation problems. ' +
     'FORMATTING RULES — follow exactly: ' +
     'Write in clear sentences and short paragraphs separated by blank lines. ' +
+    'When presenting any comparison, list of properties, or structured data with rows and columns, you MUST use a markdown pipe table. ' +
+    'A pipe table looks like this: | Header 1 | Header 2 | on the first line, then | --- | --- | on the second line, then | value | value | for each row. ' +
+    'Never use spaces or dashes alone to draw a table. Always use the pipe | character to separate columns. ' +
     'For maths and physics: use LaTeX notation inside $...$ for inline math (e.g. $f = \\frac{1}{2\\pi\\sqrt{LC}}$) and $$...$$ for display equations. ' +
     'Use \\cdot for multiplication dot (never write \\cdotp). ' +
     'Never write raw LaTeX commands like \\( or \\sqrt outside of $...$ or $$...$$ delimiters. ' +
