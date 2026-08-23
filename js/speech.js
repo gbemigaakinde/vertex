@@ -1360,6 +1360,8 @@ function _renderAiText(str) {
   raw = raw.replace(/\\\([\s\S]*?\\\)/g, _stashMath);
 
   raw = raw.replace(/!\[[^\]]*\]\([^)]*\)/g, '');
+  raw = raw.replace(/https?:\/\/[^\s)>\]"]+/g, '');
+  raw = raw.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1');
 
   // Collapse blank lines between table rows before escaping
   raw = raw.replace(/(^\|[^\n]*\|)[ \t]*\n[ \t]*\n(?=[ \t]*\|)/gm, '$1\n');
