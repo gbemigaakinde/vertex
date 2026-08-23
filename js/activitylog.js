@@ -302,7 +302,7 @@
                     margin-bottom:var(--sp-5);max-width:340px;margin-left:auto;margin-right:auto;">
             Hi <strong style="color:var(--text-1);">${_esc(first)}</strong>, your registration
             has been received. Master Timothy will review and approve your account shortly.
-            This page will update automatically — please keep it open.
+            This page will update automatically — please keep it open or check again later.
           </p>
 
           <!-- Status indicator -->
