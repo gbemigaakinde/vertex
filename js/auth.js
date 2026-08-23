@@ -468,38 +468,55 @@
     UI.setLoading(btn, true);
     window._registrationInProgress = true;
 
+    let createdUid = null;
+
     try {
+      // 1. Create Firebase Auth user
       const cred = await window.fbAuth.createUserWithEmailAndPassword(email, pass);
-      const uid  = cred.user.uid;
+      createdUid = cred.user.uid;
 
-      await window.fbDb.collection('students').doc(uid).set({
-        name,
-        class:       cls,
-        school,
-        email,
-        admissionNo: null,
-        createdAt:   firebase.firestore.FieldValue.serverTimestamp(),
-      });
+      // 2. Write ONLY to pendingStudents — not to students collection
+      await ActivityLog.submitForApproval(createdUid, email, name, cls, school);
 
-      // Registration is complete. Reset the flag and store the email for the
-      // login screen before signing out. We manually render the login screen
-      // here instead of relying on the onAuthStateChanged callback, because
-      // the auth listener's _authResolved guard would swallow the signOut
-      // event after the earlier createUser trigger already resolved it.
+      // 3. Registration submitted. Sign out silently, then show waiting room.
       window._registrationInProgress = false;
-      _pendingLoginEmail = email;
 
+      // Sign out so onAuthStateChanged does not trigger _onLogin
+      // (flag is already false so the listener guard is correct)
       await window.fbAuth.signOut();
 
-      // Directly render the login screen so the user sees the success state
-      // regardless of whether the auth listener fires again.
-      renderLogin();
+      // 4. Store credentials temporarily so we can re-authenticate for the waiting room
+      //    We do NOT auto-login — instead show the waiting room via the login flow.
+      //    Set a pending email hint so the login screen pre-fills.
+      _pendingLoginEmail = email;
+
+      // 5. Mount the waiting room directly (student just registered)
+      //    We need to sign them in silently to attach the real-time listener.
+      //    Re-authenticate, skip _onLogin by using the registration flag.
+      window._registrationInProgress = true;
+      const reCred = await window.fbAuth.signInWithEmailAndPassword(email, pass);
+      window._registrationInProgress = false;
+
+      const uid = reCred.user.uid;
+
+      // Cancel school dropdown listener now that we're leaving the auth screen
+      AppState.cancelListener('schoolDropdown');
+
+      // Show waiting room
+      ActivityLog.renderWaitingRoom(uid, name);
 
     } catch (err) {
       window._registrationInProgress = false;
 
-      if (window.fbAuth.currentUser) {
-        window.fbAuth.signOut().catch(() => {});
+      // If we created the auth user but failed afterwards, sign them out cleanly
+      if (createdUid) {
+        try {
+          // Try to clean up the pending doc if it was written
+          await window.fbDb.collection('pendingStudents').doc(createdUid).delete();
+        } catch (e) { /* non-fatal */ }
+        try { await window.fbAuth.signOut(); } catch (e) {}
+      } else if (window.fbAuth.currentUser) {
+        window.fbAuth.signOut().catch(function () {});
       }
 
       const msg = err.code === 'auth/email-already-in-use'  ? 'An account with this email already exists.'
