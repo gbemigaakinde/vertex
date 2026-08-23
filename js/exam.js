@@ -3792,12 +3792,97 @@ function _sendAiMessage() {
           return;
         }
 
-        if (result.type === 'rate_limited') {
+         if (result.type === 'rate_limited') {
+          // Show warning with automatic SVG fallback attempt
+          container.style.cssText = '';
           container.innerHTML =
-            '<span style="font-size:.8125rem;color:var(--warning-text);">' +
-              '<i class="ph ph-clock" style="font-size:14px;vertical-align:middle;margin-right:4px;"></i>' +
-              _escHtml(result.message) +
-            '</span>';
+            '<div style="display:flex;flex-direction:column;gap:.75rem;padding:.25rem;">' +
+              '<div style="display:flex;align-items:flex-start;gap:.5rem;">' +
+                '<i class="ph ph-warning" style="font-size:16px;color:var(--warning);flex-shrink:0;margin-top:1px;"></i>' +
+                '<div>' +
+                  '<p style="font-size:.8125rem;font-weight:700;color:var(--warning-text);margin:0 0 .2rem;">' +
+                    'Daily image limit reached' +
+                  '</p>' +
+                  '<p style="font-size:.75rem;color:var(--text-3);margin:0;line-height:1.5;">' +
+                    _escHtml(result.message) +
+                  '</p>' +
+                '</div>' +
+              '</div>' +
+              '<div style="display:flex;align-items:center;gap:.375rem;font-size:.75rem;color:var(--text-3);">' +
+                '<i class="ph ph-arrows-clockwise" style="font-size:13px;color:var(--accent);"></i>' +
+                '<span>Trying diagram instead…</span>' +
+              '</div>' +
+              '<div id="' + visualId + '_svg_loading" style="width:100%;height:3px;border-radius:2px;' +
+                'background:var(--accent);animation:vtx-visual-loading 1.2s ease-in-out infinite;"></div>' +
+            '</div>';
+
+          // Automatically fall back to SVG — SVG has no quota
+          fetch('https://vertex-worker.gbemigaakinde.workers.dev/visual', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              topic:        visualTopic2,
+              subject:      currentSubject || '',
+              studentId:    'svg_fallback',   // SVG path ignores studentId / rate limit
+              studentName:  studentData2.name  || '',
+              studentClass: studentData2.class || '',
+              context:      'fallback from rate limit',
+            }),
+          })
+          .then(function(res) { return res.json(); })
+          .then(function(svgResult) {
+            var cont = document.getElementById(visualId);
+            if (!cont) return;
+
+            if (svgResult && svgResult.type === 'svg' && svgResult.content) {
+              cont.className  = 'vtx-visual-svg-wrap';
+              cont.style.cssText = '';
+              cont.innerHTML =
+                svgResult.content +
+                '<div class="vtx-visual-label">' + _escHtml(visualTopic2) + '</div>' +
+                '<div style="font-size:.6rem;color:var(--text-4);text-align:right;padding:.125rem 0;">' +
+                  'Diagram shown — image limit reached for today' +
+                '</div>';
+              if (msgs) msgs.scrollTop = msgs.scrollHeight;
+            } else {
+              // SVG also failed — show final dead-end message
+              cont.style.cssText = '';
+              cont.innerHTML =
+                '<div style="display:flex;flex-direction:column;gap:.5rem;">' +
+                  '<div style="display:flex;align-items:flex-start;gap:.5rem;">' +
+                    '<i class="ph ph-warning" style="font-size:16px;color:var(--warning);flex-shrink:0;margin-top:1px;"></i>' +
+                    '<div>' +
+                      '<p style="font-size:.8125rem;font-weight:700;color:var(--warning-text);margin:0 0 .2rem;">' +
+                        'Daily image limit reached' +
+                      '</p>' +
+                      '<p style="font-size:.75rem;color:var(--text-3);margin:0;line-height:1.5;">' +
+                        _escHtml(result.message) +
+                      '</p>' +
+                    '</div>' +
+                  '</div>' +
+                  '<p style="font-size:.7rem;color:var(--text-4);margin:0;">' +
+                    'Diagram generation also unavailable right now. Please try again later.' +
+                  '</p>' +
+                '</div>';
+            }
+          })
+          .catch(function() {
+            var cont = document.getElementById(visualId);
+            if (!cont) return;
+            cont.style.cssText = '';
+            cont.innerHTML =
+              '<div style="display:flex;align-items:flex-start;gap:.5rem;">' +
+                '<i class="ph ph-warning" style="font-size:16px;color:var(--warning);flex-shrink:0;margin-top:1px;"></i>' +
+                '<div>' +
+                  '<p style="font-size:.8125rem;font-weight:700;color:var(--warning-text);margin:0 0 .2rem;">' +
+                    'Daily image limit reached' +
+                  '</p>' +
+                  '<p style="font-size:.75rem;color:var(--text-3);margin:0;line-height:1.5;">' +
+                    _escHtml(result.message) +
+                  '</p>' +
+                '</div>' +
+              '</div>';
+          });
           return;
         }
 
