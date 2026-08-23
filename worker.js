@@ -301,25 +301,31 @@ async function generateSVGDiagram(topic, subject, studentClass, context, env) {
     console.warn('[Worker] Groq SVG failed:', e.message);
   }
 
-  // Fallback: Gemini
+   // Fallback: Gemini
   try {
-    const geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + env.GEMINI_API_KEY;
-    const geminiRes = await fetch(geminiUrl, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        system_instruction: { parts: [{ text: systemPrompt }] },
-        contents:           [{ role: 'user', parts: [{ text: userPrompt }] }],
-        generationConfig:   { maxOutputTokens: 4096, temperature: 0.2 },
-      }),
-    });
-    if (geminiRes.ok) {
-      const data = await geminiRes.json();
-      const text = data.candidates && data.candidates[0] && data.candidates[0].content &&
-                   data.candidates[0].content.parts && data.candidates[0].content.parts[0] &&
-                   data.candidates[0].content.parts[0].text;
-      const svg  = extractSVG(text);
-      if (svg) return svg;
+    if (!env.GEMINI_API_KEY) {
+      console.warn('[Worker] GEMINI_API_KEY not set. Skipping Gemini SVG fallback.');
+    } else {
+      const geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + env.GEMINI_API_KEY;
+      const geminiRes = await fetch(geminiUrl, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          systemInstruction: { parts: [{ text: systemPrompt }] },
+          contents:          [{ role: 'user', parts: [{ text: userPrompt }] }],
+          generationConfig:  { maxOutputTokens: 4096, temperature: 0.2 },
+        }),
+      });
+      if (geminiRes.ok) {
+        const data = await geminiRes.json();
+        const text = data.candidates && data.candidates[0] && data.candidates[0].content &&
+                     data.candidates[0].content.parts && data.candidates[0].content.parts[0] &&
+                     data.candidates[0].content.parts[0].text;
+        const svg  = extractSVG(text);
+        if (svg) return svg;
+      } else {
+        console.warn('[Worker] Gemini SVG returned status:', geminiRes.status);
+      }
     }
   } catch (e) {
     console.warn('[Worker] Gemini SVG failed:', e.message);
@@ -611,7 +617,7 @@ async function callGemini(messages, model, env) {
   });
 
   const geminiBody = { contents, generationConfig: { maxOutputTokens: 1024, temperature: 0.4 } };
-  if (systemText.trim()) geminiBody.system_instruction = { parts: [{ text: systemText.trim() }] };
+  if (systemText.trim()) geminiBody.systemInstruction = { parts: [{ text: systemText.trim() }] };
 
   const res  = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + useModel + ':generateContent?key=' + geminiKey, {
     method:  'POST',
