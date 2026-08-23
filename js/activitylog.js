@@ -710,77 +710,82 @@
   }
 
   /* ── Approve student ── */
-  async function _approveStudent(uid) {
-    const approveBtn = document.getElementById('vtxApproveBtn_' + uid);
-    const declineBtn = document.getElementById('vtxDeclineBtn_' + uid);
-    if (approveBtn) { approveBtn.disabled = true; approveBtn.style.opacity = '0.6'; }
-    if (declineBtn) { declineBtn.disabled = true; }
+async function _approveStudent(uid) {
+  const approveBtn = document.getElementById('vtxApproveBtn_' + uid);
+  const declineBtn = document.getElementById('vtxDeclineBtn_' + uid);
+  if (approveBtn) { approveBtn.disabled = true; approveBtn.style.opacity = '0.6'; }
+  if (declineBtn) { declineBtn.disabled = true; }
 
-    try {
-      const pendingSnap = await window.fbDb.collection('pendingStudents').doc(uid).get();
-      if (!pendingSnap.exists) {
-        UI.toast('Pending record not found. It may have already been processed.', 'warning');
-        return;
-      }
-      const d = pendingSnap.data();
-
-      // 1. Write to students collection — this is what the waiting room listener checks
-      const batch = window.fbDb.batch();
-      batch.set(window.fbDb.collection('students').doc(uid), {
-        name:        d.name   || '',
-        class:       d.class  || '',
-        school:      d.school || '',
-        email:       d.email  || '',
-        admissionNo: null,
-        createdAt:   firebase.firestore.FieldValue.serverTimestamp(),
-        approvedAt:  firebase.firestore.FieldValue.serverTimestamp(),
-      });
-
-      // 2. Delete the pending doc (triggers waiting room listener on student's device)
-      batch.delete(window.fbDb.collection('pendingStudents').doc(uid));
-
-      await batch.commit();
-
-      // 3. Log the approval
-      const ttlLog = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-      window.fbDb.collection('activityLog').add({
-        uid,
-        name:      d.name   || 'Unknown',
-        class:     d.class  || '',
-        school:    d.school || '',
-        action:    'registration_approved',
-        detail:    (d.name || 'A student') + ' was approved and can now log in',
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
-        ttl:       ttlLog,
-      }).catch(function () {});
-
-      // 4. Animate card out
-      const card = document.getElementById('vtxPendingCard_' + uid);
-      if (card) {
-        card.style.transition = 'opacity 0.35s ease, transform 0.35s ease, max-height 0.35s ease';
-        card.style.overflow   = 'hidden';
-        card.style.maxHeight  = card.offsetHeight + 'px';
-        requestAnimationFrame(function () {
-          card.style.opacity   = '0';
-          card.style.transform = 'translateX(20px)';
-          card.style.maxHeight = '0';
-          card.style.padding   = '0';
-          card.style.margin    = '0';
-          setTimeout(function () {
-            if (card.parentNode) card.parentNode.removeChild(card);
-          }, 380);
-        });
-      }
-
-      UI.toast((d.name || 'Student') + ' approved and can now access the platform.', 'success');
-
-    } catch (err) {
-      console.error('[ApprovalGate] _approveStudent error:', err);
+  try {
+    const pendingSnap = await window.fbDb.collection('pendingStudents').doc(uid).get();
+    if (!pendingSnap.exists) {
+      UI.toast('Pending record not found. It may have already been processed.', 'warning');
       if (approveBtn) { approveBtn.disabled = false; approveBtn.style.opacity = '1'; }
       if (declineBtn) { declineBtn.disabled = false; }
-      UI.toast('Failed to approve student. Please try again.', 'error');
+      return;
     }
+    const d = pendingSnap.data();
+
+    // 1. Write to students collection and delete pending doc in a batch
+    const batch = window.fbDb.batch();
+    batch.set(window.fbDb.collection('students').doc(uid), {
+      name:        d.name   || '',
+      class:       d.class  || '',
+      school:      d.school || '',
+      email:       d.email  || '',
+      admissionNo: null,
+      createdAt:   firebase.firestore.FieldValue.serverTimestamp(),
+      approvedAt:  firebase.firestore.FieldValue.serverTimestamp(),
+    });
+
+    // 2. Delete the pending doc (triggers waiting room listener on student's device)
+    batch.delete(window.fbDb.collection('pendingStudents').doc(uid));
+
+    await batch.commit();
+
+    // 3. Log the approval
+    const ttlLog = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    window.fbDb.collection('activityLog').add({
+      uid,
+      name:      d.name   || 'Unknown',
+      class:     d.class  || '',
+      school:    d.school || '',
+      action:    'registration_approved',
+      detail:    (d.name || 'A student') + ' was approved and can now log in',
+      timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      ttl:       ttlLog,
+    }).catch(function () {});
+
+    // 4. Animate card out
+    const card = document.getElementById('vtxPendingCard_' + uid);
+    if (card) {
+      card.style.transition = 'opacity 0.35s ease, transform 0.35s ease, max-height 0.35s ease';
+      card.style.overflow   = 'hidden';
+      card.style.maxHeight  = card.offsetHeight + 'px';
+      requestAnimationFrame(function () {
+        card.style.opacity   = '0';
+        card.style.transform = 'translateX(20px)';
+        card.style.maxHeight = '0';
+        card.style.padding   = '0';
+        card.style.margin    = '0';
+        setTimeout(function () {
+          if (card.parentNode) card.parentNode.removeChild(card);
+        }, 380);
+      });
+    }
+
+    UI.toast((d.name || 'Student') + ' approved and can now access the platform.', 'success');
+
+  } catch (err) {
+    console.error('[ApprovalGate] _approveStudent error:', err.code, err.message, err);
+    if (approveBtn) { approveBtn.disabled = false; approveBtn.style.opacity = '1'; }
+    if (declineBtn) { declineBtn.disabled = false; }
+    const msg = err.code === 'permission-denied'
+      ? 'Permission denied. Make sure your Firestore rules allow admin to create student documents.'
+      : 'Failed to approve student. Please try again.';
+    UI.toast(msg, 'error');
   }
+}
 
   /* ── Decline: show reason prompt, then process ── */
   function _declineStudentPrompt(uid, name) {
