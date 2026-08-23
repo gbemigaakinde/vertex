@@ -463,7 +463,15 @@ function _injectTeacherNavStyles() {
 function renderTeacherDashboard() {
   AppState.isTeacher = true;
 
-  const NAV_ITEMS = [
+   const NAV_ITEMS = [
+    {
+      tab: 'approvals',
+      label: 'Approvals',
+      icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="16 11 18 13 22 9"/></svg>`,
+      badge: true,
+      badgeClass: 'vtx-td-badge',
+      badgeId: 'badge-approvals',
+    },
     {
       tab: 'students',
       label: 'Students',
@@ -504,7 +512,8 @@ function renderTeacherDashboard() {
       label: 'Activity',
       icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="1"/><circle cx="12" cy="5" r="1"/><circle cx="12" cy="19" r="1"/></svg>`,
       badge: true,
-      badgeClass: 'activity-notif-badge',
+      badgeClass: 'vtx-td-badge',
+      badgeId: 'badge-activity',
     },
     { divider: true },
     {
@@ -517,17 +526,22 @@ function renderTeacherDashboard() {
       label: 'Chat',
       icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`,
       badge: true,
+      badgeClass: 'vtx-td-badge',
+      badgeId: 'badge-chat',
     },
     {
       tab: 'dm',
       label: 'Messages',
       icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>`,
       badge: true,
+      badgeClass: 'vtx-td-badge',
+      badgeId: 'badge-dm',
     },
   ];
 
   const navItemsHtml = NAV_ITEMS.map(item => {
     if (item.divider) return `<div class="vtx-td-navdivider"></div>`;
+    const badgeId = item.badgeId || ('badge-' + item.tab);
     return `
       <button
         class="vtx-td-navitem"
@@ -537,7 +551,7 @@ function renderTeacherDashboard() {
       >
         ${item.icon}
         ${_esc(item.label)}
-        ${item.badge ? `<span class="vtx-td-badge" id="badge-${_esc(item.tab)}"></span>` : ''}
+        ${item.badge ? `<span class="${_esc(item.badgeClass || 'vtx-td-badge')}" id="${_esc(badgeId)}"></span>` : ''}
       </button>`;
   }).join('');
 
@@ -582,6 +596,7 @@ function renderTeacherDashboard() {
       <!-- Content -->
       <div class="vtx-td-body">
 
+        <div id="teacher-approvals" class="teacher-tab hidden"></div>
         <div id="teacher-students" class="teacher-tab">
           <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
             <div>
@@ -805,14 +820,16 @@ function renderTeacherDashboard() {
 }
 
 function showTab(tab) {
-  const ALL_TABS = ['students','results','schools','tasks','studyroom','games','timetable','activity','groups','chat','dm'];
+  const ALL_TABS = ['approvals','students','results','schools','tasks','studyroom','games','timetable','activity','groups','chat','dm'];
 
   ALL_TABS.forEach(t => {
     const el  = document.getElementById(`teacher-${t}`);
     const btn = document.getElementById(`tab-${t}`);
 
     if (el) {
-      if ((t === 'dm' || t === 'groups' || t === 'activity') && t !== tab) el.innerHTML = '';
+      if ((t === 'dm' || t === 'groups' || t === 'activity' || t === 'approvals') && t !== tab) {
+        el.innerHTML = '';
+      }
       el.classList.toggle('hidden', t !== tab);
     }
 
@@ -835,6 +852,12 @@ function showTab(tab) {
     window._teacherGameStatsCleanup();
   }
 
+  if (tab === 'approvals') {
+    if (window.ActivityLog && typeof ActivityLog.renderApprovalsPanel === 'function') {
+      ActivityLog.renderApprovalsPanel('teacher-approvals');
+    }
+    return;
+  }
   if (tab === 'dm')        { DM.openTeacherInbox();       return; }
   if (tab === 'chat')      { Chat.openPublicChat();        return; }
   if (tab === 'studyroom') { StudyRoom.openForTeacher();   return; }
@@ -5116,7 +5139,7 @@ async function exportResultPDF(resultId) {
     game_lobby_open:     { icon: 'ph-game-controller', label: 'Opened Games',        color: 'var(--accent)'  },
     ai_tutor_open:       { icon: 'ph-robot',           label: 'Opened AI Tutor',     color: 'var(--accent)'  },
   };
-
+  
   function _activityTimeAgo(ts) {
     if (!ts) return '';
 
@@ -5268,6 +5291,11 @@ async function exportResultPDF(resultId) {
     _activityNewCount = 0;
     _updateActivityBadge(0);
 
+    // Merge approval-related action meta from ActivityLog module (lazy — runs after all scripts load)
+    if (window._ApprovalActionMeta) {
+      Object.assign(ACTION_META, window._ApprovalActionMeta);
+    }
+
     container.innerHTML =
       '<div style="margin-bottom:1rem;">' +
 
@@ -5289,7 +5317,6 @@ async function exportResultPDF(resultId) {
 
           '<div style="display:flex;gap:.5rem;align-items:center;flex-wrap:wrap;">' +
 
-            // Filter buttons
             '<select id="activityFilterAction" onchange="Teacher._filterActivity()" ' +
 
               'style="font-size:var(--text-xs);padding:.3125rem .625rem;' +
@@ -5305,6 +5332,7 @@ async function exportResultPDF(resultId) {
               '<option value="chat_open,groupchat_open,dm_open">Chat & Messages</option>' +
               '<option value="game_lobby_open">Games</option>' +
               '<option value="ai_tutor_open">AI Tutor</option>' +
+              '<option value="registration_pending,registration_approved,registration_declined">Registrations</option>' +
 
             '</select>' +
 
@@ -5334,11 +5362,9 @@ async function exportResultPDF(resultId) {
 
       '</div>' +
 
-      // Stats bar
       '<div id="activityStatsBar" style="display:flex;gap:.625rem;flex-wrap:wrap;' +
         'margin-bottom:1rem;"></div>' +
 
-      // Feed
       '<div style="border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;' +
         'background:var(--bg-base);">' +
 
@@ -5353,7 +5379,6 @@ async function exportResultPDF(resultId) {
 
       '</div>';
 
-    // Store all docs for client-side filtering
     let _allDocs = [];
 
     function _buildStats(docs) {
@@ -5361,7 +5386,6 @@ async function exportResultPDF(resultId) {
 
       if (!bar) return;
 
-      // Count unique active students in the last 30 minutes
       const now = Date.now();
       const recentUids = new Set();
 
@@ -5377,15 +5401,14 @@ async function exportResultPDF(resultId) {
         return d.data().action === 'exam_tab_switch';
       }).length;
 
+      const pendingRegs = docs.filter(function (d) {
+        return d.data().action === 'registration_pending';
+      }).length;
+
       docs.forEach(function (d) {
         const ts = d.data().timestamp;
-
         if (!ts) return;
-
-        const t = ts.toDate
-          ? ts.toDate().getTime()
-          : new Date(ts).getTime();
-
+        const t = ts.toDate ? ts.toDate().getTime() : new Date(ts).getTime();
         if (now - t < 30 * 60 * 1000) {
           recentUids.add(d.data().uid);
         }
@@ -5410,9 +5433,12 @@ async function exportResultPDF(resultId) {
         {
           label: 'Tab warnings',
           value: tabWarnings,
-          color: tabWarnings > 0
-            ? 'var(--danger)'
-            : 'var(--text-3)'
+          color: tabWarnings > 0 ? 'var(--danger)' : 'var(--text-3)'
+        },
+        {
+          label: 'Pending signups',
+          value: pendingRegs,
+          color: pendingRegs > 0 ? 'var(--warning)' : 'var(--text-3)'
         }
       ];
 
@@ -5421,25 +5447,18 @@ async function exportResultPDF(resultId) {
           '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;' +
             'min-width:80px;padding:.5rem .875rem;border-radius:var(--r-lg);' +
             'border:1px solid var(--border);background:var(--bg-base);">' +
-
-            '<span style="font-size:1.25rem;font-weight:800;color:' +
-              s.color +
-              ';line-height:1;">' +
+            '<span style="font-size:1.25rem;font-weight:800;color:' + s.color + ';line-height:1;">' +
               s.value +
             '</span>' +
-
             '<span style="font-size:.5625rem;font-weight:600;color:var(--text-4);' +
-              'text-transform:uppercase;letter-spacing:.06em;margin-top:2px;' +
-              'white-space:nowrap;">' +
+              'text-transform:uppercase;letter-spacing:.06em;margin-top:2px;white-space:nowrap;">' +
               _esc(s.label) +
             '</span>' +
-
           '</div>'
         );
       }).join('');
     }
 
-    // 24-hour window
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
     _activityUnsub = window.fbDb
@@ -5455,7 +5474,6 @@ async function exportResultPDF(resultId) {
 
           Teacher._filterActivity();
 
-          // Pulse the badge when new documents arrive after initial load
           if (snap.docChanges) {
             const newAdded = snap.docChanges().filter(function (c) {
               return c.type === 'added';
@@ -5478,11 +5496,8 @@ async function exportResultPDF(resultId) {
               '<div style="display:flex;flex-direction:column;align-items:center;' +
                 'justify-content:center;gap:.5rem;text-align:center;padding:2rem;' +
                 'color:var(--danger);font-size:var(--text-sm);">' +
-
                 '<i class="ph ph-warning-circle" style="font-size:1.5rem;"></i>' +
-
                 '<span>Could not load activity log. Check Firestore rules.</span>' +
-
               '</div>';
           }
         }
@@ -5490,7 +5505,6 @@ async function exportResultPDF(resultId) {
 
     _reg('activityLog', _activityUnsub);
 
-    // Store documents reference for filter function
     window._activityAllDocs = function () {
       return _allDocs;
     };
