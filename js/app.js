@@ -34,163 +34,160 @@
     });
   }
 
-  async function _onLogin(firebaseUser) {
-    var uid = firebaseUser.uid;
-    AppState.cancelAllListeners();
-    AppState.userId = uid;
+async function _onLogin(firebaseUser) {
+  // Always clear any lingering loading state on the login button first
+  const loginBtn = document.getElementById('loginBtn');
+  if (loginBtn) UI.setLoading(loginBtn, false);
 
-    if (window.VtxLoader) window.VtxLoader.progress(50, 'Loading your profile…');
+  var uid = firebaseUser.uid;
+  AppState.cancelAllListeners();
+  AppState.userId = uid;
 
-    // ── Teacher path ──
-    if (uid === AppConfig.TEACHER_UID) {
-      AppState.isTeacher = true;
-      if (window.VtxLoader) window.VtxLoader.progress(90, 'Opening dashboard…');
+  if (window.VtxLoader) window.VtxLoader.progress(50, 'Loading your profile…');
 
-      Teacher.renderTeacherDashboard();
-      if (window.VtxSound) {
-        try { VtxSound.welcome(); } catch (e) {}
-      }
+  // ── Teacher path ──
+  if (uid === AppConfig.TEACHER_UID) {
+    AppState.isTeacher = true;
+    if (window.VtxLoader) window.VtxLoader.progress(90, 'Opening dashboard…');
 
-      AppState.chatUnread = 0;
-      var teacherNotifUnsub = window.fbDb
-        .collection('chatNotifications')
-        .doc(uid)
-        .onSnapshot(function (notifSnap) {
-          var count = (notifSnap.exists && notifSnap.data().unread) || 0;
-          AppState.chatUnread = count;
-          if (window.Chat && Chat._updateChatBadge) Chat._updateChatBadge(count);
-        }, function (err) {
-          console.warn('[app] teacher chatNotifications listener error:', err);
-        });
-      AppState.registerListener('chatNotifications', teacherNotifUnsub);
+    Teacher.renderTeacherDashboard();
+    if (window.VtxSound) {
+      try { VtxSound.welcome(); } catch (e) {}
+    }
 
-      if (window.DM && typeof DM.initTeacherDMListener === 'function') {
-        DM.initTeacherDMListener();
-      }
-      if (window.MsgNotif) {
-        MsgNotif.initForTeacher();
-      }
+    AppState.chatUnread = 0;
+    var teacherNotifUnsub = window.fbDb
+      .collection('chatNotifications')
+      .doc(uid)
+      .onSnapshot(function (notifSnap) {
+        var count = (notifSnap.exists && notifSnap.data().unread) || 0;
+        AppState.chatUnread = count;
+        if (window.Chat && Chat._updateChatBadge) Chat._updateChatBadge(count);
+      }, function (err) {
+        console.warn('[app] teacher chatNotifications listener error:', err);
+      });
+    AppState.registerListener('chatNotifications', teacherNotifUnsub);
 
-      // Start approval badge listener for teacher
-      if (window.ActivityLog && typeof ActivityLog.initTeacherApprovalListener === 'function') {
-        ActivityLog.initTeacherApprovalListener();
-      }
+    if (window.DM && typeof DM.initTeacherDMListener === 'function') {
+      DM.initTeacherDMListener();
+    }
+    if (window.MsgNotif) {
+      MsgNotif.initForTeacher();
+    }
 
+    if (window.ActivityLog && typeof ActivityLog.initTeacherApprovalListener === 'function') {
+      ActivityLog.initTeacherApprovalListener();
+    }
+
+    if (window.VtxLoader) window.VtxLoader.done();
+    return;
+  }
+
+  // ── Student path ──
+  AppState.isTeacher = false;
+  try {
+    const approvalStatus = await ActivityLog.checkApprovalStatus(uid);
+
+    if (approvalStatus === 'pending') {
       if (window.VtxLoader) window.VtxLoader.done();
+      const pendingData = await ActivityLog.getPendingStudentData(uid);
+      const studentName = (pendingData && pendingData.name) ? pendingData.name : '';
+      ActivityLog.renderWaitingRoom(uid, studentName);
       return;
     }
 
-    // ── Student path ──
-    AppState.isTeacher = false;
-    try {
-      // ── APPROVAL GATE CHECK ──
-      // Before fetching from students collection, check if this uid is pending or declined.
-      const approvalStatus = await ActivityLog.checkApprovalStatus(uid);
-
-      if (approvalStatus === 'pending') {
-        // Student is still awaiting approval — show waiting room
-        if (window.VtxLoader) window.VtxLoader.done();
-        const pendingData = await ActivityLog.getPendingStudentData(uid);
-        const studentName = (pendingData && pendingData.name) ? pendingData.name : '';
-        ActivityLog.renderWaitingRoom(uid, studentName);
-        return;
-      }
-
-      if (approvalStatus === 'declined') {
-        // Student was declined — show declined state and sign out
-        if (window.VtxLoader) window.VtxLoader.done();
-        const declinedData = await ActivityLog.getDeclinedStudentData(uid);
-        const reason = (declinedData && declinedData.reason) ? declinedData.reason : '';
-        // Sign out in background, show declined overlay
-        window.fbAuth.signOut().catch(function () {});
-        ActivityLog._showDeclinedOverlay(reason);
-        return;
-      }
-
-      // ── Normal approved student path ──
-      const snap = await window.fbDb.collection('students').doc(uid).get();
-
-      if (!snap.exists) {
-        if (window.VtxLoader) window.VtxLoader.done();
-        UI.toast('Profile not found. Please register again.', 'error', 0);
-        if (window.DM && typeof DM.cancelListeners === 'function') {
-          await DM.cancelListeners();
-        }
-        await _teardownAndSignOut();
-        return;
-      }
-
-      AppState.studentData = snap.data();
-      AppState.chatUnread  = 0;
-
-      // ── ACTIVITY LOG: login ──
-      if (window.ActivityLog) {
-        var _sd = AppState.studentData;
-        ActivityLog.track(
-          'login',
-          (_sd.name || 'A student') + ' logged in',
-          { deviceInfo: navigator.userAgent.slice(0, 120) }
-        );
-      }
-
-      if (window.VtxLoader) window.VtxLoader.progress(70, 'Loading your tasks…');
-
-      var notifUnsub = window.fbDb
-        .collection('chatNotifications')
-        .doc(uid)
-        .onSnapshot(function (notifSnap) {
-          var count = (notifSnap.exists && notifSnap.data().unread) || 0;
-          AppState.chatUnread = count;
-          if (window.Chat && Chat._updateChatBadge) Chat._updateChatBadge(count);
-        }, function (err) {
-          console.warn('[app] chatNotifications listener error:', err);
-        });
-      AppState.registerListener('chatNotifications', notifUnsub);
-
-      if (window.Notifications && typeof window.Notifications.init === 'function') {
-        Notifications.init(uid).catch(function (e) {
-          console.warn('[app] Notifications.init error (non-fatal):', e);
-        });
-      }
-
-      await Tasks.listenForStudentUpdates();
-
-      if (window.DM && typeof DM.initStudentDMListener === 'function') {
-        DM.initStudentDMListener(uid);
-      }
-      if (window.MsgNotif) {
-        MsgNotif.initForStudent(uid);
-      }
-
-      if (window.Game && typeof Game._startChallengeListener === 'function') {
-        Game._startChallengeListener();
-      }
-
-      if (window.GroupChat && typeof GroupChat.initStudentGroupListener === 'function') {
-        GroupChat.initStudentGroupListener(uid);
-      }
-
-      if (window.GroupChat && typeof GroupChat.initPresence === 'function') {
-        GroupChat.initPresence(uid);
-      }
-
-      if (window.VtxLoader) window.VtxLoader.progress(90, 'Almost ready…');
-      if (window.VtxSound) {
-        try { VtxSound.welcome(); } catch (e) {}
-      }
-      await Exam.loadOrStart();
+    if (approvalStatus === 'declined') {
       if (window.VtxLoader) window.VtxLoader.done();
+      const declinedData = await ActivityLog.getDeclinedStudentData(uid);
+      const reason = (declinedData && declinedData.reason) ? declinedData.reason : '';
+      window.fbAuth.signOut().catch(function () {});
+      ActivityLog._showDeclinedOverlay(reason);
+      return;
+    }
 
-    } catch (err) {
-      console.error('[app] Profile load error:', err);
+    // ── Normal approved student path ──
+    const snap = await window.fbDb.collection('students').doc(uid).get();
+
+    if (!snap.exists) {
       if (window.VtxLoader) window.VtxLoader.done();
-      UI.toast('Could not load your profile. Please check your internet connection and try again.', 'error', 0);
+      UI.toast('Profile not found. Please register again.', 'error', 0);
       if (window.DM && typeof DM.cancelListeners === 'function') {
         await DM.cancelListeners();
       }
       await _teardownAndSignOut();
+      return;
     }
+
+    AppState.studentData = snap.data();
+    AppState.chatUnread  = 0;
+
+    if (window.ActivityLog) {
+      var _sd = AppState.studentData;
+      ActivityLog.track(
+        'login',
+        (_sd.name || 'A student') + ' logged in',
+        { deviceInfo: navigator.userAgent.slice(0, 120) }
+      );
+    }
+
+    if (window.VtxLoader) window.VtxLoader.progress(70, 'Loading your tasks…');
+
+    var notifUnsub = window.fbDb
+      .collection('chatNotifications')
+      .doc(uid)
+      .onSnapshot(function (notifSnap) {
+        var count = (notifSnap.exists && notifSnap.data().unread) || 0;
+        AppState.chatUnread = count;
+        if (window.Chat && Chat._updateChatBadge) Chat._updateChatBadge(count);
+      }, function (err) {
+        console.warn('[app] chatNotifications listener error:', err);
+      });
+    AppState.registerListener('chatNotifications', notifUnsub);
+
+    if (window.Notifications && typeof window.Notifications.init === 'function') {
+      Notifications.init(uid).catch(function (e) {
+        console.warn('[app] Notifications.init error (non-fatal):', e);
+      });
+    }
+
+    await Tasks.listenForStudentUpdates();
+
+    if (window.DM && typeof DM.initStudentDMListener === 'function') {
+      DM.initStudentDMListener(uid);
+    }
+    if (window.MsgNotif) {
+      MsgNotif.initForStudent(uid);
+    }
+
+    if (window.Game && typeof Game._startChallengeListener === 'function') {
+      Game._startChallengeListener();
+    }
+
+    if (window.GroupChat && typeof GroupChat.initStudentGroupListener === 'function') {
+      GroupChat.initStudentGroupListener(uid);
+    }
+
+    if (window.GroupChat && typeof GroupChat.initPresence === 'function') {
+      GroupChat.initPresence(uid);
+    }
+
+    if (window.VtxLoader) window.VtxLoader.progress(90, 'Almost ready…');
+    if (window.VtxSound) {
+      try { VtxSound.welcome(); } catch (e) {}
+    }
+    await Exam.loadOrStart();
+    if (window.VtxLoader) window.VtxLoader.done();
+
+  } catch (err) {
+    console.error('[app] Profile load error:', err);
+    if (window.VtxLoader) window.VtxLoader.done();
+    UI.toast('Could not load your profile. Please check your internet connection and try again.', 'error', 0);
+    if (window.DM && typeof DM.cancelListeners === 'function') {
+      await DM.cancelListeners();
+    }
+    await _teardownAndSignOut();
   }
+}
 
   // ── Shared teardown ──────────────────────────────────────────
   async function _teardownAndSignOut() {
