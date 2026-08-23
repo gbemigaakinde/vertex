@@ -951,67 +951,65 @@ function cancel() {
     });
   }
 
-   function _askGemini(intentPayload, callback) {
-    fetch(_WORKER_URL, {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify(Object.assign({}, intentPayload, { provider: 'gemini', model: _GEMINI_MODEL })),
-    })
-    .then(function (res) {
-      if (!res.ok) {
-        return res.json().then(function (body) {
-          callback('gemini_error_' + res.status + ': ' + ((body && body.error && body.error.message) || 'Unknown error'), null);
-          return null;
-        }).catch(function () {
-          callback('gemini_error_' + res.status, null);
-          return null;
-        });
-      }
-      return res.json();
-    })
-    .then(function (data) {
-      if (!data) return;
-      var text = data.candidates &&
-                 data.candidates[0] &&
-                 data.candidates[0].content &&
-                 data.candidates[0].content.parts &&
-                 data.candidates[0].content.parts[0] &&
-                 data.candidates[0].content.parts[0].text;
-      if (!text || !text.trim()) {
-        callback('gemini_empty', null);
-        return;
-      }
-      callback(null, text.trim());
-    })
-    .catch(function (err) {
-      console.error('[SpeechEngine] Gemini fetch error:', err);
-      callback('gemini_network_error', null);
-    });
-  }
+function _askWorkersAI(intentPayload, callback) {
+  fetch(_WORKER_URL, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(Object.assign({}, intentPayload, { provider: 'workersai', model: '@cf/meta/llama-3.3-70b-instruct' })),
+  })
+  .then(function (res) {
+    if (!res.ok) {
+      return res.json().then(function (body) {
+        callback('workersai_error_' + res.status + ': ' + ((body && body.error && body.error.message) || 'Unknown error'), null);
+        return null;
+      }).catch(function () {
+        callback('workersai_error_' + res.status, null);
+        return null;
+      });
+    }
+    return res.json();
+  })
+  .then(function (data) {
+    if (!data) return;
+    var text = data.choices &&
+               data.choices[0] &&
+               data.choices[0].message &&
+               data.choices[0].message.content;
+    if (!text || !text.trim()) {
+      callback('workersai_empty', null);
+      return;
+    }
+    callback(null, text.trim());
+  })
+  .catch(function (err) {
+    console.error('[SpeechEngine] Workers AI fetch error:', err);
+    callback('workersai_network_error', null);
+  });
+}
 
   /*
    * _askAI  ← THE MAIN DISPATCHER
    */
-   function _askAI(intentPayload, callback) {
-    console.log('[SpeechEngine] Trying Groq first…');
-    _askGroq(intentPayload, function (err, text) {
-      if (!err && text) {
-        console.log('[SpeechEngine] Groq answered successfully.');
-        callback(null, text);
+function _askAI(intentPayload, callback) {
+  console.log('[SpeechEngine] Trying Groq first…');
+  _askGroq(intentPayload, function (err, text) {
+    if (!err && text) {
+      console.log('[SpeechEngine] Groq answered successfully.');
+      callback(null, text);
+      return;
+    }
+    console.warn('[SpeechEngine] Groq failed (' + err + ') — trying OpenRouter.');
+    _askOpenRouter(intentPayload, function (err2, text2) {
+      if (!err2 && text2) {
+        console.log('[SpeechEngine] OpenRouter answered successfully.');
+        callback(null, text2);
         return;
       }
-      console.warn('[SpeechEngine] Groq failed (' + err + ') — trying Gemini.');
-      _askGemini(intentPayload, function (err2, text2) {
-        if (!err2 && text2) {
-          console.log('[SpeechEngine] Gemini answered successfully.');
-          callback(null, text2);
-          return;
-        }
-        console.warn('[SpeechEngine] Gemini failed (' + err2 + ') — falling back to OpenRouter.');
-        _askOpenRouter(intentPayload, callback, false);
-      });
-    });
-  }
+      console.warn('[SpeechEngine] OpenRouter failed (' + err2 + ') — falling back to Workers AI.');
+      _askWorkersAI(intentPayload, callback);
+    }, false);
+  });
+}
 
   /* ════════════════════════════════════════════════════════
      _loadDeeperExplanation  (fully rewritten — uses OpenRouter AI)
@@ -1931,20 +1929,17 @@ function _renderAiText(str) {
     },
   };
   // Shared AI bridge for exam.js drawer.
-  window._vtxAskAI = function (messagesPayload, callback) {
+    window._vtxAskAI = function (messagesPayload, callback) {
 
-    // exam.js passes a full messages array including a system message.
-    // Strip the system message here — the Worker will rebuild it.
     var history = (messagesPayload || []).filter(function (m) {
       return m.role !== 'system';
     });
 
-    // Pull student context from AppState so the Worker can personalise the prompt.
     var studentData = (window.AppState && window.AppState.studentData) || {};
 
     var basePayload = {
       intent:       'tutor_chat',
-      subject:      studentData.class || '',   // class is used as subject context in the drawer
+      subject:      studentData.class || '',
       studentName:  studentData.name  || '',
       studentClass: studentData.class || '',
       history:      history,
@@ -2003,44 +1998,7 @@ function _renderAiText(str) {
         callback(null, text.trim());
       })
       .catch(function (err) {
-        console.warn('[vtxAskAI] Groq failed (' + err + ') — trying Gemini.');
-        _tryGemini(false);
-      });
-    }
-
-    function _tryGemini(isRetry) {
-      fetch(_WORKER_URL, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify(Object.assign({}, basePayload, { provider: 'gemini', model: _GEMINI_MODEL })),
-      })
-      .then(function (res) {
-        if (!res.ok) {
-          if ((res.status === 429 || res.status === 503) && !isRetry) {
-            console.warn('[vtxAskAI] Gemini rate-limited — retrying once.');
-            _tryGemini(true);
-            return null;
-          }
-          throw new Error('gemini_' + res.status);
-        }
-        return res.json();
-      })
-      .then(function (data) {
-        if (!data) return;
-        var text = data.candidates &&
-                   data.candidates[0] &&
-                   data.candidates[0].content &&
-                   data.candidates[0].content.parts &&
-                   data.candidates[0].content.parts[0] &&
-                   data.candidates[0].content.parts[0].text;
-        if (!text || !text.trim()) {
-          if (!isRetry) { _tryGemini(true); return; }
-          throw new Error('gemini_empty');
-        }
-        callback(null, text.trim());
-      })
-      .catch(function (err) {
-        console.warn('[vtxAskAI] Gemini failed (' + err + ') — falling back to OpenRouter.');
+        console.warn('[vtxAskAI] Groq failed (' + err + ') — trying OpenRouter.');
         _tryOR(false);
       });
     }
@@ -2094,8 +2052,45 @@ function _renderAiText(str) {
         }
         callback(null, text.trim());
       })
-      .catch(function () {
-        callback('Could not reach the AI server.', null);
+      .catch(function (err) {
+        console.warn('[vtxAskAI] OpenRouter failed (' + err + ') — falling back to Workers AI.');
+        _tryWorkersAI();
+      });
+    }
+
+    function _tryWorkersAI() {
+      fetch(_WORKER_URL, {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify(Object.assign({}, basePayload, { provider: 'workersai', model: '@cf/meta/llama-3.3-70b-instruct' })),
+      })
+      .then(function (res) {
+        if (!res.ok) {
+          return res.json().then(function (body) {
+            callback('workersai_error_' + res.status + ': ' + ((body && body.error && body.error.message) || 'Unknown error'), null);
+            return null;
+          }).catch(function () {
+            callback('workersai_error_' + res.status, null);
+            return null;
+          });
+        }
+        return res.json();
+      })
+      .then(function (data) {
+        if (!data) return;
+        var text = data.choices &&
+                   data.choices[0] &&
+                   data.choices[0].message &&
+                   data.choices[0].message.content;
+        if (!text || !text.trim()) {
+          callback('workersai_empty', null);
+          return;
+        }
+        callback(null, text.trim());
+      })
+      .catch(function (err) {
+        console.error('[vtxAskAI] Workers AI fetch error:', err);
+        callback('Could not reach any AI server.', null);
       });
     }
 
