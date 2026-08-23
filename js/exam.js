@@ -3637,13 +3637,11 @@ function _sendAiMessage() {
 
     var existingMarker = replyText.match(/\[VISUAL:\s*([^\]]+)\]/i);
 
-    // Only inject a marker when the student explicitly asked for a visual
-    // and the AI forgot to include one.
     if (!existingMarker && _isVisualRequest) {
       var visualTopic = text
         .replace(/\b(draw|show me|give me|display|generate|create|make|produce|illustrate|sketch)\b/gi, '')
         .replace(/\b(a |an |the |me |please |some )\b/gi, '')
-        .replace(/\b(image|picture|diagram|photo|visual|illustration|drawing)\b/gi, '')
+        .replace(/\b(image|picture|diagram|photo|visual|illustration|drawing|pictorial|representation)\b/gi, '')
         .replace(/\s+/g, ' ')
         .trim();
       if (!visualTopic || visualTopic.length < 3) visualTopic = text.trim();
@@ -3659,38 +3657,8 @@ function _sendAiMessage() {
     var visualMarkerMatch = replyText.match(/\[VISUAL:\s*([^\]]+)\]/i);
     var visualTopic2      = visualMarkerMatch ? visualMarkerMatch[1].trim() : null;
 
-    // When a visual is being shown, clean up the display text aggressively
     var displayText;
     if (visualTopic2) {
-      // Remove the marker itself
-      var stripped = replyText.replace(/\[VISUAL:\s*[^\]]+\]/i, '').trim();
-
-      // Remove markdown image links and raw links
-      stripped = stripped.replace(/!\[[^\]]*\]\([^)]*\)/g, '').trim();
-      stripped = stripped.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1').trim();
-
-      // Remove any URLs that slipped through as plain text
-      stripped = stripped.replace(/https?:\/\/[^\s)>\]"]+/g, '').trim();
-
-      // Remove ASCII art lines (lines that are mostly non-letter symbols)
-      var cleanedLines = stripped.split('\n').filter(function(line) {
-        var trimmed = line.trim();
-        if (!trimmed) return false;
-        // Remove lines that look like ASCII drawing attempts
-        var asciiChars = (trimmed.match(/[|\-+\/\\=_<>()[\]{}~^*]/g) || []).length;
-        if (asciiChars > 3 && asciiChars / Math.max(trimmed.length, 1) > 0.25) return false;
-        // Remove "Step N:" drawing instruction lines
-        if (/^step\s+\d+\s*:/i.test(trimmed)) return false;
-        // Remove lines about copying/drawing yourself
-        if (/\b(copy|sketch|pencil|draw (on )?paper|add (the )?labels|hand.drawn)\b/i.test(trimmed)) return false;
-        // Remove lines that are just emoji + label (like "🌸 Flower")
-        if (/^[\u{1F300}-\u{1F9FF}]/u.test(trimmed) && trimmed.length < 30) return false;
-        return true;
-      });
-
-      stripped = cleanedLines.join('\n').trim();
-
-      // Always use a clean, fixed acknowledgement line when showing a visual.
       displayText = 'Here is a visual representation of ' + visualTopic2 + ':';
     } else {
       displayText = replyText;
@@ -3740,90 +3708,85 @@ function _sendAiMessage() {
     }, approxDuration);
 
     if (visualTopic2 && window.SpeechEngine && typeof SpeechEngine.requestVisual === 'function') {
-      var studentData2 = S().studentData || {};
+      var studentData2   = S().studentData || {};
       var currentSubject = (window.AppState && window.AppState.exam && window.AppState.exam.currentSubject)
         || studentData2.class || '';
 
+      // ── Modern skeleton loading card ──
       var visualWrapper = document.createElement('div');
-      visualWrapper.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding-left:34px;animation:cbt-fade-in 200ms var(--ease) both;';
+      visualWrapper.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding-left:34px;animation:cbt-fade-in 200ms var(--ease) both;max-width:82%;width:100%;';
       var visualId = 'vtxVisual_' + replyTs;
+
       visualWrapper.innerHTML =
-        '<div id="' + visualId + '" style="' +
-          'border:1px solid var(--border);border-radius:var(--r-xl);' +
-          'background:var(--bg-subtle);padding:1.25rem;' +
-          'min-width:220px;max-width:100%;' +
-          'display:flex;flex-direction:column;align-items:center;gap:.625rem;' +
-          'font-size:.8125rem;color:var(--text-3);">' +
-          '<span style="display:inline-flex;align-items:center;gap:.375rem;">' +
-            '<i class="ph ph-image" style="font-size:16px;color:var(--accent);"></i>' +
-            'Generating visual for: <em>' + _escHtml(visualTopic2) + '</em>…' +
-          '</span>' +
-          '<div style="width:32px;height:3px;border-radius:2px;background:var(--accent);' +
-            'animation:vtx-visual-loading 1.2s ease-in-out infinite;"></div>' +
+        '<div id="' + visualId + '" class="vtx-visual-container">' +
+          '<div class="vtx-visual-skeleton">' +
+            '<div class="vtx-visual-skeleton-icon">' +
+              '<i class="ph ph-image"></i>' +
+              '<span class="vtx-visual-skeleton-label">Generating…</span>' +
+            '</div>' +
+          '</div>' +
+          '<div class="vtx-visual-footer">' +
+            '<span class="vtx-visual-footer-topic">' + _escHtml(visualTopic2) + '</span>' +
+            '<span class="vtx-visual-footer-badge is-loading">Loading</span>' +
+          '</div>' +
         '</div>' +
         '<span style="font-size:.6rem;color:var(--text-4);padding-left:2px;">Visual</span>';
+
       msgs.appendChild(visualWrapper);
       msgs.scrollTop = msgs.scrollHeight;
-
-      if (!document.getElementById('vtxVisualStyle')) {
-        var st = document.createElement('style');
-        st.id = 'vtxVisualStyle';
-        st.textContent =
-          '@keyframes vtx-visual-loading{0%,100%{opacity:.3;transform:scaleX(.5)}50%{opacity:1;transform:scaleX(1)}}' +
-          '.vtx-visual-svg-wrap{overflow:auto;border-radius:var(--r-lg);border:1px solid var(--border);background:#fff;padding:.5rem;}' +
-          '.vtx-visual-svg-wrap svg{max-width:100%;height:auto;display:block;}' +
-          '.vtx-visual-img-wrap{border-radius:var(--r-lg);overflow:hidden;border:1px solid var(--border);}' +
-          '.vtx-visual-img-wrap img{width:100%;height:auto;display:block;}' +
-          '.vtx-visual-label{font-size:.6875rem;color:var(--text-4);text-align:center;padding:.25rem 0;}' +
-          '.vtx-visual-quota{font-size:.625rem;color:var(--text-4);text-align:right;padding:.125rem 0;}';
-        document.head.appendChild(st);
-      }
 
       SpeechEngine.requestVisual(visualTopic2, currentSubject, function (err, result) {
         var container = document.getElementById(visualId);
         if (!container) return;
 
+        // ── Error ──
         if (err || !result) {
           container.innerHTML =
-            '<span style="font-size:.8125rem;color:var(--danger);">' +
-              '<i class="ph ph-warning" style="font-size:14px;vertical-align:middle;margin-right:4px;"></i>' +
-              'Could not generate visual. Please check your connection and try again.' +
-            '</span>';
+            '<div class="vtx-visual-rate-wrap">' +
+              '<div class="vtx-visual-rate-row">' +
+                '<i class="ph ph-warning-circle"></i>' +
+                '<div>' +
+                  '<p class="vtx-visual-rate-title">Could not generate visual</p>' +
+                  '<p class="vtx-visual-rate-msg">Please check your connection and try again.</p>' +
+                '</div>' +
+              '</div>' +
+            '</div>' +
+            '<div class="vtx-visual-footer">' +
+              '<span class="vtx-visual-footer-topic">' + _escHtml(visualTopic2) + '</span>' +
+              '<span class="vtx-visual-footer-badge is-error">Error</span>' +
+            '</div>';
           return;
         }
 
-         if (result.type === 'rate_limited') {
-          // Show warning with automatic SVG fallback attempt
-          container.style.cssText = '';
+        // ── Rate limited — auto fallback to SVG ──
+        if (result.type === 'rate_limited') {
           container.innerHTML =
-            '<div style="display:flex;flex-direction:column;gap:.75rem;padding:.25rem;">' +
-              '<div style="display:flex;align-items:flex-start;gap:.5rem;">' +
-                '<i class="ph ph-warning" style="font-size:16px;color:var(--warning);flex-shrink:0;margin-top:1px;"></i>' +
+            '<div class="vtx-visual-rate-wrap">' +
+              '<div class="vtx-visual-rate-row">' +
+                '<i class="ph ph-warning"></i>' +
                 '<div>' +
-                  '<p style="font-size:.8125rem;font-weight:700;color:var(--warning-text);margin:0 0 .2rem;">' +
-                    'Daily image limit reached' +
-                  '</p>' +
-                  '<p style="font-size:.75rem;color:var(--text-3);margin:0;line-height:1.5;">' +
-                    _escHtml(result.message) +
-                  '</p>' +
+                  '<p class="vtx-visual-rate-title">Daily image limit reached</p>' +
+                  '<p class="vtx-visual-rate-msg">' + _escHtml(result.message) + '</p>' +
                 '</div>' +
               '</div>' +
-              '<div style="display:flex;align-items:center;gap:.375rem;font-size:.75rem;color:var(--text-3);">' +
-                '<i class="ph ph-arrows-clockwise" style="font-size:13px;color:var(--accent);"></i>' +
-                '<span>Trying diagram instead…</span>' +
+              '<div class="vtx-visual-fallback-row">' +
+                '<i class="ph ph-arrows-clockwise"></i>' +
+                '<span>Generating a diagram instead…</span>' +
               '</div>' +
-              '<div id="' + visualId + '_svg_loading" style="width:100%;height:3px;border-radius:2px;' +
-                'background:var(--accent);animation:vtx-visual-loading 1.2s ease-in-out infinite;"></div>' +
+              '<div class="vtx-visual-fallback-bar"></div>' +
+            '</div>' +
+            '<div class="vtx-visual-footer">' +
+              '<span class="vtx-visual-footer-topic">' + _escHtml(visualTopic2) + '</span>' +
+              '<span class="vtx-visual-footer-badge is-loading">Diagram</span>' +
             '</div>';
 
-          // Automatically fall back to SVG — SVG has no quota
           fetch('https://vertex-worker.gbemigaakinde.workers.dev/visual', {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               topic:        visualTopic2,
               subject:      currentSubject || '',
-              studentId:    'svg_fallback',   // SVG path ignores studentId / rate limit
+              studentId:    'svg_fallback',
               studentName:  studentData2.name  || '',
               studentClass: studentData2.class || '',
               context:      'fallback from rate limit',
@@ -3835,80 +3798,92 @@ function _sendAiMessage() {
             if (!cont) return;
 
             if (svgResult && svgResult.type === 'svg' && svgResult.content) {
-              cont.className  = 'vtx-visual-svg-wrap';
-              cont.style.cssText = '';
+              cont.className = 'vtx-visual-container';
               cont.innerHTML =
-                svgResult.content +
-                '<div class="vtx-visual-label">' + _escHtml(visualTopic2) + '</div>' +
-                '<div style="font-size:.6rem;color:var(--text-4);text-align:right;padding:.125rem 0;">' +
-                  'Diagram shown — image limit reached for today' +
-                '</div>';
+                '<div class="vtx-visual-content-wrap">' + svgResult.content + '</div>' +
+                '<div class="vtx-visual-footer">' +
+                  '<span class="vtx-visual-footer-topic">' + _escHtml(visualTopic2) + '</span>' +
+                  '<span class="vtx-visual-footer-badge is-svg">Diagram</span>' +
+                '</div>' +
+                '<div class="vtx-visual-quota-row">Image limit reached — diagram shown instead</div>';
               if (msgs) msgs.scrollTop = msgs.scrollHeight;
             } else {
-              // SVG also failed — show final dead-end message
-              cont.style.cssText = '';
               cont.innerHTML =
-                '<div style="display:flex;flex-direction:column;gap:.5rem;">' +
-                  '<div style="display:flex;align-items:flex-start;gap:.5rem;">' +
-                    '<i class="ph ph-warning" style="font-size:16px;color:var(--warning);flex-shrink:0;margin-top:1px;"></i>' +
+                '<div class="vtx-visual-rate-wrap">' +
+                  '<div class="vtx-visual-rate-row">' +
+                    '<i class="ph ph-warning"></i>' +
                     '<div>' +
-                      '<p style="font-size:.8125rem;font-weight:700;color:var(--warning-text);margin:0 0 .2rem;">' +
-                        'Daily image limit reached' +
-                      '</p>' +
-                      '<p style="font-size:.75rem;color:var(--text-3);margin:0;line-height:1.5;">' +
-                        _escHtml(result.message) +
-                      '</p>' +
+                      '<p class="vtx-visual-rate-title">Daily image limit reached</p>' +
+                      '<p class="vtx-visual-rate-msg">' + _escHtml(result.message) + '</p>' +
                     '</div>' +
                   '</div>' +
-                  '<p style="font-size:.7rem;color:var(--text-4);margin:0;">' +
-                    'Diagram generation also unavailable right now. Please try again later.' +
-                  '</p>' +
+                  '<p style="font-size:.7rem;color:var(--text-4);margin:0;">Diagram generation also unavailable. Please try again later.</p>' +
+                '</div>' +
+                '<div class="vtx-visual-footer">' +
+                  '<span class="vtx-visual-footer-topic">' + _escHtml(visualTopic2) + '</span>' +
+                  '<span class="vtx-visual-footer-badge is-error">Unavailable</span>' +
                 '</div>';
             }
           })
           .catch(function() {
             var cont = document.getElementById(visualId);
             if (!cont) return;
-            cont.style.cssText = '';
             cont.innerHTML =
-              '<div style="display:flex;align-items:flex-start;gap:.5rem;">' +
-                '<i class="ph ph-warning" style="font-size:16px;color:var(--warning);flex-shrink:0;margin-top:1px;"></i>' +
-                '<div>' +
-                  '<p style="font-size:.8125rem;font-weight:700;color:var(--warning-text);margin:0 0 .2rem;">' +
-                    'Daily image limit reached' +
-                  '</p>' +
-                  '<p style="font-size:.75rem;color:var(--text-3);margin:0;line-height:1.5;">' +
-                    _escHtml(result.message) +
-                  '</p>' +
+              '<div class="vtx-visual-rate-wrap">' +
+                '<div class="vtx-visual-rate-row">' +
+                  '<i class="ph ph-warning"></i>' +
+                  '<div>' +
+                    '<p class="vtx-visual-rate-title">Daily image limit reached</p>' +
+                    '<p class="vtx-visual-rate-msg">' + _escHtml(result.message) + '</p>' +
+                  '</div>' +
                 '</div>' +
+              '</div>' +
+              '<div class="vtx-visual-footer">' +
+                '<span class="vtx-visual-footer-topic">' + _escHtml(visualTopic2) + '</span>' +
+                '<span class="vtx-visual-footer-badge is-error">Error</span>' +
               '</div>';
           });
           return;
         }
 
+        // ── SVG success ──
         if (result.type === 'svg' && result.content) {
-          container.className = 'vtx-visual-svg-wrap';
-          container.style.cssText = '';
+          container.className = 'vtx-visual-container';
           container.innerHTML =
-            result.content +
-            '<div class="vtx-visual-label">' + _escHtml(visualTopic2) + '</div>';
+            '<div class="vtx-visual-content-wrap">' + result.content + '</div>' +
+            '<div class="vtx-visual-footer">' +
+              '<span class="vtx-visual-footer-topic">' + _escHtml(visualTopic2) + '</span>' +
+              '<span class="vtx-visual-footer-badge is-svg">Diagram</span>' +
+            '</div>';
           if (msgs) msgs.scrollTop = msgs.scrollHeight;
           return;
         }
 
+        // ── Image success ──
         if (result.type === 'image' && result.content) {
-          container.className = 'vtx-visual-img-wrap';
-          container.style.cssText = '';
+          container.className = 'vtx-visual-container';
           container.innerHTML =
-            '<img src="data:image/png;base64,' + result.content + '" alt="' + _escHtml(visualTopic2) + '" loading="lazy" />' +
-            '<div class="vtx-visual-label">' + _escHtml(visualTopic2) + '</div>' +
-            '<div class="vtx-visual-quota">Images today: ' + result.used + ' / ' + result.limit + '</div>';
+            '<div class="vtx-visual-content-wrap">' +
+              '<img src="data:image/png;base64,' + result.content + '" alt="' + _escHtml(visualTopic2) + '" loading="lazy" />' +
+            '</div>' +
+            '<div class="vtx-visual-footer">' +
+              '<span class="vtx-visual-footer-topic">' + _escHtml(visualTopic2) + '</span>' +
+              '<span class="vtx-visual-footer-badge is-image">Image</span>' +
+            '</div>' +
+            '<div class="vtx-visual-quota-row">Images today: ' + result.used + ' / ' + result.limit + '</div>';
           if (msgs) msgs.scrollTop = msgs.scrollHeight;
           return;
         }
 
+        // ── Fallback unknown ──
         container.innerHTML =
-          '<span style="font-size:.8125rem;color:var(--text-3);">Visual could not be displayed.</span>';
+          '<div class="vtx-visual-rate-wrap">' +
+            '<p style="font-size:.8125rem;color:var(--text-3);margin:0;">Visual could not be displayed.</p>' +
+          '</div>' +
+          '<div class="vtx-visual-footer">' +
+            '<span class="vtx-visual-footer-topic">' + _escHtml(visualTopic2) + '</span>' +
+            '<span class="vtx-visual-footer-badge is-error">Error</span>' +
+          '</div>';
       });
     }
 
