@@ -80,6 +80,15 @@ async function handleVisualRequest(body, env) {
 
   // ── Realistic images: check rate limit ───────────────
   if (visualType === 'image') {
+    // svg_fallback is a special internal ID used when falling back from
+    // a rate-limited image request — it bypasses the rate limiter entirely.
+    if (studentId === 'svg_fallback') {
+      const svg = await generateSVGDiagram(topic, subject, studentClass, context, env);
+      return new Response(JSON.stringify({ type: 'svg', content: svg }), {
+        headers: corsJsonHeaders(),
+      });
+    }
+
     const rateLimitResult = await checkAndIncrementRateLimit(studentId, env);
 
     if (!rateLimitResult.allowed) {
@@ -96,6 +105,15 @@ async function handleVisualRequest(body, env) {
 
     const imageBase64 = await generateImage(topic, subject, studentClass, env);
 
+    // If image generation failed completely, fall back to SVG silently
+    if (!imageBase64) {
+      console.warn('[Worker] Image generation returned null — falling back to SVG.');
+      const svg = await generateSVGDiagram(topic, subject, studentClass, context, env);
+      return new Response(JSON.stringify({ type: 'svg', content: svg }), {
+        headers: corsJsonHeaders(),
+      });
+    }
+
     return new Response(JSON.stringify({
       type:    'image',
       content: imageBase64,
@@ -110,59 +128,88 @@ async function handleVisualRequest(body, env) {
 }
 
 /* ── Visual type decision logic ──────────────────────────
-   Returns 'svg' for diagrams/charts/circuits/graphs/geometry
-   Returns 'image' for realistic/illustrative visuals
+   Image patterns are checked FIRST — these are more specific
+   to what students actually request visually.
+   SVG patterns come second for technical/scientific diagrams.
 ─────────────────────────────────────────────────────────── */
 function decideVisualType(topic, subject) {
   const t = (topic   || '').toLowerCase();
   const s = (subject || '').toLowerCase();
 
-  // Always SVG: precise technical/scientific diagrams
-  const svgPatterns = [
-    // Biology diagrams
-    'cell', 'diagram', 'label', 'structure', 'organelle', 'mitosis', 'meiosis',
-    'heart', 'circulat', 'respiratory', 'digestive', 'nervous', 'skeletal',
-    'flower', 'photosynthesis', 'transpiration', 'food chain', 'food web',
-    'dna', 'chromosome', 'genetics', 'punnett',
-    // Chemistry
-    'atom', 'molecule', 'bond', 'electron', 'orbital', 'periodic',
-    'circuit', 'electrolysis', 'titration', 'reaction',
-    // Physics
-    'circuit', 'wave', 'ray', 'lens', 'mirror', 'force diagram', 'free body',
-    'velocity', 'acceleration', 'graph', 'distance-time', 'speed-time',
-    'magnetic field', 'electric field', 'refraction', 'reflection',
-    // Mathematics
-    'graph', 'geometry', 'angle', 'triangle', 'circle', 'quadrilateral',
-    'parabola', 'function', 'plot', 'coordinate', 'vector', 'matrix',
-    'venn diagram', 'pie chart', 'bar chart', 'histogram',
-    // General
-    'flowchart', 'flow chart', 'process', 'cycle', 'stages', 'steps',
-    'map', 'timeline', 'table', 'comparison',
-  ];
-
-  for (let i = 0; i < svgPatterns.length; i++) {
-    if (t.includes(svgPatterns[i])) return 'svg';
-  }
-
-  // Subject-level SVG defaults
-  if (s.includes('math') || s.includes('physics') || s.includes('chemistry')) {
-    return 'svg';
-  }
-
-  // Realistic image: animals, ecosystems, history, geography, people
+  // ── Always IMAGE first: realistic/illustrative visuals ──
   const imagePatterns = [
-    'animal', 'ecosystem', 'habitat', 'landscape', 'biome',
-    'frog', 'fish', 'bird', 'insect', 'mammal', 'plant', 'tree', 'leaf',
-    'volcano', 'mountain', 'river', 'ocean', 'desert', 'forest', 'rainforest',
-    'weather', 'cloud', 'storm', 'soil', 'rock', 'mineral',
+    // Animals — domestic and wild
+    'animal', 'dog', 'cat', 'cow', 'goat', 'sheep', 'pig', 'horse', 'rabbit',
+    'chicken', 'hen', 'duck', 'fish', 'frog', 'toad', 'bird', 'insect',
+    'butterfly', 'bee', 'ant', 'spider', 'snake', 'lizard', 'crocodile',
+    'elephant', 'lion', 'tiger', 'giraffe', 'zebra', 'monkey', 'gorilla',
+    'cheetah', 'leopard', 'buffalo', 'antelope', 'tortoise', 'turtle',
+    'parrot', 'eagle', 'hawk', 'owl', 'peacock', 'flamingo', 'penguin',
+    'mammal', 'reptile', 'amphibian', 'domestic', 'wildlife', 'pet',
+    'vertebrate', 'invertebrate', 'arthropod', 'crustacean', 'mollusk',
+    // Plants (realistic images, not diagrams)
+    'plant', 'tree', 'leaf', 'flower', 'grass', 'forest', 'garden',
+    'rainforest', 'mangrove', 'savanna', 'crop', 'farm', 'vegetation',
+    'seed', 'fruit', 'root', 'stem', 'petal', 'shrub', 'weed',
+    // Geography / landscapes / nature
+    'ecosystem', 'habitat', 'landscape', 'biome', 'environment',
+    'volcano', 'mountain', 'river', 'ocean', 'sea', 'lake', 'desert',
+    'weather', 'cloud', 'storm', 'rainbow', 'soil', 'rock', 'mineral',
+    'fossil', 'glacier', 'valley', 'cliff', 'waterfall', 'cave',
+    'beach', 'island', 'delta', 'estuary', 'swamp', 'marsh',
+    // Flags and national symbols
+    'flag', 'coat of arms', 'emblem', 'seal', 'badge', 'insignia',
+    'national symbol', 'national flag',
+    // People and culture
+    'person', 'people', 'human', 'man', 'woman', 'child', 'face',
+    'traditional', 'costume', 'clothing', 'attire', 'dress', 'outfit',
+    'market', 'village', 'community', 'tribe', 'culture',
+    // Buildings and objects
+    'building', 'architecture', 'house', 'bridge', 'church', 'mosque',
+    'school', 'hospital', 'farm', 'tool', 'instrument', 'artifact',
+    // Pictorial / representation request keywords
+    'pictorial', 'representation', 'picture', 'photo', 'realistic',
+    'illustration', 'depict', 'image of', 'show me',
   ];
 
   for (let i = 0; i < imagePatterns.length; i++) {
     if (t.includes(imagePatterns[i])) return 'image';
   }
 
-  // Default to SVG for educational content — safer and always accurate
-  return 'svg';
+  // ── Always SVG: precise technical/scientific diagrams ──
+  const svgPatterns = [
+    // Biology diagrams
+    'cell', 'diagram', 'label', 'structure', 'organelle', 'mitosis', 'meiosis',
+    'heart', 'circulat', 'respiratory', 'digestive', 'nervous', 'skeletal',
+    'photosynthesis', 'transpiration', 'food chain', 'food web',
+    'dna', 'chromosome', 'genetics', 'punnett',
+    // Chemistry
+    'atom', 'molecule', 'bond', 'electron', 'orbital', 'periodic',
+    'electrolysis', 'titration', 'reaction', 'formula',
+    // Physics
+    'circuit', 'wave', 'ray diagram', 'lens', 'mirror', 'force diagram',
+    'free body', 'velocity', 'acceleration', 'distance-time', 'speed-time',
+    'magnetic field', 'electric field', 'refraction', 'reflection',
+    // Mathematics
+    'graph', 'geometry', 'angle', 'triangle', 'circle', 'quadrilateral',
+    'parabola', 'function', 'plot', 'coordinate', 'vector', 'matrix',
+    'venn diagram', 'pie chart', 'bar chart', 'histogram',
+    // General structured diagrams
+    'flowchart', 'flow chart', 'process', 'cycle', 'stages', 'steps',
+    'map', 'timeline', 'table', 'comparison', 'cross section',
+  ];
+
+  for (let i = 0; i < svgPatterns.length; i++) {
+    if (t.includes(svgPatterns[i])) return 'svg';
+  }
+
+  // Subject-level SVG defaults for hard sciences
+  if (s.includes('math') || s.includes('physics') || s.includes('chemistry')) {
+    return 'svg';
+  }
+
+  // Default to image — more visually engaging for students
+  return 'image';
 }
 
 /* ── Rate limiter using Cloudflare KV ────────────────────
@@ -187,10 +234,10 @@ async function checkAndIncrementRateLimit(studentId, env) {
   }
 
   // Increment — expire at end of day (seconds until midnight UTC)
-  const now          = new Date();
-  const midnight     = new Date(now);
+  const now         = new Date();
+  const midnight    = new Date(now);
   midnight.setUTCHours(24, 0, 0, 0);
-  const secondsLeft  = Math.floor((midnight - now) / 1000);
+  const secondsLeft = Math.floor((midnight - now) / 1000);
 
   await env.VTX_RATE_LIMITS.put(key, String(used + 1), { expirationTtl: secondsLeft });
 
@@ -311,7 +358,6 @@ async function generateSVGDiagram(topic, subject, studentClass, context, env) {
 // Strip markdown fences and extract the raw SVG string
 function extractSVG(text) {
   if (!text) return null;
-  // Remove markdown code fences
   let clean = text.replace(/```[\w]*\n?/g, '').replace(/```/g, '').trim();
   const start = clean.indexOf('<svg');
   const end   = clean.lastIndexOf('</svg>');
@@ -321,7 +367,7 @@ function extractSVG(text) {
 
 /* ── Realistic image generator using Workers AI ──────────
    Uses Cloudflare's built-in flux-1-schnell model.
-   Returns base64-encoded PNG.
+   Returns base64-encoded JPEG string.
 ─────────────────────────────────────────────────────────── */
 async function generateImage(topic, subject, studentClass, env) {
   if (!env.AI) {
@@ -329,30 +375,64 @@ async function generateImage(topic, subject, studentClass, env) {
     return null;
   }
 
-  // Build an educational image prompt
   const prompt = buildImagePrompt(topic, subject, studentClass);
 
   try {
     const response = await env.AI.run('@cf/black-forest-labs/flux-1-schnell', {
-      prompt:           prompt,
-      num_steps:        4,
+      prompt: prompt,
+      steps:  4,   // correct param name is 'steps', NOT 'num_steps'
     });
 
-    // Workers AI returns the image as a ReadableStream or ArrayBuffer
-    // Convert to base64
-    if (response && response.image) {
-      // response.image is already base64 from Workers AI
+    // Primary path: Workers AI binding returns response.image as a
+    // base64 string directly — use it straight as an <img src> data URI.
+    if (response && typeof response.image === 'string' && response.image.length > 0) {
       return response.image;
     }
 
-    // If it came back as ArrayBuffer
-    if (response instanceof ArrayBuffer || ArrayBuffer.isView(response)) {
-      const bytes  = new Uint8Array(response instanceof ArrayBuffer ? response : response.buffer);
-      const binary = Array.from(bytes).map(b => String.fromCharCode(b)).join('');
+    // Fallback: some Worker runtime versions return response.image as
+    // a ReadableStream of raw bytes rather than a base64 string.
+    if (response && response.image instanceof ReadableStream) {
+      const reader = response.image.getReader();
+      const chunks = [];
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        chunks.push(value);
+      }
+      const totalLength = chunks.reduce(function(acc, c) { return acc + c.length; }, 0);
+      const merged      = new Uint8Array(totalLength);
+      let offset        = 0;
+      for (const chunk of chunks) {
+        merged.set(chunk, offset);
+        offset += chunk.length;
+      }
+      let binary = '';
+      for (let i = 0; i < merged.length; i++) {
+        binary += String.fromCharCode(merged[i]);
+      }
       return btoa(binary);
     }
 
+    // Fallback: plain ArrayBuffer or TypedArray (older binding behaviour)
+    if (response instanceof ArrayBuffer || ArrayBuffer.isView(response)) {
+      const bytes  = new Uint8Array(response instanceof ArrayBuffer ? response : response.buffer);
+      let binary   = '';
+      for (let i = 0; i < bytes.length; i++) {
+        binary += String.fromCharCode(bytes[i]);
+      }
+      return btoa(binary);
+    }
+
+    // Fallback: the entire response itself might be the ArrayBuffer
+    // (some early binding versions returned the raw bytes at top level)
+    if (response && !(response instanceof Object)) {
+      console.warn('[Worker] generateImage: unexpected response type:', typeof response);
+      return null;
+    }
+
+    console.warn('[Worker] generateImage: could not extract image from response. Keys:', Object.keys(response || {}));
     return null;
+
   } catch (e) {
     console.error('[Worker] Workers AI image generation failed:', e.message);
     return null;
@@ -364,10 +444,37 @@ function buildImagePrompt(topic, subject, studentClass) {
     ? 'for a ' + studentClass + ' student'
     : 'for a secondary school student';
 
+  const t = (topic || '').toLowerCase();
+
+  // Flags and national emblems need precise, accurate prompting
+  if (t.includes('flag') || t.includes('coat of arms') || t.includes('emblem') ||
+      t.includes('seal') || t.includes('insignia')) {
+    return (
+      'A highly accurate, clean, photorealistic image of the ' + topic + '. ' +
+      'Official correct colours and design. White background. Centred composition. ' +
+      'No text overlays. No artistic interpretation. Faithful reproduction of the official design.'
+    );
+  }
+
+  // Animals need a clean natural-setting prompt
+  if (t.includes('animal') || t.includes('dog') || t.includes('cat') || t.includes('cow') ||
+      t.includes('bird') || t.includes('fish') || t.includes('mammal') || t.includes('reptile') ||
+      t.includes('insect') || t.includes('wildlife') || t.includes('domestic') ||
+      t.includes('frog') || t.includes('snake') || t.includes('elephant') || t.includes('lion') ||
+      t.includes('tiger') || t.includes('horse') || t.includes('goat') || t.includes('sheep')) {
+    return (
+      'A clear, high-quality, realistic photograph of ' + topic + ' in its natural or domestic setting. ' +
+      (subject ? 'Educational context: ' + subject + '. ' : '') +
+      'Suitable for a Nigerian secondary school biology or science class. ' +
+      'Well-lit, sharp focus, natural colours. No text overlays.'
+    );
+  }
+
+  // Default educational illustration prompt
   return (
     'A clear, accurate, high-quality educational illustration ' + level + ' showing: ' + topic + '. ' +
     (subject ? 'Subject: ' + subject + '. ' : '') +
-    'The image should be clean, well-lit, realistic, scientifically accurate, and appropriate for classroom use. ' +
+    'The image should be clean, well-lit, realistic, scientifically accurate, and appropriate for classroom use in Nigeria. ' +
     'No text overlays. No cartoon style. Photorealistic or detailed scientific illustration style.'
   );
 }
