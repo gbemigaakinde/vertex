@@ -1198,10 +1198,10 @@ async function renderSubjectSelection() {
           <div style="height:1px;background:var(--border);flex-shrink:0;"></div>
 
           <!-- Messages -->
-          <div id="vtxAiMessages"
-               style="flex:1;overflow-y:auto;padding:1.25rem 1.125rem 1rem;
+           <div id="vtxAiMessages"
+               style="flex:1;overflow-y:auto;overflow-x:hidden;padding:1.25rem 1.125rem 1rem;
                       display:flex;flex-direction:column;gap:1rem;
-                      scroll-behavior:smooth;">
+                      scroll-behavior:smooth;min-width:0;">
 
             <!-- Empty state — greeting -->
             <div id="vtxAiEmptyState" style="display:flex;flex-direction:column;align-items:center;
@@ -3375,7 +3375,8 @@ function _openAiDrawer() {
                   '<div style="max-width:78%;padding:.625rem .875rem;' +
                     'border-radius:var(--r-xl) var(--r-xl) var(--r-sm) var(--r-xl);' +
                     'background:var(--accent);color:#fff;' +
-                    'font-size:.9rem;line-height:1.55;word-break:break-word;">' +
+                    'font-size:.9rem;line-height:1.55;word-break:break-word;' +
+                    'overflow-x:auto;min-width:0;">' +
                     _escHtml(msg.text) +
                   '</div>' +
                   (timeStr
@@ -3385,7 +3386,7 @@ function _openAiDrawer() {
                 var restoredHtml = (msg.raw) ? _renderAiText(msg.raw) : (msg.html || '');
                 bubble.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:2px;';
                 bubble.innerHTML =
-                  '<div style="display:flex;align-items:flex-end;gap:.5rem;">' +
+                  '<div style="display:flex;align-items:flex-end;gap:.5rem;min-width:0;">' +
                     '<span style="display:inline-flex;align-items:center;justify-content:center;' +
                       'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;">' +
                       '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>' +
@@ -3393,7 +3394,8 @@ function _openAiDrawer() {
                     '<div style="max-width:82%;padding:.625rem .875rem;' +
                       'border-radius:var(--r-sm) var(--r-xl) var(--r-xl) var(--r-xl);' +
                       'background:var(--bg-subtle);border:1px solid var(--border);' +
-                      'font-size:.9rem;line-height:1.65;color:var(--text-1);word-break:break-word;">' +
+                      'font-size:.9rem;line-height:1.65;color:var(--text-1);word-break:break-word;' +
+                      'overflow-x:auto;min-width:0;">' +
                       restoredHtml +
                     '</div>' +
                   '</div>' +
@@ -3578,7 +3580,8 @@ function _sendAiMessage() {
     '<div style="max-width:78%;padding:.625rem .875rem;' +
       'border-radius:var(--r-xl) var(--r-xl) var(--r-sm) var(--r-xl);' +
       'background:var(--accent);color:#fff;' +
-      'font-size:.9rem;line-height:1.55;word-break:break-word;">' +
+      'font-size:.9rem;line-height:1.55;word-break:break-word;' +
+      'overflow-x:auto;min-width:0;">' +
       _escHtml(text) +
     '</div>' +
     '<span style="font-size:.625rem;color:var(--text-4);padding-right:2px;">' + timeStr + '</span>';
@@ -3715,7 +3718,7 @@ function _sendAiMessage() {
     wrapper.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:2px;animation:cbt-fade-in 160ms var(--ease) both;';
     var replyId = 'vtxAiReplyTarget_' + replyTs;
     wrapper.innerHTML =
-      '<div style="display:flex;align-items:flex-end;gap:.5rem;">' +
+      '<div style="display:flex;align-items:flex-end;gap:.5rem;min-width:0;">' +
         '<span style="display:inline-flex;align-items:center;justify-content:center;' +
           'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;">' +
           '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>' +
@@ -3723,7 +3726,8 @@ function _sendAiMessage() {
         '<div id="' + replyId + '" style="max-width:82%;padding:.625rem .875rem;' +
           'border-radius:var(--r-sm) var(--r-xl) var(--r-xl) var(--r-xl);' +
           'background:var(--bg-subtle);border:1px solid var(--border);' +
-          'font-size:.9rem;line-height:1.65;color:var(--text-1);word-break:break-word;"></div>' +
+          'font-size:.9rem;line-height:1.65;color:var(--text-1);word-break:break-word;' +
+          'overflow-x:auto;min-width:0;"></div>' +
       '</div>' +
       '<span style="font-size:.625rem;color:var(--text-4);padding-left:34px;">' + replyTime + '</span>';
     msgs.appendChild(wrapper);
@@ -4205,7 +4209,7 @@ function _sendAiMessage() {
     var bubble = document.createElement('div');
     bubble.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:2px;animation:cbt-fade-in 160ms var(--ease) both;';
     bubble.innerHTML =
-      '<div style="max-width:78%;padding:.625rem .875rem;border-radius:var(--r-xl) var(--r-xl) var(--r-sm) var(--r-xl);background:var(--accent);color:#fff;font-size:.9rem;line-height:1.55;word-break:break-word;">' + _escHtml(text) + '</div>' +
+      '<div style="max-width:78%;padding:.625rem .875rem;border-radius:var(--r-xl) var(--r-xl) var(--r-sm) var(--r-xl);background:var(--accent);color:#fff;font-size:.9rem;line-height:1.55;word-break:break-word;overflow-x:auto;min-width:0;">' + _escHtml(text) + '</div>' +
       (timeStr ? '<span style="font-size:.625rem;color:var(--text-4);padding-right:2px;">' + timeStr + '</span>' : '');
     msgs.appendChild(bubble);
     msgs.scrollTop = msgs.scrollHeight;
@@ -4250,11 +4254,11 @@ function _sendAiMessage() {
     var wrapper = document.createElement('div');
     wrapper.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:2px;animation:cbt-fade-in 160ms var(--ease) both;';
     wrapper.innerHTML =
-      '<div style="display:flex;align-items:flex-end;gap:.5rem;">' +
+      '<div style="display:flex;align-items:flex-end;gap:.5rem;min-width:0;">' +
         '<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;">' +
           '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>' +
         '</span>' +
-        '<div style="max-width:82%;padding:.625rem .875rem;border-radius:var(--r-sm) var(--r-xl) var(--r-xl) var(--r-xl);background:var(--bg-subtle);border:1px solid var(--border);font-size:.9rem;line-height:1.65;color:var(--text-1);word-break:break-word;">' + rendered + '</div>' +
+        '<div style="max-width:82%;padding:.625rem .875rem;border-radius:var(--r-sm) var(--r-xl) var(--r-xl) var(--r-xl);background:var(--bg-subtle);border:1px solid var(--border);font-size:.9rem;line-height:1.65;color:var(--text-1);word-break:break-word;overflow-x:auto;min-width:0;">' + rendered + '</div>' +
       '</div>' +
       (timeStr ? '<span style="font-size:.625rem;color:var(--text-4);padding-left:34px;">' + timeStr + '</span>' : '');
     msgs.appendChild(wrapper);
