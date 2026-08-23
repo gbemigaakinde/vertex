@@ -1805,3 +1805,204 @@ details.glass-dark[open] > summary::after,
   #dmViewChat > div:first-child { padding: 0.5rem 0.875rem !important; }
   #dmViewChat > div:last-child  { padding: 0.5rem 0.875rem !important; }
 }
+
+/* ═══════════════════════════════════════════════════════════
+   VISUAL LOADING STATE
+═══════════════════════════════════════════════════════════ */
+.vtx-visual-container {
+  width: 100%;
+  border-radius: var(--r-xl);
+  overflow: hidden;
+  border: 1px solid var(--border);
+  background: var(--bg-subtle);
+}
+
+.vtx-visual-skeleton {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg-muted, #f0f0f2);
+}
+
+.vtx-visual-skeleton::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.25) 40%,
+    rgba(255, 255, 255, 0.55) 50%,
+    rgba(255, 255, 255, 0.25) 60%,
+    transparent 100%
+  );
+  background-size: 200% 100%;
+  animation: vtx-shimmer 1.6s ease-in-out infinite;
+}
+
+.vtx-visual-skeleton-icon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+}
+
+.vtx-visual-skeleton-icon i {
+  font-size: 28px;
+  color: var(--text-4, #bbb);
+  opacity: .6;
+}
+
+.vtx-visual-skeleton-label {
+  font-size: .6875rem;
+  font-weight: 600;
+  color: var(--text-4, #bbb);
+  letter-spacing: .04em;
+  opacity: .8;
+}
+
+.vtx-visual-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: .5rem .75rem;
+  border-top: 1px solid var(--border);
+  background: var(--bg-base);
+}
+
+.vtx-visual-footer-topic {
+  font-size: .6875rem;
+  color: var(--text-3);
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.vtx-visual-footer-badge {
+  flex-shrink: 0;
+  font-size: .5625rem;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 99px;
+  margin-left: .5rem;
+}
+
+.vtx-visual-footer-badge.is-loading {
+  background: var(--bg-muted, #f0f0f2);
+  color: var(--text-4);
+}
+
+.vtx-visual-footer-badge.is-svg {
+  background: var(--accent-subtle);
+  color: var(--accent-text);
+}
+
+.vtx-visual-footer-badge.is-image {
+  background: var(--success-subtle, #ecfdf5);
+  color: var(--success-text, #166534);
+}
+
+.vtx-visual-footer-badge.is-error {
+  background: var(--warning-subtle);
+  color: var(--warning-text);
+}
+
+.vtx-visual-content-wrap {
+  width: 100%;
+  display: block;
+}
+
+.vtx-visual-content-wrap svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.vtx-visual-content-wrap img {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.vtx-visual-quota-row {
+  font-size: .6rem;
+  color: var(--text-4);
+  text-align: right;
+  padding: .25rem .75rem .375rem;
+  background: var(--bg-base);
+  border-top: 1px solid var(--border);
+}
+
+.vtx-visual-rate-wrap {
+  padding: .875rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: .625rem;
+}
+
+.vtx-visual-rate-row {
+  display: flex;
+  align-items: flex-start;
+  gap: .5rem;
+}
+
+.vtx-visual-rate-row i {
+  font-size: 16px;
+  color: var(--warning);
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.vtx-visual-rate-title {
+  font-size: .8125rem;
+  font-weight: 700;
+  color: var(--warning-text);
+  margin: 0 0 .2rem;
+}
+
+.vtx-visual-rate-msg {
+  font-size: .75rem;
+  color: var(--text-3);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.vtx-visual-fallback-row {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+  font-size: .75rem;
+  color: var(--text-3);
+}
+
+.vtx-visual-fallback-row i {
+  font-size: 13px;
+  color: var(--accent);
+}
+
+.vtx-visual-fallback-bar {
+  width: 100%;
+  height: 3px;
+  border-radius: 2px;
+  background: var(--accent);
+  animation: vtx-visual-loading 1.2s ease-in-out infinite;
+}
+
+@keyframes vtx-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes vtx-visual-loading {
+  0%, 100% { opacity: .3; transform: scaleX(.5); }
+  50%       { opacity: 1;  transform: scaleX(1);  }
+}
