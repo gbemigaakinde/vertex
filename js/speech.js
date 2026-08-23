@@ -805,8 +805,6 @@ function cancel() {
   var _OR_MODEL_PRIMARY  = 'openrouter/auto';
   var _OR_MODEL_FALLBACK = 'meta-llama/llama-3.3-70b-instruct:free';
 
-  var _GEMINI_MODEL = 'gemini-2.0-flash';
-
    /*
    * _askGroq
    */
