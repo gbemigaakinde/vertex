@@ -3488,7 +3488,7 @@ function _sendAiMessage() {
   var text = (inp.value || '').trim();
   if (!text) return;
 
-  var _isVisualRequest = /\b(draw|diagram|show me|picture|image|illustrat|circuit|sketch|chart|graph|visual|what does .* look like)\b/i.test(text);
+  var _isVisualRequest = /\b(draw|diagram|show me|show|picture|image|illustrat|circuit|sketch|chart|graph|visual|pictorial|representation|depict|display|flag|coat of arms|what does .* look like|give me a .*(picture|image|diagram|visual|representation)|what .* look like)\b/i.test(text);
 
   inp.value = '';
   inp.style.height = 'auto';
@@ -3690,18 +3690,8 @@ function _sendAiMessage() {
 
       stripped = cleanedLines.join('\n').trim();
 
-      // If after all that cleaning there's nothing meaningful left, use a default line
-      if (!stripped || stripped.length < 5) {
-        stripped = 'Here is a visual for you:';
-      }
-
-      // If it's still too long (AI wrote a whole essay before the marker), truncate to first 2 sentences
-      var sentences = stripped.match(/[^.!?\n]+[.!?\n]*/g) || [stripped];
-      if (sentences.length > 2) {
-        stripped = sentences.slice(0, 2).join('').trim();
-      }
-
-      displayText = stripped;
+      // Always use a clean, fixed acknowledgement line when showing a visual.
+      displayText = 'Here is a visual representation of ' + visualTopic2 + ':';
     } else {
       displayText = replyText;
     }
