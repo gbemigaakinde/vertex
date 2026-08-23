@@ -34,7 +34,7 @@ export default {
       catch (e) { return jsonError('Could not build messages: ' + e.message, 400); }
 
       if (provider === 'groq')       return callGroq(messages, body.model, env);
-      if (provider === 'gemini')     return callGemini(messages, body.model, env);
+      if (provider === 'workersai')  return callWorkersAI(messages, body.model, env);
       if (provider === 'openrouter') return callOpenRouter(messages, body.model, env);
 
       return jsonError('Unknown provider: ' + provider, 400);
@@ -276,7 +276,7 @@ async function generateSVGDiagram(topic, subject, studentClass, context, env) {
     { role: 'user',   content: userPrompt   },
   ];
 
-  // Try Groq first
+  // 1) Try Groq first
   try {
     const groqRes = await fetch('https://api.groq.com/openai/v1/chat/completions', {
       method:  'POST',
@@ -301,37 +301,7 @@ async function generateSVGDiagram(topic, subject, studentClass, context, env) {
     console.warn('[Worker] Groq SVG failed:', e.message);
   }
 
-   // Fallback: Gemini
-  try {
-    if (!env.GEMINI_API_KEY) {
-      console.warn('[Worker] GEMINI_API_KEY not set. Skipping Gemini SVG fallback.');
-    } else {
-      const geminiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=' + env.GEMINI_API_KEY;
-      const geminiRes = await fetch(geminiUrl, {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          systemInstruction: { parts: [{ text: systemPrompt }] },
-          contents:          [{ role: 'user', parts: [{ text: userPrompt }] }],
-          generationConfig:  { maxOutputTokens: 4096, temperature: 0.2 },
-        }),
-      });
-      if (geminiRes.ok) {
-        const data = await geminiRes.json();
-        const text = data.candidates && data.candidates[0] && data.candidates[0].content &&
-                     data.candidates[0].content.parts && data.candidates[0].content.parts[0] &&
-                     data.candidates[0].content.parts[0].text;
-        const svg  = extractSVG(text);
-        if (svg) return svg;
-      } else {
-        console.warn('[Worker] Gemini SVG returned status:', geminiRes.status);
-      }
-    }
-  } catch (e) {
-    console.warn('[Worker] Gemini SVG failed:', e.message);
-  }
-
-  // Fallback: OpenRouter
+  // 2) Fallback: OpenRouter
   try {
     const orRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
       method:  'POST',
@@ -356,6 +326,22 @@ async function generateSVGDiagram(topic, subject, studentClass, context, env) {
     }
   } catch (e) {
     console.warn('[Worker] OpenRouter SVG failed:', e.message);
+  }
+
+  // 3) Fallback: Workers AI
+  try {
+    if (!env.AI) {
+      console.warn('[Worker] Workers AI binding not configured. Skipping SVG fallback.');
+    } else {
+      const res = await env.AI.run('@cf/meta/llama-3.3-70b-instruct', {
+        messages: messages,
+      });
+      const text = res && typeof res.response === 'string' ? res.response : null;
+      const svg  = extractSVG(text);
+      if (svg) return svg;
+    }
+  } catch (e) {
+    console.warn('[Worker] Workers AI SVG failed:', e.message);
   }
 
   return null;
@@ -604,28 +590,31 @@ async function callGroq(messages, model, env) {
   return new Response(JSON.stringify(data), { status: res.status, headers: corsJsonHeaders() });
 }
 
-async function callGemini(messages, model, env) {
-  const geminiKey = env.GEMINI_API_KEY;
-  if (!geminiKey) return jsonError('Gemini API key not configured.', 500);
-  const useModel  = model || 'gemini-2.0-flash';
+async function callWorkersAI(messages, model, env) {
+  if (!env.AI) return jsonError('Workers AI binding not configured.', 500);
+  const useModel = model || '@cf/meta/llama-3.3-70b-instruct';
 
-  let systemText = '';
-  const contents = [];
-  messages.forEach(msg => {
-    if (msg.role === 'system') { systemText += msg.content + '\n'; }
-    else { contents.push({ role: msg.role === 'assistant' ? 'model' : 'user', parts: [{ text: msg.content }] }); }
+  // Workers AI accepts system / user / assistant roles natively
+  const cleanMessages = messages.map(function (m) {
+    return { role: m.role === 'model' ? 'assistant' : m.role, content: m.content };
   });
 
-  const geminiBody = { contents, generationConfig: { maxOutputTokens: 1024, temperature: 0.4 } };
-  if (systemText.trim()) geminiBody.systemInstruction = { parts: [{ text: systemText.trim() }] };
+  try {
+    const res = await env.AI.run(useModel, { messages: cleanMessages });
+    const text = res && typeof res.response === 'string' ? res.response : null;
+    if (!text || !text.trim()) return jsonError('Workers AI returned empty response.', 500);
 
-  const res  = await fetch('https://generativelanguage.googleapis.com/v1beta/models/' + useModel + ':generateContent?key=' + geminiKey, {
-    method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify(geminiBody),
-  });
-  const data = await res.json();
-  return new Response(JSON.stringify(data), { status: res.status, headers: corsJsonHeaders() });
+    // Return OpenAI-compatible shape so speech.js doesn't need to change its parser
+    return new Response(JSON.stringify({
+      choices: [{
+        message: { role: 'assistant', content: text.trim() },
+        finish_reason: 'stop'
+      }]
+    }), { status: 200, headers: corsJsonHeaders() });
+  } catch (e) {
+    console.error('[Worker] Workers AI error:', e.message);
+    return jsonError('Workers AI failed: ' + e.message, 500);
+  }
 }
 
 async function callOpenRouter(messages, model, env) {
