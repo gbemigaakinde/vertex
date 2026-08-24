@@ -20,7 +20,7 @@ export default {
 
     const url = new URL(request.url);
 
-    // ── AI text route ─────────────────────────────────────
+     // ── AI text route ─────────────────────────────────────
     if (request.method === 'POST' && url.pathname === '/ai') {
       let body;
       try { body = await request.json(); }
@@ -28,6 +28,14 @@ export default {
 
       const { provider, intent } = body;
       if (!provider || !intent) return jsonError('Missing provider or intent.', 400);
+
+      // Vision intent always routes through OpenRouter regardless of provider field
+      if (intent === 'explain_image') {
+        let messages;
+        try { messages = buildMessages(intent, body); }
+        catch (e) { return jsonError('Could not build vision messages: ' + e.message, 400); }
+        return callOpenRouterVision(messages, env);
+      }
 
       let messages;
       try { messages = buildMessages(intent, body); }
@@ -568,6 +576,28 @@ function buildMessages(intent, body) {
       ...history,
     ];
   }
+  if (intent === 'explain_image') {
+    const imageBase64 = body.imageBase64 || '';
+    const imageType   = body.imageType   || 'image/jpeg';
+    const userPrompt  = (body.userPrompt || '').trim()
+      || 'Please read and explain this image clearly and thoroughly for a Nigerian secondary school student.';
+
+    if (!imageBase64) throw new Error('No image data provided.');
+
+    return [
+      { role: 'system', content: systemPrompt },
+      {
+        role: 'user',
+        content: [
+          {
+            type:      'image_url',
+            image_url: { url: `data:${imageType};base64,${imageBase64}` },
+          },
+          { type: 'text', text: userPrompt },
+        ],
+      },
+    ];
+  }
 
   throw new Error('Unknown intent: ' + intent);
 }
@@ -632,6 +662,67 @@ async function callOpenRouter(messages, model, env) {
     },
     body: JSON.stringify({ model: useModel, max_tokens: 1024, temperature: 0.4, messages }),
   });
+  const data = await res.json();
+  return new Response(JSON.stringify(data), { status: res.status, headers: corsJsonHeaders() });
+}
+
+async function callOpenRouterVision(messages, env) {
+  const orKey = env.OR_API_KEY;
+  if (!orKey) return jsonError('OpenRouter API key not configured.', 500);
+
+  // Use a vision-capable model. gemini-2.0-flash is fast, free-tier friendly,
+  // and handles diagrams, handwriting, and printed text well.
+  const visionModel = 'google/gemini-2.0-flash-exp:free';
+
+  let res;
+  try {
+    res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+      method:  'POST',
+      headers: {
+        'Authorization': 'Bearer ' + orKey,
+        'HTTP-Referer':  'https://vertex-tutorial.vercel.app',
+        'X-Title':       'Vertex Tutorial CBT',
+        'Content-Type':  'application/json',
+      },
+      body: JSON.stringify({
+        model:       visionModel,
+        max_tokens:  1024,
+        temperature: 0.4,
+        messages,
+      }),
+    });
+  } catch (e) {
+    console.error('[Worker] Vision fetch error:', e.message);
+    return jsonError('Vision request failed: ' + e.message, 500);
+  }
+
+  // If the free model is rate-limited or unavailable, fall back to a paid vision model
+  if (res.status === 429 || res.status === 503 || res.status === 404) {
+    console.warn('[Worker] Gemini vision failed (' + res.status + ') — falling back to claude-haiku.');
+    try {
+      const fallback = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method:  'POST',
+        headers: {
+          'Authorization': 'Bearer ' + orKey,
+          'HTTP-Referer':  'https://vertex-tutorial.vercel.app',
+          'X-Title':       'Vertex Tutorial CBT',
+          'Content-Type':  'application/json',
+        },
+        body: JSON.stringify({
+          model:       'anthropic/claude-haiku-4-5',
+          max_tokens:  1024,
+          temperature: 0.4,
+          messages,
+        }),
+      });
+      const data = await fallback.json();
+      return new Response(JSON.stringify(data), { status: fallback.status, headers: corsJsonHeaders() });
+    } catch (e2) {
+      console.error('[Worker] Vision fallback error:', e2.message);
+      return jsonError('Vision request failed on all models.', 500);
+    }
+  }
+
   const data = await res.json();
   return new Response(JSON.stringify(data), { status: res.status, headers: corsJsonHeaders() });
 }
