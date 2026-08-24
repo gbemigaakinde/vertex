@@ -1247,7 +1247,7 @@ async function renderSubjectSelection() {
                 oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,120)+'px';"
                 onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();Exam._sendAiMessage();}"
               ></textarea>
-              <!-- Toolbar row: mic left, send right -->
+                     <!-- Toolbar row: mic left, send right, image in middle -->
               <div style="display:flex;align-items:center;justify-content:space-between;
                           padding:.375rem .625rem .5rem;">
                 <!-- Mic button -->
@@ -1267,6 +1267,34 @@ async function renderSubjectSelection() {
                 >
                   <i class="ph ph-microphone" style="font-size:18px;pointer-events:none;"></i>
                 </button>
+
+                <!-- Image upload button -->
+                <button
+                  id="vtxAiImageBtn"
+                  onclick="Exam._aiDrawerImagePick()"
+                  title="Upload an image or photo"
+                  aria-label="Upload image"
+                  style="width:34px;height:34px;border-radius:var(--r-full);
+                         background:transparent;border:none;cursor:pointer;
+                         display:flex;align-items:center;justify-content:center;
+                         color:var(--text-4);
+                         transition:color var(--t-fast),background var(--t-fast);
+                         -webkit-tap-highlight-color:transparent;"
+                  onmouseenter="this.style.background='var(--bg-muted)';this.style.color='var(--text-2)';"
+                  onmouseleave="this.style.background='transparent';this.style.color='var(--text-4)';"
+                >
+                  <i class="ph ph-image" style="font-size:18px;pointer-events:none;"></i>
+                </button>
+
+                <!-- Hidden file input -->
+                <input
+                  type="file"
+                  id="vtxAiImageInput"
+                  accept="image/*"
+                  style="display:none;"
+                  onchange="Exam._handleImageUpload(this)"
+                />
+
                 <!-- Send button -->
                 <button
                   id="vtxAiSendBtn"
@@ -3281,7 +3309,311 @@ function _aiTypewriter(el, text, scrollContainer) {
     }
   }
 
-   function _aiDateLabel(ts) {
+function _aiDrawerImagePick() {
+  var fileInput = document.getElementById('vtxAiImageInput');
+  if (!fileInput) return;
+  // Reset so the same file can be re-selected after a previous upload
+  fileInput.value = '';
+  fileInput.click();
+}
+
+function _handleImageUpload(inputEl) {
+  var file = inputEl && inputEl.files && inputEl.files[0];
+  if (!file) return;
+
+  // Validate type
+  if (!file.type.startsWith('image/')) {
+    if (window.UI) UI.toast('Please select an image file.', 'warning', 3000);
+    return;
+  }
+
+  // Validate size — 4MB cap. Base64 encoding adds ~33% overhead,
+  // so 4MB source = ~5.3MB encoded, which is within worker limits.
+  var MAX_BYTES = 4 * 1024 * 1024;
+  if (file.size > MAX_BYTES) {
+    if (window.UI) UI.toast('Image is too large. Please use an image under 4MB.', 'warning', 4000);
+    return;
+  }
+
+  var inp     = document.getElementById('vtxAiInput');
+  var sendBtn = document.getElementById('vtxAiSendBtn');
+  var imgBtn  = document.getElementById('vtxAiImageBtn');
+  var micBtn  = document.getElementById('vtxAiMicBtn');
+
+  // Grab any text the user typed alongside the image
+  var userPrompt = inp ? inp.value.trim() : '';
+
+  // Disable controls while processing
+  if (sendBtn) { sendBtn.disabled = true; sendBtn.style.opacity = '.4'; }
+  if (imgBtn)  { imgBtn.disabled  = true; imgBtn.style.opacity  = '.4'; }
+  if (micBtn)  { micBtn.disabled  = true; }
+
+  // Clear input
+  if (inp) { inp.value = ''; inp.style.height = 'auto'; }
+
+  var reader = new FileReader();
+
+  reader.onerror = function () {
+    if (window.UI) UI.toast('Could not read the image file. Please try again.', 'error', 3000);
+    if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = '.4'; }
+    if (imgBtn)  { imgBtn.disabled  = false; imgBtn.style.opacity  = '1'; }
+    if (micBtn)  { micBtn.disabled  = false; }
+  };
+
+  reader.onload = function (e) {
+    var dataUrl   = e.target.result;
+    var base64    = dataUrl.split(',')[1];
+    var imageType = file.type;
+
+    if (!base64) {
+      if (window.UI) UI.toast('Could not process the image. Please try again.', 'error', 3000);
+      if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = '.4'; }
+      if (imgBtn)  { imgBtn.disabled  = false; imgBtn.style.opacity  = '1'; }
+      if (micBtn)  { micBtn.disabled  = false; }
+      return;
+    }
+
+    _injectThoughtStyle();
+
+    var emptyState = document.getElementById('vtxAiEmptyState');
+    if (emptyState) emptyState.style.display = 'none';
+
+    var messages = document.getElementById('vtxAiMessages');
+    if (!messages) return;
+
+    var nowTs     = Date.now();
+    var timeStr   = _aiTimeLabel(nowTs);
+    var dateLabel = _aiDateLabel(nowTs);
+
+    // Date separator if needed
+    if (dateLabel !== _lastAiDateLabel) {
+      _lastAiDateLabel = dateLabel;
+      var sep = document.createElement('div');
+      sep.style.cssText = 'display:flex;align-items:center;gap:.625rem;margin:.25rem 0 .125rem;flex-shrink:0;';
+      sep.innerHTML =
+        '<div style="flex:1;height:1px;background:var(--border);"></div>' +
+        '<span style="font-size:.6875rem;font-weight:600;color:var(--text-4);white-space:nowrap;letter-spacing:.03em;">' +
+          _escHtml(dateLabel) +
+        '</span>' +
+        '<div style="flex:1;height:1px;background:var(--border);"></div>';
+      messages.appendChild(sep);
+    }
+
+    // User bubble — show thumbnail + prompt text
+    var userBubble = document.createElement('div');
+    userBubble.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:4px;animation:cbt-fade-in 160ms var(--ease) both;';
+    userBubble.innerHTML =
+      '<div style="max-width:78%;border-radius:var(--r-xl) var(--r-xl) var(--r-sm) var(--r-xl);' +
+        'background:var(--accent);overflow:hidden;">' +
+        '<img src="' + dataUrl + '" alt="Uploaded image" ' +
+          'style="display:block;width:100%;max-width:220px;max-height:160px;object-fit:cover;" />' +
+        (userPrompt
+          ? '<div style="padding:.5rem .875rem;font-size:.9rem;line-height:1.5;color:#fff;">' +
+              _escHtml(userPrompt) +
+            '</div>'
+          : '') +
+      '</div>' +
+      '<span style="font-size:.625rem;color:var(--text-4);padding-right:2px;">' + timeStr + '</span>';
+    messages.appendChild(userBubble);
+    messages.scrollTop = messages.scrollHeight;
+
+    // AI thinking group
+    var thoughtStartMs = Date.now();
+    var _thoughtTimer  = null;
+
+    var aiGroup = document.createElement('div');
+    aiGroup.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:4px;animation:cbt-fade-in 160ms var(--ease) both;';
+
+    var thoughtPill = document.createElement('div');
+    thoughtPill.className = 'vtx-thought-bubble';
+
+    var thoughtTextEl = document.createElement('span');
+    thoughtTextEl.className = 'vtx-thought-shimmer';
+    thoughtTextEl.textContent = 'Reading image…';
+
+    thoughtPill.appendChild(thoughtTextEl);
+    aiGroup.appendChild(thoughtPill);
+    messages.appendChild(aiGroup);
+    messages.scrollTop = messages.scrollHeight;
+
+    function _tickThought() {
+      var elapsed = (Date.now() - thoughtStartMs) / 1000;
+      if (thoughtTextEl && thoughtTextEl.parentNode) {
+        thoughtTextEl.textContent = elapsed < 0.9
+          ? 'Reading image…'
+          : 'Reading image for ' + elapsed.toFixed(1) + 's…';
+        _thoughtTimer = setTimeout(_tickThought, 100);
+      }
+    }
+    _thoughtTimer = setTimeout(_tickThought, 100);
+
+    // Save to history as text only (not base64 — too large for localStorage)
+    if (!window._vtxAiHistory) window._vtxAiHistory = [];
+    var historyEntry = userPrompt
+      ? '[Image uploaded] ' + userPrompt
+      : '[Image uploaded — please read and explain this image]';
+    window._vtxAiHistory.push({ role: 'user', content: historyEntry });
+    if (window._vtxAiHistory.length > 12) window._vtxAiHistory = window._vtxAiHistory.slice(-12);
+
+    var storageKey = 'vtx_ai_history_' + (AppState.userId || 'anon');
+    try {
+      var raw    = localStorage.getItem(storageKey);
+      var saved  = raw ? JSON.parse(raw) : { ts: Date.now(), history: [], ui: [], lastActivityTs: Date.now() };
+      saved.ui   = saved.ui || [];
+      // Store a placeholder in UI log — thumbnail not stored
+      saved.ui.push({ role: 'user', text: '[📷 Image] ' + (userPrompt || ''), ts: nowTs });
+      saved.history        = window._vtxAiHistory;
+      saved.ts             = Date.now();
+      saved.lastActivityTs = Date.now();
+      localStorage.setItem(storageKey, JSON.stringify(saved));
+    } catch (e) {}
+
+    var studentData = S().studentData || {};
+
+    fetch('https://vertex-worker.gbemigaakinde.workers.dev/ai', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        provider:     'openrouter',
+        intent:       'explain_image',
+        subject:      studentData.class || '',
+        studentName:  studentData.name  || '',
+        studentClass: studentData.class || '',
+        imageBase64:  base64,
+        imageType:    imageType,
+        userPrompt:   userPrompt || '',
+      }),
+    })
+    .then(function (res) { return res.json(); })
+    .then(function (data) {
+      // Settle thought pill
+      if (_thoughtTimer) { clearTimeout(_thoughtTimer); _thoughtTimer = null; }
+
+      var elapsedMs = Date.now() - thoughtStartMs;
+      var elapsedSec = elapsedMs / 1000;
+      if (thoughtTextEl) {
+        thoughtTextEl.classList.remove('vtx-thought-shimmer');
+        thoughtTextEl.textContent = elapsedSec < 60
+          ? 'Read image in ' + elapsedSec.toFixed(1) + 's'
+          : 'Read image in ' + Math.floor(elapsedSec / 60) + 'm ' + (elapsedSec % 60).toFixed(1) + 's';
+      }
+      if (thoughtPill) {
+        requestAnimationFrame(function () {
+          requestAnimationFrame(function () { thoughtPill.classList.add('is-done'); });
+        });
+      }
+      aiGroup.removeAttribute('id');
+
+      var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+
+      if (!reply || !reply.trim()) {
+        // Error bubble
+        setTimeout(function () {
+          var errBubble = document.createElement('div');
+          errBubble.style.cssText = 'display:flex;justify-content:flex-start;animation:cbt-fade-in 160ms var(--ease) both;';
+          errBubble.innerHTML =
+            '<div style="max-width:85%;padding:.5rem .875rem;border-radius:var(--r-lg);' +
+              'background:var(--danger-subtle);border:1px solid var(--danger-border);' +
+              'font-size:.8125rem;color:var(--danger-text);">' +
+              'Sorry, I could not read that image. Please try a clearer photo or a different image.' +
+            '</div>';
+          if (messages) { messages.appendChild(errBubble); messages.scrollTop = messages.scrollHeight; }
+        }, 400);
+        return;
+      }
+
+      // Save AI reply to history
+      window._vtxAiHistory.push({ role: 'assistant', content: reply });
+
+      var replyTs   = Date.now();
+      var replyTime = _aiTimeLabel(replyTs);
+      var rendered  = _renderAiText(reply);
+      var replyId   = 'vtxAiReplyTarget_' + replyTs;
+
+      setTimeout(function () {
+        var replyRow = document.createElement('div');
+        replyRow.className = 'vtx-reply-enter';
+        replyRow.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;';
+        replyRow.innerHTML =
+          '<div style="display:flex;align-items:flex-end;gap:.5rem;min-width:0;">' +
+            '<span style="display:inline-flex;align-items:center;justify-content:center;' +
+              'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;">' +
+              '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>' +
+            '</span>' +
+            '<div id="' + replyId + '" style="max-width:82%;padding:.625rem .875rem;' +
+              'border-radius:var(--r-sm) var(--r-xl) var(--r-xl) var(--r-xl);' +
+              'background:var(--bg-subtle);border:1px solid var(--border);' +
+              'font-size:.9rem;line-height:1.65;color:var(--text-1);word-break:break-word;' +
+              'overflow-x:auto;min-width:0;"></div>' +
+          '</div>' +
+          '<span style="font-size:.625rem;color:var(--text-4);padding-left:34px;">' + replyTime + '</span>';
+
+        aiGroup.appendChild(replyRow);
+        if (messages) messages.scrollTop = messages.scrollHeight;
+
+        var targetEl = replyRow.querySelector('#' + replyId);
+        // Skip typewriter for image replies — they tend to be long structured text
+        if (targetEl) {
+          targetEl.innerHTML = rendered;
+          if (messages) messages.scrollTop = messages.scrollHeight;
+          if (window._katexAutoRenderReady && window.renderMathInElement) {
+            try {
+              renderMathInElement(targetEl, {
+                delimiters: [
+                  { left: '$$', right: '$$', display: true  },
+                  { left: '$',  right: '$',  display: false },
+                  { left: '\\(', right: '\\)', display: false },
+                  { left: '\\[', right: '\\]', display: true  },
+                ],
+                throwOnError: false,
+                errorColor: '#cc0000',
+              });
+            } catch (err) { console.warn('[KaTeX] Image reply render error:', err); }
+          }
+        }
+
+        // Save reply to localStorage
+        try {
+          var sKey   = 'vtx_ai_history_' + (AppState.userId || 'anon');
+          var raw2   = localStorage.getItem(sKey);
+          var saved2 = raw2 ? JSON.parse(raw2) : { ts: Date.now(), history: [], ui: [], lastActivityTs: Date.now() };
+          saved2.history        = window._vtxAiHistory;
+          saved2.ui             = saved2.ui || [];
+          saved2.ui.push({ role: 'assistant', html: rendered, raw: reply, ts: replyTs });
+          saved2.ts             = Date.now();
+          saved2.lastActivityTs = Date.now();
+          localStorage.setItem(sKey, JSON.stringify(saved2));
+        } catch (e) {}
+      }, 400);
+    })
+    .catch(function (err) {
+      if (_thoughtTimer) { clearTimeout(_thoughtTimer); _thoughtTimer = null; }
+      if (aiGroup && aiGroup.parentNode) aiGroup.remove();
+      console.error('[exam] Image upload fetch error:', err);
+      var errBubble = document.createElement('div');
+      errBubble.style.cssText = 'display:flex;justify-content:flex-start;animation:cbt-fade-in 160ms var(--ease) both;';
+      errBubble.innerHTML =
+        '<div style="max-width:85%;padding:.5rem .875rem;border-radius:var(--r-lg);' +
+          'background:var(--danger-subtle);border:1px solid var(--danger-border);' +
+          'font-size:.8125rem;color:var(--danger-text);">' +
+          'Could not reach the AI server. Please check your internet connection and try again.' +
+        '</div>';
+      if (messages) { messages.appendChild(errBubble); messages.scrollTop = messages.scrollHeight; }
+    })
+    .finally(function () {
+      // Re-enable controls
+      if (sendBtn) sendBtn.disabled = false;
+      if (imgBtn)  { imgBtn.disabled = false; imgBtn.style.opacity = '1'; }
+      if (micBtn)  micBtn.disabled = false;
+      // Reset file input so same image can be re-uploaded
+      if (inputEl) inputEl.value = '';
+    });
+  };
+
+  reader.readAsDataURL(file);
+}
+
+function _aiDateLabel(ts) {
   if (!ts) return '';
   var d     = new Date(ts);
   var today = new Date();
@@ -4556,45 +4888,47 @@ function _hideLiveTyping() {
   /* ─────────────────────────────────────────────────────── */
   /* Public API                                              */
   /* ─────────────────────────────────────────────────────── */
-   window.Exam = {
-    loadOrStart,
-    renderSubjectSelection,
-    startExam,
-    beginExam,
-    renderExam,
-    prevQuestion,
-    nextQuestion,
-    goTo,
-    switchSubject,
-    submitExam,
-    renderResults,
-    _shareWhatsApp,
-    _copyResult,
-    _escHtml,
-    _escAttr,
-    preprocessLatex,
-    _isTodayTaskDayCompleted,
-    _isTodayATaskDay,
-    _nextUnlockedDateLabel,
-    _downloadTimetablePDF,
-    _openAiDrawer,
-    _closeAiDrawer,
-    _sendAiMessage,
-    _aiTypewriter,
-    _aiDrawerSTT,
-    /* ── Live Mode ── */
-    _toggleLiveMode,
-    _startLiveConversation,
-    _stopLiveConversation,
-    _liveStartListening,
-    _liveProcessTranscript,
-    _liveOrbTap,
-    _updateLiveUI,
-    _appendLiveUserMessage,
-    _appendLiveAiMessage,
-    _showLiveTyping,
-    _hideLiveTyping,
-    _liveSetStatus,
-  };
+window.Exam = {
+  loadOrStart,
+  renderSubjectSelection,
+  startExam,
+  beginExam,
+  renderExam,
+  prevQuestion,
+  nextQuestion,
+  goTo,
+  switchSubject,
+  submitExam,
+  renderResults,
+  _shareWhatsApp,
+  _copyResult,
+  _escHtml,
+  _escAttr,
+  preprocessLatex,
+  _isTodayTaskDayCompleted,
+  _isTodayATaskDay,
+  _nextUnlockedDateLabel,
+  _downloadTimetablePDF,
+  _openAiDrawer,
+  _closeAiDrawer,
+  _sendAiMessage,
+  _aiTypewriter,
+  _aiDrawerSTT,
+  _aiDrawerImagePick, 
+  _handleImageUpload, 
+  /* ── Live Mode ── */
+  _toggleLiveMode,
+  _startLiveConversation,
+  _stopLiveConversation,
+  _liveStartListening,
+  _liveProcessTranscript,
+  _liveOrbTap,
+  _updateLiveUI,
+  _appendLiveUserMessage,
+  _appendLiveAiMessage,
+  _showLiveTyping,
+  _hideLiveTyping,
+  _liveSetStatus,
+};
 
 })();
