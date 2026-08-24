@@ -4356,96 +4356,199 @@ function _sendAiMessage() {
     } catch (e) {}
   }
 
-  function _appendLiveAiMessage(text) {
-    var msgs = document.getElementById('vtxAiMessages');
-    if (!msgs) return;
-    var empty = document.getElementById('vtxAiEmptyState');
-    if (empty) empty.style.display = 'none';
+function _appendLiveAiMessage(text) {
+  var msgs = document.getElementById('vtxAiMessages');
+  if (!msgs) return;
+  var empty = document.getElementById('vtxAiEmptyState');
+  if (empty) empty.style.display = 'none';
 
-    var nowTs     = Date.now();
-    var timeStr   = _aiTimeLabel(nowTs);
-    var dateLabel = _aiDateLabel(nowTs);
-    var rendered  = _renderAiText(text);
+  var nowTs     = Date.now();
+  var timeStr   = _aiTimeLabel(nowTs);
+  var dateLabel = _aiDateLabel(nowTs);
+  var rendered  = _renderAiText(text);
 
-    if (dateLabel !== _lastAiDateLabel) {
-      _lastAiDateLabel = dateLabel;
-      var sep = document.createElement('div');
-      sep.className = 'vtx-ai-date-sep';
-      sep.setAttribute('data-label', dateLabel);
-      sep.style.cssText = 'display:flex;align-items:center;gap:.625rem;margin:.25rem 0 .125rem;flex-shrink:0;';
-      sep.innerHTML =
-        '<div style="flex:1;height:1px;background:var(--border);"></div>' +
-        '<span style="font-size:.6875rem;font-weight:600;color:var(--text-4);white-space:nowrap;letter-spacing:.03em;">' + _escHtml(dateLabel) + '</span>' +
-        '<div style="flex:1;height:1px;background:var(--border);"></div>';
-      msgs.appendChild(sep);
+  if (dateLabel !== _lastAiDateLabel) {
+    _lastAiDateLabel = dateLabel;
+    var sep = document.createElement('div');
+    sep.className = 'vtx-ai-date-sep';
+    sep.setAttribute('data-label', dateLabel);
+    sep.style.cssText = 'display:flex;align-items:center;gap:.625rem;margin:.25rem 0 .125rem;flex-shrink:0;';
+    sep.innerHTML =
+      '<div style="flex:1;height:1px;background:var(--border);"></div>' +
+      '<span style="font-size:.6875rem;font-weight:600;color:var(--text-4);white-space:nowrap;letter-spacing:.03em;">' +
+        _escHtml(dateLabel) +
+      '</span>' +
+      '<div style="flex:1;height:1px;background:var(--border);"></div>';
+    msgs.appendChild(sep);
+  }
+
+  // Find the live typing indicator — we'll settle it in place rather than remove it
+  var liveTypingEl = document.getElementById('vtxAiLiveTyping');
+
+  // Stop the tick timer
+  if (liveTypingEl && liveTypingEl._liveTickTimer) {
+    clearTimeout(liveTypingEl._liveTickTimer);
+    liveTypingEl._liveTickTimer = null;
+  }
+
+  // Determine elapsed time from when _showLiveTyping was called
+  // We store the start time on the element itself so we can read it here
+  var elapsedMs = liveTypingEl && liveTypingEl._startMs
+    ? Date.now() - liveTypingEl._startMs
+    : null;
+
+  if (liveTypingEl) {
+    // Settle the shimmer text to "Thought for Xs"
+    var liveTextEl = liveTypingEl.querySelector('.vtx-thought-shimmer');
+    if (liveTextEl) {
+      liveTextEl.classList.remove('vtx-thought-shimmer');
+      if (elapsedMs !== null) {
+        var sec = elapsedMs / 1000;
+        var display = sec < 0.1 ? '0.1' : sec.toFixed(1);
+        liveTextEl.textContent = sec < 60
+          ? 'Thought for ' + display + 's'
+          : 'Thought for ' + Math.floor(sec / 60) + 'm ' + (sec % 60).toFixed(1) + 's';
+      } else {
+        liveTextEl.textContent = 'Thought for a moment';
+      }
+    }
+    var livePill = liveTypingEl.querySelector('.vtx-thought-bubble');
+    if (livePill) {
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          livePill.classList.add('is-done');
+        });
+      });
     }
 
+    // Remove the ID so _hideLiveTyping won't double-remove it
+    liveTypingEl.removeAttribute('id');
+
+    // Append the reply bubble into the same container as the thought pill
+    var replyRow = document.createElement('div');
+    replyRow.className = 'vtx-reply-enter';
+    replyRow.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;';
+    replyRow.innerHTML =
+      '<div style="display:flex;align-items:flex-end;gap:.5rem;min-width:0;">' +
+        '<span style="display:inline-flex;align-items:center;justify-content:center;' +
+          'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;">' +
+          '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>' +
+        '</span>' +
+        '<div style="max-width:82%;padding:.625rem .875rem;' +
+          'border-radius:var(--r-sm) var(--r-xl) var(--r-xl) var(--r-xl);' +
+          'background:var(--bg-subtle);border:1px solid var(--border);' +
+          'font-size:.9rem;line-height:1.65;color:var(--text-1);word-break:break-word;' +
+          'overflow-x:auto;min-width:0;">' + rendered + '</div>' +
+      '</div>' +
+      (timeStr ? '<span style="font-size:.625rem;color:var(--text-4);padding-left:34px;">' + timeStr + '</span>' : '');
+
+    liveTypingEl.appendChild(replyRow);
+
+  } else {
+    // Fallback: no live typing indicator found, just append normally
     var wrapper = document.createElement('div');
     wrapper.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:2px;animation:cbt-fade-in 160ms var(--ease) both;';
     wrapper.innerHTML =
       '<div style="display:flex;align-items:flex-end;gap:.5rem;min-width:0;">' +
-        '<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;">' +
+        '<span style="display:inline-flex;align-items:center;justify-content:center;' +
+          'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;">' +
           '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>' +
         '</span>' +
-        '<div style="max-width:82%;padding:.625rem .875rem;border-radius:var(--r-sm) var(--r-xl) var(--r-xl) var(--r-xl);background:var(--bg-subtle);border:1px solid var(--border);font-size:.9rem;line-height:1.65;color:var(--text-1);word-break:break-word;overflow-x:auto;min-width:0;">' + rendered + '</div>' +
+        '<div style="max-width:82%;padding:.625rem .875rem;' +
+          'border-radius:var(--r-sm) var(--r-xl) var(--r-xl) var(--r-xl);' +
+          'background:var(--bg-subtle);border:1px solid var(--border);' +
+          'font-size:.9rem;line-height:1.65;color:var(--text-1);word-break:break-word;' +
+          'overflow-x:auto;min-width:0;">' + rendered + '</div>' +
       '</div>' +
       (timeStr ? '<span style="font-size:.625rem;color:var(--text-4);padding-left:34px;">' + timeStr + '</span>' : '');
     msgs.appendChild(wrapper);
-    msgs.scrollTop = msgs.scrollHeight;
-
-    requestAnimationFrame(function () {
-      if (window._katexAutoRenderReady && window.renderMathInElement) {
-        try {
-          renderMathInElement(wrapper, {
-            delimiters: [
-              { left: '$$', right: '$$', display: true  },
-              { left: '$',  right: '$',  display: false },
-              { left: '\\(', right: '\\)', display: false },
-              { left: '\\[', right: '\\]', display: true  },
-            ],
-            throwOnError: false,
-            errorColor: '#cc0000',
-          });
-        } catch (err) { console.warn('[KaTeX] Live mode render error:', err); }
-      }
-    });
-
-    try {
-      var sKey  = 'vtx_ai_history_' + (AppState.userId || 'anon');
-      var raw   = localStorage.getItem(sKey);
-      var saved = raw ? JSON.parse(raw) : { ts: Date.now(), history: [], ui: [], lastActivityTs: Date.now() };
-      saved.ui = saved.ui || [];
-      saved.ui.push({ role: 'assistant', html: rendered, raw: text, ts: nowTs });
-      saved.history = window._vtxAiHistory;
-      saved.ts = Date.now();
-      saved.lastActivityTs = Date.now();
-      localStorage.setItem(sKey, JSON.stringify(saved));
-    } catch (e) {}
   }
 
-  function _showLiveTyping() {
-    var msgs = document.getElementById('vtxAiMessages');
-    if (!msgs) return;
-    var t = document.createElement('div');
-    t.id = 'vtxAiLiveTyping';
-    t.style.cssText = 'display:flex;justify-content:flex-start;align-items:flex-end;gap:.5rem;animation:cbt-fade-in 160ms var(--ease) both;';
-    t.innerHTML =
-      '<span style="display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;">' +
-        '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>' +
-      '</span>' +
-      '<div style="padding:.625rem .875rem;border-radius:var(--r-sm) var(--r-xl) var(--r-xl) var(--r-xl);background:var(--bg-subtle);border:1px solid var(--border);display:flex;align-items:center;gap:4px;">' +
-        '<span style="width:6px;height:6px;border-radius:50%;background:var(--text-4);display:inline-block;animation:dm-dot-bounce 1.2s ease-in-out infinite;"></span>' +
-        '<span style="width:6px;height:6px;border-radius:50%;background:var(--text-4);display:inline-block;animation:dm-dot-bounce 1.2s ease-in-out infinite;animation-delay:.2s;"></span>' +
-        '<span style="width:6px;height:6px;border-radius:50%;background:var(--text-4);display:inline-block;animation:dm-dot-bounce 1.2s ease-in-out infinite;animation-delay:.4s;"></span>' +
-      '</div>';
-    msgs.appendChild(t);
-    msgs.scrollTop = msgs.scrollHeight;
-  }
+  msgs.scrollTop = msgs.scrollHeight;
 
-  function _hideLiveTyping() {
-    var t = document.getElementById('vtxAiLiveTyping');
-    if (t) t.remove();
+  requestAnimationFrame(function () {
+    if (window._katexAutoRenderReady && window.renderMathInElement) {
+      try {
+        var katexTarget = (liveTypingEl && liveTypingEl.parentNode)
+          ? liveTypingEl
+          : msgs.lastElementChild;
+        renderMathInElement(katexTarget, {
+          delimiters: [
+            { left: '$$', right: '$$', display: true  },
+            { left: '$',  right: '$',  display: false },
+            { left: '\\(', right: '\\)', display: false },
+            { left: '\\[', right: '\\]', display: true  },
+          ],
+          throwOnError: false,
+          errorColor: '#cc0000',
+        });
+      } catch (err) { console.warn('[KaTeX] Live mode render error:', err); }
+    }
+  });
+
+  try {
+    var sKey  = 'vtx_ai_history_' + (AppState.userId || 'anon');
+    var raw   = localStorage.getItem(sKey);
+    var saved = raw ? JSON.parse(raw) : { ts: Date.now(), history: [], ui: [], lastActivityTs: Date.now() };
+    saved.ui = saved.ui || [];
+    saved.ui.push({ role: 'assistant', html: rendered, raw: text, ts: nowTs });
+    saved.history = window._vtxAiHistory;
+    saved.ts = Date.now();
+    saved.lastActivityTs = Date.now();
+    localStorage.setItem(sKey, JSON.stringify(saved));
+  } catch (e) {}
+}
+
+function _showLiveTyping() {
+  var msgs = document.getElementById('vtxAiMessages');
+  if (!msgs) return;
+
+  // Reuse the same thought style injection
+  _injectThoughtStyle();
+
+  var t = document.createElement('div');
+  t.id = 'vtxAiLiveTyping';
+  t.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:4px;animation:cbt-fade-in 160ms var(--ease) both;';
+
+  var liveThoughtStartMs = Date.now();
+
+  var livePill = document.createElement('div');
+  livePill.className = 'vtx-thought-bubble';
+
+  var liveTextEl = document.createElement('span');
+  liveTextEl.className = 'vtx-thought-shimmer';
+  liveTextEl.textContent = 'Thinking…';
+
+  livePill.appendChild(liveTextEl);
+  t.appendChild(livePill);
+  msgs.appendChild(t);
+  t._startMs = Date.now();
+  msgs.scrollTop = msgs.scrollHeight;
+
+  // Live ticker so the shimmer also updates elapsed time if AI takes a while
+  function _liveTick() {
+    var el = document.getElementById('vtxAiLiveTyping');
+    if (!el) return; // already removed, stop ticking
+    var elapsedSec = (Date.now() - liveThoughtStartMs) / 1000;
+    if (elapsedSec < 0.9) {
+      liveTextEl.textContent = 'Thinking…';
+    } else {
+      liveTextEl.textContent = 'Thinking for ' + elapsedSec.toFixed(1) + 's…';
+    }
+    t._liveTickTimer = setTimeout(_liveTick, 100);
   }
+  t._liveTickTimer = setTimeout(_liveTick, 100);
+}
+
+function _hideLiveTyping() {
+  var t = document.getElementById('vtxAiLiveTyping');
+  if (!t) return;
+  if (t._liveTickTimer) {
+    clearTimeout(t._liveTickTimer);
+    t._liveTickTimer = null;
+  }
+  t.remove();
+}
    
   /* ─────────────────────────────────────────────────────── */
   /* Public API                                              */
