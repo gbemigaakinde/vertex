@@ -2984,6 +2984,10 @@ function _injectThoughtStyle() {
       from { opacity: 0; transform: translateY(6px); }
       to   { opacity: 1; transform: translateY(0); }
     }
+    @keyframes vtx-shimmer {
+      0%   { background-position: 200% 0; }
+      100% { background-position: -200% 0; }
+    }
     .vtx-thought-bubble {
       display: flex;
       align-items: center;
@@ -3009,17 +3013,20 @@ function _injectThoughtStyle() {
       font-size: 0.6875rem;
       transition: opacity 400ms ease, background 400ms ease, border-color 400ms ease, font-size 300ms ease;
     }
-    .vtx-thought-spinner {
-      width: 12px;
-      height: 12px;
-      border: 1.5px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: cbt-spin 0.65s linear infinite;
-      flex-shrink: 0;
-    }
-    .vtx-thought-spinner.is-hidden {
-      display: none;
+    .vtx-thought-shimmer {
+      background: linear-gradient(
+        90deg,
+        var(--text-4) 0%,
+        var(--text-2) 40%,
+        var(--text-2) 60%,
+        var(--text-4) 100%
+      );
+      background-size: 200% 100%;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      color: var(--text-4);
+      animation: vtx-shimmer 1.6s ease-in-out infinite;
     }
     .vtx-reply-enter {
       animation: vtx-reply-fade-in 280ms cubic-bezier(0.16,1,0.3,1) both;
@@ -3648,9 +3655,9 @@ function _sendAiMessage() {
   messages.appendChild(studentBubble);
   messages.scrollTop = messages.scrollHeight;
 
-  // ── Thought bubble — Phase 1: spinner + live ticking text ──
-  var thoughtStartMs       = Date.now();
-  var _thoughtTickInterval = null;
+  // ── Thought bubble — shimmering text + live ticking ──
+  var thoughtStartMs    = Date.now();
+  var _thoughtTickTimer = null;
 
   var thoughtWrapper = document.createElement('div');
   thoughtWrapper.id = 'vtxAiTyping';
@@ -3658,31 +3665,39 @@ function _sendAiMessage() {
 
   var thoughtRow = document.createElement('div');
   thoughtRow.style.cssText = 'display:flex;align-items:center;gap:.5rem;';
-  thoughtRow.innerHTML =
-    '<span style="display:inline-flex;align-items:center;justify-content:center;' +
-      'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;">' +
-      '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>' +
-    '</span>' +
-    '<div class="vtx-thought-bubble" id="vtxThoughtPill">' +
-      '<span class="vtx-thought-spinner" id="vtxThoughtSpinner"></span>' +
-      '<span id="vtxThoughtText">Thinking…</span>' +
-    '</div>';
 
+  var thoughtAvatar = document.createElement('span');
+  thoughtAvatar.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;';
+  thoughtAvatar.innerHTML = '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>';
+
+  var thoughtPill = document.createElement('div');
+  thoughtPill.className = 'vtx-thought-bubble';
+
+  var thoughtTextEl = document.createElement('span');
+  thoughtTextEl.className = 'vtx-thought-shimmer';
+  thoughtTextEl.textContent = 'Thinking…';
+
+  thoughtPill.appendChild(thoughtTextEl);
+  thoughtRow.appendChild(thoughtAvatar);
+  thoughtRow.appendChild(thoughtPill);
   thoughtWrapper.appendChild(thoughtRow);
   messages.appendChild(thoughtWrapper);
   messages.scrollTop = messages.scrollHeight;
 
-  // Live elapsed-time ticker while waiting
-  var _elapsedSec = 0;
-  _thoughtTickInterval = setInterval(function () {
-    _elapsedSec = Math.floor((Date.now() - thoughtStartMs) / 1000);
-    var textEl = document.getElementById('vtxThoughtText');
-    if (textEl) {
-      textEl.textContent = _elapsedSec < 2
-        ? 'Thinking…'
-        : 'Thinking for ' + _elapsedSec + 's…';
+  // Live elapsed-time ticker — updates every 100ms for sub-second accuracy
+  function _tickThought() {
+    var elapsedMs  = Date.now() - thoughtStartMs;
+    var elapsedSec = elapsedMs / 1000;
+    if (thoughtTextEl && thoughtTextEl.parentNode) {
+      if (elapsedSec < 0.9) {
+        thoughtTextEl.textContent = 'Thinking…';
+      } else {
+        thoughtTextEl.textContent = 'Thinking for ' + elapsedSec.toFixed(1) + 's…';
+      }
+      _thoughtTickTimer = setTimeout(_tickThought, 100);
     }
-  }, 1000);
+  }
+  _thoughtTickTimer = setTimeout(_tickThought, 100);
 
   // ── History + localStorage (user side) ──
   if (!window._vtxAiHistory) window._vtxAiHistory = [];
@@ -3749,58 +3764,62 @@ function _sendAiMessage() {
   ].concat(window._vtxAiHistory);
 
   // ── Format elapsed time ──
-  function _formatElapsed(sec) {
-    if (sec < 60) return 'Thought for ' + sec + 's';
+  function _formatElapsed(ms) {
+    var sec = ms / 1000;
+    if (sec < 60) {
+      var display = sec < 0.1 ? '0.1' : sec.toFixed(1);
+      return 'Thought for ' + display + 's';
+    }
     var m = Math.floor(sec / 60);
-    var s = sec % 60;
-    return s > 0
+    var s = (sec % 60).toFixed(1);
+    return parseFloat(s) > 0
       ? 'Thought for ' + m + 'm ' + s + 's'
       : 'Thought for ' + m + 'm';
   }
 
-  // ── Settle the thought bubble into its final "done" state, then show reply ──
+  // ── Settle the thought bubble into its final faded "done" state, then show reply ──
   function _settleThoughtAndShowReply(replyText, renderFn) {
     // Stop the ticker
-    if (_thoughtTickInterval) {
-      clearInterval(_thoughtTickInterval);
-      _thoughtTickInterval = null;
+    if (_thoughtTickTimer) {
+      clearTimeout(_thoughtTickTimer);
+      _thoughtTickTimer = null;
     }
 
-    var elapsedMs  = Date.now() - thoughtStartMs;
-    var elapsedSec = Math.max(1, Math.round(elapsedMs / 1000));
+    var elapsedMs = Date.now() - thoughtStartMs;
 
-    var pill    = document.getElementById('vtxThoughtPill');
-    var spinner = document.getElementById('vtxThoughtSpinner');
-    var textEl  = document.getElementById('vtxThoughtText');
+    // Stop shimmer and show final elapsed text — using direct closure references
+    if (thoughtTextEl) {
+      thoughtTextEl.classList.remove('vtx-thought-shimmer');
+      thoughtTextEl.textContent = _formatElapsed(elapsedMs);
+    }
 
-    if (pill && spinner && textEl) {
-      // Hide the spinner, update label, fade the whole pill to low opacity
-      spinner.classList.add('is-hidden');
-      textEl.textContent = _formatElapsed(elapsedSec);
-      // Small delay so the DOM registers the class before the transition fires
+    // Fade the pill to low opacity — it stays in the DOM, just dimmed
+    if (thoughtPill) {
       requestAnimationFrame(function () {
         requestAnimationFrame(function () {
-          pill.classList.add('is-done');
+          thoughtPill.classList.add('is-done');
         });
       });
     }
 
-    var tw = document.getElementById('vtxAiTyping');
-    if (tw) tw.removeAttribute('id');
+    // Remove the vtxAiTyping ID so nothing else can accidentally re-target this element
+    thoughtWrapper.removeAttribute('id');
 
-    // Slight pause so the transition to "done" is visible before reply appears
+    // Wait for the fade transition to be visible, then render the reply
     setTimeout(function () {
       renderFn();
-    }, 350);
+    }, 400);
   }
 
+  // ── Remove typing indicator entirely (used on error) ──
   function _removeTyping() {
-    if (_thoughtTickInterval) {
-      clearInterval(_thoughtTickInterval);
-      _thoughtTickInterval = null;
+    if (_thoughtTickTimer) {
+      clearTimeout(_thoughtTickTimer);
+      _thoughtTickTimer = null;
     }
-    var t = document.getElementById('vtxAiTyping');
-    if (t) t.remove();
+    if (thoughtWrapper && thoughtWrapper.parentNode) {
+      thoughtWrapper.remove();
+    }
   }
 
   function _appendAiReply(replyText) {
@@ -4067,10 +4086,9 @@ function _sendAiMessage() {
   }
 
   function _showError(msg) {
-    // On error: stop ticker, remove the thought bubble entirely (no "Thought for Xs" on failure)
-    if (_thoughtTickInterval) {
-      clearInterval(_thoughtTickInterval);
-      _thoughtTickInterval = null;
+    if (_thoughtTickTimer) {
+      clearTimeout(_thoughtTickTimer);
+      _thoughtTickTimer = null;
     }
     _removeTyping();
 
