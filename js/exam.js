@@ -1122,9 +1122,7 @@ async function renderSubjectSelection() {
         >
           <!-- Icon layer -->
           <span id="vtxAiIconWrap" aria-hidden="true">
-            <svg width="19" height="19" viewBox="0 0 256 256" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-              <path d="M216,40H40A16,16,0,0,0,24,56V200a8,8,0,0,0,13,6.22L72,179.09l.19.28A16,16,0,0,0,85.35,187H216a16,16,0,0,0,16-16V56A16,16,0,0,0,216,40Zm0,192-11.35-7.49a8,8,0,0,0-8.9,0L152,229.81l-19.75-13a8,8,0,0,0-8.5,0L104,229.81,84.25,216.51a8,8,0,0,0-8.9,0L64,224V48H192ZM80,120a8,8,0,0,1,8-8h80a8,8,0,0,1,0,16H88A8,8,0,0,1,80,152Zm0,32a8,8,0,0,1,8-8h48a8,8,0,0,1,0,16H88A8,8,0,0,1,80,152Z"/>
-            </svg>
+            <i class="ph ph-chats-circle" style="font-size:20px;pointer-events:none;"></i>
           </span>
           <!-- "AI" text label layer -->
           <span id="vtxAiLabelWrap" aria-hidden="true">AI</span>
