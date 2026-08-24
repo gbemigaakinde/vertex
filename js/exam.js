@@ -2981,7 +2981,7 @@ function _injectThoughtStyle() {
       to   { opacity: 1; transform: translateY(0) scale(1); }
     }
     @keyframes vtx-reply-fade-in {
-      from { opacity: 0; transform: translateY(6px); }
+      from { opacity: 0; transform: translateY(4px); }
       to   { opacity: 1; transform: translateY(0); }
     }
     @keyframes vtx-shimmer {
@@ -2989,14 +2989,14 @@ function _injectThoughtStyle() {
       100% { background-position: -200% 0; }
     }
     .vtx-thought-bubble {
-      display: flex;
+      display: inline-flex;
       align-items: center;
       gap: 6px;
-      padding: 5px 11px;
+      padding: 3px 10px;
       border-radius: 99px;
-      background: var(--bg-subtle);
-      border: 1px solid var(--border);
-      font-size: 0.75rem;
+      background: transparent;
+      border: none;
+      font-size: 0.6875rem;
       font-weight: 500;
       color: var(--text-4);
       width: fit-content;
@@ -3004,14 +3004,11 @@ function _injectThoughtStyle() {
       animation: vtx-thought-fade-in 220ms cubic-bezier(0.16,1,0.3,1) both;
       letter-spacing: 0.01em;
       user-select: none;
+      padding-left: 38px;
     }
     .vtx-thought-bubble.is-done {
-      opacity: 0.45;
-      color: var(--text-4);
-      background: transparent;
-      border-color: transparent;
-      font-size: 0.6875rem;
-      transition: opacity 400ms ease, background 400ms ease, border-color 400ms ease, font-size 300ms ease;
+      opacity: 0.5;
+      transition: opacity 400ms ease;
     }
     .vtx-thought-shimmer {
       background: linear-gradient(
@@ -3655,21 +3652,18 @@ function _sendAiMessage() {
   messages.appendChild(studentBubble);
   messages.scrollTop = messages.scrollHeight;
 
-  // ── Thought bubble — shimmering text + live ticking ──
+  // ── AI response group: thought pill + reply live together in one wrapper ──
+  // This makes the "Thought for Xs" feel like a label above the reply,
+  // not a separate chat message.
   var thoughtStartMs    = Date.now();
   var _thoughtTickTimer = null;
 
-  var thoughtWrapper = document.createElement('div');
-  thoughtWrapper.id = 'vtxAiTyping';
-  thoughtWrapper.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:4px;animation:cbt-fade-in 160ms var(--ease) both;';
+  // Outer group holds both the thought pill and (later) the reply bubble
+  var aiGroup = document.createElement('div');
+  aiGroup.id = 'vtxAiTyping';
+  aiGroup.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:4px;animation:cbt-fade-in 160ms var(--ease) both;';
 
-  var thoughtRow = document.createElement('div');
-  thoughtRow.style.cssText = 'display:flex;align-items:center;gap:.5rem;';
-
-  var thoughtAvatar = document.createElement('span');
-  thoughtAvatar.style.cssText = 'display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;';
-  thoughtAvatar.innerHTML = '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>';
-
+  // Thought pill — no avatar, just subtle text above the reply
   var thoughtPill = document.createElement('div');
   thoughtPill.className = 'vtx-thought-bubble';
 
@@ -3678,10 +3672,8 @@ function _sendAiMessage() {
   thoughtTextEl.textContent = 'Thinking…';
 
   thoughtPill.appendChild(thoughtTextEl);
-  thoughtRow.appendChild(thoughtAvatar);
-  thoughtRow.appendChild(thoughtPill);
-  thoughtWrapper.appendChild(thoughtRow);
-  messages.appendChild(thoughtWrapper);
+  aiGroup.appendChild(thoughtPill);
+  messages.appendChild(aiGroup);
   messages.scrollTop = messages.scrollHeight;
 
   // Live elapsed-time ticker — updates every 100ms for sub-second accuracy
@@ -3777,9 +3769,8 @@ function _sendAiMessage() {
       : 'Thought for ' + m + 'm';
   }
 
-  // ── Settle the thought bubble into its final faded "done" state, then show reply ──
+  // ── Settle thought pill, then inject the reply bubble into the SAME aiGroup ──
   function _settleThoughtAndShowReply(replyText, renderFn) {
-    // Stop the ticker
     if (_thoughtTickTimer) {
       clearTimeout(_thoughtTickTimer);
       _thoughtTickTimer = null;
@@ -3787,13 +3778,11 @@ function _sendAiMessage() {
 
     var elapsedMs = Date.now() - thoughtStartMs;
 
-    // Stop shimmer and show final elapsed text — using direct closure references
     if (thoughtTextEl) {
       thoughtTextEl.classList.remove('vtx-thought-shimmer');
       thoughtTextEl.textContent = _formatElapsed(elapsedMs);
     }
 
-    // Fade the pill to low opacity — it stays in the DOM, just dimmed
     if (thoughtPill) {
       requestAnimationFrame(function () {
         requestAnimationFrame(function () {
@@ -3802,23 +3791,22 @@ function _sendAiMessage() {
       });
     }
 
-    // Remove the vtxAiTyping ID so nothing else can accidentally re-target this element
-    thoughtWrapper.removeAttribute('id');
+    aiGroup.removeAttribute('id');
 
-    // Wait for the fade transition to be visible, then render the reply
+    // Render the reply immediately into the same aiGroup — no extra gap
     setTimeout(function () {
       renderFn();
     }, 400);
   }
 
-  // ── Remove typing indicator entirely (used on error) ──
+  // ── Remove entire AI group on error ──
   function _removeTyping() {
     if (_thoughtTickTimer) {
       clearTimeout(_thoughtTickTimer);
       _thoughtTickTimer = null;
     }
-    if (thoughtWrapper && thoughtWrapper.parentNode) {
-      thoughtWrapper.remove();
+    if (aiGroup && aiGroup.parentNode) {
+      aiGroup.remove();
     }
   }
 
@@ -3850,16 +3838,14 @@ function _sendAiMessage() {
     var replyTime = _aiTimeLabel(replyTs);
     var rendered  = _renderAiText(displayText);
 
-    // ── Settle the thought bubble, then paint the reply ──
     _settleThoughtAndShowReply(replyText, function () {
-      var msgs = document.getElementById('vtxAiMessages');
-      if (!msgs) return;
-
+      // Append reply bubble directly into aiGroup so it sits tight under the thought pill
       var replyId = 'vtxAiReplyTarget_' + replyTs;
-      var wrapper = document.createElement('div');
-      wrapper.className = 'vtx-reply-enter';
-      wrapper.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:2px;';
-      wrapper.innerHTML =
+
+      var replyRow = document.createElement('div');
+      replyRow.className = 'vtx-reply-enter';
+      replyRow.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;';
+      replyRow.innerHTML =
         '<div style="display:flex;align-items:flex-end;gap:.5rem;min-width:0;">' +
           '<span style="display:inline-flex;align-items:center;justify-content:center;' +
             'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;">' +
@@ -3872,10 +3858,14 @@ function _sendAiMessage() {
             'overflow-x:auto;min-width:0;"></div>' +
         '</div>' +
         '<span style="font-size:.625rem;color:var(--text-4);padding-left:34px;">' + replyTime + '</span>';
-      msgs.appendChild(wrapper);
-      msgs.scrollTop = msgs.scrollHeight;
 
-      var targetEl = wrapper.querySelector('#' + replyId);
+      // Append into the same aiGroup — thought pill is already there above it
+      aiGroup.appendChild(replyRow);
+
+      var msgs = document.getElementById('vtxAiMessages');
+      if (msgs) msgs.scrollTop = msgs.scrollHeight;
+
+      var targetEl = replyRow.querySelector('#' + replyId);
       _aiTypewriter(targetEl, displayText, msgs);
 
       var approxDuration = Math.min(displayText.length * 18, 8000) + 400;
@@ -3920,8 +3910,8 @@ function _sendAiMessage() {
           '</div>' +
           '<span style="font-size:.6rem;color:var(--text-4);padding-left:2px;">Visual</span>';
 
-        msgs.appendChild(visualWrapper);
-        msgs.scrollTop = msgs.scrollHeight;
+        aiGroup.appendChild(visualWrapper);
+        if (msgs) msgs.scrollTop = msgs.scrollHeight;
 
         SpeechEngine.requestVisual(visualTopic2, currentSubject, function (err, result) {
           var container = document.getElementById(visualId);
