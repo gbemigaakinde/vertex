@@ -9,7 +9,7 @@
   "kv_namespaces": [
     {
       "binding": "VTX_RATE_LIMITS",
-      "id": "YOUR_KV_NAMESPACE_ID_HERE"
+      "id": "b54392f7dffc47ca93e18036d3b3aa21"
     }
   ],
   "ai": {
