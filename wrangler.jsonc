@@ -5,5 +5,14 @@
   "compatibility_date": "2026-08-22",
   "observability": {
     "enabled": true
+  },
+  "kv_namespaces": [
+    {
+      "binding": "VTX_RATE_LIMITS",
+      "id": "YOUR_KV_NAMESPACE_ID_HERE"
+    }
+  ],
+  "ai": {
+    "binding": "AI"
   }
 }
