@@ -3771,11 +3771,26 @@ function _openAiDrawer() {
                   '</div>' +
                   (timeStr
                     ? '<span style="font-size:.625rem;color:var(--text-4);padding-right:2px;">' + timeStr + '</span>'
-                    : '');
-               } else {
+                    : '');            
+                } else {
                 var restoredHtml = (msg.raw) ? _renderAiText(msg.raw) : (msg.html || '');
-                bubble.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:2px;';
+                bubble.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:4px;';
+
+                var thoughtPillHtml = '';
+                if (msg.thoughtMs != null) {
+                  var tSec = msg.thoughtMs / 1000;
+                  var tDisplay = tSec < 0.1 ? '0.1' : tSec.toFixed(1);
+                  var tLabel = tSec < 60
+                    ? 'Thought for ' + tDisplay + 's'
+                    : 'Thought for ' + Math.floor(tSec / 60) + 'm ' + (tSec % 60).toFixed(1) + 's';
+                  thoughtPillHtml =
+                    '<div class="vtx-thought-bubble is-done" style="opacity:.5;">' +
+                      '<span>' + tLabel + '</span>' +
+                    '</div>';
+                }
+
                 bubble.innerHTML =
+                  thoughtPillHtml +
                   '<div style="display:flex;align-items:flex-end;gap:.5rem;min-width:0;">' +
                     '<span style="display:inline-flex;align-items:center;justify-content:center;' +
                       'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;">' +
@@ -4395,7 +4410,13 @@ function _sendAiMessage() {
           var saved2 = raw2 ? JSON.parse(raw2) : { ts: Date.now(), history: [], ui: [], lastActivityTs: Date.now() };
           saved2.history        = window._vtxAiHistory;
           saved2.ui             = saved2.ui || [];
-          saved2.ui.push({ role: 'assistant', html: rendered, raw: replyText, ts: replyTs });
+          saved2.ui.push({
+            role:      'assistant',
+            html:      rendered,
+            raw:       replyText,
+            ts:        replyTs,
+            thoughtMs: Date.now() - thoughtStartMs,
+          });
           saved2.ts             = Date.now();
           saved2.lastActivityTs = Date.now();
           localStorage.setItem(sKey, JSON.stringify(saved2));
