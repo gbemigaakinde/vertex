@@ -2970,8 +2970,65 @@ function _renderAiText(str) {
   /* AI Drawer — open / close / send                         */
   /* ─────────────────────────────────────────────────────── */
 let _lastAiDateLabel = '';
+
+function _injectThoughtStyle() {
+  if (document.getElementById('vtxThoughtStyle')) return;
+  var s = document.createElement('style');
+  s.id = 'vtxThoughtStyle';
+  s.textContent = `
+    @keyframes vtx-thought-fade-in {
+      from { opacity: 0; transform: translateY(4px) scale(0.97); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes vtx-reply-fade-in {
+      from { opacity: 0; transform: translateY(6px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .vtx-thought-bubble {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 11px;
+      border-radius: 99px;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-4);
+      width: fit-content;
+      max-width: fit-content;
+      animation: vtx-thought-fade-in 220ms cubic-bezier(0.16,1,0.3,1) both;
+      letter-spacing: 0.01em;
+      user-select: none;
+    }
+    .vtx-thought-bubble.is-done {
+      opacity: 0.45;
+      color: var(--text-4);
+      background: transparent;
+      border-color: transparent;
+      font-size: 0.6875rem;
+      transition: opacity 400ms ease, background 400ms ease, border-color 400ms ease, font-size 300ms ease;
+    }
+    .vtx-thought-spinner {
+      width: 12px;
+      height: 12px;
+      border: 1.5px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: cbt-spin 0.65s linear infinite;
+      flex-shrink: 0;
+    }
+    .vtx-thought-spinner.is-hidden {
+      display: none;
+    }
+    .vtx-reply-enter {
+      animation: vtx-reply-fade-in 280ms cubic-bezier(0.16,1,0.3,1) both;
+    }
+  `;
+  document.head.appendChild(s);
+}
    
-   function _startPlaceholderCycle(inputId) {
+function _startPlaceholderCycle(inputId) {
   var inp = document.getElementById(inputId);
   if (!inp) return;
 
@@ -3528,6 +3585,8 @@ function _closeAiDrawer() {
 }
 
 function _sendAiMessage() {
+  _injectThoughtStyle();
+
   var inp = document.getElementById('vtxAiInput');
   if (!inp) return;
   var text = (inp.value || '').trim();
@@ -3574,6 +3633,7 @@ function _sendAiMessage() {
     messages.scrollTop = messages.scrollHeight;
   }
 
+  // ── User bubble ──
   var studentBubble = document.createElement('div');
   studentBubble.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:2px;animation:cbt-fade-in 160ms var(--ease) both;';
   studentBubble.innerHTML =
@@ -3588,28 +3648,43 @@ function _sendAiMessage() {
   messages.appendChild(studentBubble);
   messages.scrollTop = messages.scrollHeight;
 
-  var typingBubble = document.createElement('div');
-  typingBubble.id = 'vtxAiTyping';
-  typingBubble.style.cssText = 'display:flex;justify-content:flex-start;align-items:flex-end;gap:.5rem;animation:cbt-fade-in 160ms var(--ease) both;';
-  typingBubble.innerHTML =
+  // ── Thought bubble — Phase 1: spinner + live ticking text ──
+  var thoughtStartMs       = Date.now();
+  var _thoughtTickInterval = null;
+
+  var thoughtWrapper = document.createElement('div');
+  thoughtWrapper.id = 'vtxAiTyping';
+  thoughtWrapper.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:4px;animation:cbt-fade-in 160ms var(--ease) both;';
+
+  var thoughtRow = document.createElement('div');
+  thoughtRow.style.cssText = 'display:flex;align-items:center;gap:.5rem;';
+  thoughtRow.innerHTML =
     '<span style="display:inline-flex;align-items:center;justify-content:center;' +
       'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;">' +
       '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>' +
     '</span>' +
-    '<div style="padding:.625rem .875rem;' +
-      'border-radius:var(--r-sm) var(--r-xl) var(--r-xl) var(--r-xl);' +
-      'background:var(--bg-subtle);border:1px solid var(--border);' +
-      'display:flex;align-items:center;gap:4px;">' +
-      '<span style="width:6px;height:6px;border-radius:50%;background:var(--text-4);display:inline-block;' +
-        'animation:dm-dot-bounce 1.2s ease-in-out infinite;"></span>' +
-      '<span style="width:6px;height:6px;border-radius:50%;background:var(--text-4);display:inline-block;' +
-        'animation:dm-dot-bounce 1.2s ease-in-out infinite;animation-delay:.2s;"></span>' +
-      '<span style="width:6px;height:6px;border-radius:50%;background:var(--text-4);display:inline-block;' +
-        'animation:dm-dot-bounce 1.2s ease-in-out infinite;animation-delay:.4s;"></span>' +
+    '<div class="vtx-thought-bubble" id="vtxThoughtPill">' +
+      '<span class="vtx-thought-spinner" id="vtxThoughtSpinner"></span>' +
+      '<span id="vtxThoughtText">Thinking…</span>' +
     '</div>';
-  messages.appendChild(typingBubble);
+
+  thoughtWrapper.appendChild(thoughtRow);
+  messages.appendChild(thoughtWrapper);
   messages.scrollTop = messages.scrollHeight;
 
+  // Live elapsed-time ticker while waiting
+  var _elapsedSec = 0;
+  _thoughtTickInterval = setInterval(function () {
+    _elapsedSec = Math.floor((Date.now() - thoughtStartMs) / 1000);
+    var textEl = document.getElementById('vtxThoughtText');
+    if (textEl) {
+      textEl.textContent = _elapsedSec < 2
+        ? 'Thinking…'
+        : 'Thinking for ' + _elapsedSec + 's…';
+    }
+  }, 1000);
+
+  // ── History + localStorage (user side) ──
   if (!window._vtxAiHistory) window._vtxAiHistory = [];
   window._vtxAiHistory.push({ role: 'user', content: text });
   if (window._vtxAiHistory.length > 12) window._vtxAiHistory = window._vtxAiHistory.slice(-12);
@@ -3627,7 +3702,7 @@ function _sendAiMessage() {
   } catch (e) {}
 
   var studentData = S().studentData || {};
-    var systemPrompt =
+  var systemPrompt =
     'You are Master Timothy AI, a knowledgeable, patient, and supportive tutor at Vertex Tutorial Centre in Lagos, Nigeria. ' +
     'You are currently teaching ' + (studentData.name || 'a student') + ', ' +
     'who is in ' + (studentData.class || 'secondary school') + '. ' +
@@ -3646,7 +3721,7 @@ function _sendAiMessage() {
     'The table format is: first line has headers separated by |, second line has |---|---| separators, then data rows. ' +
     'Every row must start and end with |. Every cell must be on the same line — never break a cell across lines. ' +
     'For maths and physics use LaTeX: $...$ for inline, $$...$$ for display. ' +
-    'Do not use markdown headings or bullet points unless the student asks for a list. ' +
+    'Do not use markdown headings or bullet points unless the student explicitly asks for a list. ' +
     'Answer the student\'s actual question directly. ' +
     'VISUAL GENERATION RULES — these are ABSOLUTE and must NEVER be broken: ' +
     'CRITICAL: When the student asks you to draw, show, diagram, illustrate, or visualise something, ' +
@@ -3673,14 +3748,62 @@ function _sendAiMessage() {
     { role: 'system', content: systemPrompt },
   ].concat(window._vtxAiHistory);
 
+  // ── Format elapsed time ──
+  function _formatElapsed(sec) {
+    if (sec < 60) return 'Thought for ' + sec + 's';
+    var m = Math.floor(sec / 60);
+    var s = sec % 60;
+    return s > 0
+      ? 'Thought for ' + m + 'm ' + s + 's'
+      : 'Thought for ' + m + 'm';
+  }
+
+  // ── Settle the thought bubble into its final "done" state, then show reply ──
+  function _settleThoughtAndShowReply(replyText, renderFn) {
+    // Stop the ticker
+    if (_thoughtTickInterval) {
+      clearInterval(_thoughtTickInterval);
+      _thoughtTickInterval = null;
+    }
+
+    var elapsedMs  = Date.now() - thoughtStartMs;
+    var elapsedSec = Math.max(1, Math.round(elapsedMs / 1000));
+
+    var pill    = document.getElementById('vtxThoughtPill');
+    var spinner = document.getElementById('vtxThoughtSpinner');
+    var textEl  = document.getElementById('vtxThoughtText');
+
+    if (pill && spinner && textEl) {
+      // Hide the spinner, update label, fade the whole pill to low opacity
+      spinner.classList.add('is-hidden');
+      textEl.textContent = _formatElapsed(elapsedSec);
+      // Small delay so the DOM registers the class before the transition fires
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          pill.classList.add('is-done');
+        });
+      });
+    }
+
+    var tw = document.getElementById('vtxAiTyping');
+    if (tw) tw.removeAttribute('id');
+
+    // Slight pause so the transition to "done" is visible before reply appears
+    setTimeout(function () {
+      renderFn();
+    }, 350);
+  }
+
   function _removeTyping() {
+    if (_thoughtTickInterval) {
+      clearInterval(_thoughtTickInterval);
+      _thoughtTickInterval = null;
+    }
     var t = document.getElementById('vtxAiTyping');
     if (t) t.remove();
   }
 
-    function _appendAiReply(replyText) {
-    _removeTyping();
-
+  function _appendAiReply(replyText) {
     var existingMarker = replyText.match(/\[VISUAL:\s*([^\]]+)\]/i);
 
     if (!existingMarker && _isVisualRequest) {
@@ -3697,164 +3820,180 @@ function _sendAiMessage() {
 
     window._vtxAiHistory.push({ role: 'assistant', content: replyText });
 
-    var msgs = document.getElementById('vtxAiMessages');
-    if (!msgs) return;
-
     var visualMarkerMatch = replyText.match(/\[VISUAL:\s*([^\]]+)\]/i);
     var visualTopic2      = visualMarkerMatch ? visualMarkerMatch[1].trim() : null;
 
-    var displayText;
-    if (visualTopic2) {
-      displayText = 'Here is a visual representation of ' + visualTopic2 + ':';
-    } else {
-      displayText = replyText;
-    }
+    var displayText = visualTopic2
+      ? 'Here is a visual representation of ' + visualTopic2 + ':'
+      : replyText;
 
     var replyTs   = Date.now();
     var replyTime = _aiTimeLabel(replyTs);
     var rendered  = _renderAiText(displayText);
 
-    var wrapper = document.createElement('div');
-    wrapper.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:2px;animation:cbt-fade-in 160ms var(--ease) both;';
-    var replyId = 'vtxAiReplyTarget_' + replyTs;
-    wrapper.innerHTML =
-      '<div style="display:flex;align-items:flex-end;gap:.5rem;min-width:0;">' +
-        '<span style="display:inline-flex;align-items:center;justify-content:center;' +
-          'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;">' +
-          '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>' +
-        '</span>' +
-        '<div id="' + replyId + '" style="max-width:82%;padding:.625rem .875rem;' +
-          'border-radius:var(--r-sm) var(--r-xl) var(--r-xl) var(--r-xl);' +
-          'background:var(--bg-subtle);border:1px solid var(--border);' +
-          'font-size:.9rem;line-height:1.65;color:var(--text-1);word-break:break-word;' +
-          'overflow-x:auto;min-width:0;"></div>' +
-      '</div>' +
-      '<span style="font-size:.625rem;color:var(--text-4);padding-left:34px;">' + replyTime + '</span>';
-    msgs.appendChild(wrapper);
-    msgs.scrollTop = msgs.scrollHeight;
+    // ── Settle the thought bubble, then paint the reply ──
+    _settleThoughtAndShowReply(replyText, function () {
+      var msgs = document.getElementById('vtxAiMessages');
+      if (!msgs) return;
 
-    var targetEl = wrapper.querySelector('#' + replyId);
-    _aiTypewriter(targetEl, displayText, msgs);
-
-    var approxDuration = Math.min(displayText.length * 18, 8000) + 400;
-
-    setTimeout(function () {
-      if (window._katexAutoRenderReady && window.renderMathInElement && targetEl) {
-        try {
-          renderMathInElement(targetEl, {
-            delimiters: [
-              { left: '$$', right: '$$', display: true  },
-              { left: '$',  right: '$',  display: false },
-              { left: '\\(', right: '\\)', display: false },
-              { left: '\\[', right: '\\]', display: true  },
-            ],
-            throwOnError: false, errorColor: '#cc0000',
-          });
-        } catch (err) { console.warn('[KaTeX] AI drawer render error:', err); }
-      }
-    }, approxDuration);
-
-    if (visualTopic2 && window.SpeechEngine && typeof SpeechEngine.requestVisual === 'function') {
-      var studentData2   = S().studentData || {};
-      var currentSubject = (window.AppState && window.AppState.exam && window.AppState.exam.currentSubject)
-        || studentData2.class || '';
-
-      // ── Modern skeleton loading card ──
-      var visualWrapper = document.createElement('div');
-      visualWrapper.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding-left:34px;animation:cbt-fade-in 200ms var(--ease) both;max-width:82%;width:100%;';
-      var visualId = 'vtxVisual_' + replyTs;
-
-      visualWrapper.innerHTML =
-        '<div id="' + visualId + '" class="vtx-visual-container">' +
-          '<div class="vtx-visual-skeleton">' +
-            '<div class="vtx-visual-skeleton-icon">' +
-              '<i class="ph ph-image"></i>' +
-              '<span class="vtx-visual-skeleton-label">Generating…</span>' +
-            '</div>' +
-          '</div>' +
-          '<div class="vtx-visual-footer">' +
-            '<span class="vtx-visual-footer-topic">' + _escHtml(visualTopic2) + '</span>' +
-            '<span class="vtx-visual-footer-badge is-loading">Loading</span>' +
-          '</div>' +
+      var replyId = 'vtxAiReplyTarget_' + replyTs;
+      var wrapper = document.createElement('div');
+      wrapper.className = 'vtx-reply-enter';
+      wrapper.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:2px;';
+      wrapper.innerHTML =
+        '<div style="display:flex;align-items:flex-end;gap:.5rem;min-width:0;">' +
+          '<span style="display:inline-flex;align-items:center;justify-content:center;' +
+            'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;">' +
+            '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>' +
+          '</span>' +
+          '<div id="' + replyId + '" style="max-width:82%;padding:.625rem .875rem;' +
+            'border-radius:var(--r-sm) var(--r-xl) var(--r-xl) var(--r-xl);' +
+            'background:var(--bg-subtle);border:1px solid var(--border);' +
+            'font-size:.9rem;line-height:1.65;color:var(--text-1);word-break:break-word;' +
+            'overflow-x:auto;min-width:0;"></div>' +
         '</div>' +
-        '<span style="font-size:.6rem;color:var(--text-4);padding-left:2px;">Visual</span>';
-
-      msgs.appendChild(visualWrapper);
+        '<span style="font-size:.625rem;color:var(--text-4);padding-left:34px;">' + replyTime + '</span>';
+      msgs.appendChild(wrapper);
       msgs.scrollTop = msgs.scrollHeight;
 
-      SpeechEngine.requestVisual(visualTopic2, currentSubject, function (err, result) {
-        var container = document.getElementById(visualId);
-        if (!container) return;
+      var targetEl = wrapper.querySelector('#' + replyId);
+      _aiTypewriter(targetEl, displayText, msgs);
 
-        // ── Error ──
-        if (err || !result) {
-          container.innerHTML =
-            '<div class="vtx-visual-rate-wrap">' +
-              '<div class="vtx-visual-rate-row">' +
-                '<i class="ph ph-warning-circle"></i>' +
-                '<div>' +
-                  '<p class="vtx-visual-rate-title">Could not generate visual</p>' +
-                  '<p class="vtx-visual-rate-msg">Please check your connection and try again.</p>' +
-                '</div>' +
-              '</div>' +
-            '</div>' +
-            '<div class="vtx-visual-footer">' +
-              '<span class="vtx-visual-footer-topic">' + _escHtml(visualTopic2) + '</span>' +
-              '<span class="vtx-visual-footer-badge is-error">Error</span>' +
-            '</div>';
-          return;
+      var approxDuration = Math.min(displayText.length * 18, 8000) + 400;
+
+      setTimeout(function () {
+        if (window._katexAutoRenderReady && window.renderMathInElement && targetEl) {
+          try {
+            renderMathInElement(targetEl, {
+              delimiters: [
+                { left: '$$', right: '$$', display: true  },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false },
+                { left: '\\[', right: '\\]', display: true  },
+              ],
+              throwOnError: false, errorColor: '#cc0000',
+            });
+          } catch (err) { console.warn('[KaTeX] AI drawer render error:', err); }
         }
+      }, approxDuration);
 
-        // ── Rate limited — auto fallback to SVG ──
-        if (result.type === 'rate_limited') {
-          container.innerHTML =
-            '<div class="vtx-visual-rate-wrap">' +
-              '<div class="vtx-visual-rate-row">' +
-                '<i class="ph ph-warning"></i>' +
-                '<div>' +
-                  '<p class="vtx-visual-rate-title">Daily image limit reached</p>' +
-                  '<p class="vtx-visual-rate-msg">' + _escHtml(result.message) + '</p>' +
-                '</div>' +
+      if (visualTopic2 && window.SpeechEngine && typeof SpeechEngine.requestVisual === 'function') {
+        var studentData2   = S().studentData || {};
+        var currentSubject = (window.AppState && window.AppState.exam && window.AppState.exam.currentSubject)
+          || studentData2.class || '';
+
+        var visualWrapper = document.createElement('div');
+        visualWrapper.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding-left:34px;animation:cbt-fade-in 200ms var(--ease) both;max-width:82%;width:100%;';
+        var visualId = 'vtxVisual_' + replyTs;
+
+        visualWrapper.innerHTML =
+          '<div id="' + visualId + '" class="vtx-visual-container">' +
+            '<div class="vtx-visual-skeleton">' +
+              '<div class="vtx-visual-skeleton-icon">' +
+                '<i class="ph ph-image"></i>' +
+                '<span class="vtx-visual-skeleton-label">Generating…</span>' +
               '</div>' +
-              '<div class="vtx-visual-fallback-row">' +
-                '<i class="ph ph-arrows-clockwise"></i>' +
-                '<span>Generating a diagram instead…</span>' +
-              '</div>' +
-              '<div class="vtx-visual-fallback-bar"></div>' +
             '</div>' +
             '<div class="vtx-visual-footer">' +
               '<span class="vtx-visual-footer-topic">' + _escHtml(visualTopic2) + '</span>' +
-              '<span class="vtx-visual-footer-badge is-loading">Diagram</span>' +
-            '</div>';
+              '<span class="vtx-visual-footer-badge is-loading">Loading</span>' +
+            '</div>' +
+          '</div>' +
+          '<span style="font-size:.6rem;color:var(--text-4);padding-left:2px;">Visual</span>';
 
-          fetch('https://vertex-worker.gbemigaakinde.workers.dev/visual', {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              topic:        visualTopic2,
-              subject:      currentSubject || '',
-              studentId:    'svg_fallback',
-              studentName:  studentData2.name  || '',
-              studentClass: studentData2.class || '',
-              context:      'fallback from rate limit',
-            }),
-          })
-          .then(function(res) { return res.json(); })
-          .then(function(svgResult) {
-            var cont = document.getElementById(visualId);
-            if (!cont) return;
+        msgs.appendChild(visualWrapper);
+        msgs.scrollTop = msgs.scrollHeight;
 
-            if (svgResult && svgResult.type === 'svg' && svgResult.content) {
-              cont.className = 'vtx-visual-container';
-              cont.innerHTML =
-                '<div class="vtx-visual-content-wrap">' + svgResult.content + '</div>' +
-                '<div class="vtx-visual-footer">' +
-                  '<span class="vtx-visual-footer-topic">' + _escHtml(visualTopic2) + '</span>' +
-                  '<span class="vtx-visual-footer-badge is-svg">Diagram</span>' +
+        SpeechEngine.requestVisual(visualTopic2, currentSubject, function (err, result) {
+          var container = document.getElementById(visualId);
+          if (!container) return;
+
+          if (err || !result) {
+            container.innerHTML =
+              '<div class="vtx-visual-rate-wrap">' +
+                '<div class="vtx-visual-rate-row">' +
+                  '<i class="ph ph-warning-circle"></i>' +
+                  '<div>' +
+                    '<p class="vtx-visual-rate-title">Could not generate visual</p>' +
+                    '<p class="vtx-visual-rate-msg">Please check your connection and try again.</p>' +
+                  '</div>' +
                 '</div>' +
-                '<div class="vtx-visual-quota-row">Image limit reached — diagram shown instead</div>';
-              if (msgs) msgs.scrollTop = msgs.scrollHeight;
-            } else {
+              '</div>' +
+              '<div class="vtx-visual-footer">' +
+                '<span class="vtx-visual-footer-topic">' + _escHtml(visualTopic2) + '</span>' +
+                '<span class="vtx-visual-footer-badge is-error">Error</span>' +
+              '</div>';
+            return;
+          }
+
+          if (result.type === 'rate_limited') {
+            container.innerHTML =
+              '<div class="vtx-visual-rate-wrap">' +
+                '<div class="vtx-visual-rate-row">' +
+                  '<i class="ph ph-warning"></i>' +
+                  '<div>' +
+                    '<p class="vtx-visual-rate-title">Daily image limit reached</p>' +
+                    '<p class="vtx-visual-rate-msg">' + _escHtml(result.message) + '</p>' +
+                  '</div>' +
+                '</div>' +
+                '<div class="vtx-visual-fallback-row">' +
+                  '<i class="ph ph-arrows-clockwise"></i>' +
+                  '<span>Generating a diagram instead…</span>' +
+                '</div>' +
+                '<div class="vtx-visual-fallback-bar"></div>' +
+              '</div>' +
+              '<div class="vtx-visual-footer">' +
+                '<span class="vtx-visual-footer-topic">' + _escHtml(visualTopic2) + '</span>' +
+                '<span class="vtx-visual-footer-badge is-loading">Diagram</span>' +
+              '</div>';
+
+            fetch('https://vertex-worker.gbemigaakinde.workers.dev/visual', {
+              method:  'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                topic:        visualTopic2,
+                subject:      currentSubject || '',
+                studentId:    'svg_fallback',
+                studentName:  studentData2.name  || '',
+                studentClass: studentData2.class || '',
+                context:      'fallback from rate limit',
+              }),
+            })
+            .then(function(res) { return res.json(); })
+            .then(function(svgResult) {
+              var cont = document.getElementById(visualId);
+              if (!cont) return;
+              if (svgResult && svgResult.type === 'svg' && svgResult.content) {
+                cont.className = 'vtx-visual-container';
+                cont.innerHTML =
+                  '<div class="vtx-visual-content-wrap">' + svgResult.content + '</div>' +
+                  '<div class="vtx-visual-footer">' +
+                    '<span class="vtx-visual-footer-topic">' + _escHtml(visualTopic2) + '</span>' +
+                    '<span class="vtx-visual-footer-badge is-svg">Diagram</span>' +
+                  '</div>' +
+                  '<div class="vtx-visual-quota-row">Image limit reached — diagram shown instead</div>';
+                if (msgs) msgs.scrollTop = msgs.scrollHeight;
+              } else {
+                cont.innerHTML =
+                  '<div class="vtx-visual-rate-wrap">' +
+                    '<div class="vtx-visual-rate-row">' +
+                      '<i class="ph ph-warning"></i>' +
+                      '<div>' +
+                        '<p class="vtx-visual-rate-title">Daily image limit reached</p>' +
+                        '<p class="vtx-visual-rate-msg">' + _escHtml(result.message) + '</p>' +
+                      '</div>' +
+                    '</div>' +
+                    '<p style="font-size:.7rem;color:var(--text-4);margin:0;">Diagram generation also unavailable. Please try again later.</p>' +
+                  '</div>' +
+                  '<div class="vtx-visual-footer">' +
+                    '<span class="vtx-visual-footer-topic">' + _escHtml(visualTopic2) + '</span>' +
+                    '<span class="vtx-visual-footer-badge is-error">Unavailable</span>' +
+                  '</div>';
+              }
+            })
+            .catch(function() {
+              var cont = document.getElementById(visualId);
+              if (!cont) return;
               cont.innerHTML =
                 '<div class="vtx-visual-rate-wrap">' +
                   '<div class="vtx-visual-rate-row">' +
@@ -3864,93 +4003,77 @@ function _sendAiMessage() {
                       '<p class="vtx-visual-rate-msg">' + _escHtml(result.message) + '</p>' +
                     '</div>' +
                   '</div>' +
-                  '<p style="font-size:.7rem;color:var(--text-4);margin:0;">Diagram generation also unavailable. Please try again later.</p>' +
                 '</div>' +
                 '<div class="vtx-visual-footer">' +
                   '<span class="vtx-visual-footer-topic">' + _escHtml(visualTopic2) + '</span>' +
-                  '<span class="vtx-visual-footer-badge is-error">Unavailable</span>' +
+                  '<span class="vtx-visual-footer-badge is-error">Error</span>' +
                 '</div>';
-            }
-          })
-          .catch(function() {
-            var cont = document.getElementById(visualId);
-            if (!cont) return;
-            cont.innerHTML =
-              '<div class="vtx-visual-rate-wrap">' +
-                '<div class="vtx-visual-rate-row">' +
-                  '<i class="ph ph-warning"></i>' +
-                  '<div>' +
-                    '<p class="vtx-visual-rate-title">Daily image limit reached</p>' +
-                    '<p class="vtx-visual-rate-msg">' + _escHtml(result.message) + '</p>' +
-                  '</div>' +
-                '</div>' +
+            });
+            return;
+          }
+
+          if (result.type === 'svg' && result.content) {
+            container.className = 'vtx-visual-container';
+            container.innerHTML =
+              '<div class="vtx-visual-content-wrap">' + result.content + '</div>' +
+              '<div class="vtx-visual-footer">' +
+                '<span class="vtx-visual-footer-topic">' + _escHtml(visualTopic2) + '</span>' +
+                '<span class="vtx-visual-footer-badge is-svg">Diagram</span>' +
+              '</div>';
+            if (msgs) msgs.scrollTop = msgs.scrollHeight;
+            return;
+          }
+
+          if (result.type === 'image' && result.content) {
+            container.className = 'vtx-visual-container';
+            container.innerHTML =
+              '<div class="vtx-visual-content-wrap">' +
+                '<img src="data:image/png;base64,' + result.content + '" alt="' + _escHtml(visualTopic2) + '" loading="lazy" />' +
               '</div>' +
               '<div class="vtx-visual-footer">' +
                 '<span class="vtx-visual-footer-topic">' + _escHtml(visualTopic2) + '</span>' +
-                '<span class="vtx-visual-footer-badge is-error">Error</span>' +
-              '</div>';
-          });
-          return;
-        }
+                '<span class="vtx-visual-footer-badge is-image">Image</span>' +
+              '</div>' +
+              '<div class="vtx-visual-quota-row">Images today: ' + result.used + ' / ' + result.limit + '</div>';
+            if (msgs) msgs.scrollTop = msgs.scrollHeight;
+            return;
+          }
 
-        // ── SVG success ──
-        if (result.type === 'svg' && result.content) {
-          container.className = 'vtx-visual-container';
           container.innerHTML =
-            '<div class="vtx-visual-content-wrap">' + result.content + '</div>' +
+            '<div class="vtx-visual-rate-wrap">' +
+              '<p style="font-size:.8125rem;color:var(--text-3);margin:0;">Visual could not be displayed.</p>' +
+            '</div>' +
             '<div class="vtx-visual-footer">' +
               '<span class="vtx-visual-footer-topic">' + _escHtml(visualTopic2) + '</span>' +
-              '<span class="vtx-visual-footer-badge is-svg">Diagram</span>' +
+              '<span class="vtx-visual-footer-badge is-error">Error</span>' +
             '</div>';
-          if (msgs) msgs.scrollTop = msgs.scrollHeight;
-          return;
-        }
+        });
+      }
 
-        // ── Image success ──
-        if (result.type === 'image' && result.content) {
-          container.className = 'vtx-visual-container';
-          container.innerHTML =
-            '<div class="vtx-visual-content-wrap">' +
-              '<img src="data:image/png;base64,' + result.content + '" alt="' + _escHtml(visualTopic2) + '" loading="lazy" />' +
-            '</div>' +
-            '<div class="vtx-visual-footer">' +
-              '<span class="vtx-visual-footer-topic">' + _escHtml(visualTopic2) + '</span>' +
-              '<span class="vtx-visual-footer-badge is-image">Image</span>' +
-            '</div>' +
-            '<div class="vtx-visual-quota-row">Images today: ' + result.used + ' / ' + result.limit + '</div>';
-          if (msgs) msgs.scrollTop = msgs.scrollHeight;
-          return;
-        }
-
-        // ── Fallback unknown ──
-        container.innerHTML =
-          '<div class="vtx-visual-rate-wrap">' +
-            '<p style="font-size:.8125rem;color:var(--text-3);margin:0;">Visual could not be displayed.</p>' +
-          '</div>' +
-          '<div class="vtx-visual-footer">' +
-            '<span class="vtx-visual-footer-topic">' + _escHtml(visualTopic2) + '</span>' +
-            '<span class="vtx-visual-footer-badge is-error">Error</span>' +
-          '</div>';
-      });
-    }
-
-    setTimeout(function () {
-      try {
-        var sKey   = 'vtx_ai_history_' + (AppState.userId || 'anon');
-        var raw2   = localStorage.getItem(sKey);
-        var saved2 = raw2 ? JSON.parse(raw2) : { ts: Date.now(), history: [], ui: [], lastActivityTs: Date.now() };
-        saved2.history        = window._vtxAiHistory;
-        saved2.ui             = saved2.ui || [];
-        saved2.ui.push({ role: 'assistant', html: rendered, raw: replyText, ts: replyTs });
-        saved2.ts             = Date.now();
-        saved2.lastActivityTs = Date.now();
-        localStorage.setItem(sKey, JSON.stringify(saved2));
-      } catch (e) {}
-    }, approxDuration);
+      setTimeout(function () {
+        try {
+          var sKey   = 'vtx_ai_history_' + (AppState.userId || 'anon');
+          var raw2   = localStorage.getItem(sKey);
+          var saved2 = raw2 ? JSON.parse(raw2) : { ts: Date.now(), history: [], ui: [], lastActivityTs: Date.now() };
+          saved2.history        = window._vtxAiHistory;
+          saved2.ui             = saved2.ui || [];
+          saved2.ui.push({ role: 'assistant', html: rendered, raw: replyText, ts: replyTs });
+          saved2.ts             = Date.now();
+          saved2.lastActivityTs = Date.now();
+          localStorage.setItem(sKey, JSON.stringify(saved2));
+        } catch (e) {}
+      }, approxDuration);
+    });
   }
 
   function _showError(msg) {
+    // On error: stop ticker, remove the thought bubble entirely (no "Thought for Xs" on failure)
+    if (_thoughtTickInterval) {
+      clearInterval(_thoughtTickInterval);
+      _thoughtTickInterval = null;
+    }
     _removeTyping();
+
     var msgs = document.getElementById('vtxAiMessages');
     if (!msgs) return;
     var errBubble = document.createElement('div');
