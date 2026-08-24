@@ -2510,12 +2510,12 @@ function _renderAiText(str) {
     .replace(/"/g, '&quot;');
 
   safe = safe.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
-  safe = safe.replace(/\*([^*\n]+?)\*/g, '<em>$1</em>');
+  safe = safe.replace(/(?<!\*)\*(?!\*)([^*\n]+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
 
-  safe = safe.replace(/([A-Za-z0-9)])\\_([A-Za-z0-9]{1,4})(?=[^A-Za-z0-9]|$)/g, '$1<sub>$2</sub>');
-  safe = safe.replace(/([A-Za-z0-9)])_([A-Za-z0-9]{1,4})(?=[^A-Za-z0-9_]|$)/g,  '$1<sub>$2</sub>');
+  safe = safe.replace(/([A-Za-z0-9)])\\_([A-Za-z0-9+\-]{1,4})(?=[^A-Za-z0-9]|$)/g, '$1<sub>$2</sub>');
+  safe = safe.replace(/([A-Za-z0-9)])_([A-Za-z0-9+\-]{1,4})(?=[^A-Za-z0-9_]|$)/g,  '$1<sub>$2</sub>');
   safe = safe.replace(/_([^_\n]{5,})_/g, '<em>$1</em>');
-  safe = safe.replace(/([A-Za-z0-9])\^([A-Za-z0-9]{1,4})(?=[^A-Za-z0-9]|$)/g, '$1<sup>$2</sup>');
+  safe = safe.replace(/([A-Za-z0-9])\^([A-Za-z0-9+\-]{1,4})(?=[^A-Za-z0-9]|$)/g, '$1<sup>$2</sup>');
 
   safe = safe.replace(/^######\s+(.+)$/gm, '<p style="margin:0 0 .4em 0;font-size:.8rem;font-weight:700;color:var(--text-2);">$1</p>');
   safe = safe.replace(/^#####\s+(.+)$/gm,  '<p style="margin:0 0 .4em 0;font-size:.8125rem;font-weight:700;color:var(--text-2);">$1</p>');
@@ -2537,26 +2537,24 @@ function _renderAiText(str) {
       return line.replace(/^\||\|$/g, '').split('|').map(function (c) { return c.trim(); });
     }
 
-    // Detect and skip separator row
     var headerCells, bodyLines;
     var isSep = /^[\|\s\-:]+$/.test(lines[1]);
     if (isSep) {
       headerCells = _parseCells(lines[0]);
       bodyLines   = lines.slice(2);
     } else {
-      // No separator row — treat first line as header, rest as body
       headerCells = _parseCells(lines[0]);
       bodyLines   = lines.slice(1);
     }
 
-    // Must have at least one body row
     if (bodyLines.length === 0) return block;
 
     var thead = '<thead><tr>' +
       headerCells.map(function (c) {
-        return '<th style="padding:.4rem .625rem;border:1px solid var(--border);' +
+        return '<th style="padding:.4rem .5rem;border:1px solid var(--border);' +
                'background:var(--bg-subtle);font-size:.8125rem;font-weight:700;' +
-               'color:var(--text-1);text-align:left;white-space:nowrap;">' + c + '</th>';
+               'color:var(--text-1);text-align:left;' +
+               'word-break:break-word;overflow-wrap:anywhere;">' + c + '</th>';
       }).join('') +
       '</tr></thead>';
 
@@ -2567,14 +2565,15 @@ function _renderAiText(str) {
           ? 'background:var(--bg-subtle);'
           : 'background:var(--bg-base);';
         return '<tr>' + cells.map(function (c) {
-          return '<td style="padding:.375rem .625rem;border:1px solid var(--border);' +
-                 'font-size:.8rem;color:var(--text-2);' + rowBg + '">' + c + '</td>';
+          return '<td style="padding:.375rem .5rem;border:1px solid var(--border);' +
+                 'font-size:.8rem;color:var(--text-2);' +
+                 'word-break:break-word;overflow-wrap:anywhere;' + rowBg + '">' + c + '</td>';
         }).join('') + '</tr>';
       }).join('') +
       '</tbody>';
 
-    return '<div style="overflow-x:auto;margin:.5em 0 .75em;">' +
-           '<table style="border-collapse:collapse;width:100%;min-width:280px;' +
+    return '<div style="overflow-x:auto;margin:.5em 0 .75em;max-width:100%;">' +
+           '<table style="border-collapse:collapse;width:100%;table-layout:fixed;' +
            'font-family:var(--font);border:1px solid var(--border);border-radius:6px;overflow:hidden;">' +
            thead + tbody + '</table></div>';
   });
