@@ -375,7 +375,13 @@
   /* ── TTS ── */
   var _ttsActive = false;
   var _ttsQueue  = [];
-
+// ── Echo-cancellation state ──────────────────────────────
+var _isSpeakingForLive   = false; 
+var _sttGateTimer        = null;   
+var _lastSpokenText      = '';      
+var _lastSpokenEndMs     = 0;    
+var _STT_GATE_MS         = 600;   
+                                  
   function _chunkText(text) {
     var MAX = 180;
     text = text.replace(/\s+/g, ' ').trim();
@@ -419,12 +425,31 @@ function _speakNext() {
     _ttsActive = false;
     _setTtsBtn(false);
     _hookTtsBtnState(false);
-    // Fire onDone now that the queue is genuinely exhausted
-    if (_onDoneCallback) {
-      var cb = _onDoneCallback;
-      _onDoneCallback = null;
-      setTimeout(cb, 50); // small delay so cancel() state settles first
-    }
+    _lastSpokenEndMs = Date.now();
+
+    if (_sttGateTimer) { clearTimeout(_sttGateTimer); _sttGateTimer = null; }
+
+    var wasLive = _isSpeakingForLive;
+
+    _sttGateTimer = setTimeout(function () {
+      _sttGateTimer = null;
+
+      // Non-Live: reopen STT automatically so continuous listening resumes.
+      // Live: onDone callback handles STT via _liveStartListening — do not open here.
+      _isSpeakingForLive = false;
+
+      if (_sttActive && !wasLive) {
+        _openSession();
+      }
+
+      // Fire onDone — for Live Mode, this triggers _liveStartListening.
+      if (_onDoneCallback) {
+        var cb = _onDoneCallback;
+        _onDoneCallback = null;
+        setTimeout(cb, 50);
+      }
+    }, _STT_GATE_MS);
+
     return;
   }
 
@@ -453,8 +478,6 @@ function _speakNext() {
 
   _synth.speak(utt);
 
-  // Chrome bug: speechSynthesis silently stalls and never fires onend.
-  // Kick it every 10 seconds with pause/resume to unstick it.
   _chromePauseWatchdog = setInterval(function () {
     if (_synth.speaking && !_synth.paused) {
       _synth.pause();
@@ -465,7 +488,7 @@ function _speakNext() {
 
   var _onDoneCallback = null;
 
-function speak(rawText, onDone) {
+function speak(rawText, onDone, _fromLive) {
   if (!ttsSupported) {
     if (window.UI) UI.toast('Text-to-speech is not supported in your browser.', 'warning', 4000);
     if (typeof onDone === 'function') onDone();
@@ -478,6 +501,21 @@ function speak(rawText, onDone) {
     .replace(/\s+/g, ' ')
     .trim();
   if (!clean) { if (typeof onDone === 'function') onDone(); return; }
+
+  // Track whether this speak() call is from Live Mode.
+  // Live Mode manages its own STT lifecycle via callbacks —
+  // we must NOT abort the recognition session here for Live Mode
+  // because barge-in (user interrupting the AI) is intentional.
+  _isSpeakingForLive = !!_fromLive;
+
+  // Store what we are about to say so the echo filter can discard it.
+  _lastSpokenText = clean.toLowerCase();
+
+  // For non-Live flows (exam, results, explanation modal):
+  // abort STT now so the mic is closed before any audio plays.
+  if (!_isSpeakingForLive && _sttActive) {
+    _abortSTTForEcho();
+  }
 
   cancel();
   _onDoneCallback = typeof onDone === 'function' ? onDone : null;
@@ -496,9 +534,11 @@ function speak(rawText, onDone) {
 function cancel() {
   if (!ttsSupported) return;
   if (_chromePauseWatchdog) { clearInterval(_chromePauseWatchdog); _chromePauseWatchdog = null; }
-  _ttsQueue      = [];
-  _ttsActive     = false;
-  _onDoneCallback = null; 
+  if (_sttGateTimer)        { clearTimeout(_sttGateTimer);         _sttGateTimer = null; }
+  _ttsQueue          = [];
+  _ttsActive         = false;
+  _isSpeakingForLive = false;
+  _onDoneCallback    = null;
   _synth.cancel();
   _setTtsBtn(false);
   _hookTtsBtnState(false);
@@ -550,9 +590,43 @@ function cancel() {
     );
   }
 
-  function _openSession() {
+// Silently abort the active recognition session without clearing _sttActive.
+// Used before TTS starts in non-Live flows so the mic is closed during playback.
+// _openSession() will reopen it after the TTS gate expires.
+function _abortSTTForEcho() {
+  if (_sttRestartId) { clearTimeout(_sttRestartId); _sttRestartId = null; }
+  if (_recognition) {
+    try { _recognition.abort(); } catch (e) {}
+    _recognition = null;
+  }
+  _sttRunning = false;
+  _setSttBtn(false);
+  // _sttActive is deliberately left true so _speakNext knows to reopen after cooldown.
+}
+
+// Returns true if the given transcript looks like an echo of what TTS just said.
+// Compares normalised lowercase strings for a substring match.
+// The 1200ms window covers the gate + any buffering lag.
+function _isEchoTranscript(transcript) {
+  if (!_lastSpokenText || !transcript) return false;
+  var sinceEnd = Date.now() - _lastSpokenEndMs;
+  if (sinceEnd > 1200) return false;   // too late to be an echo
+  var t  = transcript.toLowerCase().replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
+  var s  = _lastSpokenText.replace(/[^a-z0-9\s]/g, '').replace(/\s+/g, ' ').trim();
+  // Echo if the transcript is a substring of what was spoken, or vice-versa
+  if (s.indexOf(t) !== -1) return true;
+  if (t.indexOf(s) !== -1) return true;
+  // Also catch partial echoes: if >60% of the transcript words appear in the spoken text
+  var tWords = t.split(' ').filter(function (w) { return w.length > 2; });
+  if (tWords.length === 0) return false;
+  var matches = tWords.filter(function (w) { return s.indexOf(w) !== -1; });
+  return matches.length / tWords.length >= 0.6;
+}
+   function _openSession() {
   if (!sttSupported || !_sttActive) return;
   if (_sttRunning) return;
+  // Hard gate: never open STT while TTS is still producing audio.
+  if (_ttsActive) return;
 
   try { _recognition = new _SpeechR(); } catch (e) {
     console.error('[SpeechEngine] Could not create SpeechRecognition:', e);
@@ -565,9 +639,8 @@ function cancel() {
   var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
 
   _recognition.continuous      = !isIOS;
-  _recognition.interimResults  = true;   
-  _recognition.maxAlternatives = 5;     
-  // en-NG is better for Nigerian English accent on Chrome/Edge than en-US
+  _recognition.interimResults  = true;
+  _recognition.maxAlternatives = 5;
   _recognition.lang = 'en-NG';
 
   var _interimShown = false;
@@ -579,30 +652,36 @@ function cancel() {
   };
 
   _recognition.onresult = function (event) {
-    // Show a visual cue on first interim result so student knows they were heard
+    // Hard gate: discard everything if TTS is still playing.
+    if (_ttsActive) return;
+
     for (var i = event.resultIndex; i < event.results.length; i++) {
       if (!event.results[i].isFinal) {
         if (!_interimShown) {
           _interimShown = true;
-          // Briefly pulse the mic button to confirm audio is being received
           var btn = document.getElementById('seSttBtn') || document.getElementById('srSttBtn') || document.getElementById('seResultsSttBtn');
           if (btn) {
             btn.style.boxShadow = '0 0 0 6px rgba(224,59,59,0.35)';
-            setTimeout(function () {
-              if (btn) btn.style.boxShadow = '';
-            }, 600);
+            setTimeout(function () { if (btn) btn.style.boxShadow = ''; }, 600);
           }
         }
         continue;
       }
 
-      // Final result
       var transcripts = [];
       for (var a = 0; a < event.results[i].length; a++) {
         var t = event.results[i][a].transcript.trim();
         if (t) transcripts.push(t);
       }
-      if (transcripts.length > 0 && _sttCallbacks.onResult) {
+      if (transcripts.length === 0) continue;
+
+      // Echo filter: discard transcripts that are echoes of what TTS just said.
+      if (_isEchoTranscript(transcripts[0])) {
+        console.warn('[SpeechEngine] Echo transcript discarded:', transcripts[0]);
+        continue;
+      }
+
+      if (_sttCallbacks.onResult) {
         _interimShown = false;
         _sttCallbacks.onResult(transcripts[0], transcripts);
       }
@@ -611,9 +690,10 @@ function cancel() {
 
   _recognition.onend = function () {
     _sttRunning = false;
-    if (_sttActive) {
+    // Only auto-restart if STT is active AND TTS is not playing.
+    if (_sttActive && !_ttsActive) {
       _sttRestartId = setTimeout(function () {
-        if (_sttActive) _openSession();
+        if (_sttActive && !_ttsActive) _openSession();
       }, 300);
     } else {
       _setSttBtn(false);
@@ -623,18 +703,17 @@ function cancel() {
   _recognition.onerror = function (event) {
     _sttRunning = false;
     if (event.error === 'aborted') {
-      if (_sttActive) { _sttRestartId = setTimeout(function () { if (_sttActive) _openSession(); }, 300); }
+      if (_sttActive && !_ttsActive) { _sttRestartId = setTimeout(function () { if (_sttActive) _openSession(); }, 300); }
       return;
     }
     if (event.error === 'no-speech') {
-      if (_sttActive) { _sttRestartId = setTimeout(function () { if (_sttActive) _openSession(); }, 200); }
+      if (_sttActive && !_ttsActive) { _sttRestartId = setTimeout(function () { if (_sttActive) _openSession(); }, 200); }
       return;
     }
-    // language-not-supported — fall back to en-GB then en-US
     if (event.error === 'language-not-supported') {
       console.warn('[SpeechEngine] en-NG not supported — falling back to en-GB');
-      _recognition.lang = 'en-GB';
-      if (_sttActive) { _sttRestartId = setTimeout(function () { if (_sttActive) _openSession(); }, 100); }
+      if (_recognition) _recognition.lang = 'en-GB';
+      if (_sttActive && !_ttsActive) { _sttRestartId = setTimeout(function () { if (_sttActive) _openSession(); }, 100); }
       return;
     }
     var msg;
@@ -688,22 +767,21 @@ function cancel() {
     _openSession();
   }
 
-    function stopSTT() {
-    _sttActive               = false;
-    _awaitingSubmitConfirm   = false;
-    _awaitingStudentQuestion = false;
-    _awaitingDeeperAnswer    = false;
-    // _deeperContext is NOT cleared here. It is cleared only in _showExplanationModal's
-    // close handler and by setting a fresh context when a new modal opens.
-    if (_sttRestartId) { clearTimeout(_sttRestartId); _sttRestartId = null; }
-    if (_recognition) {
-      try { _recognition.stop(); }  catch (e) {}
-      try { _recognition.abort(); } catch (e) {}
-      _recognition = null;
-    }
-    _sttRunning = false;
-    _setSttBtn(false);
+ function stopSTT() {
+  _sttActive               = false;
+  _awaitingSubmitConfirm   = false;
+  _awaitingStudentQuestion = false;
+  _awaitingDeeperAnswer    = false;
+  if (_sttGateTimer) { clearTimeout(_sttGateTimer); _sttGateTimer = null; }
+  if (_sttRestartId) { clearTimeout(_sttRestartId); _sttRestartId = null; }
+  if (_recognition) {
+    try { _recognition.stop(); }  catch (e) {}
+    try { _recognition.abort(); } catch (e) {}
+    _recognition = null;
   }
+  _sttRunning = false;
+  _setSttBtn(false);
+}
 
   function _setSttBtn(listening) {
     var btn  = document.getElementById('seSttBtn');
