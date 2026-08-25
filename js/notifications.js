@@ -160,83 +160,83 @@
     if (label) label.textContent = on ? 'On' : 'Off';
   }
 
-  async function init(uid) {
-    if (!_isSupported()) return;
+async function init(uid) {
+  if (!_isSupported()) return;
 
-    var userId = uid || (window.AppState && window.AppState.userId) || 'anon';
+  var userId = uid || (window.AppState && window.AppState.userId) || 'anon';
 
-    // Permission already granted — ensure subscription is active and saved
-    if (Notification.permission === 'granted') {
-      var alreadyOn = await isSubscribed();
+  if (Notification.permission === 'granted') {
+    try {
+      var reg = await navigator.serviceWorker.ready;
 
-      if (!alreadyOn) {
-        // Subscription lapsed — re-subscribe silently
-        try {
-          var reg = await navigator.serviceWorker.ready;
-          var sub = await reg.pushManager.subscribe({
-            userVisibleOnly:      true,
-            applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-          });
-          var saved = await _saveSubscription(userId, sub.toJSON());
-          if (saved) {
-            localStorage.setItem(LS_KEY, '1');
-            _updateToggleUI(true);
-          } else {
-            if (window.UI) UI.toast('Could not register for notifications. Tap the bell to retry.', 'warning', 4000);
-          }
-        } catch (e) {
-          console.warn('[notifications] Silent re-subscribe failed:', e);
+      // Always unsubscribe first to clear any stale/legacy FCM endpoint
+      var existing = await reg.pushManager.getSubscription();
+      if (existing) {
+        var ep = existing.endpoint || '';
+        // If endpoint is the old FCM legacy format, force a fresh subscription
+        var isLegacy = ep.includes('fcm.googleapis.com/fcm/send/') &&
+                       !ep.includes('/v1/');
+        if (isLegacy) {
+          console.warn('[notifications] Legacy FCM endpoint detected — forcing re-subscribe.');
+          await existing.unsubscribe();
+          existing = null;
         }
+      }
+
+      var sub;
+      if (!existing) {
+        sub = await reg.pushManager.subscribe({
+          userVisibleOnly:      true,
+          applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        });
       } else {
-        // Already subscribed — re-save to keep server copy fresh
-        try {
-          var reg2 = await navigator.serviceWorker.ready;
-          var sub2 = await reg2.pushManager.getSubscription();
-          if (sub2) {
-            var saved2 = await _saveSubscription(userId, sub2.toJSON());
-            if (saved2) {
-              localStorage.setItem(LS_KEY, '1');
-              _updateToggleUI(true);
-            }
-          }
-        } catch (e) {
-          console.warn('[notifications] Could not re-save subscription:', e);
-        }
+        sub = existing;
       }
-      return;
-    }
 
-    // Permission not yet asked — prompt automatically (skip on plain iOS Safari)
-    if (Notification.permission === 'default' && !_isIOS()) {
-      try {
-        var granted = await Notification.requestPermission();
-        if (granted === 'granted') {
-          var reg3 = await navigator.serviceWorker.ready;
-          var sub3 = await reg3.pushManager.subscribe({
-            userVisibleOnly:      true,
-            applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-          });
-          var saved3 = await _saveSubscription(userId, sub3.toJSON());
-          if (saved3) {
-            localStorage.setItem(LS_KEY, '1');
-            _updateToggleUI(true);
-            if (window.UI) UI.toast('Notifications enabled!', 'success', 3000);
-          } else {
-            if (window.UI) UI.toast('Notification save failed. Tap the bell button to retry.', 'warning', 5000);
-          }
-          return;
-        }
-      } catch (e) {
-        console.warn('[notifications] Auto-prompt failed:', e);
-        if (window.UI) UI.toast('Could not enable notifications: ' + e.message, 'warning', 5000);
+      var saved = await _saveSubscription(userId, sub.toJSON());
+      if (saved) {
+        localStorage.setItem(LS_KEY, '1');
+        _updateToggleUI(true);
+      } else {
+        if (window.UI) UI.toast('Could not register for notifications. Tap the bell to retry.', 'warning', 4000);
       }
+    } catch (e) {
+      console.warn('[notifications] init subscription error:', e);
     }
-
-    // Permission denied or iOS — just update the toggle UI
-    var on = await isSubscribed();
-    _updateToggleUI(on);
-    if (!on) localStorage.removeItem(LS_KEY);
+    return;
   }
+
+  // Permission not yet asked — prompt automatically (skip on plain iOS Safari)
+  if (Notification.permission === 'default' && !_isIOS()) {
+    try {
+      var granted = await Notification.requestPermission();
+      if (granted === 'granted') {
+        var reg2 = await navigator.serviceWorker.ready;
+        var sub2 = await reg2.pushManager.subscribe({
+          userVisibleOnly:      true,
+          applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        });
+        var saved2 = await _saveSubscription(userId, sub2.toJSON());
+        if (saved2) {
+          localStorage.setItem(LS_KEY, '1');
+          _updateToggleUI(true);
+          if (window.UI) UI.toast('Notifications enabled!', 'success', 3000);
+        } else {
+          if (window.UI) UI.toast('Notification save failed. Tap the bell button to retry.', 'warning', 5000);
+        }
+        return;
+      }
+    } catch (e) {
+      console.warn('[notifications] Auto-prompt failed:', e);
+      if (window.UI) UI.toast('Could not enable notifications: ' + e.message, 'warning', 5000);
+    }
+  }
+
+  // Permission denied or iOS — just update toggle UI
+  var on = await isSubscribed();
+  _updateToggleUI(on);
+  if (!on) localStorage.removeItem(LS_KEY);
+}
 
   function renderSettingsRow(containerId) {
     var el = document.getElementById(containerId);
