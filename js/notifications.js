@@ -45,54 +45,59 @@
     }
   }
 
-  async function subscribe() {
-    if (!_isSupported()) {
-      if (_isIOS() && !_isIOSPWA()) {
-        if (window.UI) UI.toast('To enable notifications on iPhone, add this app to your Home Screen first.', 'info', 8000);
-        return false;
-      }
-      if (window.UI) UI.toast('Push notifications are not supported in your browser.', 'warning', 5000);
+async function subscribe() {
+  if (!_isSupported()) {
+    if (_isIOS() && !_isIOSPWA()) {
+      if (window.UI) UI.toast('To enable notifications on iPhone, add this app to your Home Screen first.', 'info', 8000);
       return false;
     }
-
-    var permission = Notification.permission;
-    if (permission === 'denied') {
-      if (window.UI) UI.toast('Notifications are blocked. Please allow them in your browser settings.', 'warning', 6000);
-      return false;
-    }
-    if (permission === 'default') {
-      permission = await Notification.requestPermission();
-    }
-    if (permission !== 'granted') {
-      if (window.UI) UI.toast('Notification permission not granted.', 'info', 3000);
-      return false;
-    }
-
-    try {
-      var reg = await navigator.serviceWorker.ready;
-      var sub = await reg.pushManager.subscribe({
-        userVisibleOnly:      true,
-        applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-      });
-
-      var userId = (window.AppState && window.AppState.userId) || 'anon';
-      var res = await fetch(WORKER_URL + '/api/save-subscription', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ userId: userId, subscription: sub.toJSON() }),
-      });
-      if (!res.ok) throw new Error('Server rejected subscription');
-
-      localStorage.setItem(LS_KEY, '1');
-      if (window.UI) UI.toast('Push notifications enabled!', 'success', 3000);
-      _updateToggleUI(true);
-      return true;
-    } catch (err) {
-      console.error('[notifications] subscribe error:', err);
-      if (window.UI) UI.toast('Could not enable notifications. Please try again.', 'error', 4000);
-      return false;
-    }
+    if (window.UI) UI.toast('Push notifications are not supported in your browser.', 'warning', 5000);
+    return false;
   }
+
+  var permission = Notification.permission;
+  if (permission === 'denied') {
+    if (window.UI) UI.toast('Notifications are blocked. Please allow them in your browser settings.', 'warning', 6000);
+    return false;
+  }
+  if (permission === 'default') {
+    permission = await Notification.requestPermission();
+  }
+  if (permission !== 'granted') {
+    if (window.UI) UI.toast('Notification permission not granted.', 'info', 3000);
+    return false;
+  }
+
+  try {
+    var reg = await navigator.serviceWorker.ready;
+
+    // Cancel any old subscription first to avoid stale endpoint errors
+    var existing = await reg.pushManager.getSubscription();
+    if (existing) await existing.unsubscribe();
+
+    var sub = await reg.pushManager.subscribe({
+      userVisibleOnly:      true,
+      applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+    });
+
+    var userId = (window.AppState && window.AppState.userId) || 'anon';
+    var res = await fetch(WORKER_URL + '/api/save-subscription', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ userId: userId, subscription: sub.toJSON() }),
+    });
+    if (!res.ok) throw new Error('Server rejected subscription');
+
+    localStorage.setItem(LS_KEY, '1');
+    if (window.UI) UI.toast('Push notifications enabled!', 'success', 3000);
+    _updateToggleUI(true);
+    return true;
+  } catch (err) {
+    console.error('[notifications] subscribe error:', err);
+    if (window.UI) UI.toast('Could not enable notifications. Please try again.', 'error', 4000);
+    return false;
+  }
+}
 
   async function unsubscribe() {
     try {
@@ -140,36 +145,60 @@
   // ── init: called once after login with the student's uid ──
   // Syncs the toggle UI and re-saves the subscription if needed
   // (handles the case where the subscription was cleared after browser update).
-  async function init(uid) {
-    if (!_isSupported()) return;
+async function init(uid) {
+  if (!_isSupported()) return;
 
-    var on = await isSubscribed();
-    _updateToggleUI(on);
+  var userId = uid || (window.AppState && window.AppState.userId) || 'anon';
 
-    if (!on) {
-      localStorage.removeItem(LS_KEY);
-      return;
-    }
-
-    // Re-save the subscription to the server in case it changed
-    // (some browsers rotate push endpoints silently).
-    if (uid || (window.AppState && window.AppState.userId)) {
-      var userId = uid || window.AppState.userId;
+  // If permission is already granted and we are not yet subscribed, subscribe silently.
+  // This handles students who granted permission before but whose subscription lapsed.
+  if (Notification.permission === 'granted') {
+    var alreadyOn = await isSubscribed();
+    if (!alreadyOn) {
       try {
         var reg = await navigator.serviceWorker.ready;
-        var sub = await reg.pushManager.getSubscription();
-        if (sub) {
+        var sub = await reg.pushManager.subscribe({
+          userVisibleOnly:      true,
+          applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        });
+        await fetch(WORKER_URL + '/api/save-subscription', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ userId: userId, subscription: sub.toJSON() }),
+        });
+        localStorage.setItem(LS_KEY, '1');
+        _updateToggleUI(true);
+        return;
+      } catch (e) {
+        console.warn('[notifications] Silent re-subscribe failed:', e);
+      }
+    } else {
+      // Already subscribed — re-save to keep the server copy fresh
+      // (browsers sometimes rotate push endpoints silently).
+      try {
+        var reg2 = await navigator.serviceWorker.ready;
+        var sub2 = await reg2.pushManager.getSubscription();
+        if (sub2) {
           await fetch(WORKER_URL + '/api/save-subscription', {
             method:  'POST',
             headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ userId: userId, subscription: sub.toJSON() }),
+            body:    JSON.stringify({ userId: userId, subscription: sub2.toJSON() }),
           });
         }
+        localStorage.setItem(LS_KEY, '1');
+        _updateToggleUI(true);
       } catch (e) {
         console.warn('[notifications] Could not re-save subscription:', e);
       }
+      return;
     }
   }
+
+  // Permission not yet granted — update the toggle UI to reflect current state
+  var on = await isSubscribed();
+  _updateToggleUI(on);
+  if (!on) localStorage.removeItem(LS_KEY);
+}
 
   function renderSettingsRow(containerId) {
     var el = document.getElementById(containerId);
