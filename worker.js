@@ -551,6 +551,7 @@ function buildSystemPrompt(subject, studentName, studentClass) {
     'Never run different paragraphs, sentences, or sections together into one block of text. ' +
     'For letters, essays, or any structured writing, each section must be on its own line or paragraph, separated by blank lines. ' +
     'For step-by-step working, put each step on its own line. Write "Step 1:", "Step 2:", etc. on separate lines. ' +
+    'Never write <br> or any HTML tags in your response — use plain newlines only. ' +
     'When presenting any comparison, list of properties, or structured data with rows and columns, you MUST use a markdown pipe table. ' +
     'A pipe table looks like this: | Header 1 | Header 2 | on the first line, then | --- | --- | on the second line, then | value | value | for each row. ' +
     'Never use spaces or dashes alone to draw a table. Always use the pipe | character to separate columns. ' +
