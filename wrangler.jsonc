@@ -15,6 +15,9 @@
   "ai": {
     "binding": "AI"
   },
+  "vars": {
+    "VAPID_PUBLIC_KEY": "BCjYlOnZftKfqqez37mKt9sLy_XAO3BylbLyOUGfkO4ABeM_YYY9xEZuxplaSvrrYGEcwcBkFTGt5Rjbitz1QTA"
+  },
   "triggers": {
     "crons": [
       "0 19 * * *"
