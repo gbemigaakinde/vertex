@@ -212,6 +212,30 @@ self.addEventListener('notificationclick', function (event) {
   );
 });
 
+self.addEventListener('pushsubscriptionchange', function (event) {
+  event.waitUntil(
+    self.registration.pushManager.subscribe({
+      userVisibleOnly:      true,
+      applicationServerKey: 'BCjYlOnZftKfqqez37mKt9sLy_XAO3BylbLyOUGfkO4ABeM_YYY9xEZuxplaSvrrYGEcwcBkFTGt5Rjbitz1QTA',
+    })
+    .then(function (newSub) {
+      return fetch('https://vertex-worker.gbemigaakinde.workers.dev/api/save-subscription', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId:       event.oldSubscription
+            ? new URL(event.oldSubscription.endpoint).pathname.split('/').pop()
+            : 'unknown',
+          subscription: newSub.toJSON(),
+        }),
+      });
+    })
+    .catch(function (err) {
+      console.warn('[SW] pushsubscriptionchange re-subscribe failed:', err);
+    })
+  );
+});
+
 /* ─────────────────────────────────────────────────────────── */
 /* Strategies                                                 */
 /* ─────────────────────────────────────────────────────────── */
