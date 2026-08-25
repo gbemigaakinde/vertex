@@ -1135,26 +1135,39 @@ async function sendWebPush(subscription, payloadStr, env) {
   }
 
   try {
-    var encrypted = await _encryptPayload(subscription, payloadStr);
+    var encrypted    = await _encryptPayload(subscription, payloadStr);
     var vapidHeaders = await _buildVapidHeaders(subscription.endpoint, privKey, pubKey);
 
-    // Build the body:
-    // salt (16) + record size (4, BE uint32) + server pub len (1) + server pub (65) + ciphertext
-    var rs        = encrypted.ciphertext.length;  // FIXED: was 2*ciphertext.length + 2
-    var bodyParts = new Uint8Array(16 + 4 + 1 + 65 + encrypted.ciphertext.length);
-    var pos       = 0;
+    // aesgcm binary body layout (RFC draft-ietf-webpush-encryption-04):
+    //   salt         — 16 bytes
+    //   rs           — 4 bytes big-endian uint32 (the RECORD SIZE, default 4096, NOT ciphertext length)
+    //   dh_len       — 1 byte (length of the sender public key; always 65 for P-256 uncompressed)
+    //   dh           — 65 bytes (sender ephemeral public key, uncompressed)
+    //   ciphertext   — N bytes
+    var RS       = 4096;  // standard aesgcm record size
+    var bodyLen  = 16 + 4 + 1 + encrypted.localPubRaw.length + encrypted.ciphertext.length;
+    var body     = new Uint8Array(bodyLen);
+    var pos      = 0;
 
-    bodyParts.set(encrypted.salt, pos); pos += 16;
+    // salt (16 bytes)
+    body.set(encrypted.salt, pos);
+    pos += 16;
 
-    bodyParts[pos]   = (rs >> 24) & 0xff;
-    bodyParts[pos+1] = (rs >> 16) & 0xff;
-    bodyParts[pos+2] = (rs >>  8) & 0xff;
-    bodyParts[pos+3] =  rs        & 0xff;
+    // rs (4 bytes big-endian)
+    body[pos]   = (RS >> 24) & 0xff;
+    body[pos+1] = (RS >> 16) & 0xff;
+    body[pos+2] = (RS >>  8) & 0xff;
+    body[pos+3] =  RS        & 0xff;
     pos += 4;
 
-    bodyParts[pos] = encrypted.localPubRaw.length; pos += 1;
-    bodyParts.set(encrypted.localPubRaw, pos); pos += encrypted.localPubRaw.length;
-    bodyParts.set(encrypted.ciphertext,  pos);
+    // dh_len (1 byte) + dh (65 bytes)
+    body[pos] = encrypted.localPubRaw.length;
+    pos += 1;
+    body.set(encrypted.localPubRaw, pos);
+    pos += encrypted.localPubRaw.length;
+
+    // ciphertext
+    body.set(encrypted.ciphertext, pos);
 
     var res = await fetch(subscription.endpoint, {
       method:  'POST',
@@ -1162,15 +1175,46 @@ async function sendWebPush(subscription, payloadStr, env) {
         'Content-Encoding': 'aesgcm',
         'Crypto-Key':       'dh=' + _bytesToB64url(encrypted.localPubRaw),
         'Encryption':       'salt=' + _bytesToB64url(encrypted.salt),
+        'Content-Length':   String(body.length),
       }),
-      body: bodyParts,
+      body: body,
     });
 
     if (!res.ok) {
-      var errText = await res.text().catch(() => '');
+      var errText = await res.text().catch(function () { return ''; });
       console.warn('[Worker] Push send failed:', res.status, errText);
+
+      // Auto-clean stale subscriptions from KV so they don't clog future broadcasts
+      if ((res.status === 410 || res.status === 404) && env.VTX_RATE_LIMITS) {
+        var endpoint = subscription.endpoint;
+        var indexRaw = await env.VTX_RATE_LIMITS.get('push_index').catch(function () { return null; });
+        if (indexRaw) {
+          try {
+            var index   = JSON.parse(indexRaw);
+            var cleaned = [];
+            for (var i = 0; i < index.length; i++) {
+              var uid    = index[i];
+              var subRaw = await env.VTX_RATE_LIMITS.get('push:' + uid).catch(function () { return null; });
+              if (subRaw) {
+                var sub = JSON.parse(subRaw);
+                if (sub.endpoint === endpoint) {
+                  await env.VTX_RATE_LIMITS.delete('push:' + uid).catch(function () {});
+                  console.log('[Worker] Removed stale subscription for', uid);
+                } else {
+                  cleaned.push(uid);
+                }
+              }
+            }
+            await env.VTX_RATE_LIMITS.put('push_index', JSON.stringify(cleaned));
+          } catch (e) {
+            console.warn('[Worker] Failed to clean stale subscription:', e.message);
+          }
+        }
+      }
+
       return { ok: false, reason: 'Push server returned HTTP ' + res.status + ': ' + errText };
     }
+
     return { ok: true };
   } catch (e) {
     console.error('[Worker] sendWebPush error:', e);
