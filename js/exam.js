@@ -2514,6 +2514,7 @@ function _renderAiText(str) {
 
   var raw = String(str);
 
+  // Stash math blocks so they survive all transformations
   var mathBlocks = [];
   function _stashMath(match) {
     mathBlocks.push(match);
@@ -2525,27 +2526,44 @@ function _renderAiText(str) {
   raw = raw.replace(/\\\[[\s\S]*?\\\]/g, _stashMath);
   raw = raw.replace(/\\\([\s\S]*?\\\)/g, _stashMath);
 
+  // Strip markdown images and bare URLs; convert markdown links to plain text
   raw = raw.replace(/!\[[^\]]*\]\([^)]*\)/g, '');
   raw = raw.replace(/https?:\/\/[^\s)>\]"]+/g, '');
   raw = raw.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1');
 
+  // Stash <br> tags BEFORE HTML-escaping so they survive
+  var brBlocks = [];
+  raw = raw.replace(/<br\s*\/?>/gi, function (match) {
+    brBlocks.push(match);
+    return '\x00BR' + (brBlocks.length - 1) + '\x00';
+  });
+
   // Collapse blank lines between table rows before escaping
   raw = raw.replace(/(^\|[^\n]*\|)[ \t]*\n[ \t]*\n(?=[ \t]*\|)/gm, '$1\n');
 
+  // HTML-escape everything
   var safe = raw
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
 
+  // Restore <br> tags (now safe to re-inject as real HTML)
+  safe = safe.replace(/\x00BR(\d+)\x00/g, function (_, i) {
+    return '<br>';
+  });
+
+  // Bold and italic
   safe = safe.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
   safe = safe.replace(/(?<!\*)\*(?!\*)([^*\n]+?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
 
+  // Sub/superscript
   safe = safe.replace(/([A-Za-z0-9)])\\_([A-Za-z0-9+\-]{1,4})(?=[^A-Za-z0-9]|$)/g, '$1<sub>$2</sub>');
   safe = safe.replace(/([A-Za-z0-9)])_([A-Za-z0-9+\-]{1,4})(?=[^A-Za-z0-9_]|$)/g,  '$1<sub>$2</sub>');
   safe = safe.replace(/_([^_\n]{5,})_/g, '<em>$1</em>');
   safe = safe.replace(/([A-Za-z0-9])\^([A-Za-z0-9+\-]{1,4})(?=[^A-Za-z0-9]|$)/g, '$1<sup>$2</sup>');
 
+  // Headings
   safe = safe.replace(/^######\s+(.+)$/gm, '<p style="margin:0 0 .4em 0;font-size:.8rem;font-weight:700;color:var(--text-2);">$1</p>');
   safe = safe.replace(/^#####\s+(.+)$/gm,  '<p style="margin:0 0 .4em 0;font-size:.8125rem;font-weight:700;color:var(--text-2);">$1</p>');
   safe = safe.replace(/^####\s+(.+)$/gm,   '<p style="margin:0 0 .45em 0;font-size:.875rem;font-weight:700;color:var(--text-1);">$1</p>');
@@ -2553,9 +2571,10 @@ function _renderAiText(str) {
   safe = safe.replace(/^##\s+(.+)$/gm,     '<p style="margin:0 0 .5em 0;font-size:1rem;font-weight:700;color:var(--text-1);">$1</p>');
   safe = safe.replace(/^#\s+(.+)$/gm,      '<p style="margin:0 0 .5em 0;font-size:1.0625rem;font-weight:700;color:var(--text-1);">$1</p>');
 
+  // Horizontal rules
   safe = safe.replace(/^[\s]*[-*_]{3,}[\s]*$/gm, '<hr style="border:none;border-top:1px solid var(--border);margin:.6em 0;">');
 
-  // Tables — accepts both with-separator and without-separator formats
+  // Tables — normalize newlines within cells to <br>, accept with or without separator row
   safe = safe.replace(/((?:^\|[^\n]+\|\s*\n?)+)/gm, function (block) {
     var lines = block.trim().split('\n')
       .map(function (l) { return l.trim(); })
@@ -2583,7 +2602,7 @@ function _renderAiText(str) {
         return '<th style="padding:.4rem .5rem;border:1px solid var(--border);' +
                'background:var(--bg-subtle);font-size:.8125rem;font-weight:700;' +
                'color:var(--text-1);text-align:left;' +
-               'word-break:break-word;overflow-wrap:anywhere;">' + c + '</th>';
+               'word-break:break-word;overflow-wrap:anywhere;">' + c.replace(/\n/g, '<br>') + '</th>';
       }).join('') +
       '</tr></thead>';
 
@@ -2596,7 +2615,7 @@ function _renderAiText(str) {
         return '<tr>' + cells.map(function (c) {
           return '<td style="padding:.375rem .5rem;border:1px solid var(--border);' +
                  'font-size:.8rem;color:var(--text-2);' +
-                 'word-break:break-word;overflow-wrap:anywhere;' + rowBg + '">' + c + '</td>';
+                 'word-break:break-word;overflow-wrap:anywhere;' + rowBg + '">' + c.replace(/\n/g, '<br>') + '</td>';
         }).join('') + '</tr>';
       }).join('') +
       '</tbody>';
@@ -2607,6 +2626,7 @@ function _renderAiText(str) {
            thead + tbody + '</table></div>';
   });
 
+  // Lists
   safe = safe.replace(/^[\s]*[-*•]\s+(.+)$/gm, '<li style="margin:.2em 0;">$1</li>');
   safe = safe.replace(/^[\s]*(\d+)\.\s+(.+)$/gm, '<li style="margin:.2em 0;"><span style="font-weight:600;margin-right:.3em;">$1.</span>$2</li>');
 
@@ -2614,6 +2634,7 @@ function _renderAiText(str) {
     return '<ul style="margin:.4em 0 .6em 1.1em;padding:0;list-style:none;">' + match + '</ul>';
   });
 
+  // Paragraph wrapping
   var lines = safe.split(/\n\n+/);
   safe = lines.map(function (block) {
     if (/^<(p|ul|ol|li|hr|div|h[1-6]|table)[^>]*>/.test(block.trim())) return block;
@@ -2624,6 +2645,7 @@ function _renderAiText(str) {
 
   safe = safe.replace(/<p[^>]*>\s*<\/p>$/g, '');
 
+  // Restore math blocks
   safe = safe.replace(/\x00MATH(\d+)\x00/g, function (_, i) {
     return mathBlocks[parseInt(i, 10)];
   });
@@ -4240,6 +4262,7 @@ function _sendAiMessage() {
     'Always separate paragraphs with a blank line. ' +
     'Never run different paragraphs or sections together into one block of text. ' +
     'For step-by-step working, put each step on its own line. ' +
+    'Never write <br> or any HTML tags in your response — use plain newlines only. ' +
     'When the student asks for a table or comparison, use a markdown pipe table with a separator row. ' +
     'The table format is: first line has headers separated by |, second line has |---|---| separators, then data rows. ' +
     'Every row must start and end with |. Every cell must be on the same line — never break a cell across lines. ' +
@@ -4741,6 +4764,7 @@ function _liveProcessTranscript(transcript) {
     'Always separate paragraphs with a blank line. ' +
     'Never run different paragraphs or sections together into one block of text. ' +
     'For step-by-step working, put each step on its own line. ' +
+    'Never write <br> or HTML tags in your responses — use plain newlines only. ' +
     'When the student asks for a table or comparison, use a markdown pipe table with a separator row. ' +
     'The table format is: first line has headers separated by |, second line has |---|---| separators, then data rows. ' +
     'Every row must start and end with |. Every cell must be on the same line — never break a cell across lines. ' +
