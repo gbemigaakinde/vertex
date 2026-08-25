@@ -3319,14 +3319,11 @@ function _handleImageUpload(inputEl) {
   var file = inputEl && inputEl.files && inputEl.files[0];
   if (!file) return;
 
-  // Validate type
   if (!file.type.startsWith('image/')) {
     if (window.UI) UI.toast('Please select an image file.', 'warning', 3000);
     return;
   }
 
-  // Validate size — 4MB cap. Base64 encoding adds ~33% overhead,
-  // so 4MB source = ~5.3MB encoded, which is within worker limits.
   var MAX_BYTES = 4 * 1024 * 1024;
   if (file.size > MAX_BYTES) {
     if (window.UI) UI.toast('Image is too large. Please use an image under 4MB.', 'warning', 4000);
@@ -3338,15 +3335,12 @@ function _handleImageUpload(inputEl) {
   var imgBtn  = document.getElementById('vtxAiImageBtn');
   var micBtn  = document.getElementById('vtxAiMicBtn');
 
-  // Grab any text the user typed alongside the image
   var userPrompt = inp ? inp.value.trim() : '';
 
-  // Disable controls while processing
   if (sendBtn) { sendBtn.disabled = true; sendBtn.style.opacity = '.4'; }
   if (imgBtn)  { imgBtn.disabled  = true; imgBtn.style.opacity  = '.4'; }
   if (micBtn)  { micBtn.disabled  = true; }
 
-  // Clear input
   if (inp) { inp.value = ''; inp.style.height = 'auto'; }
 
   var reader = new FileReader();
@@ -3383,7 +3377,6 @@ function _handleImageUpload(inputEl) {
     var timeStr   = _aiTimeLabel(nowTs);
     var dateLabel = _aiDateLabel(nowTs);
 
-    // Date separator if needed
     if (dateLabel !== _lastAiDateLabel) {
       _lastAiDateLabel = dateLabel;
       var sep = document.createElement('div');
@@ -3445,7 +3438,7 @@ function _handleImageUpload(inputEl) {
     }
     _thoughtTimer = setTimeout(_tickThought, 100);
 
-    // Save to history as text only (not base64 — too large for localStorage)
+    // Save to history
     if (!window._vtxAiHistory) window._vtxAiHistory = [];
     var historyEntry = userPrompt
       ? '[Image uploaded] ' + userPrompt
@@ -3458,7 +3451,6 @@ function _handleImageUpload(inputEl) {
       var raw    = localStorage.getItem(storageKey);
       var saved  = raw ? JSON.parse(raw) : { ts: Date.now(), history: [], ui: [], lastActivityTs: Date.now() };
       saved.ui   = saved.ui || [];
-      // Store a placeholder in UI log — thumbnail not stored
       saved.ui.push({ role: 'user', text: '[📷 Image] ' + (userPrompt || ''), ts: nowTs });
       saved.history        = window._vtxAiHistory;
       saved.ts             = Date.now();
@@ -3477,6 +3469,8 @@ function _handleImageUpload(inputEl) {
         subject:      studentData.class || '',
         studentName:  studentData.name  || '',
         studentClass: studentData.class || '',
+        // Send studentId so the worker can rate-limit by student
+        studentId:    AppState.userId   || studentData.name || 'anon',
         imageBase64:  base64,
         imageType:    imageType,
         userPrompt:   userPrompt || '',
@@ -3487,7 +3481,7 @@ function _handleImageUpload(inputEl) {
       // Settle thought pill
       if (_thoughtTimer) { clearTimeout(_thoughtTimer); _thoughtTimer = null; }
 
-      var elapsedMs = Date.now() - thoughtStartMs;
+      var elapsedMs  = Date.now() - thoughtStartMs;
       var elapsedSec = elapsedMs / 1000;
       if (thoughtTextEl) {
         thoughtTextEl.classList.remove('vtx-thought-shimmer');
@@ -3502,10 +3496,26 @@ function _handleImageUpload(inputEl) {
       }
       aiGroup.removeAttribute('id');
 
+      // ── Handle upload rate limit response ──
+      if (data.type === 'upload_rate_limited') {
+        setTimeout(function () {
+          var limitBubble = document.createElement('div');
+          limitBubble.style.cssText = 'display:flex;justify-content:flex-start;animation:cbt-fade-in 160ms var(--ease) both;';
+          limitBubble.innerHTML =
+            '<div style="max-width:85%;padding:.625rem .875rem;border-radius:var(--r-lg);' +
+              'background:var(--warning-subtle);border:1px solid var(--warning-border);' +
+              'font-size:.8125rem;color:var(--warning-text);">' +
+              '<strong>Daily image upload limit reached</strong><br>' +
+              _escHtml(data.message) +
+            '</div>';
+          if (messages) { messages.appendChild(limitBubble); messages.scrollTop = messages.scrollHeight; }
+        }, 400);
+        return;
+      }
+
       var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
 
       if (!reply || !reply.trim()) {
-        // Error bubble
         setTimeout(function () {
           var errBubble = document.createElement('div');
           errBubble.style.cssText = 'display:flex;justify-content:flex-start;animation:cbt-fade-in 160ms var(--ease) both;';
@@ -3550,7 +3560,6 @@ function _handleImageUpload(inputEl) {
         if (messages) messages.scrollTop = messages.scrollHeight;
 
         var targetEl = replyRow.querySelector('#' + replyId);
-        // Skip typewriter for image replies — they tend to be long structured text
         if (targetEl) {
           targetEl.innerHTML = rendered;
           if (messages) messages.scrollTop = messages.scrollHeight;
@@ -3570,7 +3579,6 @@ function _handleImageUpload(inputEl) {
           }
         }
 
-        // Save reply to localStorage
         try {
           var sKey   = 'vtx_ai_history_' + (AppState.userId || 'anon');
           var raw2   = localStorage.getItem(sKey);
@@ -3599,11 +3607,9 @@ function _handleImageUpload(inputEl) {
       if (messages) { messages.appendChild(errBubble); messages.scrollTop = messages.scrollHeight; }
     })
     .finally(function () {
-      // Re-enable controls
       if (sendBtn) sendBtn.disabled = false;
       if (imgBtn)  { imgBtn.disabled = false; imgBtn.style.opacity = '1'; }
       if (micBtn)  micBtn.disabled = false;
-      // Reset file input so same image can be re-uploaded
       if (inputEl) inputEl.value = '';
     });
   };
