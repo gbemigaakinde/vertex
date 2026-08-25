@@ -537,6 +537,11 @@ function renderTeacherDashboard() {
       badgeClass: 'vtx-td-badge',
       badgeId: 'badge-dm',
     },
+    {
+      tab: 'push',
+      label: 'Push',
+      icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`,
+    },
   ];
 
   const navItemsHtml = NAV_ITEMS.map(item => {
@@ -797,6 +802,9 @@ function renderTeacherDashboard() {
         </div>
 
         <div id="teacher-studyroom" class="teacher-tab hidden"></div>
+        <div id="teacher-push" class="teacher-tab hidden">
+          <div id="vtxTeacherPushPanel"></div>
+        </div>
         <div id="teacher-timetable" class="teacher-tab hidden"></div>
         <div id="teacher-games" class="teacher-tab hidden">
           <div style="display:flex;gap:.375rem;margin-bottom:1rem;flex-wrap:wrap;">
@@ -820,7 +828,7 @@ function renderTeacherDashboard() {
 }
 
 function showTab(tab) {
-  const ALL_TABS = ['approvals','students','results','schools','tasks','studyroom','games','timetable','activity','groups','chat','dm'];
+   const ALL_TABS = ['approvals','students','results','schools','tasks','studyroom','games','timetable','activity','groups','chat','dm','push'];
 
   ALL_TABS.forEach(t => {
     const el  = document.getElementById(`teacher-${t}`);
@@ -869,8 +877,9 @@ function showTab(tab) {
     _showGamesSubTab('stats');
     return;
   }
-  if (tab === 'timetable') { _loadTimetableManager();     return; }
-  if (tab === 'activity')  { _loadActivityLog();          return; }
+  if (tab === 'timetable') { _loadTimetableManager();                        return; }
+  if (tab === 'activity')  { _loadActivityLog();                             return; }
+  if (tab === 'push')      { TeacherPush.renderPushPanel('vtxTeacherPushPanel'); return; }
   if (tab === 'students')  _loadStudents();
   if (tab === 'results')   _loadResults();
   if (tab === 'schools')   _loadSchools();
