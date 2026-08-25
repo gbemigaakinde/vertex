@@ -73,7 +73,57 @@ if (request.method === 'POST' && url.pathname === '/ai') {
       return handleVisualRequest(body, env);
     }
 
+    // ── Push subscription routes ──────────────────────────────
+    if (request.method === 'POST' && url.pathname === '/api/save-subscription') {
+      let body;
+      try { body = await request.json(); } catch (e) { return jsonError('Invalid JSON.', 400); }
+      const { userId, subscription } = body;
+      if (!userId || !subscription) return jsonError('Missing userId or subscription.', 400);
+      if (!env.VTX_RATE_LIMITS) return jsonError('KV not bound.', 500);
+      await env.VTX_RATE_LIMITS.put('push:' + userId, JSON.stringify(subscription));
+      // Also add to index list so cron can enumerate subscribers
+      const indexRaw = await env.VTX_RATE_LIMITS.get('push_index');
+      const index    = indexRaw ? JSON.parse(indexRaw) : [];
+      if (!index.includes(userId)) index.push(userId);
+      await env.VTX_RATE_LIMITS.put('push_index', JSON.stringify(index));
+      return new Response(JSON.stringify({ success: true }), { headers: corsJsonHeaders() });
+    }
+
+    if (request.method === 'POST' && url.pathname === '/api/unsubscribe') {
+      let body;
+      try { body = await request.json(); } catch (e) { return jsonError('Invalid JSON.', 400); }
+      const { userId } = body;
+      if (!userId) return jsonError('Missing userId.', 400);
+      if (!env.VTX_RATE_LIMITS) return jsonError('KV not bound.', 500);
+      await env.VTX_RATE_LIMITS.delete('push:' + userId);
+      const indexRaw = await env.VTX_RATE_LIMITS.get('push_index');
+      if (indexRaw) {
+        const index = JSON.parse(indexRaw).filter(id => id !== userId);
+        await env.VTX_RATE_LIMITS.put('push_index', JSON.stringify(index));
+      }
+      return new Response(JSON.stringify({ success: true }), { headers: corsJsonHeaders() });
+    }
+
+    if (request.method === 'POST' && url.pathname === '/api/trigger-reminder') {
+      let body;
+      try { body = await request.json(); } catch (e) { return jsonError('Invalid JSON.', 400); }
+      const { userId, title, bodyText, url: notifUrl } = body;
+      if (!userId) return jsonError('Missing userId.', 400);
+      if (!env.VTX_RATE_LIMITS) return jsonError('KV not bound.', 500);
+      const subRaw = await env.VTX_RATE_LIMITS.get('push:' + userId);
+      if (!subRaw) return new Response(JSON.stringify({ success: true, sent: false, reason: 'No subscription found.' }), { headers: corsJsonHeaders() });
+      const subscription = JSON.parse(subRaw);
+      const payload = JSON.stringify({ title: title || 'Vertex Tutorial', body: bodyText || 'You have a reminder.', url: notifUrl || '/' });
+      const sent = await sendWebPush(subscription, payload, env);
+      return new Response(JSON.stringify({ success: true, sent }), { headers: corsJsonHeaders() });
+    }
+
     return new Response('Not found.', { status: 404 });
+  },
+
+  // ── Cron handler ───────────────────────────────────────────
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(_runDailyReminders(env));
   },
 };
 
@@ -792,4 +842,270 @@ function corsJsonHeaders() {
 
 function jsonError(message, status) {
   return new Response(JSON.stringify({ error: message }), { status, headers: corsJsonHeaders() });
+}
+
+/* ══════════════════════════════════════════════════════════
+   WEB PUSH — VAPID signing + send
+══════════════════════════════════════════════════════════ */
+
+// Converts a base64url string to a Uint8Array
+function _b64urlToBytes(str) {
+  var b64 = str.replace(/-/g, '+').replace(/_/g, '/');
+  while (b64.length % 4 !== 0) b64 += '=';
+  var raw = atob(b64);
+  var arr = new Uint8Array(raw.length);
+  for (var i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+  return arr;
+}
+
+// Converts a Uint8Array to a base64url string
+function _bytesToB64url(bytes) {
+  var binary = '';
+  for (var i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+// Encodes an object as a base64url JWT segment
+function _b64urlEncode(obj) {
+  var json   = JSON.stringify(obj);
+  var bytes  = new TextEncoder().encode(json);
+  var binary = '';
+  for (var i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+async function _buildVapidHeaders(endpoint, vapidPrivKeyJwk, vapidPubKeyB64url) {
+  // Parse the private key JWK
+  var jwk;
+  try { jwk = JSON.parse(vapidPrivKeyJwk); } catch (e) { throw new Error('VAPID_PRIVATE_KEY is not valid JSON'); }
+
+  var privateKey = await crypto.subtle.importKey(
+    'jwk', jwk,
+    { name: 'ECDSA', namedCurve: 'P-256' },
+    false,
+    ['sign']
+  );
+
+  var endpointUrl  = new URL(endpoint);
+  var audience     = endpointUrl.protocol + '//' + endpointUrl.host;
+  var expiry       = Math.floor(Date.now() / 1000) + 12 * 3600; // 12h
+
+  var header  = _b64urlEncode({ typ: 'JWT', alg: 'ES256' });
+  var payload = _b64urlEncode({ aud: audience, exp: expiry, sub: 'mailto:admin@vertextutorial.com' });
+
+  var sigInput = header + '.' + payload;
+  var sigBytes = await crypto.subtle.sign(
+    { name: 'ECDSA', hash: 'SHA-256' },
+    privateKey,
+    new TextEncoder().encode(sigInput)
+  );
+
+  var sig = _bytesToB64url(new Uint8Array(sigBytes));
+  var jwt = sigInput + '.' + sig;
+
+  return {
+    'Authorization': 'vapid t=' + jwt + ', k=' + vapidPubKeyB64url,
+    'Content-Type':  'application/octet-stream',
+    'TTL':           '86400',
+  };
+}
+
+async function _encryptPayload(subscription, payloadStr) {
+  // We need the client's public key and auth secret from the subscription
+  var keys    = subscription.keys;
+  var p256dh  = _b64urlToBytes(keys.p256dh);
+  var auth    = _b64urlToBytes(keys.auth);
+
+  // Import the client's public key
+  var clientPubKey = await crypto.subtle.importKey(
+    'raw', p256dh,
+    { name: 'ECDH', namedCurve: 'P-256' },
+    true, []
+  );
+
+  // Generate a local ECDH key pair for this message
+  var localKeyPair = await crypto.subtle.generateKey(
+    { name: 'ECDH', namedCurve: 'P-256' },
+    true, ['deriveKey', 'deriveBits']
+  );
+  var localPubRaw = new Uint8Array(await crypto.subtle.exportKey('raw', localKeyPair.publicKey));
+
+  // ECDH derive shared secret
+  var sharedBits = new Uint8Array(await crypto.subtle.deriveBits(
+    { name: 'ECDH', public: clientPubKey },
+    localKeyPair.privateKey,
+    256
+  ));
+
+  // Generate a random 16-byte salt
+  var salt = crypto.getRandomValues(new Uint8Array(16));
+
+  // HKDF to derive PRK using auth as the input
+  // Step 1: extract PRK
+  var authInfo = new TextEncoder().encode('Content-Encoding: auth\0');
+  var ikmKey   = await crypto.subtle.importKey('raw', sharedBits, { name: 'HKDF' }, false, ['deriveBits']);
+  var prkBits  = await crypto.subtle.deriveBits(
+    { name: 'HKDF', hash: 'SHA-256', salt: auth, info: authInfo },
+    ikmKey, 256
+  );
+  var prk = new Uint8Array(prkBits);
+
+  // Step 2: derive content encryption key
+  var prkKey    = await crypto.subtle.importKey('raw', prk, { name: 'HKDF' }, false, ['deriveBits']);
+  var cekInfo   = _buildInfo('aesgcm', p256dh, localPubRaw);
+  var cekBits   = await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt: salt, info: cekInfo }, prkKey, 128);
+  var cek       = new Uint8Array(cekBits);
+
+  // Step 3: derive nonce
+  var nonceInfo = _buildInfo('nonce', p256dh, localPubRaw);
+  var nonceBits = await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt: salt, info: nonceInfo }, prkKey, 96);
+  var nonce     = new Uint8Array(nonceBits);
+
+  // Encrypt the payload
+  var plaintext = new TextEncoder().encode(payloadStr);
+  var padded    = new Uint8Array(plaintext.length + 2);
+  padded.set([0, 0]); // 2-byte padding length = 0
+  padded.set(plaintext, 2);
+
+  var aesKey = await crypto.subtle.importKey('raw', cek, { name: 'AES-GCM' }, false, ['encrypt']);
+  var ciphertext = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce }, aesKey, padded));
+
+  return { salt, localPubRaw, ciphertext };
+}
+
+function _buildInfo(type, clientPub, serverPub) {
+  var typeBytes   = new TextEncoder().encode('Content-Encoding: ' + type + '\0');
+  var label       = new TextEncoder().encode('P-256\0');
+  // clientPub length (2 bytes big-endian) + clientPub + serverPub length (2 bytes) + serverPub
+  var out = new Uint8Array(typeBytes.length + label.length + 2 + clientPub.length + 2 + serverPub.length);
+  var pos = 0;
+  out.set(typeBytes,  pos); pos += typeBytes.length;
+  out.set(label,      pos); pos += label.length;
+  out[pos] = 0; out[pos + 1] = clientPub.length; pos += 2;
+  out.set(clientPub,  pos); pos += clientPub.length;
+  out[pos] = 0; out[pos + 1] = serverPub.length; pos += 2;
+  out.set(serverPub,  pos);
+  return out;
+}
+
+async function sendWebPush(subscription, payloadStr, env) {
+  var privKey    = env.VAPID_PRIVATE_KEY;
+  var pubKey     = env.VAPID_PUBLIC_KEY;
+  if (!privKey || !pubKey) {
+    console.warn('[Worker] VAPID keys not configured.');
+    return false;
+  }
+
+  try {
+    var encrypted = await _encryptPayload(subscription, payloadStr);
+
+    var vapidHeaders = await _buildVapidHeaders(subscription.endpoint, privKey, pubKey);
+
+    // Build the body:
+    // salt (16) + record size (4, BE uint32) + server pub len (1) + server pub (65) + ciphertext
+    var recordSize  = encrypted.ciphertext.length + 2; // the 2 padding bytes + ciphertext
+    var bodyParts   = new Uint8Array(16 + 4 + 1 + 65 + encrypted.ciphertext.length);
+    var pos         = 0;
+    bodyParts.set(encrypted.salt,       pos); pos += 16;
+    // Record size as 4-byte big-endian
+    var rs = recordSize + encrypted.ciphertext.length;
+    bodyParts[pos]   = (rs >> 24) & 0xff;
+    bodyParts[pos+1] = (rs >> 16) & 0xff;
+    bodyParts[pos+2] = (rs >>  8) & 0xff;
+    bodyParts[pos+3] =  rs        & 0xff;
+    pos += 4;
+    bodyParts[pos] = encrypted.localPubRaw.length; pos += 1;
+    bodyParts.set(encrypted.localPubRaw, pos); pos += encrypted.localPubRaw.length;
+    bodyParts.set(encrypted.ciphertext,  pos);
+
+    var res = await fetch(subscription.endpoint, {
+      method:  'POST',
+      headers: Object.assign({}, vapidHeaders, {
+        'Content-Encoding': 'aesgcm',
+        'Crypto-Key':       'dh=' + _bytesToB64url(encrypted.localPubRaw),
+        'Encryption':       'salt=' + _bytesToB64url(encrypted.salt),
+      }),
+      body: bodyParts,
+    });
+
+    if (!res.ok) {
+      var errText = await res.text().catch(() => '');
+      console.warn('[Worker] Push send failed:', res.status, errText);
+      return false;
+    }
+    return true;
+  } catch (e) {
+    console.error('[Worker] sendWebPush error:', e);
+    return false;
+  }
+}
+
+/* ── Daily reminder cron ─────────────────────────────────── */
+async function _runDailyReminders(env) {
+  if (!env.VTX_RATE_LIMITS) { console.warn('[cron] KV not bound.'); return; }
+
+  var indexRaw = await env.VTX_RATE_LIMITS.get('push_index');
+  if (!indexRaw) { console.log('[cron] No push subscribers.'); return; }
+
+  var userIds;
+  try { userIds = JSON.parse(indexRaw); } catch (e) { console.warn('[cron] Bad push_index.'); return; }
+
+  var tomorrow = new Date();
+  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+  var tomorrowStr = tomorrow.toISOString().slice(0, 10);
+
+  var today = new Date().toISOString().slice(0, 10);
+
+  for (var i = 0; i < userIds.length; i++) {
+    var uid = userIds[i];
+    try {
+      var subRaw = await env.VTX_RATE_LIMITS.get('push:' + uid);
+      if (!subRaw) continue;
+      var subscription = JSON.parse(subRaw);
+
+      // Fetch Firestore student doc — construct a REST URL
+      // (We read Firestore via REST since we are in a Worker)
+      var firestoreUrl =
+        'https://firestore.googleapis.com/v1/projects/excellencecbt/databases/(default)/documents/students/' + uid;
+      var docRes = await fetch(firestoreUrl);
+      if (!docRes.ok) { console.warn('[cron] Could not fetch student', uid); continue; }
+      var docJson = await docRes.json();
+
+      var fields      = (docJson && docJson.fields) || {};
+      var streakVal   = fields.studyStreak && fields.studyStreak.integerValue
+        ? parseInt(fields.studyStreak.integerValue, 10) : 0;
+      var weakTopics  = fields.weakTopics && fields.weakTopics.arrayValue
+        ? (fields.weakTopics.arrayValue.values || []).map(function (v) { return v.stringValue || ''; })
+        : [];
+      var nextExamRaw = fields.nextExamDate && fields.nextExamDate.stringValue
+        ? fields.nextExamDate.stringValue : null;
+      var completedRaw = fields.coachingCompleted && fields.coachingCompleted.mapValue
+        ? fields.coachingCompleted.mapValue.fields || {}
+        : {};
+      var doneToday   = !!(completedRaw[today] && (completedRaw[today].booleanValue === true));
+
+      var payload = null;
+
+      // Priority 1: exam tomorrow
+      if (nextExamRaw && nextExamRaw.slice(0, 10) === tomorrowStr) {
+        payload = { title: '📅 Exam Tomorrow!', body: 'Your exam is tomorrow. Ready for a quick review?', url: '/' };
+      }
+      // Priority 2: streak at risk
+      else if (streakVal > 0 && !doneToday) {
+        payload = { title: '🔥 Keep your streak!', body: "Don't break your " + streakVal + "-day streak. Open the app for a quick session.", url: '/' };
+      }
+      // Priority 3: weak topic nudge
+      else if (weakTopics.length > 0) {
+        var topic = weakTopics[0];
+        payload = { title: '📚 Quick study tip', body: 'Struggling with ' + topic + '? A 10-minute review can help.', url: '/' };
+      }
+
+      if (payload) {
+        var sent = await sendWebPush(subscription, JSON.stringify(payload), env);
+        console.log('[cron] Push to', uid, ':', sent ? 'sent' : 'failed');
+      }
+    } catch (err) {
+      console.warn('[cron] Error for user', uid, ':', err.message || err);
+    }
+  }
 }
