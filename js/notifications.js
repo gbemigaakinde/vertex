@@ -11,8 +11,8 @@
 (function () {
   'use strict';
 
-  // ── Paste your generated VAPID PUBLIC key here ──────────────
-  var VAPID_PUBLIC_KEY = 'PASTE_YOUR_VAPID_PUBLIC_KEY_HERE';
+  // ──  VAPID PUBLIC key  ──────────────
+  var VAPID_PUBLIC_KEY = 'BCjYlOnZftKfqqez37mKt9sLy_XAO3BylbLyOUGfkO4ABeM_YYY9xEZuxplaSvrrYGEcwcBkFTGt5Rjbitz1QTA';
   // ────────────────────────────────────────────────────────────
 
   var WORKER_URL  = 'https://vertex-worker.gbemigaakinde.workers.dev';
