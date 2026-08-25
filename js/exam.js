@@ -1404,7 +1404,7 @@ async function renderSubjectSelection() {
   var sendBtn = document.getElementById('vtxAiSendBtn');
   if (!inp || !sendBtn) return;
   inp.addEventListener('input', function () {
-    // Keep send enabled if there's text OR a pending image
+    if (window._vtxAiImageLoading) return;
     var hasText  = inp.value.trim().length > 0;
     var hasImage = !!(window._vtxAiPendingImage);
     var canSend  = hasText || hasImage;
@@ -3355,39 +3355,40 @@ function _handleImageUpload(inputEl) {
     return;
   }
 
-  // Reset file input so same file can be re-selected later
   if (inputEl) inputEl.value = '';
 
-  // ── Immediately show a loading placeholder and disable
-  //    send so the student cannot fire the text path while
-  //    FileReader is still processing the image. ──────────
+  window._vtxAiImageLoading = true;
+
   var sendBtn = document.getElementById('vtxAiSendBtn');
   var imgBtn  = document.getElementById('vtxAiImageBtn');
-  var micBtn  = document.getElementById('vtxAiMicBtn');
 
   if (sendBtn) { sendBtn.disabled = true; sendBtn.style.opacity = '.4'; }
   if (imgBtn)  { imgBtn.disabled  = true; imgBtn.style.opacity  = '.4'; }
 
-  // Show a lightweight "reading image…" placeholder in the input shell
-  // so the student knows something is happening
   _showImageLoadingPlaceholder();
 
   var reader = new FileReader();
 
   reader.onerror = function () {
+    window._vtxAiImageLoading = false;
     _clearImageLoadingPlaceholder();
-    if (sendBtn) {
-      // Restore send button to its pre-upload state (enabled only if text present)
-      var inp = document.getElementById('vtxAiInput');
-      var hasText = inp && inp.value.trim().length > 0;
-      sendBtn.disabled = !hasText;
-      sendBtn.style.opacity = hasText ? '1' : '.4';
-    }
+
     if (imgBtn) { imgBtn.disabled = false; imgBtn.style.opacity = '1'; }
+
+    // Restore send button based on whether there is text
+    var inp = document.getElementById('vtxAiInput');
+    var sb  = document.getElementById('vtxAiSendBtn');
+    if (sb) {
+      var hasText = inp && inp.value.trim().length > 0;
+      sb.disabled = !hasText;
+      sb.style.opacity = hasText ? '1' : '.4';
+    }
+
     if (window.UI) UI.toast('Could not read the image file. Please try again.', 'error', 3000);
   };
 
   reader.onload = function (e) {
+    window._vtxAiImageLoading = false;
     _clearImageLoadingPlaceholder();
 
     var dataUrl   = e.target.result;
@@ -3396,17 +3397,20 @@ function _handleImageUpload(inputEl) {
 
     if (!base64) {
       if (imgBtn) { imgBtn.disabled = false; imgBtn.style.opacity = '1'; }
-      if (sendBtn) {
-        var inp2 = document.getElementById('vtxAiInput');
+      var inp2 = document.getElementById('vtxAiInput');
+      var sb2  = document.getElementById('vtxAiSendBtn');
+      if (sb2) {
         var hasText2 = inp2 && inp2.value.trim().length > 0;
-        sendBtn.disabled = !hasText2;
-        sendBtn.style.opacity = hasText2 ? '1' : '.4';
+        sb2.disabled = !hasText2;
+        sb2.style.opacity = hasText2 ? '1' : '.4';
       }
       if (window.UI) UI.toast('Could not process the image. Please try again.', 'error', 3000);
       return;
     }
 
-    // Store the pending attachment
+    _renderImagePreview(dataUrl);
+
+    // Now set the pending image — safe because _clearImagePreview already ran inside _renderImagePreview
     window._vtxAiPendingImage = {
       dataUrl:   dataUrl,
       base64:    base64,
@@ -3414,11 +3418,12 @@ function _handleImageUpload(inputEl) {
       fileName:  file.name || 'image',
     };
 
-    // Re-enable image button and render preview
-    // (preview itself re-enables the send button)
+    // Re-enable image button
     if (imgBtn) { imgBtn.disabled = false; imgBtn.style.opacity = '1'; }
 
-    _renderImagePreview(dataUrl);
+    // Enable send button last — image data is now guaranteed to be in place
+    var sb3 = document.getElementById('vtxAiSendBtn');
+    if (sb3) { sb3.disabled = false; sb3.style.opacity = '1'; }
   };
 
   reader.readAsDataURL(file);
@@ -3523,13 +3528,13 @@ function _clearImageLoadingPlaceholder() {
 }
 
 function _renderImagePreview(dataUrl) {
-  // Remove any existing preview first
+  // Remove any existing preview — this also nulls _vtxAiPendingImage,
+  // which is why _handleImageUpload sets _vtxAiPendingImage AFTER calling this.
   _clearImagePreview();
 
   var shell = document.getElementById('vtxAiInputShell');
   if (!shell) return;
 
-  // Inject preview style once
   if (!document.getElementById('vtxImgPreviewStyle')) {
     var st = document.createElement('style');
     st.id = 'vtxImgPreviewStyle';
@@ -3603,50 +3608,41 @@ function _renderImagePreview(dataUrl) {
   var preview = document.createElement('div');
   preview.id = 'vtxAiImagePreview';
 
-  var pendingImg = window._vtxAiPendingImage || {};
-  var name = (pendingImg.fileName || 'Image').substring(0, 30);
-
+  // _vtxAiPendingImage is not yet set when this runs (set by caller after),
+  // so use a generic label — the real data is in _vtxAiPendingImage
   preview.innerHTML =
     '<img src="' + dataUrl + '" alt="Image preview" />' +
     '<div class="vtx-img-preview-info">' +
-      '<span class="vtx-img-preview-name">' + _escHtml(name) + '</span>' +
+      '<span class="vtx-img-preview-name">Image</span>' +
       '<span class="vtx-img-preview-hint">Add a message or tap Send</span>' +
     '</div>' +
     '<button id="vtxAiImagePreviewRemove" title="Remove image" aria-label="Remove image">' +
       '<i class="ph ph-x" style="pointer-events:none;"></i>' +
     '</button>';
 
-  // Insert preview as the first child of the input shell (above the textarea)
   shell.insertBefore(preview, shell.firstChild);
 
-  // Wire up remove button
+  // Wire remove button
   var removeBtn = document.getElementById('vtxAiImagePreviewRemove');
   if (removeBtn) {
     removeBtn.addEventListener('click', function () {
       _clearImagePreview();
-      // Re-evaluate send button state — if no text either, disable it
       var inp = document.getElementById('vtxAiInput');
-      var sendBtn = document.getElementById('vtxAiSendBtn');
-      if (sendBtn) {
+      var sb  = document.getElementById('vtxAiSendBtn');
+      if (sb) {
         var hasText = inp && inp.value.trim().length > 0;
-        sendBtn.disabled = !hasText;
-        sendBtn.style.opacity = hasText ? '1' : '.4';
+        sb.disabled = !hasText;
+        sb.style.opacity = hasText ? '1' : '.4';
       }
     });
   }
 
-  // Enable send button immediately — image alone is enough to send
-  var sendBtn = document.getElementById('vtxAiSendBtn');
-  if (sendBtn) {
-    sendBtn.disabled = false;
-    sendBtn.style.opacity = '1';
-  }
-
-  // Focus the textarea so student can optionally type a prompt
+  // Focus textarea so student can optionally type a prompt
   setTimeout(function () {
     var inp = document.getElementById('vtxAiInput');
     if (inp) inp.focus();
   }, 80);
+
 }
 
 function _clearImagePreview() {
