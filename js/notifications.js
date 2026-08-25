@@ -168,20 +168,7 @@ async function init(uid) {
   if (Notification.permission === 'granted') {
     try {
       var reg = await navigator.serviceWorker.ready;
-
-      // Always unsubscribe first to clear any stale/legacy FCM endpoint
       var existing = await reg.pushManager.getSubscription();
-      if (existing) {
-        var ep = existing.endpoint || '';
-        // If endpoint is the old FCM legacy format, force a fresh subscription
-        var isLegacy = ep.includes('fcm.googleapis.com/fcm/send/') &&
-                       !ep.includes('/v1/');
-        if (isLegacy) {
-          console.warn('[notifications] Legacy FCM endpoint detected — forcing re-subscribe.');
-          await existing.unsubscribe();
-          existing = null;
-        }
-      }
 
       var sub;
       if (!existing) {
