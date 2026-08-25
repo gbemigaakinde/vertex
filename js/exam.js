@@ -3451,7 +3451,7 @@ function _handleImageUpload(inputEl) {
       var raw    = localStorage.getItem(storageKey);
       var saved  = raw ? JSON.parse(raw) : { ts: Date.now(), history: [], ui: [], lastActivityTs: Date.now() };
       saved.ui   = saved.ui || [];
-      saved.ui.push({ role: 'user', text: '[📷 Image] ' + (userPrompt || ''), ts: nowTs });
+      saved.ui.push({ role: 'user', text: '[Image] ' + (userPrompt || ''), ts: nowTs });
       saved.history        = window._vtxAiHistory;
       saved.ts             = Date.now();
       saved.lastActivityTs = Date.now();
@@ -4173,7 +4173,7 @@ function _sendAiMessage() {
     var visualTopic2      = visualMarkerMatch ? visualMarkerMatch[1].trim() : null;
 
     var displayText = visualTopic2
-      ? 'Here is a visual representation of ' + visualTopic2 + ':'
+      ? 'Here is a visual representation: ' + visualTopic2 + ':'
       : replyText;
 
     var replyTs   = Date.now();
