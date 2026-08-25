@@ -719,38 +719,22 @@ async function callOpenRouterVision(messages, env) {
   const orKey = env.OR_API_KEY;
   if (!orKey) return jsonError('OpenRouter API key not configured.', 500);
 
-  // Use a vision-capable model. gemini-2.0-flash is fast, free-tier friendly,
-  // and handles diagrams, handwriting, and printed text well.
-  const visionModel = 'google/gemini-2.0-flash-exp:free';
+  // Ordered list of free vision-capable models on OpenRouter.
+  // Each has :free suffix — zero cost, no card required.
+  const freeVisionModels = [
+    'google/gemini-2.0-flash-exp:free',      // primary: fast, great at diagrams/handwriting
+    'google/gemma-4-31b-it:free',            // fallback 1: Google multimodal (image + video)
+    'nvidia/nemotron-nano-12b-v2-vl:free',   // fallback 2: vision-language specialist
+    'openrouter/free',                       // last resort: auto-picks any free vision model
+  ];
 
-  let res;
-  try {
-    res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-      method:  'POST',
-      headers: {
-        'Authorization': 'Bearer ' + orKey,
-        'HTTP-Referer':  'https://vertex-tutorial.vercel.app',
-        'X-Title':       'Vertex Tutorial CBT',
-        'Content-Type':  'application/json',
-      },
-      body: JSON.stringify({
-        model:       visionModel,
-        max_tokens:  1024,
-        temperature: 0.4,
-        messages,
-      }),
-    });
-  } catch (e) {
-    console.error('[Worker] Vision fetch error:', e.message);
-    return jsonError('Vision request failed: ' + e.message, 500);
-  }
+  for (let i = 0; i < freeVisionModels.length; i++) {
+    const model = freeVisionModels[i];
+    let res;
 
-  // If the free model is rate-limited or unavailable, fall back to a paid vision model
-  if (res.status === 429 || res.status === 503 || res.status === 404) {
-    console.warn('[Worker] Gemini vision failed (' + res.status + ') — falling back to claude-haiku.');
     try {
-      const fallback = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-        method:  'POST',
+      res = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+        method: 'POST',
         headers: {
           'Authorization': 'Bearer ' + orKey,
           'HTTP-Referer':  'https://vertex-tutorial.vercel.app',
@@ -758,22 +742,44 @@ async function callOpenRouterVision(messages, env) {
           'Content-Type':  'application/json',
         },
         body: JSON.stringify({
-          model:       'anthropic/claude-haiku-4-5',
+          model,
           max_tokens:  1024,
           temperature: 0.4,
           messages,
         }),
       });
-      const data = await fallback.json();
-      return new Response(JSON.stringify(data), { status: fallback.status, headers: corsJsonHeaders() });
-    } catch (e2) {
-      console.error('[Worker] Vision fallback error:', e2.message);
-      return jsonError('Vision request failed on all models.', 500);
+    } catch (e) {
+      console.warn(`[Worker] Vision fetch error for ${model}:`, e.message);
+      continue; // network error — try next free model
     }
+
+    if (res.ok) {
+      const data = await res.json();
+      return new Response(JSON.stringify(data), { status: 200, headers: corsJsonHeaders() });
+    }
+
+    // Rate-limited or unavailable — log and try next free fallback
+    if (res.status === 429 || res.status === 503 || res.status === 404) {
+      console.warn(`[Worker] Vision model ${model} failed (${res.status}) — trying next free fallback.`);
+      continue;
+    }
+
+    // Any other error (e.g. 400 bad request) — don't burn remaining fallbacks
+    // if it's a client error; just return it.
+    if (res.status >= 400 && res.status < 500) {
+      const data = await res.json();
+      return new Response(JSON.stringify(data), { status: res.status, headers: corsJsonHeaders() });
+    }
+
+    // 5xx errors — try next model
+    console.warn(`[Worker] Vision model ${model} returned ${res.status} — trying next free fallback.`);
   }
 
-  const data = await res.json();
-  return new Response(JSON.stringify(data), { status: res.status, headers: corsJsonHeaders() });
+  // All free models exhausted
+  return jsonError(
+    'All free vision models are currently busy or unavailable. Please wait a moment and try again.',
+    503
+  );
 }
 
 /* ══════════════════════════════════════════════════════════
