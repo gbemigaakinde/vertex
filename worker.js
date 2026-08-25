@@ -118,6 +118,61 @@ if (request.method === 'POST' && url.pathname === '/ai') {
       return new Response(JSON.stringify({ success: true, sent }), { headers: corsJsonHeaders() });
     }
 
+  // ── Teacher broadcast push route ──────────────────────────
+if (request.method === 'POST' && url.pathname === '/api/send-push') {
+  let body;
+  try { body = await request.json(); }
+  catch (e) { return jsonError('Invalid JSON.', 400); }
+
+  const { teacherUid, targetUid, title, bodyText, notifUrl } = body;
+
+  // Rudimentary teacher auth check — compare against env secret
+  if (!teacherUid || teacherUid !== env.TEACHER_UID) {
+    return jsonError('Unauthorised.', 403);
+  }
+
+  if (!env.VTX_RATE_LIMITS) return jsonError('KV not bound.', 500);
+
+  const payload = JSON.stringify({
+    title:   title    || 'Message from Master Timothy',
+    body:    bodyText || 'You have a new notification.',
+    url:     notifUrl || '/',
+  });
+
+  // Broadcast to all students if no targetUid
+  if (!targetUid || targetUid === 'all') {
+    const indexRaw = await env.VTX_RATE_LIMITS.get('push_index');
+    if (!indexRaw) return new Response(JSON.stringify({ success: true, sent: 0 }), { headers: corsJsonHeaders() });
+
+    const userIds = JSON.parse(indexRaw);
+    let sentCount = 0;
+
+    for (const uid of userIds) {
+      try {
+        const subRaw = await env.VTX_RATE_LIMITS.get('push:' + uid);
+        if (!subRaw) continue;
+        const subscription = JSON.parse(subRaw);
+        const ok = await sendWebPush(subscription, payload, env);
+        if (ok) sentCount++;
+      } catch (e) {
+        console.warn('[Worker] Broadcast push failed for', uid, ':', e.message);
+      }
+    }
+
+    return new Response(JSON.stringify({ success: true, sent: sentCount, total: userIds.length }), {
+      headers: corsJsonHeaders(),
+    });
+  }
+
+  // Single student
+  const subRaw = await env.VTX_RATE_LIMITS.get('push:' + targetUid);
+  if (!subRaw) return new Response(JSON.stringify({ success: true, sent: false, reason: 'No subscription.' }), { headers: corsJsonHeaders() });
+
+  const subscription = JSON.parse(subRaw);
+  const sent = await sendWebPush(subscription, payload, env);
+  return new Response(JSON.stringify({ success: true, sent }), { headers: corsJsonHeaders() });
+}
+
     return new Response('Not found.', { status: 404 });
   },
 
