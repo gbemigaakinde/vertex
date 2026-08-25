@@ -927,44 +927,71 @@ function _b64urlEncode(obj) {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-// Convert ASN.1 DER ECDSA signature to raw r||s (64 bytes for P-256)
+// Convert ASN.1 DER ECDSA signature → raw r||s (64 bytes for P-256)
 function _derToRawP256Sig(derBytes) {
   var pos = 0;
-  if (derBytes[pos++] !== 0x30) throw new Error('Invalid DER signature: no SEQUENCE');
-  var len = derBytes[pos++];
-  if (len & 0x80) {
-    var numLenBytes = len & 0x7f;
-    len = 0;
-    for (var i = 0; i < numLenBytes; i++) len = (len << 8) | derBytes[pos++];
+
+  if (derBytes[pos++] !== 0x30) {
+    throw new Error('Invalid DER signature: expected SEQUENCE');
   }
 
-  if (derBytes[pos++] !== 0x02) throw new Error('Invalid DER: expected INTEGER for r');
-  var rLen = derBytes[pos++];
-  var r = derBytes.slice(pos, pos + rLen);
-  pos += rLen;
+  var seqLen = derBytes[pos++];
+  if (seqLen & 0x80) {
+    var numLenBytes = seqLen & 0x7f;
+    seqLen = 0;
+    for (var i = 0; i < numLenBytes; i++) {
+      seqLen = (seqLen << 8) | derBytes[pos++];
+    }
+  }
 
-  if (derBytes[pos++] !== 0x02) throw new Error('Invalid DER: expected INTEGER for s');
-  var sLen = derBytes[pos++];
-  var s = derBytes.slice(pos, pos + sLen);
+  function readInt() {
+    if (derBytes[pos++] !== 0x02) {
+      throw new Error('Invalid DER: expected INTEGER');
+    }
+    var intLen = derBytes[pos++];
+    var intBytes = derBytes.slice(pos, pos + intLen);
+    pos += intLen;
 
-  // Zero-pad to 32 bytes each
-  var rPad = new Uint8Array(32);
-  var sPad = new Uint8Array(32);
-  rPad.set(r, 32 - r.length);
-  sPad.set(s, 32 - s.length);
+    // Strip leading zero byte (DER positive-integer padding)
+    if (intBytes.length > 32 && intBytes[0] === 0) {
+      intBytes = intBytes.slice(1);
+    }
+    if (intBytes.length > 32) {
+      throw new Error('Invalid DER: integer too long (' + intBytes.length + ' bytes)');
+    }
+
+    var padded = new Uint8Array(32);
+    padded.set(intBytes, 32 - intBytes.length);
+    return padded;
+  }
+
+  var r = readInt();
+  var s = readInt();
 
   var out = new Uint8Array(64);
-  out.set(rPad, 0);
-  out.set(sPad, 32);
+  out.set(r, 0);
+  out.set(s, 32);
   return out;
 }
 
 async function _buildVapidHeaders(endpoint, vapidPrivKey, vapidPubKeyB64url) {
   var privateKey;
 
-  // 1) Try JWK (your current format)
+  // 1) Try JWK first
   try {
     var jwk = JSON.parse(vapidPrivKey);
+
+    // FIX: Cloudflare Workers requires key_ops to include the usage you request.
+    // Some JWK generators omit key_ops or set it to ["verify"] only.
+    if (Array.isArray(jwk.key_ops)) {
+      if (!jwk.key_ops.includes('sign')) {
+        // Clone so we don't mutate the original object unexpectedly
+        jwk = Object.assign({}, jwk, { key_ops: jwk.key_ops.concat('sign') });
+      }
+    } else {
+      jwk = Object.assign({}, jwk, { key_ops: ['sign'] });
+    }
+
     privateKey = await crypto.subtle.importKey(
       'jwk', jwk,
       { name: 'ECDSA', namedCurve: 'P-256' },
@@ -972,7 +999,7 @@ async function _buildVapidHeaders(endpoint, vapidPrivKey, vapidPubKeyB64url) {
       ['sign']
     );
   } catch (jwkErr) {
-    // 2) Fall back to base64url-encoded PKCS8 (for anyone else using web-push CLI output)
+    // 2) Fall back to base64url-encoded PKCS8
     try {
       var keyBytes = _b64urlToBytes(vapidPrivKey);
       privateKey = await crypto.subtle.importKey(
@@ -997,16 +1024,22 @@ async function _buildVapidHeaders(endpoint, vapidPrivKey, vapidPubKeyB64url) {
   var payload = _b64urlEncode({ aud: audience, exp: expiry, sub: 'mailto:admin@vertextutorial.com' });
 
   var sigInput = header + '.' + payload;
-  var sigBytes = await crypto.subtle.sign(
+  var sigBytes = new Uint8Array(await crypto.subtle.sign(
     { name: 'ECDSA', hash: 'SHA-256' },
     privateKey,
     new TextEncoder().encode(sigInput)
-  );
+  ));
 
-  // CRITICAL FIX: convert DER signature to raw r||s for JWT ES256
-  var rawSig = _derToRawP256Sig(new Uint8Array(sigBytes));
-  var sig    = _bytesToB64url(rawSig);
-  var jwt    = sigInput + '.' + sig;
+  // Cloudflare Workers returns raw r||s for P-256, but some runtimes return DER.
+  // Handle both so this code is portable.
+  var sig;
+  if (sigBytes.length === 64) {
+    sig = _bytesToB64url(sigBytes);           // already raw
+  } else {
+    sig = _bytesToB64url(_derToRawP256Sig(sigBytes)); // convert DER → raw
+  }
+
+  var jwt = sigInput + '.' + sig;
 
   return {
     'Authorization': 'vapid t=' + jwt + ', k=' + vapidPubKeyB64url,
