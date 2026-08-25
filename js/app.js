@@ -179,6 +179,16 @@
         try { VtxSound.welcome(); } catch (e) {}
       }
       await Exam.loadOrStart();
+      // ── Start session reminders ──
+      if (window.SessionReminders) {
+        SessionReminders.start();
+      }
+      // ── Sync push notification state ──
+      if (window.Notifications) {
+        Notifications.init().catch(function (e) {
+          console.warn('[app] Notifications.init error:', e);
+        });
+      }
       if (window.VtxLoader) window.VtxLoader.done();
 
     } catch (err) {
@@ -256,6 +266,9 @@
     if (window.SpeechEngine) SpeechEngine.cancel();
 
     AppState.reset();
+    if (window.SessionReminders) {
+      SessionReminders.stop();
+    }
 
     try {
       await window.fbAuth.signOut();
@@ -293,6 +306,9 @@
 
     Tasks.cancelListeners();
     AppState.reset();
+    if (window.SessionReminders) {
+      SessionReminders.stop();
+    }
 
     if (window.Game && typeof Game._stopChallengeListener === 'function') {
       Game._stopChallengeListener();
