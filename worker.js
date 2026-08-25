@@ -21,32 +21,48 @@ export default {
     const url = new URL(request.url);
 
      // ── AI text route ─────────────────────────────────────
-    if (request.method === 'POST' && url.pathname === '/ai') {
-      let body;
-      try { body = await request.json(); }
-      catch (e) { return jsonError('Invalid JSON body.', 400); }
+if (request.method === 'POST' && url.pathname === '/ai') {
+  let body;
+  try { body = await request.json(); }
+  catch (e) { return jsonError('Invalid JSON body.', 400); }
 
-      const { provider, intent } = body;
-      if (!provider || !intent) return jsonError('Missing provider or intent.', 400);
+  const { provider, intent } = body;
+  if (!provider || !intent) return jsonError('Missing provider or intent.', 400);
 
-      // Vision intent always routes through OpenRouter regardless of provider field
-      if (intent === 'explain_image') {
-        let messages;
-        try { messages = buildMessages(intent, body); }
-        catch (e) { return jsonError('Could not build vision messages: ' + e.message, 400); }
-        return callOpenRouterVision(messages, env);
-      }
+  // Vision intent always routes through OpenRouter regardless of provider field
+  if (intent === 'explain_image') {
+    // Rate-limit image uploads per student per day
+    const uploadStudentId = body.studentId || body.studentName || 'anon';
+    const uploadRateResult = await checkAndIncrementUploadRateLimit(uploadStudentId, env);
 
-      let messages;
-      try { messages = buildMessages(intent, body); }
-      catch (e) { return jsonError('Could not build messages: ' + e.message, 400); }
-
-      if (provider === 'groq')       return callGroq(messages, body.model, env);
-      if (provider === 'workersai')  return callWorkersAI(messages, body.model, env);
-      if (provider === 'openrouter') return callOpenRouter(messages, body.model, env);
-
-      return jsonError('Unknown provider: ' + provider, 400);
+    if (!uploadRateResult.allowed) {
+      return new Response(JSON.stringify({
+        type:    'upload_rate_limited',
+        used:    uploadRateResult.used,
+        limit:   IMAGE_UPLOAD_DAILY_LIMIT,
+        message: 'You have used all ' + IMAGE_UPLOAD_DAILY_LIMIT + ' image uploads for today. Try again tomorrow.',
+      }), {
+        status:  429,
+        headers: corsJsonHeaders(),
+      });
     }
+
+    let messages;
+    try { messages = buildMessages(intent, body); }
+    catch (e) { return jsonError('Could not build vision messages: ' + e.message, 400); }
+    return callOpenRouterVision(messages, env);
+  }
+
+  let messages;
+  try { messages = buildMessages(intent, body); }
+  catch (e) { return jsonError('Could not build messages: ' + e.message, 400); }
+
+  if (provider === 'groq')       return callGroq(messages, body.model, env);
+  if (provider === 'workersai')  return callWorkersAI(messages, body.model, env);
+  if (provider === 'openrouter') return callOpenRouter(messages, body.model, env);
+
+  return jsonError('Unknown provider: ' + provider, 400);
+}
 
     // ── Visual generation route ───────────────────────────
     if (request.method === 'POST' && url.pathname === '/visual') {
@@ -68,6 +84,8 @@ export default {
 // How many AI-generated images each student may request per day.
 // SVG diagrams do NOT count toward this limit.
 const IMAGE_DAILY_LIMIT = 5;
+// How many image uploads (vision requests) each student may send per day.
+const IMAGE_UPLOAD_DAILY_LIMIT = 5;
 
 async function handleVisualRequest(body, env) {
   const { topic, subject, studentId, studentName, studentClass, context } = body;
@@ -242,6 +260,36 @@ async function checkAndIncrementRateLimit(studentId, env) {
   }
 
   // Increment — expire at end of day (seconds until midnight UTC)
+  const now         = new Date();
+  const midnight    = new Date(now);
+  midnight.setUTCHours(24, 0, 0, 0);
+  const secondsLeft = Math.floor((midnight - now) / 1000);
+
+  await env.VTX_RATE_LIMITS.put(key, String(used + 1), { expirationTtl: secondsLeft });
+
+  return { allowed: true, used: used + 1 };
+}
+
+/* ── Upload rate limiter (vision / image upload) ─────────
+   Key format: "imgup:{studentId}:{YYYY-MM-DD}"
+   Value: number of image uploads today
+─────────────────────────────────────────────────────────── */
+async function checkAndIncrementUploadRateLimit(studentId, env) {
+  if (!env.VTX_RATE_LIMITS) {
+    console.warn('[Worker] VTX_RATE_LIMITS KV not bound. Upload rate limiting disabled.');
+    return { allowed: true, used: 0 };
+  }
+
+  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+  const key   = 'imgup:' + studentId + ':' + today;
+
+  const current = await env.VTX_RATE_LIMITS.get(key);
+  const used    = current ? parseInt(current, 10) : 0;
+
+  if (used >= IMAGE_UPLOAD_DAILY_LIMIT) {
+    return { allowed: false, used: used };
+  }
+
   const now         = new Date();
   const midnight    = new Date(now);
   midnight.setUTCHours(24, 0, 0, 0);
