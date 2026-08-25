@@ -880,7 +880,7 @@ function _isEchoTranscript(transcript) {
   var _GROQ_MODEL_PRIMARY  = 'openai/gpt-oss-120b';
   var _GROQ_MODEL_FALLBACK = 'openai/gpt-oss-20b';
 
-  var _OR_MODEL_PRIMARY  = 'openrouter/auto';
+  var _OR_MODEL_PRIMARY  = 'openrouter/free';
   var _OR_MODEL_FALLBACK = 'meta-llama/llama-3.3-70b-instruct:free';
 
    /*
