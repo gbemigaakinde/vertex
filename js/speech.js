@@ -1996,11 +1996,12 @@ function _renderAiText(str) {
   }
 
   /* ── Public API ── */
-   window.SpeechEngine = {
+ window.SpeechEngine = {
     speak:                speak,
     cancel:               cancel,
     startSTT:             startSTT,
     stopSTT:              stopSTT,
+    isSpeaking:           function () { return _ttsActive; },
     wireExamButtons:      wireExamButtons,
     wireResultsButtons:   wireResultsButtons,
     setResultsContext:    setResultsContext,
