@@ -193,7 +193,6 @@ async function init(uid) {
     return;
   }
 
-  // Permission not yet asked — prompt automatically (skip on plain iOS Safari)
   if (Notification.permission === 'default' && !_isIOS()) {
     try {
       var granted = await Notification.requestPermission();
@@ -219,7 +218,6 @@ async function init(uid) {
     }
   }
 
-  // Permission denied or iOS — just update toggle UI
   var on = await isSubscribed();
   _updateToggleUI(on);
   if (!on) localStorage.removeItem(LS_KEY);
