@@ -1398,17 +1398,20 @@ async function renderSubjectSelection() {
 
     // ── AI drawer conversation history ──
     window._vtxAiHistory = [];
-    // Wire send button opacity to textarea content
-    (function () {
-      var inp     = document.getElementById('vtxAiInput');
-      var sendBtn = document.getElementById('vtxAiSendBtn');
-      if (!inp || !sendBtn) return;
-      inp.addEventListener('input', function () {
-        var hasText = inp.value.trim().length > 0;
-        sendBtn.disabled = !hasText;
-        sendBtn.style.opacity = hasText ? '1' : '.4';
-      });
-    })();
+// Wire send button opacity to textarea content
+(function () {
+  var inp     = document.getElementById('vtxAiInput');
+  var sendBtn = document.getElementById('vtxAiSendBtn');
+  if (!inp || !sendBtn) return;
+  inp.addEventListener('input', function () {
+    // Keep send enabled if there's text OR a pending image
+    var hasText  = inp.value.trim().length > 0;
+    var hasImage = !!(window._vtxAiPendingImage);
+    var canSend  = hasText || hasImage;
+    sendBtn.disabled = !canSend;
+    sendBtn.style.opacity = canSend ? '1' : '.4';
+  });
+})();
   // ── AI trigger icon ↔ "AI" label swap ──
     (function () {
       var iconWrap  = document.getElementById('vtxAiIconWrap');
@@ -3330,26 +3333,13 @@ function _handleImageUpload(inputEl) {
     return;
   }
 
-  var inp     = document.getElementById('vtxAiInput');
-  var sendBtn = document.getElementById('vtxAiSendBtn');
-  var imgBtn  = document.getElementById('vtxAiImageBtn');
-  var micBtn  = document.getElementById('vtxAiMicBtn');
-
-  var userPrompt = inp ? inp.value.trim() : '';
-
-  if (sendBtn) { sendBtn.disabled = true; sendBtn.style.opacity = '.4'; }
-  if (imgBtn)  { imgBtn.disabled  = true; imgBtn.style.opacity  = '.4'; }
-  if (micBtn)  { micBtn.disabled  = true; }
-
-  if (inp) { inp.value = ''; inp.style.height = 'auto'; }
+  // Reset file input so same file can be re-selected later
+  if (inputEl) inputEl.value = '';
 
   var reader = new FileReader();
 
   reader.onerror = function () {
     if (window.UI) UI.toast('Could not read the image file. Please try again.', 'error', 3000);
-    if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = '.4'; }
-    if (imgBtn)  { imgBtn.disabled  = false; imgBtn.style.opacity  = '1'; }
-    if (micBtn)  { micBtn.disabled  = false; }
   };
 
   reader.onload = function (e) {
@@ -3359,264 +3349,157 @@ function _handleImageUpload(inputEl) {
 
     if (!base64) {
       if (window.UI) UI.toast('Could not process the image. Please try again.', 'error', 3000);
-      if (sendBtn) { sendBtn.disabled = false; sendBtn.style.opacity = '.4'; }
-      if (imgBtn)  { imgBtn.disabled  = false; imgBtn.style.opacity  = '1'; }
-      if (micBtn)  { micBtn.disabled  = false; }
       return;
     }
 
-    _injectThoughtStyle();
+    // Store the pending attachment on the drawer state
+    window._vtxAiPendingImage = {
+      dataUrl:   dataUrl,
+      base64:    base64,
+      imageType: imageType,
+      fileName:  file.name || 'image',
+    };
 
-    var emptyState = document.getElementById('vtxAiEmptyState');
-    if (emptyState) emptyState.style.display = 'none';
-
-    var messages = document.getElementById('vtxAiMessages');
-    if (!messages) return;
-
-    var nowTs     = Date.now();
-    var timeStr   = _aiTimeLabel(nowTs);
-    var dateLabel = _aiDateLabel(nowTs);
-
-    if (dateLabel !== _lastAiDateLabel) {
-      _lastAiDateLabel = dateLabel;
-      var sep = document.createElement('div');
-      sep.style.cssText = 'display:flex;align-items:center;gap:.625rem;margin:.25rem 0 .125rem;flex-shrink:0;';
-      sep.innerHTML =
-        '<div style="flex:1;height:1px;background:var(--border);"></div>' +
-        '<span style="font-size:.6875rem;font-weight:600;color:var(--text-4);white-space:nowrap;letter-spacing:.03em;">' +
-          _escHtml(dateLabel) +
-        '</span>' +
-        '<div style="flex:1;height:1px;background:var(--border);"></div>';
-      messages.appendChild(sep);
-    }
-
-    // User bubble — show thumbnail + prompt text
-    var userBubble = document.createElement('div');
-    userBubble.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:4px;animation:cbt-fade-in 160ms var(--ease) both;';
-    userBubble.innerHTML =
-      '<div style="max-width:78%;border-radius:var(--r-xl) var(--r-xl) var(--r-sm) var(--r-xl);' +
-        'background:var(--accent);overflow:hidden;">' +
-        '<img src="' + dataUrl + '" alt="Uploaded image" ' +
-          'style="display:block;width:100%;max-width:220px;max-height:160px;object-fit:cover;" />' +
-        (userPrompt
-          ? '<div style="padding:.5rem .875rem;font-size:.9rem;line-height:1.5;color:#fff;">' +
-              _escHtml(userPrompt) +
-            '</div>'
-          : '') +
-      '</div>' +
-      '<span style="font-size:.625rem;color:var(--text-4);padding-right:2px;">' + timeStr + '</span>';
-    messages.appendChild(userBubble);
-    messages.scrollTop = messages.scrollHeight;
-
-    // AI thinking group
-    var thoughtStartMs = Date.now();
-    var _thoughtTimer  = null;
-
-    var aiGroup = document.createElement('div');
-    aiGroup.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:4px;animation:cbt-fade-in 160ms var(--ease) both;';
-
-    var thoughtPill = document.createElement('div');
-    thoughtPill.className = 'vtx-thought-bubble';
-
-    var thoughtTextEl = document.createElement('span');
-    thoughtTextEl.className = 'vtx-thought-shimmer';
-    thoughtTextEl.textContent = 'Reading image…';
-
-    thoughtPill.appendChild(thoughtTextEl);
-    aiGroup.appendChild(thoughtPill);
-    messages.appendChild(aiGroup);
-    messages.scrollTop = messages.scrollHeight;
-
-    function _tickThought() {
-      var elapsed = (Date.now() - thoughtStartMs) / 1000;
-      if (thoughtTextEl && thoughtTextEl.parentNode) {
-        thoughtTextEl.textContent = elapsed < 0.9
-          ? 'Reading image…'
-          : 'Reading image for ' + elapsed.toFixed(1) + 's…';
-        _thoughtTimer = setTimeout(_tickThought, 100);
-      }
-    }
-    _thoughtTimer = setTimeout(_tickThought, 100);
-
-    // Save to history
-    if (!window._vtxAiHistory) window._vtxAiHistory = [];
-    var historyEntry = userPrompt
-      ? '[Image uploaded] ' + userPrompt
-      : '[Image uploaded — please read and explain this image]';
-    window._vtxAiHistory.push({ role: 'user', content: historyEntry });
-    if (window._vtxAiHistory.length > 12) window._vtxAiHistory = window._vtxAiHistory.slice(-12);
-
-    var storageKey = 'vtx_ai_history_' + (AppState.userId || 'anon');
-    try {
-      var raw    = localStorage.getItem(storageKey);
-      var saved  = raw ? JSON.parse(raw) : { ts: Date.now(), history: [], ui: [], lastActivityTs: Date.now() };
-      saved.ui   = saved.ui || [];
-      saved.ui.push({ role: 'user', text: '[Image] ' + (userPrompt || ''), ts: nowTs });
-      saved.history        = window._vtxAiHistory;
-      saved.ts             = Date.now();
-      saved.lastActivityTs = Date.now();
-      localStorage.setItem(storageKey, JSON.stringify(saved));
-    } catch (e) {}
-
-    var studentData = S().studentData || {};
-
-    fetch('https://vertex-worker.gbemigaakinde.workers.dev/ai', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        provider:     'openrouter',
-        intent:       'explain_image',
-        subject:      studentData.class || '',
-        studentName:  studentData.name  || '',
-        studentClass: studentData.class || '',
-        // Send studentId so the worker can rate-limit by student
-        studentId:    AppState.userId   || studentData.name || 'anon',
-        imageBase64:  base64,
-        imageType:    imageType,
-        userPrompt:   userPrompt || '',
-      }),
-    })
-    .then(function (res) { return res.json(); })
-    .then(function (data) {
-      // Settle thought pill
-      if (_thoughtTimer) { clearTimeout(_thoughtTimer); _thoughtTimer = null; }
-
-      var elapsedMs  = Date.now() - thoughtStartMs;
-      var elapsedSec = elapsedMs / 1000;
-      if (thoughtTextEl) {
-        thoughtTextEl.classList.remove('vtx-thought-shimmer');
-        thoughtTextEl.textContent = elapsedSec < 60
-          ? 'Read image in ' + elapsedSec.toFixed(1) + 's'
-          : 'Read image in ' + Math.floor(elapsedSec / 60) + 'm ' + (elapsedSec % 60).toFixed(1) + 's';
-      }
-      if (thoughtPill) {
-        requestAnimationFrame(function () {
-          requestAnimationFrame(function () { thoughtPill.classList.add('is-done'); });
-        });
-      }
-      aiGroup.removeAttribute('id');
-
-      // ── Handle upload rate limit response ──
-      if (data.type === 'upload_rate_limited') {
-        setTimeout(function () {
-          var limitBubble = document.createElement('div');
-          limitBubble.style.cssText = 'display:flex;justify-content:flex-start;animation:cbt-fade-in 160ms var(--ease) both;';
-          limitBubble.innerHTML =
-            '<div style="max-width:85%;padding:.625rem .875rem;border-radius:var(--r-lg);' +
-              'background:var(--warning-subtle);border:1px solid var(--warning-border);' +
-              'font-size:.8125rem;color:var(--warning-text);">' +
-              '<strong>Daily image upload limit reached</strong><br>' +
-              _escHtml(data.message) +
-            '</div>';
-          if (messages) { messages.appendChild(limitBubble); messages.scrollTop = messages.scrollHeight; }
-        }, 400);
-        return;
-      }
-
-      var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
-
-      if (!reply || !reply.trim()) {
-        setTimeout(function () {
-          var errBubble = document.createElement('div');
-          errBubble.style.cssText = 'display:flex;justify-content:flex-start;animation:cbt-fade-in 160ms var(--ease) both;';
-          errBubble.innerHTML =
-            '<div style="max-width:85%;padding:.5rem .875rem;border-radius:var(--r-lg);' +
-              'background:var(--danger-subtle);border:1px solid var(--danger-border);' +
-              'font-size:.8125rem;color:var(--danger-text);">' +
-              'Sorry, I could not read that image. Please try a clearer photo or a different image.' +
-            '</div>';
-          if (messages) { messages.appendChild(errBubble); messages.scrollTop = messages.scrollHeight; }
-        }, 400);
-        return;
-      }
-
-      // Save AI reply to history
-      window._vtxAiHistory.push({ role: 'assistant', content: reply });
-
-      var replyTs   = Date.now();
-      var replyTime = _aiTimeLabel(replyTs);
-      var rendered  = _renderAiText(reply);
-      var replyId   = 'vtxAiReplyTarget_' + replyTs;
-
-      setTimeout(function () {
-        var replyRow = document.createElement('div');
-        replyRow.className = 'vtx-reply-enter';
-        replyRow.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;';
-        replyRow.innerHTML =
-          '<div style="display:flex;align-items:flex-end;gap:.5rem;min-width:0;">' +
-            '<span style="display:inline-flex;align-items:center;justify-content:center;' +
-              'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;">' +
-              '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>' +
-            '</span>' +
-            '<div id="' + replyId + '" style="max-width:82%;padding:.625rem .875rem;' +
-              'border-radius:var(--r-sm) var(--r-xl) var(--r-xl) var(--r-xl);' +
-              'background:var(--bg-subtle);border:1px solid var(--border);' +
-              'font-size:.9rem;line-height:1.65;color:var(--text-1);word-break:break-word;' +
-              'overflow-x:auto;min-width:0;"></div>' +
-          '</div>' +
-          '<span style="font-size:.625rem;color:var(--text-4);padding-left:34px;">' + replyTime + '</span>';
-
-        aiGroup.appendChild(replyRow);
-        if (messages) messages.scrollTop = messages.scrollHeight;
-
-        var targetEl = replyRow.querySelector('#' + replyId);
-        if (targetEl) {
-          targetEl.innerHTML = rendered;
-          if (messages) messages.scrollTop = messages.scrollHeight;
-          if (window._katexAutoRenderReady && window.renderMathInElement) {
-            try {
-              renderMathInElement(targetEl, {
-                delimiters: [
-                  { left: '$$', right: '$$', display: true  },
-                  { left: '$',  right: '$',  display: false },
-                  { left: '\\(', right: '\\)', display: false },
-                  { left: '\\[', right: '\\]', display: true  },
-                ],
-                throwOnError: false,
-                errorColor: '#cc0000',
-              });
-            } catch (err) { console.warn('[KaTeX] Image reply render error:', err); }
-          }
-        }
-
-        try {
-          var sKey   = 'vtx_ai_history_' + (AppState.userId || 'anon');
-          var raw2   = localStorage.getItem(sKey);
-          var saved2 = raw2 ? JSON.parse(raw2) : { ts: Date.now(), history: [], ui: [], lastActivityTs: Date.now() };
-          saved2.history        = window._vtxAiHistory;
-          saved2.ui             = saved2.ui || [];
-          saved2.ui.push({ role: 'assistant', html: rendered, raw: reply, ts: replyTs });
-          saved2.ts             = Date.now();
-          saved2.lastActivityTs = Date.now();
-          localStorage.setItem(sKey, JSON.stringify(saved2));
-        } catch (e) {}
-      }, 400);
-    })
-    .catch(function (err) {
-      if (_thoughtTimer) { clearTimeout(_thoughtTimer); _thoughtTimer = null; }
-      if (aiGroup && aiGroup.parentNode) aiGroup.remove();
-      console.error('[exam] Image upload fetch error:', err);
-      var errBubble = document.createElement('div');
-      errBubble.style.cssText = 'display:flex;justify-content:flex-start;animation:cbt-fade-in 160ms var(--ease) both;';
-      errBubble.innerHTML =
-        '<div style="max-width:85%;padding:.5rem .875rem;border-radius:var(--r-lg);' +
-          'background:var(--danger-subtle);border:1px solid var(--danger-border);' +
-          'font-size:.8125rem;color:var(--danger-text);">' +
-          'Could not reach the AI server. Please check your internet connection and try again.' +
-        '</div>';
-      if (messages) { messages.appendChild(errBubble); messages.scrollTop = messages.scrollHeight; }
-    })
-    .finally(function () {
-      if (sendBtn) sendBtn.disabled = false;
-      if (imgBtn)  { imgBtn.disabled = false; imgBtn.style.opacity = '1'; }
-      if (micBtn)  micBtn.disabled = false;
-      if (inputEl) inputEl.value = '';
-    });
+    // Render the preview above the textarea
+    _renderImagePreview(dataUrl);
   };
 
   reader.readAsDataURL(file);
 }
 
+function _renderImagePreview(dataUrl) {
+  // Remove any existing preview first
+  _clearImagePreview();
+
+  var shell = document.getElementById('vtxAiInputShell');
+  if (!shell) return;
+
+  // Inject preview style once
+  if (!document.getElementById('vtxImgPreviewStyle')) {
+    var st = document.createElement('style');
+    st.id = 'vtxImgPreviewStyle';
+    st.textContent = `
+      #vtxAiImagePreview {
+        display: flex;
+        align-items: flex-start;
+        gap: .5rem;
+        padding: .5rem .625rem .25rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg-subtle);
+        flex-shrink: 0;
+        animation: cbt-fade-in 160ms var(--ease) both;
+      }
+      #vtxAiImagePreview img {
+        width: 52px;
+        height: 52px;
+        object-fit: cover;
+        border-radius: var(--r-md);
+        border: 1px solid var(--border);
+        flex-shrink: 0;
+        display: block;
+      }
+      #vtxAiImagePreview .vtx-img-preview-info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 2px;
+      }
+      #vtxAiImagePreview .vtx-img-preview-name {
+        font-size: .75rem;
+        font-weight: 600;
+        color: var(--text-2);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      #vtxAiImagePreview .vtx-img-preview-hint {
+        font-size: .6875rem;
+        color: var(--text-4);
+      }
+      #vtxAiImagePreviewRemove {
+        flex-shrink: 0;
+        width: 24px;
+        height: 24px;
+        border-radius: var(--r-full);
+        background: var(--bg-muted);
+        border: 1px solid var(--border);
+        color: var(--text-3);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        line-height: 1;
+        transition: background var(--t-fast), color var(--t-fast);
+        padding: 0;
+        margin-top: 2px;
+      }
+      #vtxAiImagePreviewRemove:hover {
+        background: var(--danger-subtle);
+        border-color: var(--danger-border);
+        color: var(--danger);
+      }
+    `;
+    document.head.appendChild(st);
+  }
+
+  var preview = document.createElement('div');
+  preview.id = 'vtxAiImagePreview';
+
+  var pendingImg = window._vtxAiPendingImage || {};
+  var name = (pendingImg.fileName || 'Image').substring(0, 30);
+
+  preview.innerHTML =
+    '<img src="' + dataUrl + '" alt="Image preview" />' +
+    '<div class="vtx-img-preview-info">' +
+      '<span class="vtx-img-preview-name">' + _escHtml(name) + '</span>' +
+      '<span class="vtx-img-preview-hint">Add a message or tap Send</span>' +
+    '</div>' +
+    '<button id="vtxAiImagePreviewRemove" title="Remove image" aria-label="Remove image">' +
+      '<i class="ph ph-x" style="pointer-events:none;"></i>' +
+    '</button>';
+
+  // Insert preview as the first child of the input shell (above the textarea)
+  shell.insertBefore(preview, shell.firstChild);
+
+  // Wire up remove button
+  var removeBtn = document.getElementById('vtxAiImagePreviewRemove');
+  if (removeBtn) {
+    removeBtn.addEventListener('click', function () {
+      _clearImagePreview();
+      // Re-evaluate send button state — if no text either, disable it
+      var inp = document.getElementById('vtxAiInput');
+      var sendBtn = document.getElementById('vtxAiSendBtn');
+      if (sendBtn) {
+        var hasText = inp && inp.value.trim().length > 0;
+        sendBtn.disabled = !hasText;
+        sendBtn.style.opacity = hasText ? '1' : '.4';
+      }
+    });
+  }
+
+  // Enable send button immediately — image alone is enough to send
+  var sendBtn = document.getElementById('vtxAiSendBtn');
+  if (sendBtn) {
+    sendBtn.disabled = false;
+    sendBtn.style.opacity = '1';
+  }
+
+  // Focus the textarea so student can optionally type a prompt
+  setTimeout(function () {
+    var inp = document.getElementById('vtxAiInput');
+    if (inp) inp.focus();
+  }, 80);
+}
+
+function _clearImagePreview() {
+  window._vtxAiPendingImage = null;
+  var existing = document.getElementById('vtxAiImagePreview');
+  if (existing) existing.remove();
+}
+   
 function _aiDateLabel(ts) {
   if (!ts) return '';
   var d     = new Date(ts);
@@ -3891,6 +3774,7 @@ function _openAiDrawer() {
 
 function _closeAiDrawer() {
   Exam._stopLiveConversation();
+  _clearImagePreview();
 
   var drawer  = document.getElementById('vtxAiDrawer');
   var sheet   = document.getElementById('vtxAiSheet');
@@ -3939,14 +3823,300 @@ function _closeAiDrawer() {
   sheet.style.transform = 'translateY(100%)';
 }
 
+
+function _dispatchImageSend(dataUrl, base64, imageType, userPrompt, onComplete) {
+  _injectThoughtStyle();
+
+  var emptyState = document.getElementById('vtxAiEmptyState');
+  if (emptyState) emptyState.style.display = 'none';
+
+  var messages = document.getElementById('vtxAiMessages');
+  if (!messages) { if (onComplete) onComplete(); return; }
+
+  var nowTs     = Date.now();
+  var timeStr   = _aiTimeLabel(nowTs);
+  var dateLabel = _aiDateLabel(nowTs);
+
+  if (dateLabel !== _lastAiDateLabel) {
+    _lastAiDateLabel = dateLabel;
+    var sep = document.createElement('div');
+    sep.style.cssText = 'display:flex;align-items:center;gap:.625rem;margin:.25rem 0 .125rem;flex-shrink:0;';
+    sep.innerHTML =
+      '<div style="flex:1;height:1px;background:var(--border);"></div>' +
+      '<span style="font-size:.6875rem;font-weight:600;color:var(--text-4);white-space:nowrap;letter-spacing:.03em;">' +
+        _escHtml(dateLabel) +
+      '</span>' +
+      '<div style="flex:1;height:1px;background:var(--border);"></div>';
+    messages.appendChild(sep);
+  }
+
+  // User bubble — thumbnail + optional prompt text
+  var userBubble = document.createElement('div');
+  userBubble.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:4px;animation:cbt-fade-in 160ms var(--ease) both;';
+  userBubble.innerHTML =
+    '<div style="max-width:78%;border-radius:var(--r-xl) var(--r-xl) var(--r-sm) var(--r-xl);' +
+      'background:var(--accent);overflow:hidden;">' +
+      '<img src="' + dataUrl + '" alt="Uploaded image" ' +
+        'style="display:block;width:100%;max-width:220px;max-height:160px;object-fit:cover;" />' +
+      (userPrompt
+        ? '<div style="padding:.5rem .875rem;font-size:.9rem;line-height:1.5;color:#fff;">' +
+            _escHtml(userPrompt) +
+          '</div>'
+        : '') +
+    '</div>' +
+    '<span style="font-size:.625rem;color:var(--text-4);padding-right:2px;">' + timeStr + '</span>';
+  messages.appendChild(userBubble);
+  messages.scrollTop = messages.scrollHeight;
+
+  // AI thinking group
+  var thoughtStartMs = Date.now();
+  var _thoughtTimer  = null;
+
+  var aiGroup = document.createElement('div');
+  aiGroup.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:4px;animation:cbt-fade-in 160ms var(--ease) both;';
+
+  var thoughtPill = document.createElement('div');
+  thoughtPill.className = 'vtx-thought-bubble';
+
+  var thoughtTextEl = document.createElement('span');
+  thoughtTextEl.className = 'vtx-thought-shimmer';
+  thoughtTextEl.textContent = 'Reading image…';
+
+  thoughtPill.appendChild(thoughtTextEl);
+  aiGroup.appendChild(thoughtPill);
+  messages.appendChild(aiGroup);
+  messages.scrollTop = messages.scrollHeight;
+
+  function _tickThought() {
+    var elapsed = (Date.now() - thoughtStartMs) / 1000;
+    if (thoughtTextEl && thoughtTextEl.parentNode) {
+      thoughtTextEl.textContent = elapsed < 0.9
+        ? 'Reading image…'
+        : 'Reading image for ' + elapsed.toFixed(1) + 's…';
+      _thoughtTimer = setTimeout(_tickThought, 100);
+    }
+  }
+  _thoughtTimer = setTimeout(_tickThought, 100);
+
+  // Save to history
+  if (!window._vtxAiHistory) window._vtxAiHistory = [];
+  var historyEntry = userPrompt
+    ? '[Image uploaded] ' + userPrompt
+    : '[Image uploaded — please read and explain this image]';
+  window._vtxAiHistory.push({ role: 'user', content: historyEntry });
+  if (window._vtxAiHistory.length > 12) window._vtxAiHistory = window._vtxAiHistory.slice(-12);
+
+  var storageKey = 'vtx_ai_history_' + (AppState.userId || 'anon');
+  try {
+    var raw    = localStorage.getItem(storageKey);
+    var saved  = raw ? JSON.parse(raw) : { ts: Date.now(), history: [], ui: [], lastActivityTs: Date.now() };
+    saved.ui   = saved.ui || [];
+    saved.ui.push({ role: 'user', text: '[📷 Image] ' + (userPrompt || ''), ts: nowTs });
+    saved.history        = window._vtxAiHistory;
+    saved.ts             = Date.now();
+    saved.lastActivityTs = Date.now();
+    localStorage.setItem(storageKey, JSON.stringify(saved));
+  } catch (e) {}
+
+  var studentData = S().studentData || {};
+
+  fetch('https://vertex-worker.gbemigaakinde.workers.dev/ai', {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      provider:     'openrouter',
+      intent:       'explain_image',
+      subject:      studentData.class || '',
+      studentName:  studentData.name  || '',
+      studentClass: studentData.class || '',
+      studentId:    AppState.userId   || studentData.name || 'anon',
+      imageBase64:  base64,
+      imageType:    imageType,
+      userPrompt:   userPrompt || '',
+    }),
+  })
+  .then(function (res) { return res.json(); })
+  .then(function (data) {
+    if (_thoughtTimer) { clearTimeout(_thoughtTimer); _thoughtTimer = null; }
+
+    var elapsedMs  = Date.now() - thoughtStartMs;
+    var elapsedSec = elapsedMs / 1000;
+    if (thoughtTextEl) {
+      thoughtTextEl.classList.remove('vtx-thought-shimmer');
+      thoughtTextEl.textContent = elapsedSec < 60
+        ? 'Read image in ' + elapsedSec.toFixed(1) + 's'
+        : 'Read image in ' + Math.floor(elapsedSec / 60) + 'm ' + (elapsedSec % 60).toFixed(1) + 's';
+    }
+    if (thoughtPill) {
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () { thoughtPill.classList.add('is-done'); });
+      });
+    }
+    aiGroup.removeAttribute('id');
+
+    // Handle upload rate limit
+    if (data.type === 'upload_rate_limited') {
+      setTimeout(function () {
+        var limitBubble = document.createElement('div');
+        limitBubble.style.cssText = 'display:flex;justify-content:flex-start;animation:cbt-fade-in 160ms var(--ease) both;';
+        limitBubble.innerHTML =
+          '<div style="max-width:85%;padding:.625rem .875rem;border-radius:var(--r-lg);' +
+            'background:var(--warning-subtle);border:1px solid var(--warning-border);' +
+            'font-size:.8125rem;color:var(--warning-text);">' +
+            '<strong>Daily image upload limit reached</strong><br>' +
+            _escHtml(data.message) +
+          '</div>';
+        if (messages) { messages.appendChild(limitBubble); messages.scrollTop = messages.scrollHeight; }
+      }, 400);
+      if (onComplete) onComplete();
+      return;
+    }
+
+    var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
+
+    if (!reply || !reply.trim()) {
+      setTimeout(function () {
+        var errBubble = document.createElement('div');
+        errBubble.style.cssText = 'display:flex;justify-content:flex-start;animation:cbt-fade-in 160ms var(--ease) both;';
+        errBubble.innerHTML =
+          '<div style="max-width:85%;padding:.5rem .875rem;border-radius:var(--r-lg);' +
+            'background:var(--danger-subtle);border:1px solid var(--danger-border);' +
+            'font-size:.8125rem;color:var(--danger-text);">' +
+            'Sorry, I could not read that image. Please try a clearer photo or a different image.' +
+          '</div>';
+        if (messages) { messages.appendChild(errBubble); messages.scrollTop = messages.scrollHeight; }
+      }, 400);
+      if (onComplete) onComplete();
+      return;
+    }
+
+    window._vtxAiHistory.push({ role: 'assistant', content: reply });
+
+    var replyTs   = Date.now();
+    var replyTime = _aiTimeLabel(replyTs);
+    var rendered  = _renderAiText(reply);
+    var replyId   = 'vtxAiReplyTarget_' + replyTs;
+
+    setTimeout(function () {
+      var replyRow = document.createElement('div');
+      replyRow.className = 'vtx-reply-enter';
+      replyRow.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;';
+      replyRow.innerHTML =
+        '<div style="display:flex;align-items:flex-end;gap:.5rem;min-width:0;">' +
+          '<span style="display:inline-flex;align-items:center;justify-content:center;' +
+            'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;">' +
+            '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>' +
+          '</span>' +
+          '<div id="' + replyId + '" style="max-width:82%;padding:.625rem .875rem;' +
+            'border-radius:var(--r-sm) var(--r-xl) var(--r-xl) var(--r-xl);' +
+            'background:var(--bg-subtle);border:1px solid var(--border);' +
+            'font-size:.9rem;line-height:1.65;color:var(--text-1);word-break:break-word;' +
+            'overflow-x:auto;min-width:0;"></div>' +
+        '</div>' +
+        '<span style="font-size:.625rem;color:var(--text-4);padding-left:34px;">' + replyTime + '</span>';
+
+      aiGroup.appendChild(replyRow);
+      if (messages) messages.scrollTop = messages.scrollHeight;
+
+      var targetEl = replyRow.querySelector('#' + replyId);
+      if (targetEl) {
+        targetEl.innerHTML = rendered;
+        if (messages) messages.scrollTop = messages.scrollHeight;
+        if (window._katexAutoRenderReady && window.renderMathInElement) {
+          try {
+            renderMathInElement(targetEl, {
+              delimiters: [
+                { left: '$$', right: '$$', display: true  },
+                { left: '$',  right: '$',  display: false },
+                { left: '\\(', right: '\\)', display: false },
+                { left: '\\[', right: '\\]', display: true  },
+              ],
+              throwOnError: false,
+              errorColor: '#cc0000',
+            });
+          } catch (err) { console.warn('[KaTeX] Image reply render error:', err); }
+        }
+      }
+
+      try {
+        var sKey   = 'vtx_ai_history_' + (AppState.userId || 'anon');
+        var raw2   = localStorage.getItem(sKey);
+        var saved2 = raw2 ? JSON.parse(raw2) : { ts: Date.now(), history: [], ui: [], lastActivityTs: Date.now() };
+        saved2.history        = window._vtxAiHistory;
+        saved2.ui             = saved2.ui || [];
+        saved2.ui.push({ role: 'assistant', html: rendered, raw: reply, ts: replyTs });
+        saved2.ts             = Date.now();
+        saved2.lastActivityTs = Date.now();
+        localStorage.setItem(sKey, JSON.stringify(saved2));
+      } catch (e) {}
+
+      if (onComplete) onComplete();
+    }, 400);
+  })
+  .catch(function (err) {
+    if (_thoughtTimer) { clearTimeout(_thoughtTimer); _thoughtTimer = null; }
+    if (aiGroup && aiGroup.parentNode) aiGroup.remove();
+    console.error('[exam] Image dispatch fetch error:', err);
+    var errBubble = document.createElement('div');
+    errBubble.style.cssText = 'display:flex;justify-content:flex-start;animation:cbt-fade-in 160ms var(--ease) both;';
+    errBubble.innerHTML =
+      '<div style="max-width:85%;padding:.5rem .875rem;border-radius:var(--r-lg);' +
+        'background:var(--danger-subtle);border:1px solid var(--danger-border);' +
+        'font-size:.8125rem;color:var(--danger-text);">' +
+        'Could not reach the AI server. Please check your internet connection and try again.' +
+      '</div>';
+    if (messages) { messages.appendChild(errBubble); messages.scrollTop = messages.scrollHeight; }
+    if (onComplete) onComplete();
+  });
+}
+
 function _sendAiMessage() {
   _injectThoughtStyle();
 
-  var inp = document.getElementById('vtxAiInput');
-  if (!inp) return;
-  var text = (inp.value || '').trim();
-  if (!text) return;
+  var inp        = document.getElementById('vtxAiInput');
+  var pendingImg = window._vtxAiPendingImage || null;
 
+  if (!inp) return;
+
+  var text = (inp.value || '').trim();
+
+  // If there is no text AND no pending image, do nothing
+  if (!text && !pendingImg) return;
+
+  // ── IMAGE PATH: pending image exists — send it now ──
+  if (pendingImg) {
+    var userPrompt = text; // may be empty string — that is fine
+
+    // Clear the input and preview immediately
+    inp.value = '';
+    inp.style.height = 'auto';
+    _clearImagePreview();
+
+    if (window._vtxPlaceholderCancel) {
+      window._vtxPlaceholderCancel();
+      window._vtxPlaceholderCancel = null;
+      var inp3 = document.getElementById('vtxAiInput');
+      if (inp3) inp3.setAttribute('placeholder', 'Ask a question…');
+    }
+
+    var sendBtn2 = document.getElementById('vtxAiSendBtn');
+    if (sendBtn2) { sendBtn2.disabled = true; sendBtn2.style.opacity = '.4'; }
+
+    var imgBtn2 = document.getElementById('vtxAiImageBtn');
+    var micBtn2 = document.getElementById('vtxAiMicBtn');
+    if (imgBtn2) { imgBtn2.disabled = true; imgBtn2.style.opacity = '.4'; }
+    if (micBtn2) { micBtn2.disabled = true; }
+
+    _dispatchImageSend(pendingImg.dataUrl, pendingImg.base64, pendingImg.imageType, userPrompt, function () {
+      if (sendBtn2) { sendBtn2.disabled = false; }
+      if (imgBtn2)  { imgBtn2.disabled = false; imgBtn2.style.opacity = '1'; }
+      if (micBtn2)  { micBtn2.disabled = false; }
+    });
+
+    return;
+  }
+
+  // ── TEXT PATH: normal text message ──
   var _isVisualRequest = /\b(draw|diagram|show me|show|picture|image|illustrat|circuit|sketch|chart|graph|visual|pictorial|representation|depict|display|flag|coat of arms|what does .* look like|give me a .*(picture|image|diagram|visual|representation)|what .* look like)\b/i.test(text);
 
   inp.value = '';
@@ -4336,7 +4506,7 @@ function _sendAiMessage() {
                         '<p class="vtx-visual-rate-msg">' + _escHtml(result.message) + '</p>' +
                       '</div>' +
                     '</div>' +
-                    '<p style="font-size:.7rem;color:var(--text-4);margin:0;">Diagram generation also unavailable. Please try again later.</p>' +
+                    '<p style="font-size:.7rem;color:var(--text-4);margin:0;">Diagram generation also unavailable.</p>' +
                   '</div>' +
                   '<div class="vtx-visual-footer">' +
                     '<span class="vtx-visual-footer-topic">' + _escHtml(visualTopic2) + '</span>' +
@@ -4947,6 +5117,9 @@ window.Exam = {
   _aiDrawerSTT,
   _aiDrawerImagePick, 
   _handleImageUpload, 
+  _renderImagePreview,
+  _clearImagePreview,
+  _dispatchImageSend,
   /* ── Live Mode ── */
   _toggleLiveMode,
   _startLiveConversation,
