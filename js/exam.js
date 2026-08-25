@@ -1108,7 +1108,7 @@ async function renderSubjectSelection() {
             </p>
           </div>
          <button
-          onclick="Notifications.subscribe()"
+          onclick="Notifications.toggle()"
           id="vtxEnableNotifBtn"
           style="flex-shrink:0;font-size:.6875rem;color:#fff;background:var(--accent);
                  border:none;padding:.375rem .75rem;border-radius:var(--r-full);
