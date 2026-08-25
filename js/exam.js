@@ -3358,23 +3358,55 @@ function _handleImageUpload(inputEl) {
   // Reset file input so same file can be re-selected later
   if (inputEl) inputEl.value = '';
 
+  // ── Immediately show a loading placeholder and disable
+  //    send so the student cannot fire the text path while
+  //    FileReader is still processing the image. ──────────
+  var sendBtn = document.getElementById('vtxAiSendBtn');
+  var imgBtn  = document.getElementById('vtxAiImageBtn');
+  var micBtn  = document.getElementById('vtxAiMicBtn');
+
+  if (sendBtn) { sendBtn.disabled = true; sendBtn.style.opacity = '.4'; }
+  if (imgBtn)  { imgBtn.disabled  = true; imgBtn.style.opacity  = '.4'; }
+
+  // Show a lightweight "reading image…" placeholder in the input shell
+  // so the student knows something is happening
+  _showImageLoadingPlaceholder();
+
   var reader = new FileReader();
 
   reader.onerror = function () {
+    _clearImageLoadingPlaceholder();
+    if (sendBtn) {
+      // Restore send button to its pre-upload state (enabled only if text present)
+      var inp = document.getElementById('vtxAiInput');
+      var hasText = inp && inp.value.trim().length > 0;
+      sendBtn.disabled = !hasText;
+      sendBtn.style.opacity = hasText ? '1' : '.4';
+    }
+    if (imgBtn) { imgBtn.disabled = false; imgBtn.style.opacity = '1'; }
     if (window.UI) UI.toast('Could not read the image file. Please try again.', 'error', 3000);
   };
 
   reader.onload = function (e) {
+    _clearImageLoadingPlaceholder();
+
     var dataUrl   = e.target.result;
     var base64    = dataUrl.split(',')[1];
     var imageType = file.type;
 
     if (!base64) {
+      if (imgBtn) { imgBtn.disabled = false; imgBtn.style.opacity = '1'; }
+      if (sendBtn) {
+        var inp2 = document.getElementById('vtxAiInput');
+        var hasText2 = inp2 && inp2.value.trim().length > 0;
+        sendBtn.disabled = !hasText2;
+        sendBtn.style.opacity = hasText2 ? '1' : '.4';
+      }
       if (window.UI) UI.toast('Could not process the image. Please try again.', 'error', 3000);
       return;
     }
 
-    // Store the pending attachment on the drawer state
+    // Store the pending attachment
     window._vtxAiPendingImage = {
       dataUrl:   dataUrl,
       base64:    base64,
@@ -3382,11 +3414,112 @@ function _handleImageUpload(inputEl) {
       fileName:  file.name || 'image',
     };
 
-    // Render the preview above the textarea
+    // Re-enable image button and render preview
+    // (preview itself re-enables the send button)
+    if (imgBtn) { imgBtn.disabled = false; imgBtn.style.opacity = '1'; }
+
     _renderImagePreview(dataUrl);
   };
 
   reader.readAsDataURL(file);
+}
+
+function _showImageLoadingPlaceholder() {
+  _clearImageLoadingPlaceholder(); // safety: remove any existing one
+
+  var shell = document.getElementById('vtxAiInputShell');
+  if (!shell) return;
+
+  if (!document.getElementById('vtxImgPreviewStyle')) {
+    var st = document.createElement('style');
+    st.id = 'vtxImgPreviewStyle';
+    st.textContent = `
+      #vtxAiImagePreview {
+        display: flex;
+        align-items: flex-start;
+        gap: .5rem;
+        padding: .5rem .625rem .25rem;
+        border-bottom: 1px solid var(--border);
+        background: var(--bg-subtle);
+        flex-shrink: 0;
+        animation: cbt-fade-in 160ms var(--ease) both;
+      }
+      #vtxAiImagePreview img {
+        width: 52px;
+        height: 52px;
+        object-fit: cover;
+        border-radius: var(--r-md);
+        border: 1px solid var(--border);
+        flex-shrink: 0;
+        display: block;
+      }
+      #vtxAiImagePreview .vtx-img-preview-info {
+        flex: 1;
+        min-width: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        gap: 2px;
+      }
+      #vtxAiImagePreview .vtx-img-preview-name {
+        font-size: .75rem;
+        font-weight: 600;
+        color: var(--text-2);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      #vtxAiImagePreview .vtx-img-preview-hint {
+        font-size: .6875rem;
+        color: var(--text-4);
+      }
+      #vtxAiImagePreviewRemove {
+        flex-shrink: 0;
+        width: 24px;
+        height: 24px;
+        border-radius: var(--r-full);
+        background: var(--bg-muted);
+        border: 1px solid var(--border);
+        color: var(--text-3);
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 12px;
+        line-height: 1;
+        transition: background var(--t-fast), color var(--t-fast);
+        padding: 0;
+        margin-top: 2px;
+      }
+      #vtxAiImagePreviewRemove:hover {
+        background: var(--danger-subtle);
+        border-color: var(--danger-border);
+        color: var(--danger);
+      }
+    `;
+    document.head.appendChild(st);
+  }
+
+  var placeholder = document.createElement('div');
+  placeholder.id = 'vtxAiImageLoadingPlaceholder';
+  placeholder.style.cssText =
+    'display:flex;align-items:center;gap:.5rem;padding:.5rem .625rem .25rem;' +
+    'border-bottom:1px solid var(--border);background:var(--bg-subtle);flex-shrink:0;';
+  placeholder.innerHTML =
+    '<div style="width:52px;height:52px;border-radius:var(--r-md);border:1px solid var(--border);' +
+      'background:var(--bg-muted);flex-shrink:0;display:flex;align-items:center;justify-content:center;">' +
+      '<i class="ph ph-spinner" style="font-size:18px;color:var(--text-4);animation:cbt-spin .8s linear infinite;"></i>' +
+    '</div>' +
+    '<div style="flex:1;min-width:0;">' +
+      '<span style="font-size:.75rem;font-weight:600;color:var(--text-3);">Reading image…</span>' +
+    '</div>';
+
+  shell.insertBefore(placeholder, shell.firstChild);
+}
+
+function _clearImageLoadingPlaceholder() {
+  var el = document.getElementById('vtxAiImageLoadingPlaceholder');
+  if (el) el.remove();
 }
 
 function _renderImagePreview(dataUrl) {
@@ -5139,10 +5272,12 @@ window.Exam = {
   _sendAiMessage,
   _aiTypewriter,
   _aiDrawerSTT,
-  _aiDrawerImagePick, 
-  _handleImageUpload, 
+  _aiDrawerImagePick,
+  _handleImageUpload,
   _renderImagePreview,
   _clearImagePreview,
+  _showImageLoadingPlaceholder,
+  _clearImageLoadingPlaceholder,
   _dispatchImageSend,
   /* ── Live Mode ── */
   _toggleLiveMode,
