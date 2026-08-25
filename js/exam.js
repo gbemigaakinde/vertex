@@ -1107,6 +1107,19 @@ async function renderSubjectSelection() {
               ${_escHtml(S().studentData.class)} &bull; ${_escHtml(S().studentData.school)}
             </p>
           </div>
+         <button
+          onclick="Notifications.subscribe()"
+          id="vtxEnableNotifBtn"
+          style="flex-shrink:0;font-size:.6875rem;color:#fff;background:var(--accent);
+                 border:none;padding:.375rem .75rem;border-radius:var(--r-full);
+                 cursor:pointer;font-family:var(--font);white-space:nowrap;
+                 display:inline-flex;align-items:center;gap:.375rem;
+                 transition:opacity var(--t-fast);"
+          onmouseenter="this.style.opacity='.85';"
+          onmouseleave="this.style.opacity='1';"
+        >
+          <i class="ph ph-bell" style="font-size:13px;"></i> Notifications
+        </button>
           <button onclick="App.logout()"
                   style="flex-shrink:0;font-size:.6875rem;color:var(--text-4);background:none;
                          border:1px solid var(--border);padding:.375rem .75rem;border-radius:var(--r-full);
