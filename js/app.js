@@ -183,12 +183,6 @@
       if (window.SessionReminders) {
         SessionReminders.start();
       }
-      // ── Sync push notification state ──
-      if (window.Notifications) {
-        Notifications.init().catch(function (e) {
-          console.warn('[app] Notifications.init error:', e);
-        });
-      }
       if (window.VtxLoader) window.VtxLoader.done();
 
     } catch (err) {
