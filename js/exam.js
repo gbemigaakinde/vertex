@@ -3757,22 +3757,22 @@ function _openAiDrawer() {
               var timeStr = _aiTimeLabel(msgTs);
               var bubble  = document.createElement('div');
 
-              if (msg.role === 'user') {
-                bubble.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:2px;';
+               if (msg.role === 'user') {
+                bubble.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:2px;max-width:100%;box-sizing:border-box;';
                 bubble.innerHTML =
-                  '<div style="max-width:78%;padding:.625rem .875rem;' +
+                  '<div class="vtx-ai-user-bubble" style="max-width:78%;padding:.625rem .875rem;' +
                     'border-radius:var(--r-xl) var(--r-xl) var(--r-sm) var(--r-xl);' +
                     'background:var(--accent);color:#fff;' +
-                    'font-size:.9rem;line-height:1.55;word-break:break-word;' +
-                    'overflow-x:auto;min-width:0;">' +
+                    'font-size:.9rem;line-height:1.55;word-break:break-word;overflow-wrap:break-word;' +
+                    'overflow:hidden;min-width:0;box-sizing:border-box;">' +
                     _escHtml(msg.text) +
                   '</div>' +
                   (timeStr
-                    ? '<span style="font-size:.625rem;color:var(--text-4);padding-right:2px;">' + timeStr + '</span>'
-                    : '');            
+                    ? '<span style="font-size:.625rem;color:var(--text-4);padding-right:2px;flex-shrink:0;">' + timeStr + '</span>'
+                    : '');         
                 } else {
                 var restoredHtml = (msg.raw) ? _renderAiText(msg.raw) : (msg.html || '');
-                bubble.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:4px;';
+                bubble.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:4px;max-width:100%;box-sizing:border-box;min-width:0;';
 
                 var thoughtPillHtml = '';
                 if (msg.thoughtMs != null) {
@@ -3789,21 +3789,24 @@ function _openAiDrawer() {
 
                 bubble.innerHTML =
                   thoughtPillHtml +
-                  '<div style="display:flex;align-items:flex-end;gap:.5rem;min-width:0;">' +
+                  '<div style="display:flex;align-items:flex-end;gap:.5rem;min-width:0;max-width:100%;box-sizing:border-box;">' +
                     '<span style="display:inline-flex;align-items:center;justify-content:center;' +
                       'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;">' +
                       '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>' +
                     '</span>' +
-                    '<div style="max-width:82%;padding:.625rem .875rem;' +
+                    '<div class="vtx-ai-reply-bubble" style="' +
+                      'max-width:calc(100% - 34px);' +
+                      'padding:.625rem .875rem;' +
                       'border-radius:var(--r-sm) var(--r-xl) var(--r-xl) var(--r-xl);' +
                       'background:var(--bg-subtle);border:1px solid var(--border);' +
-                      'font-size:.9rem;line-height:1.65;color:var(--text-1);word-break:break-word;' +
-                      'overflow-x:auto;min-width:0;">' +
+                      'font-size:.9rem;line-height:1.65;color:var(--text-1);' +
+                      'word-break:break-word;overflow-wrap:break-word;' +
+                      'overflow:hidden;min-width:0;box-sizing:border-box;flex:1;">' +
                       restoredHtml +
                     '</div>' +
                   '</div>' +
                   (timeStr
-                    ? '<span style="font-size:.625rem;color:var(--text-4);padding-left:34px;">' + timeStr + '</span>'
+                    ? '<span style="font-size:.625rem;color:var(--text-4);padding-left:34px;flex-shrink:0;">' + timeStr + '</span>'
                     : '');
               }
               messages.appendChild(bubble);
