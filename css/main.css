@@ -2011,28 +2011,35 @@ details.glass-dark[open] > summary::after,
 #vtxAiSheet {
   overflow: hidden;
 }
+
 #vtxAiMessages {
   min-width: 0 !important;
   overflow-x: hidden !important;
+  box-sizing: border-box !important;
 }
+
+#vtxAiMessages > * {
+  max-width: 100% !important;
+  box-sizing: border-box !important;
+  min-width: 0 !important;
+}
+
 #vtxAiMessages .katex-display {
   overflow-x: auto;
   overflow-y: hidden;
   max-width: 100%;
   padding-bottom: 3px;
 }
+
 #vtxAiMessages .katex-display > .katex {
   white-space: nowrap;
 }
+
 #vtxAiMessages .katex {
   font-size: 0.92em;
 }
 
-/* ═══════════════════════════════════════════════════════════
-   AI DRAWER — table overflow protection
-   Prevents markdown tables from breaking out of chat bubbles
-   on narrow viewports.
-═══════════════════════════════════════════════════════════ */
+/* ── AI Drawer — table overflow protection ── */
 #vtxAiMessages table,
 .se-explain-deep-text table {
   table-layout: fixed !important;
@@ -2047,6 +2054,37 @@ details.glass-dark[open] > summary::after,
   word-break: break-word !important;
   overflow-wrap: anywhere !important;
   white-space: normal !important;
+}
+
+/* ── AI bubble containment ── */
+#vtxAiMessages .vtx-ai-user-bubble,
+#vtxAiMessages .vtx-ai-reply-bubble {
+  overflow: hidden !important;
+  overflow-wrap: break-word !important;
+  word-break: break-word !important;
+  box-sizing: border-box !important;
+}
+
+/* ── AI input shell unified border ── */
+#vtxAiInputShell {
+  border: 1.5px solid var(--border);
+  border-radius: var(--r-xl);
+  background: var(--bg-subtle);
+  transition: border-color var(--t-fast);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+#vtxAiInputShell:focus-within {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px var(--accent-subtle);
+}
+
+#vtxAiInputShell textarea {
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 /* ═══════════════════════════════════════════════════════════
