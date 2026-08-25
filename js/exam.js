@@ -333,6 +333,72 @@
     return thursday.getFullYear() + '-W' + String(wn).padStart(2, '0');
   }
 
+/* ─────────────────────────────────────────────────────── */
+/* Clock format toggle (called from timetable header btn)  */
+/* ─────────────────────────────────────────────────────── */
+async function _toggleClockFormat() {
+  const current = _getClockPref();
+  _setClockPref(current === '12' ? '24' : '12');
+
+  // Re-render the timetable widget in place if it is currently visible,
+  // otherwise the next full dashboard render will pick up the new pref.
+  const widget = document.getElementById('vtxTimetableWidget');
+  if (!widget || !S().studentData) return;
+
+  const classKey = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
+  try {
+    const freshHtml = await _fetchWeeklyTimetableHtml(classKey);
+    if (freshHtml && document.getElementById('vtxTimetableWidget')) {
+      const tmp = document.createElement('div');
+      tmp.innerHTML = freshHtml;
+      const newWidget = tmp.firstElementChild;
+      if (newWidget) widget.replaceWith(newWidget);
+    }
+  } catch (e) {
+    console.warn('[timetable] Clock toggle re-render failed (non-fatal):', e);
+  }
+}
+
+/* ─────────────────────────────────────────────────────── */
+/* Clock format helpers                                    */
+/* ─────────────────────────────────────────────────────── */
+function _getClockPref() {
+  try { return localStorage.getItem('vtx_clock_pref') === '12' ? '12' : '24'; } catch (e) { return '24'; }
+}
+
+function _setClockPref(pref) {
+  try { localStorage.setItem('vtx_clock_pref', pref); } catch (e) {}
+}
+
+// Converts a single HH:MM string to 12-hour (e.g. "09:30" → "9:30 AM")
+// Returns the original string unchanged if it cannot be parsed.
+function _fmt24to12(hhmm) {
+  if (!hhmm) return hhmm;
+  const m = hhmm.match(/^(\d{1,2}):(\d{2})$/);
+  if (!m) return hhmm;
+  let h   = parseInt(m[1], 10);
+  const min = m[2];
+  const period = h >= 12 ? 'PM' : 'AM';
+  h = h % 12 || 12;
+  return h + ':' + min + '\u202f' + period; // narrow no-break space before AM/PM
+}
+
+// Converts a full range string "HH:MM - HH:MM" to the preferred format.
+// Handles the en-dash / hyphen variants the timetable uses.
+// If pref is '24' (or omitted) the original string is returned untouched.
+function _convertTimeStr(raw, pref) {
+  if (!raw) return raw;
+  if ((pref || _getClockPref()) === '24') return raw;
+  // Normalise separator to a plain hyphen for splitting
+  const normalised = raw.replace(/[\u2013\u2014\u2212]/g, '-');
+  const parts = normalised.split('-');
+  if (parts.length !== 2) return raw;
+  const start = parts[0].trim();
+  const end   = parts[1].trim();
+  if (!start || !end) return raw;
+  return _fmt24to12(start) + ' \u2013 ' + _fmt24to12(end);
+}
+
 async function _fetchWeeklyTimetableHtml(classKey) {
   try {
     if (!navigator.onLine || !window.fbDb || !classKey) return '';
@@ -429,8 +495,11 @@ async function _fetchWeeklyTimetableHtml(classKey) {
 
     const todayStr    = _todayStr();
     const todayColIdx = dayDates.findIndex(dd => dd.dateStr === todayStr);
+    const nowMin      = now.getHours() * 60 + now.getMinutes();
 
-    const nowMin = now.getHours() * 60 + now.getMinutes();
+    // Read clock preference once for this render pass
+    const clockPref = _getClockPref();
+    const is12h     = clockPref === '12';
 
     function parseMins(t) {
       if (!t) return null;
@@ -471,6 +540,9 @@ async function _fetchWeeklyTimetableHtml(classKey) {
       ' \u2013 ' +
       sunday.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
+    // In 12-hour mode the time strings are wider, give the column a little more room
+    const TIME_COL_MIN = is12h ? '108px' : '86px';
+
     const CB = 'padding:.4375rem .5625rem;border:1px solid var(--border);' +
                'font-size:.8rem;vertical-align:middle;line-height:1.45;';
     const TH = 'padding:.4375rem .5rem;border:1px solid rgba(255,255,255,.18);' +
@@ -479,7 +551,7 @@ async function _fetchWeeklyTimetableHtml(classKey) {
     const tableRows = periods.map(function (p, rowIdx) {
       const range           = parseMins(p.time || '');
       const isCurrentPeriod = currentPeriodIdx >= 0 && rowIdx === currentPeriodIdx;
-      const isNextPeriod    = nextPeriodIdx >= 0 && rowIdx === nextPeriodIdx;
+      const isNextPeriod    = nextPeriodIdx    >= 0 && rowIdx === nextPeriodIdx;
 
       const vals      = DAY_KEYS.map(function (dk) { return (p[dk] || '').trim(); });
       const firstUp   = vals[0].toUpperCase();
@@ -494,14 +566,17 @@ async function _fetchWeeklyTimetableHtml(classKey) {
                     : isNextPeriod    ? 'border-left:2px solid var(--accent-border);'
                     : '';
 
-      // ── Badge rendered on its OWN LINE below the time text ──
+      // Display time string — converted if 12-hour mode is active
+      const displayTime = _convertTimeStr(p.time || '', clockPref);
+
+      // Badge rendered on its own line below the time text
       let nowBadge = '';
       if (isCurrentPeriod && range) {
         const minsLeft = range.end - nowMin;
         nowBadge =
           '<span style="' +
             'display:inline-flex;align-items:center;gap:3px;' +
-            'margin-top:4px;' +           // space below the time text
+            'margin-top:4px;' +
             'font-size:.55rem;font-weight:700;letter-spacing:.04em;' +
             'padding:2px 6px;border-radius:99px;' +
             'background:var(--warning);color:#fff;' +
@@ -516,7 +591,7 @@ async function _fetchWeeklyTimetableHtml(classKey) {
         nowBadge =
           '<span style="' +
             'display:inline-flex;align-items:center;gap:3px;' +
-            'margin-top:4px;' +           // space below the time text
+            'margin-top:4px;' +
             'font-size:.55rem;font-weight:600;letter-spacing:.04em;' +
             'padding:2px 6px;border-radius:99px;' +
             'background:var(--accent-subtle);color:var(--accent-text);' +
@@ -526,15 +601,15 @@ async function _fetchWeeklyTimetableHtml(classKey) {
           '</span>';
       }
 
-      // Time cell: flex column so badge sits below the time string
+      // Time cell: flex column so badge sits neatly below the time string
       const timeCell =
         '<td style="' + CB + lBorder + 'background:' + rowBg + ';' +
           'font-family:var(--font-mono);font-size:.75rem;font-weight:600;' +
           'color:' + (isCurrentPeriod ? 'var(--warning)' : isNextPeriod ? 'var(--accent)' : 'var(--text-3)') + ';' +
-          'white-space:nowrap;min-width:86px;' +
+          'white-space:nowrap;min-width:' + TIME_COL_MIN + ';' +
           'vertical-align:middle;">' +
           '<div style="display:flex;flex-direction:column;align-items:flex-start;gap:0;">' +
-            '<span>' + _escHtml(p.time || '\u2014') + '</span>' +
+            '<span>' + _escHtml(displayTime) + '</span>' +
             (nowBadge ? nowBadge : '') +
           '</div>' +
         '</td>';
@@ -632,6 +707,21 @@ async function _fetchWeeklyTimetableHtml(classKey) {
         </span>`;
     }
 
+    // Clock toggle button — sits in the header next to the download button
+    const clockToggleHtml =
+      '<button onclick="Exam._toggleClockFormat()" ' +
+        'title="' + (is12h ? 'Switch to 24-hour clock' : 'Switch to 12-hour clock') + '" ' +
+        'aria-label="' + (is12h ? 'Switch to 24-hour clock' : 'Switch to 12-hour clock') + '" ' +
+        'style="flex-shrink:0;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.32);' +
+          'border-radius:7px;height:32px;padding:0 8px;cursor:pointer;display:inline-flex;' +
+          'align-items:center;justify-content:center;gap:4px;color:#fff;font-family:var(--font);' +
+          'font-size:.625rem;font-weight:700;letter-spacing:.04em;' +
+          'transition:background .14s,transform .14s;" ' +
+        'onmouseenter="this.style.background=\'rgba(255,255,255,.30)\';this.style.transform=\'scale(1.07)\'" ' +
+        'onmouseleave="this.style.background=\'rgba(255,255,255,.18)\';this.style.transform=\'\'">' +
+        (is12h ? '24H' : '12H') +
+      '</button>';
+
     return (
       '<div style="margin-bottom:1.25rem;border:1px solid var(--border);border-radius:10px;' +
         'overflow:hidden;box-shadow:var(--shadow-sm);" id="vtxTimetableWidget">' +
@@ -653,6 +743,8 @@ async function _fetchWeeklyTimetableHtml(classKey) {
             '</p>' +
           '</div>' +
           headerBadgeHtml +
+          // Clock toggle sits to the left of the download button
+          clockToggleHtml +
           '<button onclick="Exam._downloadTimetablePDF()" ' +
             'title="Download timetable as PDF" ' +
             'aria-label="Download timetable as PDF" ' +
@@ -671,7 +763,7 @@ async function _fetchWeeklyTimetableHtml(classKey) {
             '<thead>' +
               '<tr style="background:var(--accent-hover);">' +
                 '<th style="' + TH + 'background:transparent;text-align:center;' +
-                  'min-width:86px;color:rgba(255,255,255,.8);">Time</th>' +
+                  'min-width:' + TIME_COL_MIN + ';color:rgba(255,255,255,.8);">Time</th>' +
                 headerCells +
               '</tr>' +
             '</thead>' +
@@ -2687,7 +2779,7 @@ function _renderAiText(str) {
     });
   }
 
-  async function _downloadTimetablePDF() {
+async function _downloadTimetablePDF() {
   if (!S().studentData) { UI.toast('Student data not loaded.', 'error'); return; }
 
   UI.toast('Generating timetable PDF…', 'info', 3000);
@@ -2757,6 +2849,9 @@ function _renderAiText(str) {
   const todayColIdx = dayDates.findIndex(dd => dd.dateStr === todayStr);
   const nowMin = now.getHours() * 60 + now.getMinutes();
 
+  // Read clock preference for the PDF — matches what the widget shows
+  const clockPref = _getClockPref();
+
   function parseMins(t) {
     if (!t) return null;
     const m = t.match(/(\d{1,2}):(\d{2})\s*[–\-—]\s*(\d{1,2}):(\d{2})/);
@@ -2790,7 +2885,7 @@ function _renderAiText(str) {
     surfaceMuted: [240, 240, 242],
     surfaceSubtle:[247, 247, 248],
     breakBg:      [243, 244, 246],
-    weekendBg:    [248, 246, 255],  // subtle lavender tint for Sat/Sun
+    weekendBg:    [248, 246, 255],
   };
 
   let y = 0;
@@ -2812,7 +2907,9 @@ function _renderAiText(str) {
   doc.setFontSize(7.5);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(255, 255, 255);
-  const rightLabel = isUsingPermanent ? 'Permanent Schedule' : rangeLabel;
+  // Show clock format in PDF header so it's clear which format was used
+  const rightLabel = (isUsingPermanent ? 'Permanent Schedule' : rangeLabel) +
+                     '   ·   ' + (clockPref === '12' ? '12-hour' : '24-hour');
   doc.text(rightLabel, PAGE_W - MARGIN, 9, { align: 'right' });
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(6.5);
@@ -2821,27 +2918,30 @@ function _renderAiText(str) {
 
   y = 24;
 
-  /* Build head row */
+  /* Build head row — day headers include date */
   const head = [['Time / Period', ...DAY_FULL.map((d, i) => {
     const dd = dayDates[i];
     return d + '\n' + dd.dayNum + ' ' + dd.monthSh;
   })]];
 
-  /* Build body rows */
+  /* Build body rows — convert time strings to the preferred format */
   const body = periods.map(p => {
     const vals    = DAY_KEYS.map(dk => (p[dk] || '').trim());
     const firstUp = vals[0].toUpperCase();
     const allSame = firstUp !== '' && vals.every(v => v.toUpperCase() === firstUp);
     const isSpec  = allSame && (firstUp === 'BREAK' || firstUp === 'LUNCH');
-    const time    = p.time || '';
+
+    // Convert the stored 24h time string to the preferred format for display
+    const displayTime = _convertTimeStr(p.time || '', clockPref);
+
     if (isSpec) {
-      // Fill all 7 day columns: first col gets the label, rest blank
-      return [time, firstUp === 'LUNCH' ? 'LUNCH BREAK' : 'BREAK', '', '', '', '', '', ''];
+      return [displayTime, firstUp === 'LUNCH' ? 'LUNCH BREAK' : 'BREAK', '', '', '', '', '', ''];
     }
-    return [time, ...vals.map(v => v || '')];
+    return [displayTime, ...vals.map(v => v || '')];
   });
 
-  const COL_W_TIME = 26;
+  // In 12-hour mode the time column needs slightly more width
+  const COL_W_TIME = clockPref === '12' ? 34 : 26;
   const COL_W_DAY  = (CONTENT_W - COL_W_TIME) / 7;
 
   doc.autoTable({
@@ -2860,7 +2960,8 @@ function _renderAiText(str) {
       cellPadding: { top: 3, bottom: 3, left: 2, right: 2 },
     },
     columnStyles: {
-      0: { cellWidth: COL_W_TIME, halign: 'left',   fontStyle: 'bold', fontSize: 6.5,
+      0: { cellWidth: COL_W_TIME, halign: 'left', fontStyle: 'bold',
+           fontSize: clockPref === '12' ? 6 : 6.5,   // slightly smaller in 12h to fit
            font: 'courier', fillColor: C.surfaceMuted },
       1: { cellWidth: COL_W_DAY, halign: 'center' },
       2: { cellWidth: COL_W_DAY, halign: 'center' },
@@ -2904,8 +3005,7 @@ function _renderAiText(str) {
       const range           = parseMins(p.time || '');
       const isCurrentPeriod = range && todayColIdx >= 0 && nowMin >= range.start && nowMin < range.end;
 
-      // Weekend column tint (colIdx 6 = Sat, 7 = Sun in the table; colIdx 0 is time)
-      const dayArrayIdx = colIdx - 1; // 0=Mon … 6=Sun
+      const dayArrayIdx = colIdx - 1;
       const isWeekend   = dayArrayIdx >= 5 && dayArrayIdx <= 6;
 
       if (isWeekend && colIdx > 0) {
@@ -5310,6 +5410,7 @@ window.Exam = {
   _isTodayTaskDayCompleted,
   _isTodayATaskDay,
   _nextUnlockedDateLabel,
+  _toggleClockFormat,
   _downloadTimetablePDF,
   _openAiDrawer,
   _closeAiDrawer,
