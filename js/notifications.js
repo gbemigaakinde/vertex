@@ -1,24 +1,16 @@
 /* ============================================================
    js/notifications.js — Web Push subscription manager
-   Uses the browser-native Push API + VAPID (no Firebase FCM,
-   no Blaze plan required).
-
-   iOS note: iOS 16.4+ supports Web Push ONLY when the PWA is
-   added to the Home Screen. It will NOT work in Safari browser.
-   We detect this and show a helpful message.
    ============================================================ */
 
 (function () {
   'use strict';
 
-  // ──  VAPID PUBLIC key  ──────────────
+  // ── VAPID PUBLIC key — must match env.VAPID_PUBLIC_KEY in the Worker ──
   var VAPID_PUBLIC_KEY = 'BCjYlOnZftKfqqez37mKt9sLy_XAO3BylbLyOUGfkO4ABeM_YYY9xEZuxplaSvrrYGEcwcBkFTGt5Rjbitz1QTA';
-  // ────────────────────────────────────────────────────────────
 
-  var WORKER_URL  = 'https://vertex-worker.gbemigaakinde.workers.dev';
-  var LS_KEY      = 'vtx_push_enabled';
+  var WORKER_URL = 'https://vertex-worker.gbemigaakinde.workers.dev';
+  var LS_KEY     = 'vtx_push_enabled';
 
-  /* ── Helpers ── */
   function _urlBase64ToUint8Array(base64String) {
     var padding = '='.repeat((4 - base64String.length % 4) % 4);
     var base64  = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
@@ -42,7 +34,6 @@
     return /iPad|iPhone|iPod/.test(navigator.userAgent);
   }
 
-  /* ── Check if currently subscribed ── */
   async function isSubscribed() {
     if (!_isSupported()) return false;
     try {
@@ -54,7 +45,6 @@
     }
   }
 
-  /* ── Subscribe ── */
   async function subscribe() {
     if (!_isSupported()) {
       if (_isIOS() && !_isIOSPWA()) {
@@ -65,7 +55,6 @@
       return false;
     }
 
-    // Request permission
     var permission = Notification.permission;
     if (permission === 'denied') {
       if (window.UI) UI.toast('Notifications are blocked. Please allow them in your browser settings.', 'warning', 6000);
@@ -86,7 +75,6 @@
         applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       });
 
-      // Send subscription to Worker
       var userId = (window.AppState && window.AppState.userId) || 'anon';
       var res = await fetch(WORKER_URL + '/api/save-subscription', {
         method:  'POST',
@@ -106,7 +94,6 @@
     }
   }
 
-  /* ── Unsubscribe ── */
   async function unsubscribe() {
     try {
       var reg = await navigator.serviceWorker.ready;
@@ -130,7 +117,6 @@
     }
   }
 
-  /* ── Toggle (called from UI button) ── */
   async function togglePushNotifications() {
     var enabled = await isSubscribed();
     if (enabled) {
@@ -140,7 +126,6 @@
     }
   }
 
-  /* ── Update toggle button state ── */
   function _updateToggleUI(on) {
     var toggleEl = document.getElementById('vtxPushToggle');
     if (!toggleEl) return;
@@ -152,16 +137,40 @@
     if (label) label.textContent = on ? 'On' : 'Off';
   }
 
-  /* ── Init: sync UI with actual subscription state on load ── */
-  async function init() {
+  // ── init: called once after login with the student's uid ──
+  // Syncs the toggle UI and re-saves the subscription if needed
+  // (handles the case where the subscription was cleared after browser update).
+  async function init(uid) {
     if (!_isSupported()) return;
+
     var on = await isSubscribed();
     _updateToggleUI(on);
-    if (!on) localStorage.removeItem(LS_KEY);
+
+    if (!on) {
+      localStorage.removeItem(LS_KEY);
+      return;
+    }
+
+    // Re-save the subscription to the server in case it changed
+    // (some browsers rotate push endpoints silently).
+    if (uid || (window.AppState && window.AppState.userId)) {
+      var userId = uid || window.AppState.userId;
+      try {
+        var reg = await navigator.serviceWorker.ready;
+        var sub = await reg.pushManager.getSubscription();
+        if (sub) {
+          await fetch(WORKER_URL + '/api/save-subscription', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ userId: userId, subscription: sub.toJSON() }),
+          });
+        }
+      } catch (e) {
+        console.warn('[notifications] Could not re-save subscription:', e);
+      }
+    }
   }
 
-  /* ── Render the push notification settings row ── */
-  /* Call this to inject the toggle into any settings container */
   function renderSettingsRow(containerId) {
     var el = document.getElementById(containerId);
     if (!el) return;
@@ -198,17 +207,16 @@
       '</div>'
     );
 
-    // Sync state
     init();
   }
 
   window.Notifications = {
-    subscribe:  subscribe,
-    unsubscribe: unsubscribe,
-    toggle:     togglePushNotifications,
-    isSubscribed: isSubscribed,
+    subscribe:         subscribe,
+    unsubscribe:       unsubscribe,
+    toggle:            togglePushNotifications,
+    isSubscribed:      isSubscribed,
     renderSettingsRow: renderSettingsRow,
-    init:       init,
+    init:              init,
   };
 
 }());
