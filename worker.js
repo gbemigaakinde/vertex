@@ -368,7 +368,7 @@ async function generateSVGDiagram(topic, subject, studentClass, context, env) {
         'Content-Type':  'application/json',
       },
       body: JSON.stringify({
-        model:       'openrouter/auto',
+        model:       'openrouter/free',
         max_tokens:  4096,
         temperature: 0.2,
         messages:    messages,
@@ -699,7 +699,7 @@ async function callWorkersAI(messages, model, env) {
 async function callOpenRouter(messages, model, env) {
   const orKey    = env.OR_API_KEY;
   if (!orKey)    return jsonError('OpenRouter API key not configured.', 500);
-  const useModel = model || 'openrouter/auto';
+  const useModel = model || 'openrouter/free';
 
   const res  = await fetch('https://openrouter.ai/api/v1/chat/completions', {
     method:  'POST',
