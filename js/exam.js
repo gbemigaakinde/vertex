@@ -3367,21 +3367,24 @@ function _handleImageUpload(inputEl) {
 
   _showImageLoadingPlaceholder();
 
+  // Capture the filename now while file is in scope
+  var capturedFileName = file.name || 'Image';
+
   var reader = new FileReader();
 
   reader.onerror = function () {
     window._vtxAiImageLoading = false;
     _clearImageLoadingPlaceholder();
 
-    if (imgBtn) { imgBtn.disabled = false; imgBtn.style.opacity = '1'; }
+    var ib2 = document.getElementById('vtxAiImageBtn');
+    if (ib2) { ib2.disabled = false; ib2.style.opacity = '1'; }
 
-    // Restore send button based on whether there is text
     var inp = document.getElementById('vtxAiInput');
-    var sb  = document.getElementById('vtxAiSendBtn');
-    if (sb) {
+    var sb2 = document.getElementById('vtxAiSendBtn');
+    if (sb2) {
       var hasText = inp && inp.value.trim().length > 0;
-      sb.disabled = !hasText;
-      sb.style.opacity = hasText ? '1' : '.4';
+      sb2.disabled = !hasText;
+      sb2.style.opacity = hasText ? '1' : '.4';
     }
 
     if (window.UI) UI.toast('Could not read the image file. Please try again.', 'error', 3000);
@@ -3396,34 +3399,34 @@ function _handleImageUpload(inputEl) {
     var imageType = file.type;
 
     if (!base64) {
-      if (imgBtn) { imgBtn.disabled = false; imgBtn.style.opacity = '1'; }
+      var ib3 = document.getElementById('vtxAiImageBtn');
+      if (ib3) { ib3.disabled = false; ib3.style.opacity = '1'; }
       var inp2 = document.getElementById('vtxAiInput');
-      var sb2  = document.getElementById('vtxAiSendBtn');
-      if (sb2) {
+      var sb3  = document.getElementById('vtxAiSendBtn');
+      if (sb3) {
         var hasText2 = inp2 && inp2.value.trim().length > 0;
-        sb2.disabled = !hasText2;
-        sb2.style.opacity = hasText2 ? '1' : '.4';
+        sb3.disabled = !hasText2;
+        sb3.style.opacity = hasText2 ? '1' : '.4';
       }
       if (window.UI) UI.toast('Could not process the image. Please try again.', 'error', 3000);
       return;
     }
 
-    _renderImagePreview(dataUrl);
+    // Pass the captured filename so the preview shows the real name
+    _renderImagePreview(dataUrl, capturedFileName);
 
-    // Now set the pending image — safe because _clearImagePreview already ran inside _renderImagePreview
     window._vtxAiPendingImage = {
       dataUrl:   dataUrl,
       base64:    base64,
       imageType: imageType,
-      fileName:  file.name || 'image',
+      fileName:  capturedFileName,
     };
 
-    // Re-enable image button
-    if (imgBtn) { imgBtn.disabled = false; imgBtn.style.opacity = '1'; }
+    var ib4 = document.getElementById('vtxAiImageBtn');
+    if (ib4) { ib4.disabled = false; ib4.style.opacity = '1'; }
 
-    // Enable send button last — image data is now guaranteed to be in place
-    var sb3 = document.getElementById('vtxAiSendBtn');
-    if (sb3) { sb3.disabled = false; sb3.style.opacity = '1'; }
+    var sb4 = document.getElementById('vtxAiSendBtn');
+    if (sb4) { sb4.disabled = false; sb4.style.opacity = '1'; }
   };
 
   reader.readAsDataURL(file);
@@ -3527,7 +3530,7 @@ function _clearImageLoadingPlaceholder() {
   if (el) el.remove();
 }
 
-function _renderImagePreview(dataUrl) {
+function _renderImagePreview(dataUrl, fileName) {
   // Remove any existing preview — this also nulls _vtxAiPendingImage,
   // which is why _handleImageUpload sets _vtxAiPendingImage AFTER calling this.
   _clearImagePreview();
@@ -3605,15 +3608,17 @@ function _renderImagePreview(dataUrl) {
     document.head.appendChild(st);
   }
 
+  // Sanitise the display name: strip any path separators, truncate if very long
+  var displayName = (fileName || 'Image').replace(/.*[/\\]/, '');
+  if (displayName.length > 40) displayName = displayName.slice(0, 37) + '…';
+
   var preview = document.createElement('div');
   preview.id = 'vtxAiImagePreview';
 
-  // _vtxAiPendingImage is not yet set when this runs (set by caller after),
-  // so use a generic label — the real data is in _vtxAiPendingImage
   preview.innerHTML =
     '<img src="' + dataUrl + '" alt="Image preview" />' +
     '<div class="vtx-img-preview-info">' +
-      '<span class="vtx-img-preview-name">Image</span>' +
+      '<span class="vtx-img-preview-name">' + _escHtml(displayName) + '</span>' +
       '<span class="vtx-img-preview-hint">Add a message or tap Send</span>' +
     '</div>' +
     '<button id="vtxAiImagePreviewRemove" title="Remove image" aria-label="Remove image">' +
@@ -3642,7 +3647,6 @@ function _renderImagePreview(dataUrl) {
     var inp = document.getElementById('vtxAiInput');
     if (inp) inp.focus();
   }, 80);
-
 }
 
 function _clearImagePreview() {
@@ -4250,18 +4254,39 @@ function _sendAiMessage() {
       if (inp3) inp3.setAttribute('placeholder', 'Ask a question…');
     }
 
-    var sendBtn2 = document.getElementById('vtxAiSendBtn');
-    if (sendBtn2) { sendBtn2.disabled = true; sendBtn2.style.opacity = '.4'; }
+    // Disable controls while the request is in flight.
+    var _disableImageControls = function () {
+      var sb = document.getElementById('vtxAiSendBtn');
+      var ib = document.getElementById('vtxAiImageBtn');
+      var mb = document.getElementById('vtxAiMicBtn');
+      if (sb) { sb.disabled = true;  sb.style.opacity = '.4'; }
+      if (ib) { ib.disabled = true;  ib.style.opacity = '.4'; }
+      if (mb) { mb.disabled = true; }
+    };
 
-    var imgBtn2 = document.getElementById('vtxAiImageBtn');
-    var micBtn2 = document.getElementById('vtxAiMicBtn');
-    if (imgBtn2) { imgBtn2.disabled = true; imgBtn2.style.opacity = '.4'; }
-    if (micBtn2) { micBtn2.disabled = true; }
+    var _enableImageControls = function () {
+      // Always re-query the DOM so we hit the live nodes, not stale refs
+      // captured before a potential drawer close/reopen cycle.
+      var sb = document.getElementById('vtxAiSendBtn');
+      var ib = document.getElementById('vtxAiImageBtn');
+      var mb = document.getElementById('vtxAiMicBtn');
+      var ti = document.getElementById('vtxAiInput');
+      if (ib) { ib.disabled = false; ib.style.opacity = '1'; }
+      if (mb) { mb.disabled = false; }
+      // Send button: only enable if there is text or a new pending image
+      if (sb) {
+        var hasText  = ti && ti.value.trim().length > 0;
+        var hasImage = !!(window._vtxAiPendingImage);
+        var canSend  = hasText || hasImage;
+        sb.disabled = !canSend;
+        sb.style.opacity = canSend ? '1' : '.4';
+      }
+    };
+
+    _disableImageControls();
 
     _dispatchImageSend(pendingImg.dataUrl, pendingImg.base64, pendingImg.imageType, userPrompt, function () {
-      if (sendBtn2) { sendBtn2.disabled = false; }
-      if (imgBtn2)  { imgBtn2.disabled = false; imgBtn2.style.opacity = '1'; }
-      if (micBtn2)  { micBtn2.disabled = false; }
+      _enableImageControls();
     });
 
     return;
@@ -4769,6 +4794,15 @@ function _sendAiMessage() {
 
   if (window._vtxAskAI && typeof window._vtxAskAI === 'function') {
     window._vtxAskAI(messagesPayload, function (err, reply) {
+      // Re-enable send button once AI responds (text path)
+      var sb = document.getElementById('vtxAiSendBtn');
+      if (sb) {
+        var ti      = document.getElementById('vtxAiInput');
+        var hasText = ti && ti.value.trim().length > 0;
+        var hasImg  = !!(window._vtxAiPendingImage);
+        sb.disabled      = !(hasText || hasImg);
+        sb.style.opacity = (hasText || hasImg) ? '1' : '.4';
+      }
       if (!err && reply) { _appendAiReply(reply); }
       else { _showError('Could not reach the AI server. Please check your internet connection and try again.'); }
     });
