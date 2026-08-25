@@ -1144,7 +1144,7 @@ async function renderSubjectSelection() {
              style="position:absolute;inset:0;background:var(--bg-overlay);
                     backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);"></div>
         <!-- Sheet -->
-        <div id="vtxAiSheet"
+         <div id="vtxAiSheet"
              style="position:absolute;bottom:0;left:0;right:0;
                     max-width:640px;margin:0 auto;
                     background:var(--bg-base);
@@ -1152,9 +1152,10 @@ async function renderSubjectSelection() {
                     box-shadow:0 -8px 40px rgba(0,0,0,.14);
                     display:flex;flex-direction:column;
                     max-height:82dvh;
+                    overflow:hidden;
                     transform:translateY(100%);
                     transition:transform 300ms cubic-bezier(0.16,1,0.3,1);">
-
+                    
           <!-- Sheet header -->
           <div style="display:flex;align-items:center;justify-content:space-between;
                       padding:.875rem 1.125rem .75rem;flex-shrink:0;">
@@ -1223,17 +1224,14 @@ async function renderSubjectSelection() {
           <!-- Divider above input -->
           <div style="height:1px;background:var(--border);flex-shrink:0;"></div>
 
-          <!-- Input area — Claude/ChatGPT style -->
-          <div style="padding:.75rem 1rem 1rem;flex-shrink:0;">
+          <!-- Input area style -->
+          <div style="padding:.75rem 1rem calc(1rem + env(safe-area-inset-bottom,0px));flex-shrink:0;box-sizing:border-box;">
             <div style="display:flex;flex-direction:column;
-                        border:1.5px solid var(--border);border-radius:var(--r-xl);
+                        border-radius:var(--r-xl);
                         background:var(--bg-subtle);
-                        transition:border-color var(--t-fast);
                         overflow:hidden;"
-                 id="vtxAiInputShell"
-                 onfocusin="this.style.borderColor='var(--accent)'"
-                 onfocusout="this.style.borderColor='var(--border)'">
-              <!-- Textarea row -->
+                 id="vtxAiInputShell">
+                 <!-- Textarea row -->
               <textarea
                 id="vtxAiInput"
                 rows="1"
@@ -3970,44 +3968,40 @@ function _sendAiMessage() {
     var sepEl = document.createElement('div');
     sepEl.className = 'vtx-ai-date-sep';
     sepEl.setAttribute('data-label', dateLabel);
-    sepEl.style.cssText = 'display:flex;align-items:center;gap:.625rem;margin:.25rem 0 .125rem;flex-shrink:0;';
+    sepEl.style.cssText = 'display:flex;align-items:center;gap:.625rem;margin:.25rem 0 .125rem;flex-shrink:0;max-width:100%;box-sizing:border-box;';
     sepEl.innerHTML =
-      '<div style="flex:1;height:1px;background:var(--border);"></div>' +
-      '<span style="font-size:.6875rem;font-weight:600;color:var(--text-4);white-space:nowrap;letter-spacing:.03em;">' +
+      '<div style="flex:1;height:1px;background:var(--border);min-width:0;"></div>' +
+      '<span style="font-size:.6875rem;font-weight:600;color:var(--text-4);white-space:nowrap;letter-spacing:.03em;flex-shrink:0;">' +
         _escHtml(dateLabel) +
       '</span>' +
-      '<div style="flex:1;height:1px;background:var(--border);"></div>';
+      '<div style="flex:1;height:1px;background:var(--border);min-width:0;"></div>';
     messages.appendChild(sepEl);
     messages.scrollTop = messages.scrollHeight;
   }
 
   // ── User bubble ──
   var studentBubble = document.createElement('div');
-  studentBubble.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:2px;animation:cbt-fade-in 160ms var(--ease) both;';
+  studentBubble.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:2px;animation:cbt-fade-in 160ms var(--ease) both;max-width:100%;box-sizing:border-box;';
   studentBubble.innerHTML =
-    '<div style="max-width:78%;padding:.625rem .875rem;' +
+    '<div class="vtx-ai-user-bubble" style="max-width:78%;padding:.625rem .875rem;' +
       'border-radius:var(--r-xl) var(--r-xl) var(--r-sm) var(--r-xl);' +
       'background:var(--accent);color:#fff;' +
-      'font-size:.9rem;line-height:1.55;word-break:break-word;' +
-      'overflow-x:auto;min-width:0;">' +
+      'font-size:.9rem;line-height:1.55;word-break:break-word;overflow-wrap:break-word;' +
+      'overflow:hidden;min-width:0;box-sizing:border-box;">' +
       _escHtml(text) +
     '</div>' +
-    '<span style="font-size:.625rem;color:var(--text-4);padding-right:2px;">' + timeStr + '</span>';
+    '<span style="font-size:.625rem;color:var(--text-4);padding-right:2px;flex-shrink:0;">' + timeStr + '</span>';
   messages.appendChild(studentBubble);
   messages.scrollTop = messages.scrollHeight;
 
-  // ── AI response group: thought pill + reply live together in one wrapper ──
-  // This makes the "Thought for Xs" feel like a label above the reply,
-  // not a separate chat message.
+  // ── AI response group ──
   var thoughtStartMs    = Date.now();
   var _thoughtTickTimer = null;
 
-  // Outer group holds both the thought pill and (later) the reply bubble
   var aiGroup = document.createElement('div');
   aiGroup.id = 'vtxAiTyping';
-  aiGroup.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:4px;animation:cbt-fade-in 160ms var(--ease) both;';
+  aiGroup.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:4px;animation:cbt-fade-in 160ms var(--ease) both;max-width:100%;box-sizing:border-box;min-width:0;';
 
-  // Thought pill — no avatar, just subtle text above the reply
   var thoughtPill = document.createElement('div');
   thoughtPill.className = 'vtx-thought-bubble';
 
@@ -4020,7 +4014,6 @@ function _sendAiMessage() {
   messages.appendChild(aiGroup);
   messages.scrollTop = messages.scrollHeight;
 
-  // Live elapsed-time ticker — updates every 100ms for sub-second accuracy
   function _tickThought() {
     var elapsedMs  = Date.now() - thoughtStartMs;
     var elapsedSec = elapsedMs / 1000;
@@ -4099,7 +4092,6 @@ function _sendAiMessage() {
     { role: 'system', content: systemPrompt },
   ].concat(window._vtxAiHistory);
 
-  // ── Format elapsed time ──
   function _formatElapsed(ms) {
     var sec = ms / 1000;
     if (sec < 60) {
@@ -4113,7 +4105,6 @@ function _sendAiMessage() {
       : 'Thought for ' + m + 'm';
   }
 
-  // ── Settle thought pill, then inject the reply bubble into the SAME aiGroup ──
   function _settleThoughtAndShowReply(replyText, renderFn) {
     if (_thoughtTickTimer) {
       clearTimeout(_thoughtTickTimer);
@@ -4137,13 +4128,11 @@ function _sendAiMessage() {
 
     aiGroup.removeAttribute('id');
 
-    // Render the reply immediately into the same aiGroup — no extra gap
     setTimeout(function () {
       renderFn();
     }, 400);
   }
 
-  // ── Remove entire AI group on error ──
   function _removeTyping() {
     if (_thoughtTickTimer) {
       clearTimeout(_thoughtTickTimer);
@@ -4183,27 +4172,29 @@ function _sendAiMessage() {
     var rendered  = _renderAiText(displayText);
 
     _settleThoughtAndShowReply(replyText, function () {
-      // Append reply bubble directly into aiGroup so it sits tight under the thought pill
       var replyId = 'vtxAiReplyTarget_' + replyTs;
 
       var replyRow = document.createElement('div');
       replyRow.className = 'vtx-reply-enter';
-      replyRow.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;';
+      replyRow.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;max-width:100%;box-sizing:border-box;min-width:0;';
       replyRow.innerHTML =
-        '<div style="display:flex;align-items:flex-end;gap:.5rem;min-width:0;">' +
+        '<div style="display:flex;align-items:flex-end;gap:.5rem;min-width:0;max-width:100%;box-sizing:border-box;">' +
           '<span style="display:inline-flex;align-items:center;justify-content:center;' +
             'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;">' +
             '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>' +
           '</span>' +
-          '<div id="' + replyId + '" style="max-width:82%;padding:.625rem .875rem;' +
+          '<div id="' + replyId + '" class="vtx-ai-reply-bubble" style="' +
+            'max-width:calc(100% - 34px);' +
+            'padding:.625rem .875rem;' +
             'border-radius:var(--r-sm) var(--r-xl) var(--r-xl) var(--r-xl);' +
             'background:var(--bg-subtle);border:1px solid var(--border);' +
-            'font-size:.9rem;line-height:1.65;color:var(--text-1);word-break:break-word;' +
-            'overflow-x:auto;min-width:0;"></div>' +
+            'font-size:.9rem;line-height:1.65;color:var(--text-1);' +
+            'word-break:break-word;overflow-wrap:break-word;' +
+            'overflow:hidden;min-width:0;box-sizing:border-box;' +
+            'flex:1;"></div>' +
         '</div>' +
-        '<span style="font-size:.625rem;color:var(--text-4);padding-left:34px;">' + replyTime + '</span>';
+        '<span style="font-size:.625rem;color:var(--text-4);padding-left:34px;flex-shrink:0;">' + replyTime + '</span>';
 
-      // Append into the same aiGroup — thought pill is already there above it
       aiGroup.appendChild(replyRow);
 
       var msgs = document.getElementById('vtxAiMessages');
@@ -4236,7 +4227,7 @@ function _sendAiMessage() {
           || studentData2.class || '';
 
         var visualWrapper = document.createElement('div');
-        visualWrapper.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding-left:34px;animation:cbt-fade-in 200ms var(--ease) both;max-width:82%;width:100%;';
+        visualWrapper.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:4px;padding-left:34px;animation:cbt-fade-in 200ms var(--ease) both;max-width:calc(100% - 34px);width:100%;box-sizing:border-box;min-width:0;';
         var visualId = 'vtxVisual_' + replyTs;
 
         visualWrapper.innerHTML =
@@ -4435,11 +4426,12 @@ function _sendAiMessage() {
     var msgs = document.getElementById('vtxAiMessages');
     if (!msgs) return;
     var errBubble = document.createElement('div');
-    errBubble.style.cssText = 'display:flex;justify-content:flex-start;animation:cbt-fade-in 160ms var(--ease) both;';
+    errBubble.style.cssText = 'display:flex;justify-content:flex-start;animation:cbt-fade-in 160ms var(--ease) both;max-width:100%;box-sizing:border-box;';
     errBubble.innerHTML =
       '<div style="max-width:85%;padding:.5rem .875rem;border-radius:var(--r-lg);' +
         'background:var(--danger-subtle);border:1px solid var(--danger-border);' +
-        'font-size:.8125rem;color:var(--danger-text);">' + _escHtml(msg) + '</div>';
+        'font-size:.8125rem;color:var(--danger-text);word-break:break-word;overflow-wrap:break-word;' +
+        'overflow:hidden;box-sizing:border-box;">' + _escHtml(msg) + '</div>';
     msgs.appendChild(errBubble);
     msgs.scrollTop = msgs.scrollHeight;
   }
@@ -4668,49 +4660,55 @@ function _liveProcessTranscript(transcript) {
     }
   }
 
-  function _appendLiveUserMessage(text) {
-    var msgs = document.getElementById('vtxAiMessages');
-    if (!msgs) return;
-    var empty = document.getElementById('vtxAiEmptyState');
-    if (empty) empty.style.display = 'none';
+function _appendLiveUserMessage(text) {
+  var msgs = document.getElementById('vtxAiMessages');
+  if (!msgs) return;
+  var empty = document.getElementById('vtxAiEmptyState');
+  if (empty) empty.style.display = 'none';
 
-    var nowTs     = Date.now();
-    var timeStr   = _aiTimeLabel(nowTs);
-    var dateLabel = _aiDateLabel(nowTs);
+  var nowTs     = Date.now();
+  var timeStr   = _aiTimeLabel(nowTs);
+  var dateLabel = _aiDateLabel(nowTs);
 
-    if (dateLabel !== _lastAiDateLabel) {
-      _lastAiDateLabel = dateLabel;
-      var sep = document.createElement('div');
-      sep.className = 'vtx-ai-date-sep';
-      sep.setAttribute('data-label', dateLabel);
-      sep.style.cssText = 'display:flex;align-items:center;gap:.625rem;margin:.25rem 0 .125rem;flex-shrink:0;';
-      sep.innerHTML =
-        '<div style="flex:1;height:1px;background:var(--border);"></div>' +
-        '<span style="font-size:.6875rem;font-weight:600;color:var(--text-4);white-space:nowrap;letter-spacing:.03em;">' + _escHtml(dateLabel) + '</span>' +
-        '<div style="flex:1;height:1px;background:var(--border);"></div>';
-      msgs.appendChild(sep);
-    }
-
-    var bubble = document.createElement('div');
-    bubble.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:2px;animation:cbt-fade-in 160ms var(--ease) both;';
-    bubble.innerHTML =
-      '<div style="max-width:78%;padding:.625rem .875rem;border-radius:var(--r-xl) var(--r-xl) var(--r-sm) var(--r-xl);background:var(--accent);color:#fff;font-size:.9rem;line-height:1.55;word-break:break-word;overflow-x:auto;min-width:0;">' + _escHtml(text) + '</div>' +
-      (timeStr ? '<span style="font-size:.625rem;color:var(--text-4);padding-right:2px;">' + timeStr + '</span>' : '');
-    msgs.appendChild(bubble);
-    msgs.scrollTop = msgs.scrollHeight;
-
-    try {
-      var sKey   = 'vtx_ai_history_' + (AppState.userId || 'anon');
-      var raw    = localStorage.getItem(sKey);
-      var saved  = raw ? JSON.parse(raw) : { ts: Date.now(), history: [], ui: [], lastActivityTs: Date.now() };
-      saved.ui = saved.ui || [];
-      saved.ui.push({ role: 'user', text: text, ts: nowTs });
-      saved.history = window._vtxAiHistory;
-      saved.ts = Date.now();
-      saved.lastActivityTs = Date.now();
-      localStorage.setItem(sKey, JSON.stringify(saved));
-    } catch (e) {}
+  if (dateLabel !== _lastAiDateLabel) {
+    _lastAiDateLabel = dateLabel;
+    var sep = document.createElement('div');
+    sep.className = 'vtx-ai-date-sep';
+    sep.setAttribute('data-label', dateLabel);
+    sep.style.cssText = 'display:flex;align-items:center;gap:.625rem;margin:.25rem 0 .125rem;flex-shrink:0;max-width:100%;box-sizing:border-box;';
+    sep.innerHTML =
+      '<div style="flex:1;height:1px;background:var(--border);min-width:0;"></div>' +
+      '<span style="font-size:.6875rem;font-weight:600;color:var(--text-4);white-space:nowrap;letter-spacing:.03em;flex-shrink:0;">' + _escHtml(dateLabel) + '</span>' +
+      '<div style="flex:1;height:1px;background:var(--border);min-width:0;"></div>';
+    msgs.appendChild(sep);
   }
+
+  var bubble = document.createElement('div');
+  bubble.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:2px;animation:cbt-fade-in 160ms var(--ease) both;max-width:100%;box-sizing:border-box;';
+  bubble.innerHTML =
+    '<div class="vtx-ai-user-bubble" style="max-width:78%;padding:.625rem .875rem;' +
+      'border-radius:var(--r-xl) var(--r-xl) var(--r-sm) var(--r-xl);' +
+      'background:var(--accent);color:#fff;font-size:.9rem;line-height:1.55;' +
+      'word-break:break-word;overflow-wrap:break-word;' +
+      'overflow:hidden;min-width:0;box-sizing:border-box;">' +
+      _escHtml(text) +
+    '</div>' +
+    (timeStr ? '<span style="font-size:.625rem;color:var(--text-4);padding-right:2px;flex-shrink:0;">' + timeStr + '</span>' : '');
+  msgs.appendChild(bubble);
+  msgs.scrollTop = msgs.scrollHeight;
+
+  try {
+    var sKey   = 'vtx_ai_history_' + (AppState.userId || 'anon');
+    var raw    = localStorage.getItem(sKey);
+    var saved  = raw ? JSON.parse(raw) : { ts: Date.now(), history: [], ui: [], lastActivityTs: Date.now() };
+    saved.ui = saved.ui || [];
+    saved.ui.push({ role: 'user', text: text, ts: nowTs });
+    saved.history = window._vtxAiHistory;
+    saved.ts = Date.now();
+    saved.lastActivityTs = Date.now();
+    localStorage.setItem(sKey, JSON.stringify(saved));
+  } catch (e) {}
+}
 
 function _appendLiveAiMessage(text) {
   var msgs = document.getElementById('vtxAiMessages');
@@ -4728,33 +4726,29 @@ function _appendLiveAiMessage(text) {
     var sep = document.createElement('div');
     sep.className = 'vtx-ai-date-sep';
     sep.setAttribute('data-label', dateLabel);
-    sep.style.cssText = 'display:flex;align-items:center;gap:.625rem;margin:.25rem 0 .125rem;flex-shrink:0;';
+    sep.style.cssText = 'display:flex;align-items:center;gap:.625rem;margin:.25rem 0 .125rem;flex-shrink:0;max-width:100%;box-sizing:border-box;';
     sep.innerHTML =
-      '<div style="flex:1;height:1px;background:var(--border);"></div>' +
-      '<span style="font-size:.6875rem;font-weight:600;color:var(--text-4);white-space:nowrap;letter-spacing:.03em;">' +
+      '<div style="flex:1;height:1px;background:var(--border);min-width:0;"></div>' +
+      '<span style="font-size:.6875rem;font-weight:600;color:var(--text-4);' +
+        'white-space:nowrap;letter-spacing:.03em;flex-shrink:0;">' +
         _escHtml(dateLabel) +
       '</span>' +
-      '<div style="flex:1;height:1px;background:var(--border);"></div>';
+      '<div style="flex:1;height:1px;background:var(--border);min-width:0;"></div>';
     msgs.appendChild(sep);
   }
 
-  // Find the live typing indicator — we'll settle it in place rather than remove it
   var liveTypingEl = document.getElementById('vtxAiLiveTyping');
 
-  // Stop the tick timer
   if (liveTypingEl && liveTypingEl._liveTickTimer) {
     clearTimeout(liveTypingEl._liveTickTimer);
     liveTypingEl._liveTickTimer = null;
   }
 
-  // Determine elapsed time from when _showLiveTyping was called
-  // We store the start time on the element itself so we can read it here
   var elapsedMs = liveTypingEl && liveTypingEl._startMs
     ? Date.now() - liveTypingEl._startMs
     : null;
 
   if (liveTypingEl) {
-    // Settle the shimmer text to "Thought for Xs"
     var liveTextEl = liveTypingEl.querySelector('.vtx-thought-shimmer');
     if (liveTextEl) {
       liveTextEl.classList.remove('vtx-thought-shimmer');
@@ -4777,46 +4771,53 @@ function _appendLiveAiMessage(text) {
       });
     }
 
-    // Remove the ID so _hideLiveTyping won't double-remove it
     liveTypingEl.removeAttribute('id');
 
-    // Append the reply bubble into the same container as the thought pill
     var replyRow = document.createElement('div');
     replyRow.className = 'vtx-reply-enter';
-    replyRow.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;';
+    replyRow.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:2px;width:100%;max-width:100%;box-sizing:border-box;min-width:0;';
     replyRow.innerHTML =
-      '<div style="display:flex;align-items:flex-end;gap:.5rem;min-width:0;">' +
+      '<div style="display:flex;align-items:flex-end;gap:.5rem;min-width:0;max-width:100%;box-sizing:border-box;">' +
         '<span style="display:inline-flex;align-items:center;justify-content:center;' +
           'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;">' +
           '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>' +
         '</span>' +
-        '<div style="max-width:82%;padding:.625rem .875rem;' +
+        '<div class="vtx-ai-reply-bubble" style="' +
+          'max-width:calc(100% - 34px);' +
+          'padding:.625rem .875rem;' +
           'border-radius:var(--r-sm) var(--r-xl) var(--r-xl) var(--r-xl);' +
           'background:var(--bg-subtle);border:1px solid var(--border);' +
-          'font-size:.9rem;line-height:1.65;color:var(--text-1);word-break:break-word;' +
-          'overflow-x:auto;min-width:0;">' + rendered + '</div>' +
+          'font-size:.9rem;line-height:1.65;color:var(--text-1);' +
+          'word-break:break-word;overflow-wrap:break-word;' +
+          'overflow:hidden;min-width:0;box-sizing:border-box;flex:1;">' +
+          rendered +
+        '</div>' +
       '</div>' +
-      (timeStr ? '<span style="font-size:.625rem;color:var(--text-4);padding-left:34px;">' + timeStr + '</span>' : '');
+      (timeStr ? '<span style="font-size:.625rem;color:var(--text-4);padding-left:34px;flex-shrink:0;">' + timeStr + '</span>' : '');
 
     liveTypingEl.appendChild(replyRow);
 
   } else {
-    // Fallback: no live typing indicator found, just append normally
     var wrapper = document.createElement('div');
-    wrapper.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:2px;animation:cbt-fade-in 160ms var(--ease) both;';
+    wrapper.style.cssText = 'display:flex;flex-direction:column;align-items:flex-start;gap:2px;animation:cbt-fade-in 160ms var(--ease) both;max-width:100%;box-sizing:border-box;min-width:0;';
     wrapper.innerHTML =
-      '<div style="display:flex;align-items:flex-end;gap:.5rem;min-width:0;">' +
+      '<div style="display:flex;align-items:flex-end;gap:.5rem;min-width:0;max-width:100%;box-sizing:border-box;">' +
         '<span style="display:inline-flex;align-items:center;justify-content:center;' +
           'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;">' +
           '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>' +
         '</span>' +
-        '<div style="max-width:82%;padding:.625rem .875rem;' +
+        '<div class="vtx-ai-reply-bubble" style="' +
+          'max-width:calc(100% - 34px);' +
+          'padding:.625rem .875rem;' +
           'border-radius:var(--r-sm) var(--r-xl) var(--r-xl) var(--r-xl);' +
           'background:var(--bg-subtle);border:1px solid var(--border);' +
-          'font-size:.9rem;line-height:1.65;color:var(--text-1);word-break:break-word;' +
-          'overflow-x:auto;min-width:0;">' + rendered + '</div>' +
+          'font-size:.9rem;line-height:1.65;color:var(--text-1);' +
+          'word-break:break-word;overflow-wrap:break-word;' +
+          'overflow:hidden;min-width:0;box-sizing:border-box;flex:1;">' +
+          rendered +
+        '</div>' +
       '</div>' +
-      (timeStr ? '<span style="font-size:.625rem;color:var(--text-4);padding-left:34px;">' + timeStr + '</span>' : '');
+      (timeStr ? '<span style="font-size:.625rem;color:var(--text-4);padding-left:34px;flex-shrink:0;">' + timeStr + '</span>' : '');
     msgs.appendChild(wrapper);
   }
 
