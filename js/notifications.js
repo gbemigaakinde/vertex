@@ -5,7 +5,6 @@
 (function () {
   'use strict';
 
-  // ── VAPID PUBLIC key — must match env.VAPID_PUBLIC_KEY in the Worker ──
   var VAPID_PUBLIC_KEY = 'BCjYlOnZftKfqqez37mKt9sLy_XAO3BylbLyOUGfkO4ABeM_YYY9xEZuxplaSvrrYGEcwcBkFTGt5Rjbitz1QTA';
 
   var WORKER_URL = 'https://vertex-worker.gbemigaakinde.workers.dev';
@@ -34,6 +33,25 @@
     return /iPad|iPhone|iPod/.test(navigator.userAgent);
   }
 
+  // ── Central save helper — used everywhere so error handling is consistent ──
+  async function _saveSubscription(userId, subscription) {
+    try {
+      var res = await fetch(WORKER_URL + '/api/save-subscription', {
+        method:  'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body:    JSON.stringify({ userId: userId, subscription: subscription }),
+      });
+      if (!res.ok) {
+        console.warn('[notifications] save-subscription HTTP error:', res.status);
+        return false;
+      }
+      return true;
+    } catch (e) {
+      console.warn('[notifications] save-subscription fetch failed:', e);
+      return false;
+    }
+  }
+
   async function isSubscribed() {
     if (!_isSupported()) return false;
     try {
@@ -45,59 +63,59 @@
     }
   }
 
-async function subscribe() {
-  if (!_isSupported()) {
-    if (_isIOS() && !_isIOSPWA()) {
-      if (window.UI) UI.toast('To enable notifications on iPhone, add this app to your Home Screen first.', 'info', 8000);
+  async function subscribe() {
+    if (!_isSupported()) {
+      if (_isIOS() && !_isIOSPWA()) {
+        if (window.UI) UI.toast('To enable notifications on iPhone, add this app to your Home Screen first.', 'info', 8000);
+        return false;
+      }
+      if (window.UI) UI.toast('Push notifications are not supported in your browser.', 'warning', 5000);
       return false;
     }
-    if (window.UI) UI.toast('Push notifications are not supported in your browser.', 'warning', 5000);
-    return false;
+
+    var permission = Notification.permission;
+    if (permission === 'denied') {
+      if (window.UI) UI.toast('Notifications are blocked. Please allow them in your browser settings.', 'warning', 6000);
+      return false;
+    }
+    if (permission === 'default') {
+      permission = await Notification.requestPermission();
+    }
+    if (permission !== 'granted') {
+      if (window.UI) UI.toast('Notification permission not granted.', 'info', 3000);
+      return false;
+    }
+
+    try {
+      var reg = await navigator.serviceWorker.ready;
+
+      // Cancel any old subscription first to avoid stale endpoint errors
+      var existing = await reg.pushManager.getSubscription();
+      if (existing) await existing.unsubscribe();
+
+      var sub = await reg.pushManager.subscribe({
+        userVisibleOnly:      true,
+        applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+
+      var userId = (window.AppState && window.AppState.userId) || 'anon';
+      var saved  = await _saveSubscription(userId, sub.toJSON());
+
+      if (!saved) {
+        if (window.UI) UI.toast('Could not save notification subscription. Please try again.', 'error', 4000);
+        return false;
+      }
+
+      localStorage.setItem(LS_KEY, '1');
+      if (window.UI) UI.toast('Push notifications enabled!', 'success', 3000);
+      _updateToggleUI(true);
+      return true;
+    } catch (err) {
+      console.error('[notifications] subscribe error:', err);
+      if (window.UI) UI.toast('Could not enable notifications. Please try again.', 'error', 4000);
+      return false;
+    }
   }
-
-  var permission = Notification.permission;
-  if (permission === 'denied') {
-    if (window.UI) UI.toast('Notifications are blocked. Please allow them in your browser settings.', 'warning', 6000);
-    return false;
-  }
-  if (permission === 'default') {
-    permission = await Notification.requestPermission();
-  }
-  if (permission !== 'granted') {
-    if (window.UI) UI.toast('Notification permission not granted.', 'info', 3000);
-    return false;
-  }
-
-  try {
-    var reg = await navigator.serviceWorker.ready;
-
-    // Cancel any old subscription first to avoid stale endpoint errors
-    var existing = await reg.pushManager.getSubscription();
-    if (existing) await existing.unsubscribe();
-
-    var sub = await reg.pushManager.subscribe({
-      userVisibleOnly:      true,
-      applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-    });
-
-    var userId = (window.AppState && window.AppState.userId) || 'anon';
-    var res = await fetch(WORKER_URL + '/api/save-subscription', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ userId: userId, subscription: sub.toJSON() }),
-    });
-    if (!res.ok) throw new Error('Server rejected subscription');
-
-    localStorage.setItem(LS_KEY, '1');
-    if (window.UI) UI.toast('Push notifications enabled!', 'success', 3000);
-    _updateToggleUI(true);
-    return true;
-  } catch (err) {
-    console.error('[notifications] subscribe error:', err);
-    if (window.UI) UI.toast('Could not enable notifications. Please try again.', 'error', 4000);
-    return false;
-  }
-}
 
   async function unsubscribe() {
     try {
@@ -142,88 +160,83 @@ async function subscribe() {
     if (label) label.textContent = on ? 'On' : 'Off';
   }
 
-  // ── init: called once after login with the student's uid ──
-  // Syncs the toggle UI and re-saves the subscription if needed
-  // (handles the case where the subscription was cleared after browser update).
-async function init(uid) {
-  if (!_isSupported()) return;
+  async function init(uid) {
+    if (!_isSupported()) return;
 
-  var userId = uid || (window.AppState && window.AppState.userId) || 'anon';
+    var userId = uid || (window.AppState && window.AppState.userId) || 'anon';
 
-  // If permission is already granted and we are not yet subscribed, subscribe silently.
-  // This handles students who granted permission before but whose subscription lapsed.
-  if (Notification.permission === 'granted') {
-    var alreadyOn = await isSubscribed();
-    if (!alreadyOn) {
-      try {
-        var reg = await navigator.serviceWorker.ready;
-        var sub = await reg.pushManager.subscribe({
-          userVisibleOnly:      true,
-          applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-        });
-        await fetch(WORKER_URL + '/api/save-subscription', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ userId: userId, subscription: sub.toJSON() }),
-        });
-        localStorage.setItem(LS_KEY, '1');
-        _updateToggleUI(true);
-        return;
-      } catch (e) {
-        console.warn('[notifications] Silent re-subscribe failed:', e);
-      }
-    } else {
-      // Already subscribed — re-save to keep the server copy fresh
-      // (browsers sometimes rotate push endpoints silently).
-      try {
-        var reg2 = await navigator.serviceWorker.ready;
-        var sub2 = await reg2.pushManager.getSubscription();
-        if (sub2) {
-          await fetch(WORKER_URL + '/api/save-subscription', {
-            method:  'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body:    JSON.stringify({ userId: userId, subscription: sub2.toJSON() }),
+    // Permission already granted — ensure subscription is active and saved
+    if (Notification.permission === 'granted') {
+      var alreadyOn = await isSubscribed();
+
+      if (!alreadyOn) {
+        // Subscription lapsed — re-subscribe silently
+        try {
+          var reg = await navigator.serviceWorker.ready;
+          var sub = await reg.pushManager.subscribe({
+            userVisibleOnly:      true,
+            applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
           });
+          var saved = await _saveSubscription(userId, sub.toJSON());
+          if (saved) {
+            localStorage.setItem(LS_KEY, '1');
+            _updateToggleUI(true);
+          } else {
+            if (window.UI) UI.toast('Could not register for notifications. Tap the bell to retry.', 'warning', 4000);
+          }
+        } catch (e) {
+          console.warn('[notifications] Silent re-subscribe failed:', e);
         }
-        localStorage.setItem(LS_KEY, '1');
-        _updateToggleUI(true);
-      } catch (e) {
-        console.warn('[notifications] Could not re-save subscription:', e);
+      } else {
+        // Already subscribed — re-save to keep server copy fresh
+        try {
+          var reg2 = await navigator.serviceWorker.ready;
+          var sub2 = await reg2.pushManager.getSubscription();
+          if (sub2) {
+            var saved2 = await _saveSubscription(userId, sub2.toJSON());
+            if (saved2) {
+              localStorage.setItem(LS_KEY, '1');
+              _updateToggleUI(true);
+            }
+          }
+        } catch (e) {
+          console.warn('[notifications] Could not re-save subscription:', e);
+        }
       }
       return;
     }
-  }
 
-  // Permission not yet asked — prompt the student automatically
-  if (Notification.permission === 'default' && _isSupported() && !_isIOS()) {
-    try {
-      var granted = await Notification.requestPermission();
-      if (granted === 'granted') {
-        // Permission just granted — now subscribe silently
-        var reg3 = await navigator.serviceWorker.ready;
-        var sub3 = await reg3.pushManager.subscribe({
-          userVisibleOnly:      true,
-          applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-        });
-        await fetch(WORKER_URL + '/api/save-subscription', {
-          method:  'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body:    JSON.stringify({ userId: userId, subscription: sub3.toJSON() }),
-        });
-        localStorage.setItem(LS_KEY, '1');
-        _updateToggleUI(true);
-        return;
+    // Permission not yet asked — prompt automatically (skip on plain iOS Safari)
+    if (Notification.permission === 'default' && !_isIOS()) {
+      try {
+        var granted = await Notification.requestPermission();
+        if (granted === 'granted') {
+          var reg3 = await navigator.serviceWorker.ready;
+          var sub3 = await reg3.pushManager.subscribe({
+            userVisibleOnly:      true,
+            applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+          });
+          var saved3 = await _saveSubscription(userId, sub3.toJSON());
+          if (saved3) {
+            localStorage.setItem(LS_KEY, '1');
+            _updateToggleUI(true);
+            if (window.UI) UI.toast('Notifications enabled!', 'success', 3000);
+          } else {
+            if (window.UI) UI.toast('Notification save failed. Tap the bell button to retry.', 'warning', 5000);
+          }
+          return;
+        }
+      } catch (e) {
+        console.warn('[notifications] Auto-prompt failed:', e);
+        if (window.UI) UI.toast('Could not enable notifications: ' + e.message, 'warning', 5000);
       }
-    } catch (e) {
-      console.warn('[notifications] Auto-prompt failed:', e);
     }
-  }
 
-  // Permission denied or unsupported — update toggle UI only
-  var on = await isSubscribed();
-  _updateToggleUI(on);
-  if (!on) localStorage.removeItem(LS_KEY);
-}
+    // Permission denied or iOS — just update the toggle UI
+    var on = await isSubscribed();
+    _updateToggleUI(on);
+    if (!on) localStorage.removeItem(LS_KEY);
+  }
 
   function renderSettingsRow(containerId) {
     var el = document.getElementById(containerId);
