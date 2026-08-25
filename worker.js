@@ -1042,13 +1042,24 @@ async function sendWebPush(subscription, payloadStr, env) {
 
 /* ── Daily reminder cron ─────────────────────────────────── */
 async function _runDailyReminders(env) {
-  if (!env.VTX_RATE_LIMITS) { console.warn('[cron] KV not bound.'); return; }
+  if (!env.VTX_RATE_LIMITS) {
+    console.warn('[cron] KV not bound.');
+    return;
+  }
 
   var indexRaw = await env.VTX_RATE_LIMITS.get('push_index');
-  if (!indexRaw) { console.log('[cron] No push subscribers.'); return; }
+  if (!indexRaw) {
+    console.log('[cron] No push subscribers.');
+    return;
+  }
 
   var userIds;
-  try { userIds = JSON.parse(indexRaw); } catch (e) { console.warn('[cron] Bad push_index.'); return; }
+  try {
+    userIds = JSON.parse(indexRaw);
+  } catch (e) {
+    console.warn('[cron] Bad push_index.');
+    return;
+  }
 
   var tomorrow = new Date();
   tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
@@ -1058,54 +1069,108 @@ async function _runDailyReminders(env) {
 
   for (var i = 0; i < userIds.length; i++) {
     var uid = userIds[i];
+
     try {
       var subRaw = await env.VTX_RATE_LIMITS.get('push:' + uid);
       if (!subRaw) continue;
+
       var subscription = JSON.parse(subRaw);
 
-      // Fetch Firestore student doc — construct a REST URL
-      // (We read Firestore via REST since we are in a Worker)
+      // Fetch Firestore student document.
+      // We read Firestore via REST since we are in a Worker.
       var firestoreUrl =
         'https://firestore.googleapis.com/v1/projects/excellencecbt/databases/(default)/documents/students/' + uid;
+
       var docRes = await fetch(firestoreUrl);
-      if (!docRes.ok) { console.warn('[cron] Could not fetch student', uid); continue; }
+
+      if (!docRes.ok) {
+        console.warn('[cron] Could not fetch student', uid);
+        continue;
+      }
+
       var docJson = await docRes.json();
 
-      var fields      = (docJson && docJson.fields) || {};
-      var streakVal   = fields.studyStreak && fields.studyStreak.integerValue
-        ? parseInt(fields.studyStreak.integerValue, 10) : 0;
-      var weakTopics  = fields.weakTopics && fields.weakTopics.arrayValue
-        ? (fields.weakTopics.arrayValue.values || []).map(function (v) { return v.stringValue || ''; })
-        : [];
-      var nextExamRaw = fields.nextExamDate && fields.nextExamDate.stringValue
-        ? fields.nextExamDate.stringValue : null;
-      var completedRaw = fields.coachingCompleted && fields.coachingCompleted.mapValue
-        ? fields.coachingCompleted.mapValue.fields || {}
-        : {};
-      var doneToday   = !!(completedRaw[today] && (completedRaw[today].booleanValue === true));
+      var fields = (docJson && docJson.fields) || {};
+
+      var streakVal =
+        fields.studyStreak && fields.studyStreak.integerValue
+          ? parseInt(fields.studyStreak.integerValue, 10)
+          : 0;
+
+      var weakTopics =
+        fields.weakTopics && fields.weakTopics.arrayValue
+          ? (fields.weakTopics.arrayValue.values || []).map(function (v) {
+              return v.stringValue || '';
+            })
+          : [];
+
+      var nextExamRaw =
+        fields.nextExamDate && fields.nextExamDate.stringValue
+          ? fields.nextExamDate.stringValue
+          : null;
+
+      var completedRaw =
+        fields.coachingCompleted && fields.coachingCompleted.mapValue
+          ? fields.coachingCompleted.mapValue.fields || {}
+          : {};
+
+      var doneToday = !!(
+        completedRaw[today] &&
+        completedRaw[today].booleanValue === true
+      );
 
       var payload = null;
 
       // Priority 1: exam tomorrow
       if (nextExamRaw && nextExamRaw.slice(0, 10) === tomorrowStr) {
-        payload = { title: '📅 Exam Tomorrow!', body: 'Your exam is tomorrow. Ready for a quick review?', url: '/' };
+        payload = {
+          title: 'Exam Tomorrow',
+          body: 'Your exam is tomorrow. Ready for a quick review?',
+          url: '/'
+        };
       }
+
       // Priority 2: streak at risk
       else if (streakVal > 0 && !doneToday) {
-        payload = { title: '🔥 Keep your streak!', body: "Don't break your " + streakVal + "-day streak. Open the app for a quick session.", url: '/' };
+        payload = {
+          title: 'Keep Your Streak',
+          body: 'Do not break your ' + streakVal + '-day streak. Open the app for a quick session.',
+          url: '/'
+        };
       }
+
       // Priority 3: weak topic nudge
       else if (weakTopics.length > 0) {
         var topic = weakTopics[0];
-        payload = { title: '📚 Quick study tip', body: 'Struggling with ' + topic + '? A 10-minute review can help.', url: '/' };
+
+        payload = {
+          title: 'Quick Study Tip',
+          body: 'Struggling with ' + topic + '? A 10-minute review can help.',
+          url: '/'
+        };
       }
 
       if (payload) {
-        var sent = await sendWebPush(subscription, JSON.stringify(payload), env);
-        console.log('[cron] Push to', uid, ':', sent ? 'sent' : 'failed');
+        var sent = await sendWebPush(
+          subscription,
+          JSON.stringify(payload),
+          env
+        );
+
+        console.log(
+          '[cron] Push to',
+          uid,
+          ':',
+          sent ? 'sent' : 'failed'
+        );
       }
     } catch (err) {
-      console.warn('[cron] Error for user', uid, ':', err.message || err);
+      console.warn(
+        '[cron] Error for user',
+        uid,
+        ':',
+        err.message || err
+      );
     }
   }
 }
