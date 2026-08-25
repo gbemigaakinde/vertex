@@ -1437,6 +1437,13 @@ function _renderAiText(str) {
   raw = raw.replace(/https?:\/\/[^\s)>\]"]+/g, '');
   raw = raw.replace(/\[([^\]]*)\]\([^)]*\)/g, '$1');
 
+  // Stash <br> tags BEFORE HTML-escaping
+  var brBlocks = [];
+  raw = raw.replace(/<br\s*\/?>/gi, function (match) {
+    brBlocks.push(match);
+    return '\x00BR' + (brBlocks.length - 1) + '\x00';
+  });
+
   // Collapse blank lines between table rows before escaping
   raw = raw.replace(/(^\|[^\n]*\|)[ \t]*\n[ \t]*\n(?=[ \t]*\|)/gm, '$1\n');
 
@@ -1445,6 +1452,11 @@ function _renderAiText(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+
+  // Restore <br> tags
+  safe = safe.replace(/\x00BR(\d+)\x00/g, function (_, i) {
+    return '<br>';
+  });
 
   safe = safe.replace(/\*\*([^*]+?)\*\*/g, '<strong>$1</strong>');
   safe = safe.replace(/\*([^*\n]+?)\*/g, '<em>$1</em>');
@@ -1463,7 +1475,7 @@ function _renderAiText(str) {
 
   safe = safe.replace(/^[\s]*[-*_]{3,}[\s]*$/gm, '<hr style="border:none;border-top:1px solid var(--border);margin:.6em 0;">');
 
-  // Tables — accepts both with-separator and without-separator formats
+  // Tables — normalize newlines within cells to <br>
   safe = safe.replace(/((?:^\|[^\n]+\|\s*\n?)+)/gm, function (block) {
     var lines = block.trim().split('\n')
       .map(function (l) { return l.trim(); })
@@ -1491,7 +1503,7 @@ function _renderAiText(str) {
         return '<th style="padding:.4rem .5rem;border:1px solid var(--border);' +
                'background:var(--bg-subtle);font-size:.8125rem;font-weight:700;' +
                'color:var(--text-1);text-align:left;' +
-               'word-break:break-word;overflow-wrap:anywhere;">' + c + '</th>';
+               'word-break:break-word;overflow-wrap:anywhere;">' + c.replace(/\n/g, '<br>') + '</th>';
       }).join('') +
       '</tr></thead>';
 
@@ -1504,7 +1516,7 @@ function _renderAiText(str) {
         return '<tr>' + cells.map(function (c) {
           return '<td style="padding:.375rem .5rem;border:1px solid var(--border);' +
                  'font-size:.8rem;color:var(--text-2);' +
-                 'word-break:break-word;overflow-wrap:anywhere;' + rowBg + '">' + c + '</td>';
+                 'word-break:break-word;overflow-wrap:anywhere;' + rowBg + '">' + c.replace(/\n/g, '<br>') + '</td>';
         }).join('') + '</tr>';
       }).join('') +
       '</tbody>';
