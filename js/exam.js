@@ -1918,6 +1918,9 @@ async function renderSubjectSelection() {
   }
 
   _questionRenderedAt = Date.now();
+  if (window.SessionReminders) {
+    SessionReminders.resetQuestionTimer();
+  }
 
   const exam = S().exam;
   if (!exam) return;
@@ -2310,6 +2313,9 @@ async function renderSubjectSelection() {
 
     _submitLock = true;
     S().clearTimer();
+    if (window.SessionReminders) {
+      SessionReminders.stop();
+    }
     _teardownVisibilityGuard();
 
     if (window.SpeechEngine && typeof SpeechEngine.stopSTT === 'function') {
