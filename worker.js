@@ -114,8 +114,8 @@ if (request.method === 'POST' && url.pathname === '/ai') {
       if (!subRaw) return new Response(JSON.stringify({ success: true, sent: false, reason: 'No subscription found.' }), { headers: corsJsonHeaders() });
       const subscription = JSON.parse(subRaw);
       const payload = JSON.stringify({ title: title || 'Vertex Tutorial', body: bodyText || 'You have a reminder.', url: notifUrl || '/' });
-      const sent = await sendWebPush(subscription, payload, env);
-      return new Response(JSON.stringify({ success: true, sent }), { headers: corsJsonHeaders() });
+      const result = await sendWebPush(subscription, payload, env);
+      return new Response(JSON.stringify({ success: true, sent: result.ok, reason: result.reason }), { headers: corsJsonHeaders() });
     }
 
   // ── Teacher broadcast push route ──────────────────────────
@@ -152,8 +152,8 @@ if (request.method === 'POST' && url.pathname === '/api/send-push') {
         const subRaw = await env.VTX_RATE_LIMITS.get('push:' + uid);
         if (!subRaw) continue;
         const subscription = JSON.parse(subRaw);
-        const ok = await sendWebPush(subscription, payload, env);
-        if (ok) sentCount++;
+        const result = await sendWebPush(subscription, payload, env);
+        if (result.ok) sentCount++;
       } catch (e) {
         console.warn('[Worker] Broadcast push failed for', uid, ':', e.message);
       }
@@ -169,8 +169,8 @@ if (request.method === 'POST' && url.pathname === '/api/send-push') {
   if (!subRaw) return new Response(JSON.stringify({ success: true, sent: false, reason: 'No subscription.' }), { headers: corsJsonHeaders() });
 
   const subscription = JSON.parse(subRaw);
-  const sent = await sendWebPush(subscription, payload, env);
-  return new Response(JSON.stringify({ success: true, sent }), { headers: corsJsonHeaders() });
+  const result = await sendWebPush(subscription, payload, env);
+  return new Response(JSON.stringify({ success: true, sent: result.ok, reason: result.reason }), { headers: corsJsonHeaders() });
 }
 
     return new Response('Not found.', { status: 404 });
@@ -929,17 +929,35 @@ function _b64urlEncode(obj) {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
-async function _buildVapidHeaders(endpoint, vapidPrivKeyJwk, vapidPubKeyB64url) {
-  // Parse the private key JWK
-  var jwk;
-  try { jwk = JSON.parse(vapidPrivKeyJwk); } catch (e) { throw new Error('VAPID_PRIVATE_KEY is not valid JSON'); }
+async function _buildVapidHeaders(endpoint, vapidPrivKey, vapidPubKeyB64url) {
+  var privateKey;
 
-  var privateKey = await crypto.subtle.importKey(
-    'jwk', jwk,
-    { name: 'ECDSA', namedCurve: 'P-256' },
-    false,
-    ['sign']
-  );
+  // 1) Try JWK first
+  try {
+    var jwk = JSON.parse(vapidPrivKey);
+    privateKey = await crypto.subtle.importKey(
+      'jwk', jwk,
+      { name: 'ECDSA', namedCurve: 'P-256' },
+      false,
+      ['sign']
+    );
+  } catch (jwkErr) {
+    // 2) Fall back to base64url-encoded PKCS8 (standard web-push output)
+    try {
+      var keyBytes = _b64urlToBytes(vapidPrivKey);
+      privateKey = await crypto.subtle.importKey(
+        'pkcs8', keyBytes,
+        { name: 'ECDSA', namedCurve: 'P-256' },
+        false,
+        ['sign']
+      );
+    } catch (pkcs8Err) {
+      throw new Error(
+        'VAPID_PRIVATE_KEY is neither valid JWK nor base64url-encoded PKCS8. ' +
+        'JWK error: ' + jwkErr.message + '; PKCS8 error: ' + pkcs8Err.message
+      );
+    }
+  }
 
   var endpointUrl  = new URL(endpoint);
   var audience     = endpointUrl.protocol + '//' + endpointUrl.host;
@@ -1044,31 +1062,32 @@ function _buildInfo(type, clientPub, serverPub) {
 }
 
 async function sendWebPush(subscription, payloadStr, env) {
-  var privKey    = env.VAPID_PRIVATE_KEY;
-  var pubKey     = env.VAPID_PUBLIC_KEY;
+  var privKey = env.VAPID_PRIVATE_KEY;
+  var pubKey  = env.VAPID_PUBLIC_KEY;
   if (!privKey || !pubKey) {
     console.warn('[Worker] VAPID keys not configured.');
-    return false;
+    return { ok: false, reason: 'VAPID keys not configured in worker environment.' };
   }
 
   try {
     var encrypted = await _encryptPayload(subscription, payloadStr);
-
     var vapidHeaders = await _buildVapidHeaders(subscription.endpoint, privKey, pubKey);
 
     // Build the body:
     // salt (16) + record size (4, BE uint32) + server pub len (1) + server pub (65) + ciphertext
-    var recordSize  = encrypted.ciphertext.length + 2; // the 2 padding bytes + ciphertext
-    var bodyParts   = new Uint8Array(16 + 4 + 1 + 65 + encrypted.ciphertext.length);
-    var pos         = 0;
-    bodyParts.set(encrypted.salt,       pos); pos += 16;
+    var rs        = encrypted.ciphertext.length;  // FIXED: was 2*ciphertext.length+2
+    var bodyParts = new Uint8Array(16 + 4 + 1 + 65 + encrypted.ciphertext.length);
+    var pos       = 0;
+
+    bodyParts.set(encrypted.salt, pos); pos += 16;
+
     // Record size as 4-byte big-endian
-    var rs = recordSize + encrypted.ciphertext.length;
     bodyParts[pos]   = (rs >> 24) & 0xff;
     bodyParts[pos+1] = (rs >> 16) & 0xff;
     bodyParts[pos+2] = (rs >>  8) & 0xff;
     bodyParts[pos+3] =  rs        & 0xff;
     pos += 4;
+
     bodyParts[pos] = encrypted.localPubRaw.length; pos += 1;
     bodyParts.set(encrypted.localPubRaw, pos); pos += encrypted.localPubRaw.length;
     bodyParts.set(encrypted.ciphertext,  pos);
@@ -1086,12 +1105,12 @@ async function sendWebPush(subscription, payloadStr, env) {
     if (!res.ok) {
       var errText = await res.text().catch(() => '');
       console.warn('[Worker] Push send failed:', res.status, errText);
-      return false;
+      return { ok: false, reason: 'Push server returned HTTP ' + res.status + ': ' + errText };
     }
-    return true;
+    return { ok: true };
   } catch (e) {
     console.error('[Worker] sendWebPush error:', e);
-    return false;
+    return { ok: false, reason: e.message };
   }
 }
 
@@ -1285,8 +1304,8 @@ async function _runDailyReminders(env) {
       }
 
       if (payload) {
-        var sent = await sendWebPush(subscription, JSON.stringify(payload), env);
-        console.log('[cron] Push to', uid, ':', sent ? 'sent' : 'failed');
+        var result = await sendWebPush(subscription, JSON.stringify(payload), env);
+        console.log('[cron] Push to', uid, ':', result.ok ? 'sent' : 'failed', result.reason || '');
       }
 
     } catch (err) {
