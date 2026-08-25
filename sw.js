@@ -180,42 +180,49 @@ self.addEventListener('message', event => {
 });
 
 /* ─────────────────────────────────────────────────────────── */
-/* FCM BACKGROUND MESSAGES                                    */
+/* PUSH NOTIFICATIONS                                         */
 /* ─────────────────────────────────────────────────────────── */
+self.addEventListener('push', function (event) {
+  var data = {};
+  try {
+    if (event.data) data = event.data.json();
+  } catch (e) {
+    data = { title: 'Vertex Tutorial', body: event.data ? event.data.text() : '' };
+  }
 
-_fcmMessaging.onBackgroundMessage(function (payload) {
-  console.log('[SW] Background message received:', payload);
-
-  const title = (payload.notification && payload.notification.title)
-    || 'Vertex Tutorial';
-
-  const options = {
-    body:  (payload.notification && payload.notification.body)
-           || 'You have a new message from Master Timothy.',
-    icon:  '/vertex.jpeg',
-    badge: '/vertex.jpeg',
-    data:  { url: (payload.data && payload.data.url) || '/' },
+  var title   = data.title   || 'Vertex Tutorial';
+  var options = {
+    body:               data.body    || 'You have a new message.',
+    icon:               '/vertex.jpeg',
+    badge:              '/vertex.jpeg',
+    requireInteraction: true,
+    actions: [
+      { action: 'open',    title: 'Open App' },
+      { action: 'dismiss', title: 'Dismiss'  },
+    ],
+    data: { url: data.url || '/' },
   };
 
-  self.registration.showNotification(title, options);
+  event.waitUntil(self.registration.showNotification(title, options));
 });
 
 self.addEventListener('notificationclick', function (event) {
   event.notification.close();
 
-  const targetUrl = (event.notification.data && event.notification.data.url) || '/';
+  if (event.action === 'dismiss') return;
+
+  var targetUrl = (event.notification.data && event.notification.data.url) || '/';
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function (clientList) {
-      for (let i = 0; i < clientList.length; i++) {
-        const client = clientList[i];
+      for (var i = 0; i < clientList.length; i++) {
+        var client = clientList[i];
         if (client.url.includes(self.location.origin) && 'focus' in client) {
+          client.navigate(targetUrl);
           return client.focus();
         }
       }
-      if (clients.openWindow) {
-        return clients.openWindow(targetUrl);
-      }
+      if (clients.openWindow) return clients.openWindow(targetUrl);
     })
   );
 });
