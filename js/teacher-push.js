@@ -120,7 +120,7 @@
       return;
     }
 
-    btn.disabled     = true;
+    btn.disabled      = true;
     btn.style.opacity = '.5';
     if (result) result.textContent = 'Sending…';
 
@@ -140,9 +140,18 @@
       var data = await res.json();
 
       if (res.ok && data.success) {
-        var msg = targetUid === 'all'
-          ? 'Sent to ' + (data.sent || 0) + ' / ' + (data.total || 0) + ' students.'
-          : (data.sent ? 'Notification sent.' : 'Student has no push subscription.');
+        var msg;
+        if (targetUid === 'all') {
+          msg = 'Sent to ' + (data.sent || 0) + ' / ' + (data.total || 0) + ' students.';
+        } else {
+          if (data.sent) {
+            msg = 'Notification sent.';
+          } else if (data.reason === 'No subscription.' || data.reason === 'No subscription found.') {
+            msg = 'Student has no push subscription.';
+          } else {
+            msg = 'Failed to send: ' + (data.reason || 'Push delivery failed. Check worker logs.');
+          }
+        }
         if (result) result.textContent = msg;
         if (window.UI) UI.toast(msg, 'success', 4000);
         if (bodyEl) bodyEl.value = '';
