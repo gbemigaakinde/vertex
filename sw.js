@@ -4,21 +4,7 @@
 
 'use strict';
 
-importScripts('https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js');
-importScripts('https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js');
-
-firebase.initializeApp({
-  apiKey:            'AIzaSyCQk1Q5GyCVo3cKNcHaYHVzAnVeWlqkzns',
-  authDomain:        'excellencecbt.firebaseapp.com',
-  projectId:         'excellencecbt',
-  storageBucket:     'excellencecbt.firebasestorage.app',
-  messagingSenderId: '24170253162',
-  appId:             '1:24170253162:web:6e6cb86c5ffc84aebaf313',
-});
-
-const _fcmMessaging = firebase.messaging();
-
-const CACHE_VERSION = 'v1.20.42';
+const CACHE_VERSION = 'v1.20.43';
 const STATIC_CACHE  = `static-${CACHE_VERSION}`;
 const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
 
@@ -138,14 +124,13 @@ self.addEventListener('fetch', event => {
 
   if (url.pathname === '/sw.js') return;
 
-/* Never cache english.html or physics.html */
-if (
-  url.pathname === '/english.html' ||
-  url.pathname === '/physics.html'
-) {
-  event.respondWith(fetch(request));
-  return;
-}
+  if (
+    url.pathname === '/english.html' ||
+    url.pathname === '/physics.html'
+  ) {
+    event.respondWith(fetch(request));
+    return;
+  }
 
   if (BYPASS_ORIGINS.some(origin => url.hostname.includes(origin))) return;
 
@@ -268,13 +253,12 @@ async function _staleWhileRevalidate(request, cacheName) {
 async function _navigationHandler(request) {
   const url = new URL(request.url);
 
-// Never cache or intercept english.html or physics.html
-if (
-  url.pathname === '/english.html' ||
-  url.pathname === '/physics.html'
-) {
-  return fetch(request);
-}
+  if (
+    url.pathname === '/english.html' ||
+    url.pathname === '/physics.html'
+  ) {
+    return fetch(request);
+  }
 
   try {
     const cachedShell = await caches.match('/index.html');
