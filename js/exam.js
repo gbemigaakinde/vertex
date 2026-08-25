@@ -1118,7 +1118,7 @@ async function renderSubjectSelection() {
           onmouseenter="this.style.opacity='.85';"
           onmouseleave="this.style.opacity='1';"
         >
-          <i class="ph ph-bell" style="font-size:13px;"></i> Notifications
+          <i class="ph ph-bell" style="font-size:13px;"></i>
         </button>
           <button onclick="App.logout()"
                   style="flex-shrink:0;font-size:.6875rem;color:var(--text-4);background:none;
