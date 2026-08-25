@@ -64,163 +64,156 @@
   }
 
   async function subscribe() {
-    if (!_isSupported()) {
-      if (_isIOS() && !_isIOSPWA()) {
-        if (window.UI) UI.toast('To enable notifications on iPhone, add this app to your Home Screen first.', 'info', 8000);
-        return false;
-      }
-      if (window.UI) UI.toast('Push notifications are not supported in your browser.', 'warning', 5000);
+  if (!_isSupported()) {
+    if (_isIOS() && !_isIOSPWA()) {
+      if (window.UI) UI.toast('To enable notifications on iPhone, add this app to your Home Screen first.', 'info', 8000);
       return false;
     }
-
-    var permission = Notification.permission;
-    if (permission === 'denied') {
-      if (window.UI) UI.toast('Notifications are blocked. Please allow them in your browser settings.', 'warning', 6000);
-      return false;
-    }
-    if (permission === 'default') {
-      permission = await Notification.requestPermission();
-    }
-    if (permission !== 'granted') {
-      if (window.UI) UI.toast('Notification permission not granted.', 'info', 3000);
-      return false;
-    }
-
-    try {
-      var reg = await navigator.serviceWorker.ready;
-
-      // Cancel any old subscription first to avoid stale endpoint errors
-      var existing = await reg.pushManager.getSubscription();
-      if (existing) await existing.unsubscribe();
-
-      var sub = await reg.pushManager.subscribe({
-        userVisibleOnly:      true,
-        applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-      });
-
-      var userId = (window.AppState && window.AppState.userId) || 'anon';
-      var saved  = await _saveSubscription(userId, sub.toJSON());
-
-      if (!saved) {
-        if (window.UI) UI.toast('Could not save notification subscription. Please try again.', 'error', 4000);
-        return false;
-      }
-
-      localStorage.setItem(LS_KEY, '1');
-      if (window.UI) UI.toast('Push notifications enabled!', 'success', 3000);
-      _updateToggleUI(true);
-      return true;
-    } catch (err) {
-      console.error('[notifications] subscribe error:', err);
-      if (window.UI) UI.toast('Could not enable notifications. Please try again.', 'error', 4000);
-      return false;
-    }
+    if (window.UI) UI.toast('Push notifications are not supported in your browser.', 'warning', 5000);
+    return false;
   }
 
-  async function unsubscribe() {
-    try {
-      var reg = await navigator.serviceWorker.ready;
-      var sub = await reg.pushManager.getSubscription();
-      if (sub) await sub.unsubscribe();
+  var permission = Notification.permission;
+  if (permission === 'denied') {
+    if (window.UI) UI.toast('Notifications are blocked. Please allow them in your browser settings.', 'warning', 6000);
+    return false;
+  }
+  if (permission === 'default') {
+    permission = await Notification.requestPermission();
+  }
+  if (permission !== 'granted') {
+    if (window.UI) UI.toast('Notification permission not granted.', 'info', 3000);
+    return false;
+  }
 
-      var userId = (window.AppState && window.AppState.userId) || 'anon';
-      await fetch(WORKER_URL + '/api/unsubscribe', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ userId: userId }),
-      });
+  try {
+    var reg = await navigator.serviceWorker.ready;
 
-      localStorage.removeItem(LS_KEY);
-      if (window.UI) UI.toast('Push notifications disabled.', 'info', 3000);
-      _updateToggleUI(false);
-      return true;
-    } catch (err) {
-      console.error('[notifications] unsubscribe error:', err);
+    // Cancel any old subscription first to avoid stale endpoint errors
+    var existing = await reg.pushManager.getSubscription();
+    if (existing) await existing.unsubscribe();
+
+    var sub = await reg.pushManager.subscribe({
+      userVisibleOnly:      true,
+      applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+    });
+
+    var userId = (window.AppState && window.AppState.userId) || 'anon';
+    var saved  = await _saveSubscription(userId, sub.toJSON());
+
+    if (!saved) {
+      if (window.UI) UI.toast('Could not save notification subscription. Please try again.', 'error', 4000);
       return false;
     }
-  }
 
-  async function togglePushNotifications() {
-    var enabled = await isSubscribed();
-    if (enabled) {
-      await unsubscribe();
-    } else {
-      await subscribe();
-    }
+    localStorage.setItem(LS_KEY, '1');
+    if (window.UI) UI.toast('Push notifications enabled!', 'success', 3000);
+    _updateBellUI(true);
+    return true;
+  } catch (err) {
+    console.error('[notifications] subscribe error:', err);
+    if (window.UI) UI.toast('Could not enable notifications. Please try again.', 'error', 4000);
+    return false;
   }
+}
 
-  function _updateToggleUI(on) {
-    var toggleEl = document.getElementById('vtxPushToggle');
-    if (!toggleEl) return;
-    toggleEl.setAttribute('aria-checked', on ? 'true' : 'false');
-    toggleEl.style.background = on ? 'var(--accent)' : 'var(--bg-muted)';
-    var knob = toggleEl.querySelector('.vtx-toggle-knob');
-    if (knob) knob.style.transform = on ? 'translateX(18px)' : 'translateX(0)';
-    var label = document.getElementById('vtxPushToggleLabel');
-    if (label) label.textContent = on ? 'On' : 'Off';
+async function unsubscribe() {
+  try {
+    var reg = await navigator.serviceWorker.ready;
+    var sub = await reg.pushManager.getSubscription();
+    if (sub) await sub.unsubscribe();
+
+    var userId = (window.AppState && window.AppState.userId) || 'anon';
+    await fetch(WORKER_URL + '/api/unsubscribe', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify({ userId: userId }),
+    });
+
+    localStorage.removeItem(LS_KEY);
+    if (window.UI) UI.toast('Push notifications disabled.', 'info', 3000);
+    _updateBellUI(false);
+    return true;
+  } catch (err) {
+    console.error('[notifications] unsubscribe error:', err);
+    return false;
   }
+}
+
+async function togglePushNotifications() {
+  var enabled = await isSubscribed();
+  if (enabled) {
+    await unsubscribe();
+  } else {
+    await subscribe();
+  }
+}
+
+// Updates the bell button in the student dashboard header.
+// The button has id="vtxEnableNotifBtn" and is rendered by exam.js.
+function _updateBellUI(on) {
+  var btn = document.getElementById('vtxEnableNotifBtn');
+  if (!btn) return;
+
+  if (on) {
+    btn.title           = 'Notifications on — click to disable';
+    btn.style.background = 'var(--success)';
+    btn.innerHTML        =
+      '<i class="ph ph-bell-ringing" style="font-size:13px;"></i>';
+  } else {
+    btn.title           = 'Enable push notifications';
+    btn.style.background = 'var(--accent)';
+    btn.innerHTML        =
+      '<i class="ph ph-bell" style="font-size:13px;"></i>';
+  }
+}
 
 async function init(uid) {
   if (!_isSupported()) return;
 
   var userId = uid || (window.AppState && window.AppState.userId) || 'anon';
 
-  if (Notification.permission === 'granted') {
-    try {
-      var reg = await navigator.serviceWorker.ready;
-      var existing = await reg.pushManager.getSubscription();
+  // Always check the real browser subscription state, not just localStorage
+  var reg      = await navigator.serviceWorker.ready.catch(function () { return null; });
+  if (!reg) return;
 
-      var sub;
-      if (!existing) {
-        sub = await reg.pushManager.subscribe({
-          userVisibleOnly:      true,
-          applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-        });
-      } else {
-        sub = existing;
-      }
+  var existing = await reg.pushManager.getSubscription().catch(function () { return null; });
 
-      var saved = await _saveSubscription(userId, sub.toJSON());
-      if (saved) {
-        localStorage.setItem(LS_KEY, '1');
-        _updateToggleUI(true);
-      } else {
-        if (window.UI) UI.toast('Could not register for notifications. Tap the bell to retry.', 'warning', 4000);
-      }
-    } catch (e) {
-      console.warn('[notifications] init subscription error:', e);
+  if (Notification.permission === 'granted' && existing) {
+    // Re-save on every login — refreshes the endpoint in KV in case it rotated
+    var saved = await _saveSubscription(userId, existing.toJSON());
+    if (saved) {
+      localStorage.setItem(LS_KEY, '1');
+      _updateBellUI(true);
+    } else {
+      // KV save failed — reflect uncertain state but don't break the app
+      _updateBellUI(true);
     }
     return;
   }
 
-  if (Notification.permission === 'default' && !_isIOS()) {
+  if (Notification.permission === 'granted' && !existing) {
+    // Permission granted but no active subscription — subscribe silently
     try {
-      var granted = await Notification.requestPermission();
-      if (granted === 'granted') {
-        var reg2 = await navigator.serviceWorker.ready;
-        var sub2 = await reg2.pushManager.subscribe({
-          userVisibleOnly:      true,
-          applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
-        });
-        var saved2 = await _saveSubscription(userId, sub2.toJSON());
-        if (saved2) {
-          localStorage.setItem(LS_KEY, '1');
-          _updateToggleUI(true);
-          if (window.UI) UI.toast('Notifications enabled!', 'success', 3000);
-        } else {
-          if (window.UI) UI.toast('Notification save failed. Tap the bell button to retry.', 'warning', 5000);
-        }
-        return;
+      var sub = await reg.pushManager.subscribe({
+        userVisibleOnly:      true,
+        applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+      });
+      var saved2 = await _saveSubscription(userId, sub.toJSON());
+      if (saved2) {
+        localStorage.setItem(LS_KEY, '1');
+        _updateBellUI(true);
       }
     } catch (e) {
-      console.warn('[notifications] Auto-prompt failed:', e);
-      if (window.UI) UI.toast('Could not enable notifications: ' + e.message, 'warning', 5000);
+      console.warn('[notifications] Silent re-subscribe failed:', e);
+      _updateBellUI(false);
     }
+    return;
   }
 
-  var on = await isSubscribed();
-  _updateToggleUI(on);
-  if (!on) localStorage.removeItem(LS_KEY);
+  // permission is 'default' or 'denied' — show unsubscribed state
+  localStorage.removeItem(LS_KEY);
+  _updateBellUI(false);
 }
 
   function renderSettingsRow(containerId) {
