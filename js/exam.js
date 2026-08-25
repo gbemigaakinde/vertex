@@ -337,13 +337,35 @@
 /* Clock format toggle (called from timetable header btn)  */
 /* ─────────────────────────────────────────────────────── */
 async function _toggleClockFormat() {
+  // Find the button immediately so we can lock it before anything else runs
+  const btn = document.querySelector('button[onclick="Exam._toggleClockFormat()"]');
+
+  // If already processing, do nothing — this is the guard against rapid tapping
+  if (btn && btn.disabled) return;
+
+  if (btn) {
+    btn.disabled = true;
+    btn.style.opacity = '0.5';
+    btn.style.cursor  = 'not-allowed';
+    // Replace button label with a small spinner character
+    btn.textContent = '…';
+  }
+
   const current = _getClockPref();
   _setClockPref(current === '12' ? '24' : '12');
 
-  // Re-render the timetable widget in place if it is currently visible,
-  // otherwise the next full dashboard render will pick up the new pref.
   const widget = document.getElementById('vtxTimetableWidget');
-  if (!widget || !S().studentData) return;
+  if (!widget || !S().studentData) {
+    // No widget visible — just re-enable and return
+    if (btn) {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.style.cursor  = 'pointer';
+      const newPref = _getClockPref();
+      btn.textContent = newPref === '12' ? '24H' : '12H';
+    }
+    return;
+  }
 
   const classKey = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
   try {
@@ -353,9 +375,26 @@ async function _toggleClockFormat() {
       tmp.innerHTML = freshHtml;
       const newWidget = tmp.firstElementChild;
       if (newWidget) widget.replaceWith(newWidget);
+    } else {
+      // Widget disappeared while we were fetching (user navigated away) — just re-enable
+      if (btn && document.body.contains(btn)) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+        btn.style.cursor  = 'pointer';
+        const newPref = _getClockPref();
+        btn.textContent = newPref === '12' ? '24H' : '12H';
+      }
     }
   } catch (e) {
     console.warn('[timetable] Clock toggle re-render failed (non-fatal):', e);
+    // Re-enable the button so the user can try again
+    if (btn && document.body.contains(btn)) {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.style.cursor  = 'pointer';
+      const newPref = _getClockPref();
+      btn.textContent = newPref === '12' ? '24H' : '12H';
+    }
   }
 }
 
@@ -2849,14 +2888,42 @@ async function _downloadTimetablePDF() {
   const todayColIdx = dayDates.findIndex(dd => dd.dateStr === todayStr);
   const nowMin = now.getHours() * 60 + now.getMinutes();
 
-  // Read clock preference for the PDF — matches what the widget shows
+  // Read clock preference for the PDF
   const clockPref = _getClockPref();
+  const is12h     = clockPref === '12';
 
   function parseMins(t) {
     if (!t) return null;
     const m = t.match(/(\d{1,2}):(\d{2})\s*[–\-—]\s*(\d{1,2}):(\d{2})/);
     if (!m) return null;
     return { start: +m[1] * 60 + +m[2], end: +m[3] * 60 + +m[4] };
+  }
+
+  // Converts a single HH:MM to 12-hour format for PDF — no narrow-space, plain space only
+  function _pdfFmt12(hhmm) {
+    if (!hhmm) return hhmm;
+    const m = hhmm.match(/^(\d{1,2}):(\d{2})$/);
+    if (!m) return hhmm;
+    let h = parseInt(m[1], 10);
+    const min = m[2];
+    const period = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+    return h + ':' + min + ' ' + period;
+  }
+
+  // Converts a "HH:MM - HH:MM" range to 12-hour for PDF display
+  // Uses a plain hyphen separator so jsPDF wraps cleanly
+  function _pdfConvert12(raw) {
+    if (!raw || !is12h) return raw || '';
+    const normalised = raw.replace(/[\u2013\u2014\u2212]/g, '-');
+    const parts = normalised.split('-');
+    if (parts.length !== 2) return raw;
+    const start = parts[0].trim();
+    const end   = parts[1].trim();
+    if (!start || !end) return raw;
+    // Two-line format: "10:30 AM" on line one, "11:00 AM" on line two
+    // jsPDF autoTable wraps cell text automatically, so we use a newline
+    return _pdfFmt12(start) + '\n' + _pdfFmt12(end);
   }
 
   /* jsPDF setup — landscape A4 */
@@ -2907,9 +2974,8 @@ async function _downloadTimetablePDF() {
   doc.setFontSize(7.5);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(255, 255, 255);
-  // Show clock format in PDF header so it's clear which format was used
   const rightLabel = (isUsingPermanent ? 'Permanent Schedule' : rangeLabel) +
-                     '   ·   ' + (clockPref === '12' ? '12-hour' : '24-hour');
+                     '   ·   ' + (is12h ? '12-hour' : '24-hour');
   doc.text(rightLabel, PAGE_W - MARGIN, 9, { align: 'right' });
   doc.setFont('helvetica', 'normal');
   doc.setFontSize(6.5);
@@ -2918,21 +2984,22 @@ async function _downloadTimetablePDF() {
 
   y = 24;
 
-  /* Build head row — day headers include date */
+  /* Build head row */
   const head = [['Time / Period', ...DAY_FULL.map((d, i) => {
     const dd = dayDates[i];
     return d + '\n' + dd.dayNum + ' ' + dd.monthSh;
   })]];
 
-  /* Build body rows — convert time strings to the preferred format */
+  /* Build body rows
+     In 12-hour mode, use the two-line format so jsPDF can wrap within the cell.
+     In 24-hour mode, keep the original single-line string. */
   const body = periods.map(p => {
     const vals    = DAY_KEYS.map(dk => (p[dk] || '').trim());
     const firstUp = vals[0].toUpperCase();
     const allSame = firstUp !== '' && vals.every(v => v.toUpperCase() === firstUp);
     const isSpec  = allSame && (firstUp === 'BREAK' || firstUp === 'LUNCH');
 
-    // Convert the stored 24h time string to the preferred format for display
-    const displayTime = _convertTimeStr(p.time || '', clockPref);
+    const displayTime = is12h ? _pdfConvert12(p.time || '') : (p.time || '');
 
     if (isSpec) {
       return [displayTime, firstUp === 'LUNCH' ? 'LUNCH BREAK' : 'BREAK', '', '', '', '', '', ''];
@@ -2940,8 +3007,11 @@ async function _downloadTimetablePDF() {
     return [displayTime, ...vals.map(v => v || '')];
   });
 
-  // In 12-hour mode the time column needs slightly more width
-  const COL_W_TIME = clockPref === '12' ? 34 : 26;
+  // 12-hour time column needs more width because "10:30 AM" is wider than "10:30"
+  // Using two lines (start on line 1, end on line 2) means we need less width
+  // than fitting both on one line, but more height per row — autoTable handles
+  // row height automatically when text wraps.
+  const COL_W_TIME = is12h ? 30 : 26;
   const COL_W_DAY  = (CONTENT_W - COL_W_TIME) / 7;
 
   doc.autoTable({
@@ -2960,9 +3030,15 @@ async function _downloadTimetablePDF() {
       cellPadding: { top: 3, bottom: 3, left: 2, right: 2 },
     },
     columnStyles: {
-      0: { cellWidth: COL_W_TIME, halign: 'left', fontStyle: 'bold',
-           fontSize: clockPref === '12' ? 6 : 6.5,   // slightly smaller in 12h to fit
-           font: 'courier', fillColor: C.surfaceMuted },
+      0: {
+        cellWidth: COL_W_TIME,
+        halign:    'center',          // centre both lines in the cell
+        valign:    'middle',
+        fontStyle: 'bold',
+        fontSize:  is12h ? 6 : 6.5,  // slightly smaller to give the two lines room
+        font:      'courier',
+        fillColor: C.surfaceMuted,
+      },
       1: { cellWidth: COL_W_DAY, halign: 'center' },
       2: { cellWidth: COL_W_DAY, halign: 'center' },
       3: { cellWidth: COL_W_DAY, halign: 'center' },
@@ -2977,7 +3053,7 @@ async function _downloadTimetablePDF() {
       cellPadding: { top: 3.5, bottom: 3.5, left: 2, right: 2 },
       valign:      'middle',
       halign:      'center',
-      minCellHeight: 8,
+      minCellHeight: is12h ? 12 : 8,  // taller rows in 12h mode to fit two lines
     },
     alternateRowStyles: { fillColor: C.surfaceSubtle },
     tableLineColor: C.border,
