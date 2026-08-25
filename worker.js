@@ -126,7 +126,6 @@ if (request.method === 'POST' && url.pathname === '/api/send-push') {
 
   const { teacherUid, targetUid, title, bodyText, notifUrl } = body;
 
-  // Rudimentary teacher auth check — compare against env secret
   if (!teacherUid || teacherUid !== env.TEACHER_UID) {
     return jsonError('Unauthorised.', 403);
   }
@@ -139,7 +138,6 @@ if (request.method === 'POST' && url.pathname === '/api/send-push') {
     url:     notifUrl || '/',
   });
 
-  // Broadcast to all students if no targetUid
   if (!targetUid || targetUid === 'all') {
     const indexRaw = await env.VTX_RATE_LIMITS.get('push_index');
     if (!indexRaw) return new Response(JSON.stringify({ success: true, sent: 0 }), { headers: corsJsonHeaders() });
@@ -929,10 +927,42 @@ function _b64urlEncode(obj) {
   return btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
 }
 
+// Convert ASN.1 DER ECDSA signature to raw r||s (64 bytes for P-256)
+function _derToRawP256Sig(derBytes) {
+  var pos = 0;
+  if (derBytes[pos++] !== 0x30) throw new Error('Invalid DER signature: no SEQUENCE');
+  var len = derBytes[pos++];
+  if (len & 0x80) {
+    var numLenBytes = len & 0x7f;
+    len = 0;
+    for (var i = 0; i < numLenBytes; i++) len = (len << 8) | derBytes[pos++];
+  }
+
+  if (derBytes[pos++] !== 0x02) throw new Error('Invalid DER: expected INTEGER for r');
+  var rLen = derBytes[pos++];
+  var r = derBytes.slice(pos, pos + rLen);
+  pos += rLen;
+
+  if (derBytes[pos++] !== 0x02) throw new Error('Invalid DER: expected INTEGER for s');
+  var sLen = derBytes[pos++];
+  var s = derBytes.slice(pos, pos + sLen);
+
+  // Zero-pad to 32 bytes each
+  var rPad = new Uint8Array(32);
+  var sPad = new Uint8Array(32);
+  rPad.set(r, 32 - r.length);
+  sPad.set(s, 32 - s.length);
+
+  var out = new Uint8Array(64);
+  out.set(rPad, 0);
+  out.set(sPad, 32);
+  return out;
+}
+
 async function _buildVapidHeaders(endpoint, vapidPrivKey, vapidPubKeyB64url) {
   var privateKey;
 
-  // 1) Try JWK first
+  // 1) Try JWK (your current format)
   try {
     var jwk = JSON.parse(vapidPrivKey);
     privateKey = await crypto.subtle.importKey(
@@ -942,7 +972,7 @@ async function _buildVapidHeaders(endpoint, vapidPrivKey, vapidPubKeyB64url) {
       ['sign']
     );
   } catch (jwkErr) {
-    // 2) Fall back to base64url-encoded PKCS8 (standard web-push output)
+    // 2) Fall back to base64url-encoded PKCS8 (for anyone else using web-push CLI output)
     try {
       var keyBytes = _b64urlToBytes(vapidPrivKey);
       privateKey = await crypto.subtle.importKey(
@@ -959,9 +989,9 @@ async function _buildVapidHeaders(endpoint, vapidPrivKey, vapidPubKeyB64url) {
     }
   }
 
-  var endpointUrl  = new URL(endpoint);
-  var audience     = endpointUrl.protocol + '//' + endpointUrl.host;
-  var expiry       = Math.floor(Date.now() / 1000) + 12 * 3600; // 12h
+  var endpointUrl = new URL(endpoint);
+  var audience    = endpointUrl.protocol + '//' + endpointUrl.host;
+  var expiry      = Math.floor(Date.now() / 1000) + 12 * 3600;
 
   var header  = _b64urlEncode({ typ: 'JWT', alg: 'ES256' });
   var payload = _b64urlEncode({ aud: audience, exp: expiry, sub: 'mailto:admin@vertextutorial.com' });
@@ -973,8 +1003,10 @@ async function _buildVapidHeaders(endpoint, vapidPrivKey, vapidPubKeyB64url) {
     new TextEncoder().encode(sigInput)
   );
 
-  var sig = _bytesToB64url(new Uint8Array(sigBytes));
-  var jwt = sigInput + '.' + sig;
+  // CRITICAL FIX: convert DER signature to raw r||s for JWT ES256
+  var rawSig = _derToRawP256Sig(new Uint8Array(sigBytes));
+  var sig    = _bytesToB64url(rawSig);
+  var jwt    = sigInput + '.' + sig;
 
   return {
     'Authorization': 'vapid t=' + jwt + ', k=' + vapidPubKeyB64url,
@@ -1075,13 +1107,12 @@ async function sendWebPush(subscription, payloadStr, env) {
 
     // Build the body:
     // salt (16) + record size (4, BE uint32) + server pub len (1) + server pub (65) + ciphertext
-    var rs        = encrypted.ciphertext.length;  // FIXED: was 2*ciphertext.length+2
+    var rs        = encrypted.ciphertext.length;  // FIXED: was 2*ciphertext.length + 2
     var bodyParts = new Uint8Array(16 + 4 + 1 + 65 + encrypted.ciphertext.length);
     var pos       = 0;
 
     bodyParts.set(encrypted.salt, pos); pos += 16;
 
-    // Record size as 4-byte big-endian
     bodyParts[pos]   = (rs >> 24) & 0xff;
     bodyParts[pos+1] = (rs >> 16) & 0xff;
     bodyParts[pos+2] = (rs >>  8) & 0xff;
