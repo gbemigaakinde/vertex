@@ -1095,6 +1095,81 @@ async function sendWebPush(subscription, payloadStr, env) {
   }
 }
 
+/* ── Firebase auth token helper ─────────────────────────── */
+async function _signJwt(clientEmail, privateKeyPem) {
+  // Strip PEM headers and decode
+  var pemContents = privateKeyPem
+    .replace(/-----BEGIN PRIVATE KEY-----/, '')
+    .replace(/-----END PRIVATE KEY-----/, '')
+    .replace(/\s+/g, '');
+
+  var keyBytes = Uint8Array.from(atob(pemContents), function (c) {
+    return c.charCodeAt(0);
+  });
+
+  var cryptoKey = await crypto.subtle.importKey(
+    'pkcs8',
+    keyBytes,
+    { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' },
+    false,
+    ['sign']
+  );
+
+  var now = Math.floor(Date.now() / 1000);
+
+  var header  = _b64urlEncode({ alg: 'RS256', typ: 'JWT' });
+  var payload = _b64urlEncode({
+    iss:   clientEmail,
+    sub:   clientEmail,
+    aud:   'https://oauth2.googleapis.com/token',
+    iat:   now,
+    exp:   now + 3600,
+    scope: 'https://www.googleapis.com/auth/datastore',
+  });
+
+  var sigInput = header + '.' + payload;
+  var sigBytes = await crypto.subtle.sign(
+    'RSASSA-PKCS1-v1_5',
+    cryptoKey,
+    new TextEncoder().encode(sigInput)
+  );
+
+  var sig = _bytesToB64url(new Uint8Array(sigBytes));
+  return sigInput + '.' + sig;
+}
+
+async function _getFirebaseToken(env) {
+  var clientEmail = env.FIREBASE_CLIENT_EMAIL;
+  var privateKey  = env.FIREBASE_PRIVATE_KEY;
+
+  if (!clientEmail || !privateKey) {
+    console.warn('[Worker] FIREBASE_CLIENT_EMAIL or FIREBASE_PRIVATE_KEY not set.');
+    return null;
+  }
+
+  try {
+    var jwt = await _signJwt(clientEmail, privateKey);
+
+    var tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body:    'grant_type=urn%3Aietf%3Aparams%3Aoauth%3Agrant-type%3Ajwt-bearer&assertion=' + jwt,
+    });
+
+    if (!tokenRes.ok) {
+      console.warn('[Worker] Token exchange failed:', await tokenRes.text());
+      return null;
+    }
+
+    var tokenData = await tokenRes.json();
+    return tokenData.access_token || null;
+
+  } catch (e) {
+    console.warn('[Worker] _getFirebaseToken error:', e.message);
+    return null;
+  }
+}
+
 /* ── Daily reminder cron ─────────────────────────────────── */
 async function _runDailyReminders(env) {
   if (!env.VTX_RATE_LIMITS) {
@@ -1116,6 +1191,12 @@ async function _runDailyReminders(env) {
     return;
   }
 
+  // Get a single Firebase auth token to reuse for all student fetches
+  var accessToken = await _getFirebaseToken(env);
+  if (!accessToken) {
+    console.warn('[cron] Could not obtain Firebase token — student data fetch will be skipped.');
+  }
+
   var tomorrow = new Date();
   tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
   var tomorrowStr = tomorrow.toISOString().slice(0, 10);
@@ -1131,21 +1212,23 @@ async function _runDailyReminders(env) {
 
       var subscription = JSON.parse(subRaw);
 
-      // Fetch Firestore student document.
-      // We read Firestore via REST since we are in a Worker.
+      // Fetch Firestore student document with auth token
       var firestoreUrl =
         'https://firestore.googleapis.com/v1/projects/excellencecbt/databases/(default)/documents/students/' + uid;
 
-      var docRes = await fetch(firestoreUrl);
+      var fetchOptions = accessToken
+        ? { headers: { 'Authorization': 'Bearer ' + accessToken } }
+        : {};
+
+      var docRes = await fetch(firestoreUrl, fetchOptions);
 
       if (!docRes.ok) {
-        console.warn('[cron] Could not fetch student', uid);
+        console.warn('[cron] Could not fetch student', uid, '— status:', docRes.status);
         continue;
       }
 
       var docJson = await docRes.json();
-
-      var fields = (docJson && docJson.fields) || {};
+      var fields  = (docJson && docJson.fields) || {};
 
       var streakVal =
         fields.studyStreak && fields.studyStreak.integerValue
@@ -1180,52 +1263,34 @@ async function _runDailyReminders(env) {
       if (nextExamRaw && nextExamRaw.slice(0, 10) === tomorrowStr) {
         payload = {
           title: 'Exam Tomorrow',
-          body: 'Your exam is tomorrow. Ready for a quick review?',
-          url: '/'
+          body:  'Your exam is tomorrow. Ready for a quick review?',
+          url:   '/',
         };
       }
-
       // Priority 2: streak at risk
       else if (streakVal > 0 && !doneToday) {
         payload = {
           title: 'Keep Your Streak',
-          body: 'Do not break your ' + streakVal + '-day streak. Open the app for a quick session.',
-          url: '/'
+          body:  'Do not break your ' + streakVal + '-day streak. Open the app for a quick session.',
+          url:   '/',
         };
       }
-
       // Priority 3: weak topic nudge
       else if (weakTopics.length > 0) {
-        var topic = weakTopics[0];
-
         payload = {
           title: 'Quick Study Tip',
-          body: 'Struggling with ' + topic + '? A 10-minute review can help.',
-          url: '/'
+          body:  'Struggling with ' + weakTopics[0] + '? A 10-minute review can help.',
+          url:   '/',
         };
       }
 
       if (payload) {
-        var sent = await sendWebPush(
-          subscription,
-          JSON.stringify(payload),
-          env
-        );
-
-        console.log(
-          '[cron] Push to',
-          uid,
-          ':',
-          sent ? 'sent' : 'failed'
-        );
+        var sent = await sendWebPush(subscription, JSON.stringify(payload), env);
+        console.log('[cron] Push to', uid, ':', sent ? 'sent' : 'failed');
       }
+
     } catch (err) {
-      console.warn(
-        '[cron] Error for user',
-        uid,
-        ':',
-        err.message || err
-      );
+      console.warn('[cron] Error for user', uid, ':', err.message || err);
     }
   }
 }
