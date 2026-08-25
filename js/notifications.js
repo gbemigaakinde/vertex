@@ -194,7 +194,32 @@ async function init(uid) {
     }
   }
 
-  // Permission not yet granted — update the toggle UI to reflect current state
+  // Permission not yet asked — prompt the student automatically
+  if (Notification.permission === 'default' && _isSupported() && !_isIOS()) {
+    try {
+      var granted = await Notification.requestPermission();
+      if (granted === 'granted') {
+        // Permission just granted — now subscribe silently
+        var reg3 = await navigator.serviceWorker.ready;
+        var sub3 = await reg3.pushManager.subscribe({
+          userVisibleOnly:      true,
+          applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
+        });
+        await fetch(WORKER_URL + '/api/save-subscription', {
+          method:  'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body:    JSON.stringify({ userId: userId, subscription: sub3.toJSON() }),
+        });
+        localStorage.setItem(LS_KEY, '1');
+        _updateToggleUI(true);
+        return;
+      }
+    } catch (e) {
+      console.warn('[notifications] Auto-prompt failed:', e);
+    }
+  }
+
+  // Permission denied or unsupported — update toggle UI only
   var on = await isSubscribed();
   _updateToggleUI(on);
   if (!on) localStorage.removeItem(LS_KEY);
