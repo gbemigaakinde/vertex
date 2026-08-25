@@ -333,7 +333,7 @@
     return thursday.getFullYear() + '-W' + String(wn).padStart(2, '0');
   }
 
-  async function _fetchWeeklyTimetableHtml(classKey) {
+async function _fetchWeeklyTimetableHtml(classKey) {
   try {
     if (!navigator.onLine || !window.fbDb || !classKey) return '';
 
@@ -352,7 +352,6 @@
           const d = studentSnap.data() || {};
           const weekKey = _isoWeekKey();
           const allTT   = d.timetables || {};
-          // Must have at least one timetable entry to count as a real override
           if (allTT[weekKey] || allTT['permanent']) {
             ttData        = d;
             overrideLabel = 'Personal';
@@ -495,34 +494,49 @@
                     : isNextPeriod    ? 'border-left:2px solid var(--accent-border);'
                     : '';
 
+      // ── Badge rendered on its OWN LINE below the time text ──
       let nowBadge = '';
       if (isCurrentPeriod && range) {
         const minsLeft = range.end - nowMin;
-        nowBadge = `<span style="display:inline-flex;align-items:center;gap:3px;
-                       margin-left:5px;font-size:.55rem;font-weight:700;letter-spacing:.04em;
-                       padding:1px 5px;border-radius:99px;
-                       background:var(--warning);color:#fff;vertical-align:middle;
-                       animation:cbt-pulse 1.5s ease-in-out infinite;">
-                      NOW \u00b7 ${minsLeft}min left
-                    </span>`;
+        nowBadge =
+          '<span style="' +
+            'display:inline-flex;align-items:center;gap:3px;' +
+            'margin-top:4px;' +           // space below the time text
+            'font-size:.55rem;font-weight:700;letter-spacing:.04em;' +
+            'padding:2px 6px;border-radius:99px;' +
+            'background:var(--warning);color:#fff;' +
+            'animation:cbt-pulse 1.5s ease-in-out infinite;' +
+            'white-space:nowrap;' +
+          '">' +
+            'NOW \u00b7 ' + minsLeft + 'min left' +
+          '</span>';
       }
       if (isNextPeriod && range) {
         const minsUntil = range.start - nowMin;
-        nowBadge = `<span style="display:inline-flex;align-items:center;gap:3px;
-                       margin-left:5px;font-size:.55rem;font-weight:600;letter-spacing:.04em;
-                       padding:1px 5px;border-radius:99px;
-                       background:var(--accent-subtle);color:var(--accent-text);vertical-align:middle;">
-                      NEXT \u00b7 in ${minsUntil}min
-                    </span>`;
+        nowBadge =
+          '<span style="' +
+            'display:inline-flex;align-items:center;gap:3px;' +
+            'margin-top:4px;' +           // space below the time text
+            'font-size:.55rem;font-weight:600;letter-spacing:.04em;' +
+            'padding:2px 6px;border-radius:99px;' +
+            'background:var(--accent-subtle);color:var(--accent-text);' +
+            'white-space:nowrap;' +
+          '">' +
+            'NEXT \u00b7 in ' + minsUntil + 'min' +
+          '</span>';
       }
 
+      // Time cell: flex column so badge sits below the time string
       const timeCell =
         '<td style="' + CB + lBorder + 'background:' + rowBg + ';' +
           'font-family:var(--font-mono);font-size:.75rem;font-weight:600;' +
           'color:' + (isCurrentPeriod ? 'var(--warning)' : isNextPeriod ? 'var(--accent)' : 'var(--text-3)') + ';' +
-          'white-space:nowrap;min-width:86px;">' +
-          _escHtml(p.time || '\u2014') +
-          nowBadge +
+          'white-space:nowrap;min-width:86px;' +
+          'vertical-align:middle;">' +
+          '<div style="display:flex;flex-direction:column;align-items:flex-start;gap:0;">' +
+            '<span>' + _escHtml(p.time || '\u2014') + '</span>' +
+            (nowBadge ? nowBadge : '') +
+          '</div>' +
         '</td>';
 
       if (isSpecial) {
