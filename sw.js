@@ -216,7 +216,7 @@ self.addEventListener('pushsubscriptionchange', function (event) {
   event.waitUntil(
     self.registration.pushManager.subscribe({
       userVisibleOnly:      true,
-      applicationServerKey: 'BCjYlOnZftKfqqez37mKt9sLy_XAO3BylbLyOUGfkO4ABeM_YYY9xEZuxplaSvrrYGEcwcBkFTGt5Rjbitz1QTA',
+      applicationServerKey: 'BL43uSEQeh09fAtjR-H-GXoEAASmljn7vaszJDxtp8vPA1wFjhmqd9UrE35aPmsQEE-uBVpSr3uL1cB5oSBx0qs',
     })
     .then(function (newSub) {
       return fetch('https://vertex-worker.gbemigaakinde.workers.dev/api/save-subscription', {
