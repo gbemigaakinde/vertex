@@ -257,9 +257,6 @@ async function handleVisualRequest(body, env) {
 }
 
 /* ── Visual type decision logic ──────────────────────────
-   Image patterns are checked FIRST — these are more specific
-   to what students actually request visually.
-   SVG patterns come second for technical/scientific diagrams.
 ─────────────────────────────────────────────────────────── */
 function decideVisualType(topic, subject) {
   const t = (topic   || '').toLowerCase();
