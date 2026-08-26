@@ -5,7 +5,7 @@
 (function () {
   'use strict';
 
-  var VAPID_PUBLIC_KEY = 'BCjYlOnZftKfqqez37mKt9sLy_XAO3BylbLyOUGfkO4ABeM_YYY9xEZuxplaSvrrYGEcwcBkFTGt5Rjbitz1QTA';
+  var VAPID_PUBLIC_KEY = 'BL43uSEQeh09fAtjR-H-GXoEAASmljn7vaszJDxtp8vPA1wFjhmqd9UrE35aPmsQEE-uBVpSr3uL1cB5oSBx0qs';
 
   var WORKER_URL = 'https://vertex-worker.gbemigaakinde.workers.dev';
   var LS_KEY     = 'vtx_push_enabled';
