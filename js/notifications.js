@@ -89,9 +89,6 @@
   try {
     var reg = await navigator.serviceWorker.ready;
 
-   var encodings = PushManager.supportedContentEncodings || ['unknown'];
-   if (window.UI) UI.toast('Encodings: ' + encodings.join(', '), 'info', 10000);
-
     // Cancel any old subscription first to avoid stale endpoint errors
     var existing = await reg.pushManager.getSubscription();
     if (existing) await existing.unsubscribe();
