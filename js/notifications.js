@@ -216,44 +216,46 @@ async function init(uid) {
   _updateBellUI(false);
 }
 
-  function renderSettingsRow(containerId) {
-    var el = document.getElementById(containerId);
-    if (!el) return;
+function renderSettingsRow(containerId) {
+  var el = document.getElementById(containerId);
+  if (!el) return;
 
-    var supported = _isSupported();
-    var iosNote   = _isIOS() && !_isIOSPWA()
-      ? '<p style="font-size:.75rem;color:var(--warning-text);margin-top:.25rem;line-height:1.5;">' +
-        '⚠️ On iPhone, add this app to your Home Screen to enable notifications.</p>'
-      : '';
+  var supported = _isSupported();
+  var iosNote   = _isIOS() && !_isIOSPWA()
+    ? '<p style="font-size:.75rem;color:var(--warning-text);margin-top:.25rem;line-height:1.5;">' +
+      '⚠️ On iPhone, add this app to your Home Screen to enable notifications.</p>'
+    : '';
 
-    el.innerHTML = (
-      '<div style="display:flex;align-items:center;justify-content:space-between;' +
-        'gap:1rem;padding:.875rem 1rem;border:1px solid var(--border);' +
-        'border-radius:var(--r-lg);background:var(--bg-base);">' +
-        '<div>' +
-          '<p style="font-size:.875rem;font-weight:600;color:var(--text-1);">Push Notifications</p>' +
-          '<p style="font-size:.75rem;color:var(--text-3);margin-top:2px;line-height:1.5;">' +
-            'Get exam reminders and messages from Master Timothy.' +
-          '</p>' +
-          iosNote +
-        '</div>' +
-        (supported
-          ? '<button id="vtxPushToggle" role="switch" aria-checked="false" ' +
-              'onclick="Notifications.toggle()" ' +
-              'style="position:relative;width:44px;height:26px;border-radius:99px;' +
-                'background:var(--bg-muted);border:none;cursor:pointer;' +
-                'transition:background .2s;flex-shrink:0;padding:0;">' +
-              '<span class="vtx-toggle-knob" style="position:absolute;top:3px;left:3px;' +
-                'width:20px;height:20px;border-radius:50%;background:#fff;' +
-                'box-shadow:0 1px 4px rgba(0,0,0,.2);transition:transform .2s;' +
-                'display:block;"></span>' +
-            '</button>'
-          : '<span style="font-size:.75rem;color:var(--text-4);font-style:italic;">Not supported</span>') +
-      '</div>'
-    );
+  el.innerHTML = (
+    '<div style="display:flex;align-items:center;justify-content:space-between;' +
+      'gap:1rem;padding:.875rem 1rem;border:1px solid var(--border);' +
+      'border-radius:var(--r-lg);background:var(--bg-base);">' +
+      '<div>' +
+        '<p style="font-size:.875rem;font-weight:600;color:var(--text-1);">Push Notifications</p>' +
+        '<p style="font-size:.75rem;color:var(--text-3);margin-top:2px;line-height:1.5;">' +
+          'Get exam reminders and messages from Master Timothy.' +
+        '</p>' +
+        iosNote +
+      '</div>' +
+      (supported
+        ? '<button id="vtxPushToggle" role="switch" aria-checked="false" ' +
+            'onclick="Notifications.toggle()" ' +
+            'style="position:relative;width:44px;height:26px;border-radius:99px;' +
+              'background:var(--bg-muted);border:none;cursor:pointer;' +
+              'transition:background .2s;flex-shrink:0;padding:0;">' +
+            '<span class="vtx-toggle-knob" style="position:absolute;top:3px;left:3px;' +
+              'width:20px;height:20px;border-radius:50%;background:#fff;' +
+              'box-shadow:0 1px 4px rgba(0,0,0,.2);transition:transform .2s;' +
+              'display:block;"></span>' +
+          '</button>'
+        : '<span style="font-size:.75rem;color:var(--text-4);font-style:italic;">Not supported</span>') +
+    '</div>'
+  );
 
-    init();
-  }
+  // FIX: pass the actual userId so the subscription isn't re-saved under 'anon'
+  var uid = (window.AppState && window.AppState.userId) || null;
+  init(uid);
+}
 
   window.Notifications = {
     subscribe:         subscribe,
