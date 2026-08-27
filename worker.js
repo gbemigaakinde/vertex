@@ -74,20 +74,31 @@ if (request.method === 'POST' && url.pathname === '/ai') {
     }
 
     // ── Push subscription routes ──────────────────────────────
-    if (request.method === 'POST' && url.pathname === '/api/save-subscription') {
-      let body;
-      try { body = await request.json(); } catch (e) { return jsonError('Invalid JSON.', 400); }
-      const { userId, subscription } = body;
-      if (!userId || !subscription) return jsonError('Missing userId or subscription.', 400);
-      if (!env.VTX_RATE_LIMITS) return jsonError('KV not bound.', 500);
-      await env.VTX_RATE_LIMITS.put('push:' + userId, JSON.stringify(subscription));
-      // Also add to index list so cron can enumerate subscribers
-      const indexRaw = await env.VTX_RATE_LIMITS.get('push_index');
-      const index    = indexRaw ? JSON.parse(indexRaw) : [];
-      if (!index.includes(userId)) index.push(userId);
-      await env.VTX_RATE_LIMITS.put('push_index', JSON.stringify(index));
-      return new Response(JSON.stringify({ success: true }), { headers: corsJsonHeaders() });
-    }
+  if (request.method === 'POST' && url.pathname === '/api/save-subscription') {
+  let body;
+  try { body = await request.json(); } catch (e) { return jsonError('Invalid JSON.', 400); }
+  const { userId, subscription, studentClass, studentName } = body;
+  if (!userId || !subscription) return jsonError('Missing userId or subscription.', 400);
+  if (!env.VTX_RATE_LIMITS) return jsonError('KV not bound.', 500);
+  await env.VTX_RATE_LIMITS.put('push:' + userId, JSON.stringify(subscription));
+  const indexRaw = await env.VTX_RATE_LIMITS.get('push_index');
+  const index    = indexRaw ? JSON.parse(indexRaw) : [];
+  if (!index.includes(userId)) index.push(userId);
+  await env.VTX_RATE_LIMITS.put('push_index', JSON.stringify(index));
+
+  // Store class/name meta so class-targeted sends don't need a Firestore
+  // query. Optional fields — older callers that omit them are unaffected.
+  if (studentClass || studentName) {
+    await env.VTX_RATE_LIMITS.put('meta:' + userId, JSON.stringify({
+      class:     studentClass || '',
+      classKey:  _classKey(studentClass),
+      name:      studentName  || '',
+      updatedAt: Date.now(),
+    }));
+  }
+
+  return new Response(JSON.stringify({ success: true }), { headers: corsJsonHeaders() });
+}
 
     if (request.method === 'POST' && url.pathname === '/api/unsubscribe') {
       let body;
@@ -124,7 +135,7 @@ if (request.method === 'POST' && url.pathname === '/api/send-push') {
   try { body = await request.json(); }
   catch (e) { return jsonError('Invalid JSON.', 400); }
 
-  const { teacherUid, targetUid, title, bodyText, notifUrl } = body;
+  const { teacherUid, targetUid, targetType, targetClasses, title, bodyText, notifUrl } = body;
 
   if (!teacherUid || teacherUid !== env.TEACHER_UID) {
     return jsonError('Unauthorised.', 403);
@@ -138,31 +149,32 @@ if (request.method === 'POST' && url.pathname === '/api/send-push') {
     url:     notifUrl || '/',
   });
 
+  // ── New: class-targeted broadcast (multiple classes per send) ──
+  if (targetType === 'classes') {
+    if (!Array.isArray(targetClasses) || targetClasses.length === 0) {
+      return jsonError('Missing targetClasses.', 400);
+    }
+    const uids   = await _resolveUidsForClasses(targetClasses, env);
+    const result = await _sendPushToUidList(uids, payload, env);
+    return new Response(JSON.stringify({ success: true, sent: result.sent, total: result.total }), {
+      headers: corsJsonHeaders(),
+    });
+  }
+
+  // ── Existing: broadcast to all ──
   if (!targetUid || targetUid === 'all') {
     const indexRaw = await env.VTX_RATE_LIMITS.get('push_index');
     if (!indexRaw) return new Response(JSON.stringify({ success: true, sent: 0 }), { headers: corsJsonHeaders() });
 
     const userIds = JSON.parse(indexRaw);
-    let sentCount = 0;
+    const result  = await _sendPushToUidList(userIds, payload, env);
 
-    for (const uid of userIds) {
-      try {
-        const subRaw = await env.VTX_RATE_LIMITS.get('push:' + uid);
-        if (!subRaw) continue;
-        const subscription = JSON.parse(subRaw);
-        const result = await sendWebPush(subscription, payload, env);
-        if (result.ok) sentCount++;
-      } catch (e) {
-        console.warn('[Worker] Broadcast push failed for', uid, ':', e.message);
-      }
-    }
-
-    return new Response(JSON.stringify({ success: true, sent: sentCount, total: userIds.length }), {
+    return new Response(JSON.stringify({ success: true, sent: result.sent, total: result.total }), {
       headers: corsJsonHeaders(),
     });
   }
 
-  // Single student
+  // ── Existing: single student ──
   const subRaw = await env.VTX_RATE_LIMITS.get('push:' + targetUid);
   if (!subRaw) return new Response(JSON.stringify({ success: true, sent: false, reason: 'No subscription.' }), { headers: corsJsonHeaders() });
 
@@ -171,12 +183,118 @@ if (request.method === 'POST' && url.pathname === '/api/send-push') {
   return new Response(JSON.stringify({ success: true, sent: result.ok, reason: result.reason }), { headers: corsJsonHeaders() });
 }
 
+// ── Create scheduled/recurring push ──
+if (request.method === 'POST' && url.pathname === '/api/schedule-push') {
+  let body;
+  try { body = await request.json(); } catch (e) { return jsonError('Invalid JSON.', 400); }
+
+  const {
+    teacherUid, title, bodyText, notifUrl,
+    targetType, targetClasses, targetUid,
+    recurrence, timeOfDay, weeklyDays, sendAtUTC, endDate,
+  } = body;
+
+  if (!teacherUid || teacherUid !== env.TEACHER_UID) return jsonError('Unauthorised.', 403);
+  if (!env.VTX_RATE_LIMITS) return jsonError('KV not bound.', 500);
+  if (!bodyText) return jsonError('Missing bodyText.', 400);
+  if (!recurrence || !['once', 'daily', 'weekly'].includes(recurrence)) {
+    return jsonError('Invalid recurrence.', 400);
+  }
+  if ((recurrence === 'daily' || recurrence === 'weekly') && !timeOfDay) {
+    return jsonError('Missing timeOfDay for recurring schedule.', 400);
+  }
+  if (recurrence === 'weekly' && (!Array.isArray(weeklyDays) || weeklyDays.length === 0)) {
+    return jsonError('Missing weeklyDays for weekly schedule.', 400);
+  }
+  if (recurrence === 'once' && !sendAtUTC) {
+    return jsonError('Missing sendAtUTC for one-off schedule.', 400);
+  }
+  if (targetType === 'classes' && (!Array.isArray(targetClasses) || targetClasses.length === 0)) {
+    return jsonError('Missing targetClasses.', 400);
+  }
+
+  const id = 'sch_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8);
+  const record = {
+    id,
+    title:         title || 'Message from Master Timothy',
+    bodyText,
+    notifUrl:      notifUrl || '/',
+    targetType:    targetType || 'all',
+    targetClasses: targetType === 'classes' ? targetClasses : null,
+    targetUid:     targetType === 'student' ? targetUid : null,
+    recurrence,
+    timeOfDay:     timeOfDay || null,
+    weeklyDays:    recurrence === 'weekly' ? weeklyDays : null,
+    sendAtUTC:     recurrence === 'once' ? sendAtUTC : null,
+    endDate:       endDate || null,
+    status:        'active',
+    lastSentDate:  null,
+    createdAt:     Date.now(),
+  };
+
+  await env.VTX_RATE_LIMITS.put('scheduled:' + id, JSON.stringify(record));
+
+  const idxRaw = await env.VTX_RATE_LIMITS.get('scheduled_index');
+  const idx    = idxRaw ? JSON.parse(idxRaw) : [];
+  idx.push(id);
+  await env.VTX_RATE_LIMITS.put('scheduled_index', JSON.stringify(idx));
+
+  return new Response(JSON.stringify({ success: true, id }), { headers: corsJsonHeaders() });
+}
+
+// ── List scheduled pushes ──
+if (request.method === 'POST' && url.pathname === '/api/list-scheduled-pushes') {
+  let body;
+  try { body = await request.json(); } catch (e) { return jsonError('Invalid JSON.', 400); }
+  const { teacherUid } = body;
+  if (!teacherUid || teacherUid !== env.TEACHER_UID) return jsonError('Unauthorised.', 403);
+  if (!env.VTX_RATE_LIMITS) return jsonError('KV not bound.', 500);
+
+  const idxRaw = await env.VTX_RATE_LIMITS.get('scheduled_index');
+  const idx    = idxRaw ? JSON.parse(idxRaw) : [];
+
+  const records = [];
+  for (const id of idx) {
+    const raw = await env.VTX_RATE_LIMITS.get('scheduled:' + id);
+    if (raw) records.push(JSON.parse(raw));
+  }
+  records.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+
+  return new Response(JSON.stringify({ success: true, scheduled: records }), { headers: corsJsonHeaders() });
+}
+
+// ── Cancel a scheduled push ──
+if (request.method === 'POST' && url.pathname === '/api/cancel-scheduled-push') {
+  let body;
+  try { body = await request.json(); } catch (e) { return jsonError('Invalid JSON.', 400); }
+  const { teacherUid, id } = body;
+  if (!teacherUid || teacherUid !== env.TEACHER_UID) return jsonError('Unauthorised.', 403);
+  if (!id) return jsonError('Missing id.', 400);
+  if (!env.VTX_RATE_LIMITS) return jsonError('KV not bound.', 500);
+
+  const raw = await env.VTX_RATE_LIMITS.get('scheduled:' + id);
+  if (!raw) return jsonError('Scheduled push not found.', 404);
+
+  const record = JSON.parse(raw);
+  record.status = 'cancelled';
+  await env.VTX_RATE_LIMITS.put('scheduled:' + id, JSON.stringify(record));
+
+  return new Response(JSON.stringify({ success: true }), { headers: corsJsonHeaders() });
+}
+
     return new Response('Not found.', { status: 404 });
   },
 
   // ── Cron handler ───────────────────────────────────────────
+  // Two triggers are registered in wrangler.jsonc:
+  //   "0 19 * * *"   → existing daily reminder sweep (unchanged)
+  //   "*/5 * * * *"  → new scheduled/recurring push checker
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(_runDailyReminders(env));
+    if (event.cron === '*/5 * * * *') {
+      ctx.waitUntil(_runScheduledPushChecker(env));
+    } else {
+      ctx.waitUntil(_runDailyReminders(env));
+    }
   },
 };
 
@@ -894,6 +1012,151 @@ function jsonError(message, status) {
   return new Response(JSON.stringify({ error: message }), { status, headers: corsJsonHeaders() });
 }
 
+/* ══════════════════════════════════════════════════════════
+   CLASS TARGETING + SCHEDULED PUSH HELPERS
+══════════════════════════════════════════════════════════ */
+
+function _classKey(str) {
+  return (str || '').trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+}
+
+// Lagos is fixed UTC+1 year-round (no DST) — a plain offset shift is correct.
+const LAGOS_OFFSET_MIN = 60;
+
+function _lagosNowParts() {
+  const shifted = new Date(Date.now() + LAGOS_OFFSET_MIN * 60000);
+  const y  = shifted.getUTCFullYear();
+  const mo = String(shifted.getUTCMonth() + 1).padStart(2, '0');
+  const d  = String(shifted.getUTCDate()).padStart(2, '0');
+  const hh = String(shifted.getUTCHours()).padStart(2, '0');
+  const mm = String(shifted.getUTCMinutes()).padStart(2, '0');
+  return {
+    dateStr: y + '-' + mo + '-' + d,
+    timeStr: hh + ':' + mm,
+    dow:     shifted.getUTCDay(), // 0=Sun..6=Sat
+  };
+}
+
+// Resolves class names to subscribed uids via meta:<uid>, avoiding a
+// Firestore query on every send.
+async function _resolveUidsForClasses(targetClasses, env) {
+  const wantedKeys = targetClasses.map(_classKey);
+  const indexRaw   = await env.VTX_RATE_LIMITS.get('push_index');
+  const allUids    = indexRaw ? JSON.parse(indexRaw) : [];
+
+  const matched = [];
+  for (const uid of allUids) {
+    try {
+      const metaRaw = await env.VTX_RATE_LIMITS.get('meta:' + uid);
+      if (!metaRaw) continue;
+      const meta = JSON.parse(metaRaw);
+      if (meta.classKey && wantedKeys.includes(meta.classKey)) {
+        matched.push(uid);
+      }
+    } catch (e) {
+      console.warn('[Worker] _resolveUidsForClasses meta read failed for', uid, ':', e.message);
+    }
+  }
+  return matched;
+}
+
+// Shared by "send to all", "send to classes", and the scheduled checker.
+async function _sendPushToUidList(uids, payload, env) {
+  let sentCount = 0;
+  for (const uid of uids) {
+    try {
+      const subRaw = await env.VTX_RATE_LIMITS.get('push:' + uid);
+      if (!subRaw) continue;
+      const subscription = JSON.parse(subRaw);
+      const result = await sendWebPush(subscription, payload, env);
+      if (result.ok) sentCount++;
+    } catch (e) {
+      console.warn('[Worker] _sendPushToUidList failed for', uid, ':', e.message);
+    }
+  }
+  return { sent: sentCount, total: uids.length };
+}
+
+async function _resolveUidsForScheduledRecord(record, env) {
+  if (record.targetType === 'classes') {
+    return _resolveUidsForClasses(record.targetClasses || [], env);
+  }
+  if (record.targetType === 'student') {
+    return record.targetUid ? [record.targetUid] : [];
+  }
+  const indexRaw = await env.VTX_RATE_LIMITS.get('push_index');
+  return indexRaw ? JSON.parse(indexRaw) : [];
+}
+
+// Runs every 5 minutes. A missed tick self-heals on the next run because
+// "due" only requires timeStr >= timeOfDay AND lastSentDate !== today —
+// it never depends on hitting an exact 5-minute window.
+async function _runScheduledPushChecker(env) {
+  if (!env.VTX_RATE_LIMITS) {
+    console.warn('[cron] Scheduled-push checker: KV not bound.');
+    return;
+  }
+
+  const idxRaw = await env.VTX_RATE_LIMITS.get('scheduled_index');
+  if (!idxRaw) return;
+
+  let idx;
+  try { idx = JSON.parse(idxRaw); } catch (e) { return; }
+
+  const { dateStr, timeStr, dow } = _lagosNowParts();
+
+  for (const id of idx) {
+    try {
+      const raw = await env.VTX_RATE_LIMITS.get('scheduled:' + id);
+      if (!raw) continue;
+      const record = JSON.parse(raw);
+
+      if (record.status !== 'active') continue;
+
+      if (record.endDate && dateStr > record.endDate) {
+        record.status = 'completed';
+        await env.VTX_RATE_LIMITS.put('scheduled:' + id, JSON.stringify(record));
+        continue;
+      }
+
+      let due = false;
+
+      if (record.recurrence === 'once') {
+        due = record.sendAtUTC && new Date(record.sendAtUTC).getTime() <= Date.now();
+      } else if (record.recurrence === 'daily') {
+        due = record.timeOfDay
+          && timeStr >= record.timeOfDay
+          && record.lastSentDate !== dateStr;
+      } else if (record.recurrence === 'weekly') {
+        due = record.timeOfDay
+          && Array.isArray(record.weeklyDays)
+          && record.weeklyDays.includes(dow)
+          && timeStr >= record.timeOfDay
+          && record.lastSentDate !== dateStr;
+      }
+
+      if (!due) continue;
+
+      const payload = JSON.stringify({
+        title: record.title,
+        body:  record.bodyText,
+        url:   record.notifUrl || '/',
+      });
+
+      const uids   = await _resolveUidsForScheduledRecord(record, env);
+      const result = await _sendPushToUidList(uids, payload, env);
+      console.log('[cron] Scheduled push', id, 'sent to', result.sent, '/', result.total);
+
+      record.lastSentDate = dateStr;
+      if (record.recurrence === 'once') record.status = 'completed';
+
+      await env.VTX_RATE_LIMITS.put('scheduled:' + id, JSON.stringify(record));
+
+    } catch (e) {
+      console.warn('[cron] Scheduled push checker error for', id, ':', e.message || e);
+    }
+  }
+}
 /* ══════════════════════════════════════════════════════════
    WEB PUSH — VAPID signing + send
 ══════════════════════════════════════════════════════════ */
