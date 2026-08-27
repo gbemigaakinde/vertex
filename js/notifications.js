@@ -32,6 +32,17 @@
     return /iPad|iPhone|iPod/.test(navigator.userAgent);
   }
 
+function _persistUidForSW(userId) {
+  if (!('caches' in window) || !userId) return;
+  try {
+    caches.open('vtx-meta').then(function (cache) {
+      cache.put('/__vtx_uid', new Response(userId));
+    });
+  } catch (e) {
+    console.warn('[notifications] Could not persist uid for SW:', e);
+  }
+}
+
   // ── Central save helper ──
   async function _saveSubscription(userId, subscription) {
     try {
@@ -147,6 +158,7 @@
       }
 
       localStorage.setItem(LS_KEY, '1');
+      _persistUidForSW(userId);
       if (window.UI) UI.toast('Push notifications enabled!', 'success', 3000);
       _updateAllUI(true);
       return true;
@@ -203,9 +215,10 @@
     if (Notification.permission === 'granted' && existing) {
       // Re-save on every login so the endpoint in KV stays fresh
       var saved = await _saveSubscription(userId, existing.toJSON());
-      if (saved) {
-        localStorage.setItem(LS_KEY, '1');
-      }
+    if (saved) {
+      localStorage.setItem(LS_KEY, '1');
+      _persistUidForSW(userId);
+    }
       // Always update UI to reflect actual subscribed state
       _updateAllUI(true);
       return;
@@ -221,6 +234,7 @@
         var saved2 = await _saveSubscription(userId, sub.toJSON());
         if (saved2) {
           localStorage.setItem(LS_KEY, '1');
+          _persistUidForSW(userId);
           _updateAllUI(true);
         } else {
           _updateAllUI(false);
