@@ -89,7 +89,7 @@ self.addEventListener('install', event => {
 /* ACTIVATE                                                   */
 /* ─────────────────────────────────────────────────────────── */
 self.addEventListener('activate', event => {
-  const validCaches = [STATIC_CACHE, CDN_CACHE];
+  const validCaches = [STATIC_CACHE, CDN_CACHE, 'vtx-meta'];
 
   event.waitUntil(
     caches.keys()
