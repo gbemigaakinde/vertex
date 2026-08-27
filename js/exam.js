@@ -2363,6 +2363,24 @@ async function renderSubjectSelection() {
                         Array.isArray(taskCfg.dates) &&
                         taskCfg.dates.includes(sessionDate);
 
+      // ── NEW: compute streak + weak subjects from this attempt ──
+      const prevStreak     = (S().studentData && typeof S().studentData.studyStreak === 'number')
+        ? S().studentData.studyStreak : 0;
+      const prevActiveDate = (S().studentData && S().studentData.lastActiveDate) || null;
+      const newStreak      = _computeStreakUpdate(prevStreak, prevActiveDate, sessionDate);
+      const weakSubjects   = _computeWeakSubjects(result.scores);
+
+      const studentUpdate = {
+        studyStreak:         newStreak,
+        lastActiveDate:      sessionDate,
+        lastExamPercentage:  result.percentage,
+        weakSubjects:        weakSubjects,
+        totalExamsCompleted: firebase.firestore.FieldValue.increment(1),
+      };
+      if (isTaskDay) {
+        studentUpdate[`coachingCompleted.${sessionDate}`] = true;
+      }
+
       const batch = window.fbDb.batch();
       batch.set(window.fbDb.collection('results').doc(), {
         ...result,
@@ -2371,11 +2389,7 @@ async function renderSubjectSelection() {
         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
       });
       batch.delete(window.fbDb.collection('ongoingExams').doc(S().userId));
-      if (isTaskDay) {
-        batch.update(window.fbDb.collection('students').doc(S().userId), {
-          [`coachingCompleted.${sessionDate}`]: true,
-        });
-      }
+      batch.update(window.fbDb.collection('students').doc(S().userId), studentUpdate);
       await batch.commit();
 
       // ── ACTIVITY LOG: exam submitted ──
@@ -2394,8 +2408,14 @@ async function renderSubjectSelection() {
         );
       }
 
+      // ── Keep local state in sync with what we just saved ──
+      if (!S().studentData) S().studentData = {};
+      S().studentData.studyStreak         = newStreak;
+      S().studentData.lastActiveDate      = sessionDate;
+      S().studentData.lastExamPercentage  = result.percentage;
+      S().studentData.weakSubjects        = weakSubjects;
+      S().studentData.totalExamsCompleted = (S().studentData.totalExamsCompleted || 0) + 1;
       if (isTaskDay) {
-        if (!S().studentData) S().studentData = {};
         if (!S().studentData.coachingCompleted) S().studentData.coachingCompleted = {};
         S().studentData.coachingCompleted[sessionDate] = true;
       }
@@ -2447,6 +2467,26 @@ async function renderSubjectSelection() {
       subjects: exam.subjects,
       scores, correctCounts, percentage, grade,
     };
+  }
+
+  const WEAK_SUBJECT_THRESHOLD = 60;
+
+  function _computeStreakUpdate(prevStreak, prevActiveDate, sessionDate) {
+    if (!prevActiveDate) return 1;
+    if (prevActiveDate === sessionDate) return prevStreak || 1;
+    const prev = new Date(prevActiveDate + 'T00:00:00');
+    const curr = new Date(sessionDate + 'T00:00:00');
+    const dayDiff = Math.round((curr - prev) / 86400000);
+    if (dayDiff === 1) return (prevStreak || 0) + 1;
+    return 1;
+  }
+
+  function _computeWeakSubjects(scores) {
+    if (!scores) return [];
+    return Object.keys(scores)
+      .filter(subj => scores[subj] < WEAK_SUBJECT_THRESHOLD)
+      .sort((a, b) => scores[a] - scores[b])
+      .slice(0, 2);
   }
 
   /* ─────────────────────────────────────────────────────── */
