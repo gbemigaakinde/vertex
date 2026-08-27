@@ -44,12 +44,17 @@ function _persistUidForSW(userId) {
 }
 
   // ── Central save helper ──
-  async function _saveSubscription(userId, subscription) {
+async function _saveSubscription(userId, subscription, studentClass, studentName) {
     try {
       var res = await fetch(WORKER_URL + '/api/save-subscription', {
         method:  'POST',
         headers: { 'Content-Type': 'application/json' },
-        body:    JSON.stringify({ userId: userId, subscription: subscription }),
+        body:    JSON.stringify({
+          userId:       userId,
+          subscription: subscription,
+          studentClass: studentClass || null,
+          studentName:  studentName  || null,
+        }),
       });
       if (!res.ok) {
         console.warn('[notifications] save-subscription HTTP error:', res.status);
@@ -109,7 +114,7 @@ function _persistUidForSW(userId) {
     _updateAllUI(on);
   }
 
-  async function subscribe() {
+async function subscribe() {
     if (!_isSupported()) {
       if (_isIOS() && !_isIOSPWA()) {
         if (window.UI) UI.toast('To enable notifications on iPhone, add this app to your Home Screen first.', 'info', 8000);
@@ -126,8 +131,6 @@ function _persistUidForSW(userId) {
       return false;
     }
 
-    // Only prompt if we don't already have permission.
-    // Once granted, the browser never shows the dialog again — that is correct behaviour.
     if (permission === 'default') {
       permission = await Notification.requestPermission();
     }
@@ -140,7 +143,6 @@ function _persistUidForSW(userId) {
     try {
       var reg = await navigator.serviceWorker.ready;
 
-      // Cancel any old subscription first to avoid stale endpoint errors
       var existing = await reg.pushManager.getSubscription();
       if (existing) await existing.unsubscribe();
 
@@ -149,8 +151,10 @@ function _persistUidForSW(userId) {
         applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
       });
 
-      var userId = (window.AppState && window.AppState.userId) || 'anon';
-      var saved  = await _saveSubscription(userId, sub.toJSON());
+      var userId       = (window.AppState && window.AppState.userId) || 'anon';
+      var studentClass = (window.AppState && window.AppState.studentData && window.AppState.studentData.class) || null;
+      var studentName  = (window.AppState && window.AppState.studentData && window.AppState.studentData.name)  || null;
+      var saved = await _saveSubscription(userId, sub.toJSON(), studentClass, studentName);
 
       if (!saved) {
         if (window.UI) UI.toast('Could not save notification subscription. Please try again.', 'error', 4000);
@@ -202,10 +206,12 @@ function _persistUidForSW(userId) {
     }
   }
 
-  async function init(uid) {
+async function init(uid) {
     if (!_isSupported()) return;
 
-    var userId = uid || (window.AppState && window.AppState.userId) || 'anon';
+    var userId       = uid || (window.AppState && window.AppState.userId) || 'anon';
+    var studentClass = (window.AppState && window.AppState.studentData && window.AppState.studentData.class) || null;
+    var studentName  = (window.AppState && window.AppState.studentData && window.AppState.studentData.name)  || null;
 
     var reg = await navigator.serviceWorker.ready.catch(function () { return null; });
     if (!reg) return;
@@ -213,25 +219,22 @@ function _persistUidForSW(userId) {
     var existing = await reg.pushManager.getSubscription().catch(function () { return null; });
 
     if (Notification.permission === 'granted' && existing) {
-      // Re-save on every login so the endpoint in KV stays fresh
-      var saved = await _saveSubscription(userId, existing.toJSON());
-    if (saved) {
-      localStorage.setItem(LS_KEY, '1');
-      _persistUidForSW(userId);
-    }
-      // Always update UI to reflect actual subscribed state
+      var saved = await _saveSubscription(userId, existing.toJSON(), studentClass, studentName);
+      if (saved) {
+        localStorage.setItem(LS_KEY, '1');
+        _persistUidForSW(userId);
+      }
       _updateAllUI(true);
       return;
     }
 
     if (Notification.permission === 'granted' && !existing) {
-      // Permission is granted but no active subscription — re-subscribe silently
       try {
         var sub = await reg.pushManager.subscribe({
           userVisibleOnly:      true,
           applicationServerKey: _urlBase64ToUint8Array(VAPID_PUBLIC_KEY),
         });
-        var saved2 = await _saveSubscription(userId, sub.toJSON());
+        var saved2 = await _saveSubscription(userId, sub.toJSON(), studentClass, studentName);
         if (saved2) {
           localStorage.setItem(LS_KEY, '1');
           _persistUidForSW(userId);
@@ -246,7 +249,6 @@ function _persistUidForSW(userId) {
       return;
     }
 
-    // permission is 'default' or 'denied' — not subscribed
     localStorage.removeItem(LS_KEY);
     _updateAllUI(false);
   }
