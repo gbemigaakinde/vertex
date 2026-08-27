@@ -106,7 +106,7 @@
     dayCells +
     '<td style="padding:.25rem;border:1px solid var(--border);text-align:center;' +
         'vertical-align:middle;' + rowBg + '">' +
-      '<button onclick="this.closest(\'tr\').remove()" title="Remove period" ' +
+      '<button class="tt-remove-period-btn" onclick="this.closest(\'tr\').remove()" title="Remove period" ' +
         'style="background:none;border:none;cursor:pointer;font-size:1rem;' +
           'color:var(--text-4);line-height:1;padding:2px 4px;" ' +
         'onmouseenter="this.style.color=\'var(--danger)\'" ' +
@@ -129,6 +129,7 @@ function _ttSyncTimeHidden(changedInput) {
   } else {
     hidden.value = sv || ev || '';
   }
+  _ttSaveDraft();
 }
 
   /* ── Timetable: append a period row to the editor tbody ── */
@@ -170,14 +171,17 @@ function _ttSyncTimeHidden(changedInput) {
 }
 
   /* ── Timetable: row-add helpers ── */
-  function _ttAddEmptyPeriodRow() {
+function _ttAddEmptyPeriodRow() {
   _ttAppendPeriodRowToDOM({ time: '', monday: '', tuesday: '', wednesday: '', thursday: '', friday: '', saturday: '', sunday: '' });
+  _ttSaveDraft();
 }
 function _ttAddBreakRow() {
   _ttAppendPeriodRowToDOM({ time: '', monday: 'BREAK', tuesday: 'BREAK', wednesday: 'BREAK', thursday: 'BREAK', friday: 'BREAK', saturday: 'BREAK', sunday: 'BREAK' });
+  _ttSaveDraft();
 }
 function _ttAddLunchRow() {
   _ttAppendPeriodRowToDOM({ time: '', monday: 'LUNCH', tuesday: 'LUNCH', wednesday: 'LUNCH', thursday: 'LUNCH', friday: 'LUNCH', saturday: 'LUNCH', sunday: 'LUNCH' });
+  _ttSaveDraft();
 }
 
 function _injectTeacherNavStyles() {
@@ -3097,6 +3101,64 @@ function _renderExistingTasksList(docs) {
     return { col: 'weeklyTimetable', docId: _classKeyFromStr(_ttSelectedClass) };
   }
 
+  // ── Local draft autosave (survives refresh/reload) ──
+  let _ttDraftSaveTimer = null;
+
+  function _ttDraftStorageKey() {
+    const { col, docId } = _ttCurrentTarget();
+    return 'vtx_tt_draft::' + col + '::' + docId + '::' + _ttSelectedWeek;
+  }
+
+  function _ttSaveDraft() {
+    clearTimeout(_ttDraftSaveTimer);
+    _ttDraftSaveTimer = setTimeout(function () {
+      try {
+        const periods = _ttReadPeriodsFromDOM();
+        const note    = (document.getElementById('ttNoteInput')?.value || '');
+        const key     = _ttDraftStorageKey();
+        localStorage.setItem(key, JSON.stringify({ periods, note, savedAt: Date.now() }));
+        _ttShowDraftIndicator(true);
+      } catch (e) {
+        console.warn('[timetable] could not save draft to localStorage:', e);
+      }
+    }, 400);
+  }
+
+  function _ttLoadDraft() {
+    try {
+      const raw = localStorage.getItem(_ttDraftStorageKey());
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (!parsed || !Array.isArray(parsed.periods) || parsed.periods.length === 0) return null;
+      return parsed;
+    } catch (e) {
+      console.warn('[timetable] could not read draft from localStorage:', e);
+      return null;
+    }
+  }
+
+  function _ttClearDraft(key) {
+    try {
+      localStorage.removeItem(key || _ttDraftStorageKey());
+    } catch (e) { /* ignore */ }
+  }
+
+  function _ttShowDraftIndicator(saved) {
+    const el = document.getElementById('ttDraftStatus');
+    if (!el) return;
+    if (saved) {
+      const now = new Date();
+      el.textContent = 'Draft autosaved ' + now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    } else {
+      el.textContent = '';
+    }
+  }
+
+  function _ttDiscardDraft() {
+    _ttClearDraft();
+    _ttRenderEditor();
+  }
+
   function _setTTScope(scope) {
   _ttSelectedScope = scope;
 
@@ -3543,6 +3605,17 @@ async function _ttRenderEditor() {
     }
   } catch (e) { console.warn('[timetable] load error:', e); }
 
+  // Check for an unsaved local draft for this exact target + week.
+  // If one exists, it takes priority over the saved Firestore version
+  // so the teacher's in-progress edits survive a refresh/reload.
+  let draftRestored = false;
+  const localDraft = _ttLoadDraft();
+  if (localDraft) {
+    periods = localDraft.periods;
+    note    = localDraft.note || '';
+    draftRestored = true;
+  }
+
   const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
   const DAY_KEYS  = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
 
@@ -3592,6 +3665,23 @@ async function _ttRenderEditor() {
       </div>`
     : '';
 
+  const draftBannerHtml = draftRestored
+    ? `<div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;
+          margin-bottom:1rem;padding:.625rem .875rem;flex-wrap:wrap;
+          background:var(--warning-subtle);border:1px solid var(--warning-border);
+          border-radius:var(--r-md);font-size:var(--text-xs);color:var(--warning-text);line-height:1.6;">
+        <span>
+          <strong>Unsaved changes restored</strong> — these edits were kept on this device
+          and were not yet saved. Click <strong>${isPermanent ? 'Save Permanent Timetable' : 'Save Timetable'}</strong>
+          below to store them, or discard them.
+        </span>
+        <button onclick="Teacher._ttDiscardDraft()" class="btn bg-gray-500"
+                style="font-size:var(--text-xs);white-space:nowrap;">
+          Discard local draft
+        </button>
+      </div>`
+    : '';
+
   wrap.innerHTML = `
     <div class="glass-dark" style="padding:1.25rem;border-radius:var(--r-lg);overflow:hidden;">
 
@@ -3612,6 +3702,8 @@ async function _ttRenderEditor() {
         </div>
         ${badgeHtml}
       </div>
+
+      ${draftBannerHtml}
 
       ${overrideNote}
 
@@ -3686,9 +3778,27 @@ async function _ttRenderEditor() {
                ${isPermanent ? 'Delete Permanent' : 'Delete This Week'}
              </button>`
           : ''}
+        <span id="ttDraftStatus" style="font-size:var(--text-xs);color:var(--text-3);margin-left:.25rem;"></span>
       </div>
 
     </div>`;
+
+  // Wire up autosave: any typing in the grid or note field, or removing a row,
+  // saves a draft copy to this browser's local storage (debounced).
+  const periodBodyEl = document.getElementById('ttPeriodBody');
+  const noteInputEl  = document.getElementById('ttNoteInput');
+  const _ttAutosaveHandler = function () { _ttSaveDraft(); };
+  if (periodBodyEl) {
+    periodBodyEl.addEventListener('input',  _ttAutosaveHandler);
+    periodBodyEl.addEventListener('change', _ttAutosaveHandler);
+  }
+  if (noteInputEl) {
+    noteInputEl.addEventListener('input', _ttAutosaveHandler);
+  }
+  wrap.addEventListener('click', function (e) {
+    if (e.target.closest('.tt-remove-period-btn')) _ttAutosaveHandler();
+  });
+  if (draftRestored) _ttShowDraftIndicator(true);
 }
 
 function _ttRenderAllList(docData) {
@@ -3861,9 +3971,10 @@ function _editTimetableWeek(weekKey) {
     }
     const noteEl = document.getElementById('ttNoteInput');
     if (noteEl) noteEl.value = '';
+    _ttSaveDraft();
   }
 
-  async function _saveTimetable() {
+async function _saveTimetable() {
   const scope = _ttSelectedScope;
   if (!_ttSelectedWeek) { UI.toast('Please select a week.', 'warning'); return; }
   if (scope === 'class' && !_ttSelectedClass)          { UI.toast('Please select a class.', 'warning');   return; }
@@ -3915,6 +4026,7 @@ function _editTimetableWeek(weekKey) {
       ? `Permanent timetable saved for ${targetLabel}.`
       : `Timetable saved for ${targetLabel} — ${_ttSelectedWeek}.`;
     UI.toast(successMsg, 'success');
+    _ttClearDraft();
     _ttRenderEditor();
   } catch (err) {
     console.error('[timetable] save error:', err);
@@ -3924,7 +4036,7 @@ function _editTimetableWeek(weekKey) {
   }
 }
 
-  async function _deleteTimetable(weekKey) {
+async function _deleteTimetable(weekKey) {
   const scope = _ttSelectedScope;
   if (!weekKey) return;
 
@@ -3950,6 +4062,7 @@ function _editTimetableWeek(weekKey) {
       [`timetables.${weekKey}`]: firebase.firestore.FieldValue.delete(),
     });
     UI.toast(isPermanent ? 'Permanent timetable deleted.' : 'Timetable deleted.', 'success');
+    if (weekKey === _ttSelectedWeek) _ttClearDraft();
     _ttRenderEditor();
   } catch (err) {
     console.error('[timetable] delete error:', err);
@@ -5634,6 +5747,7 @@ async function exportResultPDF(resultId) {
   _ttSelectAllGroupMembers,
   _ttClearGroupMembers,
   _ttSaveGroupMembers,
+  _ttDiscardDraft,
   _moveNavIndicator,
   _injectTeacherNavStyles,
   _loadActivityLog,
