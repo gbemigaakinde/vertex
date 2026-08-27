@@ -214,25 +214,34 @@ self.addEventListener('notificationclick', function (event) {
 
 self.addEventListener('pushsubscriptionchange', function (event) {
   event.waitUntil(
-    self.registration.pushManager.subscribe({
-      userVisibleOnly:      true,
-      applicationServerKey: 'BL43uSEQeh09fAtjR-H-GXoEAASmljn7vaszJDxtp8vPA1wFjhmqd9UrE35aPmsQEE-uBVpSr3uL1cB5oSBx0qs',
-    })
-    .then(function (newSub) {
-      return fetch('https://vertex-worker.gbemigaakinde.workers.dev/api/save-subscription', {
-        method:  'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId:       event.oldSubscription
-            ? new URL(event.oldSubscription.endpoint).pathname.split('/').pop()
-            : 'unknown',
-          subscription: newSub.toJSON(),
-        }),
-      });
-    })
-    .catch(function (err) {
-      console.warn('[SW] pushsubscriptionchange re-subscribe failed:', err);
-    })
+    caches.open('vtx-meta')
+      .then(function (cache) { return cache.match('/__vtx_uid'); })
+      .then(function (res) { return res ? res.text() : null; })
+      .catch(function () { return null; })
+      .then(function (storedUid) {
+        return self.registration.pushManager.subscribe({
+          userVisibleOnly:      true,
+          applicationServerKey: 'BL43uSEQeh09fAtjR-H-GXoEAASmljn7vaszJDxtp8vPA1wFjhmqd9UrE35aPmsQEE-uBVpSr3uL1cB5oSBx0qs',
+        })
+        .then(function (newSub) {
+          var userId = storedUid ||
+            (event.oldSubscription
+              ? new URL(event.oldSubscription.endpoint).pathname.split('/').pop()
+              : 'unknown');
+
+          return fetch('https://vertex-worker.gbemigaakinde.workers.dev/api/save-subscription', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              userId:       userId,
+              subscription: newSub.toJSON(),
+            }),
+          });
+        });
+      })
+      .catch(function (err) {
+        console.warn('[SW] pushsubscriptionchange re-subscribe failed:', err);
+      })
   );
 });
 
