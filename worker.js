@@ -1046,103 +1046,89 @@ async function _buildVapidHeaders(endpoint, vapidPrivKey, vapidPubKeyB64url) {
 }
 
 async function _encryptPayload(subscription, payloadStr) {
-  var keys   = subscription.keys;
-  var p256dh = _b64urlToBytes(keys.p256dh);
-  var auth   = _b64urlToBytes(keys.auth);
+  var keys        = subscription.keys;
+  var uaPublicRaw = _b64urlToBytes(keys.p256dh);   // subscriber's public key, 65 bytes
+  var authSecret  = _b64urlToBytes(keys.auth);     // 16 bytes
 
-  var clientPubKey = await crypto.subtle.importKey(
-    'raw', p256dh,
+  var uaPublicKey = await crypto.subtle.importKey(
+    'raw', uaPublicRaw,
     { name: 'ECDH', namedCurve: 'P-256' },
     true, []
   );
 
-  var localKeyPair = await crypto.subtle.generateKey(
+  var asKeyPair = await crypto.subtle.generateKey(
     { name: 'ECDH', namedCurve: 'P-256' },
-    true, ['deriveKey', 'deriveBits']
+    true, ['deriveBits']
   );
-  var localPubRaw = new Uint8Array(await crypto.subtle.exportKey('raw', localKeyPair.publicKey));
+  var asPublicRaw = new Uint8Array(await crypto.subtle.exportKey('raw', asKeyPair.publicKey));
 
-  var sharedBits = new Uint8Array(await crypto.subtle.deriveBits(
-    { name: 'ECDH', public: clientPubKey },
-    localKeyPair.privateKey,
+  var ecdhSecret = new Uint8Array(await crypto.subtle.deriveBits(
+    { name: 'ECDH', public: uaPublicKey },
+    asKeyPair.privateKey,
     256
   ));
 
+  // PRK_key = HMAC-SHA256(key=authSecret, msg=ecdhSecret)
+  var authSecretKey = await crypto.subtle.importKey(
+    'raw', authSecret, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  var prkKey = new Uint8Array(await crypto.subtle.sign('HMAC', authSecretKey, ecdhSecret));
+
+  // key_info = "WebPush: info\0" || uaPublic || asPublic
+  var keyInfoPrefix = new TextEncoder().encode('WebPush: info\0');
+  var keyInfo = new Uint8Array(keyInfoPrefix.length + uaPublicRaw.length + asPublicRaw.length);
+  keyInfo.set(keyInfoPrefix, 0);
+  keyInfo.set(uaPublicRaw, keyInfoPrefix.length);
+  keyInfo.set(asPublicRaw, keyInfoPrefix.length + uaPublicRaw.length);
+
+  // IKM = HKDF-Expand(PRK_key, key_info, 32)
+  var prkKeyHmac = await crypto.subtle.importKey(
+    'raw', prkKey, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  var keyInfoBlock = new Uint8Array(keyInfo.length + 1);
+  keyInfoBlock.set(keyInfo, 0);
+  keyInfoBlock[keyInfo.length] = 1;
+  var ikm = new Uint8Array(await crypto.subtle.sign('HMAC', prkKeyHmac, keyInfoBlock));
+
+  // Random 16-byte salt for this message
   var salt = crypto.getRandomValues(new Uint8Array(16));
 
-  // Step 1: PRK = HKDF-Extract(salt=auth, IKM=sharedSecret, info="Content-Encoding: auth\0")
-  var authInfo = new TextEncoder().encode('Content-Encoding: auth\0');
-  var ikmKey   = await crypto.subtle.importKey('raw', sharedBits, { name: 'HKDF' }, false, ['deriveBits']);
-  var prkBits  = await crypto.subtle.deriveBits(
-    { name: 'HKDF', hash: 'SHA-256', salt: auth, info: authInfo },
-    ikmKey, 256
+  // PRK = HKDF-Extract(salt, IKM)
+  var saltHmac = await crypto.subtle.importKey(
+    'raw', salt, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
   );
-  var prk = new Uint8Array(prkBits);
+  var prk = new Uint8Array(await crypto.subtle.sign('HMAC', saltHmac, ikm));
 
-  // Step 2: CEK = HKDF(salt=salt, IKM=prk, info="Content-Encoding: aesgcm\0" + context)
-  // Context = "P-256\0" || uint16be(len(receiver_pub)) || receiver_pub
-  //                      || uint16be(len(sender_pub))   || sender_pub
-  // receiver = client (p256dh), sender = local ephemeral key
-  var prkKey  = await crypto.subtle.importKey('raw', prk, { name: 'HKDF' }, false, ['deriveBits']);
-  var cekInfo = _buildInfo('aesgcm', p256dh, localPubRaw);
-  var cekBits = await crypto.subtle.deriveBits(
-    { name: 'HKDF', hash: 'SHA-256', salt: salt, info: cekInfo },
-    prkKey, 128
+  var prkHmac = await crypto.subtle.importKey(
+    'raw', prk, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
   );
-  var cek = new Uint8Array(cekBits);
 
-  // Step 3: nonce = HKDF(salt=salt, IKM=prk, info="Content-Encoding: nonce\0" + context)
-  var nonceInfo = _buildInfo('nonce', p256dh, localPubRaw);
-  var nonceBits = await crypto.subtle.deriveBits(
-    { name: 'HKDF', hash: 'SHA-256', salt: salt, info: nonceInfo },
-    prkKey, 96
-  );
-  var nonce = new Uint8Array(nonceBits);
+  // CEK = HKDF-Expand(PRK, "Content-Encoding: aes128gcm\0", 16)
+  var cekInfo = new TextEncoder().encode('Content-Encoding: aes128gcm\0');
+  var cekBlock = new Uint8Array(cekInfo.length + 1);
+  cekBlock.set(cekInfo, 0);
+  cekBlock[cekInfo.length] = 1;
+  var cekFull = new Uint8Array(await crypto.subtle.sign('HMAC', prkHmac, cekBlock));
+  var cek = cekFull.slice(0, 16);
 
+  // NONCE = HKDF-Expand(PRK, "Content-Encoding: nonce\0", 12)
+  var nonceInfo = new TextEncoder().encode('Content-Encoding: nonce\0');
+  var nonceBlock = new Uint8Array(nonceInfo.length + 1);
+  nonceBlock.set(nonceInfo, 0);
+  nonceBlock[nonceInfo.length] = 1;
+  var nonceFull = new Uint8Array(await crypto.subtle.sign('HMAC', prkHmac, nonceBlock));
+  var nonce = nonceFull.slice(0, 12);
+
+  // Plaintext record = payload bytes + single 0x02 delimiter (last/only record, no padding)
   var plaintext = new TextEncoder().encode(payloadStr);
-  // 2-byte zero padding prefix (padding length = 0, per spec)
-  var padded = new Uint8Array(plaintext.length + 2);
-  padded[0] = 0;
-  padded[1] = 0;
-  padded.set(plaintext, 2);
+  var record = new Uint8Array(plaintext.length + 1);
+  record.set(plaintext, 0);
+  record[plaintext.length] = 2;
 
-  var aesKey     = await crypto.subtle.importKey('raw', cek, { name: 'AES-GCM' }, false, ['encrypt']);
-  var ciphertext = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce }, aesKey, padded));
+  var aesKey = await crypto.subtle.importKey('raw', cek, { name: 'AES-GCM' }, false, ['encrypt']);
+  var ciphertext = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce }, aesKey, record));
 
-  return { salt, localPubRaw, ciphertext };
-}
-
-function _buildInfo(type, receiverPub, senderPub) {
-  // context = "P-256\0"
-  //         || uint16be(len(receiverPub)) || receiverPub
-  //         || uint16be(len(senderPub))   || senderPub
-  var typeBytes = new TextEncoder().encode('Content-Encoding: ' + type + '\0');
-  var label     = new TextEncoder().encode('P-256\0');
-
-  var out = new Uint8Array(
-    typeBytes.length +
-    label.length +
-    2 + receiverPub.length +
-    2 + senderPub.length
-  );
-  var pos = 0;
-
-  out.set(typeBytes, pos); pos += typeBytes.length;
-  out.set(label,     pos); pos += label.length;
-
-  // receiver public key (client / p256dh) — uint16be length prefix
-  out[pos] = 0;
-  out[pos + 1] = receiverPub.length & 0xff;
-  pos += 2;
-  out.set(receiverPub, pos); pos += receiverPub.length;
-
-  // sender public key (local ephemeral) — uint16be length prefix
-  out[pos] = 0;
-  out[pos + 1] = senderPub.length & 0xff;
-  pos += 2;
-  out.set(senderPub, pos);
-
-  return out;
+  return { salt: salt, asPublicRaw: asPublicRaw, ciphertext: ciphertext };
 }
 
 async function sendWebPush(subscription, payloadStr, env) {
@@ -1157,37 +1143,32 @@ async function sendWebPush(subscription, payloadStr, env) {
     var encrypted    = await _encryptPayload(subscription, payloadStr);
     var vapidHeaders = await _buildVapidHeaders(subscription.endpoint, privKey, pubKey);
 
-    var RS       = 4096;
-    var bodyLen  = 16 + 4 + 1 + encrypted.localPubRaw.length + encrypted.ciphertext.length;
-    var body     = new Uint8Array(bodyLen);
-    var pos      = 0;
+    var RS = 4096;
+    var headerLen = 16 + 4 + 1 + encrypted.asPublicRaw.length;
+    var body = new Uint8Array(headerLen + encrypted.ciphertext.length);
+    var pos = 0;
 
     body.set(encrypted.salt, pos);
     pos += 16;
 
-    body[pos]   = (RS >> 24) & 0xff;
-    body[pos+1] = (RS >> 16) & 0xff;
-    body[pos+2] = (RS >>  8) & 0xff;
-    body[pos+3] =  RS        & 0xff;
+    body[pos]   = (RS >>> 24) & 0xff;
+    body[pos+1] = (RS >>> 16) & 0xff;
+    body[pos+2] = (RS >>>  8) & 0xff;
+    body[pos+3] =  RS         & 0xff;
     pos += 4;
 
-    body[pos] = encrypted.localPubRaw.length;
+    body[pos] = encrypted.asPublicRaw.length; // 65, fits in one byte
     pos += 1;
-    body.set(encrypted.localPubRaw, pos);
-    pos += encrypted.localPubRaw.length;
+    body.set(encrypted.asPublicRaw, pos);
+    pos += encrypted.asPublicRaw.length;
 
     body.set(encrypted.ciphertext, pos);
 
     var res = await fetch(subscription.endpoint, {
       method:  'POST',
       headers: Object.assign({}, vapidHeaders, {
-        'Content-Encoding': 'aesgcm',
-        // FIX: Crypto-Key must include BOTH dh (payload encryption) AND
-        // p256ecdsa (VAPID public key). Without p256ecdsa, the push service
-        // cannot verify the VAPID JWT and rejects the request.
-        'Crypto-Key':       'dh=' + _bytesToB64url(encrypted.localPubRaw) +
-                            '; p256ecdsa=' + pubKey,
-        'Encryption':       'salt=' + _bytesToB64url(encrypted.salt),
+        'Content-Encoding': 'aes128gcm',
+        'Content-Type':     'application/octet-stream',
         'Content-Length':   String(body.length),
       }),
       body: body,
