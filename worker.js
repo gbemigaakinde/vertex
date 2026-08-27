@@ -1046,37 +1046,31 @@ async function _buildVapidHeaders(endpoint, vapidPrivKey, vapidPubKeyB64url) {
 }
 
 async function _encryptPayload(subscription, payloadStr) {
-  // We need the client's public key and auth secret from the subscription
-  var keys    = subscription.keys;
-  var p256dh  = _b64urlToBytes(keys.p256dh);
-  var auth    = _b64urlToBytes(keys.auth);
+  var keys   = subscription.keys;
+  var p256dh = _b64urlToBytes(keys.p256dh);
+  var auth   = _b64urlToBytes(keys.auth);
 
-  // Import the client's public key
   var clientPubKey = await crypto.subtle.importKey(
     'raw', p256dh,
     { name: 'ECDH', namedCurve: 'P-256' },
     true, []
   );
 
-  // Generate a local ECDH key pair for this message
   var localKeyPair = await crypto.subtle.generateKey(
     { name: 'ECDH', namedCurve: 'P-256' },
     true, ['deriveKey', 'deriveBits']
   );
   var localPubRaw = new Uint8Array(await crypto.subtle.exportKey('raw', localKeyPair.publicKey));
 
-  // ECDH derive shared secret
   var sharedBits = new Uint8Array(await crypto.subtle.deriveBits(
     { name: 'ECDH', public: clientPubKey },
     localKeyPair.privateKey,
     256
   ));
 
-  // Generate a random 16-byte salt
   var salt = crypto.getRandomValues(new Uint8Array(16));
 
-  // HKDF to derive PRK using auth as the input
-  // Step 1: extract PRK
+  // Step 1: PRK = HKDF-Extract(salt=auth, IKM=sharedSecret, info="Content-Encoding: auth\0")
   var authInfo = new TextEncoder().encode('Content-Encoding: auth\0');
   var ikmKey   = await crypto.subtle.importKey('raw', sharedBits, { name: 'HKDF' }, false, ['deriveBits']);
   var prkBits  = await crypto.subtle.deriveBits(
@@ -1085,41 +1079,69 @@ async function _encryptPayload(subscription, payloadStr) {
   );
   var prk = new Uint8Array(prkBits);
 
-  // Step 2: derive content encryption key
-  var prkKey    = await crypto.subtle.importKey('raw', prk, { name: 'HKDF' }, false, ['deriveBits']);
-  var cekInfo   = _buildInfo('aesgcm', p256dh, localPubRaw);
-  var cekBits   = await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt: salt, info: cekInfo }, prkKey, 128);
-  var cek       = new Uint8Array(cekBits);
+  // Step 2: CEK = HKDF(salt=salt, IKM=prk, info="Content-Encoding: aesgcm\0" + context)
+  // Context = "P-256\0" || uint16be(len(receiver_pub)) || receiver_pub
+  //                      || uint16be(len(sender_pub))   || sender_pub
+  // receiver = client (p256dh), sender = local ephemeral key
+  var prkKey  = await crypto.subtle.importKey('raw', prk, { name: 'HKDF' }, false, ['deriveBits']);
+  var cekInfo = _buildInfo('aesgcm', p256dh, localPubRaw);
+  var cekBits = await crypto.subtle.deriveBits(
+    { name: 'HKDF', hash: 'SHA-256', salt: salt, info: cekInfo },
+    prkKey, 128
+  );
+  var cek = new Uint8Array(cekBits);
 
-  // Step 3: derive nonce
+  // Step 3: nonce = HKDF(salt=salt, IKM=prk, info="Content-Encoding: nonce\0" + context)
   var nonceInfo = _buildInfo('nonce', p256dh, localPubRaw);
-  var nonceBits = await crypto.subtle.deriveBits({ name: 'HKDF', hash: 'SHA-256', salt: salt, info: nonceInfo }, prkKey, 96);
-  var nonce     = new Uint8Array(nonceBits);
+  var nonceBits = await crypto.subtle.deriveBits(
+    { name: 'HKDF', hash: 'SHA-256', salt: salt, info: nonceInfo },
+    prkKey, 96
+  );
+  var nonce = new Uint8Array(nonceBits);
 
-  // Encrypt the payload
   var plaintext = new TextEncoder().encode(payloadStr);
-  var padded    = new Uint8Array(plaintext.length + 2);
-  padded.set([0, 0]); // 2-byte padding length = 0
+  // 2-byte zero padding prefix (padding length = 0, per spec)
+  var padded = new Uint8Array(plaintext.length + 2);
+  padded[0] = 0;
+  padded[1] = 0;
   padded.set(plaintext, 2);
 
-  var aesKey = await crypto.subtle.importKey('raw', cek, { name: 'AES-GCM' }, false, ['encrypt']);
+  var aesKey     = await crypto.subtle.importKey('raw', cek, { name: 'AES-GCM' }, false, ['encrypt']);
   var ciphertext = new Uint8Array(await crypto.subtle.encrypt({ name: 'AES-GCM', iv: nonce }, aesKey, padded));
 
   return { salt, localPubRaw, ciphertext };
 }
 
-function _buildInfo(type, clientPub, serverPub) {
-  var typeBytes   = new TextEncoder().encode('Content-Encoding: ' + type + '\0');
-  var label       = new TextEncoder().encode('P-256\0');
-  // clientPub length (2 bytes big-endian) + clientPub + serverPub length (2 bytes) + serverPub
-  var out = new Uint8Array(typeBytes.length + label.length + 2 + clientPub.length + 2 + serverPub.length);
+function _buildInfo(type, receiverPub, senderPub) {
+  // context = "P-256\0"
+  //         || uint16be(len(receiverPub)) || receiverPub
+  //         || uint16be(len(senderPub))   || senderPub
+  var typeBytes = new TextEncoder().encode('Content-Encoding: ' + type + '\0');
+  var label     = new TextEncoder().encode('P-256\0');
+
+  var out = new Uint8Array(
+    typeBytes.length +
+    label.length +
+    2 + receiverPub.length +
+    2 + senderPub.length
+  );
   var pos = 0;
-  out.set(typeBytes,  pos); pos += typeBytes.length;
-  out.set(label,      pos); pos += label.length;
-  out[pos] = 0; out[pos + 1] = clientPub.length; pos += 2;
-  out.set(clientPub,  pos); pos += clientPub.length;
-  out[pos] = 0; out[pos + 1] = serverPub.length; pos += 2;
-  out.set(serverPub,  pos);
+
+  out.set(typeBytes, pos); pos += typeBytes.length;
+  out.set(label,     pos); pos += label.length;
+
+  // receiver public key (client / p256dh) — uint16be length prefix
+  out[pos] = 0;
+  out[pos + 1] = receiverPub.length & 0xff;
+  pos += 2;
+  out.set(receiverPub, pos); pos += receiverPub.length;
+
+  // sender public key (local ephemeral) — uint16be length prefix
+  out[pos] = 0;
+  out[pos + 1] = senderPub.length & 0xff;
+  pos += 2;
+  out.set(senderPub, pos);
+
   return out;
 }
 
@@ -1135,42 +1157,36 @@ async function sendWebPush(subscription, payloadStr, env) {
     var encrypted    = await _encryptPayload(subscription, payloadStr);
     var vapidHeaders = await _buildVapidHeaders(subscription.endpoint, privKey, pubKey);
 
-    // aesgcm binary body layout (RFC draft-ietf-webpush-encryption-04):
-    //   salt         — 16 bytes
-    //   rs           — 4 bytes big-endian uint32 (the RECORD SIZE, default 4096, NOT ciphertext length)
-    //   dh_len       — 1 byte (length of the sender public key; always 65 for P-256 uncompressed)
-    //   dh           — 65 bytes (sender ephemeral public key, uncompressed)
-    //   ciphertext   — N bytes
-    var RS       = 4096;  // standard aesgcm record size
+    var RS       = 4096;
     var bodyLen  = 16 + 4 + 1 + encrypted.localPubRaw.length + encrypted.ciphertext.length;
     var body     = new Uint8Array(bodyLen);
     var pos      = 0;
 
-    // salt (16 bytes)
     body.set(encrypted.salt, pos);
     pos += 16;
 
-    // rs (4 bytes big-endian)
     body[pos]   = (RS >> 24) & 0xff;
     body[pos+1] = (RS >> 16) & 0xff;
     body[pos+2] = (RS >>  8) & 0xff;
     body[pos+3] =  RS        & 0xff;
     pos += 4;
 
-    // dh_len (1 byte) + dh (65 bytes)
     body[pos] = encrypted.localPubRaw.length;
     pos += 1;
     body.set(encrypted.localPubRaw, pos);
     pos += encrypted.localPubRaw.length;
 
-    // ciphertext
     body.set(encrypted.ciphertext, pos);
 
     var res = await fetch(subscription.endpoint, {
       method:  'POST',
       headers: Object.assign({}, vapidHeaders, {
         'Content-Encoding': 'aesgcm',
-        'Crypto-Key':       'dh=' + _bytesToB64url(encrypted.localPubRaw),
+        // FIX: Crypto-Key must include BOTH dh (payload encryption) AND
+        // p256ecdsa (VAPID public key). Without p256ecdsa, the push service
+        // cannot verify the VAPID JWT and rejects the request.
+        'Crypto-Key':       'dh=' + _bytesToB64url(encrypted.localPubRaw) +
+                            '; p256ecdsa=' + pubKey,
         'Encryption':       'salt=' + _bytesToB64url(encrypted.salt),
         'Content-Length':   String(body.length),
       }),
@@ -1181,7 +1197,6 @@ async function sendWebPush(subscription, payloadStr, env) {
       var errText = await res.text().catch(function () { return ''; });
       console.warn('[Worker] Push send failed:', res.status, errText);
 
-      // Auto-clean stale subscriptions from KV so they don't clog future broadcasts
       if ((res.status === 410 || res.status === 404) && env.VTX_RATE_LIMITS) {
         var endpoint = subscription.endpoint;
         var indexRaw = await env.VTX_RATE_LIMITS.get('push_index').catch(function () { return null; });
