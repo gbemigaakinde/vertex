@@ -30,15 +30,21 @@
   <link rel="stylesheet" href="css/studyroom.css" />
   <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
 
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    if (window.tailwind) {
-      tailwind.config = {
-        theme: { extend: { fontFamily: { sans: ['Geist','DM Sans','system-ui','-apple-system','sans-serif'] } } },
-        corePlugins: { preflight: false },
-      };
-    }
-  </script>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+  if (window.tailwind) {
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Plus Jakarta Sans', 'DM Sans', 'system-ui', '-apple-system', 'sans-serif']
+          }
+        }
+      },
+      corePlugins: { preflight: false },
+    };
+  }
+</script>
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
