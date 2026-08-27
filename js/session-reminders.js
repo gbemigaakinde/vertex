@@ -63,12 +63,12 @@
     SpeechEngine.speak(msg, null, false);
   }
 
-  function _isInExam() {
-    // Check AppState
-    if (window.AppState && window.AppState.exam && window.AppState.exam.step === 'exam') return true;
-    // Fallback: check DOM
-    return !!document.getElementById('seExamControls');
-  }
+function _isInExam() {
+  if (!window.AppState || !window.AppState.exam) return false;
+  var step = window.AppState.exam.step;
+  // 'exam' is the active test-taking step; 'review' is post-exam
+  return step === 'exam';
+}
 
   function _isTabVisible() {
     return document.visibilityState === 'visible';
@@ -87,67 +87,65 @@
   }
 
   /* ── Main check loop (runs every 30 seconds) ── */
-  function _check() {
-    if (!_running || !_isTabVisible()) return;
+function _check() {
+  if (!_running || !_isTabVisible()) return;
 
-    _trackQuestion();
+  _trackQuestion();
 
-    var now      = Date.now();
-    var idleMs   = now - _lastInteractMs;
-    var idleMins = idleMs / 60000;
+  var now      = Date.now();
+  var idleMs   = now - _lastInteractMs;
+  var idleMins = idleMs / 60000;
 
-    // ── IDLE reminder ──────────────────────────────────────────
-    if (_isInExam() && idleMins >= 3 && _canFire('idle')) {
-      _speak(
-        "You've been quiet for " + Math.floor(idleMins) + " minutes. " +
-        "Take your time, but remember the clock is running.",
-        'idle'
-      );
-      return; // one reminder per check
-    }
+  // ── IDLE reminder ──────────────────────────────────────────
+  if (_isInExam() && idleMins >= 3 && _canFire('idle')) {
+    _speak(
+      "You've been quiet for " + Math.floor(idleMins) + " minutes. " +
+      "Take your time, but remember the clock is running.",
+      'idle'
+    );
+    return;
+  }
 
-    // ── STUCK reminder ─────────────────────────────────────────
-    if (_isInExam() && _questionStartMs) {
-      var stuckMins = (now - _questionStartMs) / 60000;
-      // Check if no answer has been selected for the current question
-      if (stuckMins >= 4 && _canFire('stuck')) {
-        var exam     = window.AppState && window.AppState.exam;
-        var answered = false;
-        if (exam && exam.answers) {
-          var k = (exam.currentSubject || '') + '-' + (exam.currentIndex || 0);
-          answered = exam.answers[k] !== undefined;
-        }
-        if (!answered) {
-          _speak(
-            "You've been on this question for over " + Math.floor(stuckMins) + " minutes. " +
-            "Would you like me to read it again? Press R to hear the question.",
-            'stuck'
-          );
-          return;
-        }
+  // ── STUCK reminder ─────────────────────────────────────────
+  if (_isInExam() && _questionStartMs) {
+    var stuckMins = (now - _questionStartMs) / 60000;
+    if (stuckMins >= 4 && _canFire('stuck')) {
+      var exam     = window.AppState && window.AppState.exam;
+      var answered = false;
+      if (exam && exam.answers) {
+        var k = (exam.currentSubject || '') + '-' + (exam.currentIndex || 0);
+        answered = exam.answers[k] !== undefined;
+      }
+      if (!answered) {
+        _speak(
+          "You've been on this question for over " + Math.floor(stuckMins) + " minutes. " +
+          "Would you like me to read it again? Press R to hear the question.",
+          'stuck'
+        );
+        return;
       }
     }
+  }
 
-    // ── STREAK AT RISK reminder ────────────────────────────────
-    if (!_isInExam() && _canFire('streak_at_risk')) {
-      var sd = window.AppState && window.AppState.studentData;
-      if (sd && sd.studyStreak && sd.studyStreak > 0) {
-        var hour = new Date().getHours();
-        // Warn between 20:00 and 22:00 if they haven't done an exam today
-        if (hour >= 20 && hour < 22) {
-          var today     = (window.Tasks && Tasks._localDateStr) ? Tasks._localDateStr() : _todayStr();
-          var completed = (sd.coachingCompleted || {})[today];
-          if (!completed) {
-            _speak(
-              "Don't forget — you have a " + sd.studyStreak + "-day study streak. " +
-              "Start a quick practice exam to keep it going!",
-              'streak_at_risk'
-            );
-          }
+  // ── STREAK AT RISK reminder ────────────────────────────────
+  if (!_isInExam() && _canFire('streak_at_risk')) {
+    var sd = window.AppState && window.AppState.studentData;
+    if (sd && sd.studyStreak && sd.studyStreak > 0) {
+      var hour = new Date().getHours();
+      if (hour >= 20 && hour < 22) {
+        var today     = _todayStr();
+        var completed = (sd.coachingCompleted || {})[today];
+        if (!completed) {
+          _speak(
+            "Don't forget — you have a " + sd.studyStreak + "-day study streak. " +
+            "Start a quick practice exam to keep it going!",
+            'streak_at_risk'
+          );
         }
       }
     }
   }
+}
 
   function _todayStr() {
     var d = new Date();
