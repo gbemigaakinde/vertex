@@ -1031,7 +1031,7 @@ function _askWorkersAI(intentPayload, callback) {
   fetch(_WORKER_URL, {
     method:  'POST',
     headers: { 'Content-Type': 'application/json' },
-    body:    JSON.stringify(Object.assign({}, intentPayload, { provider: 'workersai', model: '@cf/meta/llama-3.3-70b-instruct' })),
+    body:    JSON.stringify(Object.assign({}, intentPayload, { provider: 'workersai', model: '@cf/meta/llama-3.3-70b-instruct-fp8-fast' })),
   })
   .then(function (res) {
     if (!res.ok) {
