@@ -2891,12 +2891,63 @@ async function _downloadTimetablePDF() {
   }
 
   const classKey = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
-  let periods = [], note = '', isUsingPermanent = false, rangeLabel = '';
+  let periods = [], note = '', isUsingPermanent = false, rangeLabel = '', overrideLabel = '';
 
   try {
-    const snap = await window.fbDb.collection('weeklyTimetable').doc(classKey).get();
-    if (snap && snap.exists) {
-      const allTimetables = (snap.data() || {}).timetables || {};
+    let ttData = null;
+
+    // 1. Check student-specific timetable
+    if (S().userId) {
+      try {
+        const studentSnap = await window.fbDb
+          .collection('weeklyTimetable_custom')
+          .doc('student_' + S().userId)
+          .get();
+        if (studentSnap && studentSnap.exists) {
+          const d = studentSnap.data() || {};
+          const weekKey = _isoWeekKey();
+          const allTT   = d.timetables || {};
+          if (allTT[weekKey] || allTT['permanent']) {
+            ttData        = d;
+            overrideLabel = 'Personal';
+          }
+        }
+      } catch (e) { /* non-fatal */ }
+    }
+
+    // 2. Check group timetable (student's timetableGroup field)
+    if (!ttData && S().studentData && S().studentData.timetableGroup) {
+      const groupKey = (S().studentData.timetableGroup || '')
+        .trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+      if (groupKey) {
+        try {
+          const groupSnap = await window.fbDb
+            .collection('weeklyTimetable_custom')
+            .doc('group_' + groupKey)
+            .get();
+          if (groupSnap && groupSnap.exists) {
+            const d = groupSnap.data() || {};
+            const weekKey = _isoWeekKey();
+            const allTT   = d.timetables || {};
+            if (allTT[weekKey] || allTT['permanent']) {
+              ttData        = d;
+              overrideLabel = d.targetLabel || S().studentData.timetableGroup;
+            }
+          }
+        } catch (e) { /* non-fatal */ }
+      }
+    }
+
+    // 3. Fall back to class timetable
+    if (!ttData) {
+      const snap = await window.fbDb.collection('weeklyTimetable').doc(classKey).get();
+      if (snap && snap.exists) {
+        ttData = snap.data() || {};
+      }
+    }
+
+    if (ttData) {
+      const allTimetables = ttData.timetables || {};
       const weekKey = _isoWeekKey();
       let tt = allTimetables[weekKey];
       if (!tt || !Array.isArray(tt.periods) || tt.periods.length === 0) {
@@ -3033,7 +3084,8 @@ async function _downloadTimetablePDF() {
   doc.setFontSize(7.5);
   doc.setFont('helvetica', 'bold');
   doc.setTextColor(255, 255, 255);
-  const rightLabel = (isUsingPermanent ? 'Permanent Schedule' : rangeLabel) +
+  const scheduleLabel = overrideLabel ? overrideLabel : (isUsingPermanent ? 'Permanent Schedule' : rangeLabel);
+  const rightLabel = scheduleLabel +
                      '   ·   ' + (is12h ? '12-hour' : '24-hour');
   doc.text(rightLabel, PAGE_W - MARGIN, 9, { align: 'right' });
   doc.setFont('helvetica', 'normal');
@@ -3066,10 +3118,6 @@ async function _downloadTimetablePDF() {
     return [displayTime, ...vals.map(v => v || '')];
   });
 
-  // 12-hour time column needs more width because "10:30 AM" is wider than "10:30"
-  // Using two lines (start on line 1, end on line 2) means we need less width
-  // than fitting both on one line, but more height per row — autoTable handles
-  // row height automatically when text wraps.
   const COL_W_TIME = is12h ? 30 : 26;
   const COL_W_DAY  = (CONTENT_W - COL_W_TIME) / 7;
 
@@ -3091,10 +3139,10 @@ async function _downloadTimetablePDF() {
     columnStyles: {
       0: {
         cellWidth: COL_W_TIME,
-        halign:    'center',          // centre both lines in the cell
+        halign:    'center',
         valign:    'middle',
         fontStyle: 'bold',
-        fontSize:  is12h ? 6 : 6.5,  // slightly smaller to give the two lines room
+        fontSize:  is12h ? 6 : 6.5,
         font:      'courier',
         fillColor: C.surfaceMuted,
       },
@@ -3112,7 +3160,7 @@ async function _downloadTimetablePDF() {
       cellPadding: { top: 3.5, bottom: 3.5, left: 2, right: 2 },
       valign:      'middle',
       halign:      'center',
-      minCellHeight: is12h ? 12 : 8,  // taller rows in 12h mode to fit two lines
+      minCellHeight: is12h ? 12 : 8,
     },
     alternateRowStyles: { fillColor: C.surfaceSubtle },
     tableLineColor: C.border,
