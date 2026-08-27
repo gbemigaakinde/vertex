@@ -1553,6 +1553,204 @@ async function _getFirebaseToken(env) {
   }
 }
 
+/* ── Firestore REST helpers (generic, replaces manual field parsing) ── */
+function _fsDecodeValue(v) {
+  if (!v) return null;
+  if ('stringValue'    in v) return v.stringValue;
+  if ('integerValue'   in v) return parseInt(v.integerValue, 10);
+  if ('doubleValue'    in v) return v.doubleValue;
+  if ('booleanValue'   in v) return v.booleanValue;
+  if ('nullValue'      in v) return null;
+  if ('timestampValue' in v) return v.timestampValue;
+  if ('arrayValue' in v) {
+    const vals = (v.arrayValue && v.arrayValue.values) || [];
+    return vals.map(_fsDecodeValue);
+  }
+  if ('mapValue' in v) {
+    const fields = (v.mapValue && v.mapValue.fields) || {};
+    return _fsDecodeFields(fields);
+  }
+  return null;
+}
+
+function _fsDecodeFields(fields) {
+  const out = {};
+  for (const key in fields) out[key] = _fsDecodeValue(fields[key]);
+  return out;
+}
+
+async function _fsGetDoc(path, accessToken) {
+  const url  = 'https://firestore.googleapis.com/v1/projects/excellencecbt/databases/(default)/documents/' + path;
+  const opts = accessToken ? { headers: { 'Authorization': 'Bearer ' + accessToken } } : {};
+  let res;
+  try {
+    res = await fetch(url, opts);
+  } catch (e) {
+    console.warn('[cron] Firestore fetch failed for', path, ':', e.message);
+    return null;
+  }
+  if (!res.ok) return null;
+  let json;
+  try { json = await res.json(); } catch (e) { return null; }
+  if (!json || !json.fields) return null;
+  return _fsDecodeFields(json.fields);
+}
+
+/* ── Date helper: "today + offset" as a Lagos-local YYYY-MM-DD string ── */
+function _lagosDateStrOffset(offsetDays) {
+  const shifted = new Date(Date.now() + LAGOS_OFFSET_MIN * 60000 + offsetDays * 86400000);
+  const y  = shifted.getUTCFullYear();
+  const mo = String(shifted.getUTCMonth() + 1).padStart(2, '0');
+  const d  = String(shifted.getUTCDate()).padStart(2, '0');
+  return y + '-' + mo + '-' + d;
+}
+
+/* ── Which coachingTasks doc IDs could apply to this student ── */
+function _taskDocIdsForStudent(uid, classStr) {
+  const classKey = (classStr || '').replace(/\s+/g, '').toLowerCase();
+  const ids = ['global', 'weekly', 'student_' + uid, 'weekly_student_' + uid];
+  if (classKey) {
+    ids.push('class_' + classKey);
+    ids.push('weekly_class_' + classKey);
+  }
+  return ids;
+}
+
+/* ── Expand a coachingTasks doc into concrete dates within a window ── */
+function _computeTaskDatesInRange(task, fromDateStr, toDateStr) {
+  const dates = [];
+  if (!task) return dates;
+
+  if (!task.recurrence || task.recurrence === 'once') {
+    (task.dates || []).forEach(function (d) {
+      if (d >= fromDateStr && d <= toDateStr) dates.push(d);
+    });
+    return dates;
+  }
+
+  const start = task.startDate || null;
+  if (!start) return dates;
+  const end = task.endDate || null;
+
+  const rangeStart = start > fromDateStr ? start : fromDateStr;
+  const rangeEnd   = (end && end < toDateStr) ? end : toDateStr;
+  if (rangeStart > rangeEnd) return dates;
+
+  const dayNameFull = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const weeklyDays  = Array.isArray(task.weeklyDays) ? task.weeklyDays : [];
+
+  const cursor = new Date(rangeStart + 'T00:00:00Z');
+  const endD   = new Date(rangeEnd   + 'T00:00:00Z');
+
+  while (cursor <= endD) {
+    const dow   = cursor.getUTCDay();
+    const dName = dayNameFull[dow];
+    const yyyy  = cursor.getUTCFullYear();
+    const mm    = String(cursor.getUTCMonth() + 1).padStart(2, '0');
+    const dd    = String(cursor.getUTCDate()).padStart(2, '0');
+    const dstr  = yyyy + '-' + mm + '-' + dd;
+
+    if (task.recurrence === 'weekly') {
+      if (weeklyDays.includes(dName)) dates.push(dstr);
+    } else if (task.recurrence === 'range') {
+      if (weeklyDays.length === 0 || weeklyDays.includes(dName)) dates.push(dstr);
+    }
+
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+
+  return dates;
+}
+
+/* ── Look up this student's real upcoming scheduled sessions ── */
+async function _getUpcomingTaskDates(uid, classStr, accessToken, todayStr, lookaheadDays) {
+  const toDateStr = _lagosDateStrOffset(lookaheadDays);
+  const docIds    = _taskDocIdsForStudent(uid, classStr);
+  const allDates  = new Set();
+
+  for (let i = 0; i < docIds.length; i++) {
+    const task = await _fsGetDoc('coachingTasks/' + docIds[i], accessToken);
+    if (!task || task.active !== true) continue;
+    _computeTaskDatesInRange(task, todayStr, toDateStr).forEach(d => allDates.add(d));
+  }
+
+  return [...allDates].sort();
+}
+
+/* ── Decide which single reminder a student should get today ── */
+function _buildDailyReminderPayload(student, todayStr, tomorrowStr, upcomingDates) {
+  const doneToday     = !!(student.coachingCompleted && student.coachingCompleted[todayStr]);
+  const isTaskToday    = upcomingDates.includes(todayStr);
+  const isTaskTomorrow = upcomingDates.includes(tomorrowStr);
+  const streak         = student.studyStreak || 0;
+  const weakSubjects   = Array.isArray(student.weakSubjects) ? student.weakSubjects : [];
+  const lastActiveDate = student.lastActiveDate || null;
+
+  let daysSinceActive = null;
+  if (lastActiveDate) {
+    const last  = new Date(lastActiveDate + 'T00:00:00');
+    const today = new Date(todayStr + 'T00:00:00');
+    daysSinceActive = Math.round((today - last) / 86400000);
+  }
+
+  const laterDate = upcomingDates.find(d => d > tomorrowStr);
+
+  // 1. Exam tomorrow
+  if (isTaskTomorrow) {
+    return { title: 'Exam Tomorrow', body: 'Your exam is tomorrow. Ready for a quick review?' };
+  }
+
+  // 2. Required session today, not done yet
+  if (isTaskToday && !doneToday) {
+    if (streak > 0) {
+      return {
+        title: 'Keep Your Streak',
+        body:  'Do not break your ' + streak + '-day streak. Open the app for a quick session.',
+      };
+    }
+    return {
+      title: "Complete Today's Session",
+      body:  'You have a required session today. Complete it to stay on track.',
+    };
+  }
+
+  // 3. Session coming up in the next few days
+  if (laterDate) {
+    const daysUntil = Math.round(
+      (new Date(laterDate + 'T00:00:00') - new Date(todayStr + 'T00:00:00')) / 86400000
+    );
+    return {
+      title: 'Upcoming Session',
+      body:  'You have a scheduled session in ' + daysUntil + ' day' + (daysUntil !== 1 ? 's' : '') + ' — get ready!',
+    };
+  }
+
+  // 4. Never active, or inactive 5+ days
+  if (daysSinceActive === null || daysSinceActive >= 5) {
+    return { title: 'We Miss You!', body: 'It has been a while since your last session. Come back and keep learning!' };
+  }
+
+  // 5. Weak subject follow-up
+  if (weakSubjects.length > 0) {
+    return {
+      title: 'Quick Study Tip',
+      body:  'Struggling with ' + weakSubjects[0] + '? A focused review session can help.',
+    };
+  }
+
+  // 6. Mild inactivity
+  if (daysSinceActive >= 2) {
+    return { title: 'Study Reminder', body: 'You have not practiced in a couple of days. Jump back in for a quick session!' };
+  }
+
+  // 7. Fallback general nudge, alternated for variety
+  const dayOfMonth = new Date(todayStr + 'T00:00:00').getDate();
+  if (dayOfMonth % 2 === 0) {
+    return { title: 'Practice Makes Perfect', body: 'Keep sharpening your skills — try a quick CBT practice session today.' };
+  }
+  return { title: 'Progress Check', body: 'See how far you have come — review your recent results and keep improving.' };
+}
+
 /* ── Daily reminder cron ─────────────────────────────────── */
 async function _runDailyReminders(env) {
   if (!env.VTX_RATE_LIMITS) {
@@ -1560,13 +1758,13 @@ async function _runDailyReminders(env) {
     return;
   }
 
-  var indexRaw = await env.VTX_RATE_LIMITS.get('push_index');
+  const indexRaw = await env.VTX_RATE_LIMITS.get('push_index');
   if (!indexRaw) {
     console.log('[cron] No push subscribers.');
     return;
   }
 
-  var userIds;
+  let userIds;
   try {
     userIds = JSON.parse(indexRaw);
   } catch (e) {
@@ -1574,101 +1772,38 @@ async function _runDailyReminders(env) {
     return;
   }
 
-  // Get a single Firebase auth token to reuse for all student fetches
-  var accessToken = await _getFirebaseToken(env);
+  const accessToken = await _getFirebaseToken(env);
   if (!accessToken) {
-    console.warn('[cron] Could not obtain Firebase token — student data fetch will be skipped.');
+    console.warn('[cron] Could not obtain Firebase token — reminders skipped.');
+    return;
   }
 
-  var tomorrow = new Date();
-  tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
-  var tomorrowStr = tomorrow.toISOString().slice(0, 10);
+  const todayStr    = _lagosDateStrOffset(0);
+  const tomorrowStr = _lagosDateStrOffset(1);
 
-  var today = new Date().toISOString().slice(0, 10);
-
-  for (var i = 0; i < userIds.length; i++) {
-    var uid = userIds[i];
+  for (let i = 0; i < userIds.length; i++) {
+    const uid = userIds[i];
 
     try {
-      var subRaw = await env.VTX_RATE_LIMITS.get('push:' + uid);
+      const subRaw = await env.VTX_RATE_LIMITS.get('push:' + uid);
       if (!subRaw) continue;
+      const subscription = JSON.parse(subRaw);
 
-      var subscription = JSON.parse(subRaw);
-
-      // Fetch Firestore student document with auth token
-      var firestoreUrl =
-        'https://firestore.googleapis.com/v1/projects/excellencecbt/databases/(default)/documents/students/' + uid;
-
-      var fetchOptions = accessToken
-        ? { headers: { 'Authorization': 'Bearer ' + accessToken } }
-        : {};
-
-      var docRes = await fetch(firestoreUrl, fetchOptions);
-
-      if (!docRes.ok) {
-        console.warn('[cron] Could not fetch student', uid, '— status:', docRes.status);
+      const student = await _fsGetDoc('students/' + uid, accessToken);
+      if (!student) {
+        console.warn('[cron] Could not fetch student', uid, '— skipping.');
         continue;
       }
 
-      var docJson = await docRes.json();
-      var fields  = (docJson && docJson.fields) || {};
-
-      var streakVal =
-        fields.studyStreak && fields.studyStreak.integerValue
-          ? parseInt(fields.studyStreak.integerValue, 10)
-          : 0;
-
-      var weakTopics =
-        fields.weakTopics && fields.weakTopics.arrayValue
-          ? (fields.weakTopics.arrayValue.values || []).map(function (v) {
-              return v.stringValue || '';
-            })
-          : [];
-
-      var nextExamRaw =
-        fields.nextExamDate && fields.nextExamDate.stringValue
-          ? fields.nextExamDate.stringValue
-          : null;
-
-      var completedRaw =
-        fields.coachingCompleted && fields.coachingCompleted.mapValue
-          ? fields.coachingCompleted.mapValue.fields || {}
-          : {};
-
-      var doneToday = !!(
-        completedRaw[today] &&
-        completedRaw[today].booleanValue === true
-      );
-
-      var payload = null;
-
-      // Priority 1: exam tomorrow
-      if (nextExamRaw && nextExamRaw.slice(0, 10) === tomorrowStr) {
-        payload = {
-          title: 'Exam Tomorrow',
-          body:  'Your exam is tomorrow. Ready for a quick review?',
-          url:   '/',
-        };
-      }
-      // Priority 2: streak at risk
-      else if (streakVal > 0 && !doneToday) {
-        payload = {
-          title: 'Keep Your Streak',
-          body:  'Do not break your ' + streakVal + '-day streak. Open the app for a quick session.',
-          url:   '/',
-        };
-      }
-      // Priority 3: weak topic nudge
-      else if (weakTopics.length > 0) {
-        payload = {
-          title: 'Quick Study Tip',
-          body:  'Struggling with ' + weakTopics[0] + '? A 10-minute review can help.',
-          url:   '/',
-        };
-      }
+      const upcomingDates = await _getUpcomingTaskDates(uid, student.class, accessToken, todayStr, 4);
+      const payload = _buildDailyReminderPayload(student, todayStr, tomorrowStr, upcomingDates);
 
       if (payload) {
-        var result = await sendWebPush(subscription, JSON.stringify(payload), env);
+        const result = await sendWebPush(subscription, JSON.stringify({
+          title: payload.title,
+          body:  payload.body,
+          url:   '/',
+        }), env);
         console.log('[cron] Push to', uid, ':', result.ok ? 'sent' : 'failed', result.reason || '');
       }
 
