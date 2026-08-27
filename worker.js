@@ -484,12 +484,12 @@ async function generateSVGDiagram(topic, subject, studentClass, context, env) {
     console.warn('[Worker] OpenRouter SVG failed:', e.message);
   }
 
-  // 3) Fallback: Workers AI
+  // 3) Fallback: Workers AI — use fp8-fast variant (llama-3.3-70b deprecated May 2026)
   try {
     if (!env.AI) {
       console.warn('[Worker] Workers AI binding not configured. Skipping SVG fallback.');
     } else {
-      const res = await env.AI.run('@cf/meta/llama-3.3-70b-instruct', {
+      const res = await env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', {
         messages: messages,
       });
       const text = res && typeof res.response === 'string' ? res.response : null;
@@ -771,7 +771,7 @@ async function callGroq(messages, model, env) {
 
 async function callWorkersAI(messages, model, env) {
   if (!env.AI) return jsonError('Workers AI binding not configured.', 500);
-  const useModel = model || '@cf/meta/llama-3.3-70b-instruct';
+  const useModel = model || '@cf/meta/llama-3.3-70b-instruct-fp8-fast';
 
   // Workers AI accepts system / user / assistant roles natively
   const cleanMessages = messages.map(function (m) {
