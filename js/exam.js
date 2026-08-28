@@ -442,6 +442,29 @@ function _convertTimeStr(raw, pref) {
 const TIMETABLE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 let _timetableDataCache = null; // { classKey, userId, data, fetchedAtMs }
 
+function _timetableSnapshotKey(classKey, userId) {
+  return 'vtx_timetable_snapshot_' + classKey + '_' + (userId || 'anon');
+}
+
+function _saveTimetableSnapshot(classKey, userId, data) {
+  try {
+    localStorage.setItem(_timetableSnapshotKey(classKey, userId), JSON.stringify({
+      data: data,
+      savedAtMs: Date.now(),
+    }));
+  } catch (e) { /* storage full or unavailable — non-fatal */ }
+}
+
+function _readTimetableSnapshot(classKey, userId) {
+  try {
+    const raw = localStorage.getItem(_timetableSnapshotKey(classKey, userId));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    if (!parsed || !parsed.data) return null;
+    return parsed.data;
+  } catch (e) { return null; }
+}
+
 async function _getWeeklyTimetableData(classKey, forceRefresh) {
   if (!classKey) return null;
 
@@ -459,10 +482,15 @@ async function _getWeeklyTimetableData(classKey, forceRefresh) {
   }
 
   if (!navigator.onLine || !window.fbDb) {
-    // Offline — serve the last known data for this exact student/class
-    // if we have it, rather than showing nothing.
+    // Offline — try the in-memory cache first (even past its normal TTL,
+    // since we cannot refresh it anyway), then fall back to the snapshot
+    // saved in localStorage from the last time we were online.
     if (_timetableDataCache && _timetableDataCache.classKey === classKey && _timetableDataCache.userId === userId) {
       return _timetableDataCache.data;
+    }
+    const snapshot = _readTimetableSnapshot(classKey, userId);
+    if (snapshot) {
+      return Object.assign({}, snapshot, { isOfflineSnapshot: true });
     }
     return null;
   }
@@ -524,6 +552,10 @@ async function _getWeeklyTimetableData(classKey, forceRefresh) {
       overrideLabel = '';
     } catch (e) {
       console.warn('[exam] Timetable class fetch failed (non-fatal):', e);
+      // Connection dropped mid-flight — try the offline snapshot before
+      // giving up entirely.
+      const snapshot = _readTimetableSnapshot(classKey, userId);
+      if (snapshot) return Object.assign({}, snapshot, { isOfflineSnapshot: true });
       _timetableDataCache = { classKey, userId, data: null, fetchedAtMs: now };
       return null;
     }
@@ -550,6 +582,7 @@ async function _getWeeklyTimetableData(classKey, forceRefresh) {
   };
 
   _timetableDataCache = { classKey, userId, data, fetchedAtMs: now };
+  _saveTimetableSnapshot(classKey, userId, data);
   return data;
 }
 
@@ -592,7 +625,6 @@ async function _fetchWeeklyTimetableHtml(classKey, forceRefresh) {
     const todayColIdx = dayDates.findIndex(dd => dd.dateStr === todayStr);
     const nowMin      = now.getHours() * 60 + now.getMinutes();
 
-    // Read clock preference once for this render pass
     const clockPref = _getClockPref();
     const is12h     = clockPref === '12';
 
@@ -635,7 +667,6 @@ async function _fetchWeeklyTimetableHtml(classKey, forceRefresh) {
       ' \u2013 ' +
       sunday.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
 
-    // In 12-hour mode the time strings are wider, give the column a little more room
     const TIME_COL_MIN = is12h ? '108px' : '86px';
 
     const CB = 'padding:.4375rem .5625rem;border:1px solid var(--border);' +
@@ -661,10 +692,8 @@ async function _fetchWeeklyTimetableHtml(classKey, forceRefresh) {
                     : isNextPeriod    ? 'border-left:2px solid var(--accent-border);'
                     : '';
 
-      // Display time string — converted if 12-hour mode is active
       const displayTime = _convertTimeStr(p.time || '', clockPref);
 
-      // Badge rendered on its own line below the time text
       let nowBadge = '';
       if (isCurrentPeriod && range) {
         const minsLeft = range.end - nowMin;
@@ -696,7 +725,6 @@ async function _fetchWeeklyTimetableHtml(classKey, forceRefresh) {
           '</span>';
       }
 
-      // Time cell: flex column so badge sits neatly below the time string
       const timeCell =
         '<td style="' + CB + lBorder + 'background:' + rowBg + ';' +
           'font-family:var(--font-mono);font-size:.75rem;font-weight:600;' +
@@ -783,7 +811,6 @@ async function _fetchWeeklyTimetableHtml(classKey, forceRefresh) {
         '</div>'
       : '';
 
-    // Badge: override label takes priority over permanent/week badge
     let headerBadgeHtml = '';
     if (overrideLabel) {
       headerBadgeHtml = `<span style="flex-shrink:0;font-size:.6rem;font-weight:700;
@@ -802,7 +829,20 @@ async function _fetchWeeklyTimetableHtml(classKey, forceRefresh) {
         </span>`;
     }
 
-    // Clock toggle button — sits in the header next to the download button
+    // Full-screen clock button — new
+    const fullClockBtnHtml =
+      '<button onclick="Exam._openFullClock()" ' +
+        'title="Open full-screen clock" ' +
+        'aria-label="Open full-screen clock" ' +
+        'style="flex-shrink:0;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.32);' +
+          'border-radius:7px;width:32px;height:32px;cursor:pointer;display:inline-flex;' +
+          'align-items:center;justify-content:center;color:#fff;' +
+          'transition:background .14s,transform .14s;padding:0;" ' +
+        'onmouseenter="this.style.background=\'rgba(255,255,255,.30)\';this.style.transform=\'scale(1.07)\'" ' +
+        'onmouseleave="this.style.background=\'rgba(255,255,255,.18)\';this.style.transform=\'\'">' +
+        '<i class="ph ph-clock" style="font-size:16px;pointer-events:none;"></i>' +
+      '</button>';
+
     const clockToggleHtml =
       '<button onclick="Exam._toggleClockFormat()" ' +
         'title="' + (is12h ? 'Switch to 24-hour clock' : 'Switch to 12-hour clock') + '" ' +
@@ -838,7 +878,7 @@ async function _fetchWeeklyTimetableHtml(classKey, forceRefresh) {
             '</p>' +
           '</div>' +
           headerBadgeHtml +
-          // Clock toggle sits to the left of the download button
+          fullClockBtnHtml +
           clockToggleHtml +
           '<button onclick="Exam._downloadTimetablePDF()" ' +
             'title="Download timetable as PDF" ' +
@@ -876,6 +916,314 @@ async function _fetchWeeklyTimetableHtml(classKey, forceRefresh) {
     console.warn('[exam] Timetable fetch failed (non-fatal):', err);
     return '';
   }
+}
+
+/* ═══════════════════════════════════════════════════════
+   FULL-SCREEN CLOCK
+═══════════════════════════════════════════════════════ */
+let _clockTickInterval    = null;
+let _clockNowNextInterval = null;
+
+function _getClockStylePref() {
+  try { return localStorage.getItem('vtx_clock_style_pref') === 'analogue' ? 'analogue' : 'digital'; }
+  catch (e) { return 'digital'; }
+}
+
+function _setClockStylePref(style) {
+  try { localStorage.setItem('vtx_clock_style_pref', style); } catch (e) {}
+}
+
+function _ttParseMinsRange(t) {
+  if (!t) return null;
+  const normalized = t.replace(/\s*[\u2013\u2014\u2212\-]\s*/g, '-');
+  const m = normalized.match(/^(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})$/);
+  if (!m) return null;
+  const start = +m[1] * 60 + +m[2];
+  const end   = +m[3] * 60 + +m[4];
+  if (end <= start) return null;
+  return { start, end };
+}
+
+function _clockKeydownHandler(e) {
+  if (e.key === 'Escape') _closeFullClock();
+}
+
+function _buildClockModal() {
+  const wrap = document.createElement('div');
+  wrap.id = 'vtxClockModal';
+  wrap.setAttribute('role', 'dialog');
+  wrap.setAttribute('aria-modal', 'true');
+  wrap.setAttribute('aria-label', 'Full screen clock');
+  wrap.className = 'vtx-clock-modal';
+
+  wrap.innerHTML =
+    '<div class="vtx-clock-topbar">' +
+      '<button class="vtx-clock-icon-btn" onclick="Exam._toggleClockStyle()" id="vtxClockStyleBtn" ' +
+        'title="Switch clock style" aria-label="Switch between analogue and digital clock">' +
+        '<i class="ph ph-arrows-left-right"></i>' +
+      '</button>' +
+      '<button class="vtx-clock-icon-btn" onclick="Exam._closeFullClock()" ' +
+        'title="Close" aria-label="Close clock">' +
+        '<i class="ph ph-x"></i>' +
+      '</button>' +
+    '</div>' +
+
+    '<div class="vtx-clock-stage">' +
+
+      '<div class="vtx-clock-digital" id="vtxClockDigital">' +
+        '<div class="vtx-clock-digital-time">' +
+          '<span id="vtxClockDigitalHour">00</span>' +
+          '<span class="vtx-clock-colon">:</span>' +
+          '<span id="vtxClockDigitalMin">00</span>' +
+          '<span class="vtx-clock-digital-sec" id="vtxClockDigitalSec">:00</span>' +
+          '<span class="vtx-clock-digital-period" id="vtxClockDigitalPeriod"></span>' +
+        '</div>' +
+        '<div class="vtx-clock-date" id="vtxClockDate"></div>' +
+      '</div>' +
+
+      '<div class="vtx-clock-analogue" id="vtxClockAnalogue">' +
+        '<div class="vtx-clock-face">' +
+          '<div class="vtx-clock-ticks-minute"></div>' +
+          '<div class="vtx-clock-ticks-hour"></div>' +
+          '<div class="vtx-clock-numerals" id="vtxClockNumerals"></div>' +
+          '<div class="vtx-clock-hand vtx-hand-hour"   id="vtxHandHour"></div>' +
+          '<div class="vtx-clock-hand vtx-hand-minute" id="vtxHandMinute"></div>' +
+          '<div class="vtx-clock-hand vtx-hand-second" id="vtxHandSecond"></div>' +
+          '<div class="vtx-clock-pivot"></div>' +
+        '</div>' +
+      '</div>' +
+
+    '</div>' +
+
+    '<div class="vtx-clock-events">' +
+      '<div class="vtx-clock-now" id="vtxClockNow">' +
+        '<span class="vtx-clock-now-label">Now</span>' +
+        '<span class="vtx-clock-now-value" id="vtxClockNowValue">\u2014</span>' +
+      '</div>' +
+      '<div class="vtx-clock-next" id="vtxClockNext">' +
+        '<span class="vtx-clock-next-label">Next</span>' +
+        '<span class="vtx-clock-next-value" id="vtxClockNextValue">\u2014</span>' +
+      '</div>' +
+      '<div class="vtx-clock-offline-note" id="vtxClockOfflineNote" style="display:none;">' +
+        '<i class="ph ph-wifi-slash"></i> Showing your last saved timetable' +
+      '</div>' +
+    '</div>';
+
+  // Static geometry — built once, never rebuilt on subsequent opens.
+  const minuteTicksEl = wrap.querySelector('.vtx-clock-ticks-minute');
+  const hourTicksEl   = wrap.querySelector('.vtx-clock-ticks-hour');
+  const numeralsEl    = wrap.querySelector('#vtxClockNumerals');
+
+  let minuteTicksHtml = '';
+  for (let i = 0; i < 60; i++) {
+    if (i % 5 === 0) continue; // hour ticks drawn separately, thicker
+    minuteTicksHtml += '<div class="vtx-tick-minute" style="transform:rotate(' + (i * 6) + 'deg);"></div>';
+  }
+  minuteTicksEl.innerHTML = minuteTicksHtml;
+
+  let hourTicksHtml = '';
+  for (let i = 0; i < 12; i++) {
+    hourTicksHtml += '<div class="vtx-tick-hour" style="transform:rotate(' + (i * 30) + 'deg);"></div>';
+  }
+  hourTicksEl.innerHTML = hourTicksHtml;
+
+  let numeralsHtml = '';
+  for (let i = 1; i <= 12; i++) {
+    const angleDeg  = i * 30;
+    const angleRad  = (angleDeg - 90) * (Math.PI / 180);
+    const radiusPct = 38;
+    const x = 50 + radiusPct * Math.cos(angleRad);
+    const y = 50 + radiusPct * Math.sin(angleRad);
+    numeralsHtml += '<span class="vtx-clock-numeral" style="left:' + x + '%;top:' + y + '%;">' + i + '</span>';
+  }
+  numeralsEl.innerHTML = numeralsHtml;
+
+  return wrap;
+}
+
+function _applyClockStyle(style) {
+  const digital  = document.getElementById('vtxClockDigital');
+  const analogue = document.getElementById('vtxClockAnalogue');
+  const btn      = document.getElementById('vtxClockStyleBtn');
+  if (style === 'analogue') {
+    if (digital)  digital.style.display  = 'none';
+    if (analogue) analogue.style.display = 'flex';
+    if (btn) btn.setAttribute('aria-label', 'Switch to digital clock');
+  } else {
+    if (digital)  digital.style.display  = 'flex';
+    if (analogue) analogue.style.display = 'none';
+    if (btn) btn.setAttribute('aria-label', 'Switch to analogue clock');
+  }
+}
+
+function _toggleClockStyle() {
+  const next = _getClockStylePref() === 'analogue' ? 'digital' : 'analogue';
+  _setClockStylePref(next);
+  _applyClockStyle(next);
+  _updateFullClock();
+}
+
+function _updateFullClock() {
+  const now = new Date();
+
+  // ── Digital ──
+  const clockPref = _getClockPref();
+  const is12h = clockPref === '12';
+  let h = now.getHours();
+  const m = String(now.getMinutes()).padStart(2, '0');
+  const s = String(now.getSeconds()).padStart(2, '0');
+  let periodLabel = '';
+  if (is12h) {
+    periodLabel = h >= 12 ? 'PM' : 'AM';
+    h = h % 12 || 12;
+  }
+  const hStr = is12h ? String(h) : String(h).padStart(2, '0');
+
+  const hourEl   = document.getElementById('vtxClockDigitalHour');
+  const minEl    = document.getElementById('vtxClockDigitalMin');
+  const secEl    = document.getElementById('vtxClockDigitalSec');
+  const periodEl = document.getElementById('vtxClockDigitalPeriod');
+  if (hourEl)   hourEl.textContent   = hStr;
+  if (minEl)    minEl.textContent    = m;
+  if (secEl)    secEl.textContent    = ':' + s;
+  if (periodEl) periodEl.textContent = periodLabel;
+
+  const dateEl = document.getElementById('vtxClockDate');
+  if (dateEl) {
+    dateEl.textContent = now.toLocaleDateString('en-GB', {
+      weekday: 'long', day: 'numeric', month: 'long',
+    });
+  }
+
+  // ── Analogue ──
+  const seconds = now.getSeconds();
+  const minutes = now.getMinutes();
+  const hours   = now.getHours() % 12;
+
+  const secDeg  = seconds * 6;
+  const minDeg  = (minutes + seconds / 60) * 6;
+  const hourDeg = (hours + minutes / 60) * 30;
+
+  const handSecond = document.getElementById('vtxHandSecond');
+  const handMinute = document.getElementById('vtxHandMinute');
+  const handHour   = document.getElementById('vtxHandHour');
+  if (handSecond) handSecond.style.transform = 'translateX(-50%) rotate(' + secDeg  + 'deg)';
+  if (handMinute) handMinute.style.transform = 'translateX(-50%) rotate(' + minDeg  + 'deg)';
+  if (handHour)   handHour.style.transform   = 'translateX(-50%) rotate(' + hourDeg + 'deg)';
+}
+
+async function _updateClockNowNext() {
+  const nowEl         = document.getElementById('vtxClockNowValue');
+  const nextEl        = document.getElementById('vtxClockNextValue');
+  const offlineNoteEl = document.getElementById('vtxClockOfflineNote');
+  if (!nowEl || !nextEl) return;
+
+  const classKey = S().studentData ? (S().studentData.class || '').replace(/\s+/g, '').toLowerCase() : '';
+  if (!classKey) {
+    nowEl.textContent  = 'No class in session';
+    nextEl.textContent = '\u2014';
+    if (offlineNoteEl) offlineNoteEl.style.display = 'none';
+    return;
+  }
+
+  let timetableData;
+  try {
+    timetableData = await _getWeeklyTimetableData(classKey);
+  } catch (e) {
+    timetableData = null;
+  }
+
+  if (offlineNoteEl) {
+    offlineNoteEl.style.display = (timetableData && timetableData.isOfflineSnapshot) ? 'flex' : 'none';
+  }
+
+  if (!timetableData || !Array.isArray(timetableData.periods) || timetableData.periods.length === 0) {
+    nowEl.textContent  = 'No timetable available';
+    nextEl.textContent = '\u2014';
+    return;
+  }
+
+  const DAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const now      = new Date();
+  const dayKey   = DAY_KEYS[now.getDay()];
+  const nowMin   = now.getHours() * 60 + now.getMinutes();
+
+  const periods = timetableData.periods;
+  let currentEntry = null;
+  let nextEntry     = null;
+  let nextStart     = Infinity;
+
+  periods.forEach(function (p) {
+    const range = _ttParseMinsRange(p.time || '');
+    if (!range) return;
+    const label = (p[dayKey] || '').trim();
+    if (!label) return;
+
+    if (nowMin >= range.start && nowMin < range.end) {
+      currentEntry = { label: label, endsIn: range.end - nowMin };
+    } else if (range.start > nowMin && range.start < nextStart) {
+      nextStart = range.start;
+      nextEntry = { label: label, startsIn: range.start - nowMin };
+    }
+  });
+
+  if (currentEntry) {
+    const upper = currentEntry.label.toUpperCase();
+    const displayLabel = upper === 'LUNCH' ? 'Lunch break' : upper === 'BREAK' ? 'Break' : currentEntry.label;
+    nowEl.textContent = displayLabel + ' \u2014 ' + currentEntry.endsIn + ' min left';
+  } else {
+    nowEl.textContent = 'No class in session';
+  }
+
+  if (nextEntry) {
+    nextEl.textContent = nextEntry.label + ' \u2014 in ' + nextEntry.startsIn + ' min';
+  } else {
+    nextEl.textContent = 'Nothing else scheduled today';
+  }
+}
+
+function _openFullClock() {
+  let modal = document.getElementById('vtxClockModal');
+  if (!modal) {
+    modal = _buildClockModal();
+    document.body.appendChild(modal);
+  }
+
+  document.body.style.overflow = 'hidden';
+  modal.style.display = 'flex';
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      modal.classList.add('is-open');
+    });
+  });
+
+  _applyClockStyle(_getClockStylePref());
+  _updateFullClock();
+  _updateClockNowNext();
+
+  if (_clockTickInterval) clearInterval(_clockTickInterval);
+  _clockTickInterval = setInterval(_updateFullClock, 1000);
+
+  if (_clockNowNextInterval) clearInterval(_clockNowNextInterval);
+  _clockNowNextInterval = setInterval(_updateClockNowNext, 30000);
+
+  document.addEventListener('keydown', _clockKeydownHandler);
+}
+
+function _closeFullClock() {
+  const modal = document.getElementById('vtxClockModal');
+  if (!modal) return;
+
+  modal.classList.remove('is-open');
+  document.body.style.overflow = '';
+  document.removeEventListener('keydown', _clockKeydownHandler);
+
+  if (_clockTickInterval)    { clearInterval(_clockTickInterval);    _clockTickInterval = null; }
+  if (_clockNowNextInterval) { clearInterval(_clockNowNextInterval); _clockNowNextInterval = null; }
+
+  setTimeout(function () {
+    if (modal) modal.style.display = 'none';
+  }, 320);
 }
 
   /* ─────────────────────────────────────────────────────── */
@@ -5610,6 +5958,9 @@ window.Exam = {
   _showLiveTyping,
   _hideLiveTyping,
   _liveSetStatus,
+  _openFullClock,
+  _closeFullClock,
+  _toggleClockStyle,
 };
 
 })();
