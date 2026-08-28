@@ -1699,6 +1699,14 @@ async function _getUpcomingTaskDates(uid, classStr, accessToken, todayStr, looka
   return [...allDates].sort();
 }
 
+/* ── Extract first name from a full name string ── */
+function _firstNameOf(fullName) {
+  if (!fullName) return '';
+  var trimmed = String(fullName).trim();
+  if (!trimmed) return '';
+  return trimmed.split(/\s+/)[0];
+}
+
 /* ── Decide which single reminder a student should get today ── */
 function _buildDailyReminderPayload(student, todayStr, tomorrowStr, upcomingDates) {
   const doneToday     = !!(student.coachingCompleted && student.coachingCompleted[todayStr]);
@@ -1707,6 +1715,8 @@ function _buildDailyReminderPayload(student, todayStr, tomorrowStr, upcomingDate
   const streak         = student.studyStreak || 0;
   const weakSubjects   = Array.isArray(student.weakSubjects) ? student.weakSubjects : [];
   const lastActiveDate = student.lastActiveDate || null;
+  const firstName      = _firstNameOf(student.name);
+  const namePart        = firstName ? ', ' + firstName : '';
 
   let daysSinceActive = null;
   if (lastActiveDate) {
@@ -1719,7 +1729,7 @@ function _buildDailyReminderPayload(student, todayStr, tomorrowStr, upcomingDate
 
   // 1. Exam tomorrow
   if (isTaskTomorrow) {
-    return { title: 'Exam Tomorrow', body: 'Your exam is tomorrow. Ready for a quick review?' };
+    return { title: 'Exam Tomorrow', body: 'Your exam is tomorrow' + namePart + '. Ready for a quick review?' };
   }
 
   // 2. Required session today, not done yet
@@ -1727,12 +1737,12 @@ function _buildDailyReminderPayload(student, todayStr, tomorrowStr, upcomingDate
     if (streak > 0) {
       return {
         title: 'Keep Your Streak',
-        body:  'Do not break your ' + streak + '-day streak. Open the app for a quick session.',
+        body:  'Do not break your ' + streak + '-day streak' + namePart + '. Open the app for a quick session.',
       };
     }
     return {
       title: "Complete Today's Session",
-      body:  'You have a required session today. Complete it to stay on track.',
+      body:  'You have a required session today' + namePart + '. Complete it to stay on track.',
     };
   }
 
@@ -1743,34 +1753,34 @@ function _buildDailyReminderPayload(student, todayStr, tomorrowStr, upcomingDate
     );
     return {
       title: 'Upcoming Session',
-      body:  'You have a scheduled session in ' + daysUntil + ' day' + (daysUntil !== 1 ? 's' : '') + ' — get ready!',
+      body:  'You have a scheduled session in ' + daysUntil + ' day' + (daysUntil !== 1 ? 's' : '') + namePart + ' — get ready!',
     };
   }
 
   // 4. Never active, or inactive 5+ days
   if (daysSinceActive === null || daysSinceActive >= 5) {
-    return { title: 'We Miss You!', body: 'It has been a while since your last session. Come back and keep learning!' };
+    return { title: 'We Miss You!', body: 'It has been a while since your last session' + namePart + '. Come back and keep learning!' };
   }
 
   // 5. Weak subject follow-up
   if (weakSubjects.length > 0) {
     return {
       title: 'Quick Study Tip',
-      body:  'Struggling with ' + weakSubjects[0] + '? A focused review session can help.',
+      body:  'Struggling with ' + weakSubjects[0] + namePart + '? A focused review session can help.',
     };
   }
 
   // 6. Mild inactivity
   if (daysSinceActive >= 2) {
-    return { title: 'Study Reminder', body: 'You have not practiced in a couple of days. Jump back in for a quick session!' };
+    return { title: 'Study Reminder', body: 'You have not practiced in a couple of days' + namePart + '. Jump back in for a quick session!' };
   }
 
   // 7. Fallback general nudge, alternated for variety
   const dayOfMonth = new Date(todayStr + 'T00:00:00').getDate();
   if (dayOfMonth % 2 === 0) {
-    return { title: 'Practice Makes Perfect', body: 'Keep sharpening your skills — try a quick CBT practice session today.' };
+    return { title: 'Practice Makes Perfect', body: 'Keep sharpening your skills' + namePart + ' — try a quick CBT practice session today.' };
   }
-  return { title: 'Progress Check', body: 'See how far you have come — review your recent results and keep improving.' };
+  return { title: 'Progress Check', body: 'See how far you have come' + namePart + '. Review your recent results and keep improving.' };
 }
 
 /* ── Daily reminder cron ─────────────────────────────────── */
