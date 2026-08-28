@@ -944,6 +944,48 @@ function _ttParseMinsRange(t) {
   return { start, end };
 }
 
+/* ── Fullscreen API helpers (cross-browser) ── */
+function _requestFullscreen(el) {
+  if (!el) return Promise.reject(new Error('No element'));
+  var fn = el.requestFullscreen || el.webkitRequestFullscreen ||
+           el.mozRequestFullScreen || el.msRequestFullscreen;
+  if (!fn) return Promise.reject(new Error('Fullscreen API not supported'));
+  try {
+    var result = fn.call(el);
+    return (result && typeof result.then === 'function') ? result : Promise.resolve();
+  } catch (e) {
+    return Promise.reject(e);
+  }
+}
+
+function _exitFullscreen() {
+  var fn = document.exitFullscreen || document.webkitExitFullscreen ||
+           document.mozCancelFullScreen || document.msExitFullscreen;
+  if (!fn) return Promise.resolve();
+  try {
+    var result = fn.call(document);
+    return (result && typeof result.then === 'function') ? result : Promise.resolve();
+  } catch (e) {
+    return Promise.resolve();
+  }
+}
+
+function _isFullscreenActive() {
+  return !!(document.fullscreenElement || document.webkitFullscreenElement ||
+            document.mozFullScreenElement || document.msFullscreenElement);
+}
+
+function _fullscreenChangeHandler() {
+  // Fires when fullscreen is exited any way other than our own close button —
+  // Esc key, swipe-down gesture, browser's native fullscreen exit control, etc.
+  if (!_isFullscreenActive()) {
+    var modal = document.getElementById('vtxClockModal');
+    if (modal && modal.classList.contains('is-open')) {
+      _closeFullClock();
+    }
+  }
+}
+
 function _clockKeydownHandler(e) {
   if (e.key === 'Escape') _closeFullClock();
 }
@@ -1208,21 +1250,41 @@ function _openFullClock() {
   _clockNowNextInterval = setInterval(_updateClockNowNext, 30000);
 
   document.addEventListener('keydown', _clockKeydownHandler);
+  document.addEventListener('fullscreenchange', _fullscreenChangeHandler);
+  document.addEventListener('webkitfullscreenchange', _fullscreenChangeHandler);
+  document.addEventListener('mozfullscreenchange', _fullscreenChangeHandler);
+  document.addEventListener('MSFullscreenChange', _fullscreenChangeHandler);
+
+  // Request real browser fullscreen. If the browser/device doesn't support
+  // it (or the user denies it), the modal still covers the viewport via the
+  // existing fixed-inset overlay, so this fails silently with no visual gap.
+  _requestFullscreen(modal).catch(function () {});
 }
 
 function _closeFullClock() {
   const modal = document.getElementById('vtxClockModal');
-  if (!modal) return;
+  if (!modal || modal.dataset.closing === 'true') return;
+  modal.dataset.closing = 'true';
 
   modal.classList.remove('is-open');
   document.body.style.overflow = '';
   document.removeEventListener('keydown', _clockKeydownHandler);
+  document.removeEventListener('fullscreenchange', _fullscreenChangeHandler);
+  document.removeEventListener('webkitfullscreenchange', _fullscreenChangeHandler);
+  document.removeEventListener('mozfullscreenchange', _fullscreenChangeHandler);
+  document.removeEventListener('MSFullscreenChange', _fullscreenChangeHandler);
 
   if (_clockTickInterval)    { clearInterval(_clockTickInterval);    _clockTickInterval = null; }
   if (_clockNowNextInterval) { clearInterval(_clockNowNextInterval); _clockNowNextInterval = null; }
 
+  // Leave real browser fullscreen if we're currently in it. No-op if we
+  // were only ever in the fallback pseudo-fullscreen overlay.
+  if (_isFullscreenActive()) {
+    _exitFullscreen().catch(function () {});
+  }
+
   setTimeout(function () {
-    if (modal) modal.style.display = 'none';
+    if (modal) { modal.style.display = 'none'; modal.dataset.closing = ''; }
   }, 320);
 }
 
