@@ -1676,13 +1676,22 @@ function _computeTaskDatesInRange(task, fromDateStr, toDateStr) {
 }
 
 /* ── Look up this student's real upcoming scheduled sessions ── */
-async function _getUpcomingTaskDates(uid, classStr, accessToken, todayStr, lookaheadDays) {
+async function _getUpcomingTaskDates(uid, classStr, accessToken, todayStr, lookaheadDays, taskDocCache) {
   const toDateStr = _lagosDateStrOffset(lookaheadDays);
   const docIds    = _taskDocIdsForStudent(uid, classStr);
   const allDates  = new Set();
 
   for (let i = 0; i < docIds.length; i++) {
-    const task = await _fsGetDoc('coachingTasks/' + docIds[i], accessToken);
+    const docId = docIds[i];
+    let task;
+
+    if (taskDocCache && taskDocCache.has(docId)) {
+      task = taskDocCache.get(docId);
+    } else {
+      task = await _fsGetDoc('coachingTasks/' + docId, accessToken);
+      if (taskDocCache) taskDocCache.set(docId, task);
+    }
+
     if (!task || task.active !== true) continue;
     _computeTaskDatesInRange(task, todayStr, toDateStr).forEach(d => allDates.add(d));
   }
@@ -1794,6 +1803,8 @@ async function _runDailyReminders(env) {
   const todayStr    = _lagosDateStrOffset(0);
   const tomorrowStr = _lagosDateStrOffset(1);
 
+  const taskDocCache = new Map();
+
   for (let i = 0; i < userIds.length; i++) {
     const uid = userIds[i];
 
@@ -1808,7 +1819,7 @@ async function _runDailyReminders(env) {
         continue;
       }
 
-      const upcomingDates = await _getUpcomingTaskDates(uid, student.class, accessToken, todayStr, 4);
+      const upcomingDates = await _getUpcomingTaskDates(uid, student.class, accessToken, todayStr, 4, taskDocCache);
       const payload = _buildDailyReminderPayload(student, todayStr, tomorrowStr, upcomingDates);
 
       if (payload) {
