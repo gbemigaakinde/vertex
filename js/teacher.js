@@ -4222,24 +4222,24 @@ async function _deleteTimetable(weekKey) {
     const CONTENT_W = PAGE_W - MARGIN * 2;
 
     const C = {
-      brand:       [59, 91, 219],
-      brandLight:  [237, 242, 255],
-      brandBorder: [186, 200, 255],
-      success:     [47, 158, 68],
-      successBg:   [235, 251, 238],
-      danger:      [224, 49, 49],
-      dangerBg:    [255, 245, 245],
-      warning:     [232, 137, 12],
-      warningBg:   [255, 249, 219],
-      text:        [17, 24, 39],
-      textSec:     [55, 65, 81],
-      textTert:    [107, 114, 128],
-      textDis:     [156, 163, 175],
-      border:      [229, 231, 235],
+      brand:       [0, 122, 255],
+      brandLight:  [229, 241, 255],
+      brandBorder: [179, 216, 255],
+      success:     [52, 199, 89],
+      successBg:   [229, 249, 233],
+      danger:      [255, 59, 48],
+      dangerBg:    [255, 235, 233],
+      warning:     [255, 149, 0],
+      warningBg:   [255, 244, 229],
+      text:        [28, 28, 30],
+      textSec:     [72, 72, 74],
+      textTert:    [142, 142, 147],
+      textDis:     [199, 199, 204],
+      border:      [229, 229, 234],
       surface:     [255, 255, 255],
-      surfaceMuted:[243, 244, 246],
-      purple:      [124, 58, 237],
-      purpleBg:    [245, 243, 255],
+      surfaceMuted:[246, 246, 248],
+      purple:      [175, 82, 222],
+      purpleBg:    [246, 233, 252],
     };
 
     let y = 0;
@@ -4945,14 +4945,14 @@ async function exportResultPDF(resultId) {
     const CONTENT_W = PAGE_W - MARGIN * 2;
 
     const C = {
-      text:    [30, 30, 30],
-      muted:   [120, 120, 120],
-      faint:   [165, 165, 165],
-      divider: [222, 222, 222],
-      accent:  [59, 91, 219],
-      success: [34, 140, 60],
-      danger:  [200, 45, 45],
-      warning: [190, 130, 10],
+      text:    [28, 28, 30],
+      muted:   [110, 110, 115],
+      faint:   [165, 165, 170],
+      divider: [225, 225, 230],
+      accent:  [0, 122, 255],
+      success: [40, 160, 70],
+      danger:  [214, 48, 40],
+      warning: [200, 130, 10],
     };
 
     function pctColor(pct) {
