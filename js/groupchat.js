@@ -127,7 +127,7 @@
   }
 
   /* ── CSS injection ─────────────────────────────────────── */
-  function _injectStyles() {
+function _injectStyles() {
     if (_stylesInjected) return;
     _stylesInjected = true;
     const s = document.createElement('style');
@@ -331,7 +331,6 @@
       .gc-action-menu-item + .gc-action-menu-item { border-top:1px solid var(--border); }
       .gc-action-menu-item.danger { color:var(--danger); }
 
-      /* ── Edit UI ── */
       .gc-edit-trigger-btn {
         background:none;border:none;cursor:pointer;padding:0 0 0 4px;
         display:inline-flex;align-items:center;opacity:0;transition:opacity .15s;
@@ -397,6 +396,13 @@
 
       [data-theme="dark"] .gc-modal { background:var(--bg-subtle); }
       [data-theme="dark"] .gc-history-modal { background:var(--bg-subtle); }
+
+      .gc-member-presence {
+        font-size:.6875rem;
+        color:var(--text-4);
+        margin-top:1px;
+        transition:color .3s ease;
+      }
     `;
     document.head.appendChild(s);
   }
@@ -574,7 +580,7 @@
             <p style="font-size:.6875rem;color:var(--text-3);margin:0;">
               ${g.members ? g.members.length : 0} member${(g.members||[]).length!==1?'s':''}
               ${g.settings && g.settings.description ? ' · ' + _esc(g.settings.description) : ''}
-              <span id="gcOnlineCount" style="color:#22c45e;font-weight:600;margin-left:.25rem;"></span>
+            <span id="gcOnlineCount" style="color:var(--success);font-weight:600;margin-left:.25rem;"></span>
             </p>
           </div>
           <button onclick="GroupChat._showGroupInfo('${_escAttr(groupId)}')"
@@ -1522,19 +1528,19 @@
     if (teacherEl) teacherEl.textContent = label;
   }
 
-  function _updateMemberPresenceDOM(uid, data) {
+function _updateMemberPresenceDOM(uid, data) {
     _memberPresenceCache[uid] = data;
     const online = _isPresenceOnline(data);
 
     const row = document.querySelector(`.gc-member-row[data-uid="${uid}"] .gc-member-presence`);
     if (row) {
       if (online) {
-        row.textContent   = '● Online';
-        row.style.color   = '#22c45e';
+        row.textContent      = '● Online';
+        row.style.color      = 'var(--success)';
         row.style.fontWeight = '600';
       } else {
-        row.textContent   = _formatMemberLastSeen(data.lastSeen);
-        row.style.color   = 'var(--text-4)';
+        row.textContent      = _formatMemberLastSeen(data.lastSeen);
+        row.style.color      = 'var(--text-4)';
         row.style.fontWeight = '400';
       }
     }
@@ -1886,7 +1892,7 @@
                     white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0;">${_esc(g.name)}</p>
           <p style="font-size:.6875rem;color:var(--text-3);margin:0;" id="gcTeacherMemberCount">
             ${(g.members||[]).length} member${(g.members||[]).length!==1?'s':''}
-            <span id="gcTeacherOnlineCount" style="color:#22c45e;font-weight:600;margin-left:.25rem;"></span>
+          <span id="gcTeacherOnlineCount" style="color:var(--success);font-weight:600;margin-left:.25rem;"></span>
           </p>
         </div>
         <button onclick="GroupChat._openGroupSettingsModal('${_escAttr(groupId)}')"
