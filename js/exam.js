@@ -1507,7 +1507,7 @@ async function renderSubjectSelection() {
         onclick: "if(window.ActivityLog&&AppState.studentData){ActivityLog.track('general_studies_open',(AppState.studentData.name||'A student')+' opened General Studies');}window.open('english.html', '_blank')",
         icon: _icon('BookBookmark', 22),
         label: 'General Studies',
-        color: '#7c3aed',
+        color: '#af52de',
         badge: false,
       },
       {
@@ -1548,7 +1548,7 @@ async function renderSubjectSelection() {
       >
         <span style="display:flex;align-items:center;justify-content:center;
                      width:44px;height:44px;border-radius:var(--r-lg);
-                     background:${t.gradient ? 'linear-gradient(135deg,#7c3aed,#4f6ef7)' : t.color + '18'};
+                     background:${t.gradient ? 'linear-gradient(135deg,#5ac8fa,#007aff)' : t.color + '18'};
                      color:${t.gradient ? '#fff' : t.color};">
           ${t.icon}
         </span>
@@ -3444,25 +3444,25 @@ async function _downloadTimetablePDF() {
   const CONTENT_W = PAGE_W - MARGIN * 2;
 
   const C = {
-    accent:       [79, 110, 247],
-    accentLight:  [237, 242, 255],
-    accentBorder: [186, 200, 255],
-    warning:      [217, 119, 6],
-    warningBg:    [255, 251, 235],
-    warningBorder:[253, 230, 138],
-    success:      [26, 158, 82],
-    successBg:    [236, 253, 245],
-    danger:       [224, 59, 59],
-    text:         [13, 13, 15],
-    textSec:      [58, 58, 64],
-    textTert:     [107, 107, 114],
-    textDis:      [154, 154, 163],
-    border:       [226, 226, 230],
+    accent:       [0, 122, 255],
+    accentLight:  [229, 241, 255],
+    accentBorder: [179, 216, 255],
+    warning:      [255, 149, 0],
+    warningBg:    [255, 244, 229],
+    warningBorder:[255, 214, 158],
+    success:      [52, 199, 89],
+    successBg:    [229, 249, 233],
+    danger:       [255, 59, 48],
+    text:         [28, 28, 30],
+    textSec:      [72, 72, 74],
+    textTert:     [142, 142, 147],
+    textDis:      [199, 199, 204],
+    border:       [229, 229, 234],
     surface:      [255, 255, 255],
-    surfaceMuted: [240, 240, 242],
-    surfaceSubtle:[247, 247, 248],
-    breakBg:      [243, 244, 246],
-    weekendBg:    [248, 246, 255],
+    surfaceMuted: [246, 246, 248],
+    surfaceSubtle:[242, 242, 247],
+    breakBg:      [242, 242, 247],
+    weekendBg:    [237, 233, 254],
   };
 
   let y = 0;
