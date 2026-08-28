@@ -1480,15 +1480,23 @@ async function sendWebPush(subscription, payloadStr, env) {
 
 /* ── Firebase auth token helper ─────────────────────────── */
 async function _signJwt(clientEmail, privateKeyPem) {
-  // Strip PEM headers and decode
-  var pemContents = privateKeyPem
+  var normalizedPem = privateKeyPem.replace(/\\n/g, '\n');
+  var pemContents = normalizedPem
     .replace(/-----BEGIN PRIVATE KEY-----/, '')
     .replace(/-----END PRIVATE KEY-----/, '')
     .replace(/\s+/g, '');
 
-  var keyBytes = Uint8Array.from(atob(pemContents), function (c) {
-    return c.charCodeAt(0);
-  });
+  var keyBytes;
+  try {
+    keyBytes = Uint8Array.from(atob(pemContents), function (c) {
+      return c.charCodeAt(0);
+    });
+  } catch (e) {
+    throw new Error(
+      'FIREBASE_PRIVATE_KEY could not be decoded as base64 even after normalising newlines. ' +
+      'Original error: ' + e.message
+    );
+  }
 
   var cryptoKey = await crypto.subtle.importKey(
     'pkcs8',
