@@ -2163,3 +2163,290 @@ details.glass-dark[open] > summary::after,
   animation: vtx-live-spin 1s linear infinite;
   display: inline-block;
 }
+
+/* ═══════════════════════════════════════════════════════════
+   FULL-SCREEN CLOCK
+═══════════════════════════════════════════════════════════ */
+.vtx-clock-modal {
+  display: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9500;
+  flex-direction: column;
+  background: var(--bg-page);
+  opacity: 0;
+  transform: scale(0.97);
+  transition: opacity .3s var(--ease), transform .3s var(--ease);
+}
+.vtx-clock-modal.is-open { opacity: 1; transform: scale(1); }
+
+.vtx-clock-modal::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 80% 55% at 50% 38%, var(--accent-subtle) 0%, transparent 65%);
+  pointer-events: none;
+}
+[data-theme="dark"] .vtx-clock-modal::before {
+  background: radial-gradient(ellipse 80% 55% at 50% 38%, rgba(107,135,248,.08) 0%, transparent 65%);
+}
+
+.vtx-clock-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: .5rem;
+  padding: calc(.875rem + env(safe-area-inset-top, 0px)) 1rem .5rem;
+  position: relative;
+  z-index: 1;
+}
+.vtx-clock-icon-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--r-full);
+  background: var(--bg-subtle);
+  border: 1px solid var(--border);
+  color: var(--text-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--t-fast), color var(--t-fast), transform var(--t-fast);
+  -webkit-tap-highlight-color: transparent;
+}
+.vtx-clock-icon-btn:hover { background: var(--accent-subtle); color: var(--accent); }
+.vtx-clock-icon-btn:active { transform: scale(0.92); }
+.vtx-clock-icon-btn i { font-size: 18px; pointer-events: none; }
+
+.vtx-clock-stage {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 1.25rem;
+  position: relative;
+  z-index: 1;
+}
+.vtx-clock-digital, .vtx-clock-analogue {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  animation: vtx-clock-fade-in .4s var(--ease) both;
+}
+@keyframes vtx-clock-fade-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Digital face ── */
+.vtx-clock-digital-time {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  font-size: clamp(3.25rem, 17vw, 8.5rem);
+  color: var(--text-1);
+  letter-spacing: -.01em;
+  line-height: 1;
+  display: flex;
+  align-items: flex-start;
+}
+.vtx-clock-colon {
+  animation: vtx-clock-blink 2s steps(1, end) infinite;
+  margin: 0 .02em;
+}
+@keyframes vtx-clock-blink { 50% { opacity: .2; } }
+.vtx-clock-digital-sec {
+  font-size: .32em;
+  opacity: .5;
+  margin-left: .35rem;
+  margin-top: .4em;
+  font-weight: 600;
+}
+.vtx-clock-digital-period {
+  font-size: .22em;
+  opacity: .6;
+  margin-left: .5rem;
+  margin-top: .55em;
+  letter-spacing: .12em;
+  font-weight: 700;
+}
+.vtx-clock-date {
+  margin-top: 1rem;
+  font-size: .9375rem;
+  color: var(--text-3);
+  letter-spacing: .02em;
+  text-align: center;
+}
+
+/* ── Analogue face ── */
+.vtx-clock-analogue { width: 100%; }
+.vtx-clock-face {
+  position: relative;
+  width: min(76vw, 340px);
+  height: min(76vw, 340px);
+  border-radius: 50%;
+  margin: 0 auto;
+  background:
+    radial-gradient(circle at 32% 26%, rgba(255,255,255,.55) 0%, transparent 45%),
+    radial-gradient(circle at 68% 76%, rgba(0,0,0,.10) 0%, transparent 55%),
+    var(--bg-base);
+  box-shadow:
+    0 26px 54px -16px rgba(0,0,0,.4),
+    0 8px 20px -6px rgba(0,0,0,.28),
+    inset 0 2px 5px rgba(255,255,255,.65),
+    inset 0 -8px 16px rgba(0,0,0,.2),
+    0 0 0 9px var(--bg-subtle),
+    0 0 0 10px var(--border);
+}
+[data-theme="dark"] .vtx-clock-face {
+  background:
+    radial-gradient(circle at 32% 26%, rgba(255,255,255,.08) 0%, transparent 45%),
+    radial-gradient(circle at 68% 76%, rgba(0,0,0,.35) 0%, transparent 55%),
+    var(--bg-base);
+  box-shadow:
+    0 26px 54px -16px rgba(0,0,0,.65),
+    0 8px 20px -6px rgba(0,0,0,.5),
+    inset 0 2px 5px rgba(255,255,255,.05),
+    inset 0 -8px 16px rgba(0,0,0,.45),
+    0 0 0 9px var(--bg-muted),
+    0 0 0 10px var(--border-strong);
+}
+
+.vtx-clock-ticks-hour, .vtx-clock-ticks-minute { position: absolute; inset: 0; }
+.vtx-tick-hour, .vtx-tick-minute {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 2px;
+  height: 100%;
+  transform-origin: 50% 50%;
+}
+.vtx-tick-hour::before {
+  content: '';
+  display: block;
+  width: 3px;
+  height: 8%;
+  margin-left: -0.5px;
+  background: var(--text-1);
+  border-radius: 2px;
+}
+.vtx-tick-minute::before {
+  content: '';
+  display: block;
+  width: 1px;
+  height: 4%;
+  background: var(--text-4);
+  border-radius: 1px;
+}
+
+.vtx-clock-numerals { position: absolute; inset: 0; }
+.vtx-clock-numeral {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-family: var(--font);
+  font-weight: 700;
+  font-size: clamp(.8125rem, 3.6vw, 1.0625rem);
+  color: var(--text-2);
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+}
+
+.vtx-clock-hand {
+  position: absolute;
+  bottom: 50%;
+  left: 50%;
+  transform-origin: 50% 100%;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0,0,0,.3);
+}
+.vtx-hand-hour {
+  width: 5px;
+  height: 26%;
+  background: var(--text-1);
+  transition: transform .5s cubic-bezier(0.34, 1.1, 0.64, 1);
+}
+.vtx-hand-minute {
+  width: 3.5px;
+  height: 37%;
+  background: var(--text-1);
+  transition: transform .4s cubic-bezier(0.34, 1.1, 0.64, 1);
+}
+.vtx-hand-second {
+  width: 1.5px;
+  height: 42%;
+  background: var(--danger);
+  transition: transform .15s cubic-bezier(.4, 0, .2, 1);
+}
+.vtx-clock-pivot {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle at 35% 30%, #fff, var(--accent) 60%, var(--accent-hover) 100%);
+  box-shadow: 0 2px 6px rgba(0,0,0,.4), inset 0 -1px 2px rgba(0,0,0,.25);
+  z-index: 5;
+}
+
+/* ── NOW / NEXT ── */
+.vtx-clock-events {
+  width: 100%;
+  max-width: 420px;
+  margin: 0 auto;
+  padding: 0 1.25rem calc(1.5rem + env(safe-area-inset-bottom, 0px));
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .375rem;
+  position: relative;
+  z-index: 1;
+}
+.vtx-clock-now-label {
+  display: block;
+  font-size: .6875rem;
+  font-weight: 700;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--text-4);
+}
+.vtx-clock-now-value {
+  display: block;
+  font-size: 1.375rem;
+  font-weight: 700;
+  color: var(--text-1);
+  margin-top: .2rem;
+  line-height: 1.3;
+}
+.vtx-clock-next-label {
+  display: block;
+  font-size: .625rem;
+  font-weight: 700;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: var(--text-4);
+  margin-top: .75rem;
+}
+.vtx-clock-next-value {
+  display: block;
+  font-size: .9375rem;
+  font-weight: 600;
+  color: var(--text-3);
+  margin-top: .15rem;
+}
+.vtx-clock-offline-note {
+  display: flex;
+  align-items: center;
+  gap: .375rem;
+  font-size: .6875rem;
+  color: var(--warning-text);
+  background: var(--warning-subtle);
+  border: 1px solid var(--warning-border);
+  padding: .3rem .625rem;
+  border-radius: var(--r-full);
+  margin-top: .625rem;
+}
+.vtx-clock-offline-note i { font-size: 13px; }
