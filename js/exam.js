@@ -438,76 +438,132 @@ function _convertTimeStr(raw, pref) {
   return _fmt24to12(start) + ' \u2013 ' + _fmt24to12(end);
 }
 
-async function _fetchWeeklyTimetableHtml(classKey) {
-  try {
-    if (!navigator.onLine || !window.fbDb || !classKey) return '';
+/* Weekly timetable data cache — avoids re-hitting Firestore */
+const TIMETABLE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+let _timetableDataCache = null; // { classKey, userId, data, fetchedAtMs }
 
-    // Priority order: student override → group override → class timetable
-    let ttData        = null;
-    let overrideLabel = '';
+async function _getWeeklyTimetableData(classKey, forceRefresh) {
+  if (!classKey) return null;
 
-    // 1. Check student-specific timetable
-    if (S().userId) {
+  const now    = Date.now();
+  const userId = S().userId || null;
+
+  if (
+    !forceRefresh &&
+    _timetableDataCache &&
+    _timetableDataCache.classKey === classKey &&
+    _timetableDataCache.userId === userId &&
+    (now - _timetableDataCache.fetchedAtMs) < TIMETABLE_CACHE_TTL_MS
+  ) {
+    return _timetableDataCache.data;
+  }
+
+  if (!navigator.onLine || !window.fbDb) {
+    // Offline — serve the last known data for this exact student/class
+    // if we have it, rather than showing nothing.
+    if (_timetableDataCache && _timetableDataCache.classKey === classKey && _timetableDataCache.userId === userId) {
+      return _timetableDataCache.data;
+    }
+    return null;
+  }
+
+  let ttData        = null;
+  let overrideLabel = '';
+
+  // 1. Check student-specific timetable
+  if (userId) {
+    try {
+      const studentSnap = await window.fbDb
+        .collection('weeklyTimetable_custom')
+        .doc('student_' + userId)
+        .get();
+      if (studentSnap && studentSnap.exists) {
+        const d = studentSnap.data() || {};
+        const weekKey = _isoWeekKey();
+        const allTT   = d.timetables || {};
+        if (allTT[weekKey] || allTT['permanent']) {
+          ttData        = d;
+          overrideLabel = 'Personal';
+        }
+      }
+    } catch (e) { /* non-fatal */ }
+  }
+
+  // 2. Check group timetable (student's timetableGroup field)
+  if (!ttData && S().studentData && S().studentData.timetableGroup) {
+    const groupKey = (S().studentData.timetableGroup || '')
+      .trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
+    if (groupKey) {
       try {
-        const studentSnap = await window.fbDb
+        const groupSnap = await window.fbDb
           .collection('weeklyTimetable_custom')
-          .doc('student_' + S().userId)
+          .doc('group_' + groupKey)
           .get();
-        if (studentSnap && studentSnap.exists) {
-          const d = studentSnap.data() || {};
+        if (groupSnap && groupSnap.exists) {
+          const d = groupSnap.data() || {};
           const weekKey = _isoWeekKey();
           const allTT   = d.timetables || {};
           if (allTT[weekKey] || allTT['permanent']) {
             ttData        = d;
-            overrideLabel = 'Personal';
+            overrideLabel = d.targetLabel || S().studentData.timetableGroup;
           }
         }
       } catch (e) { /* non-fatal */ }
     }
+  }
 
-    // 2. Check group timetable (student's timetableGroup field)
-    if (!ttData && S().studentData && S().studentData.timetableGroup) {
-      const groupKey = (S().studentData.timetableGroup || '')
-        .trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
-      if (groupKey) {
-        try {
-          const groupSnap = await window.fbDb
-            .collection('weeklyTimetable_custom')
-            .doc('group_' + groupKey)
-            .get();
-          if (groupSnap && groupSnap.exists) {
-            const d = groupSnap.data() || {};
-            const weekKey = _isoWeekKey();
-            const allTT   = d.timetables || {};
-            if (allTT[weekKey] || allTT['permanent']) {
-              ttData        = d;
-              overrideLabel = d.targetLabel || S().studentData.timetableGroup;
-            }
-          }
-        } catch (e) { /* non-fatal */ }
-      }
-    }
-
-    // 3. Fall back to class timetable
-    if (!ttData) {
+  // 3. Fall back to class timetable
+  if (!ttData) {
+    try {
       const snap = await window.fbDb.collection('weeklyTimetable').doc(classKey).get();
-      if (!snap || !snap.exists) return '';
-      ttData = snap.data() || {};
+      if (!snap || !snap.exists) {
+        _timetableDataCache = { classKey, userId, data: null, fetchedAtMs: now };
+        return null;
+      }
+      ttData        = snap.data() || {};
       overrideLabel = '';
+    } catch (e) {
+      console.warn('[exam] Timetable class fetch failed (non-fatal):', e);
+      _timetableDataCache = { classKey, userId, data: null, fetchedAtMs: now };
+      return null;
     }
+  }
 
-    const weekKey = _isoWeekKey();
-    const allTimetables = ttData.timetables || {};
-    let tt = allTimetables[weekKey];
-    let isUsingPermanent = false;
-    if (!tt || !Array.isArray(tt.periods) || tt.periods.length === 0) {
-      tt = allTimetables['permanent'];
-      isUsingPermanent = true;
-    }
-    if (!tt || !Array.isArray(tt.periods) || tt.periods.length === 0) return '';
+  const weekKey = _isoWeekKey();
+  const allTimetables = ttData.timetables || {};
+  let tt = allTimetables[weekKey];
+  let isUsingPermanent = false;
+  if (!tt || !Array.isArray(tt.periods) || tt.periods.length === 0) {
+    tt = allTimetables['permanent'];
+    isUsingPermanent = true;
+  }
+  if (!tt || !Array.isArray(tt.periods) || tt.periods.length === 0) {
+    _timetableDataCache = { classKey, userId, data: null, fetchedAtMs: now };
+    return null;
+  }
 
-    const periods = tt.periods;
-    const note    = tt.note || '';
+  const data = {
+    periods: tt.periods,
+    note: tt.note || '',
+    isUsingPermanent,
+    overrideLabel,
+  };
+
+  _timetableDataCache = { classKey, userId, data, fetchedAtMs: now };
+  return data;
+}
+
+async function _fetchWeeklyTimetableHtml(classKey, forceRefresh) {
+  try {
+    if (!classKey) return '';
+
+    const timetableData = await _getWeeklyTimetableData(classKey, forceRefresh);
+    if (!timetableData) return '';
+
+    const periods          = timetableData.periods;
+    const note             = timetableData.note;
+    const isUsingPermanent = timetableData.isUsingPermanent;
+    const overrideLabel    = timetableData.overrideLabel;
 
     const DAY_KEYS  = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
     const DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -2893,81 +2949,15 @@ async function _downloadTimetablePDF() {
   const classKey = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
   let periods = [], note = '', isUsingPermanent = false, rangeLabel = '', overrideLabel = '';
 
-  try {
-    let ttData = null;
-
-    // 1. Check student-specific timetable
-    if (S().userId) {
-      try {
-        const studentSnap = await window.fbDb
-          .collection('weeklyTimetable_custom')
-          .doc('student_' + S().userId)
-          .get();
-        if (studentSnap && studentSnap.exists) {
-          const d = studentSnap.data() || {};
-          const weekKey = _isoWeekKey();
-          const allTT   = d.timetables || {};
-          if (allTT[weekKey] || allTT['permanent']) {
-            ttData        = d;
-            overrideLabel = 'Personal';
-          }
-        }
-      } catch (e) { /* non-fatal */ }
-    }
-
-    // 2. Check group timetable (student's timetableGroup field)
-    if (!ttData && S().studentData && S().studentData.timetableGroup) {
-      const groupKey = (S().studentData.timetableGroup || '')
-        .trim().toLowerCase().replace(/[^a-z0-9]/g, '_');
-      if (groupKey) {
-        try {
-          const groupSnap = await window.fbDb
-            .collection('weeklyTimetable_custom')
-            .doc('group_' + groupKey)
-            .get();
-          if (groupSnap && groupSnap.exists) {
-            const d = groupSnap.data() || {};
-            const weekKey = _isoWeekKey();
-            const allTT   = d.timetables || {};
-            if (allTT[weekKey] || allTT['permanent']) {
-              ttData        = d;
-              overrideLabel = d.targetLabel || S().studentData.timetableGroup;
-            }
-          }
-        } catch (e) { /* non-fatal */ }
-      }
-    }
-
-    // 3. Fall back to class timetable
-    if (!ttData) {
-      const snap = await window.fbDb.collection('weeklyTimetable').doc(classKey).get();
-      if (snap && snap.exists) {
-        ttData = snap.data() || {};
-      }
-    }
-
-    if (ttData) {
-      const allTimetables = ttData.timetables || {};
-      const weekKey = _isoWeekKey();
-      let tt = allTimetables[weekKey];
-      if (!tt || !Array.isArray(tt.periods) || tt.periods.length === 0) {
-        tt = allTimetables['permanent'];
-        isUsingPermanent = true;
-      }
-      if (tt && Array.isArray(tt.periods)) {
-        periods = tt.periods;
-        note    = tt.note || '';
-      }
-    }
-  } catch (e) {
-    UI.toast('Failed to fetch timetable data.', 'error');
-    return;
-  }
-
-  if (periods.length === 0) {
+  const timetableData = await _getWeeklyTimetableData(classKey);
+  if (!timetableData) {
     UI.toast('No timetable data to export.', 'warning');
     return;
   }
+  periods          = timetableData.periods;
+  note             = timetableData.note;
+  isUsingPermanent = timetableData.isUsingPermanent;
+  overrideLabel    = timetableData.overrideLabel;
 
   const now    = new Date();
   const dow    = now.getDay();
