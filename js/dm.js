@@ -216,7 +216,7 @@
   }
 
   /* ── CSS injection ─────────────────────────────────────────── */
-  function _injectStyles() {
+    function _injectStyles() {
   if (document.getElementById('_dmStyles')) return;
   const style = document.createElement('style');
   style.id = '_dmStyles';
@@ -232,10 +232,10 @@
 
     .dm-presence { display:inline-flex;align-items:center;gap:5px;font-size:.6875rem;line-height:1;margin-top:3px; }
     .dm-presence__dot { width:7px;height:7px;border-radius:50%;flex-shrink:0;transition:background .4s; }
-    .dm-presence__dot--online { background:#22c45e;box-shadow:0 0 0 2px rgba(34,196,94,.2); }
+    .dm-presence__dot--online { background:var(--success);box-shadow:0 0 0 2px rgba(52,199,89,.2); }
     .dm-presence__dot--offline { background:var(--text-4,#9ca3af); }
     .dm-presence__label { color:var(--text-3,#6b7280);font-size:.6875rem; }
-    .dm-presence__label--online { color:#22c45e !important;font-weight:500; }
+    .dm-presence__label--online { color:var(--success) !important;font-weight:500; }
 
     .dm-date-sep { display:flex;align-items:center;gap:.625rem;margin:.875rem 0 .625rem;user-select:none; }
     .dm-date-sep__line { flex:1;height:1px;background:var(--border,#e5e7eb); }
@@ -277,11 +277,11 @@
       display:flex;align-items:center;justify-content:center;
       font-size:.9375rem;font-weight:700;color:var(--accent-text,#2d49d6);flex-shrink:0;
     }
-    .dm-thread-av-circle.online { border-color:#22c45e; }
+    .dm-thread-av-circle.online { border-color:var(--success); }
     .dm-thread-av-dot {
       position:absolute;bottom:1px;right:1px;
       width:11px;height:11px;border-radius:50%;
-      background:#22c45e;border:2px solid var(--bg-base,#fff);
+      background:var(--success);border:2px solid var(--bg-base,#fff);
     }
 
     .dm-thread-bd { flex:1 1 0%;min-width:0;max-width:100%;overflow:hidden; }
@@ -298,7 +298,7 @@
       font-size:.6875rem;color:var(--text-3,#6b7280);margin-bottom:1px;
       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;display:block;
     }
-    .dm-thread-presence.online { color:#22c45e;font-weight:600; }
+    .dm-thread-presence.online { color:var(--success);font-weight:600; }
 
     .dm-thread-r2 {
       display:flex;align-items:center;justify-content:space-between;
