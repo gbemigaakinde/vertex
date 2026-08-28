@@ -1597,7 +1597,12 @@ async function _fsGetDoc(path, accessToken) {
     console.warn('[cron] Firestore fetch failed for', path, ':', e.message);
     return null;
   }
-  if (!res.ok) return null;
+  if (!res.ok) {
+    let bodyText = '';
+    try { bodyText = await res.text(); } catch (e) { /* ignore */ }
+    console.warn('[cron] Firestore GET', path, 'returned', res.status, '-', bodyText.slice(0, 200));
+    return null;
+  }
   let json;
   try { json = await res.json(); } catch (e) { return null; }
   if (!json || !json.fields) return null;
