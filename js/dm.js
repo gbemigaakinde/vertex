@@ -2162,7 +2162,7 @@ function _buildTeacherBubble(msg, showLabel) {
     _subscribeTeacherThreadList();
   }
 
-  function _subscribeTeacherThreadList() {
+function _subscribeTeacherThreadList() {
   AppState.cancelListener('dmTeacherThreads');
 
   if (!window._dmThreadTypingUnsubs) window._dmThreadTypingUnsubs = {};
@@ -2349,7 +2349,7 @@ function _buildTeacherBubble(msg, showLabel) {
     _openConversation(uid, name, cls);
   }
 
-  async function _openConversation(studentUid, studentName, studentClass) {
+async function _openConversation(studentUid, studentName, studentClass) {
     _activeStudentUid   = studentUid;
     window._dmActiveUid = studentUid;
 
@@ -2357,12 +2357,10 @@ function _buildTeacherBubble(msg, showLabel) {
       el.classList.toggle('is-active', el.dataset.uid === studentUid);
     });
 
-    // Clear unread count for this thread
     try {
       await _threadRef(studentUid).set({ teacherUnread: 0 }, { merge: true });
     } catch (e) { console.warn('[dm] Could not clear teacherUnread:', e); }
 
-    // Mark as read — teacher just opened this specific thread
     await _markRead(studentUid, 'teacher');
 
     const viewList = document.getElementById('dmViewList');
@@ -2397,9 +2395,9 @@ function _buildTeacherBubble(msg, showLabel) {
         </button>
 
         <div style="width:36px;height:36px;border-radius:50%;flex-shrink:0;
-                    background:var(--brand-bg,#edf2ff);border:1.5px solid var(--brand-border,#bac8ff);
+                    background:var(--accent-subtle,rgba(79,110,247,.08));border:1.5px solid var(--accent-border,rgba(79,110,247,.25));
                     display:flex;align-items:center;justify-content:center;
-                    font-size:.8125rem;font-weight:700;color:var(--brand-text,#3730a3);">
+                    font-size:.8125rem;font-weight:700;color:var(--accent-text,#2d49d6);">
           ${_esc((studentName || '?').charAt(0).toUpperCase())}
         </div>
 
@@ -2469,7 +2467,7 @@ function _buildTeacherBubble(msg, showLabel) {
     _watchTypingIndicator(studentUid, 'studentTyping', 'dmTeacherTypingBar');
     _attachSwipeListeners('dmTeacherMessages', 'teacher');
     _subscribeTeacherMessages(studentUid);
-      if (window.VoiceNotes) VoiceNotes.injectRecorderButton('dmTeacherInput', (note) => _sendTeacherVoiceNote(studentUid, studentName, studentClass, note));
+    if (window.VoiceNotes) VoiceNotes.injectRecorderButton('dmTeacherInput', (note) => _sendTeacherVoiceNote(studentUid, studentName, studentClass, note));
   }
 
   function _backToThreadList() {
@@ -2658,7 +2656,7 @@ function _buildTeacherBubble(msg, showLabel) {
   /* ══════════════════════════════════════════════════════════════
      NEW CONVERSATION MODAL
   ══════════════════════════════════════════════════════════════ */
-  async function _openNewConversationModal() {
+async function _openNewConversationModal() {
   _injectStyles();
   const overlay     = document.createElement('div');
   overlay.className = 'dm-new-conv-overlay';
@@ -2720,9 +2718,6 @@ function _buildTeacherBubble(msg, showLabel) {
     );
   }
 
-  // Subscribe to real-time presence updates for every student in the list.
-  // Store unsub handles on the overlay element so _closeNewConversationModal
-  // can tear them all down cleanly.
   overlay._presenceUnsubs = [];
   allStudents.forEach(s => {
     const unsub = Db().collection('students').doc(s.uid).onSnapshot(snap => {
@@ -2731,11 +2726,9 @@ function _buildTeacherBubble(msg, showLabel) {
       const tsMs  = _tsToMs(data.lastSeen || null);
       const online = tsMs !== null && (Date.now() - tsMs) <= ONLINE_THRESHOLD_MS;
 
-      // Update the cached student object so re-renders from search are also fresh
       const cached = allStudents.find(x => x.uid === s.uid);
       if (cached) cached.lastSeen = data.lastSeen || null;
 
-      // Update the presence span directly in the DOM if the row is visible
       const row = document.querySelector(
         `#dmStudentPickerList .dm-picker-row[data-uid="${CSS.escape(s.uid)}"]`
       );
@@ -2747,7 +2740,7 @@ function _buildTeacherBubble(msg, showLabel) {
       presenceEl.dataset.presenceTs = tsMs ?? 'null';
 
       if (online) {
-        presenceEl.innerHTML = `<span style="color:#22c45e;font-size:.6rem;font-weight:600;line-height:1;">&#x25cf; Online</span>`;
+        presenceEl.innerHTML = `<span style="color:var(--success);font-size:.6rem;font-weight:600;line-height:1;">&#x25cf; Online</span>`;
       } else {
         const ts = data.lastSeen
           ? (data.lastSeen.toDate ? data.lastSeen.toDate() : new Date(data.lastSeen))
@@ -2757,11 +2750,10 @@ function _buildTeacherBubble(msg, showLabel) {
           : `<span style="font-size:.6rem;color:var(--text-disabled,#9ca3af);line-height:1;">Offline</span>`;
       }
 
-      // Also update the avatar border and online dot
       const avatarCircle = row.querySelector('[data-avatar-circle]');
       const avatarDot    = row.querySelector('[data-avatar-dot]');
       if (avatarCircle) {
-        avatarCircle.style.borderColor = online ? '#22c45e' : 'var(--brand-border,#bac8ff)';
+        avatarCircle.style.borderColor = online ? 'var(--success)' : 'var(--accent-border,rgba(79,110,247,.25))';
       }
       if (online && !avatarDot) {
         const avatarWrap = row.querySelector('[data-avatar-wrap]');
@@ -2769,7 +2761,7 @@ function _buildTeacherBubble(msg, showLabel) {
           const dot = document.createElement('span');
           dot.dataset.avatarDot = '1';
           dot.style.cssText = 'position:absolute;bottom:0;right:0;width:9px;height:9px;' +
-            'border-radius:50%;background:#22c45e;border:2px solid var(--surface,#fff);';
+            'border-radius:50%;background:var(--success);border:2px solid var(--surface,#fff);';
           avatarWrap.appendChild(dot);
         }
       } else if (!online && avatarDot) {
@@ -2781,7 +2773,7 @@ function _buildTeacherBubble(msg, showLabel) {
   });
 }
 
-  function _renderStudentPickerList(students, query) {
+function _renderStudentPickerList(students, query) {
   const list = document.getElementById('dmStudentPickerList');
   if (!list) return;
 
@@ -2803,7 +2795,7 @@ function _buildTeacherBubble(msg, showLabel) {
     const lastSeen  = s.lastSeen || null;
 
     const presenceTxt = isOnline
-      ? `<span style="color:#22c45e;font-size:.6rem;font-weight:600;line-height:1;">&#x25cf; Online</span>`
+      ? `<span style="color:var(--success);font-size:.6rem;font-weight:600;line-height:1;">&#x25cf; Online</span>`
       : (lastSeen
           ? `<span style="font-size:.6rem;color:var(--text-disabled,#9ca3af);line-height:1;">${_esc(_formatLastSeen(lastSeen))}</span>`
           : `<span style="font-size:.6rem;color:var(--text-disabled,#9ca3af);line-height:1;">Offline</span>`);
@@ -2818,15 +2810,15 @@ function _buildTeacherBubble(msg, showLabel) {
                   ${idx < filtered.length - 1 ? 'border-bottom:1px solid var(--border,#e5e7eb);' : ''}">
         <div data-avatar-wrap style="position:relative;flex-shrink:0;">
           <div data-avatar-circle
-               style="width:34px;height:34px;border-radius:50%;background:var(--brand-bg,#edf2ff);
-                      border:1.5px solid ${isOnline ? '#22c45e' : 'var(--brand-border,#bac8ff)'};
+               style="width:34px;height:34px;border-radius:50%;background:var(--accent-subtle,rgba(79,110,247,.08));
+                      border:1.5px solid ${isOnline ? 'var(--success)' : 'var(--accent-border,rgba(79,110,247,.25))'};
                       display:flex;align-items:center;justify-content:center;
-                      font-size:.75rem;font-weight:700;color:var(--brand-text,#3730a3);">
+                      font-size:.75rem;font-weight:700;color:var(--accent-text,#2d49d6);">
             ${_esc((s.name || '?').charAt(0).toUpperCase())}
           </div>
           ${isOnline
             ? `<span data-avatar-dot style="position:absolute;bottom:0;right:0;width:9px;height:9px;
-                            border-radius:50%;background:#22c45e;border:2px solid var(--surface,#fff);"></span>`
+                            border-radius:50%;background:var(--success);border:2px solid var(--surface,#fff);"></span>`
             : ''}
         </div>
         <div style="flex:1;min-width:0;">
