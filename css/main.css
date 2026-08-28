@@ -1600,7 +1600,7 @@ details.glass-dark[open] > summary::after,
   height: 20px !important;
   padding: 0 5px !important;
   border-radius: 10px !important;
-  background: #e53e3e !important;
+  background: var(--danger) !important;
   color: #fff !important;
   font-size: 0.6875rem !important;
   font-weight: 700 !important;
