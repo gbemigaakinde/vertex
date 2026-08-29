@@ -1441,7 +1441,7 @@ async function sendWebPush(subscription, payloadStr, env) {
       var errText = await res.text().catch(function () { return ''; });
       console.warn('[Worker] Push send failed:', res.status, errText);
 
-      if ((res.status === 410 || res.status === 404) && env.VTX_RATE_LIMITS) {
+      if ((res.status === 410 || res.status === 404 || res.status === 403) && env.VTX_RATE_LIMITS) {
         var endpoint = subscription.endpoint;
         var indexRaw = await env.VTX_RATE_LIMITS.get('push_index').catch(function () { return null; });
         if (indexRaw) {
@@ -1607,6 +1607,59 @@ async function _fsGetDoc(path, accessToken) {
   try { json = await res.json(); } catch (e) { return null; }
   if (!json || !json.fields) return null;
   return _fsDecodeFields(json.fields);
+}
+
+async function _fsBatchGetDocs(paths, accessToken) {
+  const result = new Map();
+  if (!paths || paths.length === 0) return result;
+
+  const base = 'projects/excellencecbt/databases/(default)/documents/';
+  const CHUNK = 300; // Firestore batchGet supports large batches; 300 is a safe chunk size
+
+  for (let i = 0; i < paths.length; i += CHUNK) {
+    const chunkPaths = paths.slice(i, i + CHUNK);
+    const chunkFullPaths = chunkPaths.map(p => base + p);
+
+    // Mark everything in this chunk as "not found" by default
+    chunkPaths.forEach(p => result.set(p, null));
+
+    let res;
+    try {
+      res = await fetch(
+        'https://firestore.googleapis.com/v1/projects/excellencecbt/databases/(default)/documents:batchGet',
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': 'Bearer ' + accessToken,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ documents: chunkFullPaths }),
+        }
+      );
+    } catch (e) {
+      console.warn('[cron] Firestore batchGet fetch failed:', e.message);
+      continue;
+    }
+
+    if (!res.ok) {
+      let bodyText = '';
+      try { bodyText = await res.text(); } catch (e) { /* ignore */ }
+      console.warn('[cron] Firestore batchGet returned', res.status, '-', bodyText.slice(0, 200));
+      continue;
+    }
+
+    let json;
+    try { json = await res.json(); } catch (e) { json = []; }
+
+    for (const item of json) {
+      if (item.found && item.found.name && item.found.fields) {
+        const shortPath = item.found.name.substring(base.length);
+        result.set(shortPath, _fsDecodeFields(item.found.fields));
+      }
+    }
+  }
+
+  return result;
 }
 
 /* ── Date helper: "today + offset" as a Lagos-local YYYY-MM-DD string ── */
@@ -1813,17 +1866,48 @@ async function _runDailyReminders(env) {
   const todayStr    = _lagosDateStrOffset(0);
   const tomorrowStr = _lagosDateStrOffset(1);
 
-  const taskDocCache = new Map();
-
-  for (let i = 0; i < userIds.length; i++) {
-    const uid = userIds[i];
-
+  // ── Step 1: read all saved subscriptions from KV (this does NOT count toward the subrequest limit) ──
+  const subsByUid = new Map();
+  for (const uid of userIds) {
     try {
       const subRaw = await env.VTX_RATE_LIMITS.get('push:' + uid);
-      if (!subRaw) continue;
-      const subscription = JSON.parse(subRaw);
+      if (subRaw) subsByUid.set(uid, JSON.parse(subRaw));
+    } catch (e) {
+      console.warn('[cron] Could not read subscription for', uid, ':', e.message);
+    }
+  }
 
-      const student = await _fsGetDoc('students/' + uid, accessToken);
+  const activeUids = [...subsByUid.keys()];
+  if (activeUids.length === 0) {
+    console.log('[cron] No active subscriptions to notify.');
+    return;
+  }
+
+  // ── Step 2: fetch ALL student documents in ONE network call ──
+  const studentPaths = activeUids.map(uid => 'students/' + uid);
+  const studentDocs  = await _fsBatchGetDocs(studentPaths, accessToken);
+
+  // ── Step 3: work out every coachingTasks doc we could possibly need, across everyone ──
+  const allTaskDocIds = new Set(['global', 'weekly']);
+  for (const uid of activeUids) {
+    const student = studentDocs.get('students/' + uid);
+    _taskDocIdsForStudent(uid, student && student.class).forEach(id => allTaskDocIds.add(id));
+  }
+
+  // ── Step 4: fetch ALL of those coachingTasks documents in ONE network call ──
+  const taskPaths       = [...allTaskDocIds].map(id => 'coachingTasks/' + id);
+  const taskDocsByPath  = await _fsBatchGetDocs(taskPaths, accessToken);
+  const taskDocCache    = new Map();
+  for (const id of allTaskDocIds) {
+    taskDocCache.set(id, taskDocsByPath.get('coachingTasks/' + id));
+  }
+
+  // ── Step 5: loop through students — no more Firestore network calls happen in here ──
+  for (const uid of activeUids) {
+    try {
+      const subscription = subsByUid.get(uid);
+      const student       = studentDocs.get('students/' + uid);
+
       if (!student) {
         console.warn('[cron] Could not fetch student', uid, '— skipping.');
         continue;
