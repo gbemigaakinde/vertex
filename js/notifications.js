@@ -218,6 +218,19 @@ async function init(uid) {
 
     var existing = await reg.pushManager.getSubscription().catch(function () { return null; });
 
+    if (existing && existing.options && existing.options.applicationServerKey) {
+      var currentKeyBytes  = _urlBase64ToUint8Array(VAPID_PUBLIC_KEY);
+      var existingKeyBytes = new Uint8Array(existing.options.applicationServerKey);
+      var keyMatches = currentKeyBytes.length === existingKeyBytes.length &&
+        currentKeyBytes.every(function (b, i) { return b === existingKeyBytes[i]; });
+
+      if (!keyMatches) {
+        console.warn('[notifications] Subscription uses an outdated VAPID key — resubscribing.');
+        try { await existing.unsubscribe(); } catch (e) { /* ignore */ }
+        existing = null;
+      }
+    }
+
     if (Notification.permission === 'granted' && existing) {
       var saved = await _saveSubscription(userId, existing.toJSON(), studentClass, studentName);
       if (saved) {
