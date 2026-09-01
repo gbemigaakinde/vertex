@@ -519,6 +519,11 @@ function renderTeacherDashboard() {
       badgeClass: 'vtx-td-badge',
       badgeId: 'badge-activity',
     },
+   {
+      tab: 'storage',
+      label: 'Files',
+      icon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>`,
+    },
     { divider: true },
     {
       tab: 'groups',
@@ -809,6 +814,7 @@ function renderTeacherDashboard() {
         <div id="teacher-push" class="teacher-tab hidden">
           <div id="vtxTeacherPushPanel"></div>
         </div>
+        <div id="teacher-storage" class="teacher-tab hidden"></div>
         <div id="teacher-timetable" class="teacher-tab hidden"></div>
         <div id="teacher-games" class="teacher-tab hidden">
           <div style="display:flex;gap:.375rem;margin-bottom:1rem;flex-wrap:wrap;">
@@ -832,7 +838,7 @@ function renderTeacherDashboard() {
 }
 
 function showTab(tab) {
-   const ALL_TABS = ['approvals','students','results','schools','tasks','studyroom','games','timetable','activity','groups','chat','dm','push'];
+     const ALL_TABS = ['approvals','students','results','schools','tasks','studyroom','games','timetable','activity','groups','chat','dm','push','storage'];
 
   ALL_TABS.forEach(t => {
     const el  = document.getElementById(`teacher-${t}`);
@@ -884,6 +890,14 @@ function showTab(tab) {
   if (tab === 'timetable') { _loadTimetableManager();                        return; }
   if (tab === 'activity')  { _loadActivityLog();                             return; }
   if (tab === 'push')      { TeacherPush.renderPushPanel('vtxTeacherPushPanel'); return; }
+  if (tab === 'storage')   {
+    var storageContainer = document.getElementById('teacher-storage');
+    if (storageContainer && window.Storage) {
+      storageContainer.innerHTML = '';
+      Storage.renderTeacherStoragePanel('teacher-storage');
+    }
+    return;
+  }
   if (tab === 'students')  _loadStudents();
   if (tab === 'results')   _loadResults();
   if (tab === 'schools')   _loadSchools();
