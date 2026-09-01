@@ -1631,6 +1631,13 @@ async function renderSubjectSelection() {
           </div>
         </div>
 
+        <!-- FILES & RESOURCES -->
+        <div style="margin-bottom:2rem;">
+          <p style="font-size:.6875rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+                    color:var(--text-4);margin-bottom:.875rem;">Files &amp; Resources</p>
+          <div id="vtxStudentStoragePanel"></div>
+        </div>
+
         <!-- TIMETABLE -->
         ${weeklyTimetableHtml}
 
@@ -1963,6 +1970,11 @@ async function renderSubjectSelection() {
 
     // ── Tasks ──
     Tasks.renderTasksHTML();
+
+    // ── Storage panel ──
+    if (window.Storage && typeof Storage.renderStudentStoragePanel === 'function') {
+      Storage.renderStudentStoragePanel('vtxStudentStoragePanel');
+    }
 
     // ── Ticker scroll ──
     (function () {
