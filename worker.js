@@ -1,6 +1,17 @@
 export default {
   async fetch(request, env) {
-    
+
+    // TEMPORARY DEBUG ROUTE — remove after checking
+    if (request.method === 'GET' && new URL(request.url).pathname === '/debug-b2') {
+      return new Response(JSON.stringify({
+        B2_KEY_ID:   !!env.B2_KEY_ID,
+        B2_APP_KEY:  !!env.B2_APP_KEY,
+        B2_BUCKET:   !!env.B2_BUCKET,
+        B2_ENDPOINT: !!env.B2_ENDPOINT,
+        B2_REGION:   !!env.B2_REGION,
+      }, null, 2), { headers: { 'Content-Type': 'application/json' } });
+    }
+
     // Health check
     if (request.method === 'GET') {
       return new Response('Vertex Cloudflare Worker is working!', { status: 200 });
