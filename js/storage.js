@@ -11,7 +11,7 @@
   const STUDENT_MAX_FILE_MB        = 20;   // non-video cap for students
   const STUDENT_MAX_VIDEO_MB       = 30;   // video cap for students
   const TEACHER_MAX_FILE_MB        = 5000; // practical ceiling for teachers ("unlimited")
-  const STUDENT_DAILY_UPLOAD_LIMIT = 15;   // uploads per student per day
+  const STUDENT_DAILY_UPLOAD_LIMIT = 5;   // uploads per student per day
 
   const ALLOWED_TYPES = {
     'application/pdf':                          'pdf',
