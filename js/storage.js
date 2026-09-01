@@ -832,7 +832,6 @@
       '<div style="display:flex;align-items:center;justify-content:space-between;' +
         'margin-bottom:1rem;flex-wrap:wrap;gap:.75rem;">' +
         '<div>' +
-          '<h3 style="font-size:1rem;font-weight:700;color:var(--text-1);">Files & Resources</h3>' +
           '<p style="font-size:.75rem;color:var(--text-3);margin-top:2px;">' +
             (userOpts.role === 'teacher'
               ? 'All uploaded files — click to download.'
