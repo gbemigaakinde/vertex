@@ -282,6 +282,57 @@ if (request.method === 'POST' && url.pathname === '/api/cancel-scheduled-push') 
   return new Response(JSON.stringify({ success: true }), { headers: corsJsonHeaders() });
 }
 
+    // ── Storage: presign upload ─────────────────────────────
+    if (request.method === 'POST' && url.pathname === '/storage/presign-upload') {
+      let body;
+      try { body = await request.json(); } catch (e) { return jsonError('Invalid JSON.', 400); }
+      const { objectKey, contentType } = body;
+      if (!objectKey || !contentType) return jsonError('Missing objectKey or contentType.', 400);
+      if (!env.B2_KEY_ID || !env.B2_APP_KEY || !env.B2_BUCKET || !env.B2_ENDPOINT || !env.B2_REGION) {
+        return jsonError('Backblaze B2 environment variables not configured.', 500);
+      }
+      try {
+        const presignedUrl = await _b2PresignPut(objectKey, contentType, env);
+        return new Response(JSON.stringify({ url: presignedUrl }), { headers: corsJsonHeaders() });
+      } catch (e) {
+        return jsonError('Failed to generate presigned URL: ' + e.message, 500);
+      }
+    }
+
+    // ── Storage: presign download ───────────────────────────
+    if (request.method === 'POST' && url.pathname === '/storage/presign-download') {
+      let body;
+      try { body = await request.json(); } catch (e) { return jsonError('Invalid JSON.', 400); }
+      const { objectKey } = body;
+      if (!objectKey) return jsonError('Missing objectKey.', 400);
+      if (!env.B2_KEY_ID || !env.B2_APP_KEY || !env.B2_BUCKET || !env.B2_ENDPOINT || !env.B2_REGION) {
+        return jsonError('Backblaze B2 environment variables not configured.', 500);
+      }
+      try {
+        const presignedUrl = await _b2PresignGet(objectKey, env);
+        return new Response(JSON.stringify({ url: presignedUrl }), { headers: corsJsonHeaders() });
+      } catch (e) {
+        return jsonError('Failed to generate download URL: ' + e.message, 500);
+      }
+    }
+
+    // ── Storage: delete object ──────────────────────────────
+    if (request.method === 'POST' && url.pathname === '/storage/delete') {
+      let body;
+      try { body = await request.json(); } catch (e) { return jsonError('Invalid JSON.', 400); }
+      const { objectKey } = body;
+      if (!objectKey) return jsonError('Missing objectKey.', 400);
+      if (!env.B2_KEY_ID || !env.B2_APP_KEY || !env.B2_BUCKET || !env.B2_ENDPOINT || !env.B2_REGION) {
+        return jsonError('Backblaze B2 environment variables not configured.', 500);
+      }
+      try {
+        await _b2Delete(objectKey, env);
+        return new Response(JSON.stringify({ ok: true }), { headers: corsJsonHeaders() });
+      } catch (e) {
+        return jsonError('Failed to delete object: ' + e.message, 500);
+      }
+    }
+
     return new Response('Not found.', { status: 404 });
   },
 
@@ -1928,5 +1979,203 @@ async function _runDailyReminders(env) {
     } catch (err) {
       console.warn('[cron] Error for user', uid, ':', err.message || err);
     }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   BACKBLAZE B2 — AWS S3-compatible presigned URL helpers
+   B2 speaks S3 — we sign with AWS Signature Version 4.
+══════════════════════════════════════════════════════════ */
+
+function _b2Host(env) {
+  // e.g. "vertex-storage.s3.us-east-005.backblazeb2.com"
+  return env.B2_BUCKET + '.' + env.B2_ENDPOINT.replace('https://', '');
+}
+
+async function _hmacSHA256(key, message) {
+  const keyBuf = typeof key === 'string'
+    ? new TextEncoder().encode(key)
+    : key;
+  const cryptoKey = await crypto.subtle.importKey(
+    'raw', keyBuf, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+  );
+  const sig = await crypto.subtle.sign('HMAC', cryptoKey, new TextEncoder().encode(message));
+  return new Uint8Array(sig);
+}
+
+async function _sha256Hex(message) {
+  const buf = new TextEncoder().encode(message);
+  const hash = await crypto.subtle.digest('SHA-256', buf);
+  return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function _hexEncode(bytes) {
+  return Array.from(bytes).map(b => b.toString(16).padStart(2,'0')).join('');
+}
+
+function _isoDate(now) {
+  return now.toISOString().replace(/[:\-]|\.\d{3}/g,'').slice(0,15) + 'Z';
+}
+
+function _shortDate(now) {
+  return now.toISOString().slice(0,10).replace(/-/g,'');
+}
+
+async function _b2DeriveSigningKey(secretKey, dateStr, region) {
+  const kDate    = await _hmacSHA256('AWS4' + secretKey, dateStr);
+  const kRegion  = await _hmacSHA256(kDate, region);
+  const kService = await _hmacSHA256(kRegion, 's3');
+  const kSigning = await _hmacSHA256(kService, 'aws4_request');
+  return kSigning;
+}
+
+async function _b2PresignPut(objectKey, contentType, env) {
+  const now        = new Date();
+  const amzDate    = _isoDate(now);
+  const dateStr    = _shortDate(now);
+  const region     = env.B2_REGION;
+  const bucket     = env.B2_BUCKET;
+  const host       = _b2Host(env);
+  const accessKey  = env.B2_KEY_ID;
+  const secretKey  = env.B2_APP_KEY;
+  const expires    = 300; // 5 minutes
+
+  const encodedKey = encodeURIComponent(objectKey).replace(/%2F/g,'/');
+
+  const credentialScope = dateStr + '/' + region + '/s3/aws4_request';
+  const credential      = accessKey + '/' + credentialScope;
+
+  const signedHeaders = 'host';
+
+  const queryParams = [
+    'X-Amz-Algorithm=AWS4-HMAC-SHA256',
+    'X-Amz-Content-Sha256=UNSIGNED-PAYLOAD',
+    'X-Amz-Credential=' + encodeURIComponent(credential),
+    'X-Amz-Date=' + amzDate,
+    'X-Amz-Expires=' + expires,
+    'X-Amz-SignedHeaders=' + signedHeaders,
+  ].join('&');
+
+  const canonicalRequest = [
+    'PUT',
+    '/' + encodedKey,
+    queryParams,
+    'host:' + host + '\n',
+    signedHeaders,
+    'UNSIGNED-PAYLOAD',
+  ].join('\n');
+
+  const hashedCanonical = await _sha256Hex(canonicalRequest);
+  const stringToSign = [
+    'AWS4-HMAC-SHA256',
+    amzDate,
+    credentialScope,
+    hashedCanonical,
+  ].join('\n');
+
+  const signingKey  = await _b2DeriveSigningKey(secretKey, dateStr, region);
+  const sigBytes    = await _hmacSHA256(signingKey, stringToSign);
+  const signature   = _hexEncode(sigBytes);
+
+  return 'https://' + host + '/' + encodedKey + '?' + queryParams + '&X-Amz-Signature=' + signature;
+}
+
+async function _b2PresignGet(objectKey, env) {
+  const now        = new Date();
+  const amzDate    = _isoDate(now);
+  const dateStr    = _shortDate(now);
+  const region     = env.B2_REGION;
+  const host       = _b2Host(env);
+  const accessKey  = env.B2_KEY_ID;
+  const secretKey  = env.B2_APP_KEY;
+  const expires    = 3600; // 1 hour
+
+  const encodedKey      = encodeURIComponent(objectKey).replace(/%2F/g,'/');
+  const credentialScope = dateStr + '/' + region + '/s3/aws4_request';
+  const credential      = accessKey + '/' + credentialScope;
+  const signedHeaders   = 'host';
+
+  const queryParams = [
+    'X-Amz-Algorithm=AWS4-HMAC-SHA256',
+    'X-Amz-Content-Sha256=UNSIGNED-PAYLOAD',
+    'X-Amz-Credential=' + encodeURIComponent(credential),
+    'X-Amz-Date=' + amzDate,
+    'X-Amz-Expires=' + expires,
+    'X-Amz-SignedHeaders=' + signedHeaders,
+  ].join('&');
+
+  const canonicalRequest = [
+    'GET',
+    '/' + encodedKey,
+    queryParams,
+    'host:' + host + '\n',
+    signedHeaders,
+    'UNSIGNED-PAYLOAD',
+  ].join('\n');
+
+  const hashedCanonical = await _sha256Hex(canonicalRequest);
+  const stringToSign = [
+    'AWS4-HMAC-SHA256',
+    amzDate,
+    credentialScope,
+    hashedCanonical,
+  ].join('\n');
+
+  const signingKey  = await _b2DeriveSigningKey(secretKey, dateStr, region);
+  const sigBytes    = await _hmacSHA256(signingKey, stringToSign);
+  const signature   = _hexEncode(sigBytes);
+
+  return 'https://' + host + '/' + encodedKey + '?' + queryParams + '&X-Amz-Signature=' + signature;
+}
+
+async function _b2Delete(objectKey, env) {
+  const now        = new Date();
+  const amzDate    = _isoDate(now);
+  const dateStr    = _shortDate(now);
+  const region     = env.B2_REGION;
+  const host       = _b2Host(env);
+  const accessKey  = env.B2_KEY_ID;
+  const secretKey  = env.B2_APP_KEY;
+
+  const encodedKey      = encodeURIComponent(objectKey).replace(/%2F/g,'/');
+  const credentialScope = dateStr + '/' + region + '/s3/aws4_request';
+  const credential      = accessKey + '/' + credentialScope;
+
+  const emptyHash   = await _sha256Hex('');
+  const canonicalRequest = [
+    'DELETE',
+    '/' + encodedKey,
+    '',
+    'host:' + host + '\nx-amz-content-sha256:' + emptyHash + '\nx-amz-date:' + amzDate + '\n',
+    'host;x-amz-content-sha256;x-amz-date',
+    emptyHash,
+  ].join('\n');
+
+  const hashedCanonical = await _sha256Hex(canonicalRequest);
+  const stringToSign = [
+    'AWS4-HMAC-SHA256',
+    amzDate,
+    credentialScope,
+    hashedCanonical,
+  ].join('\n');
+
+  const signingKey  = await _b2DeriveSigningKey(secretKey, dateStr, region);
+  const sigBytes    = await _hmacSHA256(signingKey, stringToSign);
+  const signature   = _hexEncode(sigBytes);
+
+  const res = await fetch('https://' + host + '/' + encodedKey, {
+    method: 'DELETE',
+    headers: {
+      'Host':                 host,
+      'X-Amz-Date':          amzDate,
+      'X-Amz-Content-Sha256': emptyHash,
+      'Authorization': 'AWS4-HMAC-SHA256 Credential=' + credential +
+        ',SignedHeaders=host;x-amz-content-sha256;x-amz-date,Signature=' + signature,
+    },
+  });
+
+  if (!res.ok && res.status !== 204) {
+    const txt = await res.text().catch(() => '');
+    throw new Error('B2 DELETE returned ' + res.status + ': ' + txt.slice(0, 200));
   }
 }
