@@ -32,14 +32,15 @@
     'image/webp':                               'webp',
   };
 
+  /* Phosphor icon class per file extension (no emojis) */
   const FILE_ICONS = {
-    pdf:  '📄',
-    doc:  '📝', docx: '📝',
-    xls:  '📊', xlsx: '📊',
-    ppt:  '📋', pptx: '📋',
-    txt:  '📃',
-    jpg:  '🖼️', jpeg: '🖼️', png: '🖼️', gif: '🖼️', webp: '🖼️',
-    default: '📁',
+    pdf:  'ph-file-pdf',
+    doc:  'ph-file-doc',  docx: 'ph-file-doc',
+    xls:  'ph-file-xls',  xlsx: 'ph-file-xls',
+    ppt:  'ph-file-ppt',  pptx: 'ph-file-ppt',
+    txt:  'ph-file-text',
+    jpg:  'ph-image', jpeg: 'ph-image', png: 'ph-image', gif: 'ph-image', webp: 'ph-image',
+    default: 'ph-file',
   };
 
   /* ── Helpers ───────────────────────────────────────────── */
@@ -62,8 +63,13 @@
     return d.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' });
   }
 
-  function _fileIcon(ext) {
+  function _fileIconClass(ext) {
     return FILE_ICONS[ext] || FILE_ICONS.default;
+  }
+
+  function _fileIconHtml(ext, sizePx) {
+    var size = sizePx || 20;
+    return '<i class="ph ' + _fileIconClass(ext) + '" style="font-size:' + size + 'px;"></i>';
   }
 
   function _ext(filename) {
@@ -309,7 +315,9 @@
           <div id="vtxFilePreview" style="display:none;padding:.75rem;border-radius:var(--r-lg);
                background:var(--bg-subtle);border:1px solid var(--border);">
             <div style="display:flex;align-items:center;gap:.75rem;">
-              <span id="vtxFileIcon" style="font-size:1.75rem;flex-shrink:0;">📁</span>
+              <span id="vtxFileIcon" style="font-size:1.75rem;flex-shrink:0;display:inline-flex;">
+                <i class="ph ph-file"></i>
+              </span>
               <div style="flex:1;min-width:0;">
                 <p id="vtxFileName" style="font-size:.875rem;font-weight:700;color:var(--text-1);
                    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></p>
@@ -317,9 +325,11 @@
               </div>
               <button onclick="Storage._clearFile()"
                       style="background:none;border:none;cursor:pointer;font-size:1.125rem;
-                             color:var(--text-4);padding:4px;"
+                             color:var(--text-4);padding:4px;display:inline-flex;"
                       onmouseenter="this.style.color='var(--danger)'"
-                      onmouseleave="this.style.color='var(--text-4)'">×</button>
+                      onmouseleave="this.style.color='var(--text-4)'">
+                <i class="ph ph-x"></i>
+              </button>
             </div>
           </div>
 
@@ -467,11 +477,10 @@
 
     function _setFile(file) {
       _selectedFile = file;
-      var ext    = _ext(file.name);
-      var icon   = _fileIcon(ext);
+      var ext = _ext(file.name);
       document.getElementById('vtxDropZone').style.display  = 'none';
       document.getElementById('vtxFilePreview').style.display = '';
-      document.getElementById('vtxFileIcon').textContent   = icon;
+      document.getElementById('vtxFileIcon').innerHTML     = _fileIconHtml(ext, 22);
       document.getElementById('vtxFileName').textContent   = file.name;
       document.getElementById('vtxFileSize').textContent   = _fmtBytes(file.size);
 
@@ -544,6 +553,13 @@
         uploadBtn.textContent   = 'Done!';
         uploadBtn.style.background = 'var(--success)';
         uploadBtn.style.opacity    = '1';
+
+        // Fix: reset the uploading flag and re-enable controls now that
+        // the upload has actually finished, so Cancel/Close/auto-close
+        // all work instead of being stuck disabled forever.
+        _uploading = false;
+        cancelBtn.disabled     = false;
+        closeBtn.style.display = '';
 
         if (window.UI && UI.toast) UI.toast('File uploaded successfully.', 'success');
         if (opts.onSuccess) opts.onSuccess(result);
@@ -635,15 +651,9 @@
 
     var query = window.fbDb.collection('uploads').orderBy('createdAt', 'desc');
 
-    // Filter by role
-    if (queryOpts.role === 'teacher') {
-      // Teacher sees everything
-    } else if (queryOpts.uploaderUid) {
-      // Student sees: their own files OR files shared with their class OR all-student files
-      // We fetch all visible and filter client-side (Firestore OR queries need index magic)
-      // Simple approach: fetch class-shared + private-own in two queries then merge
-    }
-
+    // Note: when queryOpts.role === 'teacher', every document is marked
+    // visible below regardless of sharedWith — teachers see everything,
+    // including students' private uploads.
     query.limit(100).get().then(function (snap) {
       var docs = [];
       snap.forEach(function (doc) {
@@ -701,7 +711,7 @@
 
           // Icon
           '<div style="flex-shrink:0;font-size:1.75rem;width:40px;text-align:center;">' +
-            _fileIcon(d.fileExt) +
+            _fileIconHtml(d.fileExt, 24) +
           '</div>' +
 
           // Info
