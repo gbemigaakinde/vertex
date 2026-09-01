@@ -1989,7 +1989,7 @@ async function _runDailyReminders(env) {
 
 function _b2Host(env) {
   // e.g. "vertex-storage.s3.us-east-005.backblazeb2.com"
-  return env.B2_BUCKET + '.' + env.B2_ENDPOINT.replace('https://', '');
+  return env.B2_BUCKET + '.' + env.B2_ENDPOINT.replace('https://', '').replace(/\/+$/, '');
 }
 
 async function _hmacSHA256(key, message) {
