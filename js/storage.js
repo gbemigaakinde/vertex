@@ -176,6 +176,19 @@
     return list;
   }
 
+var _cachedClassList = null;
+async function _fetchClassList() {
+  if (_cachedClassList) return _cachedClassList;
+  var snap = await window.fbDb.collection('students').get();
+  var classSet = new Set();
+  snap.forEach(function (doc) {
+    var c = doc.data().class;
+    if (c) classSet.add(c);
+  });
+  _cachedClassList = Array.from(classSet).sort();
+  return _cachedClassList;
+}
+   
   /* ── CORE: get presigned upload URL from Worker ────────── */
   async function _getPresignedPutUrl(objectKey, contentType) {
     const res = await fetch(WORKER_URL + '/storage/presign-upload', {
@@ -222,78 +235,81 @@
   }
 
   /* ── CORE: upload pipeline ─────────────────────────────── */
-  async function uploadFile(file, opts, onProgress) {
-    if (!file) throw new Error('No file selected.');
+async function uploadFile(file, opts, onProgress) {
+  if (!file) throw new Error('No file selected.');
 
-    const role = opts.uploaderRole || 'student';
-    const validationError = _fileValidationError(file, role);
-    if (validationError) throw new Error(validationError);
+  const role = opts.uploaderRole || 'student';
+  const validationError = _fileValidationError(file, role);
+  if (validationError) throw new Error(validationError);
 
-    if (role !== 'teacher') {
-      const limitCheck = await _checkStudentDailyLimit(opts.uploaderUid);
-      if (!limitCheck.allowed) {
-        throw new Error('Daily upload limit reached (' + limitCheck.limit + ' files/day). Try again tomorrow.');
-      }
+  if (role !== 'teacher') {
+    const limitCheck = await _checkStudentDailyLimit(opts.uploaderUid);
+    if (!limitCheck.allowed) {
+      throw new Error('Daily upload limit reached (' + limitCheck.limit + ' files/day). Try again tomorrow.');
     }
-
-    if (opts.sharedWith === 'student' && !opts.targetStudentUid) {
-      throw new Error('Please select which student this file is for.');
-    }
-
-    const ext         = _ext(file.name);
-    const isVideo      = _isVideoFile(file);
-    const objectKey   = _safeKey(opts.uploaderUid, file.name);
-    const contentType = file.type || 'application/octet-stream';
-
-    // 1. Get presigned URL
-    if (onProgress) onProgress(10, 'Getting upload permission…');
-    const putUrl = await _getPresignedPutUrl(objectKey, contentType);
-
-    // 2. Upload directly to B2
-    if (onProgress) onProgress(20, 'Uploading file…');
-    await new Promise(function (resolve, reject) {
-      const xhr = new XMLHttpRequest();
-      xhr.open('PUT', putUrl);
-      xhr.setRequestHeader('Content-Type', contentType);
-      xhr.upload.onprogress = function (e) {
-        if (e.lengthComputable && onProgress) {
-          const pct = Math.round(20 + (e.loaded / e.total) * 65);
-          onProgress(pct, 'Uploading… ' + Math.round((e.loaded / e.total) * 100) + '%');
-        }
-      };
-      xhr.onload = function () {
-        if (xhr.status >= 200 && xhr.status < 300) resolve();
-        else reject(new Error('Upload failed: HTTP ' + xhr.status));
-      };
-      xhr.onerror = function () { reject(new Error('Network error during upload.')); };
-      xhr.send(file);
-    });
-
-    // 3. Save metadata
-    if (onProgress) onProgress(90, 'Saving file record…');
-    const meta = {
-      objectKey,
-      fileName:          file.name,
-      fileSize:          file.size,
-      fileType:          contentType,
-      fileExt:           ext,
-      isVideo:           isVideo,
-      uploaderUid:       opts.uploaderUid,
-      uploaderName:      opts.uploaderName,
-      uploaderRole:      role,
-      uploaderClass:     opts.uploaderClass || '',
-      context:           opts.context       || 'general',
-      description:       opts.description   || '',
-      sharedWith:        opts.sharedWith    || 'private',
-      targetStudentUid:  opts.sharedWith === 'student' ? (opts.targetStudentUid  || null) : null,
-      targetStudentName: opts.sharedWith === 'student' ? (opts.targetStudentName || null) : null,
-      expiresAt:         opts.expiresAt ? firebase.firestore.Timestamp.fromDate(opts.expiresAt) : null,
-    };
-    await _saveMetadata(meta);
-
-    if (onProgress) onProgress(100, 'Done!');
-    return { objectKey, fileName: file.name, fileSize: file.size };
   }
+
+  if (opts.sharedWith === 'student' && !opts.targetStudentUid) {
+    throw new Error('Please select which student this file is for.');
+  }
+
+  // NEW validation
+  if (opts.sharedWith === 'class' && role === 'teacher' && !opts.targetClass) {
+    throw new Error('Please select which class this file is for.');
+  }
+
+  const ext         = _ext(file.name);
+  const isVideo     = _isVideoFile(file);
+  const objectKey   = _safeKey(opts.uploaderUid, file.name);
+  const contentType = file.type || 'application/octet-stream';
+
+  if (onProgress) onProgress(10, 'Getting upload permission…');
+  const putUrl = await _getPresignedPutUrl(objectKey, contentType);
+
+  if (onProgress) onProgress(20, 'Uploading file…');
+  await new Promise(function (resolve, reject) {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', putUrl);
+    xhr.setRequestHeader('Content-Type', contentType);
+    xhr.upload.onprogress = function (e) {
+      if (e.lengthComputable && onProgress) {
+        const pct = Math.round(20 + (e.loaded / e.total) * 65);
+        onProgress(pct, 'Uploading… ' + Math.round((e.loaded / e.total) * 100) + '%');
+      }
+    };
+    xhr.onload  = function () {
+      if (xhr.status >= 200 && xhr.status < 300) resolve();
+      else reject(new Error('Upload failed: HTTP ' + xhr.status));
+    };
+    xhr.onerror = function () { reject(new Error('Network error during upload.')); };
+    xhr.send(file);
+  });
+
+  if (onProgress) onProgress(90, 'Saving file record…');
+  const meta = {
+    objectKey,
+    fileName:          file.name,
+    fileSize:          file.size,
+    fileType:          contentType,
+    fileExt:           ext,
+    isVideo:           isVideo,
+    uploaderUid:       opts.uploaderUid,
+    uploaderName:      opts.uploaderName,
+    uploaderRole:      role,
+    uploaderClass:     opts.uploaderClass || '',
+    context:           opts.context       || 'general',
+    description:       opts.description   || '',
+    sharedWith:        opts.sharedWith    || 'private',
+    targetStudentUid:  opts.sharedWith === 'student' ? (opts.targetStudentUid  || null) : null,
+    targetStudentName: opts.sharedWith === 'student' ? (opts.targetStudentName || null) : null,
+    targetClass:       opts.sharedWith === 'class'   ? (opts.targetClass       || null) : null,
+    expiresAt:         opts.expiresAt ? firebase.firestore.Timestamp.fromDate(opts.expiresAt) : null,
+  };
+  await _saveMetadata(meta);
+
+  if (onProgress) onProgress(100, 'Done!');
+  return { objectKey, fileName: file.name, fileSize: file.size };
+}
 
   /* ── CORE: open file (download via presigned URL) ──────── */
   async function openFile(objectKey, fileName) {
@@ -327,494 +343,540 @@
      UI: UPLOAD MODAL
      Called from student dashboard and teacher dashboard.
   ══════════════════════════════════════════════════════════ */
-  function openUploadModal(opts) {
-    const existing = document.getElementById('vtxStorageUploadModal');
-    if (existing) existing.remove();
+function openUploadModal(opts) {
+  const existing = document.getElementById('vtxStorageUploadModal');
+  if (existing) existing.remove();
 
-    const isTeacher = opts.uploaderRole === 'teacher';
+  const isTeacher = opts.uploaderRole === 'teacher';
 
-    const overlay = document.createElement('div');
-    overlay.id    = 'vtxStorageUploadModal';
-    overlay.style.cssText =
-      'position:fixed;inset:0;background:var(--bg-overlay);z-index:9500;' +
-      'display:flex;align-items:flex-end;justify-content:center;' +
-      'backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);' +
-      'animation:cbt-overlay-in .16s ease-out both;';
+  const overlay = document.createElement('div');
+  overlay.id    = 'vtxStorageUploadModal';
+  overlay.style.cssText =
+    'position:fixed;inset:0;background:var(--bg-overlay);z-index:9500;' +
+    'display:flex;align-items:flex-end;justify-content:center;' +
+    'backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);' +
+    'animation:cbt-overlay-in .16s ease-out both;';
 
-    overlay.innerHTML = `
-      <style>
-        .vtx-vis-btn {
-          font-size:.75rem; padding:.4rem .3rem; white-space:nowrap;
-          overflow:hidden; text-overflow:ellipsis;
-        }
-        @media (max-width:420px) {
-          .vtx-vis-btn { font-size:.6875rem; padding:.32rem .2rem; }
-        }
-      </style>
-      <div id="vtxStorageSheet" style="
-        width:100%;max-width:560px;
-        background:var(--bg-base);
-        border-radius:var(--r-2xl) var(--r-2xl) 0 0;
-        box-shadow:0 -8px 40px rgba(0,0,0,.14);
-        display:flex;flex-direction:column;
-        max-height:85dvh;overflow:hidden;
-        transform:translateY(100%);
-        transition:transform 300ms cubic-bezier(0.16,1,0.3,1);">
+  overlay.innerHTML = `
+    <style>
+      .vtx-vis-btn {
+        font-size:.75rem; padding:.4rem .3rem; white-space:nowrap;
+        overflow:hidden; text-overflow:ellipsis;
+      }
+      @media (max-width:420px) {
+        .vtx-vis-btn { font-size:.6875rem; padding:.32rem .2rem; }
+      }
+    </style>
+    <div id="vtxStorageSheet" style="
+      width:100%;max-width:560px;
+      background:var(--bg-base);
+      border-radius:var(--r-2xl) var(--r-2xl) 0 0;
+      box-shadow:0 -8px 40px rgba(0,0,0,.14);
+      display:flex;flex-direction:column;
+      max-height:85dvh;overflow:hidden;
+      transform:translateY(100%);
+      transition:transform 300ms cubic-bezier(0.16,1,0.3,1);">
 
-        <!-- Header -->
-        <div style="display:flex;align-items:center;justify-content:space-between;
-                    padding:.875rem 1.125rem .75rem;flex-shrink:0;">
-          <div style="display:flex;align-items:center;gap:.625rem;min-width:0;">
-            <span style="display:inline-flex;align-items:center;justify-content:center;
-                         width:34px;height:34px;border-radius:var(--r-lg);
-                         background:var(--accent-subtle);flex-shrink:0;">
-              <i class="ph ph-upload-simple" style="font-size:17px;color:var(--accent);"></i>
+      <!-- Header -->
+      <div style="display:flex;align-items:center;justify-content:space-between;
+                  padding:.875rem 1.125rem .75rem;flex-shrink:0;">
+        <div style="display:flex;align-items:center;gap:.625rem;min-width:0;">
+          <span style="display:inline-flex;align-items:center;justify-content:center;
+                       width:34px;height:34px;border-radius:var(--r-lg);
+                       background:var(--accent-subtle);flex-shrink:0;">
+            <i class="ph ph-upload-simple" style="font-size:17px;color:var(--accent);"></i>
+          </span>
+          <div style="min-width:0;">
+            <p style="font-size:.9375rem;font-weight:700;color:var(--text-1);
+                      line-height:1.2;letter-spacing:-.015em;">Upload File</p>
+            <p id="vtxStorageSubtitle" style="font-size:.6875rem;color:var(--text-4);margin-top:1px;"></p>
+          </div>
+        </div>
+        <button id="vtxStorageCloseBtn"
+                style="background:var(--bg-subtle);border:none;cursor:pointer;
+                       width:30px;height:30px;border-radius:var(--r-full);
+                       display:flex;align-items:center;justify-content:center;
+                       color:var(--text-3);flex-shrink:0;"
+                aria-label="Close">
+          <i class="ph ph-x" style="font-size:14px;"></i>
+        </button>
+      </div>
+
+      <div style="height:1px;background:var(--border);flex-shrink:0;"></div>
+
+      <!-- Body -->
+      <div style="overflow-y:auto;padding:1.125rem;display:flex;flex-direction:column;gap:.875rem;">
+
+        <!-- Daily limit banner (student only) -->
+        <div id="vtxLimitBanner" style="display:none;padding:.625rem .75rem;border-radius:var(--r-lg);
+             background:var(--danger-subtle);border:1px solid var(--danger-border);
+             color:var(--danger);font-size:.8125rem;font-weight:600;">
+          You have reached today's upload limit. Try again tomorrow.
+        </div>
+
+        <!-- Drop zone -->
+        <div id="vtxDropZone"
+             style="border:2px dashed var(--border);border-radius:var(--r-xl);
+                    padding:2rem 1rem;text-align:center;cursor:pointer;
+                    transition:border-color .15s,background .15s;background:var(--bg-subtle);"
+             onclick="document.getElementById('vtxFileInput').click()">
+          <i class="ph ph-cloud-arrow-up" style="font-size:2rem;color:var(--text-4);display:block;margin-bottom:.5rem;"></i>
+          <p style="font-size:.9375rem;font-weight:600;color:var(--text-2);margin-bottom:.25rem;">
+            Click to choose a file
+          </p>
+          <p style="font-size:.75rem;color:var(--text-4);">or drag and drop it here</p>
+        </div>
+        <input type="file" id="vtxFileInput" style="display:none;" />
+
+        <!-- File preview -->
+        <div id="vtxFilePreview" style="display:none;padding:.75rem;border-radius:var(--r-lg);
+             background:var(--bg-subtle);border:1px solid var(--border);">
+          <div style="display:flex;align-items:center;gap:.75rem;">
+            <span id="vtxFileIcon" style="font-size:1.75rem;flex-shrink:0;display:inline-flex;">
+              <i class="ph ph-file"></i>
             </span>
-            <div style="min-width:0;">
-              <p style="font-size:.9375rem;font-weight:700;color:var(--text-1);
-                        line-height:1.2;letter-spacing:-.015em;">Upload File</p>
-              <p id="vtxStorageSubtitle" style="font-size:.6875rem;color:var(--text-4);margin-top:1px;"></p>
+            <div style="flex:1;min-width:0;">
+              <p id="vtxFileName" style="font-size:.875rem;font-weight:700;color:var(--text-1);
+                 white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></p>
+              <p id="vtxFileSize" style="font-size:.75rem;color:var(--text-3);margin-top:2px;"></p>
             </div>
+            <button onclick="Storage._clearFile()"
+                    style="background:none;border:none;cursor:pointer;font-size:1.125rem;
+                           color:var(--text-4);padding:4px;display:inline-flex;"
+                    onmouseenter="this.style.color='var(--danger)'"
+                    onmouseleave="this.style.color='var(--text-4)'">
+              <i class="ph ph-x"></i>
+            </button>
           </div>
-          <button id="vtxStorageCloseBtn"
-                  style="background:var(--bg-subtle);border:none;cursor:pointer;
-                         width:30px;height:30px;border-radius:var(--r-full);
-                         display:flex;align-items:center;justify-content:center;
-                         color:var(--text-3);flex-shrink:0;"
-                  aria-label="Close">
-            <i class="ph ph-x" style="font-size:14px;"></i>
-          </button>
+          <p id="vtxFileError" style="display:none;font-size:.75rem;color:var(--danger);margin:.5rem 0 0;"></p>
         </div>
 
-        <div style="height:1px;background:var(--border);flex-shrink:0;"></div>
-
-        <!-- Body -->
-        <div style="overflow-y:auto;padding:1.125rem;display:flex;flex-direction:column;gap:.875rem;">
-
-          <!-- Daily limit banner (student only, shown if reached) -->
-          <div id="vtxLimitBanner" style="display:none;padding:.625rem .75rem;border-radius:var(--r-lg);
-               background:var(--danger-subtle);border:1px solid var(--danger-border);
-               color:var(--danger);font-size:.8125rem;font-weight:600;">
-            You have reached today's upload limit. Try again tomorrow.
-          </div>
-
-          <!-- Drop zone -->
-          <div id="vtxDropZone"
-               style="border:2px dashed var(--border);border-radius:var(--r-xl);
-                      padding:2rem 1rem;text-align:center;cursor:pointer;
-                      transition:border-color .15s,background .15s;background:var(--bg-subtle);"
-               onclick="document.getElementById('vtxFileInput').click()">
-            <i class="ph ph-cloud-arrow-up" style="font-size:2rem;color:var(--text-4);display:block;margin-bottom:.5rem;"></i>
-            <p style="font-size:.9375rem;font-weight:600;color:var(--text-2);margin-bottom:.25rem;">
-              Click to choose a file
-            </p>
-            <p style="font-size:.75rem;color:var(--text-4);">or drag and drop it here</p>
-          </div>
-          <input type="file" id="vtxFileInput" style="display:none;" />
-
-          <!-- File preview (hidden until file selected) -->
-          <div id="vtxFilePreview" style="display:none;padding:.75rem;border-radius:var(--r-lg);
-               background:var(--bg-subtle);border:1px solid var(--border);">
-            <div style="display:flex;align-items:center;gap:.75rem;">
-              <span id="vtxFileIcon" style="font-size:1.75rem;flex-shrink:0;display:inline-flex;">
-                <i class="ph ph-file"></i>
-              </span>
-              <div style="flex:1;min-width:0;">
-                <p id="vtxFileName" style="font-size:.875rem;font-weight:700;color:var(--text-1);
-                   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;"></p>
-                <p id="vtxFileSize" style="font-size:.75rem;color:var(--text-3);margin-top:2px;"></p>
-              </div>
-              <button onclick="Storage._clearFile()"
-                      style="background:none;border:none;cursor:pointer;font-size:1.125rem;
-                             color:var(--text-4);padding:4px;display:inline-flex;"
-                      onmouseenter="this.style.color='var(--danger)'"
-                      onmouseleave="this.style.color='var(--text-4)'">
-                <i class="ph ph-x"></i>
-              </button>
-            </div>
-            <p id="vtxFileError" style="display:none;font-size:.75rem;color:var(--danger);margin:.5rem 0 0;"></p>
-          </div>
-
-          <!-- Description -->
-          <div>
-            <label style="display:block;font-size:.75rem;font-weight:600;color:var(--text-3);
-                          text-transform:uppercase;letter-spacing:.04em;margin-bottom:.375rem;">
-              Description <span style="font-weight:400;text-transform:none;color:var(--text-4);">— optional</span>
-            </label>
-            <input type="text" id="vtxFileDesc"
-                   placeholder="What is this file about?"
-                   style="width:100%;box-sizing:border-box;" />
-          </div>
-
-          <!-- Visibility -->
-          <div>
-            <label style="display:block;font-size:.75rem;font-weight:600;color:var(--text-3);
-                          text-transform:uppercase;letter-spacing:.04em;margin-bottom:.375rem;">
-              Who is this for?
-            </label>
-            <div style="display:flex;background:var(--bg-muted);border:1px solid var(--border);
-                        border-radius:var(--r-md);padding:3px;gap:3px;">
-              ${isTeacher ? `
-              <button class="vtx-vis-btn" data-val="all"
-                      style="flex:1;cursor:pointer;border:none;border-radius:5px;font-family:inherit;
-                             font-weight:500;background:var(--bg-base);color:var(--text-1);
-                             box-shadow:var(--shadow-xs);transition:all var(--t-fast);">All Students</button>
-              <button class="vtx-vis-btn" data-val="student"
-                      style="flex:1;cursor:pointer;border:none;border-radius:5px;font-family:inherit;
-                             font-weight:500;background:transparent;color:var(--text-3);
-                             transition:all var(--t-fast);">1 Student</button>
-              <button class="vtx-vis-btn" data-val="private"
-                      style="flex:1;cursor:pointer;border:none;border-radius:5px;font-family:inherit;
-                             font-weight:500;background:transparent;color:var(--text-3);
-                             transition:all var(--t-fast);">Only Me</button>
-              ` : `
-              <button class="vtx-vis-btn" data-val="teacher"
-                      style="flex:1;cursor:pointer;border:none;border-radius:5px;font-family:inherit;
-                             font-weight:500;background:var(--bg-base);color:var(--text-1);
-                             box-shadow:var(--shadow-xs);transition:all var(--t-fast);">Teacher</button>
-              <button class="vtx-vis-btn" data-val="class"
-                      style="flex:1;cursor:pointer;border:none;border-radius:5px;font-family:inherit;
-                             font-weight:500;background:transparent;color:var(--text-3);
-                             transition:all var(--t-fast);">My Class</button>
-              <button class="vtx-vis-btn" data-val="private"
-                      style="flex:1;cursor:pointer;border:none;border-radius:5px;font-family:inherit;
-                             font-weight:500;background:transparent;color:var(--text-3);
-                             transition:all var(--t-fast);">Only Me</button>
-              `}
-            </div>
-          </div>
-
-          <!-- Target student picker (teacher, "1 Student" only) -->
-          <div id="vtxTargetStudentWrap" style="display:none;">
-            <label style="display:block;font-size:.75rem;font-weight:600;color:var(--text-3);
-                          text-transform:uppercase;letter-spacing:.04em;margin-bottom:.375rem;">
-              Select Student
-            </label>
-            <select id="vtxTargetStudentSelect" style="width:100%;box-sizing:border-box;">
-              <option value="">Choose a student…</option>
-            </select>
-          </div>
-
-          <!-- Expiry (teacher only) -->
-          ${isTeacher ? `
-          <div id="vtxExpiryWrap">
-            <label style="display:block;font-size:.75rem;font-weight:600;color:var(--text-3);
-                          text-transform:uppercase;letter-spacing:.04em;margin-bottom:.375rem;">
-              Expiry <span style="font-weight:400;text-transform:none;color:var(--text-4);">— optional</span>
-            </label>
-            <input type="datetime-local" id="vtxExpiryInput" style="width:100%;box-sizing:border-box;" />
-            <p style="font-size:.6875rem;color:var(--text-4);margin-top:.375rem;">
-              Students will see a live countdown and lose access once this time passes. Leave blank for no expiry.
-            </p>
-          </div>` : ''}
-
-          <!-- Progress bar (hidden until upload starts) -->
-          <div id="vtxUploadProgressWrap" style="display:none;">
-            <div style="display:flex;align-items:center;justify-content:space-between;
-                        margin-bottom:.375rem;">
-              <span id="vtxUploadStatusText" style="font-size:.8125rem;color:var(--text-2);"></span>
-              <span id="vtxUploadPct" style="font-size:.8125rem;font-weight:700;color:var(--accent);"></span>
-            </div>
-            <div style="height:6px;border-radius:99px;background:var(--bg-muted);overflow:hidden;">
-              <div id="vtxUploadBar" style="height:100%;width:0%;background:var(--accent);
-                   border-radius:99px;transition:width .2s ease;"></div>
-            </div>
-          </div>
-
+        <!-- Description -->
+        <div>
+          <label style="display:block;font-size:.75rem;font-weight:600;color:var(--text-3);
+                        text-transform:uppercase;letter-spacing:.04em;margin-bottom:.375rem;">
+            Description <span style="font-weight:400;text-transform:none;color:var(--text-4);">— optional</span>
+          </label>
+          <input type="text" id="vtxFileDesc"
+                 placeholder="What is this file about?"
+                 style="width:100%;box-sizing:border-box;" />
         </div>
 
-        <div style="height:1px;background:var(--border);flex-shrink:0;"></div>
-
-        <!-- Footer -->
-        <div style="padding:.875rem 1.125rem calc(.875rem + env(safe-area-inset-bottom,0px));
-                    flex-shrink:0;display:flex;gap:.5rem;">
-          <button id="vtxStorageCancelBtn"
-                  style="flex:1;padding:.625rem;border-radius:var(--r-xl);
-                         background:var(--bg-subtle);border:1px solid var(--border);
-                         color:var(--text-2);font-size:.875rem;font-weight:600;
-                         cursor:pointer;font-family:var(--font);">
-            Cancel
-          </button>
-          <button id="vtxStorageUploadBtn"
-                  style="flex:2;padding:.625rem;border-radius:var(--r-xl);
-                         background:var(--accent);border:none;
-                         color:#fff;font-size:.875rem;font-weight:700;
-                         cursor:pointer;font-family:var(--font);
-                         opacity:.5;transition:opacity var(--t-fast);"
-                  disabled>
-            Upload File
-          </button>
+        <!-- Visibility -->
+        <div>
+          <label style="display:block;font-size:.75rem;font-weight:600;color:var(--text-3);
+                        text-transform:uppercase;letter-spacing:.04em;margin-bottom:.375rem;">
+            Who is this for?
+          </label>
+          <div style="display:flex;background:var(--bg-muted);border:1px solid var(--border);
+                      border-radius:var(--r-md);padding:3px;gap:3px;">
+            ${isTeacher ? `
+            <button class="vtx-vis-btn" data-val="all"
+                    style="flex:1;cursor:pointer;border:none;border-radius:5px;font-family:inherit;
+                           font-weight:500;background:var(--bg-base);color:var(--text-1);
+                           box-shadow:var(--shadow-xs);transition:all var(--t-fast);">All Students</button>
+            <button class="vtx-vis-btn" data-val="class"
+                    style="flex:1;cursor:pointer;border:none;border-radius:5px;font-family:inherit;
+                           font-weight:500;background:transparent;color:var(--text-3);
+                           transition:all var(--t-fast);">A Class</button>
+            <button class="vtx-vis-btn" data-val="student"
+                    style="flex:1;cursor:pointer;border:none;border-radius:5px;font-family:inherit;
+                           font-weight:500;background:transparent;color:var(--text-3);
+                           transition:all var(--t-fast);">1 Student</button>
+            <button class="vtx-vis-btn" data-val="private"
+                    style="flex:1;cursor:pointer;border:none;border-radius:5px;font-family:inherit;
+                           font-weight:500;background:transparent;color:var(--text-3);
+                           transition:all var(--t-fast);">Only Me</button>
+            ` : `
+            <button class="vtx-vis-btn" data-val="teacher"
+                    style="flex:1;cursor:pointer;border:none;border-radius:5px;font-family:inherit;
+                           font-weight:500;background:var(--bg-base);color:var(--text-1);
+                           box-shadow:var(--shadow-xs);transition:all var(--t-fast);">Teacher</button>
+            <button class="vtx-vis-btn" data-val="class"
+                    style="flex:1;cursor:pointer;border:none;border-radius:5px;font-family:inherit;
+                           font-weight:500;background:transparent;color:var(--text-3);
+                           transition:all var(--t-fast);">My Class</button>
+            <button class="vtx-vis-btn" data-val="private"
+                    style="flex:1;cursor:pointer;border:none;border-radius:5px;font-family:inherit;
+                           font-weight:500;background:transparent;color:var(--text-3);
+                           transition:all var(--t-fast);">Only Me</button>
+            `}
+          </div>
         </div>
-      </div>`;
 
-    document.body.appendChild(overlay);
+        <!-- Target class picker (teacher "A Class" only) -->
+        <div id="vtxTargetClassWrap" style="display:none;">
+          <label style="display:block;font-size:.75rem;font-weight:600;color:var(--text-3);
+                        text-transform:uppercase;letter-spacing:.04em;margin-bottom:.375rem;">
+            Select Class
+          </label>
+          <select id="vtxTargetClassSelect" style="width:100%;box-sizing:border-box;">
+            <option value="">Choose a class…</option>
+          </select>
+        </div>
 
-    // Animate in
+        <!-- Target student picker (teacher "1 Student" only) -->
+        <div id="vtxTargetStudentWrap" style="display:none;">
+          <label style="display:block;font-size:.75rem;font-weight:600;color:var(--text-3);
+                        text-transform:uppercase;letter-spacing:.04em;margin-bottom:.375rem;">
+            Select Student
+          </label>
+          <select id="vtxTargetStudentSelect" style="width:100%;box-sizing:border-box;">
+            <option value="">Choose a student…</option>
+          </select>
+        </div>
+
+        <!-- Expiry (teacher only) -->
+        ${isTeacher ? `
+        <div id="vtxExpiryWrap">
+          <label style="display:block;font-size:.75rem;font-weight:600;color:var(--text-3);
+                        text-transform:uppercase;letter-spacing:.04em;margin-bottom:.375rem;">
+            Expiry <span style="font-weight:400;text-transform:none;color:var(--text-4);">— optional</span>
+          </label>
+          <input type="datetime-local" id="vtxExpiryInput" style="width:100%;box-sizing:border-box;" />
+          <p style="font-size:.6875rem;color:var(--text-4);margin-top:.375rem;">
+            Students will see a live countdown and lose access once this time passes. Leave blank for no expiry.
+          </p>
+        </div>` : ''}
+
+        <!-- Progress bar -->
+        <div id="vtxUploadProgressWrap" style="display:none;">
+          <div style="display:flex;align-items:center;justify-content:space-between;
+                      margin-bottom:.375rem;">
+            <span id="vtxUploadStatusText" style="font-size:.8125rem;color:var(--text-2);"></span>
+            <span id="vtxUploadPct" style="font-size:.8125rem;font-weight:700;color:var(--accent);"></span>
+          </div>
+          <div style="height:6px;border-radius:99px;background:var(--bg-muted);overflow:hidden;">
+            <div id="vtxUploadBar" style="height:100%;width:0%;background:var(--accent);
+                 border-radius:99px;transition:width .2s ease;"></div>
+          </div>
+        </div>
+
+      </div>
+
+      <div style="height:1px;background:var(--border);flex-shrink:0;"></div>
+
+      <!-- Footer -->
+      <div style="padding:.875rem 1.125rem calc(.875rem + env(safe-area-inset-bottom,0px));
+                  flex-shrink:0;display:flex;gap:.5rem;">
+        <button id="vtxStorageCancelBtn"
+                style="flex:1;padding:.625rem;border-radius:var(--r-xl);
+                       background:var(--bg-subtle);border:1px solid var(--border);
+                       color:var(--text-2);font-size:.875rem;font-weight:600;
+                       cursor:pointer;font-family:var(--font);">
+          Cancel
+        </button>
+        <button id="vtxStorageUploadBtn"
+                style="flex:2;padding:.625rem;border-radius:var(--r-xl);
+                       background:var(--accent);border:none;
+                       color:#fff;font-size:.875rem;font-weight:700;
+                       cursor:pointer;font-family:var(--font);
+                       opacity:.5;transition:opacity var(--t-fast);"
+                disabled>
+          Upload File
+        </button>
+      </div>
+    </div>`;
+
+  document.body.appendChild(overlay);
+
+  requestAnimationFrame(function () {
     requestAnimationFrame(function () {
-      requestAnimationFrame(function () {
-        var sheet = document.getElementById('vtxStorageSheet');
-        if (sheet) sheet.style.transform = 'translateY(0)';
-      });
-    });
-
-    // File input accept + subtitle, role-dependent
-    var fileInput = document.getElementById('vtxFileInput');
-    if (isTeacher) {
-      fileInput.removeAttribute('accept'); // any file type
-    } else {
-      fileInput.setAttribute('accept', _studentAcceptString());
-    }
-
-    var subtitleEl = document.getElementById('vtxStorageSubtitle');
-    if (isTeacher) {
-      subtitleEl.textContent = 'Any file type · up to ' + TEACHER_MAX_FILE_MB + ' MB';
-    } else {
-      subtitleEl.textContent = 'PDF, Word, Excel, images, video, text';
-    }
-
-    // Expiry min = now (teacher only)
-    if (isTeacher) {
-      var expiryInput = document.getElementById('vtxExpiryInput');
-      if (expiryInput) {
-        var nowLocal = new Date();
-        nowLocal.setMinutes(nowLocal.getMinutes() - nowLocal.getTimezoneOffset());
-        expiryInput.min = nowLocal.toISOString().slice(0, 16);
-      }
-    }
-
-    // State
-    var _selectedFile          = null;
-    var _selectedVis           = isTeacher ? 'all' : 'teacher';
-    var _selectedTargetUid     = '';
-    var _selectedTargetName    = '';
-    var _uploading             = false;
-    var _dailyLimitReached     = false;
-
-    // Daily limit check (students only) — non-blocking, updates UI once resolved
-    if (!isTeacher) {
-      _checkStudentDailyLimit(opts.uploaderUid).then(function (result) {
-        subtitleEl.textContent = 'PDF, Word, Excel, images, video, text · ' +
-          result.used + '/' + result.limit + ' uploads used today';
-        if (!result.allowed) {
-          _dailyLimitReached = true;
-          var banner = document.getElementById('vtxLimitBanner');
-          if (banner) banner.style.display = '';
-          var dz = document.getElementById('vtxDropZone');
-          if (dz) { dz.style.opacity = '.5'; dz.style.pointerEvents = 'none'; }
-          _updateSubmitState();
-        }
-      });
-    }
-
-    // Visibility toggle
-    var targetWrap = document.getElementById('vtxTargetStudentWrap');
-    overlay.querySelectorAll('.vtx-vis-btn').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        _selectedVis = btn.dataset.val;
-        overlay.querySelectorAll('.vtx-vis-btn').forEach(function (b) {
-          b.style.background  = 'transparent';
-          b.style.color       = 'var(--text-3)';
-          b.style.boxShadow   = 'none';
-        });
-        btn.style.background = 'var(--bg-base)';
-        btn.style.color      = 'var(--text-1)';
-        btn.style.boxShadow  = 'var(--shadow-xs)';
-
-        if (_selectedVis === 'student') {
-          targetWrap.style.display = '';
-          var select = document.getElementById('vtxTargetStudentSelect');
-          if (select.options.length <= 1) {
-            select.innerHTML = '<option value="">Loading students…</option>';
-            _fetchStudentList().then(function (list) {
-              select.innerHTML = '<option value="">Choose a student…</option>' +
-                list.map(function (s) {
-                  return '<option value="' + _esc(s.uid) + '">' + _esc(s.name) +
-                         (s.class ? ' (' + _esc(s.class) + ')' : '') + '</option>';
-                }).join('');
-            }).catch(function () {
-              select.innerHTML = '<option value="">Could not load students</option>';
-            });
-          }
-        } else {
-          targetWrap.style.display = 'none';
-          _selectedTargetUid  = '';
-          _selectedTargetName = '';
-        }
-        _updateSubmitState();
-      });
-    });
-
-    var targetSelect = document.getElementById('vtxTargetStudentSelect');
-    if (targetSelect) {
-      targetSelect.addEventListener('change', function () {
-        _selectedTargetUid  = targetSelect.value;
-        _selectedTargetName = targetSelect.options[targetSelect.selectedIndex]
-          ? targetSelect.options[targetSelect.selectedIndex].text
-          : '';
-        _updateSubmitState();
-      });
-    }
-
-    // File input
-    fileInput.addEventListener('change', function () {
-      if (fileInput.files && fileInput.files[0]) {
-        _setFile(fileInput.files[0]);
-      }
-    });
-
-    // Drag and drop
-    var dropZone = document.getElementById('vtxDropZone');
-    dropZone.addEventListener('dragover', function (e) {
-      if (_dailyLimitReached) return;
-      e.preventDefault();
-      dropZone.style.borderColor = 'var(--accent)';
-      dropZone.style.background  = 'var(--accent-subtle)';
-    });
-    dropZone.addEventListener('dragleave', function () {
-      dropZone.style.borderColor = 'var(--border)';
-      dropZone.style.background  = 'var(--bg-subtle)';
-    });
-    dropZone.addEventListener('drop', function (e) {
-      e.preventDefault();
-      if (_dailyLimitReached) return;
-      dropZone.style.borderColor = 'var(--border)';
-      dropZone.style.background  = 'var(--bg-subtle)';
-      if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-        _setFile(e.dataTransfer.files[0]);
-      }
-    });
-
-    function _setFile(file) {
-      _selectedFile = file;
-      var ext = _ext(file.name);
-      document.getElementById('vtxDropZone').style.display    = 'none';
-      document.getElementById('vtxFilePreview').style.display = '';
-      document.getElementById('vtxFileIcon').innerHTML         = _fileIconHtml(ext, 22);
-      document.getElementById('vtxFileName').textContent       = file.name;
-      document.getElementById('vtxFileSize').textContent       = _fmtBytes(file.size);
-
-      var errorEl = document.getElementById('vtxFileError');
-      var err = _fileValidationError(file, opts.uploaderRole);
-      if (err) {
-        errorEl.textContent   = err;
-        errorEl.style.display = '';
-      } else {
-        errorEl.style.display = 'none';
-      }
-
-      _updateSubmitState();
-    }
-
-    function _updateSubmitState() {
-      var uploadBtn = document.getElementById('vtxStorageUploadBtn');
-      if (!uploadBtn) return;
-      var fileError = _selectedFile ? _fileValidationError(_selectedFile, opts.uploaderRole) : 'no file';
-      var ok = !!_selectedFile && !fileError && !_dailyLimitReached;
-      if (_selectedVis === 'student' && !_selectedTargetUid) ok = false;
-      uploadBtn.disabled      = !ok;
-      uploadBtn.style.opacity = ok ? '1' : '.5';
-    }
-
-    // Public clear (called from inline onclick)
-    Storage._clearFile = function () {
-      _selectedFile = null;
-      document.getElementById('vtxDropZone').style.display    = '';
-      document.getElementById('vtxFilePreview').style.display = 'none';
-      document.getElementById('vtxFileError').style.display   = 'none';
-      fileInput.value = '';
-      _updateSubmitState();
-    };
-
-    // Close
-    function _close() {
-      if (_uploading) return;
       var sheet = document.getElementById('vtxStorageSheet');
-      if (sheet) sheet.style.transform = 'translateY(100%)';
-      setTimeout(function () { overlay.remove(); }, 320);
-    }
-    document.getElementById('vtxStorageCloseBtn').addEventListener('click', _close);
-    document.getElementById('vtxStorageCancelBtn').addEventListener('click', _close);
-    overlay.addEventListener('click', function (e) {
-      if (e.target === overlay) _close();
+      if (sheet) sheet.style.transform = 'translateY(0)';
     });
+  });
 
-    // Upload
-    document.getElementById('vtxStorageUploadBtn').addEventListener('click', async function () {
-      if (!_selectedFile || _uploading) return;
-      _uploading = true;
+  var fileInput = document.getElementById('vtxFileInput');
+  if (isTeacher) {
+    fileInput.removeAttribute('accept');
+  } else {
+    fileInput.setAttribute('accept', _studentAcceptString());
+  }
 
-      var uploadBtn    = document.getElementById('vtxStorageUploadBtn');
-      var cancelBtn    = document.getElementById('vtxStorageCancelBtn');
-      var closeBtn     = document.getElementById('vtxStorageCloseBtn');
-      var progressWrap = document.getElementById('vtxUploadProgressWrap');
+  var subtitleEl = document.getElementById('vtxStorageSubtitle');
+  if (isTeacher) {
+    subtitleEl.textContent = 'Any file type · up to ' + TEACHER_MAX_FILE_MB + ' MB';
+  } else {
+    subtitleEl.textContent = 'PDF, Word, Excel, images, video, text';
+  }
 
-      uploadBtn.disabled         = true;
-      uploadBtn.textContent      = 'Uploading…';
-      cancelBtn.disabled         = true;
-      closeBtn.style.display     = 'none';
-      progressWrap.style.display = '';
+  if (isTeacher) {
+    var expiryInput = document.getElementById('vtxExpiryInput');
+    if (expiryInput) {
+      var nowLocal = new Date();
+      nowLocal.setMinutes(nowLocal.getMinutes() - nowLocal.getTimezoneOffset());
+      expiryInput.min = nowLocal.toISOString().slice(0, 16);
+    }
+  }
 
-      function onProgress(pct, msg) {
-        var bar   = document.getElementById('vtxUploadBar');
-        var txt   = document.getElementById('vtxUploadStatusText');
-        var pctEl = document.getElementById('vtxUploadPct');
-        if (bar)   bar.style.width  = pct + '%';
-        if (txt)   txt.textContent  = msg || '';
-        if (pctEl) pctEl.textContent = pct + '%';
-      }
+  // State
+  var _selectedFile          = null;
+  var _selectedVis           = isTeacher ? 'all' : 'teacher';
+  var _selectedTargetUid     = '';
+  var _selectedTargetName    = '';
+  var _selectedTargetClass   = '';   // NEW — for teacher "A Class" pick
+  var _uploading             = false;
+  var _dailyLimitReached     = false;
 
-      try {
-        var desc = (document.getElementById('vtxFileDesc').value || '').trim();
-
-        var expiresAt = null;
-        if (isTeacher) {
-          var expiryInputEl = document.getElementById('vtxExpiryInput');
-          if (expiryInputEl && expiryInputEl.value) {
-            expiresAt = new Date(expiryInputEl.value);
-          }
-        }
-
-        var result = await uploadFile(_selectedFile, {
-          uploaderUid:       opts.uploaderUid,
-          uploaderName:      opts.uploaderName,
-          uploaderRole:      opts.uploaderRole,
-          uploaderClass:     opts.uploaderClass || '',
-          context:           opts.context || 'general',
-          description:       desc,
-          sharedWith:        _selectedVis,
-          targetStudentUid:  _selectedTargetUid,
-          targetStudentName: _selectedTargetName,
-          expiresAt:         expiresAt,
-        }, onProgress);
-
-        uploadBtn.textContent      = 'Done!';
-        uploadBtn.style.background = 'var(--success)';
-        uploadBtn.style.opacity    = '1';
-
-        // Reset the uploading flag now that the upload has actually
-        // finished, so Cancel/Close/auto-close all work correctly.
-        _uploading = false;
-        cancelBtn.disabled     = false;
-        closeBtn.style.display = '';
-
-        if (window.UI && UI.toast) UI.toast('File uploaded successfully.', 'success');
-        if (opts.onSuccess) opts.onSuccess(result);
-
-        setTimeout(_close, 1200);
-
-      } catch (err) {
-        console.error('[storage] Upload error:', err);
-        uploadBtn.disabled      = false;
-        uploadBtn.textContent   = 'Upload File';
-        uploadBtn.style.opacity = '1';
-        cancelBtn.disabled      = false;
-        closeBtn.style.display  = '';
-        progressWrap.style.display = 'none';
-        _uploading = false;
-        if (window.UI && UI.toast) UI.toast('Upload failed: ' + err.message, 'error', 8000);
+  // Daily limit check (students only)
+  if (!isTeacher) {
+    _checkStudentDailyLimit(opts.uploaderUid).then(function (result) {
+      subtitleEl.textContent = 'PDF, Word, Excel, images, video, text · ' +
+        result.used + '/' + result.limit + ' uploads used today';
+      if (!result.allowed) {
+        _dailyLimitReached = true;
+        var banner = document.getElementById('vtxLimitBanner');
+        if (banner) banner.style.display = '';
+        var dz = document.getElementById('vtxDropZone');
+        if (dz) { dz.style.opacity = '.5'; dz.style.pointerEvents = 'none'; }
+        _updateSubmitState();
       }
     });
   }
+
+  // Visibility toggle
+  var targetWrap      = document.getElementById('vtxTargetStudentWrap');
+  var targetClassWrap = document.getElementById('vtxTargetClassWrap');
+
+  overlay.querySelectorAll('.vtx-vis-btn').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      _selectedVis = btn.dataset.val;
+
+      // Reset active styles
+      overlay.querySelectorAll('.vtx-vis-btn').forEach(function (b) {
+        b.style.background = 'transparent';
+        b.style.color      = 'var(--text-3)';
+        b.style.boxShadow  = 'none';
+      });
+      btn.style.background = 'var(--bg-base)';
+      btn.style.color      = 'var(--text-1)';
+      btn.style.boxShadow  = 'var(--shadow-xs)';
+
+      // Hide both pickers first, then show whichever is relevant
+      if (targetWrap)      targetWrap.style.display      = 'none';
+      if (targetClassWrap) targetClassWrap.style.display = 'none';
+      _selectedTargetUid   = '';
+      _selectedTargetName  = '';
+      _selectedTargetClass = '';
+
+      if (_selectedVis === 'student') {
+        targetWrap.style.display = '';
+        var select = document.getElementById('vtxTargetStudentSelect');
+        if (select.options.length <= 1) {
+          select.innerHTML = '<option value="">Loading students…</option>';
+          _fetchStudentList().then(function (list) {
+            select.innerHTML = '<option value="">Choose a student…</option>' +
+              list.map(function (s) {
+                return '<option value="' + _esc(s.uid) + '">' + _esc(s.name) +
+                       (s.class ? ' (' + _esc(s.class) + ')' : '') + '</option>';
+              }).join('');
+          }).catch(function () {
+            select.innerHTML = '<option value="">Could not load students</option>';
+          });
+        }
+      }
+
+      // NEW — teacher picks "A Class"
+      if (_selectedVis === 'class' && isTeacher) {
+        targetClassWrap.style.display = '';
+        var cSelect = document.getElementById('vtxTargetClassSelect');
+        if (cSelect.options.length <= 1) {
+          cSelect.innerHTML = '<option value="">Loading classes…</option>';
+          _fetchClassList().then(function (classes) {
+            cSelect.innerHTML = '<option value="">Choose a class…</option>' +
+              classes.map(function (c) {
+                return '<option value="' + _esc(c) + '">' + _esc(c) + '</option>';
+              }).join('');
+          }).catch(function () {
+            cSelect.innerHTML = '<option value="">Could not load classes</option>';
+          });
+        }
+      }
+
+      _updateSubmitState();
+    });
+  });
+
+  // Student select change
+  var targetSelect = document.getElementById('vtxTargetStudentSelect');
+  if (targetSelect) {
+    targetSelect.addEventListener('change', function () {
+      _selectedTargetUid  = targetSelect.value;
+      _selectedTargetName = targetSelect.options[targetSelect.selectedIndex]
+        ? targetSelect.options[targetSelect.selectedIndex].text
+        : '';
+      _updateSubmitState();
+    });
+  }
+
+  // NEW — Class select change
+  var classSelect = document.getElementById('vtxTargetClassSelect');
+  if (classSelect) {
+    classSelect.addEventListener('change', function () {
+      _selectedTargetClass = classSelect.value;
+      _updateSubmitState();
+    });
+  }
+
+  // File input
+  fileInput.addEventListener('change', function () {
+    if (fileInput.files && fileInput.files[0]) {
+      _setFile(fileInput.files[0]);
+    }
+  });
+
+  // Drag and drop
+  var dropZone = document.getElementById('vtxDropZone');
+  dropZone.addEventListener('dragover', function (e) {
+    if (_dailyLimitReached) return;
+    e.preventDefault();
+    dropZone.style.borderColor = 'var(--accent)';
+    dropZone.style.background  = 'var(--accent-subtle)';
+  });
+  dropZone.addEventListener('dragleave', function () {
+    dropZone.style.borderColor = 'var(--border)';
+    dropZone.style.background  = 'var(--bg-subtle)';
+  });
+  dropZone.addEventListener('drop', function (e) {
+    e.preventDefault();
+    if (_dailyLimitReached) return;
+    dropZone.style.borderColor = 'var(--border)';
+    dropZone.style.background  = 'var(--bg-subtle)';
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      _setFile(e.dataTransfer.files[0]);
+    }
+  });
+
+  function _setFile(file) {
+    _selectedFile = file;
+    var ext = _ext(file.name);
+    document.getElementById('vtxDropZone').style.display    = 'none';
+    document.getElementById('vtxFilePreview').style.display = '';
+    document.getElementById('vtxFileIcon').innerHTML         = _fileIconHtml(ext, 22);
+    document.getElementById('vtxFileName').textContent       = file.name;
+    document.getElementById('vtxFileSize').textContent       = _fmtBytes(file.size);
+
+    var errorEl = document.getElementById('vtxFileError');
+    var err = _fileValidationError(file, opts.uploaderRole);
+    if (err) {
+      errorEl.textContent   = err;
+      errorEl.style.display = '';
+    } else {
+      errorEl.style.display = 'none';
+    }
+    _updateSubmitState();
+  }
+
+  function _updateSubmitState() {
+    var uploadBtn = document.getElementById('vtxStorageUploadBtn');
+    if (!uploadBtn) return;
+    var fileError = _selectedFile ? _fileValidationError(_selectedFile, opts.uploaderRole) : 'no file';
+    var ok = !!_selectedFile && !fileError && !_dailyLimitReached;
+    // Teacher picking "A Class" must also pick a class
+    if (_selectedVis === 'class' && isTeacher && !_selectedTargetClass) ok = false;
+    // Teacher picking "1 Student" must also pick a student
+    if (_selectedVis === 'student' && !_selectedTargetUid) ok = false;
+    uploadBtn.disabled      = !ok;
+    uploadBtn.style.opacity = ok ? '1' : '.5';
+  }
+
+  Storage._clearFile = function () {
+    _selectedFile = null;
+    document.getElementById('vtxDropZone').style.display    = '';
+    document.getElementById('vtxFilePreview').style.display = 'none';
+    document.getElementById('vtxFileError').style.display   = 'none';
+    fileInput.value = '';
+    _updateSubmitState();
+  };
+
+  function _close() {
+    if (_uploading) return;
+    var sheet = document.getElementById('vtxStorageSheet');
+    if (sheet) sheet.style.transform = 'translateY(100%)';
+    setTimeout(function () { overlay.remove(); }, 320);
+  }
+  document.getElementById('vtxStorageCloseBtn').addEventListener('click', _close);
+  document.getElementById('vtxStorageCancelBtn').addEventListener('click', _close);
+  overlay.addEventListener('click', function (e) {
+    if (e.target === overlay) _close();
+  });
+
+  // Upload button
+  document.getElementById('vtxStorageUploadBtn').addEventListener('click', async function () {
+    if (!_selectedFile || _uploading) return;
+    _uploading = true;
+
+    var uploadBtn    = document.getElementById('vtxStorageUploadBtn');
+    var cancelBtn    = document.getElementById('vtxStorageCancelBtn');
+    var closeBtn     = document.getElementById('vtxStorageCloseBtn');
+    var progressWrap = document.getElementById('vtxUploadProgressWrap');
+
+    uploadBtn.disabled         = true;
+    uploadBtn.textContent      = 'Uploading…';
+    cancelBtn.disabled         = true;
+    closeBtn.style.display     = 'none';
+    progressWrap.style.display = '';
+
+    function onProgress(pct, msg) {
+      var bar   = document.getElementById('vtxUploadBar');
+      var txt   = document.getElementById('vtxUploadStatusText');
+      var pctEl = document.getElementById('vtxUploadPct');
+      if (bar)   bar.style.width   = pct + '%';
+      if (txt)   txt.textContent   = msg || '';
+      if (pctEl) pctEl.textContent = pct + '%';
+    }
+
+    try {
+      var desc = (document.getElementById('vtxFileDesc').value || '').trim();
+
+      var expiresAt = null;
+      if (isTeacher) {
+        var expiryInputEl = document.getElementById('vtxExpiryInput');
+        if (expiryInputEl && expiryInputEl.value) {
+          expiresAt = new Date(expiryInputEl.value);
+        }
+      }
+
+      var result = await uploadFile(_selectedFile, {
+        uploaderUid:        opts.uploaderUid,
+        uploaderName:       opts.uploaderName,
+        uploaderRole:       opts.uploaderRole,
+        uploaderClass:      opts.uploaderClass || '',
+        context:            opts.context || 'general',
+        description:        desc,
+        sharedWith:         _selectedVis,
+        targetStudentUid:   _selectedTargetUid,
+        targetStudentName:  _selectedTargetName,
+        // NEW — pass the chosen class name when visibility is "class"
+        targetClass:        _selectedVis === 'class' ? _selectedTargetClass : '',
+        expiresAt:          expiresAt,
+      }, onProgress);
+
+      uploadBtn.textContent      = 'Done!';
+      uploadBtn.style.background = 'var(--success)';
+      uploadBtn.style.opacity    = '1';
+      _uploading = false;
+      cancelBtn.disabled     = false;
+      closeBtn.style.display = '';
+
+      if (window.UI && UI.toast) UI.toast('File uploaded successfully.', 'success');
+      if (opts.onSuccess) opts.onSuccess(result);
+      setTimeout(_close, 1200);
+
+    } catch (err) {
+      console.error('[storage] Upload error:', err);
+      uploadBtn.disabled         = false;
+      uploadBtn.textContent      = 'Upload File';
+      uploadBtn.style.opacity    = '1';
+      cancelBtn.disabled         = false;
+      closeBtn.style.display     = '';
+      progressWrap.style.display = 'none';
+      _uploading = false;
+      if (window.UI && UI.toast) UI.toast('Upload failed: ' + err.message, 'error', 8000);
+    }
+  });
+}
 
   /* ══════════════════════════════════════════════════════════
      UI: FILE LIST (shared between student and teacher)
@@ -879,167 +941,172 @@
     _loadFiles(containerId, queryOpts, userOpts);
   }
 
-  function _loadFiles(containerId, queryOpts, userOpts) {
-    var inner = document.getElementById('vtxFileListInner');
-    if (!inner) return;
+function _loadFiles(containerId, queryOpts, userOpts) {
+  var inner = document.getElementById('vtxFileListInner');
+  if (!inner) return;
 
-    var query = window.fbDb.collection('uploads').orderBy('createdAt', 'desc');
+  var query = window.fbDb.collection('uploads').orderBy('createdAt', 'desc');
 
-    query.limit(100).get().then(function (snap) {
-      var now = Date.now();
-      var docs = [];
-      snap.forEach(function (doc) {
-        var d = doc.data();
-        var visible = false;
+  query.limit(100).get().then(function (snap) {
+    var now = Date.now();
+    var docs = [];
+    snap.forEach(function (doc) {
+      var d = doc.data();
+      var visible = false;
 
-        if (queryOpts.role === 'teacher') {
-          // Teachers see everything, including expired and private files.
-          visible = true;
-        } else {
-          if (d.uploaderUid === queryOpts.uploaderUid) visible = true;
-          else if (d.sharedWith === 'all') visible = true;
-          else if (d.sharedWith === 'class' && d.uploaderClass === queryOpts.uploaderClass) visible = true;
-          else if (d.sharedWith === 'student' && d.targetStudentUid === queryOpts.uploaderUid) visible = true;
-          // sharedWith === 'teacher' from other students, and 'private'
-          // uploads from the teacher, stay hidden from students.
-
-          // Hide expired files from students entirely.
-          if (visible && d.expiresAt) {
-            var expMs = _toMillis(d.expiresAt);
-            if (expMs !== null && expMs <= now) visible = false;
-          }
+      if (queryOpts.role === 'teacher') {
+        visible = true;
+      } else {
+        // Own uploads always visible
+        if (d.uploaderUid === queryOpts.uploaderUid) visible = true;
+        // Shared with all students
+        else if (d.sharedWith === 'all') visible = true;
+        // Shared with a specific class:
+        //   - If a teacher targeted a class, match against targetClass.
+        //   - If a student shared with their own class (legacy), match against uploaderClass.
+        else if (d.sharedWith === 'class') {
+          var matchClass = d.targetClass || d.uploaderClass || '';
+          if (matchClass === queryOpts.uploaderClass) visible = true;
         }
+        // Shared with this specific student
+        else if (d.sharedWith === 'student' && d.targetStudentUid === queryOpts.uploaderUid) visible = true;
 
-        if (visible) docs.push({ id: doc.id, ...d });
-      });
-
-      if (docs.length === 0) {
-        inner.innerHTML =
-          '<div style="display:flex;flex-direction:column;align-items:center;' +
-            'justify-content:center;gap:.625rem;text-align:center;' +
-            'padding:3rem 1rem;color:var(--text-3);">' +
-            '<i class="ph ph-folder-open" style="font-size:2rem;color:var(--text-4);"></i>' +
-            '<p style="font-size:.875rem;">No files yet.</p>' +
-          '</div>';
-        return;
+        // Hide expired files from students
+        if (visible && d.expiresAt) {
+          var expMs = _toMillis(d.expiresAt);
+          if (expMs !== null && expMs <= now) visible = false;
+        }
       }
 
-      inner.innerHTML = docs.map(function (d) {
-        var canDel = userOpts.canDelete ||
-          (d.uploaderUid === userOpts.uploaderUid);
-
-        var sharedBadge;
-        if (d.sharedWith === 'all') {
-          sharedBadge = '<span style="font-size:.625rem;font-weight:700;padding:1px 6px;border-radius:99px;' +
-            'background:var(--success-subtle);color:var(--success-text);' +
-            'border:1px solid var(--success-border);">All students</span>';
-        } else if (d.sharedWith === 'class') {
-          sharedBadge = '<span style="font-size:.625rem;font-weight:700;padding:1px 6px;border-radius:99px;' +
-            'background:var(--accent-subtle);color:var(--accent-text);' +
-            'border:1px solid var(--accent-border);">' + _esc(d.uploaderClass) + '</span>';
-        } else if (d.sharedWith === 'teacher') {
-          sharedBadge = '<span style="font-size:.625rem;font-weight:700;padding:1px 6px;border-radius:99px;' +
-            'background:var(--accent-subtle);color:var(--accent-text);' +
-            'border:1px solid var(--accent-border);">To: Teacher</span>';
-        } else if (d.sharedWith === 'student') {
-          sharedBadge = '<span style="font-size:.625rem;font-weight:700;padding:1px 6px;border-radius:99px;' +
-            'background:var(--accent-subtle);color:var(--accent-text);' +
-            'border:1px solid var(--accent-border);">To: ' + _esc(d.targetStudentName || 'Student') + '</span>';
-        } else {
-          sharedBadge = '<span style="font-size:.625rem;font-weight:700;padding:1px 6px;border-radius:99px;' +
-            'background:var(--bg-subtle);color:var(--text-4);' +
-            'border:1px solid var(--border);">Private</span>';
-        }
-
-        var roleBadge = d.uploaderRole === 'teacher'
-          ? '<span style="font-size:.625rem;font-weight:700;padding:1px 6px;border-radius:99px;' +
-              'background:var(--warning-subtle);color:var(--warning-text);' +
-              'border:1px solid var(--warning-border);">Teacher</span>'
-          : '';
-
-        var expiryBadge = '';
-        if (d.expiresAt) {
-          var expMs = _toMillis(d.expiresAt);
-          var remaining = expMs - now;
-          var isExpired = remaining <= 0;
-          expiryBadge =
-            '<span class="vtx-expiry-badge" data-expiry-ms="' + expMs + '" style="font-size:.625rem;' +
-              'font-weight:700;padding:1px 6px;border-radius:99px;display:inline-flex;' +
-              'align-items:center;gap:3px;' +
-              (isExpired
-                ? 'background:var(--danger-subtle);color:var(--danger);border:1px solid var(--danger-border);'
-                : 'background:var(--warning-subtle);color:var(--warning-text);border:1px solid var(--warning-border);') +
-              '">' +
-              '<i class="ph ph-clock-countdown" style="font-size:10px;"></i>' +
-              '<span class="vtx-expiry-text">' + _formatCountdown(remaining) + '</span>' +
-            '</span>';
-        }
-
-        return '<div style="display:flex;align-items:center;gap:.75rem;' +
-          'padding:.75rem .875rem;border-radius:var(--r-lg);' +
-          'background:var(--bg-base);border:1px solid var(--border);' +
-          'transition:border-color .12s,box-shadow .12s;" ' +
-          'onmouseenter="this.style.borderColor=\'var(--accent-border)\';this.style.boxShadow=\'var(--shadow-sm)\'" ' +
-          'onmouseleave="this.style.borderColor=\'var(--border)\';this.style.boxShadow=\'\'">' +
-
-          // Icon
-          '<div style="flex-shrink:0;font-size:1.75rem;width:40px;text-align:center;">' +
-            _fileIconHtml(d.fileExt, 24) +
-          '</div>' +
-
-          // Info
-          '<div style="flex:1;min-width:0;">' +
-            '<div style="display:flex;align-items:center;gap:.375rem;flex-wrap:wrap;margin-bottom:2px;">' +
-              '<p style="font-size:.875rem;font-weight:700;color:var(--text-1);' +
-                'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;">' +
-                _esc(d.fileName) + '</p>' +
-              sharedBadge + roleBadge + expiryBadge +
-            '</div>' +
-            '<p style="font-size:.75rem;color:var(--text-3);">' +
-              _esc(d.uploaderName || 'Unknown') + ' &bull; ' +
-              _fmtBytes(d.fileSize) + ' &bull; ' + _fmtDate(d.createdAt) +
-            '</p>' +
-            (d.description
-              ? '<p style="font-size:.75rem;color:var(--text-4);margin-top:2px;' +
-                  'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
-                  _esc(d.description) + '</p>'
-              : '') +
-          '</div>' +
-
-          // Actions
-          '<div style="display:flex;gap:.375rem;align-items:center;flex-shrink:0;">' +
-            '<button onclick="Storage.openFile(\'' + _esc(d.objectKey) + '\',\'' + _esc(d.fileName) + '\')" ' +
-              'title="Download / Open" ' +
-              'style="display:inline-flex;align-items:center;gap:.3rem;' +
-              'padding:.375rem .75rem;border-radius:var(--r-lg);' +
-              'background:var(--accent-subtle);border:1px solid var(--accent-border);' +
-              'color:var(--accent-text);font-size:.75rem;font-weight:600;' +
-              'cursor:pointer;font-family:var(--font);transition:background var(--t-fast);" ' +
-              'onmouseenter="this.style.background=\'var(--accent)\';this.style.color=\'#fff\'" ' +
-              'onmouseleave="this.style.background=\'var(--accent-subtle)\';this.style.color=\'var(--accent-text)\'">' +
-              '<i class="ph ph-download-simple" style="font-size:13px;"></i> Open' +
-            '</button>' +
-            (canDel
-              ? '<button onclick="Storage._confirmDelete(\'' + _esc(d.id) + '\',\'' + _esc(d.objectKey) + '\',\'' + containerId + '\',' + JSON.stringify(queryOpts).replace(/"/g,"'") + ',' + JSON.stringify(userOpts).replace(/"/g,"'") + ')" ' +
-                  'title="Delete file" ' +
-                  'style="width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;' +
-                  'border-radius:var(--r-lg);background:transparent;border:1px solid var(--border);' +
-                  'color:var(--text-4);cursor:pointer;transition:all var(--t-fast);" ' +
-                  'onmouseenter="this.style.background=\'var(--danger-subtle)\';this.style.borderColor=\'var(--danger-border)\';this.style.color=\'var(--danger)\'" ' +
-                  'onmouseleave="this.style.background=\'transparent\';this.style.borderColor=\'var(--border)\';this.style.color=\'var(--text-4)\'">' +
-                  '<i class="ph ph-trash" style="font-size:14px;pointer-events:none;"></i>' +
-                '</button>'
-              : '') +
-          '</div>' +
-        '</div>';
-      }).join('');
-
-    }).catch(function (err) {
-      console.error('[storage] File list load error:', err);
-      inner.innerHTML =
-        '<p style="color:var(--danger);font-size:.875rem;text-align:center;padding:1rem;">Error loading files.</p>';
+      if (visible) docs.push({ id: doc.id, ...d });
     });
-  }
+
+    if (docs.length === 0) {
+      inner.innerHTML =
+        '<div style="display:flex;flex-direction:column;align-items:center;' +
+          'justify-content:center;gap:.625rem;text-align:center;' +
+          'padding:3rem 1rem;color:var(--text-3);">' +
+          '<i class="ph ph-folder-open" style="font-size:2rem;color:var(--text-4);"></i>' +
+          '<p style="font-size:.875rem;">No files yet.</p>' +
+        '</div>';
+      return;
+    }
+
+    inner.innerHTML = docs.map(function (d) {
+      var canDel = userOpts.canDelete || (d.uploaderUid === userOpts.uploaderUid);
+
+      var sharedBadge;
+      if (d.sharedWith === 'all') {
+        sharedBadge = '<span style="font-size:.625rem;font-weight:700;padding:1px 6px;border-radius:99px;' +
+          'background:var(--success-subtle);color:var(--success-text);' +
+          'border:1px solid var(--success-border);">All students</span>';
+      } else if (d.sharedWith === 'class') {
+        // Show the actual targeted class name (targetClass for teacher uploads,
+        // uploaderClass for legacy student uploads)
+        var classLabel = d.targetClass || d.uploaderClass || 'Class';
+        sharedBadge = '<span style="font-size:.625rem;font-weight:700;padding:1px 6px;border-radius:99px;' +
+          'background:var(--accent-subtle);color:var(--accent-text);' +
+          'border:1px solid var(--accent-border);">' + _esc(classLabel) + '</span>';
+      } else if (d.sharedWith === 'teacher') {
+        sharedBadge = '<span style="font-size:.625rem;font-weight:700;padding:1px 6px;border-radius:99px;' +
+          'background:var(--accent-subtle);color:var(--accent-text);' +
+          'border:1px solid var(--accent-border);">To: Teacher</span>';
+      } else if (d.sharedWith === 'student') {
+        sharedBadge = '<span style="font-size:.625rem;font-weight:700;padding:1px 6px;border-radius:99px;' +
+          'background:var(--accent-subtle);color:var(--accent-text);' +
+          'border:1px solid var(--accent-border);">To: ' + _esc(d.targetStudentName || 'Student') + '</span>';
+      } else {
+        sharedBadge = '<span style="font-size:.625rem;font-weight:700;padding:1px 6px;border-radius:99px;' +
+          'background:var(--bg-subtle);color:var(--text-4);' +
+          'border:1px solid var(--border);">Private</span>';
+      }
+
+      var roleBadge = d.uploaderRole === 'teacher'
+        ? '<span style="font-size:.625rem;font-weight:700;padding:1px 6px;border-radius:99px;' +
+            'background:var(--warning-subtle);color:var(--warning-text);' +
+            'border:1px solid var(--warning-border);">Teacher</span>'
+        : '';
+
+      var expiryBadge = '';
+      if (d.expiresAt) {
+        var expMs = _toMillis(d.expiresAt);
+        var remaining = expMs - now;
+        var isExpired = remaining <= 0;
+        expiryBadge =
+          '<span class="vtx-expiry-badge" data-expiry-ms="' + expMs + '" style="font-size:.625rem;' +
+            'font-weight:700;padding:1px 6px;border-radius:99px;display:inline-flex;' +
+            'align-items:center;gap:3px;' +
+            (isExpired
+              ? 'background:var(--danger-subtle);color:var(--danger);border:1px solid var(--danger-border);'
+              : 'background:var(--warning-subtle);color:var(--warning-text);border:1px solid var(--warning-border);') +
+            '">' +
+            '<i class="ph ph-clock-countdown" style="font-size:10px;"></i>' +
+            '<span class="vtx-expiry-text">' + _formatCountdown(remaining) + '</span>' +
+          '</span>';
+      }
+
+      return '<div style="display:flex;align-items:center;gap:.75rem;' +
+        'padding:.75rem .875rem;border-radius:var(--r-lg);' +
+        'background:var(--bg-base);border:1px solid var(--border);' +
+        'transition:border-color .12s,box-shadow .12s;" ' +
+        'onmouseenter="this.style.borderColor=\'var(--accent-border)\';this.style.boxShadow=\'var(--shadow-sm)\'" ' +
+        'onmouseleave="this.style.borderColor=\'var(--border)\';this.style.boxShadow=\'\'">' +
+
+        '<div style="flex-shrink:0;font-size:1.75rem;width:40px;text-align:center;">' +
+          _fileIconHtml(d.fileExt, 24) +
+        '</div>' +
+
+        '<div style="flex:1;min-width:0;">' +
+          '<div style="display:flex;align-items:center;gap:.375rem;flex-wrap:wrap;margin-bottom:2px;">' +
+            '<p style="font-size:.875rem;font-weight:700;color:var(--text-1);' +
+              'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;">' +
+              _esc(d.fileName) + '</p>' +
+            sharedBadge + roleBadge + expiryBadge +
+          '</div>' +
+          '<p style="font-size:.75rem;color:var(--text-3);">' +
+            _esc(d.uploaderName || 'Unknown') + ' &bull; ' +
+            _fmtBytes(d.fileSize) + ' &bull; ' + _fmtDate(d.createdAt) +
+          '</p>' +
+          (d.description
+            ? '<p style="font-size:.75rem;color:var(--text-4);margin-top:2px;' +
+                'white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">' +
+                _esc(d.description) + '</p>'
+            : '') +
+        '</div>' +
+
+        '<div style="display:flex;gap:.375rem;align-items:center;flex-shrink:0;">' +
+          '<button onclick="Storage.openFile(\'' + _esc(d.objectKey) + '\',\'' + _esc(d.fileName) + '\')" ' +
+            'title="Download / Open" ' +
+            'style="display:inline-flex;align-items:center;gap:.3rem;' +
+            'padding:.375rem .75rem;border-radius:var(--r-lg);' +
+            'background:var(--accent-subtle);border:1px solid var(--accent-border);' +
+            'color:var(--accent-text);font-size:.75rem;font-weight:600;' +
+            'cursor:pointer;font-family:var(--font);transition:background var(--t-fast);" ' +
+            'onmouseenter="this.style.background=\'var(--accent)\';this.style.color=\'#fff\'" ' +
+            'onmouseleave="this.style.background=\'var(--accent-subtle)\';this.style.color=\'var(--accent-text)\'">' +
+            '<i class="ph ph-download-simple" style="font-size:13px;"></i> Open' +
+          '</button>' +
+          (canDel
+            ? '<button onclick="Storage._confirmDelete(\'' + _esc(d.id) + '\',\'' + _esc(d.objectKey) + '\',\'' + containerId + '\',' + JSON.stringify(queryOpts).replace(/"/g,"'") + ',' + JSON.stringify(userOpts).replace(/"/g,"'") + ')" ' +
+                'title="Delete file" ' +
+                'style="width:32px;height:32px;display:inline-flex;align-items:center;justify-content:center;' +
+                'border-radius:var(--r-lg);background:transparent;border:1px solid var(--border);' +
+                'color:var(--text-4);cursor:pointer;transition:all var(--t-fast);" ' +
+                'onmouseenter="this.style.background=\'var(--danger-subtle)\';this.style.borderColor=\'var(--danger-border)\';this.style.color=\'var(--danger)\'" ' +
+                'onmouseleave="this.style.background=\'transparent\';this.style.borderColor=\'var(--border)\';this.style.color=\'var(--text-4)\'">' +
+                '<i class="ph ph-trash" style="font-size:14px;pointer-events:none;"></i>' +
+              '</button>'
+            : '') +
+        '</div>' +
+      '</div>';
+    }).join('');
+
+  }).catch(function (err) {
+    console.error('[storage] File list load error:', err);
+    inner.innerHTML =
+      '<p style="color:var(--danger);font-size:.875rem;text-align:center;padding:1rem;">Error loading files.</p>';
+  });
+}
 
   /* ── Confirm delete (called from inline onclick) ────────── */
   Storage._confirmDelete = async function (docId, objectKey, containerId, queryOpts, userOpts) {
