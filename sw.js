@@ -22,6 +22,7 @@ const BYPASS_ORIGINS = [
   'fcmregistrations.googleapis.com',
   'www.gstatic.com',
   'fonts.gstatic.com',
+  'vertex-worker.gbemigaakinde.workers.dev',
 ];
 
 const CDN_ORIGINS = [
