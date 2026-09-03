@@ -250,6 +250,18 @@ self.addEventListener('pushsubscriptionchange', function (event) {
 /* ─────────────────────────────────────────────────────────── */
 
 async function _cacheFirst(request) {
+  const url = new URL(request.url);
+  if (url.origin !== self.location.origin) {
+    try {
+      return await fetch(request);
+    } catch (err) {
+      return new Response('Asset unavailable offline.', {
+        status: 503,
+        headers: { 'Content-Type': 'text/plain' },
+      });
+    }
+  }
+
   const cached = await caches.match(request, { ignoreSearch: false });
   if (cached) return cached;
 
