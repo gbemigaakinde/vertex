@@ -394,12 +394,14 @@ body {
   height: 100%;
   object-fit: cover;
   display: block;
-  opacity: 0.16;
-  filter: saturate(1.05);
+  opacity: 0.55;
+  mix-blend-mode: multiply;
+  filter: saturate(1.1);
 }
 [data-theme="dark"] .vtx-app-video {
-  opacity: 0.14;
-  filter: brightness(0.7) saturate(1.1);
+  opacity: 0.5;
+  mix-blend-mode: screen;
+  filter: saturate(1.15) brightness(1.05);
 }
 
 .vtx-app-video-scrim {
