@@ -403,10 +403,7 @@ body {
 }
 
 .vtx-app-video-scrim {
-  position: absolute;
-  inset: 0;
-  background: var(--bg-page);
-  opacity: 0.72;
+  display: none;
 }
 
 /* ═══════════════════════════════════════════════════════════
