@@ -64,11 +64,11 @@
     }
 
     /* ── NAV ── */
-    .lp-nav {
+   .lp-nav {
       position: fixed; top:0; left:0; right:0; z-index:200;
-      height: 60px;
+      height: calc(60px + env(safe-area-inset-top, 0px));
       display: flex; align-items:center; justify-content:space-between;
-      padding: 0 clamp(1.25rem, 5vw, 4rem);
+      padding: env(safe-area-inset-top, 0px) clamp(1.25rem, 5vw, 4rem) 0;
       background: var(--lp-nav-bg);
       backdrop-filter: blur(14px);
       -webkit-backdrop-filter: blur(14px);
@@ -111,9 +111,9 @@
     }
 
     /* ── HERO ── */
-    .lp-hero {
-      padding: 60px clamp(1.25rem,5vw,4rem) 0;
-      min-height: 100vh;
+   .lp-hero {
+      padding: calc(60px + env(safe-area-inset-top, 0px)) clamp(1.25rem,5vw,4rem) 0;
+      min-height: 100dvh;
       display: flex; flex-direction:column; justify-content:center;
       position: relative; overflow:hidden;
     }
