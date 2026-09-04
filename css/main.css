@@ -355,6 +355,10 @@ body {
   align-items: flex-start;
   justify-content: center;
   padding: var(--sp-6) var(--sp-4);
+  padding-top: calc(var(--sp-6) + env(safe-area-inset-top, 0px));
+  padding-bottom: calc(var(--sp-4) + env(safe-area-inset-bottom, 0px));
+  padding-left: calc(var(--sp-4) + env(safe-area-inset-left, 0px));
+  padding-right: calc(var(--sp-4) + env(safe-area-inset-right, 0px));
   overflow-x: hidden;
   position: relative;
   z-index: 1;
@@ -1755,7 +1759,14 @@ details.glass-dark[open] > summary::after,
 
 /* ── Responsive ── */
 @media (max-width: 640px) {
-  #app { padding: var(--sp-3) !important; overflow-x: hidden !important; }
+  #app {
+    padding: var(--sp-3) !important;
+    padding-top: calc(var(--sp-3) + env(safe-area-inset-top, 0px)) !important;
+    padding-bottom: calc(var(--sp-3) + env(safe-area-inset-bottom, 0px)) !important;
+    padding-left: calc(var(--sp-3) + env(safe-area-inset-left, 0px)) !important;
+    padding-right: calc(var(--sp-3) + env(safe-area-inset-right, 0px)) !important;
+    overflow-x: hidden !important;
+  }
   #app.exam-active { padding: 0.4rem !important; }
   #app > div { min-width: 0; width: 100%; max-width: 100% !important; box-sizing: border-box; }
   .glass { padding: var(--sp-4) !important; border-radius: var(--r-lg) !important; }
