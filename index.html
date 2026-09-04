@@ -206,6 +206,14 @@
 
 <body>
 
+<!-- Global ambient video background (logged-in app screens) -->
+<div id="vtxAppVideoBg" class="vtx-app-video-bg" aria-hidden="true">
+  <video id="vtxAppVideo" class="vtx-app-video" muted loop autoplay playsinline preload="auto" aria-hidden="true" tabindex="-1">
+    <source src="video/app-ambient.mp4" type="video/mp4">
+  </video>
+  <div class="vtx-app-video-scrim"></div>
+</div>
+  
   <!-- Dark mode bootstrap -->
   <script>
     (function() {
@@ -821,6 +829,43 @@
       document.addEventListener('DOMContentLoaded', function () {
         _patchExam();
         _patchMount();
+      });
+    }());
+  </script>
+
+  <!-- Ambient video background controller -->
+  <script>
+    (function () {
+      'use strict';
+
+      function _sync() {
+        var bg    = document.getElementById('vtxAppVideoBg');
+        var video = document.getElementById('vtxAppVideo');
+        if (!bg) return;
+
+        var isLanding    = !!document.getElementById('lp-root');
+        var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+        if (isLanding || reduceMotion) {
+          bg.classList.remove('is-visible');
+          if (video && !video.paused) video.pause();
+        } else {
+          bg.classList.add('is-visible');
+          if (video && video.paused) {
+            var p = video.play();
+            if (p && p.catch) p.catch(function () {});
+          }
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+        var app = document.getElementById('app');
+        if (app && 'MutationObserver' in window) {
+          var obs = new MutationObserver(_sync);
+          obs.observe(app, { childList: true, subtree: false });
+        }
+        _sync();
+        setInterval(_sync, 1000); // safety net in case a screen swaps content without triggering the observer
       });
     }());
   </script>
