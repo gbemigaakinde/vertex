@@ -120,7 +120,7 @@
     .lp-hero-inner {
       max-width:1040px; margin:0 auto; width:100%;
       padding: clamp(4rem,12vh,8rem) 0 clamp(3rem,7vh,5rem);
-      position:relative; z-index:1;
+      position:relative; z-index:3;
     }
     .lp-eyebrow {
       display:inline-flex; align-items:center; gap:.625rem;
@@ -172,13 +172,37 @@
       font-weight:400; color:transparent;
       -webkit-text-stroke: 1px var(--lp-rule);
       line-height:1; user-select:none; pointer-events:none;
-      z-index:0; white-space:nowrap; letter-spacing:-.025em;
+      z-index:2; white-space:nowrap; letter-spacing:-.025em;
       font-style:italic;
     }
 
     .lp-hero-rule {
       border:none; border-top:1px solid var(--lp-rule);
       max-width:1040px; margin:0 auto;
+      position:relative; z-index:2;
+    }
+
+    /* ── HERO VIDEO LAYER ── */
+    .lp {
+      --lp-cream-a: rgba(250,250,248,0.62);
+    }
+    [data-theme="dark"] .lp {
+      --lp-cream-a: rgba(17,17,19,0.68);
+    }
+    .lp-hero-video-wrap {
+      position:absolute; inset:0; z-index:0; overflow:hidden; pointer-events:none;
+    }
+    .lp-hero-video {
+      width:100%; height:100%; object-fit:cover; display:block;
+      opacity:0.28; filter:saturate(1.05);
+      transition: opacity .6s ease;
+    }
+    [data-theme="dark"] .lp-hero-video {
+      opacity:0.22; filter:brightness(0.75) saturate(1.1);
+    }
+    .lp-hero-scrim {
+      position:absolute; inset:0; z-index:1; pointer-events:none;
+      background: var(--lp-cream-a);
     }
 
     /* ── STATS STRIP ── */
@@ -418,7 +442,13 @@
         '</nav>' +
 
         /* HERO */
-        '<section class="lp-hero">' +
+        '<section class="lp-hero" id="lpHeroSection">' +
+          '<div class="lp-hero-video-wrap" aria-hidden="true">' +
+            '<video id="lpHeroVideo" class="lp-hero-video" muted playsinline preload="metadata" aria-hidden="true" tabindex="-1">' +
+              '<source src="video/earth-hero.mp4" type="video/mp4">' +
+            '</video>' +
+          '</div>' +
+          '<div class="lp-hero-scrim" aria-hidden="true"></div>' +
           '<div class="lp-hero-deco" aria-hidden="true">CBT</div>' +
           '<div class="lp-hero-inner">' +
             '<div class="lp-eyebrow lp-rv">' +
@@ -556,6 +586,60 @@
     window._lpCleanup.push(function () { obs.disconnect(); });
   }
 
+  function _initVideoScroll() {
+    var video = document.getElementById('lpHeroVideo');
+    var hero  = document.getElementById('lpHeroSection');
+    if (!video || !hero) return;
+
+    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion) return; // leave the video on its first static frame, no scrubbing
+
+    var ready = false;
+    var ticking = false;
+
+    video.addEventListener('loadedmetadata', function () {
+      ready = true;
+      var p = video.play();
+      if (p && p.catch) p.catch(function () {});
+      requestAnimationFrame(function () {
+        video.pause();
+        _update();
+      });
+    }, { once: true });
+
+    function _update() {
+      ticking = false;
+      if (!ready || !video.duration) return;
+      var rect = hero.getBoundingClientRect();
+      var vh = window.innerHeight || document.documentElement.clientHeight;
+      var total = rect.height + vh;
+      var scrolled = vh - rect.top;
+      var progress = scrolled / total;
+      progress = Math.max(0, Math.min(1, progress));
+      var target = progress * video.duration;
+      if (Math.abs(video.currentTime - target) > 0.03) {
+        try { video.currentTime = target; } catch (e) {}
+      }
+    }
+
+    function _onScroll() {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(_update);
+      }
+    }
+
+    window.addEventListener('scroll', _onScroll, { passive: true });
+    window.addEventListener('resize', _onScroll, { passive: true });
+    _onScroll();
+
+    window._lpCleanup = window._lpCleanup || [];
+    window._lpCleanup.push(function () {
+      window.removeEventListener('scroll', _onScroll);
+      window.removeEventListener('resize', _onScroll);
+    });
+  }
+   
   function _cleanup() {
     (window._lpCleanup || []).forEach(function (fn) { fn(); });
     window._lpCleanup = [];
@@ -569,6 +653,7 @@
     UI.mount(_html());
     requestAnimationFrame(function () {
       _initNav();
+      _initVideoScroll();
       setTimeout(_initReveal, 60);
     });
   }
