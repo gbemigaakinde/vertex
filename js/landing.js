@@ -201,8 +201,7 @@
       opacity:0.22; filter:brightness(0.75) saturate(1.1);
     }
     .lp-hero-scrim {
-      position:absolute; inset:0; z-index:1; pointer-events:none;
-      background: var(--lp-cream-a);
+      display:none;
     }
 
     /* ── STATS STRIP ── */
