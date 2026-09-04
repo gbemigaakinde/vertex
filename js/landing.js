@@ -194,11 +194,11 @@
     }
     .lp-hero-video {
       width:100%; height:100%; object-fit:cover; display:block;
-      opacity:0.28; filter:saturate(1.05);
-      transition: opacity .6s ease;
+      opacity:0.6; mix-blend-mode:multiply; filter:saturate(1.05);
+      transition: opacity .6s ease, filter .6s ease;
     }
     [data-theme="dark"] .lp-hero-video {
-      opacity:0.22; filter:brightness(0.75) saturate(1.1);
+      opacity:0.5; mix-blend-mode:screen; filter:brightness(1.05) saturate(1.1);
     }
     .lp-hero-scrim {
       display:none;
