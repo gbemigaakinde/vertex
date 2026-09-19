@@ -1,0 +1,36 @@
+# ============================================================
+# vertex — .vercelignore
+# Added as part of the Sept 2026 exposed-key remediation.
+#
+# Vercel is only meant to serve the static front-end (html/css/js/data).
+# Everything below belongs to the separate Cloudflare Worker deployment
+# (`wrangler deploy`) and has no business being uploaded to Vercel, let
+# alone being reachable as a public static file at
+# https://<your-app>.vercel.app/worker.js
+#
+# None of these currently contain live secrets (secrets live in
+# Cloudflare env vars / `wrangler secret put`), but keeping backend
+# source and infra config out of the CDN-served bundle is basic
+# defense-in-depth: it stops anyone from reading your worker's internal
+# logic, KV key naming scheme, model routing, rate-limit thresholds, etc.
+# ============================================================
+
+# Cloudflare Worker source + config — deployed via wrangler, not Vercel
+worker.js
+wrangler.jsonc
+wrangler.toml
+
+# Local Cloudflare dev/secrets files (should never exist in git anyway,
+# but belt-and-suspenders in case one is ever created locally)
+.dev.vars
+.dev.vars.*
+.wrangler/
+
+# One-off key-generation utility — dev tool only, not part of the app
+vapid-generator.html
+
+# Tooling / repo metadata that doesn't need to be on the CDN
+node_modules/
+.git/
+.github/
+README.md
