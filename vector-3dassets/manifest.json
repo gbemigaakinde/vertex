@@ -1,142 +1,19 @@
 {
-  "name": "VECTOR: BLACKLINE \u2014 Base 3D Asset Pack",
-  "format": "GLB 2.0",
-  "generated": "procedural game-ready base meshes",
-  "asset_count": 32,
+  "format": "glTF Binary 2.0 (.glb)",
+  "coordinate_system": "Z-up, forward=-Y",
   "assets": [
-    {
-      "file": "environment/barrier.glb",
-      "bytes": 1952
-    },
-    {
-      "file": "environment/crate.glb",
-      "bytes": 2288
-    },
-    {
-      "file": "environment/warehouse.glb",
-      "bytes": 1840
-    },
-    {
-      "file": "environment/ruined_building.glb",
-      "bytes": 2676
-    },
-    {
-      "file": "environment/barrels.glb",
-      "bytes": 3536
-    },
-    {
-      "file": "environment/light_post.glb",
-      "bytes": 3084
-    },
-    {
-      "file": "environment/sandbags.glb",
-      "bytes": 3748
-    },
-    {
-      "file": "environment/container.glb",
-      "bytes": 3860
-    },
-    {
-      "file": "environment/supply_drop.glb",
-      "bytes": 1924
-    },
-    {
-      "file": "environment/tent.glb",
-      "bytes": 1900
-    },
-    {
-      "file": "environment/watchtower.glb",
-      "bytes": 2340
-    },
-    {
-      "file": "props/smoke_grenade.glb",
-      "bytes": 3160
-    },
-    {
-      "file": "props/medkit.glb",
-      "bytes": 1940
-    },
-    {
-      "file": "props/flashbang.glb",
-      "bytes": 3144
-    },
-    {
-      "file": "props/frag_grenade.glb",
-      "bytes": 3128
-    },
-    {
-      "file": "weapons/rocket_launcher.glb",
-      "bytes": 4472
-    },
-    {
-      "file": "weapons/assault_rifle.glb",
-      "bytes": 6436
-    },
-    {
-      "file": "weapons/pistol.glb",
-      "bytes": 4160
-    },
-    {
-      "file": "weapons/sniper_rifle.glb",
-      "bytes": 7788
-    },
-    {
-      "file": "weapons/shotgun.glb",
-      "bytes": 5036
-    },
-    {
-      "file": "weapons/smg.glb",
-      "bytes": 5936
-    },
-    {
-      "file": "vehicles/drone.glb",
-      "bytes": 13536
-    },
-    {
-      "file": "vehicles/helicopter.glb",
-      "bytes": 11220
-    },
-    {
-      "file": "vehicles/motorcycle.glb",
-      "bytes": 5964
-    },
-    {
-      "file": "vehicles/jeep_4x4.glb",
-      "bytes": 7352
-    },
-    {
-      "file": "vehicles/boat.glb",
-      "bytes": 2376
-    },
-    {
-      "file": "vehicles/tank.glb",
-      "bytes": 7080
-    },
-    {
-      "file": "characters/enemy_rifleman.glb",
-      "bytes": 19608
-    },
-    {
-      "file": "characters/player_operative.glb",
-      "bytes": 18908
-    },
-    {
-      "file": "characters/enemy_heavy.glb",
-      "bytes": 20300
-    },
-    {
-      "file": "characters/enemy_sniper.glb",
-      "bytes": 20120
-    },
-    {
-      "file": "characters/enemy_specialist.glb",
-      "bytes": 20632
-    }
-  ],
-  "notes": [
-    "These are original procedural base meshes, not copied game assets.",
-    "Materials are embedded in GLB files.",
-    "Characters are static base meshes; skeletal rig/animation is not embedded.",
-    "Replace/refine meshes later if higher-fidelity sculpted assets are desired."
+    "props/armor_vest.glb",
+    "props/ammo_box.glb",
+    "characters/ally_civilian.glb",
+    "characters/enemy_scout.glb",
+    "characters/enemy_commander.glb",
+    "environment/wall_module.glb",
+    "environment/door.glb",
+    "environment/tree.glb",
+    "environment/stairs_module.glb",
+    "environment/fence_section.glb",
+    "environment/terminal_console.glb",
+    "environment/server_rack.glb",
+    "environment/intel_case.glb"
   ]
 }
