@@ -1,0 +1,23 @@
+{
+  // Separate from Vertex's own wrangler.jsonc. Deploy with:
+  //   cd vector/server && npx wrangler deploy
+  "name": "vector-blackline",
+  "main": "worker.js",
+  "compatibility_date": "2025-01-01",
+  "durable_objects": {
+    "bindings": [{ "name": "LOBBY", "class_name": "VectorLobby" }]
+  },
+  "migrations": [{ "tag": "v1", "new_classes": ["VectorLobby"] }],
+  "vars": {
+    // Same Firebase project Vertex uses.
+    "FIREBASE_PROJECT_ID": "excellencecbt",
+    // Optional: comma separated list of site origins allowed to call this service,
+    // e.g. "https://your-vertex-domain.com". Empty means any site may call it (every call still needs a valid sign-in token).
+    "ALLOWED_ORIGINS": "",
+    // Leave "false" in production. "true" lets you test with a token like guest:Alex.
+    "VECTOR_DEV_GUEST": "false"
+  }
+  // Optional cloud profile storage. Create with: npx wrangler kv namespace create PROFILES
+  // then uncomment and paste the id:
+  // "kv_namespaces": [{ "binding": "PROFILES", "id": "PASTE_ID_HERE" }]
+}
