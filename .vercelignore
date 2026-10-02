@@ -34,3 +34,9 @@ node_modules/
 .git/
 .github/
 README.md
+
+# VECTOR: BLACKLINE multiplayer service (a separate Cloudflare Worker) and the
+# source-code backup. Deployed by Cloudflare from GitHub, not served by Vercel.
+vector/server/
+vector/tests/
+vector-source/
