@@ -1,23 +1,21 @@
 {
-  // Separate from Vertex's own wrangler.jsonc. Deploy with:
-  //   cd vector/server && npx wrangler deploy
+  // VECTOR: BLACKLINE multiplayer service. A SEPARATE Cloudflare Worker from Vertex's own.
+  // The Worker's name in the Cloudflare dashboard must be exactly: vector-blackline
   "name": "vector-blackline",
-  "main": "worker.js",
+  "main": "worker.bundle.js",
   "compatibility_date": "2025-01-01",
   "durable_objects": {
     "bindings": [{ "name": "LOBBY", "class_name": "VectorLobby" }]
   },
-  "migrations": [{ "tag": "v1", "new_classes": ["VectorLobby"] }],
+  // new_sqlite_classes (NOT new_classes): required on the Cloudflare Free plan and for new accounts.
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["VectorLobby"] }],
   "vars": {
     // Same Firebase project Vertex uses.
     "FIREBASE_PROJECT_ID": "excellencecbt",
-    // Optional: comma separated list of site origins allowed to call this service,
-    // e.g. "https://your-vertex-domain.com". Empty means any site may call it (every call still needs a valid sign-in token).
+    // Optional: your Vertex site address(es), comma separated, e.g. "https://your-site.vercel.app".
+    // Empty means any site may call it (every call still needs a valid sign-in token).
     "ALLOWED_ORIGINS": "",
-    // Leave "false" in production. "true" lets you test with a token like guest:Alex.
+    // Keep "false". "true" is only for testing with fake users.
     "VECTOR_DEV_GUEST": "false"
   }
-  // Optional cloud profile storage. Create with: npx wrangler kv namespace create PROFILES
-  // then uncomment and paste the id:
-  // "kv_namespaces": [{ "binding": "PROFILES", "id": "PASTE_ID_HERE" }]
 }
