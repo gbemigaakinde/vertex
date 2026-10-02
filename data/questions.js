@@ -7898,7 +7898,7 @@ The author's attitude toward Ngozi's efforts can best be described as:`,
   }
 ]
 },  
-"waec/utme": {
+"tutorial": {
         'English Language': [
             {
                 q: "Choose the option that best completes the sentence: Hardly had the manager arrived _____ the workers began to protest.",
