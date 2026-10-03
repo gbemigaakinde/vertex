@@ -4,7 +4,7 @@
 
 'use strict';
 
-const CACHE_VERSION = 'v1.20.55';
+const CACHE_VERSION = 'v1.20.56';
 const STATIC_CACHE  = `static-${CACHE_VERSION}`;
 const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
 
@@ -125,6 +125,9 @@ self.addEventListener('fetch', event => {
 
   if (url.pathname === '/sw.js') return;
 
+  // KNOWLEDGE SURFER 3D: its 3D models (.glb) are large, so like VECTOR they are
+  // loaded straight from the network/browser cache instead of being copied into
+  // the Vertex cache (this also means new models show up immediately).
   // VECTOR: BLACKLINE is a separate game with its own page. Let the browser
   // handle its files directly: no app-shell fallback, no cache-first staleness,
   // and no copying of large 3D model files into the Vertex cache.
@@ -133,7 +136,8 @@ self.addEventListener('fetch', event => {
   if (
     url.pathname === '/vector' ||
     url.pathname.startsWith('/vector/') ||
-    url.pathname.startsWith('/vector-3dassets/')
+    url.pathname.startsWith('/vector-3dassets/') ||
+    url.pathname.startsWith('/surfer/')
   ) return;
 
   if (
