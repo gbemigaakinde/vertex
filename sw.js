@@ -4,7 +4,7 @@
 
 'use strict';
 
-const CACHE_VERSION = 'v1.20.54';
+const CACHE_VERSION = 'v1.20.55';
 const STATIC_CACHE  = `static-${CACHE_VERSION}`;
 const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
 
@@ -128,7 +128,13 @@ self.addEventListener('fetch', event => {
   // VECTOR: BLACKLINE is a separate game with its own page. Let the browser
   // handle its files directly: no app-shell fallback, no cache-first staleness,
   // and no copying of large 3D model files into the Vertex cache.
-  if (url.pathname.startsWith('/vector/') || url.pathname.startsWith('/vector-3dassets/')) return;
+  // '/vector' (no trailing slash) must be included, otherwise the navigation
+  // falls through to _navigationHandler and the Vertex app shell is served.
+  if (
+    url.pathname === '/vector' ||
+    url.pathname.startsWith('/vector/') ||
+    url.pathname.startsWith('/vector-3dassets/')
+  ) return;
 
   if (
     url.pathname === '/english.html' ||
