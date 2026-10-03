@@ -7572,18 +7572,26 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
   `);
 }
 
-  function _startKnowledgeRunner() {
+  function _startKnowledgeRunner(force2D) {
+  // force2D === true only when the 3D version failed to start and we are
+  // falling back to the old 2D game. That play was already counted, so the
+  // limit check and the play-recording are skipped in that case.
+
   // ── Leisure limit: double-check before launching ──
-  if (_krIsLimitReached()) {
+  if (force2D !== true && _krIsLimitReached()) {
     _closeModal();
     _showKnowledgeRunnerSetup(); // shows the locked modal with countdown
     return;
   }
 
   // Record this play session now (after all checks pass)
-  _krRecordPlay();
+  if (force2D !== true) _krRecordPlay();
 
   _closeModal();
+
+  // ── 3D Knowledge Surfer (code lives in the /surfer folder).
+  //    If it cannot start on this device, the 2D game below runs instead. ──
+  if (force2D !== true && _krLaunchSurfer3D()) return;
 
   window.UI.mount(`
     <div class="max-w-2xl mx-auto animate-fadeIn" style="padding-bottom:1rem;">
@@ -8813,6 +8821,116 @@ function _krLoop(timestamp) {
     if (_krState && _krState._keyUp)   document.removeEventListener('keyup',   _krState._keyUp);
     _krState = null;
     openGameLobby();
+  }
+
+  /* ══════════════════════════════════════════════════════════════
+     KNOWLEDGE SURFER 3D  — bridge between this file and /surfer
+     The 3D game itself lives in surfer/surfer-engine.js. It gets
+     the few things it needs from here (sounds, "game over", "quit").
+  ══════════════════════════════════════════════════════════════ */
+
+  let _krSurfer = null;   // handle of the running 3D game (null when none)
+
+  function _krLaunchSurfer3D() {
+    // This browser already failed to run the 3D version → use 2D straight away
+    if (window.__surfer3dBroken) return false;
+
+    // Quick test: does this device support WebGL at all?
+    try {
+      const probe = document.createElement('canvas');
+      const gl = probe.getContext('webgl2') || probe.getContext('webgl');
+      if (!gl) throw new Error('WebGL not available');
+      const lose = gl.getExtension('WEBGL_lose_context');
+      if (lose) lose.loseContext();          // free the test context straight away
+    } catch (e) {
+      window.__surfer3dBroken = true;
+      return false;
+    }
+
+    window.UI.mount(`
+      <div class="max-w-2xl mx-auto animate-fadeIn" style="padding-bottom:1rem;">
+        <div id="surferRoot"></div>
+      </div>`);
+    const container = document.getElementById('surferRoot');
+    const ref = { sessionId: null };
+
+    _startGameSession('knowledgeRunner', {}).then(id => { ref.sessionId = id; });
+
+    // Something went wrong → remember it and run the old 2D game instead
+    const fallBackTo2D = (err) => {
+      console.error('[surfer] 3D failed, using 2D game:', err);
+      window.__surfer3dBroken = true;
+      if (_krSurfer) { try { _krSurfer.destroy(); } catch (e) {} _krSurfer = null; }
+      if (container && container.isConnected) _startKnowledgeRunner(true);
+    };
+
+    import('/surfer/surfer-engine.js').then(mod => {
+      _krSurfer = mod.startSurfer({
+        container,
+        host: {
+          sound: {
+            coin:    () => { if (window.VtxSound) VtxSound.gameCoinCollect(); },
+            hit:     () => { if (window.VtxSound) VtxSound.gameObstacleHit(); },
+            speedUp: () => { if (window.VtxSound) VtxSound.gameSpeedUp(); },
+          },
+          onGameOver: (stats) => { _krSurfer = null; _krSurferFinish(stats, ref.sessionId); },
+          onQuit:     ()      => { _krSurfer = null; openGameLobby(); },
+          onFatal:    fallBackTo2D,
+        },
+      });
+      return _krSurfer.ready;
+    }).catch(fallBackTo2D);
+
+    return true;
+  }
+
+  // Same end-of-game logic as _krEndGame(), but fed by the 3D game's results
+  async function _krSurferFinish(s, sessionId) {
+    const score    = s.score;
+    const distance = s.distance;
+    const pct      = score > 0 ? Math.min(100, Math.round((score / Math.max(score + 3, 10)) * 100)) : 0;
+    const win      = score >= 5;
+    const result   = await _awardXP(s.xpEarned, 'knowledgeRunner', { win, perfect: false, sdSurvived: score });
+    await _saveGameResult('knowledgeRunner', {
+      score, distance: Math.floor(distance), xpEarned: s.xpEarned, pct,
+    });
+    await _endGameSession(sessionId, { xpEarned: s.xpEarned, score, pct, win, meta: { distance: Math.floor(distance) } });
+
+    const distanceTitle = distance >= 500 ? 'Legend Surfer!'
+                        : distance >= 300 ? 'Master Surfer!'
+                        : distance >= 150 ? 'Great Run!'
+                        : distance >= 80  ? 'Good Effort!'
+                        : 'Keep Practising!';
+
+    const extraHtml = `
+      <div style="margin:.75rem 0;padding:1.25rem;border-radius:10px;text-align:center;
+                  background:linear-gradient(135deg,rgba(251,191,36,0.12),rgba(99,102,241,0.12));
+                  border:2px solid rgba(251,191,36,0.3);">
+        <div style="font-size:2rem;font-weight:900;color:#fbbf24;font-family:var(--font-mono);line-height:1;">
+          ${Math.floor(distance)}m
+        </div>
+        <p style="font-size:.875rem;font-weight:700;color:#f1f5f9;margin:.25rem 0;">${distanceTitle}</p>
+        <p style="font-size:.8125rem;color:var(--text-3);margin-top:.375rem;">
+          🏄 ${score} correct coins collected &nbsp;|&nbsp; 🔥 Best combo: ${s.bestCombo > 0 ? s.bestCombo : 1}x
+        </p>
+      </div>`;
+
+    _renderGameResult({
+      gameIcon:      'bolt',
+      gameName:      'Knowledge Surfer',
+      score:         `${score} coins collected`,
+      pct,
+      xpEarned:      s.xpEarned,
+      perfect:       false,
+      win,
+      result,
+      extras: [
+        { label: 'Distance Run',   value: `${Math.floor(distance)}m` },
+        { label: 'Combo Bonus XP', value: s.xpEarned > score * KR_XP_PER_CORRECT ? `+${s.xpEarned - score * KR_XP_PER_CORRECT} XP` : '—' },
+      ],
+      extraHtml,
+      onPlayAgainKey: 'knowledgeRunner',
+    });
   }
   
   /* ══════════════════════════════════════════════════════════════
