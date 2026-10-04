@@ -14,6 +14,15 @@ export const DEFAULT_SETTINGS = {
   quality: 'auto', masterVol: 0.8, sfxVol: 0.9, musicVol: 0.5, voiceVol: 0.9,
   sens: 1.0, aimSens: 0.6, touchSens: 1.0, camDist: 3.6, invertY: false,
   vibration: true, motionFx: true, reducedMotion: false, hudScale: 1.0, subtitles: true, shoulder: 1, colorblind: false,
+  // display and accessibility
+  fullscreenOnPlay: 'auto',            // 'auto' = touch devices only, 'on', 'off'
+  subtitleSize: 1, flashReduce: false,
+  // touch
+  touchScale: 1, stickScale: 1, touchOpacity: 0.8, adsMode: 'toggle', crouchMode: 'toggle', stickSprint: true, aimAccel: false, touchLayout: {},
+  // controller
+  padSens: 1, padDeadzone: 0.15,
+  // one-time hints already shown
+  hintInstall: false,
 };
 
 export function defaultProfile() {
