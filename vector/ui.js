@@ -91,7 +91,7 @@ export class UI {
         <p>Landscape gameplay required</p>
         <div class="vb-row"><button class="vb-btn primary" data-act="orient-continue">Continue</button><button class="vb-btn ghost" data-act="exit-vertex">Back to Vertex</button></div>
       </div>
-      <div class="vb-notes" id="vbToasts" aria-live="polite"></div>`;
+      <div class="vb-topc"><div class="vb-notes" id="vbToasts" aria-live="polite"></div><div class="vb-sub-line" id="hSub" hidden><b id="hSubWho"></b><span id="hSubTxt"></span></div></div>`;
     this.canvas = this.q('#vbCanvas'); this.hud = this.q('#vbHud'); this.scr = this.q('#vbScreen'); this.loading = this.q('#vbLoading'); this.orient = this.q('#vbOrient'); this.toasts = this.q('#vbToasts');
     this.on(this.root, 'click', (e) => {
       const el = e.target.closest('[data-act]'); if (!el || el.disabled) return;
@@ -485,15 +485,14 @@ export class UI {
       <div class="vb-frame">
         <div class="vb-tl"><div class="vb-obj" id="hObj"><div class="vb-obj-k" id="hObjK">OBJECTIVE</div><div class="vb-obj-t" id="hObjT"></div><div class="vb-meter thin" id="hObjBarW"><i id="hObjBar"></i></div><div class="vb-obj-s" id="hObjS"></div></div><div class="vb-squad" id="hSquad"></div><div class="vb-feed" id="hFeed"></div></div>
         <div class="vb-tr"><canvas id="hMini" width="224" height="224" aria-label="Minimap"></canvas><div class="vb-score" id="hScore"></div><div class="vb-ping" id="hPing"></div></div>
-        <div class="vb-bottom"><div class="vb-sub-line" id="hSub" hidden><b id="hSubWho"></b><span id="hSubTxt"></span></div>
-        <div class="vb-bc">
-          <div class="vb-vitals"><div class="vb-bars">
-            <div class="vb-hp"><span class="vb-num" id="hHpT">100</span><div class="vb-bar2"><span class="vb-lab">HEALTH</span><div class="vb-meter hp"><i id="hHp"></i></div></div></div>
-            <div class="vb-ar"><span class="vb-num" id="hArT">0</span><div class="vb-bar2"><span class="vb-lab">ARMOR</span><div class="vb-meter ar"><i id="hAr"></i></div></div></div></div>
-            <div class="vb-chips">${chip('heal', 'HEAL', 'medical', 'hHealN', 'MED', 'Use medkit')}</div></div>
-          <div class="vb-ammo"><div class="vb-readout"><div class="vb-wn" id="hWn"></div><div class="vb-am"><b id="hMag">0</b><span id="hRes">/ 0</span></div><div class="vb-meter thin" id="hRelW"><i id="hRel"></i></div></div>
-            <div class="vb-chips">${chip('equip', 'EQUIP', 'grenade', 'hEqN', 'EQP', 'Use equipment').replace('<span class="vb-chip-t">EQP</span>', '<span class="vb-chip-t" id="hEqT">EQP</span>')}${chip('swap', 'SWAP', 'swap', 'hSwapN', 'SWAP', 'Switch weapon')}</div></div>
-        </div>
+        <div class="vb-bottom">
+          <div class="vb-chiprow">${chip('heal', 'HEAL', 'medical', 'hHealN', 'MED', 'Use medkit')}${chip('equip', 'EQUIP', 'grenade', 'hEqN', 'EQP', 'Use equipment').replace('<span class="vb-chip-t">EQP</span>', '<span class="vb-chip-t" id="hEqT">EQP</span>')}${chip('swap', 'SWAP', 'swap', 'hSwapN', 'SWAP', 'Switch weapon')}</div>
+          <div class="vb-bc">
+            <div class="vb-vitals"><div class="vb-bars">
+              <div class="vb-hp"><span class="vb-num" id="hHpT">100</span><div class="vb-bar2"><span class="vb-lab">HEALTH</span><div class="vb-meter hp"><i id="hHp"></i></div></div></div>
+              <div class="vb-ar"><span class="vb-num" id="hArT">0</span><div class="vb-bar2"><span class="vb-lab">ARMOR</span><div class="vb-meter ar"><i id="hAr"></i></div></div></div></div></div>
+            <div class="vb-ammo"><div class="vb-readout"><div class="vb-wn" id="hWn"></div><div class="vb-am"><b id="hMag">0</b><span id="hRes">/ 0</span></div><div class="vb-meter thin" id="hRelW"><i id="hRel"></i></div></div></div>
+          </div>
         </div>
         <div class="vb-prompt" id="hPrompt" hidden><div class="vb-ring"><i id="hPromptBar"></i></div><span id="hPromptT"></span></div>
         <div class="vb-center-msg" id="hMsg"></div>
@@ -503,7 +502,7 @@ export class UI {
     this.H = { vig: g('hVig'), flash: g('hFlash'), scope: g('hScope'), hits: g('hHits'), cross: g('hCross'), mark: g('hMark'), tags: g('hTags'), ways: g('hWays'), obj: g('hObj'), objK: g('hObjK'), objT: g('hObjT'), objBarW: g('hObjBarW'), objBar: g('hObjBar'), objS: g('hObjS'), feed: g('hFeed'),
       mini: g('hMini'), score: g('hScore'), ping: g('hPing'), squad: g('hSquad'), hpT: g('hHpT'), hp: g('hHp'), arT: g('hArT'), ar: g('hAr'), wn: g('hWn'), mag: g('hMag'), res: g('hRes'), relW: g('hRelW'), rel: g('hRel'),
       healN: g('hHealN'), eqN: g('hEqN'), eqT: g('hEqT'), swapN: g('hSwapN'), chipHeal: this.hud.querySelector('[data-tap=heal]'), chipEq: this.hud.querySelector('[data-tap=equip]'),
-      prompt: g('hPrompt'), promptBar: g('hPromptBar'), promptT: g('hPromptT'), msg: g('hMsg'), sub: g('hSub'), subWho: g('hSubWho'), subTxt: g('hSubTxt'), board: g('hBoard') };
+      prompt: g('hPrompt'), promptBar: g('hPromptBar'), promptT: g('hPromptT'), msg: g('hMsg'), sub: this.q('#hSub'), subWho: this.q('#hSubWho'), subTxt: this.q('#hSubTxt'), board: g('hBoard') };
     this.mini = this.H.mini.getContext('2d');
     // HUD chips are real buttons only on touch. One delegated listener, removed with the UI.
     this.on(this.hud, 'pointerdown', (e) => {
@@ -551,7 +550,7 @@ export class UI {
     if (this.cache.eqk !== ck) {
       this.cache.eqk = ck;
       H.healN.textContent = '×' + h.heal + (h.healT > 0 ? ' …' : ''); H.chipHeal.dataset.dis = h.heal > 0 ? '0' : '1';
-      H.chipEq.hidden = !eq; if (eq) { H.eqN.textContent = '×' + h.eqn; H.eqT.textContent = eq.name.split(' ')[0].toUpperCase(); H.chipEq.dataset.dis = h.eqn > 0 ? '0' : '1'; }
+      H.chipEq.hidden = !eq; if (eq) { H.eqN.textContent = '×' + h.eqn; { const w = eq.name.split(' ')[0].toUpperCase(); H.eqT.textContent = w.length <= 5 ? w : 'EQP'; } H.chipEq.dataset.dis = h.eqn > 0 ? '0' : '1'; }
     }
     // when nothing is happening, secondary panels step back; any action brings them back
     const now = performance.now(), sig = Math.round(h.hp) + '|' + (w ? w.m : 0) + '|' + (h.reload > 0) + '|' + (h.interact ? 1 : 0) + '|' + eng.dirHits.length + '|' + (h.blind > 0) + '|' + (h.downed ? 1 : 0) + '|' + (h.mission ? h.mission.i : -1);
@@ -607,7 +606,10 @@ export class UI {
   }
 
   updateTags(eng) {
-    const tags = eng.getTags(); let html = '';
+    // Several enemies can line up on screen. Show the nearest (lowest on screen) first and skip any tag that would land on top of one already shown.
+    const all = eng.getTags().sort((p, q) => q.y - p.y), tags = [];
+    for (const t of all) { if (tags.length >= 5) break; if (!tags.some((o) => Math.abs(o.x - t.x) < 96 && Math.abs(o.y - t.y) < 30)) tags.push(t); }
+    let html = '';
     for (const t of tags) html += `<div class="vb-tag-i ${t.kind}${t.dn ? ' dn' : ''}" style="transform:translate(${t.x.toFixed(0)}px,${t.y.toFixed(0)}px)"><span>${esc(t.label || '')}${t.state && t.kind === 'enemy' ? ` <em>${t.state === 'COMBAT' ? 'HOSTILE' : t.state === 'ALERT' ? 'ALERT' : t.state === 'SEARCH' ? 'SEARCHING' : t.state === 'SUSPICIOUS' ? '?' : ''}</em>` : ''}</span><i><u style="width:${Math.round(Math.max(0, Math.min(1, t.hp)) * 100)}%"></u></i></div>`;
     if (this.cache.tags !== html) { this.cache.tags = html; this.H.tags.innerHTML = html; }
   }
