@@ -6,18 +6,43 @@
 html.vb-open, body.vb-open { overflow: hidden !important; overscroll-behavior: none; }
 
 .vector-blackline {
+  /* ---- colour ---- */
   --bg: #070a0d; --panel: rgba(13, 18, 23, .9); --line: rgba(255, 255, 255, .1); --text: #e6ebf0; --dim: #93a0ac;
-  --amber: #f0a33a; --good: #4fe3a0; --bad: #ff5a4a; --blue: #5bb8ff; --hud: 1;
+  --amber: #f0a33a; --good: #4fe3a0; --bad: #ff5a4a; --blue: #5bb8ff;
+  --hud-bg: rgba(6, 9, 12, .66); --hud-line: rgba(255, 255, 255, .14);
+  /* ---- safe areas (notches, rounded corners, home indicator) ---- */
   --sat: env(safe-area-inset-top, 0px); --sar: env(safe-area-inset-right, 0px); --sab: env(safe-area-inset-bottom, 0px); --sal: env(safe-area-inset-left, 0px);
+  /* ---- type and spacing ---- */
   --font: Bahnschrift, "Segoe UI Variable Display", "Roboto Condensed", "Arial Narrow", system-ui, sans-serif;
-  position: fixed; inset: 0; width: 100%; height: 100%; z-index: 2147483000; overflow: hidden; background: var(--bg);
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 24px; --radius: 4px;
+  --t-fast: .12s; --t-med: .22s;
+  /* ---- the size unit ----
+     --vw / --vh are 1% of the VISIBLE width / height in px, written by platform.js
+     (100vh is wrong on iOS Safari). --u is 1% of the smaller of the visible height and
+     9/16 of the visible width, so everything sized in --u keeps its shape on any aspect
+     ratio, and an ultrawide monitor does not stretch the HUD. */
+  --u: min(var(--vh, 1dvh), calc(var(--vw, 1dvw) * .5625));
+  --edge: max(calc(var(--u) * 1.6), 10px);                    /* gap between the HUD and the screen edge */
+  --hud: 1; --ts: 1; --ss: 1; --to: .8; --subs: 1;             /* player settings: HUD scale, touch size, stick size, touch opacity, subtitle size */
+  /* ---- touch metrics: ONE button unit drives the whole layout ---- */
+  --tb: calc(clamp(44px, min(calc(var(--u) * 15), calc(var(--vw, 1dvw) * 7.4)), 84px) * var(--ts));   /* capped by width too, so a narrow screen never gets an oversized cluster */
+  --cm: calc(var(--tb) * .3);                                  /* margin from the screen edge */
+  --stick: calc(clamp(96px, min(calc(var(--u) * 36), calc(var(--vw, 1dvw) * 17)), 190px) * var(--ss));
+  --cw: calc(var(--tb) * 4.9);                                 /* width of the right-hand action cluster */
+  --bc-l: calc(var(--sal) + var(--cm) + var(--stick) + var(--s3));   /* where the bottom readouts may start ... */
+  --bc-r: calc(var(--sar) + var(--cm) + var(--cw) + var(--s3));      /* ... and stop, on touch screens */
+  --pb: max(44px, calc(var(--tb) * .72));                      /* pause button */
+  /* ---- layers: one scale, nothing else sets a z-index ---- */
+  --z-canvas: 0; --z-world: 2; --z-look: 4; --z-hud: 10; --z-touch: 20; --z-context: 30; --z-screen: 40; --z-notify: 50; --z-modal: 60; --z-system: 70; --z-orient: 80;
+  position: fixed; inset: 0; width: 100%; height: 100%; height: 100dvh; z-index: 2147483000; overflow: hidden; background: var(--bg);
   color: var(--text); font-family: var(--font); font-size: 16px; line-height: 1.35; -webkit-user-select: none; user-select: none;
-  -webkit-tap-highlight-color: transparent; touch-action: none; box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent; -webkit-touch-callout: none; touch-action: none; box-sizing: border-box;
 }
+.vector-blackline.vb-cb { --bad: #ff8a3d; --good: #56b4e9; --blue: #bfe3ff; }
 .vector-blackline *, .vector-blackline *::before, .vector-blackline *::after { box-sizing: border-box; }
 .vector-blackline[hidden], .vector-blackline [hidden] { display: none !important; }
 .vector-blackline button { font: inherit; color: inherit; cursor: pointer; }
-.vector-blackline .vb-canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; outline: none; touch-action: none; }
+.vector-blackline .vb-canvas { position: absolute; inset: 0; z-index: var(--z-canvas); width: 100%; height: 100%; display: block; outline: none; touch-action: none; }
 
 /* ---------- buttons & controls ---------- */
 .vector-blackline .vb-btn { background: rgba(255,255,255,.07); border: 1px solid var(--line); padding: 12px 22px; border-radius: 4px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; font-size: .85rem; min-height: 44px; transition: background .12s, transform .06s; }
@@ -48,7 +73,7 @@ html.vb-open, body.vb-open { overflow: hidden !important; overscroll-behavior: n
 p.vb-dim, div.vb-dim { color: var(--dim); font-size: .9rem; }
 
 /* ---------- screens ---------- */
-.vector-blackline .vb-screen { position: absolute; inset: 0; z-index: 6; overflow-y: auto; overflow-x: hidden; padding: calc(var(--sat) + 16px) calc(var(--sar) + 20px) calc(var(--sab) + 16px) calc(var(--sal) + 20px); touch-action: pan-y; -webkit-overflow-scrolling: touch; background: linear-gradient(90deg, rgba(5,8,10,.94) 0%, rgba(5,8,10,.82) 55%, rgba(5,8,10,.35) 100%); }
+.vector-blackline .vb-screen { position: absolute; inset: 0; z-index: var(--z-screen); overflow-y: auto; overflow-x: hidden; padding: calc(var(--sat) + 16px) calc(var(--sar) + 20px) calc(var(--sab) + 16px) calc(var(--sal) + 20px); touch-action: pan-y; -webkit-overflow-scrolling: touch; background: linear-gradient(90deg, rgba(5,8,10,.94) 0%, rgba(5,8,10,.82) 55%, rgba(5,8,10,.35) 100%); }
 .vector-blackline .vb-screen.vb-bgmenu { background: linear-gradient(90deg, rgba(5,8,10,.92) 0%, rgba(5,8,10,.7) 45%, rgba(5,8,10,.1) 100%); }
 .vector-blackline .vb-screen.vb-dim { background: rgba(4,6,8,.78); }
 .vector-blackline .vb-screen.vb-preview { background: linear-gradient(90deg, rgba(5,8,10,.92) 0%, rgba(5,8,10,.75) 50%, rgba(5,8,10,0) 80%); }
@@ -71,7 +96,7 @@ p.vb-dim, div.vb-dim { color: var(--dim); font-size: .9rem; }
 .vector-blackline .vb-grid.cols2 { grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); align-items: start; }
 
 /* ---------- loading, orientation, toasts ---------- */
-.vector-blackline .vb-overlay { position: absolute; inset: 0; z-index: 8; display: grid; place-items: center; background: radial-gradient(ellipse at center, #0e141a 0%, #05080a 75%); text-align: center; padding: 20px; }
+.vector-blackline .vb-overlay { position: absolute; inset: 0; z-index: var(--z-modal); display: grid; place-items: center; background: radial-gradient(ellipse at center, #0e141a 0%, #05080a 75%); text-align: center; padding: 20px; }
 .vector-blackline .vb-load { width: min(520px, 90%); }
 .vector-blackline .vb-logo { font-weight: 900; letter-spacing: .22em; font-size: 1.5rem; color: #fff; text-transform: uppercase; }
 .vector-blackline .vb-logo span { color: var(--amber); }
@@ -80,16 +105,11 @@ p.vb-dim, div.vb-dim { color: var(--dim); font-size: .9rem; }
 .vector-blackline .vb-load-sub { margin-top: 12px; color: var(--dim); font-size: .85rem; min-height: 1.2em; }
 .vector-blackline .vb-bar { height: 4px; background: rgba(255,255,255,.1); overflow: hidden; border-radius: 2px; }
 .vector-blackline .vb-bar i { display: block; height: 100%; background: var(--amber); transition: width .25s; }
-.vector-blackline .vb-orient { z-index: 20; flex-direction: column; gap: 6px; background: #05080a; display: none; }
+.vector-blackline .vb-orient { z-index: var(--z-orient); flex-direction: column; gap: 6px; background: #05080a; display: none; }
 .vector-blackline .vb-orient:not([hidden]) { display: flex; align-items: center; justify-content: center; }
 .vector-blackline .vb-orient h2 { margin: 6px 0 0; font-size: 1.5rem; } .vector-blackline .vb-orient p { max-width: 340px; color: var(--dim); }
 .vector-blackline .vb-orient-icon { color: var(--amber); animation: vbrot 2.4s ease-in-out infinite; }
 @keyframes vbrot { 0%, 20% { transform: rotate(0); } 55%, 80% { transform: rotate(-90deg); } 100% { transform: rotate(0); } }
-.vector-blackline .vb-toast-wrap { position: absolute; top: calc(var(--sat) + 14px); left: 50%; transform: translateX(-50%); z-index: 12; display: flex; flex-direction: column; gap: 6px; align-items: center; pointer-events: none; width: min(92%, 460px); }
-.vector-blackline .vb-toast { background: rgba(8,12,15,.92); border: 1px solid var(--line); border-left: 3px solid var(--amber); padding: 8px 14px; border-radius: 3px; font-size: .9rem; animation: vbin .2s ease-out; transition: opacity .35s; }
-.vector-blackline .vb-toast.out { opacity: 0; }
-@keyframes vbin { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
-
 /* ---------- main menu ---------- */
 .vector-blackline .vb-menu { display: flex; justify-content: space-between; gap: 20px; min-height: 100%; align-items: center; }
 .vector-blackline .vb-menu-main { max-width: 440px; width: 100%; }
@@ -144,9 +164,26 @@ p.vb-dim, div.vb-dim { color: var(--dim); font-size: .9rem; }
 .vector-blackline .vb-tablewrap { overflow-x: auto; margin: 10px 0; } .vector-blackline .vb-table { width: 100%; border-collapse: collapse; font-size: .88rem; } .vector-blackline .vb-table th { text-align: left; color: var(--dim); font-weight: 600; text-transform: uppercase; letter-spacing: .08em; font-size: .7rem; padding: 6px 8px; } .vector-blackline .vb-table td { padding: 6px 8px; border-top: 1px solid rgba(255,255,255,.07); } .vector-blackline .vb-table tr.me td { background: rgba(240,163,58,.1); }
 
 /* ============================================================
-   HUD
+   Notifications. One stack, top centre, above menus so a
+   confirmation is never hidden, below blocking overlays.
    ============================================================ */
-.vector-blackline .vb-hud { position: absolute; inset: 0; pointer-events: none; font-size: calc(14px * var(--hud)); }
+.vector-blackline .vb-notes { position: absolute; z-index: var(--z-notify); top: calc(var(--sat) + var(--edge)); left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: var(--s1); align-items: center; pointer-events: none; width: min(92%, 30em); }
+.vector-blackline[data-input="touch"] .vb-notes { top: calc(var(--sat) + var(--cm) + var(--pb) + var(--s2)); }
+.vector-blackline .vb-note { background: rgba(8, 12, 15, .9); border: 1px solid var(--hud-line); border-left: 3px solid var(--amber); padding: 6px 14px; border-radius: 2px; font-size: .9rem; text-align: left; max-width: 100%; animation: vbin var(--t-med) ease-out; transition: opacity .35s; }
+.vector-blackline .vb-note.out { opacity: 0; }
+.vector-blackline .vb-note-k { display: block; color: var(--amber); font-size: .66rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+.vector-blackline .vb-note.good { border-left-color: var(--good); } .vector-blackline .vb-note.good .vb-note-k { color: var(--good); }
+.vector-blackline .vb-note.warn { border-left-color: var(--bad); } .vector-blackline .vb-note.warn .vb-note-k { color: var(--bad); }
+@keyframes vbin { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
+
+/* ============================================================
+   HUD.  Layers inside: world indicators, then the framed panels.
+   Panels sit in .vb-frame, which is capped in width so an ultrawide
+   monitor keeps the HUD near the centre of attention.
+   ============================================================ */
+.vector-blackline .vb-hud { position: absolute; inset: 0; z-index: var(--z-hud); pointer-events: none; font-size: calc(clamp(12px, calc(var(--u) * 1.9), 18px) * var(--hud)); }
+.vector-blackline .vb-frame { position: absolute; top: 0; bottom: 0; left: 0; right: 0; margin: 0 auto; max-width: calc(var(--vh, 1dvh) * 190); }
+.vector-blackline[data-input="touch"] .vb-frame { max-width: none; }
 .vector-blackline .vb-vig { position: absolute; inset: 0; opacity: 0; background: radial-gradient(ellipse at center, rgba(120,0,0,0) 45%, rgba(150,10,10,.75) 100%); transition: opacity .1s; }
 .vector-blackline .vb-flash { position: absolute; inset: 0; background: #fff; opacity: 0; }
 .vector-blackline .vb-scope { position: absolute; inset: 0; display: none; background: radial-gradient(circle at center, transparent 0 28vh, #000 28.4vh); } .vector-blackline .vb-scope.on { display: block; }
@@ -158,69 +195,179 @@ p.vb-dim, div.vb-dim { color: var(--dim); font-size: .9rem; }
 .vector-blackline .vb-cross .t { left: -1px; top: calc(-8px - var(--sp)); } .vector-blackline .vb-cross .b { left: -1px; top: var(--sp); } .vector-blackline .vb-cross .l { width: 8px; height: 2px; left: calc(-8px - var(--sp)); top: -1px; } .vector-blackline .vb-cross .r { width: 8px; height: 2px; left: var(--sp); top: -1px; }
 .vector-blackline .vb-cross.ads i { background: var(--amber); }
 .vector-blackline .vb-cross u { position: absolute; left: -14px; top: -14px; width: 28px; height: 28px; opacity: 0; background: linear-gradient(45deg, transparent 44%, #fff 44% 56%, transparent 56%), linear-gradient(-45deg, transparent 44%, #fff 44% 56%, transparent 56%); transform: scale(.7); transition: opacity .1s, transform .1s; }
-.vector-blackline .vb-cross u.on { opacity: 1; transform: scale(1); } .vector-blackline .vb-cross u.head { filter: drop-shadow(0 0 3px #ff5a4a); background: linear-gradient(45deg, transparent 40%, #ff5a4a 40% 60%, transparent 60%), linear-gradient(-45deg, transparent 40%, #ff5a4a 40% 60%, transparent 60%); }
-.vector-blackline .vb-tags, .vector-blackline .vb-ways { position: absolute; inset: 0; overflow: hidden; }
+.vector-blackline .vb-cross u.on { opacity: 1; transform: scale(1); } .vector-blackline .vb-cross u.head { filter: drop-shadow(0 0 3px var(--bad)); background: linear-gradient(45deg, transparent 40%, var(--bad) 40% 60%, transparent 60%), linear-gradient(-45deg, transparent 40%, var(--bad) 40% 60%, transparent 60%); }
+.vector-blackline .vb-tags, .vector-blackline .vb-ways { position: absolute; inset: 0; overflow: hidden; z-index: var(--z-world); }
 .vector-blackline .vb-tag-i { position: absolute; left: 0; top: 0; margin: -26px 0 0 -50px; width: 100px; text-align: center; font-size: .72rem; text-shadow: 0 1px 2px #000; will-change: transform; } .vector-blackline .vb-tag-i span { white-space: nowrap; } .vector-blackline .vb-tag-i em { font-style: normal; color: var(--amber); font-weight: 700; }
 .vector-blackline .vb-tag-i i { display: block; height: 4px; background: rgba(0,0,0,.6); margin: 2px 14px 0; border-radius: 2px; overflow: hidden; } .vector-blackline .vb-tag-i u { display: block; height: 100%; background: var(--bad); }
 .vector-blackline .vb-tag-i.friend u { background: var(--blue); } .vector-blackline .vb-tag-i.dn { opacity: .7; }
 .vector-blackline .vb-way { position: absolute; left: 0; top: 0; text-align: center; font-size: .72rem; text-shadow: 0 1px 2px #000; margin: -10px 0 0 -60px; width: 120px; will-change: transform; } .vector-blackline .vb-way i { display: block; width: 10px; height: 10px; margin: 0 auto 2px; background: currentColor; transform: rotate(45deg); box-shadow: 0 0 6px currentColor; }
-.vector-blackline .vb-tl { position: absolute; top: calc(var(--sat) + 12px); left: calc(var(--sal) + 14px); max-width: 38%; }
-.vector-blackline .vb-obj { background: rgba(6,9,12,.7); border-left: 3px solid var(--amber); padding: 6px 12px; } .vector-blackline .vb-obj-k { color: var(--amber); font-size: .66rem; letter-spacing: .16em; font-weight: 800; } .vector-blackline .vb-obj-t { font-weight: 700; font-size: 1.02em; } .vector-blackline .vb-obj-s { color: var(--dim); font-size: .8em; } .vector-blackline .vb-obj .vb-meter { margin-top: 5px; }
-.vector-blackline .vb-feed { margin-top: 8px; font-size: .78rem; } .vector-blackline .vb-feed div { background: rgba(6,9,12,.6); padding: 2px 8px; margin-bottom: 2px; width: fit-content; } .vector-blackline .vb-feed .me { border-left: 2px solid var(--amber); } .vector-blackline .vb-feed .dead { border-left: 2px solid var(--bad); }
-.vector-blackline .vb-tr { position: absolute; top: calc(var(--sat) + 12px); right: calc(var(--sar) + 14px); text-align: right; } .vector-blackline .vb-tr canvas { width: calc(150px * var(--hud)); height: calc(150px * var(--hud)); border-radius: 50%; background: rgba(0,0,0,.4); display: block; margin-left: auto; }
+
+/* shared panel look: dark, thin border, one accent edge */
+.vector-blackline .vb-obj, .vector-blackline .vb-vitals, .vector-blackline .vb-ammo { background: var(--hud-bg); border: 1px solid var(--hud-line); transition: opacity .6s; }
+.vector-blackline .vb-ic { width: 1.2em; height: 1.2em; flex: none; }
+
+/* top-left: objective, squad, kill feed. Capped so it can never reach the controls below it. */
+.vector-blackline .vb-tl { position: absolute; top: calc(var(--sat) + var(--edge)); left: calc(var(--sal) + var(--edge)); width: min(34%, 24em); max-height: calc(var(--vh, 1dvh) * 100 - var(--stick) - var(--cm) * 2 - var(--edge) - var(--sat)); overflow: hidden; }
+.vector-blackline[data-input="touch"] .vb-tl { width: min(34%, 20em); }
+.vector-blackline[data-input="touch"][data-compact="0"] .vb-tl { max-height: none; }
+.vector-blackline .vb-obj { border-left: 3px solid var(--amber); padding: 6px 12px; } .vector-blackline .vb-obj-k { color: var(--amber); font-size: .66rem; letter-spacing: .16em; font-weight: 800; } .vector-blackline .vb-obj-t { font-weight: 700; font-size: 1.05em; line-height: 1.2; } .vector-blackline .vb-obj-s { color: var(--dim); font-size: .8em; } .vector-blackline .vb-obj .vb-meter { margin-top: 5px; }
+.vector-blackline .vb-obj.pop { animation: vbslide var(--t-med) ease-out; } @keyframes vbslide { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
+.vector-blackline .vb-feed { margin-top: var(--s2); font-size: .78rem; } .vector-blackline .vb-feed div { background: rgba(6,9,12,.6); padding: 2px 8px; margin-bottom: 2px; width: fit-content; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .vector-blackline .vb-feed .me { border-left: 2px solid var(--amber); } .vector-blackline .vb-feed .dead { border-left: 2px solid var(--bad); }
+.vector-blackline .vb-squad { margin-top: var(--s2); } .vector-blackline .vb-squad > div { display: grid; grid-template-columns: 1fr 4.5em auto; align-items: center; gap: 8px; background: rgba(6,9,12,.55); padding: 2px 8px; margin-bottom: 2px; font-size: .78rem; } .vector-blackline .vb-squad .dn b { color: var(--amber); } .vector-blackline .vb-squad .dead { opacity: .5; } .vector-blackline .vb-squad em { font-style: normal; color: var(--amber); font-size: .66rem; font-weight: 800; }
+
+/* top-right: minimap, score, connection. Sized so it clears the touch cluster underneath. */
+.vector-blackline { --mm: clamp(140px, calc(var(--u) * 24), 230px); }
+.vector-blackline[data-input="touch"] { --mm: clamp(72px, calc(var(--vh, 1dvh) * 100 - var(--tb) * 3.7 - var(--s5) - var(--s3) - var(--sat) - var(--sab)), calc(var(--u) * 34)); }
+.vector-blackline .vb-tr { position: absolute; top: calc(var(--sat) + var(--edge)); right: calc(var(--sar) + var(--edge)); text-align: right; }
+.vector-blackline[data-input="touch"] .vb-tr { top: calc(var(--sat) + var(--cm)); right: calc(var(--sar) + var(--cm)); }
+.vector-blackline .vb-tr canvas { width: var(--mm); height: var(--mm); border-radius: 50%; background: rgba(0,0,0,.4); display: block; margin-left: auto; }
+.vector-blackline[data-tiny="1"][data-input="touch"] .vb-tr canvas { display: none; }
 .vector-blackline .vb-score { margin-top: 6px; font-weight: 800; letter-spacing: .12em; text-shadow: 0 1px 2px #000; } .vector-blackline .vb-ping { color: var(--dim); font-size: .7rem; }
-.vector-blackline .vb-bl { position: absolute; left: calc(var(--sal) + 14px); bottom: calc(var(--sab) + 12px); display: flex; flex-direction: column; gap: 8px; width: min(300px, 40%); }
-.vector-blackline .vb-squad > div { display: grid; grid-template-columns: 1fr 70px auto; align-items: center; gap: 8px; background: rgba(6,9,12,.55); padding: 2px 8px; margin-bottom: 2px; font-size: .78rem; } .vector-blackline .vb-squad .dn b { color: var(--amber); } .vector-blackline .vb-squad .dead { opacity: .5; } .vector-blackline .vb-squad em { font-style: normal; color: var(--amber); font-size: .66rem; font-weight: 800; }
-.vector-blackline .vb-vitals { background: rgba(6,9,12,.65); padding: 8px 12px; border-left: 3px solid var(--bad); } .vector-blackline .vb-vitals span { font-size: 1.9em; font-weight: 800; line-height: 1; display: inline-block; min-width: 2.2ch; } .vector-blackline .vb-vitals .vb-ar { display: flex; align-items: center; gap: 8px; margin-top: 4px; } .vector-blackline .vb-vitals .vb-ar span { font-size: 1.1em; color: var(--blue); } .vector-blackline .vb-hp { display: flex; align-items: center; gap: 10px; }
-.vector-blackline .vb-vitals .vb-meter { flex: 1; height: 8px; } .vector-blackline .vb-meter.hp i { background: var(--bad); } .vector-blackline .vb-meter.ar i { background: var(--blue); } .vector-blackline .vb-meter.hp.low { animation: vbpulse .8s infinite; } @keyframes vbpulse { 50% { opacity: .35; } }
-.vector-blackline .vb-br { position: absolute; right: calc(var(--sar) + 14px); bottom: calc(var(--sab) + 12px); text-align: right; }
-.vector-blackline .vb-eq { font-size: .8rem; color: var(--dim); margin-bottom: 6px; display: flex; flex-direction: column; gap: 2px; } .vector-blackline .vb-eq b { display: inline-block; background: rgba(255,255,255,.14); color: #fff; border-radius: 3px; padding: 0 6px; margin-right: 4px; }
-.vector-blackline .vb-ammo { background: rgba(6,9,12,.65); padding: 8px 14px; border-right: 3px solid var(--amber); min-width: 190px; } .vector-blackline .vb-wn { font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); }
-.vector-blackline .vb-am b { font-size: 2.6em; line-height: 1; font-weight: 800; } .vector-blackline .vb-am b.low { color: var(--bad); } .vector-blackline .vb-am span { font-size: 1.2em; color: var(--dim); margin-left: 6px; }
+
+/* bottom: health and armour (left), weapon (right). On touch they become one row between the stick and the buttons. */
+.vector-blackline .vb-vitals { position: absolute; left: calc(var(--sal) + var(--edge)); bottom: calc(var(--sab) + var(--edge)); width: min(19em, 38%); padding: 8px 12px; border-left: 3px solid var(--bad); }
+.vector-blackline .vb-ammo { position: absolute; right: calc(var(--sar) + var(--edge)); bottom: calc(var(--sab) + var(--edge)); text-align: right; padding: 8px 14px; border-right: 3px solid var(--amber); min-width: 12em; }
+.vector-blackline .vb-bc { display: contents; }
+.vector-blackline .vb-bottom { display: contents; }
+.vector-blackline[data-input="touch"] .vb-bottom { position: absolute; left: var(--bc-l); right: var(--bc-r); bottom: calc(var(--sab) + var(--cm)); display: flex; flex-direction: column; gap: var(--s2); }
+.vector-blackline[data-input="touch"] .vb-bc { display: flex; gap: var(--s2); align-items: flex-end; justify-content: space-between; }
+.vector-blackline[data-input="touch"] .vb-vitals, .vector-blackline[data-input="touch"] .vb-ammo { position: static; flex: 1 1 0; min-width: 0; width: auto; padding: 6px 10px; }
+/* stack the two readouts only when the space between the stick and the buttons is really small */
+.vector-blackline[data-input="touch"] .vb-bottom { container-type: inline-size; }
+@container (max-width: 385px) {
+  .vector-blackline .vb-bc { flex-direction: column; align-items: stretch; gap: var(--s1); }
+  .vector-blackline .vb-vitals, .vector-blackline .vb-ammo { flex: none; }
+}
+.vector-blackline .vb-hp { display: flex; align-items: center; gap: 10px; }
+.vector-blackline .vb-vitals .vb-num { font-size: 1.9em; font-weight: 800; line-height: 1; display: inline-block; min-width: 2.2ch; font-variant-numeric: tabular-nums; }
+.vector-blackline .vb-vitals .vb-ar { display: flex; align-items: center; gap: 10px; margin-top: 4px; } .vector-blackline .vb-vitals .vb-ar .vb-num { font-size: 1.1em; color: var(--blue); }
+.vector-blackline .vb-lab { font-size: .6rem; letter-spacing: .16em; color: var(--dim); font-weight: 700; margin-right: -4px; }
+.vector-blackline .vb-vitals .vb-meter { flex: 1; height: 8px; } .vector-blackline .vb-meter.hp i { background: var(--bad); } .vector-blackline .vb-meter.ar i { background: var(--blue); }
+.vector-blackline .vb-meter.hp.low { animation: vbpulse .8s infinite; } @keyframes vbpulse { 50% { opacity: .35; } }
+.vector-blackline .vb-wn { font-size: .78rem; letter-spacing: .12em; text-transform: uppercase; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vector-blackline .vb-am b { font-size: 2.6em; line-height: 1; font-weight: 800; font-variant-numeric: tabular-nums; } .vector-blackline .vb-am b.low { color: var(--bad); } .vector-blackline .vb-am span { font-size: 1.2em; color: var(--dim); margin-left: 6px; }
+.vector-blackline .vb-am b.low::after { content: ' LOW'; font-size: .26em; letter-spacing: .14em; vertical-align: middle; }   /* a word, not only a colour */
 .vector-blackline .vb-ammo .vb-meter { visibility: hidden; margin-top: 4px; } .vector-blackline .vb-ammo .vb-meter.on { visibility: visible; }
-.vector-blackline .vb-prompt { position: absolute; left: 50%; top: 62%; transform: translateX(-50%); display: flex; align-items: center; gap: 12px; background: rgba(6,9,12,.78); padding: 8px 16px; border: 1px solid var(--line); border-radius: 4px; }
+.vector-blackline .vb-meter { height: 7px; background: rgba(255,255,255,.1); border-radius: 2px; overflow: hidden; } .vector-blackline .vb-meter i { display: block; height: 100%; background: var(--amber); } .vector-blackline .vb-meter.thin { height: 4px; }
+
+/* chips: medkit, equipment, weapon swap. A hint line on desktop and controller, a real button on touch. */
+.vector-blackline .vb-chips { display: flex; gap: var(--s2); margin-top: 5px; font-size: .78rem; color: var(--dim); }
+.vector-blackline .vb-ammo .vb-chips { justify-content: flex-end; }
+.vector-blackline .vb-chip { display: inline-flex; align-items: center; gap: 5px; background: none; border: 0; padding: 0; color: inherit; font: inherit; pointer-events: none; }
+.vector-blackline .vb-chip b { color: var(--text); font-weight: 700; }
+.vector-blackline .vb-chip .vb-ic { width: 1.1em; height: 1.1em; }
+.vector-blackline .vb-chip[hidden] { display: none; }
+.vector-blackline .vb-key { display: inline-block; min-width: 1.6em; text-align: center; background: rgba(255,255,255,.14); color: #fff; border: 1px solid rgba(255,255,255,.25); border-bottom-width: 2px; border-radius: 3px; padding: 0 5px; font: 700 .85em var(--font); letter-spacing: .04em; }
+.vector-blackline .vb-key-pad { border-radius: 999px; background: rgba(240,163,58,.25); border-color: rgba(240,163,58,.6); }
+.vector-blackline[data-input="touch"] .vb-key { display: none; }
+.vector-blackline[data-input="touch"] .vb-chips { margin-top: 0; }
+.vector-blackline[data-input="touch"] .vb-vitals, .vector-blackline[data-input="touch"] .vb-ammo { display: flex; align-items: center; gap: var(--s2); }
+.vector-blackline[data-input="touch"] .vb-vitals > .vb-bars, .vector-blackline[data-input="touch"] .vb-ammo > .vb-readout { flex: 1; min-width: 0; }
+.vector-blackline[data-input="touch"] .vb-chip { pointer-events: auto; touch-action: none; min-width: 44px; min-height: 44px; justify-content: center; flex-direction: column; gap: 1px; background: rgba(255,255,255,.08); border: 1px solid var(--hud-line); border-radius: var(--radius); color: var(--text); font-size: .72rem; font-weight: 700; letter-spacing: .04em; }
+.vector-blackline[data-input="touch"] .vb-chip.on { background: var(--amber); color: #1b1203; border-color: var(--amber); }
+.vector-blackline[data-input="touch"] .vb-chip[data-dis="1"] { opacity: .35; }
+.vector-blackline[data-input="touch"] .vb-chip .vb-chip-t { display: block; font-size: .85em; line-height: 1; }
+.vector-blackline:not([data-input="touch"]) .vb-chip .vb-chip-t { display: none; }
+.vector-blackline[data-input="touch"] .vb-ammo { text-align: left; }
+
+/* calm: when nothing is happening, secondary panels step back */
+.vector-blackline .vb-calm .vb-vitals, .vector-blackline .vb-calm .vb-ammo, .vector-blackline .vb-calm .vb-tr { opacity: .6; }
+
+/* contextual prompt, centre messages, subtitles, scoreboard */
+.vector-blackline .vb-prompt { position: absolute; left: 50%; top: 62%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; background: rgba(6,9,12,.78); padding: 6px 14px; border: 1px solid var(--hud-line); border-radius: var(--radius); white-space: nowrap; }
+.vector-blackline .vb-prompt b { color: var(--amber); letter-spacing: .1em; font-size: .75em; }
 .vector-blackline .vb-ring { width: 60px; height: 6px; background: rgba(255,255,255,.15); border-radius: 3px; overflow: hidden; } .vector-blackline .vb-ring i { display: block; height: 100%; background: var(--amber); }
-.vector-blackline .vb-center-msg { position: absolute; left: 50%; top: 24%; transform: translateX(-50%); font-size: 1.5em; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; text-shadow: 0 2px 6px #000; opacity: 0; transition: opacity .25s; text-align: center; width: 90%; } .vector-blackline .vb-center-msg.show { opacity: 1; }
-.vector-blackline .vb-sub-line { position: absolute; left: 50%; bottom: calc(var(--sab) + 90px); transform: translateX(-50%); width: min(720px, 70%); text-align: center; background: rgba(0,0,0,.62); padding: 8px 14px; border-radius: 3px; font-size: 1.05em; } .vector-blackline .vb-sub-line b { color: var(--amber); margin-right: 6px; }
+.vector-blackline .vb-center-msg { position: absolute; left: 50%; top: 30%; transform: translateX(-50%); font-size: 1.4em; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; text-shadow: 0 2px 6px #000; opacity: 0; transition: opacity .25s; text-align: center; width: 90%; } .vector-blackline .vb-center-msg.show { opacity: 1; }
+.vector-blackline .vb-sub-line { position: absolute; left: 50%; bottom: calc(var(--sab) + var(--edge) + 6em); transform: translateX(-50%); width: min(720px, 56%); text-align: center; background: rgba(0,0,0,.62); padding: 6px 14px; border-radius: 3px; font-size: calc(1.05em * var(--subs)); } .vector-blackline .vb-sub-line b { color: var(--amber); margin-right: 6px; }
+.vector-blackline[data-input="touch"] .vb-sub-line { position: static; transform: none; width: auto; font-size: calc(.95em * var(--subs)); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
 .vector-blackline .vb-board { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(640px, 90%); background: rgba(6,9,12,.9); border: 1px solid var(--line); padding: 12px; }
+.vector-blackline .vb-hud.vb-cine .vb-frame, .vector-blackline .vb-hud.vb-cine .vb-cross, .vector-blackline .vb-hud.vb-cine .vb-tags, .vector-blackline .vb-hud.vb-cine .vb-ways { visibility: hidden; }
 
 /* ============================================================
-   Touch controls (landscape). Shown only on touch devices.
+   Touch controls. Only in the DOM while the active input is touch.
+   Every position below comes from --tb (one button) and the safe-area
+   insets, never from raw vh/vw, so nothing can land on anything else.
    ============================================================ */
-.vector-blackline .vb-touch { position: absolute; inset: 0; z-index: 5; --tb: clamp(46px, 14vh, 72px); }
-.vector-blackline .vb-lookzone { position: absolute; top: 0; bottom: 0; right: 0; left: 42%; touch-action: none; }
-.vector-blackline .vb-stick { position: absolute; left: calc(var(--sal) + 3vw); bottom: calc(var(--sab) + 6vh); width: clamp(120px, 34vh, 190px); height: clamp(120px, 34vh, 190px); touch-action: none; }
-.vector-blackline .vb-stick-base { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(255,255,255,.25); background: rgba(255,255,255,.06); }
+.vector-blackline .vb-touch { position: absolute; inset: 0; pointer-events: none; }
+.vector-blackline .vb-touch > * { pointer-events: auto; }
+.vector-blackline .vb-lookzone { position: absolute; top: 0; bottom: 0; right: 0; left: 36%; z-index: var(--z-look); touch-action: none; }
+.vector-blackline .vb-touch[data-custom="1"] .vb-lookzone { left: 0; }
+.vector-blackline .vb-stick { position: absolute; z-index: var(--z-touch); left: calc(var(--sal) + var(--cm)); bottom: calc(var(--sab) + var(--cm)); width: var(--stick); height: var(--stick); touch-action: none; opacity: var(--to); }
+.vector-blackline .vb-stick::before { content: ''; position: absolute; inset: -12%; }                 /* forgiving hit area, bigger than what you see */
+.vector-blackline .vb-stick-base { position: absolute; inset: 0; border-radius: 50%; border: 2px solid rgba(255,255,255,.3); background: rgba(255,255,255,.06); }
 .vector-blackline .vb-stick-knob { position: absolute; left: 50%; top: 50%; width: 42%; height: 42%; margin: -21% 0 0 -21%; border-radius: 50%; background: rgba(240,163,58,.55); border: 2px solid rgba(255,255,255,.5); pointer-events: none; }
-.vector-blackline .vb-tbtn { position: absolute; width: var(--tb); height: var(--tb); border-radius: 50%; border: 2px solid rgba(255,255,255,.35); background: rgba(10,14,18,.55); color: #fff; font-weight: 800; font-size: calc(var(--tb) * .2); letter-spacing: .04em; display: grid; place-items: center; touch-action: none; padding: 0; backdrop-filter: blur(2px); }
-.vector-blackline .vb-tbtn.on { background: rgba(240,163,58,.6); } .vector-blackline .vb-tbtn.latched { background: rgba(240,163,58,.45); border-color: var(--amber); }
-.vector-blackline .vb-t-fire { right: calc(var(--sar) + 4vw); bottom: calc(var(--sab) + 12vh); width: calc(var(--tb) * 1.35); height: calc(var(--tb) * 1.35); background: rgba(255,90,74,.35); border-color: rgba(255,90,74,.8); }
-.vector-blackline .vb-t-ads { right: calc(var(--sar) + 4vw + var(--tb) * 1.55); bottom: calc(var(--sab) + 20vh); }
-.vector-blackline .vb-t-reload { right: calc(var(--sar) + 4vw + var(--tb) * 1.6); bottom: calc(var(--sab) + 4vh); }
-.vector-blackline .vb-t-jump { right: calc(var(--sar) + 4vw + var(--tb) * .1); bottom: calc(var(--sab) + 12vh + var(--tb) * 1.55); }
-.vector-blackline .vb-t-crouch { right: calc(var(--sar) + 4vw + var(--tb) * 1.7); bottom: calc(var(--sab) + 20vh + var(--tb) * 1.15); }
-.vector-blackline .vb-t-use { right: calc(var(--sar) + 4vw + var(--tb) * 3.3); bottom: calc(var(--sab) + 36vh); }
-.vector-blackline .vb-t-swap { right: calc(var(--sar) + 16px); top: calc(var(--sat) + 190px); width: calc(var(--tb) * .75); height: calc(var(--tb) * .75); }
-.vector-blackline .vb-t-equip { right: calc(var(--sar) + 16px + var(--tb) * .9); top: calc(var(--sat) + 190px); width: calc(var(--tb) * .75); height: calc(var(--tb) * .75); }
-.vector-blackline .vb-t-heal { right: calc(var(--sar) + 16px + var(--tb) * 1.8); top: calc(var(--sat) + 190px); width: calc(var(--tb) * .75); height: calc(var(--tb) * .75); }
-.vector-blackline .vb-t-pause { left: 50%; margin-left: calc(var(--tb) * -.3); top: calc(var(--sat) + 8px); width: calc(var(--tb) * .6); height: calc(var(--tb) * .6); }
-/* On touch the left/right bottom corners belong to the controls, so the vitals and ammo sit between them. */
-.vector-blackline.vb-touchmode .vb-bl { left: calc(var(--sal) + clamp(150px, 42vh, 250px)); bottom: calc(var(--sab) + 6px); width: min(260px, 26%); }
-.vector-blackline.vb-touchmode .vb-br { right: auto; left: 50%; transform: translateX(10%); bottom: calc(var(--sab) + 6px); }
-.vector-blackline.vb-touchmode .vb-eq { display: none; }
-.vector-blackline.vb-touchmode .vb-tr canvas { width: calc(110px * var(--hud)); height: calc(110px * var(--hud)); }
-.vector-blackline.vb-touchmode .vb-t-swap, .vector-blackline.vb-touchmode .vb-t-equip, .vector-blackline.vb-touchmode .vb-t-heal { top: calc(var(--sat) + 140px * var(--hud)); }
-.vector-blackline.vb-touchmode .vb-prompt { top: 48%; }
+.vector-blackline .vb-tbtn { position: absolute; z-index: var(--z-touch); width: calc(var(--d) * var(--tb)); height: calc(var(--d) * var(--tb)); right: calc(var(--sar) + var(--cm) + (var(--x) - var(--d) / 2) * var(--tb)); bottom: calc(var(--sab) + var(--cm) + (var(--y) - var(--d) / 2) * var(--tb));
+  border-radius: 50%; border: 2px solid rgba(255,255,255,.4); background: rgba(10,14,18,.6); color: #fff; padding: 0; opacity: var(--to); touch-action: none;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; transition: background var(--t-fast), opacity var(--t-fast), transform var(--t-fast); }
+.vector-blackline .vb-tbtn .vb-ic { width: 40%; height: 40%; }
+.vector-blackline .vb-tlabel { font-size: max(8px, calc(var(--tb) * .15)); font-weight: 800; letter-spacing: .06em; line-height: 1; }
+.vector-blackline .vb-t-fire { background: rgba(255,90,74,.32); border-color: rgba(255,90,74,.85); } .vector-blackline .vb-t-fire .vb-ic { width: 46%; height: 46%; }
+.vector-blackline .vb-tbtn.on { opacity: 1; background: rgba(240,163,58,.65); transform: scale(.94); } .vector-blackline .vb-tbtn.latched { opacity: 1; background: rgba(240,163,58,.45); border-color: var(--amber); }
+.vector-blackline .vb-ctx { display: none; } .vector-blackline .vb-ctx-use .vb-ctx, .vector-blackline .vb-editing .vb-ctx { display: flex; }
+.vector-blackline .vb-ctx-use .vb-t-interact { opacity: 1; border-color: var(--amber); }
+.vector-blackline .vb-t-pause { right: auto; bottom: auto; left: 50%; top: calc(var(--sat) + var(--cm)); width: var(--pb); height: var(--pb); margin-left: calc(var(--pb) / -2); }
+.vector-blackline .vb-t-pause .vb-ic { width: 46%; height: 46%; }
+.vector-blackline .vb-editing .vb-lookzone { pointer-events: none; }
+.vector-blackline .vb-editing .vb-tbtn, .vector-blackline .vb-editing .vb-stick { outline: 2px dashed var(--amber); outline-offset: 3px; opacity: 1; }
+.vector-blackline .vb-editbar { position: absolute; z-index: var(--z-context); left: 50%; top: calc(var(--sat) + var(--s2)); transform: translateX(-50%); display: flex; align-items: center; gap: var(--s2); background: var(--panel); border: 1px solid var(--line); padding: 6px 10px; border-radius: var(--radius); pointer-events: auto; }
+.vector-blackline .vb-editbar p { margin: 0 var(--s2) 0 0; color: var(--dim); font-size: .8rem; letter-spacing: .06em; text-transform: uppercase; }
 
-/* ---------- compact landscape phones ---------- */
+/* phone held upright (only reachable by choosing Continue on the turn-your-device screen): shrink so nothing overlaps */
+.vector-blackline[data-input="touch"][data-orient="portrait"] { --tb: calc(clamp(38px, calc(var(--vw, 1dvw) * 9), 64px) * var(--ts)); --stick: calc(clamp(96px, calc(var(--vw, 1dvw) * 28), 170px) * var(--ss)); --mm: clamp(72px, calc(var(--vw, 1dvw) * 22), 130px); }
+.vector-blackline[data-input="touch"][data-orient="portrait"] .vb-bottom { left: calc(var(--sal) + var(--cm)); right: calc(var(--sar) + var(--cm)); bottom: calc(var(--sab) + var(--cm) + var(--tb) * 3.6 + var(--s2)); }
+
+/* ============================================================
+   Overlays: loading (honest bar), orientation, hover and motion rules
+   ============================================================ */
+.vector-blackline .vb-bar.indet i { width: 32% !important; animation: vbind 1.3s ease-in-out infinite; }
+@keyframes vbind { 0% { transform: translateX(-110%); } 100% { transform: translateX(340%); } }
+.vector-blackline .vb-orient h2 { letter-spacing: .24em; text-transform: uppercase; font-size: 1.25rem; }
+.vector-blackline .vb-orient .vb-logo { font-size: 1rem; opacity: .85; }
+.vector-blackline .vb-orient .vb-row { justify-content: center; margin-top: var(--s4); }
+.vector-blackline .vb-padfocus { outline: 2px solid var(--amber); outline-offset: 2px; }
+.vector-blackline .vb-pill-fs { display: inline-flex; align-items: center; gap: 8px; }
+@media (hover: none) {
+  .vector-blackline .vb-btn:hover:not(:disabled) { background: rgba(255,255,255,.07); }
+  .vector-blackline .vb-btn.primary:hover:not(:disabled) { background: var(--amber); }
+  .vector-blackline .vb-nav-btn:hover:not(:disabled) { border-left-color: transparent; background: rgba(255,255,255,.04); padding-left: 16px; }
+}
+/* compact landscape phones: tighter menus */
 @media (max-height: 520px) {
   .vector-blackline { font-size: 14px; }
   .vector-blackline .vb-screen { padding-top: calc(var(--sat) + 8px); padding-bottom: calc(var(--sab) + 8px); }
-  .vector-blackline .vb-top-title { font-size: 1.15rem; } .vector-blackline .vb-nav-btn { padding: 5px 14px; min-height: 36px; font-size: .82rem; } .vector-blackline .vb-nav-btn small { display: none; }
+  .vector-blackline .vb-top-title { font-size: 1.15rem; } .vector-blackline .vb-nav-btn { padding: 5px 14px; min-height: 40px; font-size: .82rem; } .vector-blackline .vb-nav-btn small { display: none; }
   .vector-blackline .vb-card { display: none; } .vector-blackline .vb-panel { padding: 10px 12px; margin-bottom: 8px; } .vector-blackline .vb-panel h1 { font-size: 1.5rem; }
 }
-@media (max-width: 760px) { .vector-blackline .vb-split, .vector-blackline .vb-split.wide { grid-template-columns: 1fr; } .vector-blackline .vb-preview-gap { display: none; } .vector-blackline .vb-tl { max-width: 52%; } }
+@media (max-width: 760px) { .vector-blackline .vb-split, .vector-blackline .vb-split.wide { grid-template-columns: 1fr; } .vector-blackline .vb-preview-gap { display: none; } }
+/* reduced motion: from the player's setting or from the operating system */
 .vector-blackline.vb-reduced *, .vector-blackline.vb-reduced *::before, .vector-blackline.vb-reduced *::after { animation: none !important; transition: none !important; }
-@media (prefers-reduced-motion: reduce) { .vector-blackline .vb-orient-icon, .vector-blackline .vb-meter.hp.low { animation: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .vector-blackline *, .vector-blackline *::before, .vector-blackline *::after { animation: none !important; transition: none !important; }
+  .vector-blackline .vb-bar.indet i { width: 100% !important; opacity: .45; }
+}
 
-.vector-blackline .vb-hud.vb-cine > *:not(.vb-sub-line):not(.vb-vig) { visibility: hidden; }
+/* HUD detail: label + bar pairs, prompt keys that must stay visible on touch */
+.vector-blackline .vb-bar2 { flex: 1; min-width: 0; }
+.vector-blackline .vb-bar2 .vb-lab { display: block; margin: 0 0 2px; }
+.vector-blackline .vb-vitals .vb-meter { width: 100%; }
+.vector-blackline .vb-pk:empty { display: none; }
+.vector-blackline[data-input="touch"] .vb-key.vb-show { display: inline-block; }
+.vector-blackline[data-input="touch"] .vb-ar .vb-num { min-width: 2.2ch; }
+
+/* touch: let a long weapon name wrap instead of being cut off */
+.vector-blackline[data-input="touch"] .vb-wn { white-space: normal; line-height: 1.1; letter-spacing: .06em; }
+
+.vector-blackline .vb-am { white-space: nowrap; }
+/* touch readouts: the weapon panel is sized by its content, health takes the rest */
+.vector-blackline[data-input="touch"] .vb-ammo { flex: 0 0 auto; }
+.vector-blackline[data-input="touch"] .vb-vitals { flex: 1 1 0; }
+.vector-blackline[data-input="touch"] .vb-am b { font-size: 2.2em; }
+.vector-blackline[data-input="touch"] .vb-am span { font-size: 1em; margin-left: 4px; }
+.vector-blackline[data-input="touch"] .vb-ammo .vb-readout { flex: 0 0 auto; }
+.vector-blackline[data-input="touch"] .vb-wn { max-width: 7.5em; }
+@container (max-width: 385px) { .vector-blackline .vb-ammo { flex: none; } }
+
+.vector-blackline[data-input="touch"] .vb-vitals .vb-num { font-size: 1.65em; min-width: 2.3ch; }
+.vector-blackline[data-input="touch"] .vb-vitals .vb-ar .vb-num { font-size: 1.1em; }
+.vector-blackline[data-input="touch"] .vb-hp, .vector-blackline[data-input="touch"] .vb-ar { gap: 6px; }
+.vector-blackline[data-input="touch"][data-compact="1"] .vb-sub-line { -webkit-line-clamp: 1; line-clamp: 1; padding: 3px 10px; }
