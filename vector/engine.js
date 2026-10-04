@@ -60,7 +60,7 @@ export class Engine {
     if (checkpoint) this.sim.restoreCheckpoint(checkpoint);
     this.me = this.sim.players.get('me');
     this.lookSelf = look; this.nameSelf = name || 'Echo'; this.loadout = loadout; this.difficulty = difficulty;
-    await this.r.buildWorld(this.map, (p) => this.h.onLoad && this.h.onLoad(0.3 + p * 0.5));
+    await this.r.buildWorld(this.map, (p) => this.h.onLoad && this.h.onLoad(p));
     this.aim.yaw = this.me.yaw; this.aim.pitch = 0;
     this.lastDoors = '';
     this.primeEntities();
@@ -77,7 +77,7 @@ export class Engine {
     this.map = buildMap(msg.mapId); this.mapId = msg.mapId;
     this.me = createPlayer(uid, name, loadout, this.store.profile.level); this.me.look = look;
     const sp = this.map.spawns.players[0] || this.map.spawns.ffa[0]; this.me.x = sp.x; this.me.z = sp.z; this.me.synced = false;
-    await this.r.buildWorld(this.map, (p) => this.h.onLoad && this.h.onLoad(0.3 + p * 0.5));
+    await this.r.buildWorld(this.map, (p) => this.h.onLoad && this.h.onLoad(p));
     this.audio.startAmbience(this.map.env.indoor);
     this.h.onLoad && this.h.onLoad(1);
   }
@@ -292,7 +292,7 @@ export class Engine {
       case 'door': { const d = this.map.boxes.find((b) => b.id === e.id); if (d && this.kind === 'local') d.open = e.open; if (d) a.play('door', d.x, d.z, { maxD: 40 }); break; }
       case 'dialogue': this.h.onDialogue && this.h.onDialogue(e); a.play('radio'); break;
       case 'objective': this.h.onObjective && this.h.onObjective(e); a.play('objective'); break;
-      case 'objectiveDone': a.play('objective'); break;
+      case 'objectiveDone': this.h.onObjectiveDone && this.h.onObjectiveDone(e); a.play('objective'); break;
       case 'checkpoint': if (this.kind === 'local' && this.sim.checkpoint) { this.store.saveCheckpoint(JSON.parse(JSON.stringify(this.sim.checkpoint)), this.missionId); this.h.onToast && this.h.onToast('Checkpoint saved'); } break;
       case 'wave': a.play('alarm'); this.h.onToast && this.h.onToast('Reinforcements incoming'); break;
       case 'alert': { a.play('alert', e.x, e.z, { maxD: 50 }); break; }
@@ -318,7 +318,7 @@ export class Engine {
     }
   }
 
-  haptic(ms) { const s = this.store.settings; if (s.vibration && navigator.vibrate && ms > 5) { try { navigator.vibrate(Math.min(250, ms)); } catch { /* ignore */ } } }
+  haptic(ms) { const s = this.store.settings; if (!s.vibration || ms <= 5) return; if (this.input.rumble) this.input.rumble(ms); if (navigator.vibrate && this.input.mode === 'touch') { try { navigator.vibrate(Math.min(250, ms)); } catch { /* ignore */ } } }
   nameOf(id) {
     if (!id) return '';
     const s = this.lastSnap; if (!s) return id;
