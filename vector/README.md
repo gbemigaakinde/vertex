@@ -12,13 +12,37 @@ Open it at `/vector/index.html`. It reuses the Vertex Firebase sign-in because i
 | `vector/index.js` | Starts, opens and closes the game. Exposes `window.VectorBlackline = { init, open, close, destroy }` |
 | `vector/sim.js` and friends | The game rules: `player.js`, `weapons.js`, `combat.js`, `enemies.js`, `missions.js`, `world.js`. No browser code, so the same files run in the browser and on the server |
 | `vector/engine.js`, `renderer.js`, `characters.js`, `ui.js`, `input.js`, `audio.js`, `storage.js` | Browser only: loop, 3D, models, menus and HUD, controls, sound, saves |
+| `vector/platform.js` | What device this is and how it is being used: input mode (touch / keyboard+mouse / controller, switches live), visible viewport size, fullscreen and landscape lock |
+| `vector/prompts.js` | The one table that says how each action is shown per device (`E` / `A` / `USE`), plus key bindings |
+| `vector/icons.js` | The single icon set used by HUD and touch controls |
+| `vector/entry.js` | Entry point the bundle is built from |
+| `vector/game.bundle.js` | **Built file. This is what the page actually loads.** Rebuild it after any change (see Build) |
 | `vector/multiplayer.js` | Browser side of online play |
 | `vector/server/` | The multiplayer service (its own Cloudflare Worker) |
 | `vector/lib/` | Three.js r160, copied in so nothing loads from a CDN |
 | `vector/tests/` | Node tests |
 | `css/vector-blackline.css` | All styling, scoped under `.vector-blackline` |
 
-## Run it
+## Build (required after editing any file in `vector/`)
+
+`index.html` loads `vector/game.bundle.js`, not the individual files. Editing `ui.js`, `input.js` and so on changes nothing on the site until you rebuild:
+
+```
+npm i -D esbuild
+npx esbuild vector/entry.js --bundle --minify --format=esm --outfile=vector/game.bundle.js
+```
+
+Then change the `?v=` on the stylesheet and script tags in `vector/index.html` so browsers fetch the new files.
+
+## Devices and input
+
+`platform.js` decides what the player is using **right now** and writes it on the game root as `data-input="touch|kbm|pad"`. It follows the player: touch the screen and touch controls appear, move the mouse or press a key and they are removed, press a controller button and prompts become controller prompts. The touch layer only exists in the DOM while touch is active.
+
+The stylesheet sizes everything from `--vw` / `--vh` (1% of the **visible** area, written by `platform.js`, because `100vh` is wrong on iOS Safari) and one touch-button unit `--tb`. Layers use one z-index scale (`--z-*` at the top of `css/vector-blackline.css`). Touch button positions are a table in `input.js` (`TOUCH_BUTTONS`).
+
+Fullscreen and landscape lock are requested from a tap (Deploy, Join, Resume) and are allowed to fail. iPhone Safari has no fullscreen API; the game says so once and suggests Add to Home Screen.
+
+
 
 Serve the repo root with any static server and open `/vector/index.html`.
 
