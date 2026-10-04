@@ -25,9 +25,10 @@ html.vb-open, body.vb-open { overflow: hidden !important; overscroll-behavior: n
   --edge: max(calc(var(--u) * 1.6), 10px);                    /* gap between the HUD and the screen edge */
   --hud: 1; --ts: 1; --ss: 1; --to: .8; --subs: 1;             /* player settings: HUD scale, touch size, stick size, touch opacity, subtitle size */
   /* ---- touch metrics: ONE button unit drives the whole layout ---- */
-  --tb: calc(clamp(44px, min(calc(var(--u) * 15), calc(var(--vw, 1dvw) * 7.4)), 84px) * var(--ts));   /* capped by width too, so a narrow screen never gets an oversized cluster */
+  --wu: calc(var(--vw, 1dvw) * 100 - var(--sal) - var(--sar));     /* usable width: the screen minus the notch / rounded-corner insets */
+  --tb: calc(clamp(44px, min(calc(var(--u) * 15), calc(var(--wu) * .066)), 84px) * var(--ts));   /* capped by USABLE width too, so insets never squeeze the layout */
   --cm: calc(var(--tb) * .3);                                  /* margin from the screen edge */
-  --stick: calc(clamp(96px, min(calc(var(--u) * 36), calc(var(--vw, 1dvw) * 17)), 190px) * var(--ss));
+  --stick: calc(clamp(96px, min(calc(var(--u) * 36), calc(var(--wu) * .15)), 190px) * var(--ss));
   --cw: calc(var(--tb) * 4.9);                                 /* width of the right-hand action cluster */
   --bc-l: calc(var(--sal) + var(--cm) + var(--stick) + var(--s3));   /* where the bottom readouts may start ... */
   --bc-r: calc(var(--sar) + var(--cm) + var(--cw) + var(--s3));      /* ... and stop, on touch screens */
@@ -167,8 +168,6 @@ p.vb-dim, div.vb-dim { color: var(--dim); font-size: .9rem; }
    Notifications. One stack, top centre, above menus so a
    confirmation is never hidden, below blocking overlays.
    ============================================================ */
-.vector-blackline .vb-notes { position: absolute; z-index: var(--z-notify); top: calc(var(--sat) + var(--edge)); left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: var(--s1); align-items: center; pointer-events: none; width: min(92%, 30em); }
-.vector-blackline[data-input="touch"] .vb-notes { top: calc(var(--sat) + var(--cm) + var(--pb) + var(--s2)); }
 .vector-blackline .vb-note { background: rgba(8, 12, 15, .9); border: 1px solid var(--hud-line); border-left: 3px solid var(--amber); padding: 6px 14px; border-radius: 2px; font-size: .9rem; text-align: left; max-width: 100%; animation: vbin var(--t-med) ease-out; transition: opacity .35s; }
 .vector-blackline .vb-note.out { opacity: 0; }
 .vector-blackline .vb-note-k { display: block; color: var(--amber); font-size: .66rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
@@ -208,7 +207,7 @@ p.vb-dim, div.vb-dim { color: var(--dim); font-size: .9rem; }
 
 /* top-left: objective, squad, kill feed. Capped so it can never reach the controls below it. */
 .vector-blackline .vb-tl { position: absolute; top: calc(var(--sat) + var(--edge)); left: calc(var(--sal) + var(--edge)); width: min(34%, 24em); max-height: calc(var(--vh, 1dvh) * 100 - var(--stick) - var(--cm) * 2 - var(--edge) - var(--sat)); overflow: hidden; }
-.vector-blackline[data-input="touch"] .vb-tl { width: min(34%, 20em); }
+.vector-blackline[data-input="touch"] .vb-tl { width: min(30%, 17em); }
 .vector-blackline[data-input="touch"][data-compact="0"] .vb-tl { max-height: none; }
 .vector-blackline .vb-obj { border-left: 3px solid var(--amber); padding: 6px 12px; } .vector-blackline .vb-obj-k { color: var(--amber); font-size: .66rem; letter-spacing: .16em; font-weight: 800; } .vector-blackline .vb-obj-t { font-weight: 700; font-size: 1.05em; line-height: 1.2; } .vector-blackline .vb-obj-s { color: var(--dim); font-size: .8em; } .vector-blackline .vb-obj .vb-meter { margin-top: 5px; }
 .vector-blackline .vb-obj.pop { animation: vbslide var(--t-med) ease-out; } @keyframes vbslide { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
@@ -225,19 +224,6 @@ p.vb-dim, div.vb-dim { color: var(--dim); font-size: .9rem; }
 .vector-blackline .vb-score { margin-top: 6px; font-weight: 800; letter-spacing: .12em; text-shadow: 0 1px 2px #000; } .vector-blackline .vb-ping { color: var(--dim); font-size: .7rem; }
 
 /* bottom: health and armour (left), weapon (right). On touch they become one row between the stick and the buttons. */
-.vector-blackline .vb-vitals { position: absolute; left: calc(var(--sal) + var(--edge)); bottom: calc(var(--sab) + var(--edge)); width: min(19em, 38%); padding: 8px 12px; border-left: 3px solid var(--bad); }
-.vector-blackline .vb-ammo { position: absolute; right: calc(var(--sar) + var(--edge)); bottom: calc(var(--sab) + var(--edge)); text-align: right; padding: 8px 14px; border-right: 3px solid var(--amber); min-width: 12em; }
-.vector-blackline .vb-bc { display: contents; }
-.vector-blackline .vb-bottom { display: contents; }
-.vector-blackline[data-input="touch"] .vb-bottom { position: absolute; left: var(--bc-l); right: var(--bc-r); bottom: calc(var(--sab) + var(--cm)); display: flex; flex-direction: column; gap: var(--s2); }
-.vector-blackline[data-input="touch"] .vb-bc { display: flex; gap: var(--s2); align-items: flex-end; justify-content: space-between; }
-.vector-blackline[data-input="touch"] .vb-vitals, .vector-blackline[data-input="touch"] .vb-ammo { position: static; flex: 1 1 0; min-width: 0; width: auto; padding: 6px 10px; }
-/* stack the two readouts only when the space between the stick and the buttons is really small */
-.vector-blackline[data-input="touch"] .vb-bottom { container-type: inline-size; }
-@container (max-width: 385px) {
-  .vector-blackline .vb-bc { flex-direction: column; align-items: stretch; gap: var(--s1); }
-  .vector-blackline .vb-vitals, .vector-blackline .vb-ammo { flex: none; }
-}
 .vector-blackline .vb-hp { display: flex; align-items: center; gap: 10px; }
 .vector-blackline .vb-vitals .vb-num { font-size: 1.9em; font-weight: 800; line-height: 1; display: inline-block; min-width: 2.2ch; font-variant-numeric: tabular-nums; }
 .vector-blackline .vb-vitals .vb-ar { display: flex; align-items: center; gap: 10px; margin-top: 4px; } .vector-blackline .vb-vitals .vb-ar .vb-num { font-size: 1.1em; color: var(--blue); }
@@ -250,36 +236,14 @@ p.vb-dim, div.vb-dim { color: var(--dim); font-size: .9rem; }
 .vector-blackline .vb-ammo .vb-meter { visibility: hidden; margin-top: 4px; } .vector-blackline .vb-ammo .vb-meter.on { visibility: visible; }
 .vector-blackline .vb-meter { height: 7px; background: rgba(255,255,255,.1); border-radius: 2px; overflow: hidden; } .vector-blackline .vb-meter i { display: block; height: 100%; background: var(--amber); } .vector-blackline .vb-meter.thin { height: 4px; }
 
-/* chips: medkit, equipment, weapon swap. A hint line on desktop and controller, a real button on touch. */
-.vector-blackline .vb-chips { display: flex; gap: var(--s2); margin-top: 5px; font-size: .78rem; color: var(--dim); }
-.vector-blackline .vb-ammo .vb-chips { justify-content: flex-end; }
-.vector-blackline .vb-chip { display: inline-flex; align-items: center; gap: 5px; background: none; border: 0; padding: 0; color: inherit; font: inherit; pointer-events: none; }
-.vector-blackline .vb-chip b { color: var(--text); font-weight: 700; }
-.vector-blackline .vb-chip .vb-ic { width: 1.1em; height: 1.1em; }
-.vector-blackline .vb-chip[hidden] { display: none; }
-.vector-blackline .vb-key { display: inline-block; min-width: 1.6em; text-align: center; background: rgba(255,255,255,.14); color: #fff; border: 1px solid rgba(255,255,255,.25); border-bottom-width: 2px; border-radius: 3px; padding: 0 5px; font: 700 .85em var(--font); letter-spacing: .04em; }
-.vector-blackline .vb-key-pad { border-radius: 999px; background: rgba(240,163,58,.25); border-color: rgba(240,163,58,.6); }
-.vector-blackline[data-input="touch"] .vb-key { display: none; }
-.vector-blackline[data-input="touch"] .vb-chips { margin-top: 0; }
-.vector-blackline[data-input="touch"] .vb-vitals, .vector-blackline[data-input="touch"] .vb-ammo { display: flex; align-items: center; gap: var(--s2); }
-.vector-blackline[data-input="touch"] .vb-vitals > .vb-bars, .vector-blackline[data-input="touch"] .vb-ammo > .vb-readout { flex: 1; min-width: 0; }
-.vector-blackline[data-input="touch"] .vb-chip { pointer-events: auto; touch-action: none; min-width: 44px; min-height: 44px; justify-content: center; flex-direction: column; gap: 1px; background: rgba(255,255,255,.08); border: 1px solid var(--hud-line); border-radius: var(--radius); color: var(--text); font-size: .72rem; font-weight: 700; letter-spacing: .04em; }
-.vector-blackline[data-input="touch"] .vb-chip.on { background: var(--amber); color: #1b1203; border-color: var(--amber); }
-.vector-blackline[data-input="touch"] .vb-chip[data-dis="1"] { opacity: .35; }
-.vector-blackline[data-input="touch"] .vb-chip .vb-chip-t { display: block; font-size: .85em; line-height: 1; }
-.vector-blackline:not([data-input="touch"]) .vb-chip .vb-chip-t { display: none; }
-.vector-blackline[data-input="touch"] .vb-ammo { text-align: left; }
-
 /* calm: when nothing is happening, secondary panels step back */
-.vector-blackline .vb-calm .vb-vitals, .vector-blackline .vb-calm .vb-ammo, .vector-blackline .vb-calm .vb-tr { opacity: .6; }
+.vector-blackline .vb-calm .vb-vitals, .vector-blackline .vb-calm .vb-ammo, .vector-blackline .vb-calm .vb-tr, .vector-blackline .vb-calm .vb-chiprow { opacity: .6; }
 
 /* contextual prompt, centre messages, subtitles, scoreboard */
 .vector-blackline .vb-prompt { position: absolute; left: 50%; top: 62%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; background: rgba(6,9,12,.78); padding: 6px 14px; border: 1px solid var(--hud-line); border-radius: var(--radius); white-space: nowrap; }
 .vector-blackline .vb-prompt b { color: var(--amber); letter-spacing: .1em; font-size: .75em; }
 .vector-blackline .vb-ring { width: 60px; height: 6px; background: rgba(255,255,255,.15); border-radius: 3px; overflow: hidden; } .vector-blackline .vb-ring i { display: block; height: 100%; background: var(--amber); }
 .vector-blackline .vb-center-msg { position: absolute; left: 50%; top: 30%; transform: translateX(-50%); font-size: 1.4em; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; text-shadow: 0 2px 6px #000; opacity: 0; transition: opacity .25s; text-align: center; width: 90%; } .vector-blackline .vb-center-msg.show { opacity: 1; }
-.vector-blackline .vb-sub-line { position: absolute; left: 50%; bottom: calc(var(--sab) + var(--edge) + 6em); transform: translateX(-50%); width: min(720px, 56%); text-align: center; background: rgba(0,0,0,.62); padding: 6px 14px; border-radius: 3px; font-size: calc(1.05em * var(--subs)); } .vector-blackline .vb-sub-line b { color: var(--amber); margin-right: 6px; }
-.vector-blackline[data-input="touch"] .vb-sub-line { position: static; transform: none; width: auto; font-size: calc(.95em * var(--subs)); display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; line-clamp: 2; overflow: hidden; }
 .vector-blackline .vb-board { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: min(640px, 90%); background: rgba(6,9,12,.9); border: 1px solid var(--line); padding: 12px; }
 .vector-blackline .vb-hud.vb-cine .vb-frame, .vector-blackline .vb-hud.vb-cine .vb-cross, .vector-blackline .vb-hud.vb-cine .vb-tags, .vector-blackline .vb-hud.vb-cine .vb-ways { visibility: hidden; }
 
@@ -300,7 +264,7 @@ p.vb-dim, div.vb-dim { color: var(--dim); font-size: .9rem; }
   border-radius: 50%; border: 2px solid rgba(255,255,255,.4); background: rgba(10,14,18,.6); color: #fff; padding: 0; opacity: var(--to); touch-action: none;
   display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; transition: background var(--t-fast), opacity var(--t-fast), transform var(--t-fast); }
 .vector-blackline .vb-tbtn .vb-ic { width: 40%; height: 40%; }
-.vector-blackline .vb-tlabel { font-size: max(8px, calc(var(--tb) * .15)); font-weight: 800; letter-spacing: .06em; line-height: 1; }
+.vector-blackline .vb-tlabel { display: none; font-size: max(8px, calc(var(--tb) * .17)); font-weight: 800; letter-spacing: .06em; line-height: 1; }
 .vector-blackline .vb-t-fire { background: rgba(255,90,74,.32); border-color: rgba(255,90,74,.85); } .vector-blackline .vb-t-fire .vb-ic { width: 46%; height: 46%; }
 .vector-blackline .vb-tbtn.on { opacity: 1; background: rgba(240,163,58,.65); transform: scale(.94); } .vector-blackline .vb-tbtn.latched { opacity: 1; background: rgba(240,163,58,.45); border-color: var(--amber); }
 .vector-blackline .vb-ctx { display: none; } .vector-blackline .vb-ctx-use .vb-ctx, .vector-blackline .vb-editing .vb-ctx { display: flex; }
@@ -346,28 +310,82 @@ p.vb-dim, div.vb-dim { color: var(--dim); font-size: .9rem; }
   .vector-blackline .vb-bar.indet i { width: 100% !important; opacity: .45; }
 }
 
-/* HUD detail: label + bar pairs, prompt keys that must stay visible on touch */
-.vector-blackline .vb-bar2 { flex: 1; min-width: 0; }
-.vector-blackline .vb-bar2 .vb-lab { display: block; margin: 0 0 2px; }
-.vector-blackline .vb-vitals .vb-meter { width: 100%; }
-.vector-blackline .vb-pk:empty { display: none; }
-.vector-blackline[data-input="touch"] .vb-key.vb-show { display: inline-block; }
-.vector-blackline[data-input="touch"] .vb-ar .vb-num { min-width: 2.2ch; }
-
-/* touch: let a long weapon name wrap instead of being cut off */
-.vector-blackline[data-input="touch"] .vb-wn { white-space: normal; line-height: 1.1; letter-spacing: .06em; }
-
+/* ============================================================
+   Bottom group: one structure on every device.
+     .vb-bottom  = chip row (medkit, equipment, swap) above
+                   .vb-bc    = health + armour (left), weapon (right)
+   Desktop: it spans the bottom of the HUD frame.
+   Touch:   it sits between the stick and the action buttons, and the
+            usable width (screen minus notch insets) is what sizes them,
+            so the readouts always fit in one row.
+   ============================================================ */
+.vector-blackline .vb-bottom { position: absolute; left: calc(var(--sal) + var(--edge)); right: calc(var(--sar) + var(--edge)); bottom: calc(var(--sab) + var(--edge)); display: flex; flex-direction: column; gap: var(--s2); pointer-events: none; }
+.vector-blackline[data-input="touch"] .vb-bottom { left: var(--bc-l); right: var(--bc-r); bottom: calc(var(--sab) + var(--cm)); gap: var(--s1); }
+.vector-blackline .vb-bc { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--s2); }
+.vector-blackline .vb-vitals { flex: 1 1 0; min-width: 0; max-width: 19em; padding: 8px 12px; border-left: 3px solid var(--bad); }
+.vector-blackline .vb-ammo { flex: 0 1 auto; min-width: 12em; max-width: 100%; text-align: right; padding: 8px 14px; border-right: 3px solid var(--amber); }
+.vector-blackline[data-input="touch"] .vb-vitals { max-width: none; padding: 6px 10px; }
+.vector-blackline[data-input="touch"] .vb-ammo { min-width: 0; padding: 6px 10px; text-align: left; }
+.vector-blackline .vb-wn { max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.vector-blackline[data-input="touch"] .vb-wn { max-width: 12.5em; letter-spacing: .06em; }
 .vector-blackline .vb-am { white-space: nowrap; }
-/* touch readouts: the weapon panel is sized by its content, health takes the rest */
-.vector-blackline[data-input="touch"] .vb-ammo { flex: 0 0 auto; }
-.vector-blackline[data-input="touch"] .vb-vitals { flex: 1 1 0; }
 .vector-blackline[data-input="touch"] .vb-am b { font-size: 2.2em; }
 .vector-blackline[data-input="touch"] .vb-am span { font-size: 1em; margin-left: 4px; }
-.vector-blackline[data-input="touch"] .vb-ammo .vb-readout { flex: 0 0 auto; }
-.vector-blackline[data-input="touch"] .vb-wn { max-width: 7.5em; }
-@container (max-width: 385px) { .vector-blackline .vb-ammo { flex: none; } }
-
 .vector-blackline[data-input="touch"] .vb-vitals .vb-num { font-size: 1.65em; min-width: 2.3ch; }
 .vector-blackline[data-input="touch"] .vb-vitals .vb-ar .vb-num { font-size: 1.1em; }
 .vector-blackline[data-input="touch"] .vb-hp, .vector-blackline[data-input="touch"] .vb-ar { gap: 6px; }
-.vector-blackline[data-input="touch"][data-compact="1"] .vb-sub-line { -webkit-line-clamp: 1; line-clamp: 1; padding: 3px 10px; }
+.vector-blackline .vb-bar2 { flex: 1; min-width: 0; }
+.vector-blackline .vb-bar2 .vb-lab { display: block; margin: 0 0 2px; white-space: nowrap; }
+.vector-blackline .vb-vitals .vb-meter { width: 100%; }
+
+/* chips: a hint line on desktop and controller, a real 44px button on touch */
+.vector-blackline .vb-chiprow { display: flex; justify-content: flex-end; gap: var(--s3); font-size: .78rem; color: var(--dim); }
+.vector-blackline .vb-chip { display: inline-flex; align-items: center; gap: 5px; background: none; border: 0; padding: 0; color: inherit; font: inherit; pointer-events: none; }
+.vector-blackline .vb-chip b { color: var(--text); font-weight: 700; }
+.vector-blackline .vb-chip .vb-ic { width: 1.1em; height: 1.1em; }
+.vector-blackline .vb-chip[hidden] { display: none; }
+.vector-blackline .vb-chip-t { display: none; }
+.vector-blackline .vb-key { display: inline-block; min-width: 1.6em; text-align: center; background: rgba(255,255,255,.14); color: #fff; border: 1px solid rgba(255,255,255,.25); border-bottom-width: 2px; border-radius: 3px; padding: 0 5px; font: 700 .85em var(--font); letter-spacing: .04em; }
+.vector-blackline .vb-key-pad { border-radius: 999px; background: rgba(240,163,58,.25); border-color: rgba(240,163,58,.6); }
+.vector-blackline[data-input="touch"] .vb-key { display: none; }
+.vector-blackline[data-input="touch"] .vb-key.vb-show { display: inline-block; }
+.vector-blackline .vb-pk:empty { display: none; }
+.vector-blackline[data-input="touch"] .vb-chip { pointer-events: auto; touch-action: none; min-width: 48px; min-height: 44px; padding: 0 6px; justify-content: center; flex-direction: column; gap: 1px; background: var(--hud-bg); border: 1px solid var(--hud-line); border-radius: var(--radius); color: var(--text); font-size: .74rem; font-weight: 700; letter-spacing: .04em; }
+.vector-blackline[data-input="touch"] .vb-chip .vb-chip-t { display: block; font-size: .82em; line-height: 1; }
+.vector-blackline[data-input="touch"] .vb-chip.on { background: var(--amber); color: #1b1203; border-color: var(--amber); }
+.vector-blackline[data-input="touch"] .vb-chip[data-dis="1"] { opacity: .4; }
+
+/* ============================================================
+   Top centre: notifications and subtitles share one column, so they can never
+   cover each other. Desktop keeps subtitles at the bottom where there is room.
+   ============================================================ */
+.vector-blackline .vb-topc { display: contents; }
+.vector-blackline .vb-notes { position: absolute; z-index: var(--z-notify); top: calc(var(--sat) + var(--edge)); left: 50%; transform: translateX(-50%); display: flex; flex-direction: column; gap: var(--s1); align-items: center; pointer-events: none; width: min(92%, 30em); }
+.vector-blackline .vb-sub-line { position: absolute; z-index: var(--z-notify); left: 50%; bottom: calc(var(--sab) + var(--edge) + 6.8em); transform: translateX(-50%); width: min(720px, 50%); text-align: center; background: rgba(0,0,0,.62); padding: 6px 14px; border-radius: 3px; font-size: calc(1.05em * var(--subs)); pointer-events: none; }
+.vector-blackline .vb-sub-line b { color: var(--amber); margin-right: 6px; }
+.vector-blackline[data-input="touch"] .vb-topc { position: absolute; z-index: var(--z-notify); top: calc(var(--sat) + var(--cm) + var(--pb) + var(--s2)); left: 50%; transform: translateX(-50%); width: 34%; display: flex; flex-direction: column; gap: var(--s1); pointer-events: none; font-size: 12px; }
+.vector-blackline[data-input="touch"] .vb-topc .vb-notes { position: static; transform: none; width: auto; align-items: stretch; }
+.vector-blackline[data-input="touch"] .vb-topc .vb-sub-line { position: static; transform: none; width: auto; font-size: calc(.95em * var(--subs)); text-align: left; padding: 4px 10px; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; line-clamp: 3; overflow: hidden; }
+.vector-blackline[data-input="touch"][data-orient="portrait"] .vb-topc { width: 70%; }
+
+/* touch buttons: icons carry the meaning; only FIRE has room for a word */
+.vector-blackline .vb-tbtn .vb-ic { width: 50%; height: 50%; }
+.vector-blackline .vb-t-fire .vb-tlabel { display: block; }
+.vector-blackline .vb-t-fire .vb-ic { width: 46%; height: 46%; }
+.vector-blackline .vb-tbtn { min-width: 44px; min-height: 44px; }
+
+/* enemy nametags: kept apart by ui.js; this keeps a long name from running into its neighbour */
+.vector-blackline .vb-tag-i span { display: block; overflow: hidden; text-overflow: ellipsis; }
+
+/* when the space between the stick and the buttons is small, the readouts get more compact instead of overflowing */
+.vector-blackline[data-input="touch"] .vb-bottom { container-type: inline-size; }
+@container (max-width: 330px) {
+  .vector-blackline .vb-bar2 .vb-lab { display: none; }
+  .vector-blackline .vb-vitals .vb-num { font-size: 1.35em; min-width: 2.1ch; }
+  .vector-blackline .vb-vitals .vb-ar .vb-num { font-size: 1em; }
+  .vector-blackline .vb-am b { font-size: 1.8em; }
+  .vector-blackline .vb-chiprow { gap: var(--s2); }
+}
+@container (max-width: 250px) { .vector-blackline .vb-wn { display: none; } .vector-blackline .vb-ammo { padding: 6px 8px; } }
+.vector-blackline[data-input="touch"][data-compact="1"] .vb-topc .vb-sub-line { -webkit-line-clamp: 1; line-clamp: 1; }
+.vector-blackline[data-input="touch"][data-tiny="1"] .vb-topc .vb-sub-line { display: none; }
