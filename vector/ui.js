@@ -9,28 +9,58 @@ import { CAMPAIGN } from './missions.js';
 import { MAP_LIST, } from './world.js';
 import { MODES, NET } from './config.js';
 import { levelFromXp, DEFAULT_SETTINGS } from './storage.js';
+import { icon } from './icons.js';
+import { promptHtml, controlsTable, MODE_TITLE, REBINDABLE, DEFAULT_KEYS, keyName } from './prompts.js';
 
 const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const fmtTime = (s) => { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); };
 
+const pct = (v) => Math.round(v * 100) + '%';
+/* show(P) decides whether a row is relevant for the device in front of the player.
+   P = { mode: 'touch' | 'kbm' | 'pad', caps, pads }. Nothing irrelevant is ever listed. */
+const isTouch = (P) => P.mode === 'touch';
+const isMouse = (P) => P.mode === 'kbm' || (P.mode === 'pad' && P.caps.fine);
+const hasPad = (P) => P.pads > 0 || P.mode === 'pad';
 const SETTINGS_SCHEMA = [
   { group: 'Graphics', items: [
     { k: 'quality', label: 'Quality', type: 'select', opts: [['auto', 'Automatic'], ['LOW', 'Low'], ['MEDIUM', 'Medium'], ['HIGH', 'High']] },
-    { k: 'hudScale', label: 'HUD scale', type: 'range', min: 0.7, max: 1.4, step: 0.05, fmt: (v) => Math.round(v * 100) + '%' },
-    { k: 'motionFx', label: 'Motion effects (camera shake)', type: 'toggle' },
-    { k: 'reducedMotion', label: 'Reduced motion', type: 'toggle' } ] },
+    { k: 'hudScale', label: 'HUD scale', type: 'range', min: 0.7, max: 1.4, step: 0.05, fmt: pct },
+    { k: 'motionFx', label: 'Camera shake', type: 'toggle' } ] },
+  { group: 'Display', show: (P) => P.caps.fullscreen || P.needsInstall, items: [
+    { type: 'button', act: 'fullscreen', label: (P) => (P.fs ? 'Leave fullscreen' : 'Enter fullscreen'), show: (P) => P.caps.fullscreen },
+    { k: 'fullscreenOnPlay', label: 'Fullscreen when playing', type: 'select', opts: [['auto', 'Touch devices only'], ['on', 'Always'], ['off', 'Never']], show: (P) => P.caps.fullscreen },
+    { type: 'note', text: 'iPhone Safari cannot go fullscreen. For a full-screen game, tap Share, then Add to Home Screen, and open VECTOR from there.', show: (P) => P.needsInstall } ] },
   { group: 'Audio', items: [
-    { k: 'masterVol', label: 'Master', type: 'range', min: 0, max: 1, step: 0.05, fmt: (v) => Math.round(v * 100) + '%' },
-    { k: 'sfxVol', label: 'Effects', type: 'range', min: 0, max: 1, step: 0.05, fmt: (v) => Math.round(v * 100) + '%' },
-    { k: 'musicVol', label: 'Ambience', type: 'range', min: 0, max: 1, step: 0.05, fmt: (v) => Math.round(v * 100) + '%' },
-    { k: 'voiceVol', label: 'Radio', type: 'range', min: 0, max: 1, step: 0.05, fmt: (v) => Math.round(v * 100) + '%' },
-    { k: 'subtitles', label: 'Subtitles', type: 'toggle' } ] },
-  { group: 'Controls', items: [
-    { k: 'sens', label: 'Mouse sensitivity', type: 'range', min: 0.2, max: 3, step: 0.05, fmt: (v) => v.toFixed(2) },
+    { k: 'masterVol', label: 'Master', type: 'range', min: 0, max: 1, step: 0.05, fmt: pct },
+    { k: 'sfxVol', label: 'Effects', type: 'range', min: 0, max: 1, step: 0.05, fmt: pct },
+    { k: 'musicVol', label: 'Ambience', type: 'range', min: 0, max: 1, step: 0.05, fmt: pct },
+    { k: 'voiceVol', label: 'Radio', type: 'range', min: 0, max: 1, step: 0.05, fmt: pct } ] },
+  { group: 'Accessibility', items: [
+    { k: 'subtitles', label: 'Subtitles', type: 'toggle' },
+    { k: 'subtitleSize', label: 'Subtitle size', type: 'select', num: true, opts: [['0.85', 'Small'], ['1', 'Medium'], ['1.3', 'Large'], ['1.6', 'Extra large']] },
+    { k: 'colorblind', label: 'Colour-blind safe colours', type: 'toggle' },
+    { k: 'reducedMotion', label: 'Reduced motion', type: 'toggle' },
+    { k: 'flashReduce', label: 'Reduce screen flashes', type: 'toggle' } ] },
+  { group: 'Look and aim', items: [
     { k: 'aimSens', label: 'Aim sensitivity', type: 'range', min: 0.2, max: 1.5, step: 0.05, fmt: (v) => v.toFixed(2) },
-    { k: 'touchSens', label: 'Touch sensitivity', type: 'range', min: 0.3, max: 3, step: 0.05, fmt: (v) => v.toFixed(2) },
     { k: 'camDist', label: 'Camera distance', type: 'range', min: 2.0, max: 5.5, step: 0.1, fmt: (v) => v.toFixed(1) + ' m' },
-    { k: 'invertY', label: 'Invert look', type: 'toggle' },
+    { k: 'invertY', label: 'Invert look', type: 'toggle' } ] },
+  { group: 'Mouse', show: isMouse, items: [
+    { k: 'sens', label: 'Mouse sensitivity', type: 'range', min: 0.2, max: 3, step: 0.05, fmt: (v) => v.toFixed(2) } ] },
+  { group: 'Touch controls', show: isTouch, items: [
+    { k: 'touchSens', label: 'Look sensitivity', type: 'range', min: 0.3, max: 3, step: 0.05, fmt: (v) => v.toFixed(2) },
+    { k: 'aimAccel', label: 'Aim acceleration', type: 'toggle' },
+    { k: 'adsMode', label: 'Aim button', type: 'select', opts: [['toggle', 'Tap to toggle'], ['hold', 'Hold']] },
+    { k: 'crouchMode', label: 'Crouch button', type: 'select', opts: [['toggle', 'Tap to toggle'], ['hold', 'Hold']] },
+    { k: 'stickSprint', label: 'Sprint by pushing the stick fully', type: 'toggle' },
+    { k: 'touchScale', label: 'Button size', type: 'range', min: 0.8, max: 1.3, step: 0.05, fmt: pct },
+    { k: 'stickScale', label: 'Joystick size', type: 'range', min: 0.8, max: 1.4, step: 0.05, fmt: pct },
+    { k: 'touchOpacity', label: 'Button opacity', type: 'range', min: 0.3, max: 1, step: 0.05, fmt: pct },
+    { type: 'button', act: 'edit-layout', label: () => 'Move controls', show: (P) => !P.inGame } ] },
+  { group: 'Controller', show: hasPad, items: [
+    { k: 'padSens', label: 'Look speed', type: 'range', min: 0.4, max: 2.5, step: 0.05, fmt: (v) => v.toFixed(2) },
+    { k: 'padDeadzone', label: 'Stick dead zone', type: 'range', min: 0.05, max: 0.4, step: 0.01, fmt: pct } ] },
+  { group: 'Haptics', show: (P) => (P.mode === 'touch' && P.caps.vibrate) || hasPad(P), items: [
     { k: 'vibration', label: 'Vibration', type: 'toggle' } ] },
 ];
 
@@ -38,7 +68,9 @@ export class UI {
   constructor(root, app) {
     this.root = root; this.app = app; this.screen = null; this.state = { mission: null, tab: 'story', mpMode: 'coop', mpMap: 'industrial', mpMission: 'm01', code: '', lobby: null, myId: null, custom: null, opTab: 'face' };
     this.timers = []; this.listeners = []; this.cache = {}; this.toastQ = []; this.subT = null; this.mini = null; this.mmStatic = null;
+    this.platform = app.platform; this.padTimer = 0; this.actT = 0; this.pal = { bad: '#ff5a4a', mate: '#5bb8ff', down: '#ffb347', good: '#4fe3a0' };
     this.build();
+    if (this.platform) { this.unsub = this.platform.subscribe((t) => this.onPlatform(t)); this.syncPadTimer(); }
   }
 
   on(t, type, fn, o) { t.addEventListener(type, fn, o); this.listeners.push([t, type, fn, o]); }
@@ -52,13 +84,14 @@ export class UI {
       <div class="vb-hud" id="vbHud" hidden></div>
       <div class="vb-screen" id="vbScreen" hidden></div>
       <div class="vb-overlay" id="vbLoading" hidden></div>
-      <div class="vb-overlay vb-orient" id="vbOrient" hidden>
+      <div class="vb-overlay vb-orient" id="vbOrient" hidden role="alertdialog" aria-labelledby="vbOrientT">
+        <div class="vb-logo">VECTOR<span>:</span> BLACKLINE</div>
+        <h2 id="vbOrientT">Turn your device</h2>
         <div class="vb-orient-icon" aria-hidden="true"><svg viewBox="0 0 64 64" width="84" height="84"><rect x="20" y="6" width="24" height="42" rx="4" fill="none" stroke="currentColor" stroke-width="3"/><path d="M48 52c7-2 10-8 8-14m0 0l-5 1m5-1l1 5" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
-        <h2>Turn your phone sideways</h2>
-        <p>VECTOR: BLACKLINE is designed for landscape gameplay. Rotate your device to continue.</p>
-        <button class="vb-btn ghost" data-act="exit-vertex">Back to Vertex</button>
+        <p>Landscape gameplay required</p>
+        <div class="vb-row"><button class="vb-btn primary" data-act="orient-continue">Continue</button><button class="vb-btn ghost" data-act="exit-vertex">Back to Vertex</button></div>
       </div>
-      <div class="vb-toast-wrap" id="vbToasts" aria-live="polite"></div>`;
+      <div class="vb-notes" id="vbToasts" aria-live="polite"></div>`;
     this.canvas = this.q('#vbCanvas'); this.hud = this.q('#vbHud'); this.scr = this.q('#vbScreen'); this.loading = this.q('#vbLoading'); this.orient = this.q('#vbOrient'); this.toasts = this.q('#vbToasts');
     this.on(this.root, 'click', (e) => {
       const el = e.target.closest('[data-act]'); if (!el || el.disabled) return;
@@ -114,6 +147,10 @@ export class UI {
       case 'settings-back': return s.settingsFrom === 'pause' ? this.showPause() : this.showMenu();
       case 'controls-back': return s.settingsFrom === 'pause' ? this.showPause() : this.showMenu();
       case 'fullscreen': return a.toggleFullscreen();
+      case 'orient-continue': return a.continuePortrait();
+      case 'edit-layout': return this.editLayout();
+      case 'rebind': return this.startRebind(d.k, el);
+      case 'rebind-reset': a.store.setSetting('keys', {}); a.store.flush(); a.applySettings(); return this.showControls(s.settingsFrom);
       case 'retry': return a.afterResults('retry');
       default: return undefined;
     }
@@ -126,19 +163,24 @@ export class UI {
   }
   hideScreen() { this.screen = null; this.scr.hidden = true; this.scr.innerHTML = ''; }
   topbar(title, back) { return `<header class="vb-top"><div class="vb-top-title">${esc(title)}</div>${back ? `<button class="vb-btn ghost small" data-act="${back}">Back</button>` : ''}</header>`; }
-  toast(msg, ms = 2400) {
-    const t = document.createElement('div'); t.className = 'vb-toast'; t.textContent = msg; this.toasts.appendChild(t);
-    this.later(() => t.classList.add('out'), ms); this.later(() => t.remove(), ms + 400);
-    while (this.toasts.children.length > 4) this.toasts.firstChild.remove();
+  /* One notification stack. kind: '' | 'good' | 'warn'. k is a small heading. Same text twice in a row is shown once. */
+  notify(text, o = {}) {
+    const ms = o.ms || 2400, last = this.toasts.lastElementChild; if (last && last.dataset.t === text && !last.classList.contains('out')) return;
+    const n = document.createElement('div'); n.className = 'vb-note ' + (o.kind || ''); n.dataset.t = text;
+    n.innerHTML = (o.k ? `<span class="vb-note-k">${esc(o.k)}</span>` : '') + esc(text); this.toasts.appendChild(n);
+    this.later(() => n.classList.add('out'), ms); this.later(() => n.remove(), ms + 400);
+    while (this.toasts.children.length > 3) this.toasts.firstChild.remove();
   }
+  toast(msg, ms = 2400) { this.notify(msg, { ms }); }
 
   /* ---------------- loading / errors ---------------- */
+  /* The bar is indeterminate until something reports REAL progress (asset loading). No invented percentages. */
   showLoading(title = 'INITIALIZING...', sub = '') {
     this.loading.hidden = false;
-    this.loading.innerHTML = `<div class="vb-load"><div class="vb-logo">VECTOR<span>:</span> BLACKLINE</div><div class="vb-load-line" id="vbLoadLine">${esc(title)}</div><div class="vb-bar"><i id="vbLoadBar" style="width:0%"></i></div><div class="vb-load-sub" id="vbLoadSub">${esc(sub)}</div></div>`;
+    this.loading.innerHTML = `<div class="vb-load"><div class="vb-logo">VECTOR<span>:</span> BLACKLINE</div><div class="vb-load-line" id="vbLoadLine">${esc(title)}</div><div class="vb-bar indet" id="vbLoadBarW" role="progressbar" aria-label="Loading"><i id="vbLoadBar" style="width:0%"></i></div><div class="vb-load-sub" id="vbLoadSub">${esc(sub)}</div></div>`;
   }
-  setLoading(frac, line, sub) {
-    const b = this.q('#vbLoadBar'); if (b) b.style.width = Math.round(Math.max(0, Math.min(1, frac)) * 100) + '%';
+  setLoading(frac, line, sub, real) {
+    if (real) { const w = this.q('#vbLoadBarW'); if (w) w.classList.remove('indet'); const b = this.q('#vbLoadBar'); if (b) b.style.width = Math.round(Math.max(0, Math.min(1, frac)) * 100) + '%'; }
     if (line) { const l = this.q('#vbLoadLine'); if (l) l.textContent = line; }
     if (sub !== undefined) { const s = this.q('#vbLoadSub'); if (s) s.textContent = sub; }
   }
@@ -312,37 +354,105 @@ export class UI {
         <section class="vb-panel"><h3>Career</h3><div class="vb-stat-grid">${kv('Missions completed', s.missions)}${kv('Matches played', s.matches)}${kv('Wins', s.wins)}${kv('Eliminations', s.kills)}${kv('Assists', s.assists)}${kv('Deaths', s.deaths)}${kv('K/D', kd)}${kv('Accuracy', acc + '%')}${kv('Headshots', s.headshots)}${kv('Objectives', s.objectives)}${kv('Distance', Math.round(s.dist / 1000 * 10) / 10 + ' km')}${kv('Play time', Math.round(s.playtime / 60) + ' min')}</div></section></div>`);
   }
 
+  /* ---------------- device-aware helpers ---------------- */
+  P() { const p = this.platform; return { mode: p.mode, caps: p.caps, pads: p.padCount, fs: p.fs, needsInstall: p.needsInstallHint(), inGame: !!(this.app.engine && this.app.engine.running) }; }
+  onPlatform(t) {
+    if (t === 'mode' || t === 'pads') { this.refreshPrompts(); this.syncPadTimer(); if (this.screen === 'settings' || this.screen === 'controls') this.rerender(); }
+    if (t === 'fs' && (this.screen === 'settings' || this.screen === 'pause')) this.rerender();
+  }
+  rerender() {
+    const top = this.scr.scrollTop, from = this.state.settingsFrom;
+    if (this.screen === 'settings') this.showSettings(from); else if (this.screen === 'controls') this.showControls(from); else if (this.screen === 'pause') this.showPause();
+    this.scr.scrollTop = top;
+  }
+  /* Every key / button hint in the HUD is re-drawn for the active device. */
+  refreshPrompts() { const m = this.platform.mode; for (const el of this.hud.querySelectorAll('[data-pa]')) el.innerHTML = promptHtml(el.dataset.pa, m); this.cache.pr = null; }
+
+  /* Controller navigation of menus. The timer only exists while a controller is plugged in. */
+  syncPadTimer() {
+    const need = this.platform && this.platform.padCount > 0;
+    if (need && !this.padTimer) this.padTimer = setInterval(() => this.padNav(), 60);
+    else if (!need && this.padTimer) { clearInterval(this.padTimer); this.padTimer = 0; }
+  }
+  padNav() {
+    const inp = this.app.input; if (!inp) return; const act = inp.navPoll(performance.now());
+    if (!act || !this.screen || this.scr.hidden) return;                // gameplay reads the controller itself
+    if (this.platform.mode !== 'pad') this.platform.setMode('pad');
+    const list = Array.from(this.scr.querySelectorAll('button:not(:disabled), select:not(:disabled), input:not(:disabled)')).filter((e) => e.offsetParent !== null);
+    const cur = document.activeElement, idx = list.indexOf(cur), isRange = cur && cur.type === 'range', isSel = cur && cur.tagName === 'SELECT';
+    const focus = (el) => { for (const x of this.scr.querySelectorAll('.vb-padfocus')) x.classList.remove('vb-padfocus'); el.classList.add('vb-padfocus'); el.focus({ preventScroll: true }); el.scrollIntoView({ block: 'nearest' }); };
+    const fire = (el, t) => el.dispatchEvent(new Event(t, { bubbles: true }));
+    if (act === 'up' || act === 'down' || ((act === 'left' || act === 'right') && !isRange && !isSel)) {
+      if (!list.length) return; const step = act === 'down' || act === 'right' ? 1 : -1;
+      focus(list[idx < 0 ? 0 : (idx + step + list.length) % list.length]);
+    } else if ((act === 'left' || act === 'right') && isRange) {
+      const st = parseFloat(cur.step) || 1, v = parseFloat(cur.value) + (act === 'right' ? st : -st); cur.value = Math.max(parseFloat(cur.min), Math.min(parseFloat(cur.max), v)); fire(cur, 'input'); fire(cur, 'change');
+    } else if ((act === 'left' || act === 'right') && isSel) {
+      cur.selectedIndex = Math.max(0, Math.min(cur.options.length - 1, cur.selectedIndex + (act === 'right' ? 1 : -1))); fire(cur, 'change');
+    } else if (act === 'a') {
+      if (idx >= 0 && !isSel && !isRange) cur.click(); else if (idx < 0 && list.length) focus(list[0]);
+    } else if (act === 'b') {
+      const back = this.scr.querySelector('[data-act="back"],[data-act="settings-back"],[data-act="controls-back"],[data-act="resume"]'); if (back) back.click();
+    } else if (act === 'start' && this.screen === 'pause') { const r = this.scr.querySelector('[data-act="resume"]'); if (r) r.click(); }
+  }
+
   /* ---------------- settings / controls ---------------- */
   showSettings(from) {
-    this.state.settingsFrom = from; const set = this.app.store.settings;
-    const rows = SETTINGS_SCHEMA.map((g) => `<section class="vb-panel"><h3>${g.group}</h3>${g.items.map((it) => {
+    this.state.settingsFrom = from; const set = this.app.store.settings, P = this.P();
+    const row = (it) => {
+      if (it.show && !it.show(P)) return '';
+      if (it.type === 'note') return `<p class="vb-dim">${esc(it.text)}</p>`;
+      if (it.type === 'button') return `<div class="vb-set"><span></span><button class="vb-btn small" data-act="${it.act}">${esc(it.label(P))}</button></div>`;
       const v = set[it.k];
       if (it.type === 'toggle') return `<label class="vb-set"><span>${it.label}</span><input type="checkbox" data-setting="${it.k}" ${v ? 'checked' : ''}></label>`;
-      if (it.type === 'select') return `<label class="vb-set"><span>${it.label}</span><select data-setting="${it.k}">${it.opts.map(([val, n]) => `<option value="${val}" ${val === v ? 'selected' : ''}>${n}</option>`).join('')}</select></label>`;
-      return `<label class="vb-set"><span>${it.label}</span><input type="range" data-setting="${it.k}" min="${it.min}" max="${it.max}" step="${it.step}" value="${v}"><output>${it.fmt(v)}</output></label>`; }).join('')}</section>`).join('');
-    this.setScreen('settings', `<header class="vb-top"><div class="vb-top-title">Settings</div><div class="vb-row"><button class="vb-btn ghost small" data-act="reset-settings">Reset</button><button class="vb-btn small" data-act="settings-back">Done</button></div></header><div class="vb-grid cols2">${rows}</div>`, from === 'pause' ? 'vb-dim' : '');
+      if (it.type === 'select') return `<label class="vb-set"><span>${it.label}</span><select data-setting="${it.k}">${it.opts.map(([val, n]) => `<option value="${val}" ${String(val) === String(v) ? 'selected' : ''}>${n}</option>`).join('')}</select></label>`;
+      return `<label class="vb-set"><span>${it.label}</span><input type="range" data-setting="${it.k}" min="${it.min}" max="${it.max}" step="${it.step}" value="${v}"><output>${it.fmt(v)}</output></label>`;
+    };
+    const rows = SETTINGS_SCHEMA.filter((g) => !g.show || g.show(P)).map((g) => `<section class="vb-panel"><h3>${g.group}</h3>${g.items.map(row).join('')}</section>`).join('');
+    this.setScreen('settings', `<header class="vb-top"><div class="vb-top-title">Settings</div><div class="vb-row"><button class="vb-btn ghost small" data-act="reset-settings">Reset</button><button class="vb-btn small" data-act="settings-back" data-autofocus>Done</button></div></header><div class="vb-grid cols2">${rows}</div>`, from === 'pause' ? 'vb-dim' : '');
   }
   onSetting(el, commit) {
     const k = el.dataset.setting, item = SETTINGS_SCHEMA.flatMap((g) => g.items).find((i) => i.k === k); if (!item) return;
-    let v = el.type === 'checkbox' ? el.checked : el.type === 'range' ? parseFloat(el.value) : el.value;
+    const v = el.type === 'checkbox' ? el.checked : el.type === 'range' || item.num ? parseFloat(el.value) : el.value;
     this.app.store.setSetting(k, v);
     if (el.type === 'range') { const out = el.parentElement.querySelector('output'); if (out) out.textContent = item.fmt(v); }
     this.app.applySettings(); if (commit) this.app.store.flush();
   }
+  /* Only the controls of the device in your hands are listed (and a connected controller). */
   showControls(from) {
-    this.state.settingsFrom = from;
+    this.state.settingsFrom = from; const P = this.P(), keys = { ...DEFAULT_KEYS, ...(this.app.store.settings.keys || {}) };
     const k = (a, b) => `<div class="vb-kv"><span>${a}</span><b>${b}</b></div>`;
-    this.setScreen('controls', `<header class="vb-top"><div class="vb-top-title">Controls</div><button class="vb-btn small" data-act="controls-back">Done</button></header>
-      <div class="vb-grid cols2"><section class="vb-panel"><h3>Keyboard and mouse</h3>${k('Move', 'W A S D')}${k('Look', 'Mouse')}${k('Fire / Aim', 'Left / Right mouse')}${k('Sprint', 'Shift')}${k('Crouch', 'C (toggle) or Ctrl')}${k('Jump', 'Space')}${k('Reload', 'R')}${k('Interact / Revive', 'Hold E')}${k('Weapons', '1, 2, Q or wheel')}${k('Equipment', 'G')}${k('Medkit', 'H')}${k('Swap shoulder', 'V')}${k('Scoreboard', 'Tab')}${k('Pause', 'Esc')}</section>
-      <section class="vb-panel"><h3>Touch (landscape)</h3>${k('Move', 'Left stick (push fully to sprint)')}${k('Look', 'Drag the right side')}${k('Fire', 'FIRE')}${k('Aim', 'AIM (toggle)')}${k('Reload', 'RLD')}${k('Jump / Crouch', 'JMP / CRCH')}${k('Interact', 'Hold USE')}${k('Weapon', 'SWAP')}${k('Equipment / Medkit', 'EQP / MED')}${k('Pause', 'II')}</section></div>`, from === 'pause' ? 'vb-dim' : '');
+    const modes = [P.mode]; if (P.mode !== 'pad' && P.pads > 0) modes.push('pad');
+    const panel = (m) => {
+      if (m === 'kbm') return `<section class="vb-panel"><h3>${MODE_TITLE.kbm}</h3>${k('Move', 'W A S D or arrows')}${k('Look', 'Mouse')}${k('Fire / Aim', 'Left / Right mouse')}${k('Pause', 'Esc')}<h4>Keys you can change</h4>`
+        + REBINDABLE.map(([id, label]) => `<div class="vb-kv"><span>${label}</span><button class="vb-btn tiny" data-act="rebind" data-k="${id}" aria-label="Change key for ${label}">${esc(keyName(keys[id]))}</button></div>`).join('')
+        + `<div class="vb-row"><button class="vb-btn ghost small" data-act="rebind-reset">Reset keys</button></div></section>`;
+      return `<section class="vb-panel"><h3>${MODE_TITLE[m]}</h3>${controlsTable(m).map(([a, b]) => k(a, b)).join('')}</section>`;
+    };
+    this.setScreen('controls', `<header class="vb-top"><div class="vb-top-title">Controls</div><button class="vb-btn small" data-act="controls-back" data-autofocus>Done</button></header>
+      <div class="vb-grid cols2">${modes.map(panel).join('')}</div><p class="vb-dim">This list follows the device you are using. Touch the screen, use the mouse or press a controller button and it changes.</p>`, from === 'pause' ? 'vb-dim' : '');
+  }
+  startRebind(id, el) {
+    const inp = this.app.input, a = this.app.store; if (!inp || !el) return; el.textContent = 'Press a key…'; el.classList.add('primary');
+    inp.rebind = (code) => {
+      const cur = { ...DEFAULT_KEYS, ...(a.settings.keys || {}) };
+      const clash = Object.keys(cur).find((x) => x !== id && cur[x] === code), bad = ['Escape', 'KeyW', 'KeyA', 'KeyS', 'KeyD', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(code);
+      if (code === 'Escape') { /* cancelled */ } else if (bad) this.toast('That key is reserved for movement or pause'); else if (clash) this.toast('Already used by ' + (REBINDABLE.find((r) => r[0] === clash) || [0, clash])[1]); else { a.setSetting('keys', { ...(a.settings.keys || {}), [id]: code }); a.flush(); this.app.applySettings(); }
+      this.showControls(this.state.settingsFrom);
+    };
+  }
+  /* Lets a touch player drag the stick and buttons where their thumbs want them. */
+  editLayout() {
+    const inp = this.app.input; if (!inp || !inp.beginEdit(() => { this.showSettings(this.state.settingsFrom); })) { this.toast('Touch controls are not active on this device'); return; }
+    this.hideScreen(); this.hud.hidden = true;
   }
 
   /* ---------------- pause ---------------- */
   showPause() {
-    const camp = this.app.engine && this.app.engine.kind === 'local';
+    const camp = this.app.engine && this.app.engine.kind === 'local', P = this.P();
     this.setScreen('pause', `<div class="vb-center"><div class="vb-panel narrow"><h2>Paused</h2><div class="vb-stack">
-      <button class="vb-btn primary" data-act="resume" data-autofocus>Resume</button><button class="vb-btn" data-act="pause-settings">Settings</button><button class="vb-btn" data-act="pause-controls">Controls</button>
-      ${camp ? '<button class="vb-btn" data-act="restart-cp">Restart checkpoint</button>' : ''}<button class="vb-btn ghost danger" data-act="exit-mission">${camp ? 'Exit mission' : 'Leave match'}</button></div>
+      <button class="vb-btn primary" data-act="resume" data-autofocus>Resume</button>${camp ? '<button class="vb-btn" data-act="restart-cp">Restart checkpoint</button>' : ''}<button class="vb-btn" data-act="pause-settings">Settings</button><button class="vb-btn" data-act="pause-controls">Controls</button>
+      ${P.caps.fullscreen ? `<button class="vb-btn" data-act="fullscreen">${P.fs ? 'Leave fullscreen' : 'Enter fullscreen'}</button>` : ''}<button class="vb-btn ghost danger" data-act="exit-mission">${camp ? 'Quit mission' : 'Leave match'}</button></div>
       ${camp ? '' : '<p class="vb-dim">Online matches keep running while this menu is open.</p>'}</div></div>`, 'vb-dim');
   }
 
@@ -366,28 +476,52 @@ export class UI {
      HUD
      ============================================================ */
   buildHud() {
+    const chip = (tap, act, ic, id, label, aria) => `<button type="button" class="vb-chip" data-tap="${tap}" tabindex="-1" aria-label="${aria}"><span class="vb-pk" data-pa="${act}"></span>${icon(ic)}<b id="${id}"></b><span class="vb-chip-t">${label}</span></button>`;
     this.hud.innerHTML = `
       <div class="vb-vig" id="hVig"></div><div class="vb-flash" id="hFlash"></div><div class="vb-scope" id="hScope"><i></i><b></b></div>
       <div class="vb-hits" id="hHits"></div>
       <div class="vb-cross" id="hCross"><i class="t"></i><i class="b"></i><i class="l"></i><i class="r"></i><u id="hMark"></u></div>
       <div class="vb-tags" id="hTags"></div><div class="vb-ways" id="hWays"></div>
-      <div class="vb-tl"><div class="vb-obj" id="hObj"><div class="vb-obj-k" id="hObjK">OBJECTIVE</div><div class="vb-obj-t" id="hObjT"></div><div class="vb-meter thin" id="hObjBarW"><i id="hObjBar"></i></div><div class="vb-obj-s" id="hObjS"></div></div><div class="vb-feed" id="hFeed"></div></div>
-      <div class="vb-tr"><canvas id="hMini" width="176" height="176" aria-label="Minimap"></canvas><div class="vb-score" id="hScore"></div><div class="vb-ping" id="hPing"></div></div>
-      <div class="vb-bl"><div class="vb-squad" id="hSquad"></div><div class="vb-vitals"><div class="vb-hp"><span id="hHpT">100</span><div class="vb-meter hp"><i id="hHp"></i></div></div><div class="vb-ar"><span id="hArT">0</span><div class="vb-meter ar"><i id="hAr"></i></div></div></div></div>
-      <div class="vb-br"><div class="vb-eq" id="hEq"></div><div class="vb-ammo"><div class="vb-wn" id="hWn"></div><div class="vb-am"><b id="hMag">0</b><span id="hRes">/ 0</span></div><div class="vb-meter thin" id="hRelW"><i id="hRel"></i></div></div></div>
-      <div class="vb-prompt" id="hPrompt" hidden><div class="vb-ring"><i id="hPromptBar"></i></div><span id="hPromptT"></span></div>
-      <div class="vb-center-msg" id="hMsg"></div>
-      <div class="vb-sub-line" id="hSub" hidden><b id="hSubWho"></b><span id="hSubTxt"></span></div>
-      <div class="vb-board" id="hBoard" hidden></div>`;
+      <div class="vb-frame">
+        <div class="vb-tl"><div class="vb-obj" id="hObj"><div class="vb-obj-k" id="hObjK">OBJECTIVE</div><div class="vb-obj-t" id="hObjT"></div><div class="vb-meter thin" id="hObjBarW"><i id="hObjBar"></i></div><div class="vb-obj-s" id="hObjS"></div></div><div class="vb-squad" id="hSquad"></div><div class="vb-feed" id="hFeed"></div></div>
+        <div class="vb-tr"><canvas id="hMini" width="224" height="224" aria-label="Minimap"></canvas><div class="vb-score" id="hScore"></div><div class="vb-ping" id="hPing"></div></div>
+        <div class="vb-bottom"><div class="vb-sub-line" id="hSub" hidden><b id="hSubWho"></b><span id="hSubTxt"></span></div>
+        <div class="vb-bc">
+          <div class="vb-vitals"><div class="vb-bars">
+            <div class="vb-hp"><span class="vb-num" id="hHpT">100</span><div class="vb-bar2"><span class="vb-lab">HEALTH</span><div class="vb-meter hp"><i id="hHp"></i></div></div></div>
+            <div class="vb-ar"><span class="vb-num" id="hArT">0</span><div class="vb-bar2"><span class="vb-lab">ARMOR</span><div class="vb-meter ar"><i id="hAr"></i></div></div></div></div>
+            <div class="vb-chips">${chip('heal', 'HEAL', 'medical', 'hHealN', 'MED', 'Use medkit')}</div></div>
+          <div class="vb-ammo"><div class="vb-readout"><div class="vb-wn" id="hWn"></div><div class="vb-am"><b id="hMag">0</b><span id="hRes">/ 0</span></div><div class="vb-meter thin" id="hRelW"><i id="hRel"></i></div></div>
+            <div class="vb-chips">${chip('equip', 'EQUIP', 'grenade', 'hEqN', 'EQP', 'Use equipment').replace('<span class="vb-chip-t">EQP</span>', '<span class="vb-chip-t" id="hEqT">EQP</span>')}${chip('swap', 'SWAP', 'swap', 'hSwapN', 'SWAP', 'Switch weapon')}</div></div>
+        </div>
+        </div>
+        <div class="vb-prompt" id="hPrompt" hidden><div class="vb-ring"><i id="hPromptBar"></i></div><span id="hPromptT"></span></div>
+        <div class="vb-center-msg" id="hMsg"></div>
+        <div class="vb-board" id="hBoard" hidden></div>
+      </div>`;
     const g = (id) => this.hud.querySelector('#' + id);
     this.H = { vig: g('hVig'), flash: g('hFlash'), scope: g('hScope'), hits: g('hHits'), cross: g('hCross'), mark: g('hMark'), tags: g('hTags'), ways: g('hWays'), obj: g('hObj'), objK: g('hObjK'), objT: g('hObjT'), objBarW: g('hObjBarW'), objBar: g('hObjBar'), objS: g('hObjS'), feed: g('hFeed'),
-      mini: g('hMini'), score: g('hScore'), ping: g('hPing'), squad: g('hSquad'), hpT: g('hHpT'), hp: g('hHp'), arT: g('hArT'), ar: g('hAr'), eq: g('hEq'), wn: g('hWn'), mag: g('hMag'), res: g('hRes'), relW: g('hRelW'), rel: g('hRel'),
+      mini: g('hMini'), score: g('hScore'), ping: g('hPing'), squad: g('hSquad'), hpT: g('hHpT'), hp: g('hHp'), arT: g('hArT'), ar: g('hAr'), wn: g('hWn'), mag: g('hMag'), res: g('hRes'), relW: g('hRelW'), rel: g('hRel'),
+      healN: g('hHealN'), eqN: g('hEqN'), eqT: g('hEqT'), swapN: g('hSwapN'), chipHeal: this.hud.querySelector('[data-tap=heal]'), chipEq: this.hud.querySelector('[data-tap=equip]'),
       prompt: g('hPrompt'), promptBar: g('hPromptBar'), promptT: g('hPromptT'), msg: g('hMsg'), sub: g('hSub'), subWho: g('hSubWho'), subTxt: g('hSubTxt'), board: g('hBoard') };
     this.mini = this.H.mini.getContext('2d');
+    // HUD chips are real buttons only on touch. One delegated listener, removed with the UI.
+    this.on(this.hud, 'pointerdown', (e) => {
+      const c = e.target.closest('[data-tap]'); if (!c || this.platform.mode !== 'touch' || !this.app.input) return;
+      e.preventDefault(); c.classList.add('on'); this.later(() => c.classList.remove('on'), 140); this.app.input.tap(c.dataset.tap);
+    });
+    this.refreshPrompts();
   }
 
   showHud(v) { this.hud.hidden = !v; if (v) { this.hideScreen(); this.applyHudScale(); } }
-  applyHudScale() { this.root.style.setProperty('--hud', this.app.store.settings.hudScale); }
+  /* Player display settings -> CSS variables the stylesheet reads. */
+  applyHudScale() {
+    const st = this.app.store.settings, r = this.root.style;
+    r.setProperty('--hud', st.hudScale); r.setProperty('--ts', st.touchScale); r.setProperty('--ss', st.stickScale); r.setProperty('--to', st.touchOpacity); r.setProperty('--subs', st.subtitleSize);
+    this.root.classList.toggle('vb-cb', !!st.colorblind);
+    this.pal = st.colorblind ? { bad: '#ff8a3d', mate: '#bfe3ff', down: '#f0e442', good: '#56b4e9' } : { bad: '#ff5a4a', mate: '#5bb8ff', down: '#ffb347', good: '#4fe3a0' };
+    this.refreshPrompts(); if (this.platform) this.platform.measure();
+  }
   setText(el, v) { if (el.textContent !== v) el.textContent = v; }
   setW(el, pct) { const v = Math.max(0, Math.min(100, pct)).toFixed(1) + '%'; if (el.style.width !== v) el.style.width = v; }
 
@@ -396,7 +530,8 @@ export class UI {
     const H = this.H; H.sub.hidden = false; H.subWho.textContent = who ? who + ': ' : ''; H.subTxt.textContent = text;
     clearTimeout(this.subT); this.subT = setTimeout(() => { H.sub.hidden = true; }, ms);
   }
-  banner(text, ms = 2200) { const m = this.H.msg; m.textContent = text; m.classList.add('show'); clearTimeout(this._mt); this._mt = setTimeout(() => m.classList.remove('show'), ms); }
+  banner(text, ms = 2200) { this.notify(text, { ms }); }
+  objectiveDone() { this.notify('Objective complete', { kind: 'good', k: 'Mission', ms: 1800 }); }
   hitMarker(head) { const m = this.H.mark; m.className = 'on' + (head ? ' head' : ''); clearTimeout(this._hm); this._hm = setTimeout(() => { m.className = ''; }, 140); }
 
   /* Called every frame while playing. */
@@ -411,13 +546,24 @@ export class UI {
       H.mag.classList.toggle('low', def && w.m <= Math.ceil(def.mag * 0.25));
       const rel = h.reload > 0 && def ? 1 - h.reload / (def.reload / 1000) : 0; this.setW(H.rel, rel * 100); H.relW.classList.toggle('on', h.reload > 0);
     }
-    const eq = h.eq ? EQUIPMENT[h.eq] : null;
-    const eqHtml = (eq ? `<span><b>G</b> ${esc(eq.name)} ×${h.eqn}</span>` : '') + `<span><b>H</b> Medkit ×${h.heal}${h.healT > 0 ? ' · healing' : ''}</span>`;
-    if (this.cache.eq !== eqHtml) { this.cache.eq = eqHtml; H.eq.innerHTML = eqHtml; }
+    // equipment / medkit chips: touch buttons, or hint lines on desktop and controller
+    const eq = h.eq ? EQUIPMENT[h.eq] : null, ck = (eq ? eq.name : '') + '|' + h.eqn + '|' + h.heal + '|' + (h.healT > 0);
+    if (this.cache.eqk !== ck) {
+      this.cache.eqk = ck;
+      H.healN.textContent = '×' + h.heal + (h.healT > 0 ? ' …' : ''); H.chipHeal.dataset.dis = h.heal > 0 ? '0' : '1';
+      H.chipEq.hidden = !eq; if (eq) { H.eqN.textContent = '×' + h.eqn; H.eqT.textContent = eq.name.split(' ')[0].toUpperCase(); H.chipEq.dataset.dis = h.eqn > 0 ? '0' : '1'; }
+    }
+    // when nothing is happening, secondary panels step back; any action brings them back
+    const now = performance.now(), sig = Math.round(h.hp) + '|' + (w ? w.m : 0) + '|' + (h.reload > 0) + '|' + (h.interact ? 1 : 0) + '|' + eng.dirHits.length + '|' + (h.blind > 0) + '|' + (h.downed ? 1 : 0) + '|' + (h.mission ? h.mission.i : -1);
+    if (sig !== this.cache.sig) { this.cache.sig = sig; this.actT = now; }
+    const calm = now - this.actT > 6000 && h.alive && h.hp >= (h.maxHp || 100) * 0.9;
+    if (calm !== this.cache.calm) { this.cache.calm = calm; this.hud.classList.toggle('vb-calm', calm); }
     // objective
     const m = h.mission;
     if (m && m.text) {
-      H.obj.hidden = false; this.setText(H.objT, m.text);
+      H.obj.hidden = false;
+      if (this.cache.objT !== m.text) { if (this.cache.objT !== undefined) { H.obj.classList.remove('pop'); void H.obj.offsetWidth; H.obj.classList.add('pop'); } this.cache.objT = m.text; }
+      this.setText(H.objT, m.text);
       let sub = ''; let bar = 0;
       if (m.need > 1 && (m.type === 'intel' || m.type === 'investigate' || m.type === 'destroy')) { sub = m.c + ' / ' + m.need; bar = m.c / m.need; }
       else if (m.type === 'secure' || m.type === 'survive' || m.type === 'extract') { bar = m.p; sub = m.type === 'survive' && m.dt !== null ? fmtTime(m.dt) : m.contested ? 'Contested: clear the area' : ''; }
@@ -432,14 +578,20 @@ export class UI {
     this.setText(H.ping, eng.kind === 'net' ? (h.rtt ? h.rtt + ' ms' : '') : '');
     // prompt
     const ip = h.interact;
-    if (ip && h.alive) { H.prompt.hidden = false; this.setText(H.promptT, (this.app.input.touch.enabled ? 'Hold USE · ' : 'Hold E · ') + ip.label); this.setW(H.promptBar, ip.p * 100); } else H.prompt.hidden = true;
+    const mode = this.platform.mode, on = !!(ip && h.alive);
+    this.app.input.setContext({ interact: on });                     // the USE button exists only while there is something to use
+    if (on) {
+      H.prompt.hidden = false; const key = mode + '|' + ip.label + '|' + this.cache.kb;
+      if (this.cache.pr !== key) { this.cache.pr = key; H.promptT.innerHTML = `<b>HOLD</b> ${mode === 'touch' ? '<span class="vb-key vb-show">USE</span>' : promptHtml('INTERACT', mode)} ${esc(ip.label)}`; }
+      this.setW(H.promptBar, ip.p * 100);
+    } else { H.prompt.hidden = true; this.cache.pr = null; }
     // crosshair
     const hip = w && WEAPONS[w.id] ? WEAPONS[w.id].spread.hip : 3; const spread = (h.ads ? 4 : 10 + hip * 3 + (h.bloom || 0) * 6) * (h.crouched ? 0.8 : 1);
     H.cross.style.setProperty('--sp', spread.toFixed(1) + 'px'); H.cross.classList.toggle('ads', !!h.ads); H.cross.hidden = (h.zoom >= 2.5 && h.ads) || !h.alive;
     H.scope.classList.toggle('on', !!(h.ads && h.zoom >= 2.5 && h.alive));
     // screen effects
     const vig = Math.max(h.vignette, h.hp < 30 ? 0.45 : 0); H.vig.style.opacity = this.app.store.settings.reducedMotion ? Math.min(0.5, vig) : vig;
-    H.flash.style.opacity = Math.min(1, h.blind > 0 ? h.blind / 1.2 : 0);
+    H.flash.style.opacity = Math.min(this.app.store.settings.flashReduce ? 0.3 : 1, h.blind > 0 ? h.blind / 1.2 : 0);
     // directional hit indicators
     let hh = ''; for (const d of eng.dirHits) hh += `<i style="transform:rotate(${(d.ang * 180 / Math.PI).toFixed(0)}deg);opacity:${Math.min(1, d.t)}"></i>`; if (this.cache.hh !== hh) { this.cache.hh = hh; H.hits.innerHTML = hh; }
     // kill feed
@@ -451,7 +603,6 @@ export class UI {
     this.updateTags(eng); this.updateWays(eng); this.drawMinimap(eng);
     H.board.hidden = !(eng.lastIntent && eng.lastIntent.scoreboard && eng.kind === 'net');
     if (!H.board.hidden) this.drawBoard(eng);
-    if (eng.hud.squad && false) void 0;
     this.updateSquad(eng);
   }
 
@@ -493,27 +644,31 @@ export class UI {
     this.mmStatic = { c, map, S };
   }
   drawMinimap(eng) {
+    const now = performance.now(); if (now - (this._mmT || 0) < 50) return; this._mmT = now;      // 20 updates a second is plenty for a map
     const data = eng.getMinimap(); if (!data || !this.mini) return;
     if (!this.mmStatic || this.mmStatic.map !== eng.map) this.buildMiniStatic(eng.map);
-    const g = this.mini, W = 176, R = 80, view = 34, k = R / view, { c, S } = this.mmStatic, half = data.half;
+    const g = this.mini, W = 176, R = 80, view = 34, k = R / view, { c, S } = this.mmStatic, half = data.half, pal = this.pal;
+    g.setTransform(224 / 176, 0, 0, 224 / 176, 0, 0);                  // draw in 176-unit space onto a sharper 224px canvas
     g.save(); g.clearRect(0, 0, W, W); g.translate(W / 2, W / 2);
     g.beginPath(); g.arc(0, 0, R, 0, Math.PI * 2); g.clip(); g.fillStyle = '#05080a'; g.fillRect(-R, -R, 2 * R, 2 * R);
     g.rotate(data.me.yaw);
     g.drawImage(c, -(data.me.x + half) * k, -(data.me.z + half) * k, c.width / S * k, c.height / S * k);
     const P = (x, z) => [(x - data.me.x) * k, (z - data.me.z) * k];
-    for (const z of [data.zones.extract].filter(Boolean)) { const [x, y] = P(z.x, z.z); g.strokeStyle = '#4fe3a0'; g.lineWidth = 2; g.beginPath(); g.arc(x, y, z.r * k, 0, 6.28); g.stroke(); }
+    for (const z of [data.zones.extract].filter(Boolean)) { const [x, y] = P(z.x, z.z); g.strokeStyle = pal.good; g.lineWidth = 2; g.beginPath(); g.arc(x, y, z.r * k, 0, 6.28); g.stroke(); }
     for (const o of data.objectives) { const [x, y] = P(o.x, o.z); const d = Math.hypot(x, y); const px = d > R - 8 ? x / d * (R - 8) : x, py = d > R - 8 ? y / d * (R - 8) : y; g.fillStyle = o.color; g.beginPath(); g.moveTo(px, py - 6); g.lineTo(px + 5, py); g.lineTo(px, py + 6); g.lineTo(px - 5, py); g.closePath(); g.fill(); }
-    for (const m of data.mates) { const [x, y] = P(m.x, m.z); g.fillStyle = m.dn ? '#ffb347' : '#5bb8ff'; g.fillRect(x - 3, y - 3, 6, 6); }
-    for (const h of data.hostile) { const [x, y] = P(h.x, h.z); g.fillStyle = '#ff5a4a'; g.beginPath(); g.moveTo(x, y - 4); g.lineTo(x + 4, y + 3); g.lineTo(x - 4, y + 3); g.closePath(); g.fill(); }
-    for (const h of data.foes) { const [x, y] = P(h.x, h.z); g.fillStyle = '#ff5a4a'; g.beginPath(); g.moveTo(x, y - 4); g.lineTo(x + 4, y + 3); g.lineTo(x - 4, y + 3); g.closePath(); g.fill(); }
+    for (const m of data.mates) { const [x, y] = P(m.x, m.z); g.fillStyle = m.dn ? pal.down : pal.mate; g.fillRect(x - 3, y - 3, 6, 6); }
+    for (const h of data.hostile) { const [x, y] = P(h.x, h.z); g.fillStyle = pal.bad; g.beginPath(); g.moveTo(x, y - 4); g.lineTo(x + 4, y + 3); g.lineTo(x - 4, y + 3); g.closePath(); g.fill(); }
+    for (const h of data.foes) { const [x, y] = P(h.x, h.z); g.fillStyle = pal.bad; g.beginPath(); g.moveTo(x, y - 4); g.lineTo(x + 4, y + 3); g.lineTo(x - 4, y + 3); g.closePath(); g.fill(); }
     g.restore();
     g.save(); g.translate(W / 2, W / 2); g.fillStyle = '#fff'; g.beginPath(); g.moveTo(0, -7); g.lineTo(5, 6); g.lineTo(0, 3); g.lineTo(-5, 6); g.closePath(); g.fill(); g.restore();
     g.strokeStyle = 'rgba(255,255,255,.35)'; g.lineWidth = 2; g.beginPath(); g.arc(W / 2, W / 2, R, 0, 6.28); g.stroke();
   }
 
   dispose() {
+    if (this.unsub) { this.unsub(); this.unsub = null; } if (this.padTimer) { clearInterval(this.padTimer); this.padTimer = 0; }
     for (const [t, type, fn, o] of this.listeners) t.removeEventListener(type, fn, o); this.listeners.length = 0;
     for (const t of this.timers) clearTimeout(t); this.timers.length = 0; clearTimeout(this.subT); clearTimeout(this._mt); clearTimeout(this._hm);
     this.mmStatic = null; this.mini = null; this.root.innerHTML = '';
+    for (const el of Array.from(this.root.querySelectorAll('.vb-notes'))) el.remove();
   }
 }
