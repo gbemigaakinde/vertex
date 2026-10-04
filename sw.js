@@ -4,7 +4,7 @@
 
 'use strict';
 
-const CACHE_VERSION = 'v1.20.56';
+const CACHE_VERSION = 'v1.20.57';
 const STATIC_CACHE  = `static-${CACHE_VERSION}`;
 const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
 
@@ -137,6 +137,7 @@ self.addEventListener('fetch', event => {
     url.pathname === '/vector' ||
     url.pathname.startsWith('/vector/') ||
     url.pathname.startsWith('/vector-3dassets/') ||
+    url.pathname === '/css/vector-blackline.css' ||   // the game's own stylesheet: never cache-first, or UI fixes arrive late
     url.pathname.startsWith('/surfer/')
   ) return;
 
