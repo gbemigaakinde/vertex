@@ -12,6 +12,8 @@ import { API_BASE, VERSION } from './config.js';
 import { Store } from './storage.js';
 import { AudioSys } from './audio.js';
 import { Input } from './input.js';
+import { Platform } from './platform.js';
+import { applyKeyLabels } from './prompts.js';
 import { UI } from './ui.js';
 import { Engine } from './engine.js';
 import { NetClient } from './multiplayer.js';
@@ -22,7 +24,7 @@ class App {
   constructor(opts) {
     this.opts = opts || {}; this.root = null; this.ui = null; this.renderer = null; this.engine = null; this.input = null; this.audio = null; this.net = null; this.store = null;
     this.open_ = false; this.listeners = []; this.timers = []; this.uid = null; this.userName = ''; this.menuRaf = 0; this.menuBig = false; this.inMatch = false;
-    this.lockedOrientation = false; this.enteredFs = false; this.portrait = false; this.pausedByPortrait = false; this.apiBase = '';
+    this.platform = null; this.portrait = false; this.pausedByPortrait = false; this.apiBase = ''; this.fsDeclined = false; this.fsNoted = false;
     this.params = new URLSearchParams(location.search);
   }
 
@@ -58,12 +60,12 @@ class App {
     this.ownRoot = !document.getElementById('vectorBlacklineRoot') || true;
     this.root.classList.add('vector-blackline'); this.root.hidden = false; document.documentElement.classList.add('vb-open'); document.body.classList.add('vb-open');
     this.audio = new AudioSys();
+    this.platform = new Platform(this.root); this.platform.start();
+    this.platform.subscribe((t) => this.onPlatform(t));
     if (this.params.get('debug') === '1') window.__vectorDebug = this;   // test hook, only with ?debug=1
     this.ui = new UI(this.root, this);
     this.ui.showLoading('INITIALIZING...');
     this.apiBase = (this.params.get('api') || this.opts.apiBase || API_BASE || '').replace(/\/$/, '');
-    // orientation handling starts immediately so the prompt can appear over the loader
-    this.watchOrientation();
     if (!webglAvailable()) return this.fatal('Graphics not available', 'Your browser cannot run 3D graphics (WebGL). Try an up-to-date Chrome, Edge, Firefox or Safari, and make sure hardware acceleration is on.');
     this.ui.setLoading(0.1, 'CHECKING SIGN-IN...');
     let signedIn = false;
@@ -77,21 +79,21 @@ class App {
     try {
       const q = this.store.settings.quality === 'auto' ? detectQuality() : this.store.settings.quality;
       this.autoQuality = this.store.settings.quality === 'auto';
-      this.input = new Input(this.root, this.ui.canvas, () => this.store.settings);
+      this.input = new Input(this.root, this.ui.canvas, () => this.store.settings, this.platform);
+      this.input.onSave = () => this.store.flush();
       this.renderer = new Renderer(this.ui.canvas, q);
       this.resize();
-      this.input.onLockChange = (locked) => { if (!locked && this.engine && this.engine.running && !this.engine.paused && !this.input.touch.enabled && !this.engine.cine) this.pause(); };
+      this.input.onLockChange = (locked) => { if (!locked && this.engine && this.engine.running && !this.engine.paused && this.platform.mode === 'kbm' && !this.engine.cine) this.pause(); };
       this.input.enable();
-      this.root.classList.toggle('vb-touchmode', !!this.input.touch.enabled); this.input.setTouchVisible(false);
+      this.input.setTouchVisible(false);
       this.engine = new Engine({ renderer: this.renderer, audio: this.audio, input: this.input, store: this.store, hooks: this.engineHooks(q) });
     } catch (e) {
       return this.fatal('Could not start the game', 'Something went wrong while starting the graphics: ' + (e && e.message ? e.message : 'unknown error'));
     }
-    this.on(window, 'resize', () => this.resize()); this.on(window, 'orientationchange', () => this.later(() => { this.resize(); this.checkOrientation(); }, 250));
+    this.on(window, 'resize', () => this.resize());
     if (window.ResizeObserver) { this.ro = new ResizeObserver(() => this.resize()); this.ro.observe(this.root); }
     this.on(document, 'visibilitychange', () => { if (document.hidden) { if (this.engine && this.engine.running && this.engine.kind === 'local') this.pause(); this.audio.suspend(); } else if (!this.engine || !this.engine.paused) this.audio.resume(); });
-    this.on(document, 'fullscreenchange', () => this.resize());
-    this.on(this.root, 'pointerdown', () => { this.audio.unlock(); this.firstGesture(); }, { once: false, passive: true });
+    this.on(this.root, 'pointerdown', () => { this.audio.unlock(); }, { once: false, passive: true });
     this.on(window, 'beforeunload', () => { if (this.store) this.store.flush(); });
     this.applySettings();
     this.ui.setLoading(0.8, 'LOADING WORLD...');
@@ -106,13 +108,14 @@ class App {
   engineHooks(ceiling) {
     return {
       qualityCeiling: ceiling,
-      onLoad: (f) => this.ui && this.ui.setLoading(f),
+      onLoad: (f) => this.ui && this.ui.setLoading(f, undefined, undefined, true),      // real asset progress
       onFrame: (eng) => this.ui && this.ui.updateHud(eng),
       onPause: () => this.pause(),
       onEnd: (r) => this.onEnd(r),
       onDialogue: (e) => { this.ui.subtitle(e.who, e.text); },
       onSubtitle: (t) => this.ui.subtitle('', t, 4200),
-      onObjective: (e) => { if (e.index > 0) this.ui.banner('OBJECTIVE: ' + e.text.toUpperCase()); },
+      onObjective: (e) => { if (e.index > 0) this.ui.notify(e.text, { k: 'Next objective', ms: 3200 }); },
+      onObjectiveDone: () => this.ui.objectiveDone(),
       onToast: (m) => this.ui.toast(m),
       onHitMarker: (h) => this.ui.hitMarker(h),
       onHurt: () => {},
@@ -121,44 +124,47 @@ class App {
     };
   }
 
-  /* ---------------- orientation: landscape-first on touch devices ---------------- */
-  isTouch() { return !!(this.input ? this.input.touch.enabled : ('ontouchstart' in window || navigator.maxTouchPoints > 0)) && (window.matchMedia ? window.matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window : true); }
-  isPortrait() { return window.matchMedia ? window.matchMedia('(orientation: portrait)').matches : window.innerHeight > window.innerWidth; }
-  watchOrientation() {
-    this.on(window, 'resize', () => this.checkOrientation());
-    if (screen.orientation && screen.orientation.addEventListener) this.on(screen.orientation, 'change', () => this.checkOrientation());
+  /* ---------------- device, orientation, fullscreen (all decided in platform.js) ---------------- */
+  onPlatform(t) {
+    if (!this.open_ || !this.ui) return;
+    if (t === 'viewport' || t === 'mode') this.checkOrientation();
+    if (t === 'viewport') this.resize();
+    if (t === 'mode') this.onModeChange();
   }
-  /* The prompt only ever shows on touch devices. Desktop is never affected. */
+  /* The player picked up a different device: make the game match, with nothing stale left behind. */
+  onModeChange() {
+    const m = this.platform.mode; this.ui.refreshPrompts();
+    if (!this.engine || !this.engine.running) return;
+    if (m === 'kbm' && !this.engine.paused) this.ui.toast('Click the game to capture the mouse', 2600);
+    if (m !== 'kbm') this.input.exitLock();
+  }
+  /* The turn-your-device screen: only for a phone held upright. Never on desktop, never on a tablet. */
   checkOrientation() {
     if (!this.open_ || !this.ui) return;
-    const portrait = this.isTouch() && this.isPortrait();
+    const p = this.platform; if (!p.portrait) p.resetPortraitChoice();
+    const portrait = p.needsLandscape();
     this.portrait = portrait; this.ui.showOrient(portrait);
-    this.root.classList.toggle('vb-portrait', portrait);
     if (portrait) { if (this.engine && this.engine.running && !this.engine.paused) { this.engine.setPaused(true, 'portrait'); this.pausedByPortrait = true; } }
     else if (this.pausedByPortrait) { this.pausedByPortrait = false; if (this.engine && this.engine.pauseReason === 'portrait') { this.engine.pauseReason = 'menu'; this.pausedMenu = true; this.input.setTouchVisible(false); this.ui.showPause(); } }
-    if (!portrait) this.resize();
   }
-  /* Browsers only allow fullscreen and orientation lock after a tap. */
-  async firstGesture() {
-    if (this.gestureDone || !this.isTouch()) return; this.gestureDone = true;
-    try {
-      const el = document.documentElement;
-      if (!document.fullscreenElement && el.requestFullscreen) { await el.requestFullscreen({ navigationUI: 'hide' }); this.enteredFs = true; }
-    } catch { /* iOS Safari and some in-app browsers refuse: the rotate prompt covers it */ }
-    try { if (screen.orientation && screen.orientation.lock) { await screen.orientation.lock('landscape'); this.lockedOrientation = true; } } catch { /* not supported or not allowed: rely on the prompt */ }
-    this.checkOrientation();
+  continuePortrait() { this.platform.allowPortrait(); this.checkOrientation(); this.ui.toast('Best played in landscape', 2600); }
+  /* Called from a tap (deploy, join, resume...). Browsers refuse fullscreen and landscape lock otherwise. Each part may fail without harm. */
+  async enterImmersive(quiet) {
+    if (!this.platform || !this.store) return;
+    const pref = this.store.settings.fullscreenOnPlay || 'auto';
+    if (pref === 'off' || this.fsDeclined) { if (this.platform.mode === 'touch') await this.platform.enterImmersive('off'); return; }
+    const r = await this.platform.enterImmersive(pref);
+    if (!this.open_ || !this.ui || quiet) return;
+    const wantFs = pref === 'on' || this.platform.mode === 'touch';
+    if (wantFs && this.platform.caps.fullscreen && !r.fs && !this.fsNoted) { this.fsNoted = true; this.ui.toast('Fullscreen was not allowed here. Playing in the window.', 3200); }
+    if (this.platform.needsInstallHint() && this.platform.mode === 'touch' && !this.store.settings.hintInstall) { this.store.setSetting('hintInstall', true); this.store.flush(); this.ui.toast('Tip: Share, then Add to Home Screen, for a full-screen game on iPhone', 5200); }
   }
-  toggleFullscreen() { try { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); } catch { /* ignore */ } }
-  releaseOrientation() {
-    try { if (this.lockedOrientation && screen.orientation && screen.orientation.unlock) screen.orientation.unlock(); } catch { /* ignore */ }
-    this.lockedOrientation = false;
-    try { if (this.enteredFs && document.fullscreenElement) document.exitFullscreen(); } catch { /* ignore */ }
-    this.enteredFs = false;
-  }
+  async toggleFullscreen() { const fs = await this.platform.toggleFullscreen(); this.fsDeclined = !fs; this.resize(); }
 
   resize() {
     if (!this.renderer || !this.root) return;
-    const w = this.root.clientWidth || window.innerWidth, h = this.root.clientHeight || window.innerHeight;
+    if (this.platform) this.platform.measure();
+    const w = this.platform ? this.platform.w : (this.root.clientWidth || window.innerWidth), h = this.platform ? this.platform.h : (this.root.clientHeight || window.innerHeight);
     this.renderer.resize(w, h);
   }
 
@@ -166,8 +172,9 @@ class App {
     const s = this.store.settings;
     this.audio.setVolumes({ master: s.masterVol, sfx: s.sfxVol, music: s.musicVol, voice: s.voiceVol });
     if (this.renderer) { const q = s.quality === 'auto' ? (this.autoQualityName || detectQuality()) : s.quality; this.autoQuality = s.quality === 'auto'; if (q !== this.renderer.qName && s.quality !== 'auto') this.renderer.setQuality(q); }
-    if (this.ui) this.ui.applyHudScale();
     this.root.classList.toggle('vb-reduced', !!s.reducedMotion);
+    applyKeyLabels(s.keys); if (this.input) { this.input.refreshBinds(); this.input.applyLayout(); }
+    this.ui.applyHudScale();
   }
 
   /* ---------------- menu backdrop ---------------- */
@@ -190,11 +197,13 @@ class App {
   /* ---------------- campaign ---------------- */
   continueCampaign() {
     const s = this.store.getCheckpoint(); if (!s) return;
+    this.enterImmersive();
     this.startMission(s.missionId, s.cp);
   }
   deployMission(id) {
     if (!id) return;
-    const go = () => this.startMission(id);
+    this.enterImmersive();
+    const go = () => { this.enterImmersive(true); return this.startMission(id); };
     this.ui._after = go; this.ui.showLoadout(go);
   }
 
@@ -215,7 +224,7 @@ class App {
     this.input.setTouchVisible(true); this.input.resetLatches();
     this.engine.start(); this.engine.paused = false;
     this.checkOrientation();
-    if (!this.input.touch.enabled) { this.input.requestLock(); this.ui.toast('Click the game to capture the mouse', 3000); }
+    if (this.platform.mode === 'kbm') { this.input.requestLock(); this.ui.toast('Click the game to capture the mouse', 3000); }
   }
 
   /* ---------------- pause / resume / exit ---------------- */
@@ -228,7 +237,8 @@ class App {
   resume() {
     if (!this.engine) return;
     this.pausedMenu = false; this.engine.setPaused(false); this.ui.hideScreen(); this.ui.showHud(true); this.input.setTouchVisible(true); this.input.resetLatches();
-    if (!this.input.touch.enabled) this.input.requestLock();
+    if (this.platform.mode === 'kbm') this.input.requestLock();
+    if (this.platform.mode === 'touch' && !this.platform.fs) this.enterImmersive(true);      // Resume is a tap: a good moment to get fullscreen back
   }
   async restartCheckpoint() {
     const e = this.engine; if (!e || e.kind !== 'local') return;
@@ -276,12 +286,14 @@ class App {
   mpGuard() { if (!this.net.configured) { this.ui.toast('Multiplayer server is not configured yet.'); return false; } return true; }
   async mpCreate(cfg) {
     if (!this.mpGuard()) return;
+    this.enterImmersive();
     this.ui.showLoading('CONNECTING...');
     try { await this.net.create(cfg); } catch (e) { this.ui.hideLoading(); this.ui.showMultiplayer(); this.ui.toast(e.message, 4200); return; }
     this.ui.hideLoading();
   }
   async mpJoin(code) {
     if (!this.mpGuard()) return;
+    this.enterImmersive();
     this.ui.showLoading('CONNECTING...');
     try { await this.net.join(code); } catch (e) { this.ui.hideLoading(); this.ui.showMultiplayer(); this.ui.toast(e.message, 4200); return; }
     this.ui.hideLoading();
@@ -350,10 +362,10 @@ class App {
     if (this.renderer) { this.renderer.dispose(); this.renderer = null; }
     for (const [t, type, fn, o] of this.listeners) t.removeEventListener(type, fn, o); this.listeners.length = 0;
     if (this.ui) { this.ui.dispose(); this.ui = null; }
-    this.releaseOrientation();
+    if (this.platform) { this.platform.releaseImmersive(); this.platform.dispose(); this.platform = null; }
     document.documentElement.classList.remove('vb-open'); document.body.classList.remove('vb-open');
     if (this.root) { this.root.hidden = true; this.root.classList.remove('vector-blackline', 'vb-portrait', 'vb-reduced'); if (this.root.parentNode && !this.opts.keepRoot) this.root.parentNode.removeChild(this.root); this.root = null; }
-    this.store = null; this.gestureDone = false;
+    this.store = null;
   }
 }
 
