@@ -64,6 +64,11 @@ if (request.method === 'POST' && url.pathname === '/ai') {
   return jsonError('Unknown provider: ' + provider, 400);
 }
 
+    // ── Free Nigerian neural text-to-speech route ─────────
+    if (request.method === 'POST' && url.pathname === '/tts') {
+      return handleTtsRequest(request, env);
+    }
+
     // ── Visual generation route ───────────────────────────
     if (request.method === 'POST' && url.pathname === '/visual') {
       let body;
@@ -2178,4 +2183,236 @@ async function _b2Delete(objectKey, env) {
     const txt = await res.text().catch(() => '');
     throw new Error('B2 DELETE returned ' + res.status + ': ' + txt.slice(0, 200));
   }
+}
+
+/* ══════════════════════════════════════════════════════════
+   FREE NIGERIAN NEURAL TEXT-TO-SPEECH  (POST /tts)
+
+   Relays a short piece of text to Microsoft Edge's "Read Aloud"
+   voice service and returns an MP3. This is the same free service
+   (and the same protocol) the Python `edge-tts` package uses — no API
+   key, no billing. Only the two Nigerian voices are allowed.
+
+   Request : POST /tts   { "text": "...", "voice": "en-NG-EzinneNeural", "rate": "-8%" }
+   Response: 200 audio/mpeg   |   4xx/5xx { "error": "..." }
+
+   Optional env var (Cloudflare dashboard → Worker → Settings → Variables):
+     TTS_ALLOWED_ORIGINS = "https://your-app.vercel.app,https://yourdomain.com"
+   When set, browsers on other sites are refused. When unset, any origin works.
+
+   NOTE: this is an unofficial endpoint. Microsoft can change or block it
+   at any time; the app then falls back to the browser's own voices.
+══════════════════════════════════════════════════════════ */
+
+const TTS_ALLOWED_VOICES = ['en-NG-EzinneNeural', 'en-NG-AbeoNeural'];
+const TTS_MAX_CHARS      = 700;     // per request; the app sends shorter chunks
+const TTS_TIMEOUT_MS     = 15000;
+
+const EDGE_TTS_HOST    = 'speech.platform.bing.com';
+const EDGE_TTS_PATH    = '/consumer/speech/synthesize/readaloud/edge/v1';
+const EDGE_TTS_TOKEN   = '6A5AA1D4EAFF4E9FB37E23D68491D6F4';
+const EDGE_CHROMIUM    = '143.0.3650.75';
+const EDGE_CHROMIUM_MJ = EDGE_CHROMIUM.split('.')[0];
+
+async function handleTtsRequest(request, env) {
+  // Optional origin lock (stops other websites from using your worker as free TTS)
+  if (env && env.TTS_ALLOWED_ORIGINS) {
+    const allowed = String(env.TTS_ALLOWED_ORIGINS).split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+    const origin  = request.headers.get('Origin') || '';
+    if (allowed.length && allowed.indexOf(origin) === -1) return jsonError('Origin not allowed.', 403);
+  }
+
+  let body;
+  try { body = await request.json(); }
+  catch (e) { return jsonError('Invalid JSON body.', 400); }
+
+  let text = (body && typeof body.text === 'string') ? body.text : '';
+  text = _ttsCleanText(text);
+  if (!text)                       return jsonError('No text to speak.', 400);
+  if (text.length > TTS_MAX_CHARS) return jsonError('Text too long (max ' + TTS_MAX_CHARS + ' characters).', 413);
+
+  const voice = (body && body.voice) || TTS_ALLOWED_VOICES[0];
+  if (TTS_ALLOWED_VOICES.indexOf(voice) === -1) return jsonError('Voice not allowed.', 400);
+
+  let rate = (body && typeof body.rate === 'string') ? body.rate : '-8%';
+  if (!/^[+-]\d{1,2}%$/.test(rate)) rate = '-8%';
+
+  // Best-effort edge cache (only takes effect on custom domains; harmless on workers.dev)
+  let cache = null, cacheKey = null;
+  try {
+    cache = caches.default;
+    cacheKey = new Request('https://tts-cache.invalid/' + await _ttsSha256Hex(voice + '|' + rate + '|' + text));
+    const hit = await cache.match(cacheKey);
+    if (hit) return _ttsAudioResponse(await hit.arrayBuffer());
+  } catch (e) { cache = null; }
+
+  let audio = null, lastErr = null;
+  for (let attempt = 0; attempt < 2 && !audio; attempt++) {
+    try { audio = await edgeTtsSynthesize(text, voice, rate); }
+    catch (e) { lastErr = e; }
+  }
+  if (!audio) {
+    console.warn('[TTS] synth failed:', lastErr && lastErr.message);
+    return jsonError('Voice service unavailable.', 502);
+  }
+
+  if (cache && cacheKey) {
+    try { await cache.put(cacheKey, _ttsAudioResponse(audio, true)); } catch (e) {}
+  }
+  return _ttsAudioResponse(audio);
+}
+
+function _ttsAudioResponse(buf, forCache) {
+  return new Response(buf, {
+    status: 200,
+    headers: {
+      'Content-Type':                'audio/mpeg',
+      'Cache-Control':               'public, max-age=86400',
+      'Access-Control-Allow-Origin': '*',
+    },
+  });
+}
+
+// Mirrors edge-tts remove_incompatible_characters + whitespace tidy
+function _ttsCleanText(s) {
+  return String(s).replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function _ttsXmlEscape(s) {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+async function _ttsSha256Hex(str) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+}
+
+function _ttsRandomHex(bytes) {
+  const a = new Uint8Array(bytes); crypto.getRandomValues(a);
+  return Array.from(a).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
+}
+
+// Sec-MS-GEC token: SHA-256 of Windows-file-time (rounded down to 5 min) + trusted client token
+async function edgeTtsGec(nowMs) {
+  let secs = Math.floor((nowMs === undefined ? Date.now() : nowMs) / 1000) + 11644473600;
+  secs -= secs % 300;
+  const ticks = BigInt(secs) * 10000000n;
+  return (await _ttsSha256Hex(String(ticks) + EDGE_TTS_TOKEN)).toUpperCase();
+}
+
+// JavaScript-style date string the service expects
+function _ttsDateString(d) {
+  const days   = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const p = function (n) { return String(n).padStart(2, '0'); };
+  return days[d.getUTCDay()] + ' ' + months[d.getUTCMonth()] + ' ' + p(d.getUTCDate()) + ' ' + d.getUTCFullYear() +
+         ' ' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) + ':' + p(d.getUTCSeconds()) +
+         ' GMT+0000 (Coordinated Universal Time)';
+}
+
+// "en-NG-EzinneNeural" → "Microsoft Server Speech Text to Speech Voice (en-NG, EzinneNeural)"
+// (the long form is what Microsoft Edge itself sends)
+function _ttsLongVoiceName(shortName) {
+  const m = /^([a-z]{2,})-([A-Z]{2,})-(.+Neural)$/.exec(shortName);
+  if (!m) return shortName;
+  return 'Microsoft Server Speech Text to Speech Voice (' + m[1] + '-' + m[2] + ', ' + m[3] + ')';
+}
+
+function _ttsBuildMessages(text, voice, rate, now) {
+  const ts = _ttsDateString(now);
+  const config =
+    'X-Timestamp:' + ts + '\r\n' +
+    'Content-Type:application/json; charset=utf-8\r\n' +
+    'Path:speech.config\r\n\r\n' +
+    '{"context":{"synthesis":{"audio":{"metadataoptions":{' +
+    '"sentenceBoundaryEnabled":"true","wordBoundaryEnabled":"false"},' +
+    '"outputFormat":"audio-24khz-48kbitrate-mono-mp3"}}}}\r\n';
+  const ssml =
+    "<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='en-US'>" +
+    "<voice name='" + _ttsLongVoiceName(voice) + "'>" +
+    "<prosody pitch='+0Hz' rate='" + rate + "' volume='+0%'>" + _ttsXmlEscape(text) + '</prosody>' +
+    '</voice></speak>';
+  const ssmlMsg =
+    'X-RequestId:' + _ttsRandomHex(16) + '\r\n' +
+    'Content-Type:application/ssml+xml\r\n' +
+    'X-Timestamp:' + ts + 'Z\r\n' +          // the stray "Z" is intentional (matches Edge)
+    'Path:ssml\r\n\r\n' + ssml;
+  return { config: config, ssml: ssmlMsg };
+}
+
+// Talks to the voice service over an outbound WebSocket and returns the MP3 bytes.
+async function edgeTtsSynthesize(text, voice, rate) {
+  const gec = await edgeTtsGec();
+  const url = 'https://' + EDGE_TTS_HOST + EDGE_TTS_PATH +
+    '?TrustedClientToken=' + EDGE_TTS_TOKEN +
+    '&ConnectionId=' + _ttsRandomHex(16) +
+    '&Sec-MS-GEC=' + gec +
+    '&Sec-MS-GEC-Version=1-' + EDGE_CHROMIUM;
+
+  const resp = await fetch(url, {
+    headers: {
+      'Upgrade':         'websocket',
+      'Pragma':          'no-cache',
+      'Cache-Control':   'no-cache',
+      'Origin':          'chrome-extension://jdiccldimpdaibmpdkjnbmckianbfold',
+      'User-Agent':      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/' +
+                         EDGE_CHROMIUM_MJ + '.0.0.0 Safari/537.36 Edg/' + EDGE_CHROMIUM_MJ + '.0.0.0',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Cookie':          'muid=' + _ttsRandomHex(16).toUpperCase() + ';',
+    },
+  });
+  const ws = resp.webSocket;
+  if (!ws) throw new Error('WebSocket upgrade refused (HTTP ' + resp.status + ')');
+  ws.accept();
+
+  const msgs = _ttsBuildMessages(text, voice, rate, new Date());
+
+  return new Promise(function (resolve, reject) {
+    const parts = [];
+    let total = 0, finished = false, chain = Promise.resolve();
+
+    const timer = setTimeout(function () { finish(new Error('timeout')); }, TTS_TIMEOUT_MS);
+
+    function finish(err) {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      try { ws.close(1000, 'done'); } catch (e) {}
+      if (err) return reject(err);
+      if (!total) return reject(new Error('no audio received'));
+      const out = new Uint8Array(total); let off = 0;
+      parts.forEach(function (p) { out.set(p, off); off += p.length; });
+      resolve(out.buffer);
+    }
+
+    async function onMessage(ev) {
+      if (finished) return;
+      let d = ev.data;
+      if (typeof d === 'string') {
+        const m = /(?:^|\r\n)Path:([^\r\n]+)/.exec(d.slice(0, d.indexOf('\r\n\r\n') >= 0 ? d.indexOf('\r\n\r\n') : d.length));
+        if (m && m[1].trim() === 'turn.end') finish();
+        return;
+      }
+      if (d && typeof d.arrayBuffer === 'function') d = await d.arrayBuffer();   // Blob → ArrayBuffer
+      const bytes = new Uint8Array(d);
+      if (bytes.length < 2) return;
+      const headerLen = (bytes[0] << 8) | bytes[1];
+      if (headerLen + 2 > bytes.length) return;
+      const headers = new TextDecoder().decode(bytes.subarray(2, 2 + headerLen));
+      if (!/(?:^|\r\n)Path:audio\s*(?:\r\n|$)/.test(headers)) return;
+      const audio = bytes.subarray(2 + headerLen);
+      if (audio.length) { parts.push(audio.slice()); total += audio.length; }
+    }
+
+    ws.addEventListener('message', function (ev) {
+      chain = chain.then(function () { return onMessage(ev); }).catch(function (e) { finish(e); });
+    });
+    ws.addEventListener('error', function () { chain = chain.then(function () { finish(new Error('socket error')); }); });
+    ws.addEventListener('close', function () { chain = chain.then(function () { finish(); }); });
+
+    try {
+      ws.send(msgs.config);
+      ws.send(msgs.ssml);
+    } catch (e) { finish(e); }
+  });
 }
