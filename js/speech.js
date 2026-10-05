@@ -1,7 +1,15 @@
 /* ============================================================
-   js/speech.js — SpeechEngine  v7 and AI System v1
+   js/speech.js — SpeechEngine  v9 and AI System v1
    Handles TTS (text-to-speech) and STT (speech-to-text) for
    the exam screen using the native Web Speech API.
+
+   v9: Nigerian English is the default TTS voice — free, on every device.
+       Default order (first that works wins):
+         1. Ezinne / Abeo built into the browser (Microsoft Edge)
+         2. Ezinne streamed from the Vertex Worker  POST /tts  (needs internet)
+         3. any other en-NG voice on the device
+         4. best available English voice (also the offline fallback)
+       Every other voice stays available in the Voice Settings panel.
    ============================================================ */
 
 (function () {
@@ -53,20 +61,78 @@
     }
   }
 
-  /* ── Default English voice picker ── */
-  function _pickDefaultVoice() {
+  /* ── Language helpers ──
+     Android / Firefox can report "en_NG" instead of "en-NG". */
+  function _normLang(l) { return String(l || '').replace(/_/g, '-'); }
+
+  /* ── Vertex default voices ──
+     en-NG-EzinneNeural (female) and en-NG-AbeoNeural (male) are Microsoft
+     Azure Neural voices. Microsoft Edge exposes them to the Web Speech API as
+       "Microsoft Ezinne Online (Natural) - English (Nigeria)"  (en-NG)
+       "Microsoft Abeo Online (Natural) - English (Nigeria)"    (en-NG)
+     so they are matched by name + Nigerian locale. Order = priority. */
+  var _DEFAULT_VOICES = [
+    { re: /ezinne/i, short: 'Ezinne' },
+    { re: /abeo/i,   short: 'Abeo'   },
+  ];
+
+  function _isNigerianVoice(v) {
+    return /^en-ng/i.test(_normLang(v.lang)) ||
+           /english\s*\(nigeria\)/i.test(v.name || '') ||
+           /en-ng/i.test(v.voiceURI || '');
+  }
+
+  /* 0 = Ezinne, 1 = Abeo, -1 = not one of the recommended voices */
+  function _recommendedRank(v) {
+    if (!_isNigerianVoice(v)) return -1;
+    for (var i = 0; i < _DEFAULT_VOICES.length; i++) {
+      if (_DEFAULT_VOICES[i].re.test(v.name || '')) return i;
+    }
+    return -1;
+  }
+
+  /* ── Generic English fallback (used when no Nigerian voice exists,
+        and as the offline fallback for online neural voices) ── */
+  function _pickFallbackVoice() {
     if (_voices.length === 0) return null;
+    function lang(v) { return _normLang(v.lang); }
     var preferred = [
-      function (v) { return v.localService && v.lang === 'en-GB'; },
-      function (v) { return v.localService && v.lang === 'en-US'; },
-      function (v) { return v.localService && v.lang.startsWith('en'); },
-      function (v) { return v.lang.startsWith('en'); },
+      function (v) { return v.localService && lang(v) === 'en-GB'; },
+      function (v) { return v.localService && lang(v) === 'en-US'; },
+      function (v) { return v.localService && lang(v).indexOf('en') === 0; },
+      function (v) { return lang(v).indexOf('en') === 0; },
     ];
     for (var i = 0; i < preferred.length; i++) {
       var match = _voices.filter(preferred[i]);
       if (match.length > 0) return match[0];
     }
     return null;
+  }
+
+  /* Ezinne / Abeo built into this browser (Microsoft Edge) */
+  function _pickRecommendedNative() {
+    var recommended = _voices
+      .filter(function (v) { return _recommendedRank(v) !== -1; })
+      .sort(function (a, b) { return _recommendedRank(a) - _recommendedRank(b); });
+    return recommended.length > 0 ? recommended[0] : null;
+  }
+
+  /* ── Best on-device default: Ezinne → Abeo → any en-NG → generic English ── */
+  function _pickDefaultVoice() {
+    if (_voices.length === 0) return null;
+
+    var recommended = _pickRecommendedNative();
+    if (recommended) return recommended;
+
+    // Other Nigerian English voices (e.g. Android system TTS) — on-device first.
+    var nigerian = _voices
+      .filter(_isNigerianVoice)
+      .sort(function (a, b) {
+        return (b.localService ? 1 : 0) - (a.localService ? 1 : 0);
+      });
+    if (nigerian.length > 0) return nigerian[0];
+
+    return _pickFallbackVoice();
   }
 
   /* ── Voice picker: respects saved preference ── */
@@ -81,15 +147,151 @@
         if (exact.length > 0) return exact[0];
       }
       if (_voicePref.lang) {
-        var langMatch = _voices.filter(function (v) {
-          return v.lang === _voicePref.lang || v.lang.startsWith(_voicePref.lang.split('-')[0]);
-        });
-        if (langMatch.length > 0) return langMatch[0];
+        var want = _normLang(_voicePref.lang);
+        var sameLang = _voices.filter(function (v) { return _normLang(v.lang) === want; });
+        if (sameLang.length > 0) return sameLang[0];
+        var base = want.split('-')[0];
+        var sameBase = _voices.filter(function (v) { return _normLang(v.lang).split('-')[0] === base; });
+        if (sameBase.length > 0) return sameBase[0];
       }
-      _savePref(null);
+      // Saved voice isn't on this device/browser: use the default for now,
+      // but keep the preference in case the voice shows up later.
     }
 
     return _pickDefaultVoice();
+  }
+
+  /* ════════════════════════════════════════════════════════
+     FREE ONLINE NIGERIAN VOICES  (Vertex Worker  →  POST /tts)
+     en-NG-EzinneNeural / en-NG-AbeoNeural, streamed as MP3.
+     Works on any browser/phone that is online. If the service is
+     unreachable the engine silently falls back to device voices.
+     ════════════════════════════════════════════════════════ */
+  var _TTS_URL = 'https://vertex-worker.gbemigaakinde.workers.dev/tts';
+  var _SERVER_VOICES = [
+    { id: 'en-NG-EzinneNeural', short: 'Ezinne', gender: 'female' },
+    { id: 'en-NG-AbeoNeural',   short: 'Abeo',   gender: 'male'   },
+  ];
+  var _SERVER_RATE        = '-8%';     // same pace as the old 0.92 device rate
+  var _SERVER_FIRST_CHUNK = 160;       // small first piece = audio starts sooner
+  var _SERVER_CHUNK       = 300;       // later pieces: fewer requests, smoother flow
+  var _SERVER_TIMEOUT_MS  = 10000;
+  var _SERVER_COOLDOWN_MS = 120000;    // after a failure, stay on device voices this long
+  var _serverDownUntil    = 0;
+  var _serverCache        = {};        // "voice|text" -> Promise<blob URL>  (this page session)
+  var _serverCacheKeys    = [];
+
+  function _serverVoiceById(id) {
+    for (var i = 0; i < _SERVER_VOICES.length; i++) {
+      if (_SERVER_VOICES[i].id === id) return _SERVER_VOICES[i];
+    }
+    return null;
+  }
+
+  function _serverUsable() {
+    return typeof Audio !== 'undefined' && typeof fetch === 'function' &&
+           navigator.onLine !== false && Date.now() >= _serverDownUntil;
+  }
+
+  function _fetchServerAudio(text, voiceId) {
+    var key = voiceId + '|' + text;
+    if (_serverCache[key]) return _serverCache[key];
+
+    var ctl   = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    var timer = ctl ? setTimeout(function () { ctl.abort(); }, _SERVER_TIMEOUT_MS) : null;
+
+    var p = fetch(_TTS_URL, {
+      method:  'POST',
+      // text/plain keeps this a "simple" request → no CORS preflight round-trip
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+      body:    JSON.stringify({ text: text, voice: voiceId, rate: _SERVER_RATE }),
+      signal:  ctl ? ctl.signal : undefined,
+    })
+      .then(function (res) {
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return res.blob();
+      })
+      .then(function (blob) {
+        if (!blob || blob.size < 200) throw new Error('empty audio');
+        return URL.createObjectURL(blob);
+      })
+      .then(
+        function (url) { if (timer) clearTimeout(timer); return url; },
+        function (err) { if (timer) clearTimeout(timer); delete _serverCache[key]; throw err; }
+      );
+
+    _serverCache[key] = p;
+    _serverCacheKeys.push(key);
+    while (_serverCacheKeys.length > 30) {              // keep memory small
+      var old = _serverCacheKeys.shift();
+      var oldP = _serverCache[old];
+      delete _serverCache[old];
+      if (oldP) oldP.then(function (u) { try { URL.revokeObjectURL(u); } catch (e) {} }, function () {});
+    }
+    return p;
+  }
+
+  /* One shared <audio> element. Phones only let a page play audio after a tap,
+     so it is "unlocked" with a silent clip during the first speak() (a tap). */
+  var _audioEl     = null;
+  var _audioPrimed = false;
+  var _SILENT_WAV  = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAABErAAABAAgAZGF0YQAAAAA=';
+
+  function _getAudio() {
+    if (!_audioEl) { _audioEl = new Audio(); _audioEl.preload = 'auto'; }
+    return _audioEl;
+  }
+
+  function _primeAudio() {
+    if (_audioPrimed || !_serverUsable()) return;
+    _audioPrimed = true;
+    try {
+      var a = _getAudio();
+      a.src = _SILENT_WAV;
+      var pr = a.play();
+      if (pr && pr.catch) pr.catch(function () { _audioPrimed = false; });
+    } catch (e) { _audioPrimed = false; }
+  }
+
+  function _stopAudio() {
+    if (!_audioEl) return;
+    _audioEl.onended = null;
+    _audioEl.onerror = null;
+    try { _audioEl.pause(); } catch (e) {}
+  }
+
+  /* ── Which voice reads this passage? ──
+     Returns { server: id }  or  { voice: SpeechSynthesisVoice|null }.
+     Order: your saved choice → Ezinne/Abeo on the device → Ezinne online
+            → other device voices.  forceNative skips the online voice. */
+  function _planVoice(forceNative, ignorePref) {
+    var pref  = ignorePref ? null : _voicePref;
+    var srvOk = !forceNative && _serverUsable();
+
+    if (pref && pref.server) {
+      if (srvOk && _serverVoiceById(pref.server)) return { server: pref.server };
+    } else if (pref) {
+      if (_voices.length === 0) return { voice: null };
+      var chosen = _pickVoice();
+      if (chosen) return { voice: chosen };
+    }
+
+    var rec = _pickRecommendedNative();
+    if (rec) return { voice: rec };
+    if (srvOk) return { server: _SERVER_VOICES[0].id };
+    return { voice: _pickDefaultVoice() };
+  }
+
+  /* Human-readable description of what "Default" currently resolves to */
+  function _describeDefault() {
+    var plan = _planVoice(false, true);
+    if (plan.server) return _serverVoiceById(plan.server).short + ' \u2014 Nigerian English (online)';
+    var v = plan.voice;
+    if (!v) return 'Uses the best available English voice';
+    var rank = _recommendedRank(v);
+    if (rank !== -1) return _DEFAULT_VOICES[rank].short + ' \u2014 Nigerian English (recommended)';
+    if (_isNigerianVoice(v)) return v.name + ' \u2014 Nigerian English';
+    return 'Offline \u2014 using ' + v.name;
   }
 
   /* ════════════════════════════════════════════════════════
@@ -97,6 +299,9 @@
      ════════════════════════════════════════════════════════ */
 
   function _inferGender(voice) {
+    // Known Nigerian neural voices (Azure: Ezinne = female, Abeo = male)
+    if (/ezinne/i.test(voice.name || '')) return 'female';
+    if (/abeo/i.test(voice.name || ''))   return 'male';
     var n = (voice.name || '').toLowerCase();
     var femaleTokens = [
       'female', 'woman', 'girl',
@@ -147,7 +352,7 @@
     _voices.forEach(function (v) {
       if (seen[v.name]) return;
       seen[v.name] = true;
-      var lang = v.lang || 'Unknown';
+      var lang = _normLang(v.lang) || 'Unknown';
       if (!map[lang]) map[lang] = [];
       map[lang].push(v);
     });
@@ -185,14 +390,21 @@
     }
 
     var grouped   = _groupVoicesByLang();
+    function _langRank(l) {
+      if (/^en-ng$/i.test(l)) return 0;          // Nigerian English first
+      if (l.indexOf('en') === 0) return 1;       // then other English
+      return 2;
+    }
     var langCodes = Object.keys(grouped).sort(function (a, b) {
-      var aEn = a.startsWith('en') ? 0 : 1;
-      var bEn = b.startsWith('en') ? 0 : 1;
-      if (aEn !== bEn) return aEn - bEn;
+      var ra = _langRank(a), rb = _langRank(b);
+      if (ra !== rb) return ra - rb;
       return a.localeCompare(b);
     });
 
-    var activeLang  = (_voicePref && _voicePref.lang) || 'en-GB';
+    var defaultVoice = _pickDefaultVoice();
+    var defaultPlan  = _planVoice(false, true);
+    var activeLang  = _normLang((_voicePref && _voicePref.lang) ||
+                                (defaultVoice && defaultVoice.lang) || 'en-NG');
     if (!grouped[activeLang]) {
       var base = activeLang.split('-')[0];
       var found = langCodes.filter(function (l) { return l.startsWith(base); });
@@ -248,16 +460,55 @@
     defaultRow.innerHTML =
       '<i class="ph ph-globe" style="font-size:1rem;flex-shrink:0;color:var(--text-3,#888);"></i>' +
       '<div style="flex:1;min-width:0;">' +
-        '<div style="font-size:.875rem;font-weight:600;color:var(--text-1,#111);">Default (English)</div>' +
-        '<div style="font-size:.75rem;color:var(--text-3,#888);">Uses the best available English voice</div>' +
+        '<div style="font-size:.875rem;font-weight:600;color:var(--text-1,#111);">Default (Nigerian English)</div>' +
+        '<div style="font-size:.75rem;color:var(--text-3,#888);">' + _escHtmlLocal(_describeDefault()) + '</div>' +
       '</div>' +
       (isDefault ? '<span style="font-size:.8125rem;font-weight:700;color:var(--accent,#4f6ef7);">&#10003;</span>' : '');
     defaultRow.addEventListener('click', function () {
       _savePref(null);
       panel.remove();
-      if (window.UI) UI.toast('Voice reset to default English.', 'success', 2000);
+      if (window.UI) UI.toast('Voice reset to default (Nigerian English).', 'success', 2000);
     });
     body.appendChild(defaultRow);
+
+    /* Free online Nigerian voices (hidden in Edge, which already has them built in) */
+    if (!_pickRecommendedNative()) {
+      var srvSection = document.createElement('div');
+      var srvLabel   = document.createElement('div');
+      srvLabel.style.cssText = 'font-size:.6875rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--text-4,#aaa);margin-bottom:.375rem;';
+      srvLabel.textContent = 'Nigerian English (online \u00b7 free)';
+      srvSection.appendChild(srvLabel);
+
+      var srvList = document.createElement('div');
+      srvList.style.cssText = 'display:flex;flex-direction:column;gap:.375rem;';
+
+      _SERVER_VOICES.forEach(function (sv) {
+        var sel   = _voicePref && _voicePref.server === sv.id;
+        var isDef = !_voicePref && defaultPlan.server === sv.id;
+        var color = sv.gender === 'female' ? '#e879a0' : '#4f8ef7';
+        var icon  = sv.gender === 'female' ? 'ph-gender-female' : 'ph-gender-male';
+        var row = document.createElement('div');
+        row.style.cssText = 'display:flex;align-items:center;gap:.625rem;padding:.5rem .75rem;border-radius:8px;cursor:pointer;border:1.5px solid ' + (sel ? 'var(--accent,#4f6ef7)' : 'var(--border,#e0e0e0)') + ';background:' + (sel ? 'var(--accent-subtle,#eef2ff)' : 'transparent') + ';transition:all 120ms;';
+        row.innerHTML =
+          '<i class="ph ' + icon + '" style="font-size:1rem;color:' + color + ';flex-shrink:0;width:1.25rem;text-align:center;"></i>' +
+          '<div style="flex:1;min-width:0;">' +
+            '<div style="font-size:.875rem;font-weight:600;color:var(--text-1,#111);">' + sv.short +
+              '<span style="color:' + color + ';font-size:.8125rem;">' + _genderLabel(sv.gender) + '</span></div>' +
+            '<div style="font-size:.6875rem;color:var(--text-4,#aaa);">en-NG \u00b7 Online \u00b7 \u2605 Recommended' + (isDef ? ' \u00b7 Default' : '') + '</div>' +
+          '</div>' +
+          (sel ? '<span style="font-size:.8125rem;font-weight:700;color:var(--accent,#4f6ef7);flex-shrink:0;">&#10003;</span>' : '');
+        row.addEventListener('click', function () {
+          _savePref({ server: sv.id });
+          panel.remove();
+          if (window.UI) UI.toast('Voice set to: ' + sv.short + ' (Nigerian English)', 'success', 2500);
+          speak('Hello! This is how I sound.');
+        });
+        srvList.appendChild(row);
+      });
+
+      srvSection.appendChild(srvList);
+      body.appendChild(srvSection);
+    }
 
     /* Language selector */
     var langSection = document.createElement('div');
@@ -304,7 +555,10 @@
 
     function _renderVoices(langCode) {
       voiceListEl.innerHTML = '';
-      var vList = grouped[langCode] || [];
+      var vList = (grouped[langCode] || []).slice().sort(function (a, b) {
+        var ra = _recommendedRank(a), rb = _recommendedRank(b);
+        return (ra < 0 ? 99 : ra) - (rb < 0 ? 99 : rb);   // Ezinne, Abeo first
+      });
 
       if (vList.length === 0) {
         var noV = document.createElement('p');
@@ -319,6 +573,8 @@
         var gLabel     = _genderLabel(gender);
         var isSelected = _voicePref && _voicePref.voiceName === v.name;
         var local      = v.localService ? ' · Local' : ' · Online';
+        if (_recommendedRank(v) !== -1) local += ' · \u2605 Recommended';
+        else if (!_voicePref && defaultPlan.voice === v) local += ' · Default';
 
         var row = document.createElement('div');
         row.style.cssText = 'display:flex;align-items:center;gap:.625rem;padding:.5rem .75rem;border-radius:8px;cursor:pointer;border:1.5px solid ' + (isSelected ? 'var(--accent,#4f6ef7)' : 'var(--border,#e0e0e0)') + ';background:' + (isSelected ? 'var(--accent-subtle,#eef2ff)' : 'transparent') + ';transition:all 120ms;';
@@ -382,8 +638,8 @@ var _lastSpokenText      = '';
 var _lastSpokenEndMs     = 0;    
 var _STT_GATE_MS         = 600;   
                                   
-  function _chunkText(text) {
-    var MAX = 180;
+  function _chunkText(text, maxLen) {
+    var MAX = maxLen || 180;
     text = text.replace(/\s+/g, ' ').trim();
     if (text.length <= MAX) return [text];
     var chunks    = [];
@@ -420,71 +676,157 @@ var _STT_GATE_MS         = 600;
 
   var _chromePauseWatchdog = null;
 
-function _speakNext() {
-  if (_ttsQueue.length === 0) {
-    _ttsActive = false;
-    _setTtsBtn(false);
-    _hookTtsBtnState(false);
-    _lastSpokenEndMs = Date.now();
+  /* The voice is resolved once per read-aloud, so every chunk of one
+     passage is spoken by the same voice. */
+  var _queuePlan     = null;   // { server: id } | { voice: SpeechSynthesisVoice|null }
+  var _queueFellBack = false;
+  var _speakGen      = 0;      // bumped by cancel(); stale timers/replies check it
 
-    if (_sttGateTimer) { clearTimeout(_sttGateTimer); _sttGateTimer = null; }
-
-    var wasLive = _isSpeakingForLive;
-
-    _sttGateTimer = setTimeout(function () {
-      _sttGateTimer = null;
-
-      // Non-Live: reopen STT automatically so continuous listening resumes.
-      // Live: onDone callback handles STT via _liveStartListening — do not open here.
-      _isSpeakingForLive = false;
-
-      if (_sttActive && !wasLive) {
-        _openSession();
-      }
-
-      // Fire onDone — for Live Mode, this triggers _liveStartListening.
-      if (_onDoneCallback) {
-        var cb = _onDoneCallback;
-        _onDoneCallback = null;
-        setTimeout(cb, 50);
-      }
-    }, _STT_GATE_MS);
-
-    return;
+  function _clearWatchdog() {
+    if (_chromePauseWatchdog) { clearInterval(_chromePauseWatchdog); _chromePauseWatchdog = null; }
   }
 
-  if (_chromePauseWatchdog) { clearInterval(_chromePauseWatchdog); _chromePauseWatchdog = null; }
+  // setTimeout that does nothing if the read-aloud was cancelled/replaced meanwhile
+  function _later(fn, ms) {
+    var g = _speakGen;
+    setTimeout(function () { if (g === _speakGen) fn(); }, ms);
+  }
 
-  var chunk = _ttsQueue.shift();
-  var utt   = new SpeechSynthesisUtterance(chunk);
-  var voice = _pickVoice();
-  if (voice) utt.voice = voice;
-  utt.rate   = 0.92;
-  utt.pitch  = 1.0;
-  utt.volume = 1.0;
-  utt.lang   = (voice && voice.lang) || 'en-US';
+  function _speakNext() {
+    if (_ttsQueue.length === 0) {
+      _ttsActive = false;
+      _setTtsBtn(false);
+      _hookTtsBtnState(false);
+      _lastSpokenEndMs = Date.now();
 
-  utt.onend = function () {
-    if (_chromePauseWatchdog) { clearInterval(_chromePauseWatchdog); _chromePauseWatchdog = null; }
-    setTimeout(_speakNext, 80);
-  };
+      if (_sttGateTimer) { clearTimeout(_sttGateTimer); _sttGateTimer = null; }
 
-  utt.onerror = function (e) {
-    if (_chromePauseWatchdog) { clearInterval(_chromePauseWatchdog); _chromePauseWatchdog = null; }
-    if (e.error === 'interrupted' || e.error === 'canceled') return;
-    console.warn('[SpeechEngine] TTS chunk error:', e.error);
-    setTimeout(_speakNext, 100);
-  };
+      var wasLive = _isSpeakingForLive;
 
-  _synth.speak(utt);
+      _sttGateTimer = setTimeout(function () {
+        _sttGateTimer = null;
 
-  _chromePauseWatchdog = setInterval(function () {
-    if (_synth.speaking && !_synth.paused) {
-      _synth.pause();
-      _synth.resume();
+        // Non-Live: reopen STT automatically so continuous listening resumes.
+        // Live: onDone callback handles STT via _liveStartListening — do not open here.
+        _isSpeakingForLive = false;
+
+        if (_sttActive && !wasLive) {
+          _openSession();
+        }
+
+        // Fire onDone — for Live Mode, this triggers _liveStartListening.
+        if (_onDoneCallback) {
+          var cb = _onDoneCallback;
+          _onDoneCallback = null;
+          setTimeout(cb, 50);
+        }
+      }, _STT_GATE_MS);
+
+      return;
     }
-  }, 10000);
-}
+
+    _clearWatchdog();
+
+    var chunk = _ttsQueue.shift();
+
+    if (!_queuePlan) {
+      _queuePlan = _planVoice(false, false);
+      if (_queuePlan.server) {
+        // Online voice: first piece small (fast start), the rest in larger pieces.
+        var all   = [chunk].concat(_ttsQueue).join(' ');
+        var first = _chunkText(all, _SERVER_FIRST_CHUNK);
+        chunk     = first.shift();
+        var rest  = first.join(' ');
+        _ttsQueue = rest ? _chunkText(rest, _SERVER_CHUNK) : [];
+      }
+    }
+
+    if (_queuePlan.server) _speakChunkServer(chunk, _queuePlan.server);
+    else                   _speakChunkNative(chunk, _queuePlan.voice);
+  }
+
+  /* ── Online (Worker) voice ── */
+  function _speakChunkServer(chunk, voiceId) {
+    var gen = _speakGen;
+
+    _fetchServerAudio(chunk, voiceId).then(function (url) {
+      if (gen !== _speakGen) return;                       // cancelled while loading
+      var a = _getAudio();
+      a.onended = function () { if (gen === _speakGen) _later(_speakNext, 60); };
+      a.onerror = function () { if (gen === _speakGen) _serverFailed(chunk, 'playback error'); };
+      a.src = url;
+      var pr = a.play();
+      if (pr && pr.catch) {
+        pr.catch(function (err) {
+          if (gen === _speakGen) _serverFailed(chunk, (err && err.name) || 'play blocked');
+        });
+      }
+      // warm the next piece while this one plays
+      if (_ttsQueue.length) _fetchServerAudio(_ttsQueue[0], voiceId).catch(function () {});
+    }).catch(function (err) {
+      if (gen === _speakGen) _serverFailed(chunk, (err && err.message) || 'request failed');
+    });
+  }
+
+  // Online voice failed → carry on (this chunk and the rest) with device voices.
+  function _serverFailed(chunk, why) {
+    console.warn('[SpeechEngine] Online Nigerian voice unavailable (' + why + ') — using a device voice.');
+    _serverDownUntil = Date.now() + _SERVER_COOLDOWN_MS;
+    _stopAudio();
+    _queueFellBack = true;
+    _queuePlan     = _planVoice(true, false);
+
+    var pieces = [chunk].concat(_ttsQueue), out = [];
+    pieces.forEach(function (c) { out = out.concat(_chunkText(c, 180)); });   // device-friendly sizes
+    _ttsQueue = out;
+    _speakNext();
+  }
+
+  /* ── Device (Web Speech) voice ── */
+  function _speakChunkNative(chunk, voice) {
+    var utt = new SpeechSynthesisUtterance(chunk);
+    if (voice) utt.voice = voice;
+    utt.rate   = 0.92;
+    utt.pitch  = 1.0;
+    utt.volume = 1.0;
+    utt.lang   = (voice && voice.lang) || 'en-US';
+
+    utt.onend = function () {
+      _clearWatchdog();
+      _later(_speakNext, 80);
+    };
+
+    utt.onerror = function (e) {
+      _clearWatchdog();
+      if (e.error === 'interrupted' || e.error === 'canceled') return;
+
+      // Online neural voices (e.g. Edge's Ezinne / Abeo) need a connection.
+      // If one fails, retry this chunk once with an on-device voice and keep
+      // using it for the rest of this read-aloud instead of going silent.
+      if (voice && !voice.localService && !_queueFellBack) {
+        var fb = _pickFallbackVoice();
+        if (fb && fb !== voice) {
+          console.warn('[SpeechEngine] Online voice failed (' + e.error + '), using', fb.name);
+          _queueFellBack = true;
+          _queuePlan     = { voice: fb };
+          _ttsQueue.unshift(chunk);
+          _later(_speakNext, 50);
+          return;
+        }
+      }
+      console.warn('[SpeechEngine] TTS chunk error:', e.error);
+      _later(_speakNext, 100);
+    };
+
+    _synth.speak(utt);
+
+    _chromePauseWatchdog = setInterval(function () {
+      if (_synth.speaking && !_synth.paused) {
+        _synth.pause();
+        _synth.resume();
+      }
+    }, 10000);
+  }
 
   var _onDoneCallback = null;
 
@@ -502,6 +844,9 @@ function speak(rawText, onDone, _fromLive) {
     .trim();
   if (!clean) { if (typeof onDone === 'function') onDone(); return; }
 
+  // Unlock audio playback while we are still inside the user's tap (phones).
+  _primeAudio();
+
   // Track whether this speak() call is from Live Mode.
   // Live Mode manages its own STT lifecycle via callbacks —
   // we must NOT abort the recognition session here for Live Mode
@@ -518,6 +863,8 @@ function speak(rawText, onDone, _fromLive) {
   }
 
   cancel();
+  _queuePlan     = null;
+  _queueFellBack = false;
   _onDoneCallback = typeof onDone === 'function' ? onDone : null;
   _ttsQueue  = _chunkText(clean);
   _ttsActive = true;
@@ -525,7 +872,7 @@ function speak(rawText, onDone, _fromLive) {
   _hookTtsBtnState(true);
 
   if (!_voicesReady && _voices.length === 0) {
-    setTimeout(_speakNext, 250);
+    _later(_speakNext, 250);
   } else {
     _speakNext();
   }
@@ -533,12 +880,16 @@ function speak(rawText, onDone, _fromLive) {
 
 function cancel() {
   if (!ttsSupported) return;
-  if (_chromePauseWatchdog) { clearInterval(_chromePauseWatchdog); _chromePauseWatchdog = null; }
+  _speakGen++;
+  _clearWatchdog();
   if (_sttGateTimer)        { clearTimeout(_sttGateTimer);         _sttGateTimer = null; }
   _ttsQueue          = [];
   _ttsActive         = false;
   _isSpeakingForLive = false;
   _onDoneCallback    = null;
+  _queuePlan         = null;
+  _queueFellBack     = false;
+  _stopAudio();
   _synth.cancel();
   _setTtsBtn(false);
   _hookTtsBtnState(false);
@@ -2002,6 +2353,7 @@ function _renderAiText(str) {
     startSTT:             startSTT,
     stopSTT:              stopSTT,
     isSpeaking:           function () { return _ttsActive; },
+    _isTtsActive:         function () { return _ttsActive; },
     wireExamButtons:      wireExamButtons,
     wireResultsButtons:   wireResultsButtons,
     setResultsContext:    setResultsContext,
