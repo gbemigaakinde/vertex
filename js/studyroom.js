@@ -659,7 +659,8 @@
         cancelAnimationFrame(_rafId);
         return;
       }
-      const speaking = window.speechSynthesis && window.speechSynthesis.speaking;
+      const speaking = (window.SpeechEngine && SpeechEngine.isSpeaking && SpeechEngine.isSpeaking()) ||
+                       (window.speechSynthesis && window.speechSynthesis.speaking);
       ttsBtn.classList.toggle('sr-se-speaking', !!speaking);
       ttsBtn.title = speaking ? 'Stop reading (click to stop)' : 'Read lesson aloud';
 
