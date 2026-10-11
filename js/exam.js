@@ -1383,6 +1383,67 @@ function _closeFullClock() {
   /* ─────────────────────────────────────────────────────── */
   /* renderSubjectSelection — pill chip version              */
   /* ─────────────────────────────────────────────────────── */
+
+/* ── Session / term picker (students) ──────────────────────── */
+function _buildPeriodPickerHtml(classKey) {
+  const QL = window.QuestionLoader;
+  if (!QL || !QL.periodsFor) return '';
+  try {
+    const cur     = QL.getSelectedPeriod();
+    const live    = QL.getActivePeriod();
+    const periods = QL.periodsFor(classKey);
+    const label   = cur.session + ' · Term ' + cur.term;
+    const isLive  = cur.session === live.session && cur.term === live.term;
+
+    if (!QL.freeSelectAllowed(classKey) || periods.length < 2) {
+      return `<p style="font-size:.75rem;color:var(--text-3);margin:-.25rem 0 .875rem;">Questions: <strong>${label}</strong></p>`;
+    }
+    const sessions = [...new Set(periods.map(p => p.session))];
+    const terms    = periods.filter(p => p.session === cur.session).map(p => p.term);
+    const selStyle = 'font-family:var(--font);font-size:.8125rem;padding:.4375rem .625rem;border:1px solid var(--border);border-radius:var(--r-md,8px);background:var(--bg-base);color:var(--text-1,inherit);';
+    return `
+      <div style="margin:-.25rem 0 1rem;">
+        <p style="font-size:.6875rem;color:var(--text-4);margin-bottom:.375rem;">Choose the session and term to practise</p>
+        <div style="display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;">
+          <select id="examPeriodSession" aria-label="Session" onchange="Exam._onPeriodChange('session')" style="${selStyle}">
+            ${sessions.map(x => `<option value="${x}"${x === cur.session ? ' selected' : ''}>${x}</option>`).join('')}
+          </select>
+          <select id="examPeriodTerm" aria-label="Term" onchange="Exam._onPeriodChange('term')" style="${selStyle}">
+            ${terms.map(t => `<option value="${t}"${t === cur.term ? ' selected' : ''}>Term ${t}</option>`).join('')}
+          </select>
+        </div>
+        <p style="font-size:.6875rem;color:var(--text-4);margin-top:.375rem;">${isLive ? 'This is your school\u2019s current term.' : 'Not the current term. <a href="#" onclick="Exam._onPeriodChange(\'live\');return false;" style="color:var(--accent);">Back to current term</a>'}</p>
+      </div>`;
+  } catch (e) {
+    console.warn('[exam] period picker failed:', e);
+    return '';
+  }
+}
+
+async function _onPeriodChange(which) {
+  const QL = window.QuestionLoader;
+  if (!QL || !S().studentData) return;
+  const classKey = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
+  let session, term;
+  if (which === 'live') {
+    const live = QL.getActivePeriod(); session = live.session; term = live.term;
+  } else {
+    const sEl = document.getElementById('examPeriodSession');
+    const tEl = document.getElementById('examPeriodTerm');
+    session = sEl ? sEl.value : '';
+    term    = tEl ? Number(tEl.value) : 0;
+    if (which === 'session') {
+      // the new session may not have the same terms: pick the first one it has
+      const avail = QL.periodsFor(classKey).filter(p => p.session === session).map(p => p.term);
+      if (avail.length && avail.indexOf(term) < 0) term = avail[0];
+    }
+  }
+  if (!QL.selectPeriod(session, term, classKey)) {
+    UI.toast('That session and term is not available.', 'warning');
+  }
+  await renderSubjectSelection();
+}
+
 async function renderSubjectSelection() {
   if (_renderSubjectSelectionInProgress) {
     console.warn('[exam] renderSubjectSelection already in progress — skipping duplicate call.');
@@ -1402,6 +1463,8 @@ async function renderSubjectSelection() {
 
   try {
     const classKey = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
+    // Use the student's chosen session/term when the teacher allows it, otherwise the live one.
+    try { if (window.QuestionLoader) QuestionLoader.applyForClass(classKey); } catch (e) { console.warn('[exam] period apply failed:', e); }
     const _qBank   = window.questions || {};
 
     if (!S().studentData || !S().userId) {
@@ -1414,6 +1477,7 @@ async function renderSubjectSelection() {
     // Never bail out here: the dashboard (chat, tools, timetable…) must always load.
     // A missing / broken question bank only disables the exam section, with a warning.
     const bankState = _getBankState(classKey);
+    const periodPickerHtml = _buildPeriodPickerHtml(classKey);
     if (bankState.problem) {
       console.error('[exam] Question bank problem for classKey "' + classKey + '":', bankState.problem);
     }
@@ -1728,6 +1792,7 @@ async function renderSubjectSelection() {
               ? `<span style="color:var(--warning);display:inline-flex;vertical-align:middle;margin-right:.25rem;">${_icon('Warning', 13)}</span>Exam`
               : (restrictedSubjs ? 'Required subjects for today' : 'Start a practice exam')}
           </p>
+          ${(!todayTaskDone && !restrictedSubjs) ? periodPickerHtml : ''}
           ${(todayTaskDone && !bankState.problem)
             ? subjectsHtml
             : `<div>
@@ -2329,7 +2394,10 @@ async function renderSubjectSelection() {
     }
 
     const classKey = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
+    // Re-check the period right before starting (the teacher may have turned free choice off).
+    try { if (window.QuestionLoader) QuestionLoader.applyForClass(classKey); } catch (e) {}
     const _qBank   = window.questions || {};
+    const _qPeriod = window.QuestionLoader ? QuestionLoader.getSelectedPeriod() : null;
 
     if (!_qBank[classKey] || typeof _qBank[classKey] !== 'object') {
       UI.toast(`No subjects found for class "${S().studentData.class}". Contact Master Timothy.`, 'error', 8000);
@@ -2367,6 +2435,8 @@ async function renderSubjectSelection() {
       answers: {},
       sessionDate,
       durationMs: examDuration,
+      questionSession: _qPeriod ? _qPeriod.session : null,
+      questionTerm:    _qPeriod ? _qPeriod.term : null,
     };
 
     const btn = document.getElementById('startExamBtn');
@@ -2994,6 +3064,8 @@ async function renderSubjectSelection() {
         ...result,
         questionSnapshots,
         sessionDate,
+        questionSession: exam.questionSession || null,
+        questionTerm:    exam.questionTerm || null,
         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
       });
       batch.delete(window.fbDb.collection('ongoingExams').doc(S().userId));
@@ -6120,6 +6192,7 @@ function _hideLiveTyping() {
 window.Exam = {
   loadOrStart,
   renderSubjectSelection,
+  _onPeriodChange,
   startExam,
   beginExam,
   renderExam,

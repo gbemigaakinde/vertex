@@ -28,7 +28,7 @@
     docExists: false,
     form: null,             // { index: -1|n, q, opts[], optSvg[], ans, exp, svg, expSvg }
     filter: '',
-    busy: false, bulkOpen: false,
+    busy: false, bulkOpen: false, freeOpen: false,
     bulk: null,             // { groups, report }
     loadToken: 0,
   };
@@ -227,16 +227,42 @@
     } finally { S.busy = false; draw(); }
   }
 
+  // Read-modify-write of questionBank/_activePeriod so the live period and the
+  // student-choice settings never overwrite each other.
+  async function writeSettings(mutator) {
+    var ref = db().collection(QL.COLLECTION).doc('_activePeriod');
+    var snap = await ref.get();
+    var data = snap.exists ? (snap.data() || {}) : {};
+    mutator(data);
+    data.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
+    await ref.set(data);
+  }
+
   async function setLivePeriod() {
-    if (!window.confirm('Make ' + periodLabel(S.session, S.term) + ' the period students get questions from?')) return;
+    if (!window.confirm('Make ' + periodLabel(S.session, S.term) + ' the default period students get questions from?')) return;
     try {
-      await db().collection(QL.COLLECTION).doc('_activePeriod').set({
-        session: S.session, term: S.term, updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
-      });
+      await writeSettings(function (d) { d.session = S.session; d.term = S.term; });
       await QL.load({ force: true });
-      toast('Students now get ' + periodLabel(S.session, S.term) + ' questions (they see it on next page load).', 'success', 6000);
+      toast('Default for students is now ' + periodLabel(S.session, S.term) + ' (they see it on next page load).', 'success', 6000);
       draw();
     } catch (e) { toast('Could not change the live period: ' + (e.message || e), 'error', 7000); }
+  }
+
+  async function setFreeSelect(scope, value) {      // scope: 'all' or a class key; value: 'on' | 'off' | 'default'
+    try {
+      await writeSettings(function (d) {
+        var fs = d.freeSelect && typeof d.freeSelect === 'object' ? d.freeSelect : {};
+        if (typeof fs.all !== 'boolean') fs.all = true;
+        if (!fs.classes || typeof fs.classes !== 'object') fs.classes = {};
+        if (scope === 'all') fs.all = value === 'on';
+        else if (value === 'default') delete fs.classes[scope];
+        else fs.classes[scope] = value === 'on';
+        d.freeSelect = fs;
+      });
+      await QL.load({ force: true });
+      toast('Saved. Students see the change on their next page load.', 'success', 5000);
+    } catch (e) { toast('Could not save: ' + (e.message || e), 'error', 7000); }
+    draw();
   }
 
   /* ───────── rendering ───────── */
@@ -285,6 +311,24 @@
       h += '<option value="' + esc(v) + '"' + (String(v) === String(value) ? ' selected' : '') + '>' + esc(t) + '</option>';
     });
     return h + (extra || '') + '</select></div>';
+  }
+
+  function freePanel() {
+    var fs = QL.getFreeSelect();
+    var sel = function (id, val, withDefault) {
+      return '<select id="' + id + '" data-free="1">' +
+        (withDefault ? '<option value="default"' + (val === 'default' ? ' selected' : '') + '>Same as everyone</option>' : '') +
+        '<option value="on"' + (val === 'on' ? ' selected' : '') + '>Allowed</option>' +
+        '<option value="off"' + (val === 'off' ? ' selected' : '') + '>Not allowed (live period only)</option></select>';
+    };
+    var h = '<div style="margin-top:.75rem;display:flex;flex-direction:column;gap:.6rem;">' +
+      '<div class="qm-muted">When allowed, a student can pick any session and term that has questions for their class. Everyone starts on the live period. Turning it off sends students back to the live period.</div>' +
+      '<div class="qm-row" style="align-items:center;"><div style="min-width:120px;"><strong>All classes</strong></div><div class="qm-field">' + sel('qmFreeAll', fs.all ? 'on' : 'off', false) + '</div></div>';
+    classOptions().forEach(function (c) {
+      var v = typeof fs.classes[c] === 'boolean' ? (fs.classes[c] ? 'on' : 'off') : 'default';
+      h += '<div class="qm-row" style="align-items:center;"><div style="min-width:120px;">' + esc(c.toUpperCase()) + '</div><div class="qm-field">' + sel('qmFree_' + c, v, true) + '</div></div>';
+    });
+    return h + '</div>';
   }
 
   function draw() {
@@ -341,9 +385,11 @@
       '<div class="qm">' +
       '<div class="qm-live ' + (isLive ? 'ok' : 'warn') + '"><div><strong>Live for students:</strong> ' + esc(periodLabel(live.session, live.term)) +
         (QL.status.periodSource === 'date' ? ' <span class="qm-muted">(worked out from today\'s date)</span>' : '') +
-        (isLive ? '' : '<br>You are editing <strong>' + esc(periodLabel(S.session, S.term)) + '</strong>. Students will not see these until you make it live.') + '</div>' +
-        (isLive ? '' : '<button class="qm-btn qm-primary" data-act="golive">Make ' + esc(periodLabel(S.session, S.term)) + ' live</button>') +
+        (isLive ? '' : '<br>You are editing <strong>' + esc(periodLabel(S.session, S.term)) + '</strong>. Students only see these by default once you make it the default; if you allow free choice they can also pick it themselves.') + '</div>' +
+        (isLive ? '' : '<button class="qm-btn qm-primary" data-act="golive">Make ' + esc(periodLabel(S.session, S.term)) + ' the default</button>') +
         (isLive && QL.status.periodSource === 'date' ? '<button class="qm-btn" data-act="golive">Lock this period</button>' : '') + '</div>' +
+
+      '<div class="qm-card"><details id="qmFreeBox"' + (S.freeOpen ? ' open' : '') + '><summary>Let students choose their own session / term</summary>' + freePanel() + '</details></div>' +
 
       '<div class="qm-card"><div class="qm-row">' +
         selectHtml('qmSession', 'Session', sesOpts, S.session) +
@@ -750,6 +796,7 @@
 
   function onChange(e) {
     var t = e.target;
+    if (t.dataset && t.dataset.free) { return void setFreeSelect(t.id === 'qmFreeAll' ? 'all' : t.id.slice(7), t.value); }
     if (['qmSession', 'qmTerm', 'qmClass', 'qmSubject'].indexOf(t.id) >= 0) return void onSelectionChange(t.id.slice(2));
     if (t.id === 'qmFile' && t.files && t.files[0]) {
       var file = t.files[0];
@@ -775,7 +822,10 @@
       root.addEventListener('click', onClick);
       root.addEventListener('input', onInput);
       root.addEventListener('change', onChange);
-      root.addEventListener('toggle', function (e) { if (e.target && e.target.id === 'qmBulkBox') S.bulkOpen = e.target.open; }, true);
+      root.addEventListener('toggle', function (e) {
+        if (e.target && e.target.id === 'qmBulkBox') S.bulkOpen = e.target.open;
+        if (e.target && e.target.id === 'qmFreeBox') S.freeOpen = e.target.open;
+      }, true);
     }
     if (!window.fbDb || !QL) { root.innerHTML = '<p>Question tools are not available (database not ready).</p>'; return; }
     root.innerHTML = '<p class="qm-muted">Loading…</p>';

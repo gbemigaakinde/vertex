@@ -28,6 +28,11 @@
    Old documents with no session/term still work: they are the fallback for
    any period that has no questions of its own for that class + subject.
 
+   Students can also pick another session / term themselves when the teacher allows it
+   (questionBank/_activePeriod.freeSelect = { all: true|false, classes: { jss1: true|false } };
+   a class value overrides "all"; default is allowed). Their choice only ever offers periods
+   that actually have questions for their class, and is re-checked on every screen render.
+
    Behaviour
    ---------
    - data/questions.js is still loaded and is the fallback. If the backend is
@@ -190,31 +195,40 @@
     return q;
   }
 
-  function applySnapshot(snap) {
-    // Start from a copy of the bundled bank so the original is never mutated.
-    var merged = {};
-    Object.keys(_bundled).forEach(function (cls) { merged[cls] = Object.assign({}, _bundled[cls]); });
+  // ── Parsed backend documents + student period choice ───────
+  var _parsed = [];                       // [{ cls, subj, legacy, key, session, term, questions }]
+  var _free   = { all: true, classes: {} };   // who may pick their own session / term
+  var SEL_KEY = 'vtx_period_sel';
+  var _selected = null;                   // null = live period
 
-    // 1) the teacher's chosen active period (falls back to the date-based default)
+  function samePeriod(a, b) { return periodKey(a.session, a.term) === periodKey(b.session, b.term); }
+
+  function ingest(snap) {
+    _parsed = []; _free = { all: true, classes: {} };
     activePeriod = defaultPeriod();
     status.periodSource = 'date';
-    snap.forEach(function (doc) {
-      if (doc.id !== '_activePeriod') return;
-      var d = doc.data() || {};
-      if (validPeriod(d)) {
-        activePeriod = { session: normSession(d.session), term: normTerm(d.term) };
-        status.periodSource = 'teacher';
-      }
-    });
-    status.period = activePeriod;
-    var activeKey = periodKey(activePeriod.session, activePeriod.term);
+    var skipped = 0;
 
-    var legacy = {}, current = {};          // legacy[cls][subj], current[cls][subj]
-    var applied = 0, skipped = 0;
     snap.forEach(function (doc) {
       try {                                           // one bad document must not discard the rest
-        if (String(doc.id).charAt(0) === '_') return; // settings documents
         var data = doc.data() || {};
+        if (doc.id === '_activePeriod') {
+          if (validPeriod(data)) {
+            activePeriod = { session: normSession(data.session), term: normTerm(data.term) };
+            status.periodSource = 'teacher';
+          }
+          var fs = data.freeSelect;
+          if (fs && typeof fs === 'object') {
+            if (typeof fs.all === 'boolean') _free.all = fs.all;
+            if (fs.classes && typeof fs.classes === 'object') {
+              Object.keys(fs.classes).forEach(function (c) {
+                if (typeof fs.classes[c] === 'boolean') _free.classes[normClass(c)] = fs.classes[c];
+              });
+            }
+          }
+          return;
+        }
+        if (String(doc.id).charAt(0) === '_') return; // other settings documents
         if (data.active === false) return;
 
         var cls  = normClass(data.classKey || String(doc.id).split('__')[0]);
@@ -222,13 +236,11 @@
         if (!cls || !subj || !Array.isArray(data.questions)) return;
 
         var hasPeriod = data.session != null || data.term != null || data.periodKey;
-        var bucket = legacy;
+        var key = '';
         if (hasPeriod) {
-          var k = data.periodKey || periodKey(data.session, data.term);
-          if (!k || k !== activeKey) return;          // belongs to another session / term
-          bucket = current;
+          key = data.periodKey || periodKey(data.session, data.term);
+          if (!key) return;
         }
-
         var good = [];
         data.questions.forEach(function (raw) {
           var q = cleanQuestion(raw);
@@ -236,34 +248,118 @@
         });
         if (!good.length) return;                     // ignore empty / fully invalid documents
 
-        if (!bucket[cls]) bucket[cls] = {};
-        bucket[cls][subj] = good;
+        var m = key.match(/^(\d{4})-(\d{4})__t(\d)$/);
+        _parsed.push({ cls: cls, subj: subj, legacy: !hasPeriod, key: key,
+                       session: m ? m[1] + '/' + m[2] : '', term: m ? Number(m[3]) : 0, questions: good });
       } catch (docErr) {
         console.warn('[QuestionLoader] skipped bad document \"' + (doc && doc.id) + '\":', docErr);
       }
     });
+    status.period  = activePeriod;
+    status.skipped = skipped;
+  }
 
-    // 2) bundled < legacy backend docs < documents of the active session/term
-    [legacy, current].forEach(function (src) {
-      Object.keys(src).forEach(function (cls) {
-        Object.keys(src[cls]).forEach(function (subj) {
-          if (!merged[cls]) merged[cls] = {};
-          merged[cls][subj] = src[cls][subj];
-          applied++;
-        });
+  // Builds window.questions for one period.
+  //   live period : bundled < old (no session/term) documents < documents of that period
+  //   other period: ONLY documents of that exact period (no fallbacks), so a student never
+  //                 gets built-in or other-term questions labelled as a different term.
+  function rebuild(period) {
+    var isLive = samePeriod(period, activePeriod);
+    var key = periodKey(period.session, period.term);
+    var merged = {}, applied = 0;
+    if (isLive) Object.keys(_bundled).forEach(function (cls) { merged[cls] = Object.assign({}, _bundled[cls]); });
+
+    [true, false].forEach(function (legacyPass) {
+      _parsed.forEach(function (d) {
+        if (legacyPass) { if (!d.legacy || !isLive) return; }
+        else if (d.legacy || d.key !== key) return;
+        if (!merged[d.cls]) merged[d.cls] = {};
+        merged[d.cls][d.subj] = d.questions;
+        applied++;
       });
     });
 
-    status.skipped = skipped;
-    if (applied > 0) {
-      window.questions = merged;
-      status.source = 'backend';
+    window.questions = merged;
+    _selected = isLive ? null : { session: normSession(period.session), term: normTerm(period.term) };
+    status.selected = _selected ? { session: _selected.session, term: _selected.term } : { session: activePeriod.session, term: activePeriod.term };
+    if (isLive) {
+      status.source = applied > 0 ? 'backend' : 'bundled';
       status.docs   = applied;
-    } else {
-      console.info('[QuestionLoader] backend returned no usable questions for ' +
-                   activePeriod.session + ' term ' + activePeriod.term + ' — using bundled bank.');
+      if (!applied) console.info('[QuestionLoader] backend returned no usable questions for ' +
+                                 activePeriod.session + ' term ' + activePeriod.term + ' — using bundled bank.');
     }
   }
+
+  function applySnapshot(snap) { ingest(snap); rebuild(activePeriod); }
+
+  // ── Student-facing period choice ───────────────────────────
+  function freeSelectAllowed(classKey) {
+    var c = normClass(classKey);
+    if (c && typeof _free.classes[c] === 'boolean') return _free.classes[c];
+    return _free.all !== false;
+  }
+
+  // Periods this class can pick: every session/term that has questions for it, plus the live one.
+  function periodsFor(classKey) {
+    var c = normClass(classKey), seen = {}, out = [];
+    function add(session, term, count) {
+      var k = periodKey(session, term); if (!k || seen[k]) return;
+      seen[k] = 1; out.push({ session: normSession(session), term: normTerm(term), key: k, subjects: count });
+    }
+    var counts = {};
+    _parsed.forEach(function (d) { if (d.cls === c && !d.legacy) counts[d.key] = (counts[d.key] || 0) + 1; });
+    _parsed.forEach(function (d) { if (d.cls === c && !d.legacy) add(d.session, d.term, counts[d.key]); });
+    add(activePeriod.session, activePeriod.term, counts[periodKey(activePeriod.session, activePeriod.term)] || 0);
+    out.sort(function (a, b) { return a.session === b.session ? a.term - b.term : (a.session < b.session ? 1 : -1); });
+    return out;
+  }
+
+  function readSaved() {
+    try {
+      var v = JSON.parse(localStorage.getItem(SEL_KEY) || 'null');
+      return v && validPeriod(v) ? { session: normSession(v.session), term: normTerm(v.term) } : null;
+    } catch (e) { return null; }
+  }
+  function writeSaved(p) {
+    try { if (p) localStorage.setItem(SEL_KEY, JSON.stringify(p)); else localStorage.removeItem(SEL_KEY); } catch (e) {}
+  }
+
+  function getSelectedPeriod() {
+    return _selected ? { session: _selected.session, term: _selected.term } : { session: activePeriod.session, term: activePeriod.term };
+  }
+
+  // Student picks a period. Returns true when applied.
+  function selectPeriod(session, term, classKey) {
+    var p = { session: normSession(session), term: normTerm(term) };
+    if (!validPeriod(p)) return false;
+    if (!samePeriod(p, activePeriod)) {
+      if (!freeSelectAllowed(classKey)) return false;
+      var ok = periodsFor(classKey).some(function (x) { return x.key === periodKey(p.session, p.term); });
+      if (!ok) return false;
+    }
+    writeSaved(samePeriod(p, activePeriod) ? null : p);
+    rebuild(p);
+    return true;
+  }
+
+  // Called before the student's exam screen is built and before an exam starts:
+  // keeps the saved choice only if it is still allowed and still has questions,
+  // otherwise the live period is used.
+  function applyForClass(classKey) {
+    var want = readSaved();
+    var target = activePeriod;
+    if (want && !samePeriod(want, activePeriod) && freeSelectAllowed(classKey) &&
+        periodsFor(classKey).some(function (x) { return x.key === periodKey(want.session, want.term); })) {
+      target = want;
+    } else if (want) {
+      writeSaved(null);
+    }
+    var cur = getSelectedPeriod();
+    if (!samePeriod(cur, target) || !window.questions || !Object.keys(window.questions).length) rebuild(target);
+    return getSelectedPeriod();
+  }
+
+  function getFreeSelect() { return JSON.parse(JSON.stringify(_free)); }
 
   function load(opts) {
     if (_promise && !(opts && opts.force)) return _promise;
@@ -319,6 +415,8 @@
     COLLECTION: COLLECTION, MAX_DOC_CHARS: MAX_DOC_CHARS,
     getBundled: function () { return _bundled; },
     getActivePeriod: function () { return { session: activePeriod.session, term: activePeriod.term }; },
+    getSelectedPeriod: getSelectedPeriod, selectPeriod: selectPeriod, applyForClass: applyForClass,
+    periodsFor: periodsFor, freeSelectAllowed: freeSelectAllowed, getFreeSelect: getFreeSelect,
     defaultPeriod: defaultPeriod, normSession: normSession, normTerm: normTerm,
     periodKey: periodKey, normClass: normClass, slug: slug,
     _cleanQuestion: cleanQuestion, _normalizeBank: normalizeBank
