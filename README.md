@@ -267,7 +267,7 @@ Check the loader at any time with `QuestionLoader.status` (`source` is `"backend
 ---
 
 ### Managing questions from the teacher dashboard (Questions tab)
-Teachers can add, edit, reorder and delete questions, pick the correct answer, paste SVG diagrams, and bulk-import JSON, per class, subject, session (e.g. 2025/2026) and term (1-3). Documents are stored as `questionBank/<class>__<subject>__<2025-2026>__t<1-3>`. Students receive the questions of the **live period**, set with "Make live" (stored in `questionBank/_activePeriod`; if never set it follows the date: Sept-Dec Term 1, Jan-Apr Term 2, May-Aug Term 3). Older documents without a session/term remain as the fallback. Firestore rules must let the teacher write to `questionBank` (including the `_activePeriod` document).
+Teachers can add, edit, reorder and delete questions, pick the correct answer, paste SVG diagrams, and bulk-import JSON, per class, subject, session (e.g. 2025/2026) and term (1-3). Documents are stored as `questionBank/<class>__<subject>__<2025-2026>__t<1-3>`. Students receive the questions of the **live period**, set with "Make live" (stored in `questionBank/_activePeriod`; if never set it follows the date: Sept-Dec Term 1, Jan-Apr Term 2, May-Aug Term 3). Older documents without a session/term remain as the fallback. Students can pick any session and term that has questions for their class on the exam screen; the teacher turns this on or off for all classes or per class in the Questions tab. Results store `questionSession` and `questionTerm`. Firestore rules must let the teacher write to `questionBank` (including the `_activePeriod` document).
 
 ## Data model (Firestore)
 
