@@ -3273,7 +3273,7 @@ async function renderSubjectSelection() {
                         </button>
                       </div>
                       ${_diag(q.svg, 'question')}
-                      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;font-size:.8125rem;margin-bottom:.75rem;">
+                      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,13rem),1fr));gap:.75rem;font-size:.8125rem;margin-bottom:.75rem;">
                         <div>
                           <span style="font-weight:600;color:var(--text-3);">Your answer:</span>
                           <span style="margin-left:.375rem;font-weight:500;
