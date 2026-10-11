@@ -121,6 +121,12 @@
       '.vs-seg button[aria-pressed="true"]{background:var(--bg-base,#fff);color:var(--text-1,#0d0d0f);box-shadow:0 1px 3px rgba(0,0,0,.15);}',
       '.vs-btn{width:100%;padding:.75rem;border-radius:12px;border:1px solid var(--border,#e5e7eb);background:var(--bg-base,#fff);',
         'color:var(--text-2,#374151);font-size:.875rem;font-weight:600;cursor:pointer;font-family:inherit;}',
+      '.vs-btn[data-loading="true"]{pointer-events:none;color:transparent;position:relative;overflow:hidden;',
+        'background:linear-gradient(90deg,var(--bg-muted,#eef0f3) 25%,var(--bg-base,#fff) 50%,var(--bg-muted,#eef0f3) 75%);',
+        'background-size:200% 100%;animation:vsShimmer 1.2s linear infinite;}',
+      '.vs-btn[data-loading="true"]::after{content:"Signing out\\2026";position:absolute;inset:0;display:flex;align-items:center;',
+        'justify-content:center;gap:.5rem;color:var(--text-2,#374151);}',
+      '@keyframes vsShimmer{from{background-position:200% 0}to{background-position:-200% 0}}',
       '.vs-loading{padding:2rem 0;text-align:center;color:var(--text-3,#6b7280);font-size:.875rem;}',
       '@keyframes vsFade{from{opacity:0}to{opacity:1}}',
       '@keyframes vsUp{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}',
@@ -338,7 +344,21 @@
     if (act === 'sound')  { _lsSet(LS.sound,  get('sound')  ? 'off' : 'on');   applyLocal(); _render(); return; }
     if (act === 'motion') { _lsSet(LS.motion, get('reduceMotion') ? 'full' : 'reduce'); applyLocal(); _render(); return; }
     if (act === 'popups') { _lsSet(LS.popups, get('popups') ? 'off' : 'on'); _render(); return; }
-    if (act === 'signout') { close(); if (window.App && App.logout) App.logout(); return; }
+    if (act === 'signout') {
+      if (el.getAttribute('data-loading') === 'true') return;
+      el.setAttribute('data-loading', 'true');
+      el.setAttribute('aria-busy', 'true');
+      el.setAttribute('aria-label', 'Signing out');
+      try {
+        if (window.App && App.logout) await App.logout();
+        close();
+      } catch (err) {
+        console.error('[settings] sign out failed:', err);
+        el.removeAttribute('data-loading'); el.removeAttribute('aria-busy');
+        _toast('Could not sign out. Please try again.', 'error');
+      }
+      return;
+    }
 
     // Alert settings (need the loaded state; ignore taps while one is still saving)
     if (!_s || _busy) return;

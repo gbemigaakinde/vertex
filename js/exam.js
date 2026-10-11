@@ -1679,39 +1679,35 @@ async function renderSubjectSelection() {
     UI.mount(`
       <div style="max-width:680px;margin:0 auto;padding:1.5rem 0 6rem;">
 
-        <!-- GREETING ROW -->
-        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1.75rem;">
-          <div style="min-width:0;">
-            <h1 style="font-size:1.3125rem;font-weight:700;color:var(--text-1);letter-spacing:-.025em;
-                       line-height:1.25;margin-bottom:.25rem;">
-              ${_getGreeting(S().studentData.name)}
-            </h1>
-            <p style="font-size:.8125rem;color:var(--text-3);line-height:1.5;">
-              ${_escHtml(S().studentData.class)} &bull; ${_escHtml(S().studentData.school)}
-            </p>
+        <!-- HEADER: greeting → student info → settings -->
+        <div style="margin-bottom:1.75rem;">
+          <h1 style="font-size:1.4375rem;font-weight:700;color:var(--text-1);letter-spacing:-.025em;
+                     line-height:1.25;margin-bottom:.625rem;overflow-wrap:anywhere;">
+            ${_getGreeting(S().studentData.name)}
+          </h1>
+          <div style="display:flex;align-items:center;flex-wrap:wrap;gap:.375rem .5rem;margin-bottom:.875rem;">
+            <span style="font-size:.6875rem;font-weight:700;letter-spacing:.04em;color:var(--accent-text,var(--accent));
+                         background:var(--accent-subtle,rgba(79,110,247,.1));padding:.1875rem .625rem;
+                         border-radius:var(--r-full);">
+              ${_escHtml(S().studentData.class)}
+            </span>
+            <span style="font-size:.8125rem;color:var(--text-3);line-height:1.4;">
+              ${_escHtml(S().studentData.school)}
+            </span>
           </div>
-         <button
-          onclick="VtxSettings.open()"
-          id="vtxSettingsBtn"
-          aria-label="Settings"
-          style="flex-shrink:0;font-size:.6875rem;color:#fff;background:var(--accent);
-                 border:none;padding:.375rem .75rem;border-radius:var(--r-full);
-                 cursor:pointer;font-family:var(--font);white-space:nowrap;
-                 display:inline-flex;align-items:center;gap:.375rem;
-                 transition:opacity var(--t-fast);"
-          onmouseenter="this.style.opacity='.85';"
-          onmouseleave="this.style.opacity='1';"
-        >
-          <i class="ph ph-gear-six" style="font-size:13px;"></i> Settings
-        </button>
-          <button onclick="App.logout()"
-                  style="flex-shrink:0;font-size:.6875rem;color:var(--text-4);background:none;
-                         border:1px solid var(--border);padding:.375rem .75rem;border-radius:var(--r-full);
-                         cursor:pointer;font-family:var(--font);white-space:nowrap;
-                         transition:color var(--t-fast),border-color var(--t-fast);"
-                  onmouseenter="this.style.color='var(--text-2)';this.style.borderColor='var(--border-strong)';"
-                  onmouseleave="this.style.color='var(--text-4)';this.style.borderColor='var(--border)';">
-            Sign out
+          <button
+            onclick="VtxSettings.open()"
+            id="vtxSettingsBtn"
+            aria-label="Settings"
+            style="font-size:.75rem;font-weight:600;color:var(--text-2);background:var(--bg-base);
+                   border:1px solid var(--border);padding:.4375rem .875rem;border-radius:var(--r-full);
+                   cursor:pointer;font-family:var(--font);white-space:nowrap;
+                   display:inline-flex;align-items:center;gap:.4375rem;
+                   transition:border-color var(--t-fast),color var(--t-fast);"
+            onmouseenter="this.style.borderColor='var(--accent)';this.style.color='var(--accent)';"
+            onmouseleave="this.style.borderColor='var(--border)';this.style.color='var(--text-2)';"
+          >
+            <i class="ph ph-gear-six" style="font-size:14px;"></i> Settings
           </button>
         </div>
 
