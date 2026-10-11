@@ -2418,8 +2418,12 @@ async function renderSubjectSelection() {
       const rawAll = (_qBank[classKey] || {})[subj];
       const all    = Array.isArray(rawAll) ? rawAll : [];
       if (all.length === 0) { UI.toast(`No questions available for ${subj}. Please contact Master Timothy.`, 'error', 6000); return; }
-      const shuffled = [...all].sort(() => Math.random() - 0.5);
-      selectedQuestions[subj] = shuffled.slice(0, CFG().QUESTIONS_PER_SUBJECT);
+      // Shuffle the questions, then the options of each question (the stored exam keeps this
+      // order, so resuming, reviewing and marking all see exactly what the student saw).
+      const QL = window.QuestionLoader;
+      const pool = QL && QL.shuffle ? QL.shuffle(all) : [...all].sort(() => Math.random() - 0.5);
+      selectedQuestions[subj] = pool.slice(0, CFG().QUESTIONS_PER_SUBJECT)
+        .map(q => (QL && QL.shuffleOptions) ? QL.shuffleOptions(q) : q);
     }
 
     const sessionDate  = _todayStr();

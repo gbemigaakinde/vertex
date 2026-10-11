@@ -169,6 +169,73 @@
     });
   }
 
+
+  // ── Shuffling ──────────────────────────────────────────────
+  // Unbiased Fisher-Yates; always returns a new array.
+  function shuffle(arr) {
+    var a = Array.prototype.slice.call(arr || []);
+    for (var i = a.length - 1; i > 0; i--) {
+      var j = Math.floor(Math.random() * (i + 1));
+      var t = a[i]; a[i] = a[j]; a[j] = t;
+    }
+    return a;
+  }
+
+  // Options whose meaning depends on their position or on the other options must stay put.
+  var OPT_POSITIONAL = [
+    /\b(all|none|both|any|neither)\s+of\s+(the\s+)?(above|below|these|those|them|the\s+following|the\s+options?)\b/i,
+    /\b(all|none)\s+(the\s+)?(above|below)\b/i,
+    /\b(?:[Bb]oth|[Ee]ither|[Nn]either)\s+\(?[A-F]\)?\s+(?:and|or|nor)\s+\(?[A-F]\)?(?![A-Za-z])/,
+    /^\s*\(?[A-F]\)?(\s*(,|and|&|or)\s*\(?[A-F]\)?)+\s*(only)?\.?\s*$/,
+    /^\s*\(?[A-Fa-f][\).:]\s+\S/,                       // options typed as "A. Lagos"
+    /\ball\s+of\s+[A-F](?![A-Za-z])/
+  ];
+  // Stem / explanation that point at a letter ("Option B", "(C) is correct") would break.
+  var TEXT_LETTER_REFS = [
+    /\b(?:[Oo]ptions?|[Cc]hoices?|[Aa]nswers?)\s+\(?[A-F]\)?(?![A-Za-z])/,
+    /\(\s*[A-F]\s*\)/,
+    /(?:^|[\s.;,])[A-F]\s+(?:is|are)\s+(?:the\s+)?(?:correct|right|wrong|incorrect)\b/
+  ];
+  function textOf(v) { return Array.isArray(v) ? v.join(' ') : (v == null ? '' : String(v)); }
+
+  // true when the options of this question should NOT be reordered.
+  //   noShuffle === true  -> always keep   |  noShuffle === false -> always shuffle
+  //   otherwise automatic: True/False style, "All of the above", "A and C", lettered text, letter references.
+  function keepsOrder(q) {
+    if (!q) return true;
+    if (q.noShuffle === true)  return true;
+    if (q.noShuffle === false) return false;
+    var opts = Array.isArray(q.opts) ? q.opts.map(function (o) { return String(o == null ? '' : o).trim(); }) : [];
+    if (opts.length === 2) {
+      var k = opts.map(function (o) { return o.toLowerCase().replace(/[.!]+$/, ''); }).sort().join('|');
+      if (k === 'false|true' || k === 'no|yes') return true;
+    }
+    for (var i = 0; i < opts.length; i++) {
+      for (var r = 0; r < OPT_POSITIONAL.length; r++) if (OPT_POSITIONAL[r].test(opts[i])) return true;
+    }
+    var txt = textOf(q.q) + ' ' + textOf(q.exp);
+    for (var t = 0; t < TEXT_LETTER_REFS.length; t++) if (TEXT_LETTER_REFS[t].test(txt)) return true;
+    return false;
+  }
+
+  // Returns a COPY of the question with options (and option diagrams) reordered and `ans`
+  // re-pointed at the same correct option. The bank itself is never modified. On anything
+  // unexpected the original question is returned untouched.
+  function shuffleOptions(q) {
+    try {
+      if (!q || !Array.isArray(q.opts) || q.opts.length < 2) return q;
+      var ans = Number(q.ans);
+      if (q.ans == null || q.ans === '' || !isFinite(ans) || ans % 1 !== 0 || ans < 0 || ans >= q.opts.length) return q;
+      if (keepsOrder(q)) return q;
+      var order = shuffle(q.opts.map(function (_, i) { return i; }));
+      var out = Object.assign({}, q);
+      out.opts = order.map(function (i) { return q.opts[i]; });
+      out.ans  = order.indexOf(ans);
+      if (Array.isArray(q.optSvg)) out.optSvg = order.map(function (i) { return q.optSvg[i] == null ? '' : q.optSvg[i]; });
+      return out;
+    } catch (e) { return q; }
+  }
+
   // Returns a clean question object, or null when it can't be used.
   function cleanQuestion(raw) {
     if (!raw || typeof raw !== 'object') return null;
@@ -187,6 +254,7 @@
     if (d.svg != null && d.svg !== '')        q.svg    = d.svg;
     if (Array.isArray(d.optSvg))              q.optSvg = d.optSvg;
     if (d.expSvg != null && d.expSvg !== '')  q.expSvg = d.expSvg;
+    if (typeof raw.noShuffle === 'boolean')   q.noShuffle = raw.noShuffle;
 
     var hasStem = q.q.trim() !== '' || q.svg != null;
     if (!hasStem)                                   return null;
@@ -416,6 +484,7 @@
     getBundled: function () { return _bundled; },
     getActivePeriod: function () { return { session: activePeriod.session, term: activePeriod.term }; },
     getSelectedPeriod: getSelectedPeriod, selectPeriod: selectPeriod, applyForClass: applyForClass,
+    shuffle: shuffle, shuffleOptions: shuffleOptions, keepsOrder: keepsOrder,
     periodsFor: periodsFor, freeSelectAllowed: freeSelectAllowed, getFreeSelect: getFreeSelect,
     defaultPeriod: defaultPeriod, normSession: normSession, normTerm: normTerm,
     periodKey: periodKey, normClass: normClass, slug: slug,

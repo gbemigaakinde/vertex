@@ -121,6 +121,8 @@
     if (typeof raw.diagrams === 'string') { try { d = JSON.parse(raw.diagrams) || {}; } catch (e) { d = {}; } }
     if (d.svg != null && d.svg !== '') out.svg = d.svg;
     if (d.expSvg != null && d.expSvg !== '') out.expSvg = d.expSvg;
+    if (typeof raw.noShuffle === 'boolean') out.noShuffle = raw.noShuffle;
+    else if (raw.noShuffle === 'true' || raw.noShuffle === 'false') out.noShuffle = raw.noShuffle === 'true';
     if (Array.isArray(d.optSvg)) out.optSvg = d.optSvg.map(function (x) { return x == null ? '' : x; });
 
     if (out.opts.length < MIN_OPTS) return { error: 'needs at least ' + MIN_OPTS + ' options' };
@@ -359,7 +361,7 @@
       listHtml += '<div class="qm-item" data-i="' + i + '"><div class="qm-num">' + (i + 1) + '</div><div class="qm-txt">' +
         esc((it.q || '(diagram question)').slice(0, 160)) +
         '<div class="qm-muted">Answer: ' + (LETTERS[it.ans] || '?') + ' · ' + it.opts.length + ' options' +
-        (hasSvg ? '<span class="qm-tag">SVG</span>' : '') + (it._broken ? '<span class="qm-tag bad">needs fixing</span>' : '') + '</div></div>' +
+        (hasSvg ? '<span class="qm-tag">SVG</span>' : '') + (QL.keepsOrder && QL.keepsOrder(it) ? '<span class="qm-tag">fixed order</span>' : '') + (it._broken ? '<span class="qm-tag bad">needs fixing</span>' : '') + '</div></div>' +
         '<div class="qm-acts">' +
         '<button class="qm-btn" data-act="edit" data-i="' + i + '"' + (S.busy ? ' disabled' : '') + '>Edit</button>' +
         '<button class="qm-btn" data-act="dup" data-i="' + i + '"' + (S.busy ? ' disabled' : '') + '>Copy</button>' +
@@ -429,7 +431,7 @@
 
   /* ───────── question form ───────── */
   function blankForm() {
-    return { index: -1, q: '', opts: ['', '', '', ''], optSvg: ['', '', '', ''], ans: -1, exp: '', svg: '', expSvg: '' };
+    return { index: -1, q: '', opts: ['', '', '', ''], optSvg: ['', '', '', ''], ans: -1, exp: '', svg: '', expSvg: '', order: 'auto' };
   }
   function formFromQuestion(i) {
     var it = S.questions[i];
@@ -437,6 +439,7 @@
       index: i, q: it.q || '', opts: it.opts.slice(), ans: it.ans, exp: it.exp || '',
       optSvg: it.opts.map(function (_, k) { return it.optSvg && it.optSvg[k] ? joinSvg(it.optSvg[k]) : ''; }),
       svg: joinSvg(it.svg), expSvg: joinSvg(it.expSvg),
+      order: it.noShuffle === true ? 'fixed' : (it.noShuffle === false ? 'shuffle' : 'auto'),
     };
   }
 
@@ -464,6 +467,10 @@
       svgField('qmSvg', 'Diagram for the question (SVG code)', f.svg, 'question') +
       '<div><label class="qm-muted">Options. Tick the circle beside the correct answer.</label>' + optsHtml +
         '<button class="qm-btn" data-act="addopt"' + (f.opts.length >= MAX_OPTS ? ' disabled' : '') + '>+ Add option</button></div>' +
+      '<div class="qm-field"><label for="qmOrder">Option order for students</label><select id="qmOrder">' +
+        '<option value="auto"' + (f.order === 'auto' ? ' selected' : '') + '>Automatic (shuffled, except "All of the above", True/False and similar)</option>' +
+        '<option value="shuffle"' + (f.order === 'shuffle' ? ' selected' : '') + '>Always shuffle</option>' +
+        '<option value="fixed"' + (f.order === 'fixed' ? ' selected' : '') + '>Keep in the order I typed</option></select></div>' +
       '<div class="qm-field"><label for="qmExp">Explanation (shown after the exam)</label><textarea id="qmExp" class="qm-plain" rows="2">' + esc(f.exp) + '</textarea></div>' +
       svgField('qmExpSvg', 'Diagram for the explanation (SVG code)', f.expSvg, 'explanation') +
       '<div id="qmFormErr" class="qm-err" role="alert"></div>' +
@@ -490,6 +497,7 @@
     var v;
     if ((v = g('#qmQ')) != null) f.q = v;
     if ((v = g('#qmExp')) != null) f.exp = v;
+    if ((v = g('#qmOrder')) != null) f.order = v;
     if ((v = g('#qmSvg')) != null) f.svg = v;
     if ((v = g('#qmExpSvg')) != null) f.expSvg = v;
     f.opts = f.opts.map(function (o, i) { var x = g('#qmOpt' + i); return x != null ? x : o; });
@@ -503,6 +511,7 @@
     var f = S.form;
     var raw = { q: f.q, opts: f.opts, ans: f.ans, exp: f.exp };
     if (f.ans < 0) return { error: 'Select the correct answer (tick the circle beside it).' };
+    if (f.order === 'fixed') raw.noShuffle = true; else if (f.order === 'shuffle') raw.noShuffle = false;
     if (f.svg.trim()) raw.svg = f.svg;
     if (f.expSvg.trim()) raw.expSvg = f.expSvg;
     if (f.optSvg.some(function (x) { return x.trim(); })) raw.optSvg = f.optSvg;

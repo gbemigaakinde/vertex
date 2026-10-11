@@ -3553,7 +3553,8 @@ function _krStartCountdownTick(getEl) {
     const qBank    = window.questions || {};
     const classKey = (_student().class || '').replace(/\s+/g, '').toLowerCase();
     const all      = (qBank[classKey] || {})[subject] || [];
-    return _shuffleArray(all).slice(0, count);
+    return _shuffleArray(all).slice(0, count)
+      .map(q => (window.QuestionLoader && QuestionLoader.shuffleOptions) ? QuestionLoader.shuffleOptions(q) : q);
   }
 
   /* ══════════════════════════════════════════════════════════════
