@@ -74,6 +74,16 @@
 
   function _safeQ(str) { return _escHtml(preprocessLatex(str)); }
 
+  // Optional SVG diagrams (see js/svg-diagram.js). Return '' when a question has none.
+  function _diag(value, size) {
+    try { return window.SvgDiagram ? window.SvgDiagram.html(value, { size: size || 'question' }) : ''; }
+    catch (e) { return ''; }
+  }
+  function _optDiag(q, i) {
+    try { return window.SvgDiagram ? window.SvgDiagram.optionHtml(q, i) : ''; }
+    catch (e) { return ''; }
+  }
+
   /* ─────────────────────────────────────────────────────── */
   /* Duration helpers                                        */
   /* ─────────────────────────────────────────────────────── */
@@ -2551,6 +2561,7 @@ async function renderSubjectSelection() {
             <span style="font-family:var(--font-mono);font-size:.8125rem;font-weight:700;color:var(--accent);margin-right:.5rem;">${exam.currentIndex + 1}.</span>
             ${_safeQ(q.q)}
           </p>
+          ${_diag(q.svg, 'question')}
 
           <div style="display:flex;flex-direction:column;gap:0.625rem;" id="optionsContainer">
             ${q.opts.map((opt, idx) => {
@@ -2560,7 +2571,7 @@ async function renderSubjectSelection() {
                 <label class="option-label${selected ? ' is-selected' : ''}" ${selected ? 'style="border-color:var(--brand);background:var(--brand-bg);transform:translateX(4px);"' : ''}>
                   <span style="font-family:var(--font-mono);font-size:.75rem;font-weight:700;color:${selected ? 'var(--accent)' : 'var(--text-4)'};min-width:1.25rem;flex-shrink:0;margin-top:.15rem;">${letterLabel}.</span>
                   <input type="radio" name="option" value="${idx}" ${selected ? 'checked' : ''} style="display:none;" aria-label="Option ${letterLabel}" />
-                  <span class="flex-1">${_safeQ(opt)}</span>
+                  <span class="flex-1" style="min-width:0;">${_safeQ(opt)}${_optDiag(q, idx)}</span>
                 </label>
               `;
             }).join('')}
@@ -3066,22 +3077,24 @@ async function renderSubjectSelection() {
                           <i class="ph ph-chats"></i> Explain
                         </button>
                       </div>
+                      ${_diag(q.svg, 'question')}
                       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;font-size:.8125rem;margin-bottom:.75rem;">
                         <div>
                           <span style="font-weight:600;color:var(--text-3);">Your answer:</span>
                           <span style="margin-left:.375rem;font-weight:500;
                                        color:${correct ? 'var(--success)' : userAns === undefined ? 'var(--text-4)' : 'var(--danger)'};">
-                            ${userAns !== undefined ? _safeQ(q.opts[userAns]) : 'Not answered'}
+                            ${userAns !== undefined ? _safeQ(q.opts[userAns]) + _optDiag(q, userAns) : 'Not answered'}
                           </span>
                         </div>
                         <div>
                           <span style="font-weight:600;color:var(--text-3);">Correct:</span>
-                          <span style="margin-left:.375rem;font-weight:500;color:var(--success);">${_safeQ(q.opts[q.ans])}</span>
+                          <span style="margin-left:.375rem;font-weight:500;color:var(--success);">${_safeQ(q.opts[q.ans])}${_optDiag(q, q.ans)}</span>
                         </div>
                       </div>
                       <div style="background:var(--bg-subtle);border:1px solid var(--border);border-radius:var(--r-sm);
                                   padding:.625rem .875rem;font-size:.8125rem;color:var(--text-2);line-height:1.6;">
                         <span style="font-weight:600;">Explanation:</span> ${_safeQ(q.exp)}
+                        ${_diag(q.expSvg, 'explanation')}
                       </div>
                     </div>`;
                 }).join('')}

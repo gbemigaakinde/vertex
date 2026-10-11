@@ -3374,6 +3374,27 @@ function _wsLeave() {
     return _esc(processed);
   }
 
+  // Optional SVG diagrams (see js/svg-diagram.js). Bundled/backend questions carry
+  // svg / optSvg directly; challenge questions saved in Firestore carry them as a
+  // JSON string in `diagrams` (Firestore does not allow nested arrays).
+  function _qDiagrams(q) {
+    if (!q) return {};
+    if (typeof q.diagrams === 'string') {
+      try { return JSON.parse(q.diagrams) || {}; } catch (e) { return {}; }
+    }
+    return q;
+  }
+  function _qDiag(q) {
+    try { return window.SvgDiagram ? window.SvgDiagram.html(_qDiagrams(q).svg, { size: 'question' }) : ''; }
+    catch (e) { return ''; }
+  }
+  function _optDiag(q, i) {
+    try {
+      const d = _qDiagrams(q);
+      return (window.SvgDiagram && Array.isArray(d.optSvg)) ? window.SvgDiagram.html(d.optSvg[i], { size: 'option' }) : '';
+    } catch (e) { return ''; }
+  }
+
   function _renderKatex() {
     requestAnimationFrame(function () {
       if (window._katexAutoRenderReady && window.renderMathInElement) {
@@ -5112,11 +5133,12 @@ async function _endGameSession(sessionId, resultData) {
           <p style="font-size:1.0625rem;font-weight:500;line-height:1.65;margin-bottom:1.25rem;" id="quizQuestionText">
             ${_safeQ(q.q)}
           </p>
+          ${_qDiag(q)}
           <div id="quizOptions">
             ${q.opts.map((opt, idx) => `
               <button class="game-option-btn" id="quizOpt${idx}" onclick="Game._answerQuizBlitz(${idx})">
                 <span class="game-option-btn__letter">${String.fromCharCode(65 + idx)}</span>
-                <span id="quizOptText${idx}">${_safeQ(opt)}</span>
+                <span id="quizOptText${idx}" style="min-width:0;">${_safeQ(opt)}${_optDiag(q, idx)}</span>
               </button>`).join('')}
           </div>
         </div>
@@ -6496,11 +6518,12 @@ function _buildWordPoolForStudent() {
           <p style="font-size:1.0625rem;font-weight:500;line-height:1.65;margin-bottom:1.25rem;">
             ${_safeQ(q.q)}
           </p>
+          ${_qDiag(q)}
           <div id="sdOptions">
             ${q.opts.map((opt, idx) => `
               <button class="game-option-btn" id="sdOpt${idx}" onclick="Game._answerSD(${idx})">
                 <span class="game-option-btn__letter">${String.fromCharCode(65 + idx)}</span>
-                <span>${_safeQ(opt)}</span>
+                <span style="min-width:0;">${_safeQ(opt)}${_optDiag(q, idx)}</span>
               </button>`).join('')}
           </div>
         </div>
@@ -6772,7 +6795,15 @@ function _buildWordPoolForStudent() {
     }
     if (questions.length === 0) { window.UI.toast('No questions available.', 'error'); if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = `${_icon('swords', 16)} Send Challenge`; } return; }
 
-    const questionData = questions.map(q => ({ q: q.q, opts: q.opts, ans: q.ans, exp: q.exp || '', subject: q.subject }));
+    const questionData = questions.map(q => {
+      const d = { q: q.q, opts: q.opts, ans: q.ans, exp: q.exp || '', subject: q.subject };
+      // Keep diagrams (if any) so the opponent sees the same question. Stored as a JSON string
+      // because Firestore rejects nested arrays.
+      if (q.svg != null || Array.isArray(q.optSvg)) {
+        try { d.diagrams = JSON.stringify({ svg: q.svg != null ? q.svg : null, optSvg: Array.isArray(q.optSvg) ? q.optSvg : null }); } catch (e) {}
+      }
+      return d;
+    });
     try {
       await _db().collection('gameChallenges').add({
         challengerUid:   _uid(),
@@ -6995,11 +7026,12 @@ function _buildWordPoolForStudent() {
           <p style="font-size:1.0625rem;font-weight:500;line-height:1.65;margin-bottom:1.25rem;">
             ${_safeQ(q.q)}
           </p>
+          ${_qDiag(q)}
           <div id="challengeOptions">
             ${q.opts.map((opt, idx) => `
               <button class="game-option-btn" id="chOpt${idx}" onclick="Game._answerChallenge(${idx})">
                 <span class="game-option-btn__letter">${String.fromCharCode(65 + idx)}</span>
-                <span>${_safeQ(opt)}</span>
+                <span style="min-width:0;">${_safeQ(opt)}${_optDiag(q, idx)}</span>
               </button>`).join('')}
           </div>
         </div>

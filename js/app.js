@@ -41,11 +41,17 @@
 
     if (window.VtxLoader) window.VtxLoader.progress(50, 'Loading your profile…');
 
+    // Start loading the question bank from the backend now; it runs alongside the profile
+    // load and is awaited before the first screen that needs questions. load() never
+    // rejects — on any failure the bundled questions stay in use.
+    var _qbReady = window.QuestionLoader ? window.QuestionLoader.load() : Promise.resolve();
+
     // ── Teacher path ──
     if (uid === AppConfig.TEACHER_UID) {
       AppState.isTeacher = true;
       if (window.VtxLoader) window.VtxLoader.progress(90, 'Opening dashboard…');
 
+      await _qbReady;
       Teacher.renderTeacherDashboard();
       if (window.VtxSound) {
         try { VtxSound.welcome(); } catch (e) {}
@@ -178,6 +184,7 @@
       if (window.VtxSound) {
         try { VtxSound.welcome(); } catch (e) {}
       }
+      await _qbReady;
       await Exam.loadOrStart();
       // ── Start session reminders ──
       if (window.SessionReminders) {
