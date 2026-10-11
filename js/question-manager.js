@@ -288,15 +288,27 @@
       '.qm-live{padding:.6rem .8rem;border-radius:10px;font-size:.8125rem;display:flex;gap:.75rem;flex-wrap:wrap;align-items:center;justify-content:space-between;}' +
       '.qm-live.ok{background:rgba(46,160,67,.12);border:1px solid rgba(46,160,67,.35);}' +
       '.qm-live.warn{background:rgba(255,160,0,.12);border:1px solid rgba(255,160,0,.45);}' +
-      '.qm-item{display:flex;gap:.5rem;align-items:flex-start;padding:.55rem 0;border-bottom:1px solid var(--border,#eee);}' +
+      '.qm-item{display:flex;flex-wrap:wrap;gap:.4rem .6rem;align-items:flex-start;padding:.7rem 0;border-bottom:1px solid var(--border,#eee);}' +
       '.qm-item:last-child{border-bottom:0;}' +
       '.qm-num{min-width:2rem;font-weight:700;opacity:.6;}' +
-      '.qm-txt{flex:1;min-width:0;font-size:.875rem;word-break:break-word;}' +
+      '.qm-txt{flex:1 1 0;min-width:0;font-size:.875rem;line-height:1.45;overflow-wrap:anywhere;}' +
       '.qm-tag{display:inline-block;font-size:.6875rem;padding:.05rem .4rem;border-radius:99px;background:var(--accent-subtle,rgba(0,122,255,.1));margin-left:.25rem;}' +
       '.qm-tag.bad{background:rgba(198,40,40,.15);color:#c62828;}' +
-      '.qm-acts{display:flex;gap:.25rem;flex-wrap:wrap;justify-content:flex-end;}' +
-      '.qm-opt{display:flex;flex-direction:column;gap:.35rem;padding:.5rem;border:1px solid var(--border,#ddd);border-radius:8px;margin-bottom:.5rem;}' +
+      '.qm-acts{display:flex;gap:.25rem;flex-wrap:wrap;justify-content:flex-end;flex:0 0 auto;}' +
+      '@media (max-width:640px){.qm-acts{flex:1 1 100%;justify-content:flex-start;padding-left:2.5rem;}}' +
+      '.qm-stack{display:flex;flex-direction:column;gap:.75rem;margin-top:.75rem;}' +
+      '.qm-stack>.qm-field,.qm-opt .qm-field{flex:0 0 auto;min-width:0;}' +
+      '.qm .qm-btn{width:auto !important;}' +
+      '.qm #qmFilter{flex:1 1 160px;width:auto !important;min-width:0;}' +
+      '.qm input[type=radio]{-webkit-appearance:radio !important;appearance:radio !important;width:1.15rem !important;height:1.15rem !important;min-width:1.15rem;padding:0 !important;margin:0;flex:0 0 auto;accent-color:var(--accent,#007AFF);cursor:pointer;}' +
+      '.qm textarea{min-height:0 !important;}' +
+      '.teacher-tab .qm details>summary{padding:.4rem .5rem !important;font-size:.8125rem !important;font-weight:600 !important;background:transparent !important;border-radius:8px !important;}' +
+      '.teacher-tab .qm details[open]>summary{background:var(--accent-subtle,rgba(0,122,255,.08)) !important;}' +
+      '.qm details>textarea{margin-top:.4rem;}' +
+      '.qm-opt{display:flex;flex-direction:column;gap:.15rem;padding:.4rem .5rem;border:1px solid var(--border,#ddd);border-radius:8px;margin-bottom:.5rem;}' +
       '.qm-opt-top{display:flex;gap:.5rem;align-items:center;}' +
+      '.qm-opt-top input[type=text]{flex:1 1 0;min-width:0;}' +
+      '.qm-opt-top .qm-btn{flex:0 0 auto;padding:.35rem .6rem;}' +
       '.qm-prev{margin-top:.35rem;font-size:.75rem;}' +
       '.qm-err{color:#c62828;font-size:.75rem;}' +
       '.qm-ok{color:#2e7d32;font-size:.75rem;}' +
@@ -359,7 +371,7 @@
       if (q && (it.q + ' ' + it.opts.join(' ')).toLowerCase().indexOf(q) < 0) return;
       var hasSvg = it.svg || it.expSvg || (it.optSvg && it.optSvg.some(Boolean));
       listHtml += '<div class="qm-item" data-i="' + i + '"><div class="qm-num">' + (i + 1) + '</div><div class="qm-txt">' +
-        esc((it.q || '(diagram question)').slice(0, 160)) +
+        esc((it.q || '(diagram question)').slice(0, 160)) + ((it.q || '').length > 160 ? '…' : '') +
         '<div class="qm-muted">Answer: ' + (LETTERS[it.ans] || '?') + ' · ' + it.opts.length + ' options' +
         (hasSvg ? '<span class="qm-tag">SVG</span>' : '') + (QL.keepsOrder && QL.keepsOrder(it) ? '<span class="qm-tag">fixed order</span>' : '') + (it._broken ? '<span class="qm-tag bad">needs fixing</span>' : '') + '</div></div>' +
         '<div class="qm-acts">' +
@@ -462,15 +474,16 @@
         '</div>' + svgField('qmOptSvg' + i, 'Diagram for option ' + LETTERS[i], f.optSvg[i] || '', 'option') + '</div>';
     });
     host.innerHTML = '<div class="qm-card"><strong>' + (f.index < 0 ? 'New question' : 'Edit question ' + (f.index + 1)) + '</strong>' +
-      '<div style="display:flex;flex-direction:column;gap:.75rem;margin-top:.75rem;">' +
+      '<div class="qm-stack">' +
       '<div class="qm-field"><label for="qmQ">Question</label><textarea id="qmQ" class="qm-plain" rows="3">' + esc(f.q) + '</textarea></div>' +
       svgField('qmSvg', 'Diagram for the question (SVG code)', f.svg, 'question') +
       '<div><label class="qm-muted">Options. Tick the circle beside the correct answer.</label>' + optsHtml +
         '<button class="qm-btn" data-act="addopt"' + (f.opts.length >= MAX_OPTS ? ' disabled' : '') + '>+ Add option</button></div>' +
       '<div class="qm-field"><label for="qmOrder">Option order for students</label><select id="qmOrder">' +
-        '<option value="auto"' + (f.order === 'auto' ? ' selected' : '') + '>Automatic (shuffled, except "All of the above", True/False and similar)</option>' +
+        '<option value="auto"' + (f.order === 'auto' ? ' selected' : '') + '>Automatic (recommended)</option>' +
         '<option value="shuffle"' + (f.order === 'shuffle' ? ' selected' : '') + '>Always shuffle</option>' +
-        '<option value="fixed"' + (f.order === 'fixed' ? ' selected' : '') + '>Keep in the order I typed</option></select></div>' +
+        '<option value="fixed"' + (f.order === 'fixed' ? ' selected' : '') + '>Keep in the order I typed</option></select>' +
+        '<div class="qm-muted">Automatic shuffles the options, except for "All of the above", True/False and similar.</div></div>' +
       '<div class="qm-field"><label for="qmExp">Explanation (shown after the exam)</label><textarea id="qmExp" class="qm-plain" rows="2">' + esc(f.exp) + '</textarea></div>' +
       svgField('qmExpSvg', 'Diagram for the explanation (SVG code)', f.expSvg, 'explanation') +
       '<div id="qmFormErr" class="qm-err" role="alert"></div>' +
