@@ -1,5 +1,5 @@
 export default {
-  async fetch(request, env) {
+  async fetch(request, env, ctx) {
 
     // Health check
     if (request.method === 'GET') {
@@ -134,6 +134,59 @@ if (request.method === 'POST' && url.pathname === '/ai') {
       return new Response(JSON.stringify({ success: true, sent: result.ok, reason: result.reason }), { headers: corsJsonHeaders() });
     }
 
+  // ── Live trigger: a message/challenge was just sent ───────
+  // The caller only says WHAT happened (type + id). The worker re-reads
+  // Firestore itself to decide who, if anyone, gets a push.
+  if (request.method === 'POST' && url.pathname === '/api/notify-event') {
+    let body;
+    try { body = await request.json(); } catch (e) { return jsonError('Invalid JSON.', 400); }
+    const { type, id } = body || {};
+    if (!['dm', 'group', 'game'].includes(type) || !_pnValidId(id)) {
+      return jsonError('Bad event.', 400);
+    }
+    if (!env.VTX_RATE_LIMITS) return jsonError('KV not bound.', 500);
+
+    const work = (async () => {
+      const token = await _getFirebaseToken(env);
+      if (!token) return;
+      if (type === 'dm')    await _pnNotifyDm(env, token, id);
+      if (type === 'group') await _pnNotifyGroup(env, token, id);
+      if (type === 'game')  await _pnNotifyChallenge(env, token, id);
+    })().catch(e => console.warn('[notify-event]', e && e.message ? e.message : e));
+
+    if (ctx && ctx.waitUntil) ctx.waitUntil(work); else await work;
+    return new Response(JSON.stringify({ success: true }), { headers: corsJsonHeaders() });
+  }
+
+  // ── Teacher's own DM-alert preferences (+ who has alerts set up) ──
+  if (request.method === 'POST' && url.pathname === '/api/teacher-push-prefs') {
+    let body;
+    try { body = await request.json(); } catch (e) { return jsonError('Invalid JSON.', 400); }
+    const { teacherUid, action, enabled, mutedStudents } = body || {};
+    if (!teacherUid || teacherUid !== env.TEACHER_UID) return jsonError('Unauthorised.', 403);
+    if (!env.VTX_RATE_LIMITS) return jsonError('KV not bound.', 500);
+
+    if (action === 'set') {
+      const cur = await _pnTeacherPrefs(env);
+      const next = {
+        enabled: typeof enabled === 'boolean' ? enabled : cur.enabled,
+        mutedStudents: Array.isArray(mutedStudents)
+          ? mutedStudents.filter(_pnValidId).slice(0, 2000)
+          : cur.mutedStudents,
+      };
+      await env.VTX_RATE_LIMITS.put('tprefs', JSON.stringify(next));
+    }
+
+    const prefs = await _pnTeacherPrefs(env);
+    const idxRaw = await env.VTX_RATE_LIMITS.get('push_index');
+    return new Response(JSON.stringify({
+      success: true,
+      enabled: prefs.enabled,
+      mutedStudents: prefs.mutedStudents,
+      subscribed: idxRaw ? JSON.parse(idxRaw) : [],
+    }), { headers: corsJsonHeaders() });
+  }
+
   // ── Teacher broadcast push route ──────────────────────────
 if (request.method === 'POST' && url.pathname === '/api/send-push') {
   let body;
@@ -171,7 +224,7 @@ if (request.method === 'POST' && url.pathname === '/api/send-push') {
     const indexRaw = await env.VTX_RATE_LIMITS.get('push_index');
     if (!indexRaw) return new Response(JSON.stringify({ success: true, sent: 0 }), { headers: corsJsonHeaders() });
 
-    const userIds = JSON.parse(indexRaw);
+    const userIds = JSON.parse(indexRaw).filter(function (id) { return id !== env.TEACHER_UID; });
     const result  = await _sendPushToUidList(userIds, payload, env);
 
     return new Response(JSON.stringify({ success: true, sent: result.sent, total: result.total }), {
@@ -344,10 +397,11 @@ if (request.method === 'POST' && url.pathname === '/api/cancel-scheduled-push') 
   // ── Cron handler ───────────────────────────────────────────
   // Two triggers are registered in wrangler.jsonc:
   //   "0 19 * * *"   → existing daily reminder sweep (unchanged)
-  //   "*/5 * * * *"  → new scheduled/recurring push checker
+  //   "*/5 * * * *"  → scheduled/recurring push checker + message/challenge sweep
   async scheduled(event, env, ctx) {
     if (event.cron === '*/5 * * * *') {
       ctx.waitUntil(_runScheduledPushChecker(env));
+      ctx.waitUntil(_runEventPushSweep(env));
     } else {
       ctx.waitUntil(_runDailyReminders(env));
     }
@@ -1141,7 +1195,7 @@ async function _resolveUidsForScheduledRecord(record, env) {
     return record.targetUid ? [record.targetUid] : [];
   }
   const indexRaw = await env.VTX_RATE_LIMITS.get('push_index');
-  return indexRaw ? JSON.parse(indexRaw) : [];
+  return indexRaw ? JSON.parse(indexRaw).filter(function (id) { return id !== env.TEACHER_UID; }) : [];
 }
 
 // Runs every 5 minutes. A missed tick self-heals on the next run because
@@ -1213,6 +1267,215 @@ async function _runScheduledPushChecker(env) {
     }
   }
 }
+/* ══════════════════════════════════════════════════════════
+   EVENT PUSH — DMs, group chats and game challenges
+   ──────────────────────────────────────────────────────────
+   Nobody is notified unless they opted in:
+     • Student DM alerts   → students/{uid}.dmPushEnabled === true (set by the
+                             teacher) AND students/{uid}.pushPrefs.dm !== false
+     • Teacher DM alerts   → KV "tprefs" { enabled, mutedStudents[] }
+                             (on by default, teacher can switch off / mute students)
+     • Group chat alerts   → students/{uid}.pushPrefs.groups[groupId] === true
+     • Game challenge      → students/{uid}.pushPrefs.games === true
+   Public chat is never pushed — it stays in-app only.
+
+   Two triggers share the same code:
+     1. LIVE   — the sender's app calls POST /api/notify-event right after
+                 sending. The worker re-reads Firestore itself, so the caller
+                 can't fake a message or choose who receives it.
+     2. SWEEP  — the 5-minute cron looks for anything newer than its last run.
+   Duplicates are blocked with a KV marker per message id.
+══════════════════════════════════════════════════════════ */
+const _PN_FS = 'https://firestore.googleapis.com/v1/projects/excellencecbt/databases/(default)/documents';
+
+function _pnValidId(id) {
+  return typeof id === 'string' && /^[A-Za-z0-9_-]{1,128}$/.test(id);
+}
+
+function _pnPreview(text) {
+  const t = String(text || '').replace(/\s+/g, ' ').trim();
+  return t.length > 110 ? t.slice(0, 110) + '…' : t;
+}
+
+// Returns true if this event was already handled; otherwise marks it handled.
+async function _pnAlreadySent(env, key) {
+  try {
+    if (await env.VTX_RATE_LIMITS.get('pn:' + key)) return true;
+    await env.VTX_RATE_LIMITS.put('pn:' + key, '1', { expirationTtl: 86400 });
+  } catch (e) { /* if KV hiccups, better to risk a duplicate than drop it */ }
+  return false;
+}
+
+// Firestore REST: read one document, returning only the listed fields.
+async function _pnGetDoc(path, token, fieldPaths) {
+  const mask = (fieldPaths || []).map(f => 'mask.fieldPaths=' + encodeURIComponent(f)).join('&');
+  const res = await fetch(_PN_FS + '/' + path + (mask ? '?' + mask : ''), {
+    headers: { 'Authorization': 'Bearer ' + token },
+  }).catch(() => null);
+  if (!res || !res.ok) return null;
+  const json = await res.json().catch(() => null);
+  return json && json.fields ? _fsDecodeFields(json.fields) : null;
+}
+
+// Firestore REST: run a structured query. parentPath is '' for top-level collections.
+async function _pnRunQuery(parentPath, structuredQuery, token) {
+  const res = await fetch(_PN_FS + (parentPath ? '/' + parentPath : '') + ':runQuery', {
+    method:  'POST',
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ structuredQuery }),
+  }).catch(() => null);
+  if (!res || !res.ok) return [];
+  const rows = await res.json().catch(() => []);
+  const out = [];
+  for (const r of rows) {
+    if (!r.document) continue;
+    const id = r.document.name.split('/').pop();
+    out.push(Object.assign({ _id: id }, _fsDecodeFields(r.document.fields || {})));
+  }
+  return out;
+}
+
+// Newest message in a thread (text only — never downloads voice-note audio).
+async function _pnLatestMessage(parentPath, token) {
+  const rows = await _pnRunQuery(parentPath, {
+    from:    [{ collectionId: 'messages' }],
+    orderBy: [{ field: { fieldPath: 'timestamp' }, direction: 'DESCENDING' }],
+    select:  { fields: ['text', 'role', 'senderId', 'senderName', 'type', 'deletedForAll', 'timestamp']
+                 .map(f => ({ fieldPath: f })) },
+    limit:   1,
+  }, token);
+  return rows[0] || null;
+}
+
+async function _pnSendTo(uid, payloadObj, env) {
+  const subRaw = await env.VTX_RATE_LIMITS.get('push:' + uid).catch(() => null);
+  if (!subRaw) return false;
+  const result = await sendWebPush(JSON.parse(subRaw), JSON.stringify(payloadObj), env);
+  return !!(result && result.ok);
+}
+
+async function _pnTeacherPrefs(env) {
+  try {
+    const raw = await env.VTX_RATE_LIMITS.get('tprefs');
+    const p = raw ? JSON.parse(raw) : {};
+    return {
+      enabled:       p.enabled !== false,
+      mutedStudents: Array.isArray(p.mutedStudents) ? p.mutedStudents : [],
+    };
+  } catch (e) { return { enabled: true, mutedStudents: [] }; }
+}
+
+/* ── DM: student → teacher, or teacher → student ── */
+async function _pnNotifyDm(env, token, studentUid) {
+  if (!_pnValidId(studentUid)) return;
+  const msg = await _pnLatestMessage('directMessages/' + studentUid, token);
+  if (!msg || msg.deletedForAll === true) return;
+  if (await _pnAlreadySent(env, 'dm:' + studentUid + ':' + msg._id)) return;
+
+  const body = _pnPreview(msg.text) || 'Sent you a new message.';
+
+  if (msg.role === 'student') {
+    const prefs = await _pnTeacherPrefs(env);
+    if (!prefs.enabled || prefs.mutedStudents.includes(studentUid)) return;
+    if (!env.TEACHER_UID) return;
+    await _pnSendTo(env.TEACHER_UID, {
+      title: msg.senderName || 'A student',
+      body, url: '/', tag: 'dm-' + studentUid,
+    }, env);
+    return;
+  }
+
+  if (msg.role === 'teacher') {
+    const student = await _pnGetDoc('students/' + studentUid, token, ['dmPushEnabled', 'pushPrefs']);
+    if (!student || student.dmPushEnabled !== true) return;               // teacher hasn't turned it on
+    if (student.pushPrefs && student.pushPrefs.dm === false) return;       // student paused it
+    await _pnSendTo(studentUid, {
+      title: 'Master Timothy', body, url: '/', tag: 'dm-' + studentUid,
+    }, env);
+  }
+}
+
+/* ── Group chat: only members who opted in for THIS group ── */
+async function _pnNotifyGroup(env, token, groupId) {
+  if (!_pnValidId(groupId)) return;
+  const msg = await _pnLatestMessage('groupChats/' + groupId, token);
+  if (!msg || msg.type === 'event' || msg.deletedForAll === true) return;
+  if (await _pnAlreadySent(env, 'gc:' + groupId + ':' + msg._id)) return;
+
+  const group = await _pnGetDoc('groupChats/' + groupId, token, ['name', 'memberUids']);
+  if (!group || !Array.isArray(group.memberUids)) return;
+
+  const recipients = group.memberUids.filter(u =>
+    _pnValidId(u) && u !== msg.senderId && u !== env.TEACHER_UID);
+  if (recipients.length === 0) return;
+
+  const docs = await _fsBatchGetDocs(recipients.map(u => 'students/' + u), token);
+  const body = (msg.senderName ? msg.senderName + ': ' : '') + (_pnPreview(msg.text) || 'Sent a message');
+
+  for (const uid of recipients) {
+    const s = docs.get('students/' + uid);
+    const optedIn = s && s.pushPrefs && s.pushPrefs.groups && s.pushPrefs.groups[groupId] === true;
+    if (!optedIn) continue;
+    await _pnSendTo(uid, {
+      title: group.name || 'Group chat', body, url: '/', tag: 'gc-' + groupId,
+    }, env);
+  }
+}
+
+/* ── Game challenge: only the challenged student, only if opted in ── */
+async function _pnNotifyChallenge(env, token, challengeId) {
+  if (!_pnValidId(challengeId)) return;
+  const c = await _pnGetDoc('gameChallenges/' + challengeId, token,
+    ['challengedUid', 'challengerName', 'subject', 'status']);
+  if (!c || c.status !== 'pending' || !_pnValidId(c.challengedUid)) return;
+  if (await _pnAlreadySent(env, 'game:' + challengeId)) return;
+
+  const s = await _pnGetDoc('students/' + c.challengedUid, token, ['pushPrefs']);
+  if (!s || !s.pushPrefs || s.pushPrefs.games !== true) return;
+
+  await _pnSendTo(c.challengedUid, {
+    title: 'New game challenge!',
+    body:  (c.challengerName || 'A friend') + ' challenged you' + (c.subject ? ' to a ' + c.subject + ' quiz.' : '.'),
+    url:   '/', tag: 'game-' + challengeId,
+  }, env);
+}
+
+/* ── 5-minute safety net: catch anything the live trigger missed ── */
+async function _runEventPushSweep(env) {
+  if (!env.VTX_RATE_LIMITS) return;
+  const token = await _getFirebaseToken(env);
+  if (!token) { console.warn('[cron] Event sweep: no Firebase token.'); return; }
+
+  const startedAt = Date.now();
+  let since = startedAt - 6 * 60000;
+  try {
+    const saved = parseInt(await env.VTX_RATE_LIMITS.get('pn_cursor'), 10);
+    if (saved > 0) since = Math.max(saved - 60000, startedAt - 60 * 60000); // 1-min overlap, 1-hour max look-back
+  } catch (e) { /* use default */ }
+  const sinceVal = { timestampValue: new Date(since).toISOString() };
+
+  const recent = (collectionId, field) => _pnRunQuery('', {
+    from:   [{ collectionId }],
+    where:  { fieldFilter: { field: { fieldPath: field }, op: 'GREATER_THAN', value: sinceVal } },
+    select: { fields: [{ fieldPath: field }] },
+    limit:  50,
+  }, token);
+
+  try {
+    const [threads, groups, challenges] = await Promise.all([
+      recent('directMessages', 'lastAt'),
+      recent('groupChats',     'lastAt'),
+      recent('gameChallenges', 'createdAt'),
+    ]);
+    for (const t of threads)    await _pnNotifyDm(env, token, t._id).catch(e => console.warn('[cron] dm', e.message));
+    for (const g of groups)     await _pnNotifyGroup(env, token, g._id).catch(e => console.warn('[cron] gc', e.message));
+    for (const c of challenges) await _pnNotifyChallenge(env, token, c._id).catch(e => console.warn('[cron] game', e.message));
+    await env.VTX_RATE_LIMITS.put('pn_cursor', String(startedAt));
+  } catch (e) {
+    console.warn('[cron] Event sweep error:', e.message || e);
+  }
+}
+
 /* ══════════════════════════════════════════════════════════
    WEB PUSH — VAPID signing + send
 ══════════════════════════════════════════════════════════ */
@@ -1968,6 +2231,9 @@ async function _runDailyReminders(env) {
         console.warn('[cron] Could not fetch student', uid, '— skipping.');
         continue;
       }
+
+      // Student turned daily study reminders off in Settings
+      if (student.pushPrefs && student.pushPrefs.reminders === false) continue;
 
       const upcomingDates = await _getUpcomingTaskDates(uid, student.class, accessToken, todayStr, 4, taskDocCache);
       const payload = _buildDailyReminderPayload(student, todayStr, tomorrowStr, upcomingDates);

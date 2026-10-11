@@ -4,7 +4,7 @@
 
 'use strict';
 
-const CACHE_VERSION = 'v1.20.60';
+const CACHE_VERSION = 'v1.20.61';
 const STATIC_CACHE  = `static-${CACHE_VERSION}`;
 const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
 
@@ -65,6 +65,7 @@ self.addEventListener('install', event => {
         '/js/landing.js',
         '/js/app.js',
         '/js/notifications.js',
+        '/js/settings.js',
         '/js/installPrompt.js',
         '/data/questions.js',
         '/news-ticker.css',
@@ -206,6 +207,12 @@ self.addEventListener('push', function (event) {
     ],
     data: { url: data.url || '/' },
   };
+
+  // Same chat → newer alert replaces the older one instead of piling up
+  if (data.tag) {
+    options.tag      = data.tag;
+    options.renotify = true;
+  }
 
   event.waitUntil(self.registration.showNotification(title, options));
 });

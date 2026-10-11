@@ -386,3 +386,21 @@ Create the KV namespace referenced in `wrangler.jsonc` (or replace its ID with y
 | Backend questions don't appear | Check `QuestionLoader.status` in the console. Common causes: empty `questionBank`, Firestore rules deny reads, or a document with no valid questions. The bundled bank is used meanwhile. |
 | A diagram shows "Diagram unavailable" | The SVG is malformed, over 60,000 characters, or has no `viewBox` (or numeric `width` and `height`). The console shows the reason. |
 | Push notifications don't arrive | Check the VAPID keys, that the Worker's KV binding exists, and that the browser granted notification permission. |
+
+## Phone alerts (opt-in) & Student Settings
+
+Private messages, group chats and game challenges can reach people as phone alerts — **only if they opted in**. Public chat stays in-app only.
+
+| Who | What | Where it is controlled |
+|---|---|---|
+| Student | Teacher messages | Teacher turns it on per student (**Teacher → Push → Message alerts**, `students/{uid}.dmPushEnabled`). Student can pause it in Settings (`pushPrefs.dm`) |
+| Student | Group chats | Per group, in Settings (`pushPrefs.groups.{groupId}`) |
+| Student | Game challenges | Settings (`pushPrefs.games`) |
+| Student | Daily study reminders | Settings (`pushPrefs.reminders`, on by default) |
+| Teacher | Student messages | On by default; master switch + per-student mute in **Push → Message alerts** (stored in KV `tprefs`) |
+
+**How delivery works:** the sender's app calls `POST /api/notify-event` right after sending (instant). The worker re-reads Firestore itself to decide who gets a push, so the caller cannot choose recipients. The existing `*/5 * * * *` cron also sweeps for anything missed. A KV marker per message id prevents duplicates.
+
+**Student Settings** (button on the student dashboard, `js/settings.js`): phone alerts, what should pop up, dark mode, text size, sounds, fewer animations, in-app pop-ups, sign out. Device-look settings are saved on the device; alert choices are saved on the student's account.
+
+**Firestore rules:** students must be able to update `pushPrefs` on their own `students/{uid}` document, and the teacher must be able to update `dmPushEnabled` on any student document. No new secrets or cron triggers are needed — redeploy the worker (`wrangler deploy`) and the site.
