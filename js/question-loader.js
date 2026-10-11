@@ -24,6 +24,10 @@
    - Invalid questions are skipped (and logged); a document with no valid
      questions is ignored.
    - load() never throws and only hits the network once per page load.
+   - A broken or missing data/questions.js (e.g. a SyntaxError) must never stop
+     anyone from logging in: window.questions is always an object after this file
+     runs, and unusable classes / subjects / questions are dropped, not thrown on.
+     QuestionLoader.status.bundledOk tells the UI whether the bundle loaded.
 
    Firestore note: Firestore does not allow arrays inside arrays. If a question
    needs several diagrams for ONE option, store the diagrams as a JSON string:
@@ -40,16 +44,69 @@
   var TIMEOUT_MS = 8000;
   var MAX_DOC_CHARS = 900000;     // Firestore documents are limited to ~1 MiB
 
-  // Snapshot of the bundled bank (data/questions.js loads before this file).
-  var _bundled = window.questions || {};
   var _promise = null;
 
   var status = {
-    source:  'bundled',   // 'bundled' | 'backend'
-    docs:    0,           // backend documents applied
-    skipped: 0,           // invalid questions skipped
-    error:   null,        // last error message, if any
+    source:    'bundled', // 'bundled' | 'backend'
+    bundledOk: true,      // false when data/questions.js failed to load / parse
+    docs:      0,         // backend documents applied
+    skipped:   0,         // invalid questions skipped
+    error:     null,      // last error message, if any
   };
+
+  function isPlainObject(v) { return !!v && typeof v === 'object' && !Array.isArray(v); }
+
+  // Lenient shape check used on the bundled bank. Keeps the ORIGINAL object
+  // (unlike cleanQuestion, which rebuilds it) so no extra fields are lost.
+  function isUsable(q) {
+    if (!isPlainObject(q)) return false;
+    if (!Array.isArray(q.opts) || q.opts.length < 2) return false;
+    var ans = Number(q.ans);
+    if (q.ans == null || q.ans === '' || !isFinite(ans) || ans % 1 !== 0 || ans < 0 || ans >= q.opts.length) return false;
+    var hasText = typeof q.q === 'string' && q.q.trim() !== '';
+    return hasText || q.svg != null;
+  }
+
+  // Returns a safe { classKey: { subject: [questions] } } copy of whatever was loaded.
+  // Non-object classes are dropped; non-array subjects are dropped; unusable questions
+  // are skipped. A subject whose questions are ALL unusable is kept as an empty array
+  // so the home screen can flag it instead of silently hiding it.
+  function normalizeBank(raw) {
+    var out = {};
+    if (!isPlainObject(raw)) return out;
+    Object.keys(raw).forEach(function (cls) {
+      var subjects = raw[cls];
+      if (!isPlainObject(subjects)) return;
+      var key = normClass(cls);
+      if (!key) return;
+      if (!out[key]) out[key] = {};
+      Object.keys(subjects).forEach(function (subj) {
+        if (!Array.isArray(subjects[subj])) return;
+        var good = subjects[subj].filter(isUsable);
+        if (good.length !== subjects[subj].length) {
+          console.warn('[QuestionLoader] ' + cls + ' / ' + subj + ': skipped ' +
+                       (subjects[subj].length - good.length) + ' unusable question(s).');
+        }
+        out[key][subj] = good;
+      });
+    });
+    return out;
+  }
+
+  // Snapshot of the bundled bank (data/questions.js loads before this file).
+  // If that file had a SyntaxError, window.questions is undefined here — carry on with
+  // an empty bank so the rest of the app (login, chat, tools…) is unaffected.
+  var _bundled;
+  try {
+    status.bundledOk = isPlainObject(window.questions) && Object.keys(window.questions).length > 0;
+    if (!status.bundledOk) console.error('[QuestionLoader] data/questions.js did not load (syntax error or empty) — starting with an empty bank.');
+    _bundled = normalizeBank(window.questions);
+  } catch (e) {
+    status.bundledOk = false;
+    console.error('[QuestionLoader] could not read the bundled question bank:', e);
+    _bundled = {};
+  }
+  window.questions = _bundled;
 
   function normClass(k) { return String(k || '').replace(/\s+/g, '').toLowerCase(); }
 
@@ -96,23 +153,27 @@
 
     var applied = 0, skipped = 0;
     snap.forEach(function (doc) {
-      var data = doc.data() || {};
-      if (data.active === false) return;
+      try {                                           // one bad document must not discard the rest
+        var data = doc.data() || {};
+        if (data.active === false) return;
 
-      var cls  = normClass(data.classKey || String(doc.id).split('__')[0]);
-      var subj = typeof data.subject === 'string' ? data.subject.trim() : '';
-      if (!cls || !subj || !Array.isArray(data.questions)) return;
+        var cls  = normClass(data.classKey || String(doc.id).split('__')[0]);
+        var subj = typeof data.subject === 'string' ? data.subject.trim() : '';
+        if (!cls || !subj || !Array.isArray(data.questions)) return;
 
-      var good = [];
-      data.questions.forEach(function (raw) {
-        var q = cleanQuestion(raw);
-        if (q) good.push(q); else skipped++;
-      });
-      if (!good.length) return;                       // ignore empty / fully invalid documents
+        var good = [];
+        data.questions.forEach(function (raw) {
+          var q = cleanQuestion(raw);
+          if (q) good.push(q); else skipped++;
+        });
+        if (!good.length) return;                     // ignore empty / fully invalid documents
 
-      if (!merged[cls]) merged[cls] = {};
-      merged[cls][subj] = good;
-      applied++;
+        if (!merged[cls]) merged[cls] = {};
+        merged[cls][subj] = good;
+        applied++;
+      } catch (docErr) {
+        console.warn('[QuestionLoader] skipped bad document "' + (doc && doc.id) + '":', docErr);
+      }
     });
 
     status.skipped = skipped;
@@ -174,5 +235,5 @@
     return { written: writes, tooLarge: tooBig };
   }
 
-  window.QuestionLoader = { load: load, status: status, seedFromBundled: seedFromBundled, _cleanQuestion: cleanQuestion };
+  window.QuestionLoader = { load: load, status: status, seedFromBundled: seedFromBundled, _cleanQuestion: cleanQuestion, _normalizeBank: normalizeBank };
 })();

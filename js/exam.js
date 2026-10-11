@@ -18,6 +18,7 @@
   function _icon(name, size) {
     size = size || 18;
     const icons = {
+      Warning: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor"><path d="M236.8,188.09,149.35,36.22h0a24.76,24.76,0,0,0-42.7,0L19.2,188.09a23.51,23.51,0,0,0,0,23.72A24.35,24.35,0,0,0,40.55,224h174.9a24.35,24.35,0,0,0,21.33-12.19A23.51,23.51,0,0,0,236.8,188.09ZM222.93,203.8a8.5,8.5,0,0,1-7.48,4.2H40.55a8.5,8.5,0,0,1-7.48-4.2,7.59,7.59,0,0,1,0-7.72L120.52,44.21a8.75,8.75,0,0,1,15,0l87.45,151.87A7.59,7.59,0,0,1,222.93,203.8ZM120,144V104a8,8,0,0,1,16,0v40a8,8,0,0,1-16,0Zm20,36a12,12,0,1,1-12-12A12,12,0,0,1,140,180Z"/></svg>`,
       ClipboardText: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor"><path d="M184,48H136V40a8,8,0,0,0-16,0v8H72A16,16,0,0,0,56,64V216a16,16,0,0,0,16,16H184a16,16,0,0,0,16-16V64A16,16,0,0,0,184,48Zm-48-8a0,0,0,0,1,0,0v0a0,0,0,0,1,0,0v0Zm-8,16h48v16H72V56ZM184,216H72V96H184V216Zm-32-88H104a8,8,0,0,0,0,16h48a8,8,0,0,0,0-16Zm0,32H104a8,8,0,0,0,0,16h48a8,8,0,0,0,0-16Z"/></svg>`,
       Books: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor"><path d="M231.65,194.55,198.27,65.4a16,16,0,0,0-19.44-11.33l-31.8,8.52A16,16,0,0,0,136,56H120a16,16,0,0,0-11,4.56L97.17,62.59A16,16,0,0,0,80,56H40A16,16,0,0,0,24,72V200a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16A16.07,16.07,0,0,0,231.65,194.55ZM120,72h16V200H120ZM40,200V72H80V200Zm96,0V72h4.55L176,194.43V200Z"/></svg>`,
       CalendarBlank: `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 256 256" fill="currentColor"><path d="M208,32H184V24a8,8,0,0,0-16,0v8H88V24a8,8,0,0,0-16,0v8H48A16,16,0,0,0,32,48V208a16,16,0,0,0,16,16H208a16,16,0,0,0,16-16V48A16,16,0,0,0,208,32ZM208,208H48V96H208ZM48,80V48H72v8a8,8,0,0,0,16,0V48h80v8a8,8,0,0,0,16,0V48h24V80Z"/></svg>`,
@@ -1299,6 +1300,87 @@ function _closeFullClock() {
 }
 
   /* ─────────────────────────────────────────────────────── */
+  /* Question-bank health                                    */
+  /*                                                         */
+  /* The dashboard must ALWAYS render, even when the bank is */
+  /* missing, empty or broken. This reports what is usable   */
+  /* so the exam section can show a warning instead.         */
+  /* ─────────────────────────────────────────────────────── */
+  let _safeRender = false;   // set for one retry after a render error
+
+  function _getBankState(classKey) {
+    const state = { subjects: [], broken: [], problem: null };
+    if (_safeRender) { state.problem = 'error'; return state; }
+
+    let bank = null;
+    try { bank = window.questions; } catch (e) { bank = null; }
+
+    if (!bank || typeof bank !== 'object' || Object.keys(bank).length === 0) {
+      state.problem = 'bank-unavailable';
+      return state;
+    }
+    if (!classKey) { state.problem = 'no-class'; return state; }
+
+    const classBank = bank[classKey];
+    if (!classBank || typeof classBank !== 'object' || Array.isArray(classBank)) {
+      state.problem = 'class-missing';
+      return state;
+    }
+
+    Object.keys(classBank).forEach(subj => {
+      const list = classBank[subj];
+      if (Array.isArray(list) && list.length > 0) state.subjects.push(subj);
+      else state.broken.push(subj);
+    });
+
+    if (state.subjects.length === 0) state.problem = 'no-questions';
+    return state;
+  }
+
+  function _bankProblemMessage(problem, className) {
+    const cls = _escHtml(className || 'your class');
+    switch (problem) {
+      case 'bank-unavailable':
+        return 'The question bank could not be loaded right now.';
+      case 'no-class':
+        return 'Your class has not been set on your profile.';
+      case 'class-missing':
+        return `No questions have been set up for <strong>${cls}</strong> yet.`;
+      case 'no-questions':
+        return `The questions for <strong>${cls}</strong> are unavailable at the moment.`;
+      default:
+        return 'The exam section could not be loaded right now.';
+    }
+  }
+
+  function _bankWarningHtml(problem, className) {
+    return `
+      <div id="vtxExamWarning" role="alert"
+           style="display:flex;align-items:flex-start;gap:.625rem;text-align:left;
+                  background:var(--warning-subtle);border:1px solid var(--warning-border);
+                  border-left:3px solid var(--warning);border-radius:var(--r-lg);
+                  padding:.75rem 1rem;">
+        <span style="flex-shrink:0;margin-top:1px;color:var(--warning);">${_icon('Warning', 20)}</span>
+        <div>
+          <p style="font-size:.8125rem;font-weight:700;color:var(--warning-text);margin-bottom:.2rem;">
+            Exams are unavailable right now
+          </p>
+          <p style="font-size:.75rem;color:var(--text-3);line-height:1.6;">
+            ${_bankProblemMessage(problem, className)}
+            Please contact <strong style="color:var(--text-2);">Master Timothy</strong>.
+            You can still use chat, messages, the Study Room and your other tools.
+          </p>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:1rem;">
+        <button id="startExamBtn" disabled class="btn btn-lg"
+                style="min-width:200px;max-width:260px;width:100%;">
+          Start Exam
+        </button>
+      </div>`;
+  }
+
+  /* ─────────────────────────────────────────────────────── */
   /* renderSubjectSelection — pill chip version              */
   /* ─────────────────────────────────────────────────────── */
 async function renderSubjectSelection() {
@@ -1329,18 +1411,20 @@ async function renderSubjectSelection() {
 
     const weeklyTimetableHtmlPromise = _fetchWeeklyTimetableHtml(classKey);
 
-    if (!_qBank[classKey]) {
-      console.error('[exam] No questions for classKey:', classKey);
-      UI.toast(`No subjects found for class "${S().studentData.class}". Contact Master Timothy.`, 'error', 0);
-      return;
+    // Never bail out here: the dashboard (chat, tools, timetable…) must always load.
+    // A missing / broken question bank only disables the exam section, with a warning.
+    const bankState = _getBankState(classKey);
+    if (bankState.problem) {
+      console.error('[exam] Question bank problem for classKey "' + classKey + '":', bankState.problem);
     }
 
     const todayTaskDone   = _isTodayTaskDayCompleted();
-    const allAvailable    = Object.keys(_qBank[classKey]);
+    const allAvailable    = bankState.subjects.concat(bankState.broken);   // everything the class has
     const restrictedSubjs = _getRestrictedSubjectsForToday();
     const available       = restrictedSubjs
       ? allAvailable.filter(s => restrictedSubjs.includes(s))
       : allAvailable;
+    const usableAvailable = available.filter(s => bankState.subjects.includes(s));
     const isTaskDay   = _isTaskRestricted();
     const minSubjects = (restrictedSubjs && isTaskDay) ? 1 : 2;
     const messages    = S().studentMessages || [];
@@ -1404,7 +1488,7 @@ async function renderSubjectSelection() {
     // ── Subject selector ──
     let subjectsHtml;
 
-    if (todayTaskDone) {
+    if (todayTaskDone && !bankState.problem) {
       const nextLabel = _nextUnlockedDateLabel();
       const nextLine  = nextLabel
         ? `Next session opens <strong>${nextLabel}</strong>.`
@@ -1418,6 +1502,9 @@ async function renderSubjectSelection() {
           <p style="font-size:.8125rem;color:var(--text-3);line-height:1.6;">${nextLine}</p>
         </div>`;
 
+    } else if (bankState.problem) {
+      subjectsHtml = _bankWarningHtml(bankState.problem, S().studentData.class);
+
     } else if (available.length === 0) {
       subjectsHtml = `<p style="color:var(--danger);font-size:.8125rem;text-align:center;padding:1rem 0;">
         ${restrictedSubjs
@@ -1426,14 +1513,22 @@ async function renderSubjectSelection() {
       </p>`;
 
     } else if (restrictedSubjs) {
-      const enoughSubjects = available.length >= minSubjects;
+      const enoughSubjects = usableAvailable.length >= minSubjects;
       subjectsHtml = `
         <div class="vtx-subject-grid" style="margin-bottom:1.25rem;">
-          ${available.map(subj => `
+          ${available.map(subj => bankState.subjects.includes(subj) ? `
             <label class="vtx-subject-pill is-required is-selected">
               <input type="checkbox" value="${_escAttr(subj)}" class="subject-checkbox" checked disabled />
               <span class="vtx-subject-pill-check"></span>
               <span>${_escHtml(subj)}</span>
+            </label>` : `
+            <label class="vtx-subject-pill is-required" style="opacity:.6;cursor:not-allowed;"
+                   title="Questions unavailable — contact Master Timothy">
+              <input type="checkbox" disabled />
+              <span class="vtx-subject-pill-check"></span>
+              <span style="display:inline-flex;align-items:center;gap:.25rem;">
+                <span style="color:var(--warning);display:inline-flex;">${_icon('Warning', 14)}</span>${_escHtml(subj)}
+              </span>
             </label>`).join('')}
         </div>
         <div style="text-align:center;">
@@ -1447,13 +1542,25 @@ async function renderSubjectSelection() {
     } else {
       subjectsHtml = `
         <div class="vtx-subject-grid" id="subjectPillGrid" style="margin-bottom:1.25rem;">
-          ${allAvailable.map(subj => `
+          ${allAvailable.map(subj => bankState.subjects.includes(subj) ? `
             <label class="vtx-subject-pill" id="pill-${_escAttr(subj)}">
               <input type="checkbox" value="${_escAttr(subj)}" class="subject-checkbox" />
               <span class="vtx-subject-pill-check"></span>
               <span>${_escHtml(subj)}</span>
+            </label>` : `
+            <label class="vtx-subject-pill" style="opacity:.6;cursor:not-allowed;"
+                   title="Questions unavailable — contact Master Timothy">
+              <input type="checkbox" disabled />
+              <span class="vtx-subject-pill-check"></span>
+              <span style="display:inline-flex;align-items:center;gap:.25rem;">
+                <span style="color:var(--warning);display:inline-flex;">${_icon('Warning', 14)}</span>${_escHtml(subj)}
+              </span>
             </label>`).join('')}
         </div>
+        ${bankState.broken.length ? `
+        <p style="font-size:.6875rem;color:var(--warning-text);margin:-.5rem 0 1rem;line-height:1.5;">
+          ${_icon('Warning', 12)} Some subjects are unavailable. Please contact Master Timothy.
+        </p>` : ''}
         <div style="text-align:center;">
           <button id="startExamBtn" onclick="Exam.startExam()" disabled class="btn btn-lg" style="min-width:200px;max-width:260px;width:100%;">
             Start Exam
@@ -1613,20 +1720,22 @@ async function renderSubjectSelection() {
         <div id="tasksContainer" style="margin-bottom:1.5rem;"></div>
 
         ${offDayBannerHtml}
-        ${todayTaskDone ? '' : restrictionBannerHtml}
+        ${(todayTaskDone || bankState.problem) ? '' : restrictionBannerHtml}
 
         <!-- EXAM SECTION -->
         <div style="margin-bottom:2rem;padding:1.25rem;border-radius:var(--r-xl);
                     border:1.5px solid var(--border);background:var(--bg-base);text-align:center;">
           <p style="font-size:.6875rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
                     color:var(--text-4);margin-bottom:.875rem;">
-            ${restrictedSubjs ? 'Required subjects for today' : 'Start a practice exam'}
+            ${bankState.problem
+              ? `<span style="color:var(--warning);display:inline-flex;vertical-align:middle;margin-right:.25rem;">${_icon('Warning', 13)}</span>Exam`
+              : (restrictedSubjs ? 'Required subjects for today' : 'Start a practice exam')}
           </p>
-          ${todayTaskDone
+          ${(todayTaskDone && !bankState.problem)
             ? subjectsHtml
             : `<div>
                 ${subjectsHtml}
-                ${!restrictedSubjs && !todayTaskDone
+                ${!restrictedSubjs && !todayTaskDone && !bankState.problem
                   ? `<p style="font-size:.6875rem;color:var(--text-4);margin-top:.75rem;">Select at least 2 subjects to begin</p>`
                   : ''}
                </div>`}
@@ -2157,7 +2266,19 @@ async function renderSubjectSelection() {
       console.warn('[exam] Caught error but state is gone — likely a logout race.');
       return;
     }
-    UI.toast('Failed to load subject selection. Please refresh the page.', 'error', 0);
+    // Don't leave the student on a blank screen: retry once in safe mode, which renders the
+    // full dashboard with the exam section disabled and a warning.
+    if (!_safeRender) {
+      _safeRender = true;
+      _renderSubjectSelectionInProgress = false;
+      try {
+        await renderSubjectSelection();
+      } finally {
+        _safeRender = false;
+      }
+      return;
+    }
+    UI.toast('Failed to load the dashboard. Please refresh the page.', 'error', 0);
   } finally {
     _renderSubjectSelectionInProgress = false;
   }
@@ -2213,8 +2334,8 @@ async function renderSubjectSelection() {
     const classKey = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
     const _qBank   = window.questions || {};
 
-    if (!_qBank[classKey]) {
-      UI.toast(`No subjects found for class "${S().studentData.class}". Contact Master Timothy.`, 'error', 0);
+    if (!_qBank[classKey] || typeof _qBank[classKey] !== 'object') {
+      UI.toast(`No subjects found for class "${S().studentData.class}". Contact Master Timothy.`, 'error', 8000);
       return;
     }
 
@@ -2229,8 +2350,9 @@ async function renderSubjectSelection() {
 
     const selectedQuestions = {};
     for (const subj of finalChosen) {
-      const all = (_qBank[classKey] || {})[subj] || [];
-      if (all.length === 0) { UI.toast(`No questions available for ${subj}.`, 'error'); return; }
+      const rawAll = (_qBank[classKey] || {})[subj];
+      const all    = Array.isArray(rawAll) ? rawAll : [];
+      if (all.length === 0) { UI.toast(`No questions available for ${subj}. Please contact Master Timothy.`, 'error', 6000); return; }
       const shuffled = [...all].sort(() => Math.random() - 0.5);
       selectedQuestions[subj] = shuffled.slice(0, CFG().QUESTIONS_PER_SUBJECT);
     }
