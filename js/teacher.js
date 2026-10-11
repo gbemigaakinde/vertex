@@ -812,6 +812,7 @@ function renderTeacherDashboard() {
 
         <div id="teacher-studyroom" class="teacher-tab hidden"></div>
         <div id="teacher-push" class="teacher-tab hidden">
+          <div id="vtxTeacherAlertsPanel"></div>
           <div id="vtxTeacherPushPanel"></div>
         </div>
         <div id="teacher-storage" class="teacher-tab hidden"></div>
@@ -889,7 +890,7 @@ function showTab(tab) {
   }
   if (tab === 'timetable') { _loadTimetableManager();                        return; }
   if (tab === 'activity')  { _loadActivityLog();                             return; }
-  if (tab === 'push')      { TeacherPush.renderPushPanel('vtxTeacherPushPanel'); return; }
+  if (tab === 'push')      { TeacherPush.renderAlertsPanel('vtxTeacherAlertsPanel'); TeacherPush.renderPushPanel('vtxTeacherPushPanel'); return; }
   if (tab === 'storage')   {
     var storageContainer = document.getElementById('teacher-storage');
     if (storageContainer && window.Storage) {

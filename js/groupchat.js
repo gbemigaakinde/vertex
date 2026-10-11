@@ -1636,6 +1636,7 @@ function _updateMemberPresenceDOM(uid, data) {
         ...unreadInc,
       });
       await batch.commit();
+      if (window.Notifications) Notifications.notifyEvent('group', groupId);
     } catch (err) {
       console.error('[gc] sendStudentMessage error:', err);
       UI.toast('Failed to send message.', 'error');
@@ -1685,6 +1686,7 @@ function _updateMemberPresenceDOM(uid, data) {
         ...unreadInc,
       });
       await batch.commit();
+      if (window.Notifications) Notifications.notifyEvent('group', groupId);
     } catch (err) {
       console.error('[gc] _sendStudentVoiceNote error:', err);
       UI.toast('Failed to send voice note.', 'error');
@@ -2043,6 +2045,7 @@ function _updateMemberPresenceDOM(uid, data) {
         ...unreadInc,
       });
       await batch.commit();
+      if (window.Notifications) Notifications.notifyEvent('group', groupId);
     } catch (err) {
       console.error('[gc] _sendTeacherMessage error:', err);
       UI.toast('Failed to send message.', 'error');
@@ -2079,6 +2082,7 @@ function _updateMemberPresenceDOM(uid, data) {
         ...unreadInc,
       });
       await batch.commit();
+      if (window.Notifications) Notifications.notifyEvent('group', groupId);
     } catch (err) {
       console.error('[gc] _sendTeacherVoiceNote error:', err);
       UI.toast('Failed to send voice note.', 'error');

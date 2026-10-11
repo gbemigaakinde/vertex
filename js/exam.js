@@ -1691,8 +1691,9 @@ async function renderSubjectSelection() {
             </p>
           </div>
          <button
-          onclick="Notifications.toggle()"
-          id="vtxEnableNotifBtn"
+          onclick="VtxSettings.open()"
+          id="vtxSettingsBtn"
+          aria-label="Settings"
           style="flex-shrink:0;font-size:.6875rem;color:#fff;background:var(--accent);
                  border:none;padding:.375rem .75rem;border-radius:var(--r-full);
                  cursor:pointer;font-family:var(--font);white-space:nowrap;
@@ -1701,7 +1702,7 @@ async function renderSubjectSelection() {
           onmouseenter="this.style.opacity='.85';"
           onmouseleave="this.style.opacity='1';"
         >
-          <i class="ph ph-bell" style="font-size:13px;"></i>
+          <i class="ph ph-gear-six" style="font-size:13px;"></i> Settings
         </button>
           <button onclick="App.logout()"
                   style="flex-shrink:0;font-size:.6875rem;color:var(--text-4);background:none;

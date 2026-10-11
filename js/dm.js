@@ -2058,6 +2058,7 @@ function _buildTeacherBubble(msg, showLabel) {
       }, { merge: true });
 
       await batch.commit();
+      if (window.Notifications) Notifications.notifyEvent('dm', uid);
     } catch (err) {
       console.error('[dm] sendStudentMessage error:', err);
       UI.toast('Could not send message. Please try again.', 'error');
@@ -2096,6 +2097,7 @@ function _buildTeacherBubble(msg, showLabel) {
         lastMessageStatus: 'sent',
       }, { merge: true });
       await batch.commit();
+      if (window.Notifications) Notifications.notifyEvent('dm', uid);
     } catch (err) {
       console.error('[dm] sendStudentVoiceNote error:', err);
       UI.toast('Could not send voice note.', 'error');
@@ -2611,6 +2613,7 @@ async function _openConversation(studentUid, studentName, studentClass) {
       }, { merge: true });
 
       await batch.commit();
+      if (window.Notifications) Notifications.notifyEvent('dm', studentUid);
     } catch (err) {
       console.error('[dm] _sendTeacherReply error:', err);
       UI.toast('Could not send reply. Please try again.', 'error');
@@ -2645,6 +2648,7 @@ async function _openConversation(studentUid, studentName, studentClass) {
         lastMessageStatus: 'sent',
       }, { merge: true });
       await batch.commit();
+      if (window.Notifications) Notifications.notifyEvent('dm', studentUid);
     } catch (err) {
       console.error('[dm] _sendTeacherVoiceNote error:', err);
       UI.toast('Could not send voice note.', 'error');

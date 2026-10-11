@@ -6805,7 +6805,7 @@ function _buildWordPoolForStudent() {
       return d;
     });
     try {
-      await _db().collection('gameChallenges').add({
+      const _newChallengeRef = await _db().collection('gameChallenges').add({
         challengerUid:   _uid(),
         challengerName:  _student().name || '',
         challengedUid:   targetUid,
@@ -6818,6 +6818,7 @@ function _buildWordPoolForStudent() {
         createdAt:       firebase.firestore.FieldValue.serverTimestamp(),
         expiresAt:       null,
       });
+      if (window.Notifications && _newChallengeRef) Notifications.notifyEvent('game', _newChallengeRef.id);
       _closeModal();
       window.UI.toast(`Challenge sent to ${targetName}! It will remain open until they respond.`, 'success', 5000);
     } catch (e) {

@@ -77,6 +77,13 @@
         MsgNotif.initForTeacher();
       }
 
+      // Re-register the teacher's phone for message alerts (only if already allowed)
+      if (window.Notifications && typeof window.Notifications.init === 'function') {
+        Notifications.init(uid).catch(function (e) {
+          console.warn('[app] teacher Notifications.init error (non-fatal):', e);
+        });
+      }
+
       // Start approval badge listener for teacher
       if (window.ActivityLog && typeof ActivityLog.initTeacherApprovalListener === 'function') {
         ActivityLog.initTeacherApprovalListener();

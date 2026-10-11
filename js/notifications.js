@@ -310,6 +310,40 @@ async function init(uid) {
     init(uid);
   }
 
+
+  /* ── Tell the server "something was just sent" so opted-in people get a
+        phone alert right away. Fire-and-forget: the server re-checks
+        everything itself, and a 5-minute sweep catches any misses.
+        type: 'dm' (id = student uid) | 'group' (id = group id) | 'game' (id = challenge id) ── */
+  function notifyEvent(type, id) {
+    try {
+      if (!type || !id) return;
+      fetch(WORKER_URL + '/api/notify-event', {
+        method:    'POST',
+        headers:   { 'Content-Type': 'application/json' },
+        body:      JSON.stringify({ type: type, id: id }),
+        keepalive: true,
+      }).catch(function () {});
+    } catch (e) { /* never block sending a message */ }
+  }
+
+  /* ── Make sure this device can receive alerts (asks permission if needed) ── */
+  async function ensureOn() {
+    if (await isSubscribed()) return true;
+    return subscribe();
+  }
+
+  /* ── Plain status for the Settings screen ── */
+  async function getStatus() {
+    var supported = _isSupported();
+    return {
+      supported:       supported,
+      needsIOSInstall: _isIOS() && !_isIOSPWA() && !supported,
+      blocked:         supported && Notification.permission === 'denied',
+      on:              supported ? await isSubscribed() : false,
+    };
+  }
+
   window.Notifications = {
     subscribe:         subscribe,
     unsubscribe:       unsubscribe,
@@ -317,6 +351,9 @@ async function init(uid) {
     isSubscribed:      isSubscribed,
     renderSettingsRow: renderSettingsRow,
     init:              init,
+    notifyEvent:       notifyEvent,
+    ensureOn:          ensureOn,
+    getStatus:         getStatus,
   };
 
 }());

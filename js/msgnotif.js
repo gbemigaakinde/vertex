@@ -41,6 +41,9 @@
              !!document.getElementById('dmTeacherMessages');
     }
 
+    // Student turned in-app message pop-ups off in Settings
+    if (window.VtxSettings && VtxSettings.get('popups') === false) return true;
+
     // Student: suppress during exam
     const exam = window.AppState && window.AppState.exam;
     if (exam && exam.step === 'exam') return true;

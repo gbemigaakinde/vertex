@@ -466,8 +466,241 @@
     }
   }
 
+  /* ══════════════════════════════════════════════════════════
+     MESSAGE ALERTS — private-message phone alerts
+     ──────────────────────────────────────────────────────────
+     • "Alerts on this phone"  → registers THIS device for pushes
+     • "Alert me when students message me" → master switch (default ON, KV tprefs.enabled)
+     • Per student:
+         "Student gets my messages" → students/{uid}.dmPushEnabled   (default OFF)
+         "I get their messages"     → KV tprefs.mutedStudents        (default ON)
+     ══════════════════════════════════════════════════════════ */
+  var _al = { enabled: true, muted: [], subscribed: [], students: [], deviceOn: false, filter: '' };
+  var _alBox = null;
+
+  function _alEsc(str) {
+    return String(str == null ? '' : str)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function _alToast(msg, type) { if (window.UI && UI.toast) UI.toast(msg, type || 'info', 3000); }
+
+  async function _alPost(payload) {
+    var res = await fetch(WORKER_URL + '/api/teacher-push-prefs', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(Object.assign({ teacherUid: AppState.userId }, payload)),
+    });
+    var data = await res.json();
+    if (!res.ok || !data.success) throw new Error((data && data.error) || 'Request failed');
+    return data;
+  }
+
+  function _alSwitch(on, onclick, label, disabled) {
+    return '<button role="switch" aria-checked="' + (on ? 'true' : 'false') + '" aria-label="' + _alEsc(label) + '" ' +
+      (disabled ? 'disabled ' : '') + 'onclick="' + onclick + '" ' +
+      'style="position:relative;width:40px;height:24px;border-radius:99px;border:none;padding:0;flex-shrink:0;' +
+      'cursor:' + (disabled ? 'not-allowed' : 'pointer') + ';opacity:' + (disabled ? '.45' : '1') + ';' +
+      'background:' + (on ? 'var(--success)' : 'var(--bg-muted)') + ';transition:background .2s;">' +
+      '<span style="position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;' +
+      'box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s;display:block;' +
+      'transform:' + (on ? 'translateX(16px)' : 'none') + ';"></span></button>';
+  }
+
+  function _alStudentRows() {
+    var q = _al.filter.trim().toLowerCase();
+    var list = _al.students.filter(function (s) {
+      return !q || (s.name || '').toLowerCase().indexOf(q) !== -1 || (s.cls || '').toLowerCase().indexOf(q) !== -1;
+    });
+    if (list.length === 0) {
+      return '<p style="font-size:.8125rem;color:var(--text-4);padding:.75rem 0;">No students found.</p>';
+    }
+    return list.map(function (s) {
+      var ready   = _al.subscribed.indexOf(s.uid) !== -1;
+      var iGet    = _al.muted.indexOf(s.uid) === -1;
+      var uidAttr = _alEsc(s.uid).replace(/'/g, '');
+      return '<div style="padding:.625rem 0;border-top:1px solid var(--border);">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;margin-bottom:.5rem;">' +
+          '<div style="min-width:0;">' +
+            '<p style="font-size:.875rem;font-weight:600;color:var(--text-1);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">' + _alEsc(s.name || 'Student') + '</p>' +
+            '<p style="font-size:.6875rem;color:var(--text-4);">' + _alEsc(s.cls || '') + '</p>' +
+          '</div>' +
+          '<span style="flex-shrink:0;font-size:.625rem;font-weight:700;padding:2px 8px;border-radius:99px;' +
+            (ready ? 'background:var(--success-subtle,#e7f7ec);color:var(--success-text,#15803d);'
+                   : 'background:var(--bg-muted);color:var(--text-4);') + '">' +
+            (ready ? 'Phone ready' : 'Phone not set up') + '</span>' +
+        '</div>' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;margin-bottom:.375rem;">' +
+          '<span style="font-size:.75rem;color:var(--text-2);">Student gets my messages</span>' +
+          _alSwitch(s.dmPush, "TeacherPush._alStudent('" + uidAttr + "')", 'Student gets my messages') +
+        '</div>' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;gap:.75rem;">' +
+          '<span style="font-size:.75rem;color:var(--text-2);">I get their messages</span>' +
+          _alSwitch(iGet && _al.enabled, "TeacherPush._alMute('" + uidAttr + "')", 'I get their messages', !_al.enabled) +
+        '</div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function _alRender() {
+    if (!_alBox || !document.body.contains(_alBox)) return;
+    var keepFocus = document.activeElement && document.activeElement.id === 'vtxAlSearch';
+    var caret = keepFocus ? document.activeElement.selectionStart : 0;
+
+    _alBox.innerHTML =
+      '<div style="border:1.5px solid var(--border);border-radius:var(--r-xl);background:var(--bg-base);overflow:hidden;margin-bottom:1.25rem;">' +
+        '<div style="padding:.875rem 1.125rem;background:var(--accent);display:flex;align-items:center;gap:.625rem;">' +
+          '<i class="ph ph-chat-circle-dots" style="font-size:18px;color:#fff;flex-shrink:0;"></i>' +
+          '<div>' +
+            '<p style="font-size:.9375rem;font-weight:700;color:#fff;line-height:1.2;">Message alerts</p>' +
+            '<p style="font-size:.6875rem;color:rgba(255,255,255,.75);margin-top:1px;">Phone alerts for private messages</p>' +
+          '</div>' +
+        '</div>' +
+        '<div style="padding:1rem 1.125rem;">' +
+
+          '<div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:.875rem;">' +
+            '<div><p style="font-size:.875rem;font-weight:600;color:var(--text-1);">Alerts on this phone</p>' +
+            '<p style="font-size:.75rem;color:var(--text-3);margin-top:2px;line-height:1.5;">Turn this on so this device can receive alerts.</p></div>' +
+            _alSwitch(_al.deviceOn, 'TeacherPush._alDevice()', 'Alerts on this phone') +
+          '</div>' +
+
+          '<div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:1rem;">' +
+            '<div><p style="font-size:.875rem;font-weight:600;color:var(--text-1);">Alert me when students message me</p>' +
+            '<p style="font-size:.75rem;color:var(--text-3);margin-top:2px;line-height:1.5;">On by default. Switch off to stop all of them, or mute single students below.</p></div>' +
+            _alSwitch(_al.enabled, 'TeacherPush._alMaster()', 'Alert me when students message me') +
+          '</div>' +
+
+          '<div style="border-top:1px solid var(--border);padding-top:.875rem;">' +
+            '<p style="font-size:.75rem;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.25rem;">Students</p>' +
+            '<p style="font-size:.75rem;color:var(--text-3);line-height:1.5;margin-bottom:.625rem;">' +
+              '“Student gets my messages” sends your private messages to that student’s phone. It stays off until you turn it on. ' +
+              'A student also needs to have opened the app and allowed alerts (shown as “Phone ready”).</p>' +
+            '<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.625rem;">' +
+              '<input id="vtxAlSearch" type="search" placeholder="Search students…" value="' + _alEsc(_al.filter) + '" ' +
+                'oninput="TeacherPush._alFilter(this.value)" ' +
+                'style="flex:1;min-width:140px;padding:.5rem .625rem;border-radius:var(--r-md);border:1px solid var(--border);' +
+                'background:var(--bg-subtle);color:var(--text-1);font-size:.875rem;font-family:var(--font);box-sizing:border-box;" />' +
+              '<button onclick="TeacherPush._alBulk(true)" style="padding:.5rem .75rem;border-radius:var(--r-md);border:1px solid var(--border);' +
+                'background:var(--bg-base);color:var(--text-2);font-size:.75rem;font-weight:600;cursor:pointer;font-family:var(--font);">Turn on for everyone</button>' +
+              '<button onclick="TeacherPush._alBulk(false)" style="padding:.5rem .75rem;border-radius:var(--r-md);border:1px solid var(--border);' +
+                'background:var(--bg-base);color:var(--text-2);font-size:.75rem;font-weight:600;cursor:pointer;font-family:var(--font);">Turn off for everyone</button>' +
+            '</div>' +
+            '<div>' + _alStudentRows() + '</div>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+
+    if (keepFocus) {
+      var inp = document.getElementById('vtxAlSearch');
+      if (inp) { inp.focus(); try { inp.setSelectionRange(caret, caret); } catch (e) {} }
+    }
+  }
+
+  async function renderAlertsPanel(containerId) {
+    var el = document.getElementById(containerId);
+    if (!el) return;
+    _alBox = el;
+    el.innerHTML = '<p style="font-size:.8125rem;color:var(--text-3);padding:.75rem 0;">Loading message alerts…</p>';
+
+    try {
+      var results = await Promise.all([
+        _alPost({ action: 'get' }),
+        window.fbDb.collection('students').get(),
+        (window.Notifications && Notifications.isSubscribed) ? Notifications.isSubscribed() : Promise.resolve(false),
+      ]);
+      var prefs = results[0];
+      _al.enabled    = prefs.enabled !== false;
+      _al.muted      = prefs.mutedStudents || [];
+      _al.subscribed = prefs.subscribed || [];
+      _al.deviceOn   = !!results[2];
+      _al.students   = [];
+      results[1].forEach(function (d) {
+        var x = d.data() || {};
+        if (d.id === AppState.userId) return;
+        _al.students.push({ uid: d.id, name: x.name || '', cls: x.class || '', dmPush: x.dmPushEnabled === true });
+      });
+      _al.students.sort(function (a, b) { return (a.name || '').localeCompare(b.name || ''); });
+      _al.filter = '';
+      _alRender();
+    } catch (e) {
+      console.warn('[TeacherPush] alerts panel load error:', e);
+      el.innerHTML = '<p style="font-size:.8125rem;color:var(--danger);padding:.75rem 0;">Could not load message alerts. Check your internet and reopen this tab.</p>';
+    }
+  }
+
+  async function _alDevice() {
+    if (!window.Notifications) return;
+    if (_al.deviceOn) { await Notifications.unsubscribe(); }
+    else              { await Notifications.subscribe(); }
+    _al.deviceOn = await Notifications.isSubscribed();
+    _alRender();
+  }
+
+  async function _alMaster() {
+    var next = !_al.enabled;
+    _al.enabled = next; _alRender();
+    try { await _alPost({ action: 'set', enabled: next }); }
+    catch (e) { _al.enabled = !next; _alRender(); _alToast('Could not save. Try again.', 'error'); }
+  }
+
+  async function _alMute(uid) {
+    var wasMuted = _al.muted.indexOf(uid) !== -1;
+    var before = _al.muted.slice();
+    _al.muted = wasMuted ? _al.muted.filter(function (u) { return u !== uid; }) : _al.muted.concat([uid]);
+    _alRender();
+    try { await _alPost({ action: 'set', mutedStudents: _al.muted }); }
+    catch (e) { _al.muted = before; _alRender(); _alToast('Could not save. Try again.', 'error'); }
+  }
+
+  async function _alStudent(uid) {
+    var s = _al.students.filter(function (x) { return x.uid === uid; })[0];
+    if (!s) return;
+    var next = !s.dmPush;
+    s.dmPush = next; _alRender();
+    try {
+      await window.fbDb.collection('students').doc(uid).update({ dmPushEnabled: next });
+    } catch (e) {
+      s.dmPush = !next; _alRender();
+      _alToast('Could not save. Try again.', 'error');
+    }
+  }
+
+  async function _alBulk(on) {
+    var targets = _al.students.filter(function (s) {
+      var q = _al.filter.trim().toLowerCase();
+      return !q || (s.name || '').toLowerCase().indexOf(q) !== -1 || (s.cls || '').toLowerCase().indexOf(q) !== -1;
+    });
+    if (targets.length === 0) return;
+    var label = _al.filter.trim() ? 'the ' + targets.length + ' students shown' : 'all ' + targets.length + ' students';
+    if (!window.confirm((on ? 'Turn ON' : 'Turn OFF') + ' phone alerts for your messages to ' + label + '?')) return;
+
+    try {
+      for (var i = 0; i < targets.length; i += 400) {
+        var batch = window.fbDb.batch();
+        targets.slice(i, i + 400).forEach(function (s) {
+          batch.update(window.fbDb.collection('students').doc(s.uid), { dmPushEnabled: on });
+        });
+        await batch.commit();
+      }
+      targets.forEach(function (s) { s.dmPush = on; });
+      _alRender();
+      _alToast('Done — updated ' + targets.length + ' students.', 'success');
+    } catch (e) {
+      console.warn('[TeacherPush] bulk update failed:', e);
+      _alToast('Could not update everyone. Try again.', 'error');
+    }
+  }
+
+  function _alFilter(v) { _al.filter = v || ''; _alRender(); }
+
   window.TeacherPush = {
     renderPushPanel:   renderPushPanel,
+    renderAlertsPanel: renderAlertsPanel,
+    _alDevice:         _alDevice,
+    _alMaster:         _alMaster,
+    _alMute:           _alMute,
+    _alStudent:        _alStudent,
+    _alBulk:           _alBulk,
+    _alFilter:         _alFilter,
     _onModeChange:     _onModeChange,
     _onTimingChange:   _onTimingChange,
     _send:             _send,
