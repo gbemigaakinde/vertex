@@ -14,6 +14,20 @@
      questions  array    [{ q, opts, ans, exp, svg?, optSvg?, expSvg? }, …]
      active     boolean  optional — set false to hide a document
 
+   Sessions and terms (new)
+   ------------------------
+   Documents created by the teacher's Questions tab also carry
+     session    string  e.g. "2025/2026"
+     term       number  1, 2 or 3
+     periodKey  string  e.g. "2025-2026__t1"
+   and the document id becomes <classKey>__<subject>__<periodKey>.
+   Students only get the documents of the ACTIVE period. The active period is
+   stored in questionBank/_activePeriod { session, term } (set by the teacher);
+   when that document does not exist it is worked out from today's date
+   (Sept-Dec = Term 1, Jan-Apr = Term 2, May-Aug = Term 3).
+   Old documents with no session/term still work: they are the fallback for
+   any period that has no questions of its own for that class + subject.
+
    Behaviour
    ---------
    - data/questions.js is still loaded and is the fallback. If the backend is
@@ -108,6 +122,36 @@
   }
   window.questions = _bundled;
 
+
+  // ── Academic period helpers ────────────────────────────────
+  function defaultPeriod(d) {
+    d = d || new Date();
+    var m = d.getMonth() + 1, y = d.getFullYear();
+    var term = (m >= 9) ? 1 : (m <= 4 ? 2 : 3);
+    var startYear = (m >= 9) ? y : y - 1;
+    return { session: startYear + '/' + (startYear + 1), term: term };
+  }
+  function normSession(s) {
+    var m = String(s == null ? '' : s).match(/^\s*(\d{4})\s*[\/\-]\s*(\d{4})\s*$/);
+    if (!m) return '';
+    var a = Number(m[1]), b = Number(m[2]);
+    return (b === a + 1) ? (a + '/' + b) : '';
+  }
+  function normTerm(t) {
+    var n = parseInt(String(t == null ? '' : t).replace(/[^0-9]/g, ''), 10);
+    return (n >= 1 && n <= 3) ? n : 0;
+  }
+  function periodKey(session, term) {
+    var s = normSession(session), t = normTerm(term);
+    return (s && t) ? (s.replace('/', '-') + '__t' + t) : '';
+  }
+  function validPeriod(p) {
+    return !!(p && normSession(p.session) && normTerm(p.term));
+  }
+  var activePeriod = defaultPeriod();
+  status.period = activePeriod;
+  status.periodSource = 'date';   // 'date' | 'teacher'
+
   function normClass(k) { return String(k || '').replace(/\s+/g, '').toLowerCase(); }
 
   function slug(s) { return String(s || '').trim().replace(/[^A-Za-z0-9]+/g, '_').replace(/^_+|_+$/g, ''); }
@@ -151,15 +195,39 @@
     var merged = {};
     Object.keys(_bundled).forEach(function (cls) { merged[cls] = Object.assign({}, _bundled[cls]); });
 
+    // 1) the teacher's chosen active period (falls back to the date-based default)
+    activePeriod = defaultPeriod();
+    status.periodSource = 'date';
+    snap.forEach(function (doc) {
+      if (doc.id !== '_activePeriod') return;
+      var d = doc.data() || {};
+      if (validPeriod(d)) {
+        activePeriod = { session: normSession(d.session), term: normTerm(d.term) };
+        status.periodSource = 'teacher';
+      }
+    });
+    status.period = activePeriod;
+    var activeKey = periodKey(activePeriod.session, activePeriod.term);
+
+    var legacy = {}, current = {};          // legacy[cls][subj], current[cls][subj]
     var applied = 0, skipped = 0;
     snap.forEach(function (doc) {
       try {                                           // one bad document must not discard the rest
+        if (String(doc.id).charAt(0) === '_') return; // settings documents
         var data = doc.data() || {};
         if (data.active === false) return;
 
         var cls  = normClass(data.classKey || String(doc.id).split('__')[0]);
         var subj = typeof data.subject === 'string' ? data.subject.trim() : '';
         if (!cls || !subj || !Array.isArray(data.questions)) return;
+
+        var hasPeriod = data.session != null || data.term != null || data.periodKey;
+        var bucket = legacy;
+        if (hasPeriod) {
+          var k = data.periodKey || periodKey(data.session, data.term);
+          if (!k || k !== activeKey) return;          // belongs to another session / term
+          bucket = current;
+        }
 
         var good = [];
         data.questions.forEach(function (raw) {
@@ -168,12 +236,22 @@
         });
         if (!good.length) return;                     // ignore empty / fully invalid documents
 
-        if (!merged[cls]) merged[cls] = {};
-        merged[cls][subj] = good;
-        applied++;
+        if (!bucket[cls]) bucket[cls] = {};
+        bucket[cls][subj] = good;
       } catch (docErr) {
-        console.warn('[QuestionLoader] skipped bad document "' + (doc && doc.id) + '":', docErr);
+        console.warn('[QuestionLoader] skipped bad document \"' + (doc && doc.id) + '\":', docErr);
       }
+    });
+
+    // 2) bundled < legacy backend docs < documents of the active session/term
+    [legacy, current].forEach(function (src) {
+      Object.keys(src).forEach(function (cls) {
+        Object.keys(src[cls]).forEach(function (subj) {
+          if (!merged[cls]) merged[cls] = {};
+          merged[cls][subj] = src[cls][subj];
+          applied++;
+        });
+      });
     });
 
     status.skipped = skipped;
@@ -182,7 +260,8 @@
       status.source = 'backend';
       status.docs   = applied;
     } else {
-      console.info('[QuestionLoader] backend returned no usable questions — using bundled bank.');
+      console.info('[QuestionLoader] backend returned no usable questions for ' +
+                   activePeriod.session + ' term ' + activePeriod.term + ' — using bundled bank.');
     }
   }
 
@@ -235,5 +314,13 @@
     return { written: writes, tooLarge: tooBig };
   }
 
-  window.QuestionLoader = { load: load, status: status, seedFromBundled: seedFromBundled, _cleanQuestion: cleanQuestion, _normalizeBank: normalizeBank };
+  window.QuestionLoader = {
+    load: load, status: status, seedFromBundled: seedFromBundled,
+    COLLECTION: COLLECTION, MAX_DOC_CHARS: MAX_DOC_CHARS,
+    getBundled: function () { return _bundled; },
+    getActivePeriod: function () { return { session: activePeriod.session, term: activePeriod.term }; },
+    defaultPeriod: defaultPeriod, normSession: normSession, normTerm: normTerm,
+    periodKey: periodKey, normClass: normClass, slug: slug,
+    _cleanQuestion: cleanQuestion, _normalizeBank: normalizeBank
+  };
 })();
