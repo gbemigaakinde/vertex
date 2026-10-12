@@ -36,21 +36,31 @@
 
 export const ASSET_BASE = '/surfer/assets/';
 
+/* CACHING: every model is downloaded ONCE and kept in the browser (Cache Storage).
+   When you replace a .glb file with a new one, change this number (e.g. '2')
+   and every player will download the new file one time, then keep it again. */
+export const ASSET_VERSION = '1';
+
 /* Every character / obstacle is shown from BEHIND (the camera follows
    the runner), so create these models from the REAR view (see prompts). */
 
 export const MODELS = {
 
-  /* ── PLAYER (5 poses of the SAME character; the game swaps between them) ── */
-  player_run_a:   { file: 'characters/player_run_a.glb',   height: 1.75, yaw: 0 },
-  player_run_b:   { file: 'characters/player_run_b.glb',   height: 1.75, yaw: 0 },
-  player_jump:    { file: 'characters/player_jump.glb',    height: 1.60, yaw: 0 },
-  player_slide:   { file: 'characters/player_slide.glb',   height: 0.70, yaw: 0 },
-  player_stumble: { file: 'characters/player_stumble.glb', height: 1.70, yaw: 0 },
+  /* ── PLAYER: ONE model (characters/runner.glb) used for all 5 poses.
+       The game bends/tilts it for each pose, so you only download one file.
+       yaw 180 = the model was made facing the camera, the game wants its back to us.
+       roll   = small side-to-side lean so run_a / run_b look like alternating steps. ── */
+  player_run_a:   { file: 'characters/runner.glb', height: 1.75, yaw: 180, roll:  5 },
+  player_run_b:   { file: 'characters/runner.glb', height: 1.75, yaw: 180, roll: -5 },
+  player_jump:    { file: 'characters/runner.glb', height: 1.70, yaw: 180, pitch: -8 },
+  player_slide:   { file: 'characters/runner.glb', height: 0.75, yaw: 180, pitch: -78 },
+  player_stumble: { file: 'characters/runner.glb', height: 1.65, yaw: 180, pitch: 22 },
 
-  /* ── INSPECTOR + DOG (chase you from behind) ── */
-  inspector_run_a: { file: 'characters/inspector_run_a.glb', height: 1.85, yaw: 0 },
-  inspector_run_b: { file: 'characters/inspector_run_b.glb', height: 1.85, yaw: 0 },
+  /* ── INSPECTOR (police): ONE model (characters/police.glb) for both steps ── */
+  inspector_run_a: { file: 'characters/police.glb', height: 1.85, yaw: 180, roll:  5 },
+  inspector_run_b: { file: 'characters/police.glb', height: 1.85, yaw: 180, roll: -5 },
+
+  /* ── DOG: not ready yet, the game draws its simple stand-in dog until you add these ── */
   dog_run_a:       { file: 'characters/dog_run_a.glb',       height: 0.70, yaw: 0 },
   dog_run_b:       { file: 'characters/dog_run_b.glb',       height: 0.70, yaw: 0 },
 

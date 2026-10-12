@@ -9,7 +9,8 @@
 import * as THREE from '../vector/lib/three.module.js';
 import { GLTFLoader } from '../vector/lib/GLTFLoader.js';
 import { mergeGeometries } from '../vector/lib/BufferGeometryUtils.js';
-import { MODELS, ASSET_BASE } from './surfer-config.js';
+import { MeshoptDecoder } from '../vector/lib/meshopt_decoder.module.js';
+import { MODELS, ASSET_BASE, ASSET_VERSION } from './surfer-config.js';
 
 const mat = (color, o = {}) => new THREE.MeshStandardMaterial({ color, roughness: 0.7, metalness: 0.05, ...o });
 const box = (w, h, d, m, x = 0, y = 0, z = 0) => { const k = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m); k.position.set(x, y, z); return k; };
@@ -132,6 +133,7 @@ function normalise(src, cfg) {
   const inner = src.clone(true);
   if (cfg.zUp) inner.rotation.x = -Math.PI / 2;
   else if (cfg.pitch) inner.rotation.x = THREE.MathUtils.degToRad(cfg.pitch);
+  if (cfg.roll) inner.rotation.z = THREE.MathUtils.degToRad(cfg.roll);
   const yawHolder = new THREE.Group();
   yawHolder.rotation.y = THREE.MathUtils.degToRad(cfg.yaw || 0);
   yawHolder.add(inner);
@@ -166,38 +168,93 @@ function tuneMaterials(root) {
   });
 }
 
+/* ───────────── downloading + caching ─────────────
+   Each .glb is fetched ONE time, then kept in the browser's Cache Storage.
+   Next visit: no network request at all. The cache name starts with "vb-models-"
+   so sw.js never deletes it when Vertex updates. If the browser has no Cache
+   Storage (private mode, full disk) the game still works, it just downloads again. */
+const CACHE_NAME = 'vb-models-surfer-v1';
+const GLB_MAGIC = 0x46546c67;                       // "glTF"
+
+async function openCache() { try { return globalThis.caches ? await caches.open(CACHE_NAME) : null; } catch { return null; } }
+
+/* delete copies of models saved under an older ASSET_VERSION */
+async function purgeOld(cache, keepUrls) {
+  try { for (const req of await cache.keys()) if (!keepUrls.has(req.url)) await cache.delete(req); } catch { /* ignore */ }
+}
+
+async function fetchModel(file, cache) {
+  const url = new URL(ASSET_BASE + file + '?v=' + ASSET_VERSION, location.href).href;
+  if (cache) {
+    try {
+      const hit = await cache.match(url);
+      if (hit) { const buf = await hit.arrayBuffer(); if (isGlb(buf)) return { buf, url, cached: true }; await cache.delete(url); }
+    } catch { /* fall through to network */ }
+  }
+  const res = await fetch(url);
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const buf = await res.arrayBuffer();
+  if (!isGlb(buf)) throw new Error('not a .glb (the site returned a web page instead)');
+  if (cache) { try { await cache.put(url, new Response(buf.slice(0), { headers: { 'content-type': 'model/gltf-binary' } })); } catch { /* storage full: fine */ } }
+  return { buf, url, cached: false };
+}
+function isGlb(buf) { return buf && buf.byteLength > 20 && new DataView(buf).getUint32(0, true) === GLB_MAGIC; }
+
 /* ───────────── public: load everything ───────────── */
 export async function loadAssets(onProgress) {
   const loader = new GLTFLoader();
+  loader.setMeshoptDecoder(MeshoptDecoder);          // models are meshopt-compressed (tiny files)
+  const cache = await openCache();
   const names = Object.keys(MODELS);
   const real = new Map(), standIns = new Map(), missing = [];
+  const stats = { fromCache: 0, fromNetwork: 0, bytesDownloaded: 0 };
   let done = 0;
 
-  await Promise.all(names.map(name => new Promise(resolve => {
+  /* several poses can share ONE file: download/parse each file only once */
+  const files = new Map();
+  const getFile = file => {
+    if (!files.has(file)) files.set(file, fetchModel(file, cache).then(async r => {
+      const gltf = await loader.parseAsync(r.buf, '');
+      if (r.cached) stats.fromCache++; else { stats.fromNetwork++; stats.bytesDownloaded += r.buf.byteLength; }
+      return { gltf, url: r.url };
+    }));
+    return files.get(file);
+  };
+
+  await Promise.all(names.map(async name => {
     const cfg = MODELS[name];
-    const finish = () => { done++; if (onProgress) onProgress(done / names.length, name); resolve(); };
-    try {
-      loader.load(ASSET_BASE + cfg.file,
-        gltf => { try { const r = normalise(gltf.scene, cfg); tuneMaterials(r); real.set(name, r); } catch (e) { console.warn('[surfer] bad model', name, e); missing.push(name); } finish(); },
-        undefined,
-        () => { missing.push(name); finish(); });
-    } catch (e) { missing.push(name); finish(); }
-  })));
+    try { const { gltf } = await getFile(cfg.file); const r = normalise(gltf.scene, cfg); tuneMaterials(r); real.set(name, r); }
+    catch (e) { missing.push(name); }
+    done++; if (onProgress) onProgress(done / names.length, name);
+  }));
+
+  if (cache) {
+    const keep = new Set();
+    for (const f of new Set(names.map(n => MODELS[n].file))) keep.add(new URL(ASSET_BASE + f + '?v=' + ASSET_VERSION, location.href).href);
+    purgeOld(cache, keep);
+  }
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch { /* optional */ }
 
   for (const name of missing) {
-    const cfg = { ...MODELS[name], yaw: 0, scaleMul: 1, yOffset: 0, zUp: false };
+    const cfg = { ...MODELS[name], yaw: 0, roll: 0, pitch: 0, scaleMul: 1, yOffset: 0, zUp: false };
     const r = normalise(standIn(name), cfg); tuneMaterials(r); standIns.set(name, r);
   }
 
   return {
-    realCount: real.size, total: names.length, missing,
+    realCount: real.size, total: names.length, missing, stats,
     isReal: name => real.has(name),
     /* a fresh copy you can move/animate (geometry + materials are shared) */
     make(name) { const src = real.get(name) || standIns.get(name); return src ? src.clone(true) : new THREE.Group(); },
     dispose() {
+      /* geometry/materials are shared between poses, so dispose each only once */
+      const seen = new Set();
       for (const m of [real, standIns]) for (const r of m.values()) r.traverse(o => {
-        if (o.geometry) o.geometry.dispose();
-        for (const mm of (Array.isArray(o.material) ? o.material : [o.material])) { if (!mm) continue; for (const k in mm) if (mm[k] && mm[k].isTexture) mm[k].dispose(); mm.dispose(); }
+        if (o.geometry && !seen.has(o.geometry)) { seen.add(o.geometry); o.geometry.dispose(); }
+        for (const mm of (Array.isArray(o.material) ? o.material : [o.material])) {
+          if (!mm || seen.has(mm)) continue; seen.add(mm);
+          for (const k in mm) if (mm[k] && mm[k].isTexture) mm[k].dispose();
+          mm.dispose();
+        }
       });
       real.clear(); standIns.clear();
     },
