@@ -1451,13 +1451,18 @@ async function _saveStudentEdit(uid, previousAdmno) {
       studentClass: cls,
     }, { merge: true });
 
-    // Update denormalized name in student-specific coaching task docs
-    batch.set(Db().collection('coachingTasks').doc('student_' + uid), {
-      studentName: name,
-    }, { merge: true });
-    batch.set(Db().collection('coachingTasks').doc('weekly_student_' + uid), {
-      studentName: name,
-    }, { merge: true });
+    // Update denormalized name in student-specific coaching task docs.
+    // Only touch documents that already exist: a merge-set on a missing
+    // document would create an empty "ghost" task for every edited student.
+    const taskDocIds = ['student_' + uid, 'weekly_student_' + uid];
+    const taskSnaps  = await Promise.all(
+      taskDocIds.map(id => Db().collection('coachingTasks').doc(id).get().catch(() => null))
+    );
+    taskSnaps.forEach((snap, i) => {
+      if (snap && snap.exists) {
+        batch.update(Db().collection('coachingTasks').doc(taskDocIds[i]), { studentName: name });
+      }
+    });
 
     if (addingOrChanging) {
       batch.set(Db().collection('admissionNumbers').doc(admno), { uid, email });
@@ -2042,6 +2047,13 @@ async function _saveStudentEdit(uid, previousAdmno) {
     if (_taskScope === 'once') { wrap.innerHTML = ''; return; }
 
     const subjects = _getSubjectsForCurrentScope();
+
+    // Remember what is already ticked so re-drawing does not wipe it.
+    const keep = {};
+    wrap.querySelectorAll('.recurring-day-subj-cb:checked').forEach(cb => {
+      (keep[cb.dataset.day] = keep[cb.dataset.day] || []).push(cb.value);
+    });
+
     if (subjects.length === 0) {
       wrap.innerHTML = `<p style="font-size:var(--text-sm);color:var(--text-3);font-style:italic;">
         Select a target first to see available subjects.</p>`;
@@ -2080,6 +2092,15 @@ async function _saveStudentEdit(uid, previousAdmno) {
             </label>`).join('')}
         </div>
       </details>`).join('');
+
+    dayNames.forEach(day => {
+      const wanted = keep[day] || [];
+      if (wanted.length === 0) return;
+      wrap.querySelectorAll(`.recurring-day-subj-cb[data-day="${day}"]`).forEach(cb => {
+        if (wanted.includes(cb.value)) cb.checked = true;
+      });
+      _updateDaySubjCount(day);
+    });
   }
 
   function _selectAllDaySubjects(day) {
@@ -2187,10 +2208,14 @@ async function _saveStudentEdit(uid, previousAdmno) {
 
     const datesEl = document.getElementById('tasksDates');
     if (!datesEl) return;
-    const data = Array.from(datesEl.querySelectorAll('.task-date-row'))
-      .map(r => r.dataset.date);
+    // Re-draw each date row for the new target's subject list, keeping every
+    // subject the teacher had already ticked that still exists for that target.
+    const data = Array.from(datesEl.querySelectorAll('.task-date-row')).map(r => ({
+      date: r.dataset.date,
+      checked: Array.from(r.querySelectorAll('.date-subj-cb:checked')).map(cb => cb.value),
+    }));
     datesEl.innerHTML = '';
-    data.forEach(date => _appendDateItem(date, []));
+    data.forEach(row => _appendDateItem(row.date, row.checked));
   }
 
   function _getSubjectsForCurrentScope() {
@@ -2431,6 +2456,32 @@ async function _saveStudentEdit(uid, previousAdmno) {
       }
     }
 
+    // A recurring task whose date window contains none of the chosen weekdays
+    // would save fine and then never show up for anyone.
+    if (payload.recurrence !== 'once' && window.Tasks && Tasks._resolveTaskDates) {
+      if (Tasks._resolveTaskDates(payload).length === 0) {
+        UI.toast('None of the selected days fall between the start and end dates. Adjust the dates or days.', 'warning', 6000);
+        return;
+      }
+    }
+
+    // Saving writes to a fixed document per target, so it silently replaced
+    // whatever task was already there. Ask first.
+    try {
+      const existingSnap = await Db().collection('coachingTasks').doc(docId).get();
+      if (existingSnap.exists) {
+        const ex = existingSnap.data() || {};
+        const ok = await UI.confirmAction(
+          'A ' + (_taskScope === 'once' ? 'one-time' : 'recurring') + ' task' +
+          (ex.title ? ' ("' + ex.title + '")' : '') +
+          ' already exists for this target. Saving will replace it. Continue?'
+        );
+        if (!ok) return;
+      }
+    } catch (checkErr) {
+      console.warn('[teacher] saveTasksConfig existing-task check failed:', checkErr);
+    }
+
     const btn = document.getElementById('saveTasksBtn');
     UI.setLoading(btn, true);
     try {
@@ -2490,9 +2541,13 @@ async function _saveStudentEdit(uid, previousAdmno) {
     snap.forEach(doc => { const c = doc.data().class; if (c) classes.add(c); });
     const sel = document.getElementById('taskTargetClass');
     if (sel) {
+      const previous = sel.value;
       let html = '<option value="">Select a class...</option>';
       [...classes].sort().forEach(c => { html += `<option value="${_esc(c)}">${_esc(c)}</option>`; });
       sel.innerHTML = html;
+      // The list is rebuilt whenever ANY student document changes; do not
+      // throw away what the teacher already picked.
+      if (previous && classes.has(previous)) sel.value = previous;
     }
   });
   _reg('taskClassList', unsubClasses);
@@ -2514,11 +2569,13 @@ async function _saveStudentEdit(uid, previousAdmno) {
   function _populateTaskStudentSelect() {
     const sel = document.getElementById('taskTargetStudent');
     if (!sel) return;
+    const previous = sel.value;
     let html = '<option value="">Select a student...</option>';
     _msgStudentCache.forEach(s => {
       html += `<option value="${_esc(s.id)}">${_esc(s.name)} (${_esc(s.cls)})</option>`;
     });
     sel.innerHTML = html;
+    if (previous && _msgStudentCache.some(s => s.id === previous)) sel.value = previous;
   }
 
 function _renderExistingTasksList(docs) {
@@ -2533,7 +2590,15 @@ function _renderExistingTasksList(docs) {
       inner.appendChild(container);
     }
 
-    const tasks = docs.filter(d => d.id !== 'current');
+    // Skip the legacy 'current' doc and empty placeholder docs (older versions
+    // created {studentName} only documents when a student's profile was edited).
+    const tasks = docs.filter(d => {
+      if (d.id === 'current') return false;
+      const x = d.data() || {};
+      const hasContent = x.active !== undefined || x.title || x.recurrence ||
+        (Array.isArray(x.dates) && x.dates.length > 0) || x.startDate;
+      return !!hasContent;
+    });
     if (tasks.length === 0) { container.innerHTML = ''; _renderStudentProgress([]); return; }
 
     function scopeLabel(docId) {

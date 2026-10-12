@@ -1,12 +1,31 @@
 /* ============================================================
-   js/tasks.js  — v4.3
+   js/tasks.js  — v4.4
    ============================================================
+   v4.4 fixes
+   • All active task docs that apply to a student are now MERGED
+     (previously only the single highest-priority active doc was
+     used, so e.g. an active class task hid an active global task
+     scheduled for today).  For each date the most specific doc
+     (student > class > everyone, one-off before recurring) decides
+     the subject restriction and time limit.
+   • Open-ended weekly/range tasks no longer silently stop 365 days
+     after their start date.
+   • loadCoachingTasks() waits for the FIRST snapshot of every task
+     document (a repeated snapshot used to release it early).
+   • A task's time limit only applies on a day that is a task day.
+   • Student profile snapshots re-subscribe task listeners when the
+     student's class changes and no longer pin stale completions.
  */
 
 (function () {
   'use strict';
 
   const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+
+  // How far ahead an open-ended recurring task is expanded.
+  const OPEN_ENDED_DAYS_AHEAD = 120;
+  // Hard stop for the expansion loop (about 11 years of days).
+  const MAX_EXPANSION_DAYS    = 4000;
 
   /* ─────────────────────────────────────────────────────── */
   /* Phosphor icon helper                                    */
@@ -112,8 +131,11 @@
     } else if (endDate) {
       cap = endDate;
     } else {
-      const limitDate = _addDays(_parseLocalDate(startDate), 365);
-      cap = _localDateStr(limitDate);
+      // Open-ended: run from the start date until a little way past today
+      // (or past the start date if the task has not begun yet).
+      const todayStr  = _localDateStr();
+      const anchor    = startDate > todayStr ? startDate : todayStr;
+      cap = _localDateStr(_addDays(_parseLocalDate(anchor), OPEN_ENDED_DAYS_AHEAD));
     }
 
     if (floor > cap) return [];
@@ -128,7 +150,7 @@
     const capDate  = _parseLocalDate(cap);
 
     let guard = 0;
-    while (current <= capDate && guard++ < 1095) {
+    while (current <= capDate && guard++ < MAX_EXPANSION_DAYS) {
       const dow = current.getDay();
       if (allDays || activeDayIndices.has(dow)) {
         results.push(_localDateStr(current));
@@ -144,6 +166,11 @@
     const sunday    = _addDays(monday, 6);
     const weekStart = _localDateStr(monday);
     const weekEnd   = _localDateStr(sunday);
+
+    // A merged config (see _mergeTaskDocs) already carries its final date list.
+    if (doc && doc._merged && Array.isArray(doc.dates)) {
+      return doc.dates.filter(d => d >= weekStart && d <= weekEnd).sort();
+    }
 
     return _resolveTaskDates(doc, {
       fromDate:  weekStart,
@@ -196,27 +223,38 @@
     AppState.cancelListener('taskWeeklyClass');
     AppState.cancelListener('taskWeeklyStudent');
 
+    // Remember which class these listeners were built for, so a later
+    // class change on the student profile can rebuild them.
+    _listenedClass = classStr;
+
     const _docs = {
       global: null, class: null, student: null,
       weekly: null, weeklyClass: null, weeklyStudent: null,
     };
 
-    const _needed = 4 + (studentKey ? 1 : 0) + (wkStudKey ? 1 : 0);
-    let _initialCount = 0;
-    let _resolveFn    = null;
-    const promise     = new Promise(res => { _resolveFn = res; });
+    // Every document must deliver its FIRST snapshot (or error) before the
+    // returned promise resolves. Later snapshots of the same document must
+    // not count towards that total.
+    const _needed   = 4 + (studentKey ? 1 : 0) + (wkStudKey ? 1 : 0);
+    const _seen     = {};
+    let _seenCount  = 0;
+    let _resolveFn  = null;
+    const promise   = new Promise(res => { _resolveFn = res; });
 
+    function _markSeen(key) {
+      if (!_seen[key]) { _seen[key] = true; _seenCount++; }
+      if (_seenCount >= _needed && _resolveFn) { _resolveFn(); _resolveFn = null; }
+    }
     function _onSnap(key, snap) {
       _docs[key] = snap.exists ? snap.data() : null;
-      _initialCount++;
       _resolveTask(_docs);
-      if (_initialCount >= _needed && _resolveFn) { _resolveFn(); _resolveFn = null; }
+      _markSeen(key);
     }
     function _onErr(key, err) {
       console.error('[tasks] coachingTasks/' + key + ' error:', err);
       _docs[key] = null;
-      _initialCount++;
-      if (_initialCount >= _needed && _resolveFn) { _resolveFn(); _resolveFn = null; }
+      _resolveTask(_docs);
+      _markSeen(key);
     }
 
     AppState.registerListener('taskGlobal',
@@ -239,19 +277,67 @@
       AppState.registerListener('taskStudent',
         Db().collection('coachingTasks').doc(studentKey)
           .onSnapshot(s => _onSnap('student', s), e => _onErr('student', e)));
-    } else {
-      _docs.student = null;
     }
 
     if (wkStudKey) {
       AppState.registerListener('taskWeeklyStudent',
         Db().collection('coachingTasks').doc(wkStudKey)
           .onSnapshot(s => _onSnap('weeklyStudent', s), e => _onErr('weeklyStudent', e)));
-    } else {
-      _docs.weeklyStudent = null;
     }
 
     return promise;
+  }
+
+  let _listenedClass = null;
+
+  /* ─────────────────────────────────────────────────────── */
+  /* Merge every active task doc that applies to the student */
+  /* ─────────────────────────────────────────────────────── */
+  // `list` is ordered most-specific first. For every date the first doc in
+  // the list that contains that date is the "owner" of that date: its subject
+  // restriction (an empty list means "no restriction") and its time limit win.
+  function _mergeTaskDocs(list) {
+    const today  = _localDateStr();
+    const owner  = {};
+    const dateSet = {};
+
+    list.forEach(doc => {
+      (doc.dates || []).forEach(d => {
+        dateSet[d] = true;
+        if (!owner[d]) owner[d] = doc;
+      });
+    });
+
+    const dates     = Object.keys(dateSet).sort();
+    const pastDates = dates.filter(d => d <= today);
+
+    const dateSubjects = {};
+    dates.forEach(d => {
+      const subj = (owner[d].dateSubjects || {})[d];
+      if (Array.isArray(subj) && subj.length > 0) dateSubjects[d] = subj;
+    });
+
+    // Doc whose title/message the student sees: today's owner, else the next
+    // upcoming session's owner, else the most recent past session's owner,
+    // else simply the most specific active doc.
+    const nextDate = dates.find(d => d > today);
+    const lastDate = pastDates.length ? pastDates[pastDates.length - 1] : null;
+    const primary  = owner[today] || (nextDate && owner[nextDate]) || (lastDate && owner[lastDate]) || list[0];
+
+    const todayOwner = owner[today] || null;
+    const durationMs = todayOwner && typeof todayOwner.durationMs === 'number' && todayOwner.durationMs > 0
+      ? todayOwner.durationMs : null;
+
+    return Object.assign({}, primary, {
+      active:       true,
+      dates,
+      pastDates,
+      dateSubjects,
+      durationMs,
+      _merged:      true,
+      _isRecurring: list.some(d => d._isRecurring),
+      _isWeekly:    list.some(d => d._isWeekly),
+    });
   }
 
   function _resolveTask(docs) {
@@ -260,21 +346,18 @@
       return _expandTaskDoc(doc);
     }
 
-    const studentExp      = expand(docs.student);
-    const weeklyStudExp   = expand(docs.weeklyStudent);
-    const classExp        = expand(docs.class);
-    const weeklyClassExp  = expand(docs.weeklyClass);
-    const weeklyExp       = expand(docs.weekly);
-    const globalExp       = expand(docs.global);
+    // Most specific first. A one-off doc is listed before the recurring doc
+    // of the same scope because it is the more deliberate instruction.
+    const ordered = [
+      expand(docs.student),
+      expand(docs.weeklyStudent),
+      expand(docs.class),
+      expand(docs.weeklyClass),
+      expand(docs.global),
+      expand(docs.weekly),
+    ].filter(d => d && d.active === true);
 
-    const resolved =
-      (studentExp     && studentExp.active     ? studentExp     : null) ||
-      (weeklyStudExp  && weeklyStudExp.active   ? weeklyStudExp  : null) ||
-      (classExp       && classExp.active        ? classExp       : null) ||
-      (weeklyClassExp && weeklyClassExp.active  ? weeklyClassExp : null) ||
-      (weeklyExp      && weeklyExp.active       ? weeklyExp      : null) ||
-      (globalExp      && globalExp.active       ? globalExp      : null) ||
-      { active: false };
+    const resolved = ordered.length > 0 ? _mergeTaskDocs(ordered) : { active: false };
 
     AppState.currentTaskConfig = resolved;
 
@@ -331,15 +414,18 @@
           if (snap.exists) {
             const incoming = snap.data();
 
+            // The server copy is the truth. Only while this client still has
+            // unconfirmed local writes do we protect a completion we just made
+            // from being overwritten by an older snapshot.
+            const meta       = snap.metadata || {};
+            const unconfirmed = !!(meta.hasPendingWrites || meta.fromCache);
             const existingCompleted =
               (AppState.studentData && AppState.studentData.coachingCompleted) || {};
             const incomingCompleted = incoming.coachingCompleted || {};
 
-            const mergedCompleted = Object.assign(
-              {},
-              incomingCompleted,
-              existingCompleted
-            );
+            const mergedCompleted = unconfirmed
+              ? Object.assign({}, incomingCompleted, existingCompleted)
+              : Object.assign({}, incomingCompleted);
 
             AppState.studentData = Object.assign(
               {},
@@ -347,6 +433,12 @@
               incoming,
               { coachingCompleted: mergedCompleted }
             );
+
+            // Moved to another class? The class-level task documents are
+            // different ones, so the task listeners must be rebuilt.
+            if (_listenedClass !== null && (incoming.class || '') !== _listenedClass) {
+              loadCoachingTasks().catch(err => console.warn('[tasks] reload after class change:', err));
+            }
 
             if (document.getElementById('tasksContainer')) {
               renderTasksHTML();
@@ -544,6 +636,7 @@
     AppState.cancelListener('taskWeeklyClass');
     AppState.cancelListener('taskWeeklyStudent');
     AppState.cancelListener('studentProfile');
+    _listenedClass = null;
   }
 
   function _esc(str) {
