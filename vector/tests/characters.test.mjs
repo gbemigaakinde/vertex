@@ -5,6 +5,13 @@ import * as THREE from '../lib/three.module.js';
 import { GLTFLoader } from '../lib/GLTFLoader.js';
 import { AssetLoader, Character, getModelMeta, mapClips, stripRootMotion } from '../characters.js';
 
+
+/* Node has no image decoder. Textures are not needed to test skeletons and clips, so fake the two browser
+   pieces GLTFLoader asks for (WebP support check and image decoding). */
+globalThis.self = globalThis;
+globalThis.Image = class { constructor() { this.height = 1; this.width = 1; } set src(_) { queueMicrotask(() => this.onload && this.onload()); } };
+globalThis.createImageBitmap = async () => ({ width: 1, height: 1, close() {} });
+
 let n = 0; const t = async (name, fn) => { await fn(); n++; console.log('ok  ' + name); };
 const root = new URL('../../vector-3dassets/', import.meta.url);
 
@@ -64,7 +71,7 @@ await t('static Y-up detailed mesh: stands on floor, 1.85 m, sways, falls', () =
   c.update(1, { speed: 0, alive: false }); assert.ok(c.dead > 0.5); c.dispose();
 });
 await t('your existing characters are untouched: legacy mode, limbs swing', async () => {
-  const L = diskLoader(); for (const f of ['player_operative', 'enemy_rifleman', 'enemy_heavy']) {
+  const L = diskLoader(); for (const f of ['player_operative', 'enemy_rifleman', 'enemy_sniper']) {
     const m = await L.load('characters/' + f); assert.ok(m, f); assert.equal(getModelMeta(m).mode, 'legacy');
     const c = new Character(m); c.setLook(null, { outfit: '#335577' }); for (let i = 0; i < 10; i++) c.update(1 / 30, { speed: 4, alive: true });
     assert.ok(c.pv.legL && Math.abs(c.pv.legL.rotation.x) > 0.01, f); c.dispose();
