@@ -2,183 +2,415 @@
   "name": "VECTOR: BLACKLINE — Complete 3D Asset Pack",
   "format": "GLB 2.0",
   "coordinate_system": "Z-up, forward=-Y",
-  "generated": "procedural game-ready base meshes",
+  "schema": 2,
+  "version": "1fb75ecb3c",
+  "generated": "2026-10-12",
   "asset_count": 45,
   "assets": [
     {
-      "file": "environment/barrier.glb",
-      "bytes": 1952
+      "file": "characters/ally_civilian.glb",
+      "bytes": 12540,
+      "hash": "cbc338ac6b",
+      "kind": "legacy",
+      "up": "Z",
+      "verts": 254,
+      "tris": 476
     },
     {
-      "file": "environment/crate.glb",
-      "bytes": 2288
-    },
-    {
-      "file": "environment/warehouse.glb",
-      "bytes": 1840
-    },
-    {
-      "file": "environment/ruined_building.glb",
-      "bytes": 2676
-    },
-    {
-      "file": "environment/barrels.glb",
-      "bytes": 3536
-    },
-    {
-      "file": "environment/light_post.glb",
-      "bytes": 3084
-    },
-    {
-      "file": "environment/sandbags.glb",
-      "bytes": 3748
-    },
-    {
-      "file": "environment/container.glb",
-      "bytes": 3860
-    },
-    {
-      "file": "environment/supply_drop.glb",
-      "bytes": 1924
-    },
-    {
-      "file": "environment/tent.glb",
-      "bytes": 1900
-    },
-    {
-      "file": "environment/watchtower.glb",
-      "bytes": 2340
-    },
-    {
-      "file": "environment/wall_module.glb"
-    },
-    {
-      "file": "environment/door.glb"
-    },
-    {
-      "file": "environment/tree.glb"
-    },
-    {
-      "file": "environment/stairs_module.glb"
-    },
-    {
-      "file": "environment/fence_section.glb"
-    },
-    {
-      "file": "environment/terminal_console.glb"
-    },
-    {
-      "file": "environment/server_rack.glb"
-    },
-    {
-      "file": "environment/intel_case.glb"
-    },
-    {
-      "file": "props/smoke_grenade.glb",
-      "bytes": 3160
-    },
-    {
-      "file": "props/medkit.glb",
-      "bytes": 1940
-    },
-    {
-      "file": "props/flashbang.glb",
-      "bytes": 3144
-    },
-    {
-      "file": "props/frag_grenade.glb",
-      "bytes": 3128
-    },
-    {
-      "file": "props/armor_vest.glb"
-    },
-    {
-      "file": "props/ammo_box.glb"
-    },
-    {
-      "file": "weapons/rocket_launcher.glb",
-      "bytes": 4472
-    },
-    {
-      "file": "weapons/assault_rifle.glb",
-      "bytes": 6436
-    },
-    {
-      "file": "weapons/pistol.glb",
-      "bytes": 4160
-    },
-    {
-      "file": "weapons/sniper_rifle.glb",
-      "bytes": 7788
-    },
-    {
-      "file": "weapons/shotgun.glb",
-      "bytes": 5036
-    },
-    {
-      "file": "weapons/smg.glb",
-      "bytes": 5936
-    },
-    {
-      "file": "vehicles/drone.glb",
-      "bytes": 13536
-    },
-    {
-      "file": "vehicles/helicopter.glb",
-      "bytes": 11220
-    },
-    {
-      "file": "vehicles/motorcycle.glb",
-      "bytes": 5964
-    },
-    {
-      "file": "vehicles/jeep_4x4.glb",
-      "bytes": 7352
-    },
-    {
-      "file": "vehicles/boat.glb",
-      "bytes": 2376
-    },
-    {
-      "file": "vehicles/tank.glb",
-      "bytes": 7080
-    },
-    {
-      "file": "characters/enemy_rifleman.glb",
-      "bytes": 19608
-    },
-    {
-      "file": "characters/player_operative.glb",
-      "bytes": 18908
+      "file": "characters/enemy_commander.glb",
+      "bytes": 19736,
+      "hash": "bc145212db",
+      "kind": "legacy",
+      "up": "Z",
+      "verts": 366,
+      "tris": 664
     },
     {
       "file": "characters/enemy_heavy.glb",
-      "bytes": 20300
+      "bytes": 20300,
+      "hash": "aea4878dc6",
+      "kind": "legacy",
+      "up": "Z",
+      "verts": 400,
+      "tris": 724
+    },
+    {
+      "file": "characters/enemy_rifleman.glb",
+      "bytes": 19608,
+      "hash": "5cc5751ea9",
+      "kind": "legacy",
+      "up": "Z",
+      "verts": 392,
+      "tris": 712
+    },
+    {
+      "file": "characters/enemy_scout.glb",
+      "bytes": 20372,
+      "hash": "6b5699bcd9",
+      "kind": "legacy",
+      "up": "Z",
+      "verts": 504,
+      "tris": 948
     },
     {
       "file": "characters/enemy_sniper.glb",
-      "bytes": 20120
+      "bytes": 20120,
+      "hash": "760f784ef5",
+      "kind": "legacy",
+      "up": "Z",
+      "verts": 400,
+      "tris": 724
     },
     {
       "file": "characters/enemy_specialist.glb",
-      "bytes": 20632
+      "bytes": 20632,
+      "hash": "8721cb2efa",
+      "kind": "legacy",
+      "up": "Z",
+      "verts": 426,
+      "tris": 776
     },
     {
-      "file": "characters/enemy_scout.glb"
+      "file": "characters/player_operative.glb",
+      "bytes": 18908,
+      "hash": "c916a757f2",
+      "kind": "legacy",
+      "up": "Z",
+      "verts": 384,
+      "tris": 700
     },
     {
-      "file": "characters/enemy_commander.glb"
+      "file": "environment/barrels.glb",
+      "bytes": 3536,
+      "hash": "d5c73e7f03",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 84,
+      "tris": 160
     },
     {
-      "file": "characters/ally_civilian.glb"
+      "file": "environment/barrier.glb",
+      "bytes": 1952,
+      "hash": "ad3f479261",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 16,
+      "tris": 24
+    },
+    {
+      "file": "environment/container.glb",
+      "bytes": 3860,
+      "hash": "a3e63957eb",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 48,
+      "tris": 72
+    },
+    {
+      "file": "environment/crate.glb",
+      "bytes": 2288,
+      "hash": "8b3b794d0c",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 24,
+      "tris": 36
+    },
+    {
+      "file": "environment/door.glb",
+      "bytes": 3788,
+      "hash": "f30de19c3b",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 40,
+      "tris": 60
+    },
+    {
+      "file": "environment/fence_section.glb",
+      "bytes": 7284,
+      "hash": "dfc3b9fe5b",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 108,
+      "tris": 176
+    },
+    {
+      "file": "environment/intel_case.glb",
+      "bytes": 3332,
+      "hash": "994385e863",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 32,
+      "tris": 48
+    },
+    {
+      "file": "environment/light_post.glb",
+      "bytes": 3084,
+      "hash": "764c3fe5e1",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 42,
+      "tris": 76
+    },
+    {
+      "file": "environment/ruined_building.glb",
+      "bytes": 2676,
+      "hash": "ea01cab4ff",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 32,
+      "tris": 48
+    },
+    {
+      "file": "environment/sandbags.glb",
+      "bytes": 3748,
+      "hash": "b78261cfce",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 48,
+      "tris": 72
+    },
+    {
+      "file": "environment/server_rack.glb",
+      "bytes": 12808,
+      "hash": "4a0ca1391b",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 236,
+      "tris": 404
+    },
+    {
+      "file": "environment/stairs_module.glb",
+      "bytes": 5496,
+      "hash": "f3d29805e8",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 72,
+      "tris": 108
+    },
+    {
+      "file": "environment/supply_drop.glb",
+      "bytes": 1924,
+      "hash": "d8c976bbbf",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 16,
+      "tris": 24
+    },
+    {
+      "file": "environment/tent.glb",
+      "bytes": 1900,
+      "hash": "5856b139ae",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 16,
+      "tris": 24
+    },
+    {
+      "file": "environment/terminal_console.glb",
+      "bytes": 5128,
+      "hash": "5821ed5b6a",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 56,
+      "tris": 84
+    },
+    {
+      "file": "environment/tree.glb",
+      "bytes": 16604,
+      "hash": "54e233d4e0",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 700,
+      "tris": 1376
+    },
+    {
+      "file": "environment/wall_module.glb",
+      "bytes": 3528,
+      "hash": "4c70fa9c84",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 40,
+      "tris": 60
+    },
+    {
+      "file": "environment/warehouse.glb",
+      "bytes": 1840,
+      "hash": "2ab15569c4",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 16,
+      "tris": 24
+    },
+    {
+      "file": "environment/watchtower.glb",
+      "bytes": 2340,
+      "hash": "f9660da535",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 24,
+      "tris": 36
+    },
+    {
+      "file": "props/ammo_box.glb",
+      "bytes": 3336,
+      "hash": "1557cf6bcf",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 32,
+      "tris": 48
+    },
+    {
+      "file": "props/armor_vest.glb",
+      "bytes": 5168,
+      "hash": "766b696bbb",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 56,
+      "tris": 84
+    },
+    {
+      "file": "props/flashbang.glb",
+      "bytes": 3144,
+      "hash": "a75e12b407",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 42,
+      "tris": 76
+    },
+    {
+      "file": "props/frag_grenade.glb",
+      "bytes": 3128,
+      "hash": "d24881142a",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 42,
+      "tris": 76
+    },
+    {
+      "file": "props/medkit.glb",
+      "bytes": 1940,
+      "hash": "3b42198593",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 16,
+      "tris": 24
+    },
+    {
+      "file": "props/smoke_grenade.glb",
+      "bytes": 3160,
+      "hash": "42a31f275e",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 42,
+      "tris": 76
+    },
+    {
+      "file": "vehicles/boat.glb",
+      "bytes": 2376,
+      "hash": "7ae3616330",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 24,
+      "tris": 36
+    },
+    {
+      "file": "vehicles/drone.glb",
+      "bytes": 13536,
+      "hash": "27199a18a8",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 330,
+      "tris": 624
+    },
+    {
+      "file": "vehicles/helicopter.glb",
+      "bytes": 11220,
+      "hash": "ab0e21d46e",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 228,
+      "tris": 432
+    },
+    {
+      "file": "vehicles/jeep_4x4.glb",
+      "bytes": 7352,
+      "hash": "282e244695",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 192,
+      "tris": 356
+    },
+    {
+      "file": "vehicles/motorcycle.glb",
+      "bytes": 5964,
+      "hash": "5f81deafbc",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 124,
+      "tris": 228
+    },
+    {
+      "file": "vehicles/tank.glb",
+      "bytes": 7080,
+      "hash": "fa68ad855e",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 150,
+      "tris": 280
+    },
+    {
+      "file": "weapons/assault_rifle.glb",
+      "bytes": 6436,
+      "hash": "18d1f5742c",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 90,
+      "tris": 148
+    },
+    {
+      "file": "weapons/pistol.glb",
+      "bytes": 4160,
+      "hash": "955b7567f3",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 58,
+      "tris": 100
+    },
+    {
+      "file": "weapons/rocket_launcher.glb",
+      "bytes": 4472,
+      "hash": "93df3b4797",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 66,
+      "tris": 116
+    },
+    {
+      "file": "weapons/shotgun.glb",
+      "bytes": 5036,
+      "hash": "5d38415ea4",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 66,
+      "tris": 112
+    },
+    {
+      "file": "weapons/smg.glb",
+      "bytes": 5936,
+      "hash": "2ce0c65e40",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 82,
+      "tris": 136
+    },
+    {
+      "file": "weapons/sniper_rifle.glb",
+      "bytes": 7788,
+      "hash": "e3bad4d2b4",
+      "kind": "prop",
+      "up": "Z",
+      "verts": 132,
+      "tris": 224
     }
-  ],
-  "notes": [
-    "These are original procedural base meshes, not copied game assets.",
-    "Materials are embedded in GLB files.",
-    "All assets use Z-up coordinates and face -Y.",
-    "Characters are static base meshes; skeletal rig/animation is not embedded.",
-    "The 13 newly added assets replace the corresponding procedural stand-ins used by the game.",
-    "Replace/refine meshes later if higher-fidelity sculpted assets are desired."
   ]
 }
