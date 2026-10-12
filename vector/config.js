@@ -14,6 +14,27 @@ export const API_BASE = '';
 /* Folder that holds your .glb files (repo root). */
 export const ASSET_BASE = '../vector-3dassets/';
 
+/* How models are downloaded and remembered (see vector/assetstore.js).
+   - cacheName: players keep downloaded models under this name. Change the
+     number (v1 -> v2) to make EVERY player download everything again.
+   - Files are normally refreshed on their own: each model is stored under its
+     content hash from vector-3dassets/manifest.json, so replacing a .glb and
+     re-running tools/build-manifest.mjs is enough.                           */
+export const MODELS = {
+  cacheName: 'vb-models-v1',
+  concurrency: 3,              // downloads at the same time
+  retries: 2,                  // extra tries after a network error
+  timeoutMs: 45000,            // give up on one file after this long in total
+  stallMs: 20000,              // ...or if no data arrives for this long
+  maxBytes: 40 * 1024 * 1024,  // refuse any single model bigger than this
+  maxMetalness: 0.45,          // the game has no reflection map; fully metal models would look black
+  prefetchIdle: true,          // quietly pre-download the next mission's models while the player is in menus
+  highFidelityHeight: 1.85,    // detailed characters are scaled to this height in metres
+};
+
+/* Shared animation clips for rigged characters (optional). One file, loaded once. */
+export const ANIMATION_LIBRARY = 'animations/humanoid';
+
 export const STORAGE_NS = 'vectorBlackline';
 
 export const PLAYER = {

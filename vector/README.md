@@ -14,6 +14,7 @@ Open it at `/vector/index.html`. It reuses the Vertex Firebase sign-in because i
 | `vector/engine.js`, `renderer.js`, `characters.js`, `ui.js`, `input.js`, `audio.js`, `storage.js` | Browser only: loop, 3D, models, menus and HUD, controls, sound, saves |
 | `vector/platform.js` | What device this is and how it is being used: input mode (touch / keyboard+mouse / controller, switches live), visible viewport size, fullscreen and landscape lock |
 | `vector/prompts.js` | The one table that says how each action is shown per device (`E` / `A` / `USE`), plus key bindings |
+| `vector/assetstore.js` | Downloads models on demand, validates them, caches them in the browser |
 | `vector/icons.js` | The single icon set used by HUD and touch controls |
 | `vector/entry.js` | Entry point the bundle is built from |
 | `vector/game.bundle.js` | **Built file. This is what the page actually loads.** Rebuild it after any change (see Build) |
@@ -64,15 +65,33 @@ To try it locally: `npx wrangler dev --var VECTOR_DEV_GUEST:true`, then open the
 
 ## Your 3D models
 
-Models load from `vector-3dassets/`. Missing ones fall back to simple stand-ins. Add a file at the path below and it is used automatically:
+Models load from `vector-3dassets/`. Missing or broken ones fall back to simple stand-ins, so the game never stops.
 
-`characters/enemy_scout`, `characters/enemy_commander`, `characters/ally_civilian`, `environment/tree`, `environment/server_rack`, `environment/door`, `environment/fence_section`, `environment/wall_module`, `environment/stairs_module`, `environment/intel_case`, `environment/terminal_console`, `props/ammo_box`, `props/armor_vest` (all `.glb`).
+**How they are downloaded.** One at a time, only when the game needs them (the menu needs your operator and rifle; a mission needs its own enemies and props). Nothing is bulk-downloaded. Each file is then kept in the browser's Cache Storage under its fingerprint from `vector-3dassets/manifest.json`, so the next visit makes **no** model requests. Replace a model, run the manifest tool (below), and players automatically get the new file; the old copy is deleted. Phones on Data Saver / 2G skip background pre-downloading, and low-memory phones use a `name.lo.glb` copy if you made one. Code: `vector/assetstore.js`.
 
-Your current models are authored Z-up and face -Y. The loader handles that. Part names (`legL`, `armR`, `head`, `vest` and so on) are used for walking, aiming and colour customisation, so keep them if you edit the characters.
+**Three kinds of character are understood** (worked out automatically):
+
+| Kind | What it is | Animation |
+|---|---|---|
+| legacy | Your original part-built characters (parts named `legL`, `legR`, `armL`, `armR`, `head` ...) | Parts pivot: walk, aim, fall. Colour customisation works |
+| rigged | Any model with a skeleton | Real clips: idle, walk, run, sprint, crouch, crouch_walk, death |
+| static | A detailed single mesh with no skeleton | Whole-body only: bob, sway, lean, crouch, fall. **No arm/leg movement** |
+
+A detailed model keeps its own textures; cosmetic recolouring (outfit, hair, face) only exists for legacy characters. Y-up files (what Blender, Mixamo and most generators export) and your Z-up originals both work.
+
+**Adding a high-fidelity character**
+
+1. Rig it (Mixamo is free: upload the mesh, pick Idle / Walking / Running / Crouch Idle / Crouched Walking / Dying, download as glTF Binary `.glb`). Keep clip names like those words. Either leave the clips inside the character file, or put them once in `vector-3dassets/animations/humanoid.glb` and every rigged character shares them.
+2. Shrink it: `node tools/optimize-model.mjs my-model.glb characters/enemy_rifleman.glb --lo` (needs a one-time `npm install --no-save @gltf-transform/core @gltf-transform/extensions @gltf-transform/functions meshoptimizer sharp`).
+3. Register it: `node tools/build-manifest.mjs` (prints a report with warnings, rewrites `manifest.json`).
+4. If it faces the wrong way, add `"override": { "up": "Y", "front": "-Z" }` to its entry in `manifest.json` (the override survives re-running the tool).
+5. Deploy. Targets: characters under about 40,000 triangles and 6 MB, weapons/props under 15,000.
+
+The game refuses files that need Draco or KTX2 compression (it cannot decode them) and uses the stand-in instead; export with Meshopt or no compression.
 
 ## Tests
 
-`node vector/tests/server.test.mjs`
+`node vector/tests/server.test.mjs`, `node vector/tests/assets.test.mjs`, `node vector/tests/characters.test.mjs`
 
 ## Known limitations
 

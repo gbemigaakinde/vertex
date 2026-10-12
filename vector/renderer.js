@@ -5,6 +5,7 @@
 import * as THREE from './lib/three.module.js';
 import { mergeGeometries } from './lib/BufferGeometryUtils.js';
 import { AssetLoader, Character, fitModel, buildWeaponMesh } from './characters.js';
+import { MODELS } from './config.js';
 import { WEAPONS, EQUIPMENT } from './weapons.js';
 import { ARCHETYPES } from './enemies.js';
 import { dirFromAngles } from './combat.js';
@@ -60,6 +61,8 @@ export class Renderer {
     this.cam = new THREE.PerspectiveCamera(70, 16 / 9, 0.1, 400);
     this.tex = makeTextures();
     this.assets = new AssetLoader();
+    this.assets.setMaxAnisotropy(this.r.capabilities.getMaxAnisotropy());
+    this.assets.warmUp();        // fetch the model list now so the first model does not wait for it
     this.chars = new Map();      // id -> { c: Character, tag }
     this.map = null; this.worldGroup = null; this.dyn = new THREE.Group(); this.scene.add(this.dyn);
     this.doorMeshes = new Map(); this.barrelMeshes = new Map(); this.pickupMeshes = new Map(); this.intMeshes = new Map(); this.tgtMeshes = new Map(); this.coverMeshes = new Map(); this.projMeshes = new Map(); this.smokeMeshes = []; this.beacons = [];
@@ -233,6 +236,7 @@ export class Renderer {
 
   async buildWorld(map, onProgress) {
     this.clearWorld();
+    this.assets.beginSession();   // frees models that neither this mission nor the last one needed (they stay in the browser cache)
     this.map = map; const env = map.env;
     this.scene.background = new THREE.Color(env.sky); this.baseFog = env.fog; this.scene.fog = new THREE.FogExp2(env.sky, env.fog * this.q.fogMul);
     this.hemi.intensity = env.ambient * (env.indoor ? 1.2 : 1.7); this.hemi.color.set(env.indoor ? '#6f8396' : '#c6d8e8'); this.sun.intensity = env.sun * 2.4; this.sun.visible = env.sun > 0.05;
@@ -360,9 +364,20 @@ export class Renderer {
     if (kind === 'player') src = await this.assets.load('characters/player_operative');
     else { const a = ARCHETYPES[kind]; src = await this.assets.loadAny([a.model, a.fallback, 'characters/enemy_rifleman']); }
     if (this.dead || !this.chars.has(id)) return null;
-    const c = new Character(src); c.setLook(look, tint); c.group.visible = false;
+    const c = await this.makeCharacter(src, look, tint);
+    if (this.dead || !this.chars.has(id)) { c.dispose(); return null; }
+    c.group.visible = false;
     entry.c = c; entry.pending = false; this.dyn.add(c.group);
     return entry;
+  }
+  /* Builds a character; a broken model never stops the game (a stand-in is used), and a
+     skeleton model without its own clips borrows them from the shared animation file. */
+  async makeCharacter(src, look, tint) {
+    let c;
+    try { c = new Character(src); } catch (e) { try { console.warn('[vector assets] model could not be used, using a stand-in:', e); } catch { /* ignore */ } c = new Character(null); }
+    c.setLook(look, tint);
+    if (c.needsClips()) { const clips = await this.assets.loadAnimations(); if (clips.length) c.setClips(clips); }
+    return c;
   }
   removeChar(id) { const e = this.chars.get(id); if (!e) return; if (e.c) { this.dyn.remove(e.c.group); e.c.dispose(); } this.chars.delete(id); }
 
@@ -535,10 +550,13 @@ export class Renderer {
     this.menu = { scene, cam, char: null, t: 0, big: false, floor, ring };
     const src = await this.assets.load('characters/player_operative');
     if (this.dead || !this.menu) return;
-    const c = new Character(src); c.setLook(look); c.update(0, { speed: 0, pitch: 0, alive: true });
+    const c = await this.makeCharacter(src, look, null); c.update(0, { speed: 0, pitch: 0, alive: true });
+    if (this.dead || !this.menu) { c.dispose(); return; }
     scene.add(c.group); this.menu.char = c;
     const w = await this.ensureWeapon('ar_vanguard');
     if (this.menu && this.menu.char === c && w) c.setWeapon('ar_vanguard', buildWeaponMesh(w.src, w.len, null), w.len);
+    // while the player reads the menu, quietly download what almost every mission uses (cache only; skipped on Data Saver / slow links)
+    if (MODELS.prefetchIdle) { const go = () => this.assets.prefetch(['characters/enemy_rifleman', 'environment/supply_drop', 'props/medkit']); if (typeof requestIdleCallback === 'function') requestIdleCallback(go, { timeout: 4000 }); else setTimeout(go, 1500); }
   }
   setMenuLook(look) { if (this.menu && this.menu.char) this.menu.char.setLook(look); }
   renderMenu(dt, big) {
