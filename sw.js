@@ -101,7 +101,10 @@ self.addEventListener('activate', event => {
       .then(keys =>
         Promise.all(
           keys
-            .filter(key => !validCaches.includes(key))
+            // 'vb-models-*' is VECTOR: BLACKLINE's downloaded 3D models (kept by the game
+            // itself, see vector/assetstore.js). Never delete them here, or every Vertex
+            // update would make players download all the models again.
+            .filter(key => !validCaches.includes(key) && !key.startsWith('vb-models-'))
             .map(key => {
               console.log(`[SW] Deleting outdated cache: ${key}`);
               return caches.delete(key);
