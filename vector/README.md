@@ -98,3 +98,18 @@ The game refuses files that need Draco or KTX2 compression (it cannot decode the
 - Player level and unlocks are claimed by the client. There is no server-side profile store yet.
 - Server anti-cheat limits how fast a client's clock can run. It does not check positions against walls.
 - Not tested on real phones, real GPUs, or iOS Safari orientation behaviour.
+
+## Rigging a new character (no Mixamo, no laptop app)
+
+`tools/rig-soldier.mjs` turns a detailed, unrigged standing humanoid (`.obj` + texture, or a `.glb` with no skeleton) into a game-ready rigged character: about 20,000 triangles, a 1024 px WebP texture, a Mixamo-named skeleton and the clips idle, walk, run, sprint, crouch, crouch_walk and death. A 7 to 12 MB source becomes roughly 0.6 MB.
+
+One-time setup (only to run the tool):
+
+    npm install --no-save @gltf-transform/core @gltf-transform/extensions @gltf-transform/functions meshoptimizer sharp xatlasjs
+
+Run it, then regenerate the manifest:
+
+    node tools/rig-soldier.mjs soldier_a.obj vector-3dassets/characters/enemy_heavy.glb --lo
+    node tools/build-manifest.mjs
+
+Options: `--tris N` (default 20000), `--tex N` (default 1024), `--lo` (also writes `.lo.glb`, 5000 triangles, 512 px), `--rot-y 180` if the model does not face +Z, `--double` for thin open surfaces. The model must stand upright in an A-pose or T-pose. Test with `node vector/tests/characters.test.mjs`.
