@@ -290,6 +290,26 @@ Collections used by the app (non-exhaustive):
 
 ---
 
+## How tasks work
+
+A task is a document in `coachingTasks`. The document id says who it applies to:
+
+| Document id | Applies to | Type |
+|---|---|---|
+| `global` / `weekly` | every student | one-off / recurring |
+| `class_<class>` / `weekly_class_<class>` | one class (e.g. `class_jss1`) | one-off / recurring |
+| `student_<uid>` / `weekly_student_<uid>` | one student | one-off / recurring |
+
+A student's app listens to the six documents that can apply to them and **merges every active one** (`js/tasks.js`, `_mergeTaskDocs`):
+
+- A date is a task day if **any** active document contains it.
+- For each date, the most specific document decides the subject restriction and the time limit (student, then class, then everyone; a one-off before a recurring document of the same scope). A document that lists no subjects for a date means "no restriction" for that date.
+- The time limit only applies on a task day. On other days the default exam time is used.
+- Open-ended recurring tasks (no end date) keep running; they are expanded about 120 days ahead of today.
+- Completing an exam on a task day writes `coachingCompleted.<YYYY-MM-DD> = true` on the student document. The teacher dashboard and the push reminders in `worker.js` read the same field.
+
+The Worker (`worker.js`) uses the same rules to decide which reminder to send, so any change to how dates are expanded must be made in both `js/tasks.js` and `worker.js`.
+
 ## Cloudflare Worker
 
 `worker.js` (configured by `wrangler.jsonc`, name `vertex-worker`) exposes:

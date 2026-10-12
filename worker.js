@@ -2006,7 +2006,12 @@ function _computeTaskDatesInRange(task, fromDateStr, toDateStr) {
   const dates = [];
   if (!task) return dates;
 
-  if (!task.recurrence || task.recurrence === 'once') {
+  // Older task documents have no `recurrence` field; the app treats those as
+  // weekly when they list weekdays, so reminders must do the same.
+  const recurrence = task.recurrence ||
+    (Array.isArray(task.weeklyDays) && task.weeklyDays.length > 0 ? 'weekly' : 'once');
+
+  if (recurrence === 'once') {
     (task.dates || []).forEach(function (d) {
       if (d >= fromDateStr && d <= toDateStr) dates.push(d);
     });
@@ -2035,9 +2040,9 @@ function _computeTaskDatesInRange(task, fromDateStr, toDateStr) {
     const dd    = String(cursor.getUTCDate()).padStart(2, '0');
     const dstr  = yyyy + '-' + mm + '-' + dd;
 
-    if (task.recurrence === 'weekly') {
+    if (recurrence === 'weekly') {
       if (weeklyDays.includes(dName)) dates.push(dstr);
-    } else if (task.recurrence === 'range') {
+    } else if (recurrence === 'range') {
       if (weeklyDays.length === 0 || weeklyDays.includes(dName)) dates.push(dstr);
     }
 
