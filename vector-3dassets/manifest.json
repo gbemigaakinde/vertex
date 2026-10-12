@@ -3,7 +3,7 @@
   "format": "GLB 2.0",
   "coordinate_system": "Z-up, forward=-Y",
   "schema": 2,
-  "version": "1fb75ecb3c",
+  "version": "fbfe53dc8e",
   "generated": "2026-10-12",
   "asset_count": 45,
   "assets": [
@@ -27,12 +27,28 @@
     },
     {
       "file": "characters/enemy_heavy.glb",
-      "bytes": 20300,
-      "hash": "aea4878dc6",
-      "kind": "legacy",
-      "up": "Z",
-      "verts": 400,
-      "tris": 724
+      "bytes": 677376,
+      "hash": "624876f1b8",
+      "kind": "rigged",
+      "up": "Y",
+      "verts": 27062,
+      "tris": 19456,
+      "joints": 20,
+      "animations": [
+        "idle",
+        "walk",
+        "run",
+        "sprint",
+        "crouch",
+        "crouch_walk",
+        "death"
+      ],
+      "textures": 1,
+      "lo": {
+        "file": "characters/enemy_heavy.lo.glb",
+        "bytes": 218204,
+        "hash": "7e031a947a"
+      }
     },
     {
       "file": "characters/enemy_rifleman.glb",
@@ -45,12 +61,28 @@
     },
     {
       "file": "characters/enemy_scout.glb",
-      "bytes": 20372,
-      "hash": "6b5699bcd9",
-      "kind": "legacy",
-      "up": "Z",
-      "verts": 504,
-      "tris": 948
+      "bytes": 629712,
+      "hash": "f090e6c505",
+      "kind": "rigged",
+      "up": "Y",
+      "verts": 25521,
+      "tris": 19466,
+      "joints": 20,
+      "animations": [
+        "idle",
+        "walk",
+        "run",
+        "sprint",
+        "crouch",
+        "crouch_walk",
+        "death"
+      ],
+      "textures": 1,
+      "lo": {
+        "file": "characters/enemy_scout.lo.glb",
+        "bytes": 199064,
+        "hash": "777bdf46bf"
+      }
     },
     {
       "file": "characters/enemy_sniper.glb",
@@ -63,12 +95,28 @@
     },
     {
       "file": "characters/enemy_specialist.glb",
-      "bytes": 20632,
-      "hash": "8721cb2efa",
-      "kind": "legacy",
-      "up": "Z",
-      "verts": 426,
-      "tris": 776
+      "bytes": 628472,
+      "hash": "e52140348d",
+      "kind": "rigged",
+      "up": "Y",
+      "verts": 24477,
+      "tris": 19556,
+      "joints": 20,
+      "animations": [
+        "idle",
+        "walk",
+        "run",
+        "sprint",
+        "crouch",
+        "crouch_walk",
+        "death"
+      ],
+      "textures": 1,
+      "lo": {
+        "file": "characters/enemy_specialist.lo.glb",
+        "bytes": 208552,
+        "hash": "f825e01689"
+      }
     },
     {
       "file": "characters/player_operative.glb",
