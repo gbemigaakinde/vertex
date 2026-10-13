@@ -297,7 +297,7 @@
       '<span style="font-size:1.5rem;color:var(--accent);display:inline-flex;flex-shrink:0">' + icon(fileIcon(f.fileExt), 24) + '</span>' +
       '<span style="min-width:0"><span class="fm-row-name" style="display:block">' + esc(f.fileName) + '</span>' +
       '<span class="fm-row-meta" style="display:block">' + esc(meta.join(' · ')) + '<span class="fm-badge">' + esc(share) + '</span>' +
-      (coll ? '<span class="fm-badge">' + esc(coll.name) + '</span>' : '') + '</span></span></button>' +
+      (coll ? '<span class="fm-badge">' + esc(coll.name) + '</span>' : '') + (f.uploaderRole === 'student' ? '<span class="fm-badge">' + esc(({ pending: 'Awaiting review', reviewed: 'Reviewed', needs_revision: 'Needs revision', approved: 'Approved' })[f.reviewStatus || 'pending']) + '</span>' : '') + '</span></span></button>' +
       ((!shared && mine) || canDel ? '<button type="button" class="fm-icon-btn" data-act="filemenu" data-id="' + esc(f.id) + '" data-shared="' + (shared ? 1 : 0) + '" aria-label="Actions for ' + esc(f.fileName) + '" aria-haspopup="menu">' + icon('ph-dots-three-vertical', 18) + '</button>' : '') +
       '</div>';
   }
@@ -573,7 +573,7 @@
             items.push({ icon: 'ph-folder-simple', label: 'Move to folder', fn: function () { moveFiles([id]); } });
             items.push({ icon: 'ph-bookmarks-simple', label: 'Add to collection', fn: function () { setCollection([id]); } });
           }
-          items.push({ icon: 'ph-download-simple', label: 'Open / download', fn: function () { Storage.openFile(file.objectKey, file.fileName, file.id); } });
+          items.push({ icon: 'ph-download-simple', label: 'View', fn: function () { Storage.openFile(file.objectKey, file.fileName, file.id); } });
           items.push({ icon: 'ph-trash', label: 'Delete', danger: true, fn: function () { deleteFiles([id]); } });
           openMenu(b, items); break;
         }

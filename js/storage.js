@@ -222,6 +222,14 @@ async function uploadFile() {
 
   /* ── CORE: open file (download via presigned URL) ──────── */
   async function openFile(objectKey, fileName, docId) {
+    // Preferred: in-app viewer (no download needed).
+    if (window.Viewer && typeof Viewer.open === 'function') {
+      return Viewer.open({ docId: docId || null, objectKey: objectKey, fileName: fileName });
+    }
+    return downloadFile(objectKey, fileName, docId);
+  }
+
+  async function downloadFile(objectKey, fileName, docId) {
     try {
       if (window.UI && UI.toast) UI.toast('Getting download link…', 'info', 2000);
       const url = await _getPresignedGetUrl(objectKey, docId);
@@ -988,8 +996,8 @@ function _loadFiles(containerId, queryOpts, userOpts) {
         '</div>' +
 
         '<div style="display:flex;gap:.375rem;align-items:center;flex-shrink:0;">' +
-          '<button onclick="Storage.openFile(\'' + _esc(d.objectKey) + '\',\'' + _esc(d.fileName) + '\')" ' +
-            'title="Download / Open" ' +
+          '<button onclick="Storage.openFile(\'' + _esc(d.objectKey) + '\',\'' + _esc(d.fileName) + '\',\'' + _esc(d.id || '') + '\')" ' +
+            'title="View" ' +
             'style="display:inline-flex;align-items:center;gap:.3rem;' +
             'padding:.375rem .75rem;border-radius:var(--r-lg);' +
             'background:var(--accent-subtle);border:1px solid var(--accent-border);' +
@@ -997,7 +1005,7 @@ function _loadFiles(containerId, queryOpts, userOpts) {
             'cursor:pointer;font-family:var(--font);transition:background var(--t-fast);" ' +
             'onmouseenter="this.style.background=\'var(--accent)\';this.style.color=\'#fff\'" ' +
             'onmouseleave="this.style.background=\'var(--accent-subtle)\';this.style.color=\'var(--accent-text)\'">' +
-            '<i class="ph ph-download-simple" style="font-size:13px;"></i> Open' +
+            '<i class="ph ph-eye" style="font-size:13px;"></i> View' +
           '</button>' +
           (canDel
             ? '<button onclick="Storage._confirmDelete(\'' + _esc(d.id) + '\',\'' + _esc(d.objectKey) + '\',\'' + containerId + '\',' + JSON.stringify(queryOpts).replace(/"/g,"'") + ',' + JSON.stringify(userOpts).replace(/"/g,"'") + ')" ' +
@@ -1085,6 +1093,7 @@ function _loadFiles(containerId, queryOpts, userOpts) {
   window.Storage = {
     uploadFile,
     openFile,
+    downloadFile,
     deleteFile,
     openUploadModal,
     renderFileList,
