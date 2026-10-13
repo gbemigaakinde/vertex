@@ -96,6 +96,8 @@
       '.fm-row-main{flex:1;min-width:0;background:none;border:none;text-align:left;cursor:pointer;display:flex;align-items:center;gap:.625rem;padding:0;min-height:44px;color:inherit}' +
       '.fm-row-name{font-size:.875rem;font-weight:700;color:var(--text-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
       '.fm-row-meta{font-size:.75rem;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}' +
+      '.fm-thumb{width:48px;height:48px;border-radius:10px;background:var(--bg-muted);display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;overflow:hidden}' +
+      '.fm-thumb img,.fm-thumb canvas,.fm-thumb video{width:100%;height:100%;object-fit:cover;display:block}' +
       '.fm-badge{display:inline-block;font-size:.625rem;font-weight:700;padding:1px 6px;border-radius:99px;background:var(--bg-muted);color:var(--text-3);margin-left:.25rem;vertical-align:middle}' +
       '.fm-check{width:20px;height:20px;flex-shrink:0;accent-color:var(--accent);cursor:pointer}' +
       '.fm-empty{display:flex;flex-direction:column;align-items:center;gap:.625rem;text-align:center;padding:2.5rem 1rem;color:var(--text-3);font-size:.875rem}' +
@@ -335,7 +337,7 @@
     return '<div class="fm-row' + (sel ? ' sel' : '') + '" data-file="' + esc(f.id) + '">' +
       (!shared && mine ? '<input type="checkbox" class="fm-check" data-act="toggle" data-id="' + esc(f.id) + '" aria-label="Select ' + esc(f.fileName) + '"' + (sel ? ' checked' : '') + '>' : '') +
       '<button type="button" class="fm-row-main" data-act="open" data-id="' + esc(f.id) + '" aria-label="Open ' + esc(f.fileName) + '">' +
-      '<span style="font-size:1.5rem;color:var(--accent);display:inline-flex;flex-shrink:0">' + icon(fileIcon(f.fileExt), 24) + '</span>' +
+      '<span class="fm-thumb" data-th="' + esc(f.id) + '" style="font-size:1.5rem;color:var(--accent)">' + thumbInner(f) + '</span>' +
       '<span style="min-width:0"><span class="fm-row-name" style="display:block">' + esc(f.fileName) + '</span>' +
       '<span class="fm-row-meta" style="display:block">' + esc(meta.join(' · ')) + '<span class="fm-badge">' + esc(share) + '</span>' +
       (coll ? '<span class="fm-badge">' + esc(coll.name) + '</span>' : '') + cnt(M.unread[f.id] || 0) + (f.uploaderRole === 'student' ? '<span class="fm-badge">' + esc(({ pending: 'Awaiting review', reviewed: 'Reviewed', needs_revision: 'Needs revision', approved: 'Approved' })[f.reviewStatus || 'pending']) + '</span>' : '') + '</span></span></button>' +
@@ -389,7 +391,117 @@
     }
     var active = document.activeElement && document.activeElement.id;
     root.innerHTML = h;
+    hydrateThumbs(root);
     if (active === 'fmSearch') { var s = document.getElementById('fmSearch'); if (s) { s.focus(); s.setSelectionRange(s.value.length, s.value.length); } }
+  }
+
+  /* ── File previews (thumbnails) ──
+     Image / video / first page of a PDF. Falls back to the file-type icon
+     whenever a preview is not possible or fails. */
+  var THUMB_IMG = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+  var THUMB_MAX_PDF = 12 * 1048576;
+  var thumbCache = {}, thumbFail = {}, thumbQueue = [], thumbBusy = 0, thumbObs = null, pdfLibP = null;
+
+  function thumbKind(f) {
+    var e = (f.fileExt || ext(f.fileName) || '').toLowerCase();
+    if (THUMB_IMG.indexOf(e) !== -1) return 'image';
+    if (VIDEO_EXTS.indexOf(e) !== -1) return 'video';
+    if (e === 'pdf' && (f.fileSize || 0) <= THUMB_MAX_PDF) return 'pdf';
+    return '';
+  }
+  function thumbInner(f) {
+    var c = thumbCache[f.id];
+    if (c && c.kind === 'image') return '<img alt="" src="' + esc(c.src) + '" data-tf="1">';
+    if (c && c.kind === 'pdf') return '<img alt="" src="' + c.src + '" data-tf="1">';
+    if (c && c.kind === 'video') return '<video muted playsinline preload="metadata" src="' + esc(c.src) + '" data-tf="1"></video>';
+    return icon(fileIcon(f.fileExt), 24);
+  }
+  function thumbFallback(el, f) { if (el && el.isConnected) el.innerHTML = icon(fileIcon(f.fileExt), 24); }
+  function loadPdfLib() {
+    if (window.pdfjsLib) return Promise.resolve(window.pdfjsLib);
+    if (pdfLibP) return pdfLibP;
+    pdfLibP = new Promise(function (resolve, reject) {
+      var sc = document.createElement('script');
+      sc.src = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
+      sc.onload = function () {
+        window.pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        resolve(window.pdfjsLib);
+      };
+      sc.onerror = function () { pdfLibP = null; reject(new Error('pdf.js failed to load')); };
+      document.head.appendChild(sc);
+    });
+    return pdfLibP;
+  }
+  async function buildThumb(f) {
+    var kind = thumbKind(f);
+    var pre = await api('/storage/presign-download', { docId: f.id });
+    if (!pre || !pre.url) throw new Error('no url');
+    if (kind === 'image' || kind === 'video') return { kind: kind, src: pre.url };
+    // PDF: stream through the worker (same route the viewer uses), draw page 1 to a small image
+    var u = window.fbAuth && window.fbAuth.currentUser;
+    if (!u) throw new Error('no user');
+    var res = await fetch(WORKER_URL + '/storage/view', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (await u.getIdToken()) },
+      body: JSON.stringify({ docId: f.id })
+    });
+    if (!res.ok) throw new Error('view failed');
+    var buf = await res.arrayBuffer();
+    var lib = await loadPdfLib();
+    var pdf = await lib.getDocument({ data: new Uint8Array(buf) }).promise;
+    var page = await pdf.getPage(1);
+    var vp0 = page.getViewport({ scale: 1 });
+    var scale = 160 / Math.min(vp0.width, vp0.height);
+    var vp = page.getViewport({ scale: scale });
+    var cv = document.createElement('canvas'); cv.width = Math.round(vp.width); cv.height = Math.round(vp.height);
+    var cx = cv.getContext('2d'); cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
+    await page.render({ canvasContext: cx, viewport: vp }).promise;
+    var out = cv.toDataURL('image/jpeg', 0.7);
+    try { pdf.destroy(); } catch (e) { }
+    return { kind: 'pdf', src: out };
+  }
+  function pumpThumbs() {
+    while (thumbBusy < 3 && thumbQueue.length) {
+      (function (job) {
+        thumbBusy++;
+        buildThumb(job.f).then(function (c) { thumbCache[job.f.id] = c; }).catch(function () { thumbFail[job.f.id] = true; })
+          .then(function () {
+            thumbBusy--;
+            var el = document.querySelector('[data-th="' + job.f.id + '"]');
+            if (el) {
+              if (thumbCache[job.f.id]) {
+                el.innerHTML = thumbInner(job.f);
+                var m = el.querySelector('[data-tf]');
+                if (m) m.addEventListener('error', function () { delete thumbCache[job.f.id]; thumbFail[job.f.id] = true; thumbFallback(el, job.f); });
+              } else thumbFallback(el, job.f);
+            }
+            pumpThumbs();
+          });
+      }(thumbQueue.shift()));
+    }
+  }
+  function hydrateThumbs(root) {
+    if (!M) return;
+    if (thumbObs) { thumbObs.disconnect(); thumbObs = null; }
+    var els = root.querySelectorAll('[data-th]');
+    var byId = {}; M.files.concat(M.shared).forEach(function (f) { byId[f.id] = f; });
+    var want = function (el) {
+      var f = byId[el.getAttribute('data-th')];
+      if (!f || thumbCache[f.id] || thumbFail[f.id] || !thumbKind(f)) return;
+      if (thumbQueue.some(function (j) { return j.f.id === f.id; })) return;
+      thumbQueue.push({ f: f }); pumpThumbs();
+    };
+    els.forEach(function (el) {
+      var m = el.querySelector('[data-tf]');
+      var f = byId[el.getAttribute('data-th')];
+      if (m && f) m.addEventListener('error', function () { delete thumbCache[f.id]; thumbFail[f.id] = true; thumbFallback(el, f); });
+    });
+    if ('IntersectionObserver' in window) {
+      thumbObs = new IntersectionObserver(function (entries) {
+        entries.forEach(function (en) { if (en.isIntersecting) { thumbObs.unobserve(en.target); want(en.target); } });
+      }, { rootMargin: '200px' });
+      els.forEach(function (el) { thumbObs.observe(el); });
+    } else els.forEach(want);
   }
 
   function sharedList(list) {
