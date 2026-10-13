@@ -127,9 +127,14 @@
       '.vv-tools{display:flex;align-items:center;gap:.375rem;padding:.375rem .625rem;background:var(--bg-base,#fff);border-bottom:1px solid var(--border,#ddd);flex-shrink:0;flex-wrap:wrap}',
       '.vv-tools .vv-btn{min-height:32px;min-width:32px;padding:0 .5rem}',
       '.vv-tools .sp{flex:1}',
-      '.vv-jump{width:58px;min-height:34px;box-sizing:border-box;text-align:center;border-radius:var(--r-lg,10px);border:1px solid var(--border,#ddd);background:var(--bg-subtle,#f6f6f6);color:var(--text-1,#111);font:600 .8125rem var(--font,inherit);padding:0 .25rem;-moz-appearance:textfield}',
+      '.vv-tools .vv-jump{width:52px!important;min-width:0!important;height:32px!important;min-height:32px!important;padding:0 .25rem!important;margin:0!important;box-sizing:border-box;text-align:center;border-radius:var(--r-lg,10px);border:1px solid var(--border,#ddd);background:var(--bg-subtle,#f6f6f6);color:var(--text-1,#111);font:600 .8125rem var(--font,inherit);-moz-appearance:textfield;flex:0 0 auto}',
+      '.vv-tools .vv-jump[data-rj]{width:84px!important}',
+      '.vv-tools .vv-jump::-webkit-outer-spin-button,.vv-tools .vv-jump::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}',
+      '.vv-pg{display:inline-flex;align-items:center;gap:.25rem;flex-shrink:0;white-space:nowrap}',
+      '.vv-pg .lbl{min-width:0!important;text-align:left}',
+      '@media(max-width:520px){.vv-tools{gap:.25rem;padding:.375rem .5rem}.vv-tools .sp{display:none}.vv-tools .lbl{min-width:0}.vv-tools>.lbl{flex:1;text-align:center}.vv-pg{margin-left:auto}}',
       '.vv-jump::-webkit-outer-spin-button,.vv-jump::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}',
-      '.vv-jumpbox{display:inline-flex;align-items:center;gap:.25rem;flex-shrink:0;font-size:.75rem;color:var(--text-3,#777)}',
+      '.vv-jumpbox{display:inline-flex;align-items:center;gap:.25rem;flex-shrink:0;white-space:nowrap;font-size:.75rem;color:var(--text-3,#777);margin-left:auto}',
       '.vv-sheet tr{scroll-margin-top:34px}',
       '.vv-sheet tr.hit td{background:var(--accent-subtle,#e8f0ff);transition:background .3s}',
       '.vv-tools .lbl{font-size:.75rem;color:var(--text-3,#777);min-width:60px;text-align:center}',
@@ -578,11 +583,11 @@
     s.view.innerHTML = '<div class="vv-pages"></div>';
     var box = s.view.firstChild;
     setTools('<button class="vv-btn" data-p="out" aria-label="Zoom out">' + ic('minus') + '</button><span class="lbl" data-zl>100%</span>' +
-      '<button class="vv-btn" data-p="in" aria-label="Zoom in">' + ic('plus') + '</button><button class="vv-btn" data-p="fit">Fit width</button><span class="sp"></span>' +
-      '<button class="vv-btn" data-p="prev" aria-label="Previous page">' + ic('caret-up') + '</button>' +
+      '<button class="vv-btn" data-p="in" aria-label="Zoom in">' + ic('plus') + '</button><button class="vv-btn" data-p="fit">Fit</button><span class="sp"></span>' +
+      '<span class="vv-pg"><button class="vv-btn" data-p="prev" aria-label="Previous page">' + ic('caret-up') + '</button>' +
       '<input class="vv-jump" data-pj type="number" inputmode="numeric" min="1" max="' + n + '" value="1" aria-label="Go to page">' +
-      '<span class="lbl" data-pl style="min-width:0">/ ' + n + '</span>' +
-      '<button class="vv-btn" data-p="next" aria-label="Next page">' + ic('caret-down') + '</button>');
+      '<span class="lbl" data-pl>/ ' + n + '</span>' +
+      '<button class="vv-btn" data-p="next" aria-label="Next page">' + ic('caret-down') + '</button></span>');
     var first = await pdf.getPage(1);
     var base = first.getViewport({ scale: 1 });
     var pages = [], renderTok = 0, queue = Promise.resolve();
