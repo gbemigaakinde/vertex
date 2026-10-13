@@ -351,6 +351,7 @@ if (request.method === 'POST' && url.pathname === '/api/cancel-scheduled-push') 
         b2PresignPut:     _b2PresignPut,
         b2PresignGet:     _b2PresignGet,
         b2Delete:         _b2Delete,
+        pushToUid:        _pnSendTo,
       });
     }
 

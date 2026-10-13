@@ -729,6 +729,7 @@
     var m = S.meta;
     S.status = m.reviewStatus; S.canReview = !!m.canReview;
     updateFbBadge(m.feedbackCount || 0);
+    if (m.id) { op('notif.read', { docId: m.id }).then(function () { window.dispatchEvent(new CustomEvent('vtx:filenotifs-cleared', { detail: { docId: m.id } })); }).catch(function () { }); }
     // Open automatically for submissions awaiting a response, so feedback is never missed.
     S.fb.innerHTML =
       '<div class="vv-fb-head"><div class="vv-fb-title"><span>Feedback</span><span data-st></span></div><div data-rv></div></div>' +

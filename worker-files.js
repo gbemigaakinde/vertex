@@ -448,7 +448,7 @@ async function routeCommit(ctx, b) {
     targetClasses: targetClasses,
     expiresAt: expiresAt,
     folderId: folderId,
-    folderName: (ctx.isTeacher && sharedWith !== 'private' && _fo && _fo.name) ? String(_fo.name).slice(0, 80) : null,
+    folderName: (sharedWith !== 'private' && _fo && _fo.name) ? String(_fo.name).slice(0, 80) : null,
     collectionId: collectionId,
     reviewStatus: ctx.isTeacher ? null : 'pending',
     createdAt: new Date(),
@@ -620,6 +620,7 @@ async function _feedbackOp(ctx, b) {
     const cur = d.reviewStatus || 'pending';
     if (ctx.isTeacher && cur === 'pending') await ctx.db.patch('uploads/' + d._id, { reviewStatus: 'reviewed', reviewedAt: new Date() });
     if (!ctx.isTeacher && (cur === 'needs_revision' || cur === 'reviewed')) await ctx.db.patch('uploads/' + d._id, { reviewStatus: 'pending' });
+    try { await _notifyFeedback(ctx, d, name, text); } catch (e) { /* notification must never block feedback */ }
     return json({ ok: true, id: r.id });
   }
   if (b.action === 'comment.edit' || b.action === 'comment.delete') {
@@ -650,6 +651,10 @@ async function routeDelete(ctx, body) {
     const cms = await ctx.db.where('fileComments', 'docId', d._id, ['docId']);
     for (const c of cms) await ctx.db.del('fileComments/' + c._id);
   } catch (e) { /* orphan comments are unreachable anyway */ }
+  try {
+    const ns = await ctx.db.where('fileFeedbackNotifs', 'docId', d._id, ['docId']);
+    for (const n of ns) await ctx.db.del('fileFeedbackNotifs/' + n._id);
+  } catch (e) { /* ignore */ }
   const others = await ctx.db.where('uploads', 'objectKey', d.objectKey, ['objectKey']);
   if (!others.length) {
     try { await ctx.helpers.b2Delete(d.objectKey, ctx.env); } catch (e) { /* metadata already gone */ }
@@ -690,7 +695,42 @@ function _depth(all, id) {
   return d;
 }
 
+/* ── Feedback notifications ──
+   Student gets in-app + push. Teacher gets in-app only (never push). */
+async function _notifyFeedback(ctx, d, authorName, text) {
+  const toStudent = ctx.isTeacher;
+  const recipientUid = toStudent ? d.uploaderUid : ctx.env.TEACHER_UID;
+  if (!recipientUid || recipientUid === ctx.uid) return;
+  const preview = String(text).replace(/\s+/g, ' ').slice(0, 120);
+  await ctx.db.create('fileFeedbackNotifs', null, {
+    recipientUid: recipientUid, docId: d._id, fileName: d.fileName || 'a file',
+    authorName: authorName, authorRole: toStudent ? 'teacher' : 'student',
+    preview: preview, read: false, createdAt: new Date(),
+  });
+  if (toStudent && ctx.helpers.pushToUid) {
+    await ctx.helpers.pushToUid(recipientUid, {
+      title: 'New feedback on your file',
+      body: authorName + ' commented on ' + (d.fileName || 'your file') + ': ' + preview,
+      url: '/', tag: 'fb-' + d._id,
+    }, ctx.env);
+  }
+}
+
+async function _notifOp(ctx, b) {
+  const rows = (await ctx.db.where('fileFeedbackNotifs', 'recipientUid', ctx.uid)).filter(function (n) { return n.read !== true; });
+  if (b.action === 'notif.list') {
+    const byDoc = {};
+    rows.forEach(function (n) { byDoc[n.docId] = (byDoc[n.docId] || 0) + 1; });
+    const latest = rows.slice().sort(function (x, y) { return Date.parse(_iso(y.createdAt) || 0) - Date.parse(_iso(x.createdAt) || 0); })[0] || null;
+    return json({ total: rows.length, byDoc: byDoc, latest: latest ? { id: latest._id, docId: latest.docId, fileName: latest.fileName, authorName: latest.authorName, preview: latest.preview } : null });
+  }
+  const docId = String(b.docId || '');
+  for (const n of rows) { if (n.docId === docId) await ctx.db.patch('fileFeedbackNotifs/' + n._id, { read: true }); }
+  return json({ ok: true });
+}
+
 async function routeOp(ctx, b) {
+  if (b.action === 'notif.list' || b.action === 'notif.read') return _notifOp(ctx, b);
   if (b.action === 'file.info' || b.action === 'review.set' || String(b.action).indexOf('comment.') === 0) return _feedbackOp(ctx, b);
   const db = ctx.db;
   const uid = ctx.uid;
