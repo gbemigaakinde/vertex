@@ -278,7 +278,7 @@ export async function handleFilesApi(request, url, env, helpers) {
     const token = await helpers.getFirebaseToken(env);
     if (!token) return fail('Server database access is not configured.', 500);
     const db = makeDb(token, helpers.fsDecodeFields);
-    const ctx = { uid: user.uid, isTeacher: isTeacher, db: db, env: env, helpers: helpers };
+    const ctx = { uid: user.uid, isTeacher: isTeacher, db: db, env: env, helpers: helpers, origin: url.origin };
 
     switch (url.pathname) {
       case '/storage/quota':             return await routeQuota(ctx);
@@ -475,8 +475,72 @@ async function routePresignDownload(ctx, body) {
     cls = p && p.class ? p.class : '';
   }
   if (!_canSeeFile(d, ctx.uid, ctx.isTeacher, cls)) return fail('You do not have access to this file.', 403);
-  const url = await ctx.helpers.b2PresignGet(d.objectKey, ctx.env);
-  return json({ url: url });
+  // Never hand out the Backblaze address. Issue a short-lived signed token instead;
+  // the file is then served by this worker (and, via the Vercel rewrite, from the app's own domain).
+  const name = d.fileName || String(d.objectKey).split('/').pop() || 'file';
+  const tok = await _dlSign(ctx.env, { k: d.objectKey, n: name, e: Math.floor(Date.now() / 1000) + 3600 });
+  const seg = encodeURIComponent(name);
+  return json({ path: '/dl/' + tok + '/' + seg, url: ctx.origin + '/storage/dl/' + tok + '/' + seg });
+}
+
+/* ── Signed file links (hide the storage host) ─────────── */
+function _b64u(bytes) {
+  let bin = ''; for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+async function _dlMac(env, data) {
+  const enc = new TextEncoder();
+  const key = await crypto.subtle.importKey('raw', enc.encode('vtx-dl:' + env.B2_APP_KEY), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  return _b64u(new Uint8Array(await crypto.subtle.sign('HMAC', key, enc.encode(data))));
+}
+async function _dlSign(env, payload) {
+  const body = _b64u(new TextEncoder().encode(JSON.stringify(payload)));
+  return body + '.' + await _dlMac(env, body);
+}
+async function _dlVerify(env, tok) {
+  const i = tok.indexOf('.'); if (i < 1) return null;
+  const body = tok.slice(0, i), mac = tok.slice(i + 1);
+  const good = await _dlMac(env, body);
+  if (good.length !== mac.length) return null;
+  let diff = 0; for (let k = 0; k < good.length; k++) diff |= good.charCodeAt(k) ^ mac.charCodeAt(k);
+  if (diff) return null;
+  try {
+    const p = JSON.parse(new TextDecoder().decode(_b64urlToBytes(body)));
+    if (!p || !p.k || !p.e || p.e < Date.now() / 1000) return null;
+    return p;
+  } catch (e) { return null; }
+}
+
+// GET /storage/dl/<token>/<filename>[?dl=1]  — public, token-authorised, streams from B2.
+export async function handleFileDownload(request, url, env, helpers) {
+  const plain = function (msg, st) { return new Response(msg, { status: st, headers: { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'text/plain' } }); };
+  if (!env.B2_KEY_ID || !env.B2_APP_KEY || !env.B2_BUCKET || !env.B2_ENDPOINT || !env.B2_REGION) return plain('File storage is not configured.', 500);
+  const parts = url.pathname.split('/'); // ['', 'storage', 'dl', token, name]
+  const p = await _dlVerify(env, decodeURIComponent(parts[3] || ''));
+  if (!p) return plain('This link has expired. Please reopen the file.', 403);
+  const src = await helpers.b2PresignGet(p.k, env);
+  const h = {};
+  const range = request.headers.get('Range');
+  if (range && /^bytes=\d*-\d*$/.test(range)) h.Range = range;
+  const up = await fetch(src, { headers: h });
+  if (up.status === 404) return plain('The file is missing from storage.', 404);
+  if (up.status !== 200 && up.status !== 206) return plain('Could not read this file from storage.', 502);
+  const name = String(p.n || 'file');
+  const e = _ext(name);
+  const asAttachment = url.searchParams.get('dl') === '1';
+  const safe = name.replace(/[\r\n"\\]/g, '_');
+  const out = new Headers({
+    'Content-Type': MIME[e] || up.headers.get('Content-Type') || 'application/octet-stream',
+    'Content-Disposition': (asAttachment ? 'attachment' : 'inline') + '; filename="' + safe.replace(/[^\x20-\x7e]/g, '_') + '"; filename*=UTF-8\'\'' + encodeURIComponent(name),
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Expose-Headers': 'Content-Length, Content-Range, Content-Type, Accept-Ranges',
+    'Accept-Ranges': 'bytes',
+    'Cache-Control': 'private, max-age=300',
+    'X-Content-Type-Options': 'nosniff',
+  });
+  if (up.headers.get('Content-Length')) out.set('Content-Length', up.headers.get('Content-Length'));
+  if (up.headers.get('Content-Range')) out.set('Content-Range', up.headers.get('Content-Range'));
+  return new Response(up.body, { status: up.status, headers: out });
 }
 
 

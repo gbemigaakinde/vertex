@@ -48,5 +48,11 @@
         }
       ]
     }
+  ],
+  "rewrites": [
+    {
+      "source": "/dl/:token/:name*",
+      "destination": "https://vertex-worker.gbemigaakinde.workers.dev/storage/dl/:token/:name*"
+    }
   ]
 }

@@ -4,7 +4,7 @@
 
 'use strict';
 
-const CACHE_VERSION = 'v1.20.72';
+const CACHE_VERSION = 'v1.20.73';
 const STATIC_CACHE  = `static-${CACHE_VERSION}`;
 const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
 
@@ -132,6 +132,7 @@ self.addEventListener('fetch', event => {
   if (request.method !== 'GET') return;
 
   if (url.pathname === '/sw.js') return;
+  if (url.pathname.startsWith('/dl/')) return; // signed file links: always straight to the network
 
   // KNOWLEDGE SURFER 3D: its 3D models (.glb) are large, so like VECTOR they are
   // loaded straight from the network/browser cache instead of being copied into

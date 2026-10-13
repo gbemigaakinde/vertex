@@ -1,8 +1,13 @@
-import { handleFilesApi, UploadQuota } from './worker-files.js';
+import { handleFilesApi, handleFileDownload, UploadQuota } from './worker-files.js';
 export { UploadQuota };
 
 export default {
   async fetch(request, env, ctx) {
+
+    // Signed file links (token-authorised; keeps the storage host hidden)
+    if (request.method === 'GET' && new URL(request.url).pathname.indexOf('/storage/dl/') === 0) {
+      return handleFileDownload(request, new URL(request.url), env, { b2PresignGet: _b2PresignGet });
+    }
 
     // Health check
     if (request.method === 'GET') {

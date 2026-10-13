@@ -360,7 +360,7 @@
       }
       // Very large files: open the signed link in this tab (no popup, no download attribute).
       var d = await postJson('/storage/presign-download', S.docId ? { docId: S.docId } : { objectKey: S.opts.objectKey });
-      window.location.href = d.url;
+      window.location.href = (d.path ? location.origin + d.path : d.url) + '?dl=1';
     } catch (e) { if (e && e.message === 'cancelled') return; toast('Could not download: ' + e.message, 'error'); }
   }
 
@@ -830,7 +830,7 @@
     var d = await postJson('/storage/presign-download', s.docId ? { docId: s.docId } : { objectKey: s.opts.objectKey }, { signal: s.abort.signal });
     if (S !== s || s.token !== token) return;
     s.view.style.overflow = 'hidden';
-    s.view.innerHTML = '<iframe class="vv-frame" title="Document preview" allowfullscreen src="https://view.officeapps.live.com/op/embed.aspx?src=' + encodeURIComponent(d.url) + '"></iframe>';
+    s.view.innerHTML = '<iframe class="vv-frame" title="Document preview" allowfullscreen src="https://view.officeapps.live.com/op/embed.aspx?src=' + encodeURIComponent(d.path ? location.origin + d.path : d.url) + '"></iframe>';
     s.view.insertAdjacentHTML('beforeend', '<div class="vv-note" style="position:absolute;left:0;right:0;bottom:0">Preview provided by Microsoft Office Online. If it does not load, use Download.</div>');
   }
 
