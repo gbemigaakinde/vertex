@@ -18,6 +18,14 @@
   "vars": {
     "VAPID_PUBLIC_KEY": "BL43uSEQeh09fAtjR-H-GXoEAASmljn7vaszJDxtp8vPA1wFjhmqd9UrE35aPmsQEE-uBVpSr3uL1cB5oSBx0qs"
   },
+  "durable_objects": {
+    "bindings": [
+      { "name": "UPLOAD_QUOTA", "class_name": "UploadQuota" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v1-upload-quota", "new_sqlite_classes": ["UploadQuota"] }
+  ],
   "triggers": {
     "crons": [
       "0 19 * * *",

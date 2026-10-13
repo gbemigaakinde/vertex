@@ -1,3 +1,6 @@
+import { handleFilesApi, UploadQuota } from './worker-files.js';
+export { UploadQuota };
+
 export default {
   async fetch(request, env, ctx) {
 
@@ -13,7 +16,7 @@ export default {
         headers: {
           'Access-Control-Allow-Origin':  '*',
           'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-          'Access-Control-Allow-Headers': 'Content-Type',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
         },
       });
     }
@@ -340,55 +343,15 @@ if (request.method === 'POST' && url.pathname === '/api/cancel-scheduled-push') 
   return new Response(JSON.stringify({ success: true }), { headers: corsJsonHeaders() });
 }
 
-    // ── Storage: presign upload ─────────────────────────────
-    if (request.method === 'POST' && url.pathname === '/storage/presign-upload') {
-      let body;
-      try { body = await request.json(); } catch (e) { return jsonError('Invalid JSON.', 400); }
-      const { objectKey, contentType } = body;
-      if (!objectKey || !contentType) return jsonError('Missing objectKey or contentType.', 400);
-      if (!env.B2_KEY_ID || !env.B2_APP_KEY || !env.B2_BUCKET || !env.B2_ENDPOINT || !env.B2_REGION) {
-        return jsonError('Backblaze B2 environment variables not configured.', 500);
-      }
-      try {
-        const presignedUrl = await _b2PresignPut(objectKey, contentType, env);
-        return new Response(JSON.stringify({ url: presignedUrl }), { headers: corsJsonHeaders() });
-      } catch (e) {
-        return jsonError('Failed to generate presigned URL: ' + e.message, 500);
-      }
-    }
-
-    // ── Storage: presign download ───────────────────────────
-    if (request.method === 'POST' && url.pathname === '/storage/presign-download') {
-      let body;
-      try { body = await request.json(); } catch (e) { return jsonError('Invalid JSON.', 400); }
-      const { objectKey } = body;
-      if (!objectKey) return jsonError('Missing objectKey.', 400);
-      if (!env.B2_KEY_ID || !env.B2_APP_KEY || !env.B2_BUCKET || !env.B2_ENDPOINT || !env.B2_REGION) {
-        return jsonError('Backblaze B2 environment variables not configured.', 500);
-      }
-      try {
-        const presignedUrl = await _b2PresignGet(objectKey, env);
-        return new Response(JSON.stringify({ url: presignedUrl }), { headers: corsJsonHeaders() });
-      } catch (e) {
-        return jsonError('Failed to generate download URL: ' + e.message, 500);
-      }
-    }
-
-    // ── Storage: delete object ──────────────────────────────
-    if (request.method === 'POST' && url.pathname === '/storage/delete') {
-      let body;
-      try { body = await request.json(); } catch (e) { return jsonError('Invalid JSON.', 400); }
-      const { objectKey } = body;
-      if (!objectKey) return jsonError('Missing objectKey.', 400);
-      if (!env.B2_KEY_ID || !env.B2_APP_KEY || !env.B2_BUCKET || !env.B2_ENDPOINT || !env.B2_REGION) {
-        return jsonError('Backblaze B2 environment variables not configured.', 500);
-      }
-      try {
-        await _b2Delete(objectKey, env);
-        return new Response(JSON.stringify({ ok: true }), { headers: corsJsonHeaders() });
-      } catch (e) {
-        return jsonError('Failed to delete object: ' + e.message, 500);
-      }
+    // ── Storage + file organisation (authenticated; see worker-files.js) ──
+    if (request.method === 'POST' && (url.pathname.indexOf('/storage/') === 0 || url.pathname === '/files/op')) {
+      return handleFilesApi(request, url, env, {
+        getFirebaseToken: _getFirebaseToken,
+        fsDecodeFields:   _fsDecodeFields,
+        b2PresignPut:     _b2PresignPut,
+        b2PresignGet:     _b2PresignGet,
+        b2Delete:         _b2Delete,
+      });
     }
 
     return new Response('Not found.', { status: 404 });
