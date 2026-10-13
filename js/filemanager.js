@@ -126,6 +126,7 @@
       '.fm-q{display:flex;flex-direction:column;gap:.375rem;max-height:240px;min-height:64px;overflow-y:auto}' +
       '.fm-qi{display:flex;align-items:center;gap:.5rem;padding:.5rem .625rem;border-radius:var(--r-lg);border:1px solid var(--border);background:var(--bg-subtle)}' +
       '.fm-qi.err{border-color:var(--danger-border);background:var(--danger-subtle)}' +
+      '.fm-bar.ind span{width:40%!important;animation:fmind 1s ease-in-out infinite}@keyframes fmind{0%{transform:translateX(-100%)}100%{transform:translateX(250%)}}@media(prefers-reduced-motion:reduce){.fm-bar.ind span{animation:none;width:100%!important;opacity:.5}}' +
       '.fm-bar{height:4px;border-radius:4px;background:var(--bg-muted);overflow:hidden;margin-top:4px}' +
       '.fm-bar>span{display:block;height:100%;background:var(--accent);width:0;transition:width .15s}' +
       '.fm-chips{display:flex;flex-wrap:wrap;gap:.375rem}' +
@@ -405,11 +406,11 @@
       var out = '<nav class="fm-crumbs" aria-label="Breadcrumb"><button type="button" class="fm-crumb" data-act="collback">Collections</button><span aria-hidden="true" style="color:var(--text-4)">' + icon('ph-caret-right', 12) + '</span><span class="fm-crumb" aria-current="page">' + esc(c ? c.name : '') + '</span></nav>';
       out += selectionBar();
       out += files.length ? '<div class="fm-list">' + files.map(function (f) { return rowFile(f, false); }).join('') + '</div>'
-        : empty('ph-bookmarks-simple', 'No files in this collection', 'Select files in My Files and choose Collection to add them.');
+        : empty('ph-bookmarks-simple', 'This collection is empty', 'Select files in My Files, then tap Collection to add them.');
       return out;
     }
     var cols = M.collections.filter(function (c) { return !q || c.name.toLowerCase().indexOf(q) !== -1; }).sort(function (a, b) { return a.name.localeCompare(b.name); });
-    if (!cols.length) return empty('ph-bookmarks-simple', q ? 'No matches' : 'No collections yet', 'Collections group files across folders, like "Exam revision".', q ? '' : '<button type="button" class="fm-btn primary" data-act="newcoll">' + icon('ph-plus', 16) + ' New collection</button>');
+    if (!cols.length) return empty('ph-bookmarks-simple', q ? 'No matches' : 'No collections yet', 'Tap New collection above. Collections group files across folders, like "Exam revision".');
     return '<div class="fm-grid">' + cols.map(function (c) {
       var n = M.files.filter(function (f) { return f.collectionId === c.id; }).length;
       return '<div class="fm-row"><button type="button" class="fm-row-main" data-act="opencoll" data-id="' + esc(c.id) + '" aria-label="Open collection ' + esc(c.name) + '">' +
@@ -647,6 +648,7 @@
 
     function canSubmit() {
       if (st.busy) return false;
+      if (st.queue.some(function (i) { return i.status === 'checking'; })) return false;
       var ready = st.queue.filter(function (i) { return (i.status === 'queued' || i.status === 'error') && !i.invalid; });
       if (!ready.length) return false;
       if (!isT && ready.length > remainingToday()) return false;
@@ -733,15 +735,16 @@
 
     function queueItem(i) {
       var s = i.status;
-      var line = s === 'queued' ? (i.invalid ? esc(i.invalid) : 'Ready') : s === 'uploading' ? i.msg || 'Uploading…' : s === 'done' ? 'Uploaded' : esc(i.error || 'Failed');
-      var color = (s === 'error' || i.invalid) ? 'var(--danger)' : s === 'done' ? 'var(--success,var(--accent))' : 'var(--text-3)';
+      var line = s === 'checking' ? 'Preparing…' : s === 'queued' ? (i.invalid ? esc(i.invalid) : 'Ready') : s === 'uploading' ? i.msg || 'Uploading…' : s === 'done' ? 'Uploaded' : esc(i.error || 'Failed');
+      var color = s === 'checking' ? 'var(--text-3)' : (s === 'error' || i.invalid) ? 'var(--danger)' : s === 'done' ? 'var(--success,var(--accent))' : 'var(--text-3)';
       return '<div class="fm-qi' + ((s === 'error' || i.invalid) ? ' err' : '') + '" data-q="' + i.id + '">' +
         '<span style="color:var(--accent);display:inline-flex">' + icon(s === 'done' ? 'ph-check-circle' : fileIcon(ext(i.file.name)), 22) + '</span>' +
         '<div style="flex:1;min-width:0"><div class="fm-row-name">' + esc(i.file.name) + '</div>' +
         '<div class="fm-row-meta" style="color:' + color + '">' + fmtBytes(i.file.size) + ' · ' + line + '</div>' +
+        (s === 'checking' ? '<div class="fm-bar ind" role="progressbar" aria-label="Preparing file"><span></span></div>' : '') +
         (s === 'uploading' ? '<div class="fm-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="' + i.pct + '"><span style="width:' + i.pct + '%"></span></div>' : '') + '</div>' +
         (s === 'error' && !i.invalid ? '<button type="button" class="fm-icon-btn" data-retry="' + i.id + '" aria-label="Retry ' + esc(i.file.name) + '"' + (st.busy ? ' disabled' : '') + '>' + icon('ph-arrow-clockwise', 16) + '</button>' : '') +
-        (s !== 'uploading' && s !== 'done' ? '<button type="button" class="fm-icon-btn" data-rm="' + i.id + '" aria-label="Remove ' + esc(i.file.name) + ' from queue"' + (st.busy ? ' disabled' : '') + '>' + icon('ph-x', 16) + '</button>' : '') + '</div>';
+        (s !== 'uploading' && s !== 'done' && s !== 'checking' ? '<button type="button" class="fm-icon-btn" data-rm="' + i.id + '" aria-label="Remove ' + esc(i.file.name) + ' from queue"' + (st.busy ? ' disabled' : '') + '>' + icon('ph-x', 16) + '</button>' : '') + '</div>';
     }
 
     function patchItem(i) {
@@ -756,9 +759,14 @@
       Array.prototype.forEach.call(list, function (f) {
         var sig = f.name + '|' + f.size + '|' + f.lastModified;
         if (st.queue.some(function (q) { return q.sig === sig && q.status !== 'done'; })) { dup++; return; }
-        var inv = validateFile(f);
-        st.queue.push({ id: uid8(), file: f, sig: sig, status: 'queued', pct: 0, invalid: inv, key: '', error: '' });
+        var item = { id: uid8(), file: f, sig: sig, status: 'checking', pct: 0, invalid: validateFile(f), key: '', error: '' };
+        st.queue.push(item);
         added++;
+        // brief real check: reading a byte forces the device to hand over the file (cloud files can be slow)
+        var t0 = Date.now();
+        Promise.resolve().then(function () { return f.slice(0, 1).arrayBuffer(); }).catch(function () { item.invalid = item.invalid || 'Could not read this file. Remove it and choose it again.'; })
+          .then(function () { return new Promise(function (r) { setTimeout(r, Math.max(0, 450 - (Date.now() - t0))); }); })
+          .then(function () { if (st.queue.indexOf(item) === -1) return; item.status = 'queued'; patchItem(item); draw(); });
       });
       if (dup) showErr(dup + (dup === 1 ? ' file was' : ' files were') + ' already in the queue.');
       draw();
