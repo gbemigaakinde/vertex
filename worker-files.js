@@ -418,7 +418,7 @@ async function routeCommit(ctx, b) {
 
   const folderId = b.folderId || null;
   const collectionId = b.collectionId || null;
-  await _validFolder(ctx, folderId);
+  const _fo = await _validFolder(ctx, folderId);
   await _validCollection(ctx, collectionId);
 
   let expiresAt = null;
@@ -445,6 +445,7 @@ async function routeCommit(ctx, b) {
     targetClasses: targetClasses,
     expiresAt: expiresAt,
     folderId: folderId,
+    folderName: (ctx.isTeacher && sharedWith !== 'private' && _fo && _fo.name) ? String(_fo.name).slice(0, 80) : null,
     collectionId: collectionId,
     createdAt: new Date(),
   };
