@@ -109,7 +109,9 @@
       '@media(min-width:640px){.fmd-ov{align-items:center}.fmd{border-radius:var(--r-2xl)}}' +
       '.fmd-h{display:flex;align-items:center;justify-content:space-between;padding:.875rem 1.125rem;border-bottom:1px solid var(--border)}' +
       '.fmd-h h2{font-size:.9375rem;font-weight:700;color:var(--text-1);margin:0}' +
-      '.fmd-b{padding:1rem 1.125rem;overflow-y:auto;display:flex;flex-direction:column;gap:.875rem}' +
+      '.fmd-b{padding:1rem 1.125rem;overflow-y:auto;display:flex;flex-direction:column;gap:.875rem;-webkit-overflow-scrolling:touch}' +
+      '.fmd-b>*{flex-shrink:0}' +
+      '.fm-group{font-size:.75rem;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin:.5rem 0 .25rem;display:flex;align-items:center;gap:.375rem}' +
       '.fmd-f{padding:.875rem 1.125rem calc(.875rem + env(safe-area-inset-bottom,0px));border-top:1px solid var(--border);display:flex;gap:.5rem;justify-content:flex-end}' +
       '.fmd label.lbl{display:block;font-size:.75rem;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.375rem}' +
       '.fmd input[type=text],.fmd input[type=datetime-local],.fmd select{width:100%;box-sizing:border-box;min-height:42px}' +
@@ -121,7 +123,7 @@
       '.fm-drop{border:2px dashed var(--border);border-radius:var(--r-xl);padding:1.5rem 1rem;text-align:center;cursor:pointer;background:var(--bg-subtle);transition:border-color .15s,background .15s}' +
       '.fm-drop.over{border-color:var(--accent);background:var(--accent-subtle)}' +
       '.fm-drop.off{opacity:.5;pointer-events:none}' +
-      '.fm-q{display:flex;flex-direction:column;gap:.375rem;max-height:240px;overflow-y:auto}' +
+      '.fm-q{display:flex;flex-direction:column;gap:.375rem;max-height:240px;min-height:64px;overflow-y:auto}' +
       '.fm-qi{display:flex;align-items:center;gap:.5rem;padding:.5rem .625rem;border-radius:var(--r-lg);border:1px solid var(--border);background:var(--bg-subtle)}' +
       '.fm-qi.err{border-color:var(--danger-border);background:var(--danger-subtle)}' +
       '.fm-bar{height:4px;border-radius:4px;background:var(--bg-muted);overflow:hidden;margin-top:4px}' +
@@ -197,7 +199,7 @@
     var el = document.getElementById(containerId);
     if (!el) return;
     M = {
-      id: containerId, ctx: ctx, tab: 'files', folderId: null, collectionId: null,
+      id: containerId, ctx: ctx, tab: 'shared', folderId: null, collectionId: null,
       folders: [], collections: [], files: [], shared: [], search: '', sort: 'newest',
       selected: new Set(), loaded: false, error: ''
     };
@@ -323,9 +325,9 @@
     if (M.tab === 'collections' && !M.collectionId) h += '<button type="button" class="fm-btn" data-act="newcoll">' + icon('ph-plus', 16) + ' New collection</button>';
     h += '<button type="button" class="fm-btn primary" data-act="upload">' + icon('ph-upload-simple', 16) + ' Upload</button></div></div>';
     h += '<div class="fm-tabs" role="tablist" aria-label="File views">' +
+      '<button type="button" role="tab" class="fm-tab" data-act="tab" data-id="shared" aria-selected="' + (M.tab === 'shared') + '">' + (isT ? 'All files' : 'Shared with me') + '</button>' +
       '<button type="button" role="tab" class="fm-tab" data-act="tab" data-id="files" aria-selected="' + (M.tab === 'files') + '">My Files</button>' +
-      '<button type="button" role="tab" class="fm-tab" data-act="tab" data-id="collections" aria-selected="' + (M.tab === 'collections') + '">Collections</button>' +
-      '<button type="button" role="tab" class="fm-tab" data-act="tab" data-id="shared" aria-selected="' + (M.tab === 'shared') + '">' + (isT ? 'All files' : 'Shared with me') + '</button></div>';
+      '<button type="button" role="tab" class="fm-tab" data-act="tab" data-id="collections" aria-selected="' + (M.tab === 'collections') + '">Collections</button></div>';
     h += '<div class="fm-tools"><input type="text" id="fmSearch" placeholder="Search files and folders" aria-label="Search files and folders" value="' + esc(M.search) + '">' +
       '<select id="fmSort" aria-label="Sort by"><option value="newest"' + (M.sort === 'newest' ? ' selected' : '') + '>Newest</option><option value="name"' + (M.sort === 'name' ? ' selected' : '') + '>Name</option><option value="size"' + (M.sort === 'size' ? ' selected' : '') + '>Largest</option></select></div>';
 
@@ -339,12 +341,22 @@
       h += collectionsView(q);
     } else {
       var list = M.shared.filter(function (f) { return !q || String(f.fileName).toLowerCase().indexOf(q) !== -1; }).sort(sorter(M.sort));
-      h += list.length ? '<div class="fm-list">' + list.map(function (f) { return rowFile(f, true); }).join('') + '</div>'
+      h += list.length ? sharedList(list)
         : empty('ph-tray', q ? 'No matches' : 'Nothing shared yet', q ? 'Try a different search.' : (isT ? 'No files have been uploaded yet.' : 'Files your teacher shares with you will appear here.'));
     }
     var active = document.activeElement && document.activeElement.id;
     root.innerHTML = h;
     if (active === 'fmSearch') { var s = document.getElementById('fmSearch'); if (s) { s.focus(); s.setSelectionRange(s.value.length, s.value.length); } }
+  }
+
+  function sharedList(list) {
+    if (!list.some(function (f) { return f.folderName; })) return '<div class="fm-list">' + list.map(function (f) { return rowFile(f, true); }).join('') + '</div>';
+    var groups = {}, order = [];
+    list.forEach(function (f) { var k = f.folderName || ''; if (!groups[k]) { groups[k] = []; order.push(k); } groups[k].push(f); });
+    order.sort(function (a, b) { return a === '' ? 1 : b === '' ? -1 : a.localeCompare(b); });
+    return order.map(function (k) {
+      return '<div class="fm-group">' + icon(k ? 'ph-folder-simple' : 'ph-files', 16) + ' ' + esc(k || 'Other files') + ' <span style="font-weight:500">(' + groups[k].length + ')</span></div><div class="fm-list">' + groups[k].map(function (f) { return rowFile(f, true); }).join('') + '</div>';
+    }).join('');
   }
 
   function selectionBar() {
@@ -366,19 +378,19 @@
       folders = M.folders.filter(function (f) { return (f.parentId || null) === M.folderId; });
       files = M.files.filter(function (f) { return (f.folderId || null) === M.folderId; });
       var trail = pathOf(M.folderId);
-      out += '<nav class="fm-crumbs" aria-label="Breadcrumb"><button type="button" class="fm-crumb" data-act="goto" data-id="" ' + (!M.folderId ? 'aria-current="page"' : '') + '>My Files</button>';
+      if (M.folderId) out += '<nav class="fm-crumbs" aria-label="Breadcrumb"><button type="button" class="fm-crumb" data-act="goto" data-id="" ' + (!M.folderId ? 'aria-current="page"' : '') + '>My Files</button>';
       trail.forEach(function (f, i) {
         out += '<span aria-hidden="true" style="color:var(--text-4)">' + icon('ph-caret-right', 12) + '</span><button type="button" class="fm-crumb" data-act="goto" data-id="' + esc(f.id) + '" ' + (i === trail.length - 1 ? 'aria-current="page"' : '') + '>' + esc(f.name) + '</button>';
       });
-      out += '</nav>';
+      if (M.folderId) out += '</nav>';
     }
     folders = folders.slice().sort(function (a, b) { return a.name.localeCompare(b.name); });
     files = files.slice().sort(sorter(M.sort));
     out += selectionBar();
     if (!folders.length && !files.length) {
       out += q ? empty('ph-magnifying-glass', 'No matches', 'Try a different search.')
-        : M.folderId ? empty('ph-folder-open', 'This folder is empty', 'Upload files here or create a subfolder.', '<button type="button" class="fm-btn primary" data-act="upload">' + icon('ph-upload-simple', 16) + ' Upload here</button>')
-          : empty('ph-folder-open', 'No files yet', 'Upload files or create a folder to get organised.', '<button type="button" class="fm-btn primary" data-act="upload">' + icon('ph-upload-simple', 16) + ' Upload files</button>');
+        : M.folderId ? empty('ph-folder-open', 'This folder is empty', 'Tap Upload above to add files here, or create a subfolder.')
+          : empty('ph-folder-open', 'No files yet', 'Tap Upload above, or create a folder to get organised.');
       return out;
     }
     if (files.length > 1) out += '<label style="display:flex;align-items:center;gap:.5rem;font-size:.75rem;color:var(--text-3);min-height:32px"><input type="checkbox" class="fm-check" data-act="selall" aria-label="Select all files in this view"' + (files.every(function (f) { return M.selected.has(f.id); }) ? ' checked' : '') + '> Select all files</label>';
@@ -600,7 +612,7 @@
     dest = dest || {};
     if (!M || M.ctx.uid !== uid) {
       // opened outside the panel: load folders/collections for the pickers
-      M = M || { ctx: { role: isT ? 'teacher' : 'student', uid: uid, name: opts.uploaderName, cls: opts.uploaderClass || '' }, folders: [], collections: [], files: [], shared: [], selected: new Set(), loaded: false, tab: 'files', folderId: null, collectionId: null, search: '', sort: 'newest' };
+      M = M || { ctx: { role: isT ? 'teacher' : 'student', uid: uid, name: opts.uploaderName, cls: opts.uploaderClass || '' }, folders: [], collections: [], files: [], shared: [], selected: new Set(), loaded: false, tab: 'shared', folderId: null, collectionId: null, search: '', sort: 'newest' };
       try {
         var rr = await Promise.all([window.fbDb.collection('userFolders').where('ownerUid', '==', uid).get(), window.fbDb.collection('userCollections').where('ownerUid', '==', uid).get()]);
         M.folders = rr[0].docs.map(function (d) { return Object.assign({ id: d.id }, d.data()); });
@@ -643,6 +655,20 @@
       return true;
     }
 
+    function autoFolderName() {
+      if (st.vis === 'class') { var c = Array.from(st.classes); return c.length === 1 ? c[0] + ' files' : c.length ? 'Class files' : ''; }
+      if (st.vis === 'student') return st.studentName ? st.studentName + ' files' : 'Student files';
+      if (st.vis === 'all') return 'General files';
+      return '';
+    }
+    async function ensureFolder(name) {
+      var ex = M.folders.filter(function (f) { return !f.parentId && f.name.toLowerCase() === name.toLowerCase(); })[0];
+      if (ex) return ex.id;
+      var id = (await op('folder.create', { name: name, parentId: null })).id;
+      M.folders.push({ id: id, name: name, parentId: null, ownerUid: uid });
+      return id;
+    }
+
     function draw() {
       var fo = folderOptions(null);
       var h = '<div class="fmd fm" role="dialog" aria-modal="true" aria-labelledby="fmuT" style="gap:0">' +
@@ -664,9 +690,11 @@
       }
       h += '<div><span class="lbl" style="display:block;font-size:.75rem;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.375rem">Save in</span>' +
         '<div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem"><div><label class="lbl" for="fmuFolder" style="font-size:.6875rem">Folder</label><select id="fmuFolder"' + (st.busy ? ' disabled' : '') + '><option value="">My Files</option>' +
-        fo.map(function (o) { return '<option value="' + esc(o.id) + '"' + (st.folderId === o.id ? ' selected' : '') + '>' + '\u00A0\u00A0'.repeat(o.depth) + esc(o.name) + '</option>'; }).join('') + '</select></div>' +
+        fo.map(function (o) { return '<option value="' + esc(o.id) + '"' + (st.folderId === o.id ? ' selected' : '') + '>' + '\u00A0\u00A0'.repeat(o.depth) + esc(o.name) + '</option>'; }).join('') + '<option value="__new"' + (st.folderId === '__new' ? ' selected' : '') + '>New folder…</option></select></div>' +
         '<div><label class="lbl" for="fmuColl" style="font-size:.6875rem">Collection</label><select id="fmuColl"' + (st.busy ? ' disabled' : '') + '><option value="">None</option>' +
         M.collections.map(function (c) { return '<option value="' + esc(c.id) + '"' + (st.collectionId === c.id ? ' selected' : '') + '>' + esc(c.name) + '</option>'; }).join('') + '<option value="__new">New collection…</option></select></div></div>' +
+        '<div id="fmuNewFolderWrap" style="margin-top:.5rem"' + (st.folderId === '__new' ? '' : ' hidden') + '><input type="text" id="fmuNewFolder" maxlength="80" placeholder="New folder name" aria-label="New folder name" value="' + esc(st.newFolder || '') + '"></div>' +
+        (isT && st.vis !== 'private' && !st.folderId ? '<p style="margin:.5rem 0 0;font-size:.75rem;color:var(--text-3)">A folder for students is created automatically' + (autoFolderName() ? ': ' + esc(autoFolderName()) : '') + '.</p>' : '') +
         '<div id="fmuNewWrap" style="margin-top:.5rem"' + (st.collectionId === '__new' ? '' : ' hidden') + '><input type="text" id="fmuNew" maxlength="80" placeholder="New collection name" aria-label="New collection name" value="' + esc(st.newColl) + '"></div></div>';
       h += '<div><span style="display:block;font-size:.75rem;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:.375rem">Who is this for?</span><div class="fm-vis" role="group" aria-label="Who is this for">' +
         (isT ? [['all', 'All students'], ['class', 'Classes'], ['student', '1 student'], ['private', 'Only me']] : [['teacher', 'Teacher'], ['class', 'My class'], ['private', 'Only me']])
@@ -787,6 +815,7 @@
       st.desc = (document.getElementById('fmuDesc') || {}).value || st.desc || '';
       var expEl = document.getElementById('fmuExp'); st.exp = expEl ? expEl.value : st.exp;
       var newEl = document.getElementById('fmuNew'); if (newEl) st.newColl = newEl.value.trim();
+      var nfEl = document.getElementById('fmuNewFolder'); if (nfEl) st.newFolder = nfEl.value.trim();
       items.forEach(function (i) {
         if (!i.key) i.key = 'uploads/' + uid + '/' + Date.now() + '_' + uid8() + '_' + i.file.name.replace(/[^a-zA-Z0-9._-]/g, '_').slice(-100);
         i.status = 'uploading'; i.pct = 0; i.msg = 'Waiting…'; i.error = '';
@@ -801,6 +830,13 @@
           collId = (await op('collection.create', { name: st.newColl })).id;
           M.collections.push({ id: collId, name: st.newColl, ownerUid: uid });
           st.collectionId = collId; st.newColl = '';
+        }
+        var folderId = st.folderId || null;
+        if (folderId === '__new') {
+          if (!st.newFolder) throw new Error('Enter a name for the new folder.');
+          folderId = await ensureFolder(st.newFolder.trim()); st.folderId = folderId; st.newFolder = '';
+        } else if (!folderId && isT && st.vis !== 'private' && autoFolderName()) {
+          folderId = await ensureFolder(autoFolderName());
         }
         var pre = await api('/storage/presign-upload', {
           files: items.map(function (i) { return { key: i.key, name: i.file.name, size: i.file.size, type: i.file.type || 'application/octet-stream' }; })
@@ -823,7 +859,7 @@
                 targetClasses: st.vis === 'class' && isT ? Array.from(st.classes) : [],
                 targetStudentUid: st.vis === 'student' ? st.studentUid : null,
                 expiresAt: st.exp ? new Date(st.exp).getTime() : null,
-                folderId: st.folderId || null, collectionId: collId
+                folderId: folderId, collectionId: collId
               });
               item.status = 'done';
             } catch (e) {
@@ -880,13 +916,13 @@
     ov.addEventListener('change', function (e) {
       var t = e.target;
       if (t.id === 'fmFiles') { addFiles(t.files); t.value = ''; }
-      else if (t.id === 'fmuFolder') st.folderId = t.value;
+      else if (t.id === 'fmuFolder') { st.folderId = t.value; draw(); if (t.value === '__new') { var nf = document.getElementById('fmuNewFolder'); if (nf) nf.focus(); } }
       else if (t.id === 'fmuColl') { st.collectionId = t.value; var w = document.getElementById('fmuNewWrap'); if (w) w.hidden = t.value !== '__new'; if (t.value === '__new') document.getElementById('fmuNew').focus(); }
       else if (t.dataset && t.dataset.cls) { t.checked ? st.classes.add(t.dataset.cls) : st.classes.delete(t.dataset.cls); draw(); }
-      else if (t.id === 'fmuStu') { st.studentUid = t.value; draw(); }
+      else if (t.id === 'fmuStu') { st.studentUid = t.value; var sc = (studentCache || []).filter(function (x) { return x.uid === t.value; })[0]; st.studentName = sc ? sc.name : ''; draw(); }
       else if (t.id === 'fmuExp') st.exp = t.value;
     });
-    ov.addEventListener('input', function (e) { if (e.target.id === 'fmuDesc') st.desc = e.target.value; if (e.target.id === 'fmuNew') st.newColl = e.target.value; });
+    ov.addEventListener('input', function (e) { if (e.target.id === 'fmuDesc') st.desc = e.target.value; if (e.target.id === 'fmuNew') st.newColl = e.target.value; if (e.target.id === 'fmuNewFolder') st.newFolder = e.target.value; });
     ov.addEventListener('keydown', function (e) {
       if ((e.key === 'Enter' || e.key === ' ') && e.target.id === 'fmDrop') { e.preventDefault(); var fi = document.getElementById('fmFiles'); if (fi) fi.click(); }
     });
