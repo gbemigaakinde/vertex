@@ -232,17 +232,26 @@ async function uploadFile() {
   async function downloadFile(objectKey, fileName, docId) {
     try {
       if (window.UI && UI.toast) UI.toast('Getting download link…', 'info', 2000);
-      const url = await _getPresignedGetUrl(objectKey, docId);
-      const a   = document.createElement('a');
-      a.href     = url;
-      a.download = fileName || 'file';
-      a.target   = '_blank';
-      a.rel      = 'noopener noreferrer';
+      // Stream through the app server (works for students and teachers alike),
+      // then save from memory instead of navigating to the Backblaze URL.
+      const res = await fetch(WORKER_URL + '/storage/view', {
+        method:  'POST',
+        headers: await _authHeaders(),
+        body:    JSON.stringify(docId ? { docId } : { objectKey }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Could not download this file.');
+      }
+      const blob = await res.blob();
+      const u = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = u; a.download = fileName || 'file'; a.style.display = 'none';
       document.body.appendChild(a);
       a.click();
-      setTimeout(function () { a.remove(); }, 1000);
+      setTimeout(function () { a.remove(); URL.revokeObjectURL(u); }, 30000);
     } catch (e) {
-      if (window.UI && UI.toast) UI.toast('Could not open file: ' + e.message, 'error', 5000);
+      if (window.UI && UI.toast) UI.toast('Could not download file: ' + e.message, 'error', 5000);
     }
   }
 
