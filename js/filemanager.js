@@ -478,7 +478,7 @@
     if (kind === 'image' || kind === 'video') {
       var pre = await api('/storage/presign-download', { docId: f.id });
       if (!pre || !pre.url) throw new Error('no url');
-      return { kind: kind, src: pre.url };
+      return { kind: kind, src: pre.path ? location.origin + pre.path : pre.url };
     }
     var hit = savedThumb(f); if (hit) return hit;
     var lib = await loadPdfLib();
