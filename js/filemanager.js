@@ -411,6 +411,7 @@
   }
   function thumbInner(f) {
     var c = thumbCache[f.id];
+    if (!c && thumbKind(f) === 'pdf') { c = savedThumb(f); if (c) thumbCache[f.id] = c; }
     if (c && c.kind === 'image') return '<img alt="" src="' + esc(c.src) + '" data-tf="1">';
     if (c && c.kind === 'pdf') return '<img alt="" src="' + c.src + '" data-tf="1">';
     if (c && c.kind === 'video') return '<video muted playsinline preload="metadata" src="' + esc(c.src) + '" data-tf="1"></video>';
@@ -432,23 +433,56 @@
     });
     return pdfLibP;
   }
-  async function buildThumb(f) {
-    var kind = thumbKind(f);
-    var pre = await api('/storage/presign-download', { docId: f.id });
-    if (!pre || !pre.url) throw new Error('no url');
-    if (kind === 'image' || kind === 'video') return { kind: kind, src: pre.url };
-    // PDF: stream through the worker (same route the viewer uses), draw page 1 to a small image
+  async function viewFetch(f, range) {
     var u = window.fbAuth && window.fbAuth.currentUser;
     if (!u) throw new Error('no user');
-    var res = await fetch(WORKER_URL + '/storage/view', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (await u.getIdToken()) },
-      body: JSON.stringify({ docId: f.id })
-    });
+    var h = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (await u.getIdToken()) };
+    if (range) h.Range = range;
+    var res = await fetch(WORKER_URL + '/storage/view', { method: 'POST', headers: h, body: JSON.stringify({ docId: f.id }) });
     if (!res.ok) throw new Error('view failed');
-    var buf = await res.arrayBuffer();
+    return res;
+  }
+  // Reads only the parts of the PDF that page 1 needs (fast), falls back to the whole file.
+  async function openPdfFast(lib, f) {
+    try {
+      var first = await viewFetch(f, 'bytes=0-65535');
+      var cr = first.headers.get('Content-Range'), total = cr ? parseInt(cr.split('/')[1], 10) : 0;
+      var head = new Uint8Array(await first.arrayBuffer());
+      if (first.status === 206 && total > head.length) {
+        var tr = new lib.PDFDataRangeTransport(total, head);
+        tr.requestDataRange = function (begin, end) {
+          viewFetch(f, 'bytes=' + begin + '-' + (end - 1)).then(function (r) { return r.arrayBuffer(); })
+            .then(function (b) { tr.onDataRange(begin, new Uint8Array(b)); }).catch(function () { });
+        };
+        return await lib.getDocument({ range: tr, length: total, rangeChunkSize: 131072, disableAutoFetch: true, disableStream: true }).promise;
+      }
+      if (first.status === 200) return await lib.getDocument({ data: head }).promise;
+    } catch (e) { /* fall through to full download */ }
+    var full = await (await viewFetch(f)).arrayBuffer();
+    return lib.getDocument({ data: new Uint8Array(full) }).promise;
+  }
+  function savedThumb(f) {
+    try { var v = localStorage.getItem('vtx_th_' + f.id + '_' + (f.fileSize || 0)); return v ? { kind: 'pdf', src: v } : null; } catch (e) { return null; }
+  }
+  function saveThumb(f, src) {
+    try {
+      var idx = JSON.parse(localStorage.getItem('vtx_th_idx') || '[]');
+      var key = 'vtx_th_' + f.id + '_' + (f.fileSize || 0);
+      idx = idx.filter(function (k) { return k !== key; }); idx.push(key);
+      while (idx.length > 120) localStorage.removeItem(idx.shift());
+      localStorage.setItem(key, src); localStorage.setItem('vtx_th_idx', JSON.stringify(idx));
+    } catch (e) { /* storage full: skip */ }
+  }
+  async function buildThumb(f) {
+    var kind = thumbKind(f);
+    if (kind === 'image' || kind === 'video') {
+      var pre = await api('/storage/presign-download', { docId: f.id });
+      if (!pre || !pre.url) throw new Error('no url');
+      return { kind: kind, src: pre.url };
+    }
+    var hit = savedThumb(f); if (hit) return hit;
     var lib = await loadPdfLib();
-    var pdf = await lib.getDocument({ data: new Uint8Array(buf) }).promise;
+    var pdf = await openPdfFast(lib, f);
     var page = await pdf.getPage(1);
     var vp0 = page.getViewport({ scale: 1 });
     var scale = 160 / Math.min(vp0.width, vp0.height);
@@ -458,10 +492,11 @@
     await page.render({ canvasContext: cx, viewport: vp }).promise;
     var out = cv.toDataURL('image/jpeg', 0.7);
     try { pdf.destroy(); } catch (e) { }
+    saveThumb(f, out);
     return { kind: 'pdf', src: out };
   }
   function pumpThumbs() {
-    while (thumbBusy < 3 && thumbQueue.length) {
+    while (thumbBusy < 5 && thumbQueue.length) {
       (function (job) {
         thumbBusy++;
         buildThumb(job.f).then(function (c) { thumbCache[job.f.id] = c; }).catch(function () { thumbFail[job.f.id] = true; })
@@ -482,6 +517,7 @@
   }
   function hydrateThumbs(root) {
     if (!M) return;
+    if (!window.pdfjsLib && !pdfLibP) loadPdfLib().catch(function () { });
     if (thumbObs) { thumbObs.disconnect(); thumbObs = null; }
     var els = root.querySelectorAll('[data-th]');
     var byId = {}; M.files.concat(M.shared).forEach(function (f) { byId[f.id] = f; });
@@ -499,7 +535,7 @@
     if ('IntersectionObserver' in window) {
       thumbObs = new IntersectionObserver(function (entries) {
         entries.forEach(function (en) { if (en.isIntersecting) { thumbObs.unobserve(en.target); want(en.target); } });
-      }, { rootMargin: '200px' });
+      }, { rootMargin: '600px' });
       els.forEach(function (el) { thumbObs.observe(el); });
     } else els.forEach(want);
   }
