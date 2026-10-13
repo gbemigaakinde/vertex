@@ -335,15 +335,33 @@
   }
 
   /* ── file download (explicit, never automatic) ─────────── */
+  function saveBlob(blob, name) {
+    var u = URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = u; a.download = name || 'file'; a.style.display = 'none';
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { a.remove(); URL.revokeObjectURL(u); }, 30000);
+  }
   async function download() {
     if (!S) return;
+    var sess = S, name = S.name || 'file';
     try {
       toast('Preparing download…', 'info');
+      var size = (S.meta && S.meta.fileSize) || 0;
+      // Normal files: stream through the app server (same path the viewer uses, so
+      // it works for every role) and save from memory. No direct Backblaze navigation.
+      if (!size || size <= MAX_INLINE_MB * 1024 * 1024) {
+        var blob = await fcGet();
+        if (!blob) blob = await fetchBlobNet(sess.token);
+        if (!blob || !blob.size) throw new Error('The file came back empty. Please retry.');
+        saveBlob(blob, name);
+        toast('Download started.', 'success');
+        return;
+      }
+      // Very large files: open the signed link in this tab (no popup, no download attribute).
       var d = await postJson('/storage/presign-download', S.docId ? { docId: S.docId } : { objectKey: S.opts.objectKey });
-      var a = document.createElement('a');
-      a.href = d.url; a.download = S.name || 'file'; a.target = '_blank'; a.rel = 'noopener noreferrer';
-      document.body.appendChild(a); a.click(); setTimeout(function () { a.remove(); }, 1000);
-    } catch (e) { toast('Could not download: ' + e.message, 'error'); }
+      window.location.href = d.url;
+    } catch (e) { if (e && e.message === 'cancelled') return; toast('Could not download: ' + e.message, 'error'); }
   }
 
   /* ── stage helpers ─────────────────────────────────────── */
