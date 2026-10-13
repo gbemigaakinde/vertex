@@ -11,7 +11,7 @@
   const STUDENT_MAX_FILE_MB        = 20;   // non-video cap for students
   const STUDENT_MAX_VIDEO_MB       = 30;   // video cap for students
   const TEACHER_MAX_FILE_MB        = 5000; // practical ceiling for teachers ("unlimited")
-  const STUDENT_DAILY_UPLOAD_LIMIT = 5;   // uploads per student per day
+  const STUDENT_DAILY_UPLOAD_LIMIT = 50;  // uploads per student per day (enforced server-side)
 
   const ALLOWED_TYPES = {
     'application/pdf':                          'pdf',
@@ -189,133 +189,42 @@ async function _fetchClassList() {
   return _cachedClassList;
 }
    
+  /* ── Auth: every Worker storage call carries the Firebase ID token ── */
+  async function _authHeaders() {
+    var u = window.fbAuth && window.fbAuth.currentUser;
+    if (!u) throw new Error('Please sign in again.');
+    return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (await u.getIdToken()) };
+  }
+
   /* ── CORE: get presigned upload URL from Worker ────────── */
-  async function _getPresignedPutUrl(objectKey, contentType) {
-    const res = await fetch(WORKER_URL + '/storage/presign-upload', {
+
+  /* ── CORE: get presigned download URL from Worker ──────── */
+  async function _getPresignedGetUrl(objectKey, docId) {
+    const res = await fetch(WORKER_URL + '/storage/presign-download', {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ objectKey, contentType }),
+      headers: await _authHeaders(),
+      body:    JSON.stringify(docId ? { docId } : { objectKey }),
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.error || 'Failed to get upload permission.');
+      throw new Error(err.error || 'Failed to get download link.');
     }
     const data = await res.json();
-    return data.url; // presigned PUT URL valid for 5 minutes
-  }
-
-  /* ── CORE: get presigned download URL from Worker ──────── */
-  async function _getPresignedGetUrl(objectKey) {
-    const res = await fetch(WORKER_URL + '/storage/presign-download', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ objectKey }),
-    });
-    if (!res.ok) throw new Error('Failed to get download link.');
-    const data = await res.json();
-    return data.url; // presigned GET URL valid for 1 hour
-  }
-
-  /* ── CORE: delete file from B2 via Worker ──────────────── */
-  async function _deleteFromB2(objectKey) {
-    const res = await fetch(WORKER_URL + '/storage/delete', {
-      method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body:    JSON.stringify({ objectKey }),
-    });
-    if (!res.ok) throw new Error('Failed to delete file from storage.');
+    return data.url; // presigned GET URL, only issued if this user may see the file
   }
 
   /* ── CORE: save metadata to Firestore ──────────────────── */
-  async function _saveMetadata(meta) {
-    await window.fbDb.collection('uploads').add({
-      ...meta,
-      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    });
-  }
 
   /* ── CORE: upload pipeline ─────────────────────────────── */
-async function uploadFile(file, opts, onProgress) {
-  if (!file) throw new Error('No file selected.');
-
-  const role = opts.uploaderRole || 'student';
-  const validationError = _fileValidationError(file, role);
-  if (validationError) throw new Error(validationError);
-
-  if (role !== 'teacher') {
-    const limitCheck = await _checkStudentDailyLimit(opts.uploaderUid);
-    if (!limitCheck.allowed) {
-      throw new Error('Daily upload limit reached (' + limitCheck.limit + ' files/day). Try again tomorrow.');
-    }
-  }
-
-  if (opts.sharedWith === 'student' && !opts.targetStudentUid) {
-    throw new Error('Please select which student this file is for.');
-  }
-
-  // NEW validation
-  if (opts.sharedWith === 'class' && role === 'teacher' && !opts.targetClass) {
-    throw new Error('Please select which class this file is for.');
-  }
-
-  const ext         = _ext(file.name);
-  const isVideo     = _isVideoFile(file);
-  const objectKey   = _safeKey(opts.uploaderUid, file.name);
-  const contentType = file.type || 'application/octet-stream';
-
-  if (onProgress) onProgress(10, 'Getting upload permission…');
-  const putUrl = await _getPresignedPutUrl(objectKey, contentType);
-
-  if (onProgress) onProgress(20, 'Uploading file…');
-  await new Promise(function (resolve, reject) {
-    const xhr = new XMLHttpRequest();
-    xhr.open('PUT', putUrl);
-    xhr.setRequestHeader('Content-Type', contentType);
-    xhr.upload.onprogress = function (e) {
-      if (e.lengthComputable && onProgress) {
-        const pct = Math.round(20 + (e.loaded / e.total) * 65);
-        onProgress(pct, 'Uploading… ' + Math.round((e.loaded / e.total) * 100) + '%');
-      }
-    };
-    xhr.onload  = function () {
-      if (xhr.status >= 200 && xhr.status < 300) resolve();
-      else reject(new Error('Upload failed: HTTP ' + xhr.status));
-    };
-    xhr.onerror = function () { reject(new Error('Network error during upload.')); };
-    xhr.send(file);
-  });
-
-  if (onProgress) onProgress(90, 'Saving file record…');
-  const meta = {
-    objectKey,
-    fileName:          file.name,
-    fileSize:          file.size,
-    fileType:          contentType,
-    fileExt:           ext,
-    isVideo:           isVideo,
-    uploaderUid:       opts.uploaderUid,
-    uploaderName:      opts.uploaderName,
-    uploaderRole:      role,
-    uploaderClass:     opts.uploaderClass || '',
-    context:           opts.context       || 'general',
-    description:       opts.description   || '',
-    sharedWith:        opts.sharedWith    || 'private',
-    targetStudentUid:  opts.sharedWith === 'student' ? (opts.targetStudentUid  || null) : null,
-    targetStudentName: opts.sharedWith === 'student' ? (opts.targetStudentName || null) : null,
-    targetClass:       opts.sharedWith === 'class'   ? (opts.targetClass       || null) : null,
-    expiresAt:         opts.expiresAt ? firebase.firestore.Timestamp.fromDate(opts.expiresAt) : null,
-  };
-  await _saveMetadata(meta);
-
-  if (onProgress) onProgress(100, 'Done!');
-  return { objectKey, fileName: file.name, fileSize: file.size };
+async function uploadFile() {
+  throw new Error('Single-file upload has been replaced by the file manager upload queue.');
 }
 
   /* ── CORE: open file (download via presigned URL) ──────── */
-  async function openFile(objectKey, fileName) {
+  async function openFile(objectKey, fileName, docId) {
     try {
       if (window.UI && UI.toast) UI.toast('Getting download link…', 'info', 2000);
-      const url = await _getPresignedGetUrl(objectKey);
+      const url = await _getPresignedGetUrl(objectKey, docId);
       const a   = document.createElement('a');
       a.href     = url;
       a.download = fileName || 'file';
@@ -330,13 +239,16 @@ async function uploadFile(file, opts, onProgress) {
   }
 
   /* ── CORE: delete a file (metadata + B2 object) ────────── */
-  async function deleteFile(docId, objectKey) {
-    try {
-      await _deleteFromB2(objectKey);
-    } catch (e) {
-      console.warn('[storage] B2 delete failed (non-fatal):', e.message);
+  async function deleteFile(docId) {
+    const res = await fetch(WORKER_URL + '/storage/delete', {
+      method:  'POST',
+      headers: await _authHeaders(),
+      body:    JSON.stringify({ docId }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || 'Could not delete file.');
     }
-    await window.fbDb.collection('uploads').doc(docId).delete();
   }
 
   /* ══════════════════════════════════════════════════════════
@@ -344,6 +256,7 @@ async function uploadFile(file, opts, onProgress) {
      Called from student dashboard and teacher dashboard.
   ══════════════════════════════════════════════════════════ */
 function openUploadModal(opts) {
+  if (window.FileManager) { FileManager.openUpload(opts, {}); return; }
   const existing = document.getElementById('vtxStorageUploadModal');
   if (existing) existing.remove();
 
@@ -1130,6 +1043,7 @@ function _loadFiles(containerId, queryOpts, userOpts) {
     var sd  = AppState.studentData;
     var uid = AppState.userId;
     if (!sd || !uid) return;
+    if (window.FileManager) { FileManager.mount(containerId, { role: 'student', uid: uid, name: sd.name, cls: sd.class || '' }); return; }
 
     renderFileList(containerId, {
       role:          'student',
@@ -1153,6 +1067,7 @@ function _loadFiles(containerId, queryOpts, userOpts) {
   ══════════════════════════════════════════════════════════ */
   function renderTeacherStoragePanel(containerId) {
     var uid = AppState.userId;
+    if (window.FileManager) { FileManager.mount(containerId, { role: 'teacher', uid: uid, name: 'Master Timothy', cls: '' }); return; }
     renderFileList(containerId, {
       role: 'teacher',
     }, {
