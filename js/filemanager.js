@@ -202,16 +202,57 @@
     M = {
       id: containerId, ctx: ctx, tab: 'shared', folderId: null, collectionId: null,
       folders: [], collections: [], files: [], shared: [], search: '', sort: 'newest',
-      selected: new Set(), loaded: false, error: ''
+      selected: new Set(), loaded: false, error: '', unread: {}, unreadTotal: 0, sharedFolder: null, lastNotifId: null
     };
     el.innerHTML = '<div class="fm" id="fmRoot"></div>';
     bind(el);
     render();
+    startNotifPoll();
     await refresh();
   }
 
+  /* ── Feedback notification counters (in-app) ── */
+  var notifTimer = null;
+  async function loadNotifs(announce) {
+    if (!M) return;
+    try {
+      var r = await op('notif.list');
+      var first = M.lastNotifId === null;
+      M.unread = r.byDoc || {}; M.unreadTotal = r.total || 0;
+      if (!first && announce && r.latest && r.latest.id !== M.lastNotifId) {
+        toast((r.latest.authorName || 'Someone') + ' left feedback on ' + r.latest.fileName, 'info');
+      }
+      M.lastNotifId = r.latest ? r.latest.id : '';
+      render();
+      window.dispatchEvent(new CustomEvent('vtx:filenotifs', { detail: { total: M.unreadTotal } }));
+    } catch (e) { /* counters are best effort */ }
+  }
+  window.addEventListener('vtx:filenotifs-cleared', function (e) {
+    var id = e.detail && e.detail.docId;
+    if (M && id && M.unread[id]) { M.unreadTotal = Math.max(0, M.unreadTotal - M.unread[id]); delete M.unread[id]; render(); }
+  });
+  function startNotifPoll() {
+    if (notifTimer) clearInterval(notifTimer);
+    loadNotifs(false);
+    notifTimer = setInterval(function () {
+      if (!M || !document.getElementById(M.id)) { clearInterval(notifTimer); notifTimer = null; return; }
+      if (!document.hidden) loadNotifs(true);
+    }, 30000);
+  }
+  function clearUnread(docId) {
+    if (!M || !M.unread[docId]) return;
+    M.unreadTotal = Math.max(0, M.unreadTotal - M.unread[docId]);
+    delete M.unread[docId];
+    render();
+    op('notif.read', { docId: docId }).catch(function () { });
+    window.dispatchEvent(new CustomEvent('vtx:filenotifs', { detail: { total: M.unreadTotal } }));
+  }
+  function unreadIn(files) { return files.reduce(function (n, f) { return n + (M.unread[f.id] || 0); }, 0); }
+  function cnt(n) { return n > 0 ? '<span class="fm-badge" style="background:var(--danger,#dc2626);color:#fff" aria-label="' + n + ' unread feedback">' + (n > 9 ? '9+' : n) + '</span>' : ''; }
+
   async function refresh() {
     if (!M) return;
+    loadNotifs(false);
     var uid = M.ctx.uid, db = window.fbDb;
     try {
       var r = await Promise.all([
@@ -297,13 +338,14 @@
       '<span style="font-size:1.5rem;color:var(--accent);display:inline-flex;flex-shrink:0">' + icon(fileIcon(f.fileExt), 24) + '</span>' +
       '<span style="min-width:0"><span class="fm-row-name" style="display:block">' + esc(f.fileName) + '</span>' +
       '<span class="fm-row-meta" style="display:block">' + esc(meta.join(' · ')) + '<span class="fm-badge">' + esc(share) + '</span>' +
-      (coll ? '<span class="fm-badge">' + esc(coll.name) + '</span>' : '') + (f.uploaderRole === 'student' ? '<span class="fm-badge">' + esc(({ pending: 'Awaiting review', reviewed: 'Reviewed', needs_revision: 'Needs revision', approved: 'Approved' })[f.reviewStatus || 'pending']) + '</span>' : '') + '</span></span></button>' +
+      (coll ? '<span class="fm-badge">' + esc(coll.name) + '</span>' : '') + cnt(M.unread[f.id] || 0) + (f.uploaderRole === 'student' ? '<span class="fm-badge">' + esc(({ pending: 'Awaiting review', reviewed: 'Reviewed', needs_revision: 'Needs revision', approved: 'Approved' })[f.reviewStatus || 'pending']) + '</span>' : '') + '</span></span></button>' +
       ((!shared && mine) || canDel ? '<button type="button" class="fm-icon-btn" data-act="filemenu" data-id="' + esc(f.id) + '" data-shared="' + (shared ? 1 : 0) + '" aria-label="Actions for ' + esc(f.fileName) + '" aria-haspopup="menu">' + icon('ph-dots-three-vertical', 18) + '</button>' : '') +
       '</div>';
   }
 
   function rowFolder(f) {
     var kids = M.folders.filter(function (x) { return x.parentId === f.id; }).length + M.files.filter(function (x) { return x.folderId === f.id; }).length;
+    var ds = descendantsOf(f.id), fUnread = unreadIn(M.files.filter(function (x) { return ds.has(x.folderId); }));
     return '<div class="fm-row"><button type="button" class="fm-row-main" data-act="enter" data-id="' + esc(f.id) + '" aria-label="Open folder ' + esc(f.name) + '">' +
       '<span style="color:var(--accent);display:inline-flex">' + icon('ph-folder-simple', 26) + '</span>' +
       '<span style="min-width:0"><span class="fm-row-name" style="display:block">' + esc(f.name) + '</span>' +
@@ -326,8 +368,8 @@
     if (M.tab === 'collections' && !M.collectionId) h += '<button type="button" class="fm-btn" data-act="newcoll">' + icon('ph-plus', 16) + ' New collection</button>';
     h += '<button type="button" class="fm-btn primary" data-act="upload">' + icon('ph-upload-simple', 16) + ' Upload</button></div></div>';
     h += '<div class="fm-tabs" role="tablist" aria-label="File views">' +
-      '<button type="button" role="tab" class="fm-tab" data-act="tab" data-id="shared" aria-selected="' + (M.tab === 'shared') + '">' + (isT ? 'All files' : 'Shared with me') + '</button>' +
-      '<button type="button" role="tab" class="fm-tab" data-act="tab" data-id="files" aria-selected="' + (M.tab === 'files') + '">My Files</button>' +
+      '<button type="button" role="tab" class="fm-tab" data-act="tab" data-id="shared" aria-selected="' + (M.tab === 'shared') + '">' + (isT ? 'All files' : 'Shared with me') + cnt(unreadIn(M.shared)) + '</button>' +
+      '<button type="button" role="tab" class="fm-tab" data-act="tab" data-id="files" aria-selected="' + (M.tab === 'files') + '">My Files' + cnt(unreadIn(M.files)) + '</button>' +
       '<button type="button" role="tab" class="fm-tab" data-act="tab" data-id="collections" aria-selected="' + (M.tab === 'collections') + '">Collections</button></div>';
     h += '<div class="fm-tools"><input type="text" id="fmSearch" placeholder="Search files and folders" aria-label="Search files and folders" value="' + esc(M.search) + '">' +
       '<select id="fmSort" aria-label="Sort by"><option value="newest"' + (M.sort === 'newest' ? ' selected' : '') + '>Newest</option><option value="name"' + (M.sort === 'name' ? ' selected' : '') + '>Name</option><option value="size"' + (M.sort === 'size' ? ' selected' : '') + '>Largest</option></select></div>';
@@ -352,12 +394,20 @@
 
   function sharedList(list) {
     if (!list.some(function (f) { return f.folderName; })) return '<div class="fm-list">' + list.map(function (f) { return rowFile(f, true); }).join('') + '</div>';
-    var groups = {}, order = [];
-    list.forEach(function (f) { var k = f.folderName || ''; if (!groups[k]) { groups[k] = []; order.push(k); } groups[k].push(f); });
-    order.sort(function (a, b) { return a === '' ? 1 : b === '' ? -1 : a.localeCompare(b); });
-    return order.map(function (k) {
-      return '<div class="fm-group">' + icon(k ? 'ph-folder-simple' : 'ph-files', 16) + ' ' + esc(k || 'Other files') + ' <span style="font-weight:500">(' + groups[k].length + ')</span></div><div class="fm-list">' + groups[k].map(function (f) { return rowFile(f, true); }).join('') + '</div>';
-    }).join('');
+    var groups = {}, order = [], loose = [];
+    list.forEach(function (f) { var k = f.folderName || ''; if (!k) { loose.push(f); return; } if (!groups[k]) { groups[k] = []; order.push(k); } groups[k].push(f); });
+    order.sort(function (a, b) { return a.localeCompare(b); });
+    if (M.sharedFolder && groups[M.sharedFolder]) {
+      return '<nav class="fm-crumbs" aria-label="Breadcrumb"><button type="button" class="fm-crumb" data-act="sharedenter" data-name="">Shared</button> / <span>' + esc(M.sharedFolder) + '</span></nav>' +
+        '<div class="fm-list">' + groups[M.sharedFolder].map(function (f) { return rowFile(f, true); }).join('') + '</div>';
+    }
+    M.sharedFolder = null;
+    return '<div class="fm-list">' + order.map(function (k) {
+      return '<div class="fm-row"><button type="button" class="fm-row-main" data-act="sharedenter" data-name="' + esc(k) + '" aria-label="Open folder ' + esc(k) + '">' +
+        '<span style="color:var(--accent);display:inline-flex">' + icon('ph-folder-simple', 26) + '</span>' +
+        '<span style="min-width:0"><span class="fm-row-name" style="display:block">' + esc(k) + '</span>' +
+        '<span class="fm-row-meta" style="display:block">' + groups[k].length + (groups[k].length === 1 ? ' item' : ' items') + cnt(unreadIn(groups[k])) + '</span></span></button></div>';
+    }).join('') + loose.map(function (f) { return rowFile(f, true); }).join('') + '</div>';
   }
 
   function selectionBar() {
@@ -552,16 +602,17 @@
       var b = e.target.closest('[data-act]'); if (!b || b.type === 'checkbox') return;
       var act = b.dataset.act, id = b.dataset.id;
       switch (act) {
-        case 'tab': M.tab = id; M.selected.clear(); M.collectionId = null; render(); break;
+        case 'tab': M.tab = id; M.selected.clear(); M.collectionId = null; M.sharedFolder = null; render(); break;
+        case 'sharedenter': M.sharedFolder = b.dataset.name || null; M.search = ''; render(); break;
         case 'reload': M.error = ''; M.loaded = false; render(); refresh(); break;
-        case 'upload': openUpload({ uploaderRole: M.ctx.role, uploaderUid: M.ctx.uid, uploaderName: M.ctx.name, uploaderClass: M.ctx.cls }, { folderId: M.tab === 'files' ? M.folderId : null, collectionId: M.tab === 'collections' ? M.collectionId : null }); break;
+        case 'upload': openUpload({ uploaderRole: M.ctx.role, uploaderUid: M.ctx.uid, uploaderName: M.ctx.name, uploaderClass: M.ctx.cls }, { folderId: M.tab === 'files' ? M.folderId : null, folderName: M.tab === 'shared' ? M.sharedFolder : null, collectionId: M.tab === 'collections' ? M.collectionId : null }); break;
         case 'goto': M.folderId = id || null; M.search = ''; M.selected.clear(); render(); break;
         case 'enter': M.folderId = id; M.search = ''; M.selected.clear(); render(); break;
         case 'clearsel': M.selected.clear(); render(); break;
         case 'bulkmove': moveFiles(Array.from(M.selected)); break;
         case 'bulkcoll': setCollection(Array.from(M.selected)); break;
         case 'bulkdel': deleteFiles(Array.from(M.selected)); break;
-        case 'open': { var f = fileById(id); if (f) Storage.openFile(f.objectKey, f.fileName, f.id); break; }
+        case 'open': { var f = fileById(id); if (f) { Storage.openFile(f.objectKey, f.fileName, f.id); clearUnread(f.id); } break; }
         case 'newfolder': nameDialog('New folder', '', 'Folder name').then(function (n) { if (n) run(function () { return op('folder.create', { name: n, parentId: M.folderId }); }, 'Folder created.'); }); break;
         case 'newcoll': nameDialog('New collection', '', 'Collection name').then(function (n) { if (n) run(function () { return op('collection.create', { name: n }); }, 'Collection created.'); }); break;
         case 'opencoll': M.collectionId = id; M.search = ''; M.selected.clear(); render(); break;
@@ -626,6 +677,10 @@
       studentUid: '', studentName: '', folderId: dest.folderId || '', collectionId: dest.collectionId || '', newColl: '',
       used: 0, limit: isT ? null : STUDENT_DAILY_LIMIT
     };
+    if (!st.folderId && dest.folderName) {
+      var hit = M.folders.filter(function (f) { return !f.parentId && f.name.toLowerCase() === String(dest.folderName).toLowerCase(); })[0];
+      if (hit) st.folderId = hit.id; else { st.folderId = '__new'; st.newFolder = dest.folderName; }
+    }
     var prev = document.activeElement;
     var ov = document.createElement('div');
     ov.id = 'fmUpload'; ov.className = 'fmd-ov';
