@@ -127,6 +127,11 @@
       '.vv-tools{display:flex;align-items:center;gap:.375rem;padding:.375rem .625rem;background:var(--bg-base,#fff);border-bottom:1px solid var(--border,#ddd);flex-shrink:0;flex-wrap:wrap}',
       '.vv-tools .vv-btn{min-height:32px;min-width:32px;padding:0 .5rem}',
       '.vv-tools .sp{flex:1}',
+      '.vv-jump{width:58px;min-height:34px;box-sizing:border-box;text-align:center;border-radius:var(--r-lg,10px);border:1px solid var(--border,#ddd);background:var(--bg-subtle,#f6f6f6);color:var(--text-1,#111);font:600 .8125rem var(--font,inherit);padding:0 .25rem;-moz-appearance:textfield}',
+      '.vv-jump::-webkit-outer-spin-button,.vv-jump::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}',
+      '.vv-jumpbox{display:inline-flex;align-items:center;gap:.25rem;flex-shrink:0;font-size:.75rem;color:var(--text-3,#777)}',
+      '.vv-sheet tr{scroll-margin-top:34px}',
+      '.vv-sheet tr.hit td{background:var(--accent-subtle,#e8f0ff);transition:background .3s}',
       '.vv-tools .lbl{font-size:.75rem;color:var(--text-3,#777);min-width:60px;text-align:center}',
       '.vv-view{flex:1;min-height:0;position:relative;overflow:auto;-webkit-overflow-scrolling:touch}',
       '.vv-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.75rem;padding:1.5rem;text-align:center;color:var(--text-2,#333)}',
@@ -575,7 +580,8 @@
     setTools('<button class="vv-btn" data-p="out" aria-label="Zoom out">' + ic('minus') + '</button><span class="lbl" data-zl>100%</span>' +
       '<button class="vv-btn" data-p="in" aria-label="Zoom in">' + ic('plus') + '</button><button class="vv-btn" data-p="fit">Fit width</button><span class="sp"></span>' +
       '<button class="vv-btn" data-p="prev" aria-label="Previous page">' + ic('caret-up') + '</button>' +
-      '<span class="lbl" data-pl>1 / ' + n + '</span>' +
+      '<input class="vv-jump" data-pj type="number" inputmode="numeric" min="1" max="' + n + '" value="1" aria-label="Go to page">' +
+      '<span class="lbl" data-pl style="min-width:0">/ ' + n + '</span>' +
       '<button class="vv-btn" data-p="next" aria-label="Next page">' + ic('caret-down') + '</button>');
     var first = await pdf.getPage(1);
     var base = first.getViewport({ scale: 1 });
@@ -633,7 +639,21 @@
     var rt; function onResize() { clearTimeout(rt); rt = setTimeout(rerender, 200); }
     window.addEventListener('resize', onResize); s.cleanup.push(function () { window.removeEventListener('resize', onResize); clearTimeout(rt); });
 
-    function goto(k) { k = Math.max(1, Math.min(n, k)); pages[k - 1].el.scrollIntoView({ block: 'start' }); }
+    function goto(k) { k = Math.max(1, Math.min(n, k)); pages[k - 1].el.scrollIntoView({ block: 'start' }); cur = k; var pj = s.tools.querySelector('[data-pj]'); if (pj && document.activeElement !== pj) pj.value = k; }
+    function jumpFromInput() {
+      var pj = s.tools.querySelector('[data-pj]'); if (!pj) return;
+      var k = parseInt(pj.value, 10);
+      if (!k || k < 1 || k > n) { toast('Enter a page from 1 to ' + n + '.', 'error'); pj.value = cur; return; }
+      goto(k); pj.blur();
+    }
+    s.tools.addEventListener('keydown', function (ev) {
+      if (ev.target && ev.target.hasAttribute && ev.target.hasAttribute('data-pj')) {
+        if (ev.key === 'Enter') { ev.preventDefault(); jumpFromInput(); }
+        ev.stopPropagation();
+      }
+    });
+    s.tools.addEventListener('focusin', function (ev) { if (ev.target && ev.target.hasAttribute && ev.target.hasAttribute('data-pj')) ev.target.select(); });
+    s.tools.addEventListener('change', function (ev) { if (ev.target && ev.target.hasAttribute && ev.target.hasAttribute('data-pj')) jumpFromInput(); });
     function setZoom(z) { zoom = Math.min(4, Math.max(0.4, z)); rerender(); }
     s.tools.onclick = function (ev) {
       var b = ev.target.closest('[data-p]'); if (!b) return; var k = b.getAttribute('data-p');
@@ -646,11 +666,14 @@
       st = setTimeout(function () {
         st = null; var mid = s.view.scrollTop + s.view.clientHeight / 3, best = 1;
         for (var j = 0; j < pages.length; j++) { if (pages[j].el.offsetTop <= mid) best = j + 1; else break; }
-        cur = best; var l = s.tools.querySelector('[data-pl]'); if (l) l.textContent = cur + ' / ' + n;
+        cur = best; var pj = s.tools.querySelector('[data-pj]'); if (pj && document.activeElement !== pj) pj.value = cur;
       }, 80);
     });
     s.keyHandler = function (ev) {
-      if (ev.key === 'ArrowRight' || ev.key === 'PageDown') { goto(cur + 1); ev.preventDefault(); }
+      if (ev.key === 'g' || ev.key === 'G') { var pj = s.tools.querySelector('[data-pj]'); if (pj) { pj.focus(); pj.select(); ev.preventDefault(); } }
+      else if (ev.key === 'Home') { goto(1); ev.preventDefault(); }
+      else if (ev.key === 'End') { goto(n); ev.preventDefault(); }
+      else if (ev.key === 'ArrowRight' || ev.key === 'PageDown') { goto(cur + 1); ev.preventDefault(); }
       else if (ev.key === 'ArrowLeft' || ev.key === 'PageUp') { goto(cur - 1); ev.preventDefault(); }
       else if (ev.key === '+' || ev.key === '=') setZoom(zoom * 1.25);
       else if (ev.key === '-') setZoom(zoom / 1.25);
@@ -693,11 +716,33 @@
     for (var c = 0; c < cols; c++) h += '<th>' + colName(c) + '</th>';
     h += '</tr></thead><tbody>';
     rows.slice(0, MAX_SHEET_ROWS).forEach(function (r, i) {
-      h += '<tr><td class="n">' + (i + 1) + '</td>';
+      h += '<tr data-r="' + (i + 1) + '"><td class="n">' + (i + 1) + '</td>';
       for (var c2 = 0; c2 < cols; c2++) h += '<td title="' + esc(r[c2]) + '">' + esc(r[c2] == null ? '' : r[c2]) + '</td>';
       h += '</tr>';
     });
     return h + '</tbody></table>';
+  }
+  function jumpBoxHtml() {
+    return '<span class="vv-jumpbox"><span>Row</span><input class="vv-jump" data-rj type="text" inputmode="numeric" placeholder="e.g. 250" aria-label="Go to row"><button class="vv-btn" data-rjgo>Go</button></span>';
+  }
+  function bindRowJump(s) {
+    function go() {
+      var inp = s.tools.querySelector('[data-rj]'); if (!inp) return;
+      var m = String(inp.value).match(/(\d+)\s*$/); var r = m ? parseInt(m[1], 10) : 0;
+      var rows = s.view.querySelectorAll('tbody tr'); var total = rows.length;
+      if (!r || r < 1) { toast('Enter a row number.', 'error'); return; }
+      if (r > total) { toast('This sheet shows ' + total + ' rows.', 'error'); r = total; }
+      var tr = s.view.querySelector('tr[data-r="' + r + '"]'); if (!tr) return;
+      var old = s.view.querySelector('tr.hit'); if (old) old.classList.remove('hit');
+      tr.classList.add('hit'); tr.scrollIntoView({ block: 'start' });
+      setTimeout(function () { tr.classList.remove('hit'); }, 2500);
+      inp.blur();
+    }
+    s.tools.addEventListener('keydown', function (ev) {
+      if (ev.target && ev.target.hasAttribute && ev.target.hasAttribute('data-rj')) { if (ev.key === 'Enter') { ev.preventDefault(); go(); } ev.stopPropagation(); }
+    });
+    s.tools.addEventListener('click', function (ev) { if (ev.target.closest && ev.target.closest('[data-rjgo]')) go(); });
+    s.keyHandler = function (ev) { if (ev.key === 'g' || ev.key === 'G') { var i = s.tools.querySelector('[data-rj]'); if (i) { i.focus(); ev.preventDefault(); } } };
   }
   function colName(i) { var s = ''; i++; while (i > 0) { var m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; }
   function renderCsv(s, text) {
@@ -705,6 +750,8 @@
     s.view.style.overflow = 'auto';
     if (!rows.length) return setCenter('info', 'This file is empty.', { noDownload: true });
     s.view.innerHTML = tableHtml(rows) + (rows.length > MAX_SHEET_ROWS ? '<div class="vv-note">Showing the first ' + MAX_SHEET_ROWS + ' rows. Download for the full file.</div>' : '');
+    setTools('<span class="sp"></span>' + jumpBoxHtml());
+    bindRowJump(s);
   }
 
   /* ── docx (mammoth) ───────────────────────────────────── */
@@ -749,8 +796,9 @@
       s.view.innerHTML = rows.length ? tableHtml(rows) + (rows.length > MAX_SHEET_ROWS ? '<div class="vv-note">Showing the first ' + MAX_SHEET_ROWS + ' rows. Download for the full sheet.</div>' : '') : '<div class="vv-center"><p>This sheet is empty.</p></div>';
       s.tools.querySelectorAll('[data-sh]').forEach(function (b) { b.classList.toggle('on', +b.getAttribute('data-sh') === i); });
     }
-    setTools('<div class="vv-tabs">' + names.map(function (nm, i) { return '<button class="vv-btn" data-sh="' + i + '">' + esc(nm) + '</button>'; }).join('') + '</div>');
+    setTools('<div class="vv-tabs">' + names.map(function (nm, i) { return '<button class="vv-btn" data-sh="' + i + '">' + esc(nm) + '</button>'; }).join('') + '</div>' + jumpBoxHtml());
     s.tools.onclick = function (ev) { var b = ev.target.closest('[data-sh]'); if (b) show(+b.getAttribute('data-sh')); };
+    bindRowJump(s);
     show(0);
   }
 
