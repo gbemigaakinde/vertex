@@ -364,8 +364,49 @@
     S.tools.innerHTML = html; S.tools.style.display = html ? 'flex' : 'none';
   }
 
+  /* ── On-device file cache ──
+     Access is still checked by the server (file.info) on every open; only the
+     download is skipped. Cleared automatically when a different user signs in. */
+  var FC_NAME = 'vtx-files', FC_MAX_BYTES = 150 * 1048576, FC_MAX_FILE = 40 * 1048576;
+  function fcKey() { return S && S.docId && S.meta && !S.meta._fallback && S.meta.fileSize ? '/__vtxfile/' + S.docId + '/' + S.meta.fileSize : ''; }
+  function fcIdx() { try { return JSON.parse(localStorage.getItem('vtx_fc_idx') || '[]'); } catch (e) { return []; } }
+  function fcSetIdx(a) { try { localStorage.setItem('vtx_fc_idx', JSON.stringify(a)); } catch (e) { } }
+  async function fcGet() {
+    var key = fcKey(); if (!key || !window.caches) return null;
+    try {
+      var u = window.fbAuth && window.fbAuth.currentUser, uid = u ? u.uid : '';
+      if (localStorage.getItem('vtx_fc_uid') !== uid) { await caches.delete(FC_NAME); fcSetIdx([]); localStorage.setItem('vtx_fc_uid', uid); return null; }
+      var c = await caches.open(FC_NAME), hit = await c.match(key);
+      if (!hit) return null;
+      var blob = await hit.blob();
+      if (blob.size !== S.meta.fileSize) { await c.delete(key); return null; }
+      var idx = fcIdx().filter(function (e) { return e.k !== key; }); idx.push({ k: key, n: blob.size }); fcSetIdx(idx);
+      return blob;
+    } catch (e) { return null; }
+  }
+  async function fcPut(blob) {
+    var key = fcKey(); if (!key || !window.caches || blob.size > FC_MAX_FILE) return;
+    try {
+      var u = window.fbAuth && window.fbAuth.currentUser;
+      localStorage.setItem('vtx_fc_uid', u ? u.uid : '');
+      var c = await caches.open(FC_NAME);
+      await c.put(key, new Response(blob, { headers: { 'Content-Type': blob.type || 'application/octet-stream' } }));
+      var idx = fcIdx().filter(function (e) { return e.k !== key; }); idx.push({ k: key, n: blob.size });
+      var total = idx.reduce(function (a, e) { return a + e.n; }, 0);
+      while (total > FC_MAX_BYTES && idx.length > 1) { var old = idx.shift(); total -= old.n; await c.delete(old.k); }
+      fcSetIdx(idx);
+    } catch (e) { /* cache full or blocked: ignore */ }
+  }
+
   /* Fetch the file through the Worker as a Blob, with progress. */
   async function fetchBlob(token) {
+    var cached = await fcGet();
+    if (cached) { setProgress(1); return cached; }
+    var blob = await fetchBlobNet(token);
+    fcPut(blob);
+    return blob;
+  }
+  async function fetchBlobNet(token) {
     var res = await post('/storage/view', S.docId ? { docId: S.docId } : { objectKey: S.opts.objectKey }, { signal: S.abort.signal });
     if (!res.ok) {
       var j = await res.json().catch(function () { return {}; });
