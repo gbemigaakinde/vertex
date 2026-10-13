@@ -47,6 +47,7 @@ self.addEventListener('install', event => {
         '/css/studyroom.css',
         '/js/config.js',
         '/js/state.js',
+        '/viewer.js',
         '/js/ui.js',
         '/js/auth.js',
         '/js/chat.js',

@@ -28,3 +28,10 @@ No composite indexes are needed (single-field equality / orderBy queries only).
 - Student limit: 50 files/day (Africa/Lagos day), counted per file by a Durable Object. Size caps: 20 MB, 30 MB for video. Teachers have no app-imposed limit.
 - Objects are never moved or renamed; folders/collections are metadata. Deleting a file removes the stored object only when no other record references it.
 - Existing files keep working (new fields `folderId` / `collectionId` default to none = "My Files").
+
+## 4. In-app viewer + feedback (new)
+- `viewer.js` is loaded from `index.html` and precached in `sw.js`. `Storage.openFile()` now opens the viewer; `Storage.downloadFile()` keeps the old behaviour.
+- Worker adds `/storage/view` (authorised streaming) and `/files/op` actions `file.info`, `review.set`, `comment.list|add|edit|delete`.
+- Feedback lives in a new Firestore collection `fileComments` (written only by the Worker). Block client writes to it in your rules, and allow no direct client reads (all reads go through the Worker).
+- Student uploads now carry `reviewStatus` (`pending` → `reviewed` / `needs_revision` / `approved`). Older student files without it are treated as `pending`.
+- Redeploy the Worker: `npx wrangler deploy`.

@@ -78,7 +78,7 @@
   }
 
   async function authHeaders(force) {
-    var u = window.firebase && firebase.auth && firebase.auth().currentUser;
+    var u = (window.fbAuth && window.fbAuth.currentUser) || (window.firebase && firebase.auth && firebase.auth().currentUser);
     if (!u) throw new Error('Please sign in again.');
     return { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (await u.getIdToken(!!force)) };
   }

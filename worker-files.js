@@ -6,6 +6,8 @@
      /storage/commit           verify object, write metadata
      /storage/release          release quota for failed uploads
      /storage/presign-download authorised download URL
+   /storage/view             authorised in-app streaming (viewer)
+   file.info / review.set / comment.*  viewer metadata + feedback threads
      /storage/delete           authorised delete (ref-count safe)
      /files/op                 folders, collections, moves
    Every route requires a Firebase ID token. Role is derived from
@@ -284,6 +286,7 @@ export async function handleFilesApi(request, url, env, helpers) {
       case '/storage/commit':            return await routeCommit(ctx, body);
       case '/storage/release':           return await routeRelease(ctx, body);
       case '/storage/presign-download':  return await routePresignDownload(ctx, body);
+      case '/storage/view':              return await routeView(ctx, body, request);
       case '/storage/delete':            return await routeDelete(ctx, body);
       case '/files/op':                  return await routeOp(ctx, body);
     }
@@ -447,6 +450,7 @@ async function routeCommit(ctx, b) {
     folderId: folderId,
     folderName: (ctx.isTeacher && sharedWith !== 'private' && _fo && _fo.name) ? String(_fo.name).slice(0, 80) : null,
     collectionId: collectionId,
+    reviewStatus: ctx.isTeacher ? null : 'pending',
     createdAt: new Date(),
   };
   const r = await ctx.db.create('uploads', docId, data);
@@ -475,11 +479,177 @@ async function routePresignDownload(ctx, body) {
   return json({ url: url });
 }
 
+
+/* ══════════════════════════════════════════════════════════
+   In-app viewer: access, streaming, feedback threads
+══════════════════════════════════════════════════════════ */
+const MIME = {
+  pdf: 'application/pdf', png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif',
+  webp: 'image/webp', bmp: 'image/bmp', svg: 'image/svg+xml', txt: 'text/plain; charset=utf-8',
+  md: 'text/plain; charset=utf-8', json: 'text/plain; charset=utf-8', csv: 'text/csv; charset=utf-8',
+  mp4: 'video/mp4', webm: 'video/webm', mov: 'video/quicktime', mp3: 'audio/mpeg', wav: 'audio/wav',
+  ogg: 'audio/ogg', m4a: 'audio/mp4',
+  docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+};
+const MAX_VIEW_BYTES = 150 * 1024 * 1024;
+const COMMENT_MAX = 2000;
+const REVIEW_STATES = ['pending', 'reviewed', 'needs_revision', 'approved'];
+
+async function _loadAccessible(ctx, body) {
+  const d = await _findUpload(ctx, body);
+  if (!d) return { err: fail('This file no longer exists.', 404) };
+  let cls = '';
+  if (!ctx.isTeacher && d.uploaderUid !== ctx.uid) {
+    const p = await ctx.db.get('students/' + ctx.uid);
+    cls = p && p.class ? p.class : '';
+  }
+  if (!_canSeeFile(d, ctx.uid, ctx.isTeacher, cls)) {
+    const expired = d.expiresAt && Date.parse(d.expiresAt) <= Date.now();
+    return { err: fail(expired ? 'This file has expired.' : 'You do not have access to this file.', expired ? 410 : 403) };
+  }
+  return { d: d };
+}
+
+function _iso(v) {
+  if (!v) return null;
+  if (v instanceof Date) return v.toISOString();
+  if (v.toDate) return v.toDate().toISOString();
+  return String(v);
+}
+
+// Feedback exists on student submissions: between the uploader and the teacher.
+function _feedbackAllowed(d, ctx) {
+  return d.uploaderRole === 'student' && (ctx.isTeacher || d.uploaderUid === ctx.uid);
+}
+
+async function routeView(ctx, body, request) {
+  const a = await _loadAccessible(ctx, body);
+  if (a.err) return a.err;
+  const d = a.d;
+  const url = await ctx.helpers.b2PresignGet(d.objectKey, ctx.env);
+  const headers = {};
+  const range = request.headers.get('Range');
+  if (range && /^bytes=\d*-\d*$/.test(range)) headers.Range = range;
+  const up = await fetch(url, { headers: headers });
+  if (up.status === 404) return fail('The file is missing from storage.', 404);
+  if (up.status !== 200 && up.status !== 206) return fail('Could not read this file from storage.', 502);
+  const len = parseInt(up.headers.get('Content-Length') || '0', 10);
+  if (len > MAX_VIEW_BYTES) return fail('This file is too large to preview. Please download it.', 413);
+  const e = d.fileExt || _ext(d.fileName);
+  const h = new Headers({
+    'Content-Type': MIME[e] || up.headers.get('Content-Type') || 'application/octet-stream',
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Expose-Headers': 'Content-Length, Content-Range, Content-Type, Accept-Ranges',
+    'Accept-Ranges': 'bytes',
+    'Cache-Control': 'private, no-store',
+    'X-Content-Type-Options': 'nosniff',
+    'Content-Disposition': 'inline',
+  });
+  if (up.headers.get('Content-Length')) h.set('Content-Length', up.headers.get('Content-Length'));
+  if (up.headers.get('Content-Range')) h.set('Content-Range', up.headers.get('Content-Range'));
+  return new Response(up.body, { status: up.status, headers: h });
+}
+
+async function _comments(ctx, docId) {
+  const rows = await ctx.db.where('fileComments', 'docId', docId);
+  rows.sort(function (x, y) { return Date.parse(_iso(x.createdAt) || 0) - Date.parse(_iso(y.createdAt) || 0); });
+  return rows;
+}
+
+function _commentOut(c, uid) {
+  return {
+    id: c._id, parentId: c.parentId || null, text: c.deleted ? '' : (c.text || ''),
+    authorName: c.authorName || 'User', authorRole: c.authorRole || 'student',
+    createdAt: _iso(c.createdAt), editedAt: _iso(c.editedAt), deleted: !!c.deleted, mine: c.authorUid === uid,
+  };
+}
+
+async function _feedbackOp(ctx, b) {
+  const uid = ctx.uid;
+  if (b.action === 'file.info') {
+    const a = await _loadAccessible(ctx, b);
+    if (a.err) return a.err;
+    const d = a.d;
+    const canFeedback = _feedbackAllowed(d, ctx);
+    let count = 0;
+    if (canFeedback) count = (await _comments(ctx, d._id)).filter(function (c) { return !c.deleted; }).length;
+    return json({
+      id: d._id, fileName: d.fileName, fileExt: d.fileExt || _ext(d.fileName), fileSize: d.fileSize || 0,
+      uploaderName: d.uploaderName || '', uploaderRole: d.uploaderRole || '', createdAt: _iso(d.createdAt),
+      role: ctx.isTeacher ? 'teacher' : 'student', canFeedback: canFeedback,
+      canReview: canFeedback && ctx.isTeacher,
+      reviewStatus: d.uploaderRole === 'student' ? (d.reviewStatus || 'pending') : null,
+      feedbackCount: count,
+    });
+  }
+  const a = await _loadAccessible(ctx, b);
+  if (a.err) return a.err;
+  const d = a.d;
+  if (!_feedbackAllowed(d, ctx)) return fail('Feedback is only available on student submissions.', 403);
+
+  if (b.action === 'comment.list') {
+    const list = await _comments(ctx, d._id);
+    return json({ comments: list.map(function (c) { return _commentOut(c, uid); }), reviewStatus: d.reviewStatus || 'pending' });
+  }
+  if (b.action === 'review.set') {
+    if (!ctx.isTeacher) return fail('Only the teacher can set the review status.', 403);
+    if (REVIEW_STATES.indexOf(b.status) === -1) return fail('Invalid status.');
+    await ctx.db.patch('uploads/' + d._id, { reviewStatus: b.status, reviewedAt: new Date() });
+    return json({ ok: true, reviewStatus: b.status });
+  }
+  if (b.action === 'comment.add') {
+    const text = String(b.text || '').replace(/\u0000/g, '').trim();
+    if (!text) return fail('A comment cannot be empty.');
+    if (text.length > COMMENT_MAX) return fail('Comments can be at most ' + COMMENT_MAX + ' characters.');
+    let parentId = null;
+    if (b.parentId) {
+      const par = await ctx.db.get('fileComments/' + String(b.parentId));
+      if (!par || par.docId !== d._id) return fail('The comment you are replying to no longer exists.', 404);
+      parentId = par._id;
+    }
+    const recent = (await _comments(ctx, d._id)).filter(function (c) { return c.authorUid === uid && Date.now() - Date.parse(_iso(c.createdAt) || 0) < 3000; });
+    if (recent.length >= 3) return fail('You are sending comments too quickly. Wait a moment.', 429);
+    let name = ctx.isTeacher ? 'Master Timothy' : 'Student';
+    if (!ctx.isTeacher) { const p = await ctx.db.get('students/' + uid); if (p && p.name) name = String(p.name).slice(0, 80); }
+    const r = await ctx.db.create('fileComments', null, {
+      docId: d._id, parentId: parentId, text: text, authorUid: uid, authorName: name,
+      authorRole: ctx.isTeacher ? 'teacher' : 'student', deleted: false, createdAt: new Date(),
+    });
+    // Keep the review state meaningful without extra clicks.
+    const cur = d.reviewStatus || 'pending';
+    if (ctx.isTeacher && cur === 'pending') await ctx.db.patch('uploads/' + d._id, { reviewStatus: 'reviewed', reviewedAt: new Date() });
+    if (!ctx.isTeacher && (cur === 'needs_revision' || cur === 'reviewed')) await ctx.db.patch('uploads/' + d._id, { reviewStatus: 'pending' });
+    return json({ ok: true, id: r.id });
+  }
+  if (b.action === 'comment.edit' || b.action === 'comment.delete') {
+    const c = await ctx.db.get('fileComments/' + String(b.commentId || ''));
+    if (!c || c.docId !== d._id) return fail('That comment no longer exists.', 404);
+    if (c.deleted) return fail('That comment was already deleted.', 410);
+    if (b.action === 'comment.edit') {
+      if (c.authorUid !== uid) return fail('You can only edit your own comments.', 403);
+      const text = String(b.text || '').trim();
+      if (!text) return fail('A comment cannot be empty.');
+      if (text.length > COMMENT_MAX) return fail('Comments can be at most ' + COMMENT_MAX + ' characters.');
+      await ctx.db.patch('fileComments/' + c._id, { text: text, editedAt: new Date() });
+      return json({ ok: true });
+    }
+    if (c.authorUid !== uid && !ctx.isTeacher) return fail('You can only delete your own comments.', 403);
+    await ctx.db.patch('fileComments/' + c._id, { deleted: true, text: '' });
+    return json({ ok: true });
+  }
+  return fail('Unknown action.');
+}
+
 async function routeDelete(ctx, body) {
   const d = await _findUpload(ctx, body);
   if (!d) return json({ ok: true });
   if (!ctx.isTeacher && d.uploaderUid !== ctx.uid) return fail('You can only delete your own files.', 403);
   await ctx.db.del('uploads/' + d._id);
+  try {
+    const cms = await ctx.db.where('fileComments', 'docId', d._id, ['docId']);
+    for (const c of cms) await ctx.db.del('fileComments/' + c._id);
+  } catch (e) { /* orphan comments are unreachable anyway */ }
   const others = await ctx.db.where('uploads', 'objectKey', d.objectKey, ['objectKey']);
   if (!others.length) {
     try { await ctx.helpers.b2Delete(d.objectKey, ctx.env); } catch (e) { /* metadata already gone */ }
@@ -521,6 +691,7 @@ function _depth(all, id) {
 }
 
 async function routeOp(ctx, b) {
+  if (b.action === 'file.info' || b.action === 'review.set' || String(b.action).indexOf('comment.') === 0) return _feedbackOp(ctx, b);
   const db = ctx.db;
   const uid = ctx.uid;
   switch (b.action) {
