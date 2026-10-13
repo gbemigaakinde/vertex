@@ -1813,13 +1813,18 @@ async function renderSubjectSelection() {
         </div>
 
         <!-- FILES & RESOURCES -->
-        <div style="margin-bottom:2rem;">
+        <div style="margin-bottom:${weeklyTimetableHtml ? '1.5rem' : '2rem'};">
           <p style="font-size:.6875rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
                     color:var(--text-4);margin-bottom:.875rem;">Files &amp; Resources</p>
           <div id="vtxStudentStoragePanel"></div>
         </div>
 
-        <!-- TIMETABLE -->
+        <!-- TIMETABLE (divider + label only when a timetable exists) -->
+        ${weeklyTimetableHtml ? `<div role="separator" style="display:flex;align-items:center;gap:.75rem;margin:0 0 .875rem;">
+          <p style="font-size:.6875rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+                    color:var(--text-4);margin:0;white-space:nowrap;">Timetable</p>
+          <span aria-hidden="true" style="flex:1;height:1px;background:var(--border);"></span>
+        </div>` : ''}
         ${weeklyTimetableHtml}
 
       </div>
