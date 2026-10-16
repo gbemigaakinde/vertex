@@ -227,11 +227,17 @@
 
   function _accountHtml() {
     var d = (window.AppState && AppState.studentData) || {};
+    var uid = _uid() || '';
+    var letter = _esc((d.name || 'S').charAt(0).toUpperCase());
     return '<p class="vs-h">Your account</p>' +
-      '<div class="vs-card"><div class="vs-row"><div class="vs-txt">' +
+      '<div class="vs-card"><div class="vs-row" style="gap:.875rem">' +
+        '<div data-vtx-av="' + _esc(uid) + '" style="position:relative;width:56px;height:56px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.25rem;font-weight:700;background:var(--accent-subtle);border:1.5px solid var(--accent-border);color:var(--accent-text)">' + letter + '</div>' +
+        '<div class="vs-txt">' +
         '<p class="vs-t">' + _esc(d.name || 'Student') + '</p>' +
         '<p class="vs-d">' + _esc([d.class, d.school].filter(Boolean).join(' • ')) + '</p>' +
       '</div></div></div>' +
+      '<div style="margin-top:.75rem;display:flex;gap:.5rem;flex-wrap:wrap"><button class="vs-btn" data-act="avUpload">Upload photo</button><button class="vs-btn" data-act="avRemove">Use letter avatar</button></div>' +
+      '<input type="file" id="vsAvFile" accept="image/jpeg,image/png,image/webp" hidden>' +
       '<div style="margin-top:.75rem;"><button class="vs-btn" data-act="signout">Sign out</button></div>';
   }
 
@@ -332,6 +338,21 @@
     var el = e.target.closest('[data-act]');
     if (!el || el.disabled) return;
     var act = el.getAttribute('data-act');
+
+    if (act === 'avUpload') {
+      var f = document.getElementById('vsAvFile'); if (!f) return;
+      f.onchange = async function () {
+        if (!f.files[0]) return;
+        try { _toast('Uploading photo…'); await VtxAvatar.upload(f.files[0]); _toast('Profile photo updated', 'success'); }
+        catch (err) { _toast(err.message || 'Upload failed', 'error'); }
+        f.value = '';
+      };
+      f.click(); return;
+    }
+    if (act === 'avRemove') {
+      try { await VtxAvatar.remove(); _toast('Using letter avatar', 'success'); } catch (err) { _toast(err.message, 'error'); }
+      return;
+    }
 
     // Device settings (instant, no waiting)
     if (act === 'dark') {

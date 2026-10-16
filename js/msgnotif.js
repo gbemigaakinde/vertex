@@ -264,7 +264,7 @@
     toast.style.setProperty('--notif-duration', DISMISS_AFTER_MS + 'ms');
 
     toast.innerHTML = `
-      <div class="msg-notif-av">${_esc(avatarLetter)}</div>
+      <div class="msg-notif-av" data-vtx-av="${_esc(kind !== 'group' && !isTeacherSender ? (threadUid || '') : '')}">${_esc(avatarLetter)}</div>
       <div class="msg-notif-bd">
         <span class="msg-notif-app-label">${appLabel}</span>
         <div class="msg-notif-header">

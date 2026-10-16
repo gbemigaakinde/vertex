@@ -4698,7 +4698,7 @@ function _dismissScrabblePopup(gameId) {
           <!-- Row 1: Avatar+Name on left, Level Badge on right — always one line -->
           <div class="game-profile-top">
             <div class="game-profile-left">
-              <div class="game-profile-avatar">
+              <div class="game-profile-avatar" data-vtx-av="${_esc((window.AppState && AppState.userId) || '')}" style="position:relative">
                 ${_esc((_student().name || '?').charAt(0).toUpperCase())}
               </div>
               <div class="game-profile-info">

@@ -2312,7 +2312,7 @@ function _subscribeTeacherThreadList() {
                data-class="${_escAttr(item.studentClass || '')}"
                onclick="DM._openConversationFromEl(this)">
             <div class="dm-thread-av">
-              <div class="dm-thread-av-circle${isOnline ? ' online' : ''}">
+              <div class="dm-thread-av-circle${isOnline ? ' online' : ''}" data-vtx-av="${_esc(item.id || '')}">
                 ${_esc((item.studentName || '?').charAt(0).toUpperCase())}
               </div>
               ${isOnline ? `<span class="dm-thread-av-dot"></span>` : ''}
@@ -2396,7 +2396,7 @@ async function _openConversation(studentUid, studentName, studentClass) {
           </svg>
         </button>
 
-        <div style="width:36px;height:36px;border-radius:50%;flex-shrink:0;
+        <div data-vtx-av="${_esc(typeof studentUid !== 'undefined' ? studentUid : '')}" style="width:36px;height:36px;border-radius:50%;flex-shrink:0;
                     background:var(--accent-subtle,rgba(79,110,247,.08));border:1.5px solid var(--accent-border,rgba(79,110,247,.25));
                     display:flex;align-items:center;justify-content:center;
                     font-size:.8125rem;font-weight:700;color:var(--accent-text,#2d49d6);">
@@ -2813,7 +2813,7 @@ function _renderStudentPickerList(students, query) {
                   cursor:pointer;transition:background .1s;box-sizing:border-box;width:100%;
                   ${idx < filtered.length - 1 ? 'border-bottom:1px solid var(--border,#e5e7eb);' : ''}">
         <div data-avatar-wrap style="position:relative;flex-shrink:0;">
-          <div data-avatar-circle
+          <div data-avatar-circle data-vtx-av="${_esc(s.uid || s.id || '')}"
                style="width:34px;height:34px;border-radius:50%;background:var(--accent-subtle,rgba(79,110,247,.08));
                       border:1.5px solid ${isOnline ? 'var(--success)' : 'var(--accent-border,rgba(79,110,247,.25))'};
                       display:flex;align-items:center;justify-content:center;

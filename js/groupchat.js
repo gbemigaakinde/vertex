@@ -1740,7 +1740,7 @@ function _updateMemberPresenceDOM(uid, data) {
             <div style="display:flex;flex-direction:column;gap:.375rem;">
               ${members.map(m => `
                 <div class="gc-member-row" data-uid="${_escAttr(m.uid)}">
-                  <div class="gc-member-av">${_esc((m.name||'?').charAt(0).toUpperCase())}</div>
+                  <div class="gc-member-av" data-vtx-av="${_esc(m.uid||m.id||'')}">${_esc((m.name||'?').charAt(0).toUpperCase())}</div>
                   <div style="flex:1;min-width:0;">
                     <div class="gc-member-name">${_esc(m.name||'Unknown')}</div>
                     <div class="gc-member-presence" style="font-size:.6875rem;color:var(--text-4);margin-top:1px;">…</div>
@@ -2206,7 +2206,7 @@ function _updateMemberPresenceDOM(uid, data) {
                data-name="${_escAttr(s.name||'')}" data-cls="${_escAttr(s.cls||'')}"
                onchange="GroupChat._updateCreateCount()"
                style="width:.9375rem;height:.9375rem;accent-color:var(--accent);flex-shrink:0;cursor:pointer;" />
-        <div class="gc-member-av" style="width:28px;height:28px;font-size:.6875rem;flex-shrink:0;">
+        <div class="gc-member-av" data-vtx-av="${_esc(s.id||'')}" style="width:28px;height:28px;font-size:.6875rem;flex-shrink:0;">
           ${_esc((s.name||'?').charAt(0).toUpperCase())}
         </div>
         <span style="font-size:.875rem;font-weight:600;color:var(--text-1);flex:1;
@@ -2366,7 +2366,7 @@ function _updateMemberPresenceDOM(uid, data) {
                 const isMuted = mutedUids.includes(m.uid);
                 return `
                   <div class="gc-member-row" id="gcMemberRow-${_escAttr(m.uid)}">
-                    <div class="gc-member-av">${_esc((m.name||'?').charAt(0).toUpperCase())}</div>
+                    <div class="gc-member-av" data-vtx-av="${_esc(m.uid||m.id||'')}">${_esc((m.name||'?').charAt(0).toUpperCase())}</div>
                     <div style="flex:1;min-width:0;">
                       <div class="gc-member-name">${_esc(m.name||'Unknown')}</div>
                     </div>

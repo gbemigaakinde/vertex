@@ -92,7 +92,7 @@ function _buildMentionDropdown(suggestions, anchorEl) {
       'transition:background .1s',
     ].join(';');
     item.innerHTML =
-      `<div style="width:28px;height:28px;border-radius:50%;background:var(--accent-subtle);` +
+      `<div data-vtx-av="${_esc(s.uid || s.id || '')}" style="width:28px;height:28px;border-radius:50%;background:var(--accent-subtle);` +
       `border:1.5px solid var(--accent-border);display:flex;align-items:center;` +
       `justify-content:center;flex-shrink:0;font-size:.6875rem;font-weight:700;` +
       `color:var(--accent-text);">${_esc(s.name.charAt(0).toUpperCase())}</div>` +
