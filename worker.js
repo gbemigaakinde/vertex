@@ -1,4 +1,4 @@
-import { handleFilesApi, handleFileDownload, UploadQuota } from './worker-files.js';
+import { handleFilesApi, handleFileDownload, UploadQuota, verifyIdToken } from './worker-files.js';
 export { UploadQuota };
 
 export default {
@@ -12,6 +12,12 @@ export default {
     // Health check
     if (request.method === 'GET') {
       return new Response('Vertex Cloudflare Worker is working!', { status: 200 });
+    }
+
+    // ── Profile photos (optional avatars): GET public, POST upload/delete authed ──
+    {
+      const _u = new URL(request.url);
+      if (request.method !== 'OPTIONS' && _u.pathname.indexOf('/avatar/') === 0) return _handleAvatar(request, _u, env);
     }
 
     // CORS preflight
@@ -2655,4 +2661,46 @@ async function edgeTtsSynthesize(text, voice, rate) {
       ws.send(msgs.ssml);
     } catch (e) { finish(e); }
   });
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   PROFILE PHOTOS  —  B2 key: avatars/<uid>.jpg
+   GET  /avatar/<uid>   public image (client appends ?v= on change)
+   POST /avatar/upload  Bearer token, body = JPEG (<= 300 KB)
+   POST /avatar/delete  Bearer token
+══════════════════════════════════════════════════════════ */
+async function _handleAvatar(request, url, env) {
+  const parts = url.pathname.split('/').filter(Boolean);
+  const cors = { 'Access-Control-Allow-Origin': '*' };
+
+  if (request.method === 'GET' && parts.length === 2 && /^[A-Za-z0-9_-]{6,128}$/.test(parts[1]) && parts[1] !== 'upload' && parts[1] !== 'delete') {
+    const cache = caches.default;
+    const hit = await cache.match(request);
+    if (hit) return hit;
+    const res = await fetch(await _b2PresignGet('avatars/' + parts[1] + '.jpg', env));
+    if (!res.ok) return new Response('Not found', { status: 404, headers: { ...cors, 'Cache-Control': 'public, max-age=60' } });
+    const out = new Response(res.body, { headers: { ...cors, 'Content-Type': 'image/jpeg',
+      'Cache-Control': 'public, max-age=31536000, immutable' } });
+    await cache.put(request, out.clone());
+    return out;
+  }
+
+  if (request.method === 'POST' && (parts[1] === 'upload' || parts[1] === 'delete')) {
+    const user = await verifyIdToken(request);
+    if (!user) return jsonError('Please sign in again.', 401);
+    const key = 'avatars/' + user.uid + '.jpg';
+    if (parts[1] === 'delete') {
+      try { await _b2Delete(key, env); } catch (e) { return jsonError('Could not remove photo.', 500); }
+      return new Response(JSON.stringify({ ok: true }), { headers: corsJsonHeaders() });
+    }
+    const buf = await request.arrayBuffer();
+    if (!buf.byteLength || buf.byteLength > 300 * 1024) return jsonError('Image must be under 300 KB.', 413);
+    const b = new Uint8Array(buf);
+    if (!(b[0] === 0xFF && b[1] === 0xD8)) return jsonError('Image must be a JPEG.', 400);
+    const put = await fetch(await _b2PresignPut(key, 'image/jpeg', env), { method: 'PUT', headers: { 'Content-Type': 'image/jpeg' }, body: buf });
+    if (!put.ok) return jsonError('Storage error (' + put.status + ').', 502);
+    return new Response(JSON.stringify({ ok: true }), { headers: corsJsonHeaders() });
+  }
+  return new Response('Not found.', { status: 404, headers: cors });
 }

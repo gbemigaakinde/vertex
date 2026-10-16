@@ -4,7 +4,7 @@
 
 'use strict';
 
-const CACHE_VERSION = 'v1.20.73';
+const CACHE_VERSION = 'v1.20.74';
 const STATIC_CACHE  = `static-${CACHE_VERSION}`;
 const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
 
@@ -68,6 +68,7 @@ self.addEventListener('install', event => {
         '/js/app.js',
         '/js/notifications.js',
         '/js/settings.js',
+        '/js/avatar.js',
         '/js/installPrompt.js',
         '/data/questions.js',
         '/news-ticker.css',
@@ -95,7 +96,7 @@ self.addEventListener('install', event => {
 /* ACTIVATE                                                   */
 /* ─────────────────────────────────────────────────────────── */
 self.addEventListener('activate', event => {
-  const validCaches = [STATIC_CACHE, CDN_CACHE, 'vtx-meta'];
+  const validCaches = [STATIC_CACHE, CDN_CACHE, 'vtx-meta', 'avatar-v1'];
 
   event.waitUntil(
     caches.keys()
@@ -155,6 +156,13 @@ self.addEventListener('fetch', event => {
     url.pathname === '/physics.html'
   ) {
     event.respondWith(fetch(request));
+    return;
+  }
+
+  // PROFILE PHOTOS: served by the Worker, cached on-device (stale-while-revalidate
+  // keyed by ?v=, so a new upload gets a new URL and shows immediately).
+  if (url.hostname.includes('vertex-worker.gbemigaakinde.workers.dev') && url.pathname.startsWith('/avatar/')) {
+    event.respondWith(_avatarHandler(request));
     return;
   }
 
@@ -353,4 +361,14 @@ async function _navigationHandler(request) {
       { status: 503, headers: { 'Content-Type': 'text/html' } }
     );
   }
+}
+
+
+/* Profile photo cache: cache-first, refresh in background. Only 200s are stored. */
+async function _avatarHandler(request) {
+  const cache = await caches.open('avatar-v1');
+  const hit = await cache.match(request);
+  const net = fetch(request).then(r => { if (r && r.status === 200) cache.put(request, r.clone()); return r; }).catch(() => null);
+  if (hit) { net.catch(() => {}); return hit; }
+  return (await net) || Response.error();
 }

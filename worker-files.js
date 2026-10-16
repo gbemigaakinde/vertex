@@ -62,7 +62,7 @@ async function _getJwks() {
   return _jwks;
 }
 
-async function verifyIdToken(request) {
+export async function verifyIdToken(request) {
   const h = request.headers.get('Authorization') || '';
   const token = h.indexOf('Bearer ') === 0 ? h.slice(7) : '';
   const parts = token.split('.');
