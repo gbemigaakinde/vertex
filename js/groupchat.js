@@ -736,6 +736,7 @@ function _injectStyles() {
   function _subscribeGroupMessages(groupId, viewerUid, isTeacherViewer) {
     const containerId = isTeacherViewer ? 'gcTeacherMessages' : 'gcChatMessages';
     _cancel('gcMessages_' + groupId);
+    delete _rxLastId[containerId];
 
     const unsub = Db()
       .collection('groupChats').doc(groupId)
@@ -753,15 +754,63 @@ function _injectStyles() {
         const msgs = [];
         snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
 
+        // Keep the reader's place: only jump to the bottom on first load, for their own new
+        // message, or when they were already at the bottom. A reaction must never yank the scroll.
+        const prevScrollTop = container.scrollTop;
+        const wasNearBottom = (container.scrollHeight - container.scrollTop - container.clientHeight) < 120;
+        const lastMsg = msgs[msgs.length - 1];
+        const isNewTail = _rxLastId[containerId] !== (lastMsg && lastMsg.id);
+        const firstPaint = !(containerId in _rxLastId);
+        _rxLastId[containerId] = lastMsg && lastMsg.id;
+
+        _rxMaps[groupId] = {};
+        msgs.forEach(m => { _rxMaps[groupId][m.id] = m.reactions || {}; });
+
         container.innerHTML = _renderMessages(msgs, viewerUid, groupId, isTeacherViewer);
-        container.scrollTop = container.scrollHeight;
+        if (firstPaint || wasNearBottom || (isNewTail && lastMsg && lastMsg.senderId === viewerUid)) {
+          container.scrollTop = container.scrollHeight;
+        } else {
+          container.scrollTop = prevScrollTop;
+        }
         _attachSwipeListeners(containerId, isTeacherViewer);
+        _bindReactions(container, groupId, viewerUid, isTeacherViewer);
+        if (window.VtxReactions) VtxReactions.afterRender();
 
       }, err => console.error('[gc] Messages error:', err));
 
     _reg('gcMessages_' + groupId, unsub);
   }
   
+  /* ── Reactions glue (UI lives in reactions.js) ───────── */
+  const _rxMaps = {};      // groupId -> { messageId: reactions }
+  const _rxLastId = {};    // containerId -> id of last rendered message
+
+  function _bindReactions(container, groupId, viewerUid, isTeacherViewer) {
+    if (!window.VtxReactions) return;
+    VtxReactions.bind(container, {
+      groupId: () => groupId,
+      teacherUid: TEACHER_UID(),
+      viewer: () => ({
+        uid: viewerUid,
+        name: isTeacherViewer ? 'Master Timothy' : ((AppState.studentData && AppState.studentData.name) || 'Student')
+      }),
+      getMap: (msgId) => (_rxMaps[groupId] && _rxMaps[groupId][msgId]) || {},
+      blockReason: () => {
+        if (!viewerUid) return 'Please sign in again.';
+        const g = _activeGroupData;
+        if (!isTeacherViewer && g && Array.isArray(g.mutedUids) && g.mutedUids.includes(viewerUid)) return 'You are muted in this group.';
+        return '';
+      },
+      toast: (m) => UI.toast(m, 'info'),
+      onReact: (id, emoji, by) => { if (window.Notifications) Notifications.notifyEvent('react', groupId, { scope: 'group', msgId: id, by: by }); },
+      reply: (wrap) => {
+        const data = { id: wrap.dataset.replyId, text: wrap.dataset.replyText, senderName: wrap.dataset.replySender };
+        if (!data.id) return;
+        if (isTeacherViewer) _showTeacherReply(data); else _showStudentReply(data);
+      }
+    });
+  }
+
   let _openGcMenuId = null;
 
   function _closeOpenGcMenu() {
@@ -1109,6 +1158,10 @@ function _injectStyles() {
     let lastDayKey   = null;
     let lastSenderId = null;
     const parts      = [];
+    let lastBubbleId = null;
+    for (const m of msgs) { if (!m.deletedForAll && m.type !== 'event') lastBubbleId = m.id; }
+    const g = _activeGroupData;
+    const canReact = !!viewerUid && (isTeacherViewer || !(g && Array.isArray(g.mutedUids) && g.mutedUids.includes(viewerUid)));
 
     for (const msg of msgs) {
       if (msg.deletedForAll) {
@@ -1141,12 +1194,12 @@ function _injectStyles() {
       const isMe      = msg.senderId === viewerUid;
       const showLabel = msg.senderId !== lastSenderId;
       lastSenderId    = msg.senderId;
-      parts.push(_buildBubble(msg, isMe, showLabel, viewerUid, groupId, isTeacherViewer));
+      parts.push(_buildBubble(msg, isMe, showLabel, viewerUid, groupId, isTeacherViewer, msg.id === lastBubbleId, canReact));
     }
     return parts.join('');
   }
 
-  function _buildBubble(msg, isMe, showLabel, viewerUid, groupId, isTeacherViewer) {
+  function _buildBubble(msg, isMe, showLabel, viewerUid, groupId, isTeacherViewer, isLast, canReact) {
     const msgId  = msg.id || '';
     const wrapId = `gcWrap-${_escAttr(msgId)}`;
     const time   = _timeStr(msg.timestamp);
@@ -1178,6 +1231,7 @@ function _injectStyles() {
       ? `<span class="gc-edited-label">edited</span>`
       : '';
 
+    const rxRow = (window.VtxReactions && msgId) ? VtxReactions.rowHtml(msg.reactions, viewerUid, !!isLast, !!canReact) : '';
     const safeGid    = _escAttr(groupId || _activeGroupId || '');
     const safeMsgId  = _escAttr(msgId);
 
@@ -1214,6 +1268,7 @@ function _injectStyles() {
                 </div>
               </div>
             </div>
+            ${rxRow}
           </div>
         </div>`;
     } else {
@@ -1248,6 +1303,7 @@ function _injectStyles() {
                 </div>
               </div>
             </div>
+            ${rxRow}
             </div>
           </div>
         </div>`;
@@ -1270,6 +1326,8 @@ function _injectStyles() {
   function _attachSwipeListeners(containerId, isTeacher) {
     const container = document.getElementById(containerId);
     if (!container) return;
+    if (container._gcSwipeBound) return;   // snapshots re-render often; bind the swipe handlers only once per container
+    container._gcSwipeBound = true;
 
     const SWIPE_THRESHOLD  = 60;
     const SWIPE_MAX_REVEAL = 72;

@@ -1114,6 +1114,8 @@
   function _attachSwipeListeners(containerId, role) {
   const container = document.getElementById(containerId);
   if (!container) return;
+  if (container._dmSwipeBound) return;   // never stack listeners on a container that is reused
+  container._dmSwipeBound = true;
 
   const SWIPE_THRESHOLD  = 60;
   const SWIPE_MAX_REVEAL = 72;
@@ -1252,6 +1254,7 @@
 
   /* ── Desktop: right-click context menu ── */
   container.addEventListener('contextmenu', function (e) {
+    if (container._vrxBound && e.target.closest && e.target.closest('.dm-bubble-inner')) return;   // reactions picker owns right-click on bubbles
     const wrap = _getWrap(e.target);
     if (!wrap || !wrap.dataset.replyId) return;
     e.preventDefault();
@@ -1609,7 +1612,8 @@ function _confirmDeleteDMMessage(studentUid, messageId, wrapperId) {
   }
 
   /* ── Bubble builders ───────────────────────────────────────── */
-  function _buildStudentBubble(msg, myUid, showLabel) {
+  function _buildStudentBubble(msg, myUid, showLabel, isLast, canReact) {
+  const rxRow = (window.VtxReactions && msg.id && !msg.deletedForAll) ? VtxReactions.rowHtml(msg.reactions, myUid, !!isLast, !!canReact) : '';
   const isMe    = msg.senderId === myUid;
   const msgId   = msg.id || '';
   const wrapId  = `dmWrap-${_escAttr(msgId)}`;
@@ -1681,6 +1685,7 @@ function _confirmDeleteDMMessage(studentUid, messageId, wrapperId) {
               </div>
             </div>
           </div>
+          ${rxRow}
         </div>
       </div>`;
   } else {
@@ -1704,12 +1709,14 @@ function _confirmDeleteDMMessage(studentUid, messageId, wrapperId) {
               </div>
             </div>
           </div>
+          ${rxRow}
         </div>
       </div>`;
   }
 }
 
-function _buildTeacherBubble(msg, showLabel) {
+function _buildTeacherBubble(msg, showLabel, isLast, canReact) {
+  const rxRow = (window.VtxReactions && msg.id && !msg.deletedForAll) ? VtxReactions.rowHtml(msg.reactions, AppConfig.TEACHER_UID, !!isLast, !!canReact) : '';
   const isTeacher  = msg.role === 'teacher';
   const msgId      = msg.id || '';
   const wrapId     = `dmWrap-${_escAttr(msgId)}`;
@@ -1783,6 +1790,7 @@ function _buildTeacherBubble(msg, showLabel) {
               </div>
             </div>
           </div>
+          ${rxRow}
         </div>
       </div>`;
   } else {
@@ -1808,6 +1816,7 @@ function _buildTeacherBubble(msg, showLabel) {
               </div>
             </div>
           </div>
+          ${rxRow}
         </div>
       </div>`;
   }
@@ -1933,8 +1942,44 @@ function _buildTeacherBubble(msg, showLabel) {
     _subscribeStudentMessages(uid);
   }
 
+  /* Reactions glue (UI lives in reactions.js) */
+  const _rxState = {};   // role -> { lastId }
+  const _rxMap   = {};   // threadUid -> { messageId: reactions }
+
+  // Remember scroll position BEFORE re-render so a reaction never yanks the reader to the bottom.
+  function _rxPreScroll(container, role, msgs, myUid) {
+    const prev = _rxState[role];
+    const last = msgs[msgs.length - 1];
+    const nearBottom = (container.scrollHeight - container.scrollTop - container.clientHeight) < 120;
+    const stick = !prev || nearBottom || (prev.lastId !== (last && last.id) && last && (last.senderId === myUid || last.role === role));
+    _rxState[role] = { lastId: last && last.id };
+    return { stick, top: container.scrollTop };
+  }
+
+  function _rxPostRender(container, keep, msgs, myUid, role, threadUid) {
+    if (keep.stick) container.scrollTop = container.scrollHeight; else container.scrollTop = keep.top;
+    _rxMap[threadUid] = {};
+    msgs.forEach(m => { _rxMap[threadUid][m.id] = m.reactions || {}; });
+    if (!window.VtxReactions) return;
+    const isT = role === 'teacher';
+    VtxReactions.bind(container, {
+      wrapPrefix: 'dmWrap-', wrapSel: '.dm-swipe-wrap', bubbleSel: '.dm-bubble-inner', textSel: '.dm-bubble-text',
+      groupId: () => threadUid,
+      teacherUid: AppConfig.TEACHER_UID,
+      msgRef: (id) => _threadRef(threadUid).collection('messages').doc(id),
+      viewer: () => ({ uid: myUid, name: isT ? 'Master Timothy' : ((AppState.studentData && AppState.studentData.name) || 'Student') }),
+      getMap: (id) => (_rxMap[threadUid] && _rxMap[threadUid][id]) || {},
+      blockReason: () => (myUid ? '' : 'Please sign in again.'),
+      toast: (m) => { if (window.UI && UI.toast) UI.toast(m, 'info'); },
+      reply: (wrap) => { const d = _getReplyData(wrap); if (!d.id) return; if (isT) _showTeacherReplyBar(d); else _showStudentReplyBar(d); },
+      onReact: (id, emoji, by) => { if (window.Notifications) Notifications.notifyEvent('react', threadUid, { scope: 'dm', msgId: id, by: by }); }
+    });
+    VtxReactions.afterRender();
+  }
+
   function _subscribeStudentMessages(uid) {
   AppState.cancelListener('dmStudentMessages');
+  delete _rxState.student;
 
   const unsub = _threadRef(uid)
     .collection('messages').orderBy('timestamp', 'asc')
@@ -1968,8 +2013,9 @@ function _buildTeacherBubble(msg, showLabel) {
         _markRead(uid, 'student').catch(() => {});
       }
 
+      const keep = _rxPreScroll(container, 'student', msgs, uid);
       container.innerHTML = _renderMessagesWithDateSeps(msgs, uid, 'student');
-      container.scrollTop = container.scrollHeight;
+      _rxPostRender(container, keep, msgs, uid, 'student', uid);
     }, err => console.error('[dm] Student messages error:', err));
 
   AppState.registerListener('dmStudentMessages', unsub);
@@ -1979,6 +2025,9 @@ function _buildTeacherBubble(msg, showLabel) {
     let lastDayKey    = null;
     let lastSenderId  = null;
     const parts       = [];
+    let lastBubbleId  = null;
+    for (const m of msgs) { if (!m.deletedForAll) lastBubbleId = m.id; }
+    const canReact = !!myUid;
 
     for (const msg of msgs) {
       const ts   = msg.timestamp;
@@ -2001,8 +2050,8 @@ function _buildTeacherBubble(msg, showLabel) {
       lastSenderId    = senderId;
 
       parts.push(viewerRole === 'student'
-        ? _buildStudentBubble(msg, myUid, showLabel)
-        : _buildTeacherBubble(msg, showLabel));
+        ? _buildStudentBubble(msg, myUid, showLabel, msg.id === lastBubbleId, canReact)
+        : _buildTeacherBubble(msg, showLabel, msg.id === lastBubbleId, canReact));
     }
     return parts.join('');
   }
@@ -2507,6 +2556,7 @@ async function _openConversation(studentUid, studentName, studentClass) {
 
   function _subscribeTeacherMessages(studentUid) {
   AppState.cancelListener('dmTeacherMessages');
+  delete _rxState.teacher;
 
   const unsub = _threadRef(studentUid)
     .collection('messages').orderBy('timestamp', 'asc')
@@ -2539,8 +2589,9 @@ async function _openConversation(studentUid, studentName, studentClass) {
         _markRead(studentUid, 'teacher').catch(() => {});
       }
 
+      const keep = _rxPreScroll(container, 'teacher', msgs, AppConfig.TEACHER_UID);
       container.innerHTML = _renderMessagesWithDateSeps(msgs, AppConfig.TEACHER_UID, 'teacher');
-      container.scrollTop = container.scrollHeight;
+      _rxPostRender(container, keep, msgs, AppConfig.TEACHER_UID, 'teacher', studentUid);
 
       // Sync the thread doc's lastMessageStatus from the actual last teacher message
       // status so the thread list preview tick stays accurate. Only write when the

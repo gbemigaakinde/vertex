@@ -315,13 +315,13 @@ async function init(uid) {
         phone alert right away. Fire-and-forget: the server re-checks
         everything itself, and a 5-minute sweep catches any misses.
         type: 'dm' (id = student uid) | 'group' (id = group id) | 'game' (id = challenge id) ── */
-  function notifyEvent(type, id) {
+  function notifyEvent(type, id, extra) {
     try {
       if (!type || !id) return;
       fetch(WORKER_URL + '/api/notify-event', {
         method:    'POST',
         headers:   { 'Content-Type': 'application/json' },
-        body:      JSON.stringify({ type: type, id: id }),
+        body:      JSON.stringify(Object.assign({}, extra || {}, { type: type, id: id })),
         keepalive: true,
       }).catch(function () {});
     } catch (e) { /* never block sending a message */ }

@@ -250,10 +250,11 @@
           '<p class="vs-d">' + _esc([d.class, d.school].filter(Boolean).join(' \u00b7 ')) + '</p></div>' +
         '</div>' +
         '<div class="vs-row vs-avrow">' +
+          '<button type="button" class="vs-pbtn" data-act="avChar"><i class="ph ph-smiley" aria-hidden="true"></i> Create character</button>' +
           '<button type="button" class="vs-pbtn" data-act="avPick"><i class="ph ph-camera" aria-hidden="true"></i> ' + (has ? 'Change photo' : 'Add a photo') + '</button>' +
           (has ? '<button type="button" class="vs-lbtn" data-act="avRemove">Remove</button>' : '') +
         '</div>' +
-        '<p class="vs-d vs-avnote">' + (has ? 'Your photo shows to your teachers and classmates.' : 'Optional. Without a photo, your letter avatar is used.') + '</p>' +
+        '<p class="vs-d vs-avnote">' + (has ? 'Your photo shows to your teachers and classmates.' : 'Optional. Without a photo, a character is picked for you.') + '</p>' +
       '</div>' +
       '<div style="margin-top:.75rem;"><button class="vs-btn" data-act="signout">Sign out</button></div>';
   }
@@ -366,13 +367,23 @@
       } catch (err) { _toast(err.message || 'Could not update your photo.', 'error'); }
       _avBusy = false; _render(); return;
     }
+    if (act === 'avChar') {
+      if (_avBusy || !window.VtxAvatar) return;
+      _avBusy = true;
+      try {
+        var rc = await VtxAvatar.pickCharacter();
+        if (rc === 'saved') _toast('Character saved', 'success');
+        else if (rc && rc.warn) _toast(rc.warn, 'info');
+      } catch (err) { _toast(err.message || 'Could not save your character.', 'error'); }
+      _avBusy = false; _render(); return;
+    }
     if (act === 'avRemove') {
       if (el.getAttribute('data-confirm') !== '1') {          // two taps: tap, then tap again to confirm
         el.setAttribute('data-confirm', '1'); el.textContent = 'Tap again to remove';
         setTimeout(function () { if (el.isConnected) { el.removeAttribute('data-confirm'); el.textContent = 'Remove'; } }, 3000);
         return;
       }
-      try { await VtxAvatar.remove(); _toast('Photo removed. Using your letter avatar.', 'success'); }
+      try { await VtxAvatar.remove(); _toast('Photo removed. Your default character is back.', 'success'); }
       catch (err) { _toast(err.message || 'Could not remove photo.', 'error'); }
       _render(); return;
     }

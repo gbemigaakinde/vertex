@@ -415,6 +415,37 @@
   }
 
   /* ── Attach listener for a single thread (student watching their own thread) ── */
+  /*  Reactions: toast the owner of a message when somebody reacts to it  */
+  const _rxSeen = {};   // 'scope/messageId' -> { uid: emoji } as last seen
+  function _rxFlat(r) {
+    const o = {};
+    if (r && typeof r === 'object') Object.keys(r).forEach(u => { const e = r[u] && r[u].e; if (typeof e === 'string') o[u] = e; });
+    return o;
+  }
+  function _rxRemember(scope, doc) { _rxSeen[scope + '/' + doc.id] = _rxFlat((doc.data() || {}).reactions); }
+  function _rxCheck(scope, doc, isMine, meUid, threadId, kind, groupName) {
+    const d = doc.data() || {};
+    const prev = _rxSeen[scope + '/' + doc.id] || {};
+    const cur  = _rxFlat(d.reactions);
+    _rxSeen[scope + '/' + doc.id] = cur;
+    if (d.deletedForAll || !isMine(d)) return;
+    const ok = (window.VtxReactions && VtxReactions._allowed) || null;
+    Object.keys(cur).forEach(u => {
+      if (u === meUid || prev[u] === cur[u]) return;
+      if (ok && !ok[cur[u]]) return;
+      const what = d.voiceNote ? 'your voice note' : ('"' + String(d.text || '').replace(/\s+/g, ' ').trim().slice(0, 40) + '"');
+      _bufferMessage(threadId, {
+        id: doc.id + ':' + u,
+        text: 'reacted ' + cur[u] + ' to ' + what,
+        senderName: (d.reactions[u] && d.reactions[u].n) || 'Someone',
+        role: d.role === 'student' ? 'teacher' : 'student',
+        senderId: u,
+        timestamp: new Date(),
+        __kind: kind, __groupName: groupName,
+      });
+    });
+  }
+
   function _watchStudentThread(uid) {
     const key = 'msgNotif_student_' + uid;
     if (_listeners[key]) return; // already watching
@@ -430,15 +461,17 @@
         if (!baselineReady) {
           // Build baseline from first snapshot — these are "already seen"
           _baseline[uid] = new Set();
-          snap.forEach(doc => _baseline[uid].add(doc.id));
+          snap.forEach(doc => { _baseline[uid].add(doc.id); _rxRemember('dm:' + uid, doc); });
           baselineReady = true;
           return;
         }
 
         // Any doc NOT in baseline AND sent by teacher = new notification candidate
         snap.docChanges().forEach(change => {
+          if (change.type === 'modified') { _rxCheck('dm:' + uid, change.doc, d => d.role === 'student', uid, uid, 'dm'); return; }
           if (change.type !== 'added') return;
           const doc = change.doc;
+          _rxRemember('dm:' + uid, doc);
           if (_baseline[uid] && _baseline[uid].has(doc.id)) return; // already known
           if (_baseline[uid]) _baseline[uid].add(doc.id);
 
@@ -480,14 +513,16 @@
               .onSnapshot(msgSnap => {
                 if (!baselineReady) {
                   threadBaselines[threadUid] = new Set();
-                  msgSnap.forEach(doc => threadBaselines[threadUid].add(doc.id));
+                  msgSnap.forEach(doc => { threadBaselines[threadUid].add(doc.id); _rxRemember('dm:' + threadUid, doc); });
                   baselineReady = true;
                   return;
                 }
 
                 msgSnap.docChanges().forEach(msgChange => {
+                  if (msgChange.type === 'modified') { _rxCheck('dm:' + threadUid, msgChange.doc, d => d.role === 'teacher', _teacherUid(), threadUid, 'dm'); return; }
                   if (msgChange.type !== 'added') return;
                   const doc = msgChange.doc;
+                  _rxRemember('dm:' + threadUid, doc);
                   if (threadBaselines[threadUid] && threadBaselines[threadUid].has(doc.id)) return;
                   if (threadBaselines[threadUid]) threadBaselines[threadUid].add(doc.id);
 
@@ -573,14 +608,16 @@ function _teacherUid() {
               .onSnapshot(msgSnap => {
                 if (!baselineReady) {
                   groupBaselines[groupId] = new Set();
-                  msgSnap.forEach(doc => groupBaselines[groupId].add(doc.id));
+                  msgSnap.forEach(doc => { groupBaselines[groupId].add(doc.id); _rxRemember('gc:' + groupId, doc); });
                   baselineReady = true;
                   return;
                 }
 
                 msgSnap.docChanges().forEach(msgChange => {
+                  if (msgChange.type === 'modified') { _rxCheck('gc:' + groupId, msgChange.doc, d => d.senderId === uid, uid, groupId, 'group', groupData.name || 'Group'); return; }
                   if (msgChange.type !== 'added') return;
                   const doc = msgChange.doc;
+                  _rxRemember('gc:' + groupId, doc);
                   if (groupBaselines[groupId] && groupBaselines[groupId].has(doc.id)) return;
                   if (groupBaselines[groupId]) groupBaselines[groupId].add(doc.id);
 
@@ -642,14 +679,16 @@ function _teacherUid() {
               .onSnapshot(msgSnap => {
                 if (!baselineReady) {
                   groupBaselines[groupId] = new Set();
-                  msgSnap.forEach(doc => groupBaselines[groupId].add(doc.id));
+                  msgSnap.forEach(doc => { groupBaselines[groupId].add(doc.id); _rxRemember('gct:' + groupId, doc); });
                   baselineReady = true;
                   return;
                 }
 
                 msgSnap.docChanges().forEach(msgChange => {
+                  if (msgChange.type === 'modified') { _rxCheck('gct:' + groupId, msgChange.doc, d => d.senderId === _teacherUid(), _teacherUid(), groupId, 'group', groupData.name || 'Group'); return; }
                   if (msgChange.type !== 'added') return;
                   const doc = msgChange.doc;
+                  _rxRemember('gct:' + groupId, doc);
                   if (groupBaselines[groupId] && groupBaselines[groupId].has(doc.id)) return;
                   if (groupBaselines[groupId]) groupBaselines[groupId].add(doc.id);
 
