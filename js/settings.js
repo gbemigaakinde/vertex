@@ -119,6 +119,15 @@
       '.vs-seg button{border:none;background:transparent;padding:.375rem .625rem;border-radius:8px;cursor:pointer;',
         'font-size:.75rem;font-weight:600;color:var(--text-3,#6b7280);font-family:inherit;}',
       '.vs-seg button[aria-pressed="true"]{background:var(--bg-base,#fff);color:var(--text-1,#0d0d0f);box-shadow:0 1px 3px rgba(0,0,0,.15);}',
+      '.vs-avbtn{position:relative;flex-shrink:0;width:72px;height:72px;padding:0;border:0;background:none;border-radius:50%;cursor:pointer;-webkit-tap-highlight-color:transparent;}',
+      '.vs-avc{display:flex;align-items:center;justify-content:center;width:72px;height:72px;border-radius:50%;box-sizing:border-box;font-size:1.75rem;font-weight:700;background:var(--accent-subtle,#eaf0ff);border:2px solid var(--accent-border,#bfd0ff);color:var(--accent-text,#2d49d6);}',
+      '.vs-avbadge{position:absolute;right:-2px;bottom:-2px;width:26px;height:26px;border-radius:50%;background:var(--accent,#4f6ef7);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.8125rem;border:2px solid var(--bg-base,#fff);}',
+      '.vs-avbtn:focus-visible,.vs-pbtn:focus-visible,.vs-lbtn:focus-visible{outline:2px solid var(--accent,#4f6ef7);outline-offset:2px;}',
+      '.vs-avrow{gap:.625rem;padding-top:.75rem;padding-bottom:.25rem;}',
+      '.vs-pbtn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:46px;border-radius:12px;border:0;background:var(--accent,#4f6ef7);color:#fff;font:inherit;font-weight:600;font-size:.9375rem;cursor:pointer;}',
+      '.vs-pbtn[disabled]{opacity:.6;}',
+      '.vs-lbtn{min-height:46px;padding:0 1rem;border-radius:12px;border:1px solid var(--border,#e5e7eb);background:var(--bg-base,#fff);color:var(--danger,#dc2626);font:inherit;font-weight:600;font-size:.9375rem;cursor:pointer;}',
+      '.vs-avnote{margin:0;padding:.25rem .9375rem .8125rem;}',
       '.vs-btn{width:100%;padding:.75rem;border-radius:12px;border:1px solid var(--border,#e5e7eb);background:var(--bg-base,#fff);',
         'color:var(--text-2,#374151);font-size:.875rem;font-weight:600;cursor:pointer;font-family:inherit;}',
       '.vs-btn[data-loading="true"]{pointer-events:none;color:transparent;position:relative;overflow:hidden;',
@@ -229,15 +238,23 @@
     var d = (window.AppState && AppState.studentData) || {};
     var uid = _uid() || '';
     var letter = _esc((d.name || 'S').charAt(0).toUpperCase());
+    var has = window.VtxAvatar && VtxAvatar.has(uid);
     return '<p class="vs-h">Your account</p>' +
-      '<div class="vs-card"><div class="vs-row" style="gap:.875rem">' +
-        '<div data-vtx-av="' + _esc(uid) + '" style="position:relative;width:56px;height:56px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.25rem;font-weight:700;background:var(--accent-subtle);border:1.5px solid var(--accent-border);color:var(--accent-text)">' + letter + '</div>' +
-        '<div class="vs-txt">' +
-        '<p class="vs-t">' + _esc(d.name || 'Student') + '</p>' +
-        '<p class="vs-d">' + _esc([d.class, d.school].filter(Boolean).join(' • ')) + '</p>' +
-      '</div></div></div>' +
-      '<div style="margin-top:.75rem;display:flex;gap:.5rem;flex-wrap:wrap"><button class="vs-btn" data-act="avUpload">Upload photo</button><button class="vs-btn" data-act="avRemove">Use letter avatar</button></div>' +
-      '<input type="file" id="vsAvFile" accept="image/jpeg,image/png,image/webp" hidden>' +
+      '<div class="vs-card">' +
+        '<div class="vs-row" style="justify-content:flex-start;gap:1rem">' +
+          '<button type="button" class="vs-avbtn" data-act="avPick" aria-label="Change profile photo">' +
+            '<span class="vs-avc" data-vtx-av="' + _esc(uid) + '">' + letter + '</span>' +
+            '<span class="vs-avbadge" aria-hidden="true"><i class="ph ph-camera"></i></span>' +
+          '</button>' +
+          '<div class="vs-txt"><p class="vs-t">' + _esc(d.name || 'Student') + '</p>' +
+          '<p class="vs-d">' + _esc([d.class, d.school].filter(Boolean).join(' \u00b7 ')) + '</p></div>' +
+        '</div>' +
+        '<div class="vs-row vs-avrow">' +
+          '<button type="button" class="vs-pbtn" data-act="avPick"><i class="ph ph-camera" aria-hidden="true"></i> ' + (has ? 'Change photo' : 'Add a photo') + '</button>' +
+          (has ? '<button type="button" class="vs-lbtn" data-act="avRemove">Remove</button>' : '') +
+        '</div>' +
+        '<p class="vs-d vs-avnote">' + (has ? 'Your photo shows to your teachers and classmates.' : 'Optional. Without a photo, your letter avatar is used.') + '</p>' +
+      '</div>' +
       '<div style="margin-top:.75rem;"><button class="vs-btn" data-act="signout">Sign out</button></div>';
   }
 
@@ -339,19 +356,25 @@
     if (!el || el.disabled) return;
     var act = el.getAttribute('data-act');
 
-    if (act === 'avUpload') {
-      var f = document.getElementById('vsAvFile'); if (!f) return;
-      f.onchange = async function () {
-        if (!f.files[0]) return;
-        try { _toast('Uploading photo…'); await VtxAvatar.upload(f.files[0]); _toast('Profile photo updated', 'success'); }
-        catch (err) { _toast(err.message || 'Upload failed', 'error'); }
-        f.value = '';
-      };
-      f.click(); return;
+    if (act === 'avPick') {
+      if (_avBusy || !window.VtxAvatar) return;
+      _avBusy = true;
+      try {
+        var r = await VtxAvatar.pick();
+        if (r === 'saved') _toast('Profile photo updated', 'success');
+        else if (r && r.warn) _toast(r.warn, 'info');
+      } catch (err) { _toast(err.message || 'Could not update your photo.', 'error'); }
+      _avBusy = false; _render(); return;
     }
     if (act === 'avRemove') {
-      try { await VtxAvatar.remove(); _toast('Using letter avatar', 'success'); } catch (err) { _toast(err.message, 'error'); }
-      return;
+      if (el.getAttribute('data-confirm') !== '1') {          // two taps: tap, then tap again to confirm
+        el.setAttribute('data-confirm', '1'); el.textContent = 'Tap again to remove';
+        setTimeout(function () { if (el.isConnected) { el.removeAttribute('data-confirm'); el.textContent = 'Remove'; } }, 3000);
+        return;
+      }
+      try { await VtxAvatar.remove(); _toast('Photo removed. Using your letter avatar.', 'success'); }
+      catch (err) { _toast(err.message || 'Could not remove photo.', 'error'); }
+      _render(); return;
     }
 
     // Device settings (instant, no waiting)
@@ -393,7 +416,9 @@
     } finally { _busy = false; }
   }
 
-  function _onKey(e) { if (e.key === 'Escape') close(); }
+  var _avBusy = false;
+  function _onAvChange() { if (document.getElementById(MODAL_ID) && !_avBusy) _render(); }
+  function _onKey(e) { if (e.key === 'Escape' && !document.querySelector('.vac')) close(); }
 
   /* ══════════════════════════════════════════════════════════
      OPEN / CLOSE
@@ -420,6 +445,7 @@
     document.body.appendChild(m);
     document.body.style.overflow = 'hidden';
     document.addEventListener('keydown', _onKey);
+    document.addEventListener('vtx-avatar-change', _onAvChange);
     document.getElementById('vsClose').addEventListener('click', close);
     document.getElementById('vsClose').focus();
 
@@ -433,6 +459,7 @@
     if (m) m.remove();
     document.body.style.overflow = '';
     document.removeEventListener('keydown', _onKey);
+    document.removeEventListener('vtx-avatar-change', _onAvChange);
     _s = null;
   }
 
