@@ -2679,7 +2679,7 @@ async function _handleAvatar(request, url, env) {
     const hit = await cache.match(request);
     if (hit) return hit;
     const res = await fetch(await _b2PresignGet('avatars/' + parts[1] + '.jpg', env));
-    if (!res.ok) return new Response('Not found', { status: 404, headers: { ...cors, 'Cache-Control': 'public, max-age=60' } });
+    if (!res.ok) return new Response('Not found', { status: 404, headers: { ...cors, 'Cache-Control': 'public, max-age=60', 'X-Avatar-Debug': 'b2-' + res.status } });
     const out = new Response(res.body, { headers: { ...cors, 'Content-Type': 'image/jpeg',
       'Cache-Control': 'public, max-age=31536000, immutable' } });
     await cache.put(request, out.clone());
