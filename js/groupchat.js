@@ -144,6 +144,7 @@ function _injectStyles() {
       .gc-group-item:last-child { border-bottom:none; }
 
       .gc-group-av {
+        position:relative;overflow:hidden;
         flex-shrink:0;width:42px;height:42px;border-radius:50%;
         background:var(--accent-subtle);border:1.5px solid var(--accent-border);
         display:flex;align-items:center;justify-content:center;
@@ -481,7 +482,7 @@ function _injectStyles() {
           const letter = (g.name || '?').charAt(0).toUpperCase();
           html += `
             <div class="gc-group-item" onclick="GroupChat._openStudentChat('${_escAttr(gid)}')">
-              <div class="gc-group-av">${_esc(letter)}</div>
+              <div class="gc-group-av" data-vtx-gav="${_esc(gid)}">${_esc(letter)}</div>
               <div style="flex:1;min-width:0;">
                 <div style="display:flex;align-items:center;justify-content:space-between;gap:.375rem;margin-bottom:1px;">
                   <span class="gc-group-name">${_esc(g.name || 'Unnamed Group')}</span>
@@ -571,7 +572,7 @@ function _injectStyles() {
               <path d="M15 18l-6-6 6-6"/>
             </svg>
           </button>
-          <div class="gc-group-av" style="width:36px;height:36px;font-size:.875rem;">
+          <div class="gc-group-av" data-vtx-gav="${_esc(groupId)}" style="width:36px;height:36px;font-size:.875rem;">
             ${_esc((g.name || '?').charAt(0).toUpperCase())}
           </div>
           <div style="flex:1;min-width:0;">
@@ -1222,7 +1223,11 @@ function _injectStyles() {
         <div class="gc-swipe-wrap gc-msg-in" id="${wrapId}"
              style="margin-bottom:${showLabel?'.75rem':'.25rem'};"
              ${replyData}>
-          <div class="gc-swipe-inner">
+          <div class="gc-swipe-inner" style="display:flex;align-items:flex-start;gap:.5rem;">
+            <div class="gc-msg-av" ${showLabel && !isTeacherMsg ? `data-vtx-av="${_esc(msg.senderId||'')}"` : ''}
+                 style="flex-shrink:0;width:28px;height:28px;border-radius:50%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:.6875rem;font-weight:700;margin-top:${showLabel?'2px':'0'};
+                        ${showLabel ? 'background:var(--accent-subtle);border:1.5px solid var(--accent-border);color:var(--accent-text);' : 'visibility:hidden;'}">${showLabel ? _esc((msg.senderName||'?').charAt(0).toUpperCase()) : ''}</div>
+            <div style="flex:1;min-width:0;">
             ${showLabel ? `<span style="font-size:.6875rem;font-weight:600;color:${nameBg};
                            margin-bottom:2px;display:block;">
                            ${_esc(msg.senderName||'Unknown')}
@@ -1242,6 +1247,7 @@ function _injectStyles() {
                   ${editBtn}
                 </div>
               </div>
+            </div>
             </div>
           </div>
         </div>`;
@@ -1723,8 +1729,18 @@ function _updateMemberPresenceDOM(uid, data) {
         </div>
         <div class="gc-modal-body">
           <div style="text-align:center;padding:.5rem 0;">
-            <div class="gc-group-av" style="width:56px;height:56px;font-size:1.5rem;margin:0 auto .5rem;">
-              ${_esc((g.name||'?').charAt(0).toUpperCase())}
+            <button type="button" id="gcIconBtn" aria-label="Change group icon" onclick="GroupChat._changeIcon('${_escAttr(groupId)}')"
+                    style="position:relative;display:block;margin:0 auto .5rem;padding:0;border:0;background:none;border-radius:50%;cursor:pointer;width:72px;height:72px;-webkit-tap-highlight-color:transparent;">
+              <div class="gc-group-av" data-vtx-gav="${_esc(groupId)}" style="width:72px;height:72px;font-size:1.75rem;">
+                ${_esc((g.name||'?').charAt(0).toUpperCase())}
+              </div>
+              <span aria-hidden="true" style="position:absolute;right:-2px;bottom:-2px;width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.8125rem;border:2px solid var(--bg-base,#fff);"><i class="ph ph-camera"></i></span>
+            </button>
+            <div style="display:flex;justify-content:center;gap:1rem;margin-bottom:.5rem;">
+              <button type="button" id="gcIconChange" onclick="GroupChat._changeIcon('${_escAttr(groupId)}')"
+                      style="background:none;border:0;padding:.375rem .5rem;font:inherit;font-size:.8125rem;font-weight:600;color:var(--accent-text);cursor:pointer;">Change icon</button>
+              <button type="button" id="gcIconRemove" onclick="GroupChat._removeIcon('${_escAttr(groupId)}', this)"
+                      style="display:none;background:none;border:0;padding:.375rem .5rem;font:inherit;font-size:.8125rem;font-weight:600;color:var(--danger,#dc2626);cursor:pointer;">Remove icon</button>
             </div>
             <p style="font-size:1rem;font-weight:700;color:var(--text-1);">${_esc(g.name)}</p>
             ${g.settings && g.settings.description
@@ -1758,9 +1774,47 @@ function _updateMemberPresenceDOM(uid, data) {
     overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
     document.body.appendChild(overlay);
 
+    // Show "Remove icon" only while the group actually has a custom icon
+    const _syncIconUi = () => {
+      const rm = document.getElementById('gcIconRemove');
+      if (!rm) { document.removeEventListener('vtx-avatar-change', _syncIconUi); return; }
+      const has = !!(window.VtxAvatar && VtxAvatar.hasGroup(groupId));
+      rm.style.display = has ? '' : 'none';
+      const ch = document.getElementById('gcIconChange'); if (ch) ch.textContent = has ? 'Change icon' : 'Add icon';
+    };
+    document.addEventListener('vtx-avatar-change', _syncIconUi);
+    _syncIconUi();
+
     // Fill in presence text for members whose status we've already received
     Object.keys(_memberPresenceCache).forEach(uid => _updateMemberPresenceDOM(uid, _memberPresenceCache[uid]));
   }
+
+  /* Group icon (any member can change it; the Worker re-checks membership) */
+  let _iconBusy = false;
+  async function _changeIcon(groupId) {
+    if (_iconBusy || !window.VtxAvatar) return;
+    _iconBusy = true;
+    try {
+      const r = await VtxAvatar.pick(groupId);
+      if (r === 'saved') UI.toast('Group icon updated', 'success');
+      else if (r && r.warn) UI.toast(r.warn, 'info');
+    } catch (e) { UI.toast(e.message || 'Could not update the group icon.', 'error'); }
+    _iconBusy = false;
+  }
+  async function _removeIcon(groupId, btn) {
+    if (_iconBusy || !window.VtxAvatar) return;
+    if (btn && btn.getAttribute('data-confirm') !== '1') {          // tap twice to confirm
+      btn.setAttribute('data-confirm', '1'); btn.textContent = 'Tap again to remove';
+      setTimeout(() => { if (btn.isConnected) { btn.removeAttribute('data-confirm'); btn.textContent = 'Remove icon'; } }, 3000);
+      return;
+    }
+    _iconBusy = true;
+    try { await VtxAvatar.remove(groupId); UI.toast('Group icon removed', 'success'); }
+    catch (e) { UI.toast(e.message || 'Could not remove the icon.', 'error'); }
+    _iconBusy = false;
+    if (btn) { btn.removeAttribute('data-confirm'); btn.textContent = 'Remove icon'; }
+  }
+
 
   /* ══════════════════════════════════════════════════════
      TEACHER PANEL — rendered inside #teacher-groups div
@@ -1827,7 +1881,7 @@ function _updateMemberPresenceDOM(uid, data) {
           <div class="gc-group-item${isAct ? ' is-active' : ''}"
                data-gid="${_escAttr(gid)}"
                onclick="GroupChat._openTeacherChat('${_escAttr(gid)}')">
-            <div class="gc-group-av">${_esc((g.name||'?').charAt(0).toUpperCase())}</div>
+            <div class="gc-group-av" data-vtx-gav="${_esc(gid)}">${_esc((g.name||'?').charAt(0).toUpperCase())}</div>
             <div style="flex:1;min-width:0;overflow:hidden;">
               <div style="display:flex;align-items:center;justify-content:space-between;gap:.375rem;margin-bottom:1px;">
                 <span class="gc-group-name">${_esc(g.name||'Unnamed')}</span>
@@ -1886,7 +1940,7 @@ function _updateMemberPresenceDOM(uid, data) {
             <path d="M15 18l-6-6 6-6"/>
           </svg>
         </button>
-        <div class="gc-group-av" style="width:36px;height:36px;font-size:.875rem;">
+        <div class="gc-group-av" data-vtx-gav="${_esc(groupId)}" style="width:36px;height:36px;font-size:.875rem;">
           ${_esc((g.name||'?').charAt(0).toUpperCase())}
         </div>
         <div style="flex:1;min-width:0;">
@@ -2871,6 +2925,8 @@ async function _deleteGroup(groupId) {
     _sendStudentMessage,
     _sendTeacherMessage,
     _showGroupInfo,
+    _changeIcon,
+    _removeIcon,
     _scrollToMsg,
     _clearReply,
     _openCreateGroupModal,
