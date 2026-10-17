@@ -155,7 +155,7 @@ if (request.method === 'POST' && url.pathname === '/ai') {
     let body;
     try { body = await request.json(); } catch (e) { return jsonError('Invalid JSON.', 400); }
     const { type, id } = body || {};
-    if (!['dm', 'group', 'game'].includes(type) || !_pnValidId(id)) {
+    if (!['dm', 'group', 'game', 'react'].includes(type) || !_pnValidId(id)) {
       return jsonError('Bad event.', 400);
     }
     if (!env.VTX_RATE_LIMITS) return jsonError('KV not bound.', 500);
@@ -166,6 +166,7 @@ if (request.method === 'POST' && url.pathname === '/ai') {
       if (type === 'dm')    await _pnNotifyDm(env, token, id);
       if (type === 'group') await _pnNotifyGroup(env, token, id);
       if (type === 'game')  await _pnNotifyChallenge(env, token, id);
+      if (type === 'react') await _pnNotifyReaction(env, token, id, body);
     })().catch(e => console.warn('[notify-event]', e && e.message ? e.message : e));
 
     if (ctx && ctx.waitUntil) ctx.waitUntil(work); else await work;
@@ -1398,6 +1399,53 @@ async function _pnNotifyGroup(env, token, groupId) {
 }
 
 /* ── Game challenge: only the challenged student, only if opted in ── */
+/*  Reaction: tell the owner of a message that somebody reacted to it.
+    The caller only names the thread, message and reactor; the emoji and the
+    owner are re-read from Firestore, so a push can't be forged.  */
+async function _pnNotifyReaction(env, token, id, body) {
+  const scope = body && body.scope, msgId = body && body.msgId, by = body && body.by;
+  if (!['dm', 'group'].includes(scope) || !_pnValidId(msgId) || !_pnValidId(by)) return;
+  const path = (scope === 'dm' ? 'directMessages/' : 'groupChats/') + id + '/messages/' + msgId;
+  const msg = await _pnGetDoc(path, token, ['text', 'role', 'senderId', 'deletedForAll', 'reactions']);
+  if (!msg || msg.deletedForAll === true) return;
+  const r = msg.reactions && msg.reactions[by];
+  if (!r || typeof r.e !== 'string' || r.e.length > 16) return;
+  if (await _pnAlreadySent(env, 'rx:' + scope + ':' + id + ':' + msgId + ':' + by + ':' + r.e)) return;
+
+  const who  = String(r.n || 'Someone').slice(0, 40);
+  const what = msg.text ? '"' + _pnPreview(msg.text).slice(0, 40) + '"' : 'your message';
+  const payload = { title: who, body: 'reacted ' + r.e + ' to ' + what, url: '/', tag: 'rx-' + msgId };
+
+  if (scope === 'dm') {
+    if (msg.role === 'student') {                         // owner = the student, reactor = the teacher
+      if (by === id) return;
+      const student = await _pnGetDoc('students/' + id, token, ['dmPushEnabled', 'pushPrefs']);
+      if (!student || student.dmPushEnabled !== true) return;
+      if (student.pushPrefs && student.pushPrefs.dm === false) return;
+      await _pnSendTo(id, payload, env);
+    } else if (msg.role === 'teacher') {                  // owner = the teacher, reactor = the student
+      if (by !== id) return;
+      const prefs = await _pnTeacherPrefs(env);
+      if (!prefs.enabled || prefs.mutedStudents.includes(id) || !env.TEACHER_UID) return;
+      await _pnSendTo(env.TEACHER_UID, payload, env);
+    }
+    return;
+  }
+
+  const owner = msg.senderId;
+  if (!_pnValidId(owner) || owner === by) return;
+  if (owner === env.TEACHER_UID) {
+    const prefs = await _pnTeacherPrefs(env);
+    if (!prefs.enabled) return;
+    await _pnSendTo(owner, Object.assign(payload, { title: who + ' (group)' }), env);
+    return;
+  }
+  const s = await _pnGetDoc('students/' + owner, token, ['pushPrefs']);
+  const optedIn = s && s.pushPrefs && s.pushPrefs.groups && s.pushPrefs.groups[id] === true;
+  if (!optedIn) return;
+  await _pnSendTo(owner, payload, env);
+}
+
 async function _pnNotifyChallenge(env, token, challengeId) {
   if (!_pnValidId(challengeId)) return;
   const c = await _pnGetDoc('gameChallenges/' + challengeId, token,
