@@ -122,12 +122,13 @@
       '.vs-avbtn{position:relative;flex-shrink:0;width:72px;height:72px;padding:0;border:0;background:none;border-radius:50%;cursor:pointer;-webkit-tap-highlight-color:transparent;}',
       '.vs-avc{display:flex;align-items:center;justify-content:center;width:72px;height:72px;border-radius:50%;box-sizing:border-box;font-size:1.75rem;font-weight:700;background:var(--accent-subtle,#eaf0ff);border:2px solid var(--accent-border,#bfd0ff);color:var(--accent-text,#2d49d6);}',
       '.vs-avbadge{position:absolute;right:-2px;bottom:-2px;width:26px;height:26px;border-radius:50%;background:var(--accent,#4f6ef7);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.8125rem;border:2px solid var(--bg-base,#fff);}',
-      '.vs-avbtn:focus-visible,.vs-pbtn:focus-visible,.vs-lbtn:focus-visible{outline:2px solid var(--accent,#4f6ef7);outline-offset:2px;}',
-      '.vs-avrow{gap:.625rem;padding-top:.75rem;padding-bottom:.25rem;}',
-      '.vs-pbtn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:.5rem;min-height:46px;border-radius:12px;border:0;background:var(--accent,#4f6ef7);color:#fff;font:inherit;font-weight:600;font-size:.9375rem;cursor:pointer;}',
-      '.vs-pbtn[disabled]{opacity:.6;}',
-      '.vs-lbtn{min-height:46px;padding:0 1rem;border-radius:12px;border:1px solid var(--border,#e5e7eb);background:var(--bg-base,#fff);color:var(--danger,#dc2626);font:inherit;font-weight:600;font-size:.9375rem;cursor:pointer;}',
-      '.vs-avnote{margin:0;padding:.25rem .9375rem .8125rem;}',
+      '.vs-avbtn:focus-visible,.vs-act:focus-visible{outline:2px solid var(--accent,#4f6ef7);outline-offset:-2px;}',
+      // photo actions: quiet full-width rows, same look as the other settings rows
+      '.vs-act{display:flex;align-items:center;justify-content:space-between;gap:1rem;width:100%;min-height:48px;padding:0 .9375rem;border:0;border-top:1px solid var(--border,#e5e7eb);background:none;color:var(--text-1,#0d0d0f);font:inherit;font-size:.875rem;font-weight:600;text-align:left;cursor:pointer;-webkit-tap-highlight-color:transparent;}',
+      '.vs-act i{font-size:.9375rem;color:var(--text-4,#9ca3af);flex-shrink:0;}',
+      '.vs-act:active{background:var(--bg-muted,#eef0f3);}',
+      '.vs-act.vs-danger{color:var(--danger,#dc2626);}',
+      '.vs-act[disabled]{opacity:.5;}',
       '.vs-btn{width:100%;padding:.75rem;border-radius:12px;border:1px solid var(--border,#e5e7eb);background:var(--bg-base,#fff);',
         'color:var(--text-2,#374151);font-size:.875rem;font-weight:600;cursor:pointer;font-family:inherit;}',
       '.vs-btn[data-loading="true"]{pointer-events:none;color:transparent;position:relative;overflow:hidden;',
@@ -249,13 +250,11 @@
           '<div class="vs-txt"><p class="vs-t">' + _esc(d.name || 'Student') + '</p>' +
           '<p class="vs-d">' + _esc([d.class, d.school].filter(Boolean).join(' \u00b7 ')) + '</p></div>' +
         '</div>' +
-        '<div class="vs-row vs-avrow">' +
-          '<button type="button" class="vs-pbtn" data-act="avChar"><i class="ph ph-smiley" aria-hidden="true"></i> Create character</button>' +
-          '<button type="button" class="vs-pbtn" data-act="avPick"><i class="ph ph-camera" aria-hidden="true"></i> ' + (has ? 'Change photo' : 'Add a photo') + '</button>' +
-          (has ? '<button type="button" class="vs-lbtn" data-act="avRemove">Remove</button>' : '') +
-        '</div>' +
-        '<p class="vs-d vs-avnote">' + (has ? 'Your photo shows to your teachers and classmates.' : 'Optional. Without a photo, a character is picked for you.') + '</p>' +
+        '<button type="button" class="vs-act" data-act="avPick"><span>' + (has ? 'Change photo' : 'Add a photo') + '</span><i class="ph ph-caret-right" aria-hidden="true"></i></button>' +
+        '<button type="button" class="vs-act" data-act="avChar"><span>Create character</span><i class="ph ph-caret-right" aria-hidden="true"></i></button>' +
+        (has ? '<button type="button" class="vs-act vs-danger" data-act="avRemove">Remove photo</button>' : '') +
       '</div>' +
+      '<p class="vs-info">' + (has ? 'Your photo shows to your teachers and classmates.' : 'Optional. Without a photo, a character is picked for you.') + '</p>' +
       '<div style="margin-top:.75rem;"><button class="vs-btn" data-act="signout">Sign out</button></div>';
   }
 
@@ -380,7 +379,7 @@
     if (act === 'avRemove') {
       if (el.getAttribute('data-confirm') !== '1') {          // two taps: tap, then tap again to confirm
         el.setAttribute('data-confirm', '1'); el.textContent = 'Tap again to remove';
-        setTimeout(function () { if (el.isConnected) { el.removeAttribute('data-confirm'); el.textContent = 'Remove'; } }, 3000);
+        setTimeout(function () { if (el.isConnected) { el.removeAttribute('data-confirm'); el.textContent = 'Remove photo'; } }, 3000);
         return;
       }
       try { await VtxAvatar.remove(); _toast('Photo removed. Your default character is back.', 'success'); }

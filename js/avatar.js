@@ -19,10 +19,11 @@
   function validUid(u) { return /^(g:)?[A-Za-z0-9_-]{6,128}$/.test(u || ''); }
   // id of an element: a student uid, or 'g:<groupId>' for a group icon
   function elId(el) { var g = el.getAttribute('data-vtx-gav'); return g ? 'g:' + g : el.getAttribute('data-vtx-av'); }
-  function isMissing(uid) { return missing[uid] && Date.now() - missing[uid] < MISS_TTL; }
+  // ver[uid] === '0' means the server told us this person has no photo
+  function isMissing(uid) { return ver[uid] === '0' || (missing[uid] && Date.now() - missing[uid] < MISS_TTL); }
   function url(uid) {
     var path = uid.indexOf('g:') === 0 ? 'g/' + encodeURIComponent(uid.slice(2)) : encodeURIComponent(uid);
-    return WORKER_URL + '/avatar/' + path + (ver[uid] ? '?v=' + ver[uid] : '');
+    return WORKER_URL + '/avatar/' + path + (ver[uid] && ver[uid] !== '0' ? '?v=' + ver[uid] : '');
   }
   function key(uid) { return uid + '|' + (ver[uid] || ''); }
   function myUid() { return window.AppState && AppState.userId; }
@@ -90,10 +91,72 @@
     return pending[k];
   }
 
+  /* ───────── keep photo versions fresh (cheap) ─────────
+     The Worker keeps one tiny "version stamp" per photo. We ask for the stamps of the photos on
+     screen in ONE batched call, at most once a minute per person. A photo is only downloaded when
+     its stamp changed; the picture itself is cached on the phone forever (its URL carries the stamp).
+     Until the answer arrives we show the last photo we knew, so nothing flickers or waits. */
+  var SYNC_TTL = 60 * 1000;
+  var syncedAt = {}, syncQueue = {}, syncBusy = {}, syncTimer = null;
+  function needsSync(uid) { return !syncBusy[uid] && (!syncedAt[uid] || Date.now() - syncedAt[uid] > SYNC_TTL); }
+  function queueSync(uid) {
+    if (!needsSync(uid) || syncQueue[uid]) return;
+    syncQueue[uid] = 1;
+    clearTimeout(syncTimer); syncTimer = setTimeout(flushSync, 80);
+  }
+  function persistVer() { try { localStorage.setItem('vtxAvVer', JSON.stringify(ver)); } catch (e) {} }
+  function refreshAll(uid, changed) {
+    mine(uid).forEach(function (el) {
+      if (changed) {
+        if (ver[uid] === '0') restore(el);                       // photo was removed: back to the character
+        else el.removeAttribute('data-vtx-av-done');             // new photo: keep the old one on screen until it is ready
+      }
+      apply(el);
+    });
+  }
+  function flushSync() {
+    var ids = Object.keys(syncQueue); syncQueue = {};
+    for (var i = 0; i < ids.length; i += 50) syncChunk(ids.slice(i, i + 50));
+  }
+  function syncChunk(ids) {
+    ids.forEach(function (id) { syncBusy[id] = 1; });
+    function finish(map) {
+      var changed = [];
+      ids.forEach(function (id) {
+        delete syncBusy[id]; syncedAt[id] = Date.now();
+        var v = map ? map[id] : undefined;
+        if (v === undefined || v === null) return;               // unknown / old photo with no stamp: keep what we have
+        v = String(v);
+        if (ver[id] !== v) { ver[id] = v; changed.push(id); }
+      });
+      if (changed.length) persistVer();
+      ids.forEach(function (id) {
+        var c = changed.indexOf(id) >= 0;
+        if (c && ver[id] === '0') { loaded[id] = false; missing[id] = Date.now(); }
+        refreshAll(id, c);
+        if (c && (id === myUid() || id.indexOf('g:') === 0)) emit();
+      });
+    }
+    if (navigator.onLine === false) return finish(null);
+    fetch(WORKER_URL + '/avatar/versions?ids=' + ids.map(encodeURIComponent).join(','))
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(finish, function () { finish(null); });
+  }
+  // pick up changes when the app comes back to the front, and while a chat stays open
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) scan(); });
+  window.addEventListener('online', function () { scan(); });
+  setInterval(function () { if (!document.hidden) scan(); }, SYNC_TTL);
+
   function apply(el) {
     var uid = elId(el);
     if (!validUid(uid)) return;
+    queueSync(uid);
     var k = key(uid);
+    // never seen a version for this person yet: wait for the answer instead of downloading twice
+    if (!syncedAt[uid] && !ver[uid]) {
+      if (uid.indexOf('g:') !== 0) { if (hint[uid]) hideLetter(el); else show(el, defaultSrc(uid)); }
+      return;
+    }
     if (el.getAttribute('data-vtx-av-done') === k) return;
     if (blobs[k]) { el.setAttribute('data-vtx-av-done', k); show(el, blobs[k]); return; }   // instant, no flicker
     if (isMissing(uid)) { setHint(uid, false); if (uid.indexOf('g:') !== 0) show(el, defaultSrc(uid)); return; }
@@ -134,10 +197,13 @@
       method: 'POST', headers: { 'Content-Type': 'image/jpeg', 'Authorization': 'Bearer ' + (await token()) }, body: blob
     });
     if (!res.ok) { var d = await res.json().catch(function () { return {}; }); throw new Error(d.error || 'Upload failed (' + res.status + ').'); }
+    // use the version stamp the server just issued, so everyone's phone agrees on it
+    var up = await res.json().catch(function () { return {}; });
     // show it everywhere straight away from the copy we already have
-    ver[uid] = String(Date.now()); delete missing[uid]; loaded[uid] = true;
+    ver[uid] = String((up && up.v && up.v !== '0') ? up.v : Date.now()); delete missing[uid]; loaded[uid] = true;
+    syncedAt[uid] = Date.now();
     blobs[key(uid)] = URL.createObjectURL(blob);
-    try { localStorage.setItem('vtxAvVer', JSON.stringify(ver)); } catch (e) {}
+    persistVer();
     mine(uid).forEach(function (el) { restore(el); apply(el); });
     emit();
     // Confirm the stored copy can be read back. The URL carries a fresh ?v=, so it is
@@ -161,9 +227,9 @@
     var gid = T.kind === 'group';
     var res = await fetch(WORKER_URL + T.base + 'delete', { method: 'POST', headers: { 'Authorization': 'Bearer ' + (await token()) } });
     if (!res.ok) throw new Error(gid ? 'Could not remove the group icon. Try again.' : T.kind === 'student' ? 'Could not remove the photo. Try again.' : 'Could not remove your photo. Try again.');
-    missing[uid] = Date.now(); loaded[uid] = false; delete ver[uid];
+    missing[uid] = Date.now(); loaded[uid] = false; ver[uid] = '0'; syncedAt[uid] = Date.now();   // '0' = no photo
     Object.keys(blobs).forEach(function (k) { if (k.indexOf(uid + '|') === 0) delete blobs[k]; });   // drop every in-memory copy
-    try { localStorage.setItem('vtxAvVer', JSON.stringify(ver)); } catch (e) {}
+    persistVer();
     mine(uid).forEach(restore);
     try { caches.keys().then(function (ks) { ks.forEach(function (k) { if (k.indexOf('avatar') === 0) caches.delete(k); }); }); } catch (e) {}
     emit();

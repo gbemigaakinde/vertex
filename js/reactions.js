@@ -55,7 +55,11 @@
       '.vrx-chip .e{font-size:.9375rem;line-height:1}' +
       '.vrx-add{padding:0 6px;color:var(--text-3,#6b7280)}' +
       '.vrx-chip:focus-visible,.vrx-pk button:focus-visible,.vrx-sheet button:focus-visible{outline:2px solid var(--accent,#4f6ef7);outline-offset:2px}' +
-      '@media (pointer:coarse){.gc-bubble,.dm-bubble-inner{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}}' +
+      '@media (pointer:coarse){.gc-bubble,.dm-bubble-inner,.gc-bubble *,.dm-bubble-inner *{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}}' +
+      // While a message is being held (and while the menu is open) nothing on the page may be selected.
+      // Inputs are left alone so typing never breaks.
+      'html.vrx-hold,html.vrx-hold *:not(input):not(textarea){-webkit-user-select:none!important;user-select:none!important;-webkit-touch-callout:none!important}' +
+      '.vrx-back,.vrx-pk{-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}' +
       '.vrx-active{box-shadow:0 0 0 2px var(--accent,#4f6ef7)}' +
       '.vrx-back{position:fixed;inset:0;z-index:99998;background:rgba(0,0,0,.18);touch-action:none}' +
       '.vrx-pk{position:fixed;z-index:99999;width:max-content;max-width:calc(100vw - 16px);font-family:var(--font,inherit)}' +
@@ -136,6 +140,19 @@
     } finally { delete inflight[k]; }
   }
 
+  /* ───────── selection lock ─────────
+     iOS starts its own long-press text selection at about the same moment our menu opens, and
+     sometimes it wins and highlights the whole screen. So from the first touch on a message until
+     the menu closes, we switch selection off page-wide, cancel any selection that still starts,
+     and wipe whatever got selected. */
+  var de = document.documentElement;
+  function holding() { return de.classList.contains('vrx-hold'); }
+  function clearSel() { try { var s = window.getSelection && window.getSelection(); if (s && s.rangeCount) s.removeAllRanges(); } catch (x) {} }
+  function holdOn() { de.classList.add('vrx-hold'); clearSel(); }
+  function holdOff() { de.classList.remove('vrx-hold'); }
+  document.addEventListener('selectstart', function (e) { if (holding()) e.preventDefault(); }, true);
+  document.addEventListener('selectionchange', function () { if (holding()) clearSel(); });
+
   /* ───────── picker ───────── */
   var open = null;   // { msgId, close }
 
@@ -151,6 +168,7 @@
     var canReact = !(ctx.blockReason && ctx.blockReason());
     var mine = myReaction(ctx.getMap(msgId), (ctx.viewer() || {}).uid);
     bubble.classList.add('vrx-active');
+    holdOn();
 
     var back = document.createElement('div'); back.className = 'vrx-back';
     var pk = document.createElement('div'); pk.className = 'vrx-pk'; pk.setAttribute('role', 'dialog'); pk.setAttribute('aria-label', 'React to message');
@@ -198,7 +216,7 @@
       acts.appendChild(c);
     }
     if (acts.children.length) pk.appendChild(acts);
-    if (!pk.children.length) { bubble.classList.remove('vrx-active'); return; }
+    if (!pk.children.length) { bubble.classList.remove('vrx-active'); holdOff(); return; }
 
     function place() {
       var br = bubble.getBoundingClientRect(), pr = pk.getBoundingClientRect(), vw = window.innerWidth, vh = window.innerHeight;
@@ -213,6 +231,7 @@
     function close() {
       document.removeEventListener('keydown', onKey); window.removeEventListener('resize', closePicker);
       back.remove(); pk.remove(); bubble.classList.remove('vrx-active');
+      clearSel(); holdOff();
     }
     back.addEventListener('click', function () { if (!fresh()) closePicker(); });
     back.addEventListener('contextmenu', function (e) { e.preventDefault(); closePicker(); });
@@ -290,13 +309,16 @@
       if (!t.closest(cfg(container._vrxCtx).bubbleSel)) return;
       var id = msgIdOf(t); if (!id) return;
       sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+      holdOn();                                                                                   // lock selection from the very first touch
       timer = setTimeout(function () { timer = null; firedAt = Date.now(); openPicker(container._vrxCtx, id); }, 420);
     }, { passive: true });
     container.addEventListener('touchmove', function (e) {
       if (!timer) return; var p = e.touches[0];
-      if (Math.abs(p.clientX - sx) > 8 || Math.abs(p.clientY - sy) > 8) cancel();                // scrolling or swiping to reply
+      if (Math.abs(p.clientX - sx) > 8 || Math.abs(p.clientY - sy) > 8) { cancel(); if (!open) holdOff(); }   // scrolling or swiping to reply
     }, { passive: true });
-    ['touchend', 'touchcancel'].forEach(function (n) { container.addEventListener(n, cancel, { passive: true }); });
+    ['touchend', 'touchcancel'].forEach(function (n) {
+      container.addEventListener(n, function () { var was = !!timer; cancel(); if (!open && was) holdOff(); }, { passive: true });   // short tap: release the lock
+    });
 
     // desktop right-click, and Android's native long-press event (suppressed if our timer already fired)
     container.addEventListener('contextmenu', function (e) {
