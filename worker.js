@@ -2718,9 +2718,34 @@ async function edgeTtsSynthesize(text, voice, rate) {
    POST /avatar/upload  Bearer token, body = JPEG (<= 300 KB)
    POST /avatar/delete  Bearer token
 ══════════════════════════════════════════════════════════ */
+/* Photo version stamps (KV key "av:<uid>" or "av:g:<groupId>").
+   Every upload or removal writes a fresh stamp ("0" = no photo). Phones ask for the stamps of the
+   photos they are showing (one small batched call) and then request /avatar/<uid>?v=<stamp>.
+   That URL changes only when the photo really changes, so it can be cached forever, and
+   a new photo reaches everyone on their next check instead of after the cache expires. */
+async function _avStamp(env, id, removed) {
+  const v = removed ? '0' : String(Date.now());
+  try { if (env.VTX_RATE_LIMITS) await env.VTX_RATE_LIMITS.put('av:' + id, v); } catch (e) { /* the photo is saved either way */ }
+  return v;
+}
+
 async function _handleAvatar(request, url, env) {
   const parts = url.pathname.split('/').filter(Boolean);
   const cors = { 'Access-Control-Allow-Origin': '*' };
+
+  // GET /avatar/versions?ids=<uid>,<uid>,g:<groupId>  ->  { "<id>": "<stamp>" | "0" | null }
+  // null = no stamp yet (photo from before stamps existed): the app falls back to the plain URL.
+  if (request.method === 'GET' && parts.length === 2 && parts[1] === 'versions') {
+    const ids = (url.searchParams.get('ids') || '').split(',')
+      .filter(function (s, i, a) { return /^(g:)?[A-Za-z0-9_-]{6,128}$/.test(s) && a.indexOf(s) === i; }).slice(0, 60);
+    const out = {};
+    if (env.VTX_RATE_LIMITS) {
+      await Promise.all(ids.map(async function (id) {
+        try { out[id] = await env.VTX_RATE_LIMITS.get('av:' + id); } catch (e) { out[id] = null; }
+      }));
+    }
+    return new Response(JSON.stringify(out), { headers: { ...corsJsonHeaders(), 'Cache-Control': 'no-cache' } });
+  }
 
   if (request.method === 'GET' && parts.length === 2 && /^[A-Za-z0-9_-]{6,128}$/.test(parts[1]) && parts[1] !== 'upload' && parts[1] !== 'delete') {
     const cache = caches.default;
@@ -2729,9 +2754,9 @@ async function _handleAvatar(request, url, env) {
     const res = await fetch(await _b2PresignGet('avatars/' + parts[1] + '.jpg', env));
     if (!res.ok) return new Response('Not found', { status: 404, headers: { ...cors, 'Cache-Control': 'public, max-age=60', 'X-Avatar-Debug': 'b2-' + res.status } });
     const out = new Response(res.body, { headers: { ...cors, 'Content-Type': 'image/jpeg',
-      // Other students request /avatar/<uid> WITHOUT a version, so never cache it "forever":
-      // 1 hour fresh, then served stale while refreshing, so a changed photo reaches everyone soon.
-      'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400' } });
+      // With ?v=<stamp> the URL is unique to this exact photo, so it can be kept forever.
+      // Without a stamp (old photos only) keep it short so a change still shows up quickly.
+      'Cache-Control': url.searchParams.get('v') ? 'public, max-age=31536000, immutable' : 'public, max-age=60' } });
     await cache.put(request, out.clone());
     return out;
   }
@@ -2744,7 +2769,7 @@ async function _handleAvatar(request, url, env) {
     const tkey = 'avatars/' + parts[2] + '.jpg';
     if (parts[3] === 'delete') {
       try { await _b2Delete(tkey, env); } catch (e) { return jsonError('Could not remove photo.', 500); }
-      return new Response(JSON.stringify({ ok: true }), { headers: corsJsonHeaders() });
+      return new Response(JSON.stringify({ ok: true, v: await _avStamp(env, parts[2], true) }), { headers: corsJsonHeaders() });
     }
     const tbuf = await request.arrayBuffer();
     if (!tbuf.byteLength || tbuf.byteLength > 300 * 1024) return jsonError('Image must be under 300 KB.', 413);
@@ -2752,7 +2777,7 @@ async function _handleAvatar(request, url, env) {
     if (!(tb[0] === 0xFF && tb[1] === 0xD8)) return jsonError('Image must be a JPEG.', 400);
     const tput = await fetch(await _b2PresignPut(tkey, 'image/jpeg', env), { method: 'PUT', headers: { 'Content-Type': 'image/jpeg' }, body: tbuf });
     if (!tput.ok) return jsonError('Storage error (' + tput.status + ').', 502);
-    return new Response(JSON.stringify({ ok: true }), { headers: corsJsonHeaders() });
+    return new Response(JSON.stringify({ ok: true, v: await _avStamp(env, parts[2], false) }), { headers: corsJsonHeaders() });
   }
 
   // ── Group chat icons: B2 key groupicons/<groupId>.jpg ──
@@ -2768,7 +2793,7 @@ async function _handleAvatar(request, url, env) {
       const res = await fetch(await _b2PresignGet(gkey, env));
       if (!res.ok) return new Response('Not found', { status: 404, headers: { ...cors, 'Cache-Control': 'public, max-age=60', 'X-Avatar-Debug': 'b2-' + res.status } });
       const out = new Response(res.body, { headers: { ...cors, 'Content-Type': 'image/jpeg',
-        'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400' } });
+        'Cache-Control': url.searchParams.get('v') ? 'public, max-age=31536000, immutable' : 'public, max-age=60' } });
       await cache.put(request, out.clone());
       return out;
     }
@@ -2786,7 +2811,7 @@ async function _handleAvatar(request, url, env) {
       if (!_isTeacher && !vals.some(v => v.stringValue === user.uid)) return jsonError('Only group members can change the icon.', 403);
       if (parts[3] === 'delete') {
         try { await _b2Delete(gkey, env); } catch (e) { return jsonError('Could not remove the icon.', 500); }
-        return new Response(JSON.stringify({ ok: true }), { headers: corsJsonHeaders() });
+        return new Response(JSON.stringify({ ok: true, v: await _avStamp(env, 'g:' + gid, true) }), { headers: corsJsonHeaders() });
       }
       const buf = await request.arrayBuffer();
       if (!buf.byteLength || buf.byteLength > 300 * 1024) return jsonError('Image must be under 300 KB.', 413);
@@ -2794,7 +2819,7 @@ async function _handleAvatar(request, url, env) {
       if (!(b[0] === 0xFF && b[1] === 0xD8)) return jsonError('Image must be a JPEG.', 400);
       const put = await fetch(await _b2PresignPut(gkey, 'image/jpeg', env), { method: 'PUT', headers: { 'Content-Type': 'image/jpeg' }, body: buf });
       if (!put.ok) return jsonError('Storage error (' + put.status + ').', 502);
-      return new Response(JSON.stringify({ ok: true }), { headers: corsJsonHeaders() });
+      return new Response(JSON.stringify({ ok: true, v: await _avStamp(env, 'g:' + gid, false) }), { headers: corsJsonHeaders() });
     }
     return new Response('Not found.', { status: 404, headers: cors });
   }
@@ -2805,7 +2830,7 @@ async function _handleAvatar(request, url, env) {
     const key = 'avatars/' + user.uid + '.jpg';
     if (parts[1] === 'delete') {
       try { await _b2Delete(key, env); } catch (e) { return jsonError('Could not remove photo.', 500); }
-      return new Response(JSON.stringify({ ok: true }), { headers: corsJsonHeaders() });
+      return new Response(JSON.stringify({ ok: true, v: await _avStamp(env, user.uid, true) }), { headers: corsJsonHeaders() });
     }
     const buf = await request.arrayBuffer();
     if (!buf.byteLength || buf.byteLength > 300 * 1024) return jsonError('Image must be under 300 KB.', 413);
@@ -2813,7 +2838,7 @@ async function _handleAvatar(request, url, env) {
     if (!(b[0] === 0xFF && b[1] === 0xD8)) return jsonError('Image must be a JPEG.', 400);
     const put = await fetch(await _b2PresignPut(key, 'image/jpeg', env), { method: 'PUT', headers: { 'Content-Type': 'image/jpeg' }, body: buf });
     if (!put.ok) return jsonError('Storage error (' + put.status + ').', 502);
-    return new Response(JSON.stringify({ ok: true }), { headers: corsJsonHeaders() });
+    return new Response(JSON.stringify({ ok: true, v: await _avStamp(env, user.uid, false) }), { headers: corsJsonHeaders() });
   }
   return new Response('Not found.', { status: 404, headers: cors });
 }

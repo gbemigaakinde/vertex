@@ -4,7 +4,7 @@
 
 'use strict';
 
-const CACHE_VERSION = 'v1.20.81';
+const CACHE_VERSION = 'v1.20.82';
 const STATIC_CACHE  = `static-${CACHE_VERSION}`;
 const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
 
@@ -97,7 +97,7 @@ self.addEventListener('install', event => {
 /* ACTIVATE                                                   */
 /* ─────────────────────────────────────────────────────────── */
 self.addEventListener('activate', event => {
-  const validCaches = [STATIC_CACHE, CDN_CACHE, 'vtx-meta', 'avatar-v2'];
+  const validCaches = [STATIC_CACHE, CDN_CACHE, 'vtx-meta', 'avatar-v3'];
 
   event.waitUntil(
     caches.keys()
@@ -160,9 +160,10 @@ self.addEventListener('fetch', event => {
     return;
   }
 
-  // PROFILE PHOTOS: served by the Worker, cached on-device (stale-while-revalidate
-  // keyed by ?v=, so a new upload gets a new URL and shows immediately).
+  // PROFILE PHOTOS: served by the Worker. The small "which version is current" check is never
+  // cached; the pictures themselves are cached on-device by their ?v= stamp (see _avatarHandler).
   if (url.hostname.includes('vertex-worker.gbemigaakinde.workers.dev') && url.pathname.startsWith('/avatar/')) {
+    if (url.pathname === '/avatar/versions') return;
     event.respondWith(_avatarHandler(request));
     return;
   }
@@ -365,11 +366,15 @@ async function _navigationHandler(request) {
 }
 
 
-/* Profile photo cache: cache-first, refresh in background. Only 200s are stored. */
+/* Profile photo cache. A photo URL with ?v=<stamp> belongs to exactly one picture, so once it is
+   stored it can never be stale: serve it with no network at all (this is what saves reads).
+   A URL without a stamp (old photos only) goes to the network first and falls back to the copy
+   we kept when offline. Only 200 images are stored. */
 async function _avatarHandler(request) {
-  const cache = await caches.open('avatar-v2');
+  const cache = await caches.open('avatar-v3');
+  const stamped = new URL(request.url).searchParams.has('v');
   const hit = await cache.match(request);
-  const net = fetch(request).then(r => { if (r && r.status === 200 && /^image\//.test(r.headers.get('Content-Type') || '')) cache.put(request, r.clone()); return r; }).catch(() => null);
-  if (hit) { net.catch(() => {}); return hit; }
-  return (await net) || Response.error();
+  if (stamped && hit) return hit;
+  const net = await fetch(request).then(r => { if (r && r.status === 200 && /^image\//.test(r.headers.get('Content-Type') || '')) cache.put(request, r.clone()); return r; }).catch(() => null);
+  return net || hit || Response.error();
 }
