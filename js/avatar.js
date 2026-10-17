@@ -52,9 +52,10 @@
     if (blobs[k]) return Promise.resolve(blobs[k]);
     if (pending[k]) return pending[k];
     pending[k] = fetch(url(uid)).then(function (r) {
-      if (!r.ok) { missing[uid] = Date.now(); return null; }
+      var ct = (r.headers && r.headers.get && r.headers.get('Content-Type')) || '';
+      if (!r.ok || (ct && ct.indexOf('image/') !== 0)) { missing[uid] = Date.now(); return null; }
       return r.blob().then(function (b) {
-        if (!b || !b.size) { missing[uid] = Date.now(); return null; }
+        if (!b || !b.size || (b.type && b.type.indexOf('image/') !== 0)) { missing[uid] = Date.now(); return null; }
         blobs[k] = URL.createObjectURL(b); return blobs[k];
       });
     }).catch(function () { missing[uid] = Date.now(); return null; })
@@ -106,11 +107,18 @@
     try { localStorage.setItem('vtxAvVer', JSON.stringify(ver)); } catch (e) {}
     mine(uid).forEach(function (el) { restore(el); apply(el); });
     emit();
-    // verify the stored copy can really be read back; tell the student if not
+    // Confirm the stored copy can be read back. The URL carries a fresh ?v=, so it is
+    // never stale; we deliberately do NOT use cache:'no-store' because iOS Safari then adds
+    // Pragma/Cache-Control request headers, which forces a CORS preflight the Worker rejects.
+    // Only a definite server error is reported; a flaky connection is not the student's problem
+    // (the upload already succeeded and the photo is showing).
     try {
-      var chk = await fetch(url(uid), { cache: 'no-store' });
-      if (!chk.ok) return { warn: 'Saved, but it could not be read back (HTTP ' + chk.status + '). It may not show on other devices.' };
-    } catch (e) { return { warn: 'Saved, but we could not confirm it. Check your connection.' }; }
+      var chk = await fetch(url(uid));
+      var cct = (chk.headers && chk.headers.get && chk.headers.get('Content-Type')) || '';
+      if (chk.ok && cct && cct.indexOf('image/') !== 0) return { warn: 'Saved, but the server did not return an image. Please tell your teacher.' };
+      if (!chk.ok && chk.status >= 500) return { warn: 'Saved, but the server had trouble (HTTP ' + chk.status + '). Please try again if it does not show for others.' };
+      if (!chk.ok) return { warn: 'Saved, but it could not be read back (HTTP ' + chk.status + ').' };
+    } catch (e) { /* network hiccup on a check only: ignore */ }
     return {};
   }
 
