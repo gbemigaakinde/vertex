@@ -2688,6 +2688,69 @@ async function _handleAvatar(request, url, env) {
     return out;
   }
 
+  // ── Teacher changes/removes a STUDENT's photo: POST /avatar/u/<uid>/upload|delete ──
+  if (request.method === 'POST' && parts[1] === 'u' && /^[A-Za-z0-9_-]{6,128}$/.test(parts[2] || '') && (parts[3] === 'upload' || parts[3] === 'delete') && parts.length === 4) {
+    const user = await verifyIdToken(request);
+    if (!user) return jsonError('Please sign in again.', 401);
+    if (!env.TEACHER_UID || user.uid !== env.TEACHER_UID) return jsonError('Only the teacher can change another student\'s photo.', 403);
+    const tkey = 'avatars/' + parts[2] + '.jpg';
+    if (parts[3] === 'delete') {
+      try { await _b2Delete(tkey, env); } catch (e) { return jsonError('Could not remove photo.', 500); }
+      return new Response(JSON.stringify({ ok: true }), { headers: corsJsonHeaders() });
+    }
+    const tbuf = await request.arrayBuffer();
+    if (!tbuf.byteLength || tbuf.byteLength > 300 * 1024) return jsonError('Image must be under 300 KB.', 413);
+    const tb = new Uint8Array(tbuf);
+    if (!(tb[0] === 0xFF && tb[1] === 0xD8)) return jsonError('Image must be a JPEG.', 400);
+    const tput = await fetch(await _b2PresignPut(tkey, 'image/jpeg', env), { method: 'PUT', headers: { 'Content-Type': 'image/jpeg' }, body: tbuf });
+    if (!tput.ok) return jsonError('Storage error (' + tput.status + ').', 502);
+    return new Response(JSON.stringify({ ok: true }), { headers: corsJsonHeaders() });
+  }
+
+  // ── Group chat icons: B2 key groupicons/<groupId>.jpg ──
+  //   GET  /avatar/g/<groupId>            public image
+  //   POST /avatar/g/<groupId>/upload     members only
+  //   POST /avatar/g/<groupId>/delete     members only
+  if (parts[1] === 'g' && /^[A-Za-z0-9_-]{6,128}$/.test(parts[2] || '')) {
+    const gid = parts[2], gkey = 'groupicons/' + gid + '.jpg';
+    if (request.method === 'GET' && parts.length === 3) {
+      const cache = caches.default;
+      const hit = await cache.match(request);
+      if (hit) return hit;
+      const res = await fetch(await _b2PresignGet(gkey, env));
+      if (!res.ok) return new Response('Not found', { status: 404, headers: { ...cors, 'Cache-Control': 'public, max-age=60', 'X-Avatar-Debug': 'b2-' + res.status } });
+      const out = new Response(res.body, { headers: { ...cors, 'Content-Type': 'image/jpeg',
+        'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400' } });
+      await cache.put(request, out.clone());
+      return out;
+    }
+    if (request.method === 'POST' && parts.length === 4 && (parts[3] === 'upload' || parts[3] === 'delete')) {
+      const user = await verifyIdToken(request);
+      if (!user) return jsonError('Please sign in again.', 401);
+      // Membership check: read the group with the student's OWN token so Firestore rules decide.
+      const _t = !!env.TEACHER_UID && user.uid === env.TEACHER_UID;
+      const fsRes = _t ? { ok: true, json: async () => ({}) } : await fetch('https://firestore.googleapis.com/v1/projects/excellencecbt/databases/(default)/documents/groupChats/' + gid,
+        { headers: { Authorization: request.headers.get('Authorization') } });
+      if (!fsRes.ok) return jsonError('You are not allowed to change this group icon.', 403);
+      const doc = await fsRes.json().catch(() => null);
+      const vals = (doc && doc.fields && doc.fields.memberUids && doc.fields.memberUids.arrayValue && doc.fields.memberUids.arrayValue.values) || [];
+      const _isTeacher = !!env.TEACHER_UID && user.uid === env.TEACHER_UID;
+      if (!_isTeacher && !vals.some(v => v.stringValue === user.uid)) return jsonError('Only group members can change the icon.', 403);
+      if (parts[3] === 'delete') {
+        try { await _b2Delete(gkey, env); } catch (e) { return jsonError('Could not remove the icon.', 500); }
+        return new Response(JSON.stringify({ ok: true }), { headers: corsJsonHeaders() });
+      }
+      const buf = await request.arrayBuffer();
+      if (!buf.byteLength || buf.byteLength > 300 * 1024) return jsonError('Image must be under 300 KB.', 413);
+      const b = new Uint8Array(buf);
+      if (!(b[0] === 0xFF && b[1] === 0xD8)) return jsonError('Image must be a JPEG.', 400);
+      const put = await fetch(await _b2PresignPut(gkey, 'image/jpeg', env), { method: 'PUT', headers: { 'Content-Type': 'image/jpeg' }, body: buf });
+      if (!put.ok) return jsonError('Storage error (' + put.status + ').', 502);
+      return new Response(JSON.stringify({ ok: true }), { headers: corsJsonHeaders() });
+    }
+    return new Response('Not found.', { status: 404, headers: cors });
+  }
+
   if (request.method === 'POST' && (parts[1] === 'upload' || parts[1] === 'delete')) {
     const user = await verifyIdToken(request);
     if (!user) return jsonError('Please sign in again.', 401);
