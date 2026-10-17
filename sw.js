@@ -4,7 +4,7 @@
 
 'use strict';
 
-const CACHE_VERSION = 'v1.20.75';
+const CACHE_VERSION = 'v1.20.77';
 const STATIC_CACHE  = `static-${CACHE_VERSION}`;
 const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
 
@@ -96,7 +96,7 @@ self.addEventListener('install', event => {
 /* ACTIVATE                                                   */
 /* ─────────────────────────────────────────────────────────── */
 self.addEventListener('activate', event => {
-  const validCaches = [STATIC_CACHE, CDN_CACHE, 'vtx-meta', 'avatar-v1'];
+  const validCaches = [STATIC_CACHE, CDN_CACHE, 'vtx-meta', 'avatar-v2'];
 
   event.waitUntil(
     caches.keys()
@@ -366,9 +366,9 @@ async function _navigationHandler(request) {
 
 /* Profile photo cache: cache-first, refresh in background. Only 200s are stored. */
 async function _avatarHandler(request) {
-  const cache = await caches.open('avatar-v1');
+  const cache = await caches.open('avatar-v2');
   const hit = await cache.match(request);
-  const net = fetch(request).then(r => { if (r && r.status === 200) cache.put(request, r.clone()); return r; }).catch(() => null);
+  const net = fetch(request).then(r => { if (r && r.status === 200 && /^image\//.test(r.headers.get('Content-Type') || '')) cache.put(request, r.clone()); return r; }).catch(() => null);
   if (hit) { net.catch(() => {}); return hit; }
   return (await net) || Response.error();
 }

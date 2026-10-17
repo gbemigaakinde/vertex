@@ -9,15 +9,15 @@ export default {
       return handleFileDownload(request, new URL(request.url), env, { b2PresignGet: _b2PresignGet });
     }
 
-    // Health check
-    if (request.method === 'GET') {
-      return new Response('Vertex Cloudflare Worker is working!', { status: 200 });
-    }
-
     // ── Profile photos (optional avatars): GET public, POST upload/delete authed ──
     {
       const _u = new URL(request.url);
       if (request.method !== 'OPTIONS' && _u.pathname.indexOf('/avatar/') === 0) return _handleAvatar(request, _u, env);
+    }
+
+    // Health check
+    if (request.method === 'GET') {
+      return new Response('Vertex Cloudflare Worker is working!', { status: 200 });
     }
 
     // CORS preflight
@@ -2681,7 +2681,9 @@ async function _handleAvatar(request, url, env) {
     const res = await fetch(await _b2PresignGet('avatars/' + parts[1] + '.jpg', env));
     if (!res.ok) return new Response('Not found', { status: 404, headers: { ...cors, 'Cache-Control': 'public, max-age=60', 'X-Avatar-Debug': 'b2-' + res.status } });
     const out = new Response(res.body, { headers: { ...cors, 'Content-Type': 'image/jpeg',
-      'Cache-Control': 'public, max-age=31536000, immutable' } });
+      // Other students request /avatar/<uid> WITHOUT a version, so never cache it "forever":
+      // 1 hour fresh, then served stale while refreshing, so a changed photo reaches everyone soon.
+      'Cache-Control': 'public, max-age=3600, stale-while-revalidate=86400' } });
     await cache.put(request, out.clone());
     return out;
   }
