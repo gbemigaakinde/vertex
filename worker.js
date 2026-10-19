@@ -83,6 +83,11 @@ if (request.method === 'POST' && url.pathname === '/ai') {
       return handleTtsRequest(request, env);
     }
 
+    // ── Live 3D Class route (streamed NDJSON lesson) ──────
+    if (request.method === 'POST' && url.pathname === '/live') {
+      return handleLiveRequest(request, env);
+    }
+
     // ── Visual generation route ───────────────────────────
     if (request.method === 'POST' && url.pathname === '/visual') {
       let body;
@@ -2841,4 +2846,143 @@ async function _handleAvatar(request, url, env) {
     return new Response(JSON.stringify({ ok: true, v: await _avStamp(env, user.uid, false) }), { headers: corsJsonHeaders() });
   }
   return new Response('Not found.', { status: 404, headers: cors });
+}
+
+/* ══════════════════════════════════════════════════════════
+   LIVE 3D CLASS  (POST /live)
+   Streams Master Timothy's lesson as newline-delimited JSON
+   ("say" lines are spoken, "do" lines drive the 3D stage and
+   the whiteboard). Streaming means the student hears and sees
+   the lesson start before the full answer has been generated.
+══════════════════════════════════════════════════════════ */
+
+const LIVE_DAILY_LIMIT = 150; // live turns per student per day
+
+async function handleLiveRequest(request, env) {
+  let body;
+  try { body = await request.json(); }
+  catch (e) { return jsonError('Invalid JSON body.', 400); }
+
+  const studentId    = String(body.studentId   || body.studentName || 'anon').slice(0, 80);
+  const studentName  = String(body.studentName  || '').slice(0, 60);
+  const studentClass = String(body.studentClass || '').slice(0, 40);
+  const topic        = String(body.topic        || '').slice(0, 120);
+  const scene        = String(body.scene        || '').slice(0, 2500);
+
+  // Keep only well-formed, size-limited chat history (last 14 turns)
+  const history = (Array.isArray(body.history) ? body.history : [])
+    .filter(function (m) { return m && (m.role === 'user' || m.role === 'assistant') && typeof m.content === 'string' && m.content.trim(); })
+    .slice(-14)
+    .map(function (m) { return { role: m.role, content: m.content.slice(0, 1800) }; });
+
+  if (!history.length || history[history.length - 1].role !== 'user') {
+    return jsonError('History must end with a user message.', 400);
+  }
+
+  // Daily limit (protects the AI quota). Fails open if KV is not bound.
+  if (env.VTX_RATE_LIMITS) {
+    try {
+      const day = new Date().toISOString().slice(0, 10);
+      const key = 'live:' + studentId + ':' + day;
+      const used = parseInt((await env.VTX_RATE_LIMITS.get(key)) || '0', 10);
+      if (used >= LIVE_DAILY_LIMIT) {
+        return new Response(JSON.stringify({
+          error:   'live_rate_limited',
+          message: 'You have used all ' + LIVE_DAILY_LIMIT + ' live class turns for today. Please come back tomorrow.',
+        }), { status: 429, headers: corsJsonHeaders() });
+      }
+      const now = new Date(); const midnight = new Date(now); midnight.setUTCHours(24, 0, 0, 0);
+      await env.VTX_RATE_LIMITS.put(key, String(used + 1), { expirationTtl: Math.max(60, Math.floor((midnight - now) / 1000)) });
+    } catch (e) { console.warn('[Worker] live rate limit skipped:', e.message); }
+  }
+
+  const messages = [{ role: 'system', content: buildLiveSystemPrompt(studentName, studentClass, topic, scene) }].concat(history);
+
+  const sseHeaders = {
+    'Content-Type':                'text/event-stream; charset=utf-8',
+    'Cache-Control':               'no-store',
+    'Access-Control-Allow-Origin': '*',
+    'X-Accel-Buffering':           'no',
+  };
+
+  // 1) Groq, streamed. Try progressively simpler requests until one is accepted.
+  if (env.GROQ_API_KEY) {
+    const attempts = [
+      { model: 'openai/gpt-oss-120b', effort: 'low' },
+      { model: 'openai/gpt-oss-120b' },
+      { model: 'openai/gpt-oss-20b' },
+    ];
+    for (let i = 0; i < attempts.length; i++) {
+      try {
+        const payload = { model: attempts[i].model, stream: true, temperature: 0.5, max_tokens: 2400, messages: messages };
+        if (attempts[i].effort) payload.reasoning_effort = attempts[i].effort;
+        const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+          method:  'POST',
+          headers: { 'Authorization': 'Bearer ' + env.GROQ_API_KEY, 'Content-Type': 'application/json' },
+          body:    JSON.stringify(payload),
+        });
+        if (res.ok && res.body) return new Response(res.body, { status: 200, headers: sseHeaders });
+        console.warn('[Worker] live Groq attempt ' + i + ' failed: ' + res.status);
+      } catch (e) {
+        console.warn('[Worker] live Groq attempt ' + i + ' error: ' + e.message);
+      }
+    }
+  }
+
+  // 2) Workers AI fallback (not streamed): wrap the full answer in one SSE event.
+  try {
+    if (env.AI) {
+      const out  = await env.AI.run('@cf/meta/llama-3.3-70b-instruct-fp8-fast', { messages: messages });
+      const text = out && typeof out.response === 'string' ? out.response : '';
+      if (text.trim()) {
+        const sse = 'data: ' + JSON.stringify({ choices: [{ delta: { content: text } }] }) + '\n\n' + 'data: [DONE]\n\n';
+        return new Response(sse, { status: 200, headers: sseHeaders });
+      }
+    }
+  } catch (e) {
+    console.warn('[Worker] live Workers AI fallback failed:', e.message);
+  }
+
+  return jsonError('The live class teacher is unavailable right now. Please try again.', 502);
+}
+
+function buildLiveSystemPrompt(studentName, studentClass, topic, scene) {
+  return [
+    'You are Master Timothy AI, a warm, energetic, patient teacher at Vertex Tutorial Centre in Lagos, Nigeria, running a LIVE 3D CLASS.',
+    'You are teaching ' + (studentName || 'a student') + ' (' + (studentClass || 'secondary school') + '). Today\'s topic: ' + (topic || 'whatever the student asks') + '.',
+    'The student HEARS you speak and SEES a 3D stage and a whiteboard that you control. Teach by talking AND by building visuals. Use Nigerian everyday examples where natural. Never just lecture: show it.',
+    '',
+    'OUTPUT FORMAT (STRICT): reply ONLY with newline-delimited JSON. ONE JSON object per line. No markdown, no code fences, no text outside JSON.',
+    'Line type 1, speech: {"say":"..."} Spoken aloud and shown as a caption. 1-2 short sentences (under 30 words). Plain spoken English. NO LaTeX or symbols in speech (say "x squared", "divided by"). Warm and clear.',
+    'Line type 2, action: {"do":"<op>", ...} Executed in order. Put the visual line BEFORE the sentence that explains it. Typical rhythm: do, do, say, do, say, say.',
+    '',
+    'STAGE OPS (x is right, y is up, z is toward the viewer; keep coordinates between -8 and 8; max about 40 objects; colours are hex like #3b82f6):',
+    '{"do":"add","id":"sun","shape":"sphere|box|cylinder|cone|torus|plane|arrow|line","pos":[0,0,0],"size":1,"color":"#fbbf24","label":"Sun","to":[2,1,0],"opacity":1,"glow":true,"parent":"groupId"}   ("to" is only for arrow/line)',
+    '{"do":"group","id":"g1","pos":[0,0,0]}   (an invisible container; use "parent":"g1" on add so things move/spin together)',
+    '{"do":"set","id":"sun","color":"#f97316","size":1.5,"label":"New label","opacity":0.5,"visible":true}',
+    '{"do":"move","id":"ball","to":[3,2,0],"ms":1200}',
+    '{"do":"spin","id":"earth","axis":"y","speed":1}   (radians per second; speed 0 stops)',
+    '{"do":"orbit","id":"earth","around":"sun","radius":4,"speed":0.6,"tilt":0}   ("around" is an object id or [x,y,z])',
+    '{"do":"focus","id":"earth"}   (pulses it and turns the camera to it)',
+    '{"do":"camera","pos":[0,4,10],"look":[0,0,0]}',
+    '{"do":"remove","id":"ball"}   {"do":"clear"}   (clear wipes the whole stage; use it when switching topics)',
+    '{"do":"preset","name":"solar_system","params":{}}   Ready-made animated scenes. Names and params: solar_system | atom {"protons":1-18,"neutrons":0-20} | water_molecule | co2_molecule | methane_molecule | wave {"amplitude":0.3-2,"wavelength":1-6,"speed":0.5-4} | projectile {"angle":5-85,"speed":5-30,"gravity":9.8} | pendulum {"length":1-5,"angle":5-60}',
+    '',
+    'WHITEBOARD OPS (use for key points, equations, graphs, tables):',
+    '{"do":"board","op":"clear"}   {"do":"board","op":"title","text":"Newton\'s Second Law"}   {"do":"board","op":"line","text":"Force makes mass accelerate."}',
+    '{"do":"board","op":"eq","tex":"F = m a"}   (LaTeX; in JSON every backslash must be doubled, e.g. "\\\\frac{a}{b}")',
+    '{"do":"board","op":"graph","expr":"x^2 - 3*x","xmin":-5,"xmax":5,"ymin":-5,"ymax":10,"label":"y = x^2 - 3x"}   (expr may use x, + - * / ^, parentheses, sin cos tan sqrt abs ln log exp, pi, e)',
+    '{"do":"board","op":"table","rows":[["Planet","Moons"],["Earth","1"]]}   (first row is the header)',
+    '',
+    'TEACHING RULES:',
+    '- Each turn: 3 to 8 "say" lines, with visuals first. Build the picture step by step instead of dumping everything at once.',
+    '- If the student interrupts or asks something, answer THAT directly and briefly, adjust the stage if it helps, then continue or check understanding.',
+    '- A message that starts with "[EVENT]" describes something the student did on the stage (for example tapping an object). React to it: explain that object or part.',
+    '- Usually end with ONE short question to check understanding (as a "say" line). When the student answers, give honest feedback.',
+    '- Reuse existing object ids from CURRENT STAGE below instead of duplicating. Use "clear" when changing topic.',
+    '- Be accurate for the student\'s class level. If unsure of a fact, say so. Keep everything safe and school-appropriate.',
+    '- Never output an op that is not listed above.',
+    '',
+    'CURRENT STAGE: ' + (scene || 'empty'),
+  ].join('\n');
 }

@@ -34,7 +34,7 @@ There is **no build step**. The front end is plain HTML, CSS and vanilla JavaScr
 - **AI help** – explain a question, ask a tutor, ask about a topic, or upload an image for an explanation (daily limits apply to image requests).
 - **Games** – Quiz Blitz, True or False Blitz, Speed Math, Word Scramble, Perfect Run, Challenge a Classmate, Word Scrabble and Chess, with XP and a leaderboard.
 - **Study Room** – a lesson browser and reader for teacher-published Markdown lessons, with reader preferences (e.g. font size).
-- **3D Class** – interactive 3D Chemistry (periodic table), Biology (cells and systems) and Physics modules.
+- **3D Class** – interactive 3D Chemistry (periodic table), Biology (cells and systems) and Physics modules, plus **Live Class**: a real-time voice class where Master Timothy AI teaches out loud while building 3D models and writing on a whiteboard.
 - **Tasks and timetable** – teacher-assigned tasks and a weekly class timetable shown on the home screen.
 - **Chat** – public discussion chat, direct messages with online presence, group chats, voice notes, and in-app message notifications.
 - **Push notifications** – Web Push reminders (exam tomorrow, keep your streak, complete today's session) and teacher announcements.
@@ -118,7 +118,7 @@ js/
   session-reminders.js  Spoken nudges while a student is active
   tasks.js              Tasks and scheduling
   studyroom.js          Lesson browser and reader
-  threedclass*.js       3D Class hub and the Chemistry / Biology / Physics modules
+  threedclass*.js       3D Class hub, the Chemistry / Biology / Physics modules and Live Class (threedclass-live.js)
   chat.js, dm.js, groupchat.js, voice-notes.js, msgnotif.js   Messaging
   notifications.js, teacher-push.js    Web Push (student and teacher sides)
   storage.js            File storage client (Backblaze B2 via the Worker)
@@ -354,6 +354,21 @@ Exam.renderSubjectSelection()
         → [Back] → ThreeDClass._backToHub()
      → [Back in hub] → ThreeDClass._close() → Exam.renderSubjectSelection()
 ```
+
+### Live Class (`threedclass-live.js`)
+
+A real-time class with Master Timothy AI. The student talks (browser speech recognition) or types; Master Timothy answers out loud (the existing `SpeechEngine` Nigerian TTS) while a 3D stage and a whiteboard are driven live.
+
+How it works:
+- The client calls `POST /live` on the Worker. The Worker streams the model's answer (Groq, with Workers AI as a non-streamed fallback) as **newline-delimited JSON**, one object per line:
+  - `{"say":"..."}` is spoken aloud and shown as a caption.
+  - `{"do":"add|set|move|spin|orbit|focus|camera|remove|clear|group|preset|board", ...}` changes the stage or whiteboard.
+- Lines are played strictly in order, so visuals and narration stay in sync, and playback starts as soon as the first line arrives.
+- Commands are validated and clamped on the client; the model can never run code. Whiteboard graphs use a built-in safe expression parser (no `eval`); equations use KaTeX if it has loaded.
+- Built-in animated presets: `solar_system`, `atom`, `water_molecule`, `co2_molecule`, `methane_molecule`, `wave`, `projectile`, `pendulum`.
+- The student can interrupt with the mic, by typing, or by tapping an object on the stage (the tap is sent to the teacher as an event). **Hands-free** mode re-opens the mic after each answer (headphones recommended to avoid echo).
+- Limits: 150 live turns per student per day (KV key `live:{id}:{date}` in `VTX_RATE_LIMITS`). Change `LIVE_DAILY_LIMIT` in `worker.js`.
+- Deploy: `npx wrangler deploy` (the Worker changed), then deploy the front end. No new secrets or bindings are needed.
 
 To add another subject, add an entry to the `SUBJECTS` list in `threedclass.js` with `available: true` and a `launch` function pointing at the new module.
 
