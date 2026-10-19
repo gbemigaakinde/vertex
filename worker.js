@@ -2925,7 +2925,7 @@ async function handleLiveRequest(request, env) {
     ];
     for (let i = 0; i < attempts.length; i++) {
       try {
-        const payload = { model: attempts[i].model, stream: true, temperature: 0.5, max_tokens: 2400, messages: messages };
+        const payload = { model: attempts[i].model, stream: true, temperature: 0.5, max_tokens: 4000, messages: messages };
         if (attempts[i].effort) payload.reasoning_effort = attempts[i].effort;
         const res = await fetch('https://api.groq.com/openai/v1/chat/completions', {
           method:  'POST',
@@ -2986,11 +2986,18 @@ function buildLiveSystemPrompt(studentName, studentClass, topic, scene) {
     '{"do":"board","op":"graph","expr":"x^2 - 3*x","xmin":-5,"xmax":5,"ymin":-5,"ymax":10,"label":"y = x^2 - 3x"}   (expr may use x, + - * / ^, parentheses, sin cos tan sqrt abs ln log exp, pi, e)',
     '{"do":"board","op":"table","rows":[["Planet","Moons"],["Earth","1"]]}   (first row is the header)',
     '',
+    'LESSON CONTROL OPS (the class runs like a recorded video lesson that keeps playing on its own):',
+    '{"do":"plan","steps":["Step title 1","Step title 2","..."]}   Output this ONCE, as the very first line of a new topic, when the message starts with [START] or the student switches to a new topic. 4 to 6 short titles, in teaching order, the last one is a recap with a quick check.',
+    '{"do":"await"}   Output as the LAST line of a step when your final say line is a question the student should answer. The class pauses and waits for the answer.',
+    '{"do":"end"}   Output as the LAST line of the final step, after the recap. This closes the lesson.',
+    'A message starting with [CONTINUE] means: the student is listening and you must keep teaching the named step right now, without greeting, without asking permission, without repeating earlier steps. Teach ONLY that step: new visuals first, then 4 to 7 say lines, then move on. Ask a question with {"do":"await"} only about once every two steps; otherwise end the step with a smooth bridge sentence into the next idea.',
+    'TEACHING QUALITY: teach like an excellent real teacher. Open each step with a hook or real-life Nigerian example, build the visual piece by piece (add, say, add, say), use focus/shot to point at what you are explaining, put the key formula or definition on the whiteboard, work one concrete numeric example, and name a common mistake. Never read the whiteboard text aloud word for word. Never say things like "as an AI". Use the student\'s name only occasionally.',
+    '',
     'TEACHING RULES:',
-    '- Each turn: 3 to 8 "say" lines, with visuals first. Build the picture step by step instead of dumping everything at once.',
+    '- Each turn: 4 to 8 "say" lines, with visuals first. Build the picture step by step instead of dumping everything at once.',
     '- If the student interrupts or asks something, answer THAT directly and briefly, adjust the stage if it helps, then continue or check understanding.',
     '- A message that starts with "[EVENT]" describes something the student did on the stage (for example tapping an object). React to it: explain that object or part.',
-    '- Usually end with ONE short question to check understanding (as a "say" line). When the student answers, give honest feedback.',
+    '- When the student answers a question, give honest, specific feedback (say what is right, fix what is wrong), then carry on with the lesson.',
     '- Reuse existing object ids from CURRENT STAGE below instead of duplicating. Use "clear" when changing topic.',
     '- Be accurate for the student\'s class level. If unsure of a fact, say so. Keep everything safe and school-appropriate.',
     '- Never output an op that is not listed above.',
