@@ -29,6 +29,8 @@
   const LIVE_URL    = 'https://vertex-worker.gbemigaakinde.workers.dev/live';
   const THREE_CDN   = 'https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js';
   const ORBIT_CDN   = 'https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js';
+  const JSX_JS     = 'https://cdn.jsdelivr.net/npm/jsxgraph@1.9.2/distrib/jsxgraphcore.js';
+  const JSX_CSS    = 'https://cdn.jsdelivr.net/npm/jsxgraph@1.9.2/distrib/jsxgraph.css';
   const MAX_OBJS    = 60;   // objects the AI may add by itself (presets are exempt)
   const MAX_BOARD   = 40;   // whiteboard items kept on screen
   const DEFAULT_CAM = { pos: [0, 4, 11], look: [0, 0, 0] };
@@ -338,6 +340,7 @@
     _stopListening(false);
     if (S.raf) cancelAnimationFrame(S.raf);
     S.raf = 0;
+    clearTimeout(S.frameT); S.shotAt = 0; S.userAt = 0;
     if (S.ro) { try { S.ro.disconnect(); } catch (e) {} S.ro = null; }
     if (S.onResize) { window.removeEventListener('resize', S.onResize); S.onResize = null; }
     if (S.scene) {
@@ -396,8 +399,27 @@
 
           <div id="lv-side">
             <section class="lv-panel" data-panel="board" id="lv-board-panel">
-              <div class="lv-ptitle">Whiteboard</div>
-              <div id="lv-board"><div class="lv-empty">Master Timothy will write key points, equations and graphs here.</div></div>
+              <div id="lv-wb">
+                <div id="lv-wb-frame">
+                  <div id="lv-wb-surface">
+                    <div id="lv-board"><div class="lv-empty">Master Timothy will write key points, equations and graphs here.</div></div>
+                    <canvas id="lv-ink"></canvas>
+                  </div>
+                  <div id="lv-wb-tray">
+                    <button class="lv-tool active" data-tool="hand" title="Scroll the board">&#9995;</button>
+                    <button class="lv-tool" data-tool="pen" title="Pen: sketch or write">&#9999;&#65039;</button>
+                    <button class="lv-tool" data-tool="eraser" title="Eraser">&#129533;</button>
+                    <span class="lv-sep"></span>
+                    <button class="lv-marker" data-color="#1d4ed8" style="--mc:#1d4ed8" title="Blue"></button>
+                    <button class="lv-marker" data-color="#dc2626" style="--mc:#dc2626" title="Red"></button>
+                    <button class="lv-marker" data-color="#16a34a" style="--mc:#16a34a" title="Green"></button>
+                    <button class="lv-marker" data-color="#111827" style="--mc:#111827" title="Black"></button>
+                    <span class="lv-sep"></span>
+                    <button class="lv-tool" id="lv-ink-undo" title="Undo stroke">&#8630;</button>
+                    <button class="lv-tool" id="lv-ink-clear" title="Clear my drawing">&#128465;</button>
+                  </div>
+                </div>
+              </div>
             </section>
             <section class="lv-panel" data-panel="notes" id="lv-notes-panel">
               <div class="lv-ptitle">Class Notes</div>
@@ -436,6 +458,8 @@
       <style>${_css()}</style>`);
 
     _bindUI();
+    _initInk();
+    _loadFont();
     _setTab('stage');
     _loadThree(ok => {
       if (!ok || !_T) {
@@ -492,6 +516,33 @@
     .lv-graph{margin:.5rem 0;animation:lv-in .35s ease;}
     .lv-graph svg{width:100%;height:auto;max-width:460px;background:var(--bg-subtle);border:1px solid var(--border);border-radius:var(--r-md);}
     .lv-graph .cap{font-size:.75rem;color:var(--text-3);margin-top:.2rem;}
+    #lv-wb{flex:1;min-height:0;display:flex;flex-direction:column;padding:.5rem;background:var(--bg-base);}
+    #lv-wb-frame{flex:1;min-height:0;display:flex;flex-direction:column;border-radius:12px;padding:9px 9px 0;background:linear-gradient(180deg,#eef0f3,#aeb4bf 55%,#cfd4dc);box-shadow:0 6px 18px rgba(0,0,0,.35),inset 0 1px 0 #fff;}
+    #lv-wb-surface{position:relative;flex:1;min-height:0;overflow:hidden;border-radius:4px;background:radial-gradient(ellipse at 20% 15%,rgba(255,255,255,.9),rgba(255,255,255,0) 60%),linear-gradient(135deg,#fdfdfd,#f4f6f8 60%,#fbfcfd);box-shadow:inset 0 0 0 1px rgba(0,0,0,.18),inset 0 8px 16px rgba(0,0,0,.07);}
+    #lv-wb-surface #lv-board{position:absolute;inset:0;overflow-y:auto;padding:14px 20px 40px;background:transparent;color:#111827;font-family:'Caveat','Segoe Print','Bradley Hand','Comic Sans MS',cursive;}
+    #lv-ink{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;touch-action:none;}
+    #lv-wb-surface.pen #lv-ink{pointer-events:auto;cursor:crosshair;}
+    #lv-wb-surface #lv-board .lv-empty{color:#94a3b8;font-size:1.35rem;font-style:italic;}
+    #lv-board .lv-b-title{font-size:2rem;font-weight:700;color:#1e3a8a;margin:.2rem 0 .5rem;padding-bottom:.25rem;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='6' viewBox='0 0 40 6'%3E%3Cpath d='M0 3 Q5 0 10 3 T20 3 T30 3 T40 3' fill='none' stroke='%231e3a8a' stroke-width='2' stroke-linecap='round'/%3E%3C/svg%3E") repeat-x left bottom;animation:lv-wipe var(--wd,1s) ease-out both;}
+    #lv-board .lv-b-line{font-size:1.5rem;line-height:1.35;color:#111827;margin:.15rem 0;animation:lv-wipe var(--wd,1s) ease-out both;}
+    #lv-board .lv-b-eq{margin:.6rem 0;padding:.3rem .6rem;border:none;border-left:0;background:transparent;color:#be123c;font-size:1.25rem;animation:lv-wipe 1.2s ease-out both;}
+    #lv-board .lv-b-table{border-collapse:collapse;margin:.6rem 0;font-size:1.35rem;animation:lv-wipe 1.2s ease-out both;}
+    #lv-board .lv-b-table th,#lv-board .lv-b-table td{border:2px solid #334155;padding:.15rem .8rem;color:#111827;background:transparent;}
+    #lv-board .lv-b-table th{color:#1e3a8a;}
+    #lv-board .lv-graph{animation:lv-wipe 1.2s ease-out both;}
+    #lv-board .lv-graph svg{background:#fff;border:2px solid #94a3b8;}
+    #lv-board .lv-graph .cap{font-size:1.25rem;color:#1e3a8a;}
+    .lv-jxg{width:100%;max-width:480px;aspect-ratio:3/2;background:#fff;border:2px solid #94a3b8;border-radius:8px;overflow:hidden;touch-action:none;}
+    @keyframes lv-wipe{from{clip-path:inset(0 100% 0 0);}to{clip-path:inset(0 0 0 0);}}
+    #lv-wb-tray{display:flex;align-items:center;justify-content:center;gap:.3rem;flex-wrap:nowrap;flex-shrink:0;margin:8px -9px 0;padding:7px 10px;background:linear-gradient(180deg,#9aa1ad,#c9ced6 40%,#8e95a1);border-radius:0 0 12px 12px;box-shadow:inset 0 2px 3px rgba(0,0,0,.25);}
+    .lv-tool{flex-shrink:0;padding:0 .3rem;border:1px solid rgba(0,0,0,.25);background:#f1f5f9;border-radius:8px;min-width:32px;height:30px;font-size:1rem;cursor:pointer;color:#111827;}
+    .lv-tool.active{background:#fde68a;border-color:#b45309;box-shadow:0 0 0 2px rgba(180,83,9,.35);}
+    .lv-marker{flex-shrink:0;width:34px;height:15px;border-radius:8px 4px 4px 8px;border:1px solid rgba(0,0,0,.4);background:linear-gradient(90deg,var(--mc) 0 70%,#e5e7eb 70% 100%);cursor:pointer;padding:0;box-shadow:0 2px 3px rgba(0,0,0,.3);}
+    .lv-marker.active{transform:translateY(-4px);outline:2px solid #fff;}
+    .lv-sep{flex-shrink:0;width:1px;height:20px;background:rgba(0,0,0,.25);}
+    @media (max-width:420px){.lv-marker{width:26px;}.lv-tool{min-width:28px;}#lv-wb{padding:.3rem;}#lv-board .lv-b-title{font-size:1.7rem;}#lv-board .lv-b-line{font-size:1.3rem;}}
+    #lv-wb-surface #lv-board{-webkit-overflow-scrolling:touch;overscroll-behavior:contain;}
+
     @keyframes lv-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
     .lv-msg{margin:.4rem 0;padding:.5rem .7rem;border-radius:var(--r-lg);font-size:.88rem;line-height:1.45;max-width:92%;}
     .lv-msg.t{background:var(--accent-subtle);color:var(--text-1);border:1px solid var(--accent-border,var(--border));}
@@ -523,7 +574,7 @@
     @media (min-width:900px){
       #lv-tabs{display:none;}
       #lv-main{display:grid;grid-template-columns:1.6fr 1fr;grid-template-rows:1fr;}
-      #lv-side{display:grid;grid-template-rows:1.3fr 1fr;min-height:0;border-left:1px solid var(--border);}
+      #lv-side{display:grid;grid-template-rows:2.4fr 1fr;min-height:0;border-left:1px solid var(--border);}
       .lv-panel{display:flex;flex-direction:column;}
       #lv-stage-panel{grid-column:1;}
       #lv-board-panel,#lv-notes-panel{background:var(--bg-base);}
@@ -692,9 +743,9 @@
     const sd = (window.AppState && AppState.studentData) || {};
     const produced = [];   // raw lines kept for history
 
-    fetch(LIVE_URL, {
+    _getToken().then(tok => fetch(LIVE_URL, {
       method:  'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: Object.assign({ 'Content-Type': 'application/json' }, tok ? { 'Authorization': 'Bearer ' + tok } : {}),
       signal:  ctrl.signal,
       body: JSON.stringify({
         studentId:    _studentId(),
@@ -704,7 +755,7 @@
         scene:        _sceneSummary(),
         history:      G.history,
       }),
-    })
+    }))
     .then(res => {
       if (!res.ok) {
         return res.json().catch(() => ({})).then(j => {
@@ -735,7 +786,7 @@
       if (myGen !== G.gen || (err && err.name === 'AbortError')) return;
       G.fetching = false; G.ctrl = null;
       G.history.pop();
-      const msg = (err && err.status === 429 && err.message)
+      const msg = (err && (err.status === 429 || err.status === 401) && err.message)
         ? err.message
         : 'I lost my connection for a moment. Please ask me again.';
       _caption(msg);
@@ -807,6 +858,7 @@
     items.forEach(o => {
       if (typeof o.say === 'string' && o.say.trim()) {
         G.queue.push({ k: 'say', text: o.say.trim().slice(0, 400) });
+        if (G.speaking) _prefetchNext();
       } else if (typeof o.do === 'string') {
         G.queue.push({ k: 'do', o: o });
       }
@@ -842,6 +894,7 @@
     _setStatus('speaking');
     _caption(text);
     _note('teacher', text);
+    _prefetchNext();
 
     const gen = G.gen;
     const words = text.split(' ').length;
@@ -863,6 +916,28 @@
       try { SpeechEngine.speak(text, finish, true); }
       catch (e) { setTimeout(finish, words * 330 + 900); }
     }
+  }
+
+  /* Pre-fetch the audio of the NEXT sentence while the current one is playing. */
+  function _prefetchNext() {
+    try {
+      if (!window.SpeechEngine || !SpeechEngine.prefetch) return;
+      for (let i = 0; i < G.queue.length; i++) {
+        if (G.queue[i].k === 'say') {
+          SpeechEngine.prefetch(String(G.queue[i].text).replace(/\$+/g, '').replace(/\s+/g, ' ').trim());
+          break;
+        }
+      }
+    } catch (e) {}
+  }
+
+  /* Firebase ID token sent to the Worker, which verifies it. */
+  function _getToken() {
+    try {
+      const u = window.fbAuth && window.fbAuth.currentUser;
+      if (u && typeof u.getIdToken === 'function') return u.getIdToken().catch(() => null);
+    } catch (e) {}
+    return Promise.resolve(null);
   }
 
   function _turnDone() {
@@ -1001,6 +1076,7 @@
 
     S.scene = new T.Scene();
     S.scene.background = new T.Color('#0b1220');
+    S.scene.fog = new T.Fog(0x0b1220, 22, 55);
     S.camera = new T.PerspectiveCamera(50, 1, 0.1, 200);
     S.camera.position.set(DEFAULT_CAM.pos[0], DEFAULT_CAM.pos[1], DEFAULT_CAM.pos[2]);
 
@@ -1025,6 +1101,8 @@
       S.controls.maxDistance = 40;
       S.controls.minDistance = 2;
       S.controls.target.set(DEFAULT_CAM.look[0], DEFAULT_CAM.look[1], DEFAULT_CAM.look[2]);
+      S.controls.addEventListener('start', () => { S.userAt = performance.now(); S.tweens = S.tweens.filter(t => !t.cam); });
+      S.controls.addEventListener('end', () => { S.userAt = performance.now(); });
     }
     S.camera.lookAt(0, 0, 0);
 
@@ -1057,14 +1135,15 @@
     if (!S.renderer || document.hidden) { S.last = 0; return; }
     const now = performance.now();
     const dt = Math.min(0.05, (now - (S.last || now)) / 1000);
+    const rdt = Math.min(0.5, (now - (S.last || now)) / 1000);   /* real elapsed time: camera moves stay on schedule even on slow phones */
     S.last = now; S.t += dt;
 
     /* tweens */
     for (let i = S.tweens.length - 1; i >= 0; i--) {
       const tw = S.tweens[i];
-      tw.el += dt * 1000;
+      tw.el += rdt * 1000;
       const k = Math.min(1, tw.el / tw.ms);
-      tw.fn(k * k * (3 - 2 * k));
+      tw.fn(tw.cam ? (k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2) : k * k * (3 - 2 * k));
       if (k >= 1) S.tweens.splice(i, 1);
     }
 
@@ -1088,26 +1167,121 @@
 
     /* preset simulations */
     S.updaters.forEach(u => u.fn(dt, S.t));
+    _director(dt, now);
 
     if (S.controls) S.controls.update();
     S.renderer.render(S.scene, S.camera);
   }
 
-  function _tween(ms, fn) { S.tweens.push({ el: 0, ms: Math.max(50, ms), fn }); }
+  function _tween(ms, fn, cam) { S.tweens.push({ el: 0, ms: Math.max(50, ms), fn, cam: !!cam }); }
 
-  function _cameraTo(pos, look, ms) {
+  /* Cinematic camera: eased arc (orbit-style) move between two framings. */
+  function _cameraTo(pos, look, ms, auto) {
     if (!S.camera) return;
     const T = _T;
-    const p0 = S.camera.position.clone();
-    const l0 = S.controls ? S.controls.target.clone() : new T.Vector3(0, 0, 0);
+    S.tweens = S.tweens.filter(t => !t.cam);
+    const t0 = S.controls ? S.controls.target.clone() : new T.Vector3(0, 0, 0);
     const p1 = new T.Vector3(pos[0], pos[1], pos[2]);
     const l1 = new T.Vector3(look[0], look[1], look[2]);
-    _tween(ms || 1000, k => {
-      S.camera.position.lerpVectors(p0, p1, k);
-      const l = new T.Vector3().lerpVectors(l0, l1, k);
-      if (S.controls) S.controls.target.copy(l);
-      S.camera.lookAt(l);
+    const o0 = S.camera.position.clone().sub(t0), o1 = p1.clone().sub(l1);
+    const r0 = Math.max(0.5, o0.length()), r1 = Math.max(0.5, o1.length());
+    const cl = v => Math.max(-1, Math.min(1, v));
+    const th0 = Math.atan2(o0.x, o0.z), th1 = Math.atan2(o1.x, o1.z);
+    const ph0 = Math.asin(cl(o0.y / r0)), ph1 = Math.asin(cl(o1.y / r1));
+    let dth = th1 - th0;
+    while (dth > Math.PI) dth -= 2 * Math.PI;
+    while (dth < -Math.PI) dth += 2 * Math.PI;
+    if (!auto) S.shotAt = performance.now();
+    _tween(ms || 1600, k => {
+      const r = r0 + (r1 - r0) * k, th = th0 + dth * k, ph = ph0 + (ph1 - ph0) * k;
+      const tg = new T.Vector3().lerpVectors(t0, l1, k), cp = Math.cos(ph);
+      S.camera.position.set(tg.x + r * cp * Math.sin(th), tg.y + r * Math.sin(ph), tg.z + r * cp * Math.cos(th));
+      if (S.controls) S.controls.target.copy(tg);
+      S.camera.lookAt(tg);
+    }, true);
+  }
+
+  /* Idle "director": slow drift + gentle breathing so the stage never feels frozen. */
+  function _director(dt, now) {
+    if (!S.controls || !G.started || !S.camera) return;
+    if (S.tweens.some(t => t.cam)) return;
+    if (now - (S.userAt || 0) < 6000) return;
+    const tg = S.controls.target, p = S.camera.position;
+    const a = 0.05 * dt * (G.speaking ? 1 : 0.5), c = Math.cos(a), sn = Math.sin(a);
+    const ox = p.x - tg.x, oz = p.z - tg.z;
+    p.x = tg.x + ox * c - oz * sn;
+    p.z = tg.z + ox * sn + oz * c;
+    p.y += Math.sin(S.t * 0.45) * 0.12 * dt;
+  }
+
+  function _sceneBounds() {
+    const T = _T, b = new T.Box3(); let n = 0;
+    S.objs.forEach(e => {
+      if (!e.obj || e.obj.visible === false) return;
+      const bb = new T.Box3().setFromObject(e.obj);
+      if (isFinite(bb.min.x) && !bb.isEmpty()) { b.union(bb); n++; }
     });
+    return n ? b : null;
+  }
+
+  function _fitDist(radius) {
+    const fov = S.camera.fov * Math.PI / 180;
+    const asp = Math.max(0.5, S.camera.aspect || 1);
+    const half = Math.min(fov / 2, Math.atan(Math.tan(fov / 2) * asp));
+    return Math.min(32, Math.max(6, radius / Math.sin(half) * 0.9));
+  }
+
+  /* After things are added, re-frame so everything is in view (unless a shot was just called). */
+  function _scheduleFrame() {
+    clearTimeout(S.frameT);
+    S.frameT = setTimeout(() => {
+      if (!S.scene || !S.camera || !S.controls) return;
+      const now = performance.now();
+      if (now - (S.shotAt || 0) < 3500 || now - (S.userAt || 0) < 8000) return;
+      const bb = _sceneBounds(); if (!bb) return;
+      const T = _T, c = bb.getCenter(new T.Vector3());
+      const radius = Math.max(3, bb.getSize(new T.Vector3()).length() / 2);
+      const fit = _fitDist(radius);
+      const tg = S.controls.target;
+      const cur = S.camera.position.distanceTo(tg);
+      if (Math.abs(cur - fit) / fit < 0.3 && c.distanceTo(tg) < 1.5) return;
+      const dir = S.camera.position.clone().sub(tg).normalize().multiplyScalar(fit);
+      _cameraTo([c.x + dir.x, Math.max(-1, c.y + dir.y), c.z + dir.z], [c.x, c.y, c.z], 1800, true);
+    }, 500);
+  }
+
+  /* Named camera shots, like a film director. */
+  function _shot(o) {
+    if (!S.camera) return;
+    const T = _T, type = String(o.type || 'wide');
+    const bb = _sceneBounds();
+    const center = new T.Vector3(0, 0, 0); let radius = 4;
+    if (bb) { bb.getCenter(center); radius = Math.max(3, bb.getSize(new T.Vector3()).length() / 2); }
+    const fit = _fitDist(radius);
+    const ent = o.id ? S.objs.get(_id(o.id)) : null;
+    let ep = null, er = 1;
+    if (ent) {
+      ep = ent.obj.getWorldPosition(new T.Vector3());
+      er = Math.max(0.8, new T.Box3().setFromObject(ent.obj).getSize(new T.Vector3()).length() / 2);
+    }
+    let tgt = center, dir = [0.3, 0.4, 1], dist = fit, ms = 1800;
+    switch (type) {
+      case 'close':  tgt = ep || center; dist = Math.max(3, er * 3.2); dir = [0.55, 0.25, 1]; ms = 1600; break;
+      case 'medium': tgt = ep || center; dist = ep ? Math.max(5, er * 5) : fit * 0.7; dir = [0.45, 0.3, 1]; break;
+      case 'top':    dist = fit; dir = [0.02, 1, 0.18]; ms = 2000; break;
+      case 'low':    tgt = ep || center; dist = fit * 0.8; dir = [0.5, -0.05, 1]; break;
+      case 'reveal': dist = fit * 1.15; dir = [0.35, 0.4, 1]; ms = 3600; break;
+      case 'orbit': {
+        tgt = ep || center;
+        const base = S.controls ? S.controls.target : center;
+        const cur = S.camera.position.clone().sub(base), a = 1.6, c = Math.cos(a), sn = Math.sin(a);
+        _cameraTo([tgt.x + cur.x * c - cur.z * sn, tgt.y + cur.y, tgt.z + cur.x * sn + cur.z * c], [tgt.x, tgt.y, tgt.z], 4200);
+        return;
+      }
+      default: break;
+    }
+    const d = new T.Vector3(dir[0], dir[1], dir[2]).normalize().multiplyScalar(dist);
+    _cameraTo([tgt.x + d.x, Math.max(-1, tgt.y + d.y), tgt.z + d.z], [tgt.x, tgt.y, tgt.z], ms);
   }
 
   function _onStageTap(e) {
@@ -1340,7 +1514,7 @@
   function _exec(o) {
     if (!S.scene) return;
     switch (o.do) {
-      case 'add':    _add(o, false); break;
+      case 'add':    _add(o, false); _scheduleFrame(); break;
       case 'group':  _add(Object.assign({}, o, { shape: 'group' }), false); break;
       case 'set':    _setProps(o); break;
       case 'move':   _move(o); break;
@@ -1354,14 +1528,15 @@
           _pulse(o.id);
           const p = ent.obj.getWorldPosition(new _T.Vector3());
           const cam = S.camera.position;
-          _cameraTo([p.x * 0.4 + cam.x * 0.6, p.y * 0.4 + cam.y * 0.6 + 0.3, p.z * 0.4 + cam.z * 0.6], [p.x, p.y, p.z], 900);
+          _shot({ type: 'close', id: o.id });
         }
         break;
       }
       case 'camera':
-        _cameraTo(_vec(o.pos, DEFAULT_CAM.pos), _vec(o.look, DEFAULT_CAM.look), 1100);
+        _cameraTo(_vec(o.pos, DEFAULT_CAM.pos), _vec(o.look, DEFAULT_CAM.look), 1800);
         break;
-      case 'preset': _preset(String(o.name || ''), (o.params && typeof o.params === 'object') ? o.params : {}); break;
+      case 'shot':   _shot(o); break;
+      case 'preset': _preset(String(o.name || ''), (o.params && typeof o.params === 'object') ? o.params : {}); _scheduleFrame(); break;
       case 'board':  _board(o); break;
       default: break;
     }
@@ -1538,6 +1713,120 @@
      WHITEBOARD
   ══════════════════════════════════════════════════ */
 
+  /* ══════════════════════════════════════════════════
+     FREEHAND PEN  (student sketching on the whiteboard)
+     Pointer events, pressure-aware, smoothed with quadratic curves.
+  ══════════════════════════════════════════════════ */
+  const INK = { strokes: [], cur: null, color: '#1d4ed8', tool: 'hand', cv: null, ctx: null, w: 0, h: 0, penSeen: false };
+
+  function _loadFont() {
+    if (document.getElementById('lv-font')) return;
+    const l = document.createElement('link');
+    l.id = 'lv-font'; l.rel = 'stylesheet';
+    l.href = 'https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&display=swap';
+    document.head.appendChild(l);
+  }
+
+  function _initInk() {
+    const cv = _el('lv-ink'), surf = _el('lv-wb-surface');
+    if (!cv || !surf) return;
+    INK.cv = cv; INK.ctx = cv.getContext('2d'); INK.strokes = []; INK.cur = null; INK.tool = 'hand';
+
+    const fit = () => {
+      const r = cv.getBoundingClientRect();
+      if (!r.width || !r.height) return;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      INK.w = r.width; INK.h = r.height;
+      cv.width = Math.round(r.width * dpr); cv.height = Math.round(r.height * dpr);
+      INK.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      _inkRedraw();
+    };
+    if (window.ResizeObserver) new ResizeObserver(fit).observe(cv); else window.addEventListener('resize', fit);
+
+    const pos = e => {
+      const r = cv.getBoundingClientRect();
+      const p = (e.pointerType !== 'mouse' && e.pressure > 0) ? e.pressure : 0.5;
+      return { x: (e.clientX - r.left) / r.width, y: (e.clientY - r.top) / r.height, p: p };
+    };
+    cv.addEventListener('pointerdown', e => {
+      if (INK.tool === 'hand') return;
+      if (e.pointerType === 'pen') INK.penSeen = true;
+      if (e.pointerType === 'touch' && INK.penSeen) return;     // palm rejection
+      e.preventDefault();
+      try { cv.setPointerCapture(e.pointerId); } catch (x) {}
+      INK.cur = { c: INK.color, w: INK.tool === 'eraser' ? 22 : 3.2, er: INK.tool === 'eraser', pts: [pos(e)], id: e.pointerId };
+      INK.strokes.push(INK.cur);
+      _inkDot(INK.cur);
+    });
+    cv.addEventListener('pointermove', e => {
+      const s = INK.cur; if (!s || e.pointerId !== s.id) return;
+      e.preventDefault();
+      const evs = (e.getCoalescedEvents && e.getCoalescedEvents()) || [e];
+      evs.forEach(ev => {
+        s.pts.push(pos(ev));
+        if (s.pts.length >= 3) _inkSeg(INK.ctx, s, s.pts.length - 2);
+      });
+    });
+    const end = e => {
+      const s = INK.cur; if (!s || (e && e.pointerId !== s.id)) return;
+      if (s.pts.length >= 2) _inkSeg(INK.ctx, s, s.pts.length - 1);
+      INK.cur = null;
+    };
+    cv.addEventListener('pointerup', end);
+    cv.addEventListener('pointercancel', end);
+
+    const tray = _el('lv-wb-tray');
+    const setTool = t => {
+      INK.tool = t;
+      surf.classList.toggle('pen', t !== 'hand');
+      tray.querySelectorAll('.lv-tool[data-tool]').forEach(b => b.classList.toggle('active', b.getAttribute('data-tool') === t));
+    };
+    tray.querySelectorAll('.lv-tool[data-tool]').forEach(b => b.addEventListener('click', () => setTool(b.getAttribute('data-tool'))));
+    tray.querySelectorAll('.lv-marker').forEach(b => b.addEventListener('click', () => {
+      INK.color = b.getAttribute('data-color');
+      tray.querySelectorAll('.lv-marker').forEach(m => m.classList.toggle('active', m === b));
+      setTool('pen');
+    }));
+    const first = tray.querySelector('.lv-marker'); if (first) first.classList.add('active');
+    _el('lv-ink-undo').addEventListener('click', () => { INK.strokes.pop(); _inkRedraw(); });
+    _el('lv-ink-clear').addEventListener('click', _inkClear);
+  }
+
+  function _inkSetup(ctx, s) {
+    ctx.globalCompositeOperation = s.er ? 'destination-out' : 'source-over';
+    ctx.strokeStyle = s.c; ctx.fillStyle = s.c;
+    ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  }
+  function _inkDot(s) {
+    const ctx = INK.ctx, p = s.pts[0];
+    ctx.save(); _inkSetup(ctx, s);
+    ctx.beginPath(); ctx.arc(p.x * INK.w, p.y * INK.h, s.w * 0.5, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+  function _inkSeg(ctx, s, i) {
+    const a = s.pts[i - 1], b = s.pts[i], c = s.pts[i + 1], W = INK.w, H = INK.h;
+    if (!a || !b) return;
+    const sx = (i === 1) ? a.x : (a.x + b.x) / 2, sy = (i === 1) ? a.y : (a.y + b.y) / 2;
+    const ex = c ? (b.x + c.x) / 2 : b.x, ey = c ? (b.y + c.y) / 2 : b.y;
+    ctx.save(); _inkSetup(ctx, s);
+    ctx.lineWidth = s.er ? s.w : s.w * (0.6 + b.p * 0.9);
+    ctx.beginPath();
+    ctx.moveTo(sx * W, sy * H);
+    ctx.quadraticCurveTo(b.x * W, b.y * H, ex * W, ey * H);
+    ctx.stroke();
+    ctx.restore();
+  }
+  function _inkRedraw() {
+    if (!INK.ctx || !INK.w) return;
+    INK.ctx.clearRect(0, 0, INK.w, INK.h);
+    INK.strokes.forEach(s => {
+      _inkDot(s);
+      if (s.pts.length === 1) return;
+      for (let i = 1; i < s.pts.length; i++) _inkSeg(INK.ctx, s, i);
+    });
+  }
+  function _inkClear() { INK.strokes = []; INK.cur = null; _inkRedraw(); }
+
   function _board(o) {
     const el = _el('lv-board');
     if (!el) return;
@@ -1545,6 +1834,7 @@
 
     if (op === 'clear') {
       el.innerHTML = '';
+      _inkClear();
       return;
     }
     const empty = el.querySelector('.lv-empty');
@@ -1556,6 +1846,7 @@
       node = document.createElement('div');
       node.className = op === 'title' ? 'lv-b-title' : 'lv-b-line';
       node.textContent = _text(o.text, 240);
+      node.style.setProperty('--wd', Math.min(3.2, 0.5 + node.textContent.length * 0.04) + 's');
 
     } else if (op === 'eq') {
       node = document.createElement('div');
@@ -1593,6 +1884,7 @@
 
     node.setAttribute('data-bi', '1');
     el.appendChild(node);
+    if (typeof node._init === 'function') node._init();
     while (el.querySelectorAll('[data-bi]').length > MAX_BOARD) {
       const first = el.querySelector('[data-bi]');
       if (first) first.remove(); else break;
@@ -1604,7 +1896,88 @@
     }
   }
 
+  let _jxgN = 0, _jxgState = 0, _jxgWait = [];
+  function _loadJSX(cb) {
+    if (window.JXG && window.JXG.JSXGraph) return cb(true);
+    _jxgWait.push(cb);
+    if (_jxgState === 1) return;
+    _jxgState = 1;
+    const done = ok => { _jxgState = ok ? 2 : 0; const w = _jxgWait; _jxgWait = []; w.forEach(f => f(ok)); };
+    if (!document.querySelector('link[data-jsx]')) {
+      const l = document.createElement('link');
+      l.rel = 'stylesheet'; l.href = JSX_CSS; l.setAttribute('data-jsx', '1');
+      document.head.appendChild(l);
+    }
+    const sc = document.createElement('script');
+    sc.src = JSX_JS; sc.async = true;
+    sc.onload = () => done(!!(window.JXG && window.JXG.JSXGraph));
+    sc.onerror = () => done(false);
+    document.head.appendChild(sc);
+  }
+
+  /* Interactive graph (JSXGraph). Falls back to the plain SVG graph if it cannot load. */
   function _buildGraph(o) {
+    let f;
+    try { f = _compileExpr(o.expr); } catch (e) { return null; }
+    const xmin = _num(o.xmin, -5, -1e3, 1e3);
+    let xmax = _num(o.xmax, 5, -1e3, 1e3);
+    if (xmax <= xmin) xmax = xmin + 10;
+    let ymin = Number(o.ymin), ymax = Number(o.ymax);
+    if (!isFinite(ymin) || !isFinite(ymax) || ymax <= ymin) {
+      ymin = Infinity; ymax = -Infinity;
+      for (let i = 0; i <= 120; i++) {
+        const y = f(xmin + (xmax - xmin) * i / 120);
+        if (isFinite(y) && Math.abs(y) < 1e6) { ymin = Math.min(ymin, y); ymax = Math.max(ymax, y); }
+      }
+      if (!isFinite(ymin) || !isFinite(ymax)) return null;
+      const padY = (ymax - ymin) * 0.1 || 1;
+      ymin -= padY; ymax += padY;
+    }
+    const box = document.createElement('div');
+    box.className = 'lv-graph';
+    const holder = document.createElement('div');
+    holder.className = 'lv-jxg';
+    holder.id = 'lv-jxg-' + (++_jxgN);
+    box.appendChild(holder);
+    const cap = document.createElement('div');
+    cap.className = 'cap';
+    cap.textContent = _text(o.label || ('y = ' + o.expr), 100);
+    box.appendChild(cap);
+
+    function fallback() {
+      const fb = _buildGraphSVG(o);
+      if (fb && box.parentNode) box.parentNode.replaceChild(fb, box);
+    }
+    box._init = function () {
+      _loadJSX(ok => {
+        if (!ok) return fallback();
+        let jb = null;
+        const make = () => {
+          try {
+            jb = JXG.JSXGraph.initBoard(holder.id, {
+              boundingbox: [xmin, ymax, xmax, ymin], axis: true, grid: true,
+              showCopyright: false, showNavigation: false, keepAspectRatio: false,
+              pan: { enabled: true, needTwoFingers: true },
+              zoom: { wheel: false, pinch: true, needShift: false },
+            });
+            const curve = jb.create('functiongraph', [x => { const y = f(x); return isFinite(y) ? y : NaN; }],
+              { strokeColor: '#1d4ed8', strokeWidth: 3, highlightStrokeColor: '#1d4ed8' });
+            try { jb.create('glider', [(xmin + xmax) / 2, 0, curve], { name: '', size: 4, fillColor: '#dc2626', strokeColor: '#dc2626', showInfobox: true }); } catch (e) {}
+          } catch (e) { console.warn('[LiveClass] JSXGraph failed', e); fallback(); }
+        };
+        const ro = window.ResizeObserver ? new ResizeObserver(() => {
+          const w = holder.clientWidth, h = holder.clientHeight;
+          if (!w || !h) return;
+          if (!jb) make();
+          else { try { jb.resizeContainer(w, h, true); jb.update(); } catch (e) {} }
+        }) : null;
+        if (ro) ro.observe(holder); else make();
+      });
+    };
+    return box;
+  }
+
+  function _buildGraphSVG(o) {
     let f;
     try { f = _compileExpr(o.expr); } catch (e) { return null; }
 

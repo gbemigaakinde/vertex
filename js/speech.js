@@ -830,6 +830,25 @@ var _STT_GATE_MS         = 600;
 
   var _onDoneCallback = null;
 
+/* Warm the audio cache for a sentence that will be spoken NEXT, so it
+   starts instantly when the current one ends. No-op on device voices. */
+function prefetch(rawText) {
+  try {
+    if (!ttsSupported || !rawText) return;
+    var clean = String(rawText)
+      .replace(/<[^>]*>/g, ' ')
+      .replace(/%%MATH_\d+%%/g, ' ')
+      .replace(/\$\$[\s\S]*?\$\$|\$[^$]*?\$/g, ' (math expression) ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    if (!clean) return;
+    var plan = _planVoice(false, false);
+    if (!plan.server) return;
+    var first = _chunkText(clean, _SERVER_FIRST_CHUNK)[0];
+    if (first) _fetchServerAudio(first, plan.server).catch(function () {});
+  } catch (e) {}
+}
+
 function speak(rawText, onDone, _fromLive) {
   if (!ttsSupported) {
     if (window.UI) UI.toast('Text-to-speech is not supported in your browser.', 'warning', 4000);
@@ -2349,6 +2368,7 @@ function _renderAiText(str) {
   /* ── Public API ── */
  window.SpeechEngine = {
     speak:                speak,
+    prefetch:             prefetch,
     cancel:               cancel,
     startSTT:             startSTT,
     stopSTT:              stopSTT,
