@@ -3,6 +3,7 @@
    ============================================================
    Routing:
      openForStudent() → renderHub() → [subject card click] →
+       ThreeDLive.open()      (Live Class with Master Timothy AI)
        ThreeDPeriodic.open()  (Chemistry)
        ThreeDCell.open()      (Biology)
        ThreeDPhysics.open()   (Physics)
@@ -15,6 +16,24 @@
   let _activeModule = null;
 
   const SUBJECTS = [
+    {
+      id:          'live',
+      title:       'Live Class',
+      subtitle:    'Talk to Master Timothy AI',
+      description: 'A real-time voice class. Ask questions out loud, watch Master Timothy build 3D models and write on the whiteboard as he teaches, and interrupt any time.',
+      icon:        '<i class="ph ph-chalkboard-teacher"></i>',
+      color:       'var(--accent)',
+      colorBg:     'var(--accent-subtle)',
+      colorBorder: 'var(--accent-border)',
+      available:   true,
+      launch:      () => {
+        if (window.ThreeDLive) {
+          ThreeDLive.open(_backToHub);
+        } else {
+          UI.toast('Live Class module not loaded. Please refresh.', 'error');
+        }
+      },
+    },
     {
       id:          'chemistry',
       title:       'Chemistry',
@@ -156,7 +175,7 @@
 
         <p style="text-align:center;font-size:var(--text-xs);color:var(--text-4);
                   margin-top:var(--sp-8);padding-bottom:var(--sp-4);">
-          More subjects coming soon. All modules work offline once loaded.
+          More subjects coming soon. Chemistry, Biology and Physics work offline once loaded; Live Class needs an internet connection.
         </p>
 
       </div>`);
