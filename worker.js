@@ -2859,11 +2859,22 @@ async function _handleAvatar(request, url, env) {
 const LIVE_DAILY_LIMIT = 150; // live turns per student per day
 
 async function handleLiveRequest(request, env) {
+  // Firebase ID-token check (set LIVE_AUTH_OPTIONAL=1 in env to bypass while testing)
+  let authUid = null;
+  try {
+    const claims = await verifyFirebaseIdToken(request, env);
+    authUid = claims.sub;
+  } catch (e) {
+    if (env.LIVE_AUTH_OPTIONAL !== '1') {
+      return new Response(JSON.stringify({ error: 'unauthorized', message: 'Please sign in again to join the live class.' }),
+        { status: 401, headers: corsJsonHeaders() });
+    }
+  }
   let body;
   try { body = await request.json(); }
   catch (e) { return jsonError('Invalid JSON body.', 400); }
 
-  const studentId    = String(body.studentId   || body.studentName || 'anon').slice(0, 80);
+  const studentId    = String(authUid || body.studentId || body.studentName || 'anon').slice(0, 80);
   const studentName  = String(body.studentName  || '').slice(0, 60);
   const studentClass = String(body.studentClass || '').slice(0, 40);
   const topic        = String(body.topic        || '').slice(0, 120);
@@ -2965,6 +2976,7 @@ function buildLiveSystemPrompt(studentName, studentClass, topic, scene) {
     '{"do":"orbit","id":"earth","around":"sun","radius":4,"speed":0.6,"tilt":0}   ("around" is an object id or [x,y,z])',
     '{"do":"focus","id":"earth"}   (pulses it and turns the camera to it)',
     '{"do":"camera","pos":[0,4,10],"look":[0,0,0]}',
+    '{"do":"shot","type":"wide|medium|close|top|low|reveal|orbit","id":"earth"}   (cinematic camera move like a film director: wide = whole scene, close = push in on id, top = from above, low = dramatic low angle, reveal = slow pull-back, orbit = circle around id. Use a shot when you introduce something new or change focus; the camera also drifts gently by itself.)',
     '{"do":"remove","id":"ball"}   {"do":"clear"}   (clear wipes the whole stage; use it when switching topics)',
     '{"do":"preset","name":"solar_system","params":{}}   Ready-made animated scenes. Names and params: solar_system | atom {"protons":1-18,"neutrons":0-20} | water_molecule | co2_molecule | methane_molecule | wave {"amplitude":0.3-2,"wavelength":1-6,"speed":0.5-4} | projectile {"angle":5-85,"speed":5-30,"gravity":9.8} | pendulum {"length":1-5,"angle":5-60}',
     '',
@@ -2985,4 +2997,68 @@ function buildLiveSystemPrompt(studentName, studentClass, topic, scene) {
     '',
     'CURRENT STAGE: ' + (scene || 'empty'),
   ].join('\n');
+}
+
+
+/* ══════════════════════════════════════════════════════════
+   FIREBASE ID TOKEN VERIFICATION  (RS256, Google JWKS)
+   Checks signature, exp/iat, aud (= project id), iss, sub.
+══════════════════════════════════════════════════════════ */
+const FB_JWKS_URL = 'https://www.googleapis.com/service_accounts/v1/jwk/securetoken@system.gserviceaccount.com';
+let _fbJwks = null, _fbJwksExp = 0;
+
+function _fbB64uToBytes(s) {
+  s = s.replace(/-/g, '+').replace(/_/g, '/');
+  while (s.length % 4) s += '=';
+  const bin = atob(s), out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return out;
+}
+
+let _fbJwksForcedAt = 0;
+async function _fbGetJwks(force) {
+  if (!force && _fbJwks && Date.now() < _fbJwksExp) return _fbJwks;
+  /* throttle forced refreshes so bogus key ids cannot make us hammer Google */
+  if (force && _fbJwks && Date.now() - _fbJwksForcedAt < 60000) return _fbJwks;
+  if (force) _fbJwksForcedAt = Date.now();
+  const res = await fetch(FB_JWKS_URL);
+  if (!res.ok) throw new Error('jwks fetch failed');
+  const cc = res.headers.get('cache-control') || '';
+  const m  = /max-age=(\d+)/.exec(cc);
+  _fbJwks    = (await res.json()).keys || [];
+  _fbJwksExp = Date.now() + (m ? parseInt(m[1], 10) : 3600) * 1000;
+  return _fbJwks;
+}
+
+async function verifyFirebaseIdToken(request, env) {
+  const auth = request.headers.get('Authorization') || '';
+  const m = /^Bearer\s+(\S+)$/i.exec(auth);
+  if (!m) throw new Error('missing token');
+  const parts = m[1].split('.');
+  if (parts.length !== 3) throw new Error('malformed token');
+
+  const dec = new TextDecoder();
+  const header  = JSON.parse(dec.decode(_fbB64uToBytes(parts[0])));
+  const payload = JSON.parse(dec.decode(_fbB64uToBytes(parts[1])));
+  if (header.alg !== 'RS256' || !header.kid) throw new Error('bad header');
+
+  const projectId = env.FIREBASE_PROJECT_ID || 'excellencecbt';
+  const now = Math.floor(Date.now() / 1000);
+  if (payload.aud !== projectId) throw new Error('bad aud');
+  if (payload.iss !== 'https://securetoken.google.com/' + projectId) throw new Error('bad iss');
+  if (!payload.sub || typeof payload.sub !== 'string') throw new Error('bad sub');
+  if (!payload.exp || payload.exp < now - 30) throw new Error('expired');
+  if (payload.iat && payload.iat > now + 300) throw new Error('iat in future');
+  if (payload.auth_time && payload.auth_time > now + 300) throw new Error('auth_time in future');
+
+  let keys = await _fbGetJwks(false);
+  let jwk  = keys.find(function (k) { return k.kid === header.kid; });
+  if (!jwk) { keys = await _fbGetJwks(true); jwk = keys.find(function (k) { return k.kid === header.kid; }); }
+  if (!jwk) throw new Error('unknown kid');
+
+  const key = await crypto.subtle.importKey('jwk', jwk, { name: 'RSASSA-PKCS1-v1_5', hash: 'SHA-256' }, false, ['verify']);
+  const ok  = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', key, _fbB64uToBytes(parts[2]),
+                new TextEncoder().encode(parts[0] + '.' + parts[1]));
+  if (!ok) throw new Error('bad signature');
+  return payload;
 }
