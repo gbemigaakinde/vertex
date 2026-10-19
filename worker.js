@@ -2591,12 +2591,120 @@ function _ttsRandomHex(bytes) {
   return Array.from(a).map(function (b) { return b.toString(16).padStart(2, '0'); }).join('');
 }
 
-// Sec-MS-GEC token: SHA-256 of Windows-file-time (rounded down to 5 min) + trusted client token
+// ── Sec-MS-GEC v2 token (port of edge-tts drm.py: custom SHA-256 variant + CS64) ──
+const _G_INIT  = [0x6A09E667,0xBB67AE85,0x3C6EF372,0xA54FF53A,0x510E527F,0x9B05688C,0x1F83D9AB,0x5BE0CD19];
+const _G_STATE = [0xFD9FBEA2,0x91243CE7,0xBE499094,0xCD2E1E0A,0x6C006F49,0x04BD35AB,0xFEB0A7E4,0x03EFFBD2];
+const _G_SCHED = [0xEB24BF9E,0x1558691F,0xA0C09EE2,0x0CFA32BA,0xA622EE8C,0xD1DD9491,0xC0DD25A0,0xF9E70AB6,0xF0C31573,0x7058CE4E,0x7188E606,0x00E5AB33,0xD258B060,0x72766564];
+const _G_RC    = [0x428A2F98,0x71374491,0xB5C0FBCF,0xE9B5DBA5,0x3956C25B,0x59F111F1,0x923F82A4,0xAB1C5ED5,0xD807AA98,0x12835B01,0x243185BE,0x550C7DC3,0x72BE5D74,0x80DEB1FE,0x9BDC06A7,0xC19BF174,0xE49B69C1,0xEFBE4786,0x0FC19DC6,0x240CA1CC,0x2DE92C6F,0x4A7484AA,0x5CB0A9DC,0x76F988DA,0x983E5152,0xA831C66D,0xB00327C8,0xBF597FC7,0xC6E00BF3,0xD5A79147,0x06CA6351,0x14292967,0x27B70A85,0x2E1B2138,0x4D2C6DFC,0x53380D13,0x650A7354,0x766A0ABB,0x81C2C92E,0x92722C85,0xA2BFE8A1,0xA81A664B,0xC24B8B70,0xC76C51A3,0xD192E819,0xD6990624,0xF40E3585,0x106AA070,0x19A4C116,0x1E376C08,0x2748774C,0x34B0BCB5,0x391C0CB3,0x4ED8AA4A,0x5B9CCA4F,0x682E6FF3,0x748F82EE,0x78A5636F,0x84C87814,0x8CC70208,0x90BEFFFA,0xA4506CEB,0xBEF9A3F7,0xC67178F2];
+const _G_CS    = [[0xE82E91B1,0xB32700D0],[0x44DE24C6,0x88DFF51D],[0x3BEB65BC,0x29514038],[0xC89C5933,0xB328CBDF],[0x8D1EC211,0xD405B4D5],[0x314EF5D5,0x26E55F3C],[0xE92491B1,0x607801C6],[0xF0A5B9D5,0x82B2C1FB],[0x06064CF3,0xFA51A3DA],[0xDA79FA60,0x207CC464],[0xBED20560,0x3C3C74F3],[0x89F9C9F8,0xD2D14B61],[0x35FA38C6,0xBB04A2C1],[0xCB49E3C6,0xC5626167]];   // [coefficient, offset] pairs
+const _G_ADJ = 0xC9DC06A7, _G_S0ADJ = 0x059C0B80, _G_S1ADJ = 0x000B92C0;
+const _G_CSF = 0x82893933, _G_CSA0 = 0xF2F90B1A, _G_CSA1 = 0x0B1A0000;
+
+function _gRol16(v) { v >>>= 0; return ((v << 16) | (v >>> 16)) >>> 0; }
+function _gRor(v, n) { return ((v >>> n) | (v << (32 - n))) >>> 0; }
+function _gSig0(v) { return (_gRor(v, 7) ^ _gRor(v, 18) ^ (v >>> 3)) >>> 0; }
+function _gSig1(v) { return (_gRor(v, 17) ^ _gRor(v, 19) ^ (v >>> 10)) >>> 0; }
+function _gExpand(w, from) {
+  for (let i = from; i < 64; i++) w[i] = (_gSig1(w[i - 2]) + w[i - 7] + _gSig0(w[i - 15]) + w[i - 16]) >>> 0;
+}
+function _gRounds(state, w, first) {
+  let [a, b, c, d, e, f, g, h] = state;
+  const K = _G_RC.slice();
+  if (first === 14) K[14] = _G_ADJ;
+  for (let i = first; i < 64; i++) {
+    const t1 = (h + (_gRor(e, 6) ^ _gRor(e, 11) ^ _gRor(e, 25)) + ((e & f) ^ (~e & g)) + K[i] + w[i]) >>> 0;
+    const t2 = ((_gRor(a, 2) ^ _gRor(a, 13) ^ _gRor(a, 22)) + ((a & b) ^ (a & c) ^ (b & c))) >>> 0;
+    h = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+  }
+  return [a, b, c, d, e, f, g, h];
+}
+function _gShaInit(d7) {
+  const w = new Array(14).fill(0);
+  w.push(((d7[0] << 16) | (d7[1] << 8) | d7[2]) >>> 0);
+  w.push(((d7[3] << 24) | (d7[4] << 16) | (d7[5] << 8) | d7[6]) >>> 0);
+  for (let i = 16; i < 30; i++) {
+    let v = _G_SCHED[i - 16];
+    if (i - 2 >= 14)  v += (i === 16) ? ((_gSig1(w[i - 2]) ^ _G_S1ADJ) >>> 0) : _gSig1(w[i - 2]);
+    if (i - 7 >= 14)  v += w[i - 7];
+    if (i - 15 >= 14) v += (i === 29) ? ((_gSig0(w[i - 15]) ^ _G_S0ADJ) >>> 0) : _gSig0(w[i - 15]);
+    w.push(v >>> 0);
+  }
+  w.push((_gSig1(w[28]) + w[23] + _gSig0(w[15]) + w[14] + _G_ADJ - _G_RC[14]) >>> 0);
+  _gExpand(w, 31);
+  const wk = _gRounds(_G_STATE, w, 14);
+  return _G_INIT.map((x, i) => (x + wk[i]) >>> 0);
+}
+function _gShaDigest(data) {            // data: Uint8Array (>= 7 bytes) -> Uint8Array(32)
+  const len = 57 + data.length;
+  const tail = data.subarray(7);
+  const padLen = (55 - len) % 64; const pad = padLen < 0 ? padLen + 64 : padLen;
+  const total = tail.length + 1 + pad + 8;
+  const buf = new Uint8Array(total);
+  buf.set(tail, 0); buf[tail.length] = 0x80;
+  const bits = BigInt(len) * 8n;
+  for (let i = 0; i < 8; i++) buf[total - 1 - i] = Number((bits >> BigInt(8 * i)) & 0xFFn);
+  let state = _gShaInit(data.subarray(0, 7));
+  for (let off = 0; off < total; off += 64) {
+    const w = [];
+    for (let i = 0; i < 16; i++) w.push(((buf[off + 4*i] << 24) | (buf[off + 4*i + 1] << 16) | (buf[off + 4*i + 2] << 8) | buf[off + 4*i + 3]) >>> 0);
+    _gExpand(w, 16);
+    const wk = _gRounds(state, w, 0);
+    state = state.map((x, i) => (x + wk[i]) >>> 0);
+  }
+  const out = new Uint8Array(32);
+  state.forEach((x, i) => { out[4*i] = x >>> 24; out[4*i+1] = (x >>> 16) & 255; out[4*i+2] = (x >>> 8) & 255; out[4*i+3] = x & 255; });
+  return out;
+}
+function _gCs64(data, digest) {         // -> [word0, word1]
+  const dv = new DataView(digest.buffer, digest.byteOffset, 8);
+  const ka = (dv.getUint32(0, true) | 1) >>> 0, kb = (dv.getUint32(4, true) | 1) >>> 0;
+  const fac = [Math.imul(ka, _G_CSF) >>> 0, Math.imul(kb, _G_CSF) >>> 0];
+  const terms = _G_CS.map((p, i) => Math.imul(p[0], fac[i % 2]) >>> 0);
+  const offs  = _G_CS.map(p => p[1]);
+  const raw = new Uint8Array(1 + data.length + ((4 - ((1 + data.length) % 4)) % 4));
+  raw.set(data, 1);
+  const wd = []; const rv = new DataView(raw.buffer);
+  for (let i = 0; i < raw.length; i += 4) wd.push(rv.getUint32(i, true));
+  if (wd.length % 2) wd.push(0);
+  wd.forEach((word, i) => {
+    let term = Math.imul(word, i % 2 === 0 ? ka : kb) >>> 0;
+    let off  = Math.imul(_gRol16(word), i % 2 === 0 ? 0xEF0569FB : 0xC31713DB) >>> 0;
+    if (i === 0) { term = (term + Math.imul(_G_CSA0, fac[0])) >>> 0; off = (off + _G_CSA1) >>> 0; }
+    terms.push(term); offs.push(off);
+  });
+  let swapAcc = 0, swapLast = 0, st = 0, acc = 0;
+  const M = (x, y) => Math.imul(x, y) >>> 0;
+  for (let i = 0; i < terms.length; i += 2) {
+    const x = terms[i], y = terms[i + 1];
+    let t = _gRol16((offs[i] + x) >>> 0);
+    let q = M(t, 0x76F50F34);
+    swapAcc = (swapAcc + ((M(_gRol16(q), 0xC3EFEA97) + q) >>> 0)) >>> 0;
+    t = _gRol16((offs[i + 1] + y) >>> 0);
+    q = M(t, 0x1881CE3C);
+    swapLast = (M(_gRol16(q), 0x35BD1EC9) + q) >>> 0;
+    swapAcc = (swapAcc + swapLast) >>> 0;
+    st = (M(st, ka) + x) >>> 0;
+    st = M(_gRol16(st), 0xCF98B111); st = M(_gRol16(st), 0x87085B9F);
+    st = M(_gRol16(st), 0x12CEB96D); st = M(_gRol16(st), 0x257E1D83);
+    acc = (acc + st) >>> 0;
+    t = (M(st, kb) + y) >>> 0;
+    t = M(_gRol16(t), 0xA27416F5); t = M(_gRol16(t), 0xD38396FF);
+    st = M(_gRol16(M(_gRol16(t), 0x7C932B89)), 0xBFA49F69);
+    acc = (acc + st) >>> 0;
+  }
+  return [(swapLast ^ st) >>> 0, (swapAcc ^ acc) >>> 0];
+}
+function _gHexLE(w) { let s = ''; for (let i = 0; i < 4; i++) s += ((w >>> (8 * i)) & 255).toString(16).padStart(2, '0'); return s.toUpperCase(); }
+
 async function edgeTtsGec(nowMs) {
   let secs = Math.floor((nowMs === undefined ? Date.now() : nowMs) / 1000) + 11644473600;
   secs -= secs % 300;
-  const ticks = BigInt(secs) * 10000000n;
-  return (await _ttsSha256Hex(String(ticks) + EDGE_TTS_TOKEN)).toUpperCase();
+  const str = String(BigInt(secs) * 10000000n) + EDGE_TTS_TOKEN;
+  const data = new TextEncoder().encode(str);
+  const dg = _gShaDigest(data);
+  const cs = _gCs64(data, dg);
+  const hex = Array.from(dg).map(b => b.toString(16).padStart(2, '0')).join('').toUpperCase();
+  return _gHexLE(cs[0]) + _gHexLE(cs[1]) + '-' + hex;
 }
 
 // JavaScript-style date string the service expects
@@ -2646,7 +2754,7 @@ async function edgeTtsSynthesize(text, voice, rate) {
     '?TrustedClientToken=' + EDGE_TTS_TOKEN +
     '&ConnectionId=' + _ttsRandomHex(16) +
     '&Sec-MS-GEC=' + gec +
-    '&Sec-MS-GEC-Version=1-' + EDGE_CHROMIUM;
+    '&Sec-MS-GEC-Version=2-' + EDGE_CHROMIUM;
 
   const resp = await fetch(url, {
     headers: {
