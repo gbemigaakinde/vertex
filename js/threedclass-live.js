@@ -306,6 +306,9 @@
     emptyListens: 0,
     mobileTab: 'stage',
     speakTimer: null,
+    plan: [], cur: -1, curDone: true, turns: 0, retries: 0,
+    awaiting: false, finished: false, paused: false,
+    kind: 'qa', contTimer: null, awaitTimer: null,
   };
 
   const S = {            // 3D stage state
@@ -326,6 +329,8 @@
     _destroy();
     G.history = []; G.topic = ''; G.started = false; G.handsFree = false;
     G.mobileTab = 'stage'; G.emptyListens = 0;
+    G.plan = []; G.cur = -1; G.curDone = true; G.turns = 0; G.retries = 0;
+    G.awaiting = false; G.finished = false; G.paused = false; G.kind = 'qa';
     _render();
   }
 
@@ -370,7 +375,7 @@
     UI.mount(`
       <div id="lv-shell">
         <div id="lv-top">
-          <button id="lv-back" class="lv-btn">← Back</button>
+          <button id="lv-back" class="lv-btn"><i class="ph ph-arrow-left"></i> Back</button>
           <div class="lv-title">
             <div class="lv-h1">Live Class</div>
             <div class="lv-sub" id="lv-topic">with Master Timothy AI</div>
@@ -379,6 +384,11 @@
             <span class="lv-bars"><i></i><i></i><i></i><i></i></span>
             <span id="lv-status-text">Ready</span>
           </div>
+        </div>
+
+        <div id="lv-progress" style="display:none;">
+          <div id="lv-prog-text"></div>
+          <div id="lv-prog-bar"><i id="lv-prog-fill"></i></div>
         </div>
 
         <div id="lv-tabs">
@@ -392,7 +402,7 @@
             <div id="lv-stage"></div>
             <div id="lv-caption"></div>
             <div id="lv-stage-tools">
-              <button class="lv-mini" id="lv-reset-cam" title="Reset view">⟲ View</button>
+              <button class="lv-mini" id="lv-reset-cam" title="Reset view"><i class="ph ph-arrows-clockwise"></i> View</button>
             </div>
             <div id="lv-loading">Loading 3D stage…</div>
           </section>
@@ -435,7 +445,8 @@
             </button>
             <input id="lv-input" type="text" autocomplete="off" maxlength="400" placeholder="Ask a question or answer Master Timothy…" />
             <button id="lv-send" class="lv-send">Send</button>
-            <button id="lv-stop" class="lv-stop" title="Stop Master Timothy" style="display:none;">■</button>
+            <button id="lv-stop" class="lv-stop" title="Pause class" style="display:none;"><i class="ph ph-pause"></i></button>
+            <button id="lv-resume" class="lv-stop lv-resume" title="Resume class" style="display:none;"><i class="ph ph-play"></i></button>
           </div>
           <div id="lv-opts">
             <label class="lv-toggle"><input type="checkbox" id="lv-hf" /> Hands-free (auto-listen)</label>
@@ -445,7 +456,7 @@
 
         <div id="lv-start">
           <div class="lv-card">
-            <div class="lv-card-icon">🎓</div>
+            <div class="lv-card-icon"><i class="ph ph-chalkboard-teacher"></i></div>
             <h2>Join a Live Class</h2>
             <p>Master Timothy AI will teach you out loud, build 3D models and write on the whiteboard. Talk to him or type. You can interrupt any time.</p>
             <div class="lv-chips">${topicChips}</div>
@@ -562,7 +573,13 @@
     .lv-hint{font-size:.7rem;color:var(--text-4);}
     #lv-start{position:absolute;inset:0;z-index:20;background:rgba(10,15,30,.72);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:1rem;overflow-y:auto;}
     .lv-card{background:var(--bg-base);border:1px solid var(--border);border-radius:var(--r-xl);padding:1.5rem;max-width:460px;width:100%;box-shadow:var(--shadow-lg,0 20px 50px rgba(0,0,0,.3));text-align:center;}
-    .lv-card-icon{font-size:2.4rem;margin-bottom:.4rem;}
+    .lv-card-icon{font-size:2.4rem;margin-bottom:.4rem;color:var(--accent,#3b82f6);display:flex;justify-content:center;}
+    .lv-resume{background:var(--accent,#3b82f6);color:#fff;border-color:transparent;}
+    .lv-stop i,.lv-btn i,.lv-mini i{vertical-align:-.12em;}
+    #lv-progress{padding:.35rem .75rem;border-bottom:1px solid var(--border);background:var(--bg-base);flex-shrink:0;}
+    #lv-prog-text{font-size:.72rem;font-weight:600;color:var(--text-2);margin-bottom:.25rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    #lv-prog-bar{height:4px;border-radius:4px;background:var(--bg-subtle);overflow:hidden;}
+    #lv-prog-fill{display:block;height:100%;width:0;background:var(--accent,#3b82f6);transition:width .5s ease;}
     .lv-card h2{font-size:var(--text-xl);font-weight:800;color:var(--text-1);margin:0 0 .4rem;}
     .lv-card p{font-size:var(--text-sm);color:var(--text-3);line-height:1.55;margin:0 0 1rem;}
     .lv-chips{display:flex;flex-wrap:wrap;gap:.4rem;justify-content:center;margin-bottom:.75rem;}
@@ -605,7 +622,9 @@
     _el('lv-send').addEventListener('click', _sendTyped);
     _el('lv-input').addEventListener('keydown', e => { if (e.key === 'Enter') _sendTyped(); });
     _el('lv-mic').addEventListener('click', _micToggle);
-    _el('lv-stop').addEventListener('click', () => { _interrupt(); _setStatus('idle'); });
+    _el('lv-stop').addEventListener('click', _pause);
+    _el('lv-resume').addEventListener('click', _resumeClass);
+    _el('lv-input').addEventListener('input', () => { clearTimeout(G.awaitTimer); });
     _el('lv-reset-cam').addEventListener('click', () => _cameraTo(DEFAULT_CAM.pos, DEFAULT_CAM.look, 700));
     _el('lv-hf').addEventListener('change', e => {
       G.handsFree = !!e.target.checked;
@@ -629,10 +648,12 @@
     pill.setAttribute('data-s', s);
     txt.textContent = ({
       idle: 'Ready', thinking: 'Thinking…', speaking: 'Master Timothy is speaking',
-      listening: 'Listening…',
+      listening: 'Listening…', paused: 'Paused', done: 'Class complete',
     })[s] || 'Ready';
     const stop = _el('lv-stop');
     if (stop) stop.style.display = (s === 'thinking' || s === 'speaking') ? '' : 'none';
+    const rs = _el('lv-resume');
+    if (rs) rs.style.display = (s === 'paused') ? '' : 'none';
   }
 
   function _caption(text) {
@@ -684,8 +705,9 @@
     _pump();
 
     if (typed) {
-      _ask('Start the lesson on: ' + typed + '. I have already greeted the student, so go straight into teaching with visuals.',
-        { display: null, noInterrupt: true });
+      G.cur = 0; G.curDone = false;
+      _ask('[START] Begin the lesson on: ' + typed + '. I have already greeted the student. FIRST output the lesson plan as one {"do":"plan","steps":[...]} line (4 to 6 short step titles, the last one a recap with a quick check). THEN teach step 1 only, with visuals and speech.',
+        { display: null, noInterrupt: true, kind: 'lesson' });
     } else {
       _setStatus('idle');
     }
@@ -730,6 +752,12 @@
 
     if (!opts.noInterrupt) _interrupt();
     const myGen = G.gen;
+    G.kind = opts.kind || 'qa';
+    G.paused = false;
+    G.finished = G.finished && G.kind === 'lesson';
+    clearTimeout(G.contTimer); clearTimeout(G.awaitTimer);
+    if (G.kind === 'qa') { G.awaiting = false; G.retries = 0; }
+    G.turnProduced = 0;
 
     G.history.push({ role: 'user', content: text.slice(0, 600) });
     if (G.history.length > 20) G.history = G.history.slice(-20);
@@ -770,6 +798,8 @@
       G.fetching = false;
       G.ctrl = null;
       _flushLineBuf(produced);
+      if (!produced.length && G.kind === 'lesson') G.retries++;
+      else if (produced.length) G.retries = 0;
       if (produced.length) {
         let kept = '';
         for (let i = 0; i < produced.length; i++) {
@@ -786,6 +816,13 @@
       if (myGen !== G.gen || (err && err.name === 'AbortError')) return;
       G.fetching = false; G.ctrl = null;
       G.history.pop();
+      if (G.kind === 'lesson' && G.retries < 2 && !(err && (err.status === 429 || err.status === 401))) {
+        G.retries++;
+        _setStatus('thinking');
+        clearTimeout(G.contTimer);
+        G.contTimer = setTimeout(() => _continue(true), 1500);
+        return;
+      }
       const msg = (err && (err.status === 429 || err.status === 401) && err.message)
         ? err.message
         : 'I lost my connection for a moment. Please ask me again.';
@@ -855,6 +892,7 @@
     const items = _parseLine(line);
     if (!items.length) return;
     if (produced) produced.push(line.trim());
+    G.turnProduced = (G.turnProduced || 0) + items.length;
     items.forEach(o => {
       if (typeof o.say === 'string' && o.say.trim()) {
         G.queue.push({ k: 'say', text: o.say.trim().slice(0, 400) });
@@ -941,15 +979,94 @@
   }
 
   function _turnDone() {
+    if (G.paused) { _setStatus('paused'); return; }
+    if (G.kind === 'lesson' && G.turnProduced) {
+      G.curDone = true; G.retries = 0; G.turnProduced = 0;
+      if (G.cur >= 0 && G.plan.length) { G.cur++; }
+    }
+    _updateProgress();
+    if (G.started && !G.finished && G.plan.length && G.cur >= G.plan.length) { _finishClass(); return; }
+    if (G.finished) { _setStatus('done'); return; }
     _setStatus('idle');
+    if (G.started && G.plan.length && G.turns < 30 && G.retries < 3) {
+      clearTimeout(G.contTimer); clearTimeout(G.awaitTimer);
+      if (G.awaiting) {
+        /* teacher asked a question: wait for the student, then move on */
+        G.awaitTimer = setTimeout(() => {
+          if (_busy() || G.paused || G.listening) return;
+          G.awaiting = false;
+          _continue(false, true);
+        }, G.handsFree ? 30000 : 40000);
+      } else {
+        G.contTimer = setTimeout(() => _continue(false), 700);
+      }
+    }
     if (G.handsFree && G.started && !G.listening) {
       setTimeout(() => { if (G.handsFree && G.started && !_busy() && !G.listening) _startListening(); }, 450);
     }
   }
 
+  /* ── lesson continuation loop ── */
+  function _continue(isRetry, noAnswer) {
+    if (!G.started || G.paused || G.finished || _busy() || !G.plan.length) return;
+    if (G.listening) { _stopListening(false); }
+    if (G.cur >= G.plan.length) { _finishClass(); return; }
+    G.turns++;
+    const n = G.plan.length;
+    const k = Math.max(0, G.cur);
+    const title = G.plan[k] || '';
+    let msg;
+    if (isRetry || !G.curDone) {
+      msg = '[CONTINUE] Resume step ' + (k + 1) + ' of ' + n + ' (' + title + '). Do not restart the lesson. Briefly pick up where you left off, then teach this step.';
+    } else {
+      msg = '[CONTINUE] ' + (noAnswer ? 'The student did not answer. Give the answer in one short sentence, then ' : '') +
+            'Teach step ' + (k + 1) + ' of ' + n + ': ' + title + '. Build on the existing stage, add new visuals, speak 4 to 7 short lines. ' +
+            (k === n - 1 ? 'This is the last step: recap, then output {"do":"end"}.' : 'Do not repeat earlier steps.');
+    }
+    G.curDone = false;
+    _ask(msg, { display: null, noInterrupt: true, kind: 'lesson' });
+  }
+
+  function _updateProgress() {
+    const box = _el('lv-progress'); if (!box) return;
+    if (!G.plan.length) { box.style.display = 'none'; return; }
+    box.style.display = '';
+    const n = G.plan.length;
+    const idx = Math.min(G.cur < 0 ? 0 : G.cur, n - 1);
+    const done = G.finished ? n : Math.max(0, Math.min(n, G.curDone ? G.cur : G.cur));
+    const t = _el('lv-prog-text'), fl = _el('lv-prog-fill');
+    if (t) t.textContent = G.finished ? 'Lesson complete' : ('Step ' + (idx + 1) + ' of ' + n + ': ' + G.plan[idx]);
+    if (fl) fl.style.width = Math.round((done / n) * 100) + '%';
+  }
+
+  function _finishClass() {
+    G.finished = true; G.awaiting = false;
+    clearTimeout(G.contTimer); clearTimeout(G.awaitTimer);
+    _updateProgress();
+    _setStatus('done');
+    _note('teacher', 'That is the end of today\'s class. Ask me anything about it, or pick a new topic.');
+  }
+
+  function _pause() {
+    if (!G.started) return;
+    _interrupt();
+    G.paused = true;
+    if (G.kind === 'lesson') { G.curDone = false; }
+    _setStatus('paused');
+  }
+
+  function _resumeClass() {
+    if (!G.started || !G.paused) return;
+    G.paused = false;
+    if (G.plan.length && !G.finished) _continue(true);
+    else _setStatus('idle');
+  }
+
   /* Stop everything Master Timothy is doing right now. */
   function _interrupt() {
     G.gen++;
+    clearTimeout(G.contTimer); clearTimeout(G.awaitTimer);
+    if (G.started && G.kind === 'lesson' && (G.fetching || G.speaking || G.queue.length)) G.curDone = false;
     if (G.ctrl) { try { G.ctrl.abort(); } catch (e) {} G.ctrl = null; }
     clearTimeout(G.speakTimer);
     G.queue = [];
@@ -1315,10 +1432,12 @@
     const cv = document.createElement('canvas');
     cv.width = 512; cv.height = 128;
     const ctx = cv.getContext('2d');
-    ctx.font = '700 48px Arial, sans-serif';
+    let t = String(text).slice(0, 40);
+    let fs = 48;
+    ctx.font = '700 ' + fs + 'px Arial, sans-serif';
+    while (fs > 16 && ctx.measureText(t).width > 480) { fs -= 2; ctx.font = '700 ' + fs + 'px Arial, sans-serif'; }
     ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
     ctx.lineWidth = 10; ctx.strokeStyle = 'rgba(8,12,24,.95)'; ctx.lineJoin = 'round';
-    let t = String(text).slice(0, 28);
     ctx.strokeText(t, 256, 64);
     ctx.fillStyle = '#f8fafc';
     ctx.fillText(t, 256, 64);
@@ -1336,7 +1455,7 @@
       ent.labelSprite.material.dispose();
       ent.labelSprite = null;
     }
-    ent.label = text ? _text(text, 28) : '';
+    ent.label = text ? _text(text, 40) : '';
     if (ent.label) {
       const sp = _makeLabel(ent.label);
       sp.position.y = (ent.size * 0.5) / (ent.scaleNow || 1) + 0.55;
@@ -1512,7 +1631,8 @@
 
   /* ── executing one {"do": ...} command ── */
   function _exec(o) {
-    if (!S.scene) return;
+    if (o.do === 'plan' || o.do === 'await' || o.do === 'end') { /* control ops never need the stage */ }
+    else if (!S.scene) return;
     switch (o.do) {
       case 'add':    _add(o, false); _scheduleFrame(); break;
       case 'group':  _add(Object.assign({}, o, { shape: 'group' }), false); break;
@@ -1538,6 +1658,13 @@
       case 'shot':   _shot(o); break;
       case 'preset': _preset(String(o.name || ''), (o.params && typeof o.params === 'object') ? o.params : {}); _scheduleFrame(); break;
       case 'board':  _board(o); break;
+      case 'plan': {
+        const st = (Array.isArray(o.steps) ? o.steps : []).map(x => _text(x, 70)).filter(Boolean).slice(0, 8);
+        if (st.length >= 2) { G.plan = st; if (G.cur < 0) G.cur = 0; _updateProgress(); }
+        break;
+      }
+      case 'await': G.awaiting = true; break;
+      case 'end':   G.cur = G.plan.length || 1; G.finished = true; break;
       default: break;
     }
   }
