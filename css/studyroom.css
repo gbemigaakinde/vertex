@@ -897,3 +897,7 @@
 }
 
 .sr-animate-in { animation: sr-page-in 0.22s var(--ease) both; }
+
+/* Wider study room library on large screens */
+@media (min-width: 1280px) { .sr-browser { max-width: 1100px; } }
+@media (min-width: 1800px) { .sr-browser { max-width: 1280px; } }

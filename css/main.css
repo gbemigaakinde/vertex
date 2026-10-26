@@ -1588,10 +1588,57 @@ details.glass-dark[open] > summary::after,
 .glass.rounded-lg[style*="var(--success"] { border-color: var(--success-border) !important; }
 .glass.rounded-lg[style*="var(--danger"]  { border-color: var(--danger-border)  !important; }
 
-/* Container sizes */
+/* Container sizes
+   Phones and small tablets keep the compact sizes. As the screen grows the
+   containers grow with it, so desktops and big tablets are not left with a
+   narrow strip in the middle and empty space on both sides. */
 .max-w-4xl { max-width: 840px !important; }
 .max-w-5xl { max-width: 960px !important; }
 .max-w-7xl { max-width: 1080px !important; }
+
+@media (min-width: 1024px) {
+  .max-w-2xl { max-width: 760px  !important; }
+  .max-w-4xl { max-width: 980px  !important; }
+  .max-w-5xl { max-width: 1100px !important; }
+  .max-w-7xl { max-width: 1240px !important; }
+}
+@media (min-width: 1440px) {
+  .max-w-2xl { max-width: 820px  !important; }
+  .max-w-4xl { max-width: 1080px !important; }
+  .max-w-5xl { max-width: 1240px !important; }
+  .max-w-7xl { max-width: 1480px !important; }
+}
+@media (min-width: 1800px) {
+  .max-w-7xl { max-width: 1680px !important; }
+}
+
+/* ── Student dashboard ──────────────────────────────────────
+   Phone: one column (unchanged). Tablet: a little wider.
+   Desktop: two columns, exam + tools on the left, files on the right. */
+#app > div.vtx-dash { max-width: 680px; margin: 0 auto; padding: 1.5rem 0 6rem; }
+.vtx-dash-tools-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: .625rem; }
+
+@media (min-width: 768px) {
+  #app > div.vtx-dash { max-width: 820px; }
+}
+@media (min-width: 1024px) {
+  #app > div.vtx-dash { max-width: 1160px; }
+  .vtx-dash-cols {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    column-gap: 2rem;
+    align-items: start;
+  }
+  .vtx-dash-tools-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 1440px) {
+  #app > div.vtx-dash { max-width: 1360px; }
+  .vtx-dash-cols { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); column-gap: 2.5rem; }
+  .vtx-dash-tools-grid { grid-template-columns: repeat(4, 1fr); }
+}
+@media (min-width: 1800px) {
+  #app > div.vtx-dash { max-width: 1560px; }
+}
 
 /* ── Notification badges ── */
 .chat-notif-badge,
