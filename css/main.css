@@ -2612,6 +2612,11 @@ body:has(.news-ticker-container.ticker-hidden) #vtxAiFloating { bottom: calc(1re
   overflow-x: auto;
   overflow-y: hidden;
   -webkit-overflow-scrolling: touch;
+  /* room for tall glyphs (radicals, \dfrac, matrices) so overflow-y:hidden can't clip them */
+  padding-top: .45em;
+  padding-bottom: .45em;
+  margin-top: -.45em;
+  margin-bottom: -.45em;
 }
 .vtx-q-text > span, .vtx-rv-q > span { white-space: pre-line !important; }
 .vtx-rv-ans > span { display: inline-block; vertical-align: top; }
@@ -2622,9 +2627,11 @@ body:has(.news-ticker-container.ticker-hidden) #vtxAiFloating { bottom: calc(1re
 .vtx-rv-card > div:first-child { min-width: 0; }
 
 /* Diagrams / images scale to the card */
-.vtx-rv-card svg, .vtx-rv-card img,
-.vtx-question-wrap svg, .vtx-question-wrap img,
-.option-label svg, .option-label img { max-width: 100%; height: auto; }
+.vtx-rv-card svg:not(.katex svg), .vtx-rv-card img,
+.vtx-question-wrap svg:not(.katex svg), .vtx-question-wrap img,
+.option-label svg:not(.katex svg), .option-label img { max-width: 100%; height: auto; }
+/* KaTeX draws radicals/arrows/braces as inline SVG with explicit sizes — never resize them */
+.katex svg { max-width: none; height: inherit; }
 
 /* Fixed option letter, selected-state nudge must not push past the edge */
 .option-label { max-width: 100%; }
