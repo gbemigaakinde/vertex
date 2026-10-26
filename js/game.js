@@ -5132,7 +5132,7 @@ async function _endGameSession(sessionId, resultData) {
 
         <div class="glass" style="padding:1.25rem 1.5rem;margin:.75rem 0;">
           <p style="font-size:1.0625rem;font-weight:500;line-height:1.65;margin-bottom:1.25rem;" id="quizQuestionText">
-            ${_safeQ(q.q)}
+            <span style="white-space:pre-line;">${_safeQ(q.q)}</span>
           </p>
           ${_qDiag(q)}
           <div id="quizOptions">
@@ -6517,7 +6517,7 @@ function _buildWordPoolForStudent() {
 
         <div class="glass" style="padding:1.25rem 1.5rem;margin:.75rem 0;">
           <p style="font-size:1.0625rem;font-weight:500;line-height:1.65;margin-bottom:1.25rem;">
-            ${_safeQ(q.q)}
+            <span style="white-space:pre-line;">${_safeQ(q.q)}</span>
           </p>
           ${_qDiag(q)}
           <div id="sdOptions">
@@ -7026,7 +7026,7 @@ function _buildWordPoolForStudent() {
 
         <div class="glass" style="padding:1.25rem 1.5rem;margin:.75rem 0;">
           <p style="font-size:1.0625rem;font-weight:500;line-height:1.65;margin-bottom:1.25rem;">
-            ${_safeQ(q.q)}
+            <span style="white-space:pre-line;">${_safeQ(q.q)}</span>
           </p>
           ${_qDiag(q)}
           <div id="challengeOptions">

@@ -2757,7 +2757,7 @@ async function renderSubjectSelection() {
 
           <p style="font-size:1rem;font-weight:500;line-height:1.75;margin-bottom:1.125rem;color:var(--text-1);">
             <span style="font-family:var(--font-mono);font-size:.8125rem;font-weight:700;color:var(--accent);margin-right:.5rem;">${exam.currentIndex + 1}.</span>
-            ${_safeQ(q.q)}
+            <span style="white-space:pre-line;">${_safeQ(q.q)}</span>
           </p>
           ${_diag(q.svg, 'question')}
 
@@ -3268,7 +3268,7 @@ async function renderSubjectSelection() {
                   return `
                     <div style="border-radius:var(--r-lg);padding:1rem;border:1px solid var(--border);${borderStyle}">
                       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;margin-bottom:.75rem;">
-                        <p style="font-weight:600;font-size:.9375rem;margin:0;">${i + 1}. ${_safeQ(q.q)}</p>
+                        <p style="font-weight:600;font-size:.9375rem;margin:0;">${i + 1}. <span style="white-space:pre-line;">${_safeQ(q.q)}</span></p>
                         <button
                           onclick="SpeechEngine.showExplanationModal(${i + 1}, '${_escAttr(subj)}')"
                           class="se-explain-trigger-btn"

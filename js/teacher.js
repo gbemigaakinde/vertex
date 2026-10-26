@@ -1733,7 +1733,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
         return `
           <div class="review-q-card ${cardClass}">
             <p style="font-size:var(--text-base);font-weight:600;margin-bottom:.75rem;line-height:1.6;">
-              ${i + 1}. ${_escQ(q.q)}</p>
+              ${i + 1}. <span style="white-space:pre-line;">${_escQ(q.q)}</span></p>
             <div style="display:grid;grid-template-columns:1fr 1fr;gap:.75rem;font-size:var(--text-sm);margin-bottom:.75rem;">
               <div>
                 <span style="font-weight:600;color:var(--text-3);">Student answered:</span>
