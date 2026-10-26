@@ -742,7 +742,7 @@
           _orig.apply(this, arguments);
           _setExamLayout(true);
           _stickyTimer();
-          if (window.SpeechEngine) SpeechEngine.injectExamButtons();
+          if (window.SpeechEngine && typeof SpeechEngine.injectExamButtons === 'function') SpeechEngine.injectExamButtons();
         };
       }
 
