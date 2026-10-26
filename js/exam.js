@@ -42,11 +42,39 @@
   /* ─────────────────────────────────────────────────────── */
   /* LaTeX preprocessing                                     */
   /* ─────────────────────────────────────────────────────── */
+  /* A whole sentence written as \( \text{...} ... \) is ONE unbreakable KaTeX box,
+     so on phones it can't wrap and gets clipped. Turn each \text{...} group into plain
+     (wrappable) text and keep only the real maths inside \( \). */
+  function _splitTextInMath(str) {
+    return str.replace(/\\\(([\s\S]*?)\\\)/g, function (whole, body) {
+      if (body.indexOf('\\text{') === -1) return whole;
+      var out = '', math = '', i = 0;
+      function flush() { if (math.trim()) out += '\\(' + math.trim() + '\\)'; math = ''; }
+      while (i < body.length) {
+        if (body.startsWith('\\text{', i)) {
+          var j = i + 6, depth = 1;
+          while (j < body.length && depth > 0) {
+            var c = body[j];
+            if (c === '{') depth++; else if (c === '}') depth--;
+            j++;
+          }
+          var after = body.charAt(j);
+          if (depth !== 0 || after === '^' || after === '_') { math += body.slice(i, j); i = j; continue; }
+          var txt = body.slice(i + 6, j - 1);
+          if (/[\\{}$]/.test(txt)) { math += body.slice(i, j); i = j; continue; }
+          flush(); out += txt; i = j;
+        } else { math += body[i]; i++; }
+      }
+      flush();
+      return out;
+    });
+  }
+
   function preprocessLatex(str) {
     if (str == null) return '';
-    str = String(str);
+    str = _splitTextInMath(String(str));
     const protectedBlocks = [];
-    str = str.replace(/\$\$[\s\S]*?\$\$|\$[^$]*?\$/g, function (match) {
+    str = str.replace(/\$\$[\s\S]*?\$\$|\$[^$]*?\$|\\\([\s\S]*?\\\)|\\\[[\s\S]*?\\\]/g, function (match) {
       protectedBlocks.push(match);
       return '%%MATH_' + (protectedBlocks.length - 1) + '%%';
     });
