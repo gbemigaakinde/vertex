@@ -1764,7 +1764,7 @@ async function renderSubjectSelection() {
     `).join('');
 
     UI.mount(`
-      <div style="max-width:680px;margin:0 auto;padding:1.5rem 0 6rem;">
+      <div class="vtx-dash">
 
         <!-- HEADER: greeting → student info → settings -->
         <div style="margin-bottom:1.75rem;">
@@ -1806,6 +1806,9 @@ async function renderSubjectSelection() {
         ${offDayBannerHtml}
         ${(todayTaskDone || bankState.problem) ? '' : restrictionBannerHtml}
 
+        <div class="vtx-dash-cols">
+        <div class="vtx-dash-main">
+
         <!-- EXAM SECTION -->
         <div style="margin-bottom:2rem;padding:1.25rem;border-radius:var(--r-xl);
                     border:1.5px solid var(--border);background:var(--bg-base);text-align:center;">
@@ -1830,17 +1833,21 @@ async function renderSubjectSelection() {
         <div style="margin-bottom:2rem;">
           <p style="font-size:.6875rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
                     color:var(--text-4);margin-bottom:.875rem;">Tools</p>
-          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.625rem;">
+          <div class="vtx-dash-tools-grid">
             ${toolTilesHtml}
           </div>
         </div>
 
+        </div><!-- /vtx-dash-main -->
+
         <!-- FILES & RESOURCES -->
-        <div style="margin-bottom:${weeklyTimetableHtml ? '1.5rem' : '2rem'};">
+        <div class="vtx-dash-files" style="margin-bottom:${weeklyTimetableHtml ? '1.5rem' : '2rem'};">
           <p style="font-size:.6875rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
                     color:var(--text-4);margin-bottom:.875rem;">Files &amp; Resources</p>
           <div id="vtxStudentStoragePanel"></div>
         </div>
+
+        </div><!-- /vtx-dash-cols -->
 
         <!-- TIMETABLE (divider + label only when a timetable exists) -->
         ${weeklyTimetableHtml ? `<div role="separator" style="display:flex;align-items:center;gap:.75rem;margin:0 0 .875rem;">
