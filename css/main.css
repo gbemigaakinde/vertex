@@ -2567,3 +2567,67 @@ body:has(.news-ticker-container.ticker-hidden) #vtxAiFloating { bottom: calc(1re
   -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2rem), transparent);
           mask-image: linear-gradient(to right, #000 calc(100% - 2rem), transparent);
 }
+
+
+/* ══════════════════════════════════════════════════════════════
+   EXAM / REVIEW OVERFLOW FIX
+   Root causes:
+   1. KaTeX sets `white-space: nowrap` on every inline .katex, so a question
+      containing math could not wrap and ran off-screen.
+   2. Flex/grid children (review question <p>, answer cells, option text) had
+      no `min-width: 0`, so long content stretched the card past the screen.
+   ══════════════════════════════════════════════════════════════ */
+
+/* Every ancestor in the exam chain may shrink below its content width */
+#app.exam-active,
+#app.exam-active > div,
+#app.exam-active .vtx-question-section,
+#app.exam-active .vtx-question-wrap,
+#optionsContainer,
+.vtx-rv-subject, .vtx-rv-list, .vtx-rv-card, .vtx-rv-ans, .vtx-rv-exp {
+  min-width: 0;
+  max-width: 100%;
+}
+#app.exam-active { overflow-x: clip; }
+
+/* Let inline math break across lines like normal text */
+.vtx-q-text .katex,
+.option-label .katex,
+.vtx-rv-card .katex { white-space: normal; }
+.vtx-q-text .katex .base,
+.option-label .katex .base,
+.vtx-rv-card .katex .base { white-space: nowrap; }
+
+/* Text blocks wrap; a single over-wide formula (e.g. a 3x3 matrix) scrolls
+   inside its own block instead of pushing the page or being clipped */
+.vtx-q-text,
+.option-label > span.flex-1,
+.vtx-rv-q,
+.vtx-rv-ans > span,
+.vtx-rv-exp {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  white-space: normal;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+.vtx-q-text > span, .vtx-rv-q > span { white-space: pre-line !important; }
+.vtx-rv-ans > span { display: inline-block; vertical-align: top; }
+
+/* Review header row: question text takes the free space, button never shrinks */
+.vtx-rv-q { flex: 1 1 0; }
+.vtx-rv-card .se-explain-trigger-btn { flex: 0 0 auto; }
+.vtx-rv-card > div:first-child { min-width: 0; }
+
+/* Diagrams / images scale to the card */
+.vtx-rv-card svg, .vtx-rv-card img,
+.vtx-question-wrap svg, .vtx-question-wrap img,
+.option-label svg, .option-label img { max-width: 100%; height: auto; }
+
+/* Fixed option letter, selected-state nudge must not push past the edge */
+.option-label { max-width: 100%; }
+@media (max-width: 640px) {
+  .option-label:hover, .option-label.is-selected { transform: none !important; }
+}
