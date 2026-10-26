@@ -1756,27 +1756,19 @@ function _askAI(intentPayload, callback) {
       text += questionTxt + '. ';
       text += 'The correct answer is: ' + correctTxt + '. ';
       if (expTxt) text += 'Explanation: ' + expTxt + '. ';
-      text += 'Do you have a question about this topic? Say it now and I will look it up. ' +
-              'Or say "explain more" for a fuller explanation. Say "no" to skip.';
+      // The mic is never switched on automatically. If the student already
+      // turned it on themselves, it keeps listening; otherwise they type.
+      if (_sttActive) {
+        text += 'Do you have a question about this topic? Say it now and I will look it up. ' +
+                'Or say "explain more" for a fuller explanation. Say "no" to skip.';
+      } else {
+        text += 'Do you have a question about this topic? Type it in the box below, ' +
+                'or tap "Explain more" for a fuller explanation.';
+      }
 
       speak(text, function () {
         if (!document.getElementById('seExplainModal')) return;
-        _awaitingStudentQuestion = true;
-
-        // Auto-start the mic only if nothing is already listening
-        if (sttSupported && !_sttActive) {
-          _modalSttActive = true;
-          startSTT(
-            function (bestTranscript, allTranscripts) {
-              _handleResultsCommand(bestTranscript, allTranscripts);
-            },
-            null,
-            function (msg) {
-              _modalSttActive = false;
-              UI.toast(msg, 'warning', 4000);
-            }
-          );
-        }
+        if (_sttActive) _awaitingStudentQuestion = true;
       });
     }, 400);
   }
@@ -2321,15 +2313,7 @@ function _renderAiText(str) {
       _startResultsSTT();
     });
 
-    // Auto-start the results STT session immediately —
-    // submitExam already called stopSTT() so the slate is clean.
-    if (sttSupported) {
-      setTimeout(function () {
-        // Guard: only auto-start if we're still on the results page and nothing else started STT
-        if (!document.getElementById('seResultsSttBtn') || _sttActive) return;
-        _startResultsSTT();
-      }, 400);
-    }
+    // The mic stays OFF by default. The student taps "Voice Commands" when they want it.
   }
 
      /* ════════════════════════════════════════════════════════

@@ -147,6 +147,12 @@
     return null;
   }
 
+  /* Local calendar date (YYYY-MM-DD) of a moment in time. */
+  function _dateOfMs(ms) {
+    const d = new Date(ms);
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
   function _todayStr() {
     return (window.Tasks && Tasks._localDateStr)
       ? Tasks._localDateStr()
@@ -203,7 +209,24 @@
         ActivityLog.track('dashboard_view', _sn + ' opened the dashboard');
       }
 
-      if (!examData) { await renderSubjectSelection(); return; }
+      if (!examData) {
+        // If time ran out while the student was away, the server submitted the
+        // exam for them. Tell them once, with their score, then clear the note.
+        const _notice = S().studentData && S().studentData.autoSubmitNotice;
+        if (_notice && typeof _notice.percentage === 'number') {
+          UI.toast(
+            'Your last exam was submitted automatically when time ran out. You scored ' +
+            _notice.percentage + '% (Grade ' + _notice.grade + ').',
+            'info', 12000
+          );
+          delete S().studentData.autoSubmitNotice;
+          window.fbDb.collection('students').doc(S().userId)
+            .update({ autoSubmitNotice: firebase.firestore.FieldValue.delete() })
+            .catch(function (err) { console.warn('[exam] Could not clear auto-submit notice:', err); });
+        }
+        await renderSubjectSelection();
+        return;
+      }
 
       S().exam = examData;
       const startMs = _resolveStartMs(examData.startTime);
@@ -2580,11 +2603,24 @@ async function renderSubjectSelection() {
     const startDate = new Date(startMs);
     S().examStartMs    = startMs;
     S().exam.startTime = startDate;
-    if (!S().exam.sessionDate) S().exam.sessionDate = _todayStr();
+    if (!S().exam.sessionDate) S().exam.sessionDate = _dateOfMs(startMs);
+
+    // Saved with the exam so the server can finish the exam for us if this
+    // device goes offline (it needs to know if today counts as a task day).
+    const _taskCfgNow = S().currentTaskConfig;
+    const _isTaskDayNow = !!(_taskCfgNow && _taskCfgNow.active &&
+                             Array.isArray(_taskCfgNow.dates) &&
+                             _taskCfgNow.dates.includes(S().exam.sessionDate));
+    S().exam.isTaskDay = _isTaskDayNow;
+
+    // Voice commands stay OFF until the student taps the mic button.
+    if (window.SpeechEngine && typeof SpeechEngine.stopSTT === 'function') {
+      try { SpeechEngine.stopSTT(); } catch (e) {}
+    }
 
     try {
       await window.fbDb.collection('ongoingExams').doc(S().userId).set(
-        { startTime: startDate, sessionDate: S().exam.sessionDate }, { merge: true }
+        { startTime: startDate, sessionDate: S().exam.sessionDate, isTaskDay: _isTaskDayNow }, { merge: true }
       );
     } catch (err) {
       console.warn('[exam] Could not persist startTime to Firebase.', err);
@@ -3043,7 +3079,9 @@ async function renderSubjectSelection() {
         });
       }
 
-      const sessionDate = exam.sessionDate || _todayStr();
+      // An exam belongs to the day it was STARTED, never the day it was submitted.
+      const sessionDate = exam.sessionDate ||
+        (S().examStartMs ? _dateOfMs(S().examStartMs) : _todayStr());
       const taskCfg   = S().currentTaskConfig;
       const isTaskDay = taskCfg &&
                         taskCfg.active &&
@@ -3068,21 +3106,35 @@ async function renderSubjectSelection() {
         studentUpdate[`coachingCompleted.${sessionDate}`] = true;
       }
 
-      const batch = window.fbDb.batch();
-      batch.set(window.fbDb.collection('results').doc(), {
-        ...result,
-        questionSnapshots,
-        sessionDate,
-        questionSession: exam.questionSession || null,
-        questionTerm:    exam.questionTerm || null,
-        timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+      // The server also auto-submits exams whose time has run out (even if the
+      // student is offline). A transaction makes sure only ONE of us saves the
+      // result: if the ongoing exam is already gone, the server got there first.
+      const examRef    = window.fbDb.collection('ongoingExams').doc(S().userId);
+      const resultRef  = window.fbDb.collection('results').doc();
+      const studentRef = window.fbDb.collection('students').doc(S().userId);
+      let alreadySubmitted = false;
+
+      await window.fbDb.runTransaction(async function (tx) {
+        const examSnap = await tx.get(examRef);
+        if (!examSnap.exists) { alreadySubmitted = true; return; }
+        tx.set(resultRef, {
+          ...result,
+          questionSnapshots,
+          sessionDate,
+          questionSession: exam.questionSession || null,
+          questionTerm:    exam.questionTerm || null,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp(),
+        });
+        tx.delete(examRef);
+        tx.update(studentRef, studentUpdate);
       });
-      batch.delete(window.fbDb.collection('ongoingExams').doc(S().userId));
-      batch.update(window.fbDb.collection('students').doc(S().userId), studentUpdate);
-      await batch.commit();
+
+      if (alreadySubmitted) {
+        console.warn('[exam] Exam was already submitted by the server. Showing the result only.');
+      }
 
       // ── ACTIVITY LOG: exam submitted ──
-      if (window.ActivityLog && S().studentData) {
+      if (!alreadySubmitted && window.ActivityLog && S().studentData) {
         ActivityLog.track(
           'exam_submit',
           (S().studentData.name || 'A student') + ' submitted an exam — ' +
@@ -3103,7 +3155,9 @@ async function renderSubjectSelection() {
       S().studentData.lastActiveDate      = sessionDate;
       S().studentData.lastExamPercentage  = result.percentage;
       S().studentData.weakSubjects        = weakSubjects;
-      S().studentData.totalExamsCompleted = (S().studentData.totalExamsCompleted || 0) + 1;
+      if (!alreadySubmitted) {
+        S().studentData.totalExamsCompleted = (S().studentData.totalExamsCompleted || 0) + 1;
+      }
       if (isTaskDay) {
         if (!S().studentData.coachingCompleted) S().studentData.coachingCompleted = {};
         S().studentData.coachingCompleted[sessionDate] = true;
