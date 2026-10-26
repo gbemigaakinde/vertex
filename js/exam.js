@@ -3314,14 +3314,14 @@ async function renderSubjectSelection() {
         ${exam.subjects.map(subj => {
           const qs = exam.questions[subj];
           return `
-            <details style="border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;">
+            <details class="vtx-rv-subject" style="border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;min-width:0;max-width:100%;">
               <summary style="padding:.875rem 1.125rem;font-size:.9375rem;font-weight:700;cursor:pointer;
                               list-style:none;display:flex;align-items:center;justify-content:space-between;
                               background:var(--bg-subtle);user-select:none;">
-                <span>${_escHtml(subj)} — ${result.correctCounts[subj]}/${qs.length} Correct (${result.scores[subj]}%)</span>
+                <span style="min-width:0;overflow-wrap:anywhere;">${_escHtml(subj)} — ${result.correctCounts[subj]}/${qs.length} Correct (${result.scores[subj]}%)</span>
                 <span style="font-size:1.125rem;color:var(--text-4);transition:transform .15s;">›</span>
               </summary>
-              <div style="padding:1rem;display:flex;flex-direction:column;gap:0.75rem;background:var(--bg-base);">
+              <div class="vtx-rv-list" style="padding:1rem;display:flex;flex-direction:column;gap:0.75rem;background:var(--bg-base);min-width:0;">
                 ${qs.map((q, i) => {
                   const userAns = exam.answers[`${subj}-${i}`];
                   const correct = userAns === q.ans;
@@ -3331,9 +3331,9 @@ async function renderSubjectSelection() {
                     ? 'border-left:3px solid var(--border-strong);background:var(--bg-subtle);'
                     : 'border-left:3px solid var(--danger);background:var(--danger-subtle);';
                   return `
-                    <div style="border-radius:var(--r-lg);padding:1rem;border:1px solid var(--border);${borderStyle}">
+                    <div class="vtx-rv-card" style="border-radius:var(--r-lg);padding:1rem;border:1px solid var(--border);min-width:0;max-width:100%;${borderStyle}">
                       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;margin-bottom:.75rem;">
-                        <p style="font-weight:600;font-size:.9375rem;margin:0;">${i + 1}. <span style="white-space:pre-line;">${_safeQ(q.q)}</span></p>
+                        <p class="vtx-rv-q" style="font-weight:600;font-size:.9375rem;margin:0;">${i + 1}. <span style="white-space:pre-line;">${_safeQ(q.q)}</span></p>
                         <button
                           onclick="SpeechEngine.showExplanationModal(${i + 1}, '${_escAttr(subj)}')"
                           class="se-explain-trigger-btn"
@@ -3344,19 +3344,19 @@ async function renderSubjectSelection() {
                       </div>
                       ${_diag(q.svg, 'question')}
                       <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,13rem),1fr));gap:.75rem;font-size:.8125rem;margin-bottom:.75rem;">
-                        <div>
+                        <div class="vtx-rv-ans">
                           <span style="font-weight:600;color:var(--text-3);">Your answer:</span>
                           <span style="margin-left:.375rem;font-weight:500;
                                        color:${correct ? 'var(--success)' : userAns === undefined ? 'var(--text-4)' : 'var(--danger)'};">
                             ${userAns !== undefined ? _safeQ(q.opts[userAns]) + _optDiag(q, userAns) : 'Not answered'}
                           </span>
                         </div>
-                        <div>
+                        <div class="vtx-rv-ans">
                           <span style="font-weight:600;color:var(--text-3);">Correct:</span>
                           <span style="margin-left:.375rem;font-weight:500;color:var(--success);">${_safeQ(q.opts[q.ans])}${_optDiag(q, q.ans)}</span>
                         </div>
                       </div>
-                      <div style="background:var(--bg-subtle);border:1px solid var(--border);border-radius:var(--r-sm);
+                      <div class="vtx-rv-exp" style="background:var(--bg-subtle);border:1px solid var(--border);border-radius:var(--r-sm);
                                   padding:.625rem .875rem;font-size:.8125rem;color:var(--text-2);line-height:1.6;">
                         <span style="font-weight:600;">Explanation:</span> ${_safeQ(q.exp)}
                         ${_diag(q.expSvg, 'explanation')}
