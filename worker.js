@@ -383,6 +383,7 @@ if (request.method === 'POST' && url.pathname === '/api/cancel-scheduled-push') 
     if (event.cron === '*/5 * * * *') {
       ctx.waitUntil(_runScheduledPushChecker(env));
       ctx.waitUntil(_runEventPushSweep(env));
+      ctx.waitUntil(_runExpiredExamSweep(env));
     } else {
       ctx.waitUntil(_runDailyReminders(env));
     }
@@ -1505,6 +1506,251 @@ async function _runEventPushSweep(env) {
 }
 
 /* ══════════════════════════════════════════════════════════
+   EXAM AUTO-SUBMIT (server side)
+
+   The student's browser normally submits the exam when the timer hits zero.
+   If the phone dies, the tab is closed or the network drops, that never
+   happens, so the exam used to sit in `ongoingExams` until the student
+   logged in again. This sweep (runs with the 5-minute cron) finds every
+   started exam whose time has run out and submits it exactly the way the
+   browser would: marks the answers saved so far, writes the `results`
+   document, deletes the `ongoingExams` document and updates the student.
+
+   Safe against double submission: the write is one atomic commit that only
+   succeeds while the `ongoingExams` document still exists, and the browser
+   submit does the same check, so whoever goes first wins and the other
+   one quietly does nothing.
+══════════════════════════════════════════════════════════ */
+const _EXAM_DEFAULT_DURATION_MS = 120 * 60 * 1000;  // same as EXAM_DURATION_MS in js/state.js
+const _EXAM_GRACE_MS            = 30 * 1000;        // lets a live browser submit first
+const _FS_DB_PATH               = 'projects/excellencecbt/databases/(default)/documents';
+
+function _fsEncodeValue(v) {
+  if (v === null || v === undefined) return { nullValue: null };
+  if (typeof v === 'string')  return { stringValue: v };
+  if (typeof v === 'boolean') return { booleanValue: v };
+  if (typeof v === 'number') {
+    return Number.isInteger(v) ? { integerValue: String(v) } : { doubleValue: v };
+  }
+  if (Array.isArray(v)) return { arrayValue: { values: v.map(_fsEncodeValue) } };
+  if (typeof v === 'object') {
+    const fields = {};
+    for (const k in v) {
+      if (v[k] !== undefined) fields[k] = _fsEncodeValue(v[k]);
+    }
+    return { mapValue: { fields } };
+  }
+  return { nullValue: null };
+}
+
+function _fsEncodeFields(obj) {
+  const fields = {};
+  for (const k in obj) {
+    if (obj[k] !== undefined) fields[k] = _fsEncodeValue(obj[k]);
+  }
+  return fields;
+}
+
+function _examLagosDate(ms) {
+  // Lagos is UTC+1 all year (no daylight saving).
+  return new Date((ms || Date.now()) + 3600000).toISOString().slice(0, 10);
+}
+
+function _examComputeResult(exam, uid, student) {
+  let totalCorrect = 0, totalQuestions = 0;
+  const scores = {}, correctCounts = {};
+  const subjects = Array.isArray(exam.subjects) ? exam.subjects : [];
+  const answers  = exam.answers && typeof exam.answers === 'object' ? exam.answers : {};
+
+  for (const subj of subjects) {
+    const qs = Array.isArray(exam.questions && exam.questions[subj]) ? exam.questions[subj] : [];
+    let correct = 0;
+    qs.forEach((q, i) => { if (answers[subj + '-' + i] === q.ans) correct++; });
+    correctCounts[subj] = correct;
+    scores[subj]        = qs.length ? Math.round((correct / qs.length) * 100) : 0;
+    totalCorrect   += correct;
+    totalQuestions += qs.length;
+  }
+
+  const percentage = totalQuestions ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
+  const grade = percentage >= 70 ? 'A' : percentage >= 60 ? 'B'
+              : percentage >= 50 ? 'C' : percentage >= 40 ? 'D' : 'E';
+
+  return {
+    uid,
+    name:   (student && student.name)   || 'Unknown',
+    class:  (student && student.class)  || '',
+    school: (student && student.school) || '',
+    subjects, scores, correctCounts, percentage, grade,
+  };
+}
+
+function _examStreak(prevStreak, prevActiveDate, sessionDate) {
+  if (!prevActiveDate) return 1;
+  if (prevActiveDate === sessionDate) return prevStreak || 1;
+  const dayDiff = Math.round(
+    (Date.parse(sessionDate + 'T00:00:00Z') - Date.parse(prevActiveDate + 'T00:00:00Z')) / 86400000
+  );
+  if (dayDiff === 1) return (prevStreak || 0) + 1;
+  return 1;
+}
+
+function _examWeakSubjects(scores) {
+  return Object.keys(scores || {})
+    .filter(s => scores[s] < 60)
+    .sort((a, b) => scores[a] - scores[b])
+    .slice(0, 2);
+}
+
+// Returns 'submitted', 'skipped' (not expired / already gone) or 'failed'.
+async function _submitExpiredExam(token, uid) {
+  const exam = await _pnGetDoc('ongoingExams/' + uid, token, []);
+  if (!exam) return 'skipped';  // student submitted in the meantime
+
+  const startMs = Date.parse(exam.startTime || '');
+  if (!startMs) return 'skipped';  // timer never started
+  const durationMs = (typeof exam.durationMs === 'number' && exam.durationMs > 0)
+    ? exam.durationMs : _EXAM_DEFAULT_DURATION_MS;
+  if (Date.now() < startMs + durationMs + _EXAM_GRACE_MS) return 'skipped';
+
+  if (!Array.isArray(exam.subjects) || !exam.subjects.length || !exam.questions) {
+    console.warn('[cron] Exam sweep: exam for', uid, 'has no subjects/questions, skipping.');
+    return 'failed';
+  }
+
+  const student = await _pnGetDoc('students/' + uid, token,
+    ['name', 'class', 'school', 'studyStreak', 'lastActiveDate']);
+
+  const result      = _examComputeResult(exam, uid, student);
+  // The exam belongs to the day it was started (Lagos time), not the day it was submitted.
+  const sessionDate = exam.sessionDate || _examLagosDate(startMs);
+
+  const questionSnapshots = {};
+  for (const subj of exam.subjects) {
+    const qs = Array.isArray(exam.questions[subj]) ? exam.questions[subj] : [];
+    questionSnapshots[subj] = qs.map((q, i) => {
+      const chosenRaw = (exam.answers || {})[subj + '-' + i];
+      return {
+        q:      q.q   != null ? String(q.q)   : '',
+        opts:   Array.isArray(q.opts) ? q.opts.map(o => o != null ? String(o) : '') : [],
+        ans:    q.ans != null ? Number(q.ans) : 0,
+        exp:    q.exp != null ? String(q.exp) : '',
+        chosen: chosenRaw !== undefined && chosenRaw !== null ? Number(chosenRaw) : null,
+      };
+    });
+  }
+
+  const resultId = Array.from(crypto.getRandomValues(new Uint8Array(15)))
+    .map(b => 'abcdefghijklmnopqrstuvwxyz0123456789'[b % 36]).join('');
+
+  const writes = [
+    // 1. Delete the ongoing exam first. The precondition makes the whole commit
+    //    fail if the student already submitted from their own device.
+    { delete: _FS_DB_PATH + '/ongoingExams/' + uid, currentDocument: { exists: true } },
+
+    // 2. The result, same shape the browser writes.
+    {
+      update: {
+        name: _FS_DB_PATH + '/results/' + resultId,
+        fields: _fsEncodeFields(Object.assign({}, result, {
+          questionSnapshots,
+          sessionDate,
+          questionSession: exam.questionSession || null,
+          questionTerm:    exam.questionTerm    || null,
+          autoSubmitted:   true,
+          autoSubmitReason: 'time_expired',
+        })),
+      },
+      updateTransforms: [{ fieldPath: 'timestamp', setToServerValue: 'REQUEST_TIME' }],
+      currentDocument:  { exists: false },
+    },
+  ];
+
+  // 3. Student profile (only if the student document still exists).
+  if (student) {
+    const weakSubjects = _examWeakSubjects(result.scores);
+    const newStreak    = _examStreak(student.studyStreak, student.lastActiveDate, sessionDate);
+    const fields = {
+      studyStreak:        newStreak,
+      lastActiveDate:     sessionDate,
+      lastExamPercentage: result.percentage,
+      weakSubjects,
+      // The app shows this once on the student's next visit, then clears it.
+      autoSubmitNotice: {
+        percentage: result.percentage,
+        grade:      result.grade,
+        subjects:   result.subjects,
+        at:         new Date().toISOString(),
+      },
+    };
+    const maskPaths = ['studyStreak', 'lastActiveDate', 'lastExamPercentage', 'weakSubjects', 'autoSubmitNotice'];
+
+    if (exam.isTaskDay === true) {
+      fields.coachingCompleted = { [sessionDate]: true };
+      maskPaths.push('coachingCompleted.`' + sessionDate + '`');
+    }
+
+    writes.push({
+      update: { name: _FS_DB_PATH + '/students/' + uid, fields: _fsEncodeFields(fields) },
+      updateMask: { fieldPaths: maskPaths },
+      updateTransforms: [{ fieldPath: 'totalExamsCompleted', increment: { integerValue: '1' } }],
+      currentDocument: { exists: true },
+    });
+  }
+
+  const res = await fetch('https://firestore.googleapis.com/v1/' + _FS_DB_PATH + ':commit', {
+    method:  'POST',
+    headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' },
+    body:    JSON.stringify({ writes }),
+  }).catch(e => { console.warn('[cron] Exam sweep commit fetch failed:', e.message); return null; });
+
+  if (!res) return 'failed';
+  if (res.ok) {
+    console.log('[cron] Auto-submitted expired exam for', uid, '-', result.percentage + '%');
+    return 'submitted';
+  }
+
+  const bodyText = (await res.text().catch(() => '')).slice(0, 300);
+  if (/FAILED_PRECONDITION|NOT_FOUND|ALREADY_EXISTS/.test(bodyText)) {
+    // Precondition failed: the exam was already submitted by the student. Nothing to do.
+    console.log('[cron] Exam sweep: exam for', uid, 'already submitted or changed (' + res.status + ').');
+    return 'skipped';
+  }
+  console.warn('[cron] Exam sweep commit failed for', uid, res.status, bodyText);
+  return 'failed';
+}
+
+async function _runExpiredExamSweep(env) {
+  const token = await _getFirebaseToken(env);
+  if (!token) { console.warn('[cron] Exam sweep: no Firebase token.'); return; }
+
+  try {
+    // ongoingExams only holds exams that are in progress, so this stays small.
+    const rows = await _pnRunQuery('', {
+      from:   [{ collectionId: 'ongoingExams' }],
+      select: { fields: [{ fieldPath: 'startTime' }, { fieldPath: 'durationMs' }] },
+      limit:  300,
+    }, token);
+
+    const now = Date.now();
+    const expired = rows.filter(r => {
+      const startMs = Date.parse(r.startTime || '');
+      if (!startMs || !_pnValidId(r._id)) return false;
+      const dur = (typeof r.durationMs === 'number' && r.durationMs > 0)
+        ? r.durationMs : _EXAM_DEFAULT_DURATION_MS;
+      return now >= startMs + dur + _EXAM_GRACE_MS;
+    });
+
+    for (const r of expired) {
+      await _submitExpiredExam(token, r._id)
+        .catch(e => console.warn('[cron] Exam sweep error for', r._id, ':', e.message || e));
+    }
+  } catch (e) {
+    console.warn('[cron] Exam sweep error:', e.message || e);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
    WEB PUSH — VAPID signing + send
 ══════════════════════════════════════════════════════════ */
 
@@ -2113,12 +2359,11 @@ function _firstNameOf(fullName) {
 }
 
 /* ── Decide which single reminder a student should get today ── */
-function _buildDailyReminderPayload(student, todayStr, tomorrowStr, upcomingDates) {
+function _buildDailyReminderPayload(student, todayStr, tomorrowStr, upcomingDates, allowWinBack, dayAfterStr) {
   const doneToday     = !!(student.coachingCompleted && student.coachingCompleted[todayStr]);
   const isTaskToday    = upcomingDates.includes(todayStr);
   const isTaskTomorrow = upcomingDates.includes(tomorrowStr);
   const streak         = student.studyStreak || 0;
-  const weakSubjects   = Array.isArray(student.weakSubjects) ? student.weakSubjects : [];
   const lastActiveDate = student.lastActiveDate || null;
   const firstName      = _firstNameOf(student.name);
   const namePart        = firstName ? ', ' + firstName : '';
@@ -2129,8 +2374,6 @@ function _buildDailyReminderPayload(student, todayStr, tomorrowStr, upcomingDate
     const today = new Date(todayStr + 'T00:00:00');
     daysSinceActive = Math.round((today - last) / 86400000);
   }
-
-  const laterDate = upcomingDates.find(d => d > tomorrowStr);
 
   // 1. Exam tomorrow
   if (isTaskTomorrow) {
@@ -2151,41 +2394,44 @@ function _buildDailyReminderPayload(student, todayStr, tomorrowStr, upcomingDate
     };
   }
 
-  // 3. Session coming up in the next few days
-  if (laterDate) {
-    const daysUntil = Math.round(
-      (new Date(laterDate + 'T00:00:00') - new Date(todayStr + 'T00:00:00')) / 86400000
-    );
+  // 3. Heads-up for a session exactly 2 days away (tomorrow is covered above).
+  //    Only this one day, so a far-off session never causes daily pings.
+  if (upcomingDates.includes(dayAfterStr)) {
     return {
       title: 'Upcoming Session',
-      body:  'You have a scheduled session in ' + daysUntil + ' day' + (daysUntil !== 1 ? 's' : '') + namePart + ' — get ready!',
+      body:  'You have a scheduled session in 2 days' + namePart + ' — get ready!',
     };
   }
 
-  // 4. Never active, or inactive 5+ days
-  if (daysSinceActive === null || daysSinceActive >= 5) {
-    return { title: 'We Miss You!', body: 'It has been a while since your last session' + namePart + '. Come back and keep learning!' };
+  // 4. Win-back. Only after a long absence, and only if the cooldown allows it
+  //    (see _winBackAllowed). Never for students who have never been active.
+  if (allowWinBack && daysSinceActive !== null && daysSinceActive >= WIN_BACK_AFTER_DAYS) {
+    return { title: 'We Miss You!', body: 'It has been a while since your last session' + namePart + '. Come back and keep learning!', winBack: true };
   }
 
-  // 5. Weak subject follow-up
-  if (weakSubjects.length > 0) {
-    return {
-      title: 'Quick Study Tip',
-      body:  'Struggling with ' + weakSubjects[0] + namePart + '? A focused review session can help.',
-    };
-  }
+  // Nothing important to say: stay silent. (No tips, streak nudges or "progress check"
+  // filler on ordinary days.)
+  return null;
+}
 
-  // 6. Mild inactivity
-  if (daysSinceActive >= 2) {
-    return { title: 'Study Reminder', body: 'You have not practiced in a couple of days' + namePart + '. Jump back in for a quick session!' };
-  }
+// Win-back rules: first nudge after 7 quiet days, then at most one every 14 days,
+// and never more than 2 in a row. Activity resets the count.
+const WIN_BACK_AFTER_DAYS = 7;
+const WIN_BACK_GAP_DAYS   = 14;
+const WIN_BACK_MAX_IN_ROW = 2;
 
-  // 7. Fallback general nudge, alternated for variety
-  const dayOfMonth = new Date(todayStr + 'T00:00:00').getDate();
-  if (dayOfMonth % 2 === 0) {
-    return { title: 'Practice Makes Perfect', body: 'Keep sharpening your skills' + namePart + ' — try a quick CBT practice session today.' };
+async function _winBackAllowed(env, uid, student, todayStr) {
+  let state = null;
+  try { state = JSON.parse(await env.VTX_RATE_LIMITS.get('wb:' + uid) || 'null'); } catch (e) {}
+  const lastActive = student.lastActiveDate || '';
+  // Student came back since our last nudge: start fresh.
+  if (!state || state.lastActive !== lastActive) state = { count: 0, lastSent: null, lastActive };
+  if (state.count >= WIN_BACK_MAX_IN_ROW) return { ok: false, state };
+  if (state.lastSent) {
+    const gap = Math.round((new Date(todayStr + 'T00:00:00') - new Date(state.lastSent + 'T00:00:00')) / 86400000);
+    if (gap < WIN_BACK_GAP_DAYS) return { ok: false, state };
   }
-  return { title: 'Progress Check', body: 'See how far you have come' + namePart + '. Review your recent results and keep improving.' };
+  return { ok: true, state };
 }
 
 /* ── Daily reminder cron ─────────────────────────────────── */
@@ -2217,6 +2463,7 @@ async function _runDailyReminders(env) {
 
   const todayStr    = _lagosDateStrOffset(0);
   const tomorrowStr = _lagosDateStrOffset(1);
+  const dayAfterStr = _lagosDateStrOffset(2);
 
   // ── Step 1: read all saved subscriptions from KV (this does NOT count toward the subrequest limit) ──
   const subsByUid = new Map();
@@ -2269,7 +2516,8 @@ async function _runDailyReminders(env) {
       if (student.pushPrefs && student.pushPrefs.reminders === false) continue;
 
       const upcomingDates = await _getUpcomingTaskDates(uid, student.class, accessToken, todayStr, 4, taskDocCache);
-      const payload = _buildDailyReminderPayload(student, todayStr, tomorrowStr, upcomingDates);
+      const wb = await _winBackAllowed(env, uid, student, todayStr);
+      const payload = _buildDailyReminderPayload(student, todayStr, tomorrowStr, upcomingDates, wb.ok, dayAfterStr);
 
       if (payload) {
         const result = await sendWebPush(subscription, JSON.stringify({
@@ -2278,6 +2526,13 @@ async function _runDailyReminders(env) {
           url:   '/',
         }), env);
         console.log('[cron] Push to', uid, ':', result.ok ? 'sent' : 'failed', result.reason || '');
+        if (result.ok && payload.winBack) {
+          wb.state.count += 1;
+          wb.state.lastSent = todayStr;
+          await env.VTX_RATE_LIMITS.put('wb:' + uid, JSON.stringify(wb.state));
+        }
+      } else {
+        console.log('[cron] Nothing important for', uid, '- staying silent.');
       }
 
     } catch (err) {
