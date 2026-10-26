@@ -2505,3 +2505,65 @@ details.glass-dark[open] > summary::after,
   margin-top: .625rem;
 }
 .vtx-clock-offline-note i { font-size: 13px; }
+
+
+/* ══════════════════════════════════════════════════════════════
+   RESPONSIVE FIXES (all devices)
+   ══════════════════════════════════════════════════════════════ */
+
+/* Question + option text must always wrap inside the screen, even when the
+   text has no normal spaces or contains long formulas. */
+.vtx-q-text,
+.vtx-q-text > span,
+.option-label > span.flex-1 {
+  min-width: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+.vtx-q-text { display: block; }
+.vtx-question-wrap { min-width: 0; max-width: 100%; }
+.katex-display { max-width: 100%; overflow-x: auto; overflow-y: hidden; padding: .25rem 0; }
+
+/* Landing page: use the full screen width (no padded box inside #app) */
+#app:has(> #lp-root),
+#app:has(> .lp) { padding: 0 !important; display: block !important; }
+
+/* Floating AI button: sit above the red news bar instead of behind it */
+#vtxAiFloating { bottom: calc(52px + 1rem + env(safe-area-inset-bottom, 0px)) !important; }
+body:has(.news-ticker-container.ticker-hidden) #vtxAiFloating { bottom: calc(1rem + env(safe-area-inset-bottom, 0px)) !important; }
+
+/* Phones: smaller floating theme button so it hides less content */
+@media (max-width: 640px) {
+  #themeToggle { width: 28px !important; height: 28px !important; left: 8px !important; opacity: .55; }
+  #themeToggle:hover, #themeToggle:focus { opacity: 1; }
+  #vtxAiFloating { right: 1rem !important; }
+}
+
+/* Dashboard tool tiles: 3 per row on narrow phones so labels fit */
+@media (max-width: 400px) {
+  .vtx-dash-tools-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+/* Chat input placeholders must not be cut off on phones */
+@media (max-width: 640px) {
+  #chatMessages { max-height: 55vh !important; }
+  input::placeholder, textarea::placeholder { text-overflow: ellipsis; }
+}
+
+/* Exam header: let the subject name wrap on phones instead of being cut off */
+@media (max-width: 640px) {
+  .vtx-exam-hdr-name { white-space: normal !important; overflow: visible !important; text-overflow: clip !important; }
+  /* the floating theme button covered answer options during exams */
+  body:has(#app.exam-active) #themeToggle { display: none !important; }
+}
+
+/* AI button's hidden label must never push the page wider than the screen */
+#app > #vtxAiFloating { width: auto; max-width: calc(100vw - 2rem); }
+
+/* Teacher dashboard tab row: fade hints that more tabs are off-screen to the right */
+.vtx-td-nav {
+  padding-right: 2.5rem !important;
+  -webkit-mask-image: linear-gradient(to right, #000 calc(100% - 2rem), transparent);
+          mask-image: linear-gradient(to right, #000 calc(100% - 2rem), transparent);
+}
