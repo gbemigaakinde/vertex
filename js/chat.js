@@ -353,7 +353,7 @@ function _renderTextWithMentions(rawText) {
       <!-- Input row -->
       <div style="position:relative;display:flex;gap:.5rem;align-items:flex-end;" id="chatInputWrap">
         <textarea id="chatInput"
-               placeholder="${canSend ? 'Type a message… use @ to mention someone' : 'Chat is locked'}"
+               placeholder="${canSend ? 'Type a message…' : 'Chat is locked'}"
                autocomplete="off"
                rows="1"
                style="flex:1;resize:none;overflow-y:hidden;line-height:1.5;padding:.5625rem .75rem;min-height:36px;max-height:120px;border-radius:var(--r-md);font-family:var(--font);font-size:var(--text-base);"

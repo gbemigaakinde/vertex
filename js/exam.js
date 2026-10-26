@@ -73,7 +73,11 @@
     return str;
   }
 
-  function _safeQ(str) { return _escHtml(preprocessLatex(str)); }
+  function _safeQ(str) {
+    // Turn non-breaking / odd-width spaces into normal spaces so long questions can wrap on phones.
+    var clean = String(str == null ? '' : str).replace(/[\u00A0\u2007\u202F\u2060\u200B]/g, ' ');
+    return _escHtml(preprocessLatex(clean));
+  }
 
   // Optional SVG diagrams (see js/svg-diagram.js). Return '' when a question has none.
   function _diag(value, size) {
@@ -1752,7 +1756,7 @@ async function renderSubjectSelection() {
       >
         <span style="display:flex;align-items:center;justify-content:center;
                      width:44px;height:44px;border-radius:var(--r-lg);
-                     background:${t.gradient ? 'linear-gradient(135deg,#5ac8fa,#007aff)' : t.color + '18'};
+                     background:${t.gradient ? 'linear-gradient(135deg,#5ac8fa,#007aff)' : 'color-mix(in srgb, ' + t.color + ' 12%, transparent)'};
                      color:${t.gradient ? '#fff' : t.color};">
           ${t.icon}
         </span>
@@ -2798,7 +2802,7 @@ async function renderSubjectSelection() {
       <div class="vtx-question-section" id="questionSection">
         <div class="vtx-question-wrap">
 
-          <p style="font-size:1rem;font-weight:500;line-height:1.75;margin-bottom:1.125rem;color:var(--text-1);">
+          <p class="vtx-q-text" style="font-size:1rem;font-weight:500;line-height:1.75;margin-bottom:1.125rem;color:var(--text-1);">
             <span style="font-family:var(--font-mono);font-size:.8125rem;font-weight:700;color:var(--accent);margin-right:.5rem;">${exam.currentIndex + 1}.</span>
             <span style="white-space:pre-line;">${_safeQ(q.q)}</span>
           </p>
