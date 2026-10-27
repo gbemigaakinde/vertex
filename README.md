@@ -98,6 +98,7 @@ vapid-generator.html    One-off helper for generating Web Push (VAPID) keys
 
 css/
   main.css              Main design system and screens
+  tailwind.css          Pre-built Tailwind utility classes (generated, do not edit by hand)
   studyroom.css         Study Room styles
   voice-ui.css          Voice / speech UI styles
 
@@ -395,8 +396,35 @@ Create the KV namespace referenced in `wrangler.jsonc` (or replace its ID with y
 ### Releasing a front-end change
 1. Edit the files.
 2. If you added a new JS/CSS/data file, add its `<script>`/`<link>` tag to `index.html` **and** its path to `coreAssets` in `sw.js`.
-3. Bump `CACHE_VERSION` in `sw.js`.
-4. Deploy.
+3. If you used a Tailwind class that was not used before, rebuild `css/tailwind.css` (see below).
+4. Bump `CACHE_VERSION` in `sw.js`.
+5. Deploy.
+
+### Tailwind CSS
+
+The app does not load Tailwind from a CDN. The CDN script (`cdn.tailwindcss.com`) is meant for prototyping only and logs a warning in production, so the utility classes the app uses are compiled into `css/tailwind.css`, which `index.html` links and `sw.js` precaches. Preflight is disabled so it does not reset the styles in `css/main.css`.
+
+Tailwind only includes classes it finds written in the source files, so a brand new class will not work until the file is rebuilt. To rebuild it (needs [Node.js](https://nodejs.org) LTS; run these in PowerShell from the repository root):
+
+1. Install Tailwind once: `npm install tailwindcss@3.4.17`
+2. Create `tailwind.config.js` (it is not committed):
+   ```js
+   module.exports = {
+     content: ['./index.html', './js/**/*.js', './news-ticker.js', './viewer.js'],
+     theme: { extend: { fontFamily: { sans: ['Plus Jakarta Sans', 'DM Sans', 'system-ui', '-apple-system', 'sans-serif'] } } },
+     corePlugins: { preflight: false },
+   };
+   ```
+3. Create `input.css` containing:
+   ```css
+   @tailwind base;
+   @tailwind components;
+   @tailwind utilities;
+   ```
+4. Build: `npx tailwindcss -i input.css -o css/tailwind.css --minify`
+5. Commit the new `css/tailwind.css`, then bump `CACHE_VERSION` in `sw.js`.
+
+Do not commit `node_modules/`, `package.json` or `package-lock.json`; they are only needed locally.
 
 ---
 
@@ -422,6 +450,7 @@ Create the KV namespace referenced in `wrangler.jsonc` (or replace its ID with y
 | Symptom | Likely cause / fix |
 |---|---|
 | Blank screen after login | Firestore persistence was enabled or the service worker is stale. Clear site data and reload; see the comment in `js/config.js`. |
+| A Tailwind class has no effect | The class is new and `css/tailwind.css` was not rebuilt. See [Tailwind CSS](#tailwind-css). |
 | Old code still running after a deploy | `CACHE_VERSION` in `sw.js` was not bumped. |
 | Service worker fails to install | A path in `coreAssets` returns 404. |
 | "No subjects found for class …" | The student's class name does not match a key in the question bank (`jss1` … `sss3`, `tutorial`). |
