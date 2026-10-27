@@ -330,7 +330,7 @@
     _quizAnswered = false;
     _quizSelected = null;
     _quizDone = false;
-    _shuffledQuiz = _shuffle([...QUIZ_QUESTIONS]);
+    _shuffledQuiz = _shuffle(QUIZ_QUESTIONS.map(x => ({ ...x, _opts: null })));
     _render();
   }
 
@@ -356,6 +356,15 @@
         </div>
       </div>
       <style>
+        @media (max-width:640px) {
+          .bio-cellview { flex-direction:column !important; }
+          .bio-canvas-wrap { flex:1 1 auto !important; min-height:0; padding:.25rem !important; align-items:center !important; }
+          .bio-canvas-wrap svg { width:100% !important; height:100% !important; max-width:none !important; max-height:100% !important; }
+          .bio-legend { width:100% !important; max-height:34% !important; flex-shrink:0 !important;
+                        border-left:none !important; border-top:1px solid var(--border); padding:.4rem .5rem !important; }
+          .bio-legend-list { display:flex; flex-wrap:wrap; gap:.3rem; }
+          .bio-legend-list .bio-legend-btn { width:auto !important; border:1px solid var(--border); border-radius:99px; padding:3px 9px 3px 6px !important; background:var(--bg-subtle); }
+        }
         .bio-tab {
           font-size:.6rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;
           padding:4px 12px;border-radius:99px;border:1.5px solid var(--border);
@@ -406,6 +415,7 @@
         .bio-legend-btn.active .bio-org-dot { transform:scale(1.4); }
       </style>`);
 
+    _updateOrgCount(_mode);
     if (_mode === 'compare') {
   _loadThree(() => _bootScenes());
 }
@@ -468,15 +478,16 @@
   const organellesInCell = Object.values(ORGANELLES).filter(o => o.present.includes(type));
   _updateOrgCount(type);
   return `
-    <div style="display:flex;height:100%;overflow:hidden;">
-      <div id="bio-canvas-wrap-${type}" style="flex:1 1 0;position:relative;overflow:hidden;min-width:0;background:var(--bg-page);display:flex;align-items:center;justify-content:center;padding:.5rem;">
+    <div class="bio-cellview" style="display:flex;height:100%;overflow:hidden;">
+      <div id="bio-canvas-wrap-${type}" class="bio-canvas-wrap" style="flex:1 1 0;position:relative;overflow:hidden;min-width:0;background:var(--bg-page);display:flex;align-items:center;justify-content:center;padding:.5rem;">
         ${type === 'animal' ? _buildAnimalCellSVG() : _buildPlantCellSVG()}
       </div>
-      <div style="width:136px;flex-shrink:0;overflow-y:auto;overflow-x:hidden;
+      <div class="bio-legend" style="width:136px;flex-shrink:0;overflow-y:auto;overflow-x:hidden;
                   border-left:1px solid var(--border);background:var(--bg-base);
                   padding:.5rem .35rem;scrollbar-width:thin;">
-        <div style="font-size:.525rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
+        <div class="bio-legend-title" style="font-size:.525rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;
                     color:var(--text-4);margin-bottom:.4rem;padding:0 .2rem;">Organelles</div>
+        <div class="bio-legend-list">
         ${organellesInCell.map(org => `
           <button class="bio-legend-btn${_selectedOrg === org.id ? ' active' : ''}"
                   onclick="ThreeDCell._selectOrg('${org.id}','${type}')">
@@ -485,6 +496,7 @@
               ${org.label}
             </span>
           </button>`).join('')}
+        </div>
       </div>
     </div>`;
 }
@@ -595,7 +607,7 @@
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.1;
+    renderer.toneMappingExposure = 1.6;
     renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.physicallyCorrectLights = true;
 
@@ -610,6 +622,15 @@
 
     const camera = new THREE.PerspectiveCamera(42, W / H, 0.1, 300);
     camera.position.set(0, 3, 22);
+    // Fit the whole cell in view whatever the canvas shape (narrow phones / split compare view)
+    const _fitR = cellType === 'plant' ? 12.5 : 8.6;
+    function _fitCamera() {
+      const a = camera.aspect || 1;
+      const t = Math.tan((camera.fov * Math.PI / 180) / 2) * Math.min(1, a);
+      const d = Math.min(44, Math.max(20, _fitR / t));
+      camera.position.setLength(Math.hypot(d, 3) / Math.hypot(22, 3) * Math.hypot(22, 3));
+    }
+    _fitCamera();
 
     const pmremGenerator = new THREE.PMREMGenerator(renderer);
     pmremGenerator.compileEquirectangularShader();
@@ -704,8 +725,6 @@
 
     canvas.addEventListener('pointerdown', _onPointerDown);
     canvas.addEventListener('pointerup', _onPointerUp);
-    canvas.addEventListener('touchstart', _onPointerDown, { passive: true });
-    canvas.addEventListener('touchend', _onPointerUp, { passive: true });
 
     const ro = new ResizeObserver(() => {
       if (!wrap.clientWidth) return;
@@ -714,6 +733,7 @@
       renderer.setSize(nW, nH);
       camera.aspect = nW / nH;
       camera.updateProjectionMatrix();
+      _fitCamera();
     });
     ro.observe(wrap);
 
@@ -733,8 +753,6 @@
         ro.disconnect();
         canvas.removeEventListener('pointerdown', _onPointerDown);
         canvas.removeEventListener('pointerup', _onPointerUp);
-        canvas.removeEventListener('touchstart', _onPointerDown);
-        canvas.removeEventListener('touchend', _onPointerUp);
         controls.dispose();
         scene.traverse(obj => {
           if (obj.geometry) obj.geometry.dispose();
@@ -853,11 +871,7 @@
         clearcoat: opts.clearcoat !== undefined ? opts.clearcoat : 0.0,
         clearcoatRoughness: opts.clearcoatRoughness !== undefined ? opts.clearcoatRoughness : 0.2,
         transmission: opts.transmission !== undefined ? opts.transmission : 0.0,
-        thickness: opts.thickness !== undefined ? opts.thickness : 0.5,
         ior: opts.ior !== undefined ? opts.ior : 1.45,
-        sheen: opts.sheen !== undefined ? opts.sheen : 0.0,
-        sheenColor: opts.sheenColor !== undefined ? new THREE.Color(opts.sheenColor) : new THREE.Color(0xffffff),
-        sheenRoughness: opts.sheenRoughness !== undefined ? opts.sheenRoughness : 0.5,
         emissive: new THREE.Color(opts.emissive !== undefined ? opts.emissive : 0x000000),
         emissiveIntensity: opts.emissiveIntensity !== undefined ? opts.emissiveIntensity : 0.0,
       });
@@ -891,16 +905,16 @@
         const wallCol = ORGANELLES['cell_wall'].color;
         const wallGeo = new THREE.BoxGeometry(15, 15, 15);
         const wallMat = makeMat(wallCol, {
-          transparent: true, opacity: 0.07, depthWrite: false,
+          transparent: true, opacity: 0.12, depthWrite: false,
           side: THREE.FrontSide, roughness: 0.9,
         });
         registerMesh('cell_wall', new THREE.Mesh(wallGeo, wallMat));
 
         const edgeGeo = new THREE.EdgesGeometry(new THREE.BoxGeometry(15, 15, 15));
         const edgeMat = new THREE.LineBasicMaterial({
-          color: hexToNum(wallCol), transparent: true, opacity: 0.25,
+          color: hexToNum(wallCol), transparent: true, opacity: 0.6,
         });
-        edgeMat.userData.baseOpacity = 0.25;
+        edgeMat.userData.baseOpacity = 0.6;
         edgeMat.userData.baseTransparent = true;
         const edges = new THREE.LineSegments(edgeGeo, edgeMat);
         edges.userData.orgId = 'cell_wall';
@@ -910,14 +924,14 @@
 
         const memGeo = new THREE.BoxGeometry(14.2, 14.2, 14.2);
         const memMat = makeMat(col, {
-          transparent: true, opacity: 0.05, depthWrite: false,
+          transparent: true, opacity: 0.12, depthWrite: false,
           side: THREE.BackSide, roughness: 0.5,
         });
         registerMesh('cell_membrane', new THREE.Mesh(memGeo, memMat));
       } else {
         const geo = new THREE.SphereGeometry(7.2, 64, 64);
         const mat = makeMat(col, {
-          transparent: true, opacity: 0.06, depthWrite: false,
+          transparent: true, opacity: 0.14, depthWrite: false,
           side: THREE.BackSide, roughness: 0.3,
           transmission: 0.0,
         });
@@ -925,12 +939,12 @@
 
         const outerGeo = new THREE.SphereGeometry(7.3, 48, 48);
         const outerMat = makeMat(col, {
-          transparent: true, opacity: 0.12, depthWrite: false,
+          transparent: true, opacity: 0.22, depthWrite: false,
           side: THREE.FrontSide, roughness: 0.2, metalness: 0.0,
           clearcoat: 0.8, clearcoatRoughness: 0.1,
           wireframe: false,
         });
-        outerMat.userData.baseOpacity = 0.12;
+        outerMat.userData.baseOpacity = 0.22;
         outerMat.userData.baseTransparent = true;
         const outerMesh = new THREE.Mesh(outerGeo, outerMat);
         outerMesh.userData.orgId = 'cell_membrane';
@@ -1456,7 +1470,7 @@
   
   function _buildAnimalCellSVG() {
   return `
-  <svg viewBox="0 0 520 420" xmlns="http://www.w3.org/2000/svg"
+  <svg viewBox="-30 -15 580 450" xmlns="http://www.w3.org/2000/svg"
        style="width:100%;max-width:520px;max-height:100%;overflow:visible;cursor:default;">
     <defs>
       <radialGradient id="cytoBg" cx="50%" cy="50%" r="50%">
@@ -1642,7 +1656,7 @@
 
 function _buildPlantCellSVG() {
   return `
-  <svg viewBox="0 0 520 440" xmlns="http://www.w3.org/2000/svg"
+  <svg viewBox="-30 -15 580 470" xmlns="http://www.w3.org/2000/svg"
        style="width:100%;max-width:520px;max-height:100%;overflow:visible;cursor:default;">
     <defs>
       <radialGradient id="plantCytoBg" cx="50%" cy="50%" r="50%">
@@ -1825,7 +1839,8 @@ function _buildPlantCellSVG() {
       <text x="435" y="70">Peroxisome</text>
       <line x1="455" y1="73" x2="455" y2="78" stroke="currentColor" stroke-width="1" opacity="0.5"/>
 
-      <text x="2" y="185">Plasm.</text>
+      <text x="-26" y="180">Plasmo-</text>
+      <text x="-26" y="190">desmata</text>
 
       <text x="418" y="384">Vacuole</text>
     </g>
@@ -2029,7 +2044,8 @@ function _buildPlantCellSVG() {
   function _buildQuizView() {
     if (_quizDone) return _buildQuizResults();
     const q = _shuffledQuiz[_quizIdx];
-    const opts = _shuffle([...q.options]);
+    if (!q._opts) q._opts = _shuffle([...q.options]);
+    const opts = q._opts;
     const prog = (_quizIdx / _shuffledQuiz.length) * 100;
 
     return `
@@ -2210,7 +2226,7 @@ function _buildPlantCellSVG() {
     _quizAnswered = false;
     _quizSelected = null;
     _quizDone = false;
-    _shuffledQuiz = _shuffle([...QUIZ_QUESTIONS]);
+    _shuffledQuiz = _shuffle(QUIZ_QUESTIONS.map(x => ({ ...x, _opts: null })));
     const content = document.getElementById('bio-content');
     if (content) content.innerHTML = _buildContent();
   }
