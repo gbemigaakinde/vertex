@@ -325,7 +325,7 @@
     const hour   = new Date().getHours();
     const minute = new Date().getMinutes();
     const time   = hour + minute / 60;
-    const n      = _escHtml(name);
+    const n      = _escHtml(String(name || '').trim().split(/\s+/)[0] || 'there');
     const wittyMorning = [
       `Good morning, ${n}. Welcome to your dashboard.`,
       `Good morning, ${n}. It is good to see you.`,
