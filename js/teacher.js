@@ -23,6 +23,149 @@
     Object.keys(_listeners).forEach(k => _cancel(k));
   }
 
+  /* ── Skeleton loaders: each mirrors the markup of the real rendered content ── */
+  function _sk(w, h, extra, cls) {
+    return '<span class="vtx-sk ' + (cls || '') + '" style="width:' + w + ';height:' + h + ';' + (extra || '') + '"></span>';
+  }
+  function _skRepeat(n, fn) { let o = ''; for (let i = 0; i < n; i++) o += fn(i); return o; }
+
+  // Results: matches .teacher-result-card
+  function _skResults(n) {
+    return _skRepeat(n || 6, function (i) {
+      return '<div aria-hidden="true" style="position:relative;background:var(--bg-base);border:1px solid var(--border);border-radius:10px;padding:.875rem 1rem;overflow:hidden;">' +
+        '<div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:.625rem;">' +
+          _sk('48px', '48px', 'flex-shrink:0;', 'vtx-sk-box') +
+          '<div style="min-width:0;flex:1;padding-right:5.25rem;">' +
+            _sk(i % 2 ? '60%' : '75%', '14px', 'margin-top:3px;') +
+            _sk('85%', '11px', 'margin-top:8px;') +
+          '</div>' +
+        '</div>' +
+        '<div style="display:flex;flex-wrap:wrap;gap:.25rem;margin-bottom:.5rem;">' +
+          _sk('72px', '20px') + _sk('88px', '20px') + _sk('64px', '20px') +
+        '</div>' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;">' +
+          _sk('64px', '12px') + _sk('92px', '20px') +
+        '</div>' +
+      '</div>';
+    });
+  }
+
+  // Schools: matches the school row (name + Rename + ×)
+  function _skSchools(n) {
+    return _skRepeat(n || 5, function (i) {
+      return '<div aria-hidden="true" style="display:flex;align-items:center;justify-content:space-between;background:var(--bg-base);border:1px solid var(--border);border-radius:8px;padding:.625rem 1rem;">' +
+        _sk(i % 2 ? '38%' : '52%', '16px') +
+        '<div style="display:flex;gap:.375rem;align-items:center;">' +
+          _sk('64px', '30px') + _sk('44px', '44px', '', 'vtx-sk-box') +
+        '</div>' +
+      '</div>';
+    });
+  }
+
+  // Students: matches the school group <details> with a grid of student cards
+  function _skStudents() {
+    const card = function (i) {
+      return '<div style="background:var(--bg-base);border:1px solid var(--border);border-radius:8px;padding:.5rem .625rem .75rem .5rem;">' +
+        '<div style="display:flex;align-items:center;gap:.25rem;">' +
+          _sk('32px', '32px', 'flex-shrink:0;', 'vtx-sk-box') +
+          _sk(i % 2 ? '55%' : '70%', '14px', 'flex:1;') +
+          _sk('32px', '32px', 'flex-shrink:0;', 'vtx-sk-box') +
+          _sk('32px', '32px', 'flex-shrink:0;', 'vtx-sk-box') +
+        '</div>' +
+        '<div style="padding-left:2.25rem;">' +
+          _sk('40%', '11px', 'margin-top:4px;') +
+          _sk('80%', '11px', 'margin-top:6px;') +
+          _sk('50%', '11px', 'margin-top:6px;') +
+        '</div>' +
+      '</div>';
+    };
+    const group = function () {
+      return '<div aria-hidden="true" class="glass-dark overflow-hidden mb-3" style="border-radius:10px;">' +
+        '<div style="display:flex;align-items:center;gap:.5rem;padding:.875rem 1rem;">' +
+          _sk('160px', '18px') + _sk('28px', '18px', '', 'vtx-sk-pill') +
+        '</div>' +
+        '<div style="padding:.875rem 1rem;"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.625rem;">' +
+          _skRepeat(6, card) +
+        '</div></div>' +
+      '</div>';
+    };
+    return group() + group();
+  }
+
+  // Tasks: matches the "Existing Tasks" list
+  function _skTasks(n) {
+    return '<div aria-hidden="true" style="border-top:1px solid var(--border);padding-top:1rem;margin-top:.25rem;">' +
+      _sk('110px', '16px', 'margin-bottom:.625rem;') +
+      '<div style="display:flex;flex-direction:column;gap:.375rem;">' +
+      _skRepeat(n || 3, function (i) {
+        return '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem;background:var(--bg-base);border:1px solid var(--border);border-radius:8px;padding:.5rem .875rem;">' +
+          '<div style="min-width:0;flex:1;">' +
+            '<div style="display:flex;align-items:center;gap:.375rem;margin-bottom:6px;">' +
+              _sk(i % 2 ? '90px' : '130px', '16px') + _sk('84px', '18px', '', 'vtx-sk-pill') + _sk('52px', '18px', '', 'vtx-sk-pill') +
+            '</div>' +
+            _sk('70%', '11px') +
+          '</div>' +
+          '<div style="display:flex;gap:.375rem;align-items:center;flex-shrink:0;">' +
+            _sk('52px', '24px') + _sk('44px', '44px', '', 'vtx-sk-box') +
+          '</div>' +
+        '</div>';
+      }) +
+      '</div></div>';
+  }
+
+  // Timetable editor: matches the period grid (time column + 6 day columns + remove column)
+  function _skTimetableEditor() {
+    const cells = _skRepeat(6, function () {
+      return '<td style="padding:.25rem;border:1px solid var(--border);">' + _sk('100%', '28px') + '</td>';
+    });
+    const rows = _skRepeat(11, function () {
+      return '<tr><td style="padding:.25rem;border:1px solid var(--border);min-width:98px;">' + _sk('100%', '28px') + '</td>' + cells +
+        '<td style="padding:.25rem;border:1px solid var(--border);width:44px;">' + _sk('28px', '28px') + '</td></tr>';
+    });
+    return '<div aria-hidden="true" style="overflow:hidden;margin-bottom:1rem;border:1px solid var(--border);border-radius:var(--r-md);">' +
+      '<table style="border-collapse:collapse;width:100%;min-width:780px;">' +
+      '<thead><tr style="background:var(--bg-subtle);"><th style="padding:.4375rem .625rem;border:1px solid var(--border);height:34px;" colspan="8"></th></tr></thead>' +
+      '<tbody>' + rows + '</tbody></table></div>';
+  }
+
+  // Timetable saved list: matches a saved-timetable card
+  function _skTimetableList(n) {
+    return _skRepeat(n || 2, function () {
+      return '<div aria-hidden="true" style="border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--bg-base);">' +
+        '<div style="display:flex;align-items:center;justify-content:space-between;padding:.5rem .875rem;background:var(--bg-subtle);">' +
+          '<div style="display:flex;align-items:center;gap:.5rem;">' + _sk('150px', '16px') + _sk('60px', '18px', '', 'vtx-sk-pill') + _sk('110px', '12px') + '</div>' +
+          '<div style="display:flex;gap:.375rem;align-items:center;">' + _sk('26px', '12px') + _sk('36px', '12px') + '</div>' +
+        '</div>' +
+        '<div style="padding:.5rem .875rem;">' +
+          _skRepeat(4, function () {
+            return '<div style="display:flex;gap:.375rem;padding:3px 0;">' + _sk('72px', '12px', 'flex-shrink:0;') + _sk('45%', '12px') + '</div>';
+          }) +
+        '</div>' +
+      '</div>';
+    });
+  }
+
+  // Activity: stat chips + feed rows
+  function _skActivityStats() {
+    return _skRepeat(5, function () {
+      return '<div aria-hidden="true" style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:80px;padding:.5rem .875rem;border-radius:var(--r-lg);border:1px solid var(--border);background:var(--bg-base);">' +
+        _sk('24px', '20px') + _sk('56px', '9px', 'margin-top:5px;') +
+      '</div>';
+    });
+  }
+  function _skActivityFeed(n) {
+    return _skRepeat(n || 7, function (i) {
+      return '<div aria-hidden="true" style="display:flex;align-items:flex-start;gap:.75rem;padding:.75rem 1rem;border-bottom:1px solid var(--border);">' +
+        _sk('34px', '34px', 'flex-shrink:0;border-radius:50%;') +
+        '<div style="flex:1;min-width:0;">' +
+          _sk(i % 2 ? '35%' : '45%', '14px') +
+          _sk(i % 3 ? '70%' : '55%', '12px', 'margin-top:6px;') +
+        '</div>' +
+        _sk('44px', '10px', 'flex-shrink:0;') +
+      '</div>';
+    });
+  }
+
 /* ── Timetable: default period structure ── */
   function _ttDefaultPeriods() {
   return [
@@ -977,9 +1120,7 @@ function _showGamesSubTab(sub) {
   function _loadStudents() {
   const container = document.getElementById('studentsList');
   if (!container) return;
-  container.innerHTML = `
-    <div style="text-align:center;padding:2rem;color:var(--text-3);font-size:var(--text-sm);">
-      Loading students...</div>`;
+  container.innerHTML = _skStudents();
 
   const iconBtn = 'display:inline-flex;align-items:center;justify-content:center;' +
                   'width:32px;height:32px;flex-shrink:0;background:none;border:none;' +
@@ -1568,6 +1709,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
   function _loadResults() {
     const container = document.getElementById('resultsList');
     if (!container) return;
+    container.innerHTML = _skResults(6);
     _cancel('results');
     const unsub = Db().collection('results').orderBy('timestamp', 'desc').onSnapshot(
       snap => {
@@ -1864,7 +2006,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
   function _loadSchools() {
     const container = document.getElementById('schoolsList');
     if (!container) return;
-    container.innerHTML = `<p style="font-size:var(--text-sm);color:var(--text-3);">Loading...</p>`;
+    container.innerHTML = _skSchools(5);
     _cancel('schools');
     const unsub = Db().collection('schools').orderBy('name').onSnapshot(
       snap => {
@@ -2583,8 +2725,23 @@ async function _saveStudentEdit(uid, previousAdmno) {
   _reg('taskClassList', unsubClasses);
 
   _cancel('tasksList');
+  let _tasksBox = document.getElementById('existingTasksList');
+  if (!_tasksBox) {
+    const panel = document.getElementById('teacher-tasks');
+    if (panel) {
+      const inner = panel.querySelector('[style*="padding:1.25rem 1.5rem"]') || panel;
+      _tasksBox = document.createElement('div');
+      _tasksBox.id = 'existingTasksList';
+      _tasksBox.style.cssText = 'margin-top:1rem;';
+      inner.appendChild(_tasksBox);
+    }
+  }
+  if (_tasksBox) _tasksBox.innerHTML = _skTasks(3);
   const unsubTasks = Db().collection('coachingTasks').onSnapshot(snap => {
     _renderExistingTasksList(snap.docs);
+  }, err => {
+    console.error('[teacher] Error loading tasks:', err);
+    if (_tasksBox) _tasksBox.innerHTML = '<p style="font-size:var(--text-sm);color:var(--danger);">Error loading tasks.</p>';
   });
   _reg('tasksList', unsubTasks);
 
@@ -3644,7 +3801,7 @@ function _loadTimetableManager() {
     <div id="ttGroupMembersWrap"></div>
 
     <div id="ttEditorWrap" style="margin-top:.75rem;">
-      <div style="text-align:center;padding:2rem;color:var(--text-3);font-size:var(--text-sm);">Loading…</div>
+      ${_skTimetableEditor()}
     </div>
 
     <div style="margin-top:2rem;padding-top:1.25rem;border-top:1px solid var(--border);">
@@ -4075,9 +4232,15 @@ function _editTimetableWeek(weekKey) {
   const { col, docId } = _ttCurrentTarget();
   if (!docId) return;
 
+  const _ttListEl = document.getElementById('ttAllList');
+  if (_ttListEl) _ttListEl.innerHTML = _skTimetableList(2);
+
   _ttUnsubAll = Db().collection(col).doc(docId).onSnapshot(
     function (snap) { _ttRenderAllList(snap.exists ? snap.data() : {}); },
-    function (err)  { console.warn('[timetable] listen error:', err); }
+    function (err)  {
+      console.warn('[timetable] listen error:', err);
+      if (_ttListEl) _ttListEl.innerHTML = '<p style="font-size:var(--text-sm);color:var(--danger);">Could not load saved timetables.</p>';
+    }
   );
 }
 
@@ -5602,19 +5765,12 @@ async function exportResultPDF(resultId) {
       '</div>' +
 
       '<div id="activityStatsBar" style="display:flex;gap:.625rem;flex-wrap:wrap;' +
-        'margin-bottom:1rem;"></div>' +
+        'margin-bottom:1rem;">' + _skActivityStats() + '</div>' +
 
       '<div style="border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;' +
         'background:var(--bg-base);">' +
 
-        '<div id="activityFeedList">' +
-
-          '<div style="text-align:center;padding:3rem;color:var(--text-3);' +
-            'font-size:var(--text-sm);">' +
-            'Loading…' +
-          '</div>' +
-
-        '</div>' +
+        '<div id="activityFeedList">' + _skActivityFeed(7) + '</div>' +
 
       '</div>';
 
