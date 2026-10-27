@@ -4,7 +4,7 @@
 
 'use strict';
 
-const CACHE_VERSION = 'v1.20.93';
+const CACHE_VERSION = 'v1.20.94';
 const STATIC_CACHE  = `static-${CACHE_VERSION}`;
 const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
 
@@ -44,6 +44,7 @@ self.addEventListener('install', event => {
         '/offline.html',
         '/manifest.json',
         '/css/main.css',
+        '/css/tailwind.css',
         '/css/studyroom.css',
         '/js/config.js',
         '/js/state.js',
