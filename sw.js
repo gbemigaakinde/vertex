@@ -4,7 +4,7 @@
 
 'use strict';
 
-const CACHE_VERSION = 'v1.20.90';
+const CACHE_VERSION = 'v1.20.91';
 const STATIC_CACHE  = `static-${CACHE_VERSION}`;
 const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
 
@@ -58,6 +58,7 @@ self.addEventListener('install', event => {
         '/js/svg-diagram.js',
         '/js/question-loader.js',
         '/js/question-manager.js',
+        '/js/studyroom-md.js',
         '/js/studyroom.js',
         '/js/threedclass.js',
         '/js/threedclass-periodic.js',
