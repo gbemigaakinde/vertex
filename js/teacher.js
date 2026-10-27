@@ -913,25 +913,40 @@ function showTab(tab) {
 }
 
 function _moveNavIndicator(tab) {
-  const nav  = document.getElementById('vtxTeacherNav');
-  const ind  = document.getElementById('vtxNavIndicator');
-  const btn  = document.getElementById(`tab-${tab}`);
-  if (!nav || !ind || !btn) return;
+  const nav = document.getElementById('vtxTeacherNav');
+  const ind = document.getElementById('vtxNavIndicator');
+  if (!nav || !ind) return;
 
+  if (tab) _moveNavIndicator._tab = tab;
+  const current = _moveNavIndicator._tab;
+  const btn = current ? document.getElementById(`tab-${current}`) : null;
+  if (!btn) return;
+
+  // Position relative to the nav strip, accounting for how far it is scrolled.
   const navRect = nav.getBoundingClientRect();
   const btnRect = btn.getBoundingClientRect();
-
-  // Position relative to nav strip, accounting for scroll
-  const left = btnRect.left - navRect.left + nav.scrollLeft;
-  const width = btnRect.width;
-
-  ind.style.left  = left + 'px';
-  ind.style.width = width + 'px';
+  ind.style.left  = (btnRect.left - navRect.left + nav.scrollLeft - nav.clientLeft) + 'px';
+  ind.style.width = btnRect.width + 'px';
 
   // Colour for special tabs
   ind.className = 'vtx-td-nav-indicator';
-  if (tab === 'chat') ind.classList.add('for-chat');
-  if (tab === 'dm')   ind.classList.add('for-dm');
+  if (current === 'chat') ind.classList.add('for-chat');
+  if (current === 'dm')   ind.classList.add('for-dm');
+
+  // Re-position the pill whenever the tab buttons change size
+  // (e.g. the red Approvals badge appears, fonts load, screen resizes).
+  if (!nav._vtxObserved) {
+    nav._vtxObserved = true;
+    if (window.ResizeObserver) {
+      const ro = new ResizeObserver(() => _moveNavIndicator());
+      ro.observe(nav);
+      nav.querySelectorAll('.vtx-td-navitem').forEach(b => ro.observe(b));
+    }
+    window.addEventListener('resize', () => _moveNavIndicator());
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => _moveNavIndicator());
+    }
+  }
 }
 
 function _showGamesSubTab(sub) {
@@ -966,6 +981,10 @@ function _showGamesSubTab(sub) {
     <div style="text-align:center;padding:2rem;color:var(--text-3);font-size:var(--text-sm);">
       Loading students...</div>`;
 
+  const iconBtn = 'display:inline-flex;align-items:center;justify-content:center;' +
+                  'width:32px;height:32px;flex-shrink:0;background:none;border:none;' +
+                  'border-radius:8px;cursor:pointer;padding:0;';
+
   _cancel('students');
   const unsub = Db().collection('students').onSnapshot(
     snap => {
@@ -988,11 +1007,14 @@ function _showGamesSubTab(sub) {
         return `
           <details class="glass-dark overflow-hidden mb-3" style="border-radius:10px;" open>
             <summary style="cursor:pointer;">
-              <span style="font-weight:700;font-size:var(--text-base);">${_esc(school)}</span>
-              <span style="margin-left:.5rem;font-size:var(--text-xs);font-weight:500;
-                           background:var(--accent-subtle);color:var(--accent-text);
-                           border:1px solid var(--accent-border);
-                           padding:1px 7px;border-radius:99px;">${students.length}</span>
+              <span style="display:flex;align-items:center;gap:.5rem;flex:1;min-width:0;padding-right:.875rem;">
+                <span style="font-weight:700;font-size:var(--text-base);min-width:0;
+                             overflow-wrap:anywhere;line-height:1.3;">${_esc(school)}</span>
+                <span style="flex-shrink:0;font-size:var(--text-xs);font-weight:500;
+                             background:var(--accent-subtle);color:var(--accent-text);
+                             border:1px solid var(--accent-border);
+                             padding:1px 7px;border-radius:99px;">${students.length}</span>
+              </span>
             </summary>
             <div style="padding:.875rem 1rem;">
               <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.625rem;">
@@ -1003,40 +1025,48 @@ function _showGamesSubTab(sub) {
                   const admno = s.admissionNo ? `<p style="font-size:var(--text-xs);color:var(--accent);
                     margin-top:2px;font-weight:600;">🪪 ${_esc(s.admissionNo)}</p>` : '';
                   return `
-                    <div style="position:relative;background:var(--bg-base);
-                                border:1px solid var(--border);border-radius:8px;
-                                padding:.75rem .875rem .75rem 2.25rem;">
-                      <button class="teacher-toggle-admin"
-                              data-uid="${_esc(s.id)}" data-name="${_esc(s.name)}"
-                              data-is-admin="${s.isAdmin ? 'true' : 'false'}"
-                              aria-label="Toggle admin for ${_esc(s.name)}"
-                              style="position:absolute;top:.5rem;left:.5rem;background:none;border:none;
-                                     cursor:pointer;font-size:.875rem;line-height:1;padding:2px;
-                                     color:${s.isAdmin ? 'var(--warning)' : 'var(--border-strong)'};">
-                        ${s.isAdmin ? '★' : '☆'}
-                      </button>
-                      <button class="teacher-edit-student" data-uid="${_esc(s.id)}"
-                              aria-label="Edit ${_esc(s.name)}"
-                              style="position:absolute;top:.375rem;right:1.625rem;background:none;border:none;
-                                     cursor:pointer;font-size:.75rem;line-height:1;padding:2px 4px;
-                                     color:var(--accent);font-weight:700;"
-                              onmouseenter="this.style.color='var(--accent-hover)'"
-                              onmouseleave="this.style.color='var(--accent)'">✎</button>
-                      <button class="teacher-delete-student" data-uid="${_esc(s.id)}"
-                              aria-label="Delete ${_esc(s.name)}"
-                              style="position:absolute;top:.375rem;right:.5rem;background:none;border:none;
-                                     cursor:pointer;font-size:1rem;line-height:1;padding:2px 4px;
-                                     color:var(--text-4);"
-                              onmouseenter="this.style.color='var(--danger)'"
-                              onmouseleave="this.style.color='var(--text-4)'">×</button>
-                      <p style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);
-                                white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-right:1rem;">
-                        ${_esc(s.name)}</p>
-                      <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:1px;">${_esc(s.class || '—')}</p>
-                      <p style="font-size:var(--text-xs);color:var(--text-4);margin-top:3px;
-                                overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_esc(s.email || '')}</p>
-                      ${admno}
-                      <p style="font-size:var(--text-xs);color:var(--text-4);margin-top:4px;">Joined ${joined}</p>
+                    <div style="background:var(--bg-base);border:1px solid var(--border);
+                                border-radius:8px;padding:.5rem .625rem .75rem .5rem;">
+                      <div style="display:flex;align-items:center;gap:.25rem;">
+                        <button class="teacher-toggle-admin"
+                                data-uid="${_esc(s.id)}" data-name="${_esc(s.name)}"
+                                data-is-admin="${s.isAdmin ? 'true' : 'false'}"
+                                aria-label="Toggle admin for ${_esc(s.name)}"
+                                style="${iconBtn}font-size:1rem;line-height:1;
+                                       color:${s.isAdmin ? 'var(--warning)' : 'var(--text-3)'};">
+                          ${s.isAdmin ? '★' : '☆'}
+                        </button>
+                        <p style="flex:1;min-width:0;font-size:var(--text-sm);font-weight:700;color:var(--text-1);
+                                  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                          ${_esc(s.name)}</p>
+                        <button class="teacher-edit-student" data-uid="${_esc(s.id)}"
+                                aria-label="Edit ${_esc(s.name)}"
+                                style="${iconBtn}color:var(--accent);"
+                                onmouseenter="this.style.color='var(--accent-hover)'"
+                                onmouseleave="this.style.color='var(--accent)'">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+                          </svg>
+                        </button>
+                        <button class="teacher-delete-student" data-uid="${_esc(s.id)}"
+                                aria-label="Delete ${_esc(s.name)}"
+                                style="${iconBtn}color:var(--text-3);"
+                                onmouseenter="this.style.color='var(--danger)'"
+                                onmouseleave="this.style.color='var(--text-3)'">
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                          </svg>
+                        </button>
+                      </div>
+                      <div style="padding-left:2.25rem;">
+                        <p style="font-size:var(--text-xs);color:var(--text-2, var(--text-3));margin-top:1px;">${_esc(s.class || '—')}</p>
+                        <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:3px;
+                                  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_esc(s.email || '')}</p>
+                        ${admno}
+                        <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:4px;">Joined ${joined}</p>
+                      </div>
                     </div>`;
                 }).join('')}
               </div>
