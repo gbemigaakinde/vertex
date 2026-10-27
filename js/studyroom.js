@@ -558,7 +558,6 @@
     const num = l.order > 0 ? l.order : idx + 1;
     const mins = _readMinutes(_wordCount(l));
     const metaBits = [];
-    if (l.topic) metaBits.push(_esc(l.topic));
     metaBits.push(`<span class="srl-lesson__time">${ICON.clock}${mins} min</span>`);
     const status = done ? 'Completed' : inProg ? p.p + '% read' : '';
     return `
@@ -567,6 +566,7 @@
         <span class="srl-lesson__badge">${done ? ICON.check : _esc(String(num))}</span>
         <span class="srl-lesson__body">
           <span class="srl-lesson__title">${_esc(l.title)}</span>
+          ${l.topic ? `<span class="srl-lesson__topic">${_esc(l.topic)}</span>` : ''}
           <span class="srl-lesson__meta">${metaBits.join('<span class="srl-dot">·</span>')}${inProg ? `<span class="srl-dot">·</span><span class="srl-lesson__pct">${p.p}%</span>` : ''}</span>
           ${inProg ? `<span class="srl-bar srl-bar--thin"><i style="width:${p.p}%"></i></span>` : ''}
         </span>
@@ -1318,7 +1318,10 @@
           <header class="sr-lesson-header">
             <div class="sr-lesson-header__breadcrumb">${breadcrumb}</div>
             <h1 class="sr-lesson-header__title">${_esc(lesson.title)}</h1>
-            ${lesson.topic ? `<p class="sr-lesson-header__topic">${_esc(lesson.topic)}</p>` : ''}
+            ${lesson.topic ? `<div class="sr-lesson-header__lede${lesson.topic.length > 220 ? ' is-long is-clamped' : ''}">
+              <p class="sr-lesson-header__topic" id="srTopicText">${_esc(lesson.topic)}</p>
+              ${lesson.topic.length > 220 ? `<button type="button" class="sr-lede-toggle" aria-expanded="false" aria-controls="srTopicText" onclick="StudyRoom._toggleLede(this)">Read more</button>` : ''}
+            </div>` : ''}
             <div class="sr-lesson-header__meta"><span>${ICON.clock}${mins} min read</span>${_previewMode ? '<span class="sr-badge-preview">Preview</span>' : ''}</div>
           </header>
 
@@ -1938,7 +1941,10 @@
               <div>
                 <label style="display:block;font-size:.75rem;font-weight:600;
                               color:var(--text-secondary);margin-bottom:.25rem;">Topic / Subtitle</label>
-                <input type="text" id="srLessonTopic" placeholder="e.g. Understanding numerators and denominators" />
+                <textarea id="srLessonTopic" class="sr-topic-input" rows="2" maxlength="1000"
+                          placeholder="e.g. Understanding numerators and denominators"
+                          oninput="StudyRoom._topicInput(this)"></textarea>
+                <div class="sr-topic-count" id="srLessonTopicCount" aria-live="polite">0 / 1000</div>
               </div>
 
               <div>
@@ -2192,6 +2198,22 @@
     }
   }
 
+  function _toggleLede(btn) {
+    const box = btn.closest('.sr-lesson-header__lede');
+    if (!box) return;
+    const open = box.classList.toggle('is-clamped') === false;
+    btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+    btn.textContent = open ? 'Show less' : 'Read more';
+  }
+
+  function _topicInput(el) {
+    if (!el) return;
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight + 2, 220) + 'px';
+    const c = document.getElementById('srLessonTopicCount');
+    if (c) c.textContent = el.value.length + ' / 1000';
+  }
+
   async function _saveLesson() {
     const title    = document.getElementById('srLessonTitle')?.value.trim()   || '';
     const cls      = document.getElementById('srLessonClass')?.value           || '';
@@ -2262,6 +2284,7 @@
     set('srLessonOrder',   lesson.order);
     const _ordEl = document.getElementById('srLessonOrder'); if (_ordEl) _ordEl.dataset.auto = '';
     set('srLessonTopic',   lesson.topic);
+    _topicInput(document.getElementById('srLessonTopic'));
     set('srLessonContent', lesson.content);
 
     const formTitle = document.getElementById('srFormTitle');
@@ -2280,6 +2303,7 @@
      'srLessonOrder','srLessonTopic','srLessonContent'].forEach(id => {
       const el = document.getElementById(id); if (el) el.value = '';
     });
+    _topicInput(document.getElementById('srLessonTopic'));
     _populateSubjects();
     const _o = document.getElementById('srLessonOrder'); if (_o) _o.dataset.auto = '';
     const formTitle = document.getElementById('srFormTitle');
@@ -2331,6 +2355,8 @@
     openTeacherTab,
     openForTeacher: openTeacherTab,
     _saveLesson,
+    _toggleLede,
+    _topicInput,
     _editLesson,
     _cancelEdit,
     _deleteLesson,
