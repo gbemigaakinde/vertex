@@ -782,6 +782,7 @@
     _applyPrefsToReader(shell);
     _syncPrefsUI();
     _bindScrollProgress(lesson);
+    _initScrollHints(document.getElementById('srContent'));
     _renderMathContent(document.getElementById('srContent'));
     _bindQuizButtons(document.getElementById('srContent'));
     _fixContrast(document.getElementById('srContent'));
@@ -1112,6 +1113,54 @@
     });
   }
 
+  /* ── Horizontal scroll hints ─────────────────────────────────
+     Wide tables, formulas and code blocks scroll sideways. Each one gets
+     a wrapper that fades the edge where more content exists and shows a
+     small chevron until the reader scrolls it. */
+  const _HINT_SEL = '.sr-table-wrap, .katex-display, pre';
+  let _hintRO = null;
+
+  function _hintUpdate(wrap) {
+    const el = wrap && wrap.firstElementChild;
+    if (!el) return;
+    const max  = el.scrollWidth - el.clientWidth;
+    const left = el.scrollLeft;
+    wrap.classList.toggle('has-more-l', max > 4 && left > 4);
+    wrap.classList.toggle('has-more-r', max > 4 && left < max - 4);
+  }
+
+  function _initScrollHints(root) {
+    if (!root) return;
+    if (!_hintRO && window.ResizeObserver) {
+      _hintRO = new ResizeObserver(function (entries) {
+        entries.forEach(function (en) {
+          const w = en.target.closest('.sr-scrollhint');
+          if (w) _hintUpdate(w);
+        });
+      });
+    }
+    root.querySelectorAll(_HINT_SEL).forEach(function (el) {
+      if (el.closest('.sr-scrollhint') || el.parentElement.closest('pre')) return;
+      const wrap = document.createElement('span');
+      wrap.className = 'sr-scrollhint' + (el.classList.contains('katex-display') ? ' sr-scrollhint--math' : '') +
+        (el.tagName === 'PRE' ? ' sr-scrollhint--code' : '');
+      el.parentNode.insertBefore(wrap, el);
+      wrap.appendChild(el);
+      const cue = document.createElement('span');
+      cue.className = 'sr-scrollhint__cue';
+      cue.setAttribute('aria-hidden', 'true');
+      cue.innerHTML = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
+      wrap.appendChild(cue);
+      el.addEventListener('scroll', function () {
+        if (el.scrollLeft > 8) wrap.classList.add('is-touched');
+        _hintUpdate(wrap);
+      }, { passive: true });
+      if (_hintRO) { _hintRO.observe(el); if (el.firstElementChild) _hintRO.observe(el.firstElementChild); }
+      _hintUpdate(wrap);
+    });
+    root.querySelectorAll('.sr-scrollhint').forEach(_hintUpdate);
+  }
+
   function _renderMathContent(containerEl) {
     if (!containerEl) return;
     _ensureKatex().then(() => {
@@ -1125,6 +1174,8 @@
           throwOnError: false,
         });
       } catch (e) {}
+      _initScrollHints(containerEl);
+      setTimeout(function () { _initScrollHints(containerEl); }, 600);
     });
   }
 
