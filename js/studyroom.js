@@ -784,6 +784,8 @@
     _bindScrollProgress(lesson);
     _renderMathContent(document.getElementById('srContent'));
     _bindQuizButtons(document.getElementById('srContent'));
+    _fixContrast(document.getElementById('srContent'));
+    setTimeout(function () { _fixContrast(document.getElementById('srContent')); }, 700);
     _bindReaderEvents(shell);
     _bindReaderKeys();
     _wireReaderSpeech(lesson);
@@ -1517,6 +1519,7 @@
     const shell = document.getElementById('srShell');
     _applyPrefsToReader(shell);
     _syncPrefsUI();
+    if (key === 'bg') _fixContrast(document.getElementById('srContent'));
   }
 
   function _syncPrefsUI() {
@@ -1549,6 +1552,124 @@
     _savePrefs();
     _applyPrefsToReader(document.getElementById('srShell'));
     _syncPrefsUI();
+  }
+
+
+  /* ── Contrast guard ──────────────────────────────────────────
+     Lessons can contain hard-coded colours written for a white page
+     (pale boxes, dark green headings). On Dark / Night / Sepia themes
+     that gives unreadable text. For every text element we compare its
+     colour with the background it really sits on and, if contrast is
+     under WCAG AA (4.5:1), nudge the lightness of the text colour
+     (keeping its hue) until it is readable. */
+  function _parseColor(str) {
+    const m = String(str || '').match(/rgba?\(([^)]+)\)/);
+    if (!m) return null;
+    const p = m[1].split(/[\s,\/]+/).filter(Boolean).map(parseFloat);
+    if (p.length < 3 || p.some(isNaN)) return null;
+    return [p[0], p[1], p[2], p.length > 3 ? p[3] : 1];
+  }
+  function _lum(c) {
+    const f = function (v) { v /= 255; return v <= 0.03928 ? v / 12.92 : Math.pow((v + 0.055) / 1.055, 2.4); };
+    return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]);
+  }
+  function _ratio(a, b) {
+    const la = _lum(a), lb = _lum(b);
+    return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+  }
+  function _rgb2hsl(c) {
+    const r = c[0] / 255, g = c[1] / 255, b = c[2] / 255;
+    const max = Math.max(r, g, b), min = Math.min(r, g, b);
+    let h = 0, s = 0; const l = (max + min) / 2;
+    if (max !== min) {
+      const d = max - min;
+      s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+      if (max === r) h = (g - b) / d + (g < b ? 6 : 0);
+      else if (max === g) h = (b - r) / d + 2;
+      else h = (r - g) / d + 4;
+      h /= 6;
+    }
+    return [h, s, l];
+  }
+  function _hsl2rgb(h, s, l) {
+    if (s === 0) { const v = Math.round(l * 255); return [v, v, v]; }
+    const q = l < 0.5 ? l * (1 + s) : l + s - l * s, p = 2 * l - q;
+    const t = function (x) {
+      if (x < 0) x += 1; if (x > 1) x -= 1;
+      if (x < 1 / 6) return p + (q - p) * 6 * x;
+      if (x < 1 / 2) return q;
+      if (x < 2 / 3) return p + (q - p) * (2 / 3 - x) * 6;
+      return p;
+    };
+    return [Math.round(t(h + 1 / 3) * 255), Math.round(t(h) * 255), Math.round(t(h - 1 / 3) * 255)];
+  }
+  function _over(top, bottom) {
+    const a = top[3];
+    return [top[0] * a + bottom[0] * (1 - a), top[1] * a + bottom[1] * (1 - a), top[2] * a + bottom[2] * (1 - a), 1];
+  }
+  /* real background behind an element: composite ancestor layers up to the page */
+  function _effectiveBg(el, root, pageBg) {
+    const layers = [];
+    for (let n = el; n && n !== root.parentNode; n = n.parentElement) {
+      const cs = getComputedStyle(n);
+      if (cs.backgroundImage && cs.backgroundImage !== 'none') return null;   // gradient / image: cannot judge
+      const c = _parseColor(cs.backgroundColor);
+      if (c && c[3] > 0) { layers.push(c); if (c[3] >= 0.99) break; }
+    }
+    let base = pageBg;
+    for (let i = layers.length - 1; i >= 0; i--) base = _over(layers[i], base);
+    return base;
+  }
+
+  function _fixContrast(root) {
+    if (!root) return;
+    const shell = document.getElementById('srShell');
+    const pageEl = document.getElementById('srScrollReader') || shell;
+    const pageBg = _parseColor(getComputedStyle(pageEl).backgroundColor) || [255, 255, 255, 1];
+    if (pageBg[3] < 1) { pageBg[3] = 1; }
+
+    /* undo earlier adjustments (theme may have changed) */
+    root.querySelectorAll('[data-sr-fixed]').forEach(function (el) {
+      const orig = el.getAttribute('data-sr-fixed');
+      if (orig) el.style.setProperty('color', orig); else el.style.removeProperty('color');
+      el.removeAttribute('data-sr-fixed');
+    });
+
+    const els = root.querySelectorAll('*');
+    for (let i = 0; i < els.length; i++) {
+      const el = els[i];
+      const tag = el.tagName.toLowerCase();
+      if (tag === 'svg' || el.closest('svg') || tag === 'style' || tag === 'script' || tag === 'img') continue;
+      let hasText = false;
+      for (let k = 0; k < el.childNodes.length; k++) {
+        const nd = el.childNodes[k];
+        if (nd.nodeType === 3 && nd.nodeValue.trim()) { hasText = true; break; }
+      }
+      if (!hasText) continue;
+      const cs = getComputedStyle(el);
+      const fg = _parseColor(cs.color);
+      if (!fg) continue;
+      const bg = _effectiveBg(el, root, pageBg);
+      if (!bg) continue;
+      const fgSolid = fg[3] < 1 ? _over(fg, bg) : fg;
+      if (_ratio(fgSolid, bg) >= 4.5) continue;
+
+      /* move lightness away from the background until readable */
+      const hsl = _rgb2hsl(fgSolid);
+      const bgLight = _lum(bg) > 0.4;
+      let best = null;
+      const fgLum = _lum(fgSolid);
+      if (bgLight && fgLum > 0.4) best = [28, 28, 30];                      // light text on a light box: use dark ink
+      else if (!bgLight && fgLum < 0.2 && hsl[1] < 0.2) best = [236, 236, 241]; // grey/black text on a dark box
+      for (let step = 0; best === null && step <= 40; step++) {
+        const l = bgLight ? Math.max(0.06, hsl[2] - step * 0.025) : Math.min(0.96, hsl[2] + step * 0.025);
+        const cand = _hsl2rgb(hsl[0], hsl[1], l);
+        if (_ratio(cand, bg) >= 4.5) { best = cand; break; }
+      }
+      if (!best) best = bgLight ? [20, 20, 24] : [240, 240, 244];
+      el.setAttribute('data-sr-fixed', el.style.getPropertyValue('color') || '');
+      el.style.setProperty('color', 'rgb(' + best.join(',') + ')', 'important');
+    }
   }
 
   function _fontStack() {
