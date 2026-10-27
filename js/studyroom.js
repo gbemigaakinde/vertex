@@ -1320,7 +1320,7 @@
             <h1 class="sr-lesson-header__title">${_esc(lesson.title)}</h1>
             ${lesson.topic ? `<div class="sr-lesson-header__lede${lesson.topic.length > 220 ? ' is-long is-clamped' : ''}">
               <p class="sr-lesson-header__topic" id="srTopicText">${_esc(lesson.topic)}</p>
-              ${lesson.topic.length > 220 ? `<button type="button" class="sr-lede-toggle" aria-expanded="false" aria-controls="srTopicText" onclick="StudyRoom._toggleLede(this)">Read more</button>` : ''}
+              ${lesson.topic.length > 220 ? `<button type="button" class="sr-lede-toggle" aria-expanded="false" aria-controls="srTopicText" onclick="StudyRoom._toggleLede(this)">Show more</button>` : ''}
             </div>` : ''}
             <div class="sr-lesson-header__meta"><span>${ICON.clock}${mins} min read</span>${_previewMode ? '<span class="sr-badge-preview">Preview</span>' : ''}</div>
           </header>
@@ -2203,7 +2203,7 @@
     if (!box) return;
     const open = box.classList.toggle('is-clamped') === false;
     btn.setAttribute('aria-expanded', open ? 'true' : 'false');
-    btn.textContent = open ? 'Show less' : 'Read more';
+    btn.textContent = open ? 'Show less' : 'Show more';
   }
 
   function _topicInput(el) {
