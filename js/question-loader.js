@@ -266,13 +266,29 @@
   // ── Parsed backend documents + student period choice ───────
   var _parsed = [];                       // [{ cls, subj, legacy, key, session, term, questions }]
   var _free   = { all: true, classes: {} };   // who may pick their own session / term
+  // Built-in (data/questions.js) subjects the teacher deleted for a class: { classKey: { Subject: true } }.
+  // Stored in questionBank/_activePeriod.hiddenSubjects = { classKey: ['Subject', …] }.
+  var _hidden = {};
   var SEL_KEY = 'vtx_period_sel';
+
+  function normHidden(h) {
+    var out = {};
+    if (!isPlainObject(h)) return out;
+    Object.keys(h).forEach(function (c) {
+      var k = normClass(c);
+      if (!k || !Array.isArray(h[c])) return;
+      h[c].forEach(function (s) {
+        if (typeof s === 'string' && s.trim()) { (out[k] = out[k] || {})[s.trim()] = true; }
+      });
+    });
+    return out;
+  }
   var _selected = null;                   // null = live period
 
   function samePeriod(a, b) { return periodKey(a.session, a.term) === periodKey(b.session, b.term); }
 
   function ingest(snap) {
-    _parsed = []; _free = { all: true, classes: {} };
+    _parsed = []; _free = { all: true, classes: {} }; _hidden = {};
     activePeriod = defaultPeriod();
     status.periodSource = 'date';
     var skipped = 0;
@@ -285,6 +301,7 @@
             activePeriod = { session: normSession(data.session), term: normTerm(data.term) };
             status.periodSource = 'teacher';
           }
+          _hidden = normHidden(data.hiddenSubjects);
           var fs = data.freeSelect;
           if (fs && typeof fs === 'object') {
             if (typeof fs.all === 'boolean') _free.all = fs.all;
@@ -335,7 +352,11 @@
     var isLive = samePeriod(period, activePeriod);
     var key = periodKey(period.session, period.term);
     var merged = {}, applied = 0;
-    if (isLive) Object.keys(_bundled).forEach(function (cls) { merged[cls] = Object.assign({}, _bundled[cls]); });
+    if (isLive) Object.keys(_bundled).forEach(function (cls) {
+      var hid = _hidden[cls] || {};
+      merged[cls] = {};
+      Object.keys(_bundled[cls]).forEach(function (subj) { if (!hid[subj]) merged[cls][subj] = _bundled[cls][subj]; });
+    });
 
     [true, false].forEach(function (legacyPass) {
       _parsed.forEach(function (d) {
@@ -429,6 +450,18 @@
 
   function getFreeSelect() { return JSON.parse(JSON.stringify(_free)); }
 
+  // Hidden built-in subjects as { classKey: ['Subject', …] } (a copy).
+  function getHiddenSubjects() {
+    var out = {};
+    Object.keys(_hidden).forEach(function (c) { out[c] = Object.keys(_hidden[c]); });
+    return out;
+  }
+  // Teacher tab: apply a just-saved hidden list immediately, without waiting for a reload.
+  function setHiddenSubjects(map) {
+    _hidden = normHidden(map);
+    try { rebuild(getSelectedPeriod()); } catch (e) { console.warn('[QuestionLoader] rebuild failed:', e); }
+  }
+
   function load(opts) {
     if (_promise && !(opts && opts.force)) return _promise;
 
@@ -486,6 +519,7 @@
     getSelectedPeriod: getSelectedPeriod, selectPeriod: selectPeriod, applyForClass: applyForClass,
     shuffle: shuffle, shuffleOptions: shuffleOptions, keepsOrder: keepsOrder,
     periodsFor: periodsFor, freeSelectAllowed: freeSelectAllowed, getFreeSelect: getFreeSelect,
+    getHiddenSubjects: getHiddenSubjects, setHiddenSubjects: setHiddenSubjects,
     defaultPeriod: defaultPeriod, normSession: normSession, normTerm: normTerm,
     periodKey: periodKey, normClass: normClass, slug: slug,
     _cleanQuestion: cleanQuestion, _normalizeBank: normalizeBank

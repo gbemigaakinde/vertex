@@ -76,11 +76,23 @@
     if (S.cls) set[S.cls] = 1;
     return Object.keys(set).sort(function (a, b) { return a.localeCompare(b, undefined, { numeric: true }); });
   }
+  // Built-in subjects the teacher deleted for a class are hidden (see QuestionLoader.getHiddenSubjects).
+  function hiddenFor(cls) {
+    var all = QL.getHiddenSubjects ? QL.getHiddenSubjects() : {};
+    return all[cls] || [];
+  }
+  function visibleBundled(cls) {
+    var b = (QL.getBundled() || {})[cls] || {}, hid = hiddenFor(cls), out = {};
+    Object.keys(b).forEach(function (k) { if (hid.indexOf(k) < 0) out[k] = b[k]; });
+    return out;
+  }
+  function isBuiltIn(cls, subject) {
+    return Object.prototype.hasOwnProperty.call(visibleBundled(cls), subject);
+  }
   function subjectOptions() {
     var set = {};
-    [QL.getBundled(), window.questions || {}].forEach(function (b) {
-      Object.keys((b || {})[S.cls] || {}).forEach(function (k) { set[k] = 1; });
-    });
+    Object.keys(visibleBundled(S.cls)).forEach(function (k) { set[k] = 1; });
+    Object.keys((window.questions || {})[S.cls] || {}).forEach(function (k) { set[k] = 1; });
     S.classDocs.forEach(function (d) { if (d.subject) set[d.subject] = 1; });
     (S.extraSubjects[S.cls] || []).forEach(function (k) { set[k] = 1; });
     if (S.subject) set[S.subject] = 1;
@@ -238,6 +250,138 @@
     mutator(data);
     data.updatedAt = firebase.firestore.FieldValue.serverTimestamp();
     await ref.set(data);
+    return data;
+  }
+
+  // Hide / un-hide a built-in (data/questions.js) subject for one class. Saved in
+  // questionBank/_activePeriod.hiddenSubjects so students stop receiving it too.
+  async function setHidden(cls, subject, hide) {
+    var data = await writeSettings(function (d) {
+      var h = d.hiddenSubjects && typeof d.hiddenSubjects === 'object' && !Array.isArray(d.hiddenSubjects) ? d.hiddenSubjects : {};
+      var list = Array.isArray(h[cls]) ? h[cls].filter(function (s) { return s !== subject; }) : [];
+      if (hide) list.push(subject);
+      if (list.length) h[cls] = list; else delete h[cls];
+      d.hiddenSubjects = h;
+    });
+    QL.setHiddenSubjects(data.hiddenSubjects);
+  }
+
+  /* ───────── subject: rename / delete (selected class only) ───────── */
+  function subjectDocs(cls, subject) {
+    return S.classDocs.filter(function (d) { return typeof d.subject === 'string' && d.subject.trim() === subject; });
+  }
+  function isLegacyDoc(d) { return d.session == null && d.term == null && !d.periodKey; }
+  function docKey(d) { return d.periodKey || QL.periodKey(d.session, d.term) || ''; }
+
+  async function deleteSubject() {
+    if (!isTeacher()) { toast('Teacher login required.', 'error'); return; }
+    if (!S.cls || !S.subject) return;
+    var cls = S.cls, subj = S.subject;
+    await fetchClassDocs();
+    var docs = subjectDocs(cls, subj), builtIn = isBuiltIn(cls, subj);
+    var total = docs.reduce(function (n, d) { return n + (Array.isArray(d.questions) ? d.questions.length : 0); }, 0);
+    var msg = 'Delete the subject "' + subj + '" for ' + cls.toUpperCase() + ' only?\n\n' +
+      (docs.length ? total + ' saved question' + (total === 1 ? '' : 's') + ' across ' + docs.length + ' session/term' + (docs.length === 1 ? '' : 's') + ' will be permanently deleted.' : 'It has no saved questions.') +
+      (builtIn ? '\nIts built-in default questions will also be removed for this class.' : '') +
+      '\n\nOther classes are not affected. Students will no longer see this subject. Saved questions cannot be recovered.';
+    if (!window.confirm(msg)) return;
+
+    S.form = null; S.bulk = null; S.busy = true; draw();
+    try {
+      var col = db().collection(QL.COLLECTION);
+      for (var i = 0; i < docs.length; i += 400) {
+        var batch = db().batch();
+        docs.slice(i, i + 400).forEach(function (d) { batch.delete(col.doc(d._id)); });
+        await batch.commit();
+      }
+      if (builtIn) await setHidden(cls, subj, true);
+      if (S.extraSubjects[cls]) S.extraSubjects[cls] = S.extraSubjects[cls].filter(function (x) { return x !== subj; });
+      if (window.questions && window.questions[cls]) delete window.questions[cls][subj];
+      S.subject = '';
+      toast('Subject "' + subj + '" deleted for ' + cls.toUpperCase() + '.', 'success', 5000);
+    } catch (e) {
+      toast('Could not delete subject: ' + (e.message || e) + (/permission/i.test(String(e.message)) ? ' (check Firestore rules for questionBank).' : ''), 'error', 8000);
+    } finally { S.busy = false; }
+    await fetchClassDocs();
+    if (!S.subject && subjectOptions().indexOf(subj) < 0) S.subject = subjectOptions()[0] || '';
+    else if (!S.subject) S.subject = subj;                      // delete failed: stay on the same subject
+    await loadQuestions(); remember(); draw();
+    QL.load({ force: true });
+  }
+
+  async function renameSubject() {
+    if (!isTeacher()) { toast('Teacher login required.', 'error'); return; }
+    var inp = $('#qmNewVal'); var v = inp ? inp.value.trim().replace(/\s+/g, ' ') : '';
+    var cls = S.cls, old = S.subject;
+    if (!cls || !old) return;
+    if (!v) { toast('Type the new subject name first.', 'warning'); return; }
+    if (v === old) { var nr0 = $('#qmNewRow'); if (nr0) nr0.innerHTML = ''; return; }
+    if (v.length > 60 || /[\/\\]/.test(v) || !QL.slug(v)) { toast('Subject names must be 1-60 characters, include a letter or number, and not contain / or \\.', 'warning', 6000); return; }
+    var clash = subjectOptions().some(function (x) { return x !== old && (x.toLowerCase() === v.toLowerCase() || QL.slug(x) === QL.slug(v)); });
+    if (clash) { toast('"' + v + '" already exists for ' + cls.toUpperCase() + '. Choose a different name.', 'warning', 6000); return; }
+    if (S.form && !window.confirm('Discard the question you are editing?')) return;
+
+    await fetchClassDocs();
+    var docs = subjectDocs(cls, old), builtIn = isBuiltIn(cls, old);
+    var live = QL.getActivePeriod(), liveKey = QL.periodKey(live.session, live.term);
+    // Students get built-in questions only while no saved document overrides them in the live period.
+    // Renaming a built-in subject therefore copies its built-in bank into the live period under the new name.
+    var overridesLive = docs.some(function (d) {
+      if (d.active === false || !Array.isArray(d.questions) || !d.questions.some(function (r) { return QL._cleanQuestion(r); })) return false;
+      return isLegacyDoc(d) || docKey(d) === liveKey;
+    });
+    var bundledQs = null;
+    if (builtIn && !overridesLive) {
+      bundledQs = JSON.parse(JSON.stringify(visibleBundled(cls)[old] || []));
+      if (!bundledQs.length) bundledQs = null;
+      else if (JSON.stringify(bundledQs).length > QL.MAX_DOC_CHARS) {
+        toast('The built-in questions for this subject are too large to move under a new name. Add a new subject and import them instead.', 'error', 8000);
+        return;
+      }
+    }
+
+    S.form = null; S.bulk = null; S.busy = true; draw();
+    try {
+      var col = db().collection(QL.COLLECTION), ts = firebase.firestore.FieldValue.serverTimestamp();
+      var slugNew = QL.slug(v);
+      for (var i = 0; i < docs.length; i += 200) {
+        var batch = db().batch();
+        docs.slice(i, i + 200).forEach(function (d) {
+          var data = {};
+          Object.keys(d).forEach(function (k) { if (k !== '_id') data[k] = d[k]; });
+          data.subject = v; data.updatedAt = ts;
+          var key = isLegacyDoc(d) ? '' : docKey(d);
+          var newId = cls + '__' + slugNew + (key ? '__' + key : '');
+          batch.set(col.doc(newId), data);
+          if (newId !== d._id) batch.delete(col.doc(d._id));
+        });
+        await batch.commit();
+      }
+      if (bundledQs) {
+        await col.doc(cls + '__' + slugNew + '__' + liveKey).set({
+          classKey: cls, subject: v, session: live.session, term: live.term, periodKey: liveKey,
+          questions: bundledQs, active: true, updatedAt: ts,
+        });
+      }
+      if (builtIn) await setHidden(cls, old, true);
+      if (S.extraSubjects[cls]) S.extraSubjects[cls] = S.extraSubjects[cls].map(function (x) { return x === old ? v : x; });
+      if (window.questions && window.questions[cls]) delete window.questions[cls][old];
+      S.subject = v; S.filter = '';
+      toast('Subject renamed to "' + v + '" for ' + cls.toUpperCase() + '.', 'success', 5000);
+    } catch (e) {
+      toast('Could not rename subject: ' + (e.message || e) + (/permission/i.test(String(e.message)) ? ' (check Firestore rules for questionBank).' : ''), 'error', 8000);
+    } finally { S.busy = false; }
+    await fetchClassDocs();
+    await loadQuestions(); remember(); draw();
+    QL.load({ force: true });
+  }
+
+  function showRenameRow() {
+    var row = $('#qmNewRow'); if (!row || !S.subject) return;
+    row.innerHTML = '<div class="qm-field"><label for="qmNewVal">Rename "' + esc(S.subject) + '" (' + esc(S.cls.toUpperCase()) + ' only)</label>' +
+      '<input type="text" id="qmNewVal" maxlength="60" value="' + esc(S.subject) + '" /></div>' +
+      '<button class="qm-btn qm-primary" data-act="saverename">Save name</button><button class="qm-btn" data-act="cancelnew">Cancel</button>';
+    var inp = $('#qmNewVal'); if (inp) { inp.focus(); inp.select(); }
   }
 
   async function setLivePeriod() {
@@ -312,7 +456,10 @@
       '.qm-prev{margin-top:.35rem;font-size:.75rem;}' +
       '.qm-err{color:#c62828;font-size:.75rem;}' +
       '.qm-ok{color:#2e7d32;font-size:.75rem;}' +
-      '.qm-muted{font-size:.75rem;opacity:.7;}' +
+      '.qm-muted{font-size:.75rem;opacity:.7;overflow-wrap:anywhere;}' +
+      '.qm-subjbar{display:flex;flex-wrap:wrap;gap:.5rem .75rem;align-items:center;margin-top:.5rem;}' +
+      '.qm-subjbar .qm-muted{flex:1 1 180px;min-width:0;}' +
+      '@media (max-width:640px){.qm-subjbar .qm-muted{flex:1 1 100%;}#qmNewRow .qm-field{flex:1 1 100%;}}' +
       '.qm-report{max-height:220px;overflow:auto;font-size:.8125rem;border:1px solid var(--border,#ddd);border-radius:8px;padding:.5rem;}' +
       '.qm details>summary{cursor:pointer;font-size:.8125rem;font-weight:600;}';
     document.head.appendChild(st);
@@ -353,7 +500,7 @@
     S.classDocs.forEach(function (d) {
       if (d.periodKey === QL.periodKey(S.session, S.term) && Array.isArray(d.questions)) counts[d.subject] = d.questions.length;
     });
-    var bundled = (QL.getBundled()[S.cls]) || {};
+    var bundled = visibleBundled(S.cls);
 
     var subjOpts = subjectOptions().map(function (s) {
       var n = counts[s];
@@ -410,7 +557,12 @@
         selectHtml('qmTerm', 'Term', [{ value: 1, text: 'Term 1' }, { value: 2, text: 'Term 2' }, { value: 3, text: 'Term 3' }], S.term) +
         selectHtml('qmClass', 'Class', clsOpts, S.cls) +
         selectHtml('qmSubject', 'Subject', subjOpts, S.subject) +
-      '</div><div id="qmNewRow" class="qm-row" style="margin-top:.5rem;"></div></div>' +
+      '</div>' +
+      (S.subject ? '<div class="qm-subjbar">' +
+        '<span class="qm-muted">Subject <strong>' + esc(S.subject) + '</strong> · applies to ' + esc(S.cls.toUpperCase()) + ' only</span>' +
+        '<button class="qm-btn" data-act="renamesubj"' + (S.busy ? ' disabled' : '') + '>Edit name</button>' +
+        '<button class="qm-btn qm-danger" data-act="delsubj"' + (S.busy ? ' disabled' : '') + '>Delete subject</button></div>' : '') +
+      '<div id="qmNewRow" class="qm-row" style="margin-top:.5rem;"></div></div>' +
 
       '<div class="qm-card"><div class="qm-row" style="justify-content:space-between;align-items:center;margin-bottom:.5rem;">' +
         '<strong>' + S.questions.length + ' question' + (S.questions.length === 1 ? '' : 's') + '</strong>' +
@@ -439,6 +591,9 @@
 
     if (S.form) drawForm();
     if (S.bulk) drawReport();
+    // A class with no subjects only offers "+ New subject…", which is already selected and so can't be
+    // clicked to fire a change event: show the new-subject box straight away.
+    if (!S.subject && S.cls) showNewRow('Subject', true);
   }
 
   /* ───────── question form ───────── */
@@ -702,12 +857,13 @@
     await loadQuestions(); remember(); draw();
   }
 
-  function showNewRow(which) {
+  function showNewRow(which, noFocus) {
     var row = $('#qmNewRow'); if (!row) return;
     var ph = which === 'Session' ? '2026/2027' : which === 'Class' ? 'e.g. JSS 3 or Primary 4' : 'e.g. Civic Education';
     row.innerHTML = '<div class="qm-field"><label for="qmNewVal">New ' + which.toLowerCase() + '</label><input type="text" id="qmNewVal" placeholder="' + ph + '" /></div>' +
-      '<button class="qm-btn qm-primary" data-act="addnew" data-which="' + which + '">Add</button><button class="qm-btn" data-act="cancelnew">Cancel</button>';
-    var inp = $('#qmNewVal'); if (inp) inp.focus();
+      '<button class="qm-btn qm-primary" data-act="addnew" data-which="' + which + '">Add</button>' +
+      (which === 'Subject' && !S.subject ? '' : '<button class="qm-btn" data-act="cancelnew">Cancel</button>');
+    var inp = $('#qmNewVal'); if (inp && !noFocus) inp.focus();
   }
 
   async function addNew(which) {
@@ -728,6 +884,13 @@
       v = v.replace(/\s+/g, ' ');
       if (v.length > 60 || /[\/\\]/.test(v)) { toast('Subject names must be under 60 characters and not contain / or \\.', 'warning', 5000); return; }
       var existing = subjectOptions().find(function (x) { return x.toLowerCase() === v.toLowerCase(); });
+      if (!existing) {                                   // typing the name of a deleted built-in subject restores it
+        var hid = hiddenFor(S.cls).find(function (x) { return x.toLowerCase() === v.toLowerCase(); });
+        if (hid) {
+          try { await setHidden(S.cls, hid, false); existing = hid; toast('Restored the built-in "' + hid + '" subject.', 'success', 5000); QL.load({ force: true }); }
+          catch (e) { toast('Could not restore that subject: ' + (e.message || e), 'error', 6000); return; }
+        }
+      }
       v = existing || v;
       if (!existing) { (S.extraSubjects[S.cls] = S.extraSubjects[S.cls] || []).push(v); }
       S.subject = v;
@@ -768,6 +931,9 @@
       return void (await saveQuestions(l3, 'Order saved.'));
     }
     if (act === 'addnew') return addNew(t.dataset.which);
+    if (act === 'renamesubj') return showRenameRow();
+    if (act === 'saverename') return renameSubject();
+    if (act === 'delsubj') return deleteSubject();
     if (act === 'cancelnew') { var nr = $('#qmNewRow'); if (nr) nr.innerHTML = ''; return; }
     if (act === 'template') {
       return download('questions-template.json', JSON.stringify({
@@ -792,7 +958,7 @@
   async function copyFrom() {
     var sel = $('#qmCopySrc'); if (!sel) return;
     var src;
-    if (sel.value === '__bundled') src = ((QL.getBundled()[S.cls] || {})[S.subject]) || [];
+    if (sel.value === '__bundled') src = (visibleBundled(S.cls)[S.subject]) || [];
     else {
       var d = S.classDocs.find(function (x) { return x._id === sel.value; });
       src = d && Array.isArray(d.questions) ? d.questions : [];
@@ -844,6 +1010,11 @@
       root.addEventListener('click', onClick);
       root.addEventListener('input', onInput);
       root.addEventListener('change', onChange);
+      root.addEventListener('keydown', function (e) {          // Enter submits the new / rename subject box
+        if (e.key !== 'Enter' || !e.target || e.target.id !== 'qmNewVal') return;
+        e.preventDefault();
+        var b = $('#qmNewRow [data-act="saverename"], #qmNewRow [data-act="addnew"]'); if (b) b.click();
+      });
       root.addEventListener('toggle', function (e) {
         if (e.target && e.target.id === 'qmBulkBox') S.bulkOpen = e.target.open;
         if (e.target && e.target.id === 'qmFreeBox') S.freeOpen = e.target.open;
