@@ -1850,7 +1850,7 @@
                 <div>
                   <label style="display:block;font-size:.75rem;font-weight:600;
                                 color:var(--text-secondary);margin-bottom:.25rem;">Class *</label>
-                  <select id="srLessonClass" onchange="StudyRoom._autoFillOrder()">
+                  <select id="srLessonClass" onchange="StudyRoom._populateSubjects()">
                     <option value="">Select class…</option>
                     ${CLASS_OPTIONS.map(c => `<option>${c}</option>`).join('')}
                   </select>
@@ -1858,7 +1858,7 @@
                 <div>
                   <label style="display:block;font-size:.75rem;font-weight:600;
                                 color:var(--text-secondary);margin-bottom:.25rem;">Term *</label>
-                  <select id="srLessonTerm" onchange="StudyRoom._autoFillOrder()">
+                  <select id="srLessonTerm" onchange="StudyRoom._populateSubjects(true)">
                     <option value="">Select term…</option>
                     ${TERMS.map(t => `<option>${t}</option>`).join('')}
                   </select>
@@ -1869,13 +1869,18 @@
                 <div>
                   <label style="display:block;font-size:.75rem;font-weight:600;
                                 color:var(--text-secondary);margin-bottom:.25rem;">Subject *</label>
-                  <input type="text" id="srLessonSubject" placeholder="e.g. Mathematics"
+                  <select id="srLessonSubject" onchange="StudyRoom._onSubjectChange()">
+                    <option value="">Select class first…</option>
+                  </select>
+                  <input type="text" id="srLessonSubjectNew" placeholder="Type new subject"
+                         style="display:none;margin-top:.375rem;width:100%"
                          oninput="StudyRoom._autoFillOrder()" />
                 </div>
                 <div>
                   <label style="display:block;font-size:.75rem;font-weight:600;
                                 color:var(--text-secondary);margin-bottom:.25rem;">Order</label>
-                  <input type="number" id="srLessonOrder" placeholder="auto" min="1" style="width:100%" />
+                  <input type="number" id="srLessonOrder" placeholder="auto" min="1" style="width:100%"
+                         oninput="this.dataset.auto=''" />
                 </div>
               </div>
 
@@ -2056,12 +2061,68 @@
       </div>`).join('');
   }
 
+  function _getSubjectValue() {
+    const sel = document.getElementById('srLessonSubject');
+    if (!sel) return '';
+    if (sel.value === '__new__') {
+      return (document.getElementById('srLessonSubjectNew')?.value || '').trim();
+    }
+    return (sel.value || '').trim();
+  }
+
+  function _subjectsForClass(cls) {
+    if (!cls) return [];
+    const seen = {}, out = [];
+    const add = function (n) {
+      const t = (n || '').trim(), k = _normSubject(t);
+      if (t && !seen[k]) { seen[k] = 1; out.push(t); }
+    };
+    const bank = window.questions || {};
+    Object.keys(bank[cls.replace(/\s+/g, '').toLowerCase()] || {}).forEach(add);
+    _teacherLessonsAll.filter(function (l) { return l.class === cls; })
+      .forEach(function (l) { add(l.subject); });
+    return out.sort(function (a, b) { return _normSubject(a) < _normSubject(b) ? -1 : 1; });
+  }
+
+  function _populateSubjects(keep, selectValue) {
+    const sel = document.getElementById('srLessonSubject');
+    if (!sel) return;
+    const cls = document.getElementById('srLessonClass')?.value || '';
+    const prev = selectValue != null ? selectValue : (keep ? _getSubjectValue() : '');
+    const list = _subjectsForClass(cls);
+    if (prev && !list.some(function (s) { return _normSubject(s) === _normSubject(prev); })) list.push(prev);
+    sel.innerHTML = cls
+      ? '<option value="">Select subject…</option>' +
+        list.map(function (s) { return `<option value="${_esc(s)}">${_esc(s)}</option>`; }).join('') +
+        '<option value="__new__">+ Add new subject…</option>'
+      : '<option value="">Select class first…</option>';
+    const match = list.find(function (s) { return _normSubject(s) === _normSubject(prev); });
+    sel.value = match || '';
+    _onSubjectChange();
+  }
+
+  function _onSubjectChange() {
+    const sel = document.getElementById('srLessonSubject');
+    const inp = document.getElementById('srLessonSubjectNew');
+    if (inp) {
+      const isNew = sel && sel.value === '__new__';
+      inp.style.display = isNew ? '' : 'none';
+      if (!isNew) inp.value = '';
+      else inp.focus();
+    }
+    _autoFillOrder();
+  }
+
   function _autoFillOrder() {
     if (_editingId) return;
     const cls     = document.getElementById('srLessonClass')?.value           || '';
     const term    = document.getElementById('srLessonTerm')?.value            || '';
-    const subject = document.getElementById('srLessonSubject')?.value.trim() || '';
-    if (!cls || !term || !subject) return;
+    const subject = _getSubjectValue();
+    const orderEl0 = document.getElementById('srLessonOrder');
+    if (!cls || !term || !subject) {
+      if (orderEl0 && orderEl0.dataset.auto === '1') { orderEl0.value = ''; orderEl0.dataset.auto = ''; }
+      return;
+    }
 
     const group = _teacherLessonsAll.filter(
       l => l.class === cls
@@ -2074,14 +2135,17 @@
       : 1;
 
     const orderEl = document.getElementById('srLessonOrder');
-    if (orderEl && !orderEl.value) orderEl.value = nextOrder;
+    if (orderEl && (!orderEl.value || orderEl.dataset.auto === '1')) {
+      orderEl.value = nextOrder;
+      orderEl.dataset.auto = '1';
+    }
   }
 
   async function _saveLesson() {
     const title    = document.getElementById('srLessonTitle')?.value.trim()   || '';
     const cls      = document.getElementById('srLessonClass')?.value           || '';
     const term     = document.getElementById('srLessonTerm')?.value            || '';
-    const subject  = document.getElementById('srLessonSubject')?.value.trim() || '';
+    const subject  = _getSubjectValue();
     const orderRaw = document.getElementById('srLessonOrder')?.value          || '';
     const order    = parseInt(orderRaw, 10) || 1;
     const topic    = document.getElementById('srLessonTopic')?.value.trim()   || '';
@@ -2143,8 +2207,9 @@
     set('srLessonTitle',   lesson.title);
     set('srLessonClass',   lesson.class);
     set('srLessonTerm',    lesson.term);
-    set('srLessonSubject', lesson.subject);
+    _populateSubjects(false, lesson.subject || '');
     set('srLessonOrder',   lesson.order);
+    const _ordEl = document.getElementById('srLessonOrder'); if (_ordEl) _ordEl.dataset.auto = '';
     set('srLessonTopic',   lesson.topic);
     set('srLessonContent', lesson.content);
 
@@ -2164,6 +2229,8 @@
      'srLessonOrder','srLessonTopic','srLessonContent'].forEach(id => {
       const el = document.getElementById(id); if (el) el.value = '';
     });
+    _populateSubjects();
+    const _o = document.getElementById('srLessonOrder'); if (_o) _o.dataset.auto = '';
     const formTitle = document.getElementById('srFormTitle');
     const editBadge = document.getElementById('srEditBadge');
     const cancelBtn = document.getElementById('srCancelBtn');
@@ -2192,7 +2259,7 @@
       topic:   document.getElementById('srLessonTopic')?.value.trim()   || '',
       class:   document.getElementById('srLessonClass')?.value           || '',
       term:    document.getElementById('srLessonTerm')?.value            || '',
-      subject: document.getElementById('srLessonSubject')?.value.trim() || '',
+      subject: _getSubjectValue(),
       order:   1,
     };
     _studentLessonsCache = [fakeLesson];
@@ -2220,6 +2287,8 @@
     _teacherFilterLessons,
     _saveDefaultTermSetting,
     _autoFillOrder,
+    _populateSubjects,
+    _onSubjectChange,
     _syncLessonIndexes,
     cancelTeacherListeners() {
       if (_teacherLessonsUnsub) { _teacherLessonsUnsub(); _teacherLessonsUnsub = null; }
