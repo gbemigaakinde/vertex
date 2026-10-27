@@ -356,13 +356,14 @@ html #app.sr-active > div { max-width: 100% !important; padding: 0; }
 .sr-content blockquote { margin: 1.5em 0; padding: .6em 1.1em; border-left: 3px solid var(--border-strong); color: var(--text-2); font-style: italic; }
 .sr-content blockquote p:last-child { margin-bottom: 0; }
 
-.sr-callout { margin: 1.5em 0; padding: .85em 1.1em; border-radius: var(--r-md); border: 1px solid var(--accent-border); border-left-width: 4px; background: var(--accent-subtle); font-style: normal; }
+.sr-callout { --sr-co: var(--text-3); margin: 1.5em 0; padding: .9em 1.1em; border-radius: var(--r-md); border: 1px solid var(--border-strong); background: var(--bg-subtle); font-style: normal; }
 .sr-callout > :last-child { margin-bottom: 0; }
-.sr-callout__label { margin: 0 0 .25em; font: 700 .8em var(--font); text-transform: uppercase; letter-spacing: .06em; color: var(--accent-text); }
-.sr-callout--tip { background: var(--success-subtle); border-color: var(--success-border); border-left-color: var(--success); }
-.sr-callout--warn { background: var(--warning-subtle); border-color: var(--warning-border); border-left-color: var(--warning); }
-.sr-callout--example { background: var(--bg-subtle); border-color: var(--border); border-left-color: var(--text-3); }
-.sr-callout--info { border-left-color: var(--accent); }
+.sr-callout__label { display: flex; align-items: center; gap: .5em; margin: 0 0 .4em; font: 700 .75em var(--font); text-transform: uppercase; letter-spacing: .08em; color: var(--text-2); }
+.sr-callout__label::before { content: ""; width: .55em; height: .55em; border-radius: 2px; background: var(--sr-co); flex: none; }
+.sr-callout--tip { --sr-co: var(--success); }
+.sr-callout--warn { --sr-co: var(--warning); }
+.sr-callout--example { --sr-co: var(--text-3); }
+.sr-callout--info { --sr-co: var(--accent); }
 
 .sr-content code { font-family: 'Inconsolata', var(--font-mono); font-size: .88em; background: var(--bg-muted); border-radius: 5px; padding: .1em .38em; color: var(--accent-text); overflow-wrap: anywhere; }
 .sr-content pre { position: relative; margin: 1.4em 0; padding: 1em 1.1em; background: var(--bg-subtle); border: 1px solid var(--border); border-radius: var(--r-md); overflow-x: auto; max-width: 100%; box-sizing: border-box; line-height: 1.55; }
