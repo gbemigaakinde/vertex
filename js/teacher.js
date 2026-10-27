@@ -3292,8 +3292,13 @@ function _renderExistingTasksList(docs) {
     }
   }
 
+  function cancelListeners() {
+    if (typeof _ttUnsubAll === 'function') { _ttUnsubAll(); _ttUnsubAll = null; }
+    _cancelAll();
+  }
+
   async function logout() {
-  _cancelAll();
+  cancelListeners();
   AppState.isTeacher = false;
   await App.logout();
 }
@@ -5966,6 +5971,7 @@ async function exportResultPDF(resultId) {
   }
   
   window.Teacher = {
+  cancelListeners,
   renderTeacherDashboard,
   showTab,
   logout,

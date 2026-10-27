@@ -3355,6 +3355,9 @@ function _wsLeave() {
   let _speedDemonCount    = 0;
 
   let _challengeListener  = null;
+  let _challengeUnsubs    = [];
+  let _challengeListening = false;
+  let _challengeGen       = 0;
   let _notifiedChallenges = new Set();
 
   /* ══════════════════════════════════════════════════════════════
@@ -3771,7 +3774,15 @@ function _krStartCountdownTick(getEl) {
 
 function _startChallengeListener() {
   const uid = _uid();
-  if (!uid || _challengeListener) return;
+  if (!uid || _challengeListening) return;
+  _challengeListening = true;
+  const _gen = ++_challengeGen;
+  // Keep every unsubscribe so logout can switch ALL listeners off.
+  // If logout happened before a baseline fetch finished, drop the late listener.
+  const _track = function(unsub) {
+    if (_gen !== _challengeGen) { try { unsub(); } catch (e) {} return; }
+    _challengeUnsubs.push(unsub);
+  };
 
   if (!document.getElementById('_gameChallengePopupStyles')) {
     const style = document.createElement('style');
@@ -3797,7 +3808,7 @@ function _startChallengeListener() {
     .get()
     .then(function(existingSnap) {
       existingSnap.forEach(function(doc) { _notifiedChallenges.add(doc.id); });
-      _challengeListener = _db()
+      _track(_db()
         .collection('gameChallenges')
         .where('challengedUid', '==', uid)
         .where('status', '==', 'pending')
@@ -3812,11 +3823,11 @@ function _startChallengeListener() {
           });
         }, function(err) {
           console.warn('[game] challenge listener error:', err);
-        });
+        }));
     })
     .catch(function(err) {
       console.warn('[game] challenge baseline fetch error:', err);
-      _challengeListener = _db()
+      _track(_db()
         .collection('gameChallenges')
         .where('challengedUid', '==', uid)
         .where('status', '==', 'pending')
@@ -3831,7 +3842,7 @@ function _startChallengeListener() {
           });
         }, function(err) {
           console.warn('[game] challenge listener error:', err);
-        });
+        }));
     });
 
   // ── 2. Challenges the CHALLENGED player already played, now completed by challenger ──
@@ -3847,7 +3858,8 @@ function _startChallengeListener() {
         _notifiedChallenges.add(_completedKey(doc.id));
       });
 
-      _db()
+      if (_gen !== _challengeGen) return;
+      _track(_db()
         .collection('gameChallenges')
         .where('challengedUid', '==', uid)
         .where('status', '==', 'completed')
@@ -3870,7 +3882,7 @@ function _startChallengeListener() {
           });
         }, function(err) {
           console.warn('[game] completed-challenge listener error:', err);
-        });
+        }));
     })
     .catch(function(err) {
       console.warn('[game] completed-challenge baseline fetch error:', err);
@@ -3887,7 +3899,8 @@ function _startChallengeListener() {
         _notifiedChallenges.add('scrabble_' + doc.id);
       });
 
-      _db()
+      if (_gen !== _challengeGen) return;
+      _track(_db()
         .collection('scrabbleGames')
         .where('player2Uid', '==', uid)
         .where('status', '==', 'pending')
@@ -3904,7 +3917,7 @@ function _startChallengeListener() {
           });
         }, function(err) {
           console.warn('[game] scrabble listener error:', err);
-        });
+        }));
     })
     .catch(function(err) {
       console.warn('[game] scrabble baseline fetch error:', err);
@@ -3923,7 +3936,8 @@ function _startChallengeListener() {
         }
       });
 
-      _db()
+      if (_gen !== _challengeGen) return;
+      _track(_db()
         .collection('chessGames')
         .where('whiteUid', '==', uid)
         .where('status', '==', 'pending')
@@ -3944,7 +3958,7 @@ function _startChallengeListener() {
           });
         }, function(err) {
           console.warn('[game] chess (white) listener error:', err);
-        });
+        }));
     })
     .catch(function(err) {
       console.warn('[game] chess (white) baseline error:', err);
@@ -3962,7 +3976,8 @@ function _startChallengeListener() {
         }
       });
 
-      _db()
+      if (_gen !== _challengeGen) return;
+      _track(_db()
         .collection('chessGames')
         .where('blackUid', '==', uid)
         .where('status', '==', 'pending')
@@ -3983,7 +3998,7 @@ function _startChallengeListener() {
           });
         }, function(err) {
           console.warn('[game] chess (black) listener error:', err);
-        });
+        }));
     })
     .catch(function(err) {
       console.warn('[game] chess (black) baseline error:', err);
@@ -4177,7 +4192,13 @@ async function _showChallengeResultDetail(challengeId, data, myUid) {
   }
 
   function _stopChallengeListener() {
-    if (_challengeListener) { _challengeListener(); _challengeListener = null; }
+    _challengeGen++;
+    _challengeUnsubs.forEach(function (unsub) {
+      try { unsub(); } catch (e) {}
+    });
+    _challengeUnsubs = [];
+    _challengeListener = null;
+    _challengeListening = false;
   }
 
   function _showChallengePopup(challengeId, data) {

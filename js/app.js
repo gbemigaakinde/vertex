@@ -215,6 +215,12 @@
     _loggingOut = true;
     Tasks.cancelListeners();
     AppState.cancelAllListeners();
+    if (window.Game && typeof Game._stopChallengeListener === 'function') {
+      Game._stopChallengeListener();
+    }
+    if (window.Teacher && typeof Teacher.cancelListeners === 'function') {
+      Teacher.cancelListeners();
+    }
     AppState.reset();
     try {
       await window.fbAuth.signOut();
@@ -268,6 +274,9 @@
     if (window.Game && typeof Game._stopChallengeListener === 'function') {
       Game._stopChallengeListener();
     }
+    if (window.Teacher && typeof Teacher.cancelListeners === 'function') {
+      Teacher.cancelListeners();
+    }
     if (window.GroupChat && typeof GroupChat.cancelListeners === 'function') {
       GroupChat.cancelListeners();
     }
@@ -320,6 +329,9 @@
 
     if (window.Game && typeof Game._stopChallengeListener === 'function') {
       Game._stopChallengeListener();
+    }
+    if (window.Teacher && typeof Teacher.cancelListeners === 'function') {
+      Teacher.cancelListeners();
     }
     if (window.GroupChat && typeof GroupChat.cancelListeners === 'function') {
       GroupChat.cancelListeners();
