@@ -364,6 +364,7 @@ html #app.sr-active > div { max-width: 100% !important; padding: 0; }
 .sr-callout--warn { --sr-co: var(--warning); }
 .sr-callout--example { --sr-co: var(--text-3); }
 .sr-callout--info { --sr-co: var(--accent); }
+.sr-callout > p:first-child:not(.sr-callout__label) > strong:first-child::before { content: ""; display: inline-block; width: .5em; height: .5em; margin-right: .45em; border-radius: 2px; background: var(--sr-co); vertical-align: .06em; }
 
 .sr-content code { font-family: 'Inconsolata', var(--font-mono); font-size: .88em; background: var(--bg-muted); border-radius: 5px; padding: .1em .38em; color: var(--accent-text); overflow-wrap: anywhere; }
 .sr-content pre { position: relative; margin: 1.4em 0; padding: 1em 1.1em; background: var(--bg-subtle); border: 1px solid var(--border); border-radius: var(--r-md); overflow-x: auto; max-width: 100%; box-sizing: border-box; line-height: 1.55; }
@@ -377,6 +378,24 @@ html #app.sr-active > div { max-width: 100% !important; padding: 0; }
 .sr-content thead th { background: var(--accent-subtle); color: var(--accent-text); font-weight: 650; white-space: nowrap; }
 .sr-content tbody tr:nth-child(even) td { background: var(--bg-subtle); }
 .sr-content table:not(.sr-table-wrap table) { display: block; overflow-x: auto; }
+
+/* Horizontal scroll hints (tables, formulas, code) */
+.sr-scrollhint { position: relative; display: block; max-width: 100%; margin: 1.4em 0; }
+.sr-scrollhint--math { margin: 1.1em 0; }
+.sr-content .sr-scrollhint > :is(.sr-table-wrap, pre, .katex-display) { margin: 0; scrollbar-width: thin; scrollbar-color: var(--border-strong) transparent; overscroll-behavior-x: contain; }
+.sr-scrollhint > :first-child { --sr-fade-l: 0px; --sr-fade-r: 0px; }
+.sr-scrollhint.has-more-l > :first-child { --sr-fade-l: 36px; }
+.sr-scrollhint.has-more-r > :first-child { --sr-fade-r: 36px; }
+.sr-scrollhint.has-more-l > :first-child, .sr-scrollhint.has-more-r > :first-child {
+  -webkit-mask-image: linear-gradient(to right, transparent 0, #000 var(--sr-fade-l), #000 calc(100% - var(--sr-fade-r)), transparent 100%);
+  mask-image: linear-gradient(to right, transparent 0, #000 var(--sr-fade-l), #000 calc(100% - var(--sr-fade-r)), transparent 100%);
+}
+.sr-content .sr-scrollhint .sr-scrollhint__cue svg { display: block; width: 14px; height: 14px; padding: 0; margin: 0; background: none; border-radius: 0; }
+.sr-scrollhint--code > .sr-scrollhint__cue { top: auto; bottom: .45rem; margin-top: 0; }
+.sr-scrollhint__cue { position: absolute; right: .35rem; top: 50%; width: 26px; height: 26px; margin-top: -13px; display: none; align-items: center; justify-content: center; border-radius: 50%; background: var(--bg-base); border: 1px solid var(--border-strong); color: var(--text-2); box-shadow: 0 1px 3px rgba(0,0,0,.18); pointer-events: none; }
+.sr-scrollhint.has-more-r:not(.is-touched) .sr-scrollhint__cue { display: flex; animation: sr-cue-nudge 1.6s ease-in-out 3; }
+@keyframes sr-cue-nudge { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(4px); } }
+@media (prefers-reduced-motion: reduce) { .sr-scrollhint.has-more-r:not(.is-touched) .sr-scrollhint__cue { animation: none; } }
 
 .sr-content img { display: block; max-width: 100%; height: auto; margin: 1.3em auto; border-radius: var(--r-md); }
 .sr-content figure { margin: 1.6em 0; text-align: center; }
