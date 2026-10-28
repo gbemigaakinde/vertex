@@ -499,7 +499,7 @@ function _onOutsideClick(e) {
     : '';
 
   const mentionBorder = isMentionedMe
-    ? 'border-color:var(--accent);border-left:3px solid var(--accent);'
+    ? 'border-color:var(--accent);'
     : '';
 
   let cardBg;
@@ -516,7 +516,7 @@ function _onOutsideClick(e) {
     : 'var(--border)';
 
   const cardBorderLeft = isTeacherMsg
-    ? 'border-left:3px solid var(--warning);'
+    ? ''
     : '';
 
   return `

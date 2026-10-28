@@ -210,7 +210,7 @@ function _injectStyles() {
 
       .gc-reply-card {
         display:block;margin-bottom:.375rem;padding:.3rem .5rem;
-        border-left:3px solid rgba(255,255,255,.5);border-radius:0 5px 5px 0;
+        border-radius:5px;
         background:rgba(0,0,0,.12);cursor:pointer;
         font-size:.75rem;line-height:1.4;width:100%;box-sizing:border-box;overflow:hidden;
       }
@@ -233,7 +233,7 @@ function _injectStyles() {
         display:none;align-items:center;gap:.5rem;
         padding:.375rem .625rem;margin:.375rem 0 0;
         background:var(--accent-subtle);
-        border-left:3px solid var(--accent);border-radius:0 6px 6px 0;
+        border-radius:6px;
         font-size:.75rem;color:var(--text-2);
         box-sizing:border-box;width:100%;overflow:hidden;
       }

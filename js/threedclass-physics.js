@@ -351,7 +351,7 @@
               <div id="phys-scene-labels" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:4;"></div>
             </div>
 
-            <div style="margin-bottom:.625rem;border-left:3px solid ${sub.color};padding:.5rem .75rem;background:var(--bg-base);border-radius:0 var(--r-md) var(--r-md) 0;">
+            <div style="margin-bottom:.625rem;padding:.5rem .75rem;background:var(--bg-base);border-radius:var(--r-md);">
               <p style="font-size:var(--text-sm);color:var(--text-2);line-height:1.7;margin:0;">${sub.description}</p>
             </div>
             <div style="margin-bottom:.625rem;padding:.5rem .75rem;border-radius:var(--r-lg);background:${sub.color}0d;border:1px solid ${sub.color}30;">

@@ -9063,7 +9063,7 @@ function _krLoop(timestamp) {
             const lv    = _getLevelForXP(e.xp || 0);
             return `
               <div style="display:grid;grid-template-columns:2.5rem 1fr auto auto;gap:.5rem;align-items:center;padding:.625rem 1rem;
-                          ${isMe ? 'background:var(--accent-subtle);border-left:3px solid var(--accent);' : 'border-left:3px solid transparent;'}
+                          ${isMe ? 'background:var(--accent-subtle);' : ''}
                           ${i < topEntries.length - 1 ? 'border-bottom:1px solid var(--border);' : ''}">
                 <span style="font-size:${i < 3 ? '.875rem' : '.8125rem'};font-weight:800;text-align:center;color:${i === 0 ? '#f59e0b' : i === 1 ? '#9ca3af' : i === 2 ? '#b45309' : 'var(--text-3)'};">${medal}</span>
                 <div>
@@ -9847,7 +9847,7 @@ async function renderTeacherGameRestrictions(containerId) {
         return `
           <div style="display:flex;align-items:center;gap:.75rem;padding:.5rem .75rem;
                       background:var(--bg-base);border:1px solid var(--success-border);
-                      border-left:3px solid var(--success);border-radius:8px;margin-bottom:.375rem;">
+                      border-radius:8px;margin-bottom:.375rem;">
             <span style="font-size:1.125rem;flex-shrink:0;">${gameIcon(d.gameType)}</span>
             <div style="flex:1;min-width:0;">
               <div style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);

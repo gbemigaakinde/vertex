@@ -760,8 +760,8 @@ async function _fetchWeeklyTimetableHtml(classKey, forceRefresh) {
                     : isNextPeriod    ? 'rgba(79,110,247,.04)'
                     : isSpecial       ? 'var(--bg-subtle)'
                     : 'var(--bg-base)';
-      const lBorder = isCurrentPeriod ? 'border-left:3px solid var(--warning);'
-                    : isNextPeriod    ? 'border-left:2px solid var(--accent-border);'
+      const lBorder = isCurrentPeriod ? ''
+                    : isNextPeriod    ? ''
                     : '';
 
       const displayTime = _convertTimeStr(p.time || '', clockPref);
@@ -1442,7 +1442,7 @@ function _closeFullClock() {
       <div id="vtxExamWarning" role="alert"
            style="display:flex;align-items:flex-start;gap:.625rem;text-align:left;
                   background:var(--warning-subtle);border:1px solid var(--warning-border);
-                  border-left:3px solid var(--warning);border-radius:var(--r-lg);
+                  border-radius:var(--r-lg);
                   padding:.75rem 1rem;">
         <span style="flex-shrink:0;margin-top:1px;color:var(--warning);">${_icon('Warning', 20)}</span>
         <div>
@@ -1601,7 +1601,7 @@ async function renderSubjectSelection() {
     const restrictionBannerHtml = restrictedSubjs
       ? `<div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:1.25rem;
                      background:var(--warning-subtle);border:1px solid var(--warning-border);
-                     border-left:3px solid var(--warning);border-radius:var(--r-lg);
+                     border-radius:var(--r-lg);
                      padding:.75rem 1rem;text-align:left;">
            <span style="flex-shrink:0;margin-top:1px;color:var(--warning);">${_icon('ClipboardText', 18)}</span>
            <div>
@@ -1621,7 +1621,7 @@ async function renderSubjectSelection() {
     )
       ? `<div style="display:flex;align-items:flex-start;gap:.625rem;margin-bottom:1.25rem;
                      background:var(--accent-subtle);border:1px solid var(--accent-border);
-                     border-left:3px solid var(--accent);border-radius:var(--r-lg);
+                     border-radius:var(--r-lg);
                      padding:.75rem 1rem;text-align:left;">
            <span style="flex-shrink:0;margin-top:1px;color:var(--accent);">${_icon('CalendarBlank', 18)}</span>
            <div>
@@ -3403,10 +3403,10 @@ async function renderSubjectSelection() {
                   const userAns = exam.answers[`${subj}-${i}`];
                   const correct = userAns === q.ans;
                   const borderStyle = correct
-                    ? 'border-left:3px solid var(--success);background:var(--success-subtle);'
+                    ? 'background:var(--success-subtle);'
                     : userAns === undefined
-                    ? 'border-left:3px solid var(--border-strong);background:var(--bg-subtle);'
-                    : 'border-left:3px solid var(--danger);background:var(--danger-subtle);';
+                    ? 'background:var(--bg-subtle);'
+                    : 'background:var(--danger-subtle);';
                   return `
                     <div class="vtx-rv-card" style="border-radius:var(--r-lg);padding:1rem;border:1px solid var(--border);min-width:0;max-width:100%;${borderStyle}">
                       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;margin-bottom:.75rem;">

@@ -113,14 +113,12 @@
         animation:msgNotifIn .3s cubic-bezier(.34,1.45,.64,1) both;
         position:relative;
         overflow:hidden;
-        border-left:3px solid var(--accent,#4f6ef7);
+        
         transition:transform .15s ease, opacity .15s ease;
       }
       .msg-notif-toast:hover { transform:translateY(-2px);box-shadow:0 12px 36px rgba(0,0,0,.16); }
       .msg-notif-toast.is-out { animation:msgNotifOut .25s ease-in both; }
 
-      .msg-notif-toast--teacher { border-left-color:#7c3aed; }
-      .msg-notif-toast--student { border-left-color:var(--accent,#4f6ef7); }
 
       .msg-notif-progress {
         position:absolute;

@@ -1921,7 +1921,7 @@ function _buildPlantCellSVG() {
           <div style="font-size:.525rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
                       color:${org.color};margin-bottom:.25rem;">Function</div>
           <p style="font-size:var(--text-xs);color:var(--text-2);line-height:1.65;margin:0;
-                    border-left:2px solid ${org.color};padding-left:.5rem;">${org.function}</p>
+                    padding-left:.5rem;">${org.function}</p>
         </div>
         <div style="margin-bottom:.5rem;padding:.45rem .7rem;border-radius:var(--r-md);
                     background:${org.color}0f;border:1px solid ${org.color}2a;">

@@ -882,7 +882,7 @@
       </div>` : ''}
 
       <p style="font-size:var(--text-sm);color:inherit;opacity:.8;line-height:1.65;
-                margin-bottom:.5rem;border-left:3px solid ${bg};padding-left:.5rem;">
+                margin-bottom:.5rem;padding-left:.5rem;">
         ${el.desc}
       </p>
 
