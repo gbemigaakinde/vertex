@@ -104,7 +104,13 @@
   function _safeQ(str) {
     // Turn non-breaking / odd-width spaces into normal spaces so long questions can wrap on phones.
     var clean = String(str == null ? '' : str).replace(/[\u00A0\u2007\u202F\u2060\u200B]/g, ' ');
-    return _escHtml(preprocessLatex(clean));
+    // Question text may carry a few harmless formatting tags (<br>, <em>, <strong>...).
+    // Everything is escaped first, then only this attribute-less whitelist is turned back into real tags.
+    return _escHtml(preprocessLatex(clean))
+      .replace(/&lt;(\/?)(br|em|strong|i|b|u|sub|sup)\s*\/?&gt;/gi, function (m, close, tag) {
+        tag = tag.toLowerCase();
+        return tag === 'br' ? '<br>' : '<' + close + tag + '>';
+      });
   }
 
   // Optional SVG diagrams (see js/svg-diagram.js). Return '' when a question has none.
@@ -261,6 +267,19 @@
       }
 
       S().exam = examData;
+      // Put the student back on the question they were on, but never trust a stale or invalid position.
+      (function () {
+        const ex   = S().exam;
+        const subs = Array.isArray(ex.subjects) ? ex.subjects : [];
+        const qs   = ex.questions || {};
+        if (!subs.includes(ex.currentSubject) || !Array.isArray(qs[ex.currentSubject])) {
+          ex.currentSubject = subs[0];
+          ex.currentIndex   = 0;
+        }
+        const len = (qs[ex.currentSubject] || []).length;
+        const idx = Number(ex.currentIndex);
+        ex.currentIndex = (Number.isInteger(idx) && idx >= 0 && idx < len) ? idx : 0;
+      })();
       const startMs = _resolveStartMs(examData.startTime);
 
       if (startMs) {
@@ -2718,6 +2737,7 @@ async function renderSubjectSelection() {
   const qList   = exam.questions[subj];
   const q       = qList[exam.currentIndex];
   const subjIdx = exam.subjects.indexOf(subj);
+  _savePosition();
 
   const timerStr   = _currentTimerStr();
   const timerClass = _currentTimerClass();
@@ -2927,10 +2947,24 @@ async function renderSubjectSelection() {
     S().exam.answers[`${subj}-${idx}`] = val;
     clearTimeout(_saveAnswer._debounce);
     _saveAnswer._debounce = setTimeout(() => {
+      // The exam may have been submitted/cleared (or the user signed out) during the debounce window.
+      if (!S().exam || !S().userId) return;
       window.fbDb.collection('ongoingExams').doc(S().userId)
         .update({ answers: S().exam.answers })
         .catch((err) => console.warn('[exam] Firebase answer save error (non-fatal):', err));
     }, 800);
+  }
+
+  // Remembers which question the student is on so a reload or reconnect returns them to it.
+  function _savePosition() {
+    clearTimeout(_savePosition._debounce);
+    _savePosition._debounce = setTimeout(() => {
+      const ex = S().exam;
+      if (!ex || !S().userId) return;   // exam submitted/cleared or signed out meanwhile
+      window.fbDb.collection('ongoingExams').doc(S().userId)
+        .update({ currentSubject: ex.currentSubject, currentIndex: ex.currentIndex })
+        .catch((err) => console.warn('[exam] Position save error (non-fatal):', err));
+    }, 600);
   }
 
   function _updateOptionsDisplay(subj, idx) {
