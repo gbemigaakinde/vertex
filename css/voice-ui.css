@@ -754,7 +754,7 @@
 }
 .se-explain-deep-content.se-explain-deep-local {
   background: linear-gradient(135deg, var(--accent-subtle), var(--bg-subtle));
-  border-left: 3px solid var(--accent);
+  
 }
 .se-explain-deep-src {
   display: flex;

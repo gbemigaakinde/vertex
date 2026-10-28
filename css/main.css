@@ -900,24 +900,12 @@ textarea { resize: vertical; min-height: 5rem; }
   color: var(--text-1) !important;
 }
 
-/* Left accent bar */
-.option-label::before, .cbt-option::before {
-  content: '' !important;
-  position: absolute !important;
-  left: 0 !important; top: 4px !important; bottom: 4px !important;
-  width: 3px !important;
-  background: transparent !important;
-  border-radius: 0 2px 2px 0 !important;
-  transition: background var(--t-base) var(--ease) !important;
-}
-
 @media (hover: hover) and (pointer: fine) {
   .option-label:hover, .cbt-option:hover {
     border-color: var(--accent-border) !important;
     background: var(--accent-subtle) !important;
     transform: translateX(2px) !important;
   }
-  .option-label:hover::before, .cbt-option:hover::before { background: var(--accent) !important; }
 }
 
 .option-label.is-selected, .cbt-option.is-selected,
@@ -927,7 +915,6 @@ textarea { resize: vertical; min-height: 5rem; }
   box-shadow: 0 0 0 3px var(--accent-subtle) !important;
   transform: translateX(4px) !important;
 }
-.option-label.is-selected::before, .cbt-option.is-selected::before { background: var(--accent) !important; }
 
 .option-label input[type="radio"] {
   width: 1rem !important; height: 1rem !important; min-width: 1rem !important;
@@ -1326,7 +1313,6 @@ label.glass:has(.subject-checkbox:checked) {
   background: var(--glass-bg);
   backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
   -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  border-left: 3px solid var(--border);
   color: var(--text-1);
   position: relative;
 }
@@ -1338,7 +1324,6 @@ label.glass:has(.subject-checkbox:checked) {
   border-radius: inherit;
   border: 1px solid var(--glass-border);
   pointer-events: none;
-  border-left: none;
 }
 
 .cbt-toast .cbt-toast-icon {
@@ -1350,10 +1335,10 @@ label.glass:has(.subject-checkbox:checked) {
 
 .cbt-toast.is-dismissing { animation: cbt-toast-out var(--t-base) ease-in both; }
 
-.cbt-toast--success { border-left-color: var(--success); }
-.cbt-toast--error   { border-left-color: var(--danger);  }
-.cbt-toast--info    { border-left-color: var(--accent);  }
-.cbt-toast--warning { border-left-color: var(--warning); }
+.cbt-toast--success { border-color: var(--success); }
+.cbt-toast--error   { border-color: var(--danger);  }
+.cbt-toast--info    { border-color: var(--accent);  }
+.cbt-toast--warning { border-color: var(--warning); }
 
 .cbt-toast__dismiss {
   margin-left: auto;
@@ -1528,7 +1513,6 @@ details.glass-dark[open] > summary::after,
 #chatMessages .glass-dark[class*="border-yellow"] {
   background: var(--warning-subtle) !important;
   border-color: var(--warning-border) !important;
-  border-left: 2px solid var(--warning) !important;
 }
 
 #typingIndicator { min-height: 1.1rem !important; font-size: var(--text-xs) !important; color: var(--text-4) !important; text-align: center !important; font-style: italic !important; }
@@ -1553,11 +1537,8 @@ details.glass-dark[open] > summary::after,
 
 .border-l-4.border-purple-600.bg-purple-50 {
   background: var(--bg-subtle) !important;
-  border-left: 2px solid var(--accent) !important;
-  border-top: none !important;
-  border-right: none !important;
-  border-bottom: none !important;
-  border-radius: 0 var(--r-md) var(--r-md) 0 !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--r-md) !important;
   padding: 0.75rem 1rem !important;
 }
 

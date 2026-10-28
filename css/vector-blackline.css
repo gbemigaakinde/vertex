@@ -116,8 +116,8 @@ p.vb-dim, div.vb-dim { color: var(--dim); font-size: .9rem; }
 .vector-blackline .vb-menu-main { max-width: 440px; width: 100%; }
 .vector-blackline .vb-tag { color: var(--amber); letter-spacing: .3em; text-transform: uppercase; font-size: .75rem; margin: 6px 0 14px; }
 .vector-blackline .vb-nav { display: flex; flex-direction: column; gap: 6px; }
-.vector-blackline .vb-nav-btn { text-align: left; background: rgba(255,255,255,.04); border: 1px solid var(--line); border-left: 3px solid transparent; padding: 9px 16px; text-transform: uppercase; letter-spacing: .14em; font-weight: 800; font-size: .95rem; min-height: 44px; transition: border-color .12s, background .12s, padding .12s; }
-.vector-blackline .vb-nav-btn:hover:not(:disabled), .vector-blackline .vb-nav-btn:focus-visible { border-left-color: var(--amber); background: rgba(240,163,58,.12); padding-left: 22px; }
+.vector-blackline .vb-nav-btn { text-align: left; background: rgba(255,255,255,.04); border: 1px solid var(--line); padding: 9px 16px; text-transform: uppercase; letter-spacing: .14em; font-weight: 800; font-size: .95rem; min-height: 44px; transition: border-color .12s, background .12s; }
+.vector-blackline .vb-nav-btn:hover:not(:disabled), .vector-blackline .vb-nav-btn:focus-visible { border-color: var(--amber); background: rgba(240,163,58,.12); }
 .vector-blackline .vb-nav-btn.primary { background: rgba(240,163,58,.16); border-color: rgba(240,163,58,.5); }
 .vector-blackline .vb-nav-btn.ghost { opacity: .75; }
 .vector-blackline .vb-nav-btn:disabled { opacity: .4; cursor: not-allowed; }
@@ -168,11 +168,11 @@ p.vb-dim, div.vb-dim { color: var(--dim); font-size: .9rem; }
    Notifications. One stack, top centre, above menus so a
    confirmation is never hidden, below blocking overlays.
    ============================================================ */
-.vector-blackline .vb-note { background: rgba(8, 12, 15, .9); border: 1px solid var(--hud-line); border-left: 3px solid var(--amber); padding: 6px 14px; border-radius: 2px; font-size: .9rem; text-align: left; max-width: 100%; animation: vbin var(--t-med) ease-out; transition: opacity .35s; }
+.vector-blackline .vb-note { background: rgba(8, 12, 15, .9); border: 1px solid var(--hud-line); padding: 6px 14px; border-radius: 2px; font-size: .9rem; text-align: left; max-width: 100%; animation: vbin var(--t-med) ease-out; transition: opacity .35s; }
 .vector-blackline .vb-note.out { opacity: 0; }
 .vector-blackline .vb-note-k { display: block; color: var(--amber); font-size: .66rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
-.vector-blackline .vb-note.good { border-left-color: var(--good); } .vector-blackline .vb-note.good .vb-note-k { color: var(--good); }
-.vector-blackline .vb-note.warn { border-left-color: var(--bad); } .vector-blackline .vb-note.warn .vb-note-k { color: var(--bad); }
+.vector-blackline .vb-note.good { border-color: var(--good); } .vector-blackline .vb-note.good .vb-note-k { color: var(--good); }
+.vector-blackline .vb-note.warn { border-color: var(--bad); } .vector-blackline .vb-note.warn .vb-note-k { color: var(--bad); }
 @keyframes vbin { from { opacity: 0; transform: translateY(-6px); } to { opacity: 1; transform: none; } }
 
 /* ============================================================
@@ -209,9 +209,9 @@ p.vb-dim, div.vb-dim { color: var(--dim); font-size: .9rem; }
 .vector-blackline .vb-tl { position: absolute; top: calc(var(--sat) + var(--edge)); left: calc(var(--sal) + var(--edge)); width: min(34%, 24em); max-height: calc(var(--vh, 1dvh) * 100 - var(--stick) - var(--cm) * 2 - var(--edge) - var(--sat)); overflow: hidden; }
 .vector-blackline[data-input="touch"] .vb-tl { width: min(30%, 17em); }
 .vector-blackline[data-input="touch"][data-compact="0"] .vb-tl { max-height: none; }
-.vector-blackline .vb-obj { border-left: 3px solid var(--amber); padding: 6px 12px; } .vector-blackline .vb-obj-k { color: var(--amber); font-size: .66rem; letter-spacing: .16em; font-weight: 800; } .vector-blackline .vb-obj-t { font-weight: 700; font-size: 1.05em; line-height: 1.2; } .vector-blackline .vb-obj-s { color: var(--dim); font-size: .8em; } .vector-blackline .vb-obj .vb-meter { margin-top: 5px; }
+.vector-blackline .vb-obj { padding: 6px 12px; } .vector-blackline .vb-obj-k { color: var(--amber); font-size: .66rem; letter-spacing: .16em; font-weight: 800; } .vector-blackline .vb-obj-t { font-weight: 700; font-size: 1.05em; line-height: 1.2; } .vector-blackline .vb-obj-s { color: var(--dim); font-size: .8em; } .vector-blackline .vb-obj .vb-meter { margin-top: 5px; }
 .vector-blackline .vb-obj.pop { animation: vbslide var(--t-med) ease-out; } @keyframes vbslide { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: none; } }
-.vector-blackline .vb-feed { margin-top: var(--s2); font-size: .78rem; } .vector-blackline .vb-feed div { background: rgba(6,9,12,.6); padding: 2px 8px; margin-bottom: 2px; width: fit-content; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; } .vector-blackline .vb-feed .me { border-left: 2px solid var(--amber); } .vector-blackline .vb-feed .dead { border-left: 2px solid var(--bad); }
+.vector-blackline .vb-feed { margin-top: var(--s2); font-size: .78rem; } .vector-blackline .vb-feed div { background: rgba(6,9,12,.6); padding: 2px 8px; margin-bottom: 2px; width: fit-content; max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .vector-blackline .vb-squad { margin-top: var(--s2); } .vector-blackline .vb-squad > div { display: grid; grid-template-columns: 1fr 4.5em auto; align-items: center; gap: 8px; background: rgba(6,9,12,.55); padding: 2px 8px; margin-bottom: 2px; font-size: .78rem; } .vector-blackline .vb-squad .dn b { color: var(--amber); } .vector-blackline .vb-squad .dead { opacity: .5; } .vector-blackline .vb-squad em { font-style: normal; color: var(--amber); font-size: .66rem; font-weight: 800; }
 
 /* top-right: minimap, score, connection. Sized so it clears the touch cluster underneath. */
@@ -293,7 +293,7 @@ p.vb-dim, div.vb-dim { color: var(--dim); font-size: .9rem; }
 @media (hover: none) {
   .vector-blackline .vb-btn:hover:not(:disabled) { background: rgba(255,255,255,.07); }
   .vector-blackline .vb-btn.primary:hover:not(:disabled) { background: var(--amber); }
-  .vector-blackline .vb-nav-btn:hover:not(:disabled) { border-left-color: transparent; background: rgba(255,255,255,.04); padding-left: 16px; }
+  .vector-blackline .vb-nav-btn:hover:not(:disabled) { background: rgba(255,255,255,.04); }
 }
 /* compact landscape phones: tighter menus */
 @media (max-height: 520px) {
@@ -322,7 +322,7 @@ p.vb-dim, div.vb-dim { color: var(--dim); font-size: .9rem; }
 .vector-blackline .vb-bottom { position: absolute; left: calc(var(--sal) + var(--edge)); right: calc(var(--sar) + var(--edge)); bottom: calc(var(--sab) + var(--edge)); display: flex; flex-direction: column; gap: var(--s2); pointer-events: none; }
 .vector-blackline[data-input="touch"] .vb-bottom { left: var(--bc-l); right: var(--bc-r); bottom: calc(var(--sab) + var(--cm)); gap: var(--s1); }
 .vector-blackline .vb-bc { display: flex; align-items: flex-end; justify-content: space-between; gap: var(--s2); }
-.vector-blackline .vb-vitals { flex: 1 1 0; min-width: 0; max-width: 19em; padding: 8px 12px; border-left: 3px solid var(--bad); }
+.vector-blackline .vb-vitals { flex: 1 1 0; min-width: 0; max-width: 19em; padding: 8px 12px; }
 .vector-blackline .vb-ammo { flex: 0 1 auto; min-width: 12em; max-width: 100%; text-align: right; padding: 8px 14px; border-right: 3px solid var(--amber); }
 .vector-blackline[data-input="touch"] .vb-vitals { max-width: none; padding: 6px 10px; }
 .vector-blackline[data-input="touch"] .vb-ammo { min-width: 0; padding: 6px 10px; text-align: left; }
