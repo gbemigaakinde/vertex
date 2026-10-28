@@ -389,8 +389,7 @@ li {
 /* ── OBJECTIVES BOX ────────────────────────── */
 .objectives {
   background: rgba(74,111,165,0.07);
-  border-left: 4px solid var(--slate);
-  border-radius: 0 var(--radius) var(--radius) 0;
+  border-radius: var(--radius);
   padding: 16px;
   margin: 0 0 20px;
 }
@@ -412,8 +411,7 @@ li {
 .example {
   background: var(--white);
   border: 1.5px solid var(--border);
-  border-left: 4px solid var(--coral);
-  border-radius: 0 var(--radius) var(--radius) 0;
+  border-radius: var(--radius);
   padding: 14px 14px 12px;
   margin: 14px 0;
 }
@@ -433,18 +431,16 @@ li {
   font-size: 14px;
   color: var(--ink);
   padding: 4px 0 4px 10px;
-  border-left: 2px solid var(--border);
   margin: 5px 0;
   line-height: 1.5;
 }
 
 /* ── CALLOUT VARIANTS ──────────────────────── */
 .callout {
-  border-radius: 0 var(--radius) var(--radius) 0;
+  border-radius: var(--radius);
   padding: 14px;
   margin: 14px 0;
-  border-left-width: 4px;
-  border-left-style: solid;
+  border: 1px solid var(--border);
 }
 .callout-label {
   display: flex;
@@ -555,8 +551,7 @@ tbody tr:nth-child(even) { background: var(--paper2); }
   margin-top: 12px;
   padding: 12px;
   background: rgba(107,158,120,0.1);
-  border-left: 3px solid var(--sage);
-  border-radius: 0 6px 6px 0;
+  border-radius: 6px;
   font-size: 13.5px;
   color: var(--ink2);
   line-height: 1.6;
@@ -602,8 +597,7 @@ tbody tr:nth-child(even) { background: var(--paper2); }
 /* ── MISTAKE BLOCK ─────────────────────────── */
 .mistake {
   background: rgba(200,90,58,0.06);
-  border-left: 4px solid var(--coral);
-  border-radius: 0 var(--radius) var(--radius) 0;
+  border-radius: var(--radius);
   padding: 14px;
   margin: 14px 0;
 }
