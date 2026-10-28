@@ -911,12 +911,14 @@ textarea { resize: vertical; min-height: 5rem; }
   transition: background var(--t-base) var(--ease) !important;
 }
 
-.option-label:hover, .cbt-option:hover {
-  border-color: var(--accent-border) !important;
-  background: var(--accent-subtle) !important;
-  transform: translateX(2px) !important;
+@media (hover: hover) and (pointer: fine) {
+  .option-label:hover, .cbt-option:hover {
+    border-color: var(--accent-border) !important;
+    background: var(--accent-subtle) !important;
+    transform: translateX(2px) !important;
+  }
+  .option-label:hover::before, .cbt-option:hover::before { background: var(--accent) !important; }
 }
-.option-label:hover::before, .cbt-option:hover::before { background: var(--accent) !important; }
 
 .option-label.is-selected, .cbt-option.is-selected,
 .option-label[style*="edf2ff"], .option-label[style*="3b5bdb"] {
@@ -1049,20 +1051,30 @@ label.glass:has(.subject-checkbox:checked) {
   box-shadow: none !important;
   position: relative !important;
   overflow: hidden !important;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
-.nav-btn:hover, .cbt-nav-dot:hover {
-  background: var(--accent-subtle) !important;
-  border-color: var(--accent-border) !important;
-  color: var(--accent-text) !important;
-  transform: scale(1.1) !important;
+/* Hover styles only for real pointers. On touch screens (iPhone especially) :hover sticks to
+   whatever the finger touched or scrolled over, which looked like a question being selected. */
+@media (hover: hover) and (pointer: fine) {
+  .nav-btn:hover, .cbt-nav-dot:hover {
+    background: var(--accent-subtle) !important;
+    border-color: var(--accent-border) !important;
+    color: var(--accent-text) !important;
+    transform: scale(1.1) !important;
+  }
 }
 
 .nav-btn.answered, .cbt-nav-dot.is-answered {
   background: var(--success) !important;
   border-color: transparent !important;
   color: var(--text-inverse) !important;
-  animation: vtx-nav-pop var(--t-slow) var(--ease) !important;
+}
+
+/* The pop plays only on the button that has just been answered, not on every redraw. */
+.nav-btn.pop {
+  animation: vtx-nav-pop var(--t-slow) var(--ease);
 }
 
 @keyframes vtx-nav-pop {
