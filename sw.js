@@ -4,7 +4,7 @@
 
 'use strict';
 
-const CACHE_VERSION = 'v1.20.95';
+const CACHE_VERSION = 'v1.20.96';
 const STATIC_CACHE  = `static-${CACHE_VERSION}`;
 const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
 
@@ -54,6 +54,7 @@ self.addEventListener('install', event => {
         '/js/chat.js',
         '/js/dm.js',
         '/js/tasks.js',
+        '/js/student-sync.js',
         '/js/teacher.js',
         '/js/exam.js',
         '/js/svg-diagram.js',
