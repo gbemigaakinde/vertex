@@ -441,6 +441,8 @@ async function _toggleClockFormat() {
       tmp.innerHTML = freshHtml;
       const newWidget = tmp.firstElementChild;
       if (newWidget) widget.replaceWith(newWidget);
+    } else if (!freshHtml && _ttIsConfirmedEmpty() && document.getElementById('vtxTimetableWidget')) {
+      document.getElementById('vtxTimetableWidget').remove();
     } else {
       // Widget disappeared while we were fetching (user navigated away) — just re-enable
       if (btn && document.body.contains(btn)) {
@@ -481,7 +483,7 @@ function _fmt24to12(hhmm) {
   if (!hhmm) return hhmm;
   const m = hhmm.match(/^(\d{1,2}):(\d{2})$/);
   if (!m) return hhmm;
-  let h   = parseInt(m[1], 10);
+  let h   = parseInt(m[1], 10) % 24;
   const min = m[2];
   const period = h >= 12 ? 'PM' : 'AM';
   h = h % 12 || 12;
@@ -508,6 +510,11 @@ function _convertTimeStr(raw, pref) {
 const TIMETABLE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 let _timetableDataCache = null; // { classKey, userId, data, fetchedAtMs }
 
+/* True only when the last fetch succeeded and found no timetable (as opposed to an error/offline). */
+function _ttIsConfirmedEmpty() {
+  return !!(_timetableDataCache && _timetableDataCache.data === null && _timetableDataCache.confirmedEmpty);
+}
+
 function _timetableSnapshotKey(classKey, userId) {
   return 'vtx_timetable_snapshot_' + classKey + '_' + (userId || 'anon');
 }
@@ -516,6 +523,7 @@ function _saveTimetableSnapshot(classKey, userId, data) {
   try {
     localStorage.setItem(_timetableSnapshotKey(classKey, userId), JSON.stringify({
       data: data,
+      weekKey: _isoWeekKey(),
       savedAtMs: Date.now(),
     }));
   } catch (e) { /* storage full or unavailable — non-fatal */ }
@@ -527,6 +535,8 @@ function _readTimetableSnapshot(classKey, userId) {
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!parsed || !parsed.data) return null;
+    // A week-specific snapshot from an earlier week is stale; permanent ones stay valid.
+    if (!parsed.data.isUsingPermanent && parsed.weekKey !== _isoWeekKey()) return null;
     return parsed.data;
   } catch (e) { return null; }
 }
@@ -542,6 +552,7 @@ async function _getWeeklyTimetableData(classKey, forceRefresh) {
     _timetableDataCache &&
     _timetableDataCache.classKey === classKey &&
     _timetableDataCache.userId === userId &&
+    _timetableDataCache.weekKey === _isoWeekKey() &&
     (now - _timetableDataCache.fetchedAtMs) < TIMETABLE_CACHE_TTL_MS
   ) {
     return _timetableDataCache.data;
@@ -611,7 +622,7 @@ async function _getWeeklyTimetableData(classKey, forceRefresh) {
     try {
       const snap = await window.fbDb.collection('weeklyTimetable').doc(classKey).get();
       if (!snap || !snap.exists) {
-        _timetableDataCache = { classKey, userId, data: null, fetchedAtMs: now };
+        _timetableDataCache = { classKey, userId, data: null, fetchedAtMs: now, confirmedEmpty: true, weekKey: _isoWeekKey() };
         return null;
       }
       ttData        = snap.data() || {};
@@ -636,7 +647,7 @@ async function _getWeeklyTimetableData(classKey, forceRefresh) {
     isUsingPermanent = true;
   }
   if (!tt || !Array.isArray(tt.periods) || tt.periods.length === 0) {
-    _timetableDataCache = { classKey, userId, data: null, fetchedAtMs: now };
+    _timetableDataCache = { classKey, userId, data: null, fetchedAtMs: now, confirmedEmpty: true, weekKey: _isoWeekKey() };
     return null;
   }
 
@@ -647,7 +658,7 @@ async function _getWeeklyTimetableData(classKey, forceRefresh) {
     overrideLabel,
   };
 
-  _timetableDataCache = { classKey, userId, data, fetchedAtMs: now };
+  _timetableDataCache = { classKey, userId, data, fetchedAtMs: now, weekKey: _isoWeekKey() };
   _saveTimetableSnapshot(classKey, userId, data);
   return data;
 }
@@ -694,37 +705,13 @@ async function _fetchWeeklyTimetableHtml(classKey, forceRefresh) {
     const clockPref = _getClockPref();
     const is12h     = clockPref === '12';
 
-    function parseMins(t) {
-      if (!t) return null;
-      const normalized = t.replace(/\s*[\u2013\u2014\u2212\-]\s*/g, '-');
-      const m = normalized.match(/^(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})$/);
-      if (!m) return null;
-      const start = +m[1] * 60 + +m[2];
-      const end   = +m[3] * 60 + +m[4];
-      if (end <= start) return null;
-      return { start, end };
-    }
+    function parseMins(t) { return _ttParseMinsRange(t); }
 
-    function _getCurrentPeriodIndex() {
-      if (todayColIdx < 0) return -1;
-      for (let i = 0; i < periods.length; i++) {
-        const range = parseMins(periods[i].time || '');
-        if (range && nowMin >= range.start && nowMin < range.end) return i;
-      }
-      return -1;
-    }
-
-    function _getNextPeriodIndex() {
-      if (todayColIdx < 0) return -1;
-      for (let i = 0; i < periods.length; i++) {
-        const range = parseMins(periods[i].time || '');
-        if (range && nowMin < range.start) return i;
-      }
-      return -1;
-    }
-
-    const currentPeriodIdx = _getCurrentPeriodIndex();
-    const nextPeriodIdx    = _getNextPeriodIndex();
+    const nnState = _ttComputeNowNext(periods, DAY_KEYS, todayColIdx, nowMin);
+    const currentPeriodIdx = nnState.cur ? nnState.cur.idx : -1;
+    const nextPeriodIdx    = nnState.next ? nnState.next.idx : -1;
+    const curDayIdx        = nnState.cur ? nnState.cur.dayIdx : -1;
+    const nextDayIdx       = nnState.next ? nnState.next.dayIdx : -1;
 
     const sunday = new Date(monday);
     sunday.setDate(monday.getDate() + 6);
@@ -762,7 +749,7 @@ async function _fetchWeeklyTimetableHtml(classKey, forceRefresh) {
 
       let nowBadge = '';
       if (isCurrentPeriod && range) {
-        const minsLeft = range.end - nowMin;
+        const minsLeft = nnState.cur.minsLeft;
         nowBadge =
           '<span style="' +
             'display:inline-flex;align-items:center;gap:3px;' +
@@ -777,7 +764,7 @@ async function _fetchWeeklyTimetableHtml(classKey, forceRefresh) {
           '</span>';
       }
       if (isNextPeriod && range) {
-        const minsUntil = range.start - nowMin;
+        const minsUntil = nnState.next.minsUntil;
         nowBadge =
           '<span style="' +
             'display:inline-flex;align-items:center;gap:3px;' +
@@ -817,9 +804,9 @@ async function _fetchWeeklyTimetableHtml(classKey, forceRefresh) {
         var empty     = val === '';
         var isWeekend = ci >= 5;
 
-        var bg = isCurrentPeriod && isToday
+        var bg = isCurrentPeriod && ci === curDayIdx
           ? 'rgba(217,119,6,.14)'
-          : isNextPeriod && isToday
+          : isNextPeriod && ci === nextDayIdx
           ? 'rgba(79,110,247,.08)'
           : isToday
           ? 'rgba(79,110,247,.055)'
@@ -828,8 +815,8 @@ async function _fetchWeeklyTimetableHtml(classKey, forceRefresh) {
           : rowBg;
 
         return '<td style="' + CB + 'background:' + bg + ';text-align:center;' +
-          'color:' + (empty ? 'var(--text-4)' : (isCurrentPeriod && isToday) ? 'var(--warning-text)' : isToday ? 'var(--text-1)' : 'var(--text-2)') + ';' +
-          'font-weight:' + ((isCurrentPeriod && isToday && !empty) ? '700' : isToday && !empty ? '600' : '400') + ';' +
+          'color:' + (empty ? 'var(--text-4)' : (isCurrentPeriod && ci === curDayIdx) ? 'var(--warning-text)' : isToday ? 'var(--text-1)' : 'var(--text-2)') + ';' +
+          'font-weight:' + ((isCurrentPeriod && ci === curDayIdx && !empty) ? '700' : isToday && !empty ? '600' : '400') + ';' +
           'font-size:' + (empty ? '.7rem' : '.8rem') + ';">' +
           (empty ? '<span style="opacity:.28;">\u2014</span>' : _escHtml(val)) +
           '</td>';
@@ -999,15 +986,55 @@ function _setClockStylePref(style) {
   try { localStorage.setItem('vtx_clock_style_pref', style); } catch (e) {}
 }
 
+/* A timetable cell counts as a real event only if it has text that is not a
+   placeholder dash / "none" / "free" style filler. */
+function _ttCellHasEvent(val) {
+  const v = (val || '').toString().trim();
+  if (!v) return false;
+  return !/^([\-\u2013\u2014\u2212_.\/\\]+|none|nil|n\/a|na|free|no class|no classes|empty)$/i.test(v);
+}
+
 function _ttParseMinsRange(t) {
   if (!t) return null;
   const normalized = t.replace(/\s*[\u2013\u2014\u2212\-]\s*/g, '-');
   const m = normalized.match(/^(\d{1,2}):(\d{2})-(\d{1,2}):(\d{2})$/);
   if (!m) return null;
   const start = +m[1] * 60 + +m[2];
-  const end   = +m[3] * 60 + +m[4];
-  if (end <= start) return null;
-  return { start, end };
+  let end     = +m[3] * 60 + +m[4];
+  if (+m[1] > 24 || +m[3] > 24 || +m[2] > 59 || +m[4] > 59 || start >= 1440) return null;
+  if (end === start) return null;
+  // End earlier than start means the period runs past midnight (e.g. 23:00 - 00:30).
+  if (end < start) end += 1440;
+  return { start, end, overnight: end > 1440 };
+}
+
+/* Works out which period is running now and which is next.
+   dayKeys is Monday-first, todayIdx is 0..6. A period belongs to the day it
+   STARTS on, so an overnight period from yesterday is still "current" in the
+   early hours of today. */
+function _ttComputeNowNext(periods, dayKeys, todayIdx, nowMin) {
+  let cur = null, next = null;
+  if (todayIdx < 0 || !Array.isArray(periods)) return { cur, next };
+  const todayKey = dayKeys[todayIdx];
+  const prevKey  = dayKeys[(todayIdx + 6) % 7];
+  periods.forEach(function (p, i) {
+    const r = _ttParseMinsRange(p.time || '');
+    if (!r) return;
+    if (_ttCellHasEvent(p[todayKey])) {
+      if (nowMin >= r.start && nowMin < r.end) {
+        cur = { idx: i, dayIdx: todayIdx, minsLeft: r.end - nowMin, label: (p[todayKey] || '').trim() };
+      } else if (r.start > nowMin && (!next || r.start < next.start)) {
+        next = { idx: i, dayIdx: todayIdx, start: r.start, minsUntil: r.start - nowMin, label: (p[todayKey] || '').trim() };
+      }
+    }
+    if (r.overnight && !cur && _ttCellHasEvent(p[prevKey])) {
+      const m = nowMin + 1440;
+      if (m >= r.start && m < r.end) {
+        cur = { idx: i, dayIdx: (todayIdx + 6) % 7, minsLeft: r.end - m, label: (p[prevKey] || '').trim() };
+      }
+    }
+  });
+  return { cur, next };
 }
 
 /* ── Fullscreen API helpers (cross-browser) ── */
@@ -1251,29 +1278,12 @@ async function _updateClockNowNext() {
     return;
   }
 
-  const DAY_KEYS = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+  const DAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
   const now      = new Date();
-  const dayKey   = DAY_KEYS[now.getDay()];
   const nowMin   = now.getHours() * 60 + now.getMinutes();
-
-  const periods = timetableData.periods;
-  let currentEntry = null;
-  let nextEntry     = null;
-  let nextStart     = Infinity;
-
-  periods.forEach(function (p) {
-    const range = _ttParseMinsRange(p.time || '');
-    if (!range) return;
-    const label = (p[dayKey] || '').trim();
-    if (!label) return;
-
-    if (nowMin >= range.start && nowMin < range.end) {
-      currentEntry = { label: label, endsIn: range.end - nowMin };
-    } else if (range.start > nowMin && range.start < nextStart) {
-      nextStart = range.start;
-      nextEntry = { label: label, startsIn: range.start - nowMin };
-    }
-  });
+  const st       = _ttComputeNowNext(timetableData.periods, DAY_KEYS, (now.getDay() + 6) % 7, nowMin);
+  const currentEntry = st.cur ? { label: st.cur.label, endsIn: st.cur.minsLeft } : null;
+  const nextEntry    = st.next ? { label: st.next.label, startsIn: st.next.minsUntil } : null;
 
   if (currentEntry) {
     const upper = currentEntry.label.toUpperCase();
@@ -2382,6 +2392,9 @@ async function renderSubjectSelection() {
             tmp.innerHTML = freshHtml;
             const newWidget = tmp.firstElementChild;
             if (newWidget) widget.replaceWith(newWidget);
+          } else if (!freshHtml && _ttIsConfirmedEmpty()) {
+            const gone = document.getElementById('vtxTimetableWidget');
+            if (gone) gone.remove();
           }
         } catch (e) {
           console.warn('[timetable refresh] error (non-fatal):', e);
@@ -3720,19 +3733,15 @@ async function _downloadTimetablePDF() {
   const clockPref = _getClockPref();
   const is12h     = clockPref === '12';
 
-  function parseMins(t) {
-    if (!t) return null;
-    const m = t.match(/(\d{1,2}):(\d{2})\s*[–\-—]\s*(\d{1,2}):(\d{2})/);
-    if (!m) return null;
-    return { start: +m[1] * 60 + +m[2], end: +m[3] * 60 + +m[4] };
-  }
+  function parseMins(t) { return _ttParseMinsRange(t); }
+  const pdfState = _ttComputeNowNext(periods, DAY_KEYS, todayColIdx, nowMin);
 
   // Converts a single HH:MM to 12-hour format for PDF — no narrow-space, plain space only
   function _pdfFmt12(hhmm) {
     if (!hhmm) return hhmm;
     const m = hhmm.match(/^(\d{1,2}):(\d{2})$/);
     if (!m) return hhmm;
-    let h = parseInt(m[1], 10);
+    let h = parseInt(m[1], 10) % 24;
     const min = m[2];
     const period = h >= 12 ? 'PM' : 'AM';
     h = h % 12 || 12;
@@ -3904,7 +3913,7 @@ async function _downloadTimetablePDF() {
       }
 
       const range           = parseMins(p.time || '');
-      const isCurrentPeriod = range && todayColIdx >= 0 && nowMin >= range.start && nowMin < range.end;
+      const isCurrentPeriod = !!(pdfState.cur && pdfState.cur.idx === rowIdx);
 
       const dayArrayIdx = colIdx - 1;
       const isWeekend   = dayArrayIdx >= 5 && dayArrayIdx <= 6;
@@ -3954,10 +3963,10 @@ async function _downloadTimetablePDF() {
       }
 
       const range           = parseMins(p.time || '');
-      const isCurrentPeriod = range && todayColIdx >= 0 && nowMin >= range.start && nowMin < range.end;
+      const isCurrentPeriod = !!(pdfState.cur && pdfState.cur.idx === rowIdx);
 
       if (isCurrentPeriod && colIdx === 0) {
-        const minsLeft = range.end - nowMin;
+        const minsLeft = pdfState.cur.minsLeft;
         doc.setFontSize(5.5);
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(...C.warning);
