@@ -2988,7 +2988,9 @@ async function renderSubjectSelection() {
     const subj    = S().exam.currentSubject;
     const answered = S().exam.answers[`${subj}-${idx}`] !== undefined;
     const btn      = document.querySelector(`#navGrid button:nth-child(${idx + 1})`);
-    if (btn && answered) btn.classList.add('answered');
+    if (btn && answered && !btn.classList.contains('answered')) {
+      btn.classList.add('answered', 'pop');
+    }
   }
 
   /* ─────────────────────────────────────────────────────── */
