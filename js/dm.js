@@ -530,28 +530,26 @@
 
   /** Write a single student heartbeat to both docs. */
   async function _writeStudentOnline(uid) {
-    const ts    = firebase.firestore.FieldValue.serverTimestamp();
-    const batch = Db().batch();
-    batch.set(_threadRef(uid),
-      { studentLastSeen: ts, studentOnline: true },
-      { merge: true });
-    batch.set(Db().collection('students').doc(uid),
-      { lastSeen: ts, isOnline: true },
-      { merge: true });
-    await batch.commit();
+    const ts = firebase.firestore.FieldValue.serverTimestamp();
+    await _writePresence(uid, { lastSeen: ts, isOnline: true },
+                              { studentLastSeen: ts, studentOnline: true });
+  }
+
+  /**
+   * Presence must only UPDATE existing documents. A plain set-with-merge
+   * silently re-creates the student's record (and DM thread) after a teacher
+   * has deleted them, which is how deleted students kept coming back.
+   */
+  async function _writePresence(uid, studentFields, threadFields) {
+    try { await Db().collection('students').doc(uid).update(studentFields); } catch (_) {}
+    try { await _threadRef(uid).update(threadFields); } catch (_) {}
   }
 
   /** Write student offline (stale timestamp) to both docs. */
   async function _writeStudentOffline(uid) {
-    const ts    = new Date(Date.now() - (ONLINE_THRESHOLD_MS + 2000));
-    const batch = Db().batch();
-    batch.set(_threadRef(uid),
-      { studentOnline: false, studentLastSeen: ts },
-      { merge: true });
-    batch.set(Db().collection('students').doc(uid),
-      { isOnline: false, lastSeen: ts },
-      { merge: true });
-    await batch.commit();
+    const ts = new Date(Date.now() - (ONLINE_THRESHOLD_MS + 2000));
+    await _writePresence(uid, { isOnline: false, lastSeen: ts },
+                              { studentOnline: false, studentLastSeen: ts });
   }
 
   function _startStudentHeartbeat(uid) {
@@ -633,8 +631,7 @@
       _studentOfflineDone = true;
       _stopStudentHeartbeat();
       const ts = new Date(Date.now() - (ONLINE_THRESHOLD_MS + 2000));
-      try { _threadRef(uid).set({ studentOnline: false, studentLastSeen: ts }, { merge: true }); } catch (_) {}
-      try { Db().collection('students').doc(uid).set({ isOnline: false, lastSeen: ts }, { merge: true }); } catch (_) {}
+      _writePresence(uid, { isOnline: false, lastSeen: ts }, { studentOnline: false, studentLastSeen: ts });
     };
     window.addEventListener('beforeunload', _studentBeforeunloadHandler);
   }
@@ -2215,6 +2212,7 @@ function _buildTeacherBubble(msg, showLabel, isLast, canReact) {
 
 function _subscribeTeacherThreadList() {
   AppState.cancelListener('dmTeacherThreads');
+  AppState.cancelListener('dmTeacherRoster');
 
   if (!window._dmThreadTypingUnsubs) window._dmThreadTypingUnsubs = {};
 
@@ -2306,25 +2304,42 @@ function _subscribeTeacherThreadList() {
     window._dmThreadTypingUnsubs[uid] = unsub;
   }
 
-  const unsub = Db()
-    .collection('directMessages').orderBy('lastAt', 'desc')
-    .onSnapshot(snap => {
-      const list = document.getElementById('dmThreadList');
-      if (!list) { AppState.cancelListener('dmTeacherThreads'); _teardownTypingWatchers(); return; }
+  // Live roster of real students. Conversations whose student no longer exists
+  // are hidden, and names/classes always come from the student's current record.
+  let _dmRoster   = null;   // Map(uid -> { name, class }) once loaded
+  let _dmLastSnap = null;
 
-      if (snap.empty) {
+  const _renderThreadList = (snap) => {
+      const list = document.getElementById('dmThreadList');
+      if (!list) {
+        AppState.cancelListener('dmTeacherThreads');
+        AppState.cancelListener('dmTeacherRoster');
         _teardownTypingWatchers();
-        list.innerHTML = `<p style="font-size:.8125rem;color:var(--text-4,#9ca3af);text-align:center;padding:2rem 1rem;">No messages yet.</p>`;
         return;
       }
 
       let totalUnread = 0;
-      const items = [];
+      let items = [];
       snap.forEach(doc => {
-        totalUnread += (doc.data().teacherUnread || 0);
         items.push({ id: doc.id, ...doc.data() });
       });
+
+      if (_dmRoster) {
+        items = items.filter(item => _dmRoster.has(item.id));
+        items.forEach(item => {
+          const live = _dmRoster.get(item.id);
+          item.studentName  = live.name  || item.studentName;
+          item.studentClass = live.class != null ? live.class : item.studentClass;
+        });
+      }
+      items.forEach(item => { totalUnread += (item.teacherUnread || 0); });
       _updateTeacherBadge(totalUnread);
+
+      if (items.length === 0) {
+        _teardownTypingWatchers();
+        list.innerHTML = `<p style="font-size:.8125rem;color:var(--text-4,#9ca3af);text-align:center;padding:2rem 1rem;">No messages yet.</p>`;
+        return;
+      }
 
       list.innerHTML = items.map(item => {
         const unread   = item.teacherUnread || 0;
@@ -2383,10 +2398,29 @@ function _subscribeTeacherThreadList() {
       }).join('');
 
       items.forEach(item => _attachTypingWatcher(item));
+  };
 
+  const unsub = Db()
+    .collection('directMessages').orderBy('lastAt', 'desc')
+    .onSnapshot(snap => {
+      _dmLastSnap = snap;
+      _renderThreadList(snap);
     }, err => console.error('[dm] Teacher thread list error:', err));
 
   AppState.registerListener('dmTeacherThreads', unsub);
+
+  const unsubRoster = Db().collection('students').onSnapshot(snap => {
+    const roster = new Map();
+    snap.forEach(doc => {
+      const x = doc.data() || {};
+      if (!x.name && !x.class && !x.email) return; // empty shell, not a real student
+      roster.set(doc.id, { name: x.name || '', class: x.class || '' });
+    });
+    _dmRoster = roster;
+    if (_dmLastSnap) _renderThreadList(_dmLastSnap);
+  }, err => console.warn('[dm] Teacher roster watch error:', err));
+
+  AppState.registerListener('dmTeacherRoster', unsubRoster);
 }
 
   let _activeStudentUid  = null;
@@ -3077,6 +3111,7 @@ function _renderStudentPickerList(students, query) {
 
     AppState.cancelListener('dmStudentMessages');
     AppState.cancelListener('dmTeacherThreads');
+    AppState.cancelListener('dmTeacherRoster');
     AppState.cancelListener('dmTeacherMessages');
     AppState.cancelListener('dmStudentUnread');
     AppState.cancelListener('dmTeacherUnread');

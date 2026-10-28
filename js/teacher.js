@@ -765,6 +765,11 @@ function renderTeacherDashboard() {
               <h2 style="font-size:var(--text-md);font-weight:600;color:var(--text-1);letter-spacing:-0.015em;">Registered Students</h2>
               <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">Grouped by school</p>
             </div>
+            <div style="display:flex;gap:.5rem;flex-wrap:wrap;justify-content:flex-end;">
+            <button onclick="StudentSync.repair(this)" class="btn bg-gray-500" style="font-size:var(--text-sm);"
+                    title="Fix names and remove leftover records of deleted students everywhere">
+              Sync data
+            </button>
             <button onclick="Teacher._loadStudents()" class="btn bg-gray-500" style="font-size:var(--text-sm);">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -773,6 +778,7 @@ function renderTeacherDashboard() {
               </svg>
               Refresh
             </button>
+            </div>
           </div>
           <div id="studentsList"></div>
         </div>
@@ -1132,6 +1138,8 @@ function _showGamesSubTab(sub) {
       const bySchool = {};
       snap.forEach(doc => {
         const d = doc.data();
+        // Skip empty shells (no name, class or email) left behind by a deleted student's open app
+        if (!d.name && !d.class && !d.email) return;
         const school = d.school || 'No School';
         if (!bySchool[school]) bySchool[school] = [];
         bySchool[school].push({ id: doc.id, ...d });
@@ -1344,7 +1352,23 @@ function _showGamesSubTab(sub) {
     console.warn('[teacher] removeStudent: could not delete DM thread (non-fatal):', err);
   }
 
-  UI.toast('Student and all associated data deleted.', 'success');
+  // 10. Remove the student from games, challenges, leaderboard and group chats
+  let _leftovers = [];
+  try {
+    if (window.StudentSync) {
+      const report = await StudentSync.purgeEverywhere(uid);
+      _leftovers = report.failed || [];
+    }
+  } catch (err) {
+    console.warn('[teacher] removeStudent: game/group cleanup failed (non-fatal):', err);
+    _leftovers = ['Games and group chats'];
+  }
+
+  if (_leftovers.length) {
+    UI.toast('Student deleted, but these could not be cleaned up: ' + _leftovers.join(', ') + '. Use "Sync data" on the Students tab to retry.', 'warning', 8000);
+  } else {
+    UI.toast('Student and all associated data deleted.', 'success');
+  }
 }
 
 async function editStudent(uid) {
@@ -1668,6 +1692,18 @@ async function _saveStudentEdit(uid, previousAdmno) {
       }
     } catch (e) {
       console.warn('[teacher] Could not update name in public chat:', e);
+    }
+
+    // Keep the copies of this name in games, challenges, leaderboard and group chats in step
+    try {
+      if (window.StudentSync) {
+        const syncReport = await StudentSync.renameEverywhere(uid, { name, class: cls, school });
+        if (syncReport.failed && syncReport.failed.length) {
+          console.warn('[teacher] Could not update name in:', syncReport.failed);
+        }
+      }
+    } catch (e) {
+      console.warn('[teacher] Could not update name in games/groups:', e);
     }
 
     UI.toast(`Student record updated successfully.`, 'success');

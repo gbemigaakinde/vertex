@@ -475,7 +475,7 @@
          "Student gets my messages" → students/{uid}.dmPushEnabled   (default OFF)
          "I get their messages"     → KV tprefs.mutedStudents        (default ON)
      ══════════════════════════════════════════════════════════ */
-  var _al = { enabled: true, muted: [], subscribed: [], students: [], deviceOn: false, filter: '' };
+  var _al = { enabled: true, muted: [], subscribed: [], students: [], deviceOn: false, filter: '', open: false };
   var _alBox = null;
 
   function _alEsc(str) {
@@ -546,16 +546,23 @@
     var keepFocus = document.activeElement && document.activeElement.id === 'vtxAlSearch';
     var caret = keepFocus ? document.activeElement.selectionStart : 0;
 
+    var isOpen = _al.open === true;
+    var summary = isOpen ? 'Phone alerts for private messages'
+      : (!_al.enabled ? 'Off. Tap to change'
+        : (_al.deviceOn ? 'On, this phone is ready. Tap to manage' : 'On, this phone is not set up yet. Tap to manage'));
+
     _alBox.innerHTML =
       '<div style="border:1.5px solid var(--border);border-radius:var(--r-xl);background:var(--bg-base);overflow:hidden;margin-bottom:1.25rem;">' +
-        '<div style="padding:.875rem 1.125rem;background:var(--accent);display:flex;align-items:center;gap:.625rem;">' +
+        '<button type="button" id="vtxAlHead" onclick="TeacherPush._alToggle()" aria-expanded="' + (isOpen ? 'true' : 'false') + '" aria-controls="vtxAlBody" ' +
+          'style="width:100%;text-align:left;border:none;cursor:pointer;font-family:var(--font);padding:.875rem 1.125rem;background:var(--accent);display:flex;align-items:center;gap:.625rem;">' +
           '<i class="ph ph-chat-circle-dots" style="font-size:18px;color:#fff;flex-shrink:0;"></i>' +
-          '<div>' +
-            '<p style="font-size:.9375rem;font-weight:700;color:#fff;line-height:1.2;">Message alerts</p>' +
-            '<p style="font-size:.6875rem;color:rgba(255,255,255,.75);margin-top:1px;">Phone alerts for private messages</p>' +
-          '</div>' +
-        '</div>' +
-        '<div style="padding:1rem 1.125rem;">' +
+          '<span style="flex:1;min-width:0;display:block;">' +
+            '<span style="display:block;font-size:.9375rem;font-weight:700;color:#fff;line-height:1.2;">Message alerts</span>' +
+            '<span style="display:block;font-size:.6875rem;color:rgba(255,255,255,.75);margin-top:1px;">' + summary + '</span>' +
+          '</span>' +
+          '<i class="ph ph-caret-down" style="font-size:18px;color:#fff;flex-shrink:0;transition:transform .2s;transform:' + (isOpen ? 'rotate(180deg)' : 'none') + ';"></i>' +
+        '</button>' +
+        '<div id="vtxAlBody" style="padding:1rem 1.125rem;' + (isOpen ? '' : 'display:none;') + '">' +
 
           '<div style="display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-bottom:.875rem;">' +
             '<div><p style="font-size:.875rem;font-weight:600;color:var(--text-1);">Alerts on this phone</p>' +
@@ -616,10 +623,12 @@
       results[1].forEach(function (d) {
         var x = d.data() || {};
         if (d.id === AppState.userId) return;
+        if (!x.name && !x.class && !x.email) return; // empty shell left by a deleted student
         _al.students.push({ uid: d.id, name: x.name || '', cls: x.class || '', dmPush: x.dmPushEnabled === true });
       });
       _al.students.sort(function (a, b) { return (a.name || '').localeCompare(b.name || ''); });
       _al.filter = '';
+      _al.open   = false;
       _alRender();
     } catch (e) {
       console.warn('[TeacherPush] alerts panel load error:', e);
@@ -690,6 +699,8 @@
     }
   }
 
+  function _alToggle() { _al.open = !_al.open; _alRender(); }
+
   function _alFilter(v) { _al.filter = v || ''; _alRender(); }
 
   window.TeacherPush = {
@@ -701,6 +712,7 @@
     _alStudent:        _alStudent,
     _alBulk:           _alBulk,
     _alFilter:         _alFilter,
+    _alToggle:         _alToggle,
     _onModeChange:     _onModeChange,
     _onTimingChange:   _onTimingChange,
     _send:             _send,

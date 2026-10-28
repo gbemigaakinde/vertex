@@ -9034,6 +9034,7 @@ function _krLoop(timestamp) {
       const validStudents = {};
       rosterSnap.forEach(doc => {
         const d = doc.data();
+        if (!d.name && !d.class && !d.email) return; // empty shell left by a deleted student
         validStudents[doc.id] = { name: d.name || '', class: d.class || '', school: d.school || '' };
       });
 
@@ -9993,6 +9994,7 @@ async function renderTeacherGameRestrictions(containerId) {
         const validStudents = {};
         rosterSnap.forEach(doc => {
           const d = doc.data();
+          if (!d.name && !d.class && !d.email) return; // empty shell left by a deleted student
           validStudents[doc.id] = { name: d.name || '', class: d.class || '', school: d.school || '' };
         });
 

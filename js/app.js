@@ -136,6 +136,36 @@
       AppState.studentData = snap.data();
       AppState.chatUnread  = 0;
 
+      // ── Keep this student's own record live ──
+      // If the teacher renames the student or changes their class, the app
+      // picks it up straight away (instead of at next login). If the teacher
+      // deletes the student, this session is closed so it cannot recreate them.
+      var _ownProfileFirst = true;
+      var ownProfileUnsub = window.fbDb.collection('students').doc(uid).onSnapshot(async function (ownSnap) {
+        if (!ownSnap.exists) {
+          if (ownSnap.metadata && ownSnap.metadata.fromCache) return; // offline, not a real deletion
+          if (window.VtxLoader) window.VtxLoader.done();
+          UI.toast('Your account has been removed. Please contact your teacher.', 'error', 0);
+          if (window.DM && typeof DM.cancelListeners === 'function') {
+            try { await DM.cancelListeners(); } catch (e) {}
+          }
+          await _teardownAndSignOut();
+          return;
+        }
+        var fresh = ownSnap.data() || {};
+        var before = AppState.studentData || {};
+        var detailsChanged = !_ownProfileFirst &&
+          (before.name !== fresh.name || before.class !== fresh.class || before.school !== fresh.school);
+        AppState.studentData = Object.assign(before, fresh);
+        _ownProfileFirst = false;
+        if (detailsChanged) {
+          UI.toast('Your details were updated by your teacher.', 'info', 4000);
+        }
+      }, function (err) {
+        console.warn('[app] own profile listener error:', err);
+      });
+      AppState.registerListener('ownProfile', ownProfileUnsub);
+
       // ── ACTIVITY LOG: login ──
       if (window.ActivityLog) {
         var _sd = AppState.studentData;
