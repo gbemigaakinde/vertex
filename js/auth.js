@@ -65,6 +65,7 @@
               <div style="margin-bottom:var(--sp-3);">
                 <label class="cbt-label" for="loginEmail">Email address</label>
                 <input id="loginEmail" type="email" placeholder="you@example.com" autocomplete="email" />
+                <div class="cbt-field-error" id="loginEmailErr" role="alert" hidden></div>
               </div>
             </div>
 
@@ -73,13 +74,14 @@
                 <label class="cbt-label" for="loginAdmno">Registration Number</label>
                 <input id="loginAdmno" type="text" placeholder="e.g. VTX-2024-001"
                        autocomplete="off" style="text-transform:uppercase;" />
+                <div class="cbt-field-error" id="loginAdmnoErr" role="alert" hidden></div>
               </div>
             </div>
 
             <div style="margin-bottom:var(--sp-4);">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--sp-1);">
                 <label class="cbt-label" for="loginPass" style="margin-bottom:0;">Password</label>
-                <button onclick="Auth.forgotPassword()" class="cbt-text-link"
+                <button type="button" onclick="Auth.forgotPassword()" class="cbt-text-link"
                         style="font-size:var(--text-xs);">Forgot password?</button>
               </div>
               <div class="cbt-password-wrap">
@@ -104,6 +106,7 @@
               </div>
             </div>
 
+            <div class="cbt-field-error" id="loginPassErr" role="alert" hidden style="margin-top:-var(--sp-3);margin-bottom:var(--sp-3);"></div>
             <button id="loginBtn" onclick="Auth.login()" class="btn w-full btn-lg">
               Sign In
             </button>
@@ -125,6 +128,27 @@
 
           </div>
 
+          <div id="forgotPanel" class="hidden">
+            <div style="margin-bottom:var(--sp-5);">
+              <h2 style="font-size:var(--text-lg);font-weight:600;color:var(--text-1);margin-bottom:0.25rem;letter-spacing:-0.015em;">
+                Reset your password
+              </h2>
+              <p style="font-size:var(--text-sm);color:var(--text-3);">
+                Enter the email you registered with. We will send you a reset link.
+              </p>
+            </div>
+            <div style="margin-bottom:var(--sp-4);">
+              <label class="cbt-label" for="resetEmail">Email address</label>
+              <input id="resetEmail" type="email" placeholder="you@example.com" autocomplete="email" />
+              <div class="cbt-field-error" id="resetEmailErr" role="alert" hidden></div>
+            </div>
+            <div class="cbt-field-ok" id="resetOk" role="status" hidden></div>
+            <button id="resetBtn" type="button" onclick="Auth.sendReset()" class="btn w-full btn-lg">Send reset link</button>
+            <div style="text-align:center;margin-top:var(--sp-4);padding-top:var(--sp-4);border-top:1px solid var(--border);">
+              <button type="button" onclick="Auth.showLogin()" class="cbt-text-link" style="font-size:var(--text-sm);">Back to sign in</button>
+            </div>
+          </div>
+
           <div id="registerPanel" class="hidden">
 
             <div style="margin-bottom:var(--sp-5);">
@@ -141,6 +165,7 @@
               <div>
                 <label class="cbt-label" for="regName">Full Name</label>
                 <input id="regName" type="text" placeholder="Your full name" autocomplete="name" />
+                <div class="cbt-field-error" id="regNameErr" role="alert" hidden></div>
               </div>
 
               <div style="display:grid;grid-template-columns:1fr 1fr;gap:var(--sp-3);">
@@ -164,6 +189,7 @@
               <div>
                 <label class="cbt-label" for="regEmail">Email address</label>
                 <input id="regEmail" type="email" placeholder="you@example.com" autocomplete="email" />
+                <div class="cbt-field-error" id="regEmailErr" role="alert" hidden></div>
               </div>
 
               <div>
@@ -189,6 +215,7 @@
                     </svg>
                   </button>
                 </div>
+                <div class="cbt-field-error" id="regPassErr" role="alert" hidden></div>
               </div>
 
             </div>
@@ -238,6 +265,7 @@
       _wireToggle('regPass',   'regPassToggle',   'regPassEye',   'regPassEyeOff');
     }());
 
+    _wireClear();
     const loginPassEl = document.getElementById('loginPass');
     if (loginPassEl) {
       loginPassEl.addEventListener('keydown', function (e) {
@@ -320,14 +348,122 @@
     }
   }
 
-  function showRegister() {
-    document.getElementById('loginPanel').classList.add('hidden');
-    document.getElementById('registerPanel').classList.remove('hidden');
+  function _showPanel(id) {
+    ['loginPanel', 'registerPanel', 'forgotPanel'].forEach(function (p) {
+      const el = document.getElementById(p);
+      if (el) el.classList.toggle('hidden', p !== id);
+    });
+    _clearFieldErrors();
   }
 
-  function showLogin() {
-    document.getElementById('registerPanel').classList.add('hidden');
-    document.getElementById('loginPanel').classList.remove('hidden');
+  function showRegister() { _showPanel('registerPanel'); }
+  function showLogin()    { _showPanel('loginPanel'); }
+
+  // ── Field-level errors: red box, message under it, cursor lands in it ──
+  function _errSlot(input) {
+    let slot = document.getElementById(input.id + 'Err');
+    if (!slot) {
+      slot = document.createElement('div');
+      slot.className = 'cbt-field-error';
+      slot.id = input.id + 'Err';
+      slot.setAttribute('role', 'alert');
+      slot.hidden = true;
+      const anchor = input.closest('.cbt-password-wrap') || input;
+      anchor.parentNode.insertBefore(slot, anchor.nextSibling);
+    }
+    return slot;
+  }
+
+  function _clearFieldError(input) {
+    if (!input) return;
+    input.classList.remove('is-invalid');
+    input.removeAttribute('aria-invalid');
+    const wrap = input.closest('.cbt-password-wrap');
+    if (wrap) wrap.classList.remove('is-invalid');
+    const slot = document.getElementById(input.id + 'Err');
+    if (slot) { slot.hidden = true; slot.textContent = ''; }
+  }
+
+  function _clearFieldErrors() {
+    document.querySelectorAll('#app .is-invalid, #app [aria-invalid]').forEach(function (el) {
+      if (el.tagName === 'INPUT' || el.tagName === 'SELECT') _clearFieldError(el);
+      else el.classList.remove('is-invalid');
+    });
+    document.querySelectorAll('#app .cbt-field-error').forEach(function (e) { e.hidden = true; e.textContent = ''; });
+  }
+
+  // Marks every field in `ids` red. The first one gets the message and the cursor.
+  // `msg` shows under the first field; extra fields are only highlighted.
+  function _fieldError(ids, msg) {
+    ids = [].concat(ids);
+    let first = null;
+    ids.forEach(function (id, i) {
+      const input = document.getElementById(id);
+      if (!input) return;
+      if (!first) first = input;
+      input.classList.add('is-invalid');
+      input.setAttribute('aria-invalid', 'true');
+      const wrap = input.closest('.cbt-password-wrap');
+      if (wrap) wrap.classList.add('is-invalid');
+      if (i === 0) {
+        const slot = _errSlot(input);
+        slot.textContent = msg;
+        slot.hidden = false;
+        input.setAttribute('aria-describedby', slot.id);
+      }
+    });
+    if (first) {
+      try { first.scrollIntoView({ block: 'center', behavior: 'smooth' }); } catch (e) {}
+      try { first.focus({ preventScroll: true }); } catch (e) { first.focus(); }
+      first.classList.remove('shake'); void first.offsetWidth; first.classList.add('shake');
+    }
+  }
+
+  // Typing in a red field clears its error straight away.
+  function _wireClear() {
+    const app = document.getElementById('app');
+    if (!app || app._authClearWired) return;
+    app._authClearWired = true;
+    const handler = function (e) {
+      const t = e.target;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'SELECT') && t.classList.contains('is-invalid')) _clearFieldError(t);
+    };
+    app.addEventListener('input', handler);
+    app.addEventListener('change', handler);
+  }
+
+  function _validEmail(v) { return /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v); }
+
+  // Decides which box a Firebase error belongs to.
+  function _fieldFor(err, ctx) {
+    const code = err && err.code ? String(err.code).toLowerCase() : '';
+    const idField = ctx === 'login-admno' ? 'loginAdmno' : (ctx === 'register' ? 'regEmail' : (ctx === 'reset' ? 'resetEmail' : 'loginEmail'));
+    const passField = ctx === 'register' ? 'regPass' : 'loginPass';
+    switch (code) {
+      case 'auth/user-not-found':
+      case 'auth/invalid-email':
+      case 'auth/missing-email':
+      case 'auth/email-already-in-use':
+      case 'auth/user-disabled':
+        return [idField];
+      case 'auth/wrong-password':
+      case 'auth/missing-password':
+      case 'auth/weak-password':
+        return [passField];
+      case 'auth/invalid-credential':
+      case 'auth/invalid-login-credentials':
+        return ctx === 'login-admno' || ctx === 'login-email' ? [passField, idField] : [idField];
+      default:
+        return null; // network, server, too-many-requests: no single box to blame
+    }
+  }
+
+  // Shows an error. Field errors go under the box; everything else is a toast.
+  function _showError(err, ctx, step) {
+    const msg = describeError(err, step || ctx);
+    const fields = _fieldFor(err, ctx);
+    if (fields && !(typeof navigator !== 'undefined' && navigator.onLine === false)) _fieldError(fields, msg);
+    else UI.toast(msg, 'error', 7000);
   }
 
   // ── Plain-English error messages ───────────────────────────────
@@ -387,6 +523,7 @@
   // student signed in with an email or a registration number).
   const _CTX_MSG = {
     'login-email': {
+      'auth/wrong-password':            'That password is not correct. Try again, or tap "Forgot password?" to reset it.',
       'auth/invalid-credential':        'Your email or password is not correct. Check both and try again. If you forgot your password, tap "Forgot password?".',
       'auth/invalid-login-credentials': 'Your email or password is not correct. Check both and try again. If you forgot your password, tap "Forgot password?".',
       'auth/user-not-found':            'We could not find an account with that email. Check the spelling, or tap "Create an account" if you are new.'
@@ -447,6 +584,8 @@
     const pass    = document.getElementById('loginPass')?.value || '';
     const isAdmno = _loginMode === 'admno';
     const ctx     = isAdmno ? 'login-admno' : 'login-email';
+    const idField = isAdmno ? 'loginAdmno' : 'loginEmail';
+    _clearFieldErrors();
 
     const rawId = isAdmno
       ? (document.getElementById('loginAdmno')?.value || '').trim().toUpperCase()
@@ -454,14 +593,16 @@
 
     // Check what the student typed before contacting the server
     if (!rawId) {
-      UI.toast(isAdmno ? 'Please enter your registration number.' : 'Please enter your email address.', 'warning');
+      _fieldError(idField, isAdmno ? 'Please enter your registration number.' : 'Please enter your email address.');
       return;
     }
-    if (!isAdmno && rawId.indexOf('@') === -1) {
-      UI.toast('That email address does not look right. It needs an @ sign, for example name@gmail.com.', 'warning');
+    if (!isAdmno && !_validEmail(rawId)) {
+      _fieldError(idField, rawId.indexOf('@') === -1
+        ? 'This email is missing the @ sign. It should look like name@gmail.com.'
+        : 'That email address does not look right. Check for typing mistakes or spaces.');
       return;
     }
-    if (!pass) { UI.toast('Please enter your password.', 'warning'); return; }
+    if (!pass) { _fieldError('loginPass', 'Please enter your password.'); return; }
 
     UI.setLoading(btn, true);
     let step = 'signin';
@@ -473,10 +614,11 @@
 
       if (isAdmno) {
         step = 'lookup';
+        const notFound = 'We could not find that registration number. Check it and try again, or use the Email tab.';
 
         // A "/" would be read as a folder path by the database, so it cannot be a real number
         if (rawId.indexOf('/') !== -1) {
-          UI.toast('We could not find that registration number. Check it and try again, or use the Email tab.', 'error', 7000);
+          _fieldError('loginAdmno', notFound);
           UI.setLoading(btn, false);
           return;
         }
@@ -484,7 +626,7 @@
         const indexSnap = await window.fbDb.collection('admissionNumbers').doc(rawId).get();
 
         if (!indexSnap.exists) {
-          UI.toast('We could not find that registration number. Check it and try again, or use the Email tab.', 'error', 7000);
+          _fieldError('loginAdmno', notFound);
           UI.setLoading(btn, false);
           return;
         }
@@ -492,7 +634,7 @@
         const data = indexSnap.data() || {};
         if (!data.uid || !data.email) {
           console.error('[auth] admissionNumbers entry missing uid/email for:', rawId);
-          UI.toast('This registration number is not fully set up yet. Please see Master Timothy.', 'error', 7000);
+          _fieldError('loginAdmno', 'This registration number is not fully set up yet. Please see Master Timothy.');
           UI.setLoading(btn, false);
           return;
         }
@@ -506,7 +648,8 @@
 
     } catch (err) {
       console.error('[auth] login error at ' + step + ':', err && err.code, err);
-      UI.toast(describeError(err, step === 'lookup' ? 'lookup' : ctx), 'error', 7000);
+      if (step === 'lookup') UI.toast(describeError(err, 'lookup'), 'error', 7000);
+      else _showError(err, ctx);
       UI.setLoading(btn, false);
     }
   }
@@ -518,12 +661,19 @@
     const school = document.getElementById('regSchool')?.value  || '';
     const email  = (document.getElementById('regEmail')?.value  || '').trim();
     const pass   = document.getElementById('regPass')?.value    || '';
+    _clearFieldErrors();
 
-    if (!name)           { UI.toast('Please enter your full name.',             'warning'); return; }
-    if (!cls)            { UI.toast('Please select your class.',                'warning'); return; }
-    if (!school)         { UI.toast('Please select your school.',               'warning'); return; }
-    if (!email)          { UI.toast('Please enter your email.',                 'warning'); return; }
-    if (pass.length < 6) { UI.toast('Password must be at least 6 characters.', 'warning'); return; }
+    if (!name)   { _fieldError('regName',   'Please enter your full name.'); return; }
+    if (!cls)    { _fieldError('regClass',  'Please select your class.');    return; }
+    if (!school) { _fieldError('regSchool', 'Please select your school.');   return; }
+    if (!email)  { _fieldError('regEmail',  'Please enter your email address.'); return; }
+    if (!_validEmail(email)) {
+      _fieldError('regEmail', email.indexOf('@') === -1
+        ? 'This email is missing the @ sign. It should look like name@gmail.com. If you have no email, use yourname@vertex.com.'
+        : 'That email address does not look right. Check for typing mistakes or spaces.');
+      return;
+    }
+    if (pass.length < 6) { _fieldError('regPass', 'Your password must be at least 6 characters long.'); return; }
 
     UI.setLoading(btn, true);
     window._registrationInProgress = true;
@@ -540,29 +690,18 @@
 
       // 3. Registration submitted. Sign out silently, then show waiting room.
       window._registrationInProgress = false;
-
-      // Sign out so onAuthStateChanged does not trigger _onLogin
-      // (flag is already false so the listener guard is correct)
       await window.fbAuth.signOut();
 
-      // 4. Store credentials temporarily so we can re-authenticate for the waiting room
-      //    We do NOT auto-login — instead show the waiting room via the login flow.
-      //    Set a pending email hint so the login screen pre-fills.
+      // 4. Remember the email so the login screen can pre-fill it
       _pendingLoginEmail = email;
 
-      // 5. Mount the waiting room directly (student just registered)
-      //    We need to sign them in silently to attach the real-time listener.
-      //    Re-authenticate, skip _onLogin by using the registration flag.
+      // 5. Sign in silently to attach the real-time listener for the waiting room.
       window._registrationInProgress = true;
       const reCred = await window.fbAuth.signInWithEmailAndPassword(email, pass);
       window._registrationInProgress = false;
 
       const uid = reCred.user.uid;
-
-      // Cancel school dropdown listener now that we're leaving the auth screen
       AppState.cancelListener('schoolDropdown');
-
-      // Show waiting room
       ActivityLog.renderWaitingRoom(uid, name);
 
     } catch (err) {
@@ -570,46 +709,56 @@
 
       // If we created the auth user but failed afterwards, sign them out cleanly
       if (createdUid) {
-        try {
-          // Try to clean up the pending doc if it was written
-          await window.fbDb.collection('pendingStudents').doc(createdUid).delete();
-        } catch (e) { /* non-fatal */ }
+        try { await window.fbDb.collection('pendingStudents').doc(createdUid).delete(); } catch (e) { /* non-fatal */ }
         try { await window.fbAuth.signOut(); } catch (e) {}
       } else if (window.fbAuth.currentUser) {
         window.fbAuth.signOut().catch(function () {});
       }
 
       console.error('[auth] register error:', err && err.code, err);
-      const msg = describeError(err, 'register');
-      UI.toast(msg, 'error', 8000);
+      _showError(err, 'register');
       UI.setLoading(btn, false);
     }
   }
 
-  async function forgotPassword() {
+  // "Forgot password?" opens an in-page form (no browser pop-up box)
+  function forgotPassword() {
     if (_loginMode === 'admno') {
-      UI.toast(
-        'Password reset requires your email. Switch to the Email tab, or contact Master Timothy.',
-        'info',
-        8000
-      );
+      UI.toast('Password reset needs your email. Switch to the Email tab, or contact Master Timothy.', 'info', 8000);
+      return;
+    }
+    const typed = (document.getElementById('loginEmail')?.value || '').trim();
+    _showPanel('forgotPanel');
+    const input = document.getElementById('resetEmail');
+    const ok = document.getElementById('resetOk');
+    if (ok) { ok.hidden = true; ok.textContent = ''; }
+    if (input) { if (typed) input.value = typed; input.focus(); }
+  }
+
+  async function sendReset() {
+    const btn   = document.getElementById('resetBtn');
+    const email = (document.getElementById('resetEmail')?.value || '').trim();
+    const ok    = document.getElementById('resetOk');
+    _clearFieldErrors();
+    if (ok) { ok.hidden = true; ok.textContent = ''; }
+
+    if (!email) { _fieldError('resetEmail', 'Please enter your email address.'); return; }
+    if (!_validEmail(email)) {
+      _fieldError('resetEmail', email.indexOf('@') === -1
+        ? 'This email is missing the @ sign. It should look like name@gmail.com.'
+        : 'That email address does not look right. Check for typing mistakes or spaces.');
       return;
     }
 
-    const email = (window.prompt('Enter your registered email address:') || '').trim();
-    if (!email) return;
-    if (email.indexOf('@') === -1) {
-      UI.toast('That email address does not look right. It needs an @ sign, for example name@gmail.com.', 'warning');
-      return;
-    }
+    UI.setLoading(btn, true);
     try {
       await window.fbAuth.sendPasswordResetEmail(email);
-      // Firebase may hide whether the email has an account, so the wording stays true either way.
-      UI.toast('If that email has an account, a reset link is on its way. Check your inbox and your spam folder.', 'success', 8000);
+      if (ok) { ok.textContent = 'Reset link sent to ' + email + '. Check your inbox and your spam folder.'; ok.hidden = false; }
     } catch (err) {
       console.error('[auth] password reset error:', err && err.code, err);
-      UI.toast(describeError(err, 'reset'), 'error', 7000);
+      _showError(err, 'reset');
     }
+    UI.setLoading(btn, false);
   }
 
   function _esc(str) {
@@ -624,6 +773,7 @@
     login,
     register,
     forgotPassword,
+    sendReset,
     describeError,
     _setLoginMode,
   };

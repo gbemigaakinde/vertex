@@ -7,6 +7,12 @@
 
   document.addEventListener('DOMContentLoaded', function () {
     _registerGlobalErrorHandlers();
+    // Firebase (or a core script) did not load: never continue into a blank page.
+    if (!window.fbAuth || !window.fbDb || !window.UI || !window.AppState) {
+      console.error('[app] Core scripts missing, cannot start.');
+      if (window.VtxBoot) window.VtxBoot.recover('core scripts missing');
+      return;
+    }
     if (window.VtxLoader) window.VtxLoader.progress(10, 'Connecting…');
     _startAuthListener();
     window._appReady = true;
