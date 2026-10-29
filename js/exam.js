@@ -2069,9 +2069,9 @@ async function renderSubjectSelection() {
                       padding:.875rem 1.125rem .75rem;flex-shrink:0;">
             <div style="display:flex;align-items:center;gap:.625rem;">
               <span style="display:inline-flex;align-items:center;justify-content:center;
-                           width:34px;height:34px;border-radius:var(--r-lg);
+                           width:34px;height:34px;border-radius:var(--r-lg);overflow:hidden;
                            background:var(--accent-subtle);flex-shrink:0;">
-                <i class="ph ph-chats" style="font-size:17px;color:var(--accent);"></i>
+                <img src="/vertex.jpeg" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;" />
               </span>
               <div>
                 <p style="font-size:.9375rem;font-weight:700;color:var(--text-1);line-height:1.2;letter-spacing:-.015em;">Master Timothy AI</p>
@@ -3664,12 +3664,17 @@ function _renderAiText(str) {
   });
 
   // Lists
-  safe = safe.replace(/^[\s]*[-*•]\s+(.+)$/gm, '<li style="margin:.2em 0;">$1</li>');
-  safe = safe.replace(/^[\s]*(\d+)\.\s+(.+)$/gm, '<li style="margin:.2em 0;"><span style="font-weight:600;margin-right:.3em;">$1.</span>$2</li>');
+  safe = safe.replace(/^[ \t]*[-*•][ \t]+(.+)$/gm, '<li style="margin:.2em 0;">$1</li>');
+  safe = safe.replace(/^[ \t]*(\d+)\.[ \t]+(.+)$/gm, '<li style="margin:.2em 0;"><span style="font-weight:600;margin-right:.3em;">$1.</span>$2</li>');
 
   safe = safe.replace(/(<li[^>]*>[\s\S]*?<\/li>)(\s*<li[^>]*>[\s\S]*?<\/li>)*/g, function (match) {
     return '<ul style="margin:.4em 0 .6em 1.1em;padding:0;list-style:none;">' + match + '</ul>';
   });
+
+  // Give lists, tables and rules their own block so they are never wrapped inside a <p>
+  safe = safe.replace(/<ul[^>]*>[\s\S]*?<\/ul>/g, function (m) { return '\n\n' + m + '\n\n'; });
+  safe = safe.replace(/<div style="overflow-x:auto[\s\S]*?<\/table><\/div>/g, function (m) { return '\n\n' + m + '\n\n'; });
+  safe = safe.replace(/<hr[^>]*>/g, function (m) { return '\n\n' + m + '\n\n'; });
 
   // Paragraph wrapping
   var lines = safe.split(/\n\n+/);
@@ -4208,6 +4213,54 @@ function _startPlaceholderCycle(inputId) {
   };
 }
    
+/* Auto-scroll that never fights the student. If they scroll up (wheel, touch or
+   keyboard) auto-follow pauses; it resumes when they return to the bottom. */
+function _vtxAutoScroll(el) {
+  if (!el) return;
+  if (!el._vtxScrollBound) {
+    el._vtxScrollBound = true;
+    el._vtxPinned = true;
+    el._vtxUserTs = 0;
+    var _mark = function () { el._vtxUserTs = Date.now(); setTimeout(_recheck, 0); };
+    var _recheck = function () {
+      el._vtxPinned = (el.scrollHeight - el.scrollTop - el.clientHeight) < 60;
+    };
+    el.addEventListener('wheel', _mark, { passive: true });
+    el.addEventListener('touchstart', _mark, { passive: true });
+    el.addEventListener('touchmove', _mark, { passive: true });
+    el.addEventListener('keydown', _mark);
+    el.addEventListener('scroll', function () {
+      // Only react to scrolls the student caused (includes touch momentum)
+      if (Date.now() - el._vtxUserTs < 1500) _recheck();
+    }, { passive: true });
+  }
+  if (el._vtxPinned === false) return;
+  var top = el.scrollHeight;
+  if (typeof el.scrollTo === 'function') el.scrollTo({ top: top, behavior: 'instant' });
+  else el.scrollTop = top;
+}
+
+/* Put the typing cursor inside the last block that holds text, so it sits at the
+   end of the line being typed instead of dropping onto a line of its own. */
+function _vtxPlaceCursor(el) {
+  var cur = document.createElement('span');
+  cur.className = 'vtx-tw-cursor';
+  cur.setAttribute('aria-hidden', 'true');
+  var host = el;
+  var BLOCKS = { P: 1, UL: 1, OL: 1, LI: 1, DIV: 1, TABLE: 1, THEAD: 1, TBODY: 1, TR: 1, TD: 1, TH: 1, BLOCKQUOTE: 1 };
+  for (var guard = 0; guard < 12; guard++) {
+    var n = host.lastChild;
+    while (n && n.nodeType === 3 && !n.nodeValue.trim()) n = n.previousSibling;
+    if (n && n.nodeType === 1 && BLOCKS[n.tagName]) { host = n; continue; }
+    break;
+  }
+  // A trailing <br> would push the cursor onto a new line; place it before it
+  // Plain inline text-like dot: it moves with the last word and cannot wrap onto its own line
+  var tail = host.lastChild;
+  if (tail && tail.nodeType === 1 && tail.tagName === 'BR') host.insertBefore(cur, tail);
+  else host.appendChild(cur);
+}
+
 function _aiTypewriter(el, text, scrollContainer) {
     if (!el) return;
 
@@ -4219,7 +4272,7 @@ function _aiTypewriter(el, text, scrollContainer) {
     if (hasMath) {
       el.style.opacity = '0';
       el.innerHTML = rendered;
-      if (scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
+      _vtxAutoScroll(scrollContainer);
 
       // Render KaTeX first, then fade in
       if (window._katexAutoRenderReady && window.renderMathInElement) {
@@ -4241,7 +4294,7 @@ function _aiTypewriter(el, text, scrollContainer) {
       requestAnimationFrame(function () {
         el.style.transition = 'opacity 280ms ease';
         el.style.opacity = '1';
-        if (scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        _vtxAutoScroll(scrollContainer);
       });
       return;
     }
@@ -4257,17 +4310,19 @@ function _aiTypewriter(el, text, scrollContainer) {
       var s = document.createElement('style');
       s.id = 'vtxTwStyle';
       s.textContent =
-        '@keyframes vtx-cursor-blink{0%,100%{opacity:1}50%{opacity:0}}' +
-        '.vtx-tw-cursor{display:inline-block;width:2px;height:1em;' +
-          'background:var(--accent);vertical-align:text-bottom;border-radius:1px;margin-left:1px;' +
-          'animation:vtx-cursor-blink 0.7s ease-in-out infinite;}';
+        '@keyframes vtx-orb-breathe{0%,100%{opacity:.55;text-shadow:0 0 0 rgba(79,110,247,0)}' +
+          '50%{opacity:1;text-shadow:0 0 8px rgba(79,110,247,.75)}}' +
+        '.vtx-tw-cursor{display:inline;padding-left:.3em;font-size:.8em;line-height:1;vertical-align:.04em;' +
+          'color:var(--accent);animation:vtx-orb-breathe 1.1s ease-in-out infinite;}' +
+        '.vtx-tw-cursor::before{content:"\\2060\\25CF";}' +
+        '@media (prefers-reduced-motion:reduce){.vtx-tw-cursor{animation:none;}}';
       document.head.appendChild(s);
     }
 
     function tick() {
       if (i >= total) {
         el.innerHTML = rendered;
-        if (scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
+        _vtxAutoScroll(scrollContainer);
         return;
       }
 
@@ -4275,9 +4330,10 @@ function _aiTypewriter(el, text, scrollContainer) {
       i++;
 
       var partialRendered = _renderAiText(plain);
-      el.innerHTML = partialRendered + '<span class="vtx-tw-cursor"></span>';
+      el.innerHTML = partialRendered;
+      _vtxPlaceCursor(el);
 
-      if (scrollContainer) scrollContainer.scrollTop = scrollContainer.scrollHeight;
+      _vtxAutoScroll(scrollContainer);
       setTimeout(tick, speed);
     }
 
@@ -4930,8 +4986,8 @@ function _openAiDrawer() {
                   thoughtPillHtml +
                   '<div style="display:flex;align-items:flex-end;gap:.5rem;min-width:0;max-width:100%;box-sizing:border-box;">' +
                     '<span style="display:inline-flex;align-items:center;justify-content:center;' +
-                      'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;">' +
-                      '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>' +
+                      'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;overflow:hidden;">' +
+                      '<img src="/vertex.jpeg" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;" />' +
                     '</span>' +
                     '<div class="vtx-ai-reply-bubble" style="' +
                       'max-width:calc(100% - 34px);' +
@@ -5115,6 +5171,7 @@ function _dispatchImageSend(dataUrl, base64, imageType, userPrompt, onComplete) 
         : '') +
     '</div>' +
     '<span style="font-size:.625rem;color:var(--text-4);padding-right:2px;">' + timeStr + '</span>';
+  messages._vtxPinned = true;
   messages.appendChild(userBubble);
   messages.scrollTop = messages.scrollHeight;
 
@@ -5280,8 +5337,8 @@ function _dispatchImageSend(dataUrl, base64, imageType, userPrompt, onComplete) 
       replyRow.innerHTML =
         '<div style="display:flex;align-items:flex-end;gap:.5rem;min-width:0;">' +
           '<span style="display:inline-flex;align-items:center;justify-content:center;' +
-            'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;">' +
-            '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>' +
+            'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;overflow:hidden;">' +
+            '<img src="/vertex.jpeg" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;" />' +
           '</span>' +
           '<div id="' + replyId + '" style="max-width:82%;padding:.625rem .875rem;' +
             'border-radius:var(--r-sm) var(--r-xl) var(--r-xl) var(--r-xl);' +
@@ -5292,12 +5349,12 @@ function _dispatchImageSend(dataUrl, base64, imageType, userPrompt, onComplete) 
         '<span style="font-size:.625rem;color:var(--text-4);padding-left:34px;">' + replyTime + '</span>';
 
       aiGroup.appendChild(replyRow);
-      if (messages) messages.scrollTop = messages.scrollHeight;
+      _vtxAutoScroll(messages);
 
       var targetEl = replyRow.querySelector('#' + replyId);
       if (targetEl) {
         targetEl.innerHTML = rendered;
-        if (messages) messages.scrollTop = messages.scrollHeight;
+        _vtxAutoScroll(messages);
         if (window._katexAutoRenderReady && window.renderMathInElement) {
           try {
             renderMathInElement(targetEl, {
@@ -5471,6 +5528,7 @@ function _sendAiMessage() {
     messages.scrollTop = messages.scrollHeight;
   }
 
+  messages._vtxPinned = true;
   // ── User bubble ──
   var studentBubble = document.createElement('div');
   studentBubble.style.cssText = 'display:flex;flex-direction:column;align-items:flex-end;gap:2px;animation:cbt-fade-in 160ms var(--ease) both;max-width:100%;box-sizing:border-box;';
@@ -5674,8 +5732,8 @@ function _sendAiMessage() {
       replyRow.innerHTML =
         '<div style="display:flex;align-items:flex-end;gap:.5rem;min-width:0;max-width:100%;box-sizing:border-box;">' +
           '<span style="display:inline-flex;align-items:center;justify-content:center;' +
-            'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;">' +
-            '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>' +
+            'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;overflow:hidden;">' +
+            '<img src="/vertex.jpeg" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;" />' +
           '</span>' +
           '<div id="' + replyId + '" class="vtx-ai-reply-bubble" style="' +
             'max-width:calc(100% - 34px);' +
@@ -5692,7 +5750,7 @@ function _sendAiMessage() {
       aiGroup.appendChild(replyRow);
 
       var msgs = document.getElementById('vtxAiMessages');
-      if (msgs) msgs.scrollTop = msgs.scrollHeight;
+      _vtxAutoScroll(msgs);
 
       var targetEl = replyRow.querySelector('#' + replyId);
       _aiTypewriter(targetEl, displayText, msgs);
@@ -5740,7 +5798,7 @@ function _sendAiMessage() {
           '<span style="font-size:.6rem;color:var(--text-4);padding-left:2px;">Visual</span>';
 
         aiGroup.appendChild(visualWrapper);
-        if (msgs) msgs.scrollTop = msgs.scrollHeight;
+        _vtxAutoScroll(msgs);
 
         SpeechEngine.requestVisual(visualTopic2, currentSubject, function (err, result) {
           var container = document.getElementById(visualId);
@@ -5810,7 +5868,7 @@ function _sendAiMessage() {
                     '<span class="vtx-visual-footer-badge is-svg">Diagram</span>' +
                   '</div>' +
                   '<div class="vtx-visual-quota-row">Image limit reached — diagram shown instead</div>';
-                if (msgs) msgs.scrollTop = msgs.scrollHeight;
+                _vtxAutoScroll(msgs);
               } else {
                 cont.innerHTML =
                   '<div class="vtx-visual-rate-wrap">' +
@@ -5858,7 +5916,7 @@ function _sendAiMessage() {
                 '<span class="vtx-visual-footer-topic">' + _escHtml(visualTopic2) + '</span>' +
                 '<span class="vtx-visual-footer-badge is-svg">Diagram</span>' +
               '</div>';
-            if (msgs) msgs.scrollTop = msgs.scrollHeight;
+            _vtxAutoScroll(msgs);
             return;
           }
 
@@ -5873,7 +5931,7 @@ function _sendAiMessage() {
                 '<span class="vtx-visual-footer-badge is-image">Image</span>' +
               '</div>' +
               '<div class="vtx-visual-quota-row">Images today: ' + result.used + ' / ' + result.limit + '</div>';
-            if (msgs) msgs.scrollTop = msgs.scrollHeight;
+            _vtxAutoScroll(msgs);
             return;
           }
 
@@ -6302,8 +6360,8 @@ function _appendLiveAiMessage(text) {
     replyRow.innerHTML =
       '<div style="display:flex;align-items:flex-end;gap:.5rem;min-width:0;max-width:100%;box-sizing:border-box;">' +
         '<span style="display:inline-flex;align-items:center;justify-content:center;' +
-          'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;">' +
-          '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>' +
+          'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;overflow:hidden;">' +
+          '<img src="/vertex.jpeg" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;" />' +
         '</span>' +
         '<div class="vtx-ai-reply-bubble" style="' +
           'max-width:calc(100% - 34px);' +
@@ -6326,8 +6384,8 @@ function _appendLiveAiMessage(text) {
     wrapper.innerHTML =
       '<div style="display:flex;align-items:flex-end;gap:.5rem;min-width:0;max-width:100%;box-sizing:border-box;">' +
         '<span style="display:inline-flex;align-items:center;justify-content:center;' +
-          'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;">' +
-          '<i class="ph ph-chats" style="font-size:13px;color:var(--accent);"></i>' +
+          'width:26px;height:26px;border-radius:var(--r-full);background:var(--accent-subtle);flex-shrink:0;overflow:hidden;">' +
+          '<img src="/vertex.jpeg" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;display:block;" />' +
         '</span>' +
         '<div class="vtx-ai-reply-bubble" style="' +
           'max-width:calc(100% - 34px);' +
