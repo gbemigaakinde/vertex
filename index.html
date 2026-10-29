@@ -193,6 +193,105 @@
 
 <body>
 
+  <!-- ════════════════════════════════════════════════
+       BOOT GUARD — a student must never be left on a blank page.
+       Watches for failed scripts and an empty screen, repairs the app
+       once on its own, and otherwise shows a friendly "Try again" screen.
+  ════════════════════════════════════════════════ -->
+  <script>
+    (function () {
+      'use strict';
+      var KEY = 'vtx-autorecover-ts';
+      var failed = [];
+      var shown = false;
+
+      function appEmpty() {
+        var app = document.getElementById('app');
+        return !app || app.children.length === 0;
+      }
+
+      // Throw away every stored copy of the app and fetch it fresh.
+      function hardReset() {
+        var done = function () { window.location.reload(); };
+        var tasks = [];
+        try {
+          if (navigator.serviceWorker && navigator.serviceWorker.getRegistrations) {
+            tasks.push(navigator.serviceWorker.getRegistrations().then(function (regs) {
+              return Promise.all(regs.map(function (r) { return r.unregister(); }));
+            }));
+          }
+          if (window.caches && caches.keys) {
+            tasks.push(caches.keys().then(function (keys) {
+              return Promise.all(keys.filter(function (k) { return k.indexOf('vb-models-') !== 0; })
+                                     .map(function (k) { return caches.delete(k); }));
+            }));
+          }
+        } catch (e) {}
+        Promise.all(tasks).then(done, done);
+        setTimeout(done, 2500);
+      }
+
+      function show(reason) {
+        if (shown || !appEmpty()) return;
+        shown = true;
+        console.warn('[BootGuard] Showing recovery screen:', reason, failed);
+        var loader = document.getElementById('vtx-loader');
+        if (loader && loader.parentNode) loader.parentNode.removeChild(loader);
+        var offline = navigator.onLine === false;
+        var box = document.createElement('div');
+        box.id = 'vtx-recovery';
+        box.setAttribute('role', 'alert');
+        box.style.cssText = 'position:fixed;inset:0;z-index:100000;display:flex;align-items:center;justify-content:center;' +
+          'padding:1.5rem;background:#fafaf8;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;';
+        box.innerHTML =
+          '<div style="max-width:340px;width:100%;text-align:center;">' +
+            '<div style="width:56px;height:56px;margin:0 auto 1rem;border-radius:50%;background:#fdecea;color:#c62828;' +
+                 'display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;">!</div>' +
+            '<h1 style="font-size:1.25rem;margin:0 0 .5rem;color:#0e0e0f;">' +
+              (offline ? 'You are offline' : 'Vertex could not finish loading') + '</h1>' +
+            '<p style="font-size:.95rem;line-height:1.55;color:#555;margin:0 0 1.25rem;">' +
+              (offline ? 'Switch on your data or Wi-Fi. This page will reload by itself when you are back online.'
+                       : 'This usually happens when the internet is slow. Tap the button below and it will try again.') + '</p>' +
+            '<button id="vtxRecoverBtn" style="width:100%;padding:.85rem 1rem;font-size:1rem;font-weight:600;border:0;' +
+                 'border-radius:10px;background:#c62828;color:#fff;cursor:pointer;">Try again</button>' +
+          '</div>';
+        document.body.appendChild(box);
+        var btn = document.getElementById('vtxRecoverBtn');
+        btn.onclick = function () { btn.textContent = 'Please wait…'; btn.disabled = true; hardReset(); };
+        window.addEventListener('online', function () { hardReset(); });
+      }
+
+      // Once per two minutes the repair happens automatically, so the student never has to do anything.
+      function recover(reason) {
+        if (shown || !appEmpty()) return;
+        var last = 0;
+        try { last = parseInt(sessionStorage.getItem(KEY) || '0', 10) || 0; } catch (e) {}
+        if (navigator.onLine !== false && Date.now() - last > 120000) {
+          try { sessionStorage.setItem(KEY, String(Date.now())); } catch (e) {}
+          console.warn('[BootGuard] Auto-repair:', reason);
+          hardReset();
+        } else {
+          show(reason);
+        }
+      }
+
+      // A script or stylesheet of ours failed to load
+      window.addEventListener('error', function (e) {
+        var t = e && e.target;
+        if (t && (t.tagName === 'SCRIPT' || t.tagName === 'LINK') && (t.src || t.href)) {
+          failed.push(t.src || t.href);
+          setTimeout(function () { recover('resource failed'); }, 1500);
+        }
+      }, true);
+
+      // The page started but the app never drew anything
+      document.addEventListener('DOMContentLoaded', function () {
+        setTimeout(function () { recover('empty screen'); }, 9000);
+      });
+      window.VtxBoot = { recover: recover, show: show, hardReset: hardReset, isEmpty: appEmpty };
+    }());
+  </script>
+
   <!-- Dark mode bootstrap -->
   <script>
     (function() {
@@ -324,7 +423,12 @@
       }
 
       window.VtxLoader = { progress: _setProgress, done: _done };
-      setTimeout(function () { if (!_isDone) { console.warn('[VtxLoader] Failsafe.'); _done(); } }, 12000);
+      setTimeout(function () {
+        if (_isDone) return;
+        console.warn('[VtxLoader] Failsafe.');
+        if (window.VtxBoot && window.VtxBoot.isEmpty()) { window.VtxBoot.recover('loader timeout'); return; }
+        _done();
+      }, 12000);
     }());
   </script>
 
@@ -829,38 +933,70 @@
       'use strict';
       if (!('serviceWorker' in navigator)) return;
       var _swUpdateReady = false;
+      var _reloading = false;
+
+      // Never reload more than once in a row, so a problem can't turn into a reload loop.
+      function _safeReload() {
+        if (_reloading) return;
+        var last = 0;
+        try { last = parseInt(sessionStorage.getItem('vtx-sw-reload') || '0', 10) || 0; } catch (e) {}
+        if (Date.now() - last < 10000) return;
+        try { sessionStorage.setItem('vtx-sw-reload', String(Date.now())); } catch (e) {}
+        _reloading = true;
+        window.location.reload();
+      }
+
+      // Is the student in the middle of an exam? Then an update must wait.
+      function _busy() {
+        var st = window.AppState && window.AppState.exam && window.AppState.exam.step;
+        return st === 'exam';
+      }
+
       function _registerSW() {
         navigator.serviceWorker
-          .register('/sw.js', { scope: '/' })
+          .register('/sw.js', { scope: '/', updateViaCache: 'none' })
           .then(function (reg) {
             console.log('[SW] Registered. Scope:', reg.scope);
-            if (reg.waiting) _onUpdateReady(reg.waiting);
+
+            // A new version already downloaded while the app was closed: switch to it now,
+            // before the student starts using the old one.
+            if (reg.waiting) _onUpdateReady(reg.waiting, true);
+
             reg.addEventListener('updatefound', function () {
               var nw = reg.installing;
               if (!nw) return;
               nw.addEventListener('statechange', function () {
-                if (nw.state === 'installed' && navigator.serviceWorker.controller) _onUpdateReady(nw);
+                if (nw.state === 'installed' && navigator.serviceWorker.controller) _onUpdateReady(nw, false);
               });
+            });
+
+            // Look for a new version whenever the app comes back to the front.
+            document.addEventListener('visibilitychange', function () {
+              if (document.visibilityState === 'visible') reg.update().catch(function () {});
             });
           })
           .catch(function (err) { console.error('[SW] Registration failed:', err); });
+
         navigator.serviceWorker.addEventListener('controllerchange', function () {
-          if (_swUpdateReady) window.location.reload();
+          if (_swUpdateReady) _safeReload();
         });
       }
-      function _onUpdateReady(worker) {
+
+      function _onUpdateReady(worker, silentOk) {
         _swUpdateReady = true;
-        function _show() {
+        // Early in the session and not in an exam: just update. No tapping needed.
+        if (silentOk && !_busy()) { worker.postMessage({ type: 'SKIP_WAITING' }); return; }
+        function _show(tries) {
           if (window.UI && typeof window.UI.showUpdateToast === 'function') {
-            window.UI.showUpdateToast(function () {
-              if (worker) worker.postMessage({ type: 'SKIP_WAITING' });
-            });
-          } else { setTimeout(_show, 500); }
+            window.UI.showUpdateToast(function () { if (worker) worker.postMessage({ type: 'SKIP_WAITING' }); });
+          } else if (tries < 40) { setTimeout(function () { _show(tries + 1); }, 500); }
+          else if (!_busy()) { worker.postMessage({ type: 'SKIP_WAITING' }); }
         }
-        _show();
+        _show(0);
       }
-      if (document.readyState === 'loading') { window.addEventListener('load', _registerSW); }
-      else { setTimeout(_registerSW, 0); }
+
+      if (document.readyState === 'complete') { setTimeout(_registerSW, 0); }
+      else { window.addEventListener('load', _registerSW); }
     }());
   </script>
 
