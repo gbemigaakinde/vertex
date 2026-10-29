@@ -4402,6 +4402,122 @@ async function _deleteTimetable(weekKey) {
 
   function Db() { return window.fbDb; }
 
+  // ── jsPDF's built-in Helvetica only supports WinAnsi (Latin-1 plus a few
+  // punctuation marks). Any other character (subscripts, arrows, Greek letters,
+  // a true minus sign, etc.) corrupts how the whole string is encoded and measured,
+  // so the line renders as garbage or letter-spaced text that runs off the page.
+  // _toPdfSafe rewrites those characters into plain, readable equivalents.
+  // Shared by every PDF export in this file.
+  const _PDF_WIN_EXTRA = '\u20AC\u201A\u0192\u201E\u2026\u2020\u2021\u02C6\u2030\u0160\u2039\u0152\u017D' +
+                         '\u2018\u2019\u201C\u201D\u2022\u2013\u2014\u02DC\u2122\u0161\u203A\u0153\u017E\u0178';
+
+  function _pdfSafeChar(ch) {
+    const c = ch.charCodeAt(0);
+    return (c >= 0x20 && c <= 0x7E) || (c >= 0xA0 && c <= 0xFF) || _PDF_WIN_EXTRA.indexOf(ch) !== -1;
+  }
+
+  const _PDF_CHAR_MAP = {
+    // Spaces and invisible characters
+    '\u2002': ' ', '\u2003': ' ', '\u2004': ' ', '\u2005': ' ', '\u2006': ' ', '\u2007': ' ',
+    '\u2008': ' ', '\u2009': ' ', '\u200A': ' ', '\u202F': ' ', '\u205F': ' ', '\u3000': ' ',
+    '\u200B': '', '\u200C': '', '\u200D': '', '\u2060': '', '\uFEFF': '',
+    // Dashes, quotes, primes
+    '\u2010': '-', '\u2011': '-', '\u2012': '-', '\u2015': '\u2014', '\u2212': '-',
+    '\u02BC': "'", '\u2032': "'", '\u2033': '"', '\u201B': "'", '\u201F': '"',
+    // Dots and bullets
+    '\u2219': '\u00B7', '\u22C5': '\u00B7', '\u2027': '\u00B7', '\u2023': '\u2022', '\u25CF': '\u2022',
+    // Arrows
+    '\u2192': '->', '\u27F6': '->', '\u279C': '->', '\u2794': '->', '\u2190': '<-', '\u27F5': '<-',
+    '\u2194': '<->', '\u21D2': '=>', '\u27F9': '=>', '\u21D0': '<=', '\u21D4': '<=>',
+    '\u21CC': '<=>', '\u21C4': '<=>', '\u21C6': '<=>', '\u2191': '(up)', '\u2193': '(down)',
+    // Maths and symbols
+    '\u2264': '<=', '\u2265': '>=', '\u2260': '!=', '\u2248': '~', '\u223C': '~', '\u221D': 'prop. to',
+    '\u221A': 'sqrt', '\u221E': 'infinity', '\u2211': 'sum', '\u222B': 'integral',
+    '\u2234': 'therefore', '\u2235': 'because', '\u2208': 'in', '\u2206': 'Delta',
+    '\u2044': '/', '\u2215': '/',
+    '\u2713': '', '\u2714': '', '\u2717': '', '\u2718': '',
+    // Greek letters
+    '\u03B1': 'alpha', '\u03B2': 'beta', '\u03B3': 'gamma', '\u03B4': 'delta', '\u03B5': 'epsilon',
+    '\u03B6': 'zeta', '\u03B7': 'eta', '\u03B8': 'theta', '\u03B9': 'iota', '\u03BA': 'kappa',
+    '\u03BB': 'lambda', '\u03BD': 'nu', '\u03BE': 'xi', '\u03BF': 'o',
+    '\u03C0': 'pi', '\u03C1': 'rho', '\u03C3': 'sigma', '\u03C2': 'sigma', '\u03C4': 'tau',
+    '\u03C5': 'upsilon', '\u03C6': 'phi', '\u03D5': 'phi', '\u03C7': 'chi', '\u03C8': 'psi', '\u03C9': 'omega',
+    '\u0393': 'Gamma', '\u0394': 'Delta', '\u0398': 'Theta', '\u039B': 'Lambda', '\u039E': 'Xi',
+    '\u03A0': 'Pi', '\u03A3': 'Sigma', '\u03A6': 'Phi', '\u03A8': 'Psi', '\u03A9': 'Omega', '\u2126': 'ohm'
+  };
+
+  const _PDF_SUP = {
+    '\u2070': '0', '\u00B9': '1', '\u00B2': '2', '\u00B3': '3', '\u2074': '4', '\u2075': '5',
+    '\u2076': '6', '\u2077': '7', '\u2078': '8', '\u2079': '9', '\u207A': '+', '\u207B': '-',
+    '\u207C': '=', '\u207D': '(', '\u207E': ')', '\u207F': 'n', '\u2071': 'i'
+  };
+
+  const _PDF_SUB = {
+    '\u2080': '0', '\u2081': '1', '\u2082': '2', '\u2083': '3', '\u2084': '4', '\u2085': '5',
+    '\u2086': '6', '\u2087': '7', '\u2088': '8', '\u2089': '9', '\u208A': '+', '\u208B': '-',
+    '\u208C': '=', '\u208D': '(', '\u208E': ')', '\u2090': 'a', '\u2091': 'e', '\u2092': 'o',
+    '\u2093': 'x', '\u2095': 'h', '\u2096': 'k', '\u2097': 'l', '\u2098': 'm', '\u2099': 'n',
+    '\u209A': 'p', '\u209B': 's', '\u209C': 't'
+  };
+
+  function _toPdfSafe(str) {
+    let s = String(str);
+
+    // Superscripts: if the text holds any that Helvetica cannot draw, convert every
+    // superscript run in it so the notation stays consistent.
+    //   Al³⁺ -> Al3+    e⁻ -> e-    2p⁶ -> 2p^6    10⁻⁷ -> 10^-7
+    if (/[\u2070\u2074-\u207F\u2071]/.test(s)) {
+      s = s.replace(/[\u2070\u00B9\u00B2\u00B3\u2074-\u207F\u2071]+/g, function (run) {
+        const plain = run.split('').map(function (c) { return _PDF_SUP[c] || ''; }).join('');
+        return /^\d*[+-]$/.test(plain) ? plain : '^' + plain;
+      });
+    }
+
+    // Micro sign renders unreliably across PDF viewers: 5 µm -> 5 um, µ = 0.5 -> mu = 0.5
+    s = s.replace(/[\u00B5\u03BC](?=[A-Za-z])/g, 'u').replace(/[\u00B5\u03BC]/g, 'mu');
+
+    // Subscripts: CO₂ -> CO2, Fe₂O₃ -> Fe2O3
+    s = s.replace(/[\u2080-\u209C]/g, function (c) {
+      return _PDF_SUB[c] !== undefined ? _PDF_SUB[c] : c;
+    });
+
+    let out = '';
+    for (const ch of s) {
+      if (_pdfSafeChar(ch)) { out += ch; continue; }
+      if (Object.prototype.hasOwnProperty.call(_PDF_CHAR_MAP, ch)) { out += _PDF_CHAR_MAP[ch]; continue; }
+      // Fallback: decompose accents / compatibility forms and keep whatever is safe.
+      // Anything still unsupported (emoji, CJK, etc.) is dropped rather than corrupting the line.
+      const folded = ch.normalize('NFKD').replace(/\u2044/g, '/').replace(/[\u0300-\u036F]/g, '');
+      for (const f of folded) {
+        if (_pdfSafeChar(f)) out += f;
+        else if (Object.prototype.hasOwnProperty.call(_PDF_CHAR_MAP, f)) out += _PDF_CHAR_MAP[f];
+      }
+    }
+    return out;
+  }
+
+  // Cleans any user-supplied value for drawing in a jsPDF document.
+  function _pdfClean(str) {
+    if (str == null) return '';
+    return _toPdfSafe(String(str)).replace(/\s+/g, ' ').trim();
+  }
+
+  // Like doc.splitTextToSize, but also hard-breaks any single token wider than the line.
+  // Call after setting the font size/style the text will be drawn with.
+  function _pdfWrapLines(doc, text, maxW) {
+    const out = [];
+    doc.splitTextToSize(text, maxW).forEach(function (line) {
+      if (doc.getTextWidth(line) <= maxW) { out.push(line); return; }
+      let cur = '';
+      for (const ch of line) {
+        if (cur && doc.getTextWidth(cur + ch) > maxW) { out.push(cur); cur = ch; }
+        else cur += ch;
+      }
+      if (cur) out.push(cur);
+    });
+    return out;
+  }
+
   function _loadJsPDF() {
     return new Promise((resolve, reject) => {
       if (window.jspdf && window.jspdf.jsPDF) { resolve(window.jspdf.jsPDF); return; }
@@ -4520,7 +4636,7 @@ async function _deleteTimetable(weekKey) {
       const pastOnly = allDates.filter(d => d < todayStr);
       const missed = pastOnly.filter(d => !comp[d]).length;
       const pct = allDates.length > 0 ? Math.round((done / allDates.length) * 100) : 0;
-      return { ...s, done, missed, total: allDates.length, pct, comp };
+      return { ...s, name: _pdfClean(s.name), cls: _pdfClean(s.cls), done, missed, total: allDates.length, pct, comp };
     }).sort((a, b) => b.pct - a.pct || a.name.localeCompare(b.name));
 
     const cohortDone     = studentStats.reduce((n, s) => n + s.done, 0);
@@ -4649,7 +4765,7 @@ async function _deleteTimetable(weekKey) {
       doc.text(label, MARGIN + 2, y + 4.5);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(...(accent || C.text));
-      doc.text(String(value), MARGIN + 48, y + 4.5);
+      doc.text(_pdfClean(value), MARGIN + 48, y + 4.5);
       y += 6.5;
     }
 
@@ -4667,7 +4783,7 @@ async function _deleteTimetable(weekKey) {
     doc.setFontSize(16);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...C.brand);
-    const titleLines = doc.splitTextToSize(taskDoc.title || 'Untitled Task', CONTENT_W - 30);
+    const titleLines = _pdfWrapLines(doc, _pdfClean(taskDoc.title) || 'Untitled Task', CONTENT_W - 30);
     doc.text(titleLines, MARGIN + 5, y + 9);
 
     const badgeX = PAGE_W - MARGIN - 30;
@@ -4706,11 +4822,14 @@ async function _deleteTimetable(weekKey) {
       doc.setTextColor(...C.textTert);
       doc.text('Task Message', MARGIN + 2, y + 4);
       y += 6;
-      const msgLines = doc.splitTextToSize(taskDoc.message, CONTENT_W - 10);
+      // Set the font that will be used to DRAW the message before measuring it,
+      // otherwise the wrap width is calculated against the wrong font and text overflows.
+      doc.setFontSize(8); doc.setFont('helvetica','normal');
+      const msgLines = _pdfWrapLines(doc, _pdfClean(taskDoc.message), CONTENT_W - 10);
       const msgH = msgLines.length * 4.5 + 5;
       checkPage(msgH + 4);
       fillRect(MARGIN, y, CONTENT_W, msgH, C.surfaceMuted, C.border);
-      doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...C.textSec);
+      doc.setTextColor(...C.textSec);
       doc.text(msgLines, MARGIN + 4, y + 4.5);
       y += msgH + 4;
     }
@@ -4778,8 +4897,8 @@ async function _deleteTimetable(weekKey) {
     if (dsKeys.length > 0) {
       sectionHeading('Subject Restrictions');
       const subjRows = dsKeys.map(k => [
-        k.match(/^\d{4}-\d{2}-\d{2}$/) ? fmtDate(k) : k,
-        (taskDoc.dateSubjects[k] || []).join(', ') || 'None'
+        k.match(/^\d{4}-\d{2}-\d{2}$/) ? fmtDate(k) : _pdfClean(k),
+        _pdfClean((taskDoc.dateSubjects[k] || []).join(', ')) || 'None'
       ]);
       doc.autoTable({
         startY: y,
@@ -5069,7 +5188,16 @@ async function _deleteTimetable(weekKey) {
         // Student header card
         fillRect(MARGIN, y, CONTENT_W, 22, C.brandLight, C.brandBorder);
         doc.setFontSize(13); doc.setFont('helvetica','bold'); doc.setTextColor(...C.brand);
-        doc.text(s.name, MARGIN + 5, y + 9);
+        // Keep the name clear of the stat pills on the right
+        let nameLine = _pdfWrapLines(doc, s.name, 60);
+        if (nameLine.length > 1) {
+          let cut = nameLine[0];
+          while (cut.length > 1 && doc.getTextWidth(cut + '...') > 60) cut = cut.slice(0, -1);
+          nameLine = cut + '...';
+        } else {
+          nameLine = nameLine[0] || '';
+        }
+        doc.text(nameLine, MARGIN + 5, y + 9);
         doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(...C.textSec);
         doc.text(s.cls || '-', MARGIN + 5, y + 15);
 
@@ -5081,12 +5209,13 @@ async function _deleteTimetable(weekKey) {
           { label:'Rate',    value: s.pct + '%', color: pctColor(s.pct) },
         ];
         pills.forEach((p, pi) => {
-          const px = MARGIN + 70 + pi * 32;
-          fillRect(px, y + 4, 28, 13, C.surface, C.border);
+          // Right-aligned inside the card: 4 pills x 24mm wide, 3mm gaps, 4mm inner padding
+          const px = PAGE_W - MARGIN - 4 - (4 * 24 + 3 * 3) + pi * 27;
+          fillRect(px, y + 4, 24, 13, C.surface, C.border);
           doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(...p.color);
-          doc.text(String(p.value), px + 14, y + 12, { align:'center' });
+          doc.text(String(p.value), px + 12, y + 12, { align:'center' });
           doc.setFontSize(6); doc.setFont('helvetica','normal'); doc.setTextColor(...C.textTert);
-          doc.text(p.label, px + 14, y + 16, { align:'center' });
+          doc.text(p.label, px + 12, y + 16, { align:'center' });
         });
 
         y += 26;
@@ -5120,7 +5249,7 @@ async function _deleteTimetable(weekKey) {
             String(i + 1),
             dayName,
             fmtDate(dateStr),
-            subjList.join(', ') || 'No restriction',
+            _pdfClean(subjList.join(', ')) || 'No restriction',
             status,
           ];
         });
@@ -5245,7 +5374,7 @@ async function exportResultPDF(resultId) {
 
     function _pdfText(str) {
       if (str == null) return '';
-      return _stripLatex(String(str)).replace(/\s+/g, ' ').trim();
+      return _toPdfSafe(_stripLatex(String(str))).replace(/\s+/g, ' ').trim();
     }
 
     // ── PascalCase file naming (no underscores or hyphens) ──
@@ -5332,6 +5461,9 @@ async function exportResultPDF(resultId) {
       y += 5;
     }
 
+    // Wraps text and hard-breaks over-long tokens so nothing leaves the page.
+    function _wrap(text, maxW) { return _pdfWrapLines(doc, text, maxW); }
+
     // ── PAGE 1 ──────────────────────────────────────────────────
     _drawPageHeader();
     _drawPageFooter();
@@ -5378,7 +5510,7 @@ async function exportResultPDF(resultId) {
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
     doc.setTextColor(...C.text);
-    doc.text('Grade ' + (r.grade || '—'), MARGIN, blockStartY + 23);
+    doc.text('Grade ' + (_pdfText(r.grade) || '—'), MARGIN, blockStartY + 23);
 
     let rightBlockH = 0;
     if (subjects.length > 0) {
@@ -5407,7 +5539,7 @@ async function exportResultPDF(resultId) {
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(...C.text);
         const subjLabel = _pdfText(subj);
-        const subjLines = doc.splitTextToSize(subjLabel, tblW - 40);
+        const subjLines = _wrap(subjLabel, tblW - 40);
         doc.text(subjLines, tblX, ty);
 
         doc.setFont('helvetica', 'bold');
@@ -5486,23 +5618,23 @@ async function exportResultPDF(resultId) {
         // the wrong font and the drawn text overflows the page margin.
         doc.setFontSize(9);
         doc.setFont('helvetica', 'normal');
-        const qLines = doc.splitTextToSize((i + 1) + '. ' + qText, CONTENT_W);
+        const qLines = _wrap((i + 1) + '. ' + qText, CONTENT_W);
 
         const chosenRaw   = isSkipped ? 'Not answered' : _pdfText(q.opts?.[q.chosen] ?? '—');
         doc.setFontSize(8.3);
         doc.setFont('helvetica', 'bold');
-        const answerLines = doc.splitTextToSize('Answer (' + statusWord + '): ' + chosenRaw, CONTENT_W - 4);
+        const answerLines = _wrap('Answer (' + statusWord + '): ' + chosenRaw, CONTENT_W - 4);
 
         const showCorrect  = !isCorrect;
         const correctRaw   = _pdfText(q.opts?.[q.ans] ?? '—');
         doc.setFontSize(8.3);
         doc.setFont('helvetica', 'normal');
-        const correctLines = showCorrect ? doc.splitTextToSize('Correct answer: ' + correctRaw, CONTENT_W - 4) : [];
+        const correctLines = showCorrect ? _wrap('Correct answer: ' + correctRaw, CONTENT_W - 4) : [];
 
         const expText  = q.exp ? _pdfText(q.exp) : '';
         doc.setFontSize(8);
         doc.setFont('helvetica', 'italic');
-        const expLines = expText ? doc.splitTextToSize('Explanation: ' + expText, CONTENT_W - 4) : [];
+        const expLines = expText ? _wrap('Explanation: ' + expText, CONTENT_W - 4) : [];
 
         const neededH =
           qLines.length * 4.3 + 2 +
