@@ -10,15 +10,18 @@
       <div class="cbt-layout cbt-layout--auth cbt-animate-in" style="padding: var(--sp-6) var(--sp-4);">
 
         <div style="text-align:center;margin-bottom:var(--sp-8);">
-          <div style="display:inline-flex;align-items:center;justify-content:center;
-                      width:40px;height:40px;background:var(--accent);border-radius:10px;
-                      margin-bottom:var(--sp-4);box-shadow:var(--shadow-accent);">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white"
-                 stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5 12 2"/>
-              <line x1="12" y1="22" x2="12" y2="15.5"/>
-              <polyline points="22 8.5 12 15.5 2 8.5"/>
-            </svg>
+          <div role="img" aria-label="Vertex Tutorial Centre logo"
+               style="display:inline-block;padding:10px 12px;background:#ffffff;
+                      border:1px solid var(--border);border-radius:14px;
+                      box-shadow:var(--shadow-sm, 0 1px 3px rgba(0,0,0,0.08));
+                      margin-bottom:var(--sp-4);">
+            <!-- vertex.jpeg cropped to the emblem. The white patch hides the small
+                 "VERTEX" wordmark that sits in the lower-right of the original image. -->
+            <div style="position:relative;width:52px;height:73px;overflow:hidden;
+                        background:#ffffff url('vertex.jpeg') no-repeat;
+                        background-size:97px 97px;background-position:-6.2px -11.9px;">
+              <div style="position:absolute;left:74%;top:72%;right:0;bottom:0;background:#ffffff;"></div>
+            </div>
           </div>
           <h1 style="font-size:var(--text-xl);font-weight:700;color:var(--text-1);letter-spacing:-0.025em;margin-bottom:0.25rem;">
             Vertex Tutorial
@@ -327,127 +330,184 @@
     document.getElementById('loginPanel').classList.remove('hidden');
   }
 
-  async function login() {
-    const btn  = document.getElementById('loginBtn');
-    const pass = document.getElementById('loginPass')?.value || '';
+  // ── Plain-English error messages ───────────────────────────────
+  // Every Firebase Auth and Firestore error code a student could realistically hit,
+  // written so a student can tell what went wrong and what to do next.
+  // Nothing here ever shows a raw Firebase message or code.
+  const _OFFLINE_MSG = 'You are offline. Switch on your data or Wi-Fi, then try again.';
 
+  const _ERR_MSG = {
+    // Sign-in details
+    'auth/invalid-credential':     'Your details are not correct. Check them and try again.',
+    'auth/invalid-login-credentials': 'Your details are not correct. Check them and try again.',
+    'auth/wrong-password':         'That password is not correct. Try again, or tap "Forgot password?" to reset it.',
+    'auth/user-not-found':         'We could not find an account with those details. Check the spelling and try again.',
+    'auth/invalid-email':          'That email address does not look right. Check for typing mistakes, like a missing @ or a space.',
+    'auth/missing-email':          'Please enter your email address.',
+    'auth/missing-password':       'Please enter your password.',
+    'auth/user-disabled':          'This account has been switched off. Please see Master Timothy.',
+    'auth/too-many-requests':      'Too many tries in a short time. Please wait a few minutes, then try again.',
+    'auth/email-already-in-use':   'An account with this email already exists. Tap "Sign in" instead, or reset your password if you forgot it.',
+    'auth/weak-password':          'That password is too easy to guess. Use at least 6 characters.',
+    'auth/operation-not-allowed':  'This kind of sign in is switched off right now. Please see Master Timothy.',
+    // Session
+    'auth/requires-recent-login':  'For your safety, please sign in again.',
+    'auth/user-token-expired':     'Your sign-in has expired. Please sign in again.',
+    'auth/id-token-expired':       'Your sign-in has expired. Please sign in again.',
+    'auth/user-token-revoked':     'Your sign-in has expired. Please sign in again.',
+    'auth/session-expired':        'Your sign-in has expired. Please sign in again.',
+    // Connection
+    'auth/network-request-failed': 'We could not reach the internet. Check your data or Wi-Fi and try again.',
+    'auth/timeout':                'The connection is too slow and the request timed out. Check your internet and try again.',
+    'auth/quota-exceeded':         'Too many people are signing in right now. Please try again in a few minutes.',
+    'auth/web-storage-unsupported':'Your browser is blocking something the app needs to keep you signed in. Turn off private browsing, allow cookies, and try again.',
+    // App set-up problems the student cannot fix
+    'auth/internal-error':         'Something went wrong on our side. Please try again in a moment.',
+    'auth/invalid-api-key':        'The app is not set up correctly. Please tell Master Timothy.',
+    'auth/api-key-not-valid.-please-pass-a-valid-api-key.': 'The app is not set up correctly. Please tell Master Timothy.',
+    'auth/app-not-authorized':     'The app is not set up correctly. Please tell Master Timothy.',
+    'auth/unauthorized-domain':    'This website address is not allowed to sign in. Please tell Master Timothy.',
+    // School database (Firestore)
+    'permission-denied':           'The school server did not allow that. Please tell Master Timothy if this keeps happening.',
+    'unauthenticated':             'Please sign in again.',
+    'unavailable':                 'We cannot reach the school server right now. Check your internet and try again in a moment.',
+    'deadline-exceeded':           'The connection is too slow and the request timed out. Check your internet and try again.',
+    'resource-exhausted':          'The school server is very busy right now. Please try again in a few minutes.',
+    'not-found':                   'We could not find that record.',
+    'cancelled':                   'That was interrupted. Please try again.',
+    'aborted':                     'That was interrupted. Please try again.',
+    'failed-precondition':         'Something went wrong on our side. Please try again, and tell Master Timothy if it keeps happening.',
+    'invalid-argument':            'Something in your details is not accepted. Check them and try again.',
+    'internal':                    'Something went wrong on our side. Please try again in a moment.',
+    'unknown':                     'Something went wrong. Please try again in a moment.',
+    'data-loss':                   'Something went wrong on our side. Please try again in a moment.'
+  };
+
+  // Where the same code needs a more specific sentence (for example, whether the
+  // student signed in with an email or a registration number).
+  const _CTX_MSG = {
+    'login-email': {
+      'auth/invalid-credential':        'Your email or password is not correct. Check both and try again. If you forgot your password, tap "Forgot password?".',
+      'auth/invalid-login-credentials': 'Your email or password is not correct. Check both and try again. If you forgot your password, tap "Forgot password?".',
+      'auth/user-not-found':            'We could not find an account with that email. Check the spelling, or tap "Create an account" if you are new.'
+    },
+    'login-admno': {
+      'auth/invalid-credential':        'Your registration number or password is not correct. Check both and try again. If you forgot your password, switch to the Email tab and tap "Forgot password?".',
+      'auth/invalid-login-credentials': 'Your registration number or password is not correct. Check both and try again. If you forgot your password, switch to the Email tab and tap "Forgot password?".',
+      'auth/wrong-password':            'That password is not correct. Try again, or switch to the Email tab to reset it.',
+      'auth/user-not-found':            'No account is linked to that registration number. Check the number or use the Email tab.'
+    },
+    'lookup': {
+      'permission-denied':              'Signing in with a registration number is not available right now. Please use the Email tab, or see Master Timothy.'
+    },
+    'register': {
+      'permission-denied':              'We could not save your details. Please try again, and tell Master Timothy if it keeps happening.',
+      'auth/operation-not-allowed':     'New sign-ups are switched off right now. Please see Master Timothy.'
+    },
+    'reset': {
+      'auth/user-not-found':            'We could not find an account with that email. Check the spelling and try again.'
+    },
+    'profile': {
+      'permission-denied':              'You signed in, but the school server did not let us open your profile. Please tell Master Timothy.'
+    }
+  };
+
+  const _FALLBACK_MSG = {
+    'login-email': 'We could not sign you in. Check your details and your internet connection, then try again.',
+    'login-admno': 'We could not sign you in. Check your details and your internet connection, then try again.',
+    'lookup':      'We could not check that registration number. Check your internet connection and try again.',
+    'register':    'We could not create your account. Check your details and your internet connection, then try again.',
+    'reset':       'We could not send the reset email. Check the address and your internet connection, then try again.',
+    'profile':     'Could not load your profile. Please check your internet connection and try again.'
+  };
+
+  // Turns any Firebase (Auth or Firestore) error into one plain-English sentence.
+  // context: 'login-email' | 'login-admno' | 'lookup' | 'register' | 'reset' | 'profile'
+  // fallback: optional sentence to use for an error we do not recognise.
+  function describeError(err, context, fallback) {
+    const ctx  = context || 'login-email';
+    const code = err && err.code ? String(err.code).toLowerCase() : '';
+    const raw  = err && err.message ? String(err.message) : '';
+
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) return _OFFLINE_MSG;
+
+    if (_CTX_MSG[ctx] && _CTX_MSG[ctx][code]) return _CTX_MSG[ctx][code];
+    if (_ERR_MSG[code]) return _ERR_MSG[code];
+
+    // Browser-level network failures arrive without a Firebase code
+    if (!code && /network|failed to fetch|load failed|timed? ?out/i.test(raw)) {
+      return _ERR_MSG['auth/network-request-failed'];
+    }
+
+    return fallback || _FALLBACK_MSG[ctx] || _FALLBACK_MSG['login-email'];
+  }
+
+  async function login() {
+    const btn     = document.getElementById('loginBtn');
+    const pass    = document.getElementById('loginPass')?.value || '';
+    const isAdmno = _loginMode === 'admno';
+    const ctx     = isAdmno ? 'login-admno' : 'login-email';
+
+    const rawId = isAdmno
+      ? (document.getElementById('loginAdmno')?.value || '').trim().toUpperCase()
+      : (document.getElementById('loginEmail')?.value || '').trim();
+
+    // Check what the student typed before contacting the server
+    if (!rawId) {
+      UI.toast(isAdmno ? 'Please enter your registration number.' : 'Please enter your email address.', 'warning');
+      return;
+    }
+    if (!isAdmno && rawId.indexOf('@') === -1) {
+      UI.toast('That email address does not look right. It needs an @ sign, for example name@gmail.com.', 'warning');
+      return;
+    }
     if (!pass) { UI.toast('Please enter your password.', 'warning'); return; }
 
     UI.setLoading(btn, true);
+    let step = 'signin';
 
     try {
       AppState.cancelListener('schoolDropdown');
 
-      if (_loginMode === 'admno') {
-        const rawAdmno = (document.getElementById('loginAdmno')?.value || '').trim().toUpperCase();
-        if (!rawAdmno) {
-          UI.toast('Please enter your admission number.', 'warning');
+      let email = rawId;
+
+      if (isAdmno) {
+        step = 'lookup';
+
+        // A "/" would be read as a folder path by the database, so it cannot be a real number
+        if (rawId.indexOf('/') !== -1) {
+          UI.toast('We could not find that registration number. Check it and try again, or use the Email tab.', 'error', 7000);
           UI.setLoading(btn, false);
           return;
         }
 
-        let indexSnap;
-        try {
-          indexSnap = await window.fbDb.collection('admissionNumbers').doc(rawAdmno).get();
-        } catch (fetchErr) {
-          console.error('[auth] admissionNumbers lookup error:', fetchErr);
-          UI.toast('Could not verify admission number. Please try again.', 'error');
-          UI.setLoading(btn, false);
-          return;
-        }
+        const indexSnap = await window.fbDb.collection('admissionNumbers').doc(rawId).get();
 
         if (!indexSnap.exists) {
-          UI.toast('Admission number not found. Check the number or use the Email tab.', 'error');
+          UI.toast('We could not find that registration number. Check it and try again, or use the Email tab.', 'error', 7000);
           UI.setLoading(btn, false);
           return;
         }
 
-        const { uid, email } = indexSnap.data();
-
-        if (!uid || !email) {
-          console.error('[auth] admissionNumbers entry missing uid/email for:', rawAdmno);
-          UI.toast('Account data error. Please contact Master Timothy.', 'error');
+        const data = indexSnap.data() || {};
+        if (!data.uid || !data.email) {
+          console.error('[auth] admissionNumbers entry missing uid/email for:', rawId);
+          UI.toast('This registration number is not fully set up yet. Please see Master Timothy.', 'error', 7000);
           UI.setLoading(btn, false);
           return;
         }
 
-        try {
-          await window.fbAuth.signInWithEmailAndPassword(email, pass);
-        } catch (signInErr) {
-          const msg = _resolveLoginError(signInErr, 'admno');
-          UI.toast(msg, 'error');
-          UI.setLoading(btn, false);
-        }
-
-      } else {
-        const email = (document.getElementById('loginEmail')?.value || '').trim();
-        if (!email) {
-          UI.toast('Please enter your email and password.', 'warning');
-          UI.setLoading(btn, false);
-          return;
-        }
-
-        try {
-          await window.fbAuth.signInWithEmailAndPassword(email, pass);
-        } catch (signInErr) {
-          // For invalid-credential or wrong-password, check if the email exists
-          // so we can give a precise message.
-          if (
-            signInErr.code === 'auth/wrong-password' ||
-            signInErr.code === 'auth/invalid-credential' ||
-            signInErr.code === 'auth/user-not-found' ||
-            signInErr.code === 'auth/invalid-email'
-          ) {
-            let preciseMsg;
-            try {
-              const methods = await window.fbAuth.fetchSignInMethodsForEmail(email);
-              if (methods && methods.length > 0) {
-                // Email exists — the password is wrong
-                preciseMsg = 'Incorrect password. Please try again or use "Forgot password?"';
-              } else {
-                // Email not registered
-                preciseMsg = 'No account found with this email address. Please check or create an account.';
-              }
-            } catch (_) {
-              // fetchSignInMethodsForEmail itself failed (e.g. invalid email format)
-              preciseMsg = _resolveLoginError(signInErr, 'email');
-            }
-            UI.toast(preciseMsg, 'error');
-          } else {
-            UI.toast(_resolveLoginError(signInErr, 'email'), 'error');
-          }
-          UI.setLoading(btn, false);
-        }
+        email = data.email;
+        step = 'signin';
       }
 
-    } catch (err) {
-      UI.toast(_resolveLoginError(err, _loginMode), 'error');
-      UI.setLoading(btn, false);
-    }
-  }
+      await window.fbAuth.signInWithEmailAndPassword(email, pass);
+      // On success the auth listener in app.js takes over and opens the right screen.
 
-  // Translates a Firebase auth error into a user-facing message.
-  function _resolveLoginError(err, mode) {
-    switch (err.code) {
-      case 'auth/user-not-found':
-        return mode === 'admno'
-          ? 'No account linked to this admission number.'
-          : 'No account found with this email address.';
-      case 'auth/wrong-password':
-        return 'Incorrect password. Please try again or use "Forgot password?"';
-      case 'auth/too-many-requests':
-        return 'Too many failed attempts. Please wait a few minutes and try again.';
-      case 'auth/invalid-email':
-        return 'The email address you entered is not valid.';
-      case 'auth/user-disabled':
-        return 'This account has been disabled. Please contact Master Timothy.';
-      case 'auth/invalid-credential':
-        // Fallback for newer SDK — precise check done at call site for email mode
-        return 'Incorrect credentials. Please check your details and try again.';
-      case 'auth/network-request-failed':
-        return 'Network error. Please check your connection and try again.';
-      default:
-        return 'Login failed. Please try again.';
+    } catch (err) {
+      console.error('[auth] login error at ' + step + ':', err && err.code, err);
+      UI.toast(describeError(err, step === 'lookup' ? 'lookup' : ctx), 'error', 7000);
+      UI.setLoading(btn, false);
     }
   }
 
@@ -519,13 +579,8 @@
         window.fbAuth.signOut().catch(function () {});
       }
 
-      const msg = err.code === 'auth/email-already-in-use'  ? 'An account with this email already exists.'
-                : err.code === 'auth/invalid-email'         ? 'Invalid email address.'
-                : err.code === 'auth/weak-password'         ? 'Password must be at least 6 characters.'
-                : err.code === 'auth/operation-not-allowed' ? 'Registration is currently disabled. Contact Master Timothy.'
-                : err.code === 'auth/too-many-requests'     ? 'Too many attempts. Please wait and try again.'
-                : err.code === 'permission-denied'          ? 'Could not save profile. Please try again.'
-                : 'Registration failed. Please try again.';
+      console.error('[auth] register error:', err && err.code, err);
+      const msg = describeError(err, 'register');
       UI.toast(msg, 'error', 8000);
       UI.setLoading(btn, false);
     }
@@ -541,16 +596,19 @@
       return;
     }
 
-    const email = window.prompt('Enter your registered email address:');
+    const email = (window.prompt('Enter your registered email address:') || '').trim();
     if (!email) return;
-    if (!email.includes('@')) { UI.toast('Please enter a valid email address.', 'warning'); return; }
+    if (email.indexOf('@') === -1) {
+      UI.toast('That email address does not look right. It needs an @ sign, for example name@gmail.com.', 'warning');
+      return;
+    }
     try {
-      await window.fbAuth.sendPasswordResetEmail(email.trim());
-      UI.toast('Password reset email sent! Check your inbox.', 'success', 6000);
+      await window.fbAuth.sendPasswordResetEmail(email);
+      // Firebase may hide whether the email has an account, so the wording stays true either way.
+      UI.toast('If that email has an account, a reset link is on its way. Check your inbox and your spam folder.', 'success', 8000);
     } catch (err) {
-      const msg = err.code === 'auth/user-not-found' ? 'No account with this email.'
-                : 'Could not send reset email. Try again.';
-      UI.toast(msg, 'error');
+      console.error('[auth] password reset error:', err && err.code, err);
+      UI.toast(describeError(err, 'reset'), 'error', 7000);
     }
   }
 
@@ -566,6 +624,7 @@
     login,
     register,
     forgotPassword,
+    describeError,
     _setLoginMode,
   };
 

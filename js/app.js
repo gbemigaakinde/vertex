@@ -232,7 +232,12 @@
     } catch (err) {
       console.error('[app] Profile load error:', err);
       if (window.VtxLoader) window.VtxLoader.done();
-      UI.toast('Could not load your profile. Please check your internet connection and try again.', 'error', 0);
+      UI.toast(
+        (window.Auth && typeof Auth.describeError === 'function')
+          ? Auth.describeError(err, 'profile')
+          : 'Could not load your profile. Please check your internet connection and try again.',
+        'error', 0
+      );
       if (window.DM && typeof DM.cancelListeners === 'function') {
         await DM.cancelListeners();
       }
