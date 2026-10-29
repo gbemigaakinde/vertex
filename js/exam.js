@@ -4404,14 +4404,24 @@ function _handleImageUpload(inputEl) {
   var file = inputEl && inputEl.files && inputEl.files[0];
   if (!file) return;
 
-  if (!file.type.startsWith('image/')) {
-    if (window.UI) UI.toast('Please select an image file.', 'warning', 3000);
+  var _ft = (file.type || '').toLowerCase();
+  var _fn = (file.name || '').toLowerCase();
+  if (_ft === 'image/heic' || _ft === 'image/heif' || /\.(heic|heif)$/.test(_fn)) {
+    if (window.UI) UI.toast('HEIC photos are not supported. Please take a screenshot of the photo or save it as JPG, then try again.', 'warning', 5000);
+    return;
+  }
+  if (['image/jpeg', 'image/png', 'image/webp', 'image/gif'].indexOf(_ft) === -1) {
+    if (window.UI) UI.toast('Please select a JPG, PNG, WEBP or GIF image.', 'warning', 3500);
+    return;
+  }
+  if (file.size === 0) {
+    if (window.UI) UI.toast('That image file is empty. Please choose another one.', 'warning', 3500);
     return;
   }
 
-  var MAX_BYTES = 4 * 1024 * 1024;
+  var MAX_BYTES = 15 * 1024 * 1024;
   if (file.size > MAX_BYTES) {
-    if (window.UI) UI.toast('Image is too large. Please use an image under 4MB.', 'warning', 4000);
+    if (window.UI) UI.toast('Image is too large. Please use an image under 15MB.', 'warning', 4000);
     return;
   }
 
@@ -4458,6 +4468,7 @@ function _handleImageUpload(inputEl) {
     var base64    = dataUrl.split(',')[1];
     var imageType = file.type;
 
+    function _applyPicked(dataUrl, base64, imageType) {
     if (!base64) {
       var ib3 = document.getElementById('vtxAiImageBtn');
       if (ib3) { ib3.disabled = false; ib3.style.opacity = '1'; }
@@ -4487,6 +4498,30 @@ function _handleImageUpload(inputEl) {
 
     var sb4 = document.getElementById('vtxAiSendBtn');
     if (sb4) { sb4.disabled = false; sb4.style.opacity = '1'; }
+    }
+
+    // Phone photos are huge. Shrink anything big so the upload is fast and never rejected.
+    if (imageType !== 'image/gif' && (file.size > 1.5 * 1024 * 1024)) {
+      var _img = new Image();
+      _img.onload = function () {
+        try {
+          var MAXD = 1600, w = _img.naturalWidth, h = _img.naturalHeight;
+          var sc = Math.min(1, MAXD / Math.max(w, h));
+          var cv = document.createElement('canvas');
+          cv.width = Math.max(1, Math.round(w * sc));
+          cv.height = Math.max(1, Math.round(h * sc));
+          var cx = cv.getContext('2d');
+          cx.fillStyle = '#fff'; cx.fillRect(0, 0, cv.width, cv.height);
+          cx.drawImage(_img, 0, 0, cv.width, cv.height);
+          var out = cv.toDataURL('image/jpeg', 0.85);
+          _applyPicked(out, out.split(',')[1], 'image/jpeg');
+        } catch (err) { _applyPicked(dataUrl, base64, imageType); }
+      };
+      _img.onerror = function () { _applyPicked(dataUrl, base64, imageType); };
+      _img.src = dataUrl;
+    } else {
+      _applyPicked(dataUrl, base64, imageType);
+    }
   };
 
   reader.readAsDataURL(file);
@@ -5135,8 +5170,28 @@ function _dispatchImageSend(dataUrl, base64, imageType, userPrompt, onComplete) 
 
   var studentData = S().studentData || {};
 
+  // Remove this turn from history/storage when no reply arrives, so the next
+  // request never contains two user messages in a row.
+  function _rollbackImageTurn() {
+    try {
+      var h = window._vtxAiHistory;
+      if (h && h.length && h[h.length - 1].role === 'user' && h[h.length - 1].content === historyEntry) h.pop();
+      var r = localStorage.getItem(storageKey);
+      if (r) {
+        var sv = JSON.parse(r);
+        if (sv && Array.isArray(sv.ui) && sv.ui.length && sv.ui[sv.ui.length - 1].role === 'user') sv.ui.pop();
+        sv.history = h;
+        localStorage.setItem(storageKey, JSON.stringify(sv));
+      }
+    } catch (e) {}
+  }
+
+  var _imgCtrl  = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  var _imgTimer = _imgCtrl ? setTimeout(function () { _imgCtrl.abort(); }, 60000) : null;
+
   fetch('https://vertex-worker.gbemigaakinde.workers.dev/ai', {
     method:  'POST',
+    signal:  _imgCtrl ? _imgCtrl.signal : undefined,
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       provider:     'openrouter',
@@ -5150,7 +5205,11 @@ function _dispatchImageSend(dataUrl, base64, imageType, userPrompt, onComplete) 
       userPrompt:   userPrompt || '',
     }),
   })
-  .then(function (res) { return res.json(); })
+  .then(function (res) {
+    if (_imgTimer) clearTimeout(_imgTimer);
+    // A non-JSON or error body must not crash the handler; treat it as "no reply"
+    return res.json().catch(function () { return {}; }).then(function (d) { return d || {}; });
+  })
   .then(function (data) {
     if (_thoughtTimer) { clearTimeout(_thoughtTimer); _thoughtTimer = null; }
 
@@ -5171,6 +5230,7 @@ function _dispatchImageSend(dataUrl, base64, imageType, userPrompt, onComplete) 
 
     // Handle upload rate limit
     if (data.type === 'upload_rate_limited') {
+      _rollbackImageTurn();
       setTimeout(function () {
         var limitBubble = document.createElement('div');
         limitBubble.style.cssText = 'display:flex;justify-content:flex-start;animation:cbt-fade-in 160ms var(--ease) both;';
@@ -5190,6 +5250,7 @@ function _dispatchImageSend(dataUrl, base64, imageType, userPrompt, onComplete) 
     var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content;
 
     if (!reply || !reply.trim()) {
+      _rollbackImageTurn();
       setTimeout(function () {
         var errBubble = document.createElement('div');
         errBubble.style.cssText = 'display:flex;justify-content:flex-start;animation:cbt-fade-in 160ms var(--ease) both;';
@@ -5269,8 +5330,10 @@ function _dispatchImageSend(dataUrl, base64, imageType, userPrompt, onComplete) 
     }, 400);
   })
   .catch(function (err) {
+    if (_imgTimer) clearTimeout(_imgTimer);
     if (_thoughtTimer) { clearTimeout(_thoughtTimer); _thoughtTimer = null; }
     if (aiGroup && aiGroup.parentNode) aiGroup.remove();
+    _rollbackImageTurn();
     console.error('[exam] Image dispatch fetch error:', err);
     var errBubble = document.createElement('div');
     errBubble.style.cssText = 'display:flex;justify-content:flex-start;animation:cbt-fade-in 160ms var(--ease) both;';
@@ -5283,6 +5346,14 @@ function _dispatchImageSend(dataUrl, base64, imageType, userPrompt, onComplete) 
     if (messages) { messages.appendChild(errBubble); messages.scrollTop = messages.scrollHeight; }
     if (onComplete) onComplete();
   });
+}
+
+function _vtxSafeSvg(html) {
+  return String(html || '')
+    .replace(/<script[\s\S]*?<\/script>/gi, '')
+    .replace(/<foreignObject[\s\S]*?<\/foreignObject>/gi, '')
+    .replace(/\son[a-z]+\s*=\s*("[^"]*"|'[^']*'|[^\s>]+)/gi, '')
+    .replace(/(href|xlink:href)\s*=\s*("|')\s*javascript:[^"']*\2/gi, '');
 }
 
 function _sendAiMessage() {
@@ -5300,6 +5371,8 @@ function _sendAiMessage() {
 
   // ── IMAGE PATH: pending image exists — send it now ──
   if (pendingImg) {
+    if (window._vtxAiSending) return;
+    window._vtxAiSending = true;
     var userPrompt = text; // may be empty string — that is fine
 
     // Clear the input and preview immediately
@@ -5346,6 +5419,7 @@ function _sendAiMessage() {
     _disableImageControls();
 
     _dispatchImageSend(pendingImg.dataUrl, pendingImg.base64, pendingImg.imageType, userPrompt, function () {
+      window._vtxAiSending = false;
       _enableImageControls();
     });
 
@@ -5353,6 +5427,9 @@ function _sendAiMessage() {
   }
 
   // ── TEXT PATH: normal text message ──
+  // Guard: ignore Enter-key / repeat sends while a reply is still in flight
+  if (window._vtxAiSending) return;
+  window._vtxAiSending = true;
   var _isVisualRequest = /\b(draw|diagram|show me|show|picture|image|illustrat|circuit|sketch|chart|graph|visual|pictorial|representation|depict|display|flag|coat of arms|what does .* look like|give me a .*(picture|image|diagram|visual|representation)|what .* look like)\b/i.test(text);
 
   inp.value = '';
@@ -5447,6 +5524,7 @@ function _sendAiMessage() {
   if (!window._vtxAiHistory) window._vtxAiHistory = [];
   window._vtxAiHistory.push({ role: 'user', content: text });
   if (window._vtxAiHistory.length > 12) window._vtxAiHistory = window._vtxAiHistory.slice(-12);
+  while (window._vtxAiHistory.length > 1 && window._vtxAiHistory[0].role !== 'user') window._vtxAiHistory.shift();
 
   var storageKey = 'vtx_ai_history_' + (AppState.userId || 'anon');
   try {
@@ -5726,7 +5804,7 @@ function _sendAiMessage() {
               if (svgResult && svgResult.type === 'svg' && svgResult.content) {
                 cont.className = 'vtx-visual-container';
                 cont.innerHTML =
-                  '<div class="vtx-visual-content-wrap">' + svgResult.content + '</div>' +
+                  '<div class="vtx-visual-content-wrap">' + _vtxSafeSvg(svgResult.content) + '</div>' +
                   '<div class="vtx-visual-footer">' +
                     '<span class="vtx-visual-footer-topic">' + _escHtml(visualTopic2) + '</span>' +
                     '<span class="vtx-visual-footer-badge is-svg">Diagram</span>' +
@@ -5775,7 +5853,7 @@ function _sendAiMessage() {
           if (result.type === 'svg' && result.content) {
             container.className = 'vtx-visual-container';
             container.innerHTML =
-              '<div class="vtx-visual-content-wrap">' + result.content + '</div>' +
+              '<div class="vtx-visual-content-wrap">' + _vtxSafeSvg(result.content) + '</div>' +
               '<div class="vtx-visual-footer">' +
                 '<span class="vtx-visual-footer-topic">' + _escHtml(visualTopic2) + '</span>' +
                 '<span class="vtx-visual-footer-badge is-svg">Diagram</span>' +
@@ -5833,6 +5911,21 @@ function _sendAiMessage() {
   }
 
   function _showError(msg) {
+    // Roll back the failed turn so history never has two user messages in a row,
+    // and give the student their text back so they can resend.
+    try {
+      var h = window._vtxAiHistory;
+      if (h && h.length && h[h.length - 1].role === 'user' && h[h.length - 1].content === text) h.pop();
+      var _raw = localStorage.getItem(storageKey);
+      if (_raw) {
+        var _sv = JSON.parse(_raw);
+        if (_sv && Array.isArray(_sv.ui) && _sv.ui.length && _sv.ui[_sv.ui.length - 1].role === 'user') _sv.ui.pop();
+        _sv.history = h;
+        localStorage.setItem(storageKey, JSON.stringify(_sv));
+      }
+    } catch (e) {}
+    var _inp = document.getElementById('vtxAiInput');
+    if (_inp && !_inp.value.trim()) { _inp.value = text; _inp.style.height = 'auto'; _inp.style.height = Math.min(_inp.scrollHeight, 120) + 'px'; }
     if (_thoughtTickTimer) {
       clearTimeout(_thoughtTickTimer);
       _thoughtTickTimer = null;
@@ -5854,6 +5947,7 @@ function _sendAiMessage() {
 
   if (window._vtxAskAI && typeof window._vtxAskAI === 'function') {
     window._vtxAskAI(messagesPayload, function (err, reply) {
+      window._vtxAiSending = false;
       // Re-enable send button once AI responds (text path)
       var sb = document.getElementById('vtxAiSendBtn');
       if (sb) {
@@ -5864,9 +5958,12 @@ function _sendAiMessage() {
         sb.style.opacity = (hasText || hasImg) ? '1' : '.4';
       }
       if (!err && reply) { _appendAiReply(reply); }
-      else { _showError('Could not reach the AI server. Please check your internet connection and try again.'); }
+      else { _showError(navigator.onLine === false ? 'You are offline. Connect to the internet and send your question again.' : 'Could not reach the AI server. Please try again in a moment.'); }
     });
   } else {
+    window._vtxAiSending = false;
+    var _sb2 = document.getElementById('vtxAiSendBtn');
+    if (_sb2) { _sb2.disabled = false; _sb2.style.opacity = '1'; }
     _showError('AI service not ready. Please refresh the page and try again.');
   }
 }

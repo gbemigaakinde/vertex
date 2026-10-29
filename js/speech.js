@@ -2376,7 +2376,26 @@ function _renderAiText(str) {
     },
   };
   // Shared AI bridge for exam.js drawer.
-    window._vtxAskAI = function (messagesPayload, callback) {
+    window._vtxAskAI = function (messagesPayload, _rawCallback) {
+    // Fire the callback only once, even if a provider path throws after replying
+    var _cbDone = false;
+    var callback = function (err, reply) {
+      if (_cbDone) return;
+      _cbDone = true;
+      try { _rawCallback(err, reply); } catch (e) { console.error('[vtxAskAI] callback error', e); }
+    };
+    // Every request gets a 40s timeout so the UI can never hang on "Thinking…"
+    var fetch = function (url, opts) {
+      opts = opts || {};
+      if (typeof AbortController === 'undefined') return window.fetch(url, opts);
+      var ctrl = new AbortController();
+      var timer = setTimeout(function () { ctrl.abort(); }, 40000);
+      opts.signal = ctrl.signal;
+      return window.fetch(url, opts).then(
+        function (r) { clearTimeout(timer); return r; },
+        function (e) { clearTimeout(timer); throw e; }
+      );
+    };
 
     var history = (messagesPayload || []).filter(function (m) {
       return m.role !== 'system';
