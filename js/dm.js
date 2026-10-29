@@ -183,9 +183,23 @@
     </svg>`;
   }
 
-  function _tickIcon(status) {
+  let _dmPeerName = '';
+  function _rcAttr(msg, status) {
+    if (!msg || !window.VtxReceipts || !msg.id) return '';
+    const sent = VtxReceipts.toMs(msg.timestamp);
+    return VtxReceipts.attr({
+      kind: 'dm',
+      to: msg.role === 'teacher' ? (_dmPeerName || 'Student') : 'Master Timothy',
+      sent,
+      delivered: VtxReceipts.toMs(msg.deliveredAt) || ((status === 'delivered' || status === 'read') ? sent : null),
+      read: VtxReceipts.toMs(msg.readAt) || (status === 'read' ? sent : null)
+    }) + ' style="cursor:pointer;"';
+  }
+
+  function _tickIcon(status, msg) {
+    const rc = (status === 'sent' || status === 'delivered' || status === 'read') ? _rcAttr(msg, status) : '';
     if (status === 'read') {
-      return `<span class="dm-ticks dm-ticks--read" title="Read" aria-label="Read">
+      return `<span class="dm-ticks dm-ticks--read" title="Read — tap for details" aria-label="Read" ${rc}>
         <svg width="16" height="10" viewBox="0 0 16 10" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M1 5L4.5 8.5L10.5 2" stroke="#53c8f5" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
           <path d="M5.5 5L9 8.5L15 2" stroke="#53c8f5" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
@@ -193,7 +207,7 @@
       </span>`;
     }
     if (status === 'delivered') {
-      return `<span class="dm-ticks dm-ticks--delivered" title="Delivered" aria-label="Delivered">
+      return `<span class="dm-ticks dm-ticks--delivered" title="Delivered — tap for details" aria-label="Delivered" ${rc}>
         <svg width="16" height="10" viewBox="0 0 16 10" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M1 5L4.5 8.5L10.5 2" stroke="rgba(255,255,255,0.6)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
           <path d="M5.5 5L9 8.5L15 2" stroke="rgba(255,255,255,0.6)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
@@ -208,7 +222,7 @@
         </svg>
       </span>`;
     }
-    return `<span class="dm-ticks dm-ticks--sent" title="Sent" aria-label="Sent">
+    return `<span class="dm-ticks dm-ticks--sent" title="Sent — tap for details" aria-label="Sent" ${rc}>
       <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
         <path d="M1.5 5L4 7.5L8.5 2" stroke="rgba(255,255,255,0.6)" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
@@ -782,7 +796,7 @@
       snap.forEach(doc => refs.push(doc.ref));
       for (let i = 0; i < refs.length; i += 400) {
         const b = Db().batch();
-        refs.slice(i, i + 400).forEach(ref => b.update(ref, { status: 'delivered' }));
+        refs.slice(i, i + 400).forEach(ref => b.update(ref, { status: 'delivered', deliveredAt: firebase.firestore.FieldValue.serverTimestamp() }));
         await b.commit();
       }
       // Only sync lastMessageStatus if the last message in the thread is actually
@@ -813,17 +827,20 @@
       ]);
 
       const refs = [];
-      sentSnap.forEach(doc      => refs.push(doc.ref));
-      deliveredSnap.forEach(doc => refs.push(doc.ref));
+      // 'sent' messages jump straight to read, so they also get a deliveredAt stamp
+      sentSnap.forEach(doc      => refs.push({ ref: doc.ref, withDelivered: true }));
+      deliveredSnap.forEach(doc => refs.push({ ref: doc.ref, withDelivered: false }));
 
       if (!refs.length) {
         _readMarkMap.add(key);
         return;
       }
 
+      const _now = firebase.firestore.FieldValue.serverTimestamp();
       for (let i = 0; i < refs.length; i += 400) {
         const b = Db().batch();
-        refs.slice(i, i + 400).forEach(ref => b.update(ref, { status: 'read' }));
+        refs.slice(i, i + 400).forEach(r => b.update(r.ref,
+          r.withDelivered ? { status: 'read', readAt: _now, deliveredAt: _now } : { status: 'read', readAt: _now }));
         await b.commit();
       }
       _readMarkMap.add(key);
@@ -861,7 +878,7 @@
     try {
       for (let i = 0; i < refs.length; i += 400) {
         const b = Db().batch();
-        refs.slice(i, i + 400).forEach(ref => b.update(ref, { status: 'delivered' }));
+        refs.slice(i, i + 400).forEach(ref => b.update(ref, { status: 'delivered', deliveredAt: firebase.firestore.FieldValue.serverTimestamp() }));
         await b.commit();
       }
       // Only sync lastMessageStatus if the last message in the thread is actually
@@ -1678,7 +1695,7 @@ function _confirmDeleteDMMessage(studentUid, messageId, wrapperId) {
               <div class="dm-bubble-footer dm-bubble-footer--end">
                 ${editedLabel}${editBtn}
                 <span class="dm-bubble-time">${time}</span>
-                ${_tickIcon(msg.status || 'sent')}
+                ${_tickIcon(msg.status || 'sent', msg)}
               </div>
             </div>
           </div>
@@ -1783,7 +1800,7 @@ function _buildTeacherBubble(msg, showLabel, isLast, canReact) {
               <div class="dm-bubble-footer dm-bubble-footer--end">
                 ${editedLabel}${editBtn}
                 <span class="dm-bubble-time">${time}</span>
-                ${_tickIcon(msg.status || 'sent')}
+                ${_tickIcon(msg.status || 'sent', msg)}
               </div>
             </div>
           </div>
@@ -2436,6 +2453,7 @@ function _subscribeTeacherThreadList() {
 
 async function _openConversation(studentUid, studentName, studentClass) {
     _activeStudentUid   = studentUid;
+    _dmPeerName         = studentName || '';
     window._dmActiveUid = studentUid;
 
     document.querySelectorAll('.dm-thread-item').forEach(el => {

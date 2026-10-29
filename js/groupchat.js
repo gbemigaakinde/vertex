@@ -733,6 +733,79 @@ function _injectStyles() {
   /* ══════════════════════════════════════════════════════
      MESSAGES — subscribe and render (student & teacher share this)
   ══════════════════════════════════════════════════════ */
+
+  /* ══ Read receipts (delivered / seen per member) ═════════════════
+     Each message doc stores:  deliveredTo.{uid} = time,  readBy.{uid} = time  */
+  const _SV = () => firebase.firestore.FieldValue.serverTimestamp();
+
+  // Mark messages from other people as delivered (always) and read (if the chat is visible).
+  function _markGroupReceipts(snap, groupId, viewerUid, markRead) {
+    if (!viewerUid) return;
+    const writes = [];
+    snap.forEach(doc => {
+      const d = doc.data();
+      if (d.type === 'event' || d.deletedForAll || d.senderId === viewerUid) return;
+      const upd = {};
+      if (!(d.deliveredTo && d.deliveredTo[viewerUid])) upd['deliveredTo.' + viewerUid] = _SV();
+      if (markRead && !(d.readBy && d.readBy[viewerUid])) upd['readBy.' + viewerUid] = _SV();
+      if (Object.keys(upd).length) writes.push({ ref: doc.ref, upd });
+    });
+    if (!writes.length) return;
+    (async () => {
+      try {
+        for (let i = 0; i < writes.length; i += 400) {
+          const b = Db().batch();
+          writes.slice(i, i + 400).forEach(w => b.update(w.ref, w.upd));
+          await b.commit();
+        }
+      } catch (e) { console.warn('[gc] receipts write failed:', e); }
+    })();
+  }
+
+  // Student is in the app but has the group closed: stamp "delivered" on recent messages.
+  const _gcDeliverySeen = {};
+  async function _markGroupDeliveredBackground(groupId, uid, lastTs) {
+    const key = groupId + ':' + (VtxReceipts.toMs(lastTs) || 0);
+    if (_gcDeliverySeen[key]) return;
+    _gcDeliverySeen[key] = true;
+    try {
+      const snap = await Db().collection('groupChats').doc(groupId)
+        .collection('messages').orderBy('timestamp', 'desc').limit(30).get();
+      _markGroupReceipts(snap, groupId, uid, false);
+    } catch (e) { console.warn('[gc] background delivery failed:', e); }
+  }
+
+  // Build the tick + "Message info" payload for one of my own messages.
+  function _receiptTicks(msg) {
+    const g = _activeGroupData || {};
+    const meUid = msg.senderId;
+    const people = [];
+    (g.members || []).forEach(m => { if (m.uid !== meUid) people.push({ uid: m.uid, name: m.name || 'Member' }); });
+    if (meUid !== TEACHER_UID() && TEACHER_UID()) people.push({ uid: TEACHER_UID(), name: 'Master Timothy' });
+    const sent = VtxReceipts.toMs(msg.timestamp);
+    const rows = people.map(p => {
+      const rd = msg.readBy && msg.readBy[p.uid];
+      const dl = msg.deliveredTo && msg.deliveredTo[p.uid];
+      const rdMs = rd ? (VtxReceipts.toMs(rd) || Date.now()) : null;
+      const dlMs = dl ? (VtxReceipts.toMs(dl) || Date.now()) : rdMs;
+      return { name: p.name, delivered: dlMs, read: rdMs };
+    });
+    const total = rows.length;
+    const nRead = rows.filter(r => r.read).length;
+    const nDeliv = rows.filter(r => r.delivered).length;
+    let lvl = 'sent';
+    if (total && nRead === total) lvl = 'read';
+    else if (total && nDeliv === total) lvl = 'delivered';
+    const attr = VtxReceipts.attr({ kind: 'group', sent, people: rows });
+    const stroke = lvl === 'read' ? '#53c8f5' : 'rgba(255,255,255,0.7)';
+    const svg = lvl === 'sent'
+      ? `<svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M1.5 5L4 7.5L8.5 2" stroke="${stroke}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`
+      : `<svg width="16" height="10" viewBox="0 0 16 10" fill="none"><path d="M1 5L4.5 8.5L10.5 2" stroke="${stroke}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/><path d="M5.5 5L9 8.5L15 2" stroke="${stroke}" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+    const label = lvl === 'read' ? 'Read by everyone' : lvl === 'delivered' ? 'Delivered to everyone' : 'Sent';
+    return `<span class="gc-ticks gc-ticks--${lvl}" ${attr} title="${label} — tap for details" aria-label="${label}"
+              style="display:inline-flex;align-items:center;margin-left:3px;cursor:pointer;line-height:1;">${svg}</span>`;
+  }
+
   function _subscribeGroupMessages(groupId, viewerUid, isTeacherViewer) {
     const containerId = isTeacherViewer ? 'gcTeacherMessages' : 'gcChatMessages';
     _cancel('gcMessages_' + groupId);
@@ -753,6 +826,9 @@ function _injectStyles() {
 
         const msgs = [];
         snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
+
+        // Receipts: delivered always, read only while this chat is actually on screen
+        _markGroupReceipts(snap, groupId, viewerUid, document.visibilityState === 'visible');
 
         // Keep the reader's place: only jump to the bottom on first load, for their own new
         // message, or when they were already at the bottom. A reaction must never yank the scroll.
@@ -781,6 +857,15 @@ function _injectStyles() {
     _reg('gcMessages_' + groupId, unsub);
   }
   
+  // Coming back to the tab while a group is open → mark what arrived meanwhile as read
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState !== 'visible' || !_activeGroupId) return;
+    const uid = (AppState.isTeacher ? TEACHER_UID() : AppState.userId);
+    Db().collection('groupChats').doc(_activeGroupId).collection('messages')
+      .orderBy('timestamp', 'desc').limit(50).get()
+      .then(snap => _markGroupReceipts(snap, _activeGroupId, uid, true)).catch(() => {});
+  });
+
   /* ── Reactions glue (UI lives in reactions.js) ───────── */
   const _rxMaps = {};      // groupId -> { messageId: reactions }
   const _rxLastId = {};    // containerId -> id of last rendered message
@@ -1265,6 +1350,7 @@ function _injectStyles() {
                   ${editedLabel}
                   ${editBtn}
                   <span class="gc-bubble-time">${time}</span>
+                  ${msgId ? _receiptTicks(msg) : ''}
                 </div>
               </div>
             </div>
@@ -2853,7 +2939,12 @@ async function _deleteGroup(groupId) {
     .get()
     .then(snap => {
       let total = 0;
-      snap.forEach(doc => { total += (doc.data().unread && doc.data().unread[uid]) || 0; });
+      snap.forEach(doc => {
+        const gd = doc.data();
+        const n = (gd.unread && gd.unread[uid]) || 0;
+        total += n;
+        if (n > 0 && window.VtxReceipts) _markGroupDeliveredBackground(doc.id, uid, gd.lastMessageAt || gd.lastMessageTime || gd.updatedAt || n);
+      });
 
       const existing = btn.querySelector('.gc-nav-badge');
       if (existing) existing.remove();
