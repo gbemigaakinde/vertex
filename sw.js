@@ -4,7 +4,7 @@
 
 'use strict';
 
-const CACHE_VERSION = 'v1.21.1';
+const CACHE_VERSION = 'v1.22.0';
 const STATIC_CACHE  = `static-${CACHE_VERSION}`;
 const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
 
@@ -39,7 +39,7 @@ const CORE_ASSETS = [
   '/news-ticker.css', '/news-ticker.js',
   '/data/questions.js',
   '/js/config.js', '/js/state.js', '/js/svg-diagram.js', '/js/question-loader.js',
-  '/js/ui.js', '/js/auth.js', '/js/chat.js', '/js/dm.js', '/js/groupchat.js', '/js/tasks.js',
+  '/js/ui.js', '/js/auth.js', '/js/chat.js', '/js/receipts.js', '/js/dm.js', '/js/groupchat.js', '/js/tasks.js',
   '/js/studyroom-md.js', '/js/studyroom.js',
   '/js/threedclass.js', '/js/threedclass-periodic.js', '/js/threedclass-biology.js',
   '/js/threedclass-physics.js', '/js/threedclass-live.js',
