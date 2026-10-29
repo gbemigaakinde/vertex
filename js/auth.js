@@ -2,6 +2,33 @@
   'use strict';
 
   window._registrationInProgress = false;
+
+  // Show/hide password. One listener for the whole page (not one per button), so it keeps
+  // working however the screen is redrawn. mousedown is cancelled so the keyboard stays open:
+  // on phones, closing it used to shift the page and make the tap miss the small eye.
+  if (!window._vtxEyeWired) {
+    window._vtxEyeWired = true;
+    document.addEventListener('mousedown', function (e) {
+      if (e.target.closest && e.target.closest('.cbt-eye-btn')) e.preventDefault();
+    });
+    document.addEventListener('click', function (e) {
+      const btn = e.target.closest && e.target.closest('.cbt-eye-btn');
+      if (!btn) return;
+      const wrap  = btn.closest('.cbt-password-wrap');
+      const input = wrap && wrap.querySelector('input');
+      if (!input) return;
+      const svgs    = btn.querySelectorAll('svg');
+      const showing = input.type === 'text';
+      const pos = [input.selectionStart, input.selectionEnd];
+      input.type = showing ? 'password' : 'text';
+      if (svgs[0]) svgs[0].style.display = showing ? '' : 'none';
+      if (svgs[1]) svgs[1].style.display = showing ? 'none' : '';
+      btn.setAttribute('aria-label',   showing ? 'Show password' : 'Hide password');
+      btn.setAttribute('aria-pressed', String(!showing));
+      try { input.focus({ preventScroll: true }); input.setSelectionRange(pos[0], pos[1]); } catch (err) {}
+    });
+  }
+
   let _pendingLoginEmail = '';
   let _loginMode = 'email';
 
@@ -244,26 +271,6 @@
       </div>`);
 
     _loginMode = 'email';
-
-    (function () {
-      function _wireToggle(inputId, btnId, eyeId, eyeOffId) {
-        const input  = document.getElementById(inputId);
-        const btn    = document.getElementById(btnId);
-        const eye    = document.getElementById(eyeId);
-        const eyeOff = document.getElementById(eyeOffId);
-        if (!input || !btn) return;
-        btn.addEventListener('click', function () {
-          const showing = input.type === 'text';
-          input.type           = showing ? 'password' : 'text';
-          eye.style.display    = showing ? ''         : 'none';
-          eyeOff.style.display = showing ? 'none'     : '';
-          btn.setAttribute('aria-label',   showing ? 'Show password' : 'Hide password');
-          btn.setAttribute('aria-pressed', String(!showing));
-        });
-      }
-      _wireToggle('loginPass', 'loginPassToggle', 'loginPassEye', 'loginPassEyeOff');
-      _wireToggle('regPass',   'regPassToggle',   'regPassEye',   'regPassEyeOff');
-    }());
 
     _wireClear();
     const loginPassEl = document.getElementById('loginPass');
