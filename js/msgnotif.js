@@ -235,14 +235,14 @@
   }
 
   /* ── Show a notification ── */
-  function _showNotification({ senderName, preview, count, threadUid, isTeacherSender, latestTs, kind, groupId, groupName }) {
+  function _showNotification({ senderName, preview, count, threadUid, isTeacherSender, latestTs, kind, groupId, groupName, voice }) {
     const container = _ensureContainer();
     count = count || 1;
     kind  = kind || 'dm';
 
     // If already MAX_VISIBLE shown, queue it
     if (_visible.length >= MAX_VISIBLE) {
-      _queue.push({ senderName, preview, count, threadUid, isTeacherSender, latestTs, kind, groupId, groupName });
+      _queue.push({ senderName, preview, count, threadUid, isTeacherSender, latestTs, kind, groupId, groupName, voice });
       return;
     }
 
@@ -269,7 +269,7 @@
           <span class="msg-notif-name">${_esc(senderName)}${countBadge}</span>
           <span class="msg-notif-time">${_esc(timeStr)}</span>
         </div>
-        <p class="msg-notif-preview">${_esc(preview)}</p>
+        <p class="msg-notif-preview">${voice ? '<i class="ph ph-microphone" style="vertical-align:-2px;margin-right:4px;"></i>' : ''}${_esc(preview)}</p>
       </div>
       <button class="msg-notif-dismiss" aria-label="Dismiss">&#x2715;</button>
       <div class="msg-notif-progress"></div>`;
@@ -368,7 +368,7 @@
       const senderName = latest.senderName || (isTeacherSender ? 'Master Timothy' : 'Student');
       const groupName  = latest.__groupName || 'Group';
       const preview = msgs.length === 1
-        ? (latest.text || '')
+        ? (latest.voiceNote ? 'Voice note' : (latest.text || ''))
         : `${msgs.length} new messages`;
 
       _showNotification({
@@ -378,6 +378,7 @@
         threadUid,
         isTeacherSender,
         latestTs: latest.timestamp,
+        voice: msgs.length === 1 && !!latest.voiceNote,
         kind: 'group',
         groupId: threadUid,
         groupName,
@@ -389,7 +390,7 @@
 
     const senderName = latest.senderName || (latest.role === 'teacher' ? 'Master Timothy' : 'Student');
     const preview = msgs.length === 1
-      ? (latest.text || '')
+      ? (latest.voiceNote ? 'Voice note' : (latest.text || ''))
       : `${msgs.length} new messages`;
 
     _showNotification({
@@ -399,6 +400,7 @@
       threadUid,
       isTeacherSender: latest.role === 'teacher',
       latestTs: latest.timestamp,
+      voice: msgs.length === 1 && !!latest.voiceNote,
       kind: 'dm',
     });
   }
@@ -655,6 +657,7 @@ function _teacherUid() {
     if (_listeners[key]) return;
 
     const groupBaselines = {};
+    const teacherVisible = {};   // groupId -> true only if teacher chose to be visible there
 
     const unsub = window.fbDb
       .collection('groupChats')
@@ -662,6 +665,9 @@ function _teacherUid() {
         snap.docChanges().forEach(change => {
           const groupId   = change.doc.id;
           const groupData = change.doc.data() || {};
+          // Kept live (runs on every change, before the "already watching" early-return below)
+          if (change.type === 'removed') delete teacherVisible[groupId];
+          else teacherVisible[groupId] = groupData.teacherVisible === true;
 
           if (change.type === 'added' || change.type === 'modified') {
             const subKey = 'msgNotif_teacher_group_' + groupId;
@@ -694,6 +700,8 @@ function _teacherUid() {
                   if (data.type === 'event') return;
                   if (data.deletedForAll) return;
                   if (data.senderId === _teacherUid()) return; // skip my own messages
+                  // Silent-observer groups (visibility OFF, the default) never alert the teacher
+                  if (teacherVisible[groupId] !== true) return;
 
                   _bufferMessage(groupId, {
                     id: doc.id,

@@ -1674,7 +1674,7 @@ function _confirmDeleteDMMessage(studentUid, messageId, wrapperId) {
 
   const replyBtnData = msgId
     ? `data-reply-id="${safeMsgId}"
-       data-reply-text="${_escAttr((msg.text || '').substring(0, 80))}"
+       data-reply-text="${_escAttr(msg.voiceNote ? 'Voice note' : (msg.text || '').substring(0, 80))}"
        data-reply-sender="${_escAttr(isMe ? 'You' : (msg.senderName || 'Master Timothy'))}"`
     : '';
 
@@ -1779,7 +1779,7 @@ function _buildTeacherBubble(msg, showLabel, isLast, canReact) {
 
   const replyBtnData = msgId
     ? `data-reply-id="${safeMsgId}"
-       data-reply-text="${_escAttr((msg.text || '').substring(0, 80))}"
+       data-reply-text="${_escAttr(msg.voiceNote ? 'Voice note' : (msg.text || '').substring(0, 80))}"
        data-reply-sender="${_escAttr(isTeacher ? 'Master Timothy' : (msg.senderName || 'Student'))}"`
     : '';
 

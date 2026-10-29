@@ -496,7 +496,7 @@ function _injectStyles() {
                   ${unrd > 0 ? `<span class="gc-badge">${unrd > 9 ? '9+' : unrd}</span>` : ''}
                 </div>
                 <div style="font-size:.6875rem;color:var(--text-4);margin-top:2px;">
-                  ${g.members ? g.members.length + ' member' + (g.members.length !== 1 ? 's' : '') : ''}
+                  ${g.members ? _studentMemberCount(g) + ' member' + (_studentMemberCount(g) !== 1 ? 's' : '') : ''}
                 </div>
               </div>
             </div>`;
@@ -579,7 +579,7 @@ function _injectStyles() {
             <p style="font-size:.9375rem;font-weight:700;color:var(--text-1);
                       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin:0;">${_esc(g.name)}</p>
             <p style="font-size:.6875rem;color:var(--text-3);margin:0;">
-              ${g.members ? g.members.length : 0} member${(g.members||[]).length!==1?'s':''}
+              <span id="gcMemberCount">${_studentMemberCount(g)} member${_studentMemberCount(g)!==1?'s':''}</span>
               ${g.settings && g.settings.description ? ' · ' + _esc(g.settings.description) : ''}
             <span id="gcOnlineCount" style="color:var(--success);font-weight:600;margin-left:.25rem;"></span>
             </p>
@@ -699,8 +699,15 @@ function _injectStyles() {
         _backFromStudent();
         return;
       }
+      const _prevVis = _activeGroupData ? _teacherVisible(_activeGroupData) : null;
       _activeGroupData = snap.data();
       const g = _activeGroupData;
+
+      if (_prevVis !== null && _prevVis !== _teacherVisible(g)) {
+        const mc = document.getElementById('gcMemberCount');
+        if (mc) mc.textContent = _studentMemberCount(g) + ' member' + (_studentMemberCount(g) !== 1 ? 's' : '');
+        _repaintGroupMessages('gcChatMessages', groupId, uid, false);
+      }
 
       if (!Array.isArray(g.memberUids) || !g.memberUids.includes(uid)) {
         UI.toast('You have been removed from this group.', 'warning', 5000);
@@ -725,6 +732,9 @@ function _injectStyles() {
       } else if (!isMuted && inputArea) {
         inputArea.disabled = false;
         if (sendBtn) sendBtn.disabled = false;
+        if (window.VoiceNotes && !inputArea.parentElement.querySelector('.vn-recorder-btn')) {
+          VoiceNotes.injectRecorderButton('gcInput', _sendStudentVoiceNote);
+        }
         if (mutedBanr) mutedBanr.remove();
       }
     }, err => console.warn('[gc] Group doc watch error:', err)));
@@ -734,6 +744,25 @@ function _injectStyles() {
      MESSAGES — subscribe and render (student & teacher share this)
   ══════════════════════════════════════════════════════ */
 
+  /* Teacher is an invisible observer unless the teacher switches visibility ON for the group */
+  const _teacherVisible = g => !!(g && g.teacherVisible === true);
+  // Member count as STUDENTS see it (teacher only counts when visible)
+  const _studentMemberCount = g => ((g && g.members) ? g.members.length : 0) + (_teacherVisible(g) ? 1 : 0);
+
+  // Re-draw the open chat from the last snapshot (used when teacher visibility flips)
+  const _lastMsgs = {};   // containerId -> messages
+  function _repaintGroupMessages(containerId, groupId, viewerUid, isTeacherViewer) {
+    const container = document.getElementById(containerId);
+    const msgs = _lastMsgs[containerId];
+    if (!container || !msgs) return;
+    const top = container.scrollTop;
+    container.innerHTML = _renderMessages(msgs, viewerUid, groupId, isTeacherViewer);
+    container.scrollTop = top;
+    _attachSwipeListeners(containerId, isTeacherViewer);
+    _bindReactions(container, groupId, viewerUid, isTeacherViewer);
+    if (window.VtxReactions) VtxReactions.afterRender();
+  }
+
   /* ══ Read receipts (delivered / seen per member) ═════════════════
      Each message doc stores:  deliveredTo.{uid} = time,  readBy.{uid} = time  */
   const _SV = () => firebase.firestore.FieldValue.serverTimestamp();
@@ -741,6 +770,8 @@ function _injectStyles() {
   // Mark messages from other people as delivered (always) and read (if the chat is visible).
   function _markGroupReceipts(snap, groupId, viewerUid, markRead) {
     if (!viewerUid) return;
+    // Invisible teacher must leave no trace: no delivered / read stamps at all
+    if (viewerUid === TEACHER_UID() && !_teacherVisible(_activeGroupData)) return;
     const writes = [];
     snap.forEach(doc => {
       const d = doc.data();
@@ -781,7 +812,7 @@ function _injectStyles() {
     const meUid = msg.senderId;
     const people = [];
     (g.members || []).forEach(m => { if (m.uid !== meUid) people.push({ uid: m.uid, name: m.name || 'Member' }); });
-    if (meUid !== TEACHER_UID() && TEACHER_UID()) people.push({ uid: TEACHER_UID(), name: 'Master Timothy' });
+    if (_teacherVisible(g) && meUid !== TEACHER_UID() && TEACHER_UID()) people.push({ uid: TEACHER_UID(), name: 'Master Timothy' });
     const sent = VtxReceipts.toMs(msg.timestamp);
     const rows = people.map(p => {
       const rd = msg.readBy && msg.readBy[p.uid];
@@ -827,6 +858,8 @@ function _injectStyles() {
         const msgs = [];
         snap.forEach(doc => msgs.push({ id: doc.id, ...doc.data() }));
 
+        _lastMsgs[containerId] = msgs;
+
         // Receipts: delivered always, read only while this chat is actually on screen
         _markGroupReceipts(snap, groupId, viewerUid, document.visibilityState === 'visible');
 
@@ -858,13 +891,14 @@ function _injectStyles() {
   }
   
   // Coming back to the tab while a group is open → mark what arrived meanwhile as read
-  document.addEventListener('visibilitychange', () => {
+  function _stampOpenGroupRead() {
     if (document.visibilityState !== 'visible' || !_activeGroupId) return;
     const uid = (AppState.isTeacher ? TEACHER_UID() : AppState.userId);
     Db().collection('groupChats').doc(_activeGroupId).collection('messages')
       .orderBy('timestamp', 'desc').limit(50).get()
       .then(snap => _markGroupReceipts(snap, _activeGroupId, uid, true)).catch(() => {});
-  });
+  }
+  document.addEventListener('visibilitychange', _stampOpenGroupRead);
 
   /* ── Reactions glue (UI lives in reactions.js) ───────── */
   const _rxMaps = {};      // groupId -> { messageId: reactions }
@@ -1308,7 +1342,7 @@ function _injectStyles() {
 
     const replyData = msgId
       ? `data-reply-id="${_escAttr(msgId)}"
-         data-reply-text="${_escAttr((msg.text||'').substring(0,80))}"
+         data-reply-text="${_escAttr(msg.voiceNote ? 'Voice note' : (msg.text||'').substring(0,80))}"
          data-reply-sender="${_escAttr(msg.senderName||'Unknown')}"`
       : '';
 
@@ -1891,13 +1925,19 @@ function _updateMemberPresenceDOM(uid, data) {
               ? `<p style="font-size:.8125rem;color:var(--text-3);margin-top:4px;">${_esc(g.settings.description)}</p>`
               : ''}
             <p style="font-size:.75rem;color:var(--text-4);margin-top:4px;">
-              ${members.length} member${members.length!==1?'s':''}
+              ${_studentMemberCount(g)} member${_studentMemberCount(g)!==1?'s':''}
             </p>
           </div>
           <div>
             <p style="font-size:.75rem;font-weight:700;color:var(--text-3);text-transform:uppercase;
                       letter-spacing:.04em;margin-bottom:.5rem;">Members</p>
             <div style="display:flex;flex-direction:column;gap:.375rem;">
+              ${_teacherVisible(g) ? `
+                <div class="gc-member-row">
+                  <div class="gc-member-av">M</div>
+                  <div style="flex:1;min-width:0;"><div class="gc-member-name">Master Timothy</div></div>
+                  <span class="gc-member-cls">Teacher</span>
+                </div>` : ''}
               ${members.map(m => `
                 <div class="gc-member-row" data-uid="${_escAttr(m.uid)}">
                   <div class="gc-member-av" data-vtx-av="${_esc(m.uid||m.id||'')}">${_esc((m.name||'?').charAt(0).toUpperCase())}</div>
@@ -2553,6 +2593,28 @@ function _updateMemberPresenceDOM(uid, data) {
                    style="width:100%;box-sizing:border-box;" />
           </div>
 
+          <!-- Teacher visibility -->
+          <div style="display:flex;align-items:center;gap:.75rem;padding:.75rem;border:1px solid var(--border);
+                      border-radius:8px;background:var(--bg-subtle);">
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:.8125rem;font-weight:700;color:var(--text-1);">Show me in this group</div>
+              <div style="font-size:.6875rem;color:var(--text-3);margin-top:2px;line-height:1.4;">
+                Off (default): you watch silently — students can't see you as a member and you get no alerts here.
+                On: you appear as a member and receive alerts.
+              </div>
+            </div>
+            <label style="position:relative;display:inline-block;width:44px;height:24px;flex-shrink:0;cursor:pointer;">
+              <input id="gcSetTeacherVisible" type="checkbox" ${_teacherVisible(g) ? 'checked' : ''}
+                     style="position:absolute;opacity:0;width:100%;height:100%;margin:0;cursor:pointer;z-index:1;"
+                     onchange="this.nextElementSibling.style.background=this.checked?'var(--accent,#4f6ef7)':'#9ca3af';this.nextElementSibling.firstElementChild.style.transform=this.checked?'translateX(20px)':'translateX(0)'" />
+              <span style="position:absolute;inset:0;border-radius:99px;transition:background .15s;
+                           background:${_teacherVisible(g) ? 'var(--accent,#4f6ef7)' : '#9ca3af'};">
+                <span style="position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;
+                             transition:transform .15s;transform:${_teacherVisible(g) ? 'translateX(20px)' : 'translateX(0)'};"></span>
+              </span>
+            </label>
+          </div>
+
           <!-- Current members -->
           <div>
             <label style="display:block;font-size:var(--text-xs);font-weight:600;color:var(--text-3);
@@ -2904,6 +2966,7 @@ async function _deleteGroup(groupId) {
     const desc       = document.getElementById('gcSetDesc')?.value.trim() || '';
     const bannedRaw  = document.getElementById('gcSetBanned')?.value || '';
     const bannedWords = bannedRaw.split(',').map(w => w.trim().toLowerCase()).filter(Boolean);
+    const teacherVisible = !!document.getElementById('gcSetTeacherVisible')?.checked;
 
     const btn = document.getElementById('gcSaveSettingsBtn');
     UI.setLoading(btn, true);
@@ -2912,8 +2975,12 @@ async function _deleteGroup(groupId) {
         name,
         'settings.description': desc,
         'settings.bannedWords': bannedWords,
+        teacherVisible,
       });
-      _activeGroupData = { ..._activeGroupData, name, settings: { ...(_activeGroupData?.settings||{}), description: desc, bannedWords } };
+      const _wasVisible = _teacherVisible(_activeGroupData);
+      _activeGroupData = { ..._activeGroupData, name, teacherVisible, settings: { ...(_activeGroupData?.settings||{}), description: desc, bannedWords } };
+      // Just became visible while this group is open → catch up on delivered / read stamps
+      if (teacherVisible && !_wasVisible && _activeGroupId === groupId) _stampOpenGroupRead();
       UI.toast('Group settings saved.', 'success');
       document.getElementById('gcSettingsModal')?.remove();
 
