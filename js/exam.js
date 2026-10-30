@@ -2717,7 +2717,7 @@ async function renderSubjectSelection() {
 
     try {
       await window.fbDb.collection('ongoingExams').doc(S().userId).set(
-        { startTime: startDate, sessionDate: S().exam.sessionDate, isTaskDay: _isTaskDayNow }, { merge: true }
+        Object.assign({ startTime: startDate, sessionDate: S().exam.sessionDate, isTaskDay: _isTaskDayNow }, S().exam.proctorSessionId ? { proctorSessionId: S().exam.proctorSessionId } : {}), { merge: true }
       );
     } catch (err) {
       console.warn('[exam] Could not persist startTime to Firebase.', err);
