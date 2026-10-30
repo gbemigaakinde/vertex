@@ -328,7 +328,11 @@
     const durationMs = todayOwner && typeof todayOwner.durationMs === 'number' && todayOwner.durationMs > 0
       ? todayOwner.durationMs : null;
 
+    const pOwner = todayOwner || primary;
+    const proctorMode = (pOwner && (pOwner.proctorMode === 'video' || pOwner.proctorMode === 'photo')) ? pOwner.proctorMode : 'off';
     return Object.assign({}, primary, {
+      proctorMode,
+      proctorIntervalSec: (pOwner && pOwner.proctorIntervalSec) || 60,
       active:       true,
       dates,
       pastDates,

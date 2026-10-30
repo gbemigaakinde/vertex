@@ -2667,6 +2667,20 @@ async function renderSubjectSelection() {
     const beginBtn = document.getElementById('beginExamBtn');
     if (beginBtn) { beginBtn.disabled = true; beginBtn.textContent = 'Starting…'; }
 
+    // Camera proctoring (teacher-enabled): the camera must be on before the exam begins.
+    const _pc = S().currentTaskConfig;
+    const _proctorOn = !!(window.Proctor && _pc && _pc.active && Proctor.required(_pc) &&
+      Array.isArray(_pc.dates) && _pc.dates.includes(S().exam.sessionDate || _dateOfMs(Date.now())));
+    if (_proctorOn) {
+      try { await Proctor.prepare(_pc); }
+      catch (err) {
+        UI.toast(err.message || 'Camera access is required for this exam.', 'error', 8000);
+        if (beginBtn) { beginBtn.disabled = false; beginBtn.textContent = 'Begin Exam'; }
+        _beginExamLock = false;
+        return;
+      }
+    }
+
     const modal = document.getElementById('examModal');
     if (modal) modal.remove();
 
@@ -2674,6 +2688,11 @@ async function renderSubjectSelection() {
     const startDate = new Date(startMs);
     S().examStartMs    = startMs;
     S().exam.startTime = startDate;
+    if (_proctorOn) {
+      S().exam.proctorSessionId = S().userId + '_' + startMs;
+      Proctor.begin(S().exam.proctorSessionId);
+      try { window.fbDb.collection('ongoingExams').doc(S().userId).set({ proctorSessionId: S().exam.proctorSessionId }, { merge: true }); } catch (e) {}
+    }
     if (!S().exam.sessionDate) S().exam.sessionDate = _dateOfMs(startMs);
 
     // Saved with the exam so the server can finish the exam for us if this
@@ -3211,6 +3230,7 @@ async function renderSubjectSelection() {
           sessionDate,
           questionSession: exam.questionSession || null,
           questionTerm:    exam.questionTerm || null,
+          proctorSessionId: exam.proctorSessionId || null,
           timestamp: firebase.firestore.FieldValue.serverTimestamp(),
         });
         tx.delete(examRef);
@@ -3251,6 +3271,7 @@ async function renderSubjectSelection() {
         S().studentData.coachingCompleted[sessionDate] = true;
       }
 
+      if (window.Proctor) { try { await Proctor.stop(); } catch (e) {} }
       S().exam        = null;
       S().examStartMs = null;
       _startExamLock  = false;

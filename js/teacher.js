@@ -887,6 +887,26 @@ function renderTeacherDashboard() {
                 </select>
               </div>
 
+              <div style="margin-bottom:0.875rem;">
+                <label style="display:block;font-size:var(--text-xs);font-weight:500;color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">
+                  Camera Proctoring <span style="font-weight:400;text-transform:none;color:var(--text-4);">— students must turn on their camera</span>
+                </label>
+                <select id="taskProctorMode" onchange="var w=document.getElementById('taskProctorIntervalWrap');if(w)w.style.display=this.value==='photo'?'':'none';">
+                  <option value="off">Off (no camera)</option>
+                  <option value="video">Record video for the whole exam</option>
+                  <option value="photo">Take photos at intervals</option>
+                </select>
+                <div id="taskProctorIntervalWrap" style="display:none;margin-top:.5rem;">
+                  <select id="taskProctorInterval">
+                    <option value="30">Photo about every 30 seconds</option>
+                    <option value="60" selected>Photo about every 1 minute</option>
+                    <option value="120">Photo about every 2 minutes</option>
+                    <option value="300">Photo about every 5 minutes</option>
+                  </select>
+                </div>
+                <p style="font-size:var(--text-xs);color:var(--text-4);margin-top:.25rem;">Students see their live camera in the exam and are told they are being recorded. Media is saved to Backblaze and shown on each result.</p>
+              </div>
+
               <div id="taskDateConfigArea"></div>
 
               <div id="taskRecurringSubjectsWrap" style="display:none;margin-bottom:0.875rem;">
@@ -1811,7 +1831,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
                   </span>`).join('')}
               </div>
               <div style="display:flex;align-items:center;justify-content:space-between;">
-                <p style="font-size:var(--text-xs);color:var(--text-4);">${ts}</p>
+                <p style="font-size:var(--text-xs);color:var(--text-4);">${ts}${r.proctorSessionId ? ` · <a href="#" onclick="event.stopPropagation();event.preventDefault();Proctor.openViewer('${_esc(r.proctorSessionId)}','${_esc(r.name || '')}')" style="color:var(--accent-text);font-weight:600;">🎥 Proctoring</a>` : ''}</p>
                 ${hasDetail
                   ? `<span style="font-size:var(--text-xs);font-weight:600;color:var(--accent-text);
                                   background:var(--accent-subtle);border:1px solid var(--accent-border);
@@ -2379,6 +2399,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
     if (startEl)    startEl.value     = '';
     if (endEl)      endEl.value       = '';
     if (durationEl) durationEl.value  = '';
+    const pmEl = document.getElementById('taskProctorMode'); if (pmEl) { pmEl.value = 'off'; pmEl.onchange && pmEl.onchange(); }
     document.querySelectorAll('.task-day-cb').forEach(cb => { cb.checked = false; });
     document.querySelectorAll('.recurring-day-subj-cb').forEach(cb => { cb.checked = false; });
     _clearTaskFormDates();
@@ -2581,6 +2602,8 @@ async function _saveStudentEdit(uid, previousAdmno) {
     const durationMs  = durationRaw ? parseInt(durationRaw, 10) : null;
 
     if (!title) { UI.toast('Please enter a task title.', 'warning'); return; }
+    const proctorMode = document.getElementById('taskProctorMode')?.value || 'off';
+    const proctorIntervalSec = parseInt(document.getElementById('taskProctorInterval')?.value || '60', 10);
 
     let payload;
 
@@ -2602,6 +2625,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
         dates,
         dateSubjects,
         durationMs:  durationMs || null,
+        proctorMode, proctorIntervalSec,
         assignScope: _assignScope,
         updatedAt:   firebase.firestore.FieldValue.serverTimestamp(),
       };
@@ -2648,6 +2672,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
         weeklyDays:  checkedDays,
         dateSubjects,
         durationMs:  durationMs || null,
+        proctorMode, proctorIntervalSec,
         assignScope: _assignScope,
         updatedAt:   firebase.firestore.FieldValue.serverTimestamp(),
       };
