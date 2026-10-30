@@ -1627,7 +1627,7 @@ async function _submitExpiredExam(token, uid) {
   }
 
   const student = await _pnGetDoc('students/' + uid, token,
-    ['name', 'class', 'school', 'studyStreak', 'lastActiveDate']);
+    ['name', 'class', 'school', 'studyStreak', 'lastActiveDate', 'coachingCompletedDocs']);
 
   const result      = _examComputeResult(exam, uid, student);
   // The exam belongs to the day it was started (Lagos time), not the day it was submitted.
@@ -1694,15 +1694,33 @@ async function _submitExpiredExam(token, uid) {
     };
     const maskPaths = ['studyStreak', 'lastActiveDate', 'lastExamPercentage', 'weakSubjects', 'autoSubmitNotice'];
 
+    const transforms = [{ fieldPath: 'totalExamsCompleted', increment: { integerValue: '1' } }];
+
     if (exam.isTaskDay === true) {
-      fields.coachingCompleted = { [sessionDate]: true };
-      maskPaths.push('coachingCompleted.`' + sessionDate + '`');
+      // Completion is tracked per task document, so finishing an individual
+      // task does not mark the class task for the same day as done.
+      const takenId = (typeof exam.taskDocId === 'string' && exam.taskDocId) ? exam.taskDocId : null;
+      const layers  = Array.isArray(exam.taskLayers) ? exam.taskLayers : [];
+      let allDone   = true;
+      if (takenId) {
+        const rec     = student && student.coachingCompletedDocs && student.coachingCompletedDocs[sessionDate];
+        const already = Array.isArray(rec) ? rec : [];
+        allDone = layers.every(id => id === takenId || already.indexOf(id) !== -1);
+        transforms.push({
+          fieldPath: 'coachingCompletedDocs.`' + sessionDate + '`',
+          appendMissingElements: { values: [{ stringValue: takenId }] },
+        });
+      }
+      if (allDone) {
+        fields.coachingCompleted = { [sessionDate]: true };
+        maskPaths.push('coachingCompleted.`' + sessionDate + '`');
+      }
     }
 
     writes.push({
       update: { name: _FS_DB_PATH + '/students/' + uid, fields: _fsEncodeFields(fields) },
       updateMask: { fieldPaths: maskPaths },
-      updateTransforms: [{ fieldPath: 'totalExamsCompleted', increment: { integerValue: '1' } }],
+      updateTransforms: transforms,
       currentDocument: { exists: true },
     });
   }
