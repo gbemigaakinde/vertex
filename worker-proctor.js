@@ -1,14 +1,17 @@
 /* worker-proctor.js — proctoring media API (Backblaze B2 + Firestore index)
    POST /proctor/upload?sid&kind&seq&t&type[&note]  (student, raw body; kind = video | photo | flag)
-   POST /proctor/list   {sid}                (teacher)
+   POST /proctor/event  {sid,code,t,durationSec,detail}  (student, own session only; kinds screen | screenvideo also accepted on upload)
+   POST /proctor/list   {sid}                (teacher; returns items + events)
    POST /proctor/media  {id}                 (teacher, streams the object) */
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Expose-Headers': 'Content-Type' };
 const J = { ...CORS, 'Content-Type': 'application/json' };
 const out = (d, s) => new Response(JSON.stringify(d), { status: s || 200, headers: J });
-const MAX_VIDEO = 40 * 1024 * 1024, MAX_PHOTO = 600 * 1024, MAX_SEQ = 20000;
+const MAX_VIDEO = 40 * 1024 * 1024, MAX_PHOTO = 600 * 1024, MAX_SCREEN = 1536 * 1024, MAX_SEQ = 20000;
+const MAX_EVENT = 2 * 1024;
 const TYPES = { 'video/webm': 'webm', 'video/mp4': 'mp4', 'image/jpeg': 'jpg', 'application/json': 'json' };
 const MAX_FLAG = 4 * 1024;
-const KIND_EXT = { video: ['webm', 'mp4'], photo: ['jpg'], flag: ['json'] };
+const KIND_EXT = { video: ['webm', 'mp4'], photo: ['jpg'], flag: ['json'], screen: ['jpg'], screenvideo: ['webm', 'mp4'] };
+const EVENT_CODES = ['tab_hidden', 'tab_visible', 'window_blur', 'window_focus', 'screen_share_started', 'screen_share_stopped', 'screen_share_resumed', 'camera_stopped', 'unsupported_device_blocked', 'unsupported_device_camera_only'];
 
 export async function handleProctor(request, url, env, h, verifyIdToken) {
   const user = await verifyIdToken(request);
@@ -35,7 +38,7 @@ export async function handleProctor(request, url, env, h, verifyIdToken) {
       const ext = TYPES[type];
       if (!ext || KIND_EXT[kind].indexOf(ext) < 0) return out({ error: 'Invalid media type.' }, 400);
       const buf = await request.arrayBuffer();
-      if (!buf.byteLength || buf.byteLength > (kind === 'video' ? MAX_VIDEO : kind === 'flag' ? MAX_FLAG : MAX_PHOTO)) return out({ error: 'Invalid size.' }, 413);
+      if (!buf.byteLength || buf.byteLength > (kind === 'video' || kind === 'screenvideo' ? MAX_VIDEO : kind === 'flag' ? MAX_FLAG : kind === 'screen' ? MAX_SCREEN : MAX_PHOTO)) return out({ error: 'Invalid size.' }, 413);
       const key = 'proctor/' + user.uid + '/' + sid + '/' + kind + '-' + String(seq).padStart(5, '0') + '.' + ext;
       const put = await fetch(await h.b2PresignPut(key, type, env), { method: 'PUT', headers: { 'Content-Type': type }, body: buf });
       if (!put.ok) return out({ error: 'Storage error (' + put.status + ').' }, 502);
@@ -46,6 +49,24 @@ export async function handleProctor(request, url, env, h, verifyIdToken) {
       if (note) fields.note = { stringValue: note };
       const r = await fetch(FS + '/proctorMedia/' + encodeURIComponent(id), { method: 'PATCH', headers: auth, body: JSON.stringify({ fields }) });
       if (!r.ok) return out({ error: 'Could not save record.' }, 500);
+      return out({ ok: true });
+    }
+
+    if (url.pathname === '/proctor/event') {
+      let eb; try { eb = await request.json(); } catch (e) { return out({ error: 'Invalid JSON.' }, 400); }
+      const sid = String(eb.sid || '');
+      if (!/^[A-Za-z0-9_-]{6,160}$/.test(sid) || sid.indexOf(user.uid + '_') !== 0) return out({ error: 'Invalid session.' }, 403);
+      const code = String(eb.code || '');
+      if (EVENT_CODES.indexOf(code) < 0) return out({ error: 'Invalid event.' }, 400);
+      const t = parseInt(eb.t, 10) || Date.now();
+      const dur = Math.max(0, Math.min(86400, parseInt(eb.durationSec, 10) || 0));
+      const detail = String(eb.detail || '').slice(0, 200);
+      if (JSON.stringify(eb).length > MAX_EVENT) return out({ error: 'Invalid size.' }, 413);
+      const id = sid + '_' + t + '_' + code + '_' + Math.floor(Math.random() * 1e6);
+      const fields = { sid: { stringValue: sid }, uid: { stringValue: user.uid }, code: { stringValue: code },
+        t: { integerValue: String(t) }, durationSec: { integerValue: String(dur) }, detail: { stringValue: detail } };
+      const r = await fetch(FS + '/proctorEvents/' + encodeURIComponent(id), { method: 'PATCH', headers: auth, body: JSON.stringify({ fields }) });
+      if (!r.ok) return out({ error: 'Could not save event.' }, 500);
       return out({ ok: true });
     }
 
@@ -62,7 +83,16 @@ export async function handleProctor(request, url, env, h, verifyIdToken) {
         const f = x.document.fields || {};
         return { id: x.document.name.split('/').pop(), kind: f.kind && f.kind.stringValue, seq: parseInt(f.seq && f.seq.integerValue || '0', 10), t: parseInt(f.t && f.t.integerValue || '0', 10), note: (f.note && f.note.stringValue) || '' };
       }).sort((a, b) => a.t - b.t || a.seq - b.seq);
-      return out({ items });
+      const eq = { structuredQuery: { from: [{ collectionId: 'proctorEvents' }], where: { fieldFilter: { field: { fieldPath: 'sid' }, op: 'EQUAL', value: { stringValue: sid } } } } };
+      let events = [];
+      try {
+        const er = await fetch(FS + ':runQuery', { method: 'POST', headers: auth, body: JSON.stringify(eq) });
+        if (er.ok) events = (await er.json()).filter(x => x.document).map(x => {
+          const f = x.document.fields || {};
+          return { code: f.code && f.code.stringValue, t: parseInt(f.t && f.t.integerValue || '0', 10), durationSec: parseInt(f.durationSec && f.durationSec.integerValue || '0', 10), detail: (f.detail && f.detail.stringValue) || '' };
+        }).sort((a, b) => a.t - b.t);
+      } catch (e) {}
+      return out({ items, events });
     }
 
     if (url.pathname === '/proctor/media') {
