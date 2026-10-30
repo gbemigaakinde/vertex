@@ -1,3 +1,4 @@
+import { handleProctor } from './worker-proctor.js';
 import { handleFilesApi, handleFileDownload, UploadQuota, verifyIdToken } from './worker-files.js';
 export { UploadQuota };
 
@@ -359,6 +360,13 @@ if (request.method === 'POST' && url.pathname === '/api/cancel-scheduled-push') 
 
   return new Response(JSON.stringify({ success: true }), { headers: corsJsonHeaders() });
 }
+
+    // ── Exam proctoring media (see worker-proctor.js) ──
+    if (request.method === 'POST' && url.pathname.indexOf('/proctor/') === 0) {
+      return handleProctor(request, url, env, {
+        getFirebaseToken: _getFirebaseToken, b2PresignPut: _b2PresignPut, b2PresignGet: _b2PresignGet,
+      }, verifyIdToken);
+    }
 
     // ── Storage + file organisation (authenticated; see worker-files.js) ──
     if (request.method === 'POST' && (url.pathname.indexOf('/storage/') === 0 || url.pathname === '/files/op')) {

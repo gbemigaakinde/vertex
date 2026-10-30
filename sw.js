@@ -45,7 +45,7 @@ const CORE_ASSETS = [
   '/js/threedclass-physics.js', '/js/threedclass-live.js',
   '/js/student-sync.js', '/js/teacher-push.js', '/js/storage.js', '/viewer.js',
   '/js/filemanager.js', '/js/question-manager.js', '/js/teacher.js', '/js/speech.js',
-  '/js/activitylog.js', '/js/exam.js', '/js/notifications.js', '/js/avatar.js',
+  '/js/activitylog.js', '/js/exam.js', '/js/proctor.js', '/js/notifications.js', '/js/avatar.js',
   '/js/reactions.js', '/js/settings.js', '/js/session-reminders.js', '/js/msgnotif.js',
   '/js/game.js', '/js/landing.js', '/js/app.js', '/js/voice-notes.js', '/js/vendor/lame.min.js', '/js/vendor/mp3-worker.js', '/js/installPrompt.js',
 ];
