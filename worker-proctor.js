@@ -5,7 +5,7 @@
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Expose-Headers': 'Content-Type' };
 const J = { ...CORS, 'Content-Type': 'application/json' };
 const out = (d, s) => new Response(JSON.stringify(d), { status: s || 200, headers: J });
-const MAX_VIDEO = 40 * 1024 * 1024, MAX_PHOTO = 600 * 1024, MAX_SEQ = 4000;
+const MAX_VIDEO = 40 * 1024 * 1024, MAX_PHOTO = 600 * 1024, MAX_SEQ = 20000;
 const TYPES = { 'video/webm': 'webm', 'video/mp4': 'mp4', 'image/jpeg': 'jpg' };
 
 export async function handleProctor(request, url, env, h, verifyIdToken) {
