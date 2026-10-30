@@ -48,7 +48,7 @@
     panel = document.createElement('div');
     panel.id = 'proctorPanel';
     panel.setAttribute('role', 'status');
-    panel.style.cssText = 'position:fixed;right:10px;bottom:10px;z-index:9999;width:132px;background:#111;color:#fff;' +
+    panel.style.cssText = 'position:fixed;left:10px;bottom:10px;z-index:9999;width:132px;background:#111;color:#fff;' +
       'border-radius:10px;overflow:hidden;box-shadow:0 4px 18px rgba(0,0,0,.35);font:600 10px/1.3 system-ui,sans-serif;';
     vid = document.createElement('video');
     vid.muted = true; vid.autoplay = true; vid.playsInline = true;
@@ -125,9 +125,12 @@
     })();
   }
 
-  function begin(sessionId) {
+  function begin(sessionId, resumed) {
     if (!stream || !required(cfg)) return null;
-    sid = sessionId; seq = 0; active = true;
+    sid = sessionId; active = true;
+    // On resume, continue numbering by elapsed seconds so earlier recordings are never overwritten.
+    var startMs = parseInt(String(sessionId).split('_').pop(), 10);
+    seq = (resumed && startMs) ? Math.min(15000, Math.max(1, Math.floor((Date.now() - startMs) / 1000))) : 0;
     var mode = modeOf(cfg);
     mime = pickMime();
     if (mode === 'video' && !mime && !window.MediaRecorder) mode = 'photo';
@@ -142,7 +145,15 @@
   async function stop() {
     var wasActive = active; active = false;
     clearTimeout(segTimer); clearTimeout(photoTimer);
-    try { if (recorder && recorder.state !== 'inactive') recorder.stop(); } catch (e) {}
+    var rec = recorder;
+    if (rec && rec.state !== 'inactive') {
+      await new Promise(function (res) {
+        var prev = rec.onstop;
+        rec.onstop = function (ev) { try { if (prev) prev.call(rec, ev); } catch (e) {} res(); };
+        try { rec.stop(); } catch (e) { res(); }
+        setTimeout(res, 3000);
+      });
+    }
     if (wasActive && vid && cfg && modeOf(cfg) === 'photo') { active = true; snap(); active = false; }
     if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; }
     removePanel();

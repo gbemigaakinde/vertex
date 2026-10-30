@@ -300,6 +300,13 @@
         }
         renderExam();
         _startTimer();
+        // Camera proctoring: restart the camera if the student reloaded mid-exam.
+        const _rc = S().currentTaskConfig;
+        if (window.Proctor && examData.proctorSessionId && _rc && Proctor.required(_rc)) {
+          Proctor.prepare(_rc)
+            .then(function () { Proctor.begin(examData.proctorSessionId, true); })
+            .catch(function (err) { UI.toast((err && err.message) || 'Camera access is required for this exam.', 'error', 8000); });
+        }
       } else {
         renderExam();
         _showInstructionsModal();
