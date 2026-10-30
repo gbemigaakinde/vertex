@@ -1,12 +1,14 @@
 /* worker-proctor.js — proctoring media API (Backblaze B2 + Firestore index)
-   POST /proctor/upload?sid&kind&seq&t&type  (student, raw body)
+   POST /proctor/upload?sid&kind&seq&t&type[&note]  (student, raw body; kind = video | photo | flag)
    POST /proctor/list   {sid}                (teacher)
    POST /proctor/media  {id}                 (teacher, streams the object) */
 const CORS = { 'Access-Control-Allow-Origin': '*', 'Access-Control-Expose-Headers': 'Content-Type' };
 const J = { ...CORS, 'Content-Type': 'application/json' };
 const out = (d, s) => new Response(JSON.stringify(d), { status: s || 200, headers: J });
 const MAX_VIDEO = 40 * 1024 * 1024, MAX_PHOTO = 600 * 1024, MAX_SEQ = 20000;
-const TYPES = { 'video/webm': 'webm', 'video/mp4': 'mp4', 'image/jpeg': 'jpg' };
+const TYPES = { 'video/webm': 'webm', 'video/mp4': 'mp4', 'image/jpeg': 'jpg', 'application/json': 'json' };
+const MAX_FLAG = 4 * 1024;
+const KIND_EXT = { video: ['webm', 'mp4'], photo: ['jpg'], flag: ['json'] };
 
 export async function handleProctor(request, url, env, h, verifyIdToken) {
   const user = await verifyIdToken(request);
@@ -25,13 +27,15 @@ export async function handleProctor(request, url, env, h, verifyIdToken) {
       const seq = parseInt(url.searchParams.get('seq'), 10);
       const t = parseInt(url.searchParams.get('t'), 10) || Date.now();
       const type = (url.searchParams.get('type') || '').split(';')[0];
+      const noteRaw = url.searchParams.get('note') || '';
+      const note = /^[a-z_]{1,40}$/.test(noteRaw) ? noteRaw : '';
       if (!/^[A-Za-z0-9_-]{6,160}$/.test(sid) || sid.indexOf(user.uid + '_') !== 0) return out({ error: 'Invalid session.' }, 403);
-      if (kind !== 'video' && kind !== 'photo') return out({ error: 'Invalid kind.' }, 400);
+      if (!KIND_EXT[kind]) return out({ error: 'Invalid kind.' }, 400);
       if (!(seq >= 0 && seq < MAX_SEQ)) return out({ error: 'Invalid sequence.' }, 400);
       const ext = TYPES[type];
-      if (!ext || (kind === 'photo') !== (ext === 'jpg')) return out({ error: 'Invalid media type.' }, 400);
+      if (!ext || KIND_EXT[kind].indexOf(ext) < 0) return out({ error: 'Invalid media type.' }, 400);
       const buf = await request.arrayBuffer();
-      if (!buf.byteLength || buf.byteLength > (kind === 'video' ? MAX_VIDEO : MAX_PHOTO)) return out({ error: 'Invalid size.' }, 413);
+      if (!buf.byteLength || buf.byteLength > (kind === 'video' ? MAX_VIDEO : kind === 'flag' ? MAX_FLAG : MAX_PHOTO)) return out({ error: 'Invalid size.' }, 413);
       const key = 'proctor/' + user.uid + '/' + sid + '/' + kind + '-' + String(seq).padStart(5, '0') + '.' + ext;
       const put = await fetch(await h.b2PresignPut(key, type, env), { method: 'PUT', headers: { 'Content-Type': type }, body: buf });
       if (!put.ok) return out({ error: 'Storage error (' + put.status + ').' }, 502);
@@ -39,6 +43,7 @@ export async function handleProctor(request, url, env, h, verifyIdToken) {
       const fields = { sid: { stringValue: sid }, uid: { stringValue: user.uid }, kind: { stringValue: kind },
         seq: { integerValue: String(seq) }, t: { integerValue: String(t) }, objectKey: { stringValue: key },
         contentType: { stringValue: type }, size: { integerValue: String(buf.byteLength) } };
+      if (note) fields.note = { stringValue: note };
       const r = await fetch(FS + '/proctorMedia/' + encodeURIComponent(id), { method: 'PATCH', headers: auth, body: JSON.stringify({ fields }) });
       if (!r.ok) return out({ error: 'Could not save record.' }, 500);
       return out({ ok: true });
@@ -55,7 +60,7 @@ export async function handleProctor(request, url, env, h, verifyIdToken) {
       if (!r.ok) return out({ error: 'Query failed.' }, 500);
       const items = (await r.json()).filter(x => x.document).map(x => {
         const f = x.document.fields || {};
-        return { id: x.document.name.split('/').pop(), kind: f.kind && f.kind.stringValue, seq: parseInt(f.seq && f.seq.integerValue || '0', 10), t: parseInt(f.t && f.t.integerValue || '0', 10) };
+        return { id: x.document.name.split('/').pop(), kind: f.kind && f.kind.stringValue, seq: parseInt(f.seq && f.seq.integerValue || '0', 10), t: parseInt(f.t && f.t.integerValue || '0', 10), note: (f.note && f.note.stringValue) || '' };
       }).sort((a, b) => a.t - b.t || a.seq - b.seq);
       return out({ items });
     }

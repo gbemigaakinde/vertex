@@ -1665,6 +1665,7 @@ async function _submitExpiredExam(token, uid) {
           sessionDate,
           questionSession: exam.questionSession || null,
           questionTerm:    exam.questionTerm    || null,
+          proctorSessionId: exam.proctorSessionId || null,
           autoSubmitted:   true,
           autoSubmitReason: 'time_expired',
         })),

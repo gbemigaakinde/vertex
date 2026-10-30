@@ -4,7 +4,7 @@
 
 'use strict';
 
-const CACHE_VERSION = 'v1.23.0';
+const CACHE_VERSION = 'v1.23.1';
 const STATIC_CACHE  = `static-${CACHE_VERSION}`;
 const CDN_CACHE     = `cdn-${CACHE_VERSION}`;
 
@@ -150,6 +150,7 @@ self.addEventListener('fetch', event => {
 
   if (url.pathname === '/sw.js') return;
   if (url.pathname.startsWith('/dl/')) return; // signed file links: always straight to the network
+  if (url.pathname.startsWith('/vendor/mediapipe/')) return; // large face-detection files: browser HTTP cache only
 
   // KNOWLEDGE SURFER 3D: its 3D models (.glb) are large, so like VECTOR they are
   // loaded straight from the network/browser cache instead of being copied into
