@@ -2777,6 +2777,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
         cls:               s.class          || '',
         timetableGroup:    s.timetableGroup || '',
         coachingCompleted: s.coachingCompleted || {},
+        coachingCompletedDocs: s.coachingCompletedDocs || {},
       });
     });
     _populateMsgSingleSelect();
@@ -3086,12 +3087,12 @@ function _renderExistingTasksList(docs) {
 
         const pastWeekDates = weekDates.filter(dt => dt <= todayStr);
         const allStudentsDone = pastWeekDates.length > 0 && students.every(student => {
-          const comp = student.coachingCompleted || {};
+          const comp = _compForTask(student, doc.id, pastWeekDates);
           return pastWeekDates.every(dt => !!comp[dt]);
         });
 
         const studentRows = students.map(student => {
-          const completed   = student.coachingCompleted || {};
+          const completed   = _compForTask(student, doc.id, weekDates);
           const doneDates   = weekDates.filter(dt => !!completed[dt]);
           const missedDates = weekDates.filter(dt => dt < todayStr && !completed[dt]);
           const doneCount   = doneDates.length;
@@ -3179,7 +3180,7 @@ function _renderExistingTasksList(docs) {
 
       const totalSessions = allDates.length;
       const totalDone     = students.reduce((sum, s) =>
-        sum + allDates.filter(dt => !!((s.coachingCompleted || {})[dt])).length, 0);
+        sum + allDates.filter(dt => !!_compForTask(s, doc.id, allDates)[dt]).length, 0);
       const possibleTotal = students.length * totalSessions;
 
       const recurrenceLabel = d.recurrence
@@ -3210,6 +3211,18 @@ function _renderExistingTasksList(docs) {
         </div>
       </div>`;
     }).filter(Boolean).join('');
+  }
+
+  // Completion map {date: true} for ONE task document. New records are kept
+  // per task (coachingCompletedDocs); older days only have coachingCompleted.
+  function _compForTask(student, docId, dates) {
+    const flat = student.coachingCompleted || {};
+    const per  = student.coachingCompletedDocs || {};
+    const out  = {};
+    (dates || Object.keys(flat)).forEach(dt => {
+      out[dt] = Array.isArray(per[dt]) ? per[dt].indexOf(docId) !== -1 : !!flat[dt];
+    });
+    return out;
   }
 
   async function deleteTask(docId) {
@@ -4736,7 +4749,7 @@ async function _deleteTimetable(weekKey) {
     }
 
     const studentStats = students.map(s => {
-      const comp = s.coachingCompleted || {};
+      const comp = _compForTask(s, docId, allDates);
       const done = allDates.filter(d => !!comp[d]).length;
       const pastOnly = allDates.filter(d => d < todayStr);
       const missed = pastOnly.filter(d => !comp[d]).length;

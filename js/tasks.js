@@ -1,6 +1,13 @@
 /* ============================================================
-   js/tasks.js  — v4.4
+   js/tasks.js  — v4.5
    ============================================================
+   v4.5 fixes
+   • Completion is now tracked per task document (coachingCompletedDocs),
+     so finishing an individual task no longer marks the class task done.
+     When the individual task is completed the class task takes over again.
+   • The dashboard is redrawn when the task config changes, so deleting or
+     replacing a task no longer leaves the exam screen locked.
+
    v4.4 fixes
    • All active task docs that apply to a student are now MERGED
      (previously only the single highest-priority active doc was
@@ -79,6 +86,17 @@
 
   function _studentDocId(uid) {
     return 'student_' + uid;
+  }
+
+  // Has this student finished the session of ONE task document on ONE date?
+  // New records live in coachingCompletedDocs[date] (an array of task doc ids).
+  // Older records only have coachingCompleted[date] = true, which is treated
+  // as "every task of that day was completed".
+  function _layerDone(sd, dateStr, docId) {
+    sd = sd || {};
+    const rec = (sd.coachingCompletedDocs || {})[dateStr];
+    if (Array.isArray(rec)) return rec.indexOf(docId) !== -1;
+    return !!(sd.coachingCompleted || {})[dateStr];
   }
 
   function _resolveSubjectsForDate(doc, dateStr) {
@@ -178,7 +196,7 @@
     });
   }
 
-  function _expandTaskDoc(doc) {
+  function _expandTaskDoc(doc, docId) {
     if (!doc) return null;
 
     const today      = _localDateStr();
@@ -195,6 +213,7 @@
       (Array.isArray(doc.weeklyDays) && doc.weeklyDays.length > 0 ? 'weekly' : 'once');
 
     return Object.assign({}, doc, {
+      _docId:       docId || null,
       dates:        allDates,
       pastDates:    pastDates,
       dateSubjects,
@@ -231,6 +250,13 @@
       global: null, class: null, student: null,
       weekly: null, weeklyClass: null, weeklyStudent: null,
     };
+    // The Firestore document id behind each slot. Completion is tracked per id.
+    const _ids = {
+      global: 'global', class: classKey, student: studentKey,
+      weekly: wkAllKey, weeklyClass: wkClassKey, weeklyStudent: wkStudKey,
+    };
+    _lastDocs = _docs;
+    _lastIds  = _ids;
 
     // Every document must deliver its FIRST snapshot (or error) before the
     // returned promise resolves. Later snapshots of the same document must
@@ -247,13 +273,13 @@
     }
     function _onSnap(key, snap) {
       _docs[key] = snap.exists ? snap.data() : null;
-      _resolveTask(_docs);
+      _resolveTask(_docs, _ids);
       _markSeen(key);
     }
     function _onErr(key, err) {
       console.error('[tasks] coachingTasks/' + key + ' error:', err);
       _docs[key] = null;
-      _resolveTask(_docs);
+      _resolveTask(_docs, _ids);
       _markSeen(key);
     }
 
@@ -289,6 +315,9 @@
   }
 
   let _listenedClass = null;
+  let _lastDocs      = null;   // latest raw task docs (for re-resolving when the student profile changes)
+  let _lastIds       = null;
+  let _lastSig       = null;   // fingerprint of what the exam screen depends on
 
   /* ─────────────────────────────────────────────────────── */
   /* Merge every active task doc that applies to the student */
@@ -297,18 +326,36 @@
   // the list that contains that date is the "owner" of that date: its subject
   // restriction (an empty list means "no restriction") and its time limit win.
   function _mergeTaskDocs(list) {
-    const today  = _localDateStr();
-    const owner  = {};
-    const dateSet = {};
+    const today = _localDateStr();
+    const sd    = AppState.studentData || {};
 
+    // Every doc that contains a date is a "layer" of that date, most specific
+    // first (student > class > everyone). Each layer is completed separately.
+    // The date is owned by the first layer that is NOT yet completed, so when
+    // an individual task is finished the class task takes over again.
+    // Once every layer is completed the date counts as done.
+    const layers   = {};
     list.forEach(doc => {
       (doc.dates || []).forEach(d => {
-        dateSet[d] = true;
-        if (!owner[d]) owner[d] = doc;
+        if (!layers[d]) layers[d] = [];
+        layers[d].push(doc);
       });
     });
 
-    const dates     = Object.keys(dateSet).sort();
+    const owner      = {};
+    const layerIds   = {};
+    const pendingIds = {};
+    const doneDates  = {};
+    Object.keys(layers).forEach(d => {
+      const ls      = layers[d];
+      const pending = ls.find(x => !_layerDone(sd, d, x._docId));
+      layerIds[d]   = ls.map(x => x._docId);
+      pendingIds[d] = pending ? pending._docId : null;
+      doneDates[d]  = !pending;
+      owner[d]      = pending || ls[0];
+    });
+
+    const dates     = Object.keys(layers).sort();
     const pastDates = dates.filter(d => d <= today);
 
     const dateSubjects = {};
@@ -342,35 +389,77 @@
       dateSubjects,
       durationMs,
       _merged:      true,
+      _layerIds:    layerIds,     // date -> [task doc ids that apply that day]
+      _pendingIds:  pendingIds,   // date -> id of the task doc to do next (null when all done)
+      _doneDates:   doneDates,    // date -> true when every layer is completed
       _isRecurring: list.some(d => d._isRecurring),
       _isWeekly:    list.some(d => d._isWeekly),
     });
   }
 
-  function _resolveTask(docs) {
-    function expand(doc) {
+  // Everything the exam screen depends on. When this changes while the
+  // student is looking at the dashboard, the dashboard is redrawn so a stale
+  // "session complete" / subject restriction can never stay on screen.
+  function _taskSignature(cfg) {
+    if (!cfg || !cfg.active) return 'inactive';
+    const today = _localDateStr();
+    const dates = Array.isArray(cfg.dates) ? cfg.dates : [];
+    const done  = cfg._doneDates  || {};
+    const pend  = cfg._pendingIds || {};
+    return JSON.stringify([
+      dates.indexOf(today) !== -1,
+      !!done[today],
+      pend[today] || '',
+      (cfg.dateSubjects || {})[today] || [],
+      cfg.durationMs || 0,
+      dates.find(d => d > today && !done[d]) || '',
+    ]);
+  }
+
+  function _resolveTask(docs, ids) {
+    ids = ids || _lastIds || {};
+
+    function expand(doc, id) {
       if (!doc) return null;
-      return _expandTaskDoc(doc);
+      return _expandTaskDoc(doc, id);
     }
 
     // Most specific first. A one-off doc is listed before the recurring doc
     // of the same scope because it is the more deliberate instruction.
     const ordered = [
-      expand(docs.student),
-      expand(docs.weeklyStudent),
-      expand(docs.class),
-      expand(docs.weeklyClass),
-      expand(docs.global),
-      expand(docs.weekly),
+      expand(docs.student,       ids.student),
+      expand(docs.weeklyStudent, ids.weeklyStudent),
+      expand(docs.class,         ids.class),
+      expand(docs.weeklyClass,   ids.weeklyClass),
+      expand(docs.global,        ids.global),
+      expand(docs.weekly,        ids.weekly),
     ].filter(d => d && d.active === true);
 
     const resolved = ordered.length > 0 ? _mergeTaskDocs(ordered) : { active: false };
 
     AppState.currentTaskConfig = resolved;
 
-    if (document.getElementById('tasksContainer')) {
-      renderTasksHTML();
+    const sig     = _taskSignature(resolved);
+    const changed = _lastSig !== null && sig !== _lastSig;
+    _lastSig      = sig;
+
+    if (!document.getElementById('tasksContainer')) return;
+
+    // The dashboard (subject picker, "session complete" card, restrictions)
+    // is drawn from the task config, so it must be redrawn when that changes,
+    // for example when the teacher deletes or replaces a task.
+    // Draw the task card straight away so it is never missing, even if the
+    // full dashboard redraw below is skipped or fails.
+    renderTasksHTML();
+    if (changed && !AppState.exam && window.Exam && typeof window.Exam.renderSubjectSelection === 'function') {
+      window.Exam.renderSubjectSelection().catch(err => console.warn('[tasks] dashboard refresh failed:', err));
     }
+  }
+
+  // Re-resolve with the task docs we already have (used after the student's
+  // own completion records change).
+  function refresh() {
+    if (_lastDocs) _resolveTask(_lastDocs, _lastIds);
   }
 
   async function loadStudentMessages() {
@@ -434,11 +523,21 @@
               ? Object.assign({}, incomingCompleted, existingCompleted)
               : Object.assign({}, incomingCompleted);
 
+            const incomingDocs = incoming.coachingCompletedDocs || {};
+            const existingDocs = (AppState.studentData && AppState.studentData.coachingCompletedDocs) || {};
+            const mergedDocs   = {};
+            const docDates     = new Set(Object.keys(incomingDocs).concat(unconfirmed ? Object.keys(existingDocs) : []));
+            docDates.forEach(d => {
+              const a = Array.isArray(incomingDocs[d]) ? incomingDocs[d] : [];
+              const b = unconfirmed && Array.isArray(existingDocs[d]) ? existingDocs[d] : [];
+              mergedDocs[d] = Array.from(new Set(a.concat(b)));
+            });
+
             AppState.studentData = Object.assign(
               {},
               AppState.studentData,
               incoming,
-              { coachingCompleted: mergedCompleted }
+              { coachingCompleted: mergedCompleted, coachingCompletedDocs: mergedDocs }
             );
 
             // Moved to another class? The class-level task documents are
@@ -447,7 +546,10 @@
               loadCoachingTasks().catch(err => console.warn('[tasks] reload after class change:', err));
             }
 
-            if (document.getElementById('tasksContainer')) {
+            // Completion records changed, so which task is "next" may have too.
+            if (_lastDocs) {
+              _resolveTask(_lastDocs, _lastIds);
+            } else if (document.getElementById('tasksContainer')) {
               renderTasksHTML();
             }
           }
@@ -480,7 +582,8 @@
       ? currentTask.pastDates
       : allDates.filter(d => d <= todayStr);
 
-    const completed    = studentData.coachingCompleted || {};
+    // A date is done only when every task that applies that day is completed.
+    const completed    = currentTask._doneDates || studentData.coachingCompleted || {};
     const isRecurring  = !!(currentTask._isRecurring || currentTask._isWeekly);
 
     const totalPast   = pastDates.length;
@@ -644,6 +747,9 @@
     AppState.cancelListener('taskWeeklyStudent');
     AppState.cancelListener('studentProfile');
     _listenedClass = null;
+    _lastDocs = null;
+    _lastIds  = null;
+    _lastSig  = null;
   }
 
   function _esc(str) {
@@ -658,6 +764,7 @@
     listenForStudentUpdates,
     loadStudentMessages,
     renderTasksHTML,
+    refresh,
     cancelListeners,
     _localDateStr,
     _classDocId,

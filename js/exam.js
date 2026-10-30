@@ -11,6 +11,7 @@
 
   let _questionRenderedAt = 0;
   let _renderSubjectSelectionInProgress = false;
+  let _renderSubjectSelectionQueued     = false;
 
   /* ─────────────────────────────────────────────────────── */
   /* Phosphor icon helper                                    */
@@ -324,13 +325,19 @@
     }
   }
 
+  // A task date is done only when every task that applies that day is completed.
+  function _taskDateDone(taskCfg, dateStr) {
+    if (taskCfg && taskCfg._doneDates) return !!taskCfg._doneDates[dateStr];
+    const completed = (S().studentData && S().studentData.coachingCompleted) || {};
+    return !!completed[dateStr];
+  }
+
   function _isTodayTaskDayCompleted() {
     const taskCfg = S().currentTaskConfig;
     if (!taskCfg || !taskCfg.active) return false;
-    const today     = _todayStr();
-    const dates     = Array.isArray(taskCfg.dates) ? taskCfg.dates : [];
-    const completed = (S().studentData && S().studentData.coachingCompleted) || {};
-    return dates.includes(today) && !!completed[today];
+    const today = _todayStr();
+    const dates = Array.isArray(taskCfg.dates) ? taskCfg.dates : [];
+    return dates.includes(today) && _taskDateDone(taskCfg, today);
   }
 
   function _isTodayATaskDay() {
@@ -346,8 +353,7 @@
     if (!taskCfg) return null;
     const today     = _todayStr();
     const dates     = Array.isArray(taskCfg.dates) ? taskCfg.dates : [];
-    const completed = (S().studentData && S().studentData.coachingCompleted) || {};
-    const next = dates.find(d => d > today && !completed[d]);
+    const next = dates.find(d => d > today && !_taskDateDone(taskCfg, d));
     if (!next) return null;
     const parts = next.split('-');
     return new Date(+parts[0], +parts[1] - 1, +parts[2])
@@ -1544,7 +1550,9 @@ async function _onPeriodChange(which) {
 
 async function renderSubjectSelection() {
   if (_renderSubjectSelectionInProgress) {
-    console.warn('[exam] renderSubjectSelection already in progress — skipping duplicate call.');
+    // Something changed while we were drawing (for example the task config).
+    // Draw once more when this pass finishes so the screen is never stale.
+    _renderSubjectSelectionQueued = true;
     return;
   }
   if (!S().studentData || !S().userId) {
@@ -2456,6 +2464,12 @@ async function renderSubjectSelection() {
     UI.toast('Failed to load the dashboard. Please refresh the page.', 'error', 0);
   } finally {
     _renderSubjectSelectionInProgress = false;
+    if (_renderSubjectSelectionQueued) {
+      _renderSubjectSelectionQueued = false;
+      if (!S().exam && S().studentData && S().userId) {
+        renderSubjectSelection().catch(function (err) { console.warn('[exam] queued dashboard refresh failed:', err); });
+      }
+    }
   }
 }
 
@@ -2756,6 +2770,11 @@ async function renderSubjectSelection() {
                              Array.isArray(_taskCfgNow.dates) &&
                              _taskCfgNow.dates.includes(S().exam.sessionDate));
     S().exam.isTaskDay = _isTaskDayNow;
+    // Which task this session counts for (the individual one first, then the
+    // class one, and so on) and every task that applies today. Saved with the
+    // exam so the server records the same thing if it has to submit for us.
+    S().exam.taskDocId  = _isTaskDayNow ? (((_taskCfgNow._pendingIds || {})[S().exam.sessionDate]) || null) : null;
+    S().exam.taskLayers = _isTaskDayNow ? (((_taskCfgNow._layerIds   || {})[S().exam.sessionDate]) || []) : [];
 
     // Voice commands stay OFF until the student taps the mic button.
     if (window.SpeechEngine && typeof SpeechEngine.stopSTT === 'function') {
@@ -2764,7 +2783,7 @@ async function renderSubjectSelection() {
 
     try {
       await window.fbDb.collection('ongoingExams').doc(S().userId).set(
-        Object.assign({ startTime: startDate, sessionDate: S().exam.sessionDate, isTaskDay: _isTaskDayNow }, S().exam.proctorSessionId ? { proctorSessionId: S().exam.proctorSessionId } : {}), { merge: true }
+        Object.assign({ startTime: startDate, sessionDate: S().exam.sessionDate, isTaskDay: _isTaskDayNow, taskDocId: S().exam.taskDocId || null, taskLayers: S().exam.taskLayers || [] }, S().exam.proctorSessionId ? { proctorSessionId: S().exam.proctorSessionId } : {}), { merge: true }
       );
     } catch (err) {
       console.warn('[exam] Could not persist startTime to Firebase.', err);
@@ -3263,8 +3282,23 @@ async function renderSubjectSelection() {
         weakSubjects:        weakSubjects,
         totalExamsCompleted: firebase.firestore.FieldValue.increment(1),
       };
+      // Which task did this exam complete, and is anything else still pending
+      // for that day (e.g. the class task after an individual one)?
+      let takenId = null;
+      let allLayersDone = true;
       if (isTaskDay) {
-        studentUpdate[`coachingCompleted.${sessionDate}`] = true;
+        const layerIds = (Array.isArray(exam.taskLayers) && exam.taskLayers.length)
+          ? exam.taskLayers : ((taskCfg._layerIds || {})[sessionDate] || []);
+        takenId = exam.taskDocId || ((taskCfg._pendingIds || {})[sessionDate]) || null;
+        if (takenId) {
+          const rec     = ((S().studentData && S().studentData.coachingCompletedDocs) || {})[sessionDate];
+          const already = Array.isArray(rec) ? rec : [];
+          allLayersDone = layerIds.every(id => id === takenId || already.indexOf(id) !== -1);
+          studentUpdate[`coachingCompletedDocs.${sessionDate}`] = firebase.firestore.FieldValue.arrayUnion(takenId);
+        }
+        if (allLayersDone) {
+          studentUpdate[`coachingCompleted.${sessionDate}`] = true;
+        }
       }
 
       // The server also auto-submits exams whose time has run out (even if the
@@ -3322,7 +3356,16 @@ async function renderSubjectSelection() {
       }
       if (isTaskDay) {
         if (!S().studentData.coachingCompleted) S().studentData.coachingCompleted = {};
-        S().studentData.coachingCompleted[sessionDate] = true;
+        if (allLayersDone) S().studentData.coachingCompleted[sessionDate] = true;
+        if (takenId) {
+          if (!S().studentData.coachingCompletedDocs) S().studentData.coachingCompletedDocs = {};
+          const prev = Array.isArray(S().studentData.coachingCompletedDocs[sessionDate])
+            ? S().studentData.coachingCompletedDocs[sessionDate] : [];
+          if (prev.indexOf(takenId) === -1) {
+            S().studentData.coachingCompletedDocs[sessionDate] = prev.concat([takenId]);
+          }
+        }
+        if (window.Tasks && typeof Tasks.refresh === 'function') Tasks.refresh();
       }
 
       if (window.Proctor) { try { await Proctor.stop(); } catch (e) {} }
