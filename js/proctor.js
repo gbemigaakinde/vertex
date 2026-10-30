@@ -137,6 +137,13 @@
       var it = queue[0];
       try {
         var tk = await token();
+        if (it.event) {
+          var er = await fetch(WORKER + '/proctor/event', { method: 'POST', headers: { Authorization: 'Bearer ' + tk, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ sid: it.sid, code: it.code, t: it.t, durationSec: it.durationSec, detail: it.detail }) });
+          if (!er.ok && er.status >= 400 && er.status < 500 && er.status !== 429) { queue.shift(); continue; }
+          if (!er.ok) throw new Error('retry');
+          queue.shift(); continue;
+        }
         var q = '?sid=' + encodeURIComponent(it.sid) + '&kind=' + it.kind + '&seq=' + it.seq +
                 '&t=' + it.t + '&type=' + encodeURIComponent(it.type) + (it.note ? '&note=' + encodeURIComponent(it.note) : '');
         var r = await fetch(WORKER + '/proctor/upload' + q, { method: 'POST', headers: { Authorization: 'Bearer ' + tk, 'Content-Type': it.type }, body: it.blob });
@@ -271,6 +278,7 @@
     cameraLost = true; lostAt = Date.now();
     endSegment();
     flag('camera_stopped', why || 'track ended', false);
+    if (sc.active) logEvent('camera_stopped', why || 'track ended', 0);
     showBlock(true);
     if (window.UI) UI.toast('Camera stopped. Turn it back on to continue the exam.', 'error', 8000);
   }
@@ -372,6 +380,7 @@
   }
 
   async function stop() {
+    try { await stopScreen(); } catch (e) {}
     var wasActive = active;
     document.removeEventListener('visibilitychange', onVis);
     window.removeEventListener('pagehide', onPageHide);
@@ -394,7 +403,288 @@
     for (var j = 0; j < 20 && (pumping || queue.length); j++) await new Promise(function (r) { setTimeout(r, 500); });
     recorder = null; cfg = null; cameraLost = false;
   }
-  function release() { active = false; stopTicker(); document.removeEventListener('visibilitychange', onVis); window.removeEventListener('pagehide', onPageHide); if (stream) stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; removePanel(); }
+  function release() { releaseScreen(); active = false; stopTicker(); document.removeEventListener('visibilitychange', onVis); window.removeEventListener('pagehide', onPageHide); if (stream) stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; removePanel(); }
+
+  /* ================= Screen capture (independent of the camera) ================= */
+  var SCREEN_LABEL = { tab_hidden: 'Left the exam tab', tab_visible: 'Returned to the exam tab', window_blur: 'Exam window lost focus', window_focus: 'Exam window in focus again',
+    screen_share_started: 'Screen sharing started', screen_share_stopped: 'Screen sharing stopped', screen_share_resumed: 'Screen sharing resumed',
+    camera_stopped: 'Camera stopped (screen exam)', unsupported_device_blocked: 'Device cannot share its screen: exam blocked', unsupported_device_camera_only: 'Device cannot share its screen: allowed with camera only' };
+  var sc = { pending: null, stream: null, vid: null, host: null, shadow: null, over: null, overTitle: null, overSub: null, cfg: null, sid: null, active: false, lost: false, lostAt: 0,
+    startMs: 0, shotSeq: 0, vidSeq: 0, rec: null, segDue: 0, shotDue: 0, shotBase: 30000, modeNow: 'shots', ticker: null, tickWorker: null, lastExtra: 0,
+    badge: null, hiddenAt: 0, blurAt: 0, asking: false, mime: '', bodyObs: null, everShared: false };
+  var SC_CSS = 'all:initial;position:fixed;left:0;top:0;width:0;height:0;z-index:2147483100;';
+
+  function screenModeOf(c) { var m = c && c.screenMode; return m === 'shots' || m === 'video' ? m : 'off'; }
+  function screenRequired(c) { return screenModeOf(c) !== 'off'; }
+  function screenSupported() { return !!(navigator.mediaDevices && typeof navigator.mediaDevices.getDisplayMedia === 'function'); }
+  function screenFallbackCamera(c) { return screenRequired(c) && !screenSupported() && c.screenUnsupported === 'camera'; }
+  // If the device cannot share its screen and the teacher allowed "camera only", the camera is switched on even if the task had it off.
+  function effectiveConfig(c) {
+    if (screenFallbackCamera(c) && modeOf(c) === 'off') return Object.assign({}, c, { proctorMode: 'photo', proctorIntervalSec: 30 });
+    return c;
+  }
+  function consentHtml(c) {
+    var cam = modeOf(c) !== 'off', scr = screenRequired(c);
+    if (!scr) return '';
+    var items = [];
+    if (cam) items.push('your <strong>camera</strong> (' + (modeOf(c) === 'video' ? 'video of you during the whole exam' : 'photos of you at intervals') + ')');
+    var iv = c.screenIntervalSec || 30;
+    items.push('your <strong>entire screen</strong> (' + (screenModeOf(c) === 'video' ? 'video of everything on your screen during the whole exam' : 'screenshots about every ' + (iv >= 60 ? Math.round(iv / 60) + ' minute(s)' : iv + ' seconds') + ', plus one whenever you leave this tab') + ')');
+    var note = screenSupported() ? '' : '<br><span style="color:var(--danger,#b91c1c)">This device cannot share its screen (phones and tablets usually cannot). ' +
+      (c.screenUnsupported === 'camera' ? 'You may continue with your camera only.' : 'Please use a computer to take this exam.') + '</span>';
+    return '<div id="proctorConsent" style="border:1px solid var(--border,#ddd);border-radius:8px;padding:.6rem .75rem;margin-bottom:1rem;font-size:.8rem;text-align:left;">' +
+      '<strong>This exam is proctored.</strong> While it runs, the following is recorded: ' + items.join(' and ') + '. ' +
+      'When you press Start you will be asked to share your screen: choose <strong>Entire Screen</strong>. If you stop sharing, the exam is blocked until you share again. ' +
+      'Recordings are visible only to your teacher.' + note + '</div>';
+  }
+
+  async function grabScreen() {
+    var s;
+    try {
+      s = await navigator.mediaDevices.getDisplayMedia({ video: { displaySurface: 'monitor', frameRate: { ideal: 8, max: 10 }, width: { max: 1280 } }, audio: false,
+        selfBrowserSurface: 'exclude', monitorTypeSurfaces: 'include', surfaceSwitching: 'exclude' });
+    } catch (e) { throw new Error('Screen sharing is required for this exam. Press the button again and choose Entire Screen.'); }
+    var tr = s.getVideoTracks()[0], surf;
+    try { surf = tr && tr.getSettings ? tr.getSettings().displaySurface : undefined; } catch (e) {}
+    // Browsers that do not report the surface (older Firefox / Safari desktop) cannot be checked; anything reported other than "monitor" is rejected.
+    if (!tr || tr.readyState === 'ended' || (surf && surf !== 'monitor')) {
+      s.getTracks().forEach(function (t) { try { t.stop(); } catch (e) {} });
+      throw new Error('Please choose Entire Screen — not a window or a tab. Try again.');
+    }
+    return s;
+  }
+  /* Must be called straight from the tap on "Begin Exam". */
+  async function prepareScreen(c) {
+    if (!screenRequired(c)) return true;
+    if (!screenSupported()) throw new Error('unsupported');
+    if (sc.pending) { sc.pending.getTracks().forEach(function (t) { try { t.stop(); } catch (e) {} }); sc.pending = null; }
+    sc.pending = await grabScreen();
+    sc.cfg = c;
+    return true;
+  }
+  function releasePendingScreen() { if (sc.pending) { sc.pending.getTracks().forEach(function (t) { try { t.stop(); } catch (e) {} }); sc.pending = null; } }
+
+  function logEvent(code, detail, durationSec, t) {
+    if (!sc.sid) return;
+    enqueue({ event: true, sid: sc.sid, code: code, t: t || Date.now(), durationSec: durationSec || 0, detail: detail || '' });
+  }
+  function logEventFor(sessionId, code, detail) {  // for decisions made before a screen session exists
+    enqueue({ event: true, sid: sessionId, code: code, t: Date.now(), durationSec: 0, detail: detail || '' });
+  }
+
+  function buildScreenUi() {
+    removeScreenUi();
+    sc.host = document.createElement('div'); sc.host.id = 'screenProctorHost'; sc.host.style.cssText = SC_CSS;
+    sc.shadow = sc.host.attachShadow({ mode: 'closed' });
+    var st = document.createElement('style');
+    st.textContent = '@keyframes spBlink{50%{opacity:.25}}' +
+      '.bd{position:fixed;left:10px;bottom:10px;background:#111;color:#fff;border-radius:999px;padding:5px 10px;box-shadow:0 4px 18px rgba(0,0,0,.35);font:600 10px/1.3 system-ui,sans-serif;display:flex;align-items:center;gap:5px;white-space:nowrap;max-width:calc(100vw - 120px)}' +
+      '.d{width:8px;height:8px;border-radius:50%;background:#ef4444;animation:spBlink 1.2s infinite;flex-shrink:0}' +
+      '.sv{position:fixed;left:0;top:0;width:2px;height:2px;opacity:.01;pointer-events:none}' +
+      '.o{position:fixed;inset:0;background:rgba(10,10,10,.97);color:#fff;display:none;align-items:center;justify-content:center;text-align:center;padding:24px;font:600 18px/1.5 system-ui,sans-serif;flex-direction:column;gap:14px}' +
+      '.o small{font-weight:400;font-size:14px;max-width:420px;opacity:.85}' +
+      '.o button{background:#ef4444;color:#fff;border:0;border-radius:8px;padding:12px 22px;font:700 15px system-ui,sans-serif;cursor:pointer}' +
+      '.bd.c{left:152px}@media(max-width:640px){.bd.c{left:116px}}';
+    var badge = document.createElement('div'); badge.className = 'bd'; badge.setAttribute('role', 'status'); sc.badge = badge;
+    badge.innerHTML = '<span class="d"></span><span>Screen being recorded</span>';
+    sc.vid = document.createElement('video'); sc.vid.className = 'sv'; sc.vid.muted = true; sc.vid.autoplay = true; sc.vid.playsInline = true;
+    sc.vid.setAttribute('playsinline', ''); sc.vid.setAttribute('muted', '');
+    sc.over = document.createElement('div'); sc.over.className = 'o';
+    sc.overTitle = document.createElement('div'); sc.overSub = document.createElement('small');
+    var btn = document.createElement('button'); btn.type = 'button'; btn.textContent = 'Share my screen';
+    btn.onclick = function () { regainScreen(); };
+    sc.over.appendChild(sc.overTitle); sc.over.appendChild(sc.overSub); sc.over.appendChild(btn);
+    sc.shadow.appendChild(st); sc.shadow.appendChild(badge); sc.shadow.appendChild(sc.vid); sc.shadow.appendChild(sc.over);
+    document.body.appendChild(sc.host);
+    if (window.MutationObserver) {
+      sc.bodyObs = new MutationObserver(function () { if (sc.active && sc.host && !sc.host.isConnected) document.body.appendChild(sc.host); });
+      sc.bodyObs.observe(document.body, { childList: true });
+    }
+  }
+  function camPanelActive() { return !!(host && host.isConnected); }
+  function removeScreenUi() {
+    if (sc.bodyObs) { sc.bodyObs.disconnect(); sc.bodyObs = null; }
+    if (sc.host && sc.host.parentNode) sc.host.parentNode.removeChild(sc.host);
+    sc.badge = null; sc.host = sc.shadow = sc.vid = sc.over = sc.overTitle = sc.overSub = null;
+  }
+  function showScreenOverlay(on, resume) {
+    if (!sc.over) return;
+    sc.overTitle.textContent = resume ? 'Share your screen to continue.' : 'Screen sharing stopped. Share your entire screen to continue.';
+    sc.overSub.textContent = 'This exam records your entire screen. Press the button, then choose Entire Screen. Your exam timer is still running.';
+    sc.over.style.display = on ? 'flex' : 'none';
+  }
+  function attachScreen() {
+    if (!sc.vid || !sc.stream) return;
+    sc.vid.srcObject = sc.stream; var p = sc.vid.play(); if (p && p.catch) p.catch(function () {});
+  }
+  function bindScreenTrack() {
+    var tr = sc.stream && sc.stream.getVideoTracks()[0]; if (!tr) return;
+    tr.addEventListener('ended', function () { if (sc.stream && sc.stream.getVideoTracks()[0] === tr) onScreenLost('track ended'); });
+  }
+
+  function shot(note) {
+    var v = sc.vid;
+    if (!sc.active || sc.lost || !v || !v.videoWidth) return;
+    var w = Math.min(1280, v.videoWidth), h = Math.round(w * v.videoHeight / v.videoWidth);
+    var c = document.createElement('canvas'); c.width = w; c.height = h;
+    try { c.getContext('2d').drawImage(v, 0, 0, w, h); } catch (e) { return; }
+    var mySeq = Math.min(19999, sc.shotSeq++), t = Date.now();
+    c.toBlob(function (b) { if (b) enqueue({ sid: sc.sid, kind: 'screen', seq: mySeq, t: t, type: 'image/jpeg', note: typeof note === 'string' ? note : '', blob: b }); }, 'image/jpeg', 0.6);
+  }
+  function nextShotDue() { return Date.now() + sc.shotBase * (0.7 + Math.random() * 0.6); }
+  // Extra evidence when the student leaves the tab: one now, one a moment later (shows what they switched to).
+  function extraShot(note) {
+    var now = Date.now();
+    if (now - sc.lastExtra < 2500) return;
+    sc.lastExtra = now; shot(note);
+    setTimeout(function () { if (sc.active && !sc.lost && (document.hidden || !document.hasFocus())) shot(note); }, 1500);
+  }
+  function startScreenSegment() {
+    if (!sc.active || !sc.stream || sc.lost) return;
+    var chunks = [], rec;
+    try { rec = new MediaRecorder(sc.stream, sc.mime ? { mimeType: sc.mime, videoBitsPerSecond: 400000 } : { videoBitsPerSecond: 400000 }); }
+    catch (e) { sc.modeNow = 'shots'; sc.shotDue = Date.now() + 1500; return; }
+    sc.rec = rec;
+    var t0 = Date.now(), mySeq = Math.min(19999, sc.vidSeq++);
+    rec.ondataavailable = function (e) { if (e.data && e.data.size) chunks.push(e.data); };
+    rec.onstop = function () {
+      var type = (rec.mimeType || sc.mime || 'video/webm').split(';')[0];
+      if (chunks.length) enqueue({ sid: sc.sid, kind: 'screenvideo', seq: mySeq, t: t0, type: type, blob: new Blob(chunks, { type: type }) });
+      if (rec === sc.rec) { sc.rec = null; if (sc.active && !sc.lost) startScreenSegment(); }
+    };
+    rec.start();
+    sc.segDue = Date.now() + SEG_MS;
+  }
+  function endScreenSeg() { try { if (sc.rec && sc.rec.state !== 'inactive') sc.rec.stop(); } catch (e) {} }
+
+  function onScreenLost(why) {
+    if (!sc.active || sc.lost) return;
+    sc.lost = true; sc.lostAt = Date.now();
+    endScreenSeg();
+    logEvent('screen_share_stopped', why || 'stopped', 0, sc.lostAt);
+    showScreenOverlay(true, false);
+    if (window.UI) UI.toast('Screen sharing stopped. Share your entire screen to continue the exam.', 'error', 8000);
+  }
+  async function regainScreen() {
+    if (!sc.active || !sc.lost || sc.asking) return;
+    sc.asking = true;
+    try {
+      var s = await grabScreen();
+      if (sc.stream) sc.stream.getTracks().forEach(function (t) { try { t.stop(); } catch (e) {} });
+      sc.stream = s; attachScreen(); bindScreenTrack();
+      var now = Date.now(), gap = Math.round((now - sc.lostAt) / 1000);
+      sc.lost = false; sc.everShared = true; showScreenOverlay(false);
+      logEvent('screen_share_resumed', 'gap ' + new Date(sc.lostAt).toISOString() + ' to ' + new Date(now).toISOString(), gap, now);
+      if (sc.modeNow === 'video') startScreenSegment(); else sc.shotDue = Date.now() + 1500;
+    } catch (e) { if (window.UI) UI.toast(e.message || 'Could not start screen sharing.', 'error', 6000); }
+    sc.asking = false;
+  }
+
+  function scOnVis() {
+    if (!sc.active) return;
+    if (document.hidden) {
+      sc.hiddenAt = Date.now(); logEvent('tab_hidden', '', 0); extraShot('tab_hidden');
+      if (sc.modeNow === 'video') endScreenSeg();
+    } else {
+      var away = sc.hiddenAt ? Math.round((Date.now() - sc.hiddenAt) / 1000) : 0; sc.hiddenAt = 0;
+      logEvent('tab_visible', 'away ' + away + 's', away);
+      if (sc.vid) { var p = sc.vid.play(); if (p && p.catch) p.catch(function () {}); }
+    }
+  }
+  function scOnBlur() { if (!sc.active || sc.blurAt) return; sc.blurAt = Date.now(); logEvent('window_blur', '', 0); extraShot('window_blur'); }
+  function scOnFocus() {
+    if (!sc.active || !sc.blurAt) return;
+    var away = Math.round((Date.now() - sc.blurAt) / 1000); sc.blurAt = 0; logEvent('window_focus', 'unfocused ' + away + 's', away);
+  }
+  function scOnPageHide() { if (sc.active && sc.modeNow === 'video') endScreenSeg(); }
+  function scBindListeners(on) {
+    var f = on ? 'addEventListener' : 'removeEventListener';
+    document[f]('visibilitychange', scOnVis); window[f]('blur', scOnBlur); window[f]('focus', scOnFocus); window[f]('pagehide', scOnPageHide);
+  }
+  function scTick() {
+    if (!sc.active) return;
+    if (sc.badge) sc.badge.className = camPanelActive() ? 'bd c' : 'bd';
+    var now = Date.now(), tr = sc.stream && sc.stream.getVideoTracks()[0];
+    if (!sc.lost && (!tr || tr.readyState === 'ended')) onScreenLost('track ended');
+    if (sc.lost) { if (sc.over && sc.over.style.display !== 'flex') showScreenOverlay(true, !sc.everShared); return; }
+    if (sc.modeNow === 'video') { if (now >= sc.segDue) endScreenSeg(); }
+    else if (now >= sc.shotDue) { shot(''); sc.shotDue = nextShotDue(); }
+    if (sc.vid && sc.vid.paused) { var p = sc.vid.play(); if (p && p.catch) p.catch(function () {}); }
+  }
+  function scStartTicker() {
+    scStopTicker();
+    var fn = function () { scTick(); };
+    try {
+      var u = URL.createObjectURL(new Blob(['setInterval(function(){postMessage(1)},1000)'], { type: 'application/javascript' }));
+      sc.tickWorker = new Worker(u); sc.tickWorker._url = u; sc.tickWorker.onmessage = fn;
+      sc.tickWorker.onerror = function () { try { sc.tickWorker.terminate(); } catch (e) {} sc.tickWorker = null; if (!sc.ticker) sc.ticker = setInterval(fn, 1000); };
+    } catch (e) { sc.tickWorker = null; }
+    if (!sc.tickWorker) sc.ticker = setInterval(fn, 1000);
+  }
+  function scStopTicker() {
+    if (sc.ticker) { clearInterval(sc.ticker); sc.ticker = null; }
+    if (sc.tickWorker) { try { sc.tickWorker.terminate(); URL.revokeObjectURL(sc.tickWorker._url); } catch (e) {} sc.tickWorker = null; }
+  }
+
+  /* Start capturing. Fresh start: the stream chosen at "Begin Exam" is used. Resume after reload: no stream yet, so the blocking overlay asks for one. */
+  function beginScreen(sessionId, resumed, cfgIn) {
+    if (cfgIn) sc.cfg = cfgIn;
+    if (!screenRequired(sc.cfg)) return null;
+    if (!resumed && !sc.pending) return null;
+    sc.sid = sessionId; sc.active = true; sc.lost = false; sc.everShared = false;
+    sc.startMs = parseInt(String(sessionId).split('_').pop(), 10) || Date.now();
+    var base = (resumed && sc.startMs) ? Math.min(15000, Math.max(1, Math.floor((Date.now() - sc.startMs) / 1000))) : 0;
+    sc.shotSeq = base; sc.vidSeq = base; sc.lastExtra = 0; sc.hiddenAt = 0; sc.blurAt = 0;
+    sc.mime = pickMime();
+    sc.modeNow = screenModeOf(sc.cfg) === 'video' && window.MediaRecorder ? 'video' : 'shots';
+    sc.shotBase = Math.max(10, Math.min(600, sc.cfg.screenIntervalSec || 30)) * 1000;
+    buildScreenUi();
+    scBindListeners(true);
+    if (sc.pending) {
+      sc.stream = sc.pending; sc.pending = null; sc.everShared = true;
+      attachScreen(); bindScreenTrack();
+      logEvent('screen_share_started', resumed ? 'resumed exam' : 'exam started', 0);
+      if (sc.modeNow === 'video') startScreenSegment(); else sc.shotDue = Date.now() + 1500;
+    } else {
+      sc.lost = true; sc.lostAt = Date.now();
+      logEvent('screen_share_stopped', 'exam page reopened', 0, sc.lostAt);
+      showScreenOverlay(true, true);
+    }
+    scStartTicker();
+    return sessionId;
+  }
+  /* Reload mid-exam on a device that cannot share a screen and the teacher chose "Block exam": permanent block, no button. */
+  function blockUnsupportedOverlay(sessionId) {
+    logEventFor(sessionId, 'unsupported_device_blocked', 'exam reopened on unsupported device');
+    var o = document.createElement('div'); o.id = 'screenUnsupportedBlock';
+    o.style.cssText = 'position:fixed;inset:0;z-index:2147483100;background:rgba(10,10,10,.97);color:#fff;display:flex;align-items:center;justify-content:center;text-align:center;padding:24px;font:600 18px/1.5 system-ui,sans-serif;';
+    o.textContent = 'This exam requires screen sharing, which this device cannot do. Please continue on a computer (Chrome, Edge or Firefox). Your exam timer is still running.';
+    document.body.appendChild(o);
+  }
+  async function stopScreen() {
+    if (!sc.active) { releasePendingScreen(); return; }
+    scBindListeners(false); scStopTicker();
+    var rec = sc.rec;
+    if (!sc.lost && sc.modeNow === 'shots') shot('final');
+    sc.active = false;
+    if (rec && rec.state !== 'inactive') {
+      await new Promise(function (res) {
+        var prev = rec.onstop;
+        rec.onstop = function (ev) { try { if (prev) prev.call(rec, ev); } catch (e) {} res(); };
+        try { rec.stop(); } catch (e) { res(); }
+        setTimeout(res, 3000);
+      });
+    }
+    for (var i = 0; i < 4 && !queue.length; i++) await new Promise(function (r) { setTimeout(r, 100); });
+    if (sc.stream) { sc.stream.getTracks().forEach(function (t) { try { t.stop(); } catch (e) {} }); sc.stream = null; }
+    removeScreenUi(); sc.rec = null; sc.lost = false; sc.sid = null;
+    var b = document.getElementById('screenUnsupportedBlock'); if (b) b.remove();
+  }
+  function releaseScreen() {
+    sc.active = false; scStopTicker(); scBindListeners(false); releasePendingScreen();
+    if (sc.stream) sc.stream.getTracks().forEach(function (t) { try { t.stop(); } catch (e) {} });
+    sc.stream = null; removeScreenUi(); sc.sid = null;
+  }
 
   /* ================= Teacher viewer ================= */
   var urls = [];
@@ -408,54 +698,104 @@
   async function openViewer(sessionId, title) {
     closeViewer();
     var ov = document.createElement('div'); ov.id = 'proctorViewer';
-    ov.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:12px;';
-    ov.innerHTML = '<div style="background:var(--bg-base,#fff);color:var(--text-1,#111);border-radius:12px;max-width:900px;width:100%;max-height:92vh;overflow:auto;padding:16px;">' +
-      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"><strong>Proctoring — ' + esc(title || 'exam') + '</strong>' +
-      '<button id="pxClose" class="btn" style="padding:4px 12px;">Close</button></div><div id="pxBody">Loading…</div></div>';
+    ov.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.75);display:flex;align-items:center;justify-content:center;padding:8px;';
+    ov.innerHTML = '<div style="background:var(--bg-base,#fff);color:var(--text-1,#111);border-radius:12px;max-width:900px;width:100%;max-height:94vh;overflow:auto;padding:12px;box-sizing:border-box;">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:10px;"><strong style="min-width:0;overflow-wrap:anywhere;">Proctoring — ' + esc(title || 'exam') + '</strong>' +
+      '<button id="pxClose" class="btn" style="padding:4px 12px;flex-shrink:0;">Close</button></div><div id="pxBody">Loading…</div></div>';
     document.body.appendChild(ov);
     ov.querySelector('#pxClose').onclick = closeViewer;
     var body = ov.querySelector('#pxBody');
     try {
       var r = await fetch(WORKER + '/proctor/list', { method: 'POST', headers: { Authorization: 'Bearer ' + await token(), 'Content-Type': 'application/json' }, body: JSON.stringify({ sid: sessionId }) });
       var j = await r.json(); if (!r.ok) throw new Error(j.error || 'Failed');
-      var items = j.items || [];
-      if (!items.length) { body.innerHTML = '<p>No recordings were saved for this exam.</p>'; return; }
-      var flags = items.filter(function (it) { return it.kind === 'flag'; });
-      var media = items.filter(function (it) { return it.kind !== 'flag'; });
-      var html = '';
-      if (flags.length) {
-        html += '<div style="border:1px solid var(--border,#ddd);border-radius:8px;padding:8px;margin-bottom:10px;font-size:12px;"><strong>Events to review (' + flags.length + ')</strong><ul style="margin:6px 0 0 16px;padding:0;">' +
-          flags.map(function (f) { return '<li>' + esc(new Date(f.t).toLocaleTimeString()) + ' — ' + esc(FLAG_TEXT[f.note] || f.note || 'Event') + '</li>'; }).join('') + '</ul></div>';
-      } else {
-        html += '<p style="font-size:12px;opacity:.75;margin:0 0 8px;">No automatic events were logged for this exam.</p>';
+      var items = j.items || [], evs = j.events || [];
+      if (!items.length && !evs.length) { body.innerHTML = '<p>No recordings were saved for this exam.</p>'; return; }
+
+      // Durations: pair "left" with the next "returned" so each event row shows how long it lasted.
+      var PAIR = { tab_hidden: 'tab_visible', window_blur: 'window_focus', screen_share_stopped: 'screen_share_resumed' };
+      function dur(e) {
+        var want = PAIR[e.code]; if (!want) return e.code === 'tab_visible' || e.code === 'window_focus' || e.code === 'screen_share_resumed' ? e.durationSec : 0;
+        for (var i = 0; i < evs.length; i++) if (evs[i].t > e.t && evs[i].code === want) return Math.max(e.durationSec || 0, Math.round((evs[i].t - e.t) / 1000));
+        return 0;
       }
-      var nFlagged = media.filter(function (m) { return m.note; }).length;
-      if (nFlagged) html += '<label style="font-size:12px;display:block;margin-bottom:8px;"><input type="checkbox" id="pxOnly"> Show only flagged photos (' + nFlagged + ')</label>';
-      html += '<div id="pxGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px;"></div>';
-      body.innerHTML = html;
-      var grid = body.querySelector('#pxGrid');
-      media.forEach(function (it) {
-        var cell = document.createElement('div');
-        cell.setAttribute('data-flagged', it.note ? '1' : '');
+      var entries = [];
+      items.forEach(function (it) {
+        var grp = it.kind === 'flag' ? 'events' : (it.kind === 'screen' || it.kind === 'screenvideo') ? 'screen' : 'camera';
+        entries.push({ t: it.t, grp: grp, item: it });
+      });
+      evs.forEach(function (e) { entries.push({ t: e.t, grp: 'events', ev: e }); });
+      entries.sort(function (a, b) { return a.t - b.t; });
+      var counts = { all: entries.length, camera: 0, screen: 0, events: 0 };
+      entries.forEach(function (e) { counts[e.grp]++; });
+      var TABS = [['all', 'All'], ['camera', 'Camera'], ['screen', 'Screen'], ['events', 'Events']];
+      var cur = 'all', onlyFlagged = false;
+
+      body.innerHTML = '<div id="pxTabs" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px;"></div>' +
+        '<label id="pxOnlyWrap" style="font-size:12px;display:none;margin-bottom:8px;"><input type="checkbox" id="pxOnly"> Show only flagged photos</label>' +
+        '<div id="pxGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px;"></div>';
+      var tabs = body.querySelector('#pxTabs'), grid = body.querySelector('#pxGrid'), onlyWrap = body.querySelector('#pxOnlyWrap'), only = body.querySelector('#pxOnly');
+      only.onchange = function () { onlyFlagged = only.checked; draw(); };
+
+      function fmtDur(s) { return s >= 60 ? Math.floor(s / 60) + ' min ' + (s % 60) + ' s' : s + ' s'; }
+      function eventRow(e) {
+        var d = document.createElement('div');
+        var bad = e.code === 'screen_share_stopped' || e.code === 'tab_hidden' || e.code === 'camera_stopped' || e.code === 'unsupported_device_blocked' || e.code === 'window_blur';
+        d.style.cssText = 'grid-column:1/-1;border:1px solid ' + (bad ? '#f59e0b' : 'var(--border,#ddd)') + ';background:' + (bad ? 'rgba(245,158,11,.14)' : 'transparent') + ';border-radius:8px;padding:6px 8px;font-size:12px;overflow-wrap:anywhere;';
+        var du = dur(e);
+        d.innerHTML = (bad ? '⚠ ' : '• ') + '<strong>' + esc(SCREEN_LABEL[e.code] || e.code) + '</strong> · ' + esc(new Date(e.t).toLocaleTimeString()) +
+          (du ? ' · lasted ' + esc(fmtDur(du)) : '') + (e.detail && e.code !== 'screen_share_resumed' ? ' <span style="opacity:.7">(' + esc(e.detail) + ')</span>' : '');
+        return d;
+      }
+      function flagRow(it) {
+        var d = document.createElement('div');
+        d.style.cssText = 'grid-column:1/-1;border:1px solid #ef4444;background:rgba(239,68,68,.08);border-radius:8px;padding:6px 8px;font-size:12px;overflow-wrap:anywhere;';
+        d.innerHTML = '⚠ <strong>' + esc(FLAG_TEXT[it.note] || it.note || 'Event') + '</strong> · ' + esc(new Date(it.t).toLocaleTimeString()) + ' <span style="opacity:.7">(camera)</span>';
+        return d;
+      }
+      var KIND_LABEL = { photo: '📷 Camera photo', video: '🎥 Camera video', screen: '🖥 Screenshot', screenvideo: '🖥 Screen video' };
+      function mediaCell(it) {
+        var cell = document.createElement('div'), isVid = it.kind === 'video' || it.kind === 'screenvideo';
+        var noteTxt = it.note ? (FLAG_TEXT[it.note] || SCREEN_LABEL[it.note] || it.note) : '';
         cell.style.cssText = 'border:1px solid ' + (it.note ? '#ef4444' : 'var(--border,#ddd)') + ';border-radius:8px;padding:6px;font-size:12px;';
         var when = new Date(it.t).toLocaleTimeString();
-        var tag = it.note ? '<div style="color:#ef4444;font-weight:700;margin-bottom:4px;">⚠ ' + esc(FLAG_TEXT[it.note] || it.note) + '</div>' : '';
-        cell.innerHTML = tag + '<div style="margin-bottom:4px;">' + (it.kind === 'video' ? '🎥 Video' : '📷 Photo') + ' · ' + esc(when) + '</div><button class="btn" style="width:100%;padding:4px;">Load</button>';
+        var tag = it.note ? '<div style="color:#ef4444;font-weight:700;margin-bottom:4px;overflow-wrap:anywhere;">⚠ ' + esc(noteTxt) + '</div>' : '';
+        var head = '<div style="margin-bottom:4px;">' + (KIND_LABEL[it.kind] || it.kind) + ' · ' + esc(when) + '</div>';
+        cell.innerHTML = tag + head + '<button class="btn" style="width:100%;padding:4px;">Load</button>';
         cell.querySelector('button').onclick = async function () {
           this.textContent = 'Loading…';
           try {
             var u = await mediaBlob(it.id);
-            cell.innerHTML = tag + '<div style="margin-bottom:4px;">' + (it.kind === 'video' ? '🎥 ' : '📷 ') + esc(when) + '</div>' +
-              (it.kind === 'video' ? '<video controls playsinline src="' + u + '" style="width:100%;border-radius:6px;"></video>'
-                                   : '<img src="' + u + '" style="width:100%;border-radius:6px;" alt="Student photo">');
+            if (it.kind === 'screen' || it.kind === 'screenvideo') cell.style.gridColumn = '1/-1';
+            cell.innerHTML = tag + head + (isVid ? '<video controls playsinline src="' + u + '" style="width:100%;border-radius:6px;"></video>'
+              : '<img src="' + u + '" style="width:100%;border-radius:6px;" alt="Captured image">');
           } catch (e) { this.textContent = 'Failed — retry'; }
         };
-        grid.appendChild(cell);
-      });
-      var only = body.querySelector('#pxOnly');
-      if (only) only.onchange = function () {
-        Array.prototype.forEach.call(grid.children, function (c) { c.style.display = (only.checked && !c.getAttribute('data-flagged')) ? 'none' : ''; });
-      };
+        return cell;
+      }
+      function draw() {
+        tabs.innerHTML = '';
+        TABS.forEach(function (tb) {
+          var b = document.createElement('button'); b.className = 'btn'; b.type = 'button';
+          b.style.cssText = 'padding:4px 10px;font-size:12px;' + (cur === tb[0] ? 'font-weight:700;outline:2px solid var(--accent,#4f6ef7);' : '');
+          b.textContent = tb[1] + ' (' + counts[tb[0]] + ')';
+          b.onclick = function () { cur = tb[0]; draw(); };
+          tabs.appendChild(b);
+        });
+        var nFlag = entries.filter(function (e) { return e.item && e.grp === 'camera' && e.item.note; }).length;
+        onlyWrap.style.display = (nFlag && (cur === 'all' || cur === 'camera')) ? 'block' : 'none';
+        grid.innerHTML = '';
+        var shown = 0;
+        entries.forEach(function (e) {
+          if (cur !== 'all' && e.grp !== cur) return;
+          if (onlyFlagged && e.grp === 'camera' && !(e.item && e.item.note)) return;
+          if (e.ev) grid.appendChild(eventRow(e.ev));
+          else if (e.item.kind === 'flag') grid.appendChild(flagRow(e.item));
+          else grid.appendChild(mediaCell(e.item));
+          shown++;
+        });
+        if (!shown) grid.innerHTML = '<p style="grid-column:1/-1;font-size:12px;opacity:.75;">Nothing in this view.</p>';
+      }
+      draw();
     } catch (e) { body.innerHTML = '<p style="color:var(--danger,#c00)">' + esc(e.message) + '</p>'; }
   }
   function closeViewer() {
@@ -463,5 +803,7 @@
     urls.forEach(function (u) { URL.revokeObjectURL(u); }); urls = [];
   }
 
-  window.Proctor = { _test: { poseOf: poseOf, judge: judge, state: function () { return lmState; } }, required: required, modeOf: modeOf, prepare: prepare, begin: begin, stop: stop, release: release, openViewer: openViewer };
+  window.Proctor = { screenRequired: screenRequired, screenModeOf: screenModeOf, screenSupported: screenSupported, screenFallbackCamera: screenFallbackCamera,
+    effectiveConfig: effectiveConfig, consentHtml: consentHtml, prepareScreen: prepareScreen, beginScreen: beginScreen, releasePendingScreen: releasePendingScreen,
+    logEventFor: logEventFor, blockUnsupportedOverlay: blockUnsupportedOverlay, _test: { screenState: function () { return { active: sc.active, lost: sc.lost, overlay: !!(sc.over && sc.over.style.display === 'flex'), shotSeq: sc.shotSeq, vidSeq: sc.vidSeq, mode: sc.modeNow }; }, overlayButtonRect: function () { var b = sc.over && sc.over.querySelector('button'); if (!b) return null; var r = b.getBoundingClientRect(); return { x: r.left + r.width / 2, y: r.top + r.height / 2 }; }, poseOf: poseOf, judge: judge, state: function () { return lmState; } }, required: required, modeOf: modeOf, prepare: prepare, begin: begin, stop: stop, release: release, openViewer: openViewer };
 })();

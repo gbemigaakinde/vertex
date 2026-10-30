@@ -907,6 +907,33 @@ function renderTeacherDashboard() {
                 <p style="font-size:var(--text-xs);color:var(--text-4);margin-top:.25rem;">Students see their live camera in the exam and are told they are being recorded. Media is saved to Backblaze and shown on each result.</p>
               </div>
 
+              <div style="margin-bottom:0.875rem;">
+                <label style="display:block;font-size:var(--text-xs);font-weight:500;color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">
+                  Screen Capture <span style="font-weight:400;text-transform:none;color:var(--text-4);">— students must share their entire screen</span>
+                </label>
+                <select id="taskScreenMode" onchange="var w=document.getElementById('taskScreenIntervalWrap');if(w)w.style.display=this.value==='shots'?'':'none';var u=document.getElementById('taskScreenUnsupportedWrap');if(u)u.style.display=this.value==='off'?'none':'';">
+                  <option value="off">Off (no screen capture)</option>
+                  <option value="shots">Screenshots at intervals</option>
+                  <option value="video">Screen video for the whole exam</option>
+                </select>
+                <div id="taskScreenIntervalWrap" style="display:none;margin-top:.5rem;">
+                  <select id="taskScreenInterval">
+                    <option value="15">Screenshot about every 15 seconds</option>
+                    <option value="30" selected>Screenshot about every 30 seconds</option>
+                    <option value="60">Screenshot about every 1 minute</option>
+                    <option value="120">Screenshot about every 2 minutes</option>
+                  </select>
+                </div>
+                <div id="taskScreenUnsupportedWrap" style="display:none;margin-top:.5rem;">
+                  <label style="display:block;font-size:var(--text-xs);color:var(--text-3);margin-bottom:.25rem;">If a student's device can't share its screen</label>
+                  <select id="taskScreenUnsupported">
+                    <option value="block" selected>Block exam</option>
+                    <option value="camera">Allow with camera only</option>
+                  </select>
+                </div>
+                <p style="font-size:var(--text-xs);color:var(--text-4);margin-top:.25rem;">Most phones and tablets (iPhone/iPad, most Android browsers) cannot share their screen. Students are told what is captured before they begin. Screen media can be viewed only by you.</p>
+              </div>
+
               <div id="taskDateConfigArea"></div>
 
               <div id="taskRecurringSubjectsWrap" style="display:none;margin-bottom:0.875rem;">
@@ -2400,6 +2427,9 @@ async function _saveStudentEdit(uid, previousAdmno) {
     if (endEl)      endEl.value       = '';
     if (durationEl) durationEl.value  = '';
     const pmEl = document.getElementById('taskProctorMode'); if (pmEl) { pmEl.value = 'off'; pmEl.onchange && pmEl.onchange(); }
+    const smEl = document.getElementById('taskScreenMode'); if (smEl) { smEl.value = 'off'; smEl.onchange && smEl.onchange(); }
+    const siEl = document.getElementById('taskScreenInterval'); if (siEl) siEl.value = '30';
+    const suEl = document.getElementById('taskScreenUnsupported'); if (suEl) suEl.value = 'block';
     document.querySelectorAll('.task-day-cb').forEach(cb => { cb.checked = false; });
     document.querySelectorAll('.recurring-day-subj-cb').forEach(cb => { cb.checked = false; });
     _clearTaskFormDates();
@@ -2604,6 +2634,9 @@ async function _saveStudentEdit(uid, previousAdmno) {
     if (!title) { UI.toast('Please enter a task title.', 'warning'); return; }
     const proctorMode = document.getElementById('taskProctorMode')?.value || 'off';
     const proctorIntervalSec = parseInt(document.getElementById('taskProctorInterval')?.value || '60', 10);
+    const screenMode = document.getElementById('taskScreenMode')?.value || 'off';
+    const screenIntervalSec = parseInt(document.getElementById('taskScreenInterval')?.value || '30', 10);
+    const screenUnsupported = document.getElementById('taskScreenUnsupported')?.value === 'camera' ? 'camera' : 'block';
 
     let payload;
 
@@ -2626,6 +2659,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
         dateSubjects,
         durationMs:  durationMs || null,
         proctorMode, proctorIntervalSec,
+        screenMode, screenIntervalSec, screenUnsupported,
         assignScope: _assignScope,
         updatedAt:   firebase.firestore.FieldValue.serverTimestamp(),
       };
@@ -2673,6 +2707,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
         dateSubjects,
         durationMs:  durationMs || null,
         proctorMode, proctorIntervalSec,
+        screenMode, screenIntervalSec, screenUnsupported,
         assignScope: _assignScope,
         updatedAt:   firebase.firestore.FieldValue.serverTimestamp(),
       };

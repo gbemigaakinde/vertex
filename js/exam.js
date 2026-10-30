@@ -301,11 +301,18 @@
         renderExam();
         _startTimer();
         // Camera proctoring: restart the camera if the student reloaded mid-exam.
-        const _rc = S().currentTaskConfig;
+        const _rcRaw = S().currentTaskConfig;
+        const _rc = (window.Proctor && _rcRaw) ? Proctor.effectiveConfig(_rcRaw) : _rcRaw;
         if (window.Proctor && examData.proctorSessionId && _rc && Proctor.required(_rc)) {
           Proctor.prepare(_rc)
             .then(function () { Proctor.begin(examData.proctorSessionId, true); })
             .catch(function (err) { UI.toast((err && err.message) || 'Camera access is required for this exam.', 'error', 8000); });
+        }
+        // Screen capture: sharing needs a tap, so after a reload a blocking "Share your screen to continue" overlay is shown.
+        if (window.Proctor && examData.proctorSessionId && _rcRaw && Proctor.screenRequired(_rcRaw)) {
+          if (Proctor.screenSupported()) Proctor.beginScreen(examData.proctorSessionId, true, _rcRaw);
+          else if (!Proctor.screenFallbackCamera(_rcRaw)) Proctor.blockUnsupportedOverlay(examData.proctorSessionId);
+          else { try { Proctor.logEventFor(examData.proctorSessionId, 'unsupported_device_camera_only', 'exam reopened'); } catch (e) {} }
         }
       } else {
         renderExam();
@@ -2606,6 +2613,7 @@ async function renderSubjectSelection() {
             The timer starts when you click below. Switching devices will not reset it.
           </li>
         </ul>
+        ${_screenConsentHtml()}
         <button id="beginExamBtn" onclick="Exam.beginExam()" class="btn bg-green-600 hover:bg-green-700 w-full"
                 style="justify-content:center;">I understand — Start Exam Now</button>
         <p class="text-center mt-3" style="font-size:0.75rem;color:var(--text-disabled);">Good luck!</p>
@@ -2662,6 +2670,16 @@ async function renderSubjectSelection() {
     _visibilityCooldown  = false;
   }
 
+  /* Screen capture helpers (only active when the teacher turned Screen Capture on for today's task) */
+  function _screenTaskToday() {
+    const c = S().currentTaskConfig;
+    return !!(window.Proctor && c && c.active && Proctor.screenRequired(c) &&
+      Array.isArray(c.dates) && c.dates.includes((S().exam && S().exam.sessionDate) || _dateOfMs(Date.now())));
+  }
+  function _screenConsentHtml() {
+    try { return _screenTaskToday() ? Proctor.consentHtml(S().currentTaskConfig) : ''; } catch (e) { return ''; }
+  }
+
   /* ─────────────────────────────────────────────────────── */
   /* beginExam                                               */
   /* ─────────────────────────────────────────────────────── */
@@ -2674,14 +2692,41 @@ async function renderSubjectSelection() {
     const beginBtn = document.getElementById('beginExamBtn');
     if (beginBtn) { beginBtn.disabled = true; beginBtn.textContent = 'Starting…'; }
 
+    // Screen capture (teacher-enabled). getDisplayMedia needs the tap, so it runs first, before any other waiting.
+    const _rawPc = S().currentTaskConfig;
+    const _screenOn = _screenTaskToday();
+    let _screenReady = false, _screenDecision = '';
+    if (_screenOn) {
+      if (!Proctor.screenSupported()) {
+        _screenDecision = Proctor.screenFallbackCamera(_rawPc) ? 'unsupported_device_camera_only' : 'unsupported_device_blocked';
+        if (_screenDecision === 'unsupported_device_blocked') {
+          try { Proctor.logEventFor(S().userId + '_' + Date.now(), _screenDecision, 'getDisplayMedia not available'); } catch (e) {}
+          UI.toast('This exam needs screen sharing, which this device cannot do. Please use a computer.', 'error', 10000);
+          if (beginBtn) { beginBtn.disabled = false; beginBtn.textContent = 'I understand — Start Exam Now'; }
+          _beginExamLock = false;
+          return;
+        }
+        UI.toast('This device cannot share its screen. You may continue with your camera only.', 'warning', 8000);
+      } else {
+        try { await Proctor.prepareScreen(_rawPc); _screenReady = true; }
+        catch (err) {
+          UI.toast((err && err.message) || 'Please choose Entire Screen.', 'error', 8000);
+          if (beginBtn) { beginBtn.disabled = false; beginBtn.textContent = 'I understand — Start Exam Now'; }
+          _beginExamLock = false;
+          return;
+        }
+      }
+    }
+
     // Camera proctoring (teacher-enabled): the camera must be on before the exam begins.
-    const _pc = S().currentTaskConfig;
+    const _pc = (window.Proctor && _rawPc) ? Proctor.effectiveConfig(_rawPc) : _rawPc;
     const _proctorOn = !!(window.Proctor && _pc && _pc.active && Proctor.required(_pc) &&
       Array.isArray(_pc.dates) && _pc.dates.includes(S().exam.sessionDate || _dateOfMs(Date.now())));
     if (_proctorOn) {
       try { await Proctor.prepare(_pc); }
       catch (err) {
         UI.toast(err.message || 'Camera access is required for this exam.', 'error', 8000);
+        if (_screenReady) { try { Proctor.releasePendingScreen(); } catch (e) {} }
         if (beginBtn) { beginBtn.disabled = false; beginBtn.textContent = 'Begin Exam'; }
         _beginExamLock = false;
         return;
@@ -2695,9 +2740,11 @@ async function renderSubjectSelection() {
     const startDate = new Date(startMs);
     S().examStartMs    = startMs;
     S().exam.startTime = startDate;
-    if (_proctorOn) {
+    if (_proctorOn || _screenReady) {
       S().exam.proctorSessionId = S().userId + '_' + startMs;
-      Proctor.begin(S().exam.proctorSessionId);
+      if (_proctorOn) Proctor.begin(S().exam.proctorSessionId);
+      if (_screenReady) Proctor.beginScreen(S().exam.proctorSessionId, false, _rawPc);
+      if (_screenDecision) { try { Proctor.logEventFor(S().exam.proctorSessionId, _screenDecision, 'exam started'); } catch (e) {} }
       try { window.fbDb.collection('ongoingExams').doc(S().userId).set({ proctorSessionId: S().exam.proctorSessionId }, { merge: true }); } catch (e) {}
     }
     if (!S().exam.sessionDate) S().exam.sessionDate = _dateOfMs(startMs);

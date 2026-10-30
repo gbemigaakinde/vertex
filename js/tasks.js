@@ -333,6 +333,9 @@
     return Object.assign({}, primary, {
       proctorMode,
       proctorIntervalSec: (pOwner && pOwner.proctorIntervalSec) || 60,
+      screenMode: (pOwner && (pOwner.screenMode === 'shots' || pOwner.screenMode === 'video')) ? pOwner.screenMode : 'off',
+      screenIntervalSec: (pOwner && pOwner.screenIntervalSec) || 30,
+      screenUnsupported: (pOwner && pOwner.screenUnsupported === 'camera') ? 'camera' : 'block',
       active:       true,
       dates,
       pastDates,
