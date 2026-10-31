@@ -817,6 +817,8 @@ function renderTeacherDashboard() {
                 <h3 style="font-size:var(--text-base);font-weight:600;color:var(--text-1);">Coaching Tasks</h3>
               </div>
 
+              <div id="taskEditBanner" style="display:none;margin-bottom:0.875rem;padding:0.5rem 0.75rem;background:var(--warning-subtle);border:1px solid var(--warning-border);border-radius:var(--r-md);font-size:var(--text-xs);color:var(--warning-text);line-height:1.6;"></div>
+
               <div style="margin-bottom:0.875rem;">
                 <label style="display:block;font-size:var(--text-xs);font-weight:500;color:var(--text-3);margin-bottom:0.375rem;text-transform:uppercase;letter-spacing:.04em;">Recurrence</label>
                 <div style="display:flex;background:var(--bg-muted);border:1px solid var(--border);border-radius:var(--r-md);padding:3px;gap:3px;">
@@ -947,6 +949,7 @@ function renderTeacherDashboard() {
                 <button id="saveTasksBtn" onclick="Teacher.saveTasksConfig()" class="btn bg-green-600 hover:bg-green-700" style="flex:1;justify-content:center;font-size:var(--text-sm);">
                   Save &amp; Apply
                 </button>
+                <button id="cancelTaskEditBtn" onclick="Teacher.cancelTaskEdit()" class="btn" style="display:none;font-size:var(--text-sm);white-space:nowrap;">Cancel</button>
               </div>
             </div>
 
@@ -2615,8 +2618,159 @@ async function _saveStudentEdit(uid, previousAdmno) {
     _updateDateSubjCount(row);
   }
 
+  // ── Editing an existing task ─────────────────────────────
+  // While editing, the recurrence type and the target (everyone / class /
+  // student) are locked, because together they decide which Firestore document
+  // the task lives in. To move a task to a different target, delete it and
+  // create a new one.
+  let _editingTaskId = null;
+
+  function _setTaskIdentityLocked(locked) {
+    ['taskScopeAll', 'taskScopeWeekly', 'taskScopeRange',
+     'taskAssignAll', 'taskAssignClass', 'taskAssignStudent',
+     'taskTargetClass', 'taskTargetStudent'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.disabled      = !!locked;
+      el.style.opacity = locked ? '0.55' : '';
+      el.style.cursor  = locked ? 'not-allowed' : '';
+    });
+  }
+
+  function _exitTaskEditMode() {
+    if (!_editingTaskId) return;
+    _editingTaskId = null;
+    _setTaskIdentityLocked(false);
+    const banner = document.getElementById('taskEditBanner');
+    if (banner) { banner.style.display = 'none'; banner.innerHTML = ''; }
+    const cancel = document.getElementById('cancelTaskEditBtn');
+    if (cancel) cancel.style.display = 'none';
+    const save = document.getElementById('saveTasksBtn');
+    if (save) save.innerHTML = 'Save &amp; Apply';
+    _clearTaskForm();
+  }
+
+  function cancelTaskEdit() {
+    _exitTaskEditMode();
+  }
+
+  function _selectHas(sel, value) {
+    return Array.from(sel.options).some(o => o.value === String(value));
+  }
+
+  async function editTask(docId) {
+    if (!docId) return;
+
+    let d;
+    try {
+      const snap = await Db().collection('coachingTasks').doc(docId).get();
+      if (!snap.exists) { UI.toast('That task no longer exists.', 'warning'); return; }
+      d = snap.data() || {};
+    } catch (err) {
+      console.error('[teacher] editTask load error:', err);
+      UI.toast('Could not load the task.', 'error');
+      return;
+    }
+
+    // Leave any edit already in progress, then start from a clean form.
+    if (_editingTaskId) { _editingTaskId = null; _setTaskIdentityLocked(false); }
+    _clearTaskForm();
+
+    const wd  = Array.isArray(d.weeklyDays) ? d.weeklyDays : [];
+    const rec = d.recurrence || (wd.length > 0 ? 'weekly' : 'once');
+
+    // Who the task is for comes from the document id (that is what the
+    // students' apps listen to).
+    let scope = 'all';
+    if (/^(weekly_)?class_/.test(docId))        scope = 'class';
+    else if (/^(weekly_)?student_/.test(docId)) scope = 'student';
+
+    _setTaskScope(rec);
+    _setAssignScope(scope);
+
+    if (scope === 'class') {
+      const sel = document.getElementById('taskTargetClass');
+      const cls = d.className || '';
+      if (sel && cls) {
+        if (!_selectHas(sel, cls)) sel.insertAdjacentHTML('beforeend', '<option value="' + _esc(cls) + '">' + _esc(cls) + '</option>');
+        sel.value = cls;
+      }
+    } else if (scope === 'student') {
+      const sel = document.getElementById('taskTargetStudent');
+      const uid = d.studentUid || docId.replace(/^(weekly_)?student_/, '');
+      if (sel && uid) {
+        if (!_selectHas(sel, uid)) sel.insertAdjacentHTML('beforeend', '<option value="' + _esc(uid) + '">' + _esc(d.studentName || uid) + '</option>');
+        sel.value = uid;
+      }
+    }
+
+    // The target is now known, so the subject lists can be built.
+    _onTaskTargetChange();
+
+    const setVal = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined && v !== null) el.value = v; };
+    const activeEl = document.getElementById('tasksActive');
+    if (activeEl) activeEl.checked = d.active === true;
+    setVal('tasksTitle', d.title || '');
+    setVal('tasksMessage', d.message || '');
+
+    const durEl = document.getElementById('taskDurationMs');
+    if (durEl) {
+      const ms = d.durationMs ? String(d.durationMs) : '';
+      if (ms && !_selectHas(durEl, ms)) {
+        durEl.insertAdjacentHTML('beforeend', '<option value="' + ms + '">' + Math.round(+ms / 60000) + ' minutes</option>');
+      }
+      durEl.value = ms;
+    }
+
+    const pm = document.getElementById('taskProctorMode');
+    if (pm) { pm.value = d.proctorMode || 'off'; pm.onchange && pm.onchange(); }
+    const pi = document.getElementById('taskProctorInterval');
+    if (pi && d.proctorIntervalSec && _selectHas(pi, d.proctorIntervalSec)) pi.value = String(d.proctorIntervalSec);
+    const sm = document.getElementById('taskScreenMode');
+    if (sm) { sm.value = d.screenMode || 'off'; sm.onchange && sm.onchange(); }
+    const si = document.getElementById('taskScreenInterval');
+    if (si && d.screenIntervalSec && _selectHas(si, d.screenIntervalSec)) si.value = String(d.screenIntervalSec);
+    setVal('taskScreenUnsupported', d.screenUnsupported === 'camera' ? 'camera' : 'block');
+
+    if (rec === 'once') {
+      const dates = Array.from(new Set(Array.isArray(d.dates) ? d.dates : [])).sort();
+      const ds    = d.dateSubjects || {};
+      dates.forEach(dt => _appendDateItem(dt, Array.isArray(ds[dt]) ? ds[dt] : []));
+    } else {
+      setVal('taskStartDate', d.startDate || '');
+      setVal('taskEndDate', d.endDate || '');
+      document.querySelectorAll('.task-day-cb').forEach(cb => { cb.checked = wd.indexOf(cb.value) !== -1; });
+      _renderRecurringSubjectPicker();
+      const ds = d.dateSubjects || {};
+      Object.keys(ds).forEach(day => {
+        (Array.isArray(ds[day]) ? ds[day] : []).forEach(subj => {
+          document.querySelectorAll('.recurring-day-subj-cb[data-day="' + day + '"]').forEach(cb => {
+            if (cb.value === subj) cb.checked = true;
+          });
+        });
+        _updateDaySubjCount(day);
+      });
+    }
+
+    _editingTaskId = docId;
+    _setTaskIdentityLocked(true);
+
+    const banner = document.getElementById('taskEditBanner');
+    if (banner) {
+      banner.style.display = '';
+      banner.innerHTML = '<strong>Editing: ' + _esc(d.title || 'Untitled task') + '</strong><br>' +
+        'The recurrence type and who it is assigned to cannot change while editing. ' +
+        'To move a task to someone else, delete it and create a new one.';
+    }
+    const cancel = document.getElementById('cancelTaskEditBtn');
+    if (cancel) cancel.style.display = '';
+    const save = document.getElementById('saveTasksBtn');
+    if (save) save.innerHTML = 'Save changes';
+    if (banner && banner.scrollIntoView) banner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
   async function saveTasksConfig() {
-    const docId = _currentTaskDocId();
+    const docId = _editingTaskId || _currentTaskDocId();
     if (!docId) {
       if (_assignScope === 'class')   { UI.toast('Please select a class.',   'warning'); return; }
       if (_assignScope === 'student') { UI.toast('Please select a student.', 'warning'); return; }
@@ -2644,7 +2798,13 @@ async function _saveStudentEdit(uid, previousAdmno) {
       const dateRows = Array.from(document.querySelectorAll('.task-date-row'));
       if (dateRows.length === 0) { UI.toast('Please add at least one date.', 'warning'); return; }
 
-      const dates        = dateRows.map(r => r.dataset.date).filter(Boolean);
+      const dates        = Array.from(new Set(dateRows.map(r => r.dataset.date).filter(Boolean)));
+      const _todayChk    = (window.Tasks && Tasks._localDateStr) ? Tasks._localDateStr() : '';
+      if (dates.length === 0) { UI.toast('Please add at least one date.', 'warning'); return; }
+      if (!_editingTaskId && _todayChk && dates.every(d => d < _todayChk)) {
+        UI.toast('Every date is in the past, so students would never see this task. Pick today or a later date.', 'warning', 6000);
+        return;
+      }
       const dateSubjects = {};
       dateRows.forEach(row => {
         dateSubjects[row.dataset.date] =
@@ -2735,27 +2895,55 @@ async function _saveStudentEdit(uid, previousAdmno) {
 
     // Saving writes to a fixed document per target, so it silently replaced
     // whatever task was already there. Ask first.
+    let prevData = null;
     try {
       const existingSnap = await Db().collection('coachingTasks').doc(docId).get();
       if (existingSnap.exists) {
         const ex = existingSnap.data() || {};
-        const ok = await UI.confirmAction(
-          'A ' + (_taskScope === 'once' ? 'one-time' : 'recurring') + ' task' +
-          (ex.title ? ' ("' + ex.title + '")' : '') +
-          ' already exists for this target. Saving will replace it. Continue?'
-        );
-        if (!ok) return;
+        prevData = ex;
+        if (_editingTaskId) {
+          // Editing on purpose, so no "replace?" prompt. Only warn when the
+          // change makes students who already did today's session redo it.
+          if (ex.active === true && _taskReqFingerprint(ex) !== _taskReqFingerprint(payload)) {
+            const okEdit = await UI.confirmAction(
+              'These changes alter what students must do (dates, subjects, time limit or monitoring). ' +
+              'Students who already completed the current session will need to do it again. Save anyway?'
+            );
+            if (!okEdit) return;
+          }
+        } else {
+          const ok = await UI.confirmAction(
+            'A ' + (_taskScope === 'once' ? 'one-time' : 'recurring') + ' task' +
+            (ex.title ? ' ("' + ex.title + '")' : '') +
+            ' already exists for this target. Saving will replace it. Continue?'
+          );
+          if (!ok) return;
+        }
       }
     } catch (checkErr) {
       console.warn('[teacher] saveTasksConfig existing-task check failed:', checkErr);
+    }
+
+    // Stamp the task version. A brand new task (or one re-created after being
+    // deleted) and any change to what students must do gets a new `rev`, so
+    // earlier completions do not carry over. A title/message-only edit keeps it.
+    if (prevData && _taskReqFingerprint(prevData) === _taskReqFingerprint(payload)) {
+      if (prevData.rev) payload.rev = prevData.rev;
+    } else {
+      payload.rev = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
     }
 
     const btn = document.getElementById('saveTasksBtn');
     UI.setLoading(btn, true);
     try {
       await Db().collection('coachingTasks').doc(docId).set(payload);
-      UI.toast('Task saved.', 'success');
-      _clearTaskForm();
+      const wasEditing = !!_editingTaskId;
+      if (active) {
+        UI.toast(wasEditing ? 'Task updated.' : 'Task saved.', 'success');
+      } else {
+        UI.toast('Task saved but it is INACTIVE, so students cannot see it yet. Use Activate in the list below.', 'warning', 7000);
+      }
+      if (wasEditing) _exitTaskEditMode(); else _clearTaskForm();
     } catch (err) {
       console.error('[teacher] saveTasksConfig error:', err);
       UI.toast('Failed to save task' + (err?.code ? ' (' + err.code + ')' : '') + '.', 'error');
@@ -2800,6 +2988,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
 }
 
   function _loadTasksManager() {
+  _exitTaskEditMode();
   _cancel('tasksManager');
   _taskScope   = 'once';
   _assignScope = 'all';
@@ -2945,9 +3134,9 @@ function _renderExistingTasksList(docs) {
           datesDisplay = (d.dates || []).join(', ') || '—';
         }
 
-        return '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.75rem;' +
+        return '<div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:.5rem .75rem;' +
           'background:var(--bg-base);border:1px solid var(--border);border-radius:8px;padding:.5rem .875rem;">' +
-          '<div style="min-width:0;flex:1;">' +
+          '<div style="min-width:0;flex:1 1 11rem;">' +
           '<div style="display:flex;align-items:center;gap:.375rem;flex-wrap:wrap;margin-bottom:2px;">' +
           `<span style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);">${_esc(d.title || '—')}</span>` +
           `<span style="font-size:var(--text-xs);font-weight:600;padding:1px 7px;border-radius:99px;` +
@@ -2960,7 +3149,7 @@ function _renderExistingTasksList(docs) {
           '</div>' +
           `<p style="font-size:var(--text-xs);color:var(--text-4);word-break:break-all;">${_esc(datesDisplay)}</p>` +
           '</div>' +
-          '<div style="display:flex;gap:.375rem;align-items:center;flex-shrink:0;margin-top:1px;">' +
+          '<div style="display:flex;gap:.375rem;align-items:center;flex-wrap:wrap;margin-top:1px;">' +
           `<button onclick="Teacher.exportTaskReportPDF('${_esc(doc.id)}')"` +
           ` style="background:var(--accent);color:var(--text-inverse);border:none;cursor:pointer;` +
           `font-size:var(--text-xs);font-weight:700;padding:3px 9px;border-radius:4px;` +
@@ -2968,6 +3157,14 @@ function _renderExistingTasksList(docs) {
           `transition:background .12s;" ` +
           `onmouseenter="this.style.background='var(--accent-hover)'" onmouseleave="this.style.background='var(--accent)'"` +
           `title="Export attendance & progress report as PDF">📄 PDF</button>` +
+          `<button onclick="Teacher.editTask('${_esc(doc.id)}')"` +
+          ` style="background:var(--accent);color:var(--text-inverse);border:none;cursor:pointer;` +
+          `font-size:var(--text-xs);font-weight:700;padding:3px 9px;border-radius:4px;` +
+          `white-space:nowrap;font-family:inherit;line-height:1.5;">Edit</button>` +
+          `<button onclick="Teacher.toggleTaskActive('${_esc(doc.id)}', ${d.active ? 'false' : 'true'})"` +
+          ` style="background:var(--bg-subtle);color:var(--text-2);border:1px solid var(--border);cursor:pointer;` +
+          `font-size:var(--text-xs);font-weight:700;padding:3px 9px;border-radius:4px;` +
+          `white-space:nowrap;font-family:inherit;line-height:1.5;">${d.active ? 'Deactivate' : 'Activate'}</button>` +
           `<button class="teacher-delete-task" data-task-id="${_esc(doc.id)}"` +
           ` style="background:none;border:none;cursor:pointer;font-size:1rem;line-height:1;` +
           `padding:2px 4px;color:var(--text-4);"` +
@@ -3087,12 +3284,12 @@ function _renderExistingTasksList(docs) {
 
         const pastWeekDates = weekDates.filter(dt => dt <= todayStr);
         const allStudentsDone = pastWeekDates.length > 0 && students.every(student => {
-          const comp = _compForTask(student, doc.id, pastWeekDates);
+          const comp = _compForTask(student, doc.id, pastWeekDates, (doc.data() || {}).rev);
           return pastWeekDates.every(dt => !!comp[dt]);
         });
 
         const studentRows = students.map(student => {
-          const completed   = _compForTask(student, doc.id, weekDates);
+          const completed   = _compForTask(student, doc.id, weekDates, (doc.data() || {}).rev);
           const doneDates   = weekDates.filter(dt => !!completed[dt]);
           const missedDates = weekDates.filter(dt => dt < todayStr && !completed[dt]);
           const doneCount   = doneDates.length;
@@ -3180,7 +3377,7 @@ function _renderExistingTasksList(docs) {
 
       const totalSessions = allDates.length;
       const totalDone     = students.reduce((sum, s) =>
-        sum + allDates.filter(dt => !!_compForTask(s, doc.id, allDates)[dt]).length, 0);
+        sum + allDates.filter(dt => !!_compForTask(s, doc.id, allDates, (doc.data() || {}).rev)[dt]).length, 0);
       const possibleTotal = students.length * totalSessions;
 
       const recurrenceLabel = d.recurrence
@@ -3213,16 +3410,57 @@ function _renderExistingTasksList(docs) {
     }).filter(Boolean).join('');
   }
 
-  // Completion map {date: true} for ONE task document. New records are kept
-  // per task (coachingCompletedDocs); older days only have coachingCompleted.
-  function _compForTask(student, docId, dates) {
-    const flat = student.coachingCompleted || {};
-    const per  = student.coachingCompletedDocs || {};
-    const out  = {};
-    (dates || Object.keys(flat)).forEach(dt => {
-      out[dt] = Array.isArray(per[dt]) ? per[dt].indexOf(docId) !== -1 : !!flat[dt];
+  // Completion map {date: true} for ONE task. Completions are recorded per
+  // task version (see Tasks.layerIdOf), so pass the task's `rev` when it has one.
+  function _compForTask(student, docId, dates, rev) {
+    const layerId = (window.Tasks && Tasks.layerIdOf) ? Tasks.layerIdOf(docId, { rev: rev }) : docId;
+    const out = {};
+    (dates || Object.keys(student.coachingCompleted || {})).forEach(dt => {
+      out[dt] = (window.Tasks && Tasks.layerDone)
+        ? Tasks.layerDone(student, dt, layerId)
+        : !!(student.coachingCompleted || {})[dt];
     });
     return out;
+  }
+
+  // Everything a student has to act on, from today onward. If this changes
+  // when a task is re-saved, students must do it again; if only the title or
+  // message changed, their completions are kept.
+  function _taskReqFingerprint(p) {
+    const today = (window.Tasks && Tasks._localDateStr) ? Tasks._localDateStr() : '';
+    const wd    = Array.isArray(p.weeklyDays) ? p.weeklyDays : [];
+    const rec   = p.recurrence || (wd.length > 0 ? 'weekly' : 'once');
+    const once  = rec === 'once';
+    const ds    = {};
+    Object.keys(p.dateSubjects || {}).sort().forEach(k => {
+      if (once && k < today) return;
+      ds[k] = (p.dateSubjects[k] || []).slice().sort();
+    });
+    return JSON.stringify([
+      rec,
+      once ? (p.dates || []).filter(d => d >= today).sort() : [],
+      ds,
+      once ? [] : wd.slice().sort(),
+      once ? '' : (p.startDate || ''),
+      once ? '' : (p.endDate || ''),
+      p.durationMs || 0,
+      p.proctorMode || 'off',
+      p.screenMode || 'off',
+    ]);
+  }
+
+  async function toggleTaskActive(docId, makeActive) {
+    if (!docId) return;
+    try {
+      await Db().collection('coachingTasks').doc(docId).update({
+        active: !!makeActive,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      UI.toast(makeActive ? 'Task activated. Students can see it now.' : 'Task deactivated. Students no longer see it.', 'success');
+    } catch (err) {
+      console.error('[teacher] toggleTaskActive error:', err);
+      UI.toast('Could not update the task.', 'error');
+    }
   }
 
   async function deleteTask(docId) {
@@ -3231,6 +3469,7 @@ function _renderExistingTasksList(docs) {
     if (!ok) return;
     try {
       await Db().collection('coachingTasks').doc(docId).delete();
+      if (_editingTaskId === docId) _exitTaskEditMode();
       UI.toast('Task deleted.', 'success');
     } catch (err) {
       console.error('[teacher] deleteTask error:', err);
@@ -3249,7 +3488,7 @@ function _renderExistingTasksList(docs) {
         await batch.commit();
       }
       UI.toast('All tasks deleted.', 'success');
-      _clearTaskForm();
+      if (_editingTaskId) _exitTaskEditMode(); else _clearTaskForm();
     } catch (err) {
       console.error('[teacher] deleteAllTasks error:', err);
       UI.toast('Failed to delete tasks.', 'error');
@@ -4749,7 +4988,7 @@ async function _deleteTimetable(weekKey) {
     }
 
     const studentStats = students.map(s => {
-      const comp = _compForTask(s, docId, allDates);
+      const comp = _compForTask(s, docId, allDates, taskDoc.rev);
       const done = allDates.filter(d => !!comp[d]).length;
       const pastOnly = allDates.filter(d => d < todayStr);
       const missed = pastOnly.filter(d => !comp[d]).length;
@@ -6097,6 +6336,9 @@ async function exportResultPDF(resultId) {
   deleteSchool,
   addTaskDate,
   deleteTask,
+  toggleTaskActive,
+  editTask,
+  cancelTaskEdit,
   deleteAllTasks,
   saveTasksConfig,
   sendPrivateMessage,

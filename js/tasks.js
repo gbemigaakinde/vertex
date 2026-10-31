@@ -1,6 +1,13 @@
 /* ============================================================
-   js/tasks.js  — v4.5
+   js/tasks.js  — v4.6
    ============================================================
+   v4.6 fixes
+   • Completions are tied to a task VERSION (`rev`), so deleting a task and
+     creating a new one no longer inherits the old one's "done" state.
+   • The task config rebuilds when the date changes while the page is open.
+   • Duplicate dates in a one-off task are ignored; the card shows progress
+     when more than one task applies to the same day.
+
    v4.5 fixes
    • Completion is now tracked per task document (coachingCompletedDocs),
      so finishing an individual task no longer marks the class task done.
@@ -88,15 +95,38 @@
     return 'student_' + uid;
   }
 
-  // Has this student finished the session of ONE task document on ONE date?
-  // New records live in coachingCompletedDocs[date] (an array of task doc ids).
-  // Older records only have coachingCompleted[date] = true, which is treated
-  // as "every task of that day was completed".
-  function _layerDone(sd, dateStr, docId) {
+  // The id a completion is recorded under: the Firestore doc id plus the
+  // task's `rev`. A new `rev` is stamped whenever a task is created (including
+  // re-creating one that was deleted) or its requirements change, so a deleted
+  // or replaced task can never inherit completions that belonged to the old one.
+  function _layerIdOf(docId, doc) {
+    return doc && doc.rev ? docId + '@' + doc.rev : docId;
+  }
+
+  function _baseOf(layerId) {
+    return String(layerId || '').split('@')[0];
+  }
+
+  // Has this student finished the session of ONE task on ONE date?
+  // Completions live in coachingCompletedDocs[date] (array of layer ids).
+  // Past days keep their history across a replaced task (matched by doc id);
+  // today and future days only count the exact task version.
+  // Older records only have coachingCompleted[date] = true; that flag is never
+  // trusted for today or later by a task created after per-task tracking began.
+  function _layerDone(sd, dateStr, layerId, todayStr) {
     sd = sd || {};
+    todayStr = todayStr || _localDateStr();
     const rec = (sd.coachingCompletedDocs || {})[dateStr];
-    if (Array.isArray(rec)) return rec.indexOf(docId) !== -1;
-    return !!(sd.coachingCompleted || {})[dateStr];
+    if (Array.isArray(rec)) {
+      if (rec.indexOf(layerId) !== -1) return true;
+      if (dateStr < todayStr) {
+        const base = _baseOf(layerId);
+        return rec.some(id => _baseOf(id) === base);
+      }
+      return false;
+    }
+    const flat = !!(sd.coachingCompleted || {})[dateStr];
+    return flat && (String(layerId).indexOf('@') === -1 || dateStr < todayStr);
   }
 
   function _resolveSubjectsForDate(doc, dateStr) {
@@ -123,7 +153,7 @@
       (Array.isArray(doc.weeklyDays) && doc.weeklyDays.length > 0 ? 'weekly' : 'once');
 
     if (recurrence === 'once') {
-      const raw = Array.isArray(doc.dates) ? doc.dates : [];
+      const raw = Array.isArray(doc.dates) ? Array.from(new Set(doc.dates)) : [];
       return raw
         .filter(d => {
           if (opts.fromDate && d < opts.fromDate) return false;
@@ -213,7 +243,7 @@
       (Array.isArray(doc.weeklyDays) && doc.weeklyDays.length > 0 ? 'weekly' : 'once');
 
     return Object.assign({}, doc, {
-      _docId:       docId || null,
+      _docId:       docId ? _layerIdOf(docId, doc) : null,
       dates:        allDates,
       pastDates:    pastDates,
       dateSubjects,
@@ -257,6 +287,7 @@
     };
     _lastDocs = _docs;
     _lastIds  = _ids;
+    _startDayWatcher();
 
     // Every document must deliver its FIRST snapshot (or error) before the
     // returned promise resolves. Later snapshots of the same document must
@@ -318,6 +349,8 @@
   let _lastDocs      = null;   // latest raw task docs (for re-resolving when the student profile changes)
   let _lastIds       = null;
   let _lastSig       = null;   // fingerprint of what the exam screen depends on
+  let _dayWatcher    = null;
+  let _watchedDay    = null;
 
   /* ─────────────────────────────────────────────────────── */
   /* Merge every active task doc that applies to the student */
@@ -454,6 +487,25 @@
     if (changed && !AppState.exam && window.Exam && typeof window.Exam.renderSubjectSelection === 'function') {
       window.Exam.renderSubjectSelection().catch(err => console.warn('[tasks] dashboard refresh failed:', err));
     }
+  }
+
+  // The task config is built around "today". When the date rolls over while
+  // the page stays open (or the phone wakes up the next morning), rebuild it so
+  // yesterday's "session complete" lock does not linger.
+  function _startDayWatcher() {
+    _watchedDay = _localDateStr();
+    if (_dayWatcher) return;
+    const check = function () {
+      const now = _localDateStr();
+      if (now !== _watchedDay) {
+        _watchedDay = now;
+        if (_lastDocs) _resolveTask(_lastDocs, _lastIds);
+      }
+    };
+    _dayWatcher = setInterval(check, 30000);
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) check();
+    });
   }
 
   // Re-resolve with the task docs we already have (used after the student's
@@ -628,6 +680,13 @@
           subjects.map(_esc).join(', ') + '</p>'
         : '';
 
+      // More than one task applies that day (for example an individual task
+      // plus the class task): show how far through them the student is.
+      const dayLayers = ((currentTask._layerIds || {})[dateStr]) || [];
+      const dayDoneN  = dayLayers.filter(id => _layerDone(studentData, dateStr, id, todayStr)).length;
+      const multiNote = dayLayers.length > 1 && !isDone && (isToday || isMissed)
+        ? ' · ' + dayDoneN + '/' + dayLayers.length : '';
+
       let bgColor, borderColor, iconColor, iconName, labelText, labelColor;
 
       if (isDone) {
@@ -636,11 +695,11 @@
         labelColor = 'var(--success-text)';
       } else if (isMissed) {
         bgColor = 'var(--danger-bg)'; borderColor = 'var(--danger)';
-        iconColor = 'var(--danger)'; iconName = 'X'; labelText = 'Missed';
+        iconColor = 'var(--danger)'; iconName = 'X'; labelText = 'Missed' + multiNote;
         labelColor = 'var(--danger)';
       } else if (isToday) {
         bgColor = 'var(--warning-bg)'; borderColor = 'var(--warning)';
-        iconColor = 'var(--warning)'; iconName = 'Circle'; labelText = 'Today';
+        iconColor = 'var(--warning)'; iconName = 'Circle'; labelText = 'Today' + multiNote;
         labelColor = 'var(--warning-text)';
       } else if (isFuture) {
         bgColor = 'var(--surface)'; borderColor = 'var(--border)';
@@ -765,6 +824,8 @@
     loadStudentMessages,
     renderTasksHTML,
     refresh,
+    layerDone: _layerDone,
+    layerIdOf: _layerIdOf,
     cancelListeners,
     _localDateStr,
     _classDocId,
