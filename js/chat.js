@@ -483,7 +483,7 @@ function _onOutsideClick(e) {
                data-id="${_esc(msg.id)}"
                style="position:absolute;top:.5rem;right:1.75rem;background:none;border:none;
                       color:var(--warning);cursor:pointer;font-size:.75rem;padding:2px 4px;"
-               title="Pin">📌</button>`
+               title="Pin"><i class="ph ph-push-pin"></i></button>`
     : '';
 
   const replyBtn = `

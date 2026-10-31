@@ -461,7 +461,7 @@ function _injectStyles() {
         if (snap.empty) {
           list.innerHTML = `
             <div style="text-align:center;padding:2.5rem 1.5rem;">
-              <div style="font-size:2rem;margin-bottom:.75rem;">💬</div>
+              <div style="font-size:2rem;margin-bottom:.75rem;color:var(--text-3);"><i class="ph ph-chats-circle"></i></div>
               <p style="font-size:.9375rem;font-weight:600;color:var(--text-1);margin-bottom:.375rem;">
                 No group chats for you yet
               </p>
@@ -518,7 +518,7 @@ function _injectStyles() {
         } else {
           list.innerHTML = `
             <div style="text-align:center;padding:2.5rem 1.5rem;">
-              <div style="font-size:2rem;margin-bottom:.75rem;">💬</div>
+              <div style="font-size:2rem;margin-bottom:.75rem;color:var(--text-3);"><i class="ph ph-chats-circle"></i></div>
               <p style="font-size:.9375rem;font-weight:600;color:var(--text-1);margin-bottom:.375rem;">
                 No group chats yet
               </p>

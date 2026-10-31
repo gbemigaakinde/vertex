@@ -672,7 +672,7 @@ const WS_WORDLIST = new Set([
 
 const CHESS_PIECE_GLYPH = {
   wK:'♔', wQ:'♕', wR:'♖', wB:'♗', wN:'♘', wP:'♙',
-  bK:'♚', bQ:'♛', bR:'♜', bB:'♝', bN:'♞', bP:'♟',
+  bK:'♚', bQ:'♛', bR:'♜', bB:'♝', bN:'♞', bP:'♟\uFE0E',
 };
 
 function _chessInitialBoard() {
@@ -944,7 +944,7 @@ async function _showChessSetup() {
 
   _showModal(`
     <div style="text-align:center;margin-bottom:1.25rem;">
-      <div style="margin-bottom:.5rem;font-size:2.5rem;">♟️</div>
+      <div style="margin-bottom:.5rem;font-size:2.5rem;color:var(--accent);"><i class="ph ph-castle-turret"></i></div>
       <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">Chess</h2>
       <p style="font-size:.875rem;color:var(--text-3);margin-top:.375rem;line-height:1.6;">
         Full rules: castling, en passant, promotion, check &amp; checkmate detection.
@@ -964,7 +964,7 @@ async function _showChessSetup() {
       </select>
     </div>
     <button onclick="Game._sendChessChallenge()" class="btn btn-lg w-full" style="background:#1e293b;color:#fff;">
-      ♟️ Send Chess Challenge
+      <i class="ph ph-castle-turret"></i> Send Chess Challenge
     </button>
     <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full" style="margin-top:.5rem;">Cancel</button>
   `);
@@ -999,13 +999,13 @@ async function _sendChessChallenge() {
     const total = asWhite.size + asBlack.size;
     if (total >= 2) {
       window.UI.toast(`You already have ${total} ongoing Chess game${total > 1 ? 's' : ''} with ${targetName}. Finish them before starting another.`, 'warning', 5000);
-      if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = '♟️ Send Chess Challenge'; }
+      if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = '<i class="ph ph-castle-turret"></i> Send Chess Challenge'; }
       return;
     }
   } catch (e) {
     console.error('[chess] _sendChessChallenge limit check error:', e);
     window.UI.toast('Could not verify existing games. Please try again.', 'error');
-    if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = '♟️ Send Chess Challenge'; }
+    if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = '<i class="ph ph-castle-turret"></i> Send Chess Challenge'; }
     return;
   }
 
@@ -1044,7 +1044,7 @@ async function _sendChessChallenge() {
   } catch (e) {
     console.error('[chess] _sendChessChallenge error:', e);
     window.UI.toast('Could not send challenge. Please try again.', 'error');
-    if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = '♟️ Send Chess Challenge'; }
+    if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = '<i class="ph ph-castle-turret"></i> Send Chess Challenge'; }
   }
 }
 
@@ -1100,7 +1100,7 @@ async function _showChessPending() {
     <div style="background:var(--bg-base);border:1px solid var(--border);border-radius:8px;
                 padding:.75rem 1rem;margin-bottom:.5rem;">
       <p style="font-size:.9375rem;font-weight:700;color:var(--text-1);">
-        ♟️ ${_esc(fromName)} challenged you to Chess! <span style="color:var(--text-3);font-weight:500;">(you play ${myColor})</span>
+        <i class="ph ph-castle-turret"></i> ${_esc(fromName)} challenged you to Chess! <span style="color:var(--text-3);font-weight:500;">(you play ${myColor})</span>
       </p>
       <div style="display:flex;gap:.375rem;margin-top:.5rem;">
         <button onclick="Game._acceptChess('${_esc(g.id)}')" class="btn" style="flex:1;font-size:.8125rem;">Accept &amp; Play</button>
@@ -1118,7 +1118,7 @@ async function _showChessPending() {
                 border:1.5px solid ${isMyTurn ? 'var(--accent-border)' : 'var(--border)'};
                 border-radius:8px;padding:.75rem 1rem;margin-bottom:.5rem;">
       <p style="font-size:.9375rem;font-weight:700;color:${isMyTurn ? 'var(--accent-text)' : 'var(--text-2)'};">
-        ${isMyTurn ? '⚡ Your turn' : '⏳ Their turn'} vs ${_esc(oppName)}
+        ${isMyTurn ? '<i class="ph ph-lightning"></i> Your turn' : '<i class="ph ph-hourglass-medium"></i> Their turn'} vs ${_esc(oppName)}
         <span style="font-weight:500;color:var(--text-3);">(you: ${iAmWhite?'White':'Black'})</span>
       </p>
       <button onclick="Game._openChessGame('${_esc(g.id)}')" class="btn w-full"
@@ -1130,7 +1130,7 @@ async function _showChessPending() {
 
   _showModal(`
     <div style="margin-bottom:1rem;">
-      <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">♟️ Chess Games</h2>
+      <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);"><i class="ph ph-castle-turret"></i> Chess Games</h2>
     </div>
     ${pendingHtml}
     ${activeHtml}
@@ -1247,19 +1247,19 @@ async function _chessRenderGame(gameId, data) {
   const turnBanner = finished
     ? `<div style="text-align:center;padding:.625rem 1rem;border-radius:8px;margin-bottom:.75rem;
                    background:var(--success-subtle);border:1px solid var(--success-border);">
-         <span style="font-size:.9375rem;font-weight:700;color:var(--success);">🏁 Game Over</span>
+         <span style="font-size:.9375rem;font-weight:700;color:var(--success);"><i class="ph ph-flag-checkered"></i> Game Over</span>
        </div>`
     : isMyTurn
     ? `<div style="text-align:center;padding:.625rem 1rem;border-radius:8px;margin-bottom:.75rem;
                    background:var(--accent-subtle);border:1px solid var(--accent-border);">
          <span style="font-size:.875rem;font-weight:700;color:var(--accent-text);">
-           ⚡ Your turn${status === 'check' ? ' — you are in CHECK!' : ''}
+           <i class="ph ph-lightning"></i> Your turn${status === 'check' ? ' — you are in CHECK!' : ''}
          </span>
        </div>`
     : `<div style="text-align:center;padding:.625rem 1rem;border-radius:8px;margin-bottom:.75rem;
                    background:var(--bg-subtle);border:1px solid var(--border);">
          <span style="font-size:.875rem;color:var(--text-3);">
-           ⏳ Waiting for ${_esc(oppName)}${status === 'check' ? ' (they are in check)' : ''}…
+           <i class="ph ph-hourglass-medium"></i> Waiting for ${_esc(oppName)}${status === 'check' ? ' (they are in check)' : ''}…
          </span>
        </div>`;
 
@@ -1276,7 +1276,7 @@ async function _chessRenderGame(gameId, data) {
     if (data.result === 'draw') { title = "It's a Draw!"; color = 'var(--warning)'; }
     else {
       const iWon = (data.result === 'white' && iAmWhite) || (data.result === 'black' && !iAmWhite);
-      title = iWon ? '🏆 You Win!' : 'You Lost.';
+      title = iWon ? '<i class="ph ph-trophy"></i> You Win!' : 'You Lost.';
       color = iWon ? 'var(--success)' : 'var(--danger)';
     }
     const reasonText = { checkmate: 'Checkmate', stalemate: 'Stalemate', resign: 'Resignation', repetition: 'Draw by Threefold Repetition' }[data.resultReason] || '';
@@ -1311,7 +1311,7 @@ async function _chessRenderGame(gameId, data) {
       ${!finished ? `
       <div style="text-align:center;margin-bottom:.75rem;">
         <button onclick="Game._chessResign('${_esc(gameId)}')" class="btn bg-gray-500" style="font-size:.8125rem;">
-          🏳️ Resign
+          <i class="ph ph-flag"></i> Resign
         </button>
       </div>` : ''}
 
@@ -1676,7 +1676,7 @@ async function _loadChessHistory() {
                         padding:.75rem 1rem;border-bottom:1px solid var(--border);">
               <div>
                 <div style="font-size:.875rem;font-weight:700;color:var(--text-1);">
-                  ♟️ vs ${_esc(oppName)} <span style="font-weight:500;color:var(--text-3);">(you: ${iAmWhite?'White':'Black'})</span>
+                  <i class="ph ph-castle-turret"></i> vs ${_esc(oppName)} <span style="font-weight:500;color:var(--text-3);">(you: ${iAmWhite?'White':'Black'})</span>
                 </div>
                 <div style="font-size:.75rem;color:var(--text-3);">
                   ${_esc(when)} &middot; ${moveCount} move${moveCount !== 1 ? 's' : ''}${reasonText ? ' &middot; ' + _esc(reasonText) : ''}
@@ -1823,7 +1823,7 @@ function _chessRenderReview() {
   window.UI.mount(`
     <div class="max-w-lg mx-auto animate-fadeIn" style="padding-bottom:2rem;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.625rem;">
-        <h2 style="font-size:1.0625rem;font-weight:700;color:var(--text-1);">♟️ Game Review</h2>
+        <h2 style="font-size:1.0625rem;font-weight:700;color:var(--text-1);"><i class="ph ph-castle-turret"></i> Game Review</h2>
         <button onclick="Game._chessCloseReview()" class="btn bg-gray-500" style="display:inline-flex;align-items:center;gap:.3rem;">
           ${_icon('arrowLeft', 14)} Back to History
         </button>
@@ -1842,10 +1842,10 @@ function _chessRenderReview() {
       </div>
 
       <div style="display:flex;gap:.375rem;justify-content:center;margin-bottom:.75rem;">
-        <button onclick="Game._chessReviewGoTo(0)" class="btn bg-gray-500" style="font-size:.75rem;">⏮ Start</button>
-        <button onclick="Game._chessReviewPrev()" class="btn bg-gray-500" style="font-size:.75rem;">◀ Prev</button>
-        <button onclick="Game._chessReviewNext()" class="btn bg-gray-500" style="font-size:.75rem;">Next ▶</button>
-        <button onclick="Game._chessReviewGoTo(${rv.frames.length - 1})" class="btn bg-gray-500" style="font-size:.75rem;">End ⏭</button>
+        <button onclick="Game._chessReviewGoTo(0)" class="btn bg-gray-500" style="font-size:.75rem;"><i class="ph ph-skip-back"></i> Start</button>
+        <button onclick="Game._chessReviewPrev()" class="btn bg-gray-500" style="font-size:.75rem;"><i class="ph ph-caret-left"></i> Prev</button>
+        <button onclick="Game._chessReviewNext()" class="btn bg-gray-500" style="font-size:.75rem;">Next <i class="ph ph-caret-right"></i></button>
+        <button onclick="Game._chessReviewGoTo(${rv.frames.length - 1})" class="btn bg-gray-500" style="font-size:.75rem;">End <i class="ph ph-skip-forward"></i></button>
       </div>
 
       <div class="glass-dark" style="padding:.75rem;border-radius:10px;max-height:260px;overflow-y:auto;">
@@ -1901,7 +1901,7 @@ function _showChessChallengePopup(gameId, data) {
     <div style="display:flex;align-items:flex-start;gap:.625rem;">
       <div style="width:38px;height:38px;border-radius:50%;background:#e2e8f0;
                   border:2px solid #94a3b8;display:flex;align-items:center;
-                  justify-content:center;flex-shrink:0;font-size:1.25rem;">♟️</div>
+                  justify-content:center;flex-shrink:0;font-size:1.25rem;"><i class="ph ph-castle-turret"></i></div>
       <div style="flex:1;min-width:0;">
         <p style="font-size:.8125rem;font-weight:800;color:var(--text-1);margin:0 0 2px;">Chess Challenge!</p>
         <p style="font-size:.75rem;color:var(--text-2);margin:0 0 3px;line-height:1.4;">
@@ -1970,26 +1970,26 @@ function _showBadgeDetails(badgeId) {
     }
 
     const rarityMap = {
-      'max_level':       { label: '⭐ Legendary', color: '#f43f5e' },
-      'sudden_death_50': { label: '⭐ Legendary', color: '#f43f5e' },
-      'immortal':        { label: '⭐ Legendary', color: '#f43f5e' },
-      'titan':           { label: '⭐ Legendary', color: '#f43f5e' },
-      'absolute':        { label: '⭐ Legendary', color: '#f43f5e' },
-      'rank_15':         { label: '⭐⭐ Epic',    color: '#8b5cf6' },
-      'rank_10':         { label: '⭐⭐ Epic',    color: '#8b5cf6' },
-      'xp_100000':       { label: '⭐⭐ Epic',    color: '#8b5cf6' },
-      'mythic_scholar':  { label: '⭐⭐ Epic',    color: '#8b5cf6' },
-      'hall_of_fame':    { label: '⭐⭐ Epic',    color: '#8b5cf6' },
-      'perfect_quiz':    { label: '⭐⭐⭐ Rare',  color: '#06b6d4' },
-      'perfect_scramble':{ label: '⭐⭐⭐ Rare',  color: '#06b6d4' },
-      'perfect_blitz':   { label: '⭐⭐⭐ Rare',  color: '#06b6d4' },
-      'perfect_tf':      { label: '⭐⭐⭐ Rare',  color: '#06b6d4' },
-      'math_perfect':    { label: '⭐⭐⭐ Rare',  color: '#06b6d4' },
-      'streak_20':       { label: '⭐⭐⭐ Rare',  color: '#06b6d4' },
-      'streak_10':       { label: '⭐⭐⭐ Rare',  color: '#06b6d4' },
-      'challenge_10':    { label: '⭐⭐⭐ Rare',  color: '#06b6d4' },
-      'sudden_death_30': { label: '⭐⭐⭐ Rare',  color: '#06b6d4' },
-      'sudden_death_25': { label: '⭐⭐⭐ Rare',  color: '#06b6d4' },
+      'max_level':       { label: '<i class="ph ph-star"></i> Legendary', color: '#f43f5e' },
+      'sudden_death_50': { label: '<i class="ph ph-star"></i> Legendary', color: '#f43f5e' },
+      'immortal':        { label: '<i class="ph ph-star"></i> Legendary', color: '#f43f5e' },
+      'titan':           { label: '<i class="ph ph-star"></i> Legendary', color: '#f43f5e' },
+      'absolute':        { label: '<i class="ph ph-star"></i> Legendary', color: '#f43f5e' },
+      'rank_15':         { label: '<i class="ph ph-star"></i><i class="ph ph-star"></i> Epic',    color: '#8b5cf6' },
+      'rank_10':         { label: '<i class="ph ph-star"></i><i class="ph ph-star"></i> Epic',    color: '#8b5cf6' },
+      'xp_100000':       { label: '<i class="ph ph-star"></i><i class="ph ph-star"></i> Epic',    color: '#8b5cf6' },
+      'mythic_scholar':  { label: '<i class="ph ph-star"></i><i class="ph ph-star"></i> Epic',    color: '#8b5cf6' },
+      'hall_of_fame':    { label: '<i class="ph ph-star"></i><i class="ph ph-star"></i> Epic',    color: '#8b5cf6' },
+      'perfect_quiz':    { label: '<i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i> Rare',  color: '#06b6d4' },
+      'perfect_scramble':{ label: '<i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i> Rare',  color: '#06b6d4' },
+      'perfect_blitz':   { label: '<i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i> Rare',  color: '#06b6d4' },
+      'perfect_tf':      { label: '<i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i> Rare',  color: '#06b6d4' },
+      'math_perfect':    { label: '<i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i> Rare',  color: '#06b6d4' },
+      'streak_20':       { label: '<i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i> Rare',  color: '#06b6d4' },
+      'streak_10':       { label: '<i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i> Rare',  color: '#06b6d4' },
+      'challenge_10':    { label: '<i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i> Rare',  color: '#06b6d4' },
+      'sudden_death_30': { label: '<i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i> Rare',  color: '#06b6d4' },
+      'sudden_death_25': { label: '<i class="ph ph-star"></i><i class="ph ph-star"></i><i class="ph ph-star"></i> Rare',  color: '#06b6d4' },
     };
 
     const rarity = rarityMap[badgeId] || { label: 'Common', color: '#22c55e' };
@@ -2386,7 +2386,7 @@ async function _showScrabbleSetup() {
 
   _showModal(`
     <div style="text-align:center;margin-bottom:1.25rem;">
-      <div style="margin-bottom:.5rem;font-size:2.5rem;">🔤</div>
+      <div style="margin-bottom:.5rem;font-size:2.5rem;color:var(--accent);"><i class="ph ph-text-aa"></i></div>
       <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">Word Scrabble</h2>
       <p style="font-size:.875rem;color:var(--text-3);margin-top:.375rem;line-height:1.6;">
         Classic Scrabble against a classmate. Place words on the 15×15 board,
@@ -2415,7 +2415,7 @@ async function _showScrabbleSetup() {
 
     <button onclick="Game._sendScrabbleChallenge()" class="btn btn-lg w-full"
             style="background:linear-gradient(135deg,#7c3aed,#4f46e5);color:#fff;">
-      🔤 Send Scrabble Challenge
+      <i class="ph ph-text-aa"></i> Send Scrabble Challenge
     </button>
     <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full" style="margin-top:.5rem;">Cancel</button>
   `);
@@ -2449,13 +2449,13 @@ async function _sendScrabbleChallenge() {
     const total = as1.size + as2.size;
     if (total >= 2) {
       window.UI.toast(`You already have ${total} ongoing Scrabble game${total > 1 ? 's' : ''} with ${targetName}. Finish them before starting another.`, 'warning', 5000);
-      if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = '🔤 Send Scrabble Challenge'; }
+      if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = '<i class="ph ph-text-aa"></i> Send Scrabble Challenge'; }
       return;
     }
   } catch (e) {
     console.error('[scrabble] _sendScrabbleChallenge limit check error:', e);
     window.UI.toast('Could not verify existing games. Please try again.', 'error');
-    if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = '🔤 Send Scrabble Challenge'; }
+    if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = '<i class="ph ph-text-aa"></i> Send Scrabble Challenge'; }
     return;
   }
 
@@ -2495,7 +2495,7 @@ async function _sendScrabbleChallenge() {
   } catch (e) {
     console.error('[scrabble] _sendScrabbleChallenge error:', e.code, e.message, e);
     window.UI.toast('Could not send challenge. Please try again.', 'error');
-    if (sendBtn) { sendBtn.disabled = false; sendBtn.textContent = '🔤 Send Scrabble Challenge'; }
+    if (sendBtn) { sendBtn.disabled = false; sendBtn.innerHTML = '<i class="ph ph-text-aa"></i> Send Scrabble Challenge'; }
   }
 }
 
@@ -2541,7 +2541,7 @@ async function _showScrabblePending() {
     <div style="background:var(--bg-base);border:1px solid var(--border);border-radius:8px;
                 padding:.75rem 1rem;margin-bottom:.5rem;">
       <p style="font-size:.9375rem;font-weight:700;color:var(--text-1);">
-        🔤 ${_esc(g.player1Name)} challenged you to Scrabble!
+        <i class="ph ph-text-aa"></i> ${_esc(g.player1Name)} challenged you to Scrabble!
       </p>
       <div style="display:flex;gap:.375rem;margin-top:.5rem;">
         <button onclick="Game._acceptScrabble('${_esc(g.id)}')"
@@ -2564,7 +2564,7 @@ async function _showScrabblePending() {
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.375rem;">
         <p style="font-size:.9375rem;font-weight:700;
                   color:${isMyTurn ? 'var(--accent-text)' : 'var(--text-2)'};">
-          ${isMyTurn ? '⚡ Your turn' : '⏳ Their turn'} vs ${_esc(oppName)}
+          ${isMyTurn ? '<i class="ph ph-lightning"></i> Your turn' : '<i class="ph ph-hourglass-medium"></i> Their turn'} vs ${_esc(oppName)}
         </p>
         <span style="font-size:.8125rem;font-weight:700;color:var(--text-3);">
           ${myScore} – ${oppScore}
@@ -2586,7 +2586,7 @@ async function _showScrabblePending() {
   _showModal(`
     <div style="margin-bottom:1rem;">
       <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">
-        🔤 Scrabble Games
+        <i class="ph ph-text-aa"></i> Scrabble Games
       </h2>
     </div>
     ${pendingHtml}
@@ -2766,17 +2766,17 @@ function _wsRenderGame(gameId, data) {
   const turnBanner = finished
     ? `<div style="text-align:center;padding:.625rem 1rem;border-radius:8px;margin-bottom:.75rem;
                    background:var(--success-subtle);border:1px solid var(--success-border);">
-         <span style="font-size:.9375rem;font-weight:700;color:var(--success);">🏁 Game Over!</span>
+         <span style="font-size:.9375rem;font-weight:700;color:var(--success);"><i class="ph ph-flag-checkered"></i> Game Over!</span>
        </div>`
     : isMyTurn
     ? `<div style="text-align:center;padding:.625rem 1rem;border-radius:8px;margin-bottom:.75rem;
                    background:var(--accent-subtle);border:1px solid var(--accent-border);
                    animation:gameChallengePopIn .3s ease both;">
-         <span style="font-size:.875rem;font-weight:700;color:var(--accent-text);">⚡ Your turn — place a word!</span>
+         <span style="font-size:.875rem;font-weight:700;color:var(--accent-text);"><i class="ph ph-lightning"></i> Your turn — place a word!</span>
        </div>`
     : `<div style="text-align:center;padding:.625rem 1rem;border-radius:8px;margin-bottom:.75rem;
                    background:var(--bg-subtle);border:1px solid var(--border);">
-         <span style="font-size:.875rem;color:var(--text-3);">⏳ Waiting for ${_esc(oppName)}…</span>
+         <span style="font-size:.875rem;color:var(--text-3);"><i class="ph ph-hourglass-medium"></i> Waiting for ${_esc(oppName)}…</span>
        </div>`;
       
       // Cache for lightweight re-renders
@@ -2854,7 +2854,7 @@ function _wsRenderGame(gameId, data) {
         </button>
         <button onclick="Game._wsPass('${_esc(gameId)}')"
                 class="btn bg-gray-500" style="display:flex;align-items:center;gap:.375rem;">
-          ⏭ Pass
+          <i class="ph ph-skip-forward"></i> Pass
         </button>
       </div>
       ` : ''}
@@ -2863,7 +2863,7 @@ function _wsRenderGame(gameId, data) {
       <!-- Final result -->
       <div class="glass" style="padding:1.25rem;border-radius:10px;text-align:center;margin-bottom:.75rem;">
         ${myScore > oppScore
-          ? `<p style="font-size:1.125rem;font-weight:800;color:var(--success);">🏆 You Win!</p>`
+          ? `<p style="font-size:1.125rem;font-weight:800;color:var(--success);"><i class="ph ph-trophy"></i> You Win!</p>`
           : myScore < oppScore
           ? `<p style="font-size:1.125rem;font-weight:800;color:var(--danger);">You Lost. Better luck next time!</p>`
           : `<p style="font-size:1.125rem;font-weight:800;color:var(--warning);">It's a Tie!</p>`}
@@ -3070,7 +3070,7 @@ function _wsUpdatePreview(board) {
   const result = _wsValidateMove(board, _wsState.placed, _wsIsFirstMove(board));
   if (result.valid) {
     const wordList = result.words.map(w => w.word).join(', ');
-    const bingo    = _wsState.placed.length === 7 ? ' ⚡ BINGO +50!' : '';
+    const bingo    = _wsState.placed.length === 7 ? ' <i class="ph ph-lightning"></i> BINGO +50!' : '';
     el.innerHTML   = `<span style="color:var(--success);">✓ ${wordList}</span> <span style="color:var(--accent);font-weight:800;">+${result.totalScore} pts${bingo}</span>`;
   } else {
     el.innerHTML = `<span style="color:var(--danger);font-size:.8125rem;">${_esc(result.error)}</span>`;
@@ -3180,7 +3180,7 @@ async function _wsConfirmPlay(gameId) {
           : finalScore2 > finalScore1
             ? data.player2Name
             : null;
-        window.UI.toast(winner ? `Game over! ${winner} wins! 🏆` : "Game over! It's a tie!", 'success', 6000);
+        window.UI.toast(winner ? `Game over! ${winner} wins! <i class="ph ph-trophy"></i>` : "Game over! It's a tie!", 'success', 6000);
         const win    = (isP1 && finalScore1 > finalScore2) || (!isP1 && finalScore2 > finalScore1);
         const xpGain = Math.min(200, Math.max(20, myScore));
         await _awardXP(xpGain, 'wordScrabble', { win });
@@ -4020,7 +4020,7 @@ function _showChallengeResultPopup(challengeId, data, myUid) {
   const tied       = data.finalTied;
   const win        = myScore > oppScore;
 
-  const resultIcon  = win ? '🏆' : tied ? '🤝' : '😔';
+  const resultIcon  = win ? '<i class="ph ph-trophy"></i>' : tied ? '<i class="ph ph-handshake"></i>' : '<i class="ph ph-smiley-sad"></i>';
   const resultText  = win ? 'You Won!' : tied ? "It's a Tie!" : 'You Lost!';
   const borderColor = win ? 'var(--success)' : tied ? 'var(--warning)' : 'var(--danger)';
   const bgColor     = win ? '#f0fdf4' : tied ? '#fffbeb' : '#fff1f2';
@@ -4309,7 +4309,7 @@ function _showScrabbleChallengePopup(gameId, data) {
       <div style="width:38px;height:38px;border-radius:50%;background:#ede9fe;
                   border:2px solid #c4b5fd;display:flex;align-items:center;
                   justify-content:center;flex-shrink:0;font-size:1.25rem;">
-        🔤
+        <i class="ph ph-text-aa"></i>
       </div>
       <div style="flex:1;min-width:0;">
         <p style="font-size:.8125rem;font-weight:800;color:var(--text-1);margin:0 0 2px;">
@@ -4486,7 +4486,7 @@ function _dismissScrabblePopup(gameId) {
     const scrabbleNotif = pendingScrabble.length > 0 ? `
   <div class="game-challenge-alert" onclick="Game._showScrabblePending()"
        style="border-color:#7c3aed;background:linear-gradient(135deg,#ede9fe,#ddd6fe);">
-    <span class="game-challenge-alert__icon">🔤</span>
+    <span class="game-challenge-alert__icon"><i class="ph ph-text-aa"></i></span>
     <span style="color:#5b21b6;">${pendingScrabble.length} pending Scrabble challenge${pendingScrabble.length > 1 ? 's' : ''} — tap to view.</span>
     <span class="game-challenge-alert__arrow">${_icon('arrowRight', 16)}</span>
   </div>` : '';
@@ -4501,10 +4501,10 @@ function _dismissScrabblePopup(gameId) {
                 ? 'linear-gradient(135deg,#ede9fe,#ddd6fe)'
                 : 'linear-gradient(135deg,#f3f4f6,#e5e7eb)'
               };">
-    <span class="game-challenge-alert__icon">🔤</span>
+    <span class="game-challenge-alert__icon"><i class="ph ph-text-aa"></i></span>
     <span style="color:${myTurnScrabble.length > 0 ? '#5b21b6' : '#374151'};">
       ${myTurnScrabble.length > 0
-        ? `⚡ ${myTurnScrabble.length} Scrabble game${myTurnScrabble.length > 1 ? 's' : ''} waiting for YOUR move!`
+        ? `<i class="ph ph-lightning"></i> ${myTurnScrabble.length} Scrabble game${myTurnScrabble.length > 1 ? 's' : ''} waiting for YOUR move!`
         : `${theirTurnScrabble.length} Scrabble game${theirTurnScrabble.length > 1 ? 's' : ''} — waiting for opponent.`
       }
     </span>
@@ -4514,7 +4514,7 @@ function _dismissScrabblePopup(gameId) {
     const chessNotif = pendingChess.length > 0 ? `
   <div class="game-challenge-alert" onclick="Game._showChessPending()"
        style="border-color:#1e293b;background:linear-gradient(135deg,#e2e8f0,#cbd5e1);">
-    <span class="game-challenge-alert__icon">♟️</span>
+    <span class="game-challenge-alert__icon"><i class="ph ph-castle-turret"></i></span>
     <span style="color:#1e293b;">${pendingChess.length} pending Chess challenge${pendingChess.length > 1 ? 's' : ''} — tap to view.</span>
     <span class="game-challenge-alert__arrow">${_icon('arrowRight', 16)}</span>
   </div>` : '';
@@ -4529,10 +4529,10 @@ function _dismissScrabblePopup(gameId) {
                 ? 'linear-gradient(135deg,#e2e8f0,#cbd5e1)'
                 : 'linear-gradient(135deg,#f3f4f6,#e5e7eb)'
               };">
-    <span class="game-challenge-alert__icon">♟️</span>
+    <span class="game-challenge-alert__icon"><i class="ph ph-castle-turret"></i></span>
     <span style="color:${myTurnChess.length > 0 ? '#1e293b' : '#374151'};">
       ${myTurnChess.length > 0
-        ? `⚡ ${myTurnChess.length} Chess game${myTurnChess.length > 1 ? 's' : ''} waiting for YOUR move!`
+        ? `<i class="ph ph-lightning"></i> ${myTurnChess.length} Chess game${myTurnChess.length > 1 ? 's' : ''} waiting for YOUR move!`
         : `${theirTurnChess.length} Chess game${theirTurnChess.length > 1 ? 's' : ''} — waiting for opponent.`
       }
     </span>
@@ -4578,7 +4578,7 @@ function _dismissScrabblePopup(gameId) {
            onclick="Game._selectGame('knowledgeRunner')"
            style="${_krLimited ? 'opacity:.7;cursor:pointer;' : ''}">
         <div class="game-card__icon">
-          ${_krLimited ? '🔒' : _icon('bolt', 32, { color: '#06b6d4' })}
+          ${_krLimited ? '<i class="ph ph-lock" style="font-size:32px;"></i>' : _icon('bolt', 32, { color: '#06b6d4' })}
         </div>
         <div class="game-card__title">
           Knowledge Surfer
@@ -4677,7 +4677,7 @@ function _dismissScrabblePopup(gameId) {
           </div>` },
       { id: 'wordScrabble', html: `
           <div class="game-card game-card--scrabble" onclick="Game._selectGame('wordScrabble')">
-            <div class="game-card__icon">🔤</div>
+            <div class="game-card__icon"><i class="ph ph-text-aa" style="font-size:32px;"></i></div>
             <div class="game-card__title">Word Scrabble</div>
             <div class="game-card__desc">
               Classic Scrabble vs a classmate. Place words on the 15×15 board,
@@ -4692,7 +4692,7 @@ function _dismissScrabblePopup(gameId) {
       { id: 'knowledgeRunner', html: knowledgeSurferCard },
       { id: 'chess', html: `
           <div class="game-card game-card--chess" onclick="Game._selectGame('chess')">
-            <div class="game-card__icon">♟️</div>
+            <div class="game-card__icon"><i class="ph ph-castle-turret" style="font-size:32px;"></i></div>
             <div class="game-card__title">Chess</div>
             <div class="game-card__desc">
               Full-rules chess vs a classmate — castling, en passant, promotion, check &amp; checkmate detection. Play at your own pace.
@@ -5730,7 +5730,7 @@ function _buildWordPoolForStudent() {
                       background:rgba(124,58,237,0.12);border:1px solid rgba(124,58,237,0.3);
                       border-radius:99px;padding:.3rem .875rem;margin-bottom:1rem;">
             <span style="font-size:.6875rem;font-weight:800;text-transform:uppercase;
-                         letter-spacing:.08em;color:#a78bfa;">💡 Hint</span>
+                         letter-spacing:.08em;color:#a78bfa;"><i class="ph ph-lightbulb"></i> Hint</span>
             <span style="width:1px;height:10px;background:rgba(124,58,237,0.3);"></span>
             <span style="font-size:.8125rem;font-weight:500;color:var(--text-2);">
               ${_esc(entry.hint || 'Unscramble the word')}
@@ -7321,7 +7321,7 @@ function _buildWordPoolForStudent() {
               })}
             </div>
             <p style="font-size:1rem;font-weight:800;color:var(--text-1);margin:.25rem 0;">
-              ${win ? '🏆 You Won!' : tied ? "🤝 It's a Tie!" : '😔 You Lost!'}
+              ${win ? '<i class="ph ph-trophy"></i> You Won!' : tied ? '<i class="ph ph-handshake"></i> It\'s a Tie!' : '<i class="ph ph-smiley-sad"></i> You Lost!'}
             </p>
             <p style="font-size:.875rem;color:var(--text-2);margin-top:.375rem;">
               You: ${myScore}/${total} (${myPct}%) vs ${_esc(opponentName)}: ${oppScore}/${total} (${oppPct}%)
@@ -7471,7 +7471,7 @@ function _closeWatchModal(challengeId) {
             <button ${playAgainAttrib} class="btn" style="display:inline-flex;align-items:center;gap:.3rem;">${_icon('play', 15)} Play Again</button>
             <button onclick="Game.openLeaderboard()" class="btn bg-gray-500" style="display:inline-flex;align-items:center;gap:.3rem;">${_icon('trophy', 15)} Leaderboard</button>
             <button onclick="Game._showScrabblePending()" class="btn bg-gray-500" style="display:flex;align-items:center;gap:.375rem;">
-            🔤 Scrabble Games
+            <i class="ph ph-text-aa"></i> Scrabble Games
           </button>
           </div>
         </div>
@@ -7538,7 +7538,7 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
     // ── BLOCKED: show a locked modal with live countdown ──────
     _showModal(`
       <div style="text-align:center;margin-bottom:1.25rem;">
-        <div style="margin-bottom:.5rem;font-size:2.5rem;">🔒</div>
+        <div style="margin-bottom:.5rem;font-size:2.5rem;color:var(--text-3);"><i class="ph ph-lock"></i></div>
         <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">Knowledge Surfer — Taking a Break</h2>
         <p style="font-size:.875rem;color:var(--text-3);margin-top:.375rem;line-height:1.6;">
           You've played <strong>${KR_MAX_PLAYS} times</strong> in the last 8 hours.
@@ -7582,7 +7582,7 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
   // ── NOT LIMITED: show normal setup ────────────────────────────
   _showModal(`
     <div style="text-align:center;margin-bottom:1.25rem;">
-      <div style="margin-bottom:.5rem;font-size:2.5rem;">🏄</div>
+      <div style="margin-bottom:.5rem;font-size:2.5rem;color:var(--accent);"><i class="ph ph-person-simple-run"></i></div>
       <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">Knowledge Surfer</h2>
       <p style="font-size:.875rem;color:var(--text-3);margin-top:.375rem;">
         Run through 3 lanes! Steer into the gold coin lane. Dodge trains & barriers. 3 lives per run.
@@ -7591,15 +7591,15 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
     <div style="margin-bottom:1rem;padding:.75rem 1rem;background:var(--accent-subtle);border:1px solid var(--accent-border);border-radius:8px;text-align:left;font-size:.8125rem;color:var(--text-2);">
       <strong style="display:block;margin-bottom:.375rem;">Controls:</strong>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:.375rem .75rem;line-height:1.8;">
-        <span>⬅️ / ➡️ Arrow</span><span>Change lane</span>
-        <span>⬆️ Swipe Up / Space</span><span>Jump</span>
-        <span>⬇️ Swipe Down</span><span>Roll / Slide</span>
-        <span>📱 Swipe left/right</span><span>Change lane</span>
+        <span><i class="ph ph-arrow-left"></i> / <i class="ph ph-arrow-right"></i> Arrow</span><span>Change lane</span>
+        <span><i class="ph ph-arrow-up"></i> Swipe Up / Space</span><span>Jump</span>
+        <span><i class="ph ph-arrow-down"></i> Swipe Down</span><span>Roll / Slide</span>
+        <span><i class="ph ph-device-mobile"></i> Swipe left/right</span><span>Change lane</span>
         <span>P key</span><span>Pause / Resume</span>
       </div>
       <div style="margin-top:.5rem;padding:.375rem .5rem;background:var(--bg-subtle);border-radius:6px;font-size:.75rem;color:var(--text-3);">
-        🟡 Gold coins = safe lane &mdash; steer into them!<br>
-        🚂 Trains / barriers = danger &mdash; dodge, jump over, or roll under them!
+        <i class="ph ph-coins" style="color:#f59e0b;"></i> Gold coins = safe lane &mdash; steer into them!<br>
+        <i class="ph ph-train" style="color:#ef4444;"></i> Trains / barriers = danger &mdash; dodge, jump over, or roll under them!
       </div>
     </div>
 
@@ -7621,7 +7621,7 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
 
     <button onclick="Game._startKnowledgeRunner()" class="btn btn-lg w-full"
             style="background:linear-gradient(135deg,#f59e0b,#ef4444);color:#fff;font-weight:800;font-size:1rem;">
-      🏄 Start Surfing!
+      <i class="ph ph-person-simple-run"></i> Start Surfing!
     </button>
     <button onclick="Game._closeModal()" class="btn bg-gray-500 w-full" style="margin-top:.5rem;">Cancel</button>
   `);
@@ -7689,7 +7689,7 @@ const KR_INSPECTOR_START = KR_CANVAS_H + 120;  // inspector starts well below
         </div>
 
         <div style="text-align:center;margin-top:.625rem;display:flex;gap:.5rem;justify-content:center;">
-          <button id="krPauseBtn" onclick="Game._krTogglePause()" class="btn bg-gray-500" style="font-size:.8125rem;">⏸ Pause</button>
+          <button id="krPauseBtn" onclick="Game._krTogglePause()" class="btn bg-gray-500" style="font-size:.8125rem;"><i class="ph ph-pause"></i> Pause</button>
           <button onclick="Game._krQuit()" class="btn bg-gray-500" style="font-size:.8125rem;">✕ Quit</button>
         </div>
       </div>
@@ -7847,7 +7847,7 @@ function _krTogglePause() {
     if (!_krState || _krState.gameOver) return;
     _krState.paused = !_krState.paused;
     const btn = document.getElementById('krPauseBtn');
-    if (btn) btn.textContent = _krState.paused ? '▶ Resume' : '⏸ Pause';
+    if (btn) btn.innerHTML = _krState.paused ? '<i class="ph ph-play"></i> Resume' : '<i class="ph ph-pause"></i> Pause';
   }
 
   function _krSpawnWave() {
@@ -8068,7 +8068,9 @@ function _krLoop(timestamp) {
     const scoreEl = document.getElementById('krScore');
     const xpEl    = document.getElementById('krXP');
     const distEl  = document.getElementById('krDistVal');
-    if (livesEl) livesEl.textContent = '❤️'.repeat(Math.max(0, s.lives)) + '🖤'.repeat(Math.max(0, KR_LIVES - s.lives));
+    if (livesEl) livesEl.innerHTML =
+      '<i class="ph ph-heart" style="color:#ef4444;font-size:1.2em;margin-right:2px;"></i>'.repeat(Math.max(0, s.lives)) +
+      '<i class="ph ph-heart" style="opacity:.35;font-size:1.2em;margin-right:2px;"></i>'.repeat(Math.max(0, KR_LIVES - s.lives));
     if (scoreEl) scoreEl.textContent = s.score;
     if (xpEl)    xpEl.textContent    = s.xpEarned;
     if (distEl)  distEl.textContent  = Math.floor(s.distance);
@@ -8373,7 +8375,7 @@ function _krLoop(timestamp) {
     ctx.font         = `bold ${Math.min(18, 10 + s.combo)}px sans-serif`;
     ctx.textAlign    = 'right';
     ctx.textBaseline = 'top';
-    ctx.fillText(`🔥 x${s.combo}`, W - 8, 6);
+    ctx.fillText(`COMBO x${s.combo}`, W - 8, 6);
     ctx.restore();
   }
 
@@ -8392,7 +8394,7 @@ function _krLoop(timestamp) {
     ctx.font         = 'bold 9px sans-serif';
     ctx.textAlign    = 'left';
     ctx.textBaseline = 'top';
-    ctx.fillText('⚠ INSPECTOR CLOSE!', 8, 6);
+    ctx.fillText('INSPECTOR CLOSE!', 8, 6);
     ctx.restore();
   }
 
@@ -8405,7 +8407,7 @@ function _krLoop(timestamp) {
     ctx.font         = 'bold 15px sans-serif';
     ctx.textAlign    = 'center';
     ctx.textBaseline = 'top';
-    ctx.fillText('⚡ SPEED UP!', KR_CANVAS_W / 2, 26);
+    ctx.fillText('SPEED UP!', KR_CANVAS_W / 2, 26);
     ctx.restore();
     ctx.textAlign    = 'left';
     ctx.textBaseline = 'alphabetic';
@@ -8420,7 +8422,7 @@ function _krLoop(timestamp) {
     ctx.textBaseline = 'middle';
     ctx.fillStyle    = '#38bdf8';
     ctx.font         = 'bold 26px sans-serif';
-    ctx.fillText('⏸ PAUSED', KR_CANVAS_W / 2, KR_CANVAS_H / 2 - 18);
+    ctx.fillText('PAUSED', KR_CANVAS_W / 2, KR_CANVAS_H / 2 - 18);
 
     ctx.fillStyle = '#94a3b8';
     ctx.font      = '13px sans-serif';
@@ -8840,7 +8842,7 @@ function _krLoop(timestamp) {
         </div>
         <p style="font-size:.875rem;font-weight:700;color:#f1f5f9;margin:.25rem 0;">${distanceTitle}</p>
         <p style="font-size:.8125rem;color:var(--text-3);margin-top:.375rem;">
-          🏄 ${s.score} correct coins collected &nbsp;|&nbsp; 🔥 Best combo: ${s.bestCombo > 0 ? s.bestCombo : 1}x
+          <i class="ph ph-coins"></i> ${s.score} correct coins collected &nbsp;|&nbsp; <i class="ph ph-fire"></i> Best combo: ${s.bestCombo > 0 ? s.bestCombo : 1}x
         </p>
       </div>`;
 
@@ -8966,7 +8968,7 @@ function _krLoop(timestamp) {
         </div>
         <p style="font-size:.875rem;font-weight:700;color:#f1f5f9;margin:.25rem 0;">${distanceTitle}</p>
         <p style="font-size:.8125rem;color:var(--text-3);margin-top:.375rem;">
-          🏄 ${score} correct coins collected &nbsp;|&nbsp; 🔥 Best combo: ${s.bestCombo > 0 ? s.bestCombo : 1}x
+          <i class="ph ph-coins"></i> ${score} correct coins collected &nbsp;|&nbsp; <i class="ph ph-fire"></i> Best combo: ${s.bestCombo > 0 ? s.bestCombo : 1}x
         </p>
       </div>`;
 
@@ -9570,19 +9572,18 @@ async function renderTeacherGameRestrictions(containerId) {
     };
 
     const GAME_ICONS = {
-      quizBlitz:      '⚡',
-      speedMath:      '🧮',
-      wordScramble:   '🔡',
-      trueOrFalse:    '✅',
-      suddenDeath:    '💀',
-      challenge:      '⚔️',
-      knowledgeRunner:'🏄',
-      wordScrabble:   '🔤',
-      chess:          '♟️',
+      quizBlitz:       '<i class="ph ph-lightning"></i>',
+      speedMath:       '<i class="ph ph-calculator"></i>',
+      wordScramble:    '<i class="ph ph-shuffle"></i>',
+      trueOrFalse:     '<i class="ph ph-check-circle"></i>',
+      suddenDeath:     '<i class="ph ph-skull"></i>',
+      challenge:       '<i class="ph ph-sword"></i>',
+      knowledgeRunner: '<i class="ph ph-person-simple-run"></i>',
+      wordScrabble:    '<i class="ph ph-text-aa"></i>',
+      chess:           '<i class="ph ph-castle-turret"></i>',
     };
 
-    function gameLabel(type) { return GAME_LABELS[type] || type || '—'; }
-    function gameIcon(type)  { return GAME_ICONS[type]  || '🎮'; }
+    function gameIcon(type)  { return GAME_ICONS[type]  || '<i class="ph ph-game-controller"></i>'; }
 
     function _esc2(str) {
       return String(str == null ? '' : str)
@@ -9657,7 +9658,7 @@ async function renderTeacherGameRestrictions(containerId) {
             ${stillLive
               ? `<div style="font-size:var(--text-xs);font-weight:700;color:var(--success);">● Playing now</div>`
               : d.status === 'playing'
-              ? `<div style="font-size:var(--text-xs);font-weight:700;color:var(--text-4);">⚠ Disconnected</div>`
+              ? `<div style="font-size:var(--text-xs);font-weight:700;color:var(--text-4);"><i class="ph ph-warning"></i> Disconnected</div>`
               : `<div style="font-size:var(--text-sm);font-weight:700;color:${_pctColor(pct)};">
                    ${pct !== null ? pct + '%' : score !== null ? score + ' pts' : '—'}
                  </div>`}
@@ -9696,7 +9697,7 @@ async function renderTeacherGameRestrictions(containerId) {
 
       return `
         <div style="display:flex;align-items:center;gap:.625rem;padding:.5625rem .875rem;border-bottom:1px solid var(--border);">
-          <span style="font-size:1rem;flex-shrink:0;width:1.5rem;text-align:center;">♟️</span>
+          <span style="font-size:1rem;flex-shrink:0;width:1.5rem;text-align:center;"><i class="ph ph-castle-turret"></i></span>
           <div style="flex:1;min-width:0;">
             <div style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);">
               ${_esc2(d.whiteName || '—')} <span style="color:var(--text-3);font-weight:500;">vs</span> ${_esc2(d.blackName || '—')}
@@ -9734,7 +9735,7 @@ async function renderTeacherGameRestrictions(containerId) {
 
       return `
         <div style="display:flex;align-items:center;gap:.625rem;padding:.5625rem .875rem;border-bottom:1px solid var(--border);">
-          <span style="font-size:1rem;flex-shrink:0;width:1.5rem;text-align:center;">🔤</span>
+          <span style="font-size:1rem;flex-shrink:0;width:1.5rem;text-align:center;"><i class="ph ph-text-aa"></i></span>
           <div style="flex:1;min-width:0;">
             <div style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);">
               ${_esc2(d.player1Name || '—')} <span style="color:var(--text-3);font-weight:500;">vs</span> ${_esc2(d.player2Name || '—')}
@@ -10014,7 +10015,7 @@ async function renderTeacherGameRestrictions(containerId) {
         }
         const rows = topEntries.map((e, i) => {
           const lv     = _getLevelForXP(e.xp || 0);
-          const medal  = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
+          const medal  = i === 0 ? '<i class="ph ph-medal" style="color:#f59e0b;font-size:1.125rem;"></i>' : i === 1 ? '<i class="ph ph-medal" style="color:#9ca3af;font-size:1.125rem;"></i>' : i === 2 ? '<i class="ph ph-medal" style="color:#b45309;font-size:1.125rem;"></i>' : (i + 1);
           return `
             <tr style="border-bottom:1px solid var(--border);">
               <td style="padding:.4375rem .75rem;text-align:center;font-weight:700;font-size:var(--text-sm);">${medal}</td>

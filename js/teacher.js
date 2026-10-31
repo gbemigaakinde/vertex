@@ -1222,7 +1222,7 @@ function _showGamesSubTab(sub) {
                     ? new Date(s.createdAt.toDate ? s.createdAt.toDate() : s.createdAt).toLocaleDateString()
                     : '—';
                   const admno = s.admissionNo ? `<p style="font-size:var(--text-xs);color:var(--accent);
-                    margin-top:2px;font-weight:600;">🪪 ${_esc(s.admissionNo)}</p>` : '';
+                    margin-top:2px;font-weight:600;"><i class="ph ph-identification-card" style="margin-right:3px;vertical-align:-1px;"></i>${_esc(s.admissionNo)}</p>` : '';
                   return `
                     <div style="background:var(--bg-base);border:1px solid var(--border);
                                 border-radius:8px;padding:.5rem .625rem .75rem .5rem;">
@@ -1528,7 +1528,7 @@ async function editStudent(uid) {
         <div style="padding:.625rem .875rem;background:var(--bg-subtle);
                     border:1px solid var(--border);border-radius:8px;
                     font-size:var(--text-xs);color:var(--text-3);line-height:1.6;">
-          ℹ️ Email address cannot be changed here. To update a student's email,
+          <i class="ph ph-info" style="margin-right:4px;vertical-align:-1px;"></i>Email address cannot be changed here. To update a student's email,
           the student must contact you and re-register with the new email.
         </div>
 
@@ -1829,7 +1829,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
                              cursor:pointer;font-size:.8125rem;line-height:1;padding:2px 4px;
                              color:var(--text-4);z-index:2;"
                       onmouseenter="this.style.color='var(--accent)'"
-                      onmouseleave="this.style.color='var(--text-4)'">📄</button>
+                      onmouseleave="this.style.color='var(--text-4)'"><i class="ph ph-file-pdf"></i></button>
               <button class="teacher-delete-result" data-id="${_esc(doc.id)}" aria-label="Delete result"
                       style="position:absolute;top:.5rem;right:.625rem;background:none;border:none;
                              cursor:pointer;font-size:1rem;line-height:1;padding:2px 4px;
@@ -1861,7 +1861,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
                   </span>`).join('')}
               </div>
               <div style="display:flex;align-items:center;justify-content:space-between;">
-                <p style="font-size:var(--text-xs);color:var(--text-4);">${ts}${r.proctorSessionId ? ` · <a href="#" onclick="event.stopPropagation();event.preventDefault();Proctor.openViewer('${_esc(r.proctorSessionId)}','${_esc(r.name || '')}')" style="color:var(--accent-text);font-weight:600;">🎥 Proctoring</a>` : ''}</p>
+                <p style="font-size:var(--text-xs);color:var(--text-4);">${ts}${r.proctorSessionId ? ` · <a href="#" onclick="event.stopPropagation();event.preventDefault();Proctor.openViewer('${_esc(r.proctorSessionId)}','${_esc(r.name || '')}')" style="color:var(--accent-text);font-weight:600;"><i class="ph ph-video-camera" style="margin-right:3px;vertical-align:-1px;"></i>Proctoring</a>` : ''}</p>
                 ${hasDetail
                   ? `<span style="font-size:var(--text-xs);font-weight:600;color:var(--accent-text);
                                   background:var(--accent-subtle);border:1px solid var(--accent-border);
@@ -1960,7 +1960,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
           <div style="display:flex;gap:.5rem;flex-shrink:0;">
             <button onclick="Teacher.exportResultPDF('${_esc(resultId)}')"
                     class="btn bg-blue-600 hover:bg-blue-700" style="font-size:var(--text-sm);white-space:nowrap;">
-              📄 Export PDF
+              <i class="ph ph-file-pdf" style="margin-right:4px;vertical-align:-2px;"></i>Export PDF
             </button>
             <button onclick="document.getElementById('teacherReviewModal').remove()"
                     class="btn bg-gray-500" style="font-size:var(--text-sm);">Close</button>
@@ -1968,7 +1968,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
         </div>
         <div style="padding:2rem;text-align:center;background:var(--bg-subtle);
                     border-radius:8px;border:1px solid var(--border);">
-          <p style="font-size:2rem;">📋</p>
+          <p style="font-size:2rem;color:var(--text-3);"><i class="ph ph-clipboard-text"></i></p>
           <p style="font-size:var(--text-base);font-weight:600;color:var(--text-1);margin-top:.5rem;">
             Detailed attempt data not available</p>
           <p style="font-size:var(--text-sm);color:var(--text-3);margin-top:.375rem;line-height:1.6;">
@@ -2038,7 +2038,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
         <div style="display:flex;gap:.5rem;flex-shrink:0;">
           <button onclick="Teacher.exportResultPDF('${_esc(resultId)}')"
                   class="btn bg-blue-600 hover:bg-blue-700" style="font-size:var(--text-sm);white-space:nowrap;">
-            📄 Export PDF
+            <i class="ph ph-file-pdf" style="margin-right:4px;vertical-align:-2px;"></i>Export PDF
           </button>
           <button onclick="document.getElementById('teacherReviewModal').remove()"
                   class="btn bg-gray-500" style="font-size:var(--text-sm);">Close</button>
@@ -3078,11 +3078,11 @@ function _renderExistingTasksList(docs) {
       if (docId === 'global')
         return { label:'All Students', color:'var(--accent-text)', bg:'var(--accent-subtle)', border:'var(--accent-border)' };
       if (docId === 'weekly')
-        return { label:'🔄 Recurring · All', color:'var(--accent-text)', bg:'var(--accent-subtle)', border:'var(--accent-border)' };
+        return { label:'Recurring · All', color:'var(--accent-text)', bg:'var(--accent-subtle)', border:'var(--accent-border)' };
       if (docId.startsWith('weekly_class_'))
-        return { label:'🔄 Recurring · Class: ' + docId.replace('weekly_class_','').toUpperCase(), color:'var(--accent-text)', bg:'var(--accent-subtle)', border:'var(--accent-border)' };
+        return { label:'Recurring · Class: ' + docId.replace('weekly_class_','').toUpperCase(), color:'var(--accent-text)', bg:'var(--accent-subtle)', border:'var(--accent-border)' };
       if (docId.startsWith('weekly_student_'))
-        return { label:'🔄 Recurring · Student', color:'var(--accent-text)', bg:'var(--accent-subtle)', border:'var(--accent-border)' };
+        return { label:'Recurring · Student', color:'var(--accent-text)', bg:'var(--accent-subtle)', border:'var(--accent-border)' };
       if (docId.startsWith('class_'))
         return { label:'Class: ' + docId.replace('class_','').toUpperCase(), color:'var(--warning-text)', bg:'var(--warning-subtle)', border:'var(--warning-border)' };
       if (docId.startsWith('student_'))
@@ -3117,7 +3117,7 @@ function _renderExistingTasksList(docs) {
         const scope       = scopeLabel(doc.id);
         const studentName = resolveStudentName(doc.id);
         const scopeDisp   = studentName
-          ? (doc.id.startsWith('weekly_') ? '🔄 Recurring · Student: ' : 'Student: ') + studentName
+          ? (doc.id.startsWith('weekly_') ? 'Recurring · Student: ' : 'Student: ') + studentName
           : scope.label;
 
         const recurring = isRecurringTask(doc);
@@ -3156,7 +3156,7 @@ function _renderExistingTasksList(docs) {
           `white-space:nowrap;font-family:inherit;line-height:1.5;` +
           `transition:background .12s;" ` +
           `onmouseenter="this.style.background='var(--accent-hover)'" onmouseleave="this.style.background='var(--accent)'"` +
-          `title="Export attendance & progress report as PDF">📄 PDF</button>` +
+          `title="Export attendance & progress report as PDF"><i class="ph ph-file-pdf" style="margin-right:3px;vertical-align:-1px;"></i>PDF</button>` +
           `<button onclick="Teacher.editTask('${_esc(doc.id)}')"` +
           ` style="background:var(--accent);color:var(--text-inverse);border:none;cursor:pointer;` +
           `font-size:var(--text-xs);font-weight:700;padding:3px 9px;border-radius:4px;` +
@@ -3345,7 +3345,7 @@ function _renderExistingTasksList(docs) {
                           border:1px solid ${allStudentsDone ? 'var(--success-border)' : 'var(--border)'};
                           display:flex;align-items:center;justify-content:space-between;">
             <div style="display:flex;align-items:center;gap:.5rem;">
-              <span style="font-size:var(--text-xs);color:var(--text-3);">▶</span>
+              <span style="font-size:var(--text-xs);color:var(--text-3);"><i class="ph ph-caret-right"></i></span>
               <span style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);">${_esc(wLabel)}</span>
               <span style="font-size:var(--text-xs);font-weight:600;padding:1px 6px;border-radius:4px;
                            background:var(--bg-muted);color:var(--text-3);">
@@ -3388,11 +3388,11 @@ function _renderExistingTasksList(docs) {
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.625rem;">
           <div>
             <h4 style="font-size:var(--text-sm);font-weight:700;color:var(--text-1);">
-              📊 ${_esc(title)}
+              <i class="ph ph-chart-bar" style="margin-right:4px;vertical-align:-2px;"></i>${_esc(title)}
               ${recurring
                 ? `<span style="font-size:var(--text-xs);font-weight:600;padding:1px 7px;border-radius:99px;
                                background:var(--accent-subtle);color:var(--accent-text);border:1px solid var(--accent-border);margin-left:.375rem;">
-                     🔄 ${_esc(recurrenceLabel)}
+                     <i class="ph ph-arrows-clockwise" style="margin-right:3px;vertical-align:-1px;"></i>${_esc(recurrenceLabel)}
                    </span>`
                 : ''}
             </h4>

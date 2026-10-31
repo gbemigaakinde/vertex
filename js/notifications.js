@@ -273,7 +273,7 @@ async function init(uid) {
     var supported = _isSupported();
     var iosNote   = _isIOS() && !_isIOSPWA()
       ? '<p style="font-size:.75rem;color:var(--warning-text);margin-top:.25rem;line-height:1.5;">' +
-        '⚠️ On iPhone, add this app to your Home Screen to enable notifications.</p>'
+        '<i class="ph ph-warning" style="margin-right:4px;"></i>On iPhone, add this app to your Home Screen to enable notifications.</p>'
       : '';
 
     // Render toggle in the off state first; init() will correct it immediately after

@@ -5336,7 +5336,7 @@ function _dispatchImageSend(dataUrl, base64, imageType, userPrompt, onComplete) 
     var raw    = localStorage.getItem(storageKey);
     var saved  = raw ? JSON.parse(raw) : { ts: Date.now(), history: [], ui: [], lastActivityTs: Date.now() };
     saved.ui   = saved.ui || [];
-    saved.ui.push({ role: 'user', text: '[📷 Image] ' + (userPrompt || ''), ts: nowTs });
+    saved.ui.push({ role: 'user', text: '[Image] ' + (userPrompt || ''), ts: nowTs });
     saved.history        = window._vtxAiHistory;
     saved.ts             = Date.now();
     saved.lastActivityTs = Date.now();

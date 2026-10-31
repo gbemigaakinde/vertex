@@ -742,23 +742,23 @@
         var bad = e.code === 'screen_share_stopped' || e.code === 'tab_hidden' || e.code === 'camera_stopped' || e.code === 'unsupported_device_blocked' || e.code === 'window_blur';
         d.style.cssText = 'grid-column:1/-1;border:1px solid ' + (bad ? '#f59e0b' : 'var(--border,#ddd)') + ';background:' + (bad ? 'rgba(245,158,11,.14)' : 'transparent') + ';border-radius:8px;padding:6px 8px;font-size:12px;overflow-wrap:anywhere;';
         var du = dur(e);
-        d.innerHTML = (bad ? '⚠ ' : '• ') + '<strong>' + esc(SCREEN_LABEL[e.code] || e.code) + '</strong> · ' + esc(new Date(e.t).toLocaleTimeString()) +
+        d.innerHTML = (bad ? '<i class="ph ph-warning" style="margin-right:4px;"></i>' : '&bull; ') + '<strong>' + esc(SCREEN_LABEL[e.code] || e.code) + '</strong> · ' + esc(new Date(e.t).toLocaleTimeString()) +
           (du ? ' · lasted ' + esc(fmtDur(du)) : '') + (e.detail && e.code !== 'screen_share_resumed' ? ' <span style="opacity:.7">(' + esc(e.detail) + ')</span>' : '');
         return d;
       }
       function flagRow(it) {
         var d = document.createElement('div');
         d.style.cssText = 'grid-column:1/-1;border:1px solid #ef4444;background:rgba(239,68,68,.08);border-radius:8px;padding:6px 8px;font-size:12px;overflow-wrap:anywhere;';
-        d.innerHTML = '⚠ <strong>' + esc(FLAG_TEXT[it.note] || it.note || 'Event') + '</strong> · ' + esc(new Date(it.t).toLocaleTimeString()) + ' <span style="opacity:.7">(camera)</span>';
+        d.innerHTML = '<i class="ph ph-warning" style="margin-right:4px;"></i><strong>' + esc(FLAG_TEXT[it.note] || it.note || 'Event') + '</strong> · ' + esc(new Date(it.t).toLocaleTimeString()) + ' <span style="opacity:.7">(camera)</span>';
         return d;
       }
-      var KIND_LABEL = { photo: '📷 Camera photo', video: '🎥 Camera video', screen: '🖥 Screenshot', screenvideo: '🖥 Screen video' };
+      var KIND_LABEL = { photo: '<i class="ph ph-camera"></i> Camera photo', video: '<i class="ph ph-video-camera"></i> Camera video', screen: '<i class="ph ph-monitor"></i> Screenshot', screenvideo: '<i class="ph ph-monitor-play"></i> Screen video' };
       function mediaCell(it) {
         var cell = document.createElement('div'), isVid = it.kind === 'video' || it.kind === 'screenvideo';
         var noteTxt = it.note ? (FLAG_TEXT[it.note] || SCREEN_LABEL[it.note] || it.note) : '';
         cell.style.cssText = 'border:1px solid ' + (it.note ? '#ef4444' : 'var(--border,#ddd)') + ';border-radius:8px;padding:6px;font-size:12px;';
         var when = new Date(it.t).toLocaleTimeString();
-        var tag = it.note ? '<div style="color:#ef4444;font-weight:700;margin-bottom:4px;overflow-wrap:anywhere;">⚠ ' + esc(noteTxt) + '</div>' : '';
+        var tag = it.note ? '<div style="color:#ef4444;font-weight:700;margin-bottom:4px;overflow-wrap:anywhere;"><i class="ph ph-warning" style="margin-right:4px;"></i>' + esc(noteTxt) + '</div>' : '';
         var head = '<div style="margin-bottom:4px;">' + (KIND_LABEL[it.kind] || it.kind) + ' · ' + esc(when) + '</div>';
         cell.innerHTML = tag + head + '<button class="btn" style="width:100%;padding:4px;">Load</button>';
         cell.querySelector('button').onclick = async function () {
