@@ -115,15 +115,15 @@ async function init(container, host, api) {
       <canvas class="sf-canvas" data-sf="canvas"></canvas>
       <div class="sf-ov sf-flash" data-sf="flash"></div>
       <div class="sf-ov sf-combo" data-sf="combo"></div>
-      <div class="sf-ov sf-warn" data-sf="warn" style="display:none">⚠ INSPECTOR CLOSE!</div>
-      <div class="sf-ov sf-speed" data-sf="speed">⚡ SPEED UP!</div>
+      <div class="sf-ov sf-warn" data-sf="warn" style="display:none"><i class="ph ph-warning"></i> INSPECTOR CLOSE!</div>
+      <div class="sf-ov sf-speed" data-sf="speed"><i class="ph ph-lightning"></i> SPEED UP!</div>
       <div class="sf-ov sf-debug" data-sf="debug"></div>
       <div class="sf-ov sf-center" data-sf="center"><div style="font-size:1.1rem">Loading 3D world…</div><div class="sf-bar"><i data-sf="bar"></i></div><small data-sf="loadtxt"></small></div>
     </div>
     <div class="sf-hint">← → / swipe sideways: change lane &nbsp;|&nbsp; ↑ / swipe up: jump &nbsp;|&nbsp; ↓ / swipe down: slide &nbsp;|&nbsp; P: pause</div>
     <div class="sf-btns">
-      <button data-sf="pauseBtn" class="btn bg-gray-500" style="font-size:.8125rem;">⏸ Pause</button>
-      <button data-sf="quitBtn"  class="btn bg-gray-500" style="font-size:.8125rem;">✕ Quit</button>
+      <button data-sf="pauseBtn" class="btn bg-gray-500" style="font-size:.8125rem;"><i class="ph ph-pause"></i> Pause</button>
+      <button data-sf="quitBtn"  class="btn bg-gray-500" style="font-size:.8125rem;"><i class="ph ph-x"></i> Quit</button>
     </div>
   </div>`;
   const $ = k => container.querySelector(`[data-sf="${k}"]`);
@@ -330,8 +330,8 @@ async function init(container, host, api) {
      ============================================================ */
   const pauseOv = () => {
     ui.center.style.display = paused ? 'flex' : 'none';
-    ui.center.innerHTML = paused ? '<div style="font-size:1.6rem">⏸ PAUSED</div><small>Tap the screen or press P to resume</small>' : '';
-    ui.pauseBtn.textContent = paused ? '▶ Resume' : '⏸ Pause';
+    ui.center.innerHTML = paused ? '<div style="font-size:1.6rem"><i class="ph ph-pause"></i> PAUSED</div><small>Tap the screen or press P to resume</small>' : '';
+    ui.pauseBtn.innerHTML = paused ? '<i class="ph ph-play"></i> Resume' : '<i class="ph ph-pause"></i> Pause';
   };
   function togglePause() { if (ending || destroyed) return; paused = !paused; lastT = performance.now(); pauseOv(); }
   api.togglePause = togglePause;
@@ -378,6 +378,7 @@ async function init(container, host, api) {
   const look = new THREE.Vector3();
 
   function setText(k, v, el) { if (hudCache[k] !== v) { hudCache[k] = v; el.textContent = v; } }
+  function setHTML(k, v, el) { if (hudCache[k] !== v) { hudCache[k] = v; el.innerHTML = v; } }
 
   function handleEvents() {
     for (const e of S.events) {
@@ -502,11 +503,13 @@ async function init(container, host, api) {
     updateParticles(dt);
 
     /* ── HUD ── */
-    setText('lives', '❤️'.repeat(Math.max(0, S.lives)) + '🖤'.repeat(Math.max(0, GAME.lives - S.lives)), ui.lives);
+    setHTML('lives',
+      '<i class="ph ph-heart" style="color:#ef4444;font-size:1.2em;margin-right:2px;"></i>'.repeat(Math.max(0, S.lives)) +
+      '<i class="ph ph-heart" style="opacity:.35;font-size:1.2em;margin-right:2px;"></i>'.repeat(Math.max(0, GAME.lives - S.lives)), ui.lives);
     setText('score', String(S.score), ui.score);
     setText('xp', String(S.xp), ui.xp);
     setText('dist', String(Math.floor(S.distance)), ui.dist);
-    if (S.combo >= 3) { if (comboShown !== S.combo) { comboShown = S.combo; ui.combo.textContent = `🔥 x${S.combo}`; ui.combo.style.fontSize = Math.min(1.5, 0.9 + S.combo * 0.04) + 'rem'; } }
+    if (S.combo >= 3) { if (comboShown !== S.combo) { comboShown = S.combo; ui.combo.innerHTML = `<i class="ph ph-fire"></i> x${S.combo}`; ui.combo.style.fontSize = Math.min(1.5, 0.9 + S.combo * 0.04) + 'rem'; } }
     else if (comboShown) { comboShown = 0; ui.combo.textContent = ''; }
     const close = !ending && S.inspectorGap < GAME.inspectorCloseWarn;
     if (close !== warnShown) { warnShown = close; ui.warn.style.display = close ? 'block' : 'none'; }
