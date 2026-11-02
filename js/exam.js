@@ -1521,23 +1521,27 @@ function _buildPeriodPickerHtml(classKey) {
     const isLive  = cur.session === live.session && cur.term === live.term;
 
     if (!QL.freeSelectAllowed(classKey) || periods.length < 2) {
-      return `<p style="font-size:.75rem;color:var(--text-3);margin:-.25rem 0 .875rem;">Questions: <strong>${label}</strong></p>`;
+      return `<p class="vtx-period-note" style="margin:-.25rem 0 1rem;">Questions: <strong style="color:var(--text-1);">${label}</strong></p>`;
     }
     const sessions = [...new Set(periods.map(p => p.session))];
     const terms    = periods.filter(p => p.session === cur.session).map(p => p.term);
-    const selStyle = 'font-family:var(--font);font-size:.8125rem;padding:.4375rem .625rem;border:1px solid var(--border);border-radius:var(--r-md,8px);background:var(--bg-base);color:var(--text-1,inherit);';
     return `
-      <div style="margin:-.25rem 0 1rem;">
-        <p style="font-size:.6875rem;color:var(--text-4);margin-bottom:.375rem;">Choose the session and term to practise</p>
-        <div style="display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap;">
-          <select id="examPeriodSession" aria-label="Session" onchange="Exam._onPeriodChange('session')" style="${selStyle}">
-            ${sessions.map(x => `<option value="${x}"${x === cur.session ? ' selected' : ''}>${x}</option>`).join('')}
-          </select>
-          <select id="examPeriodTerm" aria-label="Term" onchange="Exam._onPeriodChange('term')" style="${selStyle}">
-            ${terms.map(t => `<option value="${t}"${t === cur.term ? ' selected' : ''}>Term ${t}</option>`).join('')}
-          </select>
+      <div class="vtx-period">
+        <div class="vtx-period-field">
+          <label class="vtx-period-cell">
+            <span class="vtx-period-label">Session</span>
+            <select id="examPeriodSession" aria-label="Session" onchange="Exam._onPeriodChange('session')">
+              ${sessions.map(x => `<option value="${x}"${x === cur.session ? ' selected' : ''}>${x}</option>`).join('')}
+            </select>
+          </label>
+          <label class="vtx-period-cell">
+            <span class="vtx-period-label">Term</span>
+            <select id="examPeriodTerm" aria-label="Term" onchange="Exam._onPeriodChange('term')">
+              ${terms.map(t => `<option value="${t}"${t === cur.term ? ' selected' : ''}>Term ${t}</option>`).join('')}
+            </select>
+          </label>
         </div>
-        <p style="font-size:.6875rem;color:var(--text-4);margin-top:.375rem;">${isLive ? 'This is your school\u2019s current term.' : 'Not the current term. <a href="#" onclick="Exam._onPeriodChange(\'live\');return false;" style="color:var(--accent);">Back to current term</a>'}</p>
+        <p class="vtx-period-note">${isLive ? 'This is your school\u2019s current term.' : 'Not the current term. <a href="#" onclick="Exam._onPeriodChange(\'live\');return false;">Back to current term</a>'}</p>
       </div>`;
   } catch (e) {
     console.warn('[exam] period picker failed:', e);
@@ -1713,8 +1717,8 @@ async function renderSubjectSelection() {
               <span class="vtx-subject-pill-check"></span>
               <span>${_escHtml(subj)}</span>
             </label>` : `
-            <label class="vtx-subject-pill is-required" style="opacity:.6;cursor:not-allowed;"
-                   title="Questions unavailable — contact Master Timothy">
+            <label class="vtx-subject-pill is-required" aria-disabled="true"
+                   title"Questions unavailable — contact Master Timothy">
               <input type="checkbox" disabled />
               <span class="vtx-subject-pill-check"></span>
               <span style="display:inline-flex;align-items:center;gap:.25rem;">
@@ -1722,11 +1726,10 @@ async function renderSubjectSelection() {
               </span>
             </label>`).join('')}
         </div>
-        <div style="text-align:center;">
+        <div class="vtx-start-foot">
           ${enoughSubjects
-            ? `<button id="startExamBtn" onclick="Exam.startExam()" class="btn btn-lg" style="min-width:200px;max-width:260px;width:100%;">
-                 Start Exam
-               </button>`
+            ? `<span class="vtx-start-count"><strong>${bankState.subjects.length}</strong> subjects set for today</span>
+               <button id="startExamBtn" onclick="Exam.startExam()" class="btn btn-lg">Start exam</button>`
             : `<p style="color:var(--danger);font-size:.8125rem;">Subject not available. Contact Master Timothy.</p>`}
         </div>`;
 
@@ -1739,8 +1742,8 @@ async function renderSubjectSelection() {
               <span class="vtx-subject-pill-check"></span>
               <span>${_escHtml(subj)}</span>
             </label>` : `
-            <label class="vtx-subject-pill" style="opacity:.6;cursor:not-allowed;"
-                   title="Questions unavailable — contact Master Timothy">
+            <label class="vtx-subject-pill" aria-disabled="true"
+                   title"Questions unavailable — contact Master Timothy">
               <input type="checkbox" disabled />
               <span class="vtx-subject-pill-check"></span>
               <span style="display:inline-flex;align-items:center;gap:.25rem;">
@@ -1752,10 +1755,9 @@ async function renderSubjectSelection() {
         <p style="font-size:.6875rem;color:var(--warning-text);margin:-.5rem 0 1rem;line-height:1.5;">
           ${_icon('Warning', 12)} Some subjects are unavailable. Please contact Master Timothy.
         </p>` : ''}
-        <div style="text-align:center;">
-          <button id="startExamBtn" onclick="Exam.startExam()" disabled class="btn btn-lg" style="min-width:200px;max-width:260px;width:100%;">
-            Start Exam
-          </button>
+        <div class="vtx-start-foot">
+          <span class="vtx-start-count" id="startExamCount" aria-live="polite">Pick at least 2 subjects</span>
+          <button id="startExamBtn" onclick="Exam.startExam()" disabled class="btn btn-lg">Start exam</button>
         </div>`;
     }
 
@@ -1914,23 +1916,15 @@ async function renderSubjectSelection() {
         <div class="vtx-dash-main">
 
         <!-- EXAM SECTION -->
-        <div style="margin-bottom:2rem;padding:1.25rem;border-radius:var(--r-xl);
-                    border:1.5px solid var(--border);background:var(--bg-base);text-align:center;">
-          <p style="font-size:.6875rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
-                    color:var(--text-4);margin-bottom:.875rem;">
+        <div class="vtx-start" style="margin-bottom:2rem;padding:1.25rem 1.125rem;border-radius:var(--r-xl);
+                    border:1px solid var(--border);background:var(--bg-base);">
+          <h2 class="vtx-start-title">
             ${bankState.problem
-              ? `<span style="color:var(--warning);display:inline-flex;vertical-align:middle;margin-right:.25rem;">${_icon('Warning', 13)}</span>Exam`
-              : (restrictedSubjs ? 'Required subjects for today' : 'Start a practice exam')}
-          </p>
+              ? `<span style="color:var(--warning);display:inline-flex;vertical-align:middle;margin-right:.375rem;">${_icon('Warning', 16)}</span>Exam`
+              : (restrictedSubjs ? 'Subjects for today' : 'Practice exam')}
+          </h2>
           ${(!todayTaskDone && !restrictedSubjs) ? periodPickerHtml : ''}
-          ${(todayTaskDone && !bankState.problem)
-            ? subjectsHtml
-            : `<div>
-                ${subjectsHtml}
-                ${!restrictedSubjs && !todayTaskDone && !bankState.problem
-                  ? `<p style="font-size:.6875rem;color:var(--text-4);margin-top:.75rem;">Select at least 2 subjects to begin</p>`
-                  : ''}
-               </div>`}
+          ${subjectsHtml}
         </div>
 
         <!-- TOOL TILES GRID -->
@@ -2498,6 +2492,10 @@ async function renderSubjectSelection() {
     const selected = document.querySelectorAll('.subject-checkbox:checked').length;
     const btn = document.getElementById('startExamBtn');
     if (btn) btn.disabled = selected < 2;
+    const cnt = document.getElementById('startExamCount');
+    if (cnt) cnt.innerHTML = selected < 2
+      ? (selected === 0 ? 'Pick at least 2 subjects' : '1 selected, pick one more')
+      : '<strong>' + selected + '</strong> subjects selected';
   }
 
   function _getSelectedSubjects() {
