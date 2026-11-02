@@ -773,39 +773,121 @@ textarea { resize: vertical; min-height: 5rem; }
 .cbt-badge--neutral { background: var(--bg-subtle);      color: var(--text-3);       border: 1px solid var(--border); }
 
 /* ════════════════════════════════════════════════════════
-   SUBJECT SELECTION — pill chip system (replaces cards)
+   EXAM START CARD — session/term field + subject list
+   (class names kept: .vtx-subject-pill / -check / is-selected / is-required)
 ════════════════════════════════════════════════════════ */
+.vtx-start { text-align: left; }
+.vtx-start-title {
+  font-size: var(--text-lg);
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--text-1);
+  margin: 0 0 var(--sp-4);
+}
+
+/* Session + term: one joined field, two cells */
+.vtx-period { margin: 0 0 1.25rem; }
+.vtx-period-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--r-lg);
+  background: var(--bg-base);
+  overflow: hidden;
+}
+.vtx-period-cell {
+  position: relative;
+  display: block;
+  padding: 0.5rem 2.25rem 0.5rem 0.875rem;
+  cursor: pointer;
+  transition: background var(--t-fast) var(--ease);
+}
+.vtx-period-cell + .vtx-period-cell { border-left: 1px solid var(--border); }
+.vtx-period-cell:hover { background: var(--bg-subtle); }
+.vtx-period-cell:focus-within { background: var(--accent-subtle); box-shadow: inset 0 0 0 1.5px var(--accent); }
+.vtx-period-label {
+  display: block;
+  font-size: var(--text-xs);
+  color: var(--text-3);
+  line-height: 1.2;
+}
+.vtx-period .vtx-period-cell select {
+  appearance: none !important;
+  -webkit-appearance: none !important;
+  display: block;
+  width: 100%;
+  min-height: 0 !important;
+  height: auto !important;
+  margin: 2px 0 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  outline: 0;
+  background: transparent !important;
+  font-family: var(--font);
+  font-size: var(--text-md);
+  font-weight: 600;
+  color: var(--text-1);
+  line-height: 1.35;
+  cursor: pointer;
+  font-variant-numeric: tabular-nums;
+}
+.vtx-period-cell::after {
+  content: '';
+  position: absolute;
+  right: 0.875rem;
+  top: 50%;
+  width: 7px; height: 7px;
+  border-right: 1.5px solid var(--text-3);
+  border-bottom: 1.5px solid var(--text-3);
+  transform: translateY(-70%) rotate(45deg);
+  pointer-events: none;
+}
+.vtx-period-note {
+  margin: 0.5rem 0 0;
+  font-size: var(--text-xs);
+  color: var(--text-3);
+  line-height: 1.5;
+}
+.vtx-period-note a { color: var(--accent-text); font-weight: 600; text-decoration: none; }
+.vtx-period-note a:hover { text-decoration: underline; }
+
+/* Subjects: a ruled list, two columns when there is room */
 .vtx-subject-grid {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  justify-content: center;
-  margin-bottom: 1.5rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  margin: 0 0 1rem;
+  border-top: 1px solid var(--border);
+}
+@media (min-width: 560px) {
+  .vtx-subject-grid { grid-template-columns: 1fr 1fr; column-gap: 1.5rem; }
 }
 
 .vtx-subject-pill {
   position: relative;
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 0.4rem;
-  padding: 0.5rem 1rem;
-  border-radius: var(--r-full);
-  font-size: var(--text-sm);
+  gap: 0.75rem;
+  min-height: 46px;
+  padding: 0.375rem 0.25rem;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  border-radius: 0;
+  background: transparent;
+  font-size: var(--text-base);
   font-weight: 500;
+  line-height: 1.3;
+  color: var(--text-1);
+  text-align: left;
   cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
-  border: 1.5px solid var(--border);
-  background: var(--bg-base);
-  color: var(--text-2);
-  transition:
-    border-color var(--t-base) var(--ease),
-    background var(--t-base) var(--ease),
-    color var(--t-base) var(--ease),
-    transform var(--t-base) var(--ease),
-    box-shadow var(--t-base) var(--ease);
-  overflow: hidden;
+  transition: background var(--t-fast) var(--ease), color var(--t-fast) var(--ease);
 }
+.vtx-subject-pill > span:last-child { flex: 1; min-width: 0; }
+.vtx-subject-pill:hover { background: var(--bg-subtle); }
+.vtx-subject-pill:focus-within { box-shadow: inset 0 0 0 2px var(--accent-border); border-radius: var(--r-sm, 6px); }
 
 .vtx-subject-pill input[type="checkbox"] {
   position: absolute;
@@ -815,65 +897,61 @@ textarea { resize: vertical; min-height: 5rem; }
   height: 0;
 }
 
+/* check box sits on the right so names line up on the left edge */
 .vtx-subject-pill-check {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  border: 1.5px solid var(--border);
-  background: transparent;
-  transition: all var(--t-base) var(--ease);
+  order: 2;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1.5px solid var(--border-strong);
+  background: var(--bg-base);
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background var(--t-fast) var(--ease), border-color var(--t-fast) var(--ease);
 }
-
-.vtx-subject-pill:hover {
-  border-color: var(--accent-border);
-  color: var(--accent-text);
-  transform: translateY(-1px);
-  box-shadow: var(--shadow-sm);
-}
-
-.vtx-subject-pill.is-selected {
-  border-color: var(--accent);
-  background: var(--accent-subtle);
-  color: var(--accent-text);
-  font-weight: 600;
-  box-shadow: 0 0 0 3px var(--accent-subtle);
-}
-
-.vtx-subject-pill.is-selected .vtx-subject-pill-check {
-  background: var(--accent);
-  border-color: var(--accent);
-}
-
-.vtx-subject-pill.is-required {
-  border-color: var(--success-border);
-  background: var(--success-subtle);
-  color: var(--success-text);
-  cursor: default;
-}
-
-.vtx-subject-pill.is-required .vtx-subject-pill-check {
-  background: var(--success);
-  border-color: var(--success);
-}
-
-/* Check mark SVG inside pill */
 .vtx-subject-pill-check::after {
   content: '';
-  width: 6px;
-  height: 6px;
-  border-right: 1.5px solid white;
-  border-bottom: 1.5px solid white;
+  width: 5px;
+  height: 10px;
+  border-right: 2px solid #fff;
+  border-bottom: 2px solid #fff;
   transform: rotate(45deg) translate(-1px, -1px) scale(0);
-  transition: transform var(--t-base) var(--ease);
+  transition: transform var(--t-fast) var(--ease);
 }
 
+.vtx-subject-pill.is-selected { color: var(--accent-text); font-weight: 600; background: var(--accent-subtle); }
+.vtx-subject-pill.is-selected .vtx-subject-pill-check { background: var(--accent); border-color: var(--accent); }
 .vtx-subject-pill.is-selected .vtx-subject-pill-check::after,
-.vtx-subject-pill.is-required .vtx-subject-pill-check::after {
-  transform: rotate(45deg) translate(-1px, -1px) scale(1);
+.vtx-subject-pill.is-required .vtx-subject-pill-check::after { transform: rotate(45deg) translate(-1px, -1px) scale(1); }
+
+.vtx-subject-pill.is-required { cursor: default; color: var(--text-1); }
+.vtx-subject-pill.is-required.is-selected { background: transparent; }
+.vtx-subject-pill.is-required .vtx-subject-pill-check { background: var(--success); border-color: var(--success); }
+
+.vtx-subject-pill[aria-disabled="true"] { opacity: .5; cursor: not-allowed; }
+.vtx-subject-pill[aria-disabled="true"]:hover { background: transparent; }
+
+/* footer: live count on the left, action on the right */
+.vtx-start-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.vtx-start-count {
+  font-size: var(--text-sm);
+  color: var(--text-3);
+  font-variant-numeric: tabular-nums;
+}
+.vtx-start-count strong { color: var(--text-1); font-weight: 650; }
+.vtx-start-foot .btn { flex: 0 1 12rem; width: 12rem; margin-left: auto; height: 46px !important; }
+@media (max-width: 420px) {
+  .vtx-start-foot { flex-direction: column; align-items: stretch; gap: .625rem; }
+  .vtx-start-foot .btn { flex: none; width: 100%; margin-left: 0; }
+  .vtx-start-count { text-align: center; }
 }
 
 /* ── MCQ Options — flat, animated ── */
