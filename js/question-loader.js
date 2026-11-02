@@ -251,6 +251,22 @@
     return shuffle(units).reduce(function (a, u) { return a.concat(u); }, []);
   }
 
+  // Questions that share a passageId but omit the text inherit it from the first one that has it,
+  // so a group still renders correctly if it is trimmed, shuffled or the text-bearing question is dropped.
+  function fillPassages(list) {
+    var text = {}, title = {};
+    list.forEach(function (q) {
+      if (!q || !q.passageId) return;
+      if (q.passage && !text[q.passageId]) text[q.passageId] = q.passage;
+      if (q.passageTitle && !title[q.passageId]) title[q.passageId] = q.passageTitle;
+    });
+    list.forEach(function (q) {
+      if (!q || !q.passageId) return;
+      if (!q.passage && text[q.passageId]) q.passage = text[q.passageId];
+      if (!q.passageTitle && title[q.passageId]) q.passageTitle = title[q.passageId];
+    });
+  }
+
   // Returns a clean question object, or null when it can't be used.
   function cleanQuestion(raw) {
     if (!raw || typeof raw !== 'object') return null;
@@ -354,6 +370,7 @@
           if (q) good.push(q); else skipped++;
         });
         if (!good.length) return;                     // ignore empty / fully invalid documents
+        fillPassages(good);                           // siblings that only carry passageId get the text
 
         var m = key.match(/^(\d{4})-(\d{4})__t(\d)$/);
         _parsed.push({ cls: cls, subj: subj, legacy: !hasPeriod, key: key,
@@ -539,7 +556,7 @@
     getBundled: function () { return _bundled; },
     getActivePeriod: function () { return { session: activePeriod.session, term: activePeriod.term }; },
     getSelectedPeriod: getSelectedPeriod, selectPeriod: selectPeriod, applyForClass: applyForClass,
-    shuffle: shuffle, shuffleGrouped: shuffleGrouped, shuffleOptions: shuffleOptions, keepsOrder: keepsOrder,
+    shuffle: shuffle, shuffleGrouped: shuffleGrouped, fillPassages: fillPassages, shuffleOptions: shuffleOptions, keepsOrder: keepsOrder,
     periodsFor: periodsFor, freeSelectAllowed: freeSelectAllowed, getFreeSelect: getFreeSelect,
     getHiddenSubjects: getHiddenSubjects, setHiddenSubjects: setHiddenSubjects,
     defaultPeriod: defaultPeriod, normSession: normSession, normTerm: normTerm,

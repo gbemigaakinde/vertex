@@ -118,9 +118,9 @@
   function _passageOf(exam, subj, q) {
     if (!q || !q.passageId) return null;
     const p = (exam && exam.passages && exam.passages[subj + '::' + q.passageId]) || null;
-    const text = p ? p.text : q.passage;
+    const text = (p && p.text != null && String(p.text).trim() !== '') ? p.text : q.passage;
     if (text == null || String(text).trim() === '') return null;
-    return { text: String(text), title: p ? p.title : (q.passageTitle || '') };
+    return { text: String(text), title: (p && p.title) || q.passageTitle || '' };
   }
   function _passageHtml(exam, subj, q, idx, qs, compact) {
     const p = _passageOf(exam, subj, q);
@@ -2585,7 +2585,7 @@ async function renderSubjectSelection() {
       // Store each passage once per exam (not once per question) to keep the saved exam small.
       selectedQuestions[subj] = selectedQuestions[subj].map(q => {
         if (!(q && q.passageId && q.passage)) return q;
-        passages[subj + '::' + q.passageId] = { text: q.passage, title: q.passageTitle || '' };
+        if (!passages[subj + '::' + q.passageId]) passages[subj + '::' + q.passageId] = { text: q.passage, title: q.passageTitle || '' };
         const c = Object.assign({}, q);          // never mutate the shared question bank
         delete c.passage; delete c.passageTitle;
         return c;

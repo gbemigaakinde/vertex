@@ -134,7 +134,7 @@
     if (d.svg != null && d.svg !== '') out.svg = d.svg;
     if (d.expSvg != null && d.expSvg !== '') out.expSvg = d.expSvg;
     var pidr = raw.passageId != null ? String(raw.passageId).trim() : '';
-    if (raw.passage != null && String(raw.passage).trim() !== '') { out.passage = String(raw.passage); if (!pidr) pidr = 'p_' + String(raw.passage).length + '_' + String(raw.passage).slice(0, 24).replace(/\W+/g, ''); }
+    if (raw.passage != null && String(raw.passage).trim() !== '') { out.passage = String(raw.passage); if (!pidr) pidr = 'p_' + (function (t) { var h = 5381; for (var i = 0; i < t.length; i++) h = ((h << 5) + h + t.charCodeAt(i)) | 0; return (h >>> 0).toString(36); })(String(raw.passage)); }
     if (pidr) out.passageId = pidr;
     if (raw.passageTitle != null && String(raw.passageTitle).trim()) out.passageTitle = String(raw.passageTitle).trim();
     if (typeof raw.noShuffle === 'boolean') out.noShuffle = raw.noShuffle;
