@@ -132,7 +132,7 @@
   /* ── Global constants ── */
   window.AppConfig = {
     TEACHER_UID:           'bV4u2V7aakMF7EyYe1bpCXGj4ny1',
-    QUESTIONS_PER_SUBJECT: 40,
+    QUESTIONS_PER_SUBJECT: 0,   // 0 / null = no limit: students get every question the teacher set
     EXAM_DURATION_MS:      120 * 60 * 1000,   // 2 hours
   };
 

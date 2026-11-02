@@ -114,6 +114,27 @@
       });
   }
 
+  // Passage shared by several questions (passage / register-cloze questions).
+  function _passageOf(exam, subj, q) {
+    if (!q || !q.passageId) return null;
+    const p = (exam && exam.passages && exam.passages[subj + '::' + q.passageId]) || null;
+    const text = p ? p.text : q.passage;
+    if (text == null || String(text).trim() === '') return null;
+    return { text: String(text), title: p ? p.title : (q.passageTitle || '') };
+  }
+  function _passageHtml(exam, subj, q, idx, qs, compact) {
+    const p = _passageOf(exam, subj, q);
+    if (!p) return '';
+    // number of this question inside its passage group
+    let pos = 0, tot = 0;
+    (qs || []).forEach((x, i) => { if (x && x.passageId === q.passageId) { tot++; if (i <= idx) pos++; } });
+    const body = _safeQ(p.text);
+    return '<div class="vtx-passage" style="border:1px solid var(--border);border-left:4px solid var(--accent);background:var(--bg-subtle);border-radius:var(--r-lg);padding:.875rem 1rem;margin-bottom:1rem;max-height:' + (compact ? 'none' : '40vh') + ';overflow:auto;-webkit-overflow-scrolling:touch;">' +
+      '<div style="font-size:.6875rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-bottom:.375rem;">' +
+        _escHtml(p.title || 'Read the passage') + (tot > 1 ? ' · question ' + pos + ' of ' + tot : '') + '</div>' +
+      '<div style="font-size:.9375rem;line-height:1.7;white-space:pre-line;overflow-wrap:anywhere;color:var(--text-2);">' + body + '</div></div>';
+  }
+
   // Optional SVG diagrams (see js/svg-diagram.js). Return '' when a question has none.
   function _diag(value, size) {
     try { return window.SvgDiagram ? window.SvgDiagram.html(value, { size: size || 'question' }) : ''; }
@@ -2541,6 +2562,7 @@ async function renderSubjectSelection() {
     }
 
     const selectedQuestions = {};
+    const passages = {};
     for (const subj of finalChosen) {
       const rawAll = (_qBank[classKey] || {})[subj];
       const all    = Array.isArray(rawAll) ? rawAll : [];
@@ -2548,9 +2570,26 @@ async function renderSubjectSelection() {
       // Shuffle the questions, then the options of each question (the stored exam keeps this
       // order, so resuming, reviewing and marking all see exactly what the student saw).
       const QL = window.QuestionLoader;
-      const pool = QL && QL.shuffle ? QL.shuffle(all) : [...all].sort(() => Math.random() - 0.5);
-      selectedQuestions[subj] = pool.slice(0, CFG().QUESTIONS_PER_SUBJECT)
+      const pool = QL && QL.shuffleGrouped ? QL.shuffleGrouped(all)
+                 : QL && QL.shuffle ? QL.shuffle(all) : [...all].sort(() => Math.random() - 0.5);
+      // No hard-coded limit: every question set by the teacher is used. A positive
+      // AppConfig.QUESTIONS_PER_SUBJECT is still honoured if someone sets one deliberately.
+      const capN = Number(CFG().QUESTIONS_PER_SUBJECT);
+      let picked = pool;
+      if (isFinite(capN) && capN > 0 && pool.length > capN) {
+        // keep whole passage groups together when trimming
+        picked = []; for (const q of pool) { if (picked.length >= capN && !(q.passageId && picked.length && picked[picked.length-1].passageId === q.passageId)) break; picked.push(q); }
+      }
+      selectedQuestions[subj] = picked
         .map(q => (QL && QL.shuffleOptions) ? QL.shuffleOptions(q) : q);
+      // Store each passage once per exam (not once per question) to keep the saved exam small.
+      selectedQuestions[subj] = selectedQuestions[subj].map(q => {
+        if (!(q && q.passageId && q.passage)) return q;
+        passages[subj + '::' + q.passageId] = { text: q.passage, title: q.passageTitle || '' };
+        const c = Object.assign({}, q);          // never mutate the shared question bank
+        delete c.passage; delete c.passageTitle;
+        return c;
+      });
     }
 
     const sessionDate  = _todayStr();
@@ -2561,6 +2600,7 @@ async function renderSubjectSelection() {
       step: 'exam',
       subjects: finalChosen,
       questions: selectedQuestions,
+      passages,
       currentSubject: finalChosen[0],
       currentIndex: 0,
       answers: {},
@@ -2954,7 +2994,7 @@ async function renderSubjectSelection() {
       <!-- QUESTION -->
       <div class="vtx-question-section" id="questionSection">
         <div class="vtx-question-wrap">
-
+          ${_passageHtml(exam, subj, q, exam.currentIndex, exam.questions[subj], false)}
           <p class="vtx-q-text" style="font-size:1rem;font-weight:500;line-height:1.75;margin-bottom:1.125rem;color:var(--text-1);">
             <span style="font-family:var(--font-mono);font-size:.8125rem;font-weight:700;color:var(--accent);margin-right:.5rem;">${exam.currentIndex + 1}.</span>
             <span style="white-space:pre-line;">${_safeQ(q.q)}</span>
@@ -3254,6 +3294,8 @@ async function renderSubjectSelection() {
             opts:   Array.isArray(q.opts) ? q.opts.map(o => o != null ? String(o) : '') : [],
             ans:    q.ans  != null ? Number(q.ans)  : 0,
             exp:    q.exp  != null ? String(q.exp)  : '',
+            passageId: q.passageId || null,
+            passage: (_passageOf(exam, subj, q) || {}).text || null,
             chosen: chosenRaw !== undefined && chosenRaw !== null ? Number(chosenRaw) : null,
           };
         });
@@ -3401,11 +3443,11 @@ async function renderSubjectSelection() {
       let correct = 0;
       qs.forEach((q, i) => { if (exam.answers[`${subj}-${i}`] === q.ans) correct++; });
       correctCounts[subj] = correct;
-      scores[subj]        = Math.round((correct / qs.length) * 100);
+      scores[subj]        = qs.length ? Math.round((correct / qs.length) * 100) : 0;
       totalCorrect        += correct;
       totalQuestions      += qs.length;
     }
-    const percentage = Math.round((totalCorrect / totalQuestions) * 100);
+    const percentage = totalQuestions ? Math.round((totalCorrect / totalQuestions) * 100) : 0;
     const grade = percentage >= 70 ? 'A' : percentage >= 60 ? 'B'
                 : percentage >= 50 ? 'C' : percentage >= 40 ? 'D' : 'E';
     return {
@@ -3527,6 +3569,7 @@ async function renderSubjectSelection() {
                     : 'background:var(--danger-subtle);';
                   return `
                     <div class="vtx-rv-card" style="border-radius:var(--r-lg);padding:1rem;border:1px solid var(--border);min-width:0;max-width:100%;${borderStyle}">
+                      ${(i === 0 || !q.passageId || qs[i-1].passageId !== q.passageId) ? _passageHtml(exam, subj, q, i, qs, true) : ''}
                       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:.5rem;margin-bottom:.75rem;">
                         <p class="vtx-rv-q" style="font-weight:600;font-size:.9375rem;margin:0;">${i + 1}. <span style="white-space:pre-line;">${_safeQ(q.q)}</span></p>
                         <button

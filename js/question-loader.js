@@ -236,6 +236,21 @@
     } catch (e) { return q; }
   }
 
+  function hashStr(s) { var h = 5381; s = String(s); for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0; return (h >>> 0).toString(36); }
+
+  // Shuffles questions but keeps every passage group together and in its written order
+  // (blank 6, 7, 8 …). Groups and stand-alone questions are shuffled as units.
+  function shuffleGrouped(arr) {
+    var list = Array.prototype.slice.call(arr || []), units = [], byId = {};
+    list.forEach(function (q) {
+      var id = q && q.passageId;
+      if (!id) { units.push([q]); return; }
+      if (!byId[id]) { byId[id] = []; units.push(byId[id]); }
+      byId[id].push(q);
+    });
+    return shuffle(units).reduce(function (a, u) { return a.concat(u); }, []);
+  }
+
   // Returns a clean question object, or null when it can't be used.
   function cleanQuestion(raw) {
     if (!raw || typeof raw !== 'object') return null;
@@ -255,6 +270,13 @@
     if (Array.isArray(d.optSvg))              q.optSvg = d.optSvg;
     if (d.expSvg != null && d.expSvg !== '')  q.expSvg = d.expSvg;
     if (typeof raw.noShuffle === 'boolean')   q.noShuffle = raw.noShuffle;
+    // Passage / "register" (cloze) questions: several questions share one passage via passageId.
+    var pid = raw.passageId == null ? '' : String(raw.passageId).trim();
+    var ptx = raw.passage == null ? '' : String(raw.passage);
+    var ptt = raw.passageTitle == null ? '' : String(raw.passageTitle).trim();
+    if (pid)                  q.passageId    = pid;
+    if (ptx.trim() !== '')    { q.passage = ptx; if (!pid) q.passageId = 'p_' + hashStr(ptx); }
+    if (ptt)                  q.passageTitle = ptt;
 
     var hasStem = q.q.trim() !== '' || q.svg != null;
     if (!hasStem)                                   return null;
@@ -517,7 +539,7 @@
     getBundled: function () { return _bundled; },
     getActivePeriod: function () { return { session: activePeriod.session, term: activePeriod.term }; },
     getSelectedPeriod: getSelectedPeriod, selectPeriod: selectPeriod, applyForClass: applyForClass,
-    shuffle: shuffle, shuffleOptions: shuffleOptions, keepsOrder: keepsOrder,
+    shuffle: shuffle, shuffleGrouped: shuffleGrouped, shuffleOptions: shuffleOptions, keepsOrder: keepsOrder,
     periodsFor: periodsFor, freeSelectAllowed: freeSelectAllowed, getFreeSelect: getFreeSelect,
     getHiddenSubjects: getHiddenSubjects, setHiddenSubjects: setHiddenSubjects,
     defaultPeriod: defaultPeriod, normSession: normSession, normTerm: normTerm,

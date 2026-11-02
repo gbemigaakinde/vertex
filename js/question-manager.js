@@ -133,6 +133,10 @@
     if (typeof raw.diagrams === 'string') { try { d = JSON.parse(raw.diagrams) || {}; } catch (e) { d = {}; } }
     if (d.svg != null && d.svg !== '') out.svg = d.svg;
     if (d.expSvg != null && d.expSvg !== '') out.expSvg = d.expSvg;
+    var pidr = raw.passageId != null ? String(raw.passageId).trim() : '';
+    if (raw.passage != null && String(raw.passage).trim() !== '') { out.passage = String(raw.passage); if (!pidr) pidr = 'p_' + String(raw.passage).length + '_' + String(raw.passage).slice(0, 24).replace(/\W+/g, ''); }
+    if (pidr) out.passageId = pidr;
+    if (raw.passageTitle != null && String(raw.passageTitle).trim()) out.passageTitle = String(raw.passageTitle).trim();
     if (typeof raw.noShuffle === 'boolean') out.noShuffle = raw.noShuffle;
     else if (raw.noShuffle === 'true' || raw.noShuffle === 'false') out.noShuffle = raw.noShuffle === 'true';
     if (Array.isArray(d.optSvg)) out.optSvg = d.optSvg.map(function (x) { return x == null ? '' : x; });
@@ -598,7 +602,7 @@
 
   /* ───────── question form ───────── */
   function blankForm() {
-    return { index: -1, q: '', opts: ['', '', '', ''], optSvg: ['', '', '', ''], ans: -1, exp: '', svg: '', expSvg: '', order: 'auto' };
+    return { index: -1, q: '', opts: ['', '', '', ''], optSvg: ['', '', '', ''], ans: -1, exp: '', svg: '', expSvg: '', order: 'auto', passage: '', passageId: '', passageTitle: '' };
   }
   function formFromQuestion(i) {
     var it = S.questions[i];
@@ -606,6 +610,7 @@
       index: i, q: it.q || '', opts: it.opts.slice(), ans: it.ans, exp: it.exp || '',
       optSvg: it.opts.map(function (_, k) { return it.optSvg && it.optSvg[k] ? joinSvg(it.optSvg[k]) : ''; }),
       svg: joinSvg(it.svg), expSvg: joinSvg(it.expSvg),
+      passage: it.passage || '', passageId: it.passageId || '', passageTitle: it.passageTitle || '',
       order: it.noShuffle === true ? 'fixed' : (it.noShuffle === false ? 'shuffle' : 'auto'),
     };
   }
@@ -639,6 +644,10 @@
         '<option value="shuffle"' + (f.order === 'shuffle' ? ' selected' : '') + '>Always shuffle</option>' +
         '<option value="fixed"' + (f.order === 'fixed' ? ' selected' : '') + '>Keep in the order I typed</option></select>' +
         '<div class="qm-muted">Automatic shuffles the options, except for "All of the above", True/False and similar.</div></div>' +
+      '<details' + (f.passage || f.passageId ? ' open' : '') + '><summary>Passage / register (optional — shared by several questions)</summary>' +
+        '<div class="qm-field"><label for="qmPid">Passage ID (same ID on every question that uses this passage)</label><input id="qmPid" type="text" value="' + esc(f.passageId) + '" placeholder="e.g. passage-2"></div>' +
+        '<div class="qm-field"><label for="qmPTitle">Passage title</label><input id="qmPTitle" type="text" value="' + esc(f.passageTitle) + '" placeholder="e.g. Passage II"></div>' +
+        '<div class="qm-field"><label for="qmPassage">Passage text (put it on the first question; others only need the ID)</label><textarea id="qmPassage" class="qm-plain" rows="6">' + esc(f.passage) + '</textarea></div></details>' +
       '<div class="qm-field"><label for="qmExp">Explanation (shown after the exam)</label><textarea id="qmExp" class="qm-plain" rows="2">' + esc(f.exp) + '</textarea></div>' +
       svgField('qmExpSvg', 'Diagram for the explanation (SVG code)', f.expSvg, 'explanation') +
       '<div id="qmFormErr" class="qm-err" role="alert"></div>' +
@@ -665,6 +674,9 @@
     var v;
     if ((v = g('#qmQ')) != null) f.q = v;
     if ((v = g('#qmExp')) != null) f.exp = v;
+    if ((v = g('#qmPid')) != null) f.passageId = v;
+    if ((v = g('#qmPTitle')) != null) f.passageTitle = v;
+    if ((v = g('#qmPassage')) != null) f.passage = v;
     if ((v = g('#qmOrder')) != null) f.order = v;
     if ((v = g('#qmSvg')) != null) f.svg = v;
     if ((v = g('#qmExpSvg')) != null) f.expSvg = v;
@@ -680,6 +692,9 @@
     var raw = { q: f.q, opts: f.opts, ans: f.ans, exp: f.exp };
     if (f.ans < 0) return { error: 'Select the correct answer (tick the circle beside it).' };
     if (f.order === 'fixed') raw.noShuffle = true; else if (f.order === 'shuffle') raw.noShuffle = false;
+    if (f.passageId.trim()) raw.passageId = f.passageId.trim();
+    if (f.passageTitle.trim()) raw.passageTitle = f.passageTitle.trim();
+    if (f.passage.trim()) raw.passage = f.passage;
     if (f.svg.trim()) raw.svg = f.svg;
     if (f.expSvg.trim()) raw.expSvg = f.expSvg;
     if (f.optSvg.some(function (x) { return x.trim(); })) raw.optSvg = f.optSvg;
