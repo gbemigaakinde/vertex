@@ -649,8 +649,34 @@ function _injectTeacherNavStyles() {
     .vtx-sd-item dt { font-size:var(--text-xs); color:var(--text-3); }
     .vtx-sd-item dd { margin:2px 0 0; font-size:var(--text-sm); font-weight:500; color:var(--text-1); display:flex; align-items:center; gap:.25rem; overflow-wrap:anywhere; min-width:0; }
     .vtx-sd-item dd.is-empty { color:var(--text-4); font-weight:400; font-style:italic; }
-    .vtx-sd-copy { flex-shrink:0; width:26px; height:26px; display:inline-flex; align-items:center; justify-content:center; color:var(--text-4); background:none; border:none; border-radius:6px; cursor:pointer; }
+    .vtx-sd-copy { position:relative; flex-shrink:0; width:26px; height:26px; display:inline-flex; align-items:center; justify-content:center; color:var(--text-4); background:none; border:none; border-radius:6px; cursor:pointer;
+      transition:color .15s, background .15s, transform .12s; -webkit-tap-highlight-color:transparent; }
     .vtx-sd-copy:hover { color:var(--accent); background:var(--bg-subtle); }
+    .vtx-sd-copy:active { transform:scale(.86); }
+    .vtx-sd-copy:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
+    .vtx-sd-copy .vtx-sd-ico { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; transition:opacity .18s, transform .26s cubic-bezier(.34,1.56,.64,1); }
+    .vtx-sd-copy .vtx-sd-ico-done { opacity:0; transform:scale(.4) rotate(-25deg); }
+    .vtx-sd-copy .vtx-sd-ico-done path { stroke-dasharray:24; stroke-dashoffset:24; }
+    .vtx-sd-copy::before { content:''; position:absolute; inset:0; border-radius:6px; border:2px solid currentColor; opacity:0; pointer-events:none; }
+    .vtx-sd-copy::after { content:attr(data-tip); position:absolute; right:0; bottom:calc(100% + 6px); padding:3px 8px; border-radius:6px; font-size:11px; font-weight:600; line-height:1.4; white-space:nowrap;
+      color:var(--bg-base); background:var(--text-1); opacity:0; transform:translateY(4px); pointer-events:none; transition:opacity .15s, transform .2s cubic-bezier(.34,1.56,.64,1); }
+    .vtx-sd-copy.is-copied { color:var(--success); background:var(--success-subtle); }
+    .vtx-sd-copy.is-copied .vtx-sd-ico-copy { opacity:0; transform:scale(.4) rotate(25deg); }
+    .vtx-sd-copy.is-copied .vtx-sd-ico-done { opacity:1; transform:none; }
+    .vtx-sd-copy.is-copied .vtx-sd-ico-done path { animation:vtx-sd-draw .32s .06s ease-out forwards; }
+    .vtx-sd-copy.is-copied::before { animation:vtx-sd-ring .55s ease-out; }
+    .vtx-sd-copy.is-copied::after, .vtx-sd-copy.is-failed::after { opacity:1; transform:none; }
+    .vtx-sd-copy.is-failed { color:var(--danger); background:var(--danger-subtle); animation:vtx-sd-shake .35s ease-in-out; }
+    .vtx-sd-copy.is-resumed::before, .vtx-sd-copy.is-resumed .vtx-sd-ico-done path { animation:none; }
+    .vtx-sd-copy.is-resumed .vtx-sd-ico-done path { stroke-dashoffset:0; }
+    @keyframes vtx-sd-draw { to { stroke-dashoffset:0; } }
+    @keyframes vtx-sd-ring { from { opacity:.55; transform:scale(1); } to { opacity:0; transform:scale(1.9); } }
+    @keyframes vtx-sd-shake { 0%,100% { transform:translateX(0); } 25% { transform:translateX(-3px); } 75% { transform:translateX(3px); } }
+    @media (prefers-reduced-motion:reduce) {
+      .vtx-sd-copy, .vtx-sd-copy::before, .vtx-sd-copy::after, .vtx-sd-copy .vtx-sd-ico { transition:none; animation:none !important; }
+      .vtx-sd-copy.is-copied .vtx-sd-ico-done path { animation:none; stroke-dashoffset:0; }
+      .vtx-sd-copy.is-failed { animation:none; }
+    }
     .vtx-sd-chips { display:flex; flex-wrap:wrap; gap:.375rem; }
     .vtx-sd-weak { font-size:var(--text-xs); font-weight:600; color:var(--warning); border:1px solid currentColor; border-radius:99px; padding:2px 10px; }
     .vtx-sd-note { font-size:var(--text-sm); color:var(--text-3); margin:.25rem 0; }
@@ -1479,9 +1505,118 @@ function _showGamesSubTab(sub) {
     return `<div class="vtx-sd-item">
       <dt>${_esc(label)}</dt>
       <dd${empty ? ' class="is-empty"' : ''}>${empty ? 'Not set' : _esc(value)}${(!empty && o.copy)
-        ? `<button type="button" class="vtx-sd-copy" data-copy="${_esc(value)}" aria-label="Copy ${_esc(label)}" title="Copy">
-             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>` : ''}</dd>
+        ? `<button type="button" class="vtx-sd-copy" data-copy="${_esc(value)}" data-label="${_esc(label)}" data-tip="Copied" aria-label="Copy ${_esc(label)}" title="Copy">
+             <span class="vtx-sd-ico vtx-sd-ico-copy"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></span>
+             <span class="vtx-sd-ico vtx-sd-ico-done"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg></span></button>` : ''}</dd>
     </div>`;
+  }
+
+  /* ── "Other details": any stored field that has no dedicated place above ──
+     Shown in plain words: friendly labels, Yes/No for true/false, readable dates.
+     Technical fields (tokens, push subscriptions, nested settings) are never shown. */
+  const _STU_FIELD_LABELS = {
+    isOnline: 'Online now',
+    lastSeen: 'Last seen',
+    approvedAt: 'Approved on',
+    dmPushEnabled: 'Teacher message alerts'
+  };
+  const _STU_FIELD_HIDDEN = /token|subscription|endpoint|p256dh|secret|password|passcode|vapid|api_?key|fcm|^auth$|^uid$|^_/i;
+  const _STU_ONLINE_WINDOW_MS = 90000;
+
+  function _stuToMs(v) {
+    if (v === null || v === undefined || v === '') return null;
+    if (typeof v.toMillis === 'function') return v.toMillis();
+    if (typeof v.toDate === 'function') return v.toDate().getTime();
+    if (v instanceof Date) return v.getTime();
+    if (typeof v === 'object' && typeof v.seconds === 'number') return v.seconds * 1000;
+    return null;
+  }
+  function _stuDateTime(ms) {
+    if (!ms || isNaN(ms)) return '';
+    return new Date(ms).toLocaleString(undefined, { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+  }
+  function _stuFieldLabel(key) {
+    if (_STU_FIELD_LABELS[key]) return _STU_FIELD_LABELS[key];
+    const words = String(key).replace(/[_\-]+/g, ' ').replace(/([a-z0-9])([A-Z])/g, '$1 $2').trim().toLowerCase().split(/\s+/);
+    const caps = { id: 'ID', url: 'URL', dob: 'date of birth', no: 'no.' };
+    const text = words.map(w => caps[w] || w).join(' ');
+    return text.charAt(0).toUpperCase() + text.slice(1);
+  }
+  /* Returns the text to show, or null when the field should not be shown at all. */
+  function _stuFieldValue(key, v, st) {
+    if (v === null || v === undefined || v === '') return null;
+    if (key === 'isOnline' && typeof v === 'boolean') {
+      const seen = _stuToMs(st.lastSeen);
+      return v && (seen === null || Date.now() - seen <= _STU_ONLINE_WINDOW_MS) ? 'Yes' : 'No';
+    }
+    if (typeof v === 'boolean') return v ? 'Yes' : 'No';
+    const ms = _stuToMs(v);
+    if (ms !== null) return _stuDateTime(ms) || null;
+    if (typeof v === 'number') {
+      if (v > 1e12 && /(at|time|seen|date|ts)$/i.test(key)) return _stuDateTime(v) || null;
+      return v.toLocaleString();
+    }
+    if (typeof v === 'string') {
+      const t = v.trim();
+      if (!t) return null;
+      if (/^(true|false)$/i.test(t)) return t.toLowerCase() === 'true' ? 'Yes' : 'No';
+      if (/^\d{4}-\d{2}-\d{2}T/.test(t)) { const d = Date.parse(t); return isNaN(d) ? t : _stuDateTime(d); }
+      if (/^\d{4}-\d{2}-\d{2}$/.test(t)) { const d = new Date(t + 'T00:00:00').getTime(); return isNaN(d) ? t : _stuDate(d); }
+      return t;
+    }
+    if (Array.isArray(v)) {
+      const items = v.filter(x => typeof x === 'string' || typeof x === 'number').map(String).filter(Boolean);
+      return items.length && items.length === v.length ? items.join(', ') : null;
+    }
+    return null;   // nested objects are settings or technical data
+  }
+  function _stuOtherDetails(st, shownKeys) {
+    const known = Object.keys(_STU_FIELD_LABELS);
+    return Object.keys(st)
+      .filter(k => !shownKeys.includes(k) && !_STU_FIELD_HIDDEN.test(k))
+      .map(k => ({ key: k, label: _stuFieldLabel(k), value: _stuFieldValue(k, st[k], st) }))
+      .filter(f => f.value !== null)
+      .sort((a, b) => {
+        const ia = known.indexOf(a.key), ib = known.indexOf(b.key);
+        if (ia !== -1 || ib !== -1) return (ia === -1 ? 99 : ia) - (ib === -1 ? 99 : ib);
+        return a.label.localeCompare(b.label);
+      });
+  }
+
+  /* ── Copy buttons: copy, then morph into a tick with a ring pulse and a small "Copied" tag ── */
+  function _stuCopyText(text) {
+    const legacy = () => new Promise((resolve, reject) => {
+      const ta = document.createElement('textarea');
+      ta.value = text; ta.setAttribute('readonly', '');
+      ta.style.cssText = 'position:fixed;top:0;left:0;opacity:0;pointer-events:none;';
+      document.body.appendChild(ta); ta.select();
+      let ok = false;
+      try { ok = document.execCommand('copy'); } catch (_) {}
+      ta.remove();
+      ok ? resolve() : reject(new Error('copy failed'));
+    });
+    if (navigator.clipboard && navigator.clipboard.writeText) return navigator.clipboard.writeText(text).catch(legacy);
+    return legacy();
+  }
+  function _stuCopyState(btn, ok, ms, resumed) {
+    clearTimeout(btn._vtxT);
+    btn.classList.remove('is-copied', 'is-failed', 'is-resumed');
+    void btn.offsetWidth;                                   // lets a quick second click replay the animation
+    btn.classList.add(ok ? 'is-copied' : 'is-failed');
+    if (resumed) btn.classList.add('is-resumed');           // panel was redrawn mid-animation: show the end state only
+    btn.dataset.tip = ok ? 'Copied' : 'Could not copy';
+    btn.setAttribute('aria-label', ok ? 'Copied' : 'Could not copy');
+    btn._vtxT = setTimeout(() => {
+      btn.classList.remove('is-copied', 'is-failed', 'is-resumed');
+      btn.setAttribute('aria-label', 'Copy ' + (btn.dataset.label || ''));
+    }, ms);
+  }
+  function _stuCopyClick(btn) {
+    const value = btn.dataset.copy;
+    _stuCopyText(value).then(() => true, () => false).then(ok => {
+      _stuM.flash = { uid: _stuM.uid, value, label: btn.dataset.label, ok, until: Date.now() + 1600 };
+      _stuCopyState(btn, ok, 1600);
+    });
   }
 
   function _stuHistoryHTML(rows) {
@@ -1521,8 +1656,7 @@ function _showGamesSubTab(sub) {
     const done = st.coachingCompleted ? Object.keys(st.coachingCompleted).length : 0;
     const weak = Array.isArray(st.weakSubjects) ? st.weakSubjects : [];
     const shownKeys = ['name','email','class','school','admissionNo','isAdmin','createdAt','timetableGroup','studyStreak','lastActiveDate','lastExamPercentage','weakSubjects','totalExamsCompleted','coachingCompleted','coachingCompletedDocs','id','_school'];
-    const extras = Object.keys(st).filter(k => !shownKeys.includes(k) && (typeof st[k] === 'string' || typeof st[k] === 'number' || typeof st[k] === 'boolean'))
-      .sort().map(k => _stuInfo(k, String(st[k])));
+    const extras = _stuOtherDetails(st, shownKeys).map(f => _stuInfo(f.label, f.value));
     const list = rows && rows !== 'error' ? rows : [];
     const taken = rows && rows !== 'error' ? rows.length : (st.totalExamsCompleted || 0);
     const avg = list.length ? Math.round(list.reduce((a, r) => a + (r.data.percentage || 0), 0) / list.length) : null;
@@ -1562,7 +1696,7 @@ function _showGamesSubTab(sub) {
       ${weak.length ? `<h3 class="vtx-sd-h">Needs work</h3><div class="vtx-sd-chips">${weak.map(w => `<span class="vtx-sd-weak">${_esc(typeof w === 'string' ? w : (w && w.subject) || JSON.stringify(w))}</span>`).join('')}</div>` : ''}
       <h3 class="vtx-sd-h">Exam history</h3>
       <div id="stuModalHistory">${_stuHistoryHTML(rows === undefined ? null : rows)}</div>
-      ${extras.length ? `<details class="vtx-sd-more"><summary>More fields (${extras.length})</summary><dl class="vtx-sd-grid">${extras.join('')}</dl></details>` : ''}`;
+      ${extras.length ? `<details class="vtx-sd-more"><summary>Other details (${extras.length})</summary><dl class="vtx-sd-grid">${extras.join('')}</dl></details>` : ''}`;
   }
 
   function _closeStudentModal() {
@@ -1585,6 +1719,11 @@ function _showGamesSubTab(sub) {
     const hit = _stuHist[_stuM.uid];
     panel.innerHTML = _stuModalBody(st, hit ? hit.rows : undefined);
     panel.scrollTop = top;
+    const fl = _stuM.flash;
+    if (fl && fl.uid === _stuM.uid && fl.until > Date.now()) {
+      const b = Array.from(panel.querySelectorAll('.vtx-sd-copy')).find(x => x.dataset.copy === fl.value && x.dataset.label === fl.label);
+      if (b) _stuCopyState(b, fl.ok, fl.until - Date.now(), true);
+    }
   }
 
   async function _openStudentModal(uid) {
@@ -1605,12 +1744,7 @@ function _showGamesSubTab(sub) {
       const av = e.target.closest('.vtx-sd-av');
       if (av) { if (window.VtxAvatar && VtxAvatar.view) VtxAvatar.view({ uid: av.dataset.avUid }, av.dataset.avName || 'Profile photo', _stuInitials(av.dataset.avName)); return; }
       const cp = e.target.closest('.vtx-sd-copy');
-      if (cp) {
-        const v = cp.dataset.copy;
-        (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(v) : Promise.reject())
-          .then(() => UI.toast('Copied.', 'success'), () => UI.toast('Could not copy.', 'error'));
-        return;
-      }
+      if (cp) { _stuCopyClick(cp); return; }
       const ex = e.target.closest('.vtx-sd-exam');
       if (ex) { _openReviewModal(ex.dataset.result); return; }
       if (e.target.closest('#stuModalMore')) { _stuM.all = !_stuM.all; _renderStuHistory(); return; }
