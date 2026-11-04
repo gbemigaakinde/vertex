@@ -576,15 +576,17 @@ function _injectTeacherNavStyles() {
     .vtx-stu-clear { font-size:var(--text-xs); font-weight:600; color:var(--text-3); background:none; border:none; cursor:pointer; padding:0 .25rem; text-decoration:underline; text-underline-offset:3px; }
     .vtx-stu-clear:hover { color:var(--text-1); }
     .vtx-stu-table { background:var(--bg-base); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
-    .vtx-stu-row { display:grid; grid-template-columns:minmax(0,2.4fr) .7fr minmax(0,1.5fr) 1fr 1fr auto; align-items:center; gap:1rem;
+    .vtx-stu-row { display:grid; grid-template-columns:minmax(0,2.4fr) .7fr minmax(0,1.5fr) 1fr 1fr 108px; align-items:center; gap:1rem;
       padding:.625rem 1rem; border-top:1px solid var(--border); transition:background .12s; }
     .vtx-stu-table > .vtx-stu-row:first-child { border-top:none; }
     .vtx-stu-row:not(.vtx-stu-th):hover { background:var(--bg-subtle); }
     .vtx-stu-th > div { text-align:left; }
     .vtx-stu-th { padding-top:.5rem; padding-bottom:.5rem; background:var(--bg-subtle); font-size:11px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--text-3); }
     .vtx-stu-who { display:flex; align-items:center; gap:.75rem; min-width:0; }
-    .vtx-stu-av { flex-shrink:0; width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    .vtx-stu-av { padding:0; border:none; cursor:pointer; position:relative; overflow:hidden; transition:box-shadow .15s, transform .15s; flex-shrink:0; width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center;
       font-size:.75rem; font-weight:700; letter-spacing:.02em; color:hsl(var(--h) 55% 32%); background:hsl(var(--h) 70% 92%); }
+    .vtx-stu-av:hover { box-shadow:0 0 0 2px var(--accent-border); }
+    .vtx-stu-av:focus-visible { outline:2px solid var(--accent); outline-offset:2px; }
     @media (prefers-color-scheme: dark) { .vtx-stu-av { color:hsl(var(--h) 70% 80%); background:hsl(var(--h) 35% 22%); } }
     .vtx-stu-id { display:flex; flex-direction:column; min-width:0; }
     .vtx-stu-name { font-size:var(--text-sm); font-weight:600; color:var(--text-1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:.375rem; }
@@ -619,6 +621,61 @@ function _injectTeacherNavStyles() {
       .vtx-stu-select { max-width:none; }
     }
     @media (max-width:480px) { .vtx-stu-tools { grid-template-columns:1fr 1fr; } .vtx-stu-search, #stuSort { grid-column:1 / -1; } }
+
+    /* ── Student details modal ── */
+    .vtx-stu-click { cursor:pointer; }
+    .vtx-stu-click:focus-visible { outline:2px solid var(--accent); outline-offset:-2px; }
+    #teacherStudentModal { position:fixed; inset:0; z-index:1100; background:var(--bg-overlay); display:flex; align-items:center; justify-content:center;
+      padding:1.25rem; backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px); animation:cbt-overlay-in .16s ease-out both; }
+    .vtx-sd-panel { background:var(--bg-base); border:1px solid var(--border); border-radius:16px; width:100%; max-width:640px; max-height:calc(100vh - 2.5rem);
+      overflow-y:auto; padding:1.5rem; box-shadow:var(--shadow-xl); text-align:left; animation:cbt-modal-in .24s cubic-bezier(.34,1.45,.64,1) both; }
+    .vtx-sd-head { display:flex; align-items:center; gap:1rem; }
+    .vtx-sd-av { width:72px; height:72px; font-size:1.375rem; }
+    .vtx-sd-who { flex:1; min-width:0; }
+    .vtx-sd-who h2 { font-size:1.25rem; font-weight:700; color:var(--text-1); letter-spacing:-0.02em; line-height:1.25; display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; overflow-wrap:anywhere; }
+    .vtx-sd-who p { font-size:var(--text-sm); color:var(--text-2, var(--text-3)); margin-top:2px; }
+    .vtx-sd-who .vtx-sd-email { color:var(--text-3); font-size:var(--text-xs); overflow-wrap:anywhere; }
+    .vtx-sd-x { align-self:flex-start; width:34px; height:34px; font-size:1.5rem; line-height:1; color:var(--text-3); background:none; border:none; border-radius:8px; cursor:pointer; }
+    .vtx-sd-x:hover { background:var(--bg-subtle); color:var(--text-1); }
+    .vtx-sd-actions { display:flex; gap:.5rem; flex-wrap:wrap; margin-top:1rem; }
+    .vtx-sd-actions .vtx-sd-danger { font-weight:600; color:var(--danger) !important; background:var(--danger-subtle) !important; border:1px solid var(--danger-border) !important; }
+    .vtx-sd-actions .vtx-sd-danger:hover { filter:brightness(.96); }
+    .vtx-sd-stats { display:grid; grid-template-columns:repeat(4,1fr); gap:.5rem; margin-top:1.125rem; }
+    .vtx-sd-stat { background:var(--bg-subtle); border:1px solid var(--border); border-radius:10px; padding:.625rem .75rem; text-align:left; }
+    .vtx-sd-stat b { display:block; font-size:1.25rem; font-weight:700; color:var(--text-1); font-variant-numeric:tabular-nums; line-height:1.2; }
+    .vtx-sd-stat span { font-size:11px; color:var(--text-3); }
+    .vtx-sd-h { font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--text-3); margin:1.375rem 0 .625rem; }
+    .vtx-sd-grid { display:grid; grid-template-columns:1fr 1fr; gap:.75rem 1.25rem; margin:0; }
+    .vtx-sd-item dt { font-size:var(--text-xs); color:var(--text-3); }
+    .vtx-sd-item dd { margin:2px 0 0; font-size:var(--text-sm); font-weight:500; color:var(--text-1); display:flex; align-items:center; gap:.25rem; overflow-wrap:anywhere; min-width:0; }
+    .vtx-sd-item dd.is-empty { color:var(--text-4); font-weight:400; font-style:italic; }
+    .vtx-sd-copy { flex-shrink:0; width:26px; height:26px; display:inline-flex; align-items:center; justify-content:center; color:var(--text-4); background:none; border:none; border-radius:6px; cursor:pointer; }
+    .vtx-sd-copy:hover { color:var(--accent); background:var(--bg-subtle); }
+    .vtx-sd-chips { display:flex; flex-wrap:wrap; gap:.375rem; }
+    .vtx-sd-weak { font-size:var(--text-xs); font-weight:600; color:var(--warning); border:1px solid currentColor; border-radius:99px; padding:2px 10px; }
+    .vtx-sd-note { font-size:var(--text-sm); color:var(--text-3); margin:.25rem 0; }
+    .vtx-sd-histbar { display:flex; align-items:center; justify-content:space-between; gap:.75rem; margin-bottom:.625rem; flex-wrap:wrap; }
+    .vtx-sd-hist { display:flex; flex-direction:column; gap:.5rem; }
+    .vtx-sd-skel { display:flex; flex-direction:column; gap:.5rem; }
+    .vtx-sd-exam { display:flex; align-items:center; gap:.75rem; width:100%; text-align:left; padding:.625rem .75rem; background:var(--bg-base); border:1px solid var(--border);
+      border-radius:10px; cursor:pointer; font:inherit; transition:border-color .15s, background .15s; }
+    .vtx-sd-exam:hover { border-color:var(--accent-border); background:var(--bg-subtle); }
+    .vtx-sd-score { flex-shrink:0; width:52px; height:44px; border-radius:8px; background:var(--bg-subtle); border:1px solid var(--border); display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1.1; }
+    .vtx-sd-score b { font-size:var(--text-sm); font-variant-numeric:tabular-nums; } .vtx-sd-score i { font-style:normal; font-size:var(--text-xs); font-weight:800; }
+    .vtx-sd-exinfo { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+    .vtx-sd-exline { display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
+    .vtx-sd-date { font-size:var(--text-xs); color:var(--text-3); }
+    .vtx-sd-subj { font-size:var(--text-xs); color:var(--text-2, var(--text-3)); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .vtx-sd-go { color:var(--text-4); font-size:1.25rem; }
+    .vtx-sd-more { margin-top:1.375rem; border-top:1px solid var(--border); padding-top:.875rem; }
+    .vtx-sd-more summary { cursor:pointer; font-size:var(--text-xs); font-weight:600; color:var(--text-3); margin-bottom:.75rem; }
+    @media (max-width:560px) {
+      #teacherStudentModal { padding:0; align-items:flex-end; }
+      .vtx-sd-panel { max-height:92vh; border-radius:16px 16px 0 0; padding:1.125rem; }
+      .vtx-sd-stats { grid-template-columns:repeat(2,1fr); }
+      .vtx-sd-grid { grid-template-columns:1fr; }
+      .vtx-sd-av { width:60px; height:60px; }
+    }
 
     /* ── Results pager ── */
     .vtx-pager { display:flex; align-items:center; justify-content:space-between; gap:.75rem;
@@ -1288,9 +1345,10 @@ function _showGamesSubTab(sub) {
     const hue = _stuHue(s.name || s.id);
     const name = s.name || 'Unnamed student';
     return `
-      <div class="vtx-stu-row" role="listitem">
+      <div class="vtx-stu-row vtx-stu-click" role="listitem" tabindex="0" data-uid="${_esc(s.id)}" aria-label="Open details for ${_esc(name)}">
         <div class="vtx-stu-who">
-          <span class="vtx-stu-av" style="--h:${hue}" aria-hidden="true">${_esc(_stuInitials(s.name))}</span>
+          <button type="button" class="vtx-stu-av" data-vtx-av="${_esc(s.id)}" data-av-uid="${_esc(s.id)}" data-av-name="${_esc(name)}"
+                  style="--h:${hue}" title="View photo" aria-label="View profile photo of ${_esc(name)}">${_esc(_stuInitials(s.name))}</button>
           <span class="vtx-stu-id">
             <span class="vtx-stu-name">${_esc(name)}${s.isAdmin ? '<span class="vtx-stu-badge">Admin</span>' : ''}</span>
             <span class="vtx-stu-email">${_esc(s.email || 'No email')}</span>
@@ -1373,7 +1431,19 @@ function _showGamesSubTab(sub) {
       else return;
       _stu.shown = STU_PAGE; _renderStudents();
     });
+    root.addEventListener('keydown', e => {
+      if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('vtx-stu-click')) {
+        e.preventDefault(); _openStudentModal(e.target.dataset.uid);
+      }
+    });
     root.addEventListener('click', e => {
+      const rowEl = e.target.closest('.vtx-stu-click');
+      if (rowEl && !e.target.closest('button, a, input, select')) { _openStudentModal(rowEl.dataset.uid); return; }
+      const av = e.target.closest('.vtx-stu-av');
+      if (av) {
+        if (window.VtxAvatar && VtxAvatar.view) VtxAvatar.view({ uid: av.dataset.avUid }, av.dataset.avName || 'Profile photo', _stuInitials(av.dataset.avName));
+        return;
+      }
       if (e.target.closest('#stuMoreBtn')) { _stu.shown += STU_PAGE; _renderStudents(); return; }
       if (e.target.closest('#stuAdminChip')) { _stu.admin = !_stu.admin; _stu.shown = STU_PAGE; _renderStudents(); return; }
       if (e.target.closest('#stuClear')) {
@@ -1382,6 +1452,190 @@ function _showGamesSubTab(sub) {
         _stuFillSelects(); _renderStudents();
       }
     });
+  }
+
+  /* ── Student details modal ──────────────────────────────────────────────
+     Opens when a row is clicked. Profile data comes from the list already in memory
+     (and stays live); the exam history is read once on open and kept for 2 minutes. */
+  const _stuHist = {};
+  const _stuM = { uid: null, period: '', all: false };
+
+  function _stuDate(ms) { return ms ? new Date(ms).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '—'; }
+  function _stuLoadHistory(uid, name) {
+    const hit = _stuHist[uid];
+    if (hit && Date.now() - hit.at < 120000) return Promise.resolve(hit.rows);
+    return (async () => {
+      let snap = await Db().collection('results').where('uid', '==', uid).get();
+      if (snap.empty && name) snap = await Db().collection('results').where('name', '==', name).get();
+      const rows = snap.docs.map(_slimResult).sort((a, b) => (b.data.ts || 0) - (a.data.ts || 0));
+      _stuHist[uid] = { at: Date.now(), rows };
+      return rows;
+    })();
+  }
+
+  function _stuInfo(label, value, opts) {
+    const o = opts || {};
+    const empty = value === undefined || value === null || value === '';
+    return `<div class="vtx-sd-item">
+      <dt>${_esc(label)}</dt>
+      <dd${empty ? ' class="is-empty"' : ''}>${empty ? 'Not set' : _esc(value)}${(!empty && o.copy)
+        ? `<button type="button" class="vtx-sd-copy" data-copy="${_esc(value)}" aria-label="Copy ${_esc(label)}" title="Copy">
+             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>` : ''}</dd>
+    </div>`;
+  }
+
+  function _stuHistoryHTML(rows) {
+    if (rows === null) return `<div class="vtx-sd-skel">${_sk('100%', '58px')}${_sk('100%', '58px')}${_sk('100%', '58px')}</div>`;
+    if (rows === 'error') return `<p class="vtx-sd-note" style="color:var(--danger);">Couldn't load exam history. Close and reopen to try again.</p>`;
+    if (!rows.length) return `<p class="vtx-sd-note">This student hasn't taken any exam yet.</p>`;
+    const periods = [];
+    rows.forEach(r => { const p = _periodOf(r.data); if (p.has && !periods.includes(p.label)) periods.push(p.label); });
+    const list = _stuM.period ? rows.filter(r => _periodOf(r.data).label === _stuM.period) : rows;
+    const shown = _stuM.all ? list : list.slice(0, 5);
+    const avg = list.length ? Math.round(list.reduce((a, r) => a + (r.data.percentage || 0), 0) / list.length) : 0;
+    return `
+      <div class="vtx-sd-histbar">
+        <span class="vtx-sd-note" style="margin:0;">${list.length} exam${list.length === 1 ? '' : 's'} · average ${avg}%</span>
+        ${periods.length > 1 ? `<select id="stuModalPeriod" class="vtx-stu-select" style="height:34px;max-width:210px;" aria-label="Filter exams by session and term">
+          <option value="">All sessions</option>${periods.map(l => `<option value="${_esc(l)}"${l === _stuM.period ? ' selected' : ''}>${_esc(l)}</option>`).join('')}</select>` : ''}
+      </div>
+      <div class="vtx-sd-hist">
+        ${shown.map(r => {
+          const d = r.data, pct = d.percentage || 0;
+          const col = d.grade === 'A' ? 'var(--success)' : d.grade === 'B' ? 'var(--info)' : (d.grade === 'C' || d.grade === 'D') ? 'var(--warning)' : 'var(--danger)';
+          return `<button type="button" class="vtx-sd-exam" data-result="${_esc(r.id)}" ${d.hasDetail ? '' : 'title="No per-question detail for this result"'}>
+            <span class="vtx-sd-score" style="color:${col}"><b>${pct}%</b><i>${_esc(d.grade || '?')}</i></span>
+            <span class="vtx-sd-exinfo">
+              <span class="vtx-sd-exline">${_periodChipHTML(d)}<span class="vtx-sd-date">${_stuDate(d.ts)}</span></span>
+              <span class="vtx-sd-subj">${(d.subjects || []).map(x => `${_esc(x)} ${d.scores?.[x] || 0}%`).join(' · ') || '—'}</span>
+            </span>
+            <span class="vtx-sd-go" aria-hidden="true">›</span></button>`;
+        }).join('') || '<p class="vtx-sd-note">No exams in this session.</p>'}
+      </div>
+      ${list.length > 5 ? `<button type="button" class="vtx-pager-btn" id="stuModalMore" style="margin-top:.625rem;width:100%;">${_stuM.all ? 'Show fewer' : `Show all ${list.length}`}</button>` : ''}`;
+  }
+
+  function _stuModalBody(st, rows) {
+    const name = st.name || 'Unnamed student';
+    const hue = _stuHue(name || st.id);
+    const done = st.coachingCompleted ? Object.keys(st.coachingCompleted).length : 0;
+    const weak = Array.isArray(st.weakSubjects) ? st.weakSubjects : [];
+    const shownKeys = ['name','email','class','school','admissionNo','isAdmin','createdAt','timetableGroup','studyStreak','lastActiveDate','lastExamPercentage','weakSubjects','totalExamsCompleted','coachingCompleted','coachingCompletedDocs','id','_school'];
+    const extras = Object.keys(st).filter(k => !shownKeys.includes(k) && (typeof st[k] === 'string' || typeof st[k] === 'number' || typeof st[k] === 'boolean'))
+      .sort().map(k => _stuInfo(k, String(st[k])));
+    const list = rows && rows !== 'error' ? rows : [];
+    const taken = rows && rows !== 'error' ? rows.length : (st.totalExamsCompleted || 0);
+    const avg = list.length ? Math.round(list.reduce((a, r) => a + (r.data.percentage || 0), 0) / list.length) : null;
+    const latest = list.length ? list[0].data.percentage : (typeof st.lastExamPercentage === 'number' ? st.lastExamPercentage : null);
+    const stat = (v, l) => `<div class="vtx-sd-stat"><b>${v}</b><span>${l}</span></div>`;
+    return `
+      <div class="vtx-sd-head">
+        <button type="button" class="vtx-stu-av vtx-sd-av" data-vtx-av="${_esc(st.id)}" data-av-uid="${_esc(st.id)}" data-av-name="${_esc(name)}"
+                style="--h:${hue}" aria-label="View profile photo of ${_esc(name)}" title="View photo">${_esc(_stuInitials(name))}</button>
+        <div class="vtx-sd-who">
+          <h2 id="stuModalTitle">${_esc(name)}${st.isAdmin ? '<span class="vtx-stu-badge">Admin</span>' : ''}</h2>
+          <p>${_esc([st.class, st._school].filter(Boolean).join(' · ') || '—')}</p>
+          <p class="vtx-sd-email">${_esc(st.email || 'No email')}</p>
+        </div>
+        <button type="button" class="vtx-sd-x" id="stuModalClose" aria-label="Close">×</button>
+      </div>
+      <div class="vtx-sd-actions">
+        <button type="button" class="teacher-edit-student btn bg-blue-600 hover:bg-blue-700" data-uid="${_esc(st.id)}" style="font-size:var(--text-sm);">Edit</button>
+        <button type="button" class="teacher-toggle-admin btn bg-gray-500" data-uid="${_esc(st.id)}" data-name="${_esc(name)}" data-is-admin="${st.isAdmin ? 'true' : 'false'}" style="font-size:var(--text-sm);">${st.isAdmin ? 'Remove admin' : 'Make admin'}</button>
+        <button type="button" class="teacher-delete-student btn vtx-sd-danger" data-uid="${_esc(st.id)}" style="font-size:var(--text-sm);">Delete</button>
+      </div>
+      <div class="vtx-sd-stats">
+        ${stat(taken, 'Exams taken')}${stat(avg === null ? '—' : avg + '%', 'Average')}${stat(latest === null || latest === undefined ? '—' : latest + '%', 'Latest')}${stat(typeof st.studyStreak === 'number' ? st.studyStreak : 0, 'Day streak')}
+      </div>
+      <h3 class="vtx-sd-h">Profile</h3>
+      <dl class="vtx-sd-grid">
+        ${_stuInfo('Email', st.email, { copy: true })}
+        ${_stuInfo('Admission no.', st.admissionNo, { copy: true })}
+        ${_stuInfo('Class', st.class)}
+        ${_stuInfo('School', st._school)}
+        ${_stuInfo('Timetable group', st.timetableGroup)}
+        ${_stuInfo('Joined', _stuTime(st) ? _stuDate(_stuTime(st)) : '')}
+        ${_stuInfo('Last active', st.lastActiveDate ? _stuDate(new Date(st.lastActiveDate + 'T00:00:00').getTime()) : '')}
+        ${_stuInfo('Task days completed', String(done))}
+        ${_stuInfo('Student ID', st.id, { copy: true })}
+      </dl>
+      ${weak.length ? `<h3 class="vtx-sd-h">Needs work</h3><div class="vtx-sd-chips">${weak.map(w => `<span class="vtx-sd-weak">${_esc(typeof w === 'string' ? w : (w && w.subject) || JSON.stringify(w))}</span>`).join('')}</div>` : ''}
+      <h3 class="vtx-sd-h">Exam history</h3>
+      <div id="stuModalHistory">${_stuHistoryHTML(rows === undefined ? null : rows)}</div>
+      ${extras.length ? `<details class="vtx-sd-more"><summary>More fields (${extras.length})</summary><dl class="vtx-sd-grid">${extras.join('')}</dl></details>` : ''}`;
+  }
+
+  function _closeStudentModal() {
+    const m = document.getElementById('teacherStudentModal');
+    if (m) m.remove();
+    document.removeEventListener('keydown', _stuModalKey);
+    _stuM.uid = null;
+  }
+  function _stuModalKey(e) {
+    if (e.key === 'Escape' && !document.getElementById('teacherReviewModal') && !document.getElementById('teacherEditStudentModal') && !document.querySelector('.vav')) _closeStudentModal();
+  }
+
+  function _refreshStudentModal() {
+    const m = document.getElementById('teacherStudentModal');
+    if (!m || !_stuM.uid) return;
+    const st = _stu.all.find(x => x.id === _stuM.uid);
+    if (!st) { _closeStudentModal(); return; }                     // the student was deleted
+    const panel = m.querySelector('.vtx-sd-panel');
+    const top = panel.scrollTop;
+    const hit = _stuHist[_stuM.uid];
+    panel.innerHTML = _stuModalBody(st, hit ? hit.rows : undefined);
+    panel.scrollTop = top;
+  }
+
+  async function _openStudentModal(uid) {
+    const st = _stu.all.find(x => x.id === uid);
+    if (!st) return;
+    _closeStudentModal();
+    _stuM.uid = uid; _stuM.period = ''; _stuM.all = false;
+    const m = document.createElement('div');
+    m.id = 'teacherStudentModal';
+    m.setAttribute('role', 'dialog'); m.setAttribute('aria-modal', 'true'); m.setAttribute('aria-labelledby', 'stuModalTitle');
+    m.innerHTML = '<div class="vtx-sd-panel"></div>';
+    document.body.appendChild(m);
+    const panel = m.querySelector('.vtx-sd-panel');
+    const hit = _stuHist[uid] && Date.now() - _stuHist[uid].at < 120000 ? _stuHist[uid].rows : undefined;
+    panel.innerHTML = _stuModalBody(st, hit);
+    m.addEventListener('click', e => {
+      if (e.target === m || e.target.closest('#stuModalClose')) { _closeStudentModal(); return; }
+      const av = e.target.closest('.vtx-sd-av');
+      if (av) { if (window.VtxAvatar && VtxAvatar.view) VtxAvatar.view({ uid: av.dataset.avUid }, av.dataset.avName || 'Profile photo', _stuInitials(av.dataset.avName)); return; }
+      const cp = e.target.closest('.vtx-sd-copy');
+      if (cp) {
+        const v = cp.dataset.copy;
+        (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(v) : Promise.reject())
+          .then(() => UI.toast('Copied.', 'success'), () => UI.toast('Could not copy.', 'error'));
+        return;
+      }
+      const ex = e.target.closest('.vtx-sd-exam');
+      if (ex) { _openReviewModal(ex.dataset.result); return; }
+      if (e.target.closest('#stuModalMore')) { _stuM.all = !_stuM.all; _renderStuHistory(); return; }
+      if (e.target.closest('.teacher-delete-student')) { setTimeout(() => { if (!_stu.all.some(x => x.id === uid)) _closeStudentModal(); }, 1500); }
+    });
+    m.addEventListener('change', e => {
+      if (e.target.id === 'stuModalPeriod') { _stuM.period = e.target.value; _stuM.all = false; _renderStuHistory(); }
+    });
+    document.addEventListener('keydown', _stuModalKey);
+    const closeBtn = m.querySelector('#stuModalClose'); if (closeBtn) closeBtn.focus();
+    if (hit === undefined) {
+      try {
+        const rows = await _stuLoadHistory(uid, st.name);
+        if (_stuM.uid === uid) _refreshStudentModal();
+      } catch (err) {
+        console.error('[teacher] student history error:', err);
+        if (_stuM.uid === uid) { _stuHist[uid] = null; const h = document.getElementById('stuModalHistory'); if (h) h.innerHTML = _stuHistoryHTML('error'); }
+      }
+    }
+  }
+
+  function _renderStuHistory() {
+    const h = document.getElementById('stuModalHistory');
+    const hit = _stuHist[_stuM.uid];
+    if (h && hit) h.innerHTML = _stuHistoryHTML(hit.rows);
   }
 
   function _loadStudents() {
@@ -1404,6 +1658,7 @@ function _showGamesSubTab(sub) {
         });
         _stu.all = rows; _stu.ready = true;
         _stuFillSelects(); _renderStudents();
+        _refreshStudentModal();
       },
       err => {
         console.error('[teacher] Error loading students:', err);
