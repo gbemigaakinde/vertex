@@ -62,34 +62,16 @@
     });
   }
 
-  // Students: matches the school group <details> with a grid of student cards
+  // Students: matches the directory rows
   function _skStudents() {
-    const card = function (i) {
-      return '<div style="background:var(--bg-base);border:1px solid var(--border);border-radius:8px;padding:.5rem .625rem .75rem .5rem;">' +
-        '<div style="display:flex;align-items:center;gap:.25rem;">' +
-          _sk('32px', '32px', 'flex-shrink:0;', 'vtx-sk-box') +
-          _sk(i % 2 ? '55%' : '70%', '14px', 'flex:1;') +
-          _sk('32px', '32px', 'flex-shrink:0;', 'vtx-sk-box') +
-          _sk('32px', '32px', 'flex-shrink:0;', 'vtx-sk-box') +
-        '</div>' +
-        '<div style="padding-left:2.25rem;">' +
-          _sk('40%', '11px', 'margin-top:4px;') +
-          _sk('80%', '11px', 'margin-top:6px;') +
-          _sk('50%', '11px', 'margin-top:6px;') +
-        '</div>' +
-      '</div>';
+    const row = function (i) {
+      return '<div class="vtx-stu-row" aria-hidden="true">' +
+        '<div class="vtx-stu-who">' + _sk('38px', '38px', 'flex-shrink:0;border-radius:50%;') +
+        '<span class="vtx-stu-id" style="flex:1;">' + _sk(i % 2 ? '45%' : '60%', '13px') + _sk('70%', '11px', 'margin-top:6px;') + '</span></div>' +
+        '<div class="vtx-stu-cell">' + _sk('50px', '12px') + '</div><div class="vtx-stu-cell">' + _sk('110px', '12px') + '</div>' +
+        '<div class="vtx-stu-cell">' + _sk('70px', '12px') + '</div><div class="vtx-stu-cell">' + _sk('70px', '12px') + '</div><div></div></div>';
     };
-    const group = function () {
-      return '<div aria-hidden="true" class="glass-dark overflow-hidden mb-3" style="border-radius:10px;">' +
-        '<div style="display:flex;align-items:center;gap:.5rem;padding:.875rem 1rem;">' +
-          _sk('160px', '18px') + _sk('28px', '18px', '', 'vtx-sk-pill') +
-        '</div>' +
-        '<div style="padding:.875rem 1rem;"><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.625rem;">' +
-          _skRepeat(6, card) +
-        '</div></div>' +
-      '</div>';
-    };
-    return group() + group();
+    return '<div class="vtx-stu-table">' + _skRepeat(7, row) + '</div>';
   }
 
   // Tasks: matches the "Existing Tasks" list
@@ -574,6 +556,81 @@ function _injectTeacherNavStyles() {
       border-color: var(--accent-border) !important;
     }
 
+    /* ── Students directory ── */
+    .vtx-stu-head { display:flex; align-items:flex-start; justify-content:space-between; gap:1rem; margin-bottom:1rem; }
+    .vtx-stu-title { font-size:var(--text-lg, 1.25rem); font-weight:650; color:var(--text-1); letter-spacing:-0.02em; line-height:1.2; }
+    .vtx-stu-sub { font-size:var(--text-xs); color:var(--text-3); margin-top:3px; font-variant-numeric:tabular-nums; }
+    .vtx-stu-tools { display:grid; grid-template-columns:minmax(0,1fr) auto auto auto; gap:.5rem; }
+    .vtx-stu-search { position:relative; display:block; min-width:0; }
+    .vtx-stu-search .vtx-stu-mag { position:absolute; left:.75rem; top:50%; transform:translateY(-50%); color:var(--text-4); pointer-events:none; }
+    .vtx-stu-search input, .vtx-stu-select { width:100%; height:40px; font:inherit; font-size:var(--text-sm); color:var(--text-1);
+      background:var(--bg-base); border:1px solid var(--border); border-radius:10px; outline:none; transition:border-color .15s, box-shadow .15s; }
+    .vtx-stu-search input { padding:0 .75rem 0 2.25rem; }
+    .vtx-stu-select { padding:0 .75rem; max-width:200px; cursor:pointer; }
+    .vtx-stu-search input:focus, .vtx-stu-select:focus { border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-subtle); }
+    .vtx-stu-chips { display:flex; align-items:center; gap:.5rem; margin:.625rem 0 1rem; min-height:30px; flex-wrap:wrap; }
+    .vtx-stu-chip { display:inline-flex; align-items:center; gap:.375rem; height:30px; padding:0 .75rem; font-size:var(--text-xs); font-weight:600;
+      color:var(--text-2); background:var(--bg-base); border:1px solid var(--border); border-radius:99px; cursor:pointer; transition:all .15s; }
+    .vtx-stu-chip:hover { border-color:var(--accent-border); }
+    .vtx-stu-chip.is-on { color:var(--accent-text); background:var(--accent-subtle); border-color:var(--accent-border); }
+    .vtx-stu-clear { font-size:var(--text-xs); font-weight:600; color:var(--text-3); background:none; border:none; cursor:pointer; padding:0 .25rem; text-decoration:underline; text-underline-offset:3px; }
+    .vtx-stu-clear:hover { color:var(--text-1); }
+    .vtx-stu-table { background:var(--bg-base); border:1px solid var(--border); border-radius:12px; overflow:hidden; }
+    .vtx-stu-row { display:grid; grid-template-columns:minmax(0,2.4fr) .7fr minmax(0,1.5fr) 1fr 1fr auto; align-items:center; gap:1rem;
+      padding:.625rem 1rem; border-top:1px solid var(--border); transition:background .12s; }
+    .vtx-stu-table > .vtx-stu-row:first-child { border-top:none; }
+    .vtx-stu-row:not(.vtx-stu-th):hover { background:var(--bg-subtle); }
+    .vtx-stu-th > div { text-align:left; }
+    .vtx-stu-th { padding-top:.5rem; padding-bottom:.5rem; background:var(--bg-subtle); font-size:11px; font-weight:600; letter-spacing:.04em; text-transform:uppercase; color:var(--text-3); }
+    .vtx-stu-who { display:flex; align-items:center; gap:.75rem; min-width:0; }
+    .vtx-stu-av { flex-shrink:0; width:38px; height:38px; border-radius:50%; display:flex; align-items:center; justify-content:center;
+      font-size:.75rem; font-weight:700; letter-spacing:.02em; color:hsl(var(--h) 55% 32%); background:hsl(var(--h) 70% 92%); }
+    @media (prefers-color-scheme: dark) { .vtx-stu-av { color:hsl(var(--h) 70% 80%); background:hsl(var(--h) 35% 22%); } }
+    .vtx-stu-id { display:flex; flex-direction:column; min-width:0; }
+    .vtx-stu-name { font-size:var(--text-sm); font-weight:600; color:var(--text-1); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:.375rem; }
+    .vtx-stu-badge { flex-shrink:0; font-size:10px; font-weight:700; letter-spacing:.03em; text-transform:uppercase; color:var(--warning); border:1px solid currentColor; border-radius:4px; padding:0 4px; line-height:15px; }
+    .vtx-stu-email { font-size:var(--text-xs); color:var(--text-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .vtx-stu-cell { font-size:var(--text-sm); color:var(--text-2, var(--text-1)); min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .vtx-stu-adm { font-variant-numeric:tabular-nums; }
+    .vtx-stu-joined { color:var(--text-3); }
+    .vtx-stu-meta { display:none; font-size:var(--text-xs); color:var(--text-3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .vtx-stu-btns { display:flex; gap:2px; justify-content:flex-end; }
+    .vtx-stu-ib { width:34px; height:34px; display:inline-flex; align-items:center; justify-content:center; font-size:1.0625rem; color:var(--text-3);
+      background:none; border:none; border-radius:8px; cursor:pointer; transition:background .12s, color .12s; }
+    .vtx-stu-ib:hover { background:var(--bg-subtle); color:var(--text-1); }
+    .vtx-stu-table .vtx-stu-row:hover .vtx-stu-ib:hover { background:var(--bg-base); }
+    .vtx-stu-ib.is-on { color:var(--warning); }
+    .vtx-stu-del:hover { color:var(--danger); background:var(--danger-subtle); }
+    .vtx-stu-ib:focus-visible, .vtx-stu-chip:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
+    .vtx-stu-empty { text-align:center; padding:3rem 1rem; color:var(--text-3); border:1px dashed var(--border); border-radius:12px; }
+    .vtx-stu-empty i { font-size:2rem; color:var(--text-4); }
+    .vtx-stu-empty p { font-size:var(--text-base); font-weight:600; color:var(--text-1); margin-top:.5rem; }
+    .vtx-stu-empty span { font-size:var(--text-sm); }
+    @media (max-width:900px) {
+      .vtx-stu-row { grid-template-columns:minmax(0,1fr) auto; gap:.375rem .75rem; }
+      .vtx-stu-th { display:none; }
+      .vtx-stu-who { grid-column:1; grid-row:1; }
+      .vtx-stu-btns { grid-column:2; grid-row:1; }
+      .vtx-stu-cell { display:none; }
+      .vtx-stu-meta { display:block; grid-column:1 / -1; grid-row:2; padding-left:50px; }
+      .vtx-stu-row { padding:.75rem .875rem; }
+      .vtx-stu-tools { grid-template-columns:1fr 1fr 1fr; }
+      .vtx-stu-search { grid-column:1 / -1; }
+      .vtx-stu-select { max-width:none; }
+    }
+    @media (max-width:480px) { .vtx-stu-tools { grid-template-columns:1fr 1fr; } .vtx-stu-search, #stuSort { grid-column:1 / -1; } }
+
+    /* ── Results pager ── */
+    .vtx-pager { display:flex; align-items:center; justify-content:space-between; gap:.75rem;
+      margin-top:1rem; padding-top:.875rem; border-top:1px solid var(--border); }
+    .vtx-pager-count { font-size:var(--text-xs); color:var(--text-3); font-variant-numeric:tabular-nums; }
+    .vtx-pager-btn { font-size:var(--text-sm); font-weight:600; color:var(--text-1); background:var(--bg-base);
+      border:1px solid var(--border); border-radius:8px; padding:.5rem 1rem; cursor:pointer;
+      transition:border-color .15s ease, background .15s ease; }
+    .vtx-pager-btn:hover:not(:disabled) { border-color:var(--accent-border); background:var(--bg-subtle); }
+    .vtx-pager-btn:disabled { opacity:.6; cursor:default; }
+    @media (max-width:480px) { .vtx-pager { flex-direction:column-reverse; align-items:stretch; text-align:center; } }
+
     /* ── Review modal ── */
     #teacherReviewModal {
       position: fixed; inset: 0; background: var(--bg-overlay); z-index: 1200;
@@ -760,26 +817,31 @@ function renderTeacherDashboard() {
 
         <div id="teacher-approvals" class="teacher-tab hidden"></div>
         <div id="teacher-students" class="teacher-tab">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+          <div class="vtx-stu-head">
             <div>
-              <h2 style="font-size:var(--text-md);font-weight:600;color:var(--text-1);letter-spacing:-0.015em;">Registered Students</h2>
-              <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:2px;">Grouped by school</p>
+              <h2 class="vtx-stu-title">Students</h2>
+              <p class="vtx-stu-sub" id="stuSummary">Loading…</p>
             </div>
-            <div style="display:flex;gap:.5rem;flex-wrap:wrap;justify-content:flex-end;">
-            <button onclick="StudentSync.repair(this)" class="btn bg-gray-500" style="font-size:var(--text-sm);"
-                    title="Fix names and remove leftover records of deleted students everywhere">
-              Sync data
-            </button>
-            <button onclick="Teacher._loadStudents()" class="btn bg-gray-500" style="font-size:var(--text-sm);">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                   stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polyline points="1 4 1 10 7 10"/>
-                <path d="M3.51 15a9 9 0 1 0 .49-3.5"/>
-              </svg>
-              Refresh
-            </button>
+            <div class="vtx-stu-actions">
+              <button onclick="StudentSync.repair(this)" class="btn bg-gray-500" style="font-size:var(--text-sm);"
+                      title="Fix names and remove leftover records of deleted students everywhere">Sync data</button>
             </div>
           </div>
+          <div class="vtx-stu-tools" role="search">
+            <label class="vtx-stu-search">
+              <svg class="vtx-stu-mag" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+              <input id="stuSearch" type="search" placeholder="Search name, email or admission no." autocomplete="off" aria-label="Search students">
+            </label>
+            <select id="stuSchool" class="vtx-stu-select" aria-label="Filter by school"></select>
+            <select id="stuClass" class="vtx-stu-select" aria-label="Filter by class"></select>
+            <select id="stuSort" class="vtx-stu-select" aria-label="Sort students">
+              <option value="name">Name A–Z</option>
+              <option value="new">Newest first</option>
+              <option value="class">Class</option>
+              <option value="school">School</option>
+            </select>
+          </div>
+          <div class="vtx-stu-chips" id="stuChips"></div>
           <div id="studentsList"></div>
         </div>
 
@@ -1173,113 +1235,183 @@ function _showGamesSubTab(sub) {
   }
 }
 
-  function _loadStudents() {
-  const container = document.getElementById('studentsList');
-  if (!container) return;
-  container.innerHTML = _skStudents();
+  /* ── Students directory ─────────────────────────────────────────────────
+     One live listener feeds an in-memory list. Search, filters, sorting and
+     "Show more" all work on that list, so they are instant and cost no reads. */
+  const STU_PAGE = 30;
+  const _stu = { all: [], q: '', school: '', cls: '', sort: 'name', admin: false, shown: STU_PAGE, ready: false };
 
-  const iconBtn = 'display:inline-flex;align-items:center;justify-content:center;' +
-                  'width:32px;height:32px;flex-shrink:0;background:none;border:none;' +
-                  'border-radius:8px;cursor:pointer;padding:0;';
+  function _stuInitials(name) {
+    const parts = String(name || '?').trim().split(/\s+/).filter(w => /[A-Za-z\u00C0-\uFFFF]/.test(w));
+    return ((parts[0] || '?')[0] + (parts.length > 1 ? parts[parts.length - 1][0] : '')).toUpperCase();
+  }
+  function _stuHue(str) {
+    let h = 0; for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) % 360; return h;
+  }
+  function _stuTime(s) {
+    const c = s.createdAt;
+    if (!c) return 0;
+    return c.toMillis ? c.toMillis() : (c.toDate ? c.toDate().getTime() : new Date(c).getTime() || 0);
+  }
+  function _stuFiltered() {
+    const q = _stu.q.trim().toLowerCase();
+    let list = _stu.all.filter(s =>
+      (!_stu.school || s._school === _stu.school) &&
+      (!_stu.cls || (s.class || '') === _stu.cls) &&
+      (!_stu.admin || s.isAdmin) &&
+      (!q || (s.name || '').toLowerCase().includes(q) || (s.email || '').toLowerCase().includes(q) ||
+             String(s.admissionNo || '').toLowerCase().includes(q)));
+    const nat = (a, b) => String(a || '').localeCompare(String(b || ''), undefined, { numeric: true, sensitivity: 'base' });
+    const by = {
+      name:   (a, b) => nat(a.name, b.name),
+      new:    (a, b) => _stuTime(b) - _stuTime(a),
+      class:  (a, b) => nat(a.class, b.class) || nat(a.name, b.name),
+      school: (a, b) => nat(a._school, b._school) || nat(a.name, b.name)
+    }[_stu.sort] || ((a, b) => 0);
+    return list.sort(by);
+  }
 
-  _cancel('students');
-  const unsub = Db().collection('students').onSnapshot(
-    snap => {
-      const bySchool = {};
-      snap.forEach(doc => {
-        const d = doc.data();
-        // Skip empty shells (no name, class or email) left behind by a deleted student's open app
-        if (!d.name && !d.class && !d.email) return;
-        const school = d.school || 'No School';
-        if (!bySchool[school]) bySchool[school] = [];
-        bySchool[school].push({ id: doc.id, ...d });
-      });
-      const schools = Object.keys(bySchool).sort();
-      if (schools.length === 0) {
-        container.innerHTML = `
-          <div style="text-align:center;padding:2rem;color:var(--text-3);font-size:var(--text-sm);">
-            No students registered yet.</div>`;
-        return;
-      }
-      container.innerHTML = schools.map(school => {
-        const students = bySchool[school];
-        return `
-          <details class="glass-dark overflow-hidden mb-3" style="border-radius:10px;" open>
-            <summary style="cursor:pointer;">
-              <span style="display:flex;align-items:center;gap:.5rem;flex:1;min-width:0;padding-right:.875rem;">
-                <span style="font-weight:700;font-size:var(--text-base);min-width:0;
-                             overflow-wrap:anywhere;line-height:1.3;">${_esc(school)}</span>
-                <span style="flex-shrink:0;font-size:var(--text-xs);font-weight:500;
-                             background:var(--accent-subtle);color:var(--accent-text);
-                             border:1px solid var(--accent-border);
-                             padding:1px 7px;border-radius:99px;">${students.length}</span>
-              </span>
-            </summary>
-            <div style="padding:.875rem 1rem;">
-              <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.625rem;">
-                ${students.map(s => {
-                  const joined = s.createdAt
-                    ? new Date(s.createdAt.toDate ? s.createdAt.toDate() : s.createdAt).toLocaleDateString()
-                    : '—';
-                  const admno = s.admissionNo ? `<p style="font-size:var(--text-xs);color:var(--accent);
-                    margin-top:2px;font-weight:600;"><i class="ph ph-identification-card" style="margin-right:3px;vertical-align:-1px;"></i>${_esc(s.admissionNo)}</p>` : '';
-                  return `
-                    <div style="background:var(--bg-base);border:1px solid var(--border);
-                                border-radius:8px;padding:.5rem .625rem .75rem .5rem;">
-                      <div style="display:flex;align-items:center;gap:.25rem;">
-                        <button class="teacher-toggle-admin"
-                                data-uid="${_esc(s.id)}" data-name="${_esc(s.name)}"
-                                data-is-admin="${s.isAdmin ? 'true' : 'false'}"
-                                aria-label="Toggle admin for ${_esc(s.name)}"
-                                style="${iconBtn}font-size:1rem;line-height:1;
-                                       color:${s.isAdmin ? 'var(--warning)' : 'var(--text-3)'};">
-                          ${s.isAdmin ? '★' : '☆'}
-                        </button>
-                        <p style="flex:1;min-width:0;font-size:var(--text-sm);font-weight:700;color:var(--text-1);
-                                  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
-                          ${_esc(s.name)}</p>
-                        <button class="teacher-edit-student" data-uid="${_esc(s.id)}"
-                                aria-label="Edit ${_esc(s.name)}"
-                                style="${iconBtn}color:var(--accent);"
-                                onmouseenter="this.style.color='var(--accent-hover)'"
-                                onmouseleave="this.style.color='var(--accent)'">
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
-                          </svg>
-                        </button>
-                        <button class="teacher-delete-student" data-uid="${_esc(s.id)}"
-                                aria-label="Delete ${_esc(s.name)}"
-                                style="${iconBtn}color:var(--text-3);"
-                                onmouseenter="this.style.color='var(--danger)'"
-                                onmouseleave="this.style.color='var(--text-3)'">
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
-                          </svg>
-                        </button>
-                      </div>
-                      <div style="padding-left:2.25rem;">
-                        <p style="font-size:var(--text-xs);color:var(--text-2, var(--text-3));margin-top:1px;">${_esc(s.class || '—')}</p>
-                        <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:3px;
-                                  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${_esc(s.email || '')}</p>
-                        ${admno}
-                        <p style="font-size:var(--text-xs);color:var(--text-3);margin-top:4px;">Joined ${joined}</p>
-                      </div>
-                    </div>`;
-                }).join('')}
-              </div>
-            </div>
-          </details>`;
-      }).join('');
-    },
-    err => {
-      console.error('[teacher] Error loading students:', err);
-      container.innerHTML = `<p style="text-align:center;color:var(--danger);font-size:var(--text-sm);">Error loading students.</p>`;
+  function _stuFillSelects() {
+    const sch = document.getElementById('stuSchool'), cls = document.getElementById('stuClass');
+    if (!sch || !cls) return;
+    const schools = [...new Set(_stu.all.map(s => s._school))].sort((a, b) => a.localeCompare(b));
+    const classes = [...new Set(_stu.all.map(s => s.class || '').filter(Boolean))]
+      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    if (_stu.school && !schools.includes(_stu.school)) _stu.school = '';
+    if (_stu.cls && !classes.includes(_stu.cls)) _stu.cls = '';
+    sch.innerHTML = '<option value="">All schools</option>' + schools.map(x => `<option value="${_esc(x)}"${x === _stu.school ? ' selected' : ''}>${_esc(x)}</option>`).join('');
+    cls.innerHTML = '<option value="">All classes</option>' + classes.map(x => `<option value="${_esc(x)}"${x === _stu.cls ? ' selected' : ''}>${_esc(x)}</option>`).join('');
+  }
+
+  function _stuRowHTML(s) {
+    const joined = _stuTime(s) ? new Date(_stuTime(s)).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' }) : '—';
+    const hue = _stuHue(s.name || s.id);
+    const name = s.name || 'Unnamed student';
+    return `
+      <div class="vtx-stu-row" role="listitem">
+        <div class="vtx-stu-who">
+          <span class="vtx-stu-av" style="--h:${hue}" aria-hidden="true">${_esc(_stuInitials(s.name))}</span>
+          <span class="vtx-stu-id">
+            <span class="vtx-stu-name">${_esc(name)}${s.isAdmin ? '<span class="vtx-stu-badge">Admin</span>' : ''}</span>
+            <span class="vtx-stu-email">${_esc(s.email || 'No email')}</span>
+          </span>
+        </div>
+        <div class="vtx-stu-meta">${_esc([s.class, s._school, s.admissionNo].filter(Boolean).join(' · ') || '—')}<span> · Joined ${joined}</span></div>
+        <div class="vtx-stu-cell vtx-stu-class" data-label="Class">${_esc(s.class || '—')}</div>
+        <div class="vtx-stu-cell vtx-stu-school" data-label="School">${_esc(s._school)}</div>
+        <div class="vtx-stu-cell vtx-stu-adm" data-label="Adm. no.">${s.admissionNo ? _esc(s.admissionNo) : '—'}</div>
+        <div class="vtx-stu-cell vtx-stu-joined" data-label="Joined">${joined}</div>
+        <div class="vtx-stu-btns">
+          <button class="teacher-toggle-admin vtx-stu-ib${s.isAdmin ? ' is-on' : ''}" data-uid="${_esc(s.id)}" data-name="${_esc(s.name)}"
+                  data-is-admin="${s.isAdmin ? 'true' : 'false'}" title="${s.isAdmin ? 'Remove admin access' : 'Make admin'}"
+                  aria-label="${s.isAdmin ? 'Remove admin access for' : 'Make admin:'} ${_esc(s.name)}" aria-pressed="${s.isAdmin ? 'true' : 'false'}">
+            ${s.isAdmin ? '<svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2.5 14.9 8.7 21.5 9.5 16.6 14 17.9 20.6 12 17.3 6.1 20.6 7.4 14 2.5 9.5 9.1 8.7"/></svg>' : '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="12 2.5 14.9 8.7 21.5 9.5 16.6 14 17.9 20.6 12 17.3 6.1 20.6 7.4 14 2.5 9.5 9.1 8.7"/></svg>'}</button>
+          <button class="teacher-edit-student vtx-stu-ib" data-uid="${_esc(s.id)}" title="Edit student" aria-label="Edit ${_esc(s.name)}">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></svg></button>
+          <button class="teacher-delete-student vtx-stu-ib vtx-stu-del" data-uid="${_esc(s.id)}" title="Delete student" aria-label="Delete ${_esc(s.name)}">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6"/></svg></button>
+        </div>
+      </div>`;
+  }
+
+  function _renderStudents() {
+    const container = document.getElementById('studentsList');
+    if (!container) return;
+    const sum = document.getElementById('stuSummary');
+    const total = _stu.all.length;
+    if (sum) {
+      const nSchools = new Set(_stu.all.map(s => s._school)).size;
+      const nAdmins = _stu.all.filter(s => s.isAdmin).length;
+      sum.textContent = total
+        ? `${total} student${total === 1 ? '' : 's'} · ${nSchools} school${nSchools === 1 ? '' : 's'}${nAdmins ? ` · ${nAdmins} admin${nAdmins === 1 ? '' : 's'}` : ''}`
+        : 'No students yet';
     }
-  );
-  _reg('students', unsub);
-}
+    const chips = document.getElementById('stuChips');
+    if (chips) {
+      chips.innerHTML = `<button type="button" class="vtx-stu-chip${_stu.admin ? ' is-on' : ''}" id="stuAdminChip" aria-pressed="${_stu.admin}">Admins only</button>` +
+        ((_stu.q || _stu.school || _stu.cls || _stu.admin) ? `<button type="button" class="vtx-stu-clear" id="stuClear">Clear filters</button>` : '');
+    }
+    if (!total) {
+      container.innerHTML = `<div class="vtx-stu-empty"><i class="ph ph-users-three"></i><p>No students registered yet</p><span>Students appear here after they sign up and are approved.</span></div>`;
+      return;
+    }
+    const list = _stuFiltered();
+    if (!list.length) {
+      container.innerHTML = `<div class="vtx-stu-empty"><i class="ph ph-magnifying-glass"></i><p>No students match</p><span>Try a different name, or clear the filters.</span></div>`;
+      return;
+    }
+    const visible = list.slice(0, _stu.shown);
+    container.innerHTML = `
+      <div class="vtx-stu-table" role="list">
+        <div class="vtx-stu-row vtx-stu-th" aria-hidden="true">
+          <div>Student</div><div>Class</div><div>School</div><div>Adm. no.</div><div>Joined</div><div></div>
+        </div>
+        ${visible.map(_stuRowHTML).join('')}
+      </div>
+      <div class="vtx-pager">
+        <span class="vtx-pager-count">Showing ${visible.length} of ${list.length}</span>
+        ${visible.length < list.length ? `<button type="button" class="vtx-pager-btn" id="stuMoreBtn">Show ${Math.min(STU_PAGE, list.length - visible.length)} more</button>` : ''}
+      </div>`;
+  }
+
+  function _stuBind() {
+    const root = document.getElementById('teacher-students');
+    if (!root || root._vtxBound) return;
+    root._vtxBound = true;
+    let t;
+    root.addEventListener('input', e => {
+      if (e.target.id !== 'stuSearch') return;
+      clearTimeout(t);
+      const v = e.target.value;
+      t = setTimeout(() => { _stu.q = v; _stu.shown = STU_PAGE; _renderStudents(); }, 120);
+    });
+    root.addEventListener('change', e => {
+      const id = e.target.id;
+      if (id === 'stuSchool') _stu.school = e.target.value;
+      else if (id === 'stuClass') _stu.cls = e.target.value;
+      else if (id === 'stuSort') _stu.sort = e.target.value;
+      else return;
+      _stu.shown = STU_PAGE; _renderStudents();
+    });
+    root.addEventListener('click', e => {
+      if (e.target.closest('#stuMoreBtn')) { _stu.shown += STU_PAGE; _renderStudents(); return; }
+      if (e.target.closest('#stuAdminChip')) { _stu.admin = !_stu.admin; _stu.shown = STU_PAGE; _renderStudents(); return; }
+      if (e.target.closest('#stuClear')) {
+        _stu.q = ''; _stu.school = ''; _stu.cls = ''; _stu.admin = false; _stu.shown = STU_PAGE;
+        const si = document.getElementById('stuSearch'); if (si) si.value = '';
+        _stuFillSelects(); _renderStudents();
+      }
+    });
+  }
+
+  function _loadStudents() {
+    const container = document.getElementById('studentsList');
+    if (!container) return;
+    _stuBind();
+    const sortEl = document.getElementById('stuSort'); if (sortEl) sortEl.value = _stu.sort;
+    const si = document.getElementById('stuSearch'); if (si) si.value = _stu.q;
+    if (_stu.ready) { _stuFillSelects(); _renderStudents(); return; }   // instant on revisit; the live listener keeps it current
+    container.innerHTML = _skStudents();
+    _cancel('students');
+    const unsub = Db().collection('students').onSnapshot(
+      snap => {
+        const rows = [];
+        snap.forEach(doc => {
+          const d = doc.data();
+          // Skip empty shells (no name, class or email) left behind by a deleted student's open app
+          if (!d.name && !d.class && !d.email) return;
+          rows.push({ id: doc.id, ...d, _school: d.school || 'No School' });
+        });
+        _stu.all = rows; _stu.ready = true;
+        _stuFillSelects(); _renderStudents();
+      },
+      err => {
+        console.error('[teacher] Error loading students:', err);
+        container.innerHTML = `<div class="vtx-stu-empty"><i class="ph ph-warning-circle"></i><p>Couldn't load students</p><span>Check your connection and reopen this tab.</span></div>`;
+      }
+    );
+    _reg('students', unsub);
+  }
 
   document.addEventListener('click', async e => {
   const deleteBtn = e.target.closest('.teacher-delete-student');
@@ -1792,32 +1924,62 @@ async function _saveStudentEdit(uid, previousAdmno) {
     }
   }
 
-  function _loadResults() {
-    const container = document.getElementById('resultsList');
-    if (!container) return;
-    container.innerHTML = _skResults(6);
-    _cancel('results');
-    const unsub = Db().collection('results').orderBy('timestamp', 'desc').onSnapshot(
-      snap => {
-        if (snap.empty) {
-          container.innerHTML = `
-            <p style="grid-column:1/-1;text-align:center;padding:2rem;
-                      color:var(--text-3);font-size:var(--text-sm);">No results yet.</p>`;
-          return;
-        }
-        container.innerHTML = snap.docs.map(doc => {
-          const r = doc.data();
-          const gradeColor = r.grade === 'A' ? 'var(--success)'
-                           : r.grade === 'B' ? 'var(--info)'
-                           : r.grade === 'C' ? 'var(--warning)'
-                           : r.grade === 'D' ? 'var(--warning)'
-                           : 'var(--danger)';
-          const pct = r.percentage || 0;
-          const ts  = r.timestamp
-            ? new Date(r.timestamp.toDate ? r.timestamp.toDate() : r.timestamp).toLocaleDateString()
-            : '—';
-          const hasDetail = !!(r.questionSnapshots);
-          return `
+  /* ── Results: paged + cached ────────────────────────────────────────────
+     Each result document carries every question snapshot, so it is heavy.
+     The list therefore (1) reads 12 cards at a time with a cursor instead of
+     opening a live listener on the whole collection, (2) keeps a light copy of
+     the first page in IndexedDB so the tab opens instantly and refreshes quietly
+     in the background, and (3) loads the full attempt only when a card is opened.
+     Firestore's own persistence stays off (see config.js). */
+  const RES_PAGE = 12;
+  const RES_TTL  = 5 * 60 * 1000;
+  const _res = { docs: [], cursor: null, done: false, loading: false, page: 0, fetchedAt: 0 };
+
+  const _idb = {
+    _db: null,
+    open() {
+      if (this._db) return this._db;
+      this._db = new Promise(resolve => {
+        try {
+          const rq = indexedDB.open('vtx-teacher-cache', 1);
+          rq.onupgradeneeded = () => rq.result.createObjectStore('kv');
+          rq.onsuccess = () => resolve(rq.result);
+          rq.onerror = () => resolve(null);
+        } catch (e) { resolve(null); }
+      });
+      return this._db;
+    },
+    async get(k) {
+      const db = await this.open(); if (!db) return null;
+      return new Promise(res => { try { const r = db.transaction('kv').objectStore('kv').get(k); r.onsuccess = () => res(r.result || null); r.onerror = () => res(null); } catch (e) { res(null); } });
+    },
+    async set(k, v) {
+      const db = await this.open(); if (!db) return;
+      try { db.transaction('kv', 'readwrite').objectStore('kv').put(v, k); } catch (e) {}
+    }
+  };
+
+  function _slimResult(d) {
+    const r = d.data();
+    const ts = r.timestamp && r.timestamp.toMillis ? r.timestamp.toMillis() : (r.timestamp || 0);
+    return { id: d.id, data: {
+      name: r.name, class: r.class, school: r.school, grade: r.grade, percentage: r.percentage,
+      subjects: r.subjects || [], scores: r.scores || {}, proctorSessionId: r.proctorSessionId || '',
+      hasDetail: !!r.questionSnapshots, ts
+    }};
+  }
+
+  function _resultCardHTML(doc) {
+    const r = doc.data;
+    const gradeColor = r.grade === 'A' ? 'var(--success)'
+                     : r.grade === 'B' ? 'var(--info)'
+                     : r.grade === 'C' ? 'var(--warning)'
+                     : r.grade === 'D' ? 'var(--warning)'
+                     : 'var(--danger)';
+    const pct = r.percentage || 0;
+    const ts  = r.ts ? new Date(r.ts).toLocaleDateString() : '—';
+    const hasDetail = !!r.hasDetail;
+    return `
             <div class="teacher-result-card" data-result-id="${_esc(doc.id)}"
                  title="${hasDetail ? 'Click to review full attempt' : 'No detailed data'}"
                  style="position:relative;background:var(--bg-base);
@@ -1869,16 +2031,77 @@ async function _saveStudentEdit(uid, previousAdmno) {
                   : `<span style="font-size:var(--text-xs);color:var(--text-4);font-style:italic;">No detail</span>`}
               </div>
             </div>`;
-        }).join('');
-      },
-      err => {
-        console.error('[teacher] Error loading results:', err);
-        container.innerHTML = `
+  }
+
+  function _renderResults() {
+    const container = document.getElementById('resultsList');
+    if (!container) return;
+    if (!_res.docs.length) {
+      container.innerHTML = _res.loading ? _skResults(6) : `
+        <p style="grid-column:1/-1;text-align:center;padding:2rem;
+                  color:var(--text-3);font-size:var(--text-sm);">No results yet.</p>`;
+      const pg0 = document.getElementById('resultsPager'); if (pg0) pg0.innerHTML = '';
+      return;
+    }
+    container.innerHTML = _res.docs.map(_resultCardHTML).join('');
+    let pg = document.getElementById('resultsPager');
+    if (!pg) {
+      pg = document.createElement('div');
+      pg.id = 'resultsPager';
+      container.after(pg);
+    }
+    pg.className = 'vtx-pager';
+    pg.innerHTML = `
+      <span class="vtx-pager-count">Showing ${_res.docs.length}${_res.done ? '' : '+'} result${_res.docs.length === 1 ? '' : 's'}</span>
+      ${_res.done ? '' : `<button type="button" id="resultsMoreBtn" class="vtx-pager-btn" ${_res.loading ? 'disabled' : ''}>
+        ${_res.loading ? 'Loading…' : 'Show more'}</button>`}`;
+    const more = document.getElementById('resultsMoreBtn');
+    if (more) more.onclick = () => _fetchResultsPage(false);
+  }
+
+  async function _fetchResultsPage(reset) {
+    if (_res.loading) return;
+    if (reset) { _res.cursor = null; _res.done = false; }
+    _res.loading = true;
+    if (!reset) _renderResults();
+    try {
+      let q = Db().collection('results').orderBy('timestamp', 'desc').limit(RES_PAGE);
+      if (_res.cursor) q = q.startAfter(_res.cursor);
+      const snap = await q.get();
+      const fresh = snap.docs.map(_slimResult);
+      _res.docs = reset ? fresh : _res.docs.concat(fresh);
+      if (snap.docs.length) _res.cursor = snap.docs[snap.docs.length - 1];
+      _res.done = snap.docs.length < RES_PAGE;
+      _res.fetchedAt = Date.now();
+      if (reset) _idb.set('results:first', { at: _res.fetchedAt, docs: fresh });
+    } catch (err) {
+      console.error('[teacher] Error loading results:', err);
+      if (!_res.docs.length) {
+        const c = document.getElementById('resultsList');
+        if (c) c.innerHTML = `
           <p style="grid-column:1/-1;text-align:center;color:var(--danger);font-size:var(--text-sm);">
             Error loading results.</p>`;
+      } else if (window.UI) UI.toast('Could not load more results.', 'error');
+    } finally {
+      _res.loading = false;
+      if (document.getElementById('resultsList') && (_res.docs.length || !document.querySelector('#resultsList p'))) _renderResults();
+    }
+  }
+
+  async function _loadResults(force) {
+    const container = document.getElementById('resultsList');
+    if (!container) return;
+    // Already loaded this session and still fresh: show it, no network.
+    if (!force && _res.docs.length && Date.now() - _res.fetchedAt < RES_TTL) { _renderResults(); return; }
+    if (!_res.docs.length) {
+      container.innerHTML = _skResults(6);
+      const cached = await _idb.get('results:first');
+      if (cached && cached.docs && cached.docs.length) {
+        _res.docs = cached.docs; _res.fetchedAt = 0; _res.done = false; _res.cursor = null;
+        _renderResults();
       }
-    );
-    _reg('results', unsub);
+    }
+    await _fetchResultsPage(true);   // quiet refresh behind the cached view
   }
 
   document.addEventListener('click', async e => {
@@ -1898,6 +2121,9 @@ async function _saveStudentEdit(uid, previousAdmno) {
     if (!ok) return;
     try {
       await Db().collection('results').doc(id).delete();
+      _res.docs = _res.docs.filter(d => d.id !== id);
+      _renderResults();
+      _fetchResultsPage(true);
       UI.toast('Result deleted.', 'success');
     } catch (err) {
       console.error('[teacher] deleteResult error:', err);
