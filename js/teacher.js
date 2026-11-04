@@ -1924,6 +1924,27 @@ async function _saveStudentEdit(uid, previousAdmno) {
     }
   }
 
+  /* Which session and term a result belongs to. Older results (before sessions existed)
+     have neither field, so they get a plain "not recorded" label instead of a blank. */
+  function _periodOf(r) {
+    const session = r && r.questionSession ? String(r.questionSession).trim() : '';
+    const term = r && r.questionTerm ? Number(r.questionTerm) : 0;
+    return { session, term, has: !!(session || term),
+      label: [session ? session : '', term ? 'Term ' + term : ''].filter(Boolean).join(' · ') };
+  }
+  function _periodFileTag(r) {
+    const p = _periodOf(r);
+    const t = (p.session ? '_' + p.session.replace(/[^A-Za-z0-9]+/g, '-') : '') + (p.term ? '_T' + p.term : '');
+    return t;
+  }
+  function _periodChipHTML(r, big) {
+    const p = _periodOf(r);
+    const pad = big ? '2px 9px' : '1px 6px';
+    return p.has
+      ? `<span class="vtx-period-chip" title="Session and term of this test" style="font-size:var(--text-xs);font-weight:600;background:var(--accent-subtle);border:1px solid var(--accent-border);border-radius:4px;padding:${pad};color:var(--accent-text);white-space:nowrap;">${_esc(p.label)}</span>`
+      : `<span class="vtx-period-chip" title="This result was saved before sessions were tracked" style="font-size:var(--text-xs);font-weight:500;background:var(--bg-subtle);border:1px dashed var(--border);border-radius:4px;padding:${pad};color:var(--text-4);white-space:nowrap;">Session not recorded</span>`;
+  }
+
   /* ── Results: paged + cached ────────────────────────────────────────────
      Each result document carries every question snapshot, so it is heavy.
      The list therefore (1) reads 12 cards at a time with a cursor instead of
@@ -1965,6 +1986,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
     return { id: d.id, data: {
       name: r.name, class: r.class, school: r.school, grade: r.grade, percentage: r.percentage,
       subjects: r.subjects || [], scores: r.scores || {}, proctorSessionId: r.proctorSessionId || '',
+      questionSession: r.questionSession || '', questionTerm: r.questionTerm || 0,
       hasDetail: !!r.questionSnapshots, ts
     }};
   }
@@ -2015,6 +2037,7 @@ async function _saveStudentEdit(uid, previousAdmno) {
                 </div>
               </div>
               <div style="display:flex;flex-wrap:wrap;gap:.25rem;margin-bottom:.5rem;">
+                ${_periodChipHTML(r)}
                 ${(r.subjects || []).map(s => `
                   <span style="font-size:var(--text-xs);font-weight:600;
                                background:var(--bg-subtle);border:1px solid var(--border);
@@ -2178,10 +2201,11 @@ async function _saveStudentEdit(uid, previousAdmno) {
     if (!r.questionSnapshots) {
       overlay.querySelector('.review-panel').innerHTML = `
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;gap:.75rem;">
-          <div style="min-width:0;">
+          <div style="min-width:0;text-align:left;">
             <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">${_esc(r.name || '')}</h2>
             <p style="font-size:var(--text-sm);color:var(--text-3);margin-top:2px;">
               ${_esc(r.class || '')} · ${_esc(r.school || '')} · ${ts}</p>
+            <div style="margin-top:6px;">${_periodChipHTML(r, true)}</div>
           </div>
           <div style="display:flex;gap:.5rem;flex-shrink:0;">
             <button onclick="Teacher.exportResultPDF('${_esc(resultId)}')"
@@ -2255,11 +2279,12 @@ async function _saveStudentEdit(uid, previousAdmno) {
     overlay.querySelector('.review-panel').innerHTML = `
       <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;
                   margin-bottom:1.25rem;padding-bottom:1rem;border-bottom:1px solid var(--border);">
-        <div style="min-width:0;">
+        <div style="min-width:0;text-align:left;">
           <h2 style="font-size:1.125rem;font-weight:700;color:var(--text-1);">${_esc(r.name || '')}</h2>
           <p style="font-size:var(--text-sm);color:var(--text-3);margin-top:3px;">
             ${_esc(r.class || '')} · ${_esc(r.school || '')}</p>
           <p style="font-size:var(--text-xs);color:var(--text-4);margin-top:2px;">${ts}</p>
+          <div style="margin-top:6px;">${_periodChipHTML(r, true)}</div>
         </div>
         <div style="display:flex;gap:.5rem;flex-shrink:0;">
           <button onclick="Teacher.exportResultPDF('${_esc(resultId)}')"
@@ -5895,7 +5920,15 @@ async function exportResultPDF(resultId) {
           .toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' })
       : '—';
     doc.text(ts, PAGE_W - MARGIN, y, { align: 'right' });
-    y += 8;
+    y += 6;
+
+    // Session and term this test was taken in
+    const _per = _periodOf(r);
+    doc.setFontSize(9);
+    doc.setFont('helvetica', _per.has ? 'bold' : 'italic');
+    doc.setTextColor(...(_per.has ? C.text : C.muted));
+    doc.text(_per.has ? 'Session: ' + _pdfText(_per.label) : 'Session: not recorded (older result)', MARGIN, y);
+    y += 7;
 
     divider();
 
@@ -5977,7 +6010,7 @@ async function exportResultPDF(resultId) {
       doc.text(noteLines, MARGIN, y + 4);
 
       const safeName = _toPascalCase(r.name || 'Student');
-      doc.save('VtxResult' + safeName + '.pdf');
+      doc.save('VtxResult' + safeName + _periodFileTag(r) + '.pdf');
       UI.toast('PDF downloaded.', 'success');
       return;
     }
@@ -6093,7 +6126,7 @@ async function exportResultPDF(resultId) {
     });
 
     const safeName = _toPascalCase(r.name || 'Student');
-    doc.save('VtxResult' + safeName + '.pdf');
+    doc.save('VtxResult' + safeName + _periodFileTag(r) + '.pdf');
     UI.toast('PDF downloaded.', 'success');
   }
   
