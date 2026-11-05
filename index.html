@@ -29,11 +29,19 @@
   <link rel="stylesheet" href="css/tailwind.css" />
   <link rel="stylesheet" href="css/voice-ui.css" />
   <link rel="stylesheet" href="css/studyroom.css" />
-  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+  <link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" media="print" onload="this.media='all'" />
+  <noscript><link rel="stylesheet" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" /></noscript>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" media="print" onload="this.media='all'" />
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" /></noscript>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" media="print" onload="this.media='all'" />
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" /></noscript>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=Inconsolata:wght@400;500&display=swap" media="print" onload="this.media='all'" />
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Lora:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&family=Inconsolata:wght@400;500&display=swap" /></noscript>
 
 
 
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" media="print" onload="this.media='all'" />
+  <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" /></noscript>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
   <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js"
           onload="window._katexAutoRenderReady = true;"></script>
@@ -43,7 +51,6 @@
        VERTEX CBT — LOADING SCREEN  v3
        Book animation + polished progress
     ══════════════════════════════════════════════════════ */
-    @import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap');
 
     #vtx-loader {
       position: fixed; inset: 0; z-index: 99999;
@@ -204,13 +211,26 @@
       var KEY = 'vtx-autorecover-ts';
       var failed = [];
       var shown = false;
+      var t0 = Date.now();
+      var lastProgress = t0;   // last time any file finished downloading
+      var loaded = 0;
+      var pct = 0;
+
+      // Slow networks (2G/3G/data saver) get more patience before we give up.
+      var slow = false;
+      try {
+        var c = navigator.connection || {};
+        slow = c.saveData === true || /^(slow-2g|2g|3g)$/.test(c.effectiveType || '');
+      } catch (e) {}
+      var STALL_MS = slow ? 35000 : 25000;  // nothing arrived for this long
+      var HARD_MS  = slow ? 100000 : 70000; // absolute ceiling, never wait forever
 
       function appEmpty() {
         var app = document.getElementById('app');
         return !app || app.children.length === 0;
       }
 
-      // Throw away every stored copy of the app and fetch it fresh.
+      // Last resort only: throw away stored copies of the app and fetch it fresh.
       function hardReset() {
         var done = function () { window.location.reload(); };
         var tasks = [];
@@ -230,6 +250,10 @@
         Promise.all(tasks).then(done, done);
         setTimeout(done, 2500);
       }
+
+      // A normal reload keeps every file already downloaded, so on a weak
+      // connection the next attempt only fetches what is still missing.
+      function softReload() { window.location.reload(); }
 
       function show(reason) {
         if (shown || !appEmpty()) return;
@@ -251,43 +275,77 @@
               (offline ? 'You are offline' : 'Vertex could not finish loading') + '</h1>' +
             '<p style="font-size:.95rem;line-height:1.55;color:#555;margin:0 0 1.25rem;">' +
               (offline ? 'Switch on your data or Wi-Fi. This page will reload by itself when you are back online.'
-                       : 'This usually happens when the internet is slow. Tap the button below and it will try again.') + '</p>' +
+                       : 'This usually happens when the internet is slow. Tap the button below and it will try again. Files already downloaded are kept, so it gets faster each time.') + '</p>' +
             '<button id="vtxRecoverBtn" style="width:100%;padding:.85rem 1rem;font-size:1rem;font-weight:600;border:0;' +
                  'border-radius:10px;background:#c62828;color:#fff;cursor:pointer;">Try again</button>' +
           '</div>';
         document.body.appendChild(box);
         var btn = document.getElementById('vtxRecoverBtn');
-        btn.onclick = function () { btn.textContent = 'Please wait…'; btn.disabled = true; hardReset(); };
-        window.addEventListener('online', function () { hardReset(); });
+        btn.onclick = function () {
+          btn.textContent = 'Please wait…'; btn.disabled = true;
+          // First tap: quick reload that keeps downloaded files. Second tap in a row: full clean reset.
+          var n = 0;
+          try { n = parseInt(sessionStorage.getItem('vtx-retry-n') || '0', 10) || 0; sessionStorage.setItem('vtx-retry-n', String(n + 1)); } catch (e) {}
+          if (n >= 1) hardReset(); else softReload();
+        };
+        window.addEventListener('online', function () { softReload(); });
       }
 
-      // Once per two minutes the repair happens automatically, so the student never has to do anything.
+      // One automatic quick retry (keeps cached files), then the friendly screen.
       function recover(reason) {
         if (shown || !appEmpty()) return;
         var last = 0;
         try { last = parseInt(sessionStorage.getItem(KEY) || '0', 10) || 0; } catch (e) {}
         if (navigator.onLine !== false && Date.now() - last > 120000) {
           try { sessionStorage.setItem(KEY, String(Date.now())); } catch (e) {}
-          console.warn('[BootGuard] Auto-repair:', reason);
-          hardReset();
+          console.warn('[BootGuard] Auto-retry:', reason);
+          softReload();
         } else {
           show(reason);
         }
       }
 
-      // A script or stylesheet of ours failed to load
-      window.addEventListener('error', function (e) {
+      // Real download progress drives the loading bar, so it moves immediately.
+      function report(label) {
+        if (window.VtxLoader && window.VtxLoader.progress) window.VtxLoader.progress(pct, label);
+      }
+      window.addEventListener('load', function (e) {
         var t = e && e.target;
-        if (t && (t.tagName === 'SCRIPT' || t.tagName === 'LINK') && (t.src || t.href)) {
-          failed.push(t.src || t.href);
-          setTimeout(function () { recover('resource failed'); }, 1500);
+        if (t && t.tagName === 'SCRIPT' && t.src) {
+          loaded++; lastProgress = Date.now();
+          var total = document.querySelectorAll('script[src]').length || 1;
+          pct = Math.min(40, Math.round((loaded / total) * 40));
+          report('Loading… ' + loaded + ' of ' + total + ' files');
         }
       }, true);
 
-      // The page started but the app never drew anything
-      document.addEventListener('DOMContentLoaded', function () {
-        setTimeout(function () { recover('empty screen'); }, 9000);
-      });
+      // A file of ours failed outright: give it a moment, then retry the quick way.
+      window.addEventListener('error', function (e) {
+        var t = e && e.target;
+        if (t && (t.tagName === 'SCRIPT' || t.tagName === 'LINK') && (t.src || t.href)) {
+          var u = t.src || t.href;
+          // Fonts and icon styles are decoration. Never treat them as a boot failure.
+          if (t.tagName === 'LINK' && !/\/css\/|news-ticker/.test(u)) return;
+          failed.push(u);
+          setTimeout(function () { recover('resource failed'); }, 3000);
+        }
+      }, true);
+
+      // Watch for a real stall instead of giving up on a fixed 9 second timer.
+      var tick = setInterval(function () {
+        if (shown || !appEmpty()) {
+          if (!appEmpty()) clearInterval(tick);
+          return;
+        }
+        var now = Date.now();
+        if (navigator.onLine === false && now - t0 > 4000) { clearInterval(tick); show('offline'); return; }
+        if (now - t0 > 6000 && now - lastProgress < STALL_MS) {
+          report(slow || now - t0 > 12000 ? 'Slow connection, still loading…' : 'Loading…');
+        }
+        if (now - lastProgress > STALL_MS) { clearInterval(tick); recover('stalled'); }
+        else if (now - t0 > HARD_MS) { clearInterval(tick); recover('timeout'); }
+      }, 1000);
+
       window.VtxBoot = { recover: recover, show: show, hardReset: hardReset, isEmpty: appEmpty };
     }());
   </script>
@@ -401,7 +459,7 @@
 
       function _setProgress(pct, label) {
         if (_isDone) return;
-        _pct = Math.min(100, Math.max(0, pct));
+        _pct = Math.min(100, Math.max(_pct, pct));  // the bar never moves backwards
         if (_pct > 0 && _track) {
           _track.style.opacity = '1';
           if (_dots) _dots.style.opacity = '0';
@@ -423,12 +481,12 @@
       }
 
       window.VtxLoader = { progress: _setProgress, done: _done };
-      setTimeout(function () {
-        if (_isDone) return;
-        console.warn('[VtxLoader] Failsafe.');
-        if (window.VtxBoot && window.VtxBoot.isEmpty()) { window.VtxBoot.recover('loader timeout'); return; }
-        _done();
-      }, 12000);
+      // If the app has drawn something but never said "done", finish quietly.
+      // If the screen is still empty, the Boot Guard owns the waiting and the retry screen.
+      var _fs = setInterval(function () {
+        if (_isDone) { clearInterval(_fs); return; }
+        if (window.VtxBoot && !window.VtxBoot.isEmpty()) { clearInterval(_fs); _done(); }
+      }, 1500);
     }());
   </script>
 
@@ -452,7 +510,7 @@
   </script>
   
   <!-- Howler.js for sound effects -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+  <script defer src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
 
   <!-- VtxSound: minimal sound engine -->
   <script>
@@ -774,54 +832,54 @@
   </script>
 
   <!-- Firebase SDKs -->
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/9.22.2/firebase-messaging-compat.js"></script>
 
   <!-- Application modules -->
-  <script src="data/questions.js"></script>
-  <script src="js/config.js"></script>
-  <script src="js/state.js"></script>
-  <script src="js/svg-diagram.js"></script>
-  <script src="js/question-loader.js"></script>
-  <script src="js/ui.js"></script>
-  <script src="js/auth.js"></script>
-  <script src="js/chat.js"></script>
-  <script src="js/receipts.js"></script>
-  <script src="js/dm.js"></script>
-  <script src="js/groupchat.js"></script>
-  <script src="js/tasks.js"></script>
-  <script src="js/studyroom-md.js"></script>
-  <script src="js/studyroom.js"></script>
-  <script src="js/threedclass.js"></script>
-  <script src="js/threedclass-periodic.js"></script>
-  <script src="js/threedclass-biology.js"></script>
-  <script src="js/threedclass-physics.js"></script>
-  <script src="js/threedclass-live.js"></script>
-  <script src="js/student-sync.js"></script>
-  <script src="js/teacher-push.js"></script>
-  <script src="js/storage.js"></script>
-  <script src="viewer.js"></script>
-  <script src="js/filemanager.js"></script>
-  <script src="js/question-manager.js"></script>
-  <script src="js/teacher.js"></script>
-  <script src="js/speech.js"></script>
-  <script src="js/activitylog.js"></script>
-  <script src="js/proctor.js"></script>
-  <script src="js/exam.js"></script>
-  <script src="js/notifications.js"></script>
-  <script src="js/avatar.js"></script>
-  <script src="js/reactions.js"></script>
-  <script src="js/settings.js"></script>
-  <script src="js/session-reminders.js"></script>
-  <script src="js/msgnotif.js"></script>
-  <script src="js/game.js"></script>
-  <script src="js/landing.js"></script>
-  <script src="js/app.js"></script>
-  <script src="js/voice-notes.js"></script>
-  <script src="js/installPrompt.js"></script>
-  <script src="news-ticker.js"></script>
+  <script defer src="data/questions.js"></script>
+  <script defer src="js/config.js"></script>
+  <script defer src="js/state.js"></script>
+  <script defer src="js/svg-diagram.js"></script>
+  <script defer src="js/question-loader.js"></script>
+  <script defer src="js/ui.js"></script>
+  <script defer src="js/auth.js"></script>
+  <script defer src="js/chat.js"></script>
+  <script defer src="js/receipts.js"></script>
+  <script defer src="js/dm.js"></script>
+  <script defer src="js/groupchat.js"></script>
+  <script defer src="js/tasks.js"></script>
+  <script defer src="js/studyroom-md.js"></script>
+  <script defer src="js/studyroom.js"></script>
+  <script defer src="js/threedclass.js"></script>
+  <script defer src="js/threedclass-periodic.js"></script>
+  <script defer src="js/threedclass-biology.js"></script>
+  <script defer src="js/threedclass-physics.js"></script>
+  <script defer src="js/threedclass-live.js"></script>
+  <script defer src="js/student-sync.js"></script>
+  <script defer src="js/teacher-push.js"></script>
+  <script defer src="js/storage.js"></script>
+  <script defer src="viewer.js"></script>
+  <script defer src="js/filemanager.js"></script>
+  <script defer src="js/question-manager.js"></script>
+  <script defer src="js/teacher.js"></script>
+  <script defer src="js/speech.js"></script>
+  <script defer src="js/activitylog.js"></script>
+  <script defer src="js/proctor.js"></script>
+  <script defer src="js/exam.js"></script>
+  <script defer src="js/notifications.js"></script>
+  <script defer src="js/avatar.js"></script>
+  <script defer src="js/reactions.js"></script>
+  <script defer src="js/settings.js"></script>
+  <script defer src="js/session-reminders.js"></script>
+  <script defer src="js/msgnotif.js"></script>
+  <script defer src="js/game.js"></script>
+  <script defer src="js/landing.js"></script>
+  <script defer src="js/app.js"></script>
+  <script defer src="js/voice-notes.js"></script>
+  <script defer src="js/installPrompt.js"></script>
+  <script defer src="news-ticker.js"></script>
 
   <!-- Presentation enhancements -->
   <script>
