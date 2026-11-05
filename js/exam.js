@@ -125,14 +125,70 @@
   function _passageHtml(exam, subj, q, idx, qs, compact) {
     const p = _passageOf(exam, subj, q);
     if (!p) return '';
+    _passageInitUi();
     // number of this question inside its passage group
     let pos = 0, tot = 0;
     (qs || []).forEach((x, i) => { if (x && x.passageId === q.passageId) { tot++; if (i <= idx) pos++; } });
     const body = _safeQ(p.text);
-    return '<div class="vtx-passage" style="border:1px solid var(--border);border-left:4px solid var(--accent);background:var(--bg-subtle);border-radius:var(--r-lg);padding:.875rem 1rem;margin-bottom:1rem;max-height:' + (compact ? 'none' : '40vh') + ';overflow:auto;-webkit-overflow-scrolling:touch;">' +
-      '<div style="font-size:.6875rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin-bottom:.375rem;">' +
-        _escHtml(p.title || 'Read the passage') + (tot > 1 ? ' · question ' + pos + ' of ' + tot : '') + '</div>' +
-      '<div style="font-size:.9375rem;line-height:1.7;white-space:pre-line;overflow-wrap:anywhere;color:var(--text-2);">' + body + '</div></div>';
+    const icon = '<svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H11v15H5.5A1.5 1.5 0 0 0 4 20.5z"/><path d="M20 5.5A1.5 1.5 0 0 0 18.5 4H13v15h5.5a1.5 1.5 0 0 1 1.5 1.5z"/></svg>';
+    const arrow = '<svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>';
+    return '<section class="vtx-passage' + (compact ? ' vtx-passage--compact' : '') + '">' +
+      '<div class="vtx-passage__head"><span class="vtx-passage__icon">' + icon + '</span>' +
+        '<span class="vtx-passage__title">' + _escHtml(p.title || 'Read the passage') + '</span>' +
+        (tot > 1 ? '<span class="vtx-passage__count">Q ' + pos + ' of ' + tot + '</span>' : '') + '</div>' +
+      '<div class="vtx-passage__wrap">' +
+        '<div class="vtx-passage__body" tabindex="0">' + body + '</div>' +
+        (compact ? '' : '<div class="vtx-passage__more" aria-hidden="true"><span>Scroll to read more ' + arrow + '</span></div>') +
+      '</div></section>';
+  }
+
+  // Passage card styling + "scroll for more" hint (hint hides once the reader reaches the end).
+  let _passageUiReady = false;
+  function _passageInitUi() {
+    if (_passageUiReady) return;
+    _passageUiReady = true;
+    try {
+      const st = document.createElement('style');
+      st.id = 'vtx-passage-css';
+      st.textContent =
+        '.vtx-passage{background:var(--bg-base,#fff);border:1px solid var(--border);border-radius:20px;margin:0 0 1.25rem;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,.04),0 8px 28px -12px rgba(0,0,0,.14);}' +
+        '.vtx-passage__head{display:flex;align-items:center;gap:.5rem;padding:.8rem 1rem .7rem;border-bottom:1px solid var(--border);}' +
+        '.vtx-passage__icon{display:inline-flex;align-items:center;justify-content:center;width:1.75rem;height:1.75rem;border-radius:9px;background:var(--bg-subtle);color:var(--text-2);flex:none;}' +
+        '.vtx-passage__title{flex:1;min-width:0;font-size:.75rem;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--text-3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}' +
+        '.vtx-passage__count{flex:none;font-size:.6875rem;font-weight:600;color:var(--text-2);background:var(--bg-subtle);border-radius:999px;padding:.2rem .6rem;}' +
+        '.vtx-passage__wrap{position:relative;}' +
+        '.vtx-passage__body{max-height:38vh;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;padding:1rem 1.1rem 1.25rem;font-family:Georgia,"Iowan Old Style","Times New Roman",serif;font-size:1.0625rem;line-height:1.8;letter-spacing:.005em;white-space:pre-line;overflow-wrap:anywhere;color:var(--text-2);outline:none;}' +
+        '.vtx-passage--compact .vtx-passage__body{max-height:none;overflow:visible;}' +
+        '.vtx-passage__more{position:absolute;left:0;right:0;bottom:0;height:4.25rem;display:flex;align-items:flex-end;justify-content:center;padding-bottom:.6rem;pointer-events:none;background:linear-gradient(to bottom,rgba(255,255,255,0),var(--bg-base,#fff) 78%);opacity:0;transition:opacity .25s ease;}' +
+        '.vtx-passage__wrap.has-more .vtx-passage__more{opacity:1;}' +
+        '.vtx-passage__more span{display:inline-flex;align-items:center;gap:.35rem;font:600 .75rem/1 -apple-system,BlinkMacSystemFont,"Inter",sans-serif;letter-spacing:.01em;color:var(--text-2);background:var(--bg-base,#fff);border:1px solid var(--border);border-radius:999px;padding:.45rem .8rem;box-shadow:0 4px 14px -4px rgba(0,0,0,.2);}' +
+        '.vtx-passage__more svg{animation:vtxPassNudge 1.4s ease-in-out infinite;}' +
+        '@keyframes vtxPassNudge{0%,100%{transform:translateY(-1px)}50%{transform:translateY(2px)}}' +
+        '@media (prefers-reduced-motion:reduce){.vtx-passage__more svg{animation:none}}';
+      document.head.appendChild(st);
+
+      const syncOne = function (body) {
+        const wrap = body.parentNode;
+        if (!wrap || !wrap.classList) return;
+        const more = body.scrollHeight - body.clientHeight > 6;
+        const atEnd = body.scrollTop + body.clientHeight >= body.scrollHeight - 6;
+        wrap.classList.toggle('has-more', more && !atEnd);
+      };
+      const syncAll = function () {
+        document.querySelectorAll('.vtx-passage__body').forEach(syncOne);
+      };
+      document.addEventListener('scroll', function (e) {
+        const t = e.target;
+        if (t && t.classList && t.classList.contains('vtx-passage__body')) syncOne(t);
+      }, true);
+      window.addEventListener('resize', syncAll);
+      let raf = 0;
+      new MutationObserver(function () {
+        if (raf) return;
+        raf = requestAnimationFrame(function () { raf = 0; syncAll(); });
+      }).observe(document.body, { childList: true, subtree: true });
+      setTimeout(syncAll, 300);
+    } catch (e) { /* cosmetic only */ }
   }
 
   // Optional SVG diagrams (see js/svg-diagram.js). Return '' when a question has none.
