@@ -416,7 +416,10 @@
   }
 
   // Teacher switch: let students of `viewer` also take the exams of class `src`.
+  var _crossBusy = false;
   async function setCrossClass(src, viewer, on) {
+    if (_crossBusy) { draw(); return; }   // ignore taps while a save is running; redraw restores the box state
+    _crossBusy = true;
     try {
       await writeSettings(function (d) {
         var cc = d.crossClass && typeof d.crossClass === 'object' ? d.crossClass : {};
@@ -429,6 +432,7 @@
       toast(on ? 'Done. ' + viewer.toUpperCase() + ' students can now take ' + src.toUpperCase() + ' exams.'
                : viewer.toUpperCase() + ' students can no longer take ' + src.toUpperCase() + ' exams.', 'success', 5000);
     } catch (e) { toast('Could not save: ' + (e.message || e), 'error', 7000); }
+    _crossBusy = false;
     S.crossOpen = true;
     draw();
   }
@@ -483,10 +487,12 @@
       '.qm-subjbar .qm-muted{flex:1 1 180px;min-width:0;}' +
       '@media (max-width:640px){.qm-subjbar .qm-muted{flex:1 1 100%;}#qmNewRow .qm-field{flex:1 1 100%;}}' +
       '.qm-report{max-height:220px;overflow:auto;font-size:.8125rem;border:1px solid var(--border,#ddd);border-radius:8px;padding:.5rem;}' +
-      '.qm-cross-row{display:flex;flex-wrap:wrap;gap:.4rem .75rem;align-items:center;}' +
-      '.qm-cross-src{min-width:150px;font-size:.8125rem;}' +
-      '.qm-cross-boxes{display:flex;flex-wrap:wrap;gap:.35rem;flex:1 1 200px;}' +
-      '.qm-cross-chip{display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .65rem;border:1px solid var(--border,#ccc);border-radius:99px;font-size:.75rem;cursor:pointer;user-select:none;}' +
+      '.qm-cross-row{display:flex;flex-wrap:wrap;gap:.4rem .75rem;align-items:center;padding-top:.75rem;border-top:1px solid var(--border,#e5e5ea);}' +
+      '.qm-cross-row:first-of-type{border-top:0;padding-top:0;}' +
+      '.qm-cross-src{flex:0 0 150px;font-size:.8125rem;}' +
+      '@media (max-width:640px){.qm-cross-src{flex:1 1 100%;}}' +
+      '.qm-cross-boxes{display:flex;flex-wrap:wrap;gap:.4rem;flex:1 1 200px;min-width:0;}' +
+      '.qm-cross-chip{display:inline-flex;align-items:center;gap:.4rem;min-height:36px;padding:.3rem .8rem;border:1px solid var(--border,#ccc);border-radius:99px;font-size:.75rem;cursor:pointer;user-select:none;}' +
       '.qm-cross-chip.on{background:var(--accent-subtle,rgba(0,122,255,.12));border-color:var(--accent,#007AFF);font-weight:600;}' +
       '.qm-cross-chip input{width:auto;margin:0;accent-color:var(--accent,#007AFF);}' +
       '.qm details>summary{cursor:pointer;font-size:.8125rem;font-weight:600;}';
@@ -522,6 +528,7 @@
 
   function crossPanel() {
     var open = QL.getCrossClass(), all = classOptions();
+    if (all.length < 2) return '<div class="qm-muted" style="margin-top:.75rem;">You need at least two classes with question banks before you can open one to another.</div>';
     var h = '<div style="margin-top:.75rem;display:flex;flex-direction:column;gap:.9rem;">' +
       '<div class="qm-muted">Tick a class to let its students also take the exams of the class named on the left. ' +
       'Students always see which class and subject they are taking, and their result is saved normally under their own name. ' +

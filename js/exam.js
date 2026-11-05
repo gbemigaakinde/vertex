@@ -1487,17 +1487,20 @@ function _closeFullClock() {
     st.id = 'vtx-xc-css';
     st.textContent =
       '.vtx-xc{margin:0 0 1.25rem;text-align:left;}' +
-      '.vtx-xc-title{font-size:.75rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-3);margin-bottom:.5rem;}' +
-      '.vtx-xc-row{display:flex;flex-wrap:wrap;gap:.5rem;}' +
-      '.vtx-xc-chip{flex:1 1 130px;display:flex;flex-direction:column;align-items:flex-start;gap:.1rem;padding:.6rem .85rem;border-radius:var(--r-lg);border:1.5px solid var(--border);background:var(--bg-subtle);color:var(--text-1);cursor:pointer;font:inherit;text-align:left;min-height:44px;}' +
-      '.vtx-xc-chip.is-on{border-color:var(--accent);background:var(--accent-subtle);}' +
-      '.vtx-xc-chip-name{font-size:.9375rem;font-weight:700;}' +
-      '.vtx-xc-chip-sub{font-size:.6875rem;color:var(--text-3);}' +
+      '.vtx-xc-title{font-size:.75rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-3);margin:0 0 .5rem;}' +
+      '.vtx-xc-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.5rem;}' +
+      '.vtx-xc-chip{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:.15rem;padding:.65rem .85rem;border-radius:var(--r-lg);border:1.5px solid var(--border);background:var(--bg-subtle);color:var(--text-1);cursor:pointer;font:inherit;text-align:left;min-height:48px;min-width:0;transition:border-color .15s,background .15s,box-shadow .15s;-webkit-tap-highlight-color:transparent;}' +
+      '.vtx-xc-chip:hover{border-color:var(--text-4);}' +
+      '.vtx-xc-chip:focus-visible{outline:2px solid var(--accent);outline-offset:2px;}' +
+      '.vtx-xc-chip.is-on{border-color:var(--accent);background:var(--accent-subtle);box-shadow:0 0 0 3px var(--accent-subtle);}' +
+      '.vtx-xc-chip-name{font-size:.9375rem;font-weight:700;line-height:1.2;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}' +
+      '.vtx-xc-chip-sub{font-size:.6875rem;color:var(--text-3);line-height:1.2;}' +
       '.vtx-xc-chip.is-on .vtx-xc-chip-sub{color:var(--accent-text);}' +
-      '.vtx-xc-note{display:flex;gap:.625rem;align-items:flex-start;margin-top:.625rem;padding:.75rem 1rem;border-radius:var(--r-lg);background:var(--warning-subtle);border:1px solid var(--warning-border);color:var(--warning);}' +
-      '.vtx-xc-note p{font-size:.78125rem;line-height:1.55;color:var(--text-2);margin:0;}' +
-      '.vtx-xc-hint{font-size:.75rem;color:var(--text-3);margin-top:.5rem;line-height:1.5;}' +
-      '.vtx-xc-badge{display:inline-block;margin-left:.4rem;padding:.05rem .5rem;border-radius:99px;font-size:.6875rem;font-weight:700;background:var(--warning-subtle);border:1px solid var(--warning-border);color:var(--warning-text);}';
+      '.vtx-xc-note{display:flex;gap:.625rem;align-items:flex-start;margin-top:.625rem;padding:.75rem 1rem;border-radius:var(--r-lg);background:var(--warning-subtle);border:1px solid var(--warning-border);color:var(--warning-text);}' +
+      '.vtx-xc-note p{font-size:.78125rem;line-height:1.55;color:var(--text-2);margin:0;min-width:0;overflow-wrap:anywhere;}' +
+      '.vtx-xc-hint{font-size:.75rem;color:var(--text-3);margin:.5rem 0 0;line-height:1.5;}' +
+      '.vtx-xc-badge{display:inline-block;margin-left:.5rem;padding:.1rem .55rem;border-radius:99px;font-size:.6875rem;font-weight:700;line-height:1.4;vertical-align:middle;white-space:nowrap;background:var(--warning-subtle);border:1px solid var(--warning-border);color:var(--warning-text);}' +
+      '@media (max-width:380px){.vtx-xc-row{grid-template-columns:1fr 1fr;}.vtx-xc-badge{display:block;margin:.3rem 0 0;width:max-content;}}';
     document.head.appendChild(st);
   }
 
@@ -1683,6 +1686,8 @@ async function renderSubjectSelection() {
 
     // Never bail out here: the dashboard (chat, tools, timetable…) must always load.
     // A missing / broken question bank only disables the exam section, with a warning.
+    // Task-day rules always apply to the student's own class, so drop any cross-class choice then.
+    if (_isTodayTaskDayCompleted() || _getRestrictedSubjectsForToday() || _isTaskRestricted()) _examClassOverride = null;
     const examKey   = _activeExamClass(classKey);
     const bankState = _getBankState(examKey);
     const periodPickerHtml = _buildPeriodPickerHtml(classKey);
@@ -2624,7 +2629,9 @@ async function renderSubjectSelection() {
     try { if (window.QuestionLoader) QuestionLoader.applyForClass(classKey); } catch (e) {}
     const _qBank   = window.questions || {};
     const _qPeriod = window.QuestionLoader ? QuestionLoader.getSelectedPeriod() : null;
+    if (_isTodayTaskDayCompleted() || _getRestrictedSubjectsForToday() || _isTaskRestricted()) _examClassOverride = null;
     const examKey  = _activeExamClass(classKey);   // own class unless the teacher has opened another one
+    _crossClassStyles();
     const isCross  = examKey !== classKey;
 
     if (!_qBank[examKey] || typeof _qBank[examKey] !== 'object') {
