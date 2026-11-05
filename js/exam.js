@@ -1761,11 +1761,17 @@ async function renderSubjectSelection() {
     const todayTaskDone   = _isTodayTaskDayCompleted();
     const allAvailable    = bankState.subjects.concat(bankState.broken);   // everything the class has
     const restrictedSubjs = _getRestrictedSubjectsForToday();
+    const isTaskDay   = _isTaskRestricted();
+    // Subjects the student has hidden in Settings. Only ever applies to free practice on the
+    // student's own class: task days, teacher-assigned subjects and cross-class practice are untouched.
+    let hiddenSubjs = [];
+    if (!restrictedSubjs && !isTaskDay && !todayTaskDone && examKey === classKey && window.VtxSettings && VtxSettings.getHiddenSubjects) {
+      try { hiddenSubjs = VtxSettings.getHiddenSubjects(classKey, bankState.subjects) || []; } catch (e) { hiddenSubjs = []; }
+    }
     const available       = restrictedSubjs
       ? allAvailable.filter(s => restrictedSubjs.includes(s))
-      : allAvailable;
+      : allAvailable.filter(s => hiddenSubjs.indexOf(s) === -1);
     const usableAvailable = available.filter(s => bankState.subjects.includes(s));
-    const isTaskDay   = _isTaskRestricted();
     const minSubjects = (restrictedSubjs && isTaskDay) ? 1 : 2;
     const messages    = S().studentMessages || [];
 
@@ -1881,7 +1887,7 @@ async function renderSubjectSelection() {
     } else {
       subjectsHtml = `
         <div class="vtx-subject-grid" id="subjectPillGrid" style="margin-bottom:1.25rem;">
-          ${allAvailable.map(subj => bankState.subjects.includes(subj) ? `
+          ${available.map(subj => bankState.subjects.includes(subj) ? `
             <label class="vtx-subject-pill" id="pill-${_escAttr(subj)}">
               <input type="checkbox" value="${_escAttr(subj)}" class="subject-checkbox" />
               <span class="vtx-subject-pill-check"></span>
@@ -1896,7 +1902,12 @@ async function renderSubjectSelection() {
               </span>
             </label>`).join('')}
         </div>
-        ${bankState.broken.length ? `
+        ${hiddenSubjs.length ? `
+        <p class="vtx-hidden-note" style="font-size:.75rem;color:var(--text-3);margin:-.5rem 0 1rem;line-height:1.5;">
+          ${hiddenSubjs.length} subject${hiddenSubjs.length === 1 ? '' : 's'} hidden.
+          <button type="button" onclick="VtxSettings.open()" style="background:none;border:0;padding:0;font:inherit;font-weight:600;color:var(--text-1);text-decoration:underline;text-underline-offset:2px;cursor:pointer;">Manage in Settings</button>
+        </p>` : ''}
+        ${bankState.broken.filter(b => hiddenSubjs.indexOf(b) === -1).length ? `
         <p style="font-size:.6875rem;color:var(--warning-text);margin:-.5rem 0 1rem;line-height:1.5;">
           ${_icon('Warning', 12)} Some subjects are unavailable. Please contact Master Timothy.
         </p>` : ''}
@@ -2702,9 +2713,16 @@ async function renderSubjectSelection() {
       return;
     }
 
-    const finalChosen = restrictedSubjs
+    let finalChosen = restrictedSubjs
       ? chosen.filter(s => restrictedSubjs.includes(s))
       : chosen;
+    // Safety net: never start an exam with a subject the student has hidden (own-class practice only).
+    if (!restrictedSubjs && !isTaskDay && !isCross && window.VtxSettings && VtxSettings.getHiddenSubjects) {
+      try {
+        const hid = VtxSettings.getHiddenSubjects(classKey, Object.keys(_qBank[examKey] || {}));
+        if (hid.length) finalChosen = finalChosen.filter(s => hid.indexOf(s) === -1);
+      } catch (e) {}
+    }
 
     if (finalChosen.length < minSubjects) {
       UI.toast('Not enough allowed subjects selected. Please contact Master Timothy.', 'error');

@@ -13,6 +13,9 @@
      pushPrefs.games     true  = alert me about game challenges
      pushPrefs.reminders false = no daily study reminders
      pushPrefs.groups    { [groupId]: true } = alert me for that group
+     pushPrefs.hiddenSubjects { [classKey]: [subject, ...] } = subjects the
+                         student does not take; hidden from their own practice
+                         exam picker only (teacher tasks are never affected)
 
    Teacher-message alerts also need students/{uid}.dmPushEnabled === true,
    which only the teacher can set (Teacher → Push tab).
@@ -64,6 +67,105 @@
     if (key === 'textSize') return _ls(LS.text, 'normal');
     return undefined;
   }
+
+  /* ══════════════════════════════════════════════════════════
+     HIDDEN SUBJECTS (student's own practice exams only)
+  ══════════════════════════════════════════════════════════ */
+  var MIN_VISIBLE = 2;   // the exam picker needs at least 2 subjects
+
+  function _classKey() {
+    var d = (window.AppState && AppState.studentData) || {};
+    return String(d.class || '').replace(/\s+/g, '').toLowerCase();
+  }
+  function _savedHidden(classKey) {
+    var d = (window.AppState && AppState.studentData) || {};
+    var map = (d.pushPrefs && d.pushPrefs.hiddenSubjects) || {};
+    var list = map[classKey];
+    return Array.isArray(list) ? list.filter(function (x) { return typeof x === 'string'; }) : [];
+  }
+  function _classSubjects(classKey) {
+    var bank = null;
+    try { bank = window.questions; } catch (e) {}
+    var cb = bank && bank[classKey];
+    if (!cb || typeof cb !== 'object' || Array.isArray(cb)) return [];
+    return Object.keys(cb).filter(function (k) { return Array.isArray(cb[k]) && cb[k].length > 0; });
+  }
+
+  // Used by the exam screen. Returns only subjects that still exist in the class bank.
+  // If hiding them would leave fewer than 2 subjects (e.g. the teacher removed some),
+  // nothing is hidden so the student is never locked out of practising.
+  function getHiddenSubjects(classKey, bankSubjects) {
+    var subjects = Array.isArray(bankSubjects) ? bankSubjects : _classSubjects(classKey);
+    var hidden = _savedHidden(classKey).filter(function (x) { return subjects.indexOf(x) !== -1; });
+    if (subjects.length - hidden.length < MIN_VISIBLE) return [];
+    return hidden;
+  }
+
+  function _subjectsHtml() {
+    var ck = _classKey();
+    var all = _classSubjects(ck).sort(function (a, b) { return a.localeCompare(b); });
+    var h = '<p class="vs-h">My subjects</p>';
+    if (!ck || all.length === 0) {
+      return h + '<div class="vs-card"><div class="vs-row"><div class="vs-txt"><p class="vs-d" style="margin:0;">' +
+        'Your subjects will appear here once your class questions have loaded.</p></div></div></div>';
+    }
+    var hidden = _savedHidden(ck).filter(function (x) { return all.indexOf(x) !== -1; });
+    var shown = all.length - hidden.length;
+    var locked = all.length < MIN_VISIBLE + 1;   // nothing could ever be hidden
+    h += '<div class="vs-card">';
+    h += '<div class="vs-row vs-sub-head"><div class="vs-txt"><p class="vs-t">Subjects I take</p>' +
+      '<p class="vs-d">Switch off any subject you do not offer. It will be removed from your practice exam list. ' +
+      'Tasks set by your teacher are not affected.</p></div>' +
+      '<span class="vs-count" aria-live="polite">' + shown + ' of ' + all.length + '</span></div>';
+    all.forEach(function (subj) {
+      var on = hidden.indexOf(subj) === -1;
+      // the last two visible subjects stay on so the exam list never becomes unusable
+      var dis = locked || _subBusy || (on && shown <= MIN_VISIBLE);
+      h += '<div class="vs-row vs-sub">' +
+        '<div class="vs-txt"><p class="vs-t' + (on ? '' : ' vs-off') + '">' + _esc(subj) + '</p></div>' +
+        '<button class="vs-sw" role="switch" aria-label="' + _esc('Show ' + subj) + '" aria-checked="' + (on ? 'true' : 'false') + '"' +
+        ' data-act="' + _esc('sub:' + subj) + '"' + (dis ? ' disabled' : '') + '><span></span></button></div>';
+    });
+    if (hidden.length) {
+      h += '<button type="button" class="vs-act" data-act="subAll"' + (_subBusy ? ' disabled' : '') + '><span>Show all subjects</span><i class="ph ph-arrow-counter-clockwise" aria-hidden="true"></i></button>';
+    }
+    h += '</div>';
+    if (!locked && shown <= MIN_VISIBLE) {
+      h += '<p class="vs-info">At least ' + MIN_VISIBLE + ' subjects must stay on so you can start a practice exam.</p>';
+    }
+    return h;
+  }
+
+  var _subBusy = false;
+  async function _setHidden(list) {
+    var ck = _classKey();
+    var d = window.AppState && AppState.studentData;
+    if (!ck || !d) return;
+    var prev = _savedHidden(ck).slice();
+    var all = _classSubjects(ck);
+    list = list.filter(function (x, i) { return list.indexOf(x) === i; });
+    if (all.length - list.filter(function (x) { return all.indexOf(x) !== -1; }).length < MIN_VISIBLE) {
+      _toast('Keep at least ' + MIN_VISIBLE + ' subjects on.', 'info'); return;
+    }
+    function put(v) {
+      d.pushPrefs = d.pushPrefs || {};
+      d.pushPrefs.hiddenSubjects = d.pushPrefs.hiddenSubjects || {};
+      if (v.length) d.pushPrefs.hiddenSubjects[ck] = v; else delete d.pushPrefs.hiddenSubjects[ck];
+    }
+    _subBusy = true; put(list); _render();
+    try {
+      var fp = new firebase.firestore.FieldPath('pushPrefs', 'hiddenSubjects', ck);
+      var ref = _db().collection('students').doc(_uid());
+      if (list.length) await ref.update(fp, list); else await ref.update(fp, firebase.firestore.FieldValue.delete());
+      _subChanged = true;
+    } catch (e) {
+      console.error('[settings] subject save failed:', e);
+      put(prev);
+      _toast('Could not save that. Check your internet and try again.', 'error');
+    }
+    _subBusy = false; _render();
+  }
+  var _subChanged = false;
 
   function _injectGlobalStyles() {
     if (document.getElementById('_vtxSettingsGlobalCss')) return;
@@ -136,6 +238,10 @@
         'background-size:200% 100%;animation:vsShimmer 1.2s linear infinite;}',
       '.vs-btn[data-loading="true"]::after{content:"Signing out\\2026";position:absolute;inset:0;display:flex;align-items:center;',
         'justify-content:center;gap:.5rem;color:var(--text-2,#374151);}',
+      '.vs-sub{padding-top:.6875rem;padding-bottom:.6875rem;}',
+      '.vs-sub-head{align-items:flex-start;}',
+      '.vs-count{flex-shrink:0;font-size:.75rem;font-weight:600;color:var(--text-3,#6b7280);font-variant-numeric:tabular-nums;padding-top:2px;}',
+      '.vs-t.vs-off{color:var(--text-4,#9ca3af);text-decoration:line-through;text-decoration-color:var(--border,#d1d5db);}',
       '@keyframes vsShimmer{from{background-position:200% 0}to{background-position:-200% 0}}',
       '.vs-loading{padding:2rem 0;text-align:center;color:var(--text-3,#6b7280);font-size:.875rem;}',
       '@keyframes vsFade{from{opacity:0}to{opacity:1}}',
@@ -262,7 +368,7 @@
     var body = document.getElementById('vsBody');
     if (!body) return;
     var top = body.scrollTop;
-    body.innerHTML = _alertsHtml() + _deviceHtml() + _accountHtml();
+    body.innerHTML = _subjectsHtml() + _alertsHtml() + _deviceHtml() + _accountHtml();
     body.scrollTop = top;
   }
 
@@ -302,7 +408,11 @@
   }
 
   function _mirrorLocally() {
-    if (window.AppState && AppState.studentData && _s) AppState.studentData.pushPrefs = JSON.parse(JSON.stringify(_s.prefs));
+    if (window.AppState && AppState.studentData && _s) {
+      var hs = (AppState.studentData.pushPrefs || {}).hiddenSubjects;
+      AppState.studentData.pushPrefs = JSON.parse(JSON.stringify(_s.prefs));
+      if (hs) AppState.studentData.pushPrefs.hiddenSubjects = hs;
+    }
   }
 
   async function _refreshStatus() {
@@ -386,6 +496,14 @@
       catch (err) { _toast(err.message || 'Could not remove photo.', 'error'); }
       _render(); return;
     }
+
+    if (act.indexOf('sub:') === 0) {
+      if (_subBusy) return;
+      var subj = act.slice(4), cur = _savedHidden(_classKey());
+      _setHidden(cur.indexOf(subj) === -1 ? cur.concat(subj) : cur.filter(function (x) { return x !== subj; }));
+      return;
+    }
+    if (act === 'subAll') { if (!_subBusy) _setHidden([]); return; }
 
     // Device settings (instant, no waiting)
     if (act === 'dark') {
@@ -471,9 +589,14 @@
     document.removeEventListener('keydown', _onKey);
     document.removeEventListener('vtx-avatar-change', _onAvChange);
     _s = null;
+    // Redraw the practice list behind the sheet if subjects changed (never during a running exam).
+    if (_subChanged) {
+      _subChanged = false;
+      try { if (!(window.AppState && AppState.exam) && window.Exam && Exam.renderSubjectSelection && document.getElementById('subjectPillGrid') !== undefined) Exam.renderSubjectSelection(); } catch (e) {}
+    }
   }
 
   applyLocal();
 
-  window.VtxSettings = { open: open, close: close, get: get, applyLocal: applyLocal };
+  window.VtxSettings = { open: open, close: close, get: get, applyLocal: applyLocal, getHiddenSubjects: getHiddenSubjects };
 })();
