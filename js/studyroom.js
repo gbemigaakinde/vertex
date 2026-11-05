@@ -39,6 +39,7 @@
   let _previewMode         = false;
   let _defaultTerm         = '';
   let _studentLessonsCache = [];
+  let _studentLessonsAll   = [];   // everything the teacher published for the class (before the student's hidden subjects are applied)
   let _teacherLessonsAll   = [];
   let _katexLoadPromise    = null;
 
@@ -302,7 +303,7 @@
     _enterRoom();
     _mountLibrary();
 
-    const fresh = _studentLessonsCache.length && _cacheClass === _studentClass &&
+    const fresh = (_studentLessonsAll.length || _studentLessonsCache.length) && _cacheClass === _studentClass &&
                   (Date.now() - _cacheAt) < 5 * 60 * 1000 && !(opts && opts.fresh);
     if (fresh) {
       _paintLibrary();
@@ -402,6 +403,7 @@
     const termP = new Promise(function (resolve) { _loadDefaultTerm(resolve); });
 
     Promise.all([lessonsP, termP]).then(function (res) {
+      _studentLessonsAll   = res[0];
       _studentLessonsCache = res[0];
       _cacheAt = Date.now();
       _cacheClass = _studentClass;
@@ -437,7 +439,23 @@
   }
 
   /* First paint after data arrives: resolve default term, build controls, render list */
+  // Subjects the student switched off in Settings are removed from their library, including the
+  // lessons, the subject filter chips, "continue reading" and previous/next navigation.
+  function _applyHiddenSubjects() {
+    if (_previewMode || !_studentLessonsAll.length) return;
+    let hidden = [];
+    try {
+      const ck = String(_studentClass || '').replace(/\s+/g, '').toLowerCase();
+      if (window.VtxSettings && VtxSettings.getHiddenSubjects) hidden = VtxSettings.getHiddenSubjects(ck) || [];
+    } catch (e) { hidden = []; }
+    const set = hidden.map(_normSubject);
+    _studentLessonsCache = set.length
+      ? _studentLessonsAll.filter(function (l) { return set.indexOf(_normSubject(l.subject)) === -1; })
+      : _studentLessonsAll.slice();
+  }
+
   function _paintLibrary() {
+    _applyHiddenSubjects();
     _sortLessons(_studentLessonsCache);
     if (_libState.term === null) _libState.term = _defaultTerm || '';
     if (_libState.term && !_studentLessonsCache.some(function (l) { return l.term === _libState.term; })) {
@@ -577,6 +595,15 @@
   function _renderResults() {
     const el = document.getElementById('srlResults');
     if (!el) return;
+    if (!_studentLessonsCache.length && _studentLessonsAll.length && !_previewMode) {
+      el.innerHTML = `
+        <div class="srl-state">
+          <div class="srl-state__icon">${ICON.book}</div>
+          <h3>No lessons to show</h3>
+          <p>Lessons for the subjects you hid in Settings are not shown. Switch a subject back on in Settings to see its lessons.</p>
+        </div>`;
+      return;
+    }
     if (!_studentLessonsCache.length) {
       el.innerHTML = `
         <div class="srl-state">
@@ -1806,6 +1833,7 @@
     if (_previewMode) {
       _previewMode         = false;
       _studentLessonsCache = [];
+      _studentLessonsAll   = [];
       _view = '';
       _leaveRoom();
       if (window.Teacher && typeof Teacher.renderTeacherDashboard === 'function') {
@@ -1831,7 +1859,7 @@
     _view = 'library';
     _enterRoom();
     _mountLibrary();
-    if (_studentLessonsCache.length) _paintLibrary(); else _loadLibraryData();
+    if (_studentLessonsCache.length || _studentLessonsAll.length) _paintLibrary(); else _loadLibraryData();
   }
 
 
