@@ -346,7 +346,7 @@
     var uid = _uid() || '';
     var letter = _esc((d.name || 'S').charAt(0).toUpperCase());
     var has = window.VtxAvatar && VtxAvatar.has(uid);
-    return '<p class="vs-h">Your account</p>' +
+    return '<p class="vs-h">My account</p>' +
       '<div class="vs-card">' +
         '<div class="vs-row" style="justify-content:flex-start;gap:1rem">' +
           '<button type="button" class="vs-avbtn" data-act="avPick" aria-label="Change profile photo">' +
@@ -368,7 +368,7 @@
     var body = document.getElementById('vsBody');
     if (!body) return;
     var top = body.scrollTop;
-    body.innerHTML = _subjectsHtml() + _alertsHtml() + _deviceHtml() + _accountHtml();
+    body.innerHTML = _alertsHtml() + _deviceHtml() + _subjectsHtml() + _accountHtml();
     body.scrollTop = top;
   }
 
