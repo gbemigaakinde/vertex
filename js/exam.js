@@ -1431,6 +1431,82 @@ function _closeFullClock() {
   /* missing, empty or broken. This reports what is usable   */
   /* so the exam section can show a warning instead.         */
   /* ─────────────────────────────────────────────────────── */
+
+  /* ─────────────────────────────────────────────────────── */
+  /* Cross-class exams (teacher switch)                      */
+  /* A teacher can open one class's exams to other classes.  */
+  /* The student picks, sees the real class + subject, and   */
+  /* the result is saved normally under their own name.      */
+  /* ─────────────────────────────────────────────────────── */
+  let _examClassOverride = null;   // class key the student chose, or null for their own class
+
+  function _classLabel(key) {
+    return String(key || '').replace(/^([a-z]+)(\d+)$/i, function (m, a, b) { return a.toUpperCase() + ' ' + b; }).toUpperCase();
+  }
+
+  // The class whose bank is used right now. Falls back to the student's own class
+  // the moment the teacher switches access off.
+  function _activeExamClass(ownKey) {
+    try {
+      const QL = window.QuestionLoader;
+      if (_examClassOverride && QL && QL.openClassesFor && QL.openClassesFor(ownKey).indexOf(_examClassOverride) >= 0) {
+        return _examClassOverride;
+      }
+    } catch (e) {}
+    _examClassOverride = null;
+    return ownKey;
+  }
+
+  function _crossClassHtml(ownKey, activeKey) {
+    const QL = window.QuestionLoader;
+    const others = (QL && QL.openClassesFor) ? QL.openClassesFor(ownKey) : [];
+    if (!others.length) return '';
+    const chip = (key, label, sub) => {
+      const on = key === activeKey;
+      return '<button type="button" class="vtx-xc-chip' + (on ? ' is-on' : '') + '" aria-pressed="' + on + '" ' +
+        'onclick="Exam._chooseExamClass(\'' + _escAttr(key) + '\')">' +
+        '<span class="vtx-xc-chip-name">' + _escHtml(label) + '</span>' +
+        '<span class="vtx-xc-chip-sub">' + _escHtml(sub) + '</span></button>';
+    };
+    const own = chip(ownKey, _classLabel(ownKey), 'Your class');
+    const rest = others.map(k => chip(k, _classLabel(k), 'Open to you')).join('');
+    const away = activeKey !== ownKey;
+    const note = away
+      ? '<div class="vtx-xc-note" role="status"><span style="flex-shrink:0;display:inline-flex;">' + _icon('Info', 18) + '</span>' +
+        '<p>You are taking <strong>' + _escHtml(_classLabel(activeKey)) + '</strong> exams, not your own class (' + _escHtml(_classLabel(ownKey)) + '). ' +
+        'Your score is saved normally under your own name and is marked as a <strong>' + _escHtml(_classLabel(activeKey)) + '</strong> exam.</p></div>'
+      : '<p class="vtx-xc-hint">Your teacher has opened exams from other classes to you. Pick which class you want to take.</p>';
+    return '<div class="vtx-xc" id="vtxCrossClass">' +
+      '<p class="vtx-xc-title">Choose the class exam</p>' +
+      '<div class="vtx-xc-row">' + own + rest + '</div>' + note + '</div>';
+  }
+
+  function _crossClassStyles() {
+    if (document.getElementById('vtx-xc-css')) return;
+    const st = document.createElement('style');
+    st.id = 'vtx-xc-css';
+    st.textContent =
+      '.vtx-xc{margin:0 0 1.25rem;text-align:left;}' +
+      '.vtx-xc-title{font-size:.75rem;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--text-3);margin-bottom:.5rem;}' +
+      '.vtx-xc-row{display:flex;flex-wrap:wrap;gap:.5rem;}' +
+      '.vtx-xc-chip{flex:1 1 130px;display:flex;flex-direction:column;align-items:flex-start;gap:.1rem;padding:.6rem .85rem;border-radius:var(--r-lg);border:1.5px solid var(--border);background:var(--bg-subtle);color:var(--text-1);cursor:pointer;font:inherit;text-align:left;min-height:44px;}' +
+      '.vtx-xc-chip.is-on{border-color:var(--accent);background:var(--accent-subtle);}' +
+      '.vtx-xc-chip-name{font-size:.9375rem;font-weight:700;}' +
+      '.vtx-xc-chip-sub{font-size:.6875rem;color:var(--text-3);}' +
+      '.vtx-xc-chip.is-on .vtx-xc-chip-sub{color:var(--accent-text);}' +
+      '.vtx-xc-note{display:flex;gap:.625rem;align-items:flex-start;margin-top:.625rem;padding:.75rem 1rem;border-radius:var(--r-lg);background:var(--warning-subtle);border:1px solid var(--warning-border);color:var(--warning);}' +
+      '.vtx-xc-note p{font-size:.78125rem;line-height:1.55;color:var(--text-2);margin:0;}' +
+      '.vtx-xc-hint{font-size:.75rem;color:var(--text-3);margin-top:.5rem;line-height:1.5;}' +
+      '.vtx-xc-badge{display:inline-block;margin-left:.4rem;padding:.05rem .5rem;border-radius:99px;font-size:.6875rem;font-weight:700;background:var(--warning-subtle);border:1px solid var(--warning-border);color:var(--warning-text);}';
+    document.head.appendChild(st);
+  }
+
+  async function _chooseExamClass(key) {
+    const own = (S().studentData.class || '').replace(/\s+/g, '').toLowerCase();
+    _examClassOverride = (key && key !== own) ? key : null;
+    await renderSubjectSelection();
+  }
+
   let _safeRender = false;   // set for one retry after a render error
 
   function _getBankState(classKey) {
@@ -1607,7 +1683,8 @@ async function renderSubjectSelection() {
 
     // Never bail out here: the dashboard (chat, tools, timetable…) must always load.
     // A missing / broken question bank only disables the exam section, with a warning.
-    const bankState = _getBankState(classKey);
+    const examKey   = _activeExamClass(classKey);
+    const bankState = _getBankState(examKey);
     const periodPickerHtml = _buildPeriodPickerHtml(classKey);
     if (bankState.problem) {
       console.error('[exam] Question bank problem for classKey "' + classKey + '":', bankState.problem);
@@ -1698,7 +1775,7 @@ async function renderSubjectSelection() {
         </div>`;
 
     } else if (bankState.problem) {
-      subjectsHtml = _bankWarningHtml(bankState.problem, S().studentData.class);
+      subjectsHtml = _bankWarningHtml(bankState.problem, examKey !== classKey ? _classLabel(examKey) : S().studentData.class);
 
     } else if (available.length === 0) {
       subjectsHtml = `<p style="color:var(--danger);font-size:.8125rem;text-align:center;padding:1rem 0;">
@@ -1760,6 +1837,9 @@ async function renderSubjectSelection() {
           <button id="startExamBtn" onclick="Exam.startExam()" disabled class="btn btn-lg">Start exam</button>
         </div>`;
     }
+
+    // Cross-class picker: only on free-practice days, so task-day rules always use the student's own class.
+    if (!restrictedSubjs && !todayTaskDone) { _crossClassStyles(); subjectsHtml = _crossClassHtml(classKey, examKey) + subjectsHtml; }
 
     const weeklyTimetableHtml = await weeklyTimetableHtmlPromise;
 
@@ -2544,9 +2624,11 @@ async function renderSubjectSelection() {
     try { if (window.QuestionLoader) QuestionLoader.applyForClass(classKey); } catch (e) {}
     const _qBank   = window.questions || {};
     const _qPeriod = window.QuestionLoader ? QuestionLoader.getSelectedPeriod() : null;
+    const examKey  = _activeExamClass(classKey);   // own class unless the teacher has opened another one
+    const isCross  = examKey !== classKey;
 
-    if (!_qBank[classKey] || typeof _qBank[classKey] !== 'object') {
-      UI.toast(`No subjects found for class "${S().studentData.class}". Contact Master Timothy.`, 'error', 8000);
+    if (!_qBank[examKey] || typeof _qBank[examKey] !== 'object') {
+      UI.toast(`No subjects found for class "${isCross ? _classLabel(examKey) : S().studentData.class}". Contact Master Timothy.`, 'error', 8000);
       return;
     }
 
@@ -2562,7 +2644,7 @@ async function renderSubjectSelection() {
     const selectedQuestions = {};
     const passages = {};
     for (const subj of finalChosen) {
-      const rawAll = (_qBank[classKey] || {})[subj];
+      const rawAll = (_qBank[examKey] || {})[subj];
       const all    = Array.isArray(rawAll) ? rawAll : [];
       if (all.length === 0) { UI.toast(`No questions available for ${subj}. Please contact Master Timothy.`, 'error', 6000); return; }
       // Shuffle the questions, then the options of each question (the stored exam keeps this
@@ -2606,6 +2688,9 @@ async function renderSubjectSelection() {
       durationMs: examDuration,
       questionSession: _qPeriod ? _qPeriod.session : null,
       questionTerm:    _qPeriod ? _qPeriod.term : null,
+      examClass:       examKey,
+      examClassLabel:  _classLabel(examKey),
+      crossClass:      isCross,
     };
 
     const btn = document.getElementById('startExamBtn');
@@ -2906,7 +2991,7 @@ async function renderSubjectSelection() {
         <div class="vtx-exam-hdr-top">
 
           <div class="vtx-exam-hdr-subj">
-            <h2 class="vtx-exam-hdr-name">${_escHtml(subj)}</h2>
+            <h2 class="vtx-exam-hdr-name">${_escHtml(subj)}${exam.crossClass ? '<span class="vtx-xc-badge">' + _escHtml(exam.examClassLabel || '') + ' exam</span>' : ''}</h2>
             <p class="vtx-exam-hdr-meta">
               Subject ${subjIdx + 1} of ${exam.subjects.length}
               &bull;
@@ -3454,6 +3539,9 @@ async function renderSubjectSelection() {
       class:  S().studentData.class,
       school: S().studentData.school,
       subjects: exam.subjects,
+      examClass:      exam.examClass || null,
+      examClassLabel: exam.examClassLabel || null,
+      crossClass:     !!exam.crossClass,
       scores, correctCounts, percentage, grade,
     };
   }
@@ -3507,6 +3595,7 @@ async function renderSubjectSelection() {
         <p style="font-size:0.875rem;color:var(--text-3);margin-top:4px;">
           ${_escHtml(result.name)} &bull; ${_escHtml(result.class)} &bull; ${_escHtml(result.school)}
         </p>
+        ${result.crossClass ? '<p style="font-size:0.8125rem;font-weight:600;color:var(--warning-text);margin-top:6px;">You took the ' + _escHtml(result.examClassLabel || '') + ' exam</p>' : ''}
       </div>
 
       <div style="text-align:center;padding:2rem 1rem;border-radius:var(--r-xl);
@@ -6655,6 +6744,7 @@ window.Exam = {
   renderSubjectSelection,
   _onPeriodChange,
   startExam,
+  _chooseExamClass,
   beginExam,
   renderExam,
   prevQuestion,

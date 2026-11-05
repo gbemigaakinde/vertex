@@ -415,6 +415,24 @@
     draw();
   }
 
+  // Teacher switch: let students of `viewer` also take the exams of class `src`.
+  async function setCrossClass(src, viewer, on) {
+    try {
+      await writeSettings(function (d) {
+        var cc = d.crossClass && typeof d.crossClass === 'object' ? d.crossClass : {};
+        var list = Array.isArray(cc[src]) ? cc[src].filter(function (x) { return x !== viewer; }) : [];
+        if (on) list.push(viewer);
+        if (list.length) cc[src] = list; else delete cc[src];
+        d.crossClass = cc;
+      });
+      await QL.load({ force: true });
+      toast(on ? 'Done. ' + viewer.toUpperCase() + ' students can now take ' + src.toUpperCase() + ' exams.'
+               : viewer.toUpperCase() + ' students can no longer take ' + src.toUpperCase() + ' exams.', 'success', 5000);
+    } catch (e) { toast('Could not save: ' + (e.message || e), 'error', 7000); }
+    S.crossOpen = true;
+    draw();
+  }
+
   /* ───────── rendering ───────── */
   function styles() {
     if (document.getElementById('vtx-qm-css')) return;
@@ -465,6 +483,12 @@
       '.qm-subjbar .qm-muted{flex:1 1 180px;min-width:0;}' +
       '@media (max-width:640px){.qm-subjbar .qm-muted{flex:1 1 100%;}#qmNewRow .qm-field{flex:1 1 100%;}}' +
       '.qm-report{max-height:220px;overflow:auto;font-size:.8125rem;border:1px solid var(--border,#ddd);border-radius:8px;padding:.5rem;}' +
+      '.qm-cross-row{display:flex;flex-wrap:wrap;gap:.4rem .75rem;align-items:center;}' +
+      '.qm-cross-src{min-width:150px;font-size:.8125rem;}' +
+      '.qm-cross-boxes{display:flex;flex-wrap:wrap;gap:.35rem;flex:1 1 200px;}' +
+      '.qm-cross-chip{display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .65rem;border:1px solid var(--border,#ccc);border-radius:99px;font-size:.75rem;cursor:pointer;user-select:none;}' +
+      '.qm-cross-chip.on{background:var(--accent-subtle,rgba(0,122,255,.12));border-color:var(--accent,#007AFF);font-weight:600;}' +
+      '.qm-cross-chip input{width:auto;margin:0;accent-color:var(--accent,#007AFF);}' +
       '.qm details>summary{cursor:pointer;font-size:.8125rem;font-weight:600;}';
     document.head.appendChild(st);
   }
@@ -492,6 +516,24 @@
     classOptions().forEach(function (c) {
       var v = typeof fs.classes[c] === 'boolean' ? (fs.classes[c] ? 'on' : 'off') : 'default';
       h += '<div class="qm-row" style="align-items:center;"><div style="min-width:120px;">' + esc(c.toUpperCase()) + '</div><div class="qm-field">' + sel('qmFree_' + c, v, true) + '</div></div>';
+    });
+    return h + '</div>';
+  }
+
+  function crossPanel() {
+    var open = QL.getCrossClass(), all = classOptions();
+    var h = '<div style="margin-top:.75rem;display:flex;flex-direction:column;gap:.9rem;">' +
+      '<div class="qm-muted">Tick a class to let its students also take the exams of the class named on the left. ' +
+      'Students always see which class and subject they are taking, and their result is saved normally under their own name. ' +
+      'Untick any time to switch it off.</div>';
+    all.forEach(function (src) {
+      var others = all.filter(function (c) { return c !== src; });
+      h += '<div class="qm-cross-row"><div class="qm-cross-src"><strong>' + esc(src.toUpperCase()) + '</strong> exams open to:</div><div class="qm-cross-boxes">';
+      others.forEach(function (v) {
+        var on = Array.isArray(open[src]) && open[src].indexOf(v) >= 0;
+        h += '<label class="qm-cross-chip' + (on ? ' on' : '') + '"><input type="checkbox" data-cross="' + esc(src) + '|' + esc(v) + '"' + (on ? ' checked' : '') + ' /> ' + esc(v.toUpperCase()) + '</label>';
+      });
+      h += '</div></div>';
     });
     return h + '</div>';
   }
@@ -555,6 +597,7 @@
         (isLive && QL.status.periodSource === 'date' ? '<button class="qm-btn" data-act="golive">Lock this period</button>' : '') + '</div>' +
 
       '<div class="qm-card"><details id="qmFreeBox"' + (S.freeOpen ? ' open' : '') + '><summary>Let students choose their own session / term</summary>' + freePanel() + '</details></div>' +
+      '<div class="qm-card"><details id="qmCrossBox"' + (S.crossOpen ? ' open' : '') + '><summary>Open exams to other classes</summary>' + crossPanel() + '</details></div>' +
 
       '<div class="qm-card"><div class="qm-row">' +
         selectHtml('qmSession', 'Session', sesOpts, S.session) +
@@ -999,6 +1042,7 @@
 
   function onChange(e) {
     var t = e.target;
+    if (t.dataset && t.dataset.cross) { var cp = t.dataset.cross.split('|'); return void setCrossClass(cp[0], cp[1], !!t.checked); }
     if (t.dataset && t.dataset.free) { return void setFreeSelect(t.id === 'qmFreeAll' ? 'all' : t.id.slice(7), t.value); }
     if (['qmSession', 'qmTerm', 'qmClass', 'qmSubject'].indexOf(t.id) >= 0) return void onSelectionChange(t.id.slice(2));
     if (t.id === 'qmFile' && t.files && t.files[0]) {
@@ -1033,6 +1077,7 @@
       root.addEventListener('toggle', function (e) {
         if (e.target && e.target.id === 'qmBulkBox') S.bulkOpen = e.target.open;
         if (e.target && e.target.id === 'qmFreeBox') S.freeOpen = e.target.open;
+        if (e.target && e.target.id === 'qmCrossBox') S.crossOpen = e.target.open;
       }, true);
     }
     if (!window.fbDb || !QL) { root.innerHTML = '<p>Question tools are not available (database not ready).</p>'; return; }

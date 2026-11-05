@@ -307,6 +307,7 @@
   // Built-in (data/questions.js) subjects the teacher deleted for a class: { classKey: { Subject: true } }.
   // Stored in questionBank/_activePeriod.hiddenSubjects = { classKey: ['Subject', …] }.
   var _hidden = {};
+  var _open = {};            // cross-class access: { sourceClass: [viewer classes] }
   var SEL_KEY = 'vtx_period_sel';
 
   function normHidden(h) {
@@ -326,7 +327,7 @@
   function samePeriod(a, b) { return periodKey(a.session, a.term) === periodKey(b.session, b.term); }
 
   function ingest(snap) {
-    _parsed = []; _free = { all: true, classes: {} }; _hidden = {};
+    _parsed = []; _free = { all: true, classes: {} }; _hidden = {}; _open = {};
     activePeriod = defaultPeriod();
     status.periodSource = 'date';
     var skipped = 0;
@@ -340,6 +341,16 @@
             status.periodSource = 'teacher';
           }
           _hidden = normHidden(data.hiddenSubjects);
+          // Cross-class access: { sourceClass: [classes allowed to take its exams] }
+          if (data.crossClass && typeof data.crossClass === 'object') {
+            Object.keys(data.crossClass).forEach(function (src) {
+              var list = data.crossClass[src];
+              if (!Array.isArray(list)) return;
+              var s = normClass(src);
+              var out = list.map(normClass).filter(function (v) { return v && v !== s; });
+              if (s && out.length) _open[s] = out;
+            });
+          }
           var fs = data.freeSelect;
           if (fs && typeof fs === 'object') {
             if (typeof fs.all === 'boolean') _free.all = fs.all;
@@ -489,6 +500,18 @@
 
   function getFreeSelect() { return JSON.parse(JSON.stringify(_free)); }
 
+  // Cross-class exam access (teacher switch).
+  function getCrossClass() { return JSON.parse(JSON.stringify(_open)); }
+  // Classes whose exams the given class may take as well as its own.
+  function openClassesFor(viewerKey) {
+    var v = normClass(viewerKey), out = [];
+    if (!v) return out;
+    Object.keys(_open).forEach(function (src) {
+      if (src !== v && _open[src].indexOf(v) >= 0) out.push(src);
+    });
+    return out.sort(function (a, b) { return a.localeCompare(b, undefined, { numeric: true }); });
+  }
+
   // Hidden built-in subjects as { classKey: ['Subject', …] } (a copy).
   function getHiddenSubjects() {
     var out = {};
@@ -558,6 +581,7 @@
     getSelectedPeriod: getSelectedPeriod, selectPeriod: selectPeriod, applyForClass: applyForClass,
     shuffle: shuffle, shuffleGrouped: shuffleGrouped, fillPassages: fillPassages, shuffleOptions: shuffleOptions, keepsOrder: keepsOrder,
     periodsFor: periodsFor, freeSelectAllowed: freeSelectAllowed, getFreeSelect: getFreeSelect,
+    getCrossClass: getCrossClass, openClassesFor: openClassesFor,
     getHiddenSubjects: getHiddenSubjects, setHiddenSubjects: setHiddenSubjects,
     defaultPeriod: defaultPeriod, normSession: normSession, normTerm: normTerm,
     periodKey: periodKey, normClass: normClass, slug: slug,
